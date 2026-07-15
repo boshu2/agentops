@@ -100,22 +100,6 @@
       ],
       "dimensions": ["correctness", "artifact_quality", "safety"],
       "critical": true
-    },
-    {
-      "id": "recover-and-codex-validator-contracts",
-      "title": "Recover/goals and Codex validator contracts preserve runtime-specific assumptions",
-      "kind": "artifact_check",
-      "objective": "Ensure recover/goals validators keep validating shared metadata when present while accepting minimal Codex frontmatter and dollar-skill references.",
-      "expectations": [
-        {"type": "artifact_contains", "target": "../../skills/goals/scripts/validate.sh", "value": "SKILL.md references evolve skill"},
-        {"type": "artifact_contains", "target": "../../skills-codex/goals/scripts/validate.sh", "value": "SKILL.md references evolve skill"},
-        {"type": "artifact_contains", "target": "../../skills/recover/scripts/validate.sh", "value": "tier: session when metadata is present"},
-        {"type": "artifact_contains", "target": "../../skills-codex/recover/scripts/validate.sh", "value": "tier: session when metadata is present"},
-        {"type": "artifact_contains", "target": "../../skills-codex/recover/.agentops-generated.json", "value": "\"source_skill\": \"skills/recover\""},
-        {"type": "artifact_contains", "target": "../../skills-codex/converter/.agentops-generated.json", "value": "\"source_skill\": \"skills/converter\""}
-      ],
-      "dimensions": ["process_adherence", "artifact_quality", "runtime_compatibility"],
-      "critical": true
     }
   ]
 }

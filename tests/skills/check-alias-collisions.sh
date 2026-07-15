@@ -10,7 +10,7 @@ REPO_ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 # These are semantic overlaps where multiple skills legitimately handle the same phrase.
 ALLOWLIST=(
   "brainstorm|brainstorm|council"
-  "is this ready|pre-mortem|vibe"
+  "is this ready|premortem|vibe"
   "research|council|research"
   "where did this come from|provenance|trace"
   "where was i|recover|status"

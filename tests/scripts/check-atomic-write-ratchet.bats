@@ -3,7 +3,7 @@
 # — the ADVISORY changed-scope ratchet on hand-rolled tmp+rename atomic writes
 # outside cli/internal/storage, the first NEW consumer of scripts/lib/ratchet.sh.
 #
-# The fixture corpus below is PRE-REGISTERED (pre-mortem rounds 2-3): the
+# The fixture corpus below is PRE-REGISTERED (premortem rounds 2-3): the
 # positive shapes are real in-tree writers (scenarioresults/writer.go:124-131,
 # config/config.go:694-701, agentworker/quarantine.go:69-81) and the negatives
 # are real plain-movers (search/util.go, doctor/engine.go) plus the

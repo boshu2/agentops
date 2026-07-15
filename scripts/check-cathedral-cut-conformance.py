@@ -37,8 +37,10 @@ FORBIDDEN_SCHEMA_STATE = {
 REMOVED_SKILLS = {
     "discovery", "behavior-first-planning", "goal-design", "crank", "converge",
     "evolve", "gc-membrane", "pawl-review", "push", "release", "pr-prep",
-    "beads-br", "beads-bv", "pre-mortem", "pre_mortem", "post-mortem",
-    "post_mortem",
+    "beads-br", "beads-bv",
+}
+REMOVED_MORTEM_ALIASES = {
+    "pre-mortem", "pre_mortem", "post-mortem", "post_mortem",
 }
 REMOVED_COMMANDS = {
     "pawl", "plan-pawl", "land", "done", "close", "governor", "yield",
@@ -90,10 +92,13 @@ def check_skill_graph() -> None:
     for name, entry in entries.items():
         deps = set((entry.get("metadata") or {}).get("dependencies") or [])
         if name != "rpi":
-            assert not deps.intersection(CORE), f"{name}: forbidden hard core dependency {deps.intersection(CORE)}"
+            assert not deps, f"{name}: only rpi may declare hard dependencies: {sorted(deps)}"
     for name in REMOVED_SKILLS:
         assert not (ROOT / "skills" / name / "SKILL.md").exists(), f"removed skill is live: {name}"
         assert not (ROOT / "skills-codex" / name / "SKILL.md").exists(), f"removed Codex skill is live: {name}"
+    for name in REMOVED_MORTEM_ALIASES:
+        assert not (ROOT / "skills" / name).exists(), f"removed skill alias is live: {name}"
+        assert not (ROOT / "skills-codex" / name).exists(), f"removed Codex alias is live: {name}"
     assert (ROOT / "skills" / "premortem" / "SKILL.md").is_file()
     assert (ROOT / "skills" / "postmortem" / "SKILL.md").is_file()
     swarm = entries["swarm"]
@@ -137,9 +142,13 @@ def check_core_schemas() -> None:
 
 def check_single_pass_contract() -> None:
     text = (ROOT / "skills" / "rpi" / "SKILL.md").read_text(encoding="utf-8")
-    for phase in ("plan", "implement", "validate"):
-        assert text.lower().count(f"invoke `/{phase}` once") == 1, f"RPI does not dispatch {phase} exactly once"
     assert "Stop regardless" in text
+    runner = ROOT / "skills" / "rpi" / "scripts" / "run_once.py"
+    assert runner.is_file(), "RPI has no executable single-pass reference behavior"
+    tree = ast.parse(runner.read_text(encoding="utf-8"), filename=str(runner))
+    assert not any(isinstance(node, (ast.For, ast.While)) for node in ast.walk(tree)), (
+        "RPI reference behavior must not contain a dispatch loop"
+    )
     report = json.loads((ROOT / "schemas" / "rpi-report.v1.schema.json").read_text())
     assert "next_action" not in property_names(report)
 
@@ -156,6 +165,26 @@ def check_validate_helper() -> None:
             assert (node.module or "").split(".")[0] not in forbidden_imports, f"validate helper imports {node.module}"
         elif isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute):
             assert node.func.attr not in {"system", "popen", "spawn", "execv", "execve"}, f"validate helper launches {node.func.attr}"
+    spec = importlib.util.spec_from_file_location("cathedral_validate_contract", path)
+    assert spec and spec.loader
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    with tempfile.TemporaryDirectory() as raw:
+        try:
+            module.store_verdict({"verdict": "FAIL"}, Path(raw))
+        except module.ContractError:
+            pass
+        else:
+            raise AssertionError("Validate persisted an incomplete verdict.v2 draft")
+        assert not list(Path(raw).iterdir()), "Validate wrote an invalid verdict artifact"
+    with tempfile.TemporaryDirectory() as raw:
+        subject = Path(raw)
+        (subject / "value").write_text("same", encoding="utf-8")
+        first = module.build_manifest(subject, ["."], [], git_metadata={"commit": "one"})
+        second = module.build_manifest(subject, ["."], [], git_metadata={"commit": "two"})
+        assert first["canonical_manifest_digest"] == second["canonical_manifest_digest"], (
+            "optional Git metadata changes subject content identity"
+        )
 
 
 def check_tombstones() -> None:
@@ -171,6 +200,15 @@ def check_tombstones() -> None:
     }
     for filename in removed_sources:
         assert not (ROOT / "cli" / "cmd" / "ao" / filename).exists(), f"old command implementation is live: {filename}"
+    for filename in (
+        "closeout.go",
+        "inmemory_closeout.go",
+        "convergence_check.go",
+        "inmemory_convergence_check.go",
+    ):
+        assert not (ROOT / "cli" / "internal" / "ports" / filename).exists(), (
+            f"lifecycle authority port remains live: {filename}"
+        )
 
 
 def check_dispatch_once() -> None:
@@ -195,10 +233,23 @@ def check_dispatch_once() -> None:
     assert calls == ["one", "two"], f"dispatch count/order mismatch: {calls}"
     assert results[0]["result"] == "candidate"
     assert results[1]["error"]["message"] == "observed error"
+    try:
+        module.dispatch_once(
+            [
+                {"packet_id": "wide", "write_scope": {"include": ["src/**"]}},
+                {"packet_id": "nested", "write_scope": {"include": ["src/lib/**"]}},
+            ],
+            executor,
+        )
+    except ValueError:
+        pass
+    else:
+        raise AssertionError("dispatch_once accepted overlapping glob scopes")
 
 
 def probe_no_substrate_calls() -> None:
     helper = ROOT / "skills" / "validate" / "scripts" / "validate.py"
+    rpi_runner = ROOT / "skills" / "rpi" / "scripts" / "run_once.py"
     with tempfile.TemporaryDirectory() as raw:
         temp = Path(raw)
         subject = temp / "subject"
@@ -224,6 +275,10 @@ def probe_no_substrate_calls() -> None:
         assert spec and spec.loader
         module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(module)
+        rpi_spec = importlib.util.spec_from_file_location("cathedral_rpi", rpi_runner)
+        assert rpi_spec and rpi_spec.loader
+        rpi = importlib.util.module_from_spec(rpi_spec)
+        rpi_spec.loader.exec_module(rpi)
         acceptance = "a" * 64
         plan = {
             "schema_version": "plan-packet.v1",
@@ -235,6 +290,7 @@ def probe_no_substrate_calls() -> None:
             "plan_packet_digest": module.plan_digest(plan),
             "acceptance_digest": acceptance,
             "subject_manifest_digest": payload["canonical_manifest_digest"],
+            "subject_manifest": payload,
             "changed_path_coverage_complete": True,
             "actual_changed_paths": ["value.txt"],
         }
@@ -254,8 +310,35 @@ def probe_no_substrate_calls() -> None:
             "validated_at": "2026-07-14T00:00:00Z",
         }
         verdict_dir = temp / ".agentops" / "verdicts" / "sha256"
-        artifact, verdict_path, existed = module.store_verdict(draft, verdict_dir)
-        assert artifact["verdict"] == "PASS" and verdict_path.is_file() and not existed
+        calls: list[str] = []
+
+        def plan_phase(_intent: object) -> dict:
+            calls.append("plan")
+            return plan
+
+        def implement_phase(received_plan: dict) -> dict:
+            calls.append("implement")
+            assert received_plan == plan
+            return candidate
+
+        def validate_phase(received_plan: dict, received_candidate: dict) -> dict:
+            calls.append("validate")
+            assert module.scope_result(received_plan, received_candidate)["result"] == "PASS"
+            artifact, verdict_path, existed = module.store_verdict(draft, verdict_dir)
+            assert not existed
+            return {
+                "verdict": artifact["verdict"],
+                "subject_manifest_digest": artifact["subject_manifest_digest"],
+                "verdict_digest": artifact["artifact_digest"],
+                "verdict_ref": str(verdict_path),
+                "checked": artifact["checked"],
+                "not_checked": artifact["not_checked"],
+            }
+
+        rpi_report = rpi.invoke_once("temporary non-Git experiment", plan_phase, implement_phase, validate_phase)
+        verdict_path = Path(rpi_report["verdict_ref"])
+        assert calls == ["plan", "implement", "validate"], f"RPI dispatch trace is {calls}"
+        assert rpi_report["status"] == "PASS" and verdict_path.is_file()
         assert verdict_path.parent == verdict_dir
         assert not called.exists(), "Validate helper invoked a Git, tracker, push, or delivery executable"
 

@@ -70,11 +70,7 @@ e2e_factory_repo() {
 # Resolves an ao binary into <build-dir>/ao. Honors:
 #   PROOF_AO_BIN          — explicit override (must point at an executable)
 #   PROOF_FORCE_BUILD=1   — disable reuse and always go build from source
-#   PROOF_BUILD_TAGS      — go build tags (e.g. "flywheel legacy" for proofs
-#                           that exercise ADR-0012 archived commands)
-#   <repo-root>/cli/bin/ao — auto-detected reuse when present (tag-less only:
-#                           the prebuilt repo binary is the default spine build
-#                           and cannot satisfy a tagged request)
+#   <repo-root>/cli/bin/ao — auto-detected reuse when present
 # Falls back to a fresh `go build` under <repo-root>/cli.
 e2e_factory_ao_bin() {
   local build_dir="$1" repo_root="$2"
@@ -82,9 +78,8 @@ e2e_factory_ao_bin() {
   [[ -n "$repo_root" ]] || _e2e_factory_die "e2e_factory_ao_bin: repo_root is required"
   mkdir -p "$build_dir"
   local out="$build_dir/ao"
-  local tags="${PROOF_BUILD_TAGS:-}"
   local src="${PROOF_AO_BIN:-}"
-  if [[ -z "$src" && -z "$tags" && "${PROOF_FORCE_BUILD:-0}" != "1" && -x "$repo_root/cli/bin/ao" ]]; then
+  if [[ -z "$src" && "${PROOF_FORCE_BUILD:-0}" != "1" && -x "$repo_root/cli/bin/ao" ]]; then
     src="$repo_root/cli/bin/ao"
   fi
   if [[ -n "$src" && -x "$src" ]]; then
@@ -94,11 +89,7 @@ e2e_factory_ao_bin() {
       || _e2e_factory_die "no prebuilt ao binary and 'go' is not on PATH"
     (
       cd "$repo_root/cli"
-      if [[ -n "$tags" ]]; then
-        go build -tags "$tags" -o "$out" ./cmd/ao
-      else
-        go build -o "$out" ./cmd/ao
-      fi
+      go build -o "$out" ./cmd/ao
     ) >/dev/null || _e2e_factory_die "go build ./cmd/ao failed"
   fi
   chmod +x "$out"

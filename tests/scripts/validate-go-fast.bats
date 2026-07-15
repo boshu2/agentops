@@ -142,7 +142,7 @@ GO
 #!/usr/bin/env bash
 case "$*" in
     *"rev-parse --git-dir"*) echo ".git"; exit 0 ;;
-    *"diff --name-only --cached"*) echo "cli/internal/adapters/agentsdoctor/doctor.go"; exit 0 ;;
+    *"diff --name-only --cached"*) echo "cli/internal/doctor/doctor.go"; exit 0 ;;
     *"diff --name-only"*) echo ""; exit 0 ;;
     *"ls-files --others"*) echo ""; exit 0 ;;
 esac
@@ -156,7 +156,7 @@ GIT
     run bash "$SCRIPT" --scope worktree
     [ "$status" -eq 0 ]
     grep -q -- '-run ^(' "$GO_LOG"
-    grep -q -- './internal/adapters/agentsdoctor' "$GO_LOG"
+    grep -q -- './internal/doctor' "$GO_LOG"
 }
 
 @test "validate-go-fast.sh skips deleted package directories" {

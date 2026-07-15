@@ -76,9 +76,7 @@ func TestRemovedCommandHint_NotTombstoned(t *testing.T) {
 	}
 }
 
-// A flywheel/legacy build registers some tombstoned verbs as real commands.
-// The hint must stay silent for any verb the running binary actually serves,
-// so a restored command never gets a "was removed" message on a usage error.
+// A registered verb always wins over a tombstone hint.
 func TestRemovedCommandHint_RegisteredVerbSuppressed(t *testing.T) {
 	root := bareRoot()
 	root.AddCommand(&cobra.Command{Use: "pawl"})

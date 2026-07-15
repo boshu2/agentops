@@ -54,41 +54,9 @@ graph LR
   using_gc["using-gc"]
   validate["validate"]
   workflow_builder["workflow-builder"]
-  agent_native --> agent_mail
-  agent_native --> ntm
-  automation_shape_routing --> agent_native
-  automation_shape_routing --> skill_builder
-  automation_shape_routing --> workflow_builder
-  bootstrap --> doc
-  bootstrap --> goals
-  bootstrap --> product
-  bootstrap --> scaffold
-  bootstrap --> shared
-  codebase_recon --> doc
-  doc --> council
-  doc --> standards
-  dueling_idea_genies --> idea_genie
-  idea_genie --> research
-  pattern_mining --> operationalize
-  postmortem --> council
-  postmortem --> toil_mining
-  premortem --> council
-  refactor --> pattern_mining
-  refactor --> standards
-  research --> cass
-  research --> codebase_recon
-  research --> ms
-  research --> pattern_mining
-  research --> reverse_engineer
   rpi --> implement
   rpi --> plan
   rpi --> validate
-  scaffold --> standards
-  skill_builder --> converter
-  skill_builder --> heal_skill
-  status --> sbh
-  test --> standards
-  toil_mining --> automation_shape_routing
 ```
 
 Hard dependencies only. Optional context relationships are listed in the context map.

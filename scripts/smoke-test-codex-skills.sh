@@ -1,14 +1,13 @@
 #!/usr/bin/env bash
-# smoke-test-codex-skills.sh — DAG-based headless smoke test for Codex skills.
-# Traverses skill dependency graph in topological order, spawns a headless codex
-# runner per skill, collects PASS/PARTIAL/FAIL verdicts.
+# smoke-test-codex-skills.sh — optional evaluation of generated Codex skills.
+# The metadata-derived directory inventory is the test set; this script owns no
+# runtime graph or release decision.
 #
 # Usage:
 #   scripts/smoke-test-codex-skills.sh [OPTIONS]
 #
 # Options:
 #   --dry-run       Print what would run without spawning Codex
-#   --chain N       Run only chain N (1-4)
 #   --skill NAME    Run only a single skill
 #   --timeout SECS  Per-skill timeout (default: 90)
 #   --parallel N    Max parallel Codex invocations (default: 4)
@@ -36,7 +35,6 @@ RESULTS_DIR="$REPO_ROOT/.agents/smoke-test"
 
 # Defaults
 DRY_RUN=false
-CHAIN_FILTER=""
 SKILL_FILTER=""
 TIMEOUT=90
 PARALLEL=4
@@ -49,7 +47,6 @@ VERBOSE=false
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --dry-run)    DRY_RUN=true; shift ;;
-    --chain)      CHAIN_FILTER="$2"; shift 2 ;;
     --skill)      SKILL_FILTER="$2"; shift 2 ;;
     --timeout)    TIMEOUT="$2"; shift 2 ;;
     --parallel)   PARALLEL="$2"; shift 2 ;;
@@ -79,23 +76,6 @@ if [[ "$STATIC_ONLY" == "false" && "$DRY_RUN" == "false" ]]; then
 fi
 
 mkdir -p "$RESULTS_DIR"
-
-# --- DAG Definition ---
-# Extracted from skill body analysis (see .agents/handoff/2026-03-14-codex-api-alignment.md)
-# Format: LAYER[n]="skill1 skill2 ..."
-
-LAYER0="standards shared beads brainstorm inject forge retro ratchet provenance compile handoff recover quickstart goals flywheel openai-docs oss-docs product security release converter update using-agentops status heal-skill codex-team pr-research pr-plan pr-implement pr-validate pr-prep pr-retro grafana-platform-dashboard reverse-engineer-rpi push"
-LAYER1="council research doc implement bug-hunt trace readme"
-LAYER2="pre-mortem post-mortem vibe complexity"
-LAYER3="swarm validation plan"
-LAYER4="crank discovery"
-LAYER5="rpi evolve"
-
-# Chains for traversal (minimum covering paths)
-CHAIN1="standards council pre-mortem plan research inject brainstorm discovery implement beads swarm vibe complexity bug-hunt crank post-mortem validation retro forge rpi ratchet"
-CHAIN2="pr-research pr-plan pr-implement pr-validate pr-prep pr-retro"
-CHAIN3="compile evolve flywheel provenance trace"
-CHAIN4="doc readme handoff recover status quickstart goals product oss-docs release security heal-skill codex-team update converter using-agentops grafana-platform-dashboard reverse-engineer-rpi push openai-docs shared"
 
 # --- Static Validation ---
 static_check() {
@@ -234,20 +214,10 @@ get_skills() {
     return
   fi
 
-  if [[ -n "$CHAIN_FILTER" ]]; then
-    case "$CHAIN_FILTER" in
-      1) skills="$CHAIN1" ;;
-      2) skills="$CHAIN2" ;;
-      3) skills="$CHAIN3" ;;
-      4) skills="$CHAIN4" ;;
-      *) echo "Invalid chain: $CHAIN_FILTER (must be 1-4)" >&2; exit 2 ;;
-    esac
-    echo "$skills"
-    return
-  fi
-
-  # All skills in topological order (deduped across chains)
-  echo "$LAYER0 $LAYER1 $LAYER2 $LAYER3 $LAYER4 $LAYER5"
+  find "$SKILLS_CODEX" -mindepth 2 -maxdepth 2 -name SKILL.md -print \
+    | sed 's#/SKILL.md$##; s#^.*/##' \
+    | LC_ALL=C sort \
+    | tr '\n' ' '
 }
 
 # --- Main ---
@@ -406,7 +376,7 @@ main() {
   fi
 
   # --- Summary ---
-  echo "=== Release Gate Verdict ==="
+  echo "=== Evaluation Result ==="
   echo "Total: $total  PASS: $pass  PARTIAL: $partial  FAIL: $fail"
   echo ""
 

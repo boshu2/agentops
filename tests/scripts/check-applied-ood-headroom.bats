@@ -76,6 +76,5 @@ FAKE
   run grep -F "scripts/check-applied-ood-headroom.sh" "$REPO_ROOT/.github/workflows/validate.yml"
   [ "$status" -eq 0 ]
 
-  run grep -F "scripts/check-applied-ood-headroom.sh" "$REPO_ROOT/scripts/hooks/pre-push.local"
-  [ "$status" -ne 0 ]
+  [ ! -e "$REPO_ROOT/scripts/hooks/pre-push.local" ]
 }

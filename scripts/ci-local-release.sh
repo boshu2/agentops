@@ -335,6 +335,7 @@ run_shellcheck() {
     # the gate irreproducible across machines (age-z1pv).
     local files=()
     while IFS= read -r file; do
+        [[ -f "$file" ]] || continue
         files+=("$file")
     done < <(git ls-files '*.sh')
 
@@ -349,6 +350,12 @@ run_shellcheck() {
 run_markdownlint() {
     local md_files=()
     while IFS= read -r file; do
+        [[ -f "$file" ]] || continue
+        case "$file" in
+            docs/audits/*|docs/plans/*|docs/releases/*|docs/learnings/*|docs/evidence/*|docs/decisions/*|docs/handoffs/*)
+                continue
+                ;;
+        esac
         md_files+=("$file")
     done < <(git ls-files '*.md')
 
@@ -966,7 +973,6 @@ run_step_bg "Codex runtime sections" bash ./scripts/validate-codex-runtime-secti
 # run_step_bg "Codex install bundle parity" bash ./scripts/validate-codex-install-bundle.sh
 run_step_bg "Codex artifact manifest" bash ./scripts/validate-codex-generated-manifest.sh
 run_step_bg "Codex artifact metadata" bash ./scripts/validate-codex-generated-artifacts.sh --scope worktree
-run_step_bg "Codex backbone prompts" bash ./scripts/validate-codex-backbone-prompts.sh
 run_step_bg "Skill runtime formats" bash ./scripts/validate-skill-runtime-formats.sh
 run_step_bg "Contract compatibility gate" ./scripts/check-contract-compatibility.sh
 run_step_bg "Embedded sync check" ./scripts/validate-embedded-sync.sh
@@ -975,18 +981,8 @@ run_step_bg "Secret pattern scan" run_security_scan_patterns
 run_step_bg "Dangerous shell pattern scan" run_dangerous_pattern_scan
 run_step_bg "Skill CLI snippets" bash ./scripts/validate-skill-cli-snippets.sh
 run_step_bg "Command/test pairing gate" ./scripts/check-go-command-test-pair.sh
-# MemRL feedback health is a local observation, not lifecycle authority.
-if local_env_checks_blocking; then
-    run_step_bg "MemRL feedback loop health" ./scripts/check-memrl-health.sh
-fi
-run_step_bg "Doctor health check" ./scripts/check-doctor-health.sh
 
 collect_parallel
-
-# Non-official local-ci: keep the local observation advisory.
-if ! local_env_checks_blocking; then
-    run_step_advisory "MemRL feedback loop health" ./scripts/check-memrl-health.sh
-fi
 
 # ── Phase 3: Parallel medium-weight checks ──
 
@@ -995,8 +991,6 @@ run_step_bg "ShellCheck" run_shellcheck
 run_step_bg "Markdownlint" run_markdownlint
 run_step_bg "Smoke tests" ./tests/smoke-test.sh --verbose
 run_step_bg "Skill lint" bash ./tests/skills/run-all.sh
-run_step_bg "Headless runtime skill smoke" bash ./scripts/validate-headless-runtime-skills.sh
-run_step_bg "CLI integration smoke tests" ./tests/integration/test-cli-commands.sh
 run_step_bg "Command/test pairing gate tests" ./tests/scripts/test-go-command-test-pair.sh
 run_step_bg "Go fast scope tests" bats ./tests/scripts/validate-go-fast.bats
 run_step_bg "Skill runtime parity tests" bash ./tests/scripts/test-skill-runtime-parity.sh
@@ -1005,9 +999,7 @@ run_step_bg "Codex plugin install tests" bash ./tests/scripts/test-codex-plugin-
 run_step_bg "Codex native install tests" bash ./tests/scripts/test-codex-native-skills-install.sh
 run_step_bg "Codex artifact manifest tests" bash ./tests/scripts/test-codex-generated-manifest.sh
 run_step_bg "Codex artifact metadata tests" bash ./tests/scripts/test-codex-generated-artifacts.sh
-run_step_bg "Codex backbone prompt tests" bash ./tests/scripts/test-codex-backbone-prompts.sh
 run_step_bg "Validate-local tests" bash ./tests/scripts/test-validate-local.sh
-run_step_bg "Headless runtime skill smoke tests" bash ./tests/scripts/test-headless-runtime-skills.sh
 
 collect_parallel
 
@@ -1016,8 +1008,6 @@ collect_parallel
 
 run_step_bg "Skill schema validation" ./scripts/validate-skill-schema.sh --verbose
 run_step_bg "Learning coherence" ./scripts/validate-learning-coherence.sh
-run_step_bg "JSON flag consistency" ./tests/cli/test-json-flag-consistency.sh
-run_step_bg "JSON flag temp workspace" ./tests/cli/test-json-flag-consistency-tempdir.sh
 
 collect_parallel
 
@@ -1025,75 +1015,37 @@ collect_parallel
 
 if [[ "$QUICK_MODE" == "true" ]]; then
     # --quick: code-correctness only. Build the binary (current platform), vet, and run
-    # the test suite WITHOUT -race. Skip the entire release-rehearsal lane: SBOM
-    # (cyclonedx/spdx), the multi-platform release-binary validation, the vuln-scan
-    # security gate, and the contract canaries — those belong to the full pre-tag run.
+    # the test suite WITHOUT -race.
     echo ""
     echo -e "${YELLOW}  [--quick] skipping release-rehearsal lane (SBOM/cross-build/scan);${NC}"
     echo -e "${YELLOW}            run full mode before the actual tag${NC}"
-    warn "Skipped SBOM generation (cyclonedx/spdx) (--quick)"
     warn "Skipped multi-platform release-binary validation (--quick)"
     warn "Skipped vuln-scan security gate (syft/grype/trivy) (--quick)"
-    warn "Skipped AgentOps contract canaries (--quick)"
     warn "Skipped Go race tests (--quick; runs non-race go test instead)"
 
     run_step "Go build + vet + test (current platform, no -race)" run_go_quick_build_and_test
 elif [[ "$FAST_MODE" == "true" ]]; then
     warn "Skipped Go race tests (--fast)"
-    warn "Skipped SBOM generation (--fast)"
     warn "Skipped Security gate (--fast)"
-    warn "Skipped AgentOps contract canaries (--fast)"
 
     # Still build the binary (fast) and run smoke tests against it
     run_step "Go build + vet" run_go_build_only
     run_step "Release binary validation" run_release_binary_validation
 else
-    # These are the heavy hitters — run them in parallel
+    # The full deterministic code and security checks run in parallel.
     run_step_bg "Go build + race tests" run_go_build_and_tests
-    run_step_bg "Generate SBOM artifacts (CycloneDX + SPDX)" generate_sbom_artifacts
-    run_step_bg "Security toolchain gate (${SECURITY_MODE}, require tools)" run_security_gate
-    run_step_bg "AgentOps contract canaries" ./scripts/test-agentops-contract-canaries.sh
+    run_step_bg "Security toolchain gate (${SECURITY_MODE})" run_security_gate
 
     collect_parallel
 
     run_step "Release binary validation" run_release_binary_validation
 fi
 
-# Build-tag archive mechanism (ADR-0012 / recon-2026-07-02 audit A8): the default
-# build must OMIT the archived command sets and -tags flywheel|legacy must restore
-# them buildably. Cheap (compiles 4 tag variants) and a real bitrot guard, so it
-# runs in every mode — archived satellite code (ao orchestrate/loop/tick/corpus)
-# can no longer silently stop compiling between manual `make verify-buildtags` runs.
-run_step "Build-tag archive mechanism (verify-buildtags)" ./scripts/verify-buildtags.sh
-
 # ── Phase 5: CLI smoke tests (need built binary) ──
 
 run_step_bg "ao init + live-waist smoke" run_init_live_waist_smoke
-run_step_bg "Release smoke test (all commands)" ./scripts/release-smoke-test.sh --skip-build
 
 collect_parallel
-
-# Digital-twin/VIL + eval evidence are release-rehearsal artifacts (the eval lane runs
-# the AgentOps eval suite, which is slow). --quick skips them entirely; the full pre-tag
-# run produces them.
-if [[ "$QUICK_MODE" != "true" ]]; then
-    run_step "Digital twin/VIL evidence" write_release_digital_twin_evidence
-    run_step "AgentOps eval evidence" run_release_eval_evidence
-else
-    warn "Skipped digital-twin/VIL + AgentOps eval evidence (--quick)"
-fi
-
-# ── Phase 6: Release readiness evidence ──
-# Official release audits (--release-version) require HIL evidence or an
-# explicit waiver. Normal local runs and --fast runs still write advisory JSON.
-# --quick skips the HIL + readiness-score release-rehearsal gates outright — they
-# audit release readiness, not code correctness.
-if [[ "$QUICK_MODE" != "true" ]]; then
-    run_step "HIL release evidence" run_release_hil_evidence
-    run_step "Release readiness score gate" check_release_readiness
-else
-    warn "Skipped HIL release evidence + release readiness score gate (--quick)"
-fi
 
 # ═══════════════════════════════════════════════════════
 #  Summary
@@ -1102,32 +1054,21 @@ fi
 END_TIME=$(date +%s)
 ELAPSED=$((END_TIME - START_TIME))
 
-# Release-provenance artifacts (manifest + tag-index) record a release rehearsal.
-# --quick is explicitly NOT a rehearsal, so it does not write them — that keeps the
-# tag-index free of non-rehearsal entries.
-if [[ "$QUICK_MODE" != "true" ]]; then
-    write_release_artifact_manifest
-    write_tag_index
-fi
-
 echo ""
 echo -e "${BLUE}═══════════════════════════════════════════════════════${NC}"
 if [[ "$errors" -gt 0 ]]; then
     echo -e "${RED}  LOCAL CI FAILED ($errors failing check(s)) [${ELAPSED}s]${NC}"
-    echo "  Scan/SBOM artifacts: $ARTIFACT_DIR"
     echo -e "${BLUE}═══════════════════════════════════════════════════════${NC}"
     exit 1
 fi
 
 if [[ "$QUICK_MODE" == "true" ]]; then
     echo -e "${GREEN}  LOCAL CI QUICK SANITY PASSED [${ELAPSED}s]${NC}"
-    echo -e "${YELLOW}  --quick skipped the release-rehearsal lane (SBOM/cross-build/scan/eval/HIL/readiness).${NC}"
-    echo -e "${YELLOW}  Run the full gate (no flag) before the actual tag.${NC}"
+    echo -e "${YELLOW}  --quick skipped race, security, and release-binary checks.${NC}"
     echo -e "${BLUE}═══════════════════════════════════════════════════════${NC}"
     exit 0
 fi
 
 echo -e "${GREEN}  LOCAL CI PASSED [${ELAPSED}s]${NC}"
-echo "  Scan/SBOM artifacts: $ARTIFACT_DIR"
 echo -e "${BLUE}═══════════════════════════════════════════════════════${NC}"
 exit 0

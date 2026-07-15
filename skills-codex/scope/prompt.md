@@ -1,6 +1,6 @@
 # scope
 
-Hard-block edits outside declared frozen directories and protect paths during risky changes. Triggers: "scope", "hard-block edits outside declared frozen", "scope skill".
+Review a proposed PlanPacket write scope for completeness and ambiguity. Triggers: "review write scope", "check scope boundaries", "scope this change".
 
 ## Instructions
 

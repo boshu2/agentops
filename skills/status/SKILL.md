@@ -20,7 +20,7 @@ metadata:
   disposition: keep_specialist
   graph_root: true
   tier: session
-  dependencies: [sbh]
+  dependencies: []
 output_contract: read-only status snapshot
 ---
 

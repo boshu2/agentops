@@ -1,8 +1,8 @@
 # Producer-Defect Recurrence Contract
 
-This contract governs the bookkeeping seam from repeated validation findings to
-an advisory producer-rule candidate. It does not create policy, block delivery,
-or activate a mechanical check.
+This contract describes an optional, post-run reduction from repeated Validate
+findings to an advisory producer-rule candidate. It does not participate in RPI,
+change a verdict, create policy, block work, or activate a mechanical check.
 
 ## Inputs
 
@@ -30,17 +30,16 @@ The recurrence reducer groups by `class_key`, then counts distinct
   objective and reports that distinct-objective count as `recurrence_count`.
 
 Candidates conform to `schemas/producer-rule-candidate.v1.schema.json`. They
-are always `advisory: true`. A candidate proposes that the orchestrator examine
-the producer surface—Discovery, Plan, Premortem, a skill contract, or an
-operator footgun—but it is not itself a rule or gate.
+are always `advisory: true`. A candidate proposes that a later Learn invocation
+examine Plan, Premortem, a specialist skill, or an operator footgun. It is not a
+rule, gate, lifecycle transition, or instruction to revise the completed run.
 
-## Runtime projection
+## Optional projection
 
-`ao membrane digest --json` exposes the reduction as
-`producer_candidates`. Learn records the same shape in its receipt after
-reconciling immutable Validate observations. The orchestrator alone decides
-whether a candidate changes future work.
+An explicitly invoked Learn consumer may read a caller-supplied collection of
+immutable `verdict.v2` artifacts, normalize their findings into observations,
+and emit this reduction. There is no required receipt, command, background
+process, automatic invocation, or core-state update.
 
-The measured before/after register remains a separate projection: it evaluates
-whether an accepted producer change reduced later recurrence. Candidate
+Any before/after measurement remains a separate advisory projection. Candidate
 creation and effectiveness measurement must not be conflated.

@@ -432,8 +432,7 @@ with open(sys.argv[1], encoding="utf-8") as fh:
 print(len(data.get("stale_suite_hashes") or []))
 PY
 )"
-        # Drift-only gate (mirrors pre-push-gate.sh block 24d and the
-        # agentops-eval-baseline-audit CI job): fail only on
+        # Drift-only check: fail only on
         # stale_suite_hashes (a promoted baseline's recorded suite SHA stops
         # matching the current suite definition). policy_mismatch_count is
         # informational because under the no-tracked-.agents/ policy

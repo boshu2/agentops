@@ -5,6 +5,8 @@ content identity, one author-distinct Validate verdict, and a durable verdict
 artifact. It does not own Git delivery, merge policy, retries, queues, work
 ownership, or release transitions.
 
+Repositories own delivery policy for local and cloud agents.
+
 ## Separation of responsibilities
 
 ```text
@@ -16,11 +18,9 @@ Repository: deterministic checks -> repository-selected Git/CI/release policy
 means only that its selected checks passed. It cannot create, strengthen, or
 replace a semantic verdict.
 
-The installed pre-push hook runs ordinary build, race, schema, generated-drift,
-and security checks. It performs no model review, admission decision, tracker
-transition, delivery serialization, or provenance backstop. Repositories may
-replace or omit the hook and may use direct push, pull requests, external CI,
-or another delivery process.
+AgentOps installs no push hook and does not choose how a repository invokes
+these checks. A repository may call `ao gate check` from a local command, CI,
+pull request, merge queue, or another delivery process.
 
 ## GitHub workflows
 
@@ -50,22 +50,10 @@ once for the complete candidate:
 
 ```bash
 cd cli && go test ./...
-./scripts/check-cathedral-cut-conformance.py
-./scripts/check-skill-mesh.py
-./scripts/ci-local-release.sh
+python3 scripts/check-cathedral-cut-conformance.py
+python3 scripts/generate-skill-mesh.py --check
+bash scripts/ci-local-release.sh
 ```
 
 The local release script validates this repository's release artifacts. That is
 repository policy, not an AgentOps lifecycle transition.
-
-## Bootstrap bypass
-
-The Cathedral Cut itself may use the audited one-time bypass:
-
-```bash
-AGENTOPS_GATE_DISABLED=1 git push
-```
-
-The hook logs that bypass. It does not grant semantic validity; this migration
-still requires the full ordinary suite and a fresh `verdict.v2` for the exact
-candidate before the push.

@@ -61,8 +61,6 @@ package_dirs = [
 ]
 skill_dirs = []
 for skill_dir in sorted(p for p in skills_root.iterdir() if p.is_dir()):
-    if skill_dir.name in {"pre-mortem", "post-mortem", "pre_mortem", "post_mortem"}:
-        continue
     if (skill_dir / "SKILL.md").exists():
         skill_dirs.append(skill_dir)
 

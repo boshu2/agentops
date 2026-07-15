@@ -212,7 +212,7 @@ def transform_body(body: str, known_skills: set[str], exempt: bool = False) -> s
         )
 
     # /<known-skill> -> $<known-skill> for slash-COMMAND invocations only — never
-    # a path segment. Longest names first (so /pre-mortem wins over /pre). Exclude
+    # a path segment. Longest names first (so /premortem wins over /pre). Exclude
     # when preceded by a path char (word/./-/_/slash, e.g. ../research/, foo/plan)
     # or followed by '/' (a path like /research/SKILL.md), so markdown links and
     # file paths are left intact (the bug that turned ../foo/ into ..$foo/).
@@ -448,13 +448,29 @@ source_skills = sorted(
     for p in source_root.iterdir()
     if p.is_dir()
     and not p.name.startswith("_")
-    and p.name not in {"pre-mortem", "post-mortem", "pre_mortem", "post_mortem"}
     and (p / "SKILL.md").exists()
 )
 known_skills = set(source_skills)
 
 drift = []
 generated = []
+
+# Source metadata owns the installed set. Retired source roots must not leave
+# empty directories, stale generated twins, or override rows that continue to
+# advertise removed skills.
+retired_twin_dirs = sorted(
+    p for p in codex_root.iterdir()
+    if p.is_dir() and not p.name.startswith("_") and p.name not in known_skills
+)
+if check_only:
+    drift.extend((p.name, ["retired twin directory remains"]) for p in retired_twin_dirs)
+else:
+    for path in retired_twin_dirs:
+        shutil.rmtree(path)
+
+overrides_skills[:] = [
+    entry for entry in overrides_skills if entry.get("name") in known_skills
+]
 
 for name in source_skills:
     if name in bespoke:
@@ -615,7 +631,6 @@ for twin_dir in sorted(
     p
     for p in codex_root.iterdir()
     if p.is_dir()
-    and p.name not in {"pre-mortem", "post-mortem", "pre_mortem", "post_mortem"}
     and (p / "SKILL.md").exists()
 ):
     marker_path = twin_dir / marker_name

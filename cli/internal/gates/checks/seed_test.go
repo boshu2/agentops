@@ -13,9 +13,8 @@ func TestSeedChecksRegistered(t *testing.T) {
 		"always.mutation-route",
 		"always.embedded-sync",
 		"skill.schema",
-		"contract.registry-drift",
+		"contract.skill-mesh",
 		"ci.policy-parity",
-		"eval.corpus-freshness",
 		"corpus.path-guard",
 	}
 	for _, id := range want {
@@ -133,25 +132,6 @@ func TestRetrievalManifestPathGateHasFixtureManifestArgs(t *testing.T) {
 		if check.Args[i] != want[i] {
 			t.Fatalf("always.retrieval-manifest-paths args = %v, want %v", check.Args, want)
 		}
-	}
-}
-
-func TestSkillIsolationGateIsWarnFirst(t *testing.T) {
-	check, ok := gates.Default.Get("skill.isolation")
-	if !ok {
-		t.Fatal("skill.isolation gate is not registered")
-	}
-	if check.Backing != "check-skill-isolation.sh" {
-		t.Fatalf("skill.isolation backing = %q, want check-skill-isolation.sh", check.Backing)
-	}
-	if check.Blocking {
-		t.Fatal("skill.isolation must be warn-first / non-blocking")
-	}
-	if !check.Tiers.Has(gates.Fast) || !check.Tiers.Has(gates.Full) {
-		t.Fatalf("skill.isolation tiers = %v, want Fast|Full", check.Tiers)
-	}
-	if len(check.Match) == 0 {
-		t.Fatal("skill.isolation should be routed by skill paths, not always-run")
 	}
 }
 

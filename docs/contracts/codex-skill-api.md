@@ -213,17 +213,12 @@ A Codex-conformant skill must:
 
 ---
 
-## CLI Skill-Map Refresh
+## Generated inventories
 
-After changing `ao` command usage in any of these locations, refresh [`docs/cli-skills-map.md`](../cli-skills-map.md):
-
-- `skills/*/SKILL.md`
-- `skills-codex/*/SKILL.md`
-
-Process:
-
-1. Update the map from current sources.
-2. Run `bash tests/docs/validate-doc-release.sh` and `bash tests/docs/validate-skill-count.sh` before pushing.
+`skills/<name>/SKILL.md` metadata owns the skill inventory and dependency graph.
+Run `scripts/regen-all.sh` after changing it. The CLI command surface is a
+separate executable projection generated from Cobra; no handwritten CLI-to-skill
+map is maintained.
 
 ---
 
@@ -245,43 +240,15 @@ bespoke skills or deliberate Codex-only divergence recorded in
 `skills-codex-overrides/catalog.json`; otherwise fix the source skill or the
 codex-sync transform/template and regenerate.
 
-**Bespoke twins are HAND-MAINTAINED in full — body AND references (age-0js4).**
-A `treatment: bespoke` twin (catalog.json — `council`, `crank`, `evolve`,
-`plan`, `premortem`, `research`, `rpi`, … 19 total) is skipped ENTIRELY by
-codex-sync, **including `--force`**. Its `SKILL.md` body and everything under
-`references/`/`scripts/` are authored by hand: many bespoke references are
-deliberate Codex-condensed rewrites of source (e.g. `research/references/
-data-flow-from-entry-points.md` is a substantial hand-rewrite — 85 source lines
-deleted, 56 added), so a source edit does **NOT** auto-propagate, and
-`codex-sync --force --only <bespoke>` reporting "nothing to generate" is
-CORRECT, not a bug. Refreshing a bespoke twin after a source change is a
-deliberate human edit of the twin. **Do not** auto-mirror source over a bespoke
-twin — it would clobber the hand-authored Codex copy. (Auto-refresh was
-evaluated under age-0js4 and rejected: dozens of the bespoke reference files are
-genuine hand-rewrites; only an explicit per-file tracked/bespoke manifest could
-refresh safely, which is disproportionate to the low-frequency cost. *Accidental*
-drift — a twin that should have tracked source but didn't — is the divergence
-gate's job, tracked under age-odv to add an explicit bespoke exemption, not
-codex-sync's.)
+The current catalog has no bespoke or pointer twins. Every live Codex package is
+a generated parity projection of `skills/<name>/SKILL.md` plus its linked local
+files. `scripts/codex-sync.sh` owns those packages; manual edits under
+`skills-codex/<name>/` are drift and will be overwritten.
 
-**Pointer twins are exempt from the mirror requirement (`parity_policy: pointer`).**
-Distinct from bespoke: some twins are deliberately THIN POINTERS — they carry no
-mirrored prose, just "the source skill is the source of truth — read it first"
-plus a short Codex Runtime Contract (e.g. `pawl-review`, `agent-mail`,
-`ntm`; ~16 of them). For these there is nothing to mirror, so a source-only prose
-edit must NOT demand twin churn. Declare it once in the twin's frontmatter:
-
-```yaml
-parity_policy: pointer   # twin defers to the source body; exempt from source-divergence
-```
-
-`validate-codex-generated-artifacts.sh` (`twin_is_pointer`) then skips the
-SKILL.md-body and references divergence gates for that twin. Use this ONLY for a
-genuine pointer — a twin that duplicates source prose must stay a full mirror and
-keep the marker off, so its divergence gate still fires. The twin's own content
-(incl. its Codex Runtime Contract) is still validated by the source→codex
-existence check and the manifest/hash audit. Marking the existing ~16 pointer
-twins is tracked under age-backfill-pointer-twin-markers-uco.
+`skills-codex-overrides/catalog.json` remains the explicit treatment registry.
+If a future runtime-specific implementation is genuinely necessary, declare it
+there before editing a twin and add focused parity tests in the same change.
+Do not create an undocumented exception or a second skill inventory.
 
 When a skill change affects Codex behavior, phrasing, orchestration, or UX:
 

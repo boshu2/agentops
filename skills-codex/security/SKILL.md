@@ -1,12 +1,12 @@
 ---
 name: security
-description: Run repository security scans for
+description: Run authorized repository security scans for
 ---
 # Security Skill
 
-> **Purpose:** Run repeatable security checks across code, scripts, release gates, authorized binaries, and repo-managed prompt surfaces.
+> **Purpose:** Run repeatable security checks across code, scripts, authorized binaries, and repo-managed prompt surfaces.
 
-Use this skill for deterministic pre-merge/release validation, scheduled checks, authorized binary assurance, dependency risk, secrets, or offline prompt-surface redteam.
+Use this skill for a caller-requested repository scan, authorized binary assurance, dependency risk, secrets, or offline prompt-surface redteam.
 
 ## Critical Constraints
 
@@ -39,7 +39,7 @@ scripts/security-gate.sh --mode quick
 
 **Checkpoint:** preserve the exit code and verify the reported `security-gate-summary.json` exists and parses before triage.
 
-### 2) Full or release gate
+### 2) Full scan
 
 Run:
 
@@ -47,18 +47,18 @@ Run:
 scripts/security-gate.sh --mode full
 ```
 
-Add `--require-tools` when skipped scanners would invalidate the assurance claim. **Checkpoint:** do not authorize promotion until the full artifact passes the output validator and the process exits zero.
+Add `--require-tools` when skipped scanners would invalidate the assurance claim. **Checkpoint:** report the result as incomplete unless the selected artifact validator and process both succeed.
 
 ### 3) Scheduled gate
 
 Scheduled automation runs the full gate against the intended branch and retains its artifact directory. A failing scheduled run creates actionable tracked work; AgentOps itself does not supply the scheduler.
 
-### 4) Triage and re-run
+### 4) Triage
 
 1. Open the latest artifact and identify scanner, severity, file, and coverage gaps.
 2. Reproduce the finding with the narrowest safe command.
-3. For authorized remediation, fix critical/high findings; otherwise report them with owner and next action.
-4. Re-run the same gate. Do not downgrade, suppress, or update a baseline merely to pass.
+3. Rank concrete findings and preserve coverage gaps.
+4. Stop. Remediation, risk acceptance, and any later scan are new caller decisions. Do not downgrade, suppress, or update a baseline merely to pass.
 
 ## Output Specification
 
@@ -78,9 +78,9 @@ an owner, next action, approval, release, or retry decision.
 
 - [ ] Target and authorization boundary are explicit; collection stayed within them.
 - [ ] Scanner availability and skipped/error coverage are visible in the report.
-- [ ] Findings include severity, location, reproducible evidence, and remediation/owner.
+- [ ] Findings include severity, location, reproducible evidence, and bounded remediation guidance.
 - [ ] Artifacts contain no newly exposed secrets or unredacted sensitive payloads.
-- [ ] Required gate and output validator both pass before promotion is declared safe.
+- [ ] The report distinguishes a passing scan from permission to promote or release.
 - [ ] Suppressions, policy changes, baselines, and risk acceptance require explicit judgment.
 - [ ] The report stops after evidence and contains no continuation decision.
 
@@ -98,7 +98,7 @@ For a bounded suite smoke test, use an owned binary and a temporary output direc
 ## Examples
 
 - `$security` — run the quick repository gate, validate its summary, and report coverage/findings.
-- `$security --release` — run the full gate, preserve artifacts, and block promotion until the verdict is green.
+- `$security --full` — run the full scan once, preserve artifacts, and report coverage and findings.
 - `$security run --binary "$(command -v ao)" --out-dir .tmp/security-suite/ao-current` — capture an authorized binary baseline via the composable suite.
 - `$security collect-redteam --repo-root .` — run the offline attack pack over repo-owned control surfaces.
 

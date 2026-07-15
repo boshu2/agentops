@@ -84,7 +84,7 @@ log "REPO_ROOT=$REPO_ROOT"
 log ""
 
 # Gate 1: registry-check (post-soc-k47k: deterministic across local/CI).
-run_gate "registry-check" bash scripts/generate-registry.sh --check
+run_gate "skill-mesh-check" python3 scripts/generate-skill-mesh.py --check
 
 # Gate 2: skill-lint suite.
 run_gate "skill-lint" bash tests/skills/lint-skills.sh

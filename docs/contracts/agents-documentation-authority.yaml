@@ -29,7 +29,7 @@ documents:
     class: operating-contract
     disposition: retain-and-tighten
     owner: AGENTS.md
-    proof: docs/contracts/agents-operating-contract.md plus fresh-context verdicts
+    proof: scripts/check-cathedral-cut-conformance.py plus fresh-context verdicts
     references:
       phase_policy: {inventory: exact, pre-cutover: exact, cutover: exact}
       include_globs:
@@ -53,14 +53,14 @@ documents:
     class: public-entrypoint
     disposition: retain-and-tighten
     owner: README.md
-    proof: docs/contracts/entry-documentation-behavior.md plus fresh-context verdicts
+    proof: scripts/check-cathedral-cut-conformance.py plus fresh-context verdicts
 
   - path: PRODUCT.md
     tracked: true
     class: product-contract
     disposition: retain-and-tighten
     owner: PRODUCT.md
-    proof: scripts/check-docs-demoted-claims.sh
+    proof: scripts/check-cathedral-cut-conformance.py
 
   - path: GOALS.md
     tracked: true

@@ -262,8 +262,6 @@ func resetCommandState(t *testing.T) {
 	origGoalsMeasureExcludeTag := goalsMeasureExcludeTag
 	origGoalsMeasureTotalTimeout := goalsMeasureTotalTimeout
 	origGoalsMeasureScenariosOnly := goalsMeasureScenariosOnly
-	origGoalsInitNonInteractive := goalsInitNonInteractive
-	origGoalsInitTemplate := goalsInitTemplate
 	origGoalsRenderOut := goalsRenderOut
 	origMemorySyncQuiet := memorySyncQuiet
 	origMemorySyncMaxEntries := memorySyncMaxEntries
@@ -275,9 +273,8 @@ func resetCommandState(t *testing.T) {
 	origSearchUseSC := searchUseSC
 	origSearchUseCASS := searchUseCASS
 	origSearchUseLocal := searchUseLocal
-	// codex + autodev cobra-flag globals live in the //go:build legacy archive
-	// (age-h4y3). Their save/restore/reset is delegated to a tagged helper so the
-	// untagged (spine) test build never references archived symbols.
+	// No alternate lifecycle build exists; the helper remains a no-op so shared
+	// test setup has one stable call site.
 	resetArchivedCommandGlobals(t)
 	origFindingsListLimit := findingsListLimit
 	origFindingsListAll := findingsListAll
@@ -307,8 +304,6 @@ func resetCommandState(t *testing.T) {
 		goalsMeasureExcludeTag = origGoalsMeasureExcludeTag
 		goalsMeasureTotalTimeout = origGoalsMeasureTotalTimeout
 		goalsMeasureScenariosOnly = origGoalsMeasureScenariosOnly
-		goalsInitNonInteractive = origGoalsInitNonInteractive
-		goalsInitTemplate = origGoalsInitTemplate
 		goalsRenderOut = origGoalsRenderOut
 		memorySyncQuiet = origMemorySyncQuiet
 		memorySyncMaxEntries = origMemorySyncMaxEntries
@@ -351,8 +346,6 @@ func resetCommandState(t *testing.T) {
 	goalsMeasureExcludeTag = ""
 	goalsMeasureTotalTimeout = 0
 	goalsMeasureScenariosOnly = false
-	goalsInitNonInteractive = false
-	goalsInitTemplate = ""
 	goalsRenderOut = ""
 	output = "table"
 	memorySyncQuiet = false

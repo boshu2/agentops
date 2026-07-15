@@ -44,6 +44,9 @@ RPI preserves the original intent and dispatches each core phase at most once.
 It does not own retries, budgets, queues, claims, leases, Git, delivery, release,
 closure, or the caller's next decision.
 
+The pure [`scripts/run_once.py`](scripts/run_once.py) reference behavior makes
+the dispatch and stop semantics executable without Git, `ao`, or a tracker.
+
 ## Contract
 
 1. Invoke `/plan` once with the caller's intent. Preserve its exact

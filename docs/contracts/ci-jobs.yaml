@@ -1,5 +1,5 @@
-# CI jobs manifest — source of truth for the docs/CI-CD.md "## CI Jobs and What
-# They Check" table (rendered by scripts/generate-ci-jobs-table.sh) and parity-
+# CI jobs manifest — source of truth for the generated jobs table in
+# docs/CI-CD.md (rendered by scripts/generate-ci-jobs-table.sh) and parity-
 # gated by scripts/validate-ci-policy-parity.sh.
 #
 # One entry per purpose-grouped job in .github/workflows/validate.yml's
@@ -8,11 +8,11 @@
 # CI backstop authority; correctness + security remain as complementary lanes.
 jobs:
 - name: go-gate-shadow
-  reason: Runs the ordinary Go gate registry with GitHub annotations, JSON evidence, workflow coverage, and `--require-workflow-parity`; success means only that deterministic checks passed
-  failure: A blocking Go-gate check failure, a workflow coverage parity gap for a non-deferred blocking script, or an inability to produce/upload the `ao-gate-shadow-report` JSON artifact
+  reason: Runs the ordinary Go gate registry with workflow-coverage reporting
+  failure: A deterministic check failure or workflow/registry coverage mismatch
 - name: correctness
-  reason: '`ao` builds (Linux + native Windows smoke via matrix); Go tests pass with `-race`/coverage floor; embedded lib/skills in sync; Go complexity budget; CLI + v2.18 integration; release smoke; JSON-flag consistency; bats; Python smoke; advisory `ao doctor` dead-reference check'
-  failure: Build/test failure, race, coverage-floor regression, embedded drift, a function exceeding cyclomatic complexity 25, integration/smoke/bats/JSON-flag breakage, or Windows-smoke regression
+  reason: Builds `ao`; runs Go, schema, generated-surface, shell, and smoke tests
+  failure: Compilation, test, schema, generated-drift, or portability failure
 - name: security
-  reason: No hardcoded secrets or dangerous patterns (`curl|sh`, `rm -rf /`); unified security toolchain gate (`scripts/security-gate.sh --mode quick`) — gosec, golangci-lint, gitleaks, trivy, semgrep — blocking on any CRITICAL/HIGH finding
-  failure: Hardcoded API keys/passwords in non-test files, a dangerous pattern, or a CRITICAL/HIGH security/quality finding
+  reason: Runs secret, dependency, static-analysis, and dangerous-pattern checks
+  failure: A blocking security finding

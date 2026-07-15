@@ -2,8 +2,6 @@
 package main
 
 import (
-	"os"
-	"path/filepath"
 	"strings"
 	"testing"
 )
@@ -16,16 +14,6 @@ func TestNegativePath_MissingArgs(t *testing.T) {
 		args   []string
 		errSub string // substring expected in error message
 	}{
-		{
-			name:   "goals add missing all args",
-			args:   []string{"goals", "add"},
-			errSub: "accepts 2 arg(s), received 0",
-		},
-		{
-			name:   "goals add missing check-command arg",
-			args:   []string{"goals", "add", "my-goal"},
-			errSub: "accepts 2 arg(s), received 1",
-		},
 		{
 			name:   "metrics cite missing artifact-path",
 			args:   []string{"metrics", "cite"},
@@ -62,11 +50,6 @@ func TestNegativePath_InvalidFlagValues(t *testing.T) {
 		{
 			name:   "metrics report --days not-a-number",
 			args:   []string{"metrics", "report", "--days", "xyz"},
-			errSub: "invalid argument",
-		},
-		{
-			name:   "goals add --weight not-a-number",
-			args:   []string{"goals", "add", "my-id", "true", "--weight", "heavy"},
 			errSub: "invalid argument",
 		},
 	}
@@ -131,33 +114,6 @@ func TestNegativePath_UnknownNestedSubcommand(t *testing.T) {
 	}
 }
 
-// TestNegativePath_GoalsAddInvalidID verifies that goals add rejects a non-kebab-case ID.
-// This test requires a valid GOALS.md on disk because Cobra argument validation
-// passes (ExactArgs(2) is satisfied) and RunE proceeds to validate the ID format.
-func TestNegativePath_GoalsAddInvalidID(t *testing.T) {
-	tmp := chdirTemp(t)
-
-	// Create a minimal GOALS.md so the command can load goals.
-	goalsContent := `# Goals
-## Version
-4
-## Mission
-Test
-## Gates
-`
-	if err := os.WriteFile(filepath.Join(tmp, "GOALS.md"), []byte(goalsContent), 0o644); err != nil {
-		t.Fatal(err)
-	}
-
-	out, err := executeCommand("goals", "add", "NotKebabCase", "true", "--dry-run")
-	if err == nil {
-		t.Fatalf("expected error for non-kebab-case ID, got nil (output: %s)", out)
-	}
-	if !strings.Contains(err.Error(), "kebab-case") {
-		t.Errorf("error %q does not mention kebab-case requirement", err.Error())
-	}
-}
-
 // TestNegativePath_ExcessArgs verifies that commands reject too many positional arguments.
 func TestNegativePath_ExcessArgs(t *testing.T) {
 	tests := []struct {
@@ -193,11 +149,6 @@ func TestNegativePath_UnknownFlags(t *testing.T) {
 		errSub string
 	}{
 		{
-			name:   "goals add with unknown flag",
-			args:   []string{"goals", "add", "my-id", "true", "--nonexistent"},
-			errSub: "unknown flag",
-		},
-		{
 			name:   "metrics baseline with unknown flag",
 			args:   []string{"metrics", "baseline", "--nonexistent"},
 			errSub: "unknown flag",
@@ -229,9 +180,9 @@ func TestNegativePath_ErrorOutputNotEmpty(t *testing.T) {
 		name string
 		args []string
 	}{
-		{"missing args", []string{"goals", "add"}},
+		{"missing args", []string{"metrics", "cite"}},
 		{"unknown command", []string{"nonexistent-command"}},
-		{"unknown flag", []string{"goals", "add", "x", "true", "--bogus"}},
+		{"unknown flag", []string{"goals", "measure", "--bogus"}},
 	}
 
 	for _, tt := range tests {

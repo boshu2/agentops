@@ -35,7 +35,6 @@ affects_files:
     - scripts/check-compile-health.sh
 
   compile-no-oscillation:
-    - scripts/check-compile-oscillation.sh
 
   flywheel-compounding:
     - scripts/check-flywheel-compounding.sh
@@ -74,10 +73,6 @@ affects_files:
     - GOALS.md
     - goals-affects-files.yaml
     - cli/internal/goals/**
-
-  competitive-freshness:
-    - docs/comparisons/**
-    - scripts/check-competitive-freshness.sh
 
   codex-parity-drift:
     - skills-codex/**

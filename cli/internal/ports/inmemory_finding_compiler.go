@@ -140,7 +140,7 @@ func parseCompilerTargets(raw string) []CompiledOutputKind {
 		switch name {
 		case "plan", "planning-rule", "planning_rule":
 			appendUnique(CompiledOutputPlanningRule)
-		case "pre-mortem", "pre_mortem", "premortem":
+		case "premortem":
 			appendUnique(CompiledOutputPremortemCheck)
 		case "constraint", "constraints":
 			appendUnique(CompiledOutputConstraint)

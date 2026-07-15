@@ -11,7 +11,7 @@ each skill that lacks one.
 
 Discovery in the runtime is pure LLM reasoning over the `description` field, so
 a missing trigger phrase is a material skill-selection risk, not cosmetic. See
-`skills/skill-builder/references/skill-authoring-standard.md`.
+`skills/skill-builder/SKILL.md`.
 
 Usage:
     python3 scan_descriptions.py [SKILLS_DIR] [--json] [--strict] [--quiet]

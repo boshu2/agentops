@@ -59,7 +59,7 @@ func RecordCitation(baseDir string, event types.CitationEvent) error {
 	if err != nil {
 		return fmt.Errorf("open citation ledger: %w", err)
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 	data, err := json.Marshal(event)
 	if err != nil {
 		return fmt.Errorf("marshal citation: %w", err)
@@ -78,7 +78,7 @@ func LoadCitations(baseDir string) ([]types.CitationEvent, error) {
 		}
 		return nil, fmt.Errorf("open citation ledger: %w", err)
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 	var citations []types.CitationEvent
 	scanner := bufio.NewScanner(file)
 	scanner.Buffer(make([]byte, 0, 64*1024), 1024*1024)

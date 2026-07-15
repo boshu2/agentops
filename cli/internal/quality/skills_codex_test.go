@@ -105,11 +105,11 @@ func TestCheckSkillsCountsCompatibilityPointerPackages(t *testing.T) {
 	skills := filepath.Join(root, "skills-codex")
 	writeSkill(t, skills, "research")
 
-	pointerDir := filepath.Join(skills, "pre-mortem")
+	pointerDir := filepath.Join(skills, "premortem")
 	if err := os.MkdirAll(pointerDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(pointerDir, "SKILL.md"), []byte("---\nname: pre-mortem\nimplementation: false\nredirect_to: premortem\n---\n"), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(pointerDir, "SKILL.md"), []byte("---\nname: premortem\nimplementation: false\nredirect_to: premortem\n---\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
 

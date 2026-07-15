@@ -1,6 +1,6 @@
 # heal-skill
 
-Repair skill hygiene and deep-audit SKILL.md quality (absorbed skill-auditor). Triggers: "heal-skill", "heal skill", "repair skill hygiene", "skill-auditor", "audit skill", "skill audit".
+Check or repair structural hygiene in AgentOps skill packages. Triggers: "heal skill", "repair skill hygiene", "audit skill structure", "check skill package".
 
 ## Instructions
 

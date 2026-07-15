@@ -164,17 +164,24 @@
     },
     {
       "category": "public-tested",
-      "command": "gate check",
+      "command": "flywheel compare",
       "coverage_status": "covered",
       "kind": "leaf",
       "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
     },
     {
-      "category": "public-stateful-fixture-needed",
-      "command": "goals add",
-      "coverage_status": "allowlisted",
+      "category": "public-tested",
+      "command": "flywheel status",
+      "coverage_status": "covered",
       "kind": "leaf",
-      "reason": "Writes GOALS.md and needs an isolated fixture."
+      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
+    },
+    {
+      "category": "public-tested",
+      "command": "gate check",
+      "coverage_status": "covered",
+      "kind": "leaf",
+      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
     },
     {
       "category": "public-stateful-fixture-needed",
@@ -198,13 +205,6 @@
       "reason": "Historical view shares goals validation behavior."
     },
     {
-      "category": "public-stateful-fixture-needed",
-      "command": "goals init",
-      "coverage_status": "allowlisted",
-      "kind": "leaf",
-      "reason": "Initializes GOALS.md and may prompt."
-    },
-    {
       "category": "public-tested",
       "command": "goals measure",
       "coverage_status": "covered",
@@ -217,20 +217,6 @@
       "coverage_status": "allowlisted",
       "kind": "leaf",
       "reason": "Covered through goals measurement behavior."
-    },
-    {
-      "category": "public-stateful-fixture-needed",
-      "command": "goals migrate",
-      "coverage_status": "allowlisted",
-      "kind": "leaf",
-      "reason": "Migrates GOALS.md and needs a disposable fixture."
-    },
-    {
-      "category": "public-stateful-fixture-needed",
-      "command": "goals prune",
-      "coverage_status": "allowlisted",
-      "kind": "leaf",
-      "reason": "Removes goal entries and needs a disposable fixture."
     },
     {
       "category": "public-tested",

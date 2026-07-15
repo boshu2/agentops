@@ -87,7 +87,6 @@ echo ""
 SUPPORT_SCRIPTS=(
     "scripts/install-codex-plugin.sh"
     "scripts/install-codex-native-skills.sh"
-    "scripts/install-dev-hooks.sh"
 )
 
 for script in "${SUPPORT_SCRIPTS[@]}"; do

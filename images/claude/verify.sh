@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # verify.sh — confirm every skill in the Claude image manifest exists in the corpus.
 #
-# Reads the slug list from images/claude/manifest.json (core_skills + operator_skills)
+# Reads the metadata-derived slug list from images/claude/manifest.json
 # and asserts each skills/<slug>/SKILL.md is present at the agentops repo root.
 # Exit 0 iff all present; exit 1 on any missing skill (or a malformed manifest).
 #
@@ -18,15 +18,14 @@ if [ ! -f "$manifest" ]; then
   exit 1
 fi
 
-# Extract every "slug" value from both core_skills and operator_skills.
+# Extract every generated slug.
 # Prefer python3 (robust JSON); fall back to grep/sed if python3 is absent.
 if command -v python3 >/dev/null 2>&1; then
   slugs="$(python3 -c '
 import json, sys
 d = json.load(open(sys.argv[1]))
-for k in ("core_skills", "operator_skills"):
-    for e in d.get(k, []):
-        print(e["slug"])
+for e in d.get("skills", []):
+    print(e["slug"])
 ' "$manifest")"
 else
   slugs="$(grep -oE '"slug"[[:space:]]*:[[:space:]]*"[^"]+"' "$manifest" \
@@ -81,5 +80,7 @@ if [ "$plugin_version" != "$EXPECTED_VERSION" ]; then
 fi
 echo "OK: Claude plugin manifest version $plugin_version matches expected $EXPECTED_VERSION"
 
-echo "OK: all $count Claude-image skills present (CORE + operator, per manifest.json)"
+declared_count="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["skill_count"])' "$manifest")"
+[ "$count" -eq "$declared_count" ] || { echo "FAIL: parsed $count skills, manifest declares $declared_count" >&2; exit 1; }
+echo "OK: all $count metadata-derived Claude-image skills present"
 exit 0

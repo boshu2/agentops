@@ -136,8 +136,8 @@ bash tests/docs/validate-doc-release.sh
 # If you added or removed a skill directory
 python3 scripts/generate-skill-mesh.py
 
-# Recommended fast gate before push
-scripts/pre-push-gate.sh --fast
+# Recommended fast changed-surface check
+ao gate check --fast --scope worktree
 ```
 
 If your change affects Codex behavior or the checked-in Codex bundle, also run:

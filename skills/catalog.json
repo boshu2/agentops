@@ -80,10 +80,7 @@
           "with": "agent-mail"
         }
       ],
-      "dependencies": [
-        "ntm",
-        "agent-mail"
-      ],
+      "dependencies": [],
       "description": "Operate explicit orchestrator, implementer, validator, and scribe roles through a caller-selected agent runtime. Triggers: \"agent-native factory\", \"role-shaped agent panes\", \"persistent workers\".",
       "disposition": "keep_optional_adapter",
       "effects": [
@@ -171,11 +168,7 @@
           "with": "operationalize"
         }
       ],
-      "dependencies": [
-        "skill-builder",
-        "workflow-builder",
-        "agent-native"
-      ],
+      "dependencies": [],
       "description": "Front door for agent automation: choose inline, bounded fanout, reusable skill/workflow/gate, persistent agent-native workers, or explicit Gas City. Triggers: \"build automation\", \"which orchestration shape\", \"should this use NTM\".",
       "disposition": "keep_optional_adapter",
       "effects": [],
@@ -207,13 +200,7 @@
         "shared"
       ],
       "context_rel": [],
-      "dependencies": [
-        "goals",
-        "product",
-        "doc",
-        "shared",
-        "scaffold"
-      ],
+      "dependencies": [],
       "description": "Initialize minimal AgentOps documentation and verdict storage without taking over repository workflow.",
       "disposition": "keep_specialist",
       "effects": [],
@@ -299,9 +286,7 @@
           "with": "doc"
         }
       ],
-      "dependencies": [
-        "doc"
-      ],
+      "dependencies": [],
       "description": "Reconstruct a repository as cited entry-to-test flows, bounded claims, and a reusable baseline or verified delta. Triggers: \"build a repository mental model\", \"trace this codebase\", \"refresh the prior recon\".",
       "disposition": "keep_specialist",
       "effects": [],
@@ -442,10 +427,7 @@
         "repo-context"
       ],
       "context_rel": [],
-      "dependencies": [
-        "standards",
-        "council"
-      ],
+      "dependencies": [],
       "description": "Generate and validate repo docs, READMEs, and OSS doc packs. Triggers: \"doc\", \"generate and validate repo docs\", \"doc skill\".",
       "disposition": "keep_specialist",
       "effects": [],
@@ -510,9 +492,7 @@
           "with": "plan"
         }
       ],
-      "dependencies": [
-        "idea-genie"
-      ],
+      "dependencies": [],
       "description": "Challenge a consequential idea with sealed independent perspectives, cross-review, and preserved dissent. Triggers: \"challenge this idea\", \"compare independent proposals\", \"stress-test a one-way door\".",
       "disposition": "keep_strategy",
       "effects": [],
@@ -603,20 +583,21 @@
         }
       ],
       "dependencies": [],
-      "description": "Repair skill hygiene and deep-audit SKILL.md quality (absorbed skill-auditor). Triggers: \"heal-skill\", \"heal skill\", \"repair skill hygiene\", \"skill-auditor\", \"audit skill\", \"skill audit\".",
+      "description": "Check or repair structural hygiene in AgentOps skill packages. Triggers: \"heal skill\", \"repair skill hygiene\", \"audit skill structure\", \"check skill package\".",
       "disposition": "keep_specialist",
-      "effects": [],
+      "effects": [
+        "optional_skill_projection_repair"
+      ],
       "graph_root": false,
       "hexagonal_role": "supporting",
       "name": "heal-skill",
       "practices": [
-        "refactoring",
-        "code-complete"
+        "refactoring"
       ],
       "produces": [
-        "audit-report.json"
+        "skill-hygiene-report"
       ],
-      "references_count": 6,
+      "references_count": 5,
       "tier": "meta",
       "user_invocable": false
     },
@@ -640,9 +621,7 @@
           "with": "plan"
         }
       ],
-      "dependencies": [
-        "research"
-      ],
+      "dependencies": [],
       "description": "Generate an evidence-grounded opportunity portfolio for an open-ended product or engineering question. Triggers: \"idea genie\", \"what should we build\", \"supported opportunities\".",
       "disposition": "keep_strategy",
       "effects": [
@@ -855,9 +834,7 @@
           "with": "operationalize"
         }
       ],
-      "dependencies": [
-        "operationalize"
-      ],
+      "dependencies": [],
       "description": "Test repeated implementation shapes against independent exemplars and a holdout before routing an earned abstraction. Triggers: \"mine a recurring code pattern\", \"is this abstraction earned\", \"extract invariants from implementations\".",
       "disposition": "keep_specialist",
       "effects": [],
@@ -914,24 +891,11 @@
       ],
       "codex_override_present": true,
       "consumes": [
-        "learn",
-        "toil-mining"
+        "verdict.v2"
       ],
-      "context_rel": [
-        {
-          "kind": "customer-of",
-          "with": "learn"
-        },
-        {
-          "kind": "customer-of",
-          "with": "toil-mining"
-        }
-      ],
-      "dependencies": [
-        "council",
-        "toil-mining"
-      ],
-      "description": "Test an explicit retrospective causal question against evidence and counterfactuals after Validate and Learn. Triggers: \"postmortem\", \"causal retrospective\", \"test a retrospective hypothesis\".",
+      "context_rel": [],
+      "dependencies": [],
+      "description": "Optionally test a retrospective causal question against durable verdict evidence. Triggers: \"postmortem\", \"causal retrospective\", \"test a retrospective hypothesis\".",
       "disposition": "keep_strategy",
       "effects": [],
       "graph_root": false,
@@ -951,38 +915,37 @@
     {
       "canonical_status": "canonical",
       "capabilities": [
-        "premortem"
+        "challenge_plan"
       ],
       "codex_override_present": true,
       "consumes": [
-        "standards"
+        "plan-packet.v1"
       ],
       "context_rel": [
         {
-          "kind": "shared-kernel",
-          "with": "standards"
+          "kind": "supplier-to",
+          "with": "plan"
         }
       ],
-      "dependencies": [
-        "council"
-      ],
-      "description": "Use when: an exact plan needs a verdict. Stress-tests readiness before work with one fresh, independent judge.",
+      "dependencies": [],
+      "description": "Optionally challenge a frozen plan with one fresh independent judge before implementation. Triggers: \"premortem\", \"challenge this plan\", \"what could make this plan fail\".",
       "disposition": "keep_strategy",
-      "effects": [],
+      "effects": [
+        "write_advisory_plan_review"
+      ],
       "graph_root": true,
       "hexagonal_role": "domain",
       "name": "premortem",
       "practices": [
-        "adr",
-        "mythical-man-month",
-        "design-by-contract"
+        "design-by-contract",
+        "adr"
       ],
       "produces": [
-        "premortem-plan-verdict.v1"
+        "premortem-plan-review.v1"
       ],
-      "references_count": 7,
+      "references_count": 1,
       "tier": "judgment",
-      "user_invocable": false
+      "user_invocable": true
     },
     {
       "canonical_status": "canonical",
@@ -1086,10 +1049,7 @@
         "repo-context"
       ],
       "context_rel": [],
-      "dependencies": [
-        "standards",
-        "pattern-mining"
-      ],
+      "dependencies": [],
       "description": "Execute one behavior-preserving structural transformation and report evidence.",
       "disposition": "keep_specialist",
       "effects": [],
@@ -1115,32 +1075,24 @@
       ],
       "codex_override_present": true,
       "consumes": [
-        "repo-context"
+        "research-question"
       ],
       "context_rel": [],
-      "dependencies": [
-        "cass",
-        "ms",
-        "reverse-engineer",
-        "codebase-recon",
-        "pattern-mining"
-      ],
-      "description": "Explore and write findings. Triggers: \"research\", \"explore and write findings.\", \"research skill\".",
+      "dependencies": [],
+      "description": "Answer a bounded question with current cited evidence. Triggers: \"research\", \"investigate\", \"find evidence\".",
       "disposition": "keep_specialist",
       "effects": [],
       "graph_root": false,
       "hexagonal_role": "driving-adapter",
       "name": "research",
       "practices": [
-        "wiki-knowledge-surface",
         "pragmatic-programmer",
         "ddd-bounded-context"
       ],
       "produces": [
-        ".agents/research/*.md",
-        "result.json"
+        "research-report"
       ],
-      "references_count": 19,
+      "references_count": 1,
       "tier": "execution",
       "user_invocable": false
     },
@@ -1253,10 +1205,8 @@
       "codex_override_present": true,
       "consumes": [],
       "context_rel": [],
-      "dependencies": [
-        "standards"
-      ],
-      "description": "Stamp project/component/CI scaffolds \u2014 but reach for it mainly for the repo-specific domain-slice binding (generic trees a frontier model needs no skill for). Triggers: \"scaffold\", \"create project component or boilerplate\".",
+      "dependencies": [],
+      "description": "Stamp a bounded project, component, or CI scaffold and verify the generated result once. Triggers: \"scaffold\", \"create project component or boilerplate\".",
       "disposition": "keep_specialist",
       "effects": [],
       "graph_root": false,
@@ -1270,39 +1220,40 @@
       "produces": [
         "converted-skill"
       ],
-      "references_count": 4,
+      "references_count": 3,
       "tier": "execution",
       "user_invocable": false
     },
     {
       "canonical_status": "canonical",
       "capabilities": [
-        "scope"
+        "scope_review"
       ],
       "codex_override_present": true,
-      "consumes": [],
+      "consumes": [
+        "proposed-write-scope"
+      ],
       "context_rel": [
         {
           "kind": "supplier-to",
-          "with": "domain"
+          "with": "plan"
         }
       ],
       "dependencies": [],
-      "description": "Hard-block edits outside declared frozen directories and protect paths during risky changes. Triggers: \"scope\", \"hard-block edits outside declared frozen\", \"scope skill\".",
+      "description": "Review a proposed PlanPacket write scope for completeness and ambiguity. Triggers: \"review write scope\", \"check scope boundaries\", \"scope this change\".",
       "disposition": "keep_specialist",
       "effects": [],
       "graph_root": false,
-      "hexagonal_role": "driven-adapter",
+      "hexagonal_role": "supporting",
       "name": "scope",
       "practices": [
         "ddd-bounded-context",
-        "design-by-contract",
-        "mythical-man-month"
+        "design-by-contract"
       ],
       "produces": [
-        "filesystem-gate"
+        "scope-review"
       ],
-      "references_count": 4,
+      "references_count": 0,
       "tier": "meta",
       "user_invocable": false
     },
@@ -1322,7 +1273,7 @@
         }
       ],
       "dependencies": [],
-      "description": "Run repository security scans for vulnerabilities, dependency risk, secrets, and release gates. Triggers: \"security\", \"run repository security scans for\", \"security skill\".",
+      "description": "Run authorized repository security scans for vulnerabilities, dependency risk, secrets, and binary policy. Triggers: \"security\", \"run repository security scans for\", \"security skill\".",
       "disposition": "keep_specialist",
       "effects": [],
       "graph_root": true,
@@ -1362,7 +1313,7 @@
       "produces": [
         "reference-documents"
       ],
-      "references_count": 1,
+      "references_count": 0,
       "tier": "library",
       "user_invocable": false
     },
@@ -1375,33 +1326,27 @@
       "consumes": [],
       "context_rel": [
         {
-          "kind": "customer-of",
-          "with": "automation-shape-routing"
-        },
-        {
           "kind": "supplier-to",
           "with": "heal-skill"
         }
       ],
-      "dependencies": [
-        "heal-skill",
-        "converter"
-      ],
-      "description": "Scaffold or absorb new SKILL.md files against the unified AgentOps template. Triggers: \"create a skill\", \"scaffold skill\", \"absorb external skill\", \"new skill\".",
+      "dependencies": [],
+      "description": "Create a metadata-complete AgentOps skill source package and regenerate its derived projections. Triggers: \"create a skill\", \"scaffold skill\", \"absorb external skill\", \"new skill\".",
       "disposition": "keep_specialist",
-      "effects": [],
+      "effects": [
+        "writes_skill_source",
+        "regenerates_skill_projections"
+      ],
       "graph_root": false,
       "hexagonal_role": "supporting",
       "name": "skill-builder",
       "practices": [
-        "code-complete",
-        "pragmatic-programmer",
-        "design-patterns"
+        "pragmatic-programmer"
       ],
       "produces": [
-        "converted-skill"
+        "skill-source-package"
       ],
-      "references_count": 6,
+      "references_count": 3,
       "tier": "meta",
       "user_invocable": false
     },
@@ -1439,9 +1384,7 @@
       "codex_override_present": true,
       "consumes": [],
       "context_rel": [],
-      "dependencies": [
-        "sbh"
-      ],
+      "dependencies": [],
       "description": "Report observable AgentOps evidence without selecting work. Triggers: \"status\", \"show AgentOps status\".",
       "disposition": "keep_specialist",
       "effects": [],
@@ -1500,9 +1443,7 @@
         "repo-context"
       ],
       "context_rel": [],
-      "dependencies": [
-        "standards"
-      ],
+      "dependencies": [],
       "description": "Generate tests and coverage plans. Triggers: \"test\", \"generate tests and coverage plans.\", \"test skill\".",
       "disposition": "keep_specialist",
       "effects": [],
@@ -1534,9 +1475,7 @@
           "with": "automation-shape-routing"
         }
       ],
-      "dependencies": [
-        "automation-shape-routing"
-      ],
+      "dependencies": [],
       "description": "Mine caller-supplied usage history for repeated toil and emit ranked evidence.",
       "disposition": "keep_specialist",
       "effects": [],

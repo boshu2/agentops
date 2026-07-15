@@ -6,41 +6,9 @@
 
 | Source | Target |
 |---|---|
-| `agent-native` | `agent-mail` |
-| `agent-native` | `ntm` |
-| `automation-shape-routing` | `agent-native` |
-| `automation-shape-routing` | `skill-builder` |
-| `automation-shape-routing` | `workflow-builder` |
-| `bootstrap` | `doc` |
-| `bootstrap` | `goals` |
-| `bootstrap` | `product` |
-| `bootstrap` | `scaffold` |
-| `bootstrap` | `shared` |
-| `codebase-recon` | `doc` |
-| `doc` | `council` |
-| `doc` | `standards` |
-| `dueling-idea-genies` | `idea-genie` |
-| `idea-genie` | `research` |
-| `pattern-mining` | `operationalize` |
-| `postmortem` | `council` |
-| `postmortem` | `toil-mining` |
-| `premortem` | `council` |
-| `refactor` | `pattern-mining` |
-| `refactor` | `standards` |
-| `research` | `cass` |
-| `research` | `codebase-recon` |
-| `research` | `ms` |
-| `research` | `pattern-mining` |
-| `research` | `reverse-engineer` |
 | `rpi` | `implement` |
 | `rpi` | `plan` |
 | `rpi` | `validate` |
-| `scaffold` | `standards` |
-| `skill-builder` | `converter` |
-| `skill-builder` | `heal-skill` |
-| `status` | `sbh` |
-| `test` | `standards` |
-| `toil-mining` | `automation-shape-routing` |
 
 ## Optional context relationships
 
@@ -73,17 +41,14 @@
 | `pattern-mining` | `customer-of` | `research` |
 | `pattern-mining` | `customer-of` | `validate` |
 | `pattern-mining` | `supplier-to` | `operationalize` |
-| `postmortem` | `customer-of` | `learn` |
-| `postmortem` | `customer-of` | `toil-mining` |
-| `premortem` | `shared-kernel` | `standards` |
+| `premortem` | `supplier-to` | `plan` |
 | `product` | `supplier-to` | `plan` |
 | `reality-check` | `supplier-to` | `plan` |
 | `rpi` | `customer-of` | `implement` |
 | `rpi` | `customer-of` | `plan` |
 | `rpi` | `customer-of` | `validate` |
-| `scope` | `supplier-to` | `domain` |
+| `scope` | `supplier-to` | `plan` |
 | `security` | `supplier-to` | `validate` |
-| `skill-builder` | `customer-of` | `automation-shape-routing` |
 | `skill-builder` | `supplier-to` | `heal-skill` |
 | `toil-mining` | `supplier-to` | `automation-shape-routing` |
 | `using-gc` | `partnership` | `agent-native` |
@@ -128,7 +93,7 @@
 | `dueling-idea-genies` | produces | `idea-challenge.v1` |
 | `goals` | produces | `result.json` |
 | `handoff` | produces | `.agents/handoff/*.md` |
-| `heal-skill` | produces | `audit-report.json` |
+| `heal-skill` | produces | `skill-hygiene-report` |
 | `idea-genie` | consumes | `repo-context` |
 | `idea-genie` | consumes | `task-question` |
 | `idea-genie` | produces | `idea-portfolio.v1` |
@@ -145,31 +110,30 @@
 | `pattern-mining` | consumes | `task-question` |
 | `pattern-mining` | produces | `pattern-mining.v1` |
 | `plan` | produces | `plan-packet.v1` |
-| `postmortem` | consumes | `learn` |
-| `postmortem` | consumes | `toil-mining` |
+| `postmortem` | consumes | `verdict.v2` |
 | `postmortem` | produces | `postmortem-report.md` |
-| `premortem` | consumes | `standards` |
-| `premortem` | produces | `premortem-plan-verdict.v1` |
+| `premortem` | consumes | `plan-packet.v1` |
+| `premortem` | produces | `premortem-plan-review.v1` |
 | `product` | produces | `PRODUCT.md` |
 | `reality-check` | consumes | `claim` |
 | `reality-check` | consumes | `repository-evidence` |
 | `reality-check` | produces | `reality-check-report.v1` |
 | `refactor` | consumes | `repo-context` |
 | `refactor` | produces | `code-changes` |
-| `research` | consumes | `repo-context` |
-| `research` | produces | `.agents/research/*.md` |
-| `research` | produces | `result.json` |
+| `research` | consumes | `research-question` |
+| `research` | produces | `research-report` |
 | `reverse-engineer` | produces | `.agents/research/*.md` |
 | `rpi` | consumes | `plan` |
 | `rpi` | consumes | `implement` |
 | `rpi` | consumes | `validate` |
 | `rpi` | produces | `rpi-report.v1` |
 | `scaffold` | produces | `converted-skill` |
-| `scope` | produces | `filesystem-gate` |
+| `scope` | consumes | `proposed-write-scope` |
+| `scope` | produces | `scope-review` |
 | `security` | consumes | `repo-context` |
 | `security` | produces | `security-report.json` |
 | `shared` | produces | `reference-documents` |
-| `skill-builder` | produces | `converted-skill` |
+| `skill-builder` | produces | `skill-source-package` |
 | `standards` | produces | `stdout` |
 | `status` | produces | `stdout` |
 | `swarm` | consumes | `explicit-disjoint-packets` |

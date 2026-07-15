@@ -3,7 +3,7 @@
 #
 # Resolve every `ao …` command cited in a LIVE doc against the live cobra tree
 # and fail if a doc names a command that does not exist (a removed/renamed
-# command like `ao factory start`, `ao rpi phased`, `ao evolve` on a golden
+# command like `ao factory start` or `ao rpi phased` on a golden
 # path). Port-style sibling of scripts/validate-skill-cli-snippets.sh — it
 # SHARES that gate's resolution core (scripts/lib/ao-snippet-resolve.*) rather
 # than forking it (age-gate-the-ungated-egwt.4).

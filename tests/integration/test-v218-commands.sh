@@ -114,7 +114,7 @@ LEARNING_EOF
 
 cat > "$TMPDIR_TEST/.agents/learnings/2026-02-25-test-learning-gamma.md" <<'LEARNING_EOF'
 ---
-title: Never skip pre-mortem for large changes
+title: Never skip premortem for large changes
 id: test-learning-gamma
 date: 2026-02-25
 maturity: sapling
@@ -122,13 +122,13 @@ tags: [process, validation]
 ---
 
 ## Context
-Large changes without pre-mortem review introduce avoidable risk.
+Large changes without premortem review introduce avoidable risk.
 
 ## Lesson
-Always run pre-mortem before implementing changes with 3+ files.
+Always run premortem before implementing changes with 3+ files.
 
 ## Evidence
-4/4 epics with pre-mortem had zero implementation bugs.
+4/4 epics with premortem had zero implementation bugs.
 LEARNING_EOF
 
 # Create a sample session file
@@ -182,13 +182,13 @@ cat > "$TMPDIR_TEST/.agents/findings/test-finding-alpha.md" <<'FINDING_EOF'
 ---
 id: test-finding-alpha
 title: Prefer registry-backed prevention
-source_skill: post-mortem
+source_skill: postmortem
 severity: high
 detectability: advisory
 status: active
 compiler_targets: [inject, lookup]
 scope_tags: [planning, flywheel]
-applicable_when: [pre-mortem, planning]
+applicable_when: [premortem, planning]
 applicable_languages: [go, shell]
 hit_count: 3
 last_cited: 2026-03-09T12:00:00Z

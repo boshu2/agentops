@@ -208,7 +208,6 @@ find "$SKILLS_DIR" -mindepth 1 -maxdepth 1 -type d \
   | while IFS= read -r d; do
       [[ -f "$d/SKILL.md" ]] || continue
       name="$(basename "$d")"
-      [[ "$name" == "pre-mortem" || "$name" == "post-mortem" || "$name" == "pre_mortem" || "$name" == "post_mortem" ]] && continue
       printf '%s\n' "$name"
     done \
   | LC_ALL=C sort -u > "$source_skills_file"
@@ -377,8 +376,8 @@ while IFS= read -r entry; do
       if jq -e '.operator_contract_required == true' <<<"$entry" >/dev/null; then
         fail "parity-only skill cannot require operator-contract governance: $skill"
       fi
-      if [[ -d "$override_dir" ]]; then
-        fail "parity-only skill has unexpected Codex override directory: $skill"
+      if [[ -f "$override_prompt" ]]; then
+        fail "parity-only skill has unexpected Codex override prompt: $skill"
       fi
       ;;
     excluded)
@@ -388,8 +387,8 @@ while IFS= read -r entry; do
       if [[ -d "$GENERATED_DIR/$skill" ]]; then
         fail "excluded skill still has a generated Codex twin dir (git rm -r skills-codex/$skill): $skill"
       fi
-      if [[ -d "$override_dir" ]]; then
-        fail "excluded skill has unexpected Codex override directory: $skill"
+      if [[ -f "$override_prompt" ]]; then
+        fail "excluded skill has unexpected Codex override prompt: $skill"
       fi
       ;;
     *)
@@ -400,6 +399,7 @@ done < "$selected_entries_file"
 
 find "$OVERRIDES_DIR" -mindepth 1 -maxdepth 1 -type d \
   | while IFS= read -r d; do
+      [[ -f "$d/prompt.md" ]] || continue
       basename "$d"
     done \
   | LC_ALL=C sort -u > "$actual_override_dirs_file"

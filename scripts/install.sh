@@ -72,21 +72,13 @@ install_dev() {
     local repo_root
     repo_root="$(cd "$SCRIPT_DIR/.." && pwd)"
 
-    if [[ ! -f "$repo_root/scripts/install-dev-hooks.sh" || ! -d "$repo_root/cli" ]]; then
+    if [[ ! -d "$repo_root/cli" ]]; then
         echo "Error: --dev must be run from an AgentOps source checkout." >&2
         exit 1
     fi
 
-    echo "Installing AgentOps development wiring..."
-    echo "Step 1/2: Configuring repo-managed git hooks..."
-    bash "$repo_root/scripts/install-dev-hooks.sh"
-
-    echo "Step 2/2: Building cli/bin/ao..."
+    echo "Building the AgentOps development CLI..."
     make -C "$repo_root/cli" build
-
-    # Pre-push gate-wiring verification retired (soc-bbvw / soc-g2r9):
-    # local pre-push gate retired; CI is sole authoritative push gate.
-    # See docs/contracts/local-pre-push-gate-retirement.md.
 
     echo ""
     echo "Done! Development checkout ready."

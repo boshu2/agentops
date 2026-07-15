@@ -22,8 +22,8 @@ WARNING -  Doc file 'GLOSSARY.md' contains a link '../skills/council/SKILL.md', 
 WARNING -  Doc file 'GLOSSARY.md' contains a link '../skills/crank/SKILL.md', but the target is not found among documentation files.
 WARNING -  Doc file 'GLOSSARY.md' contains a link '../skills/handoff/SKILL.md', but the target is not found among documentation files.
 WARNING -  Doc file 'GLOSSARY.md' contains a link '../skills/operationalize/SKILL.md', but the target is not found among documentation files.
-WARNING -  Doc file 'GLOSSARY.md' contains a link '../skills/post-mortem/SKILL.md', but the target is not found among documentation files.
-WARNING -  Doc file 'GLOSSARY.md' contains a link '../skills/pre-mortem/SKILL.md', but the target is not found among documentation files.
+WARNING -  Doc file 'GLOSSARY.md' contains a link '../skills/postmortem/SKILL.md', but the target is not found among documentation files.
+WARNING -  Doc file 'GLOSSARY.md' contains a link '../skills/premortem/SKILL.md', but the target is not found among documentation files.
 WARNING -  Doc file 'GLOSSARY.md' contains a link '../skills/research/SKILL.md', but the target is not found among documentation files.
 WARNING -  Doc file 'GLOSSARY.md' contains a link '../skills/standards/SKILL.md', but the target is not found among documentation files.
 WARNING -  Doc file 'GLOSSARY.md' contains a link '../skills/swarm/SKILL.md', but the target is not found among documentation files.
@@ -41,8 +41,8 @@ WARNING -  Doc file 'architecture/workflow-conformance-pattern.md' contains a li
 WARNING -  Doc file 'architecture/workflow-conformance-pattern.md' contains a link '../../skills/workflow-builder/SKILL.md', but the target '../skills/workflow-builder/SKILL.md' is not found among documentation files.
 WARNING -  Doc file 'comparisons/vs-hosted-code-review.md' contains a link '../../README.md#the-honest-version', but the target '../README.md' is not found among documentation files.
 WARNING -  Doc file 'context-lifecycle.md' contains a link '../skills/council/SKILL.md', but the target is not found among documentation files.
-WARNING -  Doc file 'context-lifecycle.md' contains a link '../skills/post-mortem/SKILL.md', but the target is not found among documentation files.
-WARNING -  Doc file 'context-lifecycle.md' contains a link '../skills/pre-mortem/SKILL.md', but the target is not found among documentation files.
+WARNING -  Doc file 'context-lifecycle.md' contains a link '../skills/postmortem/SKILL.md', but the target is not found among documentation files.
+WARNING -  Doc file 'context-lifecycle.md' contains a link '../skills/premortem/SKILL.md', but the target is not found among documentation files.
 WARNING -  Doc file 'context-lifecycle.md' contains a link '../skills/validate/SKILL.md', but the target is not found among documentation files.
 WARNING -  Doc file 'contracts/corpus-learning-seam.md' contains a link '../../schemas/learning.v1.schema.json', but the target '../schemas/learning.v1.schema.json' is not found among documentation files.
 WARNING -  Doc file 'contracts/pawls.md' contains a link '../../scripts/evolve/halt-check.sh', but the target '../scripts/evolve/halt-check.sh' is not found among documentation files.

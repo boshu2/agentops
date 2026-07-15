@@ -23,7 +23,7 @@ func withEnv(t *testing.T, env map[string]string) {
 	t.Helper()
 	keys := []string{
 		"AO_HOME", "CLAUDE_PLUGIN_DATA",
-		"AO_AGENTS_DIR", "AO_KNOWLEDGE_ROOT", "AO_HOOKS_DIR", "AO_SCOPE_LOCK",
+		"AO_AGENTS_DIR", "AO_KNOWLEDGE_ROOT", "AO_HOOKS_DIR",
 		"AO_RPI_DIR", "AO_FINDINGS_DIR", "AO_PLANS_DIR", "AO_COUNCIL_DIR",
 		"AO_LEARNINGS_DIR", "AO_PATTERNS_DIR", "AO_DECISIONS_DIR",
 		"AO_PATHS_DEBUG",
@@ -136,10 +136,6 @@ func TestResolve_EnvPrecedence(t *testing.T) {
 			wantWiki := filepath.Join(wantAgent, "wiki")
 			if got.KnowledgeRoot != wantWiki {
 				t.Errorf("KnowledgeRoot = %q, want %q", got.KnowledgeRoot, wantWiki)
-			}
-			wantLock := filepath.Join(wantAgent, "scope.lock")
-			if got.ScopeLock != wantLock {
-				t.Errorf("ScopeLock = %q, want %q", got.ScopeLock, wantLock)
 			}
 		})
 	}
@@ -300,7 +296,7 @@ func TestShellGoAgreement(t *testing.T) {
 			// Compare every AO_* key — shell may export AO_PATHS_DEBUG (excluded).
 			for _, key := range []string{
 				"AO_HOME", "AO_AGENTS_DIR", "AO_KNOWLEDGE_ROOT",
-				"AO_HOOKS_DIR", "AO_SCOPE_LOCK", "AO_RPI_DIR",
+				"AO_HOOKS_DIR", "AO_RPI_DIR",
 				"AO_FINDINGS_DIR", "AO_PLANS_DIR", "AO_COUNCIL_DIR",
 				"AO_LEARNINGS_DIR", "AO_PATTERNS_DIR", "AO_DECISIONS_DIR",
 			} {
@@ -355,7 +351,6 @@ func goPathsToEnv(p *Paths) map[string]string {
 		"AO_AGENTS_DIR":     p.AgentsDir,
 		"AO_KNOWLEDGE_ROOT": p.KnowledgeRoot,
 		"AO_HOOKS_DIR":      p.HooksDir,
-		"AO_SCOPE_LOCK":     p.ScopeLock,
 		"AO_RPI_DIR":        p.RPIDir,
 		"AO_FINDINGS_DIR":   p.FindingsDir,
 		"AO_PLANS_DIR":      p.PlansDir,

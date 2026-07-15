@@ -61,19 +61,9 @@ function Get-ManifestSkillCount {
   $manifest = Get-Content -LiteralPath $ManifestPath -Raw | ConvertFrom-Json
   $hasCount = ($manifest.PSObject.Properties.Name -contains "package_count" -and $manifest.package_count -gt 0)
   $hasSkills = ($manifest.PSObject.Properties.Name -contains "skills")
-  # package_count and skills[] are DELIBERATELY different counts and must not be
-  # forced equal: package_count inventories every installable skill directory
-  # (incl. the compatibility pointer twins pre-mortem/post-mortem/pre_mortem/
-  # post_mortem), while skills[] lists only canonical implementation rows. On the
-  # real bundle that is 66 vs 62. This split is the authoritative contract —
-  # enforced by scripts/validate-codex-generated-manifest.sh (package_count ==
-  # all installable dirs; len(skills[]) == dirs minus the 4 pointers), by the
-  # generator scripts/codex-sync.sh, by cli/internal/quality/skills_codex.go
-  # (doctor reads package_count when present), and by the bash installer selftest
-  # (installer-selftest.bats asserts disk==package_count only, NOT
-  # package_count==len(skills[])). The real 66-vs-62 bug this leg guards against
-  # is a STALE manifest whose package_count is missing/wrong, caught below by the
-  # manifest-count-vs-disk assertion — not by any internal equality check.
+  # package_count inventories every installable generated skill directory.
+  # The manifest validator keeps it equal to the canonical skills[] inventory;
+  # no compatibility-pointer directories are installed.
   if ($hasCount) {
     return [int]$manifest.package_count
   }

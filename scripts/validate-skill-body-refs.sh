@@ -44,13 +44,7 @@ if [[ -z "$AO_BIN" ]]; then
   AO_BIN="$TMP_DIR/ao"
   (
     cd "$REPO_ROOT/cli"
-    # Build with the ADR-0012 archive tags so skill body-refs that document
-    # archived-but-revivable commands (e.g. `ao harvest`, `ao turn verify`,
-    # behind //go:build flywheel|legacy) validate against the FULL command
-    # surface. The default `ao` omits them, but a skill may legitimately
-    # reference any command; validating only the spine would false-fail those.
-    # (Same escape/fix as validate-skill-cli-snippets.sh, bead age-sydq.)
-    go build -tags "flywheel legacy" -o "$AO_BIN" ./cmd/ao
+    go build -o "$AO_BIN" ./cmd/ao
   )
 fi
 

@@ -1,6 +1,6 @@
 # Composable Security Suite Runbook
 
-Use this reference for authorized binary assurance, baseline comparison, policy enforcement, and offline repo-surface redteam. The main `security` skill owns authorization, pawl recovery, and release decisions.
+Use this reference for authorized binary assurance, baseline comparison, policy enforcement, and offline repo-surface redteam. The caller supplies authorization and owns every decision after the report.
 
 ## Primitive model
 

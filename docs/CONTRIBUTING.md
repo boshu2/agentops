@@ -22,9 +22,6 @@ If you want the fastest path to a meaningful first contribution, start here:
 ```bash
 git clone https://github.com/YOUR_USERNAME/agentops.git
 cd agentops
-
-# Optional, but useful for local workflow testing
-bash scripts/install-dev-hooks.sh
 ```
 
 ## High-Leverage Ways To Contribute
@@ -86,10 +83,10 @@ bash scripts/audit-codex-parity.sh --skill your-skill-name
 bash scripts/validate-codex-generated-artifacts.sh --scope worktree
 ```
 
-Before pushing, the recommended fast gate is:
+For a fast changed-surface check, run:
 
 ```bash
-scripts/pre-push-gate.sh --fast
+ao gate check --fast --scope worktree
 ```
 
 ### Working On The Docs Site
@@ -111,7 +108,7 @@ MkDocs-specific expectations:
 - Skill pages and the CLI reference are **generated at build time** from `skills/**/SKILL.md` and `cli/docs/COMMANDS.md` respectively — do not hand-author `docs/skills/*.md` or `docs/cli/commands.md`.
 - Navigation is declared in `mkdocs.yml` under `nav:`. New top-level docs need an entry there.
 
-Python toolchain is required only for local preview and the strict build. If your dev machine can't install Python, set `PRE_PUSH_SKIP_MKDOCS=1` to bypass the MkDocs check in the pre-push gate; CI will catch it.
+Python tooling is required only for local preview and the strict build. If it is unavailable, report that the docs build was not checked; do not treat another green check as equivalent evidence.
 
 ## Opening The PR
 

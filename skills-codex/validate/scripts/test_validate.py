@@ -48,6 +48,17 @@ class ValidateV2Tests(unittest.TestCase):
             subject.write_text("two", encoding="utf-8")
             self.assertFalse(tool.verify_manifest(manifest, root, None)[0])
 
+    def test_git_metadata_is_not_identity_bearing(self):
+        with tempfile.TemporaryDirectory() as raw:
+            root = Path(raw)
+            (root / "value").write_text("same", encoding="utf-8")
+            first = tool.build_manifest(root, ["."], [], git_metadata={"commit": "one"})
+            second = tool.build_manifest(root, ["."], [], git_metadata={"commit": "two"})
+            self.assertEqual(first["canonical_manifest_digest"], second["canonical_manifest_digest"])
+            self.assertNotEqual(first["git_metadata"], second["git_metadata"])
+            self.assertTrue(tool.verify_manifest(first, root, None)[0])
+            self.assertTrue(tool.verify_manifest(second, root, None)[0])
+
     def test_symlink_and_deletion_identity(self):
         with tempfile.TemporaryDirectory() as raw:
             root = Path(raw)
@@ -119,6 +130,20 @@ class ValidateV2Tests(unittest.TestCase):
             self.assertNotEqual(replacement_path, path)
             self.assertFalse(existed)
             self.assert_schema_valid(replacement)
+
+    def test_incomplete_draft_is_rejected_without_writing(self):
+        with tempfile.TemporaryDirectory() as raw:
+            with self.assertRaisesRegex(tool.ContractError, "missing required fields"):
+                tool.store_verdict({"verdict": "FAIL"}, Path(raw))
+            self.assertEqual(list(Path(raw).iterdir()), [])
+
+    def test_unknown_field_is_rejected_without_writing(self):
+        with tempfile.TemporaryDirectory() as raw:
+            draft = self.draft()
+            draft["next_action"] = "repair"
+            with self.assertRaisesRegex(tool.ContractError, "unknown fields"):
+                tool.store_verdict(draft, Path(raw))
+            self.assertEqual(list(Path(raw).iterdir()), [])
 
 
 if __name__ == "__main__":

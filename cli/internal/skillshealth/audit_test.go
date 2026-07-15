@@ -1,6 +1,7 @@
 package skillshealth
 
 import (
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"testing"
@@ -125,11 +126,18 @@ func TestAudit_RealRepo_L2(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Audit failed: %v", err)
 	}
-	// Floor tracks the deliberate corpus size: 58 skills + _fixtures after the
-	// 2026-07-07 retire wave (docs/audits/skills-audit-2026-07-06.md, 66 -> 58).
-	// A drop BELOW the floor means skills went missing outside a governed retire.
-	if got := len(report.Skills); got < 55 {
-		t.Errorf("expected >= 55 skills, got %d", got)
+	catalogRaw, err := os.ReadFile(filepath.Join(skillsDir, "catalog.json"))
+	if err != nil {
+		t.Fatalf("read generated catalog: %v", err)
+	}
+	var catalog struct {
+		Skills []json.RawMessage `json:"skills"`
+	}
+	if err := json.Unmarshal(catalogRaw, &catalog); err != nil {
+		t.Fatalf("parse generated catalog: %v", err)
+	}
+	if got, want := len(report.Skills), len(catalog.Skills); got != want {
+		t.Errorf("audit/catalog skill count mismatch: got %d want %d", got, want)
 	}
 	if len(report.Errors) > 0 {
 		t.Logf("audit reports %d errors against real repo (informational):", len(report.Errors))
@@ -140,8 +148,7 @@ func TestAudit_RealRepo_L2(t *testing.T) {
 			}
 			t.Logf("  %s", e)
 		}
-		// Don't fail by default; the live tree may have transient drift while
-		// other Wave 1 work is in progress. Real expectation is empty.
+		t.Fail()
 	}
 }
 

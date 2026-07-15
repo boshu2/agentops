@@ -389,6 +389,14 @@ ao goals history [flags]
       --since string   Show entries since date (YYYY-MM-DD)
 ```
 
+#### `ao goals meta`
+
+Run and report meta-goals only
+
+```
+ao goals meta [flags]
+```
+
 #### `ao goals render`
 
 Render the executable-spec layer as BDD/Gherkin text.
@@ -406,7 +414,7 @@ ao goals render [flags]
 
 #### `ao goals scenarios`
 
-List or create the executable-spec scenarios linked to GOALS.md directives.
+Inspect the executable-spec scenarios linked to GOALS.md directives.
 
 ```
 ao goals scenarios [flags]
@@ -415,15 +423,11 @@ ao goals scenarios [flags]
 **Flags:**
 
 ```
-      --create string         Create a scenario from this goal description and link it to --directive
-      --directive int         Directive display number (filter when listing, target when creating)
+      --directive int         Filter by directive display number
       --directive-id string   Filter listing to one directive by stable Directive ID
   -h, --help                  help for scenarios
       --lint                  Lint the directive↔scenario link graph instead of listing
-      --source string         Source for a created scenario (human, agent, prod-telemetry) (default "human")
-      --status string         Status for a created scenario (active, draft, retired) (default "draft")
       --strict                With --lint, exit non-zero on warnings as well as errors
-      --threshold float       Satisfaction threshold for a created scenario (default 0.8)
 ```
 
 #### `ao goals trace`
@@ -441,88 +445,6 @@ ao goals trace [flags]
   -h, --help          help for trace
       --orphans       Audit the whole chain for broken references (errors) and missing yields (warnings)
       --strict        Escalate warning-class defects to a non-zero exit (ADR-0005 §4.2)
-```
-
-#### `ao goals add`
-
-Add a new goal
-
-```
-ao goals add <id> <check-command> [flags]
-```
-
-**Aliases:**
-
-```
-  add, a
-```
-
-**Flags:**
-
-```
-      --description string   Goal description
-  -h, --help                 help for add
-      --type string          Goal type (health, architecture, quality, meta)
-      --weight int           Goal weight (1-10) (default 5)
-```
-
-#### `ao goals init`
-
-Bootstrap a new GOALS.md file
-
-```
-ao goals init [flags]
-```
-
-**Flags:**
-
-```
-  -h, --help              help for init
-      --non-interactive   Use defaults without prompting
-      --template string   Goal template (go-cli, python-lib, web-app, rust-cli, generic)
-```
-
-#### `ao goals meta`
-
-Run and report meta-goals only
-
-```
-ao goals meta [flags]
-```
-
-#### `ao goals migrate`
-
-Migrate goals between formats.
-
-```
-ao goals migrate [flags]
-```
-
-**Aliases:**
-
-```
-  migrate, mg
-```
-
-**Flags:**
-
-```
-  -h, --help    help for migrate
-      --to-md   Convert GOALS.yaml to GOALS.md format
-```
-
-#### `ao goals prune`
-
-Remove goals referencing nonexistent files
-
-```
-ao goals prune [flags]
-```
-
-**Aliases:**
-
-```
-  prune, p
 ```
 
 ---
@@ -653,6 +575,49 @@ ao config models [flags]
   -h, --help               help for models
       --set-skill string   Set a skill-specific tier override (e.g. council=quality)
       --set-tier string    Set the default model cost tier (quality, balanced, budget)
+```
+
+---
+
+### `ao flywheel`
+
+Knowledge flywheel operations and status.
+
+```
+ao flywheel [command]
+```
+
+**Subcommands:**
+
+#### `ao flywheel compare`
+
+Compare retrieval quality between primary and shadow namespaces.
+
+```
+ao flywheel compare [flags]
+```
+
+**Flags:**
+
+```
+  -h, --help            help for compare
+      --shadow string   Shadow namespace to compare against primary (default "shadow")
+```
+
+#### `ao flywheel status`
+
+Display comprehensive flywheel health status.
+
+```
+ao flywheel status [flags]
+```
+
+**Flags:**
+
+```
+      --days int           Period in days for metrics calculation (default 7)
+  -h, --help               help for status
+      --namespace string   Citation namespace to evaluate (primary by default) (default "primary")
 ```
 
 ---
@@ -860,7 +825,7 @@ ao provenance mine-session --file <session.jsonl> [flags]
 
 #### `ao provenance position`
 
-Read the provenance ledger and report the navigator's current position:
+Report the ledger record count and latest hash without inferring lifecycle state.
 
 ```
 ao provenance position [flags]
@@ -870,22 +835,22 @@ ao provenance position [flags]
 
 ```
   -h, --help   help for position
-      --json   Emit machine-readable JSON (stdout-as-data)
+      --json   Emit machine-readable JSON
 ```
 
 #### `ao provenance show`
 
-Render the human story of one change from the committed provenance
+Read the provenance ledger and show every edge whose from_id or to_id
 
 ```
-ao provenance show <sha|bead-id> [flags]
+ao provenance show <node-id> [flags]
 ```
 
 **Flags:**
 
 ```
   -h, --help   help for show
-      --json   Emit machine-readable JSON (stdout-as-data)
+      --json   Emit machine-readable JSON
 ```
 
 #### `ao provenance trace`

@@ -42,9 +42,8 @@ def emit(src: Path, dest: str, title: str) -> None:
 def emit_index() -> None:
     body = """# CLI Overview
 
-The `ao` CLI is the programmatic surface for AgentOps. It bundles every skill
-invocation, validation gate, and knowledge-flywheel operation into a single
-Go binary.
+The `ao` CLI provides deterministic repository checks and optional evidence
+utilities. Semantic workflows remain skills rather than CLI lifecycle commands.
 
 <div class="grid cards" markdown>
 
@@ -52,8 +51,8 @@ Go binary.
   Every `ao` command with flags, examples, and exit codes. Auto-generated from
   `ao --help`.
 
-- :material-map: **[CLI ↔ Skills Map](../cli-skills-map.md)**
-  Which commands are called by which skills.
+- :material-map: **[CLI Surface](../cli-surface.md)**
+  Generated public command inventory and coverage classification.
 
 </div>
 

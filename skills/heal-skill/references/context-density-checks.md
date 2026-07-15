@@ -29,9 +29,8 @@ Density Rule fields before that prose is passed into a fresh context session.
 ## Runnable Examples
 
 ```bash
-bash skills/heal-skill/scripts/audit.sh skills/discovery
 bash skills/heal-skill/scripts/audit.sh skills/plan
-bash skills/heal-skill/scripts/audit.sh skills/crank
+bash skills/heal-skill/scripts/audit.sh skills/implement
 bash skills/heal-skill/scripts/audit.sh skills/validate
 ```
 

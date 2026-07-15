@@ -91,6 +91,6 @@ acceptance_criteria:
 ## See also
 
 - `.agents/plans/2026-05-20-ultimate-dogfood-3.0.md` — the 3.0 release plan that prescribed this gate
-- `.agents/council/2026-05-20-pre-mortem-ultimate-dogfood-3.0.md` — pre-mortem HIGH-1 surfaced the `.agents/`-gitignored contradiction this gate resolves
+- `.agents/council/2026-05-20-premortem-ultimate-dogfood-3.0.md` — premortem HIGH-1 surfaced the `.agents/`-gitignored contradiction this gate resolves
 - `scripts/export-evidence.sh` — the promoter
 - `scripts/check-pmf-evidence.sh` — the gate

@@ -1,94 +1,72 @@
 {
   "schema_version": 1,
   "id": "agentops-core.rpi-behavior",
-  "name": "AgentOps RPI Behavior Canary",
-  "description": "Offline public canary for RPI phased runner contracts and deterministic runtime boundaries.",
+  "name": "AgentOps Single-Pass RPI Canary",
+  "description": "Offline public canary for the Plan, Implement, fresh Validate, durable verdict, report-and-stop boundary.",
   "practices": ["llm-eval-harness", "agile-manifesto"],
   "domain": "rpi",
   "visibility": "public_canary",
   "tier": "deterministic",
   "owners": ["agentops"],
-  "tags": ["canary", "offline", "rpi", "runtime"],
+  "tags": ["canary", "offline", "rpi", "single-pass", "verdict"],
   "allowed_runtimes": ["static", "shell"],
   "environment": {
     "offline_required": true,
     "network": "forbidden",
     "scrub_env_prefixes": ["AGENTOPS_RPI_RUNTIME", "ANTHROPIC_", "OPENAI_"],
-    "timeout_seconds": 20
+    "timeout_seconds": 30
   },
   "scoring": {
     "aggregate_threshold": 1,
     "dimensions": [
       {"name": "correctness", "weight": 2, "threshold": 1, "critical": true},
-      {"name": "process_adherence", "weight": 1, "threshold": 1},
-      {"name": "runtime_compatibility", "weight": 1, "threshold": 1},
-      {"name": "safety", "weight": 1, "threshold": 1}
+      {"name": "process_adherence", "weight": 1, "threshold": 1, "critical": true},
+      {"name": "artifact_quality", "weight": 1, "threshold": 1},
+      {"name": "safety", "weight": 1, "threshold": 1, "critical": true}
     ]
   },
   "baseline_policy": {"mode": "compare", "baseline_path": ".agents/evals/baselines/agentops-core.rpi-behavior.baseline.json", "blocking_gate": "none"},
   "cases": [
     {
-      "id": "rpi-runtime-files",
-      "title": "RPI runtime source files are present",
+      "id": "single-pass-reference-tests",
+      "title": "RPI dispatches each core phase at most once",
       "kind": "command",
-      "objective": "Verify the RPI behavior canary resolves repo-root source paths from the suite directory.",
+      "objective": "Prove PASS and FAIL both stop after one Plan, one Implement, and one Validate dispatch.",
       "runtime": "shell",
       "inputs": {
         "cwd": "../..",
-        "shell": "test -f cli/cmd/ao/rpi_phased.go && test -f cli/cmd/ao/rpi_serve.go && test -f skills/rpi/SKILL.md"
+        "shell": "python3 skills/rpi/tests/test_run_once.py && python3 scripts/check-cathedral-cut-conformance.py"
       },
-      "expectations": [
-        {"type": "exit_code", "value": 0}
-      ],
-      "dimensions": ["correctness", "runtime_compatibility"],
+      "expectations": [{"type": "exit_code", "value": 0}],
+      "dimensions": ["correctness", "process_adherence", "safety"],
       "critical": true
     },
     {
-      "id": "phased-runner-runtime-contract",
-      "title": "phased runner exposes bounded runtime modes",
+      "id": "rpi-skill-stop-contract",
+      "title": "RPI reports and stops without continuation authority",
       "kind": "artifact_check",
-      "objective": "Ensure RPI phased execution keeps explicit runtime-mode and runtime-command contracts.",
+      "objective": "Keep the public wrapper anchored to one ordered invocation and caller-owned continuation.",
       "expectations": [
-        {"type": "artifact_contains", "target": "../../cli/cmd/ao/rpi_phased.go", "value": "Run RPI with fresh runtime session per phase"},
-        {"type": "artifact_contains", "target": "../../cli/cmd/ao/rpi_phased.go", "value": "Phase runtime mode: auto|direct|stream|tmux"},
-        {"type": "artifact_contains", "target": "../../cli/cmd/ao/rpi_phased.go", "value": "Runtime command used for phase prompts"}
+        {"type": "artifact_contains", "target": "../../skills/rpi/SKILL.md", "value": "Plan -> Implement -> fresh Validate -> report"},
+        {"type": "artifact_contains", "target": "../../skills/rpi/SKILL.md", "value": "Stop regardless"},
+        {"type": "artifact_contains", "target": "../../skills/rpi/SKILL.md", "value": "Do not append a next action"}
       ],
-      "dimensions": ["correctness", "runtime_compatibility"],
+      "dimensions": ["process_adherence", "artifact_quality"],
       "critical": true
     },
     {
-      "id": "serve-runtime-contract",
-      "title": "RPI serve preserves runtime orchestration flags",
-      "kind": "artifact_check",
-      "objective": "Cover the serve entrypoint used for RPI orchestration without invoking a live runtime.",
-      "expectations": [
-        {"type": "artifact_contains", "target": "../../cli/cmd/ao/rpi_serve.go", "value": "Phase runtime mode for orchestration"},
-        {"type": "artifact_contains", "target": "../../cli/cmd/ao/rpi_serve.go", "value": "Runtime command for orchestration phase prompts"}
-      ],
-      "dimensions": ["process_adherence", "runtime_compatibility"]
-    },
-    {
-      "id": "eval-deterministic-boundary",
-      "title": "eval runner keeps live adapters advisory",
-      "kind": "artifact_check",
-      "objective": "Protect deterministic public canaries from live Claude or Codex execution.",
-      "expectations": [
-        {"type": "artifact_contains", "target": "../../cli/cmd/ao/eval.go", "value": "Live Claude and Codex adapters are evaluated by a later runtime tier."},
-        {"type": "artifact_contains", "target": "../../cli/cmd/ao/eval.go", "value": "unknown runtime %q (use static, mock, shell, claude, or codex)"}
-      ],
-      "dimensions": ["runtime_compatibility", "safety"],
+      "id": "core-schema-contract",
+      "title": "RPI status and semantic verdict remain separate",
+      "kind": "command",
+      "objective": "Protect verdict.v2 from orchestration statuses and preserve the standalone RPI report.",
+      "runtime": "shell",
+      "inputs": {
+        "cwd": "../..",
+        "shell": "grep -q NOT_PROVEN schemas/verdict.v2.schema.json && ! grep -q NOT_BUILT schemas/verdict.v2.schema.json && grep -q NOT_BUILT schemas/rpi-report.v1.schema.json"
+      },
+      "expectations": [{"type": "exit_code", "value": 0}],
+      "dimensions": ["correctness", "artifact_quality"],
       "critical": true
-    },
-    {
-      "id": "rpi-skill-contract",
-      "title": "RPI skill contract remains available",
-      "kind": "artifact_check",
-      "objective": "Ensure RPI behavior canaries are anchored to the user-facing skill contract.",
-      "expectations": [
-        {"type": "artifact_contains", "target": "../../skills/rpi/SKILL.md", "value": "RPI"},
-        {"type": "artifact_contains", "target": "../../skills/rpi/SKILL.md", "value": "validation"}
-      ],
-      "dimensions": ["process_adherence", "artifact_quality"]
     }
   ]
 }

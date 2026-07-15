@@ -12,7 +12,7 @@
 # A diff = thesis drift; the operator must consciously accept it (and
 # re-validate Waves 2-4) before proceeding, OR re-brainstorm Waves 2-4.
 #
-# Hero extraction (per pre-mortem M2):
+# Hero extraction (per premortem M2):
 #   awk 'NR==1, /^## / {if (!/^## /) print}' <file>
 # This anchors to ^## (with the H2 boundary literal) and excludes the
 # boundary line from the captured hero. Code-fence-safe because it matches

@@ -127,13 +127,13 @@ func writeHandoffArtifact(cwd string, artifact *handoffArtifact, data []byte) (s
 		return "", fmt.Errorf("create handoff temporary file: %w", err)
 	}
 	tmpName := tmp.Name()
-	defer os.Remove(tmpName)
+	defer func() { _ = os.Remove(tmpName) }()
 	if _, err := tmp.Write(data); err != nil {
-		tmp.Close()
+		_ = tmp.Close()
 		return "", fmt.Errorf("write handoff: %w", err)
 	}
 	if err := tmp.Sync(); err != nil {
-		tmp.Close()
+		_ = tmp.Close()
 		return "", fmt.Errorf("flush handoff: %w", err)
 	}
 	if err := tmp.Close(); err != nil {

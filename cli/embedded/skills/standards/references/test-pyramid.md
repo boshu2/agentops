@@ -1,6 +1,6 @@
 # AI-Native Test Shape — L0 through L7
 
-> Shared reference for RPI lifecycle skills. Loaded by `/discovery`, `/plan`, `/premortem`, `/implement`, `/crank`, `/validate`, and `/postmortem`.
+> Optional engineering reference for Plan, Implement, and Validate. It does not add phases or continuation authority.
 
 ## The AI-Native Test Shape
 
@@ -76,9 +76,9 @@ The Traditional Pyramid          The AI-Native Shape
 
 | RPI Phase | Test Levels | What Happens |
 |-----------|-------------|--------------|
-| **Discovery** (`/discovery`, `/plan`) | L0–L3 scoping | Plan identifies which test levels apply. **Default: L2 required for all code-change issues.** Issues include `test_level` metadata. |
+| **Plan** (`/plan`) | L0–L3 scoping | Plan identifies which checks prove the active behavior and names the first acceptance check. |
 | **Premortem** (`/premortem`) | L0–L3 coverage check | Validates plan covers appropriate test levels. **Flags L1-only coverage as WARN.** |
-| **Implementation** (`/implement`, `/crank`) | L0–L2 writing + execution | **TDD writes L2 integration tests first (RED).** L0 contracts from specs. L1 as regression guards. |
+| **Implementation** (`/implement`) | L0–L2 writing + execution | Behavior-changing work starts with the bounded acceptance check RED, then GREEN and refactor. |
 | **Validation** (`/validate`, `/postmortem`) | L0–L3 coverage audit | Assesses test coverage. **L2+ coverage weighted 3-5x over L1 in vibe scoring.** |
 
 ## Test Level Selection Guide
@@ -125,7 +125,7 @@ When creating issues in `/plan`, include test level metadata:
 ## Bug-Finding Levels (Agent-Autonomous)
 
 > **Proven 2026-03-14 on jren-cm:** 3,321 L1 unit tests found 0 new bugs. These levels found 8.
-> Evidence: `/Users/fullerbt/gt/jren_cm/crew/ichigo/scripts/.agents/council/2026-03-14-post-mortem-full-session-methodology.md`
+> Evidence: `/Users/fullerbt/gt/jren_cm/crew/ichigo/scripts/.agents/council/2026-03-14-postmortem-full-session-methodology.md`
 
 L0–L3 are the **coverage shape** — they verify code works as designed.
 These are the **bug-finding shape** — they find bugs the coverage shape misses.

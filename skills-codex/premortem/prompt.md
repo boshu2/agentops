@@ -1,6 +1,6 @@
 # premortem
 
-Use when: an exact plan needs a verdict. Stress-tests readiness before work with one fresh, independent judge.
+Optionally challenge a frozen plan with one fresh independent judge before implementation. Triggers: "premortem", "challenge this plan", "what could make this plan fail".
 
 ## Instructions
 

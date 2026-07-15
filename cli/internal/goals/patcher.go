@@ -9,13 +9,6 @@ import (
 )
 
 // Directive-attribute keys recognized as structured executable-spec metadata.
-//
-// All executable-spec directive mutations go through GoalsPatcher, never
-// RenderGoalsMD / WriteMDGoals: those render a GOALS.md from the GoalFile model
-// and silently drop the "## Three-Gap Contract Proof Surface" section, the
-// Gates table "Tags" column, prose paragraphs, and HTML agentops:claim
-// comments. The patcher edits only the target directive block and preserves
-// every other byte of the file.
 const (
 	AttrDirectiveID       = "Directive ID"
 	AttrSteer             = "Steer"
@@ -26,9 +19,8 @@ const (
 )
 
 // directiveIDRe is the stable directive-ID format: "d-" followed by an
-// alphanumeric then alphanumerics/hyphens. A stable ID is a slug of the
-// directive title, never the display number, so it survives the renumbering
-// done by `ao goals steer prioritize`.
+// alphanumeric then alphanumerics/hyphens. A stable ID is independent of a
+// directive's display number.
 var directiveIDRe = regexp.MustCompile(`^d-[a-z0-9][a-z0-9-]*$`)
 
 // attrLineRe matches a "**Key:** value" directive-attribute line (trimmed).
@@ -48,17 +40,6 @@ var knownAttrKeys = map[string]bool{
 	AttrScenarios:         true,
 	AttrScenarioThreshold: true,
 	attrTags:              true,
-}
-
-// attrOrder is the canonical ordering for inserting a new attribute line into a
-// directive block. Lower rank sorts earlier; unknown keys sort last.
-var attrOrder = map[string]int{
-	AttrDirectiveID:       0,
-	AttrSteer:             1,
-	AttrSetpoint:          2,
-	AttrScenarios:         3,
-	AttrScenarioThreshold: 4,
-	attrTags:              5,
 }
 
 // directiveAttr is one "**Key:** value" metadata line within a directive block.
@@ -90,13 +71,12 @@ type ParsedDirective struct {
 	attrs      []directiveAttr // every recognized "**Key:** value" line, in source order
 }
 
-// GoalsPatcher holds GOALS.md as a line buffer and patches individual directive
-// blocks without disturbing any other byte of the file.
+// GoalsPatcher is a read-only parsed view over GOALS.md directive metadata.
 type GoalsPatcher struct {
 	lines []string
 }
 
-// NewGoalsPatcher builds a patcher over raw GOALS.md content.
+// NewGoalsPatcher builds a read-only view over raw GOALS.md content.
 func NewGoalsPatcher(data []byte) (*GoalsPatcher, error) {
 	if strings.TrimSpace(string(data)) == "" {
 		return nil, fmt.Errorf("empty goals file")
@@ -105,7 +85,7 @@ func NewGoalsPatcher(data []byte) (*GoalsPatcher, error) {
 }
 
 // LoadGoalsPatcher resolves the GOALS.md path, reads it, and returns a patcher
-// plus the resolved path.
+// plus the resolved path. It never writes either file.
 func LoadGoalsPatcher(path string) (*GoalsPatcher, string, error) {
 	resolved := ResolveGoalsPath(path)
 	data, err := os.ReadFile(resolved)
@@ -117,17 +97,6 @@ func LoadGoalsPatcher(path string) (*GoalsPatcher, string, error) {
 		return nil, "", fmt.Errorf("parsing %s: %w", resolved, err)
 	}
 	return p, resolved, nil
-}
-
-// Bytes renders the current (possibly patched) GOALS.md content. With no
-// intervening patch it is byte-for-byte identical to the input.
-func (p *GoalsPatcher) Bytes() []byte {
-	return []byte(strings.Join(p.lines, "\n"))
-}
-
-// WriteFile writes the current content back to path with 0644 permissions.
-func (p *GoalsPatcher) WriteFile(path string) error {
-	return os.WriteFile(path, p.Bytes(), 0o644)
 }
 
 // Directives parses every directive block in the current buffer.
@@ -268,232 +237,6 @@ func splitScenarioList(s string) []string {
 	return out
 }
 
-// SetAttribute sets a "**Key:** value" attribute on the directive identified by
-// display number. Only that directive's block is touched: an existing
-// attribute line is replaced in place, a new one is inserted in canonical
-// attribute order, and every other byte of GOALS.md is preserved.
-func (p *GoalsPatcher) SetAttribute(number int, key, value string) error {
-	if !knownAttrKeys[key] {
-		return fmt.Errorf("unknown directive attribute %q", key)
-	}
-	if err := validateAttribute(key, value); err != nil {
-		return err
-	}
-	d, ok := p.DirectiveByNumber(number)
-	if !ok {
-		return fmt.Errorf("directive #%d not found", number)
-	}
-	newLine := fmt.Sprintf("**%s:** %s", key, value)
-	for _, a := range d.attrs {
-		if a.key == key {
-			p.lines[a.lineIdx] = newLine
-			return nil
-		}
-	}
-	at, prefixBlank := attrInsertion(p.lines, d, key)
-	if prefixBlank {
-		p.lines = insertLines(p.lines, at, "", newLine)
-	} else {
-		p.lines = insertLines(p.lines, at, newLine)
-	}
-	return nil
-}
-
-// AppendDirective inserts a new directive block at the end of the Directives
-// section, surgically: every other byte of the file — including non-directive
-// sections such as "## Three-Gap Contract Proof Surface", the Gates table, and
-// agentops:claim comments — is preserved. It returns the assigned display
-// number. This replaces the lossy RenderGoalsMD round-trip that `ao goals steer
-// add` used to perform (soc-byt52).
-func (p *GoalsPatcher) AppendDirective(title, description, steer string) (int, error) {
-	title = strings.TrimSpace(title)
-	if title == "" {
-		return 0, fmt.Errorf("directive title must not be empty")
-	}
-	if strings.ContainsAny(title, "\r\n") {
-		return 0, fmt.Errorf("directive title must be a single line")
-	}
-	if strings.TrimSpace(description) == "" {
-		return 0, fmt.Errorf("directive description must not be empty")
-	}
-	steer = strings.TrimSpace(steer)
-	if steer == "" {
-		steer = "increase"
-	}
-
-	dirs := p.Directives()
-	num := 1
-	at := -1
-	if len(dirs) > 0 {
-		for _, d := range dirs {
-			if d.Number >= num {
-				num = d.Number + 1
-			}
-		}
-		at = lastContentIdx(p.lines, dirs[len(dirs)-1]) + 1
-	} else {
-		start := directiveSectionStart(p.lines)
-		if start < 0 {
-			return 0, fmt.Errorf("no \"## Directives\" section found in GOALS.md")
-		}
-		at = start
-	}
-
-	block := []string{"", fmt.Sprintf("### %d. %s", num, title), ""}
-	block = append(block, strings.Split(strings.TrimRight(description, "\n"), "\n")...)
-	block = append(block, "", fmt.Sprintf("**Steer:** %s", steer))
-	p.lines = insertLines(p.lines, at, block...)
-	return num, nil
-}
-
-// splitDirectiveBlocks decomposes the buffer into the lines before the first
-// directive (prefix), one line slice per directive block in source order, and
-// the lines after the last directive block (suffix). prefix+blocks+suffix
-// reconstructs the file, so the suffix — which holds non-directive sections
-// like "## Three-Gap Contract Proof Surface" and the Gates table — is carried
-// byte-for-byte across remove/reorder. ok is false when there are no directives.
-func (p *GoalsPatcher) splitDirectiveBlocks() (prefix []string, blocks [][]string, suffix []string, ok bool) {
-	dirs := p.Directives()
-	if len(dirs) == 0 {
-		return nil, nil, nil, false
-	}
-	prefix = p.lines[:dirs[0].headingIdx]
-	suffix = p.lines[dirs[len(dirs)-1].endIdx:]
-	for _, d := range dirs {
-		blocks = append(blocks, p.lines[d.headingIdx:d.endIdx])
-	}
-	return prefix, blocks, suffix, true
-}
-
-// assembleDirectives reassembles the buffer from prefix + directive blocks +
-// suffix, renumbering each block's "### N. Title" heading to its 1-based
-// position. Block bodies, attributes, and blank lines are copied verbatim;
-// only the heading number changes.
-func assembleDirectives(prefix []string, blocks [][]string, suffix []string) []string {
-	out := make([]string, 0, len(prefix)+len(suffix)+len(blocks)*8)
-	out = append(out, prefix...)
-	for i, b := range blocks {
-		nb := make([]string, len(b))
-		copy(nb, b)
-		if len(nb) > 0 {
-			if m := directiveHeadingRe.FindStringSubmatch(strings.TrimSpace(nb[0])); m != nil {
-				nb[0] = fmt.Sprintf("### %d. %s", i+1, m[2])
-			}
-		}
-		out = append(out, nb...)
-	}
-	return append(out, suffix...)
-}
-
-// directiveIndexByNumber returns the source-order index of the directive with
-// the given display number, or -1.
-func directiveIndexByNumber(dirs []ParsedDirective, number int) int {
-	for i, d := range dirs {
-		if d.Number == number {
-			return i
-		}
-	}
-	return -1
-}
-
-// RemoveDirective deletes the directive with the given display number and
-// renumbers the remaining directives sequentially, preserving every
-// non-directive byte of the file (soc-5335b). Replaces the lossy
-// LoadMDGoals→WriteMDGoals round-trip.
-func (p *GoalsPatcher) RemoveDirective(number int) error {
-	prefix, blocks, suffix, ok := p.splitDirectiveBlocks()
-	if !ok {
-		return fmt.Errorf("no directives to remove")
-	}
-	idx := directiveIndexByNumber(p.Directives(), number)
-	if idx < 0 {
-		return fmt.Errorf("directive #%d not found", number)
-	}
-	kept := make([][]string, 0, len(blocks)-1)
-	kept = append(kept, blocks[:idx]...)
-	kept = append(kept, blocks[idx+1:]...)
-	p.lines = assembleDirectives(prefix, kept, suffix)
-	return nil
-}
-
-// MoveDirective moves the directive with the given display number to newPos
-// (1-based) and renumbers all directives sequentially, preserving every
-// non-directive byte of the file (soc-5335b).
-func (p *GoalsPatcher) MoveDirective(number, newPos int) error {
-	prefix, blocks, suffix, ok := p.splitDirectiveBlocks()
-	if !ok {
-		return fmt.Errorf("no directives to prioritize")
-	}
-	if newPos < 1 || newPos > len(blocks) {
-		return fmt.Errorf("new position must be between 1 and %d", len(blocks))
-	}
-	idx := directiveIndexByNumber(p.Directives(), number)
-	if idx < 0 {
-		return fmt.Errorf("directive #%d not found", number)
-	}
-	moving := blocks[idx]
-	rest := make([][]string, 0, len(blocks)-1)
-	rest = append(rest, blocks[:idx]...)
-	rest = append(rest, blocks[idx+1:]...)
-	insertIdx := newPos - 1
-	reordered := make([][]string, 0, len(blocks))
-	reordered = append(reordered, rest[:insertIdx]...)
-	reordered = append(reordered, moving)
-	reordered = append(reordered, rest[insertIdx:]...)
-	p.lines = assembleDirectives(prefix, reordered, suffix)
-	return nil
-}
-
-// attrRank returns the canonical sort rank for an attribute key.
-func attrRank(key string) int {
-	if r, ok := attrOrder[key]; ok {
-		return r
-	}
-	return 99
-}
-
-// attrInsertion returns the line index at which a new attribute of the given
-// key should be inserted, and whether a blank separator line is needed before
-// it (true only when the block has no existing attribute lines).
-func attrInsertion(lines []string, d ParsedDirective, key string) (int, bool) {
-	if len(d.attrs) == 0 {
-		return lastContentIdx(lines, d) + 1, true
-	}
-	rank := attrRank(key)
-	for _, a := range d.attrs {
-		if attrRank(a.key) > rank {
-			return a.lineIdx, false
-		}
-	}
-	return d.attrs[len(d.attrs)-1].lineIdx + 1, false
-}
-
-// lastContentIdx returns the index of the last non-blank line inside the block,
-// or the heading index when the block has no body.
-func lastContentIdx(lines []string, d ParsedDirective) int {
-	for i := d.endIdx - 1; i > d.headingIdx; i-- {
-		if strings.TrimSpace(lines[i]) != "" {
-			return i
-		}
-	}
-	return d.headingIdx
-}
-
-// insertLines returns a new slice with newLines spliced in before index at.
-func insertLines(lines []string, at int, newLines ...string) []string {
-	if at < 0 {
-		at = 0
-	}
-	if at > len(lines) {
-		at = len(lines)
-	}
-	out := make([]string, 0, len(lines)+len(newLines))
-	out = append(out, lines[:at]...)
-	out = append(out, newLines...)
-	out = append(out, lines[at:]...)
-	return out
-}
-
 // validateAttribute checks that an attribute value is well-formed.
 func validateAttribute(key, value string) error {
 	if strings.ContainsAny(value, "\r\n") {
@@ -542,10 +285,8 @@ func (p *GoalsPatcher) Validate() []error {
 	return errs
 }
 
-// SlugifyDirectiveID derives a deterministic stable directive ID from a title.
-// The result always matches the stable-ID format (d-<alnum>...). Because it is
-// a function of the title alone, the ID is independent of the directive's
-// display number and survives `ao goals steer prioritize` renumbering.
+// SlugifyDirectiveID derives a deterministic display tag from a directive
+// title when an older GOALS.md file has no explicit stable ID.
 func SlugifyDirectiveID(title string) string {
 	slug := nonSlugRe.ReplaceAllString(strings.ToLower(title), "-")
 	slug = strings.Trim(slug, "-")
@@ -553,44 +294,4 @@ func SlugifyDirectiveID(title string) string {
 		return "d-directive"
 	}
 	return "d-" + slug
-}
-
-// uniqueID returns base if unused, else base with the lowest free "-N" suffix.
-func uniqueID(base string, used map[string]bool) string {
-	if !used[base] {
-		return base
-	}
-	for n := 2; ; n++ {
-		candidate := fmt.Sprintf("%s-%d", base, n)
-		if !used[candidate] {
-			return candidate
-		}
-	}
-}
-
-// EnsureStableIDs assigns a "**Directive ID:**" attribute to every directive
-// that lacks one, deriving a deterministic slug from the title with a numeric
-// collision suffix when needed. Directives that already declare an ID keep it.
-// Returns the stable ID of every directive keyed by display number.
-func (p *GoalsPatcher) EnsureStableIDs() (map[int]string, error) {
-	used := map[string]bool{}
-	for _, d := range p.Directives() {
-		if d.StableID != "" {
-			used[d.StableID] = true
-		}
-	}
-	result := map[int]string{}
-	for _, d := range p.Directives() {
-		if d.StableID != "" {
-			result[d.Number] = d.StableID
-			continue
-		}
-		id := uniqueID(SlugifyDirectiveID(d.Title), used)
-		used[id] = true
-		if err := p.SetAttribute(d.Number, AttrDirectiveID, id); err != nil {
-			return nil, err
-		}
-		result[d.Number] = id
-	}
-	return result, nil
 }

@@ -1865,14 +1865,14 @@ def main() -> int:
         # Run validation gate (includes secret scan over output_dir).
         _run([str(sec_dir / "validate-security-audit.sh"), str(output_dir), "--sbom" if args.sbom else "--no-sbom"], check=True)
 
-    # 9) Reports (vibe-style + post-mortem) + learning.
+    # 9) Reports (vibe-style + postmortem) + learning.
     council_dir = REPO_ROOT / ".agents" / "council"
     _ensure_dirs([council_dir])
     vibe_path = council_dir / f"{_today_ymd()}-vibe-{product_slug}.md"
-    post_path = council_dir / f"{_today_ymd()}-post-mortem-{product_slug}.md"
+    post_path = council_dir / f"{_today_ymd()}-postmortem-{product_slug}.md"
 
     _render_template(TEMPLATES_DIR / "vibe-report.md.tmpl", vibe_path, {**vars, "OUTPUT_DIR": str(output_dir)})
-    _render_template(TEMPLATES_DIR / "post-mortem.md.tmpl", post_path, {**vars, "OUTPUT_DIR": str(output_dir)})
+    _render_template(TEMPLATES_DIR / "postmortem.md.tmpl", post_path, {**vars, "OUTPUT_DIR": str(output_dir)})
 
     learning_path = REPO_ROOT / ".agents" / "learnings" / f"{_today_ymd()}-{product_slug}-reverse-engineer.md"
     if not learning_path.exists():
