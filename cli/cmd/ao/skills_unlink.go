@@ -118,13 +118,13 @@ func symlinkResolvesInto(linkPath, destDir, absRoot string) (bool, string) {
 
 var skillsUnlinkCmd = &cobra.Command{
 	Use:   "unlink",
-	Short: "Remove the repo-skill symlinks that `skills link` minted (Claude, Codex, AGY, Cursor, Pi)",
+	Short: "Remove the repo-skill symlinks that `skills link` minted",
 	Long: `The clean uninstall inverse of ` + "`ao skills link`" + `. Scan each runtime's
 live tier and remove EXACTLY the symlinks that link minted — those whose target
 resolves into THIS repo's skills/ tree. By DEFAULT it sweeps EVERY agent runtime
-you have installed — ~/.claude/skills, ~/.codex/skills, ~/.gemini/skills
-(AGY/Gemini), ~/.cursor/skills, and ~/.pi/skills — detected by the runtime's
-config dir existing under $HOME; --dest overrides to a single dir. Idempotent and
+you have installed — ~/.agents/skills, ~/.claude/skills, ~/.codex/skills,
+~/.gemini/skills, ~/.cursor/skills, and ~/.pi/skills — detected by the config
+root existing under $HOME; --dest overrides to a single dir. Idempotent and
 non-destructive: a foreign symlink pointing outside the repo and a name owned by
 a real directory (a foreign corpus such as jsm) are both reported as foreign and
 never removed. A stale link to a skill since removed from the repo is still
@@ -147,7 +147,7 @@ path to know which links are its own.
 
 func init() {
 	skillsCmd.AddCommand(skillsUnlinkCmd)
-	skillsUnlinkCmd.Flags().StringVar(&skillsUnlinkDest, "dest", "", "Sweep this single dir instead of the auto-detected runtimes (default: every installed runtime — ~/.claude, ~/.codex, ~/.gemini, ~/.cursor, ~/.pi)")
+	skillsUnlinkCmd.Flags().StringVar(&skillsUnlinkDest, "dest", "", "Sweep this single dir instead of the auto-detected roots (default: ~/.agents plus every installed runtime)")
 	skillsUnlinkCmd.Flags().BoolVar(&skillsUnlinkJSON, "json", false, "Emit machine-readable JSON")
 }
 

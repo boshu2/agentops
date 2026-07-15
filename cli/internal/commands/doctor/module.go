@@ -111,10 +111,10 @@ func (module Module) Command() *cobra.Command {
 		Use: "doctor", Short: "Check AgentOps health", Args: cobra.NoArgs,
 		Long: `Run health checks on your AgentOps installation.
 
-Validates that all required components are present and configured. Optional
-components (and states you simply haven't reached yet) are reported as
-informational lines, not warnings, and never cause failure. Checks meaningful
-only inside an agentops repo clone are collapsed to a single line outside one.
+The default check is intentionally small: CLI identity, source-skill links,
+binary freshness, optional provenance integrity, and host safety. It does not
+probe trackers, reviewers, plugin caches, search indexes, or operating-loop
+state. Advanced failure-mode diagnostics run only when explicitly selected.
 
 Examples:
   ao doctor
@@ -194,29 +194,31 @@ func (module Module) runRoot(command *cobra.Command, options rootOptions) error 
 	if options.fix {
 		return module.runFix(command, mutationRequest(options, dryRun, jsonOutput), jsonOutput)
 	}
-	if jsonOutput {
+	if advancedDiagnosticsRequested(command) {
 		report, err := module.useCases.Read.Diagnose(command.Context(), request)
 		if err != nil {
 			return exit(doctorapp.ExitIOError, err.Error())
 		}
-		if err := writeJSON(command, report); err != nil {
-			return err
+		if jsonOutput {
+			if err := writeJSON(command, report); err != nil {
+				return err
+			}
+		} else {
+			renderFindings(command, report)
 		}
 		return resultExit(report.ExitCode, "doctor findings present")
 	}
 	checks := module.useCases.LegacyChecks(command.Context())
-	if err := quality.RunDoctor(quality.DoctorOptions{Checks: checks, Stdout: command.OutOrStdout()}); err != nil {
-		return err
+	return quality.RunDoctor(quality.DoctorOptions{JSON: jsonOutput, Checks: checks, Stdout: command.OutOrStdout()})
+}
+
+func advancedDiagnosticsRequested(command *cobra.Command) bool {
+	for _, name := range []string{"robot", "robot-triage", "explain", "online", "quick", "since", "severity", "only", "skip"} {
+		if command.Flags().Changed(name) {
+			return true
+		}
 	}
-	if module.useCases.DetectorCount != nil && module.useCases.DetectorCount() == 0 {
-		return nil
-	}
-	report, err := module.useCases.Read.Diagnose(command.Context(), request)
-	if err != nil || report == nil || len(report.Findings) == 0 {
-		return nil
-	}
-	renderFindings(command, report)
-	return resultExit(report.ExitCode, "doctor findings present")
+	return false
 }
 
 func exit(code int, message string) error { return &ExitError{Code: code, Message: message} }

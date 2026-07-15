@@ -1,6 +1,6 @@
 ---
 name: codex-exec
-description: 'Run one caller-supplied Codex worker or validator command non-interactively and capture evidence.'
+description: 'Run one caller-supplied Codex command non-interactively and capture evidence. Triggers: "run Codex headless", "capture Codex evidence".'
 skill_api_version: 1
 user-invocable: false
 hexagonal_role: driving-adapter
@@ -31,6 +31,7 @@ metadata:
   triggers:
   - codex exec
   - spawn a codex worker
+output_contract: process exit status and captured Codex output artifact
 ---
 # Codex Exec — one-shot runtime adapter
 

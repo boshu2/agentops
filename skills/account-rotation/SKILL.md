@@ -13,9 +13,10 @@ metadata:
   canonical_status: canonical
   disposition: keep_specialist
   tier: execution
-description: 'Switch a caller-selected coding-agent account and report the observed identity.'
+description: 'Switch a caller-selected coding-agent account and report the observed identity. Triggers: "switch account", "rotate coding-agent account".'
 practices:
 - pragmatic-programmer
+output_contract: observed account identity and command status
 ---
 # Account rotation — credential adapter
 

@@ -1,6 +1,6 @@
 ---
 name: refactor
-description: 'Execute one behavior-preserving structural transformation and report evidence.'
+description: 'Execute one behavior-preserving structural transformation and report evidence. Triggers: "refactor this", "simplify without changing behavior".'
 practices:
 - refactoring
 - legacy-code-seams

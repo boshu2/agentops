@@ -21,6 +21,7 @@ metadata:
 description: 'Use NTM as an optional pane adapter for caller-supplied roles and commands. Triggers: "ntm", "tmux panes", "ntm robot state".'
 practices:
 - pragmatic-programmer
+output_contract: factual session, pane, command, and observation results
 ---
 # NTM — optional pane adapter
 

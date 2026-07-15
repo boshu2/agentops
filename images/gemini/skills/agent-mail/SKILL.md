@@ -19,9 +19,10 @@ metadata:
   disposition: keep_optional_adapter
   tier: execution
   dependencies: []
-description: 'Use Agent Mail as an optional messaging and file-reservation adapter for explicitly coordinated writers.'
+description: 'Use Agent Mail as an optional messaging and file-reservation adapter for explicitly coordinated writers. Triggers: "coordinate writers", "reserve files".'
 practices:
 - pragmatic-programmer
+output_contract: factual messaging and reservation adapter results
 ---
 # Agent Mail — optional coordination adapter
 

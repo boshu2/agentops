@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Build Codex-native skills and install them into local Codex skill homes.
+# Legacy copied-skill installer. New installs should use `ao skills link`.
 #
 set -euo pipefail
 
@@ -26,6 +26,9 @@ usage() {
 install-codex-native-skills.sh
 
 Installs the checked-in Codex-native skills from ./skills-codex to ~/.agents/skills.
+
+DEPRECATED: retained for 3.x migration compatibility. New installs should use
+one canonical checkout plus `ao skills link`.
 
 If the current Codex install metadata reports native-plugin mode, the default
 behavior is to refresh the active plugin cache without leaving a duplicate raw

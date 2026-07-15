@@ -7,6 +7,43 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.0.0] - 2026-07-15
+
+AgentOps 4.0 is the Cathedral Cut. The operating loop is now one bounded pass:
+Plan, Implement, fresh Validate, durable verdict, report, and stop. AgentOps no
+longer owns retry, queue, work-claim, Git, closure, release, or delivery state.
+
+### Added
+
+- Exact `subject-manifest.v1`, explicit `revision-packet.v1`, and durable
+  `verdict.v2` contracts.
+- Source-linked multi-runtime installation through `ao skills link`.
+- Structural conformance for the four-skill core and retained CLI boundary.
+
+### Changed
+
+- The 50-skill canonical corpus is metadata-owned, fully strict-audited, and
+  projected into Codex and Gemini artifacts.
+- The Go CLI remains useful for deterministic checks and read-only inspection;
+  lifecycle and delivery authority was removed.
+- Runtime plugin installers are migration-only compatibility for this release;
+  new installs use one canonical checkout plus symlinks.
+
+### Removed
+
+- Pawl, Crank, landing, retry/governor, tracker-wrapper, and semantic-validation
+  controllers, plus folded or noncanonical skill roots.
+
+### Fixed
+
+- `ao doctor` now checks the release binary, exact source-skill links, optional
+  provenance integrity, and host safety without implicitly running 3.2 plugin,
+  tracker, reviewer, search-index, OpenClaw, or repair diagnostics.
+- Go CLI tests cannot tear down the operator's inherited tmux server.
+- Skill quality checks reward concise executable contracts rather than ceremony.
+
+See [docs/4.0.md](4.0.md) and [the migration guide](MIGRATION.md).
+
 ## [3.2.0] - 2026-07-03
 
 AgentOps 3.2 is the **verification-keystone** minor: the cross-family review loop became the product's front door. `ao verify` is the canonical verb over the pawl engine (with `init` making the pre-push verdict ratchet portable to any repo, `stats` pricing the cost of verified-done, and `receipts` rendering the proof), `ao done` makes bead closes verdict-referenced, and the reviewer hardened into a standing multi-model service with honest degradation — outage-only failover, REBOUND re-authorization for byte-identical rebases, and an opt-in strict two-family quorum that reports honest-UNAVAILABLE rather than fake redundancy. The membrane gained memory (`ao membrane catch/recall/triage`) and its escape→derived-check loop is proven end-to-end on the shipped binary, including constraint travel to CI. Around that core the CLI shed the cathedral: the default build is the verification + bookkeeping spine (corpus-flywheel and legacy families behind `-tags "flywheel legacy"`, ADR-0012), the `ao rpi` surface and v1 memory experiment are removed, the bd/Dolt tracker is retired for `br`+`bv`, and the skill catalog consolidated 105→63. See [docs/3.2.md](https://github.com/boshu2/agentops/blob/main/docs/3.2.md) for the release narrative.

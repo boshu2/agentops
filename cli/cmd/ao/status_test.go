@@ -250,6 +250,25 @@ func TestRunStatus_LoadsQualitySignalsFromAgentsRoot(t *testing.T) {
 	}
 }
 
+func TestOutputStatus_RecommendsOnlyRetainedCommands(t *testing.T) {
+	got, err := captureStdout(t, func() error {
+		return outputStatus(&statusOutput{Initialized: true, BaseDir: ".agents/ao"})
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, want := range []string{"ao gate check", "ao skills list", "ao skills link --dry-run", "ao provenance list"} {
+		if !strings.Contains(got, want) {
+			t.Errorf("status output missing retained command %q: %s", want, got)
+		}
+	}
+	for _, forbidden := range []string{"ao forge", "ao search", "ao trace"} {
+		if strings.Contains(got, forbidden) {
+			t.Errorf("status output still recommends removed command %q: %s", forbidden, got)
+		}
+	}
+}
+
 func TestLoadFlywheelBrief_TimesOut(t *testing.T) {
 	oldTimeout := statusFlywheelTimeout
 	oldCompute := statusComputeFlywheelBrief

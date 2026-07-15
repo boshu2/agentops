@@ -2,7 +2,7 @@
 # install-installed-skill-edit-guard.sh — opt-in installer for the
 # installed-skill-edit PreToolUse guard (age-workflow-guardrail-hooks-j39.1).
 #
-# AgentOps 3.0 is hookless by default — this guard ships INERT. Run this script
+# AgentOps is hookless by default — this guard ships INERT. Run this script
 # explicitly to activate it. It copies the guard into ~/.claude/hooks/ and adds a
 # PreToolUse Edit|Write matcher to a Claude settings.json. Idempotent: re-running
 # is a no-op once wired. Nothing here runs at build/install-of-skills time.

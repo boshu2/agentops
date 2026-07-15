@@ -12,7 +12,7 @@ import (
 // documenting them there is the whole point, so guard against silent removal.
 func TestSkillsLinkHelp_DocumentsTrackMainAndRuntimes(t *testing.T) {
 	long := skillsLinkCmd.Long
-	for _, want := range []string{"Track main", "git pull && ao skills link", "~/.codex/skills", "~/.gemini/skills"} {
+	for _, want := range []string{"Track main", "git pull && ao skills link", "~/.agents/skills", "~/.codex/skills", "~/.gemini/skills", "no reinstall or plugin cache"} {
 		if !strings.Contains(long, want) {
 			t.Errorf("`ao skills link --help` no longer documents %q", want)
 		}
@@ -20,8 +20,7 @@ func TestSkillsLinkHelp_DocumentsTrackMainAndRuntimes(t *testing.T) {
 }
 
 // resolveTargetDests must fan out to every INSTALLED runtime (Codex/AGY too, not
-// just Claude), honor an explicit --dest, and fall back to Claude when no runtime
-// is present (age-ivcba). t.Setenv isolates $HOME so os.UserHomeDir is controlled.
+// just Claude), honor an explicit --dest, and always include the portable root.
 func TestResolveTargetDests(t *testing.T) {
 	t.Run("explicit dest wins", func(t *testing.T) {
 		got, err := resolveTargetDests("/custom/skills")
@@ -36,7 +35,7 @@ func TestResolveTargetDests(t *testing.T) {
 	t.Run("fans out to installed runtimes", func(t *testing.T) {
 		home := t.TempDir()
 		t.Setenv("HOME", home)
-		// Codex + AGY + Pi installed; Claude + Cursor absent.
+		// Codex + Gemini + Pi installed; Claude + Cursor absent.
 		for _, rt := range []string{".codex", ".gemini", ".pi"} {
 			if err := os.MkdirAll(filepath.Join(home, rt), 0o755); err != nil {
 				t.Fatal(err)
@@ -47,6 +46,7 @@ func TestResolveTargetDests(t *testing.T) {
 			t.Fatalf("err: %v", err)
 		}
 		want := []string{
+			filepath.Join(home, ".agents", "skills"),
 			filepath.Join(home, ".codex", "skills"),
 			filepath.Join(home, ".gemini", "skills"),
 			filepath.Join(home, ".pi", "skills"),
@@ -61,18 +61,36 @@ func TestResolveTargetDests(t *testing.T) {
 		}
 	})
 
-	t.Run("falls back to claude when no runtime present", func(t *testing.T) {
+	t.Run("portable root exists even when no runtime is present", func(t *testing.T) {
 		home := t.TempDir()
 		t.Setenv("HOME", home)
 		got, err := resolveTargetDests("")
 		if err != nil {
 			t.Fatalf("err: %v", err)
 		}
-		want := filepath.Join(home, ".claude", "skills")
+		want := filepath.Join(home, ".agents", "skills")
 		if len(got) != 1 || got[0] != want {
 			t.Fatalf("got %v, want [%s]", got, want)
 		}
 	})
+}
+
+func TestLinkMissingSkills_WrongSymlinkIsConflict(t *testing.T) {
+	src := t.TempDir()
+	dest := t.TempDir()
+	mkSkill(t, src, "plan")
+	wrong := filepath.Join(t.TempDir(), "plan")
+	if err := os.Symlink(wrong, filepath.Join(dest, "plan")); err != nil {
+		t.Fatal(err)
+	}
+
+	res, err := linkMissingSkills(src, dest, false)
+	if err != nil {
+		t.Fatalf("linkMissingSkills: %v", err)
+	}
+	if len(res.Present) != 0 || len(res.Conflicts) != 1 || res.Conflicts[0] != "plan" {
+		t.Fatalf("wrong link classified as %+v", res)
+	}
 }
 
 // mkSkill creates dir/<name>/SKILL.md so linkMissingSkills recognizes it as a skill.

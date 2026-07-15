@@ -194,8 +194,8 @@ if [[ -n "$AO_BIN" ]]; then
     # ao goals subcommand is registered
     check "ao goals subcommand registered" bash -c "'$AO_BIN' help 2>&1 | grep -q goals"
 
-    # ao inject subcommand is registered
-    check "ao inject subcommand registered" bash -c "'$AO_BIN' help 2>&1 | grep -q inject"
+    # source-linked installation is part of the retained public surface
+    check "ao skills link subcommand registered" bash -c "'$AO_BIN' skills link --help 2>&1 | grep -q 'Track main'"
 else
     echo "SKIP: ao binary not found — build with 'cd cli && make build' to enable runtime execution tests"
 fi

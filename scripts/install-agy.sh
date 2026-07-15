@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
-# install-agy.sh - Install the AgentOps Gemini/Antigravity image bundle.
+# install-agy.sh - Legacy Gemini/Antigravity plugin compatibility installer.
+# New installs should clone AgentOps and run `ao skills link`.
 #
 # Usage:
 #   curl -fsSL https://raw.githubusercontent.com/boshu2/agentops/main/scripts/install-agy.sh | bash
-#   curl -fsSL https://raw.githubusercontent.com/boshu2/agentops/main/scripts/install-agy.sh | bash -s -- --ref v3.2.0
+#   curl -fsSL https://raw.githubusercontent.com/boshu2/agentops/main/scripts/install-agy.sh | bash -s -- --ref v4.0.0
 
 set -euo pipefail
 shopt -s lastpipe 2>/dev/null || true
@@ -24,9 +25,12 @@ install-agy.sh
 
 Install the AgentOps Gemini/Antigravity image bundle.
 
+DEPRECATED: retained for 3.x migration compatibility. New installs should use
+one canonical checkout plus `ao skills link`.
+
 Usage:
   curl -fsSL https://raw.githubusercontent.com/boshu2/agentops/main/scripts/install-agy.sh | bash
-  curl -fsSL https://raw.githubusercontent.com/boshu2/agentops/main/scripts/install-agy.sh | bash -s -- --ref v3.2.0
+  curl -fsSL https://raw.githubusercontent.com/boshu2/agentops/main/scripts/install-agy.sh | bash -s -- --ref v4.0.0
 
 Options:
   --ref <ref>       Git ref to install. Defaults to AGENTOPS_INSTALL_REF or main.

@@ -10,11 +10,7 @@
 | `ao close` | `deprecated` | `allowlisted` | One-release failure stub for removed closure control. |
 | `ao completion` | `public-tested` | `allowlisted` | Framework completion root has focused generation tests. |
 | `ao config models` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
-| `ao constraint activate` | `public-tested` | `allowlisted` | Covered through constraint list behavior. |
-| `ao constraint list` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
-| `ao constraint publish` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
-| `ao constraint retire` | `public-tested` | `allowlisted` | Covered through constraint list behavior. |
-| `ao constraint review` | `public-tested` | `allowlisted` | Covered through constraint list behavior. |
+| `ao constraint` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao converge` | `deprecated` | `allowlisted` | One-release failure stub for removed retry convergence. |
 | `ao crank` | `deprecated` | `allowlisted` | One-release failure stub for removed factory controller. |
 | `ao doctor capabilities` | `public-stateful-fixture-needed` | `allowlisted` | Inspects local installation state. |
@@ -60,12 +56,11 @@
 | `ao robot-docs` | `public-tested` | `allowlisted` | Covered by generated documentation tests. |
 | `ao session bootstrap` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao session handoff` | `public-tested` | `allowlisted` | Covered by handoff artifact tests. |
-| `ao session memory sync` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
+| `ao session memory` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao session rehydrate` | `public-tested` | `allowlisted` | Covered by rehydrate artifact tests. |
 | `ao skills check` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao skills consumers` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
-| `ao skills edit digest` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
-| `ao skills edit seal` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
+| `ao skills edit` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao skills find` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao skills graph` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao skills link` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |

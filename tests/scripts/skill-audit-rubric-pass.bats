@@ -94,10 +94,10 @@ PY
     verdict="$(python3 -c "import json,sys; print(json.load(open(sys.argv[1]))['verdict'])" "$TMP_DIR/report.json")"
     [ "$verdict" = "WARN" ]
 
-    # The rubric score for this minimal fixture is low (no scripts/refs/self-test)
-    # but the verdict is driven only by Pass 1+2.
+    # Optional package parts are not rewarded when this concise fixture does
+    # not need them; the verdict is still driven only by Pass 1+2.
     rating="$(python3 -c "import json,sys; print(json.load(open(sys.argv[1]))['rubric']['rating'])" "$TMP_DIR/report.json")"
-    [ "$rating" = "C" ]
+    [[ "$rating" = "A" || "$rating" = "S" ]]
 }
 
 @test "report stays valid JSON when the rubric block is emitted" {

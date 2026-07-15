@@ -1,7 +1,7 @@
 {
   "name": "agentops",
-  "version": "3.2.0",
-  "description": "The operational layer for coding agents. Bookkeeping, validation, and flows that compound knowledge between sessions.",
+  "version": "4.0.0",
+  "description": "Fresh-context validation for coding-agent work: shape one behavior, run one bounded experiment, and persist an independent verdict.",
   "author": {
     "name": "Boden Fuller",
     "email": "fullerbt@users.noreply.github.com"

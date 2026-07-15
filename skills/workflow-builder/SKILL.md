@@ -1,6 +1,6 @@
 ---
 name: workflow-builder
-description: 'Scaffold an explicit one-shot workflow adapter without lifecycle authority.'
+description: 'Scaffold an explicit one-shot workflow adapter without lifecycle authority. Triggers: "build a workflow adapter", "scaffold a one-shot workflow".'
 practices:
 - pragmatic-programmer
 - hexagonal-architecture

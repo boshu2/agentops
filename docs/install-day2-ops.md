@@ -1,224 +1,121 @@
 # Install And Day-2 Operations
 
-AgentOps 3.1 ships three installable image paths. Pick the runtime the operator
-uses, then run the matching one-liner.
+AgentOps 4 uses one canonical checkout and source symlinks. The checkout is the
+source of truth; runtime plugin caches and copied skill mirrors are not part of
+the active path.
 
 ## Install
 
-### Claude Code
+Install the optional `ao` CLI, clone AgentOps, and link its skills:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/boshu2/agentops/main/scripts/install-claude.sh | bash
+brew tap boshu2/agentops https://github.com/boshu2/homebrew-agentops
+brew install agentops
+git clone https://github.com/boshu2/agentops.git ~/.local/share/agentops
+cd ~/.local/share/agentops
+ao skills link
 ```
 
-Equivalent marketplace commands:
+Without Homebrew:
 
 ```bash
-claude plugin marketplace add boshu2/agentops
-claude plugin install agentops@agentops-marketplace
+git clone https://github.com/boshu2/agentops.git ~/.local/share/agentops
+cd ~/.local/share/agentops/cli
+go install ./cmd/ao
+cd ..
+"$(go env GOPATH)/bin/ao" skills link
 ```
 
-### Codex CLI
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/boshu2/agentops/main/scripts/install-codex.sh | bash
-```
-
-The Codex installer refreshes the native plugin cache, enables the plugin, and
-archives stale raw skill mirrors when they overlap the AgentOps-managed set.
-
-### Gemini / Antigravity
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/boshu2/agentops/main/scripts/install-agy.sh | bash
-```
-
-The Gemini/AGY installer downloads the AgentOps bundle, runs
-`images/gemini/verify.sh`, runs `agy plugin validate`, installs the
-`agentops-core-gemini` plugin, and enables it.
+The command links each canonical `skills/<slug>/` directory into
+`~/.agents/skills` and every detected runtime skills root. It refuses to replace
+real directories, foreign links, or user-owned skills.
 
 ## Update
 
-Re-run the same installer used for the original runtime:
-
 ```bash
-curl -fsSL https://raw.githubusercontent.com/boshu2/agentops/main/scripts/install-claude.sh | bash -s -- --update
-curl -fsSL https://raw.githubusercontent.com/boshu2/agentops/main/scripts/install-codex.sh | bash
-curl -fsSL https://raw.githubusercontent.com/boshu2/agentops/main/scripts/install-agy.sh | bash
+cd ~/.local/share/agentops
+git pull --ff-only
+ao skills link
 ```
 
-For a pinned release, set `AGENTOPS_INSTALL_REF` or pass `--ref` where the
-runtime installer supports it.
+Existing links immediately see edits to their targets. Rerunning `ao skills
+link` adds newly introduced skills and reports conflicts. It does not copy the
+corpus or refresh a plugin cache.
 
-## Backup
+## Audit
 
-- Claude Code: the marketplace plugin is reinstallable from source; preserve any
-  local Claude settings before changing plugin configuration.
-- Codex CLI: the installer writes `~/.codex/.agentops-codex-install.json` and
-  archives overlapping `~/.codex/skills` or `~/.agents/skills` entries into
-  timestamped backup directories.
-- Gemini/AGY: use the AGY plugin manager to list the installed plugin before
-  reinstalling, then keep any exported Antigravity workspace settings with the
-  project backup.
+Preview the complete runtime fan-out without changing anything:
 
-## Uninstall
+```bash
+cd ~/.local/share/agentops
+ao skills link --dry-run --json
+```
 
-A clean, documented exit. Two categories, stated up front so you know which is
-which before you remove anything:
+For every destination, `present` means the symlink resolves to the expected
+canonical source. `conflicts` are deliberately untouched and require operator
+judgment. A conflict is not evidence that the user-owned entry should be
+deleted.
 
-- **AgentOps-owned artifacts** — the plugin/skill installs each runtime installer
-  wrote. Safe to remove; the steps below remove exactly these.
-- **User-owned data** — anything in your own repos. AgentOps never removes it,
-  and the uninstall deliberately leaves it in place (see "What is kept").
+## Migrate from 3.x plugins
 
-### Per-runtime plugin/skill removal
+Remove the old runtime plugin before enabling source links so only one AgentOps
+corpus is visible.
 
-Remove the runtime(s) you installed:
-
-**Claude Code**
+### Claude Code
 
 ```bash
 claude plugin uninstall agentops@agentops-marketplace
 claude plugin marketplace remove agentops-marketplace
 ```
 
-**Codex CLI**
+### Codex
 
-The Codex installer writes the native plugin cache and one enable entry. Remove
-both, plus the install manifest:
+Remove the old cache and install manifest, then delete the AgentOps plugin enable
+entry from `~/.codex/config.toml`:
 
 ```bash
-rm -rf ~/.codex/plugins/cache/agentops-marketplace   # cached plugin bundle
-rm -f  ~/.codex/.agentops-codex-install.json          # install manifest + backup pointers
-# then delete the AgentOps plugin's enable entry from ~/.codex/config.toml (edit by hand)
+rm -rf ~/.codex/plugins/cache/agentops-marketplace
+rm -f ~/.codex/.agentops-codex-install.json
 ```
 
-If the installer archived overlapping raw skills into a timestamped backup
-directory, its path is recorded in `~/.codex/.agentops-codex-install.json`;
-restore or discard that backup as you prefer.
-
-**Gemini / Antigravity (AGY)**
+### Gemini / Antigravity
 
 ```bash
 agy plugin disable agentops-core-gemini
 agy plugin uninstall agentops-core-gemini
 ```
 
-**OpenCode**
+The legacy runtime-specific installers remain in this release only as migration
+compatibility. They are not the recommended install path.
 
-The OpenCode installer symlinks a plugin and a skills dir; remove both symlinks
-(they are links, so removing them never touches the repo they point at):
+## Uninstall
 
-```bash
-rm -f ~/.config/opencode/plugins/agentops.js
-rm -f ~/.config/opencode/skills/agentops
-```
-
-**Clone-linked skills (`ao skills link` / the generic `scripts/install.sh` and
-npx skill paths)**
-
-If you followed a repo clone with `ao skills link` (the "track main" path), run
-its inverse from inside the clone. It removes exactly the symlinks link minted —
-those pointing into this repo's `skills/` tree — across every runtime, and leaves
-every foreign skill and real directory (e.g. the jsm corpus) untouched:
+From the canonical checkout, rehearse and then remove only links pointing into
+that checkout:
 
 ```bash
-ao skills unlink --dry-run   # rehearse: show what would be removed
-ao skills unlink             # remove AgentOps-owned links from every installed runtime
+ao skills unlink --dry-run
+ao skills unlink
 ```
 
-### CLI binary
-
-If you installed the `ao` CLI via Homebrew:
-
-```bash
-brew uninstall agentops
-```
-
-For a source checkout (`scripts/install.sh --dev`), remove the checkout directory
-itself; nothing was installed outside it except the clone-linked skills handled
-by `ao skills unlink` above.
-
-### What is kept (by design)
-
-Uninstall stops at the AgentOps-owned artifacts above. It deliberately does not
-touch your data — this is the whole portability pitch, that AgentOps rides on top
-of your work without owning it:
-
-- **`.agents/` in your repos is YOUR data**, not an AgentOps artifact — the local
-  knowledge corpus, provenance, and runtime state. It is never removed. Delete it
-  yourself only if you want to discard that history.
-- **Quick-start artifacts are your files.** The `CLAUDE.md` block the quick-start
-  appended and the generated `GOALS.md` are checked into your repo and owned by
-  you. Edit or delete them by hand if you no longer want them; the uninstall
-  leaves them alone.
-
-## Permissions
-
-All installers are user-space installers. They must not require `sudo`.
-
-If a write fails:
-
-1. Confirm the target home directory is writable.
-2. Re-run the installer from a normal user shell.
-3. Avoid changing ownership recursively; repair only the reported file or
-   directory.
+This does not remove foreign skills, real directories, the checkout, or data in
+project-local `.agents/` directories. Remove the checkout separately when it is
+no longer needed. If Homebrew installed the CLI, use `brew uninstall agentops`.
 
 ## Recover
 
-Start every recovery with the CLI self-check when `ao` is installed. It reports
-which pieces are healthy before you reinstall anything:
+If a runtime cannot see a skill:
 
-```bash
-ao doctor          # health check: prints what is wired and what is broken
-ao version         # confirm the installed CLI version
-```
+1. Run `ao skills link --dry-run --json` from the canonical checkout.
+2. Resolve broken links or reported conflicts deliberately.
+3. Run `ao skills link` again.
+4. Restart the runtime if it snapshots its skill inventory at startup.
 
-If `ao doctor` reports a broken or missing plugin install, re-run the matching
-runtime installer below — the installers are idempotent and safe to re-run.
-
-### Claude Code
-
-```bash
-claude plugin marketplace update agentops-marketplace
-claude plugin update agentops
-```
-
-If the marketplace state is corrupt, remove the stale marketplace/plugin through
-Claude Code's plugin manager, then re-run `scripts/install-claude.sh`.
-
-### Codex CLI
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/boshu2/agentops/main/scripts/install-codex.sh | bash
-codex --version
-ao codex image-health --json
-```
-
-`ao codex image-health` is the read-only Codex image doctor. It aggregates
-`images/codex/verify.sh`, Codex parity/override/generated-artifact gates, the
-RPI contract, lifecycle guards, and headless-runtime checks without running
-`ao codex start`, `ao codex stop`, `ao codex ensure-start`, or
-`ao codex ensure-stop`.
-
-If stale raw skills shadow the plugin, inspect the backup path recorded in
-`~/.codex/.agentops-codex-install.json`, then re-run the installer.
-
-### Gemini / Antigravity
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/boshu2/agentops/main/scripts/install-agy.sh | bash -s -- --validate-only
-curl -fsSL https://raw.githubusercontent.com/boshu2/agentops/main/scripts/install-agy.sh | bash
-```
-
-If `agy plugin validate` fails, run `bash images/gemini/verify.sh` from a source
-checkout to distinguish AgentOps bundle drift from a local AGY runtime problem.
+`ao doctor` and `ao version` provide additional read-only CLI diagnostics. Do
+not reinstall a plugin cache to repair a source-link problem.
 
 ## Escalate
 
-Escalate with the runtime, command, OS, and exact installer output. Include:
-
-- `ao version` and `ao doctor` if the CLI is installed.
-- `claude plugin list` for Claude Code issues.
-- `codex --version` and `~/.codex/.agentops-codex-install.json` for Codex issues.
-- `agy plugin list` and `agy plugin validate <plugin-dir>` for Gemini/AGY issues.
+Include the runtime and OS, `ao version`, the JSON result of `ao skills link
+--dry-run --json`, and the output of `readlink` for one affected skill. Do not
+include credentials or unrelated runtime configuration.

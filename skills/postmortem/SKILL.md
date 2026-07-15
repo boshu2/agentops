@@ -66,7 +66,7 @@ output_contract: skills/postmortem/references/postmortem.feature
 
 ## Output Specification
 
-- **Artifact directory:** `.agents/council/`.
+- **Artifact directory:** `.agents/postmortem/`.
 - **Filename convention:** `YYYY-MM-DD-postmortem-<topic>.md`.
 - **Serialization/schema format:** Markdown with causal question, pinned inputs,
   timeline, hypotheses, evidence, counterfactuals, unknowns, and experiments.

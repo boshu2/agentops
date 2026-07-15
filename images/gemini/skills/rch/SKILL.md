@@ -13,9 +13,10 @@ metadata:
   canonical_status: canonical
   disposition: keep_specialist
   tier: execution
-description: 'Use RCH once to offload a build or collect remote-compilation diagnostics.'
+description: 'Use RCH once to offload a build or collect remote-compilation diagnostics. Triggers: "use RCH", "offload this build".'
 practices:
 - pragmatic-programmer
+output_contract: remote compilation status and diagnostic evidence
 ---
 # RCH — remote compilation specialist
 

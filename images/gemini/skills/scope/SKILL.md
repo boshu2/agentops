@@ -30,7 +30,7 @@ metadata:
 output_contract: 'response: proposed write_scope.include/exclude plus gaps and ambiguities'
 ---
 
-# /scope — Review a proposed write scope
+# Scope — Review a proposed write scope
 
 Review the `write_scope.include` and `write_scope.exclude` fields of a proposed
 PlanPacket. This skill is advisory: it does not write a lock, install a hook,
