@@ -4,12 +4,12 @@
 > (bead `age-skills-audit-fable-l6ic.10`, generic-craft trim). A frontier model produces
 > standard project trees, best-practice config, and GitHub-Actions / GitLab-CI YAML
 > correctly **with no template** — so this file is a fallback reference, not the skill's
-> durable value. The durable binding (the domain-slice manifest → operating-loop scope)
-> stays in `SKILL.md`. Reach for this file only when you want the canonical shapes the
-> skill historically stamped; otherwise ask the model directly.
+> durable value. Reach for this file only when the caller wants one of the
+> historical shapes the skill stamped; otherwise produce an idiomatic scaffold
+> directly.
 
 The three generic modes share a four-step spine: **gather requirements → generate
-structure → verify → initial commit**. Every generated file must have real, functional
+structure → verify → report**. Every generated file must have real, functional
 content — not placeholder comments.
 
 ## Step 1: Gather Requirements

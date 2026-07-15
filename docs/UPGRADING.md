@@ -23,73 +23,53 @@ The "Action required" callout distinguishes hard breakages (must fix before runn
 
 ---
 
-## Direct-cut transition
+## Cathedral Cut transition
 
-AgentOps now has four lifecycle umbrellas: Discovery, Crank, Validate, and
-Learn. Premortem belongs to Discovery; Postmortem is optional after Learn. A
-candidate receives one immutable verdict from fresh context, then the consumer
-repository decides how local or cloud delivery works.
+AgentOps now has one semantic operating loop:
 
-The `flywheel` and `legacy` build profiles described in older sections are
-transitional executable state. Do not add new dependencies on them. The final
-profile cut removes old owners directly after their retained behavior has an
-explicit disposition; no compatibility profile remains.
+```text
+RPI → Plan → Implement → fresh Validate → durable verdict → report and stop
+```
 
-**Action required:** remove automation that expects AgentOps to merge, push,
-queue, or run semantic review from a Git hook. Retain your repository's own CI
-or delivery policy and consume AgentOps candidate, verdict, Learn, and delivery
-receipts as evidence.
+Plan shapes one behavior. Implement performs one bounded experiment. Validate
+computes exact content identity, obtains one independent judgment, and writes a
+standalone `verdict.v2`. RPI reports the result and stops. Learn is an optional
+later consumer of verdict collections.
 
----
+**Action required:** remove automation that expects AgentOps to retry, queue,
+claim work, mutate Git, merge, release, close work, or drive semantic review from
+a hook. Keep repository-owned deterministic CI and delivery. No legacy or
+flywheel build profile restores removed commands.
 
-## Upgrading to 3.2.x
+### Removed CLI lifecycle commands
 
-3.2 introduced build-tag profiles while removing the last CLI-orchestration
-verbs. That profile decision is superseded by the direct-cut transition above;
-the restore commands below document executable history and do not promise
-retention.
+The cut removes Pawl, Plan-Pawl, land, done, close, governor, yield, claim,
+next-work, state/worktree lifecycle, semantic `ao validate`, converge,
+reconcile, membrane, and Crank behavior. Their one-release tombstones fail with
+a migration hint and never load old code.
 
-### `ao rpi` / `ao evolve` command surface removed
+**Action required:** invoke the RPI skill for the semantic loop, use `ao gate
+check` only for deterministic repository checks, and use your repository's Git
+or CI system for delivery.
 
-**Affects:** anyone invoking `ao rpi` or `ao evolve` from scripts, wrappers, or CI.
+### Removed goal mutation commands
 
-`ao rpi` was deleted at `f61c5f0e7`; `ao evolve` was removed earlier (#724). The loop itself is now the in-session navigation path, not a CLI verb.
+`ao goals` retains measurement and analysis. It no longer creates, migrates,
+prunes, re-steers, or auto-applies changes to operator intent.
 
-**Action required:** drive the loop in-session via the operating loop + the `/rpi` skill (one turn over the loop). The verbs themselves do not come back under any build tag — `AGENTOPS_LEGACY=1 make build` restores the *archived factory machinery* (`ao loop`, `ao orchestrate`, `ao operator`, ...; see the legacy-tag section below), not `ao rpi`.
+**Action required:** edit goal specifications with your normal authoring tools;
+use `ao goals validate`, `measure`, `drift`, and related read-only views to
+inspect them.
 
-### `ao recall` / `ao memory ingest-claude` removed
+### Removed alternate build profiles
 
-**Affects:** anyone calling `ao recall` or `ao memory ingest-claude`.
+The old `flywheel` and `legacy` build tags and their archived command sets were
+deleted. `ao flywheel status` and `ao flywheel compare` remain ordinary
+read-only observations in the supported binary.
 
-Both were removed at `9d5be0b9e`. AgentOps consumes external memory tools instead of shipping its own store.
-
-**Action required:** use `cass` (search your past agent sessions) and `cm` (procedural memory). Session-log → provenance mining stays native.
-
-### Corpus / flywheel commands archived behind the `flywheel` build tag
-
-**Affects:** callers of `ao corpus`, `ao curate`, `ao defrag`, `ao harvest`, `ao mind`, `ao refinery`.
-
-These moved behind `//go:build flywheel`; the default (`spine`) build omits them. The code stays buildable, just off by default.
-
-**Action required:** rebuild them with `make build-flywheel`, or consume knowledge via `cass` + `cm`.
-
-### RPI / factory commands archived behind the `legacy` build tag
-
-**Affects:** callers of `ao autodev`, `ao codex`, `ao loop*`, `ao orchestrate*`, `ao operator*`, `ao tick`, `ao turn_verify`, `ao harness`.
-
-These moved behind `//go:build legacy`.
-
-**Action required:** use the operating loop + an out-of-session substrate; restore the old commands with `AGENTOPS_LEGACY=1 make build`.
-
-### `ao cron` shim deleted
-
-**Affects:** anyone calling the `ao cron` scheduling shim.
-
-Removed at `b242136ac` (ADR-0012).
-
-**Action required:** schedule an external substrate instead — NTM dispatch, `ao mcp serve`, or `ao agent`.
-
-full map: [MIGRATION.md](MIGRATION.md)
+**Action required:** remove `make build-flywheel`, `AGENTOPS_LEGACY`, and tagged
+build invocations. External specialist tools remain caller-selected and do not
+become AgentOps lifecycle authorities.
 
 ---
 
@@ -193,9 +173,8 @@ ao daemon ready
 ao doctor --json
 ```
 
-Then migrate wrappers one command at a time. See
-[`daemon-migration.md`](daemon-migration.md) for RPI, Dream, wiki/forge,
-GasCity, OpenClaw, and rollback guidance.
+This entry is historical. Current AgentOps has no daemon migration path; see
+[`MIGRATION.md`](MIGRATION.md) for the supported single-pass boundary.
 
 ---
 
@@ -221,9 +200,9 @@ Worker sessions now carry an explicit `lead-only-worker-git-guard.sh` hook in th
 
 **Affects:** any workflow that relied on the previous fail-open behavior.
 
-The crank pre-mortem gate now denies ambiguous state by default. If your pipeline ran crank jobs with missing pre-mortem context, they will now stop early rather than proceed silently.
+The crank premortem gate now denies ambiguous state by default. If your pipeline ran crank jobs with missing premortem context, they will now stop early rather than proceed silently.
 
-**Action required:** either set `AGENTOPS_PREMORTEM_MODE=advisory` for exploratory runs, or ensure pre-mortem artifacts are generated before invoking crank.
+**Action required:** either set `AGENTOPS_PREMORTEM_MODE=advisory` for exploratory runs, or ensure premortem artifacts are generated before invoking crank.
 
 ---
 

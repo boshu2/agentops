@@ -1,6 +1,6 @@
 # shellcheck shell=bash
 # tests/scripts/lib/ratchet-difftest.bash — differential parity harness for the
-# ratchet-lib migrations (age-ratchet-lib-extraction-bv7d, pre-mortem FM2).
+# ratchet-lib migrations (age-ratchet-lib-extraction-bv7d, premortem FM2).
 #
 # A migration slice claims ZERO behavior change. "Exit code + the offender path
 # appears somewhere" is not that claim — output ordering, stream routing

@@ -12,7 +12,7 @@
     {
       "step": "premortem",
       "status": "locked",
-      "output": "pre-mortem.md",
+      "output": "premortem.md",
       "time": "2025-06-15T09:20:00Z"
     },
     {

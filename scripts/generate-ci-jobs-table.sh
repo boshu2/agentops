@@ -2,10 +2,8 @@
 # generate-ci-jobs-table.sh — render docs/CI-CD.md "## CI Jobs and What They Check"
 # table from .github/workflows/validate.yml + docs/contracts/ci-jobs.yaml.
 #
-# soc-3oij: CI jobs table generator. Eliminates hand-edit drift — adding a
-# new validate-* job goes through scripts/add-validate-job.sh (soc-3oij meta-fix,
-# PR #315) which writes the workflow row; the manifest gets a matching entry;
-# this generator renders the CI-CD table.
+# CI jobs table generator. Adding a new purpose job updates the declared
+# registry and workflow together; this generator renders the CI-CD table.
 #
 # Modes:
 #   (default)    Render table to stdout
@@ -125,13 +123,12 @@ for job in needs:
 PYEOF
 }
 
-# Find CI jobs table boundaries: section header → next ### or EOF.
-# Accept ## (docs/CI-CD.md) or ### (legacy fixture / AGENTS-era heading).
+# Find the generated CI jobs table between its explicit ownership markers.
 extract_agents_section() {
     awk '
         BEGIN { in_section=0 }
-        /^(##|###) CI Jobs and What They Check$/ { in_section=1; next }
-        in_section && /^### / { in_section=0 }
+        /^<!-- BEGIN GENERATED CI JOBS -->$/ { in_section=1; next }
+        /^<!-- END GENERATED CI JOBS -->$/ { in_section=0 }
         in_section { print }
     ' "$AGENTS_PATH"
 }
@@ -172,8 +169,8 @@ case "$MODE" in
         trap 'rm -f "$TMP_GEN" "$TMP_NEW"' EXIT
 
         render_table > "$TMP_GEN"
-        # Walk the target doc replacing the section content between
-        # "##|### CI Jobs and What They Check" and the next "### " header.
+        # Replace only the explicitly generated region. The surrounding
+        # narrative and section names remain hand-maintained documentation.
         awk -v gen_file="$TMP_GEN" '
             BEGIN {
                 while ((getline line < gen_file) > 0) {
@@ -183,16 +180,15 @@ case "$MODE" in
                 in_section = 0
                 emitted = 0
             }
-            /^(##|###) CI Jobs and What They Check$/ {
+            /^<!-- BEGIN GENERATED CI JOBS -->$/ {
                 print
-                print ""
+                print "<!-- Generated from docs/contracts/ci-jobs.yaml by scripts/generate-ci-jobs-table.sh. -->"
                 for (i = 1; i <= n; i++) print gen[i]
-                print ""
                 in_section = 1
                 emitted = 1
                 next
             }
-            in_section && /^### / {
+            in_section && /^<!-- END GENERATED CI JOBS -->$/ {
                 in_section = 0
                 print
                 next

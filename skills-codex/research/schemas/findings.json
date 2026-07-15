@@ -26,10 +26,15 @@
         "additionalProperties": false
       }
     },
-    "recommendations": {
+    "checked": {
       "type": "array",
       "items": {"type": "string"},
-      "description": "Actionable next steps"
+      "description": "Surfaces and claims examined"
+    },
+    "not_checked": {
+      "type": "array",
+      "items": {"type": "string"},
+      "description": "Relevant surfaces and claims left unexamined"
     },
     "schema_version": {
       "type": "integer",
@@ -37,6 +42,6 @@
       "description": "Schema version for forward compatibility"
     }
   },
-  "required": ["topic", "summary", "findings", "recommendations", "schema_version"],
+  "required": ["topic", "summary", "findings", "checked", "not_checked", "schema_version"],
   "additionalProperties": false
 }

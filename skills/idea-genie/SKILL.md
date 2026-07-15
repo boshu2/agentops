@@ -14,7 +14,7 @@ skill_api_version: 1
 user-invocable: true
 metadata:
   tier: execution
-  dependencies: [research]
+  dependencies: []
   capabilities: [generate_evidenced_options]
   effects: [write_idea_portfolio]
   canonical_status: canonical

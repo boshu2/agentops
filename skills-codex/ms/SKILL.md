@@ -80,19 +80,19 @@ ms config                      # resolved config + skill_paths
 - **Path:** search, load, and admin results are returned on `stdout`; durable index state remains under `~/Library/Application Support/ms/`.
 - **Filename:** no result filename is created by this skill; callers capture CLI output explicitly when they need a durable artifact.
 - **Format:** MCP returns structured tool data; CLI automation uses JSON or JSONL, with full skill text at `.data.content` for `ms load --full -O json`.
-- **Validation command:** run `skills/ms/scripts/validate.sh` for the production lifecycle contract and `scripts/ms-reindex.sh --check-source` for normalized source equivalence.
-- **Downstream handoff:** the invoking agent consumes full loaded guidance, routes production skill intent to the canonical factory, and records `ms outcome` only after downstream use and validation—not after retrieval alone.
+- **Validation command:** run `skills/ms/scripts/validate.sh` for the retrieval boundary and `scripts/ms-reindex.sh --check-source` for normalized source equivalence.
+- **Downstream handoff:** return the loaded guidance and source identity to the caller. Retrieval never chooses or starts a workflow.
 
 ## Production Skill Handoff
 
-**Production-intent handoff:** When the query or intended use is to create, edit, heal, or promote a skill, `ms` only retrieves full guidance and then routes execution to `agentops-skill-factory`, `skill-builder`, `heal-skill`, and the factory-selected validation primitives.
+**Production-intent handoff:** When the query concerns creating or editing a skill, `ms` retrieves relevant guidance and stops. The caller may separately invoke `skill-builder`, `heal-skill`, or another authoring tool.
 
 **Authority boundary:** `skills/**` is canonical source; the generator owns the `ms` Codex twin and other projections. Never edit the index, loaded copies, or generated projections as source.
 
-`ms` never promotes a skill or interprets a validator result. A failed search,
+`ms` never validates or interprets downstream work. A failed search,
 load, write, or reindex is returned as evidence and ends this invocation.
 
-**Outcome timing:** Record `ms outcome` only after the downstream factory use and validation complete, never after retrieval alone.
+**Outcome timing:** Record `ms outcome` only after the caller has independent evidence about downstream usefulness, never after retrieval alone. That observation does not change core state.
 
 ---
 
@@ -139,9 +139,9 @@ Scenario: A stale local projection fails closed
 - Full loads preserve the complete runnable guidance rather than a metadata card or packed overview.
 - Search/load reads use the verified MCP path, while feedback and outcome writes use the verified CLI boundary.
 - Any rebuild finishes with stale servers swept and source equivalence reported.
-- Production skill intent leaves `ms` after retrieval and enters the canonical factory against `skills/**`; generated twins and loaded/indexed copies are never hand-edited as source.
-- Promotion carries deterministic evidence and a fresh-context independent verdict; no producer self-certification is accepted.
-- `REFUTED` stays in automatic repair, while exactly one helper is reserved for a tripped breaker and `ms outcome` waits for downstream validation.
+- Production skill intent leaves `ms` after retrieval; generated twins and loaded/indexed copies are never hand-edited as source.
+- Search and load results remain advisory inputs, never proof that downstream work is correct.
+- `ms outcome` records observed usefulness only after independent downstream evidence.
 
 ## References
 

@@ -9,7 +9,7 @@ import (
 const redactionDenylistEnv = "AGENTOPS_REDACTION_DENYLIST"
 
 // secretPatterns are the regular expressions applied to every message BEFORE
-// chunking (critical per pre-mortem F3). Redaction runs ahead of chunking so
+// chunking (critical per premortem F3). Redaction runs ahead of chunking so
 // credentials cannot leak via chunk-boundary truncation.
 //
 // Sources: .agents/research/2026-04-11-sessions-privacy-policy.md

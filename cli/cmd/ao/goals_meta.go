@@ -11,7 +11,7 @@ import (
 var goalsMetaCmd = &cobra.Command{
 	Use:     "meta",
 	Short:   "Run and report meta-goals only",
-	GroupID: "management",
+	GroupID: "analysis",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return goals.RunMeta(goals.MetaOptions{
 			GoalsFile: resolveGoalsFile(),

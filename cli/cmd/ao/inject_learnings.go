@@ -30,7 +30,7 @@ func sanitizeSourcePhase(phase string) string { return search.SanitizeSourcePhas
 // t.Cleanup(func() { nowFunc = time.Now })` so every run against the
 // frozen-mtime fixture produces byte-identical ranking output.
 //
-// ANTI-GOAL per pre-mortem: do NOT thread a `now time.Time` parameter
+// ANTI-GOAL per premortem: do NOT thread a `now time.Time` parameter
 // through collectLearnings / processLearningFile / ApplyFreshnessToLearning.
 // The 8 production callers of collectLearnings (retrieval_bench.go:200
 // and 406,418; lookup.go:101,164; inject.go:340; codex.go:594;

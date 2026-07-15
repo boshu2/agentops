@@ -50,9 +50,7 @@ echo "Repo:  $REPO_ROOT"
 echo "Scope: $SCOPE"
 
 bash scripts/regen-codex-hashes.sh
-bash scripts/validate-codex-backbone-prompts.sh --repo-root "$REPO_ROOT"
 bash scripts/validate-codex-override-coverage.sh
-bash scripts/validate-codex-lifecycle-guards.sh
 bash scripts/validate-codex-generated-artifacts.sh --scope "$SCOPE"
 bash scripts/audit-codex-parity.sh
 

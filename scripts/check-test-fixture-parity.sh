@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# check-test-fixture-parity.sh — pre-push parity gate
+# check-test-fixture-parity.sh — deterministic fixture parity check
 #
 # Catches the pattern at developer time:
 #   1. New hooks/<x>.sh added without a matching reference in any

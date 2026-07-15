@@ -5,7 +5,8 @@ last_reviewed: YYYY-MM-DD
 # PRODUCT.md Template
 
 > Copy this file to your project root as `PRODUCT.md` and fill in each section.
-> When present, `/pre-mortem` and `/vibe` automatically include product perspectives in council reviews.
+> A caller may pass this document to Plan, Premortem, Validate, or an optional
+> Council when product context is relevant.
 
 ## Mission
 
@@ -39,11 +40,11 @@ last_reviewed: YYYY-MM-DD
 
 ## Usage
 
-This file enables product-aware council reviews:
+This file is advisory product context:
 
-- **`/pre-mortem`** — Automatically includes `product` perspectives (user-value, adoption-barriers, competitive-position) alongside plan-review judges when this file exists.
-- **`/vibe`** — Automatically includes `developer-experience` perspectives (api-clarity, error-experience, discoverability) alongside code-review judges when this file exists.
-- **`/council --preset=product`** — Run product review on demand.
-- **`/council --preset=developer-experience`** — Run DX review on demand.
+- **`/plan`** — Use it while shaping acceptance and non-goals.
+- **`/premortem`** — Challenge a frozen plan against product risks on request.
+- **`/validate`** — Judge explicit product acceptance criteria against the exact candidate.
+- **`/council`** — Add caller-selected product or developer-experience perspectives.
 
-Explicit `--preset` overrides from the user skip auto-include (user intent takes precedence).
+Its presence never triggers a strategy, admits work, or changes a verdict.

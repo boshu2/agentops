@@ -332,7 +332,7 @@ func TestRunFlywheelStatus_JSONOutput(t *testing.T) {
 	for _, rel := range []string{
 		filepath.Join(".agents", "findings"),
 		filepath.Join(".agents", "planning-rules"),
-		filepath.Join(".agents", "pre-mortem-checks"),
+		filepath.Join(".agents", "premortem-checks"),
 		filepath.Join(".agents", "rpi"),
 	} {
 		if err := os.MkdirAll(filepath.Join(dir, rel), 0o755); err != nil {
@@ -345,7 +345,7 @@ func TestRunFlywheelStatus_JSONOutput(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(dir, ".agents", "planning-rules", "f-1.md"), []byte("x"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(dir, ".agents", "pre-mortem-checks", "f-1.md"), []byte("x"), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(dir, ".agents", "premortem-checks", "f-1.md"), []byte("x"), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	queue := `{"source_epic":"ag-h83","timestamp":"2026-03-11T17:00:00Z","items":[{"title":"High one","type":"task","severity":"high","source":"council-finding","description":"d1","target_repo":"agentops","consumed":false}],"consumed":false,"claim_status":"available","claimed_by":null,"claimed_at":null,"consumed_by":null,"consumed_at":null}
@@ -543,7 +543,7 @@ func TestPrintFlywheelStatus_ShowsPeriod(t *testing.T) {
 	}
 }
 
-func TestBuildNamespaceComparison_PromotionReady(t *testing.T) {
+func TestBuildNamespaceComparison_ReportsDeltasOnly(t *testing.T) {
 	primary := &types.FlywheelMetrics{
 		Sigma:    0.25,
 		Rho:      0.60,
@@ -559,71 +559,45 @@ func TestBuildNamespaceComparison_PromotionReady(t *testing.T) {
 		Delta:    17.0,
 	}
 	comp := buildNamespaceComparison(primary, shadow, "experimental")
-	if !comp.PromotionReady {
-		t.Errorf("expected promotion ready: sigma %.3f > %.3f and rho %.3f >= %.3f, reason: %s",
-			shadow.Sigma, primary.Sigma, shadow.Rho, primary.Rho, comp.PromotionReason)
-	}
 	if comp.SigmaDelta <= 0 {
 		t.Errorf("expected positive sigma delta, got %v", comp.SigmaDelta)
 	}
 }
 
-func TestBuildNamespaceComparison_NotReady_SigmaWorse(t *testing.T) {
-	primary := &types.FlywheelMetrics{Sigma: 0.40, Rho: 0.60}
-	shadow := &types.FlywheelMetrics{Sigma: 0.30, Rho: 0.70}
-	comp := buildNamespaceComparison(primary, shadow, "shadow")
-	if comp.PromotionReady {
-		t.Error("expected promotion not ready when shadow sigma < primary sigma")
-	}
-	if !strings.Contains(comp.PromotionReason, "does not beat") {
-		t.Errorf("expected 'does not beat' in reason, got %q", comp.PromotionReason)
-	}
-}
-
-func TestBuildNamespaceComparison_NotReady_RhoRegressed(t *testing.T) {
-	primary := &types.FlywheelMetrics{Sigma: 0.30, Rho: 0.70}
-	shadow := &types.FlywheelMetrics{Sigma: 0.35, Rho: 0.50}
-	comp := buildNamespaceComparison(primary, shadow, "shadow")
-	if comp.PromotionReady {
-		t.Error("expected promotion not ready when shadow rho regressed")
-	}
-	if !strings.Contains(comp.PromotionReason, "regressed") {
-		t.Errorf("expected 'regressed' in reason, got %q", comp.PromotionReason)
-	}
-}
-
-func TestBuildNamespaceComparison_RollbackContract(t *testing.T) {
-	primary := &types.FlywheelMetrics{}
-	shadow := &types.FlywheelMetrics{}
-	comp := buildNamespaceComparison(primary, shadow, "shadow")
-	if comp.RollbackContract == "" {
-		t.Error("expected non-empty rollback contract")
-	}
-	if !strings.Contains(comp.RollbackContract, "Stop reading") {
-		t.Errorf("rollback contract should describe namespace routing, got %q", comp.RollbackContract)
-	}
-}
-
 func TestPrintNamespaceComparison_ContainsMetrics(t *testing.T) {
 	comp := &namespaceComparison{
-		Primary:          &types.FlywheelMetrics{Sigma: 0.25, Rho: 0.60, SigmaRho: 0.15, Velocity: -0.02, Delta: 17.0},
-		Shadow:           &types.FlywheelMetrics{Sigma: 0.35, Rho: 0.65, SigmaRho: 0.23, Velocity: 0.06, Delta: 17.0},
-		ShadowName:       "experimental",
-		SigmaDelta:       0.10,
-		RhoDelta:         0.05,
-		VelocityDelta:    0.08,
-		PromotionReady:   true,
-		PromotionReason:  "Shadow sigma beats primary",
-		RollbackContract: "Stop reading shadow namespace",
+		Primary:       &types.FlywheelMetrics{Sigma: 0.25, Rho: 0.60, SigmaRho: 0.15, Velocity: -0.02, Delta: 17.0},
+		Shadow:        &types.FlywheelMetrics{Sigma: 0.35, Rho: 0.65, SigmaRho: 0.23, Velocity: 0.06, Delta: 17.0},
+		ShadowName:    "experimental",
+		SigmaDelta:    0.10,
+		RhoDelta:      0.05,
+		VelocityDelta: 0.08,
 	}
 	var buf bytes.Buffer
 	printNamespaceComparison(&buf, comp)
 	got := buf.String()
 
-	checks := []string{"experimental", "sigma", "rho", "PROMOTION: READY", "Rollback"}
+	checks := []string{"experimental", "sigma", "rho", "velocity", "Delta"}
 	for _, check := range checks {
 		if !strings.Contains(got, check) {
 			t.Errorf("expected %q in comparison output, got:\n%s", check, got)
 		}
+	}
+}
+
+func TestRunFlywheelCompareReportsWithoutRecommendation(t *testing.T) {
+	t.Chdir(t.TempDir())
+	var buf bytes.Buffer
+	cmd := &cobra.Command{}
+	cmd.SetOut(&buf)
+	oldOutput := output
+	output = "table"
+	t.Cleanup(func() { output = oldOutput })
+	if err := runFlywheelCompare(cmd, nil); err != nil {
+		t.Fatalf("runFlywheelCompare: %v", err)
+	}
+	got := buf.String()
+	if strings.Contains(got, "PROMOTION") || strings.Contains(got, "Rollback") {
+		t.Fatalf("flywheel compare emitted transition advice: %s", got)
 	}
 }

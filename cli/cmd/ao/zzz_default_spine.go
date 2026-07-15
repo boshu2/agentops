@@ -7,12 +7,11 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// defaultSpineCommands is the executable ADR-0012 membership boundary. The
-// archive tags restore the complete registered tree; an untagged production
-// build removes satellite registrations so those paths cannot execute.
+// defaultSpineCommands is the published CLI membership boundary. Optional
+// source packages do not become public commands merely by registering in tests.
 var defaultSpineCommands = map[string]struct{}{
 	"capabilities": {}, "config": {}, "constraint": {}, "doctor": {},
-	"gate": {}, "goals": {},
+	"flywheel": {}, "gate": {}, "goals": {},
 	"init": {}, "provenance": {}, "quick-start": {},
 	"robot-docs": {}, "session": {}, "skills": {}, "status": {},
 	"version": {},
@@ -26,10 +25,9 @@ var defaultSpineCommands = map[string]struct{}{
 func init() {
 	installRemovedCommandTombstones(rootCmd)
 
-	// The package test binary deliberately retains every registration so focused
-	// tests for archived commands remain runnable without compiling the suite
-	// repeatedly under every tag. Production/default binaries take the boundary.
-	if len(archiveBuildTags) != 0 || strings.HasSuffix(os.Args[0], ".test") {
+	// The package test binary retains registrations so focused command tests can
+	// exercise optional surfaces. Production binaries take the boundary.
+	if strings.HasSuffix(os.Args[0], ".test") {
 		return
 	}
 	pruneToDefaultSpine(rootCmd)
@@ -37,7 +35,7 @@ func init() {
 
 // pruneToDefaultSpine applies the production membership boundary and returns
 // the commands it removed. Tests use the returned slice to restore the full
-// archive tree after checking the production view.
+// registered test tree after checking the production view.
 func pruneToDefaultSpine(root *cobra.Command) []*cobra.Command {
 	var removed []*cobra.Command
 	for _, command := range append([]*cobra.Command(nil), root.Commands()...) {

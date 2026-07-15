@@ -10,8 +10,8 @@ import (
 )
 
 // removedCommand is the tombstone for a verb the default build no longer
-// serves: what replaces it, and (when a build tag restores it) how to get the
-// old surface back. The full map with the why lives in docs/MIGRATION.md —
+// serves and what replaces it. The full map with the why lives in
+// docs/MIGRATION.md —
 // these one-liners exist so the pointer appears at the moment of failure,
 // where a dev (or an agent following error strings) actually hits the wall.
 type removedCommand struct {
@@ -88,9 +88,8 @@ var cathedralCutCommands = map[string]struct{}{
 
 // removedCommandHint returns the tombstone hint for an "unknown command"
 // error whose verb was removed from the default build, or "" when the error
-// is anything else. A verb the running binary actually registers (a flywheel
-// or legacy build) never hints: the command exists there, so a usage error
-// must not claim it was removed.
+// is anything else. A registered verb always wins so a usage error cannot be
+// mislabeled as removal.
 func removedCommandHint(root *cobra.Command, err error) string {
 	if err == nil {
 		return ""

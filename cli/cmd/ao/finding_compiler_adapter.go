@@ -134,7 +134,7 @@ func parseCompilerKind(name string) (ports.CompiledOutputKind, bool) {
 	switch name {
 	case string(ports.CompiledOutputPlanningRule):
 		return ports.CompiledOutputPlanningRule, true
-	case string(ports.CompiledOutputPremortemCheck), "pre-mortem", "pre_mortem":
+	case string(ports.CompiledOutputPremortemCheck):
 		return ports.CompiledOutputPremortemCheck, true
 	case string(ports.CompiledOutputConstraint):
 		return ports.CompiledOutputConstraint, true

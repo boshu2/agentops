@@ -8,6 +8,7 @@ delivery integration. It operates only on explicit files and directories.
 from __future__ import annotations
 
 import argparse
+from datetime import datetime
 import fnmatch
 import hashlib
 import json
@@ -144,7 +145,7 @@ def build_manifest(
         manifest["entries"] = sorted(manifest["entries"] + deletions, key=lambda item: item["path"])
     if git_metadata:
         manifest["git_metadata"] = git_metadata
-    manifest["canonical_manifest_digest"] = digest_value(manifest)
+    manifest["canonical_manifest_digest"] = digest_value(manifest_identity(manifest))
     return manifest
 
 
@@ -152,10 +153,22 @@ def valid_digest(value: Any) -> bool:
     return isinstance(value, str) and len(value) == 64 and all(ch in HEX64 for ch in value)
 
 
+def manifest_identity(manifest: dict[str, Any]) -> dict[str, Any]:
+    """Return only the fields that identify subject content.
+
+    ``git_metadata`` is intentionally descriptive.  Supplying or changing it
+    must never change the identity of otherwise identical content.
+    """
+    return {
+        key: value
+        for key, value in manifest.items()
+        if key not in {"canonical_manifest_digest", "git_metadata"}
+    }
+
+
 def verify_manifest(manifest: dict[str, Any], root: Path, base_manifest: dict[str, Any] | None) -> tuple[bool, str]:
     claimed = manifest.get("canonical_manifest_digest")
-    unsigned = {key: value for key, value in manifest.items() if key != "canonical_manifest_digest"}
-    if not valid_digest(claimed) or digest_value(unsigned) != claimed:
+    if not valid_digest(claimed) or digest_value(manifest_identity(manifest)) != claimed:
         return False, "manifest canonical digest is invalid"
     rebuilt = build_manifest(
         root,
@@ -244,6 +257,106 @@ def enforce_identity(draft: dict[str, Any]) -> dict[str, Any]:
     return draft
 
 
+VERDICT_KEYS = {
+    "schema_version",
+    "acceptance_digest",
+    "subject_manifest_digest",
+    "author_context_id",
+    "validator_context_id",
+    "freshness_attestation",
+    "verdict",
+    "criteria",
+    "findings",
+    "evidence_refs",
+    "checked",
+    "not_checked",
+    "validated_at",
+    "artifact_digest",
+}
+
+
+def require_string_list(value: Any, field: str, *, nonempty: bool = False) -> None:
+    if not isinstance(value, list) or (nonempty and not value):
+        raise ContractError(f"verdict.v2 {field} must be a{' nonempty' if nonempty else ''} array")
+    if any(not isinstance(item, str) or not item for item in value):
+        raise ContractError(f"verdict.v2 {field} entries must be nonempty strings")
+
+
+def validate_verdict_v2(artifact: dict[str, Any]) -> None:
+    """Enforce the complete bundled verdict.v2 contract before persistence."""
+    missing = sorted(VERDICT_KEYS - artifact.keys())
+    extra = sorted(artifact.keys() - VERDICT_KEYS)
+    if missing:
+        raise ContractError(f"verdict.v2 missing required fields: {', '.join(missing)}")
+    if extra:
+        raise ContractError(f"verdict.v2 contains unknown fields: {', '.join(extra)}")
+    if artifact["schema_version"] != "verdict.v2":
+        raise ContractError("verdict.v2 schema_version must be verdict.v2")
+    for field in ("acceptance_digest", "subject_manifest_digest", "artifact_digest"):
+        if not valid_digest(artifact[field]):
+            raise ContractError(f"verdict.v2 {field} must be a lowercase SHA-256 digest")
+    expected_digest = digest_value({key: value for key, value in artifact.items() if key != "artifact_digest"})
+    if artifact["artifact_digest"] != expected_digest:
+        raise ContractError("verdict.v2 artifact_digest does not match canonical JSON")
+    for field in ("author_context_id", "validator_context_id"):
+        if artifact[field] is not None and (not isinstance(artifact[field], str) or not artifact[field]):
+            raise ContractError(f"verdict.v2 {field} must be null or a nonempty string")
+    freshness = artifact["freshness_attestation"]
+    if freshness is not None:
+        if not isinstance(freshness, dict) or set(freshness) != {"source", "attester_identity"}:
+            raise ContractError("verdict.v2 freshness_attestation has invalid fields")
+        if freshness["source"] not in {"runtime", "caller"}:
+            raise ContractError("verdict.v2 freshness source must be runtime or caller")
+        if not isinstance(freshness["attester_identity"], str) or not freshness["attester_identity"]:
+            raise ContractError("verdict.v2 freshness attester_identity must be nonempty")
+    if artifact["verdict"] not in {"PASS", "FAIL", "NOT_PROVEN"}:
+        raise ContractError("verdict.v2 verdict must be PASS, FAIL, or NOT_PROVEN")
+    criteria = artifact["criteria"]
+    if not isinstance(criteria, list) or not criteria:
+        raise ContractError("verdict.v2 criteria must be a nonempty array")
+    for index, criterion in enumerate(criteria):
+        allowed = {"id", "result", "evidence_refs", "reason"}
+        if not isinstance(criterion, dict) or not {"id", "result", "evidence_refs"}.issubset(criterion) or not set(criterion).issubset(allowed):
+            raise ContractError(f"verdict.v2 criteria[{index}] has invalid fields")
+        if not isinstance(criterion["id"], str) or not criterion["id"]:
+            raise ContractError(f"verdict.v2 criteria[{index}].id must be nonempty")
+        if criterion["result"] not in {"PASS", "FAIL", "NOT_PROVEN"}:
+            raise ContractError(f"verdict.v2 criteria[{index}].result is invalid")
+        require_string_list(criterion["evidence_refs"], f"criteria[{index}].evidence_refs")
+        if "reason" in criterion and not isinstance(criterion["reason"], str):
+            raise ContractError(f"verdict.v2 criteria[{index}].reason must be a string")
+    findings = artifact["findings"]
+    if not isinstance(findings, list):
+        raise ContractError("verdict.v2 findings must be an array")
+    for index, finding in enumerate(findings):
+        if not isinstance(finding, dict) or set(finding) != {"id", "summary", "evidence_refs"}:
+            raise ContractError(f"verdict.v2 findings[{index}] has invalid fields")
+        if not isinstance(finding["id"], str) or not finding["id"]:
+            raise ContractError(f"verdict.v2 findings[{index}].id must be nonempty")
+        if not isinstance(finding["summary"], str) or not finding["summary"]:
+            raise ContractError(f"verdict.v2 findings[{index}].summary must be nonempty")
+        require_string_list(finding["evidence_refs"], f"findings[{index}].evidence_refs", nonempty=True)
+    for field in ("evidence_refs", "checked", "not_checked"):
+        require_string_list(artifact[field], field)
+    if not isinstance(artifact["validated_at"], str):
+        raise ContractError("verdict.v2 validated_at must be an RFC3339 date-time")
+    try:
+        timestamp = datetime.fromisoformat(artifact["validated_at"].replace("Z", "+00:00"))
+    except ValueError as exc:
+        raise ContractError("verdict.v2 validated_at must be an RFC3339 date-time") from exc
+    if timestamp.tzinfo is None:
+        raise ContractError("verdict.v2 validated_at must include a timezone")
+    if artifact["verdict"] == "PASS":
+        author = artifact["author_context_id"]
+        validator = artifact["validator_context_id"]
+        if not author or not validator or author == validator or freshness is None:
+            raise ContractError("verdict.v2 PASS requires distinct identities and freshness attestation")
+        if any(criterion["result"] != "PASS" for criterion in criteria):
+            raise ContractError("verdict.v2 PASS requires every criterion to PASS")
+        if artifact["not_checked"]:
+            raise ContractError("verdict.v2 PASS cannot contain not_checked items")
+
+
 def artifact_bytes(draft: dict[str, Any]) -> tuple[dict[str, Any], bytes]:
     unsigned = {key: value for key, value in draft.items() if key != "artifact_digest"}
     digest = digest_value(unsigned)
@@ -281,10 +394,12 @@ def store_verdict(draft: dict[str, Any], destination: Path) -> tuple[dict[str, A
     draft = enforce_identity(draft)
     draft["schema_version"] = "verdict.v2"
     artifact, payload = artifact_bytes(draft)
+    validate_verdict_v2(artifact)
     try:
         path, existed = atomic_store(artifact, payload, destination)
     except ContractError as exc:
         artifact, payload = artifact_bytes(add_integrity_finding(draft, str(exc)))
+        validate_verdict_v2(artifact)
         path, existed = atomic_store(artifact, payload, destination)
     return artifact, path, existed
 

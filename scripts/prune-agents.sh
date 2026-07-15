@@ -198,10 +198,6 @@ if [[ -d "$AGENTS_DIR/releases/local-ci" ]]; then
 fi
 [[ "$QUIET" == false ]] && echo ""
 
-# --- Policy: evolve/ — keep last 20 cycle files ---
-prune_keep_newest "$AGENTS_DIR/evolve" 20 "evolve"
-[[ "$QUIET" == false ]] && echo ""
-
 # --- Policy: vibe/ vibecheck/ — keep last 20 ---
 prune_keep_newest "$AGENTS_DIR/vibe" 20 "vibe"
 prune_keep_newest "$AGENTS_DIR/vibecheck" 20 "vibecheck"
@@ -215,8 +211,7 @@ prune_keep_newest "$AGENTS_DIR/brainstorm" 10 "brainstorm"
 prune_older_than "$AGENTS_DIR/compaction-snapshots" 7 "*.md" "compaction-snapshots"
 [[ "$QUIET" == false ]] && echo ""
 
-# --- Policy: crank/ swarm/ — keep last 10 ---
-prune_keep_newest "$AGENTS_DIR/crank" 10 "crank"
+# --- Policy: swarm/ — keep last 10 ---
 prune_keep_newest "$AGENTS_DIR/swarm" 10 "swarm"
 [[ "$QUIET" == false ]] && echo ""
 

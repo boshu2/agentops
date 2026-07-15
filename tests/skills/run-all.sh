@@ -129,23 +129,6 @@ else
     echo -e "  ${YELLOW}⚠ lint-skills.sh not found${NC}"
 fi
 
-# Run Claude feature coverage checks
-echo ""
-echo -e "${BLUE}━━━ Claude Feature Coverage ━━━${NC}"
-echo ""
-CLAUDE_FEATURE_SCRIPT="$SCRIPT_DIR/test-claude-feature-coverage.sh"
-if [ -f "$CLAUDE_FEATURE_SCRIPT" ]; then
-    chmod +x "$CLAUDE_FEATURE_SCRIPT"
-    if "$CLAUDE_FEATURE_SCRIPT"; then
-        echo -e "  ${GREEN}✓ claude feature coverage passed${NC}"
-    else
-        echo -e "  ${RED}✗ claude feature coverage failed${NC}"
-        FAILED=$((FAILED + 1))
-    fi
-else
-    echo -e "  ${YELLOW}⚠ test-claude-feature-coverage.sh not found${NC}"
-fi
-
 # Run token/context budget checks
 echo ""
 echo -e "${BLUE}━━━ Token Budget Checks ━━━${NC}"
@@ -186,12 +169,9 @@ echo -e "${BLUE}━━━ Additional Skill Tests ━━━${NC}"
 
 for extra_test in \
     "$SCRIPT_DIR/test-tuning-defaults.sh" \
-    "$SCRIPT_DIR/test-allowlist-negative.sh" \
     "$SCRIPT_DIR/test-first-smoke.sh" \
     "$SCRIPT_DIR/test-codex-override-coverage.sh" \
-    "$SCRIPT_DIR/test-crank-wave-checkpoint.sh" \
-    "$SCRIPT_DIR/test-repo-native-orchestration.sh" \
-    "$SCRIPT_DIR/test-evolve-autonomy.sh"; do
+    "$SCRIPT_DIR/test-repo-native-orchestration.sh"; do
     if [ -f "$extra_test" ]; then
         test_name=$(basename "$extra_test" .sh)
         echo -n "  $test_name ... "

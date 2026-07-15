@@ -24,7 +24,7 @@ cite → promote → lookup → feedback → nightly across one isolated sandbox
 bash tests/e2e/proof-run.sh
 ```
 
-Other scripts (`goals-*.sh`, `rpi-phased-domain.sh`, `closure-integrity-grace.sh`,
+Other scripts (`goals-*.sh`, `rpi-phased-domain.sh`,
 …) follow the same harness contract and can be run the same way.
 
 ---
@@ -154,7 +154,6 @@ prints a `[e2e-guard] WARNING:` line to stderr.
 | `rpi-phased-domain.sh` | dispatch → phase trace | F3 |
 | `goals-trace-chain.sh` | trace → dependency assert | F4 |
 | `goals-steer-auto.sh` | steer → re-prioritize | F5 |
-| `closure-integrity-grace.sh` | citation → grace period → closure invariant | citation flow regressions |
 | `factory-operator-canary.sh` | factory admission → operator action | factory pipeline contract |
 
 Every script in this list is mock-free **today** — this file is the contract

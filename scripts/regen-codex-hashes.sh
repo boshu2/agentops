@@ -130,8 +130,6 @@ for skill_dir in sorted(p for p in skills_root.iterdir() if p.is_dir()):
         continue
 
     name = skill_dir.name
-    if name in {"pre-mortem", "post-mortem", "pre_mortem", "post_mortem"}:
-        continue
     if scope and name not in scope:
         continue
     new_hash = hash_tree(skill_dir)

@@ -57,6 +57,36 @@ class DispatchOnceTests(unittest.TestCase):
             )
         self.assertEqual(calls, 0)
 
+    def test_overlapping_glob_scopes_fail_before_dispatch(self) -> None:
+        calls = 0
+
+        def executor(_value: dict) -> None:
+            nonlocal calls
+            calls += 1
+
+        with self.assertRaisesRegex(ValueError, "write scopes overlap"):
+            MODULE.dispatch_once(
+                [packet("a", "src/**"), packet("b", "src/lib/**")], executor
+            )
+        self.assertEqual(calls, 0)
+
+    def test_disjoint_glob_prefixes_dispatch(self) -> None:
+        calls: list[str] = []
+
+        MODULE.dispatch_once(
+            [packet("a", "src/a/**"), packet("b", "src/b/**")],
+            lambda value: calls.append(value["packet_id"]),
+        )
+
+        self.assertEqual(calls, ["a", "b"])
+
+    def test_uncertain_glob_overlap_is_rejected(self) -> None:
+        with self.assertRaisesRegex(ValueError, "write scopes overlap"):
+            MODULE.dispatch_once(
+                [packet("a", "src/*/generated"), packet("b", "src/*/manual")],
+                lambda _value: None,
+            )
+
 
 if __name__ == "__main__":
     unittest.main()

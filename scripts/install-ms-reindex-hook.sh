@@ -3,10 +3,9 @@
 # reindex law (scripts/ms-reindex.sh) on the CANONICAL agentops checkout (age-22g0).
 #
 # WHY INSTALL-ON-DEMAND, NOT A TRACKED HOOK:
-#   AgentOps 3.0 is hookless BY DOCTRINE — no runtime hook ships in-repo (the
-#   release authority is the cockpit/pawl gate, not git hooks). So this cannot be
-#   a committed `.githooks/` + core.hooksPath default without contradicting that
-#   doctrine and firing on every contributor's clone and every linked worktree.
+#   AgentOps does not own repository Git policy. This maintenance hook therefore
+#   cannot be a committed `.githooks/` + core.hooksPath default that fires in
+#   every contributor clone and linked worktree.
 #   Instead we ship the INSTALLER, tracked, and the operator runs it ONCE on the
 #   canonical checkout. The hook it writes is heavily GUARDED so it is a no-op
 #   anywhere except the canonical checkout on main after a merge that touched

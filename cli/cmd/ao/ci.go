@@ -31,7 +31,7 @@ BC2 CIStatusPort. Wraps 'gh run list --commit <sha> --json ...'
 behind productionCIStatus.
 
 Emits one JSON object (or empty for no run). Useful as a typed
-replacement for inline gh shell-outs in /evolve Step 1.5 (healing-
+replacement for duplicated inline gh shell-outs in repository scripts (healing-
 first classifier) and similar consumers.
 
 Examples:

@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import json
 from pathlib import Path
+import shutil
 import sys
 from typing import Any
 
@@ -76,6 +77,9 @@ def validate_graph(entries: list[dict[str, Any]]) -> None:
     expected = {"rpi": {"plan", "implement", "validate"}, "plan": set(), "implement": set(), "validate": set()}
     if core != expected:
         raise ValueError(f"core dependency graph mismatch: {core!r}")
+    extra = {entry["name"]: entry["dependencies"] for entry in entries if entry["name"] != "rpi" and entry["dependencies"]}
+    if extra:
+        raise ValueError(f"only rpi may declare hard dependencies: {extra!r}")
 
 
 def catalog(entries: list[dict[str, Any]]) -> dict[str, Any]:
@@ -198,6 +202,51 @@ def context_map(entries: list[dict[str, Any]]) -> str:
     return "\n".join(lines)
 
 
+def claude_image(entries: list[dict[str, Any]]) -> dict[str, Any]:
+    return {
+        "schema_version": "skill-image.v1",
+        "image": "claude",
+        "source": "skills/*/SKILL.md metadata",
+        "skill_count": len(entries),
+        "skills": [
+            {"slug": entry["name"], "path": f"skills/{entry['name']}/", "disposition": entry["disposition"]}
+            for entry in entries
+        ],
+    }
+
+
+def codex_image(entries: list[dict[str, Any]]) -> dict[str, Any]:
+    return {
+        "schema_version": "skill-image.v1",
+        "image": "codex",
+        "source": "skills/*/SKILL.md metadata",
+        "skill_count": len(entries),
+        "skills": [
+            {
+                "slug": entry["name"],
+                "source_path": f"skills/{entry['name']}/",
+                "twin_path": f"skills-codex/{entry['name']}/",
+                "disposition": entry["disposition"],
+            }
+            for entry in entries
+        ],
+    }
+
+
+def gemini_plugin(entries: list[dict[str, Any]]) -> dict[str, Any]:
+    version = json.loads((ROOT / ".claude-plugin" / "plugin.json").read_text(encoding="utf-8"))["version"]
+    return {
+        "name": "agentops-core-gemini",
+        "version": version,
+        "description": f"AgentOps {len(entries)}-skill metadata-derived bundle for Google Antigravity and Gemini.",
+        "skills": "./skills",
+        "agents": "./agents",
+        "rules": "./rules",
+        "hooks": "./hooks/hooks.json",
+        "mcpServers": {"agent-mail": {"command": "am", "args": ["serve-stdio"]}},
+    }
+
+
 def outputs(entries: list[dict[str, Any]]) -> dict[Path, bytes]:
     return {
         ROOT / "skills" / "catalog.json": (json.dumps(catalog(entries), indent=2, sort_keys=True) + "\n").encode(),
@@ -208,7 +257,37 @@ def outputs(entries: list[dict[str, Any]]) -> dict[Path, bytes]:
         ROOT / "docs" / "reference" / "agentops-skill-domain-map.md": domain_map(entries).encode(),
         ROOT / "docs" / "reference" / "agentops-skill-graph.md": graph(entries).encode(),
         ROOT / "docs" / "contracts" / "context-map.md": context_map(entries).encode(),
+        ROOT / "images" / "claude" / "manifest.json": (json.dumps(claude_image(entries), indent=2, sort_keys=True) + "\n").encode(),
+        ROOT / "images" / "codex" / "manifest.json": (json.dumps(codex_image(entries), indent=2, sort_keys=True) + "\n").encode(),
+        ROOT / "images" / "gemini" / "plugin.json": (json.dumps(gemini_plugin(entries), indent=2, sort_keys=True) + "\n").encode(),
     }
+
+
+def sync_gemini_skills(entries: list[dict[str, Any]], check: bool) -> list[str]:
+    destination = ROOT / "images" / "gemini" / "skills"
+    expected = {entry["name"] for entry in entries}
+    actual = {path.name for path in destination.iterdir() if path.is_dir()} if destination.is_dir() else set()
+    drift: list[str] = []
+    for name in sorted(actual - expected):
+        path = destination / name
+        if check:
+            drift.append(path.relative_to(ROOT).as_posix())
+        else:
+            shutil.rmtree(path)
+    for name in sorted(expected):
+        source = ROOT / "skills" / name / "SKILL.md"
+        target_dir = destination / name
+        target = target_dir / "SKILL.md"
+        extra = [path for path in target_dir.rglob("*") if path.is_file() and path != target] if target_dir.is_dir() else []
+        if check:
+            if not target.is_file() or target.read_bytes() != source.read_bytes() or extra:
+                drift.append(target_dir.relative_to(ROOT).as_posix())
+        else:
+            if target_dir.exists():
+                shutil.rmtree(target_dir)
+            target_dir.mkdir(parents=True, exist_ok=True)
+            target.write_bytes(source.read_bytes())
+    return drift
 
 
 def main() -> int:
@@ -244,6 +323,7 @@ def main() -> int:
             else:
                 path.parent.mkdir(parents=True, exist_ok=True)
                 path.write_bytes(payload)
+        drift.extend(sync_gemini_skills(entries, args.check))
         if drift:
             for path in drift:
                 print(f"DRIFT: {path}", file=sys.stderr)

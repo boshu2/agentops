@@ -34,7 +34,30 @@ def _includes(packet: Mapping[str, Any]) -> tuple[str, ...]:
 
 
 def _overlap(left: str, right: str) -> bool:
-    return left == right or left.startswith(right + "/") or right.startswith(left + "/")
+    """Conservatively decide whether two include patterns may intersect.
+
+    Literal sibling paths are provably disjoint.  For globs, the literal path
+    prefix before the first wildcard must itself be disjoint; otherwise the
+    adapter rejects the batch instead of guessing about a shared write surface.
+    """
+
+    def literal_prefix(pattern: str) -> str:
+        parts: list[str] = []
+        for part in PurePosixPath(pattern).parts:
+            if any(character in part for character in "*?["):
+                break
+            parts.append(part)
+        return PurePosixPath(*parts).as_posix() if parts else "."
+
+    left_prefix = literal_prefix(left)
+    right_prefix = literal_prefix(right)
+    if left_prefix == "." or right_prefix == ".":
+        return True
+    return (
+        left_prefix == right_prefix
+        or left_prefix.startswith(right_prefix + "/")
+        or right_prefix.startswith(left_prefix + "/")
+    )
 
 
 def dispatch_once(

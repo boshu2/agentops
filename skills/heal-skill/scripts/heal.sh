@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# One-pass structural audit for source and Codex skill packages.
+# One-pass structural audit for source skill packages.
 set -euo pipefail
 
 MODE=check
@@ -24,10 +24,8 @@ REPO_ROOT="${HEAL_REPO_ROOT:-$(cd "$SCRIPT_DIR/../../.." && pwd)}"
 REPO_ROOT="$(cd "$REPO_ROOT" && pwd -P)"
 
 if [[ ${#TARGETS[@]} -eq 0 ]]; then
-  for root in "$REPO_ROOT/skills" "$REPO_ROOT/skills-codex"; do
-    for path in "$root"/*; do
-      [[ -d "$path" ]] && TARGETS+=("$path")
-    done
+  for path in "$REPO_ROOT/skills"/*; do
+    [[ -d "$path" && -f "$path/SKILL.md" ]] && TARGETS+=("$path")
   done
 fi
 
@@ -38,7 +36,7 @@ for target in "${TARGETS[@]}"; do
   [[ ! -L "$target" ]] || { echo "heal.sh: symlink targets are not accepted: $target" >&2; exit 2; }
   resolved="$(cd "$target" && pwd -P)"
   case "$(dirname "$resolved")" in
-    "$REPO_ROOT/skills"|"$REPO_ROOT/skills-codex") ;;
+    "$REPO_ROOT/skills") ;;
     *) echo "heal.sh: target is not a direct skill package: $target" >&2; exit 2 ;;
   esac
   normalized+=("$resolved")

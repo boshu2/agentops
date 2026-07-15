@@ -89,7 +89,7 @@ func TestLoad_MissingDirErrors(t *testing.T) {
 }
 
 // TestLoad_LiveTreeNonEmpty asserts the loader reads the real skills/ tree when
-// run from the repo. Per the pre-mortem, it does NOT assert exact skill names
+// run from the repo. Per the premortem, it does NOT assert exact skill names
 // (the tree churns) — only that loading succeeds and finds skills.
 func TestLoad_LiveTreeNonEmpty(t *testing.T) {
 	root := repoSkillsDir(t)

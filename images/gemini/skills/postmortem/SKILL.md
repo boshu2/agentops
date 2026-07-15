@@ -1,27 +1,24 @@
 ---
 name: postmortem
-description: 'Test an explicit retrospective causal question against evidence and counterfactuals after Validate and Learn. Triggers: "postmortem", "causal retrospective", "test a retrospective hypothesis".'
+description: 'Optionally test a retrospective causal question against durable verdict evidence. Triggers: "postmortem", "causal retrospective", "test a retrospective hypothesis".'
 practices:
 - sre
 - lean-startup
 hexagonal_role: domain
 consumes:
-- learn
-- toil-mining
+- verdict.v2
 produces:
 - postmortem-report.md
-context_rel:
-- kind: customer-of
-  with: learn
-- kind: customer-of
-  with: toil-mining
+context_rel: []
 skill_api_version: 1
 user-invocable: true
 metadata:
+  capabilities: [postmortem]
+  effects: []
+  canonical_status: canonical
+  disposition: keep_strategy
   tier: judgment
-  dependencies:
-  - council
-  - toil-mining
+  dependencies: []
 context:
   window: fork
   intent:
@@ -41,7 +38,7 @@ output_contract: skills/postmortem/references/postmortem.feature
 ## Critical Constraints
 
 - Because proof and causal inference are different judgments, Postmortem is retrospective causal analysis, not the general learning umbrella and not a completion gate.
-- It consumes an immutable Validate verdict plus Learn receipt and does not re-run acceptance validation by default because Validate already owns that proof.
+- It consumes immutable Validate verdict evidence and does not re-run acceptance validation because Validate already owns that proof.
 - Treat causal statements as hypotheses because causal confidence must survive
   alternatives. Separate observed sequence, contributing conditions,
   counterfactuals, and unknowns.
@@ -55,7 +52,7 @@ output_contract: skills/postmortem/references/postmortem.feature
 
 ## Workflow
 
-1. Pin the verdict, Learn receipt, delivered artifact, and explicit causal
+1. Pin the verdict, subject evidence, and explicit causal
    question.
 2. Reconstruct the evidence-backed timeline without importing hidden author
    reasoning as fact.
@@ -74,7 +71,7 @@ output_contract: skills/postmortem/references/postmortem.feature
 - **Serialization/schema format:** Markdown with causal question, pinned inputs,
   timeline, hypotheses, evidence, counterfactuals, unknowns, and experiments.
 - **Validator command:** `bash skills/postmortem/scripts/validate.sh`.
-- **Downstream handoff:** Learn or the orchestrator may consume the analysis; they own
+- **Downstream handoff:** Learn or the caller may consume the analysis; they own
   any bookkeeping, promotion, planning, or delivery decision.
 
 ## Quality Checklist

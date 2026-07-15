@@ -1,6 +1,6 @@
 # research
 
-Explore and write findings. Triggers: "research", "explore and write findings.", "research skill".
+Answer a bounded question with current cited evidence. Triggers: "research", "investigate", "find evidence".
 
 ## Instructions
 

@@ -10,7 +10,7 @@
 # NEW violations fail the gate; the list only SHRINKS. Only a gate changes
 # behavior — this is the repo's own law, extracted.
 #
-# DESIGN RULES (pre-mortem hardened, .agents/council/2026-07-10-pre-mortem-ratchet-lib.md):
+# DESIGN RULES (premortem hardened, .agents/council/2026-07-10-premortem-ratchet-lib.md):
 #   * Functions only — no top-level `set -e`/`set -u`, no preamble source
 #     (libs are strict-mode-agnostic by convention; see lib/bats-common.bash).
 #     Callers own strict mode and REPO_ROOT anchoring.

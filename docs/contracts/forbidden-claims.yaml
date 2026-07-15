@@ -50,7 +50,7 @@ claims:
     pattern: 'session hooks'
     rationale: >-
       AgentOps 3.0 is HOOKLESS (docs/3.0.md, ADR-0009) — no session hook extracts
-      learnings; a session writes them explicitly via /post-mortem. `ao init
+      learnings; a session writes them explicitly via /postmortem. `ao init
       --hooks` is not a real flag.
     allowed_contexts: *common
 

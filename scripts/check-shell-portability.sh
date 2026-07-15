@@ -14,7 +14,7 @@
 # it enumerates `git ls-files` (tracked only — so worktree copies, vendored, and
 # gitignored trees are excluded for free) and selects shell scripts by EITHER a
 # .sh/.bash suffix OR a shell shebang (so extensionless hooks like
-# scripts/hooks/pre-push.local, .githooks/*, bin/* are covered). tests/ is
+# .githooks/* and bin/* are covered). tests/ is
 # excluded: test fixtures legitimately embed the pattern as data.
 #
 # Precision: the token `-printf` (with a LEADING dash) is only ever a `find`

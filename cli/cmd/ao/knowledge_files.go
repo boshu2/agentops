@@ -36,12 +36,6 @@ func walkKnowledgeFiles(dir string, extensions ...string) []string {
 	return files
 }
 
-func templateCompletionValues() []string {
-	values := append([]string(nil), validTemplateNames...)
-	sort.Strings(values)
-	return values
-}
-
 func extractLearningBody(path string) string {
 	content, err := os.ReadFile(path) // #nosec G304 -- caller-selected local knowledge artifact
 	if err != nil {

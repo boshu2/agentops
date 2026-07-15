@@ -27,16 +27,14 @@
 | `ao doctor robot-docs` | `public-stateful-fixture-needed` | `allowlisted` | Generates docs from local installation state. |
 | `ao doctor undo` | `public-stateful-fixture-needed` | `allowlisted` | Reverts a doctor repair fixture. |
 | `ao done` | `deprecated` | `allowlisted` | One-release failure stub for removed closure control. |
+| `ao flywheel compare` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
+| `ao flywheel status` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao gate check` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
-| `ao goals add` | `public-stateful-fixture-needed` | `allowlisted` | Writes GOALS.md and needs an isolated fixture. |
 | `ao goals drift` | `public-stateful-fixture-needed` | `allowlisted` | Requires two goal snapshots. |
 | `ao goals export` | `public-tested` | `allowlisted` | Covered through goals snapshot behavior. |
 | `ao goals history` | `public-tested` | `allowlisted` | Historical view shares goals validation behavior. |
-| `ao goals init` | `public-stateful-fixture-needed` | `allowlisted` | Initializes GOALS.md and may prompt. |
 | `ao goals measure` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao goals meta` | `public-tested` | `allowlisted` | Covered through goals measurement behavior. |
-| `ao goals migrate` | `public-stateful-fixture-needed` | `allowlisted` | Migrates GOALS.md and needs a disposable fixture. |
-| `ao goals prune` | `public-stateful-fixture-needed` | `allowlisted` | Removes goal entries and needs a disposable fixture. |
 | `ao goals render` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao goals scenarios` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao goals trace` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |

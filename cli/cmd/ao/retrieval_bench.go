@@ -568,7 +568,7 @@ func runLiveBench(k int, asJSON, global bool, corpusDir string) error {
 	fmt.Println()
 
 	if report.TotalLearnings == 0 {
-		fmt.Println("No learnings found. Run /retro or /post-mortem to populate the knowledge base.")
+		fmt.Println("No learnings found. Run /retro or /postmortem to populate the knowledge base.")
 		return nil
 	}
 

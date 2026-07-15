@@ -1,7 +1,7 @@
 // catalog.go — load and query the generated skills/catalog.json.
 //
 // The catalog is the queryable inventory emitted by
-// scripts/generate-skill-catalog.sh (slice 1 of soc-vuu6.4). This file is
+// scripts/generate-skill-mesh.py. This file is
 // slice 2: a pure, table-testable query engine plus a thin disk loader so the
 // `ao skills list|consumers|producers|graph` commands never re-parse SKILL.md
 // frontmatter — they read the committed catalog, which CI keeps in sync.

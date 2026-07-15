@@ -2,7 +2,7 @@
   "schema_version": 1,
   "id": "agentops-core.headless-runtime-skills",
   "name": "AgentOps Headless Runtime Skills Canary",
-  "description": "Public deterministic canary for Claude and Codex headless skill inventory validation, fallback controls, and CI/release wiring.",
+  "description": "Optional canary for caller-selected Claude and Codex headless skill inventory validation.",
   "practices": ["llm-eval-harness", "sre"],
   "domain": "runtime",
   "visibility": "public_canary",
@@ -15,8 +15,7 @@
     "network": "allowed",
     "scrub_env_prefixes": ["AGENTOPS_RPI_RUNTIME"],
     "isolate_codex_home": true,
-    "timeout_seconds": 180,
-    "max_attempts": 1
+    "timeout_seconds": 180
   },
   "scoring": {
     "aggregate_threshold": 1,
@@ -51,7 +50,7 @@
       "id": "headless-runtime-validation",
       "title": "headless runtime skill validation command passes",
       "kind": "command",
-      "objective": "Run the same headless runtime skill validation surface used by CI and release gates with bounded retries and timeout.",
+      "objective": "Run the optional headless runtime inventory validator when a caller explicitly selects it.",
       "runtime": "shell",
       "timeout_seconds": 210,
       "inputs": {
@@ -67,17 +66,16 @@
       "critical": true
     },
     {
-      "id": "headless-runtime-gate-wiring",
-      "title": "headless runtime skill validation remains wired into gates",
-      "kind": "artifact_check",
-      "objective": "Keep the runtime inventory validator visible in CI, local release, fast pre-push full mode, and smoke-test dispatch.",
-      "expectations": [
-        {"type": "artifact_contains", "target": "../../.github/workflows/validate.yml", "value": "Validate headless runtime skills"},
-        {"type": "artifact_contains", "target": "../../.github/workflows/validate.yml", "value": "./scripts/validate-headless-runtime-skills.sh"},
-        {"type": "artifact_contains", "target": "../../scripts/ci-local-release.sh", "value": "Headless runtime skill smoke"},
-        {"type": "artifact_contains", "target": "../../scripts/pre-push-gate.sh", "value": "headless runtime skills"},
-        {"type": "artifact_contains", "target": "../../tests/smoke-test.sh", "value": "test-headless-runtime-skills.sh"}
-      ],
+      "id": "headless-runtime-remains-optional",
+      "title": "headless runtime validation is not a core gate",
+      "kind": "command",
+      "objective": "Prove optional live-runtime probing is not required by ordinary CI, local release, or smoke dispatch.",
+      "runtime": "shell",
+      "inputs": {
+        "cwd": "../..",
+        "shell": "! rg -n 'validate-headless-runtime-skills|test-headless-runtime-skills' .github/workflows/validate.yml scripts/ci-local-release.sh tests/smoke-test.sh"
+      },
+      "expectations": [{"type": "exit_code", "value": 0}],
       "dimensions": ["process_adherence", "artifact_quality", "runtime_compatibility"],
       "critical": true
     },

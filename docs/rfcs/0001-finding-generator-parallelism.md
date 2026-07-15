@@ -26,7 +26,7 @@ Branch: `research/finding-generator-parallelism`
 
 - `cli/internal/overnight/external_watchlist_generator.go` — `runExternalWatchlistGenerator` reads the operator-managed watchlist and emits one `Status="proposed"`, `Requires=["human-review"]` candidate per entry past its `stale_after` window (default 168h). Missing file → soft-success with zero candidates; malformed YAML → soft-fail; ctx cancellation → soft-fail. Dedup key format: `external-watchlist|<normalized-id-and-title>`.
 - `cli/internal/overnight/ingest.go` — registered in `findingGenerators()` alongside `mine-findings`; reuses `defaultFindingGeneratorTimeout` (2 min, RFC §253).
-- `cli/internal/overnight/generator_sidecars.go` — `normalizeGeneratorCandidate` recognizes both `finding-generator|` and `external-watchlist|` prefixes (Wave 1 pre-mortem fix); without this, the aggregator silently rewrote external dedup keys.
+- `cli/internal/overnight/generator_sidecars.go` — `normalizeGeneratorCandidate` recognizes both `finding-generator|` and `external-watchlist|` prefixes (Wave 1 premortem fix); without this, the aggregator silently rewrote external dedup keys.
 - `PROGRAM.md` — `.agents/dream/external-watchlist.yaml` listed under Mutable Scope.
 - `IngestResult.ExternalWatchlistEmitted` + `ingestSummary["external_watchlist_emitted"]` — fitness counter for lane throughput.
 
@@ -65,7 +65,7 @@ The implementation follows that contract. `RunIngest` is documented as read-only
 
 ### Evolve is intentionally serial by default
 
-The Evolve skill describes the operator cadence as: post-mortem, analyze repo state, select or create the next highest-value item, run `/rpi`, harvest follow-ups, and repeat until a cap, breaker, or real dormancy (`skills/evolve/SKILL.md:37-41`). Its first work source is `.agents/rpi/next-work.jsonl`, and the selector picks the highest-value unconsumed item (`skills/evolve/SKILL.md:43-58`, `skills/evolve/SKILL.md:191-194`).
+The Evolve skill describes the operator cadence as: postmortem, analyze repo state, select or create the next highest-value item, run `/rpi`, harvest follow-ups, and repeat until a cap, breaker, or real dormancy (`skills/evolve/SKILL.md:37-41`). Its first work source is `.agents/rpi/next-work.jsonl`, and the selector picks the highest-value unconsumed item (`skills/evolve/SKILL.md:43-58`, `skills/evolve/SKILL.md:191-194`).
 
 The existing write-side parallel option is explicit and isolated. `ao rpi parallel` runs multiple RPI epics concurrently, each in its own git worktree, then merges successful branches in order and runs a gate (`cli/cmd/ao/rpi_parallel.go:59-167`). It dispatches epics with goroutines, enforces a per-epic timeout, reports failures, and stops merging on conflicts (`cli/cmd/ao/rpi_parallel.go:284-454`). The older parallel execution reference makes the safety model explicit: heuristic independence is not a guarantee; the regression gate is the real safety net; each worker needs isolated artifacts and a worktree because concurrent RPI cycles would collide on `.agents/rpi/` and git locks (`skills/evolve/references/parallel-execution.md:47-86`).
 
@@ -84,7 +84,7 @@ The findings registry already has a stronger dedup contract. It defines `dedup_k
 | Code-internal repo scan | `mine.Run` over `git`, `agents`, and `code`; counts code hotspots, orphaned research, co-change files, recurring fixes, error events, and gate verdicts | 1 | 2026-04-12, `eeea2b9f` | Runs in INGEST with `DryRun=true` (`cli/internal/overnight/ingest.go:253-312`) |
 | Code-internal finding router | `.agents/findings/*.md` -> `next-work.jsonl`, deduped by finding ID | 1 | 2026-04-19, `fc42b0aa` | Single `O_APPEND` line plus fsync; NFS append is not atomic (`cli/internal/overnight/findings_router.go:54-68`, `cli/internal/overnight/findings_router.go:83-155`) |
 | Runtime health | Dream fallback packets from explicit goal, retrieval coverage below threshold, metrics escape velocity false, and escalatable degradation | 4 | 2026-04-14, `a01235a3` | Packet IDs hash source parts with `dream-` prefix (`cli/cmd/ao/overnight_packets.go:258-343`, `cli/cmd/ao/overnight_packets.go:923-938`) |
-| Runtime corroboration | Long-haul packet corroboration and council as optional confidence-improvement lanes | 2 | 2026-04-19, `2f6105bc` | Prior post-mortem says cheapest probe before council was the reusable pattern (`.agents/council/2026-04-14-post-mortem-dream-longhaul.md:140-158`) |
+| Runtime corroboration | Long-haul packet corroboration and council as optional confidence-improvement lanes | 2 | 2026-04-19, `2f6105bc` | Prior postmortem says cheapest probe before council was the reusable pattern (`.agents/council/2026-04-14-postmortem-dream-longhaul.md:140-158`) |
 | Local external-ish curator | Ollama/Gemma-backed worker queue and event records | 1 | 2026-04-24, `04964419` | Allowed jobs are knowledge jobs and bounded events; no recursive runner budget-free calls (`skills/dream/SKILL.md:58-74`) |
 | Web/competitor/dependency scan inside Dream | None found | 0 | N/A | Evolve has deps/perf/test/refactor generators, but Dream has no web/competitor/deps finding-generator today (`skills/evolve/SKILL.md:52-57`) |
 
@@ -100,7 +100,7 @@ At the same time, the repo already treats read/research fanout as useful when ou
 
 These are not resolved by this pass and should not be guessed:
 
-- The actual nightly latency and yield distribution of each Dream substage. We have static code and post-mortem evidence, not per-generator timing histograms.
+- The actual nightly latency and yield distribution of each Dream substage. We have static code and postmortem evidence, not per-generator timing histograms.
 - How often current Dream runs are bottlenecked by finding starvation versus execution backlog. The queue has unresolved rows, but the question is marginal yield, not raw queue length.
 - Whether the user wants external web/competitor/dependency findings to become automatically executable or remain human-review-only.
 - Whether `status`, `requires`, `goal_weight`, and `dedup_key` should become first-class next-work schema fields or stay advisory metadata.

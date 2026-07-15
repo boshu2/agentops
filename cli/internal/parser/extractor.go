@@ -40,7 +40,7 @@ var DefaultPatterns = []ExtractionPattern{
 			"will use",
 			"architecture decision",
 			"design choice",
-			// Additional patterns from pre-mortem
+			// Additional patterns from premortem
 			"went with",
 			"opted for",
 			"selected",

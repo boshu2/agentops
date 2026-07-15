@@ -2,7 +2,7 @@
 // executor. The Karpathy loop has four stages — Ingest, Query, Lint, Promote —
 // applied conditionally based on wiki state on each tick.
 //
-// Per-stage idempotency contracts (pre-mortem amendment A3):
+// Per-stage idempotency contracts (premortem amendment A3):
 //
 //   - INGEST: atomic write (tmp + fsync + rename). Re-claim after crash inspects
 //     existing wiki/sources/<slug>.md and skips if already present.
@@ -30,7 +30,7 @@ import (
 // file in the same directory, fsyncing it, and renaming over the destination.
 // A partial write never leaves a corrupted file visible to readers.
 //
-// Per pre-mortem amendment A3. Rejects an empty path (llmwiki never writes to
+// Per premortem amendment A3. Rejects an empty path (llmwiki never writes to
 // the working directory) and otherwise delegates the temp+fsync+chmod+rename
 // mechanics to the canonical storage.AtomicWriteFile so there is a single
 // implementation of the algorithm across the CLI.

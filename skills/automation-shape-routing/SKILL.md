@@ -33,7 +33,7 @@ metadata:
   canonical_status: canonical
   disposition: keep_optional_adapter
   tier: meta
-  dependencies: [skill-builder, workflow-builder, agent-native]
+  dependencies: []
 output_contract: a one-line routing verdict naming the shape and deciding axis
 ---
 

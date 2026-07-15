@@ -14,7 +14,7 @@ skill_api_version: 1
 user-invocable: true
 metadata:
   tier: meta
-  dependencies: [ntm, agent-mail]
+  dependencies: []
   capabilities: [role_dispatch, observe_workers, handoff]
   effects: [manage_runtime_sessions]
   canonical_status: canonical

@@ -9,6 +9,7 @@ import (
 var approvedDefaultSpine = map[string]bool{
 	"capabilities": true, "config": true, "constraint": true, "doctor": true,
 	"gate": true, "goals": true, "init": true,
+	"flywheel":   true,
 	"provenance": true, "quick-start": true, "robot-docs": true,
 	"session": true, "skills": true, "status": true,
 	"version": true,
@@ -19,9 +20,6 @@ var approvedDefaultSpine = map[string]bool{
 }
 
 func TestDefaultSpineMatchesCathedralCutAllowlist(t *testing.T) {
-	if len(archiveBuildTags) != 0 {
-		t.Skip("restoration build")
-	}
 	removed := pruneToDefaultSpine(rootCmd)
 	t.Cleanup(func() { restorePrunedCommands(rootCmd, removed) })
 	var unexpected, missing []string

@@ -41,26 +41,26 @@
       },
       "expectations": [
         {"type": "exit_code", "value": 0},
-        {"type": "stdout_contains", "value": "cli-command-headings: top=32 sub=51 all=86"},
+        {"type": "stdout_contains", "value": "cli-command-headings: top=33 sub=49 all=85"},
         {"type": "stdout_contains", "value": "cli-help-matrix-ok"}
       ],
       "dimensions": ["correctness", "runtime_compatibility", "artifact_quality"],
       "critical": true
     },
     {
-      "id": "cli-reference-and-map-gates",
-      "title": "CLI generated docs and skill map remain current",
+      "id": "cli-reference-gate",
+      "title": "CLI generated docs remain current",
       "kind": "command",
-      "objective": "Keep the generated CLI reference and CLI-to-skills map synchronized with the Go command tree before relying on the matrix smoke.",
+      "objective": "Keep the generated CLI reference synchronized with the Go command tree before relying on the matrix smoke.",
       "runtime": "shell",
       "timeout_seconds": 120,
       "inputs": {
         "cwd": "../..",
-        "shell": "scripts/generate-cli-reference.sh --check && bash scripts/validate-cli-skills-map.sh"
+        "shell": "scripts/generate-cli-reference.sh --check"
       },
       "expectations": [
         {"type": "exit_code", "value": 0},
-        {"type": "stdout_contains", "value": "CLI_SKILLS_MAP: PASS"}
+        {"type": "stdout_contains", "value": "cli/docs/COMMANDS.md is up to date."}
       ],
       "dimensions": ["correctness", "process_adherence", "artifact_quality"],
       "critical": true

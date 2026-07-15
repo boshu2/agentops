@@ -26,9 +26,7 @@ metadata:
   canonical_status: canonical
   disposition: keep_specialist
   tier: execution
-  dependencies:
-  - standards
-  - pattern-mining
+  dependencies: []
 output_contract: code changes with regression evidence
 ---
 # Refactor — one structural experiment

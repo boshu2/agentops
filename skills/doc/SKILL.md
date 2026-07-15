@@ -26,9 +26,7 @@ metadata:
   canonical_status: canonical
   disposition: keep_specialist
   tier: product
-  dependencies:
-  - standards
-  - council
+  dependencies: []
 output_contract: documentation files
 ---
 # Doc Skill

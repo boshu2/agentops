@@ -80,7 +80,7 @@ func verifyTextCitation(citation *Citation, cwd, needle, kind string) {
 			if len(matches) >= 10 {
 				return nil
 			}
-			data, readErr := os.ReadFile(path) // #nosec G304 -- bounded repository walk
+			data, readErr := os.ReadFile(path) // #nosec G122 -- path comes from this bounded repository walk
 			if readErr == nil && strings.Contains(string(data), needle) {
 				if relative, relErr := filepath.Rel(cwd, path); relErr == nil {
 					matches = append(matches, relative)

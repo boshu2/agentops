@@ -16,7 +16,7 @@ const (
 
 // HarnessSkillSync is one (skill, harness) → checksum mapping. Path
 // is the skill manifest path the harness expects to find (e.g.
-// "skills-codex/evolve/SKILL.md"); ContentHash is the SHA hash the
+// "skills-codex/validate/SKILL.md"); ContentHash is the SHA hash the
 // adapter computed; OutOfSync is true when the hash doesn't match
 // the canonical source-of-truth (skills/<name>/SKILL.md by default).
 type HarnessSkillSync struct {
@@ -28,8 +28,8 @@ type HarnessSkillSync struct {
 }
 
 // HarnessPort is the BC5 Runtime surface. Callers — `make sync-hooks`,
-// the codex-parity audit, the dream-loop harness-state recorder, and
-// any future cross-harness sanity check — depend on this port so they
+// the codex-parity audit and any cross-harness sanity check depend on
+// this port so they
 // can ask "what's the sync state of each (skill, harness) pair?"
 // without coupling to a specific implementation (filesystem scan,
 // registry.json snapshot, etc.).

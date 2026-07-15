@@ -69,8 +69,8 @@ teardown() {
 }
 
 @test "an EXTENSIONLESS shell script (shebang, no .sh) with find -printf is caught" {
-    # The four real bugs were in .sh files, but hooks like scripts/hooks/pre-push.local
-    # and .githooks/* are extensionless shell. Detection must follow the shebang.
+    # Hooks and other executable helpers may be extensionless shell. Detection
+    # must follow the shebang.
     printf '#!/usr/bin/env bash\nx=$(find . -printf "%%f\\n")\n' > "$TMP_DIR/scripts/myhook"
     chmod +x "$TMP_DIR/scripts/myhook"
     run bash "$SCRIPT" --root "$TMP_DIR/scripts"

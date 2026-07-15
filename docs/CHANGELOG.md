@@ -19,7 +19,7 @@ AgentOps 3.2 is the **verification-keystone** minor: the cross-family review loo
 - **Verdict-integrity layers** (age-rk3r): REBOUND patch-id verdicts authorize byte-identical rebases without a re-review (honored by the portable push-gate and CI with Go-side lineage+proof re-validation, plus a keep-ref so CI can re-verify an orphaned reviewed commit); opt-in strict two-family cold quorum that refuses to degrade (honest-UNAVAILABLE); outage-only cold reviewer failover chain with explicit degraded labels; evidence-quality floor for CONFIRMED; live-smoke verify mode; provenance v1.1 verdict-edge enrichment (reviewer_family, degraded, rounds, duration_s, evidence_path).
 - **Membrane memory** (age-zpj5, age-membrane-memory-arch-tz2s): `ao membrane catch` records panel catches (class key + affected paths), `ao membrane recall --include-catches` retrieves them by domain into prompts, `ao membrane triage` reports honest two-axis recurrence; the escape→derived-check loop is proven end-to-end on the shipped binary (`scripts/em-loop-donetest.sh`) with learned constraints traveling to CI and clean clones.
 - **`ao wiki`** — the OpenKB port (age-port-openkb-into-agentops-go-5qw): `init/use/add/remove/recompile/lint/status`, gold-wiki compilation from `.agents/` with sanitize+mine, and verdict-gated publish bound to a content digest; retrieval integration via `ao lookup --gold` and `--pointers` bounded retrieval with a cold-start ε-exploration floor.
-- **Plan-pawl duel** (age-plan-pawl-9yib): `ao plan-pawl decide` deterministic duel decider; `/discovery` gains `--duel/--no-duel/--duel-rounds`; pre-mortem gains the duel checklist; ApprovalEdge records two judge panes.
+- **Plan-pawl duel** (age-plan-pawl-9yib): `ao plan-pawl decide` deterministic duel decider; `/discovery` gains `--duel/--no-duel/--duel-rounds`; premortem gains the duel checklist; ApprovalEdge records two judge panes.
 - **Real token accounting + governor**: per-bead token capture kills the hardcoded zeros, `ao yield tokens` parses Claude and Codex transcripts (deduped by response id, loud on absent usage), and `ao governor budget` adds an SPC error-budget with a two-sided noise band (age-membrane-memory-arch-tz2s.3, .7).
 - **Gate wave** (age-gate-the-ungated-egwt, age-push-equals-ci-0ua): full `-race` suite on push-to-main, provenance hash-chain gate at the pre-push boundary, `docs.cli-snippets` (live docs resolve against the cobra tree), `docs.skill-refs --all-docs`, `docs.demoted-claims` honesty lexicon, script-preamble ratchet, ADR-registry check, fail-closed pinned golangci-lint, static shell-portability gate, jsonl-scanner ratchet, and a report-only CI verdict backstop (age-wedge-all-in-dyr0.9).
 - **Land pipeline** (agentops-2pl, age-genn, age-qeqv, age-tkxq): single-writer land lane with branch submit queue and default-deny gh shim, deterministic land wrapper, staged-scope pre-commit guard against concurrent-lane contamination, first-class per-item consumed markers in next-work.
@@ -155,7 +155,7 @@ AgentOps 3.0 is the **hookless-first** major. The headline: AgentOps is what run
 - **Supergate Gap 3 (loop-closure) bats coverage** — `tests/scripts/check-three-gap-supergate.bats` extended with three tests (happy-path PASS, `goals-validate` FAIL, `flywheel-proof` SKIP) using a PATH-shimmed `go` that produces a controlled `/tmp/ao-sg` (`soc-wxh5.3`). Suite goes 15 → 18 tests; closes the cycle-63 Gap 3 deferral.
 - **Mandatory STEP 1.7.5 release-readiness gates** in `/validation` — auto-detects release context from branch name (`release/*`, `v*-prep`, `v*-evolve-run`, `v\d+\.\d+*`) or `--release-context` flag and requires `scripts/pre-push-gate.sh` (full, not `--fast`), `scripts/ci-local-release.sh`, and `scripts/generate-cli-reference.sh` cleanliness check when CLI surface changed. Validation refuses to recommend `/release` until all three pass. Codex parity synced.
 - **`/evolve` teardown pre-release checklist** — when the loop runs on a release-shaped branch, the teardown report emits an explicit unchecked checklist (regen CLI docs, full pre-push, `ci-local-release.sh`, optional smoke run) instead of recommending `/release`. The handoff artifact carries the checklist verbatim; "ready to tag" means boxes checked, not cycles green.
-- **Acceptance-Text vs Delivered Drift audit** in `/post-mortem` closure-integrity check — for each closed child, parses the bead `Acceptance:` section, extracts named gates, and WARNs when the close-note does not confirm the gate ran green. Catches the failure mode where a bead's acceptance language drifts from delivered evidence (origin: cycle 182 `soc-w6vh.4`).
+- **Acceptance-Text vs Delivered Drift audit** in `/postmortem` closure-integrity check — for each closed child, parses the bead `Acceptance:` section, extracts named gates, and WARNs when the close-note does not confirm the gate ran green. Catches the failure mode where a bead's acceptance language drifts from delivered evidence (origin: cycle 182 `soc-w6vh.4`).
 - **`.agents/operator/` write-surface contract entry** — `docs/contracts/agents-write-surfaces.md` now documents the BC4 `OperatorPort` durable-intent log (allowlist + classification row, lifecycle=`rolling`, writer=`cli`).
 
 ### Changed
@@ -164,7 +164,7 @@ AgentOps 3.0 is the **hookless-first** major. The headline: AgentOps is what run
 - **`/evolve` Step 1.5 healing-first classifier** now routes through the typed BC2 `CIStatusPort` (`cli/cmd/ao/ci_status_adapter.go`, cycle 117 `productionCIStatus`) via `ao ci recent --limit 1` instead of an inline `gh run list --workflow validate.yml --json conclusion` (`soc-y5vh.2`). Both callsites (`skills/evolve/SKILL.md` + `skills/evolve/references/convergence-mechanics.md`) updated in lockstep. Zero remaining inline `gh` shell-outs in `/evolve`'s hot read path.
 - **`cli/cmd/ao` coverage floor** raised back to 76 % in `scripts/check-cmd-ao-coverage.sh` after real statement coverage climbed to 76.1 % (23553/30953) on the v2.41-evolve-run baseline (`soc-wxh5.1`). The cycle-60 recalibration to 75 % is reversed.
 - **`/evolve` session-state refresh at Step 0** so the dormancy gate stays correct after long-running cycles harvest follow-ups (cycle 171 retrospective fix).
-- **`/release` skill refactor** — moved Examples + Troubleshooting + the non-HEAD cut-version logic into `references/release-workflow-detail.md` to bring `SKILL.md` back under the `tier=execution` size limit. Behavioral surface unchanged; cycle 169 post-mortem restoration commit restored Examples and Troubleshooting after the initial extraction.
+- **`/release` skill refactor** — moved Examples + Troubleshooting + the non-HEAD cut-version logic into `references/release-workflow-detail.md` to bring `SKILL.md` back under the `tier=execution` size limit. Behavioral surface unchanged; cycle 169 postmortem restoration commit restored Examples and Troubleshooting after the initial extraction.
 
 ### Fixed
 
@@ -177,7 +177,7 @@ AgentOps 3.0 is the **hookless-first** major. The headline: AgentOps is what run
 
 ### Internal
 
-- **DDD/Hex architecture rescope arc — 13 cycles closed.** Phase-1 complete + phase-2 retrospective (`docs/rescope/2026-05-13-ddd-hex-architecture-rescope.md`); test-architecture-debt analysis reconciled to deletions; BC ports phase-2 narrowness post-mortem captured (`docs/learnings/2026-05-13-bc-ports-narrowness-postmortem.md`).
+- **DDD/Hex architecture rescope arc — 13 cycles closed.** Phase-1 complete + phase-2 retrospective (`docs/rescope/2026-05-13-ddd-hex-architecture-rescope.md`); test-architecture-debt analysis reconciled to deletions; BC ports phase-2 narrowness postmortem captured (`docs/learnings/2026-05-13-bc-ports-narrowness-postmortem.md`).
 - **Learnings catalog hygiene** — README + when-to-add rubric (cycle 134), empirical /loop context-drift study over 87+ cycles (cycle 135), BC-ports wire-up arc retrospective (cycle 122), CLI-wiring cycle-shape template (cycles 144–146), substring sed-rename overreach warning.
 - **Contract drift resolution** — `soc-5yuy` drift #5 resolved via audit; `cli-skills-map.md` refreshed to 70 generated CLI command headings for v2.41-prep BC-arc commands.
 
@@ -294,9 +294,9 @@ AgentOps 3.0 is the **hookless-first** major. The headline: AgentOps is what run
 ### Changed
 
 - **`--no-lifecycle` in `/discovery` renamed to `--no-scaffold`** for semantic clarity — the flag controls STEP 4.5 scaffold auto-invocation only, not broader lifecycle checks. `--no-lifecycle` is honored as a deprecated alias through v2.40.0; when both flags are passed, they are equivalent. Other skills (`/crank`, `/validation`, `/implement`, `/evolve`) retain `--no-lifecycle` with its existing lifecycle-skill-invocation semantics.
-- **`/discovery` flags table** expanded: `--auto` is now explicitly documented (was transitively honored but undocumented); `--interactive` scope clarified ("research + plan gates, not pre-mortem").
+- **`/discovery` flags table** expanded: `--auto` is now explicitly documented (was transitively honored but undocumented); `--interactive` scope clarified ("research + plan gates, not premortem").
 - **`/validation` flags table** expanded: `--complexity=<level>` syntax formalized to match `/rpi` and `/discovery`; `--interactive` scope documented.
-- **`/rpi` `--interactive` flag** scope note added: applies to discovery (research + plan) and validation (Gate 1, Gate 2); does NOT override pre-mortem or vibe council autonomy.
+- **`/rpi` `--interactive` flag** scope note added: applies to discovery (research + plan) and validation (Gate 1, Gate 2); does NOT override premortem or vibe council autonomy.
 - **ASCII fast-path performance sweep** across rune-aware truncation call sites in `cli/` (`TruncateText`, `TruncateRunes`, `truncateForError`, plus goals/pool/search/rpi/parser call sites) — ASCII inputs now skip the full UTF-8 rune scan.
 - **Compile and overnight internals refactored** — `runCompile` split into phase + preflight helpers; article scan, inbound count, and prune extracted from `repair`; dream packet corroboration split per source epic; dream yield emptiness guard extracted into a dedicated helper. No behavior change; lower cyclomatic complexity and tighter test surfaces.
 - **Skills-codex DAG bodies converted to `$skill` notation** for the Codex runtime.
@@ -328,12 +328,12 @@ AgentOps 3.0 is the **hookless-first** major. The headline: AgentOps is what run
 ### Changed
 
 - **Release and pre-push validation** — local release, pre-push, and command coverage gates now validate more of the hook, evidence, and Codex runtime surface before publish.
-- **Codex/runtime artifacts and docs** — compile, evolve, post-mortem, swarm, and related runtime docs and artifacts were decomposed and synchronized to better match shipped behavior.
+- **Codex/runtime artifacts and docs** — compile, evolve, postmortem, swarm, and related runtime docs and artifacts were decomposed and synchronized to better match shipped behavior.
 - **Flywheel backlog bookkeeping** — next-work aggregates, consumed markers, and enum normalization were cleaned up so carry-forward work is recorded consistently.
 
 ### Fixed
 
-- **Pre-mortem gate ambiguity** — the crank pre-mortem gate now denies ambiguous state by default instead of failing open.
+- **Pre-mortem gate ambiguity** — the crank premortem gate now denies ambiguous state by default instead of failing open.
 - **CLI and shell reliability edges** — `ao rpi serve --run-id` now accepts legacy 8-hex IDs, `ao mine --dry-run` emits a single clean JSON payload, and bash invocations are sanitized to bypass unsafe shell aliases.
 - **Compile, harvest, and release drift** — compile repair defaults, malformed frontmatter salvage, YAML parse error surfacing, CI fixture drift, shellcheck drift, and Codex artifact metadata drift were corrected.
 
@@ -369,7 +369,7 @@ AgentOps 3.0 is the **hookless-first** major. The headline: AgentOps is what run
 
 - **Knowledge scoring and search behavior** — inject now deduplicates by content hash, boosts indexed pages, weights stability, and search can pull Dream vault and wiki sources with stronger local recall.
 - **Overnight and RPI internals** — overnight, lifecycle, search, inject, harvest, and RPI flows were decomposed into smaller helpers while tightening proof paths, mixed-mode provenance, and worktree cleanup.
-- **Public framing and contributor docs** — README, philosophy, planning/post-mortem docs, and reference surfaces now better match the context-compiler and operational-layer story.
+- **Public framing and contributor docs** — README, philosophy, planning/postmortem docs, and reference surfaces now better match the context-compiler and operational-layer story.
 
 ### Fixed
 
@@ -399,8 +399,8 @@ AgentOps 3.0 is the **hookless-first** major. The headline: AgentOps is what run
 
 - **RPI wave recovery integrated** — recovered RPI wave work landed across Dream, council, stale-scope planning, discovery artifacts, CI hardening, and Codex runtime surfaces.
 - **Council `--mixed` strict contract documented** — `skills/council/references/cli-spawning.md` documents that `/council --mixed` requires Codex CLI and emits a hard error instead of silently falling back to Claude-only.
-- **Plan and pre-mortem skill bodies decomposed** — focused reference files now carry the detailed pre-decomposition, scope-mode, mandatory-check, output, wave-matrix, and task-creation guidance while keeping the top-level skills within lint budgets.
-- **Bead-input pre-flight wired into planning skills** — `/plan` and `/pre-mortem` invoke `ao beads verify <bead-id>` for full-complexity, aged, or prior-session bead inputs before decomposition or validation.
+- **Plan and premortem skill bodies decomposed** — focused reference files now carry the detailed pre-decomposition, scope-mode, mandatory-check, output, wave-matrix, and task-creation guidance while keeping the top-level skills within lint budgets.
+- **Bead-input pre-flight wired into planning skills** — `/plan` and `/premortem` invoke `ao beads verify <bead-id>` for full-complexity, aged, or prior-session bead inputs before decomposition or validation.
 - **Operational-layer framing** — README, onboarding, docs, comparisons, and linked surfaces now consistently explain AgentOps as bookkeeping, validation, primitives, and flows for coding agents
 - **Dream runtime positioning** — the public GitHub nightly is now documented as a proof harness, while `ao overnight` is documented as the private local compounding engine
 - **Codex default path** — native hooks, install copy, runtime smoke coverage, and checked-in Codex artifacts are aligned around the native-plugin path on supported Codex versions
@@ -441,7 +441,7 @@ AgentOps 3.0 is the **hookless-first** major. The headline: AgentOps is what run
 - **Defrag test flag leak** — `TestDefragOutputDirFlag` used `cmd.Flags().Lookup("output")` which matched the root persistent `--output` flag; changed to `cmd.LocalFlags().Lookup("output")`
 - **Goroutine leak false positive** — `TestRunGoals_GoroutineLeak` used `goleak.VerifyNone` which caught goroutines from parallel tests; switched to `goleak.IgnoreCurrent()` to only detect leaks within the test itself
 - **Secret scan false positives** — excluded `.gc/` directory and `Getenv`/`os.Environ` patterns from secret pattern scan
-- **Codex skill validation** — added `output_contract` as valid schema key, `cross-vendor`/`knowledge` as valid tiers, fixed `$/` prefix in codex forge/post-mortem/scenario skills
+- **Codex skill validation** — added `output_contract` as valid schema key, `cross-vendor`/`knowledge` as valid tiers, fixed `$/` prefix in codex forge/postmortem/scenario skills
 - **Scenario CLI snippets** — replaced non-existent `--source`/`--scope` flags with valid `--status` variants
 
 ### Removed
@@ -509,11 +509,11 @@ AgentOps 3.0 is the **hookless-first** major. The headline: AgentOps is what run
 
 ### Fixed
 
-- **Codex artifact parity** — restored checked-in Codex parity for red-team and cleaned Codex runtime metadata/frontmatter drift across crank, forge, post-mortem, release, and swarm artifacts
+- **Codex artifact parity** — restored checked-in Codex parity for red-team and cleaned Codex runtime metadata/frontmatter drift across crank, forge, postmortem, release, and swarm artifacts
 - **Retrieval quality** — replaced exact-substring filtering with token-level matching and tuned penalty, deduplication, and OR-fallback behavior
 - **Harvest metadata preservation** — promotion now preserves source metadata and fills missing maturity, utility, and type fields safely
 - **Release tooling** — release artifact directories are created safely and audit artifacts now resolve against release tag names
-- **Documentation and link drift** — repaired the post-mortem Codex link and aligned runtime docs around the newer startup and lifecycle flows
+- **Documentation and link drift** — repaired the postmortem Codex link and aligned runtime docs around the newer startup and lifecycle flows
 
 ## [2.32.0] - 2026-04-01
 
@@ -570,7 +570,7 @@ AgentOps 3.0 is the **hookless-first** major. The headline: AgentOps is what run
 - **`ao lookup` retrieval** — fixed retrieval gaps that caused lookup to return no results
 - **Embedded sync** — using-agentops SKILL.md and `.agents/.gitignore` now written correctly on first session start
 - **Closure integrity** — 24h grace window for close-before-commit evidence, normalized file parsing
-- **Skill lint compliance** — vibe, post-mortem, crank, and plan skills trimmed or restructured to stay under 800-line limit
+- **Skill lint compliance** — vibe, postmortem, crank, and plan skills trimmed or restructured to stay under 800-line limit
 - **Codex tool naming** — added CLAUDE_TOOL_NAMING rule and fixed 5 Claude-era tool references in codex skills
 - **ASCII diagram consistency** — aligned box-drawing characters across 23 documentation files
 - **Fork exhaustion prevention** — replaced jq with awk in validate-go-fast to prevent fork bombs on large repos
@@ -599,7 +599,7 @@ AgentOps 3.0 is the **hookless-first** major. The headline: AgentOps is what run
 
 - **Model cost tiers and config writes** — `ao config` can now assign per-agent models by cost tier and persist repo configuration changes directly
 - **Search brokerage over session history and repo knowledge** — `ao search` now wraps upstream `cass` results with repo-local AgentOps artifacts by default
-- **Reviewer and post-mortem reference packs** — Added model-routing, iterative-retrieval, confidence-scoring, write-time-quality, and conflict-recovery guidance across council, research, swarm, vibe, compile, and related skills
+- **Reviewer and postmortem reference packs** — Added model-routing, iterative-retrieval, confidence-scoring, write-time-quality, and conflict-recovery guidance across council, research, swarm, vibe, compile, and related skills
 
 ### Changed
 
@@ -694,7 +694,7 @@ AgentOps 3.0 is the **hookless-first** major. The headline: AgentOps is what run
 
 ### Fixed
 
-- **Codex BF pyramid parity** — Synced BF1/BF2/BF4 bug-finding level selection into skills-codex implement, post-mortem, and validation skills
+- **Codex BF pyramid parity** — Synced BF1/BF2/BF4 bug-finding level selection into skills-codex implement, postmortem, and validation skills
 - **Codex Claude backend cross-contamination** — Removed orphaned `backend-claude-teams.md` files (Claude primitives: TeamCreate, SendMessage) from 4 Codex skills (council, research, shared, swarm)
 - **Dead converter rule** — Removed stale sed substitution for `backend-claude-teams.md` rename in converter script
 - **Swarm reference integrity** — Added Reference Documents section to swarm SKILL.md; updated validate.sh to check only Codex-native backend references
@@ -704,14 +704,14 @@ AgentOps 3.0 is the **hookless-first** major. The headline: AgentOps is what run
 ### Added
 
 - **L0–L7 test pyramid standard** — Shared reference doc (`standards/references/test-pyramid.md`) defining 8 test levels, agent autonomy boundaries (L0–L3 autonomous, L4+ human-guided), and RPI phase mapping
-- **Test pyramid integration across RPI lifecycle** — Discovery identifies test levels, plan classifies tests by level, pre-mortem validates coverage, implement selects TDD level, crank carries `test_levels` metadata, validation audits coverage, post-mortem reports gaps
+- **Test pyramid integration across RPI lifecycle** — Discovery identifies test levels, plan classifies tests by level, premortem validates coverage, implement selects TDD level, crank carries `test_levels` metadata, validation audits coverage, postmortem reports gaps
 - **RPI autonomous execution enforcement** — Three-Phase Rule mandates discovery → implementation → validation without human interruption; anti-patterns table documents 7 failure modes
 - **Evolve autonomous execution enforcement** — Each cycle runs a complete 3-phase `/rpi --auto`; anti-patterns table documents 6 failure modes; large work decomposed into sub-RPI cycles
 - **Codex skill standard** — New `standards/references/codex-skill.md` with tool mapping, prohibited primitives, two-phase validation, DAG-first traversal, and prompt constraint boundaries
 - **Codex-native overrides** — Durable overrides for crank, swarm, council that survive regeneration
 - **DAG-based Codex smoke test** — `scripts/smoke-test-codex-skills.sh` validates 54 skills with dependency-ordered traversal
 - **Codex skill API contract** — `docs/contracts/codex-skill-api.md` with conformance validator
-- **Output contract declarations** — `output_contract` field on council, vibe, pre-mortem, research skills with canonical finding-item schema
+- **Output contract declarations** — `output_contract` field on council, vibe, premortem, research skills with canonical finding-item schema
 
 ### Changed
 
@@ -732,13 +732,13 @@ AgentOps 3.0 is the **hookless-first** major. The headline: AgentOps is what run
 - **Error & rescue map template** — Pre-mortem Step 2.5 with 3 worked examples (HTTP, database, LLM)
 - **Scope mode selection** — Pre-mortem Step 1.6 with 3-mode framework (Expand/Hold/Reduce) and auto-detection
 - **Temporal interrogation** — Pre-mortem Step 2.4 walks implementation timeline (hour 1/2/4/6+) for time-dependent risks
-- **Prediction tracking** — Pre-mortem findings get unique IDs (`pm-YYYYMMDD-NNN`) correlated through vibe and post-mortem
+- **Prediction tracking** — Pre-mortem findings get unique IDs (`pm-YYYYMMDD-NNN`) correlated through vibe and postmortem
 - **Finding classification** — Vibe separates CRITICAL (blocks ship) from INFORMATIONAL findings
 - **Suppression framework** — Vibe loads default + project-level suppression patterns for known false positives
 - **Domain-specific checklists** — Standards skill extended with SQL safety, LLM trust boundary, and race condition checklists, auto-loaded by vibe
 - **RPI session streak tracking** — Post-mortem Step 1.5 shows consecutive session days and verdict history
 - **Persistent retro history** — Post-mortem Step 4.8 writes structured JSON summaries to `.agents/retro/` for cross-epic trend analysis
-- **Prediction accuracy scoring** — Post-mortem Step 3.5 scores HIT/MISS/SURPRISE against pre-mortem predictions
+- **Prediction accuracy scoring** — Post-mortem Step 3.5 scores HIT/MISS/SURPRISE against premortem predictions
 - **Commit split advisor** — PR-prep Phase 4.5 suggests bisectable commit ordering (suggestion-only)
 - **Council finding auto-extraction** — Significant findings from WARN/FAIL verdicts staged for flywheel consumption
 
@@ -761,7 +761,7 @@ AgentOps 3.0 is the **hookless-first** major. The headline: AgentOps is what run
 
 - **Discovery and validation phase orchestrators** — New `/discovery` and
   `/validation` skills decompose the RPI lifecycle into independently
-  invocable phases (research+plan+pre-mortem and vibe+post-mortem)
+  invocable phases (research+plan+premortem and vibe+postmortem)
 - **Stigmergic packet scorecard** — Ranked scoring for flywheel knowledge
   packets so higher-utility learnings surface first
 - **Pinned work queue** — `/evolve` gains a pinned work queue with blocker
@@ -994,7 +994,7 @@ AgentOps 3.0 is the **hookless-first** major. The headline: AgentOps is what run
 - High-complexity CLI paths refactored (`runRPIParallel`, `runDedup`, `parseGatesTable`) to lower cyclomatic complexity.
 
 ### Fixed
-- Multiple post-mortem remediation waves landed for CLI/RPI/swarm reliability and edge-case handling.
+- Multiple postmortem remediation waves landed for CLI/RPI/swarm reliability and edge-case handling.
 - Hook delegation and integration behavior corrected for flat command namespace.
 - `heal.sh` false-positive behavior reduced and doctor stale-path detection improved.
 - Skill/doc parity and cross-reference drift issues corrected across codex and core skill catalogs.
@@ -1085,7 +1085,7 @@ AgentOps 3.0 is the **hookless-first** major. The headline: AgentOps is what run
 - 6 new tests for dedup, ambiguity detection, iteration cap, duplicate markers
 - Cobra pflag state pollution between test invocations — explicit flag reset in `executeCommand()` helper
 - Goals validate.sh outdated checks and missing validate.sh for 7 skills
-- 10 tech debt findings from ag-8km+ag-chm post-mortem (stale nudge, scanner, docs)
+- 10 tech debt findings from ag-8km+ag-chm postmortem (stale nudge, scanner, docs)
 - ao binary codesigned with stable Mach-O identifier
 - Hook integration tests updated — removed 8 stale standalone ao-* hook tests consolidated into session-end-maintenance.sh
 
@@ -1112,7 +1112,7 @@ AgentOps 3.0 is the **hookless-first** major. The headline: AgentOps is what run
 
 ### Added
 - Evolve idle hardening — disk-derived stagnation detection, 60-minute circuit breaker, rolling fitness files, no idle commits
-- Evolve `--quality` mode — findings-first priority cascade that prioritizes post-mortem findings over goals
+- Evolve `--quality` mode — findings-first priority cascade that prioritizes postmortem findings over goals
 - Evolve cycle-history.jsonl canonical schema standardization and artifact-only commit gating
 - `heal-skill` checks 7-10 with `--strict` CI gate for automated skill maintenance
 - 6-phase E2E validation test suite for RPI lifecycle (gate retries, complexity scaling, phase summaries, promise tags)
@@ -1138,7 +1138,7 @@ AgentOps 3.0 is the **hookless-first** major. The headline: AgentOps is what run
 - Handoff example filename format corrected to `YYYYMMDDTHHMMSSZ` spec
 - Quickstart step numbering corrected (7 before 8)
 - OpenAI docs skill: added Claude Code MCP alternative to Codex-only fallback
-- Dead link to `conflict-resolution-algorithm.md` removed from post-mortem
+- Dead link to `conflict-resolution-algorithm.md` removed from postmortem
 - `ao forge search` → `ao search` in provenance and knowledge skills
 - OSS docs: root-level doc path checks, removed golden-init reference
 - Reverse-engineer-rpi fixture paths and contract refs corrected

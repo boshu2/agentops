@@ -841,10 +841,10 @@ type FlywheelMetrics struct {
 	// PriorArtBypasses is how many times users bypassed the prior art gate.
 	PriorArtBypasses int `json:"prior_art_bypasses,omitempty"`
 
-	// RetrosWithLearnings is post-mortems that created extractable learnings.
+	// RetrosWithLearnings is postmortems that created extractable learnings.
 	RetrosWithLearnings int `json:"retros_with_learnings,omitempty"`
 
-	// TotalRetros is total post-mortem count this period.
+	// TotalRetros is total postmortem count this period.
 	TotalRetros int `json:"total_retros,omitempty"`
 
 	// --- MemRL Utility Metrics (ol-memrl) ---

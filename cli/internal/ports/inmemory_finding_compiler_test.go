@@ -36,7 +36,7 @@ func replayReadyDetectorEvidence() *DetectorEvidence {
 	}
 }
 
-// An ADVISORY finding (no detector metadata) defaults to plan + pre-mortem only;
+// An ADVISORY finding (no detector metadata) defaults to plan + premortem only;
 // the constraint is skipped, not emitted as a dead artifact (EM-ENF property:
 // constraint only with valid mechanical detector metadata).
 func TestInMemoryFindingCompiler_AdvisoryDefaultEmitsTwoTargets(t *testing.T) {
@@ -46,7 +46,7 @@ func TestInMemoryFindingCompiler_AdvisoryDefaultEmitsTwoTargets(t *testing.T) {
 		t.Fatalf("Compile: %v", err)
 	}
 	if len(got) != 2 {
-		t.Fatalf("advisory default emitted %d outputs, want 2 (plan + pre-mortem)", len(got))
+		t.Fatalf("advisory default emitted %d outputs, want 2 (plan + premortem)", len(got))
 	}
 	if contains(collectKinds(got), CompiledOutputConstraint) {
 		t.Fatalf("advisory finding must emit no constraint; got %v", collectKinds(got))

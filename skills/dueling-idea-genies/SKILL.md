@@ -32,8 +32,7 @@ metadata:
   canonical_status: canonical
   disposition: keep_strategy
   tier: judgment
-  dependencies:
-  - idea-genie
+  dependencies: []
 output_contract: idea-challenge.v1 JSON validated by skills/dueling-idea-genies/scripts/validate-output.sh
 ---
 # Dueling Idea Genies

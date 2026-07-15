@@ -1,105 +1,49 @@
 ---
 name: scaffold
-description: Stamp project/component/CI scaffolds — but
+description: Stamp a bounded project, component, or CI
 ---
-# Scaffold Skill
+# Scaffold
 
-> **Quick Ref:** Domain-slice manifests (the repo binding) + generic project/component/CI scaffolds. `$scaffold domain <name>` for a scoped operating-loop slice; `$scaffold <language> <name>`, `$scaffold component <type> <name>`, `$scaffold ci <platform>` for the generic modes.
+Create one bounded project, component, or CI scaffold. This specialist does not
+schedule RPI, create work ownership, mutate Git, or decide what happens next.
 
-Stamp real project, component, or CI boilerplate plus its executable verification surface.
+## Contract
 
-**YOU MUST EXECUTE THIS WORKFLOW. Do not just describe it.** Generate real files, run real commands, verify real output.
+1. Resolve the requested target root and declare the exact paths that may be
+   created or changed.
+2. Refuse to overwrite an existing path without explicit caller authorization.
+3. Generate idiomatic, functional files with at least one behavioral test for
+   generated behavior.
+4. Run the target's selected build, test, and lint commands once.
+5. Report the files changed and factual command results, then stop.
 
-## Critical Constraints
-
-- Snapshot `git status`, resolve the target root, and declare the exact write scope before generation. **Why:** scaffold must not absorb unrelated user changes or write outside the requested boundary.
-- Require explicit authorization before `--force`, overwriting, deleting, or replacing any existing path; stop on overlap with pre-existing edits. **Why:** generated convenience never outranks user-owned work.
-- Use the current agent and local shell; do not start alternate runtimes or orchestration substrates unless the user explicitly requested them. **Why:** scaffolding is a bounded write operation, not automatic permission to fan out.
-- Run the target's build, behavioral test, and lint contract once and report the
-  exact results. Git, repair, reruns, escalation, and delivery belong to the caller.
+Use the current agent and local shell unless the caller explicitly requests a
+different runtime. Preserve unrelated existing changes.
 
 ## Modes
 
-| Mode | Invocation | Output | Where |
-|------|-----------|--------|-------|
-| **Domain-Slice** | `$scaffold domain <name>` | Domain-slice manifest for a scoped operating-loop run | **this file** (repo binding) |
-| **Project** | `$scaffold <language> <name>` | Full project directory with build, test, lint | [references/generic-templates.md](references/generic-templates.md) |
-| **Component** | `$scaffold component <type> <name>` | New module/package added to existing project | [references/generic-templates.md](references/generic-templates.md) |
-| **CI** | `$scaffold ci <platform>` | CI/CD pipeline configuration | [references/generic-templates.md](references/generic-templates.md) |
+- `$scaffold <language> <name>` creates a project.
+- `$scaffold component <type> <name>` adds a component to an existing project.
+- `$scaffold ci <platform>` creates the requested CI configuration.
 
-Parse the invocation: `domain` first-positional → Domain-Slice; `component` → Component; `ci` → CI; otherwise Project. If ambiguous, ask ONE clarifying question, then proceed.
+If the request does not identify a target or language, ask only for the missing
+fact. The caller owns version control, revision, and delivery.
 
-## Generic scaffolding (project / component / CI)
+## Evidence
 
-**A frontier model needs no template for standard project trees, best-practice
-config, or CI YAML.** State the language, type, and name; it produces an
-idiomatic tree with real files and a behavioral test, then reports the selected
-build/test/lint results. The caller owns version-control actions.
+Return:
 
-The canonical tree shapes, `.editorconfig`/pre-commit/CI YAML skeletons, verification-command table, per-mode component layouts, and the error-recovery + output-summary blocks the skill historically stamped are preserved verbatim in **[references/generic-templates.md](references/generic-templates.md)** — consult it only when you want those exact shapes. For installer scripts, agent-facing tool servers, MCP surfaces, or Rust CLI storage scaffolds, apply [references/agent-facing-tool-scaffolds.md](references/agent-facing-tool-scaffolds.md) before writing files.
+- the target root and actual changed paths;
+- the build, test, and lint commands selected;
+- each command's exit code;
+- any requested check that was not run.
 
-## Domain-Slice Mode
-
-When invoked as `$scaffold domain <name>`, scaffold a **domain-slice manifest** — the bounded-context declaration used to scope an operating-loop run.
-
-> There is **no `scaffold` subcommand on the `ao` CLI**. Domain-slice scaffolding is this skill's responsibility; the old phased-engine flags are superseded by ADR-0009.
-
-### Workflow
-
-1. **Generate the manifest.** Run the write-and-exit flag — it creates the template and returns without starting an RPI run:
-
-   Run `$scaffold domain <name>`.
-
-   This writes `docs/domains/<name>/manifest.yaml` from a template that already validates against `schemas/domain-slice-manifest.v1.schema.json`. An existing manifest is **not** overwritten unless `--force` is passed.
-
-2. **Fill in the placeholders.** Edit the generated manifest:
-   - `bounded_context` — one sentence: what this slice owns and explicitly does NOT own.
-   - `directive_ids` — stable GOALS.md directive IDs (pattern `d-<slug>`) this slice owns.
-   - `scenario_ids` — promoted spec scenario IDs from `spec/scenarios/` (may stay `[]` initially).
-   - `context_roots` — repo-relative implementation surface (at least one entry).
-   - `allowed_read_globs` / `denied_read_globs` — the read fence (gitignore syntax; deny wins).
-   - `validation_commands` — ordered build/test/lint steps.
-
-3. **Verify it loads.** The scaffolded manifest already passes the F3.1 schema/loader. After editing, confirm it still validates:
-
-   Dry-run the operating-loop plan against `docs/domains/<name>/manifest.yaml` before execution.
-
-   A dry run loads the manifest, prints the scoped phase prompts, and exits — proving the slice attaches.
-
-4. **Run scoped RPI.** Once the manifest is real:
-
-   Run the operating loop with `docs/domains/<name>/manifest.yaml` as the explicit scope contract.
-
-   Phase prompts carry the slice's boundaries; each run also writes a domain-scope audit artifact reporting any out-of-domain references visible in evidence.
-
-### Next commands the scaffold names
-
-After writing the manifest, lint executable-spec links with `ao goals scenarios --lint`, preview the scoped operating-loop plan, then execute with the manifest as the scope contract. Run them in that order.
-
-Error-recovery and output-summary conventions (shared with the generic modes) live in [references/generic-templates.md](references/generic-templates.md).
-
-## Output Specification
-
-**Artifact directory:** generated files stay under the declared target root; write the durable handoff to `.agents/evidence/scaffold/<run-id>/` at the invocation root.
-**Filename convention:** required `receipt.json`; Domain-Slice mode additionally produces `docs/domains/<name>/manifest.yaml`; other filenames follow the selected scaffold mode.
-**Serialization/schema format:** `receipt.json` contains `schema_version: 1`,
-`mode`, `target_root`, `files_created`, `files_modified`, and factual
-`validation` entries of `{kind,command,exit_code}`. It contains no commit,
-verdict, next action, retry, or delivery state.
-**Validator command:** check the required fields and confirm every reported path
-is beneath `target_root`.
-**Output:** return the receipt path and stop.
-
-## Quality Checklist
-
-- [ ] The generated paths equal the declared write scope and preserve pre-existing changes.
-- [ ] Files contain real behavior and at least one behavioral test—no placeholder-only green.
-- [ ] Build, tests, and lint are recorded with actual exit codes in `receipt.json`.
-- [ ] Domain manifests validate against `schemas/domain-slice-manifest.v1.schema.json` and retain their read fence.
-- [ ] The receipt contains facts only and leaves Git and continuation to the caller.
+The result contains no verdict, lifecycle state, retry instruction, or next
+action.
 
 ## References
 
+- [references/generic-templates.md](references/generic-templates.md) — optional
+  historical shapes when the caller wants a specific template.
 - [references/agent-facing-tool-scaffolds.md](references/agent-facing-tool-scaffolds.md)
-- [references/recommended-reading.md](references/recommended-reading.md) — forward-looking index of external skills (e.g., `mcp-server-design`) worth absorbing into scaffold when their trigger conditions arrive. Consult before designing a new scaffold mode that targets agent-facing tool surfaces.
-- [references/scaffold.feature](references/scaffold.feature) — Executable spec: project/component/CI scaffolding entry points + domain-slice manifest routing (soc-qk4b)
+- [references/scaffold.feature](references/scaffold.feature)

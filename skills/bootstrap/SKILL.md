@@ -26,12 +26,7 @@ metadata:
   disposition: keep_specialist
   graph_root: true
   tier: session
-  dependencies:
-  - goals
-  - product
-  - doc
-  - shared
-  - scaffold
+  dependencies: []
 output_contract: minimal project docs and .agentops/verdicts directory
 ---
 # Bootstrap — minimal project setup

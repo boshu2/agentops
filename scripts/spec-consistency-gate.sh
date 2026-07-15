@@ -26,7 +26,7 @@
 #   0  All FAIL checks passed (WARN is OK)
 #   1  One or more FAIL checks failed
 #
-# Pattern: pre-push-gate.sh accumulator / color pattern
+# This is an ordinary deterministic check; callers choose where to run it.
 
 set -euo pipefail
 

@@ -1,12 +1,7 @@
-// Package provenancegraph is the write model for the SDLC provenance/intent
-// graph (ag-x31t). It appends typed, evidence-backed provenance edges to the
-// committed, per-record hash-chained ledger at docs/provenance/ledger.jsonl.
-//
-// Per CLAUDE.md and the council architecture
-// (.agents/council/2026-05-30-debate-provenance-substrate.md) the committed
-// JSONL ledger is the AUDIT authority and the source of truth; any Dolt
-// provenance_edges table is a rebuildable projection and loses on disagreement.
-// This package therefore writes the JSONL ledger directly.
+// Package provenancegraph appends typed evidence edges to the optional,
+// per-record hash-chained ledger at docs/provenance/ledger.jsonl. The ledger is
+// generic audit evidence. Its availability or contents never control RPI
+// sequencing, verdict validity, revision, or repository delivery.
 //
 // Edge events conform to schemas/agentops-sdlc-provenance.v1.schema.json and
 // reuse the hashing discipline of cli/internal/rpi/ledger.go:
@@ -31,7 +26,7 @@ import (
 const SchemaVersion = "agentops-sdlc-provenance.v1"
 
 // LedgerRelativePath is the repo-relative path to the committed provenance
-// ledger. The committed JSONL is the audit authority.
+// ledger. This is a historical audit location, not a lifecycle authority.
 const LedgerRelativePath = "docs/provenance/ledger.jsonl"
 
 // NodeTypes is the closed set of edge-endpoint node types from the v1 schema.
@@ -53,17 +48,9 @@ var NodeTypes = []string{
 // commit_implements_decision->wasRevisionOf, learning_revises_decision->
 // wasInvalidatedBy.
 //
-// "resolves" is the one deliberate non-PROV-O addition (age-ekam, epic
-// age-xnet A1/A6/A7): a commit→commit resolution edge from a landed
-// compensating commit (mechanical revert or fix-forward) to the REFUTED
-// commit it resolves. It is appended by the compensator lane and consumed by
-// the LKG-frontier computation (cli/internal/frontier), which enforces the
-// duel-hardened validity floor — strict-descendant compensator, acyclicity,
-// one live edge per refuted sha, and the refuting verdict's repro executed
-// GREEN at the compensating sha recorded in evidence_ref plus the P0-fix-bead
-// binding. No PROV-O verb carries the "compensates a refuted change"
-// semantics without overloading an existing meaning, so the ledger names it
-// literally.
+// "resolves" is the one historical non-PROV-O addition: a commit-to-commit
+// observation that one change compensates for another. It remains readable for
+// existing records but does not change any current core outcome.
 var Relations = []string{
 	"wasGeneratedBy",
 	"wasAssociatedWith",
@@ -92,45 +79,21 @@ type Edge struct {
 	ToType        string `json:"to_type"`
 	Relation      string `json:"relation"`
 	EvidenceRef   string `json:"evidence_ref,omitempty"`
-	// BeadID and MergeSHA are additive, NON-payload mesh join keys (ag-5qltf,
-	// epic ag-w0wr2). They denormalize the already-hashed from_id/to_id of a
-	// bead→commit edge into the canonical (bead_id, merge_sha) join key the
-	// yield↔provenance mesh joins on (bead_id is the universal key; merge_sha
-	// anchors the bead→commit hop). Deliberately EXCLUDED from edgePayload: the
-	// authoritative values are from_id/to_id, which the payload already covers,
-	// so these projections need no independent hash protection — and excluding
-	// them keeps every existing committed edge's payload_hash/VerifyChain intact.
+	// BeadID and MergeSHA are legacy, NON-payload join keys retained so existing
+	// records remain byte-verifiable. They carry no work-ownership or delivery
+	// authority and generic appenders need not emit them.
 	BeadID    string `json:"bead_id,omitempty"`
 	MergeSHA  string `json:"merge_sha,omitempty"`
 	TrustTier string `json:"trust_tier"`
 	TS        string `json:"ts"`
-	// v1.1 verdict-record enrichment (age-rk3r.3) — five OPTIONAL, additive
-	// fields carrying reviewer metadata for verdict edges (the cost-of-verified-
-	// done substrate; failover label; the receipts' structured evidence source).
-	// UNLIKE the bead_id/merge_sha join keys above, these ARE part of edgePayload
-	// and therefore hash-PROTECTED: a record that sets any of them has it covered
-	// by payload_hash, so it is tamper-evident. Backward compatibility rests on
-	// omitempty — a record predating these fields (or leaving them at their zero
-	// value) omits them from the payload JSON entirely, so its payload_hash is
-	// byte-identical to the pre-v1.1 layout and VerifyChain stays intact across the
-	// whole committed history. "v1.1" is a DOCUMENTATION label only: SchemaVersion
-	// is UNCHANGED, and consumers branch on field PRESENCE, never a version string.
-	//
-	// COMPATIBILITY BOUNDARY (documented, load-bearing): because the fields are IN
-	// the payload, an OLDER ao binary that predates them unmarshals a v1.1 record
-	// into a struct that DROPS them, recomputes the payload WITHOUT them, and so
-	// reports a spurious payload_hash mismatch (a false "broken chain") on v1.1
-	// records — while still verifying every pre-v1.1 record. A reader must be at or
-	// above the version that knows these fields to verify v1.1 records; the
-	// installed-hook ao-version floor is a separate bead (.6).
+	// These optional legacy observations are part of edgePayload when present.
+	// Keep them to preserve historical payload hashes; they are not verdict.v2
+	// fields and do not affect current validation.
 	ReviewerFamily string  `json:"reviewer_family,omitempty"`
 	Degraded       bool    `json:"degraded,omitempty"`
 	Rounds         int     `json:"rounds,omitempty"`
 	DurationS      float64 `json:"duration_s,omitempty"`
-	// TokensEst is the verification-economics meter (age-verification-economics-ebec.1):
-	// estimated tokens spent producing this verdict (transcript-bytes/4 when the
-	// harness reports no exact usage). Same additive/omitempty compatibility
-	// contract as the other v1.1 fields — zero omits, pre-meter records unchanged.
+	// TokensEst is a legacy observation retained for hash compatibility.
 	TokensEst    int    `json:"tokens_est,omitempty"`
 	EvidencePath string `json:"evidence_path,omitempty"`
 	PrevHash     string `json:"prev_hash"`

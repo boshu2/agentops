@@ -9,7 +9,7 @@ Parent: ag-parent
 STEP            STATUS       OUTPUT
 ----            ------       ------
 research        ✓ locked     findings.md
-premortem       ✓ locked     pre-mortem.md
+premortem       ✓ locked     premortem.md
 plan            ○ pending
 implement       ○ pending
 crank           ○ pending

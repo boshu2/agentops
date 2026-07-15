@@ -59,8 +59,8 @@ func TestCoreCanaryMortemReferencesAreCanonical(t *testing.T) {
 	for _, path := range []string{
 		"../../../skills/premortem/SKILL.md",
 		"../../../skills/premortem/scripts/validate.sh",
-		"../../../skills/premortem/references/mandatory-checks.md",
-		"../../../skills/premortem/references/write-premortem-output.md",
+		"../../../skills/premortem/references/premortem.feature",
+		"../../../skills/premortem/schemas/premortem-plan-review.v1.schema.json",
 		"../../../skills-codex/premortem/SKILL.md",
 		"../../../skills-codex/premortem/prompt.md",
 		"../../../skills-codex/premortem/scripts/validate.sh",

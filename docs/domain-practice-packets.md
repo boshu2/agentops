@@ -58,7 +58,7 @@ above them.
 | `docs/standards/` and `skills/standards/` | Coding and review conventions. |
 | `br` beads (`_beads/`) | Current work, dependencies, acceptance criteria, and ownership. |
 | `ao context assemble` | Builds a phase-scoped briefing from goals, history, intel, task, and protocol. |
-| `ao context packet` | Shows ranked findings, planning rules, pre-mortem checks, and next-work context. |
+| `ao context packet` | Shows ranked findings, planning rules, premortem checks, and next-work context. |
 | `/council` | Turns the packet into a shared evidence frame for independent judges. |
 | `/provenance` and `/trace` | Reconstruct where packet claims came from and how they moved through later artifacts. |
 | RPI execution packet | Carries the accepted objective, plan path, contract surfaces, validation lanes, and done criteria across discovery, implementation, and validation. |

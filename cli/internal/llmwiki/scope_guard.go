@@ -8,7 +8,7 @@ import (
 )
 
 // allowedWritePaths lists the prefixes (relative to vault root) that llmwiki
-// stages are allowed to write to. Hardcoded per pre-mortem amendment C5.
+// stages are allowed to write to. Hardcoded per premortem amendment C5.
 //
 // Roadmap: future expansion to wiki/threads/, wiki/clips/, wiki/reviewed/,
 // wiki/knowledge/ when those subdirs are formally adopted by llmwiki.loop.

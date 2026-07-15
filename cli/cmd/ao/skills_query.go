@@ -29,7 +29,7 @@ var skillsListCmd = &cobra.Command{
 	Short: "Query the generated skill catalog (skills/catalog.json)",
 	Long: `Filter the generated skill catalog by hexagonal role, produced or
 consumed port, declared practice, or user-invocability. Reads
-skills/catalog.json (emitted by scripts/generate-skill-catalog.sh and kept
+skills/catalog.json (emitted by scripts/generate-skill-mesh.py and kept
 in sync by CI), so queries are fast and never re-parse SKILL.md frontmatter.
 
 Examples:
@@ -105,7 +105,7 @@ func loadCatalogOrErr(cmd *cobra.Command) (*skills.Catalog, error) {
 	cat, err := skills.LoadCatalog(skillsDir)
 	if err != nil {
 		cmd.SilenceUsage = true
-		return nil, fmt.Errorf("%w; run `scripts/generate-skill-catalog.sh` to (re)build it", err)
+		return nil, fmt.Errorf("%w; run `python3 scripts/generate-skill-mesh.py` to (re)build it", err)
 	}
 	return cat, nil
 }

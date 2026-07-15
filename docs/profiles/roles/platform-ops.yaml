@@ -34,7 +34,7 @@ skills:
 commands:
   - /research
   - /implement
-  - /post-mortem
+  - /postmortem
   - /session-start
   - /session-end
 

@@ -10,10 +10,10 @@ import (
 
 // defaultBundleSkills is the AgentOps-native default skill set stitched into an
 // out-of-session Agent definition when --skills is not given (ag-eguw0).
-var defaultBundleSkills = []string{"session-bootstrap", "standards", "validation", "provenance"}
+var defaultBundleSkills = []string{"rpi", "plan", "implement", "validate"}
 
 // defaultAgentModel is the model an emitted managed Agent definition targets.
-const defaultAgentModel = "claude-opus-4-8"
+const defaultAgentModel = "gpt-5.6-codex"
 
 // holdoutMarkers are substrings whose presence in a selected skill's body means
 // bundling it to a (non-ZDR) cloud agent would leak the locked eval substrate.
@@ -106,7 +106,7 @@ func buildCodexNTMBundle(skills []string) Bundle {
 		Runtime:      "codex-ntm",
 		Instructions: stitchInstructions(skills),
 		Skills:       skills,
-		Bootstrap:    "ao session bootstrap && ao inject --bead \"$BEAD\"",
+		Bootstrap:    "Load rpi and run one Plan -> Implement -> fresh Validate invocation; report and stop.",
 		Reference:    "skills-codex/agent-native",
 	}
 }
@@ -116,8 +116,8 @@ func buildCodexNTMBundle(skills []string) Bundle {
 // skill bodies are loaded by the agent at runtime via the ao tool surface).
 func stitchInstructions(skills []string) string {
 	var sb strings.Builder
-	sb.WriteString("You are an AgentOps-native agent. Load and follow these skills, ")
-	sb.WriteString("self-bootstrap with `ao session bootstrap`, and gate your output with `ao validate`:\n")
+	sb.WriteString("You are an AgentOps-native agent. Load and follow these skills. ")
+	sb.WriteString("Run each core phase at most once, persist the fresh verdict, report, and stop:\n")
 	for _, s := range skills {
 		sb.WriteString("- ")
 		sb.WriteString(s)

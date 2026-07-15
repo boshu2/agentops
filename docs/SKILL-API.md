@@ -170,7 +170,7 @@ metadata:
 
 | Tier | Purpose | Example Skills |
 |------|---------|----------------|
-| `judgment` | Legacy internal tier name for validation and review gates | council, vibe, pre-mortem, post-mortem |
+| `judgment` | Legacy internal tier name for validation and review gates | council, vibe, premortem, postmortem |
 | `execution` | Single-task implementation | implement, bug-hunt, complexity, security-suite |
 | `orchestration` | Multi-skill coordination | rpi, crank, swarm, evolve |
 | `session` | Session lifecycle | handoff, recover, status, quickstart |
@@ -210,8 +210,8 @@ Core skills and their context policies:
 | **Validation (tier: judgment)** | | | | |
 | council | isolated | exclude: HISTORY | task | full |
 | vibe | fork | exclude: HISTORY | task | — |
-| pre-mortem | fork | exclude: HISTORY | task | — |
-| post-mortem | fork | exclude: HISTORY | task | — |
+| premortem | fork | exclude: HISTORY | task | — |
+| postmortem | fork | exclude: HISTORY | task | — |
 | **Orchestration** | | | | |
 | rpi | fork | — | — | — |
 | crank | fork | exclude: HISTORY | task | full |

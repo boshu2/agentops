@@ -25,7 +25,7 @@ const minMessageChars = 20
 // maxChars caps the total UserText+AssistantText for each chunk; when a pair
 // exceeds the budget, each side is truncated proportionally (40/60 favoring
 // assistant, matching the spike's extract_chunks.py behavior). Callers should
-// use the redactor BEFORE chunking (critical per pre-mortem F3); this
+// use the redactor BEFORE chunking (critical per premortem F3); this
 // function is a pure structural transform.
 //
 // Orphan messages (a user with no following assistant, or vice versa) are

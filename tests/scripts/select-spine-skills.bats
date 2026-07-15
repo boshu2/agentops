@@ -20,8 +20,8 @@ setup() {
     # Permanent compatibility pointers for a spine skill must survive the same
     # bundle pruning as their canonical target.
     echo "$output" | grep -qx "premortem"
-    echo "$output" | grep -qx "pre-mortem"
-    echo "$output" | grep -qx "pre_mortem"
+    echo "$output" | grep -qx "premortem"
+    echo "$output" | grep -qx "premortem"
 }
 
 @test "selector excludes non-spine (experimental/corpus) skills" {

@@ -167,7 +167,7 @@ func buildKnowledgeHarvestTopicPackets(agentsRoot string, catalog knowledgeHarve
 	b.WriteString("## Consumers\n\n")
 	b.WriteString("- `ao knowledge activate`\n")
 	b.WriteString("- `ao knowledge brief --goal \"turn harvested knowledge into actionable praxis for this repo\"`\n")
-	b.WriteString("- RPI discovery, planning, pre-mortem, and validation phases\n\n")
+	b.WriteString("- RPI discovery, planning, premortem, and validation phases\n\n")
 	b.WriteString("## Key Decisions\n\n")
 	b.WriteString("- Convert high-confidence harvested artifacts into operator surfaces before starting freeform implementation.\n")
 	b.WriteString("- Treat harvest confidence, source paths, and runnable validation as selection gates for reusable praxis.\n")
@@ -302,7 +302,7 @@ func knowledgeHarvestPraxisScore(artifact knowledgeHarvestArtifact) int {
 		" acceptance probe",
 		" ratchet",
 		" gate",
-		" pre-mortem",
+		" premortem",
 		" deterministic",
 	} {
 		if strings.Contains(text, keyword) {

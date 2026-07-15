@@ -301,7 +301,7 @@ func PrimitivesForTopic(topic TopicDetail) []string {
 		"stateful environment":   {"context", "memory", "environment", "packet", "state", "control plane", "knowledge"},
 		"replaceable actors":     {"actor", "agent", "worker", "handoff", "owner", "ownership", "swarm"},
 		"stigmergic traces":      {"trace", "provenance", "citation", "handoff", "log", "queue", "artifact"},
-		"selection gates":        {"gate", "validation", "check", "policy", "proof", "review", "pre-mortem"},
+		"selection gates":        {"gate", "validation", "check", "policy", "proof", "review", "premortem"},
 		"evolutionary promotion": {"promotion", "promote", "retro", "learning", "flywheel", "reuse", "playbook"},
 		"governance":             {"governance", "scope", "boundary", "operator", "policy", "constraint"},
 	}

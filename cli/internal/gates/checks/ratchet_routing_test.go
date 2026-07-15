@@ -11,7 +11,7 @@ import (
 )
 
 // TestRatchetLibConsumersRouteLibEdits is the ratchet-lib routing closure
-// (age-ratchet-lib-extraction-bv7d.1, pre-mortem FM3): every scripts/check-*.sh
+// (age-ratchet-lib-extraction-bv7d.1, premortem FM3): every scripts/check-*.sh
 // that sources scripts/lib/ratchet.sh must (a) be a registered Backing in the
 // Go gate registry and (b) carry "scripts/lib/ratchet.sh" in its Match globs —
 // otherwise an edit to the shared lib would not re-run the gates that depend

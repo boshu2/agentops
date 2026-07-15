@@ -34,10 +34,10 @@ See also: `skills/swarm/references/worker-pitfalls.md` for general platform pitf
 
 ## Maintenance Protocol
 
-This document is a living reference. Update it during every post-mortem cycle.
+This document is a living reference. Update it during every postmortem cycle.
 
 **When to add an entry:**
-- A post-mortem discovers a framework/platform surprise that wasted agent time
+- A postmortem discovers a framework/platform surprise that wasted agent time
 - A swarm worker hits a known limitation not documented here
 - A new tool or library introduces a gotcha
 
@@ -47,4 +47,4 @@ This document is a living reference. Update it during every post-mortem cycle.
 3. Format: `- **Bold name**: Description of the footgun and how to avoid it`
 4. Include the relevant file path or code reference
 
-**Update cadence:** Every `/post-mortem` should check: "Did we discover a new footgun?" If yes, add it here in the same cycle — not next cycle.
+**Update cadence:** Every `/postmortem` should check: "Did we discover a new footgun?" If yes, add it here in the same cycle — not next cycle.

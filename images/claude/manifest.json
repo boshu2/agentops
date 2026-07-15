@@ -1,209 +1,258 @@
 {
   "image": "claude",
-  "spec": "IMAGE-CORE.md",
-  "spec_section": "post-consolidation corpus refresh (2026-07-04, age-085q); original spec: IMAGE-CORE.md \u00a71 + \u00a72a + \u00a72d + \u00a73a",
-  "source_corpus_commit": "81303ad9c48373c0f78ec785fb4c05c9422f9399",
-  "recipe": "direct",
-  "transform": "none",
-  "description": "Claude image = the CORE skill set shipped DIRECT. SKILL.md is Claude-native (YAML frontmatter name/description + markdown body); no conversion, no wrapper. Skills are consumed in place from agentops/skills/<slug>/ via the Claude harness skills path / marketplace plugin. First-class Claude primitives (Workflows, Agent subagents, scheduled tasks) wrap USAGE, not the skill files. This bundle is the manifest + README + verify only; it does NOT copy or duplicate the skill files.",
-  "counts": {
-    "method_core": 20,
-    "tool_op_core": 9,
-    "core_total": 29,
-    "operator": 2,
-    "manifest_total": 31
-  },
-  "core_skills": [
+  "schema_version": "skill-image.v1",
+  "skill_count": 50,
+  "skills": [
     {
-      "slug": "rpi",
-      "path": "skills/rpi/",
-      "category": "method-core",
-      "ship": "direct"
-    },
-    {
-      "slug": "discovery",
-      "path": "skills/discovery/",
-      "category": "method-core",
-      "ship": "direct"
-    },
-    {
-      "slug": "research",
-      "path": "skills/research/",
-      "category": "method-core",
-      "ship": "direct"
-    },
-    {
-      "slug": "plan",
-      "path": "skills/plan/",
-      "category": "method-core",
-      "ship": "direct"
-    },
-    {
-      "slug": "implement",
-      "path": "skills/implement/",
-      "category": "method-core",
-      "ship": "direct"
-    },
-    {
-      "slug": "crank",
-      "path": "skills/crank/",
-      "category": "method-core",
-      "ship": "direct"
-    },
-    {
-      "slug": "swarm",
-      "path": "skills/swarm/",
-      "category": "method-core",
-      "ship": "direct"
-    },
-    {
-      "slug": "validate",
-      "path": "skills/validate/",
-      "category": "method-core",
-      "ship": "direct"
-    },
-    {
-      "slug": "council",
-      "path": "skills/council/",
-      "category": "method-core",
-      "ship": "direct"
-    },
-    {
-      "slug": "premortem",
-      "path": "skills/premortem/",
-      "category": "method-core",
-      "ship": "direct"
-    },
-    {
-      "slug": "postmortem",
-      "path": "skills/postmortem/",
-      "category": "method-core",
-      "ship": "direct"
-    },
-    {
-      "slug": "goals",
-      "path": "skills/goals/",
-      "category": "method-core",
-      "ship": "direct"
-    },
-    {
-      "slug": "evolve",
-      "path": "skills/evolve/",
-      "category": "method-core",
-      "ship": "direct"
-    },
-    {
-      "slug": "bootstrap",
-      "path": "skills/bootstrap/",
-      "category": "method-core",
-      "ship": "direct"
-    },
-    {
-      "slug": "handoff",
-      "path": "skills/handoff/",
-      "category": "method-core",
-      "ship": "direct"
-    },
-    {
-      "slug": "push",
-      "path": "skills/push/",
-      "category": "method-core",
-      "ship": "direct"
-    },
-    {
-      "slug": "scope",
-      "path": "skills/scope/",
-      "category": "method-core",
-      "ship": "direct"
-    },
-    {
-      "slug": "status",
-      "path": "skills/status/",
-      "category": "method-core",
-      "ship": "direct"
-    },
-    {
-      "slug": "test",
-      "path": "skills/test/",
-      "category": "method-core",
-      "ship": "direct"
-    },
-    {
-      "slug": "skill-builder",
-      "path": "skills/skill-builder/",
-      "category": "method-core",
-      "ship": "direct"
-    },
-    {
-      "slug": "beads-br",
-      "path": "skills/beads-br/",
-      "category": "tool-op-core",
-      "ship": "direct"
-    },
-    {
-      "slug": "beads-bv",
-      "path": "skills/beads-bv/",
-      "category": "tool-op-core",
-      "ship": "direct"
-    },
-    {
-      "slug": "agent-mail",
-      "path": "skills/agent-mail/",
-      "category": "tool-op-core",
-      "ship": "direct"
-    },
-    {
-      "slug": "ntm",
-      "path": "skills/ntm/",
-      "category": "tool-op-core",
-      "ship": "direct"
-    },
-    {
-      "slug": "cass",
-      "path": "skills/cass/",
-      "category": "tool-op-core",
-      "ship": "direct"
-    },
-    {
-      "slug": "dcg",
-      "path": "skills/dcg/",
-      "category": "tool-op-core",
-      "ship": "direct"
-    },
-    {
-      "slug": "account-rotation",
+      "disposition": "keep_specialist",
       "path": "skills/account-rotation/",
-      "category": "tool-op-core",
-      "ship": "direct"
+      "slug": "account-rotation"
     },
     {
-      "slug": "rch",
-      "path": "skills/rch/",
-      "category": "tool-op-core",
-      "ship": "direct"
+      "disposition": "keep_optional_adapter",
+      "path": "skills/agent-mail/",
+      "slug": "agent-mail"
     },
     {
-      "slug": "sbh",
-      "path": "skills/sbh/",
-      "category": "tool-op-core",
-      "ship": "direct"
-    }
-  ],
-  "operator_skills": [
-    {
-      "slug": "workflow-builder",
-      "path": "skills/workflow-builder/",
-      "category": "claude-operator",
-      "ship": "direct",
-      "primitive": "Claude Workflows (worker -> validate -> tie-break/council)"
+      "disposition": "keep_optional_adapter",
+      "path": "skills/agent-native/",
+      "slug": "agent-native"
     },
     {
-      "slug": "cc-hooks",
+      "disposition": "keep_optional_adapter",
+      "path": "skills/agy-native/",
+      "slug": "agy-native"
+    },
+    {
+      "disposition": "keep_optional_adapter",
+      "path": "skills/automation-shape-routing/",
+      "slug": "automation-shape-routing"
+    },
+    {
+      "disposition": "keep_specialist",
+      "path": "skills/bootstrap/",
+      "slug": "bootstrap"
+    },
+    {
+      "disposition": "keep_specialist",
+      "path": "skills/cass/",
+      "slug": "cass"
+    },
+    {
+      "disposition": "keep_specialist",
       "path": "skills/cc-hooks/",
-      "category": "claude-operator",
-      "ship": "direct",
-      "primitive": "Claude Agent subagents (worker/validator/scout)"
+      "slug": "cc-hooks"
+    },
+    {
+      "disposition": "keep_specialist",
+      "path": "skills/codebase-recon/",
+      "slug": "codebase-recon"
+    },
+    {
+      "disposition": "keep_optional_adapter",
+      "path": "skills/codex-exec/",
+      "slug": "codex-exec"
+    },
+    {
+      "disposition": "keep_specialist",
+      "path": "skills/converter/",
+      "slug": "converter"
+    },
+    {
+      "disposition": "keep_strategy",
+      "path": "skills/council/",
+      "slug": "council"
+    },
+    {
+      "disposition": "keep_specialist",
+      "path": "skills/dcg/",
+      "slug": "dcg"
+    },
+    {
+      "disposition": "keep_specialist",
+      "path": "skills/doc/",
+      "slug": "doc"
+    },
+    {
+      "disposition": "keep_specialist",
+      "path": "skills/domain/",
+      "slug": "domain"
+    },
+    {
+      "disposition": "keep_strategy",
+      "path": "skills/dueling-idea-genies/",
+      "slug": "dueling-idea-genies"
+    },
+    {
+      "disposition": "keep_specialist",
+      "path": "skills/goals/",
+      "slug": "goals"
+    },
+    {
+      "disposition": "keep_specialist",
+      "path": "skills/handoff/",
+      "slug": "handoff"
+    },
+    {
+      "disposition": "keep_specialist",
+      "path": "skills/heal-skill/",
+      "slug": "heal-skill"
+    },
+    {
+      "disposition": "keep_strategy",
+      "path": "skills/idea-genie/",
+      "slug": "idea-genie"
+    },
+    {
+      "disposition": "keep",
+      "path": "skills/implement/",
+      "slug": "implement"
+    },
+    {
+      "disposition": "keep_off_path",
+      "path": "skills/learn/",
+      "slug": "learn"
+    },
+    {
+      "disposition": "keep_specialist",
+      "path": "skills/ms/",
+      "slug": "ms"
+    },
+    {
+      "disposition": "keep_optional_adapter",
+      "path": "skills/ntm/",
+      "slug": "ntm"
+    },
+    {
+      "disposition": "keep_specialist",
+      "path": "skills/operationalize/",
+      "slug": "operationalize"
+    },
+    {
+      "disposition": "keep_specialist",
+      "path": "skills/pattern-mining/",
+      "slug": "pattern-mining"
+    },
+    {
+      "disposition": "keep",
+      "path": "skills/plan/",
+      "slug": "plan"
+    },
+    {
+      "disposition": "keep_strategy",
+      "path": "skills/postmortem/",
+      "slug": "postmortem"
+    },
+    {
+      "disposition": "keep_strategy",
+      "path": "skills/premortem/",
+      "slug": "premortem"
+    },
+    {
+      "disposition": "keep_specialist",
+      "path": "skills/product/",
+      "slug": "product"
+    },
+    {
+      "disposition": "keep_specialist",
+      "path": "skills/rch/",
+      "slug": "rch"
+    },
+    {
+      "disposition": "keep_strategy",
+      "path": "skills/reality-check/",
+      "slug": "reality-check"
+    },
+    {
+      "disposition": "keep_specialist",
+      "path": "skills/refactor/",
+      "slug": "refactor"
+    },
+    {
+      "disposition": "keep_specialist",
+      "path": "skills/research/",
+      "slug": "research"
+    },
+    {
+      "disposition": "keep_specialist",
+      "path": "skills/reverse-engineer/",
+      "slug": "reverse-engineer"
+    },
+    {
+      "disposition": "keep",
+      "path": "skills/rpi/",
+      "slug": "rpi"
+    },
+    {
+      "disposition": "keep_specialist",
+      "path": "skills/sbh/",
+      "slug": "sbh"
+    },
+    {
+      "disposition": "keep_specialist",
+      "path": "skills/scaffold/",
+      "slug": "scaffold"
+    },
+    {
+      "disposition": "keep_specialist",
+      "path": "skills/scope/",
+      "slug": "scope"
+    },
+    {
+      "disposition": "keep_specialist",
+      "path": "skills/security/",
+      "slug": "security"
+    },
+    {
+      "disposition": "keep_specialist",
+      "path": "skills/shared/",
+      "slug": "shared"
+    },
+    {
+      "disposition": "keep_specialist",
+      "path": "skills/skill-builder/",
+      "slug": "skill-builder"
+    },
+    {
+      "disposition": "keep_specialist",
+      "path": "skills/standards/",
+      "slug": "standards"
+    },
+    {
+      "disposition": "keep_specialist",
+      "path": "skills/status/",
+      "slug": "status"
+    },
+    {
+      "disposition": "keep_optional_adapter",
+      "path": "skills/swarm/",
+      "slug": "swarm"
+    },
+    {
+      "disposition": "keep_specialist",
+      "path": "skills/test/",
+      "slug": "test"
+    },
+    {
+      "disposition": "keep_specialist",
+      "path": "skills/toil-mining/",
+      "slug": "toil-mining"
+    },
+    {
+      "disposition": "keep_optional_adapter",
+      "path": "skills/using-gc/",
+      "slug": "using-gc"
+    },
+    {
+      "disposition": "keep",
+      "path": "skills/validate/",
+      "slug": "validate"
+    },
+    {
+      "disposition": "keep_specialist",
+      "path": "skills/workflow-builder/",
+      "slug": "workflow-builder"
     }
   ],
-  "note_ag_s43tg": "Prune ag-s43tg (2026-06-12): folded slugs remapped to their fold targets; counts recomputed."
+  "source": "skills/*/SKILL.md metadata"
 }

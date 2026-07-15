@@ -70,7 +70,7 @@ Every principle was learned through failure and refined through iteration across
 The instinct is to front-load everything. This fails. Agents drown in irrelevant context and hallucinate connections. What works: deliver the right context at the right time. AgentOps evolved from monolithic prompt files to skill-scoped references and session intelligence packets.
 
 **2. Raw Chat History Is Not Knowledge.**
-Organizations that archive agent conversations without extraction get zero compounding. Every session starts from scratch. What works: force transformation. The flywheel pipeline — forge, retro, post-mortem — transforms raw events into learnings, learnings into rules, and rules into context for the next session. Later sessions resolve problems in 2 operations that earlier sessions spent hours debugging.
+Organizations that archive agent conversations without extraction get zero compounding. Every session starts from scratch. What works: force transformation. The flywheel pipeline — forge, retro, postmortem — transforms raw events into learnings, learnings into rules, and rules into context for the next session. Later sessions resolve problems in 2 operations that earlier sessions spent hours debugging.
 
 **3. Never Trust Self-Reported Success.**
 Agents claim success without running tests. They report "all passing" after partial runs. What works: external validation at every stage. The 33 CI checks in AgentOps exist because every one was added after a failure that self-reported success would have hidden. The 3-5x validation overhead prevents 10x bug rework.
@@ -126,8 +126,8 @@ Unstructured knowledge (learnings, patterns)
     ↓ curate, temper, promote
 Structured findings (actionable, severity-ranked)
     ↓ finding-compiler
-Compiled output: planning rules, pre-mortem checks, constraints
-    ↓ plan, pre-mortem, crank
+Compiled output: planning rules, premortem checks, constraints
+    ↓ plan, premortem, crank
 Enforcement gates that reject bad plans before implementation
 ```
 

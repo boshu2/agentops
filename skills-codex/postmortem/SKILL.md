@@ -1,6 +1,6 @@
 ---
 name: postmortem
-description: Test an explicit retrospective causal
+description: Optionally test a retrospective causal
 ---
 # Postmortem
 
@@ -10,7 +10,7 @@ description: Test an explicit retrospective causal
 ## Critical Constraints
 
 - Because proof and causal inference are different judgments, Postmortem is retrospective causal analysis, not the general learning umbrella and not a completion gate.
-- It consumes an immutable Validate verdict plus Learn receipt and does not re-run acceptance validation by default because Validate already owns that proof.
+- It consumes immutable Validate verdict evidence and does not re-run acceptance validation because Validate already owns that proof.
 - Treat causal statements as hypotheses because causal confidence must survive
   alternatives. Separate observed sequence, contributing conditions,
   counterfactuals, and unknowns.
@@ -24,7 +24,7 @@ description: Test an explicit retrospective causal
 
 ## Workflow
 
-1. Pin the verdict, Learn receipt, delivered artifact, and explicit causal
+1. Pin the verdict, subject evidence, and explicit causal
    question.
 2. Reconstruct the evidence-backed timeline without importing hidden author
    reasoning as fact.
@@ -43,7 +43,7 @@ description: Test an explicit retrospective causal
 - **Serialization/schema format:** Markdown with causal question, pinned inputs,
   timeline, hypotheses, evidence, counterfactuals, unknowns, and experiments.
 - **Validator command:** `bash skills/postmortem/scripts/validate.sh`.
-- **Downstream handoff:** Learn or the orchestrator may consume the analysis; they own
+- **Downstream handoff:** Learn or the caller may consume the analysis; they own
   any bookkeeping, promotion, planning, or delivery decision.
 
 ## Quality Checklist

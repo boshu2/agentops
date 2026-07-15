@@ -27,8 +27,7 @@ metadata:
   canonical_status: canonical
   disposition: keep_specialist
   tier: execution
-  dependencies:
-  - standards
+  dependencies: []
 output_contract: test files, coverage report
 ---
 # Test Skill

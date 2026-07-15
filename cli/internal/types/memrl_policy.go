@@ -68,8 +68,8 @@ const (
 	// MemRLFailureClassAny is a wildcard used for fallback rules.
 	MemRLFailureClassAny MemRLFailureClass = "*"
 
-	// MemRLFailureClassPreMortemFail maps to pre-mortem gate FAIL.
-	MemRLFailureClassPreMortemFail MemRLFailureClass = "pre_mortem_fail"
+	// MemRLFailureClassPreMortemFail maps to premortem gate FAIL.
+	MemRLFailureClassPreMortemFail MemRLFailureClass = "premortem_fail"
 
 	// MemRLFailureClassCrankBlocked maps to crank BLOCKED status.
 	MemRLFailureClassCrankBlocked MemRLFailureClass = "crank_blocked"

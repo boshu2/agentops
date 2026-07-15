@@ -101,13 +101,6 @@ func Execute() {
 			}
 			os.Exit(docErr.ExitCode())
 		}
-		var scanErr *corpusScanExitError
-		if errors.As(err, &scanErr) {
-			// The exit code IS the verdict for `ao corpus scan`: 1 means a leak
-			// marker (or unreadable file) was detected — fail closed. The
-			// report already went to stdout/stderr, so nothing more to surface.
-			os.Exit(scanErr.ExitCode())
-		}
 		var wikiHealthErr *wikiHealthExitError
 		if errors.As(err, &wikiHealthErr) {
 			// The exit code IS the verdict for `ao wiki lint`: 1 means blocking
@@ -143,10 +136,7 @@ func init() {
 		&cobra.Group{ID: "config", Title: "Configuration:"},
 		&cobra.Group{ID: "comms", Title: "Communication:"},
 		&cobra.Group{ID: "knowledge", Title: "Knowledge:"},
-		// The corpus/flywheel surface is experimental-tier (unproven — ADR-0004,
-		// ADR-0011): kept and buildable, but demoted under its own header so the
-		// spine (proven) commands lead the `ao --help` surface (age-h4y3).
-		&cobra.Group{ID: "experimental", Title: "Experimental (corpus/flywheel):"},
+		&cobra.Group{ID: "experimental", Title: "Optional knowledge tools:"},
 	)
 
 	// Global flags available to all commands

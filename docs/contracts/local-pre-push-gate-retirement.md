@@ -10,29 +10,27 @@ trying to publish, which made ordinary delivery slow and fragile.
 
 ## Current decision
 
-Validation stops after one exact candidate has deterministic evidence, one
-immutable verdict from fresh context, and one Learn receipt. The consumer
-repository owns delivery for local and cloud agents. It may use direct push, a
-PR, hosted CI, or a small deterministic hook.
+AgentOps stops after one exact candidate has deterministic evidence and one
+durable verdict from fresh context. The consumer repository owns delivery for
+local and cloud agents. It may use direct push, a PR, hosted CI, or a small
+deterministic hook.
 
-A repository delivery adapter may verify identity and reuse an exact-input
-receipt. It must not:
+A repository hook or CI job may run deterministic repository checks. It must
+not treat AgentOps as the delivery controller or:
 
 - invoke a model or perform another semantic review;
 - mutate or upgrade the Validate verdict;
 - close tracker work as a side effect of Git;
-- own a global delivery queue for AgentOps; or
+- create an AgentOps delivery queue or receipt; or
 - replay an unchanged full suite merely because delivery started.
 
-## Deletion ownership
+## Retired surface
 
-K7 deletes the old delivery command, queue, and semantic push-hook machinery
-while installing deterministic delivery recording. Dedicated scripts, hooks,
-tests, and fixtures disappear in that same candidate. F4 later removes the
-build profiles that kept alternate command owners compilable. D2 regenerates
-command projections after executable ownership is final.
+The old AgentOps delivery commands, queue, semantic push admission, and
+delivery receipts are retired. Existing deterministic repository checks remain
+ordinary checks whose exit status means only success or failure.
 
 ## Rollback
 
-Revert the complete K7 candidate before downstream consumers depend on its
-receipt contract. Do not restore only a hook or only a removed delivery owner.
+Revert the complete Cathedral Cut if repository policy needs to restore the old
+product boundary. Do not restore only an AgentOps push hook or delivery command.

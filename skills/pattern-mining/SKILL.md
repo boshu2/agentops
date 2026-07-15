@@ -34,8 +34,7 @@ metadata:
   canonical_status: canonical
   disposition: keep_specialist
   tier: execution
-  dependencies:
-  - operationalize
+  dependencies: []
 output_contract: pattern-mining.v1 JSON validated by skills/pattern-mining/scripts/validate-output.sh
 ---
 

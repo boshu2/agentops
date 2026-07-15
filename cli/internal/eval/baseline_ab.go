@@ -17,7 +17,7 @@ const (
 )
 
 // AllBaselineModes returns the legal --baseline-mode values, used by
-// cobra ValidArgs so invalid values are rejected (per pre-mortem Check 5).
+// cobra ValidArgs so invalid values are rejected (per premortem Check 5).
 func AllBaselineModes() []string {
 	return []string{
 		string(BaselineModeSkillOn),

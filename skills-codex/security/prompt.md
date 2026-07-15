@@ -1,6 +1,6 @@
 # security
 
-Run repository security scans for vulnerabilities, dependency risk, secrets, and release gates. Triggers: "security", "run repository security scans for", "security skill".
+Run authorized repository security scans for vulnerabilities, dependency risk, secrets, and binary policy. Triggers: "security", "run repository security scans for", "security skill".
 
 ## Instructions
 

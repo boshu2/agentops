@@ -49,7 +49,7 @@ lib_set() {
       basename "$d"
     fi
   done
-  printf '%s\n' standards shared gc-membrane domain codex-exec beads-br
+  printf '%s\n' standards shared domain
 }
 
 # Count both persisted shapes across transcripts newer than the window.
@@ -96,4 +96,4 @@ printf '%s\n' "$raw" | while read -r c s; do
   if printf '%s\n' "$libs" | /usr/bin/grep -qx "$s"; then printf '  %6s  %s\n' "$c" "$s"; fi
 done
 echo
-echo "feeds: disposition refreshes (docs/contracts/skill-dispositions.yaml), age-e508 measured tier."
+echo "usage is advisory evidence; skills/*/SKILL.md metadata remains the inventory source."

@@ -4,7 +4,7 @@
 #
 # Usage:
 #   ralph "Add dark mode support"
-#   ralph --skip-pre-mortem "Fix typo in README"
+#   ralph --skip-premortem "Fix typo in README"
 #   ralph --branch feat/dark-mode "Add dark mode"
 #   ralph --spec spec.md "Add dark mode"
 #   ralph --dry-run "Add dark mode"
@@ -14,7 +14,7 @@
 set -euo pipefail
 
 # ── Phase order (for checkpoint skip logic) ───────────────────────────────────
-PHASES=(plan pre-mortem branch crank vibe post-mortem pr)
+PHASES=(plan premortem branch crank vibe postmortem pr)
 
 # ── Defaults ──────────────────────────────────────────────────────────────────
 SKIP_PRE_MORTEM=false
@@ -31,7 +31,7 @@ CODEX_BIN="${CODEX_BIN:-codex}"
 # ── Parse args ────────────────────────────────────────────────────────────────
 while [[ $# -gt 0 ]]; do
   case "$1" in
-    --skip-pre-mortem) SKIP_PRE_MORTEM=true; shift ;;
+    --skip-premortem) SKIP_PRE_MORTEM=true; shift ;;
     --branch)          BRANCH="$2"; shift 2 ;;
     --dry-run)         DRY_RUN=true; shift ;;
     --resume)          RESUME_FILE="$2"; shift 2 ;;
@@ -223,10 +223,10 @@ PLAN_PATH="$RALPH_DIR/plan-path.txt"
 
 # ── Phase 2: Pre-mortem (optional) ────────────────────────────────────────────
 if [[ "$SKIP_PRE_MORTEM" == "true" ]]; then
-  if ! should_skip "pre-mortem"; then
-    log "Skipping pre-mortem (--skip-pre-mortem)"
-    echo "SKIP" > "$RALPH_DIR/pre-mortem-verdict.txt"
-    save_checkpoint "pre-mortem"
+  if ! should_skip "premortem"; then
+    log "Skipping premortem (--skip-premortem)"
+    echo "SKIP" > "$RALPH_DIR/premortem-verdict.txt"
+    save_checkpoint "premortem"
   fi
 else
   PLAN_FILE=""
@@ -234,13 +234,13 @@ else
     PLAN_FILE=$(cat "$PLAN_PATH")
   fi
 
-  run_phase "pre-mortem" \
+  run_phase "premortem" \
     "You are working in $WORKDIR.
-Run /pre-mortem on the plan${PLAN_FILE:+ at $PLAN_FILE}.$(spec_context)
-After the council finishes, write exactly one word — PASS, WARN, or FAIL — into $RALPH_DIR/pre-mortem-verdict.txt."
+Run /premortem on the plan${PLAN_FILE:+ at $PLAN_FILE}.$(spec_context)
+After the council finishes, write exactly one word — PASS, WARN, or FAIL — into $RALPH_DIR/premortem-verdict.txt."
 
-  if ! should_skip "pre-mortem"; then
-    PRE_MORTEM=$(read_verdict "$RALPH_DIR/pre-mortem-verdict.txt")
+  if ! should_skip "premortem"; then
+    PRE_MORTEM=$(read_verdict "$RALPH_DIR/premortem-verdict.txt")
     if [[ "$PRE_MORTEM" == "FAIL" ]]; then
       die "Pre-mortem verdict: FAIL — aborting. See $RALPH_LOG for details."
     fi
@@ -285,10 +285,10 @@ if ! should_skip "vibe"; then
 fi
 
 # ── Phase 5: Post-mortem ──────────────────────────────────────────────────────
-run_phase "post-mortem" \
+run_phase "postmortem" \
   "You are working in $WORKDIR on branch $BRANCH.
-Run /post-mortem to wrap up. Extract learnings.
-Write exactly one word — PASS, WARN, or FAIL — into $RALPH_DIR/post-mortem-verdict.txt."
+Run /postmortem to wrap up. Extract learnings.
+Write exactly one word — PASS, WARN, or FAIL — into $RALPH_DIR/postmortem-verdict.txt."
 
 # ── Phase 6: PR ───────────────────────────────────────────────────────────────
 if should_skip "pr"; then
@@ -315,9 +315,9 @@ else
 $GOAL
 
 ## Council Verdicts
-- Pre-mortem: $(read_verdict "$RALPH_DIR/pre-mortem-verdict.txt")
+- Pre-mortem: $(read_verdict "$RALPH_DIR/premortem-verdict.txt")
 - Vibe: $(read_verdict "$RALPH_DIR/vibe-verdict.txt")
-- Post-mortem: $(read_verdict "$RALPH_DIR/post-mortem-verdict.txt")
+- Post-mortem: $(read_verdict "$RALPH_DIR/postmortem-verdict.txt")
 "
 
   if [[ -n "$SPEC_CONTENT" ]]; then

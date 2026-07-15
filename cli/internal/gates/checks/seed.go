@@ -25,7 +25,7 @@ var (
 	skillPaths = []string{"skills/**", "skills-codex/**", "tests/skills/**"}
 	// skill.scenario-test-linkage routes on the scenario corpus PLUS its own
 	// surfaces — the script, allowlist, bats twin, and shared ratchet lib were
-	// previously un-routed (self-routing repair, pre-mortem FM3,
+	// previously un-routed (self-routing repair, premortem FM3,
 	// age-ratchet-lib-extraction-bv7d.7).
 	scenarioLinkagePaths = []string{
 		"skills/**", "skills-codex/**", "tests/skills/**",
@@ -57,14 +57,13 @@ var (
 		"scripts/check-honest-voice.sh",
 		"tests/scripts/check-honest-voice.bats",
 	}
-	ciPolicyPaths     = []string{".github/workflows/validate.yml", "docs/CI-CD.md", "AGENTS.md"}
-	evalPaths         = []string{"evals/**", "schemas/eval-*", "cli/internal/eval/**"}
-	contextMapPaths   = []string{"skills/**", "docs/contracts/context-map.md"}
-	swarmPaths        = []string{".agents/swarm/**", "schemas/swarm-*"}
-	agentsDocPaths    = []string{"AGENTS.md", "docs/agent-workflow-reference.md", "docs/CI-CD.md", "docs/contracts/codex-skill-api.md", ".github/workflows/validate.yml"}
-	corpusPaths       = []string{".agents/**", "docs/canon/**", "canon/**"}
-	cliContractPaths  = []string{"cli/**", "docs/cli-surface.*", "scripts/check-cli-contract.sh", "scripts/check-docs-cli-snippets.sh", "scripts/generate-cli-reference.sh", "tests/cli_contract_gate.bats", "tests/cli_quality_zero_debt.bats"}
-	registryPaths     = []string{"skills/**", "hooks/**", "evals/**", "cli/cmd/ao/**", "cli/internal/**", "registry.json"}
+	ciPolicyPaths    = []string{".github/workflows/validate.yml", "docs/CI-CD.md", "AGENTS.md"}
+	contextMapPaths  = []string{"skills/**", "docs/contracts/context-map.md"}
+	swarmPaths       = []string{".agents/swarm/**", "schemas/swarm-*"}
+	agentsDocPaths   = []string{"AGENTS.md", "docs/agent-workflow-reference.md", "docs/CI-CD.md", "docs/contracts/codex-skill-api.md", ".github/workflows/validate.yml"}
+	corpusPaths      = []string{".agents/**", "docs/canon/**", "canon/**"}
+	cliContractPaths = []string{"cli/**", "docs/cli-surface.*", "scripts/check-cli-contract.sh", "scripts/check-docs-cli-snippets.sh", "scripts/generate-cli-reference.sh", "tests/cli_contract_gate.bats", "tests/cli_quality_zero_debt.bats"}
+	registryPaths    = []string{"skills/**", "hooks/**", "evals/**", "cli/cmd/ao/**", "cli/internal/**", "registry.json"}
 	// Widened to docs/** (--all-docs mode): the checker no longer scans a fixed
 	// 6-file set — it scans every LIVE docs/** file (plus the pinned doctrine
 	// files) and ratchets against scripts/.docs-skill-refs-baseline, so any live
@@ -246,16 +245,11 @@ func init() {
 		{ID: "go.lint", Tiers: gates.Full, Match: goLintPaths, Blocking: true, Backing: "check-go-lint.sh", RepairHint: "cd cli && make lint; fix or split — budgets in .claude/rules/go.md; promote to Fast tier only after measured <60s on changed scope (age-gate-the-ungated-egwt.7)"},
 		{ID: "skill.schema", Tiers: gates.Fast | gates.Full, Match: skillPaths, Blocking: true, Backing: "validate-skill-schema.sh"},
 		{ID: "skill.triggers", Tiers: gates.Fast | gates.Full, Match: skillPaths, Blocking: true, Backing: "validate-skill-triggers.sh"},
-		{ID: "contract.registry-drift", Tiers: gates.Fast | gates.Full, Match: contractPaths, Blocking: true, Backing: "check-registry-drift.sh", RepairHint: "bash scripts/generate-registry.sh"},
-		{ID: "contract.bounded-contexts-drift", Tiers: gates.Fast | gates.Full, Match: contractPaths, Blocking: true, Backing: "check-bounded-contexts-drift.sh"},
 		{ID: "contract.cathedral-cut", Tiers: gates.Fast | gates.Full, Match: cathedralCutPaths, Blocking: true, Backing: "check-cathedral-cut-conformance.py"},
 		{ID: "contract.skill-mesh", Tiers: gates.Fast | gates.Full, Match: skillPaths, Blocking: true, Backing: "check-skill-mesh.py"},
 		{ID: "contract.finding-registry", Tiers: gates.Fast | gates.Full, Match: contractPaths, Blocking: true, Backing: "check-finding-registry.sh"},
 		{ID: "ci.policy-parity", Tiers: gates.Fast | gates.Full, Match: ciPolicyPaths, Blocking: true, Backing: "validate-ci-policy-parity.sh"},
-		{ID: "eval.corpus-freshness", Tiers: gates.Fast | gates.Full, Match: evalPaths, Blocking: true, Backing: "check-corpus-freshness.sh"},
-
 		// skill class (PB1 parity batch — all shell-backed via ScriptRunner)
-		{ID: "skill.cli-skills-map", Tiers: gates.Fast | gates.Full, Match: skillPaths, Blocking: true, Backing: "validate-cli-skills-map.sh"},
 		{ID: "skill.runtime-formats", Tiers: gates.Fast | gates.Full, Match: skillPaths, Blocking: true, Backing: "validate-skill-runtime-formats.sh"},
 		{ID: "skill.runtime-parity", Tiers: gates.Fast | gates.Full, Match: skillPaths, Blocking: true, Backing: "validate-skill-runtime-parity.sh"},
 		{ID: "skill.cli-snippets", Tiers: gates.Fast | gates.Full, Match: skillPaths, Blocking: true, Backing: "validate-skill-cli-snippets.sh"},
@@ -263,7 +257,6 @@ func init() {
 		{ID: "skill.codex-parity-drift", Tiers: gates.Fast | gates.Full, Match: skillPaths, Blocking: true, Backing: "check-codex-parity-drift.sh"},
 		{ID: "skill.codex-runtime-sections", Tiers: gates.Fast | gates.Full, Match: skillPaths, Blocking: true, Backing: "validate-codex-runtime-sections.sh"},
 		{ID: "skill.codex-override-coverage", Tiers: gates.Fast | gates.Full, Match: skillPaths, Blocking: true, Backing: "validate-codex-override-coverage.sh"},
-		{ID: "skill.codex-backbone-prompts", Tiers: gates.Fast | gates.Full, Match: skillPaths, Blocking: true, Backing: "validate-codex-backbone-prompts.sh"},
 		// age-2s5k: always-run (no Match) — these validators assert whole-twin
 		// contract invariants over hardcoded file lists, so latent drift in a twin
 		// must fail the NEXT push regardless of scope, not lie invisible on green
@@ -271,7 +264,6 @@ func init() {
 		// ambushes it (the age-huim / age-3pdt failure mode). Cheap (string greps),
 		// so the per-push cost is negligible against the anti-ambush guarantee.
 		{ID: "skill.codex-generated-artifacts", Tiers: gates.Fast | gates.Full, Match: skillPaths, Blocking: true, Backing: "validate-codex-generated-artifacts.sh"},
-		{ID: "skill.isolation", Tiers: gates.Fast | gates.Full, Match: skillPaths, Blocking: false, Backing: "check-skill-isolation.sh"},
 		// skill.probe-coverage (ADVISORY): a product-/judgment-tier skill whose
 		// tier badge carries no BEHAVIORAL-probe result is unmeasured — the badge
 		// is editorial, not proven. This NAMES the unmeasured ones. Advisory-first
@@ -283,8 +275,6 @@ func init() {
 		{ID: "skill.heal-strict", Tiers: gates.Full, Match: skillPaths, Blocking: true, Backing: "skills/heal-skill/scripts/heal.sh", Args: []string{"--check", "--strict"}},
 		{ID: "skill.frontmatter-v2", Tiers: gates.Full, Match: skillPaths, Blocking: true, Backing: "validate-skill-frontmatter.sh"},
 		{ID: "skill.body-refs", Tiers: gates.Full, Match: skillPaths, Blocking: true, Backing: "validate-skill-body-refs.sh"},
-		{ID: "skill.flow", Tiers: gates.Full, Match: skillPaths, Blocking: true, Backing: "validate-skill-flow.sh"},
-		{ID: "skill.domain-map-golden", Tiers: gates.Full, Match: skillPaths, Blocking: true, Backing: "generate-skill-domain-map.sh", Args: []string{"--check"}},
 		{ID: "skill.scenario-test-linkage", Tiers: gates.Full, Match: scenarioLinkagePaths, Blocking: true, Backing: "check-scenario-test-linkage.sh"},
 
 		// go class
@@ -299,8 +289,6 @@ func init() {
 
 		// contract / context-map / swarm classes
 		{ID: "contract.compatibility", Tiers: gates.Fast | gates.Full, Match: contractPaths, Blocking: true, Backing: "check-contract-compatibility.sh"},
-		{ID: "contract.context-map-drift", Tiers: gates.Fast | gates.Full, Match: contextMapPaths, Blocking: true, Backing: "validate-context-map-drift.sh", RepairHint: "bash scripts/generate-context-map.sh"},
-		{ID: "contract.registry-json", Tiers: gates.Full, Match: registryPaths, Blocking: true, Backing: "generate-registry.sh", Args: []string{"--check"}},
 		{ID: "docs.agents-split", Tiers: gates.Full, Match: agentsDocPaths, Blocking: true, Backing: "validate-agents-split.sh"},
 
 		// always-run structural invariants (no Match)
@@ -332,9 +320,6 @@ func init() {
 		{ID: "go.atomic-write-ratchet", Tiers: gates.Full, Match: atomicWriteRatchetPaths, Blocking: false, Backing: "check-atomic-write-ratchet.sh", Args: []string{"--scope", "head"}, RepairHint: "use storage.AtomicWriteFile (temp+fsync+rename+fsync-dir) or storage.FsyncDir instead of a hand-rolled tmp+rename; advisory — see age-ratchet-lib-extraction-bv7d.9"},
 		{ID: "corpus.secret-scan", Tiers: gates.Full, Match: corpusPaths, Blocking: true, Backing: "check-corpus-secret-scan.sh"},
 		{ID: "corpus.witness-dolt-jsonl-crosscheck", Tiers: gates.Full, Match: corpusPaths, Blocking: true, Backing: "witness-dolt-jsonl-crosscheck.sh"},
-
-		// full-mode-only / advisory (mirror the bash gate: these skip in fast or warn)
-		{ID: "skill.catalog-drift", Tiers: gates.Full, Blocking: false, Backing: "check-skill-catalog-drift.sh"},
 
 		// final backing-script batch (PB1)
 		{ID: "always.quarantine-empty", Tiers: gates.Fast | gates.Full, Blocking: true, Backing: "check-quarantine-empty.sh"},

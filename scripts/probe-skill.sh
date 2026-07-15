@@ -37,10 +37,10 @@
 # iff no usable treatment reps (all degraded / missing).
 #
 # Usage:
-#   bash scripts/probe-skill.sh --probe crank --replay
-#   bash scripts/probe-skill.sh --probe crank --reps 2 --output out.json
-#   bash scripts/probe-skill.sh --probe crank --live --capture   # record fixtures
-#   bash scripts/probe-skill.sh --probe crank --live --model gpt-5-mini  # weak producer
+#   bash scripts/probe-skill.sh --probe rpi --replay
+#   bash scripts/probe-skill.sh --probe rpi --reps 2 --output out.json
+#   bash scripts/probe-skill.sh --probe rpi --live --capture
+#   bash scripts/probe-skill.sh --probe rpi --live --model gpt-5-mini
 #
 # Flags: --probe <id> (required) · --replay | --live · --capture · --reps N ·
 #        --output <path> · --timeout <secs> · --model <id> (weaker producer, the

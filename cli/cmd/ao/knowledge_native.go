@@ -581,7 +581,7 @@ func renderKnowledgePlaybook(topic knowledgeTopicDetail, agentsRoot string) stri
 	b.WriteString("\n## Selection Gates\n\n")
 	b.WriteString("- Validate the chosen path against current repo or workspace reality before promotion.\n")
 	b.WriteString("- Keep thin topics discovery-only; only healthy topics and promoted packets may define default behavior.\n")
-	b.WriteString("- Prefer planning rules, pre-mortem checks, and direct artifact lineage over conversational confidence.\n")
+	b.WriteString("- Prefer planning rules, premortem checks, and direct artifact lineage over conversational confidence.\n")
 	b.WriteString("\n## Trust Status\n\n")
 	fmt.Fprintf(&b, "- Topic health: `%s`\n", topic.Health)
 	fmt.Fprintf(&b, "- Promoted packet present: `%s`\n", yesNo(knowledgePathExists(promotedPath)))
@@ -645,7 +645,7 @@ func renderKnowledgeBriefing(goal string, topics []knowledgeTopicDetail, beliefs
 		fmt.Fprintf(&b, "- Source surface: `%s`\n", source)
 	}
 	b.WriteString("\n## Selection Gates / Proof Surfaces\n\n")
-	b.WriteString("- Gate: planning rules and pre-mortem checks outrank preference when they disagree with the current plan.\n")
+	b.WriteString("- Gate: planning rules and premortem checks outrank preference when they disagree with the current plan.\n")
 	b.WriteString("- Gate: promote only changes backed by direct artifacts, promoted packets, or runnable validation.\n")
 	if strings.TrimSpace(playbookPath) != "" {
 		fmt.Fprintf(&b, "- Proof surface: healthy playbook at `%s`\n", playbookPath)

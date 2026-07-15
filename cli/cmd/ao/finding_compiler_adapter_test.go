@@ -30,7 +30,7 @@ func mechanicalFrontmatter(extra map[string]string) map[string]string {
 	return fm
 }
 
-// An ADVISORY finding (no detector metadata) defaults to plan + pre-mortem only:
+// An ADVISORY finding (no detector metadata) defaults to plan + premortem only:
 // the constraint target is skipped rather than emitting a dead artifact the gate
 // ignores. (EM-ENF: constraint only when detector metadata is present and valid.)
 func TestProductionFindingCompiler_AdvisoryDefaultsToTwoKinds(t *testing.T) {
@@ -43,7 +43,7 @@ func TestProductionFindingCompiler_AdvisoryDefaultsToTwoKinds(t *testing.T) {
 		t.Fatal(err)
 	}
 	if len(out) != 2 {
-		t.Fatalf("len = %d, want 2 (advisory: plan+pre-mortem, no constraint)", len(out))
+		t.Fatalf("len = %d, want 2 (advisory: plan+premortem, no constraint)", len(out))
 	}
 	for _, o := range out {
 		if o.Kind == ports.CompiledOutputConstraint {

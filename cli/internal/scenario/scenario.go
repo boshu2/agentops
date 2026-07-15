@@ -1,6 +1,6 @@
 // Package scenario creates and describes AgentOps behavioral validation
 // scenarios. Create is the single scenario-authoring path shared by
-// `ao scenario add` and `ao goals scenarios --create`, so the two commands
+// `ao scenario add`, so callers
 // can never drift in how they shape a scenario file.
 package scenario
 

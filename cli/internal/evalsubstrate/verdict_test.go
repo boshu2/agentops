@@ -63,7 +63,7 @@ func TestManifest_VerdictRoundTrip(t *testing.T) {
 	}
 }
 
-// TestManifest_VerdictLegacyStringCompat — pre-mortem C1 fix.
+// TestManifest_VerdictLegacyStringCompat — premortem C1 fix.
 // rc2 manifests stored verdict as a bare string ("improved"). New *Verdict struct
 // MUST accept that legacy form via custom UnmarshalJSON; otherwise existing
 // runs would fail to load.

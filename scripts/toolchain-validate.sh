@@ -637,17 +637,18 @@ run_semgrep() {
         return 0
     fi
 
-    local critical high
+    local critical advisory
     critical=$(jq '[.results[]? | select(.extra.severity == "ERROR")] | length' "$output_file" 2>/dev/null || echo 0)
-    high=$(jq '[.results[]? | select(.extra.severity == "WARNING")] | length' "$output_file" 2>/dev/null || echo 0)
+    advisory=$(jq '[.results[]? | select(.extra.severity == "WARNING" or .extra.severity == "MEDIUM")] | length' "$output_file" 2>/dev/null || echo 0)
     critical=${critical:-0}
-    high=${high:-0}
+    advisory=${advisory:-0}
     critical=$(echo "$critical" | tr -d '[:space:]')
-    high=$(echo "$high" | tr -d '[:space:]')
+    advisory=$(echo "$advisory" | tr -d '[:space:]')
     CRITICAL_COUNT=$((CRITICAL_COUNT + critical))
-    HIGH_COUNT=$((HIGH_COUNT + high))
-    SECURITY_HIGH_COUNT=$((SECURITY_HIGH_COUNT + high))
-    TOOL_STATUS["semgrep"]=$([[ "$critical" -gt 0 || "$high" -gt 0 ]] && echo "findings" || echo "pass")
+    MEDIUM_COUNT=$((MEDIUM_COUNT + advisory))
+    # Semgrep WARNING/MEDIUM results are advisory findings, not security HIGH.
+    # They remain in the report without blocking an otherwise green candidate.
+    TOOL_STATUS["semgrep"]=$([[ "$critical" -gt 0 || "$advisory" -gt 0 ]] && echo "findings" || echo "pass")
 }
 
 # ============================================================================

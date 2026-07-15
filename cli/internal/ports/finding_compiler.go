@@ -126,7 +126,7 @@ type CompiledOutput struct {
 // FindingCompilerPort is the BC1 compile-side. It turns a promoted
 // finding artifact into the advisory and mechanical outputs named in
 // docs/contracts/finding-compiler.md "Compiler Targets" — planning
-// rules, pre-mortem checks, and constraints. Callers — the
+// rules, premortem checks, and constraints. Callers — the
 // `ao compile` path, dream's compounding loop, and any future
 // cross-repo finding ingester — depend on this port so the compile
 // behavior can be exercised against an in-memory adapter without

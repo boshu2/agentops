@@ -27,8 +27,7 @@ metadata:
   canonical_status: canonical
   disposition: keep_specialist
   tier: meta
-  dependencies:
-  - automation-shape-routing
+  dependencies: []
   stability: experimental
 output_contract: ranked evidence report under .agents/toil-mining/
 ---

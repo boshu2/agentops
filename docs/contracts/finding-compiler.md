@@ -47,7 +47,7 @@ Promotion must preserve the reusable prevention content:
 | `premortem` | `.agents/premortem-checks/<id>.md` | Surface prior failure modes during plan/spec validation |
 | `constraint` | `.agents/constraints/index.json` | Observe mechanically detectable rules in shadow, then enforce only after measured activation |
 
-`pre-mortem` and `pre_mortem` remain accepted input aliases during migration,
+`premortem` and `premortem` remain accepted input aliases during migration,
 but writers emit `premortem`. Advisory findings may compile to `plan` and
 `premortem`. A mechanical finding compiles to `constraint` only when its regex
 matches every stored positive and passes every explicit negative control.
