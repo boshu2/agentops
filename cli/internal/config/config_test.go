@@ -6,7 +6,9 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"runtime"
 	"strings"
+	"sync"
 	"testing"
 
 	"gopkg.in/yaml.v3"
@@ -2334,6 +2336,111 @@ func TestSave_WritesYAML(t *testing.T) {
 	}
 	if parsed.Models.SkillOverrides["council"] != "quality" {
 		t.Errorf("parsed Models.SkillOverrides[council] = %q, want %q", parsed.Models.SkillOverrides["council"], "quality")
+	}
+}
+
+func TestSave_RejectsMalformedExistingConfigWithoutDataLoss(t *testing.T) {
+	configPath := filepath.Join(t.TempDir(), ".agentops", "config.yaml")
+	t.Setenv("AGENTOPS_CONFIG", configPath)
+	if err := os.MkdirAll(filepath.Dir(configPath), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	original := []byte("models: [unterminated\n")
+	if err := os.WriteFile(configPath, original, 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := Save(&Config{Models: ModelsConfig{DefaultTier: "quality"}}); err == nil {
+		t.Fatal("Save succeeded with malformed existing config")
+	}
+	got, err := os.ReadFile(configPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Equal(got, original) {
+		t.Fatalf("malformed config was replaced: got %q want %q", got, original)
+	}
+}
+
+func TestSave_DoesNotFollowPredictableTempSymlink(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("symlink creation requires privileges on some Windows hosts")
+	}
+	root := t.TempDir()
+	configPath := filepath.Join(root, ".agentops", "config.yaml")
+	t.Setenv("AGENTOPS_CONFIG", configPath)
+	if err := os.MkdirAll(filepath.Dir(configPath), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	victim := filepath.Join(root, "victim")
+	if err := os.WriteFile(victim, []byte("unchanged\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink(victim, configPath+".tmp"); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := Save(&Config{Models: ModelsConfig{DefaultTier: "quality"}}); err != nil {
+		t.Fatalf("Save: %v", err)
+	}
+	got, err := os.ReadFile(victim)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(got) != "unchanged\n" {
+		t.Fatalf("predictable temp symlink target changed: %q", got)
+	}
+}
+
+func TestSave_ConcurrentPatchesPreserveBothUpdates(t *testing.T) {
+	configPath := filepath.Join(t.TempDir(), ".agentops", "config.yaml")
+	t.Setenv("AGENTOPS_CONFIG", configPath)
+	start := make(chan struct{})
+	errors := make(chan error, 2)
+	var writers sync.WaitGroup
+	for skill, tier := range map[string]string{"council": "quality", "plan": "budget"} {
+		writers.Add(1)
+		go func() {
+			defer writers.Done()
+			<-start
+			errors <- Save(&Config{Models: ModelsConfig{SkillOverrides: map[string]string{skill: tier}}})
+		}()
+	}
+	close(start)
+	writers.Wait()
+	close(errors)
+	for err := range errors {
+		if err != nil {
+			t.Fatalf("concurrent Save: %v", err)
+		}
+	}
+	loaded, err := loadFromPath(configPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if loaded.Models.SkillOverrides["council"] != "quality" || loaded.Models.SkillOverrides["plan"] != "budget" {
+		t.Fatalf("concurrent updates lost: %+v", loaded.Models.SkillOverrides)
+	}
+}
+
+func TestPreviewSaveValidatesWithoutFilesystemMutation(t *testing.T) {
+	root := t.TempDir()
+	missing := filepath.Join(root, "missing", "config.yaml")
+	t.Setenv("AGENTOPS_CONFIG", missing)
+	if err := PreviewSave(&Config{Models: ModelsConfig{DefaultTier: "quality"}}); err != nil {
+		t.Fatalf("PreviewSave missing target: %v", err)
+	}
+	if _, err := os.Stat(filepath.Dir(missing)); !os.IsNotExist(err) {
+		t.Fatalf("PreviewSave created target directory: %v", err)
+	}
+
+	malformed := filepath.Join(root, "malformed.yaml")
+	if err := os.WriteFile(malformed, []byte("models: [\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("AGENTOPS_CONFIG", malformed)
+	if err := PreviewSave(&Config{Models: ModelsConfig{DefaultTier: "quality"}}); err == nil {
+		t.Fatal("PreviewSave accepted malformed existing config")
 	}
 }
 

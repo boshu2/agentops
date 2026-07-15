@@ -1,5 +1,7 @@
 # Agent workflow reference
 
+This document expands the repository contract in [AGENTS.md](../AGENTS.md).
+
 The public AgentOps workflow has one pass:
 
 ```text
@@ -8,38 +10,49 @@ RPI -> Plan -> Implement -> fresh Validate -> durable verdict -> report and stop
 
 ## 1. Plan
 
-Create one `plan-packet.v1` with one active behavior, normal and edge Gherkin
-scenarios, non-goals, required evidence, explicit included/excluded write scope,
-and the first acceptance check. Decomposition is advisory. The packet contains
-no owner, claim, priority, attempt, queue, lease, next action, closure, release,
-or delivery state.
+Resolve one active behavior in the caller-owned tracker, issue, or conversation.
+Keep acceptance, important non-goals, required evidence, write scope, and the
+first useful check in that source. Do not create a second planning artifact.
+
+The runtime snapshots the exact resolved source bytes under
+`.agentops/intents/sha256/<digest>.intent`. This is derived identity, not a
+model-authored packet, and makes conversation-only intent readable by a fresh
+validator. The pure helper accepts a file or stdin:
+
+```bash
+python3 skills/validate/scripts/validate.py snapshot-intent --source PATH  # use - for stdin
+```
 
 ## 2. Implement
 
 Run one bounded RED-GREEN-refactor experiment when the behavior supports it.
-Return a `candidate-packet.v1` containing factual evidence, actual changed
-paths, the Plan digest, author context ID, and a `subject-manifest.v1`. Implement
-does not commit, claim, repair, retry, close, push, or deliver.
+The runtime derives factual check receipts, actual changed paths, author context
+ID, and `subject-manifest.v1`; the model does not transcribe them into a
+candidate packet. Implement does not commit, claim, repair, retry, close, push,
+or deliver.
 
 ## 3. Validate
 
-An author-distinct context judges the exact candidate against acceptance and
+An author-distinct context judges the exact subject against acceptance and
 writes one content-addressed `verdict.v2`. Validate is the only verdict writer.
 It returns `PASS`, `FAIL`, or `NOT_PROVEN`, lists checked and unchecked scope,
-and stops. It does not repair, re-plan, choose a next action, or authorize Git.
+and stops. PASS requires nonempty checked scope, top-level evidence, and evidence
+for every criterion. A `NOT_PROVEN` finding states the concrete missing runtime
+precondition or examined uncertainty; it does not manufacture a next action.
+Validate does not repair, re-plan, choose a next action, or authorize Git.
 
 ## 4. Caller continuation
 
-The caller receives the RPI report and decides what happens next. A revision is
-a new invocation supplied with an explicit `revision-packet.v1`; RPI neither
-creates nor consumes one automatically. Changing acceptance starts a new intent.
+The caller receives the RPI report and decides what happens next. A revision
+updates the caller-owned intent source and starts a new invocation. RPI creates
+no parallel revision artifact. Changing acceptance changes the intent digest.
 
 ## Optional surfaces
 
 Premortem, postmortem, councils, idea genies, runtime adapters, research tools,
 and factory dispatch are caller-selected. They never become hard dependencies
 or lifecycle authorities. `dispatch_once` executes only explicitly supplied,
-disjoint packets once and performs no selection, retry, validation, integration,
+disjoint work once and performs no selection, retry, validation, integration,
 Git, closure, or delivery.
 
 ## Repository mechanics

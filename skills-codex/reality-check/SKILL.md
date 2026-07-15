@@ -12,6 +12,6 @@ missing behavior with a file, command result, or artifact. Separate:
 - incomplete evidence;
 - changed assumptions.
 
-Return the report to the caller. Plan may use concrete gaps as input to a new
-PlanPacket. Reality Check does not create work, schedule, claim, implement,
-validate, retry, or deliver.
+Return the report to the caller. Plan may use concrete gaps to refine the
+existing bead or caller intent. Reality Check does not create work, schedule,
+claim, implement, validate, retry, or deliver.

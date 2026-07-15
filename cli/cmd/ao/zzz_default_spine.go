@@ -13,7 +13,7 @@ var defaultSpineCommands = map[string]struct{}{
 	"capabilities": {}, "config": {}, "constraint": {}, "doctor": {},
 	"flywheel": {}, "gate": {}, "goals": {},
 	"init": {}, "provenance": {}, "quick-start": {},
-	"robot-docs": {}, "session": {}, "skills": {}, "status": {},
+	"redact": {}, "robot-docs": {}, "session": {}, "skills": {}, "status": {},
 	"version": {},
 	// One-release inert tombstones. These names do not restore lifecycle code.
 	"pawl": {}, "plan-pawl": {}, "land": {}, "done": {}, "close": {},

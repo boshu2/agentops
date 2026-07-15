@@ -2,8 +2,8 @@
 
 | Bounded context | Owns | Does not own |
 |---|---|---|
-| Intent | `PlanPacket`, acceptance digest, write scope | Scheduling, claims, priorities, queues |
-| Experiment | One bounded implementation and factual evidence | Retry, repair routing, Git, delivery |
+| Intent | Caller-owned bead or issue, derived acceptance digest, write scope | A duplicate AgentOps planning artifact |
+| Experiment | One bounded implementation and runtime-derived factual evidence | Model-authored candidate packets, retry, Git, delivery |
 | Identity | Deterministic `subject-manifest.v1` | Commit, branch, or tracker authority |
 | Judgment | Fresh-context evaluation and `verdict.v2` | Continuation, closure, release |
 | Evidence | Atomic content-addressed verdict storage and generic provenance | Admission or lifecycle state |

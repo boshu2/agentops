@@ -1,5 +1,7 @@
 # AgentOps Operating Contract
 
+Detailed workflow mechanics: [docs/agent-workflow-reference.md](docs/agent-workflow-reference.md).
+
 AgentOps turns one explicit intent into one independently judged experiment:
 
 ```text
@@ -39,31 +41,34 @@ Edit source owners and regenerate projections through the owning command.
 
 ## Core loop
 
-1. **Plan once.** Shape one active behavior into `plan-packet.v1`: normal and
-   edge Given/When/Then acceptance, non-goals, evidence, explicit inclusive and
-   exclusive write scope, and a first acceptance check. Planning does not
-   schedule, assign, claim, prioritize, or authorize continuation.
+1. **Plan once.** Resolve the existing bead or caller intent and shape one
+   active behavior there. Acceptance, non-goals, scope, and the first useful
+   check stay in that source; AgentOps does not require a model-authored plan
+   packet that duplicates it. If no durable tracker artifact exists, the runtime
+   snapshots the resolved intent bytes under their content digest so fresh
+   contexts can consume the exact same source.
 2. **Implement once.** Execute one bounded RED -> GREEN -> refactor experiment.
-   Produce `candidate-packet.v1` with the Plan digest, author context ID, pure
-   content manifest, actual changed paths, coverage completeness, and factual
-   results. Implement does not use tracker, Git, retry, closure, or delivery
-   authority.
-3. **Validate once, fresh.** A distinct context verifies subject identity,
-   scope, evidence, and acceptance, then writes one `verdict.v2` with
+   The runtime derives the content manifest, actual changed paths, coverage
+   completeness, and factual check receipts; the model does not transcribe a
+   candidate packet.
+3. **Validate once, fresh.** A distinct context verifies the intent-source
+   digest, subject identity, scope, evidence, and acceptance, then writes one `verdict.v2` with
    `PASS | FAIL | NOT_PROVEN`. Missing or colliding context identities,
    unattested freshness, subject mutation, or incomplete changed-path coverage
-   is `NOT_PROVEN`; proven out-of-scope change is `FAIL`.
+   is `NOT_PROVEN`; proven out-of-scope change is `FAIL`. PASS requires nonempty
+   checked scope, top-level evidence, and evidence for every criterion.
 4. **Report and stop.** RPI reports `PASS | FAIL | NOT_PROVEN`, or the report-only
    statuses `NOT_PLANNED | NOT_BUILT`. It emits no next action and performs no
    automatic revision.
 
-A caller may create `revision-packet.v1` and start a new invocation. Changing
-acceptance creates a new intent. Learn is an optional later consumer of verdict
-collections and cannot change core outcomes.
+A caller may revise the bead or caller intent and start a new invocation.
+Changing acceptance changes that source; AgentOps does not create a parallel
+revision packet. Learn is an optional later consumer of verdict collections and
+cannot change core outcomes.
 
 ## Product boundary
 
-AgentOps owns intent shaping, one bounded experiment, exact content identity,
+AgentOps reads or refines caller-owned intent, runs one bounded experiment, exact content identity,
 fresh independent judgment, and a standalone durable verdict. It owns no retry,
 budget, queue, work ownership, Git, closure, release, landing, or delivery
 transition. Consumer repositories keep their own direct-push, PR, CI, merge,
@@ -85,7 +90,7 @@ AgentOps work ownership.
 
 | Trigger | Canonical owner |
 |---|---|
-| Core loop or packet change | `docs/architecture/operating-loop.md`, `schemas/*.schema.json` |
+| Core loop or evidence-contract change | `docs/architecture/operating-loop.md`, `schemas/*.schema.json` |
 | CLI command or flag | `cli/cmd/ao/`, then generated `cli/docs/COMMANDS.md` |
 | Skill behavior or inventory | `skills/<slug>/SKILL.md`, generated `docs/SKILL-ROUTER.md` |
 | Codex projection | `docs/contracts/codex-skill-api.md`, `skills-codex-overrides/catalog.json` |

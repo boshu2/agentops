@@ -8,6 +8,7 @@ import (
 	"github.com/spf13/cobra"
 
 	gateadapter "github.com/boshu2/agentops/cli/internal/adapters/gate"
+	"github.com/boshu2/agentops/cli/internal/clicontract"
 	gatecommands "github.com/boshu2/agentops/cli/internal/commands/gate"
 	gateapp "github.com/boshu2/agentops/cli/internal/gate"
 	"github.com/boshu2/agentops/cli/internal/gates"
@@ -25,7 +26,11 @@ func newGateCommand() *cobra.Command {
 		DryRun:       GetDryRun,
 		OutputFormat: GetOutput,
 	})
-	return module.Command()
+	command := module.Command()
+	if err := clicontract.Attach(command, module.Contract()); err != nil {
+		panic(err)
+	}
+	return command
 }
 
 type gateCheckUseCases struct{}

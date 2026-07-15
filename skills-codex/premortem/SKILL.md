@@ -5,13 +5,13 @@ description: Optionally challenge a frozen plan with one
 # Premortem
 
 Premortem is an optional plan-challenge strategy. It asks one fresh context to
-identify concrete ways a frozen PlanPacket could fail before implementation.
+identify concrete ways the resolved bead or caller intent could fail before implementation.
 It is not part of the required RPI sequence and does not authorize readiness.
 
 ## Workflow
 
-1. Pin the PlanPacket digest, acceptance, non-goals, evidence requirements, and
-   declared write scope.
+1. Resolve the existing intent source and derive its digest; inspect acceptance,
+   non-goals, evidence requirements, and declared write scope there.
 2. Use one fresh judge with a context ID distinct from the plan author.
 3. Test acceptance completeness, edge behavior, scope, dependencies,
    reversibility, and evidence shape against cited repository facts.
@@ -30,7 +30,7 @@ does not require either strategy and cannot turn consensus into approval.
 
 ## Output
 
-Return `premortem-plan-review.v1` with the plan digest, author and judge context
+Return `premortem-plan-review.v1` with the intent digest, author and judge context
 IDs, findings, evidence references, `checked`, and `not_checked`. An empty
 finding set means only that this optional challenge found no concrete defect;
 it is never a lifecycle gate.

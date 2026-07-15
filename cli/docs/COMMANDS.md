@@ -200,6 +200,16 @@ ao gate check [flags]
 
 ---
 
+### `ao redact`
+
+Read text on stdin, apply the canonical secret redactor (the same
+
+```
+ao redact [flags]
+```
+
+---
+
 ### `ao robot-docs`
 
 Print a paste-ready, agent-targeted handbook for the whole ao CLI.

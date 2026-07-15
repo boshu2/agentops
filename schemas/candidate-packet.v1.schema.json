@@ -2,6 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://agentops.dev/schemas/candidate-packet.v1.schema.json",
   "title": "CandidatePacket v1",
+  "$comment": "Compatibility-only legacy format. The default core loop derives subject identity, changed paths, and check receipts at runtime and does not ask a model to author this packet.",
   "type": "object",
   "additionalProperties": false,
   "required": ["schema_version", "plan_packet_digest", "acceptance_digest", "author_context_id", "subject_locator", "subject_manifest", "actual_changed_paths", "changed_path_coverage_complete", "factual_evidence", "acceptance_check_results"],

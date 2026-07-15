@@ -1,5 +1,8 @@
 # Runbook: Outcomes grading (holdout-safe Outcomes projection)
 
+> **RETIRED:** This page documents the removed `ao eval` surface for historical
+> reference. It is not an executable runbook on current `main`.
+
 > Operator guide for the AgentOps × Claude Managed Agents **Outcomes** lane —
 > grading an agent run against a *rubric* (the Anthropic Managed Agents Outcomes
 > analog) instead of an exact-match answer, as a **holdout-safe projection** of

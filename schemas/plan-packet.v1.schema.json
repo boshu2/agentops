@@ -2,6 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://agentops.dev/schemas/plan-packet.v1.schema.json",
   "title": "PlanPacket v1",
+  "$comment": "Compatibility-only legacy format. The default core loop reads planning intent from the caller-owned bead, issue, or conversation and does not ask a model to author this packet.",
   "type": "object",
   "additionalProperties": false,
   "required": ["schema_version", "intent", "intent_digest", "acceptance_digest", "active_behavior", "scenarios", "non_goals", "required_evidence", "write_scope", "first_acceptance_check"],

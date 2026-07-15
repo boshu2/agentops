@@ -5,9 +5,9 @@ queue, or autonomous controller.
 
 ```text
 intent
-  -> PlanPacket
+  -> existing bead or caller source
   -> one bounded implementation experiment
-  -> CandidatePacket + subject-manifest.v1
+  -> runtime-derived subject-manifest.v1 + check receipts
   -> one fresh independent validation
   -> durable verdict.v2
   -> report and stop
@@ -17,8 +17,8 @@ intent
 
 | Role | Owns | Does not own |
 |---|---|---|
-| Caller | intent, invocation, optional strategies, any later revision or delivery | semantic PASS unless acting in a fresh validator context |
-| Plan | acceptance and write boundary | scheduling, ownership, readiness, continuation |
+| Caller | intent source, invocation, optional strategies, any later revision or delivery | semantic PASS unless acting in a fresh validator context |
+| Plan | refining acceptance and write boundary in the existing source | a duplicate planning artifact, scheduling, ownership, readiness |
 | Implement | one subject change and factual evidence | validation, repair loop, Git, closure, delivery |
 | Validate | exact identity, independent judgment, durable verdict | subject edits, retries, next actions, release |
 | RPI | one ordered dispatch and report | a controller around repeated invocations |
@@ -28,30 +28,36 @@ nonempty distinct author and validator context IDs and an explicit freshness
 attestation. The attestation is a declared trust fact, not cryptographic process
 isolation.
 
-## PlanPacket
+## Intent source
 
-Plan shapes one active behavior. It records:
+Plan shapes one active behavior in the caller-owned bead, issue, or conversation.
+That source records:
 
-- intent and acceptance digests;
-- normal and edge Given/When/Then scenarios;
+- acceptance examples where they reduce ambiguity;
 - non-goals and required evidence;
 - `write_scope.include` and `write_scope.exclude`, including generated companions;
 - a first acceptance command or artifact path;
-- optional advisory decomposition with no scheduling semantics.
+- optional decomposition with no scheduling semantics.
+
+The runtime stores the exact resolved source bytes under
+`.agentops/intents/sha256/<digest>.intent` and derives the acceptance digest
+from those bytes. This also makes conversation-only intent available to a fresh
+validator. The model does not author a second PlanPacket.
 
 Owner, ready, claim, priority, attempt, wave, queue, lease, admission, next
 action, close, release, and delivery fields are outside the contract.
 
 ## One bounded experiment
 
-Implement consumes the exact PlanPacket once. A behavior change captures a
+Implement consumes the resolved intent once. A behavior change captures a
 right-reason RED, makes the smallest coherent change that turns it GREEN, and
 refactors under the unchanged acceptance check. Docs-only and pure-refactor
 work record an honest pre-change baseline.
 
-The CandidatePacket binds the Plan digest, acceptance digest, author context,
-subject locator, manifest, actual changed paths, changed-path coverage fact,
-and factual evidence. A failed check is evidence, not loop authority.
+The runtime derives the author context, subject manifest, actual changed paths,
+coverage fact, and check receipts. These facts can be passed directly to
+Validate; the model does not transcribe a CandidatePacket. A failed check is
+evidence, not loop authority.
 
 ## Content identity
 
@@ -66,14 +72,15 @@ tracker, queue, network, release, or delivery call.
 
 ## Fresh Validate
 
-Validate recomputes subject identity, confirms acceptance continuity and
+Validate recomputes subject identity, confirms intent-source continuity and
 complete changed-path coverage, compares actual changes with Plan scope, checks
 the evidence, and judges every acceptance criterion.
 
 - Proven out-of-scope change: `FAIL`.
 - Incomplete path coverage, subject mutation, digest mismatch, missing/colliding
   identities, or missing freshness: `NOT_PROVEN`.
-- Complete evidence satisfying every criterion: `PASS`.
+- Complete evidence satisfying every criterion, with nonempty checked scope and
+  evidence references: `PASS`.
 
 The verdict records criterion results, findings, evidence references, checked
 and not-checked surfaces, timestamp, identities, freshness, and artifact digest.
@@ -95,18 +102,17 @@ NOT_PROVEN report does not repair, replan, consult a helper, escalate, or invoke
 a second phase. `NOT_PLANNED` and `NOT_BUILT` describe RPI progress only and are
 not verdict values.
 
-If a caller wants another experiment, it creates `revision-packet.v1` with the
-prior verdict digest, prior/current manifest digests, unchanged acceptance
-digest, responses keyed by finding ID, reusable exact-input evidence, and new
-author context. The caller supplies that packet to a new invocation. Changed
-acceptance is a new intent, not a revision.
+If a caller wants another experiment, it updates the existing bead or caller
+intent and starts a new invocation. Prior verdicts and manifests remain durable
+evidence, but AgentOps does not require a model-authored revision packet.
+Changed acceptance is represented once in the intent source.
 
 ## Optional ports
 
 - Premortem, Postmortem, Council, and genie skills are optional judgment
   strategies selected by the caller.
-- `dispatch_once(explicit_disjoint_packets, executor)` may dispatch explicit
-  factory packets exactly once. It does not select, queue, persist, retry,
+- `dispatch_once(explicit_disjoint_work, executor)` may dispatch explicit
+  disjoint work exactly once. It does not select, queue, persist, retry,
   validate, integrate, close, or deliver.
 - Learn may later inspect collections of durable verdicts. It cannot alter a
   verdict, plan, or core result.

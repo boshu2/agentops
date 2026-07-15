@@ -97,8 +97,7 @@
 | `idea-genie` | consumes | `repo-context` |
 | `idea-genie` | consumes | `task-question` |
 | `idea-genie` | produces | `idea-portfolio.v1` |
-| `implement` | consumes | `plan-packet.v1` |
-| `implement` | produces | `candidate-packet.v1` |
+| `implement` | produces | `subject-manifest.v1` |
 | `learn` | consumes | `verdict.v2` |
 | `learn` | produces | `learning-observations` |
 | `ntm` | consumes | `task-intent` |
@@ -109,10 +108,8 @@
 | `pattern-mining` | consumes | `repo-context` |
 | `pattern-mining` | consumes | `task-question` |
 | `pattern-mining` | produces | `pattern-mining.v1` |
-| `plan` | produces | `plan-packet.v1` |
 | `postmortem` | consumes | `verdict.v2` |
 | `postmortem` | produces | `postmortem-report.md` |
-| `premortem` | consumes | `plan-packet.v1` |
 | `premortem` | produces | `premortem-plan-review.v1` |
 | `product` | produces | `PRODUCT.md` |
 | `reality-check` | consumes | `claim` |
@@ -144,8 +141,7 @@
 | `toil-mining` | produces | `result.json` |
 | `using-gc` | consumes | `explicit-packets` |
 | `using-gc` | produces | `gas-city-runtime-evidence` |
-| `validate` | consumes | `plan-packet.v1` |
-| `validate` | consumes | `candidate-packet.v1` |
+| `validate` | consumes | `subject-manifest.v1` |
 | `validate` | produces | `subject-manifest.v1` |
 | `validate` | produces | `verdict.v2` |
 | `workflow-builder` | produces | `workflow-script` |

@@ -18,30 +18,19 @@
 #
 # Lines starting with '#' and blank lines are ignored. Trailing '# comment' on
 # an entry is stripped.
-skills/bootstrap/references/bootstrap.feature
 skills/doc/references/doc.feature
 skills/doc/references/oss-docs.feature
 skills/doc/references/readme.feature
-skills/domain/references/domain.feature
-skills/handoff/references/handoff.feature
 skills/heal-skill/references/heal-skill.feature
-skills/implement/references/implement.feature
-skills/operationalize/references/knowledge-activation.feature
-skills/plan/references/plan.feature
 skills/postmortem/references/postmortem.feature
 skills/learn/references/learn.feature
 skills/premortem/references/premortem.feature
-skills/product/references/product.feature
 skills/refactor/references/refactor.feature
 skills/research/references/research.feature
 skills/reverse-engineer/references/reverse-engineer.feature
 skills/scaffold/references/scaffold.feature
-skills/scope/references/scope.feature
 skills/security/references/security-suite.feature
 skills/security/references/security.feature
 skills/heal-skill/references/skill-auditor.feature
 skills/skill-builder/references/skill-builder.feature
-skills/status/references/status.feature
-skills/swarm/references/swarm.feature
 skills/test/references/test.feature
-skills/validate/references/validate.feature

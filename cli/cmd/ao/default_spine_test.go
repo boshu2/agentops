@@ -10,7 +10,7 @@ var approvedDefaultSpine = map[string]bool{
 	"capabilities": true, "config": true, "constraint": true, "doctor": true,
 	"gate": true, "goals": true, "init": true,
 	"flywheel":   true,
-	"provenance": true, "quick-start": true, "robot-docs": true,
+	"provenance": true, "quick-start": true, "redact": true, "robot-docs": true,
 	"session": true, "skills": true, "status": true,
 	"version": true,
 	"pawl":    true, "plan-pawl": true, "land": true, "done": true,

@@ -53,6 +53,7 @@
 | `ao provenance verify` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao quick-start` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao reconcile` | `deprecated` | `allowlisted` | One-release failure stub for removed lifecycle reconciliation. |
+| `ao redact` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao robot-docs` | `public-tested` | `allowlisted` | Covered by generated documentation tests. |
 | `ao session bootstrap` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao session handoff` | `public-tested` | `allowlisted` | Covered by handoff artifact tests. |

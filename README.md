@@ -55,11 +55,11 @@ old plugin install.
 ## Core workflow
 
 ```text
-> use plan for "rate-limit /login"
-PlanPacket: normal + burst edge scenarios, exact scope, first acceptance check
+> use plan for bead agentops-123
+Plan refines acceptance and scope in the bead; it creates no second plan file
 
 > use implement
-CandidatePacket: RED -> GREEN -> refactor, actual paths, content manifest
+RED -> GREEN -> refactor; runtime derives changed paths and content manifest
 
 > use validate
 verdict.v2: FAIL — burst refill violates scenario S2
@@ -76,8 +76,8 @@ decides whether to revise, deliver, or abandon the work.
 | Skill | Responsibility |
 |---|---|
 | `rpi` | invoke Plan, Implement, and fresh Validate at most once |
-| `plan` | define one behavior, acceptance, evidence, and write scope |
-| `implement` | run one bounded experiment and describe the candidate |
+| `plan` | refine behavior, acceptance, evidence, and scope in the existing intent source |
+| `implement` | run one bounded experiment; let the runtime derive subject facts |
 | `validate` | independently judge exact content and persist `verdict.v2` |
 
 `learn` is an optional later analysis of verdict collections. `premortem`,
@@ -92,7 +92,7 @@ A PASS binds:
 - unchanged acceptance;
 - a deterministic manifest of files, symlinks, deletions, executable bits, and
   content digests;
-- complete changed-path coverage inside the Plan write scope;
+- complete changed-path coverage inside the bead or caller-defined write scope;
 - distinct author and validator context IDs;
 - an explicit freshness attestation;
 - criterion results, evidence references, checked scope, and omissions.
@@ -102,17 +102,19 @@ out-of-scope change or failed acceptance criterion is `FAIL`.
 
 Verdicts default to `.agentops/verdicts/sha256/<digest>.json`. They are plain,
 content-addressed JSON and do not require Git, `ao`, a tracker, a hosted service,
-or a provenance ledger.
+or a provenance ledger. The acceptance digest is derived from the existing
+intent source; models do not author Plan, Candidate, or revision packets.
 
 ## Product boundary
 
-AgentOps owns intent shaping, one bounded experiment, exact content identity,
-independent judgment, and the durable verdict. It does not own retries, budgets,
+AgentOps reads or refines caller-owned intent, runs one bounded experiment,
+derives exact content identity, obtains independent judgment, and stores the
+durable verdict. It does not own retries, budgets,
 queues, work claims, Git, CI, PRs, merges, closure, release, or delivery.
 
 Use your repository's existing direct-push, PR, merge queue, hosted CI, and
-release process after validation. Local and cloud agents use the same packet and
-verdict contracts.
+release process after validation. Local and cloud agents use the same intent,
+manifest, and verdict boundaries.
 
 ## Honest status
 

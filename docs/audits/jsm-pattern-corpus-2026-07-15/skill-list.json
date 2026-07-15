@@ -1,0 +1,821 @@
+[
+ {
+  "name": "agent-fungibility-philosophy",
+  "disposition": "absorb into `agent-native` + `swarm` role/replaceability rules",
+  "path": "/Users/bo/dev/skill-library/agent-fungibility-philosophy/SKILL.md",
+  "prov": "skill-library",
+  "agentops_copy": false
+ },
+ {
+  "name": "asupersync-mega-skill",
+  "disposition": "keep external; unrelated runtime specialization",
+  "path": "/Users/bo/dev/skill-library/asupersync-mega-skill/SKILL.md",
+  "prov": "skill-library",
+  "agentops_copy": false
+ },
+ {
+  "name": "beads-compliance-and-completion-verification",
+  "disposition": "absorb into `validate` + `ao done` evidence checks",
+  "path": "/Users/bo/.claude/skills/beads-compliance-and-completion-verification/SKILL.md",
+  "prov": "claude",
+  "agentops_copy": false
+ },
+ {
+  "name": "brennerbot-with-ntm",
+  "disposition": "keep external/on-demand; investigation specialization",
+  "path": "/Users/bo/dev/skill-library/brennerbot-with-ntm/SKILL.md",
+  "prov": "skill-library",
+  "agentops_copy": false
+ },
+ {
+  "name": "code-review-gemini-swarm-with-ntm",
+  "disposition": "absorb into `council` + new `pawl-review` reviewer lanes",
+  "path": "/Users/bo/dev/skill-library/code-review-gemini-swarm-with-ntm/SKILL.md",
+  "prov": "skill-library",
+  "agentops_copy": false
+ },
+ {
+  "name": "codebase-archaeology",
+  "disposition": "improve existing `codebase-recon`",
+  "path": "/Users/bo/.claude/skills/codebase-archaeology/SKILL.md",
+  "prov": "claude",
+  "agentops_copy": false
+ },
+ {
+  "name": "codebase-audit",
+  "disposition": "improve `codebase-recon` bounded audit + `validate` verdict",
+  "path": "/Users/bo/.claude/skills/codebase-audit/SKILL.md",
+  "prov": "claude",
+  "agentops_copy": false
+ },
+ {
+  "name": "codebase-pattern-extraction",
+  "disposition": "create `pattern-mining`, consumed by `operationalize`",
+  "path": "/Users/bo/.claude/skills/codebase-pattern-extraction/SKILL.md",
+  "prov": "claude",
+  "agentops_copy": false
+ },
+ {
+  "name": "codebase-report",
+  "disposition": "improve existing `codebase-recon` durable report/delta",
+  "path": "/Users/bo/.claude/skills/codebase-report/SKILL.md",
+  "prov": "claude",
+  "agentops_copy": false
+ },
+ {
+  "name": "csctf",
+  "disposition": "keep external; domain utility",
+  "path": "/Users/bo/dev/skill-library/csctf/SKILL.md",
+  "prov": "skill-library",
+  "agentops_copy": false
+ },
+ {
+  "name": "cursor",
+  "disposition": "keep external; editor adapter",
+  "path": "/Users/bo/dev/skill-library/cursor/SKILL.md",
+  "prov": "skill-library",
+  "agentops_copy": false
+ },
+ {
+  "name": "de-monolithize-your-codebase-isomorphically",
+  "disposition": "absorb into `refactor`",
+  "path": "/Users/bo/.claude/skills/de-monolithize-your-codebase-isomorphically/SKILL.md",
+  "prov": "claude",
+  "agentops_copy": false
+ },
+ {
+  "name": "de-slopify",
+  "disposition": "absorb into `doc` + `refactor`",
+  "path": "/Users/bo/.claude/skills/de-slopify/SKILL.md",
+  "prov": "claude",
+  "agentops_copy": false
+ },
+ {
+  "name": "documentation-website-for-software-project",
+  "disposition": "keep external; product-specific generator",
+  "path": "/Users/bo/dev/skill-library/documentation-website-for-software-project/SKILL.md",
+  "prov": "skill-library",
+  "agentops_copy": false
+ },
+ {
+  "name": "dsr",
+  "disposition": "absorb into `release` publisher boundaries",
+  "path": "/Users/bo/dev/skill-library/dsr/SKILL.md",
+  "prov": "skill-library",
+  "agentops_copy": false
+ },
+ {
+  "name": "dueling-idea-wizards",
+  "disposition": "create original `dueling-idea-genies`",
+  "path": "/Users/bo/dev/skill-library/dueling-idea-wizards/SKILL.md",
+  "prov": "skill-library",
+  "agentops_copy": false
+ },
+ {
+  "name": "e2e-testing-for-webapps",
+  "disposition": "absorb into `test` + `validate`",
+  "path": "/Users/bo/dev/skill-library/e2e-testing-for-webapps/SKILL.md",
+  "prov": "skill-library",
+  "agentops_copy": false
+ },
+ {
+  "name": "extreme-software-optimization",
+  "disposition": "absorb into `refactor` + `test` proof loop",
+  "path": "/Users/bo/dev/skill-library/extreme-software-optimization/SKILL.md",
+  "prov": "skill-library",
+  "agentops_copy": false
+ },
+ {
+  "name": "focr",
+  "disposition": "keep external; specialized tool",
+  "path": "/Users/bo/.claude/skills/focr/SKILL.md",
+  "prov": "claude",
+  "agentops_copy": false
+ },
+ {
+  "name": "frankensearch-integration-for-rust-projects",
+  "disposition": "keep external; project-specific integration",
+  "path": "/Users/bo/dev/skill-library/frankensearch-integration-for-rust-projects/SKILL.md",
+  "prov": "skill-library",
+  "agentops_copy": false
+ },
+ {
+  "name": "frankensuite-website-development",
+  "disposition": "keep external; project-specific development",
+  "path": "/Users/bo/dev/skill-library/frankensuite-website-development/SKILL.md",
+  "prov": "skill-library",
+  "agentops_copy": false
+ },
+ {
+  "name": "frankentui",
+  "disposition": "keep external; specialized TUI toolkit",
+  "path": "/Users/bo/dev/skill-library/frankentui/SKILL.md",
+  "prov": "skill-library",
+  "agentops_copy": false
+ },
+ {
+  "name": "fsnow",
+  "disposition": "keep external; specialized tool",
+  "path": "/Users/bo/.claude/skills/fsnow/SKILL.md",
+  "prov": "claude",
+  "agentops_copy": false
+ },
+ {
+  "name": "ga4",
+  "disposition": "keep external; external product adapter",
+  "path": "/Users/bo/dev/skill-library/ga4/SKILL.md",
+  "prov": "skill-library",
+  "agentops_copy": false
+ },
+ {
+  "name": "gcloud",
+  "disposition": "keep external; external product adapter",
+  "path": "/Users/bo/.claude/skills/gcloud/SKILL.md",
+  "prov": "claude",
+  "agentops_copy": false
+ },
+ {
+  "name": "gdb-for-debugging",
+  "disposition": "keep external/on-demand; debugger specialization",
+  "path": "/Users/bo/.claude/skills/gdb-for-debugging/SKILL.md",
+  "prov": "claude",
+  "agentops_copy": false
+ },
+ {
+  "name": "gh-actions",
+  "disposition": "absorb into `release` + CI gates",
+  "path": "/Users/bo/.claude/skills/gh-actions/SKILL.md",
+  "prov": "claude",
+  "agentops_copy": false
+ },
+ {
+  "name": "gh-cli",
+  "disposition": "absorb into `release` + `pr-prep` publisher boundaries",
+  "path": "/Users/bo/.claude/skills/gh-cli/SKILL.md",
+  "prov": "claude",
+  "agentops_copy": false
+ },
+ {
+  "name": "gh-og-share-images",
+  "disposition": "keep external; content utility",
+  "path": "/Users/bo/dev/skill-library/gh-og-share-images/SKILL.md",
+  "prov": "skill-library",
+  "agentops_copy": false
+ },
+ {
+  "name": "gh-triage-ru",
+  "disposition": "keep external; domain-specific triage",
+  "path": "/Users/bo/.claude/skills/gh-triage-ru/SKILL.md",
+  "prov": "claude",
+  "agentops_copy": false
+ },
+ {
+  "name": "ghostty",
+  "disposition": "keep external; terminal adapter",
+  "path": "/Users/bo/dev/skill-library/ghostty/SKILL.md",
+  "prov": "skill-library",
+  "agentops_copy": false
+ },
+ {
+  "name": "giil",
+  "disposition": "keep external; specialized utility",
+  "path": "/Users/bo/dev/skill-library/giil/SKILL.md",
+  "prov": "skill-library",
+  "agentops_copy": false
+ },
+ {
+  "name": "git-repo-janitor",
+  "disposition": "keep external/on-demand; repository maintenance utility",
+  "path": "/Users/bo/.claude/skills/git-repo-janitor/SKILL.md",
+  "prov": "claude",
+  "agentops_copy": false
+ },
+ {
+  "name": "git-stash-janitor",
+  "disposition": "keep external/on-demand; repository maintenance utility",
+  "path": "/Users/bo/.claude/skills/git-stash-janitor/SKILL.md",
+  "prov": "claude",
+  "agentops_copy": false
+ },
+ {
+  "name": "git-worktree-branch-rationalization",
+  "disposition": "keep external/on-demand; repository maintenance utility",
+  "path": "/Users/bo/.claude/skills/git-worktree-branch-rationalization/SKILL.md",
+  "prov": "claude",
+  "agentops_copy": false
+ },
+ {
+  "name": "idea-wizard",
+  "disposition": "create original `idea-genie` and wire from `discovery`",
+  "path": "/Users/bo/dev/skill-library/idea-wizard/SKILL.md",
+  "prov": "skill-library",
+  "agentops_copy": false
+ },
+ {
+  "name": "installer-workmanship",
+  "disposition": "absorb into `scaffold` + release validation",
+  "path": "/Users/bo/dev/skill-library/installer-workmanship/SKILL.md",
+  "prov": "skill-library",
+  "agentops_copy": false
+ },
+ {
+  "name": "interactive-visualization-creator",
+  "disposition": "keep external; output specialization",
+  "path": "/Users/bo/dev/skill-library/interactive-visualization-creator/SKILL.md",
+  "prov": "skill-library",
+  "agentops_copy": false
+ },
+ {
+  "name": "lean-formal-feedback-loop",
+  "disposition": "keep external; language/tool specialization",
+  "path": "/Users/bo/dev/skill-library/lean-formal-feedback-loop/SKILL.md",
+  "prov": "skill-library",
+  "agentops_copy": false
+ },
+ {
+  "name": "library-updater",
+  "disposition": "absorb into `release` dependency ratchet",
+  "path": "/Users/bo/.claude/skills/library-updater/SKILL.md",
+  "prov": "claude",
+  "agentops_copy": false
+ },
+ {
+  "name": "mcp-server-design",
+  "disposition": "absorb into `standards` + `scaffold`",
+  "path": "/Users/bo/dev/skill-library/mcp-server-design/SKILL.md",
+  "prov": "skill-library",
+  "agentops_copy": false
+ },
+ {
+  "name": "mock-code-finder",
+  "disposition": "absorb into `validate` bounded audit",
+  "path": "/Users/bo/dev/skill-library/mock-code-finder/SKILL.md",
+  "prov": "skill-library",
+  "agentops_copy": false
+ },
+ {
+  "name": "modes-of-reasoning-project-analysis",
+  "disposition": "absorb into `council` perspectives",
+  "path": "/Users/bo/dev/skill-library/modes-of-reasoning-project-analysis/SKILL.md",
+  "prov": "skill-library",
+  "agentops_copy": false
+ },
+ {
+  "name": "multi-model-triangulation",
+  "disposition": "absorb into `council` and membrane diversity rules",
+  "path": "/Users/bo/.claude/skills/multi-model-triangulation/SKILL.md",
+  "prov": "claude",
+  "agentops_copy": false
+ },
+ {
+  "name": "multi-pass-bug-hunting",
+  "disposition": "absorb into `validate` convergence passes",
+  "path": "/Users/bo/.claude/skills/multi-pass-bug-hunting/SKILL.md",
+  "prov": "claude",
+  "agentops_copy": false
+ },
+ {
+  "name": "og-share-images",
+  "disposition": "keep external; content utility",
+  "path": "/Users/bo/dev/skill-library/og-share-images/SKILL.md",
+  "prov": "skill-library",
+  "agentops_copy": false
+ },
+ {
+  "name": "operationalizing-expertise",
+  "disposition": "improve existing `operationalize`; remove retired routes",
+  "path": "/Users/bo/.claude/skills/operationalizing-expertise/SKILL.md",
+  "prov": "claude",
+  "agentops_copy": false
+ },
+ {
+  "name": "path-rationalization",
+  "disposition": "keep external/on-demand; filesystem specialization",
+  "path": "/Users/bo/.claude/skills/path-rationalization/SKILL.md",
+  "prov": "claude",
+  "agentops_copy": false
+ },
+ {
+  "name": "pi-agent-rust",
+  "disposition": "keep external; project specialization",
+  "path": "/Users/bo/dev/skill-library/pi-agent-rust/SKILL.md",
+  "prov": "skill-library",
+  "agentops_copy": false
+ },
+ {
+  "name": "profiling-software-performance",
+  "disposition": "absorb into `refactor` + `test` evidence loop",
+  "path": "/Users/bo/dev/skill-library/profiling-software-performance/SKILL.md",
+  "prov": "skill-library",
+  "agentops_copy": false
+ },
+ {
+  "name": "rch",
+  "disposition": "existing owner `rch`",
+  "path": "/Users/bo/dev/skill-library/rch/SKILL.md",
+  "prov": "skill-library",
+  "agentops_copy": false
+ },
+ {
+  "name": "readme-writing",
+  "disposition": "absorb into `doc --mode=readme`",
+  "path": "/Users/bo/dev/skill-library/readme-writing/SKILL.md",
+  "prov": "skill-library",
+  "agentops_copy": false
+ },
+ {
+  "name": "reality-check-for-project",
+  "disposition": "existing owner `reality-check`",
+  "path": "/Users/bo/dev/skill-library/reality-check-for-project/SKILL.md",
+  "prov": "skill-library",
+  "agentops_copy": false
+ },
+ {
+  "name": "release-preparations",
+  "disposition": "existing owner `release`",
+  "path": "/Users/bo/.claude/skills/release-preparations/SKILL.md",
+  "prov": "claude",
+  "agentops_copy": false
+ },
+ {
+  "name": "repeatedly-apply-skill",
+  "disposition": "absorb into bounded `rpi` / `evolve` convergence",
+  "path": "/Users/bo/.claude/skills/repeatedly-apply-skill/SKILL.md",
+  "prov": "claude",
+  "agentops_copy": false
+ },
+ {
+  "name": "research-software",
+  "disposition": "existing owner `research`",
+  "path": "/Users/bo/.claude/skills/research-software/SKILL.md",
+  "prov": "claude",
+  "agentops_copy": false
+ },
+ {
+  "name": "ru-multi-repo-workflow",
+  "disposition": "absorb into `release` + `rch` validation",
+  "path": "/Users/bo/.claude/skills/ru-multi-repo-workflow/SKILL.md",
+  "prov": "claude",
+  "agentops_copy": false
+ },
+ {
+  "name": "running-the-gauntlet-on-your-rust-port",
+  "disposition": "absorb into `test` + `validate`",
+  "path": "/Users/bo/dev/skill-library/running-the-gauntlet-on-your-rust-port/SKILL.md",
+  "prov": "skill-library",
+  "agentops_copy": false
+ },
+ {
+  "name": "rust-cli-with-sqlite",
+  "disposition": "absorb into `scaffold` reference patterns",
+  "path": "/Users/bo/dev/skill-library/rust-cli-with-sqlite/SKILL.md",
+  "prov": "skill-library",
+  "agentops_copy": false
+ },
+ {
+  "name": "rust-crates-publishing",
+  "disposition": "absorb into `release`",
+  "path": "/Users/bo/dev/skill-library/rust-crates-publishing/SKILL.md",
+  "prov": "skill-library",
+  "agentops_copy": false
+ },
+ {
+  "name": "rust-undefined-behavior-exorcist",
+  "disposition": "absorb into `security` + `test`",
+  "path": "/Users/bo/dev/skill-library/rust-undefined-behavior-exorcist/SKILL.md",
+  "prov": "skill-library",
+  "agentops_copy": false
+ },
+ {
+  "name": "rust-unsafe-code-exorcist",
+  "disposition": "absorb into `security` + `test`",
+  "path": "/Users/bo/dev/skill-library/rust-unsafe-code-exorcist/SKILL.md",
+  "prov": "skill-library",
+  "agentops_copy": false
+ },
+ {
+  "name": "saas-billing-patterns-for-stripe-and-paypal",
+  "disposition": "keep external; SaaS domain",
+  "path": "/Users/bo/dev/skill-library/saas-billing-patterns-for-stripe-and-paypal/SKILL.md",
+  "prov": "skill-library",
+  "agentops_copy": false
+ },
+ {
+  "name": "saas-cli-auth-flow",
+  "disposition": "keep external; SaaS domain",
+  "path": "/Users/bo/dev/skill-library/saas-cli-auth-flow/SKILL.md",
+  "prov": "skill-library",
+  "agentops_copy": false
+ },
+ {
+  "name": "saas-customer-analytics",
+  "disposition": "keep external; SaaS domain",
+  "path": "/Users/bo/dev/skill-library/saas-customer-analytics/SKILL.md",
+  "prov": "skill-library",
+  "agentops_copy": false
+ },
+ {
+  "name": "security-audit-for-saas",
+  "disposition": "absorb generic proof shape into `security`; keep SaaS specifics external",
+  "path": "/Users/bo/dev/skill-library/security-audit-for-saas/SKILL.md",
+  "prov": "skill-library",
+  "agentops_copy": false
+ },
+ {
+  "name": "seo-for-saas-businesses",
+  "disposition": "keep external; SaaS/GTM domain",
+  "path": "/Users/bo/dev/skill-library/seo-for-saas-businesses/SKILL.md",
+  "prov": "skill-library",
+  "agentops_copy": false
+ },
+ {
+  "name": "simplify-and-refactor-code-isomorphically",
+  "disposition": "absorb into `refactor`",
+  "path": "/Users/bo/.claude/skills/simplify-and-refactor-code-isomorphically/SKILL.md",
+  "prov": "claude",
+  "agentops_copy": false
+ },
+ {
+  "name": "slack-migration-to-mattermost-phase-1-extraction",
+  "disposition": "keep external; migration domain",
+  "path": "/Users/bo/dev/skill-library/slack-migration-to-mattermost-phase-1-extraction/SKILL.md",
+  "prov": "skill-library",
+  "agentops_copy": false
+ },
+ {
+  "name": "slack-migration-to-mattermost-phase-2-setup-and-import",
+  "disposition": "keep external; migration domain",
+  "path": "/Users/bo/dev/skill-library/slack-migration-to-mattermost-phase-2-setup-and-import/SKILL.md",
+  "prov": "skill-library",
+  "agentops_copy": false
+ },
+ {
+  "name": "slack-migration-to-mattermost-phase-3-ongoing-maintenance",
+  "disposition": "keep external; migration domain",
+  "path": "/Users/bo/dev/skill-library/slack-migration-to-mattermost-phase-3-ongoing-maintenance/SKILL.md",
+  "prov": "skill-library",
+  "agentops_copy": false
+ },
+ {
+  "name": "slb",
+  "disposition": "absorb into `dcg` + `scope` approval policy",
+  "path": "/Users/bo/dev/skill-library/slb/SKILL.md",
+  "prov": "skill-library",
+  "agentops_copy": false
+ },
+ {
+  "name": "ssh",
+  "disposition": "absorb only remote execution boundaries into `rch` + `agent-native`; keep command manual external",
+  "path": "/Users/bo/.claude/skills/ssh/SKILL.md",
+  "prov": "claude",
+  "agentops_copy": false
+ },
+ {
+  "name": "stripe-checkout",
+  "disposition": "keep external; product adapter",
+  "path": "/Users/bo/dev/skill-library/stripe-checkout/SKILL.md",
+  "prov": "skill-library",
+  "agentops_copy": false
+ },
+ {
+  "name": "supabase",
+  "disposition": "keep external; product adapter",
+  "path": "/Users/bo/dev/skill-library/supabase/SKILL.md",
+  "prov": "skill-library",
+  "agentops_copy": false
+ },
+ {
+  "name": "system-performance-remediation",
+  "disposition": "absorb into `sbh`, `status`, and `rch`",
+  "path": "/Users/bo/.claude/skills/system-performance-remediation/SKILL.md",
+  "prov": "claude",
+  "agentops_copy": false
+ },
+ {
+  "name": "tanstack",
+  "disposition": "keep external; framework specialization",
+  "path": "/Users/bo/dev/skill-library/tanstack/SKILL.md",
+  "prov": "skill-library",
+  "agentops_copy": false
+ },
+ {
+  "name": "tax-return-preparation-and-advice-generic",
+  "disposition": "keep external; regulated domain",
+  "path": "/Users/bo/dev/skill-library/tax-return-preparation-and-advice-generic/SKILL.md",
+  "prov": "skill-library",
+  "agentops_copy": false
+ },
+ {
+  "name": "testing-conformance-harnesses",
+  "disposition": "absorb into `test`",
+  "path": "/Users/bo/dev/skill-library/testing-conformance-harnesses/SKILL.md",
+  "prov": "skill-library",
+  "agentops_copy": false
+ },
+ {
+  "name": "testing-fuzzing",
+  "disposition": "absorb into `test`",
+  "path": "/Users/bo/dev/skill-library/testing-fuzzing/SKILL.md",
+  "prov": "skill-library",
+  "agentops_copy": false
+ },
+ {
+  "name": "testing-golden-artifacts",
+  "disposition": "absorb into `test`",
+  "path": "/Users/bo/dev/skill-library/testing-golden-artifacts/SKILL.md",
+  "prov": "skill-library",
+  "agentops_copy": false
+ },
+ {
+  "name": "testing-real-service-e2e-no-mocks",
+  "disposition": "absorb into `test` + `validate`",
+  "path": "/Users/bo/dev/skill-library/testing-real-service-e2e-no-mocks/SKILL.md",
+  "prov": "skill-library",
+  "agentops_copy": false
+ },
+ {
+  "name": "tui-glamorous",
+  "disposition": "keep external; UI specialization",
+  "path": "/Users/bo/dev/skill-library/tui-glamorous/SKILL.md",
+  "prov": "skill-library",
+  "agentops_copy": false
+ },
+ {
+  "name": "tui-inspector",
+  "disposition": "keep external; UI specialization",
+  "path": "/Users/bo/dev/skill-library/tui-inspector/SKILL.md",
+  "prov": "skill-library",
+  "agentops_copy": false
+ },
+ {
+  "name": "ubs",
+  "disposition": "absorb into `validate` + `security`",
+  "path": "/Users/bo/.claude/skills/ubs/SKILL.md",
+  "prov": "claude",
+  "agentops_copy": false
+ },
+ {
+  "name": "ui-polish",
+  "disposition": "keep external; UI specialization",
+  "path": "/Users/bo/dev/skill-library/ui-polish/SKILL.md",
+  "prov": "skill-library",
+  "agentops_copy": false
+ },
+ {
+  "name": "user-support-ticketing-system-for-saas",
+  "disposition": "keep external; SaaS domain",
+  "path": "/Users/bo/dev/skill-library/user-support-ticketing-system-for-saas/SKILL.md",
+  "prov": "skill-library",
+  "agentops_copy": false
+ },
+ {
+  "name": "user-support-triage-for-saas-and-open-source-projects",
+  "disposition": "keep external; support domain",
+  "path": "/Users/bo/dev/skill-library/user-support-triage-for-saas-and-open-source-projects/SKILL.md",
+  "prov": "skill-library",
+  "agentops_copy": false
+ },
+ {
+  "name": "ux-audit",
+  "disposition": "absorb generic evidence lens into `codebase-recon` + `validate`",
+  "path": "/Users/bo/dev/skill-library/ux-audit/SKILL.md",
+  "prov": "skill-library",
+  "agentops_copy": false
+ },
+ {
+  "name": "vercel",
+  "disposition": "absorb publisher boundary into `release`; keep platform manual external",
+  "path": "/Users/bo/dev/skill-library/vercel/SKILL.md",
+  "prov": "skill-library",
+  "agentops_copy": false
+ },
+ {
+  "name": "vibing-with-ntm",
+  "disposition": "keep retired; split behavior between `ntm` adapter mechanics and `agent-native` lifecycle",
+  "path": "/Users/bo/.claude/skills/vibing-with-ntm/SKILL.md",
+  "prov": "claude",
+  "agentops_copy": false
+ },
+ {
+  "name": "video-obs-youtube-music",
+  "disposition": "keep external; media utility",
+  "path": "/Users/bo/dev/skill-library/video-obs-youtube-music/SKILL.md",
+  "prov": "skill-library",
+  "agentops_copy": false
+ },
+ {
+  "name": "wezterm",
+  "disposition": "absorb pane/terminal boundary only into `ntm`; keep terminal manual external",
+  "path": "/Users/bo/dev/skill-library/wezterm/SKILL.md",
+  "prov": "skill-library",
+  "agentops_copy": false
+ },
+ {
+  "name": "wills-and-estate-planning-skill",
+  "disposition": "keep external; regulated domain",
+  "path": "/Users/bo/dev/skill-library/wills-and-estate-planning-skill/SKILL.md",
+  "prov": "skill-library",
+  "agentops_copy": false
+ },
+ {
+  "name": "world-class-doctor-mode-for-cli-tools",
+  "disposition": "absorb into `standards` + live CLI doctor/gates",
+  "path": "/Users/bo/dev/skill-library/world-class-doctor-mode-for-cli-tools/SKILL.md",
+  "prov": "skill-library",
+  "agentops_copy": false
+ },
+ {
+  "name": "wrangler",
+  "disposition": "keep external; platform adapter",
+  "path": "/Users/bo/dev/skill-library/wrangler/SKILL.md",
+  "prov": "skill-library",
+  "agentops_copy": false
+ },
+ {
+  "name": "xf",
+  "disposition": "absorb search routing into `research` + `cass`; keep network tool external",
+  "path": "/Users/bo/dev/skill-library/xf/SKILL.md",
+  "prov": "skill-library",
+  "agentops_copy": false
+ },
+ {
+  "name": "ab-testing",
+  "disposition": "absorb into `goals`/evaluation evidence; no standalone skill",
+  "path": "/Users/bo/dev/skill-library/ab-testing/SKILL.md",
+  "prov": "skill-library",
+  "agentops_copy": false
+ },
+ {
+  "name": "admin-page-for-nextjs-sites",
+  "disposition": "keep external; application-domain template",
+  "path": "/Users/bo/dev/skill-library/admin-page-for-nextjs-sites/SKILL.md",
+  "prov": "skill-library",
+  "agentops_copy": false
+ },
+ {
+  "name": "agent-ergonomics-and-intuitiveness-maximization-for-cli-tools",
+  "disposition": "absorb into `standards` + CLI gates",
+  "path": "/Users/bo/dev/skill-library/agent-ergonomics-and-intuitiveness-maximization-for-cli-tools/SKILL.md",
+  "prov": "skill-library",
+  "agentops_copy": false
+ },
+ {
+  "name": "automating-your-automations",
+  "disposition": "existing owner `toil-mining`",
+  "path": "/Users/bo/dev/skill-library/automating-your-automations/SKILL.md",
+  "prov": "skill-library",
+  "agentops_copy": false
+ },
+ {
+  "name": "bd-to-br-migration",
+  "disposition": "absorb into `beads-br` migration references",
+  "path": "/Users/bo/.claude/skills/bd-to-br-migration/SKILL.md",
+  "prov": "claude",
+  "agentops_copy": false
+ },
+ {
+  "name": "brenner",
+  "disposition": "keep external/on-demand; investigation specialization",
+  "path": "/Users/bo/dev/skill-library/brenner/SKILL.md",
+  "prov": "skill-library",
+  "agentops_copy": false
+ },
+ {
+  "name": "browser-extension-automation",
+  "disposition": "keep external; browser specialization",
+  "path": "/Users/bo/dev/skill-library/browser-extension-automation/SKILL.md",
+  "prov": "skill-library",
+  "agentops_copy": false
+ },
+ {
+  "name": "browser-testing-with-ntm",
+  "disposition": "absorb worker lifecycle into `agent-native`; test method into `test`",
+  "path": "/Users/bo/dev/skill-library/browser-testing-with-ntm/SKILL.md",
+  "prov": "skill-library",
+  "agentops_copy": false
+ },
+ {
+  "name": "caam",
+  "disposition": "existing owner `account-rotation`",
+  "path": "/Users/bo/.claude/skills/caam/SKILL.md",
+  "prov": "claude",
+  "agentops_copy": false
+ },
+ {
+  "name": "cass-memory",
+  "disposition": "existing owner `cass`",
+  "path": "/Users/bo/.claude/skills/cass-memory/SKILL.md",
+  "prov": "claude",
+  "agentops_copy": false
+ },
+ {
+  "name": "changelog-md-workmanship",
+  "disposition": "absorb into `release` + `doc`",
+  "path": "/Users/bo/.claude/skills/changelog-md-workmanship/SKILL.md",
+  "prov": "claude",
+  "agentops_copy": false
+ },
+ {
+  "name": "deadlock-finder-and-fixer",
+  "disposition": "absorb into `validate` bounded audit + `status` recovery",
+  "path": "/Users/bo/.claude/skills/deadlock-finder-and-fixer/SKILL.md",
+  "prov": "claude",
+  "agentops_copy": false
+ },
+ {
+  "name": "detect-forgotten-sessions-post-crash",
+  "disposition": "absorb into `ntm` liveness + `status` recovery",
+  "path": "/Users/bo/dev/skill-library/detect-forgotten-sessions-post-crash/SKILL.md",
+  "prov": "skill-library",
+  "agentops_copy": false
+ },
+ {
+  "name": "document-to-latex",
+  "disposition": "keep external; format specialization",
+  "path": "/Users/bo/dev/skill-library/document-to-latex/SKILL.md",
+  "prov": "skill-library",
+  "agentops_copy": false
+ },
+ {
+  "name": "papers",
+  "disposition": "absorb research routing into `research`; keep network/package external",
+  "path": "/Users/bo/dev/skill-library/papers/SKILL.md",
+  "prov": "skill-library",
+  "agentops_copy": false
+ },
+ {
+  "name": "planning-workflow",
+  "disposition": "existing owner `plan` + `discovery`",
+  "path": "/Users/bo/.claude/skills/planning-workflow/SKILL.md",
+  "prov": "claude",
+  "agentops_copy": false
+ },
+ {
+  "name": "redacting-sensitive-parts-of-screencast-videos",
+  "disposition": "keep external; media utility",
+  "path": "/Users/bo/dev/skill-library/redacting-sensitive-parts-of-screencast-videos/SKILL.md",
+  "prov": "skill-library",
+  "agentops_copy": false
+ },
+ {
+  "name": "rg-optimized",
+  "disposition": "absorb bounded retrieval hints into `research`; keep utility external",
+  "path": "/Users/bo/.claude/skills/rg-optimized/SKILL.md",
+  "prov": "claude",
+  "agentops_copy": false
+ },
+ {
+  "name": "testing-metamorphic",
+  "disposition": "absorb into `test`",
+  "path": "/Users/bo/dev/skill-library/testing-metamorphic/SKILL.md",
+  "prov": "skill-library",
+  "agentops_copy": false
+ },
+ {
+  "name": "transcribing-audio-from-calls-and-meetings",
+  "disposition": "keep external; media utility",
+  "path": "/Users/bo/.claude/skills/transcribing-audio-from-calls-and-meetings/SKILL.md",
+  "prov": "claude",
+  "agentops_copy": false
+ }
+]

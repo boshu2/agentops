@@ -279,24 +279,19 @@ def probe_no_substrate_calls() -> None:
         assert rpi_spec and rpi_spec.loader
         rpi = importlib.util.module_from_spec(rpi_spec)
         rpi_spec.loader.exec_module(rpi)
-        acceptance = "a" * 64
-        plan = {
-            "schema_version": "plan-packet.v1",
-            "acceptance_digest": acceptance,
+        resolved_intent = {
+            "intent_ref": "conversation:cathedral-probe",
+            "acceptance": ["value.txt contains candidate"],
             "write_scope": {"include": ["value.txt"], "exclude": []},
         }
-        candidate = {
-            "schema_version": "candidate-packet.v1",
-            "plan_packet_digest": module.plan_digest(plan),
-            "acceptance_digest": acceptance,
+        intent_bytes = module.canonical_bytes(resolved_intent)
+        subject_facts = {
             "subject_manifest_digest": payload["canonical_manifest_digest"],
             "subject_manifest": payload,
-            "changed_path_coverage_complete": True,
-            "actual_changed_paths": ["value.txt"],
+            "checks": ["manifest"],
         }
-        assert module.scope_result(plan, candidate)["result"] == "PASS"
         draft = {
-            "acceptance_digest": acceptance,
+            "acceptance_digest": "a" * 64,
             "subject_manifest_digest": payload["canonical_manifest_digest"],
             "author_context_id": "non-git-author",
             "validator_context_id": "non-git-validator",
@@ -314,20 +309,29 @@ def probe_no_substrate_calls() -> None:
 
         def plan_phase(_intent: object) -> dict:
             calls.append("plan")
-            return plan
+            return resolved_intent
 
-        def implement_phase(received_plan: dict) -> dict:
+        def implement_phase(received_intent: dict) -> dict:
             calls.append("implement")
-            assert received_plan == plan
-            return candidate
+            assert received_intent == resolved_intent
+            return subject_facts
 
-        def validate_phase(received_plan: dict, received_candidate: dict) -> dict:
+        def validate_phase(received_intent: dict, received_subject: dict) -> dict:
             calls.append("validate")
-            assert module.scope_result(received_plan, received_candidate)["result"] == "PASS"
-            artifact, verdict_path, existed = module.store_verdict(draft, verdict_dir)
+            assert received_intent == resolved_intent
+            assert received_subject == subject_facts
+            artifact, verdict_path, existed = module.store_verdict(
+                draft,
+                verdict_dir,
+                intent_bytes,
+                payload,
+                "non-git-author",
+                "PASS",
+            )
             assert not existed
             return {
                 "verdict": artifact["verdict"],
+                "acceptance_digest": artifact["acceptance_digest"],
                 "subject_manifest_digest": artifact["subject_manifest_digest"],
                 "verdict_digest": artifact["artifact_digest"],
                 "verdict_ref": str(verdict_path),

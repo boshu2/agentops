@@ -15,5 +15,5 @@ not select, schedule, track, implement, or validate work.
 5. Stop when no materially new evidenced candidate appears.
 6. Write and validate `idea-portfolio.v1`, then return it to the caller or Plan.
 
-An empty `no-new-work` portfolio is valid. Plan alone may turn an option into a
-PlanPacket.
+An empty `no-new-work` portfolio is valid. Plan alone may incorporate a selected
+option into the existing bead or caller intent.

@@ -100,6 +100,29 @@ func TestRunConfig_NoFlags_ShowsHelp(t *testing.T) {
 	}
 }
 
+func TestConfigModuleHonorsGlobalDryRun(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	t.Setenv("AGENTOPS_CONFIG", filepath.Join(home, "config.yaml"))
+	originalDryRun, originalOutput := dryRun, output
+	dryRun, output = true, "table"
+	t.Cleanup(func() { dryRun, output = originalDryRun, originalOutput })
+
+	command := configModule.Command()
+	var stdout strings.Builder
+	command.SetOut(&stdout)
+	command.SetArgs([]string{"models", "--set-tier", "quality"})
+	if err := command.Execute(); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Stat(os.Getenv("AGENTOPS_CONFIG")); !os.IsNotExist(err) {
+		t.Fatalf("global dry-run wrote config: %v", err)
+	}
+	if !strings.Contains(stdout.String(), "Would set default model tier") {
+		t.Fatalf("dry-run preview missing: %q", stdout.String())
+	}
+}
+
 func TestRunConfig_ShowJSON(t *testing.T) {
 	oldShow := configShow
 	configShow = true

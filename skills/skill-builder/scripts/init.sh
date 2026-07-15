@@ -52,7 +52,7 @@ target="$REPO_ROOT/skills/$slug"
 
 tier="${SKILL_TIER:-execution}"
 dependencies="${SKILL_DEPENDENCIES:-[]}"
-capabilities="${SKILL_CAPABILITIES:-[${slug//-/_}]}"
+capabilities="${SKILL_CAPABILITIES:-[\"${slug//-/_}\"]}"
 effects="${SKILL_EFFECTS:-[]}"
 
 python3 - "$dependencies" "$capabilities" "$effects" <<'PY'
@@ -70,11 +70,13 @@ cat >"$target/SKILL.md" <<EOF
 ---
 name: $slug
 description: 'TODO: state the behavior and concrete trigger phrases for $slug.'
+practices: []
 skill_api_version: 1
 hexagonal_role: supporting
 consumes: []
 produces: []
 context_rel: []
+user-invocable: true
 metadata:
   tier: $tier
   dependencies: $dependencies

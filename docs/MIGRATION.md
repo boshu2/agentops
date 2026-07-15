@@ -22,7 +22,7 @@ under `ao gate check`; semantic judgment is the Validate skill.
 | `ao governor`, `ao converge` | The caller decides whether to start a new invocation or revision. |
 | `ao yield` | Observe throughput in the selected runtime or external system. |
 | `ao claim`, `ao next-work` | Use the caller's tracker or substrate directly. |
-| `ao state`, `ao reconcile` | Inspect packets, verdicts, and generic provenance as read-only artifacts. |
+| `ao state`, `ao reconcile` | Inspect the bead or caller intent, derived subject manifest, verdict, and generic provenance as read-only evidence. |
 | `ao worktree` | Use Git directly. |
 | `ao membrane` | Record observations as Validate findings or generic provenance. |
 | `ao crank` | Call an executor directly or use the optional `dispatch_once` adapter. |
