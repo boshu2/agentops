@@ -14,7 +14,16 @@
     "scenarios": {
       "type": "array",
       "minItems": 2,
-      "contains": {"type": "object", "required": ["kind"], "properties": {"kind": {"const": "edge"}}},
+      "allOf": [
+        {
+          "contains": {"type": "object", "required": ["kind"], "properties": {"kind": {"const": "normal"}}},
+          "minContains": 1
+        },
+        {
+          "contains": {"type": "object", "required": ["kind"], "properties": {"kind": {"const": "edge"}}},
+          "minContains": 1
+        }
+      ],
       "items": {"$ref": "#/$defs/scenario"}
     },
     "non_goals": {"type": "array", "items": {"type": "string", "minLength": 1}},
