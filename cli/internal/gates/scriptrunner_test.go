@@ -82,6 +82,45 @@ func TestScriptRunner_PassAndFail(t *testing.T) {
 	}
 }
 
+func TestScriptRunner_PythonUsesPythonInterpreter(t *testing.T) {
+	root := t.TempDir()
+	writeScript(t, root, "check.py", "#!/usr/bin/env python3\nprint('python gate ran')\n")
+
+	v, err := NewScriptRunner(root).Run(context.Background(), ports.GateRunRequest{Name: "check.py"})
+	if err != nil {
+		t.Fatalf("Run check.py: %v", err)
+	}
+	if v.Status != ports.GateStatusPass {
+		t.Fatalf("check.py -> %s, want PASS; log: %q", v.Status, v.LogTail)
+	}
+	if !strings.Contains(v.LogTail, "python gate ran") {
+		t.Fatalf("check.py output = %q, want Python output", v.LogTail)
+	}
+}
+
+func TestScriptRunner_MissingPythonInterpreterRetainsLogTail(t *testing.T) {
+	root := t.TempDir()
+	writeScript(t, root, "check.py", "#!/usr/bin/env python3\nprint('unreachable')\n")
+	t.Setenv("PATH", t.TempDir())
+
+	v, err := NewScriptRunner(root).Run(context.Background(), ports.GateRunRequest{Name: "check.py"})
+	if err != nil {
+		t.Fatalf("Run check.py: %v", err)
+	}
+	if v.Status != ports.GateStatusUnknown {
+		t.Fatalf("check.py -> %s, want UNKNOWN", v.Status)
+	}
+	if !strings.Contains(v.Reason, "subprocess error") {
+		t.Fatalf("Reason = %q, want subprocess diagnostic", v.Reason)
+	}
+	if v.LogTail == "" {
+		t.Fatal("LogTail is empty; process-start diagnostic must survive JSON reporting")
+	}
+	if v.LogTail != v.Reason {
+		t.Fatalf("LogTail = %q, want diagnostic reason %q", v.LogTail, v.Reason)
+	}
+}
+
 // setGateSelfBinary overrides the running-gate-binary resolver for the test and
 // restores it via t.Cleanup (package-global shared state — .claude/rules/go.md).
 func setGateSelfBinary(t *testing.T, fn func() (string, error)) {

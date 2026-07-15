@@ -1,12 +1,12 @@
 ---
 name: scope
-description: Review a proposed PlanPacket write scope for
+description: Review the bead or caller intent write scope
 ---
 # Scope — Review a proposed write scope
 
-Review the `write_scope.include` and `write_scope.exclude` fields of a proposed
-PlanPacket. This skill is advisory: it does not write a lock, install a hook,
-block an edit, claim paths, or change the PlanPacket.
+Review the write scope in the existing bead or caller intent. This skill is
+advisory: it does not create a second planning artifact, write a lock, install
+a hook, block an edit, or claim paths.
 
 ## Inputs
 
@@ -23,9 +23,8 @@ block an edit, claim paths, or change the PlanPacket.
 4. Identify likely paths the proposal omitted.
 5. Return a corrected proposal and the reasons for each change, then stop.
 
-The caller decides whether to adopt the proposal. Plan remains the sole author
-of a PlanPacket, and Validate independently compares proven changed paths with
-the accepted scope.
+The caller decides whether to adopt the proposal in the original intent source,
+and Validate independently compares runtime-derived changed paths with that scope.
 
 ## Output
 

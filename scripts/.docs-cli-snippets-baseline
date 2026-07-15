@@ -1,11 +1,5 @@
 # Filename-pinned temporary allowlist for live docs that still prescribe a removed ao command.
 # The liveness gate fails on new offenders and on stale entries; this list only shrinks.
-docs/activation-profiles.md
-docs/contracts/agent-native-mechanism.md
 docs/doctrine/effective-feedback-compute.md
 docs/domain-practice-packets.md
 docs/examples/agentops-3-council-verdict-example.md
-docs/GLOSSARY.md
-docs/positioning/12-factors-validation-lens.md
-docs/reference/agentops-domain-evolution-plan.md
-docs/workflows/session-lifecycle.md

@@ -73,14 +73,7 @@ Run a relative-path script.
 
 	// Move cwd OUTSIDE the fake repo to reproduce the bug.
 	outside := t.TempDir()
-	prev, err := os.Getwd()
-	if err != nil {
-		t.Fatalf("getwd: %v", err)
-	}
-	if err := os.Chdir(outside); err != nil {
-		t.Fatalf("chdir outside: %v", err)
-	}
-	t.Cleanup(func() { _ = os.Chdir(prev) })
+	t.Chdir(outside)
 
 	// Run the measure command via the same entry point the CLI uses.
 	var stdout, stderr bytes.Buffer
@@ -127,13 +120,8 @@ func TestWithGoalFileCwd_NoRepoFallback(t *testing.T) {
 		t.Fatalf("write goals: %v", err)
 	}
 
-	prev, _ := os.Getwd()
-	t.Cleanup(func() { _ = os.Chdir(prev) })
-
 	starting := t.TempDir()
-	if err := os.Chdir(starting); err != nil {
-		t.Fatalf("chdir starting: %v", err)
-	}
+	t.Chdir(starting)
 
 	restore := withGoalFileCwd(goalsPath)
 	defer restore()
@@ -149,7 +137,6 @@ func TestWithGoalFileCwd_NoRepoFallback(t *testing.T) {
 // TestWithGoalFileCwd_EmptyPath verifies that an empty path is a no-op.
 func TestWithGoalFileCwd_EmptyPath(t *testing.T) {
 	prev, _ := os.Getwd()
-	t.Cleanup(func() { _ = os.Chdir(prev) })
 
 	restore := withGoalFileCwd("")
 	defer restore()

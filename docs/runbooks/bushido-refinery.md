@@ -1,5 +1,7 @@
 # Bushido Refinery — continuous main-validation backstop
 
+> **RETIRED:** The refinery command and lifecycle described here are no longer live.
+
 The refinery (`ao refinery`) is the **backstop** half of the push-to-main model
 (ag-qidx). Push-to-main makes the local pre-push gate the pre-merge wall; the
 refinery is the always-on net behind `main` on bushido.

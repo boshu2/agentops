@@ -1,9 +1,8 @@
 # Retrieval Comparison Contract
 
-The search-eval path of `ao eval bench` is the deterministic decision
-gate for changing AgentOps retrieval behavior. It compares named backends over
-the same manifest, search root, and `k`, then reports additive metrics for each
-backend.
+The former search-eval CLI was retired. The deterministic decision gate for
+changing retrieval behavior is the smoke script below; it compares named
+backends over the same manifest, search root, and `k`.
 
 ## Command Surface
 

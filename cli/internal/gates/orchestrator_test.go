@@ -171,6 +171,23 @@ func TestReport_ExitCode_NonBlockingFailIsAdvisory(t *testing.T) {
 	}
 }
 
+func TestReport_ExitCode_BlockingWarnFailsClosed(t *testing.T) {
+	r := NewRegistry()
+	if err := r.Add(Check{ID: "guard", Tiers: Full, Blocking: true, Backing: "guard"}); err != nil {
+		t.Fatal(err)
+	}
+	o := testOrch(t, r, fakeFiles{}, map[ports.GateName]ports.GateVerdict{
+		"guard": {Status: ports.GateStatusWarn, Reason: "interpreter or usage failure"},
+	})
+	rep, err := o.Run(context.Background(), RunOptions{Mode: Full})
+	if err != nil {
+		t.Fatalf("Run: %v", err)
+	}
+	if rep.ExitCode() != 1 {
+		t.Errorf("ExitCode = %d, want 1 (blocking WARN must fail closed)", rep.ExitCode())
+	}
+}
+
 // TestReport_ExitCode_BlockingUnknownFailsClosed pins the audit-A1 fix: a
 // blocking check that returns UNKNOWN — exactly what ScriptRunner emits when its
 // backing script is missing or won't launch (scriptrunner.go:45,67) — must fail
@@ -353,5 +370,25 @@ func TestGateReport_JSONSchema(t *testing.T) {
 	}
 	if goGate.RepairHint != "bash scripts/go" {
 		t.Errorf("go repair_hint = %q, want bash scripts/go", goGate.RepairHint)
+	}
+}
+
+func TestCheckWorkflowBackingUsesArtifactInterpreter(t *testing.T) {
+	tests := []struct {
+		name  string
+		check Check
+		want  string
+	}{
+		{name: "shell", check: Check{Backing: "check-shell.sh"}, want: "bash scripts/check-shell.sh"},
+		{name: "python", check: Check{Backing: "check-python.py"}, want: "python3 scripts/check-python.py"},
+		{name: "python path and args", check: Check{Backing: "tools/check.PY", Args: []string{"--strict"}}, want: "python3 tools/check.PY --strict"},
+		{name: "native", check: Check{Run: func(context.Context, RunContext) (ports.GateVerdict, error) { return ports.GateVerdict{}, nil }}, want: "native-go"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.check.WorkflowBacking(); got != tt.want {
+				t.Fatalf("WorkflowBacking() = %q, want %q", got, tt.want)
+			}
+		})
 	}
 }

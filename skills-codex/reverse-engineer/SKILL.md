@@ -58,8 +58,8 @@ Discipline that makes the map trustworthy:
 If adopting a steal is a **one-way door** (an architecture fork, a new bounded
 context, or a migration), do not decide it here. Hand the steal-map to Plan.
 Dueling Idea Genies or Premortem may challenge the choice as advisory
-evidence. Plan alone shapes the resulting PlanPacket; neither strategy grants
-readiness or continuation authority.
+evidence. Plan alone shapes the selected option in the existing intent source;
+neither strategy grants readiness or continuation authority.
 
 ## Invocation Contract
 
@@ -161,7 +161,7 @@ Run the skill for `ao` with `--authorized --mode=binary --binary-path="$(command
 
 ## See Also
 
-- [plan](../plan/SKILL.md) — shape selected steals into exact PlanPackets
+- [plan](../plan/SKILL.md) — shape selected steals in the existing intent source
 - [dueling-idea-genies](../dueling-idea-genies/SKILL.md) — optional advisory challenge
 - [premortem](../premortem/SKILL.md) — optional advisory challenge of the exact plan
 - [research](../research/SKILL.md) — general exploration; this is its external-system specialization

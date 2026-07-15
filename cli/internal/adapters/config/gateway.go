@@ -37,6 +37,9 @@ func (Gateway) Environment(keys []string) map[string]string {
 
 func (Gateway) Load() (*configapp.Config, error)   { return configapp.Load(nil) }
 func (Gateway) Save(value *configapp.Config) error { return configapp.Save(value) }
+func (Gateway) PreviewSave(value *configapp.Config) error {
+	return configapp.PreviewSave(value)
+}
 
 func exists(path string) bool {
 	_, err := os.Stat(path)

@@ -19,24 +19,21 @@ REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$REPO_ROOT"
 
 # Baselines captured 2026-06-03 (excludes the testutil_test.go helper home).
-# CHDIR lowered 137->7 (age-cmd-ao-test-floor-hvb): the full cli/cmd/ao test suite was
+# CHDIR lowered 137->0 (age-cmd-ao-test-floor-hvb): the full cli/cmd/ao test suite was
 # migrated off raw os.Chdir to t.Chdir (~62 blocks), which fixed a non-restoring chdir leak
 # (orchestrate_test.go) that kept the package deterministically RED under -shuffle, plus
-# internal/paths chdir helper. The remaining 7 are INTENTIONAL cwd-behavior tests that
-# cannot use t.Chdir: internal/goals/measure_cwd_test.go (asserts os.Getwd resolution from a
-# manipulated cwd) and internal/rpi/worktree_test.go (deliberately deletes the cwd to force
-# os.Getwd to fail). They restore correctly via t.Cleanup and are shuffle-safe.
+# internal/paths chdir helper. Cwd-behavior tests now use t.Chdir or isolated subprocesses.
 # os.Setenv lowered 22->12 on 2026-06-06 (ag-k38x #bulk-migration). The remaining
 # are intentional and cannot use t.Setenv: TestMain sites (no *testing.T), string-literal
 # fixtures in fix_cliconfig_test.go, and unset-semantics helpers (t.Setenv cannot unset).
 # 12->14 on 2026-06-25: cmd/ao/main_test.go TestMain sets+restores TMUX_TMPDIR to isolate
 # the tmux socket (a test poisoned the dev's real tmux server with HOME=tempdir). TestMain
 # has no *testing.T, so t.Setenv is unavailable — these two are intentional, like HOME above.
-BASELINE_CHDIR=7
-BASELINE_SETENV=14
+BASELINE_CHDIR=0
+BASELINE_SETENV=10
 
-chdir=$(grep -rho --include='*_test.go' --exclude='testutil_test.go' 'os\.Chdir(' cli 2>/dev/null | wc -l | tr -d ' ')
-setenv=$(grep -rho --include='*_test.go' --exclude='testutil_test.go' 'os\.Setenv(' cli 2>/dev/null | wc -l | tr -d ' ')
+chdir=$({ grep -rho --include='*_test.go' --exclude='testutil_test.go' 'os\.Chdir(' cli 2>/dev/null || true; } | wc -l | tr -d ' ')
+setenv=$({ grep -rho --include='*_test.go' --exclude='testutil_test.go' 'os\.Setenv(' cli 2>/dev/null || true; } | wc -l | tr -d ' ')
 
 rc=0
 if [ "$chdir" -gt "$BASELINE_CHDIR" ]; then

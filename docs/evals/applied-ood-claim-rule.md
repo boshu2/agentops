@@ -1,5 +1,7 @@
 # Applied-OOD moat claim rule — PRE-REGISTRATION (the sentinel-recall ban)
 
+> **HISTORICAL:** Locked preregistration for a retired evaluation harness.
+
 > **Pre-registered BEFORE the next valid moat run (age-6ys, 2026-06-17).** This
 > fixes — in advance — what a scenario must be for its A/B scorecard to count as
 > evidence that *"AgentOps' knowledge corpus improves agent work."* Locked: do not

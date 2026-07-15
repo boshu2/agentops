@@ -1,9 +1,11 @@
 # Repository CI and delivery
 
-AgentOps produces a `PlanPacket`, one bounded implementation candidate, exact
-content identity, one author-distinct Validate verdict, and a durable verdict
-artifact. It does not own Git delivery, merge policy, retries, queues, work
-ownership, or release transitions.
+Repository authority and the core work boundary are defined in [AGENTS.md](../AGENTS.md).
+
+AgentOps reads or refines the existing bead/caller intent, runs one bounded
+implementation experiment, derives exact content identity, obtains one
+author-distinct Validate verdict, and stores that verdict. It does not own Git
+delivery, merge policy, retries, queues, work ownership, or release transitions.
 
 Repositories own delivery policy for local and cloud agents.
 

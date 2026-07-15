@@ -648,9 +648,7 @@
         "collect_factual_evidence"
       ],
       "codex_override_present": true,
-      "consumes": [
-        "plan-packet.v1"
-      ],
+      "consumes": [],
       "context_rel": [
         {
           "kind": "customer-of",
@@ -658,11 +656,11 @@
         }
       ],
       "dependencies": [],
-      "description": "Execute one bounded RED to GREEN to refactor experiment from a PlanPacket and return a CandidatePacket. Triggers: \"implement\", \"build this plan\", \"run the experiment\".",
+      "description": "Execute one bounded RED to GREEN experiment from bead or caller intent; return derived subject identity and check facts. Triggers: \"implement\", \"build this plan\", \"run the experiment\".",
       "disposition": "keep",
       "effects": [
         "modify_declared_subject",
-        "write_candidate_packet"
+        "derive_subject_manifest"
       ],
       "graph_root": true,
       "hexagonal_role": "driving-adapter",
@@ -673,7 +671,7 @@
         "small-batch-flow"
       ],
       "produces": [
-        "candidate-packet.v1"
+        "subject-manifest.v1"
       ],
       "references_count": 1,
       "tier": "execution",
@@ -864,10 +862,10 @@
       "consumes": [],
       "context_rel": [],
       "dependencies": [],
-      "description": "Shape intent into one behavior-first PlanPacket with acceptance, evidence, and write scope. Triggers: \"plan\", \"discover and plan\", \"shape this goal\".",
+      "description": "Shape or refine the existing bead or caller intent without creating a second planning artifact. Triggers: \"plan\", \"discover and plan\", \"shape this goal\".",
       "disposition": "keep",
       "effects": [
-        "write_plan_packet"
+        "update_intent_source"
       ],
       "graph_root": true,
       "hexagonal_role": "domain",
@@ -877,9 +875,7 @@
         "design-by-contract",
         "ddd-bounded-context"
       ],
-      "produces": [
-        "plan-packet.v1"
-      ],
+      "produces": [],
       "references_count": 1,
       "tier": "execution",
       "user_invocable": true
@@ -918,9 +914,7 @@
         "challenge_plan"
       ],
       "codex_override_present": true,
-      "consumes": [
-        "plan-packet.v1"
-      ],
+      "consumes": [],
       "context_rel": [
         {
           "kind": "supplier-to",
@@ -1240,7 +1234,7 @@
         }
       ],
       "dependencies": [],
-      "description": "Review a proposed PlanPacket write scope for completeness and ambiguity. Triggers: \"review write scope\", \"check scope boundaries\", \"scope this change\".",
+      "description": "Review the bead or caller intent write scope for completeness and ambiguity. Triggers: \"review write scope\", \"check scope boundaries\", \"scope this change\".",
       "disposition": "keep_specialist",
       "effects": [],
       "graph_root": false,
@@ -1538,8 +1532,7 @@
       ],
       "codex_override_present": true,
       "consumes": [
-        "plan-packet.v1",
-        "candidate-packet.v1"
+        "subject-manifest.v1"
       ],
       "context_rel": [
         {
@@ -1552,7 +1545,7 @@
         }
       ],
       "dependencies": [],
-      "description": "Freshly and independently judge one exact CandidatePacket, persist verdict.v2, and stop. Triggers: \"validate\", \"independently validate\", \"vibe\".",
+      "description": "Freshly judge exact subject content against bead or caller acceptance, persist verdict.v2, and stop. Triggers: \"validate\", \"independently validate\", \"vibe\".",
       "disposition": "keep",
       "effects": [
         "write_verdict_artifact"

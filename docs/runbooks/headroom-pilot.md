@@ -1,5 +1,7 @@
 # Headroom Pilot Runbook
 
+> **HISTORICAL:** This pilot references context and lookup commands removed from current `main`.
+
 This runbook defines how to evaluate
 [Headroom](https://github.com/chopratejas/headroom) as an optional context
 compression sidecar for AgentOps.

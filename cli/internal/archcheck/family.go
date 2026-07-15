@@ -74,28 +74,13 @@ func checkFamily(root, family string) ([]Violation, error) {
 
 	moduleDir := filepath.Join(root, "cli", "internal", "commands", familyDir)
 	modulePath := filepath.Join(moduleDir, "module.go")
-	_, moduleErr := os.Stat(modulePath)
-	if moduleErr != nil {
-		violations = append(violations, Violation{Rule: RuleOwnership, Path: relative(root, modulePath), Message: "migrated family must have module.go"})
-	} else {
-		if lineage.MigrationState != "migrating" && lineage.MigrationState != "migrated" {
-			violations = append(violations, Violation{Rule: RuleOwnership, Path: relative(root, lineagePath), Message: "module exists but lineage migration_state is neither migrating nor migrated"})
-		}
-		moduleViolations, checkErr := checkTree(root, moduleDir)
-		if checkErr != nil {
-			return nil, checkErr
-		}
-		violations = append(violations, moduleViolations...)
-		violations = append(violations, checkModuleShape(root, moduleDir, modulePath, ownership)...)
+	moduleViolations, err := checkFamilyModule(root, moduleDir, modulePath, lineagePath, lineage, ownership)
+	if err != nil {
+		return nil, err
 	}
-	if (lineage.MigrationState == "migrating" || lineage.MigrationState == "migrated") && moduleErr != nil {
-		violations = append(violations, Violation{Rule: RuleOwnership, Path: relative(root, modulePath), Message: "migration lineage cannot lose its command module"})
-	}
+	violations = append(violations, moduleViolations...)
 
-	ownerPath := filepath.Join(root, filepath.FromSlash(ownership.LiveOwner))
-	if info, err := os.Stat(ownerPath); err != nil || !info.IsDir() {
-		violations = append(violations, Violation{Rule: RuleOwnership, Path: ownership.LiveOwner, Message: "declared live owner directory does not exist"})
-	}
+	violations = append(violations, checkLiveOwner(root, lineage.MigrationState, ownership)...)
 	legacy, err := findLegacySymbols(root, ownership.LegacySymbols)
 	if err != nil {
 		return nil, err
@@ -114,6 +99,10 @@ func checkFamily(root, family string) ([]Violation, error) {
 			if isFullCommitSHA(lineage.AcceptedSHA) {
 				scopeEnd = lineage.AcceptedSHA
 			}
+		case "retired":
+			if isFullCommitSHA(lineage.AcceptedSHA) {
+				scopeEnd = lineage.AcceptedSHA
+			}
 		}
 		scopeViolations, err := checkAllowedScope(root, lineage.FreezeSHA, scopeEnd, ownership.AllowedPaths)
 		if err != nil {
@@ -125,6 +114,43 @@ func checkFamily(root, family string) ([]Violation, error) {
 	violations = dedupe(violations)
 	sortViolations(violations)
 	return violations, nil
+}
+
+func checkFamilyModule(root, moduleDir, modulePath, lineagePath string, lineage lineageRecord, ownership ownershipRecord) ([]Violation, error) {
+	var violations []Violation
+	_, moduleErr := os.Stat(modulePath)
+	if moduleErr != nil {
+		if lineage.MigrationState != "retired" {
+			violations = append(violations, Violation{Rule: RuleOwnership, Path: relative(root, modulePath), Message: "migrated family must have module.go"})
+		}
+	} else if lineage.MigrationState == "retired" {
+		violations = append(violations, Violation{Rule: RuleOwnership, Path: relative(root, modulePath), Message: "retired family must not retain module.go"})
+	} else {
+		if lineage.MigrationState != "migrating" && lineage.MigrationState != "migrated" {
+			violations = append(violations, Violation{Rule: RuleOwnership, Path: relative(root, lineagePath), Message: "module exists but lineage migration_state is neither migrating nor migrated"})
+		}
+		moduleViolations, err := checkTree(root, moduleDir)
+		if err != nil {
+			return nil, err
+		}
+		violations = append(violations, moduleViolations...)
+		violations = append(violations, checkModuleShape(root, moduleDir, modulePath, ownership)...)
+	}
+	if (lineage.MigrationState == "migrating" || lineage.MigrationState == "migrated") && moduleErr != nil {
+		violations = append(violations, Violation{Rule: RuleOwnership, Path: relative(root, modulePath), Message: "migration lineage cannot lose its command module"})
+	}
+	return violations, nil
+}
+
+func checkLiveOwner(root, migrationState string, ownership ownershipRecord) []Violation {
+	if migrationState == "retired" {
+		return nil
+	}
+	ownerPath := filepath.Join(root, filepath.FromSlash(ownership.LiveOwner))
+	if info, err := os.Stat(ownerPath); err != nil || !info.IsDir() {
+		return []Violation{{Rule: RuleOwnership, Path: ownership.LiveOwner, Message: "declared live owner directory does not exist"}}
+	}
+	return nil
 }
 
 func validOwnershipRecord(ownership ownershipRecord, family string) bool {

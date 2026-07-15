@@ -37,7 +37,8 @@ metadata:
 
 ### `context`
 
-Controls what knowledge `ao lookup --for=<skill>` provides. Two forms:
+Legacy metadata that once controlled the now-retired lookup command. Two forms
+remain accepted for compatibility:
 
 **String form** (backward compat):
 ```yaml
@@ -90,7 +91,8 @@ Valid section names:
 | `INTEL` | Learnings and patterns from the knowledge flywheel |
 | `TASK` | Current bead ID and predecessor context |
 
-**v1 status:** Actively enforced at runtime. `ao lookup --for=<skill>` zeroes excluded/non-included sections.
+**v1 status:** Metadata compatibility only; the lookup command was removed and
+these fields do not trigger runtime retrieval.
 
 #### `context.intent.mode`
 

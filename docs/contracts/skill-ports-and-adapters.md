@@ -8,10 +8,11 @@ rpi -> implement
 rpi -> validate
 ```
 
-`plan` emits `plan-packet.v1`. `implement` runs one bounded experiment and emits
-`candidate-packet.v1`. `validate` computes exact content identity, obtains one
-fresh independent judgment, and atomically stores `verdict.v2`. RPI reports the
-result and stops.
+`plan` reads or refines the existing bead or caller intent. `implement` runs one
+bounded experiment while the runtime derives subject identity and check facts.
+`validate` computes exact content identity, obtains one fresh independent
+judgment, and atomically stores `verdict.v2`. No core phase requires a model to
+author a Plan, Candidate, or revision packet. RPI reports the result and stops.
 
 All other skills are caller-selected strategies, specialists, setup helpers, or
 runtime adapters. They may contribute context or factual evidence. They cannot

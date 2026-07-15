@@ -13,6 +13,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/boshu2/agentops/cli/internal/storage"
 	"gopkg.in/yaml.v3"
 )
 
@@ -677,30 +678,74 @@ func Save(cfg *Config) error {
 		return fmt.Errorf("creating config directory %s: %w", dir, err)
 	}
 
-	// Load existing config to preserve fields not being changed.
-	existing, _ := loadFromPath(path)
+	return withConfigLock(path, func() error {
+		data, err := prepareSave(path, cfg)
+		if err != nil {
+			return err
+		}
+		if err := storage.AtomicWriteFile(path, data, 0o644); err != nil {
+			return fmt.Errorf("writing config %s: %w", path, err)
+		}
+		return nil
+	})
+}
+
+// PreviewSave validates the exact read-merge-marshal path used by Save without
+// creating directories, locks, or files. A missing target is a valid new config.
+func PreviewSave(cfg *Config) error {
+	path := projectConfigPath()
+	if path == "" {
+		return fmt.Errorf("determining project config path: could not resolve working directory")
+	}
+	_, err := prepareSave(path, cfg)
+	return err
+}
+
+func prepareSave(path string, cfg *Config) ([]byte, error) {
+	existing, err := loadFromPath(path)
+	if err != nil && !os.IsNotExist(err) {
+		return nil, fmt.Errorf("loading existing config %s: %w", path, err)
+	}
 	if existing != nil {
 		existing = merge(existing, cfg)
 	} else {
 		existing = cfg
 	}
-
 	data, err := yaml.Marshal(existing)
 	if err != nil {
-		return fmt.Errorf("marshaling config: %w", err)
+		return nil, fmt.Errorf("marshaling config: %w", err)
 	}
+	return data, nil
+}
 
-	// Write atomically: temp file then rename.
-	tmp := path + ".tmp"
-	if err := os.WriteFile(tmp, data, 0644); err != nil {
-		return fmt.Errorf("writing temp config %s: %w", tmp, err)
+// withConfigLock serializes the complete read-merge-write transaction across
+// goroutines and ao processes. The sidecar is only a lock token; config bytes
+// are committed separately through the canonical atomic writer.
+func withConfigLock(path string, fn func() error) (err error) {
+	lockPath := path + ".lock"
+	if err := os.MkdirAll(filepath.Dir(lockPath), 0o755); err != nil {
+		return fmt.Errorf("creating config lock directory: %w", err)
 	}
-	if err := os.Rename(tmp, path); err != nil {
-		_ = os.Remove(tmp)
-		return fmt.Errorf("renaming temp config to %s: %w", path, err)
+	file, err := os.OpenFile(lockPath, os.O_CREATE|os.O_RDWR, 0o600)
+	if err != nil {
+		return fmt.Errorf("opening config lock: %w", err)
 	}
-
-	return nil
+	locked := false
+	defer func() {
+		if locked {
+			if unlockErr := unlockConfigFile(file); unlockErr != nil && err == nil {
+				err = fmt.Errorf("unlocking config: %w", unlockErr)
+			}
+		}
+		if closeErr := file.Close(); closeErr != nil && err == nil {
+			err = fmt.Errorf("closing config lock: %w", closeErr)
+		}
+	}()
+	if err := lockConfigFile(file); err != nil {
+		return fmt.Errorf("locking config: %w", err)
+	}
+	locked = true
+	return fn()
 }
 
 // Source represents where a config value came from.

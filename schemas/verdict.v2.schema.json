@@ -68,7 +68,16 @@
           "author_context_id": {"type": "string", "minLength": 1},
           "validator_context_id": {"type": "string", "minLength": 1},
           "freshness_attestation": {"type": "object"},
-          "criteria": {"items": {"properties": {"result": {"const": "PASS"}}}},
+          "criteria": {
+            "items": {
+              "properties": {
+                "result": {"const": "PASS"},
+                "evidence_refs": {"minItems": 1}
+              }
+            }
+          },
+          "evidence_refs": {"minItems": 1},
+          "checked": {"minItems": 1},
           "not_checked": {"maxItems": 0}
         }
       }

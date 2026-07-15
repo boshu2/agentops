@@ -8,7 +8,7 @@ import (
 	configapp "github.com/boshu2/agentops/cli/internal/config"
 )
 
-var configModule = configcommands.NewModule(configapp.NewCommandService(configadapter.Gateway{}), GetOutput, GetVerbose)
+var configModule = configcommands.NewModule(configapp.NewCommandService(configadapter.Gateway{}), GetOutput, GetVerbose, GetDryRun)
 var configCommand = configModule.Command()
 
 func init() {

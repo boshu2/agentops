@@ -869,7 +869,7 @@
         "disposition": "keep",
         "effects": [
           "modify_declared_subject",
-          "write_candidate_packet"
+          "derive_subject_manifest"
         ],
         "has_references": true,
         "has_skill_md": true,
@@ -956,7 +956,7 @@
         ],
         "disposition": "keep",
         "effects": [
-          "write_plan_packet"
+          "update_intent_source"
         ],
         "has_references": true,
         "has_skill_md": true,

@@ -15,7 +15,8 @@ setup_file() {
   export REAL_REPO_ROOT SCRATCH_ROOT
   export SKILL_BUILDER_REPO_ROOT="$SCRATCH_ROOT"
   BUILD_SH="$REAL_REPO_ROOT/skills/skill-builder/scripts/build.sh"
-  export BUILD_SH
+  INIT_SH="$REAL_REPO_ROOT/skills/skill-builder/scripts/init.sh"
+  export BUILD_SH INIT_SH
 }
 
 @test "builder rejects missing and unknown modes" {
@@ -31,7 +32,6 @@ setup_file() {
   run env \
     SKILL_TIER=execution \
     SKILL_DEPENDENCIES='[]' \
-    SKILL_CAPABILITIES='["builder_contract_test"]' \
     SKILL_EFFECTS='[]' \
     bash "$BUILD_SH" from-scratch "$name"
   [ "$status" -eq 0 ]
@@ -42,12 +42,26 @@ setup_file() {
   grep -q '^  disposition: keep_specialist$' "$source"
   grep -q '^  capabilities: ' "$source"
   grep -q 'builder_contract_test' "$source"
+  grep -q '^practices: \[\]$' "$source"
+  grep -q '^user-invocable: true$' "$source"
 
   [ -f "$SCRATCH_ROOT/skills-codex/$name/SKILL.md" ]
   [ -f "$SCRATCH_ROOT/skills-codex/$name/prompt.md" ]
   grep -q "\"name\": \"$name\"" "$SCRATCH_ROOT/skills/catalog.json"
   grep -q '"structure_check_pass": true' \
     "$SCRATCH_ROOT/.agents/audits/${name}-build.json"
+}
+
+@test "initializer accepts template and external creation modes with defaults" {
+  run bash "$INIT_SH" --template builder-template-test --like plan
+  [ "$status" -eq 0 ]
+  grep -q 'builder_template_test' "$SCRATCH_ROOT/skills/builder-template-test/SKILL.md"
+
+  external="$BATS_TEST_TMPDIR/external-skill.md"
+  printf '%s\n' '# External skill source' > "$external"
+  run bash "$INIT_SH" --external builder-external-test --from "$external"
+  [ "$status" -eq 0 ]
+  grep -q 'builder_external_test' "$SCRATCH_ROOT/skills/builder-external-test/SKILL.md"
 }
 
 @test "builder does not create lifecycle ledgers or touch the real repository" {

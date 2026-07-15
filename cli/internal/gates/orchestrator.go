@@ -190,19 +190,18 @@ func (o *Orchestrator) runOne(ctx context.Context, c Check, rc RunContext) (port
 
 // isBlockingFail reports whether a verdict should fail the run. It is
 // fail-closed for blocking checks: a blocking check clears the run ONLY when it
-// definitively PASSed, WARNed (advisory), or SKIPped (a first-class
-// not-applicable verdict). FAIL, UNKNOWN, and any empty/unrecognized status
-// all fail the run — because a blocking gate that could not produce a verdict
-// (missing/unlaunchable backing script, empty gate name, native eval error) has
-// not proven the change. "No verdict = not done" applies to the gate's own
-// output: UNKNOWN is never a silent pass (audit A1 / ADR-0011 escape class).
+// definitively PASSed or SKIPped (a first-class not-applicable verdict). WARN,
+// FAIL, UNKNOWN, and any empty/unrecognized status all fail the run. Advisory
+// behavior belongs on the registered check as Blocking=false; accepting WARN
+// from a blocking check would let interpreter or usage failures degrade release
+// authority. "No verdict = not done" applies to the gate's own output.
 // A non-blocking check (of any status) is always advisory.
 func isBlockingFail(c Check, v ports.GateVerdict) bool {
 	if !c.Blocking {
 		return false
 	}
 	switch v.Status {
-	case ports.GateStatusPass, ports.GateStatusWarn, ports.GateStatusSkip:
+	case ports.GateStatusPass, ports.GateStatusSkip:
 		return false
 	default:
 		return true

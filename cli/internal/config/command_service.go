@@ -37,10 +37,12 @@ type ModelsResult struct {
 type ModelsWriteRequest struct {
 	DefaultTier string
 	Skill       string
+	DryRun      bool
 }
 
 type ModelsWriteResult struct {
 	Updated        bool              `json:"updated"`
+	DryRun         bool              `json:"dry_run"`
 	DefaultTier    string            `json:"default_tier,omitempty"`
 	SkillOverrides map[string]string `json:"skill_overrides,omitempty"`
 }
@@ -51,6 +53,7 @@ type CommandGateway interface {
 	Environment([]string) map[string]string
 	Load() (*Config, error)
 	Save(*Config) error
+	PreviewSave(*Config) error
 }
 
 type CommandService struct {
@@ -82,7 +85,7 @@ func (service *CommandService) Models(_ context.Context) (ModelsResult, error) {
 
 func (service *CommandService) WriteModels(_ context.Context, request ModelsWriteRequest) (ModelsWriteResult, error) {
 	save := &Config{}
-	result := ModelsWriteResult{Updated: true}
+	result := ModelsWriteResult{Updated: !request.DryRun, DryRun: request.DryRun}
 	if request.DefaultTier != "" {
 		if request.DefaultTier == "inherit" {
 			return ModelsWriteResult{}, fmt.Errorf("invalid tier %q for default: \"inherit\" is only valid for skill overrides", request.DefaultTier)
@@ -104,6 +107,12 @@ func (service *CommandService) WriteModels(_ context.Context, request ModelsWrit
 		}
 		save.Models.SkillOverrides = map[string]string{skill: tier}
 		result.SkillOverrides = map[string]string{skill: tier}
+	}
+	if request.DryRun {
+		if err := service.gateway.PreviewSave(save); err != nil {
+			return ModelsWriteResult{}, fmt.Errorf("preview config save: %w", err)
+		}
+		return result, nil
 	}
 	if err := service.gateway.Save(save); err != nil {
 		return ModelsWriteResult{}, fmt.Errorf("saving config: %w", err)

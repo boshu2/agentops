@@ -1,5 +1,7 @@
 # AgentOps 3.0 Council Demo Storyboard
 
+> **SUPERSEDED:** This storyboard targets command surfaces removed from current `main`.
+
 This storyboard is the canonical 3.0 launch demo. It is designed to become a
 video script, docs quickstart, and PMF scenario seed.
 

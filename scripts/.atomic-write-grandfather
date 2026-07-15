@@ -13,23 +13,13 @@
 #
 # Regenerate with:  bash scripts/check-atomic-write-ratchet.sh --regenerate
 # (regenerate at LAND time, after the final rebase; hand-audit the list.)
-cli/cmd/ao/corpus_snapshot.go
 cli/cmd/ao/handoff.go
-cli/cmd/ao/live_status.go
-cli/cmd/ao/loop_blocked.go
-cli/cmd/ao/rehydrate.go
-cli/internal/agentworker/quarantine.go
-cli/internal/aostate/state.go
-cli/internal/config/config.go
 cli/internal/doctor/runartifact.go
 cli/internal/evalsubstrate/atomic.go
-cli/internal/feedbackcompiler/feedbackcompiler.go
-cli/internal/lifecycle/dedup.go
 cli/internal/llm/review.go
 cli/internal/llm/session_writer.go
 cli/internal/llmwiki/atomic.go
 cli/internal/pool/pool.go
-cli/internal/rpi/phased_state.go
 cli/internal/scenarioresults/writer.go
 cli/internal/search/constraint.go
 cli/internal/search/findings_ops.go

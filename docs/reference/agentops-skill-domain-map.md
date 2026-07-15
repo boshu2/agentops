@@ -42,13 +42,13 @@
 | `handoff` | session | `keep_specialist` | - | `handoff` | - |
 | `heal-skill` | meta | `keep_specialist` | - | `heal_skill` | `optional_skill_projection_repair` |
 | `idea-genie` | execution | `keep_strategy` | - | `generate_evidenced_options` | `write_idea_portfolio` |
-| `implement` | execution | `keep` | - | `execute_one_experiment`, `collect_factual_evidence` | `modify_declared_subject`, `write_candidate_packet` |
+| `implement` | execution | `keep` | - | `execute_one_experiment`, `collect_factual_evidence` | `modify_declared_subject`, `derive_subject_manifest` |
 | `learn` | execution | `keep_off_path` | - | `analyze_verdict_collections` | `write_advisory_observations` |
 | `ms` | execution | `keep_specialist` | - | `ms` | - |
 | `ntm` | execution | `keep_optional_adapter` | - | `ntm` | - |
 | `operationalize` | meta | `keep_specialist` | - | `distill_expertise`, `propose_artifact_shape` | `write_advisory_proposal` |
 | `pattern-mining` | execution | `keep_specialist` | - | `pattern_mining` | - |
-| `plan` | execution | `keep` | - | `shape_intent`, `define_acceptance`, `bound_write_scope` | `write_plan_packet` |
+| `plan` | execution | `keep` | - | `shape_intent`, `define_acceptance`, `bound_write_scope` | `update_intent_source` |
 | `postmortem` | judgment | `keep_strategy` | - | `postmortem` | - |
 | `premortem` | judgment | `keep_strategy` | - | `challenge_plan` | `write_advisory_plan_review` |
 | `product` | product | `keep_specialist` | - | `shape_product_boundary` | `write_product_document` |
