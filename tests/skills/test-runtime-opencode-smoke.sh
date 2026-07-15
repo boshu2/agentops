@@ -20,20 +20,28 @@ echo "=== OpenCode Runtime Smoke Tests ==="
 echo "Proof tier: Tier S structural/install smoke"
 echo ""
 
-# ── 1. Install script validity ────────────────────────────────────────────────
-echo "Stage 1: OpenCode install script"
+# ── 1. OpenCode install tombstone + canonical docs ───────────────────────────
+echo "Stage 1: OpenCode install surface"
 
 OPENCODE_INSTALL="$REPO_ROOT/scripts/install-opencode.sh"
+OPENCODE_DOCS="$REPO_ROOT/.opencode/INSTALL.md"
 if [[ -f "$OPENCODE_INSTALL" ]]; then
     bash -n "$OPENCODE_INSTALL" && pass "install-opencode.sh syntax valid" || fail "install-opencode.sh syntax invalid"
-    head -1 "$OPENCODE_INSTALL" | grep -qE '^#!/usr/bin/env bash|^#!/bin/bash' \
-        && pass "install-opencode.sh has valid shebang" || fail "install-opencode.sh missing shebang"
-    grep -q 'boshu2/agentops' "$OPENCODE_INSTALL" \
-        && pass "install-opencode.sh references agentops repo" || fail "install-opencode.sh missing repo ref"
-    grep -qi 'opencode' "$OPENCODE_INSTALL" \
-        && pass "install-opencode.sh mentions opencode target" || fail "install-opencode.sh missing opencode reference"
+    grep -q 'ao skills link' "$OPENCODE_INSTALL" \
+        && pass "install-opencode.sh tombstone points at ao skills link" || fail "install-opencode.sh missing ao skills link"
+    if bash "$OPENCODE_INSTALL" >/dev/null 2>&1; then
+        fail "install-opencode.sh tombstone exited 0"
+    else
+        pass "install-opencode.sh tombstone exits nonzero"
+    fi
 else
     fail "install-opencode.sh not found at $OPENCODE_INSTALL"
+fi
+
+if [[ -f "$OPENCODE_DOCS" ]] && grep -q 'ao skills link' "$OPENCODE_DOCS"; then
+    pass ".opencode/INSTALL.md documents ao skills link"
+else
+    fail ".opencode/INSTALL.md missing ao skills link guidance"
 fi
 
 echo ""
@@ -97,15 +105,14 @@ fi
 
 echo ""
 
-# ── 4. OpenCode install target directory ──────────────────────────────────────
+# ── 4. OpenCode install docs ──────────────────────────────────────────────────
 echo "Stage 4: OpenCode config path compatibility"
 
-# OpenCode reads from ~/.opencode/skills/ — verify install script targets it
-if [[ -f "$OPENCODE_INSTALL" ]]; then
-    if grep -q 'opencode\|\.opencode' "$OPENCODE_INSTALL"; then
-        pass "install-opencode.sh references opencode config path"
+if [[ -f "$OPENCODE_DOCS" ]]; then
+    if grep -qE 'opencode|\.opencode|ao skills link' "$OPENCODE_DOCS"; then
+        pass ".opencode/INSTALL.md references opencode / skills link path"
     else
-        skip "install-opencode.sh does not reference .opencode path (may use alternate mechanism)"
+        skip ".opencode/INSTALL.md missing opencode path reference"
     fi
 fi
 

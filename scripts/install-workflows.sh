@@ -15,6 +15,8 @@
 #   - dest absent                          -> ln -sfn
 # Touches ONLY $HOME; never writes into the repo. Exits non-zero on any real failure.
 set -euo pipefail
+shopt -s lastpipe 2>/dev/null || true
+umask 022
 
 repo_root="$(git rev-parse --show-toplevel)"
 src_dir="$repo_root/.claude/workflows"

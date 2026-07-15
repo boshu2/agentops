@@ -24,39 +24,32 @@ make_fixture() {
 
     mkdir -p \
         "$root/scripts" \
+        "$root/cli/bin" \
         "$root/skills/compile" \
         "$root/skills/research" \
         "$root/skills-codex/compile" \
         "$root/skills-codex/research"
 
-    cat > "$root/scripts/install-codex-plugin.sh" <<'EOF'
+    # Stub ao that implements skills link for the headless Codex setup path.
+    cat > "$root/cli/bin/ao" <<'EOF'
 #!/usr/bin/env bash
 set -euo pipefail
-
-codex_home=""
-while [[ $# -gt 0 ]]; do
-  case "$1" in
-    --codex-home)
-      codex_home="${2:-}"
-      shift 2
-      ;;
-    *)
-      shift
-      ;;
-  esac
-done
-
-if [[ -z "$codex_home" ]]; then
-  echo "missing --codex-home" >&2
-  exit 2
+if [[ "${1:-}" == "skills" && "${2:-}" == "link" ]]; then
+  dest=""
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --dest) dest="${2:-}"; shift 2 ;;
+      *) shift ;;
+    esac
+  done
+  if [[ -n "$dest" ]]; then
+    mkdir -p "$dest"
+  fi
+  exit 0
 fi
-
-mkdir -p "$codex_home"
-cat > "$codex_home/.agentops-codex-install.json" <<'JSON'
-{"installed":true}
-JSON
+exit 0
 EOF
-    chmod +x "$root/scripts/install-codex-plugin.sh"
+    chmod +x "$root/cli/bin/ao"
 
     cat > "$root/skills/compile/SKILL.md" <<'EOF'
 ---

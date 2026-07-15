@@ -472,7 +472,7 @@ func (devVersionBuildIntegrityDetector) Detect(_ *DetectEnv) ([]Finding, error) 
 		},
 		Remediation: Remediation{
 			Command: "Reinstall a release build: " +
-				"bash <(curl -fsSL https://raw.githubusercontent.com/boshu2/agentops/main/scripts/install.sh) " +
+				"brew upgrade agentops " +
 				"— or, if developing, rebuild with ldflags: cd cli && make build. " +
 				"If `which -a ao` shows duplicates, remove the stale one from PATH.",
 			ExplainCommand:   "ao doctor explain " + fmDevVersionBuildIntegrity,

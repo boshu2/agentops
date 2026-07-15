@@ -8,9 +8,9 @@
 #
 # Every case runs OFFLINE and FAST by feeding the harness a fake `ao` through
 # its --release-tarball entry point (a tar.gz holding a stub `ao`), so no
-# go build, no network, and no real binary are needed. The real, offline
-# install-codex.sh still runs against the worktree bundle (as a fresh user's
-# would), with HOME pointed at a temp dir — never the real $HOME.
+# go build, no network, and no real binary are needed. Section (b) uses
+# `ao skills link` against the worktree with HOME pointed at a temp dir —
+# never the real $HOME.
 
 setup() {
   REPO_ROOT="$(git rev-parse --show-toplevel)"
@@ -57,6 +57,15 @@ case "$1" in
       # A fix a fresh user cannot run: a repo-relative script path.
       echo "  Fix: run scripts/fix-me.sh to repair the install"
     fi
+    ;;
+  skills)
+    # Fresh-install section (b) runs `ao skills link`.
+    if [[ "${2:-}" == "link" ]]; then
+      mkdir -p "${HOME}/.agents/skills/plan"
+      printf 'linked\n' >"${HOME}/.agents/skills/plan/.link-ok"
+      exit 0
+    fi
+    exit 0
     ;;
   *)
     exit 0

@@ -72,10 +72,9 @@ func writeInstallMeta(t *testing.T, home, root, version, hash string, count int)
 func TestCheckSkillsReportsInstallGuidanceWhenEmpty(t *testing.T) {
 	setHome(t, t.TempDir())
 	check := CheckSkills()
-	// The empty-home hint is platform-specific: POSIX points at install.sh,
-	// Windows at install-codex.ps1 (pluginInstallHint switches on GOOS). Assert
-	// against the production hint itself so the test is platform-independent —
-	// a literal "install.sh" substring silently fails on the Windows runners.
+	// The empty-home hint is platform-specific (pluginInstallHint switches on
+	// GOOS). Assert against the production hint itself so the test is
+	// platform-independent.
 	if check.Status != "warn" || !strings.Contains(check.Detail, pluginInstallHint()) {
 		t.Fatalf("check = %+v", check)
 	}
@@ -187,7 +186,7 @@ func TestCheckCodexSyncDetectsMatchManifestDriftAndStaleVersion(t *testing.T) {
 	}{
 		{name: "match", status: "pass", detail: "matches repo"},
 		{name: "manifest drift", hash: "deadbeef", status: "warn", detail: "manifest differs from repo"},
-		{name: "stale version", version: "oldsha", hash: "deadbeef", status: "warn", detail: "refresh-codex-local.sh"},
+		{name: "stale version", version: "oldsha", hash: "deadbeef", status: "warn", detail: "ao skills link"},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			repo, current, currentHash := setupCodexSyncRepo(t)

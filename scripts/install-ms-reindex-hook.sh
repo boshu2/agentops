@@ -15,6 +15,8 @@
 # the reindex law, sweeps every surviving `ms mcp serve` so stale servers can't
 # serve pre-wipe orphan ids.
 set -euo pipefail
+shopt -s lastpipe 2>/dev/null || true
+umask 022
 
 CANONICAL_DIR="${MS_REINDEX_CANONICAL_DIR:-$HOME/dev/agentops}"
 

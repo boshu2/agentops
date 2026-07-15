@@ -47,10 +47,10 @@ cd ..
 "$(go env GOPATH)/bin/ao" skills link
 ```
 
-The 3.x runtime plugin installers remain only as migration compatibility for
-this release. New installs do not need a plugin cache, hooks, or a runtime-owned
-copy of the AgentOps corpus. See the [migration guide](docs/MIGRATION.md) for
-removing an old plugin install.
+The 3.x runtime plugin installers are tombstones for this release: they exit
+nonzero and point here. New installs use one canonical checkout plus
+`ao skills link`. See the [migration guide](docs/MIGRATION.md) for removing an
+old plugin install.
 
 ## Core workflow
 

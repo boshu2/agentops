@@ -62,9 +62,11 @@ step() {
 
 echo "=== PG1 five-minute first-value journey (floor: ${FLOOR_SECONDS}s) ==="
 
-# Step 1: install bundle syntactically valid
-step "Step 1: install.sh resolves" \
-    "bash -n scripts/install.sh && echo OK"
+# Step 1: install tombstone + canonical link surface present
+step "Step 1: install.sh is a removed-installer tombstone" \
+    "grep -q 'ao skills link' scripts/install.sh && bash -n scripts/install.sh && echo OK"
+step "Step 1: ao skills link help resolves" \
+    "test -x cli/bin/ao || (cd cli && go build -o bin/ao ./cmd/ao); cli/bin/ao skills link --help >/dev/null && echo OK"
 
 # Step 2: ao binary builds + --version succeeds
 # Reuse pre-built binary if it exists to keep the journey realistic for an

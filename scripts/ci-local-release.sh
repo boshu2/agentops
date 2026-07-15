@@ -995,8 +995,7 @@ run_step_bg "Command/test pairing gate tests" ./tests/scripts/test-go-command-te
 run_step_bg "Go fast scope tests" bats ./tests/scripts/validate-go-fast.bats
 run_step_bg "Skill runtime parity tests" bash ./tests/scripts/test-skill-runtime-parity.sh
 run_step_bg "Skill CLI snippet tests" bash ./tests/scripts/test-skill-cli-snippets.sh
-run_step_bg "Codex plugin install tests" bash ./tests/scripts/test-codex-plugin-install.sh
-run_step_bg "Codex native install tests" bash ./tests/scripts/test-codex-native-skills-install.sh
+run_step_bg "Install surface smoke" bash ./tests/install/test-install-smoke.sh
 run_step_bg "Codex artifact manifest tests" bash ./tests/scripts/test-codex-generated-manifest.sh
 run_step_bg "Codex artifact metadata tests" bash ./tests/scripts/test-codex-generated-artifacts.sh
 run_step_bg "Validate-local tests" bash ./tests/scripts/test-validate-local.sh
