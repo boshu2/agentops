@@ -17,7 +17,7 @@ import (
 // "check-registry-drift.sh"). Path backings resolve from the repo root (for
 // example "skills/heal-skill/scripts/heal.sh").
 //
-// It satisfies ports.GateRunnerPort, so the orchestrator can shell to ANY
+// It satisfies ports.GateRunnerPort, so the deterministic runner can shell to ANY
 // scripts/* gate — both check-*.sh and validate-*.sh — not only the check-*
 // names the legacy productionGateRunner (ao gate run) resolves. Exit mapping:
 // 0=PASS, 2=WARN, 75=SKIP, missing script=UNKNOWN, else=FAIL.
@@ -32,22 +32,18 @@ func NewScriptRunner(repoRoot string) *ScriptRunner { return &ScriptRunner{repoR
 // (production: os.Executable()). It is indirected as a package var so a test
 // can simulate running as a differently-named binary — the AO_BIN self-injection
 // below is guarded on the executable BASENAME, and under `go test`
-// os.Executable() is the package test binary, not `ao`. Mirrors the
-// pawlSelfBinary / verifyInitSelfBinary indirection in cli/cmd/ao.
+// os.Executable() is the package test binary, not `ao`.
 var gateSelfBinary = os.Executable
 
 // aoBinInjection returns the AO_BIN value the gate should propagate to a spawned
 // sub-check given the running executable path exe, and whether to inject at all.
 //
-// age-jmfl: the release-authority path (pre-push) builds a FRESH temp `ao` and
-// runs `ao gate check` with it, but shell sub-checks (check-provenance-chain.sh,
-// check-pawl-pre-push.sh) resolve AO_BIN → $ROOT/cli/bin/ao → PATH `ao`. A STALE
-// cli/bin/ao (e.g. an old payload-hash algorithm) then FALSE-fails an
-// origin-identical ledger line. Propagating AO_BIN=<the running gate binary>
-// makes the gate's own fresh binary authoritative for its sub-scripts.
+// A caller may run a freshly built `ao gate check` while shell sub-checks would
+// otherwise resolve a stale repository binary. Propagating the running binary
+// keeps one deterministic check invocation internally consistent.
 //
 // The guard is on the basename SUFFIX, NOT a stat/regular-file test and NOT an
-// exact basename=="ao" match (age-pawl-intent-zhndq.6): under `go test`,
+// exact basename=="ao" match: under `go test`,
 // os.Executable() is the package test binary (`<pkg>.test`, a real regular file),
 // so a stat guard would inject the test binary and make a sub-script run
 // `"$AO_BIN" provenance verify` against a non-ao executable and fail spuriously.

@@ -1,0 +1,78 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agentops.dev/schemas/verdict.v2.schema.json",
+  "title": "verdict.v2",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "acceptance_digest", "subject_manifest_digest", "author_context_id", "validator_context_id", "freshness_attestation", "verdict", "criteria", "findings", "evidence_refs", "checked", "not_checked", "validated_at", "artifact_digest"],
+  "properties": {
+    "schema_version": {"const": "verdict.v2"},
+    "acceptance_digest": {"$ref": "#/$defs/digest"},
+    "subject_manifest_digest": {"$ref": "#/$defs/digest"},
+    "author_context_id": {"type": ["string", "null"]},
+    "validator_context_id": {"type": ["string", "null"]},
+    "freshness_attestation": {
+      "oneOf": [
+        {"type": "null"},
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["source", "attester_identity"],
+          "properties": {
+            "source": {"enum": ["runtime", "caller"]},
+            "attester_identity": {"type": "string", "minLength": 1}
+          }
+        }
+      ]
+    },
+    "verdict": {"enum": ["PASS", "FAIL", "NOT_PROVEN"]},
+    "criteria": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "result", "evidence_refs"],
+        "properties": {
+          "id": {"type": "string", "minLength": 1},
+          "result": {"enum": ["PASS", "FAIL", "NOT_PROVEN"]},
+          "evidence_refs": {"type": "array", "items": {"type": "string", "minLength": 1}},
+          "reason": {"type": "string"}
+        }
+      }
+    },
+    "findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "summary", "evidence_refs"],
+        "properties": {
+          "id": {"type": "string", "minLength": 1},
+          "summary": {"type": "string", "minLength": 1},
+          "evidence_refs": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}}
+        }
+      }
+    },
+    "evidence_refs": {"type": "array", "items": {"type": "string", "minLength": 1}},
+    "checked": {"type": "array", "items": {"type": "string", "minLength": 1}},
+    "not_checked": {"type": "array", "items": {"type": "string", "minLength": 1}},
+    "validated_at": {"type": "string", "format": "date-time"},
+    "artifact_digest": {"$ref": "#/$defs/digest"}
+  },
+  "allOf": [
+    {
+      "if": {"properties": {"verdict": {"const": "PASS"}}},
+      "then": {
+        "properties": {
+          "author_context_id": {"type": "string", "minLength": 1},
+          "validator_context_id": {"type": "string", "minLength": 1},
+          "freshness_attestation": {"type": "object"},
+          "criteria": {"items": {"properties": {"result": {"const": "PASS"}}}},
+          "not_checked": {"maxItems": 0}
+        }
+      }
+    }
+  ],
+  "$defs": {"digest": {"type": "string", "pattern": "^[a-f0-9]{64}$"}}
+}

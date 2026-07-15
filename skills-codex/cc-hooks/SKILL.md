@@ -209,33 +209,10 @@ claude --debug  # Hook execution details
 - Blocking and allow paths use the documented exit code and output channel without leaking context.
 - The hook is reversible, narrowly scoped, recursion-safe, and clearly labeled as opt-in host policy.
 
-## Absorbed Skills (skill-prune phase 2 fold-ins)
-
-This skill is the fold target for four retired Claude Code operator skills. Their
-use-cases route here:
-
-- **cc-cron-ticks** — scheduling autonomous in-session flywheel ticks with Claude
-  Code cron routines. Use Claude Code scheduled tasks (cron routines) to fire a
-  recurring tick prompt (e.g. an evolve tick or a bead-queue pull); pair each
-  tick with a Stop hook that verifies evidence landed before the session ends.
-- **cc-loop-driver** — running a Claude-native control-plane tick loop with worker
-  and separate-validator subagents. One tick = claim a bead, dispatch a worker
-  subagent, then a SEPARATE validator subagent grades the evidence; hooks enforce
-  the gate (PreToolUse blocks out-of-scope writes, Stop blocks close-without-evidence).
-- **cc-subagents** — dispatching scoped Claude Code subagents with worktrees, roles,
-  tools, memory, and evidence gates. Give each subagent an explicit role prompt, a
-  tool allowlist, and a write scope; never let two subagents share a write surface.
-- **cc-worktree-isolation** — isolating parallel Claude Code workers in
-  separate git worktrees to prevent file collisions.
-  `git worktree add <dir> -b <branch>` per
-  worker; workers commit only in their own worktree; the orchestrator merges
-  branches sequentially. File collisions are the #1 swarm failure mode.
-
 ## References
 
 - [HOOK-EVENTS.md](references/HOOK-EVENTS.md) - All events with full schemas
 - [DCG-RCH.md](references/DCG-RCH.md) - Production examples (dcg, rch)
-- [SKILL-FIRST-COORDINATION-GUARD.md](references/SKILL-FIRST-COORDINATION-GUARD.md) - Opt-in coordination skill-first guard + context-budget doctrine
 - [INSTALLED-SKILL-EDIT-GUARD.md](references/INSTALLED-SKILL-EDIT-GUARD.md) - Opt-in guard routing installed-skill edits to repo skills/ (keystone)
 - [GUARDRAIL-VALUE-PROOF.md](references/GUARDRAIL-VALUE-PROOF.md) - Pre-registered value-proof methodology + per-fire telemetry contract (ADR-0002 l.58)
 - [PATTERNS.md](references/PATTERNS.md) - Auto-format, logging, notifications

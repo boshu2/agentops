@@ -30,9 +30,12 @@ context:
     - HISTORY
   intel_scope: topic
 metadata:
+  capabilities: [codebase_recon]
+  effects: []
+  canonical_status: canonical
+  disposition: keep_specialist
   tier: execution
   dependencies:
-  - validate
   - doc
 output_contract: codebase-recon.v1 JSON validated by skills/codebase-recon/scripts/validate-output.sh with a companion cited report
 ---

@@ -159,7 +159,7 @@ If `false`, run: `cass index --json`
 - **Filename:** none unless the caller explicitly requests an export path such as `/tmp/cass-export.json` with `-o`.
 - **Format:** use the installed command's JSON schema from `cass introspect --json`; wide searches should keep `--fields minimal` and downstream narrowing must preserve `source_path` and line location.
 - **Exit code:** validate with `cass status --json | jq -e .` and parse every selected result with `jq`; a nonzero command, malformed JSON, or unresolved source path blocks the handoff.
-- **Downstream handoff:** consumed by research, planning, recovery, or post-mortem work with the exact query, canonical workspace, selected source paths/lines, and index freshness noted.
+- **Downstream handoff:** consumed by research, planning, recovery, or postmortem work with the exact query, canonical workspace, selected source paths/lines, and index freshness noted.
 
 ## Quality Checklist
 

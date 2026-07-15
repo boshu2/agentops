@@ -52,7 +52,7 @@ func TestCommandDelegatesAndRendersYAML(t *testing.T) {
 	if err := command.Execute(); err != nil {
 		t.Fatal(err)
 	}
-	if builder.calls != 1 || !strings.Contains(output.String(), "schemaversion: \"1.1\"") {
+	if builder.calls != 1 || !strings.Contains(output.String(), "schemaversion: \"2.0\"") {
 		t.Fatalf("YAML output = %q, calls=%d", output.String(), builder.calls)
 	}
 }

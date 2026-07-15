@@ -1,8 +1,0 @@
-role=crank
-proof=immutable
-delivery=merge-queue
-git=push
-tracker=none
-verdict_mutation=none
-git_queue=owned
-llm_verdict=none

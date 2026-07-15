@@ -18,6 +18,10 @@ context_rel:
 skill_api_version: 1
 user-invocable: true
 metadata:
+  capabilities: [postmortem]
+  effects: []
+  canonical_status: canonical
+  disposition: keep_strategy
   tier: judgment
   dependencies:
   - council

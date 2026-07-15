@@ -28,6 +28,10 @@ context:
     mode: task
   intel_scope: none
 metadata:
+  capabilities: [automation_shape_routing]
+  effects: []
+  canonical_status: canonical
+  disposition: keep_optional_adapter
   tier: meta
   dependencies: [skill-builder, workflow-builder, agent-native]
 output_contract: a one-line routing verdict naming the shape and deciding axis

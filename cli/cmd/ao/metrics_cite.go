@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
-	"github.com/boshu2/agentops/cli/internal/liveness"
-	"github.com/boshu2/agentops/cli/internal/ratchet"
+	ratchet "github.com/boshu2/agentops/cli/internal/evidence"
 	"github.com/boshu2/agentops/cli/internal/types"
 	"github.com/spf13/cobra"
 )
@@ -60,7 +60,7 @@ func runMetricsCite(cmd *cobra.Command, args []string) error {
 		if citeArtifactAuthor == "" || citeByAgent == "" {
 			return fmt.Errorf("outcome citation %q requires artifact-author and cited-by-agent identities", citeType)
 		}
-		if liveness.Disjoint(citeArtifactAuthor, citeByAgent) != liveness.Allowed {
+		if strings.TrimSpace(citeArtifactAuthor) == strings.TrimSpace(citeByAgent) {
 			return fmt.Errorf("outcome citation %q requires non-author identity: artifact-author and cited-by-agent are both %q", citeType, citeByAgent)
 		}
 	}

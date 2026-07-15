@@ -24,6 +24,10 @@ context:
     - HISTORY
   intel_scope: topic
 metadata:
+  capabilities: [skill_builder]
+  effects: []
+  canonical_status: canonical
+  disposition: keep_specialist
   tier: meta
   dependencies:
   - heal-skill

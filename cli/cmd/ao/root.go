@@ -11,7 +11,6 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/boshu2/agentops/cli/internal/adapters/worktreeconfig"
 	doctorcommands "github.com/boshu2/agentops/cli/internal/commands/doctor"
 	"github.com/boshu2/agentops/cli/internal/doctor"
 )
@@ -29,14 +28,10 @@ var (
 var rootCmd = &cobra.Command{
 	Use:     "ao",
 	Version: version,
-	Short:   "AgentOps CLI: validation gate + provenance for agent work",
-	Long: `ao is the CLI for AgentOps: a verification membrane for agent work. The loop
-produces validated output with proof — no verdict = not done.
-
-The operating loop:
-  ao session bootstrap                  Orient any agent in this repo (run first)
-  ao verify <change-slug>               Independent cross-family review of your latest commit
-  ao gate check --fast --scope head     The release gate before any push
+	Short:   "AgentOps CLI: deterministic checks and evidence records",
+	Long: `ao provides deterministic repository checks and generic evidence records.
+Semantic judgment belongs to the Validate skill. Git, delivery, retries, work
+ownership, and continuation belong to the caller and repository.
 
 For AI agents:
   ao capabilities     Machine-readable CLI contract (JSON) — run this first.
@@ -53,17 +48,10 @@ Use "ao <command> --help" for more information about a command.`,
 			return err
 		}
 		syncConfigFlagToEnv()
-		if err := worktreeconfig.SanitizeGitProcessEnv(); err != nil {
-			return err
-		}
 		cwd, err := os.Getwd()
 		if err != nil {
 			return err
 		}
-		if err := worktreeconfig.RepairSharedCoreWorktreeConfig(cwd); err != nil {
-			return err
-		}
-
 		// Build App struct from resolved flag values and inject into context.
 		app := NewApp()
 		app.DryRun = dryRun
@@ -102,10 +90,6 @@ func negotiateOutput(cmd *cobra.Command) error {
 func Execute() {
 	executedCmd, err := rootCmd.ExecuteC()
 	if err != nil {
-		var lintErr *AgentsLintError
-		if errors.As(err, &lintErr) {
-			os.Exit(lintErr.ExitCode)
-		}
 		var docErr *doctorcommands.ExitError
 		if errors.As(err, &docErr) {
 			// Exit 1 means findings are present — a normal diagnostic result,
@@ -117,75 +101,12 @@ func Execute() {
 			}
 			os.Exit(docErr.ExitCode())
 		}
-		var gateErr *gateExitError
-		if errors.As(err, &gateErr) {
-			// The exit code IS the verdict in `ao validate --gate`. A FAIL (1)
-			// carries no stderr noise (detail already went to stderr); an
-			// internal error (2) surfaces its reason.
-			if gateErr.ExitCode() == gateExitInternal && gateErr.Error() != "" {
-				fmt.Fprintln(os.Stderr, "ao validate: "+gateErr.Error())
-			}
-			os.Exit(gateErr.ExitCode())
-		}
-		var planPawlErr *planPawlExitError
-		if errors.As(err, &planPawlErr) {
-			// The exit code IS the decision in `ao plan-pawl decide`: 3 REDO,
-			// 4 BLOCKED. The decision already went to stdout and the command
-			// silences cobra's error print; surface a reason only on a usage error.
-			if planPawlErr.ExitCode() == planPawlExitUsage && planPawlErr.Error() != "" {
-				fmt.Fprintln(os.Stderr, "ao plan-pawl: "+planPawlErr.Error())
-			}
-			os.Exit(planPawlErr.ExitCode())
-		}
-		var pawlReviewErr *pawlReviewExitError
-		if errors.As(err, &pawlReviewErr) {
-			// The exit code IS the verdict in `ao pawl review` (0 CONFIRMED · 3 REFUTED ·
-			// 4 --converge advisory-only · 2 usage). The script already printed the
-			// verdict + defects; propagate the code with no extra cobra noise.
-			os.Exit(pawlReviewErr.ExitCode())
-		}
-		var reconcileErr *reconcileExitError
-		if errors.As(err, &reconcileErr) {
-			// ao provenance reconcile: 0 clean · 1 unbound/emit-failed · 2 usage. The
-			// command already printed its report/reason; propagate the code cleanly.
-			os.Exit(reconcileErr.ExitCode())
-		}
-		var verifyPrePushErr *verifyPrePushExitError
-		if errors.As(err, &verifyPrePushErr) {
-			// The exit code IS the decision in `ao verify pre-push` (0 allow · 1
-			// refuse). The gate already printed the human refusal to stderr and
-			// silences cobra's error print; just map to the process exit code.
-			os.Exit(verifyPrePushErr.ExitCode())
-		}
-		var landErr *landExitError
-		if errors.As(err, &landErr) {
-			// The exit code IS the outcome in `ao land` (0 landed; a re-exec'd
-			// child's code, or a pawl-land / gate / push failure otherwise). The
-			// underlying step already printed its reason via streamed stdio;
-			// propagate the code with no extra cobra noise.
-			os.Exit(landErr.ExitCode())
-		}
-		var tickErr *tickExitError
-		if errors.As(err, &tickErr) {
-			if tickErr.Error() != "" {
-				fmt.Fprintln(os.Stderr, tickErr.Error())
-			}
-			os.Exit(tickErr.ExitCode())
-		}
 		var scanErr *corpusScanExitError
 		if errors.As(err, &scanErr) {
 			// The exit code IS the verdict for `ao corpus scan`: 1 means a leak
 			// marker (or unreadable file) was detected — fail closed. The
 			// report already went to stdout/stderr, so nothing more to surface.
 			os.Exit(scanErr.ExitCode())
-		}
-		var govErr *governorExitError
-		if errors.As(err, &govErr) {
-			// The exit code IS the decision for `ao governor budget`: 3 means HARDEN
-			// (error budget burned — stop the line). The verdict already went to
-			// stdout and the command silences cobra's error print, so nothing more
-			// to surface — just map to the process exit code.
-			os.Exit(govErr.ExitCode())
 		}
 		var wikiHealthErr *wikiHealthExitError
 		if errors.As(err, &wikiHealthErr) {

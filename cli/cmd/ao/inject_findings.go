@@ -16,7 +16,6 @@ import (
 func collectFindings(cwd, query string, limit int, globalDir string, globalWeight float64) ([]knowledgeFinding, error) {
 	return collectFindingsWithOptions(cwd, query, limit, globalDir, globalWeight, false)
 }
-
 func collectFindingsWithOptions(cwd, query string, limit int, globalDir string, globalWeight float64, includeInactive bool) ([]knowledgeFinding, error) {
 	queryLower := strings.ToLower(query)
 	now := time.Now()

@@ -1,256 +1,114 @@
 # Operating Loop
 
-> Canonical transition model for AgentOps work. The root
-> [`AGENTS.md`](../../AGENTS.md) is the compact always-loaded router; this file
-> owns the detailed proof loop. Repository-specific bead, worktree, candidate,
-> landing, and report mechanics live in the
-> [Agent Workflow Reference](../agent-workflow-reference.md).
-
-AgentOps is not a CI server or a Git workflow. It is an operating contract for
-turning intent into independently judged evidence. A consumer repository keeps
-its own test, delivery, and CI policy. AgentOps supplies the role separation and
-artifacts that make an agent's “done” claim inspectable.
-
-## Roles and trust boundary
-
-| Role | Owns | Cannot authorize |
-|---|---|---|
-| Orchestrator | acceptance, leaf selection, scope, evidence classification, next transition | a worker's unreviewed completion claim |
-| Implementer | one bounded behavior, its RED/GREEN evidence, and the candidate it authors | the binding semantic verdict on that candidate |
-| Validator | one frozen candidate, its declared claims, deterministic receipts, and one complete blocker set | repair, delivery, or a verdict on mutable work |
-
-One model may fill all three roles across separate contexts. The invariant is
-fresh, independent context at the verdict boundary: `author_id != validator_id`.
-A council or mixed-model panel is an optional higher-rigor validator strategy,
-not the default and not a second lifecycle.
-
-## State flow
+AgentOps is a semantic work-and-proof protocol, not CI, Git workflow, tracker,
+queue, or autonomous controller.
 
 ```text
-READY DEMAND
-  → ACTIVE TRANCHE (one active leaf at a time)
-  → 1-3 WAVE CHECKPOINTS
-  → FROZEN TRANCHE CANDIDATE
-  → VALIDATED CANDIDATE
-  → LEARNED CANDIDATE
-  → DELIVERED
-  → REMOTE VERIFIED
-  → REPORTED / CLOSED LEAF
+intent
+  -> PlanPacket
+  -> one bounded implementation experiment
+  -> CandidatePacket + subject-manifest.v1
+  -> one fresh independent validation
+  -> durable verdict.v2
+  -> report and stop
 ```
 
-A goal or epic is aggregate demand. It never occupies WIP. One behavioral leaf
-is the bounded tranche and remains the unit of implementation, proof, learning,
-and delivery. It may take one to three sequential low-risk implementation waves,
-with targeted acceptance after each. One writer holds one active leaf, and no
-second leaf starts until the current leaf is remotely verified and reported.
+## Roles
 
-## 1. Orient and shape acceptance
-
-Read the request, repository contract, status, and only the canonical sources
-triggered by the work. Resolve these questions before mutation:
-
-- What authority permits the change?
-- What exact behavior is requested, and what is explicitly outside scope?
-- Which bounded context and source owner control it?
-- What state already exists locally, in the tracker, and on the target remote?
-- Which action is the next reversible move, and which later action requires
-  explicit repository or operator authority?
-
-Acceptance is executable shared language, not a prose aspiration. Record:
-
-- one capability name;
-- Given/When/Then for the normal path and at least one edge;
-- the first runnable acceptance check;
-- exact writable paths and read-only consumers;
-- non-goals and rollback;
-- deterministic evidence and independent judgment required for done.
-
-Use `/discovery` when acceptance or authority is missing, `/plan` to form
-reviewable vertical slices, and `/premortem` to judge an accepted plan before
-expensive or irreversible work. Premortem judges the plan, never the finished
-implementation.
-
-## 2. Pull one leaf and isolate it
-
-Before tracked work intended to land, claim one ready BDD-shaped leaf and bind it
-to one writer and one worktree. The leaf packet records:
-
-- admitted remote base;
-- one behavior and its acceptance examples;
-- exact write scope and read-only consumers;
-- first RED or honest pre-change baseline;
-- prerequisites and concurrency conflicts;
-- rollback and proof boundary.
-
-A missing path discovered during implementation is not implicit permission to
-expand scope. If a read-only consumer must change, or the behavior cannot be
-completed inside the accepted write set, return `REPLAN` before editing it.
-
-## 3. Build one vertical behavior
-
-For behavior-changing work:
-
-1. Author the named acceptance check.
-2. Run it against the admitted base.
-3. Confirm RED is caused by the missing behavior, not a missing harness, syntax,
-   setup, unrelated baseline failure, or arbitrary threshold.
-4. Make the smallest coherent change that turns it green.
-5. Refactor under green without changing the acceptance check.
-
-Docs-only, pure relocation, and accepted `--no-test-first` work use an honest
-pre-change baseline plus a negative fixture when needed to prove the detector.
-Every failure considered for `REPAIR` is first attributed to the candidate; a
-base-reproduced failure is NOTE unless the leaf explicitly owns it.
-
-A Crank tick is bounded implementation, not an unlimited retry controller. It
-runs only checks selected from the changed behavior and authority surface. At a
-wave boundary, the orchestrator reuses the accepted Premortem while plan inputs
-and risk remain unchanged; material change receives one fresh Premortem before
-another wave. Validate and Learn never sit between unchanged low-risk waves.
-
-## 4. Freeze the tranche candidate
-
-After at most three waves or 90 minutes, the complete intended tranche is
-committed before binding review. Its candidate
-receipt pins at least:
-
-- admitted base SHA;
-- candidate SHA and tree;
-- owned paths with blob identities or explicit deletions;
-- acceptance and claim identities;
-- selected deterministic commands and receipts;
-- relevant registry/toolchain identities;
-- author identity and clean-worktree state.
-
-The receipt is immutable evidence, not a mutable status document. Any candidate
-edit invalidates the frozen identity and every verdict that consumed it. Base-only
-movement may reuse semantic judgment only when owned blobs, deletions, acceptance,
-claim dependencies, and evidence dependencies remain identical and explicit
-overlap/mapping proof is green.
-
-## 5. Prove facts, then judge meaning once
-
-A verdict is immutable evidence from fresh context. The author may supply facts
-and claims, but cannot issue that verdict or mutate it after review.
-
-Deterministic checks prove facts such as syntax, schema, identity, paths, drift,
-tests, and evidence integrity. Select the cheapest checks that cover the changed
-surface, run each selected fact once for an exact input, and retain its receipt.
-Scripts do not score prose usefulness or substitute for engineering judgment.
-
-One validator in fresh context receives the frozen tranche identity, acceptance claims,
-changed surface, and factual receipts. It returns:
-
-- exact candidate and base identities;
-- claim-by-claim citations;
-- one complete blocker set, not serial discoveries;
-- PASS or FAIL;
-- NOTE, REPAIR, or REPLAN disposition for each finding.
-
-Routine work uses one independent validator. Add a council or multiple model
-families only for an explicitly named high-blast-radius or irreversible decision.
-Green deterministic checks without the independent verdict are not done.
-
-After one consolidated repair batch, refreeze and re-review only original
-findings, changed claims, named interaction risks, and invalidated evidence. A
-second distinct repair need is evidence that acceptance, slicing, or approach is
-wrong and returns to `REPLAN`; it does not buy another whole-diff review loop.
-
-After semantic repair and affected-claim closure, run the repository's full
-deterministic terminal gate once on the final exact candidate. Persist its
-exact-input receipt so delivery or pre-push may reuse it instead of rerunning the
-same suite. Only then seal the final Validate result and hand it to Learn.
-
-## 6. Govern evidence without turning every failure into an andon
-
-| Disposition | Meaning | Next legal move |
+| Role | Owns | Does not own |
 |---|---|---|
-| `NOTE` | cosmetic, pre-existing, theoretical, or outside acceptance | record if useful; never block |
-| `REPAIR` | introduced, concrete, verifiable acceptance/correctness/safety/contract defect | one consolidated local repair |
-| `REPLAN` | evidence invalidates the slice, acceptance, dependency graph, or approach | return to the earliest invalidated planning move |
-| `HOLD` | mutation cannot safely continue automatically and no hard ceiling is spent | pause mutation; one bounded fresh-context helper |
-| `ANDON` | human authority is required, or a declared hard time/cost/quota ceiling is spent | stop and ask for the smallest operator decision |
+| Caller | intent, invocation, optional strategies, any later revision or delivery | semantic PASS unless acting in a fresh validator context |
+| Plan | acceptance and write boundary | scheduling, ownership, readiness, continuation |
+| Implement | one subject change and factual evidence | validation, repair loop, Git, closure, delivery |
+| Validate | exact identity, independent judgment, durable verdict | subject edits, retries, next actions, release |
+| RPI | one ordered dispatch and report | a controller around repeated invocations |
 
-A finding blocks only when it is introduced or newly reachable in the candidate,
-concrete and verifiable, and breaks acceptance, correctness, safety, or a claimed
-contract. WARN, PARTIAL, reviewer disagreement, generated drift, ordinary test
-failure, or retry count alone is not ANDON.
+One model may fill multiple roles across distinct contexts. PASS requires
+nonempty distinct author and validator context IDs and an explicit freshness
+attestation. The attestation is a declared trust fact, not cryptographic process
+isolation.
 
-One run-level governor owns attempts, time, token/cost, and helper consumption.
-Phase-local retry multipliers are forbidden. Max-attempts, oscillation, or
-no-progress enters HOLD and receives exactly one helper consultation. `UNSTUCK`
-resumes with a new approach; helper `ESCALATE`, human-only judgment, or a genuinely
-spent hard ceiling raises ANDON. The state table above owns disposition; RPI's
-durable transitions are the
-[pull-flow governor](../../skills/rpi/references/pull-flow-governor.md).
+## PlanPacket
 
-## 7. Learn, deliver, verify, and report
+Plan shapes one active behavior. It records:
 
-`/learn` runs once per tranche, consumes the immutable Validate verdict, and writes the smallest honest
-receipt: no change, material plan impact, or terminal. It may copy candidate,
-verdict, finding, and recurrence identities; it may not change the verdict,
-candidate, delivery authority, or plan. The orchestrator alone consumes
-`plan_impact` and chooses the next move.
+- intent and acceptance digests;
+- normal and edge Given/When/Then scenarios;
+- non-goals and required evidence;
+- `write_scope.include` and `write_scope.exclude`, including generated companions;
+- a first acceptance command or artifact path;
+- optional advisory decomposition with no scheduling semantics.
 
-| Transition | Owner | Authority |
-|---|---|---|
-| Capture | `learn` | Immutable-verdict observations + plan impact for the orchestrator |
+Owner, ready, claim, priority, attempt, wave, queue, lease, admission, next
+action, close, release, and delivery fields are outside the contract.
 
-Pattern mining and promotion are off the critical path. A repeated finding earns
-a durable check only when it has a named owner, a future consumer, a runnable
-activation/holdout example, and rollback or expiry. `/postmortem` is optional and
-answers an explicit causal question after Validate and Learn; it is not another
-validation pass.
+## One bounded experiment
 
-Validation completion and Git delivery are separate transitions.
-Delivery consumes the exact candidate, PASS verdict, Learn receipt, and
-repository policy; it does not create or upgrade semantic proof. Base movement
-triggers only the identity, overlap, mapping, and integration evidence it
-invalidates. After delivery, verify the exact remote ref and emit a report
-containing landed identity, remote verification, closed leaf, goal status, next
-ready leaf, and residual risk. Only that report releases the WIP slot.
-Repo-specific commands are in the
-[Agent Workflow Reference](../agent-workflow-reference.md).
+Implement consumes the exact PlanPacket once. A behavior change captures a
+right-reason RED, makes the smallest coherent change that turns it GREEN, and
+refactors under the unchanged acceptance check. Docs-only and pure-refactor
+work record an honest pre-change baseline.
 
-## Concurrency and software-factory roles
+The CandidatePacket binds the Plan digest, acceptance digest, author context,
+subject locator, manifest, actual changed paths, changed-path coverage fact,
+and factual evidence. A failed check is evidence, not loop authority.
 
-One capable agent plus the local shell is the default. Multiple lanes are useful
-only when the operator requests delegation and outputs have independent owners.
-Read-only implementer/validator separation may use separate contexts without
-multiple writers. Concurrent writers require disjoint paths, separate worktrees,
-and explicit integration ownership; a potentially shared path is serialized or
-reserved before mutation.
+## Content identity
 
-NTM, Agent Mail, Gas City, and councils are optional adapters for durability,
-coordination, factory-shaped roles, or higher-rigor judgment. They do not change
-the loop, grant write authority, or become mandatory startup infrastructure.
+`subject-manifest.v1` is independent of Git. It contains normalized relative
+paths, file/symlink/deletion kinds, executable bits, content or target digests,
+declared roots and exclusions, an optional base-manifest digest, and one
+canonical manifest digest. Git commit/tree information may be attached as
+read-only metadata.
 
-## What the loop deliberately does not own
+The pure helper lives at `skills/validate/scripts/validate.py`. It makes no Git,
+tracker, queue, network, release, or delivery call.
 
-- the consumer repository's CI provider, PR policy, or merge queue;
-- a second tracker or database of duplicate tracker truth;
-- automatic agent-runtime startup or a daemon;
-- semantic judgment in the CLI;
-- full validation in a push hook;
-- cumulative final-program review of already validated leaves.
+## Fresh Validate
 
-The CLI may provide deterministic transaction and recovery mechanics. Agents own
-intent, implementation, and semantic judgment; repositories own delivery policy.
+Validate recomputes subject identity, confirms acceptance continuity and
+complete changed-path coverage, compares actual changes with Plan scope, checks
+the evidence, and judges every acceptance criterion.
 
-## Dynamo map (optional framing)
+- Proven out-of-scope change: `FAIL`.
+- Incomplete path coverage, subject mutation, digest mismatch, missing/colliding
+  identities, or missing freshness: `NOT_PROVEN`.
+- Complete evidence satisfying every criterion: `PASS`.
 
-The same loop as a measured dynamo. Useful when reading yield-ledger and pawl
-signals; not a second subsystem.
+The verdict records criterion results, findings, evidence references, checked
+and not-checked surfaces, timestamp, identities, freshness, and artifact digest.
+It carries no WARN, confidence, disposition, learning, owner, next action,
+retry, closure, release, or delivery state.
 
-| Term | Meaning | Organ | Signal |
-|---|---|---|---|
-| Rotor | Fungible workers that return evidence | Dispatch, worktrees, bead claims | Attempted work, usage, rework |
-| Field | Operating loop + pawl + ratchet | `docs/contracts/pawls.md`, gates, accepted-bead policy | Accept, reject, hold, return |
-| Current | Only evidence-backed accepted work | Merge/accept events, bead state | `yieldledger.EventAccept` |
-| Self-excitation | Corpus delta becomes positive | Measured under `ag-8p8o`; unproven until published | Gauge `C` (pending until measured) |
-| Sensors | Durable operational events | `cli/internal/yieldledger`, `.agents/yield/` | `accept`, `gate-verdict`, `usage` |
-| Structural gate | Author ≠ judge; fail-closed launch | Separation of duties + explicit approval | No self-approval |
+Validate alone persists verdicts. Default storage is
+`.agentops/verdicts/sha256/<digest>.json`; a caller may provide `verdict_dir`.
+The digest is SHA-256 over canonical JSON without `artifact_digest`. Writes are
+same-directory, flushed, fsynced, and atomically renamed. Exact existing content
+is idempotent. Conflicting content is an integrity failure and cannot produce
+PASS. Provenance may record a verdict afterward, but ledger availability never
+affects validity.
 
-Loop sketch: goal + acceptance → fungible worker → evidence-backed claim →
-fresh-context pawl → accepted current → yield sensors → corpus assay → next
-rotation. `C` stays measured, never asserted.
+## Stop boundary and revision
+
+RPI invokes Plan, Implement, and Validate at most once and then stops. A FAIL or
+NOT_PROVEN report does not repair, replan, consult a helper, escalate, or invoke
+a second phase. `NOT_PLANNED` and `NOT_BUILT` describe RPI progress only and are
+not verdict values.
+
+If a caller wants another experiment, it creates `revision-packet.v1` with the
+prior verdict digest, prior/current manifest digests, unchanged acceptance
+digest, responses keyed by finding ID, reusable exact-input evidence, and new
+author context. The caller supplies that packet to a new invocation. Changed
+acceptance is a new intent, not a revision.
+
+## Optional ports
+
+- Premortem, Postmortem, Council, and genie skills are optional judgment
+  strategies selected by the caller.
+- `dispatch_once(explicit_disjoint_packets, executor)` may dispatch explicit
+  factory packets exactly once. It does not select, queue, persist, retry,
+  validate, integrate, close, or deliver.
+- Learn may later inspect collections of durable verdicts. It cannot alter a
+  verdict, plan, or core result.
+- Consumer repository Git, CI, merge, rollback, and release mechanisms operate
+  after and outside this loop.

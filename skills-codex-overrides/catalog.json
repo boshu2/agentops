@@ -1,30 +1,10 @@
 {
-  "version": 1,
-  "description": "Machine-readable Codex treatment map for the full skill catalog.",
+  "version": 2,
+  "description": "Codex projection treatments for the live skill inventory. Source skill behavior lives in skills/<name>/SKILL.md.",
   "waves": [
     {
-      "id": "backbone",
-      "description": "Existing bespoke Codex-first overrides for the execution backbone and shared runtime entry points."
-    },
-    {
-      "id": "core-execution",
-      "description": "Primary execution and session-continuity skills that anchor day-to-day Codex work."
-    },
-    {
-      "id": "analysis-authoring",
-      "description": "Analysis and authoring skills where Codex phrasing and artifact expectations materially affect usability."
-    },
-    {
-      "id": "contribution-workflow",
-      "description": "Open source contribution chain skills that need explicit PR-oriented Codex behavior."
-    },
-    {
-      "id": "security-focused",
-      "description": "Security review workflows where findings format and gate semantics need bespoke Codex guidance."
-    },
-    {
       "id": "catalog-parity",
-      "description": "Skills reviewed explicitly and kept on converter parity until a real Codex-only divergence appears."
+      "description": "Generate a Codex-compatible twin from each live source skill."
     }
   ],
   "skills": [
@@ -32,550 +12,301 @@
       "name": "account-rotation",
       "treatment": "parity_only",
       "wave": "catalog-parity",
-      "reason": "Codex-owned wrapper for the tool-operator skill wave; source behavior lives in skills/<name>, Codex profile stays parity-only until durable Codex-specific divergence is proven."
+      "reason": "Live source skill; generate a parity twin and keep runtime-specific behavior in the source contract."
     },
     {
       "name": "agent-mail",
       "treatment": "parity_only",
       "wave": "catalog-parity",
-      "reason": "Codex-owned wrapper for the tool-operator skill wave; source behavior lives in skills/<name>, Codex profile stays parity-only until durable Codex-specific divergence is proven."
+      "reason": "Live source skill; generate a parity twin and keep runtime-specific behavior in the source contract."
     },
     {
       "name": "agent-native",
       "treatment": "parity_only",
       "wave": "catalog-parity",
-      "reason": "TODO: confirm parity_only or flip to bespoke (+scaffold override dir) for agent-native"
+      "reason": "Live source skill; generate a parity twin and keep runtime-specific behavior in the source contract."
     },
     {
       "name": "agy-native",
       "treatment": "parity_only",
       "wave": "catalog-parity",
-      "reason": "Factory-built vendor-native operator skill with checked-in Codex artifact; keep on parity until a durable Codex-only divergence is proven."
+      "reason": "Live source skill; generate a parity twin and keep runtime-specific behavior in the source contract."
     },
     {
       "name": "automation-shape-routing",
       "treatment": "parity_only",
       "wave": "catalog-parity",
-      "reason": "Front-door routing skill that names the deciding axis (Workflow vs NTM vs plain skill) and hands off; the prose is decision guidance with no Codex-specific runtime divergence."
-    },
-    {
-      "name": "beads-br",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "Codex-owned wrapper for the tool-operator skill wave; source behavior lives in skills/<name>, Codex profile stays parity-only until durable Codex-specific divergence is proven."
-    },
-    {
-      "name": "beads-bv",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "Codex-owned wrapper for the tool-operator skill wave; source behavior lives in skills/<name>, Codex profile stays parity-only until durable Codex-specific divergence is proven."
-    },
-    {
-      "name": "behavior-first-planning",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "Codex-owned parity wrapper; source behavior (the four-phase behavior-first planning discipline) lives in skills/behavior-first-planning, Codex profile stays parity-only until durable Codex-specific divergence is proven."
+      "reason": "Live source skill; generate a parity twin and keep runtime-specific behavior in the source contract."
     },
     {
       "name": "bootstrap",
       "treatment": "parity_only",
       "wave": "catalog-parity",
-      "reason": "New lifecycle skill; converter parity is acceptable."
+      "reason": "Live source skill; generate a parity twin and keep runtime-specific behavior in the source contract."
     },
     {
       "name": "cass",
       "treatment": "parity_only",
       "wave": "catalog-parity",
-      "reason": "Codex-owned wrapper for the tool-operator skill wave; source behavior lives in skills/<name>, Codex profile stays parity-only until durable Codex-specific divergence is proven."
+      "reason": "Live source skill; generate a parity twin and keep runtime-specific behavior in the source contract."
     },
     {
       "name": "cc-hooks",
       "treatment": "parity_only",
       "wave": "catalog-parity",
-      "reason": "Codex-owned wrapper for the tool-operator skill wave; source behavior lives in skills/<name>, Codex profile stays parity-only until durable Codex-specific divergence is proven."
-    },
-    {
-      "name": "codex-exec",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "Factory-built vendor-native operator skill with checked-in Codex artifact; keep on parity until a durable Codex-only divergence is proven."
-    },
-    {
-      "name": "converge",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "Thin memo over the Go ao converge command; the loop + canary live in cli, so a bespoke Codex prompt is not justified \u2014 parity twin suffices."
-    },
-    {
-      "name": "converter",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "The canonical converter workflow is already tool-specific and remains sufficient without extra Codex prompt tailoring."
-    },
-    {
-      "name": "council",
-      "treatment": "bespoke",
-      "wave": "backbone",
-      "reason": "Multi-judge review flow and evidence handling differ materially in Codex sessions."
-    },
-    {
-      "name": "crank",
-      "treatment": "parity_only",
-      "wave": "backbone",
-      "reason": "The one-wave execution and evidence boundary are runtime-portable; Codex-specific worker guidance is a small generated operator contract, not a second hand-maintained skill.",
-      "operator_contract": {
-        "required_sections": [
-          "## Codex Execution Profile",
-          "## Guardrails"
-        ],
-        "required_markers": [
-          "In Codex hookless mode, run `ao codex ensure-start` before the first wave; the CLI records startup once per thread and skips duplicates automatically.",
-          "Use the current leaf owner for one write scope; use Codex subagents only for at least two explicitly admitted disjoint lanes.",
-          "End after one wave and return targeted evidence to RPI. RPI may admit another unchanged wave without `$validate` or `$learn`; those run once only after the leaf is complete and frozen."
-        ]
-      }
-    },
-    {
-      "name": "dcg",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "Codex-owned wrapper for the tool-operator skill wave; source behavior lives in skills/<name>, Codex profile stays parity-only until durable Codex-specific divergence is proven."
-    },
-    {
-      "name": "discovery",
-      "treatment": "parity_only",
-      "wave": "backbone",
-      "reason": "Discovery delegates to sub-skills; Codex hookless startup and phase-chaining guardrails are catalog-declared while the body stays source-generated.",
-      "operator_contract": {
-        "required_sections": [
-          "## Codex Execution Profile",
-          "## Guardrails"
-        ],
-        "required_markers": [
-          "In Codex hookless mode, run `ao codex ensure-start`; the CLI records startup once per thread and skips duplicates automatically.",
-          "Delegate to `$research`, `$plan`, and `$premortem` as separate skill invocations after internal brainstorm/design modes."
-        ]
-      }
-    },
-    {
-      "name": "doc",
-      "treatment": "bespoke",
-      "wave": "analysis-authoring",
-      "reason": "Documentation work benefits from Codex-specific emphasis on repo-grounded evidence and validation commands."
-    },
-    {
-      "name": "domain",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "Vocabulary corpus loaded as reference material; entries are vendor-neutral markdown and do not currently need a Codex-specific prompt layer."
-    },
-    {
-      "name": "evolve",
-      "treatment": "parity_only",
-      "wave": "backbone",
-      "reason": "The four-umbrella cycle is runtime-portable; Codex persistence and lead-loop guidance fit in a generated operator contract.",
-      "operator_contract": {
-        "required_sections": [
-          "## Codex Execution Profile",
-          "## Guardrails"
-        ],
-        "required_markers": [
-          "Drive the lead cycle in-session through the skills; do not shell out to a CLI loop wrapper.",
-          "Persist loop state under `.agents/evolve/` and recover from disk instead of relying on live context.",
-          "Enforce `Validate -> Learn -> orchestrator`; only an orchestrator-owned changed plan enters `$premortem`."
-        ]
-      }
-    },
-    {
-      "name": "goals",
-      "treatment": "bespoke",
-      "wave": "core-execution",
-      "reason": "Goal maintenance in Codex should stay compact, measurable, and immediately actionable.",
-      "operator_contract_required": true,
-      "operator_contract": {
-        "required_sections": [
-          "## Codex Execution Profile",
-          "## Guardrails"
-        ],
-        "required_markers": [
-          "Prefer compact status summaries with explicit failing goals, directive gaps, and file-backed updates.",
-          "Keep goal maintenance output ready to feed `$evolve`, `$status`, and future Codex sessions.",
-          "Prefer measurable fitness language over subjective prose."
-        ]
-      }
-    },
-    {
-      "name": "handoff",
-      "treatment": "bespoke",
-      "wave": "core-execution",
-      "reason": "Compaction-safe resume handoffs are runtime-sensitive and need explicit Codex pickup guidance.",
-      "operator_contract_required": true,
-      "operator_contract": {
-        "required_sections": [
-          "## Codex Execution Profile",
-          "## Guardrails"
-        ],
-        "required_markers": [
-          "Capture the current objective, completed work, unresolved blockers, and the next command or file to inspect.",
-          "Prefer durable paths, issue ids, and validation evidence over conversational summaries.",
-          "Finish handoff-driven session closeout by running `ao codex ensure-stop --auto-extract`; the CLI already skips duplicate closeout for the same Codex thread.",
-          "Do not leave the next session guessing what to do first."
-        ]
-      }
-    },
-    {
-      "name": "heal-skill",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "Skill repair is already procedural and script-led; the generated Codex prompt is adequate."
-    },
-    {
-      "name": "implement",
-      "treatment": "bespoke",
-      "wave": "core-execution",
-      "reason": "Single-issue implementation is a primary Codex workflow and benefits from explicit test-first execution rules.",
-      "operator_contract_required": true,
-      "operator_contract": {
-        "required_sections": [
-          "## Codex Execution Profile",
-          "## Guardrails"
-        ],
-        "required_markers": [
-          "In Codex hookless mode, run `ao codex ensure-start` before implementation begins; the CLI records startup once per thread and skips duplicates automatically.",
-          "Work one claimed issue to completion with acceptance criteria, touched files, and validation steps kept explicit.",
-          "Prefer TDD or the smallest proving test first when behavior changes, then widen validation only as needed.",
-          "Do not widen scope beyond the claimed issue without creating a beads follow-up."
-        ]
-      }
-    },
-    {
-      "name": "ntm",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "Codex-owned wrapper for the tool-operator skill wave; source behavior lives in skills/<name>, Codex profile stays parity-only until durable Codex-specific divergence is proven."
-    },
-    {
-      "name": "operationalize",
-      "treatment": "excluded",
-      "wave": "catalog-parity",
-      "reason": "Spine-excluded (age-focus-membrane-bookkeeper-m1wg.19): demoted to the experimental tier; Codex twin dropped \u2014 no runtime twin ships."
-    },
-    {
-      "name": "plan",
-      "treatment": "bespoke",
-      "wave": "backbone",
-      "reason": "Planning output must feed the Codex execution chain with issue-ready scope and handoff artifacts.",
-      "operator_contract_required": true,
-      "operator_contract": {
-        "required_sections": [
-          "## Codex Execution Profile",
-          "## Guardrails"
-        ],
-        "required_markers": [
-          "beads-ready issues, dependencies, and acceptance criteria",
-          "future Codex sessions can pick them up without chat-only context",
-          "Keep WHAT and HOW separated"
-        ]
-      }
-    },
-    {
-      "name": "postmortem",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "Retrospective causal analysis is runtime-portable; the retired Codex-specific closeout/flywheel behavior violated the Validate-to-Learn boundary."
-    },
-    {
-      "name": "pr-prep",
-      "treatment": "bespoke",
-      "wave": "contribution-workflow",
-      "reason": "Preparing a PR in Codex needs a tighter artifact checklist and explicit user-review boundary."
-    },
-    {
-      "name": "premortem",
-      "treatment": "parity_only",
-      "wave": "core-execution",
-      "reason": "Plan judgment is runtime-portable; concise Codex verdict framing fits in a generated operator contract.",
-      "operator_contract": {
-        "required_sections": [
-          "## Codex Execution Profile",
-          "## Guardrails"
-        ],
-        "required_markers": [
-          "Lead with the verdict, then the smallest set of blocking findings that would change implementation behavior.",
-          "Between waves, accept only a changed plan from an explicit orchestrator request.",
-          "Do not accept direct control transfer from `$validate` or `$learn`."
-        ]
-      }
-    },
-    {
-      "name": "product",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "The canonical interview-and-synthesis loop already defines the interaction strongly enough for Codex."
-    },
-    {
-      "name": "push",
-      "treatment": "parity_only",
-      "wave": "core-execution",
-      "reason": "Repository-selected deterministic delivery is runtime-portable; Codex has no durable need for a second hand-maintained lifecycle or authorization policy."
-    },
-    {
-      "name": "rch",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "Codex-owned wrapper for the tool-operator skill wave; source behavior lives in skills/<name>, Codex profile stays parity-only until durable Codex-specific divergence is proven."
-    },
-    {
-      "name": "reality-check",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "seams epic ag-xwjlc parity twin"
-    },
-    {
-      "name": "refactor",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "New lifecycle skill; converter parity is acceptable."
-    },
-    {
-      "name": "release",
-      "treatment": "bespoke",
-      "wave": "core-execution",
-      "reason": "Release preparation needs explicit Codex operator guidance around gates, boundaries, and tagging.",
-      "operator_contract_required": true,
-      "operator_contract": {
-        "required_sections": [
-          "## Codex Execution Profile",
-          "## Guardrails"
-        ],
-        "required_markers": [
-          "Keep the release boundary explicit: everything up to the tag, with validations and changelog evidence called out.",
-          "Prefer deterministic command sequences and clear rollback points over narrative release notes during execution.",
-          "Do not run `ao codex stop` after the release commit/tag boundary; finish Codex closeout before `$release` if those artifacts must be part of the release boundary.",
-          "Do not blur preparation work with post-tag publishing tasks."
-        ]
-      }
-    },
-    {
-      "name": "research",
-      "treatment": "bespoke",
-      "wave": "backbone",
-      "reason": "Parallel exploration and artifact capture differ materially in Codex sessions.",
-      "operator_contract_required": true,
-      "operator_contract": {
-        "required_sections": [
-          "## Codex Execution Profile",
-          "## Guardrails"
-        ],
-        "required_markers": [
-          "In Codex hookless mode, run `ao codex ensure-start` before research; the CLI records startup once per thread and skips duplicates automatically.",
-          "Prefer `spawn_agent` / `send_input` / `wait` for parallel exploration.",
-          "Write findings to `.agents/research/` with file-level references and concrete evidence.",
-          "Keep backend fallback logic explicit: codex sub-agents, then background-task-fallback, then inline."
-        ]
-      }
-    },
-    {
-      "name": "learn",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "The post-verdict learning receipt and proof/delivery boundary are runtime-portable."
-    },
-    {
-      "name": "rpi",
-      "treatment": "parity_only",
-      "wave": "backbone",
-      "reason": "The four-umbrella lifecycle is runtime-portable; Codex-native lead orchestration remains a generated operator contract instead of a second hand-maintained skill.",
-      "operator_contract": {
-        "required_sections": [
-          "## Codex Execution Profile",
-          "## Guardrails"
-        ],
-        "required_markers": [
-          "In Codex hookless mode, run `ao codex ensure-start` before phase orchestration; the CLI records startup once per thread and skips duplicates automatically.",
-          "When beads are present, resolve bead IDs before routing; when beads are absent, preserve the current goal or execution-packet objective across phases.",
-          "Keep a single lifecycle objective spine across discovery, crank, validation, and learning. Never replace it with a child issue ID or one ready slice from `br ready`, `br show`, or `.agents/rpi/next-work.jsonl`.",
-          "If discovery does not yield an epic id, invoke `$crank .agents/rpi/execution-packet.json` and standalone `$validate` instead of inventing one.",
-          "If `$crank` returns `<promise>PARTIAL</promise>`, compare the remaining work with the bound plan. Admit another unchanged wave below the three-wave and 90-minute boundary; at an incomplete soft boundary persist resume evidence and stop without `$validate`, `$learn`, or delivery.",
-          "Orchestrate phases directly in the current session; do not hand RPI orchestration to wrapper commands.",
-          "Keep one ordered receipt index in `.agents/rpi/execution-packet.json` that points to canonical Discovery, Crank, Validate, and Learn artifacts; legacy phase summaries are optional link-only projections.",
-          "Enforce `Validate -> Learn -> orchestrator`. Only the lead orchestrator may invoke `$discovery` to change the remaining plan and then `$premortem` on that exact changed plan.",
-          "claim, release, and consume semantics exactly",
-          "claim before work, consume on success, release on failure or interruption",
-          "Do not silently loop after a partial wave. Preserve the objective and make the remaining-plan decision explicit; per-wave Validate, Learn, delivery, and duplicate summaries are forbidden."
-        ]
-      }
-    },
-    {
-      "name": "sbh",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "Codex-owned wrapper for the tool-operator skill wave; source behavior lives in skills/<name>, Codex profile stays parity-only until durable Codex-specific divergence is proven."
-    },
-    {
-      "name": "scaffold",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "New lifecycle skill; converter parity is acceptable."
-    },
-    {
-      "name": "scope",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "Edit-scope guard behavior is already explicit in the generated Codex artifact; no bespoke override is needed yet."
-    },
-    {
-      "name": "security",
-      "treatment": "bespoke",
-      "wave": "security-focused",
-      "reason": "Security review needs findings-first Codex output and clear release-gate semantics."
-    },
-    {
-      "name": "shared",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "This non-invocable shared-reference skill does not need bespoke Codex prompt wording."
-    },
-    {
-      "name": "skill-builder",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "Builder dispatcher (scripts/build.sh) drives all 4 modes (from-scratch, from-template, absorb-external, from-pattern); the prose is reference material with no Codex-specific runtime divergence."
-    },
-    {
-      "name": "standards",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "Standards are loaded as reference material and do not currently need a Codex-specific prompt layer."
-    },
-    {
-      "name": "status",
-      "treatment": "bespoke",
-      "wave": "core-execution",
-      "reason": "Status output should be concise, operational, and resume-friendly in Codex.",
-      "operator_contract_required": true,
-      "operator_contract": {
-        "required_sections": [
-          "## Codex Execution Profile",
-          "## Guardrails"
-        ],
-        "required_markers": [
-          "In Codex hookless mode, run `ao codex ensure-start` before gathering dashboard state; the CLI records startup once per thread and skips duplicates automatically.",
-          "Default to a one-screen layout with three blocks in this order: `Current Work`, `Latest Gates`, `Next Action`.",
-          "Use exact issue ids, branch/worktree state, and file-backed artifacts instead of conversational summaries.",
-          "Keep the output resumable after compaction."
-        ]
-      }
-    },
-    {
-      "name": "swarm",
-      "treatment": "bespoke",
-      "wave": "backbone",
-      "reason": "Parallel worker execution depends directly on Codex-native sub-agent patterns and ownership rules.",
-      "operator_contract_required": true,
-      "operator_contract": {
-        "required_sections": [
-          "## Codex Execution Profile",
-          "## Guardrails"
-        ],
-        "required_markers": [
-          "Assign explicit ownership per worker before spawning: issue id, file set, and expected output.",
-          "Use file-backed result handoff under `.agents/swarm/` for consolidation and deterministic merge order.",
-          "Do not give two workers overlapping write ownership in the same wave unless the merge plan is explicit."
-        ]
-      }
-    },
-    {
-      "name": "test",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "New lifecycle skill; converter parity is acceptable."
-    },
-    {
-      "name": "toil-mining",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "seams epic ag-xwjlc parity twin"
-    },
-    {
-      "name": "validate",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "Canonical validator role; converter parity is acceptable until the legacy validation skills are shimmed or retired."
-    },
-    {
-      "name": "workflow-builder",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "Scaffolds a Claude Workflow JS script from the operating-loop.js template; the authoring guidance is tool-specific reference material with no Codex-specific runtime divergence."
-    },
-    {
-      "name": "reverse-engineer",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "TODO: confirm parity_only or flip to bespoke (+scaffold override dir) for reverse-engineer"
-    },
-    {
-      "name": "ms",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "Auto-generated parity twin (codex-sync): skills/ms is the source of truth; no durable Codex-specific divergence yet."
-    },
-    {
-      "name": "gc-membrane",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "Auto-generated parity twin (codex-sync): skills/gc-membrane is the source of truth; no durable Codex-specific divergence yet."
-    },
-    {
-      "name": "using-gc",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "Auto-generated parity twin (codex-sync): skills/using-gc is the source of truth; no durable Codex-specific divergence yet."
-    },
-    {
-      "name": "goal-design",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "Goal-design packet authoring is a deterministic loop input; Premortem alone owns later semantic plan readiness. Hookless startup stays catalog-declared for parity regeneration.",
-      "operator_contract": {
-        "required_markers": [
-          "In Codex hookless mode, run `ao codex ensure-start`; the CLI records startup once per thread and skips duplicates automatically."
-        ],
-        "required_sections": [
-          "## Codex Execution Profile"
-        ]
-      }
-    },
-    {
-      "name": "idea-genie",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "Evidence-grounded opportunity artifact is runtime-portable."
-    },
-    {
-      "name": "dueling-idea-genies",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "Sealed advisory challenge artifact and Plan handoff are runtime-portable; the skill emits no readiness verdict."
+      "reason": "Live source skill; generate a parity twin and keep runtime-specific behavior in the source contract."
     },
     {
       "name": "codebase-recon",
       "treatment": "parity_only",
       "wave": "catalog-parity",
-      "reason": "Evidence-bounded recon and delta contracts are runtime-portable."
+      "reason": "Live source skill; generate a parity twin and keep runtime-specific behavior in the source contract."
+    },
+    {
+      "name": "codex-exec",
+      "treatment": "parity_only",
+      "wave": "catalog-parity",
+      "reason": "Live source skill; generate a parity twin and keep runtime-specific behavior in the source contract."
+    },
+    {
+      "name": "converter",
+      "treatment": "parity_only",
+      "wave": "catalog-parity",
+      "reason": "Live source skill; generate a parity twin and keep runtime-specific behavior in the source contract."
+    },
+    {
+      "name": "council",
+      "treatment": "parity_only",
+      "wave": "catalog-parity",
+      "reason": "Live source skill; generate a parity twin and keep runtime-specific behavior in the source contract."
+    },
+    {
+      "name": "dcg",
+      "treatment": "parity_only",
+      "wave": "catalog-parity",
+      "reason": "Live source skill; generate a parity twin and keep runtime-specific behavior in the source contract."
+    },
+    {
+      "name": "doc",
+      "treatment": "parity_only",
+      "wave": "catalog-parity",
+      "reason": "Live source skill; generate a parity twin and keep runtime-specific behavior in the source contract."
+    },
+    {
+      "name": "domain",
+      "treatment": "parity_only",
+      "wave": "catalog-parity",
+      "reason": "Live source skill; generate a parity twin and keep runtime-specific behavior in the source contract."
+    },
+    {
+      "name": "dueling-idea-genies",
+      "treatment": "parity_only",
+      "wave": "catalog-parity",
+      "reason": "Live source skill; generate a parity twin and keep runtime-specific behavior in the source contract."
+    },
+    {
+      "name": "goals",
+      "treatment": "parity_only",
+      "wave": "catalog-parity",
+      "reason": "Live source skill; generate a parity twin and keep runtime-specific behavior in the source contract."
+    },
+    {
+      "name": "handoff",
+      "treatment": "parity_only",
+      "wave": "catalog-parity",
+      "reason": "Live source skill; generate a parity twin and keep runtime-specific behavior in the source contract."
+    },
+    {
+      "name": "heal-skill",
+      "treatment": "parity_only",
+      "wave": "catalog-parity",
+      "reason": "Live source skill; generate a parity twin and keep runtime-specific behavior in the source contract."
+    },
+    {
+      "name": "idea-genie",
+      "treatment": "parity_only",
+      "wave": "catalog-parity",
+      "reason": "Live source skill; generate a parity twin and keep runtime-specific behavior in the source contract."
+    },
+    {
+      "name": "implement",
+      "treatment": "parity_only",
+      "wave": "catalog-parity",
+      "reason": "Live source skill; generate a parity twin and keep runtime-specific behavior in the source contract."
+    },
+    {
+      "name": "learn",
+      "treatment": "parity_only",
+      "wave": "catalog-parity",
+      "reason": "Live source skill; generate a parity twin and keep runtime-specific behavior in the source contract."
+    },
+    {
+      "name": "ms",
+      "treatment": "parity_only",
+      "wave": "catalog-parity",
+      "reason": "Live source skill; generate a parity twin and keep runtime-specific behavior in the source contract."
+    },
+    {
+      "name": "ntm",
+      "treatment": "parity_only",
+      "wave": "catalog-parity",
+      "reason": "Live source skill; generate a parity twin and keep runtime-specific behavior in the source contract."
+    },
+    {
+      "name": "operationalize",
+      "treatment": "parity_only",
+      "wave": "catalog-parity",
+      "reason": "Live source skill; generate a parity twin and keep runtime-specific behavior in the source contract."
     },
     {
       "name": "pattern-mining",
       "treatment": "parity_only",
       "wave": "catalog-parity",
-      "reason": "Exemplar and holdout validation contract is runtime-portable."
+      "reason": "Live source skill; generate a parity twin and keep runtime-specific behavior in the source contract."
     },
     {
-      "name": "pawl-review",
+      "name": "plan",
       "treatment": "parity_only",
       "wave": "catalog-parity",
-      "reason": "Immutable reviewer-lane contract is runtime-portable; concrete adapters stay behind ports."
+      "reason": "Live source skill; generate a parity twin and keep runtime-specific behavior in the source contract."
+    },
+    {
+      "name": "postmortem",
+      "treatment": "parity_only",
+      "wave": "catalog-parity",
+      "reason": "Live source skill; generate a parity twin and keep runtime-specific behavior in the source contract."
+    },
+    {
+      "name": "premortem",
+      "treatment": "parity_only",
+      "wave": "catalog-parity",
+      "reason": "Live source skill; generate a parity twin and keep runtime-specific behavior in the source contract."
+    },
+    {
+      "name": "product",
+      "treatment": "parity_only",
+      "wave": "catalog-parity",
+      "reason": "Live source skill; generate a parity twin and keep runtime-specific behavior in the source contract."
+    },
+    {
+      "name": "rch",
+      "treatment": "parity_only",
+      "wave": "catalog-parity",
+      "reason": "Live source skill; generate a parity twin and keep runtime-specific behavior in the source contract."
+    },
+    {
+      "name": "reality-check",
+      "treatment": "parity_only",
+      "wave": "catalog-parity",
+      "reason": "Live source skill; generate a parity twin and keep runtime-specific behavior in the source contract."
+    },
+    {
+      "name": "refactor",
+      "treatment": "parity_only",
+      "wave": "catalog-parity",
+      "reason": "Live source skill; generate a parity twin and keep runtime-specific behavior in the source contract."
+    },
+    {
+      "name": "research",
+      "treatment": "parity_only",
+      "wave": "catalog-parity",
+      "reason": "Live source skill; generate a parity twin and keep runtime-specific behavior in the source contract."
+    },
+    {
+      "name": "reverse-engineer",
+      "treatment": "parity_only",
+      "wave": "catalog-parity",
+      "reason": "Live source skill; generate a parity twin and keep runtime-specific behavior in the source contract."
+    },
+    {
+      "name": "rpi",
+      "treatment": "parity_only",
+      "wave": "catalog-parity",
+      "reason": "Live source skill; generate a parity twin and keep runtime-specific behavior in the source contract."
+    },
+    {
+      "name": "sbh",
+      "treatment": "parity_only",
+      "wave": "catalog-parity",
+      "reason": "Live source skill; generate a parity twin and keep runtime-specific behavior in the source contract."
+    },
+    {
+      "name": "scaffold",
+      "treatment": "parity_only",
+      "wave": "catalog-parity",
+      "reason": "Live source skill; generate a parity twin and keep runtime-specific behavior in the source contract."
+    },
+    {
+      "name": "scope",
+      "treatment": "parity_only",
+      "wave": "catalog-parity",
+      "reason": "Live source skill; generate a parity twin and keep runtime-specific behavior in the source contract."
+    },
+    {
+      "name": "security",
+      "treatment": "parity_only",
+      "wave": "catalog-parity",
+      "reason": "Live source skill; generate a parity twin and keep runtime-specific behavior in the source contract."
+    },
+    {
+      "name": "shared",
+      "treatment": "parity_only",
+      "wave": "catalog-parity",
+      "reason": "Live source skill; generate a parity twin and keep runtime-specific behavior in the source contract."
+    },
+    {
+      "name": "skill-builder",
+      "treatment": "parity_only",
+      "wave": "catalog-parity",
+      "reason": "Live source skill; generate a parity twin and keep runtime-specific behavior in the source contract."
+    },
+    {
+      "name": "standards",
+      "treatment": "parity_only",
+      "wave": "catalog-parity",
+      "reason": "Live source skill; generate a parity twin and keep runtime-specific behavior in the source contract."
+    },
+    {
+      "name": "status",
+      "treatment": "parity_only",
+      "wave": "catalog-parity",
+      "reason": "Live source skill; generate a parity twin and keep runtime-specific behavior in the source contract."
+    },
+    {
+      "name": "swarm",
+      "treatment": "parity_only",
+      "wave": "catalog-parity",
+      "reason": "Live source skill; generate a parity twin and keep runtime-specific behavior in the source contract."
+    },
+    {
+      "name": "test",
+      "treatment": "parity_only",
+      "wave": "catalog-parity",
+      "reason": "Live source skill; generate a parity twin and keep runtime-specific behavior in the source contract."
+    },
+    {
+      "name": "toil-mining",
+      "treatment": "parity_only",
+      "wave": "catalog-parity",
+      "reason": "Live source skill; generate a parity twin and keep runtime-specific behavior in the source contract."
+    },
+    {
+      "name": "using-gc",
+      "treatment": "parity_only",
+      "wave": "catalog-parity",
+      "reason": "Live source skill; generate a parity twin and keep runtime-specific behavior in the source contract."
+    },
+    {
+      "name": "validate",
+      "treatment": "parity_only",
+      "wave": "catalog-parity",
+      "reason": "Live source skill; generate a parity twin and keep runtime-specific behavior in the source contract."
+    },
+    {
+      "name": "workflow-builder",
+      "treatment": "parity_only",
+      "wave": "catalog-parity",
+      "reason": "Live source skill; generate a parity twin and keep runtime-specific behavior in the source contract."
     }
   ]
 }

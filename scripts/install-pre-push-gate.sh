@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# install-pre-push-gate.sh — wire the AgentOps cockpit pre-push gate (P1.2 / ag-qidx.2).
+# install-pre-push-gate.sh — wire the ordinary deterministic pre-push checks.
 #
 # Idempotent. Installs scripts/hooks/pre-push.local into the SHARED git hooks dir
 # (git-common-dir, so it covers the main checkout and every linked worktree at
@@ -225,5 +225,5 @@ if [[ "$(git config --local --get core.bare 2>/dev/null)" == "true" ]]; then
 fi
 
 echo ""
-echo "Cockpit pre-push gate active for this repo (all worktrees)."
+echo "Deterministic pre-push checks active for this repo (all worktrees)."
 echo "Audited bypass (logged): AGENTOPS_GATE_DISABLED=1 git push ..."

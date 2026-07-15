@@ -397,7 +397,7 @@ func extractSnapshot(tarPath, destParent string) (int, int64, error) {
 			return 0, 0, fmt.Errorf("refusing path traversal entry: %q", hdr.Name)
 		}
 		target := filepath.Join(parentDir, clean)
-		// (b) Canonical containment assert: the same pathInside check the pawl uses.
+		// (b) Canonical containment assertion.
 		// This is the windshield — it catches an escape that survived the string cut
 		// (e.g. a symlinked parentDir, or a clean name that still resolves outside).
 		if !pathInside(realpathOrSelf(target), rootReal) {

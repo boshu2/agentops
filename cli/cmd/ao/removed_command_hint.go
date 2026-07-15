@@ -15,52 +15,75 @@ import (
 // these one-liners exist so the pointer appears at the moment of failure,
 // where a dev (or an agent following error strings) actually hits the wall.
 type removedCommand struct {
-	use     string // what to use instead — one clause, plain words
-	restore string // exact restore command, or "" when nothing brings it back
+	use string // what to use instead — one clause, plain words
 }
-
-const (
-	restoreFlywheel = "make build-flywheel"
-	restoreLegacy   = "AGENTOPS_LEGACY=1 make build"
-)
 
 // removedCommands maps every verb removed from the default `ao` build to its
 // tombstone. Keep in lockstep with docs/MIGRATION.md — the drift test
 // (TestRemovedVerbsHaveMigrationRows) fails when a verb here has no row there.
 var removedCommands = map[string]removedCommand{
-	// Daemon + scheduling lane (ADR-0009: delete, not deprecate; no restore).
-	"daemon":    {use: "out-of-session work moved to an external substrate (NTM, `ao mcp serve`, or `ao agent`)"},
-	"schedule":  {use: "scheduling moved to your substrate (cron-triggered NTM dispatch or a managed-agents schedule)"},
-	"plans":     {use: "scheduling moved to your substrate (cron-triggered NTM dispatch or a managed-agents schedule)"},
-	"watch":     {use: "scheduling moved to your substrate (cron-triggered NTM dispatch or a managed-agents schedule)"},
-	"overnight": {use: "scheduling moved to your substrate (cron-triggered NTM dispatch or a managed-agents schedule)"},
-	"cron":      {use: "scheduling moved to your substrate (cron-triggered NTM dispatch or a managed-agents schedule)"},
+	// Cathedral Cut lifecycle removals. These are executable tombstones for one
+	// release: each fails without importing, forwarding to, or mutating old state.
+	"pawl":      {use: "semantic review no longer controls admission; invoke the Validate skill for an independent verdict"},
+	"plan-pawl": {use: "plan admission was removed; invoke premortem when the caller wants an advisory plan challenge"},
+	"land":      {use: "AgentOps no longer owns delivery; use the repository's Git or CI process"},
+	"done":      {use: "AgentOps no longer owns work closure; report the result to the caller"},
+	"close":     {use: "AgentOps no longer owns work closure; report the result to the caller"},
+	"governor":  {use: "AgentOps no longer owns retries or budgets; the caller decides whether to invoke RPI again"},
+	"yield":     {use: "AgentOps no longer controls throughput budgets; use substrate-native observation"},
+	"claim":     {use: "AgentOps no longer owns work claims; use your tracker or execution substrate directly"},
+	"next-work": {use: "AgentOps no longer selects work; the caller supplies the next PlanPacket"},
+	"state":     {use: "AgentOps no longer admits lifecycle state; inspect packet and verdict artifacts directly"},
+	"worktree":  {use: "AgentOps no longer owns Git worktrees; use Git directly"},
+	"validate":  {use: "semantic validation is the Validate skill; deterministic repository checks remain under `ao gate check`"},
+	"converge":  {use: "AgentOps no longer retries toward convergence; start a caller-directed revision invocation"},
+	"reconcile": {use: "AgentOps no longer reconciles lifecycle state; use read-only provenance verify or trace"},
+	"membrane":  {use: "admission was removed; record observations as verdict findings or generic provenance"},
+	"crank":     {use: "factory control was removed; call an executor directly or use optional `dispatch_once`"},
+}
 
-	// Loop verbs deleted outright (no build tag brings these back).
-	"rpi":     {use: "run the in-session operating loop instead (the /rpi skill drives one turn of it)"},
-	"evolve":  {use: "run the /evolve skill flow instead"},
-	"factory": {use: "the factory is the loop itself — /crank and /swarm in-session, or substrate dispatch out-of-session"},
+type removedCommandExitError struct{}
 
-	// Memory/recall moved to external tools (ADR-0010 kept only session-log mining native).
-	"recall": {use: "use cass (coding_agent_session_search) to search past sessions"},
+func (removedCommandExitError) Error() string { return "" }
+func (removedCommandExitError) ExitCode() int { return 1 }
 
-	// Corpus/flywheel surface, archived behind //go:build flywheel (ADR-0012).
-	"corpus":   {use: "archived flywheel surface; consume knowledge via cass + cm", restore: restoreFlywheel},
-	"curate":   {use: "archived flywheel surface; consume knowledge via cass + cm", restore: restoreFlywheel},
-	"defrag":   {use: "archived flywheel surface; consume knowledge via cass + cm", restore: restoreFlywheel},
-	"harvest":  {use: "archived flywheel surface; consume knowledge via cass + cm", restore: restoreFlywheel},
-	"mind":     {use: "archived flywheel surface; consume knowledge via cass + cm", restore: restoreFlywheel},
-	"refinery": {use: "archived flywheel surface; consume knowledge via cass + cm", restore: restoreFlywheel},
+func newRemovedCommand(name string, tomb removedCommand) *cobra.Command {
+	command := &cobra.Command{
+		Use:           name,
+		Short:         "Removed in the AgentOps Cathedral Cut",
+		Args:          cobra.ArbitraryArgs,
+		SilenceErrors: true,
+		SilenceUsage:  true,
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			fmt.Fprintf(cmd.ErrOrStderr(), "%s no longer exists: %s.\n", name, tomb.use)
+			return removedCommandExitError{}
+		},
+	}
+	command.FParseErrWhitelist.UnknownFlags = true
+	return command
+}
 
-	// RPI/factory machinery, archived behind //go:build legacy (ADR-0012).
-	"autodev":     {use: "archived RPI/factory machinery; the operating loop replaces it", restore: restoreLegacy},
-	"codex":       {use: "archived RPI/factory machinery; the operating loop replaces it", restore: restoreLegacy},
-	"loop":        {use: "archived RPI/factory machinery; the operating loop replaces it", restore: restoreLegacy},
-	"orchestrate": {use: "archived RPI/factory machinery; the operating loop replaces it", restore: restoreLegacy},
-	"operator":    {use: "archived RPI/factory machinery; the operating loop replaces it", restore: restoreLegacy},
-	"tick":        {use: "archived RPI/factory machinery; the operating loop replaces it", restore: restoreLegacy},
-	"turn_verify": {use: "archived RPI/factory machinery; the operating loop replaces it", restore: restoreLegacy},
-	"harness":     {use: "archived RPI/factory machinery; the operating loop replaces it", restore: restoreLegacy},
+// installRemovedCommandTombstones replaces any legacy registrations with the
+// centralized inert stubs. No tombstone forwards to old implementation code.
+func installRemovedCommandTombstones(root *cobra.Command) {
+	for name, tomb := range removedCommands {
+		if _, cathedralCut := cathedralCutCommands[name]; !cathedralCut {
+			continue
+		}
+		for _, command := range append([]*cobra.Command(nil), root.Commands()...) {
+			if command.Name() == name || command.HasAlias(name) {
+				root.RemoveCommand(command)
+			}
+		}
+		root.AddCommand(newRemovedCommand(name, tomb))
+	}
+}
+
+var cathedralCutCommands = map[string]struct{}{
+	"pawl": {}, "plan-pawl": {}, "land": {}, "done": {}, "close": {},
+	"governor": {}, "yield": {}, "claim": {}, "next-work": {}, "state": {},
+	"worktree": {}, "validate": {}, "converge": {}, "reconcile": {},
+	"membrane": {}, "crank": {},
 }
 
 // removedCommandHint returns the tombstone hint for an "unknown command"
@@ -89,9 +112,6 @@ func removedCommandHint(root *cobra.Command, err error) string {
 	}
 	var b strings.Builder
 	fmt.Fprintf(&b, "%q was removed from ao — %s.\n", verb, tomb.use)
-	if tomb.restore != "" {
-		fmt.Fprintf(&b, "Restore the old surface with: %s\n", tomb.restore)
-	}
 	b.WriteString("Full map of removed surfaces and replacements: docs/MIGRATION.md\n")
 	return b.String()
 }

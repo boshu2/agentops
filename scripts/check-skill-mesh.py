@@ -1,113 +1,113 @@
 #!/usr/bin/env python3
-import argparse
-import sys
+"""Check that every skill projection agrees with SKILL.md metadata."""
+
+from __future__ import annotations
+
+import json
 from pathlib import Path
+import subprocess
+import sys
 
 import yaml
 
+
 ROOT = Path(__file__).resolve().parents[1]
+CORE = {"rpi", "plan", "implement", "validate"}
+EXPECTED_CORE = {
+    "rpi": {"plan", "implement", "validate"},
+    "plan": set(),
+    "implement": set(),
+    "validate": set(),
+}
+DISPOSITIONS = {
+    "keep",
+    "keep_off_path",
+    "keep_strategy",
+    "keep_optional_adapter",
+    "keep_specialist",
+}
 
 
 def frontmatter(path: Path) -> dict:
-    text = path.read_text(encoding="utf-8")
-    parts = text.split("---", 2)
+    parts = path.read_text(encoding="utf-8").split("---", 2)
     if len(parts) < 3:
         raise ValueError(f"missing frontmatter: {path}")
-    return yaml.safe_load(parts[1]) or {}
+    value = yaml.safe_load(parts[1]) or {}
+    if not isinstance(value, dict):
+        raise ValueError(f"frontmatter is not a mapping: {path}")
+    return value
 
 
-def load_skills() -> dict[str, dict]:
-    result = {}
-    for path in sorted((ROOT / "skills").glob("*/SKILL.md")):
-        if path.parent.name.startswith("_"):
-            continue
-        result[path.parent.name] = frontmatter(path)
-    return result
-
-
-def dependencies(data: dict) -> list[str]:
-    metadata = data.get("metadata") or {}
-    value = metadata.get("dependencies") or []
-    return [str(item) for item in value] if isinstance(value, list) else []
-
-
-def context_targets(data: dict) -> set[str]:
-    return {str(item.get("with")) for item in data.get("context_rel", []) if isinstance(item, dict) and item.get("with")}
-
-
-def historical() -> dict:
-    data = yaml.safe_load((ROOT / "docs/contracts/skill-dispositions.yaml").read_text(encoding="utf-8"))
-    return data.get("historical", {}), data.get("dispositions", [])
+def fail(message: str, failures: list[str]) -> None:
+    failures.append(message)
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--optional-edge", action="append", default=[])
-    parser.add_argument("--independent", action="append", default=[])
-    parser.add_argument("--retired", action="append", default=[])
-    parser.add_argument("--require-reachable", default="")
-    args = parser.parse_args()
-    skills = load_skills()
-    failures = []
+    failures: list[str] = []
+    skills: dict[str, dict] = {}
+    for path in sorted((ROOT / "skills").glob("*/SKILL.md")):
+        name = path.parent.name
+        data = frontmatter(path)
+        metadata = data.get("metadata") or {}
+        if data.get("name") != name:
+            fail(f"name/path mismatch: {path}", failures)
+        if metadata.get("disposition") not in DISPOSITIONS:
+            fail(f"missing or invalid disposition: {name}", failures)
+        for field in ("tier", "dependencies", "capabilities", "effects", "canonical_status"):
+            if field not in metadata:
+                fail(f"missing metadata.{field}: {name}", failures)
+        skills[name] = data
 
-    for pair in args.optional_edge:
-        source, target = pair.split(":", 1)
-        if source not in skills or target not in skills:
-            failures.append(f"optional edge names missing skill: {pair}")
-            continue
-        if target not in context_targets(skills[source]):
-            failures.append(f"optional context edge absent: {pair}")
-        if target in dependencies(skills[source]):
-            failures.append(f"optional edge became hard dependency: {pair}")
+    names = set(skills)
+    for name, data in skills.items():
+        metadata = data.get("metadata") or {}
+        for dependency in metadata.get("dependencies") or []:
+            if dependency not in names:
+                fail(f"dangling dependency: {name} -> {dependency}", failures)
 
-    for pair in args.independent:
-        left, right = pair.split(":", 1)
-        if left not in skills or right not in skills:
-            failures.append(f"independence names missing skill: {pair}")
-            continue
-        if right in dependencies(skills[left]) or left in dependencies(skills[right]):
-            failures.append(f"substrates have a hard mutual/direct dependency: {pair}")
+    core_graph = {
+        name: set((skills.get(name, {}).get("metadata") or {}).get("dependencies") or [])
+        for name in CORE
+    }
+    if core_graph != EXPECTED_CORE:
+        fail(f"core dependency graph mismatch: {core_graph!r}", failures)
 
-    history, active = historical()
-    active_names = {row.get("skill") for row in active}
-    for pair in args.retired:
-        old, target = pair.split(":", 1)
-        row = history.get(old, {})
-        if (ROOT / "skills" / old / "SKILL.md").exists() or (ROOT / "skills-codex" / old / "SKILL.md").exists():
-            failures.append(f"retired source still exists: {old}")
-        if old in active_names:
-            failures.append(f"retired source still active in disposition ledger: {old}")
-        if row.get("state") != "merged-into" or row.get("merged-into") != target:
-            failures.append(f"historical redirect mismatch: {old} -> {target}")
+    catalog = json.loads((ROOT / "skills/catalog.json").read_text(encoding="utf-8"))
+    catalog_names = [entry.get("name") for entry in catalog.get("skills", [])]
+    if set(catalog_names) != names or len(catalog_names) != len(names):
+        fail("skills/catalog.json inventory does not equal source metadata", failures)
+    if catalog.get("skill_count") != len(names):
+        fail("skills/catalog.json skill_count is stale", failures)
 
-    required = [name for name in args.require_reachable.split(",") if name]
-    inbound = {name: [] for name in skills}
-    for source, data in skills.items():
-        for target in dependencies(data):
-            if target in inbound:
-                inbound[target].append(source)
-    roots = {name for name, data in skills.items() if (data.get("metadata") or {}).get("graph_root") is True}
-    reachable = set(roots)
-    stack = list(roots)
-    while stack:
-        source = stack.pop()
-        for target in dependencies(skills[source]):
-            if target in skills and target not in reachable:
-                reachable.add(target)
-                stack.append(target)
-    for name in required:
-        if name not in skills:
-            failures.append(f"required skill absent: {name}")
-        elif not inbound[name]:
-            failures.append(f"new capability has no inbound entry-point dependency: {name}")
-        elif name not in reachable:
-            failures.append(f"new capability is not reachable from an explicit graph root: {name}")
+    registry = json.loads((ROOT / "registry.json").read_text(encoding="utf-8"))
+    registry_names = {
+        entry.get("name") for entry in registry.get("surfaces", {}).get("skills", [])
+    }
+    if registry_names != names:
+        fail("registry.json skill inventory does not equal source metadata", failures)
+
+    overrides = json.loads(
+        (ROOT / "skills-codex-overrides/catalog.json").read_text(encoding="utf-8")
+    )
+    override_names = {entry.get("name") for entry in overrides.get("skills", [])}
+    if override_names != names:
+        fail("Codex override catalog does not equal source metadata", failures)
+
+    generated = subprocess.run(
+        [sys.executable, str(ROOT / "scripts/generate-skill-mesh.py"), "--check"],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    if generated.returncode:
+        fail(generated.stderr.strip() or generated.stdout.strip() or "skill projections drifted", failures)
 
     if failures:
-        for failure in failures:
-            print(f"FAIL: {failure}", file=sys.stderr)
+        for message in failures:
+            print(f"FAIL: {message}", file=sys.stderr)
         return 1
-    print("skill mesh: PASS")
+    print(f"skill mesh: PASS ({len(names)} skills; metadata is authoritative)")
     return 0
 
 

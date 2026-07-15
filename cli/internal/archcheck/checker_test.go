@@ -18,37 +18,15 @@ func TestGoCLIArchitectureInducedFixtures(t *testing.T) {
 }
 
 func TestSemanticEscapeClassifierPositiveAndNegativeFixtures(t *testing.T) {
-	repoRoot := filepath.Clean(filepath.Join("..", "..", ".."))
-	positive := []string{
-		"cli/internal/adapters/claim/tracker.go",
-		"cli/cmd/ao/root.go",
+	positivePath := "cli/internal/adapters/example/runner.go"
+	positiveSource := []byte("package example\nimport (\"os/exec\"; _ \"github.com/boshu2/agentops/cli/internal/trackerresolve\")\nvar _ = exec.Command\n")
+	if classes := ClassifySemanticEscapes(positivePath, positiveSource); len(classes) == 0 {
+		t.Fatal("synthetic tracker-execution escape was not classified")
 	}
-	negative := []string{
-		"cli/internal/adapters/worktreeconfig/worktree_config.go",
-		"cli/internal/context/run.go",
-		"cli/internal/adapters/tracker_br/tracker_br_test.go",
-		// The beads module's context debt was paid (bb35feb0e routed tracker
-		// launches through trackerexec with cancellation propagated); pin the
-		// clean state so the debt cannot silently return.
-		"cli/internal/commands/beads/module.go",
-	}
-	for _, path := range positive {
-		source, err := os.ReadFile(filepath.Join(repoRoot, filepath.FromSlash(path)))
-		if err != nil {
-			t.Fatal(err)
-		}
-		if classes := ClassifySemanticEscapes(path, source); len(classes) == 0 {
-			t.Errorf("positive fixture %s was not classified", path)
-		}
-	}
-	for _, path := range negative {
-		source, err := os.ReadFile(filepath.Join(repoRoot, filepath.FromSlash(path)))
-		if err != nil {
-			t.Fatal(err)
-		}
-		if classes := ClassifySemanticEscapes(path, source); len(classes) != 0 {
-			t.Errorf("negative fixture %s classified as %v", path, classes)
-		}
+	negativePath := "cli/internal/adapters/example/reader.go"
+	negativeSource := []byte("package example\nimport \"os\"\nvar _ = os.ReadFile\n")
+	if classes := ClassifySemanticEscapes(negativePath, negativeSource); len(classes) != 0 {
+		t.Fatalf("read-only adapter classified as %v", classes)
 	}
 }
 

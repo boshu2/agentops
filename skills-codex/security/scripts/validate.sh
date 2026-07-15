@@ -2,7 +2,6 @@
 set -euo pipefail
 SKILL_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 PASS=0; FAIL=0
-
 check() { if bash -c "$2"; then echo "PASS: $1"; PASS=$((PASS + 1)); else echo "FAIL: $1"; FAIL=$((FAIL + 1)); fi; }
 
 validate_contract() {
@@ -25,10 +24,15 @@ export -f validate_contract
 
 check "SKILL.md exists" "[ -f '$SKILL_DIR/SKILL.md' ]"
 check "SKILL.md has YAML frontmatter" "head -1 '$SKILL_DIR/SKILL.md' | grep -q '^---$'"
-check "security_suite.py exists" "[ -f '$SKILL_DIR/scripts/security_suite.py' ]"
+check "name is security" "grep -q '^name: security' '$SKILL_DIR/SKILL.md'"
+check "references policy exists" "[ -f '$SKILL_DIR/references/policy-example.json' ]"
+check "references redteam pack exists" "[ -f '$SKILL_DIR/references/agentops-redteam-pack.json' ]"
+check "security_suite.py exists" "[ -x '$SKILL_DIR/scripts/security_suite.py' ]"
 check "security_suite.py compiles" "python3 -m py_compile '$SKILL_DIR/scripts/security_suite.py'"
-check "prompt_redteam.py exists" "[ -f '$SKILL_DIR/scripts/prompt_redteam.py' ]"
+check "prompt_redteam.py exists" "[ -x '$SKILL_DIR/scripts/prompt_redteam.py' ]"
 check "prompt_redteam.py compiles" "python3 -m py_compile '$SKILL_DIR/scripts/prompt_redteam.py'"
+check "policy JSON valid" "python3 -c \"import json, pathlib; json.loads(pathlib.Path('$SKILL_DIR/references/policy-example.json').read_text()); print('ok')\""
+check "redteam pack JSON valid" "python3 -c \"import json, pathlib; json.loads(pathlib.Path('$SKILL_DIR/references/agentops-redteam-pack.json').read_text()); print('ok')\""
 check "suite runbook exists" "[ -s '$SKILL_DIR/references/security-suite-runbook.md' ]"
 check "security contract is complete" "validate_contract '$SKILL_DIR/SKILL.md'"
 
@@ -52,5 +56,6 @@ else
   PASS=$((PASS + 1))
 fi
 
-echo ""; echo "Results: $PASS passed, $FAIL failed"
+echo ""
+echo "Results: $PASS passed, $FAIL failed"
 [ $FAIL -eq 0 ] && exit 0 || exit 1

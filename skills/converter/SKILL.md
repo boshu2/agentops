@@ -21,6 +21,10 @@ context:
     - TASK
   intel_scope: none
 metadata:
+  capabilities: [converter]
+  effects: []
+  canonical_status: canonical
+  disposition: keep_specialist
   tier: cross-vendor
   dependencies: []
 output_contract: converted skill files for target platform

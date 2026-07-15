@@ -22,57 +22,29 @@ func TestRemovedCommandHint_TombstonedVerbs(t *testing.T) {
 	cases := []struct {
 		verb     string
 		wantFrag []string // every fragment must appear in the hint
-		noFrag   []string // fragments that must NOT appear
 	}{
 		{
-			verb: "watch",
+			verb: "pawl",
 			wantFrag: []string{
-				`"watch" was removed`,
+				`"pawl" was removed`,
 				"docs/MIGRATION.md",
-				"substrate",
-			},
-			noFrag: []string{"make build-flywheel", "AGENTOPS_LEGACY"},
-		},
-		{
-			verb: "rpi",
-			wantFrag: []string{
-				`"rpi" was removed`,
-				"docs/MIGRATION.md",
-				"operating loop",
-			},
-			noFrag: []string{"make build-flywheel", "AGENTOPS_LEGACY"},
-		},
-		{
-			verb: "recall",
-			wantFrag: []string{
-				`"recall" was removed`,
-				"docs/MIGRATION.md",
-				"cass",
-			},
-			noFrag: []string{"make build-flywheel", "AGENTOPS_LEGACY"},
-		},
-		{
-			verb: "factory",
-			wantFrag: []string{
-				`"factory" was removed`,
-				"docs/MIGRATION.md",
-			},
-			noFrag: []string{"make build-flywheel", "AGENTOPS_LEGACY"},
-		},
-		{
-			verb: "corpus",
-			wantFrag: []string{
-				`"corpus" was removed`,
-				"docs/MIGRATION.md",
-				"make build-flywheel",
+				"Validate skill",
 			},
 		},
 		{
-			verb: "orchestrate",
+			verb: "land",
 			wantFrag: []string{
-				`"orchestrate" was removed`,
+				`"land" was removed`,
 				"docs/MIGRATION.md",
-				"AGENTOPS_LEGACY=1 make build",
+				"Git or CI",
+			},
+		},
+		{
+			verb: "crank",
+			wantFrag: []string{
+				`"crank" was removed`,
+				"docs/MIGRATION.md",
+				"dispatch_once",
 			},
 		},
 	}
@@ -86,11 +58,6 @@ func TestRemovedCommandHint_TombstonedVerbs(t *testing.T) {
 			for _, frag := range tc.wantFrag {
 				if !strings.Contains(hint, frag) {
 					t.Errorf("hint for %q missing %q; got:\n%s", tc.verb, frag, hint)
-				}
-			}
-			for _, frag := range tc.noFrag {
-				if strings.Contains(hint, frag) {
-					t.Errorf("hint for %q must not claim %q; got:\n%s", tc.verb, frag, hint)
 				}
 			}
 		})
@@ -114,8 +81,8 @@ func TestRemovedCommandHint_NotTombstoned(t *testing.T) {
 // so a restored command never gets a "was removed" message on a usage error.
 func TestRemovedCommandHint_RegisteredVerbSuppressed(t *testing.T) {
 	root := bareRoot()
-	root.AddCommand(&cobra.Command{Use: "watch"})
-	err := fmt.Errorf("unknown command %q for %q", "watch", "ao")
+	root.AddCommand(&cobra.Command{Use: "pawl"})
+	err := fmt.Errorf("unknown command %q for %q", "pawl", "ao")
 	if got := removedCommandHint(root, err); got != "" {
 		t.Errorf("registered verb produced a tombstone hint: %q", got)
 	}

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/boshu2/agentops/cli/internal/ratchet"
+	ratchet "github.com/boshu2/agentops/cli/internal/evidence"
 	"github.com/boshu2/agentops/cli/internal/types"
 )
 

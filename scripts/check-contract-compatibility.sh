@@ -241,10 +241,9 @@ for example in "$CONTRACTS_DIR"/*.example.json; do
   base="$(basename "$example")"
 
   # Derive schema name: strip .example.json, find matching .schema.json
-  # memrl-policy.profile.example.json -> memrl-policy.schema.json
   # Strategy: try progressively shorter prefixes
   schema_found=""
-  prefix="${base%.example.json}"  # e.g. "memrl-policy.profile"
+  prefix="${base%.example.json}"
   while [[ "$prefix" == *.* ]]; do
     candidate="$CONTRACTS_DIR/${prefix%.*}.schema.json"
     if [[ -f "$candidate" ]]; then

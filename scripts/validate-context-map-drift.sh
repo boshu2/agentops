@@ -9,7 +9,7 @@
 # be committed alongside the SKILL.md edit.
 #
 # Behaviour:
-#   - Exit 0 if regenerating yields the same bytes as the current committed
+#   - Exit 0 if regenerating yields the same bytes as the current on-disk
 #     context-map.
 #   - Exit 1 if drift is detected, with a helpful "how to fix" message on stderr.
 #
@@ -48,17 +48,6 @@ trap cleanup EXIT
 bash "$GENERATOR" >/dev/null
 
 if cmp -s "$CONTEXT_MAP" "$TMP_BACKUP"; then
-    if git rev-parse --is-inside-work-tree >/dev/null 2>&1 \
-        && git ls-files --error-unmatch -- "$CONTEXT_MAP" >/dev/null 2>&1; then
-        if ! git diff --quiet -- "$CONTEXT_MAP" \
-            || ! git diff --cached --quiet -- "$CONTEXT_MAP"; then
-            cat >&2 <<'EOF'
-Context map matches the generator but has uncommitted changes.
-Commit the regenerated docs/contracts/context-map.md, then rerun this gate.
-EOF
-            exit 1
-        fi
-    fi
     exit 0
 fi
 

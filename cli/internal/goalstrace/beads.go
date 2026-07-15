@@ -2,14 +2,8 @@ package goalstrace
 
 import (
 	"context"
-	"encoding/json"
-	"errors"
-	"os"
 	"regexp"
 	"strings"
-
-	"github.com/boshu2/agentops/cli/internal/trackerexec"
-	"github.com/boshu2/agentops/cli/internal/trackerresolve"
 )
 
 // scenariosLineRe matches an explicit "Scenarios: <id>[, <id>...]" line in a
@@ -68,99 +62,23 @@ type BeadQuerier interface {
 	Beads() ([]beadRecord, error)
 }
 
-// ExecBeadQuerierOptions carries the caller-owned process context into the
-// canonical tracker resolver and executor. The zero value preserves the
-// historical background/current-directory behavior.
+// ExecBeadQuerierOptions is retained as a source-compatible read-only option.
+// The bundled CLI no longer resolves or invokes tracker executables.
 type ExecBeadQuerierOptions struct {
 	Context context.Context
 	WorkDir string
 }
 
-// execBeadQuerier queries beads through the selected br or bd backend. It
-// caches one canonical resolution so availability and both list attempts use
-// the same binary, work directory, ledger, and child environment.
-type execBeadQuerier struct {
-	ctx        context.Context
-	resolution trackerresolve.Resolution
-	resolveErr error
-}
+type unavailableBeadQuerier struct{}
 
-// NewExecBeadQuerier returns a tracker-backed BeadQuerier. Its optional typed
-// configuration keeps existing no-argument callers source compatible.
+// NewExecBeadQuerier no longer invokes br or bd. Tracker integration belongs
+// in a caller-selected plugin; the built-in goals trace remains filesystem-only.
 func NewExecBeadQuerier(options ...ExecBeadQuerierOptions) BeadQuerier {
-	var config ExecBeadQuerierOptions
-	if len(options) > 0 {
-		config = options[0]
-	}
-	if config.Context == nil {
-		config.Context = context.Background()
-	}
-	resolution, err := trackerresolve.Resolve(config.WorkDir, os.Environ())
-	return &execBeadQuerier{ctx: config.Context, resolution: resolution, resolveErr: err}
+	return unavailableBeadQuerier{}
 }
 
-// Available reports whether the selected tracker resolved successfully.
-func (q *execBeadQuerier) Available() bool {
-	return q.resolveErr == nil
-}
-
-// Beads runs `bd list --json --all` and parses the result. Both an array and
-// a {"issues": [...]} envelope are accepted since bd output has varied.
-func (q *execBeadQuerier) Beads() ([]beadRecord, error) {
-	if q.resolveErr != nil {
-		return nil, q.resolveErr
-	}
-	factory := trackerexec.Factory{}
-	out, err := factory.Command(
-		q.ctx,
-		q.resolution,
-		[]string{"list", "--json", "--all"},
-		trackerexec.Streams{},
-	).Output()
-	if err != nil {
-		if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
-			return nil, err
-		}
-		// Retry without --all for older tracker versions, never on another backend.
-		out, err = factory.Command(
-			q.ctx,
-			q.resolution,
-			[]string{"list", "--json"},
-			trackerexec.Streams{},
-		).Output()
-		if err != nil {
-			return nil, err
-		}
-	}
-	return parseBeadList(out)
-}
-
-// parseBeadList decodes `bd list --json` output, tolerating either a bare
-// array or an {"issues": [...]} envelope.
-func parseBeadList(data []byte) ([]beadRecord, error) {
-	trimmed := strings.TrimSpace(string(data))
-	if trimmed == "" {
-		return nil, nil
-	}
-	if strings.HasPrefix(trimmed, "[") {
-		var arr []beadRecord
-		if err := json.Unmarshal([]byte(trimmed), &arr); err != nil {
-			return nil, err
-		}
-		return arr, nil
-	}
-	var env struct {
-		Issues []beadRecord `json:"issues"`
-		Beads  []beadRecord `json:"beads"`
-	}
-	if err := json.Unmarshal([]byte(trimmed), &env); err != nil {
-		return nil, err
-	}
-	if len(env.Issues) > 0 {
-		return env.Issues, nil
-	}
-	return env.Beads, nil
-}
+func (unavailableBeadQuerier) Available() bool              { return false }
+func (unavailableBeadQuerier) Beads() ([]beadRecord, error) { return nil, nil }
 
 // staticBeadQuerier is a test/fixture-backed BeadQuerier.
 type staticBeadQuerier struct {

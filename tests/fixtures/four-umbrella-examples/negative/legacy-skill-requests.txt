@@ -1,2 +1,0 @@
-/pre-mortem
-/post-mortem

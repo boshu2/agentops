@@ -3,7 +3,15 @@ name: dcg
 user-invocable: false
 skill_api_version: 1
 hexagonal_role: supporting
+consumes: []
+produces: []
+context_rel: []
 metadata:
+  dependencies: []
+  capabilities: [dcg]
+  effects: []
+  canonical_status: canonical
+  disposition: keep_specialist
   tier: execution
 description: 'Handle blocked destructive commands and configure agent safety guardrails. Triggers: "dcg", "handle blocked destructive commands. use", "dcg skill".'
 practices:

@@ -19,8 +19,8 @@ Options:
   --with-hooks
               Also install runtime hooks. Default install is hookless.
   --tier <spine|all>
-              Which skill tier to install. "spine" installs only the proven
-              spine skills (spine: true frontmatter — see skills/SKILL-TIERS.md),
+              Which skill tier to install. "spine" installs only the
+              metadata-derived core (`disposition: keep`),
               skipping the experimental corpus/flywheel tier; "all" (default)
               installs the whole bundle. Filters the Codex/AGY bundle installs;
               the Claude plugin path is whole-bundle (manifest split is future work).
@@ -38,10 +38,9 @@ TIER="${AGENTOPS_INSTALL_TIER:-all}"
 # would mutate the source checkout).
 SOURCE_ROOT_OVERRIDE="${AGENTOPS_BUNDLE_ROOT:-}"
 
-# prune_bundle_to_spine removes every non-spine skill dir from an extracted
-# AgentOps bundle so a --tier spine install ships only the proven spine skills
-# (age-h4y3). It edits the bundle in place before the per-runtime installers copy
-# from it; the selection lever is scripts/select-spine-skills.sh.
+# prune_bundle_to_spine removes every non-core skill dir from an extracted
+# AgentOps bundle so the legacy --tier spine spelling ships only the four
+# load-bearing skills. The selection comes from generated skill metadata.
 prune_bundle_to_spine() {
     local bundle="$1"
     local selector="$bundle/scripts/select-spine-skills.sh"
@@ -66,7 +65,7 @@ prune_bundle_to_spine() {
             fi
         done
     done
-    echo "Tier spine: kept $(printf '%s\n' "$keep" | grep -c .) spine skills; skipped the experimental corpus/flywheel tier."
+    echo "Tier spine (core): kept $(printf '%s\n' "$keep" | grep -c .) metadata-selected core skills."
 }
 
 install_dev() {
@@ -214,7 +213,7 @@ else
         | tar xz -C "$TMP" --strip-components=1
     BUNDLE="$TMP"
     if [[ "$TIER" == "spine" ]]; then
-        echo "Tier: spine — pruning bundle to spine skills before install..."
+        echo "Tier: spine (core) — pruning bundle to metadata-selected core skills..."
         prune_bundle_to_spine "$BUNDLE"
     fi
 fi

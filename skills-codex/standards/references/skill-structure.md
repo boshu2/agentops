@@ -137,9 +137,8 @@ metadata:
 **Allowed tier values** (binding — from `scripts/validate-skill-schema.sh:174-178`):
 `judgment`, `execution`, `library`, `session`, `product`, `contribute`, `meta`, `background`, `orchestration`, `cross-vendor`, `knowledge`.
 
-**Per-tier line caps:** see [`skill-tier-caps.md`](skill-tier-caps.md) for the canonical mapping enforced by `tests/skills/lint-skills.sh:65-77`.
-
-`SKILL-TIERS.md` describes "utility", "team", and "solo" categories — these are narrative groupings, NOT binding `metadata.tier` values. Skills in those categories use `tier: execution` (e.g., `bug-hunt`, `brainstorm`, `system-tuning`).
+Tier and disposition are declared in each skill's metadata and projected into
+the generated catalog. There is no separate handwritten tier-cap table.
 
 ### Security Restrictions
 

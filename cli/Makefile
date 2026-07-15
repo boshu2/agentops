@@ -28,19 +28,6 @@ sync-hooks:
 	@cp ../lib/chain-parser.sh embedded/lib/
 	@cp ../skills/standards/references/* embedded/skills/standards/references/
 	@cp ../scripts/lib/flywheel-compile.sh embedded/skills/compile/scripts/compile.sh
-	@mkdir -p embedded/pawl/scripts embedded/pawl/scripts/lib embedded/pawl/schemas embedded/pawl/hooks
-	@cp ../scripts/pawl-review.sh ../scripts/pawl-verdict.sh embedded/pawl/scripts/
-	@cp ../scripts/gen-membrane-receipts.sh ../scripts/check-membrane-receipts-freshness.sh embedded/pawl/scripts/
-	@cp ../scripts/lib/codex-exec.sh ../scripts/lib/verify-config.sh ../scripts/lib/diff-identity.sh ../scripts/lib/trivial-waiver.sh ../scripts/lib/pawl-preflight.sh ../scripts/lib/pawl-amend-guard.sh ../scripts/lib/pawl-tip-coherence.sh ../scripts/lib/pawl-evidence-dir.sh embedded/pawl/scripts/lib/
-	@cp ../schemas/pawl-verdict.v1.schema.json embedded/pawl/schemas/
-	@cp ../scripts/hooks/pre-push-verify.template embedded/pawl/hooks/pre-push-verify.template
-	@# F4 (age-pawl-intent-zhndq.4): a DETERMINISTIC content-hash stamp of the embedded pawl
-	@# scripts, so doctor/review can say whether an INSTALLED binary's bundle matches a live
-	@# checkout (the landed!=installed signal). Hash of the three review scripts; changes ONLY
-	@# when they change, in the SAME sync-hooks run (no always-dirty). Portable sha256 tool.
-	@cat embedded/pawl/scripts/pawl-review.sh embedded/pawl/scripts/pawl-verdict.sh \
-		| { command -v sha256sum >/dev/null 2>&1 && sha256sum || shasum -a 256; } \
-		| cut -d' ' -f1 > embedded/pawl/BUNDLE_STAMP
 
 # Build the binary (default = spine; archived satellites omitted)
 build: sync-hooks

@@ -8,9 +8,9 @@
 ## Step 2.3: Authority/consumer manifest (migration-shaped plans)
 
 When a plan renames, deletes, moves, migrates, or transfers ownership, require
-the complete manifest defined by
-[`plan/references/authority-consumer-manifest.md`](../../plan/references/authority-consumer-manifest.md).
-Run its checker against the repository state the plan will consume.
+the complete `write_scope.include` and `write_scope.exclude` manifest in the
+PlanPacket, including generated companions. Compare it with the repository
+state the plan will consume.
 
 - `incomplete` is FAIL: do not dispatch or infer missing consumers.
 - `shared` is a valid inventory but the affected slices must serialize or merge.

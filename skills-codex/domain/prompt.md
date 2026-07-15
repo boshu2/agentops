@@ -1,6 +1,6 @@
 # domain
 
-Ubiquitous language for human-AI software building — canonical definitions (vertical slice, tracer bullet, primitive) loaded JIT when a term needs pinning. Triggers: "domain", "canonical vocabulary for human-ai software", "domain skill".
+Load the small AgentOps ubiquitous-language and bounded-context contracts when a term needs precise meaning.
 
 ## Instructions
 

@@ -609,7 +609,7 @@ func checkUniversalEffectsSource(path string, source []byte) ([]Violation, error
 				return true
 			}
 			importPath := aliases[ident.Name]
-			if importPath == "os" && osRule(selector.Sel.Name) != "" || importPath == "github.com/boshu2/agentops/cli/internal/adapters/worktreeconfig" {
+			if importPath == "os" && osRule(selector.Sel.Name) != "" {
 				hasEffect = true
 				return false
 			}

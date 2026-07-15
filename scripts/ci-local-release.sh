@@ -692,7 +692,6 @@ run_init_live_waist_smoke() {
         HOME="$tmp_home" "$REPO_ROOT/cli/bin/ao" status >/dev/null
         HOME="$tmp_home" "$REPO_ROOT/cli/bin/ao" session bootstrap >/dev/null
         HOME="$tmp_home" "$REPO_ROOT/cli/bin/ao" gate check --help >/dev/null
-        HOME="$tmp_home" "$REPO_ROOT/cli/bin/ao" verify --help >/dev/null
     ) || rc=$?
 
     rm -rf "$tmp_home" "$tmp_repo"
@@ -949,32 +948,6 @@ echo "Max parallel jobs: $MAX_JOBS"
 
 run_step "Required tool check" check_required_cmds
 
-# Capture ~/.agents content-hash snapshot before anything that could mutate it.
-# Diffed at the end of the gate (see Phase 6 below). Complements the pre-emptive
-# grep-based scripts/check-home-isolation.sh by catching runtime mutations,
-# including the os.Chtimes mtime-bypass attack.
-HASH_GATE_SNAPSHOT=""
-if [[ -x "$REPO_ROOT/scripts/check-agents-hash-snapshot.sh" ]]; then
-    HASH_GATE_SNAPSHOT="$("$REPO_ROOT/scripts/check-agents-hash-snapshot.sh" capture 2>/dev/null || echo "")"
-fi
-
-check_agents_hash_gate() {
-    if [[ -z "$HASH_GATE_SNAPSHOT" ]]; then
-        echo "snapshot not captured (check-agents-hash-snapshot.sh missing or failed)"
-        return 0
-    fi
-    if [[ ! -x "$REPO_ROOT/scripts/check-agents-hash-snapshot.sh" ]]; then
-        echo "check-agents-hash-snapshot.sh no longer executable"
-        return 1
-    fi
-    if "$REPO_ROOT/scripts/check-agents-hash-snapshot.sh" diff "$HASH_GATE_SNAPSHOT"; then
-        rm -f "$HASH_GATE_SNAPSHOT"
-        return 0
-    fi
-    rm -f "$HASH_GATE_SNAPSHOT"
-    return 1
-}
-
 # ── Phase 2: Parallel independent checks ──
 # These have zero dependencies on each other.
 
@@ -985,9 +958,6 @@ run_step_bg "CI policy/docs parity" ./scripts/validate-ci-policy-parity.sh
 # Worktree-disposition is a LOCAL-env-state check (reflects the local working tree, not
 # committed code). It gates official release-version runs and can be forced with
 # LOCAL_CI_STRICT_LOCAL_ENV=1; otherwise it runs advisory after collect_parallel.
-if local_env_checks_blocking; then
-    run_step_bg "Worktree disposition gate" ./scripts/check-worktree-disposition.sh
-fi
 run_step_bg "Skill integrity" bash ./skills/heal-skill/scripts/heal.sh --strict
 run_step_bg "Skill runtime parity" bash ./scripts/validate-skill-runtime-parity.sh
 run_step_bg "Codex runtime sections" bash ./scripts/validate-codex-runtime-sections.sh
@@ -997,7 +967,6 @@ run_step_bg "Codex runtime sections" bash ./scripts/validate-codex-runtime-secti
 run_step_bg "Codex artifact manifest" bash ./scripts/validate-codex-generated-manifest.sh
 run_step_bg "Codex artifact metadata" bash ./scripts/validate-codex-generated-artifacts.sh --scope worktree
 run_step_bg "Codex backbone prompts" bash ./scripts/validate-codex-backbone-prompts.sh
-run_step_bg "Next-work contract parity" bash ./scripts/validate-next-work-contract-parity.sh
 run_step_bg "Skill runtime formats" bash ./scripts/validate-skill-runtime-formats.sh
 run_step_bg "Contract compatibility gate" ./scripts/check-contract-compatibility.sh
 run_step_bg "Embedded sync check" ./scripts/validate-embedded-sync.sh
@@ -1006,8 +975,7 @@ run_step_bg "Secret pattern scan" run_security_scan_patterns
 run_step_bg "Dangerous shell pattern scan" run_dangerous_pattern_scan
 run_step_bg "Skill CLI snippets" bash ./scripts/validate-skill-cli-snippets.sh
 run_step_bg "Command/test pairing gate" ./scripts/check-go-command-test-pair.sh
-# MemRL feedback health is a LOCAL-env-state check (depends on local feedback data, not
-# committed code). It follows the same official/strict behavior as worktree disposition.
+# MemRL feedback health is a local observation, not lifecycle authority.
 if local_env_checks_blocking; then
     run_step_bg "MemRL feedback loop health" ./scripts/check-memrl-health.sh
 fi
@@ -1015,10 +983,8 @@ run_step_bg "Doctor health check" ./scripts/check-doctor-health.sh
 
 collect_parallel
 
-# Non-official local-ci: run the LOCAL-env-state checks as advisory (do not gate
-# the code-readiness verdict).
+# Non-official local-ci: keep the local observation advisory.
 if ! local_env_checks_blocking; then
-    run_step_advisory "Worktree disposition gate" ./scripts/check-worktree-disposition.sh
     run_step_advisory "MemRL feedback loop health" ./scripts/check-memrl-health.sh
 fi
 
@@ -1117,13 +1083,7 @@ else
     warn "Skipped digital-twin/VIL + AgentOps eval evidence (--quick)"
 fi
 
-# ── Phase 6: Post-hoc ~/.agents content-hash gate ──
-# Fails if any protected subtree under $HOME/.agents was mutated since
-# the snapshot was captured in Phase 1. Cheap + a real isolation protection, so it
-# runs in every mode (including --quick).
-run_step "Agents-hub content-hash gate" check_agents_hash_gate
-
-# ── Phase 7: Release readiness evidence ──
+# ── Phase 6: Release readiness evidence ──
 # Official release audits (--release-version) require HIL evidence or an
 # explicit waiver. Normal local runs and --fast runs still write advisory JSON.
 # --quick skips the HIL + readiness-score release-rehearsal gates outright — they

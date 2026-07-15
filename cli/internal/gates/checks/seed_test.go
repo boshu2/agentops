@@ -89,8 +89,8 @@ func TestChangedScopeRegenIsSplitFromReleaseWideRegenAll(t *testing.T) {
 	if changed.Backing != "regen-changed-scope.sh" {
 		t.Fatalf("derived.changed-scope backing = %q, want regen-changed-scope.sh", changed.Backing)
 	}
-	if !strings.Contains(changed.RepairHint, "skills/heal-skill/scripts/audit.sh --strict") {
-		t.Fatalf("derived.changed-scope repair hint = %q, want canonical deep-audit command", changed.RepairHint)
+	if !strings.Contains(changed.RepairHint, "skills/heal-skill/scripts/heal.sh --check --strict") {
+		t.Fatalf("derived.changed-scope repair hint = %q, want one-pass structural audit command", changed.RepairHint)
 	}
 	for _, path := range []string{
 		"scripts/regen-changed-scope.sh",
@@ -215,101 +215,6 @@ func TestDocSkillRefsGateIsBlockingAndStrict(t *testing.T) {
 		}
 		if !found {
 			t.Fatalf("docs.skill-refs match paths missing %q in %v", want, check.Match)
-		}
-	}
-}
-
-func TestCliAgentsTrackerGateIsBlockingAndStrict(t *testing.T) {
-	check, ok := gates.Default.Get("cli.agents-tracker")
-	if !ok {
-		t.Fatal("cli.agents-tracker gate is not registered")
-	}
-	if check.Backing != "check-cli-agents-tracker-drift.sh" {
-		t.Fatalf("cli.agents-tracker backing = %q, want check-cli-agents-tracker-drift.sh", check.Backing)
-	}
-	if !check.Blocking {
-		t.Fatal("cli.agents-tracker must be blocking")
-	}
-	if !check.Tiers.Has(gates.Fast) || !check.Tiers.Has(gates.Full) {
-		t.Fatalf("cli.agents-tracker tiers = %v, want Fast|Full", check.Tiers)
-	}
-	if len(check.Match) == 0 {
-		t.Fatal("cli.agents-tracker should be routed by cli/AGENTS.md + checker paths")
-	}
-	for _, want := range []string{"cli/AGENTS.md", "scripts/check-cli-agents-tracker-drift.sh", "tests/scripts/check-cli-agents-tracker-drift.bats"} {
-		found := false
-		for _, got := range check.Match {
-			if got == want {
-				found = true
-				break
-			}
-		}
-		if !found {
-			t.Fatalf("cli.agents-tracker match paths missing %q in %v", want, check.Match)
-		}
-	}
-}
-
-func TestSkillContractGatesAreAlwaysRun(t *testing.T) {
-	// age-2s5k, age-tpeel: these validators assert whole-skill invariants,
-	// so they must run on EVERY push (empty Match => AlwaysRun), not be
-	// scope-gated to skills-codex changes — otherwise latent twin drift lies
-	// invisible on green main and ambushes a later unrelated skill push.
-	for _, id := range []string{
-		"skill.codex-rpi-contract",
-		"skill.codex-lifecycle-guards",
-		"skill.four-umbrella-examples",
-		"skill.mortem-name-migration",
-		"skill.validation-learning-boundary",
-		"skill.validation-delivery-boundary",
-	} {
-		check, ok := gates.Default.Get(id)
-		if !ok {
-			t.Fatalf("%s gate is not registered", id)
-		}
-		if !check.AlwaysRun() {
-			t.Errorf("%s must be always-run (empty Match) so twin drift fails the next push regardless of scope; got Match=%v", id, check.Match)
-		}
-		if !check.Blocking {
-			t.Errorf("%s must be blocking", id)
-		}
-		if !check.Tiers.Has(gates.Fast) || !check.Tiers.Has(gates.Full) {
-			t.Errorf("%s tiers = %v, want Fast|Full so routine fast pushes are covered", id, check.Tiers)
-		}
-	}
-}
-
-func TestNextWorkContractGateRoutesOnItsSubjectFile(t *testing.T) {
-	check, ok := gates.Default.Get("skill.next-work-contract")
-	if !ok {
-		t.Fatal("skill.next-work-contract gate is not registered")
-	}
-	if check.Backing != "validate-next-work-contract-parity.sh" {
-		t.Fatalf("skill.next-work-contract backing = %q, want validate-next-work-contract-parity.sh", check.Backing)
-	}
-	if !check.Blocking {
-		t.Fatal("skill.next-work-contract must be blocking")
-	}
-	if !check.Tiers.Has(gates.Fast) || !check.Tiers.Has(gates.Full) {
-		t.Fatalf("skill.next-work-contract tiers = %v, want Fast|Full", check.Tiers)
-	}
-	// The validator asserts the live queue's aggregate lifecycle plus parity
-	// across the schema doc, the rpi runtime, and the validator scripts. A
-	// change to any of those surfaces must route the gate — most critically
-	// the subject file itself: a next-work.jsonl-only commit previously
-	// SKIPped its own contract gate and had to be caught by a pawl round
-	// (age-77g6).
-	for _, path := range []string{
-		".agents/rpi/next-work.jsonl",
-		"docs/contracts/next-work.schema.md",
-		"cli/internal/rpi/types.go",
-		"cli/cmd/ao/rpi_loop.go",
-		"scripts/validate-next-work-contract-parity.sh",
-		"scripts/validate-next-work.sh",
-		"skills/post-mortem/SKILL.md",
-	} {
-		if !gates.PathMatchesAny(check.Match, path) {
-			t.Fatalf("skill.next-work-contract must route on %q; match globs = %v", path, check.Match)
 		}
 	}
 }

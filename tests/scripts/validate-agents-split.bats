@@ -2,7 +2,7 @@
 #
 # tests/scripts/validate-agents-split.bats
 # Regression coverage for scripts/validate-agents-split.sh after the root
-# AGENTS-* sibling cutover: AGENTS.md must stay lean and point at the four
+# AGENTS-* sibling cutover: AGENTS.md must stay lean and point at the three
 # detail owners under docs/.
 
 setup() {
@@ -30,7 +30,6 @@ write_valid_split() {
         echo "- [docs/agent-workflow-reference.md](docs/agent-workflow-reference.md)"
         echo "- [docs/CI-CD.md](docs/CI-CD.md)"
         echo "- [docs/contracts/codex-skill-api.md](docs/contracts/codex-skill-api.md)"
-        echo "- [docs/contracts/repo-execution-profile.md](docs/contracts/repo-execution-profile.md)"
     } > "$WORK_REPO/AGENTS.md"
 
     printf '# workflow\n\nBack-link: [AGENTS.md](../AGENTS.md)\n' \
@@ -39,17 +38,15 @@ write_valid_split() {
         > "$WORK_REPO/docs/CI-CD.md"
     printf '# codex\n\nBack-link: [AGENTS.md](../../AGENTS.md)\n' \
         > "$WORK_REPO/docs/contracts/codex-skill-api.md"
-    printf '# runtime\n\nBack-link: [AGENTS.md](../../AGENTS.md)\n' \
-        > "$WORK_REPO/docs/contracts/repo-execution-profile.md"
 }
 
-@test "passes when AGENTS.md <=250 lines and four owners link bidirectionally" {
+@test "passes when AGENTS.md <=250 lines and three owners link bidirectionally" {
     write_valid_split
 
     run bash -c "cd '$WORK_REPO' && bash scripts/validate-agents-split.sh"
     [ "$status" -eq 0 ]
     [[ "$output" == *"PASS"* ]]
-    [[ "$output" == *"18 checks"* ]]
+    [[ "$output" == *"15 checks"* ]]
 }
 
 @test "fails when AGENTS.md is missing" {
@@ -90,7 +87,6 @@ write_valid_split() {
         echo "# Agent Instructions"
         echo "- [docs/agent-workflow-reference.md](docs/agent-workflow-reference.md)"
         echo "- [docs/CI-CD.md](docs/CI-CD.md)"
-        echo "- [docs/contracts/repo-execution-profile.md](docs/contracts/repo-execution-profile.md)"
     } > "$WORK_REPO/AGENTS.md"
 
     run bash -c "cd '$WORK_REPO' && bash scripts/validate-agents-split.sh"

@@ -29,10 +29,13 @@ context:
     - HISTORY
   intel_scope: topic
 metadata:
+  capabilities: [pattern_mining]
+  effects: []
+  canonical_status: canonical
+  disposition: keep_specialist
   tier: execution
   dependencies:
   - operationalize
-  - validate
 output_contract: pattern-mining.v1 JSON validated by skills/pattern-mining/scripts/validate-output.sh
 ---
 

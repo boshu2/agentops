@@ -13,7 +13,8 @@ description: Repair skill hygiene and deep-audit SKILL.md
 - Resolve every explicit target to a real direct child of `skills/` or `skills-codex/` before processing; reject traversal, missing/outside paths, and every symlink spelling because aliases make mutation ownership ambiguous.
 - Run `--check` and deep audit read-only before any repair, because their exact finding codes and target path define the permitted mutation.
 - Use `--fix` only for the documented auto-fixable structural codes, then rerun strict validation; never hand-edit generated Codex artifacts because parity projections have owned regeneration paths.
-- Treat WARN/FAIL as ordinary repair evidence: redo and re-audit automatically while the breaker remains closed; only a breaker enters HOLD/helper routing, because a plain refutation is not an andon.
+- Run the requested repair once and return every remaining audit result. A failed
+  repair is evidence for the caller, not permission to retry or route work.
 
 ## Quick Start
 

@@ -1,1 +1,0 @@
-{"source_epic":"e1","timestamp":"2026-04-26T00:00:00Z","items":[{"title":"item with invalid type","type":"bogus","severity":"high","source":"council-finding","description":"d"}],"consumed":false,"claim_status":"available","claimed_by":null,"claimed_at":null,"consumed_by":null,"consumed_at":null}

@@ -1,3687 +1,1284 @@
 {
-  "schema_version": 2,
-  "summary": {
-    "skills": 63,
-    "hooks": 0,
-    "knowledge_stores": 5,
-    "job_types": 0,
-    "eval_files": 55,
-    "cli_commands": 30,
-    "workflows": 4,
-    "capabilities": 98
-  },
-  "surfaces": {
-    "skills": [
-      {
-        "name": "pr-prep",
-        "tier": "contribute",
-        "path": "skills/pr-prep/",
-        "has_skill_md": true,
-        "has_references": true,
-        "reference_count": 4
-      },
-      {
-        "name": "agy-native",
-        "tier": "cross-vendor",
-        "path": "skills/agy-native/",
-        "has_skill_md": true,
-        "has_references": true,
-        "reference_count": 1
-      },
-      {
-        "name": "converter",
-        "tier": "cross-vendor",
-        "path": "skills/converter/",
-        "has_skill_md": true,
-        "has_references": true,
-        "reference_count": 1
-      },
-      {
-        "name": "using-gc",
-        "tier": "cross-vendor",
-        "path": "skills/using-gc/",
-        "has_skill_md": true,
-        "has_references": true,
-        "reference_count": 3
-      },
-      {
-        "name": "account-rotation",
-        "tier": "execution",
-        "path": "skills/account-rotation/",
-        "has_skill_md": true,
-        "has_references": false,
-        "reference_count": 0
-      },
-      {
-        "name": "agent-mail",
-        "tier": "execution",
-        "path": "skills/agent-mail/",
-        "has_skill_md": true,
-        "has_references": true,
-        "reference_count": 8
-      },
-      {
-        "name": "beads-br",
-        "tier": "execution",
-        "path": "skills/beads-br/",
-        "has_skill_md": true,
-        "has_references": true,
-        "reference_count": 6
-      },
-      {
-        "name": "beads-bv",
-        "tier": "execution",
-        "path": "skills/beads-bv/",
-        "has_skill_md": true,
-        "has_references": true,
-        "reference_count": 3
-      },
-      {
-        "name": "behavior-first-planning",
-        "tier": "execution",
-        "path": "skills/behavior-first-planning/",
-        "has_skill_md": true,
-        "has_references": true,
-        "reference_count": 0
-      },
-      {
-        "name": "cass",
-        "tier": "execution",
-        "path": "skills/cass/",
-        "has_skill_md": true,
-        "has_references": true,
-        "reference_count": 16
-      },
-      {
-        "name": "cc-hooks",
-        "tier": "execution",
-        "path": "skills/cc-hooks/",
-        "has_skill_md": true,
-        "has_references": true,
-        "reference_count": 7
-      },
-      {
-        "name": "codebase-recon",
-        "tier": "execution",
-        "path": "skills/codebase-recon/",
-        "has_skill_md": true,
-        "has_references": true,
-        "reference_count": 0
-      },
-      {
-        "name": "converge",
-        "tier": "execution",
-        "path": "skills/converge/",
-        "has_skill_md": true,
-        "has_references": false,
-        "reference_count": 0
-      },
-      {
-        "name": "crank",
-        "tier": "execution",
-        "path": "skills/crank/",
-        "has_skill_md": true,
-        "has_references": true,
-        "reference_count": 31
-      },
-      {
-        "name": "dcg",
-        "tier": "execution",
-        "path": "skills/dcg/",
-        "has_skill_md": true,
-        "has_references": true,
-        "reference_count": 6
-      },
-      {
-        "name": "dueling-idea-genies",
-        "tier": "execution",
-        "path": "skills/dueling-idea-genies/",
-        "has_skill_md": true,
-        "has_references": true,
-        "reference_count": 0
-      },
-      {
-        "name": "goal-design",
-        "tier": "execution",
-        "path": "skills/goal-design/",
-        "has_skill_md": true,
-        "has_references": false,
-        "reference_count": 0
-      },
-      {
-        "name": "idea-genie",
-        "tier": "execution",
-        "path": "skills/idea-genie/",
-        "has_skill_md": true,
-        "has_references": true,
-        "reference_count": 0
-      },
-      {
-        "name": "implement",
-        "tier": "execution",
-        "path": "skills/implement/",
-        "has_skill_md": true,
-        "has_references": true,
-        "reference_count": 7
-      },
-      {
-        "name": "ms",
-        "tier": "execution",
-        "path": "skills/ms/",
-        "has_skill_md": true,
-        "has_references": false,
-        "reference_count": 0
-      },
-      {
-        "name": "ntm",
-        "tier": "execution",
-        "path": "skills/ntm/",
-        "has_skill_md": true,
-        "has_references": true,
-        "reference_count": 16
-      },
-      {
-        "name": "pattern-mining",
-        "tier": "execution",
-        "path": "skills/pattern-mining/",
-        "has_skill_md": true,
-        "has_references": true,
-        "reference_count": 0
-      },
-      {
-        "name": "plan",
-        "tier": "execution",
-        "path": "skills/plan/",
-        "has_skill_md": true,
-        "has_references": true,
-        "reference_count": 15
-      },
-      {
-        "name": "push",
-        "tier": "execution",
-        "path": "skills/push/",
-        "has_skill_md": true,
-        "has_references": true,
-        "reference_count": 0
-      },
-      {
-        "name": "rch",
-        "tier": "execution",
-        "path": "skills/rch/",
-        "has_skill_md": true,
-        "has_references": true,
-        "reference_count": 16
-      },
-      {
-        "name": "reality-check",
-        "tier": "execution",
-        "path": "skills/reality-check/",
-        "has_skill_md": true,
-        "has_references": false,
-        "reference_count": 0
-      },
-      {
-        "name": "refactor",
-        "tier": "execution",
-        "path": "skills/refactor/",
-        "has_skill_md": true,
-        "has_references": true,
-        "reference_count": 1
-      },
-      {
-        "name": "research",
-        "tier": "execution",
-        "path": "skills/research/",
-        "has_skill_md": true,
-        "has_references": true,
-        "reference_count": 18
-      },
-      {
-        "name": "reverse-engineer",
-        "tier": "execution",
-        "path": "skills/reverse-engineer/",
-        "has_skill_md": true,
-        "has_references": true,
-        "reference_count": 0
-      },
-      {
-        "name": "sbh",
-        "tier": "execution",
-        "path": "skills/sbh/",
-        "has_skill_md": true,
-        "has_references": false,
-        "reference_count": 0
-      },
-      {
-        "name": "scaffold",
-        "tier": "execution",
-        "path": "skills/scaffold/",
-        "has_skill_md": true,
-        "has_references": true,
-        "reference_count": 3
-      },
-      {
-        "name": "scope",
-        "tier": "execution",
-        "path": "skills/scope/",
-        "has_skill_md": true,
-        "has_references": true,
-        "reference_count": 3
-      },
-      {
-        "name": "swarm",
-        "tier": "execution",
-        "path": "skills/swarm/",
-        "has_skill_md": true,
-        "has_references": true,
-        "reference_count": 21
-      },
-      {
-        "name": "test",
-        "tier": "execution",
-        "path": "skills/test/",
-        "has_skill_md": true,
-        "has_references": true,
-        "reference_count": 6
-      },
-      {
-        "name": "toil-mining",
-        "tier": "execution",
-        "path": "skills/toil-mining/",
-        "has_skill_md": true,
-        "has_references": true,
-        "reference_count": 1
-      },
-      {
-        "name": "evolve",
-        "tier": "experimental",
-        "path": "skills/evolve/",
-        "has_skill_md": true,
-        "has_references": true,
-        "reference_count": 27
-      },
-      {
-        "name": "operationalize",
-        "tier": "experimental",
-        "path": "skills/operationalize/",
-        "has_skill_md": true,
-        "has_references": true,
-        "reference_count": 3
-      },
-      {
-        "name": "council",
-        "tier": "judgment",
-        "path": "skills/council/",
-        "has_skill_md": true,
-        "has_references": false,
-        "reference_count": 0
-      },
-      {
-        "name": "learn",
-        "tier": "judgment",
-        "path": "skills/learn/",
-        "has_skill_md": true,
-        "has_references": true,
-        "reference_count": 1
-      },
-      {
-        "name": "pawl-review",
-        "tier": "judgment",
-        "path": "skills/pawl-review/",
-        "has_skill_md": true,
-        "has_references": true,
-        "reference_count": 0
-      },
-      {
-        "name": "postmortem",
-        "tier": "judgment",
-        "path": "skills/postmortem/",
-        "has_skill_md": true,
-        "has_references": true,
-        "reference_count": 0
-      },
-      {
-        "name": "premortem",
-        "tier": "judgment",
-        "path": "skills/premortem/",
-        "has_skill_md": true,
-        "has_references": true,
-        "reference_count": 6
-      },
-      {
-        "name": "validate",
-        "tier": "judgment",
-        "path": "skills/validate/",
-        "has_skill_md": true,
-        "has_references": true,
-        "reference_count": 3
-      },
-      {
-        "name": "domain",
-        "tier": "knowledge",
-        "path": "skills/domain/",
-        "has_skill_md": true,
-        "has_references": true,
-        "reference_count": 19
-      },
-      {
-        "name": "gc-membrane",
-        "tier": "library",
-        "path": "skills/gc-membrane/",
-        "has_skill_md": true,
-        "has_references": false,
-        "reference_count": 0
-      },
-      {
-        "name": "shared",
-        "tier": "library",
-        "path": "skills/shared/",
-        "has_skill_md": true,
-        "has_references": true,
-        "reference_count": 16
-      },
-      {
-        "name": "standards",
-        "tier": "library",
-        "path": "skills/standards/",
-        "has_skill_md": true,
-        "has_references": true,
-        "reference_count": 25
-      },
-      {
-        "name": "agent-native",
-        "tier": "meta",
-        "path": "skills/agent-native/",
-        "has_skill_md": true,
-        "has_references": true,
-        "reference_count": 2
-      },
-      {
-        "name": "automation-shape-routing",
-        "tier": "meta",
-        "path": "skills/automation-shape-routing/",
-        "has_skill_md": true,
-        "has_references": false,
-        "reference_count": 0
-      },
-      {
-        "name": "discovery",
-        "tier": "meta",
-        "path": "skills/discovery/",
-        "has_skill_md": true,
-        "has_references": true,
-        "reference_count": 12
-      },
-      {
-        "name": "heal-skill",
-        "tier": "meta",
-        "path": "skills/heal-skill/",
-        "has_skill_md": true,
-        "has_references": true,
-        "reference_count": 4
-      },
-      {
-        "name": "rpi",
-        "tier": "meta",
-        "path": "skills/rpi/",
-        "has_skill_md": true,
-        "has_references": true,
-        "reference_count": 19
-      },
-      {
-        "name": "skill-builder",
-        "tier": "meta",
-        "path": "skills/skill-builder/",
-        "has_skill_md": true,
-        "has_references": true,
-        "reference_count": 4
-      },
-      {
-        "name": "workflow-builder",
-        "tier": "meta",
-        "path": "skills/workflow-builder/",
-        "has_skill_md": true,
-        "has_references": false,
-        "reference_count": 0
-      },
-      {
-        "name": "doc",
-        "tier": "product",
-        "path": "skills/doc/",
-        "has_skill_md": true,
-        "has_references": true,
-        "reference_count": 12
-      },
-      {
-        "name": "goals",
-        "tier": "product",
-        "path": "skills/goals/",
-        "has_skill_md": true,
-        "has_references": true,
-        "reference_count": 4
-      },
-      {
-        "name": "product",
-        "tier": "product",
-        "path": "skills/product/",
-        "has_skill_md": true,
-        "has_references": true,
-        "reference_count": 1
-      },
-      {
-        "name": "release",
-        "tier": "product",
-        "path": "skills/release/",
-        "has_skill_md": true,
-        "has_references": true,
-        "reference_count": 8
-      },
-      {
-        "name": "security",
-        "tier": "product",
-        "path": "skills/security/",
-        "has_skill_md": true,
-        "has_references": true,
-        "reference_count": 2
-      },
-      {
-        "name": "bootstrap",
-        "tier": "session",
-        "path": "skills/bootstrap/",
-        "has_skill_md": true,
-        "has_references": true,
-        "reference_count": 3
-      },
-      {
-        "name": "handoff",
-        "tier": "session",
-        "path": "skills/handoff/",
-        "has_skill_md": true,
-        "has_references": true,
-        "reference_count": 0
-      },
-      {
-        "name": "status",
-        "tier": "session",
-        "path": "skills/status/",
-        "has_skill_md": true,
-        "has_references": true,
-        "reference_count": 2
-      },
-      {
-        "name": "codex-exec",
-        "tier": "unknown",
-        "path": "skills/codex-exec/",
-        "has_skill_md": true,
-        "has_references": true,
-        "reference_count": 1
-      }
-    ],
-    "hooks": [],
-    "knowledge_stores": [
-      {
-        "name": "evolve",
-        "path": ".agents/evolve/",
-        "purpose": "Evolve skill session outputs",
-        "file_count": 2
-      },
-      {
-        "name": "findings",
-        "path": ".agents/findings/",
-        "purpose": "Bug hunt and research findings",
-        "file_count": 1
-      },
-      {
-        "name": "nightly",
-        "path": ".agents/nightly/",
-        "purpose": "Nightly run outputs and digests",
-        "file_count": 6
-      },
-      {
-        "name": "reconcile",
-        "path": ".agents/reconcile/",
-        "purpose": "Unknown — needs documentation",
-        "file_count": 3
-      },
-      {
-        "name": "rpi",
-        "path": ".agents/rpi/",
-        "purpose": "RPI run state and registry",
-        "file_count": 1
-      }
-    ],
-    "job_types": [],
-    "schedules": {
-      "example": [],
-      "live": []
-    },
-    "evals": [
-      {
-        "suite": "agentops-core",
-        "path": "evals/agentops-core/",
-        "eval_count": 54,
-        "evals": [
-          "beads-issue-tracking",
-          "cli-command-surface-matrix",
-          "cli-contracts",
-          "cli-onboarding-health",
-          "context-comprehension",
-          "context-packet-ab-wave0",
-          "contract-schema-governance",
-          "converter-update-runtime-parity",
-          "core-surfaces",
-          "curation-feedback-governance",
-          "distribution-install-update",
-          "docs-release-governance",
-          "efficiency-budgets",
-          "eval-runner-engine-control-plane",
-          "explicit-skill-prompts",
-          "finding-prevention-governance",
-          "goals-autodev-evolve",
-          "goals-management-lifecycle",
-          "headless-runtime-skills",
-          "hidden-cli-internals",
-          "knowledge-flywheel-ingestion",
-          "lid-primitives-demo",
-          "mock-runtime-contracts",
-          "model-upgrade-readiness",
-          "operator-workflow-skills",
-          "optimization-dependency-governance",
-          "parallel-execution-evidence",
-          "planning-premortem-gates",
-          "pre-push-gate-governance",
-          "push-worktree-closeout",
-          "ratchet-lifecycle-ledger",
-          "release-security-gates",
-          "remote-compute-contracts",
-          "retag-release-governance",
-          "retrieval-brokerage-citations",
-          "retrieval-contracts",
-          "retrieval-quality-gates",
-          "rpi-behavior",
-          "rpi-control-plane-orchestration",
-          "rpi-scorecard",
-          "runtime-contracts",
-          "runtime-smoke-matrix",
-          "scenario-contracts",
-          "security-suite-behavioral-gates",
-          "security-toolchain-governance",
-          "session-continuity-context",
-          "skill-catalog",
-          "skill-change-scorecard",
-          "skill-quality-gates",
-          "standards-governance",
-          "status-quickstart-dashboard",
-          "supporting-cli-utilities",
-          "workbench-agent-v1",
-          "workbench-behavioral-v1"
-        ]
-      },
-      {
-        "suite": "workbench",
-        "path": "evals/workbench/",
-        "eval_count": 1,
-        "evals": [
-          "baseline-scorecard"
-        ]
-      }
-    ],
-    "cli_commands": [
-      {
-        "name": "ao beads",
-        "path": "cli/cmd/ao/",
-        "purpose": "Complementary tooling for the bd (beads) issue tracker",
-        "bounded_context": "",
-        "driven_by_skills": []
-      },
-      {
-        "name": "ao capabilities",
-        "path": "cli/cmd/ao/",
-        "purpose": "Print the machine-readable CLI contract (JSON)",
-        "bounded_context": "BC5",
-        "driven_by_skills": []
-      },
-      {
-        "name": "ao claim",
-        "path": "cli/cmd/ao/",
-        "purpose": "Claim a BR bead or manage claim-evidence bindings",
-        "bounded_context": "BC3",
-        "driven_by_skills": []
-      },
-      {
-        "name": "ao close",
-        "path": "cli/cmd/ao/",
-        "purpose": "Close a bead and persist the explicit ledger/evidence paths",
-        "bounded_context": "",
-        "driven_by_skills": []
-      },
-      {
-        "name": "ao config",
-        "path": "cli/cmd/ao/",
-        "purpose": "Manage configuration",
-        "bounded_context": "BC4",
-        "driven_by_skills": []
-      },
-      {
-        "name": "ao constraint",
-        "path": "cli/cmd/ao/",
-        "purpose": "Manage compiled constraints",
-        "bounded_context": "BC2",
-        "driven_by_skills": []
-      },
-      {
-        "name": "ao council-gate",
-        "path": "cli/cmd/ao/",
-        "purpose": "Fail-closed two-plus judge verdict aggregation",
-        "bounded_context": "",
-        "driven_by_skills": []
-      },
-      {
-        "name": "ao doctor",
-        "path": "cli/cmd/ao/",
-        "purpose": "Check AgentOps health",
-        "bounded_context": "BC4",
-        "driven_by_skills": []
-      },
-      {
-        "name": "ao done",
-        "path": "cli/cmd/ao/",
-        "purpose": "Close a bead with a verdict-referenced stamp — no verdict = not done",
-        "bounded_context": "",
-        "driven_by_skills": []
-      },
-      {
-        "name": "ao eval",
-        "path": "cli/cmd/ao/",
-        "purpose": "Run deterministic local evaluation suites",
-        "bounded_context": "BC2",
-        "driven_by_skills": []
-      },
-      {
-        "name": "ao gate",
-        "path": "cli/cmd/ao/",
-        "purpose": "Human review gates",
-        "bounded_context": "BC2",
-        "driven_by_skills": []
-      },
-      {
-        "name": "ao goals",
-        "path": "cli/cmd/ao/",
-        "purpose": "Fitness goal measurement and validation",
-        "bounded_context": "BC3",
-        "driven_by_skills": [
-          "goals"
-        ]
-      },
-      {
-        "name": "ao governor",
-        "path": "cli/cmd/ao/",
-        "purpose": "The membrane's SPC control-loop governor (error budget, special-cause)",
-        "bounded_context": "",
-        "driven_by_skills": []
-      },
-      {
-        "name": "ao init",
-        "path": "cli/cmd/ao/",
-        "purpose": "Initialize AgentOps in the current repository",
-        "bounded_context": "BC4",
-        "driven_by_skills": []
-      },
-      {
-        "name": "ao land",
-        "path": "cli/cmd/ao/",
-        "purpose": "Land a bead through the trusted pawl path with a fresh in-checkout binary, then atomic pawl-land",
-        "bounded_context": "",
-        "driven_by_skills": []
-      },
-      {
-        "name": "ao membrane",
-        "path": "cli/cmd/ao/",
-        "purpose": "Self-improving membrane: turn escapes into membrane checks",
-        "bounded_context": "",
-        "driven_by_skills": []
-      },
-      {
-        "name": "ao pawl",
-        "path": "cli/cmd/ao/",
-        "purpose": "Cross-family membrane review and verdict tooling (the in-repo acceptance pawl)",
-        "bounded_context": "",
-        "driven_by_skills": [
-          "council",
-          "ntm",
-          "pawl-review"
-        ]
-      },
-      {
-        "name": "ao plan-pawl",
-        "path": "cli/cmd/ao/",
-        "purpose": "The plan-pawl duel gate over discovery plans (docs/contracts/pawls.md)",
-        "bounded_context": "",
-        "driven_by_skills": []
-      },
-      {
-        "name": "ao provenance",
-        "path": "cli/cmd/ao/",
-        "purpose": "Write and read the SDLC provenance edge ledger",
-        "bounded_context": "",
-        "driven_by_skills": []
-      },
-      {
-        "name": "ao quick-start",
-        "path": "cli/cmd/ao/",
-        "purpose": "Set up AgentOps in your project (5 minutes)",
-        "bounded_context": "BC3",
-        "driven_by_skills": [
-          "bootstrap"
-        ]
-      },
-      {
-        "name": "ao ready",
-        "path": "cli/cmd/ao/",
-        "purpose": "Print harness-neutral ready bead state as JSON",
-        "bounded_context": "",
-        "driven_by_skills": []
-      },
-      {
-        "name": "ao robot-docs",
-        "path": "cli/cmd/ao/",
-        "purpose": "Print the paste-ready agent handbook for the ao CLI (Markdown)",
-        "bounded_context": "BC5",
-        "driven_by_skills": []
-      },
-      {
-        "name": "ao session",
-        "path": "cli/cmd/ao/",
-        "purpose": "Session lifecycle operations",
-        "bounded_context": "BC5",
-        "driven_by_skills": []
-      },
-      {
-        "name": "ao skills",
-        "path": "cli/cmd/ao/",
-        "purpose": "Inspect and validate the skills/ tree",
-        "bounded_context": "BC4",
-        "driven_by_skills": []
-      },
-      {
-        "name": "ao status",
-        "path": "cli/cmd/ao/",
-        "purpose": "Show AgentOps status",
-        "bounded_context": "BC3",
-        "driven_by_skills": []
-      },
-      {
-        "name": "ao validate",
-        "path": "cli/cmd/ao/",
-        "purpose": "Umbrella validation gate (exit-code-as-verdict with --gate)",
-        "bounded_context": "BC2",
-        "driven_by_skills": []
-      },
-      {
-        "name": "ao verdict-gate",
-        "path": "cli/cmd/ao/",
-        "purpose": "Reject verdicts without commands and independent judge identity",
-        "bounded_context": "",
-        "driven_by_skills": []
-      },
-      {
-        "name": "ao verify",
-        "path": "cli/cmd/ao/",
-        "purpose": "Independent cross-family verdict on your change — no verdict = not done",
-        "bounded_context": "",
-        "driven_by_skills": []
-      },
-      {
-        "name": "ao version",
-        "path": "cli/cmd/ao/",
-        "purpose": "Show version information",
-        "bounded_context": "BC4",
-        "driven_by_skills": [
-          "crank",
-          "shared"
-        ]
-      },
-      {
-        "name": "ao yield",
-        "path": "cli/cmd/ao/",
-        "purpose": "Record dynamo yield-ledger events (per-bead operational stream)",
-        "bounded_context": "",
-        "driven_by_skills": []
-      }
-    ],
-    "workflows": [
-      {
-        "id": "bdd-foundry",
-        "kind": "workflow",
-        "bounded_context": "BC3",
-        "hex_role": "driving-adapter",
-        "capability_class": "planning",
-        "runtime_targets": [
-          "claude"
-        ],
-        "runtime_reach": "claude",
-        "parity_policy": "exempt",
-        "aliases": [],
-        "path": ".claude/workflows/bdd-foundry.js",
-        "supersedes": null
-      },
-      {
-        "id": "bead-crank",
-        "kind": "workflow",
-        "bounded_context": "BC3",
-        "hex_role": "driving-adapter",
-        "capability_class": "orchestration",
-        "runtime_targets": [
-          "claude"
-        ],
-        "runtime_reach": "claude",
-        "parity_policy": "exempt",
-        "aliases": [
-          "crank"
-        ],
-        "path": ".claude/workflows/bead-crank.js",
-        "supersedes": "ship-beads"
-      },
-      {
-        "id": "operating-loop",
-        "kind": "workflow",
-        "bounded_context": "BC3",
-        "hex_role": "driving-adapter",
-        "capability_class": "orchestration",
-        "runtime_targets": [
-          "claude"
-        ],
-        "runtime_reach": "claude",
-        "parity_policy": "exempt",
-        "aliases": [],
-        "path": ".claude/workflows/operating-loop.js",
-        "supersedes": null
-      },
-      {
-        "id": "ship-beads",
-        "kind": "workflow",
-        "bounded_context": "BC3",
-        "hex_role": "driving-adapter",
-        "capability_class": "orchestration",
-        "runtime_targets": [
-          "claude"
-        ],
-        "runtime_reach": "claude",
-        "parity_policy": "exempt",
-        "aliases": [
-          "crank",
-          "bead-crank"
-        ],
-        "path": ".claude/workflows/ship-beads.js",
-        "supersedes": null
-      }
-    ]
-  },
-  "capability_summary": {
-    "total": 98,
-    "skills": 63,
-    "cli_commands": 30,
-    "gates": 5,
-    "reference_impls": 0
-  },
-  "cli_top_level_commands": [
-    "beads",
-    "capabilities",
-    "claim",
-    "close",
-    "config",
-    "constraint",
-    "council-gate",
-    "doctor",
-    "done",
-    "eval",
-    "gate",
-    "goals",
-    "governor",
-    "init",
-    "land",
-    "membrane",
-    "pawl",
-    "plan-pawl",
-    "provenance",
-    "quick-start",
-    "ready",
-    "robot-docs",
-    "session",
-    "skills",
-    "status",
-    "validate",
-    "verdict-gate",
-    "verify",
-    "version",
-    "yield"
-  ],
+  "cadence_recommendations": [],
   "capabilities": [
     {
-      "sku": "skill:account-rotation",
-      "name": "account-rotation",
-      "type": "skill",
-      "kind": "skill",
-      "bounded_context": "BC5",
-      "hex_role": "supporting",
-      "tier": "execution",
-      "capability_class": "safety",
-      "purpose": "Switch coding-agent accounts on a usage/rate limit. Routes by host+agent: macOS+Claude to claude-acct; Codex/Gemini and Linux/WSL to caam. Triggers: \"account-rotation\", \"account rotation\", \"switch coding-agent accounts on a\".",
-      "status": "active",
-      "disposition": "keep",
-      "runtime_targets": [
-        "claude",
-        "codex"
+      "driven_by_skills": [
+        "account-rotation"
       ],
-      "runtime_reach": "cross",
-      "parity_policy": "required",
-      "aliases": [],
-      "supersedes": null,
-      "consumes": [],
-      "produces": [],
-      "drives_commands": [],
-      "path": "skills/account-rotation/",
-      "references": 0
+      "id": "skill:account-rotation:account_rotation",
+      "name": "account_rotation",
+      "path": "skills/account-rotation/SKILL.md",
+      "type": "skill"
     },
     {
-      "sku": "skill:agent-mail",
-      "name": "agent-mail",
-      "type": "skill",
-      "kind": "skill",
-      "bounded_context": "BC6",
-      "hex_role": "supporting",
-      "tier": "execution",
-      "capability_class": "orchestration",
-      "purpose": "Use when coordinating agents with Agent Mail locks, inboxes, threads, and conflict-prevention handoffs. Triggers: \"agent-mail\", \"agent mail\", \"use when coordinating agents with\".",
-      "status": "active",
-      "disposition": "keep",
-      "runtime_targets": [
-        "claude",
-        "codex"
+      "driven_by_skills": [
+        "agent-mail"
       ],
-      "runtime_reach": "cross",
-      "parity_policy": "required",
-      "aliases": [],
-      "supersedes": null,
-      "consumes": [
-        "task-intent"
-      ],
-      "produces": [
-        "agent-identity",
-        "file-reservation",
-        "acknowledged-handoff"
-      ],
-      "drives_commands": [
-        "ao beads exec"
-      ],
-      "path": "skills/agent-mail/",
-      "references": 8
+      "id": "skill:agent-mail:agent_mail",
+      "name": "agent_mail",
+      "path": "skills/agent-mail/SKILL.md",
+      "type": "skill"
     },
     {
-      "sku": "skill:agent-native",
-      "name": "agent-native",
-      "type": "skill",
-      "kind": "skill",
-      "bounded_context": "BC5",
-      "hex_role": "supporting",
-      "tier": "meta",
-      "capability_class": "execution",
-      "purpose": "Run persistent software-factory workers through a substrate-neutral lifecycle with observable readiness, engagement, evidence, bounded recovery, and handoff. Triggers: \"agent-native factory\", \"role-shaped agent panes\", \"supervise persistent workers\".",
-      "status": "active",
-      "disposition": "keep",
-      "runtime_targets": [
-        "claude",
-        "codex"
+      "driven_by_skills": [
+        "agent-native"
       ],
-      "runtime_reach": "cross",
-      "parity_policy": "required",
-      "aliases": [],
-      "supersedes": null,
-      "consumes": [
-        "specification",
-        "existing-tracked-work",
-        "task-intent"
-      ],
-      "produces": [
-        "agent-worker-evidence",
-        "worker-handoff"
-      ],
-      "drives_commands": [],
-      "path": "skills/agent-native/",
-      "references": 2
+      "id": "skill:agent-native:role_dispatch",
+      "name": "role_dispatch",
+      "path": "skills/agent-native/SKILL.md",
+      "type": "skill"
     },
     {
-      "sku": "skill:agy-native",
-      "name": "agy-native",
-      "type": "skill",
-      "kind": "skill",
-      "bounded_context": "BC5",
-      "hex_role": "driving-adapter",
-      "tier": "cross-vendor",
-      "capability_class": "execution",
-      "purpose": "|-",
-      "status": "active",
-      "disposition": "keep",
-      "runtime_targets": [
-        "claude",
-        "codex"
+      "driven_by_skills": [
+        "agent-native"
       ],
-      "runtime_reach": "cross",
-      "parity_policy": "required",
-      "aliases": [],
-      "supersedes": null,
-      "consumes": [],
-      "produces": [
-        "agy-run-evidence"
-      ],
-      "drives_commands": [
-        "ao beads exec"
-      ],
-      "path": "skills/agy-native/",
-      "references": 1
+      "id": "skill:agent-native:observe_workers",
+      "name": "observe_workers",
+      "path": "skills/agent-native/SKILL.md",
+      "type": "skill"
     },
     {
-      "sku": "skill:automation-shape-routing",
-      "name": "automation-shape-routing",
-      "type": "skill",
-      "kind": "skill",
-      "bounded_context": "BC4",
-      "hex_role": "supporting",
-      "tier": "meta",
-      "capability_class": "planning",
-      "purpose": "Front door for agent automation: choose inline, bounded fanout, reusable skill/workflow/gate, persistent agent-native workers, or explicit Gas City. Triggers: \"build automation\", \"which orchestration shape\", \"should this use NTM\".",
-      "status": "active",
-      "disposition": "keep",
-      "runtime_targets": [
-        "claude",
-        "codex"
+      "driven_by_skills": [
+        "agent-native"
       ],
-      "runtime_reach": "cross",
-      "parity_policy": "required",
-      "aliases": [],
-      "supersedes": null,
-      "consumes": [
-        "task-intent"
-      ],
-      "produces": [
-        "automation-shape-verdict"
-      ],
-      "drives_commands": [],
-      "path": "skills/automation-shape-routing/",
-      "references": 0
-    },
-    {
-      "sku": "skill:beads-br",
-      "name": "beads-br",
-      "type": "skill",
-      "kind": "skill",
-      "bounded_context": "BC3",
-      "hex_role": "supporting",
-      "tier": "execution",
-      "capability_class": "tracking",
-      "purpose": "Local-first issue tracker (beads_rust) for AI agents — track tasks, manage dependencies, find ready work, sync via git JSONL. Triggers: \"beads-br\", \"beads br\", \"local-first issue tracker beads rust\".",
-      "status": "active",
-      "disposition": "keep",
-      "runtime_targets": [
-        "claude",
-        "codex"
-      ],
-      "runtime_reach": "cross",
-      "parity_policy": "required",
-      "aliases": [],
-      "supersedes": null,
-      "consumes": [],
-      "produces": [],
-      "drives_commands": [
-        "ao beads dir"
-      ],
-      "path": "skills/beads-br/",
-      "references": 6
-    },
-    {
-      "sku": "skill:beads-bv",
-      "name": "beads-bv",
-      "type": "skill",
-      "kind": "skill",
-      "bounded_context": "BC3",
-      "hex_role": "supporting",
-      "tier": "execution",
-      "capability_class": "tracking",
-      "purpose": "Graph-aware task triage with bv and br — prioritize work, find bottlenecks, track dependencies across projects. Triggers: \"beads-bv\", \"beads bv\", \"graph-aware task triage with bv\".",
-      "status": "active",
-      "disposition": "keep",
-      "runtime_targets": [
-        "claude",
-        "codex"
-      ],
-      "runtime_reach": "cross",
-      "parity_policy": "required",
-      "aliases": [],
-      "supersedes": null,
-      "consumes": [],
-      "produces": [],
-      "drives_commands": [],
-      "path": "skills/beads-bv/",
-      "references": 3
-    },
-    {
-      "sku": "skill:behavior-first-planning",
-      "name": "behavior-first-planning",
-      "type": "skill",
-      "kind": "skill",
-      "bounded_context": "BC3",
-      "hex_role": "domain",
-      "tier": "execution",
-      "capability_class": "planning",
-      "purpose": "Behavior-first planning discipline — intent → Gherkin behaviors → EXECUTED-red acceptance tests → spec → acceptance-gated bead DAG. No runnable acceptance test, no bead. Triggers: \"plan behavior-first\", \"acceptance-first planning\", \"give these beads runnable done-criteria\".",
-      "status": "active",
-      "disposition": "keep",
-      "runtime_targets": [
-        "claude",
-        "codex"
-      ],
-      "runtime_reach": "cross",
-      "parity_policy": "required",
-      "aliases": [],
-      "supersedes": null,
-      "consumes": [
-        "standards"
-      ],
-      "produces": [
-        ".agents/plans/*.md",
-        "br-issue"
-      ],
-      "drives_commands": [],
-      "path": "skills/behavior-first-planning/",
-      "references": 0
-    },
-    {
-      "sku": "skill:bootstrap",
-      "name": "bootstrap",
-      "type": "skill",
-      "kind": "skill",
-      "bounded_context": "BC4",
-      "hex_role": "driving-adapter",
-      "tier": "session",
-      "capability_class": "authoring",
-      "purpose": "Initialize AgentOps project files. Triggers: \"initialize AgentOps\", \"bootstrap project files\", \"set up .agents scaffolding\".",
-      "status": "active",
-      "disposition": "update",
-      "runtime_targets": [
-        "claude",
-        "codex"
-      ],
-      "runtime_reach": "cross",
-      "parity_policy": "required",
-      "aliases": [],
-      "supersedes": null,
-      "consumes": [
-        "goals",
-        "product",
-        "doc",
-        "shared"
-      ],
-      "produces": [],
-      "drives_commands": [
-        "ao gate check",
-        "ao quick-start",
-        "ao session bootstrap"
-      ],
-      "path": "skills/bootstrap/",
-      "references": 3
-    },
-    {
-      "sku": "skill:cass",
-      "name": "cass",
-      "type": "skill",
-      "kind": "skill",
-      "bounded_context": "BC1",
-      "hex_role": "supporting",
-      "tier": "execution",
-      "capability_class": "corpus",
-      "purpose": "Mine past agent sessions for working prompts, decisions, and patterns (session archaeology). Triggers: \"cass\", \"mine past agent sessions for\", \"cass skill\".",
-      "status": "active",
-      "disposition": "keep",
-      "runtime_targets": [
-        "claude",
-        "codex"
-      ],
-      "runtime_reach": "cross",
-      "parity_policy": "required",
-      "aliases": [],
-      "supersedes": null,
-      "consumes": [],
-      "produces": [],
-      "drives_commands": [],
-      "path": "skills/cass/",
-      "references": 16
-    },
-    {
-      "sku": "skill:cc-hooks",
-      "name": "cc-hooks",
-      "type": "skill",
-      "kind": "skill",
-      "bounded_context": "BC5",
-      "hex_role": "supporting",
-      "tier": "execution",
-      "capability_class": "execution",
-      "purpose": "Configure Claude Code hooks (PreToolUse, PostToolUse, Stop, Notification) — user-side, opt-in per host (AgentOps 3.0 ships none). Triggers: \"cc-hooks\", \"cc hooks\", \"configure claude code hooks pretooluse\".",
-      "status": "active",
-      "disposition": "keep",
-      "runtime_targets": [
-        "claude",
-        "codex"
-      ],
-      "runtime_reach": "cross",
-      "parity_policy": "required",
-      "aliases": [],
-      "supersedes": null,
-      "consumes": [],
-      "produces": [],
-      "drives_commands": [],
-      "path": "skills/cc-hooks/",
-      "references": 7
-    },
-    {
-      "sku": "skill:codebase-recon",
-      "name": "codebase-recon",
-      "type": "skill",
-      "kind": "skill",
-      "bounded_context": "BC1",
-      "hex_role": "supporting",
-      "tier": "execution",
-      "capability_class": "corpus",
-      "purpose": "Reconstruct a repository as cited entry-to-test flows, bounded claims, and a reusable baseline or verified delta. Triggers: \"build a repository mental model\", \"trace this codebase\", \"refresh the prior recon\".",
-      "status": "active",
-      "disposition": "keep",
-      "runtime_targets": [
-        "claude",
-        "codex"
-      ],
-      "runtime_reach": "cross",
-      "parity_policy": "required",
-      "aliases": [],
-      "supersedes": null,
-      "consumes": [
-        "repo-context",
-        "existing-docs"
-      ],
-      "produces": [
-        "codebase-recon.v1",
-        "evidence-bounded-recon-report"
-      ],
-      "drives_commands": [],
-      "path": "skills/codebase-recon/",
-      "references": 0
-    },
-    {
-      "sku": "skill:codex-exec",
-      "name": "codex-exec",
-      "type": "skill",
-      "kind": "skill",
-      "bounded_context": "BC5",
-      "hex_role": "driving-adapter",
-      "tier": "unknown",
-      "capability_class": "execution",
-      "purpose": "|-",
-      "status": "active",
-      "disposition": "keep",
-      "runtime_targets": [
-        "claude",
-        "codex"
-      ],
-      "runtime_reach": "cross",
-      "parity_policy": "required",
-      "aliases": [],
-      "supersedes": null,
-      "consumes": [],
-      "produces": [
-        "codex-run-output"
-      ],
-      "drives_commands": [],
-      "path": "skills/codex-exec/",
-      "references": 1
-    },
-    {
-      "sku": "skill:converge",
-      "name": "converge",
-      "type": "skill",
-      "kind": "skill",
-      "bounded_context": "BC5",
-      "hex_role": "driving-adapter",
-      "tier": "execution",
-      "capability_class": "orchestration",
-      "purpose": "Drive a fix -> re-run-judge-panel loop to terminal agreement or a hard BLOCK via the Go ao converge command. Triggers: \"converge\", \"drive a fix re-run-judge-panel loop\", \"converge skill\".",
-      "status": "active",
-      "disposition": "keep",
-      "runtime_targets": [
-        "claude",
-        "codex"
-      ],
-      "runtime_reach": "cross",
-      "parity_policy": "required",
-      "aliases": [],
-      "supersedes": null,
-      "consumes": [
-        "command-help"
-      ],
-      "produces": [
-        "stdout"
-      ],
-      "drives_commands": [],
-      "path": "skills/converge/",
-      "references": 0
-    },
-    {
-      "sku": "skill:converter",
-      "name": "converter",
-      "type": "skill",
-      "kind": "skill",
-      "bounded_context": "BC4",
-      "hex_role": "driven-adapter",
-      "tier": "cross-vendor",
-      "capability_class": "authoring",
-      "purpose": "Convert AgentOps skill formats. Triggers: \"converter\", \"convert agentops skill formats.\", \"converter skill\".",
-      "status": "active",
-      "disposition": "keep",
-      "runtime_targets": [
-        "claude",
-        "codex"
-      ],
-      "runtime_reach": "cross",
-      "parity_policy": "required",
-      "aliases": [],
-      "supersedes": null,
-      "consumes": [],
-      "produces": [
-        "converted-skill"
-      ],
-      "drives_commands": [],
-      "path": "skills/converter/",
-      "references": 1
-    },
-    {
-      "sku": "skill:council",
-      "name": "council",
-      "type": "skill",
-      "kind": "skill",
-      "bounded_context": "BC2",
-      "hex_role": "domain",
-      "tier": "judgment",
-      "capability_class": "validation",
-      "purpose": "Run multi-judge consensus. Use when: an irreversible or high-stakes decision needs independent judges before committing — architecture forks, one-way doors, scoring options.",
-      "status": "active",
-      "disposition": "update",
-      "runtime_targets": [
-        "claude",
-        "codex"
-      ],
-      "runtime_reach": "cross",
-      "parity_policy": "required",
-      "aliases": [],
-      "supersedes": null,
-      "consumes": [
-        "standards"
-      ],
-      "produces": [
-        "result.json",
-        "verdict.json"
-      ],
-      "drives_commands": [
-        "ao pawl"
-      ],
-      "path": "skills/council/",
-      "references": 0
-    },
-    {
-      "sku": "skill:crank",
-      "name": "crank",
-      "type": "skill",
-      "kind": "skill",
-      "bounded_context": "BC3",
-      "hex_role": "domain",
-      "tier": "execution",
-      "capability_class": "orchestration",
-      "purpose": "Execute the next ready epic wave and return evidence before any between-wave decision. Triggers: \"crank an epic\", \"execute the next wave\", \"drive the bead wave plan\".",
-      "status": "active",
-      "disposition": "refactor",
-      "runtime_targets": [
-        "claude",
-        "codex"
-      ],
-      "runtime_reach": "cross",
-      "parity_policy": "required",
-      "aliases": [],
-      "supersedes": null,
-      "consumes": [
-        "beads-br",
-        "implement",
-        "swarm"
-      ],
-      "produces": [
-        ".agents/swarm/results/*.json",
-        "git-changes"
-      ],
-      "drives_commands": [
-        "ao beads exec",
-        "ao session handoff",
-        "ao version"
-      ],
-      "path": "skills/crank/",
-      "references": 31
-    },
-    {
-      "sku": "skill:dcg",
-      "name": "dcg",
-      "type": "skill",
-      "kind": "skill",
-      "bounded_context": "BC5",
-      "hex_role": "supporting",
-      "tier": "execution",
-      "capability_class": "safety",
-      "purpose": "Handle blocked destructive commands and configure agent safety guardrails. Triggers: \"dcg\", \"handle blocked destructive commands. use\", \"dcg skill\".",
-      "status": "active",
-      "disposition": "keep",
-      "runtime_targets": [
-        "claude",
-        "codex"
-      ],
-      "runtime_reach": "cross",
-      "parity_policy": "required",
-      "aliases": [],
-      "supersedes": null,
-      "consumes": [],
-      "produces": [],
-      "drives_commands": [],
-      "path": "skills/dcg/",
-      "references": 6
-    },
-    {
-      "sku": "skill:discovery",
-      "name": "discovery",
-      "type": "skill",
-      "kind": "skill",
-      "bounded_context": "BC3",
-      "hex_role": "domain",
-      "tier": "meta",
-      "capability_class": "planning",
-      "purpose": "Create dense execution packets from intent, research, one exact plan, and its Premortem verdict. Triggers: \"run discovery\", \"shape intent as BDD\", \"scope a feature into an execution packet\".",
-      "status": "active",
-      "disposition": "update",
-      "runtime_targets": [
-        "claude",
-        "codex"
-      ],
-      "runtime_reach": "cross",
-      "parity_policy": "required",
-      "aliases": [],
-      "supersedes": null,
-      "consumes": [
-        "plan",
-        "premortem",
-        "research",
-        "shared"
-      ],
-      "produces": [
-        ".agents/plans/*.md",
-        "br-issue",
-        "execution-packet.json"
-      ],
-      "drives_commands": [
-        "ao beads exec"
-      ],
-      "path": "skills/discovery/",
-      "references": 12
-    },
-    {
-      "sku": "skill:doc",
-      "name": "doc",
-      "type": "skill",
-      "kind": "skill",
-      "bounded_context": "BC4",
-      "hex_role": "supporting",
-      "tier": "product",
-      "capability_class": "docs",
-      "purpose": "Generate and validate repo docs, READMEs, and OSS doc packs. Triggers: \"doc\", \"generate and validate repo docs\", \"doc skill\".",
-      "status": "active",
-      "disposition": "update",
-      "runtime_targets": [
-        "claude",
-        "codex"
-      ],
-      "runtime_reach": "cross",
-      "parity_policy": "required",
-      "aliases": [],
-      "supersedes": null,
-      "consumes": [
-        "repo-context"
-      ],
-      "produces": [
-        "documentation"
-      ],
-      "drives_commands": [],
-      "path": "skills/doc/",
-      "references": 12
-    },
-    {
-      "sku": "skill:domain",
-      "name": "domain",
-      "type": "skill",
-      "kind": "skill",
-      "bounded_context": "BC4",
-      "hex_role": "domain",
-      "tier": "knowledge",
-      "capability_class": "docs",
-      "purpose": "Ubiquitous language for human-AI software building — canonical definitions (vertical slice, tracer bullet, primitive) loaded JIT when a term needs pinning. Triggers: \"domain\", \"canonical vocabulary for human-ai software\", \"domain skill\".",
-      "status": "active",
-      "disposition": "keep",
-      "runtime_targets": [
-        "claude",
-        "codex"
-      ],
-      "runtime_reach": "cross",
-      "parity_policy": "required",
-      "aliases": [],
-      "supersedes": null,
-      "consumes": [],
-      "produces": [
-        "stdout"
-      ],
-      "drives_commands": [
-        "ao eval run",
-        "ao gate check",
-        "ao session bootstrap"
-      ],
-      "path": "skills/domain/",
-      "references": 19
-    },
-    {
-      "sku": "skill:dueling-idea-genies",
-      "name": "dueling-idea-genies",
-      "type": "skill",
-      "kind": "skill",
-      "bounded_context": "BC3",
-      "hex_role": "domain",
-      "tier": "execution",
-      "capability_class": "planning",
-      "purpose": "Challenge a consequential idea with sealed independent perspectives, cross-review, and preserved dissent. Triggers: \"challenge this idea\", \"compare independent proposals\", \"stress-test a one-way door\".",
-      "status": "active",
-      "disposition": "keep",
-      "runtime_targets": [
-        "claude",
-        "codex"
-      ],
-      "runtime_reach": "cross",
-      "parity_policy": "required",
-      "aliases": [],
-      "supersedes": null,
-      "consumes": [
-        "idea-portfolio.v1",
-        "task-question"
-      ],
-      "produces": [
-        "idea-challenge.v1"
-      ],
-      "drives_commands": [],
-      "path": "skills/dueling-idea-genies/",
-      "references": 0
-    },
-    {
-      "sku": "skill:evolve",
-      "name": "evolve",
-      "type": "skill",
-      "kind": "skill",
-      "bounded_context": "BC3",
-      "hex_role": "domain",
-      "tier": "experimental",
-      "capability_class": "orchestration",
-      "purpose": "Run autonomous improvement loops. Triggers: \"evolve\", \"improve everything\", \"autonomous improvement\".",
-      "status": "active",
-      "disposition": "refactor",
-      "runtime_targets": [
-        "claude",
-        "codex"
-      ],
-      "runtime_reach": "cross",
-      "parity_policy": "required",
-      "aliases": [],
-      "supersedes": null,
-      "consumes": [
-        "rpi",
-        "goals",
-        "postmortem",
-        "push"
-      ],
-      "produces": [
-        "git-changes",
-        "goals-fitness-delta"
-      ],
-      "drives_commands": [
-        "ao beads exec",
-        "ao gate check",
-        "ao goals measure",
-        "ao skills edit digest",
-        "ao skills edit seal"
-      ],
-      "path": "skills/evolve/",
-      "references": 27
-    },
-    {
-      "sku": "skill:gc-membrane",
-      "name": "gc-membrane",
-      "type": "skill",
-      "kind": "skill",
-      "bounded_context": "BC6",
-      "hex_role": "supporting",
-      "tier": "library",
-      "capability_class": "orchestration",
-      "purpose": "The agentops-membrane pack: fail-closed cross-family verdict-bound close door on stock gc — close gate, finalize, pawl-verdict.v1, RBAC, quest intake, doctor. JIT via using-gc. Triggers: \"gc-membrane\", \"membrane pack\", \"pawl-verdict.v1\", \"gc close door\".",
-      "status": "active",
-      "disposition": "keep",
-      "runtime_targets": [
-        "claude",
-        "codex"
-      ],
-      "runtime_reach": "cross",
-      "parity_policy": "required",
-      "aliases": [],
-      "supersedes": null,
-      "consumes": [],
-      "produces": [],
-      "drives_commands": [],
-      "path": "skills/gc-membrane/",
-      "references": 0
-    },
-    {
-      "sku": "skill:goal-design",
-      "name": "goal-design",
-      "type": "skill",
-      "kind": "skill",
-      "bounded_context": "BC3",
-      "hex_role": "driving-adapter",
-      "tier": "execution",
-      "capability_class": "planning",
-      "purpose": "Create deterministic goal-design packets. Triggers: \"goal prompt\", \"goal-design packet\", \"turn this goal into loop-ready work\".",
-      "status": "active",
-      "disposition": "keep",
-      "runtime_targets": [
-        "claude",
-        "codex"
-      ],
-      "runtime_reach": "cross",
-      "parity_policy": "required",
-      "aliases": [],
-      "supersedes": null,
-      "consumes": [
-        "project-goals",
-        "existing-docs"
-      ],
-      "produces": [
-        ".agents/goal-design/<slug>/intent.md",
-        ".agents/goal-design/<slug>/driver.md"
-      ],
-      "drives_commands": [],
-      "path": "skills/goal-design/",
-      "references": 0
-    },
-    {
-      "sku": "skill:goals",
-      "name": "goals",
-      "type": "skill",
-      "kind": "skill",
-      "bounded_context": "BC3",
-      "hex_role": "domain",
-      "tier": "product",
-      "capability_class": "planning",
-      "purpose": "Maintain AgentOps goals. Triggers: \"goals\", \"maintain agentops goals.\", \"goals skill\".",
-      "status": "active",
-      "disposition": "keep",
-      "runtime_targets": [
-        "claude",
-        "codex"
-      ],
-      "runtime_reach": "cross",
-      "parity_policy": "required",
-      "aliases": [],
-      "supersedes": null,
-      "consumes": [],
-      "produces": [
-        "result.json"
-      ],
-      "drives_commands": [
-        "ao eval scenario",
-        "ao goals",
-        "ao goals add",
-        "ao goals drift",
-        "ao goals export",
-        "ao goals history",
-        "ao goals init",
-        "ao goals measure",
-        "ao goals meta",
-        "ao goals migrate",
-        "ao goals prune",
-        "ao goals render",
-        "ao goals scenarios",
-        "ao goals steer",
-        "ao goals steer add",
-        "ao goals steer apply",
-        "ao goals steer prioritize",
-        "ao goals steer recommend",
-        "ao goals steer remove",
-        "ao goals trace",
-        "ao goals validate"
-      ],
-      "path": "skills/goals/",
-      "references": 4
-    },
-    {
-      "sku": "skill:handoff",
+      "id": "skill:agent-native:handoff",
       "name": "handoff",
-      "type": "skill",
-      "kind": "skill",
-      "bounded_context": "BC1",
-      "hex_role": "supporting",
-      "tier": "session",
-      "capability_class": "corpus",
-      "purpose": "Write compact session handoffs. Triggers: \"handoff\", \"write compact session handoffs.\", \"handoff skill\".",
-      "status": "active",
-      "disposition": "update",
-      "runtime_targets": [
-        "claude",
-        "codex"
-      ],
-      "runtime_reach": "cross",
-      "parity_policy": "required",
-      "aliases": [],
-      "supersedes": null,
-      "consumes": [],
-      "produces": [
-        ".agents/handoff/*.md"
-      ],
-      "drives_commands": [
-        "ao beads exec",
-        "ao session handoff"
-      ],
-      "path": "skills/handoff/",
-      "references": 0
+      "path": "skills/agent-native/SKILL.md",
+      "type": "skill"
     },
     {
-      "sku": "skill:heal-skill",
-      "name": "heal-skill",
-      "type": "skill",
-      "kind": "skill",
-      "bounded_context": "BC4",
-      "hex_role": "supporting",
-      "tier": "meta",
-      "capability_class": "authoring",
-      "purpose": "Repair skill hygiene and deep-audit SKILL.md quality (absorbed skill-auditor). Triggers: \"heal-skill\", \"heal skill\", \"repair skill hygiene\", \"skill-auditor\", \"audit skill\", \"skill audit\".",
-      "status": "active",
-      "disposition": "update",
-      "runtime_targets": [
-        "claude",
-        "codex"
-      ],
-      "runtime_reach": "cross",
-      "parity_policy": "required",
-      "aliases": [],
-      "supersedes": null,
-      "consumes": [],
-      "produces": [
-        "audit-report.json"
-      ],
-      "drives_commands": [],
-      "path": "skills/heal-skill/",
-      "references": 4
-    },
-    {
-      "sku": "skill:idea-genie",
-      "name": "idea-genie",
-      "type": "skill",
-      "kind": "skill",
-      "bounded_context": "BC3",
-      "hex_role": "domain",
-      "tier": "execution",
-      "capability_class": "planning",
-      "purpose": "Generate an evidence-grounded opportunity portfolio for an open-ended product or engineering question. Triggers: \"generate ideas from repository evidence\", \"what should we build next\", \"find supported opportunities\".",
-      "status": "active",
-      "disposition": "keep",
-      "runtime_targets": [
-        "claude",
-        "codex"
-      ],
-      "runtime_reach": "cross",
-      "parity_policy": "required",
-      "aliases": [],
-      "supersedes": null,
-      "consumes": [
-        "repo-context",
-        "task-question"
-      ],
-      "produces": [
-        "idea-portfolio.v1"
-      ],
-      "drives_commands": [],
-      "path": "skills/idea-genie/",
-      "references": 0
-    },
-    {
-      "sku": "skill:implement",
-      "name": "implement",
-      "type": "skill",
-      "kind": "skill",
-      "bounded_context": "BC3",
-      "hex_role": "driving-adapter",
-      "tier": "execution",
-      "capability_class": "execution",
-      "purpose": "Implement one tracked issue. Triggers: \"implement\", \"implement one tracked issue.\", \"implement skill\".",
-      "status": "active",
-      "disposition": "update",
-      "runtime_targets": [
-        "claude",
-        "codex"
-      ],
-      "runtime_reach": "cross",
-      "parity_policy": "required",
-      "aliases": [],
-      "supersedes": null,
-      "consumes": [
-        "domain"
-      ],
-      "produces": [
-        "git-changes"
-      ],
-      "drives_commands": [
-        "ao beads exec"
-      ],
-      "path": "skills/implement/",
-      "references": 7
-    },
-    {
-      "sku": "skill:learn",
-      "name": "learn",
-      "type": "skill",
-      "kind": "skill",
-      "bounded_context": "BC3",
-      "hex_role": "domain",
-      "tier": "judgment",
-      "capability_class": "corpus",
-      "purpose": "Consume an immutable Validate verdict and emit evidence-bound bookkeeping. Triggers: \"learn\", \"consume a validation verdict\", \"record observations\".",
-      "status": "active",
-      "disposition": "keep",
-      "runtime_targets": [
-        "claude",
-        "codex"
-      ],
-      "runtime_reach": "cross",
-      "parity_policy": "required",
-      "aliases": [],
-      "supersedes": null,
-      "consumes": [
-        "validate"
-      ],
-      "produces": [
-        "learn-receipt.json"
-      ],
-      "drives_commands": [],
-      "path": "skills/learn/",
-      "references": 1
-    },
-    {
-      "sku": "skill:ms",
-      "name": "ms",
-      "type": "skill",
-      "kind": "skill",
-      "bounded_context": "BC1",
-      "hex_role": "supporting",
-      "tier": "execution",
-      "capability_class": "corpus",
-      "purpose": "meta_skill (ms) — the skill-search/load engine over both corpora (agentops + jsm). Find a skill for a task, search skills, or load runnable skill guidance. Triggers: \"ms\", \"meta_skill\", \"skill search\", \"find a skill for\", \"load skill guidance\".",
-      "status": "active",
-      "disposition": "keep",
-      "runtime_targets": [
-        "claude",
-        "codex"
-      ],
-      "runtime_reach": "cross",
-      "parity_policy": "required",
-      "aliases": [
-        "meta_skill"
-      ],
-      "supersedes": null,
-      "consumes": [],
-      "produces": [],
-      "drives_commands": [],
-      "path": "skills/ms/",
-      "references": 0
-    },
-    {
-      "sku": "skill:ntm",
-      "name": "ntm",
-      "type": "skill",
-      "kind": "skill",
-      "bounded_context": "BC6",
-      "hex_role": "supporting",
-      "tier": "execution",
-      "capability_class": "orchestration",
-      "purpose": "Orchestrate NTM tmux agent swarms and robot APIs — spawn/send panes, read robot state, triage, locks/mail, safety, pipelines. Single owner of swarm-tending doctrine. Triggers: \"ntm\", \"orchestrates ntm tmux agent swarms\", \"ntm skill\".",
-      "status": "active",
-      "disposition": "keep",
-      "runtime_targets": [
-        "claude",
-        "codex"
-      ],
-      "runtime_reach": "cross",
-      "parity_policy": "required",
-      "aliases": [],
-      "supersedes": null,
-      "consumes": [
-        "task-intent"
-      ],
-      "produces": [
-        "ntm-robot-state",
-        "agent-worker-transcript"
-      ],
-      "drives_commands": [
-        "ao beads exec",
-        "ao pawl",
-        "ao pawl review"
-      ],
-      "path": "skills/ntm/",
-      "references": 16
-    },
-    {
-      "sku": "skill:operationalize",
-      "name": "operationalize",
-      "type": "skill",
-      "kind": "skill",
-      "bounded_context": "BC1",
-      "hex_role": "domain",
-      "tier": "experimental",
-      "capability_class": "corpus",
-      "purpose": ">-",
-      "status": "active",
-      "disposition": "keep",
-      "runtime_targets": [
-        "claude",
-        "codex"
-      ],
-      "runtime_reach": "cross",
-      "parity_policy": "required",
-      "aliases": [],
-      "supersedes": null,
-      "consumes": [
-        ".agents/research/*.md",
-        "pattern-mining.v1"
-      ],
-      "produces": [
-        ".agents/operationalize/*.md",
-        "routed-handoffs"
-      ],
-      "drives_commands": [],
-      "path": "skills/operationalize/",
-      "references": 3
-    },
-    {
-      "sku": "skill:pattern-mining",
-      "name": "pattern-mining",
-      "type": "skill",
-      "kind": "skill",
-      "bounded_context": "BC1",
-      "hex_role": "supporting",
-      "tier": "execution",
-      "capability_class": "corpus",
-      "purpose": "Test repeated implementation shapes against independent exemplars and a holdout before routing an earned abstraction. Triggers: \"mine a recurring code pattern\", \"is this abstraction earned\", \"extract invariants from implementations\".",
-      "status": "active",
-      "disposition": "keep",
-      "runtime_targets": [
-        "claude",
-        "codex"
-      ],
-      "runtime_reach": "cross",
-      "parity_policy": "required",
-      "aliases": [],
-      "supersedes": null,
-      "consumes": [
-        "repo-context",
-        "task-question"
-      ],
-      "produces": [
-        "pattern-mining.v1"
-      ],
-      "drives_commands": [],
-      "path": "skills/pattern-mining/",
-      "references": 0
-    },
-    {
-      "sku": "skill:pawl-review",
-      "name": "pawl-review",
-      "type": "skill",
-      "kind": "skill",
-      "bounded_context": "BC2",
-      "hex_role": "driving-adapter",
-      "tier": "judgment",
-      "capability_class": "validation",
-      "purpose": "Run one fresh, read-only, nonce-bound reviewer lane and hand its evidence to ao pawl without deciding the panel verdict. Triggers: \"run a pawl reviewer\", \"fresh-context review lane\", \"collect independent review evidence\".",
-      "status": "active",
-      "disposition": "keep",
-      "runtime_targets": [
-        "claude",
-        "codex"
-      ],
-      "runtime_reach": "cross",
-      "parity_policy": "required",
-      "aliases": [
-        "pre-land-refuters"
-      ],
-      "supersedes": "pre-land-refuters",
-      "consumes": [
-        "code-under-review",
-        "specification"
-      ],
-      "produces": [
-        "review-lane-result.v1"
-      ],
-      "drives_commands": [
-        "ao pawl"
-      ],
-      "path": "skills/pawl-review/",
-      "references": 0
-    },
-    {
-      "sku": "skill:plan",
-      "name": "plan",
-      "type": "skill",
-      "kind": "skill",
-      "bounded_context": "BC3",
-      "hex_role": "domain",
-      "tier": "execution",
-      "capability_class": "planning",
-      "purpose": "Decompose goals into issue plans. Triggers: \"plan\", \"decompose goals into issue plans.\", \"plan skill\".",
-      "status": "active",
-      "disposition": "update",
-      "runtime_targets": [
-        "claude",
-        "codex"
-      ],
-      "runtime_reach": "cross",
-      "parity_policy": "required",
-      "aliases": [],
-      "supersedes": null,
-      "consumes": [
-        "standards"
-      ],
-      "produces": [
-        ".agents/plans/*.md",
-        "execution-packet.json"
-      ],
-      "drives_commands": [
-        "ao beads exec",
-        "ao beads verify"
-      ],
-      "path": "skills/plan/",
-      "references": 15
-    },
-    {
-      "sku": "skill:postmortem",
-      "name": "postmortem",
-      "type": "skill",
-      "kind": "skill",
-      "bounded_context": "BC3",
-      "hex_role": "domain",
-      "tier": "judgment",
-      "capability_class": "corpus",
-      "purpose": "Test an explicit retrospective causal question against evidence and counterfactuals after Validate and Learn. Triggers: \"postmortem\", \"causal retrospective\", \"test a retrospective hypothesis\".",
-      "status": "active",
-      "disposition": "update",
-      "runtime_targets": [
-        "claude",
-        "codex"
-      ],
-      "runtime_reach": "cross",
-      "parity_policy": "required",
-      "aliases": [],
-      "supersedes": null,
-      "consumes": [
-        "learn",
-        "toil-mining"
-      ],
-      "produces": [
-        "postmortem-report.md"
-      ],
-      "drives_commands": [],
-      "path": "skills/postmortem/",
-      "references": 0
-    },
-    {
-      "sku": "skill:pr-prep",
-      "name": "pr-prep",
-      "type": "skill",
-      "kind": "skill",
-      "bounded_context": "BC5",
-      "hex_role": "driving-adapter",
-      "tier": "contribute",
-      "capability_class": "delivery",
-      "purpose": "Prepare PR commits and body. Triggers: \"pr-prep\", \"pr prep\", \"prepare pr commits and body.\".",
-      "status": "active",
-      "disposition": "update",
-      "runtime_targets": [
-        "claude",
-        "codex"
-      ],
-      "runtime_reach": "cross",
-      "parity_policy": "required",
-      "aliases": [],
-      "supersedes": null,
-      "consumes": [
-        "domain"
-      ],
-      "produces": [
-        "git-changes"
-      ],
-      "drives_commands": [],
-      "path": "skills/pr-prep/",
-      "references": 4
-    },
-    {
-      "sku": "skill:premortem",
-      "name": "premortem",
-      "type": "skill",
-      "kind": "skill",
-      "bounded_context": "BC2",
-      "hex_role": "domain",
-      "tier": "judgment",
-      "capability_class": "validation",
-      "purpose": "Use when: an exact plan needs a verdict. Stress-tests readiness before work with one fresh, independent judge.",
-      "status": "active",
-      "disposition": "update",
-      "runtime_targets": [
-        "claude",
-        "codex"
-      ],
-      "runtime_reach": "cross",
-      "parity_policy": "required",
-      "aliases": [],
-      "supersedes": null,
-      "consumes": [
-        "standards"
-      ],
-      "produces": [
-        "premortem-plan-verdict.v1"
-      ],
-      "drives_commands": [],
-      "path": "skills/premortem/",
-      "references": 6
-    },
-    {
-      "sku": "skill:product",
-      "name": "product",
-      "type": "skill",
-      "kind": "skill",
-      "bounded_context": "BC3",
-      "hex_role": "domain",
-      "tier": "product",
-      "capability_class": "planning",
-      "purpose": "Create or refine PRODUCT.md. Triggers: \"product\", \"create or refine product.md.\", \"product skill\".",
-      "status": "active",
-      "disposition": "keep",
-      "runtime_targets": [
-        "claude",
-        "codex"
-      ],
-      "runtime_reach": "cross",
-      "parity_policy": "required",
-      "aliases": [],
-      "supersedes": null,
-      "consumes": [],
-      "produces": [
-        "result.json"
-      ],
-      "drives_commands": [],
-      "path": "skills/product/",
-      "references": 1
-    },
-    {
-      "sku": "skill:push",
-      "name": "push",
-      "type": "skill",
-      "kind": "skill",
-      "bounded_context": "BC5",
-      "hex_role": "driving-adapter",
-      "tier": "execution",
-      "capability_class": "delivery",
-      "purpose": "Run repository-selected deterministic delivery. Triggers: \"push\", \"ship it\", \"commit and push\".",
-      "status": "active",
-      "disposition": "update",
-      "runtime_targets": [
-        "claude",
-        "codex"
-      ],
-      "runtime_reach": "cross",
-      "parity_policy": "required",
-      "aliases": [],
-      "supersedes": null,
-      "consumes": [
-        "git-changes"
-      ],
-      "produces": [
-        "git-changes"
-      ],
-      "drives_commands": [
-        "ao gate check"
-      ],
-      "path": "skills/push/",
-      "references": 0
-    },
-    {
-      "sku": "skill:rch",
-      "name": "rch",
-      "type": "skill",
-      "kind": "skill",
-      "bounded_context": "BC5",
-      "hex_role": "supporting",
-      "tier": "execution",
-      "capability_class": "execution",
-      "purpose": "Use when offloading slow builds to remote workers or recovering RCH worker, hook, SSH, sync, or disk issues. Triggers: \"rch\", \"use when offloading slow builds\", \"rch skill\".",
-      "status": "active",
-      "disposition": "keep",
-      "runtime_targets": [
-        "claude",
-        "codex"
-      ],
-      "runtime_reach": "cross",
-      "parity_policy": "required",
-      "aliases": [],
-      "supersedes": null,
-      "consumes": [],
-      "produces": [],
-      "drives_commands": [],
-      "path": "skills/rch/",
-      "references": 16
-    },
-    {
-      "sku": "skill:reality-check",
-      "name": "reality-check",
-      "type": "skill",
-      "kind": "skill",
-      "bounded_context": "BC2",
-      "hex_role": "domain",
-      "tier": "execution",
-      "capability_class": "validation",
-      "purpose": ">-",
-      "status": "active",
-      "disposition": "keep",
-      "runtime_targets": [
-        "claude",
-        "codex"
-      ],
-      "runtime_reach": "cross",
-      "parity_policy": "required",
-      "aliases": [],
-      "supersedes": null,
-      "consumes": [
-        "implement"
-      ],
-      "produces": [
-        "result.json"
-      ],
-      "drives_commands": [
-        "ao beads exec"
-      ],
-      "path": "skills/reality-check/",
-      "references": 0
-    },
-    {
-      "sku": "skill:refactor",
-      "name": "refactor",
-      "type": "skill",
-      "kind": "skill",
-      "bounded_context": "BC3",
-      "hex_role": "supporting",
-      "tier": "execution",
-      "capability_class": "execution",
-      "purpose": "Execute safe refactors. Triggers: \"refactor\", \"execute safe refactors.\", \"refactor skill\".",
-      "status": "active",
-      "disposition": "update",
-      "runtime_targets": [
-        "claude",
-        "codex"
-      ],
-      "runtime_reach": "cross",
-      "parity_policy": "required",
-      "aliases": [],
-      "supersedes": null,
-      "consumes": [
-        "repo-context"
-      ],
-      "produces": [
-        "git-changes"
-      ],
-      "drives_commands": [],
-      "path": "skills/refactor/",
-      "references": 1
-    },
-    {
-      "sku": "skill:release",
-      "name": "release",
-      "type": "skill",
-      "kind": "skill",
-      "bounded_context": "BC2",
-      "hex_role": "supporting",
-      "tier": "product",
-      "capability_class": "delivery",
-      "purpose": "Run release validation. Triggers: \"run release validation\", \"cut a release\", \"check release readiness\".",
-      "status": "active",
-      "disposition": "update",
-      "runtime_targets": [
-        "claude",
-        "codex"
-      ],
-      "runtime_reach": "cross",
-      "parity_policy": "required",
-      "aliases": [],
-      "supersedes": null,
-      "consumes": [],
-      "produces": [
-        "result.json"
-      ],
-      "drives_commands": [
-        "ao goals init"
-      ],
-      "path": "skills/release/",
-      "references": 8
-    },
-    {
-      "sku": "skill:research",
-      "name": "research",
-      "type": "skill",
-      "kind": "skill",
-      "bounded_context": "BC1",
-      "hex_role": "driving-adapter",
-      "tier": "execution",
-      "capability_class": "corpus",
-      "purpose": "Explore and write findings. Triggers: \"research\", \"explore and write findings.\", \"research skill\".",
-      "status": "active",
-      "disposition": "update",
-      "runtime_targets": [
-        "claude",
-        "codex"
-      ],
-      "runtime_reach": "cross",
-      "parity_policy": "required",
-      "aliases": [],
-      "supersedes": null,
-      "consumes": [
-        "repo-context"
-      ],
-      "produces": [
-        ".agents/research/*.md",
-        "result.json"
-      ],
-      "drives_commands": [],
-      "path": "skills/research/",
-      "references": 18
-    },
-    {
-      "sku": "skill:reverse-engineer",
-      "name": "reverse-engineer",
-      "type": "skill",
-      "kind": "skill",
-      "bounded_context": "BC1",
-      "hex_role": "supporting",
-      "tier": "execution",
-      "capability_class": "corpus",
-      "purpose": "Reverse-engineer an authorized repo, binary, or product into a verifiable feature inventory and adoption map. Triggers: \"reverse-engineer X\", \"tear down Y\", \"what should we steal from Z\", \"evaluate competitor/upstream\", \"should we fork/adopt/build-native\".",
-      "status": "active",
-      "disposition": "keep",
-      "runtime_targets": [
-        "claude",
-        "codex"
-      ],
-      "runtime_reach": "cross",
-      "parity_policy": "required",
-      "aliases": [
-        "reverse-engineer-rpi"
-      ],
-      "supersedes": "reverse-engineer-rpi",
-      "consumes": [],
-      "produces": [
-        ".agents/research/*.md"
-      ],
-      "drives_commands": [],
-      "path": "skills/reverse-engineer/",
-      "references": 0
-    },
-    {
-      "sku": "skill:rpi",
-      "name": "rpi",
-      "type": "skill",
-      "kind": "skill",
-      "bounded_context": "BC3",
-      "hex_role": "domain",
-      "tier": "meta",
-      "capability_class": "orchestration",
-      "purpose": "Run Discovery, Crank, Validate, and Learn as four ordered, independently receipted umbrellas. Triggers: \"run rpi\", \"research-plan-implement one turn\", \"drive a turn through the operating loop\".",
-      "status": "active",
-      "disposition": "refactor",
-      "runtime_targets": [
-        "claude",
-        "codex"
-      ],
-      "runtime_reach": "cross",
-      "parity_policy": "required",
-      "aliases": [],
-      "supersedes": null,
-      "consumes": [
-        "crank",
-        "discovery",
-        "domain",
-        "learn",
-        "validate"
-      ],
-      "produces": [
-        ".agents/rpi/*.md"
-      ],
-      "drives_commands": [
-        "ao beads exec"
-      ],
-      "path": "skills/rpi/",
-      "references": 19
-    },
-    {
-      "sku": "skill:sbh",
-      "name": "sbh",
-      "type": "skill",
-      "kind": "skill",
-      "bounded_context": "BC5",
-      "hex_role": "supporting",
-      "tier": "execution",
-      "capability_class": "safety",
-      "purpose": ">-",
-      "status": "active",
-      "disposition": "keep",
-      "runtime_targets": [
-        "claude",
-        "codex"
-      ],
-      "runtime_reach": "cross",
-      "parity_policy": "required",
-      "aliases": [],
-      "supersedes": null,
-      "consumes": [],
-      "produces": [],
-      "drives_commands": [],
-      "path": "skills/sbh/",
-      "references": 0
-    },
-    {
-      "sku": "skill:scaffold",
-      "name": "scaffold",
-      "type": "skill",
-      "kind": "skill",
-      "bounded_context": "BC4",
-      "hex_role": "supporting",
-      "tier": "execution",
-      "capability_class": "authoring",
-      "purpose": "Stamp project/component/CI scaffolds — but reach for it mainly for the repo-specific domain-slice binding (generic trees a frontier model needs no skill for). Triggers: \"scaffold\", \"create project component or boilerplate\".",
-      "status": "active",
-      "disposition": "update",
-      "runtime_targets": [
-        "claude",
-        "codex"
-      ],
-      "runtime_reach": "cross",
-      "parity_policy": "required",
-      "aliases": [],
-      "supersedes": null,
-      "consumes": [],
-      "produces": [
-        "converted-skill"
-      ],
-      "drives_commands": [
-        "ao goals scenarios"
-      ],
-      "path": "skills/scaffold/",
-      "references": 3
-    },
-    {
-      "sku": "skill:scope",
-      "name": "scope",
-      "type": "skill",
-      "kind": "skill",
-      "bounded_context": "BC5",
-      "hex_role": "driven-adapter",
-      "tier": "execution",
-      "capability_class": "safety",
-      "purpose": "Hard-block edits outside declared frozen directories and protect paths during risky changes. Triggers: \"scope\", \"hard-block edits outside declared frozen\", \"scope skill\".",
-      "status": "active",
-      "disposition": "keep",
-      "runtime_targets": [
-        "claude",
-        "codex"
-      ],
-      "runtime_reach": "cross",
-      "parity_policy": "required",
-      "aliases": [],
-      "supersedes": null,
-      "consumes": [],
-      "produces": [
-        "filesystem-gate"
-      ],
-      "drives_commands": [],
-      "path": "skills/scope/",
-      "references": 3
-    },
-    {
-      "sku": "skill:security",
-      "name": "security",
-      "type": "skill",
-      "kind": "skill",
-      "bounded_context": "BC2",
-      "hex_role": "driven-adapter",
-      "tier": "product",
-      "capability_class": "safety",
-      "purpose": "Run repository security scans for vulnerabilities, dependency risk, secrets, and release gates. Triggers: \"security\", \"run repository security scans for\", \"security skill\".",
-      "status": "active",
-      "disposition": "keep",
-      "runtime_targets": [
-        "claude",
-        "codex"
-      ],
-      "runtime_reach": "cross",
-      "parity_policy": "required",
-      "aliases": [],
-      "supersedes": null,
-      "consumes": [
-        "repo-context"
-      ],
-      "produces": [
-        "security-report.json"
-      ],
-      "drives_commands": [],
-      "path": "skills/security/",
-      "references": 2
-    },
-    {
-      "sku": "skill:shared",
-      "name": "shared",
-      "type": "skill",
-      "kind": "skill",
-      "bounded_context": "BC4",
-      "hex_role": "domain",
-      "tier": "library",
-      "capability_class": "authoring",
-      "purpose": "Shared AgentOps skill contracts. Triggers: \"shared\", \"shared agentops skill contracts.\", \"shared skill\".",
-      "status": "active",
-      "disposition": "keep",
-      "runtime_targets": [
-        "claude",
-        "codex"
-      ],
-      "runtime_reach": "cross",
-      "parity_policy": "required",
-      "aliases": [],
-      "supersedes": null,
-      "consumes": [],
-      "produces": [
-        "stdout"
-      ],
-      "drives_commands": [
-        "ao beads verify",
-        "ao version"
-      ],
-      "path": "skills/shared/",
-      "references": 16
-    },
-    {
-      "sku": "skill:skill-builder",
-      "name": "skill-builder",
-      "type": "skill",
-      "kind": "skill",
-      "bounded_context": "BC4",
-      "hex_role": "supporting",
-      "tier": "meta",
-      "capability_class": "authoring",
-      "purpose": "Scaffold or absorb new SKILL.md files against the unified AgentOps template. Triggers: \"create a skill\", \"scaffold skill\", \"absorb external skill\", \"new skill\".",
-      "status": "active",
-      "disposition": "update",
-      "runtime_targets": [
-        "claude",
-        "codex"
-      ],
-      "runtime_reach": "cross",
-      "parity_policy": "required",
-      "aliases": [],
-      "supersedes": null,
-      "consumes": [],
-      "produces": [
-        "converted-skill"
-      ],
-      "drives_commands": [],
-      "path": "skills/skill-builder/",
-      "references": 4
-    },
-    {
-      "sku": "skill:standards",
-      "name": "standards",
-      "type": "skill",
-      "kind": "skill",
-      "bounded_context": "BC4",
-      "hex_role": "domain",
-      "tier": "library",
-      "capability_class": "docs",
-      "purpose": "Provide repo coding standards. Triggers: \"standards\", \"provide repo coding standards.\", \"standards skill\".",
-      "status": "active",
-      "disposition": "keep",
-      "runtime_targets": [
-        "claude",
-        "codex"
-      ],
-      "runtime_reach": "cross",
-      "parity_policy": "required",
-      "aliases": [],
-      "supersedes": null,
-      "consumes": [],
-      "produces": [
-        "stdout"
-      ],
-      "drives_commands": [],
-      "path": "skills/standards/",
-      "references": 25
-    },
-    {
-      "sku": "skill:status",
-      "name": "status",
-      "type": "skill",
-      "kind": "skill",
-      "bounded_context": "BC3",
-      "hex_role": "driving-adapter",
-      "tier": "session",
-      "capability_class": "tracking",
-      "purpose": "Show AgentOps work status. Triggers: \"status\", \"show agentops work status.\", \"status skill\".",
-      "status": "active",
-      "disposition": "update",
-      "runtime_targets": [
-        "claude",
-        "codex"
-      ],
-      "runtime_reach": "cross",
-      "parity_policy": "required",
-      "aliases": [],
-      "supersedes": null,
-      "consumes": [
-        "br"
-      ],
-      "produces": [
-        "stdout"
-      ],
-      "drives_commands": [
-        "ao beads exec",
-        "ao session bootstrap"
-      ],
-      "path": "skills/status/",
-      "references": 2
-    },
-    {
-      "sku": "skill:swarm",
-      "name": "swarm",
-      "type": "skill",
-      "kind": "skill",
-      "bounded_context": "BC6",
-      "hex_role": "supporting",
-      "tier": "execution",
-      "capability_class": "orchestration",
-      "purpose": "Dispatch parallel agents. Triggers: \"swarm\", \"dispatch parallel agents.\", \"swarm skill\".",
-      "status": "active",
-      "disposition": "update",
-      "runtime_targets": [
-        "claude",
-        "codex"
-      ],
-      "runtime_reach": "cross",
-      "parity_policy": "required",
-      "aliases": [],
-      "supersedes": null,
-      "consumes": [
-        "implement",
-        "validate"
-      ],
-      "produces": [
-        ".agents/swarm/results/*.json"
-      ],
-      "drives_commands": [],
-      "path": "skills/swarm/",
-      "references": 21
-    },
-    {
-      "sku": "skill:test",
-      "name": "test",
-      "type": "skill",
-      "kind": "skill",
-      "bounded_context": "BC2",
-      "hex_role": "supporting",
-      "tier": "execution",
-      "capability_class": "validation",
-      "purpose": "Generate tests and coverage plans. Triggers: \"test\", \"generate tests and coverage plans.\", \"test skill\".",
-      "status": "active",
-      "disposition": "update",
-      "runtime_targets": [
-        "claude",
-        "codex"
-      ],
-      "runtime_reach": "cross",
-      "parity_policy": "required",
-      "aliases": [],
-      "supersedes": null,
-      "consumes": [
-        "standards",
-        "repo-context"
-      ],
-      "produces": [
-        "result.json"
-      ],
-      "drives_commands": [
-        "ao beads exec"
-      ],
-      "path": "skills/test/",
-      "references": 6
-    },
-    {
-      "sku": "skill:toil-mining",
-      "name": "toil-mining",
-      "type": "skill",
-      "kind": "skill",
-      "bounded_context": "BC1",
-      "hex_role": "supporting",
-      "tier": "execution",
-      "capability_class": "corpus",
-      "purpose": ">-",
-      "status": "active",
-      "disposition": "keep",
-      "runtime_targets": [
-        "claude",
-        "codex"
-      ],
-      "runtime_reach": "cross",
-      "parity_policy": "required",
-      "aliases": [],
-      "supersedes": null,
-      "consumes": [],
-      "produces": [
-        "result.json"
-      ],
-      "drives_commands": [
-        "ao beads exec"
-      ],
-      "path": "skills/toil-mining/",
-      "references": 1
-    },
-    {
-      "sku": "skill:using-gc",
-      "name": "using-gc",
-      "type": "skill",
-      "kind": "skill",
-      "bounded_context": "BC6",
-      "hex_role": "supporting",
-      "tier": "cross-vendor",
-      "capability_class": "orchestration",
-      "purpose": "Drive an explicitly selected Gas City factory: stand up a city, sling quests, watch the AgentOps membrane close gate, resolve stalls, and converge. Triggers: \"using-gc\", \"gas city\", \"drive a gc city\", \"sling a quest\", \"gc stall\".",
-      "status": "active",
-      "disposition": "keep",
-      "runtime_targets": [
-        "claude",
-        "codex"
-      ],
-      "runtime_reach": "cross",
-      "parity_policy": "required",
-      "aliases": [],
-      "supersedes": null,
-      "consumes": [],
-      "produces": [],
-      "drives_commands": [],
-      "path": "skills/using-gc/",
-      "references": 3
-    },
-    {
-      "sku": "skill:validate",
-      "name": "validate",
-      "type": "skill",
-      "kind": "skill",
-      "bounded_context": "BC2",
-      "hex_role": "driving-adapter",
-      "tier": "judgment",
-      "capability_class": "validation",
-      "purpose": "Independently remeasure a bounded artifact and emit one immutable, evidence-bound verdict. Triggers: \"validate\", \"independently validate\", \"vibe\".",
-      "status": "active",
-      "disposition": "keep",
-      "runtime_targets": [
-        "claude",
-        "codex"
-      ],
-      "runtime_reach": "cross",
-      "parity_policy": "required",
-      "aliases": [],
-      "supersedes": null,
-      "consumes": [],
-      "produces": [
-        "result.json"
-      ],
-      "drives_commands": [],
-      "path": "skills/validate/",
-      "references": 3
-    },
-    {
-      "sku": "skill:workflow-builder",
-      "name": "workflow-builder",
-      "type": "skill",
-      "kind": "skill",
-      "bounded_context": "BC4",
-      "hex_role": "supporting",
-      "tier": "meta",
-      "capability_class": "authoring",
-      "purpose": "Scaffold a new Claude Workflow script — deterministic multi-agent orchestration. Triggers: \"build a workflow\", \"create a workflow\", \"scaffold workflow\", \"author a workflow\".",
-      "status": "active",
-      "disposition": "keep",
-      "runtime_targets": [
-        "claude",
-        "codex"
-      ],
-      "runtime_reach": "cross",
-      "parity_policy": "required",
-      "aliases": [],
-      "supersedes": null,
-      "consumes": [],
-      "produces": [
-        "workflow-script"
-      ],
-      "drives_commands": [],
-      "path": "skills/workflow-builder/",
-      "references": 0
-    },
-    {
-      "sku": "cmd:ao.beads",
-      "name": "ao beads",
-      "type": "cli-command",
-      "bounded_context": "",
-      "purpose": "Complementary tooling for the bd (beads) issue tracker",
-      "status": "active",
-      "driven_by_skills": [],
-      "flags": [
-        "--config",
-        "--dry-run",
-        "--json",
-        "--output",
-        "--verbose"
-      ],
-      "path": "cli/cmd/ao/"
-    },
-    {
-      "sku": "cmd:ao.capabilities",
-      "name": "ao capabilities",
-      "type": "cli-command",
-      "bounded_context": "BC5",
-      "purpose": "Print the machine-readable CLI contract (JSON)",
-      "status": "active",
-      "driven_by_skills": [],
-      "flags": [
-        "--config",
-        "--dry-run",
-        "--json",
-        "--output",
-        "--verbose"
-      ],
-      "path": "cli/cmd/ao/"
-    },
-    {
-      "sku": "cmd:ao.claim",
-      "name": "ao claim",
-      "type": "cli-command",
-      "bounded_context": "BC3",
-      "purpose": "Claim a BR bead or manage claim-evidence bindings",
-      "status": "active",
-      "driven_by_skills": [],
-      "flags": [
-        "--claim",
-        "--config",
-        "--dry-run",
-        "--json",
-        "--level",
-        "--output",
-        "--path",
-        "--verbose"
-      ],
-      "path": "cli/cmd/ao/"
-    },
-    {
-      "sku": "cmd:ao.close",
-      "name": "ao close",
-      "type": "cli-command",
-      "bounded_context": "",
-      "purpose": "Close a bead and persist the explicit ledger/evidence paths",
-      "status": "active",
-      "driven_by_skills": [],
-      "flags": [
-        "--config",
-        "--dry-run",
-        "--json",
-        "--output",
-        "--verbose"
-      ],
-      "path": "cli/cmd/ao/"
-    },
-    {
-      "sku": "cmd:ao.config",
-      "name": "ao config",
-      "type": "cli-command",
-      "bounded_context": "BC4",
-      "purpose": "Manage configuration",
-      "status": "active",
-      "driven_by_skills": [],
-      "flags": [
-        "--config",
-        "--dry-run",
-        "--json",
-        "--output",
-        "--show",
-        "--verbose"
-      ],
-      "path": "cli/cmd/ao/"
-    },
-    {
-      "sku": "cmd:ao.constraint",
-      "name": "ao constraint",
-      "type": "cli-command",
-      "bounded_context": "BC2",
-      "purpose": "Manage compiled constraints",
-      "status": "active",
-      "driven_by_skills": [],
-      "flags": [
-        "--config",
-        "--dry-run",
-        "--json",
-        "--output",
-        "--verbose"
-      ],
-      "path": "cli/cmd/ao/"
-    },
-    {
-      "sku": "cmd:ao.council-gate",
-      "name": "ao council-gate",
-      "type": "cli-command",
-      "bounded_context": "",
-      "purpose": "Fail-closed two-plus judge verdict aggregation",
-      "status": "active",
-      "driven_by_skills": [],
-      "flags": [
-        "--config",
-        "--dry-run",
-        "--json",
-        "--output",
-        "--verbose"
-      ],
-      "path": "cli/cmd/ao/"
-    },
-    {
-      "sku": "cmd:ao.doctor",
-      "name": "ao doctor",
-      "type": "cli-command",
-      "bounded_context": "BC4",
-      "purpose": "Check AgentOps health",
-      "status": "active",
-      "driven_by_skills": [],
-      "flags": [
-        "--before",
-        "--config",
-        "--dry-run",
-        "--explain",
-        "--fix",
-        "--json",
-        "--online",
-        "--only",
-        "--output",
-        "--quick",
-        "--robot",
-        "--robot-triage",
-        "--severity",
-        "--since",
-        "--skip",
-        "--verbose",
-        "--yes"
-      ],
-      "path": "cli/cmd/ao/"
-    },
-    {
-      "sku": "cmd:ao.done",
-      "name": "ao done",
-      "type": "cli-command",
-      "bounded_context": "",
-      "purpose": "Close a bead with a verdict-referenced stamp — no verdict = not done",
-      "status": "active",
-      "driven_by_skills": [],
-      "flags": [
-        "--config",
-        "--dry-run",
-        "--force-no-verdict",
-        "--json",
-        "--output",
-        "--reason",
-        "--sha",
-        "--verbose"
-      ],
-      "path": "cli/cmd/ao/"
-    },
-    {
-      "sku": "cmd:ao.eval",
-      "name": "ao eval",
-      "type": "cli-command",
-      "bounded_context": "BC2",
-      "purpose": "Run deterministic local evaluation suites",
-      "status": "active",
-      "driven_by_skills": [],
-      "flags": [
-        "--config",
-        "--delete",
-        "--dry-run",
-        "--json",
-        "--output",
-        "--tmp-files",
-        "--verbose"
-      ],
-      "path": "cli/cmd/ao/"
-    },
-    {
-      "sku": "cmd:ao.gate",
-      "name": "ao gate",
-      "type": "cli-command",
-      "bounded_context": "BC2",
-      "purpose": "Human review gates",
-      "status": "active",
-      "driven_by_skills": [],
-      "flags": [
-        "--config",
-        "--dry-run",
-        "--json",
-        "--output",
-        "--reason",
-        "--verbose"
-      ],
-      "path": "cli/cmd/ao/"
-    },
-    {
-      "sku": "cmd:ao.goals",
-      "name": "ao goals",
-      "type": "cli-command",
-      "bounded_context": "BC3",
-      "purpose": "Fitness goal measurement and validation",
-      "status": "active",
       "driven_by_skills": [
-        "goals"
+        "agy-native"
       ],
-      "flags": [
-        "--config",
-        "--dry-run",
-        "--file",
-        "--json",
-        "--output",
-        "--timeout",
-        "--verbose"
-      ],
-      "path": "cli/cmd/ao/"
+      "id": "skill:agy-native:dispatch_explicit_packet",
+      "name": "dispatch_explicit_packet",
+      "path": "skills/agy-native/SKILL.md",
+      "type": "skill"
     },
     {
-      "sku": "cmd:ao.governor",
-      "name": "ao governor",
-      "type": "cli-command",
-      "bounded_context": "",
-      "purpose": "The membrane's SPC control-loop governor (error budget, special-cause)",
-      "status": "active",
-      "driven_by_skills": [],
-      "flags": [
-        "--config",
-        "--dry-run",
-        "--json",
-        "--output",
-        "--verbose"
-      ],
-      "path": "cli/cmd/ao/"
-    },
-    {
-      "sku": "cmd:ao.init",
-      "name": "ao init",
-      "type": "cli-command",
-      "bounded_context": "BC4",
-      "purpose": "Initialize AgentOps in the current repository",
-      "status": "active",
-      "driven_by_skills": [],
-      "flags": [
-        "--config",
-        "--dry-run",
-        "--json",
-        "--output",
-        "--stealth",
-        "--verbose"
-      ],
-      "path": "cli/cmd/ao/"
-    },
-    {
-      "sku": "cmd:ao.land",
-      "name": "ao land",
-      "type": "cli-command",
-      "bounded_context": "",
-      "purpose": "Land a bead through the trusted pawl path with a fresh in-checkout binary, then atomic pawl-land",
-      "status": "active",
-      "driven_by_skills": [],
-      "flags": [
-        "--config",
-        "--dry-run",
-        "--json",
-        "--output",
-        "--scope",
-        "--verbose"
-      ],
-      "path": "cli/cmd/ao/"
-    },
-    {
-      "sku": "cmd:ao.membrane",
-      "name": "ao membrane",
-      "type": "cli-command",
-      "bounded_context": "",
-      "purpose": "Self-improving membrane: turn escapes into membrane checks",
-      "status": "active",
-      "driven_by_skills": [],
-      "flags": [
-        "--config",
-        "--dry-run",
-        "--json",
-        "--output",
-        "--verbose"
-      ],
-      "path": "cli/cmd/ao/"
-    },
-    {
-      "sku": "cmd:ao.pawl",
-      "name": "ao pawl",
-      "type": "cli-command",
-      "bounded_context": "",
-      "purpose": "Cross-family membrane review and verdict tooling (the in-repo acceptance pawl)",
-      "status": "active",
       "driven_by_skills": [
-        "council",
-        "ntm",
-        "pawl-review"
+        "agy-native"
       ],
-      "flags": [
-        "--config",
-        "--dry-run",
-        "--json",
-        "--output",
-        "--verbose"
-      ],
-      "path": "cli/cmd/ao/"
+      "id": "skill:agy-native:provide_fresh_context",
+      "name": "provide_fresh_context",
+      "path": "skills/agy-native/SKILL.md",
+      "type": "skill"
     },
     {
-      "sku": "cmd:ao.plan-pawl",
-      "name": "ao plan-pawl",
-      "type": "cli-command",
-      "bounded_context": "",
-      "purpose": "The plan-pawl duel gate over discovery plans (docs/contracts/pawls.md)",
-      "status": "active",
-      "driven_by_skills": [],
-      "flags": [
-        "--config",
-        "--dry-run",
-        "--json",
-        "--output",
-        "--verbose"
+      "driven_by_skills": [
+        "automation-shape-routing"
       ],
-      "path": "cli/cmd/ao/"
+      "id": "skill:automation-shape-routing:automation_shape_routing",
+      "name": "automation_shape_routing",
+      "path": "skills/automation-shape-routing/SKILL.md",
+      "type": "skill"
     },
     {
-      "sku": "cmd:ao.provenance",
-      "name": "ao provenance",
-      "type": "cli-command",
-      "bounded_context": "",
-      "purpose": "Write and read the SDLC provenance edge ledger",
-      "status": "active",
-      "driven_by_skills": [],
-      "flags": [
-        "--config",
-        "--dry-run",
-        "--json",
-        "--output",
-        "--verbose"
-      ],
-      "path": "cli/cmd/ao/"
-    },
-    {
-      "sku": "cmd:ao.quick-start",
-      "name": "ao quick-start",
-      "type": "cli-command",
-      "bounded_context": "BC3",
-      "purpose": "Set up AgentOps in your project (5 minutes)",
-      "status": "active",
       "driven_by_skills": [
         "bootstrap"
       ],
-      "flags": [
-        "--config",
-        "--dry-run",
-        "--json",
-        "--minimal",
-        "--no-beads",
-        "--output",
-        "--verbose"
-      ],
-      "path": "cli/cmd/ao/"
+      "id": "skill:bootstrap:bootstrap",
+      "name": "bootstrap",
+      "path": "skills/bootstrap/SKILL.md",
+      "type": "skill"
     },
     {
-      "sku": "cmd:ao.ready",
-      "name": "ao ready",
-      "type": "cli-command",
-      "bounded_context": "",
-      "purpose": "Print harness-neutral ready bead state as JSON",
-      "status": "active",
-      "driven_by_skills": [],
-      "flags": [
-        "--config",
-        "--dry-run",
-        "--json",
-        "--output",
-        "--verbose"
-      ],
-      "path": "cli/cmd/ao/"
-    },
-    {
-      "sku": "cmd:ao.robot-docs",
-      "name": "ao robot-docs",
-      "type": "cli-command",
-      "bounded_context": "BC5",
-      "purpose": "Print the paste-ready agent handbook for the ao CLI (Markdown)",
-      "status": "active",
-      "driven_by_skills": [],
-      "flags": [
-        "--config",
-        "--dry-run",
-        "--json",
-        "--output",
-        "--verbose"
-      ],
-      "path": "cli/cmd/ao/"
-    },
-    {
-      "sku": "cmd:ao.session",
-      "name": "ao session",
-      "type": "cli-command",
-      "bounded_context": "BC5",
-      "purpose": "Session lifecycle operations",
-      "status": "active",
-      "driven_by_skills": [],
-      "flags": [
-        "--config",
-        "--dry-run",
-        "--json",
-        "--output",
-        "--session",
-        "--verbose"
-      ],
-      "path": "cli/cmd/ao/"
-    },
-    {
-      "sku": "cmd:ao.skills",
-      "name": "ao skills",
-      "type": "cli-command",
-      "bounded_context": "BC4",
-      "purpose": "Inspect and validate the skills/ tree",
-      "status": "active",
-      "driven_by_skills": [],
-      "flags": [
-        "--config",
-        "--dry-run",
-        "--json",
-        "--output",
-        "--verbose"
-      ],
-      "path": "cli/cmd/ao/"
-    },
-    {
-      "sku": "cmd:ao.status",
-      "name": "ao status",
-      "type": "cli-command",
-      "bounded_context": "BC3",
-      "purpose": "Show AgentOps status",
-      "status": "active",
-      "driven_by_skills": [],
-      "flags": [
-        "--config",
-        "--dry-run",
-        "--json",
-        "--output",
-        "--verbose"
-      ],
-      "path": "cli/cmd/ao/"
-    },
-    {
-      "sku": "cmd:ao.validate",
-      "name": "ao validate",
-      "type": "cli-command",
-      "bounded_context": "BC2",
-      "purpose": "Umbrella validation gate (exit-code-as-verdict with --gate)",
-      "status": "active",
-      "driven_by_skills": [],
-      "flags": [
-        "--bead",
-        "--changes",
-        "--config",
-        "--dry-run",
-        "--gate",
-        "--json",
-        "--lenient",
-        "--lenient-expiry",
-        "--output",
-        "--strict",
-        "--verbose",
-        "--warn-as-fail"
-      ],
-      "path": "cli/cmd/ao/"
-    },
-    {
-      "sku": "cmd:ao.verdict-gate",
-      "name": "ao verdict-gate",
-      "type": "cli-command",
-      "bounded_context": "",
-      "purpose": "Reject verdicts without commands and independent judge identity",
-      "status": "active",
-      "driven_by_skills": [],
-      "flags": [
-        "--config",
-        "--dry-run",
-        "--json",
-        "--output",
-        "--verbose"
-      ],
-      "path": "cli/cmd/ao/"
-    },
-    {
-      "sku": "cmd:ao.verify",
-      "name": "ao verify",
-      "type": "cli-command",
-      "bounded_context": "",
-      "purpose": "Independent cross-family verdict on your change — no verdict = not done",
-      "status": "active",
-      "driven_by_skills": [],
-      "flags": [
-        "--author-family",
-        "--config",
-        "--context",
-        "--converge",
-        "--dir",
-        "--dry-run",
-        "--export-env",
-        "--from-verdict",
-        "--head",
-        "--json",
-        "--output",
-        "--rebind",
-        "--scope",
-        "--show-config",
-        "--stable",
-        "--strict",
-        "--verbose"
-      ],
-      "path": "cli/cmd/ao/"
-    },
-    {
-      "sku": "cmd:ao.version",
-      "name": "ao version",
-      "type": "cli-command",
-      "bounded_context": "BC4",
-      "purpose": "Show version information",
-      "status": "active",
       "driven_by_skills": [
-        "crank",
+        "cass"
+      ],
+      "id": "skill:cass:cass",
+      "name": "cass",
+      "path": "skills/cass/SKILL.md",
+      "type": "skill"
+    },
+    {
+      "driven_by_skills": [
+        "cc-hooks"
+      ],
+      "id": "skill:cc-hooks:cc_hooks",
+      "name": "cc_hooks",
+      "path": "skills/cc-hooks/SKILL.md",
+      "type": "skill"
+    },
+    {
+      "driven_by_skills": [
+        "codebase-recon"
+      ],
+      "id": "skill:codebase-recon:codebase_recon",
+      "name": "codebase_recon",
+      "path": "skills/codebase-recon/SKILL.md",
+      "type": "skill"
+    },
+    {
+      "driven_by_skills": [
+        "codex-exec"
+      ],
+      "id": "skill:codex-exec:codex_exec",
+      "name": "codex_exec",
+      "path": "skills/codex-exec/SKILL.md",
+      "type": "skill"
+    },
+    {
+      "driven_by_skills": [
+        "converter"
+      ],
+      "id": "skill:converter:converter",
+      "name": "converter",
+      "path": "skills/converter/SKILL.md",
+      "type": "skill"
+    },
+    {
+      "driven_by_skills": [
+        "council"
+      ],
+      "id": "skill:council:collect_independent_judgments",
+      "name": "collect_independent_judgments",
+      "path": "skills/council/SKILL.md",
+      "type": "skill"
+    },
+    {
+      "driven_by_skills": [
+        "council"
+      ],
+      "id": "skill:council:synthesize_disagreement",
+      "name": "synthesize_disagreement",
+      "path": "skills/council/SKILL.md",
+      "type": "skill"
+    },
+    {
+      "driven_by_skills": [
+        "dcg"
+      ],
+      "id": "skill:dcg:dcg",
+      "name": "dcg",
+      "path": "skills/dcg/SKILL.md",
+      "type": "skill"
+    },
+    {
+      "driven_by_skills": [
+        "doc"
+      ],
+      "id": "skill:doc:doc",
+      "name": "doc",
+      "path": "skills/doc/SKILL.md",
+      "type": "skill"
+    },
+    {
+      "driven_by_skills": [
+        "domain"
+      ],
+      "id": "skill:domain:domain",
+      "name": "domain",
+      "path": "skills/domain/SKILL.md",
+      "type": "skill"
+    },
+    {
+      "driven_by_skills": [
+        "dueling-idea-genies"
+      ],
+      "id": "skill:dueling-idea-genies:dueling_idea_genies",
+      "name": "dueling_idea_genies",
+      "path": "skills/dueling-idea-genies/SKILL.md",
+      "type": "skill"
+    },
+    {
+      "driven_by_skills": [
+        "goals"
+      ],
+      "id": "skill:goals:goals",
+      "name": "goals",
+      "path": "skills/goals/SKILL.md",
+      "type": "skill"
+    },
+    {
+      "driven_by_skills": [
+        "handoff"
+      ],
+      "id": "skill:handoff:handoff",
+      "name": "handoff",
+      "path": "skills/handoff/SKILL.md",
+      "type": "skill"
+    },
+    {
+      "driven_by_skills": [
+        "heal-skill"
+      ],
+      "id": "skill:heal-skill:heal_skill",
+      "name": "heal_skill",
+      "path": "skills/heal-skill/SKILL.md",
+      "type": "skill"
+    },
+    {
+      "driven_by_skills": [
+        "idea-genie"
+      ],
+      "id": "skill:idea-genie:generate_evidenced_options",
+      "name": "generate_evidenced_options",
+      "path": "skills/idea-genie/SKILL.md",
+      "type": "skill"
+    },
+    {
+      "driven_by_skills": [
+        "implement"
+      ],
+      "id": "skill:implement:execute_one_experiment",
+      "name": "execute_one_experiment",
+      "path": "skills/implement/SKILL.md",
+      "type": "skill"
+    },
+    {
+      "driven_by_skills": [
+        "implement"
+      ],
+      "id": "skill:implement:collect_factual_evidence",
+      "name": "collect_factual_evidence",
+      "path": "skills/implement/SKILL.md",
+      "type": "skill"
+    },
+    {
+      "driven_by_skills": [
+        "learn"
+      ],
+      "id": "skill:learn:analyze_verdict_collections",
+      "name": "analyze_verdict_collections",
+      "path": "skills/learn/SKILL.md",
+      "type": "skill"
+    },
+    {
+      "driven_by_skills": [
+        "ms"
+      ],
+      "id": "skill:ms:ms",
+      "name": "ms",
+      "path": "skills/ms/SKILL.md",
+      "type": "skill"
+    },
+    {
+      "driven_by_skills": [
+        "ntm"
+      ],
+      "id": "skill:ntm:ntm",
+      "name": "ntm",
+      "path": "skills/ntm/SKILL.md",
+      "type": "skill"
+    },
+    {
+      "driven_by_skills": [
+        "operationalize"
+      ],
+      "id": "skill:operationalize:distill_expertise",
+      "name": "distill_expertise",
+      "path": "skills/operationalize/SKILL.md",
+      "type": "skill"
+    },
+    {
+      "driven_by_skills": [
+        "operationalize"
+      ],
+      "id": "skill:operationalize:propose_artifact_shape",
+      "name": "propose_artifact_shape",
+      "path": "skills/operationalize/SKILL.md",
+      "type": "skill"
+    },
+    {
+      "driven_by_skills": [
+        "pattern-mining"
+      ],
+      "id": "skill:pattern-mining:pattern_mining",
+      "name": "pattern_mining",
+      "path": "skills/pattern-mining/SKILL.md",
+      "type": "skill"
+    },
+    {
+      "driven_by_skills": [
+        "plan"
+      ],
+      "id": "skill:plan:shape_intent",
+      "name": "shape_intent",
+      "path": "skills/plan/SKILL.md",
+      "type": "skill"
+    },
+    {
+      "driven_by_skills": [
+        "plan"
+      ],
+      "id": "skill:plan:define_acceptance",
+      "name": "define_acceptance",
+      "path": "skills/plan/SKILL.md",
+      "type": "skill"
+    },
+    {
+      "driven_by_skills": [
+        "plan"
+      ],
+      "id": "skill:plan:bound_write_scope",
+      "name": "bound_write_scope",
+      "path": "skills/plan/SKILL.md",
+      "type": "skill"
+    },
+    {
+      "driven_by_skills": [
+        "postmortem"
+      ],
+      "id": "skill:postmortem:postmortem",
+      "name": "postmortem",
+      "path": "skills/postmortem/SKILL.md",
+      "type": "skill"
+    },
+    {
+      "driven_by_skills": [
+        "premortem"
+      ],
+      "id": "skill:premortem:premortem",
+      "name": "premortem",
+      "path": "skills/premortem/SKILL.md",
+      "type": "skill"
+    },
+    {
+      "driven_by_skills": [
+        "product"
+      ],
+      "id": "skill:product:shape_product_boundary",
+      "name": "shape_product_boundary",
+      "path": "skills/product/SKILL.md",
+      "type": "skill"
+    },
+    {
+      "driven_by_skills": [
+        "rch"
+      ],
+      "id": "skill:rch:rch",
+      "name": "rch",
+      "path": "skills/rch/SKILL.md",
+      "type": "skill"
+    },
+    {
+      "driven_by_skills": [
+        "reality-check"
+      ],
+      "id": "skill:reality-check:compare_claim_to_evidence",
+      "name": "compare_claim_to_evidence",
+      "path": "skills/reality-check/SKILL.md",
+      "type": "skill"
+    },
+    {
+      "driven_by_skills": [
+        "refactor"
+      ],
+      "id": "skill:refactor:refactor",
+      "name": "refactor",
+      "path": "skills/refactor/SKILL.md",
+      "type": "skill"
+    },
+    {
+      "driven_by_skills": [
+        "research"
+      ],
+      "id": "skill:research:research",
+      "name": "research",
+      "path": "skills/research/SKILL.md",
+      "type": "skill"
+    },
+    {
+      "driven_by_skills": [
+        "reverse-engineer"
+      ],
+      "id": "skill:reverse-engineer:reverse_engineer",
+      "name": "reverse_engineer",
+      "path": "skills/reverse-engineer/SKILL.md",
+      "type": "skill"
+    },
+    {
+      "driven_by_skills": [
+        "rpi"
+      ],
+      "id": "skill:rpi:orchestrate_once",
+      "name": "orchestrate_once",
+      "path": "skills/rpi/SKILL.md",
+      "type": "skill"
+    },
+    {
+      "driven_by_skills": [
+        "rpi"
+      ],
+      "id": "skill:rpi:report",
+      "name": "report",
+      "path": "skills/rpi/SKILL.md",
+      "type": "skill"
+    },
+    {
+      "driven_by_skills": [
+        "sbh"
+      ],
+      "id": "skill:sbh:sbh",
+      "name": "sbh",
+      "path": "skills/sbh/SKILL.md",
+      "type": "skill"
+    },
+    {
+      "driven_by_skills": [
+        "scaffold"
+      ],
+      "id": "skill:scaffold:scaffold",
+      "name": "scaffold",
+      "path": "skills/scaffold/SKILL.md",
+      "type": "skill"
+    },
+    {
+      "driven_by_skills": [
+        "scope"
+      ],
+      "id": "skill:scope:scope",
+      "name": "scope",
+      "path": "skills/scope/SKILL.md",
+      "type": "skill"
+    },
+    {
+      "driven_by_skills": [
+        "security"
+      ],
+      "id": "skill:security:security",
+      "name": "security",
+      "path": "skills/security/SKILL.md",
+      "type": "skill"
+    },
+    {
+      "driven_by_skills": [
         "shared"
       ],
-      "flags": [
-        "--config",
-        "--dry-run",
-        "--json",
-        "--output",
-        "--verbose"
+      "id": "skill:shared:provide_reference_context",
+      "name": "provide_reference_context",
+      "path": "skills/shared/SKILL.md",
+      "type": "skill"
+    },
+    {
+      "driven_by_skills": [
+        "skill-builder"
       ],
-      "path": "cli/cmd/ao/"
+      "id": "skill:skill-builder:skill_builder",
+      "name": "skill_builder",
+      "path": "skills/skill-builder/SKILL.md",
+      "type": "skill"
     },
     {
-      "sku": "cmd:ao.yield",
-      "name": "ao yield",
-      "type": "cli-command",
-      "bounded_context": "",
-      "purpose": "Record dynamo yield-ledger events (per-bead operational stream)",
-      "status": "active",
-      "driven_by_skills": [],
-      "flags": [
-        "--config",
-        "--dry-run",
-        "--json",
-        "--output",
-        "--verbose"
+      "driven_by_skills": [
+        "standards"
       ],
-      "path": "cli/cmd/ao/"
+      "id": "skill:standards:standards",
+      "name": "standards",
+      "path": "skills/standards/SKILL.md",
+      "type": "skill"
     },
     {
-      "sku": "gate:changes",
-      "name": "changes",
-      "type": "gate",
-      "bounded_context": "BC2",
-      "purpose": "CI validation gate (.github/workflows/validate.yml).",
-      "status": "active",
-      "path": ".github/workflows/validate.yml"
+      "driven_by_skills": [
+        "status"
+      ],
+      "id": "skill:status:status",
+      "name": "status",
+      "path": "skills/status/SKILL.md",
+      "type": "skill"
     },
     {
-      "sku": "gate:go-gate-shadow",
-      "name": "go-gate-shadow",
-      "type": "gate",
-      "bounded_context": "BC2",
-      "purpose": "CI validation gate (.github/workflows/validate.yml).",
-      "status": "active",
-      "path": ".github/workflows/validate.yml"
+      "driven_by_skills": [
+        "swarm"
+      ],
+      "id": "skill:swarm:dispatch_once",
+      "name": "dispatch_once",
+      "path": "skills/swarm/SKILL.md",
+      "type": "skill"
     },
     {
-      "sku": "gate:correctness",
-      "name": "correctness",
-      "type": "gate",
-      "bounded_context": "BC2",
-      "purpose": "CI validation gate (.github/workflows/validate.yml).",
-      "status": "active",
-      "path": ".github/workflows/validate.yml"
+      "driven_by_skills": [
+        "test"
+      ],
+      "id": "skill:test:test",
+      "name": "test",
+      "path": "skills/test/SKILL.md",
+      "type": "skill"
     },
     {
-      "sku": "gate:security",
-      "name": "security",
-      "type": "gate",
-      "bounded_context": "BC2",
-      "purpose": "CI validation gate (.github/workflows/validate.yml).",
-      "status": "active",
-      "path": ".github/workflows/validate.yml"
+      "driven_by_skills": [
+        "toil-mining"
+      ],
+      "id": "skill:toil-mining:toil_mining",
+      "name": "toil_mining",
+      "path": "skills/toil-mining/SKILL.md",
+      "type": "skill"
     },
     {
-      "sku": "gate:summary",
-      "name": "summary",
-      "type": "gate",
-      "bounded_context": "BC2",
-      "purpose": "CI validation gate (.github/workflows/validate.yml).",
-      "status": "active",
-      "path": ".github/workflows/validate.yml"
+      "driven_by_skills": [
+        "using-gc"
+      ],
+      "id": "skill:using-gc:dispatch_explicit_packet",
+      "name": "dispatch_explicit_packet",
+      "path": "skills/using-gc/SKILL.md",
+      "type": "skill"
+    },
+    {
+      "driven_by_skills": [
+        "using-gc"
+      ],
+      "id": "skill:using-gc:observe_gc_runtime",
+      "name": "observe_gc_runtime",
+      "path": "skills/using-gc/SKILL.md",
+      "type": "skill"
+    },
+    {
+      "driven_by_skills": [
+        "validate"
+      ],
+      "id": "skill:validate:compute_subject_identity",
+      "name": "compute_subject_identity",
+      "path": "skills/validate/SKILL.md",
+      "type": "skill"
+    },
+    {
+      "driven_by_skills": [
+        "validate"
+      ],
+      "id": "skill:validate:judge_acceptance",
+      "name": "judge_acceptance",
+      "path": "skills/validate/SKILL.md",
+      "type": "skill"
+    },
+    {
+      "driven_by_skills": [
+        "validate"
+      ],
+      "id": "skill:validate:persist_verdict",
+      "name": "persist_verdict",
+      "path": "skills/validate/SKILL.md",
+      "type": "skill"
+    },
+    {
+      "driven_by_skills": [
+        "workflow-builder"
+      ],
+      "id": "skill:workflow-builder:workflow_builder",
+      "name": "workflow_builder",
+      "path": "skills/workflow-builder/SKILL.md",
+      "type": "skill"
     }
   ],
-  "workflows": [
-    {
-      "id": "bdd-foundry",
-      "kind": "workflow",
-      "bounded_context": "BC3",
-      "hex_role": "driving-adapter",
-      "capability_class": "planning",
-      "runtime_targets": [
-        "claude"
-      ],
-      "runtime_reach": "claude",
-      "parity_policy": "exempt",
-      "aliases": [],
-      "path": ".claude/workflows/bdd-foundry.js",
-      "supersedes": null
-    },
-    {
-      "id": "bead-crank",
-      "kind": "workflow",
-      "bounded_context": "BC3",
-      "hex_role": "driving-adapter",
-      "capability_class": "orchestration",
-      "runtime_targets": [
-        "claude"
-      ],
-      "runtime_reach": "claude",
-      "parity_policy": "exempt",
-      "aliases": [
-        "crank"
-      ],
-      "path": ".claude/workflows/bead-crank.js",
-      "supersedes": "ship-beads"
-    },
-    {
-      "id": "operating-loop",
-      "kind": "workflow",
-      "bounded_context": "BC3",
-      "hex_role": "driving-adapter",
-      "capability_class": "orchestration",
-      "runtime_targets": [
-        "claude"
-      ],
-      "runtime_reach": "claude",
-      "parity_policy": "exempt",
-      "aliases": [],
-      "path": ".claude/workflows/operating-loop.js",
-      "supersedes": null
-    },
-    {
-      "id": "ship-beads",
-      "kind": "workflow",
-      "bounded_context": "BC3",
-      "hex_role": "driving-adapter",
-      "capability_class": "orchestration",
-      "runtime_targets": [
-        "claude"
-      ],
-      "runtime_reach": "claude",
-      "parity_policy": "exempt",
-      "aliases": [
-        "crank",
-        "bead-crank"
-      ],
-      "path": ".claude/workflows/ship-beads.js",
-      "supersedes": null
-    }
-  ],
-  "cadence_recommendations": [
-    {
-      "name": "dream-cycle",
-      "cadence": "nightly",
-      "cron": "0 3 * * *",
-      "job_type": "dream.run",
-      "description": "Full knowledge consolidation: harvest → forge → inject → defrag",
-      "skills": [
-        "curate",
-        "forge",
-        "compile",
-        "inject"
-      ]
-    },
-    {
-      "name": "knowledge-forge",
-      "cadence": "hourly",
-      "cron": "5 * * * *",
-      "job_type": "wiki.forge",
-      "description": "Mine session transcripts into learnings",
-      "skills": [
-        "forge"
-      ]
-    },
-    {
-      "name": "eval-suite",
-      "cadence": "nightly",
-      "cron": "0 4 * * *",
-      "job_type": "eval.suite",
-      "description": "Run behavioral eval suite against skill changes",
-      "skills": [
-        "scenario"
-      ]
-    },
-    {
-      "name": "wiki-build",
-      "cadence": "weekly",
-      "cron": "0 5 * * 0",
-      "job_type": "wiki.build",
-      "description": "Full .agents/compiled rebuild",
-      "skills": [
-        "compile"
-      ]
-    },
-    {
-      "name": "flywheel-health",
-      "cadence": "weekly",
-      "cron": "0 6 * * 1",
-      "job_type": null,
-      "description": "Knowledge flywheel staleness and pool depth check",
-      "skills": [
-        "flywheel"
-      ]
-    },
-    {
-      "name": "deps-audit",
-      "cadence": "weekly",
-      "cron": "0 7 * * 2",
-      "job_type": null,
-      "description": "Dependency vulnerability and license audit",
-      "skills": [
-        "deps"
-      ]
-    },
-    {
-      "name": "security-scan",
-      "cadence": "weekly",
-      "cron": "0 7 * * 3",
-      "job_type": null,
-      "description": "Repository security scan",
-      "skills": [
-        "security"
-      ]
-    },
-    {
-      "name": "evolve-loop",
-      "cadence": "weekly",
-      "cron": "0 2 * * 6",
-      "job_type": "rpi.run",
-      "description": "Autonomous fitness-scored improvement cycle",
-      "skills": [
-        "evolve",
-        "rpi"
-      ]
-    },
-    {
-      "name": "pre-push-gate",
-      "cadence": "per-push",
-      "cron": null,
-      "job_type": null,
-      "description": "Local cockpit validation before push to main",
-      "skills": []
-    },
-    {
-      "name": "session-inject",
-      "cadence": "per-session",
-      "cron": null,
-      "job_type": null,
-      "description": "Context injection at session start",
-      "skills": [
-        "inject",
-        "recover"
-      ]
-    }
-  ]
+  "capability_summary": {
+    "cli_commands": 0,
+    "gates": 0,
+    "reference_impls": 0,
+    "skills": 62,
+    "total": 62
+  },
+  "cli_top_level_commands": [],
+  "schema_version": 3,
+  "summary": {
+    "capabilities": 62,
+    "cli_commands": 0,
+    "eval_files": 0,
+    "hooks": 0,
+    "job_types": 0,
+    "knowledge_stores": 0,
+    "skills": 50,
+    "workflows": 0
+  },
+  "surfaces": {
+    "cli_commands": [],
+    "evals": [],
+    "hooks": [],
+    "job_types": [],
+    "knowledge_stores": [],
+    "schedules": [],
+    "skills": [
+      {
+        "capabilities": [
+          "account_rotation"
+        ],
+        "disposition": "keep_specialist",
+        "effects": [],
+        "has_references": false,
+        "has_skill_md": true,
+        "name": "account-rotation",
+        "path": "skills/account-rotation/",
+        "reference_count": 0,
+        "tier": "execution"
+      },
+      {
+        "capabilities": [
+          "agent_mail"
+        ],
+        "disposition": "keep_optional_adapter",
+        "effects": [],
+        "has_references": true,
+        "has_skill_md": true,
+        "name": "agent-mail",
+        "path": "skills/agent-mail/",
+        "reference_count": 3,
+        "tier": "execution"
+      },
+      {
+        "capabilities": [
+          "role_dispatch",
+          "observe_workers",
+          "handoff"
+        ],
+        "disposition": "keep_optional_adapter",
+        "effects": [
+          "manage_runtime_sessions"
+        ],
+        "has_references": false,
+        "has_skill_md": true,
+        "name": "agent-native",
+        "path": "skills/agent-native/",
+        "reference_count": 0,
+        "tier": "meta"
+      },
+      {
+        "capabilities": [
+          "dispatch_explicit_packet",
+          "provide_fresh_context"
+        ],
+        "disposition": "keep_optional_adapter",
+        "effects": [
+          "start_agy_session"
+        ],
+        "has_references": false,
+        "has_skill_md": true,
+        "name": "agy-native",
+        "path": "skills/agy-native/",
+        "reference_count": 0,
+        "tier": "cross-vendor"
+      },
+      {
+        "capabilities": [
+          "automation_shape_routing"
+        ],
+        "disposition": "keep_optional_adapter",
+        "effects": [],
+        "has_references": false,
+        "has_skill_md": true,
+        "name": "automation-shape-routing",
+        "path": "skills/automation-shape-routing/",
+        "reference_count": 0,
+        "tier": "meta"
+      },
+      {
+        "capabilities": [
+          "bootstrap"
+        ],
+        "disposition": "keep_specialist",
+        "effects": [],
+        "has_references": true,
+        "has_skill_md": true,
+        "name": "bootstrap",
+        "path": "skills/bootstrap/",
+        "reference_count": 1,
+        "tier": "session"
+      },
+      {
+        "capabilities": [
+          "cass"
+        ],
+        "disposition": "keep_specialist",
+        "effects": [],
+        "has_references": true,
+        "has_skill_md": true,
+        "name": "cass",
+        "path": "skills/cass/",
+        "reference_count": 16,
+        "tier": "execution"
+      },
+      {
+        "capabilities": [
+          "cc_hooks"
+        ],
+        "disposition": "keep_specialist",
+        "effects": [],
+        "has_references": true,
+        "has_skill_md": true,
+        "name": "cc-hooks",
+        "path": "skills/cc-hooks/",
+        "reference_count": 7,
+        "tier": "execution"
+      },
+      {
+        "capabilities": [
+          "codebase_recon"
+        ],
+        "disposition": "keep_specialist",
+        "effects": [],
+        "has_references": true,
+        "has_skill_md": true,
+        "name": "codebase-recon",
+        "path": "skills/codebase-recon/",
+        "reference_count": 1,
+        "tier": "execution"
+      },
+      {
+        "capabilities": [
+          "codex_exec"
+        ],
+        "disposition": "keep_optional_adapter",
+        "effects": [],
+        "has_references": false,
+        "has_skill_md": true,
+        "name": "codex-exec",
+        "path": "skills/codex-exec/",
+        "reference_count": 0,
+        "tier": "orchestration"
+      },
+      {
+        "capabilities": [
+          "converter"
+        ],
+        "disposition": "keep_specialist",
+        "effects": [],
+        "has_references": true,
+        "has_skill_md": true,
+        "name": "converter",
+        "path": "skills/converter/",
+        "reference_count": 1,
+        "tier": "cross-vendor"
+      },
+      {
+        "capabilities": [
+          "collect_independent_judgments",
+          "synthesize_disagreement"
+        ],
+        "disposition": "keep_strategy",
+        "effects": [
+          "write_advisory_council_report"
+        ],
+        "has_references": false,
+        "has_skill_md": true,
+        "name": "council",
+        "path": "skills/council/",
+        "reference_count": 0,
+        "tier": "judgment"
+      },
+      {
+        "capabilities": [
+          "dcg"
+        ],
+        "disposition": "keep_specialist",
+        "effects": [],
+        "has_references": true,
+        "has_skill_md": true,
+        "name": "dcg",
+        "path": "skills/dcg/",
+        "reference_count": 6,
+        "tier": "execution"
+      },
+      {
+        "capabilities": [
+          "doc"
+        ],
+        "disposition": "keep_specialist",
+        "effects": [],
+        "has_references": true,
+        "has_skill_md": true,
+        "name": "doc",
+        "path": "skills/doc/",
+        "reference_count": 15,
+        "tier": "product"
+      },
+      {
+        "capabilities": [
+          "domain"
+        ],
+        "disposition": "keep_specialist",
+        "effects": [],
+        "has_references": false,
+        "has_skill_md": true,
+        "name": "domain",
+        "path": "skills/domain/",
+        "reference_count": 0,
+        "tier": "knowledge"
+      },
+      {
+        "capabilities": [
+          "dueling_idea_genies"
+        ],
+        "disposition": "keep_strategy",
+        "effects": [],
+        "has_references": true,
+        "has_skill_md": true,
+        "name": "dueling-idea-genies",
+        "path": "skills/dueling-idea-genies/",
+        "reference_count": 1,
+        "tier": "judgment"
+      },
+      {
+        "capabilities": [
+          "goals"
+        ],
+        "disposition": "keep_specialist",
+        "effects": [],
+        "has_references": false,
+        "has_skill_md": true,
+        "name": "goals",
+        "path": "skills/goals/",
+        "reference_count": 0,
+        "tier": "product"
+      },
+      {
+        "capabilities": [
+          "handoff"
+        ],
+        "disposition": "keep_specialist",
+        "effects": [],
+        "has_references": true,
+        "has_skill_md": true,
+        "name": "handoff",
+        "path": "skills/handoff/",
+        "reference_count": 1,
+        "tier": "session"
+      },
+      {
+        "capabilities": [
+          "heal_skill"
+        ],
+        "disposition": "keep_specialist",
+        "effects": [],
+        "has_references": true,
+        "has_skill_md": true,
+        "name": "heal-skill",
+        "path": "skills/heal-skill/",
+        "reference_count": 6,
+        "tier": "meta"
+      },
+      {
+        "capabilities": [
+          "generate_evidenced_options"
+        ],
+        "disposition": "keep_strategy",
+        "effects": [
+          "write_idea_portfolio"
+        ],
+        "has_references": true,
+        "has_skill_md": true,
+        "name": "idea-genie",
+        "path": "skills/idea-genie/",
+        "reference_count": 1,
+        "tier": "execution"
+      },
+      {
+        "capabilities": [
+          "execute_one_experiment",
+          "collect_factual_evidence"
+        ],
+        "disposition": "keep",
+        "effects": [
+          "modify_declared_subject",
+          "write_candidate_packet"
+        ],
+        "has_references": true,
+        "has_skill_md": true,
+        "name": "implement",
+        "path": "skills/implement/",
+        "reference_count": 1,
+        "tier": "execution"
+      },
+      {
+        "capabilities": [
+          "analyze_verdict_collections"
+        ],
+        "disposition": "keep_off_path",
+        "effects": [
+          "write_advisory_observations"
+        ],
+        "has_references": true,
+        "has_skill_md": true,
+        "name": "learn",
+        "path": "skills/learn/",
+        "reference_count": 1,
+        "tier": "execution"
+      },
+      {
+        "capabilities": [
+          "ms"
+        ],
+        "disposition": "keep_specialist",
+        "effects": [],
+        "has_references": false,
+        "has_skill_md": true,
+        "name": "ms",
+        "path": "skills/ms/",
+        "reference_count": 0,
+        "tier": "execution"
+      },
+      {
+        "capabilities": [
+          "ntm"
+        ],
+        "disposition": "keep_optional_adapter",
+        "effects": [],
+        "has_references": false,
+        "has_skill_md": true,
+        "name": "ntm",
+        "path": "skills/ntm/",
+        "reference_count": 0,
+        "tier": "execution"
+      },
+      {
+        "capabilities": [
+          "distill_expertise",
+          "propose_artifact_shape"
+        ],
+        "disposition": "keep_specialist",
+        "effects": [
+          "write_advisory_proposal"
+        ],
+        "has_references": false,
+        "has_skill_md": true,
+        "name": "operationalize",
+        "path": "skills/operationalize/",
+        "reference_count": 0,
+        "tier": "meta"
+      },
+      {
+        "capabilities": [
+          "pattern_mining"
+        ],
+        "disposition": "keep_specialist",
+        "effects": [],
+        "has_references": true,
+        "has_skill_md": true,
+        "name": "pattern-mining",
+        "path": "skills/pattern-mining/",
+        "reference_count": 1,
+        "tier": "execution"
+      },
+      {
+        "capabilities": [
+          "shape_intent",
+          "define_acceptance",
+          "bound_write_scope"
+        ],
+        "disposition": "keep",
+        "effects": [
+          "write_plan_packet"
+        ],
+        "has_references": true,
+        "has_skill_md": true,
+        "name": "plan",
+        "path": "skills/plan/",
+        "reference_count": 1,
+        "tier": "execution"
+      },
+      {
+        "capabilities": [
+          "postmortem"
+        ],
+        "disposition": "keep_strategy",
+        "effects": [],
+        "has_references": true,
+        "has_skill_md": true,
+        "name": "postmortem",
+        "path": "skills/postmortem/",
+        "reference_count": 1,
+        "tier": "judgment"
+      },
+      {
+        "capabilities": [
+          "premortem"
+        ],
+        "disposition": "keep_strategy",
+        "effects": [],
+        "has_references": true,
+        "has_skill_md": true,
+        "name": "premortem",
+        "path": "skills/premortem/",
+        "reference_count": 7,
+        "tier": "judgment"
+      },
+      {
+        "capabilities": [
+          "shape_product_boundary"
+        ],
+        "disposition": "keep_specialist",
+        "effects": [
+          "write_product_document"
+        ],
+        "has_references": false,
+        "has_skill_md": true,
+        "name": "product",
+        "path": "skills/product/",
+        "reference_count": 0,
+        "tier": "product"
+      },
+      {
+        "capabilities": [
+          "rch"
+        ],
+        "disposition": "keep_specialist",
+        "effects": [],
+        "has_references": true,
+        "has_skill_md": true,
+        "name": "rch",
+        "path": "skills/rch/",
+        "reference_count": 7,
+        "tier": "execution"
+      },
+      {
+        "capabilities": [
+          "compare_claim_to_evidence"
+        ],
+        "disposition": "keep_strategy",
+        "effects": [
+          "write_advisory_gap_report"
+        ],
+        "has_references": false,
+        "has_skill_md": true,
+        "name": "reality-check",
+        "path": "skills/reality-check/",
+        "reference_count": 0,
+        "tier": "judgment"
+      },
+      {
+        "capabilities": [
+          "refactor"
+        ],
+        "disposition": "keep_specialist",
+        "effects": [],
+        "has_references": true,
+        "has_skill_md": true,
+        "name": "refactor",
+        "path": "skills/refactor/",
+        "reference_count": 2,
+        "tier": "execution"
+      },
+      {
+        "capabilities": [
+          "research"
+        ],
+        "disposition": "keep_specialist",
+        "effects": [],
+        "has_references": true,
+        "has_skill_md": true,
+        "name": "research",
+        "path": "skills/research/",
+        "reference_count": 19,
+        "tier": "execution"
+      },
+      {
+        "capabilities": [
+          "reverse_engineer"
+        ],
+        "disposition": "keep_specialist",
+        "effects": [],
+        "has_references": true,
+        "has_skill_md": true,
+        "name": "reverse-engineer",
+        "path": "skills/reverse-engineer/",
+        "reference_count": 2,
+        "tier": "execution"
+      },
+      {
+        "capabilities": [
+          "orchestrate_once",
+          "report"
+        ],
+        "disposition": "keep",
+        "effects": [
+          "dispatch_core_phases"
+        ],
+        "has_references": true,
+        "has_skill_md": true,
+        "name": "rpi",
+        "path": "skills/rpi/",
+        "reference_count": 1,
+        "tier": "meta"
+      },
+      {
+        "capabilities": [
+          "sbh"
+        ],
+        "disposition": "keep_specialist",
+        "effects": [],
+        "has_references": false,
+        "has_skill_md": true,
+        "name": "sbh",
+        "path": "skills/sbh/",
+        "reference_count": 0,
+        "tier": "execution"
+      },
+      {
+        "capabilities": [
+          "scaffold"
+        ],
+        "disposition": "keep_specialist",
+        "effects": [],
+        "has_references": true,
+        "has_skill_md": true,
+        "name": "scaffold",
+        "path": "skills/scaffold/",
+        "reference_count": 4,
+        "tier": "execution"
+      },
+      {
+        "capabilities": [
+          "scope"
+        ],
+        "disposition": "keep_specialist",
+        "effects": [],
+        "has_references": true,
+        "has_skill_md": true,
+        "name": "scope",
+        "path": "skills/scope/",
+        "reference_count": 4,
+        "tier": "meta"
+      },
+      {
+        "capabilities": [
+          "security"
+        ],
+        "disposition": "keep_specialist",
+        "effects": [],
+        "has_references": true,
+        "has_skill_md": true,
+        "name": "security",
+        "path": "skills/security/",
+        "reference_count": 6,
+        "tier": "product"
+      },
+      {
+        "capabilities": [
+          "provide_reference_context"
+        ],
+        "disposition": "keep_specialist",
+        "effects": [],
+        "has_references": true,
+        "has_skill_md": true,
+        "name": "shared",
+        "path": "skills/shared/",
+        "reference_count": 1,
+        "tier": "library"
+      },
+      {
+        "capabilities": [
+          "skill_builder"
+        ],
+        "disposition": "keep_specialist",
+        "effects": [],
+        "has_references": true,
+        "has_skill_md": true,
+        "name": "skill-builder",
+        "path": "skills/skill-builder/",
+        "reference_count": 6,
+        "tier": "meta"
+      },
+      {
+        "capabilities": [
+          "standards"
+        ],
+        "disposition": "keep_specialist",
+        "effects": [],
+        "has_references": true,
+        "has_skill_md": true,
+        "name": "standards",
+        "path": "skills/standards/",
+        "reference_count": 15,
+        "tier": "knowledge"
+      },
+      {
+        "capabilities": [
+          "status"
+        ],
+        "disposition": "keep_specialist",
+        "effects": [],
+        "has_references": true,
+        "has_skill_md": true,
+        "name": "status",
+        "path": "skills/status/",
+        "reference_count": 1,
+        "tier": "session"
+      },
+      {
+        "capabilities": [
+          "dispatch_once"
+        ],
+        "disposition": "keep_optional_adapter",
+        "effects": [
+          "invoke_selected_executor"
+        ],
+        "has_references": false,
+        "has_skill_md": true,
+        "name": "swarm",
+        "path": "skills/swarm/",
+        "reference_count": 0,
+        "tier": "execution"
+      },
+      {
+        "capabilities": [
+          "test"
+        ],
+        "disposition": "keep_specialist",
+        "effects": [],
+        "has_references": true,
+        "has_skill_md": true,
+        "name": "test",
+        "path": "skills/test/",
+        "reference_count": 7,
+        "tier": "execution"
+      },
+      {
+        "capabilities": [
+          "toil_mining"
+        ],
+        "disposition": "keep_specialist",
+        "effects": [],
+        "has_references": false,
+        "has_skill_md": true,
+        "name": "toil-mining",
+        "path": "skills/toil-mining/",
+        "reference_count": 0,
+        "tier": "meta"
+      },
+      {
+        "capabilities": [
+          "dispatch_explicit_packet",
+          "observe_gc_runtime"
+        ],
+        "disposition": "keep_optional_adapter",
+        "effects": [
+          "operate_gas_city"
+        ],
+        "has_references": false,
+        "has_skill_md": true,
+        "name": "using-gc",
+        "path": "skills/using-gc/",
+        "reference_count": 0,
+        "tier": "execution"
+      },
+      {
+        "capabilities": [
+          "compute_subject_identity",
+          "judge_acceptance",
+          "persist_verdict"
+        ],
+        "disposition": "keep",
+        "effects": [
+          "write_verdict_artifact"
+        ],
+        "has_references": true,
+        "has_skill_md": true,
+        "name": "validate",
+        "path": "skills/validate/",
+        "reference_count": 1,
+        "tier": "judgment"
+      },
+      {
+        "capabilities": [
+          "workflow_builder"
+        ],
+        "disposition": "keep_specialist",
+        "effects": [],
+        "has_references": false,
+        "has_skill_md": true,
+        "name": "workflow-builder",
+        "path": "skills/workflow-builder/",
+        "reference_count": 0,
+        "tier": "meta"
+      }
+    ],
+    "workflows": []
+  }
 }

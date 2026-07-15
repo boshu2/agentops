@@ -24,6 +24,10 @@ context:
     - TASK
   intel_scope: none
 metadata:
+  capabilities: [scope]
+  effects: []
+  canonical_status: canonical
+  disposition: keep_specialist
   tier: meta
   dependencies: []
 output_contract: 'stdout: scope status / lock state; stderr: blocked-edit reason from
@@ -41,9 +45,8 @@ output_contract: 'stdout: scope status / lock state; stderr: blocked-edit reason
 - Resolve each frozen directory repo-relative, reject traversal outside the repository, and verify `ao scope status --json` after every mutation. **Why:** an unverified or escaping prefix gives false confidence about the active boundary.
 - Never unfreeze or widen scope merely to make a blocked edit pass; require explicit scope-expansion judgment tied to the original objective. **Why:** silently moving the boundary defeats the guard.
 - Use the current agent and local shell for freeze, status, and recovery; do not start another runtime or orchestration substrate unless explicitly requested. **Why:** a path guard does not authorize fan-out.
-- `WARN|FAIL|REFUTED -> AUTO-REDO`: consult the pawl, repair the path or lock state, and retry within the same declared scope. **Why:** malformed inputs and failed checks are recovery evidence, not an andon by themselves.
-- `BREAKER -> HOLD -> ONE-HELPER`; `HELPER-UNSTUCK -> AUTO-REDO`. On an out-of-scope rejection, hold the write and use one bounded local-shell helper to inspect status and find an in-scope route. **Why:** one recovery pass preserves containment without hiding a real scope conflict.
-- `HELPER-ESCALATE -> HUMAN`; `REFUSAL-LANE|EXPLICIT-JUDGMENT|EXHAUSTED-BUDGET -> HUMAN`. **Why:** only a genuine boundary change, unavailable authority, explicit judgment, or exhausted recovery earns the human andon.
+- Report an out-of-scope target and stop that invocation. This skill does not
+  widen scope, repair, retry, escalate, or select an alternative path.
 
 ---
 
@@ -110,14 +113,16 @@ Reserved for a follow-up skill that combines `freeze` + status + spawn-orchestra
 **Filename convention:** `scope.lock`; status emits the same state to stdout, with `--json` producing one JSON object.
 **Serialization/schema format:** JSON matching [lock-file-format](references/lock-file-format.md): `schema_version: 1`, string array `frozen_dirs`, nonempty RFC-3339 `acquired_at`, and string `acquired_by`.
 **Validator command:** run `ao scope status --json | jq -e '.schema_version==1 and (.frozen_dirs|type=="array" and all(.[]; type=="string" and length>0)) and (.acquired_at|type=="string" and length>0) and (.acquired_by|type=="string")'`.
-**Downstream handoff:** pass the lock path, normalized frozen directories, acquisition identity/time, attempted target, blocked-edit reason, and next safe action to the consuming workflow; a blocked edit enters pawl recovery before scope expansion or human escalation.
+**Output:** pass the lock path, normalized frozen directories, acquisition
+identity/time, attempted target, and blocked-edit reason. The caller decides
+what happens next.
 
 ## Quality Checklist
 
 - [ ] Every frozen directory is repo-relative, normalized, and tied to the current objective.
 - [ ] `ao scope status --json` round-trips after freeze/unfreeze and passes the validator.
 - [ ] In-scope and out-of-scope probes demonstrate the intended boundary before risky work.
-- [ ] A rejection holds the write and consults the pawl; it never silently widens scope.
+- [ ] A rejection stops the invocation and never silently widens scope.
 - [ ] Unfreeze happens at explicit release/closeout, not as a workaround for a failed command.
 
 ---

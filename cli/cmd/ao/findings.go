@@ -215,7 +215,6 @@ func runFindingsPull(cmd *cobra.Command, args []string) error {
 		}
 		copied = append(copied, dst)
 	}
-	bestEffortRefreshFindingCompiler(cwd)
 	return printFindingTransferResult("pulled", copied)
 }
 
@@ -244,8 +243,6 @@ func runFindingsRetire(cmd *cobra.Command, args []string) error {
 	}); err != nil {
 		return err
 	}
-	bestEffortRefreshFindingCompiler(cwd)
-
 	if GetOutput() == "json" {
 		result := map[string]string{
 			"id":         finding.ID,
@@ -374,15 +371,4 @@ func updateFindingFrontMatter(path string, updates map[string]string) error {
 
 func writeFindingFileAtomic(path string, data []byte, mode os.FileMode) error {
 	return search.WriteFindingFileAtomic(path, data, mode)
-}
-
-// bestEffortRefreshFindingCompiler opportunistically re-runs the repo's
-// finding-compiler hook. It routes through the trusted-script chokepoint
-// (runBestEffortRepoScript): the hook only runs when the checkout passes the
-// aoBinaryInside trust boundary (or AGENTOPS_TRUST_REPO=1), so an installed ao
-// pointed at a foreign repo never executes that repo's planted
-// hooks/finding-compiler.sh — an untrusted repo is skipped with an observable
-// stderr note instead of silently executed. Failures stay swallowed (best-effort).
-func bestEffortRefreshFindingCompiler(cwd string) {
-	runBestEffortRepoScript(cwd, "hooks/finding-compiler.sh", "--quiet")
 }

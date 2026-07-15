@@ -1,144 +1,54 @@
-# cmdao-surface-allowlist.txt
-#
-# Commands intentionally excluded from direct command-surface coverage checks.
-#
-# Format: category|command|reason
-# Comment lines start with #. Blank lines are ignored.
-#
-# Valid categories:
-#   public-tested
-#   public-stateful-fixture-needed
-#   internal-hidden
-#   deprecated
-#   unsafe-live
-#   manual-only
-#
-# Before adding a command here, prefer adding coverage to:
-#   - scripts/release-smoke-test.sh  (for smoke/integration coverage)
-#   - cli/cmd/ao/*_test.go           (for unit test coverage)
+# Current default-spine exceptions. The live Cobra tree and generated
+# cli/docs/COMMANDS.md are the command inventory; this file only explains why
+# a current leaf is not exercised directly by the smoke suite.
 
 internal-hidden|help|Built-in Cobra help dispatcher with no application handler.
-public-tested|completion|Framework completion root; subcommand generation has focused tests.
+public-tested|completion|Framework completion root has focused generation tests.
 manual-only|demo|Interactive demonstration requires a TTY.
 
-public-stateful-fixture-needed|goals steer add|Writes GOALS.md and needs an isolated goal fixture.
-public-stateful-fixture-needed|goals steer prioritize|Writes GOALS.md and needs an isolated goal fixture.
-public-stateful-fixture-needed|goals steer remove|Writes GOALS.md and needs an isolated goal fixture.
-public-stateful-fixture-needed|goals add|Writes GOALS.md and needs an isolated goal fixture.
-public-stateful-fixture-needed|goals prune|Removes stale goal entries and needs a disposable fixture.
-public-stateful-fixture-needed|goals migrate|Migrates GOALS.md format and needs a disposable fixture.
-public-tested|goals meta|Covered through goals measure behavior.
-public-tested|goals export|Covered through goals measure snapshot behavior.
-public-stateful-fixture-needed|goals drift|Requires two goal snapshots to compare.
+public-stateful-fixture-needed|goals add|Writes GOALS.md and needs an isolated fixture.
+public-stateful-fixture-needed|goals prune|Removes goal entries and needs a disposable fixture.
+public-stateful-fixture-needed|goals migrate|Migrates GOALS.md and needs a disposable fixture.
+public-tested|goals meta|Covered through goals measurement behavior.
+public-tested|goals export|Covered through goals snapshot behavior.
+public-stateful-fixture-needed|goals drift|Requires two goal snapshots.
 public-tested|goals history|Historical view shares goals validation behavior.
-public-stateful-fixture-needed|goals init|Initializes GOALS.md and may prompt in an existing repo.
+public-stateful-fixture-needed|goals init|Initializes GOALS.md and may prompt.
 
-public-stateful-fixture-needed|beads audit|Requires a beads database fixture; auto-close mode mutates issue state.
-public-stateful-fixture-needed|beads cluster|Requires a beads database fixture; apply mode mutates issue parents.
+public-tested|constraint activate|Covered through constraint list behavior.
+public-tested|constraint retire|Covered through constraint list behavior.
+public-tested|constraint review|Covered through constraint list behavior.
 
-public-stateful-fixture-needed|ratchet migrate|Migrates legacy ratchet artifacts.
-public-stateful-fixture-needed|ratchet migrate-artifacts|Adds frontmatter to .agents artifacts.
-public-stateful-fixture-needed|ratchet record|Records workflow step completion.
-public-stateful-fixture-needed|ratchet skip|Records intentional skip state.
-public-stateful-fixture-needed|ratchet promote|Promotes artifact state across tiers.
-public-tested|ratchet find|Covered through search and inject command behavior.
-public-tested|ratchet trace|Covered through trace command behavior.
-public-tested|ratchet spec|Covered through ratchet status behavior.
+public-stateful-fixture-needed|doctor capabilities|Inspects local installation state.
+public-stateful-fixture-needed|doctor diff|Compares local installation state.
+public-stateful-fixture-needed|doctor explain|Requires controlled findings.
+public-stateful-fixture-needed|doctor fix|Mutates local installation state.
+public-stateful-fixture-needed|doctor gc|Prunes local doctor artifacts.
+public-stateful-fixture-needed|doctor health|Inspects local health state.
+public-stateful-fixture-needed|doctor ls|Lists local doctor artifacts.
+public-stateful-fixture-needed|doctor robot-docs|Generates docs from local installation state.
+public-stateful-fixture-needed|doctor undo|Reverts a doctor repair fixture.
 
-unsafe-live|rpi loop|Autonomous loop is long-running and state-modifying.
-unsafe-live|rpi parallel|Parallel orchestration is long-running and state-modifying.
-unsafe-live|rpi phased|Full RPI lifecycle orchestration is long-running and state-modifying.
-unsafe-live|rpi nudge|Requires an active RPI tmux session.
-unsafe-live|rpi stream|Requires an active RPI run event stream.
-public-tested|rpi verify|Covered by RPI status and verification tests.
-unsafe-live|rpi workers|Requires active worker run state.
-public-tested|rpi cleanup|Covered by rpi cleanup tests.
+public-tested|capabilities|Covered by capability contract tests.
+public-tested|robot-docs|Covered by generated documentation tests.
+public-tested|provenance show|Covered by generic provenance read tests.
+public-tested|session handoff|Covered by handoff artifact tests.
+public-tested|session rehydrate|Covered by rehydrate artifact tests.
 
-public-tested|pool auto-promote|Covered by pool command tests.
-public-tested|pool batch-promote|Covered by batch promote tests.
-public-tested|pool promote|Covered by pool command tests.
-public-tested|pool reject|Covered by pool command tests.
-public-tested|pool show|Covered by pool command tests.
-public-tested|pool stage|Covered by pool command tests.
-
-public-tested|gate approve|Covered by gate command tests.
-public-tested|gate bulk-approve|Covered by gate command tests.
-public-tested|gate pending|Covered by gate command tests.
-public-tested|gate reject|Covered by gate command tests.
-
-public-tested|constraint activate|Covered by constraint list smoke behavior.
-public-tested|constraint retire|Covered by constraint list smoke behavior.
-public-tested|constraint review|Covered by constraint list smoke behavior.
-
-public-tested|curate catalog|Covered by curate command tests.
-public-stateful-fixture-needed|flywheel compare|Requires primary and shadow metric fixtures for meaningful comparison.
-public-tested|flywheel nudge|Covered by flywheel status smoke behavior.
-public-tested|metrics baseline|Covered by metrics command tests.
-public-tested|metrics cite|Covered by metrics command tests.
-public-tested|session close|Covered by session close tests.
-public-tested|agent bundle|Covered by vendorimage agentbundle adapter tests and command registration tests.
-public-tested|mcp serve|Covered by mcpsurface and mcptransport adapter tests and command registration tests.
-public-tested|turn verify|Covered by turnverify adapter tests and command registration tests.
-public-tested|next-work materialize|Covered by nextworkmaterialize adapter tests and command registration tests.
-
-public-tested|hooks init|Covered by hook helper tests.
-public-tested|hooks install|Covered by hook helper tests.
-public-tested|hooks show|Covered by hook helper tests.
-public-tested|hooks test|Covered by hook helper tests.
-
-public-tested|plans diff|Covered by plans command tests.
-public-tested|plans register|Covered by plans command tests.
-public-tested|plans search|Covered by plans command tests.
-public-tested|plans sync|Covered by plans command tests.
-public-tested|plans update|Covered by plans command tests.
-
-public-tested|forge markdown|Covered by forge helper tests.
-public-tested|forge transcript|Covered by forge helper tests.
-public-tested|forge batch|Covered by batch forge tests.
-
-public-tested|mind all|Covered by mind subcommand tests.
-public-tested|mind graph|Covered by mind subcommand tests.
-public-tested|mind index|Covered by mind subcommand tests.
-public-tested|mind scan|Covered by mind command argument construction tests.
-public-stateful-fixture-needed|mind link|Writes wikilinks through the Python mind tool.
-
-unsafe-live|overnight curator compact|Executes a configured local curator worker script.
-manual-only|overnight curator diagnose|Depends on local curator, runner, and Ollama environment.
-public-stateful-fixture-needed|overnight curator enqueue|Writes jobs into a configured local curator queue.
-public-stateful-fixture-needed|overnight curator event|Appends events to a configured local curator ledger.
-manual-only|overnight curator status|Depends on local curator, runner, and Ollama environment.
-public-stateful-fixture-needed|eval outcomes compile|Holdout-safe rubric projection; core logic unit-tested (eval_outcomes_test.go compileOutcomesRubric); CLI smoke needs an input.json fixture (follow-up).
-public-stateful-fixture-needed|eval outcomes ingest|Maps an Outcomes score to the council verdict record; core logic unit-tested (eval_outcomes_ingest_test.go ingestOutcomesScore); CLI smoke needs a score.json fixture (follow-up).
-public-stateful-fixture-needed|canon cite|Requires an isolated canon ledger and citation fixture.
-public-stateful-fixture-needed|canon promote|Mutates canon promotion state and needs a disposable canon fixture.
-public-stateful-fixture-needed|canon verify|Verifies canon evidence against repo-local canon fixtures not present in release smoke.
-manual-only|ci latest|Depends on live remote CI state; command smoke coverage needs a mocked GitHub/CI fixture.
-manual-only|ci recent|Depends on live remote CI state; command smoke coverage needs a mocked GitHub/CI fixture.
-unsafe-live|refinery once|Runs the full refinery against live repo state; command registration and subcommands are covered by refinery tests.
-public-stateful-fixture-needed|claim list|Reads claim-evidence stores and needs an isolated claim fixture.
-public-stateful-fixture-needed|corpus restore|Restores corpus snapshots and needs a disposable corpus fixture.
-public-stateful-fixture-needed|doctor capabilities|Inspects local installation capabilities and needs a controlled home/repo fixture.
-public-stateful-fixture-needed|doctor diff|Compares local installation state and needs a controlled home/repo fixture.
-public-stateful-fixture-needed|doctor explain|Explains doctor findings from local state and needs a controlled findings fixture.
-public-stateful-fixture-needed|doctor fix|Mutates local installation state and needs an isolated repair fixture.
-public-stateful-fixture-needed|doctor gc|Prunes local doctor artifacts and needs an isolated artifact fixture.
-public-stateful-fixture-needed|doctor health|Inspects local health state and needs a controlled home/repo fixture.
-public-stateful-fixture-needed|doctor ls|Lists local doctor-managed artifacts and needs a controlled home/repo fixture.
-public-stateful-fixture-needed|doctor robot-docs|Generates robot docs from local state and needs a controlled output fixture.
-public-stateful-fixture-needed|doctor undo|Reverts doctor fixes and needs an isolated undo fixture.
-public-stateful-fixture-needed|eval suite n-required|Computes eval-suite thresholds and needs a representative suite fixture.
-public-stateful-fixture-needed|eval suite verdict|Projects eval-suite verdicts and needs a representative suite fixture.
-public-stateful-fixture-needed|eval task add|Mutates eval task manifests and needs a disposable eval fixture.
-public-stateful-fixture-needed|eval task list|Reads eval task manifests and needs a representative eval fixture.
-public-stateful-fixture-needed|eval task show|Reads eval task manifests and needs a representative eval fixture.
-public-stateful-fixture-needed|goals steer apply|Mutates GOALS.md from steering recommendations and needs an isolated goal fixture.
-public-stateful-fixture-needed|goals steer recommend|Reads goal history and needs a representative goal fixture.
-public-stateful-fixture-needed|loop hypothesis append|Appends loop hypotheses and needs an isolated loop ledger fixture.
-public-stateful-fixture-needed|loop hypothesis list|Reads loop hypotheses and needs a representative loop ledger fixture.
-public-stateful-fixture-needed|orchestrate select|Selects work from repo-local orchestration state and needs a controlled queue fixture.
-public-stateful-fixture-needed|registry list|Reads generated registry state and needs a representative registry fixture.
-manual-only|sessions spawn|Spawns runtime sessions and requires live terminal/runtime state.
-public-stateful-fixture-needed|wiki gold|Reads .agents and writes the .ao/wiki OKF gold wiki; compiler logic covered by cli/internal/wiki/gold_test.go.
-public-stateful-fixture-needed|wiki inject|Reads and writes wiki/corpus state and needs an isolated wiki fixture.
-public-stateful-fixture-needed|wiki query|Queries wiki/corpus indexes and needs a representative wiki fixture.
-public-stateful-fixture-needed|yield emit|Parent of accept/gate-verdict/usage; writes the yield ledger and needs a bead+run fixture. Pre-existing gap surfaced by an unrelated cli/cmd/ao change (ag-62jrm).
+# One-release inert Cathedral Cut tombstones.
+deprecated|pawl|One-release failure stub for removed admission control.
+deprecated|plan-pawl|One-release failure stub for removed plan admission.
+deprecated|land|One-release failure stub for removed delivery control.
+deprecated|done|One-release failure stub for removed closure control.
+deprecated|close|One-release failure stub for removed closure control.
+deprecated|governor|One-release failure stub for removed retry control.
+deprecated|yield|One-release failure stub for removed throughput control.
+deprecated|claim|One-release failure stub for removed work ownership.
+deprecated|next-work|One-release failure stub for removed work selection.
+deprecated|state|One-release failure stub for removed lifecycle admission.
+deprecated|worktree|One-release failure stub for removed Git mutation.
+deprecated|validate|One-release failure stub for removed semantic CLI validation.
+deprecated|converge|One-release failure stub for removed retry convergence.
+deprecated|reconcile|One-release failure stub for removed lifecycle reconciliation.
+deprecated|membrane|One-release failure stub for removed admission behavior.
+deprecated|crank|One-release failure stub for removed factory controller.

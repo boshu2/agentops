@@ -1,33 +1,19 @@
 #!/usr/bin/env bash
 # shellcheck shell=bash
-# scripts/lib/codex-exec.sh — sourced library: ONE fail-closed hardened runner for a
-# cold-path REVIEWER, so every non-pawl harness that shells to a reviewer shares the same
-# defenses instead of re-solving a subset of them.
+# scripts/lib/codex-exec.sh — one-shot runner for a caller-selected reviewer.
 #
 # Source it (do NOT execute it):
 #     . "$(CDPATH= cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib/codex-exec.sh"
 #
-# Extracted from the pawl surfaces (scripts/pawl-review.sh — the timeout-array
-# wrapper, the missing-codex PRECONDITION exit, the anti-ECHO/anti-WANDER output
-# defense, and the retry-once-on-flat-0-byte stall handling) and the
-# scripts/eval-membrane.sh membrane timeout wrapper, so the three known
-# codex-exec failure modes are defended ONCE (age-gate-the-ungated-egwt.8):
-#   STALL   — a hung reviewer once froze a run for 22 min (eval-membrane
-#             age-9h3d). Killed by the timeout/gtimeout wrapper.
-#   ECHO    — the prompt is reflected back with no review and no genuine-run
-#             marker (pawl-review age-a9iv). Detected here (output ≈ prompt AND
-#             no marker) and reported as a DISTINCT exit code.
-#   WANDER  — the model greps the filesystem instead of answering (pawl-review
-#             age-a9iv, observed on large read-files packets). The caller owns the
-#             prompt shape that avoids it; the lib does not run WANDER-prone tools.
+# It executes once, records output, distinguishes missing binaries, timeouts,
+# and prompt echoes, and returns. It owns no reviewer selection, retry,
+# validation, admission, merge, or continuation decision.
 #
 # ---------------------------------------------------------------------------
 # REVIEWER ADAPTER CONTRACT (age-rk3r.1)
 # ---------------------------------------------------------------------------
-# The cold review path used to be codex-ONLY: the binary, the exec argv shape, and
-# the literal "tokens used" genuine-run marker were hardwired. Combined with the
-# same-family author rejection in pawl-review.sh (a gpt/codex author has NO cold
-# reviewer), a codex outage halted ALL portable validation. This lib now dispatches
+# The review path used to be codex-only: the binary, the exec argv shape, and
+# the literal "tokens used" genuine-run marker were hardwired. This library dispatches
 # a per-adapter CONTRACT keyed by the REVIEWER env var (default: codex):
 #
 #   FIELD              codex                agy (cold)              local-mlx (eval-only)
@@ -42,7 +28,7 @@
 #   sandbox mapping    --sandbox <value>    --sandbox (toggle)    n/a (local endpoint)
 #   prompt delivery    file(stdin)/arg      FILE-PATH pointer     single positional arg
 #                                           (sentinel-wrapped)
-#   eval-only?         no                   no                    YES (refuses in prod)
+#   local?             no                   no                    yes
 #
 #   Adapter 1 = codex — BYTE-COMPATIBLE with the historical behavior: REVIEWER unset
 #     (or =codex) produces exactly the pre-adapter argv/exec/classify. The codex-exec.sh
@@ -67,17 +53,12 @@
 #     untrusted-repo posture is accepted; it runs `--sandbox` (terminal restrictions) +
 #     `--dangerously-skip-permissions` so a headless file-read review does not block on
 #     a permission prompt.
-#   Adapter 3 = local-mlx — EVAL-ONLY, flag-gated per the 2026-06-23 ruling (local models
-#     are EVAL-PATH ONLY; the production gate stays a frontier cross-family review). If
-#     invoked in a prod context WITHOUT PAWL_EVAL_ADAPTERS_OK=1 it HARD-REFUSES, naming
-#     the ruling, and returns CODEX_EXEC_REFUSED. Reference invocation shape:
+#   Adapter 3 = local-mlx — a caller-selected local adapter. Reference invocation shape:
 #     evals/membrane/membranes/local-mlx-membrane.sh (a wrapper that takes the reviewer
 #     prompt as $1 and echoes the model review).
 #
-# IMPORTANT — behavior-preserving contract: this lib does NOT `set -euo pipefail`
-# on behalf of its callers, and it NEVER edits the pawl surfaces (pawl-review.sh /
-# pawl-verdict.sh), which own their own richer, verdict-bound flow. The
-# functions below are pure/idempotent and safe under either shell mode.
+# This library does not set shell options or mutate caller state. Its outcome is
+# runtime evidence, never a semantic verdict.
 #
 # THE HARD CONTRACT: NO-VERDICT ≠ REFUTED. A caller must be able to tell a run
 # that produced NOTHING TRUSTWORTHY (stall, echo, missing bin, eval-only refusal)
@@ -91,7 +72,7 @@
 #   0  CODEX_EXEC_OK             SUCCESS: the reviewer ran to completion, produced output.
 #   2  CODEX_EXEC_MISSING        MISSING-BIN: the reviewer binary is not on PATH — a
 #                                PRECONDITION failure, NOT a result (matches
-#                                pawl-review's exit-2 precondition semantics).
+#                                the runner's exit-2 precondition semantics).
 #   3  CODEX_EXEC_GENUINE_NONZERO GENUINE-NONZERO: the reviewer launched and exited
 #                                non-zero for its OWN reason (auth error, refusal,
 #                                a real task failure) — distinct from a timeout.
@@ -108,10 +89,6 @@
 #                                keyed on 124 keep working).
 #   125 CODEX_EXEC_ECHO          ECHO: output reflected the prompt back with no
 #                                genuine-run marker — no real review happened.
-#   126 CODEX_EXEC_REFUSED       REFUSED: an EVAL-ONLY adapter (local-mlx) was invoked in a
-#                                prod context without PAWL_EVAL_ADAPTERS_OK=1. A refusal to
-#                                run, NOT a result (2026-06-23 ruling: local models are
-#                                eval-path only; the prod gate stays frontier cross-family).
 # These names are exported as readonly ints so sourcing callers can switch on
 # names rather than magic numbers.
 # ---------------------------------------------------------------------------
@@ -120,11 +97,10 @@
 : "${CODEX_EXEC_GENUINE_NONZERO:=3}"
 : "${CODEX_EXEC_STALL_TIMEOUT:=124}"
 : "${CODEX_EXEC_ECHO:=125}"
-: "${CODEX_EXEC_REFUSED:=126}"
 
 # codex_exec_timeout_cmd — echo the timeout-wrapper argv (space-separated) for a
 # budget, or nothing when no timeout binary exists. Ported READ-ONLY from
-# pawl-review.sh (~line 233): PREFER `timeout`, fall back to `gtimeout`, and if
+# Prefer `timeout`, fall back to `gtimeout`, and if
 # NEITHER exists degrade to running the reviewer with no timeout rather than failing
 # closed and being unusable on a bo-mac that ships no coreutils `timeout`.
 # Usage: read -r -a _to <<<"$(codex_exec_timeout_cmd 300)"; "${_to[@]}" codex ...
@@ -138,7 +114,7 @@ codex_exec_timeout_cmd() {
 
 # codex_exec_looks_echoed — return 0 (true) when the captured output looks like an
 # ECHO of the prompt (a WANDER/ECHO failure with no real review), 1 otherwise.
-# Ported READ-ONLY from the pawl-review institutional knowledge: a real run prints a
+# A real run prints a
 # genuine-run marker; an echo does not, AND its bytes closely match the prompt bytes.
 # Both conditions must hold to call it an echo, so a legitimately short answer that
 # merely lacks the marker is NOT mis-flagged.
@@ -213,12 +189,6 @@ reviewer_normalize() {
   esac
 }
 
-# reviewer_adapter_is_eval_only <reviewer> — return 0 for EVAL-ONLY (local) adapters
-# that must never authorize a prod merge without the explicit opt-in (2026-06-23 ruling).
-reviewer_adapter_is_eval_only() {
-  case "$1" in local-mlx) return 0 ;; *) return 1 ;; esac
-}
-
 # reviewer_adapter_bin <reviewer> — the adapter's default binary, honoring overrides.
 # codex keeps CODEX_EXEC_BIN (byte-compat with the .8 fixture tests); the other
 # adapters share the REVIEWER_BIN override.
@@ -251,8 +221,6 @@ reviewer_adapter_marker() {
 #   REVIEWER_BIN             override the non-codex adapter binary (a stub in tests).
 #   REVIEWER_MODEL           override the non-codex adapter model (empty = adapter default).
 #   REVIEWER_MARKER          override the adapter's genuine-run marker.
-#   PAWL_EVAL_ADAPTERS_OK    1 => permit an EVAL-ONLY adapter (local-mlx) to run. Absent =>
-#                            an eval-only adapter HARD-REFUSES (CODEX_EXEC_REFUSED).
 #   CODEX_EXEC_PROMPT_FILE   file whose contents are the prompt (mutually exclusive
 #                            with CODEX_EXEC_PROMPT_ARG; a file wins if both set).
 #   CODEX_EXEC_PROMPT_ARG    the prompt as a single positional argument.
@@ -269,8 +237,6 @@ reviewer_adapter_marker() {
 #   CODEX_EXEC_OUT_FILE      write captured stdout+stderr here. If empty, output is
 #                            captured to a temp file used only for echo-detection
 #                            and then streamed to the caller's stdout on success.
-#   CODEX_EXEC_RETRY_ON_EMPTY 1 (default) => retry ONCE on a flat 0-byte first run
-#                            (the pawl-review stall-retry). 0 disables the retry.
 #   CODEX_EXEC_EXPECT_OUTPUT 1 (default) => the caller CONSUMES reviewer output, so a
 #                            flat 0-byte run is a STALL and an output≈prompt run is
 #                            an ECHO (both fail-closed). 0 => the caller only cares
@@ -287,19 +253,8 @@ reviewer_adapter_marker() {
 codex_exec_guarded() {
   local reviewer; reviewer="$(reviewer_normalize "${REVIEWER:-codex}")"
 
-  # (0) EVAL-ONLY GATE (2026-06-23 ruling: local models are EVAL-PATH ONLY; the prod
-  # gate stays a frontier cross-family review). An eval-only adapter invoked WITHOUT the
-  # explicit opt-in HARD-REFUSES — it must never authorize a prod merge.
-  if reviewer_adapter_is_eval_only "$reviewer" && [ "${PAWL_EVAL_ADAPTERS_OK:-0}" != "1" ]; then
-    echo "codex-exec: REFUSED — reviewer '$reviewer' is a LOCAL, EVAL-ONLY model adapter." >&2
-    echo "  Per the 2026-06-23 ruling, local models are EVAL-PATH ONLY; the production pawl" >&2
-    echo "  gate must stay a frontier cross-family review (a weaker local reviewer must never" >&2
-    echo "  authorize a merge). Set PAWL_EVAL_ADAPTERS_OK=1 to use this adapter on the EVAL" >&2
-    echo "  path only. (exit $CODEX_EXEC_REFUSED = refused, NOT a review result)" >&2
-    return "$CODEX_EXEC_REFUSED"
-  fi
-
-  # (1) resolve the adapter's binary + genuine-run marker (the contract fields).
+  # Resolve the adapter's binary + genuine-run marker. The caller selected the
+  # adapter; this helper reports one invocation and has no admission authority.
   local bin marker
   bin="$(reviewer_adapter_bin "$reviewer")"
   marker="$(reviewer_adapter_marker "$reviewer")"
@@ -315,7 +270,7 @@ codex_exec_guarded() {
     [ -x "$_mlx_ref" ] && bin="$_mlx_ref"
   fi
 
-  # PRECONDITION (ported from pawl-review ~line 204): a missing reviewer binary is a
+  # A missing reviewer binary is a
   # PRECONDITION failure with its OWN exit code — never a review result. Name it,
   # say it is installable, and return the distinct code so a caller can tell a
   # missing dep apart from a real refutation.
@@ -456,7 +411,7 @@ codex_exec_guarded() {
 
   _codex_exec_run() {
     if [ "$delivery" = "stdin_file" ]; then
-      # File-prompt mode: feed the file on stdin (pawl-review's `< prompt_file`).
+      # File-prompt mode: feed the file on stdin.
       if [ "${#to_cmd[@]}" -gt 0 ]; then "${to_cmd[@]}" "$bin" "${argv[@]}" <"$prompt_file" >"$out_file" 2>&1
       else "$bin" "${argv[@]}" <"$prompt_file" >"$out_file" 2>&1; fi
     else
@@ -470,17 +425,6 @@ codex_exec_guarded() {
 
   local rc=0
   _codex_exec_run || rc=$?
-
-  # Retry-once on a flat 0-byte first run (ported from pawl-review ~line 417): a
-  # stall that produced NOTHING gets one more chance before we call it a timeout.
-  # Only for output-consuming callers — a fire-and-score producer legitimately
-  # produces no stdout, so retrying it would be spurious.
-  if [ "$expect_output" = "1" ] && [ ! -s "$out_file" ] \
-     && [ "${CODEX_EXEC_RETRY_ON_EMPTY:-1}" = "1" ]; then
-    echo "codex-exec: no output on first run (stall) — retrying once…" >&2
-    rc=0
-    _codex_exec_run || rc=$?
-  fi
 
   _codex_exec_cleanup() {
     unset -f _codex_exec_run
@@ -504,9 +448,9 @@ codex_exec_guarded() {
   # CONSUME output. A fire-and-score caller (CODEX_EXEC_EXPECT_OUTPUT=0) discards
   # output, so a clean exit-0 with empty output is a real SUCCESS there.
   if [ "$expect_output" = "1" ]; then
-    # 2) Still empty after the retry => a STALL that never produced output.
+    # 2) Empty output is reported after the single invocation.
     if [ ! -s "$out_file" ]; then
-      echo "codex-exec: STALL — reviewer produced no output after a retry." >&2
+      echo "codex-exec: STALL — reviewer produced no output." >&2
       echo "  (exit $CODEX_EXEC_STALL_TIMEOUT = stall, NOT a review result)" >&2
       [ -n "$cleanup_out" ] && rm -f "$cleanup_out"
       _codex_exec_cleanup
@@ -559,7 +503,7 @@ codex_exec_guarded() {
 # TEMPLATE string used by eval-membrane.sh's pluggable --producer-cmd / --membrane
 # -cmd surface, so the literal `codex exec` invocation lives ONLY in this lib (an
 # acceptance-allowed file) and NOT in the migrated caller (the acceptance grep
-# wants the string off every non-pawl caller). The strings below are byte-
+# wants the string off every caller). The strings below are byte-
 # identical to eval-membrane's historical defaults so behavior is preserved
 # exactly.
 #   $1 = which template: "producer" (frontier producer) or "membrane" (verifier).

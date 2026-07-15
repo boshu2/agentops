@@ -1,9 +1,0 @@
-{
-  "schema_version": 3,
-  "objective": "This current example is incomplete",
-  "phase_receipts": [
-    {"phase": "discovery", "skill": "discovery", "status": "DONE", "artifact": "phase-1.md"},
-    {"phase": "crank", "skill": "crank", "status": "DONE", "artifact": "phase-2.md"},
-    {"phase": "validate", "skill": "validate", "status": "PASS", "artifact": "verdict.json"}
-  ]
-}

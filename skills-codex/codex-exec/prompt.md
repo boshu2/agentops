@@ -1,7 +1,6 @@
 # codex-exec
 
-Use when running Codex workers or validators non-interactively through codex exec with evidence.
-Triggers:
+Run one caller-supplied Codex worker or validator command non-interactively and capture evidence.
 
 ## Instructions
 

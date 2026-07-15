@@ -2,7 +2,7 @@
 
 ## Overview
 
-The `validate.sh` script ensures the `$research` skill meets basic quality and completeness standards. It runs a series of checks against the skill's structure, documentation, and references.
+The `validate.sh` script ensures the `/research` skill meets basic quality and completeness standards. It runs a series of checks against the skill's structure, documentation, and references.
 
 ## Purpose
 
@@ -31,6 +31,11 @@ The script performs the following checks:
 
 ### Documentation Content Validation
 - **SKILL.md mentions .agents/research/ output path**: Confirms documented output location
+- **SKILL.md mentions .agents/findings/registry.jsonl**: Confirms the reusable-finding registry bridge
+- **SKILL.md mentions reusable findings**: Ensures transient notes are not treated as durable registry entries
+- **SKILL.md mentions dedup_key**: Confirms the merge key required by the registry contract
+- **SKILL.md mentions temp-file-plus-rename atomic write rule**: Confirms the registry write semantics
+- **SKILL.md mentions finding-compiler.sh refresh**: Confirms the follow-up compiler pass is documented
 - **SKILL.md mentions Explore agent**: Ensures agent reference is included
 - **SKILL.md mentions --auto flag**: Validates feature documentation
 - **SKILL.md mentions ao lookup or ao search**: Checks CLI integration documentation
@@ -56,6 +61,11 @@ PASS: SKILL.md has name: research
 PASS: references/ directory exists
 PASS: references/ has at least 3 files
 PASS: SKILL.md mentions .agents/research/ output path
+PASS: SKILL.md mentions .agents/findings/registry.jsonl
+PASS: SKILL.md mentions reusable findings
+PASS: SKILL.md mentions dedup_key
+PASS: SKILL.md mentions temp-file-plus-rename atomic write rule
+PASS: SKILL.md mentions finding-compiler.sh refresh
 PASS: SKILL.md mentions Explore agent
 PASS: SKILL.md mentions --auto flag
 PASS: SKILL.md mentions ao lookup or ao search
@@ -63,7 +73,7 @@ PASS: SKILL.md mentions knowledge flywheel
 PASS: SKILL.md mentions backend detection
 PASS: SKILL.md mentions quality validation
 
-Results: 12 passed, 0 failed
+Results: 17 passed, 0 failed
 ```
 
 ## Integration with CI/CD

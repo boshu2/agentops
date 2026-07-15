@@ -8,7 +8,7 @@
 # Usage:
 #   bash scripts/regen-changed-scope.sh
 #   bash scripts/regen-changed-scope.sh --check --scope head
-#   bash scripts/regen-changed-scope.sh --list --file skills/discovery/SKILL.md
+#   bash scripts/regen-changed-scope.sh --list --file skills/plan/SKILL.md
 #   bash scripts/regen-changed-scope.sh --files skills/foo/SKILL.md,docs/contracts/x.md
 set -euo pipefail
 
@@ -117,9 +117,7 @@ fi
 
 NEED_CODEX=false
 NEED_CODEX_ALL=false
-NEED_CONTEXT_MAP=false
-NEED_SKILL_DOMAIN=false
-NEED_REGISTRY=false
+NEED_SKILL_MESH=false
 NEED_CLI_REFERENCE=false
 NEED_COMMAND_SURFACES=false
 NEED_CONTRACT_COMPAT=false
@@ -181,9 +179,7 @@ for file in "${FILES[@]}"; do
       source_skill="$(skill_from_path "$file")"
       add_unique_codex_skill "$source_skill"
       [[ -f "skills/$source_skill/SKILL.md" ]] && add_unique_source_skill "$source_skill"
-      NEED_SKILL_DOMAIN=true
-      NEED_REGISTRY=true
-      [[ "$file" == skills/*/SKILL.md ]] && NEED_CONTEXT_MAP=true
+      NEED_SKILL_MESH=true
       ;;
     skills-codex/*)
       NEED_CODEX=true
@@ -194,26 +190,18 @@ for file in "${FILES[@]}"; do
       NEED_CODEX_ALL=true
       add_unique_codex_skill "$(skill_from_path "$file")"
       ;;
-    docs/contracts/context-map.md)
-      NEED_CONTEXT_MAP=true
+    docs/contracts/context-map.md|docs/reference/agentops-skill-domain-map.md|docs/reference/agentops-skill-graph.md|docs/SKILL-ROUTER.md|docs/SKILLS.md|skills/SKILL-TIERS.md|skills/catalog.json|registry.json)
+      NEED_SKILL_MESH=true
       ;;
-    docs/contracts/bounded-contexts.yaml|docs/contracts/skill-dispositions.yaml)
-      NEED_SKILL_DOMAIN=true
+    docs/contracts/bounded-contexts.yaml)
       NEED_CONTRACT_COMPAT=true
       ;;
     docs/contracts/*)
       NEED_CONTRACT_COMPAT=true
       ;;
-    docs/reference/agentops-skill-domain-map.md|docs/reference/agentops-hexagonal-architecture-map.md)
-      NEED_SKILL_DOMAIN=true
-      ;;
-    registry.json)
-      NEED_REGISTRY=true
-      ;;
     cli/cmd/ao/*)
       NEED_CLI_REFERENCE=true
       NEED_COMMAND_SURFACES=true
-      NEED_REGISTRY=true
       ;;
     cli/docs/COMMANDS.md)
       NEED_CLI_REFERENCE=true
@@ -257,27 +245,11 @@ if [[ "${#SOURCE_SKILLS[@]}" -gt 0 ]]; then
   add_step "changed skill structural integrity|$integrity_cmd|$integrity_cmd"
 fi
 
-if $NEED_CONTEXT_MAP; then
+if $NEED_SKILL_MESH; then
   if [[ "$MODE" == "check" ]]; then
-    add_step "context-map drift|bash scripts/validate-context-map-drift.sh|bash scripts/generate-context-map.sh"
+    add_step "skill mesh drift|python3 scripts/generate-skill-mesh.py --check|python3 scripts/generate-skill-mesh.py"
   else
-    add_step "context-map|bash scripts/generate-context-map.sh|"
-  fi
-fi
-
-if $NEED_SKILL_DOMAIN; then
-  if [[ "$MODE" == "check" ]]; then
-    add_step "skill-domain map drift|bash scripts/generate-skill-domain-map.sh --check|bash scripts/generate-skill-domain-map.sh"
-  else
-    add_step "skill-domain map|bash scripts/generate-skill-domain-map.sh|"
-  fi
-fi
-
-if $NEED_REGISTRY; then
-  if [[ "$MODE" == "check" ]]; then
-    add_step "registry drift|bash scripts/generate-registry.sh --check|bash scripts/generate-registry.sh"
-  else
-    add_step "registry|bash scripts/generate-registry.sh|"
+    add_step "skill mesh|python3 scripts/generate-skill-mesh.py|"
   fi
 fi
 

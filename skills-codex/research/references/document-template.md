@@ -157,7 +157,7 @@ Identify which of the 12 failure patterns are risks for this work. This proactiv
 
 ### 10. Next Steps
 
-Point to `$plan` for implementation.
+Point to `/plan` for implementation.
 
 ---
 

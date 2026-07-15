@@ -6,7 +6,15 @@ practices:
 skill_api_version: 1
 user-invocable: false
 hexagonal_role: supporting
+consumes: []
+produces: []
+context_rel: []
 metadata:
+  dependencies: []
+  capabilities: [cass]
+  effects: []
+  canonical_status: canonical
+  disposition: keep_specialist
   tier: execution
   external_dependencies:
   - "cass binary (>=0.3.6 recommended; some commands require HEAD \u2014 see Version Pinning)"

@@ -27,6 +27,10 @@ context:
     - HISTORY
   intel_scope: full
 metadata:
+  capabilities: [dueling_idea_genies]
+  effects: []
+  canonical_status: canonical
+  disposition: keep_strategy
   tier: judgment
   dependencies:
   - idea-genie

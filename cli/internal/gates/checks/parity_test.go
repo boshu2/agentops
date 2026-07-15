@@ -31,7 +31,6 @@ func selectedIDs(t *testing.T, changed []string) map[string]bool {
 // alwaysIDs are the no-Match checks that must run for any change.
 var alwaysIDs = []string{
 	"always.mutation-route",
-	"always.agents-write-surfaces",
 	"always.no-tracked-agents",
 	"always.embedded-sync",
 }
@@ -93,9 +92,8 @@ func TestPredicateParity_PerChangeClass(t *testing.T) {
 
 	t.Run("docs change", func(t *testing.T) {
 		ids := selectedIDs(t, []string{"docs/how-it-works.md"})
-		assertHas(t, ids, "claim.registry-drift")
 		assertHas(t, ids, alwaysIDs...)
-		assertNot(t, ids, "go.build", "skill.schema", "contract.registry-drift")
+		assertNot(t, ids, "go.build", "skill.schema", "contract.registry-drift", "claim.registry-drift")
 	})
 
 	t.Run("empty diff runs only always-checks", func(t *testing.T) {

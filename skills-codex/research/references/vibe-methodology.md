@@ -9,7 +9,7 @@ Core principles for AI-assisted development. "Vibe" = trust-but-verify.
 **Never exceed 40% context utilization.**
 
 - Checkpoint at 35%
-- Reset via session restart or `$research` artifact
+- Reset via session restart or `/research` artifact
 - More context ≠ better results (hallucination risk increases)
 
 ---
@@ -91,11 +91,11 @@ ls .agents/research/ | grep -i "<topic>"
 ```bash
 # Start
 gt hook              # Check assigned work
-br ready             # What's available
+bd ready             # What's available
 
 # Work
-$research <topic>    # Creates artifact, saves context
-$implement <issue>   # Focused execution
+/research <topic>    # Creates artifact, saves context
+/implement <issue>   # Focused execution
 
 # End
 bd vc status         # Optional Dolt status check; JSONL auto-sync is automatic
@@ -109,4 +109,4 @@ git push             # WORK IS NOT DONE UNTIL PUSHED
 
 - `failure-patterns.md` - 12 specific failure modes
 - `context-discovery.md` - 6-tier exploration hierarchy
-- `~/.codex/CLAUDE-base.md` - Full vibe methodology
+- `~/.claude/CLAUDE-base.md` - Full vibe methodology
