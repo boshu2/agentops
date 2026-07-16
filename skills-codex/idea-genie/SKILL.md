@@ -57,7 +57,12 @@ turns a later optional Premortem challenge into an approval gate.
 
 1. Freeze the question, constraints, evidence paths, and comparison rubric.
 2. For a one-way door, create at least two fresh contexts with distinct context
-   identifiers. Each produces its perspective before any is revealed.
+   identifiers. Each produces its perspective before any is revealed. When the
+   caller pins perspectives to model profiles, record each perspective's
+   `model_identity` (see `skills/agent-native/references/model-dispatch.md`); a
+   duel may use two distinct models on request. Sealed generation is unchanged:
+   no perspective may see another before reveal. Unavailable profiles → disclose
+   and continue single-model.
 3. Reveal the sealed perspectives and cross-review by evidence, reversibility,
    system fit, failure modes, and cost.
 4. Attempt concrete refutations. Preserve disagreements, failed refutations,

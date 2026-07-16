@@ -74,4 +74,7 @@ printf '%s\n' "$PROMPT" | codex exec -C "$WORKSPACE" -s read-only \
 For a validator, the prompt must name the acceptance digest, exact subject
 manifest digest, author context ID, evidence, and required checked/not-checked
 report. The validator context ID must be distinct from the author's before a
-`PASS` verdict is possible.
+`PASS` verdict is possible. When the caller elects a cross-model fresh
+validator, record model identities per
+`skills/agent-native/references/model-dispatch.md` and match the sandbox to
+declared effects.

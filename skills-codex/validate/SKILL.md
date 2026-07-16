@@ -21,6 +21,17 @@ packets.
 Missing, colliding, or unattested identities produce `NOT_PROVEN`. This is a
 declared trust fact, not cryptographic proof that contexts were isolated.
 
+## Cross-model fresh validator (caller-elected)
+
+A caller may request that the fresh validator run on a different model than
+the author. Dispatch via the controller-session recipe in
+`skills/agent-native/references/model-dispatch.md` (`codex-exec` and/or `ntm`,
+probed at runtime). Record author and validator `model_identity` in evidence
+refs and freshness attestation notes — do not change `verdict.v2` schema. If
+the requested validator model has no live adapter, disclose the unsatisfied
+diversity request and proceed same-model; never invoke `claude -p` /
+`claude --print`. Single fresh validator remains the default shape.
+
 ## Mutating-check quarantine
 
 Before running any acceptance-listed command, classify it as read-only or

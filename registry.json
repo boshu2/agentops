@@ -623,11 +623,11 @@
         "effects": [
           "manage_runtime_sessions"
         ],
-        "has_references": false,
+        "has_references": true,
         "has_skill_md": true,
         "name": "agent-native",
         "path": "skills/agent-native/",
-        "reference_count": 0,
+        "reference_count": 1,
         "tier": "meta"
       },
       {

@@ -44,6 +44,17 @@ it as one confirmation, however many judges share it. The named failure mode
 is echo consensus: unanimous judgment produced from identical inputs by one
 shared method, laundered as independent confirmation.
 
+## Model-diversity axis
+
+When the caller pins judges to model profiles, record each judge's
+`model_identity` beside its methodology and context ID (see
+`skills/agent-native/references/model-dispatch.md`).
+Cross-model agreement is an additional diversity axis: single-model unanimity
+is weighted as one confirmation with the same anti-echo-consensus rationale,
+regardless of how many judges share that model. If a requested profile has no
+live adapter, disclose `diversity_unsatisfied` on the report and continue
+single-model — never silently, never via `claude -p`.
+
 ## Fresh sessions per round
 
 Every judging round uses fresh judge contexts with new context IDs, distinct

@@ -339,8 +339,8 @@
     {
       "name": "agent-native",
       "source_skill": "skills/agent-native",
-      "source_hash": "ab72c360819a7b3630bec0e748ad3771da78750a91d2360afa97fb4eb7dbc61e",
-      "generated_hash": "1aaac8275a187ab816e92179a56ea66058233317133376ecda676d773e292293"
+      "source_hash": "281f66ca51b712cadbc4630f7809c57a721e49838243a5d4346638038305a58d",
+      "generated_hash": "b6d6685acb03edc9bf703b33d9c2185ef3b3c905af55328f2325f5f7be871563"
     },
     {
       "name": "agy-native",
@@ -369,8 +369,8 @@
     {
       "name": "cc-hooks",
       "source_skill": "skills/cc-hooks",
-      "source_hash": "a716774d125f64b461b670c3fdb0e55eda8d8e2293fd66d70b440642ae7a6caa",
-      "generated_hash": "fe9af83e283a8f0fb913ef5f64079f731804a2ba5814df8a5f8a4eea0cad681c"
+      "source_hash": "d85a55382bdf1fc91a1de99e48451197f0b79b33e3b2dfb809084b2a5fb89fd9",
+      "generated_hash": "51fd3f0daf67d12e848e3b69ee3eb7cea4793bd719fce89efa0b6a5b29d5c155"
     },
     {
       "name": "codebase-recon",
@@ -381,8 +381,8 @@
     {
       "name": "codex-exec",
       "source_skill": "skills/codex-exec",
-      "source_hash": "7226646cc507d6c26953f02cec451878dec624395a69bb0b1ee7e53f55e3fea4",
-      "generated_hash": "0e01563a9201494af7f3350b9b58895a897e27134ced1c12fb16f81751b6e159"
+      "source_hash": "a2f75021c7a132547724a28a41b52e9f4422d876aa59d266ac79be5395a7cf47",
+      "generated_hash": "0f20ba798bc19f2d276427acff2d63a2cf1c22328cc2968ad70f5a42bd90b126"
     },
     {
       "name": "converter",
@@ -393,8 +393,8 @@
     {
       "name": "council",
       "source_skill": "skills/council",
-      "source_hash": "fde785c9f24f43061efc4480ea9f472373ffa91d05fd39ac7921c9ea2ccf93af",
-      "generated_hash": "4322b9f4853da3863e8a7627190ed4446cf0f69008eebaad1415af35e663bbdf"
+      "source_hash": "20f1eb85d1c90ab7dae9597b8da631b227064e992c309c790e7e5ed53cd8ce80",
+      "generated_hash": "7da7b30cf693e1800d4626888787365235d921d627c6cf47087c0bcf9f6e0272"
     },
     {
       "name": "dcg",
@@ -429,8 +429,8 @@
     {
       "name": "idea-genie",
       "source_skill": "skills/idea-genie",
-      "source_hash": "ed1918c33f3a0f8f12fd45802f65957d6992b48157150616dbb12d3211540362",
-      "generated_hash": "6385b8b66337eab8cd1a317d5be59411fea7348f9705b1b1bae12f9f430bb931"
+      "source_hash": "7362beeffb787eb8d5c56a35a194c31213e9de3c6ae58347d8c4483a8d8f93da",
+      "generated_hash": "00c3977a525c8b7b8a9c4afca9f5d71dc77815723d481dea0771bf0b1a670247"
     },
     {
       "name": "implement",
@@ -453,8 +453,8 @@
     {
       "name": "ntm",
       "source_skill": "skills/ntm",
-      "source_hash": "e32203910ad83116523bf0d26348af54f0b8a9af726fd5bb6360c7e314d6afbc",
-      "generated_hash": "92789acea6731ad9f692778c7bdebacbce5a420407274e8948ab34a13a71be5b"
+      "source_hash": "b9a47f98e79ea8fb4561d5c45e01b05ee96821e04bb6cedb14ca9463e48120c3",
+      "generated_hash": "2a4a264cf06c14bfe901c3daf9d0f0a2861e0d9fb679ae4df0b6fd179c4f7053"
     },
     {
       "name": "operationalize",
@@ -561,8 +561,8 @@
     {
       "name": "skill-builder",
       "source_skill": "skills/skill-builder",
-      "source_hash": "000efe84a961ef280a98e586250877d360b121257cddfd8da70c91226f858a7b",
-      "generated_hash": "0223c8e2b89ca52cfeffef0f895981cb2fffbb2962286becec1a5e6b0c9d7992"
+      "source_hash": "27030e0e4c61867128c880c6fda1d8d187c8dec374e83dff8fd1bec47497ecdd",
+      "generated_hash": "8bd153ce168a79900d5e8b0c4b717c441c8ab12064592bb29e1b702cde804428"
     },
     {
       "name": "standards",
@@ -603,8 +603,8 @@
     {
       "name": "validate",
       "source_skill": "skills/validate",
-      "source_hash": "86d84e7457418fb997fcee06988a0b4d7592ddc30b64f6621ace9925f66a3420",
-      "generated_hash": "8203d5b7af345c69202767322c9a6114a71ee3154a7f76cbe54023235131c275"
+      "source_hash": "cf751ff4ab2f9259ae2331e8c70f6f96e4af94a8d289bc88d1d3dd81e997465c",
+      "generated_hash": "5a89993f8c806c3f3aaa4f057efa1a7b39b25d6b419ab68809e4be4197e24fba"
     },
     {
       "name": "workflow-builder",

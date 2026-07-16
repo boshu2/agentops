@@ -16,6 +16,7 @@
 |---|---|---|
 | `agent-mail` | `supplier-to` | `agent-native` |
 | `agent-native` | `customer-of` | `agent-mail` |
+| `agent-native` | `customer-of` | `codex-exec` |
 | `agent-native` | `customer-of` | `ntm` |
 | `agy-native` | `separate-ways` | `codex-exec` |
 | `automation-shape-routing` | `supplier-to` | `agent-native` |
