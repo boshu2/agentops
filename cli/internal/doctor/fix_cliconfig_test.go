@@ -36,7 +36,7 @@ func TestCliConfigInvalidConfigYAML_DetectsBrokenHomeConfig(t *testing.T) {
 	tmp := t.TempDir()
 	home := filepath.Join(tmp, "home")
 	// Unterminated double-quoted scalar — fails yaml.Unmarshal at a fixed point.
-	writeFile(t, filepath.Join(home, ".agentops", "config.yaml"),
+	writeFile(t, filepath.Join(home, ".agents", "ao", "config.yaml"),
 		"models:\n  default_tier: \"haiku\n")
 
 	env := &DetectEnv{HomeDir: home, CWD: filepath.Join(tmp, "cwd")}
@@ -54,7 +54,7 @@ func TestCliConfigInvalidConfigYAML_DetectsBrokenHomeConfig(t *testing.T) {
 	if f.Remediation.AutoFixable {
 		t.Error("AutoFixable = true, want false")
 	}
-	wantPath := filepath.Join(home, ".agentops", "config.yaml")
+	wantPath := filepath.Join(home, ".agents", "ao", "config.yaml")
 	if f.Evidence.File != wantPath {
 		t.Errorf("Evidence.File = %q, want %q", f.Evidence.File, wantPath)
 	}
@@ -69,7 +69,7 @@ func TestCliConfigInvalidConfigYAML_DetectsBrokenHomeConfig(t *testing.T) {
 func TestCliConfigInvalidConfigYAML_CleanConfigYieldsNoFinding(t *testing.T) {
 	tmp := t.TempDir()
 	home := filepath.Join(tmp, "home")
-	writeFile(t, filepath.Join(home, ".agentops", "config.yaml"),
+	writeFile(t, filepath.Join(home, ".agents", "ao", "config.yaml"),
 		"models:\n  default_tier: haiku\n")
 
 	env := &DetectEnv{HomeDir: home, CWD: filepath.Join(tmp, "cwd")}
@@ -117,7 +117,7 @@ func TestCliConfigConfigFlagNotThreaded_DetectsBuggySource(t *testing.T) {
 	writeFile(t, filepath.Join(repo, "cli", "cmd", "ao", "root.go"),
 		"package main\nfunc syncConfigFlagToEnv() { os.Setenv(\"AGENTOPS_CONFIG\", path) }\n")
 	writeFile(t, filepath.Join(repo, "cli", "internal", "config", "config.go"),
-		"package config\nfunc homeConfigPath() string { return \"~/.agentops/config.yaml\" }\n")
+		"package config\nfunc homeConfigPath() string { return \"~/.agents/ao/config.yaml\" }\n")
 
 	if !probeConfigSourceShape(repo) {
 		t.Fatal("probeConfigSourceShape = false, want true for buggy shape")
@@ -459,9 +459,9 @@ func TestCliConfigStaleProjectConfig_DetectsShadowing(t *testing.T) {
 	tmp := t.TempDir()
 	home := filepath.Join(tmp, "home")
 	cwd := filepath.Join(tmp, "work")
-	writeFile(t, filepath.Join(home, ".agentops", "config.yaml"),
+	writeFile(t, filepath.Join(home, ".agents", "ao", "config.yaml"),
 		"models:\n  default_tier: sonnet\n")
-	writeFile(t, filepath.Join(cwd, ".agentops", "config.yaml"),
+	writeFile(t, filepath.Join(cwd, ".agents", "ao", "config.yaml"),
 		"models:\n  default_tier: haiku\n  deprecated_tier: opus\n")
 
 	env := &DetectEnv{HomeDir: home, CWD: cwd}
@@ -473,7 +473,7 @@ func TestCliConfigStaleProjectConfig_DetectsShadowing(t *testing.T) {
 	if f.Severity != "P3" {
 		t.Errorf("Severity = %q, want P3", f.Severity)
 	}
-	wantPath := filepath.Join(cwd, ".agentops", "config.yaml")
+	wantPath := filepath.Join(cwd, ".agents", "ao", "config.yaml")
 	if f.Evidence.File != wantPath {
 		t.Errorf("Evidence.File = %q, want %q", f.Evidence.File, wantPath)
 	}
@@ -495,7 +495,7 @@ func TestCliConfigStaleProjectConfig_NoProjectFileYieldsNoFinding(t *testing.T) 
 	tmp := t.TempDir()
 	home := filepath.Join(tmp, "home")
 	cwd := filepath.Join(tmp, "work")
-	writeFile(t, filepath.Join(home, ".agentops", "config.yaml"),
+	writeFile(t, filepath.Join(home, ".agents", "ao", "config.yaml"),
 		"models:\n  default_tier: sonnet\n")
 
 	env := &DetectEnv{HomeDir: home, CWD: cwd}
@@ -513,9 +513,9 @@ func TestCliConfigStaleProjectConfig_InertProjectFileYieldsNoFinding(t *testing.
 	home := filepath.Join(tmp, "home")
 	cwd := filepath.Join(tmp, "work")
 	// Project file matches home exactly — inert, not shadowing.
-	writeFile(t, filepath.Join(home, ".agentops", "config.yaml"),
+	writeFile(t, filepath.Join(home, ".agents", "ao", "config.yaml"),
 		"models:\n  default_tier: sonnet\n")
-	writeFile(t, filepath.Join(cwd, ".agentops", "config.yaml"),
+	writeFile(t, filepath.Join(cwd, ".agents", "ao", "config.yaml"),
 		"models:\n  default_tier: sonnet\n")
 
 	env := &DetectEnv{HomeDir: home, CWD: cwd}

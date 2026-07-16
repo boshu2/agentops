@@ -49,8 +49,13 @@ wiki/
 
 # Agent runtime state
 # Repo-root .agents/ is local/private runtime state for Codex, Claude,
-# AgentOps, and other agents. It must never be tracked in git.
-/.agents/
+# AgentOps, and other agents. It must never be tracked in git — except the
+# AgentOps project config, which pins repo-wide settings (e.g. tracker=br)
+# and must survive fresh clones.
+/.agents/*
+!/.agents/ao/
+/.agents/ao/*
+!/.agents/ao/config.yaml
 tests/claude-code/.agents/
 
 # Allow test fixtures under .agents/ paths

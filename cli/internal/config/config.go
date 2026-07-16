@@ -2,8 +2,8 @@
 // Configuration is loaded from (highest to lowest priority):
 // 1. Command-line flags
 // 2. Environment variables (AGENTOPS_*)
-// 3. Project config (.agentops/config.yaml in cwd)
-// 4. Home config (~/.agentops/config.yaml)
+// 3. Project config (.agents/ao/config.yaml in cwd)
+// 4. Home config (~/.agents/ao/config.yaml)
 // 5. Defaults
 package config
 
@@ -64,7 +64,7 @@ type CompileConfig struct {
 	// Precedence (high → low):
 	//   1. --runtime flag
 	//   2. AGENTOPS_COMPILE_RUNTIME env var
-	//   3. compile.preferred_runtime in ~/.agentops/config.yaml
+	//   3. compile.preferred_runtime in ~/.agents/ao/config.yaml
 	//   4. auto-detect (codex binary on PATH -> codex-cli)
 	//   5. empty (preflight will fail with an actionable error)
 	PreferredRuntime string `yaml:"preferred_runtime" json:"preferred_runtime"`
@@ -361,7 +361,7 @@ func Load(flagOverrides *Config) (*Config, error) {
 	cfg := Default()
 
 	// An explicit --config / AGENTOPS_CONFIG override IS the config file (per the
-	// documented contract "the config file (default: ~/.agentops/config.yaml)"):
+	// documented contract "the config file (default: ~/.agents/ao/config.yaml)"):
 	// load ONLY that file over defaults, and skip the ambient home + cwd-project
 	// discovery. Otherwise home settings the explicit file is silent on would leak
 	// underneath it (fm-cli-config-config-flag-not-threaded).
@@ -413,7 +413,7 @@ func homeConfigPath() string {
 	if err != nil {
 		return ""
 	}
-	return filepath.Join(home, ".agentops", "config.yaml")
+	return filepath.Join(home, ".agents", "ao", "config.yaml")
 }
 
 // getwdFunc is the function used to get the current working directory.
@@ -429,7 +429,7 @@ func projectConfigPath() string {
 	if err != nil {
 		return ""
 	}
-	return filepath.Join(cwd, ".agentops", "config.yaml")
+	return filepath.Join(cwd, ".agents", "ao", "config.yaml")
 }
 
 // loadHomeConfig loads the home directory config, returning nil on error.
@@ -753,8 +753,8 @@ type Source string
 
 const (
 	SourceDefault Source = "default"
-	SourceHome    Source = "~/.agentops/config.yaml"
-	SourceProject Source = ".agentops/config.yaml"
+	SourceHome    Source = "~/.agents/ao/config.yaml"
+	SourceProject Source = ".agents/ao/config.yaml"
 	SourceEnv     Source = "environment"
 	SourceFlag    Source = "flag"
 )

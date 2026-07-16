@@ -288,7 +288,7 @@ func TestDetectLifecycleRuntimeProfileWithOptions_Claude_WithManifest(t *testing
 	t.Setenv("OPENCODE_SESSION_ID", "")
 
 	// Create hook manifest
-	manifestDir := filepath.Join(home, ".agentops")
+	manifestDir := filepath.Join(home, ".agents", "ao")
 	if err := os.MkdirAll(manifestDir, 0755); err != nil {
 		t.Fatal(err)
 	}

@@ -144,7 +144,7 @@ func init() {
 	rootCmd.PersistentFlags().BoolVarP(&verbose, "verbose", "v", false, "Enable verbose output")
 	rootCmd.PersistentFlags().StringVarP(&output, "output", "o", "table", "Output format (json, table, yaml)")
 	rootCmd.PersistentFlags().BoolVar(&jsonFlag, "json", false, "Output as JSON (shorthand for -o json)")
-	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "Config file (default: ~/.agentops/config.yaml)")
+	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "Config file (default: ~/.agents/ao/config.yaml)")
 
 	_ = rootCmd.RegisterFlagCompletionFunc("output", staticCompletionFunc("json", "table", "yaml"))
 

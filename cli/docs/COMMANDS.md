@@ -5,7 +5,7 @@
 
 ## Global Flags
 
-          --config string   Config file (default: ~/.agentops/config.yaml)
+          --config string   Config file (default: ~/.agents/ao/config.yaml)
           --dry-run         Show what would happen without executing
       -h, --help            help for ao
           --json            Output as JSON (shorthand for -o json)

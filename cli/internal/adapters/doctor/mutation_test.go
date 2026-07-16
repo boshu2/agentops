@@ -28,7 +28,7 @@ func TestMutationRuntimeMapsApplicationRequest(t *testing.T) {
 func TestMutationServiceDryRunThroughRealAdaptersDoesNotPersist(t *testing.T) {
 	root := t.TempDir()
 	t.Chdir(root)
-	configDir := filepath.Join(root, ".agentops")
+	configDir := filepath.Join(root, ".agents", "ao")
 	if err := os.MkdirAll(configDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
