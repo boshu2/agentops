@@ -237,7 +237,7 @@ if [[ "${#SOURCE_SKILLS[@]}" -gt 0 ]]; then
     if [[ -n "$integrity_cmd" ]]; then
       integrity_cmd+=" && "
     fi
-    integrity_cmd+="bash skills/heal-skill/scripts/heal.sh --check --strict $source_target"
+    integrity_cmd+="bash skills/skill-builder/scripts/heal.sh --check --strict $source_target"
   done
   # Changed-scope release proof owns structural package integrity only. Content
   # quality and trigger usefulness are semantic evidence for the independent

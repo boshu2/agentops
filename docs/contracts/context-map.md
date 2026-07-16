@@ -30,7 +30,6 @@
 | `dueling-idea-genies` | `customer-of` | `idea-genie` |
 | `dueling-idea-genies` | `supplier-to` | `plan` |
 | `goals` | `shared-kernel` | `standards` |
-| `heal-skill` | `customer-of` | `skill-builder` |
 | `idea-genie` | `customer-of` | `research` |
 | `idea-genie` | `supplier-to` | `plan` |
 | `implement` | `customer-of` | `plan` |
@@ -49,7 +48,6 @@
 | `rpi` | `customer-of` | `validate` |
 | `scope` | `supplier-to` | `plan` |
 | `security` | `supplier-to` | `validate` |
-| `skill-builder` | `supplier-to` | `heal-skill` |
 | `toil-mining` | `supplier-to` | `automation-shape-routing` |
 | `using-gc` | `partnership` | `agent-native` |
 | `validate` | `customer-of` | `implement` |
@@ -93,7 +91,6 @@
 | `dueling-idea-genies` | produces | `idea-challenge.v1` |
 | `goals` | produces | `result.json` |
 | `handoff` | produces | `.agents/handoff/*.md` |
-| `heal-skill` | produces | `skill-hygiene-report` |
 | `idea-genie` | consumes | `repo-context` |
 | `idea-genie` | consumes | `task-question` |
 | `idea-genie` | produces | `idea-portfolio.v1` |
@@ -131,6 +128,7 @@
 | `security` | produces | `security-report.json` |
 | `shared` | produces | `reference-documents` |
 | `skill-builder` | produces | `skill-source-package` |
+| `skill-builder` | produces | `skill-hygiene-report` |
 | `standards` | produces | `stdout` |
 | `status` | produces | `stdout` |
 | `swarm` | consumes | `explicit-disjoint-packets` |

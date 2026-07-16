@@ -1,7 +1,7 @@
 {
   "image": "codex",
   "schema_version": "skill-image.v1",
-  "skill_count": 50,
+  "skill_count": 49,
   "skills": [
     {
       "disposition": "keep_specialist",
@@ -110,12 +110,6 @@
       "slug": "handoff",
       "source_path": "skills/handoff/",
       "twin_path": "skills-codex/handoff/"
-    },
-    {
-      "disposition": "keep_specialist",
-      "slug": "heal-skill",
-      "source_path": "skills/heal-skill/",
-      "twin_path": "skills-codex/heal-skill/"
     },
     {
       "disposition": "keep_strategy",

@@ -121,7 +121,7 @@ func CodexNativePluginSkillsPath(home string) string {
 }
 
 func CodexNativePluginHealPath(home string) string {
-	return filepath.Join(CodexNativePluginSkillsPath(home), "heal-skill", "scripts", "heal.sh")
+	return filepath.Join(CodexNativePluginSkillsPath(home), "skill-builder", "scripts", "heal.sh")
 }
 
 func CodexNativePluginManifestPath(home string) string {
@@ -544,7 +544,7 @@ func CheckCodexSync() Check {
 
 // FindHealScript searches for heal.sh in known locations and returns the path if found.
 func FindHealScript() string {
-	if p := "skills/heal-skill/scripts/heal.sh"; FileExists(p) {
+	if p := "skills/skill-builder/scripts/heal.sh"; FileExists(p) {
 		abs, err := filepath.Abs(p)
 		if err == nil {
 			return abs
@@ -559,13 +559,13 @@ func FindHealScript() string {
 	if p := CodexNativePluginHealPath(home); FileExists(p) {
 		return p
 	}
-	if p := filepath.Join(home, ".codex", "skills", "heal-skill", "scripts", "heal.sh"); FileExists(p) {
+	if p := filepath.Join(home, ".codex", "skills", "skill-builder", "scripts", "heal.sh"); FileExists(p) {
 		return p
 	}
-	if p := filepath.Join(home, ".claude", "skills", "heal-skill", "scripts", "heal.sh"); FileExists(p) {
+	if p := filepath.Join(home, ".claude", "skills", "skill-builder", "scripts", "heal.sh"); FileExists(p) {
 		return p
 	}
-	if p := filepath.Join(home, ".agents", "skills", "heal-skill", "scripts", "heal.sh"); FileExists(p) {
+	if p := filepath.Join(home, ".agents", "skills", "skill-builder", "scripts", "heal.sh"); FileExists(p) {
 		return p
 	}
 
@@ -596,7 +596,7 @@ func CheckSkillIntegrity() Check {
 		return Check{
 			Name:     "Skill Integrity",
 			Status:   "warn",
-			Detail:   "heal-skill not installed, skipping integrity check",
+			Detail:   "heal.sh not installed, skipping integrity check",
 			Required: false,
 		}
 	}

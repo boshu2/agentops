@@ -70,6 +70,6 @@ to satisfy a heuristic.
 ```bash
 for skill in skills/*; do
   [[ -f "$skill/SKILL.md" ]] || continue
-  bash skills/heal-skill/scripts/audit.sh "$skill" >/dev/null
+  bash skills/skill-builder/scripts/audit.sh "$skill" >/dev/null
 done
 ```

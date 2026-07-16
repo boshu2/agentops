@@ -15,7 +15,7 @@ import (
 // ScriptRunner runs a script-backed check and maps its exit code to a
 // GateVerdict. Basename backings resolve under scripts/ (for example
 // "check-cathedral-cut-conformance.py"). Path backings resolve from the repo root (for
-// example "skills/heal-skill/scripts/heal.sh").
+// example "skills/skill-builder/scripts/heal.sh").
 //
 // It satisfies ports.GateRunnerPort, so the deterministic runner can dispatch
 // ANY scripts/* gate — shell and Python — not only the check-* names the legacy

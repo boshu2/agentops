@@ -180,7 +180,7 @@ metadata:
 | `knowledge` | Knowledge management | compile, trace |
 | `product` | Product strategy | product, readme, release, goals |
 | `library` | Shared references | shared, standards, beads |
-| `meta` | System-level | using-agentops, update, heal-skill |
+| `meta` | System-level | using-agentops, update, skill-builder |
 | `contribute` | External contributions | pr-plan, pr-implement, pr-research, oss-docs |
 | `cross-vendor` | Cross-platform | openai-docs, codex-team, converter, grafana-platform-dashboard |
 
@@ -244,7 +244,6 @@ Core skills and their context policies:
 | push | isolated | exclude: HISTORY, INTEL, TASK | none | none |
 | ratchet | isolated | exclude: HISTORY, INTEL, TASK | none | none |
 | update | isolated | exclude: HISTORY, INTEL, TASK | none | none |
-| heal-skill | isolated | exclude: HISTORY, INTEL, TASK | none | none |
 | **Product** | | | | |
 | product | fork | exclude: HISTORY | task | full |
 | readme | fork | exclude: HISTORY | task | full |

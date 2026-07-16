@@ -117,12 +117,6 @@
       "reason": "Live source skill; generate a parity twin and keep runtime-specific behavior in the source contract."
     },
     {
-      "name": "heal-skill",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "Live source skill; generate a parity twin and keep runtime-specific behavior in the source contract."
-    },
-    {
       "name": "idea-genie",
       "treatment": "parity_only",
       "wave": "catalog-parity",

@@ -24,7 +24,7 @@
 
 ## meta
 
-`agent-native`, `automation-shape-routing`, `heal-skill`, `operationalize`, `rpi`, `scope`, `skill-builder`, `toil-mining`, `workflow-builder`
+`agent-native`, `automation-shape-routing`, `operationalize`, `rpi`, `scope`, `skill-builder`, `toil-mining`, `workflow-builder`
 
 ## orchestration
 
@@ -60,7 +60,6 @@
 | `dueling-idea-genies` | judgment | `keep_strategy` | - | `dueling_idea_genies` | - |
 | `goals` | product | `keep_specialist` | - | `goals` | - |
 | `handoff` | session | `keep_specialist` | - | `handoff` | - |
-| `heal-skill` | meta | `keep_specialist` | - | `heal_skill` | `optional_skill_projection_repair` |
 | `idea-genie` | execution | `keep_strategy` | - | `generate_evidenced_options` | `write_idea_portfolio` |
 | `implement` | execution | `keep` | - | `execute_one_experiment`, `collect_factual_evidence` | `modify_declared_subject`, `derive_subject_manifest` |
 | `learn` | execution | `keep_off_path` | - | `analyze_verdict_collections` | `write_advisory_observations` |
@@ -83,7 +82,7 @@
 | `scope` | meta | `keep_specialist` | - | `scope_review` | - |
 | `security` | product | `keep_specialist` | - | `security` | - |
 | `shared` | library | `keep_specialist` | - | `provide_reference_context` | - |
-| `skill-builder` | meta | `keep_specialist` | - | `skill_builder` | `writes_skill_source`, `regenerates_skill_projections` |
+| `skill-builder` | meta | `keep_specialist` | - | `skill_builder`, `heal_skill` | `writes_skill_source`, `regenerates_skill_projections`, `optional_skill_projection_repair` |
 | `standards` | knowledge | `keep_specialist` | - | `standards` | - |
 | `status` | session | `keep_specialist` | - | `status` | - |
 | `swarm` | execution | `keep_optional_adapter` | - | `dispatch_once` | `invoke_selected_executor` |

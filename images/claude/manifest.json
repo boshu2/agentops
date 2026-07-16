@@ -1,7 +1,7 @@
 {
   "image": "claude",
   "schema_version": "skill-image.v1",
-  "skill_count": 50,
+  "skill_count": 49,
   "skills": [
     {
       "disposition": "keep_specialist",
@@ -92,11 +92,6 @@
       "disposition": "keep_specialist",
       "path": "skills/handoff/",
       "slug": "handoff"
-    },
-    {
-      "disposition": "keep_specialist",
-      "path": "skills/heal-skill/",
-      "slug": "heal-skill"
     },
     {
       "disposition": "keep_strategy",

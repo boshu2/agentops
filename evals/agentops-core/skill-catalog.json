@@ -51,7 +51,7 @@
       "runtime": "shell",
       "inputs": {
         "cwd": "../..",
-        "shell": "env -u AGENTOPS_RPI_RUNTIME bash skills/heal-skill/scripts/heal.sh --strict"
+        "shell": "env -u AGENTOPS_RPI_RUNTIME bash skills/skill-builder/scripts/heal.sh --strict"
       },
       "expectations": [
         {"type": "exit_code", "value": 0}

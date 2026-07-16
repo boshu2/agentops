@@ -72,7 +72,7 @@ HEAL_REPO_ROOT="$FIX" bash "$HEAL" --check skills/sibling >/dev/null
 [[ "$(digest_tree "$FIX")" == "$check_before" ]]
 
 audit_before="$(digest_tree "$REPO_ROOT/skills")"
-bash "$AUDIT" "$REPO_ROOT/skills/heal-skill" >/dev/null 2>&1
+bash "$AUDIT" "$REPO_ROOT/skills/skill-builder" >/dev/null 2>&1
 [[ "$(digest_tree "$REPO_ROOT/skills")" == "$audit_before" ]]
 
-echo "heal-skill mutation boundaries: PASS"
+echo "heal mutation boundaries: PASS"

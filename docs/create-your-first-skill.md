@@ -128,7 +128,7 @@ Run the current local checks:
 
 ```bash
 # Required for any skill change
-bash skills/heal-skill/scripts/heal.sh --strict
+bash skills/skill-builder/scripts/heal.sh --strict
 
 # Required when docs or skill counts change
 bash tests/docs/validate-doc-release.sh

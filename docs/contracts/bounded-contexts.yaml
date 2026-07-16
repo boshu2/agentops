@@ -26,7 +26,7 @@ bounded_contexts:
     name: Skills
     product_layer: "Skill mesh"
     responsibility: "Author skills and generate every inventory and graph projection from SKILL.md metadata."
-    center_of_gravity: [skill-builder, heal-skill, standards, doc]
+    center_of_gravity: [skill-builder, standards, doc]
     ports: [SkillCatalogPort, SkillProjectionPort]
 
   - id: BC5
