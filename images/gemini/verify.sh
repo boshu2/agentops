@@ -60,11 +60,15 @@ jq -e '
   || fail "mcp_config.json does not expose Agent Mail over stdio"
 
 jq -e '
-  .["agentops-dcg"].PreToolUse[0].matcher == "run_command"
-  and .["agentops-dcg"].PreToolUse[0].hooks[0].command == "dcg"
-  and .["agentops-evidence-surface"].Stop[0].command == "ao handoff --help >/dev/null 2>&1 || true"
+  (keys == ["agentops-command-guards"])
+  and ((.["agentops-command-guards"] | keys) == ["PreToolUse"])
+  and .["agentops-command-guards"].PreToolUse[0].matcher == "run_command"
+  and ((.["agentops-command-guards"].PreToolUse[0].hooks | length) == 2)
+  and .["agentops-command-guards"].PreToolUse[0].hooks[0].command == "dcg"
+  and .["agentops-command-guards"].PreToolUse[0].hooks[1].command
+      == "bash ~/.agents/ao/hooks/skill-first-coord-guard.sh"
 ' "$PLUGIN_DIR/hooks.json" >/dev/null \
-  || fail "hooks.json does not expose the expected guard/evidence hooks"
+  || fail "hooks.json does not expose the expected uniform command guards"
 
 cmp -s "$PLUGIN_DIR/hooks.json" "$PLUGIN_DIR/hooks/hooks.json" \
   || fail "root hooks.json and hooks/hooks.json drifted"

@@ -1,5 +1,5 @@
 {
-  "agentops-dcg": {
+  "agentops-command-guards": {
     "PreToolUse": [
       {
         "matcher": "run_command",
@@ -8,28 +8,13 @@
             "type": "command",
             "command": "dcg",
             "timeout": 10
-          }
-        ]
-      }
-    ],
-    "PostToolUse": [
-      {
-        "hooks": [
+          },
           {
             "type": "command",
-            "command": "ao handoff --help >/dev/null 2>&1 || true",
+            "command": "bash ~/.agents/ao/hooks/skill-first-coord-guard.sh",
             "timeout": 10
           }
         ]
-      }
-    ]
-  },
-  "agentops-evidence-surface": {
-    "Stop": [
-      {
-        "type": "command",
-        "command": "ao handoff --help >/dev/null 2>&1 || true",
-        "timeout": 10
       }
     ]
   }

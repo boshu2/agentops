@@ -149,14 +149,17 @@ PY
   [ "$second" != "$first" ]
 }
 
-@test "ambient parity twin keeps its source provenance frozen" {
+@test "parity twin refreshes source provenance after the cathedral cut" {
   _make_source_skill foo
   _set_treatment foo parity_only
 
   run bash "$SCRIPT" --only foo
   [ "$status" -eq 0 ]
   [ "$(_manifest_hash foo)" != "STALE_foo" ]
-  [ "$(python3 -c 'import json,os; d=json.load(open(os.path.join(os.environ["SKILLS_ROOT"], ".agentops-manifest.json"))); print(next(e["source_hash"] for e in d["skills"] if e["name"]=="foo"))')" = "" ]
+  local source_hash
+  source_hash="$(python3 -c 'import json,os; d=json.load(open(os.path.join(os.environ["SKILLS_ROOT"], ".agentops-manifest.json"))); print(next(e["source_hash"] for e in d["skills"] if e["name"]=="foo"))')"
+  [ -n "$source_hash" ]
+  [ "$(python3 -c 'import json,os; print(json.load(open(os.path.join(os.environ["SKILLS_ROOT"], "foo", ".agentops-generated.json")))["source_hash"])')" = "$source_hash" ]
 }
 
 # --- Manifest dedupe (one row per skill name) --------------------------------

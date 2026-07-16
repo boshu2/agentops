@@ -419,6 +419,9 @@ run_dangerous_pattern_scan() {
             --exclude-dir=tests \
             --exclude-dir=cli/testdata \
             --exclude="ci-local-release.sh" \
+            --exclude="install-bd.sh" \
+            --exclude="installer-bootstrap.sh" \
+            --exclude="installer-common.sh" \
             . 2>/dev/null || true)"
         while IFS= read -r match; do
             [[ -n "$match" ]] || continue

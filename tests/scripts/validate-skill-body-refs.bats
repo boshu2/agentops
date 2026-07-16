@@ -52,7 +52,7 @@ write_skill() {
 @test "passes when every inline-code prose ref resolves against the live CLI" {
     AO_BIN="$(require_ao)"
     local fixture="$BATS_TEST_TMPDIR/clean"
-    write_skill "$fixture" "good" 'Run \`ao lookup --query "topic"\` then \`ao goals measure\`.'
+    write_skill "$fixture" "good" 'Run \`ao status --json\` to inspect durable loop evidence.'
 
     run env AGENTOPS_AO_BIN="$AO_BIN" AGENTOPS_SKILL_BODY_ROOTS="$fixture" \
         bash "$REPO_ROOT/scripts/validate-skill-body-refs.sh"
@@ -75,7 +75,7 @@ write_skill() {
 @test "fails on an injected stale flag ref in prose" {
     AO_BIN="$(require_ao)"
     local fixture="$BATS_TEST_TMPDIR/bad-flag"
-    write_skill "$fixture" "staleflag" 'Use \`ao inject --bogus-flag\` to load context.'
+    write_skill "$fixture" "staleflag" 'Use \`ao status --bogus-flag\` to inspect loop evidence.'
 
     run env AGENTOPS_AO_BIN="$AO_BIN" AGENTOPS_SKILL_BODY_ROOTS="$fixture" \
         bash "$REPO_ROOT/scripts/validate-skill-body-refs.sh"

@@ -75,7 +75,9 @@ Content.
 
 ### CI Jobs and What They Check
 
+<!-- BEGIN GENERATED CI JOBS -->
 (placeholder)
+<!-- END GENERATED CI JOBS -->
 
 ### Next section
 

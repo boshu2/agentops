@@ -466,6 +466,26 @@ func TestBuildLiveReport_FixtureCoverage(t *testing.T) {
 			t.Errorf("query %q returned zero hits", result.Query)
 		}
 	}
+
+	expectedTopIDs := map[string]string{
+		"security":     "security-toolchain-gate.md",
+		"architecture": "architecture-surface-contract.md",
+	}
+	for query, expectedID := range expectedTopIDs {
+		found := false
+		for _, result := range report.Results {
+			if result.Query != query {
+				continue
+			}
+			found = true
+			if len(result.TopIDs) == 0 || result.TopIDs[0] != expectedID {
+				t.Errorf("query %q top result = %v, want %q", query, result.TopIDs, expectedID)
+			}
+		}
+		if !found {
+			t.Errorf("live report missing query %q", query)
+		}
+	}
 }
 
 func mustParseTime(t *testing.T, s string) (tm time.Time) {

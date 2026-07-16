@@ -55,9 +55,9 @@ make_skeleton_without_linter() {
     # Inject a temp Go file into the real cli tree that trips a mechanical
     # staticcheck finding (S1008 De Morgan / early-return), run the gate, then
     # remove it. The injected file is uniquely named and always cleaned up.
-    probe="$REPO_ROOT/cli/internal/aostate/zz_bats_lint_probe.go"
+    probe="$REPO_ROOT/cli/internal/config/zz_bats_lint_probe.go"
     cat > "$probe" <<'GO'
-package aostate
+package config
 
 import "strings"
 

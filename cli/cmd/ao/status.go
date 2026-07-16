@@ -318,38 +318,65 @@ func validateVerdictShape(verdict *storedVerdict) error {
 	if len(verdict.Criteria) == 0 {
 		return fmt.Errorf("verdict.v2 criteria must be nonempty")
 	}
-	for _, criterion := range verdict.Criteria {
-		if criterion.ID == "" || !validVerdictResult(criterion.Result) || criterion.EvidenceRefs == nil || !nonemptyStrings(*criterion.EvidenceRefs) {
-			return fmt.Errorf("verdict.v2 contains an invalid criterion")
-		}
+	if err := validateVerdictCriteria(verdict.Criteria); err != nil {
+		return err
 	}
-	for _, finding := range verdict.Findings {
-		if finding.ID == "" || finding.Summary == "" || len(finding.EvidenceRefs) == 0 || !nonemptyStrings(finding.EvidenceRefs) {
-			return fmt.Errorf("verdict.v2 contains an invalid finding")
-		}
+	if err := validateVerdictFindings(verdict.Findings); err != nil {
+		return err
 	}
 	if !nonemptyStrings(verdict.EvidenceRefs) || !nonemptyStrings(verdict.Checked) || !nonemptyStrings(verdict.NotChecked) {
 		return fmt.Errorf("verdict.v2 contains an empty evidence, checked, or not_checked item")
 	}
-	if verdict.FreshnessAttestation != nil {
-		if (verdict.FreshnessAttestation.Source != "runtime" && verdict.FreshnessAttestation.Source != "caller") || verdict.FreshnessAttestation.AttesterIdentity == "" {
-			return fmt.Errorf("verdict.v2 has invalid freshness_attestation")
-		}
+	if err := validateFreshnessAttestation(verdict.FreshnessAttestation); err != nil {
+		return err
 	}
 	if _, err := time.Parse(time.RFC3339, verdict.ValidatedAt); err != nil {
 		return fmt.Errorf("verdict.v2 has invalid validated_at: %w", err)
 	}
 	if verdict.Verdict == "PASS" {
-		if verdict.AuthorContextID == nil || *verdict.AuthorContextID == "" || verdict.ValidatorContextID == nil || *verdict.ValidatorContextID == "" || *verdict.AuthorContextID == *verdict.ValidatorContextID {
-			return fmt.Errorf("PASS verdict requires distinct nonempty context identities")
+		return validatePassVerdict(verdict)
+	}
+	return nil
+}
+
+func validateVerdictCriteria(criteria []storedCriterion) error {
+	for _, criterion := range criteria {
+		if criterion.ID == "" || !validVerdictResult(criterion.Result) || criterion.EvidenceRefs == nil || !nonemptyStrings(*criterion.EvidenceRefs) {
+			return fmt.Errorf("verdict.v2 contains an invalid criterion")
 		}
-		if verdict.FreshnessAttestation == nil || len(verdict.EvidenceRefs) == 0 || len(verdict.Checked) == 0 || len(verdict.NotChecked) != 0 {
-			return fmt.Errorf("PASS verdict does not satisfy evidence and freshness requirements")
+	}
+	return nil
+}
+
+func validateVerdictFindings(findings []storedFinding) error {
+	for _, finding := range findings {
+		if finding.ID == "" || finding.Summary == "" || len(finding.EvidenceRefs) == 0 || !nonemptyStrings(finding.EvidenceRefs) {
+			return fmt.Errorf("verdict.v2 contains an invalid finding")
 		}
-		for _, criterion := range verdict.Criteria {
-			if criterion.Result != "PASS" || criterion.EvidenceRefs == nil || len(*criterion.EvidenceRefs) == 0 {
-				return fmt.Errorf("PASS verdict contains an unproven criterion")
-			}
+	}
+	return nil
+}
+
+func validateFreshnessAttestation(attestation *storedFreshness) error {
+	if attestation == nil {
+		return nil
+	}
+	if (attestation.Source != "runtime" && attestation.Source != "caller") || attestation.AttesterIdentity == "" {
+		return fmt.Errorf("verdict.v2 has invalid freshness_attestation")
+	}
+	return nil
+}
+
+func validatePassVerdict(verdict *storedVerdict) error {
+	if verdict.AuthorContextID == nil || *verdict.AuthorContextID == "" || verdict.ValidatorContextID == nil || *verdict.ValidatorContextID == "" || *verdict.AuthorContextID == *verdict.ValidatorContextID {
+		return fmt.Errorf("PASS verdict requires distinct nonempty context identities")
+	}
+	if verdict.FreshnessAttestation == nil || len(verdict.EvidenceRefs) == 0 || len(verdict.Checked) == 0 || len(verdict.NotChecked) != 0 {
+		return fmt.Errorf("PASS verdict does not satisfy evidence and freshness requirements")
+	}
+	for _, criterion := range verdict.Criteria {
+		if criterion.Result != "PASS" || criterion.EvidenceRefs == nil || len(*criterion.EvidenceRefs) == 0 {
+			return fmt.Errorf("PASS verdict contains an unproven criterion")
 		}
 	}
 	return nil
