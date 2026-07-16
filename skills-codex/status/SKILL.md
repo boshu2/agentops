@@ -11,8 +11,8 @@ guess wearing a report's clothes.
 Report only observable local facts: available intent, subject-manifest, and
 verdict artifacts; their counts, digests, and timestamps; deterministic check
 results; and unavailable or corrupt sources. The canonical durable stores are
-`.agentops/intents/sha256` and `.agentops/verdicts/sha256`; subject manifests
-remain caller-supplied unless the caller names their location. When `.agentops`
+`.agents/ao/intents/sha256` and `.agents/ao/verdicts/sha256`; subject manifests
+remain caller-supplied unless the caller names their location. When `.agents/ao`
 evidence exists, report which stored artifact kind is newest and label that
 conclusion as evidence recency, not runtime phase or process activity.
 

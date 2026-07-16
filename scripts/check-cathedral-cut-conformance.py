@@ -348,7 +348,7 @@ def probe_no_substrate_calls() -> None:
             "not_checked": [],
             "validated_at": "2026-07-14T00:00:00Z",
         }
-        verdict_dir = temp / ".agentops" / "verdicts" / "sha256"
+        verdict_dir = temp / ".agents" / "ao" / "verdicts" / "sha256"
         calls: list[str] = []
 
         def plan_phase(_intent: object) -> dict:

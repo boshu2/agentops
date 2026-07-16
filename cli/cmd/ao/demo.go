@@ -57,7 +57,7 @@ func quickDemo(w io.Writer) error {
 2. Implement runs one bounded RED -> GREEN -> refactor experiment.
 3. The runtime derives changed paths, check receipts, and subject-manifest.v1.
 4. A distinct fresh context validates the exact intent and subject once.
-5. Validate atomically stores verdict.v2 under .agentops/verdicts/sha256/.
+5. Validate atomically stores verdict.v2 under .agents/ao/verdicts/sha256/.
 6. RPI reports PASS, FAIL, NOT_PROVEN, NOT_PLANNED, or NOT_BUILT and stops.
 
 No Git repository or ao binary is required for this semantic loop.`)

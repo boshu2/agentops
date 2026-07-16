@@ -43,7 +43,7 @@ a reference. No reapply proof, no rule.
 
 Tie each rule to its source moments with a quote bank: for every counted
 occurrence, a short verbatim quote or command/output excerpt plus a locally
-resolving citation (repo path, `.agentops` digest, or session artifact). An
+resolving citation (repo path, `.agents/ao` digest, or session artifact). An
 occurrence that cannot be quoted and cited does not count toward the
 three-instance floor. Anchors let a later reader test whether the rule still
 matches what actually happened, instead of trusting the abstraction.

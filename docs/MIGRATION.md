@@ -51,7 +51,7 @@ release only. They do not forward to old code or mutate old state.
 `verdict.v2` binds acceptance and a deterministic `subject-manifest.v1` to
 distinct declared author and validator context identities. Freshness is an
 attested trust fact, not cryptographic proof of process isolation. Verdicts are
-stored atomically by content digest under `.agentops/verdicts/sha256/` unless a
+stored atomically by content digest under `.agents/ao/verdicts/sha256/` unless a
 caller supplies another directory.
 
 Historical Pawl, queue, claim, landing, and lifecycle artifacts remain inert

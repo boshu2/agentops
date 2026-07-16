@@ -15,7 +15,7 @@ Validate is the sole verdict writer. It writes canonical JSON to a temporary
 file in the destination directory, flushes it, and atomically renames it to:
 
 ```text
-.agentops/verdicts/sha256/<artifact-digest>.json
+.agents/ao/verdicts/sha256/<artifact-digest>.json
 ```
 
 An identical existing artifact is success. Different content under the same

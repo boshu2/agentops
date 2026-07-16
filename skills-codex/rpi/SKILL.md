@@ -61,8 +61,8 @@ rule — the second non-PASS outcome on one intent stops that lane and returns
 to the caller instead of dispatching another attempt. An orchestration without
 a declared envelope does not converge; it accretes lanes. The 2026-07-15
 heal-skill fold ran three intent revisions
-(`.agentops/intents/sha256/26a4f2be...eb48` lineage) and a `NOT_PROVEN` then
-PASS verdict pair (`.agentops/verdicts/sha256/b6e759dd...cb6a`,
+(`.agents/ao/intents/sha256/26a4f2be...eb48` lineage) and a `NOT_PROVEN` then
+PASS verdict pair (`.agents/ao/verdicts/sha256/b6e759dd...cb6a`,
 `e9b6cdb8...37b9`) before an enforced two-stop checkpoint ended the wave.
 
 Delegate with minimal context: a lane receives the frozen intent reference and

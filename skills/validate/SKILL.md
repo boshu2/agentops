@@ -87,10 +87,10 @@ committed subject, never the judged working tree.
    --intent-source <resolved-intent> --subject-manifest <manifest.json>
    --author-context-id <id> --scope-result <PASS|FAIL|NOT_PROVEN>`. The helper
    snapshots the exact resolved intent under
-   `<workspace>/.agentops/intents/sha256/<digest>.intent`, then computes and
+   `<workspace>/.agents/ao/intents/sha256/<digest>.intent`, then computes and
    injects intent and subject digests. Identity and changed-path facts come from
    runtime-derived manifests and receipts, not model transcription. Verdict
-   storage defaults to `<workspace>/.agentops/verdicts/sha256/<digest>.json`;
+   storage defaults to `<workspace>/.agents/ao/verdicts/sha256/<digest>.json`;
    callers may provide `verdict_dir`.
 7. Return the artifact path and digest. Stop.
 

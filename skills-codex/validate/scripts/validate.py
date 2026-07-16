@@ -509,7 +509,7 @@ def main() -> int:
             return 0 if ok else 1
         elif args.command == "snapshot-intent":
             intent_bytes = sys.stdin.buffer.read() if args.source == "-" else Path(args.source).read_bytes()
-            destination = Path(args.intent_dir) if args.intent_dir else Path(args.workspace) / ".agentops" / "intents" / "sha256"
+            destination = Path(args.intent_dir) if args.intent_dir else Path(args.workspace) / ".agents" / "ao" / "intents" / "sha256"
             intent_path, existed = snapshot_intent(intent_bytes, destination)
             write_json({
                 "acceptance_digest": hashlib.sha256(intent_bytes).hexdigest(),
@@ -519,11 +519,11 @@ def main() -> int:
         elif args.command == "digest":
             print(digest_value(load_json(Path(args.json_file))))
         elif args.command == "store-verdict":
-            destination = Path(args.verdict_dir) if args.verdict_dir else Path(args.workspace) / ".agentops" / "verdicts" / "sha256"
+            destination = Path(args.verdict_dir) if args.verdict_dir else Path(args.workspace) / ".agents" / "ao" / "verdicts" / "sha256"
             intent_bytes = Path(args.intent_source).read_bytes()
             intent_path, intent_existed = snapshot_intent(
                 intent_bytes,
-                Path(args.workspace) / ".agentops" / "intents" / "sha256",
+                Path(args.workspace) / ".agents" / "ao" / "intents" / "sha256",
             )
             artifact, path, existed = store_verdict(
                 load_json(Path(args.draft)),

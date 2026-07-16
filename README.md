@@ -1,129 +1,112 @@
-<div align="center">
-
 # AgentOps
 
-### Fresh-context validation for coding-agent work
-
-Coding agents are stochastic and can declare work done when it is not.
-AgentOps turns one behavior into one bounded experiment, gives the exact result
-to a fresh validator, and stores the verdict under your control.
-
-</div>
+Coding agents ship work that looks finished and isn't. AgentOps turns one
+behavior into one bounded experiment, hands the exact result to a fresh
+validator, and stores a durable verdict you control.
 
 ```text
 RPI -> Plan -> Implement -> fresh Validate -> durable verdict -> report and stop
 ```
 
-## Install
+## Quickstart
 
 ```bash
-# Install the optional CLI.
+npx skills@latest add boshu2/agentops --all -g
+```
+
+Works for Claude Code, Codex, Cursor, and other skills-compatible agents.
+Restart the agent, then run `plan`, `implement`, `validate`, or `rpi`.
+
+## Plugins (Claude Code / Codex)
+
+Prefer a managed bundle that updates with the release:
+
+```bash
+# Claude Code
+claude plugin marketplace add boshu2/agentops
+claude plugin install agentops@agentops-marketplace
+
+# Codex
+codex plugin marketplace add boshu2/agentops
+codex plugin add agentops@agentops-marketplace
+```
+
+`npx` copies skills you can edit. Plugins keep a read-only bundle current with
+the repo.
+
+## Optional: `ao` CLI
+
+Deterministic checks, inspection, and skill linking — not required for the
+core loop.
+
+```bash
 brew tap boshu2/agentops https://github.com/boshu2/homebrew-agentops
 brew install agentops
-
-# Keep one canonical checkout and link it into every installed runtime.
-git clone https://github.com/boshu2/agentops.git ~/.local/share/agentops
-cd ~/.local/share/agentops
-ao skills link
 ```
 
-`ao skills link` creates source symlinks under the portable
-`~/.agents/skills` root and every detected runtime skill root, including Claude,
-Codex, Gemini/Antigravity, and Cursor. It never replaces a real directory or a
-foreign symlink. Updates stay simple:
+Without Homebrew: `go install github.com/boshu2/agentops/cli/cmd/ao@latest`
 
-```bash
-cd ~/.local/share/agentops
-git pull --ff-only
-ao skills link
-```
+## Why AgentOps exists
 
-Without Homebrew, build the optional CLI from the checkout and then link:
+### 1. The agent said it was done
 
-```bash
-cd ~/.local/share/agentops/cli
-go install ./cmd/ao
-cd ..
-"$(go env GOPATH)/bin/ao" skills link
-```
+Same session that wrote the code also declared victory. AgentOps separates
+authorship from judgment: `implement` produces a candidate; a fresh `validate`
+issues `PASS`, `FAIL`, or `NOT_PROVEN`.
 
-The 3.x runtime plugin installers are tombstones for this release: they exit
-nonzero and point here. New installs use one canonical checkout plus
-`ao skills link`. See the [migration guide](docs/MIGRATION.md) for removing an
-old plugin install.
+### 2. Acceptance drifted mid-flight
 
-## Core workflow
+Without a fixed behavior and write scope, "done" is whatever the agent
+improvised. `plan` locks normal and edge acceptance in the existing intent
+source before anyone builds.
 
-```text
-> use plan for bead agentops-123
-Plan refines acceptance and scope in the bead; it creates no second plan file
+### 3. Nobody can replay what was judged
 
-> use implement
-RED -> GREEN -> refactor; runtime derives changed paths and content manifest
+Chat scrolls away. `validate` writes a content-addressed `verdict.v2` under
+`.agents/ao/verdicts/sha256/` with checked scope, omissions, and evidence
+refs. Plain JSON. No hosted service required.
 
-> use validate
-verdict.v2: FAIL — burst refill violates scenario S2
-checked: S1, S2, subject identity, write scope
-not_checked: load behavior above declared limit
-```
+### 4. The loop tried to own delivery
 
-Or invoke `rpi` with `rate-limit /login` to run the three responsibilities once and
-receive one report. RPI stops after `PASS`, `FAIL`, or `NOT_PROVEN`; the caller
-decides whether to revise, deliver, or abandon the work.
+Retries, queues, PRs, and merges are caller policy. AgentOps stops after one
+report. `rpi` runs Plan → Implement → Validate once; you decide what happens
+next.
 
 ## Core skills
 
-| Skill | Responsibility |
+| Skill | Job |
 |---|---|
-| `rpi` | invoke Plan, Implement, and fresh Validate at most once |
-| `plan` | refine behavior, acceptance, evidence, and scope in the existing intent source |
-| `implement` | run one bounded experiment; let the runtime derive subject facts |
-| `validate` | independently judge exact content and persist `verdict.v2` |
+| [`rpi`](skills/rpi/SKILL.md) | run Plan, Implement, and fresh Validate at most once |
+| [`plan`](skills/plan/SKILL.md) | refine acceptance, evidence, and scope in the intent source |
+| [`implement`](skills/implement/SKILL.md) | one RED → GREEN → refactor experiment |
+| [`validate`](skills/validate/SKILL.md) | independent judgment; persist `verdict.v2` |
 
-`learn` is an optional later analysis of verdict collections. `premortem`,
-`postmortem`, `council`, and idea genies are caller-selected strategies.
-Factory/runtime skills such as NTM, Agent Mail, Gas City, and swarms are optional
-adapters. None can change core sequencing or a verdict.
+Optional later: [`learn`](skills/learn/SKILL.md) over verdict collections.
+Caller-selected strategies: [`premortem`](skills/premortem/SKILL.md),
+[`postmortem`](skills/postmortem/SKILL.md), [`council`](skills/council/SKILL.md).
+Adapters (NTM, Agent Mail, Gas City, swarms) never change the core sequence or
+a verdict.
 
-## The evidence contract
+Full inventory: [Skill Router](docs/SKILL-ROUTER.md).
 
-A PASS binds:
+## Evidence contract
 
-- unchanged acceptance;
-- a deterministic manifest of files, symlinks, deletions, executable bits, and
-  content digests;
-- complete changed-path coverage inside the bead or caller-defined write scope;
-- distinct author and validator context IDs;
-- an explicit freshness attestation;
-- criterion results, evidence references, checked scope, and omissions.
+A `PASS` binds unchanged acceptance, a deterministic subject manifest, complete
+changed-path coverage inside write scope, distinct author and validator context
+IDs, a freshness attestation, and criterion-level evidence.
 
-Missing identity, mutation, or incomplete coverage is `NOT_PROVEN`. A proven
-out-of-scope change or failed acceptance criterion is `FAIL`.
+Missing identity, mutation, or incomplete coverage → `NOT_PROVEN`. Proven
+out-of-scope change or failed criterion → `FAIL`.
 
-Verdicts default to `.agentops/verdicts/sha256/<digest>.json`. They are plain,
-content-addressed JSON and do not require Git, `ao`, a tracker, a hosted service,
-or a provenance ledger. The acceptance digest is derived from the existing
-intent source; models do not author Plan, Candidate, or revision packets.
+## Boundary
 
-## Product boundary
+AgentOps owns intent shaping, one experiment, content identity, fresh judgment,
+and the verdict. It does not own retries, budgets, queues, claims, Git, CI,
+PRs, merges, closure, or release.
 
-AgentOps reads or refines caller-owned intent, runs one bounded experiment,
-derives exact content identity, obtains independent judgment, and stores the
-durable verdict. It does not own retries, budgets,
-queues, work claims, Git, CI, PRs, merges, closure, release, or delivery.
+Fresh judgment is a practical trust boundary, not cryptographic isolation.
+Context IDs and freshness are declared facts.
 
-Use your repository's existing direct-push, PR, merge queue, hosted CI, and
-release process after validation. Local and cloud agents use the same intent,
-manifest, and verdict boundaries.
-
-## Honest status
-
-Fresh independent judgment is a practical trust boundary, not a guarantee that
-stochastic output is correct. Context identities and freshness are declared
-facts, not cryptographic isolation. The longer-term learning hypothesis—that
-recurring verdict findings can improve future context and deterministic
-checks—remains off the critical path and must be measured.
-
-[Product boundary](PRODUCT.md) · [Operating loop](docs/architecture/operating-loop.md) · [CLI commands](cli/docs/COMMANDS.md) · [Skill router](docs/SKILL-ROUTER.md) · [Docs index](docs/documentation-index.md)
+[Product boundary](PRODUCT.md) · [Operating loop](docs/architecture/operating-loop.md) · [CLI](cli/docs/COMMANDS.md) · [Docs](docs/documentation-index.md)
 
 Contributing: [docs/CONTRIBUTING.md](docs/CONTRIBUTING.md). License: Apache-2.0.

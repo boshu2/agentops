@@ -219,7 +219,7 @@ element — only authored prose counts.
 | 5 | `quantified-rules` | Quantify at least one rule with a number and unit (`at most 3 attempts`, `250 lines`). |
 | 6 | `negative-space` | State what this skill is NOT for (`non-goals`, `not for`, `do not use when`). |
 | 7 | `anti-pattern-with-corrective` | Pair each anti-pattern with its corrective in the same section (`avoid X; instead Y`). |
-| 8 | `provenance-citation` | Cite at least one resolvable source: a repo path or a `.agentops` verdict/intent digest (abbreviated `prefix...suffix` accepted). |
+| 8 | `provenance-citation` | Cite at least one resolvable source: a repo path or a `.agents/ao` verdict/intent digest (abbreviated `prefix...suffix` accepted). |
 | 9 | `measurable-done` | Give a machine-checkable done signal (`done when`, `exit 0`, a validator command). |
 | 10 | `router-shape` | Map trigger phrases to modes/entry points in a routing table or Modes section. |
 | 11 | `trigger-rich-description` | Put `Triggers:` / `Use when` phrases callers actually say in the frontmatter description. |

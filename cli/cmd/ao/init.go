@@ -28,7 +28,7 @@ func runInit(cmd *cobra.Command, _ []string) error {
 		return fmt.Errorf("get cwd: %w", err)
 	}
 	paths := []string{
-		filepath.Join(".agentops", "verdicts", "sha256"),
+		filepath.Join(".agents", "ao", "verdicts", "sha256"),
 		filepath.Join(".agents", "ao", "provenance"),
 		filepath.Join(".agents", "handoff"),
 	}

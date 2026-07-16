@@ -357,8 +357,8 @@
     {
       "name": "bootstrap",
       "source_skill": "skills/bootstrap",
-      "source_hash": "54a856e43837ded8cf22dc2770b0a2653b272e21aa90a74bc21bab8eae1ecdd3",
-      "generated_hash": "54ec2b23f7b0408d55d573dd634ff82ade08a0cc619b765703d0354263fc875b"
+      "source_hash": "c3685be5bd081805490b7a5bf5c2c806ff40ecfb0e77a6dd40752f8bc3e2ca71",
+      "generated_hash": "a36120c164e708633c101c73b8fb2a1fe3e939ba3f3fbadbf37322f25e0a6063"
     },
     {
       "name": "cass",
@@ -435,14 +435,14 @@
     {
       "name": "implement",
       "source_skill": "skills/implement",
-      "source_hash": "87b8cb952f4ca625ada0d9a3fed6a581fba0b777f26f595bcc8ac4700cfce2e5",
-      "generated_hash": "5ec4ad4602bff6348517c7a78d82b882258c7b0306475f0df472aeccc801586c"
+      "source_hash": "5cd2058a3a56480d1e33e3f1f778077adeaef3de24bd05a8d5b521e66184e6bc",
+      "generated_hash": "081af199f9ddd36acad084458bad92d7f26191e8d6a85356e11b377a1b433aa8"
     },
     {
       "name": "learn",
       "source_skill": "skills/learn",
-      "source_hash": "c28dbaa073a76f0bcc9aa72a0abc06e353562b24e6d0922fc21199e075b24327",
-      "generated_hash": "58c7361f4336614776f994c5b2062bff465fd8c5ed434aa48784844bd233e56d"
+      "source_hash": "253b1e0a328b1bd7fe08bd2c6cfe292094d258cd7c3bb3216586c832635fd9a7",
+      "generated_hash": "9844ba038eeea70997051673be4708d47a06c059cd7037ddf418024ee7206deb"
     },
     {
       "name": "ms",
@@ -459,8 +459,8 @@
     {
       "name": "operationalize",
       "source_skill": "skills/operationalize",
-      "source_hash": "19ed5107a1636cc3907c890148734d52d489001540d5a54819eddfa1af7a6f7e",
-      "generated_hash": "f35a42ec5eac4967a7b1b256d10a710e05f7606ef68e3db9a90834fb4f0a6b8d"
+      "source_hash": "6d7181d96cf5b1c41db7887c3989328b89f114705d2e4e51843b96c516ba5923",
+      "generated_hash": "b8c4754c0650125d304fc4bedbd138aee2d33f6b2e5625ef182008ddae606ecd"
     },
     {
       "name": "pattern-mining",
@@ -471,8 +471,8 @@
     {
       "name": "plan",
       "source_skill": "skills/plan",
-      "source_hash": "26fdbbc8df0566bd2a1544ae9571376495835f8a3e8e96a555d27168cd1a66ec",
-      "generated_hash": "ddb57b7610e7227a66e47390187d0505bcb7f5443c65e041bc0d8b0c92193a9a"
+      "source_hash": "52b1a430e92c6e0758d8bfb63a7b7fb5a7bcde2580a877b2139f0d81164054e8",
+      "generated_hash": "1a45337fb4092eaee0bf2f17b74516014efc7a9891ed7b8843af9b0f337b1a7f"
     },
     {
       "name": "postmortem",
@@ -525,8 +525,8 @@
     {
       "name": "rpi",
       "source_skill": "skills/rpi",
-      "source_hash": "c3f6dbabe813e2dcb582c72b6a1a10a06923a570efbcd533c05abdc6c1526768",
-      "generated_hash": "a638970e2db24c257546e3e10fabde238845519f95c9748ef0cb290f4737d9ad"
+      "source_hash": "8483b9800e8c0d0a9247271cc67f8c7bb51fe8ed50fc1f6dcd379006530c53fc",
+      "generated_hash": "98669531f0481581d7ad115c54371dbf88b16dd7ff8a9cf0476c641f9d07eee4"
     },
     {
       "name": "sbh",
@@ -561,8 +561,8 @@
     {
       "name": "skill-builder",
       "source_skill": "skills/skill-builder",
-      "source_hash": "dd4f3c95f966c9fac3ed8b638be585bfa0e2f5a4c6dffa71628e09026dda1891",
-      "generated_hash": "cf9f7f2bfb3e0b44bcfc79aa7ca1723b7a8bf4fea83c5b538ec1c5bf155a0263"
+      "source_hash": "1d12ff3fe70b0bbcb5909e0c8f32dc18f20fdfd30777910b13de71c8ec5e7c82",
+      "generated_hash": "a30500c2355a602a5ea6a62ea7c73591d8364b0dc9f54aa8aa775914f76a7d38"
     },
     {
       "name": "standards",
@@ -573,8 +573,8 @@
     {
       "name": "status",
       "source_skill": "skills/status",
-      "source_hash": "627bd05bfee389bc643cd1f4e1996af335867d87d1ee1479e92803ba67abd9ee",
-      "generated_hash": "edb3d96d3331a43e99f97a4e1127f3722a57a60ed9ef537188e5d17ae2b38879"
+      "source_hash": "c4988fd8d1c497d63521e96e1235e132fdec955145e47ad276d7510c1615e89c",
+      "generated_hash": "60fcedb9dbc8aa913deb523161fd6b508de9101ad224841fbbf0a5d11df6f058"
     },
     {
       "name": "swarm",
@@ -603,8 +603,8 @@
     {
       "name": "validate",
       "source_skill": "skills/validate",
-      "source_hash": "36cd35044662b15811a04776ce654b66b233e437f1a25ed061f3dd1330216720",
-      "generated_hash": "44852ade76ae7631873383b531c710be03607d5ed782dfab9209a4d5df0492b7"
+      "source_hash": "86d84e7457418fb997fcee06988a0b4d7592ddc30b64f6621ace9925f66a3420",
+      "generated_hash": "8203d5b7af345c69202767322c9a6114a71ee3154a7f76cbe54023235131c275"
     },
     {
       "name": "workflow-builder",

@@ -41,7 +41,7 @@ outputs as a class — the hand-edited sources plus all outputs of the owning
 regen commands — never as a hand-enumerated path list. Hand enumeration is
 falsified the first time a regen command rewrites a companion the author did
 not list: the 2026-07-15 heal-skill fold burned two implement lanes and three
-intent revisions (`.agentops/intents/sha256/d1db59d4...2b81` superseded by
+intent revisions (`.agents/ao/intents/sha256/d1db59d4...2b81` superseded by
 `f5fd7c3c...af75` superseded by `26a4f2be...eb48`) before scope was restated
 as a class.
 

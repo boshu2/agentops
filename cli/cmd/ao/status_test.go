@@ -69,7 +69,7 @@ func TestLoadLoopEvidence_RejectsArbitraryAndCorruptFiles(t *testing.T) {
 	tmp := t.TempDir()
 	valid := writeIntentArtifact(t, tmp, "valid intent")
 	intentDir := filepath.Dir(valid)
-	verdictDir := filepath.Join(tmp, ".agentops", "verdicts", "sha256")
+	verdictDir := filepath.Join(tmp, ".agents", "ao", "verdicts", "sha256")
 	if err := os.MkdirAll(verdictDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
@@ -92,7 +92,7 @@ func TestLoadLoopEvidence_RejectsArbitraryAndCorruptFiles(t *testing.T) {
 
 func TestLoadLoopEvidence_ReportsUnavailableStore(t *testing.T) {
 	tmp := t.TempDir()
-	path := filepath.Join(tmp, ".agentops", "intents", "sha256")
+	path := filepath.Join(tmp, ".agents", "ao", "intents", "sha256")
 	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 		t.Fatal(err)
 	}
@@ -186,7 +186,7 @@ func TestRunStatus_JSONHasNoLegacySurfaces(t *testing.T) {
 func writeIntentArtifact(t *testing.T, root, content string) string {
 	t.Helper()
 	digest := sha256.Sum256([]byte(content))
-	directory := filepath.Join(root, ".agentops", "intents", "sha256")
+	directory := filepath.Join(root, ".agents", "ao", "intents", "sha256")
 	if err := os.MkdirAll(directory, 0o755); err != nil {
 		t.Fatal(err)
 	}
@@ -199,7 +199,7 @@ func writeIntentArtifact(t *testing.T, root, content string) string {
 
 func writeVerdictArtifact(t *testing.T, root string) string {
 	t.Helper()
-	directory := filepath.Join(root, ".agentops", "verdicts", "sha256")
+	directory := filepath.Join(root, ".agents", "ao", "verdicts", "sha256")
 	if err := os.MkdirAll(directory, 0o755); err != nil {
 		t.Fatal(err)
 	}

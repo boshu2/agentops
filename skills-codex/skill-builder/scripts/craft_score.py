@@ -7,7 +7,7 @@ Reports three advisory blocks over a skill's SKILL.md:
    machine-detectable authoring elements enumerated in
    references/skill-template.md (section 8). Presence is detected, never
    quality; scoring quality stays a fresh validator's judgment.
-2. Provenance resolution: cited repo paths and .agentops verdict/intent
+2. Provenance resolution: cited repo paths and .agents/ao verdict/intent
    digests (full or prefix...suffix abbreviated) must resolve; dead
    citations are named findings.
 3. Loop safety: iteration prose lacking a checkable stop-condition phrase
@@ -122,7 +122,7 @@ def check_provenance(text: str, repo_root: Path, skill_dir: Path) -> dict:
     digest_stems = [
         path.stem
         for pattern in ("verdicts", "intents")
-        for path in sorted((repo_root / ".agentops" / pattern / "sha256").glob("*"))
+        for path in sorted((repo_root / ".agents" / "ao" / pattern / "sha256").glob("*"))
         if path.is_file()
     ]
 
@@ -270,7 +270,7 @@ def detect_elements(
         (
             "provenance-citation",
             provenance["citations"] > 0 and provenance["resolved"] > 0,
-            "at least one resolvable repo-path or .agentops digest citation",
+            "at least one resolvable repo-path or .agents/ao digest citation",
         ),
         (
             "measurable-done",
