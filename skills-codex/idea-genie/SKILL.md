@@ -59,7 +59,7 @@ turns a later optional Premortem challenge into an approval gate.
 2. For a one-way door, create at least two fresh contexts with distinct context
    identifiers. Each produces its perspective before any is revealed. When the
    caller pins perspectives to model profiles, record each perspective's
-   `model_identity` (see `skills/agent-native/references/model-dispatch.md`); a
+   `model_identity` (see the `agent-native` model-dispatch recipe); a
    duel may use two distinct models on request. Sealed generation is unchanged:
    no perspective may see another before reveal. Unavailable profiles → disclose
    and continue single-model.
