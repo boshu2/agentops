@@ -139,7 +139,7 @@ Recipe: [INSTALLED-SKILL-EDIT-GUARD.md](references/INSTALLED-SKILL-EDIT-GUARD.md
 
 The keystone guard ships **gate-blind per-fire telemetry**: on each fire it
 appends exactly one JSONL line — `{ts, session, token_class, path_sha256}` — to
-`${AGENTOPS_HOME:-~/.agentops}/guardrail-telemetry.jsonl` (override with
+`${AGENTOPS_HOME:-~/.agents/ao}/guardrail-telemetry.jsonl` (override with
 `AGENTOPS_GUARDRAIL_TELEMETRY`). The path is **SHA-256 hashed, never raw**
 (privacy); nothing is written on the happy path; the sensor is inert until the
 guard is installed and fires. The pre-registered methodology — metric =

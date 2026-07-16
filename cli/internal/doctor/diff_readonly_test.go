@@ -47,7 +47,7 @@ func TestFixDryRunDoesNotCreateDoctorArtifactsOrEditGitignore(t *testing.T) {
 	if err := os.WriteFile(gitignore, []byte("existing\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	configDir := filepath.Join(root, ".agentops")
+	configDir := filepath.Join(root, ".agents", "ao")
 	if err := os.MkdirAll(configDir, 0o755); err != nil {
 		t.Fatal(err)
 	}

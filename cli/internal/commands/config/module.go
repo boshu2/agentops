@@ -261,8 +261,8 @@ const configLong = `View and manage AgentOps configuration.
 Configuration priority (highest to lowest):
   1. Command-line flags
   2. Environment variables (AGENTOPS_*)
-  3. Project config (.agentops/config.yaml)
-  4. Home config (~/.agentops/config.yaml)
+  3. Project config (.agents/ao/config.yaml)
+  4. Home config (~/.agents/ao/config.yaml)
   5. Defaults
 
 Environment variables:
@@ -296,7 +296,7 @@ Cost tiers map to model quality levels:
   budget   → haiku  (quick checks, simple tasks)
   inherit  → uses default tier (falls back to balanced)
 
-Configure in .agentops/config.yaml:
+Configure in .agents/ao/config.yaml:
   models:
     default_tier: balanced
     skill_overrides:
