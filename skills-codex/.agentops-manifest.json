@@ -375,8 +375,8 @@
     {
       "name": "codebase-recon",
       "source_skill": "skills/codebase-recon",
-      "source_hash": "dbcc1f6e2672a6d718119e281fa5da1556b48537cfb7c70754666ca61ae67595",
-      "generated_hash": "8098fc199246b551e389865a69e5b9f6b88705a2ece0ecc918ba64fd97fc28d3"
+      "source_hash": "24f574cc1b0699a46f666d2e3b2413952bd4979b1f5920c12c30f1c40efe04d0",
+      "generated_hash": "03bb598c93757cc1824a859bbab5c3bcebf0500a477b9bf28ada1933efc82f65"
     },
     {
       "name": "codex-exec",
@@ -405,8 +405,8 @@
     {
       "name": "doc",
       "source_skill": "skills/doc",
-      "source_hash": "770a124b353259b259b9d265b08b46b0775ed1f3b11635a34a6f0f25f95d25f8",
-      "generated_hash": "82c844a3e3a3b39fed10ef512a7512dae3c8283c8ce52cd0fc6080caa4370c30"
+      "source_hash": "6ebe03e1bade16684819e9b2dddc7b55d06513904d19f946099615266bd91f8e",
+      "generated_hash": "1743038084a42d861465d7c6bae53f45919da7b43df004ed36fa36e21cce2499"
     },
     {
       "name": "domain",

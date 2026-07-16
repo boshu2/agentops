@@ -20,8 +20,12 @@ Generate and validate documentation for any project. `--mode` selects the artifa
 | `--mode` | Artifact | Read first |
 |----------|----------|-----------|
 | *(default)* | API docs, code-maps, doc coverage/validate | this file |
-| `readme` | Gold-standard README (interview → generate → deterministic checks) | [references/readme-craft.md](references/readme-craft.md) |
+| `readme` | Gold-standard README (interview → generate → de-slop → deterministic checks) | [references/readme-craft.md](references/readme-craft.md) |
 | `oss` | OSS doc pack (CONTRIBUTING/CHANGELOG/AGENTS.md, audit + scaffold) | [references/oss-pack.md](references/oss-pack.md) |
+
+Same skill, different shapes. Prefer modes and references over a pile of
+one-off doc skills. README generate/rewrite always runs the
+[de-slopify](references/de-slopify.md) docs-prose pass before checks.
 
 **Mode routing (absorbed skills):**
 
@@ -94,7 +98,7 @@ doc** failure mode — accurate, complete, and useless.
 - [references/prose-and-report-workmanship.md](references/prose-and-report-workmanship.md)
 - [references/project-types.md](references/project-types.md)
 - [references/validation-rules.md](references/validation-rules.md)
-- [references/de-slopify.md](references/de-slopify.md) — Required prose pass for README mode; optional for other doc surfaces
+- [references/de-slopify.md](references/de-slopify.md) — Docs prose pass (required in README mode)
 - [references/architecture-report.md](references/architecture-report.md) — Generate technical architecture documents
 
 ## Examples
