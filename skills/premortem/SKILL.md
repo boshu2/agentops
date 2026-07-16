@@ -40,6 +40,21 @@ It is not part of the required RPI sequence and does not authorize readiness.
 Council or Dueling Idea Genies may be caller-supplied evidence, but Premortem
 does not require either strategy and cannot turn consensus into approval.
 
+## Adversarial defeat attempts
+
+Actively try to construct each failure, not imagine it. For every candidate
+failure, attempt a concrete defeat: write the input, command sequence, or
+repository state that would make the plan fail, and run or cite the check
+that shows whether the plan survives it. A finding is reportable as concrete
+when it names the defeating construction and what the plan does when it
+lands; a failure you could not construct is reported as attempted-and-blocked
+with the obstacle named, which is itself evidence for the plan. The named
+failure mode is armchair pessimism: a list of imagined risks with no
+construction attempts, which reads as diligence while testing nothing. Stop
+condition: every reported finding is backed by a defeat attempt — constructed,
+or attempted with the blocking fact cited; a finding with neither is deleted,
+not softened.
+
 ## Boundary
 
 - Emit advisory findings, not `verdict.v2`, readiness, admission, or permission.

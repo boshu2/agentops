@@ -17,6 +17,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
 HEAL_SH="$SCRIPT_DIR/heal.sh"
 SCORE_PY="$SCRIPT_DIR/score_agentops_skill.py"
+CRAFT_PY="$SCRIPT_DIR/craft_score.py"
 PROFILE_TOOL="$REPO_ROOT/skills/skill-builder/scripts/conformance_profile.py"
 
 STRICT=0
@@ -333,6 +334,37 @@ if [[ -f "$SCORE_PY" ]] && command -v python3 >/dev/null 2>&1; then
   fi
 fi
 
+# --- Pass 4: craft instrumentation (advisory) -----------------------------
+# 12-element craft score, provenance resolution, and loop-safety findings via
+# craft_score.py. Advisory-only by design: it never changes the PASS/WARN/FAIL
+# verdict or the exit code — presence of craft elements is cheaply detectable,
+# but craft quality stays the fresh validator's judgment. Fail-open to null
+# like the Pass 3 rubric.
+CRAFT_JSON="null"
+CRAFT_LINES=""
+if [[ -f "$CRAFT_PY" ]] && command -v python3 >/dev/null 2>&1; then
+  if craft_out="$(python3 "$CRAFT_PY" "$TARGET" --audit-block --repo-root "$REPO_ROOT" 2>/dev/null)"; then
+    CRAFT_JSON="$craft_out"
+    CRAFT_LINES="$(CRAFT_OUT="$craft_out" python3 - 2>/dev/null <<'PY' || true
+import json
+import os
+
+report = json.loads(os.environ["CRAFT_OUT"])
+lines = [f"Pass 4 craft (advisory): {report['summary']}"]
+prov = report["provenance"]
+lines.append(f"Provenance (advisory): {prov['resolved']}/{prov['citations']} citations resolve")
+for dead in prov["dead"]:
+    lines.append(f"  dead citation: {dead['citation']} ({dead['kind']})")
+loop = report["loop_safety"]["findings"]
+lines.append(f"Loop-safety (advisory): {len(loop)} finding(s)")
+for finding in loop:
+    lines.append(f"  {finding['type']} in section '{finding['section']}'")
+print("\n".join(lines))
+PY
+)"
+  fi
+fi
+
 # --- Aggregate verdict ---------------------------------------------------
 fails=0
 warns=0
@@ -402,6 +434,7 @@ PY
   printf '    "summary": "%d/6 density signals present; advisory-only and not execution-packet enforcement."\n' "$density_present_count"
   printf '  },\n'
   printf '  "rubric": %s,\n' "$RUBRIC_JSON"
+  printf '  "craft": %s,\n' "$CRAFT_JSON"
   printf '  "summary": "Pass1: %s via heal --strict (exit %d, %d findings, %d autofixable). Pass2: %d fails, %d warns.%s Verdict: %s."\n' \
     "$PASS1_STATUS" "$PASS1_EXIT_CODE" "$PASS1_FINDING_COUNT" "$PASS1_AUTOFIXABLE" "$fails" "$warns" "$RUBRIC_SUMMARY" "$VERDICT"
   printf '}\n'
@@ -422,6 +455,9 @@ fi
   done
   echo "Density advisory: $density_present_count/6 fields present ($DENSITY_STATUS)"
   echo "Pass 3 rubric (advisory): ${RUBRIC_SCORE}/30 (${RUBRIC_RATING})"
+  if [[ -n "$CRAFT_LINES" ]]; then
+    echo "$CRAFT_LINES"
+  fi
   echo "VERDICT: $VERDICT"
 } >&2
 

@@ -4,6 +4,10 @@ description: Report observable AgentOps evidence without
 ---
 # Status
 
+A status snapshot is trustworthy exactly when every line traces to an artifact
+that exists on disk right now; the first inferred line turns the report into a
+guess wearing a report's clothes.
+
 Report only observable local facts: available intent, subject-manifest, and
 verdict artifacts; their counts, digests, and timestamps; deterministic check
 results; and unavailable or corrupt sources. The canonical durable stores are
@@ -26,5 +30,13 @@ Status does not inspect work queues, assign priority, claim work, infer a next
 action, repair records, govern retries, or change any state. Optional Git or
 tracker metadata may be displayed only when the caller supplies it; absence
 cannot change the report interpretation.
+
+Named failure mode — **recency-as-activity**: reading "newest artifact is a
+verdict" as "validation is running", which invents a runtime phase from a
+timestamp.
+
+Anti-pattern: filling `not_checked` gaps with plausible narrative so the
+snapshot feels complete. Corrective: report the gap as a gap; an honest hole
+outranks a smooth story.
 
 Return the snapshot and stop.

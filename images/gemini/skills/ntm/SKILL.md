@@ -29,6 +29,23 @@ NTM hosts explicit agent roles in persistent panes. It is transport, not an
 AgentOps lifecycle controller. The caller chooses the panes, roles, commands,
 write scopes, and stopping point.
 
+Robot surfaces work because they report what the pane is doing, not what was
+sent to it; a dispatch layer that only proved delivery would let every dead
+worker look busy.
+
+Judge pane liveness by the truth-stack, strongest first: new artifacts on
+disk, then transcript growth, then robot state and attention flags, then bare
+process existence. A successful prompt send sits below all of these and proves
+nothing about work.
+
+Named failure mode — **kill-the-witness**: restarting a stuck pane before
+capturing its state, destroying the only evidence of why it stalled.
+
+Anti-pattern: restarting an unresponsive pane as the default remedy.
+Corrective: rescue before restart — snapshot robot state and transcript,
+attempt a nudge, and restart only when the truth-stack shows no liveness at
+any level.
+
 ## Boundary
 
 - Never start or probe NTM merely because it is installed.

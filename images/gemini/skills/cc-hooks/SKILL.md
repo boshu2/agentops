@@ -21,6 +21,14 @@ practices:
 
 Shell commands that fire at specific points in Claude Code's lifecycle.
 
+Hooks enforce mechanically what prose cannot: a model can reason its way past
+an instruction, but it cannot reason its way past an exit 2 — which is exactly
+why every hook must be narrow, silent, and reversible.
+
+Named failure mode — **chatty happy path**: a hook that emits stdout on exit 0
+corrupts the tool call it was guarding; silence on success is part of the
+contract, not a style preference.
+
 ## Constraints
 
 - Keep every hook opt-in because AgentOps installs no runtime hooks by default and host policy belongs to the operator.

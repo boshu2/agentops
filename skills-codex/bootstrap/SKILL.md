@@ -8,6 +8,17 @@ Bootstrap fills only missing AgentOps entry documents and the default durable
 verdict directory. It does not initialize Git, install hooks, create tracker
 state, start runtimes, or impose a delivery workflow.
 
+Never-overwrite is what makes bootstrap safe to run on any repository: a setup
+step that can only add is idempotent by construction, while one that can
+replace must first prove it understands what it is replacing.
+
+Named failure mode — **scaffold sprawl**: creating files the caller never
+requested because a "complete" setup feels more helpful than a minimal one.
+
+Anti-pattern: inferring product intent from directory names and READMEs to
+avoid asking the caller. Corrective: ask for the missing content; a wrong
+PRODUCT.md written confidently is worse than a question.
+
 ## Procedure
 
 1. Inspect the target directory and report which canonical files already exist.

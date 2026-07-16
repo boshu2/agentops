@@ -65,6 +65,48 @@ Your conversation history contains:
 
 **The insight:** Mining your past beats inventing new approaches. In the AgentOps loop the goal is prior-art first: mine as a research-phase move before writing a fresh plan or prompt, and feed what you find back into the corpus instead of re-deriving it.
 
+## History-First Routing
+
+Before deriving a plan, prompt, or approach from scratch, run one bounded
+search of past sessions (one query family, `--fields minimal`, a real
+`--limit`, under a minute of wall clock). Three outcomes, each with its own
+routing:
+
+- **Direct hit** — a prior session solved this. Reuse its prompt or decision;
+  cite `source_path` and line in whatever you build on it.
+- **Adjacent hit** — prior work borders the problem. Extract the working
+  fragments, then derive only the missing part fresh.
+- **Verified absence** — zero hits after retrying against discovered workspace
+  keys (`--aggregate workspace`). Now derivation is justified, and the absence
+  itself is worth noting: you are in new territory, so budget accordingly.
+
+The named failure mode is re-derivation drift: solving the same problem
+slightly differently each session, so the corpus accumulates near-duplicate
+approaches and no single one ever hardens into a ritual. Stop condition for
+the history pass itself: one query family exhausted or a direct hit found —
+history search is a bounded pre-step, not an open-ended excavation that
+displaces the actual task.
+
+## Lesson Weighting: Decay and Failure Overweight
+
+Mined lessons are evidence with a shelf life, not doctrine:
+
+- **Confidence decays with corpus drift.** Weight a mined lesson by what has
+  changed since it was captured, not by calendar age alone. A lesson about a
+  tool surface or repository that has since moved is a hypothesis to re-verify
+  — one probe against the current surface — before it steers a fresh plan. A
+  lesson about durable method (how to decompose, how to verify) decays far
+  more slowly. Never carry a stale-surface lesson forward at its original
+  confidence; the named failure mode is fossil doctrine — a dead workaround
+  reapplied for months because it once worked and nobody re-checked.
+- **Overweight failures.** A session where an approach failed is worth more
+  than a session where one worked: successes are overrepresented in what gets
+  polished and remembered, while failures encode the boundary of validity.
+  When mining prior art for an approach, explicitly search for its failures
+  ("didn't work", "reverted", "gave up", error strings) before adopting it. A
+  hit showing the approach failing in circumstances like yours outranks three
+  hits showing it succeeding elsewhere.
+
 ## THE EXACT PROMPT — Discovery Workflow
 
 ```

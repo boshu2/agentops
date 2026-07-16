@@ -202,7 +202,32 @@ For every shipped AgentOps skill, both files must exist:
 
 ---
 
-## 7. Out-of-scope for v1 (stocktake territory)
+## 7. The 12 craft elements (advisory Pass-4 instrumentation)
+
+`scripts/craft_score.py` detects the presence of these 12 authoring elements
+(never their quality) and reports an advisory `craft n/12` with named gaps in
+the deep audit. `scripts/init.sh` scaffolds one `<!-- craft:<id> ... -->` stub
+per element; the scorer strips HTML comments, so stubs never satisfy an
+element — only authored prose counts.
+
+| # | Element id | One-line authoring prompt |
+|---|------------|---------------------------|
+| 1 | `causal-insight-line` | State the one causal insight that makes this skill work (`Insight:` / `**Why:**` / a `because` clause). |
+| 2 | `named-failure-mode` | Name the concrete failure mode this skill exists to prevent (`fails when`, `failure mode`, a Failure behavior section). |
+| 3 | `frozen-prompts` | Provide any reusable prompt as a fenced block marked copy-paste-only. |
+| 4 | `named-loop-stop-condition` | If the skill iterates, name the loop and give a checkable stop condition in the same section (`stop after`, `at most N passes`, `until ... exit 0`). |
+| 5 | `quantified-rules` | Quantify at least one rule with a number and unit (`at most 3 attempts`, `250 lines`). |
+| 6 | `negative-space` | State what this skill is NOT for (`non-goals`, `not for`, `do not use when`). |
+| 7 | `anti-pattern-with-corrective` | Pair each anti-pattern with its corrective in the same section (`avoid X; instead Y`). |
+| 8 | `provenance-citation` | Cite at least one resolvable source: a repo path or a `.agentops` verdict/intent digest (abbreviated `prefix...suffix` accepted). |
+| 9 | `measurable-done` | Give a machine-checkable done signal (`done when`, `exit 0`, a validator command). |
+| 10 | `router-shape` | Map trigger phrases to modes/entry points in a routing table or Modes section. |
+| 11 | `trigger-rich-description` | Put `Triggers:` / `Use when` phrases callers actually say in the frontmatter description. |
+| 12 | `runnable-commands` | Include at least one fenced block with runnable commands. |
+
+---
+
+## 8. Out-of-scope for v1 (stocktake territory)
 
 The following deeper audits are described in a future `skills/skill-builder/references/skill-stocktake.md` but NOT yet implemented anywhere — defer to v2:
 

@@ -225,6 +225,117 @@
         }
       ]
     },
+    "craft": {
+      "description": "Advisory-only Pass-4 craft instrumentation (craft_score.py): 12-element craft score with named gaps, provenance-citation resolution, and loop-safety findings. Additive and never affects the aggregate verdict or exit code. Emitted as null when python3 or the scorer is unavailable (fail-open).",
+      "oneOf": [
+        {"type": "null"},
+        {
+          "type": "object",
+          "required": ["score", "max", "advisory", "missing", "elements", "provenance", "loop_safety", "summary"],
+          "properties": {
+            "score": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 12,
+              "description": "Count of the 12 craft elements detected as present."
+            },
+            "max": {"type": "integer", "const": 12},
+            "advisory": {
+              "type": "boolean",
+              "const": true,
+              "description": "Always true. Craft instrumentation is report-only and never gates."
+            },
+            "missing": {
+              "type": "array",
+              "items": {"type": "string"},
+              "description": "Element ids not detected; the named gaps."
+            },
+            "elements": {
+              "type": "array",
+              "minItems": 12,
+              "maxItems": 12,
+              "items": {
+                "type": "object",
+                "required": ["id", "present", "evidence"],
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "enum": [
+                      "causal-insight-line",
+                      "named-failure-mode",
+                      "frozen-prompts",
+                      "named-loop-stop-condition",
+                      "quantified-rules",
+                      "negative-space",
+                      "anti-pattern-with-corrective",
+                      "provenance-citation",
+                      "measurable-done",
+                      "router-shape",
+                      "trigger-rich-description",
+                      "runnable-commands"
+                    ]
+                  },
+                  "present": {"type": "boolean"},
+                  "evidence": {"type": "string"}
+                },
+                "additionalProperties": false
+              }
+            },
+            "provenance": {
+              "type": "object",
+              "required": ["advisory", "citations", "resolved", "dead"],
+              "properties": {
+                "advisory": {"type": "boolean", "const": true},
+                "citations": {"type": "integer", "minimum": 0},
+                "resolved": {"type": "integer", "minimum": 0},
+                "dead": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": ["citation", "kind"],
+                    "properties": {
+                      "citation": {"type": "string"},
+                      "kind": {"type": "string", "enum": ["digest", "path"]}
+                    },
+                    "additionalProperties": false
+                  }
+                }
+              },
+              "additionalProperties": false
+            },
+            "loop_safety": {
+              "type": "object",
+              "required": ["advisory", "findings"],
+              "properties": {
+                "advisory": {"type": "boolean", "const": true},
+                "findings": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": ["type", "section", "evidence"],
+                    "properties": {
+                      "type": {
+                        "type": "string",
+                        "enum": ["loop-missing-stop-condition", "dispatch-loop-missing-budget"]
+                      },
+                      "section": {"type": "string"},
+                      "evidence": {"type": "string"}
+                    },
+                    "additionalProperties": false
+                  }
+                }
+              },
+              "additionalProperties": false
+            },
+            "summary": {
+              "type": "string",
+              "description": "One-line rollup, e.g. 'craft 7/12; missing: causal-insight-line, frozen-prompts'."
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
     "summary": {
       "type": "string",
       "description": "Human-readable one-paragraph rollup. Suitable for embedding in a markdown audit report."

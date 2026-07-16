@@ -27,6 +27,25 @@ output_contract: runtime evidence for explicit packets
 Operate caller-selected agent sessions as explicit roles without turning the
 runtime into AgentOps lifecycle authority.
 
+Role separation works because each role's authority is checkable from its
+packet: a worker that cannot exceed its declared subject cannot corrupt a
+sibling's evidence, so factory failures stay local instead of systemic.
+
+When a worker looks stuck, score interventions by evidence and reversibility
+before acting: observe more (free, fully reversible), then nudge, then replace
+the worker, then restart the runtime — escalate only when observable state,
+not impatience, rules out the cheaper step. Stop the observe-nudge cycle once
+the worker reaches a terminal status or the caller's observation window ends;
+past that point further intervention manufactures noise, not evidence.
+
+Named failure mode — **prompt-send optimism**: treating a successfully
+delivered prompt as a working worker; delivery proves transport, not
+engagement.
+
+Anti-pattern: restarting an unresponsive worker as the first move. Corrective:
+capture its observable state first — a restart destroys the evidence of why it
+stalled, and rescue is usually cheaper than rerun.
+
 ## Roles
 
 - **Orchestrator:** passes explicit packets and reports runtime facts.

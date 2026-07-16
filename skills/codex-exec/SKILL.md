@@ -38,6 +38,17 @@ output_contract: process exit status and captured Codex output artifact
 Run exactly one caller-supplied Codex prompt and capture its result. This skill
 does not choose work, retry failures, validate by itself, or control continuation.
 
+One prompt, one process, one captured artifact is what makes the run auditable:
+when nothing loops, every byte of output traces to exactly one invocation, and
+a disagreement about what happened is settled by the artifact.
+
+Named failure mode — **stdin hang**: a non-TTY run left waiting forever on an
+open stdin nobody will write to; always pipe the prompt or close the stream.
+
+Anti-pattern: granting workspace-write or network access "in case the prompt
+needs it". Corrective: match the sandbox to the declared effects; a review
+prompt runs read-only, full stop.
+
 ## Procedure
 
 1. Confirm `codex login status` for the intended profile.

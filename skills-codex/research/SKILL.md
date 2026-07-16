@@ -24,6 +24,31 @@ are optional execution choices only when the caller authorizes them. Prior
 research, CASS, MS, codebase recon, and pattern mining are advisory sources,
 not required phases.
 
+## Commit-level citation for code claims
+
+A claim about what code does cites the commit it was observed at, plus
+file:line — code moves, and a citation without a revision decays silently into
+a claim about a repository that no longer exists. For the working tree, record
+the current HEAD and whether the cited file carries uncommitted changes. The
+named failure mode is the floating citation: a path and line that resolved
+when written, drifted after a refactor, and now lends false authority to a
+stale answer. A reader must be able to run `git show <commit>:<path>` and see
+the cited lines; a code claim that cannot survive that replay is reported as
+unverified, not asserted.
+
+## Done means observable capability
+
+Research is done when its capability flags are answerable, not when effort
+feels sufficient. At the start, derive from the bounded question a short list
+of capability statements — "can name the module that owns X, with citation",
+"can state whether Y is reachable from Z, or that this is unknown". The stop
+condition: every flag is either satisfied with evidence or explicitly reported
+unknown with what was searched. Hours spent and files read are not flags. The
+named failure mode is effort-shaped doneness — stopping because the search was
+long, and shipping an answer whose load-bearing claim was never actually
+established. If a flag stays unsatisfiable inside scope, say so and stop;
+widening the question mid-search is a new question, and the caller owns it.
+
 ### Multiple caller-supplied reports
 
 When the caller supplies several reports for one bounded question, synthesize
