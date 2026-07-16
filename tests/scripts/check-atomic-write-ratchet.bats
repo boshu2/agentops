@@ -254,8 +254,21 @@ GO
     [ "$status" -eq 2 ]
 }
 
-@test "real repo: the seeded grandfather + clean head passes" {
-    run bash "$REPO_ROOT/scripts/check-atomic-write-ratchet.sh" --scope head
+@test "committed repo snapshot: the seeded grandfather + clean head passes" {
+    # Other Bats files run concurrently and may temporarily mutate the checkout.
+    # Seed this fixture from committed blobs so the ratchet sees one stable tree.
+    git -C "$REPO_ROOT" show HEAD:scripts/.atomic-write-grandfather \
+        > "$TMP_DIR/scripts/.atomic-write-grandfather"
+    while IFS= read -r path; do
+        [[ -z "$path" || "$path" == \#* ]] && continue
+        mkdir -p "$TMP_DIR/$(dirname "$path")"
+        git -C "$REPO_ROOT" show "HEAD:$path" > "$TMP_DIR/$path"
+    done < "$TMP_DIR/scripts/.atomic-write-grandfather"
+    commit_all "seed committed grandfather snapshot"
+    ( cd "$TMP_DIR" && echo clean > snapshot-marker.txt )
+    commit_all "clean head"
+
+    run run_gate
     [ "$status" -eq 0 ]
     [[ "$output" == *"PASS"* ]]
 }

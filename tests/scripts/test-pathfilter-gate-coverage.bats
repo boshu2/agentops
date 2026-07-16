@@ -89,7 +89,7 @@ PY
     [ "$status" -eq 0 ]
 }
 
-@test "contracts filter covers every AGENTS*.md file the split script reads" {
+@test "contracts filter covers AGENTS.md and every current split owner" {
     SPLIT_SCRIPT="$REPO_ROOT/scripts/validate-agents-split.sh"
     run python3 - "$WORKFLOW_PATH" "$SPLIT_SCRIPT" <<'PY'
 import sys, re, fnmatch, yaml
@@ -98,10 +98,12 @@ workflow_path, split_path = sys.argv[1], sys.argv[2]
 
 with open(split_path) as f:
     src = f.read()
-agents_files = sorted(set(re.findall(r'\bAGENTS(?:-[A-Z]+)?\.md\b', src)))
-if not agents_files:
-    print("FAIL: no AGENTS*.md references found in split script (refactored?)")
+owners_match = re.search(r'readonly OWNERS=\(\n(.*?)\n\)', src, re.DOTALL)
+if not owners_match:
+    print("FAIL: could not parse OWNERS from split script")
     sys.exit(1)
+owners = re.findall(r'^\s*(docs/[^\s]+)\s*$', owners_match.group(1), re.MULTILINE)
+agents_files = sorted({"AGENTS.md", *owners})
 
 with open(workflow_path) as f:
     doc = yaml.safe_load(f)
@@ -127,10 +129,10 @@ uncovered = sorted(t for t in agents_files if not covered(t, contracts))
 if uncovered:
     print("UNCOVERED AGENTS split targets:", uncovered)
     sys.exit(1)
-print("ok: all AGENTS split targets covered by contracts filter:", agents_files)
+print("ok: AGENTS.md and split owners covered by contracts filter:", agents_files)
 PY
     [ "$status" -eq 0 ]
-    [[ "$output" == *"ok: all AGENTS split targets covered"* ]]
+    [[ "$output" == *"ok: AGENTS.md and split owners covered"* ]]
 }
 
 @test "surviving jobs still consume changes outputs (correctness + security)" {

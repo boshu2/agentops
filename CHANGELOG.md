@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- A deterministic `toil-mining` extractor for recent human-origin Codex JSONL
+  messages, with provenance, wrapper normalization, deduplication, exclusion
+  accounting, and explicit checked/not-checked scope.
+- Read-only `ao status` inventory for durable intent and verdict evidence,
+  including newest-evidence recency without runtime-phase inference.
+- One-shot MCP-backed `ms` search for environments without an attached MCP
+  tool, plus multi-report synthesis guidance in Research.
+
+### Changed
+
+- Published `ao demo` now presents the packet-free one-pass loop; active docs,
+  templates, and smoke tests use caller-owned intent plus runtime-derived
+  subject evidence. The old Plan, Candidate, and revision schemas are labeled
+  deprecated compatibility formats.
+- `scripts/ms-reindex.sh` derives completeness from live
+  discovered/indexed/error accounting instead of a hard-coded corpus floor.
+- CASS guidance distinguishes authoritative rebuild fallback and timed-out
+  concurrent reads from empty results or source loss.
+
 ## [4.0.0] - 2026-07-15
 
 AgentOps 4.0 is the Cathedral Cut: the product returns to one small trust

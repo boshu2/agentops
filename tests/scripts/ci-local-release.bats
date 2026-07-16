@@ -194,6 +194,30 @@ EOF
     [ "$status" -eq 0 ]
 }
 
+@test "dangerous pattern scan skips canonical installer plumbing" {
+    mkdir -p "$TMP_DIR/scripts/lib"
+    cat > "$TMP_DIR/scripts/install-bd.sh" <<'EOF'
+curl -fsSL https://raw.githubusercontent.com/boshu2/agentops/main/scripts/install-bd.sh | bash
+EOF
+    cat > "$TMP_DIR/scripts/lib/installer-bootstrap.sh" <<'EOF'
+# curl|bash bootstrap support
+EOF
+    cat > "$TMP_DIR/scripts/lib/installer-common.sh" <<'EOF'
+printf 'curl -fsSL https://example.invalid/install.sh | bash\n'
+EOF
+
+    run env SCRIPT_UNDER_TEST="$SCRIPT" FIXTURE_DIR="$TMP_DIR" bash -c '
+        set -euo pipefail
+        set --
+        export AGENTOPS_CI_LOCAL_RELEASE_SOURCE_ONLY=1
+        source "$SCRIPT_UNDER_TEST"
+        cd "$FIXTURE_DIR"
+        run_dangerous_pattern_scan
+    '
+
+    [ "$status" -eq 0 ]
+}
+
 @test "dangerous pattern scan rejects non-allowlisted curl bash" {
     mkdir -p "$TMP_DIR/scripts"
     cat > "$TMP_DIR/scripts/evil.sh" <<'EOF'

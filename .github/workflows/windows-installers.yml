@@ -49,7 +49,7 @@ jobs:
             -NoPathUpdate
           & (Join-Path $sandboxInstall 'ao.exe') version
 
-      - name: Run Windows smoke (ao install + skills link + doctor hints)
+      - name: Run Windows smoke (ao install + skills link + doctor guidance)
         run: |
           & "$env:GITHUB_WORKSPACE\tests\windows\test-windows-smoke.ps1" `
             -RepoRoot $env:GITHUB_WORKSPACE

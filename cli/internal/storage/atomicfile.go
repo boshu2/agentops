@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 	"syscall"
 )
 
@@ -84,6 +85,13 @@ func FsyncDir(dir string) error {
 		return err
 	}
 	defer func() { _ = d.Close() }()
+	// Windows does not expose a usable directory fsync through os.File.Sync:
+	// FlushFileBuffers on the directory handle returns ERROR_ACCESS_DENIED.
+	// Opening the directory above still preserves the missing-path/error
+	// contract; the metadata barrier itself is unavailable on this platform.
+	if runtime.GOOS == "windows" {
+		return nil
+	}
 	if err := d.Sync(); err != nil && !dirFsyncUnsupported(err) {
 		return err
 	}

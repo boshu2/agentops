@@ -1,6 +1,6 @@
 ---
 name: idea-genie
-description: 'Generate an evidence-grounded opportunity portfolio for an open-ended product or engineering question, or challenge a consequential idea with sealed independent perspectives, cross-review, and preserved dissent. Triggers: "idea genie", "what should we build", "supported opportunities", "challenge this idea", "compare independent proposals", "stress-test a one-way door".'
+description: 'Generate evidenced opportunities or challenge an idea with sealed perspectives. Triggers: "idea genie", "what should we build", "challenge this idea", "compare proposals".'
 practices: [lean-startup, bdd-gherkin, design-by-contract, llm-eval-harness, adr]
 hexagonal_role: domain
 consumes: [repo-context, task-question, idea-portfolio.v1]

@@ -82,6 +82,9 @@ brew install agentops
 
 Without Homebrew: `go install github.com/boshu2/agentops/cli/cmd/ao@latest`
 
+To track skills from a local checkout instead of a release bundle, run
+`ao skills link` from that checkout.
+
 ## Why AgentOps exists
 
 ### 1. The agent said it was done
