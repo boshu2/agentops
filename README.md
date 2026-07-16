@@ -1,15 +1,21 @@
 # AgentOps
 
-Coding agents ship work that looks finished and isn't. AgentOps turns one
-behavior into one bounded experiment, hands the exact result to a fresh
-validator, and stores a durable verdict you control. For contested calls, opt
-into [`council`](skills/council/SKILL.md) (independent judges) or
-[`idea-genie`](skills/idea-genie/SKILL.md) duel mode (sealed perspectives before
-Plan).
+AgentOps is the operating loop for coding agents: one intent, one bounded
+build, one fresh judge, one durable verdict. For contested calls, opt into
+[`council`](skills/council/SKILL.md) (independent judges) or
+[`idea-genie`](skills/idea-genie/SKILL.md) duel mode (sealed perspectives
+before Plan).
 
 ```text
 RPI -> Plan -> Implement -> fresh Validate -> durable verdict -> report and stop
 ```
+
+Need more than one agent? Skills cover multi-agent orchestration —
+[`swarm`](skills/swarm/SKILL.md), [`agent-native`](skills/agent-native/SKILL.md),
+[`ntm`](skills/ntm/SKILL.md), [`using-gc`](skills/using-gc/SKILL.md). They
+dispatch work; they do not own the verdict. Optional factories around the
+loop: [Gas City](https://github.com/gastownhall/gascity) and Jeffrey Emanuel's
+[Agentic Coding Flywheel](https://agent-flywheel.com).
 
 ## Quickstart
 
