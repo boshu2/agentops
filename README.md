@@ -14,12 +14,12 @@ RPI -> Plan -> Implement -> fresh Validate -> durable verdict -> report and stop
 ## Quickstart
 
 ```bash
+brew install beads
 npx skills@latest add boshu2/agentops --all -g
 ```
 
-Works for Claude Code, Codex, Cursor, and other skills-compatible agents.
-Installs skills under your agent skill roots (for example `~/.agents/skills`).
-Restart the agent, then:
+Restart the agent. Use `plan`, `implement`, `validate`, and `learn` — or
+`rpi` to run the loop once.
 
 ```text
 > use plan for bead agentops-123
@@ -33,8 +33,6 @@ verdict.v2: FAIL — burst refill violates scenario S2
 checked: S1, S2, subject identity, write scope
 not_checked: load above declared limit
 ```
-
-Or run `rpi` once for the full loop.
 
 ## Plugins (Claude Code / Codex)
 
@@ -50,21 +48,25 @@ codex plugin marketplace add boshu2/agentops
 codex plugin add agentops@agentops-marketplace
 ```
 
-`npx` copies skills you can edit. Plugins keep a read-only bundle current with
-the repo. Remove with your runtime's plugin uninstall, or delete the linked
-skill directories.
+Two install paths:
+
+- **npx / [skills.sh](https://skills.sh)** copies skills you can edit.
+- **Plugins** keep a read-only bundle current with the repo.
+
+Remove with your runtime's plugin uninstall, or delete the linked skill
+directories.
 
 ## Intent lives in a bead
 
-```bash
-brew install beads
-```
+[Beads](https://github.com/steveyegge/beads) is the preferred tracker. Plan
+writes [BDD](https://cucumber.io/docs/bdd/) acceptance and DDD [ubiquitous
+language](https://martinfowler.com/bliki/UbiquitousLanguage.html) into the bead;
+Implement builds against it; Validate judges a hashed snapshot under
+`.agents/ao/intents/sha256/`. No beads? Plan shapes the caller's issue or chat
+text and the runtime snapshots those bytes the same way.
 
-[Beads](https://github.com/steveyegge/beads) is an issue tracker built for
-agents. AgentOps uses a bead as the intent source for each experiment: Plan
-writes acceptance and write scope into it, Implement builds from it, and
-Validate judges against a hashed snapshot of those same bytes under
-`.agents/ao/intents/sha256/`.
+`validate` must run in a fresh context (not the author session). Same model or
+a different one — both are supported.
 
 ## Optional: `ao` CLI
 
@@ -83,8 +85,9 @@ Without Homebrew: `go install github.com/boshu2/agentops/cli/cmd/ao@latest`
 ### 1. The agent said it was done
 
 Same session that wrote the code also declared victory. AgentOps separates
-authorship from judgment: `implement` produces a candidate; a fresh `validate`
-issues `PASS`, `FAIL`, or `NOT_PROVEN`.
+authorship from judgment: `implement` produces a candidate; `validate` must
+run in a fresh context and may use a different model. It issues `PASS`,
+`FAIL`, or `NOT_PROVEN`.
 
 ### 2. One perspective rubber-stamped another
 
@@ -110,9 +113,9 @@ refs. Plain JSON. No hosted service required.
 | Skill | Job |
 |---|---|
 | [`rpi`](skills/rpi/SKILL.md) | run Plan, Implement, and fresh Validate at most once |
-| [`plan`](skills/plan/SKILL.md) | refine acceptance, evidence, and scope in the bead |
-| [`implement`](skills/implement/SKILL.md) | one RED → GREEN → refactor experiment |
-| [`validate`](skills/validate/SKILL.md) | independent judgment; persist `verdict.v2` |
+| [`plan`](skills/plan/SKILL.md) | create the bead (BDD + DDD ubiquitous language) |
+| [`implement`](skills/implement/SKILL.md) | TDD against the bead: RED → GREEN → refactor |
+| [`validate`](skills/validate/SKILL.md) | fresh context (optionally different model); persist `verdict.v2` |
 
 Optional later: [`learn`](skills/learn/SKILL.md). Strategies:
 [`council`](skills/council/SKILL.md), [`idea-genie`](skills/idea-genie/SKILL.md),
