@@ -17,6 +17,14 @@ import (
 
 type Rule string
 
+type SemanticEscapeClass string
+
+const (
+	SemanticEscapeTrackerExecution SemanticEscapeClass = "tracker-execution"
+	SemanticEscapeCommandContext   SemanticEscapeClass = "command-context"
+	SemanticEscapeUniversalEffects SemanticEscapeClass = "universal-effects"
+)
+
 const (
 	RuleProcess             Rule = "effect.process"
 	RuleFilesystem          Rule = "effect.filesystem"
@@ -24,6 +32,13 @@ const (
 	RuleNetwork             Rule = "effect.network"
 	RuleTracker             Rule = "effect.tracker"
 	RuleClock               Rule = "effect.clock"
+	RuleContext             Rule = "semantic.context"
+	RuleTrackerExecution    Rule = "semantic.tracker-execution"
+	RuleEffects             Rule = "semantic.effects"
+	RuleOutput              Rule = "semantic.output"
+	RuleRecursiveContracts  Rule = "semantic.recursive-contracts"
+	RuleGeneratedEvidence   Rule = "semantic.generated-evidence"
+	RuleEvidenceBinding     Rule = "semantic.evidence-binding"
 	RuleServiceBag          Rule = "dependency.service-bag"
 	RuleCompositionImport   Rule = "dependency.composition"
 	RuleConcreteAdapter     Rule = "dependency.concrete-adapter"
@@ -48,10 +63,54 @@ func (v Violation) String() string {
 }
 
 type Options struct {
-	Root        string
-	Family      string
-	AllMigrated bool
-	VerifyScope string
+	Root         string
+	Family       string
+	AllMigrated  bool
+	VerifyScope  string
+	CandidateSHA string
+}
+
+// ClassifySemanticEscapes identifies production files that still own one of
+// the pre-migration semantic escape hatches guarded by the architecture seals.
+func ClassifySemanticEscapes(path string, source []byte) []SemanticEscapeClass {
+	path = filepath.ToSlash(filepath.Clean(path))
+	if strings.HasSuffix(path, "_test.go") {
+		return nil
+	}
+	fset := token.NewFileSet()
+	file, err := parser.ParseFile(fset, path, source, 0)
+	if err != nil {
+		return nil
+	}
+	aliases := sourceImportAliases(file)
+	var classes []SemanticEscapeClass
+	if strings.HasPrefix(path, "cli/internal/adapters/") {
+		hasTrackerResolver := false
+		hasProcessLaunch := false
+		for _, importPath := range aliases {
+			hasTrackerResolver = hasTrackerResolver || strings.HasSuffix(importPath, "/internal/trackerresolve")
+			hasProcessLaunch = hasProcessLaunch || importPath == "os/exec"
+		}
+		if hasTrackerResolver && hasProcessLaunch {
+			classes = append(classes, SemanticEscapeTrackerExecution)
+		}
+	}
+	if isCommandPath(path) {
+		violations, _ := CheckSource(path, source)
+		for _, violation := range violations {
+			if violation.Rule == RuleContext {
+				classes = append(classes, SemanticEscapeCommandContext)
+				break
+			}
+		}
+	}
+	if path == "cli/cmd/ao/root.go" {
+		violations, _ := checkUniversalEffectsSource(path, source)
+		if len(violations) > 0 {
+			classes = append(classes, SemanticEscapeUniversalEffects)
+		}
+	}
+	return classes
 }
 
 func Check(options Options) ([]Violation, error) {
@@ -97,6 +156,12 @@ func Check(options Options) ([]Violation, error) {
 		}
 		violations = append(violations, familyViolations...)
 	}
+	semanticViolations, err := checkSemanticSeal(root, options.CandidateSHA)
+	if err != nil {
+		return nil, err
+	}
+	violations = append(violations, semanticViolations...)
+
 	violations = dedupe(violations)
 	sortViolations(violations)
 	return violations, nil
@@ -115,7 +180,7 @@ func checkTree(root, tree string) ([]Violation, error) {
 		if err != nil {
 			return err
 		}
-		data, err := os.ReadFile(path)
+		data, err := os.ReadFile(path) // #nosec G122 -- dev-time arch checker walks this repo's own trusted source tree; no symlink-TOCTOU threat model.
 		if err != nil {
 			return err
 		}
@@ -225,10 +290,31 @@ func (c *sourceChecker) inspectNode(node ast.Node) bool {
 		if containsServiceBagType(item.Type) {
 			c.add(RuleServiceBag, item, "shared dependency/service bags are forbidden")
 		}
+	case *ast.CallExpr:
+		c.checkContextCall(item)
 	case *ast.SelectorExpr:
 		c.checkSelector(item)
 	}
 	return true
+}
+
+func (c *sourceChecker) checkContextCall(call *ast.CallExpr) {
+	selector, ok := call.Fun.(*ast.SelectorExpr)
+	if !ok {
+		return
+	}
+	ident, ok := selector.X.(*ast.Ident)
+	if !ok || c.aliases[ident.Name] != "context" {
+		return
+	}
+	if selector.Sel.Name != "Background" && selector.Sel.Name != "TODO" {
+		return
+	}
+	c.add(
+		RuleContext,
+		call,
+		fmt.Sprintf("context.%s discards command cancellation; propagate the caller context", selector.Sel.Name),
+	)
 }
 
 func (c *sourceChecker) checkSelector(item *ast.SelectorExpr) {

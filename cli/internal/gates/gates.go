@@ -13,6 +13,7 @@ package gates
 
 import (
 	"context"
+	"path/filepath"
 	"strings"
 
 	"github.com/boshu2/agentops/cli/internal/ports"
@@ -103,12 +104,23 @@ func (c Check) ArtifactPath() string {
 	return "scripts/" + c.Backing
 }
 
+// backingInterpreter returns the portable interpreter name for a script-backed
+// check. ScriptRunner may resolve "bash" to a host-specific Bash 4+ path, but
+// reports and workflow evidence keep the stable command name.
+func backingInterpreter(artifactPath string) string {
+	if strings.EqualFold(filepath.Ext(artifactPath), ".py") {
+		return "python3"
+	}
+	return "bash"
+}
+
 // WorkflowBacking returns the command-shaped backing visible in CI/workflows.
 func (c Check) WorkflowBacking() string {
 	if c.Run != nil {
 		return "native-go"
 	}
-	return strings.Join(append([]string{"bash", c.ArtifactPath()}, c.Args...), " ")
+	artifactPath := c.ArtifactPath()
+	return strings.Join(append([]string{backingInterpreter(artifactPath), artifactPath}, c.Args...), " ")
 }
 
 // EffectiveRepairHint returns an explicit repair hint or derives a rerun hint

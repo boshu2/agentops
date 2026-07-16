@@ -78,6 +78,7 @@ manifest = {
     "generator": "manual-maintained",
     "source_root": "skills",
     "layout": "modular",
+    "package_count": 1,
     "skills": [
         {
             "name": "source-skill",
@@ -114,6 +115,27 @@ test_fails_on_drift() {
   fi
 }
 
+test_fails_on_package_count_drift() {
+  local fixture="$TMP_DIR/package-count"
+  setup_fixture "$fixture"
+  python3 - "$fixture/skills-codex/.agentops-manifest.json" <<'PY'
+import json
+import pathlib
+import sys
+
+path = pathlib.Path(sys.argv[1])
+manifest = json.loads(path.read_text(encoding="utf-8"))
+manifest["package_count"] = 2
+path.write_text(json.dumps(manifest), encoding="utf-8")
+PY
+
+  if (cd "$fixture" && bash "$SCRIPT" skills-codex >/dev/null 2>&1); then
+    fail "should fail when package_count drifts from installable directories"
+  else
+    pass "fails when package_count drifts from installable directories"
+  fi
+}
+
 test_ignores_cache_artifacts() {
   local fixture="$TMP_DIR/cache"
   setup_fixture "$fixture"
@@ -131,6 +153,7 @@ test_ignores_cache_artifacts() {
 echo "== test-codex-generated-manifest =="
 test_passes_with_matching_manifest
 test_fails_on_drift
+test_fails_on_package_count_drift
 test_ignores_cache_artifacts
 
 echo ""

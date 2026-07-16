@@ -13,11 +13,16 @@ import (
 // Without this, cobra prints human help text to a caller that asked for a
 // machine-readable structure.
 type groupCommandListing struct {
-	Command     string       `json:"command"`
-	Description string       `json:"description"`
-	IsGroup     bool         `json:"is_group"`
-	Subcommands []capCommand `json:"subcommands"`
-	Hint        string       `json:"hint"`
+	Command     string         `json:"command"`
+	Description string         `json:"description"`
+	IsGroup     bool           `json:"is_group"`
+	Subcommands []groupCommand `json:"subcommands"`
+	Hint        string         `json:"hint"`
+}
+
+type groupCommand struct {
+	Name  string `json:"name"`
+	Short string `json:"short"`
 }
 
 // maybeEmitGroupJSON reports whether cmd is a non-runnable parent command
@@ -32,12 +37,12 @@ func maybeEmitGroupJSON(cmd *cobra.Command) bool {
 	if !jsonFlag && output != "json" {
 		return false
 	}
-	var subs []capCommand
+	var subs []groupCommand
 	for _, c := range cmd.Commands() {
 		if c.Hidden || c.Name() == "help" {
 			continue
 		}
-		subs = append(subs, capCommand{Name: c.Name(), Short: c.Short})
+		subs = append(subs, groupCommand{Name: c.Name(), Short: c.Short})
 	}
 	sort.Slice(subs, func(i, j int) bool { return subs[i].Name < subs[j].Name })
 	listing := groupCommandListing{

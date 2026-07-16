@@ -159,6 +159,7 @@ fi
 
 while IFS= read -r skill_dir; do
   [[ -f "$skill_dir/SKILL.md" ]] || continue
+  skill_name="$(basename "$skill_dir")"
   [[ -f "$skill_dir/$MARKER_FILE_NAME" ]] || fail "missing Codex artifact marker: ${skill_dir#"$ROOT"/}/$MARKER_FILE_NAME"
   if grep -qE "^description:[[:space:]]*['\"]?[>|]['\"]?[[:space:]]*$" "$skill_dir/SKILL.md"; then
     fail "malformed generated description frontmatter: ${skill_dir#"$ROOT"/}/SKILL.md"

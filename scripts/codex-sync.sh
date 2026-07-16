@@ -3,9 +3,11 @@
 #
 # A parity_only twin is a SELF-CONTAINED runtime artifact derived from its
 # source skill. The Codex runtime ships skills-codex/ ONLY (never skills/ source
-# — see install-codex-plugin.sh + plugin.json "skills": "./skills-codex"), so a
+# Codex may still consume a generated skills-codex projection for archive/
+# marketplace artifacts. Live installs use `ao skills link` into runtime skill
+# roots — not a plugin-cache installer.
 # twin must carry its own body + references; a bare pointer to skills/<name>
-# would dangle at runtime (AGENTS-CODEX.md). The generated twin is therefore:
+# would dangle at runtime (docs/contracts/codex-skill-api.md). The generated twin is therefore:
 #   - SKILL.md: slim (name + description) frontmatter + the source body
 #     transformed runtime-native (slash-command invocations of known skills ->
 #     `$` prefix, ~/.claude -> ~/.codex, "Claude Code" -> "Codex");
@@ -212,7 +214,7 @@ def transform_body(body: str, known_skills: set[str], exempt: bool = False) -> s
         )
 
     # /<known-skill> -> $<known-skill> for slash-COMMAND invocations only — never
-    # a path segment. Longest names first (so /pre-mortem wins over /pre). Exclude
+    # a path segment. Longest names first (so /premortem wins over /pre). Exclude
     # when preceded by a path char (word/./-/_/slash, e.g. ../research/, foo/plan)
     # or followed by '/' (a path like /research/SKILL.md), so markdown links and
     # file paths are left intact (the bug that turned ../foo/ into ..$foo/).
@@ -334,7 +336,7 @@ def twin_skill_md(
     """A self-contained Codex twin: slim (name + terse catalog description)
     frontmatter + the source body transformed runtime-native. Self-contained
     because the Codex runtime ships skills-codex/ ONLY (never skills/ source) —
-    a twin must carry its own body + references (AGENTS-CODEX.md)."""
+    a twin must carry its own body + references (docs/contracts/codex-skill-api.md)."""
     fm = {"name": name, "description": description}
     front = yaml.safe_dump(fm, sort_keys=False, allow_unicode=True, width=10_000).strip()
     body = transform_body(source_body, known_skills, exempt)
@@ -446,12 +448,31 @@ def exact_mirror_source_payload(src_dir: pathlib.Path, twin_dir: pathlib.Path) -
 source_skills = sorted(
     p.name
     for p in source_root.iterdir()
-    if p.is_dir() and not p.name.startswith("_") and (p / "SKILL.md").exists()
+    if p.is_dir()
+    and not p.name.startswith("_")
+    and (p / "SKILL.md").exists()
 )
 known_skills = set(source_skills)
 
 drift = []
 generated = []
+
+# Source metadata owns the installed set. Retired source roots must not leave
+# empty directories, stale generated twins, or override rows that continue to
+# advertise removed skills.
+retired_twin_dirs = sorted(
+    p for p in codex_root.iterdir()
+    if p.is_dir() and not p.name.startswith("_") and p.name not in known_skills
+)
+if check_only:
+    drift.extend((p.name, ["retired twin directory remains"]) for p in retired_twin_dirs)
+else:
+    for path in retired_twin_dirs:
+        shutil.rmtree(path)
+
+overrides_skills[:] = [
+    entry for entry in overrides_skills if entry.get("name") in known_skills
+]
 
 for name in source_skills:
     if name in bespoke:
@@ -494,23 +515,6 @@ for name in source_skills:
     # The bloated manifest .codex_override_catalog is downstream and is NOT a
     # generation trigger.
     in_ocat = any(e.get("name") == name for e in overrides_skills)
-
-    # Freeze ambient (non-spine) twins — age-focus-membrane-bookkeeper-m1wg.18.
-    # A source skill WITHOUT top-level `spine: true` whose twin already exists,
-    # is registered, and is complete is FROZEN: editing that ambient source must
-    # not restain its Codex twin (the ~70% regen cut). Frozen twins are skipped in
-    # BOTH --check (no drift reported) and regen (no refresh). Two escape hatches
-    # keep the rest of the workflow intact: a MISSING/incomplete twin (e.g. a
-    # brand-new skill) is still generated so validate-codex-override-coverage.sh
-    # stays satisfied, and `--force --only <slug>` still deliberately regenerates
-    # a frozen twin. (bespoke twins were already the opt-out above; this adds the
-    # parity_only ambient set, which is where the restain churn actually came from.)
-    spine = fm.get("spine") is True
-    twin_complete = (
-        skill_md.exists() and prompt_md.exists() and marker_path.exists() and in_ocat
-    )
-    if not spine and twin_complete and not force:
-        continue
 
     if check_only:
         # THE single drift gate for parity twins: the on-disk twin must EXACTLY
@@ -620,7 +624,17 @@ desired_manifest_skills = []
 existing_manifest_by_name = {
     entry.get("name"): entry for entry in manifest_skills if entry.get("name")
 }
-for twin_dir in sorted(p for p in codex_root.iterdir() if p.is_dir() and (p / "SKILL.md").exists()):
+package_count = sum(
+    1
+    for package_dir in codex_root.iterdir()
+    if package_dir.is_dir() and (package_dir / "SKILL.md").exists()
+)
+for twin_dir in sorted(
+    p
+    for p in codex_root.iterdir()
+    if p.is_dir()
+    and (p / "SKILL.md").exists()
+):
     marker_path = twin_dir / marker_name
     if not marker_path.exists():
         continue  # the manifest validator reports the missing marker fail-closed
@@ -636,12 +650,15 @@ for twin_dir in sorted(p for p in codex_root.iterdir() if p.is_dir() and (p / "S
 
 manifest_inventory_drift = manifest_skills != desired_manifest_skills
 embedded_catalog_drift = manifest_catalog_skills != overrides_skills
+package_count_drift = manifest.get("package_count") != package_count
 
 if check_only:
     if manifest_inventory_drift:
         drift.append(("<manifest>", ["artifact inventory differs from skills-codex directories"]))
     if embedded_catalog_drift:
         drift.append(("<manifest-catalog>", ["embedded treatment catalog differs from authoritative overrides catalog"]))
+    if package_count_drift:
+        drift.append(("<manifest>", [f"package_count differs from {package_count} installable skill directories"]))
     if drift:
         print(f"codex-sync drift: {len(drift)} parity twin(s) differ from generator output:")
         for n, reasons in drift:
@@ -653,8 +670,9 @@ if check_only:
 
 manifest_skills[:] = desired_manifest_skills
 manifest_catalog_skills[:] = [dict(entry) for entry in overrides_skills]
+manifest["package_count"] = package_count
 
-if generated or manifest_inventory_drift or embedded_catalog_drift:
+if generated or manifest_inventory_drift or embedded_catalog_drift or package_count_drift:
     # Recompute the embedded catalog hash (same algorithm as
     # register-new-codex-skill.sh) so the manifest catalog stays self-consistent.
     catalog_for_hash = json.dumps(

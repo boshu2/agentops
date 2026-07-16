@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "family": "capabilities",
+  "checks": [
+    {
+      "id": "capabilities-black-box",
+      "command": "tmp=$(mktemp -d /tmp/ao-capabilities.XXXXXX); trap 'rm -r \"$tmp\"' EXIT; (cd cli && go build -o \"$tmp/ao\" ./cmd/ao); \"$tmp/ao\" capabilities --help >\"$tmp/help\"; grep -q 'Print the machine-readable contract for the whole ao CLI as JSON' \"$tmp/help\"; \"$tmp/ao\" capabilities --json >\"$tmp/first.json\"; \"$tmp/ao\" capabilities --json >\"$tmp/second.json\"; cmp -s \"$tmp/first.json\" \"$tmp/second.json\"; jq -e '.schema_version == \"1.1\" and .tool == \"ao\" and .contract_version == \"1.1\" and .platform.os != \"\" and .platform.arch != \"\" and any(.commands[]; .path == \"ao capabilities\")' \"$tmp/first.json\" >/dev/null; set +e; \"$tmp/ao\" capabilities unexpected >\"$tmp/rejected.out\" 2>\"$tmp/rejected.err\"; code=$?; set -e; test \"$code\" -eq 1; test ! -s \"$tmp/rejected.out\"; grep -qx 'Error: unknown command \"unexpected\" for \"ao capabilities\"' \"$tmp/rejected.err\""
+    }
+  ],
+  "dimensions": {
+    "path": {"status": "evidence", "evidence": ["capabilities-black-box"]},
+    "aliases": {"status": "not_applicable", "reason": "The ao capabilities command declares no aliases."},
+    "accepted_args": {"status": "evidence", "evidence": ["capabilities-black-box"]},
+    "rejected_args": {"status": "evidence", "evidence": ["capabilities-black-box"]},
+    "stdout": {"status": "evidence", "evidence": ["capabilities-black-box"]},
+    "stderr": {"status": "evidence", "evidence": ["capabilities-black-box"]},
+    "exit_classes": {"status": "evidence", "evidence": ["capabilities-black-box"]},
+    "tracker_selection": {"status": "not_applicable", "reason": "Capabilities projects the compiled CLI surface and does not select a tracker."},
+    "ordered_effects": {"status": "not_applicable", "reason": "Capabilities is a deterministic read-side projection with no ordered external effects."}
+  }
+}

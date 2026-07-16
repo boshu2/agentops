@@ -1,7 +1,7 @@
 {
-  "generator": "manual-maintained",
+  "generator": "codex-sync",
   "source_skill": "skills/swarm",
   "layout": "modular",
-  "source_hash": "67ca7ce752c90fc08bb8248305df3c623ee7084c56bcc15a8c8a1a67bb2274e3",
-  "generated_hash": "0df6d40c6d070b722ea769f6a52e5f6b8f38c8e4cb8cec4d3c5614b32e97148d"
+  "source_hash": "460a78219f0470cfc5423298dd3b3e4bc1a5a6704866564838a79aafb69cb231",
+  "generated_hash": "1a3ffdc203fea5bad5e70b13a06992f3c033c57f28dbab9cae26c963d8088c39"
 }

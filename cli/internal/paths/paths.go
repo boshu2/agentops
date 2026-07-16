@@ -42,7 +42,6 @@ type Paths struct {
 	AgentsDir     string
 	KnowledgeRoot string
 	HooksDir      string
-	ScopeLock     string
 	RPIDir        string
 	FindingsDir   string
 	PlansDir      string
@@ -100,7 +99,6 @@ func resolveFrom(repoRootDir string) *Paths {
 	agentsDir := envOr("AO_AGENTS_DIR", home)
 	knowledge := envOr("AO_KNOWLEDGE_ROOT", filepath.Join(agentsDir, "wiki"))
 	hooks := envOr("AO_HOOKS_DIR", filepath.Join(agentsDir, "hooks"))
-	scopeLock := envOr("AO_SCOPE_LOCK", filepath.Join(agentsDir, "scope.lock"))
 	rpi := envOr("AO_RPI_DIR", filepath.Join(agentsDir, "rpi"))
 	findings := envOr("AO_FINDINGS_DIR", filepath.Join(agentsDir, "findings"))
 	plans := envOr("AO_PLANS_DIR", filepath.Join(agentsDir, "plans"))
@@ -120,7 +118,6 @@ func resolveFrom(repoRootDir string) *Paths {
 		AgentsDir:     agentsDir,
 		KnowledgeRoot: knowledge,
 		HooksDir:      hooks,
-		ScopeLock:     scopeLock,
 		RPIDir:        rpi,
 		FindingsDir:   findings,
 		PlansDir:      plans,
@@ -169,9 +166,7 @@ func repoRoot(dir string) string {
 }
 
 // Validate ensures every directory root either exists already or can be
-// created. It returns the joined error of every dir that fails. ScopeLock is
-// a file path — its parent dir must be creatable, but the file itself is not
-// required to exist.
+// created. It returns the joined error of every directory that fails.
 func (p *Paths) Validate() error {
 	if p == nil {
 		return errors.New("paths: nil receiver")
@@ -195,11 +190,6 @@ func (p *Paths) Validate() error {
 	for _, d := range dirs {
 		if err := ensureDir(d.path); err != nil {
 			errs = append(errs, fmt.Errorf("%s (%s): %w", d.name, d.path, err))
-		}
-	}
-	if p.ScopeLock != "" {
-		if err := ensureDir(filepath.Dir(p.ScopeLock)); err != nil {
-			errs = append(errs, fmt.Errorf("ScopeLock parent (%s): %w", filepath.Dir(p.ScopeLock), err))
 		}
 	}
 	return errors.Join(errs...)

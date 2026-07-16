@@ -1,0 +1,38 @@
+{
+  "schema_version": 3,
+  "base_oracle": "v2",
+  "behavioral_source_sha": "d38b1b4e6b7e96ce2b3b19b7daf0bc14d08e66f4",
+  "capture_sha": "ce805178e79e64af33ef79dcd0edcc917348a7c1",
+  "projection": "project-v2.jq",
+  "projection_sha256": "b9f7f3b752819ae3ec1b959a754f37370e34bcbb4e765a767d7788689a371e55",
+  "intentional_deltas": [
+    "constraint_default_spine",
+    "constraint_shadow_activation",
+    "membrane_detector_evidence"
+  ],
+  "profiles": {
+    "default": {
+      "tags": [],
+      "sha256": "36590643c408dd42902efb0f794bd293c0cedcc07c1fd0968211e801b5c60277"
+    },
+    "flywheel": {
+      "tags": [
+        "flywheel"
+      ],
+      "sha256": "b4cdbb49aab9d2c2a15217f5aa56452e1f882731d04f885fc7f189752d37adf6"
+    },
+    "legacy": {
+      "tags": [
+        "legacy"
+      ],
+      "sha256": "6939c4657c505eca1436136c75b1c007c65430d2277be3604a85e4c486083459"
+    },
+    "combined": {
+      "tags": [
+        "flywheel",
+        "legacy"
+      ],
+      "sha256": "5e813af47a5f6ee5c6ab00578aae57a77033d77ba3fea4c781d40a9332427461"
+    }
+  }
+}

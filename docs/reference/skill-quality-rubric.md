@@ -1,111 +1,64 @@
 # Skill Quality Rubric
 
-Use this rubric to score AgentOps skills against a higher market-facing standard while preserving AgentOps repo-runtime constraints. The rubric is AgentOps-owned and derived from pattern-level external-corpus inspection plus existing AgentOps standards.
-
-## Profiles
-
-| Profile | Purpose | Required gate |
-|---|---|---|
-| Repo-runtime | Works inside this repository and AgentOps release pipeline | AgentOps skill, docs, and Codex artifact gates |
-| Marketplace-export | Can be packaged for a marketplace lane | the target marketplace export validator |
-| Mega-skill | Product-bundle skill that intentionally exceeds simple package-clean limits | explicit mega-skill classification and split/defer decision |
+This advisory rubric identifies concrete hardening opportunities. It does not
+change a deep-audit verdict and must not reward unnecessary references,
+scripts, assets, self-tests, or subagent packets.
 
 ## Scoring
 
-Score each category from 0 to 3.
+Each category receives 0–3:
 
 | Score | Meaning |
 |---:|---|
-| 0 | Missing or unsafe |
-| 1 | Present but weak, vague, or manual |
-| 2 | Solid and usable |
-| 3 | Product-grade and mechanically validated |
+| 0 | Missing and required for this skill's actual behavior |
+| 1 | Present but weak, or warranted but absent |
+| 2 | Solid for the skill's scope, including “not needed” |
+| 3 | Mechanically strong or unusually complete |
 
-## Categories
+| Category | What good means |
+|---|---|
+| Trigger quality | Description says what, when, and avoids obvious false positives. |
+| Kernel clarity | The bounded procedure and stop condition are easy to find. |
+| Progressive disclosure | A concise kernel is self-contained; complex detail is linked. |
+| Helper scripts | Repeated deterministic mechanics are scripted; judgment is not. |
+| Validation | Evidence commands or artifacts prove executable behavior. |
+| Self-test | Trigger or behavior examples exist when complexity warrants them. |
+| Assets/templates | Reusable payloads exist only when the workflow actually needs them. |
+| Subagents/roles | Delegation packets exist only for intentionally delegated work. |
+| Safety boundaries | Mutation, authorization, and non-goals are explicit where relevant. |
+| Packaging | The package is small, linked, mode-correct, and projection-safe. |
 
-| Category | 0 | 1 | 2 | 3 |
-|---|---|---|---|---|
-| Trigger quality | vague description | description says what but not when | clear what/when triggers | trigger phrases plus false-positive boundaries |
-| Kernel clarity | `SKILL.md` is absent or overloaded | workflow exists but buries decisions | concise workflow with links | router-style kernel with phases, stop conditions, and references |
-| Progressive disclosure | no references for complex material | references exist but are thin or unlinked | detailed linked references | reference map covers commands, failures, outputs, and variants |
-| Helper scripts | no repeatable mechanics | scripts exist but are manual/fragile | scripts cover core checks | scripts provide scan, validate, doctor, score, or export gates |
-| Validation | no runnable checks | manual checklist only | local commands prove behavior | automated repo and export gates with expected outputs |
-| Self-test | no `SELF-TEST.md` | ad hoc examples only | trigger and behavior checks | self-test covers trigger, non-trigger, expected artifacts, and failure modes |
-| Assets/templates | none where templates are needed | inline templates bloat `SKILL.md` | assets hold reusable payloads | assets are versioned, referenced, and validated |
-| Subagents/roles | delegation absent despite broad scope | generic delegation guidance | role packets for complex work | subagents have bounded ownership and validation contracts |
-| Safety boundaries | no non-goals or forbidden commands | partial warnings | explicit safe/unsafe operations | clean-room, auth, privacy, and mutation boundaries are mechanically checked |
-| Packaging | unknown package readiness | package mostly works locally | package-clean or classified mega-skill | export validator proves mode normalization and marketplace validation class |
+The maximum remains 30. Rating bands are C (0–10), B (11–20), A (21–26), and
+S (27–30). A lower advisory rating is a review signal, not a ship blocker.
 
-Maximum score: 30.
-
-## Rating Bands
-
-| Score | Rating | Meaning |
-|---:|---|---|
-| 0-10 | C | Basic local prompt, not product-grade |
-| 11-20 | B | Useful repo skill with gaps |
-| 21-26 | A | Strong skill ready for targeted hardening |
-| 27-30 | S | Market-facing, mechanically validated skill |
-
-## Required Gates By Profile
-
-### Repo-Runtime
+## Required repository checks
 
 ```bash
-bash skills/heal-skill/scripts/heal.sh --strict
+bash skills/skill-builder/scripts/heal.sh --check --strict skills/<slug>
+bash skills/skill-builder/scripts/audit.sh --strict skills/<slug>
 bash scripts/validate-skill-frontmatter.sh --strict
 bash tests/docs/validate-skill-count.sh
+python3 scripts/generate-skill-mesh.py --check
 ```
 
-When skill behavior or runtime UX changes:
+When behavior or metadata changes:
 
 ```bash
 bash scripts/refresh-codex-artifacts.sh --scope worktree
 bash scripts/validate-codex-generated-artifacts.sh --scope worktree
 ```
 
-### Marketplace-Export
+Marketplace export checks apply only when preparing that package. A
+self-contained repo skill is not defective merely because it lacks marketplace
+assets or a dedicated delegation tree.
 
-Run the target marketplace's export validator against a temporary package copy. The export wrapper must:
+## Audit method
 
-- copy the skill to a temporary directory,
-- normalize exported `scripts/` files to non-executable mode,
-- run the marketplace validator against the temporary copy,
-- classify file-count failures as mega-skill candidates,
-- leave source file modes unchanged.
+1. Read the complete `SKILL.md` and every linked resource.
+2. Compare its declared trigger, boundaries, output, and evidence with actual
+   behavior.
+3. Run the repository checks.
+4. Score optional package features relative to demonstrated need.
+5. Recommend the smallest change that removes a real defect.
 
-### Mega-Skill
-
-A skill is a mega-skill candidate when it exceeds 50 files or requires broad `assets/`, `scripts/`, `references/`, and `subagents/` to operate.
-
-Mega-skill handling requires one of:
-
-- split into smaller package-clean skills,
-- keep as repo-runtime only,
-- document a product-bundle profile with explicit validation and distribution limits.
-
-## Minimum Bar For New Market-Facing Skills
-
-New market-facing skills should include:
-
-- `SKILL.md` under the applicable AgentOps line cap,
-- at least one linked `references/*.md` file when domain context is substantial,
-- `SELF-TEST.md`,
-- runnable validation command or script,
-- explicit non-goals and forbidden operations,
-- export validation against the target marketplace validator.
-
-## Audit Method
-
-For each skill:
-
-1. Count files and structural directories.
-2. Read frontmatter description and top-level headings.
-3. Check for references, scripts, assets, subagents, and self-test.
-4. Run repo-native skill gates.
-5. Run export validation on a temporary copy when marketplace readiness matters.
-6. Assign score and list the smallest upgrade that improves the rating.
-
----
-
-**Source:** Pattern-only inspection of an external skill corpus and AgentOps skill standards. No proprietary source text copied.
+Never add ceremony solely to raise a numeric score.

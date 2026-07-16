@@ -39,7 +39,7 @@ func TestBuildGraphRejectsDependencyCycles(t *testing.T) {
 	}
 }
 
-func TestBuildGraphRejectsUnreachableNonRoot(t *testing.T) {
+func TestBuildGraphAllowsCallerSelectedOrphan(t *testing.T) {
 	g := BuildGraph([]CatalogEntry{
 		{Name: "root", GraphRoot: true, Dependencies: []string{"leaf"}},
 		{Name: "leaf"},
@@ -48,8 +48,8 @@ func TestBuildGraphRejectsUnreachableNonRoot(t *testing.T) {
 	if got := strings.Join(g.Diagnostics.UnreachableNonRoots, ","); got != "orphan" {
 		t.Fatalf("unreachable = %q, want orphan", got)
 	}
-	if err := g.Validate(); err == nil {
-		t.Fatal("unreachable non-root should fail graph validation")
+	if err := g.Validate(); err != nil {
+		t.Fatalf("caller-selected specialist must remain valid: %v", err)
 	}
 }
 

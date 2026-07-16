@@ -3,22 +3,37 @@ name: cc-hooks
 user-invocable: false
 skill_api_version: 1
 hexagonal_role: supporting
+consumes: []
+produces: []
+context_rel: []
 metadata:
+  dependencies: []
+  capabilities: [cc_hooks]
+  effects: []
+  canonical_status: canonical
+  disposition: keep_specialist
   tier: execution
-description: 'Configure Claude Code hooks (PreToolUse, PostToolUse, Stop, Notification). Fold target for the cc-* loop, subagent, and worktree-isolation skills. Triggers: "cc-hooks", "cc hooks", "configure claude code hooks pretooluse".'
+description: 'Configure Claude Code hooks (PreToolUse, PostToolUse, Stop, Notification) as an opt-in host adapter; AgentOps installs none by default. Triggers: "cc-hooks", "configure Claude Code hooks".'
 practices:
 - pragmatic-programmer
 ---
 # Claude Code Hooks
 
-## Absorbed skills (ag-s43tg)
-
-- **cc-cron-ticks** — Scheduling autonomous in-session flywheel ticks with Claude Code cron routines.
-- **cc-loop-driver** — Running a Claude-native control-plane tick loop with worker and separate-validator subagents.
-- **cc-subagents** — Dispatching scoped Claude Code subagents with worktrees, roles, tools, memory, and evidence gates.
-- **cc-worktree-isolation** — Isolating parallel Claude Code workers in separate git worktrees to prevent file collisions.
-
 Shell commands that fire at specific points in Claude Code's lifecycle.
+
+Hooks enforce mechanically what prose cannot: a model can reason its way past
+an instruction, but it cannot reason its way past an exit 2 — which is exactly
+why every hook must be narrow, silent, and reversible.
+
+Named failure mode — **chatty happy path**: a hook that emits stdout on exit 0
+corrupts the tool call it was guarding; silence on success is part of the
+contract, not a style preference.
+
+## Constraints
+
+- Keep every hook opt-in because AgentOps installs no runtime hooks by default and host policy belongs to the operator.
+- Keep the happy path silent and block only with the event's documented exit/JSON contract because stray stdout can corrupt a tool call.
+- Bound Stop hooks with `stop_hook_active` and scope matchers narrowly to prevent recursion and unrelated-command interception.
 
 <!-- TOC: Quick Start | Events | Blocking | Writing Hooks | Anti-Patterns | References -->
 
@@ -27,18 +42,7 @@ Shell commands that fire at specific points in Claude Code's lifecycle.
 Add to `~/.claude/settings.json` (user) or `.claude/settings.json` (project):
 
 ```json
-{
-  "hooks": {
-    "PreToolUse": [
-      {
-        "matcher": "Bash",
-        "hooks": [
-          { "type": "command", "command": "my-validator.sh" }
-        ]
-      }
-    ]
-  }
-}
+{"hooks":{"PreToolUse":[{"matcher":"Bash","hooks":[{"type":"command","command":"my-validator.sh"}]}]}}
 ```
 
 ## Hook Events
@@ -150,7 +154,7 @@ Recipe: [INSTALLED-SKILL-EDIT-GUARD.md](references/INSTALLED-SKILL-EDIT-GUARD.md
 
 The keystone guard ships **gate-blind per-fire telemetry**: on each fire it
 appends exactly one JSONL line — `{ts, session, token_class, path_sha256}` — to
-`${AGENTOPS_HOME:-~/.agentops}/guardrail-telemetry.jsonl` (override with
+`${AGENTOPS_HOME:-~/.agents/ao}/guardrail-telemetry.jsonl` (override with
 `AGENTOPS_GUARDRAIL_TELEMETRY`). The path is **SHA-256 hashed, never raw**
 (privacy); nothing is written on the happy path; the sensor is inert until the
 guard is installed and fires. The pre-registered methodology — metric =
@@ -214,33 +218,24 @@ claude --debug  # Hook execution details
 /hooks          # View/edit in REPL
 ```
 
-## Absorbed Skills (skill-prune phase 2 fold-ins)
+## Output Specification
 
-This skill is the fold target for four retired Claude Code operator skills. Their
-use-cases route here:
+- **Path:** user `~/.claude/settings.json` or project `.claude/settings.json`, plus explicitly named hook scripts; no runtime hook is installed by default.
+- **Filename:** preserve `settings.json`; give scripts descriptive executable filenames rather than embedding large shell programs in JSON.
+- **Format:** valid Claude hook JSON using event arrays, matchers, and command objects; hook stdout/stderr and exit codes follow the selected event schema.
+- **Exit code:** validate with `jq -e '.hooks | type=="object"' <settings.json>` and a representative silent/fire test for each matcher; any parse error, noisy happy path, or recursion risk blocks activation.
+- **Downstream handoff:** consumed by the operator only after the exact scope, reversal command, test evidence, and opt-in location are reported.
 
-- **cc-cron-ticks** — scheduling autonomous in-session flywheel ticks with Claude
-  Code cron routines. Use Claude Code scheduled tasks (cron routines) to fire a
-  recurring tick prompt (e.g. an evolve tick or a bead-queue pull); pair each
-  tick with a Stop hook that verifies evidence landed before the session ends.
-- **cc-loop-driver** — running a Claude-native control-plane tick loop with worker
-  and separate-validator subagents. One tick = claim a bead, dispatch a worker
-  subagent, then a SEPARATE validator subagent grades the evidence; hooks enforce
-  the gate (PreToolUse blocks out-of-scope writes, Stop blocks close-without-evidence).
-- **cc-subagents** — dispatching scoped Claude Code subagents with worktrees, roles,
-  tools, memory, and evidence gates. Give each subagent an explicit role prompt, a
-  tool allowlist, and a write scope; never let two subagents share a write surface.
-- **cc-worktree-isolation** — isolating parallel Claude Code workers in
-  separate git worktrees to prevent file collisions.
-  `git worktree add <dir> -b <branch>` per
-  worker; workers commit only in their own worktree; the orchestrator merges
-  branches sequentially. File collisions are the #1 swarm failure mode.
+## Quality Checklist
+
+- The matcher fires on the intended event/input and stays silent on representative near misses.
+- Blocking and allow paths use the documented exit code and output channel without leaking context.
+- The hook is reversible, narrowly scoped, recursion-safe, and clearly labeled as opt-in host policy.
 
 ## References
 
 - [HOOK-EVENTS.md](references/HOOK-EVENTS.md) - All events with full schemas
 - [DCG-RCH.md](references/DCG-RCH.md) - Production examples (dcg, rch)
-- [SKILL-FIRST-COORDINATION-GUARD.md](references/SKILL-FIRST-COORDINATION-GUARD.md) - Opt-in coordination skill-first guard + context-budget doctrine
 - [INSTALLED-SKILL-EDIT-GUARD.md](references/INSTALLED-SKILL-EDIT-GUARD.md) - Opt-in guard routing installed-skill edits to repo skills/ (keystone)
 - [GUARDRAIL-VALUE-PROOF.md](references/GUARDRAIL-VALUE-PROOF.md) - Pre-registered value-proof methodology + per-fire telemetry contract (ADR-0002 l.58)
 - [PATTERNS.md](references/PATTERNS.md) - Auto-format, logging, notifications

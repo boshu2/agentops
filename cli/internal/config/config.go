@@ -2,8 +2,8 @@
 // Configuration is loaded from (highest to lowest priority):
 // 1. Command-line flags
 // 2. Environment variables (AGENTOPS_*)
-// 3. Project config (.agentops/config.yaml in cwd)
-// 4. Home config (~/.agentops/config.yaml)
+// 3. Project config (.agents/ao/config.yaml in cwd)
+// 4. Home config (~/.agents/ao/config.yaml)
 // 5. Defaults
 package config
 
@@ -13,6 +13,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/boshu2/agentops/cli/internal/storage"
 	"gopkg.in/yaml.v3"
 )
 
@@ -63,7 +64,7 @@ type CompileConfig struct {
 	// Precedence (high → low):
 	//   1. --runtime flag
 	//   2. AGENTOPS_COMPILE_RUNTIME env var
-	//   3. compile.preferred_runtime in ~/.agentops/config.yaml
+	//   3. compile.preferred_runtime in ~/.agents/ao/config.yaml
 	//   4. auto-detect (codex binary on PATH -> codex-cli)
 	//   5. empty (preflight will fail with an actionable error)
 	PreferredRuntime string `yaml:"preferred_runtime" json:"preferred_runtime"`
@@ -360,7 +361,7 @@ func Load(flagOverrides *Config) (*Config, error) {
 	cfg := Default()
 
 	// An explicit --config / AGENTOPS_CONFIG override IS the config file (per the
-	// documented contract "the config file (default: ~/.agentops/config.yaml)"):
+	// documented contract "the config file (default: ~/.agents/ao/config.yaml)"):
 	// load ONLY that file over defaults, and skip the ambient home + cwd-project
 	// discovery. Otherwise home settings the explicit file is silent on would leak
 	// underneath it (fm-cli-config-config-flag-not-threaded).
@@ -412,7 +413,7 @@ func homeConfigPath() string {
 	if err != nil {
 		return ""
 	}
-	return filepath.Join(home, ".agentops", "config.yaml")
+	return filepath.Join(home, ".agents", "ao", "config.yaml")
 }
 
 // getwdFunc is the function used to get the current working directory.
@@ -428,7 +429,7 @@ func projectConfigPath() string {
 	if err != nil {
 		return ""
 	}
-	return filepath.Join(cwd, ".agentops", "config.yaml")
+	return filepath.Join(cwd, ".agents", "ao", "config.yaml")
 }
 
 // loadHomeConfig loads the home directory config, returning nil on error.
@@ -677,30 +678,74 @@ func Save(cfg *Config) error {
 		return fmt.Errorf("creating config directory %s: %w", dir, err)
 	}
 
-	// Load existing config to preserve fields not being changed.
-	existing, _ := loadFromPath(path)
+	return withConfigLock(path, func() error {
+		data, err := prepareSave(path, cfg)
+		if err != nil {
+			return err
+		}
+		if err := storage.AtomicWriteFile(path, data, 0o644); err != nil {
+			return fmt.Errorf("writing config %s: %w", path, err)
+		}
+		return nil
+	})
+}
+
+// PreviewSave validates the exact read-merge-marshal path used by Save without
+// creating directories, locks, or files. A missing target is a valid new config.
+func PreviewSave(cfg *Config) error {
+	path := projectConfigPath()
+	if path == "" {
+		return fmt.Errorf("determining project config path: could not resolve working directory")
+	}
+	_, err := prepareSave(path, cfg)
+	return err
+}
+
+func prepareSave(path string, cfg *Config) ([]byte, error) {
+	existing, err := loadFromPath(path)
+	if err != nil && !os.IsNotExist(err) {
+		return nil, fmt.Errorf("loading existing config %s: %w", path, err)
+	}
 	if existing != nil {
 		existing = merge(existing, cfg)
 	} else {
 		existing = cfg
 	}
-
 	data, err := yaml.Marshal(existing)
 	if err != nil {
-		return fmt.Errorf("marshaling config: %w", err)
+		return nil, fmt.Errorf("marshaling config: %w", err)
 	}
+	return data, nil
+}
 
-	// Write atomically: temp file then rename.
-	tmp := path + ".tmp"
-	if err := os.WriteFile(tmp, data, 0644); err != nil {
-		return fmt.Errorf("writing temp config %s: %w", tmp, err)
+// withConfigLock serializes the complete read-merge-write transaction across
+// goroutines and ao processes. The sidecar is only a lock token; config bytes
+// are committed separately through the canonical atomic writer.
+func withConfigLock(path string, fn func() error) (err error) {
+	lockPath := path + ".lock"
+	if err := os.MkdirAll(filepath.Dir(lockPath), 0o755); err != nil {
+		return fmt.Errorf("creating config lock directory: %w", err)
 	}
-	if err := os.Rename(tmp, path); err != nil {
-		_ = os.Remove(tmp)
-		return fmt.Errorf("renaming temp config to %s: %w", path, err)
+	file, err := os.OpenFile(lockPath, os.O_CREATE|os.O_RDWR, 0o600)
+	if err != nil {
+		return fmt.Errorf("opening config lock: %w", err)
 	}
-
-	return nil
+	locked := false
+	defer func() {
+		if locked {
+			if unlockErr := unlockConfigFile(file); unlockErr != nil && err == nil {
+				err = fmt.Errorf("unlocking config: %w", unlockErr)
+			}
+		}
+		if closeErr := file.Close(); closeErr != nil && err == nil {
+			err = fmt.Errorf("closing config lock: %w", closeErr)
+		}
+	}()
+	if err := lockConfigFile(file); err != nil {
+		return fmt.Errorf("locking config: %w", err)
+	}
+	locked = true
+	return fn()
 }
 
 // Source represents where a config value came from.
@@ -708,8 +753,8 @@ type Source string
 
 const (
 	SourceDefault Source = "default"
-	SourceHome    Source = "~/.agentops/config.yaml"
-	SourceProject Source = ".agentops/config.yaml"
+	SourceHome    Source = "~/.agents/ao/config.yaml"
+	SourceProject Source = ".agents/ao/config.yaml"
 	SourceEnv     Source = "environment"
 	SourceFlag    Source = "flag"
 )

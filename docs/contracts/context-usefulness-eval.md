@@ -1,5 +1,7 @@
 # Context Usefulness Eval Contract
 
+> **RETIRED:** Historical draft for the removed evaluation CLI; not a live command contract.
+
 > **Status:** Draft
 > **Surface:** Wave 0 deterministic context-packet A/B for `context_off` versus `context_on`
 > **Consumers:** `ao eval` context-variant orchestration, deterministic SIL canaries, future context lifecycle work

@@ -36,10 +36,10 @@
 #   trips  ⟺  a NON-COMMENT line invokes `os.Rename(`
 #             AND a NON-COMMENT line carries `os.CreateTemp(` OR a `".tmp`
 #                 literal (two-signal AND; comment mentions NEVER count —
-#                 the comment-strip rule, pre-mortem r3)
+#                 the comment-strip rule, premortem r3)
 #             AND (changed-content guard) an ADDED hunk introduces `os.Rename(`.
 #   The added-hunk guard fires EVEN when the file is grandfathered: a NEW
-#   rename site inside a grandfathered file still trips (pre-mortem FM7 —
+#   rename site inside a grandfathered file still trips (premortem FM7 —
 #   do not clone the grandfather-skips-first flow). Its ERE skips lines whose
 #   os.Rename( sits after a // (comment-only additions never trip); an added
 #   line inside a multi-line /* block */ cannot be classified from a diff
@@ -105,7 +105,7 @@ is_exempt_path() {
 }
 
 # strip_go_comments (stdin -> stdout): remove // line tails and /* */ block
-# comments before signal-grepping — a comment mention never counts (pre-mortem
+# comments before signal-grepping — a comment mention never counts (premortem
 # r3; pawl refute extended it from full-line to inline/block forms). NOT a Go
 # parser: a "//" or "/*" INSIDE a string literal is treated as a comment
 # opener and truncates that line — acceptable for a two-signal grep and
@@ -214,7 +214,7 @@ while IFS= read -r f; do
   is_exempt_path "$f" && continue
   file_trips "$f" || continue
   # The added-hunk guard applies to EVERY tripping file — grandfathered or
-  # not: a new rename site never rides an old exemption (pre-mortem FM7).
+  # not: a new rename site never rides an old exemption (premortem FM7).
   # It fires when the added hunk introduces EITHER half of the signature —
   # the rename OR the temp signal — because file_trips already requires both
   # in the file: adding a temp-writer that reuses an EXISTING rename is a new

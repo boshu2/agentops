@@ -111,15 +111,15 @@ func TestFlagMatrix_QuietMode(t *testing.T) {
 
 	for _, tt := range tests {
 		if !approvedDefaultSpineBinaryCommand(tt.args) {
-			t.Run(tt.name+"-archived", func(t *testing.T) {
+			t.Run(tt.name+"-unpublished", func(t *testing.T) {
 				cmd := exec.Command(bin, tt.args[0], "--help")
 				cmd.Dir = findRepoRoot(t)
 				out, err := cmd.CombinedOutput()
 				if err == nil {
-					t.Fatalf("archived command %q unexpectedly executes in the default spine", tt.args[0])
+					t.Fatalf("unpublished command %q unexpectedly executes in the supported binary", tt.args[0])
 				}
 				if !strings.Contains(string(out), "unknown command") {
-					t.Fatalf("archived command %q failed for the wrong reason:\n%s", tt.args[0], out)
+					t.Fatalf("unpublished command %q failed for the wrong reason:\n%s", tt.args[0], out)
 				}
 			})
 			continue

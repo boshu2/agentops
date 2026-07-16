@@ -31,7 +31,7 @@ Verbatim from olympus:
 4. For architecture changes, provide at least two alternatives and justify the selected option with tradeoffs (correctness, operability, and cost).
 5. If uncertainty is material, state it directly and define the experiment or data needed before committing to a build path.
 
-Agentops's `.claude/rules/*` cover code-level conventions but not this pre-implementation decision gate. Closest equivalent is `/pre-mortem` and `/brainstorm` skills, which are interactive flows rather than written standards.
+Agentops's `.claude/rules/*` cover code-level conventions but not this pre-implementation decision gate. Closest equivalent is `/premortem` and `/brainstorm` skills, which are interactive flows rather than written standards.
 
 ### Logging and observability hygiene
 
@@ -68,7 +68,7 @@ All olympus rules in this category are equally or more thoroughly covered by the
 | Coverage with behavior tests, not happy-path padding | `.claude/rules/go.md` ("No coverage-padding tests"), `skills/standards/references/go.md` ("Test Conventions") |
 | `#!/usr/bin/env bash` + `set -euo pipefail`; quote variables; `command -v`; cleanup traps; non-interactive in CI | `skills/standards/references/shell.md` (full coverage), agentops `~/CLAUDE.md` ("Non-interactive shell defaults") |
 | One H1 per document; consistent heading hierarchy; runnable command blocks | `skills/standards/references/markdown.md` |
-| Start from synced `main`; do not finish session until commits pushed | agentops `~/CLAUDE.md` ("Task tracking protocol"), `/push` skill |
+| Start from synced `main`; publish through the repository's own Git policy | Repository/operator policy; AgentOps does not own Git delivery |
 
 ## What did NOT carry (rejected with reason)
 
@@ -76,10 +76,10 @@ All olympus rules in this category are equally or more thoroughly covered by the
 |---|---|
 | `internal/` for implementation, `cmd/` for entrypoints | Already idiomatic Go layout; agentops follows it (`cli/cmd/ao`, `cli/internal/`) without needing it written down. Restating would be noise. |
 | Source-of-truth order naming `docs/specs/index.md`, `SPEC-CONTRACT.md`, etc. | Olympus-specific doc tree. Agentops has its own precedence ladder in `CLAUDE.md` ("Source-of-Truth Precedence") — that one wins. |
-| `make test`, `make build`, `make testing-check`, `make daemon-smoke`, `make serve-smoke`, `make throughput` as gate names | Olympus Makefile target names. Agentops's gate is `scripts/pre-push-gate.sh` + `cd cli && make build && make test` — different surface. |
+| `make test`, `make build`, `make testing-check`, `make daemon-smoke`, `make serve-smoke`, `make throughput` as gate names | Olympus Makefile target names. AgentOps exposes deterministic repository checks through `ao gate check`; release policy remains repository-owned. |
 | Coverage ratchet via `scripts/check-coverage-floors.sh` | Olympus-specific script path. Agentops handles coverage through `/validate`, complexity checks, and the local Go gate / CI rather than a ratcheted-floor script. |
 | Suite definitions in `testing/suites/*.md`, scenarios in `testing/scenarios/catalog.md` | Olympus-specific paths and catalog. Agentops uses `tests/` + `/scenario` skill (holdout scenarios in `.agents/holdout/`) — different model. |
-| Long-tail merge checklist (6 items: spec match, tests, daemon/serve safety, throughput, docs/runbooks, goals/traceability) | Heavily olympus-coupled (daemon/serve binaries, throughput as a tracked metric, GOALS-yaml ratchets). Agentops's merge gate is `scripts/pre-push-gate.sh` and CI's 24 jobs — already enforced mechanically. Re-stating as prose would drift. |
+| Long-tail merge checklist (6 items: spec match, tests, daemon/serve safety, throughput, docs/runbooks, goals/traceability) | Heavily Olympus-coupled. A consumer repository chooses its own merge checks; AgentOps supplies intent, exact-subject validation, and deterministic test utilities without becoming merge policy. |
 | Per-clone runtime isolation (`OL_HOME`, `BEADS_DIR`) | Olympus crew-clone workflow. Agentops uses repo-local `.agents/` and `.beads/` without `OL_HOME` indirection. |
 | Source-of-truth precedence (`docs/specs` > spec-contract > engineering-standards > workflow guides) | Olympus-specific document hierarchy. Agentops's executable-first precedence (CLI > schemas > docs) supersedes it. |
 | "Portable Template Intent" closing section | Meta-commentary about reuse, not a standard. Self-fulfilling: this port is the reuse. |

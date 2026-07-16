@@ -1,24 +1,31 @@
-# Executable spec for the /validate skill — the unified validator (driving-adapter).
-# /validate takes any artifact (plan, spec, code, PR, fitness gate) and emits a verdict.v1:
-# PASS, WARN, or FAIL with rationale and findings. The artifact shape is selected by --mode,
-# and the mode set is budget-capped. Hexagon: driving-adapter; consumes validation; produces
-# result.json; customer-of validation. (soc-qk4b)
+Feature: Validate writes one fresh verdict over exact content
+  @covered-by:skills/validate/scripts/test_validate.py::test_verdict_identity_floor_and_idempotence
+  Scenario: Identity gaps stay unproven
+    Given missing, colliding, or unattested author and validator identities
+    When Validate judges the subject
+    Then the verdict is NOT_PROVEN
 
-Feature: Validate produces a PASS/WARN/FAIL verdict for any artifact
-  As the unified validator
-  I want any artifact judged to a verdict.v1 with rationale and findings
-  So that plans, code, PRs, and gates all share one verdict contract
+  @covered-by:skills/validate/scripts/test_validate.py::test_pass_without_evidence_is_downgraded
+  Scenario: Evidence-free PASS stays unproven
+    Given a claimed PASS without checked scope or criterion evidence
+    When Validate persists the verdict
+    Then the verdict is NOT_PROVEN
 
-  Scenario: an artifact is validated to a verdict
-    When /validate runs on an artifact (plan, spec, code, PR, or fitness gate)
-    Then it emits a PASS, WARN, or FAIL verdict with rationale and findings
-    And the verdict conforms to the verdict.v1 schema
+  @covered-by:skills/validate/scripts/test_validate.py::test_runtime_scope_failure_forces_fail
+  Scenario: Scope failure is distinct from missing proof
+    Given complete changed-path coverage
+    When a proven path is outside the intent-source write scope
+    Then the verdict is FAIL
 
-  Scenario: the mode selects the validation shape
-    When /validate runs with --mode
-    Then --mode=pr produces a PR-shape verdict (diff review + acceptance check)
-    And --mode=pre-impl --target=fitness validates the fitness gate against GOALS.md
+  @covered-by:skills/validate/scripts/test_validate.py::test_intent_snapshot_is_content_addressed_and_idempotent
+  Scenario: Tracker-less intent remains readable
+    Given the caller conversation is the resolved intent
+    When the runtime snapshots its exact bytes
+    Then the snapshot path is its SHA-256 identity
 
-  Scenario: the mode set is budget-capped
-    Then /validate exposes at most 8 modes
-    And adding a 9th requires demoting an existing mode or refusing the addition
+  @covered-by:skills/validate/scripts/test_validate.py::test_verdict_identity_floor_and_idempotence
+  Scenario: Validation stops after persistence
+    Given any PASS, FAIL, or NOT_PROVEN verdict
+    When Validate atomically persists it
+    Then Validate returns the artifact digest and path
+    And performs no repair, retry, Git, closure, release, or delivery action

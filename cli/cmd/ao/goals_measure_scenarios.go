@@ -6,12 +6,9 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"time"
 
-	"github.com/boshu2/agentops/cli/internal/feedbackcompiler"
 	"github.com/boshu2/agentops/cli/internal/goals"
 	"github.com/boshu2/agentops/cli/internal/goalsfitness"
-	"github.com/boshu2/agentops/cli/internal/verdictledger"
 )
 
 // directiveScenarioReport is the per-directive scenario-satisfaction record
@@ -136,7 +133,6 @@ func runScenariosOnly(goalsFile, projectRoot string, asJSON bool, stdout io.Writ
 	if err != nil {
 		return err
 	}
-	recordVerdictLedgerIterations(projectRoot, reports, os.Stderr)
 	if asJSON {
 		return emitMeasureScenarioJSON(stdout, measureModeScenariosOnly, nil, reports)
 	}
@@ -174,58 +170,6 @@ func renderScenarioReports(w io.Writer, mode string, reports []directiveScenario
 		fmt.Fprintf(w, "%-22s  %-8s  %9.0f%%  %8.0f%%  %d/%d (eval %d, missing %d)\n",
 			id, r.ScenarioVerdict, r.ScenarioSatisfaction*100, r.ScenarioThreshold*100,
 			r.EvaluatedCount, r.ScenarioCount, r.EvaluatedCount, r.MissingCount)
-	}
-}
-
-// recordVerdictLedgerIterations appends one verdict-ledger iteration record
-// per directive for a completed `ao goals measure` run (F5.1 producer hookup
-// for the F5.2 re-steer policy engine).
-//
-// Per ADR-0006 §ITERATION an iteration is one completed measure run that
-// records a scenario_verdict for the directive. This function is called only
-// after evaluateDirectiveScenarios succeeds — a structurally-failed run
-// returns before reaching here, so no record is written for it. Every
-// directive that produced a report (including "unknown"-verdict directives
-// with no linked scenarios) is recorded: "unknown" is a valid iteration
-// outcome that breaks a failure streak.
-//
-// The append is purely additive: it never changes measure stdout. A write
-// failure is logged to stderr and swallowed so a ledger I/O problem cannot
-// turn a successful measurement into a non-zero exit. Directives without a
-// stable d- ID (which the verdict ledger keys on) are skipped.
-func recordVerdictLedgerIterations(projectRoot string, reports []directiveScenarioReport, stderr io.Writer) {
-	writer := verdictledger.Writer{}
-	runTime := time.Now().UTC()
-	for _, r := range reports {
-		if !verdictledger.ValidDirectiveID(r.DirectiveID) {
-			continue
-		}
-		_, err := writer.AppendIteration(projectRoot, verdictledger.IterationInput{
-			DirectiveID:          r.DirectiveID,
-			RunTime:              runTime,
-			ScenarioVerdict:      r.ScenarioVerdict,
-			ScenarioSatisfaction: r.ScenarioSatisfaction,
-			ScenarioCount:        r.ScenarioCount,
-			EvaluatedCount:       r.EvaluatedCount,
-		})
-		if err != nil && stderr != nil {
-			fmt.Fprintf(stderr, "warning: verdict ledger append for %s: %v\n", r.DirectiveID, err)
-		}
-	}
-
-	// F5.4: auto-draft learnings for any fail→pass transitions the iterations
-	// above just recorded. This is the trigger orphaned when #515 removed the
-	// daemon that used to invoke the feedback compiler. The compiler is
-	// idempotent (existing drafts are skipped) and writes status:draft files
-	// that still require human promotion — so it is safe to run on every
-	// measure. A draft failure must never fail `ao goals measure`.
-	compiler := feedbackcompiler.Compiler{}
-	if res, err := compiler.Compile(projectRoot); err != nil {
-		if stderr != nil {
-			fmt.Fprintf(stderr, "warning: feedback compiler draft: %v\n", err)
-		}
-	} else if len(res.Drafts) > 0 && stderr != nil {
-		fmt.Fprintf(stderr, "auto-drafted %d learning(s) from fail→pass transitions\n", len(res.Drafts))
 	}
 }
 

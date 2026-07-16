@@ -7,6 +7,86 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- A deterministic `toil-mining` extractor for recent human-origin Codex JSONL
+  messages, with provenance, wrapper normalization, deduplication, exclusion
+  accounting, and explicit checked/not-checked scope.
+- Read-only `ao status` inventory for durable intent and verdict evidence,
+  including newest-evidence recency without runtime-phase inference.
+- One-shot MCP-backed `ms` search for environments without an attached MCP
+  tool, plus multi-report synthesis guidance in Research.
+
+### Changed
+
+- Published `ao demo` now presents the packet-free one-pass loop; active docs,
+  templates, and smoke tests use caller-owned intent plus runtime-derived
+  subject evidence. The old Plan, Candidate, and revision schemas are labeled
+  deprecated compatibility formats.
+- `scripts/ms-reindex.sh` derives completeness from live
+  discovered/indexed/error accounting instead of a hard-coded corpus floor.
+- CASS guidance distinguishes authoritative rebuild fallback and timed-out
+  concurrent reads from empty results or source loss.
+
+## [4.0.0] - 2026-07-15
+
+AgentOps 4.0 is the Cathedral Cut: the product returns to one small trust
+boundary—shape one behavior, run one bounded experiment, validate the exact
+result from fresh context, persist the verdict, and stop. Git, CI, retries,
+queues, work ownership, closure, release, and delivery are caller-owned.
+
+### Added
+
+- `subject-manifest.v1`, `revision-packet.v1`, and `verdict.v2` contracts for
+  exact content identity, explicit fresh-context attestation, criterion-level
+  judgment, and atomic content-addressed verdict storage.
+- `ao skills link` and `ao skills unlink` as the source-linked install path
+  across portable, Claude, Codex, Gemini, Cursor, and Pi skill roots.
+- Structural conformance for the four-skill core, forbidden lifecycle authority,
+  one-pass RPI sequencing, optional adapters, and inert command tombstones.
+
+### Changed
+
+- RPI is now exactly `Plan -> Implement -> fresh Validate -> report and stop`.
+  Plan absorbs Discovery, behavior-first planning, and goal design; Learn moves
+  off-path as optional later analysis.
+- The canonical corpus is 50 metadata-owned skills. Every skill passes the deep
+  strict auditor, generated registry/graph/router/count projections agree, and
+  Codex/Gemini artifacts regenerate from the canonical tree.
+- The retained Go CLI is a deterministic repository-check and inspection tool.
+  Its default public surface no longer controls semantic validation, retries,
+  work lifecycle, Git, or delivery.
+- New installations use one canonical checkout plus symlinks. Runtime plugin
+  installers remain migration-only compatibility for this release.
+
+### Removed
+
+- Pawl admission, land/done/close, governor/converge/reconcile, claim/next-work,
+  state/worktree, membrane, semantic `ao validate`, and the Crank control plane.
+  Major public names return one-release non-mutating tombstones.
+- Discovery, behavior-first-planning, goal-design, Crank, delivery/controller,
+  tracker-wrapper, and noncanonical mortem skill roots after their useful
+  behavior was folded or retired.
+- The unreferenced `.agy-plugin` 3.x bundle, whose copied 12-skill corpus still
+  exposed removed beads, Discovery, and Crank behavior. `images/gemini` remains
+  the generated Gemini/Antigravity compatibility bundle.
+
+### Fixed
+
+- `ao doctor` is now a fast installation-health check over binary identity,
+  exact source-skill links, optional provenance integrity, and host safety. It
+  no longer implicitly runs the 3.2 plugin/tracker/reviewer/fixer diagnostics,
+  and its JSON output represents the same bounded checks as human output.
+- CLI tests no longer inherit the operator's `TMUX` server; test cleanup is
+  isolated under its temporary tmux socket directory.
+- Skill auditing now measures concise executable contracts instead of rewarding
+  ceremonial length, optional directories, or invented lifecycle sections.
+- Scenario coverage is a caller-supplied static evidence check and no longer
+  depends on beads, admission, tracker lookup, or lifecycle state.
+
+See [docs/4.0.md](https://github.com/boshu2/agentops/blob/main/docs/4.0.md) for
+the release narrative and migration boundary.
+
 ## [3.2.0] - 2026-07-03
 
 AgentOps 3.2 is the **verification-keystone** minor: the cross-family review loop became the product's front door. `ao verify` is the canonical verb over the pawl engine (with `init` making the pre-push verdict ratchet portable to any repo, `stats` pricing the cost of verified-done, and `receipts` rendering the proof), `ao done` makes bead closes verdict-referenced, and the reviewer hardened into a standing multi-model service with honest degradation — outage-only failover, REBOUND re-authorization for byte-identical rebases, and an opt-in strict two-family quorum that reports honest-UNAVAILABLE rather than fake redundancy. The membrane gained memory (`ao membrane catch/recall/triage`) and its escape→derived-check loop is proven end-to-end on the shipped binary, including constraint travel to CI. Around that core the CLI shed the cathedral: the default build is the verification + bookkeeping spine (corpus-flywheel and legacy families behind `-tags "flywheel legacy"`, ADR-0012), the `ao rpi` surface and v1 memory experiment are removed, the bd/Dolt tracker is retired for `br`+`bv`, and the skill catalog consolidated 105→63. See [docs/3.2.md](https://github.com/boshu2/agentops/blob/main/docs/3.2.md) for the release narrative.

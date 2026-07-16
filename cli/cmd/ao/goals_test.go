@@ -24,7 +24,7 @@ func TestGoalsCmd_HasExpectedSubcommands(t *testing.T) {
 
 	expected := []string{
 		"measure", "validate", "drift", "history", "export",
-		"init", "add", "steer", "prune", "migrate", "meta",
+		"meta", "render", "scenarios", "trace",
 	}
 	for _, name := range expected {
 		if !subNames[name] {
@@ -44,7 +44,7 @@ func TestGoalsCmd_HasGroups(t *testing.T) {
 		ids[g.ID] = true
 	}
 
-	for _, want := range []string{"measurement", "analysis", "management"} {
+	for _, want := range []string{"measurement", "analysis"} {
 		if !ids[want] {
 			t.Errorf("missing group %q", want)
 		}

@@ -36,7 +36,7 @@ func TestCliConfigInvalidConfigYAML_DetectsBrokenHomeConfig(t *testing.T) {
 	tmp := t.TempDir()
 	home := filepath.Join(tmp, "home")
 	// Unterminated double-quoted scalar — fails yaml.Unmarshal at a fixed point.
-	writeFile(t, filepath.Join(home, ".agentops", "config.yaml"),
+	writeFile(t, filepath.Join(home, ".agents", "ao", "config.yaml"),
 		"models:\n  default_tier: \"haiku\n")
 
 	env := &DetectEnv{HomeDir: home, CWD: filepath.Join(tmp, "cwd")}
@@ -54,7 +54,7 @@ func TestCliConfigInvalidConfigYAML_DetectsBrokenHomeConfig(t *testing.T) {
 	if f.Remediation.AutoFixable {
 		t.Error("AutoFixable = true, want false")
 	}
-	wantPath := filepath.Join(home, ".agentops", "config.yaml")
+	wantPath := filepath.Join(home, ".agents", "ao", "config.yaml")
 	if f.Evidence.File != wantPath {
 		t.Errorf("Evidence.File = %q, want %q", f.Evidence.File, wantPath)
 	}
@@ -69,7 +69,7 @@ func TestCliConfigInvalidConfigYAML_DetectsBrokenHomeConfig(t *testing.T) {
 func TestCliConfigInvalidConfigYAML_CleanConfigYieldsNoFinding(t *testing.T) {
 	tmp := t.TempDir()
 	home := filepath.Join(tmp, "home")
-	writeFile(t, filepath.Join(home, ".agentops", "config.yaml"),
+	writeFile(t, filepath.Join(home, ".agents", "ao", "config.yaml"),
 		"models:\n  default_tier: haiku\n")
 
 	env := &DetectEnv{HomeDir: home, CWD: filepath.Join(tmp, "cwd")}
@@ -117,7 +117,7 @@ func TestCliConfigConfigFlagNotThreaded_DetectsBuggySource(t *testing.T) {
 	writeFile(t, filepath.Join(repo, "cli", "cmd", "ao", "root.go"),
 		"package main\nfunc syncConfigFlagToEnv() { os.Setenv(\"AGENTOPS_CONFIG\", path) }\n")
 	writeFile(t, filepath.Join(repo, "cli", "internal", "config", "config.go"),
-		"package config\nfunc homeConfigPath() string { return \"~/.agentops/config.yaml\" }\n")
+		"package config\nfunc homeConfigPath() string { return \"~/.agents/ao/config.yaml\" }\n")
 
 	if !probeConfigSourceShape(repo) {
 		t.Fatal("probeConfigSourceShape = false, want true for buggy shape")
@@ -174,7 +174,17 @@ func TestCliConfigConfigFlagNotThreaded_FixerRefuses(t *testing.T) {
 
 // --- FM 3: missing-required-cli -------------------------------------------
 
-func TestCliConfigMissingRequiredCLI_DetectsMissingBr(t *testing.T) {
+// writeFakeCLIRepoRoot writes the cli/go.mod marker that insideAgentopsRepo
+// looks for, so a DetectEnv.RepoRoot can be made to look like an agentops clone.
+func writeFakeCLIRepoRoot(t *testing.T, root string) {
+	t.Helper()
+	if err := os.MkdirAll(filepath.Join(root, "cli"), 0o755); err != nil {
+		t.Fatalf("mkdir: %v", err)
+	}
+	writeFile(t, filepath.Join(root, "cli", "go.mod"), "module github.com/boshu2/agentops/cli\n")
+}
+
+func TestCliConfigMissingRequiredCLI_DetectsMissingBrInsideRepo(t *testing.T) {
 	tmp := t.TempDir()
 	fakebin := filepath.Join(tmp, "fakebin")
 	// Only git present, no br.
@@ -184,7 +194,9 @@ func TestCliConfigMissingRequiredCLI_DetectsMissingBr(t *testing.T) {
 	}
 	t.Setenv("PATH", fakebin)
 
-	fs, err := missingRequiredCLIDetector{}.Detect(&DetectEnv{})
+	repoRoot := filepath.Join(tmp, "repo")
+	writeFakeCLIRepoRoot(t, repoRoot)
+	fs, err := missingRequiredCLIDetector{}.Detect(&DetectEnv{RepoRoot: repoRoot})
 	if err != nil {
 		t.Fatalf("Detect error: %v", err)
 	}
@@ -200,6 +212,48 @@ func TestCliConfigMissingRequiredCLI_DetectsMissingBr(t *testing.T) {
 	}
 	if !strings.Contains(f.Remediation.Command, "beads_rust") {
 		t.Errorf("Remediation.Command lacks br install hint: %q", f.Remediation.Command)
+	}
+}
+
+// Outside an agentops clone, br is NOT required — an installed user who tracks
+// with bd (or nothing) must never see br reported as a missing required CLI.
+func TestCliConfigMissingRequiredCLI_BrNotRequiredOutsideRepo(t *testing.T) {
+	tmp := t.TempDir()
+	fakebin := filepath.Join(tmp, "fakebin")
+	// Only git present, no br. RepoRoot is a plain dir (not an agentops clone).
+	writeFile(t, filepath.Join(fakebin, "git"), "#!/bin/sh\nexit 0\n")
+	if err := os.Chmod(filepath.Join(fakebin, "git"), 0o755); err != nil {
+		t.Fatalf("chmod: %v", err)
+	}
+	t.Setenv("PATH", fakebin)
+
+	fs, err := missingRequiredCLIDetector{}.Detect(&DetectEnv{RepoRoot: filepath.Join(tmp, "not-a-clone")})
+	if err != nil {
+		t.Fatalf("Detect error: %v", err)
+	}
+	if len(fs) != 0 {
+		t.Fatalf("expected 0 findings outside a clone with git present, got %d: %+v", len(fs), fs)
+	}
+}
+
+// Outside a clone, a genuinely missing git is still a real P1.
+func TestCliConfigMissingRequiredCLI_GitStillRequiredOutsideRepo(t *testing.T) {
+	tmp := t.TempDir()
+	t.Setenv("PATH", filepath.Join(tmp, "empty"))
+
+	fs, err := missingRequiredCLIDetector{}.Detect(&DetectEnv{RepoRoot: filepath.Join(tmp, "not-a-clone")})
+	if err != nil {
+		t.Fatalf("Detect error: %v", err)
+	}
+	f := findByID(t, fs, fmMissingRequiredCLI)
+	if f.Severity != "P1" {
+		t.Errorf("Severity = %q, want P1", f.Severity)
+	}
+	if !strings.Contains(f.Evidence.Query, "missing_clis=git") {
+		t.Errorf("Evidence.Query missing git: %q", f.Evidence.Query)
+	}
+	if strings.Contains(f.Evidence.Query, "br") {
+		t.Errorf("br wrongly reported outside a clone: %q", f.Evidence.Query)
 	}
 }
 
@@ -266,66 +320,25 @@ func TestCliConfigMissingRequiredCLI_FixerRefuses(t *testing.T) {
 	}
 }
 
-// --- FM 4: optional-codex-cli-absent --------------------------------------
+// --- FM 4 (retired): optional-codex-cli-absent ----------------------------
+// The optional-codex-absent detector was retired under FU2 (age-6g2du): an
+// optional dependency's absence must never flip the doctor exit code on a
+// pristine install. The legacy check table reports codex as an informational
+// "optional — enables --mixed council review" line instead. See
+// TestCliConfigOptionalCodexAbsent_NotRegistered.
 
-func TestCliConfigOptionalCodexAbsent_DetectsAbsence(t *testing.T) {
-	tmp := t.TempDir()
-	fakebin := filepath.Join(tmp, "fakebin")
-	for _, name := range []string{"br", "git"} {
-		p := filepath.Join(fakebin, name)
-		writeFile(t, p, "#!/bin/sh\nexit 0\n")
-		if err := os.Chmod(p, 0o755); err != nil {
-			t.Fatalf("chmod: %v", err)
+// TestCliConfigOptionalCodexAbsent_NotRegistered locks in the retirement: no
+// detector or fixer for the optional codex CLI may reappear, since an optional
+// dependency's absence must not fail a pristine install.
+func TestCliConfigOptionalCodexAbsent_NotRegistered(t *testing.T) {
+	const retiredID = "fm-cli-config-optional-codex-cli-absent"
+	for _, d := range Detectors() {
+		if d.ID() == retiredID {
+			t.Errorf("retired detector %q is registered again", retiredID)
 		}
 	}
-	t.Setenv("PATH", fakebin) // no codex on PATH
-
-	fs, err := optionalCodexAbsentDetector{}.Detect(&DetectEnv{})
-	if err != nil {
-		t.Fatalf("Detect error: %v", err)
-	}
-	f := findByID(t, fs, fmOptionalCodexAbsent)
-	if f.Severity != "P3" {
-		t.Errorf("Severity = %q, want P3", f.Severity)
-	}
-	if !strings.Contains(f.Evidence.Query, "state=absent") {
-		t.Errorf("Evidence.Query lacks state=absent: %q", f.Evidence.Query)
-	}
-	if !strings.Contains(f.Remediation.Command, "codex") {
-		t.Errorf("Remediation.Command lacks codex install hint: %q", f.Remediation.Command)
-	}
-}
-
-func TestCliConfigOptionalCodexAbsent_PresentYieldsNoFinding(t *testing.T) {
-	tmp := t.TempDir()
-	fakebin := filepath.Join(tmp, "fakebin")
-	p := filepath.Join(fakebin, "codex")
-	writeFile(t, p, "#!/bin/sh\nexit 0\n")
-	if err := os.Chmod(p, 0o755); err != nil {
-		t.Fatalf("chmod: %v", err)
-	}
-	t.Setenv("PATH", fakebin)
-
-	fs, err := optionalCodexAbsentDetector{}.Detect(&DetectEnv{})
-	if err != nil {
-		t.Fatalf("Detect error: %v", err)
-	}
-	if len(fs) != 0 {
-		t.Fatalf("expected 0 findings when codex present, got %d: %+v", len(fs), fs)
-	}
-}
-
-func TestCliConfigOptionalCodexAbsent_FixerRefuses(t *testing.T) {
-	fx := FixerByID(fmOptionalCodexAbsent)
-	if fx == nil {
-		t.Fatal("fixer not registered")
-	}
-	res, err := fx.Fix(nil, nil, []Finding{{ID: fmOptionalCodexAbsent}})
-	if err == nil || res.Fixed {
-		t.Fatalf("Fix() = (%+v, %v), want refusal", res, err)
-	}
-	if !strings.Contains(err.Error(), "refused_unsafe") {
-		t.Errorf("error lacks refused_unsafe: %v", err)
+	if fx := FixerByID(retiredID); fx != nil {
+		t.Errorf("retired fixer %q is registered again", retiredID)
 	}
 }
 
@@ -446,9 +459,9 @@ func TestCliConfigStaleProjectConfig_DetectsShadowing(t *testing.T) {
 	tmp := t.TempDir()
 	home := filepath.Join(tmp, "home")
 	cwd := filepath.Join(tmp, "work")
-	writeFile(t, filepath.Join(home, ".agentops", "config.yaml"),
+	writeFile(t, filepath.Join(home, ".agents", "ao", "config.yaml"),
 		"models:\n  default_tier: sonnet\n")
-	writeFile(t, filepath.Join(cwd, ".agentops", "config.yaml"),
+	writeFile(t, filepath.Join(cwd, ".agents", "ao", "config.yaml"),
 		"models:\n  default_tier: haiku\n  deprecated_tier: opus\n")
 
 	env := &DetectEnv{HomeDir: home, CWD: cwd}
@@ -460,7 +473,7 @@ func TestCliConfigStaleProjectConfig_DetectsShadowing(t *testing.T) {
 	if f.Severity != "P3" {
 		t.Errorf("Severity = %q, want P3", f.Severity)
 	}
-	wantPath := filepath.Join(cwd, ".agentops", "config.yaml")
+	wantPath := filepath.Join(cwd, ".agents", "ao", "config.yaml")
 	if f.Evidence.File != wantPath {
 		t.Errorf("Evidence.File = %q, want %q", f.Evidence.File, wantPath)
 	}
@@ -482,7 +495,7 @@ func TestCliConfigStaleProjectConfig_NoProjectFileYieldsNoFinding(t *testing.T) 
 	tmp := t.TempDir()
 	home := filepath.Join(tmp, "home")
 	cwd := filepath.Join(tmp, "work")
-	writeFile(t, filepath.Join(home, ".agentops", "config.yaml"),
+	writeFile(t, filepath.Join(home, ".agents", "ao", "config.yaml"),
 		"models:\n  default_tier: sonnet\n")
 
 	env := &DetectEnv{HomeDir: home, CWD: cwd}
@@ -500,9 +513,9 @@ func TestCliConfigStaleProjectConfig_InertProjectFileYieldsNoFinding(t *testing.
 	home := filepath.Join(tmp, "home")
 	cwd := filepath.Join(tmp, "work")
 	// Project file matches home exactly — inert, not shadowing.
-	writeFile(t, filepath.Join(home, ".agentops", "config.yaml"),
+	writeFile(t, filepath.Join(home, ".agents", "ao", "config.yaml"),
 		"models:\n  default_tier: sonnet\n")
-	writeFile(t, filepath.Join(cwd, ".agentops", "config.yaml"),
+	writeFile(t, filepath.Join(cwd, ".agents", "ao", "config.yaml"),
 		"models:\n  default_tier: sonnet\n")
 
 	env := &DetectEnv{HomeDir: home, CWD: cwd}
@@ -531,12 +544,11 @@ func TestCliConfigStaleProjectConfig_FixerRefuses(t *testing.T) {
 
 // --- Registration sanity --------------------------------------------------
 
-func TestCliConfigAllSixRegistered(t *testing.T) {
+func TestCliConfigAllFiveRegistered(t *testing.T) {
 	want := []string{
 		fmInvalidConfigYAML,
 		fmConfigFlagNotThreaded,
 		fmMissingRequiredCLI,
-		fmOptionalCodexAbsent,
 		fmDevVersionBuildIntegrity,
 		fmStaleProjectConfig,
 	}

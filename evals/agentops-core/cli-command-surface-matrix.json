@@ -41,26 +41,26 @@
       },
       "expectations": [
         {"type": "exit_code", "value": 0},
-        {"type": "stdout_contains", "value": "cli-command-headings: top=31 sub=115 all=146"},
+        {"type": "stdout_contains", "value": "cli-command-headings: top=35 sub=44 all=79"},
         {"type": "stdout_contains", "value": "cli-help-matrix-ok"}
       ],
       "dimensions": ["correctness", "runtime_compatibility", "artifact_quality"],
       "critical": true
     },
     {
-      "id": "cli-reference-and-map-gates",
-      "title": "CLI generated docs and skill map remain current",
+      "id": "cli-reference-gate",
+      "title": "CLI generated docs remain current",
       "kind": "command",
-      "objective": "Keep the generated CLI reference and CLI-to-skills map synchronized with the Go command tree before relying on the matrix smoke.",
+      "objective": "Keep the generated CLI reference synchronized with the Go command tree before relying on the matrix smoke.",
       "runtime": "shell",
       "timeout_seconds": 120,
       "inputs": {
         "cwd": "../..",
-        "shell": "scripts/generate-cli-reference.sh --check && bash scripts/validate-cli-skills-map.sh"
+        "shell": "scripts/generate-cli-reference.sh --check"
       },
       "expectations": [
         {"type": "exit_code", "value": 0},
-        {"type": "stdout_contains", "value": "CLI_SKILLS_MAP: PASS"}
+        {"type": "stdout_contains", "value": "cli/docs/COMMANDS.md is up to date."}
       ],
       "dimensions": ["correctness", "process_adherence", "artifact_quality"],
       "critical": true
@@ -88,26 +88,20 @@
       "id": "cli-operator-subcommand-docs",
       "title": "operator subcommand docs cover the breadth of ao",
       "kind": "artifact_check",
-      "objective": "Lock representative generated subcommand docs across constraints, curation, pool, goals, hooks, beads, findings, knowledge activation, sessions, and scenarios.",
+      "objective": "Lock representative generated docs across the retained checks, evidence, skill-linking, goal, session, and optional knowledge surfaces.",
       "expectations": [
-        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "#### `ao constraint activate`"},
-        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "Change constraint status from draft to active"},
+        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "#### `ao gate check`"},
+        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "Run deterministic repository checks"},
         {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "#### `ao flywheel status`"},
         {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "Display comprehensive flywheel health status."},
-        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "#### `ao pool auto-promote`"},
-        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "Automatically approve (and optionally promote) high-quality candidates"},
         {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "#### `ao goals measure`"},
         {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "Run goal checks and produce a snapshot"},
-        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "##### `ao session memory sync`"},
-        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "Write recent session history to a repo-root MEMORY.md with managed block markers."},
-        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "#### `ao beads audit`"},
-        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "Audits open and in-progress beads for backlog hygiene issues."},
-        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "#### `ao findings stats`"},
-        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "Summarize local finding artifact inventory"},
-        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "#### `ao knowledge activate`"},
-        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "Run the full knowledge activation outer loop"},
-        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "#### `ao sessions index`"},
-        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "##### `ao eval scenario validate`"}
+        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "#### `ao session handoff`"},
+        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "Write a small handoff artifact without selecting work, claiming it,"},
+        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "#### `ao provenance add`"},
+        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "Append one schema-valid, hash-chained provenance edge"},
+        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "#### `ao skills link`"},
+        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "create a live-tier symlink for every skill dir"}
       ],
       "dimensions": ["artifact_quality", "process_adherence", "runtime_compatibility"],
       "critical": true
@@ -116,15 +110,14 @@
       "id": "cli-command-source-surface-contracts",
       "title": "CLI source keeps command families registered",
       "kind": "artifact_check",
-      "objective": "Ensure the Go command tree still wires the less frequently touched command families that the generated docs and matrix smoke depend on.",
+      "objective": "Ensure the Go command tree wires the retained command families that the generated docs and matrix smoke depend on.",
       "expectations": [
         {"type": "artifact_contains", "target": "../../cli/cmd/ao/init.go", "value": "rootCmd.AddCommand(initCmd)"},
-        {"type": "artifact_contains", "target": "../../cli/cmd/ao/beads.go", "value": "var beadsCmd = &cobra.Command"},
-        {"type": "artifact_contains", "target": "../../cli/cmd/ao/findings.go", "value": "var findingsCmd = &cobra.Command"},
-        {"type": "artifact_contains", "target": "../../cli/cmd/ao/knowledge.go", "value": "var knowledgeCmd = &cobra.Command"},
-        {"type": "artifact_contains", "target": "../../cli/cmd/ao/scenario.go", "value": "var scenarioCmd = &cobra.Command"},
-        {"type": "artifact_contains", "target": "../../cli/cmd/ao/metrics.go", "value": "var metricsCmd = &cobra.Command"},
-        {"type": "artifact_contains", "target": "../../cli/cmd/ao/pool.go", "value": "var poolCmd = &cobra.Command"}
+        {"type": "artifact_contains", "target": "../../cli/cmd/ao/skills.go", "value": "var skillsCmd = &cobra.Command"},
+        {"type": "artifact_contains", "target": "../../cli/cmd/ao/provenance_add.go", "value": "var provenanceCmd = &cobra.Command"},
+        {"type": "artifact_contains", "target": "../../cli/cmd/ao/goals.go", "value": "var goalsCmd = &cobra.Command"},
+        {"type": "artifact_contains", "target": "../../cli/cmd/ao/session.go", "value": "var sessionCmd = &cobra.Command"},
+        {"type": "artifact_contains", "target": "../../cli/cmd/ao/metrics_flywheel.go", "value": "var flywheelCmd = &cobra.Command"}
       ],
       "dimensions": ["correctness", "artifact_quality"],
       "critical": true

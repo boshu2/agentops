@@ -17,12 +17,12 @@ Do not use it as a second product page. If the claim is core CDLC doctrine,
 put it in `docs/cdlc.md`, `docs/architecture/operating-loop.md`, `PRODUCT.md`,
 or `GOALS.md`.
 
-## Lineage — reverse-traced from now to the 90s
+## Lineage: reverse-traced from now to the 90s
 
 Filtered to techniques engineers actually adopted at scale, with the canonical
 source. Only practices that survived contact with real production are listed.
 
-### 2024-2026 — agent-assisted dev, post-LLM operations
+### 2024-2026: agent-assisted dev, post-LLM operations
 
 - **LLM evaluation harnesses + golden-set canaries** — Anthropic eval kits,
   OpenAI evals, DSPy. Proven for drift detection on prompt and model changes.
@@ -41,7 +41,7 @@ source. Only practices that survived contact with real production are listed.
   and `refactoring` slugs; digest in
   `skills/standards/references/agentic-workflow-evidence.md`.
 
-### 2018-2023 — cloud-native maturity, observability, platform engineering
+### 2018-2023: cloud-native maturity, observability, platform engineering
 
 - **GitOps** — Weaveworks 2017, Flux/ArgoCD. Proven: declarative reconcile
   loops survive operator turnover.
@@ -61,7 +61,7 @@ source. Only practices that survived contact with real production are listed.
 - **Service mesh** — Linkerd thrived; Istio survived after years of bruising.
   Mixed-proven.
 
-### 2013-2017 — DevOps mainstream, microservices first wave, kubernetes
+### 2013-2017: DevOps mainstream, microservices first wave, kubernetes
 
 - ***The Phoenix Project*** — Kim / Behr / Spafford 2013. Synthesis of DevOps
   practices into one operational frame. Proven via mass adoption.
@@ -81,7 +81,7 @@ source. Only practices that survived contact with real production are listed.
 - **Infrastructure as Code** — Puppet 2005, Chef 2009, Terraform 2014.
 - **Docker** — 2013, mainstreamed Linux containers. Proven.
 
-### 2003-2012 — DDD, refactoring, agile/XP maturity, CI/CD birth
+### 2003-2012: DDD, refactoring, agile/XP maturity, CI/CD birth
 
 - **Domain-Driven Design** — Eric Evans 2003. Bounded contexts, ubiquitous
   language, anti-corruption layer. Twenty years of survival in real
@@ -109,7 +109,7 @@ source. Only practices that survived contact with real production are listed.
 - ***The Lean Startup*** — Eric Ries 2011. Build-measure-learn. Proven
   outside startups too.
 
-### 1996-2003 — Agile birth, Pragmatic Programmer, GoF, design contracts
+### 1996-2003: Agile birth, Pragmatic Programmer, GoF, design contracts
 
 - **Agile Manifesto** — Snowbird 2001 (Beck, Fowler, Cunningham, Cockburn,
   Jeffries, Schwaber, Sutherland, et al). Proven by displacing waterfall in
@@ -130,7 +130,7 @@ source. Only practices that survived contact with real production are listed.
 - ***The Mythical Man-Month*** — Brooks 1975, anniversary ed 1995. Conway's
   Law, second-system effect, no-silver-bullet. Foundational.
 
-### Pre-1996 — still load-bearing
+### Pre-1996: still load-bearing
 
 - **TCP/IP, HTTP, robust internet engineering** — Postel's Law (RFC 793,
   1981): "be conservative in what you do, liberal in what you accept." The

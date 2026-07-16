@@ -4,7 +4,7 @@ set -euo pipefail
 # Mirror reference files from skills/ to skills-codex/ and update SKILL.md links.
 #
 # Usage:
-#   scripts/mirror-codex-references.sh council crank        # mirror specific skills
+#   scripts/mirror-codex-references.sh council premortem    # mirror specific skills
 #   scripts/mirror-codex-references.sh --all                 # mirror all skills
 #   scripts/mirror-codex-references.sh --dry-run --all       # preview without changes
 #   scripts/mirror-codex-references.sh --dry-run council     # preview one skill
@@ -35,7 +35,7 @@ Options:
   -h, --help  Show this help
 
 Examples:
-  scripts/mirror-codex-references.sh council crank
+  scripts/mirror-codex-references.sh council premortem
   scripts/mirror-codex-references.sh --dry-run --all
 USAGE
       exit 0

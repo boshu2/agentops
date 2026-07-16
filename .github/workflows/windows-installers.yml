@@ -1,0 +1,55 @@
+# Windows onboarding leg: exercise scripts/install-ao.ps1 on windows-latest.
+# Skills install via `ao skills link` (canonical AgentOps 4 path). The old
+# install-codex.ps1 plugin installer is retained only as a tombstone.
+
+name: windows-installers
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '45 9 * * *'
+  pull_request:
+    paths:
+      - 'scripts/install-ao.ps1'
+      - 'scripts/install-codex.ps1'
+      - 'tests/windows/test-windows-smoke.ps1'
+      - '.github/workflows/windows-installers.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  windows-installers:
+    runs-on: windows-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+
+      - name: Confirm install-codex.ps1 is a removed-installer tombstone
+        run: |
+          $script = Get-Content -Raw (Join-Path $env:GITHUB_WORKSPACE 'scripts\install-codex.ps1')
+          if ($script -notmatch 'removed in 4') {
+            throw "install-codex.ps1 should be an AgentOps 4 tombstone"
+          }
+          if ($script -notmatch 'ao skills link') {
+            throw "install-codex.ps1 tombstone must point at ao skills link"
+          }
+
+      - name: Install ao CLI release binary (sandboxed install dir)
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          $sandboxInstall = Join-Path $env:RUNNER_TEMP "ao-install"
+          New-Item -ItemType Directory -Force -Path $sandboxInstall | Out-Null
+          & "$env:GITHUB_WORKSPACE\scripts\install-ao.ps1" `
+            -InstallDir $sandboxInstall `
+            -NoPathUpdate
+          & (Join-Path $sandboxInstall 'ao.exe') version
+
+      - name: Run Windows smoke (ao install + skills link + doctor guidance)
+        run: |
+          & "$env:GITHUB_WORKSPACE\tests\windows\test-windows-smoke.ps1" `
+            -RepoRoot $env:GITHUB_WORKSPACE

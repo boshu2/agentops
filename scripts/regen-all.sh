@@ -1,106 +1,79 @@
 #!/usr/bin/env bash
-# regen-all.sh — one-command finalizer for the derived-artifact gate surface.
-#
-# Adding a skill or `ao` command makes ~8 generated registries/goldens stale, each
-# guarded by an independent CI gate that stops at the first error. Discovering them
-# one CI round at a time is slow (see PR #598 / ag-nk67: 9 rounds, 0 feature-code
-# failures). This composes every generator into one local pass, with a --check mode
-# that runs the matching drift validators as a pre-push gate.
-#
-# Usage:
-#   scripts/regen-all.sh                      # regenerate all derived artifacts (writes)
-#   scripts/regen-all.sh --check              # run all drift validators (no writes); exit 1 on drift
-#   scripts/regen-all.sh --skills foo,bar     # scope the codex-hash step to foo,bar
-#   REGEN_SKILLS=foo,bar scripts/regen-all.sh # same scoping via env
-#
-# For ordinary slice work, prefer changed-scope repair first:
-#   scripts/regen-changed-scope.sh --check --scope head
-#   scripts/regen-changed-scope.sh --scope worktree
-#
-# This script is release-wide: use it for final release sweeps, broad skill
-# prune waves, command deletion/rename cleanup, or when changed-scope repair has
-# no localized generator.
-#
-# NOTE: a MISSING parity_only Codex twin (skills-codex/<name>/) is now
-# AUTO-generated from source by scripts/codex-sync.sh (run as a step below) — a
-# self-contained runtime artifact: slim frontmatter + the source body transformed
-# runtime-native + references copied (the Codex runtime ships skills-codex/ only).
-# Only bespoke (hand-authored) Codex profiles are manual; mark a skill bespoke in
-# skills-codex-overrides/catalog.json to opt out. Existing parity twins are
-# refreshed when they drift from source.
+# Regenerate or check every metadata-owned projection in dependency order.
 set -euo pipefail
 
-REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-cd "$REPO_ROOT"
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+cd "$ROOT"
 
-MODE="regen"
-REGEN_SKILLS="${REGEN_SKILLS:-}"
+mode=regen
+skills="${REGEN_SKILLS:-}"
 while [[ $# -gt 0 ]]; do
   case "$1" in
-    --check) MODE="check" ;;
-    --skills) shift; [[ $# -gt 0 ]] || { echo "--skills requires a value" >&2; exit 2; }; REGEN_SKILLS="$1" ;;
-    --skills=*) REGEN_SKILLS="${1#--skills=}" ;;
+    --check) mode=check ;;
+    --skills) shift; [[ $# -gt 0 ]] || { echo "--skills requires a value" >&2; exit 2; }; skills="$1" ;;
+    --skills=*) skills="${1#--skills=}" ;;
     *) echo "usage: $0 [--check] [--skills <skill[,skill,...]>]" >&2; exit 2 ;;
   esac
   shift
 done
 
 fail=0
-step() { # label cmd...
-  local label="$1"; shift
-  if "$@" >/tmp/regen-all.$$.log 2>&1; then
-    printf '  \033[0;32m✓\033[0m %s\n' "$label"
+log="$(mktemp "${TMPDIR:-/tmp}/regen-all.XXXXXX")"
+trap 'rm -f "$log"' EXIT
+
+step() {
+  local label="$1"
+  shift
+  if "$@" >"$log" 2>&1; then
+    printf '  ✓ %s\n' "$label"
   else
-    printf '  \033[0;31m✗\033[0m %s\n' "$label"; sed 's/^/      /' /tmp/regen-all.$$.log | tail -6
+    printf '  ✗ %s\n' "$label"
+    tail -n 12 "$log" | sed 's/^/      /'
     fail=1
   fi
 }
 
-if [[ "$MODE" == "regen" ]]; then
-  echo "== regenerating derived artifacts (dependency order) =="
-  step "skill counts"          bash scripts/sync-skill-counts.sh
-  step "skill-domain-map"      bash scripts/generate-skill-domain-map.sh
-  step "SKU catalog (registry.json)" bash scripts/generate-registry.sh
-  step "context-map"           bash scripts/generate-context-map.sh
-  step "embedded skills"       make -C cli sync-hooks
-  step "cli reference (COMMANDS.md)" bash scripts/generate-cli-reference.sh
-  step "command surfaces (cobra expectedCmds + heading counts)" bash scripts/regen-command-surfaces.sh
-  step "cli-surface inventory" bash scripts/check-cmdao-surface-parity.sh --write-surface
-  step "codex twins (parity)"  bash scripts/codex-sync.sh ${REGEN_SKILLS:+--only "$REGEN_SKILLS"}
-  step "codex hashes"          bash scripts/regen-codex-hashes.sh ${REGEN_SKILLS:+--only "$REGEN_SKILLS"}
-  # Catalog LAST: it projects skill frontmatter + references + codex-twin PRESENCE,
-  # so it must run after codex-sync.sh (which may create/remove skills-codex/<name>/
-  # twins) for the codex_override_present flag to be correct.
-  step "skill catalog (catalog.json)" bash scripts/generate-skill-catalog.sh
+codex_sync() {
+  local args=()
+  [[ "$mode" == check ]] && args+=(--check)
+  [[ -n "$skills" ]] && args+=(--only "$skills")
+  bash scripts/codex-sync.sh "${args[@]}"
+}
+
+codex_hashes() {
+  local args=()
+  [[ "$mode" == check ]] && args+=(--check)
+  [[ -n "$skills" ]] && args+=(--only "$skills")
+  bash scripts/regen-codex-hashes.sh "${args[@]}"
+}
+
+if [[ "$mode" == regen ]]; then
+  echo "== regenerate metadata-owned projections =="
+  step "Codex twins" codex_sync
+  step "Codex hashes" codex_hashes
+  step "skill mesh" python3 scripts/generate-skill-mesh.py
+  step "embedded runtime files" make -C cli sync-hooks
+  step "CLI reference" bash scripts/generate-cli-reference.sh
+  step "command heading projections" bash scripts/regen-command-surfaces.sh
+  step "CLI surface inventory" bash scripts/check-cmdao-surface-parity.sh --write-surface
+  step "documentation index" python3 scripts/generate-documentation-index.py
   echo
-  echo "Regenerated. Review 'git status', then run: scripts/regen-all.sh --check"
-  echo "Note: parity_only skills-codex/<name>/ twins are AUTO-generated/refreshed"
-  echo "  by scripts/codex-sync.sh (self-contained, from source). Only a bespoke"
-  echo "  (hand-authored) Codex profile needs manual authoring — add it to skills-codex-overrides/catalog.json."
-  echo "Note: cobra expectedCmds + cli-command-surface counts are now AUTO-regenerated"
-  echo "  (regen-command-surfaces.sh). DELETING/RENAMING a command also needs manual"
-  echo "  attention on codex-contract gates + skills-codex twins + VERBATIM template SHAs"
-  echo "  — see the 'deletion ⊃ addition' note in scripts/regen-command-surfaces.sh."
-  echo "Scope tip: changed only some skills? Re-run with --skills a,b (or REGEN_SKILLS=a,b)"
-  echo "  so the codex-hash step skips unrelated pre-existing drift instead of sweeping it in."
+  [[ $fail -eq 0 ]] && echo "Regeneration complete. Review the diff and run scripts/regen-all.sh --check." || echo "Regeneration failed."
 else
-  echo "== drift / gate sweep (no writes) =="
-  step "registry drift"        bash scripts/check-registry-drift.sh
-  step "skill-domain-map golden" bash scripts/generate-skill-domain-map.sh --check
-  step "write-surfaces"        bash scripts/check-agents-write-surfaces.sh
-  step "codex parity"          bash scripts/audit-codex-parity.sh
-  step "codex runtime sections" bash scripts/validate-codex-runtime-sections.sh
-  step "codex twins (no drift)" bash scripts/codex-sync.sh --check ${REGEN_SKILLS:+--only "$REGEN_SKILLS"}
-  step "codex hashes (no drift)" bash scripts/regen-codex-hashes.sh --check ${REGEN_SKILLS:+--only "$REGEN_SKILLS"}
-  step "SKU catalog drift"     bash scripts/validate-sku-catalog-drift.sh
-  step "skill catalog drift"   bash scripts/check-skill-catalog-drift.sh
-  step "artifact-classification schema" bash scripts/validate-skill-disposition-schema.sh
-  step "context-map drift"     bash scripts/validate-context-map-drift.sh
-  step "command surfaces drift" bash scripts/regen-command-surfaces.sh --check
-  step "doc-release gate"      bash tests/docs/validate-doc-release.sh
+  echo "== check metadata-owned projections =="
+  step "Codex twins" codex_sync
+  step "Codex hashes" codex_hashes
+  step "skill mesh" python3 scripts/generate-skill-mesh.py --check
+  step "Codex parity" bash scripts/audit-codex-parity.sh
+  step "Codex runtime sections" bash scripts/validate-codex-runtime-sections.sh
+  step "embedded runtime files" bash scripts/validate-embedded-sync.sh
+  step "CLI reference" bash scripts/generate-cli-reference.sh --check
+  step "command heading projections" bash scripts/regen-command-surfaces.sh --check
+  step "CLI surface inventory" bash scripts/check-cmdao-surface-parity.sh
+  step "documentation index" python3 scripts/generate-documentation-index.py --check
+  step "documentation release checks" bash tests/docs/validate-doc-release.sh
   echo
-  [[ $fail -eq 0 ]] && echo "ALL GATES GREEN — safe to push" || echo "DRIFT DETECTED — run scripts/regen-all.sh (no flag) to fix, then commit"
+  [[ $fail -eq 0 ]] && echo "All generated projections are current." || echo "Projection drift or validation failure detected."
 fi
 
-rm -f /tmp/regen-all.$$.log
-exit $fail
+exit "$fail"

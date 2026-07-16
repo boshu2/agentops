@@ -10,18 +10,18 @@ import (
 // DeprecatedCommands maps old namespace-qualified command references to their
 // new flat replacements.
 var DeprecatedCommands = map[string]string{
-	"ao know forge":            "ao forge",
-	"ao know inject":           "ao inject",
-	"ao know search":           "ao search",
-	"ao know lookup":           "ao lookup",
-	"ao know trace":            "ao trace",
-	"ao know store":            "ao store",
-	"ao know index":            "ao index",
-	"ao know temper":           "ao temper",
-	"ao know feedback":         "ao feedback",
-	"ao know migrate":          "ao migrate",
-	"ao know batch-feedback":   "ao batch-feedback",
-	"ao know session-outcome":  "ao eval session-outcome",
+	"ao know forge":           "ao forge",
+	"ao know inject":          "ao inject",
+	"ao know search":          "ao search",
+	"ao know lookup":          "ao lookup",
+	"ao know trace":           "ao trace",
+	"ao know store":           "ao store",
+	"ao know index":           "ao index",
+	"ao know temper":          "ao temper",
+	"ao know feedback":        "ao feedback",
+	"ao know migrate":         "ao migrate",
+	"ao know batch-feedback":  "ao batch-feedback",
+	"ao know session-outcome": "ao eval session-outcome",
 	// Eval-family commands folded under `ao eval` (age-focus-membrane-bookkeeper-m1wg.16).
 	// The old top-level spellings still resolve (hidden) except `ao scenario`,
 	// which is reparented; canonical is the `ao eval …` form.
@@ -33,13 +33,10 @@ var DeprecatedCommands = map[string]string{
 	// (age-focus-membrane-bookkeeper-m1wg.17). The old top-level spellings still
 	// resolve (hidden aliases) except `ao state`, which is fully reparented;
 	// canonical is the `ao session …` form.
-	"ao state":     "ao session state",
-	"ao memory":    "ao session memory",
-	"ao rehydrate": "ao session rehydrate",
-	"ao handoff":   "ao session handoff",
-	// `ao orchestrate` was archived behind //go:build legacy (age-h4y3); point the
-	// stale `ao work rpi` ref at the surviving spine loop driver `ao converge`.
-	"ao work rpi":              "ao converge",
+	"ao state":                 "ao session state",
+	"ao memory":                "ao session memory",
+	"ao rehydrate":             "ao session rehydrate",
+	"ao handoff":               "ao session handoff",
 	"ao work ratchet":          "ao ratchet",
 	"ao work goals":            "ao goals",
 	"ao work session":          "ao session",
@@ -63,7 +60,6 @@ var DeprecatedCommands = map[string]string{
 	"ao settings config":       "ao config",
 	"ao settings memory":       "ao memory",
 	"ao settings notebook":     "ao notebook",
-	"ao settings worktree":     "ao worktree",
 	"ao start demo":            "ao demo",
 	"ao start init":            "ao init",
 	"ao start seed":            "ao seed",

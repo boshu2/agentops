@@ -133,7 +133,7 @@ else
     skip "Doc link validation (script not found)"
 fi
 
-# Skill count validation deferred to validate-doc-release.sh (CI-active, runs validate-skill-count.sh + sync-skill-counts.sh)
+# Skill inventory validation is owned by validate-doc-release.sh and the metadata catalog.
 
 if [[ -f "$SCRIPT_DIR/docs/validate-goal-count.sh" ]]; then
     run_lane "Doc goal count validation" "$RUN_ALL_STATIC_LANE_TIMEOUT_SECONDS" "$(lane_log_file doc-goal-count)" \

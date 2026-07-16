@@ -6,14 +6,14 @@ Epic: ag-cycle
 Cycle: 2
 Parent: ag-parent
 
-STEP            STATUS       OUTPUT                                  
-----            ------       ------                                  
-research        ✓ locked     findings.md                             
-pre-mortem      ✓ locked     pre-mortem.md                           
-plan            ○ pending                                            
-implement       ○ pending                                            
-crank           ○ pending                                            
-vibe            ○ pending                                            
-post-mortem     ○ pending                                            
+STEP            STATUS       OUTPUT
+----            ------       ------
+research        ✓ locked     findings.md
+premortem       ✓ locked     premortem.md
+plan            ○ pending
+implement       ○ pending
+crank           ○ pending
+vibe            ○ pending
+postmortem      ○ pending
 
 Path: /tmp/test/.agents/ao/chain.jsonl

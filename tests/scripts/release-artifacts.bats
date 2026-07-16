@@ -100,7 +100,8 @@ EOF
 {
   "schema_version": 1,
   "evidence_kind": "agentops_eval_fast",
-  "status": "pass",
+  "status": "not_applicable",
+  "reason": "legacy eval surface retired",
   "baseline_audit": "eval-baseline-audit.json"
 }
 EOF

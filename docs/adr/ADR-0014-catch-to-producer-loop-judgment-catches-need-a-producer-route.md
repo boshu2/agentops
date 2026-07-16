@@ -1,9 +1,15 @@
 # ADR-0014: The Catch→Producer Loop — Judgment-Class Catches Need a Producer Route, Not a Mechanical Check
 
-- **Status:** Accepted (2026-07-08)
+- **Status:** Superseded by the Cathedral Cut (2026-07-14)
 - **Author:** AgentOps maintainers
 - **Builds on:** [ADR-0011](ADR-0011-escape-corpus-compounding-unproven-structural-starvation.md) (escape-corpus compounding unproven — data-starved), [ADR-0004](ADR-0004-corpus-moat-unproven-position-on-the-system.md) (corpus moat unproven). The EM spine (`escape → derived check → future block`) and `ao membrane {catch,triage,derive-checks}`.
-- **Evidence:** the live catch corpus `.agents/yield/yield-ledger.jsonl` and `ao membrane triage` (numbers below, 2026-07-08), the producer-defect register `docs/architecture/producer-defect-register.md`, post-mortem Step BP.7 (`skills/post-mortem/references/maintenance-phases.md`).
+- **Evidence:** historical catch data summarized below. The optional replacement
+  contract is [`docs/contracts/producer-defect-register.md`](../contracts/producer-defect-register.md).
+
+> This ADR records why the old membrane feedback machinery failed. Its commands,
+> automatic routing, receipts, and producer-side mutation are not active product
+> behavior. Learn may later analyze caller-supplied verdict collections, but it
+> has no critical-path or lifecycle authority.
 
 ## Context
 

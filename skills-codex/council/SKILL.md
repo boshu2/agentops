@@ -1,51 +1,64 @@
 ---
 name: council
-description: 'Run multi-judge consensus. Triggers: "council", "independent judges", "high-stakes decision review".'
+description: Collect independent perspectives for an
 ---
+# Council
 
-# council — moved to Mount Olympus (2026-06-10)
+Council is an optional judgment strategy, not a lifecycle or delivery gate. Use
+it when one fresh validator is insufficient for a named irreversible,
+high-blast-radius, or genuinely contested decision.
 
-Canonical home: the mt-olympus repository, project skill `council`
-(`~/dev/mt-olympus/` repo, project skills directory). Read and follow the
-canonical SKILL.md there. This stub preserves routing and twin parity until
-the catalog closer updates the registry (skill-prune Lane A,
-evidence/skill-prune-recon.md).
+1. Freeze one question, acceptance surface, evidence set, and subject digest.
+2. Give each judge an independent context and the same bounded packet.
+3. Require each judge to cite evidence, disclose omissions, and return its own
+   judgment without seeing other answers first.
+4. Synthesize agreement and disagreement without majority laundering. Preserve
+   minority evidence and unresolved assumptions.
+5. Write `council-report.v1` and return it to the caller.
 
-## Constraints
+## Methodology-weighted agreement
 
-- Read the Mount Olympus canonical body before running a panel because this repository copy is a routing stub, not the executable procedure.
-- Reserve council for irreversible decisions; use `$validate` for per-slice acceptance so one artifact is not double-gated by overlapping authorities.
-- Keep author and judges distinct and judge lanes read-only because consensus is evidence only when verdicts are independent of production and mutation.
+Agreement across differing evidence methodologies counts more than agreement
+within one. Record each judge's evidence methodology (for example: static
+reading, executing the subject, tracing history) alongside its judgment. A
+consensus claim must name at least two distinct methodologies among its
+supporting judges; otherwise report it as single-method agreement and weight
+it as one confirmation, however many judges share it. The named failure mode
+is echo consensus: unanimous judgment produced from identical inputs by one
+shared method, laundered as independent confirmation.
 
-Narrow-waist obligations (must hold at the canonical body): council is the S5
-membrane for irreversible DECISIONS, not slice-acceptance closes — `$validate` owns
-the per-slice acceptance verdict, so do not double-gate. Its verdict binds to the
-slice's BDD/ATDD acceptance test; author != judge; every REFUTE feeds a lesson into
-the next loop's `$pre-mortem` checks (S6).
+## Model-diversity axis
 
-For mixed-family work, `$agent-native` may drive durable roles over NTM while
-bounded in-session lanes use the native Codex agent surface. Landing oracles are
-owned by `$pawl-review`; `ao pawl` owns the deterministic panel verdict. Route
-contested one-way-door ideas through `$dueling-idea-genies` before planning.
+When the caller pins judges to model profiles, record each judge's
+`model_identity` beside its methodology and context ID (see
+the `agent-native` model-dispatch recipe).
+Cross-model agreement is an additional diversity axis: single-model unanimity
+is weighted as one confirmation with the same anti-echo-consensus rationale,
+regardless of how many judges share that model. If a requested profile has no
+live adapter, disclose `diversity_unsatisfied` on the report and continue
+single-model — never silently, never via `claude -p`.
 
-## Examples
+## Fresh sessions per round
 
-- Run council from the canonical location in the mt-olympus repository.
+Every judging round uses fresh judge contexts with new context IDs, distinct
+from the author, the synthesizer, and every prior round. A judge that has
+seen another judge's answer, or its own prior-round answer, is no longer
+independent: exclude its judgment from agreement counting and admit it only
+as labeled commentary. Reused or colliding context IDs are a checkable stop
+condition — repair the isolation or report the round as non-independent.
 
-## Troubleshooting
+## Synthesis section
 
-- Body moved to Mount Olympus 2026-06-10; this stub preserves routing/parity.
+The report ends with an explicit consensus/divergence synthesis: consensus
+points with their methodology spread, divergence points with each side's
+cited evidence, minority findings preserved in their own words, and
+unresolved assumptions. Synthesis is complete when every judge finding lands
+in exactly one of those buckets; a finding silently dropped from synthesis is
+majority laundering.
 
-## Output Specification
+## Boundary
 
-- **Path:** the run's declared evidence directory, containing both the panel aggregate and its binding decision handoff.
-- **Filename:** `result.json` for judge results and `verdict.json` for the council verdict.
-- **Format:** JSON; `verdict.json` must validate against `skills/council/schemas/verdict.json` and retain each concrete finding's location, recommendation, rationale, and reference.
-- **Exit code:** validate with `python3 -m jsonschema -i <evidence-dir>/verdict.json skills/council/schemas/verdict.json`; missing judges, author overlap, invalid JSON, or schema failure is nonzero and not consensus.
-- **Downstream handoff:** pass the independent results and validated verdict to `$pawl-review`/the verification membrane; council does not itself authorize landing.
-
-## Quality Checklist
-
-- Every counted judge is independent of the author context, read-only, and evaluating the same decision packet.
-- The verdict preserves dissent and concrete evidence instead of reducing disagreement to an unsupported majority label.
-- The chosen option, confidence, findings, and next action validate against the schema and remain traceable to the panel inputs.
+Council does not write `verdict.v2`, edit the subject, retry work, choose a next
+action, or authorize Git, closure, release, or delivery. When Council is used as
+a Validate strategy, one accountable fresh validator consumes its report and
+Validate remains the sole durable verdict writer.

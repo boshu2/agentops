@@ -1,373 +1,64 @@
 ---
 name: status
-spine: true
-description: 'Show AgentOps work status. Triggers: "status", "show agentops work status.", "status skill".'
-practices:
-- dora-metrics
-- sre
+description: 'Report observable AgentOps evidence without selecting work. Triggers: "status", "show AgentOps status".'
+practices: [dora-metrics, sre]
 hexagonal_role: driving-adapter
-consumes:
-- br
-produces:
-- stdout
+consumes: []
+produces: [stdout]
 context_rel: []
 skill_api_version: 1
 allowed-tools: Read, Grep, Glob, Bash
 model: haiku
 context:
   window: inherit
-  intent:
-    mode: none
+  intent: {mode: none}
   intel_scope: none
 metadata:
+  capabilities: [status]
+  effects: []
+  canonical_status: canonical
+  disposition: keep_specialist
+  graph_root: true
   tier: session
   dependencies: []
-output_contract: 'stdout: dashboard'
----
-# /status — Workflow Dashboard
-
-> **Purpose:** Single-screen overview of your current state. What am I working on? What happened recently? What should I do next?
-
-**YOU MUST EXECUTE THIS WORKFLOW. Do not just describe it.**
-
-**CLI dependencies:** br, ao, gt — all optional. Shows what's available, skips what isn't.
-
-### Folded triggers (ag-s43tg wave 1): `quickstart` routes here
-
-- **`quickstart` → `/status` Step 3.** Use when asked to show the AgentOps next action
-  or "what do I do first" — the state-aware SUGGESTED NEXT ACTION table (Step 3) is the
-  next-action surface. For a fresh/new-user setup, Priority 1 ("Start with `quickstart`
-  or `/research`") and Priority 12 (clean state) cover the onboarding walkthrough.
-
+output_contract: read-only status snapshot
 ---
 
-## Quick Start
+# Status
 
-```bash
-/status              # Full dashboard
-/status --json       # Machine-readable JSON output
-/status --recover    # Post-compaction recovery mode (absorbed /recover)
-```
+A status snapshot is trustworthy exactly when every line traces to an artifact
+that exists on disk right now; the first inferred line turns the report into a
+guess wearing a report's clothes.
 
----
+Report only observable local facts: available intent, subject-manifest, and
+verdict artifacts; their counts, digests, and timestamps; deterministic check
+results; and unavailable or corrupt sources. The canonical durable stores are
+`.agents/ao/intents/sha256` and `.agents/ao/verdicts/sha256`; subject manifests
+remain caller-supplied unless the caller names their location. When `.agents/ao`
+evidence exists, report which stored artifact kind is newest and label that
+conclusion as evidence recency, not runtime phase or process activity.
 
-## Post-compaction recovery mode (absorbed `/recover`, 2026-07-07)
+Always disclose `checked` and `not_checked`. Runtime phase, execution elapsed
+time, tool-call activity, and remaining work are `not_checked` unless a caller
+provides a separate authoritative source for them.
 
-Fires for the retired `/recover` skill's triggers — "recover", "recover session
-context", post-compaction re-orientation. Same gather as the dashboard plus the
-continuation surfaces, in this order:
+`ao status` is the evidence-store view. It validates content-addressed artifact
+names and content before counting them, reports corrupt and unavailable entries,
+and shows only intent/verdict counts plus evidence recency. Legacy session
+indexes, provenance summaries, flywheel health, and quality signals belong to
+their own read surfaces and are not aggregated into this command.
 
-1. Run the full dashboard gather (Step 1 below).
-2. Read the newest `.agents/handoff/*.md` (the write-side counterpart — see
-   [handoff](../handoff/SKILL.md)) and `.agents/rpi/execution-packet.json` if present.
-3. Re-read `AGENTS.md`/`CLAUDE.md` before resuming any claimed bead (two-correction
-   rule applies after compaction).
-4. Report: what was in flight, the exact next action, and any claimed-but-unfinished
-   beads (`BEADS_DIR="$(ao beads dir)" br list --status in_progress`).
+Status does not inspect work queues, assign priority, claim work, infer a next
+action, repair records, govern retries, or change any state. Optional Git or
+tracker metadata may be displayed only when the caller supplies it; absence
+cannot change the report interpretation.
 
-The old skill's deep-recovery walkthrough survives at
-[references/recovery-playbook.md](references/recovery-playbook.md).
+Named failure mode — **recency-as-activity**: reading "newest artifact is a
+verdict" as "validation is running", which invents a runtime phase from a
+timestamp.
 
----
+Anti-pattern: filling `not_checked` gaps with plausible narrative so the
+snapshot feels complete. Corrective: report the gap as a gap; an honest hole
+outranks a smooth story.
 
-## Execution Steps
-
-### Step 1: Gather State (Parallel)
-
-Run ALL of the following in parallel bash calls for speed:
-
-**Call 0 - Reconciliation Snapshot:**
-```bash
-if command -v ao &>/dev/null; then
-  ao reconcile --json 2>/dev/null || echo "RECONCILE_UNAVAILABLE"
-else
-  echo "AO_UNAVAILABLE"
-fi
-```
-
-**Call 1 — RPI + Ratchet + Task State:**
-```bash
-# Current ratchet phase
-if [ -f .agents/ao/chain.jsonl ]; then
-  tail -1 .agents/ao/chain.jsonl 2>/dev/null
-else
-  echo "NO_CHAIN"
-fi
-
-# Ratchet status via CLI
-if command -v ao &>/dev/null; then
-  ao ratchet status --json 2>/dev/null || echo "RATCHET_UNAVAILABLE"
-  ao task-status --json 2>/dev/null || echo "TASK_STATUS_UNAVAILABLE"
-fi
-```
-
-**Call 2 — Beads / Epic State:**
-```bash
-if command -v br &>/dev/null; then
-  BEADS_DIR="$(ao beads dir 2>/dev/null)"
-  export BEADS_DIR
-  echo "=== EPIC ==="
-  br list --type epic --status open 2>/dev/null | head -5
-  echo "=== IN_PROGRESS ==="
-  br list --status in_progress 2>/dev/null | head -5
-  echo "=== READY ==="
-  br ready 2>/dev/null | head -5
-  echo "=== TOTAL ==="
-  br list 2>/dev/null | wc -l
-else
-  echo "BR_UNAVAILABLE"
-fi
-```
-
-**Call 3 — Knowledge Flywheel:**
-```bash
-# Learnings count
-echo "LEARNINGS=$(ls .agents/learnings/ 2>/dev/null | wc -l | tr -d ' ')"
-echo "PATTERNS=$(ls .agents/patterns/ 2>/dev/null | wc -l | tr -d ' ')"
-echo "PENDING=$(ls .agents/forge/ 2>/dev/null | wc -l | tr -d ' ')"
-
-# Flywheel health + badge
-if command -v ao &>/dev/null; then
-  ao metrics flywheel status 2>/dev/null || echo "FLYWHEEL_UNAVAILABLE"
-  ao badge 2>/dev/null || echo "BADGE_UNAVAILABLE"
-fi
-```
-
-**Call 4 — Recent Activity + Git:**
-```bash
-# Recent sessions
-if [ -d .agents/ao/sessions ]; then
-  ls -t .agents/ao/sessions/*.md 2>/dev/null | head -3
-else
-  echo "NO_SESSIONS"
-fi
-
-# Recent council verdicts
-ls -lt .agents/council/ 2>/dev/null | head -4
-
-# Git state
-echo "=== GIT ==="
-git branch --show-current 2>/dev/null
-git log --oneline -3 2>/dev/null
-git status --short 2>/dev/null | head -5
-```
-
-**Call 5 — Inbox:**
-```bash
-if command -v gt &>/dev/null; then
-  gt mail inbox 2>/dev/null | head -5
-else
-  echo "GT_UNAVAILABLE"
-fi
-```
-
-**Call 6 — Session Quality Signals:**
-```bash
-if [ -f .agents/signals/session-quality.jsonl ]; then
-  tail -10 .agents/signals/session-quality.jsonl
-else
-  echo "NO_SIGNALS"
-fi
-```
-
-### Step 2: Render Dashboard
-
-Assemble gathered data into this format. Use Unicode indicators for visual clarity:
-
-- Pass/healthy: `[PASS]`
-- Warning/partial: `[WARN]`
-- Fail/missing: `[FAIL]`
-- Progress: `[3/7]` with bar `███░░░░`
-
-```
-══════════════════════════════════════════════════
-  Workflow Dashboard
-══════════════════════════════════════════════════
-
-RECONCILIATION
-  Overall: <ao reconcile overall_status, or "unavailable">
-  High: <top high-severity findings, max 3, or "none">
-  Next: <first high finding next_action, or "none">
-
-RPI PROGRESS
-  Phase: <current phase from chain.jsonl: research | plan | implement | validate | idle>
-  Gate:  <last completed gate or "none">
-  ─────────────────────────────────
-  research ── plan ── implement ── validate
-     <mark current position with arrow or highlight>
-
-ACTIVE EPIC
-  <epic title and ID, or "No active epic">
-  Progress: <completed>/<total> issues  <progress bar>
-  In Progress: <list in-progress issues, max 3>
-
-READY TO WORK
-  <top 3 unblocked issues from br ready>
-  <or "No ready issues — create work with /plan">
-
-RECENT VALIDATIONS
-  <last 3 council reports with verdict>
-  <format: date  verdict  target>
-  <or "No recent validations">
-
-KNOWLEDGE FLYWHEEL
-  Learnings: <count>  Patterns: <count>  Pending: <count>
-  Health: <flywheel status or "ao not installed">
-  Badge: <ao badge output or omit if unavailable>
-
-TASK MATURITY
-  <ao task-status summary: active tasks with CASS maturity levels, or omit if unavailable>
-
-RECENT SESSIONS
-  <last 3 session summaries with dates>
-  <or "No session history">
-
-GIT STATE
-  Branch: <current branch>
-  Recent: <last 3 commits, one-line>
-  Changes: <uncommitted file count or "clean">
-
-INBOX
-  <message count or "No messages" or "gt not installed">
-
-SESSION QUALITY SIGNALS
-  <last 10 entries from .agents/signals/session-quality.jsonl as table>
-  | Timestamp | Signal | Detail | Session |
-  |-----------|--------|--------|---------|
-  <parsed from JSON lines: .timestamp, .signal, .detail, .session>
-  <or "No quality signals recorded." if file missing or empty>
-
-──────────────────────────────────────────────────
-SUGGESTED NEXT ACTION
-  <state-aware suggestion — see Step 3>
-──────────────────────────────────────────────────
-
-QUICK COMMANDS
-  /research     Deep codebase exploration
-  /plan         Decompose epic into issues
-  /pre-mortem   Validate plan before coding
-  /implement    Execute a single issue
-  /crank        Autonomous epic execution
-  /validate   Full close-out and learnings
-  /validate         Targeted code review
-  ao reconcile --json   Joined git/CI/release/beads/.agents truth
-══════════════════════════════════════════════════
-```
-
-### Step 3: Suggest Next Action (State-Aware)
-
-Evaluate state top-to-bottom. Use the FIRST matching condition:
-
-| Priority | Condition | Suggestion |
-|----------|-----------|------------|
-| 0 | `ao reconcile` reports a high-severity finding | "Resolve reconciliation blockers from `ao reconcile --json` before picking backlog work" |
-| 1 | No ratchet chain exists | "Start with `quickstart` or `/research` to begin a workflow" |
-| 2 | Research done, no plan | "Run `/plan` to decompose research into actionable issues" |
-| 3 | Plan done, no pre-mortem | "Run `/pre-mortem` to validate the plan before coding" |
-| 4 | Issues in-progress | "Continue working: `/implement <issue-id>` or `/crank` for autonomous execution" |
-| 5 | Ready issues available | "Pick up next issue: `/implement <first-ready-id>`" |
-| 6 | Uncommitted changes | "Review recent work: `/validate`" |
-| 7 | Implementation done, no vibe | "Run `/validate` for final close-out" |
-| 8 | Recent WARN/FAIL verdict | "Address findings in `<report-path>`, then re-run `/validate`" |
-| 10 | Vibe passed, no post-mortem | "Run `/validate` to complete closeout and extract learnings" |
-| 11 | Pending knowledge items | "Promote learnings: `ao pool list --status pending --json`, then `ao pool stage <id>` and `ao pool promote <id>`" |
-| 12 | Clean state, nothing pending | "All clear. Start with `/research` or `/plan` to find new work" |
-
-If Call 0 is unavailable, skip Priority 0 and continue evaluating the remaining conditions.
-
-### Step 4: JSON Output (--json flag)
-
-If the user passed `--json`, output all dashboard data as structured JSON instead of the visual dashboard:
-
-```json
-{
-  "reconciliation": {
-    "overall_status": "green",
-    "high_findings": []
-  },
-  "rpi": {
-    "phase": "implement",
-    "last_gate": "plan",
-    "chain_entries": 3
-  },
-  "epic": {
-    "id": "ag-042",
-    "title": "Epic title",
-    "progress": { "completed": 3, "total": 7, "in_progress": ["ag-042.2"] }
-  },
-  "ready_issues": ["ag-042.4", "ag-042.5"],
-  "validations": [
-    { "date": "2026-02-09", "verdict": "PASS", "target": "src/auth/" }
-  ],
-  "flywheel": {
-    "learnings": 12,
-    "patterns": 5,
-    "pending": 2,
-    "health": "healthy"
-  },
-  "sessions": [
-    { "date": "2026-02-09", "file": "session-abc.md" }
-  ],
-  "git": {
-    "branch": "main",
-    "uncommitted_count": 3,
-    "recent_commits": ["abc1234 fix: thing", "def5678 feat: other"]
-  },
-  "inbox": { "count": 0 },
-  "session_quality_signals": [
-    { "timestamp": "2026-03-31T14:22:00Z", "signal": "drift", "detail": "3 corrections in 5min", "session": "abc123" }
-  ],
-  "suggestion": {
-    "priority": 5,
-    "message": "Continue working: /implement ag-042.2"
-  }
-}
-```
-
-Render this with a single code block. No visual dashboard when `--json` is active.
-
----
-
-## Examples
-
-### Checking Status Mid-Epic
-
-**User says:** `/status`
-
-**What happens:**
-1. Agent runs 7 parallel bash calls to gather all state
-2. Agent reads ratchet chain showing "implement" phase
-3. Agent queries beads showing epic ag-042 with 3/7 issues completed
-4. Agent finds 2 in-progress issues and 4 ready issues
-5. Agent lists recent council verdict: PASS on src/auth/
-6. Agent checks flywheel showing 12 learnings, 5 patterns, 2 pending
-7. Agent renders dashboard with progress bars and suggests: "Continue working: /implement ag-042.2"
-
-**Result:** Full single-screen dashboard showing mid-epic progress with actionable next step.
-
-### Status in Clean State
-
-**User says:** `/status`
-
-**What happens:**
-1. Agent gathers all state in parallel
-2. Agent finds no ratchet chain exists (.agents/ao/chain.jsonl missing)
-3. Agent finds no open epics or in-progress issues
-4. Agent shows clean git state, recent commits only
-5. Agent finds no recent validations
-6. Agent suggests: "All clear. Start with /research or /plan to find new work"
-
-**Result:** Dashboard confirms clean slate, points user to workflow entry points.
-
-## Troubleshooting
-
-| Problem | Cause | Solution |
-|---------|-------|----------|
-| Shows "BR_UNAVAILABLE" or "AO_UNAVAILABLE" | CLI tools not installed or not in PATH | Install missing tools: `br` (beads_rust) or `ao`. Skill gracefully degrades by showing available state only. |
-| Ratchet phase shows stale data | Old chain.jsonl not cleaned up | Check timestamp of `.agents/ao/chain.jsonl`. If stale, delete it or run `/validate` to complete cycle and reset state. |
-| Suggested action doesn't match intent | State-aware rules didn't capture edge case | Review priority table in Step 3. May need to refine conditions. Use `--json` to inspect raw state and debug rule matching. |
-| JSON output malformed | Parallel bash calls returned unexpected format | Check each bash call individually. Ensure jq parsing works on actual data. Validate JSON structure with `jq .` before returning to user. |
-
-## Reference Documents
-
-- [references/status.feature](references/status.feature) — Executable spec: work dashboard from br (ready/in-progress/epics) + ratchet/flywheel/git, --json, fail-soft on missing tools (soc-qk4b)
+Return the snapshot and stop.

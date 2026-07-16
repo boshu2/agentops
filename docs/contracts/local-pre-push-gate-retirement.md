@@ -1,128 +1,36 @@
-# Superseded Historical ADR: Local Pre-Push Gate Retirement
+# Superseded Historical ADR: Local Push-Gate Experiments
 
-> Superseded on 2026-06-08 by `ag-3l86`: GitHub Actions became a quota SPOF,
-> so AgentOps returned release authority to the local cockpit gate and direct
-> pushes to `main`. Keep this document as historical context for the older
-> CI-only experiment, not as current workflow doctrine. If this file disagrees
-> with `scripts/hooks/pre-push.local`, `scripts/install-pre-push-gate.sh`, or
-> `docs/CI-CD.md`, those current-path surfaces win.
+> **Status:** Superseded. This file preserves the disposition of two failed
+> policies; it is not an active delivery contract.
 
-`scripts/pre-push-gate.sh` is the local mirror of `.github/workflows/validate.yml`.
-The mirror has drifted three times in observable ways during the 2026-05-19
-session alone, each costing a self-correction PR. This document is the
-architecture decision to retire the local mirror and treat GitHub Actions as
-the push-gate enforcement point. That decision is no longer current.
+AgentOps tried both CI-only enforcement and a large local push hook. Each moved
+the product into repository delivery and duplicated expensive proof. The local
+variant also serialized mutable checks and model judgment at the moment Git was
+trying to publish, which made ordinary delivery slow and fragile.
 
-## Decision
+## Current decision
 
-The historical decision retired the local pre-push gate and moved authority to
-GitHub Actions workflows under `.github/workflows/`. Current doctrine reverses
-that: the local cockpit gate is the release authority for normal direct-main
-work.
+AgentOps stops after one exact candidate has deterministic evidence and one
+durable verdict from fresh context. The consumer repository owns delivery for
+local and cloud agents. It may use direct push, a PR, hosted CI, or a small
+deterministic hook.
 
-Historical authoritative gate in this superseded decision:
+A repository hook or CI job may run deterministic repository checks. It must
+not treat AgentOps as the delivery controller or:
 
-- `.github/workflows/validate.yml`
-- `.github/workflows/release.yml`
-- the `claude-code-review` required check
+- invoke a model or perform another semantic review;
+- mutate or upgrade the Validate verdict;
+- close tracker work as a side effect of Git;
+- create an AgentOps delivery queue or receipt; or
+- replay an unchanged full suite merely because delivery started.
 
-Historical non-authoritative surfaces in this superseded decision:
+## Retired surface
 
-- `scripts/pre-push-gate.sh`
-- the ~12 helper scripts under `scripts/check-*.sh` invoked only by the gate
-- the ~40 bats files under `tests/scripts/` that test gate helpers in
-  isolation (the bats that test the gate itself stay until the gate is
-  deleted)
+The old AgentOps delivery commands, queue, semantic push admission, and
+delivery receipts are retired. Existing deterministic repository checks remain
+ordinary checks whose exit status means only success or failure.
 
-`.githooks/pre-push` kept its `bd hooks run pre-push` invocation; that piece was
-tracker plumbing, not the AgentOps cockpit gate. Current installs use
-`.git/hooks/pre-push` chaining `scripts/hooks/pre-push.local`.
+## Rollback
 
-## Why this rather than the alternatives
-
-The bead (`soc-g2r9`) enumerated three options. They were considered together:
-
-| Option | Effort | Drift | Verdict |
-|---|---|---|---|
-| `accept-drift` | 30 min (1 ADR) | unchanged | rejected — legitimizes the cost we filed the bead to remove |
-| `drop-local-gate` (this decision) | ~2-3h across PRs | impossible (no local) | **chosen** |
-| `mirror-CI-via-act` | 1-2 days, +30s/push, +2GB Docker | impossible (Docker GH-Actions runtime) | rejected — heaviest, and the 30-90s CI feedback loop is acceptable |
-
-`drop-local-gate` is the option that removes the *category* of drift instead
-of paying ongoing alignment cost. The cost we accept is a 30-90s CI feedback
-loop per push instead of a 10-20s local one. The session of 2026-05-19 spent
-several multi-minute self-correction PR cycles per local-gate-was-wrong event,
-so the per-push cost is dominated by the per-incident cost we just removed.
-
-## What replaced the superseded decision
-
-The older CI-only experiment was reversed. Current normal `main` pushes are
-gated locally by `.git/hooks/pre-push -> scripts/hooks/pre-push.local -> ao gate
-check --fast -> go test ./... -race -shuffle=on -count=1 -> pawl pre-push`.
-GitHub Actions are tag/PR/manual backstop telemetry. Specific past concerns and
-how they map onto the old shape:
-
-- **Speed of feedback.** CI takes 30-90s on the fast path. Operators who
-  want a local sanity check can run `cd cli && make test` or `bats
-  tests/scripts/<changed>.bats` directly. The omnibus 38-check gate is the
-  thing being retired, not the per-tool feedback loops.
-- **Pre-push hygiene.** The bd hooks invocation in `.githooks/pre-push` is
-  preserved (issue tracker plumbing, not gate enforcement).
-- **AP#7 mechanical enforcement (soc-o5kq, PR #356).** Today's mechanical
-  check that verifies `Evidence:` PR-body claims against the gate log moves
-  to CI as a new validate.yml job. The standalone `scripts/verify-gate-claim.sh`
-  tool stays; only its pre-push wiring goes. Tracked as a follow-up bead so
-  AP#7 protection has at most a ~1-day gap.
-- **Coverage ratchets and similar local-only signals.** Currently surfaced
-  via `pre-push-gate.sh`; will migrate to CI jobs that emit the same
-  signals on PRs. The signal stays; the surface changes.
-
-## What this PR does
-
-This PR locks in the decision without the deletion churn:
-
-- Adds this ADR.
-- Edits `.githooks/pre-push` to skip the `scripts/pre-push-gate.sh`
-  invocation. The pre-push hook still runs `bd hooks run pre-push` so issue
-  tracking continues to work.
-- Files four follow-up beads for the actual removal waves.
-
-After the historical PR landed, `git push` no longer ran the local gate and CI
-was treated as the sole gate. That is no longer true. The current local gate is
-installed by `scripts/install-pre-push-gate.sh` and sourced from
-`scripts/hooks/pre-push.local`.
-
-## Follow-up work
-
-Tracked as discovered-from soc-g2r9:
-
-1. **Wave 1 (delete pre-push-gate.sh + helpers).** Delete `scripts/pre-push-gate.sh`,
-   `scripts/check-pre-push-gate-wired.sh`, and the ~11 gate-only helpers
-   under `scripts/check-*.sh`. Audit callers first; any helper with non-gate
-   callers stays.
-2. **Wave 2 (retire gate-only bats).** Delete `tests/scripts/pre-push-gate*.bats`
-   and gate-helper bats. Keep `tests/scripts/verify-gate-claim.bats` (the
-   standalone tool stays).
-3. **Wave 3 (migrate AP#7 to CI).** Add a `pr-evidence-claim-verify` job to
-   `.github/workflows/validate.yml` that calls `scripts/verify-gate-claim.sh`
-   against the PR body's `Evidence:` line(s). Closes the ~1-day mechanical
-   AP#7 gap this PR opens.
-4. **Wave 4 (doctrine sweep).** Update `skills/ship-loop/SKILL.md`, the Codex
-   twin, and `skills/ship-loop/references/anti-patterns.md` to reflect the
-   new "CI is sole truth" stance and remove pre-push-gate references.
-
-## Reversibility
-
-The decision is fully reversible by reverting this PR. The orphaned files
-(left in place by design) keep working; flipping `.githooks/pre-push` back
-to invoking `scripts/pre-push-gate.sh` restores the previous behavior with
-zero data migration. The deletion waves are individually reversible too,
-but each progressively raises the revert cost — that's by design and matches
-the operator's "decide before you delete" preference.
-
-## Acceptance
-
-- ADR exists at `docs/contracts/local-pre-push-gate-retirement.md` (this file).
-- `.githooks/pre-push` no longer invokes `scripts/pre-push-gate.sh`.
-- Four follow-up beads filed under `discovered-from: soc-g2r9`.
-- Linked from `docs/documentation-index.md`.
+Revert the complete Cathedral Cut if repository policy needs to restore the old
+product boundary. Do not restore only an AgentOps push hook or delivery command.

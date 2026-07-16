@@ -13,7 +13,7 @@
 #   default              — $REPO_ROOT/.agents (git rev-parse) or ${PWD}/.agents
 #
 # Per-subdir overrides (read after the home resolves, win over the default layout):
-#   AO_AGENTS_DIR, AO_KNOWLEDGE_ROOT, AO_HOOKS_DIR, AO_SCOPE_LOCK,
+#   AO_AGENTS_DIR, AO_KNOWLEDGE_ROOT, AO_HOOKS_DIR,
 #   AO_RPI_DIR, AO_FINDINGS_DIR, AO_PLANS_DIR, AO_COUNCIL_DIR,
 #   AO_LEARNINGS_DIR, AO_PATTERNS_DIR, AO_DECISIONS_DIR
 #
@@ -58,7 +58,6 @@ fi
 _ao_agents_dir="${AO_AGENTS_DIR:-$_ao_home}"
 _ao_knowledge_root="${AO_KNOWLEDGE_ROOT:-$_ao_agents_dir/wiki}"
 _ao_hooks_dir="${AO_HOOKS_DIR:-$_ao_agents_dir/hooks}"
-_ao_scope_lock="${AO_SCOPE_LOCK:-$_ao_agents_dir/scope.lock}"
 _ao_rpi_dir="${AO_RPI_DIR:-$_ao_agents_dir/rpi}"
 _ao_findings_dir="${AO_FINDINGS_DIR:-$_ao_agents_dir/findings}"
 _ao_plans_dir="${AO_PLANS_DIR:-$_ao_agents_dir/plans}"
@@ -72,7 +71,6 @@ printf 'export AO_HOME=%q\n' "$_ao_home"
 printf 'export AO_AGENTS_DIR=%q\n' "$_ao_agents_dir"
 printf 'export AO_KNOWLEDGE_ROOT=%q\n' "$_ao_knowledge_root"
 printf 'export AO_HOOKS_DIR=%q\n' "$_ao_hooks_dir"
-printf 'export AO_SCOPE_LOCK=%q\n' "$_ao_scope_lock"
 printf 'export AO_RPI_DIR=%q\n' "$_ao_rpi_dir"
 printf 'export AO_FINDINGS_DIR=%q\n' "$_ao_findings_dir"
 printf 'export AO_PLANS_DIR=%q\n' "$_ao_plans_dir"

@@ -146,6 +146,4 @@ declared opt-in here; no CI Tier E lane is added.
   hook capability matrix, install behavior
 - `docs/contracts/headless-invocation-standards.md` — what "headless
   invocation" means for each runtime
-- `docs/contracts/release-readiness.md` — what release validation gates
-  are blocking
 - `GOALS.md` — gate roster (search for `multi-runtime` / `runtime-`)

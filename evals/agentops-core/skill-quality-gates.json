@@ -118,15 +118,14 @@
       "critical": true
     },
     {
-      "id": "skill-quality-gate-wiring",
-      "title": "pre-push skill quality gates remain wired",
+      "id": "skill-quality-check-registry",
+      "title": "ordinary deterministic skill checks remain registered",
       "kind": "artifact_check",
-      "objective": "Keep the same skill quality checks connected to the repo-managed pre-push gate.",
+      "objective": "Keep skill quality checks available through ao gate check without making them Git admission policy.",
       "expectations": [
-        {"type": "artifact_contains", "target": "../../scripts/pre-push-gate.sh", "value": "skill lint suite"},
-        {"type": "artifact_contains", "target": "../../scripts/pre-push-gate.sh", "value": "skill schema validation"},
-        {"type": "artifact_contains", "target": "../../scripts/pre-push-gate.sh", "value": "skill runtime formats"},
-        {"type": "artifact_contains", "target": "../../scripts/pre-push-gate.sh", "value": "skill CLI snippets"},
+        {"type": "artifact_contains", "target": "../../cli/internal/gates/checks/seed.go", "value": "ID: \"skill.schema\""},
+        {"type": "artifact_contains", "target": "../../cli/internal/gates/checks/seed.go", "value": "ID: \"skill.runtime-formats\""},
+        {"type": "artifact_contains", "target": "../../cli/internal/gates/checks/seed.go", "value": "ID: \"skill.cli-snippets\""},
         {"type": "artifact_contains", "target": "../../scripts/check-skill-size.sh", "value": "WARN_LINES"}
       ],
       "dimensions": ["process_adherence", "artifact_quality"]

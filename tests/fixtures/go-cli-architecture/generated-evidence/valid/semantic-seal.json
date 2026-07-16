@@ -1,0 +1,1 @@
+{"schema_version":1,"class":"generated-evidence","sources":["source.txt"],"generated":[{"source":"source.txt","source_sha256":"b8bb034f9b63bd0254fbc7c157cae746c75853f4643d6cea844dc48ddb57f522","generator":"archcheck.prefix-generated-from.v1","path":"generated.txt","sha256":"7c8905f7f46b075d1f934ca822dec13c5efcb10b596fe535a6dde2f8a94cc607"}]}

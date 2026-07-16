@@ -1,134 +1,107 @@
 ---
 name: scope
-description: 'Hard-block edits outside declared frozen directories and protect paths during risky changes. Triggers: "scope", "hard-block edits outside declared frozen", "scope skill".'
+description: 'Review the bead or caller intent write scope for completeness and ambiguity. Triggers: "review write scope", "check scope boundaries", "scope this change".'
 practices:
 - ddd-bounded-context
 - design-by-contract
-- mythical-man-month
-hexagonal_role: driven-adapter
-consumes: []
+hexagonal_role: supporting
+consumes:
+- proposed-write-scope
 produces:
-- filesystem-gate
+- scope-review
 context_rel:
 - kind: supplier-to
-  with: domain
+  with: plan
 skill_api_version: 1
 context:
   window: isolated
   intent:
     mode: none
   sections:
-    exclude:
-    - HISTORY
-    - INTEL
-    - TASK
+    exclude: [HISTORY, INTEL, TASK]
   intel_scope: none
 metadata:
+  capabilities: [scope_review]
+  effects: []
+  canonical_status: canonical
+  disposition: keep_specialist
   tier: meta
   dependencies: []
-output_contract: 'stdout: scope status / lock state; stderr: blocked-edit reason from
-  hook'
----
-# /scope — Edit Scope Guard
-
-> **Purpose:** Declare which directories are in scope for the current work session. Edits outside the declared scope are hard-blocked by a PreToolUse hook.
-
-**YOU MUST EXECUTE THIS WORKFLOW. Do not just describe it.**
-
+output_contract: 'response: proposed write_scope.include/exclude plus gaps and ambiguities'
 ---
 
-## Quick Start
+# Scope — Review a proposed write scope
 
-```bash
-/scope freeze cli/cmd/ao/                   # Freeze a single directory
-/scope freeze cli/cmd/ao/ skills/scope/     # Freeze multiple (additive)
-/scope unfreeze cli/cmd/ao/                 # Remove one frozen directory
-/scope unfreeze                             # Clear ALL frozen directories
-/scope status                               # Show current lock state
-/scope status --json                        # JSON output
+Review the write scope in the existing bead or caller intent. This skill is
+advisory: it does not create a second planning artifact, write a lock, install
+a hook, block an edit, or claim paths.
+
+## Inputs
+
+- One active behavior and its acceptance scenarios.
+- Proposed include and exclude patterns.
+- Known generated companions and fixture/projection paths.
+- Explicit non-goals.
+
+## Procedure
+
+1. Map each acceptance criterion to the smallest source paths that may change.
+2. Add owned generated companions that must move with those sources.
+3. Check whether any include/exclude patterns overlap or are too broad to prove.
+4. Identify likely paths the proposal omitted.
+5. Return a corrected proposal and the reasons for each change, then stop.
+
+The caller decides whether to adopt the proposal in the original intent source,
+and Validate independently compares runtime-derived changed paths with that scope.
+
+## Axiom-kernel framing
+
+Derive the scope from axioms, not enumeration instinct. State the small set of
+facts the acceptance makes true — "behavior X lives in root A", "projection B
+is generated from A", "history under C is frozen" — and derive every include
+and exclude pattern from exactly one axiom. A pattern with no supporting axiom
+is unjustified breadth; an axiom with no pattern is a gap. Both go in the
+review output. Scopes assembled by listing directories that feel related are
+the **vibes perimeter** failure mode: they cannot be defended when Validate
+finds a path on the boundary, because nobody can say why the line is where it
+is. Stop condition: the review is complete when the axiom-to-pattern mapping
+has no unmapped members on either side.
+
+## Byte-verified recovery ceremony
+
+When the review finds that protected paths were already touched — or the
+caller asks how a scope violation should be unwound — the advisory answer is a
+ceremony, not a hand-wave: identify the known-good source for each affected
+path (committed state, snapshot, or generated-from-source), restore, then
+verify byte-for-byte that restored content matches the known-good bytes
+(content hash comparison, not visual diff or "looks right"). Recovery declared
+on inspection alone is the **eyeballed restore** failure mode: a file that
+looks restored can still differ in bytes that matter. The ceremony's stop
+condition is a hash match for every affected path; any path with no
+known-good source to verify against is reported as unrecoverable-as-scoped,
+and the caller decides.
+
+## Output
+
+```yaml
+write_scope:
+  include: ["bounded/source/**"]
+  exclude: ["bounded/source/generated-by-other-owner/**"]
+generated_companions: ["bounded/generated/**"]
+gaps: []
+ambiguities: []
 ```
 
----
+## Checks
 
-## Behavior Contract
+- Patterns are normalized repository-relative paths.
+- Includes cover the behavior without granting unrelated directories.
+- Excludes do not contradict required changes.
+- Generated companions are explicit.
+- No ownership, scheduling, Git, hook, retry, release, or delivery state is
+  introduced.
 
-When `.agents/scope.lock` declares one or more `frozen_dirs`:
+## Failure behavior
 
-- Any `Edit`, `Write`, or `Bash` tool call whose target path is **outside** every frozen directory is **rejected** by `hooks/edit-scope-guard.sh` with a structured stderr reason and a non-zero exit code (Claude Code converts that into a tool-use refusal).
-- Edits to paths **under** any frozen directory are allowed.
-- When the lock file is missing OR `frozen_dirs` is empty, the hook short-circuits with exit 0 (no enforcement; allow everything).
-- The hook fails **open** on malformed JSON or missing target-path fields — do not block when the input contract is violated. Defensive default protects against harness changes.
-
-The lock file is written via `cli/internal/llmwiki/scope_guard.go:SafeAtomicWrite`, so concurrent `freeze` / `unfreeze` calls converge atomically (last writer wins, never tears).
-
----
-
-## Subcommands
-
-### `/scope freeze <dir>...`
-
-Append one or more directories to the frozen set. Idempotent; re-freezing an already-frozen directory is a no-op. Updates `acquired_at` (ISO-8601) and `acquired_by` (session id or PID) on every write.
-
-### `/scope unfreeze [<dir>]`
-
-Without arguments, clears the entire frozen set. With one or more directory arguments, removes just those entries. Removing a directory that is not frozen is a no-op.
-
-### `/scope status [--json]`
-
-Print the current lock state. With `--json`, emit a single JSON object matching the schema in [references/lock-file-format.md](references/lock-file-format.md). Without flags, print a human-readable summary including each frozen directory, the acquisition timestamp, and the acquiring session.
-
-### `/scope guard` (future combo skill)
-
-Reserved for a follow-up skill that combines `freeze` + status + spawn-orchestration. Not implemented in this release; documented here for forward reference.
-
----
-
-## Lock File Format
-
-`.agents/scope.lock` is a single JSON object. Full schema lives in [references/lock-file-format.md](references/lock-file-format.md). Key fields:
-
-- `schema_version` — currently `1`
-- `frozen_dirs` — list of repo-relative directory prefixes (trailing slash optional)
-- `acquired_at` — ISO-8601 UTC timestamp
-- `acquired_by` — string identifying the writer (session id, PID, or label)
-
----
-
-## Examples
-
-### Freezing scope before a swarm wave
-
-**User says:** `/scope freeze cli/cmd/ao/ cli/internal/scope/`
-
-**What happens:**
-
-1. `ao scope freeze cli/cmd/ao/ cli/internal/scope/` writes `.agents/scope.lock` via `SafeAtomicWrite`.
-2. `hooks/edit-scope-guard.sh` (registered as PreToolUse on `Edit|Write|Bash`) consults the lock on every subsequent tool call.
-3. A worker that tries to `Write` to `skills/foo/SKILL.md` is rejected; a worker editing `cli/cmd/ao/scope.go` proceeds.
-
-### Releasing scope at the end of a wave
-
-**User says:** `/scope unfreeze`
-
-**What happens:**
-
-1. `ao scope unfreeze` rewrites `.agents/scope.lock` with `frozen_dirs: []`.
-2. The hook short-circuits to exit 0 on the next tool call.
-
----
-
-## Notes
-
-- Wave 1 hardcodes the `.agents/scope.lock` path. Wave 2 (issue I5) migrates the path through `lib/ao-paths.sh`.
-- The hook's defensive parse on malformed JSON is intentional. See [references/lock-file-format.md](references/lock-file-format.md) for the rationale.
-- This skill is purely session-boundary (path-scope freezing within a session). Cron-cadence orchestration lives outside AgentOps on the orchestration substrate (the reference is NTM + MCP + managed-agents), not in an AgentOps-shipped daemon.
-- Path-scope freezing handles *where* edits land. For a complementary lane that gates *what* commands run (`rm -rf`, `git reset --hard`, `DROP DATABASE`, `kubectl delete`, `terraform destroy`) — including allowlist layering, one-shot override codes, and PreToolUse wiring — see [references/destructive-command-guard-patterns.md](references/destructive-command-guard-patterns.md). Wire it alongside the scope guard when a wave touches infrastructure or shared data.
-- When a workflow needs human approval, hook parity, or simultaneous command review rather than only path freezing, use [references/command-approval-and-hook-guardrails.md](references/command-approval-and-hook-guardrails.md).
-- When authoring new hook behavior rather than using scope's existing guard, use the hook authoring guidance in `cc-hooks`.
-
-## References
-
-- [references/lock-file-format.md](references/lock-file-format.md)
-- [references/destructive-command-guard-patterns.md](references/destructive-command-guard-patterns.md)
-- [references/command-approval-and-hook-guardrails.md](references/command-approval-and-hook-guardrails.md)
-- [references/scope.feature](references/scope.feature) — Executable spec: declare in-scope dirs, allow in-scope edits, hard-block out-of-scope edits via PreToolUse hook, report/release scope state (soc-qk4b)
+If the scope cannot be made unambiguous from the supplied acceptance, report
+the missing facts and stop. The caller may revise the intent in a new action.

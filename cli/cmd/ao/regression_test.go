@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/boshu2/agentops/cli/internal/quality"
 	"github.com/boshu2/agentops/cli/internal/vibecheck"
 )
 
@@ -42,7 +43,7 @@ func seedAgentsFixture(t *testing.T) string {
 func TestDoctorFlywheelFindsFixtureArtifacts(t *testing.T) {
 	tmp := seedAgentsFixture(t)
 
-	result := checkFlywheelHealth(tmp)
+	result := quality.CheckFlywheelHealth(filepath.Join(tmp, ".agents"))
 
 	// Fixture has 3 .md + 1 .jsonl in learnings = 4 learning files
 	// checkFlywheelHealth should find learnings > 0 and report pass
@@ -63,13 +64,13 @@ func TestCountLearningFilesMatchesFixture(t *testing.T) {
 	tmp := seedAgentsFixture(t)
 
 	learningsDir := filepath.Join(tmp, ".agents", "learnings")
-	got := countLearningFiles(learningsDir)
+	got := quality.CountLearningFiles(learningsDir)
 
 	// Fixture learnings: learn-2026-test-001.md, learn-2026-test-002.md,
 	// learn-2026-test-003.md (3 .md) + feedback.jsonl (1 .jsonl) = 4
 	want := 4
 	if got != want {
-		t.Errorf("countLearningFiles() = %d, want %d", got, want)
+		t.Errorf("quality.CountLearningFiles() = %d, want %d", got, want)
 	}
 }
 
@@ -108,9 +109,9 @@ func TestMetricsCountArtifactsIncludesLearnings(t *testing.T) {
 func TestLearningCountConsistency(t *testing.T) {
 	tmp := seedAgentsFixture(t)
 
-	// Get count from countLearningFiles (doctor.go method)
+	// Get count from quality.CountLearningFiles (doctor.go method)
 	learningsDir := filepath.Join(tmp, ".agents", "learnings")
-	doctorCount := countLearningFiles(learningsDir)
+	doctorCount := quality.CountLearningFiles(learningsDir)
 
 	// Get count from countArtifacts (metrics.go method)
 	_, tierCounts, err := countArtifacts(tmp)
@@ -121,7 +122,7 @@ func TestLearningCountConsistency(t *testing.T) {
 
 	// Both should agree: they both count *.md + *.jsonl in the learnings directory
 	if doctorCount != metricsCount {
-		t.Errorf("learning count mismatch: countLearningFiles()=%d, countArtifacts[learning]=%d",
+		t.Errorf("learning count mismatch: quality.CountLearningFiles()=%d, countArtifacts[learning]=%d",
 			doctorCount, metricsCount)
 	}
 }

@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "family": "beads",
+  "old_implementation_sha": "5acf5f45b30caf6f8d0557198499487def7b05d1",
+  "freeze_sha": "9ec18f6523375563679866d66462ce5d4211fe29",
+  "fixture_sha256": "fa3f72bc3b0a325d5b662a2b56ad0ccc92ac6b669871061be99ef34974b67473",
+  "ownership_sha256": "c4baf423279f90d923030854688bc547a3170afcc093a31f0dc72c00720adccb",
+  "scope_sha256": "55272fba3517bec8c3a80503fad1f30a551a1f76e8731e73617c8063da21215a",
+  "migration_state": "retired",
+  "accepted_sha": "4863195d07079bb4f995a84686b2c572afe070fb"
+}

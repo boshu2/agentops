@@ -179,7 +179,7 @@ validate_structural() {
   fi
 
   # Check for unknown top-level keys (additionalProperties: false)
-  local valid_keys="name description spine skill_api_version metadata user-invocable context allowed-tools license compatibility model output_contract"
+  local valid_keys="name description skill_api_version metadata user-invocable context allowed-tools license compatibility model output_contract practices hexagonal_role consumes produces context_rel"
   local actual_keys
   actual_keys=$(echo "$json_data" | jq -r 'keys[]' 2>/dev/null)
   for key in $actual_keys; do
@@ -251,6 +251,12 @@ for skill_dir in "$SKILLS_DIR"/*/; do
   if [[ ! -f "$skill_file" ]]; then
     echo -e "  ${YELLOW}SKIP${NC} $skill_name: no SKILL.md"
     warn=$((warn + 1))
+    continue
+  fi
+
+  # Runtime compatibility pointers are redirect packages, not independent
+  # implementations. The redirect gate owns their compact schema.
+  if grep -Eq '^implementation:[[:space:]]+false([[:space:]]|$)' "$skill_file"; then
     continue
   fi
 

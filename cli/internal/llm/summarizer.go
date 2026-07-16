@@ -32,7 +32,7 @@ Return ONLY a JSON object with these exact keys:
 - concepts: array of technical patterns, architectural ideas, or reusable approaches observed
 - decisions: array of explicit choices made with brief rationale ("chose X because Y")
 - open_questions: array of unresolved items or things that need follow-up
-- work_phase: one of research, plan, implement, verify, post-mortem, other
+- work_phase: one of research, plan, implement, verify, postmortem, other
 
 Only include entities/concepts that literally appear in the source text. Do not invent. Use empty arrays for fields with no content. If a session has no real decisions or learnings, title it honestly (e.g., "Routine file inspection with no decisions").
 

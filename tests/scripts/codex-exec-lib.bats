@@ -1,7 +1,6 @@
 #!/usr/bin/env bats
-# codex-exec-lib.bats — the fail-closed contract for scripts/lib/codex-exec.sh.
-# age-gate-the-ungated-egwt.8: ONE hardened codex runner, extracted from the pawl
-# surfaces + eval-membrane, must classify the three known failure modes (STALL /
+# codex-exec-lib.bats — the one-shot contract for scripts/lib/codex-exec.sh.
+# The runner must classify the three known failure modes (STALL /
 # ECHO / MISSING-CODEX) into DISTINCT exit codes so a caller can tell NO-VERDICT
 # apart from a genuine result. Every case here uses a STUB `codex` on PATH — the
 # real codex binary is NEVER invoked.
@@ -15,9 +14,14 @@ setup() {
   export TMPDIR="$TMP"
   # Require a timeout binary for the STALL/timeout cases (the lib degrades to
   # no-timeout when neither exists, so the kill-based assertions can't hold).
+  # NOTE: keep this a single `if` so setup's terminal exit status is always 0.
+  # A bare `command -v gtimeout ... && HAVE_TIMEOUT=1` as the last setup line
+  # returns non-zero on Linux CI (gtimeout is a macOS/coreutils name only),
+  # which bats treats as a setup FAILURE and errors every test in the file.
   HAVE_TIMEOUT=0
-  command -v timeout >/dev/null 2>&1 && HAVE_TIMEOUT=1
-  command -v gtimeout >/dev/null 2>&1 && HAVE_TIMEOUT=1
+  if command -v timeout >/dev/null 2>&1 || command -v gtimeout >/dev/null 2>&1; then
+    HAVE_TIMEOUT=1
+  fi
 }
 
 teardown() { rm -rf "$TMP"; }
@@ -59,17 +63,13 @@ FAKE
   chmod +x "$TMP/bin/codex"
 }
 
-# A stub codex that prints NOTHING on the first run (flat 0-byte) and a real
-# answer on the second — proves the retry-once-on-empty defense.
+# A stub codex that records how many times it was invoked and prints nothing.
 stub_flat_then_success() {
   cat > "$TMP/bin/codex" <<FAKE
 #!/usr/bin/env bash
 COUNT="$TMP/flat-count"
 n=\$(cat "\$COUNT" 2>/dev/null || echo 0)
 n=\$((n + 1)); echo "\$n" > "\$COUNT"
-if [ "\$n" -eq 1 ]; then exit 0; fi   # first run: no output, exit clean (a stall)
-echo "real answer after retry"
-echo "tokens used: 9"
 exit 0
 FAKE
   chmod +x "$TMP/bin/codex"
@@ -124,17 +124,15 @@ FAKE
   [[ "$output" == *"MISSING DEPENDENCY"* ]]
 }
 
-# --- (e) flat 0-byte then success -> retry-once works (exit 0) -----------------
-@test "(e) a flat 0-byte first run is retried once, then succeeds (exit 0)" {
+# --- (e) flat 0-byte output is reported after exactly one call ----------------
+@test "(e) a flat 0-byte run is not retried" {
   stub_flat_then_success
   run bash -c '
     . "'"$LIB"'"
     CODEX_EXEC_PROMPT_ARG="do the thing" CODEX_EXEC_TIMEOUT=10 codex_exec_guarded
   '
-  [ "$status" -eq 0 ]
-  [[ "$output" == *"real answer after retry"* ]]
-  # The stub was invoked TWICE (first empty, then real) — the retry fired.
-  [ "$(cat "$TMP/flat-count")" -eq 2 ]
+  [ "$status" -eq 124 ]
+  [ "$(cat "$TMP/flat-count")" -eq 1 ]
 }
 
 # --- fire-and-score caller: empty output on a clean exit is SUCCESS, not STALL -

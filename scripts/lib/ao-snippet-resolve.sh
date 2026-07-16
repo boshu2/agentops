@@ -35,11 +35,8 @@ export AO_SNIPPET_LIB_DIR
 # for snippet resolution and export it as AO_BIN.
 #
 # Honors an already-set AGENTOPS_AO_BIN (fast path for CI / tests). Otherwise
-# builds `ao` from <REPO_ROOT>/cli with the ADR-0012 archive tags
-# (`-tags "flywheel legacy"`) so snippets that document archived-but-revivable
-# commands (e.g. `ao harvest`, `ao forge`, behind //go:build flywheel|legacy)
-# still resolve — the default spine build omits them and would false-fail those
-# (two prior escapes). The built binary lands in a mktemp dir; the CALLER is
+# builds the one supported `ao` command tree from <REPO_ROOT>/cli. The built
+# binary lands in a mktemp dir; the CALLER is
 # responsible for its own EXIT trap cleanup if it wants the temp removed.
 #
 # REPO_ROOT defaults to the parent of this lib's dir's parent (…/scripts/lib →
@@ -58,7 +55,7 @@ ao_snippet_resolve_bin() {
     ao_bin="$tmp_dir/ao"
     (
       cd "$repo_root/cli" || exit 1
-      go build -tags "flywheel legacy" -o "$ao_bin" ./cmd/ao
+      go build -o "$ao_bin" ./cmd/ao
     )
     # Surface the temp dir so the caller can trap-clean it.
     AO_SNIPPET_TMP_DIR="$tmp_dir"

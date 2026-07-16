@@ -31,47 +31,6 @@ done
 # ships the embedded copy; the embedded PATH is unchanged (Go embed contract).
 check_file "$REPO_ROOT/scripts/lib/flywheel-compile.sh" "$EMBEDDED/skills/compile/scripts/compile.sh"
 
-# Check the pawl bundle: scripts + verdict schema embedded so `ao pawl review` runs
-# zero-config on a stranger's repo (no AgentOps checkout). The scripts/ + schemas/
-# sibling layout must be preserved (pawl-verdict.sh reads its schema script-relative).
-for s in pawl-review.sh pawl-verdict.sh pawl.sh; do
-    check_file "$REPO_ROOT/scripts/$s" "$EMBEDDED/pawl/scripts/$s"
-done
-# The membrane-receipts generator + its freshness check ride along in the bundle so
-# `ao verify receipts` renders a repo's own proof page zero-config on the stranger
-# path (no AgentOps checkout to resolve them from). (age-rk3r.12)
-for s in gen-membrane-receipts.sh check-membrane-receipts-freshness.sh; do
-    check_file "$REPO_ROOT/scripts/$s" "$EMBEDDED/pawl/scripts/$s"
-done
-# The shared fail-closed codex runner (lib/codex-exec.sh) MUST ride along in the pawl
-# bundle: pawl-review.sh sources it script-relative ($SCRIPT_DIR/lib/codex-exec.sh), so on
-# the stranger/embedded path the extracted bundle needs scripts/lib/codex-exec.sh present
-# or the review cannot even start. (age-gate-the-ungated-egwt.13)
-check_file "$REPO_ROOT/scripts/lib/codex-exec.sh" "$EMBEDDED/pawl/scripts/lib/codex-exec.sh"
-# The per-repo verify-config hook (lib/verify-config.sh) also rides along: pawl-review.sh
-# sources it script-relative to honor a stranger repo's checked-in .aoverify.yaml on the
-# embedded path (via `ao verify --export-env`). Absent from the bundle => stranger-repo
-# config is silently ignored, so keep it byte-identical. (age-rk3r.17)
-check_file "$REPO_ROOT/scripts/lib/verify-config.sh" "$EMBEDDED/pawl/scripts/lib/verify-config.sh"
-# The shared diff-identity signature (lib/diff-identity.sh) rides along too: BOTH pawl-verdict.sh
-# and pawl-review.sh source it script-relative ($SCRIPT_DIR/lib/diff-identity.sh) for the SINGLE
-# byte-exact denylist used by REBOUND rebind/check AND --converge lineage. Absent from the bundle
-# => the embedded rebind/check/converge cannot resolve the signature (fail-closed at the source),
-# so keep it byte-identical. (age-rk3r.9)
-check_file "$REPO_ROOT/scripts/lib/diff-identity.sh" "$EMBEDDED/pawl/scripts/lib/diff-identity.sh"
-# pawl-review.sh sources the #trivial waiver helper unconditionally before it
-# can dispatch a review. Keep the stranger-path copy byte-identical too.
-check_file "$REPO_ROOT/scripts/lib/trivial-waiver.sh" "$EMBEDDED/pawl/scripts/lib/trivial-waiver.sh"
-# ebec.9: pawl-review.sh sources this unconditionally — absent from the bundle => the
-# embedded pawl-review dangles at runtime, so keep it byte-identical.
-check_file "$REPO_ROOT/scripts/lib/pawl-preflight.sh" "$EMBEDDED/pawl/scripts/lib/pawl-preflight.sh"
-check_file "$REPO_ROOT/scripts/lib/pawl-amend-guard.sh" "$EMBEDDED/pawl/scripts/lib/pawl-amend-guard.sh"
-# wckn + np1e: both sourced unconditionally by pawl-review.sh (tip-coherence guard;
-# canonical evidence/catch rooting) — same dangling-bundle class as pawl-preflight.
-check_file "$REPO_ROOT/scripts/lib/pawl-tip-coherence.sh" "$EMBEDDED/pawl/scripts/lib/pawl-tip-coherence.sh"
-check_file "$REPO_ROOT/scripts/lib/pawl-evidence-dir.sh" "$EMBEDDED/pawl/scripts/lib/pawl-evidence-dir.sh"
-check_file "$REPO_ROOT/schemas/pawl-verdict.v1.schema.json" "$EMBEDDED/pawl/schemas/pawl-verdict.v1.schema.json"
-
 if [[ $ERRORS -gt 0 ]]; then
     echo ""
     echo "ERROR: $ERRORS embedded file(s) are out of sync."

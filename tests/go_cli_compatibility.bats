@@ -200,28 +200,61 @@ JSON
   [[ "$output" == *"fixture digest drift"* ]]
 }
 
-@test "append-only compatibility oracle selects v1 or v2 without rewriting evidence" {
+@test "v2 integrity seals finalized family lineage state" {
+  repo="$TMP/terminal-lineage-repo"
+  git clone -q --no-hardlinks "$REPO_ROOT" "$repo"
+  git -C "$repo" config user.email test@example.com
+  git -C "$repo" config user.name test
+
+  family_dir="$repo/cli/testdata/compatibility-baseline/families/terminal-demo"
+  mkdir -p "$family_dir"
+  cat >"$family_dir/lineage.json" <<'JSON'
+{"schema_version":1,"family":"terminal-demo","migration_state":"migrating"}
+JSON
+  git -C "$repo" add cli/testdata/compatibility-baseline/families/terminal-demo/lineage.json
+  git -C "$repo" commit -q -m 'start terminal demo migration'
+  accepted_sha="$(git -C "$repo" rev-parse HEAD)"
+
+  jq --arg accepted "$accepted_sha" '.migration_state = "migrated" | .accepted_sha = $accepted' \
+    "$family_dir/lineage.json" >"$TMP/terminal-lineage.json"
+  mv "$TMP/terminal-lineage.json" "$family_dir/lineage.json"
+  git -C "$repo" add cli/testdata/compatibility-baseline/families/terminal-demo/lineage.json
+  git -C "$repo" commit -q -m 'seal terminal demo migration'
+
+  run env AO_CLI_COMPAT_REPO_ROOT="$repo" \
+    "$CHECKER" --verify-baseline-integrity --oracle-version v2
+  printf '%s\n' "$output"
+  [ "$status" -eq 0 ]
+
+  jq '.accepted_sha = "0000000000000000000000000000000000000000"' \
+    "$family_dir/lineage.json" >"$TMP/terminal-lineage-mutated.json"
+  mv "$TMP/terminal-lineage-mutated.json" "$family_dir/lineage.json"
+  run env AO_CLI_COMPAT_REPO_ROOT="$repo" \
+    "$CHECKER" --verify-baseline-integrity --oracle-version v2
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"terminal seal"* ]]
+}
+
+@test "append-only compatibility oracle preserves the v1 and v2 evidence chain" {
   c59="c59d36e58d2c5f6cefce2aa5c48e97be1db8f66f"
-  main_sha="$(git -C "$REPO_ROOT" rev-parse origin/main)"
+  recorded_main="$(jq -r '.equivalent_main_sha' "$BASELINE/v2/metadata.json")"
+  main_sha="$recorded_main"
 
   # The production checker must never use untracked runtime evidence.
   run rg -n '\.agents/' "$CHECKER"
   [ "$status" -ne 0 ]
 
   # The recorded equivalent main is immutable; behavior-identical descendants advance safely.
-  recorded_main="$(jq -r '.equivalent_main_sha' "$BASELINE/v2/metadata.json")"
   head_sha="$(git -C "$REPO_ROOT" rev-parse HEAD)"
-  git -C "$REPO_ROOT" merge-base --is-ancestor "$recorded_main" "$main_sha"
   git -C "$REPO_ROOT" merge-base --is-ancestor "$recorded_main" "$head_sha"
   run git -C "$REPO_ROOT" merge-base --is-ancestor "$recorded_main" "$c59"
   [ "$status" -ne 0 ]
 
   run "$CHECKER" --verify-source-decision "$c59" "$recorded_main"
   [ "$status" -eq 0 ]
-  run "$CHECKER" --verify-source-decision "$c59" "$main_sha"
-  [ "$status" -eq 0 ]
   run "$CHECKER" --verify-source-decision "$c59" "$head_sha"
-  [ "$status" -eq 0 ]
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"behavior differs"* ]]
   run "$CHECKER" --verify-source-decision "$c59" "$c59"
   [ "$status" -ne 0 ]
   [[ "$output" == *"not a descendant"* ]]
@@ -235,20 +268,22 @@ JSON
   [ "$status" -eq 2 ]
 
   cp -R "$BASELINE" "$TMP/base"
+  rm -rf "$TMP/base/v3"
   rm -rf "$TMP/base/v2"
   run env AO_CLI_COMPAT_BASELINE_DIR="$TMP/base" "$CHECKER" --oracle-version current --verify-baseline-integrity
   [ "$status" -eq 0 ]
   run env AO_CLI_COMPAT_BASELINE_DIR="$TMP/base" "$CHECKER" --oracle-version v2 --verify-baseline-integrity
   [ "$status" -ne 0 ]
 
-  # Any partial successor is poison; arbitrary future directories are ignored.
+  # Any partial selected successor is poison.
   mkdir -p "$TMP/base/v2"
   run env AO_CLI_COMPAT_BASELINE_DIR="$TMP/base" "$CHECKER" --oracle-version current --verify-baseline-integrity
   [ "$status" -ne 0 ]
   rm -rf "$TMP/base/v2"
   mkdir -p "$TMP/base/v3"
   run env AO_CLI_COMPAT_BASELINE_DIR="$TMP/base" "$CHECKER" --oracle-version current --verify-baseline-integrity
-  [ "$status" -eq 0 ]
+  [ "$status" -ne 0 ]
+  rm -rf "$TMP/base/v3"
 
   # Capture is four-profile, twice deterministic, exact-delta, and non-overwriting.
   run env AO_CLI_COMPAT_BASELINE_DIR="$TMP/base" "$CHECKER" \
@@ -264,8 +299,12 @@ JSON
     and (.intentional_deltas | sort) == ["environment_projection","pawl_review_hold_5","provenance_reconcile","verify_hold_5"]
     and ([.intentional_deltas[] | select(test("plan-pawl"))] | length) == 0
   ' "$TMP/base/v2/metadata.json"
-  run env AO_CLI_COMPAT_BASELINE_DIR="$TMP/base" "$CHECKER" --oracle-version v2 --profiles default,flywheel,legacy,combined
-  [ "$status" -eq 0 ]
+  # Frozen v2 remains valid, but a binary with classified v3 behavior must not
+  # masquerade as v2. The v3 test below owns the projected current behavior.
+  run env AO_CLI_COMPAT_BASELINE_DIR="$TMP/base" "$CHECKER" \
+    --oracle-version v2 --profiles default,flywheel,legacy,combined
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"CLI compatibility drift in profile default"* ]]
   run env AO_CLI_COMPAT_BASELINE_DIR="$TMP/base" "$CHECKER" --oracle-version current --verify-baseline-integrity
   [ "$status" -eq 0 ]
 
@@ -341,4 +380,78 @@ JSON
     [ ! -e "$TMP/base/.v2.lock" ]
     [ -z "$(find "$TMP/base" -maxdepth 1 -name '.v2-stage.*' -print -quit)" ]
   done
+}
+
+@test "v3 projects the classified current behavior without rewriting v2" {
+  source_sha="$(jq -r '.behavioral_source_sha' "$BASELINE/v3/metadata.json")"
+  head_sha="$(git -C "$REPO_ROOT" rev-parse HEAD)"
+
+  run "$CHECKER" --oracle-version v3 --verify-baseline-integrity
+  [ "$status" -eq 0 ]
+  run "$CHECKER" --oracle-version v3 --verify-source-decision "$source_sha" "$head_sha"
+  [ "$status" -eq 0 ]
+
+  cp -R "$BASELINE" "$TMP/base"
+  run env AO_CLI_COMPAT_BASELINE_DIR="$TMP/base" \
+    "$CHECKER" --oracle-version current --verify-baseline-integrity
+  [ "$status" -eq 0 ]
+
+  rm "$TMP/base/v3/project-v2.jq"
+  run env AO_CLI_COMPAT_BASELINE_DIR="$TMP/base" \
+    "$CHECKER" --oracle-version current --verify-baseline-integrity
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"missing v3 projection"* ]]
+
+  cp -R "$BASELINE" "$TMP/missing-v2"
+  rm -rf "$TMP/missing-v2/v2"
+  run env AO_CLI_COMPAT_BASELINE_DIR="$TMP/missing-v2" \
+    "$CHECKER" --oracle-version current --verify-baseline-integrity
+  [ "$status" -ne 0 ]
+
+  cp -R "$BASELINE" "$TMP/delta-drift"
+  jq '.intentional_deltas += ["unclassified"]' \
+    "$TMP/delta-drift/v3/metadata.json" >"$TMP/delta-drift-metadata.json"
+  mv "$TMP/delta-drift-metadata.json" "$TMP/delta-drift/v3/metadata.json"
+  run env AO_CLI_COMPAT_BASELINE_DIR="$TMP/delta-drift" \
+    "$CHECKER" --oracle-version current --verify-baseline-integrity
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"invalid schema-3 v3 metadata"* ]]
+
+  cp -R "$BASELINE" "$TMP/coherent-tamper"
+  printf '\n| .env_vars.ZZZ_UNCLASSIFIED = "coherent mutation"\n' \
+    >>"$TMP/coherent-tamper/v3/project-v2.jq"
+  projection_sha="$(hash_file "$TMP/coherent-tamper/v3/project-v2.jq")"
+  jq --arg sha "$projection_sha" '.projection_sha256 = $sha' \
+    "$TMP/coherent-tamper/v3/metadata.json" >"$TMP/coherent-metadata.json"
+  mv "$TMP/coherent-metadata.json" "$TMP/coherent-tamper/v3/metadata.json"
+  mkdir -p "$TMP/coherent-profiles"
+  for profile in default flywheel legacy combined; do
+    jq -S \
+      --arg profile "$profile" \
+      --slurpfile tagged "$TMP/coherent-tamper/v2/profiles/flywheel.json" \
+      -f "$TMP/coherent-tamper/v3/project-v2.jq" \
+      "$TMP/coherent-tamper/v2/profiles/$profile.json" >"$TMP/coherent-profiles/$profile.json"
+    profile_sha="$(hash_file "$TMP/coherent-profiles/$profile.json")"
+    jq --arg profile "$profile" --arg sha "$profile_sha" '.profiles[$profile].sha256 = $sha' \
+      "$TMP/coherent-tamper/v3/metadata.json" >"$TMP/coherent-metadata.json"
+    mv "$TMP/coherent-metadata.json" "$TMP/coherent-tamper/v3/metadata.json"
+  done
+  run env AO_CLI_COMPAT_BASELINE_DIR="$TMP/coherent-tamper" \
+    "$CHECKER" --oracle-version current --verify-baseline-integrity
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"v3 measured source mismatch"* ]]
+
+  cp -R "$BASELINE" "$TMP/fallback"
+  rm -rf "$TMP/fallback/v3"
+  run env AO_CLI_COMPAT_BASELINE_DIR="$TMP/fallback" \
+    "$CHECKER" --oracle-version current --verify-baseline-integrity
+  [ "$status" -eq 0 ]
+  mkdir -p "$TMP/fallback/v4"
+  run env AO_CLI_COMPAT_BASELINE_DIR="$TMP/fallback" \
+    "$CHECKER" --oracle-version current --verify-baseline-integrity
+  [ "$status" -eq 0 ]
+  rm -rf "$TMP/fallback/v2"
+  run env AO_CLI_COMPAT_BASELINE_DIR="$TMP/fallback" \
+    "$CHECKER" --oracle-version current --verify-baseline-integrity
+  [ "$status" -eq 0 ]
 }

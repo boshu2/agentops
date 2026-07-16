@@ -187,7 +187,7 @@ def emit_skills_index(skills: list[dict[str, str]]) -> None:
         ("quickstart", "You want the fastest setup check and next action"),
         ("council", "You want independent judges to review a plan, PR, or decision"),
         ("research", "You need codebase context and prior learnings before changing code"),
-        ("pre-mortem", "You want to pressure-test a plan before implementation"),
+        ("premortem", "You want to pressure-test a plan before implementation"),
         ("implement", "You want one scoped task built and validated"),
         ("rpi", "You want discovery, build, validation, and bookkeeping in one flow"),
         ("vibe", "You want a code-quality and risk review before shipping"),
@@ -197,13 +197,13 @@ def emit_skills_index(skills: list[dict[str, str]]) -> None:
 
     # Family groups for the complete-catalog section
     families = [
-        ("Validation", ["council", "vibe", "pre-mortem", "post-mortem", "red-team"]),
+        ("Validation", ["council", "vibe", "premortem", "postmortem", "red-team"]),
         ("Flows", ["research", "plan", "implement", "crank", "swarm", "rpi", "evolve", "discovery", "validation"]),
         ("Bookkeeping", ["retro", "forge", "flywheel", "compile", "harvest", "inject", "provenance"]),
         ("Session", ["handoff", "recover", "status", "trace", "dream", "using-agentops"]),
         ("Product", ["product", "goals", "release", "readme", "doc", "oss-docs"]),
         ("Utility", ["brainstorm", "bug-hunt", "complexity", "scaffold", "push", "refactor", "test", "deps", "perf", "review", "security"]),
-        ("Platform", ["beads", "ratchet", "heal-skill", "update", "converter", "codex-team", "scenario", "bootstrap", "autodev"]),
+        ("Platform", ["beads", "ratchet", "skill-builder", "update", "converter", "codex-team", "scenario", "bootstrap", "autodev"]),
         ("PR workflow", ["pr-research", "pr-plan", "pr-implement", "pr-validate", "pr-prep", "pr-retro"]),
     ]
 
@@ -229,7 +229,7 @@ def emit_skills_index(skills: list[dict[str, str]]) -> None:
     lines.extend([
         "",
         "!!! tip \"Which skill do I need next?\"",
-        "    See the [Decision Tree](../skills-decision-tree.md) for a visual walkthrough, or [SKILL-ROUTER](../SKILL-ROUTER.md) for rule-based routing.",
+        "    See [SKILL-ROUTER](../SKILL-ROUTER.md) for the generated inventory and [Skill Graph](../reference/agentops-skill-graph.md) for hard dependencies.",
         "",
         "---",
         "",
@@ -271,7 +271,7 @@ def emit_skills_index(skills: list[dict[str, str]]) -> None:
         "- :material-format-list-bulleted: **[Single-page catalog](catalog.md)**",
         "  All skills on one page — easier to grep or Ctrl-F than browsing by family.",
         "",
-        "- :material-routes: **[Decision Tree](../skills-decision-tree.md)**",
+        "- :material-routes: **[Skill Graph](../reference/agentops-skill-graph.md)**",
         "  \"Which skill do I need next?\" — single source of truth.",
         "",
         "- :material-api: **[Skill API](../SKILL-API.md)**",

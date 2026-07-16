@@ -1,100 +1,35 @@
 ---
-last_reviewed: 2026-04-12
+last_reviewed: 2026-07-14
 ---
 
 # AgentOps Philosophy
 
-## The Problem
+AI agents are stochastic authors. Tests can establish deterministic facts, but
+they do not judge every semantic claim, and an author should not certify its
+own work. AgentOps therefore provides a small evidence protocol:
 
-Coding agents are good at thinking. They are bad at bookkeeping.
-
-Every session starts cold. The agent that spent two hours debugging a timeout bug last Tuesday has no memory of it. The pattern you hard-won in session 3 is gone by session 15. The planning rule that would have prevented a regression sits buried in a transcript no one reads.
-
-This is not a model problem. It is an environment problem. The model is capable. The environment around it does not compound.
-
-## What AgentOps Is
-
-AgentOps is a context compiler.
-
-The compiler analogy is exact: raw session signal (decisions, failures, patterns, warnings) is processed through extraction, scoring, curation, and promotion into reusable artifacts — learnings, findings, planning rules, enforcement gates. The next session runs against a richer environment than the last. The model stays the same. The environment gets smarter.
-
-This maps directly to what Andrej Karpathy observed about knowledge work: the tedious part is not the thinking, it is the bookkeeping. Organizing, surfacing, routing, and keeping knowledge fresh. AgentOps automates that layer.
-
-## The Flywheel
-
-```
-Sessions → Bookkeeping → Learnings → Findings → Planning Rules → Gates
-    ↑                                                                │
-    └────────────────────── Better next session ─────────────────────┘
+```text
+intent -> one bounded experiment -> exact subject identity
+       -> fresh independent judgment -> durable verdict
 ```
 
-Each phase is deliberate:
+The protocol is behavior-first. Plan expresses one behavior as normal and edge
+Given/When/Then scenarios, non-goals, write scope, and required evidence.
+Implement performs one bounded RED-to-GREEN-to-refactor experiment. Validate
+binds criterion-level judgment to a deterministic content manifest and stores
+the result as `verdict.v2`. RPI invokes those responsibilities once and stops.
 
-- **Sessions** produce signal: commits, decisions, failures, retros.
-- **Bookkeeping** (`/post-mortem`, which folded the retired `/curate` mining modes, `ao harvest`) extracts and scores that signal. Scores on specificity, actionability, novelty, and confidence filter noise.
-- **Learnings** are the raw output — scored, attributed, timestamped.
-- **Findings** are promoted learnings: higher confidence, cross-session validation, broader applicability.
-- **Planning rules** are enforcement-level knowledge: if a finding is violated, the pre-mortem blocks the plan.
-- **Gates** are automated checks in `/pre-mortem`, `/validate`, and `/council` that prevent known failure modes before they ship.
+This is a trust floor, not a workflow engine. AgentOps does not own retries,
+budgets, queues, claims, leases, Git, CI, closure, release, or delivery. A FAIL
+is evidence for the caller, not permission for AgentOps to repair or continue.
 
-The loop closes. The system does not just capture knowledge — it enforces it.
+Learn remains an optional, off-path hypothesis: collections of verdicts may
+reveal repeated defect classes worth turning into guidance or deterministic
+checks. Promotion is deliberate and evidence-backed; it never changes the
+validity of the candidate that produced the observation.
 
-## The Data Format
-
-`.agents/` is the universal data format.
-
-Plain markdown files, versioned in git, readable by any LLM, browsable in Obsidian, diffable in any editor. No embeddings, no vector database, no proprietary store.
-
-This is a deliberate bet against the current tooling consensus. Vector databases optimize for semantic recall at scale. `.agents/` optimizes for editorial control, freshness management, and human legibility. For a codebase knowledge base where:
-
-- Volume is bounded (one project, not the internet)
-- Freshness matters more than recall breadth (stale knowledge is worse than no knowledge)
-- Human curation is the highest-leverage action
-- Portability is required (repo-local state, no AgentOps-hosted control plane, mirrorable dependencies)
-
-...markdown + wikilinks outperforms embeddings. The agent can grep it, the human can read it, and `ao defrag` can maintain it.
-
-## The Tiered Model
-
-Not every knowledge operation needs a frontier model. AgentOps uses three tiers:
-
-| Tier | When | Why |
-|------|------|-----|
-| Local 8B (ollama, etc.) — **optional, user-supplied** | Volume work — dedup, defrag, freshness scoring, overnight compounding | Fast, private, cheap. Runs while you sleep. AgentOps ships no model host; bring your own, or run these on your frontier model. |
-| Frontier (Claude, GPT-4o, etc.) | Quality work — council validation, pre-mortem review, pattern extraction | Accuracy matters more than throughput. |
-| Human | Curation and promotion decisions | Judgment calls that agents get wrong systematically. |
-
-The dream loop (retired as a standalone `/dream` command; folded into the out-of-session substrate) uses the local tier when one is configured (otherwise your frontier model) for continuous compounding; when that compounding runs out of session — always-on, scheduled, unattended — it runs on an out-of-session substrate (reference: NTM + MCP + managed-agents), not an AgentOps daemon. `/council` and `/pre-mortem` use the frontier tier for high-stakes validation. The human reviews promotions from learning → finding → rule.
-
-The ratio is intentional. On this repo, validation and curation have run several times the implementation time. This is not overhead — it is the ratchet. Without it, the flywheel runs backward.
-
-## The Ratchet
-
-AgentOps adopts the Brownian Ratchet as a first principle: embrace agent variance, filter aggressively, and make progress one-way.
-
-Agents produce noisy output. Some sessions are brilliant; some are catastrophic. The naive response is to constrain the agent. The AgentOps response is to ratchet: let variance happen, filter at gates (`/pre-mortem` blocks bad plans, `/validate` blocks bad code, `/council` blocks bad decisions), and only let good output advance. The gate is asymmetric — easy to pass in the forward direction, impossible to pass backward.
-
-This is why validation gates are blocking, not advisory. An advisory gate with no enforcement is not a ratchet. It is a suggestion.
-
-## What This Is Not
-
-AgentOps is not a chatbot wrapper. It does not make prompts bigger. It does not add more agents to the same problem.
-
-It is not trying to replace thinking. The model thinks. AgentOps manages what the model knows when it thinks.
-
-It is not a SaaS product or a managed service. All state lives locally. All operations are reversible. The product is the compounding environment — the `skills/`, the `ao` CLI, and the discipline enforced by the local pre-push gate. AgentOps 3.0 is hookless: skills and the CLI guide the workflow and the local pre-push Go gate (`ao gate check`) is the release authority (CI is a backstop). Hooks are opt-in — you author your own via the `hooks-authoring` skill — never installed by default. That environment is yours to own, version-control, and take with you.
-
-## The Thesis, and What Is Actually Proven
-
-The proven part is the verification: every change reaches *done* only with an independent proof artifact. Whether the knowledge corpus *compounds* over time is a separate, **explicitly-named unproven hypothesis** — demoted to that status in [ADR-0004](adr/ADR-0004-corpus-moat-unproven-position-on-the-system.md) and [ADR-0011](adr/ADR-0011-escape-corpus-compounding-unproven-structural-starvation.md), which found the compounding claim faces a structural data-starvation headwind. Do not read the numbers below as a validated flywheel.
-
-What this repo has accumulated (descriptive, not a compounding proof):
-
-- 163 learnings extracted, scored, and curated
-- 13 planning rules enforced at pre-mortem gates
-- 12 patterns promoted from repeated findings
-- 10/12 `ao doctor` checks passing, with the full CI gate suite green
-
-Session 1 started cold. Session 100+ starts with a knowledge corpus that *can* catch known failure modes before implementation begins — that the corpus keeps paying off as it grows is the hypothesis, not a settled result.
-
-That is the aim. Not a bigger prompt. A repo that remembers.
+The product remains portable. Its core contracts operate in a non-Git
+directory without the `ao` binary. The CLI supplies repository utilities and
+ordinary deterministic checks. Optional councils, genies, runtimes, trackers,
+and software-factory adapters can consume the protocol without becoming its
+authority.

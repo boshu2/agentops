@@ -22,7 +22,7 @@ setup() {
 }
 
 @test "path filter is skipped on release tags" {
-    run bash -c "awk '/dorny\\/paths-filter@v4/{p=NR} p && NR>=p && NR<=p+4' '$WORKFLOW_PATH' | grep -F \"if: steps.release.outputs.release != 'true'\""
+    run bash -c "awk '/dorny\\/paths-filter@/{p=NR} p && NR>=p && NR<=p+4' '$WORKFLOW_PATH' | grep -F \"if: steps.release.outputs.release != 'true'\""
     [ "$status" -eq 0 ]
 }
 
@@ -48,12 +48,9 @@ setup() {
 }
 
 @test "summary uses a selective toJson(needs) allowlist, not a blind skip check" {
-    # Post-rebuild (ag-877): the 67→10 collapse removed the standalone PR-only
-    # jobs (validate-pr-evidence-claims, lint-evidence-lines-advisory) — AP#7
-    # Evidence verification and the Evidence-line lint are now STEPS (in summary
-    # and process-hygiene respectively), gated by github.event_name. So no
-    # top-level job needs allowlisting on release tags. The selective mechanism
-    # itself must still exist: summary inspects toJson(needs) against an
+    # No PR-only lifecycle or evidence-admission job is part of this workflow,
+    # so no top-level job needs allowlisting on release tags. The selective
+    # mechanism itself must still exist: summary inspects toJson(needs) against an
     # allowed_skips set rather than blindly failing on any skip.
     run grep -F "toJson(needs)" "$WORKFLOW_PATH"
     [ "$status" -eq 0 ]

@@ -35,7 +35,6 @@ affects_files:
     - scripts/check-compile-health.sh
 
   compile-no-oscillation:
-    - scripts/check-compile-oscillation.sh
 
   flywheel-compounding:
     - scripts/check-flywheel-compounding.sh
@@ -65,9 +64,6 @@ affects_files:
     - .claude-plugin/marketplace.json
     - .claude-plugin/plugin.json
 
-  wiring-closure:
-    - scripts/check-wiring-closure.sh
-
   contract-compatibility:
     - scripts/check-contract-compatibility.sh
     - schemas/**
@@ -78,10 +74,6 @@ affects_files:
     - goals-affects-files.yaml
     - cli/internal/goals/**
 
-  competitive-freshness:
-    - docs/comparisons/**
-    - scripts/check-competitive-freshness.sh
-
   codex-parity-drift:
     - skills-codex/**
     - skills-codex-overrides/**
@@ -91,8 +83,6 @@ affects_files:
     - scripts/install*.sh
     - tests/install/test-install-smoke.sh
 
-  flywheel-proof:
-    - scripts/proof-run.sh
 
   eval-workbench-verify:
     - evals/**

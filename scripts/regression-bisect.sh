@@ -7,7 +7,7 @@ set -euo pipefail
 # Usage:
 #   scripts/regression-bisect.sh --good <sha> --bad <sha> --check "<command>"
 # Example:
-#   scripts/regression-bisect.sh --good abc123 --bad def456 --check "bash scripts/check-evolve-cycle-logging.sh"
+#   scripts/regression-bisect.sh --good abc123 --bad def456 --check "go test ./internal/gates/..."
 
 GOOD=""
 BAD=""

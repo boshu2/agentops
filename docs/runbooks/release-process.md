@@ -2,7 +2,7 @@
 
 How to cut a release of `ao` (the AgentOps CLI).
 
-> See also: [`RELEASING.md`](../RELEASING.md) for the canonical AgentOps release doc and [`release-e2e-checklist.md`](../release-e2e-checklist.md) for the full local gate sequence. This runbook is the operator checklist view of those release contracts.
+> See [`RELEASING.md`](../RELEASING.md) for the canonical repository release policy. This runbook is an operator checklist for that external delivery process, not part of the AgentOps semantic loop.
 
 ## Prerequisites
 
@@ -15,8 +15,8 @@ How to cut a release of `ao` (the AgentOps CLI).
 All core gates must pass before tagging:
 
 ```bash
-# Smart, diff-aware gate (recommended)
-scripts/pre-push-gate.sh --fast
+# Diff-aware deterministic checks (recommended during iteration)
+ao gate check --fast --scope worktree
 
 # Full local release validation gate (mandatory before tagging)
 scripts/ci-local-release.sh
@@ -41,8 +41,7 @@ AgentOps release gate semantics:
 
 - `go-test`: hard gate on full test suite within a 300s budget.
 - `ci-local-release`: full local release validation, including doc, shell, contract, CLI, and release-surface checks.
-- `pre-push-fast`: smart changed-file gate for PR iteration before the full release gate.
-- `release-e2e`: optional HIL/SIL/VIL release smoke path from `docs/release-e2e-checklist.md`.
+- `ao gate check --fast`: smart changed-file checks for iteration before the full release gate.
 
 ### Dogfood Hardening Pack
 
@@ -50,7 +49,7 @@ AgentOps dogfood means running `ao` against this repo's own `.agents/` state and
 
 - Build a local `ao` binary from repo source (`cd cli && make build`).
 - Run `scripts/ci-local-release.sh` before tagging.
-- For explicit release smoke coverage, use `bash scripts/ci-local-release.sh --fast --jobs 4` and the HIL/SIL/VIL targets in `docs/release-e2e-checklist.md`.
+- For explicit release smoke coverage, use `bash scripts/ci-local-release.sh --fast --jobs 4` before the full release gate.
 - Bound any manual smoke command with `timeout` so model or daemon dependencies cannot hang a release shell.
 
 ## Version Bump
@@ -123,12 +122,11 @@ curl -sL https://github.com/boshu2/agentops/releases/download/vX.Y.Z/ao_X.Y.Z_da
 | Local build | `cd cli && make build` (or `cd cli && go build -o bin/ao ./cmd/ao/`) |
 | Local install | `cd cli && make install` (installs to `~/go/bin/ao`) |
 | Tests | `cd cli && make test` (or `cd cli && go test ./... -count=1`) |
-| Smart pre-push gate | `scripts/pre-push-gate.sh --fast` |
-| Full pre-push gate | `scripts/pre-push-gate.sh` |
+| Changed-surface checks | `ao gate check --fast --scope worktree` |
+| Full deterministic registry | `ao gate check --full` |
 | Local release gate | `scripts/ci-local-release.sh` |
 | Dogfood quick | `bash scripts/ci-local-release.sh --fast --jobs 4` |
 | Dogfood full | `scripts/ci-local-release.sh` |
-| Throughput gate | `docs/release-e2e-checklist.md` HIL/SIL/VIL smoke path |
 | Release (full) | `goreleaser release --clean` |
 | Release (dry run) | `goreleaser release --clean --snapshot --skip=publish` |
 | Retag | `scripts/retag-release.sh vX.Y.Z` |
@@ -140,7 +138,7 @@ curl -sL https://github.com/boshu2/agentops/releases/download/vX.Y.Z/ao_X.Y.Z_da
 | Binary | `ao` |
 | CLI source | `cli/cmd/ao/` |
 | Build/test targets | `cd cli && make build` / `make install` / `make test` |
-| Smart commit gate | `scripts/pre-push-gate.sh --fast` |
+| Changed-surface checks | `ao gate check --fast --scope worktree` |
 | Full release gate | `scripts/ci-local-release.sh` |
 | Release artifact prefix | `ao_X.Y.Z_*` |
 | Release repo path | `boshu2/agentops` |

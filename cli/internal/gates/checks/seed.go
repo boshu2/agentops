@@ -25,7 +25,7 @@ var (
 	skillPaths = []string{"skills/**", "skills-codex/**", "tests/skills/**"}
 	// skill.scenario-test-linkage routes on the scenario corpus PLUS its own
 	// surfaces — the script, allowlist, bats twin, and shared ratchet lib were
-	// previously un-routed (self-routing repair, pre-mortem FM3,
+	// previously un-routed (self-routing repair, premortem FM3,
 	// age-ratchet-lib-extraction-bv7d.7).
 	scenarioLinkagePaths = []string{
 		"skills/**", "skills-codex/**", "tests/skills/**",
@@ -46,33 +46,24 @@ var (
 		"scripts/check-skill-probe-coverage.sh",
 		"tests/scripts/check-skill-probe-coverage.bats",
 	}
-	// nextWorkContractPaths routes skill.next-work-contract on every surface its
-	// validator actually reads — most critically the subject file itself
-	// (.agents/rpi/next-work.jsonl): a next-work-only commit previously SKIPped
-	// its own contract gate and the defect had to be caught by a pawl round
-	// (age-77g6, age-e70a).
-	nextWorkContractPaths = []string{
-		"skills/**", "skills-codex/**", "tests/skills/**",
-		".agents/rpi/next-work.jsonl",
-		"docs/contracts/next-work.schema.md",
-		"cli/internal/rpi/**",
-		"cli/cmd/ao/rpi_loop.go",
-		"scripts/validate-next-work-contract-parity.sh",
-		"scripts/validate-next-work.sh",
-	}
 	operatorLeakPaths = []string{"skills/**", "skills-codex/**", "docs/SKILLS.md", "registry.json", "tests/scripts/check-no-operator-skills.bats", "scripts/check-no-operator-skills.sh"}
-	frontDoorPaths    = []string{"skills/**", ".claude/workflows/**"}
 	contractPaths     = []string{"docs/contracts/**", "schemas/**"}
-	ciPolicyPaths     = []string{".github/workflows/validate.yml", "docs/CI-CD.md", "AGENTS.md"}
-	evalPaths         = []string{"evals/**", "schemas/eval-*", "cli/internal/eval/**"}
-	contextMapPaths   = []string{"skills/**", "docs/contracts/context-map.md"}
-	swarmPaths        = []string{".agents/swarm/**", "schemas/swarm-*"}
-	docsPaths         = []string{"docs/**", "README.md", "CHANGELOG.md", "PRODUCT.md", "SKILL-TIERS.md"}
-	agentsDocPaths    = []string{"AGENTS.md", "AGENTS-WORKFLOW.md", "AGENTS-CI.md", "AGENTS-CODEX.md", "AGENTS-RUNTIME.md", ".github/workflows/validate.yml"}
-	corpusPaths       = []string{".agents/**", "docs/canon/**", "canon/**"}
-	goalsPaths        = []string{"GOALS.md", "spec/scenarios/**", "docs/adr/ADR-0003*"}
-	cliContractPaths  = []string{"cli/**", "docs/cli-surface.*", "scripts/check-cli-contract.sh", "scripts/check-docs-cli-snippets.sh", "scripts/generate-cli-reference.sh", "tests/cli_contract_gate.bats", "tests/cli_quality_zero_debt.bats"}
-	registryPaths     = []string{"skills/**", "hooks/**", "evals/**", "cli/cmd/ao/**", "cli/internal/**", "registry.json"}
+	// honest-voice gate (age-5qjyn / FU3): routes on the user-facing surfaces it
+	// scans (cli/** Go + seed/template assets), the lexicon it reads, and a
+	// self-reference (the gate script + its bats) so editing the gate re-runs it.
+	honestVoicePaths = []string{
+		"cli/**",
+		"docs/contracts/forbidden-claims.yaml",
+		"scripts/check-honest-voice.sh",
+		"tests/scripts/check-honest-voice.bats",
+	}
+	ciPolicyPaths    = []string{".github/workflows/validate.yml", "docs/CI-CD.md", "AGENTS.md"}
+	contextMapPaths  = []string{"skills/**", "docs/contracts/context-map.md"}
+	swarmPaths       = []string{".agents/swarm/**", "schemas/swarm-*"}
+	agentsDocPaths   = []string{"AGENTS.md", "docs/agent-workflow-reference.md", "docs/CI-CD.md", "docs/contracts/codex-skill-api.md", ".github/workflows/validate.yml"}
+	corpusPaths      = []string{".agents/**", "docs/canon/**", "canon/**"}
+	cliContractPaths = []string{"cli/**", "docs/cli-surface.*", "scripts/check-cli-contract.sh", "scripts/check-docs-cli-snippets.sh", "scripts/generate-cli-reference.sh", "tests/cli_contract_gate.bats", "tests/cli_quality_zero_debt.bats"}
+	registryPaths    = []string{"skills/**", "hooks/**", "evals/**", "cli/cmd/ao/**", "cli/internal/**", "registry.json"}
 	// Widened to docs/** (--all-docs mode): the checker no longer scans a fixed
 	// 6-file set — it scans every LIVE docs/** file (plus the pinned doctrine
 	// files) and ratchets against scripts/.docs-skill-refs-baseline, so any live
@@ -94,16 +85,10 @@ var (
 		"tests/scripts/check-doc-skill-refs.bats",
 		"tests/scripts/check-doc-skill-refs-all-docs.bats",
 	}
-	// A folded skill (state: merged-into) is a redirect; its target must stay a
-	// live skill. A rename/prune of a fold target (under skills/) silently
-	// breaks the redirect, so this runs when either the ledger or the skill set
-	// changes (plus self-reference so editing the gate re-runs it).
-	skillRedirectPaths = []string{
-		"docs/contracts/skill-dispositions.yaml",
-		"skills/**",
-		"skills-codex/**",
-		"scripts/check-skill-redirects.sh",
-		"tests/scripts/check-skill-redirects.bats",
+	cathedralCutPaths = []string{
+		"AGENTS.md", "PRODUCT.md", "README.md", "docs/architecture/operating-loop.md",
+		"skills/**", "skills-codex/**", "schemas/**", "cli/cmd/ao/**", "cli/internal/**",
+		"scripts/check-cathedral-cut-conformance.py",
 	}
 	// docs.cli-snippets resolves every `ao …` command cited in a live doc against
 	// the cobra tree; a rename/removal of a command silently strands a golden-path
@@ -144,49 +129,6 @@ var (
 	// Claude workflows must use `br` (bd/Dolt is retired). operating-loop.js —
 	// the most-viewed content artifact on the public repo — shipped a prompt
 	// telling agents to run `bd ready` with no gate to catch it.
-	workflowTrackerPaths = []string{
-		".claude/workflows/**",
-		"scripts/check-workflow-no-retired-tracker.sh",
-		"tests/scripts/check-workflow-no-retired-tracker.bats",
-	}
-	// ADR-0004 / ADR-0011 demoted the corpus-moat + escape-corpus-compounding
-	// claims to a named UNPROVEN hypothesis; live narrative docs must not assert
-	// them (or ship an uncited multiplier / peer-review claim) as proven. Runs on
-	// any docs change plus self-reference (script / baseline / bats).
-	demotedClaimsPaths = []string{
-		"docs/**",
-		"scripts/check-docs-demoted-claims.sh",
-		"scripts/.docs-demoted-claims-baseline",
-		"tests/scripts/check-docs-demoted-claims.bats",
-		// shared ratchet mechanics: a lib edit must re-run every consumer
-		// (age-ratchet-lib-extraction-bv7d.2, pre-mortem FM3)
-		"scripts/lib/ratchet.sh",
-	}
-	// docs.duplicates shasums every live doc and fails on a byte-identical pair
-	// over the line threshold — an anti-regrowth guard after a docs-lifecycle
-	// sweep deleted a wholesale byte-dup (age-gate-the-ungated-egwt.12). Runs on
-	// any docs change plus self-reference (script / shared scope lib / bats).
-	docsDuplicatesPaths = []string{
-		"docs/**",
-		"scripts/check-docs-duplicates.sh",
-		"scripts/lib/docs-scope.sh",
-		"tests/scripts/check-docs-duplicates.bats",
-	}
-	archDocDriftPaths = []string{
-		"docs/architecture/ports-and-adapters.md",
-		"docs/contracts/bounded-contexts.yaml",
-		"docs/reference/agentops-skill-domain-map.md",
-		"docs/reference/agentops-hexagonal-architecture-map.md",
-		"docs/ARCHITECTURE.md",
-		"docs/CI-CD.md",
-		"scripts/check-architecture-doc-drift.sh",
-		"tests/scripts/check-architecture-doc-drift.bats",
-	}
-	cliAgentsTrackerPaths = []string{
-		"cli/AGENTS.md",
-		"scripts/check-cli-agents-tracker-drift.sh",
-		"tests/scripts/check-cli-agents-tracker-drift.bats",
-	}
 	// provenance.chain: verify the committed ledger's hash chain at the pre-push
 	// authority boundary (age-gate-the-ungated-egwt.9). Runs on any ledger change
 	// plus self-reference (script + bats) so editing the gate re-runs it.
@@ -194,16 +136,6 @@ var (
 		"docs/provenance/**",
 		"scripts/check-provenance-chain.sh",
 		"tests/scripts/check-provenance-chain.bats",
-	}
-	controlPlaneTaxonomyPaths = []string{
-		"docs/architecture/the-agent-factory.md",
-		"docs/architecture/control-loop-model.md",
-		"docs/architecture/ports-and-adapters.md",
-		"docs/architecture/primitive-chains.md",
-		"docs/architecture/canonical-loop-model.md",
-		"docs/architecture/loop-map.md",
-		"scripts/check-control-plane-taxonomy.sh",
-		"tests/scripts/check-control-plane-taxonomy.bats",
 	}
 	regenScopePaths = []string{
 		"skills/**",
@@ -239,12 +171,6 @@ var (
 	// in-file title number, every ADR carries a Status: line. A duplicate
 	// number (two ADR-0004s — resolved in age-gate-the-ungated-egwt.11) or a
 	// filename/title mismatch must fail the next push, plus self-refs so
-	// editing the gate re-runs it.
-	adrRegistryPaths = []string{
-		"docs/adr/**",
-		"scripts/check-adr-registry.sh",
-		"tests/scripts/check-adr-registry.bats",
-	}
 	// go.jsonl-scanner-ratchet: ADVISORY heuristic — flags a NEW raw
 	// bufio.NewScanner over JSONL outside cli/internal/storage. A raw scanner
 	// silently truncates at its 64KB default buffer; the blessed replacement is
@@ -277,7 +203,6 @@ func init() {
 		// always-run (no Match): structural invariants that hold regardless of
 		// what changed.
 		{ID: "always.mutation-route", Tiers: gates.Fast | gates.Full, Blocking: true, Backing: "check-mutation-route-coverage.sh"},
-		{ID: "always.agents-write-surfaces", Tiers: gates.Fast | gates.Full, Blocking: true, Backing: "check-agents-write-surfaces.sh"},
 		{ID: "always.door9-no-claude-p", Tiers: gates.Fast | gates.Full, Blocking: true, Backing: "check-door9-no-claude-p.sh"},
 		{ID: "always.no-tracked-agents", Tiers: gates.Fast | gates.Full, Blocking: true, Backing: "check-no-tracked-agents.sh"},
 		// static portability guard for the never-safe `find -printf` (GNU-only)
@@ -300,10 +225,13 @@ func init() {
 		// glob — a force-added private path might not match any corpus glob, so
 		// changed-file scoping must never be able to skip this (ag-ao0eo).
 		{ID: "corpus.path-guard", Tiers: gates.Fast | gates.Full, Blocking: true, Backing: "check-corpus-path-guard.sh"},
-		// local-only br ledger policy: _beads is gitignored/private, so this
-		// must be always-run and gracefully skip when the ledger is absent.
-		{ID: "always.ledger-prefix-policy", Tiers: gates.Fast | gates.Full, Blocking: false, Backing: "check-ledger-prefix-policy.sh"},
 		{ID: "always.embedded-sync", Tiers: gates.Fast | gates.Full, Blocking: true, Backing: "validate-embedded-sync.sh"},
+		// honest-voice: user-facing CLI strings + seed/template assets must not
+		// claim proven/automatic knowledge compounding (unproven — ADR-0004,
+		// ADR-0011) or hookless-3.0-violating "session hooks" (docs/3.0.md, honest-voice:allow
+		// ADR-0009). The claims regrew because nothing gated them (#907, FU4);
+		// this is the gate. Lexicon: docs/contracts/forbidden-claims.yaml (age-5qjyn).
+		{ID: "contract.honest-voice", Tiers: gates.Fast | gates.Full, Match: honestVoicePaths, Blocking: true, Backing: "check-honest-voice.sh", RepairHint: "rewrite to honest phrasing (context accrues in .agents/ — compounding still being measured; 3.0 is hookless), or add a reviewed `honest-voice:allow`; lexicon docs/contracts/forbidden-claims.yaml"},
 
 		// routed by change class
 		gates.GoCLIArchitectureCheck(),
@@ -317,36 +245,25 @@ func init() {
 		{ID: "go.lint", Tiers: gates.Full, Match: goLintPaths, Blocking: true, Backing: "check-go-lint.sh", RepairHint: "cd cli && make lint; fix or split — budgets in .claude/rules/go.md; promote to Fast tier only after measured <60s on changed scope (age-gate-the-ungated-egwt.7)"},
 		{ID: "skill.schema", Tiers: gates.Fast | gates.Full, Match: skillPaths, Blocking: true, Backing: "validate-skill-schema.sh"},
 		{ID: "skill.triggers", Tiers: gates.Fast | gates.Full, Match: skillPaths, Blocking: true, Backing: "validate-skill-triggers.sh"},
-		{ID: "contract.registry-drift", Tiers: gates.Fast | gates.Full, Match: contractPaths, Blocking: true, Backing: "check-registry-drift.sh", RepairHint: "bash scripts/generate-registry.sh"},
-		{ID: "contract.bounded-contexts-drift", Tiers: gates.Fast | gates.Full, Match: contractPaths, Blocking: true, Backing: "check-bounded-contexts-drift.sh"},
-		{ID: "contract.disposition-schema", Tiers: gates.Fast | gates.Full, Match: contractPaths, Blocking: true, Backing: "validate-skill-disposition-schema.sh"},
-		{ID: "contract.skill-redirects", Tiers: gates.Fast | gates.Full, Match: skillRedirectPaths, Blocking: true, Backing: "check-skill-redirects.sh"},
-		{ID: "workflow.no-retired-tracker", Tiers: gates.Fast | gates.Full, Match: workflowTrackerPaths, Blocking: true, Backing: "check-workflow-no-retired-tracker.sh"},
+		{ID: "contract.cathedral-cut", Tiers: gates.Fast | gates.Full, Match: cathedralCutPaths, Blocking: true, Backing: "check-cathedral-cut-conformance.py"},
+		{ID: "contract.skill-mesh", Tiers: gates.Fast | gates.Full, Match: skillPaths, Blocking: true, Backing: "check-skill-mesh.py"},
 		{ID: "contract.finding-registry", Tiers: gates.Fast | gates.Full, Match: contractPaths, Blocking: true, Backing: "check-finding-registry.sh"},
 		{ID: "ci.policy-parity", Tiers: gates.Fast | gates.Full, Match: ciPolicyPaths, Blocking: true, Backing: "validate-ci-policy-parity.sh"},
-		{ID: "eval.corpus-freshness", Tiers: gates.Fast | gates.Full, Match: evalPaths, Blocking: true, Backing: "check-corpus-freshness.sh"},
-
 		// skill class (PB1 parity batch — all shell-backed via ScriptRunner)
-		{ID: "skill.cli-skills-map", Tiers: gates.Fast | gates.Full, Match: skillPaths, Blocking: true, Backing: "validate-cli-skills-map.sh"},
 		{ID: "skill.runtime-formats", Tiers: gates.Fast | gates.Full, Match: skillPaths, Blocking: true, Backing: "validate-skill-runtime-formats.sh"},
 		{ID: "skill.runtime-parity", Tiers: gates.Fast | gates.Full, Match: skillPaths, Blocking: true, Backing: "validate-skill-runtime-parity.sh"},
 		{ID: "skill.cli-snippets", Tiers: gates.Fast | gates.Full, Match: skillPaths, Blocking: true, Backing: "validate-skill-cli-snippets.sh"},
 		{ID: "skill.manifests", Tiers: gates.Fast | gates.Full, Match: skillPaths, Blocking: true, Backing: "validate-manifests.sh", Args: []string{"--repo-root", "."}},
-		{ID: "skill.next-work-contract", Tiers: gates.Fast | gates.Full, Match: nextWorkContractPaths, Blocking: true, Backing: "validate-next-work-contract-parity.sh"},
 		{ID: "skill.codex-parity-drift", Tiers: gates.Fast | gates.Full, Match: skillPaths, Blocking: true, Backing: "check-codex-parity-drift.sh"},
 		{ID: "skill.codex-runtime-sections", Tiers: gates.Fast | gates.Full, Match: skillPaths, Blocking: true, Backing: "validate-codex-runtime-sections.sh"},
 		{ID: "skill.codex-override-coverage", Tiers: gates.Fast | gates.Full, Match: skillPaths, Blocking: true, Backing: "validate-codex-override-coverage.sh"},
-		{ID: "skill.codex-backbone-prompts", Tiers: gates.Fast | gates.Full, Match: skillPaths, Blocking: true, Backing: "validate-codex-backbone-prompts.sh"},
 		// age-2s5k: always-run (no Match) — these validators assert whole-twin
 		// contract invariants over hardcoded file lists, so latent drift in a twin
 		// must fail the NEXT push regardless of scope, not lie invisible on green
 		// main until an unrelated skills-codex touch triggers a scope-gated run and
 		// ambushes it (the age-huim / age-3pdt failure mode). Cheap (string greps),
 		// so the per-push cost is negligible against the anti-ambush guarantee.
-		{ID: "skill.codex-rpi-contract", Tiers: gates.Fast | gates.Full, Blocking: true, Backing: "validate-codex-rpi-contract.sh"},
-		{ID: "skill.codex-lifecycle-guards", Tiers: gates.Fast | gates.Full, Blocking: true, Backing: "validate-codex-lifecycle-guards.sh"},
 		{ID: "skill.codex-generated-artifacts", Tiers: gates.Fast | gates.Full, Match: skillPaths, Blocking: true, Backing: "validate-codex-generated-artifacts.sh"},
-		{ID: "skill.isolation", Tiers: gates.Fast | gates.Full, Match: skillPaths, Blocking: false, Backing: "check-skill-isolation.sh"},
 		// skill.probe-coverage (ADVISORY): a product-/judgment-tier skill whose
 		// tier badge carries no BEHAVIORAL-probe result is unmeasured — the badge
 		// is editorial, not proven. This NAMES the unmeasured ones. Advisory-first
@@ -355,16 +272,10 @@ func init() {
 		// the Blocking:false->true flip is made deliberately once covered. age-e508.1.
 		{ID: "skill.probe-coverage", Tiers: gates.Fast | gates.Full, Match: skillProbePaths, Blocking: false, Backing: "check-skill-probe-coverage.sh", RepairHint: "bash scripts/probe-skill.sh --probe <skill> then record it in the MEASURED ledger of skills/SKILL-TIERS.md; advisory — probe the spine, ratchet the rest"},
 		{ID: "skill.no-operator-leakage", Tiers: gates.Fast | gates.Full, Match: operatorLeakPaths, Blocking: true, Backing: "check-no-operator-skills.sh"},
-		{ID: "skill.heal-strict", Tiers: gates.Full, Match: skillPaths, Blocking: true, Backing: "skills/heal-skill/scripts/heal.sh", Args: []string{"--strict"}},
+		{ID: "skill.heal-strict", Tiers: gates.Full, Match: skillPaths, Blocking: true, Backing: "skills/skill-builder/scripts/heal.sh", Args: []string{"--check", "--strict"}},
 		{ID: "skill.frontmatter-v2", Tiers: gates.Full, Match: skillPaths, Blocking: true, Backing: "validate-skill-frontmatter.sh"},
 		{ID: "skill.body-refs", Tiers: gates.Full, Match: skillPaths, Blocking: true, Backing: "validate-skill-body-refs.sh"},
-		{ID: "skill.flow", Tiers: gates.Full, Match: skillPaths, Blocking: true, Backing: "validate-skill-flow.sh"},
-		{ID: "skill.domain-map-golden", Tiers: gates.Full, Match: skillPaths, Blocking: true, Backing: "generate-skill-domain-map.sh", Args: []string{"--check"}},
 		{ID: "skill.scenario-test-linkage", Tiers: gates.Full, Match: scenarioLinkagePaths, Blocking: true, Backing: "check-scenario-test-linkage.sh"},
-
-		// governance front-door admission (M5): a newly-ADDED skill/workflow/loop
-		// cannot merge without bounded-context + role + a runnable acceptance.
-		{ID: "governance.frontdoor-admission", Tiers: gates.Fast | gates.Full, Match: frontDoorPaths, Blocking: true, Backing: "check-frontdoor-admission.sh"},
 
 		// go class
 		{ID: "go.home-isolation", Tiers: gates.Fast | gates.Full, Match: goPaths, Blocking: true, Backing: "check-home-isolation.sh"},
@@ -375,56 +286,28 @@ func init() {
 		{ID: "go.cli-surface-counts", Tiers: gates.Full, Match: goPaths, Blocking: true, Backing: "update-cli-surface-counts.sh"},
 		{ID: "go.test-count-regression", Tiers: gates.Full, Match: goPaths, Blocking: true, Backing: "check-test-count-regression.sh"},
 		{ID: "go.test-isolation", Tiers: gates.Fast | gates.Full, Match: goPaths, Blocking: true, Backing: "check-test-isolation.sh"},
-		{ID: "go.test-staleness", Tiers: gates.Full, Match: goPaths, Blocking: false, Backing: "check-test-staleness.sh"},
-		{ID: "go.path-containment", Tiers: gates.Fast | gates.Full, Match: goPaths, Blocking: false, Backing: "check-path-containment.sh"},
 
 		// contract / context-map / swarm classes
 		{ID: "contract.compatibility", Tiers: gates.Fast | gates.Full, Match: contractPaths, Blocking: true, Backing: "check-contract-compatibility.sh"},
-		{ID: "contract.context-map-drift", Tiers: gates.Fast | gates.Full, Match: contextMapPaths, Blocking: true, Backing: "validate-context-map-drift.sh", RepairHint: "bash scripts/generate-context-map.sh"},
-		{ID: "contract.registry-json", Tiers: gates.Full, Match: registryPaths, Blocking: true, Backing: "generate-registry.sh", Args: []string{"--check"}},
-		{ID: "contract.sku-catalog-drift", Tiers: gates.Full, Match: registryPaths, Blocking: true, Backing: "validate-sku-catalog-drift.sh"},
 		{ID: "docs.agents-split", Tiers: gates.Full, Match: agentsDocPaths, Blocking: true, Backing: "validate-agents-split.sh"},
-		{ID: "swarm.evidence", Tiers: gates.Fast | gates.Full, Match: swarmPaths, Blocking: true, Backing: "validate-swarm-evidence.sh"},
 
 		// always-run structural invariants (no Match)
-		{ID: "always.author-judge-convergence", Tiers: gates.Fast | gates.Full, Blocking: true, Backing: "check-author-judge-convergence.sh"},
-		{ID: "always.contracts-structural-floor", Tiers: gates.Fast | gates.Full, Blocking: true, Backing: "check-contracts-structural-floor.sh"},
-		{ID: "always.docs-learning-references", Tiers: gates.Fast | gates.Full, Blocking: true, Backing: "check-docs-learning-references.sh"},
-		{ID: "docs.skill-refs", Tiers: gates.Fast | gates.Full, Match: docSkillRefPaths, Blocking: true,
+		{ID: "docs.skill-refs", Tiers: gates.Full, Match: docSkillRefPaths, Blocking: true,
 			Backing: "check-doc-skill-refs.sh", Args: []string{"--all-docs", "--strict"}},
-		{ID: "cli.agents-tracker", Tiers: gates.Fast | gates.Full, Match: cliAgentsTrackerPaths, Blocking: true,
-			Backing: "check-cli-agents-tracker-drift.sh"},
-		{ID: "docs.architecture-drift", Tiers: gates.Fast | gates.Full, Match: archDocDriftPaths, Blocking: true,
-			Backing: "check-architecture-doc-drift.sh"},
-		{ID: "docs.control-plane-taxonomy", Tiers: gates.Fast | gates.Full, Match: controlPlaneTaxonomyPaths, Blocking: true,
-			Backing:    "check-control-plane-taxonomy.sh",
-			RepairHint: "keep the etcd-analog bound to br + the proof/verdict ledger (not bd/Dolt); keep the agent two-altitude note in the-agent-factory.md + ports-and-adapters.md; keep the taxonomy cross-links bidirectional; see scripts/check-control-plane-taxonomy.sh"},
-		{ID: "eval.skill-probe-i0", Tiers: gates.Full, Match: skillPaths, Blocking: false,
-			Backing: "skill-probe-i0.sh", Args: []string{"skills", ".agents/ao/skill-eval"}},
 		{ID: "provenance.orphans", Tiers: gates.Full, Match: contractPaths, Blocking: true,
 			Backing: "check-provenance-orphans.sh"},
 		{ID: "provenance.chain", Tiers: gates.Fast | gates.Full, Match: provenanceChainPaths, Blocking: true,
 			Backing:    "check-provenance-chain.sh",
 			RepairHint: "docs/provenance/ledger.jsonl hash chain broken — find the first bad entry with 'ao provenance verify'; repair is a deliberate re-seal, never hand-edit (age-gate-the-ungated-egwt.9)"},
 		{ID: "always.docs-hookless", Tiers: gates.Full, Blocking: true, Backing: "check-doc-hooks-drift.sh"},
-		{ID: "always.flywheel-compounding-snapshot", Tiers: gates.Fast | gates.Full, Blocking: true, Backing: "check-flywheel-compounding-snapshot.sh"},
 		{ID: "always.retrieval-manifest-paths", Tiers: gates.Fast | gates.Full, Blocking: true, Backing: "check-retrieval-manifest-paths.sh",
 			Args: []string{"cli/cmd/ao/testdata/retrieval-bench/search-eval-manifest.json"}},
-		{ID: "always.wiring-closure", Tiers: gates.Fast | gates.Full, Blocking: true, Backing: "check-wiring-closure.sh"},
-		{ID: "always.bd-closeout-contract", Tiers: gates.Fast | gates.Full, Blocking: true, Backing: "validate-bd-closeout-contract.sh"},
-		{ID: "always.domain-evolution-plan", Tiers: gates.Fast | gates.Full, Blocking: true, Backing: "check-agentops-domain-evolution-plan.sh"},
 		{ID: "always.file-manifest-overlap", Tiers: gates.Full, Blocking: true, Backing: "check-file-manifest-overlap.sh"},
 		{ID: "derived.changed-scope", Tiers: gates.Fast, Blocking: true, Backing: "regen-changed-scope.sh", Args: []string{"--check", "--scope", "head"},
-			Match: regenScopePaths, RepairHint: "bash scripts/regen-changed-scope.sh --scope head; for a reported skill run: bash skills/heal-skill/scripts/audit.sh --strict skills/<skill>"},
+			Match: regenScopePaths, RepairHint: "bash scripts/regen-changed-scope.sh --scope head; for a reported skill run: bash skills/skill-builder/scripts/heal.sh --check --strict skills/<skill>"},
 		{ID: "always.regen-all", Tiers: gates.Full, Blocking: true, Backing: "regen-all.sh", Args: []string{"--check"}, RepairHint: "bash scripts/regen-all.sh"},
-		{ID: "always.three-gap-supergate", Tiers: gates.Full, Match: goalsPaths, Blocking: true, Backing: "check-three-gap-supergate.sh"},
-		{ID: "always.sovereignty-proof-citations", Tiers: gates.Full, Match: docsPaths, Blocking: true, Backing: "validate-sovereignty-proof-citations.sh"},
-		{ID: "docs.no-retired-tech", Tiers: gates.Fast | gates.Full, Match: docsPaths, Blocking: true, Backing: "check-docs-no-retired-tech.sh", RepairHint: "convert to current truth, or add a RETIRED/HISTORICAL banner in the first 15 lines; see scripts/check-docs-no-retired-tech.sh"},
 		{ID: "docs.cli-snippets", Tiers: gates.Full, Match: docsCliSnippetsPaths, Blocking: false, Backing: "check-docs-cli-snippets.sh", RepairHint: "fix the dead ao reference or prune the stale baseline entry; flips Blocking after one clean advisory cycle (age-gate-the-ungated-egwt.4)"},
 		{ID: "scripts.ao-invocations", Tiers: gates.Fast | gates.Full, Match: scriptsAoInvocationsPaths, Blocking: false, Backing: "check-scripts-ao-invocations.sh", RepairHint: "fix the dead ao invocation (use the live subcommand or add `# ao-resolve: ignore`), or prune the stale baseline entry; advisory-first, flips Blocking after one clean cycle (age-owcs)"},
-		{ID: "docs.demoted-claims", Tiers: gates.Full, Match: demotedClaimsPaths, Blocking: false, Backing: "check-docs-demoted-claims.sh", RepairHint: "hedge the claim to match ADR-0004/ADR-0011 or add a citation; advisory one clean cycle then flips Blocking (age-gate-the-ungated-egwt.6)"},
-		{ID: "docs.adr-registry", Tiers: gates.Full, Match: adrRegistryPaths, Blocking: true, Backing: "check-adr-registry.sh", RepairHint: "duplicate/mismatched ADR number — renumber the newer ADR and sweep citations (age-gate-the-ungated-egwt.11)"},
-		{ID: "docs.duplicates", Tiers: gates.Full, Match: docsDuplicatesPaths, Blocking: true, Backing: "check-docs-duplicates.sh", RepairHint: "byte-identical live docs — delete the copy, repoint links (age-gate-the-ungated-egwt.12)"},
 		// go.jsonl-scanner-ratchet: ADVISORY grep-ratchet — a NEW raw
 		// bufio.NewScanner over JSONL outside cli/internal/storage silently
 		// truncates at the 64KB default buffer. Stays advisory PERMANENTLY (unless
@@ -437,28 +320,16 @@ func init() {
 		{ID: "go.atomic-write-ratchet", Tiers: gates.Full, Match: atomicWriteRatchetPaths, Blocking: false, Backing: "check-atomic-write-ratchet.sh", Args: []string{"--scope", "head"}, RepairHint: "use storage.AtomicWriteFile (temp+fsync+rename+fsync-dir) or storage.FsyncDir instead of a hand-rolled tmp+rename; advisory — see age-ratchet-lib-extraction-bv7d.9"},
 		{ID: "corpus.secret-scan", Tiers: gates.Full, Match: corpusPaths, Blocking: true, Backing: "check-corpus-secret-scan.sh"},
 		{ID: "corpus.witness-dolt-jsonl-crosscheck", Tiers: gates.Full, Match: corpusPaths, Blocking: true, Backing: "witness-dolt-jsonl-crosscheck.sh"},
-		{ID: "doctrine.memrl-health", Tiers: gates.Full, Blocking: true, Backing: "check-memrl-health.sh"},
-		{ID: "doctrine.flywheel-proof", Tiers: gates.Full, Blocking: true, Backing: "proof-run.sh"},
-		{ID: "eval.retrieval-quality-smoke", Tiers: gates.Full, Blocking: true, Backing: "retrieval-quality-smoke.sh"},
-
-		// full-mode-only / advisory (mirror the bash gate: these skip in fast or warn)
-		{ID: "full.worktree-disposition", Tiers: gates.Full, Blocking: true, Backing: "check-worktree-disposition.sh"},
-		{ID: "full.retrieval-quality-ratchet", Tiers: gates.Full, Blocking: false, Backing: "check-retrieval-quality-ratchet.sh"},
-		{ID: "always.loop-shape", Tiers: gates.Fast | gates.Full, Blocking: false, Backing: "check-loop-shape.sh"},
-		{ID: "skill.catalog-drift", Tiers: gates.Full, Blocking: false, Backing: "check-skill-catalog-drift.sh"},
 
 		// final backing-script batch (PB1)
 		{ID: "always.quarantine-empty", Tiers: gates.Fast | gates.Full, Blocking: true, Backing: "check-quarantine-empty.sh"},
 		{ID: "always.test-fixture-parity", Tiers: gates.Fast | gates.Full, Blocking: true, Backing: "check-test-fixture-parity.sh"},
 		{ID: "go.race-fast", Tiers: gates.Fast | gates.Full, Match: goPaths, Blocking: true, Backing: "validate-go-fast.sh"},
-		{ID: "full.headless-runtime-skills", Tiers: gates.Full, Blocking: false, Backing: "validate-headless-runtime-skills.sh"},
 		// release-audit: narrow Match (only release files) + --mode changed, mirroring
 		// the bash gate's needs_release_audit_artifact_check (PB1a Args support).
 		{ID: "release.audit-artifacts", Tiers: gates.Fast | gates.Full, Blocking: true,
 			Backing: "validate-release-audit-artifacts.sh", Args: []string{"--mode", "changed"},
 			Match: []string{"docs/releases/**", "scripts/ci-local-release.sh", "scripts/resolve-release-artifacts.sh", "scripts/validate-release-audit-artifacts.sh", "tests/scripts/release-artifacts.bats"}},
-		// DEFERRED: check-agents-hash-snapshot.sh is a stateful capture/diff pair —
-		// needs a native Go port, not a single wrapper.
 	}
 	for _, c := range seed {
 		gates.Register(c)

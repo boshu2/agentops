@@ -1,6 +1,6 @@
 # shared
 
-Shared AgentOps skill contracts. Triggers: "shared", "shared agentops skill contracts.", "shared skill".
+Shared runtime and evidence references loaded only by a consuming skill. Triggers: internal shared contracts.
 
 ## Instructions
 

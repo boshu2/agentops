@@ -13,17 +13,17 @@
 
 ## Debugging
 
-- **Tracker Skew First**: When tracker probes fail with schema errors, check the tracker binary version and cache state before blaming repo code — for `br`, the SQLite cache can go stale under concurrent ledger writes; the JSONL is the source of truth (originally learned on the retired `bd`; source: `.agents/learnings/2026-03-24-codex-hookless-followup.md`)
+- **Tracker Skew First**: When tracker probes fail with schema errors, check the tracker binary version and cache state before blaming repo code. For `br`, the SQLite cache can go stale under concurrent ledger writes; the JSONL is the source of truth (originally learned on the retired `bd`; source: `.agents/learnings/2026-03-24-codex-hookless-followup.md`)
 
 ## Patterns
 
-- **CLI-Owned Lifecycle** *(superseded)*: skills should delegate lifecycle state to the CLI instead of parsing state files themselves — but the specific commands this taught (`ao codex ensure-start` / `ensure-stop`) are now deprecated legacy shims; see AGENTS-RUNTIME.md (source: `.agents/learnings/2026-03-24-codex-hookless-followup.md`)
+- **CLI-Owned Lifecycle** *(superseded)*: skills should delegate lifecycle state to the CLI instead of parsing state files themselves, but the specific commands this taught (`ao codex ensure-start` / `ensure-stop`) are now deprecated legacy shims; see AGENTS-RUNTIME.md (source: `.agents/learnings/2026-03-24-codex-hookless-followup.md`)
 
 ## Key Lessons
 
 - **Validation Before Autonomy**: Prove code and agent output before expanding orchestration or autonomy. (source: `.agents/learnings/2026-06-16-validation-before-autonomy.md`)
 - **RPI Run Context Needs Run-ID Scope**: Phase handoff readers should filter by current run ID before injecting summaries, or unrelated prior RPI runs can contaminate implementation and validation prompts (source: `.agents/learnings/2026-05-01-rpi-run-context-needs-run-id-scope.md`)
-- **CI Scanner Syntax Parity** — Contract validators that mirror each other need paired fixtures for every accepted syntax form, not only comments saying the regexes agree (source: `.agents/learnings/2026-04-27-ci-contract-scanners-need-syntax-parity.md`)
+- **CI Scanner Syntax Parity**: Contract validators that mirror each other need paired fixtures for every accepted syntax form, not only comments saying the regexes agree (source: `.agents/learnings/2026-04-27-ci-contract-scanners-need-syntax-parity.md`)
 - **Audit Parser Reality**: Mechanical auditors must parse `File:` prose, anchors, and examples correctly or they create noisy false failures (source: `.agents/learnings/2026-03-28-last-week-commits.md`)
 - **Output Mode Orthogonality**: `--json` must preserve normal command side effects and change only serialization (source: `.agents/learnings/2026-04-10-output-modes-must-not-change-command-side-effects.md`)
 - **Pair Command Refactors With Tests**: Production command refactors under `cli/cmd/ao/` should ship with direct test diffs so the command/test-pairing gate is designed for, not rediscovered at push time (source: `.agents/learnings/2026-04-14-command-refactors-need-paired-tests.md`)

@@ -95,17 +95,29 @@ func runConstraintEnforceGate(_ context.Context, rc gates.RunContext) (ports.Gat
 	}
 
 	var (
-		active     int
-		violations []string
-		broken     []string
+		active       int
+		shadow       int
+		violations   []string
+		broken       []string
+		shadowHits   []string
+		shadowBroken []string
 	)
 	for i := range idx.Constraints {
 		c := idx.Constraints[i]
-		if c.Status != "active" {
+		if c.Status != "active" && c.Status != "shadow" {
+			continue
+		}
+		hits, err := evalConstraint(c, rc.RepoRoot, files)
+		if c.Status == "shadow" {
+			shadow++
+			if err != nil {
+				shadowBroken = append(shadowBroken, fmt.Sprintf("%s (%s): %v", c.ID, c.Title, err))
+			} else {
+				shadowHits = append(shadowHits, hits...)
+			}
 			continue
 		}
 		active++
-		hits, err := evalConstraint(c, rc.RepoRoot, files)
 		if err != nil {
 			broken = append(broken, fmt.Sprintf("%s (%s): %v", c.ID, c.Title, err))
 			continue
@@ -129,9 +141,16 @@ func runConstraintEnforceGate(_ context.Context, rc gates.RunContext) (ports.Gat
 			LogTail: strings.Join(violations, "\n"),
 		}, nil
 	}
+	if len(shadowHits) > 0 || len(shadowBroken) > 0 {
+		return ports.GateVerdict{
+			Status:  ports.GateStatusWarn,
+			Reason:  fmt.Sprintf("%d shadow constraint(s) evaluated in warn-only mode", shadow),
+			LogTail: strings.Join(append(shadowBroken, shadowHits...), "\n"),
+		}, nil
+	}
 	return ports.GateVerdict{
 		Status: ports.GateStatusPass,
-		Reason: fmt.Sprintf("%d active constraint(s) enforced, no violations", active),
+		Reason: fmt.Sprintf("%d active constraint(s) enforced and %d shadow constraint(s) observed, no violations", active, shadow),
 	}, nil
 }
 
@@ -178,8 +197,8 @@ func mergeConstraintIndexes(local, published *search.ConstraintIndex) *search.Co
 		}
 		for _, c := range idx.Constraints {
 			if existing, ok := byID[c.ID]; ok {
-				if existing.Status != "active" && c.Status == "active" {
-					byID[c.ID] = c // active-wins
+				if constraintStatusRank(c.Status) > constraintStatusRank(existing.Status) {
+					byID[c.ID] = c // active > shadow > non-enforcing states
 				}
 				continue
 			}
@@ -194,6 +213,17 @@ func mergeConstraintIndexes(local, published *search.ConstraintIndex) *search.Co
 		out.Constraints = append(out.Constraints, byID[id])
 	}
 	return out
+}
+
+func constraintStatusRank(status string) int {
+	switch status {
+	case "active":
+		return 2
+	case "shadow":
+		return 1
+	default:
+		return 0
+	}
 }
 
 // loadIndexFile reads + strictly parses one constraint-index JSON file. missing=true
@@ -229,7 +259,7 @@ func loadIndexFile(path string) (idx *search.ConstraintIndex, missing bool, pars
 	return &parsed, false, nil
 }
 
-var knownConstraintStatuses = map[string]bool{"active": true, "draft": true, "retired": true}
+var knownConstraintStatuses = map[string]bool{"active": true, "shadow": true, "draft": true, "retired": true}
 
 // validateIndexStructure enforces the fields the gate depends on, so a
 // JSON-valid but structurally-incomplete index fails closed instead of silently
@@ -270,7 +300,7 @@ func validateIndexStructure(raw []byte, parsed *search.ConstraintIndex) error {
 			return fmt.Errorf("constraint #%d missing id", i)
 		}
 		if !knownConstraintStatuses[c.Status] {
-			return fmt.Errorf("constraint %q has invalid status %q (want active|draft|retired)", c.ID, c.Status)
+			return fmt.Errorf("constraint %q has invalid status %q (want active|shadow|draft|retired)", c.ID, c.Status)
 		}
 	}
 	return nil

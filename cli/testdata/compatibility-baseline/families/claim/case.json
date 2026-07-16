@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "family": "claim",
+  "checks": [
+    {
+      "id": "claim-black-box",
+      "command": "tmp=$(mktemp -d /tmp/ao-claim.XXXXXX); trap 'rm -r \"$tmp\"' EXIT; (cd cli && go build -o \"$tmp/ao\" ./cmd/ao); mkdir -p \"$tmp/repo/_beads\" \"$tmp/repo/sub\" \"$tmp/bin\"; git -C \"$tmp/repo\" init -q; printf '%s\\n' '#!/usr/bin/env bash' 'printf \"%s\\n\" \"$*\" >\"$TRACE_FILE\"' 'printf \"claimed-output\\n\"' >\"$tmp/bin/br\"; chmod +x \"$tmp/bin/br\"; (cd \"$tmp/repo\" && PATH=\"$tmp/bin:$PATH\" BEADS_DIR=\"$tmp/repo/_beads\" TRACE_FILE=\"$tmp/trace\" \"$tmp/ao\" claim age-1 >\"$tmp/claim.out\"); grep -qx 'update age-1 --claim' \"$tmp/trace\"; grep -qx 'claimed-output' \"$tmp/claim.out\"; (cd \"$tmp/repo\" && \"$tmp/ao\" claim >\"$tmp/help\" && \"$tmp/ao\" claim check --help >\"$tmp/check-help\"); (cd \"$tmp/repo/sub\" && \"$tmp/ao\" claim bind --claim AOP-X --path p.md --level PG2 >\"$tmp/bind.out\"); (cd \"$tmp/repo\" && \"$tmp/ao\" claim list >\"$tmp/list.out\"); grep -q 'Claim a BR bead for harness-neutral AgentOps loops' \"$tmp/help\"; grep -q 'Report read-only proof cards for changed public claim markers' \"$tmp/check-help\"; grep -qx 'bound claim=\"AOP-X\" path=\"p.md\" level=PG2' \"$tmp/bind.out\"; jq -e '.Claim == \"AOP-X\" and .Path == \"p.md\" and .Level == \"PG2\"' \"$tmp/list.out\" >/dev/null; set +e; (cd \"$tmp/repo\" && \"$tmp/ao\" claim check --changed >\"$tmp/check.out\" 2>\"$tmp/check.err\"); check_code=$?; \"$tmp/ao\" claim one two >\"$tmp/rejected.out\" 2>\"$tmp/rejected.err\"; code=$?; set -e; test \"$check_code\" -eq 1; grep -q 'Error: claim check: claim proof: read claim registry:' \"$tmp/check.err\"; test \"$code\" -eq 1; test ! -s \"$tmp/rejected.out\"; grep -qx 'Error: accepts between 0 and 1 arg(s), received 2' \"$tmp/rejected.err\""
+    }
+  ],
+  "dimensions": {
+    "path": {"status": "evidence", "evidence": ["claim-black-box"]},
+    "aliases": {"status": "not_applicable", "reason": "The ao claim command family declares no aliases."},
+    "accepted_args": {"status": "evidence", "evidence": ["claim-black-box"]},
+    "rejected_args": {"status": "evidence", "evidence": ["claim-black-box"]},
+    "stdout": {"status": "evidence", "evidence": ["claim-black-box"]},
+    "stderr": {"status": "evidence", "evidence": ["claim-black-box"]},
+    "exit_classes": {"status": "evidence", "evidence": ["claim-black-box"]},
+    "tracker_selection": {"status": "evidence", "evidence": ["claim-black-box"]},
+    "ordered_effects": {"status": "evidence", "evidence": ["claim-black-box"]}
+  }
+}

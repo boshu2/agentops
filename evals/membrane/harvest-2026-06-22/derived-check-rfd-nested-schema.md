@@ -1,5 +1,5 @@
 ---
-compiler_targets: pre-mortem
+compiler_targets: premortem
 detectability: advisory
 escape_bead_id: age-harvest-rfd-nested-schema
 escape_confirmed_sha: a3b9bcb

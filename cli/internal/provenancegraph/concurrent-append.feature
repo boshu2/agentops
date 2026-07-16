@@ -2,11 +2,11 @@
 #
 # age-membrane-memory-arch-tz2s.4.5. The provenance ledger (docs/provenance/
 # ledger.jsonl) is the membrane's verdict audit authority — "no verdict = not
-# done" reads from it, and the #trivial / pawl-pre-push gates check it. Every
+# generic provenance readers inspect it. Every
 # edge SEALS onto the current chain tip (prev_hash = last record's hash), so the
 # read-seal-write in Store.Append is a critical section: two concurrent appenders
 # that each read the same tip would both seal onto it and FORK the chain. ml8's
-# standing pawl-service made this live — concurrent routes emit verdict edges
+# independent callers may append evidence edges
 # concurrently. The contract: appends are serialized by a cross-process advisory
 # lock (flock on a sidecar .lock file), so the chain never forks and no append is
 # lost. The executable proof is store_test.go:TestStore_ConcurrentAppendDoesNotForkChain.

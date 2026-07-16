@@ -34,7 +34,7 @@ func homeConfigPathFor(homeDir string) string {
 	if homeDir == "" {
 		homeDir, _ = os.UserHomeDir()
 	}
-	return filepath.Join(homeDir, ".agentops", "config.yaml")
+	return filepath.Join(homeDir, ".agents", "ao", "config.yaml")
 }
 
 // projectConfigPathFor returns the project config path for the given cwd.
@@ -42,7 +42,7 @@ func projectConfigPathFor(cwd string) string {
 	if cwd == "" {
 		cwd, _ = os.Getwd()
 	}
-	return filepath.Join(cwd, ".agentops", "config.yaml")
+	return filepath.Join(cwd, ".agents", "ao", "config.yaml")
 }
 
 // lookPathAll resolves every occurrence of name on PATH, preserving order.
@@ -77,14 +77,38 @@ func lookPathAll(name string) []string {
 	return out
 }
 
+// agentopsModuleLine identifies the agentops CLI module in cli/go.mod.
+const agentopsModuleLine = "module github.com/boshu2/agentops/cli"
+
+// insideAgentopsRepo reports whether dir is within an agentops repo clone,
+// walking up a bounded number of parents looking for cli/go.mod declaring the
+// agentops module. It is read-only. An empty dir is treated as "not in repo".
+func insideAgentopsRepo(dir string) bool {
+	if dir == "" {
+		return false
+	}
+	for range 12 {
+		data, err := os.ReadFile(filepath.Join(dir, "cli", "go.mod"))
+		if err == nil && strings.Contains(string(data), agentopsModuleLine) {
+			return true
+		}
+		parent := filepath.Dir(dir)
+		if parent == dir {
+			break
+		}
+		dir = parent
+	}
+	return false
+}
+
 // installHintFor returns a platform-specific install command for a CLI.
 func installHintFor(name string) string {
 	switch name {
 	case "br":
 		if runtime.GOOS == "windows" {
-			return "br: install beads_rust from its Windows release or use WSL/Homebrew"
+			return "br: install beads_rust from its Windows release or use WSL/Homebrew — https://github.com/Dicklesworthstone/beads_rust"
 		}
-		return "br: install beads_rust; see AGENTS.md for the BEADS_DIR workflow"
+		return "br: install beads_rust — https://github.com/Dicklesworthstone/beads_rust ('ao beads dir' prints the resolved ledger)"
 	case "git":
 		if runtime.GOOS == "windows" {
 			return "git: choco install git  |  https://git-scm.com/download/win"
@@ -321,8 +345,11 @@ func probeConfigSourceShape(repoRoot string) bool {
 
 const fmMissingRequiredCLI = "fm-cli-config-missing-required-cli"
 
-// missingRequiredCLIDetector flags a required external CLI (br, git) absent
-// from PATH, or shadowed by a duplicate earlier on PATH.
+// missingRequiredCLIDetector flags a required external CLI absent from PATH, or
+// shadowed by a duplicate earlier on PATH. Only `git` is universally required;
+// `br` (this repo's own tracker) is required only when running inside an
+// agentops repo clone — an installed user who tracks work with `bd` (or nothing)
+// must never see `br` reported as a missing "required" CLI.
 type missingRequiredCLIDetector struct{}
 
 func (missingRequiredCLIDetector) ID() string           { return fmMissingRequiredCLI }
@@ -332,13 +359,17 @@ func (missingRequiredCLIDetector) EstimatedCostMS() int { return 5 }
 func (missingRequiredCLIDetector) OnlineRequired() bool { return false }
 func (missingRequiredCLIDetector) QuickPath() bool      { return true }
 func (missingRequiredCLIDetector) Describe() string {
-	return "Detects required external CLIs (br, git) missing from PATH or shadowed by a duplicate."
+	return "Detects required external CLIs (git always; br inside an agentops clone) missing from PATH or shadowed by a duplicate."
 }
 
-// Detect resolves every match for br and git on PATH. It is pure: lookPathAll
-// only reads $PATH and stats candidate files.
-func (missingRequiredCLIDetector) Detect(_ *DetectEnv) ([]Finding, error) {
-	required := []string{"br", "git"}
+// Detect resolves every match for the required CLIs on PATH. It is pure:
+// lookPathAll only reads $PATH and stats candidate files, and insideAgentopsRepo
+// only stats a marker file.
+func (missingRequiredCLIDetector) Detect(env *DetectEnv) ([]Finding, error) {
+	required := []string{"git"}
+	if env != nil && insideAgentopsRepo(env.RepoRoot) {
+		required = append(required, "br")
+	}
 	var missing, shadowed, hints []string
 	for _, name := range required {
 		resolved := lookPathAll(name)
@@ -377,49 +408,13 @@ func (missingRequiredCLIDetector) Detect(_ *DetectEnv) ([]Finding, error) {
 	}}, nil
 }
 
-// ---------------------------------------------------------------------------
-// FM 4: fm-cli-config-optional-codex-cli-absent (P3)
-// ---------------------------------------------------------------------------
-
-const fmOptionalCodexAbsent = "fm-cli-config-optional-codex-cli-absent"
-
-// optionalCodexAbsentDetector flags the optional `codex` CLI missing from PATH.
-type optionalCodexAbsentDetector struct{}
-
-func (optionalCodexAbsentDetector) ID() string           { return fmOptionalCodexAbsent }
-func (optionalCodexAbsentDetector) Subsystem() string    { return "cli-config" }
-func (optionalCodexAbsentDetector) Severity() string     { return "P3" }
-func (optionalCodexAbsentDetector) EstimatedCostMS() int { return 5 }
-func (optionalCodexAbsentDetector) OnlineRequired() bool { return false }
-func (optionalCodexAbsentDetector) QuickPath() bool      { return true }
-func (optionalCodexAbsentDetector) Describe() string {
-	return "Detects the optional codex CLI missing from PATH — the --mixed council is unavailable."
-}
-
-// Detect resolves `codex` on PATH. It is pure: lookPathAll reads $PATH only.
-func (optionalCodexAbsentDetector) Detect(_ *DetectEnv) ([]Finding, error) {
-	resolved := lookPathAll("codex")
-	if len(resolved) > 0 {
-		return nil, nil // installed — not this FM (auth probe deferred, see spec open Q)
-	}
-	return []Finding{{
-		ID:         fmOptionalCodexAbsent,
-		Severity:   "P3",
-		Subsystem:  "cli-config",
-		Title:      "optional `codex` CLI not found — `--mixed` council unavailable",
-		Confidence: 1.0,
-		Evidence: Evidence{
-			Query: "state=absent — command -v codex resolves nothing on PATH",
-		},
-		Remediation: Remediation{
-			Command: "The doctor does not install software. Install codex yourself — " +
-				installHintFor("codex") + " — then re-run: ao doctor",
-			ExplainCommand:   "ao doctor explain " + fmOptionalCodexAbsent,
-			AutoFixable:      false,
-			EstimatedActions: 0,
-		},
-	}}, nil
-}
+// NOTE: the optional `codex` CLI absence is intentionally NOT a failure-mode
+// detector. An optional dependency's absence must never flip `ao doctor`'s exit
+// code on a pristine install. The legacy check table already reports codex as an
+// informational "optional — enables --mixed council review" line with a runnable
+// install hint (see internal/adapters/doctor/legacy.go), so a duplicate P3
+// finding here would only fail every codex-less install for no actionable
+// benefit. (Retired under FU2 / age-6g2du — doctor severity calibration.)
 
 // ---------------------------------------------------------------------------
 // FM 5: fm-cli-config-dev-version-build-integrity (P2) — build-time concern
@@ -477,7 +472,7 @@ func (devVersionBuildIntegrityDetector) Detect(_ *DetectEnv) ([]Finding, error) 
 		},
 		Remediation: Remediation{
 			Command: "Reinstall a release build: " +
-				"bash <(curl -fsSL https://raw.githubusercontent.com/boshu2/agentops/main/scripts/install.sh) " +
+				"brew upgrade agentops " +
 				"— or, if developing, rebuild with ldflags: cd cli && make build. " +
 				"If `which -a ao` shows duplicates, remove the stale one from PATH.",
 			ExplainCommand:   "ao doctor explain " + fmDevVersionBuildIntegrity,
@@ -536,7 +531,7 @@ func describeAOPaths(paths []string) string {
 
 const fmStaleProjectConfig = "fm-cli-config-stale-project-config-shadows-home"
 
-// staleProjectConfigDetector flags a project .agentops/config.yaml in cwd that
+// staleProjectConfigDetector flags a project .agents/ao/config.yaml in cwd that
 // silently overrides the home config.
 type staleProjectConfigDetector struct{}
 
@@ -547,7 +542,7 @@ func (staleProjectConfigDetector) EstimatedCostMS() int { return 5 }
 func (staleProjectConfigDetector) OnlineRequired() bool { return false }
 func (staleProjectConfigDetector) QuickPath() bool      { return true }
 func (staleProjectConfigDetector) Describe() string {
-	return "Detects a project .agentops/config.yaml in cwd that silently shadows the home config."
+	return "Detects a project .agents/ao/config.yaml in cwd that silently shadows the home config."
 }
 
 // flattenYAML recursively flattens a parsed YAML map into dotted keys.
@@ -604,7 +599,7 @@ func (staleProjectConfigDetector) Detect(env *DetectEnv) ([]Finding, error) {
 		ID:         fmStaleProjectConfig,
 		Severity:   "P3",
 		Subsystem:  "cli-config",
-		Title:      "a project .agentops/config.yaml is overriding home config in this directory",
+		Title:      "a project .agents/ao/config.yaml is overriding home config in this directory",
 		Confidence: 0.95,
 		Evidence: Evidence{
 			File:  projectPath,
@@ -629,7 +624,6 @@ func init() {
 	RegisterDetector(invalidConfigYAMLDetector{})
 	RegisterDetector(configFlagNotThreadedDetector{})
 	RegisterDetector(missingRequiredCLIDetector{})
-	RegisterDetector(optionalCodexAbsentDetector{})
 	RegisterDetector(devVersionBuildIntegrityDetector{})
 	RegisterDetector(staleProjectConfigDetector{})
 
@@ -649,18 +643,13 @@ func init() {
 		operatorCmd: "ao doctor explain " + fmMissingRequiredCLI,
 	})
 	RegisterFixer(cliConfigRefuser{
-		id:          fmOptionalCodexAbsent,
-		reason:      "optional codex CLI absent; the doctor does not install software or perform OAuth logins",
-		operatorCmd: "ao doctor explain " + fmOptionalCodexAbsent,
-	})
-	RegisterFixer(cliConfigRefuser{
 		id:          fmDevVersionBuildIntegrity,
 		reason:      "ao reports a non-release version; the doctor does not recompile or replace binaries",
 		operatorCmd: "ao doctor explain " + fmDevVersionBuildIntegrity,
 	})
 	RegisterFixer(cliConfigRefuser{
 		id:          fmStaleProjectConfig,
-		reason:      "a project .agentops/config.yaml shadows home config; the doctor will not move a possibly-intentional user file",
+		reason:      "a project .agents/ao/config.yaml shadows home config; the doctor will not move a possibly-intentional user file",
 		operatorCmd: "ao doctor explain " + fmStaleProjectConfig,
 	})
 }

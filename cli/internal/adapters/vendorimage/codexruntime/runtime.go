@@ -106,7 +106,7 @@ func detectLifecycleRuntimeProfileWithOptions(forceCodex bool) lifecycleRuntimeP
 		}
 	}
 
-	claudeManifest := filepath.Join(homeDir, ".agentops", "hooks.json")
+	claudeManifest := filepath.Join(homeDir, ".agents", "ao", "hooks.json")
 	legacyClaudeManifest := filepath.Join(homeDir, ".claude", "hooks.json")
 	codexManifest := filepath.Join(homeDir, ".codex", "hooks.json")
 	openCodeManifest := filepath.Join(homeDir, ".config", "opencode", "agentops", "hooks", "hooks.json")

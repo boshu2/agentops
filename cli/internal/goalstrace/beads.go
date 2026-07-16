@@ -1,13 +1,9 @@
 package goalstrace
 
 import (
-	"encoding/json"
-	"os"
-	"os/exec"
+	"context"
 	"regexp"
 	"strings"
-
-	"github.com/boshu2/agentops/cli/internal/trackerresolve"
 )
 
 // scenariosLineRe matches an explicit "Scenarios: <id>[, <id>...]" line in a
@@ -66,65 +62,23 @@ type BeadQuerier interface {
 	Beads() ([]beadRecord, error)
 }
 
-// execBeadQuerier queries beads via the real `bd` CLI. It is read-only:
-// `bd list --json` never mutates the tracker.
-type execBeadQuerier struct{}
-
-// NewExecBeadQuerier returns a BeadQuerier backed by the `bd` binary on PATH.
-func NewExecBeadQuerier() BeadQuerier {
-	return execBeadQuerier{}
+// ExecBeadQuerierOptions is retained as a source-compatible read-only option.
+// The bundled CLI no longer resolves or invokes tracker executables.
+type ExecBeadQuerierOptions struct {
+	Context context.Context
+	WorkDir string
 }
 
-// Available reports whether the bd binary is reachable via PATH.
-func (execBeadQuerier) Available() bool {
-	_, err := trackerresolve.Resolve("", os.Environ())
-	return err == nil
+type unavailableBeadQuerier struct{}
+
+// NewExecBeadQuerier no longer invokes br or bd. Tracker integration belongs
+// in a caller-selected plugin; the built-in goals trace remains filesystem-only.
+func NewExecBeadQuerier(options ...ExecBeadQuerierOptions) BeadQuerier {
+	return unavailableBeadQuerier{}
 }
 
-// Beads runs `bd list --json --all` and parses the result. Both an array and
-// a {"issues": [...]} envelope are accepted since bd output has varied.
-func (execBeadQuerier) Beads() ([]beadRecord, error) {
-	resolution, err := trackerresolve.Resolve("", os.Environ())
-	if err != nil {
-		return nil, err
-	}
-	out, err := exec.Command(resolution.Binary, "list", "--json", "--all").Output() // #nosec G204 -- selected br|bd binary.
-	if err != nil {
-		// Retry without --all for older tracker versions, never on another backend.
-		out, err = exec.Command(resolution.Binary, "list", "--json").Output() // #nosec G204 -- selected br|bd binary.
-		if err != nil {
-			return nil, err
-		}
-	}
-	return parseBeadList(out)
-}
-
-// parseBeadList decodes `bd list --json` output, tolerating either a bare
-// array or an {"issues": [...]} envelope.
-func parseBeadList(data []byte) ([]beadRecord, error) {
-	trimmed := strings.TrimSpace(string(data))
-	if trimmed == "" {
-		return nil, nil
-	}
-	if strings.HasPrefix(trimmed, "[") {
-		var arr []beadRecord
-		if err := json.Unmarshal([]byte(trimmed), &arr); err != nil {
-			return nil, err
-		}
-		return arr, nil
-	}
-	var env struct {
-		Issues []beadRecord `json:"issues"`
-		Beads  []beadRecord `json:"beads"`
-	}
-	if err := json.Unmarshal([]byte(trimmed), &env); err != nil {
-		return nil, err
-	}
-	if len(env.Issues) > 0 {
-		return env.Issues, nil
-	}
-	return env.Beads, nil
-}
+func (unavailableBeadQuerier) Available() bool              { return false }
+func (unavailableBeadQuerier) Beads() ([]beadRecord, error) { return nil, nil }
 
 // staticBeadQuerier is a test/fixture-backed BeadQuerier.
 type staticBeadQuerier struct {

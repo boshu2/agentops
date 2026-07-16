@@ -18,7 +18,24 @@ func main() {
 	inventory := flag.Bool("inventory", false, "emit the deterministic pre-migration family inventory")
 	out := flag.String("out", "", "write inventory JSON to this path instead of stdout")
 	verifyScope := flag.String("verify-scope", "", "verify a reviewed scope JSON against lineage and ownership")
+	candidateSHA := flag.String("candidate-sha", "", "externally resolved exact candidate Git SHA")
+	semanticProductionGate := flag.Bool("semantic-production-gate", false, "execute every registered semantic rule canary")
 	flag.Parse()
+	if *semanticProductionGate {
+		rules, err := archcheck.SemanticProductionGate(*candidateSHA)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, "go-cli semantic production gate FAIL:", err)
+			os.Exit(1)
+		}
+		for index, rule := range rules {
+			if index > 0 {
+				fmt.Print(",")
+			}
+			fmt.Print(rule)
+		}
+		fmt.Println()
+		return
+	}
 	if *selfTest {
 		if err := archcheck.SelfTest(); err != nil {
 			fmt.Fprintln(os.Stderr, "go-cli-architecture self-test FAIL:", err)
@@ -58,7 +75,7 @@ func main() {
 		fmt.Println(path)
 		return
 	}
-	violations, err := archcheck.Check(archcheck.Options{Root: *root, Family: *family, AllMigrated: *allMigrated, VerifyScope: *verifyScope})
+	violations, err := archcheck.Check(archcheck.Options{Root: *root, Family: *family, AllMigrated: *allMigrated, VerifyScope: *verifyScope, CandidateSHA: *candidateSHA})
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "go-cli-architecture:", err)
 		os.Exit(1)

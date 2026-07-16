@@ -78,7 +78,7 @@
       "kind": "artifact_check",
       "objective": "Catch drift where the Codex standards artifact regresses to slash-command wording or drops downstream skill integration links.",
       "expectations": [
-        {"type": "artifact_contains", "target": "../../skills-codex/standards/SKILL.md", "value": "Loaded automatically by `$vibe` and `$pre-mortem`"},
+        {"type": "artifact_contains", "target": "../../skills-codex/standards/SKILL.md", "value": "Loaded automatically by `$vibe` and `$premortem`"},
         {"type": "artifact_contains", "target": "../../skills-codex/standards/SKILL.md", "value": "- `$vibe` - Loads based on changed file types"},
         {"type": "artifact_contains", "target": "../../skills-codex/standards/SKILL.md", "value": "- `$implement` - Loads for files being modified"},
         {"type": "artifact_contains", "target": "../../skills-codex/standards/SKILL.md", "value": "- `$review` - Loads for change-quality and blast-radius checks"},

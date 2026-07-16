@@ -17,6 +17,30 @@ func TestGoCLIArchitectureInducedFixtures(t *testing.T) {
 	}
 }
 
+func TestSemanticEscapeClassifierPositiveAndNegativeFixtures(t *testing.T) {
+	positivePath := "cli/internal/adapters/example/runner.go"
+	positiveSource := []byte("package example\nimport (\"os/exec\"; _ \"github.com/boshu2/agentops/cli/internal/trackerresolve\")\nvar _ = exec.Command\n")
+	if classes := ClassifySemanticEscapes(positivePath, positiveSource); len(classes) == 0 {
+		t.Fatal("synthetic tracker-execution escape was not classified")
+	}
+	negativePath := "cli/internal/adapters/example/reader.go"
+	negativeSource := []byte("package example\nimport \"os\"\nvar _ = os.ReadFile\n")
+	if classes := ClassifySemanticEscapes(negativePath, negativeSource); len(classes) != 0 {
+		t.Fatalf("read-only adapter classified as %v", classes)
+	}
+}
+
+func TestRetiredFamilyDoesNotRequireUntrackedLiveOwnerDirectory(t *testing.T) {
+	root := t.TempDir()
+	ownership := ownershipRecord{LiveOwner: "cli/internal/commands/retired"}
+	if violations := checkLiveOwner(root, "retired", ownership); len(violations) != 0 {
+		t.Fatalf("retired family required an empty live-owner directory: %v", violations)
+	}
+	if violations := checkLiveOwner(root, "migrated", ownership); !hasRule(violations, RuleOwnership) {
+		t.Fatalf("active family did not require its live owner: %v", violations)
+	}
+}
+
 func TestGoCLIArchitectureFamilyOwnershipAndScope(t *testing.T) {
 	root := t.TempDir()
 	runFixtureGit(t, root, "init")

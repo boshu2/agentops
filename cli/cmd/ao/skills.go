@@ -23,8 +23,9 @@ var (
 )
 
 var skillsCmd = &cobra.Command{
-	Use:   "skills",
-	Short: "Inspect and validate the skills/ tree",
+	Use:     "skills",
+	Short:   "Inspect and validate the skills/ tree",
+	GroupID: "knowledge",
 	Long: `Tooling for the skills/ source-of-truth and its skills-codex/
 parity sibling. Subcommands surface health (frontmatter completeness,
 broken reference links, codex parity drift) without mutating either
@@ -51,14 +52,13 @@ var skillsResolveCmd = &cobra.Command{
 	Long: `Walk skills/ and resolve the corpus toward MECE:
 
   - Mutually Exclusive (ME): cluster skills by name-family stem and
-    description-token Jaccard, surfacing overlapping/near-duplicate skills as
-    merge candidates (the prune queue, cp-dkf).
+    description-token Jaccard, surfacing overlapping or near-duplicate skills
+    for caller review.
   - Collectively Exhaustive (CE): flag thin or description-less SKILL.md files
     as coverage-quality gaps.
 
-Read-only; mutates nothing. The deployment-DRY half (which live-tier symlink
-backs each name) is an operator-side concern handled by
-control-plane/bin/skill-resolve, not this command.
+Read-only; mutates nothing. Installation and symlink selection remain an
+operator-side concern outside this report.
 
 Exits 0 by default. With --strict, exits 1 when any ME overlap is reported,
 suitable for a CI dedup gate.`,
@@ -95,7 +95,7 @@ func runSkillsResolve(cmd *cobra.Command, args []string) error {
 		fmt.Fprintf(out, "Skills MECE resolve (%s)\n", report.Generated)
 		fmt.Fprintf(out, "===================\n")
 		fmt.Fprintf(out, "Skills:               %d\n", report.SkillsCount)
-		fmt.Fprintf(out, "ME candidate overlaps: %d  (review/merge -> cp-dkf)\n", len(report.Overlaps))
+		fmt.Fprintf(out, "ME candidate overlaps: %d  (caller review)\n", len(report.Overlaps))
 		fmt.Fprintf(out, "CE coverage flags:     %d  (thin/triggerless)\n\n", len(report.CoverageGaps))
 		if len(report.Overlaps) > 0 {
 			fmt.Fprintln(out, "Overlap candidates:")

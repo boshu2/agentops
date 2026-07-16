@@ -72,9 +72,9 @@ if [[ $skill_errors -eq 0 ]] && [[ $skill_count -gt 0 ]]; then
 fi
 
 # =============================================================================
-# Test 2b: Validate council/crank flag allowlists and contracts
+# Test 2b: Validate the optional council strategy contract
 # =============================================================================
-log "Validating council/crank flag allowlists..."
+log "Validating council strategy contract..."
 
 if [[ -x "$REPO_ROOT/tests/skills/validate-skill.sh" ]]; then
     if bash "$REPO_ROOT/tests/skills/validate-skill.sh" council "$REPO_ROOT/skills" > /tmp/validate-council.log 2>&1; then
@@ -82,13 +82,6 @@ if [[ -x "$REPO_ROOT/tests/skills/validate-skill.sh" ]]; then
     else
         fail "council validate-skill checks failed"
         tail -n 30 /tmp/validate-council.log | sed 's/^/    /'
-    fi
-
-    if bash "$REPO_ROOT/tests/skills/validate-skill.sh" crank "$REPO_ROOT/skills" > /tmp/validate-crank.log 2>&1; then
-        pass "crank validate-skill checks passed"
-    else
-        fail "crank validate-skill checks failed"
-        tail -n 30 /tmp/validate-crank.log | sed 's/^/    /'
     fi
 else
     warn "tests/skills/validate-skill.sh missing or not executable"
@@ -139,8 +132,7 @@ for runtime_test in \
     "$REPO_ROOT/tests/skills/test-runtime-claude-code-smoke.sh" \
     "$REPO_ROOT/tests/skills/test-runtime-codex-smoke.sh" \
     "$REPO_ROOT/tests/skills/test-runtime-cursor-smoke.sh" \
-    "$REPO_ROOT/tests/skills/test-runtime-opencode-smoke.sh" \
-    "$REPO_ROOT/tests/scripts/test-headless-runtime-skills.sh"; do
+    "$REPO_ROOT/tests/skills/test-runtime-opencode-smoke.sh"; do
     [[ -f "$runtime_test" ]] || continue
     test_name="$(basename "$runtime_test")"
     if bash "$runtime_test" >"/tmp/${test_name}.log" 2>&1; then
@@ -174,11 +166,10 @@ else
 fi
 
 # =============================================================================
-# Test 7: Claude CLI load test
+# Test 7: Optional Claude CLI load test
 # =============================================================================
-log "Testing Claude CLI plugin load..."
-
-if command -v claude &>/dev/null; then
+if [[ "${AGENTOPS_EXERCISE_CLAUDE_RUNTIME:-0}" == "1" ]] && command -v claude &>/dev/null; then
+    log "Testing explicitly requested Claude CLI plugin load..."
     load_output=$(timeout 10 claude --plugin-dir . --help 2>&1) || true
     if echo "$load_output" | grep -qiE "invalid manifest|validation error|failed to load"; then
         fail "Claude CLI load failed"
@@ -186,130 +177,6 @@ if command -v claude &>/dev/null; then
     else
         pass "Claude CLI loads plugin"
     fi
-else
-    warn "Claude CLI not available for load test"
-fi
-
-# =============================================================================
-# Test 8: Flywheel loop (next-work round-trip)
-# =============================================================================
-log "Testing flywheel loop (next-work round-trip)..."
-
-NEXTWORK_DIR="$REPO_ROOT/.agents/rpi"
-NEXTWORK_FILE="$NEXTWORK_DIR/next-work.jsonl"
-NEXTWORK_SCHEMA="$REPO_ROOT/docs/contracts/next-work.schema.md"
-
-# Check schema contract exists
-if [[ -f "$NEXTWORK_SCHEMA" ]]; then
-    pass "next-work.schema.md exists"
-else
-    fail "next-work.schema.md missing"
-fi
-
-if [[ -x "$REPO_ROOT/scripts/validate-next-work-contract-parity.sh" ]]; then
-    if "$REPO_ROOT/scripts/validate-next-work-contract-parity.sh" >/dev/null 2>&1; then
-        pass "next-work contract parity validator passed"
-    else
-        fail "next-work contract parity validator failed"
-    fi
-else
-    fail "scripts/validate-next-work-contract-parity.sh missing or not executable"
-fi
-
-# Validate existing next-work.jsonl if present
-if [[ -f "$NEXTWORK_FILE" ]]; then
-    if command -v jq &>/dev/null; then
-        # Validate each line is valid JSON with required fields
-        line_num=0
-        nw_errors=0
-        while IFS= read -r line; do
-            ((line_num++)) || true
-            [[ -z "$line" ]] && continue
-            if ! echo "$line" | jq -e '
-                .source_epic and
-                ((.timestamp | type == "string") or (.created_at | type == "string")) and
-                (.consumed | type == "boolean") and
-                (
-                  ((.items | type) == "array") or
-                  ((.title | type == "string") and (.type | type == "string") and (.severity | type == "string"))
-                )
-            ' >/dev/null 2>&1; then
-                fail "next-work.jsonl line $line_num: missing required fields for batch or legacy flat schema"
-                ((nw_errors++)) || true
-            fi
-            # Validate optional target_repo is a string when present
-            if echo "$line" | jq -e 'has("target_repo")' >/dev/null 2>&1; then
-                if ! echo "$line" | jq -e '(.target_repo | type) == "string"' >/dev/null 2>&1; then
-                    fail "next-work.jsonl line $line_num: target_repo must be a string"
-                    ((nw_errors++)) || true
-                fi
-            fi
-            if echo "$line" | jq -e 'has("items") and (.items | type == "array")' >/dev/null 2>&1; then
-                if ! echo "$line" | jq -e 'all(.items[]?; (has("target_repo") | not) or (.target_repo | type == "string"))' >/dev/null 2>&1; then
-                    fail "next-work.jsonl line $line_num: item target_repo must be a string"
-                    ((nw_errors++)) || true
-                fi
-                if ! echo "$line" | jq -e 'all(.items[]?; (has("claim_status") | not) or (.claim_status == "available" or .claim_status == "in_progress" or .claim_status == "consumed"))' >/dev/null 2>&1; then
-                    fail "next-work.jsonl line $line_num: item claim_status must be available|in_progress|consumed"
-                    ((nw_errors++)) || true
-                fi
-                if ! echo "$line" | jq -e 'all(.items[]?; (has("claimed_by") | not) or (.claimed_by == null) or ((.claimed_by | type) == "string"))' >/dev/null 2>&1; then
-                    fail "next-work.jsonl line $line_num: item claimed_by must be null or string"
-                    ((nw_errors++)) || true
-                fi
-                if ! echo "$line" | jq -e 'all(.items[]?; (has("claimed_at") | not) or (.claimed_at == null) or ((.claimed_at | type) == "string"))' >/dev/null 2>&1; then
-                    fail "next-work.jsonl line $line_num: item claimed_at must be null or string"
-                    ((nw_errors++)) || true
-                fi
-            fi
-            if echo "$line" | jq -e 'has("claim_status")' >/dev/null 2>&1; then
-                if ! echo "$line" | jq -e '(.claim_status == "available" or .claim_status == "in_progress" or .claim_status == "consumed")' >/dev/null 2>&1; then
-                    fail "next-work.jsonl line $line_num: claim_status must be available|in_progress|consumed"
-                    ((nw_errors++)) || true
-                fi
-            fi
-            if echo "$line" | jq -e 'has("claimed_by")' >/dev/null 2>&1; then
-                if ! echo "$line" | jq -e '(.claimed_by == null) or ((.claimed_by | type) == "string")' >/dev/null 2>&1; then
-                    fail "next-work.jsonl line $line_num: claimed_by must be null or string"
-                    ((nw_errors++)) || true
-                fi
-            fi
-            if echo "$line" | jq -e 'has("claimed_at")' >/dev/null 2>&1; then
-                if ! echo "$line" | jq -e '(.claimed_at == null) or ((.claimed_at | type) == "string")' >/dev/null 2>&1; then
-                    fail "next-work.jsonl line $line_num: claimed_at must be null or string"
-                    ((nw_errors++)) || true
-                fi
-            fi
-        done < "$NEXTWORK_FILE"
-        if [[ $nw_errors -eq 0 ]]; then
-            pass "next-work.jsonl: all $line_num entries have valid schema"
-        fi
-    else
-        warn "jq not available — skipping next-work.jsonl schema validation"
-    fi
-else
-    # Not an error — file only exists after first post-mortem with Step 8
-    if [[ "$VERBOSE" == "--verbose" ]]; then
-        log "  next-work.jsonl not present (expected before first flywheel cycle)"
-    fi
-    pass "next-work.jsonl absent (pre-flywheel state is valid)"
-fi
-
-# =============================================================================
-# Test 9: RPI context-windowing contract (large-repo mode)
-# =============================================================================
-log "Testing RPI context-windowing contract..."
-
-if [[ -x "scripts/rpi/context-window-contract.sh" ]]; then
-    cw_output=""
-    if cw_output=$(./scripts/rpi/context-window-contract.sh 2>&1); then
-        pass "RPI context-window contract passed"
-    else
-        fail "RPI context-window contract failed"
-        [[ "$VERBOSE" == "--verbose" ]] && echo "$cw_output" | sed 's/^/    /'
-    fi
-else
-    fail "scripts/rpi/context-window-contract.sh missing or not executable"
 fi
 
 # =============================================================================

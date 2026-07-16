@@ -568,7 +568,7 @@ func runLiveBench(k int, asJSON, global bool, corpusDir string) error {
 	fmt.Println()
 
 	if report.TotalLearnings == 0 {
-		fmt.Println("No learnings found. Run /retro or /post-mortem to populate the knowledge base.")
+		fmt.Println("No learnings found. Run /retro or /postmortem to populate the knowledge base.")
 		return nil
 	}
 
@@ -713,20 +713,8 @@ func bindRetrievalBenchFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVar(&benchSearchCompareBackends, "search-compare-backends", "", "Comma-separated search backends to compare for --search-eval")
 }
 
-// evalBenchCmd is the canonical `ao eval bench` alias for the retrieval-quality
-// benchmark, folded under `ao eval` (age-focus-membrane-bookkeeper-m1wg.16).
-var evalBenchCmd = &cobra.Command{
-	Use:   "bench",
-	Short: "Run retrieval quality benchmarks",
-	Long:  retrievalBenchCmd.Long,
-	RunE:  runRetrievalBench,
-}
-
 func init() {
 	retrievalBenchCmd.GroupID = "knowledge"
 	rootCmd.AddCommand(retrievalBenchCmd)
 	bindRetrievalBenchFlags(retrievalBenchCmd)
-
-	bindRetrievalBenchFlags(evalBenchCmd)
-	evalCmd.AddCommand(evalBenchCmd)
 }

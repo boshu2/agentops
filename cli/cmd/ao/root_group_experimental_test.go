@@ -2,12 +2,8 @@ package main
 
 import "testing"
 
-// TestExperimentalHelpGroup asserts the corpus/flywheel demotion contract
-// (age-h4y3): the experimental cobra group is registered on rootCmd and every
-// demoted corpus/flywheel command present in this (default/spine) build variant
-// carries it. age-nzwo archived `corpus` and `curate` behind the flywheel tag,
-// so they moved out of this default list into the flywheel-tagged variant in
-// root_group_experimental_flywheel_test.go (which asserts the full 12).
+// TestExperimentalHelpGroup asserts that optional knowledge commands do not
+// become lifecycle authorities merely because they are available.
 func TestExperimentalHelpGroup(t *testing.T) {
 	var title string
 	for _, g := range rootCmd.Groups() {
@@ -18,17 +14,11 @@ func TestExperimentalHelpGroup(t *testing.T) {
 	if title == "" {
 		t.Fatal("experimental cobra group not registered on rootCmd")
 	}
-	if title != "Experimental (corpus/flywheel):" {
-		t.Fatalf("experimental group title = %q, want %q", title, "Experimental (corpus/flywheel):")
+	if title != "Optional knowledge tools:" {
+		t.Fatalf("experimental group title = %q, want %q", title, "Optional knowledge tools:")
 	}
 
-	// corpus + curate + defrag are archived behind //go:build flywheel (age-nzwo)
-	// so they are absent from the spine build; the flywheel-tagged sibling test
-	// asserts them.
-	demoted := []string{
-		"compile", "dedup", "flywheel",
-		"maturity", "pool", "ratchet", "store", "temper", "wiki",
-	}
+	demoted := []string{"flywheel", "store", "wiki"}
 	for _, name := range demoted {
 		cmd, _, err := rootCmd.Find([]string{name})
 		if err != nil || cmd == nil || cmd.Name() != name {

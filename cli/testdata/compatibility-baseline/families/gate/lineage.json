@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "family": "gate",
+  "old_implementation_sha": "8f779fea9e7802e7d2410281ff0ab112e48eb6ea",
+  "freeze_sha": "121911c89c0dccf18a6e6229b6b92086fcd9d168",
+  "fixture_sha256": "67198187ec7bc117bc9190eca6238ab2c11a2853cfef3c48e89a89af46d65c7f",
+  "ownership_sha256": "0461b6c20f5477fde5b2fef03ecafaea9740c3f732d75092590877d4f0828a96",
+  "scope_sha256": "d286af8b81c202bea8c5a1a85d215d5da5aeedbaaac8f9ba1ebef9246b2cb2ad",
+  "migration_state": "migrated",
+  "accepted_sha": "bb6f4b58cfe3efb9489d61512b3bb9af5cfd8d45"
+}

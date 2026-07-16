@@ -71,7 +71,7 @@ The five principles are voluntary until codified. Codification path:
 | 2. Drift-blocking test | `check-test-pair-on-commit.sh` checks for added `*_test.go` / `*.bats` paired with modified `*.go` / `*.sh` | TODO (BC3 epic, separate cycle) |
 | 3. Sibling-pattern citation | lint commit body for `matching … pattern` / `sibling …` / `following the … shape` phrasing | TODO (BC3 epic, separate cycle) |
 | 4. Fitness delta | regex `/[0-9]+\/[0-9]+ → [0-9]+\/[0-9]+/` or similar numerical-pair pattern in commit body | TODO (BC3 epic, separate cycle) |
-| 5. Clean branch point | `git log --since` check on the commit's first-parent base — already partially enforced by `pre-push-gate.sh` worktree-disposition lane | partial |
+| 5. Clean branch point | Consumer repository policy; deliberately outside AgentOps | external |
 
 Each principle's enforcer ships as its own commit (each cycle demonstrates principle 1).
 
@@ -92,7 +92,7 @@ Not claiming the exemplar commit is the only valid shape. A bug fix can be one f
 
 - Rescope plan: `.agents/plans/2026-05-12-rescope-evolve-and-architecture.md` (operator review pending; tracked outside `.agents/` once filed under bd epics).
 - Bounded-context inventory: `.agents/research/2026-05-12-bounded-contexts-and-ports.md`.
-- Source post-mortem: `.agents/post-mortems/2026-05-12-evolve-session-improvement-postmortem.md`.
+- Source postmortem: `.agents/postmortems/2026-05-12-evolve-session-improvement-postmortem.md`.
 
 ## Cycle log
 
