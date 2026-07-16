@@ -1,8 +1,8 @@
 # Deep Skill Audit Checks
 
 `audit.sh` runs the structural `heal.sh --check --strict` pass, eight content
-checks, and an advisory quality score. The checks protect usability without
-rewarding ceremony or package size.
+checks, an advisory quality score, and advisory craft instrumentation. The
+checks protect usability without rewarding ceremony or package size.
 
 Executable thresholds and severities come from
 `skills/skill-builder/references/skill-conformance-profiles.yaml`.
@@ -59,6 +59,33 @@ kernels pass because their evidence and stop conditions are directly visible.
 
 The canonical repo-runtime kernel limit is 250 lines. Move genuinely detailed
 material into linked references instead of expanding the always-loaded kernel.
+
+## Craft instrumentation (Pass 4, advisory)
+
+`craft_score.py` adds three advisory blocks to the report. None of them ever
+changes the verdict or exit code; they name gaps for the author and the fresh
+validator to judge.
+
+- **Craft score** — presence of the 12 craft elements enumerated in
+  [skill-template.md](skill-template.md) section 7, reported as
+  `craft n/12; missing: <element-ids>`. Detection is cheap pattern matching
+  over authored prose (HTML comments are stripped, so `init.sh` scaffold stubs
+  never count). Presence, never quality.
+- **Provenance resolution** — repo paths and `.agentops` verdict/intent digest
+  citations (full or abbreviated `prefix...suffix`) extracted from prose must
+  resolve against the repository; each dead citation is a named finding.
+  Fenced code blocks are treated as examples, not citations.
+- **Loop safety** — any section with iteration prose (`repeat`, `iterate`,
+  `loop`) must contain a checkable stop-condition phrase (`stop after`,
+  `at most N`, `until ... exit 0`); an agent-dispatch loop must also carry a
+  budget phrase. Vague goals ("until it feels done") do not count as stop
+  conditions.
+
+The scorer's detection power is itself mutation-tested:
+
+```bash
+bash skills/skill-builder/scripts/test-craft-mutations.sh
+```
 
 ## Calibration rule
 

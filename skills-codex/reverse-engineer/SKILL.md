@@ -4,7 +4,7 @@ description: Reverse-engineer an authorized repo, binary
 ---
 # Reverse Engineer
 
-Reverse-engineer an external system into two things: a **mechanically-verifiable teardown** (feature inventory + registry + specs, optionally a security audit) and a **steal-map** — what to adopt into our surfaces, what to leave behind. The teardown is the evidence; the steal-map is the decision. The original failure mode this skill exists to prevent: reading a competitor's README and "deciding" from vibes.
+Reverse-engineer an external system into two things: a **mechanically-verifiable teardown** (feature inventory + registry + specs, optionally a security audit) and a **steal-map** — what to adopt into our surfaces, what to leave behind. The teardown is the evidence; the steal-map is the decision. Separating them works because a decision row that must cite a registry entry can be re-checked by anyone, while a decision made from impressions cannot be re-checked by its own author. The original failure mode this skill exists to prevent: reading a competitor's README and "deciding" from vibes.
 
 **Triggers:** "reverse-engineer X", "tear down Y", "what should we steal from Z", "evaluate competitor/upstream", "should we fork/adopt/build-native".
 

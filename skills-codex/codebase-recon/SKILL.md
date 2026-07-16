@@ -33,6 +33,40 @@ PASS/WARN/FAIL verdict.
    report, then run the validator. Missing evidence and hidden coverage gaps are
    contract failures, not prose caveats.
 
+## Docs-first entry-point tracing
+
+Enter through what the repository declares about itself — README, architecture
+docs, build manifests, CLI help — and only then verify those declarations
+against the tree. Before the first broad search, list the declared entry points
+and trace at least one of them to code. The named failure mode is grep-first
+drift: opening with keyword sweeps builds a model of whatever happened to
+match, and the recon inherits the search terms' blind spots instead of the
+repository's actual shape. When declaration and code disagree, that is a
+finding, not noise: record the doc's claim as `inference`, the traced behavior
+as `fact`, and cite both.
+
+## One-domain-deep lens per pass
+
+Each pass adopts exactly one lens — persistence, auth, CLI surface, build
+system, test harness — and follows it from entry point through domain logic to
+its tests before switching lenses. A pass ends in exactly one of two states:
+the lens has one complete entry-to-test flow, or the report names the file and
+line where the trace was cut and why. The named failure mode is the shallow
+sweep: touching every directory at depth one produces a file inventory that
+reads like a model but supports no claim, because no path was followed far
+enough to falsify anything.
+
+## Citation floor: file:line or downgrade
+
+The durable output doc earns its keep only if a future reader can re-verify a
+claim without redoing the recon. Every `fact` cites file:line; every
+`inference` cites the file:line facts it rests on. A claim that cannot be
+cited is downgraded to `unknown` before the report ships — never shipped
+uncited at its original confidence. The manifest validator accepts a bare path,
+but hold the companion report to the stricter floor: a path without a line is
+a pointer to homework, not a citation, and counts as a coverage gap in the
+report's own terms.
+
 ## Output Specification
 
 - **Artifact directory:** `.agents/recon/<run-id>/`

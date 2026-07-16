@@ -52,6 +52,36 @@ Each candidate must contain a measured count, source references, confidence in
 the clustering, pain evidence, and the smallest plausible automation shape.
 Separate observations from recommendations.
 
+## Repetition threshold: measured, not remembered
+
+A cluster qualifies as toil only above a measured floor: at least three
+occurrences in the supplied window, each resolvable to a source reference. Two
+occurrences are a coincidence; a vivid memory of "doing this constantly" with
+one resolvable instance is an anecdote. The named failure mode is
+salience mining — ranking by how annoying the last occurrence felt rather than
+by count, which surfaces yesterday's irritation over the quiet weekly drain.
+If the supplied history cannot establish the count, report the candidate as
+below-threshold with its actual measured count; never round an impression up
+to a frequency.
+
+## Weighted priority: frequency x cost x error-proneness
+
+Rank clusters by the product of three measured factors, not by any single one:
+
+- **frequency** — occurrences per window, from the cluster count;
+- **cost** — median elapsed time or token cost per occurrence, from the
+  evidence, not from recall;
+- **error-proneness** — fraction of occurrences showing a failure, retry, or
+  correction in the source.
+
+Score each factor from cited evidence and show the three inputs next to every
+composite score so the caller can re-weigh them. A factor the history cannot
+support is reported as unmeasured — scored at the floor, never guessed at the
+midpoint. The named failure mode is frequency-only ranking: a daily two-second
+nuisance outranking a weekly half-hour error-prone ritual because only one
+axis was measured. The product form exists precisely so that a high-frequency,
+near-zero-cost, never-fails cluster ranks where it belongs: low.
+
 ### Deterministic recent-human extraction (Codex JSONL)
 
 The helper accepts only explicit session paths and requires an explicit,

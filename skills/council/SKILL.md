@@ -33,6 +33,37 @@ high-blast-radius, or genuinely contested decision.
    minority evidence and unresolved assumptions.
 5. Write `council-report.v1` and return it to the caller.
 
+## Methodology-weighted agreement
+
+Agreement across differing evidence methodologies counts more than agreement
+within one. Record each judge's evidence methodology (for example: static
+reading, executing the subject, tracing history) alongside its judgment. A
+consensus claim must name at least two distinct methodologies among its
+supporting judges; otherwise report it as single-method agreement and weight
+it as one confirmation, however many judges share it. The named failure mode
+is echo consensus: unanimous judgment produced from identical inputs by one
+shared method, laundered as independent confirmation.
+
+## Fresh sessions per round
+
+Every judging round uses fresh judge contexts with new context IDs, distinct
+from the author, the synthesizer, and every prior round. A judge that has
+seen another judge's answer, or its own prior-round answer, is no longer
+independent: exclude its judgment from agreement counting and admit it only
+as labeled commentary. Reused or colliding context IDs are a checkable stop
+condition — repair the isolation or report the round as non-independent.
+
+## Synthesis section
+
+The report ends with an explicit consensus/divergence synthesis: consensus
+points with their methodology spread, divergence points with each side's
+cited evidence, minority findings preserved in their own words, and
+unresolved assumptions. Synthesis is complete when every judge finding lands
+in exactly one of those buckets; a finding silently dropped from synthesis is
+majority laundering.
+
+## Boundary
+
 Council does not write `verdict.v2`, edit the subject, retry work, choose a next
 action, or authorize Git, closure, release, or delivery. When Council is used as
 a Validate strategy, one accountable fresh validator consumes its report and

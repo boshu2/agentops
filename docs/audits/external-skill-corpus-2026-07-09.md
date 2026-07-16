@@ -94,7 +94,7 @@ manuals, and ATM alias/fork mechanics as product doctrine.
 | 3 | `beads-compliance-and-completion-verification` | absorb into `validate` + `ao done` evidence checks |
 | 4 | `brennerbot-with-ntm` | keep external/on-demand; investigation specialization |
 | 5 | `cass` | existing owner `cass` |
-| 6 | `code-review-gemini-swarm-with-ntm` | absorb into `council` + new `pawl-review` reviewer lanes |
+| 6 | `code-review-gemini-swarm-with-ntm` | absorb into `council` (review-swarm fresh sessions, model-downgrade detection) + `validate` completion verification |
 | 7 | `codebase-archaeology` | improve existing `codebase-recon` |
 | 8 | `codebase-audit` | improve `codebase-recon` bounded audit + `validate` verdict |
 | 9 | `codebase-pattern-extraction` | create `pattern-mining`, consumed by `operationalize` |
@@ -105,7 +105,7 @@ manuals, and ATM alias/fork mechanics as product doctrine.
 | 14 | `de-monolithize-your-codebase-isomorphically` | absorb into `refactor` |
 | 15 | `de-slopify` | absorb into `doc` + `refactor` |
 | 16 | `documentation-website-for-software-project` | keep external; product-specific generator |
-| 17 | `dsr` | absorb into `release` publisher boundaries |
+| 17 | `dsr` | keep external; release/delivery is caller-owned (4.0 boundary) |
 | 18 | `dueling-idea-wizards` | create original `dueling-idea-genies` |
 | 19 | `e2e-testing-for-webapps` | absorb into `test` + `validate` |
 | 20 | `extreme-software-optimization` | absorb into `refactor` + `test` proof loop |
@@ -117,8 +117,8 @@ manuals, and ATM alias/fork mechanics as product doctrine.
 | 26 | `ga4` | keep external; external product adapter |
 | 27 | `gcloud` | keep external; external product adapter |
 | 28 | `gdb-for-debugging` | keep external/on-demand; debugger specialization |
-| 29 | `gh-actions` | absorb into `release` + CI gates |
-| 30 | `gh-cli` | absorb into `release` + `pr-prep` publisher boundaries |
+| 29 | `gh-actions` | keep external; CI/delivery is caller-owned (4.0 boundary) |
+| 30 | `gh-cli` | keep external; publishing is caller-owned (4.0 boundary) |
 | 31 | `gh-og-share-images` | keep external; content utility |
 | 32 | `gh-triage-ru` | keep external; domain-specific triage |
 | 33 | `ghostty` | keep external; terminal adapter |
@@ -126,11 +126,11 @@ manuals, and ATM alias/fork mechanics as product doctrine.
 | 35 | `git-repo-janitor` | keep external/on-demand; repository maintenance utility |
 | 36 | `git-stash-janitor` | keep external/on-demand; repository maintenance utility |
 | 37 | `git-worktree-branch-rationalization` | keep external/on-demand; repository maintenance utility |
-| 38 | `idea-wizard` | create original `idea-genie` and wire from `discovery` |
-| 39 | `installer-workmanship` | absorb into `scaffold` + release validation |
+| 38 | `idea-wizard` | create original `idea-genie`; routed from `plan` (discovery retired, 4.0) |
+| 39 | `installer-workmanship` | absorb into `scaffold` installer quality |
 | 40 | `interactive-visualization-creator` | keep external; output specialization |
 | 41 | `lean-formal-feedback-loop` | keep external; language/tool specialization |
-| 42 | `library-updater` | absorb into `release` dependency ratchet |
+| 42 | `library-updater` | keep external; dependency/release ratchet is caller-owned (4.0 boundary) |
 | 43 | `mcp-server-design` | absorb into `standards` + `scaffold` |
 | 44 | `mock-code-finder` | absorb into `validate` bounded audit |
 | 45 | `modes-of-reasoning-project-analysis` | absorb into `council` perspectives |
@@ -145,13 +145,13 @@ manuals, and ATM alias/fork mechanics as product doctrine.
 | 54 | `rch` | existing owner `rch` |
 | 55 | `readme-writing` | absorb into `doc --mode=readme` |
 | 56 | `reality-check-for-project` | existing owner `reality-check` |
-| 57 | `release-preparations` | existing owner `release` |
-| 58 | `repeatedly-apply-skill` | absorb into bounded `rpi` / `evolve` convergence |
+| 57 | `release-preparations` | keep external; release is caller-owned (4.0 boundary); changelog craft absorbed into `doc` |
+| 58 | `repeatedly-apply-skill` | absorb into bounded `rpi` convergence (evolve retired, 4.0) |
 | 59 | `research-software` | existing owner `research` |
-| 60 | `ru-multi-repo-workflow` | absorb into `release` + `rch` validation |
+| 60 | `ru-multi-repo-workflow` | absorb into `rch` validation; release side caller-owned (4.0 boundary) |
 | 61 | `running-the-gauntlet-on-your-rust-port` | absorb into `test` + `validate` |
 | 62 | `rust-cli-with-sqlite` | absorb into `scaffold` reference patterns |
-| 63 | `rust-crates-publishing` | absorb into `release` |
+| 63 | `rust-crates-publishing` | keep external; publishing is caller-owned (4.0 boundary) |
 | 64 | `rust-undefined-behavior-exorcist` | absorb into `security` + `test` |
 | 65 | `rust-unsafe-code-exorcist` | absorb into `security` + `test` |
 | 66 | `saas-billing-patterns-for-stripe-and-paypal` | keep external; SaaS domain |
@@ -181,7 +181,7 @@ manuals, and ATM alias/fork mechanics as product doctrine.
 | 90 | `user-support-ticketing-system-for-saas` | keep external; SaaS domain |
 | 91 | `user-support-triage-for-saas-and-open-source-projects` | keep external; support domain |
 | 92 | `ux-audit` | absorb generic evidence lens into `codebase-recon` + `validate` |
-| 93 | `vercel` | absorb publisher boundary into `release`; keep platform manual external |
+| 93 | `vercel` | keep external; publishing is caller-owned (4.0 boundary), platform manual external |
 | 94 | `vibing-with-ntm` | keep retired; split behavior between `ntm` adapter mechanics and `agent-native` lifecycle |
 | 95 | `video-obs-youtube-music` | keep external; media utility |
 | 96 | `wezterm` | absorb pane/terminal boundary only into `ntm`; keep terminal manual external |
@@ -202,19 +202,19 @@ manuals, and ATM alias/fork mechanics as product doctrine.
 | 6 | `bd-to-br-migration` | absorb into `beads-br` migration references |
 | 7 | `beads-br` | existing owner `beads-br` |
 | 8 | `beads-bv` | existing owner `beads-bv` |
-| 9 | `beads-workflow` | absorb into `plan` + discovery persistence |
+| 9 | `beads-workflow` | absorb into `plan` bead-shaping (discovery retired, 4.0) |
 | 10 | `brenner` | keep external/on-demand; investigation specialization |
 | 11 | `browser-extension-automation` | keep external; browser specialization |
 | 12 | `browser-testing-with-ntm` | absorb worker lifecycle into `agent-native`; test method into `test` |
 | 13 | `caam` | existing owner `account-rotation` |
 | 14 | `cass-memory` | existing owner `cass` |
 | 15 | `cc-hooks` | existing optional owner `cc-hooks` |
-| 16 | `changelog-md-workmanship` | absorb into `release` + `doc` |
+| 16 | `changelog-md-workmanship` | absorb into `doc` changelog craft; release mechanics caller-owned (4.0 boundary) |
 | 17 | `deadlock-finder-and-fixer` | absorb into `validate` bounded audit + `status` recovery |
 | 18 | `detect-forgotten-sessions-post-crash` | absorb into `ntm` liveness + `status` recovery |
 | 19 | `document-to-latex` | keep external; format specialization |
 | 20 | `papers` | absorb research routing into `research`; keep network/package external |
-| 21 | `planning-workflow` | existing owner `plan` + `discovery` |
+| 21 | `planning-workflow` | existing owner `plan` (discovery retired, 4.0) |
 | 22 | `redacting-sensitive-parts-of-screencast-videos` | keep external; media utility |
 | 23 | `rg-optimized` | absorb bounded retrieval hints into `research`; keep utility external |
 | 24 | `testing-metamorphic` | absorb into `test` |
