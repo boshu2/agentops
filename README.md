@@ -1,7 +1,8 @@
 # AgentOps
 
-AgentOps is the operating loop for coding agents: one intent, one bounded
-build, one fresh judge, one durable verdict. For contested calls, opt into
+AgentOps is the operating loop a coding agent follows: one intent, one bounded
+build, one fresh judge, one durable verdict. It also ships skills to orchestrate
+multi-agent systems. For contested calls, opt into
 [`council`](skills/council/SKILL.md) (independent judges) or
 [`idea-genie`](skills/idea-genie/SKILL.md) duel mode (sealed perspectives
 before Plan).
@@ -9,13 +10,6 @@ before Plan).
 ```text
 RPI -> Plan -> Implement -> fresh Validate -> durable verdict -> report and stop
 ```
-
-Need more than one agent? Skills cover multi-agent orchestration —
-[`swarm`](skills/swarm/SKILL.md), [`agent-native`](skills/agent-native/SKILL.md),
-[`ntm`](skills/ntm/SKILL.md), [`using-gc`](skills/using-gc/SKILL.md). They
-dispatch work; they do not own the verdict. Optional factories around the
-loop: [Gas City](https://github.com/gastownhall/gascity) and Jeffrey Emanuel's
-[Agentic Coding Flywheel](https://agent-flywheel.com).
 
 ## Quickstart
 
@@ -60,6 +54,21 @@ text and the runtime snapshots those bytes the same way.
 
 `validate` must run in a fresh context (not the author session). Same model or
 a different one — both are supported.
+
+## Multi-agent systems
+
+The default loop is one agent, one writer. When you need a fleet,
+[`swarm`](skills/swarm/SKILL.md), [`agent-native`](skills/agent-native/SKILL.md),
+[`ntm`](skills/ntm/SKILL.md), and [`using-gc`](skills/using-gc/SKILL.md)
+orchestrate multi-agent work. They dispatch; they do not own the verdict.
+
+AgentOps already borrows heavily from that ecosystem. Two stacks people run
+around the same loop:
+
+- [Gas City](https://github.com/gastownhall/gascity) — orchestration-builder for
+  multi-agent coding workflows
+- Jeffrey Emanuel's [Agentic Coding Flywheel](https://agent-flywheel.com) —
+  coordinated multi-agent tooling (mail, beads, NTM, and friends)
 
 ## Optional: `ao` CLI
 
