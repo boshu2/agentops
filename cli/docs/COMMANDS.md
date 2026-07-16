@@ -17,6 +17,24 @@
 
 ## Commands
 
+### `ao demo`
+
+Show the AgentOps product boundary:
+
+```
+ao demo [flags]
+```
+
+**Flags:**
+
+```
+      --concepts   explain the product boundary
+  -h, --help       help for demo
+      --quick      show the compact one-pass example
+```
+
+---
+
 ### `ao init`
 
 Create local evidence and verdict directories. This command does not
@@ -222,7 +240,7 @@ ao robot-docs [flags]
 
 ### `ao status`
 
-Display local AgentOps evidence and optional knowledge observations.
+Display the content-addressed intent and verdict evidence stored by AgentOps.
 
 ```
 ao status [flags]

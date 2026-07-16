@@ -26,9 +26,23 @@ output_contract: read-only status snapshot
 
 # Status
 
-Report only observable local facts: available intent, candidate, and verdict
-artifacts; their digests and timestamps; deterministic check results; and
-unavailable or corrupt sources. Label staleness and uncertainty explicitly.
+Report only observable local facts: available intent, subject-manifest, and
+verdict artifacts; their counts, digests, and timestamps; deterministic check
+results; and unavailable or corrupt sources. The canonical durable stores are
+`.agentops/intents/sha256` and `.agentops/verdicts/sha256`; subject manifests
+remain caller-supplied unless the caller names their location. When `.agentops`
+evidence exists, report which stored artifact kind is newest and label that
+conclusion as evidence recency, not runtime phase or process activity.
+
+Always disclose `checked` and `not_checked`. Runtime phase, execution elapsed
+time, tool-call activity, and remaining work are `not_checked` unless a caller
+provides a separate authoritative source for them.
+
+`ao status` is the evidence-store view. It validates content-addressed artifact
+names and content before counting them, reports corrupt and unavailable entries,
+and shows only intent/verdict counts plus evidence recency. Legacy session
+indexes, provenance summaries, flywheel health, and quality signals belong to
+their own read surfaces and are not aggregated into this command.
 
 Status does not inspect work queues, assign priority, claim work, infer a next
 action, repair records, govern retries, or change any state. Optional Git or

@@ -11,7 +11,7 @@ import (
 // source packages do not become public commands merely by registering in tests.
 var defaultSpineCommands = map[string]struct{}{
 	"capabilities": {}, "config": {}, "constraint": {}, "doctor": {},
-	"flywheel": {}, "gate": {}, "goals": {},
+	"demo": {}, "flywheel": {}, "gate": {}, "goals": {},
 	"init": {}, "provenance": {}, "quick-start": {},
 	"redact": {}, "robot-docs": {}, "session": {}, "skills": {}, "status": {},
 	"version": {},

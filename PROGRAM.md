@@ -5,11 +5,12 @@ repository execution guidance, not a product retry or delivery controller.
 
 ## Experiment unit
 
-One invocation contains:
+One invocation consumes and produces:
 
-1. one behavior-first PlanPacket;
+1. one resolved caller-owned intent, snapshotted by content when necessary;
 2. one bounded RED -> GREEN -> refactor implementation experiment;
-3. one CandidatePacket with complete or honestly incomplete changed-path proof;
+3. one runtime-derived subject manifest and factual check receipts with
+   complete or honestly incomplete changed-path proof;
 4. one fresh author-distinct Validate judgment over exact content;
 5. one durable verdict and report.
 

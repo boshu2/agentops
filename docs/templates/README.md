@@ -6,8 +6,10 @@ These templates carry one bounded turn of the
 [operating loop](../architecture/operating-loop.md): behavior-first intent,
 one experiment, exact subject identity, and fresh validation.
 
-- [PlanPacket worksheet](./intent-issue.md) — optional source material for Plan.
-- [Candidate and validation worksheet](./slice-validation.md) — factual candidate and independent verdict inputs.
+- [Intent worksheet](./intent-issue.md) — optional source material for the
+  caller-owned intent.
+- [Experiment and validation worksheet](./slice-validation.md) — factual
+  implementation evidence and independent verdict inputs.
 
 ## Authoring templates
 

@@ -24,6 +24,33 @@ are optional execution choices only when the caller authorizes them. Prior
 research, CASS, MS, codebase recon, and pattern mining are advisory sources,
 not required phases.
 
+### Multiple caller-supplied reports
+
+When the caller supplies several reports for one bounded question, synthesize
+them as evidence inside this same Research invocation:
+
+1. Build a source ledger before comparing claims. Preserve each report's path or
+   supplied identifier, title, author/runtime when known, and revision or date
+   when supplied. Assign a short local label without replacing that identity.
+2. Extract each load-bearing claim with its source label and original evidence
+   reference. Normalize wording only for comparison; never merge citations or
+   make agreement erase provenance.
+3. Group comparable claims into **agreement**, **contradiction**, and **unknown**.
+   Agreement means independent reports support the same claim. Contradiction
+   preserves the conflicting claims and evidence. Unknown means the reports do
+   not establish the fact or the underlying source was not checked. Reports that
+   repeat one upstream source are agreement in wording, not independent
+   corroboration; preserve that shared provenance.
+4. Verify load-bearing claims against authoritative content when the bounded
+   question requires it. A report's conclusion is advisory, not authority.
+5. Produce one cited synthesis that states what the reports jointly support,
+   where they disagree, and what remains unknown. Report checked and unchecked
+   sources, then stop.
+
+Do not recursively launch another Research pass, invent a synthesis umbrella,
+or start a new runtime merely because multiple reports exist. Additional readers
+remain caller-authorized execution choices, not part of this procedure.
+
 ## Output
 
 For a quick question, return the cited answer directly. When the caller asks
@@ -34,6 +61,10 @@ for a durable artifact, write one report containing:
 - evidence references;
 - contradictions and unknowns;
 - checked and unchecked areas.
+
+For a durable synthesis of multiple reports, also include `source_ledger` and
+`comparison` (`agreements`, `contradictions`, and `unknowns`) as defined by the
+output schema. Single-report outputs may omit those optional fields.
 
 Do not emit approval, confidence gates, retry instructions, owner, next action,
 or delivery state.

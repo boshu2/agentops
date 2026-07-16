@@ -17,8 +17,9 @@ explicit behavior
 
 ## Fitness properties
 
-1. **Behavior before activity.** Every PlanPacket contains normal and edge
-   Given/When/Then scenarios, non-goals, evidence, and bounded write scope.
+1. **Behavior before activity.** The caller-owned intent states the active
+   behavior, acceptance examples where useful, non-goals, evidence, and bounded
+   write scope before implementation begins.
 2. **One experiment.** Implement performs one RED -> GREEN -> refactor cycle and
    reports facts without retry or delivery authority.
 3. **Fresh judgment.** PASS requires explicit, distinct author and validator

@@ -21,7 +21,8 @@
 #         because plain `ps aux | grep` false-negatives on these (measured).
 #     (2) CLEAR the stale lock a killed/crashed writer leaves (a dead-pid lock is
 #         safe to delete — SKILL.md footgun table); refuse if a LIVE pid holds it.
-#     (3) REBUILD the index and PROVE it took (indexed >= MIN, errors <= MAX).
+#     (3) REBUILD the index and PROVE it took (every discovered skill is either
+#         indexed or reported as an error, errors <= MAX, index nonempty).
 #     (4) SWEEP again — belt-and-suspenders: kill any server that raced in during
 #         the rebuild (literal "kill after rebuild").
 #     (5) PROBE a FRESH one-shot server over stdio JSON-RPC and assert it serves a
@@ -37,7 +38,10 @@
 set -euo pipefail
 
 MS_BIN="${MS_BIN:-ms}"
-MIN_INDEXED="${MS_REINDEX_MIN_INDEXED:-170}"
+# Optional operator policy, deliberately unset by default. Corpus size changes
+# as skills are added/retired; rebuild completeness comes from the indexer's own
+# discovered/indexed/errors accounting, not a frozen historical count.
+MIN_INDEXED="${MS_REINDEX_MIN_INDEXED:-}"
 MAX_ERRORS="${MS_REINDEX_MAX_ERRORS:-1}"          # the intentional _fixtures/bad-skill
 SERVE_PATTERN="${MS_REINDEX_SERVE_PATTERN:-ms mcp serve}"
 PROBE_QUERY="${MS_REINDEX_PROBE_QUERY:-flaky concurrent test}"
@@ -139,22 +143,43 @@ step_clear_stale_locks() {
 
 # --- Rebuild the index, assert it took -----------------------------------------
 step_index() {
-  local out indexed errors
+  local out indexed errors discovered accounted floor_label
   if ! out="$("$MS_BIN" index -O json 2>/dev/null)"; then
     die "ms index exited nonzero even after sweep+lock-clear — check: ms doctor"
   fi
   [ -n "$out" ] || die "ms index produced no JSON on stdout"
-  indexed="$(printf '%s' "$out" | jq -r '.indexed // empty')"
-  errors="$(printf '%s' "$out" | jq -r '(.errors // []) | length')"
-  [ -n "$indexed" ] || die "ms index JSON missing .indexed: $out"
-  case "$indexed" in ''|*[!0-9]*) die "ms index .indexed not numeric: '$indexed'";; esac
-  if [ "$indexed" -lt "$MIN_INDEXED" ]; then
-    die "indexed=$indexed < required $MIN_INDEXED — index looks empty/broken"
+
+  if ! printf '%s' "$out" | jq -e '
+    (type == "object")
+    and (.indexed | (type == "number") and (. >= 0) and (floor == .))
+    and (.errors | type == "array")
+    and (.package_summary.skills_discovered
+      | (type == "number") and (. >= 0) and (floor == .))
+  ' >/dev/null 2>&1; then
+    die "ms index JSON missing/invalid integer .indexed, array .errors, or integer .package_summary.skills_discovered"
   fi
+  indexed="$(printf '%s' "$out" | jq -r '.indexed // empty')"
+  errors="$(printf '%s' "$out" | jq -r '.errors | length')"
+  discovered="$(printf '%s' "$out" | jq -r '.package_summary.skills_discovered')"
+
+  case "$MAX_ERRORS" in ''|*[!0-9]*) die "MS_REINDEX_MAX_ERRORS must be a nonnegative integer, got '$MAX_ERRORS'";; esac
+  if [ -n "$MIN_INDEXED" ]; then
+    case "$MIN_INDEXED" in *[!0-9]*) die "MS_REINDEX_MIN_INDEXED must be a nonnegative integer, got '$MIN_INDEXED'";; esac
+  fi
+  [ "$discovered" -gt 0 ] || die "skills_discovered=$discovered — refusing to accept an empty corpus"
+  [ "$indexed" -gt 0 ] || die "indexed=$indexed — refusing to accept an empty searchable index"
   if [ "$errors" -gt "$MAX_ERRORS" ]; then
     die "errors=$errors > allowed $MAX_ERRORS: $(printf '%s' "$out" | jq -c '.errors')"
   fi
-  log "index OK — indexed=$indexed errors=$errors (min=$MIN_INDEXED max_err=$MAX_ERRORS)"
+  accounted=$((indexed + errors))
+  if [ "$accounted" -ne "$discovered" ]; then
+    die "incomplete index accounting — indexed=$indexed + errors=$errors = $accounted, discovered=$discovered"
+  fi
+  if [ -n "$MIN_INDEXED" ] && [ "$indexed" -lt "$MIN_INDEXED" ]; then
+    die "indexed=$indexed < explicit floor $MIN_INDEXED"
+  fi
+  floor_label="${MIN_INDEXED:-none}"
+  log "index OK — discovered=$discovered indexed=$indexed errors=$errors (explicit_floor=$floor_label max_err=$MAX_ERRORS)"
 }
 
 # --- Probe a fresh one-shot server over stdio JSON-RPC -------------------------
@@ -247,7 +272,7 @@ Usage:
   ms-reindex.sh --check-source       Compare local ms loads with current AgentOps source.
   ms-reindex.sh -h | --help
 
-Env overrides: MS_BIN, MS_DATA_DIR, MS_REINDEX_MIN_INDEXED (170),
+Env overrides: MS_BIN, MS_DATA_DIR, MS_REINDEX_MIN_INDEXED (optional explicit floor),
   MS_REINDEX_MAX_ERRORS (1), MS_REINDEX_SERVE_PATTERN, MS_REINDEX_PROBE_QUERY,
   MS_REINDEX_PROBE_EXPECT_ID, MS_REINDEX_ORPHAN_IDS, MS_REINDEX_PS_FIXTURE (test hook),
   MS_REINDEX_SKILLS_ROOT (defaults to this repository's skills/ directory).

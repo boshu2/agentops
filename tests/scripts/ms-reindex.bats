@@ -32,14 +32,14 @@ teardown() {
 }
 
 # Write a mock `ms` binary. $1=indexed count, $2=errors JSON array,
-# $3=serve line-2 (the tools/call result). Reads env for nothing else.
+# $3=serve line-2 (the tools/call result), $4=discovered count (default 177).
 write_mock() {
-    local indexed="$1" errors="$2" serve_l2="$3"
+    local indexed="$1" errors="$2" serve_l2="$3" discovered="${4:-177}"
     cat > "$MOCK" <<EOF
 #!/usr/bin/env bash
 case "\$1" in
   index)
-    printf '%s' '{"status":"partial","indexed":${indexed},"errors":${errors},"elapsed_ms":127,"package_summary":{"skills_discovered":177,"skills_with_companions":165,"total_companion_files":4517}}'
+    printf '%s' '{"status":"partial","indexed":${indexed},"errors":${errors},"elapsed_ms":127,"package_summary":{"skills_discovered":${discovered},"skills_with_companions":165,"total_companion_files":4517}}'
     ;;
   mcp)
     if [ "\$2" = "serve" ]; then
@@ -71,16 +71,45 @@ SERVE_MISSING='{"jsonrpc":"2.0","id":2,"result":{"content":[{"type":"text","text
     printf '' > "$TMP_DIR/empty_ps"
     run env MS_BIN="$MOCK" MS_REINDEX_PS_FIXTURE="$TMP_DIR/empty_ps" bash "$SCRIPT"
     [ "$status" -eq 0 ]
-    [[ "$output" == *"index OK — indexed=176"* ]]
+    [[ "$output" == *"index OK — discovered=177 indexed=176 errors=1"* ]]
     [[ "$output" == *"probe OK"* ]]
     [[ "$output" == *"DONE"* ]]
 }
 
-@test "fails loud when indexed below the minimum" {
-    write_mock 5 '[]' "$SERVE_GOOD"
+@test "corpus shrink passes when live discovered accounting is complete" {
+    write_mock 12 '[{"path":"skills/_fixtures/bad-skill/SKILL.md","error":"missing skill id"}]' "$SERVE_GOOD" 13
+    run env MS_BIN="$MOCK" MS_REINDEX_PS_FIXTURE=/dev/null bash "$SCRIPT"
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"index OK — discovered=13 indexed=12 errors=1"* ]]
+}
+
+@test "fails loud when indexing does not account for every discovered skill" {
+    write_mock 170 '[{"path":"a","error":"x"}]' "$SERVE_GOOD" 177
     run env MS_BIN="$MOCK" MS_REINDEX_PS_FIXTURE=/dev/null bash "$SCRIPT"
     [ "$status" -ne 0 ]
-    [[ "$output" == *"indexed=5 < required 170"* ]]
+    [[ "$output" == *"incomplete index accounting"* ]]
+    [[ "$output" == *"indexed=170 + errors=1 = 171, discovered=177"* ]]
+}
+
+@test "optional explicit indexed floor remains available" {
+    write_mock 12 '[]' "$SERVE_GOOD" 12
+    run env MS_BIN="$MOCK" MS_REINDEX_MIN_INDEXED=13 MS_REINDEX_PS_FIXTURE=/dev/null bash "$SCRIPT"
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"indexed=12 < explicit floor 13"* ]]
+}
+
+@test "fails closed when the searchable index is empty" {
+    write_mock 0 '[{"path":"a","error":"x"}]' "$SERVE_GOOD" 1
+    run env MS_BIN="$MOCK" MS_REINDEX_PS_FIXTURE=/dev/null bash "$SCRIPT"
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"refusing to accept an empty searchable index"* ]]
+}
+
+@test "fails closed when index JSON omits live discovery facts" {
+    write_mock 12 '[]' "$SERVE_GOOD" null
+    run env MS_BIN="$MOCK" MS_REINDEX_PS_FIXTURE=/dev/null bash "$SCRIPT"
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"missing/invalid integer .indexed, array .errors, or integer .package_summary.skills_discovered"* ]]
 }
 
 @test "fails loud when errors exceed the allowance" {
@@ -91,14 +120,14 @@ SERVE_MISSING='{"jsonrpc":"2.0","id":2,"result":{"content":[{"type":"text","text
 }
 
 @test "probe fails loud when an orphan-class id is present" {
-    write_mock 176 '[]' "$SERVE_ORPHAN"
+    write_mock 176 '[]' "$SERVE_ORPHAN" 176
     run env MS_BIN="$MOCK" MS_REINDEX_PS_FIXTURE=/dev/null bash "$SCRIPT"
     [ "$status" -ne 0 ]
     [[ "$output" == *"ORPHAN id 'expected-all-pass' present"* ]]
 }
 
 @test "probe fails loud when the expected real id is missing" {
-    write_mock 176 '[]' "$SERVE_MISSING"
+    write_mock 176 '[]' "$SERVE_MISSING" 176
     run env MS_BIN="$MOCK" MS_REINDEX_PS_FIXTURE=/dev/null bash "$SCRIPT"
     [ "$status" -ne 0 ]
     [[ "$output" == *"expected real id 'deadlock-finder-and-fixer' NOT in results"* ]]

@@ -8,7 +8,7 @@ import (
 
 var approvedDefaultSpine = map[string]bool{
 	"capabilities": true, "config": true, "constraint": true, "doctor": true,
-	"gate": true, "goals": true, "init": true,
+	"demo": true, "gate": true, "goals": true, "init": true,
 	"flywheel":   true,
 	"provenance": true, "quick-start": true, "redact": true, "robot-docs": true,
 	"session": true, "skills": true, "status": true,

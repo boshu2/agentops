@@ -13,6 +13,7 @@
 | `ao constraint` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao converge` | `deprecated` | `allowlisted` | One-release failure stub for removed retry convergence. |
 | `ao crank` | `deprecated` | `allowlisted` | One-release failure stub for removed factory controller. |
+| `ao demo` | `manual-only` | `allowlisted` | Interactive demonstration requires a TTY. |
 | `ao doctor capabilities` | `public-stateful-fixture-needed` | `allowlisted` | Inspects local installation state. |
 | `ao doctor diff` | `public-stateful-fixture-needed` | `allowlisted` | Compares local installation state. |
 | `ao doctor explain` | `public-stateful-fixture-needed` | `allowlisted` | Requires controlled findings. |

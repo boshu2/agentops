@@ -27,7 +27,7 @@ X = EFC / D_task     feedback SUFFICIENCY — measured against task demand
 
 | Factor | "Counts only when…" | AgentOps mechanism | Failure mode it names |
 |---|---|---|---|
-| **I — Informative** | reveals task-relevant info | `ao inject` / corpus retrieval; discovery→plan packet; routing the right context to the right move | context-stuffing that surfaces nothing relevant |
+| **I — Informative** | reveals task-relevant info | `ao inject` / corpus retrieval; discovery→resolved intent; routing the right context to the right move | context-stuffing that surfaces nothing relevant |
 | **V — Valid** | grounded in reliable evidence | gates (`ao gate`), evidence-before-close, provenance ledger, cross-family review, `eval-outcomes`, real tests | confident-but-ungrounded output; "looks good" self-grade |
 | **R — Non-redundant** | addresses an *active* subgoal, no repeats | corpus dedup, dry-runs, the promotion ratchet (kill artifacts that don't change behavior) | re-observing the same failure; flailing; landfill `.agents/` |
 | **M — Retained** | actually affects later decisions | the Knowledge Flywheel; `σ×ρ` in `ao metrics health` (ρ ≈ M); durable `.agents/` corpus; handoffs | learnings written and never re-read |

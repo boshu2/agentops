@@ -2,9 +2,9 @@
 
 ## Preserve evidence
 
-Copy the relevant PlanPacket, CandidatePacket, manifest, command output, and
-verdict before changing the subject. Do not treat an incomplete or corrupt
-artifact as PASS.
+Copy the resolved intent or snapshot, subject manifest, check receipts, command
+output, and verdict before changing the subject. Do not treat incomplete or
+corrupt evidence as PASS.
 
 ## Classify the boundary
 

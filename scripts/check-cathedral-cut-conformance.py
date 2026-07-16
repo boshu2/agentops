@@ -18,12 +18,28 @@ import yaml
 ROOT = Path(__file__).resolve().parents[1]
 CORE = ("rpi", "plan", "implement", "validate")
 CORE_SCHEMAS = (
-    "plan-packet.v1.schema.json",
-    "candidate-packet.v1.schema.json",
     "subject-manifest.v1.schema.json",
-    "revision-packet.v1.schema.json",
     "verdict.v2.schema.json",
     "rpi-report.v1.schema.json",
+)
+COMPATIBILITY_SCHEMAS = (
+    "plan-packet.v1.schema.json",
+    "candidate-packet.v1.schema.json",
+    "revision-packet.v1.schema.json",
+)
+PACKET_FREE_NARRATIVE = (
+    "GOALS.md",
+    "PROGRAM.md",
+    "docs/software-factory.md",
+    "docs/seed-definition.md",
+    "docs/INCIDENT-RUNBOOK.md",
+    "docs/templates/README.md",
+    "docs/templates/intent-issue.md",
+    "docs/templates/slice-validation.md",
+)
+LEGACY_PACKET_TOKENS = (
+    "PlanPacket", "CandidatePacket", "RevisionPacket",
+    "plan-packet.v1", "candidate-packet.v1", "revision-packet.v1",
 )
 FORBIDDEN_STATE = {
     "owner", "ready", "claim", "priority", "attempt", "attempts", "queue",
@@ -132,12 +148,40 @@ def check_core_schemas() -> None:
         schema = json.loads(path.read_text(encoding="utf-8"))
         bad = property_names(schema).intersection(FORBIDDEN_STATE)
         assert not bad, f"{filename}: lifecycle state {sorted(bad)}"
+    for filename in COMPATIBILITY_SCHEMAS:
+        path = ROOT / "schemas" / filename
+        assert path.is_file(), f"missing compatibility schema: {filename}"
+        schema = json.loads(path.read_text(encoding="utf-8"))
+        assert schema.get("deprecated") is True, f"{filename}: compatibility schema is not deprecated"
     verdict = json.loads((ROOT / "schemas" / "verdict.v2.schema.json").read_text())
     assert set(verdict["properties"]["verdict"]["enum"]) == {"PASS", "FAIL", "NOT_PROVEN"}
     for forbidden in ("WARN", "confidence", "disposition", "next_action", "NOT_BUILT", "NOT_PLANNED"):
         assert forbidden not in json.dumps(verdict), f"verdict.v2 retains {forbidden}"
     for filename in RETIRED_SCHEMAS:
         assert not (ROOT / "schemas" / filename).exists(), f"retired schema is live: {filename}"
+
+
+def check_packet_free_narrative() -> None:
+    for relative in PACKET_FREE_NARRATIVE:
+        text = (ROOT / relative).read_text(encoding="utf-8")
+        advertised = [name for name in LEGACY_PACKET_TOKENS if name in text]
+        assert not advertised, f"{relative}: advertises legacy packets {advertised}"
+
+    schemas_doc = (ROOT / "docs" / "SCHEMAS.md").read_text(encoding="utf-8")
+    assert "## Legacy compatibility" in schemas_doc, "docs/SCHEMAS.md: no legacy compatibility section"
+    current_schema_section = schemas_doc.split("## Legacy compatibility", 1)[0]
+    assert not any(name in current_schema_section for name in LEGACY_PACKET_TOKENS), (
+        "docs/SCHEMAS.md: legacy packet listed as a current core schema"
+    )
+
+    contracts_doc = (ROOT / "docs" / "contracts" / "index.md").read_text(encoding="utf-8")
+    assert "Deprecated compatibility contracts" in contracts_doc, (
+        "docs/contracts/index.md: compatibility contracts are not labeled deprecated"
+    )
+    current_contract_section = contracts_doc.split("Deprecated compatibility contracts", 1)[0]
+    assert not any(name in current_contract_section for name in LEGACY_PACKET_TOKENS), (
+        "docs/contracts/index.md: legacy packet listed as a current public contract"
+    )
 
 
 def check_single_pass_contract() -> None:
@@ -352,6 +396,7 @@ def main() -> int:
         check_skill_graph,
         check_generated_skill_inventory,
         check_core_schemas,
+        check_packet_free_narrative,
         check_single_pass_contract,
         check_validate_helper,
         check_tombstones,
