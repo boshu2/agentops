@@ -1,7 +1,9 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://agentops.dev/schemas/revision-packet.v1.schema.json",
-  "title": "RevisionPacket v1",
+  "title": "Legacy RevisionPacket v1 compatibility schema",
+  "description": "Deprecated compatibility schema for reading previously produced revision packets. The current AgentOps loop records changes once in the caller-owned intent source instead.",
+  "deprecated": true,
   "$comment": "Compatibility-only legacy format. Revisions belong in the caller-owned bead or intent source; the default core loop does not ask a model to author this packet.",
   "type": "object",
   "additionalProperties": false,

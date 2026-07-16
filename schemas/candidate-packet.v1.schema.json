@@ -1,7 +1,9 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://agentops.dev/schemas/candidate-packet.v1.schema.json",
-  "title": "CandidatePacket v1",
+  "title": "Legacy CandidatePacket v1 compatibility schema",
+  "description": "Deprecated compatibility schema for reading previously produced candidate packets. The current AgentOps loop derives subject identity, changed paths, and check receipts at runtime instead.",
+  "deprecated": true,
   "$comment": "Compatibility-only legacy format. The default core loop derives subject identity, changed paths, and check receipts at runtime and does not ask a model to author this packet.",
   "type": "object",
   "additionalProperties": false,

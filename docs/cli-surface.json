@@ -65,6 +65,13 @@
       "reason": "One-release failure stub for removed factory controller."
     },
     {
+      "category": "manual-only",
+      "command": "demo",
+      "coverage_status": "allowlisted",
+      "kind": "leaf",
+      "reason": "Interactive demonstration requires a TTY."
+    },
+    {
       "category": "public-stateful-fixture-needed",
       "command": "doctor capabilities",
       "coverage_status": "allowlisted",

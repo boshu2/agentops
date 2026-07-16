@@ -1,7 +1,9 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://agentops.dev/schemas/plan-packet.v1.schema.json",
-  "title": "PlanPacket v1",
+  "title": "Legacy PlanPacket v1 compatibility schema",
+  "description": "Deprecated compatibility schema for reading previously produced planning packets. The current AgentOps loop refines the caller-owned intent source instead.",
+  "deprecated": true,
   "$comment": "Compatibility-only legacy format. The default core loop reads planning intent from the caller-owned bead, issue, or conversation and does not ask a model to author this packet.",
   "type": "object",
   "additionalProperties": false,
