@@ -1,6 +1,6 @@
 ---
 name: workflow-builder
-description: 'Scaffold an explicit one-shot workflow adapter without lifecycle authority.'
+description: 'Scaffold an explicit one-shot workflow adapter without lifecycle authority. Triggers: "build a workflow adapter", "scaffold a one-shot workflow".'
 practices:
 - pragmatic-programmer
 - hexagonal-architecture
@@ -37,6 +37,17 @@ output_contract: a runnable one-shot workflow with explicit inputs and outputs
 Build a thin adapter only when a caller needs to dispatch an explicit set of
 independent operations. A workflow is convenience code, never a correctness or
 lifecycle authority.
+
+At-most-once dispatch over explicit inputs is the whole safety argument: a
+workflow that cannot retry or select work cannot compound a failure, so the
+worst case is one reported error per operation.
+
+Named failure mode — **framework gravity**: a one-shot script growing config
+files, plugin hooks, and a state store until it is an unrequested orchestrator.
+
+Anti-pattern: adding retry-on-failure "just for robustness". Corrective:
+report the per-operation error and stop; the caller owns whether anything runs
+again.
 
 ## Contract
 

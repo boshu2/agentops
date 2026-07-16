@@ -29,16 +29,15 @@ var (
 )
 
 var provenanceCmd = &cobra.Command{
-	Use:   "provenance",
-	Short: "Write and read the SDLC provenance edge ledger",
-	Long: `Append-only write model for the SDLC provenance/intent graph
-(ag-x31t). Edges are typed, evidence-backed relations between SDLC nodes
-(e.g. a decision and the artifact it produced), recorded as per-record
-hash-chained events in the committed ledger at docs/provenance/ledger.jsonl.
+	Use:     "provenance",
+	Short:   "Write and read optional evidence relationships",
+	GroupID: "comms",
+	Long: `Append and inspect generic, evidence-backed relationships between
+artifacts, decisions, and observations. Records use a hash-chained JSONL file
+at docs/provenance/ledger.jsonl when that repository path exists.
 
-Per CLAUDE.md the committed JSONL ledger is the AUDIT authority and source of
-truth; any Dolt projection is rebuildable and loses on disagreement, so these
-subcommands write the JSONL ledger directly.`,
+Provenance is optional audit evidence. Its availability or contents never
+change RPI sequencing, candidate identity, or a Validate verdict.`,
 }
 
 var provenanceAddCmd = &cobra.Command{
@@ -53,11 +52,11 @@ The command is idempotent: re-running with the same endpoints, relation,
 evidence, and trust tier is a no-op (no duplicate row).
 
 Examples:
-  ao provenance add ag-x31t.4 cli/cmd/ao/provenance_add.go \
+  ao provenance add decision-42 cli/cmd/ao/provenance_add.go \
     --relation wasGeneratedBy --to-type artifact
-  ao provenance add soc-byl.3 ag-x31t \
-    --relation wasInfluencedBy --from-type bead --to-type decision \
-    --trust-tier authored --evidence .agents/council/2026-05-30-debate-provenance-substrate.md`,
+  ao provenance add observation-7 decision-42 \
+    --relation wasInfluencedBy --from-type observation --to-type decision \
+    --trust-tier authored --evidence docs/decision-42.md`,
 	Args: cobra.ExactArgs(2),
 	RunE: runProvenanceAdd,
 }
@@ -71,7 +70,7 @@ ledger (chain) order. Optionally filter by source node id or relation.
 Examples:
   ao provenance list
   ao provenance list --json
-  ao provenance list --from-id ag-x31t.4
+  ao provenance list --from-id decision-42
   ao provenance list --relation wasGeneratedBy`,
 	Args: cobra.NoArgs,
 	RunE: runProvenanceList,
@@ -83,8 +82,8 @@ func init() {
 	provenanceCmd.AddCommand(provenanceListCmd)
 
 	provenanceAddCmd.Flags().StringVar(&provAddRelation, "relation", "", "Typed PROV-O relation (required), e.g. wasGeneratedBy")
-	provenanceAddCmd.Flags().StringVar(&provAddFromType, "from-type", "decision", "Source node type (decision|artifact|bead|...)")
-	provenanceAddCmd.Flags().StringVar(&provAddToType, "to-type", "artifact", "Target node type (decision|artifact|bead|...)")
+	provenanceAddCmd.Flags().StringVar(&provAddFromType, "from-type", "decision", "Source node type (for example decision, artifact, or observation)")
+	provenanceAddCmd.Flags().StringVar(&provAddToType, "to-type", "artifact", "Target node type (for example decision, artifact, or observation)")
 	provenanceAddCmd.Flags().StringVar(&provAddTrustTier, "trust-tier", "authored", "Trust tier (authored|inferred|mined)")
 	provenanceAddCmd.Flags().StringVar(&provAddEvidence, "evidence", "", "Optional evidence pointer (path, commit, CI run URL, event id)")
 	provenanceAddCmd.Flags().StringVar(&provAddTS, "ts", "", "Override the UTC RFC3339 timestamp (defaults to now)")

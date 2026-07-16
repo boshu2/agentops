@@ -35,6 +35,25 @@ setup() {
   [[ "$output" == *"must not re-include"* ]]
 }
 
+@test "tracked project config .agents/ao/config.yaml is allowed" {
+  printf '/.agents/*\n!/.agents/ao/\n/.agents/ao/*\n!/.agents/ao/config.yaml\n' >"$FAKE_REPO/.gitignore"
+  mkdir -p "$FAKE_REPO/.agents/ao"
+  printf 'tracker: br\n' >"$FAKE_REPO/.agents/ao/config.yaml"
+  git -C "$FAKE_REPO" add .agents/ao/config.yaml
+  run "$SCRIPT"
+  [ "$status" -eq 0 ]
+}
+
+@test "tracked non-config state under .agents/ao still fails" {
+  printf '/.agents/*\n!/.agents/ao/\n/.agents/ao/*\n!/.agents/ao/config.yaml\n' >"$FAKE_REPO/.gitignore"
+  mkdir -p "$FAKE_REPO/.agents/ao"
+  printf '{}\n' >"$FAKE_REPO/.agents/ao/state.json"
+  git -C "$FAKE_REPO" add -f .agents/ao/state.json
+  run "$SCRIPT"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *".agents/ao/state.json"* ]]
+}
+
 @test "nested test fixtures are not repo-root agent state" {
   mkdir -p "$FAKE_REPO/cli/cmd/testdata/example/.agents"
   printf '{}\n' >"$FAKE_REPO/cli/cmd/testdata/example/.agents/fixture.json"

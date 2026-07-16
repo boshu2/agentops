@@ -21,7 +21,7 @@ Flags:
   -h, --help   help for forge
 
 Global Flags:
-      --config string   Config file (default: ~/.agentops/config.yaml)
+      --config string   Config file (default: ~/.agents/ao/config.yaml)
       --dry-run         Show what would happen without executing
       --json            Output as JSON (shorthand for -o json)
   -o, --output string   Output format (json, table, yaml) (default "table")

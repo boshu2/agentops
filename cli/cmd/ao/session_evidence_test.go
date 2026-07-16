@@ -14,11 +14,7 @@ func TestSessionBootstrapOnlyReportsLocalOrientation(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(dir, "AGENTS.md"), []byte("test"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	previous, _ := os.Getwd()
-	if err := os.Chdir(dir); err != nil {
-		t.Fatal(err)
-	}
-	t.Cleanup(func() { _ = os.Chdir(previous) })
+	t.Chdir(dir)
 
 	var output bytes.Buffer
 	command := *sessionBootstrapCmd
@@ -39,11 +35,7 @@ func TestSessionBootstrapOnlyReportsLocalOrientation(t *testing.T) {
 
 func TestHandoffAndRehydratePreserveCallerTextWithoutLifecycleState(t *testing.T) {
 	dir := t.TempDir()
-	previous, _ := os.Getwd()
-	if err := os.Chdir(dir); err != nil {
-		t.Fatal(err)
-	}
-	t.Cleanup(func() { _ = os.Chdir(previous) })
+	t.Chdir(dir)
 
 	handoffGoal = "prove one behavior"
 	handoffContinuation = "caller will choose whether to revise"

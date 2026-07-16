@@ -1,7 +1,7 @@
 {
   "image": "codex",
   "schema_version": "skill-image.v1",
-  "skill_count": 50,
+  "skill_count": 48,
   "skills": [
     {
       "disposition": "keep_specialist",
@@ -94,12 +94,6 @@
       "twin_path": "skills-codex/domain/"
     },
     {
-      "disposition": "keep_strategy",
-      "slug": "dueling-idea-genies",
-      "source_path": "skills/dueling-idea-genies/",
-      "twin_path": "skills-codex/dueling-idea-genies/"
-    },
-    {
       "disposition": "keep_specialist",
       "slug": "goals",
       "source_path": "skills/goals/",
@@ -110,12 +104,6 @@
       "slug": "handoff",
       "source_path": "skills/handoff/",
       "twin_path": "skills-codex/handoff/"
-    },
-    {
-      "disposition": "keep_specialist",
-      "slug": "heal-skill",
-      "source_path": "skills/heal-skill/",
-      "twin_path": "skills-codex/heal-skill/"
     },
     {
       "disposition": "keep_strategy",

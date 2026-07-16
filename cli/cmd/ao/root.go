@@ -134,7 +134,7 @@ func init() {
 		&cobra.Group{ID: "core", Title: "Core Commands:"},
 		&cobra.Group{ID: "workflow", Title: "Workflow:"},
 		&cobra.Group{ID: "config", Title: "Configuration:"},
-		&cobra.Group{ID: "comms", Title: "Communication:"},
+		&cobra.Group{ID: "comms", Title: "Evidence:"},
 		&cobra.Group{ID: "knowledge", Title: "Knowledge:"},
 		&cobra.Group{ID: "experimental", Title: "Optional knowledge tools:"},
 	)
@@ -144,7 +144,7 @@ func init() {
 	rootCmd.PersistentFlags().BoolVarP(&verbose, "verbose", "v", false, "Enable verbose output")
 	rootCmd.PersistentFlags().StringVarP(&output, "output", "o", "table", "Output format (json, table, yaml)")
 	rootCmd.PersistentFlags().BoolVar(&jsonFlag, "json", false, "Output as JSON (shorthand for -o json)")
-	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "Config file (default: ~/.agentops/config.yaml)")
+	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "Config file (default: ~/.agents/ao/config.yaml)")
 
 	_ = rootCmd.RegisterFlagCompletionFunc("output", staticCompletionFunc("json", "table", "yaml"))
 

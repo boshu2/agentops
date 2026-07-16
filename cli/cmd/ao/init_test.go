@@ -9,11 +9,7 @@ import (
 
 func TestInitCreatesEvidenceStorageWithoutGitMutation(t *testing.T) {
 	dir := t.TempDir()
-	previous, _ := os.Getwd()
-	if err := os.Chdir(dir); err != nil {
-		t.Fatal(err)
-	}
-	t.Cleanup(func() { _ = os.Chdir(previous) })
+	t.Chdir(dir)
 	var output bytes.Buffer
 	command := *initCmd
 	command.SetOut(&output)
@@ -21,7 +17,7 @@ func TestInitCreatesEvidenceStorageWithoutGitMutation(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, relative := range []string{
-		filepath.Join(".agentops", "verdicts", "sha256"),
+		filepath.Join(".agents", "ao", "verdicts", "sha256"),
 		filepath.Join(".agents", "ao", "provenance"),
 		filepath.Join(".agents", "handoff"),
 	} {

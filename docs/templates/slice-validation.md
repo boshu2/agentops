@@ -1,14 +1,13 @@
-# Candidate and validation worksheet
+# Experiment and validation worksheet
 
-Use this worksheet for one bounded CandidatePacket and its independent Validate
-review. The machine contracts are
-[`candidate-packet.v1`](../../schemas/candidate-packet.v1.schema.json),
-[`subject-manifest.v1`](../../schemas/subject-manifest.v1.schema.json), and
+Use this worksheet to record evidence from one bounded experiment and its
+independent Validate review. The current machine contracts are
+[`subject-manifest.v1`](../../schemas/subject-manifest.v1.schema.json) and
 [`verdict.v2`](../../schemas/verdict.v2.schema.json).
 
 ## Pinned inputs
 
-- PlanPacket digest: `<sha256>`
+- Intent reference or snapshot: `<caller source or content-addressed path>`
 - Acceptance digest: `<sha256>`
 - Author context ID: `<nonempty identity>`
 - Subject locator: `<directory or explicit root>`
@@ -19,7 +18,7 @@ review. The machine contracts are
 - GREEN evidence: `<same acceptance check and factual result>`
 - Refactor evidence: `<check that remained green>`
 
-## Candidate facts
+## Runtime-derived subject facts
 
 - Subject-manifest digest: `<sha256>`
 - Actual changed paths: `<complete list>`

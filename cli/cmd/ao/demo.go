@@ -3,6 +3,7 @@ package main
 
 import (
 	"fmt"
+	"io"
 
 	"github.com/spf13/cobra"
 )
@@ -30,15 +31,15 @@ func init() {
 	demoCmd.Flags().BoolVar(&demoConcepts, "concepts", false, "explain the product boundary")
 }
 
-func runDemo(_ *cobra.Command, _ []string) error {
+func runDemo(cmd *cobra.Command, _ []string) error {
 	if demoConcepts {
-		return showConcepts()
+		return showConcepts(cmd.OutOrStdout())
 	}
-	return quickDemo()
+	return quickDemo(cmd.OutOrStdout())
 }
 
-func showConcepts() error {
-	fmt.Println(`AGENTOPS PRODUCT BOUNDARY
+func showConcepts(w io.Writer) error {
+	fmt.Fprintln(w, `AGENTOPS PRODUCT BOUNDARY
 
 AgentOps shapes one behavior, runs one bounded implementation experiment,
 obtains one fresh independent judgment over exact content, persists the verdict,
@@ -49,14 +50,15 @@ or delivery. Learn and multi-agent strategies are optional callers.`)
 	return nil
 }
 
-func quickDemo() error {
-	fmt.Println(`AGENTOPS ONE-PASS DEMO
+func quickDemo(w io.Writer) error {
+	fmt.Fprintln(w, `AGENTOPS ONE-PASS DEMO
 
-1. Plan emits a PlanPacket with one active behavior and write scope.
-2. Implement emits a CandidatePacket with evidence and a subject-manifest.v1.
-3. A distinct fresh context runs Validate once.
-4. Validate atomically stores verdict.v2 under .agentops/verdicts/sha256/.
-5. RPI reports PASS, FAIL, NOT_PROVEN, NOT_PLANNED, or NOT_BUILT and stops.
+1. Plan refines one active behavior and write scope in the existing intent source.
+2. Implement runs one bounded RED -> GREEN -> refactor experiment.
+3. The runtime derives changed paths, check receipts, and subject-manifest.v1.
+4. A distinct fresh context validates the exact intent and subject once.
+5. Validate atomically stores verdict.v2 under .agents/ao/verdicts/sha256/.
+6. RPI reports PASS, FAIL, NOT_PROVEN, NOT_PLANNED, or NOT_BUILT and stops.
 
 No Git repository or ao binary is required for this semantic loop.`)
 	return nil

@@ -19,15 +19,27 @@ metadata:
   disposition: keep_optional_adapter
   tier: execution
   dependencies: []
-description: 'Use Agent Mail as an optional messaging and file-reservation adapter for explicitly coordinated writers.'
+description: 'Use Agent Mail as an optional messaging and file-reservation adapter for explicitly coordinated writers. Triggers: "coordinate writers", "reserve files".'
 practices:
 - pragmatic-programmer
+output_contract: factual messaging and reservation adapter results
 ---
 # Agent Mail — optional coordination adapter
 
 Agent Mail carries messages, acknowledgements, identities, and temporary file
 reservations. It is not a task tracker, queue, proof ledger, or lifecycle
 controller.
+
+Reservations prevent collisions only because every cooperating writer checks
+them against the same absolute project path; one writer registered against a
+different path resolution makes the whole ledger advisory fiction.
+
+Named failure mode — **silence-as-status**: reading an unanswered thread as
+"work stalled" or "work done"; mail silence proves only that no mail arrived.
+
+Anti-pattern: widening or renewing a reservation unprompted when a conflict
+appears. Corrective: report the conflict to the caller as-is; scope and TTL
+changes are the caller's call.
 
 ## Boundary
 

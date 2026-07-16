@@ -32,7 +32,7 @@ Options:
   --hil-waiver TEXT       Record an explicit HIL waiver
   --artifacts STATUS      pass|fail|skipped (default: pass)
   --security STATUS       pass|fail|skipped (default: pass)
-  --eval STATUS           pass|fail|skipped (default: pass)
+  --eval STATUS           pass|fail|skipped|not_applicable (default: pass)
   -h, --help              Show this help
 USAGE
 }
@@ -120,7 +120,7 @@ validate_status() {
     local allow_waived="${3:-false}"
 
     case "$status" in
-        pass|fail|skipped)
+        pass|fail|skipped|not_applicable)
             return 0
             ;;
         waived)
@@ -129,9 +129,9 @@ validate_status() {
     esac
 
     if [[ "$allow_waived" == "true" ]]; then
-        echo "$label must be pass, fail, skipped, or waived" >&2
+        echo "$label must be pass, fail, skipped, not_applicable, or waived" >&2
     else
-        echo "$label must be pass, fail, or skipped" >&2
+        echo "$label must be pass, fail, skipped, or not_applicable" >&2
     fi
     exit 1
 }
@@ -202,11 +202,14 @@ fi
 
 OFFICIAL_MANDATORY_OK=true
 if [[ "$MODE" == "official" ]]; then
-    for status in "$SIL_STATUS" "$VIL_STATUS" "$ARTIFACT_STATUS" "$SECURITY_STATUS" "$EVAL_STATUS"; do
+    for status in "$SIL_STATUS" "$VIL_STATUS" "$ARTIFACT_STATUS" "$SECURITY_STATUS"; do
         if [[ "$status" != "pass" ]]; then
             OFFICIAL_MANDATORY_OK=false
         fi
     done
+    if [[ "$EVAL_STATUS" != "pass" && "$EVAL_STATUS" != "not_applicable" ]]; then
+        OFFICIAL_MANDATORY_OK=false
+    fi
     if [[ "$HIL_STATUS" != "pass" && "$HIL_STATUS" != "waived" ]]; then
         OFFICIAL_MANDATORY_OK=false
     fi
@@ -232,7 +235,9 @@ if [[ "$HIL_STATUS" != "pass" && "$HIL_STATUS" != "waived" ]]; then
 fi
 [[ "$ARTIFACT_STATUS" == "pass" ]] || add_recommendation "Regenerate release artifacts before resolving a release audit."
 [[ "$SECURITY_STATUS" == "pass" ]] || add_recommendation "Run the full security gate and include its JSON report."
-[[ "$EVAL_STATUS" == "pass" ]] || add_recommendation "Run release smoke/eval checks and attach the result."
+if [[ "$EVAL_STATUS" != "pass" && "$EVAL_STATUS" != "not_applicable" ]]; then
+    add_recommendation "Run release smoke/eval checks and attach the result."
+fi
 
 timestamp() {
     date -u +%Y-%m-%dT%H:%M:%SZ

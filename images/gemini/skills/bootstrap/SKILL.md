@@ -1,6 +1,6 @@
 ---
 name: bootstrap
-description: 'Initialize minimal AgentOps documentation and verdict storage without taking over repository workflow.'
+description: 'Initialize minimal AgentOps documentation and verdict storage without taking over repository workflow. Triggers: "bootstrap AgentOps", "initialize AgentOps docs".'
 practices:
 - hermetic-builds
 - code-complete
@@ -27,13 +27,24 @@ metadata:
   graph_root: true
   tier: session
   dependencies: []
-output_contract: minimal project docs and .agentops/verdicts directory
+output_contract: minimal project docs and .agents/ao/verdicts directory
 ---
 # Bootstrap — minimal project setup
 
 Bootstrap fills only missing AgentOps entry documents and the default durable
 verdict directory. It does not initialize Git, install hooks, create tracker
 state, start runtimes, or impose a delivery workflow.
+
+Never-overwrite is what makes bootstrap safe to run on any repository: a setup
+step that can only add is idempotent by construction, while one that can
+replace must first prove it understands what it is replacing.
+
+Named failure mode — **scaffold sprawl**: creating files the caller never
+requested because a "complete" setup feels more helpful than a minimal one.
+
+Anti-pattern: inferring product intent from directory names and READMEs to
+avoid asking the caller. Corrective: ask for the missing content; a wrong
+PRODUCT.md written confidently is worse than a question.
 
 ## Procedure
 
@@ -42,7 +53,7 @@ state, start runtimes, or impose a delivery workflow.
    inferred safely.
 3. Create only missing, explicitly requested files. Never overwrite an existing
    document.
-4. Create `.agentops/verdicts/sha256/` when durable local verdict storage is
+4. Create `.agents/ao/verdicts/sha256/` when durable local verdict storage is
    requested.
 5. Validate filesystem existence and report created, skipped, and failed paths.
 6. Stop.

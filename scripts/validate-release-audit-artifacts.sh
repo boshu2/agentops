@@ -193,10 +193,13 @@ validate_manifest_artifacts() {
         fi
         if ! jq -e '
             .schema_version == 1 and
-            .status == "pass" and
+            (
+              .status == "pass" or
+              (.status == "not_applicable" and (.reason | type == "string") and (.reason | length) > 0)
+            ) and
             .baseline_audit == "eval-baseline-audit.json"
         ' "$REPO_ROOT/$artifact_dir/$eval_fast_report" >/dev/null; then
-            printf '%s: eval fast report did not pass: %s/%s\n' "$audit" "$artifact_dir" "$eval_fast_report"
+            printf '%s: eval fast report neither passed nor declared not-applicable: %s/%s\n' "$audit" "$artifact_dir" "$eval_fast_report"
             return 1
         fi
         if ! jq -e '

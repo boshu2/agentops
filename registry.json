@@ -174,15 +174,6 @@
     },
     {
       "driven_by_skills": [
-        "dueling-idea-genies"
-      ],
-      "id": "skill:dueling-idea-genies:dueling_idea_genies",
-      "name": "dueling_idea_genies",
-      "path": "skills/dueling-idea-genies/SKILL.md",
-      "type": "skill"
-    },
-    {
-      "driven_by_skills": [
         "goals"
       ],
       "id": "skill:goals:goals",
@@ -201,19 +192,19 @@
     },
     {
       "driven_by_skills": [
-        "heal-skill"
+        "idea-genie"
       ],
-      "id": "skill:heal-skill:heal_skill",
-      "name": "heal_skill",
-      "path": "skills/heal-skill/SKILL.md",
+      "id": "skill:idea-genie:generate_evidenced_options",
+      "name": "generate_evidenced_options",
+      "path": "skills/idea-genie/SKILL.md",
       "type": "skill"
     },
     {
       "driven_by_skills": [
         "idea-genie"
       ],
-      "id": "skill:idea-genie:generate_evidenced_options",
-      "name": "generate_evidenced_options",
+      "id": "skill:idea-genie:dueling_idea_genies",
+      "name": "dueling_idea_genies",
       "path": "skills/idea-genie/SKILL.md",
       "type": "skill"
     },
@@ -462,6 +453,15 @@
     },
     {
       "driven_by_skills": [
+        "skill-builder"
+      ],
+      "id": "skill:skill-builder:heal_skill",
+      "name": "heal_skill",
+      "path": "skills/skill-builder/SKILL.md",
+      "type": "skill"
+    },
+    {
+      "driven_by_skills": [
         "standards"
       ],
       "id": "skill:standards:standards",
@@ -576,7 +576,7 @@
     "hooks": 0,
     "job_types": 0,
     "knowledge_stores": 0,
-    "skills": 50,
+    "skills": 48,
     "workflows": 0
   },
   "surfaces": {
@@ -623,11 +623,11 @@
         "effects": [
           "manage_runtime_sessions"
         ],
-        "has_references": false,
+        "has_references": true,
         "has_skill_md": true,
         "name": "agent-native",
         "path": "skills/agent-native/",
-        "reference_count": 0,
+        "reference_count": 1,
         "tier": "meta"
       },
       {
@@ -776,7 +776,7 @@
         "has_skill_md": true,
         "name": "doc",
         "path": "skills/doc/",
-        "reference_count": 15,
+        "reference_count": 14,
         "tier": "product"
       },
       {
@@ -791,19 +791,6 @@
         "path": "skills/domain/",
         "reference_count": 0,
         "tier": "knowledge"
-      },
-      {
-        "capabilities": [
-          "dueling_idea_genies"
-        ],
-        "disposition": "keep_strategy",
-        "effects": [],
-        "has_references": true,
-        "has_skill_md": true,
-        "name": "dueling-idea-genies",
-        "path": "skills/dueling-idea-genies/",
-        "reference_count": 1,
-        "tier": "judgment"
       },
       {
         "capabilities": [
@@ -833,22 +820,8 @@
       },
       {
         "capabilities": [
-          "heal_skill"
-        ],
-        "disposition": "keep_specialist",
-        "effects": [
-          "optional_skill_projection_repair"
-        ],
-        "has_references": true,
-        "has_skill_md": true,
-        "name": "heal-skill",
-        "path": "skills/heal-skill/",
-        "reference_count": 5,
-        "tier": "meta"
-      },
-      {
-        "capabilities": [
-          "generate_evidenced_options"
+          "generate_evidenced_options",
+          "dueling_idea_genies"
         ],
         "disposition": "keep_strategy",
         "effects": [
@@ -858,7 +831,7 @@
         "has_skill_md": true,
         "name": "idea-genie",
         "path": "skills/idea-genie/",
-        "reference_count": 1,
+        "reference_count": 2,
         "tier": "execution"
       },
       {
@@ -869,7 +842,7 @@
         "disposition": "keep",
         "effects": [
           "modify_declared_subject",
-          "write_candidate_packet"
+          "derive_subject_manifest"
         ],
         "has_references": true,
         "has_skill_md": true,
@@ -956,7 +929,7 @@
         ],
         "disposition": "keep",
         "effects": [
-          "write_plan_packet"
+          "update_intent_source"
         ],
         "has_references": true,
         "has_skill_md": true,
@@ -1158,18 +1131,20 @@
       },
       {
         "capabilities": [
-          "skill_builder"
+          "skill_builder",
+          "heal_skill"
         ],
         "disposition": "keep_specialist",
         "effects": [
           "writes_skill_source",
-          "regenerates_skill_projections"
+          "regenerates_skill_projections",
+          "optional_skill_projection_repair"
         ],
         "has_references": true,
         "has_skill_md": true,
         "name": "skill-builder",
         "path": "skills/skill-builder/",
-        "reference_count": 3,
+        "reference_count": 9,
         "tier": "meta"
       },
       {

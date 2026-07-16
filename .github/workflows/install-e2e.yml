@@ -1,17 +1,10 @@
-# End-to-end install execution against clean OS containers.
-# Companion: GOALS.md Directive D2 (bead soc-ymph.2). The fast suite
-# `tests/install/test-install-smoke.sh` only validates syntax/structure;
-# this workflow exercises the actual install.sh flow against ubuntu and
-# macOS runners and verifies the post-install surface is usable.
+# End-to-end install against clean OS containers.
+# Canonical AgentOps 4 path: build/install ao + `ao skills link`.
 #
 # Triggered:
-#   - Nightly (UTC 09:30 — late evening Pacific)
+#   - Nightly (UTC 09:30)
 #   - Manual via workflow_dispatch
-#   - PRs that touch install.sh or this workflow
-#
-# Not on every push: the brew tap + real prereq probes take 2-5 min per
-# runner, which is too expensive for the main merge gate. Treat this as
-# a periodic drift detector instead.
+#   - PRs that touch install surfaces or this workflow
 
 name: install-e2e
 
@@ -21,9 +14,13 @@ on:
     - cron: '30 9 * * *'
   pull_request:
     paths:
-      - 'scripts/install.sh'
-      - 'scripts/install-codex.sh'
+      - 'scripts/install-bd.sh'
+      - 'scripts/refresh-codex-local.sh'
+      - 'scripts/lib/installer-*.sh'
+      - 'tests/install/**'
       - '.github/workflows/install-e2e.yml'
+      - 'cli/internal/commands/skills/**'
+      - 'cli/cmd/ao/**'
 
 permissions:
   contents: read
@@ -35,62 +32,28 @@ jobs:
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
 
-      - name: Set up Go (needed to build ao from source)
+      - name: Set up Go
         uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
         with:
           go-version: '1.26.3'
           cache-dependency-path: cli/go.sum
 
-      - name: Stub coding agent so prereq check passes
-        # install.sh warns rather than failing when no agent is installed,
-        # but we want a populated PATH to exercise the codex-present branch.
+      - name: Build ao and link skills into a fresh HOME
         run: |
-          mkdir -p "$HOME/.local/bin"
-          cat <<'STUB' > "$HOME/.local/bin/codex"
-          #!/usr/bin/env bash
-          echo "codex stub for install-e2e: $*"
-          exit 0
-          STUB
-          chmod +x "$HOME/.local/bin/codex"
-          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
-
-      - name: Run install.sh against clean ubuntu
-        # We expect Homebrew not to be installed on ubuntu-latest, so the
-        # CLI install path will hit the documented fallback message
-        # ("Skipping CLI (Homebrew not found)"). That branch is the one we
-        # want to verify is reachable without crashing.
-        run: |
-          set +e
-          bash scripts/install.sh
-          rc=$?
-          echo "install.sh exit code: $rc"
-          if [ "$rc" -ne 0 ]; then
-            echo "::error::install.sh failed on ubuntu (rc=$rc)"
-            exit "$rc"
-          fi
-
-      - name: Build ao from source and verify version
-        # Real install path on ubuntu without brew is build-from-source.
-        # Verify the binary the install path produces a usable CLI surface.
-        run: |
+          set -euo pipefail
           cd cli && go build -o bin/ao ./cmd/ao
+          FRESH_HOME="$(mktemp -d)"
+          HOME="$FRESH_HOME" ./bin/ao skills link
+          test -d "$FRESH_HOME/.agents/skills"
+          count="$(find "$FRESH_HOME/.agents/skills" -mindepth 1 -maxdepth 1 | wc -l | tr -d ' ')"
+          echo "linked skill entries: $count"
+          test "$count" -gt 0
           ./bin/ao version
 
-      - name: Verify install-smoke (fast structural check still green)
+      - name: Verify install-smoke
         run: |
           chmod +x tests/install/test-install-smoke.sh
-          run_with_timeout() {
-            seconds="$1"
-            shift
-            if command -v timeout >/dev/null 2>&1; then
-              timeout "$seconds" "$@"
-            elif command -v gtimeout >/dev/null 2>&1; then
-              gtimeout "$seconds" "$@"
-            else
-              perl -e 'alarm shift @ARGV; exec @ARGV or die "exec failed: $!\n"' "$seconds" "$@"
-            fi
-          }
-          run_with_timeout 60 bash tests/install/test-install-smoke.sh
+          bash tests/install/test-install-smoke.sh
 
   macos-install:
     runs-on: macos-latest
@@ -104,54 +67,19 @@ jobs:
           go-version: '1.26.3'
           cache-dependency-path: cli/go.sum
 
-      - name: Stub coding agent so prereq check passes
+      - name: Build ao and link skills into a fresh HOME
         run: |
-          mkdir -p "$HOME/.local/bin"
-          cat <<'STUB' > "$HOME/.local/bin/codex"
-          #!/usr/bin/env bash
-          echo "codex stub for install-e2e: $*"
-          exit 0
-          STUB
-          chmod +x "$HOME/.local/bin/codex"
-          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
-
-      - name: Run install.sh against clean macos
-        # macOS runners have brew preinstalled; install.sh will try the
-        # boshu2/agentops tap. If the tap is missing or the formula has not
-        # been published to the latest tag, we surface that as a warning
-        # (not a hard fail) — it is an upstream-config drift, not an
-        # install.sh script defect. Hard-fail only on install.sh itself.
-        run: |
-          set +e
-          bash scripts/install.sh 2>&1 | tee /tmp/install.log
-          rc=${PIPESTATUS[0]}
-          echo "install.sh exit code: $rc"
-          if [ "$rc" -ne 0 ]; then
-            if grep -q "brew install agentops" /tmp/install.log; then
-              echo "::warning::install.sh exited non-zero on the brew step; treating as upstream-config warning"
-              exit 0
-            fi
-            echo "::error::install.sh failed on macos for a non-brew reason (rc=$rc)"
-            exit "$rc"
-          fi
-
-      - name: Build ao from source and verify version
-        run: |
+          set -euo pipefail
           cd cli && go build -o bin/ao ./cmd/ao
+          FRESH_HOME="$(mktemp -d)"
+          HOME="$FRESH_HOME" ./bin/ao skills link
+          test -d "$FRESH_HOME/.agents/skills"
+          count="$(find "$FRESH_HOME/.agents/skills" -mindepth 1 -maxdepth 1 | wc -l | tr -d ' ')"
+          echo "linked skill entries: $count"
+          test "$count" -gt 0
           ./bin/ao version
 
-      - name: Verify install-smoke (fast structural check still green)
+      - name: Verify install-smoke
         run: |
           chmod +x tests/install/test-install-smoke.sh
-          run_with_timeout() {
-            seconds="$1"
-            shift
-            if command -v timeout >/dev/null 2>&1; then
-              timeout "$seconds" "$@"
-            elif command -v gtimeout >/dev/null 2>&1; then
-              gtimeout "$seconds" "$@"
-            else
-              perl -e 'alarm shift @ARGV; exec @ARGV or die "exec failed: $!\n"' "$seconds" "$@"
-            fi
-          }
-          run_with_timeout 60 bash tests/install/test-install-smoke.sh
+          bash tests/install/test-install-smoke.sh

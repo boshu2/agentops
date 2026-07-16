@@ -14,7 +14,7 @@ If you hit an error invoking one of these, it does not exist yet — that is exp
 
 ## Curation pipeline — later stages
 
-The curation pipeline is a six-stage design: CATALOG, VERIFY, INDEX, SCORE, REJECT, CONSTRAIN. Today **CATALOG and VERIFY** ship as CLI commands (`ao curate catalog`, `ao curate verify`, `ao curate status`). The later stages (INDEX, SCORE, REJECT, CONSTRAIN) are roadmap, not built. The orthogonal, currently-active prevention lane is the finding-compiler (`.agents/findings/registry.jsonl` → constraints + planning rules), which is separate from this pipeline. See [docs/curation-pipeline.md](curation-pipeline.md).
+The curation pipeline is a six-stage design: CATALOG, VERIFY, INDEX, SCORE, REJECT, CONSTRAIN. The former curation CLI was retired; none of these stages is a live `ao` command on current `main`. The orthogonal prevention lane is the finding-compiler (`.agents/findings/registry.jsonl` → constraints + planning rules), which is separate from this pipeline. See [docs/curation-pipeline.md](curation-pipeline.md).
 
 ## Hookless default install (ADR-0002 S2–S5)
 

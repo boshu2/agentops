@@ -1,6 +1,6 @@
 ---
 name: goals
-description: 'Measure declared project fitness goals without recommending or applying work.'
+description: 'Measure declared project fitness goals without recommending or applying work. Triggers: "measure goals", "check project fitness".'
 practices:
 - dora-metrics
 - lean-startup
@@ -30,6 +30,17 @@ output_contract: read-only goal measurement report
 
 Inspect the active goals document and run only the caller-selected measurement,
 validation, drift, history, export, or meta-goal command.
+
+Measurement stays trustworthy only because it cannot mutate what it measures;
+the moment a fitness report edits a goal, the next report measures the editor,
+not the project.
+
+Named failure mode — **advice creep**: a measurement report that ends with
+"you should…" has silently become work selection.
+
+Anti-pattern: padding the report with recommendations to look helpful.
+Corrective: return the numbers, the evidence gaps, and checked/not-checked
+scope, and let the caller decide.
 
 ## Boundary
 

@@ -13,14 +13,31 @@ metadata:
   canonical_status: canonical
   disposition: keep_specialist
   tier: execution
-description: 'Use RCH once to offload a build or collect remote-compilation diagnostics.'
+description: 'Use RCH once to offload a build or collect remote-compilation diagnostics. Triggers: "use RCH", "offload this build".'
 practices:
 - pragmatic-programmer
+output_contract: remote compilation status and diagnostic evidence
 ---
 # RCH — remote compilation specialist
 
 RCH can offload one explicit compilation command or inspect the remote compiler
 path. This skill reports what happened; it does not govern retries or repair.
+
+Staged diagnosis works because the offload pipeline fails in order —
+availability, configuration, hook, classification, sync, remote compile,
+worker pressure — so the first failing stage localizes the fault and every
+later stage is noise until it passes. Remediate in irreversibility order:
+read-only probes and config inspection before daemon restarts, restarts before
+cleanup, and destructive cleanup or worker mutation only with explicit caller
+authority.
+
+Named failure mode — **green-local blindness**: a passing `[RCH] local (...)`
+build read as offload success; the local fallback hid that the remote claim
+was never proved.
+
+Anti-pattern: re-running the build hoping the fallback reason disappears.
+Corrective: read the recorded fallback reason and fix that stage; the pipeline
+fails deterministically, not moodily.
 
 ## Procedure
 

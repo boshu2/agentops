@@ -14,12 +14,12 @@ func (Gateway) Resolve(output string, verbose bool) *configapp.ResolvedConfig {
 }
 
 func (Gateway) Files() (configapp.ConfigFiles, error) {
-	home := filepath.Join(os.Getenv("HOME"), ".agentops", "config.yaml")
+	home := filepath.Join(os.Getenv("HOME"), ".agents", "ao", "config.yaml")
 	cwd, err := os.Getwd()
 	if err != nil {
 		return configapp.ConfigFiles{}, err
 	}
-	project := filepath.Join(cwd, ".agentops", "config.yaml")
+	project := filepath.Join(cwd, ".agents", "ao", "config.yaml")
 	return configapp.ConfigFiles{
 		HomePath: home, HomeExists: exists(home), ProjectPath: project, ProjectExists: exists(project),
 	}, nil
@@ -37,6 +37,9 @@ func (Gateway) Environment(keys []string) map[string]string {
 
 func (Gateway) Load() (*configapp.Config, error)   { return configapp.Load(nil) }
 func (Gateway) Save(value *configapp.Config) error { return configapp.Save(value) }
+func (Gateway) PreviewSave(value *configapp.Config) error {
+	return configapp.PreviewSave(value)
+}
 
 func exists(path string) bool {
 	_, err := os.Stat(path)

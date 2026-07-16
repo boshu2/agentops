@@ -99,12 +99,6 @@
       "reason": "Live source skill; generate a parity twin and keep runtime-specific behavior in the source contract."
     },
     {
-      "name": "dueling-idea-genies",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "Live source skill; generate a parity twin and keep runtime-specific behavior in the source contract."
-    },
-    {
       "name": "goals",
       "treatment": "parity_only",
       "wave": "catalog-parity",
@@ -112,12 +106,6 @@
     },
     {
       "name": "handoff",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "Live source skill; generate a parity twin and keep runtime-specific behavior in the source contract."
-    },
-    {
-      "name": "heal-skill",
       "treatment": "parity_only",
       "wave": "catalog-parity",
       "reason": "Live source skill; generate a parity twin and keep runtime-specific behavior in the source contract."

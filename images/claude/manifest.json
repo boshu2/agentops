@@ -1,7 +1,7 @@
 {
   "image": "claude",
   "schema_version": "skill-image.v1",
-  "skill_count": 50,
+  "skill_count": 48,
   "skills": [
     {
       "disposition": "keep_specialist",
@@ -79,11 +79,6 @@
       "slug": "domain"
     },
     {
-      "disposition": "keep_strategy",
-      "path": "skills/dueling-idea-genies/",
-      "slug": "dueling-idea-genies"
-    },
-    {
       "disposition": "keep_specialist",
       "path": "skills/goals/",
       "slug": "goals"
@@ -92,11 +87,6 @@
       "disposition": "keep_specialist",
       "path": "skills/handoff/",
       "slug": "handoff"
-    },
-    {
-      "disposition": "keep_specialist",
-      "path": "skills/heal-skill/",
-      "slug": "heal-skill"
     },
     {
       "disposition": "keep_strategy",

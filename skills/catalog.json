@@ -1,6 +1,6 @@
 {
   "schema_version": "3",
-  "skill_count": 50,
+  "skill_count": 48,
   "skills": [
     {
       "canonical_status": "canonical",
@@ -11,7 +11,7 @@
       "consumes": [],
       "context_rel": [],
       "dependencies": [],
-      "description": "Switch a caller-selected coding-agent account and report the observed identity.",
+      "description": "Switch a caller-selected coding-agent account and report the observed identity. Triggers: \"switch account\", \"rotate coding-agent account\".",
       "disposition": "keep_specialist",
       "effects": [],
       "graph_root": false,
@@ -41,7 +41,7 @@
         }
       ],
       "dependencies": [],
-      "description": "Use Agent Mail as an optional messaging and file-reservation adapter for explicitly coordinated writers.",
+      "description": "Use Agent Mail as an optional messaging and file-reservation adapter for explicitly coordinated writers. Triggers: \"coordinate writers\", \"reserve files\".",
       "disposition": "keep_optional_adapter",
       "effects": [],
       "graph_root": false,
@@ -77,6 +77,10 @@
         },
         {
           "kind": "customer-of",
+          "with": "codex-exec"
+        },
+        {
+          "kind": "customer-of",
           "with": "agent-mail"
         }
       ],
@@ -97,7 +101,7 @@
         "runtime-evidence",
         "worker-handoff"
       ],
-      "references_count": 0,
+      "references_count": 1,
       "tier": "meta",
       "user_invocable": true
     },
@@ -201,7 +205,7 @@
       ],
       "context_rel": [],
       "dependencies": [],
-      "description": "Initialize minimal AgentOps documentation and verdict storage without taking over repository workflow.",
+      "description": "Initialize minimal AgentOps documentation and verdict storage without taking over repository workflow. Triggers: \"bootstrap AgentOps\", \"initialize AgentOps docs\".",
       "disposition": "keep_specialist",
       "effects": [],
       "graph_root": true,
@@ -248,7 +252,7 @@
       "consumes": [],
       "context_rel": [],
       "dependencies": [],
-      "description": "Configure Claude Code hooks (PreToolUse, PostToolUse, Stop, Notification) \u2014 user-side, opt-in per host (AgentOps 3.0 ships none). Triggers: \"cc-hooks\", \"cc hooks\", \"configure claude code hooks pretooluse\".",
+      "description": "Configure Claude Code hooks (PreToolUse, PostToolUse, Stop, Notification) as an opt-in host adapter; AgentOps installs none by default. Triggers: \"cc-hooks\", \"configure Claude Code hooks\".",
       "disposition": "keep_specialist",
       "effects": [],
       "graph_root": false,
@@ -287,7 +291,7 @@
         }
       ],
       "dependencies": [],
-      "description": "Reconstruct a repository as cited entry-to-test flows, bounded claims, and a reusable baseline or verified delta. Triggers: \"build a repository mental model\", \"trace this codebase\", \"refresh the prior recon\".",
+      "description": "Reconstruct a repository as cited entry-to-test flows and bounded claims. Triggers: \"codebase recon\", \"trace this codebase\", \"repository audit\", \"refresh the prior recon\".",
       "disposition": "keep_specialist",
       "effects": [],
       "graph_root": false,
@@ -320,7 +324,7 @@
         }
       ],
       "dependencies": [],
-      "description": "Run one caller-supplied Codex worker or validator command non-interactively and capture evidence.",
+      "description": "Run one caller-supplied Codex command non-interactively and capture evidence. Triggers: \"run Codex headless\", \"capture Codex evidence\".",
       "disposition": "keep_optional_adapter",
       "effects": [],
       "graph_root": false,
@@ -442,7 +446,7 @@
       "produces": [
         "documentation"
       ],
-      "references_count": 15,
+      "references_count": 14,
       "tier": "product",
       "user_invocable": false
     },
@@ -455,7 +459,7 @@
       "consumes": [],
       "context_rel": [],
       "dependencies": [],
-      "description": "Load the small AgentOps ubiquitous-language and bounded-context contracts when a term needs precise meaning.",
+      "description": "Load the AgentOps language and bounded-context contracts when a term needs precise meaning. Triggers: \"define this domain term\", \"check the bounded context\".",
       "disposition": "keep_specialist",
       "effects": [],
       "graph_root": false,
@@ -475,45 +479,6 @@
     {
       "canonical_status": "canonical",
       "capabilities": [
-        "dueling_idea_genies"
-      ],
-      "codex_override_present": true,
-      "consumes": [
-        "idea-portfolio.v1",
-        "task-question"
-      ],
-      "context_rel": [
-        {
-          "kind": "customer-of",
-          "with": "idea-genie"
-        },
-        {
-          "kind": "supplier-to",
-          "with": "plan"
-        }
-      ],
-      "dependencies": [],
-      "description": "Challenge a consequential idea with sealed independent perspectives, cross-review, and preserved dissent. Triggers: \"challenge this idea\", \"compare independent proposals\", \"stress-test a one-way door\".",
-      "disposition": "keep_strategy",
-      "effects": [],
-      "graph_root": false,
-      "hexagonal_role": "domain",
-      "name": "dueling-idea-genies",
-      "practices": [
-        "design-by-contract",
-        "llm-eval-harness",
-        "adr"
-      ],
-      "produces": [
-        "idea-challenge.v1"
-      ],
-      "references_count": 1,
-      "tier": "judgment",
-      "user_invocable": true
-    },
-    {
-      "canonical_status": "canonical",
-      "capabilities": [
         "goals"
       ],
       "codex_override_present": true,
@@ -525,7 +490,7 @@
         }
       ],
       "dependencies": [],
-      "description": "Measure declared project fitness goals without recommending or applying work.",
+      "description": "Measure declared project fitness goals without recommending or applying work. Triggers: \"measure goals\", \"check project fitness\".",
       "disposition": "keep_specialist",
       "effects": [],
       "graph_root": false,
@@ -572,44 +537,14 @@
     {
       "canonical_status": "canonical",
       "capabilities": [
-        "heal_skill"
-      ],
-      "codex_override_present": true,
-      "consumes": [],
-      "context_rel": [
-        {
-          "kind": "customer-of",
-          "with": "skill-builder"
-        }
-      ],
-      "dependencies": [],
-      "description": "Check or repair structural hygiene in AgentOps skill packages. Triggers: \"heal skill\", \"repair skill hygiene\", \"audit skill structure\", \"check skill package\".",
-      "disposition": "keep_specialist",
-      "effects": [
-        "optional_skill_projection_repair"
-      ],
-      "graph_root": false,
-      "hexagonal_role": "supporting",
-      "name": "heal-skill",
-      "practices": [
-        "refactoring"
-      ],
-      "produces": [
-        "skill-hygiene-report"
-      ],
-      "references_count": 5,
-      "tier": "meta",
-      "user_invocable": false
-    },
-    {
-      "canonical_status": "canonical",
-      "capabilities": [
-        "generate_evidenced_options"
+        "generate_evidenced_options",
+        "dueling_idea_genies"
       ],
       "codex_override_present": true,
       "consumes": [
         "repo-context",
-        "task-question"
+        "task-question",
+        "idea-portfolio.v1"
       ],
       "context_rel": [
         {
@@ -622,7 +557,7 @@
         }
       ],
       "dependencies": [],
-      "description": "Generate an evidence-grounded opportunity portfolio for an open-ended product or engineering question. Triggers: \"idea genie\", \"what should we build\", \"supported opportunities\".",
+      "description": "Generate evidenced opportunities or challenge an idea with sealed perspectives. Triggers: \"idea genie\", \"what should we build\", \"challenge this idea\", \"compare proposals\".",
       "disposition": "keep_strategy",
       "effects": [
         "write_idea_portfolio"
@@ -632,12 +567,16 @@
       "name": "idea-genie",
       "practices": [
         "lean-startup",
-        "bdd-gherkin"
+        "bdd-gherkin",
+        "design-by-contract",
+        "llm-eval-harness",
+        "adr"
       ],
       "produces": [
-        "idea-portfolio.v1"
+        "idea-portfolio.v1",
+        "idea-challenge.v1"
       ],
-      "references_count": 1,
+      "references_count": 2,
       "tier": "execution",
       "user_invocable": true
     },
@@ -648,9 +587,7 @@
         "collect_factual_evidence"
       ],
       "codex_override_present": true,
-      "consumes": [
-        "plan-packet.v1"
-      ],
+      "consumes": [],
       "context_rel": [
         {
           "kind": "customer-of",
@@ -658,11 +595,11 @@
         }
       ],
       "dependencies": [],
-      "description": "Execute one bounded RED to GREEN to refactor experiment from a PlanPacket and return a CandidatePacket. Triggers: \"implement\", \"build this plan\", \"run the experiment\".",
+      "description": "Execute one bounded RED to GREEN experiment from bead or caller intent; return derived subject identity and check facts. Triggers: \"implement\", \"build this plan\", \"run the experiment\".",
       "disposition": "keep",
       "effects": [
         "modify_declared_subject",
-        "write_candidate_packet"
+        "derive_subject_manifest"
       ],
       "graph_root": true,
       "hexagonal_role": "driving-adapter",
@@ -673,7 +610,7 @@
         "small-batch-flow"
       ],
       "produces": [
-        "candidate-packet.v1"
+        "subject-manifest.v1"
       ],
       "references_count": 1,
       "tier": "execution",
@@ -864,10 +801,10 @@
       "consumes": [],
       "context_rel": [],
       "dependencies": [],
-      "description": "Shape intent into one behavior-first PlanPacket with acceptance, evidence, and write scope. Triggers: \"plan\", \"discover and plan\", \"shape this goal\".",
+      "description": "Shape or refine the existing bead or caller intent without creating a second planning artifact. Triggers: \"plan\", \"discover and plan\", \"shape this goal\".",
       "disposition": "keep",
       "effects": [
-        "write_plan_packet"
+        "update_intent_source"
       ],
       "graph_root": true,
       "hexagonal_role": "domain",
@@ -877,9 +814,7 @@
         "design-by-contract",
         "ddd-bounded-context"
       ],
-      "produces": [
-        "plan-packet.v1"
-      ],
+      "produces": [],
       "references_count": 1,
       "tier": "execution",
       "user_invocable": true
@@ -918,9 +853,7 @@
         "challenge_plan"
       ],
       "codex_override_present": true,
-      "consumes": [
-        "plan-packet.v1"
-      ],
+      "consumes": [],
       "context_rel": [
         {
           "kind": "supplier-to",
@@ -989,7 +922,7 @@
       "consumes": [],
       "context_rel": [],
       "dependencies": [],
-      "description": "Use RCH once to offload a build or collect remote-compilation diagnostics.",
+      "description": "Use RCH once to offload a build or collect remote-compilation diagnostics. Triggers: \"use RCH\", \"offload this build\".",
       "disposition": "keep_specialist",
       "effects": [],
       "graph_root": false,
@@ -1050,7 +983,7 @@
       ],
       "context_rel": [],
       "dependencies": [],
-      "description": "Execute one behavior-preserving structural transformation and report evidence.",
+      "description": "Execute one behavior-preserving structural transformation and report evidence. Triggers: \"refactor this\", \"simplify without changing behavior\".",
       "disposition": "keep_specialist",
       "effects": [],
       "graph_root": false,
@@ -1183,7 +1116,7 @@
       "consumes": [],
       "context_rel": [],
       "dependencies": [],
-      "description": "Inspect disk pressure with SBH and run one explicitly authorized recovery action.",
+      "description": "Inspect disk pressure with SBH and run one explicitly authorized recovery action. Triggers: \"check disk pressure\", \"run SBH\".",
       "disposition": "keep_specialist",
       "effects": [],
       "graph_root": false,
@@ -1218,7 +1151,7 @@
         "hexagonal-architecture"
       ],
       "produces": [
-        "converted-skill"
+        "project-scaffold"
       ],
       "references_count": 3,
       "tier": "execution",
@@ -1240,7 +1173,7 @@
         }
       ],
       "dependencies": [],
-      "description": "Review a proposed PlanPacket write scope for completeness and ambiguity. Triggers: \"review write scope\", \"check scope boundaries\", \"scope this change\".",
+      "description": "Review the bead or caller intent write scope for completeness and ambiguity. Triggers: \"review write scope\", \"check scope boundaries\", \"scope this change\".",
       "disposition": "keep_specialist",
       "effects": [],
       "graph_root": false,
@@ -1320,33 +1253,32 @@
     {
       "canonical_status": "canonical",
       "capabilities": [
-        "skill_builder"
+        "skill_builder",
+        "heal_skill"
       ],
       "codex_override_present": true,
       "consumes": [],
-      "context_rel": [
-        {
-          "kind": "supplier-to",
-          "with": "heal-skill"
-        }
-      ],
+      "context_rel": [],
       "dependencies": [],
-      "description": "Create a metadata-complete AgentOps skill source package and regenerate its derived projections. Triggers: \"create a skill\", \"scaffold skill\", \"absorb external skill\", \"new skill\".",
+      "description": "Create a metadata-complete AgentOps skill source package, regenerate its derived projections, and check or repair structural hygiene in skill packages. Triggers: \"create a skill\", \"scaffold skill\", \"absorb external skill\", \"new skill\", \"heal skill\", \"repair skill hygiene\", \"audit skill structure\", \"check skill package\".",
       "disposition": "keep_specialist",
       "effects": [
         "writes_skill_source",
-        "regenerates_skill_projections"
+        "regenerates_skill_projections",
+        "optional_skill_projection_repair"
       ],
       "graph_root": false,
       "hexagonal_role": "supporting",
       "name": "skill-builder",
       "practices": [
-        "pragmatic-programmer"
+        "pragmatic-programmer",
+        "refactoring"
       ],
       "produces": [
-        "skill-source-package"
+        "skill-source-package",
+        "skill-hygiene-report"
       ],
-      "references_count": 3,
+      "references_count": 9,
       "tier": "meta",
       "user_invocable": false
     },
@@ -1359,7 +1291,7 @@
       "consumes": [],
       "context_rel": [],
       "dependencies": [],
-      "description": "Load only the language and risk standards relevant to a caller-supplied change, then report concrete findings.",
+      "description": "Load only the standards relevant to a caller-supplied change, then report concrete findings. Triggers: \"check standards\", \"which standards apply\".",
       "disposition": "keep_specialist",
       "effects": [],
       "graph_root": false,
@@ -1476,7 +1408,7 @@
         }
       ],
       "dependencies": [],
-      "description": "Mine caller-supplied usage history for repeated toil and emit ranked evidence.",
+      "description": "Mine caller-supplied usage history for repeated toil and emit ranked evidence. Triggers: \"mine toil\", \"find repeated operational work\".",
       "disposition": "keep_specialist",
       "effects": [],
       "graph_root": false,
@@ -1538,8 +1470,7 @@
       ],
       "codex_override_present": true,
       "consumes": [
-        "plan-packet.v1",
-        "candidate-packet.v1"
+        "subject-manifest.v1"
       ],
       "context_rel": [
         {
@@ -1552,7 +1483,7 @@
         }
       ],
       "dependencies": [],
-      "description": "Freshly and independently judge one exact CandidatePacket, persist verdict.v2, and stop. Triggers: \"validate\", \"independently validate\", \"vibe\".",
+      "description": "Freshly judge exact subject content against bead or caller acceptance, persist verdict.v2, and stop. Triggers: \"validate\", \"independently validate\", \"vibe\".",
       "disposition": "keep",
       "effects": [
         "write_verdict_artifact"
@@ -1591,7 +1522,7 @@
         }
       ],
       "dependencies": [],
-      "description": "Scaffold an explicit one-shot workflow adapter without lifecycle authority.",
+      "description": "Scaffold an explicit one-shot workflow adapter without lifecycle authority. Triggers: \"build a workflow adapter\", \"scaffold a one-shot workflow\".",
       "disposition": "keep_specialist",
       "effects": [],
       "graph_root": false,

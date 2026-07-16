@@ -18,12 +18,28 @@ import yaml
 ROOT = Path(__file__).resolve().parents[1]
 CORE = ("rpi", "plan", "implement", "validate")
 CORE_SCHEMAS = (
-    "plan-packet.v1.schema.json",
-    "candidate-packet.v1.schema.json",
     "subject-manifest.v1.schema.json",
-    "revision-packet.v1.schema.json",
     "verdict.v2.schema.json",
     "rpi-report.v1.schema.json",
+)
+COMPATIBILITY_SCHEMAS = (
+    "plan-packet.v1.schema.json",
+    "candidate-packet.v1.schema.json",
+    "revision-packet.v1.schema.json",
+)
+PACKET_FREE_NARRATIVE = (
+    "GOALS.md",
+    "PROGRAM.md",
+    "docs/software-factory.md",
+    "docs/seed-definition.md",
+    "docs/INCIDENT-RUNBOOK.md",
+    "docs/templates/README.md",
+    "docs/templates/intent-issue.md",
+    "docs/templates/slice-validation.md",
+)
+LEGACY_PACKET_TOKENS = (
+    "PlanPacket", "CandidatePacket", "RevisionPacket",
+    "plan-packet.v1", "candidate-packet.v1", "revision-packet.v1",
 )
 FORBIDDEN_STATE = {
     "owner", "ready", "claim", "priority", "attempt", "attempts", "queue",
@@ -132,12 +148,40 @@ def check_core_schemas() -> None:
         schema = json.loads(path.read_text(encoding="utf-8"))
         bad = property_names(schema).intersection(FORBIDDEN_STATE)
         assert not bad, f"{filename}: lifecycle state {sorted(bad)}"
+    for filename in COMPATIBILITY_SCHEMAS:
+        path = ROOT / "schemas" / filename
+        assert path.is_file(), f"missing compatibility schema: {filename}"
+        schema = json.loads(path.read_text(encoding="utf-8"))
+        assert schema.get("deprecated") is True, f"{filename}: compatibility schema is not deprecated"
     verdict = json.loads((ROOT / "schemas" / "verdict.v2.schema.json").read_text())
     assert set(verdict["properties"]["verdict"]["enum"]) == {"PASS", "FAIL", "NOT_PROVEN"}
     for forbidden in ("WARN", "confidence", "disposition", "next_action", "NOT_BUILT", "NOT_PLANNED"):
         assert forbidden not in json.dumps(verdict), f"verdict.v2 retains {forbidden}"
     for filename in RETIRED_SCHEMAS:
         assert not (ROOT / "schemas" / filename).exists(), f"retired schema is live: {filename}"
+
+
+def check_packet_free_narrative() -> None:
+    for relative in PACKET_FREE_NARRATIVE:
+        text = (ROOT / relative).read_text(encoding="utf-8")
+        advertised = [name for name in LEGACY_PACKET_TOKENS if name in text]
+        assert not advertised, f"{relative}: advertises legacy packets {advertised}"
+
+    schemas_doc = (ROOT / "docs" / "SCHEMAS.md").read_text(encoding="utf-8")
+    assert "## Legacy compatibility" in schemas_doc, "docs/SCHEMAS.md: no legacy compatibility section"
+    current_schema_section = schemas_doc.split("## Legacy compatibility", 1)[0]
+    assert not any(name in current_schema_section for name in LEGACY_PACKET_TOKENS), (
+        "docs/SCHEMAS.md: legacy packet listed as a current core schema"
+    )
+
+    contracts_doc = (ROOT / "docs" / "contracts" / "index.md").read_text(encoding="utf-8")
+    assert "Deprecated compatibility contracts" in contracts_doc, (
+        "docs/contracts/index.md: compatibility contracts are not labeled deprecated"
+    )
+    current_contract_section = contracts_doc.split("Deprecated compatibility contracts", 1)[0]
+    assert not any(name in current_contract_section for name in LEGACY_PACKET_TOKENS), (
+        "docs/contracts/index.md: legacy packet listed as a current public contract"
+    )
 
 
 def check_single_pass_contract() -> None:
@@ -279,24 +323,19 @@ def probe_no_substrate_calls() -> None:
         assert rpi_spec and rpi_spec.loader
         rpi = importlib.util.module_from_spec(rpi_spec)
         rpi_spec.loader.exec_module(rpi)
-        acceptance = "a" * 64
-        plan = {
-            "schema_version": "plan-packet.v1",
-            "acceptance_digest": acceptance,
+        resolved_intent = {
+            "intent_ref": "conversation:cathedral-probe",
+            "acceptance": ["value.txt contains candidate"],
             "write_scope": {"include": ["value.txt"], "exclude": []},
         }
-        candidate = {
-            "schema_version": "candidate-packet.v1",
-            "plan_packet_digest": module.plan_digest(plan),
-            "acceptance_digest": acceptance,
+        intent_bytes = module.canonical_bytes(resolved_intent)
+        subject_facts = {
             "subject_manifest_digest": payload["canonical_manifest_digest"],
             "subject_manifest": payload,
-            "changed_path_coverage_complete": True,
-            "actual_changed_paths": ["value.txt"],
+            "checks": ["manifest"],
         }
-        assert module.scope_result(plan, candidate)["result"] == "PASS"
         draft = {
-            "acceptance_digest": acceptance,
+            "acceptance_digest": "a" * 64,
             "subject_manifest_digest": payload["canonical_manifest_digest"],
             "author_context_id": "non-git-author",
             "validator_context_id": "non-git-validator",
@@ -309,25 +348,34 @@ def probe_no_substrate_calls() -> None:
             "not_checked": [],
             "validated_at": "2026-07-14T00:00:00Z",
         }
-        verdict_dir = temp / ".agentops" / "verdicts" / "sha256"
+        verdict_dir = temp / ".agents" / "ao" / "verdicts" / "sha256"
         calls: list[str] = []
 
         def plan_phase(_intent: object) -> dict:
             calls.append("plan")
-            return plan
+            return resolved_intent
 
-        def implement_phase(received_plan: dict) -> dict:
+        def implement_phase(received_intent: dict) -> dict:
             calls.append("implement")
-            assert received_plan == plan
-            return candidate
+            assert received_intent == resolved_intent
+            return subject_facts
 
-        def validate_phase(received_plan: dict, received_candidate: dict) -> dict:
+        def validate_phase(received_intent: dict, received_subject: dict) -> dict:
             calls.append("validate")
-            assert module.scope_result(received_plan, received_candidate)["result"] == "PASS"
-            artifact, verdict_path, existed = module.store_verdict(draft, verdict_dir)
+            assert received_intent == resolved_intent
+            assert received_subject == subject_facts
+            artifact, verdict_path, existed = module.store_verdict(
+                draft,
+                verdict_dir,
+                intent_bytes,
+                payload,
+                "non-git-author",
+                "PASS",
+            )
             assert not existed
             return {
                 "verdict": artifact["verdict"],
+                "acceptance_digest": artifact["acceptance_digest"],
                 "subject_manifest_digest": artifact["subject_manifest_digest"],
                 "verdict_digest": artifact["artifact_digest"],
                 "verdict_ref": str(verdict_path),
@@ -348,6 +396,7 @@ def main() -> int:
         check_skill_graph,
         check_generated_skill_inventory,
         check_core_schemas,
+        check_packet_free_narrative,
         check_single_pass_contract,
         check_validate_helper,
         check_tombstones,

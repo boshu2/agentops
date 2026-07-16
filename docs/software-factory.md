@@ -7,9 +7,9 @@ software factory or own its queue.
 
 | Role | Input | Output |
 |---|---|---|
-| Planner | caller intent | one PlanPacket |
-| Implementer | exact PlanPacket | one CandidatePacket |
-| Validator | exact Plan and Candidate in a fresh context | one durable verdict |
+| Planner | caller intent | refined intent in its existing source |
+| Implementer | exact resolved intent | derived manifest and factual evidence |
+| Validator | exact intent, subject, and evidence in a fresh context | one durable verdict |
 
 One runtime may fill the roles in separate contexts. PASS still requires
 distinct nonempty author and validator context IDs plus an explicit freshness

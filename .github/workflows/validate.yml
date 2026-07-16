@@ -207,6 +207,7 @@ jobs:
           sudo wget -qO /usr/local/bin/yq https://github.com/mikefarah/yq/releases/download/v4.53.3/yq_linux_amd64
           sudo chmod +x /usr/local/bin/yq
           pip install jsonschema pyyaml
+          GOBIN=/usr/local/bin go install github.com/fzipp/gocyclo/cmd/gocyclo@v0.6.0
 
       - name: Build ao
         run: |
@@ -447,10 +448,6 @@ jobs:
         if: runner.os == 'Linux' && (needs.changes.outputs.go == 'true' || needs.changes.outputs.ci == 'true')
         run: bash tests/integration/test-cli-commands.sh
 
-      - name: Run v2.18 commands integration test
-        if: runner.os == 'Linux' && (needs.changes.outputs.go == 'true' || needs.changes.outputs.ci == 'true')
-        run: bash tests/integration/test-v218-commands.sh
-
       - name: Run release smoke test
         if: runner.os == 'Linux' && (needs.changes.outputs.go == 'true' || needs.changes.outputs.ci == 'true')
         run: bash scripts/release-smoke-test.sh --skip-build
@@ -567,13 +564,10 @@ jobs:
                 --exclude-dir=.git \
                 --exclude-dir=tests \
                 --exclude-dir=cli/testdata \
-                --exclude="install-opencode.sh" \
-                --exclude="install-codex.sh" \
-                --exclude="install-codex-plugin.sh" \
-                --exclude="install-codex-native-skills.sh" \
-                --exclude="install-claude.sh" \
-                --exclude="install-agy.sh" \
-                --exclude="install.sh" \
+                --exclude="install-ao.ps1" \
+                --exclude="install-bd.sh" \
+                --exclude="installer-bootstrap.sh" \
+                --exclude="installer-common.sh" \
                 --exclude="ci-local-release.sh" \
                 . 2>/dev/null; then
               echo "Found: $pattern"

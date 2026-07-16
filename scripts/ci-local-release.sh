@@ -168,22 +168,6 @@ run_step() {
     fi
 }
 
-# run_step_advisory runs a step but NEVER contributes to the error count.
-# Used in --quick for LOCAL-env-state checks (worktree-disposition, MemRL feedback)
-# that reflect the local machine, not committed code — they should not gate the
-# code-readiness verdict. Reported as a warning when they fail, pass otherwise.
-run_step_advisory() {
-    local name="$1"
-    shift
-    echo ""
-    echo -e "${BLUE}== $name (advisory) ==${NC}"
-    if "$@"; then
-        pass "$name"
-    else
-        warn "$name failed (advisory — local-env state, not gating --quick verdict)"
-    fi
-}
-
 release_version() {
     if [[ -n "$RELEASE_VERSION_OVERRIDE" ]]; then
         printf '%s\n' "$RELEASE_VERSION_OVERRIDE"
@@ -435,6 +419,9 @@ run_dangerous_pattern_scan() {
             --exclude-dir=tests \
             --exclude-dir=cli/testdata \
             --exclude="ci-local-release.sh" \
+            --exclude="install-bd.sh" \
+            --exclude="installer-bootstrap.sh" \
+            --exclude="installer-common.sh" \
             . 2>/dev/null || true)"
         while IFS= read -r match; do
             [[ -n "$match" ]] || continue
@@ -717,13 +704,6 @@ release_readiness_mode() {
     fi
 }
 
-local_env_checks_blocking() {
-    if [[ "${LOCAL_CI_STRICT_LOCAL_ENV:-0}" == "1" ]]; then
-        return 0
-    fi
-    [[ "$(release_readiness_mode)" == "official" ]]
-}
-
 run_release_hil_evidence() {
     local mode
     local version
@@ -787,92 +767,23 @@ write_release_digital_twin_evidence() {
 }
 
 run_release_eval_evidence() {
-    if [[ "$FAST_MODE" == "true" ]]; then
-        jq -n \
-            --arg generated_at "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
-            --arg artifact_dir "$(artifact_dir_rel)" \
-            '{
-              schema_version: 1,
-              evidence_kind: "agentops_eval_fast",
-              generated_at: $generated_at,
-              artifact_dir: $artifact_dir,
-              status: "skipped",
-              reason: "fast mode skips release eval evidence"
-            }' > "$ARTIFACT_DIR/eval-agentops-fast.json"
-        jq -n \
-            '{suite_count: 0, baseline_count: 0, policy_mismatch_count: 0, stale_suite_hashes: []}' \
-            > "$ARTIFACT_DIR/eval-baseline-audit.json"
-        return 0
-    fi
-
-    local eval_root="$ARTIFACT_DIR/eval-agentops"
-    local run_root="$eval_root/runs"
-    local log_file="$ARTIFACT_DIR/eval-agentops-fast.log"
-    local run_dir=""
-    local rc=0
-    local mode
-    local eval_args
-    local command_display
-    local arg
-    local quoted
-    mkdir -p "$run_root"
-
-    mode="$(release_readiness_mode)"
-    eval_args=(--fast --run-root "$run_root" --baseline-dir "$eval_root/baselines")
-    if [[ "$mode" != "official" ]]; then
-        eval_args+=(--advisory)
-    fi
-    command_display="scripts/eval-agentops.sh"
-    for arg in "${eval_args[@]}"; do
-        printf -v quoted '%q' "$arg"
-        command_display+=" $quoted"
-    done
-
-    AO_BIN="$REPO_ROOT/cli/bin/ao" \
-        ./scripts/eval-agentops.sh "${eval_args[@]}" > "$log_file" 2>&1 || rc=$?
-
-    run_dir="$(find "$run_root" -mindepth 1 -maxdepth 1 -type d 2>/dev/null | sort | tail -1)"
-    if [[ -n "$run_dir" && -f "$run_dir/baseline-audit.json" ]]; then
-        cp "$run_dir/baseline-audit.json" "$ARTIFACT_DIR/eval-baseline-audit.json"
-    else
-        jq -n \
-            '{suite_count: 0, baseline_count: 0, policy_mismatch_count: 0, stale_suite_hashes: []}' \
-            > "$ARTIFACT_DIR/eval-baseline-audit.json"
-        rc=1
-    fi
-
-    local status="pass"
-    [[ "$rc" -eq 0 ]] || status="fail"
-    if [[ -f "$log_file" ]] && grep -q '^FAIL eval-agentops:' "$log_file"; then
-        status="fail"
-    fi
-
+    # The legacy eval surface was retired. Keep release evidence honest and
+    # explicit instead of invoking a tombstone or manufacturing a PASS.
     jq -n \
         --arg generated_at "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
         --arg artifact_dir "$(artifact_dir_rel)" \
-        --arg status "$status" \
-        --arg command "$command_display" \
-        --arg run_dir "${run_dir#"$REPO_ROOT"/}" \
-        --arg log "eval-agentops-fast.log" \
-        --arg baseline_audit "eval-baseline-audit.json" \
-        --argjson exit_code "$rc" \
         '{
           schema_version: 1,
           evidence_kind: "agentops_eval_fast",
           generated_at: $generated_at,
           artifact_dir: $artifact_dir,
-          status: $status,
-          command: $command,
-          exit_code: $exit_code,
-          run_dir: (if $run_dir == "" then null else $run_dir end),
-          log: $log,
-          baseline_audit: $baseline_audit
+          status: "not_applicable",
+          reason: "legacy eval surface retired; no release evaluator is currently wired",
+          baseline_audit: "eval-baseline-audit.json"
         }' > "$ARTIFACT_DIR/eval-agentops-fast.json"
-
-    if [[ "$mode" != "official" && "$rc" -eq 0 ]]; then
-        return 0
-    fi
-    return "$rc"
+    jq -n \
+        '{suite_count: 0, baseline_count: 0, policy_mismatch_count: 0, stale_suite_hashes: []}' \
+        > "$ARTIFACT_DIR/eval-baseline-audit.json"
 }
 
 check_release_readiness() {
@@ -889,9 +800,14 @@ check_release_readiness() {
         artifact_status="skipped"
         vil_status="skipped"
         eval_status="skipped"
-    elif [[ ! -f "$ARTIFACT_DIR/eval-agentops-fast.json" ]] || \
-        ! jq -e '.status == "pass"' "$ARTIFACT_DIR/eval-agentops-fast.json" >/dev/null 2>&1; then
+    elif [[ ! -f "$ARTIFACT_DIR/eval-agentops-fast.json" ]]; then
         eval_status="fail"
+    else
+        case "$(jq -r '.status // "fail"' "$ARTIFACT_DIR/eval-agentops-fast.json")" in
+            pass) eval_status="pass" ;;
+            not_applicable) eval_status="not_applicable" ;;
+            *) eval_status="fail" ;;
+        esac
     fi
     if [[ "$FAST_MODE" != "true" ]] && \
         { [[ ! -f "$ARTIFACT_DIR/digital-twin-evidence.json" ]] || \
@@ -938,6 +854,7 @@ if [[ "$QUICK_MODE" == "true" ]]; then
     echo -e "${BLUE}  AgentOps Local CI (Release Gate) — QUICK SANITY MODE${NC}"
     echo -e "${YELLOW}  [--quick] skipping release-rehearsal lane (SBOM/cross-build/scan);${NC}"
     echo -e "${YELLOW}            run full mode before the actual tag${NC}"
+    warn "Skipped SBOM generation (cyclonedx/spdx) (--quick)"
 elif [[ "$FAST_MODE" == "true" ]]; then
     echo -e "${BLUE}  AgentOps Local CI (Release Gate) — FAST MODE${NC}"
     echo -e "${YELLOW}  Skipping: race tests, security gate, SBOM, hook integration${NC}"
@@ -965,7 +882,7 @@ run_step_bg "CI policy/docs parity" ./scripts/validate-ci-policy-parity.sh
 # Worktree-disposition is a LOCAL-env-state check (reflects the local working tree, not
 # committed code). It gates official release-version runs and can be forced with
 # LOCAL_CI_STRICT_LOCAL_ENV=1; otherwise it runs advisory after collect_parallel.
-run_step_bg "Skill integrity" bash ./skills/heal-skill/scripts/heal.sh --strict
+run_step_bg "Skill integrity" bash ./skills/skill-builder/scripts/heal.sh --strict
 run_step_bg "Skill runtime parity" bash ./scripts/validate-skill-runtime-parity.sh
 run_step_bg "Codex runtime sections" bash ./scripts/validate-codex-runtime-sections.sh
 # Codex skill parity removed — skills-codex/ is manually maintained
@@ -995,8 +912,7 @@ run_step_bg "Command/test pairing gate tests" ./tests/scripts/test-go-command-te
 run_step_bg "Go fast scope tests" bats ./tests/scripts/validate-go-fast.bats
 run_step_bg "Skill runtime parity tests" bash ./tests/scripts/test-skill-runtime-parity.sh
 run_step_bg "Skill CLI snippet tests" bash ./tests/scripts/test-skill-cli-snippets.sh
-run_step_bg "Codex plugin install tests" bash ./tests/scripts/test-codex-plugin-install.sh
-run_step_bg "Codex native install tests" bash ./tests/scripts/test-codex-native-skills-install.sh
+run_step_bg "Install surface smoke" bash ./tests/install/test-install-smoke.sh
 run_step_bg "Codex artifact manifest tests" bash ./tests/scripts/test-codex-generated-manifest.sh
 run_step_bg "Codex artifact metadata tests" bash ./tests/scripts/test-codex-generated-artifacts.sh
 run_step_bg "Validate-local tests" bash ./tests/scripts/test-validate-local.sh
@@ -1026,6 +942,7 @@ if [[ "$QUICK_MODE" == "true" ]]; then
     run_step "Go build + vet + test (current platform, no -race)" run_go_quick_build_and_test
 elif [[ "$FAST_MODE" == "true" ]]; then
     warn "Skipped Go race tests (--fast)"
+    warn "Skipped SBOM generation (--fast)"
     warn "Skipped Security gate (--fast)"
 
     # Still build the binary (fast) and run smoke tests against it
@@ -1034,6 +951,7 @@ elif [[ "$FAST_MODE" == "true" ]]; then
 else
     # The full deterministic code and security checks run in parallel.
     run_step_bg "Go build + race tests" run_go_build_and_tests
+    run_step_bg "Generate SBOM artifacts (CycloneDX + SPDX)" generate_sbom_artifacts
     run_step_bg "Security toolchain gate (${SECURITY_MODE})" run_security_gate
 
     collect_parallel
@@ -1044,8 +962,20 @@ fi
 # ── Phase 5: CLI smoke tests (need built binary) ──
 
 run_step_bg "ao init + live-waist smoke" run_init_live_waist_smoke
+run_step_bg "Release smoke test (all commands)" ./scripts/release-smoke-test.sh --skip-build
 
 collect_parallel
+
+# The release-evidence lane uses retained deterministic surfaces only. The
+# removed evaluator is recorded explicitly as not applicable.
+if [[ "$QUICK_MODE" != "true" ]]; then
+    run_step "Digital twin/VIL evidence" write_release_digital_twin_evidence
+    run_step "AgentOps eval evidence" run_release_eval_evidence
+    run_step "HIL release evidence" run_release_hil_evidence
+    run_step "Release readiness score gate" check_release_readiness
+else
+    warn "Skipped digital-twin, HIL, and readiness evidence (--quick)"
+fi
 
 # ═══════════════════════════════════════════════════════
 #  Summary
@@ -1054,21 +984,28 @@ collect_parallel
 END_TIME=$(date +%s)
 ELAPSED=$((END_TIME - START_TIME))
 
+if [[ "$QUICK_MODE" != "true" ]]; then
+    write_release_artifact_manifest
+    write_tag_index
+fi
+
 echo ""
 echo -e "${BLUE}═══════════════════════════════════════════════════════${NC}"
 if [[ "$errors" -gt 0 ]]; then
     echo -e "${RED}  LOCAL CI FAILED ($errors failing check(s)) [${ELAPSED}s]${NC}"
+    echo "  Release artifacts: $ARTIFACT_DIR"
     echo -e "${BLUE}═══════════════════════════════════════════════════════${NC}"
     exit 1
 fi
 
 if [[ "$QUICK_MODE" == "true" ]]; then
     echo -e "${GREEN}  LOCAL CI QUICK SANITY PASSED [${ELAPSED}s]${NC}"
-    echo -e "${YELLOW}  --quick skipped race, security, and release-binary checks.${NC}"
+    echo -e "${YELLOW}  --quick skipped race, security, SBOM, and release-evidence checks.${NC}"
     echo -e "${BLUE}═══════════════════════════════════════════════════════${NC}"
     exit 0
 fi
 
 echo -e "${GREEN}  LOCAL CI PASSED [${ELAPSED}s]${NC}"
+echo "  Release artifacts: $ARTIFACT_DIR"
 echo -e "${BLUE}═══════════════════════════════════════════════════════${NC}"
 exit 0

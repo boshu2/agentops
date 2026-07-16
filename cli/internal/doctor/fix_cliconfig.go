@@ -34,7 +34,7 @@ func homeConfigPathFor(homeDir string) string {
 	if homeDir == "" {
 		homeDir, _ = os.UserHomeDir()
 	}
-	return filepath.Join(homeDir, ".agentops", "config.yaml")
+	return filepath.Join(homeDir, ".agents", "ao", "config.yaml")
 }
 
 // projectConfigPathFor returns the project config path for the given cwd.
@@ -42,7 +42,7 @@ func projectConfigPathFor(cwd string) string {
 	if cwd == "" {
 		cwd, _ = os.Getwd()
 	}
-	return filepath.Join(cwd, ".agentops", "config.yaml")
+	return filepath.Join(cwd, ".agents", "ao", "config.yaml")
 }
 
 // lookPathAll resolves every occurrence of name on PATH, preserving order.
@@ -472,7 +472,7 @@ func (devVersionBuildIntegrityDetector) Detect(_ *DetectEnv) ([]Finding, error) 
 		},
 		Remediation: Remediation{
 			Command: "Reinstall a release build: " +
-				"bash <(curl -fsSL https://raw.githubusercontent.com/boshu2/agentops/main/scripts/install.sh) " +
+				"brew upgrade agentops " +
 				"— or, if developing, rebuild with ldflags: cd cli && make build. " +
 				"If `which -a ao` shows duplicates, remove the stale one from PATH.",
 			ExplainCommand:   "ao doctor explain " + fmDevVersionBuildIntegrity,
@@ -531,7 +531,7 @@ func describeAOPaths(paths []string) string {
 
 const fmStaleProjectConfig = "fm-cli-config-stale-project-config-shadows-home"
 
-// staleProjectConfigDetector flags a project .agentops/config.yaml in cwd that
+// staleProjectConfigDetector flags a project .agents/ao/config.yaml in cwd that
 // silently overrides the home config.
 type staleProjectConfigDetector struct{}
 
@@ -542,7 +542,7 @@ func (staleProjectConfigDetector) EstimatedCostMS() int { return 5 }
 func (staleProjectConfigDetector) OnlineRequired() bool { return false }
 func (staleProjectConfigDetector) QuickPath() bool      { return true }
 func (staleProjectConfigDetector) Describe() string {
-	return "Detects a project .agentops/config.yaml in cwd that silently shadows the home config."
+	return "Detects a project .agents/ao/config.yaml in cwd that silently shadows the home config."
 }
 
 // flattenYAML recursively flattens a parsed YAML map into dotted keys.
@@ -599,7 +599,7 @@ func (staleProjectConfigDetector) Detect(env *DetectEnv) ([]Finding, error) {
 		ID:         fmStaleProjectConfig,
 		Severity:   "P3",
 		Subsystem:  "cli-config",
-		Title:      "a project .agentops/config.yaml is overriding home config in this directory",
+		Title:      "a project .agents/ao/config.yaml is overriding home config in this directory",
 		Confidence: 0.95,
 		Evidence: Evidence{
 			File:  projectPath,
@@ -649,7 +649,7 @@ func init() {
 	})
 	RegisterFixer(cliConfigRefuser{
 		id:          fmStaleProjectConfig,
-		reason:      "a project .agentops/config.yaml shadows home config; the doctor will not move a possibly-intentional user file",
+		reason:      "a project .agents/ao/config.yaml shadows home config; the doctor will not move a possibly-intentional user file",
 		operatorCmd: "ao doctor explain " + fmStaleProjectConfig,
 	})
 }

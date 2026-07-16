@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/boshu2/agentops/cli/internal/doctor"
+	"github.com/boshu2/agentops/cli/internal/quality"
 )
 
 func TestDoctor_Integration_HealthyState(t *testing.T) {
@@ -55,31 +55,14 @@ func TestDoctor_Integration_JSONOutput(t *testing.T) {
 		t.Fatal("expected JSON output, got empty string")
 	}
 
-	// `ao doctor --json` is the engine's machine surface: a single Report.
-	// Strict unmarshal fails if a second JSON document leaked onto stdout.
-	var rep doctor.Report
+	// JSON is the machine representation of the same bounded health checks as
+	// human output, not an implicit run of the failure-mode engine.
+	var rep quality.DoctorOutput
 	if err := json.Unmarshal([]byte(out), &rep); err != nil {
-		t.Fatalf("expected a single valid engine Report, got parse error: %v\nraw output:\n%s", err, out)
+		t.Fatalf("expected one valid health report, got parse error: %v\nraw output:\n%s", err, out)
 	}
-	if rep.SchemaVersion != "1.0" {
-		t.Errorf("expected schema_version 1.0, got %q", rep.SchemaVersion)
-	}
-	if rep.Tool != "ao" {
-		t.Errorf("expected tool 'ao', got %q", rep.Tool)
-	}
-	if rep.RunID == "" {
-		t.Error("expected a non-empty run_id")
-	}
-	// Diagnose (no --fix) exits 0 (healthy) or 1 (findings present).
-	if rep.ExitCode != 0 && rep.ExitCode != 1 {
-		t.Errorf("expected diagnose exit_code 0 or 1, got %d", rep.ExitCode)
-	}
-	if rep.OK != (rep.ExitCode == 0) {
-		t.Errorf("ok=%v inconsistent with exit_code=%d", rep.OK, rep.ExitCode)
-	}
-	if rep.Summary.TotalFindings != len(rep.Findings) {
-		t.Errorf("summary.total_findings=%d but findings array has %d entries",
-			rep.Summary.TotalFindings, len(rep.Findings))
+	if len(rep.Checks) == 0 || rep.Result == "" || rep.Summary == "" {
+		t.Fatalf("incomplete health report: %+v", rep)
 	}
 }
 

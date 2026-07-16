@@ -1,8 +1,8 @@
-# PlanPacket worksheet
+# Intent worksheet
 
-Use this worksheet to shape one behavior before serializing
-[`plan-packet.v1`](../../schemas/plan-packet.v1.schema.json). It is optional
-source material for Plan, not work readiness, ownership, or scheduling state.
+Use this worksheet to shape one behavior in the caller-owned issue, bead, or
+conversation. It is optional source material for Plan, not a second planning
+artifact, work-readiness record, ownership claim, or scheduling state.
 
 ## Intent
 
@@ -61,6 +61,6 @@ artifact_path: <artifact whose absence or content proves RED>
 <Caller-owned way to undo or contain the experiment, or an explicit statement
 that no rollback exists.>
 
-Plan computes the intent, acceptance, and packet digests. It emits no owner,
-priority, attempt, wave, queue, lease, admission, next action, closure, release,
-or delivery field.
+The runtime snapshots and hashes these resolved intent bytes when their source
+is not already durable. Plan emits no owner, priority, attempt, wave, queue,
+lease, admission, next action, closure, release, or delivery field.

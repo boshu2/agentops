@@ -33,6 +33,7 @@ type Module struct {
 	useCases UseCases
 	output   func() string
 	verbose  func() bool
+	dryRun   func() bool
 }
 
 type options struct {
@@ -41,8 +42,8 @@ type options struct {
 	setSkill string
 }
 
-func NewModule(useCases UseCases, output func() string, verbose func() bool) Module {
-	return Module{useCases: useCases, output: output, verbose: verbose}
+func NewModule(useCases UseCases, output func() string, verbose func() bool, dryRun func() bool) Module {
+	return Module{useCases: useCases, output: output, verbose: verbose, dryRun: dryRun}
 }
 
 func (Module) Contract() clicontract.CommandContract {
@@ -85,7 +86,7 @@ func (module Module) modelsCommand(commandOptions *options) *cobra.Command {
 	command.RunE = func(command *cobra.Command, _ []string) error {
 		if commandOptions.setTier != "" || commandOptions.setSkill != "" {
 			result, err := module.useCases.WriteModels(command.Context(), configapp.ModelsWriteRequest{
-				DefaultTier: commandOptions.setTier, Skill: commandOptions.setSkill,
+				DefaultTier: commandOptions.setTier, Skill: commandOptions.setSkill, DryRun: module.dryRun != nil && module.dryRun(),
 			})
 			if err != nil {
 				return err
@@ -194,12 +195,16 @@ func renderModelsWrite(command *cobra.Command, output, tier, skill string, resul
 		return writeJSON(command, result, "marshal models write result")
 	}
 	w := command.OutOrStdout()
+	verb := "Set"
+	if result.DryRun {
+		verb = "Would set"
+	}
 	if tier != "" {
-		fmt.Fprintf(w, "Set default model tier to %q\n", tier)
+		fmt.Fprintf(w, "%s default model tier to %q\n", verb, tier)
 	}
 	if skill != "" {
 		parts := splitSkill(skill)
-		fmt.Fprintf(w, "Set skill %q tier to %q\n", parts[0], parts[1])
+		fmt.Fprintf(w, "%s skill %q tier to %q\n", verb, parts[0], parts[1])
 	}
 	return nil
 }
@@ -256,8 +261,8 @@ const configLong = `View and manage AgentOps configuration.
 Configuration priority (highest to lowest):
   1. Command-line flags
   2. Environment variables (AGENTOPS_*)
-  3. Project config (.agentops/config.yaml)
-  4. Home config (~/.agentops/config.yaml)
+  3. Project config (.agents/ao/config.yaml)
+  4. Home config (~/.agents/ao/config.yaml)
   5. Defaults
 
 Environment variables:
@@ -291,7 +296,7 @@ Cost tiers map to model quality levels:
   budget   → haiku  (quick checks, simple tasks)
   inherit  → uses default tier (falls back to balanced)
 
-Configure in .agentops/config.yaml:
+Configure in .agents/ao/config.yaml:
   models:
     default_tier: balanced
     skill_overrides:

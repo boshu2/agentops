@@ -1,5 +1,7 @@
 # Eval Baseline-A/B Contract
 
+> **RETIRED:** Historical draft for the removed evaluation CLI; not a live command contract.
+
 > **Status:** Draft
 > **Surface:** `ao eval run --baseline-mode={skill-on,skill-off,both}` plus the `DeltaScorecard` JSON artifact
 > **Consumers:** SIL canaries that want to measure per-skill value-add; future HIL/VIL extensions

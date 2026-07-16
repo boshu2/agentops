@@ -16,6 +16,7 @@
 |---|---|---|
 | `agent-mail` | `supplier-to` | `agent-native` |
 | `agent-native` | `customer-of` | `agent-mail` |
+| `agent-native` | `customer-of` | `codex-exec` |
 | `agent-native` | `customer-of` | `ntm` |
 | `agy-native` | `separate-ways` | `codex-exec` |
 | `automation-shape-routing` | `supplier-to` | `agent-native` |
@@ -27,10 +28,7 @@
 | `codebase-recon` | `customer-of` | `research` |
 | `codebase-recon` | `customer-of` | `validate` |
 | `codex-exec` | `supplier-to` | `validate` |
-| `dueling-idea-genies` | `customer-of` | `idea-genie` |
-| `dueling-idea-genies` | `supplier-to` | `plan` |
 | `goals` | `shared-kernel` | `standards` |
-| `heal-skill` | `customer-of` | `skill-builder` |
 | `idea-genie` | `customer-of` | `research` |
 | `idea-genie` | `supplier-to` | `plan` |
 | `implement` | `customer-of` | `plan` |
@@ -49,7 +47,6 @@
 | `rpi` | `customer-of` | `validate` |
 | `scope` | `supplier-to` | `plan` |
 | `security` | `supplier-to` | `validate` |
-| `skill-builder` | `supplier-to` | `heal-skill` |
 | `toil-mining` | `supplier-to` | `automation-shape-routing` |
 | `using-gc` | `partnership` | `agent-native` |
 | `validate` | `customer-of` | `implement` |
@@ -88,17 +85,14 @@
 | `doc` | consumes | `repo-context` |
 | `doc` | produces | `documentation` |
 | `domain` | produces | `stdout` |
-| `dueling-idea-genies` | consumes | `idea-portfolio.v1` |
-| `dueling-idea-genies` | consumes | `task-question` |
-| `dueling-idea-genies` | produces | `idea-challenge.v1` |
 | `goals` | produces | `result.json` |
 | `handoff` | produces | `.agents/handoff/*.md` |
-| `heal-skill` | produces | `skill-hygiene-report` |
 | `idea-genie` | consumes | `repo-context` |
 | `idea-genie` | consumes | `task-question` |
+| `idea-genie` | consumes | `idea-portfolio.v1` |
 | `idea-genie` | produces | `idea-portfolio.v1` |
-| `implement` | consumes | `plan-packet.v1` |
-| `implement` | produces | `candidate-packet.v1` |
+| `idea-genie` | produces | `idea-challenge.v1` |
+| `implement` | produces | `subject-manifest.v1` |
 | `learn` | consumes | `verdict.v2` |
 | `learn` | produces | `learning-observations` |
 | `ntm` | consumes | `task-intent` |
@@ -109,10 +103,8 @@
 | `pattern-mining` | consumes | `repo-context` |
 | `pattern-mining` | consumes | `task-question` |
 | `pattern-mining` | produces | `pattern-mining.v1` |
-| `plan` | produces | `plan-packet.v1` |
 | `postmortem` | consumes | `verdict.v2` |
 | `postmortem` | produces | `postmortem-report.md` |
-| `premortem` | consumes | `plan-packet.v1` |
 | `premortem` | produces | `premortem-plan-review.v1` |
 | `product` | produces | `PRODUCT.md` |
 | `reality-check` | consumes | `claim` |
@@ -127,13 +119,14 @@
 | `rpi` | consumes | `implement` |
 | `rpi` | consumes | `validate` |
 | `rpi` | produces | `rpi-report.v1` |
-| `scaffold` | produces | `converted-skill` |
+| `scaffold` | produces | `project-scaffold` |
 | `scope` | consumes | `proposed-write-scope` |
 | `scope` | produces | `scope-review` |
 | `security` | consumes | `repo-context` |
 | `security` | produces | `security-report.json` |
 | `shared` | produces | `reference-documents` |
 | `skill-builder` | produces | `skill-source-package` |
+| `skill-builder` | produces | `skill-hygiene-report` |
 | `standards` | produces | `stdout` |
 | `status` | produces | `stdout` |
 | `swarm` | consumes | `explicit-disjoint-packets` |
@@ -144,8 +137,7 @@
 | `toil-mining` | produces | `result.json` |
 | `using-gc` | consumes | `explicit-packets` |
 | `using-gc` | produces | `gas-city-runtime-evidence` |
-| `validate` | consumes | `plan-packet.v1` |
-| `validate` | consumes | `candidate-packet.v1` |
+| `validate` | consumes | `subject-manifest.v1` |
 | `validate` | produces | `subject-manifest.v1` |
 | `validate` | produces | `verdict.v2` |
 | `workflow-builder` | produces | `workflow-script` |

@@ -37,7 +37,8 @@ metadata:
 
 ### `context`
 
-Controls what knowledge `ao lookup --for=<skill>` provides. Two forms:
+Legacy metadata that once controlled the now-retired lookup command. Two forms
+remain accepted for compatibility:
 
 **String form** (backward compat):
 ```yaml
@@ -90,7 +91,8 @@ Valid section names:
 | `INTEL` | Learnings and patterns from the knowledge flywheel |
 | `TASK` | Current bead ID and predecessor context |
 
-**v1 status:** Actively enforced at runtime. `ao lookup --for=<skill>` zeroes excluded/non-included sections.
+**v1 status:** Metadata compatibility only; the lookup command was removed and
+these fields do not trigger runtime retrieval.
 
 #### `context.intent.mode`
 
@@ -178,7 +180,7 @@ metadata:
 | `knowledge` | Knowledge management | compile, trace |
 | `product` | Product strategy | product, readme, release, goals |
 | `library` | Shared references | shared, standards, beads |
-| `meta` | System-level | using-agentops, update, heal-skill |
+| `meta` | System-level | using-agentops, update, skill-builder |
 | `contribute` | External contributions | pr-plan, pr-implement, pr-research, oss-docs |
 | `cross-vendor` | Cross-platform | openai-docs, codex-team, converter, grafana-platform-dashboard |
 
@@ -242,7 +244,6 @@ Core skills and their context policies:
 | push | isolated | exclude: HISTORY, INTEL, TASK | none | none |
 | ratchet | isolated | exclude: HISTORY, INTEL, TASK | none | none |
 | update | isolated | exclude: HISTORY, INTEL, TASK | none | none |
-| heal-skill | isolated | exclude: HISTORY, INTEL, TASK | none | none |
 | **Product** | | | | |
 | product | fork | exclude: HISTORY | task | full |
 | readme | fork | exclude: HISTORY | task | full |

@@ -5,7 +5,7 @@
 
 ## Global Flags
 
-          --config string   Config file (default: ~/.agentops/config.yaml)
+          --config string   Config file (default: ~/.agents/ao/config.yaml)
           --dry-run         Show what would happen without executing
       -h, --help            help for ao
           --json            Output as JSON (shorthand for -o json)
@@ -16,6 +16,24 @@
 ---
 
 ## Commands
+
+### `ao demo`
+
+Show the AgentOps product boundary:
+
+```
+ao demo [flags]
+```
+
+**Flags:**
+
+```
+      --concepts   explain the product boundary
+  -h, --help       help for demo
+      --quick      show the compact one-pass example
+```
+
+---
 
 ### `ao init`
 
@@ -43,58 +61,6 @@ Print the machine-readable contract for the whole ao CLI as JSON.
 
 ```
 ao capabilities [flags]
-```
-
----
-
-### `ao constraint`
-
-Manage constraints compiled from promoted findings.
-
-```
-ao constraint [command]
-```
-
-**Subcommands:**
-
-#### `ao constraint activate`
-
-Promote a precision-backed shadow constraint to active blocking
-
-```
-ao constraint activate <id> [flags]
-```
-
-#### `ao constraint list`
-
-List all constraints with status
-
-```
-ao constraint list [flags]
-```
-
-#### `ao constraint publish`
-
-Export the ACTIVE constraints to docs/constraints/published.json (tracked + committed),
-
-```
-ao constraint publish [flags]
-```
-
-#### `ao constraint retire`
-
-Change constraint status from active to retired
-
-```
-ao constraint retire <id> [flags]
-```
-
-#### `ao constraint review`
-
-List constraints compiled >90 days ago without recent citation
-
-```
-ao constraint review [flags]
 ```
 
 ---
@@ -252,6 +218,16 @@ ao gate check [flags]
 
 ---
 
+### `ao redact`
+
+Read text on stdin, apply the canonical secret redactor (the same
+
+```
+ao redact [flags]
+```
+
+---
+
 ### `ao robot-docs`
 
 Print a paste-ready, agent-targeted handbook for the whole ao CLI.
@@ -264,7 +240,7 @@ ao robot-docs [flags]
 
 ### `ao status`
 
-Display the current state of AgentOps knowledge base.
+Display the content-addressed intent and verdict evidence stored by AgentOps.
 
 ```
 ao status [flags]
@@ -432,19 +408,10 @@ ao goals scenarios [flags]
 
 #### `ao goals trace`
 
-Walk the executable-spec trace chain defined in docs/adr/ADR-0005.
+Removed in the AgentOps Cathedral Cut
 
 ```
 ao goals trace [flags]
-```
-
-**Flags:**
-
-```
-      --from string   Render the trace lineage rooted at this directive, scenario, or bead ID
-  -h, --help          help for trace
-      --orphans       Audit the whole chain for broken references (errors) and missing yields (warnings)
-      --strict        Escalate warning-class defects to a non-zero exit (ADR-0005 §4.2)
 ```
 
 ---
@@ -494,27 +461,10 @@ ao session handoff [summary] [flags]
 
 #### `ao session memory`
 
-Manage repo-root MEMORY.md for cross-runtime access
+Removed in the AgentOps Cathedral Cut
 
 ```
-ao session memory [command]
-```
-
-##### `ao session memory sync`
-
-Write recent session history to a repo-root MEMORY.md with managed block markers.
-
-```
-ao session memory sync [flags]
-```
-
-**Flags:**
-
-```
-  -h, --help                 help for sync
-      --max-entries int      Maximum session entries to keep (default 10)
-      --output-file string   Output path (default: MEMORY.md in repo root)
-      --quiet                Suppress output
+ao session memory [flags]
 ```
 
 #### `ao session rehydrate`
@@ -579,172 +529,9 @@ ao config models [flags]
 
 ---
 
-### `ao flywheel`
-
-Knowledge flywheel operations and status.
-
-```
-ao flywheel [command]
-```
-
-**Subcommands:**
-
-#### `ao flywheel compare`
-
-Compare retrieval quality between primary and shadow namespaces.
-
-```
-ao flywheel compare [flags]
-```
-
-**Flags:**
-
-```
-  -h, --help            help for compare
-      --shadow string   Shadow namespace to compare against primary (default "shadow")
-```
-
-#### `ao flywheel status`
-
-Display comprehensive flywheel health status.
-
-```
-ao flywheel status [flags]
-```
-
-**Flags:**
-
-```
-      --days int           Period in days for metrics calculation (default 7)
-  -h, --help               help for status
-      --namespace string   Citation namespace to evaluate (primary by default) (default "primary")
-```
-
----
-
-### `ao claim`
-
-Removed in the AgentOps Cathedral Cut
-
-```
-ao claim [flags]
-```
-
----
-
-### `ao close`
-
-Removed in the AgentOps Cathedral Cut
-
-```
-ao close [flags]
-```
-
----
-
-### `ao converge`
-
-Removed in the AgentOps Cathedral Cut
-
-```
-ao converge [flags]
-```
-
----
-
-### `ao crank`
-
-Removed in the AgentOps Cathedral Cut
-
-```
-ao crank [flags]
-```
-
----
-
-### `ao done`
-
-Removed in the AgentOps Cathedral Cut
-
-```
-ao done [flags]
-```
-
----
-
-### `ao governor`
-
-Removed in the AgentOps Cathedral Cut
-
-```
-ao governor [flags]
-```
-
----
-
-### `ao help`
-
-Help provides help for any command in the application.
-
-```
-ao help [command] [flags]
-```
-
----
-
-### `ao land`
-
-Removed in the AgentOps Cathedral Cut
-
-```
-ao land [flags]
-```
-
----
-
-### `ao membrane`
-
-Removed in the AgentOps Cathedral Cut
-
-```
-ao membrane [flags]
-```
-
----
-
-### `ao next-work`
-
-Removed in the AgentOps Cathedral Cut
-
-```
-ao next-work [flags]
-```
-
----
-
-### `ao pawl`
-
-Removed in the AgentOps Cathedral Cut
-
-```
-ao pawl [flags]
-```
-
----
-
-### `ao plan-pawl`
-
-Removed in the AgentOps Cathedral Cut
-
-```
-ao plan-pawl [flags]
-```
-
----
-
 ### `ao provenance`
 
-Append-only write model for the SDLC provenance/intent graph
+Append and inspect generic, evidence-backed relationships between
 
 ```
 ao provenance [command]
@@ -764,11 +551,11 @@ ao provenance add <from-id> <to-id> [flags]
 
 ```
       --evidence string     Optional evidence pointer (path, commit, CI run URL, event id)
-      --from-type string    Source node type (decision|artifact|bead|...) (default "decision")
+      --from-type string    Source node type (for example decision, artifact, or observation) (default "decision")
   -h, --help                help for add
       --json                Emit the sealed edge as JSON
       --relation string     Typed PROV-O relation (required), e.g. wasGeneratedBy
-      --to-type string      Target node type (decision|artifact|bead|...) (default "artifact")
+      --to-type string      Target node type (for example decision, artifact, or observation) (default "artifact")
       --trust-tier string   Trust tier (authored|inferred|mined) (default "authored")
       --ts string           Override the UTC RFC3339 timestamp (defaults to now)
 ```
@@ -888,16 +675,6 @@ ao provenance verify [flags]
 
 ---
 
-### `ao reconcile`
-
-Removed in the AgentOps Cathedral Cut
-
-```
-ao reconcile [flags]
-```
-
----
-
 ### `ao skills`
 
 Tooling for the skills/ source-of-truth and its skills-codex/
@@ -942,47 +719,10 @@ ao skills consumers <skill> [flags]
 
 #### `ao skills edit`
 
-Immune-system commands for the live skill tier.
+Removed in the AgentOps Cathedral Cut
 
 ```
-ao skills edit [command]
-```
-
-##### `ao skills edit digest`
-
-Summarize recent committed skill edits
-
-```
-ao skills edit digest [flags]
-```
-
-**Flags:**
-
-```
-      --critical-policy string   Critical skills policy file (default: docs/contracts/critical-skills.txt)
-  -h, --help                     help for digest
-      --json                     Emit JSON
-      --since string             git log --since value (default "24 hours ago")
-```
-
-##### `ao skills edit seal`
-
-Commit one live skill edit with critical-skill protection
-
-```
-ao skills edit seal [flags]
-```
-
-**Flags:**
-
-```
-      --actor string             Agent/operator name recorded in the commit body
-      --allow-critical           Allow a critical skill edit; use only for human-supervised edits
-      --critical-policy string   Critical skills policy file (default: docs/contracts/critical-skills.txt)
-      --dry-run                  Check policy and print the commit action without staging or committing
-  -h, --help                     help for seal
-      --message string           Commit subject (default: chore(skills): update <skill> via live edit)
-      --skill string             Skill slug under skills/<slug> to seal
+ao skills edit [flags]
 ```
 
 #### `ao skills find`
@@ -1027,7 +767,7 @@ ao skills link [flags]
 **Flags:**
 
 ```
-      --dest string   Link into this single dir instead of the auto-detected runtimes (default: every installed runtime — ~/.claude, ~/.codex, ~/.gemini, ~/.cursor, ~/.pi)
+      --dest string   Link into this single dir instead of the auto-detected roots (default: ~/.agents plus every installed runtime)
   -h, --help          help for link
       --json          Emit machine-readable JSON
 ```
@@ -1094,9 +834,192 @@ ao skills unlink [flags]
 **Flags:**
 
 ```
-      --dest string   Sweep this single dir instead of the auto-detected runtimes (default: every installed runtime — ~/.claude, ~/.codex, ~/.gemini, ~/.cursor, ~/.pi)
+      --dest string   Sweep this single dir instead of the auto-detected roots (default: ~/.agents plus every installed runtime)
   -h, --help          help for unlink
       --json          Emit machine-readable JSON
+```
+
+---
+
+### `ao flywheel`
+
+Knowledge flywheel operations and status.
+
+```
+ao flywheel [command]
+```
+
+**Subcommands:**
+
+#### `ao flywheel compare`
+
+Compare retrieval quality between primary and shadow namespaces.
+
+```
+ao flywheel compare [flags]
+```
+
+**Flags:**
+
+```
+  -h, --help            help for compare
+      --shadow string   Shadow namespace to compare against primary (default "shadow")
+```
+
+#### `ao flywheel status`
+
+Display comprehensive flywheel health status.
+
+```
+ao flywheel status [flags]
+```
+
+**Flags:**
+
+```
+      --days int           Period in days for metrics calculation (default 7)
+  -h, --help               help for status
+      --namespace string   Citation namespace to evaluate (primary by default) (default "primary")
+```
+
+---
+
+### `ao claim`
+
+Removed in the AgentOps Cathedral Cut
+
+```
+ao claim [flags]
+```
+
+---
+
+### `ao close`
+
+Removed in the AgentOps Cathedral Cut
+
+```
+ao close [flags]
+```
+
+---
+
+### `ao constraint`
+
+Removed in the AgentOps Cathedral Cut
+
+```
+ao constraint [flags]
+```
+
+---
+
+### `ao converge`
+
+Removed in the AgentOps Cathedral Cut
+
+```
+ao converge [flags]
+```
+
+---
+
+### `ao crank`
+
+Removed in the AgentOps Cathedral Cut
+
+```
+ao crank [flags]
+```
+
+---
+
+### `ao done`
+
+Removed in the AgentOps Cathedral Cut
+
+```
+ao done [flags]
+```
+
+---
+
+### `ao governor`
+
+Removed in the AgentOps Cathedral Cut
+
+```
+ao governor [flags]
+```
+
+---
+
+### `ao help`
+
+Help provides help for any command in the application.
+
+```
+ao help [command] [flags]
+```
+
+---
+
+### `ao land`
+
+Removed in the AgentOps Cathedral Cut
+
+```
+ao land [flags]
+```
+
+---
+
+### `ao membrane`
+
+Removed in the AgentOps Cathedral Cut
+
+```
+ao membrane [flags]
+```
+
+---
+
+### `ao next-work`
+
+Removed in the AgentOps Cathedral Cut
+
+```
+ao next-work [flags]
+```
+
+---
+
+### `ao pawl`
+
+Removed in the AgentOps Cathedral Cut
+
+```
+ao pawl [flags]
+```
+
+---
+
+### `ao plan-pawl`
+
+Removed in the AgentOps Cathedral Cut
+
+```
+ao plan-pawl [flags]
+```
+
+---
+
+### `ao reconcile`
+
+Removed in the AgentOps Cathedral Cut
+
+```
+ao reconcile [flags]
 ```
 
 ---

@@ -62,7 +62,7 @@ At minimum, run:
 
 ```bash
 # Skill structure and reference integrity
-bash skills/heal-skill/scripts/heal.sh --strict
+bash skills/skill-builder/scripts/heal.sh --strict
 
 # Docs, links, and skill-count consistency
 bash tests/docs/validate-doc-release.sh

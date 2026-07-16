@@ -40,15 +40,16 @@ mkdir -p "$OUTPUT_DIR"
 # --- Utility functions ---
 
 # scrub_secrets: git-safety chokepoint (ag-sz3h). Pipe compiled article content
-# through the canonical secret redactor before it lands on disk. Uses `ao redact`
-# when available; falls back to identity with a loud warning so compile never
-# silently writes unscrubbed output.
+# through the canonical secret redactor before it lands on disk. Redaction is
+# fail-closed: compile never substitutes an identity transform.
 scrub_secrets() {
   if command -v ao >/dev/null 2>&1; then
     ao redact
+  elif [[ -x cli/bin/ao ]]; then
+    cli/bin/ao redact
   else
-    echo "WARN: 'ao' not on PATH; compile output NOT secret-scrubbed (ag-sz3h)" >&2
-    cat
+    echo "ERROR: compile requires an ao binary with the redact command" >&2
+    return 1
   fi
 }
 

@@ -30,6 +30,17 @@ func TestSemanticEscapeClassifierPositiveAndNegativeFixtures(t *testing.T) {
 	}
 }
 
+func TestRetiredFamilyDoesNotRequireUntrackedLiveOwnerDirectory(t *testing.T) {
+	root := t.TempDir()
+	ownership := ownershipRecord{LiveOwner: "cli/internal/commands/retired"}
+	if violations := checkLiveOwner(root, "retired", ownership); len(violations) != 0 {
+		t.Fatalf("retired family required an empty live-owner directory: %v", violations)
+	}
+	if violations := checkLiveOwner(root, "migrated", ownership); !hasRule(violations, RuleOwnership) {
+		t.Fatalf("active family did not require its live owner: %v", violations)
+	}
+}
+
 func TestGoCLIArchitectureFamilyOwnershipAndScope(t *testing.T) {
 	root := t.TempDir()
 	runFixtureGit(t, root, "init")

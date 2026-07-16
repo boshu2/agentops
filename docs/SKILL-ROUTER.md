@@ -2,7 +2,7 @@
 
 # Skill Router
 
-50 live skills. Metadata is the sole inventory and graph source.
+48 live skills. Metadata is the sole inventory and graph source.
 
 ## keep
 
@@ -14,7 +14,7 @@
 
 ## keep_strategy
 
-`council`, `dueling-idea-genies`, `idea-genie`, `postmortem`, `premortem`, `reality-check`
+`council`, `idea-genie`, `postmortem`, `premortem`, `reality-check`
 
 ## keep_optional_adapter
 
@@ -22,7 +22,7 @@
 
 ## keep_specialist
 
-`account-rotation`, `bootstrap`, `cass`, `cc-hooks`, `codebase-recon`, `converter`, `dcg`, `doc`, `domain`, `goals`, `handoff`, `heal-skill`, `ms`, `operationalize`, `pattern-mining`, `product`, `rch`, `refactor`, `research`, `reverse-engineer`, `sbh`, `scaffold`, `scope`, `security`, `shared`, `skill-builder`, `standards`, `status`, `test`, `toil-mining`, `workflow-builder`
+`account-rotation`, `bootstrap`, `cass`, `cc-hooks`, `codebase-recon`, `converter`, `dcg`, `doc`, `domain`, `goals`, `handoff`, `ms`, `operationalize`, `pattern-mining`, `product`, `rch`, `refactor`, `research`, `reverse-engineer`, `sbh`, `scaffold`, `scope`, `security`, `shared`, `skill-builder`, `standards`, `status`, `test`, `toil-mining`, `workflow-builder`
 
 ## Complete inventory
 
@@ -43,18 +43,16 @@
 | `dcg` | execution | `keep_specialist` | - | `dcg` | - |
 | `doc` | product | `keep_specialist` | - | `doc` | - |
 | `domain` | knowledge | `keep_specialist` | - | `domain` | - |
-| `dueling-idea-genies` | judgment | `keep_strategy` | - | `dueling_idea_genies` | - |
 | `goals` | product | `keep_specialist` | - | `goals` | - |
 | `handoff` | session | `keep_specialist` | - | `handoff` | - |
-| `heal-skill` | meta | `keep_specialist` | - | `heal_skill` | `optional_skill_projection_repair` |
-| `idea-genie` | execution | `keep_strategy` | - | `generate_evidenced_options` | `write_idea_portfolio` |
-| `implement` | execution | `keep` | - | `execute_one_experiment`, `collect_factual_evidence` | `modify_declared_subject`, `write_candidate_packet` |
+| `idea-genie` | execution | `keep_strategy` | - | `generate_evidenced_options`, `dueling_idea_genies` | `write_idea_portfolio` |
+| `implement` | execution | `keep` | - | `execute_one_experiment`, `collect_factual_evidence` | `modify_declared_subject`, `derive_subject_manifest` |
 | `learn` | execution | `keep_off_path` | - | `analyze_verdict_collections` | `write_advisory_observations` |
 | `ms` | execution | `keep_specialist` | - | `ms` | - |
 | `ntm` | execution | `keep_optional_adapter` | - | `ntm` | - |
 | `operationalize` | meta | `keep_specialist` | - | `distill_expertise`, `propose_artifact_shape` | `write_advisory_proposal` |
 | `pattern-mining` | execution | `keep_specialist` | - | `pattern_mining` | - |
-| `plan` | execution | `keep` | - | `shape_intent`, `define_acceptance`, `bound_write_scope` | `write_plan_packet` |
+| `plan` | execution | `keep` | - | `shape_intent`, `define_acceptance`, `bound_write_scope` | `update_intent_source` |
 | `postmortem` | judgment | `keep_strategy` | - | `postmortem` | - |
 | `premortem` | judgment | `keep_strategy` | - | `challenge_plan` | `write_advisory_plan_review` |
 | `product` | product | `keep_specialist` | - | `shape_product_boundary` | `write_product_document` |
@@ -69,7 +67,7 @@
 | `scope` | meta | `keep_specialist` | - | `scope_review` | - |
 | `security` | product | `keep_specialist` | - | `security` | - |
 | `shared` | library | `keep_specialist` | - | `provide_reference_context` | - |
-| `skill-builder` | meta | `keep_specialist` | - | `skill_builder` | `writes_skill_source`, `regenerates_skill_projections` |
+| `skill-builder` | meta | `keep_specialist` | - | `skill_builder`, `heal_skill` | `writes_skill_source`, `regenerates_skill_projections`, `optional_skill_projection_repair` |
 | `standards` | knowledge | `keep_specialist` | - | `standards` | - |
 | `status` | session | `keep_specialist` | - | `status` | - |
 | `swarm` | execution | `keep_optional_adapter` | - | `dispatch_once` | `invoke_selected_executor` |

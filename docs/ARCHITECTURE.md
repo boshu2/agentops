@@ -3,9 +3,9 @@
 AgentOps has a small semantic core and optional adapters around it.
 
 ```text
-intent
-  -> PlanPacket
-  -> CandidatePacket + subject-manifest.v1
+existing bead or caller intent
+  -> one bounded implementation experiment
+  -> runtime-derived subject-manifest.v1 + check receipts
   -> fresh Validate
   -> verdict.v2
   -> RPI report and stop
@@ -13,18 +13,19 @@ intent
 
 ## Core
 
-- **Plan** shapes one active behavior, normal and edge examples, non-goals,
-  required evidence, write scope, and the first acceptance check.
+- **Plan** refines one active behavior, examples, non-goals, required evidence,
+  write scope, and the first acceptance check in the existing intent source.
 - **Implement** performs one bounded RED → GREEN → refactor experiment and
-  reports the actual changed paths and evidence.
+  returns runtime-derived subject identity, actual changed paths, and factual
+  check receipts.
 - **Validate** identifies the exact subject without Git, checks scope and
   acceptance, obtains one judgment from a distinct declared context, and stores
   a content-addressed verdict atomically.
 - **RPI** invokes each core phase at most once and reports the result.
 
 `FAIL` and `NOT_PROVEN` are terminal results for that invocation. A caller may
-start a new invocation and may provide a `revision-packet.v1`; RPI never creates
-or consumes one automatically.
+update the existing intent source and start a new invocation. RPI never creates
+a parallel revision record or revises the subject automatically.
 
 ## Hexagonal boundary
 

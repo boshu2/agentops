@@ -31,7 +31,7 @@ func (useCases *fakeUseCases) WriteModels(_ context.Context, request configapp.M
 
 func TestModuleShowJSONUsesCommandWriter(t *testing.T) {
 	useCases := &fakeUseCases{showResult: configapp.ShowResult{Resolved: &configapp.ResolvedConfig{}}}
-	command := NewModule(useCases, func() string { return "json" }, func() bool { return false }).Command()
+	command := NewModule(useCases, func() string { return "json" }, func() bool { return false }, func() bool { return false }).Command()
 	var stdout bytes.Buffer
 	command.SetOut(&stdout)
 	command.SetArgs([]string{"--show"})
@@ -45,7 +45,7 @@ func TestModuleShowJSONUsesCommandWriter(t *testing.T) {
 
 func TestModuleModelsWriteParsesDelegatesAndRenders(t *testing.T) {
 	useCases := &fakeUseCases{writeResult: configapp.ModelsWriteResult{Updated: true, DefaultTier: "quality"}}
-	command := NewModule(useCases, func() string { return "table" }, func() bool { return false }).Command()
+	command := NewModule(useCases, func() string { return "table" }, func() bool { return false }, func() bool { return false }).Command()
 	var stdout bytes.Buffer
 	command.SetOut(&stdout)
 	command.SetArgs([]string{"models", "--set-tier", "quality", "--set-skill", "council=budget"})
@@ -56,6 +56,23 @@ func TestModuleModelsWriteParsesDelegatesAndRenders(t *testing.T) {
 		t.Fatalf("request = %+v", useCases.writeRequest)
 	}
 	if got := stdout.String(); got != "Set default model tier to \"quality\"\nSet skill \"council\" tier to \"budget\"\n" {
+		t.Fatalf("stdout = %q", got)
+	}
+}
+
+func TestModuleModelsDryRunDelegatesAndRendersPreview(t *testing.T) {
+	useCases := &fakeUseCases{writeResult: configapp.ModelsWriteResult{DryRun: true, DefaultTier: "quality"}}
+	command := NewModule(useCases, func() string { return "table" }, func() bool { return false }, func() bool { return true }).Command()
+	var stdout bytes.Buffer
+	command.SetOut(&stdout)
+	command.SetArgs([]string{"models", "--set-tier", "quality"})
+	if err := command.Execute(); err != nil {
+		t.Fatal(err)
+	}
+	if !useCases.writeRequest.DryRun {
+		t.Fatal("dry-run was not passed to the use case")
+	}
+	if got := stdout.String(); got != "Would set default model tier to \"quality\"\n" {
 		t.Fatalf("stdout = %q", got)
 	}
 }

@@ -83,7 +83,35 @@ Add `--require-tools` when skipped scanners would invalidate the assurance claim
 
 Scheduled automation runs the full gate against the intended branch and retains its artifact directory. A failing scheduled run creates actionable tracked work; AgentOps itself does not supply the scheduler.
 
-### 4) Triage
+### 4) Hunt discipline
+
+For review work beyond the scripted gates (code-level or redteam passes), hunt
+against the full taxonomy, not your first hunch:
+
+- **Full-taxonomy hunt.** Walk every applicable class in
+  [the OWASP checklist](references/owasp-checklist.md) (or the attack pack for
+  prompt surfaces) and record a per-class result: finding, clean, or
+  not-assessed. An unvisited class is a coverage gap, not a clean. Chasing one
+  suspicious lead to the exclusion of the taxonomy is the **first-scent
+  fixation** failure mode.
+- **Empirical proof per finding.** A finding is real when it reproduces: a
+  concrete input, request, or command demonstrating the behavior, captured in
+  the artifact. Pattern-match-only findings are reported as suspicions, ranked
+  below proven ones.
+- **Fail-open probes.** For every guard, gate, or timeout on the surface, ask
+  what happens when it errors or hangs — then probe it where safe. A control
+  that fails open under error is a finding even when its happy path is correct.
+- **Identity-chain traces.** For authenticated or delegated flows, trace who
+  the effective identity is at each hop (user, service, token, hook). A hop
+  where identity is assumed rather than verified — the **borrowed identity**
+  failure mode — is a finding.
+- **Quiet-round convergence.** Iterate full passes until one complete pass
+  yields nothing new: no new finding, no new coverage gap. That quiet round is
+  the stop condition. Stopping after a loud round (findings still arriving) is
+  premature; report the hunt as unconverged if the budget ends before a quiet
+  round.
+
+### 5) Triage
 
 1. Open the latest artifact and identify scanner, severity, file, and coverage gaps.
 2. Reproduce the finding with the narrowest safe command.
@@ -127,10 +155,10 @@ For a bounded suite smoke test, use an owned binary and a temporary output direc
 
 ## Examples
 
-- `/security` — run the quick repository gate, validate its summary, and report coverage/findings.
-- `/security --full` — run the full scan once, preserve artifacts, and report coverage and findings.
-- `/security run --binary "$(command -v ao)" --out-dir .tmp/security-suite/ao-current` — capture an authorized binary baseline via the composable suite.
-- `/security collect-redteam --repo-root .` — run the offline attack pack over repo-owned control surfaces.
+- A quick Security request runs the repository gate once and reports coverage and findings.
+- A full Security request runs the full scan once and preserves its artifacts.
+- An authorized binary request may capture a baseline in an explicit temporary output directory.
+- A red-team request may run the offline attack pack over repo-owned surfaces.
 
 ## Troubleshooting
 

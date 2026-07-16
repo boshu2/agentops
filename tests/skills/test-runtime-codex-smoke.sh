@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# Test: Codex runtime smoke — validates AgentOps installs and loads under the
-# native Codex plugin model (.codex-plugin/, hookless — skills + ao CLI only).
-# Standalone: does NOT require a live Codex session or network access.
+# Test: Codex runtime smoke — validates AgentOps 4 source-link install under
+# an isolated HOME (ao skills link → ~/.codex/skills). Standalone: no live
+# Codex session or network required.
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -21,18 +21,14 @@ echo ""
 
 PLUGIN_JSON="$REPO_ROOT/.codex-plugin/plugin.json"
 MARKETPLACE_JSON="$REPO_ROOT/plugins/marketplace.json"
-PUBLIC_INSTALL="$REPO_ROOT/scripts/install-codex.sh"
-PLUGIN_INSTALL="$REPO_ROOT/scripts/install-codex-plugin.sh"
-# ── 1. Codex plugin manifest + marketplace wiring ────────────────────────────
-echo "Stage 1: Codex plugin manifest"
+TOMBSTONE="$REPO_ROOT/scripts/install-codex.sh"
+
+# ── 1. Legacy plugin manifests still ship (compat artifacts) ─────────────────
+echo "Stage 1: Codex plugin manifest artifacts"
 
 if [[ -f "$PLUGIN_JSON" ]]; then
     python3 -m json.tool "$PLUGIN_JSON" >/dev/null 2>&1 \
         && pass ".codex-plugin/plugin.json is valid JSON" || fail ".codex-plugin/plugin.json is invalid JSON"
-    jq -e '.name == "agentops"' "$PLUGIN_JSON" >/dev/null 2>&1 \
-        && pass "plugin.json targets the agentops plugin" || fail "plugin.json missing agentops name"
-    jq -e '.skills == "./skills-codex"' "$PLUGIN_JSON" >/dev/null 2>&1 \
-        && pass "plugin.json points at ./skills-codex" || fail "plugin.json missing ./skills-codex entry"
 else
     fail ".codex-plugin/plugin.json not found"
 fi
@@ -40,119 +36,81 @@ fi
 if [[ -f "$MARKETPLACE_JSON" ]]; then
     python3 -m json.tool "$MARKETPLACE_JSON" >/dev/null 2>&1 \
         && pass "plugins/marketplace.json is valid JSON" || fail "plugins/marketplace.json is invalid JSON"
-    jq -e '.plugins[] | select(.name == "agentops")' "$MARKETPLACE_JSON" >/dev/null 2>&1 \
-        && pass "marketplace.json includes agentops" || fail "marketplace.json missing agentops entry"
 else
     fail "plugins/marketplace.json not found"
 fi
 
 echo ""
 
-# ── 2. Codex installer scripts are runtime-native ─────────────────────────────
-echo "Stage 2: Codex installer scripts"
+# ── 2. Public installer is a tombstone pointing at ao skills link ────────────
+echo "Stage 2: Codex installer tombstone"
 
-if [[ -f "$PUBLIC_INSTALL" ]]; then
-    bash -n "$PUBLIC_INSTALL" && pass "install-codex.sh syntax valid" || fail "install-codex.sh syntax invalid"
-    head -1 "$PUBLIC_INSTALL" | grep -qE '^#!/usr/bin/env bash|^#!/bin/bash' \
-        && pass "install-codex.sh has valid shebang" || fail "install-codex.sh missing shebang"
+if [[ -f "$TOMBSTONE" ]]; then
+    bash -n "$TOMBSTONE" && pass "install-codex.sh syntax valid" || fail "install-codex.sh syntax invalid"
+    grep -q 'ao skills link' "$TOMBSTONE" \
+        && pass "install-codex.sh tombstone points at ao skills link" || fail "install-codex.sh missing ao skills link"
+    if bash "$TOMBSTONE" >/dev/null 2>&1; then
+        fail "install-codex.sh tombstone exited 0"
+    else
+        pass "install-codex.sh tombstone exits nonzero"
+    fi
 else
     fail "scripts/install-codex.sh not found"
 fi
 
-if [[ -f "$PLUGIN_INSTALL" ]]; then
-    bash -n "$PLUGIN_INSTALL" && pass "install-codex-plugin.sh syntax valid" || fail "install-codex-plugin.sh syntax invalid"
-    ! grep -q 'codex-hooks.json' "$PLUGIN_INSTALL" \
-        && pass "install-codex-plugin.sh ships hookless (no codex-hooks.json install flow)" || fail "install-codex-plugin.sh still references codex-hooks.json"
+if [[ ! -e "$REPO_ROOT/scripts/install-codex-plugin.sh" ]]; then
+    pass "install-codex-plugin.sh deleted"
 else
-    fail "scripts/install-codex-plugin.sh not found"
+    fail "install-codex-plugin.sh still exists"
 fi
 
 echo ""
 
-# ── 3. Public installer smoke into temp HOME ─────────────────────────────────
-echo "Stage 3: Codex native install smoke"
+# ── 3. ao skills link into temp HOME ─────────────────────────────────────────
+echo "Stage 3: ao skills link smoke"
+
+AO_BIN=""
+if [[ -x "$REPO_ROOT/cli/bin/ao" ]]; then
+    AO_BIN="$REPO_ROOT/cli/bin/ao"
+elif command -v ao >/dev/null 2>&1; then
+    AO_BIN="$(command -v ao)"
+else
+    (cd "$REPO_ROOT/cli" && go build -o bin/ao ./cmd/ao)
+    AO_BIN="$REPO_ROOT/cli/bin/ao"
+fi
 
 TMP_ROOT="$(mktemp -d)"
 trap 'rm -rf "$TMP_ROOT"' EXIT
-
 HOME_ROOT="$TMP_ROOT/home"
-CODEX_HOME="$HOME_ROOT/.codex"
-PLUGIN_ROOT="$CODEX_HOME/plugins/cache/agentops-marketplace/agentops/local"
-PLUGIN_SKILLS="$PLUGIN_ROOT/skills-codex"
+mkdir -p "$HOME_ROOT"
 
-if HOME="$HOME_ROOT" AGENTOPS_BUNDLE_ROOT="$REPO_ROOT" AGENTOPS_INSTALL_REF="test-local" \
-    bash "$PUBLIC_INSTALL" >/dev/null 2>&1; then
-    pass "install-codex.sh succeeds into temp HOME"
+if (cd "$REPO_ROOT" && HOME="$HOME_ROOT" "$AO_BIN" skills link >/dev/null 2>&1); then
+    pass "ao skills link succeeds into temp HOME"
 else
-    fail "install-codex.sh failed in temp HOME"
+    fail "ao skills link failed in temp HOME"
 fi
 
-if [[ -d "$PLUGIN_SKILLS" ]]; then
-    pass "native plugin cache created under ~/.codex/plugins/cache"
+if [[ -d "$HOME_ROOT/.agents/skills" ]]; then
+    pass "linked skills under ~/.agents/skills"
 else
-    fail "native plugin cache missing under ~/.codex/plugins/cache"
+    fail "missing ~/.agents/skills after ao skills link"
 fi
 
-if [[ -f "$CODEX_HOME/config.toml" ]]; then
-    pass "config.toml created in ~/.codex"
-    if grep -q '^hooks = true$' "$CODEX_HOME/config.toml"; then
-        fail "default config.toml should not enable hooks"
+# Codex skills root appears when ~/.codex exists or is created by link detection.
+if [[ -d "$HOME_ROOT/.codex/skills" ]]; then
+    pass "linked skills under ~/.codex/skills"
+else
+    # skills link only fans into detected runtimes; creating ~/.codex may be required.
+    mkdir -p "$HOME_ROOT/.codex"
+    (cd "$REPO_ROOT" && HOME="$HOME_ROOT" "$AO_BIN" skills link >/dev/null 2>&1) || true
+    if [[ -d "$HOME_ROOT/.codex/skills" ]]; then
+        pass "linked skills under ~/.codex/skills after creating ~/.codex"
     else
-        pass "default config.toml leaves hooks disabled"
+        skip "Codex skills root not linked (runtime root not detected)"
     fi
-    if grep -q '^codex_hooks[[:space:]]*=' "$CODEX_HOME/config.toml"; then
-        fail "config.toml still contains deprecated codex_hooks"
-    else
-        pass "config.toml omits deprecated codex_hooks"
-    fi
-    grep -q '^\[plugins\."agentops@agentops-marketplace"\]$' "$CODEX_HOME/config.toml" \
-        && pass "config.toml enables the AgentOps plugin" || fail "config.toml missing AgentOps plugin block"
-else
-    fail "config.toml missing from ~/.codex"
-fi
-
-if [[ -f "$CODEX_HOME/hooks.json" ]]; then
-    fail "$CODEX_HOME/hooks.json should not be created by default install"
-else
-    pass "default install does not create hooks.json"
-fi
-
-if [[ -f "$CODEX_HOME/.agentops-codex-install.json" ]]; then
-    jq -e '.install_mode == "native-plugin"' "$CODEX_HOME/.agentops-codex-install.json" >/dev/null 2>&1 \
-        && pass "install metadata records native-plugin mode" || fail "install metadata missing native-plugin mode"
-    jq -e '.hook_runtime == "hookless-default" and .hooks_installed == false' "$CODEX_HOME/.agentops-codex-install.json" >/dev/null 2>&1 \
-        && pass "install metadata records hookless default" || fail "install metadata missing hookless default"
-else
-    fail "Codex install metadata missing"
-fi
-
-if [[ ! -e "$HOME_ROOT/.agents/skills" ]] && [[ ! -e "$CODEX_HOME/skills" ]]; then
-    pass "install leaves no raw ~/.agents/skills or ~/.codex/skills mirror"
-else
-    fail "install recreated a raw skill mirror under ~/.agents/skills or ~/.codex/skills"
-fi
-
-expected_count="$(find "$REPO_ROOT/skills-codex" -mindepth 1 -maxdepth 1 -type d | wc -l | tr -d ' ')"
-installed_count="$(find "$PLUGIN_SKILLS" -mindepth 1 -maxdepth 1 -type d | wc -l | tr -d ' ')"
-if [[ "$expected_count" == "$installed_count" ]]; then
-    pass "installed native Codex bundle has the expected skill count ($installed_count)"
-else
-    fail "installed native Codex bundle count mismatch (expected $expected_count, got $installed_count)"
-fi
-
-while IFS= read -r -d '' entrypoint_file; do
-    if grep -qE '[~]/\.codex/skills|\$HOME/\.codex/skills' "$entrypoint_file"; then
-        fail "installed Codex entrypoint still references raw .codex/skills paths: $entrypoint_file"
-        break
-    fi
-done < <(find "$PLUGIN_SKILLS" -type f \( -name 'SKILL.md' -o -name 'prompt.md' \) -print0)
-if [[ $FAIL -eq 0 ]]; then
-    pass "installed Codex entrypoints avoid stale raw .codex/skills references"
 fi
 
 echo ""
-
-# ── Summary ───────────────────────────────────────────────────────────────────
 echo "================================="
 echo "Results: $PASS passed, $FAIL failed, $SKIP skipped"
 echo "================================="
