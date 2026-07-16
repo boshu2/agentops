@@ -48,20 +48,38 @@ packets.
 Missing, colliding, or unattested identities produce `NOT_PROVEN`. This is a
 declared trust fact, not cryptographic proof that contexts were isolated.
 
+## Mutating-check quarantine
+
+Before running any acceptance-listed command, classify it as read-only or
+subject-mutating. Regen scripts, sync scripts, formatters, and anything with
+`--force` are subject-mutating until proven otherwise. Never run a
+subject-mutating check against an uncommitted subject: on 2026-07-15,
+`scripts/test-ci-deterministic-gates.sh` regenerated `skills-codex/` from HEAD
+mid-validation and destroyed the uncommitted subject, forcing `NOT_PROVEN`
+(verdict `b6e759dd...cb6a`); only restoring the subject and revalidating in a
+fresh context produced the PASS (`e9b6cdb8...37b9`). If a mutating check is
+genuinely required by acceptance, run it against a disposable copy or a
+committed subject, never the judged working tree.
+
 ## Workflow
 
 1. Recompute and compare `subject-manifest.v1` using
    `python3 skills/validate/scripts/validate.py manifest`. The helper uses only
-   filesystem content; Git commit/tree IDs are optional metadata.
+   filesystem content; Git commit/tree IDs are optional metadata. Derive the
+   manifest at the start of validation and re-derive it at the end; any
+   mismatch between the two is subject mutation and returns `NOT_PROVEN`.
 2. Confirm the intent-source digest has not changed since implementation. If
    the subject changed or complete changed-path coverage cannot be derived,
    return `NOT_PROVEN`.
-3. Compare runtime-derived actual changed paths with the source write scope. A proven
-   out-of-scope path returns `FAIL`; incomplete scope evidence returns
+3. Adjudicate the actual diff, not a declared path list: compare
+   runtime-derived actual changed paths against the intent's scope classes. A
+   proven out-of-scope path returns `FAIL`; incomplete scope evidence returns
    `NOT_PROVEN`.
-4. Inspect the exact subject and factual evidence. Judge every acceptance
-   criterion and record criterion-level results, findings, evidence references,
-   `checked`, and `not_checked`.
+4. Inspect the exact subject and factual evidence. Reported exit codes are
+   claims, not evidence: re-execute the claimed proofs that bear on acceptance
+   (see the freshness rules below for when a digest-bound receipt suffices).
+   Judge every acceptance criterion and record criterion-level results,
+   findings, evidence references, `checked`, and `not_checked`.
 5. Choose exactly one semantic result: `PASS`, `FAIL`, or `NOT_PROVEN`. PASS
    requires distinct identities, explicit freshness, nonempty checked scope,
    top-level evidence, and evidence for every criterion.
