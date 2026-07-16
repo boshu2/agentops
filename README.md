@@ -18,21 +18,8 @@ brew install beads
 npx skills@latest add boshu2/agentops --all -g
 ```
 
-Restart the agent. Use `plan`, `implement`, `validate`, and `learn` — or
+Use `plan`, `implement`, `validate`, and `learn` — or
 `rpi` to run the loop once.
-
-```text
-> use plan for bead agentops-123
-acceptance and write scope locked in the bead
-
-> use implement
-RED -> GREEN -> refactor; subject manifest derived
-
-> use validate
-verdict.v2: FAIL — burst refill violates scenario S2
-checked: S1, S2, subject identity, write scope
-not_checked: load above declared limit
-```
 
 ## Plugins (Claude Code / Codex)
 
