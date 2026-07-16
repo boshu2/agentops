@@ -7,6 +7,12 @@ description: Operate explicit orchestrator, implementer
 Operate caller-selected agent sessions as explicit roles without turning the
 runtime into AgentOps lifecycle authority.
 
+For caller-elected multi-model judgment (mixed council, dueling perspectives,
+cross-model validate), follow
+[references/model-dispatch.md](references/model-dispatch.md): the working
+session is the controller; probe `codex-exec` and `ntm` at runtime; never
+require either; never use Agent Mail for judgment; never invoke `claude -p`.
+
 Role separation works because each role's authority is checkable from its
 packet: a worker that cannot exceed its declared subject cannot corrupt a
 sibling's evidence, so factory failures stay local instead of systemic.
@@ -47,6 +53,8 @@ stalled, and rescue is usually cheaper than rerun.
 6. A validator session may supply judgment to Validate, but only Validate writes
    `verdict.v2`.
 
-NTM, native processes, Agent Mail, and Gas City are replaceable adapters. Use
-them only when the caller selected that execution shape. A single local agent
-pays no factory coordination cost.
+NTM, Codex exec, native processes, Agent Mail, and Gas City are replaceable
+adapters. Use them only when the caller selected that execution shape. A
+single local agent pays no factory coordination cost. Model identity, when
+recorded, is a declared runtime fact like context identity — see
+[references/model-dispatch.md](references/model-dispatch.md).

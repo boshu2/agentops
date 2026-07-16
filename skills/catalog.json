@@ -77,6 +77,10 @@
         },
         {
           "kind": "customer-of",
+          "with": "codex-exec"
+        },
+        {
+          "kind": "customer-of",
           "with": "agent-mail"
         }
       ],
@@ -97,7 +101,7 @@
         "runtime-evidence",
         "worker-handoff"
       ],
-      "references_count": 0,
+      "references_count": 1,
       "tier": "meta",
       "user_invocable": true
     },

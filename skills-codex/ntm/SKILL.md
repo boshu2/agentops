@@ -55,7 +55,9 @@ For a software-factory layout, the caller may name producer, tester, validator,
 or integrator panes. The same identity rule still applies: a validator for a
 candidate must have a distinct context identity from its author. Merely placing
 two roles in different panes is a declared runtime fact, not proof of semantic
-independence.
+independence. Mixed-model judgment panes follow
+`skills/agent-native/references/model-dispatch.md` (probe, disclose, never
+`claude -p`).
 
 ## Output
 
