@@ -76,6 +76,7 @@ doc** failure mode — accurate, complete, and useless.
 
 - Every factual claim is traceable to inspected code, configuration, or existing documentation.
 - Generated documentation follows the selected mode's templates and preserves useful existing depth.
+- README generate/rewrite runs [references/de-slopify.md](references/de-slopify.md) before deterministic checks.
 - Completion reports name the validators run and disclose unresolved gaps rather than implying full coverage.
 
 ## Reference Documents
@@ -93,7 +94,7 @@ doc** failure mode — accurate, complete, and useless.
 - [references/prose-and-report-workmanship.md](references/prose-and-report-workmanship.md)
 - [references/project-types.md](references/project-types.md)
 - [references/validation-rules.md](references/validation-rules.md)
-- [references/de-slopify.md](references/de-slopify.md) — Remove AI writing artifacts from docs
+- [references/de-slopify.md](references/de-slopify.md) — Required prose pass for README mode; optional for other doc surfaces
 - [references/architecture-report.md](references/architecture-report.md) — Generate technical architecture documents
 
 ## Examples
