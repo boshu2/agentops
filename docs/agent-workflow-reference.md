@@ -15,7 +15,7 @@ Keep acceptance, important non-goals, required evidence, write scope, and the
 first useful check in that source. Do not create a second planning artifact.
 
 The runtime snapshots the exact resolved source bytes under
-`.agentops/intents/sha256/<digest>.intent`. This is derived identity, not a
+`.agents/ao/intents/sha256/<digest>.intent`. This is derived identity, not a
 model-authored packet, and makes conversation-only intent readable by a fresh
 validator. The pure helper accepts a file or stdin:
 

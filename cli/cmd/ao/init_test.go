@@ -17,7 +17,7 @@ func TestInitCreatesEvidenceStorageWithoutGitMutation(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, relative := range []string{
-		filepath.Join(".agentops", "verdicts", "sha256"),
+		filepath.Join(".agents", "ao", "verdicts", "sha256"),
 		filepath.Join(".agents", "ao", "provenance"),
 		filepath.Join(".agents", "handoff"),
 	} {

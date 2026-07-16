@@ -71,7 +71,7 @@ validator to judge.
   `craft n/12; missing: <element-ids>`. Detection is cheap pattern matching
   over authored prose (HTML comments are stripped, so `init.sh` scaffold stubs
   never count). Presence, never quality.
-- **Provenance resolution** — repo paths and `.agentops` verdict/intent digest
+- **Provenance resolution** — repo paths and `.agents/ao` verdict/intent digest
   citations (full or abbreviated `prefix...suffix`) extracted from prose must
   resolve against the repository; each dead citation is a named finding.
   Fenced code blocks are treated as examples, not citations.

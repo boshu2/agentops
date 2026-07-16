@@ -129,7 +129,7 @@ TODO: Define the artifact or response shape and how a caller checks it.
 - The output satisfies the declared behavior.
 - No undeclared side effect occurred.
 
-<!-- craft:provenance-citation Cite at least one resolvable repo path or .agentops verdict/intent digest grounding this skill. -->
+<!-- craft:provenance-citation Cite at least one resolvable repo path or .agents/ao verdict/intent digest grounding this skill. -->
 
 ## Failure behavior
 

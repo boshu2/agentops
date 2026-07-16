@@ -27,7 +27,7 @@ metadata:
   graph_root: true
   tier: session
   dependencies: []
-output_contract: minimal project docs and .agentops/verdicts directory
+output_contract: minimal project docs and .agents/ao/verdicts directory
 ---
 # Bootstrap — minimal project setup
 
@@ -53,7 +53,7 @@ PRODUCT.md written confidently is worse than a question.
    inferred safely.
 3. Create only missing, explicitly requested files. Never overwrite an existing
    document.
-4. Create `.agentops/verdicts/sha256/` when durable local verdict storage is
+4. Create `.agents/ao/verdicts/sha256/` when durable local verdict storage is
    requested.
 5. Validate filesystem existence and report created, skipped, and failed paths.
 6. Stop.

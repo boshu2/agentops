@@ -40,7 +40,7 @@ That source records:
 - optional decomposition with no scheduling semantics.
 
 The runtime stores the exact resolved source bytes under
-`.agentops/intents/sha256/<digest>.intent` and derives the acceptance digest
+`.agents/ao/intents/sha256/<digest>.intent` and derives the acceptance digest
 from those bytes. This also makes conversation-only intent available to a fresh
 validator. The model does not author a second PlanPacket.
 
@@ -88,7 +88,7 @@ It carries no WARN, confidence, disposition, learning, owner, next action,
 retry, closure, release, or delivery state.
 
 Validate alone persists verdicts. Default storage is
-`.agentops/verdicts/sha256/<digest>.json`; a caller may provide `verdict_dir`.
+`.agents/ao/verdicts/sha256/<digest>.json`; a caller may provide `verdict_dir`.
 The digest is SHA-256 over canonical JSON without `artifact_digest`. Writes are
 same-directory, flushed, fsynced, and atomically renamed. Exact existing content
 is idempotent. Conflicting content is an integrity failure and cannot produce

@@ -45,7 +45,7 @@ On discovering a live consumer of the change outside the declared write scope
 file — stop and report the exact file and line to the caller. Do not silently
 expand scope to absorb it. One repair revision of the intent is the maximum
 before escalating to the caller; the 2026-07-15 heal-skill fold took three
-intent revisions (lineage under `.agentops/intents/sha256/26a4f2be...eb48`)
+intent revisions (lineage under `.agents/ao/intents/sha256/26a4f2be...eb48`)
 because hand-enumerated scope kept missing live consumers.
 
 Before declaring GREEN, self-audit the diff for mocks, placeholders, TODO

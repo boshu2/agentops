@@ -118,11 +118,11 @@ func loadLoopEvidence(cwd string, now time.Time) *loopEvidenceStatus {
 	}
 	sources := []evidenceSource{
 		{
-			kind: "intent", path: filepath.Join(cwd, ".agentops", "intents", "sha256"),
+			kind: "intent", path: filepath.Join(cwd, ".agents", "ao", "intents", "sha256"),
 			suffix: ".intent", count: &result.IntentArtifacts, validate: validateIntentArtifact,
 		},
 		{
-			kind: "verdict", path: filepath.Join(cwd, ".agentops", "verdicts", "sha256"),
+			kind: "verdict", path: filepath.Join(cwd, ".agents", "ao", "verdicts", "sha256"),
 			suffix: ".json", count: &result.VerdictArtifacts, validate: validateVerdictArtifact,
 		},
 	}
