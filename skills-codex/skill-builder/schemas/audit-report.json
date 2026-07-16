@@ -336,6 +336,59 @@
         }
       ]
     },
+    "authoring": {
+      "description": "Advisory-only Pass-5 authoring prose-quality scan (authoring_scan.py): mechanical suspects for the failure modes named in references/authoring-doctrine.md. Never affects the aggregate verdict or exit code. Emitted as null when python3 or the scanner is unavailable (fail-open).",
+      "oneOf": [
+        {"type": "null"},
+        {
+          "type": "object",
+          "required": ["advisory", "findings", "counts", "summary"],
+          "properties": {
+            "advisory": {
+              "type": "boolean",
+              "const": true,
+              "description": "Always true. Authoring findings are report-only and never gate."
+            },
+            "findings": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": ["id", "line", "evidence"],
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "enum": [
+                      "noop-phrase",
+                      "negation-without-positive",
+                      "step-missing-done-condition"
+                    ]
+                  },
+                  "line": {"type": "integer", "minimum": 1},
+                  "evidence": {"type": "string"}
+                },
+                "additionalProperties": false
+              }
+            },
+            "counts": {
+              "type": "object",
+              "required": [
+                "noop-phrase",
+                "negation-without-positive",
+                "step-missing-done-condition"
+              ],
+              "properties": {
+                "noop-phrase": {"type": "integer", "minimum": 0},
+                "negation-without-positive": {"type": "integer", "minimum": 0},
+                "step-missing-done-condition": {"type": "integer", "minimum": 0}
+              },
+              "additionalProperties": false
+            },
+            "summary": {"type": "string"}
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
     "summary": {
       "type": "string",
       "description": "Human-readable one-paragraph rollup. Suitable for embedding in a markdown audit report."

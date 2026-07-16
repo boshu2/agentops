@@ -18,6 +18,7 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
 HEAL_SH="$SCRIPT_DIR/heal.sh"
 SCORE_PY="$SCRIPT_DIR/score_agentops_skill.py"
 CRAFT_PY="$SCRIPT_DIR/craft_score.py"
+AUTHORING_PY="$SCRIPT_DIR/authoring_scan.py"
 PROFILE_TOOL="$REPO_ROOT/skills/skill-builder/scripts/conformance_profile.py"
 
 STRICT=0
@@ -365,6 +366,32 @@ PY
   fi
 fi
 
+# --- Pass 5: authoring prose-quality scan (advisory) ----------------------
+# Advisory suspects for the failure modes named in
+# references/authoring-doctrine.md (noop-phrase, negation-without-positive,
+# step-missing-done-condition). Advisory-only: the doctrine's no-op test is
+# model-relative and prohibitions are sometimes correct guardrails, so these
+# findings never change the PASS/WARN/FAIL verdict or exit code. Fail-open to
+# null like the Pass 3 rubric and Pass 4 craft blocks.
+AUTHORING_JSON="null"
+AUTHORING_LINES=""
+if [[ -f "$AUTHORING_PY" ]] && command -v python3 >/dev/null 2>&1; then
+  if authoring_out="$(python3 "$AUTHORING_PY" "$TARGET" --audit-block 2>/dev/null)"; then
+    AUTHORING_JSON="$authoring_out"
+    AUTHORING_LINES="$(AUTHORING_OUT="$authoring_out" python3 - 2>/dev/null <<'PY' || true
+import json
+import os
+
+report = json.loads(os.environ["AUTHORING_OUT"])
+lines = [f"Pass 5 authoring (advisory): {report['summary']}"]
+for finding in report["findings"]:
+    lines.append(f"  {finding['id']} line {finding['line']}: {finding['evidence']}")
+print("\n".join(lines))
+PY
+)"
+  fi
+fi
+
 # --- Aggregate verdict ---------------------------------------------------
 fails=0
 warns=0
@@ -435,6 +462,7 @@ PY
   printf '  },\n'
   printf '  "rubric": %s,\n' "$RUBRIC_JSON"
   printf '  "craft": %s,\n' "$CRAFT_JSON"
+  printf '  "authoring": %s,\n' "$AUTHORING_JSON"
   printf '  "summary": "Pass1: %s via heal --strict (exit %d, %d findings, %d autofixable). Pass2: %d fails, %d warns.%s Verdict: %s."\n' \
     "$PASS1_STATUS" "$PASS1_EXIT_CODE" "$PASS1_FINDING_COUNT" "$PASS1_AUTOFIXABLE" "$fails" "$warns" "$RUBRIC_SUMMARY" "$VERDICT"
   printf '}\n'
@@ -457,6 +485,9 @@ fi
   echo "Pass 3 rubric (advisory): ${RUBRIC_SCORE}/30 (${RUBRIC_RATING})"
   if [[ -n "$CRAFT_LINES" ]]; then
     echo "$CRAFT_LINES"
+  fi
+  if [[ -n "$AUTHORING_LINES" ]]; then
+    echo "$AUTHORING_LINES"
   fi
   echo "VERDICT: $VERDICT"
 } >&2
