@@ -11,6 +11,19 @@ duel mode for sealed perspectives before Plan.
 RPI -> Plan -> Implement -> fresh Validate -> durable verdict -> report and stop
 ```
 
+## Intent lives in a bead
+
+Install [beads](https://github.com/steveyegge/beads):
+
+```bash
+brew install beads
+```
+
+[Beads](https://github.com/steveyegge/beads) is an agent-friendly issue tracker. AgentOps uses a bead as the intent
+source for each experiment: Plan writes acceptance and write scope into it,
+Implement builds from it, and Validate judges against a hashed snapshot of
+those same bytes under `.agents/ao/intents/sha256/`.
+
 ## Quickstart
 
 ```bash
@@ -69,8 +82,8 @@ disagreement, and minority evidence. Neither writes `verdict.v2`; Validate does.
 ### 3. Acceptance drifted mid-flight
 
 Without a fixed behavior and write scope, "done" is whatever the agent
-improvised. `plan` locks normal and edge acceptance in the existing intent
-source before anyone builds.
+improvised. `plan` locks normal and edge acceptance in the bead (or other
+intent source) before anyone builds. Later phases bind to that digest.
 
 ### 4. Nobody can replay what was judged
 
@@ -78,27 +91,19 @@ Chat scrolls away. `validate` writes a content-addressed `verdict.v2` under
 `.agents/ao/verdicts/sha256/` with checked scope, omissions, and evidence
 refs. Plain JSON. No hosted service required.
 
-### 5. The loop tried to own delivery
-
-Retries, queues, PRs, and merges are caller policy. AgentOps stops after one
-report. `rpi` runs Plan → Implement → Validate once; you decide what happens
-next.
-
 ## Core skills
 
 | Skill | Job |
 |---|---|
 | [`rpi`](skills/rpi/SKILL.md) | run Plan, Implement, and fresh Validate at most once |
-| [`plan`](skills/plan/SKILL.md) | refine acceptance, evidence, and scope in the intent source |
+| [`plan`](skills/plan/SKILL.md) | refine acceptance, evidence, and scope in the bead / intent source |
 | [`implement`](skills/implement/SKILL.md) | one RED → GREEN → refactor experiment |
 | [`validate`](skills/validate/SKILL.md) | independent judgment; persist `verdict.v2` |
 
 Optional later: [`learn`](skills/learn/SKILL.md) over verdict collections.
-Caller-selected strategies: [`council`](skills/council/SKILL.md) (multi-judge
-validation), [`idea-genie`](skills/idea-genie/SKILL.md) (portfolio + sealed
-duels), [`premortem`](skills/premortem/SKILL.md),
-[`postmortem`](skills/postmortem/SKILL.md). Adapters (NTM, Agent Mail, Gas City,
-swarms) never change the core sequence or a verdict.
+Caller-selected strategies: [`council`](skills/council/SKILL.md),
+[`idea-genie`](skills/idea-genie/SKILL.md), [`premortem`](skills/premortem/SKILL.md),
+[`postmortem`](skills/postmortem/SKILL.md).
 
 Full inventory: [Skill Router](docs/SKILL-ROUTER.md).
 
@@ -111,15 +116,6 @@ IDs, a freshness attestation, and criterion-level evidence.
 Missing identity, mutation, or incomplete coverage → `NOT_PROVEN`. Proven
 out-of-scope change or failed criterion → `FAIL`.
 
-## Boundary
-
-AgentOps owns intent shaping, one experiment, content identity, fresh judgment,
-and the verdict. It does not own retries, budgets, queues, claims, Git, CI,
-PRs, merges, closure, or release.
-
-Fresh judgment is a practical trust boundary, not cryptographic isolation.
-Context IDs and freshness are declared facts.
-
-[Product boundary](PRODUCT.md) · [Operating loop](docs/architecture/operating-loop.md) · [CLI](cli/docs/COMMANDS.md) · [Docs](docs/documentation-index.md)
+[Operating loop](docs/architecture/operating-loop.md) · [CLI](cli/docs/COMMANDS.md) · [Docs](docs/documentation-index.md)
 
 Contributing: [docs/CONTRIBUTING.md](docs/CONTRIBUTING.md). License: Apache-2.0.
