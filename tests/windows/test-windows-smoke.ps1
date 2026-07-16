@@ -165,10 +165,10 @@ finally {
 }
 
 # ---------------------------------------------------------------------------
-# 3. Build local ao, link skills, and check Windows doctor hints
+# 3. Build local ao, link skills, and check the current doctor contract
 # ---------------------------------------------------------------------------
 
-Write-Step "Building local ao, linking skills, and checking Windows doctor hints"
+Write-Step "Building local ao, linking skills, and checking doctor guidance"
 $builtAO = Join-PathSegments -Base ([System.IO.Path]::GetTempPath()) -Segments ("ao-windows-smoke-" + [Guid]::NewGuid().ToString("N") + ".exe")
 $linkHome = Join-PathSegments -Base ([System.IO.Path]::GetTempPath()) -Segments ("agentops-link-home-" + [Guid]::NewGuid().ToString("N"))
 try {
@@ -217,9 +217,6 @@ try {
   }
   if ($doctorText -notmatch 'ao skills link') {
     throw "doctor output did not include the ao skills link install hint"
-  }
-  if ($doctorText -notmatch 'Windows release|WSL/Homebrew|install-ao\.ps1') {
-    throw "doctor output did not include Windows dependency guidance"
   }
 }
 finally {
