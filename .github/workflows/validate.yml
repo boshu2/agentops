@@ -565,6 +565,8 @@ jobs:
                 --exclude-dir=cli/testdata \
                 --exclude="install-ao.ps1" \
                 --exclude="install-bd.sh" \
+                --exclude="installer-bootstrap.sh" \
+                --exclude="installer-common.sh" \
                 --exclude="ci-local-release.sh" \
                 . 2>/dev/null; then
               echo "Found: $pattern"

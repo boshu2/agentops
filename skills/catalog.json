@@ -291,7 +291,7 @@
         }
       ],
       "dependencies": [],
-      "description": "Reconstruct a repository as cited entry-to-test flows, bounded claims, and a reusable baseline or verified delta. Steer with mode (baseline|delta), view emphasis, domain lens, and depth. Triggers: \"build a repository mental model\", \"trace this codebase\", \"refresh the prior recon\", \"codebase-recon --view=audit\".",
+      "description": "Reconstruct a repository as cited entry-to-test flows and bounded claims. Triggers: \"codebase recon\", \"trace this codebase\", \"repository audit\", \"refresh the prior recon\".",
       "disposition": "keep_specialist",
       "effects": [],
       "graph_root": false,
@@ -557,7 +557,7 @@
         }
       ],
       "dependencies": [],
-      "description": "Generate an evidence-grounded opportunity portfolio for an open-ended product or engineering question, or challenge a consequential idea with sealed independent perspectives, cross-review, and preserved dissent. Triggers: \"idea genie\", \"what should we build\", \"supported opportunities\", \"challenge this idea\", \"compare independent proposals\", \"stress-test a one-way door\".",
+      "description": "Generate evidenced opportunities or challenge an idea with sealed perspectives. Triggers: \"idea genie\", \"what should we build\", \"challenge this idea\", \"compare proposals\".",
       "disposition": "keep_strategy",
       "effects": [
         "write_idea_portfolio"

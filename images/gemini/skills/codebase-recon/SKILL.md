@@ -1,6 +1,6 @@
 ---
 name: codebase-recon
-description: 'Reconstruct a repository as cited entry-to-test flows, bounded claims, and a reusable baseline or verified delta. Steer with mode (baseline|delta), view emphasis, domain lens, and depth. Triggers: "build a repository mental model", "trace this codebase", "refresh the prior recon", "codebase-recon --view=audit".'
+description: 'Reconstruct a repository as cited entry-to-test flows and bounded claims. Triggers: "codebase recon", "trace this codebase", "repository audit", "refresh the prior recon".'
 practices:
 - legacy-code-seams
 - ddd-bounded-context

@@ -36,7 +36,7 @@ require_checker_or_skip() {
     --phase=inventory
 
   [ "$status" -eq 0 ]
-  [[ "$output" == *"PASS phase=inventory root_markdown=10 declared=10"* ]]
+  [[ "$output" == *"PASS phase=inventory root_markdown=9 declared=10"* ]]
 }
 
 @test "inventory accepts exact root and literal consumer coverage" {

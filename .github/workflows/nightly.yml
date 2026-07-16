@@ -67,42 +67,8 @@ jobs:
           go-version: '1.26.3'
           cache-dependency-path: cli/go.sum
 
-      - name: Run retrieval bench (synthetic corpus)
-        working-directory: cli
-        run: |
-          go run ./cmd/ao retrieval-bench --json 2>&1 | tee bench-results.json
-          # Fail if P@3 drops below 0.67
-          P3=$(go run ./cmd/ao retrieval-bench 2>&1 | grep "Precision@3" | awk '{print $2}')
-          echo "Precision@3: $P3"
-          if awk "BEGIN{exit !($P3 < 0.67)}"; then
-            echo "FAIL: Retrieval precision dropped below 0.67"
-            exit 1
-          fi
-
-      - name: Run retrieval bench (representative live corpus)
-        working-directory: cli
-        run: |
-          go run ./cmd/ao retrieval-bench --live --corpus cmd/ao/testdata/retrieval-bench-live --json > bench-live.json
-          python3 - <<'PY'
-          import json
-          import sys
-
-          with open("bench-live.json", "r", encoding="utf-8") as fh:
-              data = json.load(fh)
-
-          coverage = float(data.get("coverage", 0.0))
-          total = int(data.get("total_learnings", 0))
-          empty = [item["query"] for item in data.get("results", []) if int(item.get("count", 0)) == 0]
-
-          print(f"Live coverage: {coverage:.2f}")
-          print(f"Live total learnings: {total}")
-          if total < 8:
-              print("FAIL: representative live corpus is too small to be meaningful", file=sys.stderr)
-              sys.exit(1)
-          if coverage < 0.8:
-              print(f"FAIL: live retrieval coverage dropped below 0.80 (empty queries: {empty})", file=sys.stderr)
-              sys.exit(1)
-          PY
+      - name: Run retrieval quality smoke
+        run: bash evals/agentops-core/fixtures/retrieval-quality-smoke.sh
 
   security-toolchain:
     name: Security Toolchain
@@ -176,16 +142,18 @@ jobs:
 
       - name: Summary
         run: |
-          echo "## Nightly Test Results" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "| Job | Status |" >> $GITHUB_STEP_SUMMARY
-          echo "|-----|--------|" >> $GITHUB_STEP_SUMMARY
-          echo "| CLI tests | ${{ needs.cli-tests.result }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Static validation | ${{ needs.static-validation.result }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Retrieval bench | ${{ needs.retrieval-bench.result }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Security toolchain | ${{ needs.security-toolchain.result }} |" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "Run completed at $(date -u)" >> $GITHUB_STEP_SUMMARY
+          {
+            echo "## Nightly Test Results"
+            echo ""
+            echo "| Job | Status |"
+            echo "|-----|--------|"
+            echo "| CLI tests | ${{ needs.cli-tests.result }} |"
+            echo "| Static validation | ${{ needs.static-validation.result }} |"
+            echo "| Retrieval bench | ${{ needs.retrieval-bench.result }} |"
+            echo "| Security toolchain | ${{ needs.security-toolchain.result }} |"
+            echo ""
+            echo "Run completed at $(date -u)"
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Create issue on failure
         if: needs.cli-tests.result == 'failure' || needs.static-validation.result == 'failure' || needs.retrieval-bench.result == 'failure' || needs.security-toolchain.result == 'failure'

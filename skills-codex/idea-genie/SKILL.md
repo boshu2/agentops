@@ -1,6 +1,6 @@
 ---
 name: idea-genie
-description: Generate an evidence-grounded opportunity
+description: Generate evidenced opportunities or
 ---
 # Idea Genie
 
