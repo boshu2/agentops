@@ -76,5 +76,5 @@ manifest digest, author context ID, evidence, and required checked/not-checked
 report. The validator context ID must be distinct from the author's before a
 `PASS` verdict is possible. When the caller elects a cross-model fresh
 validator, record model identities per
-`skills/agent-native/references/model-dispatch.md` and match the sandbox to
+the `agent-native` model-dispatch recipe and match the sandbox to
 declared effects.
