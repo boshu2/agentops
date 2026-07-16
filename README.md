@@ -118,7 +118,20 @@ Optional later: [`learn`](skills/learn/SKILL.md). Strategies:
 [`council`](skills/council/SKILL.md), [`idea-genie`](skills/idea-genie/SKILL.md),
 [`premortem`](skills/premortem/SKILL.md), [`postmortem`](skills/postmortem/SKILL.md).
 
-Full inventory: [Skill Router](docs/SKILL-ROUTER.md).
+## One skill, many shapes
+
+AgentOps prefers a smaller skill set you can steer over dozens of near-duplicate
+skills. Modes and flags change behavior inside one contract.
+
+| Skill | Steer with | Examples |
+|---|---|---|
+| [`doc`](skills/doc/SKILL.md) | `--mode` | `readme`, `oss`, default API/docs; README mode runs a docs-prose (de-slop) pass |
+| [`codebase-recon`](skills/codebase-recon/SKILL.md) | mode · view · lens · depth | `baseline`/`delta`; emphasize audit or mental model; one domain lens per pass |
+| [`idea-genie`](skills/idea-genie/SKILL.md) | elicit \| duel | portfolio vs sealed multi-perspective challenge |
+| [`rpi`](skills/rpi/SKILL.md) | bead / intent ref | one full loop against a frozen bead |
+
+Read the skill's mode table before inventing a sibling skill. Full inventory:
+[Skill Router](docs/SKILL-ROUTER.md).
 
 ## Evidence contract
 

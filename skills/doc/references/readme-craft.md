@@ -259,14 +259,14 @@ State what's genuinely new about your approach — once.}
 
 Write the generated README to `README.md`.
 
-### Step 4b: De-slopify (required)
+### Step 4b: Docs prose pass (required)
 
-Read [de-slopify.md](de-slopify.md) and run the full de-slopify prompt on the
+Read [de-slopify.md](de-slopify.md) and run the full docs-prose prompt on the
 exact `README.md` you just wrote. Apply fixes in place. Manual line-by-line
 recast only — no regex pass. Do not report the README complete until this pass
 has run.
 
-On `--validate` only: inspect for residual slop tells and record them as
+On `--validate` only: inspect for residual prefab/slop tells and record them as
 evidence; do not rewrite unless the caller asked for `--rewrite`.
 
 ### Step 5: Deterministic checks

@@ -47,8 +47,12 @@ Generate and validate documentation for any project. `--mode` selects the artifa
 | `--mode` | Artifact | Read first |
 |----------|----------|-----------|
 | *(default)* | API docs, code-maps, doc coverage/validate | this file |
-| `readme` | Gold-standard README (interview → generate → deterministic checks) | [references/readme-craft.md](references/readme-craft.md) |
+| `readme` | Gold-standard README (interview → generate → de-slop → deterministic checks) | [references/readme-craft.md](references/readme-craft.md) |
 | `oss` | OSS doc pack (CONTRIBUTING/CHANGELOG/AGENTS.md, audit + scaffold) | [references/oss-pack.md](references/oss-pack.md) |
+
+Same skill, different shapes. Prefer modes and references over a pile of
+one-off doc skills. README generate/rewrite always runs the
+[de-slopify](references/de-slopify.md) docs-prose pass before checks.
 
 **Mode routing (absorbed skills):**
 
@@ -103,6 +107,7 @@ doc** failure mode — accurate, complete, and useless.
 
 - Every factual claim is traceable to inspected code, configuration, or existing documentation.
 - Generated documentation follows the selected mode's templates and preserves useful existing depth.
+- README generate/rewrite runs [references/de-slopify.md](references/de-slopify.md) before deterministic checks.
 - Completion reports name the validators run and disclose unresolved gaps rather than implying full coverage.
 
 ## Reference Documents
@@ -120,7 +125,7 @@ doc** failure mode — accurate, complete, and useless.
 - [references/prose-and-report-workmanship.md](references/prose-and-report-workmanship.md)
 - [references/project-types.md](references/project-types.md)
 - [references/validation-rules.md](references/validation-rules.md)
-- [references/de-slopify.md](references/de-slopify.md) — Remove AI writing artifacts from docs
+- [references/de-slopify.md](references/de-slopify.md) — Docs prose pass (required in README mode)
 - [references/architecture-report.md](references/architecture-report.md) — Generate technical architecture documents
 
 ## Examples

@@ -1,17 +1,24 @@
-# De-Slopify — Remove AI Writing Artifacts
+# De-Slopify — Docs Prose Pass
+
+> Make documentation read like a careful human wrote it. This is a **docs
+> quality** method under [`doc`](../SKILL.md), not a general writing skill and
+> not a standalone AgentOps skill.
+
+Use it from `doc` (required for `--mode=readme` generate/rewrite) so READMEs and
+other repo docs stay concrete, scannable, and free of LLM prefab.
+
+Use this reference from `doc` (especially `--mode=readme`) before reporting
+completion.
 
 > **Core insight #1:** You cannot do this with regex or a script. It requires a
 > manual, line-by-line read. A linter catches a fraction; the rest is judgment.
 >
 > **Core insight #2:** Slop is a thinking defect wearing a fluent surface.
 > Alignment trains models toward the *mode* of human preference, so prose goes
-> prefab — strips of words already set in order (Orwell). Lexical diversity can
-> rise while conceptual diversity falls. Swapping blacklist words is necessary
-> and not sufficient. A real pass removes the prefab *and* checks that something
-> specific is still present (the additive floor below).
-
-Use this reference from `doc` (especially `--mode=readme`) before reporting
-completion. It is a method under `doc`, not a standalone AgentOps skill.
+> prefab. Lexical diversity can rise while conceptual diversity falls. Swapping
+> blacklist words is necessary and not sufficient. A real pass removes the
+> prefab *and* checks that something specific is still present (the additive
+> floor below).
 
 ## THE PROMPT — full
 

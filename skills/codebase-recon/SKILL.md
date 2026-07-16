@@ -1,6 +1,6 @@
 ---
 name: codebase-recon
-description: 'Reconstruct a repository as cited entry-to-test flows, bounded claims, and a reusable baseline or verified delta. Triggers: "build a repository mental model", "trace this codebase", "refresh the prior recon".'
+description: 'Reconstruct a repository as cited entry-to-test flows, bounded claims, and a reusable baseline or verified delta. Steer with mode (baseline|delta), view emphasis, domain lens, and depth. Triggers: "build a repository mental model", "trace this codebase", "refresh the prior recon", "codebase-recon --view=audit".'
 practices:
 - legacy-code-seams
 - ddd-bounded-context
@@ -53,6 +53,31 @@ PASS/WARN/FAIL verdict.
   fact and inference.
 - To preserve traceability, prefer a verified delta when a prior pack exists
   instead of rewriting unchanged evidence as fresh discovery.
+
+## Modes, views, and lenses
+
+One skill replaces a cluster of loose recon skills. Steer it with mode, view
+emphasis, lens, and depth — do not invent a second skill for each shape.
+
+| Control | Values | Use when |
+|---|---|---|
+| **Mode** | `baseline` \| `delta` | First pack vs refresh after a prior recon |
+| **View emphasis** | mental model · bounded audit · pattern evidence · synthesis | Archaeology-style map, audit-style findings, pattern harvest, or executive synthesis |
+| **Lens** | persistence · auth · CLI · build · test (one per pass) | Domain-deep cut instead of a shallow whole-tree sweep |
+| **Depth** | quick · standard · deep | Orientation vs onboarding vs decision-grade evidence |
+
+Ask for the shape explicitly, for example:
+
+```text
+codebase-recon --mode=delta --view=audit --lens=cli --depth=standard
+codebase-recon baseline, mental-model view, persistence lens, deep
+```
+
+Natural-language equivalents count. The durable pack still carries all four
+views; emphasis changes what you spend tokens on and what the companion report
+leads with. Pattern packaging beyond evidence pointers belongs in
+[`pattern-mining`](../pattern-mining/SKILL.md). Binding PASS/FAIL stays with
+[`validate`](../validate/SKILL.md).
 
 ## Workflow
 
