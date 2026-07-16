@@ -1274,7 +1274,7 @@
         "skill-source-package",
         "skill-hygiene-report"
       ],
-      "references_count": 8,
+      "references_count": 9,
       "tier": "meta",
       "user_invocable": false
     },

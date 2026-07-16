@@ -87,6 +87,33 @@ The scorer's detection power is itself mutation-tested:
 bash skills/skill-builder/scripts/test-craft-mutations.sh
 ```
 
+## Authoring prose scan (Pass 5, advisory)
+
+`authoring_scan.py` adds an advisory `authoring` block naming mechanical
+suspects for three failure modes from
+[authoring-doctrine.md](authoring-doctrine.md). Like density and craft, it
+never changes the verdict or exit code — the no-op test is model-relative and
+prohibitions are sometimes correct guardrails, so a human (or fresh validator)
+owns the judgment.
+
+- **`noop-phrase`** — phrasing the model already obeys by default ("be
+  thorough", "make sure to", "carefully"), reported with the offending line.
+  The fix is a sharper, behavior-changing instruction, not a louder wish.
+- **`negation-without-positive`** — a bullet/paragraph whose every clause
+  prohibits ("Never edit generated files.") with no positive counterpart in
+  the same unit. Pairing the prohibition with the target behavior ("Edit the
+  source and regenerate; never edit generated files directly.") clears it.
+- **`step-missing-done-condition`** — a `###` subphase under a
+  Workflow/Process/Methodology/Execution section with no checkable
+  done-condition phrasing ("Done when", "Checkpoint:", "Stop after",
+  "until ... exit 0"). One finding per offending subphase.
+
+Detection power is mutation-tested:
+
+```bash
+bash skills/skill-builder/scripts/test-authoring-mutations.sh
+```
+
 ## Calibration rule
 
 Before tightening a check, run it across every canonical skill. A proposed

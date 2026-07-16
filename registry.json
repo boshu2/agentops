@@ -1144,7 +1144,7 @@
         "has_skill_md": true,
         "name": "skill-builder",
         "path": "skills/skill-builder/",
-        "reference_count": 8,
+        "reference_count": 9,
         "tier": "meta"
       },
       {

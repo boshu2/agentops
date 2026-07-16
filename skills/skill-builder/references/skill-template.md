@@ -6,6 +6,11 @@
 
 This is the canonical template `skill-builder` materializes and its deep audit mode validates against. Two artifacts in one document because both modes need identical truth.
 
+This template governs *structure*. The prose inside that structure is governed
+by [authoring-doctrine.md](authoring-doctrine.md) — the no-op test, negation,
+completion criteria, leading words, description discipline, and the context
+load vs cognitive load decision. Apply both when authoring or healing a skill.
+
 ---
 
 ## 1. Canonical SKILL.md template

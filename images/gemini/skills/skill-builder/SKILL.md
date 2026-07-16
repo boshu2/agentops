@@ -177,5 +177,7 @@ or invoke the builder again.
 ## References
 
 - [skill template](references/skill-template.md)
+- [authoring doctrine](references/authoring-doctrine.md) — prose-quality
+  principles behind the advisory `authoring` audit block
 - [heal.feature](references/heal.feature)
 - [skill-auditor.feature](references/skill-auditor.feature)
