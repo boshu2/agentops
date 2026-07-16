@@ -19,7 +19,6 @@ graph LR
   dcg["dcg"]
   doc["doc"]
   domain["domain"]
-  dueling_idea_genies["dueling-idea-genies"]
   goals["goals"]
   handoff["handoff"]
   idea_genie["idea-genie"]

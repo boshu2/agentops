@@ -1,6 +1,6 @@
 {
   "schema_version": "3",
-  "skill_count": 49,
+  "skill_count": 48,
   "skills": [
     {
       "canonical_status": "canonical",
@@ -475,45 +475,6 @@
     {
       "canonical_status": "canonical",
       "capabilities": [
-        "dueling_idea_genies"
-      ],
-      "codex_override_present": true,
-      "consumes": [
-        "idea-portfolio.v1",
-        "task-question"
-      ],
-      "context_rel": [
-        {
-          "kind": "customer-of",
-          "with": "idea-genie"
-        },
-        {
-          "kind": "supplier-to",
-          "with": "plan"
-        }
-      ],
-      "dependencies": [],
-      "description": "Challenge a consequential idea with sealed independent perspectives, cross-review, and preserved dissent. Triggers: \"challenge this idea\", \"compare independent proposals\", \"stress-test a one-way door\".",
-      "disposition": "keep_strategy",
-      "effects": [],
-      "graph_root": false,
-      "hexagonal_role": "domain",
-      "name": "dueling-idea-genies",
-      "practices": [
-        "design-by-contract",
-        "llm-eval-harness",
-        "adr"
-      ],
-      "produces": [
-        "idea-challenge.v1"
-      ],
-      "references_count": 1,
-      "tier": "judgment",
-      "user_invocable": true
-    },
-    {
-      "canonical_status": "canonical",
-      "capabilities": [
         "goals"
       ],
       "codex_override_present": true,
@@ -572,12 +533,14 @@
     {
       "canonical_status": "canonical",
       "capabilities": [
-        "generate_evidenced_options"
+        "generate_evidenced_options",
+        "dueling_idea_genies"
       ],
       "codex_override_present": true,
       "consumes": [
         "repo-context",
-        "task-question"
+        "task-question",
+        "idea-portfolio.v1"
       ],
       "context_rel": [
         {
@@ -590,7 +553,7 @@
         }
       ],
       "dependencies": [],
-      "description": "Generate an evidence-grounded opportunity portfolio for an open-ended product or engineering question. Triggers: \"idea genie\", \"what should we build\", \"supported opportunities\".",
+      "description": "Generate an evidence-grounded opportunity portfolio for an open-ended product or engineering question, or challenge a consequential idea with sealed independent perspectives, cross-review, and preserved dissent. Triggers: \"idea genie\", \"what should we build\", \"supported opportunities\", \"challenge this idea\", \"compare independent proposals\", \"stress-test a one-way door\".",
       "disposition": "keep_strategy",
       "effects": [
         "write_idea_portfolio"
@@ -600,12 +563,16 @@
       "name": "idea-genie",
       "practices": [
         "lean-startup",
-        "bdd-gherkin"
+        "bdd-gherkin",
+        "design-by-contract",
+        "llm-eval-harness",
+        "adr"
       ],
       "produces": [
-        "idea-portfolio.v1"
+        "idea-portfolio.v1",
+        "idea-challenge.v1"
       ],
-      "references_count": 1,
+      "references_count": 2,
       "tier": "execution",
       "user_invocable": true
     },

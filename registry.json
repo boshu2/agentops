@@ -174,15 +174,6 @@
     },
     {
       "driven_by_skills": [
-        "dueling-idea-genies"
-      ],
-      "id": "skill:dueling-idea-genies:dueling_idea_genies",
-      "name": "dueling_idea_genies",
-      "path": "skills/dueling-idea-genies/SKILL.md",
-      "type": "skill"
-    },
-    {
-      "driven_by_skills": [
         "goals"
       ],
       "id": "skill:goals:goals",
@@ -205,6 +196,15 @@
       ],
       "id": "skill:idea-genie:generate_evidenced_options",
       "name": "generate_evidenced_options",
+      "path": "skills/idea-genie/SKILL.md",
+      "type": "skill"
+    },
+    {
+      "driven_by_skills": [
+        "idea-genie"
+      ],
+      "id": "skill:idea-genie:dueling_idea_genies",
+      "name": "dueling_idea_genies",
       "path": "skills/idea-genie/SKILL.md",
       "type": "skill"
     },
@@ -576,7 +576,7 @@
     "hooks": 0,
     "job_types": 0,
     "knowledge_stores": 0,
-    "skills": 49,
+    "skills": 48,
     "workflows": 0
   },
   "surfaces": {
@@ -794,19 +794,6 @@
       },
       {
         "capabilities": [
-          "dueling_idea_genies"
-        ],
-        "disposition": "keep_strategy",
-        "effects": [],
-        "has_references": true,
-        "has_skill_md": true,
-        "name": "dueling-idea-genies",
-        "path": "skills/dueling-idea-genies/",
-        "reference_count": 1,
-        "tier": "judgment"
-      },
-      {
-        "capabilities": [
           "goals"
         ],
         "disposition": "keep_specialist",
@@ -833,7 +820,8 @@
       },
       {
         "capabilities": [
-          "generate_evidenced_options"
+          "generate_evidenced_options",
+          "dueling_idea_genies"
         ],
         "disposition": "keep_strategy",
         "effects": [
@@ -843,7 +831,7 @@
         "has_skill_md": true,
         "name": "idea-genie",
         "path": "skills/idea-genie/",
-        "reference_count": 1,
+        "reference_count": 2,
         "tier": "execution"
       },
       {

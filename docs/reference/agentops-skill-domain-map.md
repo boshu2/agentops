@@ -4,7 +4,7 @@
 
 ## domain
 
-`council`, `domain`, `dueling-idea-genies`, `goals`, `idea-genie`, `plan`, `postmortem`, `premortem`, `product`, `reality-check`, `rpi`, `shared`
+`council`, `domain`, `goals`, `idea-genie`, `plan`, `postmortem`, `premortem`, `product`, `reality-check`, `rpi`, `shared`
 
 ## driven-adapter
 
@@ -37,10 +37,9 @@
 | `dcg` | execution | `keep_specialist` | - | `dcg` | - |
 | `doc` | product | `keep_specialist` | - | `doc` | - |
 | `domain` | knowledge | `keep_specialist` | - | `domain` | - |
-| `dueling-idea-genies` | judgment | `keep_strategy` | - | `dueling_idea_genies` | - |
 | `goals` | product | `keep_specialist` | - | `goals` | - |
 | `handoff` | session | `keep_specialist` | - | `handoff` | - |
-| `idea-genie` | execution | `keep_strategy` | - | `generate_evidenced_options` | `write_idea_portfolio` |
+| `idea-genie` | execution | `keep_strategy` | - | `generate_evidenced_options`, `dueling_idea_genies` | `write_idea_portfolio` |
 | `implement` | execution | `keep` | - | `execute_one_experiment`, `collect_factual_evidence` | `modify_declared_subject`, `derive_subject_manifest` |
 | `learn` | execution | `keep_off_path` | - | `analyze_verdict_collections` | `write_advisory_observations` |
 | `ms` | execution | `keep_specialist` | - | `ms` | - |

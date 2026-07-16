@@ -27,8 +27,6 @@
 | `codebase-recon` | `customer-of` | `research` |
 | `codebase-recon` | `customer-of` | `validate` |
 | `codex-exec` | `supplier-to` | `validate` |
-| `dueling-idea-genies` | `customer-of` | `idea-genie` |
-| `dueling-idea-genies` | `supplier-to` | `plan` |
 | `goals` | `shared-kernel` | `standards` |
 | `idea-genie` | `customer-of` | `research` |
 | `idea-genie` | `supplier-to` | `plan` |
@@ -86,14 +84,13 @@
 | `doc` | consumes | `repo-context` |
 | `doc` | produces | `documentation` |
 | `domain` | produces | `stdout` |
-| `dueling-idea-genies` | consumes | `idea-portfolio.v1` |
-| `dueling-idea-genies` | consumes | `task-question` |
-| `dueling-idea-genies` | produces | `idea-challenge.v1` |
 | `goals` | produces | `result.json` |
 | `handoff` | produces | `.agents/handoff/*.md` |
 | `idea-genie` | consumes | `repo-context` |
 | `idea-genie` | consumes | `task-question` |
+| `idea-genie` | consumes | `idea-portfolio.v1` |
 | `idea-genie` | produces | `idea-portfolio.v1` |
+| `idea-genie` | produces | `idea-challenge.v1` |
 | `implement` | produces | `subject-manifest.v1` |
 | `learn` | consumes | `verdict.v2` |
 | `learn` | produces | `learning-observations` |
