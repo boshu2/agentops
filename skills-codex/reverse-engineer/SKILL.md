@@ -162,7 +162,7 @@ Run the skill for `ao` with `--authorized --mode=binary --binary-path="$(command
 ## See Also
 
 - [plan](../plan/SKILL.md) — shape selected steals in the existing intent source
-- [dueling-idea-genies](../dueling-idea-genies/SKILL.md) — optional advisory challenge
+- [idea-genie](../idea-genie/SKILL.md) — optional advisory challenge (duel mode)
 - [premortem](../premortem/SKILL.md) — optional advisory challenge of the exact plan
 - [research](../research/SKILL.md) — general exploration; this is its external-system specialization
 

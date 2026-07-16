@@ -4,7 +4,7 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 PREMORTEM="$ROOT/skills/premortem/SKILL.md"
 POSTMORTEM="$ROOT/skills/postmortem/SKILL.md"
-DUELING="$ROOT/skills/dueling-idea-genies/SKILL.md"
+DUELING="$ROOT/skills/idea-genie/SKILL.md"
 PLAN="$ROOT/skills/plan/SKILL.md"
 
 grep -Fq 'optional plan-challenge strategy' "$PREMORTEM"

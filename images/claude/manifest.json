@@ -1,7 +1,7 @@
 {
   "image": "claude",
   "schema_version": "skill-image.v1",
-  "skill_count": 49,
+  "skill_count": 48,
   "skills": [
     {
       "disposition": "keep_specialist",
@@ -77,11 +77,6 @@
       "disposition": "keep_specialist",
       "path": "skills/domain/",
       "slug": "domain"
-    },
-    {
-      "disposition": "keep_strategy",
-      "path": "skills/dueling-idea-genies/",
-      "slug": "dueling-idea-genies"
     },
     {
       "disposition": "keep_specialist",

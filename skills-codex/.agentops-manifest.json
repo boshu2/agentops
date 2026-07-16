@@ -2,7 +2,7 @@
   "generator": "manual-maintained",
   "source_root": "skills",
   "layout": "modular",
-  "codex_override_catalog_hash": "d01b395c11e8abc2eacde3f49b2dd85dcec4b96bb3734b0ee9816521a14dc010",
+  "codex_override_catalog_hash": "d05da256388554908b917c51baebc47425925df7cbee17d004dcc1e124f04edc",
   "codex_override_catalog": {
     "version": 1,
     "description": "Machine-readable Codex treatment map for the full skill catalog.",
@@ -119,12 +119,6 @@
       },
       {
         "name": "domain",
-        "treatment": "parity_only",
-        "wave": "catalog-parity",
-        "reason": "Live source skill; generate a parity twin and keep runtime-specific behavior in the source contract."
-      },
-      {
-        "name": "dueling-idea-genies",
         "treatment": "parity_only",
         "wave": "catalog-parity",
         "reason": "Live source skill; generate a parity twin and keep runtime-specific behavior in the source contract."
@@ -421,12 +415,6 @@
       "generated_hash": "e982808abf4438d118ae9c92b688425a5db358e14955030c71d3359a652144e6"
     },
     {
-      "name": "dueling-idea-genies",
-      "source_skill": "skills/dueling-idea-genies",
-      "source_hash": "6b826b0cd39ffe5c5573686c32ffbccf2e6429992fa7141998e52b2b7387dbb2",
-      "generated_hash": "c972718a4120e363f1159e4f455ed614aa1179fb37a78a0675bdd035b3629ec0"
-    },
-    {
       "name": "goals",
       "source_skill": "skills/goals",
       "source_hash": "5648e827ef8259c9bd33bdb210aefe508280d3edb242643c2cf3b88f69316bd3",
@@ -441,8 +429,8 @@
     {
       "name": "idea-genie",
       "source_skill": "skills/idea-genie",
-      "source_hash": "50d62549c7e0d750b7bc9834b540251caa5855a8c5b9896bf47d4b9dd0b619e8",
-      "generated_hash": "4954bf3cc221b6cc37951447cb68c754e63af81065fb3897ccdabccb9f0dc932"
+      "source_hash": "ed1918c33f3a0f8f12fd45802f65957d6992b48157150616dbb12d3211540362",
+      "generated_hash": "6385b8b66337eab8cd1a317d5be59411fea7348f9705b1b1bae12f9f430bb931"
     },
     {
       "name": "implement",
@@ -531,8 +519,8 @@
     {
       "name": "reverse-engineer",
       "source_skill": "skills/reverse-engineer",
-      "source_hash": "51004bc63aaf2c764dda5386d1f4e6c0f3bf60a87a15ecdb6d5cb505b44f25b1",
-      "generated_hash": "170ad9e24572bbf816759bc9c3f9a4fd91e95885601be707e3a7d119ed794ab7"
+      "source_hash": "6299e2659e72ad91d4447c4358a3b08924dee9503364eb34c07017f5222693b5",
+      "generated_hash": "74c74bcb540f92e03bf687570786b76814475a72f019313f9447c661361a3567"
     },
     {
       "name": "rpi",
@@ -625,5 +613,5 @@
       "generated_hash": "f01700116b3dac4ada4b04f0d40e363107b9da1149dc0b1eb990ed6b4db9fe16"
     }
   ],
-  "package_count": 49
+  "package_count": 48
 }

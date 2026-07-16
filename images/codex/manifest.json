@@ -1,7 +1,7 @@
 {
   "image": "codex",
   "schema_version": "skill-image.v1",
-  "skill_count": 49,
+  "skill_count": 48,
   "skills": [
     {
       "disposition": "keep_specialist",
@@ -92,12 +92,6 @@
       "slug": "domain",
       "source_path": "skills/domain/",
       "twin_path": "skills-codex/domain/"
-    },
-    {
-      "disposition": "keep_strategy",
-      "slug": "dueling-idea-genies",
-      "source_path": "skills/dueling-idea-genies/",
-      "twin_path": "skills-codex/dueling-idea-genies/"
     },
     {
       "disposition": "keep_specialist",
