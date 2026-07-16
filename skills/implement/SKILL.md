@@ -34,10 +34,11 @@ second planning record or a model-authored candidate packet.
 
 1. Read the intent, acceptance, and scope from their existing source. A runtime
    may snapshot and hash that source automatically for drift detection.
-2. Run the declared first acceptance check before changing behavior. For a
-   behavior change, preserve evidence that it fails for the expected missing
-   behavior. For docs-only or pure refactor work, record an honest green
-   pre-change baseline instead.
+2. Run the declared first acceptance check before changing behavior. RED-first
+   applies only when acceptance is behavioral: preserve evidence that the check
+   fails for the expected missing behavior. Relocations, doc merges, and pure
+   refactors need no failing-check ritual — record an honest green pre-change
+   baseline instead.
 3. Make the smallest in-scope change that satisfies the active behavior.
 4. Run the targeted acceptance checks and capture factual results.
 5. Refactor only while those checks stay green. Refactoring does not change the
@@ -58,6 +59,21 @@ match. Run an expensive full-suite check at the integration boundary, or
 earlier only when the intent explicitly makes it the first acceptance check.
 Repeatedly replaying the full suite after every focused edit adds latency, not
 proof.
+
+## Scope conflict rule
+
+On discovering a live consumer of the change outside the declared write scope
+— a test asserting the old path, a generated twin, a gate reading the moved
+file — stop and report the exact file and line to the caller. Do not silently
+expand scope to absorb it. One repair revision of the intent is the maximum
+before escalating to the caller; the 2026-07-15 heal-skill fold took three
+intent revisions (lineage under `.agentops/intents/sha256/26a4f2be...eb48`)
+because hand-enumerated scope kept missing live consumers.
+
+Before declaring GREEN, self-audit the diff for mocks, placeholders, TODO
+stubs, and hardcoded fixture values standing in for real behavior. A check
+that passes against a placeholder is not evidence for the acceptance
+criterion; either finish the behavior or report it as not built.
 
 ## Boundary
 
