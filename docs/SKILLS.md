@@ -2,7 +2,7 @@
 
 # Skill Router
 
-50 live skills. Metadata is the sole inventory and graph source.
+49 live skills. Metadata is the sole inventory and graph source.
 
 ## keep
 
@@ -22,7 +22,7 @@
 
 ## keep_specialist
 
-`account-rotation`, `bootstrap`, `cass`, `cc-hooks`, `codebase-recon`, `converter`, `dcg`, `doc`, `domain`, `goals`, `handoff`, `heal-skill`, `ms`, `operationalize`, `pattern-mining`, `product`, `rch`, `refactor`, `research`, `reverse-engineer`, `sbh`, `scaffold`, `scope`, `security`, `shared`, `skill-builder`, `standards`, `status`, `test`, `toil-mining`, `workflow-builder`
+`account-rotation`, `bootstrap`, `cass`, `cc-hooks`, `codebase-recon`, `converter`, `dcg`, `doc`, `domain`, `goals`, `handoff`, `ms`, `operationalize`, `pattern-mining`, `product`, `rch`, `refactor`, `research`, `reverse-engineer`, `sbh`, `scaffold`, `scope`, `security`, `shared`, `skill-builder`, `standards`, `status`, `test`, `toil-mining`, `workflow-builder`
 
 ## Complete inventory
 
@@ -46,7 +46,6 @@
 | `dueling-idea-genies` | judgment | `keep_strategy` | - | `dueling_idea_genies` | - |
 | `goals` | product | `keep_specialist` | - | `goals` | - |
 | `handoff` | session | `keep_specialist` | - | `handoff` | - |
-| `heal-skill` | meta | `keep_specialist` | - | `heal_skill` | `optional_skill_projection_repair` |
 | `idea-genie` | execution | `keep_strategy` | - | `generate_evidenced_options` | `write_idea_portfolio` |
 | `implement` | execution | `keep` | - | `execute_one_experiment`, `collect_factual_evidence` | `modify_declared_subject`, `derive_subject_manifest` |
 | `learn` | execution | `keep_off_path` | - | `analyze_verdict_collections` | `write_advisory_observations` |
@@ -69,7 +68,7 @@
 | `scope` | meta | `keep_specialist` | - | `scope_review` | - |
 | `security` | product | `keep_specialist` | - | `security` | - |
 | `shared` | library | `keep_specialist` | - | `provide_reference_context` | - |
-| `skill-builder` | meta | `keep_specialist` | - | `skill_builder` | `writes_skill_source`, `regenerates_skill_projections` |
+| `skill-builder` | meta | `keep_specialist` | - | `skill_builder`, `heal_skill` | `writes_skill_source`, `regenerates_skill_projections`, `optional_skill_projection_repair` |
 | `standards` | knowledge | `keep_specialist` | - | `standards` | - |
 | `status` | session | `keep_specialist` | - | `status` | - |
 | `swarm` | execution | `keep_optional_adapter` | - | `dispatch_once` | `invoke_selected_executor` |

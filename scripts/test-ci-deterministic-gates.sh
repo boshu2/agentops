@@ -89,8 +89,8 @@ run_gate "skill-mesh-check" python3 scripts/generate-skill-mesh.py --check
 # Gate 2: skill-lint suite.
 run_gate "skill-lint" bash tests/skills/lint-skills.sh
 
-# Gate 3: heal-skill --strict (catches dead refs, unlinked refs, name mismatches).
-run_gate "heal-skill --strict" bash skills/heal-skill/scripts/heal.sh --strict
+# Gate 3: heal.sh --strict (catches dead refs, unlinked refs, name mismatches).
+run_gate "heal --strict" bash skills/skill-builder/scripts/heal.sh --strict
 
 # Gate 4: codex artifact metadata (skip with --skip-codex when iterating fast).
 if [[ "$SKIP_CODEX" == 0 ]]; then

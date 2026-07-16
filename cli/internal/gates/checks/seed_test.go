@@ -88,7 +88,7 @@ func TestChangedScopeRegenIsSplitFromReleaseWideRegenAll(t *testing.T) {
 	if changed.Backing != "regen-changed-scope.sh" {
 		t.Fatalf("derived.changed-scope backing = %q, want regen-changed-scope.sh", changed.Backing)
 	}
-	if !strings.Contains(changed.RepairHint, "skills/heal-skill/scripts/heal.sh --check --strict") {
+	if !strings.Contains(changed.RepairHint, "skills/skill-builder/scripts/heal.sh --check --strict") {
 		t.Fatalf("derived.changed-scope repair hint = %q, want one-pass structural audit command", changed.RepairHint)
 	}
 	for _, path := range []string{

@@ -1,15 +1,14 @@
 ---
 name: skill-builder
-description: 'Create a metadata-complete AgentOps skill source package and regenerate its derived projections. Triggers: "create a skill", "scaffold skill", "absorb external skill", "new skill".'
+description: 'Create a metadata-complete AgentOps skill source package, regenerate its derived projections, and check or repair structural hygiene in skill packages. Triggers: "create a skill", "scaffold skill", "absorb external skill", "new skill", "heal skill", "repair skill hygiene", "audit skill structure", "check skill package".'
 practices:
 - pragmatic-programmer
+- refactoring
 hexagonal_role: supporting
 consumes: []
 produces:
 - skill-source-package
-context_rel:
-- kind: supplier-to
-  with: heal-skill
+- skill-hygiene-report
 skill_api_version: 1
 context:
   window: fork
@@ -20,25 +19,36 @@ context:
     - HISTORY
   intel_scope: topic
 metadata:
-  capabilities: [skill_builder]
-  effects: [writes_skill_source, regenerates_skill_projections]
+  capabilities: [skill_builder, heal_skill]
+  effects: [writes_skill_source, regenerates_skill_projections, optional_skill_projection_repair]
   canonical_status: canonical
   disposition: keep_specialist
   tier: meta
   dependencies: []
   stability: experimental
-output_contract: skills/skill-builder/schemas/build-report.json
+output_contract: skills/skill-builder/schemas/build-report.json (create/build) or skills/skill-builder/schemas/audit-report.json (audit)
 ---
 
-# Skill Builder — Create one skill source package
+# Skill Builder — Create, heal, and audit skill packages
 
-Create one `skills/<slug>/` package, verify its structure, regenerate the
-metadata-owned projections, and stop. The builder does not schedule work,
-allocate writers, operate Git, promote learnings, or decide whether the new
-skill should be invoked.
+`skill-builder` owns the full structural lifecycle of one `skills/<slug>/`
+source package: create it, verify its structure, repair owned projections, and
+audit its content discipline. It does not schedule work, allocate writers,
+operate Git, validate a software candidate, promote learnings, or decide what
+happens after a failure.
 
 Before creating a new root, search `skills/*/SKILL.md` for an existing owner.
 Extend an existing skill when it already owns the requested behavior.
+
+## Modes
+
+| Trigger phrases | Mode | Entry point |
+|---|---|---|
+| "create a skill", "scaffold skill", "new skill" | create (build) | `scripts/build.sh` |
+| "absorb external skill" | create (absorb-external) | `scripts/build.sh` |
+| "check skill package" | check | `scripts/heal.sh --check [--strict]` |
+| "heal skill", "repair skill hygiene" | heal | `scripts/heal.sh --fix` |
+| "audit skill structure" | audit | `scripts/audit.sh` |
 
 ## Constraints
 
@@ -48,10 +58,13 @@ Extend an existing skill when it already owns the requested behavior.
   must not copy names, prose, prompts, scripts, or examples.
 - Regenerate projections once and stop because validation, revision, Git, and
   delivery remain caller-owned.
+- Check and audit modes never mutate files; fix mode changes only an explicit
+  source target and its owned projections, because source behavior remains
+  human-authored.
 
-## Inputs
+## Create mode
 
-Choose exactly one mode:
+Choose exactly one build input:
 
 - `from-scratch <slug>` creates a blank source package.
 - `from-template <slug> --like <existing-slug>` uses the existing skill only
@@ -64,11 +77,11 @@ The caller may set `SKILL_TIER`, `SKILL_DEPENDENCIES`,
 `SKILL_CAPABILITIES`, and `SKILL_EFFECTS`. Values that represent lists must be
 JSON arrays.
 
-## Procedure
+### Procedure
 
 1. Run `scripts/build.sh` with one mode and one new slug.
 2. Fill the generated placeholders with the skill's actual behavior.
-3. Run `skills/heal-skill/scripts/heal.sh --check --strict skills/<slug>`.
+3. Run `scripts/heal.sh --check --strict skills/<slug>`.
 4. Run `scripts/generate-skill-mesh.py` to derive the catalog, registry,
    router, graph, maps, counts, and runtime image manifests from `SKILL.md`
    metadata.
@@ -79,9 +92,56 @@ JSON arrays.
 `build.sh` performs steps 1, 3, 4, and 5 once. It never retries or chooses a
 next action.
 
+## Heal and check modes
+
+```bash
+bash skills/skill-builder/scripts/heal.sh --check [skills/<slug> ...]
+bash skills/skill-builder/scripts/heal.sh --check --strict [skills/<slug> ...]
+bash skills/skill-builder/scripts/heal.sh --fix [skills/<slug> ...]
+```
+
+Every explicit target must be a real, direct child of `skills/` or
+`skills-codex/`. Missing paths, traversal, and symlink spellings are rejected.
+
+### Procedure
+
+1. Resolve and contain all requested target directories.
+2. Parse each `SKILL.md` frontmatter.
+3. Check the path/name match, description, API version, disposition metadata,
+   and linked local references.
+4. Print every finding once.
+5. In `--fix` mode only, regenerate metadata-owned projections and scoped Codex
+   twins, then stop.
+
+`--check` is read-only. `--strict` makes any finding produce exit 1. A failed
+fix is returned to the caller; the skill does not retry or select another
+action. Structural findings are printed as:
+
+```text
+[FINDING_CODE] skills/example: concrete explanation
+```
+
+Generated Codex parity follows [codex-parity.md](references/codex-parity.md).
+A second identical fix is idempotent, and remaining non-fixable findings stay
+explicit.
+
+## Audit mode
+
+The optional read-only deep content audit is:
+
+```bash
+bash skills/skill-builder/scripts/audit.sh [--strict] [--json <path>] skills/<slug>
+```
+
+It combines the structural result with deterministic authoring checks and an
+advisory quality score. It is not the core `Validate` phase, does not write a
+`verdict.v2`, and has no delivery authority. Check definitions live in
+[audit-checks.md](references/audit-checks.md); density scoring is described in
+[context-density-checks.md](references/context-density-checks.md).
+
 ## Output
 
-The source package contains:
+A created source package contains:
 
 ```text
 skills/<slug>/
@@ -90,8 +150,10 @@ skills/<slug>/
 ```
 
 The build report is `.agents/audits/<slug>-build.json` and conforms to
-`schemas/build-report.json`. Generated inventories and runtime projections are
-not additional sources of truth.
+`schemas/build-report.json`. Deep audit JSON conforms to
+`schemas/audit-report.json`. Generated inventories and runtime projections are
+not additional sources of truth. The caller owns any subsequent edit or
+invocation.
 
 ## Checks
 
@@ -103,6 +165,8 @@ not additional sources of truth.
   delivery behavior.
 - External material is treated only as a signal that a clean-room skill may be
   useful; its content is not copied.
+- Check mode never mutates files; fix mode changes only an explicit source
+  target and its owned projections.
 
 ## Failure behavior
 
@@ -113,4 +177,5 @@ or invoke the builder again.
 ## References
 
 - [skill template](references/skill-template.md)
-- [heal-skill](../heal-skill/SKILL.md)
+- [heal.feature](references/heal.feature)
+- [skill-auditor.feature](references/skill-auditor.feature)

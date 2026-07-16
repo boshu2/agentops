@@ -201,15 +201,6 @@
     },
     {
       "driven_by_skills": [
-        "heal-skill"
-      ],
-      "id": "skill:heal-skill:heal_skill",
-      "name": "heal_skill",
-      "path": "skills/heal-skill/SKILL.md",
-      "type": "skill"
-    },
-    {
-      "driven_by_skills": [
         "idea-genie"
       ],
       "id": "skill:idea-genie:generate_evidenced_options",
@@ -462,6 +453,15 @@
     },
     {
       "driven_by_skills": [
+        "skill-builder"
+      ],
+      "id": "skill:skill-builder:heal_skill",
+      "name": "heal_skill",
+      "path": "skills/skill-builder/SKILL.md",
+      "type": "skill"
+    },
+    {
+      "driven_by_skills": [
         "standards"
       ],
       "id": "skill:standards:standards",
@@ -576,7 +576,7 @@
     "hooks": 0,
     "job_types": 0,
     "knowledge_stores": 0,
-    "skills": 50,
+    "skills": 49,
     "workflows": 0
   },
   "surfaces": {
@@ -830,21 +830,6 @@
         "path": "skills/handoff/",
         "reference_count": 1,
         "tier": "session"
-      },
-      {
-        "capabilities": [
-          "heal_skill"
-        ],
-        "disposition": "keep_specialist",
-        "effects": [
-          "optional_skill_projection_repair"
-        ],
-        "has_references": true,
-        "has_skill_md": true,
-        "name": "heal-skill",
-        "path": "skills/heal-skill/",
-        "reference_count": 5,
-        "tier": "meta"
       },
       {
         "capabilities": [
@@ -1158,18 +1143,20 @@
       },
       {
         "capabilities": [
-          "skill_builder"
+          "skill_builder",
+          "heal_skill"
         ],
         "disposition": "keep_specialist",
         "effects": [
           "writes_skill_source",
-          "regenerates_skill_projections"
+          "regenerates_skill_projections",
+          "optional_skill_projection_repair"
         ],
         "has_references": true,
         "has_skill_md": true,
         "name": "skill-builder",
         "path": "skills/skill-builder/",
-        "reference_count": 3,
+        "reference_count": 8,
         "tier": "meta"
       },
       {

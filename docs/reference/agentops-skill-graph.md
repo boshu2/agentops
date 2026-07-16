@@ -22,7 +22,6 @@ graph LR
   dueling_idea_genies["dueling-idea-genies"]
   goals["goals"]
   handoff["handoff"]
-  heal_skill["heal-skill"]
   idea_genie["idea-genie"]
   implement["implement"]
   learn["learn"]

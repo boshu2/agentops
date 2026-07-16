@@ -879,7 +879,7 @@ run_step_bg "CI policy/docs parity" ./scripts/validate-ci-policy-parity.sh
 # Worktree-disposition is a LOCAL-env-state check (reflects the local working tree, not
 # committed code). It gates official release-version runs and can be forced with
 # LOCAL_CI_STRICT_LOCAL_ENV=1; otherwise it runs advisory after collect_parallel.
-run_step_bg "Skill integrity" bash ./skills/heal-skill/scripts/heal.sh --strict
+run_step_bg "Skill integrity" bash ./skills/skill-builder/scripts/heal.sh --strict
 run_step_bg "Skill runtime parity" bash ./scripts/validate-skill-runtime-parity.sh
 run_step_bg "Codex runtime sections" bash ./scripts/validate-codex-runtime-sections.sh
 # Codex skill parity removed — skills-codex/ is manually maintained

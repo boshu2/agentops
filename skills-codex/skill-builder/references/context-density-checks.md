@@ -1,6 +1,6 @@
 # Advisory Context Density Checks
 
-This reference defines the density block of heal-skill's deep audit mode
+This reference defines the density block of skill-builder's deep audit mode
 (absorbed from the retired `/skill-auditor`). It is report-only.
 It helps reviewers find skill prose that does not carry one of the six Context
 Density Rule fields before that prose is passed into a fresh context session.
@@ -29,9 +29,9 @@ Density Rule fields before that prose is passed into a fresh context session.
 ## Runnable Examples
 
 ```bash
-bash skills/heal-skill/scripts/audit.sh skills/plan
-bash skills/heal-skill/scripts/audit.sh skills/implement
-bash skills/heal-skill/scripts/audit.sh skills/validate
+bash skills/skill-builder/scripts/audit.sh skills/plan
+bash skills/skill-builder/scripts/audit.sh skills/implement
+bash skills/skill-builder/scripts/audit.sh skills/validate
 ```
 
 The expected result is a JSON `density` object with six `fields[]` entries. The

@@ -70,4 +70,3 @@ WARNING -  Doc file 'evals/local-membrane-vs-codex-2026-06-23.md' contains a lin
 WARNING -  Doc file 'evals/local-membrane-vs-codex-2026-06-23.md' contains a link '../../evals/membrane/subtle-escape-2026-06-23/full-B-codex.json', but the target '../evals/membrane/subtle-escape-2026-06-23/full-B-codex.json' is not found among documentation files.
 WARNING -  Doc file 'evals/membrane-escape-harvest-no-escape.md' contains a link '../../evals/membrane/flywheel-harvest.workflow.js', but the target '../evals/membrane/flywheel-harvest.workflow.js' is not found among documentation files.
 WARNING -  Doc file 'evals/membrane-escape-harvest-no-escape.md' contains a link '../../evals/membrane/harvest.sh', but the target '../evals/membrane/harvest.sh' is not found among documentation files.
-WARNING -  Doc file 'skills/heal-skill.md' contains a link 'schemas/audit-report.json', but the target 'skills/schemas/audit-report.json' is not found among documentation files.

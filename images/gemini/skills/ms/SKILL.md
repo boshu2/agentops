@@ -117,7 +117,7 @@ ms config                      # resolved config + skill_paths
 
 ## Production Skill Handoff
 
-**Production-intent handoff:** When the query concerns creating or editing a skill, `ms` retrieves relevant guidance and stops. The caller may separately invoke `skill-builder`, `heal-skill`, or another authoring tool.
+**Production-intent handoff:** When the query concerns creating or editing a skill, `ms` retrieves relevant guidance and stops. The caller may separately invoke `skill-builder` (create, heal, or audit mode) or another authoring tool.
 
 **Authority boundary:** `skills/**` is canonical source; the generator owns the `ms` Codex twin and other projections. Never edit the index, loaded copies, or generated projections as source.
 

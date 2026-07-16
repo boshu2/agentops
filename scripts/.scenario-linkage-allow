@@ -21,7 +21,6 @@
 skills/doc/references/doc.feature
 skills/doc/references/oss-docs.feature
 skills/doc/references/readme.feature
-skills/heal-skill/references/heal-skill.feature
 skills/postmortem/references/postmortem.feature
 skills/learn/references/learn.feature
 skills/premortem/references/premortem.feature
@@ -31,6 +30,7 @@ skills/reverse-engineer/references/reverse-engineer.feature
 skills/scaffold/references/scaffold.feature
 skills/security/references/security-suite.feature
 skills/security/references/security.feature
-skills/heal-skill/references/skill-auditor.feature
+skills/skill-builder/references/heal.feature
+skills/skill-builder/references/skill-auditor.feature
 skills/skill-builder/references/skill-builder.feature
 skills/test/references/test.feature

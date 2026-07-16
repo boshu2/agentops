@@ -67,7 +67,7 @@ RULES = [
             r"(?i)what\s+NOT\s+to\s+use",
             r"^\s*#",
             r"//\s+",
-            r"heal-skill",
+            r"skill-builder",
             r"\|.*`.*\|.*`.*\|",
         ],
         "summary": "Generated Codex body contains Claude-specific primitives that have no Codex equivalent.",

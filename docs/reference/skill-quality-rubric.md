@@ -34,8 +34,8 @@ S (27–30). A lower advisory rating is a review signal, not a ship blocker.
 ## Required repository checks
 
 ```bash
-bash skills/heal-skill/scripts/heal.sh --check --strict skills/<slug>
-bash skills/heal-skill/scripts/audit.sh --strict skills/<slug>
+bash skills/skill-builder/scripts/heal.sh --check --strict skills/<slug>
+bash skills/skill-builder/scripts/audit.sh --strict skills/<slug>
 bash scripts/validate-skill-frontmatter.sh --strict
 bash tests/docs/validate-skill-count.sh
 python3 scripts/generate-skill-mesh.py --check

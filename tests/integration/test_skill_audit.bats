@@ -1,5 +1,5 @@
 #!/usr/bin/env bats
-# test_skill_audit.bats — L2 integration tests for the heal-skill deep audit (absorbed from /skill-auditor).
+# test_skill_audit.bats — L2 integration tests for the skill-builder deep audit (absorbed from /skill-auditor).
 #
 # Asserts that the auditor returns:
 #   - PASS exit 0 on the canonical known-good fixture
@@ -11,7 +11,7 @@
 
 setup() {
     REPO_ROOT="$(cd "${BATS_TEST_DIRNAME}/../.." && pwd)"
-    AUDIT_SH="$REPO_ROOT/skills/heal-skill/scripts/audit.sh"
+    AUDIT_SH="$REPO_ROOT/skills/skill-builder/scripts/audit.sh"
     GOOD="$REPO_ROOT/tests/fixtures/skills/known-good"
     BAD="$REPO_ROOT/tests/fixtures/skills/known-bad"
 }
@@ -95,13 +95,8 @@ setup() {
     [ "$status" -eq 0 ]
 }
 
-@test "auditor self-audits heal-skill's own SKILL.md" {
-    run bash "$AUDIT_SH" "$REPO_ROOT/skills/heal-skill"
-    # Self-audit may PASS or WARN, but never FAIL.
-    [ "$status" -eq 0 ]
-}
-
 @test "auditor self-audits skill-builder SKILL.md" {
+    # Self-audit may PASS or WARN, but never FAIL.
     run bash "$AUDIT_SH" "$REPO_ROOT/skills/skill-builder"
     [ "$status" -eq 0 ]
 }

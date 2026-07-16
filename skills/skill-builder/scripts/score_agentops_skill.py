@@ -131,7 +131,7 @@ def score_helper_scripts(path: Path, metrics: dict) -> tuple[int, str]:
 
 
 def score_validation(path: Path, body: str, metrics: dict) -> tuple[int, str]:
-    validation_terms = ("validate", "test", "check", "lint", "verify", "heal-skill")
+    validation_terms = ("validate", "test", "check", "lint", "verify", "heal.sh")
     if metrics["script_files"] == 0 and metrics["skill_md_lines"] <= 100:
         return 2, "Concise non-executable skill states its evidence inline."
     score = int(any(term in body.lower() for term in validation_terms))
@@ -273,7 +273,7 @@ def score_skill(path: Path) -> dict:
 
 
 def audit_block(report: dict) -> dict:
-    """Compact rubric object for embedding in the heal-skill deep audit's audit-report.json (Pass 3).
+    """Compact rubric object for embedding in the skill-builder deep audit's audit-report.json (Pass 3).
 
     Mirrors the rubric schema block: per-category 0-3 score plus an explainable
     reason, the 0-30 total, max, and the C/B/A/S rating band. Deterministic —
@@ -321,7 +321,7 @@ def main() -> int:
     group.add_argument(
         "--audit-block",
         action="store_true",
-        help="Emit the compact rubric block consumed by the heal-skill deep audit Pass 3.",
+        help="Emit the compact rubric block consumed by the skill-builder deep audit Pass 3.",
     )
     args = parser.parse_args()
 

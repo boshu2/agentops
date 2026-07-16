@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# audit.sh — two-pass skill audit (heal-skill deep audit mode; absorbed from /skill-auditor)
+# audit.sh — two-pass skill audit (skill-builder deep audit mode; absorbed from /skill-auditor)
 # Pass 1 gates through heal.sh --check --strict; Pass 2 adds 8 NEW content-discipline checks.
 # Canonical SKILL.md template: skills/skill-builder/references/skill-template.md
 #
@@ -96,7 +96,7 @@ if [[ -z "$PROFILE_ID" || -z "$KERNEL_MAX_LINES" || ${#RULE_IDS[@]} -eq 0 ]]; th
   exit 2
 fi
 
-# --- Pass 1: heal-skill structural ---------------------------------------
+# --- Pass 1: heal structural ----------------------------------------------
 PASS1_OUT=""
 PASS1_FINDINGS_JSON="[]"
 PASS1_AUTOFIXABLE=0
@@ -134,8 +134,8 @@ PY
 else
   PASS1_STATUS="fail"
   PASS1_EXIT_CODE=2
-  PASS1_OUT="heal-skill delegate missing or not executable: $HEAL_SH"
-  PASS1_FINDINGS_JSON='[{"code":"HEAL_SKILL_MISSING","path":"skills/heal-skill/scripts/heal.sh","msg":"heal-skill delegate missing or not executable"}]'
+  PASS1_OUT="heal delegate missing or not executable: $HEAL_SH"
+  PASS1_FINDINGS_JSON='[{"code":"HEAL_SKILL_MISSING","path":"skills/skill-builder/scripts/heal.sh","msg":"heal delegate missing or not executable"}]'
 fi
 PASS1_FINDING_COUNT=$(PASS1_FINDINGS_JSON="$PASS1_FINDINGS_JSON" python3 - <<'PY'
 import json
@@ -415,7 +415,7 @@ fi
 {
   echo "=== Skill Audit: $TARGET ==="
   echo "Profile: $PROFILE_ID"
-  echo "Pass 1 (heal-skill --strict): $PASS1_STATUS (exit $PASS1_EXIT_CODE), $PASS1_FINDING_COUNT findings ($PASS1_AUTOFIXABLE autofixable)"
+  echo "Pass 1 (heal --strict): $PASS1_STATUS (exit $PASS1_EXIT_CODE), $PASS1_FINDING_COUNT findings ($PASS1_AUTOFIXABLE autofixable)"
   echo "Pass 2 (8 NEW checks):"
   for id in "${RULE_IDS[@]}"; do
     printf "  [%-4s] %s\n" "${CHECK_STATUS[$id]}" "$id"

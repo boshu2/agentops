@@ -64,7 +64,7 @@ Aggregate via max-severity rule.
 
 ## Quality Rubric
 
-- [ ] Frontmatter passes Pass 1 (heal-skill structural)
+- [ ] Frontmatter passes Pass 1 (heal structural)
 - [ ] Constraints section is front-loaded (first H2 after title)
 - [ ] Every constraint has a Why: rationale
 - [ ] Each Phase has a Checkpoint
@@ -76,7 +76,7 @@ Aggregate via max-severity rule.
 
 ```bash
 # Run auditor against this fixture; expect exit 0 and verdict PASS or WARN
-bash skills/heal-skill/scripts/audit.sh tests/fixtures/skills/known-good
+bash skills/skill-builder/scripts/audit.sh tests/fixtures/skills/known-good
 ```
 
 ## Troubleshooting

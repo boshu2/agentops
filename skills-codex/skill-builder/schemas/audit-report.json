@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft-07/schema#",
   "title": "Skill Audit Report",
-  "description": "Output contract for skill-auditor. Three passes: Pass 1 wraps heal-skill structural checks; Pass 2 adds 8 NEW content-discipline checks beyond heal-skill; Pass 3 folds the 10-category Skill Quality Rubric (docs/reference/skill-quality-rubric.md) in as an advisory 0-30 productization score.",
+  "description": "Output contract for the skill-builder deep audit. Three passes: Pass 1 wraps heal.sh structural checks; Pass 2 adds 8 NEW content-discipline checks beyond heal.sh; Pass 3 folds the 10-category Skill Quality Rubric (docs/reference/skill-quality-rubric.md) in as an advisory 0-30 productization score.",
   "type": "object",
   "required": ["target", "profile_id", "verdict", "pass1", "pass2"],
   "properties": {
@@ -20,13 +20,13 @@
     },
     "pass1": {
       "type": "object",
-      "description": "heal-skill structural results (delegated to bash skills/heal-skill/scripts/heal.sh --check --strict <target>).",
+      "description": "heal structural results (delegated to bash skills/skill-builder/scripts/heal.sh --check --strict <target>).",
       "required": ["status", "exit_code", "findings"],
       "properties": {
         "status": {
           "type": "string",
           "enum": ["pass", "fail"],
-          "description": "Strict heal-skill verdict based on process exit code, not parsed finding text."
+          "description": "Strict heal verdict based on process exit code, not parsed finding text."
         },
         "exit_code": {
           "type": "integer",
@@ -35,7 +35,7 @@
         "strict": {
           "type": "boolean",
           "const": true,
-          "description": "Always true: Pass 1 uses heal-skill strict mode."
+          "description": "Always true: Pass 1 uses heal strict mode."
         },
         "findings": {
           "type": "array",
@@ -60,7 +60,7 @@
     },
     "pass2": {
       "type": "object",
-      "description": "Eight NEW checks beyond heal-skill structural hygiene.",
+      "description": "Eight NEW checks beyond heal structural hygiene.",
       "required": ["checks"],
       "properties": {
         "checks": {

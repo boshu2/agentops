@@ -1,6 +1,6 @@
 #!/usr/bin/env bats
 
-# Regression test for the heal-skill deep audit Pass 3 (rubric scoring) — soc-ads5v.
+# Regression test for the skill-builder deep audit Pass 3 (rubric scoring) — soc-ads5v.
 # Pass 3 folds the 10-category Skill Quality Rubric
 # (docs/reference/skill-quality-rubric.md) into audit-report.json via
 # score_agentops_skill.py --audit-block. The score is advisory: it must NOT
@@ -9,8 +9,8 @@
 
 setup() {
     REPO_ROOT="$(cd "$BATS_TEST_DIRNAME/../.." && pwd)"
-    AUDIT="$REPO_ROOT/skills/heal-skill/scripts/audit.sh"
-    SCORE="$REPO_ROOT/skills/heal-skill/scripts/score_agentops_skill.py"
+    AUDIT="$REPO_ROOT/skills/skill-builder/scripts/audit.sh"
+    SCORE="$REPO_ROOT/skills/skill-builder/scripts/score_agentops_skill.py"
 
     # The 10 rubric categories, verbatim from docs/reference/skill-quality-rubric.md.
     EXPECTED_CATEGORIES=(

@@ -222,7 +222,7 @@ func TestCheckSkillIntegrityAbsentCleanAndFindings(t *testing.T) {
 			t.Chdir(root)
 			setHome(t, t.TempDir())
 			if test.script != "" {
-				path := filepath.Join(root, "skills", "heal-skill", "scripts", "heal.sh")
+				path := filepath.Join(root, "skills", "skill-builder", "scripts", "heal.sh")
 				if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 					t.Fatal(err)
 				}

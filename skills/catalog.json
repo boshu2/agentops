@@ -1,6 +1,6 @@
 {
   "schema_version": "3",
-  "skill_count": 50,
+  "skill_count": 49,
   "skills": [
     {
       "canonical_status": "canonical",
@@ -567,38 +567,6 @@
       ],
       "references_count": 1,
       "tier": "session",
-      "user_invocable": false
-    },
-    {
-      "canonical_status": "canonical",
-      "capabilities": [
-        "heal_skill"
-      ],
-      "codex_override_present": true,
-      "consumes": [],
-      "context_rel": [
-        {
-          "kind": "customer-of",
-          "with": "skill-builder"
-        }
-      ],
-      "dependencies": [],
-      "description": "Check or repair structural hygiene in AgentOps skill packages. Triggers: \"heal skill\", \"repair skill hygiene\", \"audit skill structure\", \"check skill package\".",
-      "disposition": "keep_specialist",
-      "effects": [
-        "optional_skill_projection_repair"
-      ],
-      "graph_root": false,
-      "hexagonal_role": "supporting",
-      "name": "heal-skill",
-      "practices": [
-        "refactoring"
-      ],
-      "produces": [
-        "skill-hygiene-report"
-      ],
-      "references_count": 5,
-      "tier": "meta",
       "user_invocable": false
     },
     {
@@ -1314,33 +1282,32 @@
     {
       "canonical_status": "canonical",
       "capabilities": [
-        "skill_builder"
+        "skill_builder",
+        "heal_skill"
       ],
       "codex_override_present": true,
       "consumes": [],
-      "context_rel": [
-        {
-          "kind": "supplier-to",
-          "with": "heal-skill"
-        }
-      ],
+      "context_rel": [],
       "dependencies": [],
-      "description": "Create a metadata-complete AgentOps skill source package and regenerate its derived projections. Triggers: \"create a skill\", \"scaffold skill\", \"absorb external skill\", \"new skill\".",
+      "description": "Create a metadata-complete AgentOps skill source package, regenerate its derived projections, and check or repair structural hygiene in skill packages. Triggers: \"create a skill\", \"scaffold skill\", \"absorb external skill\", \"new skill\", \"heal skill\", \"repair skill hygiene\", \"audit skill structure\", \"check skill package\".",
       "disposition": "keep_specialist",
       "effects": [
         "writes_skill_source",
-        "regenerates_skill_projections"
+        "regenerates_skill_projections",
+        "optional_skill_projection_repair"
       ],
       "graph_root": false,
       "hexagonal_role": "supporting",
       "name": "skill-builder",
       "practices": [
-        "pragmatic-programmer"
+        "pragmatic-programmer",
+        "refactoring"
       ],
       "produces": [
-        "skill-source-package"
+        "skill-source-package",
+        "skill-hygiene-report"
       ],
-      "references_count": 3,
+      "references_count": 8,
       "tier": "meta",
       "user_invocable": false
     },
