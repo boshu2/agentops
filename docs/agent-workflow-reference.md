@@ -1,99 +1,62 @@
-# Agent Workflow Reference (on-demand)
+# Agent workflow reference
 
-> **Not auto-loaded.** This is the deep-detail sidecar for `CLAUDE.md`. The root
-> `CLAUDE.md` is a thin router; the CI-validation detail, release-pipeline
-> detail, key-scripts table, and agent-goals command surface live here so they
-> don't cost context on every session. Read this when you're actually touching
-> CI, the release pipeline, or `GOALS.md` — not before.
->
-> See also the tiered `AGENTS-*.md` split (`AGENTS-WORKFLOW.md`, `AGENTS-CI.md`,
-> `AGENTS-CODEX.md`, `AGENTS-RUNTIME.md`) which owns the AGENTS-side scope detail.
+This document expands the repository contract in [AGENTS.md](../AGENTS.md).
 
-## Building the CLI
+The public AgentOps workflow has one pass:
 
-```bash
-cd cli && make build        # Build ao binary to cli/bin/ao
-cd cli && make test         # Run tests
-cd cli && make lint         # Run linter
-cd cli && make sync-hooks   # Sync embedded lib/skills into cli/embedded/
+```text
+RPI -> Plan -> Implement -> fresh Validate -> durable verdict -> report and stop
 ```
 
-## Key Scripts
+## 1. Plan
 
-| Script | Purpose |
-|--------|---------|
-| `make regen-all` | **One-command finalizer** — regenerates *every* derived artifact (skill counts, skill-domain-map, `registry.json`, context-map, embedded skills, CLI reference, cli-surface inventory, codex hashes) after adding a skill/command. Run this instead of hunting the generators one CI round at a time (`ag-jima`, ex-PR #598). |
-| `make regen-check` | The no-write companion: runs the matching drift validators (the same gates `contracts-sync` enforces). Green here ⇒ those gates pass in CI. |
-| `scripts/ship.sh` | One-knob ship loop — detects inventory changes, runs regen sweep, opens PR |
-| `scripts/ci-local-release.sh` | Local release validation gate (run before tagging) |
-| `scripts/sync-skill-counts.sh` | Sync skill counts across docs after adding/removing skills |
-| `scripts/generate-cli-reference.sh` | Regenerate CLI docs after changing commands/flags |
-| `scripts/regen-codex-hashes.sh` | Regenerate hashes after changing skills-codex/ files |
-| `scripts/verify-gate-claim.sh` | AP#7 mechanical enforcement — verify `Evidence:` claims against gate logs |
+Resolve one active behavior in the caller-owned tracker, issue, or conversation.
+Keep acceptance, important non-goals, required evidence, write scope, and the
+first useful check in that source. Do not create a second planning artifact.
 
-## Local Validation
-
-Routine AgentOps changes land by local validation plus direct push to `main`. `ao gate check --fast --scope head` is the Go-owned cockpit gate for normal pushes; `ao gate check --full --workflow-coverage --require-workflow-parity` is the local full-gate parity proof for release-sensitive work. The legacy bash gate remains available only through the documented `AGENTOPS_GATE_BASH=1` fallback while its backing scripts still serve CI. GitHub Actions remain available for explicit/manual backstop runs, external PR contexts, and release tags, but they are not the normal push authority.
-
-### Quick Local Sanity Checks (per-tool, not omnibus)
+The runtime snapshots the exact resolved source bytes under
+`.agents/ao/intents/sha256/<digest>.intent`. This is derived identity, not a
+model-authored packet, and makes conversation-only intent readable by a fresh
+validator. The pure helper accepts a file or stdin:
 
 ```bash
-cd cli && make build && make test         # If you changed Go code
-make regen-all && make regen-check        # If you ADDED/REMOVED a skill or `ao` command (then commit the regenerated files)
-cd cli && make sync-hooks                 # If you changed lib/ or skills/standards/references/
-scripts/regen-codex-hashes.sh             # If you changed skills-codex/ files
-bats tests/scripts/<script-you-touched>.bats   # Per-script regression suite
-
-# If you touched docs/ and need the mkdocs strict check locally:
-# (system mkdocs ≤1.1.2 cannot parse the modern mkdocs.yml — needs material plugins)
-python3 -m venv .venv-mkdocs && .venv-mkdocs/bin/pip install -r requirements-docs.txt && .venv-mkdocs/bin/mkdocs build --strict
+python3 skills/validate/scripts/validate.py snapshot-intent --source PATH  # use - for stdin
 ```
 
-Run only the per-tool checks for the surfaces you actually touched. Push, let CI run, fix any failures. The 30-90s CI feedback loop replaced the 10-20s local omnibus gate intentionally — the per-incident drift cost dominates the per-push wait.
+## 2. Implement
 
-### Rules That Break CI
+Run one bounded RED-GREEN-refactor experiment when the behavior supports it.
+The runtime derives factual check receipts, actual changed paths, author context
+ID, and `subject-manifest.v1`; the model does not transcribe them into a
+candidate packet. Implement does not commit, claim, repair, retry, close, push,
+or deliver.
 
-**No symlinks.** Ever. The plugin-load-test rejects all symlinks in the repo. If you need the same reference file in multiple skills, **copy** it.
+## 3. Validate
 
-**Skill counts must be synced.** Adding or removing a skill directory requires:
+An author-distinct context judges the exact subject against acceptance and
+writes one content-addressed `verdict.v2`. Validate is the only verdict writer.
+It returns `PASS`, `FAIL`, or `NOT_PROVEN`, lists checked and unchecked scope,
+and stops. PASS requires nonempty checked scope, top-level evidence, and evidence
+for every criterion. A `NOT_PROVEN` finding states the concrete missing runtime
+precondition or examined uncertainty; it does not manufacture a next action.
+Validate does not repair, re-plan, choose a next action, or authorize Git.
 
-```bash
-scripts/sync-skill-counts.sh
-```
+## 4. Caller continuation
 
-This updates SKILL-TIERS.md, PRODUCT.md, README.md, docs/SKILLS.md, docs/ARCHITECTURE.md, and using-agentops/SKILL.md. Forgetting this fails the doc-release-gate. `make regen-all` runs this **plus** every other derived-artifact generator, so prefer it when adding a skill rather than remembering each script individually.
+The caller receives the RPI report and decides what happens next. A revision
+updates the caller-owned intent source and starts a new invocation. RPI creates
+no parallel revision artifact. Changing acceptance changes the intent digest.
 
-**Every `references/*.md` must be linked in SKILL.md.** If a file exists in `skills/<name>/references/`, the skill's SKILL.md must contain a markdown link to it or a `Read` instruction referencing it. Use `heal.sh --strict` to check.
+## Optional surfaces
 
-**Codex skills are manually maintained.** Edit `skills-codex/<name>/SKILL.md` directly or add overrides in `skills-codex-overrides/<name>/`. Audit drift with `bash scripts/audit-codex-parity.sh --skill <name>`.
+Premortem, postmortem, councils, idea genies, runtime adapters, research tools,
+and factory dispatch are caller-selected. They never become hard dependencies
+or lifecycle authorities. `dispatch_once` executes only explicitly supplied,
+disjoint work once and performs no selection, retry, validation, integration,
+Git, closure, or delivery.
 
-**Embedded lib/skills must stay in sync.** After editing `lib/` or `skills/standards/references/`: run `cd cli && make sync-hooks`.
+## Repository mechanics
 
-**CLI docs must stay in sync.** After changing commands/flags: run `scripts/generate-cli-reference.sh`.
-
-**Contracts must be catalogued.** Files added to `docs/contracts/` need a link in `docs/documentation-index.md`.
-
-**Go complexity budget.** New/modified functions must stay under cyclomatic complexity 25 (warn at 15).
-
-**No TODOs in SKILL.md.** Use `br` issue tracking (`BEADS_DIR="$(ao beads dir)" br`) instead.
-
-**No secrets in code.** CI greps for hardcoded passwords, API keys, tokens in non-test files.
-
-## Testing Rules
-
-See `.claude/rules/go.md` and `.claude/rules/python.md` for language-specific testing conventions. Key rules: L2 integration tests first, L1 unit tests always. No coverage-padding. No `cov*_test.go` naming.
-
-## Release Pipeline
-
-Tag triggers GoReleaser + GitHub Actions: `git tag v2.X.0 && git push origin v2.X.0`. **Always run `scripts/ci-local-release.sh` before tagging.** Retag with `scripts/retag-release.sh v2.X.0`.
-
-For iterative pre-tag work, use `scripts/ci-local-release.sh --quick` (alias `--sanity`) — the fast code-correctness subset (current-platform build + test + version consistency + release smoke + cheap doc/snippet/shellcheck gates) that skips the slow release-rehearsal lane (SBOM, multi-platform cross-build, vuln scan, eval/HIL/readiness). Run the full gate (no flag) once before the actual tag.
-
-## Agent Goals
-
-GOALS.md is the strategic intent layer consumed by `/evolve` and `/goals`:
-- `ao goals measure` — fitness gate checks
-- `ao goals measure --directives` — list strategic directives as JSON
-- `ao goals steer add/remove/prioritize` — manage directives
-- `ao goals init` — bootstrap GOALS.md interactively
-- `ao goals migrate --to-md` — convert GOALS.yaml → GOALS.md
+Git branches, worktrees, trackers, pull requests, merge queues, CI, pushing,
+rollback, and release are repository or caller policy. `ao gate check` may run
+deterministic checks; it conveys no semantic verdict.

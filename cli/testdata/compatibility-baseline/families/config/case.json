@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "family": "config",
+  "checks": [
+    {
+      "id": "config-cli-surface",
+      "command": "tmp=$(mktemp -d /tmp/ao-config-surface.XXXXXX); (cd cli && go build -o \"$tmp/ao\" ./cmd/ao); mkdir -p \"$tmp/home\" \"$tmp/repo\"; HOME=\"$tmp/home\" \"$tmp/ao\" config --help >\"$tmp/help\"; grep -Fq 'ao config [flags]' \"$tmp/help\"; grep -Fq 'models      Show model cost tier configuration' \"$tmp/help\"; HOME=\"$tmp/home\" \"$tmp/ao\" config >\"$tmp/noargs\"; grep -Fq 'View and manage AgentOps configuration.' \"$tmp/noargs\"; HOME=\"$tmp/home\" \"$tmp/ao\" --json config --show >\"$tmp/show.json\"; jq -e '.output.value != null and .dream_report_dir.value != null' \"$tmp/show.json\" >/dev/null; HOME=\"$tmp/home\" \"$tmp/ao\" --json config models >\"$tmp/models.json\"; jq -e '.default_tier == \"balanced\" and (.tiers|length) == 3' \"$tmp/models.json\" >/dev/null; (cd \"$tmp/repo\" && HOME=\"$tmp/home\" \"$tmp/ao\" config models --set-tier quality >\"$tmp/write.out\"); grep -qx 'Set default model tier to \"quality\"' \"$tmp/write.out\"; grep -q 'default_tier: quality' \"$tmp/repo/.agentops/config.yaml\"; set +e; HOME=\"$tmp/home\" \"$tmp/ao\" config junk >\"$tmp/junk.out\" 2>\"$tmp/junk.err\"; junk=$?; HOME=\"$tmp/home\" \"$tmp/ao\" config models --set-tier premium >\"$tmp/bad.out\" 2>\"$tmp/bad.err\"; bad=$?; set -e; test \"$junk\" -eq 1; test \"$bad\" -eq 1; grep -qx 'Error: unknown command \"junk\" for \"ao config\"' \"$tmp/junk.err\"; grep -q 'Error: invalid tier \"premium\"' \"$tmp/bad.err\""
+    },
+    {
+      "id": "config-go-behavior",
+      "command": "cd cli && go test ./cmd/ao -run '^(TestConfigFlag_MaterializesAndIsHonored|TestRunConfig_.*|TestRunConfigModels_.*|TestConfigModels_.*|TestConfigCommandsRejectPositionalArgs|TestCobraConfigCommand|TestJSONValidity_Config)$' -count=1"
+    }
+  ],
+  "dimensions": {
+    "path": {"status": "evidence", "evidence": ["config-cli-surface"]},
+    "aliases": {"status": "not_applicable", "reason": "The ao config family declares no aliases."},
+    "accepted_args": {"status": "evidence", "evidence": ["config-cli-surface", "config-go-behavior"]},
+    "rejected_args": {"status": "evidence", "evidence": ["config-cli-surface", "config-go-behavior"]},
+    "stdout": {"status": "evidence", "evidence": ["config-cli-surface", "config-go-behavior"]},
+    "stderr": {"status": "evidence", "evidence": ["config-cli-surface", "config-go-behavior"]},
+    "exit_classes": {"status": "evidence", "evidence": ["config-cli-surface", "config-go-behavior"]},
+    "tracker_selection": {"status": "not_applicable", "reason": "The config family does not select or execute an issue tracker."},
+    "ordered_effects": {"status": "evidence", "evidence": ["config-cli-surface", "config-go-behavior"]}
+  }
+}

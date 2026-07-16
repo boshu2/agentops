@@ -19,7 +19,7 @@
 #   1  one or more gates fail (each failure prints diagnostic + final summary)
 #   2  argument or environment error
 #
-# Pairs with scripts/pre-push-gate.sh: that script runs --fast, this one runs
+# Pairs with `ao gate check --fast`: that path runs changed-scope, this one runs
 # the deterministic-only surface. Run both before push when changes touch
 # skills/, schemas/, registry-input paths, or codex-mirrored skills.
 
@@ -84,13 +84,13 @@ log "REPO_ROOT=$REPO_ROOT"
 log ""
 
 # Gate 1: registry-check (post-soc-k47k: deterministic across local/CI).
-run_gate "registry-check" bash scripts/generate-registry.sh --check
+run_gate "skill-mesh-check" python3 scripts/generate-skill-mesh.py --check
 
 # Gate 2: skill-lint suite.
 run_gate "skill-lint" bash tests/skills/lint-skills.sh
 
-# Gate 3: heal-skill --strict (catches dead refs, unlinked refs, name mismatches).
-run_gate "heal-skill --strict" bash skills/heal-skill/scripts/heal.sh --strict
+# Gate 3: heal.sh --strict (catches dead refs, unlinked refs, name mismatches).
+run_gate "heal --strict" bash skills/skill-builder/scripts/heal.sh --strict
 
 # Gate 4: codex artifact metadata (skip with --skip-codex when iterating fast).
 if [[ "$SKIP_CODEX" == 0 ]]; then

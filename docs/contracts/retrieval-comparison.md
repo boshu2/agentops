@@ -1,31 +1,30 @@
 # Retrieval Comparison Contract
 
-The search-eval path of `ao eval bench` is the deterministic decision
-gate for changing AgentOps retrieval behavior. It compares named backends over
-the same manifest, search root, and `k`, then reports additive metrics for each
-backend.
+The former retrieval-bench CLI was retired from the production command spine.
+The deterministic decision gate for changing retrieval behavior is the
+repository-owned smoke below. It exercises the retained Go implementation
+directly, including named backend comparison over the same manifest, search
+root, and `k`.
 
 ## Command Surface
 
 The canonical comparison smoke is:
 
 ```bash
-bash scripts/retrieval-quality-smoke.sh
+bash evals/agentops-core/fixtures/retrieval-quality-smoke.sh
 ```
 
-By default the smoke runs:
+The smoke runs focused Go tests covering:
 
-```bash
-ao eval bench \
-  --search-eval cli/cmd/ao/testdata/retrieval-bench/search-eval-manifest.json \
-  --search-root "$REPO_ROOT" \
-  --search-compare-backends local-lexical,ao-auto,agentic-rg,wiki-link-expand,rerank-llamacpp \
-  --json
-```
+- train/holdout Precision@K and MRR
+- representative live-corpus coverage and stable top results
+- multi-backend comparison report shape
+- offline `agentic-rg`, `wiki-link-expand`, and `rerank-llamacpp` fallback behavior
+- flywheel retrieval thresholds
 
-The smoke must run offline. It unsets `AGENTOPS_RETRIEVAL_RERANK_ENDPOINT`, so
-`rerank-llamacpp` proves the unset-endpoint fallback rather than contacting a
-live model.
+The smoke must run offline. The `rerank-llamacpp` case leaves
+`AGENTOPS_RETRIEVAL_RERANK_ENDPOINT` unset, proving the file-backed fallback
+rather than contacting a live model.
 
 ## Report Shape
 

@@ -13,10 +13,9 @@ func TestSeedChecksRegistered(t *testing.T) {
 		"always.mutation-route",
 		"always.embedded-sync",
 		"skill.schema",
-		"contract.registry-drift",
+		"contract.skill-mesh",
 		"ci.policy-parity",
-		"eval.corpus-freshness",
-		"docs.no-retired-tech",
+		"corpus.path-guard",
 	}
 	for _, id := range want {
 		if _, ok := gates.Default.Get(id); !ok {
@@ -89,8 +88,8 @@ func TestChangedScopeRegenIsSplitFromReleaseWideRegenAll(t *testing.T) {
 	if changed.Backing != "regen-changed-scope.sh" {
 		t.Fatalf("derived.changed-scope backing = %q, want regen-changed-scope.sh", changed.Backing)
 	}
-	if !strings.Contains(changed.RepairHint, "skills/heal-skill/scripts/audit.sh --strict") {
-		t.Fatalf("derived.changed-scope repair hint = %q, want canonical deep-audit command", changed.RepairHint)
+	if !strings.Contains(changed.RepairHint, "skills/skill-builder/scripts/heal.sh --check --strict") {
+		t.Fatalf("derived.changed-scope repair hint = %q, want one-pass structural audit command", changed.RepairHint)
 	}
 	for _, path := range []string{
 		"scripts/regen-changed-scope.sh",
@@ -136,25 +135,6 @@ func TestRetrievalManifestPathGateHasFixtureManifestArgs(t *testing.T) {
 	}
 }
 
-func TestSkillIsolationGateIsWarnFirst(t *testing.T) {
-	check, ok := gates.Default.Get("skill.isolation")
-	if !ok {
-		t.Fatal("skill.isolation gate is not registered")
-	}
-	if check.Backing != "check-skill-isolation.sh" {
-		t.Fatalf("skill.isolation backing = %q, want check-skill-isolation.sh", check.Backing)
-	}
-	if check.Blocking {
-		t.Fatal("skill.isolation must be warn-first / non-blocking")
-	}
-	if !check.Tiers.Has(gates.Fast) || !check.Tiers.Has(gates.Full) {
-		t.Fatalf("skill.isolation tiers = %v, want Fast|Full", check.Tiers)
-	}
-	if len(check.Match) == 0 {
-		t.Fatal("skill.isolation should be routed by skill paths, not always-run")
-	}
-}
-
 func TestSkillProbeCoverageGateIsWarnFirstAdvisory(t *testing.T) {
 	check, ok := gates.Default.Get("skill.probe-coverage")
 	if !ok {
@@ -182,25 +162,6 @@ func TestSkillProbeCoverageGateIsWarnFirstAdvisory(t *testing.T) {
 	}
 }
 
-func TestLedgerPrefixPolicyGateIsWarnFirstLocalOnly(t *testing.T) {
-	check, ok := gates.Default.Get("always.ledger-prefix-policy")
-	if !ok {
-		t.Fatal("always.ledger-prefix-policy gate is not registered")
-	}
-	if check.Backing != "check-ledger-prefix-policy.sh" {
-		t.Fatalf("always.ledger-prefix-policy backing = %q, want check-ledger-prefix-policy.sh", check.Backing)
-	}
-	if check.Blocking {
-		t.Fatal("always.ledger-prefix-policy must be warn-first / non-blocking")
-	}
-	if !check.Tiers.Has(gates.Fast) || !check.Tiers.Has(gates.Full) {
-		t.Fatalf("always.ledger-prefix-policy tiers = %v, want Fast|Full", check.Tiers)
-	}
-	if len(check.Match) != 0 {
-		t.Fatalf("always.ledger-prefix-policy should be always-run with graceful local-only skip; got Match=%v", check.Match)
-	}
-}
-
 func TestDocSkillRefsGateIsBlockingAndStrict(t *testing.T) {
 	check, ok := gates.Default.Get("docs.skill-refs")
 	if !ok {
@@ -212,8 +173,8 @@ func TestDocSkillRefsGateIsBlockingAndStrict(t *testing.T) {
 	if !check.Blocking {
 		t.Fatal("docs.skill-refs must be blocking")
 	}
-	if !check.Tiers.Has(gates.Fast) || !check.Tiers.Has(gates.Full) {
-		t.Fatalf("docs.skill-refs tiers = %v, want Fast|Full", check.Tiers)
+	if check.Tiers.Has(gates.Fast) || !check.Tiers.Has(gates.Full) {
+		t.Fatalf("docs.skill-refs tiers = %v, want Full only (not on --fast path)", check.Tiers)
 	}
 	if len(check.Args) != 2 || check.Args[0] != "--all-docs" || check.Args[1] != "--strict" {
 		t.Fatalf("docs.skill-refs args = %v, want [--all-docs --strict]", check.Args)
@@ -234,107 +195,6 @@ func TestDocSkillRefsGateIsBlockingAndStrict(t *testing.T) {
 		}
 		if !found {
 			t.Fatalf("docs.skill-refs match paths missing %q in %v", want, check.Match)
-		}
-	}
-}
-
-func TestCliAgentsTrackerGateIsBlockingAndStrict(t *testing.T) {
-	check, ok := gates.Default.Get("cli.agents-tracker")
-	if !ok {
-		t.Fatal("cli.agents-tracker gate is not registered")
-	}
-	if check.Backing != "check-cli-agents-tracker-drift.sh" {
-		t.Fatalf("cli.agents-tracker backing = %q, want check-cli-agents-tracker-drift.sh", check.Backing)
-	}
-	if !check.Blocking {
-		t.Fatal("cli.agents-tracker must be blocking")
-	}
-	if !check.Tiers.Has(gates.Fast) || !check.Tiers.Has(gates.Full) {
-		t.Fatalf("cli.agents-tracker tiers = %v, want Fast|Full", check.Tiers)
-	}
-	if len(check.Match) == 0 {
-		t.Fatal("cli.agents-tracker should be routed by cli/AGENTS.md + checker paths")
-	}
-	for _, want := range []string{"cli/AGENTS.md", "scripts/check-cli-agents-tracker-drift.sh", "tests/scripts/check-cli-agents-tracker-drift.bats"} {
-		found := false
-		for _, got := range check.Match {
-			if got == want {
-				found = true
-				break
-			}
-		}
-		if !found {
-			t.Fatalf("cli.agents-tracker match paths missing %q in %v", want, check.Match)
-		}
-	}
-}
-
-func TestCodexContractGatesAreAlwaysRun(t *testing.T) {
-	// age-2s5k: the two codex-contract validators assert whole-twin invariants,
-	// so they must run on EVERY push (empty Match => AlwaysRun), not be
-	// scope-gated to skills-codex changes — otherwise latent twin drift lies
-	// invisible on green main and ambushes a later unrelated skill push.
-	for _, id := range []string{"skill.codex-rpi-contract", "skill.codex-lifecycle-guards"} {
-		check, ok := gates.Default.Get(id)
-		if !ok {
-			t.Fatalf("%s gate is not registered", id)
-		}
-		if !check.AlwaysRun() {
-			t.Errorf("%s must be always-run (empty Match) so twin drift fails the next push regardless of scope; got Match=%v", id, check.Match)
-		}
-		if !check.Blocking {
-			t.Errorf("%s must be blocking", id)
-		}
-		if !check.Tiers.Has(gates.Fast) || !check.Tiers.Has(gates.Full) {
-			t.Errorf("%s tiers = %v, want Fast|Full so routine fast pushes are covered", id, check.Tiers)
-		}
-	}
-}
-
-func TestArchitectureDriftGateIsBlocking(t *testing.T) {
-	check, ok := gates.Default.Get("docs.architecture-drift")
-	if !ok {
-		t.Fatal("docs.architecture-drift gate is not registered")
-	}
-	if check.Backing != "check-architecture-doc-drift.sh" {
-		t.Fatalf("docs.architecture-drift backing = %q, want check-architecture-doc-drift.sh", check.Backing)
-	}
-	if !check.Blocking {
-		t.Fatal("docs.architecture-drift must be blocking")
-	}
-}
-
-func TestNextWorkContractGateRoutesOnItsSubjectFile(t *testing.T) {
-	check, ok := gates.Default.Get("skill.next-work-contract")
-	if !ok {
-		t.Fatal("skill.next-work-contract gate is not registered")
-	}
-	if check.Backing != "validate-next-work-contract-parity.sh" {
-		t.Fatalf("skill.next-work-contract backing = %q, want validate-next-work-contract-parity.sh", check.Backing)
-	}
-	if !check.Blocking {
-		t.Fatal("skill.next-work-contract must be blocking")
-	}
-	if !check.Tiers.Has(gates.Fast) || !check.Tiers.Has(gates.Full) {
-		t.Fatalf("skill.next-work-contract tiers = %v, want Fast|Full", check.Tiers)
-	}
-	// The validator asserts the live queue's aggregate lifecycle plus parity
-	// across the schema doc, the rpi runtime, and the validator scripts. A
-	// change to any of those surfaces must route the gate — most critically
-	// the subject file itself: a next-work.jsonl-only commit previously
-	// SKIPped its own contract gate and had to be caught by a pawl round
-	// (age-77g6).
-	for _, path := range []string{
-		".agents/rpi/next-work.jsonl",
-		"docs/contracts/next-work.schema.md",
-		"cli/internal/rpi/types.go",
-		"cli/cmd/ao/rpi_loop.go",
-		"scripts/validate-next-work-contract-parity.sh",
-		"scripts/validate-next-work.sh",
-		"skills/post-mortem/SKILL.md",
-	} {
-		if !gates.PathMatchesAny(check.Match, path) {
-			t.Fatalf("skill.next-work-contract must route on %q; match globs = %v", path, check.Match)
 		}
 	}
 }

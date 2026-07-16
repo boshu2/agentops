@@ -143,7 +143,7 @@ def _run_help(ao_bin: str, command: List[str]) -> subprocess.CompletedProcess:
 
 # Cobra sections that head NON-command blocks. Any other column-0 line ending with
 # ":" is a command block: either the default "Available/Additional Commands:" or a
-# custom cobra.Group title (e.g. `ao pawl`'s front-door/operator split), whose titles
+# custom cobra.Group title, whose titles
 # are arbitrary prose and need not contain the word "Commands".
 _NON_COMMAND_SECTIONS = {
     "Usage:",
@@ -172,7 +172,7 @@ def _parse_subcommands(help_text: str) -> List[str]:
                 in_block = False
                 continue
             # Command rows render as "  <name><2+ spaces><short>"; the >=2-space gap
-            # keeps Examples-style "  ao pawl ..." lines from parsing as commands.
+            # keeps Examples-style "  ao example ..." lines from parsing as commands.
             m = re.match(r"^\s+([a-z][a-z0-9-]*)(\s{2,}|\s*$)", line)
             if m and m.group(1) not in {"help", "completion"}:
                 subs.append(m.group(1))

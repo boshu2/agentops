@@ -23,7 +23,7 @@ import (
 //     silently skipped — callers can detect the gap by comparing
 //     requested vs emitted slices.
 //   - When compiler_targets is absent or empty, the adapter emits all
-//     three targets (plan + pre-mortem + constraint). This is the
+//     three targets (plan + premortem + constraint). This is the
 //     adapter's documented default per the port contract.
 type InMemoryFindingCompiler struct{}
 
@@ -57,12 +57,25 @@ func (c *InMemoryFindingCompiler) Compile(ctx context.Context, artifact FindingA
 		if kind == CompiledOutputConstraint && !hasMechanicalDetectorMetadata(artifact.Frontmatter) {
 			continue
 		}
+		if kind == CompiledOutputConstraint {
+			_, ready, err := ReplayDetectorEvidence(
+				strings.TrimSpace(artifact.Frontmatter["detector_pattern"]),
+				strings.TrimSpace(artifact.Frontmatter["detector_kind"]),
+				artifact.DetectorEvidence,
+			)
+			if err != nil {
+				return nil, err
+			}
+			if !ready {
+				continue
+			}
+		}
 		var p string
 		switch kind {
 		case CompiledOutputPlanningRule:
 			p = path.Join(".agents", "planning-rules", artifact.ID+".md")
-		case CompiledOutputPreMortemCheck:
-			p = path.Join(".agents", "pre-mortem-checks", artifact.ID+".md")
+		case CompiledOutputPremortemCheck:
+			p = path.Join(".agents", "premortem-checks", artifact.ID+".md")
 		case CompiledOutputConstraint:
 			p = path.Join(".agents", "constraints", artifact.ID+".sh")
 		default:
@@ -108,21 +121,29 @@ func parseCompilerTargets(raw string) []CompiledOutputKind {
 	if trimmed == "" {
 		return []CompiledOutputKind{
 			CompiledOutputPlanningRule,
-			CompiledOutputPreMortemCheck,
+			CompiledOutputPremortemCheck,
 			CompiledOutputConstraint,
 		}
 	}
 	parts := strings.Split(trimmed, ",")
 	result := make([]CompiledOutputKind, 0, len(parts))
+	seen := make(map[CompiledOutputKind]struct{}, len(parts))
+	appendUnique := func(kind CompiledOutputKind) {
+		if _, exists := seen[kind]; exists {
+			return
+		}
+		seen[kind] = struct{}{}
+		result = append(result, kind)
+	}
 	for _, raw := range parts {
 		name := strings.ToLower(strings.TrimSpace(raw))
 		switch name {
 		case "plan", "planning-rule", "planning_rule":
-			result = append(result, CompiledOutputPlanningRule)
-		case "pre-mortem", "pre_mortem", "premortem":
-			result = append(result, CompiledOutputPreMortemCheck)
+			appendUnique(CompiledOutputPlanningRule)
+		case "premortem":
+			appendUnique(CompiledOutputPremortemCheck)
 		case "constraint", "constraints":
-			result = append(result, CompiledOutputConstraint)
+			appendUnique(CompiledOutputConstraint)
 		default:
 			// silently skip unknown — port contract notes this
 		}

@@ -249,9 +249,6 @@ func resetCommandState(t *testing.T) {
 	origDemoConcepts := demoConcepts
 	origDemoQuick := demoQuick
 	origConfigShow := configShow
-	origSeedForce := seedForce
-	origNoBeads := noBeads
-	origMinimal := minimal
 	origGoalsJSON := output
 	// Goals subcommand flag globals (ag-pah): cli/cmd/ao/goals_*.go
 	// declares these as package-level vars bound to cobra flags. Tests
@@ -265,8 +262,6 @@ func resetCommandState(t *testing.T) {
 	origGoalsMeasureExcludeTag := goalsMeasureExcludeTag
 	origGoalsMeasureTotalTimeout := goalsMeasureTotalTimeout
 	origGoalsMeasureScenariosOnly := goalsMeasureScenariosOnly
-	origGoalsInitNonInteractive := goalsInitNonInteractive
-	origGoalsInitTemplate := goalsInitTemplate
 	origGoalsRenderOut := goalsRenderOut
 	origMemorySyncQuiet := memorySyncQuiet
 	origMemorySyncMaxEntries := memorySyncMaxEntries
@@ -278,9 +273,8 @@ func resetCommandState(t *testing.T) {
 	origSearchUseSC := searchUseSC
 	origSearchUseCASS := searchUseCASS
 	origSearchUseLocal := searchUseLocal
-	// codex + autodev cobra-flag globals live in the //go:build legacy archive
-	// (age-h4y3). Their save/restore/reset is delegated to a tagged helper so the
-	// untagged (spine) test build never references archived symbols.
+	// No alternate lifecycle build exists; the helper remains a no-op so shared
+	// test setup has one stable call site.
 	resetArchivedCommandGlobals(t)
 	origFindingsListLimit := findingsListLimit
 	origFindingsListAll := findingsListAll
@@ -291,33 +285,6 @@ func resetCommandState(t *testing.T) {
 	origFindingsPullAll := findingsPullAll
 	origFindingsPullForce := findingsPullForce
 	origFindingsRetireBy := findingsRetireBy
-	origScenarioListStatus := scenarioListStatus
-	origContextPacketFlags := contextPacketFlags
-	origContextExplainFlags := contextExplainFlags
-	origContextPacketStatusFlags := contextPacketStatusFlags
-	origDoctorJSON := doctorJSON
-	origMaturityApply := maturityApply
-	origMaturityScan := maturityScan
-	origMaturityCurate := maturityCurate
-	origMaturityExpire := maturityExpire
-	origMaturityArchive := maturityArchive
-	origMaturityEvict := maturityEvict
-	origMaturityGlobal := maturityGlobal
-	origMaturityMigrateMd := maturityMigrateMd
-	origMaturityRecalibrate := maturityRecalibrate
-	origMaturityUncitedDays := maturityUncitedDays
-	origCompileSourcesDir := compileSourcesDir
-	origCompileOutputDir := compileOutputDir
-	origCompileSince := compileSince
-	origCompileRuntime := compileRuntime
-	origCompileIncremental := compileIncremental
-	origCompileForce := compileForce
-	origCompileOnly := compileOnly
-	origCompileLintOnly := compileLintOnly
-	origCompileDefragOnly := compileDefragOnly
-	origCompileMineOnly := compileMineOnly
-	origCompileFull := compileFull
-	origCompileQuiet := compileQuiet
 
 	t.Cleanup(func() {
 		dryRun = origDryRun
@@ -328,9 +295,6 @@ func resetCommandState(t *testing.T) {
 		demoConcepts = origDemoConcepts
 		demoQuick = origDemoQuick
 		configShow = origConfigShow
-		seedForce = origSeedForce
-		noBeads = origNoBeads
-		minimal = origMinimal
 		output = origGoalsJSON
 		// Goals subcommand flag globals (ag-pah): paired with saves above.
 		goalsFile = origGoalsFile
@@ -340,8 +304,6 @@ func resetCommandState(t *testing.T) {
 		goalsMeasureExcludeTag = origGoalsMeasureExcludeTag
 		goalsMeasureTotalTimeout = origGoalsMeasureTotalTimeout
 		goalsMeasureScenariosOnly = origGoalsMeasureScenariosOnly
-		goalsInitNonInteractive = origGoalsInitNonInteractive
-		goalsInitTemplate = origGoalsInitTemplate
 		goalsRenderOut = origGoalsRenderOut
 		memorySyncQuiet = origMemorySyncQuiet
 		memorySyncMaxEntries = origMemorySyncMaxEntries
@@ -362,33 +324,6 @@ func resetCommandState(t *testing.T) {
 		findingsPullAll = origFindingsPullAll
 		findingsPullForce = origFindingsPullForce
 		findingsRetireBy = origFindingsRetireBy
-		scenarioListStatus = origScenarioListStatus
-		contextPacketFlags = origContextPacketFlags
-		contextExplainFlags = origContextExplainFlags
-		contextPacketStatusFlags = origContextPacketStatusFlags
-		doctorJSON = origDoctorJSON
-		maturityApply = origMaturityApply
-		maturityScan = origMaturityScan
-		maturityCurate = origMaturityCurate
-		maturityExpire = origMaturityExpire
-		maturityArchive = origMaturityArchive
-		maturityEvict = origMaturityEvict
-		maturityGlobal = origMaturityGlobal
-		maturityMigrateMd = origMaturityMigrateMd
-		maturityRecalibrate = origMaturityRecalibrate
-		maturityUncitedDays = origMaturityUncitedDays
-		compileSourcesDir = origCompileSourcesDir
-		compileOutputDir = origCompileOutputDir
-		compileSince = origCompileSince
-		compileRuntime = origCompileRuntime
-		compileIncremental = origCompileIncremental
-		compileForce = origCompileForce
-		compileOnly = origCompileOnly
-		compileLintOnly = origCompileLintOnly
-		compileDefragOnly = origCompileDefragOnly
-		compileMineOnly = origCompileMineOnly
-		compileFull = origCompileFull
-		compileQuiet = origCompileQuiet
 	})
 
 	// Reset to defaults.
@@ -400,9 +335,6 @@ func resetCommandState(t *testing.T) {
 	demoConcepts = false
 	demoQuick = false
 	configShow = false
-	seedForce = false
-	noBeads = false
-	minimal = false
 	// Goals subcommand flag globals (ag-pah): explicit reset to flag defaults
 	// so a polluted prior-test state doesn't carry into the current test.
 	// Save+restore above handles after-test cleanup; this handles before-test
@@ -414,8 +346,6 @@ func resetCommandState(t *testing.T) {
 	goalsMeasureExcludeTag = ""
 	goalsMeasureTotalTimeout = 0
 	goalsMeasureScenariosOnly = false
-	goalsInitNonInteractive = false
-	goalsInitTemplate = ""
 	goalsRenderOut = ""
 	output = "table"
 	memorySyncQuiet = false
@@ -437,48 +367,6 @@ func resetCommandState(t *testing.T) {
 	findingsPullAll = false
 	findingsPullForce = false
 	findingsRetireBy = ""
-	scenarioListStatus = ""
-	doctorJSON = false
-	maturityApply = false
-	maturityScan = false
-	maturityCurate = false
-	maturityExpire = false
-	maturityArchive = false
-	maturityEvict = false
-	maturityGlobal = false
-	maturityMigrateMd = false
-	maturityRecalibrate = false
-	maturityUncitedDays = 0
-	compileSourcesDir = ".agents"
-	compileOutputDir = ".agents/compiled"
-	compileSince = "26h"
-	compileRuntime = ""
-	compileIncremental = true
-	compileForce = false
-	compileOnly = false
-	compileLintOnly = false
-	compileDefragOnly = false
-	compileMineOnly = false
-	compileFull = false
-	compileQuiet = false
-	contextPacketFlags = struct {
-		goal  string
-		epic  string
-		repo  string
-		limit int
-		json  bool
-	}{limit: defaultStigmergicPacketLimit}
-	contextExplainFlags = struct {
-		task  string
-		phase string
-		limit int
-	}{}
-	contextPacketStatusFlags = struct {
-		task  string
-		phase string
-		limit int
-	}{}
-
 	// Reset Cobra flag Changed state and values to defaults.
 	resetFlagChangesRecursive(rootCmd)
 	rootCmd.PersistentFlags().VisitAll(func(f *pflag.Flag) {

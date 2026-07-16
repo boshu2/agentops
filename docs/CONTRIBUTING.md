@@ -22,9 +22,6 @@ If you want the fastest path to a meaningful first contribution, start here:
 ```bash
 git clone https://github.com/YOUR_USERNAME/agentops.git
 cd agentops
-
-# Optional, but useful for local workflow testing
-bash scripts/install-dev-hooks.sh
 ```
 
 ## High-Leverage Ways To Contribute
@@ -65,7 +62,7 @@ At minimum, run:
 
 ```bash
 # Skill structure and reference integrity
-bash skills/heal-skill/scripts/heal.sh --strict
+bash skills/skill-builder/scripts/heal.sh --strict
 
 # Docs, links, and skill-count consistency
 bash tests/docs/validate-doc-release.sh
@@ -74,7 +71,7 @@ bash tests/docs/validate-doc-release.sh
 **If you add or remove a skill directory, you must run:**
 
 ```bash
-scripts/sync-skill-counts.sh
+python3 scripts/generate-skill-mesh.py
 ```
 
 This updates the skill count across `SKILL-TIERS.md`, `PRODUCT.md`, `README.md`, `docs/SKILLS.md`, `docs/ARCHITECTURE.md`, and `using-agentops/SKILL.md`. The `doc-release-gate` CI job fails if counts drift, so skipping this step will block your PR. If you're unsure whether your change affects counts, run the script anyway — it's idempotent when counts are already in sync.
@@ -86,10 +83,10 @@ bash scripts/audit-codex-parity.sh --skill your-skill-name
 bash scripts/validate-codex-generated-artifacts.sh --scope worktree
 ```
 
-Before pushing, the recommended fast gate is:
+For a fast changed-surface check, run:
 
 ```bash
-scripts/pre-push-gate.sh --fast
+ao gate check --fast --scope worktree
 ```
 
 ### Working On The Docs Site
@@ -111,7 +108,7 @@ MkDocs-specific expectations:
 - Skill pages and the CLI reference are **generated at build time** from `skills/**/SKILL.md` and `cli/docs/COMMANDS.md` respectively — do not hand-author `docs/skills/*.md` or `docs/cli/commands.md`.
 - Navigation is declared in `mkdocs.yml` under `nav:`. New top-level docs need an entry there.
 
-Python toolchain is required only for local preview and the strict build. If your dev machine can't install Python, set `PRE_PUSH_SKIP_MKDOCS=1` to bypass the MkDocs check in the pre-push gate; CI will catch it.
+Python tooling is required only for local preview and the strict build. If it is unavailable, report that the docs build was not checked; do not treat another green check as equivalent evidence.
 
 ## Opening The PR
 

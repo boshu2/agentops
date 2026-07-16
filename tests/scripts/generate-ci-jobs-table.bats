@@ -1,7 +1,7 @@
 #!/usr/bin/env bats
 # Tests for scripts/generate-ci-jobs-table.sh (soc-3oij).
 #
-# Verifies the generator renders the AGENTS '### CI Jobs and What They Check'
+# Verifies the generator renders the '##|### CI Jobs and What They Check'
 # table from docs/contracts/ci-jobs.yaml + .github/workflows/validate.yml in
 # workflow.summary.needs order, marks continue-on-error jobs (non-blocking),
 # detects manifest/workflow drift, and rewrites the section in --write mode.
@@ -75,7 +75,9 @@ Content.
 
 ### CI Jobs and What They Check
 
+<!-- BEGIN GENERATED CI JOBS -->
 (placeholder)
+<!-- END GENERATED CI JOBS -->
 
 ### Next section
 

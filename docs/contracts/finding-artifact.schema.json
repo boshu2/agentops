@@ -95,7 +95,7 @@
       "uniqueItems": true,
       "items": {
         "type": "string",
-        "enum": ["plan", "pre-mortem", "constraint"]
+        "enum": ["plan", "premortem", "premortem", "constraint"]
       }
     },
     "scope_tags": {

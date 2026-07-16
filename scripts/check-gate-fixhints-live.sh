@@ -10,9 +10,8 @@
 # This scans the gate-backing scripts for fix/remedy/repair directives that name
 # an `ao <subcommand>` and asserts the subcommand resolves in the LIVE ao command
 # tree. A dead one is reported UNLESS the same line carries a removal/historical
-# marker (restore|removed|retired|archived|historical|legacy|was|formerly) — so a
-# line that documents what a command USED to be (like the now-fixed corpus hint,
-# 'make build-flywheel to restore ...ao corpus snapshot') is correctly not flagged.
+# marker (removed|retired|historical|was|formerly) — so a line that documents
+# what a command used to be is correctly not flagged.
 #
 # Posture: WARN-ONLY by default (GOALS row, tags: warn-only) — prints offenders,
 # exits 0. --strict (or AGENTOPS_GATE_FIXHINTS_STRICT=1) exits nonzero on any dead

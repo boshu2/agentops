@@ -1,5 +1,7 @@
 # Decision — making AgentOps evals agent-runnable + agent-monitorable
 
+> **HISTORICAL:** Captures a 2026-06-16 decision about CLI surfaces later removed.
+
 > **Date:** 2026-06-16 · **Method:** mixed (cross-family) council — Claude (Opus 4.8)
 > + Codex (gpt-5.3-codex, `codex exec`, read-only) judging the same brief
 > independently. **Brief:** `/tmp/eval-orchestration-decision-brief.md`. **Codex

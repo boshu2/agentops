@@ -54,10 +54,22 @@ def hash_tree(root: pathlib.Path) -> str:
         rows.append(f"{rel}\t{sha256_file(path)}\n")
     return sha256_bytes("".join(rows).encode("utf-8"))
 
+package_dirs = [
+    package_dir
+    for package_dir in sorted(p for p in skills_root.iterdir() if p.is_dir())
+    if (package_dir / "SKILL.md").exists()
+]
 skill_dirs = []
 for skill_dir in sorted(p for p in skills_root.iterdir() if p.is_dir()):
     if (skill_dir / "SKILL.md").exists():
         skill_dirs.append(skill_dir)
+
+declared_package_count = manifest.get("package_count")
+if declared_package_count is not None and declared_package_count != len(package_dirs):
+    failures.append(
+        f"Codex package count drift detected: manifest declares {declared_package_count}, "
+        f"tree contains {len(package_dirs)} installable skill directories"
+    )
 
 if len(skill_dirs) != len(entry_by_name):
     failures.append(

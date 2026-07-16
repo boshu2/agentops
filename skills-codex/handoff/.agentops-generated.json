@@ -1,7 +1,7 @@
 {
-  "generator": "manual-maintained",
+  "generator": "codex-sync",
   "source_skill": "skills/handoff",
   "layout": "modular",
-  "source_hash": "0234ba9c7b4022ab33e3b6e79d4959bd42e1e91fd97ecfd354a776f5a6958b86",
-  "generated_hash": "d12c5bc1f744170a1920e2207c5cd9118dd245c673f7e7d7552e9fb8c86c38ec"
+  "source_hash": "beee4bc7b0c68a1185871b3b46f4ca3b3413360e9afc5e67d3a7a32cbfbcebe6",
+  "generated_hash": "a6b7439f4eea091fee8cbb8ce4c52c458a21f96abfdad7898c766332a768e4c1"
 }

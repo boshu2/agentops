@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
-# Validate a curated release-notes file against the standard in
-# skills/release/references/release-notes.md.
+# Validate a curated release-notes file against docs/contracts/release-notes.md.
 #
 # Usage: scripts/validate-release-notes.sh <version> [--since <prev-tag>] [--changed-files <file>]
 #   <version>          release version, with or without leading "v" (e.g. v3.0.1 or 3.0.1)
@@ -67,7 +66,7 @@ NOTES_FILE="$(find "$REPO_ROOT/docs/releases" -name "*-v${VERSION}-notes.md" 2>/
 if [[ -z "$NOTES_FILE" || ! -f "$NOTES_FILE" ]]; then
   echo "FAIL: no curated release-notes file docs/releases/*-v${VERSION}-notes.md" >&2
   echo "      Scaffold one with: scripts/scaffold-release-notes.sh v${VERSION} --since <prev-tag>" >&2
-  echo "      then curate per skills/release/references/release-notes.md before tagging." >&2
+  echo "      then curate per docs/contracts/release-notes.md before tagging." >&2
   exit 1
 fi
 echo "Validating $NOTES_FILE (version $VERSION, tier $TIER)"
@@ -119,7 +118,7 @@ is_canonical_area() {
 
 # Map a changed path to its product area (first match wins). Echoes the area
 # name, or nothing for paths that don't map to a release-facing area. Mirrors
-# the Coverage Workflow table in skills/release/references/release-notes.md.
+# the Coverage Workflow table in docs/contracts/release-notes.md.
 map_path_to_area() {
   local p="$1"
   case "$p" in
@@ -155,7 +154,7 @@ while IFS= read -r line; do
     current_area="${line:4}"  # strip the literal "### " prefix (4 chars)
     present_areas["$current_area"]=1
     if ! is_canonical_area "$current_area"; then
-      fail "non-canonical product-area heading: '### ${current_area}' (see skills/release/references/release-notes.md taxonomy)"
+      fail "non-canonical product-area heading: '### ${current_area}' (see docs/contracts/release-notes.md taxonomy)"
     fi
     continue
   fi

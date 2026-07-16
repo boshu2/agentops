@@ -9,36 +9,21 @@ import re
 import sys
 
 MAPPING = {
-    "agent-update.schema.json": ["gitops", "continuous-delivery"],
-    "bead.v1.schema.json": ["dora-metrics", "lean-startup"],
     "briefing.v1.schema.json": ["wiki-knowledge-surface", "pragmatic-programmer"],
     "codex-marketplace.v1.schema.json": ["microservices", "team-topologies"],
     "codex-plugin-manifest.v1.schema.json": ["microservices", "design-by-contract"],
     "eval-run.v1.schema.json": ["llm-eval-harness", "dora-metrics"],
     "eval-suite.v1.schema.json": ["llm-eval-harness", "tdd"],
-    "evidence-only-closure.v1.schema.json": ["adr", "cmm-process-maturity"],
-    "execution-packet.schema.json": ["design-by-contract", "pragmatic-programmer"],
     "finding.json": ["dora-metrics", "wiki-knowledge-surface"],
     "handoff.v1.schema.json": ["event-sourcing-cqrs", "distributed-tracing"],
     "hooks-manifest.v1.schema.json": ["gitops", "infrastructure-as-code"],
     "learning.v1.schema.json": ["wiki-knowledge-surface", "lean-startup"],
     "memory-packet.v1.schema.json": ["wiki-knowledge-surface", "event-sourcing-cqrs"],
-    "phase.v1.schema.json": ["continuous-delivery", "agile-manifesto"],
     "plugin-manifest.v1.schema.json": ["microservices", "hexagonal-architecture"],
-    "quest.v1.schema.json": ["agile-manifesto", "lean-startup"],
-    "release-readiness.v1.schema.json": ["continuous-delivery", "supply-chain-integrity"],
-    "remote-compute-target.schema.json": ["microservices", "distributed-systems-design"],
-    "remote-session-event.schema.json": ["event-sourcing-cqrs", "distributed-tracing"],
-    "routing-policy.v1.schema.json": ["microservices", "service-mesh"],
     "rubric.v1.schema.json": ["llm-eval-harness", "design-by-contract"],
     "scenario.v1.schema.json": ["property-based-testing", "llm-eval-harness"],
-    "schedule.schema.json": ["sre", "continuous-delivery"],
     "session-quality-signal.v1.schema.json": ["dora-metrics", "sre"],
     "skill-frontmatter.v1.schema.json": ["design-by-contract", "code-complete"],
-    "swarm-evidence.schema.json": ["dora-metrics", "team-topologies"],
-    "verdict.v1.schema.json": ["llm-eval-harness", "adr"],
-    "watch-event.v1.schema.json": ["event-sourcing-cqrs", "distributed-tracing"],
-    "worker-spec.v1.schema.json": ["microservices", "team-topologies"],
 }
 
 schemas_dir = pathlib.Path("schemas")

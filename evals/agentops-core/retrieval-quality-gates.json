@@ -2,7 +2,7 @@
   "schema_version": 1,
   "id": "agentops-core.retrieval-quality-gates",
   "name": "AgentOps Retrieval Quality Gates Canary",
-  "description": "Offline public canary for real-corpus retrieval quality, flywheel gate thresholds, Dream retrieval determinism, and retrieval quality ratchet wiring.",
+  "description": "Offline public canary for real-corpus retrieval quality, search-backend comparison, flywheel gate thresholds, and deterministic fixture coverage.",
   "practices": ["llm-eval-harness", "wiki-knowledge-surface"],
   "domain": "retrieval",
   "visibility": "public_canary",
@@ -19,7 +19,7 @@
   "fixtures": [
     {
       "path": "fixtures/retrieval-quality-smoke.sh",
-      "purpose": "Behavioral retrieval smoke covering real-corpus benchmark tests, flywheel gate threshold tests, and deterministic live-corpus CLI JSON.",
+      "purpose": "Behavioral retrieval smoke covering quality thresholds, live-corpus ranking, offline backend comparison, and flywheel gate behavior.",
       "required": true
     }
   ],
@@ -39,7 +39,7 @@
       "id": "retrieval-quality-smoke",
       "title": "real-corpus retrieval and flywheel gate smoke passes",
       "kind": "command",
-      "objective": "Keep real-corpus train/holdout retrieval benchmark coverage, flywheel gate threshold behavior, and deterministic live-corpus CLI results passing.",
+      "objective": "Keep train/holdout retrieval quality, live-corpus ranking, offline backend comparison, and flywheel gate threshold behavior passing.",
       "runtime": "shell",
       "timeout_seconds": 120,
       "inputs": {
@@ -52,21 +52,6 @@
       ],
       "dimensions": ["correctness", "learning_closure", "runtime_compatibility"],
       "critical": true
-    },
-    {
-      "id": "retrieval-ratchet-wiring",
-      "title": "retrieval quality ratchet keeps thresholds and fallback eval set",
-      "kind": "artifact_check",
-      "objective": "Keep the standalone retrieval quality ratchet wired to any-relevant@K, strictness thresholds, and a deterministic fallback manifest.",
-      "expectations": [
-        {"type": "artifact_contains", "target": "../../scripts/check-retrieval-quality-ratchet.sh", "value": "DEFAULT_FALLBACK_MANIFEST=\"cli/cmd/ao/testdata/retrieval-bench/search-eval-manifest.json\""},
-        {"type": "artifact_contains", "target": "../../scripts/check-retrieval-quality-ratchet.sh", "value": "LEGACY_FALLBACK_MANIFEST=\"cli/cmd/ao/testdata/retrieval-bench/eval-queries.json\""},
-        {"type": "artifact_contains", "target": "../../scripts/check-retrieval-quality-ratchet.sh", "value": "AGENTOPS_RETRIEVAL_RATCHET_MIN_ANY_RELEVANT"},
-        {"type": "artifact_contains", "target": "../../scripts/check-retrieval-quality-ratchet.sh", "value": "any_relevant_at_k"},
-        {"type": "artifact_contains", "target": "../../scripts/check-retrieval-quality-ratchet.sh", "value": "STRICT_TURNS"},
-        {"type": "artifact_contains", "target": "../../scripts/check-retrieval-quality-ratchet.sh", "value": "WARN retrieval quality ratchet"}
-      ],
-      "dimensions": ["process_adherence", "artifact_quality", "learning_closure"]
     },
     {
       "id": "retrieval-real-corpus-fixtures",

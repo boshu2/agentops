@@ -75,7 +75,13 @@ while IFS= read -r manifest; do
           (.dimensions.hil.status == "pass" or .dimensions.hil.status == "waived")
         ' "$REPO_ROOT/$artifact_dir/$release_readiness" >/dev/null 2>&1 && \
         jq -e '((.gate_status // "") | ascii_downcase) == "pass"' "$REPO_ROOT/$artifact_dir/$security_report" >/dev/null 2>&1 && \
-        jq -e '.schema_version == 1 and .status == "pass"' "$REPO_ROOT/$artifact_dir/$eval_fast_report" >/dev/null 2>&1 && \
+        jq -e '
+          .schema_version == 1 and
+          (
+            .status == "pass" or
+            (.status == "not_applicable" and (.reason | type == "string") and (.reason | length) > 0)
+          )
+        ' "$REPO_ROOT/$artifact_dir/$eval_fast_report" >/dev/null 2>&1 && \
         jq -e '(.policy_mismatch_count | type == "number") and (((.stale_suite_hashes // []) | length) == 0)' "$REPO_ROOT/$artifact_dir/$eval_baseline_audit" >/dev/null 2>&1 && \
         jq -e '.schema_version == 1 and .evidence_kind == "digital_twin" and .status == "pass" and .dimensions.vil.status == "pass"' "$REPO_ROOT/$artifact_dir/$digital_twin_evidence" >/dev/null 2>&1; then
         cat "$manifest"

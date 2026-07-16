@@ -1,6 +1,6 @@
 # validate
 
-Produce PASS/WARN/FAIL verdicts for artifacts, plans, code, PRs, or gates — quick pre-commit checks (absorbs vibe) through completion audits. Triggers: "validate an artifact", "PASS/WARN/FAIL verdict", "readiness / completion audit".
+Freshly judge exact subject content against bead or caller acceptance, persist verdict.v2, and stop. Triggers: "validate", "independently validate", "vibe".
 
 ## Instructions
 

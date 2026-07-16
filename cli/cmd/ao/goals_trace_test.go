@@ -3,7 +3,10 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
+	"errors"
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -86,6 +89,35 @@ func TestGoalsTrace_RequiresAModeFlag(t *testing.T) {
 	}
 	if !strings.Contains(err.Error(), "--from") || !strings.Contains(err.Error(), "--orphans") {
 		t.Errorf("error must name both modes, got: %v", err)
+	}
+}
+
+func TestGoalsTraceUsesResolvedTrackerContext(t *testing.T) {
+	resetCommandState(t)
+	traceFrom, traceOrphans, traceStrict = "", true, false
+	t.Cleanup(func() { traceFrom, traceOrphans, traceStrict = "", false, false })
+
+	root := goalsTraceFixtureRoot(t)
+	t.Chdir(root)
+	binDir := t.TempDir()
+	marker := filepath.Join(t.TempDir(), "tracker-launched")
+	tracker := filepath.Join(binDir, "br")
+	script := "#!/bin/sh\nprintf launched > \"$TRACKER_LAUNCH_MARKER\"\nprintf '[]\\n'\n"
+	if err := os.WriteFile(tracker, []byte(script), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("PATH", binDir+string(os.PathListSeparator)+os.Getenv("PATH"))
+	t.Setenv("AGENTOPS_TRACKER", "br")
+	t.Setenv("TRACKER_LAUNCH_MARKER", marker)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	cmd := newTraceTestCmd(&bytes.Buffer{})
+	cmd.SetContext(ctx)
+	_ = runGoalsTrace(cmd, nil)
+
+	if _, err := os.Stat(marker); !errors.Is(err, os.ErrNotExist) {
+		t.Fatalf("pre-canceled Cobra context launched the tracker child: %v", err)
 	}
 }
 

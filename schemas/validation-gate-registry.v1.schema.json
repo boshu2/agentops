@@ -1,0 +1,59 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agentops.dev/schemas/validation-gate-registry.v1.schema.json",
+  "title": "Factual validation gate registry",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "gates"],
+  "properties": {
+    "schema_version": { "const": 1 },
+    "gates": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/gate" }
+    }
+  },
+  "$defs": {
+    "digest": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "path": { "type": "string", "minLength": 1, "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$)).+$" },
+    "backing": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "sha256"],
+      "properties": {
+        "path": { "$ref": "#/$defs/path" },
+        "sha256": { "$ref": "#/$defs/digest" }
+      }
+    },
+    "gate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "lane", "proof_kind", "argv", "backing"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1, "pattern": "^[a-z0-9][a-z0-9._-]*$" },
+        "lane": { "enum": ["mandatory", "diagnostic", "release"] },
+        "proof_kind": {
+          "enum": [
+            "syntax",
+            "schema",
+            "identity",
+            "paths",
+            "generated_drift",
+            "executable_assertion",
+            "evidence_integrity"
+          ]
+        },
+        "argv": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "backing": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/backing" }
+        }
+      }
+    }
+  }
+}

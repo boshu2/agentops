@@ -2,7 +2,7 @@
 #
 # Tests for scripts/lib/docs-scope.sh — the shared LIVE-doc scope resolver
 # (docs_scope_live_files) and the historical-exemption test
-# (docs_scope_is_exempt) extracted from check-docs-no-retired-tech.sh
+# (docs_scope_is_exempt) for LIVE-doc scoping
 # (age-gate-the-ungated-egwt.1).
 #
 # Sibling pattern: matches tests/scripts/check-workflow-no-retired-tracker.bats
@@ -110,37 +110,4 @@ setup() {
 # check script cd's to the root and passes docs/... paths that resolve as-is.
 @test "exemption resolves a directly-readable path too" {
     ( cd "$DOCS_ROOT" && docs_scope_is_exempt "docs/banner.md" )
-}
-
-# ---- extracting-script integration (lib sourcing survives invocation modes) --
-
-# REGRESSION (pawl catch, first land attempt): the check script cd's to $ROOT
-# before sourcing; a relative ${BASH_SOURCE[0]} path (invoked as
-# `cd scripts && ./check-docs-no-retired-tech.sh`) then resolved the lib from
-# $ROOT/lib/ instead of $ROOT/scripts/lib/ and the gate died before scanning.
-# The lib must be resolved via the pre-cd absolutized $ROOT.
-@test "check script sources the lib when invoked from inside scripts/" {
-    FIX="$BATS_TEST_TMPDIR/repo"
-    mkdir -p "$FIX/scripts/lib" "$FIX/docs"
-    cp "$REPO_ROOT/scripts/check-docs-no-retired-tech.sh" "$FIX/scripts/"
-    cp "$REPO_ROOT/scripts/lib/docs-scope.sh" "$FIX/scripts/lib/"
-    chmod +x "$FIX/scripts/check-docs-no-retired-tech.sh"
-    printf '# Clean live doc\n' > "$FIX/docs/live.md"
-    run bash -c 'cd "$1/scripts" && ./check-docs-no-retired-tech.sh' _ "$FIX"
-    [ "$status" -eq 0 ]
-    [[ "$output" == *"scanned 1 live docs"* ]]
-    [[ "$output" == *"PASS"* ]]
-}
-
-@test "check script sources the lib when invoked from the repo root" {
-    FIX="$BATS_TEST_TMPDIR/repo2"
-    mkdir -p "$FIX/scripts/lib" "$FIX/docs"
-    cp "$REPO_ROOT/scripts/check-docs-no-retired-tech.sh" "$FIX/scripts/"
-    cp "$REPO_ROOT/scripts/lib/docs-scope.sh" "$FIX/scripts/lib/"
-    chmod +x "$FIX/scripts/check-docs-no-retired-tech.sh"
-    printf '# Clean live doc\n' > "$FIX/docs/live.md"
-    run bash -c 'cd "$1" && scripts/check-docs-no-retired-tech.sh' _ "$FIX"
-    [ "$status" -eq 0 ]
-    [[ "$output" == *"scanned 1 live docs"* ]]
-    [[ "$output" == *"PASS"* ]]
 }

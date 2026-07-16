@@ -23,7 +23,7 @@ func TestConfigFlag_MaterializesAndIsHonored(t *testing.T) {
 	// A home config that sets output=json — the explicit file is silent on it.
 	home := t.TempDir()
 	t.Setenv("HOME", home)
-	homeDir := filepath.Join(home, ".agentops")
+	homeDir := filepath.Join(home, ".agents", "ao")
 	if err := os.MkdirAll(homeDir, 0o755); err != nil {
 		t.Fatalf("mkdir home: %v", err)
 	}
@@ -97,6 +97,29 @@ func TestRunConfig_NoFlags_ShowsHelp(t *testing.T) {
 	// cmd.Help() returns nil, so this should succeed
 	if err := runConfig(cmd, nil); err != nil {
 		t.Fatalf("runConfig without --show: %v", err)
+	}
+}
+
+func TestConfigModuleHonorsGlobalDryRun(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	t.Setenv("AGENTOPS_CONFIG", filepath.Join(home, "config.yaml"))
+	originalDryRun, originalOutput := dryRun, output
+	dryRun, output = true, "table"
+	t.Cleanup(func() { dryRun, output = originalDryRun, originalOutput })
+
+	command := configModule.Command()
+	var stdout strings.Builder
+	command.SetOut(&stdout)
+	command.SetArgs([]string{"models", "--set-tier", "quality"})
+	if err := command.Execute(); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Stat(os.Getenv("AGENTOPS_CONFIG")); !os.IsNotExist(err) {
+		t.Fatalf("global dry-run wrote config: %v", err)
+	}
+	if !strings.Contains(stdout.String(), "Would set default model tier") {
+		t.Fatalf("dry-run preview missing: %q", stdout.String())
 	}
 }
 
@@ -499,5 +522,39 @@ func TestRunConfig_ShowTable_NoEnvVars(t *testing.T) {
 
 	if !strings.Contains(stdout, "(none set)") {
 		t.Errorf("expected '(none set)' for no env vars, got: %q", stdout)
+	}
+}
+
+func TestConfigCommandsRejectPositionalArgs(t *testing.T) {
+	if err := configCmd.Args(configCmd, []string{"junk"}); err == nil {
+		t.Fatal("config accepted an unexpected positional argument")
+	}
+	if err := configModelsCmd.Args(configModelsCmd, []string{"junk"}); err == nil {
+		t.Fatal("config models accepted an unexpected positional argument")
+	}
+}
+
+func TestRunConfigModelsSortsSkillOverrides(t *testing.T) {
+	dir := t.TempDir()
+	t.Chdir(dir)
+	t.Setenv("AGENTOPS_CONFIG", "")
+	if err := os.MkdirAll(filepath.Join(dir, ".agents", "ao"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	body := "models:\n  skill_overrides:\n    zebra: budget\n    alpha: quality\n"
+	if err := os.WriteFile(filepath.Join(dir, ".agents", "ao", "config.yaml"), []byte(body), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	oldOutput := output
+	output = "table"
+	defer func() { output = oldOutput }()
+	stdout, err := captureStdout(t, func() error { return runConfigModels(&cobra.Command{}, nil) })
+	if err != nil {
+		t.Fatal(err)
+	}
+	alpha := strings.Index(stdout, "alpha")
+	zebra := strings.Index(stdout, "zebra")
+	if alpha < 0 || zebra < 0 || alpha > zebra {
+		t.Fatalf("skill overrides are not sorted:\n%s", stdout)
 	}
 }

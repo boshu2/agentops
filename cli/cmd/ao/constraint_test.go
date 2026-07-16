@@ -569,10 +569,10 @@ func TestConstraintIndexPath_IsStable(t *testing.T) {
 }
 
 // ---------------------------------------------------------------------------
-// Full lifecycle: draft -> activate -> retire
+// Full lifecycle: measured shadow -> activate -> retire
 // ---------------------------------------------------------------------------
 
-func TestConstraintLifecycle_DraftActivateRetire(t *testing.T) {
+func TestConstraintLifecycle_ShadowActivateRetire(t *testing.T) {
 	wd := t.TempDir()
 	chdirTo(t, wd)
 	mkdirConstraintsDir(t)
@@ -583,9 +583,7 @@ func TestConstraintLifecycle_DraftActivateRetire(t *testing.T) {
 
 	idx := &constraintIndex{
 		SchemaVersion: 1,
-		Constraints: []constraintEntry{
-			{ID: "lifecycle", Title: "Lifecycle test", Status: "draft", CompiledAt: time.Now().Format(time.RFC3339)},
-		},
+		Constraints:   []constraintEntry{activationReadyConstraintEntry("lifecycle")},
 	}
 	if err := saveConstraintIndex(idx); err != nil {
 		t.Fatalf("save: %v", err)

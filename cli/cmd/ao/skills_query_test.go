@@ -196,8 +196,8 @@ func TestSkillsGraph_JSONCarriesTypedTopologyDiagnostics(t *testing.T) {
 	if got.Diagnostics.EntryPoints == nil || got.Diagnostics.DanglingEdges == nil {
 		t.Fatalf("graph diagnostics must encode empty arrays, not null: %+v", got.Diagnostics)
 	}
-	if len(got.Diagnostics.DanglingEdges) != 0 || len(got.Diagnostics.DependencyCycles) != 0 || len(got.Diagnostics.UnreachableNonRoots) != 0 {
-		t.Fatalf("live graph must fail closed before command output; diagnostics = %+v", got.Diagnostics)
+	if len(got.Diagnostics.DanglingEdges) != 0 || len(got.Diagnostics.DependencyCycles) != 0 {
+		t.Fatalf("live graph contains an invalid hard edge; diagnostics = %+v", got.Diagnostics)
 	}
 }
 

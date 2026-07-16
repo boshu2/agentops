@@ -176,7 +176,7 @@ func LoadGoals(path string) (*GoalFile, error) {
 	}
 
 	if gf.Version == 1 {
-		fmt.Fprintf(os.Stderr, "WARNING: %s uses version 1 (deprecated). Run 'ao goals migrate' to upgrade to version 2.\n", path)
+		fmt.Fprintf(os.Stderr, "WARNING: %s uses deprecated version 1; update the file outside AgentOps before relying on newer fields.\n", path)
 	}
 
 	gf.Format = "yaml"

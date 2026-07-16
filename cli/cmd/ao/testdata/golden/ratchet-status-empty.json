@@ -7,7 +7,7 @@
       "status": "pending"
     },
     {
-      "step": "pre-mortem",
+      "step": "premortem",
       "status": "pending"
     },
     {
@@ -27,7 +27,7 @@
       "status": "pending"
     },
     {
-      "step": "post-mortem",
+      "step": "postmortem",
       "status": "pending"
     }
   ],

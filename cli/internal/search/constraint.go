@@ -7,6 +7,8 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
+
+	"github.com/boshu2/agentops/cli/internal/ports"
 )
 
 // ConstraintIndex represents the .agents/constraints/index.json schema.
@@ -34,6 +36,17 @@ type ConstraintDetector struct {
 	Message   string `json:"message,omitempty"`
 }
 
+// ConstraintEvidence is the safe, content-free proof projection that allowed a
+// detector to enter shadow mode and may later authorize blocking activation.
+type ConstraintEvidence struct {
+	PositiveRefs         []string `json:"positive_refs"`
+	NegativeControlRefs  []string `json:"negative_control_refs"`
+	PrecisionEvidenceRef string   `json:"precision_evidence_ref,omitempty"`
+	ShadowSamples        int      `json:"shadow_samples,omitempty"`
+	TruePositives        int      `json:"true_positives,omitempty"`
+	FalsePositives       int      `json:"false_positives,omitempty"`
+}
+
 // ConstraintEntry represents a single compiled constraint.
 type ConstraintEntry struct {
 	ID              string              `json:"id"`
@@ -45,10 +58,12 @@ type ConstraintEntry struct {
 	CompilerTargets []string            `json:"compiler_targets,omitempty"`
 	Detectability   string              `json:"detectability,omitempty"`
 	Status          string              `json:"status"`
+	EnforcementMode string              `json:"enforcement_mode,omitempty"`
 	CompiledAt      string              `json:"compiled_at"`
 	ReviewFile      string              `json:"review_file,omitempty"`
 	AppliesTo       ConstraintAppliesTo `json:"applies_to,omitempty"`
 	Detector        ConstraintDetector  `json:"detector,omitempty"`
+	Evidence        ConstraintEvidence  `json:"evidence,omitempty"`
 	File            string              `json:"file"`
 }
 
@@ -90,6 +105,7 @@ func SanitizeForPublish(e ConstraintEntry) ConstraintEntry {
 		CompilerTargets: e.CompilerTargets,
 		Detectability:   e.Detectability,
 		Status:          e.Status,
+		EnforcementMode: e.EnforcementMode,
 		CompiledAt:      e.CompiledAt,
 		AppliesTo:       e.AppliesTo,
 		Detector:        e.Detector,
@@ -208,19 +224,18 @@ func SaveConstraintIndex(idx *ConstraintIndex) error {
 	})
 }
 
-// BuildConstraintEntry builds a draft ConstraintEntry from a finding's
-// mechanical detector metadata (its frontmatter), or (zero, false) when the
-// finding is advisory or its detector metadata is incomplete/invalid. It is the
-// SINGLE source of the "finding frontmatter -> draft constraint" rule, shared by
-// every FindingCompilerPort implementation so they cannot drift.
+// BuildConstraintEntry builds a warn-only shadow ConstraintEntry from a
+// finding's mechanical detector metadata and deterministic replay result, or
+// (zero, false) when metadata is incomplete. Replay itself is owned by the
+// FindingCompilerPort and must have passed before this constructor is called.
 //
 // Required frontmatter: detectability=mechanical, detector_pattern (non-empty),
 // constraint_path_globs (non-empty), compiled_at; detector_kind defaults to and
-// must be "regex". The entry is ALWAYS status="draft" — a derived detector must
-// be reviewed and explicitly `ao constraint activate`d before it gates releases
-// (auto-active would let the compiler block every push). Field names match the
-// enforcement gate exactly (kind=regex / pattern / path_globs).
-func BuildConstraintEntry(id string, fm map[string]string) (ConstraintEntry, bool) {
+// must be "regex". The entry is always warn-only status="shadow". It can become
+// blocking only after `ao constraint activate` verifies cited precision evidence.
+// Field names match the enforcement gate exactly (kind=regex / pattern /
+// path_globs).
+func BuildConstraintEntry(id string, fm map[string]string, replay ports.DetectorReplayResult) (ConstraintEntry, bool) {
 	if strings.TrimSpace(fm["detectability"]) != "mechanical" {
 		return ConstraintEntry{}, false
 	}
@@ -243,6 +258,9 @@ func BuildConstraintEntry(id string, fm map[string]string) (ConstraintEntry, boo
 	if compiledAt == "" {
 		return ConstraintEntry{}, false
 	}
+	if len(replay.PositiveRefs) == 0 || len(replay.NegativeControlRefs) == 0 {
+		return ConstraintEntry{}, false
+	}
 	title := strings.TrimSpace(fm["title"])
 	if title == "" {
 		title = id
@@ -256,7 +274,8 @@ func BuildConstraintEntry(id string, fm map[string]string) (ConstraintEntry, boo
 		SourceType:      strings.TrimSpace(fm["source"]),
 		CompilerTargets: []string{"constraint"},
 		Detectability:   "mechanical",
-		Status:          "draft",
+		Status:          "shadow",
+		EnforcementMode: "warn",
 		CompiledAt:      compiledAt,
 		ReviewFile:      ".agents/constraints/" + id + ".sh",
 		File:            ".agents/constraints/" + id + ".sh",
@@ -268,7 +287,48 @@ func BuildConstraintEntry(id string, fm map[string]string) (ConstraintEntry, boo
 			Exclude: strings.TrimSpace(fm["detector_exclude"]),
 			Message: strings.TrimSpace(fm["detector_message"]),
 		},
+		Evidence: constraintEvidenceFromReplay(replay),
 	}, true
+}
+
+const minimumConstraintPrecision = 0.95
+
+func constraintEvidenceFromReplay(replay ports.DetectorReplayResult) ConstraintEvidence {
+	evidence := ConstraintEvidence{
+		PositiveRefs:        append([]string(nil), replay.PositiveRefs...),
+		NegativeControlRefs: append([]string(nil), replay.NegativeControlRefs...),
+	}
+	if precision := replay.Precision; precision != nil {
+		evidence.PrecisionEvidenceRef = precision.EvidenceRef
+		evidence.ShadowSamples = precision.Samples
+		evidence.TruePositives = precision.TruePositives
+		evidence.FalsePositives = precision.FalsePositives
+	}
+	return evidence
+}
+
+// ValidateConstraintActivation fails closed until a shadow detector carries a
+// cited precision measurement at or above the blocking threshold.
+func ValidateConstraintActivation(entry ConstraintEntry) error {
+	if entry.Status != "shadow" || entry.EnforcementMode != "warn" {
+		return fmt.Errorf("constraint %q is %q/%q; can only activate from warn-only shadow", entry.ID, entry.Status, entry.EnforcementMode)
+	}
+	if len(entry.Evidence.PositiveRefs) == 0 || len(entry.Evidence.NegativeControlRefs) == 0 {
+		return fmt.Errorf("constraint %q lacks positive and negative replay evidence", entry.ID)
+	}
+	if strings.TrimSpace(entry.Evidence.PrecisionEvidenceRef) == "" {
+		return fmt.Errorf("constraint %q lacks precision evidence", entry.ID)
+	}
+	if entry.Evidence.ShadowSamples <= 0 ||
+		entry.Evidence.TruePositives < 0 || entry.Evidence.FalsePositives < 0 ||
+		entry.Evidence.TruePositives+entry.Evidence.FalsePositives != entry.Evidence.ShadowSamples {
+		return fmt.Errorf("constraint %q has invalid precision evidence", entry.ID)
+	}
+	precision := float64(entry.Evidence.TruePositives) / float64(entry.Evidence.ShadowSamples)
+	if precision < minimumConstraintPrecision {
+		return fmt.Errorf("constraint %q precision %.3f is below %.2f", entry.ID, precision, minimumConstraintPrecision)
+	}
+	return nil
 }
 
 // splitConstraintCSV splits a comma-separated value into trimmed, non-empty
@@ -290,9 +350,8 @@ func splitConstraintCSV(raw string) []string {
 // no-op (idempotent re-run); otherwise the entry is inserted/replaced. The save
 // is atomic and lock-guarded. Returns whether the index was written.
 //
-// A compiled constraint is ALWAYS persisted as status="draft": a freshly derived
-// detector must be reviewed and explicitly `ao constraint activate`d before it
-// gates releases — auto-activating would let the compiler block every push.
+// A compiled constraint is persisted as status="shadow" and warn-only. Explicit
+// activation remains impossible until cited precision evidence is present.
 func UpsertConstraintAt(root string, entry ConstraintEntry, force bool) (bool, error) {
 	indexPath := filepath.Join(root, ConstraintIndexPath())
 	lockPath := filepath.Join(root, ConstraintLockPath())
@@ -407,7 +466,7 @@ func FindConstraint(idx *ConstraintIndex, id string) *ConstraintEntry {
 	return nil
 }
 
-// FilterStaleConstraints returns active/draft constraints compiled before cutoff.
+// FilterStaleConstraints returns non-retired constraints compiled before cutoff.
 func FilterStaleConstraints(entries []ConstraintEntry, cutoff time.Time) []ConstraintEntry {
 	stale := make([]ConstraintEntry, 0)
 	for _, c := range entries {

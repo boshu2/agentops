@@ -1,11 +1,10 @@
 #!/usr/bin/env bash
 # verify.sh — confirm every skill in the Claude image manifest exists in the corpus.
 #
-# Reads the slug list from images/claude/manifest.json (core_skills + operator_skills)
+# Reads the metadata-derived slug list from images/claude/manifest.json
 # and asserts each skills/<slug>/SKILL.md is present at the agentops repo root.
 # Exit 0 iff all present; exit 1 on any missing skill (or a malformed manifest).
 #
-# Unit 2 (cp-ytub) of the cp-gqu image EPIC. Spec: IMAGE-CORE.md §1 + §2a + §3a.
 set -euo pipefail
 
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -18,15 +17,14 @@ if [ ! -f "$manifest" ]; then
   exit 1
 fi
 
-# Extract every "slug" value from both core_skills and operator_skills.
+# Extract every generated slug.
 # Prefer python3 (robust JSON); fall back to grep/sed if python3 is absent.
 if command -v python3 >/dev/null 2>&1; then
   slugs="$(python3 -c '
 import json, sys
 d = json.load(open(sys.argv[1]))
-for k in ("core_skills", "operator_skills"):
-    for e in d.get(k, []):
-        print(e["slug"])
+for e in d.get("skills", []):
+    print(e["slug"])
 ' "$manifest")"
 else
   slugs="$(grep -oE '"slug"[[:space:]]*:[[:space:]]*"[^"]+"' "$manifest" \
@@ -60,7 +58,7 @@ fi
 # Version guard: the Claude marketplace plugin manifest is the install entrypoint
 # for this image. Assert .claude-plugin/plugin.json declares the expected version
 # so a stale-version drift (plugin.json behind the release) fails the gate.
-EXPECTED_VERSION="${AGENTOPS_EXPECTED_VERSION:-3.2.0}"
+EXPECTED_VERSION="${AGENTOPS_EXPECTED_VERSION:-4.0.0}"
 plugin_manifest="$repo_root/.claude-plugin/plugin.json"
 if [ ! -f "$plugin_manifest" ]; then
   echo "FAIL: Claude plugin manifest not found: $plugin_manifest" >&2
@@ -81,5 +79,7 @@ if [ "$plugin_version" != "$EXPECTED_VERSION" ]; then
 fi
 echo "OK: Claude plugin manifest version $plugin_version matches expected $EXPECTED_VERSION"
 
-echo "OK: all $count Claude-image skills present (CORE + operator, per manifest.json)"
+declared_count="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["skill_count"])' "$manifest")"
+[ "$count" -eq "$declared_count" ] || { echo "FAIL: parsed $count skills, manifest declares $declared_count" >&2; exit 1; }
+echo "OK: all $count metadata-derived Claude-image skills present"
 exit 0

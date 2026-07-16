@@ -841,10 +841,10 @@ type FlywheelMetrics struct {
 	// PriorArtBypasses is how many times users bypassed the prior art gate.
 	PriorArtBypasses int `json:"prior_art_bypasses,omitempty"`
 
-	// RetrosWithLearnings is post-mortems that created extractable learnings.
+	// RetrosWithLearnings is postmortems that created extractable learnings.
 	RetrosWithLearnings int `json:"retros_with_learnings,omitempty"`
 
-	// TotalRetros is total post-mortem count this period.
+	// TotalRetros is total postmortem count this period.
 	TotalRetros int `json:"total_retros,omitempty"`
 
 	// --- MemRL Utility Metrics (ol-memrl) ---
@@ -908,7 +908,7 @@ type GoldenSignals struct {
 type StigmergicScorecard struct {
 	PromotedFindings       int `json:"promoted_findings"`
 	PlanningRules          int `json:"planning_rules"`
-	PreMortemChecks        int `json:"pre_mortem_checks"`
+	PreMortemChecks        int `json:"premortem_checks"`
 	QueueEntries           int `json:"queue_entries"`
 	UnconsumedBatches      int `json:"unconsumed_batches"`
 	UnconsumedItems        int `json:"unconsumed_items"`

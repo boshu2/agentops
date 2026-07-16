@@ -1,9 +1,0 @@
-# builder — implements ONE task at a time in its OWN git worktree; evidence-bound.
-# Interactive claude pane (the sanctioned class — LAW 0: never claude -p; the
-# city's [providers.claude] print_args=[] kills the print sinks and the pack's
-# law0-print-args doctor check asserts it). Builder is the ONLY role that keeps
-# write capability, and only inside its worktree — so no permission_mode override.
-scope = "city"
-provider = "claude"
-option_defaults = { model = "opus" }
-append_fragments = ["law0", "breaker-escalation", "sentinel"]

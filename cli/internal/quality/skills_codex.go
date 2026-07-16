@@ -121,7 +121,7 @@ func CodexNativePluginSkillsPath(home string) string {
 }
 
 func CodexNativePluginHealPath(home string) string {
-	return filepath.Join(CodexNativePluginSkillsPath(home), "heal-skill", "scripts", "heal.sh")
+	return filepath.Join(CodexNativePluginSkillsPath(home), "skill-builder", "scripts", "heal.sh")
 }
 
 func CodexNativePluginManifestPath(home string) string {
@@ -146,7 +146,8 @@ func ReadCodexInstallMeta(home string) (*CodexInstallMeta, error) {
 
 func ReadCodexManifestSkillCount(path string) (int, error) {
 	var manifest struct {
-		Skills []struct {
+		PackageCount int `json:"package_count"`
+		Skills       []struct {
 			Name string `json:"name"`
 		} `json:"skills"`
 	}
@@ -157,6 +158,14 @@ func ReadCodexManifestSkillCount(path string) (int, error) {
 	if err := json.Unmarshal(data, &manifest); err != nil {
 		return 0, err
 	}
+	// skills[] inventories canonical implementations. package_count also
+	// includes installable compatibility pointers (implementation: false),
+	// which are real runtime packages but deliberately not implementation rows.
+	if manifest.PackageCount > 0 {
+		return manifest.PackageCount, nil
+	}
+	// Preserve legacy behavior for older manifests; refreshing the bundle adds
+	// package_count when compatibility pointers make the two counts differ.
 	return len(manifest.Skills), nil
 }
 
@@ -168,17 +177,17 @@ func CheckCodexNativePluginManifest(home, primary string, primaryCount int) *Che
 		return &Check{
 			Name:   "Plugin",
 			Status: "warn",
-			Detail: fmt.Sprintf("%d skills found in %s; native plugin is missing .agentops-manifest.json — run 'bash scripts/refresh-codex-local.sh' from the repo checkout.",
+			Detail: fmt.Sprintf("%d skills found in %s; native plugin is missing .agentops-manifest.json — run 'ao skills link' from the repo checkout.",
 				primaryCount, primary),
 		}
 	}
 
-	manifestSkillCount, err := ReadCodexManifestSkillCount(manifestPath)
+	manifestPackageCount, err := ReadCodexManifestSkillCount(manifestPath)
 	if err != nil {
 		return &Check{
 			Name:   "Plugin",
 			Status: "warn",
-			Detail: fmt.Sprintf("%d skills found in %s; native plugin manifest is unreadable — run 'bash scripts/refresh-codex-local.sh'.",
+			Detail: fmt.Sprintf("%d skills found in %s; native plugin manifest is unreadable — run 'ao skills link'.",
 				primaryCount, primary),
 		}
 	}
@@ -188,7 +197,7 @@ func CheckCodexNativePluginManifest(home, primary string, primaryCount int) *Che
 		return &Check{
 			Name:   "Plugin",
 			Status: "warn",
-			Detail: fmt.Sprintf("%d skills found in %s; native plugin install metadata is missing — run 'bash scripts/refresh-codex-local.sh' from the repo checkout.",
+			Detail: fmt.Sprintf("%d skills found in %s; native plugin install metadata is missing — run 'ao skills link' from the repo checkout.",
 				primaryCount, primary),
 		}
 	}
@@ -198,7 +207,7 @@ func CheckCodexNativePluginManifest(home, primary string, primaryCount int) *Che
 		return &Check{
 			Name:   "Plugin",
 			Status: "warn",
-			Detail: fmt.Sprintf("%d skills found in %s; install metadata says install_mode=%q instead of native-plugin — run 'bash scripts/refresh-codex-local.sh'.",
+			Detail: fmt.Sprintf("%d skills found in %s; install metadata says install_mode=%q instead of native-plugin — run 'ao skills link'.",
 				primaryCount, primary, meta.InstallMode),
 		}
 	}
@@ -206,7 +215,7 @@ func CheckCodexNativePluginManifest(home, primary string, primaryCount int) *Che
 		return &Check{
 			Name:   "Plugin",
 			Status: "warn",
-			Detail: fmt.Sprintf("%d skills found in %s; install metadata points at %s instead of %s — run 'bash scripts/refresh-codex-local.sh'.",
+			Detail: fmt.Sprintf("%d skills found in %s; install metadata points at %s instead of %s — run 'ao skills link'.",
 				primaryCount, primary, meta.PluginRoot, expectedRoot),
 		}
 	}
@@ -214,24 +223,24 @@ func CheckCodexNativePluginManifest(home, primary string, primaryCount int) *Che
 		return &Check{
 			Name:   "Plugin",
 			Status: "warn",
-			Detail: fmt.Sprintf("%d skills found in %s; install metadata manifest hash does not match the active native plugin manifest — run 'bash scripts/refresh-codex-local.sh'.",
+			Detail: fmt.Sprintf("%d skills found in %s; install metadata manifest hash does not match the active native plugin manifest — run 'ao skills link'.",
 				primaryCount, primary),
 		}
 	}
-	if meta.SkillCount > 0 && manifestSkillCount > 0 && meta.SkillCount != manifestSkillCount {
+	if meta.SkillCount > 0 && manifestPackageCount > 0 && meta.SkillCount != manifestPackageCount {
 		return &Check{
 			Name:   "Plugin",
 			Status: "warn",
-			Detail: fmt.Sprintf("%d skills found in %s; install metadata says %d skills but manifest says %d — run 'bash scripts/refresh-codex-local.sh'.",
-				primaryCount, primary, meta.SkillCount, manifestSkillCount),
+			Detail: fmt.Sprintf("%d skills found in %s; install metadata says %d packages but manifest says %d — run 'ao skills link'.",
+				primaryCount, primary, meta.SkillCount, manifestPackageCount),
 		}
 	}
-	if manifestSkillCount > 0 && manifestSkillCount != primaryCount {
+	if manifestPackageCount > 0 && manifestPackageCount != primaryCount {
 		return &Check{
 			Name:   "Plugin",
 			Status: "warn",
-			Detail: fmt.Sprintf("%d skills found in %s; active native plugin manifest lists %d skills — run 'bash scripts/refresh-codex-local.sh'.",
-				primaryCount, primary, manifestSkillCount),
+			Detail: fmt.Sprintf("%d skills found in %s; active native plugin manifest lists %d packages — run 'ao skills link'.",
+				primaryCount, primary, manifestPackageCount),
 		}
 	}
 
@@ -421,9 +430,9 @@ func CheckSkills() Check {
 
 func pluginInstallHint() string {
 	if runtime.GOOS == "windows" {
-		return "for Codex run 'irm https://raw.githubusercontent.com/boshu2/agentops/main/scripts/install-codex.ps1 | iex'; for Claude Code use 'claude plugin install agentops@agentops-marketplace'"
+		return "clone AgentOps and run 'ao skills link' (CLI: irm https://raw.githubusercontent.com/boshu2/agentops/main/scripts/install-ao.ps1 | iex)"
 	}
-	return "run 'bash <(curl -fsSL https://raw.githubusercontent.com/boshu2/agentops/main/scripts/install.sh)'"
+	return "clone AgentOps and run 'ao skills link' (CLI: brew install agentops)"
 }
 
 func FindAgentOpsRepoRoot(start string) string {
@@ -495,7 +504,7 @@ func CheckCodexSync() Check {
 		return Check{
 			Name:   "Codex Sync",
 			Status: "warn",
-			Detail: fmt.Sprintf("Codex install metadata is missing manifest hash — run 'cd %s && bash scripts/refresh-codex-local.sh'", repoRoot),
+			Detail: fmt.Sprintf("Codex install metadata is missing manifest hash — run 'cd %s && ao skills link'", repoRoot),
 		}
 	}
 
@@ -504,14 +513,14 @@ func CheckCodexSync() Check {
 			return Check{
 				Name:   "Codex Sync",
 				Status: "warn",
-				Detail: fmt.Sprintf("installed Codex %s manifest differs from repo %s — run 'cd %s && bash scripts/refresh-codex-local.sh'",
+				Detail: fmt.Sprintf("installed Codex %s manifest differs from repo %s — run 'cd %s && ao skills link'",
 					ModeOrDefault(meta.InstallMode), ValueOrUnknown(repoVersion), repoRoot),
 			}
 		}
 		return Check{
 			Name:   "Codex Sync",
 			Status: "warn",
-			Detail: fmt.Sprintf("installed Codex %s is stale relative to repo (%s -> %s) — run 'cd %s && bash scripts/refresh-codex-local.sh'",
+			Detail: fmt.Sprintf("installed Codex %s is stale relative to repo (%s -> %s) — run 'cd %s && ao skills link'",
 				ModeOrDefault(meta.InstallMode), ValueOrUnknown(meta.Version), ValueOrUnknown(repoVersion), repoRoot),
 		}
 	}
@@ -520,7 +529,7 @@ func CheckCodexSync() Check {
 		return Check{
 			Name:   "Codex Sync",
 			Status: "warn",
-			Detail: fmt.Sprintf("installed Codex %s is stale relative to repo (%s -> %s) — run 'cd %s && bash scripts/refresh-codex-local.sh'",
+			Detail: fmt.Sprintf("installed Codex %s is stale relative to repo (%s -> %s) — run 'cd %s && ao skills link'",
 				ModeOrDefault(meta.InstallMode), ValueOrUnknown(meta.Version), ValueOrUnknown(repoVersion), repoRoot),
 		}
 	}
@@ -535,7 +544,7 @@ func CheckCodexSync() Check {
 
 // FindHealScript searches for heal.sh in known locations and returns the path if found.
 func FindHealScript() string {
-	if p := "skills/heal-skill/scripts/heal.sh"; FileExists(p) {
+	if p := "skills/skill-builder/scripts/heal.sh"; FileExists(p) {
 		abs, err := filepath.Abs(p)
 		if err == nil {
 			return abs
@@ -550,13 +559,13 @@ func FindHealScript() string {
 	if p := CodexNativePluginHealPath(home); FileExists(p) {
 		return p
 	}
-	if p := filepath.Join(home, ".codex", "skills", "heal-skill", "scripts", "heal.sh"); FileExists(p) {
+	if p := filepath.Join(home, ".codex", "skills", "skill-builder", "scripts", "heal.sh"); FileExists(p) {
 		return p
 	}
-	if p := filepath.Join(home, ".claude", "skills", "heal-skill", "scripts", "heal.sh"); FileExists(p) {
+	if p := filepath.Join(home, ".claude", "skills", "skill-builder", "scripts", "heal.sh"); FileExists(p) {
 		return p
 	}
-	if p := filepath.Join(home, ".agents", "skills", "heal-skill", "scripts", "heal.sh"); FileExists(p) {
+	if p := filepath.Join(home, ".agents", "skills", "skill-builder", "scripts", "heal.sh"); FileExists(p) {
 		return p
 	}
 
@@ -587,7 +596,7 @@ func CheckSkillIntegrity() Check {
 		return Check{
 			Name:     "Skill Integrity",
 			Status:   "warn",
-			Detail:   "heal-skill not installed, skipping integrity check",
+			Detail:   "heal.sh not installed, skipping integrity check",
 			Required: false,
 		}
 	}
@@ -627,14 +636,18 @@ func CheckSkillIntegrity() Check {
 }
 
 // CheckOptionalCLI reports whether an optional CLI dependency is installed.
-func CheckOptionalCLI(name string, reason string) Check {
+// fix is an optional remediation runnable from the reader's own context (e.g.
+// "npm install -g @openai/codex"); it must never be a repo-relative script.
+func CheckOptionalCLI(name, reason, fix string) Check {
 	_, err := exec.LookPath(name)
 	if err != nil {
 		return Check{
 			Name:     strings.Title(name) + " CLI", //nolint:staticcheck
-			Status:   "warn",
+			Status:   "info",
 			Detail:   fmt.Sprintf("not found (optional — %s)", reason),
 			Required: false,
+			Audience: AudienceInstalledUser,
+			Fix:      fix,
 		}
 	}
 
@@ -643,5 +656,6 @@ func CheckOptionalCLI(name string, reason string) Check {
 		Status:   "pass",
 		Detail:   "available",
 		Required: false,
+		Audience: AudienceInstalledUser,
 	}
 }

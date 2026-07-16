@@ -4,7 +4,7 @@
 # AgentOps 3.0 is hookless: the default install ships zero hooks, there is no
 # `hooks/hooks.json` runtime, and `ao hooks` is not a registered command. The
 # ag-t1ca epic de-hooked ~16 live-facing docs but did NOT gate the class, so the
-# rot can silently re-enter. This is the companion to scripts/sync-skill-counts.sh
+# rot can silently re-enter. Skill inventory is generated from SKILL.md metadata
 # (skill-count drift) and scripts/check-hookless-cold-start.sh (a FIXED-list cold-
 # start gate); this gate broadens to the live-facing narrative/onboarding/operator
 # docs tree.

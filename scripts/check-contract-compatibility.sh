@@ -29,7 +29,6 @@ ROOT="$(cd "$ROOT" && pwd)"
 
 CONTRACTS_DIR="$ROOT/docs/contracts"
 INDEX="$ROOT/docs/documentation-index.md"
-BRIDGE="$ROOT/docs/ol-bridge-contracts.md"
 ORPHAN_ALLOWLIST="$ROOT/scripts/contract-orphans-allowlist.txt"
 
 failures=0
@@ -156,25 +155,7 @@ fi
 sort -u "$INDEX_CONTRACTS_TMP" -o "$INDEX_CONTRACTS_TMP"
 echo ""
 
-# ── Check 4: Bridge doc references resolve ──
-
-echo "--- Bridge doc reference resolution ---"
-if [[ -f "$BRIDGE" ]]; then
-  while IFS= read -r ref; do
-    [[ -z "$ref" ]] && continue
-    if [[ -f "$ROOT/$ref" ]]; then
-      pass "$ref"
-    else
-      fail "ol-bridge-contracts.md references $ref but file not found"
-    fi
-  done < <(awk '/^```/{skip=!skip; next} !skip{print}' "$BRIDGE" \
-    | grep -oE 'docs/contracts/[A-Za-z0-9_./-]+' | sort -u)
-else
-  warn "docs/ol-bridge-contracts.md not found (optional)"
-fi
-echo ""
-
-# ── Check 5: Contract .md files' embedded references resolve ──
+# ── Check 4: Contract .md files' embedded references resolve ──
 
 echo "--- Contract .md cross-references ---"
 for md in "$CONTRACTS_DIR"/*.md; do
@@ -241,10 +222,9 @@ for example in "$CONTRACTS_DIR"/*.example.json; do
   base="$(basename "$example")"
 
   # Derive schema name: strip .example.json, find matching .schema.json
-  # memrl-policy.profile.example.json -> memrl-policy.schema.json
   # Strategy: try progressively shorter prefixes
   schema_found=""
-  prefix="${base%.example.json}"  # e.g. "memrl-policy.profile"
+  prefix="${base%.example.json}"
   while [[ "$prefix" == *.* ]]; do
     candidate="$CONTRACTS_DIR/${prefix%.*}.schema.json"
     if [[ -f "$candidate" ]]; then

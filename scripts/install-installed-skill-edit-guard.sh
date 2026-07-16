@@ -2,7 +2,7 @@
 # install-installed-skill-edit-guard.sh — opt-in installer for the
 # installed-skill-edit PreToolUse guard (age-workflow-guardrail-hooks-j39.1).
 #
-# AgentOps 3.0 is hookless by default — this guard ships INERT. Run this script
+# AgentOps is hookless by default — this guard ships INERT. Run this script
 # explicitly to activate it. It copies the guard into ~/.claude/hooks/ and adds a
 # PreToolUse Edit|Write matcher to a Claude settings.json. Idempotent: re-running
 # is a no-op once wired. Nothing here runs at build/install-of-skills time.
@@ -12,6 +12,8 @@
 #   scripts/install-installed-skill-edit-guard.sh --project  # project settings (.claude/settings.json)
 #   SETTINGS=/path/to/settings.json scripts/install-installed-skill-edit-guard.sh
 set -euo pipefail
+shopt -s lastpipe 2>/dev/null || true
+umask 022
 
 repo_root="$(git rev-parse --show-toplevel 2>/dev/null || cd "$(dirname "$0")/.." && pwd)"
 src="${repo_root}/skills/cc-hooks/hooks/installed-skill-edit-guard.sh"
@@ -38,7 +40,15 @@ echo "✓ installed ${dst}"
 mkdir -p "$(dirname "$settings")"
 [[ -f "$settings" ]] || echo '{}' > "$settings"
 
+# Timestamped backup before mutating settings (installer-workmanship).
+if [[ -f "$settings" && -s "$settings" ]]; then
+  backup="${settings}.bak.$(date +%Y%m%d%H%M%S)"
+  cp -p "$settings" "$backup"
+  echo "✓ backed up settings → ${backup}"
+fi
+
 tmp="$(mktemp)"
+trap 'rm -f "$tmp"' EXIT
 jq --arg cmd "$dst" '
   .hooks //= {} |
   .hooks.PreToolUse //= [] |
@@ -50,6 +60,7 @@ jq --arg cmd "$dst" '
   }]
   end
 ' "$settings" > "$tmp" && mv "$tmp" "$settings"
+trap - EXIT
 
 if grep -qF "$dst" "$settings"; then
   echo "✓ wired Edit|Write PreToolUse guard into ${settings}"
@@ -62,3 +73,4 @@ echo ""
 echo "Installed-skill-edit guard active for this Claude scope."
 echo "It is SILENT on every non-installed-skill edit; fires once per session on a"
 echo "*/.claude/skills/** (or .codex/.gemini) Edit/Write, routing you to repo skills/."
+echo "Uninstall: remove the PreToolUse matcher for ${dst} from ${settings}, then rm -f ${dst}"

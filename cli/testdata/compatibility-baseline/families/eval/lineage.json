@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "family": "eval",
+  "old_implementation_sha": "e741222b21931c3f7fe98fb947bd74b9272a915a",
+  "freeze_sha": "13167d4a028f3dab3b1da67f7616ad7dd517bc05",
+  "fixture_sha256": "906273234e3fc94a9fec4e4f7762ce1ec7ea58485ccfeb080aa338931bbf0a1d",
+  "ownership_sha256": "e8eb03162ee4fded8e6aeb2c582ef265103b35cb5836c162ddae1a2803178565",
+  "scope_sha256": "42d515c799e9f1a50bcc5471d3df4837cd2c1b8a1b7c6d000dc02877ab8ce86e",
+  "migration_state": "migrated",
+  "accepted_sha": "39e7a6885a01ee459d702a386775fdffd20f411b"
+}

@@ -5,7 +5,7 @@
 
 ## Global Flags
 
-          --config string   Config file (default: ~/.agentops/config.yaml)
+          --config string   Config file (default: ~/.agents/ao/config.yaml)
           --dry-run         Show what would happen without executing
       -h, --help            help for ao
           --json            Output as JSON (shorthand for -o json)
@@ -17,43 +17,40 @@
 
 ## Commands
 
-### `ao init`
+### `ao demo`
 
-Set up a repository for AgentOps: directories and gitignore.
+Show the AgentOps product boundary:
 
 ```
-ao init [flags]
+ao demo [flags]
 ```
 
 **Flags:**
 
 ```
-  -h, --help      help for init
-      --stealth   Use .git/info/exclude instead of .gitignore
+      --concepts   explain the product boundary
+  -h, --help       help for demo
+      --quick      show the compact one-pass example
+```
+
+---
+
+### `ao init`
+
+Create local evidence and verdict directories. This command does not
+
+```
+ao init [flags]
 ```
 
 ---
 
 ### `ao quick-start`
 
-Initialize AgentOps in your current project.
+AgentOps is a small semantic evidence layer around agent work.
 
 ```
 ao quick-start [flags]
-```
-
-**Aliases:**
-
-```
-  quick-start, quickstart
-```
-
-**Flags:**
-
-```
-  -h, --help       help for quick-start
-      --minimal    Minimal setup (just directories)
-      --no-beads   Skip beads initialization
 ```
 
 ---
@@ -64,62 +61,6 @@ Print the machine-readable contract for the whole ao CLI as JSON.
 
 ```
 ao capabilities [flags]
-```
-
----
-
-### `ao claim`
-
-Claim a BR bead for harness-neutral AgentOps loops, or bind/list claim evidence via the typed BC2 ClaimEvidenceBinderPort.
-
-```
-ao claim [command]
-```
-
-**Subcommands:**
-
-#### `ao claim bind`
-
-Append (or upgrade) a claim→evidence binding via the typed BC2
-
-```
-ao claim bind --claim <AOP-CLAIM-X> --path <evidence-path> [--level PG1|PG2|PG3|PG4] [--anchor ...] [--author-id <id> --judge-id <id>] [flags]
-```
-
-**Flags:**
-
-```
-      --anchor stringArray   optional in-file anchors (repeatable)
-      --author-id string     artifact author identity for reviewer separation checks
-      --claim string         claim ID (required, e.g. AOP-CLAIM-X)
-  -h, --help                 help for bind
-      --judge-id string      judge/verifier identity for reviewer separation checks
-      --level string         promotion level: PG1|PG2|PG3|PG4 (default "PG1")
-      --path string          evidence file path (required, relative to repo root)
-```
-
-#### `ao claim check`
-
-Report read-only proof cards for changed public claim markers.
-
-```
-ao claim check --changed [--base <ref>] [flags]
-```
-
-**Flags:**
-
-```
-      --base string   base ref for --changed comparison (default "origin/main")
-      --changed       check claim markers in files changed against --base plus worktree changes
-  -h, --help          help for check
-```
-
-#### `ao claim list`
-
-Emit all known claim→evidence bindings via the typed BC2 ClaimEvidenceBinderPort. Output is line-delimited JSON.
-
-```
-ao claim list [flags]
 ```
 
 ---
@@ -244,7 +185,7 @@ ao doctor undo <run-id> [flags]
 
 ### `ao gate`
 
-Manage human review gates for bronze-tier candidates.
+Run ordinary deterministic repository checks.
 
 ```
 ao gate [command]
@@ -252,40 +193,9 @@ ao gate [command]
 
 **Subcommands:**
 
-#### `ao gate approve`
-
-Approve a bronze-tier candidate for promotion.
-
-```
-ao gate approve <candidate-id> [flags]
-```
-
-**Flags:**
-
-```
-  -h, --help          help for approve
-      --note string   Optional approval note
-```
-
-#### `ao gate bulk-approve`
-
-Approve all silver-tier candidates older than a threshold.
-
-```
-ao gate bulk-approve [flags]
-```
-
-**Flags:**
-
-```
-  -h, --help                help for bulk-approve
-      --older-than string   Age threshold for bulk approval (default "24h")
-      --tier string         Tier to bulk approve (default: silver) (default "silver")
-```
-
 #### `ao gate check`
 
-Run the declarative gate registry.
+Run the declarative deterministic check registry.
 
 ```
 ao gate check [flags]
@@ -294,47 +204,26 @@ ao gate check [flags]
 **Flags:**
 
 ```
-      --fail-fast                 stop after the first blocking failure
-      --fast                      fast cockpit subset routed to changed files (the default; explicit flag for clarity in hooks)
-      --full                      run every check (routing ignored); default is the fast changed-file subset
-      --github-annotations        emit GitHub Actions annotations for WARN/FAIL checks
+      --fail-fast                 stop after the first blocking check failure
+      --fast                      explicitly select the default fast changed-surface subset
+      --full                      run every registered deterministic check
+      --github-annotations        emit GitHub Actions annotations for check results
   -h, --help                      help for check
       --json                      emit the machine-readable JSON report
-      --require-workflow-parity   fail if validate.yml references scripts missing from the Go gate registry
-      --scope string              fast-mode changed-file scope: head|staged|worktree|upstream|range:<base>..<head> (default "head")
-      --workflow-coverage         include validate.yml-vs-registry script coverage in the report
-      --workflow-path string      workflow path used by --workflow-coverage and --require-workflow-parity (default ".github/workflows/validate.yml")
+      --require-workflow-parity   fail if the workflow references unregistered blocking scripts
+      --scope string              changed-file scope: head|staged|worktree|upstream|range:<base>..<head> (default "head")
+      --workflow-coverage         include workflow-to-registry coverage in the report
+      --workflow-path string      workflow used for optional coverage comparison (default ".github/workflows/validate.yml")
 ```
 
-#### `ao gate pending`
+---
 
-List bronze-tier candidates awaiting human review.
+### `ao redact`
 
-```
-ao gate pending [flags]
-```
-
-#### `ao gate reject`
-
-Reject a candidate with a required reason.
+Read text on stdin, apply the canonical secret redactor (the same
 
 ```
-ao gate reject <candidate-id> [flags]
-```
-
-**Flags:**
-
-```
-  -h, --help            help for reject
-      --reason string   Required rejection reason
-```
-
-#### `ao gate run`
-
-Invoke a check-*.sh gate via the typed BC2 GateRunnerPort
-
-```
-ao gate run <name> [flags]
+ao redact [flags]
 ```
 
 ---
@@ -351,7 +240,7 @@ ao robot-docs [flags]
 
 ### `ao status`
 
-Display the current state of AgentOps knowledge base.
+Display the content-addressed intent and verdict evidence stored by AgentOps.
 
 ```
 ao status [flags]
@@ -365,445 +254,6 @@ Display the version, build information, and runtime details.
 
 ```
 ao version [flags]
-```
-
----
-
-### `ao eval`
-
-Run deterministic AgentOps evaluation suites and compare run records.
-
-```
-ao eval [command]
-```
-
-**Subcommands:**
-
-#### `ao eval baseline`
-
-Promote an eval run record as a baseline
-
-```
-ao eval baseline <run.json> [flags]
-```
-
-**Flags:**
-
-```
-  -h, --help                 help for baseline
-      --out string           write promoted baseline run record to path
-      --promoted-by string   identity promoting the baseline
-      --rationale string     rationale for promoting the baseline
-```
-
-#### `ao eval baseline-audit`
-
-Audit eval suite baseline policy against promoted baselines
-
-```
-ao eval baseline-audit [suite.json ...] [flags]
-```
-
-**Flags:**
-
-```
-      --baseline-dir string   promoted baseline directory (default ".agents/evals/baselines")
-  -h, --help                  help for baseline-audit
-      --root string           suite root to scan when no suite paths are provided (default "evals/agentops-core")
-```
-
-#### `ao eval bench`
-
-Measure Precision@K and MRR against a curated corpus of learning artifacts.
-
-```
-ao eval bench [flags]
-```
-
-**Flags:**
-
-```
-      --corpus string                    Path to benchmark corpus directory
-      --global                           Include ~/.agents/learnings/ (cross-rig aggregated store, requires --live)
-  -h, --help                             help for bench
-      --json                             JSON output
-      --k int                            K for Precision@K (default 3)
-      --live                             Benchmark against real .agents/learnings/ instead of synthetic corpus
-      --search-backend string            Search backend for --search-eval (local-lexical, ao-auto, agentic-rg, wiki-link-expand, rerank-llamacpp) (default "local-lexical")
-      --search-compare-backends string   Comma-separated search backends to compare for --search-eval
-      --search-eval string               Path to an ao-search eval manifest with queries and ground_truth paths
-      --search-root string               Repo root to search for --search-eval (defaults to current directory)
-```
-
-#### `ao eval chaos`
-
-Run a read-only smoke test of the tick membrane
-
-```
-ao eval chaos [flags]
-```
-
-#### `ao eval cleanup`
-
-Per SCHEMA.md §4 cleanup state-transition rule (rc2):
-
-```
-ao eval cleanup [flags]
-```
-
-**Flags:**
-
-```
-      --delete        Remove Run directories whose status is failed or aborted (never retracted)
-      --dry-run       Preview without mutations
-  -h, --help          help for cleanup
-      --tmp-age int   Minimum tmp-file age in seconds before sweep (0 = sweep all) (default 60)
-      --tmp-files     Sweep orphan *.tmp files older than --tmp-age
-```
-
-#### `ao eval compare`
-
-Compare an eval run against a baseline
-
-```
-ao eval compare <candidate-run.json> <baseline-run.json> [flags]
-```
-
-**Flags:**
-
-```
-  -h, --help                             help for compare
-      --max-aggregate-regression float   allowed aggregate regression before verdict becomes regression
-      --max-dimension-regression float   allowed per-dimension regression before verdict becomes regression
-      --out string                       write compared eval run record to path
-```
-
-#### `ao eval coverage`
-
-Summarize eval suite coverage
-
-```
-ao eval coverage [suite.json ...] [flags]
-```
-
-**Flags:**
-
-```
-  -h, --help                                help for coverage
-      --require-dimension stringArray       required score dimension for missing-dimension reporting (default [correctness,process_adherence,artifact_quality,runtime_compatibility,efficiency,safety,learning_closure])
-      --require-domain stringArray          required product domain for missing-domain reporting (default [cli,hook,skill,rpi,runtime,retrieval,scenario,mixed,security])
-      --require-evidence-kind stringArray   required evidence kind for missing-evidence-kind reporting
-      --require-runtime stringArray         required deterministic runtime for missing-runtime reporting (default [static,shell,mock])
-      --root string                         suite root to scan when no suite paths are provided (default "evals/agentops-core")
-```
-
-#### `ao eval outcomes`
-
-Outcomes is a derived projection of the locked eval substrate (SCHEMA.md), never an alternate authority. Subcommands compile holdout-safe rubric payloads and ingest returned scores into the one verdict format.
-
-```
-ao eval outcomes [command]
-```
-
-##### `ao eval outcomes compile`
-
-Compile a holdout-safe Outcomes rubric payload from a locked Task + criteria
-
-```
-ao eval outcomes compile <input.json> [flags]
-```
-
-##### `ao eval outcomes ingest`
-
-Ingest an Outcomes score payload into the one council verdict record
-
-```
-ao eval outcomes ingest <score.json> [flags]
-```
-
-**Flags:**
-
-```
-      --burn-ledger string         path to a JSON HoldoutBurnLedger; when set, a holdout-split score registers a burn and is REFUSED if the (suite,gt) quota is exhausted (gate #3 runtime enforcement), persisted across invocations
-      --expect-judge-hash string   refuse the ingest if the score's judge_content_hash does not match this value (gate #2 rubric-drift parity)
-  -h, --help                       help for ingest
-      --manifest-out string        also write an eval-run.v1 manifest to <dir>/<run-id>/manifest.json so the verdict pipeline feeds the Knowledge Flywheel (closes the Outcomes→Flywheel loop)
-      --run-id string              run id for the --manifest-out manifest; defaults to the score's run_id, then source_task_id (sanitized to the eval-run.v1 pattern)
-```
-
-#### `ao eval run`
-
-Run a deterministic eval suite
-
-```
-ao eval run <suite.json> [flags]
-```
-
-**Flags:**
-
-```
-      --baseline string                 compare the run against a baseline run record
-      --baseline-mode string            skill-on | skill-off | both — runs the suite once with skills loaded, once with hooks suppressed, or both for a delta scorecard (default "skill-on")
-      --context-mode string             none | ab — run context-off/context-on legs over isolated AO_AGENTS_DIR roots (default "none")
-      --context-off-agents-dir string   AO_AGENTS_DIR root for the context-off leg (defaults to suite fixtures)
-      --context-on-agents-dir string    AO_AGENTS_DIR root for the context-on leg (defaults to suite fixtures)
-      --delta-out string                write delta scorecard JSON to path (with --baseline-mode=both or --context-mode=ab)
-  -h, --help                            help for run
-      --out string                      write eval run record to path
-      --run-id string                   stable run id to use in the run record
-      --runtime string                  runtime override (static, mock, shell, claude, codex)
-```
-
-#### `ao eval scenario`
-
-Create, list, and validate holdout scenarios stored in .agents/holdout/.
-
-```
-ao eval scenario [command]
-```
-
-##### `ao eval scenario add`
-
-Author a schema-compliant holdout scenario in .agents/holdout/.
-
-```
-ao eval scenario add <goal> [flags]
-```
-
-**Flags:**
-
-```
-      --expected-outcome string   Expected observable outcome (default: inferred from goal)
-  -h, --help                      help for add
-      --narrative string          Narrative description (default: inferred from goal)
-      --source string             Scenario source (human, agent, prod-telemetry) (default "human")
-      --status string             Scenario status (active, draft, retired) (default "draft")
-      --threshold float           Satisfaction threshold in [0,1] (default 0.8)
-```
-
-##### `ao eval scenario evaluate`
-
-Evaluate the executable-spec scenarios linked to GOALS.md directives and
-
-```
-ao eval scenario evaluate [flags]
-```
-
-**Flags:**
-
-```
-      --all                Evaluate every directive's linked scenarios
-      --directive string   Evaluate only the directive with this stable Directive ID
-  -h, --help               help for evaluate
-      --json               Emit the machine-readable evaluation report
-      --run-id string      run_id recorded in the results artifact (default "ao-scenario-evaluate")
-      --timeout duration   Per-check execution timeout (default 2m0s)
-```
-
-##### `ao eval scenario init`
-
-Initialize .agents/holdout/ directory for scenario storage
-
-```
-ao eval scenario init [flags]
-```
-
-##### `ao eval scenario list`
-
-List holdout scenarios
-
-```
-ao eval scenario list [flags]
-```
-
-**Flags:**
-
-```
-  -h, --help            help for list
-      --status string   Filter by status (active, draft, retired)
-```
-
-##### `ao eval scenario validate`
-
-Validate holdout scenarios against schema
-
-```
-ao eval scenario validate [flags]
-```
-
-#### `ao eval scenario-ab`
-
-Run one holdout scenario (scenario.v1) twice — a control arm WITHOUT the gold
-
-```
-ao eval scenario-ab [flags]
-```
-
-**Flags:**
-
-```
-      --control-only       Run only the without-gold control arm and fail on ceiling/no-headroom
-  -h, --help               help for scenario-ab
-      --output string      Write the ScenarioDeltaScorecard JSON to this path
-      --scenario string    Path to the scenario.v1 JSON file (required)
-      --timeout duration   Per-arm timeout (0 = default 5m)
-      --token-budget int   Fail the gate if summed arm token cost exceeds this (0 = default 200000)
-```
-
-#### `ao eval scenario-moat`
-
-Render a moat positive/null/inconclusive verdict over one or more
-
-```
-ao eval scenario-moat [flags]
-```
-
-**Flags:**
-
-```
-  -h, --help                    help for scenario-moat
-      --output string           Write the MoatClaimResult JSON to this path
-      --scorecard stringArray   Path to a ScenarioDeltaScorecard JSON (repeatable)
-```
-
-#### `ao eval scorecard`
-
-Build an eval scorecard from run records
-
-```
-ao eval scorecard <candidate-run.json> [baseline-run.json] [flags]
-```
-
-**Flags:**
-
-```
-  -h, --help                            help for scorecard
-      --kind string                     scorecard kind (rpi, skill-change) (default "rpi")
-      --max-category-regression float   allowed per-category regression before verdict becomes regression
-      --out string                      write scorecard JSON to path
-```
-
-#### `ao eval session-outcome`
-
-Parse a Claude Code session transcript and derive a composite reward signal.
-
-```
-ao eval session-outcome [transcript-path] [flags]
-```
-
-**Flags:**
-
-```
-  -h, --help             help for session-outcome
-      --output string    Output format: text, json (default "text")
-      --session string   Session ID (extracted from transcript if not provided)
-```
-
-#### `ao eval suite`
-
-Suite-level operations against the §6.5 statistical contract.
-
-```
-ao eval suite [command]
-```
-
-##### `ao eval suite n-required`
-
-Compute power-derived n_required (gate #6 input on Day 3+)
-
-```
-ao eval suite n-required [flags]
-```
-
-**Flags:**
-
-```
-      --alpha float           Type-I error rate (default 0.05)
-      --baseline-rate float   Baseline rate (binomial worst-case fallback) (default 0.5)
-  -h, --help                  help for n-required
-      --mde float             Minimum detectable effect (default 0.05)
-      --paired                Paired comparison (default true)
-      --power float           Statistical power (1-beta) (default 0.8)
-```
-
-##### `ao eval suite verdict`
-
-Compute the §6.5 paired cluster-bootstrap verdict
-
-```
-ao eval suite verdict <suite-id> --arms a,b --inputs <bootstrap-inputs.json> [flags]
-```
-
-**Flags:**
-
-```
-      --B int            Bootstrap resamples (default 10000)
-      --arms string      Comma-separated arm ids (default: from suite varied_axis)
-  -h, --help             help for verdict
-      --inputs string    Path to canonical bootstrap-inputs JSON (REQUIRED)
-      --mde float        Minimum detectable effect (used for inconclusive_high_variance)
-      --n-required int   Override n_required (default: derived from suite power block)
-```
-
-#### `ao eval task`
-
-Operate on the §3 Task primitive of the eval substrate.
-
-```
-ao eval task [command]
-```
-
-##### `ao eval task add`
-
-Register a Task by copying its yaml + samples into the substrate
-
-```
-ao eval task add <task.yaml> [flags]
-```
-
-##### `ao eval task list`
-
-List registered Task ids
-
-```
-ao eval task list [flags]
-```
-
-##### `ao eval task run`
-
-Opens a new Run under $AGENTOPS_EVALS_ROOT/runs/<run-id>/manifest.json
-
-```
-ao eval task run <task-id> [flags]
-```
-
-**Flags:**
-
-```
-      --allow-weak-labels        Allow runs against confidence=weak ground-truth rows (gate #7)
-      --cross-spec               Allow ModelSpec drift (gate #4)
-      --dry-run                  Run gates and exit without writing a Run manifest
-      --ground-truth string      Ground-truth row id (head of supersession chain)
-      --harness string           Harness id (recorded into manifest)
-      --harness-dir string       Path to harness source dir for snapshot + gate #8
-  -h, --help                     help for run
-      --inspect-command string   Inspect command recorded into the Run manifest (not executed yet)
-      --inspect-version string   Inspect AI version stamped into manifest (default "0.3.216")
-      --model-spec string        ModelSpec id (already captured via ao eval models capture)
-      --n-samples int            Override Suite.n_samples
-      --quick                    Mark Run as quick_session=true (excluded from --vs auto-baseline pool)
-      --rig-id string            Rig identifier stamped into the Run manifest
-      --sample-split string      Sample split (dev|holdout); default from suite
-      --seeds string             Comma-separated seeds (>=3, per §4)
-      --suite string             Suite id or path to suite.yaml (required)
-```
-
-##### `ao eval task show`
-
-Print a registered Task summary
-
-```
-ao eval task show <task-id> [flags]
 ```
 
 ---
@@ -915,6 +365,14 @@ ao goals history [flags]
       --since string   Show entries since date (YYYY-MM-DD)
 ```
 
+#### `ao goals meta`
+
+Run and report meta-goals only
+
+```
+ao goals meta [flags]
+```
+
 #### `ao goals render`
 
 Render the executable-spec layer as BDD/Gherkin text.
@@ -932,7 +390,7 @@ ao goals render [flags]
 
 #### `ao goals scenarios`
 
-List or create the executable-spec scenarios linked to GOALS.md directives.
+Inspect the executable-spec scenarios linked to GOALS.md directives.
 
 ```
 ao goals scenarios [flags]
@@ -941,203 +399,26 @@ ao goals scenarios [flags]
 **Flags:**
 
 ```
-      --create string         Create a scenario from this goal description and link it to --directive
-      --directive int         Directive display number (filter when listing, target when creating)
+      --directive int         Filter by directive display number
       --directive-id string   Filter listing to one directive by stable Directive ID
   -h, --help                  help for scenarios
       --lint                  Lint the directive↔scenario link graph instead of listing
-      --source string         Source for a created scenario (human, agent, prod-telemetry) (default "human")
-      --status string         Status for a created scenario (active, draft, retired) (default "draft")
       --strict                With --lint, exit non-zero on warnings as well as errors
-      --threshold float       Satisfaction threshold for a created scenario (default 0.8)
 ```
 
 #### `ao goals trace`
 
-Walk the executable-spec trace chain defined in docs/adr/ADR-0005.
+Removed in the AgentOps Cathedral Cut
 
 ```
 ao goals trace [flags]
-```
-
-**Flags:**
-
-```
-      --from string   Render the trace lineage rooted at this directive, scenario, or bead ID
-  -h, --help          help for trace
-      --orphans       Audit the whole chain for broken references (errors) and missing yields (warnings)
-      --strict        Escalate warning-class defects to a non-zero exit (ADR-0005 §4.2)
-```
-
-#### `ao goals add`
-
-Add a new goal
-
-```
-ao goals add <id> <check-command> [flags]
-```
-
-**Aliases:**
-
-```
-  add, a
-```
-
-**Flags:**
-
-```
-      --description string   Goal description
-  -h, --help                 help for add
-      --type string          Goal type (health, architecture, quality, meta)
-      --weight int           Goal weight (1-10) (default 5)
-```
-
-#### `ao goals init`
-
-Bootstrap a new GOALS.md file
-
-```
-ao goals init [flags]
-```
-
-**Flags:**
-
-```
-  -h, --help              help for init
-      --non-interactive   Use defaults without prompting
-      --template string   Goal template (go-cli, python-lib, web-app, rust-cli, generic)
-```
-
-#### `ao goals meta`
-
-Run and report meta-goals only
-
-```
-ao goals meta [flags]
-```
-
-#### `ao goals migrate`
-
-Migrate goals between formats.
-
-```
-ao goals migrate [flags]
-```
-
-**Aliases:**
-
-```
-  migrate, mg
-```
-
-**Flags:**
-
-```
-  -h, --help    help for migrate
-      --to-md   Convert GOALS.yaml to GOALS.md format
-```
-
-#### `ao goals prune`
-
-Remove goals referencing nonexistent files
-
-```
-ao goals prune [flags]
-```
-
-**Aliases:**
-
-```
-  prune, p
-```
-
-#### `ao goals steer`
-
-Manage directives
-
-```
-ao goals steer [command]
-```
-
-##### `ao goals steer add`
-
-Add a new directive
-
-```
-ao goals steer add <title> [flags]
-```
-
-**Flags:**
-
-```
-      --description string   Directive description (required)
-  -h, --help                 help for add
-      --steer string         Steer direction (increase, decrease, hold, explore) (default "increase")
-```
-
-##### `ao goals steer apply`
-
-Apply the top re-steer recommendation to GOALS.md via the non-lossy directive-block patcher. Requires policy auto_apply:true AND explicit human confirmation (interactive prompt, or --auto --yes for scripts). A run without confirmation never changes GOALS.md.
-
-```
-ao goals steer apply [flags]
-```
-
-**Flags:**
-
-```
-      --auto            Equivalent to --yes: explicit non-interactive consent to apply
-  -h, --help            help for apply
-      --policy string   Re-steer policy path (default: docs/re-steer-policy.json)
-      --yes             Pre-confirm the apply for non-interactive/scripted use (explicit consent)
-```
-
-##### `ao goals steer prioritize`
-
-Move a directive to a new position
-
-```
-ao goals steer prioritize <number> <new-position> [flags]
-```
-
-##### `ao goals steer recommend`
-
-Run the re-steer policy engine over the verdict ledger and print recommended directive mutations and skip reasons. GOALS.md is never modified. Use `ao goals steer apply` to apply a recommendation.
-
-```
-ao goals steer recommend [flags]
-```
-
-**Flags:**
-
-```
-  -h, --help            help for recommend
-      --policy string   Re-steer policy path (default: docs/re-steer-policy.json)
-```
-
-##### `ao goals steer remove`
-
-Remove a directive by number
-
-```
-ao goals steer remove <number> [flags]
-```
-
----
-
-### `ao land`
-
-Land one reviewed bead the trusted way, in one verb. 'ao land' builds NOTHING
-
-```
-ao land <bead-id> [flags]
 ```
 
 ---
 
 ### `ao session`
 
-Session lifecycle operations.
+Inspect or export session evidence
 
 ```
 ao session [command]
@@ -1147,7 +428,7 @@ ao session [command]
 
 #### `ao session bootstrap`
 
-Universal init prompt for any agent spawned into an AgentOps repo.
+Report local orientation files without starting runtimes, probing
 
 ```
 ao session bootstrap [flags]
@@ -1156,34 +437,13 @@ ao session bootstrap [flags]
 **Flags:**
 
 ```
-  --json       Emit the full status object as JSON (default: 1-line summary).
-  --no-mail    Skip the mcp-agent-mail probe even if the MCP server is reachable.
-  --robot      Same as --json but tighter exit-code contract for hooks.
-  -h, --help      help for bootstrap
-      --json      Emit machine-readable status as JSON
-      --no-mail   Skip the mcp-agent-mail probe
-      --robot     Robot mode: JSON output with tight exit-code contract for SessionStart hooks
-```
-
-#### `ao session close`
-
-Close a session by forging its transcript, extracting learnings,
-
-```
-ao session close [flags]
-```
-
-**Flags:**
-
-```
-      --auto-extract     Extract lightweight learnings (quality-filtered) and write handoff artifact
-  -h, --help             help for close
-      --session string   Session ID to close (default: most recent transcript)
+  -h, --help   help for bootstrap
+      --json   Emit JSON
 ```
 
 #### `ao session handoff`
 
-Write a structured JSON handoff artifact that captures session context
+Write a small handoff artifact without selecting work, claiming it,
 
 ```
 ao session handoff [summary] [flags]
@@ -1192,44 +452,24 @@ ao session handoff [summary] [flags]
 **Flags:**
 
 ```
-      --collect         Auto-collect git/bead state into the artifact
-      --dry-run         Print artifact to stdout without writing file
-      --epic string     Epic ID for RPI context
-      --goal string     What the session was working on
-  -h, --help            help for handoff
-      --no-kill         Write artifact without restarting the session via tmux
-      --rpi-phase int   RPI phase number (populates RPI context, sets type=rpi)
-      --run-id string   Run ID for RPI context
+      --collect               Collect best-effort read-only Git observations
+      --continuation string   Caller-supplied continuation note
+      --dry-run               Print the artifact without writing it
+      --goal string           Caller-supplied goal
+  -h, --help                  help for handoff
 ```
 
 #### `ao session memory`
 
-Manage repo-root MEMORY.md for cross-runtime access
+Removed in the AgentOps Cathedral Cut
 
 ```
-ao session memory [command]
-```
-
-##### `ao session memory sync`
-
-Write recent session history to a repo-root MEMORY.md with managed block markers.
-
-```
-ao session memory sync [flags]
-```
-
-**Flags:**
-
-```
-  -h, --help                 help for sync
-      --max-entries int      Maximum session entries to keep (default 10)
-      --output-file string   Output path (default: MEMORY.md in repo root)
-      --quiet                Suppress output
+ao session memory [flags]
 ```
 
 #### `ao session rehydrate`
 
-Rehydrate emits a lane's re-bootstrap brief from the most recent handoff
+Read a handoff without consuming it, claiming work, or choosing a next action.
 
 ```
 ao session rehydrate [flags]
@@ -1239,113 +479,7 @@ ao session rehydrate [flags]
 
 ```
   -h, --help   help for rehydrate
-      --json   Emit the raw handoff artifact as JSON
-      --peek   Read the brief without marking the handoff consumed
-```
-
-#### `ao session state`
-
-Manage the durable AgentOps state-memory contract.
-
-```
-ao session state [command]
-```
-
-##### `ao session state admit`
-
-Admit one independently reviewed Finding candidate into .ao/accepted
-
-```
-ao session state admit --candidate <path> --verdict <path> [flags]
-```
-
-**Flags:**
-
-```
-      --candidate string     Path to an .ao Finding candidate JSON file (required)
-      --destination string   Destination under .ao/accepted/findings/ (default: finding id)
-  -h, --help                 help for admit
-      --max-age-days int     Maximum age for reviewed findings (default 30)
-      --verdict string       Path to an independent admission verdict JSON file (required)
-```
-
-##### `ao session state candidate`
-
-Inspect inert .ao state candidates
-
-```
-ao session state candidate [command]
-```
-
-###### `ao session state candidate validate`
-
-Validate an inert .ao Finding candidate and print its digest
-
-```
-ao session state candidate validate <path> [flags]
-```
-
-##### `ao session state doctor`
-
-Diagnose state memory health
-
-```
-ao session state doctor [flags]
-```
-
-##### `ao session state review-request`
-
-Emit the digest-bound review request for a Finding candidate
-
-```
-ao session state review-request <candidate> [flags]
-```
-
-##### `ao session state validate`
-
-Validate state memory JSON files against their schemas
-
-```
-ao session state validate <file> [file...] [flags]
-```
-
-##### `ao session state verify`
-
-Verify .ao state schemas, fixtures, accepted findings, and ledger rows
-
-```
-ao session state verify [flags]
-```
-
-**Flags:**
-
-```
-      --all    Verify all .ao state authority surfaces
-  -h, --help   help for verify
-```
-
----
-
-### `ao validate`
-
-Run a deterministic validation gate over RPI artifacts and emit a single
-
-```
-ao validate [flags]
-```
-
-**Flags:**
-
-```
-      --bead string          Validate artifacts bound to a bead id
-      --changes strings      Explicit files to validate
-      --gate                 Exit-code mode: 0=PASS/WARN, 1=FAIL, 2=error
-  -h, --help                 help for validate
-      --json                 Structured verdict (honored in both modes)
-      --lenient              Allow legacy artifacts without schema_version
-      --lenient-expiry int   Days until lenient bypass expires (default 90)
-      --strict               Promote WARN to FAIL (exit 1)
-      --warn-as-fail         Alias for --strict
+      --json   Emit the stored artifact as JSON
 ```
 
 ---
@@ -1395,577 +529,9 @@ ao config models [flags]
 
 ---
 
-### `ao beads`
-
-Commands that help maintain the bd issue tracker alongside the main
-
-```
-ao beads [command]
-```
-
-**Subcommands:**
-
-#### `ao beads audit`
-
-Audits open and in-progress beads for backlog hygiene issues.
-
-```
-ao beads audit [flags]
-```
-
-**Flags:**
-
-```
-      --auto-close   Close likely-fixed beads when commit or file-change evidence is found
-  -h, --help         help for audit
-      --json         Emit audit report as JSON
-      --strict       Exit 1 when any likely-fixed, likely-stale, or consolidatable bead is found
-```
-
-#### `ao beads cluster`
-
-Analyzes open beads for domain overlap and suggests consolidation groups.
-
-```
-ao beads cluster [flags]
-```
-
-**Flags:**
-
-```
-      --apply   Reparent non-representative beads under the cluster representative
-  -h, --help    help for cluster
-      --json    Emit cluster report as JSON
-```
-
-#### `ao beads dir`
-
-Print the BEADS_DIR path AgentOps will use for br subprocesses.
-
-```
-ao beads dir [flags]
-```
-
-**Flags:**
-
-```
-  -h, --help      help for dir
-      --json      Emit {beads_dir, source} as JSON
-      --require   Fail closed: exit non-zero (printing nothing to stdout) unless the resolved directory holds a br ledger
-```
-
-#### `ao beads epic-status`
-
-Emit a deterministic "is this epic/wave actually done" verdict, replacing
-
-```
-ao beads epic-status <epic-id> [flags]
-```
-
-**Flags:**
-
-```
-  -h, --help       help for epic-status
-      --json       Emit the verdict as a JSON object instead of a human-readable line.
-      --terminal   Map the verdict to the process exit code (0 terminal / 2 not-terminal / 3 skipped).
-```
-
-#### `ao beads exec`
-
-Forward a bead command verbatim to the resolved beads tracker (bd or br),
-
-```
-ao beads exec [args...] [flags]
-```
-
-#### `ao beads harvest`
-
-Reads a closed bead via 'bd show <id>' and writes its closure reason
-
-```
-ao beads harvest <bead-id> [flags]
-```
-
-**Flags:**
-
-```
-      --dry-run          Print the learning content to stdout without writing a file
-  -h, --help             help for harvest
-      --out-dir string   Directory to write the learning file into (default ".agents/learnings")
-```
-
-#### `ao beads lint`
-
-Runs 'ao beads verify' on every bead matching a status filter and
-
-```
-ao beads lint [flags]
-```
-
-**Flags:**
-
-```
-  -h, --help            help for lint
-      --json            Emit lint report as JSON
-      --status string   bd status filter (open, closed, all) (default "open")
-```
-
-#### `ao beads resume`
-
-Transfers a stale claim via 'br update <bead-id> --claim', then appends a
-
-```
-ao beads resume <bead-id> [flags]
-```
-
-**Flags:**
-
-```
-      --agent string    New claimant id (defaults to BEADS_ACTOR env var, else ao-beads-resume).
-  -h, --help            help for resume
-      --json            Emit the claim_transferred event to stdout (always written to ledger).
-      --ledger string   Path to the provenance ledger (relative to repo root). (default "docs/provenance/ledger.jsonl")
-```
-
-#### `ao beads scenarios`
-
-Turn a bead's free-text acceptance criteria into structured Gherkin
-
-```
-ao beads scenarios [command]
-```
-
-##### `ao beads scenarios extract`
-
-Read a bead's acceptance criteria via 'bd show <id> --json', convert the
-
-```
-ao beads scenarios extract <bead-id> [flags]
-```
-
-**Flags:**
-
-```
-      --force   Extract even when the bead already has a '## Scenarios' block
-  -h, --help    help for extract
-      --json    Emit extracted scenarios as JSON (data on stdout) instead of a Gherkin block
-      --write   After printing the block and an operator y/N confirmation, append it to the bead via 'bd update'
-```
-
-##### `ao beads scenarios validate`
-
-Read a bead via 'bd show <id> --json' and validate its authored
-
-```
-ao beads scenarios validate <bead-id> [flags]
-```
-
-**Flags:**
-
-```
-  -h, --help   help for validate
-      --json   Emit a structured validation verdict as JSON on stdout
-```
-
-#### `ao beads stale-claims`
-
-Lists in_progress beads whose claim activity is older than --threshold.
-
-```
-ao beads stale-claims [flags]
-```
-
-**Flags:**
-
-```
-  -h, --help              help for stale-claims
-      --json              Emit JSON array conforming to stale-claim-event.v1 (event_type: stale_detected).
-      --threshold float   Staleness threshold in hours (claim updated more than N hours ago). (default 4)
-```
-
-#### `ao beads tracker`
-
-Detect which beads tracker AgentOps will drive here and how it was
-
-```
-ao beads tracker [flags]
-```
-
-**Flags:**
-
-```
-  -h, --help   help for tracker
-      --json   Emit {tracker, binary, ledger_dir, source} as JSON
-```
-
-#### `ao beads verify`
-
-Reads a bead description via 'bd show <id>' and checks every file
-
-```
-ao beads verify <bead-id> [flags]
-```
-
-**Flags:**
-
-```
-  -h, --help      help for verify
-      --json      Emit verification report as JSON instead of human-readable text
-      --verbose   Include FRESH citations in the output (default: stale only)
-```
-
-#### `ao beads verify-acceptance`
-
-Read beads via br (never the retired bd) and check each bead carries the
-
-```
-ao beads verify-acceptance <bead-id>... [flags]
-```
-
-**Flags:**
-
-```
-  -h, --help     help for verify-acceptance
-      --json     Emit verdicts as JSON
-      --strict   Exit non-zero on any FAIL or UNDEFINED verdict
-```
-
----
-
-### `ao membrane`
-
-Operate the self-improving membrane (epic age-cwo).
-
-```
-ao membrane [command]
-```
-
-**Subcommands:**
-
-#### `ao membrane calibrate`
-
-Run the standing membrane calibration harness (age-e508.2): measure the current
-
-```
-ao membrane calibrate [--membrane-label <adapter>] [--membrane-cmd <c>] [--out-dir <dir>] [flags]
-```
-
-#### `ao membrane catch`
-
-Record a catch out-of-band: a REFUTED gate-verdict carrying the bounded
-
-```
-ao membrane catch --bead <id> (--domain <bc> --reason <what> | --evidence <file>) [--scope head|staged|upstream] [--base <sha>] [--class <slug>] [--paths f1,f2] [--detector-pattern <re> --globs <g> --detector-kind <k>] [flags]
-```
-
-**Flags:**
-
-```
-      --base string               With --scope upstream: exact reviewed ancestor commit (default: configured-upstream merge-base)
-      --bead string               Bead id the catch was found on (required)
-      --class string              Optional SEMANTIC class slug (e.g. stale-retired-surface). When set it keys the class CROSS-BEAD (the same label on different beads is ONE class), instead of the bead-drifting reason. Slug shape: lowercase [a-z0-9] words joined by '-'
-      --detector-kind string      Optional detector kind (e.g. regex)
-      --detector-pattern string   Optional regex that mechanically detects this class (makes it a compile candidate)
-      --domain string             Bounded-context / work-class tag (required)
-      --evidence string           Pawl-review evidence file: derive --reason (two-tier REFUTED salvage), --domain (first changed file's top dir) and --paths (changed files, first 20); explicit flags win
-      --globs string              Optional path globs scoping the detector pattern
-      --head string               Commit sha the catch was found at (default: git HEAD)
-  -h, --help                      help for catch
-      --mode string               Pawl diversity mode: fresh-context (default) | multi-model | deterministic
-      --paths strings             Concrete repo-relative file paths the catch touches (comma-separated or repeated)
-      --reason string             What was caught — the defect (required; the class reason when no --class given)
-      --run string                Run id (default: membrane-catch)
-      --scope string              With --evidence: changed-file scope — head (the --head commit), staged (the index), or upstream (configured-upstream merge-base through --head) (default "head")
-```
-
-#### `ao membrane derive-checks`
-
-Derive membrane checks from escapes in a run
-
-```
-ao membrane derive-checks --run <id> [flags]
-```
-
-**Flags:**
-
-```
-      --dry-run      Report what would be derived without writing files
-      --force        Overwrite existing derived artifacts
-  -h, --help         help for derive-checks
-      --run string   Run id to scan for escapes (required)
-```
-
-#### `ao membrane digest`
-
-Mine the ABUNDANT catch corpus into a single GLOBAL top-N recurring-defect
-
-```
-ao membrane digest [--top N] [--json] [--deltas --since <date>] [flags]
-```
-
-**Flags:**
-
-```
-      --deltas                 Per-class recurrence before vs since --since (read-only; for the producer-defect register)
-  -h, --help                   help for digest
-      --include-placeholders   Include reason-less placeholder classes (e.g. "pawl-review REFUTED (see evidence)") for corpus auditing; excluded by default so the checklist stays actionable
-      --json                   Also print the ranked digest as JSON (the checklist file is written either way)
-      --since string           Cutoff for --deltas: an ISO date (2026-07-08, UTC midnight) or RFC3339 timestamp — typically a producer fix's land date
-      --top int                How many top recurring catch classes to include (default 10)
-```
-
-#### `ao membrane recall`
-
-Recall the membrane's accumulated memory for one bounded context: every
-
-```
-ao membrane recall --domain <domain> [flags]
-```
-
-**Flags:**
-
-```
-      --domain string     Bounded-context / work-class tag to recall escapes for (required)
-  -h, --help              help for recall
-      --include-catches   Also surface CATCH classes in the domain (the abundant memory; escapes are rare)
-      --json              Emit the recalled escapes as JSON
-      --paths strings     With --include-catches, narrow to catches whose affected_paths overlap these files
-```
-
-#### `ao membrane triage`
-
-Read the CATCH corpus and report whether the compiler thesis has fuel — with a
-
-```
-ao membrane triage [flags]
-```
-
-**Flags:**
-
-```
-  -h, --help   help for triage
-      --json   Emit the triage result as JSON
-```
-
----
-
-### `ao close`
-
-Close a bead and persist the explicit ledger/evidence paths
-
-```
-ao close <id> <commit-message> <evidence-ref> [paths...] [flags]
-```
-
----
-
-### `ao council-gate`
-
-Fail-closed two-plus judge verdict aggregation
-
-```
-ao council-gate <verdict1> <verdict2> [...] [flags]
-```
-
----
-
-### `ao done`
-
-Close a bead through the membrane's bookkeeping half: the close reason is
-
-```
-ao done <bead-id> [flags]
-```
-
-**Flags:**
-
-```
-      --force-no-verdict   Close without a verdict, stamping an explicit UNVERIFIED marker
-  -h, --help               help for done
-      --json               Emit machine-readable JSON (stdout-as-data)
-  -r, --reason string      Close reason prose (the verdict stamp is appended) (default "Done")
-      --sha string         Commit sha (or >=7-char prefix) the bead landed as (default: HEAD at cwd)
-```
-
----
-
-### `ao governor`
-
-The slow-loop setpoint that keeps the self-improving membrane from oscillating
-
-```
-ao governor [command]
-```
-
-**Subcommands:**
-
-#### `ao governor budget`
-
-SPC.1 (control-loop-model.md §4). The ERROR BUDGET is the top governor: inside
-
-```
-ao governor budget [--json] [--window N] [--tolerance T] [--min-confirmed N] [flags]
-```
-
-**Flags:**
-
-```
-  -h, --help                help for budget
-      --json                Emit the verdict as JSON
-      --min-confirmed int   Special-cause floor: min confirmed in window before harden can fire; 0 = default
-      --tolerance float     Tolerated escape rate T; 0 = default
-      --window int          Rolling window size (gate-verdicts); 0 = default
-```
-
-#### `ao governor noise-band`
-
-SPC.2 (control-loop-model.md §4). The membrane adjusts ONLY on a special-cause
-
-```
-ao governor noise-band [--json] [--window N] [--limit K] [flags]
-```
-
-**Flags:**
-
-```
-  -h, --help         help for noise-band
-      --json         Emit the verdict as JSON
-      --limit int    Special-cause control limit K (escapes per domain in window); 0 = default
-      --window int   Rolling window size (gate-verdicts); 0 = default
-```
-
----
-
-### `ao help`
-
-Help provides help for any command in the application.
-
-```
-ao help [command] [flags]
-```
-
----
-
-### `ao pawl`
-
-The pawl is AgentOps's acceptance gate: a change reaches "done" only with an
-
-```
-ao pawl [command]
-```
-
-**Subcommands:**
-
-#### `ao pawl review`
-
-Wrap scripts/pawl-review.sh and surface it on the ao CLI. Dispatches the codex
-
-```
-ao pawl review <bead-id> [--scope head|staged|upstream] [--base <sha>] [--converge] [--strict] [--author-family <fam>] [--context <s>] [--smoke <cmd>] [flags]
-```
-
-#### `ao pawl doctor`
-
-Read-only standing pawl preflight: assert swarm binary (ntm-first), session, pane cwd/model, trust prompts, readiness, and evidence policy
-
-```
-ao pawl doctor [--json] [--expected-cwd PATH] [--expected-claude-model MODEL] [--expected-codex-model MODEL] [flags]
-```
-
-#### `ao pawl down`
-
-Tear down the standing pawl-service (no orphan panes)
-
-```
-ao pawl down [flags]
-```
-
-#### `ao pawl health`
-
-Per-pane liveness/readiness of the standing pawl-service + the membrane tier
-
-```
-ao pawl health [--json] [flags]
-```
-
-#### `ao pawl metrics`
-
-p50/p95 route latency + agreement-rate SLOs over the recorded routes
-
-```
-ao pawl metrics [--json] [flags]
-```
-
-#### `ao pawl reap`
-
-Tear down the standing pawl-service iff idle > PAWL_IDLE_TTL (substrate/cron schedules it; no-op otherwise)
-
-```
-ao pawl reap [flags]
-```
-
-#### `ao pawl route`
-
-Route a review packet to the warm cross-family panel; require tier-appropriate agreement, record the verdict
-
-```
-ao pawl route <bead> <packet> [pr] [flags]
-```
-
-#### `ao pawl smoke`
-
-Alias for pawl doctor: non-mutating readiness smoke before routing real reviews
-
-```
-ao pawl smoke [--json] [--expected-cwd PATH] [--expected-claude-model MODEL] [--expected-codex-model MODEL] [flags]
-```
-
-#### `ao pawl up`
-
-Stand up the standing pawl-service — adaptive: probe installed families (claude/codex/agy) and form the strongest membrane; pin with --dual/--tri/--models. Readiness-gated, idempotent
-
-```
-ao pawl up [--dual|--tri|--models a,b,c] [flags]
-```
-
----
-
-### `ao plan-pawl`
-
-The plan-pawl is the multi-model pawl applied to a discovery PLAN artifact
-
-```
-ao plan-pawl [command]
-```
-
-**Subcommands:**
-
-#### `ao plan-pawl decide`
-
-Apply the deterministic quorum/round/breaker rules to one round of judge
-
-```
-ao plan-pawl decide [flags]
-```
-
-**Flags:**
-
-```
-      --dir string            directory of judge verdict *.json files
-  -h, --help                  help for decide
-      --json                  emit the decision as JSON
-      --judgment-flag         a reviewer raised an explicit value/irreversibility judgment (hard breaker)
-      --max-rounds int        max rounds before the max-attempts breaker trips (<=0 = unbounded) (default 3)
-      --oscillation           the same failure has repeated (hard breaker)
-      --round int             current round (1-based) (default 1)
-      --verdict stringArray   judge verdict: family:disposition[:warnclass] (repeatable)
-```
-
----
-
 ### `ao provenance`
 
-Append-only write model for the SDLC provenance/intent graph
+Append and inspect generic, evidence-backed relationships between
 
 ```
 ao provenance [command]
@@ -1985,49 +551,13 @@ ao provenance add <from-id> <to-id> [flags]
 
 ```
       --evidence string     Optional evidence pointer (path, commit, CI run URL, event id)
-      --from-type string    Source node type (decision|artifact|bead|...) (default "decision")
+      --from-type string    Source node type (for example decision, artifact, or observation) (default "decision")
   -h, --help                help for add
       --json                Emit the sealed edge as JSON
       --relation string     Typed PROV-O relation (required), e.g. wasGeneratedBy
-      --to-type string      Target node type (decision|artifact|bead|...) (default "artifact")
+      --to-type string      Target node type (for example decision, artifact, or observation) (default "artifact")
       --trust-tier string   Trust tier (authored|inferred|mined) (default "authored")
       --ts string           Override the UTC RFC3339 timestamp (defaults to now)
-```
-
-#### `ao provenance emit-landed`
-
-Read the commit(s) being landed and append a schema-valid, hash-chained
-
-```
-ao provenance emit-landed [flags]
-```
-
-**Flags:**
-
-```
-      --commit string      Single commit-ish to emit edges for (default HEAD when no --range)
-      --dry-run            Resolve and print edges without writing the ledger
-  -h, --help               help for emit-landed
-      --json               Emit appended edges as JSON
-      --range string       Git revision range (e.g. origin/main..HEAD); emits for every commit in it
-      --trunk-ref string   Require each commit to be an ancestor of this ref (e.g. origin/main) before emitting; merge_sha uses the resolved full OID
-```
-
-#### `ao provenance emit-verdict`
-
-Read a pawl-verdict JSON artifact (.agents/pawl-verdicts/<bead>.json) and
-
-```
-ao provenance emit-verdict [flags]
-```
-
-**Flags:**
-
-```
-      --dry-run       Resolve and print edges without writing the ledger
-      --file string   Path to the pawl-verdict JSON file (required)
-  -h, --help          help for emit-verdict
-      --json          Emit appended edges as JSON
 ```
 
 #### `ao provenance export`
@@ -2044,14 +574,6 @@ ao provenance export [flags]
   -h, --help     help for export
       --json     Emit a single indented JSON array instead of JSONL
       --verify   Verify the re-chained export and print only a one-line summary
-```
-
-#### `ao provenance ledger-reader-version`
-
-Print, as a single bare integer, the ledger-reader capability level this ao
-
-```
-ao provenance ledger-reader-version [flags]
 ```
 
 #### `ao provenance list`
@@ -2090,7 +612,7 @@ ao provenance mine-session --file <session.jsonl> [flags]
 
 #### `ao provenance position`
 
-Read the provenance ledger and report the navigator's current position:
+Report the ledger record count and latest hash without inferring lifecycle state.
 
 ```
 ao provenance position [flags]
@@ -2100,40 +622,22 @@ ao provenance position [flags]
 
 ```
   -h, --help   help for position
-      --json   Emit machine-readable JSON (stdout-as-data)
-```
-
-#### `ao provenance reconcile`
-
-Scan the pawl-verdicts dir (.agents/pawl-verdicts/*.json) and, for every
-
-```
-ao provenance reconcile [flags]
-```
-
-**Flags:**
-
-```
-      --dir string   Verdicts dir (default: <repo>/.agents/pawl-verdicts)
-      --emit         Re-emit missing ledger edges for unbound verdicts
-      --force        Run even with an uncommitted ledger worktree
-  -h, --help         help for reconcile
-      --json         Emit the reconcile result as JSON
+      --json   Emit machine-readable JSON
 ```
 
 #### `ao provenance show`
 
-Render the human story of one change from the committed provenance
+Read the provenance ledger and show every edge whose from_id or to_id
 
 ```
-ao provenance show <sha|bead-id> [flags]
+ao provenance show <node-id> [flags]
 ```
 
 **Flags:**
 
 ```
   -h, --help   help for show
-      --json   Emit machine-readable JSON (stdout-as-data)
+      --json   Emit machine-readable JSON
 ```
 
 #### `ao provenance trace`
@@ -2167,16 +671,6 @@ ao provenance verify [flags]
 ```
   -h, --help   help for verify
       --json   Emit the machine-readable verify result as JSON
-```
-
----
-
-### `ao ready`
-
-Print harness-neutral ready bead state as JSON
-
-```
-ao ready [flags]
 ```
 
 ---
@@ -2225,47 +719,10 @@ ao skills consumers <skill> [flags]
 
 #### `ao skills edit`
 
-Immune-system commands for the live skill tier.
+Removed in the AgentOps Cathedral Cut
 
 ```
-ao skills edit [command]
-```
-
-##### `ao skills edit digest`
-
-Summarize recent committed skill edits
-
-```
-ao skills edit digest [flags]
-```
-
-**Flags:**
-
-```
-      --critical-policy string   Critical skills policy file (default: docs/contracts/critical-skills.txt)
-  -h, --help                     help for digest
-      --json                     Emit JSON
-      --since string             git log --since value (default "24 hours ago")
-```
-
-##### `ao skills edit seal`
-
-Commit one live skill edit with critical-skill protection
-
-```
-ao skills edit seal [flags]
-```
-
-**Flags:**
-
-```
-      --actor string             Agent/operator name recorded in the commit body
-      --allow-critical           Allow a critical skill edit; use only for human-supervised edits
-      --critical-policy string   Critical skills policy file (default: docs/contracts/critical-skills.txt)
-      --dry-run                  Check policy and print the commit action without staging or committing
-  -h, --help                     help for seal
-      --message string           Commit subject (default: chore(skills): update <skill> via live edit)
-      --skill string             Skill slug under skills/<slug> to seal
+ao skills edit [flags]
 ```
 
 #### `ao skills find`
@@ -2310,7 +767,7 @@ ao skills link [flags]
 **Flags:**
 
 ```
-      --dest string   Link into this single dir instead of the auto-detected runtimes (default: every installed runtime — ~/.claude, ~/.codex, ~/.gemini, ~/.cursor, ~/.pi)
+      --dest string   Link into this single dir instead of the auto-detected roots (default: ~/.agents plus every installed runtime)
   -h, --help          help for link
       --json          Emit machine-readable JSON
 ```
@@ -2366,165 +823,243 @@ ao skills resolve [flags]
       --strict   Exit non-zero when ME overlaps are found (CI dedup gate)
 ```
 
-#### `ao skills retire`
+#### `ao skills unlink`
 
-One deterministic retire operation for a skill.
+The clean uninstall inverse of `ao skills link`. Scan each runtime's
 
 ```
-ao skills retire <slug> [flags]
+ao skills unlink [flags]
 ```
 
 **Flags:**
 
 ```
-      --allow-critical   Allow retiring a slug listed in docs/contracts/critical-skills.txt
-      --dry-run          Report every planned operation without mutating anything
-  -h, --help             help for retire
-      --into string      Target skill the retiree merges into (historical state merged-into; default: cut)
-      --json             Emit a machine-readable JSON report
-      --no-regen         Skip the regen scripts after the ledger flip
+      --dest string   Sweep this single dir instead of the auto-detected roots (default: ~/.agents plus every installed runtime)
+  -h, --help          help for unlink
+      --json          Emit machine-readable JSON
 ```
 
 ---
 
-### `ao verdict-gate`
+### `ao flywheel`
 
-Reject verdicts without commands and independent judge identity
-
-```
-ao verdict-gate <file|-> [flags]
-```
-
----
-
-### `ao verify`
-
-Run an independent cross-family review of your change and, on CONFIRMED, write
+Knowledge flywheel operations and status.
 
 ```
-ao verify [command]
+ao flywheel [command]
 ```
 
 **Subcommands:**
 
-#### `ao verify init`
+#### `ao flywheel compare`
 
-Install a pre-push hook into THIS git repository that refuses any push to
-
-```
-ao verify init [--remove] [flags]
-```
-
-**Flags:**
+Compare retrieval quality between primary and shadow namespaces.
 
 ```
-  -h, --help     help for init
-      --remove   Uninstall the ratchet, restoring any pre-existing pre-push hook byte-identically
-```
-
-#### `ao verify receipts`
-
-Render the membrane-receipts proof page for THIS git repository from its
-
-```
-ao verify receipts [flags]
-```
-
-#### `ao verify stats`
-
-Report the COST of verified-done from the committed provenance ledger
-
-```
-ao verify stats [flags]
+ao flywheel compare [flags]
 ```
 
 **Flags:**
 
 ```
-      --days int        Trailing window in days for the trend section (<=0 = all time) (default 30)
-  -h, --help            help for stats
-      --json            Emit machine-readable JSON (stdout-as-data)
-      --ledger string   Ledger path override (default: repo docs/provenance/ledger.jsonl)
+  -h, --help            help for compare
+      --shadow string   Shadow namespace to compare against primary (default "shadow")
+```
+
+#### `ao flywheel status`
+
+Display comprehensive flywheel health status.
+
+```
+ao flywheel status [flags]
+```
+
+**Flags:**
+
+```
+      --days int           Period in days for metrics calculation (default 7)
+  -h, --help               help for status
+      --namespace string   Citation namespace to evaluate (primary by default) (default "primary")
+```
+
+---
+
+### `ao claim`
+
+Removed in the AgentOps Cathedral Cut
+
+```
+ao claim [flags]
+```
+
+---
+
+### `ao close`
+
+Removed in the AgentOps Cathedral Cut
+
+```
+ao close [flags]
+```
+
+---
+
+### `ao constraint`
+
+Removed in the AgentOps Cathedral Cut
+
+```
+ao constraint [flags]
+```
+
+---
+
+### `ao converge`
+
+Removed in the AgentOps Cathedral Cut
+
+```
+ao converge [flags]
+```
+
+---
+
+### `ao crank`
+
+Removed in the AgentOps Cathedral Cut
+
+```
+ao crank [flags]
+```
+
+---
+
+### `ao done`
+
+Removed in the AgentOps Cathedral Cut
+
+```
+ao done [flags]
+```
+
+---
+
+### `ao governor`
+
+Removed in the AgentOps Cathedral Cut
+
+```
+ao governor [flags]
+```
+
+---
+
+### `ao help`
+
+Help provides help for any command in the application.
+
+```
+ao help [command] [flags]
+```
+
+---
+
+### `ao land`
+
+Removed in the AgentOps Cathedral Cut
+
+```
+ao land [flags]
+```
+
+---
+
+### `ao membrane`
+
+Removed in the AgentOps Cathedral Cut
+
+```
+ao membrane [flags]
+```
+
+---
+
+### `ao next-work`
+
+Removed in the AgentOps Cathedral Cut
+
+```
+ao next-work [flags]
+```
+
+---
+
+### `ao pawl`
+
+Removed in the AgentOps Cathedral Cut
+
+```
+ao pawl [flags]
+```
+
+---
+
+### `ao plan-pawl`
+
+Removed in the AgentOps Cathedral Cut
+
+```
+ao plan-pawl [flags]
+```
+
+---
+
+### `ao reconcile`
+
+Removed in the AgentOps Cathedral Cut
+
+```
+ao reconcile [flags]
+```
+
+---
+
+### `ao state`
+
+Removed in the AgentOps Cathedral Cut
+
+```
+ao state [flags]
+```
+
+---
+
+### `ao validate`
+
+Removed in the AgentOps Cathedral Cut
+
+```
+ao validate [flags]
+```
+
+---
+
+### `ao worktree`
+
+Removed in the AgentOps Cathedral Cut
+
+```
+ao worktree [flags]
 ```
 
 ---
 
 ### `ao yield`
 
-Record durable, append-only, bead-keyed operational events for the
+Removed in the AgentOps Cathedral Cut
 
 ```
-ao yield [command]
-```
-
-**Subcommands:**
-
-#### `ao yield emit`
-
-Append one operational event keyed by bead to the yield ledger
-
-```
-ao yield emit <accept|gate-verdict|usage> --bead <id> --run <id> [--json <body> | typed flags] [flags]
-```
-
-**Flags:**
-
-```
-      --bead string   bead id this event is keyed to (required)
-  -h, --help          help for emit
-      --json string   the typed body object as a single JSON blob
-      --run string    factory run/cycle id (required)
-      --ts string     optional RFC3339 timestamp; defaults to now (UTC)
-```
-
-#### `ao yield gauge`
-
-Load the yield ledger, compute the dynamo yield vector for one run, and
-
-```
-ao yield gauge --run <id> [--json] [--c-delta <float>] [flags]
-```
-
-**Flags:**
-
-```
-      --c-delta float   ag-8p8o's published corpus delta (C); omit to report C as pending
-  -h, --help            help for gauge
-      --json            emit the computed gauges as JSON for machine consumption
-      --run string      factory run/cycle id to compute gauges for (required)
-```
-
-#### `ao yield report`
-
-Print what an autonomous loop did — and what it parked for you — without
-
-```
-ao yield report [--since <RFC3339|duration>] [--json] [flags]
-```
-
-**Flags:**
-
-```
-  -h, --help           help for report
-      --json           emit the full report struct as JSON
-      --since string   cutoff: an RFC3339 instant or a duration lookback like 8h (default 24h)
-```
-
-#### `ao yield tokens`
-
-Parse a Claude Code or Codex session transcript and sum the real token
-
-```
-ao yield tokens --transcript <path> [--json] [flags]
-```
-
-**Flags:**
-
-```
-  -h, --help                help for tokens
-      --json                emit {"tokens_in":N,"tokens_out":M} as JSON
-      --pair                emit two whitespace-separated values: tokens_in tokens_out
-      --transcript string   path to a session transcript (JSONL) to sum tokens from (required)
+ao yield [flags]
 ```
 
 ---

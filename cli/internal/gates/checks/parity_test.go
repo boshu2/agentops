@@ -31,7 +31,6 @@ func selectedIDs(t *testing.T, changed []string) map[string]bool {
 // alwaysIDs are the no-Match checks that must run for any change.
 var alwaysIDs = []string{
 	"always.mutation-route",
-	"always.agents-write-surfaces",
 	"always.no-tracked-agents",
 	"always.embedded-sync",
 }
@@ -61,14 +60,15 @@ func TestPredicateParity_PerChangeClass(t *testing.T) {
 		ids := selectedIDs(t, []string{"cli/cmd/ao/main.go"})
 		assertHas(t, ids, "go.build", "go.command-test-pair")
 		assertHas(t, ids, alwaysIDs...)
-		assertNot(t, ids, "skill.schema", "contract.registry-drift", "eval.corpus-freshness")
+		assertNot(t, ids, "skill.schema", "contract.skill-mesh")
 	})
 
 	t.Run("skill change", func(t *testing.T) {
 		ids := selectedIDs(t, []string{"skills/foo/SKILL.md"})
-		assertHas(t, ids, "skill.schema", "skill.isolation", "skill.no-operator-leakage", "derived.changed-scope")
+		assertHas(t, ids, "skill.schema", "skill.no-operator-leakage", "derived.changed-scope")
 		assertHas(t, ids, alwaysIDs...)
-		assertNot(t, ids, "go.build", "go.command-test-pair", "contract.registry-drift")
+		assertHas(t, ids, "contract.skill-mesh")
+		assertNot(t, ids, "go.build", "go.command-test-pair")
 	})
 
 	t.Run("skill conformance selector self-change", func(t *testing.T) {
@@ -86,22 +86,21 @@ func TestPredicateParity_PerChangeClass(t *testing.T) {
 
 	t.Run("contract change", func(t *testing.T) {
 		ids := selectedIDs(t, []string{"schemas/eval-outcomes.json"})
-		assertHas(t, ids, "contract.registry-drift", "contract.bounded-contexts-drift", "contract.finding-registry")
+		assertHas(t, ids, "contract.cathedral-cut", "contract.finding-registry")
 		assertHas(t, ids, alwaysIDs...)
 		assertNot(t, ids, "go.build", "skill.schema")
 	})
 
 	t.Run("docs change", func(t *testing.T) {
 		ids := selectedIDs(t, []string{"docs/how-it-works.md"})
-		assertHas(t, ids, "docs.no-retired-tech")
 		assertHas(t, ids, alwaysIDs...)
-		assertNot(t, ids, "go.build", "skill.schema", "contract.registry-drift")
+		assertNot(t, ids, "go.build", "skill.schema", "contract.skill-mesh", "claim.registry-drift")
 	})
 
 	t.Run("empty diff runs only always-checks", func(t *testing.T) {
 		ids := selectedIDs(t, nil)
 		assertHas(t, ids, alwaysIDs...)
-		assertNot(t, ids, "go.build", "skill.schema", "contract.registry-drift", "eval.corpus-freshness")
+		assertNot(t, ids, "go.build", "skill.schema", "contract.skill-mesh")
 	})
 }
 
@@ -109,6 +108,6 @@ func TestPredicateParity_PerChangeClass(t *testing.T) {
 // force every fast check regardless of routing.
 func TestPredicateParity_InvalidationRunsAll(t *testing.T) {
 	ids := selectedIDs(t, []string{"go.mod"})
-	assertHas(t, ids, "go.build", "skill.schema", "contract.registry-drift", "eval.corpus-freshness")
+	assertHas(t, ids, "go.build", "skill.schema", "contract.skill-mesh")
 	assertHas(t, ids, alwaysIDs...)
 }

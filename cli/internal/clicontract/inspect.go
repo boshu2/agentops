@@ -29,6 +29,11 @@ func Inspect(root *cobra.Command, commandExits map[string]map[string]string) []C
 				Effects:    effectsPolicy(child),
 				ExitCodes:  exitsFor(path, commandExits),
 			}
+			if contract, ok := ContractFor(child); ok {
+				// ContractFor has already validated the attached metadata, so this
+				// projection cannot fail without an internal contract bug.
+				record, _ = ProjectContract(record, contract)
+			}
 			if path == "ao capabilities" {
 				record.Output = "structured"
 				record.Effects = "pure"

@@ -128,16 +128,16 @@ Run the current local checks:
 
 ```bash
 # Required for any skill change
-bash skills/heal-skill/scripts/heal.sh --strict
+bash skills/skill-builder/scripts/heal.sh --strict
 
 # Required when docs or skill counts change
 bash tests/docs/validate-doc-release.sh
 
 # If you added or removed a skill directory
-scripts/sync-skill-counts.sh
+python3 scripts/generate-skill-mesh.py
 
-# Recommended fast gate before push
-scripts/pre-push-gate.sh --fast
+# Recommended fast changed-surface check
+ao gate check --fast --scope worktree
 ```
 
 If your change affects Codex behavior or the checked-in Codex bundle, also run:
@@ -154,7 +154,7 @@ Start from a simple, high-signal skill rather than the biggest orchestration lay
 Useful examples:
 
 - [skills/research/SKILL.md](skills/research.md)
-- [skills/post-mortem/SKILL.md](skills/post-mortem.md)
+- [skills/postmortem/SKILL.md](skills/postmortem.md)
 - [skills/doc/SKILL.md](skills/doc.md)
 - [skills/implement/SKILL.md](skills/implement.md)
 

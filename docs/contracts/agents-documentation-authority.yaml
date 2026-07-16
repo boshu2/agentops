@@ -1,0 +1,106 @@
+schema_version: agentops-documentation-authority.v1
+status: active
+
+# This contract records human and agent judgments; the checker proves only
+# filesystem, index, ownership-path, and literal-reference facts.
+scope:
+  root_markdown_count: 10
+  reference_excludes:
+    - glob: .agents/rpi/**
+      reason: generated runtime evidence
+    - glob: docs/releases/**
+      reason: immutable release history
+    - glob: docs/plans/**
+      reason: historical planning records
+    - glob: docs/audits/**
+      reason: point-in-time audit evidence
+    - glob: docs/provenance/**
+      reason: append-only provenance evidence
+    - glob: docs/handoffs/**
+      reason: historical session handoffs
+    - glob: spec/teardown-2026-05-28/**
+      reason: archived teardown specification
+    - glob: CHANGELOG.md
+      reason: immutable release history
+
+documents:
+  - path: AGENTS.md
+    tracked: true
+    class: operating-contract
+    disposition: retain-and-tighten
+    owner: AGENTS.md
+    proof: scripts/check-cathedral-cut-conformance.py plus fresh-context verdicts
+    references:
+      phase_policy: {inventory: exact, pre-cutover: exact, cutover: exact}
+      include_globs:
+        - docs/agent-workflow-reference.md
+        - docs/CI-CD.md
+        - docs/contracts/codex-skill-api.md
+      consumers:
+        - docs/agent-workflow-reference.md
+        - docs/CI-CD.md
+        - docs/contracts/codex-skill-api.md
+
+  - path: CLAUDE.md
+    tracked: true
+    class: compatibility-adapter
+    disposition: retain-symlink
+    owner: AGENTS.md
+    proof: factual symlink and owner-path checks
+
+  - path: README.md
+    tracked: true
+    class: public-entrypoint
+    disposition: retain-and-tighten
+    owner: README.md
+    proof: scripts/check-cathedral-cut-conformance.py plus fresh-context verdicts
+
+  - path: PRODUCT.md
+    tracked: true
+    class: product-contract
+    disposition: retain-and-tighten
+    owner: PRODUCT.md
+    proof: scripts/check-cathedral-cut-conformance.py
+
+  - path: GOALS.md
+    tracked: true
+    class: fitness-contract
+    disposition: retain-and-tighten
+    owner: GOALS.md
+    proof: ao goals validate --json
+
+  - path: CHANGELOG.md
+    tracked: true
+    class: release-history
+    disposition: retain-historical
+    owner: CHANGELOG.md
+    proof: tests/docs/validate-doc-release.sh
+
+  - path: PROGRAM.md
+    tracked: true
+    class: product-boundary
+    disposition: retain-and-tighten
+    owner: PROGRAM.md
+    proof: Cathedral Cut conformance
+
+  - path: MEMORY.md
+    tracked: true
+    class: machine-consumed-memory-projection
+    disposition: retain-until-consumers-migrate
+    owner: MEMORY.md
+    proof: factual path and consumer audit
+
+  - path: PRACTICE-REGISTRY.md
+    tracked: true
+    class: machine-consumed-practice-registry
+    disposition: retain-until-structured-owner-exists
+    owner: PRACTICE-REGISTRY.md
+    proof: scripts/validate-practice-citations.sh
+
+  - path: release-notes.md
+    tracked: false
+    presence: optional-generated
+    class: ignored-generated-runtime-output
+    disposition: preserve-outside-repository-cleanup
+    owner: scripts/extract-release-notes.sh
+    proof: tests/docs/validate-doc-release.sh

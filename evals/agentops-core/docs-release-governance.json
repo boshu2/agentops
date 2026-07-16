@@ -2,7 +2,7 @@
   "schema_version": 1,
   "id": "agentops-core.docs-release-governance",
   "name": "AgentOps Docs and Release Governance Canary",
-  "description": "Offline public canary for documentation governance: doc-release stabilization, skill-count sync, CLI-skills map parity, CI policy parity, source-backed doc/readme contracts, and OSS docs audit behavior.",
+  "description": "Offline public canary for documentation governance: doc-release stabilization, metadata-derived skill inventory, CLI-skills map parity, CI policy parity, source-backed doc/readme contracts, and OSS docs audit behavior.",
   "practices": ["llm-eval-harness", "wiki-knowledge-surface"],
   "domain": "docs",
   "visibility": "public_canary",
@@ -32,7 +32,7 @@
       "id": "doc-release-stabilization-gate",
       "title": "doc-release stabilization gate passes",
       "kind": "command",
-      "objective": "Baseline the full doc-release gate that validates links, skill counts, skill-count sync, CLI-skills map parity, and release message freeze.",
+      "objective": "Baseline the doc-release gate that validates links, metadata inventory, CLI-skills map parity, and release message freeze.",
       "runtime": "shell",
       "timeout_seconds": 240,
       "inputs": {
@@ -43,7 +43,6 @@
         {"type": "exit_code", "value": 0},
         {"type": "stdout_contains", "value": "PASS: Link validation"},
         {"type": "stdout_contains", "value": "PASS: Skill count validation"},
-        {"type": "stdout_contains", "value": "PASS: CLI skills map validation"},
         {"type": "stdout_contains", "value": "PASS: release message freeze intact"},
         {"type": "stdout_contains", "value": "PASS: doc-release gate succeeded"}
       ],
@@ -54,18 +53,17 @@
       "id": "docs-policy-parity-gates",
       "title": "docs policy parity gates pass",
       "kind": "command",
-      "objective": "Keep CI blocking policy parity, CLI-skills map generation count, and skill-count sync directly protected as eval canaries.",
+      "objective": "Keep CI policy parity and the metadata inventory directly protected as eval canaries.",
       "runtime": "shell",
       "timeout_seconds": 120,
       "inputs": {
         "cwd": "../..",
-        "shell": "bash scripts/validate-ci-policy-parity.sh && bash scripts/validate-cli-skills-map.sh && scripts/sync-skill-counts.sh --check"
+        "shell": "bash scripts/validate-ci-policy-parity.sh && bash tests/docs/validate-skill-count.sh"
       },
       "expectations": [
         {"type": "exit_code", "value": 0},
         {"type": "stdout_contains", "value": "CI_POLICY_PARITY: PASS"},
-        {"type": "stdout_contains", "value": "CLI_SKILLS_MAP: PASS"},
-        {"type": "stdout_contains", "value": "DONE: All counts already in sync."}
+        {"type": "stdout_contains", "value": "PASS: metadata inventory covers"}
       ],
       "dimensions": ["correctness", "process_adherence", "artifact_quality"],
       "critical": true
@@ -127,14 +125,12 @@
       "id": "doc-release-script-contracts",
       "title": "doc-release scripts preserve fail-closed parity contracts",
       "kind": "artifact_check",
-      "objective": "Ensure documentation release scripts keep their fail-closed checks for release notes, skill counts, CLI mapping, and CI blocking policy.",
+      "objective": "Ensure documentation release scripts keep their checks for release notes, metadata inventory, and CI policy.",
       "expectations": [
         {"type": "artifact_contains", "target": "../../tests/docs/validate-doc-release.sh", "value": "run_check \"Link validation\""},
-        {"type": "artifact_contains", "target": "../../tests/docs/validate-doc-release.sh", "value": "run_check \"Skill count sync check\""},
-        {"type": "artifact_contains", "target": "../../tests/docs/validate-doc-release.sh", "value": "run_check \"CLI skills map validation\""},
+        {"type": "artifact_contains", "target": "../../tests/docs/validate-doc-release.sh", "value": "run_check \"Skill count validation\""},
         {"type": "artifact_contains", "target": "../../tests/docs/validate-doc-release.sh", "value": "run_check \"Release message freeze validation\""},
-        {"type": "artifact_contains", "target": "../../scripts/sync-skill-counts.sh", "value": "pattern not found (fail-closed)"},
-        {"type": "artifact_contains", "target": "../../scripts/validate-cli-skills-map.sh", "value": "top audit line must declare '<N> generated CLI command headings'"},
+        {"type": "artifact_contains", "target": "../../tests/docs/validate-skill-count.sh", "value": "metadata inventory covers"},
         {"type": "artifact_contains", "target": "../../scripts/validate-ci-policy-parity.sh", "value": "CI_POLICY_PARITY: PASS"}
       ],
       "dimensions": ["process_adherence", "artifact_quality", "safety"],

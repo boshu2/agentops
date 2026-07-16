@@ -3,89 +3,20 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 SCRIPT="$ROOT/scripts/validate-local.sh"
-TMP_DIR=""
-
-PASS=0
-FAIL=0
-
-pass() { echo "PASS: $1"; PASS=$((PASS + 1)); }
-fail() { echo "FAIL: $1"; FAIL=$((FAIL + 1)); }
-
-cleanup() {
-  if [[ -n "$TMP_DIR" && -d "$TMP_DIR" ]]; then
-    rm -rf "$TMP_DIR"
-  fi
-}
-trap cleanup EXIT
-
-assert_contains() {
-  local pattern="$1"
-  local label="$2"
-
-  if rg -q "$pattern" "$SCRIPT"; then
-    pass "$label"
-  else
-    fail "$label"
-  fi
-}
-
-echo "== test-validate-local =="
-assert_contains 'install-dev-hooks\.sh' "validate-local references repo hook bootstrap"
-assert_contains 'core\.hooksPath' "validate-local warns when core.hooksPath is not .githooks"
-assert_contains 'Manual Local Validation' "validate-local describes itself as manual validation"
-assert_contains 'pre-push-gate\.sh' "validate-local wraps the shared push gate"
-assert_contains 'agentops-validate-local\.lock' "validate-local serializes concurrent runs"
-
 TMP_DIR="$(mktemp -d)"
-FAKE_REPO="$TMP_DIR/repo"
-mkdir -p "$FAKE_REPO/scripts"
-cp "$SCRIPT" "$FAKE_REPO/scripts/validate-local.sh"
-chmod +x "$FAKE_REPO/scripts/validate-local.sh"
-cat > "$FAKE_REPO/scripts/pre-push-gate.sh" <<'EOF'
+trap 'rm -rf "$TMP_DIR"' EXIT
+
+! rg -n 'install-dev-hooks|core\.hooksPath|claude|lock|retry|verdict' "$SCRIPT"
+
+mkdir -p "$TMP_DIR/repo/scripts" "$TMP_DIR/repo/cli/bin"
+cp "$SCRIPT" "$TMP_DIR/repo/scripts/validate-local.sh"
+cat > "$TMP_DIR/repo/cli/bin/ao" <<'EOF'
 #!/usr/bin/env bash
-set -euo pipefail
-sleep 5
+printf '%s\n' "$*" > "${AO_CAPTURE:?}"
 EOF
-chmod +x "$FAKE_REPO/scripts/pre-push-gate.sh"
+chmod +x "$TMP_DIR/repo/scripts/validate-local.sh" "$TMP_DIR/repo/cli/bin/ao"
 
-git -C "$TMP_DIR" init repo >/dev/null 2>&1
-git -C "$FAKE_REPO" config core.hooksPath .githooks
+AO_CAPTURE="$TMP_DIR/args" bash "$TMP_DIR/repo/scripts/validate-local.sh" --scope staged --full
+grep -qx 'gate check --full --scope staged' "$TMP_DIR/args"
 
-(
-  cd "$FAKE_REPO"
-  bash scripts/validate-local.sh --skip-claude >/dev/null 2>&1
-) &
-FIRST_PID=$!
-
-LOCK_DIR="$FAKE_REPO/.git/agentops-validate-local.lock"
-for _ in $(seq 1 50); do
-  [[ -d "$LOCK_DIR" ]] && break
-  sleep 0.1
-done
-
-if [[ -d "$LOCK_DIR" ]]; then
-  set +e
-  SECOND_OUTPUT="$(
-    cd "$FAKE_REPO" &&
-      bash scripts/validate-local.sh --skip-claude 2>&1
-  )"
-  SECOND_STATUS=$?
-  set -e
-
-  if [[ "$SECOND_STATUS" -eq 1 && "$SECOND_OUTPUT" == *"already running"* ]]; then
-    pass "validate-local rejects concurrent runs with a clear lock error"
-  else
-    fail "validate-local rejects concurrent runs with a clear lock error"
-  fi
-else
-  fail "validate-local creates its repo-scoped lock before running the shared gate"
-fi
-
-wait "$FIRST_PID"
-
-echo ""
-echo "Results: $PASS PASS, $FAIL FAIL"
-if [[ "$FAIL" -gt 0 ]]; then
-  exit 1
-fi
-exit 0
+echo "PASS: validate-local is a thin deterministic gate wrapper"

@@ -26,10 +26,8 @@ import (
 // When AO_DUMP_REGISTERED_CMDS is unset the test is a no-op assertion that the
 // command set is non-empty, so it stays cheap in the normal `go test ./...` run.
 func TestDumpRegisteredTopLevelCommands(t *testing.T) {
-	if len(archiveBuildTags) == 0 {
-		removed := pruneToDefaultSpine(rootCmd)
-		t.Cleanup(func() { restorePrunedCommands(rootCmd, removed) })
-	}
+	removed := pruneToDefaultSpine(rootCmd)
+	t.Cleanup(func() { restorePrunedCommands(rootCmd, removed) })
 	var names []string
 	for _, c := range rootCmd.Commands() {
 		if c.Name() == "help" {

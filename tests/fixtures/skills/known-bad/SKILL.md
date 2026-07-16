@@ -14,7 +14,7 @@ Run the auditor and expect FAIL exit 1.
 ## Examples
 
 ```bash
-bash skills/heal-skill/scripts/audit.sh tests/fixtures/skills/known-bad
+bash skills/skill-builder/scripts/audit.sh tests/fixtures/skills/known-bad
 ```
 
 Note: there is intentionally no `## ⚠️ Critical Constraints` section, no `**Why:**` rationales, no `## Output Specification`, no `## Quality Rubric`, and no `Checkpoint:` markers. These omissions exercise multiple Pass-2 checks. The single FAIL severity check (`output-spec-explicit`) drives the FAIL verdict.

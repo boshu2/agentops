@@ -73,35 +73,6 @@
       ],
       "dimensions": ["correctness", "runtime_compatibility", "safety"],
       "critical": true
-    },
-    {
-      "id": "codex-lifecycle-cli-docs",
-      "title": "codex lifecycle and runtime command docs remain visible",
-      "kind": "artifact_check",
-      "objective": "Keep generated CLI docs aligned with Codex hookless lifecycle commands and runtime command selection.",
-      "expectations": [
-        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "#### `ao codex ensure-start`"},
-        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "#### `ao codex ensure-stop`"},
-        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "ao codex ensure-start [flags]"},
-        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "ao codex ensure-stop [flags]"},
-        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "Codex uses 'exec'"}
-      ],
-      "dimensions": ["artifact_quality", "process_adherence", "runtime_compatibility"]
-    },
-    {
-      "id": "codex-skill-lifecycle-guards",
-      "title": "codex runtime skills preserve lifecycle guards",
-      "kind": "artifact_check",
-      "objective": "Ensure Codex runtime artifacts keep startup and closeout guard commands in the shipped skill bodies.",
-      "expectations": [
-        {"type": "artifact_contains", "target": "../../skills-codex/rpi/SKILL.md", "value": "ao codex ensure-start 2>/dev/null || true"},
-        {"type": "artifact_contains", "target": "../../skills-codex/crank/SKILL.md", "value": "ao codex ensure-start 2>/dev/null || true"},
-        {"type": "artifact_contains", "target": "../../skills-codex/status/SKILL.md", "value": "ao codex ensure-start 2>/dev/null || true"},
-        {"type": "artifact_contains", "target": "../../skills-codex/recover/SKILL.md", "value": "ao codex ensure-start 2>/dev/null || true"},
-        {"type": "artifact_contains", "target": "../../skills-codex/handoff/SKILL.md", "value": "ao codex ensure-stop --auto-extract 2>/dev/null || true"}
-      ],
-      "dimensions": ["process_adherence", "runtime_compatibility", "safety"],
-      "critical": true
     }
   ]
 }

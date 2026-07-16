@@ -18,7 +18,7 @@ setup() {
     DOCS="$(mktemp -d "$BATS_TMPDIR/docs.XXXXXX")"
     SKILLS="$(mktemp -d "$BATS_TMPDIR/skills.XXXXXX")"
     BASELINE="$(mktemp "$BATS_TMPDIR/baseline.XXXXXX")"
-    mkdir -p "$SKILLS/alpha" "$SKILLS/cc-hooks" "$SKILLS/validate" "$SKILLS/post-mortem"
+    mkdir -p "$SKILLS/alpha" "$SKILLS/cc-hooks" "$SKILLS/validate" "$SKILLS/postmortem"
     mkdir -p "$DOCS/docs" "$DOCS/docs/levels" "$DOCS/skills"
     # docs-scope.sh emits paths anchored at DOCS_ROOT; a live docs/** file must
     # exist for --all-docs to pick it up.

@@ -12,15 +12,16 @@ import (
 	"github.com/boshu2/agentops/cli/internal/ports"
 )
 
-// ScriptRunner runs a shell-backed check and maps its exit code to a
+// ScriptRunner runs a script-backed check and maps its exit code to a
 // GateVerdict. Basename backings resolve under scripts/ (for example
-// "check-registry-drift.sh"). Path backings resolve from the repo root (for
-// example "skills/heal-skill/scripts/heal.sh").
+// "check-cathedral-cut-conformance.py"). Path backings resolve from the repo root (for
+// example "skills/skill-builder/scripts/heal.sh").
 //
-// It satisfies ports.GateRunnerPort, so the orchestrator can shell to ANY
-// scripts/* gate — both check-*.sh and validate-*.sh — not only the check-*
-// names the legacy productionGateRunner (ao gate run) resolves. Exit mapping:
-// 0=PASS, 2=WARN, 75=SKIP, missing script=UNKNOWN, else=FAIL.
+// It satisfies ports.GateRunnerPort, so the deterministic runner can dispatch
+// ANY scripts/* gate — shell and Python — not only the check-* names the legacy
+// productionGateRunner (ao gate run) resolves. Exit mapping: 0=PASS, 2=WARN,
+// 75=SKIP, missing script=UNKNOWN, else=FAIL. Whether WARN is allowed is a
+// property of the registered check, enforced by the orchestrator.
 type ScriptRunner struct {
 	repoRoot string
 }
@@ -32,22 +33,18 @@ func NewScriptRunner(repoRoot string) *ScriptRunner { return &ScriptRunner{repoR
 // (production: os.Executable()). It is indirected as a package var so a test
 // can simulate running as a differently-named binary — the AO_BIN self-injection
 // below is guarded on the executable BASENAME, and under `go test`
-// os.Executable() is the package test binary, not `ao`. Mirrors the
-// pawlSelfBinary / verifyInitSelfBinary indirection in cli/cmd/ao.
+// os.Executable() is the package test binary, not `ao`.
 var gateSelfBinary = os.Executable
 
 // aoBinInjection returns the AO_BIN value the gate should propagate to a spawned
 // sub-check given the running executable path exe, and whether to inject at all.
 //
-// age-jmfl: the release-authority path (pre-push) builds a FRESH temp `ao` and
-// runs `ao gate check` with it, but shell sub-checks (check-provenance-chain.sh,
-// check-pawl-pre-push.sh) resolve AO_BIN → $ROOT/cli/bin/ao → PATH `ao`. A STALE
-// cli/bin/ao (e.g. an old payload-hash algorithm) then FALSE-fails an
-// origin-identical ledger line. Propagating AO_BIN=<the running gate binary>
-// makes the gate's own fresh binary authoritative for its sub-scripts.
+// A caller may run a freshly built `ao gate check` while shell sub-checks would
+// otherwise resolve a stale repository binary. Propagating the running binary
+// keeps one deterministic check invocation internally consistent.
 //
 // The guard is on the basename SUFFIX, NOT a stat/regular-file test and NOT an
-// exact basename=="ao" match (age-pawl-intent-zhndq.6): under `go test`,
+// exact basename=="ao" match: under `go test`,
 // os.Executable() is the package test binary (`<pkg>.test`, a real regular file),
 // so a stat guard would inject the test binary and make a sub-script run
 // `"$AO_BIN" provenance verify` against a non-ao executable and fail spuriously.
@@ -127,8 +124,12 @@ func (s *ScriptRunner) Run(ctx context.Context, req ports.GateRunRequest) (ports
 		return ports.GateVerdict{Status: ports.GateStatusUnknown, Reason: fmt.Sprintf("no script %s", script)}, nil
 	}
 
-	bashArgs := append([]string{script}, req.Args...)
-	cmd := exec.CommandContext(ctx, resolveBash(), bashArgs...)
+	interpreter := backingInterpreter(script)
+	if interpreter == "bash" {
+		interpreter = resolveBash()
+	}
+	interpreterArgs := append([]string{script}, req.Args...)
+	cmd := exec.CommandContext(ctx, interpreter, interpreterArgs...)
 	cmd.Dir = s.repoRoot
 	cmd.Env = buildCheckEnv(cmd.Environ(), req.Env)
 	var out bytes.Buffer
@@ -140,10 +141,15 @@ func (s *ScriptRunner) Run(ctx context.Context, req ports.GateRunRequest) (ports
 	if exitErr, ok := runErr.(*exec.ExitError); ok {
 		code = exitErr.ExitCode()
 	} else if runErr != nil {
+		reason := fmt.Sprintf("subprocess error: %v", runErr)
+		logTail := tailBytes(out.Bytes(), 4096)
+		if strings.TrimSpace(logTail) == "" {
+			logTail = reason
+		}
 		return ports.GateVerdict{
 			Status:  ports.GateStatusUnknown,
-			Reason:  fmt.Sprintf("subprocess error: %v", runErr),
-			LogTail: tailBytes(out.Bytes(), 4096),
+			Reason:  reason,
+			LogTail: logTail,
 		}, nil
 	}
 	v := exitCodeToVerdict(code)

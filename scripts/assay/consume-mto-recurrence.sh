@@ -200,7 +200,7 @@ RULE_PATH="$PLANNING_DIR/$FINDING_ID.md"
 
 # schema-conformant frontmatter (finding-artifact.schema.json). detectability=
 # advisory -> no `compiler` block required; compiler_targets are the advisory two
-# (plan, pre-mortem); applicable_when uses only enum members; additionalProperties
+# (plan, premortem); applicable_when uses only enum members; additionalProperties
 # is false so we emit ONLY schema-known keys.
 read -r -d '' FINDING_BODY <<EOF || true
 ---
@@ -217,7 +217,7 @@ checklist_item: "Before planning work that could trip a recurring MTO class, re-
 severity: "significant"
 detectability: "advisory"
 status: "active"
-compiler_targets: ["plan", "pre-mortem"]
+compiler_targets: ["plan", "premortem"]
 scope_tags: ["mto-gate", "seeded-guard", "recurrence"]
 dedup_key: "validation-gap|mto-seeded-guard-recurred-across-beads|validation-gap"
 applicable_when: ["validation-gap", "plan-shape"]

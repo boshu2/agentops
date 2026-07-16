@@ -1,5 +1,7 @@
 # Eval Environment Contract
 
+> **RETIRED:** Historical draft for the removed evaluation CLI; not a live command contract.
+
 > **Status:** Draft
 > **Suite Schema:** `eval-suite.v1.schema.json`
 > **Run Schema:** `eval-run.v1.schema.json`

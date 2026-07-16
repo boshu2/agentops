@@ -1,183 +1,85 @@
 ---
 name: implement
-spine: true
-description: 'Implement one tracked issue. Triggers: "implement", "implement one tracked issue.", "implement skill".'
+description: 'Execute one bounded RED to GREEN experiment from bead or caller intent; return derived subject identity and check facts. Triggers: "implement", "build this plan", "run the experiment".'
 practices:
 - tdd
 - refactoring
-- code-complete
+- small-batch-flow
 hexagonal_role: driving-adapter
-consumes:
-- domain
+consumes: []
 produces:
-- git-changes
+- subject-manifest.v1
 context_rel:
 - kind: customer-of
-  with: domain
+  with: plan
 skill_api_version: 1
+user-invocable: true
 metadata:
+  graph_root: true
   tier: execution
-  dependencies:
-  - beads-br
-  - standards
-context:
-  window: isolated
-  intent:
-    mode: task
-  sections:
-    exclude:
-    - HISTORY
-  intel_scope: topic
-output_contract: code changes, test results, bead status update, behavioral spec (optional)
+  dependencies: []
+  capabilities: [execute_one_experiment, collect_factual_evidence]
+  effects: [modify_declared_subject, derive_subject_manifest]
+  canonical_status: canonical
+  disposition: keep
 ---
-# Implement Skill
 
-> **Quick Ref:** Execute single issue end-to-end. Output: code changes + commit + closed issue.
+# Implement
 
-**YOU MUST EXECUTE THIS WORKFLOW. Do not just describe it.**
+Execute exactly one bounded experiment described by the resolved bead or caller
+intent. Implement owns subject edits and factual evidence. It does not create a
+second planning record or a model-authored candidate packet.
 
-## Loop position
+## Workflow
 
-Move **4 (TDD per slice)** of the [operating loop](../../docs/architecture/operating-loop.md). Consumes one vertical slice from the [slice validation plan](../../docs/templates/slice-validation.md); produces failing test → passing implementation → refactor-under-green. Discipline: (1) first failing test must fail for the right reason (missing behavior, not syntax); (2) smallest change to flip green; (3) refactor as its own commit. Slices that mix refactor + feature are two slices, not one. Code without a failing test has no contract; the slice is not done.
+1. Read the intent, acceptance, and scope from their existing source. A runtime
+   may snapshot and hash that source automatically for drift detection.
+2. Run the declared first acceptance check before changing behavior. RED-first
+   applies only when acceptance is behavioral: preserve evidence that the check
+   fails for the expected missing behavior. Relocations, doc merges, and pure
+   refactors need no failing-check ritual — record an honest green pre-change
+   baseline instead.
+3. Make the smallest in-scope change that satisfies the active behavior.
+4. Run the targeted acceptance checks and capture factual results.
+5. Refactor only while those checks stay green. Refactoring does not change the
+   acceptance test.
+6. Have the runtime derive actual changed paths and `subject-manifest.v1` from
+   the before/after subject. Do not make the model transcribe those facts.
+7. Return the manifest digest, author context ID, and exact check receipts in the
+   response or runtime channel. Stop.
 
-Execute a single issue from start to finish.
+Specialists such as standards, domain, test, refactor, and security may provide
+advice. They are never hard dependencies and cannot add lifecycle authority.
 
-**CLI dependencies:** br (beads_rust, issue tracking — invoke as `BEADS_DIR="$(ao beads dir)" br <cmd>`), ao (ratchet gates). Both optional — see `skills/shared/SKILL.md` for fallback table. If br is unavailable, use the issue description directly and track progress via TaskList instead of beads.
+## Evidence proportionality
 
-## When to use
+During edits, run the smallest deterministic checks that can falsify the active
+change. Reuse exact-input receipts when their subject and tool identity still
+match. Run an expensive full-suite check at the integration boundary, or
+earlier only when the intent explicitly makes it the first acceptance check.
+Repeatedly replaying the full suite after every focused edit adds latency, not
+proof.
 
-- Use `/implement <issue-id>` to implement a specific tracked issue.
-- Use `/implement` (no argument) to pick up next ready work via `br ready`.
-- Use `/implement <description>` to implement an ad-hoc task without a tracked issue.
+## Scope conflict rule
 
-### Folded triggers (ag-s43tg wave 1): `pr-implement` routes here
+On discovering a live consumer of the change outside the declared write scope
+— a test asserting the old path, a generated twin, a gate reading the moved
+file — stop and report the exact file and line to the caller. Do not silently
+expand scope to absorb it. One repair revision of the intent is the maximum
+before escalating to the caller; the 2026-07-15 heal-skill fold took three
+intent revisions (lineage under `.agents/ao/intents/sha256/26a4f2be...eb48`)
+because hand-enumerated scope kept missing live consumers.
 
-- **`pr-implement` → OSS contribution mode.** Use when you need to implement a scoped OSS PR —
-  fork-based implementation of an open source contribution with mandatory isolation checks.
-  Same single-issue TDD discipline as internal work, plus the fork lane: ensure the fork exists
-  and is current, create an isolated worktree, run an isolation pre-check (BLOCK on mixed
-  concerns) and post-check (BLOCK on scope creep), check for competing PRs before starting, and
-  hand off to `/pr-prep` for commit/PR shaping. Input is the plan artifact from `/pr-prep` +
-  `/plan` (run those first if no plan exists).
+Before declaring GREEN, self-audit the diff for mocks, placeholders, TODO
+stubs, and hardcoded fixture values standing in for real behavior. A check
+that passes against a placeholder is not evidence for the acceptance
+criterion; either finish the behavior or report it as not built.
 
-## Examples
+## Boundary
 
-### Implement Specific Issue
-
-**User says:** `/implement ag-5k2`
-
-**What happens:**
-1. Agent reads issue from beads: "Add JWT token validation middleware"
-2. Explore agent finds relevant auth code and middleware patterns
-3. Agent edits `middleware/auth.go` to add token validation
-4. Runs `go test ./middleware/...` — all tests pass
-5. Commits with message "Add JWT token validation middleware\n\nImplements: ag-5k2"
-6. Closes issue via `BEADS_DIR="$(ao beads dir)" br close ag-5k2 --reason "commit:<sha> files:[middleware/auth.go]"`
-
-**Result:** Issue implemented, verified, committed, and closed. Ratchet recorded.
-
-### Pick Up Next Available Work
-
-**User says:** `/implement`
-
-**What happens:**
-1. Agent runs `br ready` — finds `ag-3b7` (first unblocked issue)
-2. Claims issue via `BEADS_DIR="$(ao beads dir)" br update ag-3b7 --status in_progress`
-3. Implements and verifies
-4. Closes issue
-
-**Result:** Autonomous work pickup and completion from ready queue.
-
-### GREEN Mode (Test-First)
-
-**User says:** `/implement ag-8h3` (invoked by `/crank --test-first`)
-
-**What happens:**
-1. Agent receives failing tests (immutable) and contract
-2. Reads tests to understand expected behavior
-3. Implements ONLY enough to make tests pass
-4. Does NOT modify test files
-5. Verification: all tests pass with fresh output
-
-**Result:** Minimal implementation driven by tests, no over-engineering.
-
-## Lifecycle Integration Flags
-
-| Flag | Default | Description |
-|------|---------|-------------|
-| `--no-lifecycle` | off | Skip ALL lifecycle skill auto-invocations (test gen, review, refactor) |
-| `--lifecycle=<tier>` | matches complexity | Controls which lifecycle skills fire: `minimal` (test only), `standard` (+review), `full` (+refactor dry-run) |
-
-Lifecycle tier defaults to matching the current complexity level. Explicit `--lifecycle=<tier>` overrides.
-
-## Execution
-
-Read [references/workflow.md](references/workflow.md) when you need the full step-by-step procedure (Steps 0 through 8, including pre-flight gates, TDD discipline, build/security verification, the binary-deployment gate, the verification iron law, commit, close, and ratchet record).
-
-GREEN mode rules live in [references/green-mode.md](references/green-mode.md). The pre-commit autonomous quality loop lives in [references/quality-loop.md](references/quality-loop.md). The behavioral spec format lives in [references/behavioral-spec.md](references/behavioral-spec.md).
-
-## Key Rules
-
-- **TDD by default** - write failing tests before implementing (skip with `--no-tdd`)
-- **Lifecycle skills fire automatically** - /test, /review, /refactor run at appropriate steps (disable with `--no-lifecycle`)
-- **Explore first** - understand before changing
-- **Edit, don't rewrite** - prefer Edit tool over Write tool
-- **Follow patterns** - match existing code style
-- **Verify changes** - run tests or sanity checks
-- **Commit with context** - reference the issue ID
-- **Close the issue** - update status when done
-
-## Without Beads
-
-If br CLI not available:
-1. Skip the claim/close status updates
-2. Use the description as the task
-3. Still commit with descriptive message
-4. Report completion to user
-
-## Output Specification
-
-Per the `output_contract` in frontmatter: code changes, test results, bead status update, and behavioral spec (optional).
-
-## Completion Markers
-
-```
-<promise>DONE</promise>
-```
-
-If blocked or incomplete:
-```
-<promise>BLOCKED</promise>
-Reason: <why blocked>
-```
-
-```
-<promise>PARTIAL</promise>
-Remaining: <what's left>
-```
-
-## Troubleshooting
-
-| Problem | Cause | Solution |
-|---------|-------|----------|
-| Issue not found | Issue ID doesn't exist or local state looks stale | Run `BEADS_DIR="$(ao beads dir)" br show <id>` to verify; trust `_beads/issues.jsonl` (source of truth) if the SQLite cache looks stale |
-| GREEN mode violation | Edited a file not related to the issue scope | Revert unrelated changes. GREEN mode restricts edits to files relevant to the issue |
-| Verification gate fails | Tests fail or build breaks after implementation | Read the verification output, fix the specific failures, re-run verification |
-| "BLOCKED" status | Contract contradicts tests or is incomplete in GREEN mode | Write BLOCKED with specific reason, do NOT modify tests |
-| Fresh verification missing | Agent claims success without running verification command | MUST run verification command fresh with full output before claiming completion |
-| Ratchet record failed | ao CLI unavailable or chain.jsonl corrupted | Implementation still closes via br, but ratchet chain needs manual repair |
-
-## Reference Documents
-
-- [references/behavioral-spec.md](references/behavioral-spec.md) — Behavioral spec format for Stage 4 validation
-- [references/binary-deployment-gate.md](references/binary-deployment-gate.md) — CLI/hook binary-deployment gate spec
-- [references/gate-checks.md](references/gate-checks.md) — Ratchet and pre-mortem gate checks
-- [references/green-mode.md](references/green-mode.md) — GREEN mode test-first implementation rules
-- [references/implement.feature](references/implement.feature) — Executable spec: the /implement done-state (first-failing-test → green → refactor → verified close) (soc-qk4b.2)
-- [references/quality-loop.md](references/quality-loop.md) — Pre-commit autonomous quality loop
-- [references/resume-protocol.md](references/resume-protocol.md) — Resume protocol for interrupted sessions
-- [references/workflow.md](references/workflow.md) — Full execution workflow (Steps 0 through 8)
-
-## See also
-
-- [test](../test/SKILL.md) — Test generation, coverage analysis, and TDD workflow
+- Do not commit, push, claim, close, release, land, reserve, retry, or invoke a
+  semantic validator.
+- Do not silently expand acceptance. A different acceptance contract is a new
+  intent for a caller to start separately.
+- A failed check is evidence for the caller, not permission to create a packet
+  or validation loop.

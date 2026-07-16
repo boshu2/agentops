@@ -277,7 +277,7 @@ func (c *OllamaClient) fetchContextBudget() (int, bool) {
 
 // ResolveDefaultEndpoint returns the default ollama endpoint from
 // $AGENTOPS_LLM_ENDPOINT or http://localhost:11434. Not hardcoded to bushido
-// per pre-mortem F6.
+// per premortem F6.
 func ResolveDefaultEndpoint() string {
 	if v := os.Getenv("AGENTOPS_LLM_ENDPOINT"); v != "" {
 		return v

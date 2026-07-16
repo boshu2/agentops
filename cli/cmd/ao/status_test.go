@@ -2,8 +2,9 @@
 package main
 
 import (
-	"bytes"
-	"context"
+	"crypto/sha256"
+	"encoding/hex"
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"strings"
@@ -11,350 +12,241 @@ import (
 	"time"
 )
 
-func TestTruncateStatus(t *testing.T) {
-	tests := []struct {
-		name   string
-		input  string
-		maxLen int
-		want   string
-	}{
-		{"short string", "hello", 10, "hello"},
-		{"exact length", "hello", 5, "hello"},
-		{"truncated", "hello world this is long", 10, "hello w..."},
-		{"empty string", "", 10, ""},
-		{"with newline", "first line\nsecond line", 60, "first line"},
-		{"newline only", "\nsecond line", 60, ""},
-		{"maxLen 4", "hello", 4, "h..."},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got := truncateStatus(tt.input, tt.maxLen)
-			if got != tt.want {
-				t.Errorf("truncateStatus(%q, %d) = %q, want %q", tt.input, tt.maxLen, got, tt.want)
-			}
-		})
-	}
-}
-
-func TestFirstLine(t *testing.T) {
-	tests := []struct {
-		name  string
-		input string
-		want  string
-	}{
-		{"single line", "hello", "hello"},
-		{"multi line", "first\nsecond\nthird", "first"},
-		{"empty string", "", ""},
-		{"starts with newline", "\nfirst", ""},
-		{"trailing newline", "hello\n", "hello"},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got := firstLine(tt.input)
-			if got != tt.want {
-				t.Errorf("firstLine(%q) = %q, want %q", tt.input, got, tt.want)
-			}
-		})
-	}
-}
-
-func TestFindLastForgeTime(t *testing.T) {
-	t.Run("finds most recent file", func(t *testing.T) {
-		tmp := t.TempDir()
-		retrosDir := filepath.Join(tmp, ".agents", "retros")
-		learningsDir := filepath.Join(tmp, ".agents", "learnings")
-		if err := os.MkdirAll(retrosDir, 0755); err != nil {
-			t.Fatal(err)
-		}
-		if err := os.MkdirAll(learningsDir, 0755); err != nil {
-			t.Fatal(err)
-		}
-
-		if err := os.WriteFile(filepath.Join(retrosDir, "retro-1.md"), []byte("retro"), 0644); err != nil {
-			t.Fatal(err)
-		}
-		if err := os.WriteFile(filepath.Join(learningsDir, "L1.md"), []byte("learning"), 0644); err != nil {
-			t.Fatal(err)
-		}
-
-		result := findLastForgeTime(tmp)
-		if result.IsZero() {
-			t.Error("expected non-zero time")
-		}
-		// Should be very recent (within last minute)
-		if time.Since(result) > time.Minute {
-			t.Errorf("last forge time too old: %v", result)
-		}
-	})
-
-	t.Run("empty dirs return zero", func(t *testing.T) {
-		tmp := t.TempDir()
-		if err := os.MkdirAll(filepath.Join(tmp, ".agents", "retros"), 0755); err != nil {
-			t.Fatal(err)
-		}
-		if err := os.MkdirAll(filepath.Join(tmp, ".agents", "learnings"), 0755); err != nil {
-			t.Fatal(err)
-		}
-
-		result := findLastForgeTime(tmp)
-		if !result.IsZero() {
-			t.Errorf("expected zero time, got %v", result)
-		}
-	})
-
-	t.Run("nonexistent dirs return zero", func(t *testing.T) {
-		tmp := t.TempDir()
-		result := findLastForgeTime(tmp)
-		if !result.IsZero() {
-			t.Errorf("expected zero time, got %v", result)
-		}
-	})
-
-	t.Run("ignores subdirectories", func(t *testing.T) {
-		tmp := t.TempDir()
-		retrosDir := filepath.Join(tmp, ".agents", "retros")
-		if err := os.MkdirAll(filepath.Join(retrosDir, "subdir"), 0755); err != nil {
-			t.Fatal(err)
-		}
-
-		result := findLastForgeTime(tmp)
-		if !result.IsZero() {
-			t.Errorf("expected zero time (dirs should be ignored), got %v", result)
-		}
-	})
-}
-
 func TestFormatDurationBrief(t *testing.T) {
 	tests := []struct {
-		name  string
 		input time.Duration
 		want  string
 	}{
-		{"sub-minute", 30 * time.Second, "<1m"},
-		{"minutes", 45 * time.Minute, "45m"},
-		{"hours", 5 * time.Hour, "5h"},
-		{"days", 3 * 24 * time.Hour, "3d"},
-		{"weeks", 45 * 24 * time.Hour, "6w"},
+		{30 * time.Second, "<1m"},
+		{5 * time.Minute, "5m"},
+		{2 * time.Hour, "2h"},
+		{3 * 24 * time.Hour, "3d"},
+		{45 * 24 * time.Hour, "6w"},
 	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got := formatDurationBrief(tt.input)
-			if got != tt.want {
-				t.Errorf("formatDurationBrief(%v) = %q, want %q", tt.input, got, tt.want)
-			}
-		})
-	}
-}
-
-func TestLoadFlywheelBrief_IncludesStigmergicScorecard(t *testing.T) {
-	tmp := t.TempDir()
-	for _, rel := range []string{
-		filepath.Join(".agents", "findings"),
-		filepath.Join(".agents", "planning-rules"),
-		filepath.Join(".agents", "pre-mortem-checks"),
-		filepath.Join(".agents", "rpi"),
-	} {
-		if err := os.MkdirAll(filepath.Join(tmp, rel), 0o755); err != nil {
-			t.Fatal(err)
+	for _, test := range tests {
+		if got := formatDurationBrief(test.input); got != test.want {
+			t.Errorf("formatDurationBrief(%s) = %q, want %q", test.input, got, test.want)
 		}
 	}
-	if err := os.WriteFile(filepath.Join(tmp, ".agents", "findings", "f-1.md"), []byte("x"), 0o644); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.WriteFile(filepath.Join(tmp, ".agents", "planning-rules", "f-1.md"), []byte("x"), 0o644); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.WriteFile(filepath.Join(tmp, ".agents", "pre-mortem-checks", "f-1.md"), []byte("x"), 0o644); err != nil {
-		t.Fatal(err)
-	}
-	queue := `{"source_epic":"ag-h83","timestamp":"2026-03-11T17:00:00Z","items":[{"title":"High one","type":"task","severity":"high","source":"council-finding","description":"d1","target_repo":"agentops","consumed":false}],"consumed":false,"claim_status":"available","claimed_by":null,"claimed_at":null,"consumed_by":null,"consumed_at":null}
-`
-	if err := os.WriteFile(filepath.Join(tmp, ".agents", "rpi", "next-work.jsonl"), []byte(queue), 0o644); err != nil {
-		t.Fatal(err)
-	}
+}
 
-	brief := loadFlywheelBrief(tmp)
-	if brief == nil {
-		t.Fatal("expected flywheel brief")
+func TestLoadLoopEvidence_ReportsOnlyValidatedArtifacts(t *testing.T) {
+	tmp := t.TempDir()
+	now := time.Date(2026, 7, 16, 1, 0, 0, 0, time.UTC)
+	first := writeIntentArtifact(t, tmp, "first intent")
+	second := writeIntentArtifact(t, tmp, "second intent")
+	verdict := writeVerdictArtifact(t, tmp)
+	setArtifactTime(t, first, now.Add(-20*time.Minute))
+	setArtifactTime(t, second, now.Add(-5*time.Minute))
+	setArtifactTime(t, verdict, now.Add(-15*time.Minute))
+
+	got := loadLoopEvidence(tmp, now)
+	if got.IntentArtifacts != 2 || got.VerdictArtifacts != 1 {
+		t.Fatalf("unexpected counts: %+v", got)
 	}
-	if brief.PromotedFindings != 1 || brief.PlanningRules != 1 || brief.PreMortemChecks != 1 {
-		t.Fatalf("brief signal counts = %+v, want 1/1/1", brief)
+	if got.LatestKind != "intent" || got.State != "intent_is_latest_evidence" {
+		t.Fatalf("unexpected latest evidence: %+v", got)
 	}
-	if brief.UnconsumedItems != 1 || brief.HighSeverityUnconsumed != 1 {
-		t.Fatalf("brief backlog counts = %+v, want 1/1", brief)
+	if got.LastEvidenceAt != "2026-07-16T00:55:00Z" || got.LastEvidenceAge != "5m" {
+		t.Fatalf("unexpected evidence time: %+v", got)
+	}
+	if len(got.Corrupt) != 0 || len(got.Unavailable) != 0 {
+		t.Fatalf("valid artifacts reported unhealthy: %+v", got)
 	}
 }
 
-func TestPrintFlywheelHealth_IncludesBacklogLine(t *testing.T) {
-	var buf bytes.Buffer
-	oldStdout := os.Stdout
-	r, w, err := os.Pipe()
+func TestLoadLoopEvidence_NoArtifactsIsExplicit(t *testing.T) {
+	got := loadLoopEvidence(t.TempDir(), time.Now())
+	if got == nil || got.State != "no_evidence" || got.IntentArtifacts != 0 || got.VerdictArtifacts != 0 {
+		t.Fatalf("got %+v, want explicit no_evidence snapshot", got)
+	}
+	if len(got.Checked) != 2 || len(got.NotChecked) == 0 {
+		t.Fatalf("missing disclosure: %+v", got)
+	}
+}
+
+func TestLoadLoopEvidence_RejectsArbitraryAndCorruptFiles(t *testing.T) {
+	tmp := t.TempDir()
+	valid := writeIntentArtifact(t, tmp, "valid intent")
+	intentDir := filepath.Dir(valid)
+	verdictDir := filepath.Join(tmp, ".agents", "ao", "verdicts", "sha256")
+	if err := os.MkdirAll(verdictDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(intentDir, "notes.txt"), []byte("not evidence"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(intentDir, strings.Repeat("a", 64)+".intent"), []byte("wrong digest"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	writeRawVerdictArtifact(t, verdictDir, map[string]any{"schema_version": "verdict.v2"})
+
+	got := loadLoopEvidence(tmp, time.Now())
+	if got.IntentArtifacts != 1 || got.VerdictArtifacts != 0 {
+		t.Fatalf("corrupt files affected counts: %+v", got)
+	}
+	if len(got.Corrupt) != 3 {
+		t.Fatalf("corrupt = %+v, want three rejected files", got.Corrupt)
+	}
+}
+
+func TestLoadLoopEvidence_ReportsUnavailableStore(t *testing.T) {
+	tmp := t.TempDir()
+	path := filepath.Join(tmp, ".agents", "ao", "intents", "sha256")
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(path, []byte("not a directory"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	got := loadLoopEvidence(tmp, time.Now())
+	if got.State != "evidence_unavailable" || len(got.Unavailable) != 1 {
+		t.Fatalf("expected explicit unavailable evidence, got %+v", got)
+	}
+}
+
+func TestValidateVerdictArtifact_DetectsMutation(t *testing.T) {
+	tmp := t.TempDir()
+	path := writeVerdictArtifact(t, tmp)
+	expected, ok := artifactDigestFromName(filepath.Base(path), ".json")
+	if !ok {
+		t.Fatal("generated verdict has invalid name")
+	}
+	if err := validateVerdictArtifact(path, expected); err != nil {
+		t.Fatalf("valid verdict rejected: %v", err)
+	}
+
+	var value map[string]any
+	payload, err := os.ReadFile(path)
 	if err != nil {
 		t.Fatal(err)
 	}
-	os.Stdout = w
-	defer func() { os.Stdout = oldStdout }()
-
-	printFlywheelHealth(&flywheelBrief{
-		Status:                 "COMPOUNDING",
-		TotalArtifacts:         10,
-		Velocity:               1.2,
-		NewArtifacts:           3,
-		StaleArtifacts:         1,
-		PromotedFindings:       2,
-		PlanningRules:          2,
-		PreMortemChecks:        1,
-		UnconsumedItems:        7,
-		HighSeverityUnconsumed: 3,
-	})
-
-	_ = w.Close()
-	if _, err := buf.ReadFrom(r); err != nil {
+	if err := json.Unmarshal(payload, &value); err != nil {
 		t.Fatal(err)
 	}
-	got := buf.String()
-	if !strings.Contains(got, "Backlog:") {
-		t.Fatalf("expected backlog line, got: %q", got)
+	value["checked"] = []string{"mutated after storage"}
+	payload, err = json.MarshalIndent(value, "", "  ")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(path, append(payload, '\n'), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := validateVerdictArtifact(path, expected); err == nil || !strings.Contains(err.Error(), "canonical content digest") {
+		t.Fatalf("mutation error = %v, want canonical digest failure", err)
 	}
 }
 
-func TestLoadQualitySignals_ReturnsRecentValidEntries(t *testing.T) {
-	tmp := t.TempDir()
-	signalsDir := filepath.Join(tmp, ".agents", "signals")
-	if err := os.MkdirAll(signalsDir, 0o755); err != nil {
-		t.Fatal(err)
-	}
-	jsonl := strings.Join([]string{
-		`{"timestamp":"2026-04-13T01:00:00Z","signal_type":"repeated_prompt","detail":"first","session_id":"s1"}`,
-		`not-json`,
-		`{"timestamp":"2026-04-13T01:01:00Z","signal_type":"correction","detail":"second","session_id":"s2"}`,
-		`{"timestamp":"2026-04-13T01:02:00Z","signal_type":"repeated_prompt","detail":"third","session_id":"s3"}`,
-		"",
-	}, "\n")
-	if err := os.WriteFile(filepath.Join(signalsDir, "session-quality.jsonl"), []byte(jsonl), 0o644); err != nil {
-		t.Fatal(err)
-	}
-
-	got := loadQualitySignals(filepath.Join(tmp, ".agents"), 2)
-	if len(got) != 2 {
-		t.Fatalf("len = %d, want 2: %+v", len(got), got)
-	}
-	if got[0].Detail != "second" || got[1].Detail != "third" {
-		t.Fatalf("details = %q, %q; want second, third", got[0].Detail, got[1].Detail)
-	}
-	if got[1].SessionID != "s3" || got[1].SignalType != "repeated_prompt" {
-		t.Fatalf("last signal = %+v, want session s3 repeated_prompt", got[1])
-	}
-}
-
-func TestLoadQualitySignals_MissingFileReturnsNil(t *testing.T) {
-	got := loadQualitySignals(filepath.Join(t.TempDir(), ".agents"), 10)
-	if got != nil {
-		t.Fatalf("got %+v, want nil", got)
-	}
-}
-
-func TestRunStatus_LoadsQualitySignalsFromAgentsRoot(t *testing.T) {
+func TestRunStatus_HumanOutputIsEvidenceOnly(t *testing.T) {
 	resetCommandState(t)
-
 	tmp := t.TempDir()
-	if err := os.MkdirAll(filepath.Join(tmp, ".agents", "ao"), 0o755); err != nil {
-		t.Fatal(err)
-	}
-	signalsDir := filepath.Join(tmp, ".agents", "signals")
-	if err := os.MkdirAll(signalsDir, 0o755); err != nil {
-		t.Fatal(err)
-	}
-	jsonl := `{"timestamp":"2026-04-13T01:02:00Z","signal_type":"correction","detail":"status should read agents root","session_id":"s1"}`
-	if err := os.WriteFile(filepath.Join(signalsDir, "session-quality.jsonl"), []byte(jsonl+"\n"), 0o644); err != nil {
-		t.Fatal(err)
-	}
-
+	writeIntentArtifact(t, tmp, "intent")
 	t.Chdir(tmp)
 
-	got, err := captureStdout(t, func() error {
-		return runStatus(statusCmd, nil)
-	})
+	got, err := captureStdout(t, func() error { return runStatus(statusCmd, nil) })
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !strings.Contains(got, "Session Quality Signals") {
-		t.Fatalf("expected quality signal section, got: %q", got)
+	for _, want := range []string{"Loop Evidence", "intent_is_latest_evidence", "Checked:", "Not checked:"} {
+		if !strings.Contains(got, want) {
+			t.Errorf("output missing %q:\n%s", want, got)
+		}
 	}
-	if !strings.Contains(got, "status should read agents root") {
-		t.Fatalf("expected signal from .agents/signals, got: %q", got)
-	}
-}
-
-func TestLoadFlywheelBrief_TimesOut(t *testing.T) {
-	oldTimeout := statusFlywheelTimeout
-	oldCompute := statusComputeFlywheelBrief
-	t.Cleanup(func() {
-		statusFlywheelTimeout = oldTimeout
-		statusComputeFlywheelBrief = oldCompute
-	})
-
-	statusFlywheelTimeout = 5 * time.Millisecond
-	cancelObserved := make(chan struct{})
-	statusComputeFlywheelBrief = func(ctx context.Context, _ string) *flywheelBrief {
-		<-ctx.Done()
-		close(cancelObserved)
-		return &flywheelBrief{Status: "SHOULD_NOT_BLOCK"}
-	}
-
-	start := time.Now()
-	got := loadFlywheelBrief(t.TempDir())
-	elapsed := time.Since(start)
-
-	if got != nil {
-		t.Fatalf("got %+v, want nil after timeout", got)
-	}
-	if elapsed > 100*time.Millisecond {
-		t.Fatalf("loadFlywheelBrief took %s, want bounded timeout", elapsed)
-	}
-	select {
-	case <-cancelObserved:
-	case <-time.After(100 * time.Millisecond):
-		t.Fatal("compute goroutine did not observe timeout cancellation")
+	for _, forbidden := range []string{"Sessions:", "Provenance:", "Flywheel", "Quality Signals", "Commands:", "ao init"} {
+		if strings.Contains(got, forbidden) {
+			t.Errorf("evidence-only output contains %q:\n%s", forbidden, got)
+		}
 	}
 }
 
-func TestOutputStatus_IncludesQualitySignalsHuman(t *testing.T) {
-	var buf bytes.Buffer
-	oldStdout := os.Stdout
-	r, w, err := os.Pipe()
+func TestRunStatus_JSONHasNoLegacySurfaces(t *testing.T) {
+	resetCommandState(t)
+	output = "json"
+	t.Chdir(t.TempDir())
+
+	got, err := captureStdout(t, func() error { return runStatus(statusCmd, nil) })
 	if err != nil {
 		t.Fatal(err)
 	}
-	os.Stdout = w
-	defer func() { os.Stdout = oldStdout }()
+	var value map[string]any
+	if err := json.Unmarshal([]byte(got), &value); err != nil {
+		t.Fatalf("invalid JSON: %v\n%s", err, got)
+	}
+	if len(value) != 1 || value["loop_evidence"] == nil {
+		t.Fatalf("unexpected top-level status shape: %+v", value)
+	}
+	for _, forbidden := range []string{"initialized", "base_dir", "session_count", "recent_sessions", "provenance_stats", "flywheel", "quality_signals"} {
+		if _, ok := value[forbidden]; ok {
+			t.Errorf("JSON contains legacy field %q: %s", forbidden, got)
+		}
+	}
+}
 
-	err = outputStatus(&statusOutput{
-		Initialized:  true,
-		BaseDir:      filepath.Join(t.TempDir(), ".agents"),
-		SessionCount: 0,
-		QualitySignals: []qualitySignalInfo{{
-			Timestamp:  "2026-04-13T01:02:00Z",
-			SignalType: "correction",
-			Detail:     "Prompt starts with correction pattern",
-			SessionID:  "s1",
+func writeIntentArtifact(t *testing.T, root, content string) string {
+	t.Helper()
+	digest := sha256.Sum256([]byte(content))
+	directory := filepath.Join(root, ".agents", "ao", "intents", "sha256")
+	if err := os.MkdirAll(directory, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	path := filepath.Join(directory, hex.EncodeToString(digest[:])+".intent")
+	if err := os.WriteFile(path, []byte(content), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	return path
+}
+
+func writeVerdictArtifact(t *testing.T, root string) string {
+	t.Helper()
+	directory := filepath.Join(root, ".agents", "ao", "verdicts", "sha256")
+	if err := os.MkdirAll(directory, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	return writeRawVerdictArtifact(t, directory, map[string]any{
+		"schema_version":          "verdict.v2",
+		"acceptance_digest":       strings.Repeat("a", 64),
+		"subject_manifest_digest": strings.Repeat("b", 64),
+		"author_context_id":       "author",
+		"validator_context_id":    "validator",
+		"freshness_attestation": map[string]any{
+			"source": "runtime", "attester_identity": "test-runtime",
+		},
+		"verdict": "FAIL",
+		"criteria": []any{map[string]any{
+			"id": "criterion", "result": "FAIL", "evidence_refs": []string{"test"},
 		}},
+		"findings":      []any{},
+		"evidence_refs": []string{"test"},
+		"checked":       []string{"test"},
+		"not_checked":   []string{"live system"},
+		"validated_at":  "2026-07-16T01:00:00Z",
 	})
-	_ = w.Close()
+}
+
+func writeRawVerdictArtifact(t *testing.T, directory string, value map[string]any) string {
+	t.Helper()
+	canonical, err := canonicalJSON(value)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := buf.ReadFrom(r); err != nil {
+	digest := sha256.Sum256(canonical)
+	digestText := hex.EncodeToString(digest[:])
+	value["artifact_digest"] = digestText
+	payload, err := json.MarshalIndent(value, "", "  ")
+	if err != nil {
 		t.Fatal(err)
 	}
-	got := buf.String()
-	if !strings.Contains(got, "Session Quality Signals") {
-		t.Fatalf("expected quality signal section, got: %q", got)
+	path := filepath.Join(directory, digestText+".json")
+	if err := os.WriteFile(path, append(payload, '\n'), 0o600); err != nil {
+		t.Fatal(err)
 	}
-	if !strings.Contains(got, "correction") || !strings.Contains(got, "Prompt starts with correction pattern") {
-		t.Fatalf("expected rendered quality signal, got: %q", got)
+	return path
+}
+
+func setArtifactTime(t *testing.T, path string, timestamp time.Time) {
+	t.Helper()
+	if err := os.Chtimes(path, timestamp, timestamp); err != nil {
+		t.Fatal(err)
 	}
 }

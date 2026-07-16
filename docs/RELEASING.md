@@ -1,381 +1,76 @@
 # Releasing AgentOps
 
-This document describes the release process for the `ao` CLI and AgentOps plugin.
+This is repository release policy for the `ao` binary and plugin bundles. It is
+outside the AgentOps semantic loop: release checks never create a Validate
+verdict, and a verdict never pushes a tag.
 
-## Overview
+## Preconditions
 
-Releases are triggered by git tags and use a publisher-only workflow:
-
-```
-git tag vX.Y.Z
-    ↓
-┌──────────────────────────────────────────────────────┐
-│          Local gate (authoritative)                  │
-├──────────────────────────────────────────────────────┤
-│  ./scripts/ci-local-release.sh                       │
-│  - validation + tests + smoke checks                 │
-│  - bootstrap + pawl smoke                            │
-│  - SBOM + security report artifacts                  │
-│  - release readiness score + SIL/VIL/HIL evidence    │
-└──────────────────────────────────────────────────────┘
-                         ↓
-┌──────────────────────────────────────────────────────┐
-│           release.yml (publisher only)               │
-├──────────────────────────────────────────────────────┤
-│  - pre-publish SBOM + security + readiness evidence  │
-│  - GoReleaser publish                                │
-│  - GitHub Release notes + assets                     │
-│  - Homebrew update                                   │
-│  - SLSA provenance attestation                       │
-└──────────────────────────────────────────────────────┘
-```
-
-## Making a Release
-
-### 1. Pre-release Checklist
-
-- [ ] Local CI release gate passes (`./scripts/ci-local-release.sh`; once the target version is known, rerun as `./scripts/ci-local-release.sh --release-version X.Y.Z`)
-- [ ] Official readiness score is at least 8/10 (`release-readiness.json` has `release_status: pass`)
-- [ ] SIL/VIL/HIL evidence is attached (`hil-evidence.json`; use a workflow-rich `--hil-target` or an explicit `--hil-waiver "reason"`)
-- [ ] Local gate artifacts generated (`.agents/releases/local-ci/<timestamp>/` includes SBOM, security report, readiness, and HIL evidence)
-- [ ] Release validation did not mutate tracked `.agents/findings/*` metadata; `scripts/ci-local-release.sh` guards this by default.
-- [ ] All tests pass locally (`cd cli && make test`)
-- [ ] Full Validate green on the exact release SHA (`scripts/verify-release-ci.sh vX.Y.Z` after pushing; release tag pushes force every path-filtered release lane on, PR-only evidence jobs may be skipped, and unexpected skipped release lanes fail the summary)
-- [ ] Version number follows semver (vX.Y.Z)
-- [ ] CHANGELOG.md updated with release notes
-- [ ] plugin.json version matches tag
-- [ ] No uncommitted changes on main
-- [ ] Homebrew token is valid (check secrets)
-
-### 1a. Release Size Check
-
-Releases should contain **at most 15 commits** per minor version bump. v2.2.0 had 26 commits — too large to review, debug, or bisect effectively.
-
-If the commit count since the last tag exceeds 15:
-- Split into multiple releases (e.g., vX.Y.Z for first batch, vX.Y.(Z+1) for remainder)
-- Or ensure each commit is well-scoped and the changelog covers all changes
-
-Check commit count:
-```bash
-git log $(git describe --tags --match 'v[0-9]*.[0-9]*.[0-9]*' --abbrev=0)..HEAD --oneline | wc -l
-```
-
-The pre-flight validation script (`scripts/validate-release.sh`) will warn (not fail) when this threshold is exceeded.
-
-### 1b. Historical Changelog Coverage
-
-The maintained changelog coverage floor is `v2.16.0`. Earlier tags are treated
-as historical bootstrap tags and do not require backfilled curated notes or audit
-documents for current releases. If a future release needs a complete pre-`v2.16.0`
-history, file explicit backfill beads for the missing versions instead of
-blocking the active release by default.
-
-### 1c. Agent Metadata Mutation
-
-Release validation must be read-only with respect to tracked finding metadata.
-`scripts/ci-local-release.sh` runs the release smoke path through
-`scripts/check-release-agent-metadata-stable.sh`, and
-`scripts/release-smoke-test.sh` uses `ao inject --no-cite`,
-`ao lookup --no-cite`, and `ao flywheel close-loop --dry-run` by default.
-
-Intentional citation/finding metadata refreshes are opt-in:
+Choose the exact release commit, then run the ordinary deterministic suite:
 
 ```bash
-AGENTOPS_RELEASE_ALLOW_AGENT_MUTATIONS=1 scripts/ci-local-release.sh
+bash scripts/ci-local-release.sh --release-version X.Y.Z
+bash tests/docs/validate-doc-release.sh
+cd cli && go test ./...
 ```
 
-### 2. Update CHANGELOG
+Inspect the generated release artifacts, the final diff, and the version in the
+Go binary and plugin manifests. Local artifacts under ignored directories are
+evidence for the operator; they are not tracked lifecycle state.
 
-Follow [Keep a Changelog](https://keepachangelog.com/) format:
+If this repository's operator wants semantic review of the release candidate,
+invoke the Validate skill once from a fresh context against that exact subject.
+Record the verdict separately. Do not make the release workflow produce or
+strengthen a semantic verdict.
 
-```markdown
-## [X.Y.Z] - YYYY-MM-DD
+## Publish
 
-### Added
-- Feature description
-
-### Changed
-- Change description
-
-### Fixed
-- Fix description
-```
-
-### 3. Create and Push Tag
+Update `CHANGELOG.md`, commit the release changes through normal Git policy,
+then create and push the annotated tag:
 
 ```bash
-# Ensure you're on main and up to date
-git checkout main
-git pull
-
-# Create annotated tag
 git tag -a vX.Y.Z -m "Release vX.Y.Z"
-
-# Push commit and tag (triggers Validate and the release workflow)
-git push origin main
 git push origin vX.Y.Z
-
-# Release is not done until full Validate is green for the exact tagged SHA
-scripts/verify-release-ci.sh vX.Y.Z
 ```
 
-### 4. Monitor the Publisher Workflow
-
-Watch the release at: https://github.com/boshu2/agentops/actions
-
-The workflow runs three jobs:
-1. **doc-release-gate** - Confirms release docs and generated references are current
-2. **pre-publish-evidence** - Generates SBOM, runs the full security gate, and writes release-readiness evidence before publish
-3. **publish** - Runs only after both gates pass; publishes artifacts, updates Homebrew, uploads the pre-publish evidence bundle, and signs attestation
-
-### 5. Verify the Release
-
-After the workflow completes:
-
-```bash
-# Update Homebrew
-brew update
-
-# Upgrade ao
-brew upgrade agentops
-
-# Verify version
-ao version
-# Should show: ao version X.Y.Z
-```
-
-### 6. Verify Integrity (checksums + provenance)
-
-```bash
-# Download and verify checksums
-curl -sL https://github.com/boshu2/agentops/releases/download/vX.Y.Z/checksums.txt
-shasum -a 256 -c checksums.txt --ignore-missing
-
-# Verify SLSA provenance (requires gh CLI)
-gh attestation verify ao-darwin-arm64.tar.gz --repo boshu2/agentops
-```
-
-## Release Artifacts
-
-Each release produces:
-
-| Artifact | Description |
-|----------|-------------|
-| `ao-darwin-amd64.tar.gz` | macOS Intel binary |
-| `ao-darwin-arm64.tar.gz` | macOS Apple Silicon binary |
-| `ao-linux-amd64.tar.gz` | Linux x86_64 binary |
-| `ao-linux-arm64.tar.gz` | Linux ARM64 binary |
-| `checksums.txt` | SHA256 checksums for all archives |
-| `sbom-cyclonedx-go-mod.json` | Publishable CycloneDX SBOM for Go dependencies |
-| `security-gate-summary.json` | Security scan summary (gitleaks/semgrep/gosec/trivy/etc.) |
-| `release-readiness.json` | Release readiness score with SIL/VIL/HIL status |
-| `eval-agentops-fast.json` | AgentOps eval proof summary for release readiness |
-| `eval-baseline-audit.json` | Eval baseline drift audit; stale suite hashes block audit resolution |
-| `digital-twin-evidence.json` | Local release digital-twin/VIL proof |
-| SLSA attestation | Build provenance (verifiable via `gh attestation verify`) |
-
-## Release Notes
-
-Release notes are auto-generated by GoReleaser with:
-- **Header** with install/upgrade instructions and integrity verification
-- **Changelog** grouped by type (features, fixes, docs, other)
-- **Footer** with full changelog diff link
-
-The template lives in `.goreleaser.yml` under `release.header` and `release.footer`.
-
-## Validation Checks
-
-Release validation is local-first and enforced by:
-
-```bash
-./scripts/ci-local-release.sh
-```
-
-This local gate runs doc checks, manifest/schema checks, smoke/integration checks, bootstrap and pawl smoke paths, binary validation, SBOM generation, security scans, AgentOps eval evidence, digital-twin/VIL evidence, and the release readiness score. Official release audits require SIL/VIL evidence plus workflow-rich HIL evidence or an explicit HIL waiver.
-For command variants and expected release-E2E smoke markers, see [Release E2E Checklist](release-e2e-checklist.md).
-
-## Failure Modes
-
-### Local Gate Fails
-
-If `./scripts/ci-local-release.sh` fails, do not tag or publish.
-
-**To fix:**
-1. Identify the issue from the workflow logs
-2. Fix the code
-3. Delete the tag: `git tag -d vX.Y.Z && git push origin :refs/tags/vX.Y.Z`
-4. Re-run the local gate until all checks pass
-5. Create and push the tag
-
-### Exact-SHA Validate Fails
-
-If `scripts/verify-release-ci.sh vX.Y.Z` prints `NO-GO release-ci`, the release
-is not complete even if the tag exists locally or the publisher workflow starts.
-
-**To fix:**
-1. Open the reported run URL and repair the failing Validate job.
-2. Commit the fix on `main`.
-3. Move the release tag to the fixed commit with `scripts/retag-release.sh vX.Y.Z`, or delete and recreate the local tag before any public release exists.
-4. Re-run `scripts/verify-release-ci.sh vX.Y.Z` and record the `GO release-ci` line in the handoff or release audit notes.
-
-### Publish Fails
-
-If publisher CI fails after a local gate pass, the release may be in a partial state.
-
-**To fix:**
-1. Check if GitHub release was created (may need manual cleanup)
-2. Check if Homebrew formula was pushed
-3. If the original tag-push workflow is still running for that tag, wait for it to finish before starting anything else
-4. For post-tag commits, use `scripts/retag-release.sh vX.Y.Z`
-5. Use `workflow_dispatch` only to rerun an existing tag after the original tag-triggered workflow has already finished and you are not pushing a new tag in parallel
-6. `scripts/retag-release.sh` already waits on the tag-push workflow. It should not launch a second manual publish run for the same tag.
-
-Why this matters: a second publish for the same tag can collide on release assets and fail with GitHub `422 already_exists` errors if the first publish already created or uploaded assets.
-
-### Homebrew Token Expired
-
-The `HOMEBREW_TAP_GITHUB_TOKEN` secret is validated before publish. If it fails:
-
-1. Generate a new PAT at https://github.com/settings/tokens
-2. Scope: `public_repo` (for homebrew-agentops)
-3. Update the secret in repository settings
-
-## Manual Release (workflow_dispatch)
-
-Use `workflow_dispatch` only when you need to rerun an existing tag release after the original tag-triggered workflow has already completed or failed.
-
-Do not use `workflow_dispatch` as the primary path for a fresh release. The primary path is still `git push origin vX.Y.Z`.
-
-Do not launch a manual run in parallel with a tag-push run for the same tag.
-
-If you have post-tag commits that should become part of the same version, use:
-
-```bash
-scripts/retag-release.sh vX.Y.Z
-```
-
-If you only need to retry the existing tag with no new commits:
-
-1. Go to Actions → Release workflow
-2. Click "Run workflow"
-3. Enter the tag (e.g., `vX.Y.Z`)
-4. Click "Run workflow"
-
-## Local Testing
-
-Before tagging, you can test the build locally:
-
-```bash
-# Run CI-equivalent local release gate (required)
-./scripts/ci-local-release.sh
-
-# Once the target version is known, bind the artifacts to that version for the audit
-./scripts/ci-local-release.sh --release-version X.Y.Z
-./scripts/resolve-release-artifacts.sh X.Y.Z
-
-# Publishable local artifacts will be written to:
-# .agents/releases/local-ci/<timestamp>/
-#   - sbom-vX.Y.Z.cyclonedx.json
-#   - sbom-vX.Y.Z.spdx.json
-#   - security-gate-full.json
-#   - eval-agentops-fast.json
-#   - eval-baseline-audit.json
-#   - digital-twin-evidence.json
-#   - hil-evidence.json
-#   - release-readiness.json
-#   - release-artifacts.json
-
-# Install goreleaser
-brew install goreleaser
-
-# Validate config
-goreleaser check
-
-# Build snapshot (doesn't require tag)
-goreleaser build --snapshot --clean --single-target
-
-# Test the binary
-./dist/ao_darwin_arm64/ao version
-./dist/ao_darwin_arm64/ao --help
-./dist/ao_darwin_arm64/ao status
-
-# Run doc-release gate
-./tests/docs/validate-doc-release.sh
-```
-
-## Dependency Automation Policy
-
-Dependency automation is managed by Dependabot and follows this policy:
-
-- Scope: Go modules (`/cli/go.mod`) and GitHub Actions (`/.github/workflows/*.yml`)
-- Cadence: Weekly on Monday (separate schedules for Go and Actions)
-- Grouping: Minor and patch updates are grouped per ecosystem
-- Major updates: Opened as separate PRs for explicit review
-- Security updates: Treated as priority work and merged outside normal cadence when validated
-- PR limits: Capped to keep queue manageable and avoid review overload
-
-## Configuration Files
-
-| File | Purpose |
-|------|---------|
-| `.goreleaser.yml` | Build config, checksums, release notes, Homebrew formula |
-| `.github/workflows/release.yml` | Publisher-only release workflow (publish + assets + attestation) |
-| `.github/workflows/validate.yml` | CI validation (includes doc-release stabilization gate) |
-| `.github/workflows/nightly.yml` | Nightly tests with failure alerts |
-| `.github/dependabot.yml` | Dependabot policy and schedules for Go modules + GitHub Actions |
-| `scripts/validate-release.sh` | Binary validation script |
-| `tests/docs/validate-doc-release.sh` | Unified doc-release gate (links + skills + message freeze) |
-
-## Homebrew Tap
-
-The Homebrew formula is automatically pushed to:
-https://github.com/boshu2/homebrew-agentops
-
-Users install with:
-```bash
-brew tap boshu2/agentops
-brew install agentops
-```
-
-## Security
-
-- **Checksums:** SHA256 checksums for all archives (`checksums.txt`)
-- **SLSA provenance:** Build attestation via `actions/attest-build-provenance`
-- **Dependabot:** Automated dependency updates for Go modules and GitHub Actions
-- **Security scan:** Secrets and dangerous pattern detection on every PR
-
-See [SECURITY.md](SECURITY.md) for vulnerability reporting.
-
-## Troubleshooting
-
-### "ao version" shows "dev"
-
-The ldflags version injection failed. Check `.goreleaser.yml`:
-```yaml
-ldflags:
-  - -s -w -X main.version={{ .Version }}
-```
-
-`./scripts/ci-local-release.sh` should catch this before tagging.
-
-### Binary artifact missing or renamed
-
-GoReleaser archive naming doesn't match extraction pattern. Check:
-- `.goreleaser.yml` `archives` section
-- Release asset names in the GitHub Release page
-
-### Homebrew formula not updated
-
-1. Check `HOMEBREW_TAP_GITHUB_TOKEN` is valid
-2. Check workflow logs for push errors
-3. Verify formula at homebrew-agentops repo
-
-### Attestation verification fails
-
-```bash
-# Ensure gh CLI is authenticated
-gh auth status
-
-# Try verification with verbose output
-gh attestation verify <file> --repo boshu2/agentops --verbose
-```
+`.github/workflows/release.yml` is the publisher-only workflow. It builds the
+declared platforms, produces checksums and attestations, publishes the GitHub
+release, and updates configured package distribution. It does not merge
+branches, close work, or invoke AgentOps semantic validation.
+
+Use `workflow_dispatch` only to retry an existing tag after inspecting the
+previous publisher run. Do not start a second publisher for the same tag while
+one is active.
+
+## Verify
+
+After the publisher completes:
+
+1. Confirm the GitHub release points to the intended tag and commit.
+2. Verify checksums for at least one downloaded artifact.
+3. Install the published binary in a clean temporary environment and run
+   `ao version` plus one read-only command.
+4. Confirm Claude, Codex, and Gemini bundle manifests contain the generated
+   metadata-owned skill inventory.
+
+## Failure and rollback
+
+Before publication, fix the candidate and create a new exact release commit.
+After publication, prefer a new patch release. Move or recreate a public tag
+only when repository policy explicitly permits it and no consumer can have
+observed the old artifact.
+
+Release failures are repository failures, not AgentOps `FAIL` or
+`NOT_PROVEN` verdicts. Diagnose them with the release workflow logs and the
+deterministic commands above.
+
+## Owned surfaces
+
+| Surface | Responsibility |
+|---|---|
+| `.goreleaser.yml` | binary archives, checksums, and release notes |
+| `.github/workflows/release.yml` | tagged publication |
+| `.github/workflows/validate.yml` | optional hosted deterministic checks |
+| `scripts/ci-local-release.sh` | local deterministic release rehearsal |
+| `scripts/validate-release.sh` | built-binary release checks |
+| `tests/docs/validate-doc-release.sh` | documentation and generated-reference checks |

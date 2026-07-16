@@ -10,10 +10,11 @@ The prevention ladder has four layers:
    The canonical intake ledger governed by [finding-registry.md](finding-registry.md).
 2. `.agents/findings/<id>.md`
    The promoted finding artifact governed by [finding-artifact.schema.json](finding-artifact.schema.json).
-3. `.agents/planning-rules/<id>.md` and `.agents/pre-mortem-checks/<id>.md`
-   Advisory outputs consumed by `/plan`, `/pre-mortem`, and related judgment/runtime flows.
-4. `.agents/constraints/index.json` plus `.agents/constraints/<id>.sh`
-   Mechanical outputs for active declarative prevention during validation.
+3. `.agents/planning-rules/<id>.md` and `.agents/premortem-checks/<id>.md`
+   Advisory outputs consumed by `/plan`, `/premortem`, and related judgment flows.
+4. `.agents/constraints/index.json`
+   Mechanical detectors that begin as warn-only shadows and become blocking only
+   after precision-backed activation.
 
 The registry is still the canonical intake ledger. Promotion and compilation are additive v2 layers, not a replacement data store.
 
@@ -43,28 +44,35 @@ Promotion must preserve the reusable prevention content:
 | Target | Output path | Purpose |
 |--------|-------------|---------|
 | `plan` | `.agents/planning-rules/<id>.md` | Prevent known-bad decomposition or sequencing during planning |
-| `pre-mortem` | `.agents/pre-mortem-checks/<id>.md` | Surface prior failure modes during plan/spec validation |
-| `constraint` | `.agents/constraints/index.json` plus `.agents/constraints/<id>.sh` | Enforce mechanically detectable rules during task validation |
+| `premortem` | `.agents/premortem-checks/<id>.md` | Surface prior failure modes during plan/spec validation |
+| `constraint` | `.agents/constraints/index.json` | Observe mechanically detectable rules in shadow, then enforce only after measured activation |
 
-Advisory findings may compile to `plan` and `pre-mortem`. Mechanical findings may compile to `constraint` only when detector metadata is present and valid.
+`premortem` and `premortem` remain accepted input aliases during migration,
+but writers emit `premortem`. Advisory findings may compile to `plan` and
+`premortem`. A mechanical finding compiles to `constraint` only when its regex
+matches every stored positive and passes every explicit negative control.
 
 ## Constraint Index Contract
 
 .agents/constraints/index.json is the canonical executable surface.
 
-The runtime hook reads only the index. It does not source or execute `.agents/constraints/<id>.sh` directly.
+The Go gate reads only the index. It never sources or executes per-constraint
+scripts.
 
 Each index entry must retain:
 
 - `id`
 - `finding_id`
 - `title`
-- `status` (`draft`, `active`, `retired`)
+- `status` (`shadow`, `active`, `retired`)
+- `enforcement_mode` (`warn` for shadow, `block` for active)
 - `source_artifact`
 - `review_file`
 - `compiled_at`
 - `applies_to`
 - `detector`
+- `evidence` (positive references, negative-control references, and optional
+  shadow precision measurement)
 
 Illustrative shape:
 
@@ -73,7 +81,8 @@ Illustrative shape:
   "id": "f-2026-03-09-001",
   "finding_id": "f-2026-03-09-001",
   "title": "Preserve issue type in TaskCreate metadata",
-  "status": "draft",
+  "status": "shadow",
+  "enforcement_mode": "warn",
   "source_artifact": ".agents/findings/f-2026-03-09-001.md",
   "review_file": ".agents/constraints/f-2026-03-09-001.sh",
   "compiled_at": "2026-03-09T20:15:00Z",
@@ -84,20 +93,25 @@ Illustrative shape:
     "languages": ["markdown", "shell"]
   },
   "detector": {
-    "kind": "content_pattern",
-    "mode": "must_contain",
+    "kind": "regex",
+    "mode": "match",
     "pattern": "issue_type"
+  },
+  "evidence": {
+    "positive_refs": ["tests/fixtures/issue-type-positive.md"],
+    "negative_control_refs": ["tests/fixtures/issue-type-negative.md"]
   }
 }
 ```
 
 ## Detector Precision (authoring a sound regex gate)
 
-A `regex` detector is matched against **whole-file text** — it cannot tell code from a comment,
-string, or docstring. An `active` constraint is a **blocking** gate, so a false positive fails a
-legitimate push. Author detectors so the pattern is **rare in non-code positions**, and prefer the
-narrowest precise form (lessons hardened across the 2026-06-22 seeding — every rule below was a real
-cross-family-pawl catch):
+A `regex` detector is matched against **whole-file text** — it cannot tell code
+from a comment, string, or docstring. Compilation requires at least one stored
+positive and one explicit negative control; every positive must match and every
+negative must pass. The resulting constraint is `shadow` + `warn`, never blocking.
+`ao constraint activate` additionally requires cited shadow measurements with at
+least 95% precision before changing it to `active` + `block`.
 
 - **Anchor over substring.** A bare substring has an unbounded false-positive tail. Line-anchor with
   `(?m)^...` and use `[ \t]` (space/tab) rather than `[[:space:]]` (which includes `\n` and can match
@@ -110,49 +124,30 @@ cross-family-pawl catch):
 - **Scope to code with a SUPPORTED glob.** Use `**/*.go` / `**/*.sh` / `**/*.py` (the gate accepts
   `base/**`, `**/*.ext`, `*.ext`, exact, and a single-`*` segment — `cli/**/*.go` is REJECTED and
   fails closed). Code-only globs also keep the doc that *documents* the footgun (a `.md`) out of scope.
-- **Verify ZERO existing violations** with the exact regex before activating — an active constraint
-  with a current violation fails the repo's own gate. Probe the enforce/PASS+violation/FAIL transition
-  on the built binary, not just by eye.
+- **Measure before blocking.** Record samples, true positives, false positives,
+  and an evidence reference. A detector without that evidence remains advisory.
+- **Verify ZERO existing violations** with the exact regex before activating.
+  Probe shadow/WARN, active/FAIL, and clean/PASS on the built binary.
 
 ## Applicability Inputs
 
-Active constraint applicability is resolved from concrete runtime inputs, not abstract scope tags.
-
-The runtime executor is `hooks/task-validation-gate.sh`. It reads active entries from `.agents/constraints/index.json`, then filters them with these inputs:
-
-- `metadata.issue_type` from the task payload, matched against `applies_to.issue_types`.
-- normalized target files from `metadata.files`.
-- normalized validation files from `metadata.validation.files_exist`.
-- normalized validation files from `metadata.validation.content_check[].file`.
-- normalized changed files from staged, unstaged, and untracked git state.
-- `applies_to.path_globs` and `applies_to.languages`, applied to the normalized target-file set.
-
-If any active constraint declares `applies_to.issue_types`, task validation requires an issue type in the payload before evaluating the constraint set. This prevents issue-scoped prevention rules from silently guessing applicability.
+Constraint applicability is resolved from concrete repository files. The Go
+`constraints.enforce` check evaluates changed files in fast mode and enumerates
+repository files in full mode, then applies `applies_to.path_globs`. Shadow
+detector hits or evaluation errors WARN. Active detector hits or evaluation
+errors FAIL closed.
 
 ## Supported Detector Kinds
 
-The v2 compiler contract only recognizes detector kinds that fit the existing hook safety model:
+The compiler currently recognizes `regex` only. Broader detector kinds are out
+of scope until their positive/negative replay and shadow evaluation semantics are
+defined explicitly.
 
-- `content_pattern`
-  Literal must-have or must-not-have pattern checks over normalized target files.
-- `paired_files`
-  Companion-file requirements derived from normalized changed files.
-- `restricted_command`
-  Allowlisted bare-name commands that remain subject to the hook sandbox.
+## Review metadata
 
-Broader detector kinds are out of scope until a later contract revision expands the safety model explicitly.
-
-## Companion `.sh` Files
-
-`.agents/constraints/<id>.sh` is a human-reviewable companion artifact.
-
-Its purposes are:
-
-- explain the intent of the rule in shell-adjacent form
-- preserve compatibility for older review tooling
-- provide a migration stub for humans
-
-It is not a runtime contract. Hooks must never execute it directly.
+`review_file` and `file` may retain `.agents/constraints/<id>.sh` as compatibility
+metadata for older review tooling. The compiler does not execute that path and
+the gate does not depend on it.
 
 ## Lifecycle
 
@@ -165,7 +160,7 @@ Finding artifact lifecycle:
 
 Constraint index lifecycle:
 
-- `draft`
+- `shadow`
 - `active`
 - `retired`
 
@@ -173,7 +168,8 @@ Rules:
 
 - `retired` or `superseded` findings must not leave active downstream outputs behind.
 - `superseded` findings should point to their replacement via `superseded_by`.
-- `ao constraint activate` and `ao constraint retire` remain the lifecycle surface for constraint index entries.
+- `ao constraint activate` accepts only precision-backed warn-only shadows.
+- `ao constraint retire` accepts only active entries.
 
 ## Atomicity and Locking
 
@@ -183,11 +179,13 @@ If a lock is used, the canonical lock path is:
 
 - `.agents/constraints/compile.lock`
 
-Any CLI or hook path that mutates `.agents/constraints/index.json` must follow the same lock and atomic-write contract so compiler and lifecycle operations do not race each other.
+Any CLI path that mutates `.agents/constraints/index.json` must follow the same
+lock and atomic-write contract so compiler and lifecycle operations do not race.
 
 ## Backward Compatibility
 
 - The registry JSONL line shape remains canonical `version: 1`.
 - Older readers may continue to consume `registry.jsonl` directly.
 - New promoted artifacts and compiled outputs are additive layers.
-- Narrative docs must not claim active enforcement unless the runtime hook actually reads active entries from `.agents/constraints/index.json`.
+- Narrative docs must not claim active enforcement unless the Go gate actually
+  reads active entries from `.agents/constraints/index.json`.

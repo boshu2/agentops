@@ -47,7 +47,7 @@ run_meta() { ( cd "$WORK" && PATH="$WORK/bin:$PATH" bash scripts/check-gate-fixh
 }
 
 @test "dead command WITH a removal marker (historical ref) -> NOT flagged" {
-  printf '#!/usr/bin/env bash\necho "  fix: make build-flywheel to restore the archived ao corpus snapshot"\n' > "$WORK/scripts/check-d.sh"
+  printf '#!/usr/bin/env bash\necho "  historical: ao corpus snapshot was removed"\n' > "$WORK/scripts/check-d.sh"
   run run_meta --strict
   [ "$status" -eq 0 ]
   [[ "$output" == *"PASS"* ]]

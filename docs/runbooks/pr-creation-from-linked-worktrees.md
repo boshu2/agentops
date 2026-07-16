@@ -140,4 +140,5 @@ main --draft`).
 ## See also
 
 - `skills/swarm/references/shared-checkout-discipline.md` — when a worktree is required.
-- `skills/push/SKILL.md` — the test→commit→push half (stops before PR creation; this runbook covers the rest).
+- The repository's own contribution and CI documentation for checks required
+  before opening a PR. AgentOps does not own the push or PR transition.

@@ -24,7 +24,6 @@ func tokenizeWords(text string) []string       { return search.TokenizeWords(tex
 func computeAdjacency(tokens []string, words []string) float64 {
 	return search.ComputeAdjacency(tokens, words)
 }
-
 func weightedSectionScore(tokens []string, heading, content string, sectionIndex, totalSections int) float64 {
 	return search.WeightedSectionScore(tokens, heading, content, sectionIndex, totalSections)
 }

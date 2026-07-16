@@ -70,7 +70,7 @@ func Audit(opts Options) (*Report, error) {
 	names := make([]string, 0, len(entries))
 	for _, e := range entries {
 		// Skip files (e.g., SKILL-TIERS.md) at the top level. Only walk dirs.
-		if !e.IsDir() {
+		if !e.IsDir() || strings.HasPrefix(e.Name(), "_") {
 			continue
 		}
 		name := e.Name()

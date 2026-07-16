@@ -56,8 +56,9 @@ parity. Powers `ao doctor`, `ao metrics`, and several CI gates.
 
 ## Cross-references
 
-- `cli/cmd/ao/doctor.go`, `metrics_*.go` — CLI wiring.
+- `cli/cmd/ao/doctor_module.go`, `metrics_*.go` — CLI wiring.
+- `cli/internal/commands/doctor/module.go` — doctor presentation owner.
 - `cli/internal/types/` — shared learning/memory types this package reads.
-- `scripts/sync-skill-counts.sh`, `scripts/audit-codex-parity.sh` — sibling
+- `scripts/generate-skill-mesh.py`, `scripts/audit-codex-parity.sh` — sibling
   shell tools that overlap with this package's responsibilities.
 - `skills/flywheel/SKILL.md` — surfaces health metrics computed here.

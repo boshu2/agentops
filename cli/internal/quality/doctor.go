@@ -14,12 +14,39 @@ import (
 	"time"
 )
 
+// Check status values. "info" is a non-warning, non-failing informational line
+// (e.g. "you haven't run a session yet", "optional dependency absent") — it is
+// rendered but never counted as a warning and never degrades the result.
+const (
+	StatusPass = "pass"
+	StatusWarn = "warn"
+	StatusFail = "fail"
+	StatusInfo = "info"
+)
+
+// Check audiences. Every doctor check declares who it is for:
+//   - AudienceInstalledUser: relevant to anyone who installed AgentOps.
+//   - AudienceRepoDev: only meaningful inside an agentops repo clone (skill
+//     hygiene, codex-sync internals, plugin-manifest internals, stale in-repo
+//     references, binary freshness). Collapsed to a single info line outside a
+//     clone so a pristine install never sees repo-internal warnings.
+const (
+	AudienceInstalledUser = "installed-user"
+	AudienceRepoDev       = "repo-dev"
+)
+
 // Check represents a single doctor health check result.
 type Check struct {
 	Name     string `json:"name"`
-	Status   string `json:"status"` // "pass", "warn", "fail"
+	Status   string `json:"status"` // "pass", "warn", "fail", "info"
 	Detail   string `json:"detail"`
 	Required bool   `json:"required"`
+	// Audience is who the check is for: "installed-user" or "repo-dev".
+	Audience string `json:"audience,omitempty"`
+	// Fix, when set, is a remediation runnable from the reader's own context
+	// (a URL or an ao/br/brew/npm/curl command) — never a repo-relative script
+	// path. Populated for installed-user checks that have a next action.
+	Fix string `json:"fix,omitempty"`
 }
 
 // DoctorOutput holds the full doctor report.
@@ -66,6 +93,8 @@ func StatusIcon(status string) string {
 		return "!"
 	case "fail":
 		return "\u2717"
+	case "info":
+		return "\u00b7"
 	}
 	return "?"
 }
@@ -101,7 +130,9 @@ func HasRequiredFailure(checks []Check) bool {
 // ComputeResult determines the overall doctor result from checks.
 func ComputeResult(checks []Check) DoctorOutput {
 	passes, fails, warns := CountCheckStatuses(checks)
-	total := len(checks)
+	// "info" lines are informational only: they are not counted toward the
+	// pass/total tally and never degrade the result.
+	total := passes + fails + warns
 	result := "HEALTHY"
 	if fails > 0 {
 		result = "UNHEALTHY"
@@ -173,6 +204,15 @@ func FormatDuration(d time.Duration) string {
 		return fmt.Sprintf("%dh", int(d.Hours()))
 	}
 	return fmt.Sprintf("%dd", int(d.Hours()/24))
+}
+
+// pluralize renders "<n> <word>" with a trailing "s" unless n == 1, so the
+// doctor never prints "1 learnings".
+func pluralize(n int, word string) string {
+	if n == 1 {
+		return fmt.Sprintf("1 %s", word)
+	}
+	return fmt.Sprintf("%d %ss", n, word)
 }
 
 // FormatNumber adds comma separators to an integer.
@@ -285,14 +325,14 @@ func SHA256File(path string) (string, error) {
 // CheckKnowledgeBase checks that the knowledge base directory exists.
 func CheckKnowledgeBase(baseDir string) Check {
 	if _, err := os.Stat(baseDir); os.IsNotExist(err) {
-		return Check{Name: "Knowledge Base", Status: "fail", Detail: ".agents/ao not initialized", Required: true}
+		return Check{Name: "Knowledge Base", Status: "fail", Detail: ".agents/ao not initialized", Required: true, Audience: AudienceInstalledUser, Fix: "ao init"}
 	}
-	return Check{Name: "Knowledge Base", Status: "pass", Detail: ".agents/ao initialized", Required: true}
+	return Check{Name: "Knowledge Base", Status: "pass", Detail: ".agents/ao initialized", Required: true, Audience: AudienceInstalledUser}
 }
 
 // CheckKnowledgeFreshness checks the most recent file in the sessions directory.
 func CheckKnowledgeFreshness(sessionsDir string) Check {
-	noSessions := Check{Name: "Knowledge Freshness", Status: "warn", Detail: "No sessions found \u2014 run 'ao forge transcript' after your next session", Required: false}
+	noSessions := Check{Name: "Knowledge Freshness", Status: "info", Detail: "No sessions yet \u2014 run 'ao forge transcript' after your next session", Required: false, Audience: AudienceInstalledUser, Fix: "ao forge transcript"}
 	entries, err := os.ReadDir(sessionsDir)
 	if err != nil || len(entries) == 0 {
 		return noSessions
@@ -303,21 +343,21 @@ func CheckKnowledgeFreshness(sessionsDir string) Check {
 	}
 	age := time.Since(newest)
 	if age > 14*24*time.Hour {
-		return Check{Name: "Knowledge Freshness", Status: "warn", Detail: fmt.Sprintf("Last session: %s ago \u2014 knowledge may be stale", FormatDuration(age)), Required: false}
+		return Check{Name: "Knowledge Freshness", Status: "warn", Detail: fmt.Sprintf("Last session: %s ago \u2014 knowledge may be stale", FormatDuration(age)), Required: false, Audience: AudienceInstalledUser, Fix: "ao forge transcript"}
 	}
-	return Check{Name: "Knowledge Freshness", Status: "pass", Detail: fmt.Sprintf("Last session: %s ago", FormatDuration(age)), Required: false}
+	return Check{Name: "Knowledge Freshness", Status: "pass", Detail: fmt.Sprintf("Last session: %s ago", FormatDuration(age)), Required: false, Audience: AudienceInstalledUser}
 }
 
 // CheckSearchIndex checks if the search index exists and counts terms.
 func CheckSearchIndex(indexPath string) Check {
 	info, err := os.Stat(indexPath)
 	if err != nil {
-		return Check{Name: "Search Index", Status: "warn", Detail: "No search index \u2014 run 'ao store rebuild' for faster searches", Required: false}
+		return Check{Name: "Search Index", Status: "info", Detail: "No search index yet \u2014 run 'ao store rebuild' for faster searches", Required: false, Audience: AudienceInstalledUser, Fix: "ao store rebuild"}
 	}
 	if info.Size() == 0 {
-		return Check{Name: "Search Index", Status: "warn", Detail: "Search index is empty \u2014 run 'ao store rebuild'", Required: false}
+		return Check{Name: "Search Index", Status: "info", Detail: "Search index is empty \u2014 run 'ao store rebuild'", Required: false, Audience: AudienceInstalledUser, Fix: "ao store rebuild"}
 	}
-	return Check{Name: "Search Index", Status: "pass", Detail: fmt.Sprintf("Index exists (%s terms)", FormatNumber(CountFileLines(indexPath))), Required: false}
+	return Check{Name: "Search Index", Status: "pass", Detail: fmt.Sprintf("Index exists (%s terms)", FormatNumber(CountFileLines(indexPath))), Required: false, Audience: AudienceInstalledUser}
 }
 
 // CheckFlywheelHealth checks if the flywheel has learnings.
@@ -329,17 +369,17 @@ func CheckFlywheelHealth(baseDir string) Check {
 		total = CountLearningFiles(altDir)
 	}
 	if total == 0 {
-		return Check{Name: "Flywheel Health", Status: "warn", Detail: "No learnings found \u2014 the flywheel hasn't started", Required: false}
+		return Check{Name: "Flywheel Health", Status: "info", Detail: "No learnings yet \u2014 the flywheel starts after your first sessions", Required: false, Audience: AudienceInstalledUser}
 	}
 	established := CountEstablished(filepath.Join(baseDir, "learnings"))
 	if established == 0 {
 		established = CountEstablished(filepath.Join(filepath.Dir(baseDir), "learnings"))
 	}
-	detail := fmt.Sprintf("%d learnings in flywheel", total)
+	detail := fmt.Sprintf("%s in flywheel", pluralize(total, "learning"))
 	if established > 0 {
-		detail = fmt.Sprintf("%d learnings (%d established)", total, established)
+		detail = fmt.Sprintf("%s (%d established)", pluralize(total, "learning"), established)
 	}
-	return Check{Name: "Flywheel Health", Status: "pass", Detail: detail, Required: false}
+	return Check{Name: "Flywheel Health", Status: "pass", Detail: detail, Required: false, Audience: AudienceInstalledUser}
 }
 
 // CheckCLIDependencies verifies gt and bd are available in PATH.
@@ -357,30 +397,28 @@ func CheckCLIDependencies(lookPath func(string) (string, error)) Check {
 		}
 	}
 	if gtOk && bdOk {
-		return Check{Name: "CLI Dependencies", Status: "pass", Detail: "gt and bd available", Required: false}
+		return Check{Name: "CLI Dependencies", Status: "pass", Detail: "gt and bd available", Required: false, Audience: AudienceInstalledUser}
 	}
-	var missing, hints []string
+	// gt and bd are OPTIONAL: gt enables Gas City substrate ops, bd enables the
+	// beads/dolt substrate store. Their absence is informational, never a
+	// warning, and never "required".
+	var missing, enables, brewPkgs []string
 	if !gtOk {
 		missing = append(missing, "gt")
-		hints = append(hints, installHint("gt", "brew install gastown"))
+		enables = append(enables, "gt enables Gas City substrate ops")
+		brewPkgs = append(brewPkgs, "gastown")
 	}
 	if !bdOk {
 		missing = append(missing, "bd")
-		hints = append(hints, installHint("bd", "brew install beads"))
+		enables = append(enables, "bd enables the beads substrate store")
+		brewPkgs = append(brewPkgs, "beads")
 	}
-	return Check{Name: "CLI Dependencies", Status: "warn", Detail: fmt.Sprintf("%s not found \u2014 %s", strings.Join(missing, ", "), strings.Join(hints, "; ")), Required: false}
-}
-
-func installHint(command, unixHint string) string {
+	detail := fmt.Sprintf("%s not found (optional \u2014 %s)", strings.Join(missing, ", "), strings.Join(enables, "; "))
+	fix := ""
 	if runtime.GOOS != "windows" {
-		return "install with '" + unixHint + "'"
+		fix = "brew install " + strings.Join(brewPkgs, " ")
+	} else {
+		detail += " \u2014 install from their Windows releases or use WSL/Homebrew"
 	}
-	switch command {
-	case "gt":
-		return "install GasTown from its Windows release or use WSL/Homebrew"
-	case "bd":
-		return "install Beads from its Windows release or use WSL/Homebrew"
-	default:
-		return "install " + command + " for Windows or use WSL"
-	}
+	return Check{Name: "CLI Dependencies", Status: "info", Detail: detail, Required: false, Audience: AudienceInstalledUser, Fix: fix}
 }

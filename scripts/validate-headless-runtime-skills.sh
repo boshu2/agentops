@@ -397,10 +397,20 @@ run_codex_validation() {
         return 0
     fi
 
-    mkdir -p "$CODEX_USER_HOME" "$CODEX_VALIDATION_HOME"
-    if ! bash "$REPO_ROOT/scripts/install-codex-plugin.sh" --repo-root "$REPO_ROOT" --codex-home "$CODEX_VALIDATION_HOME" >/dev/null; then
-        echo "Codex plugin install into temp CODEX_HOME failed" >&2
-        return 1
+    mkdir -p "$CODEX_USER_HOME" "$CODEX_VALIDATION_HOME/skills"
+    # AgentOps 4: source-link skills into the isolated Codex skills root.
+    local ao_bin=""
+    if [[ -x "$REPO_ROOT/cli/bin/ao" ]]; then
+      ao_bin="$REPO_ROOT/cli/bin/ao"
+    elif command -v ao >/dev/null 2>&1; then
+      ao_bin="$(command -v ao)"
+    else
+      make -C "$REPO_ROOT/cli" build >/dev/null
+      ao_bin="$REPO_ROOT/cli/bin/ao"
+    fi
+    if ! (cd "$REPO_ROOT" && env HOME="$CODEX_USER_HOME" "$ao_bin" skills link --dest "$CODEX_VALIDATION_HOME/skills" >/dev/null); then
+      echo "Codex skills link into temp CODEX_HOME failed" >&2
+      return 1
     fi
 
     if [[ -f "$SOURCE_CODEX_HOME/auth.json" ]]; then

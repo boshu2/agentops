@@ -12,10 +12,20 @@ The v2 prevention ladder has four layers:
 
 1. `.agents/findings/registry.jsonl` — append-only intake ledger for normalized findings.
 2. `.agents/findings/<id>.md` — promoted finding artifact with YAML frontmatter matching [finding-artifact.schema.json](finding-artifact.schema.json).
-3. `.agents/planning-rules/<id>.md` and `.agents/pre-mortem-checks/<id>.md` — compiled advisory outputs consumed before planning or judgment.
-4. `.agents/constraints/index.json` plus `.agents/constraints/<id>.sh` — compiled mechanical outputs governed by [finding-compiler.md](finding-compiler.md).
+3. `.agents/planning-rules/<id>.md` and `.agents/premortem-checks/<id>.md` — compiled advisory outputs consumed before planning or judgment.
+4. `.agents/constraints/index.json` — replay-qualified warn-only shadows and precision-backed active constraints governed by [finding-compiler.md](finding-compiler.md).
 
 This contract governs only the registry ledger. The promotion ladder, executable constraint index, and runtime enforcement expectations are governed by [finding-compiler.md](finding-compiler.md).
+
+## Recurrence is objective-scoped
+
+Registry hit counts and citation counts are lifecycle telemetry; they do not by
+themselves establish recurrence. The Learn/bookkeeper recurrence seam is
+governed by [producer-defect-register.md](producer-defect-register.md): repeated
+review rounds inside one objective collapse to one occurrence, and only the
+same defect class observed in at least two distinct objectives creates one
+advisory producer-rule candidate. A single finding never creates policy or a
+delivery blocker.
 
 ## Canonical Shape
 
@@ -124,7 +134,7 @@ Lifecycle notes:
 
 - later retrieval and close-loop paths may increment `hit_count`
 - later retrieval and close-loop paths may update `last_cited`
-- post-mortem scoring inputs such as confidence, citations, and recency may guide promotion decisions
+- postmortem scoring inputs such as confidence, citations, and recency may guide promotion decisions
 - the registry remains the source intake ledger even when higher-level v2 surfaces mutate these fields
 
 ## Retirement and Supersession
@@ -156,8 +166,8 @@ If a lock is used, the canonical lock path is `.agents/findings/registry.lock`, 
   "source": {
     "repo": "agentops/crew/nami",
     "session": "2026-03-09",
-    "file": ".agents/council/2026-03-09-pre-mortem-finding-compiler-v1.md",
-    "skill": "pre-mortem"
+    "file": ".agents/council/2026-03-09-premortem-finding-compiler-v1.md",
+    "skill": "premortem"
   },
   "date": "2026-03-09",
   "severity": "significant",

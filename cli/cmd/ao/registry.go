@@ -106,7 +106,7 @@ func runRegistryListCommand(cmd *cobra.Command, _ []string) error {
 
 	data, err := os.ReadFile(regPath)
 	if err != nil {
-		return fmt.Errorf("registry.json not found — run: bash scripts/generate-registry.sh")
+		return fmt.Errorf("registry.json not found — run: python3 scripts/generate-skill-mesh.py")
 	}
 
 	var reg registryFile

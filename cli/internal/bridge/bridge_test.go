@@ -127,24 +127,6 @@ func TestEnsureStopReason(t *testing.T) {
 	}
 }
 
-func TestFactoryRecommendedCommands(t *testing.T) {
-	noGoal := FactoryRecommendedCommands("")
-	if len(noGoal) == 0 {
-		t.Fatal("expected commands for empty goal")
-	}
-	if !strings.Contains(noGoal[0], "Set a concrete goal") {
-		t.Errorf("first command should suggest setting a goal, got %q", noGoal[0])
-	}
-
-	withGoal := FactoryRecommendedCommands("ship v3")
-	if len(withGoal) == 0 {
-		t.Fatal("expected commands with goal")
-	}
-	if !strings.Contains(withGoal[0], "ship v3") {
-		t.Errorf("first command should contain goal, got %q", withGoal[0])
-	}
-}
-
 func TestParseSemverParts(t *testing.T) {
 	tests := []struct {
 		version string

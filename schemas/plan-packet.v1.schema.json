@@ -1,0 +1,79 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agentops.dev/schemas/plan-packet.v1.schema.json",
+  "title": "Legacy PlanPacket v1 compatibility schema",
+  "description": "Deprecated compatibility schema for reading previously produced planning packets. The current AgentOps loop refines the caller-owned intent source instead.",
+  "deprecated": true,
+  "$comment": "Compatibility-only legacy format. The default core loop reads planning intent from the caller-owned bead, issue, or conversation and does not ask a model to author this packet.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "intent", "intent_digest", "acceptance_digest", "active_behavior", "scenarios", "non_goals", "required_evidence", "write_scope", "first_acceptance_check"],
+  "properties": {
+    "schema_version": {"const": "plan-packet.v1"},
+    "intent": {"type": "string", "minLength": 1},
+    "intent_digest": {"$ref": "#/$defs/digest"},
+    "acceptance_digest": {"$ref": "#/$defs/digest"},
+    "active_behavior": {"type": "string", "minLength": 1},
+    "scenarios": {
+      "type": "array",
+      "minItems": 2,
+      "allOf": [
+        {
+          "contains": {"type": "object", "required": ["kind"], "properties": {"kind": {"const": "normal"}}},
+          "minContains": 1
+        },
+        {
+          "contains": {"type": "object", "required": ["kind"], "properties": {"kind": {"const": "edge"}}},
+          "minContains": 1
+        }
+      ],
+      "items": {"$ref": "#/$defs/scenario"}
+    },
+    "non_goals": {"type": "array", "items": {"type": "string", "minLength": 1}},
+    "required_evidence": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}},
+    "write_scope": {"$ref": "#/$defs/write_scope"},
+    "first_acceptance_check": {
+      "oneOf": [
+        {"type": "object", "additionalProperties": false, "required": ["command"], "properties": {"command": {"type": "string", "minLength": 1}}},
+        {"type": "object", "additionalProperties": false, "required": ["artifact_path"], "properties": {"artifact_path": {"type": "string", "minLength": 1}}}
+      ]
+    },
+    "advisory_decomposition": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["behavior"],
+        "properties": {
+          "behavior": {"type": "string", "minLength": 1},
+          "scenario_ids": {"type": "array", "items": {"type": "string"}},
+          "write_scope": {"$ref": "#/$defs/write_scope"}
+        }
+      }
+    }
+  },
+  "$defs": {
+    "digest": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "scenario": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "kind", "given", "when", "then"],
+      "properties": {
+        "id": {"type": "string", "minLength": 1},
+        "kind": {"enum": ["normal", "edge"]},
+        "given": {"type": "string", "minLength": 1},
+        "when": {"type": "string", "minLength": 1},
+        "then": {"type": "string", "minLength": 1}
+      }
+    },
+    "write_scope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["include", "exclude"],
+      "properties": {
+        "include": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+        "exclude": {"type": "array", "uniqueItems": true, "items": {"type": "string", "minLength": 1}}
+      }
+    }
+  }
+}

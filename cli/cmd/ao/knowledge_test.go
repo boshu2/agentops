@@ -683,7 +683,7 @@ func writeKnowledgeHarvestCatalogFixture(t *testing.T, repo string) {
       "summary": "Plans that add fallback work should verify the target file does not already have the intended behavior.",
       "type": "learning",
       "source_rig": "agentops-agentops",
-      "source_path": "/tmp/repo/.agents/learnings/pre-mortem-grep.md",
+      "source_path": "/tmp/repo/.agents/learnings/premortem-grep.md",
       "confidence": 0.90,
       "scope": "project:agentops",
       "date": "2026-04-24"

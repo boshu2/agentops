@@ -1,187 +1,101 @@
 ---
 name: validate
-description: Produce PASS/WARN/FAIL verdicts for
+description: Freshly judge exact subject content against
 ---
-# $validate — Canonical Validator
+# Validate
 
-> **Purpose:** Move 6 of the operating loop: independently remeasure a bounded artifact or slice, prove its acceptance, and emit one schema-valid PASS/WARN/FAIL verdict with an executable next action.
+Independently judge one exact subject against the acceptance in its existing
+bead or caller source, write one durable verdict, and stop. Validate is the sole
+verdict writer. It never asks the model to reconstruct Plan or Candidate
+packets.
 
-## Critical Constraints
+## Preconditions
 
-- **One role: validator.** Never edit the artifact, commit, push, close tracker work, or operate infrastructure. **Why:** a judge that mutates the subject destroys independence.
-- Rerun cited commands on the actual artifact; never accept author evidence, conversational memory, or uncited figures as proof. **Why:** validation remeasures rather than agrees.
-- PASS requires every mandatory check green, all blockers resolved, disclosed `not_checked` coverage, and an independent judge when the mode claims independence. **Why:** missing evidence cannot be laundered into confidence.
-- `judge_id == author_id` cannot independently PASS; inline `--quick` fallback is stamped waived. **Why:** self-grading is guidance, not assurance.
-- Every judge brief says: **"READ-ONLY except writing your single verdict file at `<path>`. Do NOT commit, push, or run tracker/infra ops (git push, br/bd, dolt)."** **Why:** role scope is model-independent.
-- This skill validates work; `ao pawl` certifies landing with a commit-bound verdict. **Why:** a pre-work PASS never pre-authorizes a main write.
-- Use runtime-native judges for a requested multi-judge mode; never start NTM, Agent Mail, managed agents, Gas City, or another runtime unless explicitly selected. **Why:** judgment does not silently broaden orchestration.
-- `WARN|FAIL|REFUTED -> AUTO-REDO`: consult the pawl, return findings as re-plan evidence, repair through the owning producer, and rerun the same checks. **Why:** ordinary negative verdicts are self-correction, not human andons.
-- `BREAKER -> HOLD -> ONE-HELPER`; `HELPER-UNSTUCK -> AUTO-REDO`. Hold judgment and use one bounded local-shell helper to inspect contradictory evidence or a broken validator. **Why:** one recovery pass distinguishes tooling failure from a real stop.
-- `HELPER-ESCALATE -> HUMAN`; `REFUSAL-LANE|EXPLICIT-JUDGMENT|EXHAUSTED-BUDGET -> HUMAN`. **Why:** waivers, risk acceptance, unavailable authority, refusal, or exhausted recovery require the operator.
+- The intent source is available as a caller-owned artifact or runtime-owned
+  content-addressed snapshot; its acceptance digest is derived automatically.
+- The subject manifest still matches the subject.
+- Author and validator context IDs are explicit.
+- Freshness is explicitly attested with `source: runtime | caller` and an
+  attester identity.
 
-## Modes
+Missing, colliding, or unattested identities produce `NOT_PROVEN`. This is a
+declared trust fact, not cryptographic proof that contexts were isolated.
 
-| Mode | Judge shape | Purpose |
-|---|---|---|
-| default | 2 independent | general artifact consensus |
-| `--quick` | inline, waived | bounded sanity/readiness check |
-| `--deep` | 4 perspectives | thorough requirement/feasibility/scope review |
-| `--mixed` | explicitly selected families | cross-family review |
-| `--debate` | 2+ judges, 2 rounds | adversarial critique/rebuttal |
-| `--mode=post-impl` | pipeline + isolated judges | acceptance and completion audit |
-| `--mode=pre-impl [--target=X]` | 2–4 judges | plan/spec/fitness/scope/skill/health audit |
-| `--mode=pr` | diff + acceptance judges | submission readiness |
+## Cross-model fresh validator (caller-elected)
 
-**Mode-budget assertion:** 8 modes. Adding a ninth requires merging or removing an existing mode.
+A caller may request that the fresh validator run on a different model than
+the author. Dispatch via the controller-session recipe in
+the `agent-native` model-dispatch recipe (`codex-exec` and/or `ntm`,
+probed at runtime). Record author and validator `model_identity` in evidence
+refs and freshness attestation notes — do not change `verdict.v2` schema. If
+the requested validator model has no live adapter, disclose the unsatisfied
+diversity request and proceed same-model; never invoke `claude -p` /
+`claude --print`. Single fresh validator remains the default shape.
 
-Folded triggers remain load-bearing: **`vibe` → `--mode=post-impl`** for code
-readiness, and `bead-completion-audit` routes to post-implementation closeout.
-Detailed target and evidence rules live in
-[canonical-validation-protocol](references/canonical-validation-protocol.md).
+## Mutating-check quarantine
 
-## Quick Start
+Before running any acceptance-listed command, classify it as read-only or
+subject-mutating. Regen scripts, sync scripts, formatters, and anything with
+`--force` are subject-mutating until proven otherwise. Never run a
+subject-mutating check against an uncommitted subject: on 2026-07-15,
+`scripts/test-ci-deterministic-gates.sh` regenerated `skills-codex/` from HEAD
+mid-validation and destroyed the uncommitted subject, forcing `NOT_PROVEN`
+(verdict `b6e759dd...cb6a`); only restoring the subject and revalidating in a
+fresh context produced the PASS (`e9b6cdb8...37b9`). If a mutating check is
+genuinely required by acceptance, run it against a disposable copy or a
+committed subject, never the judged working tree.
 
-```bash
-$validate path/to/artifact
-$validate --quick path/to/artifact
-$validate --deep path/to/spec.md
-$validate --mode=pre-impl --target=skill skills/example
-$validate --mode=post-impl recent
-$validate --mode=pr 123
-```
+## Workflow
 
-## Execution Workflow
+1. Recompute and compare `subject-manifest.v1` using
+   `python3 skills/validate/scripts/validate.py manifest`. The helper uses only
+   filesystem content; Git commit/tree IDs are optional metadata. Derive the
+   manifest at the start of validation and re-derive it at the end; any
+   mismatch between the two is subject mutation and returns `NOT_PROVEN`.
+2. Confirm the intent-source digest has not changed since implementation. If
+   the subject changed or complete changed-path coverage cannot be derived,
+   return `NOT_PROVEN`.
+3. Adjudicate the actual diff, not a declared path list: compare
+   runtime-derived actual changed paths against the intent's scope classes. A
+   proven out-of-scope path returns `FAIL`; incomplete scope evidence returns
+   `NOT_PROVEN`.
+4. Inspect the exact subject and factual evidence. Reported exit codes are
+   claims, not evidence: re-execute the claimed proofs that bear on acceptance
+   (see the freshness rules below for when a digest-bound receipt suffices).
+   Judge every acceptance criterion and record criterion-level results,
+   findings, evidence references, `checked`, and `not_checked`.
+5. Choose exactly one semantic result: `PASS`, `FAIL`, or `NOT_PROVEN`. PASS
+   requires distinct identities, explicit freshness, nonempty checked scope,
+   top-level evidence, and evidence for every criterion.
+6. Persist canonical `verdict.v2` with `store-verdict --draft <draft.json>
+   --intent-source <resolved-intent> --subject-manifest <manifest.json>
+   --author-context-id <id> --scope-result <PASS|FAIL|NOT_PROVEN>`. The helper
+   snapshots the exact resolved intent under
+   `<workspace>/.agents/ao/intents/sha256/<digest>.intent`, then computes and
+   injects intent and subject digests. Identity and changed-path facts come from
+   runtime-derived manifests and receipts, not model transcription. Verdict
+   storage defaults to `<workspace>/.agents/ao/verdicts/sha256/<digest>.json`;
+   callers may provide `verdict_dir`.
+7. Return the artifact path and digest. Stop.
 
-### 1. Resolve mode, artifact, and authority
+The digest is SHA-256 over canonical JSON with `artifact_digest` omitted. Writes
+use a same-directory temporary file, flush, fsync, and atomic rename. Identical
+existing content is idempotent success; conflicting content is an integrity
+failure represented by `NOT_PROVEN`.
 
-Reject invalid mode/target combinations. Confirm the artifact exists, is within
-scope, and has explicit acceptance. For a goal-design packet, run:
+## Freshness without duplication
 
-```bash
-scripts/check-goal-design-packet.sh <packet-dir>
-```
+Fresh validation means independent judgment over the exact subject. It does not
+require mechanically replaying every author command. Verify intent identity,
+scope, evidence digests, and every acceptance criterion; independently rerun
+the risk-critical, uncertain, or insufficiently evidenced checks. A
+digest-bound deterministic receipt may prove routine facts. Replay an expensive
+full suite only when acceptance requires that result or the supplied receipt
+cannot establish it.
 
-Nonzero is deterministic FAIL evidence. Load only the selected section of
-[canonical-validation-protocol](references/canonical-validation-protocol.md)
-plus the relevant language/risk standards.
+## Boundary
 
-**Checkpoint:** record artifact identity, commit/digest, mode, targets, author id,
-required checks, and `not_checked` before dispatch.
-
-### 2. Run deterministic prechecks
-
-- pre-implementation: target rubric, temporal/error-rescue checks, test pyramid;
-- post-implementation: complexity, bug sweep, slice acceptance, completion kernel;
-- PR: upstream alignment first, contribution rules, atomicity, scope, tests/lint;
-- all modes: source precedence, artifact freshness, and output-schema availability.
-
-A deterministic red result is a FAIL verdict; do not spend judge tokens to
-rediscover it.
-
-### 3. Dispatch isolated judges
-
-Register dispatch intent before spawning. Use the current runtime's native
-subagents for multi-judge modes; if unavailable, degrade only to explicit
-`--quick` and stamp the independence waiver.
-
-Each judge receives the artifact path/digest, bounded context, mandatory checks,
-verdict path, and exact read-only clamp. It independently reruns commands.
-
-**Checkpoint:** author and judge identities differ, dispatch scopes do not
-collide, and every claimed judge produced a nonempty verdict artifact.
-
-### 4. Consolidate fail-closed
-
-- PASS: all required judges/checks PASS (or the declared deep-mode majority), no blocker.
-- WARN: nonblocking concern or explicit coverage gap remains.
-- FAIL: any deterministic failure, blocker, counterfeit/self judge, stale artifact, or malformed evidence.
-
-Contradictory verdicts are FAIL until reconciled; never average away a blocker.
-
-### 5. Write and validate outputs
-
-Write `.agents/council/YYYY-MM-DD-validate-<slug>.md` with exactly one anchored
-`## Council Verdict: PASS|WARN|FAIL`, plus `result.json` matching
-`schemas/verdict.v1.schema.json`. The report contains exactly one anchored
-`VERDICT:`, a nonempty `COMMANDS RUN:`, `REASONS:`, findings, and `not_checked`.
-
-**Checkpoint:** run both validators in Output Specification; PASS is illegal if
-either output is missing, malformed, stale, self-graded, or unsupported by commands.
-
-### 6. Route the verdict
-
-Report verdict, key findings, artifact paths, and one executable next action.
-WARN/FAIL re-enters the operating loop through the owning producer. Reusable
-failures compile into a planning/pre-mortem check instead of becoming a dead log.
-
-## Output Specification
-
-**Artifact directory:** markdown verdicts under `.agents/council/`; machine-readable `result.json` at the invocation output root.
-
-**Filename convention:** `.agents/council/YYYY-MM-DD-validate-<topic-slug>.md` plus `result.json`.
-
-**Serialization/schema format:** `result.json` follows closed `schemas/verdict.v1.schema.json`; markdown has one `## Council Verdict: PASS|WARN|FAIL` and the anchored evidence form in the protocol reference.
-
-**Validator command:** validate `result.json` with `Draft202012Validator(schema, format_checker=FormatChecker())`, an explicit timezone-aware RFC3339 parse of `validated_at`, and the pinned author identity so a PASS requires `validator_session != author_session`; then verify the markdown has exactly one council verdict, exactly one matching `VERDICT:`, and a `judge=<validator_session> command=<command>` evidence line under `COMMANDS RUN:` before `REASONS:`. The executable fixture suite is `bash skills/validate/scripts/validate.sh`.
-
-**Downstream handoff:** pass mode/target, artifact path/digest/commit, author and judge identities/families, deterministic commands and exit codes, verdict/report paths, findings, `not_checked`, waiver/breaker state, and the exact next action; landing still requires `ao pawl`.
-
-## Quality Checklist
-
-- [ ] Artifact identity and acceptance are pinned before checks run.
-- [ ] Judges are read-only, independent when claimed, and rerun commands themselves.
-- [ ] Every number, timing, and commit is captured from cited output.
-- [ ] PASS has no blockers, counterfeit judges, stale evidence, or undisclosed gaps.
-- [ ] Markdown and JSON agree and pass their deterministic validators.
-- [ ] WARN/FAIL/REFUTED returns to AUTO-REDO; only real breakers reach a human.
-- [ ] Validation PASS is never substituted for the commit-bound landing verdict.
-
-## Examples
-
-### Reject a counterfeit completion claim
-
-**User says:** `$validate --mode=post-impl recent`
-
-**What happens:** the isolated judge reruns the slice acceptance command and
-finds the author's reported count was inferred and the test exits nonzero.
-
-**Result:** FAIL with captured output, corrected count, owning producer, and the
-same validation command as next action; no human andon and no landing claim.
-
-## Troubleshooting
-
-| Problem | Response |
-|---|---|
-| Judge unavailable | Use explicit waived `--quick` or HOLD only if independence is required |
-| Artifact changed mid-review | Mark stale, pin the new digest, rerun all checks |
-| Judges disagree | FAIL until the blocker is reproduced and reconciled |
-| Empty `COMMANDS RUN:` | Discard the verdict and dispatch a real verifier |
-
-## Reference Documents
-
-- [references/canonical-validation-protocol.md](references/canonical-validation-protocol.md) — modes, targets, evidence, isolation, landing boundary
-- [references/report-format.md](references/report-format.md) — markdown detail
-- [references/deep-audit-protocol.md](references/deep-audit-protocol.md) — deep-mode perspectives
-- [references/test-pyramid-inventory.md](references/test-pyramid-inventory.md) — coverage selection
-- [references/post-verdict-actions.md](references/post-verdict-actions.md) — bounded follow-through
-- [references/validate.feature](references/validate.feature) — executable behavior
-- [references/complexity-analysis.md](references/complexity-analysis.md)
-- [references/deep-checks.md](references/deep-checks.md)
-- [references/examples.md](references/examples.md)
-- [references/go-patterns.md](references/go-patterns.md)
-- [references/go-standards.md](references/go-standards.md)
-- [references/json-standards.md](references/json-standards.md)
-- [references/markdown-standards.md](references/markdown-standards.md)
-- [references/patterns.md](references/patterns.md)
-- [references/python-standards.md](references/python-standards.md)
-- [references/quick-mode-vibe.md](references/quick-mode-vibe.md)
-- [references/rust-standards.md](references/rust-standards.md)
-- [references/shell-standards.md](references/shell-standards.md)
-- [references/test-pyramid-weighting.md](references/test-pyramid-weighting.md)
-- [references/typescript-standards.md](references/typescript-standards.md)
-- [references/verification-report.md](references/verification-report.md)
-- [references/vibe-coding.md](references/vibe-coding.md)
-- [references/vibe-suppressions.md](references/vibe-suppressions.md)
-- [references/write-time-quality.md](references/write-time-quality.md)
-- [references/yaml-standards.md](references/yaml-standards.md)
-- [references/vibe.feature](references/vibe.feature)
+Validate emits no WARN, confidence, disposition, briefing learning, owner,
+next action, repair, retry, replan, helper, escalation, tracker, Git, release,
+closure, or delivery state. Generic provenance may record a verdict later, but
+ledger availability cannot change its validity.

@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/boshu2/agentops/cli/internal/doctor"
+	"github.com/boshu2/agentops/cli/internal/quality"
 )
 
 func TestDoctor_Integration_HealthyState(t *testing.T) {
@@ -55,39 +55,26 @@ func TestDoctor_Integration_JSONOutput(t *testing.T) {
 		t.Fatal("expected JSON output, got empty string")
 	}
 
-	// `ao doctor --json` is the engine's machine surface: a single Report.
-	// Strict unmarshal fails if a second JSON document leaked onto stdout.
-	var rep doctor.Report
+	// JSON is the machine representation of the same bounded health checks as
+	// human output, not an implicit run of the failure-mode engine.
+	var rep quality.DoctorOutput
 	if err := json.Unmarshal([]byte(out), &rep); err != nil {
-		t.Fatalf("expected a single valid engine Report, got parse error: %v\nraw output:\n%s", err, out)
+		t.Fatalf("expected one valid health report, got parse error: %v\nraw output:\n%s", err, out)
 	}
-	if rep.SchemaVersion != "1.0" {
-		t.Errorf("expected schema_version 1.0, got %q", rep.SchemaVersion)
-	}
-	if rep.Tool != "ao" {
-		t.Errorf("expected tool 'ao', got %q", rep.Tool)
-	}
-	if rep.RunID == "" {
-		t.Error("expected a non-empty run_id")
-	}
-	// Diagnose (no --fix) exits 0 (healthy) or 1 (findings present).
-	if rep.ExitCode != 0 && rep.ExitCode != 1 {
-		t.Errorf("expected diagnose exit_code 0 or 1, got %d", rep.ExitCode)
-	}
-	if rep.OK != (rep.ExitCode == 0) {
-		t.Errorf("ok=%v inconsistent with exit_code=%d", rep.OK, rep.ExitCode)
-	}
-	if rep.Summary.TotalFindings != len(rep.Findings) {
-		t.Errorf("summary.total_findings=%d but findings array has %d entries",
-			rep.Summary.TotalFindings, len(rep.Findings))
+	if len(rep.Checks) == 0 || rep.Result == "" || rep.Summary == "" {
+		t.Fatalf("incomplete health report: %+v", rep)
 	}
 }
 
-func TestDoctor_Integration_DegradedState(t *testing.T) {
+// A fresh install with an initialized-but-empty knowledge base (no sessions, no
+// learnings, no index yet) must NOT manufacture warnings: those are "you
+// haven't done anything yet" info lines, not defects. This encodes the FU2
+// doctrine — a pristine install is green.
+func TestDoctor_Integration_FreshInstallIsNotDegraded(t *testing.T) {
 	resetCommandState(t)
 	dir := chdirTemp(t)
 
-	// Minimal .agents/ without a learnings dir — should trigger legacy warnings.
+	// Minimal .agents/ — initialized base, no sessions/learnings/index yet.
 	writeFile(t, dir+"/.agents/ao/sessions/.gitkeep", "")
 
 	// The legacy check table runs in human mode (`ao doctor` without --json).
@@ -96,11 +83,16 @@ func TestDoctor_Integration_DegradedState(t *testing.T) {
 	if out == "" {
 		t.Fatal("expected doctor output, got empty string")
 	}
-	// A missing learnings dir must surface as a non-healthy summary.
-	if !strings.Contains(out, "DEGRADED") &&
-		!strings.Contains(out, "UNHEALTHY") &&
-		!strings.Contains(out, "warning") {
-		t.Errorf("expected a degraded/unhealthy summary, got:\n%s", out)
+	if strings.Contains(out, "UNHEALTHY") {
+		t.Errorf("fresh install must not be UNHEALTHY, got:\n%s", out)
+	}
+	// "you haven't started yet" states are info lines, never warnings.
+	if strings.Contains(out, "warning") {
+		t.Errorf("fresh install must not surface warnings, got:\n%s", out)
+	}
+	// No check may point the user at a repo-relative script.
+	if strings.Contains(out, "scripts/") {
+		t.Errorf("fresh install names a repo-relative script, got:\n%s", out)
 	}
 }
 

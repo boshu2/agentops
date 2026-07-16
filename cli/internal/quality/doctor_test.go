@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 )
@@ -201,25 +202,32 @@ func TestCheckKnowledgeBase(t *testing.T) {
 func TestCheckFlywheelHealth(t *testing.T) {
 	t.Parallel()
 	dir := t.TempDir()
-	if c := CheckFlywheelHealth(dir); c.Status != "warn" {
+	// A fresh install with no learnings yet is informational, not a warning.
+	if c := CheckFlywheelHealth(dir); c.Status != "info" {
 		t.Errorf("empty: %q", c.Status)
 	}
 	os.MkdirAll(filepath.Join(dir, "learnings"), 0o755)
 	os.WriteFile(filepath.Join(dir, "learnings", "test.md"), []byte("x"), 0o644)
-	if c := CheckFlywheelHealth(dir); c.Status != "pass" {
+	c := CheckFlywheelHealth(dir)
+	if c.Status != "pass" {
 		t.Errorf("with learnings: %q", c.Status)
+	}
+	// One learning is singular, never "1 learnings".
+	if !strings.Contains(c.Detail, "1 learning in flywheel") {
+		t.Errorf("singular grammar: %q", c.Detail)
 	}
 }
 
 func TestCheckSearchIndex(t *testing.T) {
 	t.Parallel()
-	if c := CheckSearchIndex("/nonexistent"); c.Status != "warn" {
+	// No index / empty index on a fresh install is informational, not a warning.
+	if c := CheckSearchIndex("/nonexistent"); c.Status != "info" {
 		t.Errorf("missing: %q", c.Status)
 	}
 	dir := t.TempDir()
 	p := filepath.Join(dir, "idx.jsonl")
 	os.WriteFile(p, []byte(""), 0o644)
-	if c := CheckSearchIndex(p); c.Status != "warn" {
+	if c := CheckSearchIndex(p); c.Status != "info" {
 		t.Errorf("empty: %q", c.Status)
 	}
 	os.WriteFile(p, []byte("term1\nterm2\n"), 0o644)

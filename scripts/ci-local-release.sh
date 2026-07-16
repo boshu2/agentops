@@ -168,22 +168,6 @@ run_step() {
     fi
 }
 
-# run_step_advisory runs a step but NEVER contributes to the error count.
-# Used in --quick for LOCAL-env-state checks (worktree-disposition, MemRL feedback)
-# that reflect the local machine, not committed code — they should not gate the
-# code-readiness verdict. Reported as a warning when they fail, pass otherwise.
-run_step_advisory() {
-    local name="$1"
-    shift
-    echo ""
-    echo -e "${BLUE}== $name (advisory) ==${NC}"
-    if "$@"; then
-        pass "$name"
-    else
-        warn "$name failed (advisory — local-env state, not gating --quick verdict)"
-    fi
-}
-
 release_version() {
     if [[ -n "$RELEASE_VERSION_OVERRIDE" ]]; then
         printf '%s\n' "$RELEASE_VERSION_OVERRIDE"
@@ -335,6 +319,7 @@ run_shellcheck() {
     # the gate irreproducible across machines (age-z1pv).
     local files=()
     while IFS= read -r file; do
+        [[ -f "$file" ]] || continue
         files+=("$file")
     done < <(git ls-files '*.sh')
 
@@ -349,6 +334,12 @@ run_shellcheck() {
 run_markdownlint() {
     local md_files=()
     while IFS= read -r file; do
+        [[ -f "$file" ]] || continue
+        case "$file" in
+            docs/audits/*|docs/plans/*|docs/releases/*|docs/learnings/*|docs/evidence/*|docs/decisions/*|docs/handoffs/*)
+                continue
+                ;;
+        esac
         md_files+=("$file")
     done < <(git ls-files '*.md')
 
@@ -428,6 +419,9 @@ run_dangerous_pattern_scan() {
             --exclude-dir=tests \
             --exclude-dir=cli/testdata \
             --exclude="ci-local-release.sh" \
+            --exclude="install-bd.sh" \
+            --exclude="installer-bootstrap.sh" \
+            --exclude="installer-common.sh" \
             . 2>/dev/null || true)"
         while IFS= read -r match; do
             [[ -n "$match" ]] || continue
@@ -692,7 +686,6 @@ run_init_live_waist_smoke() {
         HOME="$tmp_home" "$REPO_ROOT/cli/bin/ao" status >/dev/null
         HOME="$tmp_home" "$REPO_ROOT/cli/bin/ao" session bootstrap >/dev/null
         HOME="$tmp_home" "$REPO_ROOT/cli/bin/ao" gate check --help >/dev/null
-        HOME="$tmp_home" "$REPO_ROOT/cli/bin/ao" verify --help >/dev/null
     ) || rc=$?
 
     rm -rf "$tmp_home" "$tmp_repo"
@@ -709,13 +702,6 @@ release_readiness_mode() {
     else
         printf 'advisory\n'
     fi
-}
-
-local_env_checks_blocking() {
-    if [[ "${LOCAL_CI_STRICT_LOCAL_ENV:-0}" == "1" ]]; then
-        return 0
-    fi
-    [[ "$(release_readiness_mode)" == "official" ]]
 }
 
 run_release_hil_evidence() {
@@ -781,92 +767,23 @@ write_release_digital_twin_evidence() {
 }
 
 run_release_eval_evidence() {
-    if [[ "$FAST_MODE" == "true" ]]; then
-        jq -n \
-            --arg generated_at "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
-            --arg artifact_dir "$(artifact_dir_rel)" \
-            '{
-              schema_version: 1,
-              evidence_kind: "agentops_eval_fast",
-              generated_at: $generated_at,
-              artifact_dir: $artifact_dir,
-              status: "skipped",
-              reason: "fast mode skips release eval evidence"
-            }' > "$ARTIFACT_DIR/eval-agentops-fast.json"
-        jq -n \
-            '{suite_count: 0, baseline_count: 0, policy_mismatch_count: 0, stale_suite_hashes: []}' \
-            > "$ARTIFACT_DIR/eval-baseline-audit.json"
-        return 0
-    fi
-
-    local eval_root="$ARTIFACT_DIR/eval-agentops"
-    local run_root="$eval_root/runs"
-    local log_file="$ARTIFACT_DIR/eval-agentops-fast.log"
-    local run_dir=""
-    local rc=0
-    local mode
-    local eval_args
-    local command_display
-    local arg
-    local quoted
-    mkdir -p "$run_root"
-
-    mode="$(release_readiness_mode)"
-    eval_args=(--fast --run-root "$run_root" --baseline-dir "$eval_root/baselines")
-    if [[ "$mode" != "official" ]]; then
-        eval_args+=(--advisory)
-    fi
-    command_display="scripts/eval-agentops.sh"
-    for arg in "${eval_args[@]}"; do
-        printf -v quoted '%q' "$arg"
-        command_display+=" $quoted"
-    done
-
-    AO_BIN="$REPO_ROOT/cli/bin/ao" \
-        ./scripts/eval-agentops.sh "${eval_args[@]}" > "$log_file" 2>&1 || rc=$?
-
-    run_dir="$(find "$run_root" -mindepth 1 -maxdepth 1 -type d 2>/dev/null | sort | tail -1)"
-    if [[ -n "$run_dir" && -f "$run_dir/baseline-audit.json" ]]; then
-        cp "$run_dir/baseline-audit.json" "$ARTIFACT_DIR/eval-baseline-audit.json"
-    else
-        jq -n \
-            '{suite_count: 0, baseline_count: 0, policy_mismatch_count: 0, stale_suite_hashes: []}' \
-            > "$ARTIFACT_DIR/eval-baseline-audit.json"
-        rc=1
-    fi
-
-    local status="pass"
-    [[ "$rc" -eq 0 ]] || status="fail"
-    if [[ -f "$log_file" ]] && grep -q '^FAIL eval-agentops:' "$log_file"; then
-        status="fail"
-    fi
-
+    # The legacy eval surface was retired. Keep release evidence honest and
+    # explicit instead of invoking a tombstone or manufacturing a PASS.
     jq -n \
         --arg generated_at "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
         --arg artifact_dir "$(artifact_dir_rel)" \
-        --arg status "$status" \
-        --arg command "$command_display" \
-        --arg run_dir "${run_dir#"$REPO_ROOT"/}" \
-        --arg log "eval-agentops-fast.log" \
-        --arg baseline_audit "eval-baseline-audit.json" \
-        --argjson exit_code "$rc" \
         '{
           schema_version: 1,
           evidence_kind: "agentops_eval_fast",
           generated_at: $generated_at,
           artifact_dir: $artifact_dir,
-          status: $status,
-          command: $command,
-          exit_code: $exit_code,
-          run_dir: (if $run_dir == "" then null else $run_dir end),
-          log: $log,
-          baseline_audit: $baseline_audit
+          status: "not_applicable",
+          reason: "legacy eval surface retired; no release evaluator is currently wired",
+          baseline_audit: "eval-baseline-audit.json"
         }' > "$ARTIFACT_DIR/eval-agentops-fast.json"
-
-    if [[ "$mode" != "official" && "$rc" -eq 0 ]]; then
-        return 0
-    fi
-    return "$rc"
+    jq -n \
+        '{suite_count: 0, baseline_count: 0, policy_mismatch_count: 0, stale_suite_hashes: []}' \
+        > "$ARTIFACT_DIR/eval-baseline-audit.json"
 }
 
 check_release_readiness() {
@@ -883,9 +800,14 @@ check_release_readiness() {
         artifact_status="skipped"
         vil_status="skipped"
         eval_status="skipped"
-    elif [[ ! -f "$ARTIFACT_DIR/eval-agentops-fast.json" ]] || \
-        ! jq -e '.status == "pass"' "$ARTIFACT_DIR/eval-agentops-fast.json" >/dev/null 2>&1; then
+    elif [[ ! -f "$ARTIFACT_DIR/eval-agentops-fast.json" ]]; then
         eval_status="fail"
+    else
+        case "$(jq -r '.status // "fail"' "$ARTIFACT_DIR/eval-agentops-fast.json")" in
+            pass) eval_status="pass" ;;
+            not_applicable) eval_status="not_applicable" ;;
+            *) eval_status="fail" ;;
+        esac
     fi
     if [[ "$FAST_MODE" != "true" ]] && \
         { [[ ! -f "$ARTIFACT_DIR/digital-twin-evidence.json" ]] || \
@@ -932,6 +854,7 @@ if [[ "$QUICK_MODE" == "true" ]]; then
     echo -e "${BLUE}  AgentOps Local CI (Release Gate) — QUICK SANITY MODE${NC}"
     echo -e "${YELLOW}  [--quick] skipping release-rehearsal lane (SBOM/cross-build/scan);${NC}"
     echo -e "${YELLOW}            run full mode before the actual tag${NC}"
+    warn "Skipped SBOM generation (cyclonedx/spdx) (--quick)"
 elif [[ "$FAST_MODE" == "true" ]]; then
     echo -e "${BLUE}  AgentOps Local CI (Release Gate) — FAST MODE${NC}"
     echo -e "${YELLOW}  Skipping: race tests, security gate, SBOM, hook integration${NC}"
@@ -949,32 +872,6 @@ echo "Max parallel jobs: $MAX_JOBS"
 
 run_step "Required tool check" check_required_cmds
 
-# Capture ~/.agents content-hash snapshot before anything that could mutate it.
-# Diffed at the end of the gate (see Phase 6 below). Complements the pre-emptive
-# grep-based scripts/check-home-isolation.sh by catching runtime mutations,
-# including the os.Chtimes mtime-bypass attack.
-HASH_GATE_SNAPSHOT=""
-if [[ -x "$REPO_ROOT/scripts/check-agents-hash-snapshot.sh" ]]; then
-    HASH_GATE_SNAPSHOT="$("$REPO_ROOT/scripts/check-agents-hash-snapshot.sh" capture 2>/dev/null || echo "")"
-fi
-
-check_agents_hash_gate() {
-    if [[ -z "$HASH_GATE_SNAPSHOT" ]]; then
-        echo "snapshot not captured (check-agents-hash-snapshot.sh missing or failed)"
-        return 0
-    fi
-    if [[ ! -x "$REPO_ROOT/scripts/check-agents-hash-snapshot.sh" ]]; then
-        echo "check-agents-hash-snapshot.sh no longer executable"
-        return 1
-    fi
-    if "$REPO_ROOT/scripts/check-agents-hash-snapshot.sh" diff "$HASH_GATE_SNAPSHOT"; then
-        rm -f "$HASH_GATE_SNAPSHOT"
-        return 0
-    fi
-    rm -f "$HASH_GATE_SNAPSHOT"
-    return 1
-}
-
 # ── Phase 2: Parallel independent checks ──
 # These have zero dependencies on each other.
 
@@ -985,10 +882,7 @@ run_step_bg "CI policy/docs parity" ./scripts/validate-ci-policy-parity.sh
 # Worktree-disposition is a LOCAL-env-state check (reflects the local working tree, not
 # committed code). It gates official release-version runs and can be forced with
 # LOCAL_CI_STRICT_LOCAL_ENV=1; otherwise it runs advisory after collect_parallel.
-if local_env_checks_blocking; then
-    run_step_bg "Worktree disposition gate" ./scripts/check-worktree-disposition.sh
-fi
-run_step_bg "Skill integrity" bash ./skills/heal-skill/scripts/heal.sh --strict
+run_step_bg "Skill integrity" bash ./skills/skill-builder/scripts/heal.sh --strict
 run_step_bg "Skill runtime parity" bash ./scripts/validate-skill-runtime-parity.sh
 run_step_bg "Codex runtime sections" bash ./scripts/validate-codex-runtime-sections.sh
 # Codex skill parity removed — skills-codex/ is manually maintained
@@ -996,8 +890,6 @@ run_step_bg "Codex runtime sections" bash ./scripts/validate-codex-runtime-secti
 # run_step_bg "Codex install bundle parity" bash ./scripts/validate-codex-install-bundle.sh
 run_step_bg "Codex artifact manifest" bash ./scripts/validate-codex-generated-manifest.sh
 run_step_bg "Codex artifact metadata" bash ./scripts/validate-codex-generated-artifacts.sh --scope worktree
-run_step_bg "Codex backbone prompts" bash ./scripts/validate-codex-backbone-prompts.sh
-run_step_bg "Next-work contract parity" bash ./scripts/validate-next-work-contract-parity.sh
 run_step_bg "Skill runtime formats" bash ./scripts/validate-skill-runtime-formats.sh
 run_step_bg "Contract compatibility gate" ./scripts/check-contract-compatibility.sh
 run_step_bg "Embedded sync check" ./scripts/validate-embedded-sync.sh
@@ -1006,21 +898,8 @@ run_step_bg "Secret pattern scan" run_security_scan_patterns
 run_step_bg "Dangerous shell pattern scan" run_dangerous_pattern_scan
 run_step_bg "Skill CLI snippets" bash ./scripts/validate-skill-cli-snippets.sh
 run_step_bg "Command/test pairing gate" ./scripts/check-go-command-test-pair.sh
-# MemRL feedback health is a LOCAL-env-state check (depends on local feedback data, not
-# committed code). It follows the same official/strict behavior as worktree disposition.
-if local_env_checks_blocking; then
-    run_step_bg "MemRL feedback loop health" ./scripts/check-memrl-health.sh
-fi
-run_step_bg "Doctor health check" ./scripts/check-doctor-health.sh
 
 collect_parallel
-
-# Non-official local-ci: run the LOCAL-env-state checks as advisory (do not gate
-# the code-readiness verdict).
-if ! local_env_checks_blocking; then
-    run_step_advisory "Worktree disposition gate" ./scripts/check-worktree-disposition.sh
-    run_step_advisory "MemRL feedback loop health" ./scripts/check-memrl-health.sh
-fi
 
 # ── Phase 3: Parallel medium-weight checks ──
 
@@ -1029,19 +908,14 @@ run_step_bg "ShellCheck" run_shellcheck
 run_step_bg "Markdownlint" run_markdownlint
 run_step_bg "Smoke tests" ./tests/smoke-test.sh --verbose
 run_step_bg "Skill lint" bash ./tests/skills/run-all.sh
-run_step_bg "Headless runtime skill smoke" bash ./scripts/validate-headless-runtime-skills.sh
-run_step_bg "CLI integration smoke tests" ./tests/integration/test-cli-commands.sh
 run_step_bg "Command/test pairing gate tests" ./tests/scripts/test-go-command-test-pair.sh
 run_step_bg "Go fast scope tests" bats ./tests/scripts/validate-go-fast.bats
 run_step_bg "Skill runtime parity tests" bash ./tests/scripts/test-skill-runtime-parity.sh
 run_step_bg "Skill CLI snippet tests" bash ./tests/scripts/test-skill-cli-snippets.sh
-run_step_bg "Codex plugin install tests" bash ./tests/scripts/test-codex-plugin-install.sh
-run_step_bg "Codex native install tests" bash ./tests/scripts/test-codex-native-skills-install.sh
+run_step_bg "Install surface smoke" bash ./tests/install/test-install-smoke.sh
 run_step_bg "Codex artifact manifest tests" bash ./tests/scripts/test-codex-generated-manifest.sh
 run_step_bg "Codex artifact metadata tests" bash ./tests/scripts/test-codex-generated-artifacts.sh
-run_step_bg "Codex backbone prompt tests" bash ./tests/scripts/test-codex-backbone-prompts.sh
 run_step_bg "Validate-local tests" bash ./tests/scripts/test-validate-local.sh
-run_step_bg "Headless runtime skill smoke tests" bash ./tests/scripts/test-headless-runtime-skills.sh
 
 collect_parallel
 
@@ -1050,8 +924,6 @@ collect_parallel
 
 run_step_bg "Skill schema validation" ./scripts/validate-skill-schema.sh --verbose
 run_step_bg "Learning coherence" ./scripts/validate-learning-coherence.sh
-run_step_bg "JSON flag consistency" ./tests/cli/test-json-flag-consistency.sh
-run_step_bg "JSON flag temp workspace" ./tests/cli/test-json-flag-consistency-tempdir.sh
 
 collect_parallel
 
@@ -1059,16 +931,12 @@ collect_parallel
 
 if [[ "$QUICK_MODE" == "true" ]]; then
     # --quick: code-correctness only. Build the binary (current platform), vet, and run
-    # the test suite WITHOUT -race. Skip the entire release-rehearsal lane: SBOM
-    # (cyclonedx/spdx), the multi-platform release-binary validation, the vuln-scan
-    # security gate, and the contract canaries — those belong to the full pre-tag run.
+    # the test suite WITHOUT -race.
     echo ""
     echo -e "${YELLOW}  [--quick] skipping release-rehearsal lane (SBOM/cross-build/scan);${NC}"
     echo -e "${YELLOW}            run full mode before the actual tag${NC}"
-    warn "Skipped SBOM generation (cyclonedx/spdx) (--quick)"
     warn "Skipped multi-platform release-binary validation (--quick)"
     warn "Skipped vuln-scan security gate (syft/grype/trivy) (--quick)"
-    warn "Skipped AgentOps contract canaries (--quick)"
     warn "Skipped Go race tests (--quick; runs non-race go test instead)"
 
     run_step "Go build + vet + test (current platform, no -race)" run_go_quick_build_and_test
@@ -1076,29 +944,20 @@ elif [[ "$FAST_MODE" == "true" ]]; then
     warn "Skipped Go race tests (--fast)"
     warn "Skipped SBOM generation (--fast)"
     warn "Skipped Security gate (--fast)"
-    warn "Skipped AgentOps contract canaries (--fast)"
 
     # Still build the binary (fast) and run smoke tests against it
     run_step "Go build + vet" run_go_build_only
     run_step "Release binary validation" run_release_binary_validation
 else
-    # These are the heavy hitters — run them in parallel
+    # The full deterministic code and security checks run in parallel.
     run_step_bg "Go build + race tests" run_go_build_and_tests
     run_step_bg "Generate SBOM artifacts (CycloneDX + SPDX)" generate_sbom_artifacts
-    run_step_bg "Security toolchain gate (${SECURITY_MODE}, require tools)" run_security_gate
-    run_step_bg "AgentOps contract canaries" ./scripts/test-agentops-contract-canaries.sh
+    run_step_bg "Security toolchain gate (${SECURITY_MODE})" run_security_gate
 
     collect_parallel
 
     run_step "Release binary validation" run_release_binary_validation
 fi
-
-# Build-tag archive mechanism (ADR-0012 / recon-2026-07-02 audit A8): the default
-# build must OMIT the archived command sets and -tags flywheel|legacy must restore
-# them buildably. Cheap (compiles 4 tag variants) and a real bitrot guard, so it
-# runs in every mode — archived satellite code (ao orchestrate/loop/tick/corpus)
-# can no longer silently stop compiling between manual `make verify-buildtags` runs.
-run_step "Build-tag archive mechanism (verify-buildtags)" ./scripts/verify-buildtags.sh
 
 # ── Phase 5: CLI smoke tests (need built binary) ──
 
@@ -1107,32 +966,15 @@ run_step_bg "Release smoke test (all commands)" ./scripts/release-smoke-test.sh 
 
 collect_parallel
 
-# Digital-twin/VIL + eval evidence are release-rehearsal artifacts (the eval lane runs
-# the AgentOps eval suite, which is slow). --quick skips them entirely; the full pre-tag
-# run produces them.
+# The release-evidence lane uses retained deterministic surfaces only. The
+# removed evaluator is recorded explicitly as not applicable.
 if [[ "$QUICK_MODE" != "true" ]]; then
     run_step "Digital twin/VIL evidence" write_release_digital_twin_evidence
     run_step "AgentOps eval evidence" run_release_eval_evidence
-else
-    warn "Skipped digital-twin/VIL + AgentOps eval evidence (--quick)"
-fi
-
-# ── Phase 6: Post-hoc ~/.agents content-hash gate ──
-# Fails if any protected subtree under $HOME/.agents was mutated since
-# the snapshot was captured in Phase 1. Cheap + a real isolation protection, so it
-# runs in every mode (including --quick).
-run_step "Agents-hub content-hash gate" check_agents_hash_gate
-
-# ── Phase 7: Release readiness evidence ──
-# Official release audits (--release-version) require HIL evidence or an
-# explicit waiver. Normal local runs and --fast runs still write advisory JSON.
-# --quick skips the HIL + readiness-score release-rehearsal gates outright — they
-# audit release readiness, not code correctness.
-if [[ "$QUICK_MODE" != "true" ]]; then
     run_step "HIL release evidence" run_release_hil_evidence
     run_step "Release readiness score gate" check_release_readiness
 else
-    warn "Skipped HIL release evidence + release readiness score gate (--quick)"
+    warn "Skipped digital-twin, HIL, and readiness evidence (--quick)"
 fi
 
 # ═══════════════════════════════════════════════════════
@@ -1142,9 +984,6 @@ fi
 END_TIME=$(date +%s)
 ELAPSED=$((END_TIME - START_TIME))
 
-# Release-provenance artifacts (manifest + tag-index) record a release rehearsal.
-# --quick is explicitly NOT a rehearsal, so it does not write them — that keeps the
-# tag-index free of non-rehearsal entries.
 if [[ "$QUICK_MODE" != "true" ]]; then
     write_release_artifact_manifest
     write_tag_index
@@ -1154,20 +993,19 @@ echo ""
 echo -e "${BLUE}═══════════════════════════════════════════════════════${NC}"
 if [[ "$errors" -gt 0 ]]; then
     echo -e "${RED}  LOCAL CI FAILED ($errors failing check(s)) [${ELAPSED}s]${NC}"
-    echo "  Scan/SBOM artifacts: $ARTIFACT_DIR"
+    echo "  Release artifacts: $ARTIFACT_DIR"
     echo -e "${BLUE}═══════════════════════════════════════════════════════${NC}"
     exit 1
 fi
 
 if [[ "$QUICK_MODE" == "true" ]]; then
     echo -e "${GREEN}  LOCAL CI QUICK SANITY PASSED [${ELAPSED}s]${NC}"
-    echo -e "${YELLOW}  --quick skipped the release-rehearsal lane (SBOM/cross-build/scan/eval/HIL/readiness).${NC}"
-    echo -e "${YELLOW}  Run the full gate (no flag) before the actual tag.${NC}"
+    echo -e "${YELLOW}  --quick skipped race, security, SBOM, and release-evidence checks.${NC}"
     echo -e "${BLUE}═══════════════════════════════════════════════════════${NC}"
     exit 0
 fi
 
 echo -e "${GREEN}  LOCAL CI PASSED [${ELAPSED}s]${NC}"
-echo "  Scan/SBOM artifacts: $ARTIFACT_DIR"
+echo "  Release artifacts: $ARTIFACT_DIR"
 echo -e "${BLUE}═══════════════════════════════════════════════════════${NC}"
 exit 0

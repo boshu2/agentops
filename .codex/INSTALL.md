@@ -1,31 +1,35 @@
 # Installing AgentOps for Codex
 
-AgentOps Codex skills install directly into Codex's native skills directory.
+AgentOps 4 uses one canonical checkout and source symlinks. Do not use the
+old curl installer or a Codex plugin cache.
 
 ## Installation
 
-Run:
-
 ```bash
-curl -fsSL https://raw.githubusercontent.com/boshu2/agentops/main/scripts/install-codex.sh | bash
+brew tap boshu2/agentops https://github.com/boshu2/homebrew-agentops
+brew install agentops
+git clone https://github.com/boshu2/agentops.git ~/.local/share/agentops
+cd ~/.local/share/agentops
+ao skills link
 ```
 
-This installs skills to:
-
-```bash
-~/.codex/skills
-```
+`ao skills link` creates source links under `~/.agents/skills` and every
+detected runtime skill root, including `~/.codex/skills`.
 
 ## Verification
 
-You should see AgentOps skills as normal native Codex skills in your next session.
+Restart Codex and confirm AgentOps skills are visible (for example `/plan` or
+`/quickstart`).
 
-## Update policy
-
-AgentOps updates frequently. Codex does not currently provide a universal auto-update channel for this style of skill install.
-
-Re-run the installer regularly, especially after new releases:
+## Update
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/boshu2/agentops/main/scripts/install-codex.sh | bash
+cd ~/.local/share/agentops
+git pull --ff-only
+ao skills link
 ```
+
+## Migration from 3.x
+
+See [docs/MIGRATION.md](../docs/MIGRATION.md). Remove any old
+`~/.codex/plugins/cache/agentops-marketplace` install before linking.

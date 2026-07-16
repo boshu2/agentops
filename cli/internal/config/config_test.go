@@ -6,7 +6,9 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"runtime"
 	"strings"
+	"sync"
 	"testing"
 
 	"gopkg.in/yaml.v3"
@@ -596,7 +598,7 @@ func TestLoad_WithFlagOverrides(t *testing.T) {
 
 // TestLoad_ExplicitConfigDoesNotLeakHomeConfig pins the documented contract that
 // --config (AGENTOPS_CONFIG) is THE config file: when an explicit override is set,
-// the ambient home config (~/.agentops/config.yaml) must NOT merge underneath it.
+// the ambient home config (~/.agents/ao/config.yaml) must NOT merge underneath it.
 // The bug (fm-cli-config-config-flag-not-threaded): projectConfigPath honored the
 // override but homeConfigPath did not, so home settings the explicit file is silent
 // on leaked through.
@@ -609,7 +611,7 @@ func TestLoad_ExplicitConfigDoesNotLeakHomeConfig(t *testing.T) {
 	// A home config that sets output=json — a NON-default the explicit file is silent on.
 	home := t.TempDir()
 	t.Setenv("HOME", home)
-	homeCfgDir := filepath.Join(home, ".agentops")
+	homeCfgDir := filepath.Join(home, ".agents", "ao")
 	if err := os.MkdirAll(homeCfgDir, 0o755); err != nil {
 		t.Fatalf("mkdir home cfg: %v", err)
 	}
@@ -651,7 +653,7 @@ func TestResolve_ExplicitConfigDoesNotLeakHomeConfig(t *testing.T) {
 
 	home := t.TempDir()
 	t.Setenv("HOME", home)
-	homeCfgDir := filepath.Join(home, ".agentops")
+	homeCfgDir := filepath.Join(home, ".agents", "ao")
 	if err := os.MkdirAll(homeCfgDir, 0o755); err != nil {
 		t.Fatalf("mkdir home cfg: %v", err)
 	}
@@ -755,7 +757,7 @@ func TestLoadFromPath_InvalidYAML(t *testing.T) {
 func TestLoadConfig_SurfacesYAMLErrorToStderr(t *testing.T) {
 	tmpDir := t.TempDir()
 	t.Chdir(tmpDir)
-	// Invalid YAML in an AUTO-DISCOVERED project config (cwd/.agentops/config.yaml).
+	// Invalid YAML in an AUTO-DISCOVERED project config (cwd/.agents/ao/config.yaml).
 	// Auto-discovered configs warn + fall back to defaults; an EXPLICIT --config
 	// fails closed instead (see TestLoad_ExplicitConfigInvalidFailsClosed).
 	t.Setenv("AGENTOPS_CONFIG", "")
@@ -1176,7 +1178,7 @@ func TestProjectConfigPath_DefaultFromCwd(t *testing.T) {
 	t.Setenv("AGENTOPS_CONFIG", "")
 	got := projectConfigPath()
 	cwd, _ := os.Getwd()
-	expected := filepath.Join(cwd, ".agentops", "config.yaml")
+	expected := filepath.Join(cwd, ".agents", "ao", "config.yaml")
 	if got != expected {
 		t.Errorf("projectConfigPath() = %q, want %q", got, expected)
 	}
@@ -1187,7 +1189,7 @@ func TestProjectConfigPath_WhitespaceOnlyConfig(t *testing.T) {
 	t.Setenv("AGENTOPS_CONFIG", "  \t  ")
 	got := projectConfigPath()
 	cwd, _ := os.Getwd()
-	expected := filepath.Join(cwd, ".agentops", "config.yaml")
+	expected := filepath.Join(cwd, ".agents", "ao", "config.yaml")
 	if got != expected {
 		t.Errorf("projectConfigPath() with whitespace = %q, want %q", got, expected)
 	}
@@ -1497,7 +1499,7 @@ rpi:
 
 	// Clear env vars and isolate from any cwd project config. No AGENTOPS_CONFIG
 	// override (an explicit --config IS the config file and would skip home, per
-	// the documented contract); instead chdir to an empty dir so cwd/.agentops/
+	// the documented contract); instead chdir to an empty dir so cwd/.agents/ao/
 	// config.yaml is absent, leaving the home config as the sole source under test.
 	t.Setenv("AGENTOPS_CONFIG", "")
 	t.Chdir(t.TempDir())
@@ -1547,7 +1549,7 @@ rpi:
 `)
 	// No AGENTOPS_CONFIG override (an explicit --config IS the config file and
 	// would skip home per the documented contract); chdir to an empty dir so
-	// cwd/.agentops/config.yaml is absent, leaving home as the sole source.
+	// cwd/.agents/ao/config.yaml is absent, leaving home as the sole source.
 	clearConfigResolutionEnv(t, "")
 	t.Chdir(t.TempDir())
 
@@ -2241,7 +2243,7 @@ func TestMergeDream_ExtendedFields(t *testing.T) {
 
 func TestSave_CreatesDirectory(t *testing.T) {
 	tmpDir := t.TempDir()
-	configDir := filepath.Join(tmpDir, ".agentops")
+	configDir := filepath.Join(tmpDir, ".agents", "ao")
 	configPath := filepath.Join(configDir, "config.yaml")
 	t.Setenv("AGENTOPS_CONFIG", configPath)
 
@@ -2255,7 +2257,7 @@ func TestSave_CreatesDirectory(t *testing.T) {
 
 	// Directory should have been created
 	if _, err := os.Stat(configDir); os.IsNotExist(err) {
-		t.Fatal("Save() did not create .agentops/ directory")
+		t.Fatal("Save() did not create .agents/ao/ directory")
 	}
 
 	// File should exist and be valid YAML
@@ -2270,7 +2272,7 @@ func TestSave_CreatesDirectory(t *testing.T) {
 
 func TestSave_MergesWithExisting(t *testing.T) {
 	tmpDir := t.TempDir()
-	configDir := filepath.Join(tmpDir, ".agentops")
+	configDir := filepath.Join(tmpDir, ".agents", "ao")
 	configPath := filepath.Join(configDir, "config.yaml")
 	t.Setenv("AGENTOPS_CONFIG", configPath)
 
@@ -2305,7 +2307,7 @@ func TestSave_MergesWithExisting(t *testing.T) {
 
 func TestSave_WritesYAML(t *testing.T) {
 	tmpDir := t.TempDir()
-	configPath := filepath.Join(tmpDir, ".agentops", "config.yaml")
+	configPath := filepath.Join(tmpDir, ".agents", "ao", "config.yaml")
 	t.Setenv("AGENTOPS_CONFIG", configPath)
 
 	cfg := &Config{
@@ -2334,6 +2336,111 @@ func TestSave_WritesYAML(t *testing.T) {
 	}
 	if parsed.Models.SkillOverrides["council"] != "quality" {
 		t.Errorf("parsed Models.SkillOverrides[council] = %q, want %q", parsed.Models.SkillOverrides["council"], "quality")
+	}
+}
+
+func TestSave_RejectsMalformedExistingConfigWithoutDataLoss(t *testing.T) {
+	configPath := filepath.Join(t.TempDir(), ".agents", "ao", "config.yaml")
+	t.Setenv("AGENTOPS_CONFIG", configPath)
+	if err := os.MkdirAll(filepath.Dir(configPath), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	original := []byte("models: [unterminated\n")
+	if err := os.WriteFile(configPath, original, 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := Save(&Config{Models: ModelsConfig{DefaultTier: "quality"}}); err == nil {
+		t.Fatal("Save succeeded with malformed existing config")
+	}
+	got, err := os.ReadFile(configPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Equal(got, original) {
+		t.Fatalf("malformed config was replaced: got %q want %q", got, original)
+	}
+}
+
+func TestSave_DoesNotFollowPredictableTempSymlink(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("symlink creation requires privileges on some Windows hosts")
+	}
+	root := t.TempDir()
+	configPath := filepath.Join(root, ".agents", "ao", "config.yaml")
+	t.Setenv("AGENTOPS_CONFIG", configPath)
+	if err := os.MkdirAll(filepath.Dir(configPath), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	victim := filepath.Join(root, "victim")
+	if err := os.WriteFile(victim, []byte("unchanged\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink(victim, configPath+".tmp"); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := Save(&Config{Models: ModelsConfig{DefaultTier: "quality"}}); err != nil {
+		t.Fatalf("Save: %v", err)
+	}
+	got, err := os.ReadFile(victim)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(got) != "unchanged\n" {
+		t.Fatalf("predictable temp symlink target changed: %q", got)
+	}
+}
+
+func TestSave_ConcurrentPatchesPreserveBothUpdates(t *testing.T) {
+	configPath := filepath.Join(t.TempDir(), ".agents", "ao", "config.yaml")
+	t.Setenv("AGENTOPS_CONFIG", configPath)
+	start := make(chan struct{})
+	errors := make(chan error, 2)
+	var writers sync.WaitGroup
+	for skill, tier := range map[string]string{"council": "quality", "plan": "budget"} {
+		writers.Add(1)
+		go func() {
+			defer writers.Done()
+			<-start
+			errors <- Save(&Config{Models: ModelsConfig{SkillOverrides: map[string]string{skill: tier}}})
+		}()
+	}
+	close(start)
+	writers.Wait()
+	close(errors)
+	for err := range errors {
+		if err != nil {
+			t.Fatalf("concurrent Save: %v", err)
+		}
+	}
+	loaded, err := loadFromPath(configPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if loaded.Models.SkillOverrides["council"] != "quality" || loaded.Models.SkillOverrides["plan"] != "budget" {
+		t.Fatalf("concurrent updates lost: %+v", loaded.Models.SkillOverrides)
+	}
+}
+
+func TestPreviewSaveValidatesWithoutFilesystemMutation(t *testing.T) {
+	root := t.TempDir()
+	missing := filepath.Join(root, "missing", "config.yaml")
+	t.Setenv("AGENTOPS_CONFIG", missing)
+	if err := PreviewSave(&Config{Models: ModelsConfig{DefaultTier: "quality"}}); err != nil {
+		t.Fatalf("PreviewSave missing target: %v", err)
+	}
+	if _, err := os.Stat(filepath.Dir(missing)); !os.IsNotExist(err) {
+		t.Fatalf("PreviewSave created target directory: %v", err)
+	}
+
+	malformed := filepath.Join(root, "malformed.yaml")
+	if err := os.WriteFile(malformed, []byte("models: [\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("AGENTOPS_CONFIG", malformed)
+	if err := PreviewSave(&Config{Models: ModelsConfig{DefaultTier: "quality"}}); err == nil {
+		t.Fatal("PreviewSave accepted malformed existing config")
 	}
 }
 

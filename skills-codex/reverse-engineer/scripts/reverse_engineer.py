@@ -1503,8 +1503,6 @@ def main() -> int:
         help="Authorized-only: skip extracting embedded ZIP candidates (index-only).",
     )
 
-    ap.add_argument("--beads", action="store_true", help="Optional: create bd epic/tasks for phases (requires bd).")
-
     args = ap.parse_args()
 
     product_slug = _slugify(args.product_name)
@@ -1512,30 +1510,8 @@ def main() -> int:
     output_dir = Path(args.output_dir or f".agents/research/{product_slug}/").resolve()
     analysis_root = local_clone_dir
 
-    _ensure_dirs(
-        [
-            REPO_ROOT / ".agents" / "research",
-            REPO_ROOT / ".agents" / "plans",
-            REPO_ROOT / ".agents" / "council",
-            REPO_ROOT / ".agents" / "rpi",
-            REPO_ROOT / ".agents" / "learnings",
-            REPO_ROOT / ".tmp",
-            local_clone_dir,
-            output_dir,
-        ]
-    )
-
     tmp_dir = (REPO_ROOT / ".tmp" / f"reverse-engineer-{product_slug}").resolve()
-    _ensure_dirs([tmp_dir])
-
-    # Optional AO context injection (best-effort; ignore failures).
-    if shutil.which("ao"):
-        subprocess.run(["ao", "search", args.product_name, "reverse engineering"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-        subprocess.run(["ao", "inject", args.product_name, "reverse engineering"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-
-    # Optional beads epic/tasks (off by default).
-    if args.beads and shutil.which("bd"):
-        _run(["bd", "ready"], check=False)
+    _ensure_dirs([local_clone_dir, output_dir, tmp_dir])
 
     docs_features_txt = output_dir / "docs-features.txt"
     effective_docs_prefix = args.docs_features_prefix
@@ -1865,14 +1841,14 @@ def main() -> int:
         # Run validation gate (includes secret scan over output_dir).
         _run([str(sec_dir / "validate-security-audit.sh"), str(output_dir), "--sbom" if args.sbom else "--no-sbom"], check=True)
 
-    # 9) Reports (vibe-style + post-mortem) + learning.
+    # 9) Reports (vibe-style + postmortem) + learning.
     council_dir = REPO_ROOT / ".agents" / "council"
     _ensure_dirs([council_dir])
     vibe_path = council_dir / f"{_today_ymd()}-vibe-{product_slug}.md"
-    post_path = council_dir / f"{_today_ymd()}-post-mortem-{product_slug}.md"
+    post_path = council_dir / f"{_today_ymd()}-postmortem-{product_slug}.md"
 
     _render_template(TEMPLATES_DIR / "vibe-report.md.tmpl", vibe_path, {**vars, "OUTPUT_DIR": str(output_dir)})
-    _render_template(TEMPLATES_DIR / "post-mortem.md.tmpl", post_path, {**vars, "OUTPUT_DIR": str(output_dir)})
+    _render_template(TEMPLATES_DIR / "postmortem.md.tmpl", post_path, {**vars, "OUTPUT_DIR": str(output_dir)})
 
     learning_path = REPO_ROOT / ".agents" / "learnings" / f"{_today_ymd()}-{product_slug}-reverse-engineer.md"
     if not learning_path.exists():

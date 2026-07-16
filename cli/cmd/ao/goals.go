@@ -24,14 +24,8 @@ Analysis:
   drift (d)     Compare snapshots for regressions
   history (h)   Show goal measurement history
   export (e)    Export latest snapshot as JSON
-
-Management:
-  init          Bootstrap a new GOALS.md interactively
-  add (a)       Add a new goal
-  steer         Manage directives (add/remove/prioritize)
-  prune (p)     Remove stale gates
-  migrate (mg)  Migrate between formats
-  meta          Run and report meta-goals only`,
+  meta          Run and report meta-goals only
+  scenarios     Inspect or lint linked acceptance scenarios`,
 }
 
 const defaultGoalsTimeoutSeconds = 240
@@ -54,7 +48,6 @@ func init() {
 	goalsCmd.AddGroup(
 		&cobra.Group{ID: "measurement", Title: "Measurement:"},
 		&cobra.Group{ID: "analysis", Title: "Analysis:"},
-		&cobra.Group{ID: "management", Title: "Management:"},
 	)
 	goalsCmd.PersistentFlags().StringVar(&goalsFile, "file", "", "Path to goals file (auto-detects GOALS.md then GOALS.yaml)")
 	goalsCmd.PersistentFlags().IntVar(&goalsTimeout, "timeout", defaultGoalsTimeoutSeconds, "Check timeout in seconds")

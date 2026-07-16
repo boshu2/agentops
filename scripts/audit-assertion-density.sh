@@ -13,7 +13,7 @@ THRESHOLD=1.5
 # Default to *_test.go so the audit covers any test file that ships with
 # the change, not just the legacy *coverage*_test.go pattern (cov*_test.go
 # is banned by CLAUDE.md, so the old default audited an empty set on a
-# clean checkout — see post-mortem #5).
+# clean checkout — see postmortem #5).
 SCOPE='*_test.go'
 
 POSITIONAL=()

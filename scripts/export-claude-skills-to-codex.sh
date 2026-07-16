@@ -6,6 +6,8 @@
 # Safe by default:
 # - Creates a timestamped backup of any destination skill it overwrites
 # - Supports --dry-run to preview changes
+# - On a full refresh, removes only obsolete skills named by the prior
+#   AgentOps manifest; unrelated user skills are preserved.
 #
 # Usage:
 #   ./scripts/export-claude-skills-to-codex.sh \
@@ -122,12 +124,41 @@ fi
 
 copied=0
 skipped=0
+removed=0
 
 echo "Source: $SRC"
 echo "Dest:   $DST"
 echo "Backup: $BACKUP"
 echo "DryRun: $DRY_RUN"
 echo ""
+
+# A full refresh reconciles the prior AgentOps-owned set against the new source
+# manifest. This removes deleted skill directories and dangling symlinks without
+# treating the entire destination as AgentOps-owned. Partial --only installs do
+# not prune anything.
+if [[ -z "$ONLY_CSV" ]] && command -v jq >/dev/null 2>&1 && [[ -f "$DST/.agentops-manifest.json" ]]; then
+  declare -A SOURCE_NAMES
+  for skill_dir in "$SRC"/*/; do
+    [[ -f "${skill_dir}SKILL.md" ]] || continue
+    SOURCE_NAMES["$(basename "$skill_dir")"]=1
+  done
+  while IFS= read -r old_name; do
+    [[ -n "$old_name" ]] || continue
+    [[ -n "${SOURCE_NAMES[$old_name]:-}" ]] && continue
+    old_path="${DST%/}/$old_name"
+    [[ -e "$old_path" || -L "$old_path" ]] || continue
+    if [[ "$DRY_RUN" == "true" ]]; then
+      echo "Would remove obsolete AgentOps skill: $old_path"
+    else
+      if [[ -d "$old_path" && ! -L "$old_path" ]]; then
+        rsync -a "${old_path%/}/" "${BACKUP%/}/${old_name%/}/"
+      fi
+      rm -rf "$old_path"
+      echo "Removed obsolete AgentOps skill: $old_path"
+    fi
+    removed=$((removed + 1))
+  done < <(jq -r '.skills[]?.name // empty' "$DST/.agentops-manifest.json")
+fi
 
 shopt -s nullglob
 for skill_dir in "$SRC"/*/; do
@@ -171,6 +202,7 @@ done
 
 echo "Skills copied: $copied"
 echo "Skills skipped: $skipped"
+echo "Obsolete AgentOps skills removed: $removed"
 if [[ "$DRY_RUN" != "true" ]]; then
   echo "Backups written to: $BACKUP"
 fi

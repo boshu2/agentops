@@ -48,7 +48,7 @@ if [[ -z "$CHANGELOG_SECTION" ]]; then
   exit 1
 fi
 
-# Check for curated release notes (written by /release skill or manually).
+# Check for manually curated release notes.
 # These are plain-English highlights, not the raw changelog.
 # Curated notes are REQUIRED — no silent fallback to the raw CHANGELOG. A missing
 # or non-conforming file is a hard error (3.0.0/3.0.1 shipped raw CHANGELOG dumps
@@ -57,7 +57,7 @@ fi
 NOTES_FILE=$(find docs/releases -name "*-v${VERSION}-notes.md" 2>/dev/null | head -1 || true)
 if [[ -z "$NOTES_FILE" || ! -f "$NOTES_FILE" ]]; then
   echo "ERROR: no curated release-notes file docs/releases/*-v${VERSION}-notes.md" >&2
-  echo "       Write one per skills/release/references/release-notes.md before tagging." >&2
+  echo "       Write one per docs/contracts/release-notes.md before tagging." >&2
   echo "       The raw CHANGELOG is not an acceptable release body." >&2
   exit 1
 fi
@@ -72,7 +72,7 @@ echo "Using curated release notes from $NOTES_FILE" >&2
 {
   # Header
   cat <<HEADER
-\`brew update && brew upgrade agentops\` · \`bash <(curl -fsSL https://raw.githubusercontent.com/boshu2/agentops/main/scripts/install.sh)\` · [checksums](https://github.com/${REPO}/releases/download/${TAG}/checksums.txt) · [verify provenance](https://docs.github.com/en/actions/security-for-github-actions/using-artifact-attestations/using-artifact-attestations-to-establish-provenance-for-builds)
+\`brew update && brew upgrade agentops\` · \`cd ~/.local/share/agentops && git pull --ff-only && ao skills link\` · [checksums](https://github.com/${REPO}/releases/download/${TAG}/checksums.txt) · [verify provenance](https://docs.github.com/en/actions/security-for-github-actions/using-artifact-attestations/using-artifact-attestations-to-establish-provenance-for-builds)
 
 ---
 

@@ -1,10 +1,9 @@
-// Package domainsignal computes the membrane's three-signal domain record for an
-// escape (EM.2.2 / age-membrane-memory-arch-tz2s.2.2). The three signals answer
-// three different questions about a false-done that escaped the membrane:
+// Package domainsignal computes a read-only three-signal domain observation.
+// The signals answer different questions about a reviewed change:
 //
-//   - intent_domain        — where was the work INTENDED? (the bead's BC tag)
+//   - intent_domain        — where was the work intended?
 //   - changed_file_domains — where did the CODE actually change? (path->BC heuristic)
-//   - escape_domain        — where did the refuter say it ESCAPED? (EM.2.1)
+//   - escape_domain        — where did a reviewer place a finding?
 //
 // A mismatch between intent and the changed files (the code moved outside the
 // intended bounded context) is itself evidence — it is PRESERVED, never collapsed.
@@ -38,7 +37,7 @@ const (
 // false classification is worse than a missing one (it manufactures a cross-domain
 // alarm that isn't real). So this advisory heuristic favors PRECISION over recall:
 // a path is classified only when its prefix is unambiguous; anything else
-// contributes no signal. (Two cross-family pawl rounds drove this to prefix-only.)
+// contributes no signal. This intentionally uses prefix-only matching.
 type rule struct {
 	prefix string
 	bc     string
@@ -46,13 +45,10 @@ type rule struct {
 
 // rules is the ordered path->BC table. Sourced from component-map.md ownership.
 // Specific package prefixes precede the broad cli/cmd/ao adapter prefix so a
-// validation package (e.g. yieldledger) is not swallowed by the runtime adapter.
+// validation package is not swallowed by the runtime adapter.
 var rules = []rule{
-	// BC2 Validation — gates, verdicts, council/pawl, safety, evidence.
+	// BC2 Validation — deterministic gates, safety, and evidence.
 	{prefix: "cli/internal/gates/", bc: BC2Validation},
-	{prefix: "cli/internal/governor/", bc: BC2Validation},
-	{prefix: "cli/internal/yieldledger/", bc: BC2Validation},
-	{prefix: "cli/internal/planpawl/", bc: BC2Validation},
 	{prefix: "cli/internal/safety/", bc: BC2Validation},
 	{prefix: "cli/internal/domainsignal/", bc: BC2Validation},
 	{prefix: "cli/internal/provenancegraph/", bc: BC2Validation},
@@ -62,11 +58,8 @@ var rules = []rule{
 	{prefix: "cli/internal/corpus/", bc: BC1Corpus},
 	{prefix: "cli/internal/wiki/", bc: BC1Corpus},
 	{prefix: "cli/internal/search/", bc: BC1Corpus},
-	// BC3 Loop — beads, work selection, RPI, evolve, closeout.
+	// BC3 Loop — historical tracker artifacts only.
 	{prefix: "_beads/", bc: BC3Loop},
-	{prefix: "cli/internal/rpi/", bc: BC3Loop},
-	{prefix: "cli/internal/evolve/", bc: BC3Loop},
-	{prefix: "scripts/evolve/", bc: BC3Loop},
 	// BC4 Factory — skill/workflow admission, skill quality.
 	{prefix: "skills/", bc: BC4Factory},
 	{prefix: "skills-codex/", bc: BC4Factory},
@@ -76,7 +69,6 @@ var rules = []rule{
 	{prefix: "cli/internal/swarm/", bc: BC6Orchestration},
 	// BC5 Runtime — ao CLI driving adapters, git/workspace/session, harness.
 	// Broad; LAST so specific internal packages above win first.
-	{prefix: "cli/internal/worktree/", bc: BC5Runtime},
 	{prefix: "cli/internal/runtimecmd/", bc: BC5Runtime},
 	{prefix: "cli/internal/harness", bc: BC5Runtime},
 	{prefix: "cli/cmd/ao/", bc: BC5Runtime},
@@ -114,7 +106,7 @@ func ChangedFilesDomains(paths []string) []string {
 	return out
 }
 
-// Record is the membrane's three-signal domain record for one escape.
+// Record is a three-signal domain observation.
 type Record struct {
 	IntentDomain       string   `json:"intent_domain,omitempty"`
 	ChangedFileDomains []string `json:"changed_file_domains,omitempty"`
@@ -126,9 +118,9 @@ type Record struct {
 }
 
 // Build assembles the three-signal record. changedFiles are repo-relative paths
-// (e.g. from `git diff --name-only`); intent and escape are the bead BC tag and
-// the refuter-selected escape domain. Mismatch is computed over the BC-vocabulary
-// signals (intent vs changed files); escape_domain is recorded raw (the refuter's
+// (for example, from a caller-supplied manifest); intent and escape are declared
+// labels. Mismatch is computed over the BC-vocabulary signals (intent vs changed
+// files); escape_domain is recorded raw (the reviewer's
 // free-text choice, which may not be a BC) but is not forced into the comparison.
 func Build(intent string, changedFiles []string, escape string) Record {
 	changed := ChangedFilesDomains(changedFiles)

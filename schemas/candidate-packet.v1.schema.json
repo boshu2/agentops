@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agentops.dev/schemas/candidate-packet.v1.schema.json",
+  "title": "Legacy CandidatePacket v1 compatibility schema",
+  "description": "Deprecated compatibility schema for reading previously produced candidate packets. The current AgentOps loop derives subject identity, changed paths, and check receipts at runtime instead.",
+  "deprecated": true,
+  "$comment": "Compatibility-only legacy format. The default core loop derives subject identity, changed paths, and check receipts at runtime and does not ask a model to author this packet.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "plan_packet_digest", "acceptance_digest", "author_context_id", "subject_locator", "subject_manifest", "actual_changed_paths", "changed_path_coverage_complete", "factual_evidence", "acceptance_check_results"],
+  "properties": {
+    "schema_version": {"const": "candidate-packet.v1"},
+    "plan_packet_digest": {"$ref": "#/$defs/digest"},
+    "acceptance_digest": {"$ref": "#/$defs/digest"},
+    "author_context_id": {"type": "string", "minLength": 1},
+    "subject_locator": {"type": "string", "minLength": 1},
+    "subject_manifest": {"$ref": "subject-manifest.v1.schema.json"},
+    "actual_changed_paths": {"type": "array", "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+    "changed_path_coverage_complete": {"type": "boolean"},
+    "factual_evidence": {"type": "array", "items": {"$ref": "#/$defs/evidence"}},
+    "acceptance_check_results": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/evidence"}},
+    "git_metadata": {"type": "object", "additionalProperties": {"type": ["string", "null"]}}
+  },
+  "$defs": {
+    "digest": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "result", "evidence_ref"],
+      "properties": {
+        "id": {"type": "string", "minLength": 1},
+        "result": {"enum": ["PASS", "FAIL", "NOT_PROVEN"]},
+        "evidence_ref": {"type": "string", "minLength": 1},
+        "input_digest": {"$ref": "#/$defs/digest"}
+      }
+    }
+  }
+}

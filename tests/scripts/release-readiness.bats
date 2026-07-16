@@ -27,6 +27,23 @@ teardown() {
     jq -e '.release_status == "pass" and .release_readiness_score == 10 and .dimensions.hil.status == "pass"' "$out"
 }
 
+@test "official readiness records a retired evaluator as not applicable" {
+    out="$TMP_DIR/release-readiness.json"
+
+    run bash "$SCRIPT" \
+        --mode official \
+        --out "$out" \
+        --sil pass \
+        --vil pass \
+        --hil-status pass \
+        --artifacts pass \
+        --security pass \
+        --eval not_applicable
+
+    [ "$status" -eq 0 ]
+    jq -e '.release_status == "pass" and .release_readiness_score == 9 and .dimensions.evals.status == "not_applicable"' "$out"
+}
+
 @test "official readiness fails when HIL is missing" {
     out="$TMP_DIR/release-readiness.json"
 

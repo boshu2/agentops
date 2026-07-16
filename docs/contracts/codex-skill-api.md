@@ -1,6 +1,7 @@
 # Codex Skill API Contract
 
 > Source of truth for what the Codex runtime actually supports. All converter output and validation must conform to this contract.
+> Orientation contract: [`AGENTS.md`](../../AGENTS.md).
 
 **Official docs:**
 - [Codex Skills](https://developers.openai.com/codex/skills/)
@@ -59,20 +60,27 @@ dependencies:
 
 ---
 
-## Skill Discovery Paths
+## Skill Discovery And Installation
 
-Codex scans these directories (in order):
+The portable Codex skill root is `.agents/skills/` at repository or parent
+scope and `$HOME/.agents/skills/` at user scope. Current Codex desktop installs
+may also index `$HOME/.codex/skills/`; on Bo's development fleet both user roots
+are symlinks to this repository's canonical `skills/` tree.
 
 | Scope | Path | Use Case |
 |-------|------|----------|
 | Repo (nearest) | `.agents/skills/` from CWD | Folder-specific workflows |
 | Repo (parent) | `../.agents/skills/` | Nested repo organization |
 | Repo (root) | `$REPO_ROOT/.agents/skills/` | Organization-wide skills |
-| User | `$HOME/.agents/skills/` | Personal skill collection |
+| User | `$HOME/.agents/skills/` | Portable personal skill collection |
+| Host compatibility | `$HOME/.codex/skills/` | Codex-host symlink root when configured |
 | Admin | `/etc/codex/skills/` | System-wide defaults |
 | System | Bundled with Codex | Built-in skills |
 
-**NOT:** `~/.claude/skills/` or `~/.codex/skills/` — these are Claude Code paths.
+Development symlinks may point directly at `skills/<name>/`; checked-in
+`skills-codex/` packages are the release projection. Plugin caches are neither
+source nor an installation target and may be deleted without affecting the
+canonical repository skills.
 
 ---
 
@@ -194,7 +202,7 @@ When generating Codex skills from source skills:
 2. **Map Claude tools to Codex tools** — Read→read_file, Edit→apply_patch, Grep→rg, Glob→glob_file_search
 3. **Rewrite `Skill(skill="X")` to `$X`** — Codex uses dollar-prefix invocation
 4. **Strip ALL task/team primitives** — TaskCreate, TaskList, TeamCreate, SendMessage (none have working Codex equivalents as direct tool calls — `todo_write`/`update_plan` empirically unavailable, and `send_input` is follow-up-only)
-5. **Fix paths** — `~/.claude/skills/` → `~/.agents/skills/` (Codex discovery path)
+5. **Fix paths** — avoid host-specific installed-skill paths; use repository-relative links in shipped instructions
 6. **Rewrite reference files** — `.md` files in references/ pass through `codex_rewrite_text()` during copy
 7. **Preserve skill body** — the SKILL.md body (instructions) is the skill's value; keep it functional
 
@@ -206,6 +214,71 @@ A Codex-conformant skill must:
 
 1. Have frontmatter with only `name` and `description`
 2. Contain no Claude-only primitive names (TaskCreate, TeamCreate, SendMessage, etc.)
-3. Contain no Claude-specific paths (`~/.claude/`, `~/.codex/`)
+3. Contain no Claude-specific paths and no dependency on one host's installed-skill root
 4. Have valid `agents/openai.yaml` if present
 5. Not reference non-existent Codex features (context controls, plan mode, etc.)
+
+---
+
+## Generated inventories
+
+`skills/<name>/SKILL.md` metadata owns the skill inventory and dependency graph.
+Run `scripts/regen-all.sh` after changing it. The CLI command surface is a
+separate executable projection generated from Cobra; no handwritten CLI-to-skill
+map is maintained.
+
+---
+
+## Codex Skill Maintenance
+
+Codex is a first-class runtime in this repo.
+
+- `skills/<name>/SKILL.md` is the canonical behavior contract.
+- `skills-codex-overrides/<name>/` is the Codex-specific tailoring layer.
+- `skills-codex-overrides/catalog.json` is the machine-readable treatment map for the full catalog.
+- `skills-codex/<name>/` is the generated checked-in Codex runtime artifact.
+
+**Editing an EXISTING parity skill regenerates its Codex twin — not just hashes.**
+`make regen-all` / `scripts/codex-sync.sh` refresh parity-only twins from
+`skills/<name>/` whenever their generated body, prompt, or mirrored references
+drift. `scripts/regen-codex-hashes.sh` remains the bookkeeping step after
+content is current. Manual edits under `skills-codex/<name>/` are reserved for
+bespoke skills or deliberate Codex-only divergence recorded in
+`skills-codex-overrides/catalog.json`; otherwise fix the source skill or the
+codex-sync transform/template and regenerate.
+
+The current catalog has no bespoke or pointer twins. Every live Codex package is
+a generated parity projection of `skills/<name>/SKILL.md` plus its linked local
+files. `scripts/codex-sync.sh` owns those packages; manual edits under
+`skills-codex/<name>/` are drift and will be overwritten.
+
+`skills-codex-overrides/catalog.json` remains the explicit treatment registry.
+If a future runtime-specific implementation is genuinely necessary, declare it
+there before editing a twin and add focused parity tests in the same change.
+Do not create an undocumented exception or a second skill inventory.
+
+When a skill change affects Codex behavior, phrasing, orchestration, or UX:
+
+1. Update the source skill under `skills/` when the shared contract changes.
+2. For parity-only skills, update source or the codex-sync transform/template and regenerate. Update `skills-codex/<name>/SKILL.md` directly only when the Codex runtime copy is bespoke, or update `skills-codex-overrides/<name>/` when the Codex experience should differ from Claude.
+   - Prompt/operator-layer changes belong in `skills-codex-overrides/<name>/prompt.md`.
+   - Durable Codex-only body rewrites belong in `skills-codex-overrides/<name>/SKILL.md`.
+3. Run the semantic audit if the checked-in Codex body looks suspicious:
+
+   ```bash
+   bash scripts/audit-codex-parity.sh
+   # or target one skill
+   bash scripts/audit-codex-parity.sh --skill <name>
+   ```
+
+4. Validate the checked-in Codex artifacts:
+
+   ```bash
+   bash scripts/audit-codex-parity.sh
+   bash scripts/validate-codex-override-coverage.sh
+   bash scripts/validate-codex-generated-artifacts.sh --scope worktree
+   bash scripts/validate-headless-runtime-skills.sh
+   python3 scripts/check-cathedral-cut-conformance.py
+   ```
+
+Think of `skills/` as the shared contract, `skills-codex-overrides/` as the durable Codex-only tailoring layer, and `skills-codex/` as the checked-in Codex artifact shipped to users.

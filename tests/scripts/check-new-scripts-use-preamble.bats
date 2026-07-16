@@ -190,7 +190,7 @@ EOF
   cp "$SCRIPT_SRC" "$INIT/scripts/check-new-scripts-use-preamble.sh"
   cp "$LIB_SRC" "$INIT/scripts/lib/preamble.sh"
   # shared ratchet mechanics — this SECOND skeleton needs the lib too (the
-  # per-copy-site table from pre-mortem FM5 called out exactly this fixture)
+  # per-copy-site table from premortem FM5 called out exactly this fixture)
   cp "$BATS_TEST_DIRNAME/../../scripts/lib/ratchet.sh" "$INIT/scripts/lib/ratchet.sh"
   cat > "$INIT/scripts/old-handrolled.sh" <<'EOF'
 #!/usr/bin/env bash

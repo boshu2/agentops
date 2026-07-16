@@ -10,23 +10,14 @@
 # Scope is a FIXED list of cold-start / continuity AND workflow-discipline
 # surfaces. It deliberately does NOT scan all of docs/+skills/ (release notes, the
 # hooks-authoring skill, and scope guards legitimately name hook paths). The repo
-# CLAUDE.md + its tiered split (AGENTS-WORKFLOW.md) and the session-scope surfaces
-# (ship-loop, the evolve post-mortem checkpoint) were brought IN scope by ag-o5xp:
+# CLAUDE.md + workflow owner (docs/agent-workflow-reference.md) and the session-scope surfaces
+# (ship-loop, the evolve postmortem checkpoint) were brought IN scope by ag-o5xp:
 # their `session-pr-counter.sh` reference was a stale active-surface promise after
 # the hook was removed in the #511 hookless teardown. They are now hedged
 # (removed / opt-in / hooks-authoring) and gated here so the drift cannot recur.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-
-# ag-2vz5v: resolve skill paths through the dispositions ledger so folds/cuts
-# auto-retarget. Identity fallback keeps hermetic test copies self-contained.
-if [[ -f "$ROOT/scripts/lib/resolve-skill-path.sh" ]]; then
-  # shellcheck source=lib/resolve-skill-path.sh
-  source "$ROOT/scripts/lib/resolve-skill-path.sh"
-else
-  resolve_skill_path() { printf '%s\n' "$1"; }
-fi
 
 FILES=(
   "AGENTS.md"
@@ -45,13 +36,10 @@ FILES=(
   "skills/review/SKILL.md"
   "skills-codex/review/SKILL.md"
   "docs/newcomer-guide.md"
-  # Workflow-discipline surfaces (ag-o5xp): must never present the removed
+  # Workflow-discipline surfaces: must never present the removed
   # session-pr-counter hook as an active surface.
   "CLAUDE.md"
-  "AGENTS-WORKFLOW.md"
-  "skills/crank/SKILL.md"
-  "skills/evolve/references/postmortem-checkpoint.md"
-  "skills-codex/evolve/references/postmortem-checkpoint.md"
+  "docs/agent-workflow-reference.md"
 )
 
 # A hook path is "hedged" (allowed) when its line also carries one of these.
@@ -68,9 +56,7 @@ fail() {
 
 violations=0
 scanned=0
-for raw in "${FILES[@]}"; do
-  rel="$(resolve_skill_path "$raw")"
-  [[ -n "$rel" ]] || continue # cut slug: resolver warned; skip visibly
+for rel in "${FILES[@]}"; do
   file="$ROOT/$rel"
   [[ -f "$file" ]] || continue
   scanned=$((scanned + 1))

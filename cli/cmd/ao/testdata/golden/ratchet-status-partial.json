@@ -10,9 +10,9 @@
       "time": "2025-06-15T09:10:00Z"
     },
     {
-      "step": "pre-mortem",
+      "step": "premortem",
       "status": "locked",
-      "output": "pre-mortem.md",
+      "output": "premortem.md",
       "time": "2025-06-15T09:20:00Z"
     },
     {
@@ -33,7 +33,7 @@
       "status": "pending"
     },
     {
-      "step": "post-mortem",
+      "step": "postmortem",
       "status": "pending"
     }
   ],

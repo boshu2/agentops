@@ -51,7 +51,7 @@ func TestCheckStaleReferences_AggregatesMatches(t *testing.T) {
 	if err := os.WriteFile(a, []byte("ao know forge\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(b, []byte("ao work rpi status\nao know inject\n"), 0o644); err != nil {
+	if err := os.WriteFile(b, []byte("ao know search status\nao know inject\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
 
