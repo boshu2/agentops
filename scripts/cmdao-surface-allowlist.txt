@@ -48,6 +48,7 @@ deprecated|next-work|One-release failure stub for removed work selection.
 deprecated|state|One-release failure stub for removed lifecycle admission.
 deprecated|worktree|One-release failure stub for removed Git mutation.
 deprecated|validate|One-release failure stub for removed semantic CLI validation.
+deprecated|verify|One-release failure stub for removed 3.2 verification front door.
 deprecated|converge|One-release failure stub for removed retry convergence.
 deprecated|reconcile|One-release failure stub for removed lifecycle reconciliation.
 deprecated|membrane|One-release failure stub for removed admission behavior.

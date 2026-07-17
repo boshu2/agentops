@@ -485,11 +485,11 @@
       "reason": "One-release failure stub for removed semantic CLI validation."
     },
     {
-      "category": "public-tested",
+      "category": "deprecated",
       "command": "verify",
-      "coverage_status": "covered",
+      "coverage_status": "allowlisted",
       "kind": "leaf",
-      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
+      "reason": "One-release failure stub for removed 3.2 verification front door."
     },
     {
       "category": "public-tested",

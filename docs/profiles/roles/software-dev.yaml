@@ -2,7 +2,7 @@
 # Full-stack development, backend, frontend, APIs, applications
 
 name: software-dev
-version: 4.0.0
+version: 3.3.0
 description: |
   Software development across the stack. Build applications (backend APIs, frontends,
   full-stack features), write code in Python, Go, Rust, TypeScript, Java, review code,
