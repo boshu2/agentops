@@ -127,7 +127,7 @@ class PacketContractTests(unittest.TestCase):
         args = types.SimpleNamespace(
             packet=str(fixture.packet_path), rig="agentops", binding="agentops", timeout=1.0, json=False
         )
-        with mock.patch.object(packet_module, "sling_packet", dispatched), contextlib.redirect_stdout(io.StringIO()) as output:
+        with mock.patch.object(packet_module, "prepare_packet_transport", dispatched), contextlib.redirect_stdout(io.StringIO()) as output:
             result = packet_module.command_run(args)
         self.assertEqual(result, 2)
         dispatched.assert_not_called()
@@ -149,27 +149,68 @@ class PacketContractTests(unittest.TestCase):
         with self.assertRaisesRegex(packet_module.PacketError, "provider must be codex or claude"):
             packet_module.validate_envelope(fixture.packet_path)
 
-    def test_claude_packet_routes_to_explicit_claude_role(self) -> None:
+    def test_claude_packet_prepares_deterministic_bead_and_routes_explicit_role(self) -> None:
         fixture = PacketFixture(self.root, provider="claude")
         packet, paths = packet_module.validate_envelope(fixture.packet_path)
+        packet_digest = hashlib.sha256(fixture.packet_path.read_bytes()).hexdigest()
+        bead_id = f"ao-pkt-{packet_digest[:16]}"
+        target = "agentops/agentops.implementer-claude"
+        identity = {
+            "agentops.packet_id": packet["packet_id"],
+            "agentops.packet_digest": packet_digest,
+            "agentops.intent_digest": packet["intent_digest"],
+            "agentops.target": target,
+            "agentops.result_path": str(paths["result"]),
+        }
+        created = {
+            "id": bead_id,
+            "title": f"AgentOps implement packet {packet['packet_id']}",
+            "description": packet_module.packet_transport_description(packet, paths),
+            "status": "open",
+            "metadata": identity,
+        }
         with (
             mock.patch.dict(os.environ, {"GC_CITY_PATH": "/tmp/city"}, clear=False),
             mock.patch.object(packet_module, "gc_binary", return_value="/tmp/gc"),
+            mock.patch.object(packet_module, "transport_record", side_effect=[None, created]),
             mock.patch.object(
                 packet_module,
                 "require_process",
                 side_effect=[
-                    json.dumps({"ok": True, "rigs": [{"name": "agentops", "path": str(self.root)}]}),
-                    '{"success":true,"bead_id":"ao-1"}',
+                    json.dumps({
+                        "ok": True,
+                        "rigs": [{"name": "agentops", "path": str(self.root), "prefix": "ao"}],
+                    }),
+                    json.dumps(created),
+                    json.dumps({"success": True, "bead_id": bead_id}),
                 ],
             ) as run,
         ):
-            bead, target = packet_module.sling_packet(packet, paths, "agentops", "agentops")
-        self.assertEqual(bead, "ao-1")
-        self.assertEqual(target, "agentops/agentops.implementer-claude")
-        description = run.call_args_list[1].kwargs["input_text"]
+            bead, prepared_target = packet_module.prepare_packet_transport(
+                packet, paths, "agentops", "agentops",
+            )
+            packet_module.ensure_transport_routed("agentops", bead, prepared_target)
+        self.assertEqual(bead, bead_id)
+        self.assertEqual(prepared_target, target)
+        description = run.call_args_list[1].args[0][run.call_args_list[1].args[0].index("--description") + 1]
         self.assertIn("execution_provider=claude", description)
         self.assertIn(f"adapter_path={packet_module.Path(packet_module.__file__).resolve()}", description)
+        self.assertEqual(run.call_args_list[2].args[0][-4], bead_id)
+
+    def test_already_routed_transport_is_not_slung_twice(self) -> None:
+        target = "agentops/agentops.implementer"
+        record = {
+            "id": "ao-pkt-existing",
+            "status": "in_progress",
+            "metadata": {"gc.routed_to": target},
+        }
+        with (
+            mock.patch.dict(os.environ, {"GC_CITY_PATH": "/tmp/city"}, clear=False),
+            mock.patch.object(packet_module, "transport_record", return_value=record),
+            mock.patch.object(packet_module, "require_process") as run,
+        ):
+            packet_module.ensure_transport_routed("agentops", record["id"], target)
+        run.assert_not_called()
 
     def test_packet_workspace_must_equal_selected_rig_root(self) -> None:
         fixture = PacketFixture(self.root)
@@ -181,11 +222,14 @@ class PacketContractTests(unittest.TestCase):
             mock.patch.object(
                 packet_module,
                 "require_process",
-                return_value=json.dumps({"ok": True, "rigs": [{"name": "agentops", "path": str(other_root)}]}),
+                return_value=json.dumps({
+                    "ok": True,
+                    "rigs": [{"name": "agentops", "path": str(other_root), "prefix": "ao"}],
+                }),
             ) as run,
         ):
             with self.assertRaisesRegex(packet_module.PacketError, "workspace must equal configured rig root"):
-                packet_module.sling_packet(packet, paths, "agentops", "agentops")
+                packet_module.prepare_packet_transport(packet, paths, "agentops", "agentops")
         self.assertEqual(run.call_count, 1)
 
     def test_runtime_provider_must_match_packet_provider(self) -> None:
@@ -378,6 +422,135 @@ class PacketContractTests(unittest.TestCase):
         self.assertEqual(receipt["status"], "FAIL")
         self.assertEqual(receipt["outside_scope"], ["README.md"])
         self.assertNotIn("verdict", receipt)
+
+    def test_run_reconciles_cached_runtime_result_without_reslinging(self) -> None:
+        fixture = PacketFixture(self.root)
+        packet, paths = packet_module.validate_envelope(fixture.packet_path)
+        baseline_path = fixture.evidence / "runtime-baseline-manifest.json"
+        baseline = packet_module.build_manifest(packet, paths, baseline_path)
+        (self.root / "src").mkdir()
+        (self.root / "src" / "candidate.txt").write_text("candidate\n", encoding="utf-8")
+        subject = packet_module.build_manifest(
+            packet, paths, fixture.evidence / "runtime-subject-manifest.json", baseline_path,
+        )
+        changes = packet_module.changed_paths(baseline, subject)
+        receipt = packet_module.make_scope_receipt(packet, changes)
+        artifact = fixture.evidence / "worker-receipt.json"
+        artifact.write_text("{}\n", encoding="utf-8")
+        response = {
+            "schema_version": "gc-agent-response.v1",
+            "packet_id": packet["packet_id"],
+            "role": "implement",
+            "outcome": "candidate",
+            "transport_bead_id": "ao-recover",
+            "session_context_id": "gc-recover-session",
+            "session_name": "implementer-1",
+            "template": "agentops.implementer",
+            "artifacts": [{
+                "path": str(artifact),
+                "sha256": hashlib.sha256(artifact.read_bytes()).hexdigest(),
+            }],
+            "message": "",
+        }
+        fixture.result.write_text(json.dumps(response) + "\n", encoding="utf-8")
+        runtime = packet_module.success_result(
+            packet, paths, response, "ao-recover", "agentops/agentops.implementer",
+            {
+                "packet_digest": hashlib.sha256(fixture.packet_path.read_bytes()).hexdigest(),
+                "actual_changed_paths": changes,
+                "subject_manifest_digest": subject["canonical_manifest_digest"],
+                "scope_status": receipt["status"],
+            },
+        )
+        (fixture.evidence / "runtime-result.json").write_text(
+            json.dumps(runtime) + "\n", encoding="utf-8",
+        )
+        transport = {"id": "ao-recover", "status": "closed", "assignee": "implementer-1"}
+        session = {
+            "id": "gc-recover-session", "session_name": "implementer-1",
+            "template": "agentops/agentops.implementer", "provider": "codex",
+        }
+        # The target is the exact runtime template for packet validation.
+        response["template"] = "agentops/agentops.implementer"
+        fixture.result.write_text(json.dumps(response) + "\n", encoding="utf-8")
+        runtime["agent_response"] = response
+        (fixture.evidence / "runtime-result.json").write_text(json.dumps(runtime) + "\n", encoding="utf-8")
+        args = types.SimpleNamespace(
+            packet=str(fixture.packet_path), rig="agentops", binding="agentops",
+            timeout=1.0, json=False,
+        )
+        with (
+            mock.patch.object(packet_module, "transport_record", return_value=transport),
+            mock.patch.object(packet_module, "runtime_session", return_value=session),
+            mock.patch.object(packet_module, "prepare_packet_transport") as prepare,
+            contextlib.redirect_stdout(io.StringIO()) as stdout,
+        ):
+            self.assertEqual(packet_module.command_run(args), 0)
+        prepare.assert_not_called()
+        self.assertTrue(json.loads(stdout.getvalue())["ok"])
+
+    def test_run_resumes_prepared_transport_without_creating_another_bead(self) -> None:
+        fixture = PacketFixture(self.root)
+        packet, paths = packet_module.validate_envelope(fixture.packet_path)
+        baseline_path = fixture.evidence / "runtime-baseline-manifest.json"
+        packet_module.build_manifest(packet, paths, baseline_path)
+        target = "agentops/agentops.implementer"
+        bead_id = "ao-pkt-prepared"
+        state_path = fixture.evidence / "runtime-transport.json"
+        state_path.write_text(json.dumps({
+            "schema_version": "gc-packet-transport.v1",
+            "packet_id": packet["packet_id"],
+            "packet_digest": hashlib.sha256(fixture.packet_path.read_bytes()).hexdigest(),
+            "intent_digest": packet["intent_digest"],
+            "rig": "agentops",
+            "binding": "agentops",
+            "bead_id": bead_id,
+            "target": target,
+            "dispatch_phase": "prepared",
+            "manifest_file_digests": {
+                str(baseline_path): hashlib.sha256(baseline_path.read_bytes()).hexdigest(),
+            },
+        }) + "\n", encoding="utf-8")
+        artifact = fixture.evidence / "worker-receipt.txt"
+        artifact.write_text("candidate\n", encoding="utf-8")
+        response = {
+            "schema_version": "gc-agent-response.v1",
+            "packet_id": packet["packet_id"],
+            "role": "implement",
+            "outcome": "candidate",
+            "transport_bead_id": bead_id,
+            "session_context_id": "gc-resumed-session",
+            "session_name": "implementer-resumed",
+            "template": target,
+            "artifacts": [{
+                "path": str(artifact),
+                "sha256": hashlib.sha256(artifact.read_bytes()).hexdigest(),
+            }],
+            "message": "",
+        }
+        fixture.result.write_text(json.dumps(response) + "\n", encoding="utf-8")
+        transport = {"id": bead_id, "status": "closed", "assignee": "implementer-resumed"}
+        session = {
+            "id": "gc-resumed-session", "session_name": "implementer-resumed",
+            "template": target, "provider": "codex",
+        }
+        args = types.SimpleNamespace(
+            packet=str(fixture.packet_path), rig="agentops", binding="agentops",
+            timeout=1.0, json=False,
+        )
+        with (
+            mock.patch.object(packet_module, "prepare_packet_transport") as prepare,
+            mock.patch.object(packet_module, "ensure_transport_routed") as ensure,
+            mock.patch.object(packet_module, "wait_for_response", return_value=(response, transport)),
+            mock.patch.object(packet_module, "runtime_session", return_value=session),
+            contextlib.redirect_stdout(io.StringIO()) as stdout,
+        ):
+            self.assertEqual(packet_module.command_run(args), 0)
+        prepare.assert_not_called()
+        ensure.assert_called_once_with("agentops", bead_id, target)
+        persisted = json.loads(state_path.read_text(encoding="utf-8"))
+        self.assertEqual(persisted["dispatch_phase"], "routed")
+        self.assertTrue(json.loads(stdout.getvalue())["ok"])
 
 
 if __name__ == "__main__":

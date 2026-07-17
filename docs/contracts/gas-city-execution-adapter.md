@@ -62,9 +62,10 @@ Validator context must not reuse the Implementer's context identity.
 When selected, `agentops-factory` imports that executor and adds Mayor,
 plan-review, deterministic reducer, and fenced Refiner surfaces. The work unit
 is still a bead, never the pack. Every dynamic candidate rig is patched and
-verified to expose only the admitted binding's four Worker/Validator routes;
-every integration rig exposes only its two Validator routes. The factory does
-not broaden the executor packet's semantic authority.
+verified to expose exactly the bead-selected Implementer route and its selected
+opposite-family Validator route; every integration rig exposes only its two
+Validator routes. The factory does not broaden the executor packet's semantic
+authority.
 
 ## SDK-owned configuration
 
@@ -87,11 +88,14 @@ For a released pack, use the normal import command and a durable commit pin.
 
 1. The caller supplies one resolved intent source. If it has no durable tracker
    artifact, AgentOps snapshots the exact bytes under their digest.
-2. The adapter creates a transport item carrying the explicit run envelope and
-   its resolved absolute adapter path. The item is routing state, not a second
-   plan or source of acceptance criteria. Agents use that declared path rather
-   than guessing the local import directory. The packet and intent are hashed
-   before dispatch and rechecked before return.
+2. The adapter derives a deterministic transport-bead ID from the selected
+   rig's bead prefix and exact packet digest, creates or reconciles that bead,
+   and records the explicit run envelope and resolved absolute adapter path.
+   The bead is transport work, not a second plan or source of acceptance
+   criteria. Its identity is persisted before routing; a restart inspects the
+   same bead's `gc.routed_to` metadata and never slings an already-routed bead a
+   second time. The packet and intent are hashed before dispatch and rechecked
+   before return.
 3. The implementer consumes the envelope in an isolated rig/workspace and
    performs one bounded RED-to-GREEN experiment.
 4. AgentOps derives the candidate manifest, changed paths, subject digest, and
@@ -104,6 +108,14 @@ For a released pack, use the normal import command and a durable commit pin.
 6. Validate emits exactly one `verdict.v2` beneath the evidence workspace. The
    GC adapter returns the artifact reference and transport/runtime evidence,
    without copying the semantic result into its own response, then stops.
+
+The packet evidence directory also contains digest-bound
+`runtime-transport.json` and `runtime-result.json` receipts. They make a
+controller restart replayable: a prepared transport resumes from its existing
+bead, and a completed runtime result is revalidated against the closed bead,
+actual provider session, artifacts, and current exact subject before it is
+returned. These receipts do not own work status, semantic retry, or verdict
+authority; the bead and `verdict.v2` retain those meanings.
 
 Successful role responses must reference digest-bound files under the packet's
 canonical `.gc/agentops/<packet-id>/` evidence directory. This transport plane

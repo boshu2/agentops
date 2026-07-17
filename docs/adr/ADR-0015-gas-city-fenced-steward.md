@@ -145,8 +145,8 @@ Refinery holds a monotonic fencing epoch per repository and target branch;
 every integration push and PR mutation presents the current token and uses
 compare-and-swap or force-with-lease against the recorded head.
 
-Integration proceeds in bounded trains, initially at most five candidates or a
-configured diff ceiling. Refinery applies exact admitted SHAs in stable DAG
+Integration proceeds in bounded trains with a configured candidate-count limit
+(five by default in v1). Refinery applies exact admitted SHAs in stable DAG
 order in a scratch tree, runs deterministic checks after each application,
 regenerates shared outputs once, publishes one integration cut, obtains fresh
 semantic validation, and opens or updates one PR. At most one wave per target is

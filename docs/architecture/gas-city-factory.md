@@ -100,7 +100,7 @@ continue, or reinterpret the completed inner experiment.
 | Experiment | One bounded Implement plus fresh Validate cycle ending in a durable result |
 | Program graph | Mayor proposal that admission atomically materializes as program, experiment, dependency, and Refinery beads |
 | Admission certificate | Deterministic reference proving that exact component verdicts satisfy intake policy |
-| Delivery record | Refinery-owned fenced state connecting candidates, integration cuts, PR state, and landed SHA |
+| Delivery record | Immutable Refinery evidence connecting candidates, integration cuts, PR state, and landed SHA; the Refinery bead remains lifecycle truth |
 
 The most important distinction is that a thin-executor transport bead closing
 is not an AgentOps verdict. A factory experiment bead closes only after its
@@ -160,10 +160,13 @@ path. Validate packets additionally bind baseline and subject manifests, the
 runtime-derived scope receipt, and author context identity; their write scope is
 empty.
 
-The adapter validates before dispatch, creates transport state, slings exactly
-once with `--no-formula --no-convoy`, verifies packet and intent continuity,
-checks the runtime provider and context, validates response artifacts, and
-returns one deterministic transport result. The semantic verdict stays in the
+The adapter validates before dispatch, creates a deterministic transport bead,
+persists its exact identity, then slings that bead with `--no-formula
+--no-convoy`. On restart it reconciles the same bead and its `gc.routed_to`
+metadata instead of creating or slinging duplicate work. It verifies packet
+and intent continuity, checks the runtime provider and context, validates
+response artifacts, persists a replayable factual runtime receipt, and returns
+one deterministic transport result. The semantic verdict stays in the
 referenced `verdict.v2`; the transport response cannot smuggle a verdict field.
 
 The current binding contract is
@@ -211,6 +214,16 @@ It may reject malformed or policy-incomplete input, but it cannot make semantic
 judgments or synthesize PASS. `bd create --graph` creates the initial graph in
 one transaction; later reducer commands update bead dependencies and metadata.
 No pack-owned lifecycle state file competes with Gas City.
+
+Reducer transitions are crash-replayable bead reductions. Preparation markers
+such as `lease_preparing`, `rejection_preparing`, `successor_preparing`, and
+`assembling` are written to the owning bead before external Git or dependency
+effects. A replay verifies the stored identities, reconciles the worktree,
+branch, dependency edge, successor, or delivery evidence, and completes the
+same transition. It never allocates a new semantic work identity merely because
+the controller restarted. Packet transport/result JSON and graph, verdict,
+admission, and delivery JSON are digest-bound evidence referenced by beads; they
+are not a second factory lifecycle machine.
 
 ### Worker pools
 
@@ -302,7 +315,7 @@ the `rescope` command. Product acceptance changes require operator approval.
 ### 6. Assemble a bounded integration train
 
 Refinery accepts only exact SHAs with valid admission certificates. One train is
-initially limited to five candidates or a configured diff ceiling. In stable DAG
+limited by the configured candidate count (five by default). In stable DAG
 order it:
 
 1. applies each candidate in a disposable scratch tree/index;
@@ -319,10 +332,11 @@ and requests protected merge only when all repository policy is satisfied.
 Dependent later waves may be drafts; only one wave per target is merge-eligible
 in v1.
 
-If `main` moves, Refinery rebases under fencing and compare-and-swap, reruns
-checks and regeneration, invalidates stale semantic validation, and obtains a
-fresh exact-head certificate. Semantic CI or review failure returns evidence to
-the Mayor rather than triggering hidden repair.
+If `main` moves, Refinery marks the bead `reassembly_required`, allocates a new
+fence epoch and integration worktree from the current protected base, replays
+the exact admitted candidate deltas, reruns checks, invalidates stale semantic
+validation, and obtains a fresh exact-head certificate. Semantic CI or review
+failure returns evidence to the Mayor rather than triggering hidden repair.
 
 ### 8. Record delivery
 
@@ -373,11 +387,12 @@ capacity. The allocator, scope compiler, isolated indexes, leases, and fencing
 must pass their gates before raising that cap.
 
 Dynamic worktree rigs are route-minimized from the bead's admitted
-`factory.binding`. Candidate rigs expose only that binding's Codex/Claude
-Implementer and Validator routes; integration rigs expose only its two
-Validator routes. Rig registration and the durable suspension patches share a
-city-config lock, and dispatch stops unless the resolved active inventory is
-exactly the expected set.
+`factory.binding`. A candidate rig exposes exactly two routes: the bead-selected
+Codex-or-Claude Implementer and its bead-selected opposite-family Validator.
+Integration rigs expose only the binding's two Validator routes. Rig
+registration and the durable suspension patches share a city-config lock, and
+dispatch stops unless the resolved active inventory is exactly the expected
+set.
 
 AgentOps skills remain semantic sources of truth. Thin role prompts inject the
 appropriate Mayor, plan-review, Implement, Validate, or Refinery-triage skill.
@@ -389,11 +404,11 @@ commands, formulas, and exec orders rather than prompt prose.
 
 | Event | Owner and response |
 |---|---|
-| Session crash or stall | Gas City controller/health policy; preserve work and report transport state without manufacturing a verdict |
+| Session or controller crash | Re-enter through the same request digest or deterministic packet bead; reconcile bead routing and preparation metadata without manufacturing a verdict or duplicate work |
 | Unauthorized or stale-token Git write | Deterministic hook/credential/fencing rejection |
 | Candidate PASS but branch moves | Invalidate intake; exact SHA no longer matches |
 | Candidate `FAIL` or `NOT_PROVEN` | Close the exact experiment, create a blocking rescope bead, and route that bead through a fresh Mayor context for a new successor proposal; stop in HOLD at the attempt ceiling |
-| Clean main-moved rebase | Refinery under fence; rerun checks; invalidate and freshly validate subject |
+| Clean `main` movement | Mark `reassembly_required`; build a new fenced epoch from current protected base; rerun checks and freshly validate the new subject |
 | Canonical regeneration changes bytes | Refinery mechanism; invalidate and freshly validate subject |
 | Semantic conflict, test defect, or substantive review request | Freeze evidence and return to Mayor; no Refinery repair |
 | Flaky CI covered by explicit bounded repository policy | Deterministic rerun with receipt |

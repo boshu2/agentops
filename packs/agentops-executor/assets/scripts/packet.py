@@ -169,7 +169,7 @@ def string_list(value: Any, label: str, *, nonempty: bool = False) -> list[str]:
     return normalized
 
 
-def validate_envelope(path: Path) -> tuple[dict[str, Any], dict[str, Path]]:
+def validate_envelope(path: Path, allow_existing_result: bool = False) -> tuple[dict[str, Any], dict[str, Path]]:
     packet = load_object(path, "packet")
     unknown = sorted(set(packet) - ALLOWED_KEYS)
     if unknown:
@@ -225,7 +225,7 @@ def validate_envelope(path: Path) -> tuple[dict[str, Any], dict[str, Path]]:
             "invalid_envelope",
             f"evidence_dir must be the canonical packet directory {expected_evidence}",
         )
-    if result.exists():
+    if result.exists() and not allow_existing_result:
         raise PacketError("stale_result", f"result_path already exists: {result}")
     actual_intent_digest = sha256_file(intent)
     if actual_intent_digest != digest:
@@ -465,7 +465,7 @@ def local_agent_name(packet: dict[str, Any]) -> str:
     }[(packet["role"], packet["provider"])]
 
 
-def selected_rig_root(rig: str) -> Path:
+def selected_rig_record(rig: str) -> dict[str, Any]:
     city = os.environ.get("GC_CITY_PATH") or os.environ.get("GC_CITY")
     if not city:
         raise PacketError("city_missing", "GC_CITY_PATH is not set by the pack command runtime")
@@ -477,33 +477,24 @@ def selected_rig_root(rig: str) -> Path:
     if not isinstance(records, list):
         raise PacketError("rig_missing", "gc rig list returned no rigs array")
     requested_path = Path(rig).expanduser().resolve(strict=False) if Path(rig).is_absolute() else None
-    matches = []
+    matches: list[dict[str, Any]] = []
     for record in records:
         if not isinstance(record, dict) or not isinstance(record.get("path"), str):
             continue
         root = Path(record["path"]).expanduser().resolve(strict=False)
         if record.get("name") == rig or (requested_path is not None and root == requested_path):
-            matches.append(root)
+            matches.append({**record, "resolved_path": root})
     if len(matches) != 1:
         raise PacketError("rig_missing", f"expected exactly one configured rig matching {rig!r}")
+    prefix = matches[0].get("prefix")
+    if not isinstance(prefix, str) or not prefix:
+        raise PacketError("rig_missing", f"configured rig {rig!r} has no bead prefix")
     return matches[0]
 
 
-def sling_packet(packet: dict[str, Any], paths: dict[str, Path], rig: str, binding: str) -> tuple[str, str]:
-    city = os.environ.get("GC_CITY_PATH") or os.environ.get("GC_CITY")
-    if not city:
-        raise PacketError("city_missing", "GC_CITY_PATH is not set by the pack command runtime")
-    rig_root = selected_rig_root(rig)
-    if paths["workspace"] != rig_root:
-        raise PacketError(
-            "workspace_rig_mismatch",
-            f"packet workspace must equal configured rig root {rig_root}: {paths['workspace']}",
-        )
-    local_agent = local_agent_name(packet)
-    target = f"{rig}/{binding}.{local_agent}"
-    description = "\n".join(
+def packet_transport_description(packet: dict[str, Any], paths: dict[str, Path]) -> str:
+    return "\n".join(
         [
-            f"AgentOps {packet['role']} packet {packet['packet_id']}",
             f"execution_provider={packet['provider']}",
             "GC transport only; handle exactly once and do not infer semantic completion.",
             f"adapter_path={Path(__file__).resolve()}",
@@ -512,22 +503,109 @@ def sling_packet(packet: dict[str, Any], paths: dict[str, Path], rig: str, bindi
             f"intent_digest={packet['intent_digest']}",
             f"result_path={paths['result']}",
         ]
-    ) + "\n"
+    )
+
+
+def validate_transport_identity(record: dict[str, Any], bead_id: str, title: str, description: str,
+                                identity: dict[str, str]) -> None:
+    if record.get("id") != bead_id or record.get("title") != title or record.get("description") != description:
+        raise PacketError("transport_identity_mismatch", f"transport bead {bead_id} belongs to different work")
+    meta = record.get("metadata")
+    if not isinstance(meta, dict) or any(meta.get(key) != value for key, value in identity.items()):
+        raise PacketError("transport_identity_mismatch", f"transport bead {bead_id} metadata changed")
+
+
+def prepare_packet_transport(packet: dict[str, Any], paths: dict[str, Path], rig: str,
+                             binding: str) -> tuple[str, str]:
+    """Create or reconcile the deterministic packet bead without routing it."""
+    city = os.environ.get("GC_CITY_PATH") or os.environ.get("GC_CITY")
+    if not city:
+        raise PacketError("city_missing", "GC_CITY_PATH is not set by the pack command runtime")
+    rig_record = selected_rig_record(rig)
+    rig_root = rig_record["resolved_path"]
+    if paths["workspace"] != rig_root:
+        raise PacketError(
+            "workspace_rig_mismatch",
+            f"packet workspace must equal configured rig root {rig_root}: {paths['workspace']}",
+        )
+    local_agent = local_agent_name(packet)
+    target = f"{rig}/{binding}.{local_agent}"
+    packet_digest = sha256_file(paths["packet"])
+    bead_id = f"{rig_record['prefix']}-pkt-{packet_digest[:16]}"
+    title = f"AgentOps {packet['role']} packet {packet['packet_id']}"
+    description = packet_transport_description(packet, paths)
+    identity = {
+        "agentops.packet_id": packet["packet_id"],
+        "agentops.packet_digest": packet_digest,
+        "agentops.intent_digest": packet["intent_digest"],
+        "agentops.target": target,
+        "agentops.result_path": str(paths["result"]),
+    }
+    record = transport_record(rig, bead_id)
+    if record is None:
+        args = [
+            gc_binary(),
+            "--city",
+            city,
+            "bd",
+            "--rig",
+            rig,
+            "create",
+            title,
+            "--id",
+            bead_id,
+            "--force",
+            "--description",
+            description,
+            "--labels",
+            "agentops-packet,gc-transport",
+            "--metadata",
+            json.dumps(identity, sort_keys=True, separators=(",", ":")),
+            "--json",
+        ]
+        value = parse_json_output(require_process(args, timeout=120), "gc bd create")
+        record = bead_record(value, bead_id)
+        if record is None:
+            raise PacketError("dispatch_failed", f"gc bd create returned no transport bead {bead_id}")
+    validate_transport_identity(record, bead_id, title, description, identity)
+    return bead_id, target
+
+
+def ensure_transport_routed(rig: str, bead_id: str, target: str) -> None:
+    """Route a prepared bead once, or reconcile an already-routed bead."""
+    city = os.environ.get("GC_CITY_PATH") or os.environ.get("GC_CITY")
+    if not city:
+        raise PacketError("city_missing", "GC_CITY_PATH is not set by the pack command runtime")
+    record = transport_record(rig, bead_id)
+    if record is None:
+        raise PacketError("transport_missing", f"prepared transport bead disappeared: {bead_id}")
+    meta = record.get("metadata")
+    meta = meta if isinstance(meta, dict) else {}
+    routed_to = meta.get("gc.routed_to")
+    if routed_to is not None:
+        if routed_to != target:
+            raise PacketError("transport_identity_mismatch", f"transport bead {bead_id} routed to {routed_to!r}")
+        return
+    if record.get("status") != "open":
+        raise PacketError("transport_state_invalid", f"unrouted transport bead {bead_id} is not open")
     args = [
         gc_binary(),
         "--city",
         city,
         "sling",
         target,
-        "--stdin",
+        bead_id,
         "--no-formula",
         "--no-convoy",
         "--json",
     ]
-    value = parse_json_output(require_process(args, input_text=description, timeout=120), "gc sling")
-    if not isinstance(value, dict) or not value.get("success") or not value.get("bead_id"):
+    value = parse_json_output(require_process(args, timeout=120), "gc sling")
+    if (
+        not isinstance(value, dict)
+        or not value.get("success")
+        or str(value.get("bead_id", "")) != bead_id
+    ):
         raise PacketError("dispatch_failed", f"gc sling did not route the packet: {value!r}")
-    return str(value["bead_id"]), target
 
 
 def bead_record(value: Any, bead_id: str) -> dict[str, Any] | None:
@@ -740,19 +818,124 @@ def error_result(error: PacketError, packet: dict[str, Any] | None = None) -> di
     }
 
 
+def load_transport_state(path: Path, packet: dict[str, Any], paths: dict[str, Path],
+                         rig: str, binding: str) -> dict[str, Any]:
+    state = load_object(path, "runtime transport state")
+    expected_keys = {
+        "schema_version", "packet_id", "packet_digest", "intent_digest",
+        "rig", "binding", "bead_id", "target", "dispatch_phase", "manifest_file_digests",
+    }
+    if set(state) != expected_keys or state.get("schema_version") != "gc-packet-transport.v1":
+        raise PacketError("transport_state_invalid", "runtime transport state fields are invalid")
+    expected = {
+        "packet_id": packet["packet_id"],
+        "packet_digest": sha256_file(paths["packet"]),
+        "intent_digest": sha256_file(paths["intent"]),
+        "rig": rig,
+        "binding": binding,
+    }
+    for field, wanted in expected.items():
+        if state.get(field) != wanted:
+            raise PacketError("transport_state_mismatch", f"runtime transport {field} changed")
+    if state["intent_digest"] != packet["intent_digest"]:
+        raise PacketError("transport_state_mismatch", "runtime transport intent no longer matches the packet")
+    if not isinstance(state.get("bead_id"), str) or not state["bead_id"]:
+        raise PacketError("transport_state_invalid", "runtime transport has no bead ID")
+    if not isinstance(state.get("target"), str) or not state["target"]:
+        raise PacketError("transport_state_invalid", "runtime transport has no target")
+    if state.get("dispatch_phase") not in {"prepared", "routed"}:
+        raise PacketError("transport_state_invalid", "runtime transport has an invalid dispatch phase")
+    digests = state.get("manifest_file_digests")
+    if not isinstance(digests, dict) or not digests:
+        raise PacketError("transport_state_invalid", "runtime transport has no manifest digests")
+    for field, digest in digests.items():
+        manifest_path = Path(field)
+        if not manifest_path.is_file() or sha256_file(manifest_path) != digest:
+            raise PacketError("manifest_mutated", f"{field} changed after transport dispatch")
+    return state
+
+
+def recover_runtime_result(path: Path, packet: dict[str, Any], paths: dict[str, Path],
+                           rig: str) -> dict[str, Any]:
+    result = load_object(path, "runtime execution result")
+    if result.get("schema_version") != "gc-execution-result.v1" or result.get("ok") is not True:
+        raise PacketError("runtime_result_invalid", "cached runtime result is not a successful execution result")
+    expected = {
+        "packet_id": packet["packet_id"], "role": packet["role"],
+        "provider": packet["provider"], "intent_digest": packet["intent_digest"],
+        "workspace": str(paths["workspace"]),
+    }
+    for field, wanted in expected.items():
+        if result.get(field) != wanted:
+            raise PacketError("runtime_result_mismatch", f"cached runtime result {field} changed")
+    evidence = result.get("runtime_evidence")
+    if not isinstance(evidence, dict) or evidence.get("packet_digest") != sha256_file(paths["packet"]):
+        raise PacketError("runtime_result_mismatch", "cached runtime result packet digest changed")
+    if sha256_file(paths["intent"]) != packet["intent_digest"]:
+        raise PacketError("runtime_result_mismatch", "cached runtime result intent changed")
+    response = load_object(paths["result"], "agent response")
+    if response != result.get("agent_response"):
+        raise PacketError("runtime_result_mismatch", "cached agent response differs from the durable response")
+    transport_summary = result.get("transport")
+    if not isinstance(transport_summary, dict):
+        raise PacketError("runtime_result_invalid", "cached runtime result has no transport summary")
+    bead_id = str(transport_summary.get("bead_id", ""))
+    target = str(transport_summary.get("target", ""))
+    transport = transport_record(rig, bead_id)
+    if transport is None or transport.get("status") != "closed":
+        raise PacketError("transport_state_invalid", "cached transport bead is not closed")
+    session = runtime_session(str(response.get("session_context_id", "")))
+    validate_agent_response(packet, paths, response, bead_id, transport, session, target)
+    if packet["role"] == "implement":
+        baseline_path = paths["evidence"] / "runtime-baseline-manifest.json"
+        baseline = load_object(baseline_path, "runtime baseline manifest")
+        recovered_subject = build_manifest(
+            packet, paths, paths["evidence"] / "runtime-recovery-subject-manifest.json",
+            baseline_path,
+        )
+        changes = changed_paths(baseline, recovered_subject)
+        receipt = make_scope_receipt(packet, changes)
+        if evidence.get("actual_changed_paths") != changes:
+            raise PacketError("runtime_result_mismatch", "cached changed paths differ from the current subject")
+        if evidence.get("subject_manifest_digest") != recovered_subject.get("canonical_manifest_digest"):
+            raise PacketError("runtime_result_mismatch", "cached subject digest differs from the current subject")
+        if evidence.get("scope_status") != receipt.get("status"):
+            raise PacketError("runtime_result_mismatch", "cached scope status differs from the current subject")
+    else:
+        matched, detail = verify_manifest(paths)
+        if not matched:
+            raise PacketError("runtime_result_mismatch", f"cached validation subject moved: {detail}")
+    return result
+
+
 def command_run(args: argparse.Namespace) -> int:
     packet: dict[str, Any] | None = None
     try:
         packet_path = absolute_path(args.packet, "packet", must_exist=True)
-        packet, paths = validate_envelope(packet_path)
+        raw_packet = load_object(packet_path, "packet")
+        raw_evidence = absolute_path(raw_packet.get("evidence_dir"), "evidence_dir", directory=True)
+        runtime_result_path = raw_evidence / "runtime-result.json"
+        transport_state_path = raw_evidence / "runtime-transport.json"
+        recovering = runtime_result_path.is_file() or transport_state_path.is_file()
+        packet, paths = validate_envelope(packet_path, allow_existing_result=recovering)
         paths["evidence"].mkdir(parents=True, exist_ok=True)
+        if runtime_result_path.is_file():
+            print(json.dumps(recover_runtime_result(runtime_result_path, packet, paths, args.rig), sort_keys=True, separators=(",", ":")))
+            return 0
         initial_packet_digest = sha256_file(packet_path)
         initial_intent_digest = sha256_file(paths["intent"])
         runtime_evidence: dict[str, Any] = {"packet_digest": initial_packet_digest}
+        transport_state = (
+            load_transport_state(transport_state_path, packet, paths, args.rig, args.binding)
+            if transport_state_path.is_file() else None
+        )
 
         if packet["role"] == "implement":
             baseline_path = paths["evidence"] / "runtime-baseline-manifest.json"
-            baseline = build_manifest(packet, paths, baseline_path)
+            if transport_state:
+                baseline = load_object(baseline_path, "runtime baseline manifest")
+            else:
+                baseline = build_manifest(packet, paths, baseline_path)
             initial_manifest_digests = {"baseline_manifest": sha256_file(baseline_path)}
             runtime_evidence["baseline_manifest"] = str(baseline_path)
             runtime_evidence["baseline_manifest_digest"] = baseline["canonical_manifest_digest"]
@@ -768,7 +951,33 @@ def command_run(args: argparse.Namespace) -> int:
             if not before_ok:
                 raise PacketError("subject_mismatch", f"subject does not match supplied manifest before dispatch: {before_message}")
 
-        bead_id, target = sling_packet(packet, paths, args.rig, args.binding)
+        if transport_state:
+            bead_id = transport_state["bead_id"]
+            target = transport_state["target"]
+        else:
+            bead_id, target = prepare_packet_transport(packet, paths, args.rig, args.binding)
+            manifest_file_digests = {
+                str(path): digest
+                for field, digest in initial_manifest_digests.items()
+                for path in [baseline_path if field == "baseline_manifest" and packet["role"] == "implement" else paths[field]]
+            }
+            transport_state = {
+                "schema_version": "gc-packet-transport.v1",
+                "packet_id": packet["packet_id"],
+                "packet_digest": initial_packet_digest,
+                "intent_digest": initial_intent_digest,
+                "rig": args.rig,
+                "binding": args.binding,
+                "bead_id": bead_id,
+                "target": target,
+                "dispatch_phase": "prepared",
+                "manifest_file_digests": manifest_file_digests,
+            }
+            write_json_atomic(transport_state_path, transport_state)
+        ensure_transport_routed(args.rig, bead_id, target)
+        if transport_state["dispatch_phase"] != "routed":
+            transport_state["dispatch_phase"] = "routed"
+            write_json_atomic(transport_state_path, transport_state)
         deadline = time.monotonic() + args.timeout
         response, transport = wait_for_response(paths["result"], args.rig, bead_id, deadline)
         response_digest = sha256_file(paths["result"])
@@ -824,8 +1033,10 @@ def command_run(args: argparse.Namespace) -> int:
         runtime_evidence["packet_stable"] = True
         runtime_evidence["intent_stable"] = True
         runtime_evidence["agent_response_stable"] = True
+        runtime_evidence["agent_response_digest"] = response_digest
         runtime_evidence["manifests_stable"] = True
         result = success_result(packet, paths, response, bead_id, target, runtime_evidence)
+        write_json_atomic(runtime_result_path, result)
         print(json.dumps(result, sort_keys=True, separators=(",", ":")))
         return 0
     except PacketError as exc:
