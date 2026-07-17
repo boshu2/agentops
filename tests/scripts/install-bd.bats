@@ -51,3 +51,17 @@ setup() {
     [ "$status" -eq 0 ]
     [ -x "$SCRIPT" ]
 }
+
+@test "installer-common.sh pin in install-bd.sh matches the file on disk" {
+    # The curl|bash path of install-bd.sh sources installer-common.sh only
+    # after verifying it against INSTALLER_COMMON_SHA256. Any edit to
+    # installer-common.sh must bump that pin or remote installs fail closed.
+    pin="$(sed -n 's/^INSTALLER_COMMON_SHA256="\([0-9a-f]\{64\}\)"$/\1/p' "$SCRIPT")"
+    [ -n "$pin" ]
+    if command -v sha256sum >/dev/null 2>&1; then
+        actual="$(sha256sum "$REPO_ROOT/scripts/lib/installer-common.sh" | awk '{print $1}')"
+    else
+        actual="$(shasum -a 256 "$REPO_ROOT/scripts/lib/installer-common.sh" | awk '{print $1}')"
+    fi
+    [ "$pin" = "$actual" ]
+}

@@ -44,11 +44,11 @@
       "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
     },
     {
-      "category": "public-tested",
+      "category": "deprecated",
       "command": "constraint",
-      "coverage_status": "covered",
+      "coverage_status": "allowlisted",
       "kind": "leaf",
-      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
+      "reason": "One-release failure stub for removed constraint promotion."
     },
     {
       "category": "deprecated",
@@ -212,11 +212,11 @@
       "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
     },
     {
-      "category": "public-tested",
+      "category": "deprecated",
       "command": "goals trace",
-      "coverage_status": "covered",
+      "coverage_status": "allowlisted",
       "kind": "leaf",
-      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
+      "reason": "One-release failure stub for removed lifecycle tracing."
     },
     {
       "category": "public-tested",
@@ -380,11 +380,11 @@
       "reason": "Covered by handoff artifact tests."
     },
     {
-      "category": "public-tested",
+      "category": "deprecated",
       "command": "session memory",
-      "coverage_status": "covered",
+      "coverage_status": "allowlisted",
       "kind": "leaf",
-      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
+      "reason": "One-release failure stub for removed repository-memory synchronization."
     },
     {
       "category": "public-tested",
@@ -408,11 +408,11 @@
       "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
     },
     {
-      "category": "public-tested",
+      "category": "deprecated",
       "command": "skills edit",
-      "coverage_status": "covered",
+      "coverage_status": "allowlisted",
       "kind": "leaf",
-      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
+      "reason": "One-release failure stub for removed skill-edit commit flow."
     },
     {
       "category": "public-tested",

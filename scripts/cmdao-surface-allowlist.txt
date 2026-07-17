@@ -15,10 +15,6 @@ public-stateful-fixture-needed|goals drift|Requires two goal snapshots.
 public-tested|goals history|Historical view shares goals validation behavior.
 public-stateful-fixture-needed|goals init|Initializes GOALS.md and may prompt.
 
-public-tested|constraint activate|Covered through constraint list behavior.
-public-tested|constraint retire|Covered through constraint list behavior.
-public-tested|constraint review|Covered through constraint list behavior.
-
 public-stateful-fixture-needed|doctor capabilities|Inspects local installation state.
 public-stateful-fixture-needed|doctor diff|Compares local installation state.
 public-stateful-fixture-needed|doctor explain|Requires controlled findings.
@@ -53,3 +49,7 @@ deprecated|converge|One-release failure stub for removed retry convergence.
 deprecated|reconcile|One-release failure stub for removed lifecycle reconciliation.
 deprecated|membrane|One-release failure stub for removed admission behavior.
 deprecated|crank|One-release failure stub for removed factory controller.
+deprecated|constraint|One-release failure stub for removed constraint promotion.
+deprecated|goals trace|One-release failure stub for removed lifecycle tracing.
+deprecated|session memory|One-release failure stub for removed repository-memory synchronization.
+deprecated|skills edit|One-release failure stub for removed skill-edit commit flow.

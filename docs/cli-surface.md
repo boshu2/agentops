@@ -10,7 +10,7 @@
 | `ao close` | `deprecated` | `allowlisted` | One-release failure stub for removed closure control. |
 | `ao completion` | `public-tested` | `allowlisted` | Framework completion root has focused generation tests. |
 | `ao config models` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
-| `ao constraint` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
+| `ao constraint` | `deprecated` | `allowlisted` | One-release failure stub for removed constraint promotion. |
 | `ao converge` | `deprecated` | `allowlisted` | One-release failure stub for removed retry convergence. |
 | `ao crank` | `deprecated` | `allowlisted` | One-release failure stub for removed factory controller. |
 | `ao demo` | `manual-only` | `allowlisted` | Interactive demonstration requires a TTY. |
@@ -34,7 +34,7 @@
 | `ao goals meta` | `public-tested` | `allowlisted` | Covered through goals measurement behavior. |
 | `ao goals render` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao goals scenarios` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
-| `ao goals trace` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
+| `ao goals trace` | `deprecated` | `allowlisted` | One-release failure stub for removed lifecycle tracing. |
 | `ao goals validate` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao governor` | `deprecated` | `allowlisted` | One-release failure stub for removed retry control. |
 | `ao help` | `internal-hidden` | `allowlisted` | Built-in Cobra help dispatcher with no application handler. |
@@ -58,11 +58,11 @@
 | `ao robot-docs` | `public-tested` | `allowlisted` | Covered by generated documentation tests. |
 | `ao session bootstrap` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao session handoff` | `public-tested` | `allowlisted` | Covered by handoff artifact tests. |
-| `ao session memory` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
+| `ao session memory` | `deprecated` | `allowlisted` | One-release failure stub for removed repository-memory synchronization. |
 | `ao session rehydrate` | `public-tested` | `allowlisted` | Covered by rehydrate artifact tests. |
 | `ao skills check` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao skills consumers` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
-| `ao skills edit` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
+| `ao skills edit` | `deprecated` | `allowlisted` | One-release failure stub for removed skill-edit commit flow. |
 | `ao skills find` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao skills graph` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao skills link` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
