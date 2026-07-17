@@ -1484,7 +1484,8 @@ def register_candidate_rig(lease: dict[str, Any], record: dict[str, Any]) -> tup
 
 
 def register_integration_rig(worktree: Path, refinery_bead: str, branch: str, binding: str) -> tuple[str, str]:
-    rig_name = safe_identifier("fx", "refinery", refinery_bead)
+    epoch = require_string(branch.rsplit("/", 1)[-1], "integration branch epoch", ID_RE)
+    rig_name = safe_identifier("fx", "refinery", refinery_bead, epoch)
     binding = require_string(binding, "factory.binding", ID_RE)
     with city_config_lock():
         matches = [item for item in configured_rigs() if item.get("name") == rig_name]
@@ -1532,6 +1533,11 @@ def execute_experiment(base_rig: str, bead_id: str, lease: dict[str, Any],
     beads = Beads(base_rig)
     record = beads.show(bead_id)
     meta = metadata(record)
+    stored_max_attempts = meta.get("factory.max_attempts")
+    if stored_max_attempts is not None and int(stored_max_attempts) != max_attempts:
+        raise FactoryError("attempt_policy_mismatch", "experiment max-attempt policy changed after leasing")
+    beads.update_metadata(bead_id, {"factory.max_attempts": str(max_attempts)})
+    meta["factory.max_attempts"] = str(max_attempts)
     worktree = Path(lease["worktree"])
     evidence = worktree / ".gc" / "agentops-factory" / bead_id
     evidence.mkdir(parents=True, exist_ok=True)
@@ -1655,17 +1661,29 @@ def execute_experiment(base_rig: str, bead_id: str, lease: dict[str, Any],
     if result["verdict"] in {"FAIL", "NOT_PROVEN"}:
         rescope_bead = require_string(final_meta.get("factory.rescope_bead"), "factory.rescope_bead")
         result["rescope_bead"] = rescope_bead
-        attempt = int(meta.get("factory.attempt", "1"))
-        if attempt < max_attempts:
+        rescope_phase = metadata(Beads(base_rig).show(rescope_bead)).get("factory.status")
+        if rescope_phase in {"mayor_required", "successor_preparing", "successor_admitted"}:
             rescope_result = rescope_rejection(base_rig, rescope_bead, timeout)
             result["successor_bead"] = rescope_result["successor_bead"]
-        else:
-            Beads(base_rig).update_metadata(rescope_bead, {
-                "factory.status": "hold",
-                "factory.hold_reason": f"automatic rescope stopped at attempt {attempt} of {max_attempts}",
-            })
+        elif rescope_phase == "hold":
             result["hold"] = True
+        else:
+            raise FactoryError("invalid_rescope", f"rejected experiment produced rescope phase {rescope_phase!r}")
     return result
+
+
+def lease_snapshot(bead_id: str, meta: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "bead": bead_id,
+        "branch": require_string(meta.get("factory.branch"), "factory.branch"),
+        "worktree": str(absolute_path(meta.get("factory.worktree"), "factory.worktree", True, True)),
+        "git_index": require_string(meta.get("factory.git_index"), "factory.git_index"),
+        "lease_token": require_string(meta.get("factory.lease_token"), "factory.lease_token"),
+        "fence_epoch": int(meta.get("factory.fence_epoch", "0")),
+        "candidate_base_sha": require_string(meta.get("factory.candidate_base_sha"), "factory.candidate_base_sha", SHA_RE),
+        "predecessor_beads": metadata_list(meta, "factory.predecessor_beads"),
+        "predecessor_shas": metadata_list(meta, "factory.predecessor_shas"),
+    }
 
 
 def command_execute(args: argparse.Namespace) -> int:
@@ -1679,17 +1697,60 @@ def command_execute(args: argparse.Namespace) -> int:
     program_meta = metadata(program)
     if program_meta.get("factory.kind") != "program":
         raise FactoryError("not_program", f"{args.program_bead} is not a factory program bead")
+    stored_max_attempts = program_meta.get("factory.max_attempts")
+    if stored_max_attempts is not None and int(stored_max_attempts) != args.max_attempts:
+        raise FactoryError("attempt_policy_mismatch", "program max-attempt policy changed after execution began")
+    beads.update_metadata(args.program_bead, {"factory.max_attempts": str(args.max_attempts)})
+    program_meta["factory.max_attempts"] = str(args.max_attempts)
     waves: list[list[dict[str, Any]]] = []
+    recoveries: list[dict[str, Any]] = []
     selected = set(args.bead or [])
     while True:
         ready = beads.ready_ids()
         records = beads.list_program(args.program_bead)
+        pending_rescopes = sorted(
+            (
+                record for record in records
+                if record.get("status") == "open"
+                and metadata(record).get("factory.kind") == "rescope"
+                and metadata(record).get("factory.status") == "mayor_required"
+            ),
+            key=lambda item: str(item.get("id")),
+        )
+        for rescope in pending_rescopes:
+            rescope_meta = metadata(rescope)
+            rejected_bead = require_string(rescope_meta.get("factory.rejected_bead"), "factory.rejected_bead")
+            if selected and rejected_bead not in selected and str(rescope.get("id")) not in selected:
+                continue
+            rejected_meta = metadata(beads.show(rejected_bead))
+            attempt = int(rejected_meta.get("factory.attempt", "1"))
+            maximum = int(rejected_meta.get("factory.max_attempts", program_meta["factory.max_attempts"]))
+            if attempt >= maximum:
+                beads.update_metadata(str(rescope["id"]), {
+                    "factory.status": "hold",
+                    "factory.hold_reason": f"automatic rescope stopped at attempt {attempt} of {maximum}",
+                })
+                recoveries.append({"rescope_bead": str(rescope["id"]), "status": "hold"})
+                continue
+            rescope_result = rescope_rejection(args.rig, str(rescope["id"]), args.timeout)
+            recoveries.append({**rescope_result, "status": "successor_admitted"})
+            if selected and (rejected_bead in selected or str(rescope.get("id")) in selected):
+                selected.add(rescope_result["successor_bead"])
+        if pending_rescopes:
+            ready = beads.ready_ids()
+            records = beads.list_program(args.program_bead)
         runnable = []
         for record in records:
             meta = metadata(record)
-            if meta.get("factory.kind") != "experiment" or meta.get("factory.status") not in {"admitted", "ready"}:
+            phase = meta.get("factory.status")
+            if meta.get("factory.kind") != "experiment" or phase not in {
+                "admitted", "ready", "lease_preparing", "leased",
+                "passed", "rejection_preparing", "rejected",
+            }:
                 continue
-            if record.get("id") not in ready:
+            if record.get("status") == "closed":
+                continue
+            if phase in {"admitted", "ready"} and record.get("id") not in ready:
                 continue
             if selected and record.get("id") not in selected:
                 continue
@@ -1701,7 +1762,24 @@ def command_execute(args: argparse.Namespace) -> int:
         prepared = []
         for record in runnable:
             bead_id = str(record["id"])
-            lease = lease_experiment(args.rig, bead_id, worktree_root)
+            meta = metadata(record)
+            stored = meta.get("factory.max_attempts")
+            if stored is not None and int(stored) != args.max_attempts:
+                raise FactoryError("attempt_policy_mismatch", f"experiment {bead_id} max-attempt policy changed")
+            beads.update_metadata(bead_id, {"factory.max_attempts": str(args.max_attempts)})
+            if meta.get("factory.status") == "lease_preparing":
+                preparing_worktree = absolute_path(meta.get("factory.worktree"), "factory.worktree")
+                try:
+                    preparing_root = preparing_worktree.parents[1]
+                except IndexError as exc:
+                    raise FactoryError("invalid_contract", "preparing worktree has no factory root") from exc
+                lease_experiment(args.rig, bead_id, preparing_root)
+                record = beads.show(bead_id)
+                meta = metadata(record)
+            if meta.get("factory.status") in {"leased", "passed", "rejection_preparing", "rejected"}:
+                lease = lease_snapshot(bead_id, meta)
+            else:
+                lease = lease_experiment(args.rig, bead_id, worktree_root)
             candidate_rig, binding = register_candidate_rig(lease, record)
             beads.update_metadata(bead_id, {
                 "factory.candidate_rig": candidate_rig,
@@ -1735,9 +1813,10 @@ def command_execute(args: argparse.Namespace) -> int:
         "program_bead": args.program_bead,
         "waves": waves,
         "executed": sum(len(wave) for wave in waves),
+        "reconciled": recoveries,
         "refinery_ready": program_meta.get("factory.refinery_bead") in beads.ready_ids(),
     }
-    if not waves:
+    if not waves and not recoveries:
         raise FactoryError("no_ready_experiments", "program has no admitted ready experiment beads")
     if args.result:
         write_json_atomic(absolute_path(args.result, "result"), result)
@@ -1760,17 +1839,7 @@ def command_resume_experiment(args: argparse.Namespace) -> int:
         lease_experiment(args.rig, args.bead, worktree_root)
         record = beads.show(args.bead)
         meta = metadata(record)
-    lease = {
-        "bead": args.bead,
-        "branch": require_string(meta.get("factory.branch"), "factory.branch"),
-        "worktree": str(absolute_path(meta.get("factory.worktree"), "factory.worktree", True, True)),
-        "git_index": require_string(meta.get("factory.git_index"), "factory.git_index"),
-        "lease_token": require_string(meta.get("factory.lease_token"), "factory.lease_token"),
-        "fence_epoch": int(meta.get("factory.fence_epoch", "0")),
-        "candidate_base_sha": require_string(meta.get("factory.candidate_base_sha"), "factory.candidate_base_sha", SHA_RE),
-        "predecessor_beads": metadata_list(meta, "factory.predecessor_beads"),
-        "predecessor_shas": metadata_list(meta, "factory.predecessor_shas"),
-    }
+    lease = lease_snapshot(args.bead, meta)
     candidate_rig, binding = register_candidate_rig(lease, record)
     beads.update_metadata(args.bead, {
         "factory.candidate_rig": candidate_rig,
@@ -1882,6 +1951,9 @@ def command_record_verdict(args: argparse.Namespace) -> int:
         return 0
 
     refinery = require_string(meta.get("factory.refinery_bead"), "factory.refinery_bead")
+    attempt = int(meta.get("factory.attempt", "1"))
+    max_attempts = int(meta.get("factory.max_attempts", "3"))
+    at_ceiling = attempt >= max_attempts
     rescope_meta = {
         "factory.kind": "rescope",
         "factory.schema": "fenced-steward.v1",
@@ -1889,14 +1961,20 @@ def command_record_verdict(args: argparse.Namespace) -> int:
         "factory.program_bead": meta["factory.program_bead"],
         "factory.refinery_bead": refinery,
         "factory.rejected_bead": args.bead,
+        "factory.attempt": str(attempt),
+        "factory.max_attempts": str(max_attempts),
         "factory.verdict": result,
         "factory.verdict_path": str(verdict_path),
         "factory.verdict_digest": digest_file(verdict_path),
-        "factory.status": "mayor_required",
+        "factory.status": "hold" if at_ceiling else "mayor_required",
         "factory.rig": require_string(meta.get("factory.rig"), "factory.rig"),
         "factory.binding": require_string(meta.get("factory.binding"), "factory.binding", ID_RE),
         "factory.adapter_path": require_string(meta.get("factory.adapter_path"), "factory.adapter_path"),
     }
+    if at_ceiling:
+        rescope_meta["factory.hold_reason"] = (
+            f"automatic rescope stopped at attempt {attempt} of {max_attempts}"
+        )
     preparing = {**common, "factory.status": "rejection_preparing"}
     beads.update_metadata(args.bead, preparing)
     program_records = beads.list_program(meta["factory.program_bead"])
@@ -1913,6 +1991,13 @@ def command_record_verdict(args: argparse.Namespace) -> int:
         for key in ("factory.program_id", "factory.program_bead", "factory.refinery_bead", "factory.verdict_digest"):
             if existing_rescope_meta.get(key) != rescope_meta[key]:
                 raise FactoryError("rescope_identity_mismatch", f"existing rescope {key} differs from the rejected bead")
+        if at_ceiling and existing_rescope_meta.get("factory.status") != "hold":
+            beads.update_metadata(rescope, {
+                "factory.status": "hold",
+                "factory.attempt": str(attempt),
+                "factory.max_attempts": str(max_attempts),
+                "factory.hold_reason": rescope_meta["factory.hold_reason"],
+            })
     else:
         rescope = beads.create(
             f"Mayor rescope after {result}: {meta['factory.node_id']}",
@@ -1953,6 +2038,19 @@ def program_by_node(records: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:
     return result
 
 
+def reconcile_rescope_transport(rescope_meta: dict[str, Any], rescope_bead: str,
+                                successor_bead: str) -> None:
+    transport = rescope_meta.get("factory.rescope_transport_bead")
+    if not transport:
+        return
+    Beads(None).update_metadata(require_string(transport, "factory.rescope_transport_bead"), {
+        "factory.program_bead": require_string(rescope_meta.get("factory.program_bead"), "factory.program_bead"),
+        "factory.rescope_bead": rescope_bead,
+        "factory.rejected_bead": require_string(rescope_meta.get("factory.rejected_bead"), "factory.rejected_bead"),
+        "factory.successor_bead": successor_bead,
+    })
+
+
 def rescope_rejection(rig: str, rescope_bead: str, timeout: float) -> dict[str, Any]:
     beads = Beads(rig)
     rescope = beads.show(rescope_bead)
@@ -1978,6 +2076,7 @@ def rescope_rejection(rig: str, rescope_bead: str, timeout: float) -> dict[str, 
                     rescope_bead=rescope_bead,
                     proposal=str(proposal_path),
                 ))
+        reconcile_rescope_transport(metadata(beads.show(rescope_bead)), rescope_bead, successor_id)
         return {
             "rescope_bead": rescope_bead,
             "successor_bead": successor_id,
@@ -1998,9 +2097,11 @@ def rescope_rejection(rig: str, rescope_bead: str, timeout: float) -> dict[str, 
                 proposal=str(proposal_path),
             ))
         refreshed = metadata(beads.show(rescope_bead))
+        successor_id = require_string(refreshed.get("factory.successor_bead"), "factory.successor_bead")
+        reconcile_rescope_transport(refreshed, rescope_bead, successor_id)
         return {
             "rescope_bead": rescope_bead,
-            "successor_bead": require_string(refreshed.get("factory.successor_bead"), "factory.successor_bead"),
+            "successor_bead": successor_id,
             "transport_bead": refreshed.get("factory.rescope_transport_bead"),
             "mayor_context_id": refreshed.get("factory.rescope_mayor_context_id"),
         }
@@ -2094,12 +2195,7 @@ def rescope_rejection(rig: str, rescope_bead: str, timeout: float) -> dict[str, 
         ))
     refreshed = metadata(beads.show(rescope_bead))
     successor = require_string(refreshed.get("factory.successor_bead"), "factory.successor_bead")
-    Beads(None).update_metadata(mayor["work_bead"], {
-        "factory.program_bead": program_bead,
-        "factory.rescope_bead": rescope_bead,
-        "factory.rejected_bead": rejected_bead,
-        "factory.successor_bead": successor,
-    })
+    reconcile_rescope_transport(refreshed, rescope_bead, successor)
     return {
         "rescope_bead": rescope_bead,
         "successor_bead": successor,

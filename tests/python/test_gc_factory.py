@@ -401,6 +401,151 @@ class FactoryTests(unittest.TestCase):
         self.assertEqual(recovered["fence_epoch"], first["fence_epoch"])
         self.assertEqual(record["metadata"]["factory.status"], "leased")
 
+    def test_program_execute_recovers_an_already_leased_experiment(self) -> None:
+        beads, record, _verdict_args = self.leased_experiment("PASS")
+        record["metadata"].update({
+            "factory.branch": "candidate-pass",
+            "factory.git_index": str(self.repo / ".git" / "worktrees" / "candidate-pass" / "index"),
+        })
+        beads.records["bd-program"] = {
+            "id": "bd-program", "status": "open",
+            "metadata": {
+                "factory.kind": "program", "factory.refinery_bead": "bd-refinery",
+            },
+        }
+        args = types.SimpleNamespace(
+            rig="repo", program_bead="bd-program", bead=[],
+            worktree_root=str(self.root / "unused-worktrees"), max_parallel=1,
+            max_attempts=3, timeout=30, result=None,
+        )
+
+        def recovered_execute(*_args, **_kwargs):
+            record["metadata"]["factory.status"] = "passed"
+            record["status"] = "closed"
+            return {
+                "bead": "bd-experiment", "node_id": "alpha", "verdict": "PASS",
+                "candidate_rig": "fx-alpha", "branch": "candidate-pass",
+                "candidate_sha": factory.git_head(Path(record["metadata"]["factory.worktree"])),
+                "implementer_context_id": "author", "validator_context_id": "validator",
+            }
+
+        with (
+            mock.patch.dict(factory.os.environ, {
+                "GC_CITY_PATH": str(self.root / "city"), "GC_BIN": "/usr/bin/true",
+            }, clear=False),
+            mock.patch.object(factory, "Beads", return_value=beads),
+            mock.patch.object(factory, "lease_experiment") as lease,
+            mock.patch.object(factory, "register_candidate_rig", return_value=("fx-alpha", "factory")),
+            mock.patch.object(factory, "execute_experiment", side_effect=recovered_execute),
+            contextlib.redirect_stdout(io.StringIO()) as stdout,
+        ):
+            self.assertEqual(factory.command_execute(args), 0)
+
+        lease.assert_not_called()
+        result = json.loads(stdout.getvalue())
+        self.assertEqual(result["executed"], 1)
+        self.assertEqual(result["waves"][0][0]["bead"], "bd-experiment")
+
+    def test_program_execute_recovers_an_open_verdict_reducer_phase(self) -> None:
+        beads, record, _verdict_args = self.leased_experiment("FAIL")
+        record["metadata"].update({
+            "factory.status": "rejection_preparing",
+            "factory.branch": "candidate-fail",
+            "factory.git_index": str(self.repo / ".git" / "index"),
+            "factory.max_attempts": "3",
+        })
+        beads.records["bd-program"] = {
+            "id": "bd-program", "status": "open",
+            "metadata": {
+                "factory.kind": "program", "factory.refinery_bead": "bd-refinery",
+            },
+        }
+        args = types.SimpleNamespace(
+            rig="repo", program_bead="bd-program", bead=[],
+            worktree_root=str(self.root / "unused-worktrees"), max_parallel=1,
+            max_attempts=3, timeout=30, result=None,
+        )
+
+        def recover_reducer(*_args, **_kwargs):
+            record["metadata"]["factory.status"] = "rejected"
+            record["status"] = "closed"
+            return {"bead": "bd-experiment", "node_id": "alpha", "verdict": "FAIL"}
+
+        with (
+            mock.patch.object(factory, "Beads", return_value=beads),
+            mock.patch.object(factory, "lease_experiment") as lease,
+            mock.patch.object(factory, "register_candidate_rig", return_value=("fx-alpha", "factory")),
+            mock.patch.object(factory, "execute_experiment", side_effect=recover_reducer),
+            contextlib.redirect_stdout(io.StringIO()) as stdout,
+        ):
+            self.assertEqual(factory.command_execute(args), 0)
+
+        lease.assert_not_called()
+        result = json.loads(stdout.getvalue())
+        self.assertEqual(result["executed"], 1)
+        self.assertEqual(record["status"], "closed")
+
+    def test_program_execute_recovers_a_mayor_required_rescope_then_runs_successor(self) -> None:
+        beads, rejected, verdict_args = self.leased_experiment("FAIL")
+        beads.records["bd-program"] = {
+            "id": "bd-program", "status": "open",
+            "metadata": {
+                "factory.kind": "program", "factory.refinery_bead": "bd-refinery",
+            },
+        }
+        with mock.patch.object(factory, "Beads", return_value=beads), contextlib.redirect_stdout(io.StringIO()):
+            self.assertEqual(factory.command_record_verdict(verdict_args), 0)
+        rescope_bead = rejected["metadata"]["factory.rescope_bead"]
+        successor = {
+            "id": "bd-successor", "status": "open",
+            "metadata": {
+                "factory.kind": "experiment", "factory.status": "admitted",
+                "factory.program_bead": "bd-program", "factory.node_id": "alpha-v2",
+            },
+        }
+
+        def recover_rescope(_rig, bead_id, _timeout):
+            self.assertEqual(bead_id, rescope_bead)
+            beads.records[rescope_bead]["metadata"]["factory.status"] = "successor_admitted"
+            beads.records[rescope_bead]["status"] = "closed"
+            beads.records["bd-successor"] = successor
+            beads.ready.add("bd-successor")
+            return {
+                "rescope_bead": rescope_bead, "successor_bead": "bd-successor",
+                "transport_bead": "hq-rescope", "mayor_context_id": "fresh-mayor",
+            }
+
+        def run_successor(*_args, **_kwargs):
+            successor["metadata"]["factory.status"] = "passed"
+            successor["status"] = "closed"
+            return {"bead": "bd-successor", "node_id": "alpha-v2", "verdict": "PASS"}
+
+        args = types.SimpleNamespace(
+            rig="repo", program_bead="bd-program", bead=[],
+            worktree_root=str(self.root / "recovery-worktrees"), max_parallel=1,
+            max_attempts=3, timeout=30, result=None,
+        )
+        lease = {
+            "bead": "bd-successor", "branch": "candidate-successor",
+            "worktree": str(self.repo), "git_index": str(self.repo / ".git" / "index"),
+            "lease_token": "lease", "fence_epoch": 1,
+            "candidate_base_sha": self.base_sha, "predecessor_beads": [], "predecessor_shas": [],
+        }
+        with (
+            mock.patch.object(factory, "Beads", return_value=beads),
+            mock.patch.object(factory, "rescope_rejection", side_effect=recover_rescope) as rescope,
+            mock.patch.object(factory, "lease_experiment", return_value=lease),
+            mock.patch.object(factory, "register_candidate_rig", return_value=("fx-successor", "factory")),
+            mock.patch.object(factory, "execute_experiment", side_effect=run_successor),
+            contextlib.redirect_stdout(io.StringIO()) as stdout,
+        ):
+            self.assertEqual(factory.command_execute(args), 0)
+
+        rescope.assert_called_once()
+        result = json.loads(stdout.getvalue())
+        self.assertEqual(result["executed"], 1)
+        self.assertEqual(result["reconciled"][0]["status"], "successor_admitted")
+
     def test_dependent_bead_starts_from_admitted_predecessor_content(self) -> None:
         alpha_tree = self.root / "alpha-candidate"
         git(self.repo, "worktree", "add", "-b", "alpha-candidate", str(alpha_tree), self.base_sha)
@@ -583,6 +728,41 @@ class FactoryTests(unittest.TestCase):
             self.assertEqual(factory.command_record_verdict(args), 0)
         self.assertEqual(sum(event[:2] == ("close", "bd-experiment") for event in beads.events), close_count)
 
+    def test_attempt_ceiling_is_persisted_on_rescope_before_rejected_experiment_closes(self) -> None:
+        beads, record, args = self.leased_experiment("FAIL")
+        record["metadata"]["factory.attempt"] = "3"
+        record["metadata"]["factory.max_attempts"] = "3"
+
+        with mock.patch.object(factory, "Beads", return_value=beads), contextlib.redirect_stdout(io.StringIO()):
+            self.assertEqual(factory.command_record_verdict(args), 0)
+
+        rescope = beads.records[record["metadata"]["factory.rescope_bead"]]
+        self.assertEqual(rescope["metadata"]["factory.status"], "hold")
+        self.assertIn("attempt 3 of 3", rescope["metadata"]["factory.hold_reason"])
+        self.assertEqual(record["status"], "closed")
+
+    def test_attempt_ceiling_repairs_an_existing_mayor_required_rescope_to_hold(self) -> None:
+        beads, record, args = self.leased_experiment("FAIL")
+        record["metadata"].update({"factory.attempt": "3", "factory.max_attempts": "3"})
+        verdict_digest = hashlib.sha256(Path(args.verdict).read_bytes()).hexdigest()
+        beads.records["rescope-old"] = {
+            "id": "rescope-old", "status": "open",
+            "metadata": {
+                "factory.kind": "rescope", "factory.status": "mayor_required",
+                "factory.program_id": "factory-test", "factory.program_bead": "bd-program",
+                "factory.refinery_bead": "bd-refinery", "factory.rejected_bead": "bd-experiment",
+                "factory.verdict_digest": verdict_digest,
+            },
+        }
+
+        with mock.patch.object(factory, "Beads", return_value=beads), contextlib.redirect_stdout(io.StringIO()):
+            self.assertEqual(factory.command_record_verdict(args), 0)
+
+        rescope = beads.records["rescope-old"]["metadata"]
+        self.assertEqual(rescope["factory.status"], "hold")
+        self.assertEqual(rescope["factory.max_attempts"], "3")
+        self.assertIn("attempt 3 of 3", rescope["factory.hold_reason"])
+
     def test_rejection_creates_refinery_blocking_rescope_bead_before_closure(self) -> None:
         beads, record, args = self.leased_experiment("NOT_PROVEN")
         beads.records["bd-dependent"] = {
@@ -668,6 +848,7 @@ class FactoryTests(unittest.TestCase):
             rescope_record["metadata"]["factory.status"] = "successor_preparing"
             rescope_record["metadata"].pop("factory.successor_bead")
             record["metadata"].pop("factory.successor_bead")
+            hq.records["hq-rescope"]["metadata"].clear()
             replayed = factory.rescope_rejection("repo", rescope_bead, 10)
 
         successor_bead = result["successor_bead"]
@@ -963,6 +1144,76 @@ class FactoryTests(unittest.TestCase):
             contextlib.redirect_stdout(io.StringIO()),
         ):
             self.assertEqual(factory.command_refinery_run_validation(args), 0)
+
+    def test_reassembled_epoch_registers_a_new_rig_before_fresh_validation(self) -> None:
+        integration = self.root / "integration-epoch-2"
+        git(self.repo, "worktree", "add", "-b", "integration-epoch-2", str(integration), self.base_sha)
+        evidence = integration / ".gc" / "agentops-factory" / "bd-refinery"
+        evidence.mkdir(parents=True)
+        baseline = evidence / "baseline.json"
+        subject = evidence / "subject.json"
+        scope = evidence / "scope.json"
+        baseline.write_text("{}\n", encoding="utf-8")
+        subject.write_text(json.dumps({"canonical_manifest_digest": "8" * 64}) + "\n", encoding="utf-8")
+        scope.write_text("{}\n", encoding="utf-8")
+        refinery = {
+            "id": "bd-refinery", "status": "open",
+            "metadata": {
+                "factory.kind": "refinery", "factory.status": "validation_required",
+                "factory.binding": "factory", "factory.program_bead": "bd-program",
+                "factory.intent_digest": hashlib.sha256(self.intent.read_bytes()).hexdigest(),
+                "factory.fence_epoch": "2", "factory.fence_token": "epoch-2-token",
+                "factory.integration_sha": self.base_sha,
+                "factory.integration_worktree": str(integration),
+                "factory.integration_branch": "gc/integration/factory-test/1/2",
+                "factory.integration_subject": json.dumps({"includes": ["README.md"], "excludes": []}),
+                "factory.integration_baseline_manifest": str(baseline),
+                "factory.integration_subject_manifest": str(subject),
+                "factory.integration_scope_receipt": str(scope),
+            },
+        }
+        program = {
+            "id": "bd-program", "status": "open",
+            "metadata": {"factory.intent_source": str(self.intent)},
+        }
+        beads = FakeBeads({"bd-refinery": refinery, "bd-program": program})
+        old_rig = {
+            "name": "fx-refinery-bd-refinery-1",
+            "path": str(self.root / "integration-epoch-1"),
+        }
+
+        def run_packet(packet_path: Path, rig: str, binding: str, timeout: float) -> dict:
+            self.assertEqual(rig, "fx-refinery-bd-refinery-2")
+            self.assertEqual(binding, "factory")
+            packet = json.loads(packet_path.read_text(encoding="utf-8"))
+            verdict = Path(packet["evidence_dir"]) / "verdict.v2.json"
+            verdict.parent.mkdir(parents=True, exist_ok=True)
+            verdict.write_text(json.dumps({"verdict": "PASS"}) + "\n", encoding="utf-8")
+            return {
+                "transport": {"session_context_id": "epoch-2-validator"},
+                "agent_response": {"artifacts": [{"path": str(verdict)}]},
+            }
+
+        args = types.SimpleNamespace(
+            rig="repo", refinery_bead="bd-refinery", provider="claude", timeout=30,
+        )
+        with (
+            mock.patch.dict(factory.os.environ, {
+                "GC_CITY_PATH": str(self.root / "city"), "GC_BIN": "/usr/bin/true",
+            }, clear=False),
+            mock.patch.object(factory, "Beads", return_value=beads),
+            mock.patch.object(factory, "city_config_lock", return_value=contextlib.nullcontext()),
+            mock.patch.object(factory, "configured_rigs", return_value=[old_rig]),
+            mock.patch.object(factory, "add_gc_rig_with_local_origin", return_value={"ok": True}) as add_rig,
+            mock.patch.object(factory, "enforce_rig_agent_policy"),
+            mock.patch.object(factory, "restore_rig_scaffolding"),
+            mock.patch.object(factory, "run_executor_packet", side_effect=run_packet),
+            mock.patch.object(factory, "command_refinery_validate", return_value=0),
+            contextlib.redirect_stdout(io.StringIO()),
+        ):
+            self.assertEqual(factory.command_refinery_run_validation(args), 0)
+
+        self.assertIn("fx-refinery-bd-refinery-2", add_rig.call_args.args[1])
 
     def test_refinery_deliver_resumes_at_the_recorded_bead_phase(self) -> None:
         refinery = {

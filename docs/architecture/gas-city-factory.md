@@ -225,6 +225,15 @@ the controller restarted. Packet transport/result JSON and graph, verdict,
 admission, and delivery JSON are digest-bound evidence referenced by beads; they
 are not a second factory lifecycle machine.
 
+Rerunning `program execute` reduces any open `lease_preparing`, `leased`,
+`passed`, `rejection_preparing`, or `rejected` experiment before selecting new
+Ready work, and routes a recovered `mayor_required` rescope before admitting
+its successor. The chosen
+`max_attempts` policy is persisted on the program and experiment before work;
+the verdict reducer writes an at-ceiling rescope directly to `hold`, so a crash
+cannot accidentally make another automatic attempt dispatchable. Operator
+`rescope` remains the explicit override for that held bead.
+
 ### Worker pools
 
 Codex and Claude workers are fresh, fungible, and horizontally scalable. Each
@@ -335,8 +344,9 @@ in v1.
 If `main` moves, Refinery marks the bead `reassembly_required`, allocates a new
 fence epoch and integration worktree from the current protected base, replays
 the exact admitted candidate deltas, reruns checks, invalidates stale semantic
-validation, and obtains a fresh exact-head certificate. Semantic CI or review
-failure returns evidence to the Mayor rather than triggering hidden repair.
+validation, registers an epoch-specific integration rig, and obtains a fresh
+exact-head certificate. Semantic CI or review failure returns evidence to the
+Mayor rather than triggering hidden repair.
 
 ### 8. Record delivery
 
