@@ -2545,11 +2545,95 @@ func clearConfigEnv(t *testing.T) {
 	t.Setenv("AGENTOPS_NO_SC", "")
 }
 
+func isolateLegacyWarnings(t *testing.T) {
+	t.Helper()
+	legacyWarnedMu.Lock()
+	previous := legacyWarned
+	legacyWarned = map[string]bool{}
+	legacyWarnedMu.Unlock()
+	t.Cleanup(func() {
+		legacyWarnedMu.Lock()
+		legacyWarned = previous
+		legacyWarnedMu.Unlock()
+	})
+}
+
+func TestWithLegacyFallback_WarnsOncePerPathConcurrently(t *testing.T) {
+	isolateLegacyWarnings(t)
+	root := t.TempDir()
+	firstNew := filepath.Join(root, "first", ".agents", "ao", "config.yaml")
+	firstLegacy := filepath.Join(root, "first", ".agentops", "config.yaml")
+	secondNew := filepath.Join(root, "second", ".agents", "ao", "config.yaml")
+	secondLegacy := filepath.Join(root, "second", ".agentops", "config.yaml")
+	for _, path := range []string{firstLegacy, secondLegacy} {
+		if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+			t.Fatalf("mkdir legacy config dir: %v", err)
+		}
+		if err := os.WriteFile(path, []byte("output: json\n"), 0o644); err != nil {
+			t.Fatalf("write legacy config: %v", err)
+		}
+	}
+
+	originalStderr := os.Stderr
+	reader, writer, err := os.Pipe()
+	if err != nil {
+		t.Fatalf("create stderr pipe: %v", err)
+	}
+	os.Stderr = writer
+	t.Cleanup(func() {
+		os.Stderr = originalStderr
+		_ = reader.Close()
+		_ = writer.Close()
+	})
+
+	const readers = 32
+	results := make(chan string, readers)
+	start := make(chan struct{})
+	var group sync.WaitGroup
+	for range readers {
+		group.Add(1)
+		go func() {
+			defer group.Done()
+			<-start
+			results <- withLegacyFallback(firstNew, firstLegacy)
+		}()
+	}
+	close(start)
+	group.Wait()
+	close(results)
+	for got := range results {
+		if got != firstLegacy {
+			t.Errorf("withLegacyFallback() = %q, want %q", got, firstLegacy)
+		}
+	}
+	if got := withLegacyFallback(secondNew, secondLegacy); got != secondLegacy {
+		t.Errorf("second withLegacyFallback() = %q, want %q", got, secondLegacy)
+	}
+	if got := withLegacyFallback(secondNew, secondLegacy); got != secondLegacy {
+		t.Errorf("repeated second withLegacyFallback() = %q, want %q", got, secondLegacy)
+	}
+
+	if err := writer.Close(); err != nil {
+		t.Fatalf("close stderr writer: %v", err)
+	}
+	os.Stderr = originalStderr
+	warnings, err := io.ReadAll(reader)
+	if err != nil {
+		t.Fatalf("read warnings: %v", err)
+	}
+	want := "Warning: reading deprecated config path " + firstLegacy + "; move it to " + firstNew + "\n" +
+		"Warning: reading deprecated config path " + secondLegacy + "; move it to " + secondNew + "\n"
+	if string(warnings) != want {
+		t.Errorf("legacy warnings = %q, want %q", string(warnings), want)
+	}
+}
+
 // TestLoad_LegacyHomeConfigFallback pins the 3.3 migration contract: with no
 // config at ~/.agents/ao/config.yaml, a legacy ~/.agentops/config.yaml is
 // still read; once the new path exists it wins and the legacy file is ignored.
 func TestLoad_LegacyHomeConfigFallback(t *testing.T) {
 	clearConfigEnv(t)
+	isolateLegacyWarnings(t)
 	home := t.TempDir()
 	t.Setenv("HOME", home)
 	t.Chdir(t.TempDir())
@@ -2592,6 +2676,7 @@ func TestLoad_LegacyHomeConfigFallback(t *testing.T) {
 // is absent, and the new path wins once present.
 func TestLoad_LegacyProjectConfigFallback(t *testing.T) {
 	clearConfigEnv(t)
+	isolateLegacyWarnings(t)
 	t.Setenv("HOME", t.TempDir())
 	project := t.TempDir()
 	t.Chdir(project)
@@ -2626,11 +2711,13 @@ func TestLoad_LegacyProjectConfigFallback(t *testing.T) {
 	}
 }
 
-// TestSave_WritesNewPathNotLegacy pins that writes never target the legacy
-// location: Save with only ./.agentops/config.yaml present creates
-// ./.agents/ao/config.yaml and leaves the legacy file untouched.
-func TestSave_WritesNewPathNotLegacy(t *testing.T) {
+// TestSave_MigratesLegacyProjectConfigToNewPath pins that the first write after
+// upgrading preserves fields from the legacy project config while writing only
+// the new path. The new file becomes authoritative immediately, so failing to
+// merge the legacy bytes would silently reset every field not in the update.
+func TestSave_MigratesLegacyProjectConfigToNewPath(t *testing.T) {
 	clearConfigEnv(t)
+	isolateLegacyWarnings(t)
 	t.Setenv("HOME", t.TempDir())
 	project := t.TempDir()
 	t.Chdir(project)
@@ -2639,27 +2726,44 @@ func TestSave_WritesNewPathNotLegacy(t *testing.T) {
 	if err := os.MkdirAll(filepath.Dir(legacy), 0o755); err != nil {
 		t.Fatalf("mkdir legacy cfg: %v", err)
 	}
-	if err := os.WriteFile(legacy, []byte("output: json\n"), 0o644); err != nil {
+	legacyBody := "output: json\nbase_dir: /legacy/base\n"
+	if err := os.WriteFile(legacy, []byte(legacyBody), 0o644); err != nil {
 		t.Fatalf("write legacy cfg: %v", err)
 	}
 
-	if err := Save(&Config{Output: "yaml"}); err != nil {
+	if err := Save(&Config{Models: ModelsConfig{DefaultTier: "quality"}}); err != nil {
 		t.Fatalf("Save() error = %v", err)
 	}
 
 	newPath := filepath.Join(project, ".agents", "ao", "config.yaml")
-	data, err := os.ReadFile(newPath)
+	newConfig, err := loadFromPath(newPath)
 	if err != nil {
-		t.Fatalf("Save must write the new path %s: %v", newPath, err)
+		t.Fatalf("load new config %s: %v", newPath, err)
 	}
-	if !strings.Contains(string(data), "output: yaml") {
-		t.Errorf("new config = %q, want it to contain %q", string(data), "output: yaml")
+	if newConfig.Output != "json" {
+		t.Errorf("new config Output = %q, want %q preserved from legacy", newConfig.Output, "json")
+	}
+	if newConfig.BaseDir != "/legacy/base" {
+		t.Errorf("new config BaseDir = %q, want %q preserved from legacy", newConfig.BaseDir, "/legacy/base")
+	}
+	if newConfig.Models.DefaultTier != "quality" {
+		t.Errorf("new config Models.DefaultTier = %q, want %q from update", newConfig.Models.DefaultTier, "quality")
 	}
 	legacyData, err := os.ReadFile(legacy)
 	if err != nil {
 		t.Fatalf("legacy config must remain untouched: %v", err)
 	}
-	if string(legacyData) != "output: json\n" {
+	if string(legacyData) != legacyBody {
 		t.Errorf("legacy config mutated to %q; Save must not write the legacy path", string(legacyData))
+	}
+
+	effective, err := Load(nil)
+	if err != nil {
+		t.Fatalf("Load() after Save error = %v", err)
+	}
+	if effective.Output != "json" || effective.BaseDir != "/legacy/base" || effective.Models.DefaultTier != "quality" {
+		t.Errorf("effective config after Save = Output %q, BaseDir %q, Models.DefaultTier %q; want %q, %q, %q",
+			effective.Output, effective.BaseDir, effective.Models.DefaultTier,
+			"json", "/legacy/base", "quality")
 	}
 }

@@ -12,6 +12,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 
 	"github.com/boshu2/agentops/cli/internal/storage"
 	"gopkg.in/yaml.v3"
@@ -418,7 +419,10 @@ func homeConfigPath() string {
 
 // legacyWarned tracks which legacy config paths already produced a
 // deprecation warning, so repeated loads in one process warn once per path.
-var legacyWarned = map[string]bool{}
+var (
+	legacyWarnedMu sync.Mutex
+	legacyWarned   = map[string]bool{}
+)
 
 // withLegacyFallback returns newPath when a file exists there. When it does
 // not and legacyPath holds a file, it returns legacyPath and warns once on
@@ -434,11 +438,20 @@ func withLegacyFallback(newPath, legacyPath string) string {
 	if _, err := os.Stat(legacyPath); err != nil {
 		return newPath
 	}
-	if !legacyWarned[legacyPath] {
-		legacyWarned[legacyPath] = true
-		fmt.Fprintf(os.Stderr, "Warning: reading deprecated config path %s; move it to %s\n", legacyPath, newPath)
-	}
+	warnLegacyConfigOnce(legacyPath, newPath)
 	return legacyPath
+}
+
+func warnLegacyConfigOnce(legacyPath, newPath string) {
+	legacyWarnedMu.Lock()
+	if legacyWarned[legacyPath] {
+		legacyWarnedMu.Unlock()
+		return
+	}
+	legacyWarned[legacyPath] = true
+	legacyWarnedMu.Unlock()
+
+	fmt.Fprintf(os.Stderr, "Warning: reading deprecated config path %s; move it to %s\n", legacyPath, newPath)
 }
 
 // homeConfigReadPath returns the home config path for reads, falling back to
@@ -458,17 +471,11 @@ func homeConfigReadPath() string {
 // back to the legacy ./.agentops/config.yaml location when the new path is
 // absent. An explicit AGENTOPS_CONFIG override is returned verbatim.
 func projectConfigReadPath() string {
-	if override := strings.TrimSpace(os.Getenv("AGENTOPS_CONFIG")); override != "" {
-		return override
+	newPath, legacyPath := projectConfigPaths()
+	if legacyPath == "" {
+		return newPath
 	}
-	cwd, err := getwdFunc()
-	if err != nil {
-		return ""
-	}
-	return withLegacyFallback(
-		filepath.Join(cwd, ".agents", "ao", "config.yaml"),
-		filepath.Join(cwd, ".agentops", "config.yaml"),
-	)
+	return withLegacyFallback(newPath, legacyPath)
 }
 
 // getwdFunc is the function used to get the current working directory.
@@ -477,14 +484,23 @@ var getwdFunc = os.Getwd
 
 // projectConfigPath returns the project config path.
 func projectConfigPath() string {
+	path, _ := projectConfigPaths()
+	return path
+}
+
+// projectConfigPaths returns the canonical write path and optional legacy read
+// fallback in one working-directory snapshot. An explicit AGENTOPS_CONFIG is
+// authoritative for both reads and writes and therefore has no fallback.
+func projectConfigPaths() (string, string) {
 	if override := strings.TrimSpace(os.Getenv("AGENTOPS_CONFIG")); override != "" {
-		return override
+		return override, ""
 	}
 	cwd, err := getwdFunc()
 	if err != nil {
-		return ""
+		return "", ""
 	}
-	return filepath.Join(cwd, ".agents", "ao", "config.yaml")
+	return filepath.Join(cwd, ".agents", "ao", "config.yaml"),
+		filepath.Join(cwd, ".agentops", "config.yaml")
 }
 
 // loadHomeConfig loads the home directory config, returning nil on error.
@@ -723,7 +739,7 @@ func mergePaths(dst, src *PathsConfig) {
 // Save writes the given config to the project config file.
 // It merges with existing config to preserve fields not being changed.
 func Save(cfg *Config) error {
-	path := projectConfigPath()
+	path, legacyPath := projectConfigPaths()
 	if path == "" {
 		return fmt.Errorf("determining project config path: could not resolve working directory")
 	}
@@ -734,7 +750,7 @@ func Save(cfg *Config) error {
 	}
 
 	return withConfigLock(path, func() error {
-		data, err := prepareSave(path, cfg)
+		data, err := prepareSave(path, legacyPath, cfg)
 		if err != nil {
 			return err
 		}
@@ -748,18 +764,22 @@ func Save(cfg *Config) error {
 // PreviewSave validates the exact read-merge-marshal path used by Save without
 // creating directories, locks, or files. A missing target is a valid new config.
 func PreviewSave(cfg *Config) error {
-	path := projectConfigPath()
+	path, legacyPath := projectConfigPaths()
 	if path == "" {
 		return fmt.Errorf("determining project config path: could not resolve working directory")
 	}
-	_, err := prepareSave(path, cfg)
+	_, err := prepareSave(path, legacyPath, cfg)
 	return err
 }
 
-func prepareSave(path string, cfg *Config) ([]byte, error) {
-	existing, err := loadFromPath(path)
+func prepareSave(path, legacyPath string, cfg *Config) ([]byte, error) {
+	readPath := path
+	if legacyPath != "" {
+		readPath = withLegacyFallback(path, legacyPath)
+	}
+	existing, err := loadFromPath(readPath)
 	if err != nil && !os.IsNotExist(err) {
-		return nil, fmt.Errorf("loading existing config %s: %w", path, err)
+		return nil, fmt.Errorf("loading existing config %s: %w", readPath, err)
 	}
 	if existing != nil {
 		existing = merge(existing, cfg)
