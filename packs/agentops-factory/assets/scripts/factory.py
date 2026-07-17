@@ -1722,8 +1722,9 @@ def command_execute(args: argparse.Namespace) -> int:
             rejected_bead = require_string(rescope_meta.get("factory.rejected_bead"), "factory.rejected_bead")
             if selected and rejected_bead not in selected and str(rescope.get("id")) not in selected:
                 continue
-            rejected_meta = metadata(beads.show(rejected_bead))
-            if rejected_meta.get("factory.status") != "rejected":
+            rejected_record = beads.show(rejected_bead)
+            rejected_meta = metadata(rejected_record)
+            if rejected_meta.get("factory.status") != "rejected" or rejected_record.get("status") != "closed":
                 if selected and str(rescope.get("id")) in selected:
                     selected.add(rejected_bead)
                 continue

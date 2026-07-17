@@ -237,7 +237,9 @@ cannot accidentally make another automatic attempt dispatchable. Operator
 If a rescope bead exists while its rejected experiment is still
 `rejection_preparing`, program execution reduces the experiment first. The
 Mayor cannot receive the rescope until the rejected experiment bead itself
-records the terminal `rejected` phase.
+records the terminal `rejected` phase and is closed. An open experiment with
+`factory.status=rejected` is still a reducer-recovery state, not dispatchable
+Mayor work.
 
 ### Worker pools
 
