@@ -59,8 +59,11 @@ before upgrading.
 ### Removed
 
 - Pawl admission, land/done/close, governor/converge/reconcile, claim/next-work,
-  state/worktree, membrane, semantic `ao validate`, and the Crank control plane.
-  Major public names return one-release non-mutating tombstones.
+  state/worktree, membrane, yield, constraint promotion, the 3.2 `ao verify`
+  front door, semantic `ao validate`, and the Crank control plane. Major public
+  names return one-release non-mutating tombstones; the full removed-surface
+  map with replacements is in
+  [docs/MIGRATION.md](https://github.com/boshu2/agentops/blob/main/docs/MIGRATION.md).
 - Discovery, behavior-first-planning, goal-design, Crank, delivery/controller,
   tracker-wrapper, and noncanonical mortem skill roots after their useful
   behavior was folded or retired.

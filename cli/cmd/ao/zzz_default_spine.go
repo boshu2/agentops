@@ -10,16 +10,18 @@ import (
 // defaultSpineCommands is the published CLI membership boundary. Optional
 // source packages do not become public commands merely by registering in tests.
 var defaultSpineCommands = map[string]struct{}{
-	"capabilities": {}, "config": {}, "constraint": {}, "doctor": {},
+	"capabilities": {}, "config": {}, "doctor": {},
 	"demo": {}, "flywheel": {}, "gate": {}, "goals": {},
 	"init": {}, "provenance": {}, "quick-start": {},
 	"redact": {}, "robot-docs": {}, "session": {}, "skills": {}, "status": {},
 	"version": {},
 	// One-release inert tombstones. These names do not restore lifecycle code.
+	// constraint is tombstoned in production like the rest; the test binary
+	// alone keeps its legacy registration (see init below).
 	"pawl": {}, "plan-pawl": {}, "land": {}, "done": {}, "close": {},
 	"governor": {}, "yield": {}, "claim": {}, "next-work": {}, "state": {},
 	"worktree": {}, "validate": {}, "converge": {}, "reconcile": {},
-	"membrane": {}, "crank": {}, "verify": {},
+	"membrane": {}, "crank": {}, "constraint": {}, "verify": {},
 }
 
 // defaultChildSpineCommands removes legacy controller behavior nested under a
