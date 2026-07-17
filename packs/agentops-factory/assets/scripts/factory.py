@@ -2221,8 +2221,12 @@ def command_successor(args: argparse.Namespace) -> int:
     rejected_meta = metadata(rejected)
     rescope = beads.show(args.rescope_bead)
     rescope_meta = metadata(rescope)
-    if rejected_meta.get("factory.status") != "rejected" or rejected_meta.get("factory.verdict") not in {"FAIL", "NOT_PROVEN"}:
-        raise FactoryError("invalid_successor", "successor source is not a rejected experiment")
+    if (
+        rejected_meta.get("factory.status") != "rejected"
+        or rejected_meta.get("factory.verdict") not in {"FAIL", "NOT_PROVEN"}
+        or rejected.get("status") != "closed"
+    ):
+        raise FactoryError("invalid_successor", "successor source is not a terminal closed rejected experiment")
     if rescope_meta.get("factory.rejected_bead") != args.rejected_bead or rescope.get("status") not in {"open", "closed"}:
         raise FactoryError("invalid_successor", "rescope bead does not own the rejected experiment")
     proposal_path = absolute_path(args.proposal, "proposal", True)
