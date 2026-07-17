@@ -234,6 +234,11 @@ the verdict reducer writes an at-ceiling rescope directly to `hold`, so a crash
 cannot accidentally make another automatic attempt dispatchable. Operator
 `rescope` remains the explicit override for that held bead.
 
+If a rescope bead exists while its rejected experiment is still
+`rejection_preparing`, program execution reduces the experiment first. The
+Mayor cannot receive the rescope until the rejected experiment bead itself
+records the terminal `rejected` phase.
+
 ### Worker pools
 
 Codex and Claude workers are fresh, fungible, and horizontally scalable. Each

@@ -1723,6 +1723,10 @@ def command_execute(args: argparse.Namespace) -> int:
             if selected and rejected_bead not in selected and str(rescope.get("id")) not in selected:
                 continue
             rejected_meta = metadata(beads.show(rejected_bead))
+            if rejected_meta.get("factory.status") != "rejected":
+                if selected and str(rescope.get("id")) in selected:
+                    selected.add(rejected_bead)
+                continue
             attempt = int(rejected_meta.get("factory.attempt", "1"))
             maximum = int(rejected_meta.get("factory.max_attempts", program_meta["factory.max_attempts"]))
             if attempt >= maximum:

@@ -460,6 +460,13 @@ class FactoryTests(unittest.TestCase):
                 "factory.kind": "program", "factory.refinery_bead": "bd-refinery",
             },
         }
+        beads.records["rescope-preparing"] = {
+            "id": "rescope-preparing", "status": "open",
+            "metadata": {
+                "factory.kind": "rescope", "factory.status": "mayor_required",
+                "factory.program_bead": "bd-program", "factory.rejected_bead": "bd-experiment",
+            },
+        }
         args = types.SimpleNamespace(
             rig="repo", program_bead="bd-program", bead=[],
             worktree_root=str(self.root / "unused-worktrees"), max_parallel=1,
@@ -469,6 +476,8 @@ class FactoryTests(unittest.TestCase):
         def recover_reducer(*_args, **_kwargs):
             record["metadata"]["factory.status"] = "rejected"
             record["status"] = "closed"
+            beads.records["rescope-preparing"]["metadata"]["factory.status"] = "successor_admitted"
+            beads.records["rescope-preparing"]["status"] = "closed"
             return {"bead": "bd-experiment", "node_id": "alpha", "verdict": "FAIL"}
 
         with (
@@ -476,11 +485,13 @@ class FactoryTests(unittest.TestCase):
             mock.patch.object(factory, "lease_experiment") as lease,
             mock.patch.object(factory, "register_candidate_rig", return_value=("fx-alpha", "factory")),
             mock.patch.object(factory, "execute_experiment", side_effect=recover_reducer),
+            mock.patch.object(factory, "rescope_rejection") as rescope,
             contextlib.redirect_stdout(io.StringIO()) as stdout,
         ):
             self.assertEqual(factory.command_execute(args), 0)
 
         lease.assert_not_called()
+        rescope.assert_not_called()
         result = json.loads(stdout.getvalue())
         self.assertEqual(result["executed"], 1)
         self.assertEqual(record["status"], "closed")
