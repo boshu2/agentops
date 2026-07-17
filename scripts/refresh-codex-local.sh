@@ -2,7 +2,7 @@
 set -euo pipefail
 
 # refresh-codex-local.sh — thin compatibility wrapper.
-# AgentOps 4 uses source links, not a Codex plugin cache refresh.
+# AgentOps 3.3 uses source links, not a Codex plugin cache refresh.
 # Prefer: ao skills link
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

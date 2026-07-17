@@ -398,7 +398,7 @@ run_codex_validation() {
     fi
 
     mkdir -p "$CODEX_USER_HOME" "$CODEX_VALIDATION_HOME/skills"
-    # AgentOps 4: source-link skills into the isolated Codex skills root.
+    # AgentOps 3.3: source-link skills into the isolated Codex skills root.
     local ao_bin=""
     if [[ -x "$REPO_ROOT/cli/bin/ao" ]]; then
       ao_bin="$REPO_ROOT/cli/bin/ao"

@@ -246,8 +246,8 @@ func TestBinaryFreshnessCheck(t *testing.T) {
 	if check := BinaryFreshnessCheck(t.TempDir(), "1.0.0"); check.Status != "pass" || !strings.Contains(check.Detail, "outside the agentops repo") {
 		t.Fatalf("outside-repo check = %+v", check)
 	}
-	rcRoot := makeFakeAgentopsRepo(t, "4.0.0-rc")
-	if check := BinaryFreshnessCheck(rcRoot, "4.0.0"); check.Status != "pass" || !strings.Contains(check.Detail, "release build") {
+	rcRoot := makeFakeAgentopsRepo(t, "3.3.0-rc")
+	if check := BinaryFreshnessCheck(rcRoot, "3.3.0"); check.Status != "pass" || !strings.Contains(check.Detail, "release build") {
 		t.Fatalf("release build against rc source = %+v", check)
 	}
 }

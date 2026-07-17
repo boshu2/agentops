@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Release smoke for the retained AgentOps 4 CLI surface.
+# Release smoke for the retained AgentOps 3.3 CLI surface.
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

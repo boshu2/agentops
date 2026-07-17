@@ -1,6 +1,6 @@
 # Install And Day-2 Operations
 
-AgentOps 4 uses one canonical checkout and source symlinks. The checkout is the
+AgentOps 3.3 uses one canonical checkout and source symlinks. The checkout is the
 source of truth; runtime plugin caches and copied skill mirrors are not part of
 the active path.
 
