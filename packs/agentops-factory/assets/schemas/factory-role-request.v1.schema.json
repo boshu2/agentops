@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agentops.local/schemas/factory-role-request.v1.schema.json",
+  "title": "Factory Mayor, rescope, or plan-review transport request",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "request_id",
+    "role",
+    "provider",
+    "program_id",
+    "workspace",
+    "intent_source",
+    "intent_digest",
+    "repository",
+    "base_branch",
+    "base_sha",
+    "subject_path",
+    "subject_digest",
+    "mayor_context_id",
+    "artifact_path",
+    "result_path"
+  ],
+  "properties": {
+    "schema_version": {"const": "factory-role-request.v1"},
+    "request_id": {"type": "string", "minLength": 1},
+    "role": {"enum": ["mayor", "plan-review", "rescope"]},
+    "provider": {"enum": ["codex", "claude"]},
+    "program_id": {"type": "string", "minLength": 1},
+    "workspace": {"type": "string", "minLength": 1},
+    "intent_source": {"type": "string", "minLength": 1},
+    "intent_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "repository": {"type": "string", "minLength": 1},
+    "base_branch": {"type": "string", "minLength": 1},
+    "base_sha": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+    "subject_path": {"type": ["string", "null"]},
+    "subject_digest": {"type": ["string", "null"]},
+    "mayor_context_id": {"type": ["string", "null"]},
+    "artifact_path": {"type": "string", "minLength": 1},
+    "result_path": {"type": "string", "minLength": 1}
+  }
+}

@@ -1,0 +1,273 @@
+# GPT-5.6-sol cross-score of Fable's revised finalists
+
+## Method
+
+This score treats `WIZARD_REFINERY_ADDENDUM_FABLE.md` as an override wherever
+it changes the original proposal. I scored the resulting F1R–F5R, not the
+pre-addendum versions and not the Refinery as a sixth finalist.
+
+Each dimension is 0–100. The composite is the rounded weighted mean multiplied
+by ten: Useful and Pragmatic are 2×, Accretive is 1.5×, and the other seven
+dimensions are 1×, for total weight 12.5. Thus a score above 700 means I would
+actually prioritize building the option, not merely admire it. The governing
+standard is deliberately hostile to role ceremony: a resident LLM must own an
+irreducible, bounded, measurable judgment loop that cannot be a formula, lease,
+reducer, worktree rule, or mode
+([AGENTS.md](/Users/bo/dev/gc-role-duel/AGENTS.md:18)). The mandatory baseline
+also includes isolated branches/worktrees, fresh exact-subject validation, one
+integration reducer, protected `main`, and revalidation after rebases
+([EVIDENCE_PACKET.md](/Users/bo/dev/gc-role-duel/EVIDENCE_PACKET.md:246)).
+
+### Score matrix
+
+| Rank | Revised finalist | Robust | Reliable | Performant | Intuitive | User-friendly | Ergonomic | Useful (2×) | Compelling | Accretive (1.5×) | Pragmatic (2×) | Composite |
+|---:|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| 1 | F2R — Mayor + fresh judges + Refinery | 82 | 82 | 78 | 87 | 86 | 83 | 93 | 90 | 84 | 78 | **845** |
+| 2 | F1R — Bare City + Refinery | 78 | 76 | 72 | 73 | 55 | 60 | 68 | 60 | 90 | 82 | **727** |
+| 3 | F5R — Stigmergy factory + Refinery | 77 | 70 | 78 | 61 | 48 | 63 | 62 | 55 | 85 | 70 | **675** |
+| 4 | F3R — Mayor + persistent governor + Refinery | 76 | 74 | 70 | 60 | 75 | 62 | 73 | 74 | 50 | 52 | **653** |
+| 5 | F4R — Mayor + quest conductors + Refinery | 70 | 65 | 80 | 50 | 60 | 52 | 62 | 68 | 48 | 44 | **583** |
+
+All five inherit a materially useful delivery design: candidate branches feed
+a bounded integration train, one PR represents the train, and every subject
+mutation regenerates, checks, and revalidates
+([Fable addendum](/Users/bo/dev/gc-role-duel/WIZARD_REFINERY_ADDENDUM_FABLE.md:60),
+[mutation loop](/Users/bo/dev/gc-role-duel/WIZARD_REFINERY_ADDENDUM_FABLE.md:159)).
+They also inherit four unresolved seams, priced into Robust, Reliable, and
+Pragmatic rather than waved away:
+
+1. The shared bot identity is the standing authority while a TTL lease is held
+   by a transient session, but no fencing token or compare-and-swap push rule is
+   specified. After reap, a stale process using the same credential can still
+   race the replacement
+   ([identity](/Users/bo/dev/gc-role-duel/WIZARD_REFINERY_ADDENDUM_FABLE.md:27),
+   [lease](/Users/bo/dev/gc-role-duel/WIZARD_REFINERY_ADDENDUM_FABLE.md:112)).
+2. The high-stakes path requests a “2-of-3 family quorum” with author-family
+   exclusion, but the stated deployment has only Codex and Claude providers;
+   provider is configuration, not another role
+   ([quorum rule](/Users/bo/dev/gc-role-duel/WIZARD_REFINERY_ADDENDUM_FABLE.md:172),
+   [provider boundary](/Users/bo/dev/gc-role-duel/EVIDENCE_PACKET.md:40)).
+3. Intake requires “exactly one” PASS while the same design can require several
+   judge outputs. It needs an explicit deterministic quorum certificate that is
+   singular without erasing the immutable component verdicts
+   ([intake](/Users/bo/dev/gc-role-duel/WIZARD_REFINERY_ADDENDUM_FABLE.md:134)).
+4. The Refinery identity authors the PR, while validator artifacts may satisfy
+   required review. Unless the forge policy represents validation as a separate
+   required check or a distinct reviewer identity, this can collapse author and
+   approver at the repository gate
+   ([PR authority](/Users/bo/dev/gc-role-duel/WIZARD_REFINERY_ADDENDUM_FABLE.md:27),
+   [review gate](/Users/bo/dev/gc-role-duel/WIZARD_REFINERY_ADDENDUM_FABLE.md:228)).
+
+These are correctable specification gaps, not reasons to discard the shared
+Refinery. They matter because the packet explicitly requires atomic claims,
+independent judges, immutable judgments, and a non-bypassable protected-main
+transition
+([EVIDENCE_PACKET.md](/Users/bo/dev/gc-role-duel/EVIDENCE_PACKET.md:257),
+[delivery rules](/Users/bo/dev/gc-role-duel/EVIDENCE_PACKET.md:272)).
+
+## 1. F2R — Mayor + fresh judges over a deterministic spine + Refinery
+
+**Score: 845/1000 — STRONG; PRIORITIZE.** I would build this, after closing the
+four shared Refinery seams above.
+
+- **Strongest contribution:** it puts the one continuous semantic loop where it
+  belongs. The Mayor preserves product conversation, reshapes the experiment
+  DAG from verdict feedback, and proposes retries, while fresh plan reviewers,
+  fresh verdict judges, and a deterministic reducer retain independence. The
+  Mayor cannot implement, judge, or write terminal state
+  ([original F2](/Users/bo/dev/gc-role-duel/WIZARD_IDEAS_FABLE.md:287),
+  [authority matrix](/Users/bo/dev/gc-role-duel/WIZARD_IDEAS_FABLE.md:330)).
+  The revised Refinery then owns delivery without moving Git into AgentOps or
+  moving delivery into the Mayor
+  ([addendum ruling](/Users/bo/dev/gc-role-duel/WIZARD_REFINERY_ADDENDUM_FABLE.md:23)).
+- **Fatal or limiting concern:** the one-writer promise is not yet a one-writer
+  guarantee. A shared Git credential plus a reapable lease needs fencing/CAS at
+  every branch update; otherwise a stale fresh-wake session can mutate the train
+  after losing ownership. The infeasible quorum wording and ambiguous review
+  identity are additional launch blockers, though neither changes the topology.
+- **Irreducible-role result:** **yes.** The Mayor passes all five tests: unique
+  recurring replan/human-interface judgment, observable absence failure,
+  non-mechanical work, proposal-only bounded authority, and explicit SLO/kill
+  criteria. Refinery is a persistent authority identity but not a persistent
+  LLM; its ambiguous failure-classification work is a min-0/max-1 fresh pool
+  ([Refinery runtime](/Users/bo/dev/gc-role-duel/WIZARD_REFINERY_ADDENDUM_FABLE.md:27)).
+- **What I would steal/combine:** take the capped train—up to five experiments
+  or a diff ceiling—and the negative worker-push test, then combine them with my
+  fenced delivery record, compare-and-swap branch updates, exact-head dual-
+  provider validation, and separate PR-author/policy-check identities
+  ([train cap](/Users/bo/dev/gc-role-duel/WIZARD_REFINERY_ADDENDUM_FABLE.md:101),
+  [proof negatives](/Users/bo/dev/gc-role-duel/WIZARD_REFINERY_ADDENDUM_FABLE.md:335)).
+- **100+ swing condition:** **lower by at least 150** if the proof week produces
+  even one post-reap push from a session that no longer owns the integration
+  lease. That is a broken one-writer guarantee, not ordinary tuning.
+
+## 2. F1R — Bare City + Refinery
+
+**Score: 727/1000 — STRONG; PRIORITIZE AS THE BOOTSTRAP/FALLBACK.** This clears
+700 because its deterministic substrate is exactly what F2R needs and I would
+prioritize building it first. I would not stop here if Bo must converse with a
+city about a changing large plan.
+
+- **Strongest contribution:** it is a clean falsification instrument for every
+  proposed resident role. A fresh plan compiler, four fresh worker/validator
+  pools, formulas, leases, reducer, and the revised Refinery can prove safe fan-
+  out and delivery without pre-paying for a government
+  ([F1](/Users/bo/dev/gc-role-duel/WIZARD_IDEAS_FABLE.md:251),
+  [shared substrate](/Users/bo/dev/gc-role-duel/WIZARD_IDEAS_FABLE.md:198)). It
+  is also an honest absorption target if the Mayor later fails its week.
+- **Fatal or limiting concern:** mid-flight semantic replanning has no owner.
+  The proposal explicitly sends every change back through Bo and a new plan-
+  compile context; state can remain durable, but conversational intent and the
+  reasons for changing the DAG do not become somebody's closed loop
+  ([F1 weakness](/Users/bo/dev/gc-role-duel/WIZARD_IDEAS_FABLE.md:279)). That is
+  directly misaligned with the request to hand a large plan to a Mayor and get
+  feedback without babysitting
+  ([decision question](/Users/bo/dev/gc-role-duel/EVIDENCE_PACKET.md:3)).
+- **Irreducible-role result:** **yes, vacuously.** There are no persistent LLM
+  roles. The Refinery's durable Git identity is not an LLM session; the fresh
+  triage pool remains bounded to delivery classification.
+- **What I would steal/combine:** use F1R as the first two-day deployment slice
+  and as my winner's kill destination. Keep its formulas, worktree/scope
+  enforcement, reducer, and delivery engine unchanged when adding the Mayor.
+- **100+ swing condition:** **raise by at least 110** if an adversarial proof
+  week includes two material mid-flight plan changes yet Bo spends no more than
+  15 minutes per day on dispatch/re-explanation and every fresh plan compile
+  preserves prior decision rationale. That would disprove the need for Mayor
+  continuity in this workload.
+
+## 3. F5R — Stigmergy factory + Refinery
+
+**Score: 675/1000 — DECENT; EVALUATE, DO NOT PRIORITIZE YET.**
+
+- **Strongest contribution:** pull-based self-claiming plus durable beads makes
+  session death cheap and pool scaling natural. The current queue state, not an
+  agent's memory, is the coordination surface; the Refinery is likewise queue-
+  shaped, so the composition is conceptually accretive
+  ([F5](/Users/bo/dev/gc-role-duel/WIZARD_IDEAS_FABLE.md:438),
+  [addendum impact](/Users/bo/dev/gc-role-duel/WIZARD_REFINERY_ADDENDUM_FABLE.md:254)).
+- **Fatal or limiting concern:** the scheduled fresh “producer tick” is a Mayor
+  loop split into stateless invocations without a human interface. It must make
+  semantic retry/revision decisions, but no persistent owner carries the
+  product conversation or reconciles two individually plausible ticks. This is
+  mechanism-shaped orchestration until the first ambiguous failure, then an
+  unowned judgment loop
+  ([producer tick](/Users/bo/dev/gc-role-duel/WIZARD_IDEAS_FABLE.md:445),
+  [known failure mode](/Users/bo/dev/gc-role-duel/WIZARD_IDEAS_FABLE.md:461)).
+- **Irreducible-role result:** **yes, vacuously.** No persistent LLM is present.
+  That does not prove the architecture complete; it exposes the missing
+  recurring replan owner.
+- **What I would steal/combine:** keep pull claims, durable sidecars, and fresh
+  resumption as worker-pool mechanics inside my Mayor topology. Do not make the
+  queue itself responsible for semantic replanning.
+- **100+ swing condition:** **raise by at least 110** if three independent
+  FAIL→revised-intent cycles complete through producer ticks with zero duplicate
+  or contradictory intents, zero Bo session attachments, and plan-review PASS
+  over each revised DAG. That would show continuity is sufficiently encoded in
+  durable state.
+
+## 4. F3R — Mayor + persistent Witness governor + Refinery
+
+**Score: 653/1000 — DECENT INHERITED CORE; KILL AS A DISTINCT TOPOLOGY.**
+
+- **Strongest contribution:** it names a legitimate question that simpler
+  designs can miss: who notices cross-experiment goal drift and degrading judge
+  independence? Its finding-precision and acted-on-finding metrics are better
+  than ceremonial “oversight” claims
+  ([F3](/Users/bo/dev/gc-role-duel/WIZARD_IDEAS_FABLE.md:376)).
+- **Fatal or limiting concern:** the answer does not require a resident LLM.
+  Identity/independence is deterministic, and semantic drift can be sampled by
+  fresh read-only audits. A persistent observer adds cost, saturated context,
+  another personality to monitor, and an obvious path toward veto/replan/repair
+  authority. Fable itself says the role likely fails the test and predicts
+  collapse into F2's sampling audit
+  ([self-critique](/Users/bo/dev/gc-role-duel/WIZARD_IDEAS_FABLE.md:386),
+  [cathedral argument](/Users/bo/dev/gc-role-duel/WIZARD_IDEAS_FABLE.md:496)).
+  The addendum gives it more PR state to watch but concedes that scheduled fresh
+  reads still cover it
+  ([revision](/Users/bo/dev/gc-role-duel/WIZARD_REFINERY_ADDENDUM_FABLE.md:271)).
+- **Irreducible-role result:** **no.** The Mayor passes; the persistent governor
+  fails conditions 2 and 3 because its observable outputs can be produced by
+  deterministic attestation plus a scheduled fresh audit. Therefore not every
+  persistent role passes.
+- **What I would steal/combine:** steal the governor's audit prompt, finding-
+  precision metric, and system-goal-drift lens; schedule them as fresh assurance
+  jobs in my winner. Do not steal the named session or any veto authority.
+- **100+ swing condition:** **raise by at least 120** only if, across two real
+  plans, the governor finds at least two high-severity issues that are acted on
+  and that replayed deterministic checks plus blinded fresh sampling audits both
+  fail to find. That would establish unique value from continuity rather than
+  prompt quality.
+
+## 5. F4R — persistent product Mayor + per-quest conductors + Refinery
+
+**Score: 583/1000 — DECENT ONLY BEHIND A MEASURED SCALE GATE; DO NOT BUILD NOW.**
+
+- **Strongest contribution:** it is the only finalist with a credible scale-out
+  escape hatch for semantic conduction. Conductors are fresh per quest rather
+  than permanent area sub-mayors, and Fable correctly gates adoption on an
+  observed Mayor scale wall
+  ([F4](/Users/bo/dev/gc-role-duel/WIZARD_IDEAS_FABLE.md:406)). The addendum also
+  correctly refuses per-quest Refineries, preserving one integration seam
+  ([F4R revision](/Users/bo/dev/gc-role-duel/WIZARD_REFINERY_ADDENDUM_FABLE.md:274)).
+- **Fatal or limiting concern:** product replanning and quest replanning are the
+  same semantic loop at different grain. The product/quest boundary becomes a
+  judgmental authority handoff: who decides that a validator result changes
+  only a quest rather than the product DAG? The deterministic dispatcher already
+  owns mechanical sequencing, so the new tier buys ambiguous authority and
+  context-transfer cost before measured saturation. This is precisely the
+  unproven Apollo-shaped cathedral risk the proposal itself identifies
+  ([F4 limits](/Users/bo/dev/gc-role-duel/WIZARD_IDEAS_FABLE.md:414),
+  [cathedral finding](/Users/bo/dev/gc-role-duel/WIZARD_IDEAS_FABLE.md:515)).
+- **Irreducible-role result:** **yes for persistent roles, with an important
+  caveat.** The persistent Mayor passes. Conductors are fresh ephemeral roles,
+  so they do not violate the literal resident-session test, but they fail the
+  broader duplication test until scale evidence proves that a Mayor prompt mode
+  cannot handle the same loop.
+- **What I would steal/combine:** keep a dormant `quest-conduct` prompt mode and
+  its scale trigger in my winner's runbook. Activate it only after Mayor replan
+  latency or context recycling crosses a measured threshold; never deploy it as
+  the default tier.
+- **100+ swing condition:** **raise by at least 140** if F2R first demonstrates
+  a sustained scale wall—more than 20 concurrent lanes and Mayor context recycle
+  over once per day—and then three quest conductors complete three nontrivial
+  subgraphs without the Mayor reading inner beads, reversing a verdict, or
+  repairing their handoffs.
+
+## Final ranking and duel judgment
+
+1. **F2R — 845:** build-worthy winner after delivery-seam hardening.
+2. **F1R — 727:** build-worthy deterministic bootstrap and absorption target.
+3. **F5R — 675:** promising pool mechanics, incomplete semantic ownership.
+4. **F3R — 653:** good F2 core burdened by a role that does not earn residency.
+5. **F4R — 583:** retain only as a gated scale experiment.
+
+### Consensus-kill candidate
+
+**F3R is the consensus kill as a distinct topology.** This does not mean its
+F2R substrate is bad; it means the only feature distinguishing F3R—the
+persistent Judge-Witness governor—should be absorbed into scheduled fresh
+assurance. Fable's own irreducible-role analysis says it likely fails and its
+own addendum gives the governor no new unique loop
+([original verdict](/Users/bo/dev/gc-role-duel/WIZARD_IDEAS_FABLE.md:390),
+[addendum verdict](/Users/bo/dev/gc-role-duel/WIZARD_REFINERY_ADDENDUM_FABLE.md:271)).
+F4R is a **consensus defer**, not a permanent kill: both proposals preserve the
+per-quest mode only if measured Mayor saturation appears.
+
+### Does Fable's winner beat my winner?
+
+**No, but it is close and belongs to the same winning family.** F2R validates
+the central conclusion: one persistent proposal-only Mayor, fresh independent
+judges, deterministic admission/operations, and a bounded fresh-wake Refinery.
+I would prioritize building it over Fable's other four options.
+
+My winner remains preferable because it makes the delivery seam executable,
+not merely legible: a durable delivery record carries a fencing epoch; every
+integration-branch mutation is lease-epoch checked and compare-and-swap
+guarded; the exact final PR head must receive feasible Codex + Claude
+independent PASS under separate identities; and the repository gate cannot
+interpret the PR author's posting of validator artifacts as self-review. Those
+details directly close Fable's shared lease, quorum, intake-certificate, and
+review-identity gaps. I would still import Fable's bounded train-size policy,
+fresh sampling-audit formulation, and explicit negative tests. That is genuine
+convergence with a few high-consequence control-seam corrections, not a reason
+to reverse the winner.

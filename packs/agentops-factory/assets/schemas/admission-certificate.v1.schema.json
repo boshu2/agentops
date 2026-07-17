@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agentops.local/schemas/admission-certificate.v1.schema.json",
+  "title": "Deterministic AgentOps candidate admission certificate",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "program_id",
+    "node_id",
+    "experiment_id",
+    "intent_digest",
+    "candidate_sha",
+    "candidate_base_sha",
+    "predecessor_beads",
+    "predecessor_shas",
+    "subject_manifest_digest",
+    "author_context_id",
+    "validator_context_id",
+    "verdict_digest",
+    "verdict",
+    "lease_token",
+    "fence_epoch"
+  ],
+  "properties": {
+    "schema_version": {"const": "admission-certificate.v1"},
+    "program_id": {"type": "string", "minLength": 1},
+    "node_id": {"type": "string", "minLength": 1},
+    "experiment_id": {"type": "string", "minLength": 1},
+    "intent_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "candidate_sha": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+    "candidate_base_sha": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+    "predecessor_beads": {"type": "array", "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+    "predecessor_shas": {"type": "array", "uniqueItems": true, "items": {"type": "string", "pattern": "^[0-9a-f]{40}$"}},
+    "subject_manifest_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "author_context_id": {"type": "string", "minLength": 1},
+    "validator_context_id": {"type": "string", "minLength": 1},
+    "verdict_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "verdict": {"const": "PASS"},
+    "lease_token": {"type": "string", "pattern": "^[0-9a-f]{32,64}$"},
+    "fence_epoch": {"type": "integer", "minimum": 1}
+  }
+}

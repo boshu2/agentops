@@ -1,0 +1,245 @@
+# WIZARD_SCORES_FABLE — Fable's cross-scores of GPT-SOL-5.6's five revised finalists
+
+Scorer: Fable wizard. Inputs read: `WIZARD_IDEAS_GPT_SOL_5_6.md`,
+`WIZARD_REFINERY_ADDENDUM_GPT_SOL_5_6.md` (treated as final revision where it
+changes the original), `AGENTS.md`, `EVIDENCE_PACKET.md`. No score/reaction/
+rebuttal files were read.
+
+**Rubric:** Robust, Reliable, Performant, Intuitive, User-friendly, Ergonomic,
+Useful (×2), Compelling, Accretive (×1.5), Pragmatic (×2). Composite = weighted
+mean × 10, /1000. Complexity budget, role duplication, authority leakage, and
+cathedral risk are priced inside the dimensions (chiefly Reliable, Intuitive,
+Pragmatic, and Accretive) and called out per finalist.
+
+## Dimension scores (0-100)
+
+| Dimension (weight) | A. Lean Steward | B. Headless Graph | C. Portfolio/Quest | D. Governor+Court | E. Two-Key Court |
+|---|---:|---:|---:|---:|---:|
+| Robust (1) | 88 | 88 | 78 | 84 | 90 |
+| Reliable (1) | 90 | 88 | 76 | 74 | 76 |
+| Performant (1) | 75 | 80 | 84 | 62 | 52 |
+| Intuitive (1) | 88 | 90 | 60 | 58 | 84 |
+| User-friendly (1) | 90 | 72 | 76 | 68 | 74 |
+| Ergonomic (1) | 85 | 78 | 66 | 62 | 72 |
+| Useful (2) | 93 | 74 | 66 | 62 | 60 |
+| Compelling (1) | 88 | 76 | 70 | 60 | 66 |
+| Accretive (1.5) | 90 | 92 | 78 | 64 | 72 |
+| Pragmatic (2) | 84 | 88 | 56 | 48 | 54 |
+| **Composite /1000** | **874** | **827** | **697** | **627** | **680** |
+
+---
+
+## A. Lean Steward + Fresh Refinery — **874 / BUILD**
+
+- **Verdict:** Build. This crosses 700 honestly: it is the architecture I would
+  actually prioritize — persistent Mayor as sole named session (proposals only),
+  fresh author-distinct judges, deterministic reducer/lease/worktree spine,
+  Refinery as durable logical identity + formula state machine + min-0/max-1
+  fresh triage pool.
+- **Strongest contribution:** the delivery-plane mechanical rigor. The fenced
+  delivery lease with monotonic tokens owned by the *delivery record* rather
+  than any session (addendum §"One-writer integration lease"), the
+  landed-SHA-verified delivery receipt, and the explicit rejection of the
+  pinned pack's "file the pre-existing failure and merge anyway" behavior
+  (addendum CI-routing table, last row) are the strongest single-writer
+  enforcement in either proposal.
+- **Fatal/limiting concern:** validation economics. A requires a fresh
+  validation after *every* candidate merge (I1, I2, I3 …) **plus** a mandatory
+  fresh Codex+Claude pair on every PR head, re-run on *every* head/base
+  mutation including each rebase as `main` moves. On a rebase-churny week this
+  is O(candidates + rebases) validator invocations per wave; judge capacity is
+  the scarce resource and their own E-kill criterion (validator queue >35% of
+  wall time) will likely trip inside A itself. The safety story is airtight;
+  the cost story is under-priced (their own Cost score of 78 is generous).
+- **Irreducible-role test:** passes for every persistent role. Mayor earns its
+  session with an honest kill (80%-mechanical-actions absorption rule);
+  Refinery persistence is correctly refused — durable identity + fresh wakes;
+  judges stay fresh. Clean.
+- **Steal/combine:** fencing tokens on every integration write; delivery
+  record as lease owner; per-candidate incremental validation *as a
+  policy-selectable mode* (it localizes the first incompatible candidate,
+  which my per-train validation cannot); draft dependent PRs with
+  `depends_on_pr` metadata for pipeline visibility; the
+  attest-current-main-and-PR-head step before enabling auto-merge; the
+  `degraded_provider_independence` receipt.
+- **±100 condition:** −100 if the universal final two-provider pair plus
+  per-merge intermediate validation measurably consumes >35% of wall time or
+  ~2× cost per admitted node in the proof week (their own E-kill number,
+  which A's addendum policy quietly imports). +100 if intermediate validation
+  is made stakes-tiered (deterministic classification, pair only on
+  high-stakes/final heads) with no escaped defect in the proof week —
+  that fix makes this a ~950 architecture.
+
+## B. Headless Graph + Fresh Refinery — **827 / BUILD (as the substrate + control)**
+
+- **Verdict:** Build — with the precise role their own decision rule assigns
+  it: the mechanism plane everyone builds first, and the control experiment
+  that keeps the Mayor honest. Above 700 because I would genuinely prioritize
+  building it: it is A minus one configured agent, and every artifact is
+  reused.
+- **Strongest contribution:** the collapse invariant — "build A's mechanism
+  plane so deleting the Mayor yields B rather than a rewrite" (final decision
+  rule). That single sentence is the best anti-cathedral device in the file:
+  it makes the persistent role *removable by config*, which converts the
+  Mayor debate from doctrine into a measurement.
+- **Fatal/limiting concern:** it does not answer the decision question. Bo
+  asked to hand a large plan to a Mayor and steer mid-flight; B's replan path
+  is human + fresh planner + structured holds, and its own kill criterion
+  ("operator repeatedly asks for a continuous conversation surface")
+  predicts its most likely outcome. As primary it under-serves; as fallback
+  it is exactly right.
+- **Irreducible-role test:** vacuously passes — zero persistent LLM roles.
+- **Steal/combine:** the structured hold contract ("exact node, digest,
+  failed invariant, permissible next actions; not a chat request") — my F1/F5
+  escalation surfaces were vaguer; planner-reproducibility and
+  graph-revision-churn as first-class metrics.
+- **±100 condition:** +100 if the proof week shows Mayor actions were ≥80%
+  mechanical mirrors of graph state (their A-kill fires and B becomes the
+  *proven* primary). −100 if human clarification time exceeds their own
+  15-minute/DAG budget — the topology then fails its own pass bar.
+
+## C. Portfolio/Quest Split + Fresh Refinery — **697 / DEFER (correctly gated by its own author)**
+
+- **Verdict:** Defer. Below 700 and that is the point: as a thing to build
+  *now* it fails the complexity budget; as a documented, disabled escalation
+  path it is fine. Their own migration step 3-4 (Apollo template ships
+  `min_active_sessions = 0`, activated only at ≥3 concurrent quests or
+  measured Mayor SLO breach) is the right discipline — but a gated future
+  option scored as a finalist must be scored as what it builds.
+- **Strongest contribution:** the most disciplined Apollo ever specified in
+  this corpus: quest-digest binding, hard TTL, context budget, one-owner
+  quest lease, provider-agnostic rollover from durable state, and a
+  reversal-rate kill (>15% of proposals reversed by Mayor). If a conductor
+  tier is ever justified, this is its contract.
+- **Fatal/limiting concern:** history plus arithmetic. Apollo autonomy was
+  never production-proven through two repo generations
+  (`mt-olympus/docs/canonical/olympus-pantheon-synthesis.md:274`), and the
+  split adds three handoff boundaries (Mayor→Apollo→Refinery) around a
+  formula executor that already sequences ready nodes. The nested two-DAG
+  state model, cross-quest path-ownership transfer edges, and per-quest
+  integration digests are a real second machine — role duplication cost
+  paid before any queueing evidence exists.
+- **Irreducible-role test:** Mayor passes. Apollo passes only conditionally —
+  *because* it starts disabled and TTL-bound. As a default-on role it would
+  fail test (c): its dispatch half is the formula, its replan half is the
+  Mayor's loop at a finer grain. Their own cathedral section concedes this.
+- **Steal/combine:** the activation gate itself (≥3 concurrent quests OR
+  measured dispatch-latency SLO breach) is a better-quantified trigger than
+  my F4 gate ("Mayor context recycles >1×/day"); quest-lease
+  duplicate-conductor rejection as a mechanical guard.
+- **±100 condition:** −100+ if built before three genuinely concurrent quests
+  exist (pure cathedral spend). +100 only after F2/A-shape saturation
+  evidence — at which point it is no longer premature and its throughput 84
+  starts earning.
+
+## D. Governor and Court + Fresh Refinery — **627 / KILL-CANDIDATE**
+
+- **Verdict:** Reject as a build target; run at most as the shadow-mode
+  experiment its own migration path describes. This is the consensus-kill
+  candidate.
+- **Strongest contribution:** the shadow-mode discipline — sidecars only,
+  compare unique-find yield against fresh judges and deterministic audits,
+  enable reducer-consumed HOLD only after shadow evidence, seeded-drift
+  recall as the pass metric. If Bo insists on trying a persistent Witness,
+  this is the only honest way to do it. The seeded system-level defect
+  battery (omitted acceptance edge; two locally-valid nodes whose
+  combination violates intent) is a genuinely good test design I'd reuse for
+  *fresh* audit orders.
+- **Fatal/limiting concern:** authority leakage plus context gravity, priced
+  simultaneously. Post-addendum, D runs **three** recurring observers (Mayor,
+  Governor, Refinery) around one evidence stream — their own words: "plainly
+  overbuilt." The Governor's HOLD is blocking authority granted to the one
+  role whose value is unproven, and `assurance_degraded` makes Governor
+  *availability* a product-admission dependency — a persistent role that must
+  be up before work ships is precisely the resident-layer failure mode
+  (`mt-olympus/FINAL-POSTMORTEM.md:106`). Reliability and cost both eat it.
+- **Irreducible-role test:** **fails for the Governor**, and their own text
+  admits it "barely passes." I score it as not passing: longitudinal drift
+  detection does not require a *resident* context — a scheduled fresh audit
+  over durable digests/verdicts/coverage maps has the same longitudinal
+  inputs (state lives in artifacts, not transcripts) without saturation.
+  The merge-with-neighbor counterfactual is answered by "fresh audit order,"
+  which their table never seriously prices as the neighbor.
+- **Steal/combine:** the seeded cross-wave defect suite and the
+  false-HOLD-rate <10% / unique-find-yield metrics — attached to my
+  *fresh* sampling auditor instead of a resident.
+- **±100 condition:** +100 if a real shadow week detects ≥3 of 4 seeded
+  system-level defects **plus** ≥1 confirmed unique non-seeded finding that
+  fresh judges and deterministic checks all missed (their own pass bar) —
+  that is the only evidence that would justify residency. Absent that, this
+  stays killed.
+
+## E. Two-Key Court + Fresh Refinery — **680 / REJECT AS DEFAULT, KEEP AS POLICY KNOB**
+
+- **Verdict:** Reject as a universal default; retain as the high-stakes
+  admission policy. Below 700 because post-addendum its marginal value
+  collapsed *by their own design*: A's delivery policy already mandates a
+  fresh Codex+Claude pair on every merge-eligible PR head, so E's remaining
+  delta is dual-provider judgment on every intermediate/routine node —
+  nearly pure cost (their Cost: 43) purchasing marginal safety on the
+  lowest-stakes work.
+- **Strongest contribution:** making the council mechanical instead of
+  prose — pair assembly, attested identities, PASS/PASS-or-hold, no Mayor
+  tie-break, no permanent tie-break provider, re-panel-then-human. That
+  deterministic pair-resolution policy is the right *shape* wherever dual
+  review is warranted.
+- **Fatal/limiting concern:** availability coupling and queue arithmetic.
+  Either provider's outage halts *all* admission (their own kill: >4h outage
+  blocking routine work); validator capacity is doubled on exactly the nodes
+  least likely to carry cross-provider-visible defects. Risk-tiering
+  (A's/my quorum-on-demand with deterministic stakes classification) buys
+  ~90% of the safety at ~half the judge spend.
+- **Irreducible-role test:** passes — Mayor is the only persistent role; the
+  court is fresh pools plus a deterministic gate. The flaw is policy cost,
+  not role legitimacy.
+- **Steal/combine:** the provider agreement matrix and false-fail
+  confirmation rate as standing metrics (they make the risk-tiering
+  threshold *empirical* — if the cross-provider unique-catch rate on routine
+  nodes is ~0 over a month, tiering is vindicated; if not, escalate more).
+- **±100 condition:** +100 if a provider-specific defect escapes a
+  risk-tiered pipeline into `main` during the proof period (evidence that
+  tiering under-triggers — E's premium becomes justified). −100 if provider
+  outage blocks routine admission >4h in week one (their own kill fires).
+
+---
+
+## Ranking, consensus-kill, and winner-vs-winner
+
+**Ranking:** A (874) > B (827) > C (697) > E (680) > D (627).
+
+**Consensus-kill candidate: D's persistent Assurance Governor.** Both my
+independent analysis (my F3, scored last among my viable options with
+cathedral-resistance 45-48) and their own cathedral section ("the most likely
+finalist to recreate Olympus… deletion, not prompt refinement") converge:
+the persistent read-only Witness fails the irreducible-role test and survives
+only as a bounded shadow experiment with a one-week yield bar. That is as
+close to consensus as two non-coordinating wizards get.
+
+**Does their winner beat mine?** Their A and my F2R are convergent to a
+striking degree — one persistent Mayor (proposal-only, reducer-executed),
+fresh author-distinct judges, deterministic scope/lease/reducer spine,
+Refinery as durable identity + fresh-wake pool + state-machine formula, wave/
+train PRs, no direct `main` pushes, semantic repairs as new AgentOps
+experiments. The differences are real but second-order:
+
+- **Where theirs is better:** delivery-plane mechanics. Fencing tokens,
+  delivery-record-owned leases, landed-SHA receipts, draft dependent PRs, the
+  merge-queue speculative-subject clause, and the pre-existing-failure
+  non-waiver rule are more enforceable than my §3/§7 equivalents. Their
+  per-candidate incremental validation also localizes the first bad candidate,
+  which my per-train validation cannot.
+- **Where mine is better:** judgment economics. My deterministic stakes
+  classification + quorum-on-demand + per-train validation spends scarce
+  validator capacity where risk lives; their A hard-codes a universal final
+  dual-provider pair re-run on every rebase plus per-merge intermediate
+  validation — the cost profile of their own rejected E leaking into their
+  winner.
+
+Candid net: **their A beats my F2R by a small margin on mechanical
+enforceability, and loses to it on operating cost; neither dominates.** Scored
+on their rubric weights I'd put my F2R at ~880 and their A at 874 — inside
+the noise floor of self-scoring bias, so I do not claim a win. The correct
+duel outcome is a merge: their delivery state machine, fencing, receipts, and
+shadow/collapse disciplines, with my stakes-tiered validation policy and
+train-cap sizing replacing their universal pair + per-merge validation. That
+merged architecture is the one I would build Monday.

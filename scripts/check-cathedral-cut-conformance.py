@@ -371,6 +371,9 @@ def probe_no_substrate_calls() -> None:
                 payload,
                 "non-git-author",
                 "PASS",
+                "non-git-validator",
+                "runtime",
+                "non-git-validator",
             )
             assert not existed
             return {
