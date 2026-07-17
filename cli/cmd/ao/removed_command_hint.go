@@ -41,6 +41,7 @@ var removedCommands = map[string]removedCommand{
 	"membrane":   {use: "admission was removed; record observations as verdict findings or generic provenance"},
 	"crank":      {use: "factory control was removed; call an executor directly or use optional `dispatch_once`"},
 	"constraint": {use: "AgentOps no longer promotes findings into blocking policy; encode accepted rules in repository-owned checks"},
+	"verify":     {use: "the 3.2 verification front door was removed; semantic judgment is the Validate skill. If `ao verify init` installed a pre-push hook, delete the AGENTOPS-VERIFY-RATCHET block from .git/hooks/pre-push (see docs/UPGRADING.md)"},
 }
 
 var removedChildCommands = map[string]map[string]removedCommand{
@@ -113,7 +114,7 @@ var cathedralCutCommands = map[string]struct{}{
 	"governor": {}, "yield": {}, "claim": {}, "next-work": {}, "state": {},
 	"worktree": {}, "validate": {}, "converge": {}, "reconcile": {},
 	"membrane": {}, "crank": {},
-	"constraint": {},
+	"constraint": {}, "verify": {},
 }
 
 // removedCommandHint returns the tombstone hint for an "unknown command"

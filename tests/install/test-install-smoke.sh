@@ -2,7 +2,7 @@
 set -euo pipefail
 
 # Smoke tests for install surfaces — validates syntax and the canonical
-# AgentOps 4 install path (ao skills link). Legacy 3.x plugin installers are
+# AgentOps 3.3 install path (ao skills link). Legacy 3.x plugin installers are
 # retained only as tombstones that exit nonzero with migration guidance.
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -69,7 +69,7 @@ TOMBSTONES=(
 for script in "${TOMBSTONES[@]}"; do
     check "$script syntax valid" bash -n "$REPO_ROOT/$script"
     check "$script is a removed-installer tombstone" \
-        grep -q 'removed in 4' "$REPO_ROOT/$script"
+        grep -q 'removed in 3.3' "$REPO_ROOT/$script"
     check "$script points at ao skills link" \
         grep -q 'ao skills link' "$REPO_ROOT/$script"
     # Must exit nonzero (migration refusal).

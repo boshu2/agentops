@@ -1,8 +1,8 @@
-# Tombstone: AgentOps 4 removed the 3.x Codex plugin installer.
+# Tombstone: AgentOps 3.3 removed the legacy Codex plugin installer.
 # Canonical install: one checkout + `ao skills link` (see docs/MIGRATION.md).
 $ErrorActionPreference = "Stop"
 Write-Error @"
-This AgentOps installer was removed in 4.x.
+This AgentOps installer was removed in 3.3.
 
 New installs:
   git clone https://github.com/boshu2/agentops.git `$HOME\.local\share\agentops

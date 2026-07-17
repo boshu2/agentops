@@ -7,33 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Added
+## [3.3.0] - 2026-07-17
 
-- A deterministic `toil-mining` extractor for recent human-origin Codex JSONL
-  messages, with provenance, wrapper normalization, deduplication, exclusion
-  accounting, and explicit checked/not-checked scope.
-- Read-only `ao status` inventory for durable intent and verdict evidence,
-  including newest-evidence recency without runtime-phase inference.
-- One-shot MCP-backed `ms` search for environments without an attached MCP
-  tool, plus multi-report synthesis guidance in Research.
-
-### Changed
-
-- Published `ao demo` now presents the packet-free one-pass loop; active docs,
-  templates, and smoke tests use caller-owned intent plus runtime-derived
-  subject evidence. The old Plan, Candidate, and revision schemas are labeled
-  deprecated compatibility formats.
-- `scripts/ms-reindex.sh` derives completeness from live
-  discovered/indexed/error accounting instead of a hard-coded corpus floor.
-- CASS guidance distinguishes authoritative rebuild fallback and timed-out
-  concurrent reads from empty results or source loss.
-
-## [4.0.0] - 2026-07-15
-
-AgentOps 4.0 is the Cathedral Cut: the product returns to one small trust
+AgentOps 3.3 is the Cathedral Cut: the product returns to one small trust
 boundary—shape one behavior, run one bounded experiment, validate the exact
 result from fresh context, persist the verdict, and stop. Git, CI, retries,
 queues, work ownership, closure, release, and delivery are caller-owned.
+This release removes public command surfaces despite the minor version
+number; read [docs/UPGRADING.md](https://github.com/boshu2/agentops/blob/main/docs/UPGRADING.md)
+before upgrading.
 
 ### Added
 
@@ -44,6 +26,13 @@ queues, work ownership, closure, release, and delivery are caller-owned.
   across portable, Claude, Codex, Gemini, Cursor, and Pi skill roots.
 - Structural conformance for the four-skill core, forbidden lifecycle authority,
   one-pass RPI sequencing, optional adapters, and inert command tombstones.
+- A deterministic `toil-mining` extractor for recent human-origin Codex JSONL
+  messages, with provenance, wrapper normalization, deduplication, exclusion
+  accounting, and explicit checked/not-checked scope.
+- Read-only `ao status` inventory for durable intent and verdict evidence,
+  including newest-evidence recency without runtime-phase inference.
+- One-shot MCP-backed `ms` search for environments without an attached MCP
+  tool, plus multi-report synthesis guidance in Research.
 
 ### Changed
 
@@ -58,6 +47,14 @@ queues, work ownership, closure, release, and delivery are caller-owned.
   work lifecycle, Git, or delivery.
 - New installations use one canonical checkout plus symlinks. Runtime plugin
   installers remain migration-only compatibility for this release.
+- Published `ao demo` now presents the packet-free one-pass loop; active docs,
+  templates, and smoke tests use caller-owned intent plus runtime-derived
+  subject evidence. The old Plan, Candidate, and revision schemas are labeled
+  deprecated compatibility formats.
+- `scripts/ms-reindex.sh` derives completeness from live
+  discovered/indexed/error accounting instead of a hard-coded corpus floor.
+- CASS guidance distinguishes authoritative rebuild fallback and timed-out
+  concurrent reads from empty results or source loss.
 
 ### Removed
 
@@ -84,7 +81,7 @@ queues, work ownership, closure, release, and delivery are caller-owned.
 - Scenario coverage is a caller-supplied static evidence check and no longer
   depends on beads, admission, tracker lookup, or lifecycle state.
 
-See [docs/4.0.md](https://github.com/boshu2/agentops/blob/main/docs/4.0.md) for
+See [docs/3.3.md](https://github.com/boshu2/agentops/blob/main/docs/3.3.md) for
 the release narrative and migration boundary.
 
 ## [3.2.0] - 2026-07-03

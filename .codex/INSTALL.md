@@ -1,6 +1,6 @@
 # Installing AgentOps for Codex
 
-AgentOps 4 uses one canonical checkout and source symlinks. Do not use the
+AgentOps 3.3 uses one canonical checkout and source symlinks. Do not use the
 old curl installer or a Codex plugin cache.
 
 ## Installation

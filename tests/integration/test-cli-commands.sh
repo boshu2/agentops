@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Functional subprocess smoke for the retained AgentOps 4 CLI.
+# Functional subprocess smoke for the retained AgentOps 3.3 CLI.
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

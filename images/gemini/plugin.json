@@ -13,5 +13,5 @@
   "name": "agentops-core-gemini",
   "rules": "./rules",
   "skills": "./skills",
-  "version": "4.0.0"
+  "version": "3.3.0"
 }

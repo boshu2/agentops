@@ -17,6 +17,7 @@ var approvedDefaultSpine = map[string]bool{
 	"close": true, "governor": true, "yield": true, "claim": true,
 	"next-work": true, "state": true, "worktree": true, "validate": true,
 	"converge": true, "reconcile": true, "membrane": true, "crank": true,
+	"verify": true,
 }
 
 var approvedDefaultChildren = map[string]map[string]bool{

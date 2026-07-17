@@ -19,7 +19,7 @@ var defaultSpineCommands = map[string]struct{}{
 	"pawl": {}, "plan-pawl": {}, "land": {}, "done": {}, "close": {},
 	"governor": {}, "yield": {}, "claim": {}, "next-work": {}, "state": {},
 	"worktree": {}, "validate": {}, "converge": {}, "reconcile": {},
-	"membrane": {}, "crank": {},
+	"membrane": {}, "crank": {}, "verify": {},
 }
 
 // defaultChildSpineCommands removes legacy controller behavior nested under a

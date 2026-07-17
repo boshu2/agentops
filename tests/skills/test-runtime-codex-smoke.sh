@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Test: Codex runtime smoke — validates AgentOps 4 source-link install under
+# Test: Codex runtime smoke — validates AgentOps 3.3 source-link install under
 # an isolated HOME (ao skills link → ~/.codex/skills). Standalone: no live
 # Codex session or network required.
 set -euo pipefail

@@ -1,6 +1,6 @@
 # Installing AgentOps for OpenCode
 
-AgentOps 4 uses one canonical checkout and source symlinks.
+AgentOps 3.3 uses one canonical checkout and source symlinks.
 
 ## Recommended install
 
@@ -41,5 +41,5 @@ ao skills link
 
 ## Migration
 
-The old `scripts/install-opencode.sh` curl installer was removed in 4.x. See
+The old `scripts/install-opencode.sh` curl installer was removed in 3.3. See
 [docs/MIGRATION.md](../docs/MIGRATION.md).

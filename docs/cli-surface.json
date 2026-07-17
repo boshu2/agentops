@@ -485,6 +485,13 @@
       "reason": "One-release failure stub for removed semantic CLI validation."
     },
     {
+      "category": "deprecated",
+      "command": "verify",
+      "coverage_status": "allowlisted",
+      "kind": "leaf",
+      "reason": "One-release failure stub for removed 3.2 verification front door."
+    },
+    {
       "category": "public-tested",
       "command": "version",
       "coverage_status": "covered",

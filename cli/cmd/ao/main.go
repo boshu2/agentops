@@ -3,9 +3,9 @@
 package main
 
 // version is set at build time via ldflags (goreleaser: -X main.version={{ .Version }}).
-// The fallback identifies untagged source builds for the next breaking release;
+// The fallback identifies untagged source builds for the next release;
 // published binaries override it from the release tag via GoReleaser.
-var version = "4.0.0-rc"
+var version = "3.3.0-rc"
 
 func main() {
 	Execute()

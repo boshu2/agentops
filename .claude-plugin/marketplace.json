@@ -6,13 +6,13 @@
   },
   "metadata": {
     "description": "Fresh-context validation for coding-agent work: one behavior, one bounded experiment, one independent verdict.",
-    "version": "4.0.0"
+    "version": "3.3.0"
   },
   "plugins": [
     {
       "name": "agentops",
       "description": "Fresh-context validation for coding-agent work: one behavior, one bounded experiment, one independent verdict.",
-      "version": "4.0.0",
+      "version": "3.3.0",
       "source": "./",
       "author": {
         "name": "Boden Fuller",
