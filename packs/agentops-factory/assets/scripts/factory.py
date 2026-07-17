@@ -2115,8 +2115,8 @@ def rescope_rejection(rig: str, rescope_bead: str, timeout: float) -> dict[str, 
     rejected_bead = require_string(rescope_meta.get("factory.rejected_bead"), "factory.rejected_bead")
     rejected = beads.show(rejected_bead)
     rejected_meta = metadata(rejected)
-    if rejected_meta.get("factory.status") != "rejected":
-        raise FactoryError("invalid_rescope", "rescope source is not a terminal rejected experiment")
+    if rejected_meta.get("factory.status") != "rejected" or rejected.get("status") != "closed":
+        raise FactoryError("invalid_rescope", "rescope source is not a terminal closed rejected experiment")
     program_bead = require_string(rescope_meta.get("factory.program_bead"), "factory.program_bead")
     program_meta = metadata(beads.show(program_bead))
     repository = absolute_path(program_meta.get("factory.repository"), "factory.repository", True, True)

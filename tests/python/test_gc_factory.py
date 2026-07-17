@@ -930,6 +930,22 @@ class FactoryTests(unittest.TestCase):
         self.assertEqual(replayed["successor_bead"], successor_bead)
         self.assertEqual(sum(event[0] == "graph_create" for event in beads.events), 1)
 
+    def test_direct_rescope_rejects_an_open_rejected_source_before_mayor_dispatch(self) -> None:
+        beads, record, verdict_args = self.leased_experiment("FAIL")
+        with mock.patch.object(factory, "Beads", return_value=beads), contextlib.redirect_stdout(io.StringIO()):
+            self.assertEqual(factory.command_record_verdict(verdict_args), 0)
+        rescope_bead = record["metadata"]["factory.rescope_bead"]
+        record["status"] = "open"
+
+        with (
+            mock.patch.object(factory, "Beads", return_value=beads),
+            mock.patch.object(factory, "dispatch_role") as dispatch,
+            self.assertRaisesRegex(factory.FactoryError, "terminal closed rejected experiment"),
+        ):
+            factory.rescope_rejection("repo", rescope_bead, 10)
+
+        dispatch.assert_not_called()
+
     def test_stale_fence_rejects_verdict_without_mutating_beads(self) -> None:
         beads, _record, args = self.leased_experiment("PASS")
         args.lease_token = "stale-token"
