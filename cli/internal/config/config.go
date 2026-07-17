@@ -385,13 +385,13 @@ func Load(flagOverrides *Config) (*Config, error) {
 	}
 
 	// Load home config
-	homeConfig, _ := loadFromPath(homeConfigPath())
+	homeConfig, _ := loadFromPath(homeConfigReadPath())
 	if homeConfig != nil {
 		cfg = merge(cfg, homeConfig)
 	}
 
 	// Load project config
-	projectConfig, _ := loadFromPath(projectConfigPath())
+	projectConfig, _ := loadFromPath(projectConfigReadPath())
 	if projectConfig != nil {
 		cfg = merge(cfg, projectConfig)
 	}
@@ -416,6 +416,61 @@ func homeConfigPath() string {
 	return filepath.Join(home, ".agents", "ao", "config.yaml")
 }
 
+// legacyWarned tracks which legacy config paths already produced a
+// deprecation warning, so repeated loads in one process warn once per path.
+var legacyWarned = map[string]bool{}
+
+// withLegacyFallback returns newPath when a file exists there. When it does
+// not and legacyPath holds a file, it returns legacyPath and warns once on
+// stderr: the pre-3.3 `.agentops/` location is read-only compatibility for
+// this release. Writes (Save) always target the new path.
+func withLegacyFallback(newPath, legacyPath string) string {
+	if newPath == "" || legacyPath == "" {
+		return newPath
+	}
+	if _, err := os.Stat(newPath); err == nil {
+		return newPath
+	}
+	if _, err := os.Stat(legacyPath); err != nil {
+		return newPath
+	}
+	if !legacyWarned[legacyPath] {
+		legacyWarned[legacyPath] = true
+		fmt.Fprintf(os.Stderr, "Warning: reading deprecated config path %s; move it to %s\n", legacyPath, newPath)
+	}
+	return legacyPath
+}
+
+// homeConfigReadPath returns the home config path for reads, falling back to
+// the legacy ~/.agentops/config.yaml location when the new path is absent.
+func homeConfigReadPath() string {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return ""
+	}
+	return withLegacyFallback(
+		filepath.Join(home, ".agents", "ao", "config.yaml"),
+		filepath.Join(home, ".agentops", "config.yaml"),
+	)
+}
+
+// projectConfigReadPath returns the project config path for reads, falling
+// back to the legacy ./.agentops/config.yaml location when the new path is
+// absent. An explicit AGENTOPS_CONFIG override is returned verbatim.
+func projectConfigReadPath() string {
+	if override := strings.TrimSpace(os.Getenv("AGENTOPS_CONFIG")); override != "" {
+		return override
+	}
+	cwd, err := getwdFunc()
+	if err != nil {
+		return ""
+	}
+	return withLegacyFallback(
+		filepath.Join(cwd, ".agents", "ao", "config.yaml"),
+		filepath.Join(cwd, ".agentops", "config.yaml"),
+	)
+}
+
 // getwdFunc is the function used to get the current working directory.
 // It can be overridden in tests to simulate os.Getwd failures.
 var getwdFunc = os.Getwd
@@ -434,13 +489,13 @@ func projectConfigPath() string {
 
 // loadHomeConfig loads the home directory config, returning nil on error.
 func loadHomeConfig() *Config {
-	cfg, _ := loadFromPath(homeConfigPath())
+	cfg, _ := loadFromPath(homeConfigReadPath())
 	return cfg
 }
 
 // loadProjectConfig loads the project config, returning nil on error.
 func loadProjectConfig() *Config {
-	cfg, _ := loadFromPath(projectConfigPath())
+	cfg, _ := loadFromPath(projectConfigReadPath())
 	return cfg
 }
 

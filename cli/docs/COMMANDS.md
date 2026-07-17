@@ -1044,6 +1044,16 @@ ao validate [flags]
 
 ---
 
+### `ao verify`
+
+Removed in the AgentOps Cathedral Cut
+
+```
+ao verify [flags]
+```
+
+---
+
 ### `ao worktree`
 
 Removed in the AgentOps Cathedral Cut

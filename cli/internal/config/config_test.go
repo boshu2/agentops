@@ -2533,3 +2533,133 @@ func TestMerge_HarvestRoots(t *testing.T) {
 		t.Errorf("merge HarvestRoots[0] = %q, want %q", result.Paths.HarvestRoots[0], "/custom/root1")
 	}
 }
+
+// clearConfigEnv blanks the env vars that would otherwise leak into Load()
+// during legacy-fallback tests.
+func clearConfigEnv(t *testing.T) {
+	t.Helper()
+	t.Setenv("AGENTOPS_CONFIG", "")
+	t.Setenv("AGENTOPS_OUTPUT", "")
+	t.Setenv("AGENTOPS_BASE_DIR", "")
+	t.Setenv("AGENTOPS_VERBOSE", "")
+	t.Setenv("AGENTOPS_NO_SC", "")
+}
+
+// TestLoad_LegacyHomeConfigFallback pins the 3.3 migration contract: with no
+// config at ~/.agents/ao/config.yaml, a legacy ~/.agentops/config.yaml is
+// still read; once the new path exists it wins and the legacy file is ignored.
+func TestLoad_LegacyHomeConfigFallback(t *testing.T) {
+	clearConfigEnv(t)
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	t.Chdir(t.TempDir())
+
+	legacyDir := filepath.Join(home, ".agentops")
+	if err := os.MkdirAll(legacyDir, 0o755); err != nil {
+		t.Fatalf("mkdir legacy cfg: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(legacyDir, "config.yaml"), []byte("output: json\n"), 0o644); err != nil {
+		t.Fatalf("write legacy cfg: %v", err)
+	}
+
+	cfg, err := Load(nil)
+	if err != nil {
+		t.Fatalf("Load() error = %v", err)
+	}
+	if cfg.Output != "json" {
+		t.Errorf("Output = %q, want %q (legacy ~/.agentops/config.yaml must be read when the new path is absent)", cfg.Output, "json")
+	}
+
+	// The new path, once present, wins and the legacy file is ignored.
+	newDir := filepath.Join(home, ".agents", "ao")
+	if err := os.MkdirAll(newDir, 0o755); err != nil {
+		t.Fatalf("mkdir new cfg: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(newDir, "config.yaml"), []byte("output: yaml\n"), 0o644); err != nil {
+		t.Fatalf("write new cfg: %v", err)
+	}
+	cfg, err = Load(nil)
+	if err != nil {
+		t.Fatalf("Load() error = %v", err)
+	}
+	if cfg.Output != "yaml" {
+		t.Errorf("Output = %q, want %q (new path must win over legacy)", cfg.Output, "yaml")
+	}
+}
+
+// TestLoad_LegacyProjectConfigFallback pins the same contract for the
+// project layer: ./.agentops/config.yaml is read when ./.agents/ao/config.yaml
+// is absent, and the new path wins once present.
+func TestLoad_LegacyProjectConfigFallback(t *testing.T) {
+	clearConfigEnv(t)
+	t.Setenv("HOME", t.TempDir())
+	project := t.TempDir()
+	t.Chdir(project)
+
+	if err := os.MkdirAll(filepath.Join(project, ".agentops"), 0o755); err != nil {
+		t.Fatalf("mkdir legacy cfg: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(project, ".agentops", "config.yaml"), []byte("base_dir: /legacy/base\n"), 0o644); err != nil {
+		t.Fatalf("write legacy cfg: %v", err)
+	}
+
+	cfg, err := Load(nil)
+	if err != nil {
+		t.Fatalf("Load() error = %v", err)
+	}
+	if cfg.BaseDir != "/legacy/base" {
+		t.Errorf("BaseDir = %q, want %q (legacy ./.agentops/config.yaml must be read when the new path is absent)", cfg.BaseDir, "/legacy/base")
+	}
+
+	if err := os.MkdirAll(filepath.Join(project, ".agents", "ao"), 0o755); err != nil {
+		t.Fatalf("mkdir new cfg: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(project, ".agents", "ao", "config.yaml"), []byte("base_dir: /new/base\n"), 0o644); err != nil {
+		t.Fatalf("write new cfg: %v", err)
+	}
+	cfg, err = Load(nil)
+	if err != nil {
+		t.Fatalf("Load() error = %v", err)
+	}
+	if cfg.BaseDir != "/new/base" {
+		t.Errorf("BaseDir = %q, want %q (new path must win over legacy)", cfg.BaseDir, "/new/base")
+	}
+}
+
+// TestSave_WritesNewPathNotLegacy pins that writes never target the legacy
+// location: Save with only ./.agentops/config.yaml present creates
+// ./.agents/ao/config.yaml and leaves the legacy file untouched.
+func TestSave_WritesNewPathNotLegacy(t *testing.T) {
+	clearConfigEnv(t)
+	t.Setenv("HOME", t.TempDir())
+	project := t.TempDir()
+	t.Chdir(project)
+
+	legacy := filepath.Join(project, ".agentops", "config.yaml")
+	if err := os.MkdirAll(filepath.Dir(legacy), 0o755); err != nil {
+		t.Fatalf("mkdir legacy cfg: %v", err)
+	}
+	if err := os.WriteFile(legacy, []byte("output: json\n"), 0o644); err != nil {
+		t.Fatalf("write legacy cfg: %v", err)
+	}
+
+	if err := Save(&Config{Output: "yaml"}); err != nil {
+		t.Fatalf("Save() error = %v", err)
+	}
+
+	newPath := filepath.Join(project, ".agents", "ao", "config.yaml")
+	data, err := os.ReadFile(newPath)
+	if err != nil {
+		t.Fatalf("Save must write the new path %s: %v", newPath, err)
+	}
+	if !strings.Contains(string(data), "output: yaml") {
+		t.Errorf("new config = %q, want it to contain %q", string(data), "output: yaml")
+	}
+	legacyData, err := os.ReadFile(legacy)
+	if err != nil {
+		t.Fatalf("legacy config must remain untouched: %v", err)
+	}
+	if string(legacyData) != "output: json\n" {
+		t.Errorf("legacy config mutated to %q; Save must not write the legacy path", string(legacyData))
+	}
+}
