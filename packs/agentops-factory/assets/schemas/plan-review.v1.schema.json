@@ -1,0 +1,57 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agentops.local/schemas/plan-review.v1.schema.json",
+  "title": "Fresh semantic review of an exact product graph",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "program_id",
+    "intent_digest",
+    "graph_digest",
+    "mayor_context_id",
+    "reviewer_context_id",
+    "provider",
+    "verdict",
+    "criteria",
+    "findings"
+  ],
+  "properties": {
+    "schema_version": {"const": "plan-review.v1"},
+    "program_id": {"type": "string", "minLength": 1},
+    "intent_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "graph_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "mayor_context_id": {"type": "string", "minLength": 1},
+    "reviewer_context_id": {"type": "string", "minLength": 1},
+    "provider": {"enum": ["codex", "claude"]},
+    "verdict": {"enum": ["PASS", "FAIL", "NOT_PROVEN"]},
+    "criteria": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "result", "reason"],
+        "properties": {
+          "id": {"type": "string", "minLength": 1},
+          "result": {"enum": ["PASS", "FAIL", "NOT_PROVEN"]},
+          "reason": {"type": "string", "minLength": 1}
+        }
+      }
+    },
+    "findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "severity", "node_ids", "reason"],
+        "properties": {
+          "id": {"type": "string", "minLength": 1},
+          "severity": {"enum": ["blocking", "advisory"]},
+          "node_ids": {"type": "array", "uniqueItems": true, "items": {"type": "string"}},
+          "reason": {"type": "string", "minLength": 1}
+        }
+      }
+    }
+  }
+}

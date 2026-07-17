@@ -1,0 +1,70 @@
+# Portable city policy. deploy/gc/bootstrap.sh replaces the runtime sentinels
+# in the generated city with this city's private paths.
+
+[workspace]
+max_active_sessions = 1
+env = { GC_BIN = "__GC_AGENTOPS_GC_BIN__" }
+
+[providers.codex]
+base = "builtin:codex"
+args_append = ["__GC_AGENTOPS_CODEX_SCOPE_ARGS__"]
+options_schema_merge = "replace"
+option_defaults = { permission_mode = "auto-edit" }
+env = { CODEX_HOME = "__GC_AGENTOPS_CODEX_HOME__" }
+
+[[providers.codex.options_schema]]
+key = "permission_mode"
+label = "Approval Policy"
+type = "select"
+default = "auto-edit"
+
+  [[providers.codex.options_schema.choices]]
+  value = "auto-edit"
+  label = "Workspace write, no prompts"
+  flag_args = ["--sandbox", "workspace-write", "--ask-for-approval", "never", "-c", "sandbox_workspace_write.network_access=true"]
+
+  [[providers.codex.options_schema.choices]]
+  value = "unrestricted"
+  label = "Git delivery authority (Refiner only)"
+  flag_args = ["--dangerously-bypass-approvals-and-sandbox"]
+
+[providers.claude]
+base = "builtin:claude"
+args_append = ["__GC_AGENTOPS_CLAUDE_SCOPE_ARGS__"]
+print_args = []
+options_schema_merge = "replace"
+option_defaults = { permission_mode = "auto" }
+
+[[providers.claude.options_schema]]
+key = "permission_mode"
+label = "Permission Mode"
+type = "select"
+default = "auto"
+
+  [[providers.claude.options_schema.choices]]
+  value = "auto"
+  label = "Auto mode with safety checks"
+  flag_args = ["--permission-mode", "auto"]
+
+
+# Gas City's scaffold imports maintenance workers and turns every provider
+# catalog entry into a generic sling target. This managed city routes neither
+# surface: only roles explicitly declared by the selected AgentOps pack may
+# consume its bounded session capacity. bootstrap.sh adds equivalent
+# rig-scoped patches after gc rig add supplies each logical rig name; the
+# factory narrows its dynamic worktree rigs further from bead metadata.
+[[patches.agent]]
+name = "bd.dog"
+suspended = true
+
+[[patches.agent]]
+name = "core.control-dispatcher"
+suspended = true
+
+[[patches.agent]]
+name = "codex"
+suspended = true
+
+[[patches.agent]]
+name = "claude"
+suspended = true

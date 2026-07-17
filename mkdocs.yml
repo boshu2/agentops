@@ -167,6 +167,7 @@ nav:
   - Architecture:
       - architecture/index.md
       - Operating Loop: architecture/operating-loop.md
+      - Gas City Factory: architecture/gas-city-factory.md
       - How It Works: how-it-works.md
       - Architecture Overview: ARCHITECTURE.md
       - Component Map: architecture/component-map.md

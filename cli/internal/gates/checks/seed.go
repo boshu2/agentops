@@ -90,6 +90,27 @@ var (
 		"skills/**", "skills-codex/**", "schemas/**", "cli/cmd/ao/**", "cli/internal/**",
 		"scripts/check-cathedral-cut-conformance.py",
 	}
+	gcExecutorPaths = []string{
+		"packs/agentops-executor/**",
+		"packs/agentops-factory/**",
+		"deploy/gc/**",
+		"docs/contracts/gas-city-execution-adapter.md",
+		"docs/architecture/gas-city-factory.md",
+		"docs/adr/ADR-0015-gas-city-fenced-steward.md",
+		"docs/audits/gas-city-factory-live-bead-canary.md",
+		"docs/plans/2026-07-17-gas-city-factory-operationalization.md",
+		"skills-codex/implement/**",
+		"skills-codex/validate/**",
+		"skills-codex/using-gc/**",
+		"scripts/sync-gc-pack.py",
+		"scripts/check-gc-executor.sh",
+		"scripts/regen-all.sh",
+		"tests/python/test_gc_packet.py",
+		"tests/python/test_gc_factory.py",
+		"tests/python/test_sync_gc_pack.py",
+		"tests/scripts/check-gc-executor.bats",
+		"tests/scripts/gc-agentops-bootstrap.bats",
+	}
 	// docs.cli-snippets resolves every `ao …` command cited in a live doc against
 	// the cobra tree; a rename/removal of a command silently strands a golden-path
 	// snippet. Runs on any docs change plus self-reference (the script, its baseline
@@ -246,6 +267,7 @@ func init() {
 		{ID: "skill.schema", Tiers: gates.Fast | gates.Full, Match: skillPaths, Blocking: true, Backing: "validate-skill-schema.sh"},
 		{ID: "skill.triggers", Tiers: gates.Fast | gates.Full, Match: skillPaths, Blocking: true, Backing: "validate-skill-triggers.sh"},
 		{ID: "contract.cathedral-cut", Tiers: gates.Fast | gates.Full, Match: cathedralCutPaths, Blocking: true, Backing: "check-cathedral-cut-conformance.py"},
+		{ID: "adapter.gc-executor", Tiers: gates.Fast | gates.Full, Match: gcExecutorPaths, Blocking: true, Backing: "check-gc-executor.sh", RepairHint: "run scripts/sync-gc-pack.py, then scripts/check-gc-executor.sh"},
 		{ID: "contract.skill-mesh", Tiers: gates.Fast | gates.Full, Match: skillPaths, Blocking: true, Backing: "check-skill-mesh.py"},
 		{ID: "contract.finding-registry", Tiers: gates.Fast | gates.Full, Match: contractPaths, Blocking: true, Backing: "check-finding-registry.sh"},
 		{ID: "ci.policy-parity", Tiers: gates.Fast | gates.Full, Match: ciPolicyPaths, Blocking: true, Backing: "validate-ci-policy-parity.sh"},

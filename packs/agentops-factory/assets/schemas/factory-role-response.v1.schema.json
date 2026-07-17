@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agentops.local/schemas/factory-role-response.v1.schema.json",
+  "title": "Runtime-bound evidence emitted by a factory semantic role",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "request_id",
+    "role",
+    "provider",
+    "bead_id",
+    "session_context_id",
+    "session_name",
+    "template",
+    "artifact_path",
+    "artifact_digest"
+  ],
+  "properties": {
+    "schema_version": {"const": "factory-role-response.v1"},
+    "request_id": {"type": "string", "minLength": 1},
+    "role": {"enum": ["mayor", "plan-review"]},
+    "provider": {"enum": ["codex", "claude"]},
+    "bead_id": {"type": "string", "minLength": 1},
+    "session_context_id": {"type": "string", "minLength": 1},
+    "session_name": {"type": "string", "minLength": 1},
+    "template": {"type": "string", "minLength": 1},
+    "artifact_path": {"type": "string", "minLength": 1},
+    "artifact_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+  }
+}

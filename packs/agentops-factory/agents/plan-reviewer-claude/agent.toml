@@ -1,0 +1,9 @@
+scope = "rig"
+provider = "claude"
+session = "tmux"
+wake_mode = "fresh"
+min_active_sessions = 0
+max_active_sessions = 1
+option_defaults = { permission_mode = "auto" }
+inject_assigned_skills = true
+nudge = "Claim one plan-review request, freshly judge the exact graph without repairing it, emit plan-review.v1, close only the transport bead, then drain and exit."

@@ -1,0 +1,9 @@
+[pack]
+name = "agentops-factory"
+schema = 2
+version = "0.1.0"
+requires_gc = ">=1.1.1"
+description = "Fenced Steward product factory: Mayor semantics, deterministic graph admission, isolated AgentOps experiments, and fenced PR delivery."
+
+[imports.executor]
+source = "../agentops-executor"

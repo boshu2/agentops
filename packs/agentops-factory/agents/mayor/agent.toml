@@ -1,0 +1,10 @@
+scope = "city"
+provider = "codex"
+session = "tmux"
+wake_mode = "fresh"
+work_dir = ".gc/agents/mayor"
+min_active_sessions = 0
+max_active_sessions = 1
+option_defaults = { permission_mode = "auto-edit" }
+inject_assigned_skills = true
+nudge = "Claim exactly one factory planning request, propose a digest-bound program graph, emit it through the factory adapter, close only the transport bead, then drain and exit."

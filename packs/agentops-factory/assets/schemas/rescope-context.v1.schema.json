@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agentops.local/schemas/rescope-context.v1.schema.json",
+  "title": "Immutable Mayor rescope context",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "program_id",
+    "program_bead",
+    "rescope_bead",
+    "rejected_bead",
+    "rejected_node_id",
+    "rejected_attempt",
+    "rejected_spec",
+    "verdict",
+    "verdict_digest",
+    "verdict_path",
+    "canonical_intent_source",
+    "canonical_intent_digest",
+    "dependent_beads"
+  ],
+  "properties": {
+    "schema_version": {"const": "rescope-context.v1"},
+    "program_id": {"type": "string", "minLength": 1},
+    "program_bead": {"type": "string", "minLength": 1},
+    "rescope_bead": {"type": "string", "minLength": 1},
+    "rejected_bead": {"type": "string", "minLength": 1},
+    "rejected_node_id": {"type": "string", "minLength": 1},
+    "rejected_attempt": {"type": "integer", "minimum": 1},
+    "rejected_spec": {"type": "object"},
+    "verdict": {"enum": ["FAIL", "NOT_PROVEN"]},
+    "verdict_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "verdict_path": {"type": "string", "minLength": 1},
+    "canonical_intent_source": {"type": "string", "minLength": 1},
+    "canonical_intent_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "dependent_beads": {"type": "array", "items": {"type": "string", "minLength": 1}, "uniqueItems": true}
+  }
+}

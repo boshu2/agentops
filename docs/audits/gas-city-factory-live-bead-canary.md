@@ -26,3 +26,32 @@ and it does not prove rejection, rebase, outage, or recovery paths.
 This canary confirms that a single bounded unit of work moved through the
 bead-native lifecycle and honored protected delivery. It is not a release and
 is not proof of every failure mode.
+
+## Live evidence
+
+The isolated city `/Users/bo/dev/gc-agentops-factory-v1b` admitted and delivered
+this canary on 2026-07-17:
+
+| Stage | Durable identity and result |
+|---|---|
+| Mayor planning | planning bead `gafv-are`; Codex context `gafv-wisp-mi7` |
+| Fresh plan review | review bead `al-yon`; Claude context `gafv-wisp-yjj`; PASS |
+| Program | program bead `al-5n6`; graph digest `cedc2ace35c0aab14c20898401bbfc22088dd18c99e147c987973ec033309715` |
+| Experiment | experiment bead `al-139`; Claude Worker context `gafv-wisp-8pcm`; frozen candidate `4205fc6194a9c2ee93b2e59473311021b1d955ad` |
+| Candidate judgment | fresh Codex Validator context `gafv-wisp-3pw7`; PASS admission certificate attached to `al-139` |
+| Refinery | Refinery bead `al-h8n`; Codex Refiner; fenced integration head `5c4af4afbe8813b4b745e2e2e1c2a528d72ee60a` |
+| Integration judgment | fresh Claude Validator context `gafv-wisp-9hzj`; PASS |
+| Protected delivery | PR [#916](https://github.com/boshu2/agentops/pull/916); required checks passed; landed SHA `b80a752aad3843af66160b08a823aaed57e07169` |
+
+The experiment, Refinery, and program beads are closed with the landed result.
+The JSON graph, review, verdict, admission certificate, manifests, and delivery
+record remain evidence referenced by bead metadata; none is a work queue or
+lifecycle replacement.
+
+## Qualification boundary
+
+This proves the real single-bead happy path, provider interchange across author
+and judge roles, exact-subject validation, fenced integration, and protected
+landing. It does not prove multiple simultaneous writers, dependent waves,
+rejection/rescope, stale fences, moved subjects, dead workers, provider outage,
+or rebase recovery; those remain the proof-week fault matrix.

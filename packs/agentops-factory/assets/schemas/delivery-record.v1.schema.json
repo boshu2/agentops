@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agentops.local/schemas/delivery-record.v1.schema.json",
+  "title": "Fenced Refinery delivery record",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "program_id",
+    "wave",
+    "epoch",
+    "fence_token",
+    "base_branch",
+    "expected_base_sha",
+    "candidate_shas",
+    "integration_branch",
+    "integration_sha",
+    "integration_validation",
+    "pr",
+    "landed_sha",
+    "status"
+  ],
+  "properties": {
+    "schema_version": {"const": "delivery-record.v1"},
+    "program_id": {"type": "string", "minLength": 1},
+    "wave": {"type": "integer", "minimum": 1},
+    "epoch": {"type": "integer", "minimum": 1},
+    "fence_token": {"type": "string", "pattern": "^[0-9a-f]{32,64}$"},
+    "base_branch": {"type": "string", "minLength": 1},
+    "expected_base_sha": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+    "candidate_shas": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "pattern": "^[0-9a-f]{40}$"}},
+    "integration_branch": {"type": "string", "minLength": 1},
+    "integration_sha": {"type": "string", "pattern": "^$|^[0-9a-f]{40}$"},
+    "integration_validation": {"type": ["object", "null"]},
+    "pr": {"type": ["object", "null"]},
+    "landed_sha": {"type": ["string", "null"]},
+    "status": {"enum": ["assembling", "validation_required", "validated", "published", "merge_eligible", "landed", "failed"]}
+  }
+}

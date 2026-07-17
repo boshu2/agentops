@@ -1,0 +1,287 @@
+# WIZARD_REBUTTAL_FABLE — final defense, revision, and v1 ruling
+
+Author: Fable wizard. Inputs: both reactions (`WIZARD_REACTION_FABLE.md`,
+`WIZARD_REACTION_GPT_SOL_5_6.md`) plus all prior duel artifacts. The operator's
+new rejection-loop rule is incorporated as hard authority law (§3).
+
+---
+
+## 1. Their strongest criticism of my topology, answered
+
+**The criticism: my one-writer integration promise was not a guarantee.** A
+shared bot credential plus a TTL/heartbeat/reap lease, with no fencing token
+and no compare-and-swap push rule, leaves a race window in which a
+reaped-but-alive Refinery wake can mutate the train after losing ownership
+(`WIZARD_SCORES_GPT_SOL_5_6.md:39-44`), and three adjacent seams compound it:
+an infeasible "2-of-3 family" quorum in a two-provider city (`:45-49`), an
+ambiguous "exactly one PASS" intake under multi-judge policy (`:50-53`), and a
+PR-author/review-identity collapse at the forge gate (`:54-59`).
+
+**Verdict: conceded, not defended — and now closed as v1 spec, which
+dissolves the criticism's scoring weight.** The concession was already made in
+my reaction (`WIZARD_REACTION_FABLE.md` §4); here is the closed form:
+
+1. **Fenced delivery record.** The record — not any session — owns the
+   delivery slot; monotonic fencing epoch; every integration push, PR
+   mutation, state transition, and cleanup receipt presents the current
+   token; force-with-lease against the *recorded* expected old head; reap
+   invalidates the old token *before* a replacement can acquire
+   (adopted verbatim from `WIZARD_REFINERY_ADDENDUM_GPT_SOL_5_6.md:143-166`).
+   The control-loop justification is mine as much as theirs: L8 proved prose
+   does not bind tool-capable sessions and L13 proved liveness beliefs about
+   claimants are unreliable (`/Users/bo/dev/control-plane/LEARNINGS.md:21-24`,
+   `:58-59`); a fence is the only shape that survives both.
+2. **Two-provider quorum.** "2-of-3 family" is dead. Routine subjects: one
+   fresh validator, family ≠ author family. High-stakes subjects and PR heads:
+   one fresh PASS from **each** family. Contested: one fresh re-panel, then
+   Bo. No synthesized tie-break, no Mayor vote — the QUORUM-PROTOCOL
+   degradation rule (missing judge on a load-bearing call ⇒ escalate,
+   `/Users/bo/dev/control-plane/QUORUM-PROTOCOL.md:54-58`, `:71-75`) applied
+   honestly to a two-family deployment.
+3. **Admission certificate.** The reducer writes exactly one deterministic
+   admission certificate per admitted subject, referencing the immutable
+   component `verdict.v2` digests; intake and merge-eligibility key on the
+   certificate. Verdicts stay evidence; the certificate is the singular gate
+   artifact — the same decision/close separation QUORUM-PROTOCOL already drew
+   (`:90-102`).
+4. **Split forge identities.** `refinery-bot` authors PRs;
+   `agentops-validation` posts validation as a required *status check* under
+   a distinct identity. The required-review slot is satisfied by that check
+   or by Bo, never by the PR author's own artifact posts. No-self-approval
+   holds at the forge gate, not just in the city
+   (`mt-olympus/FINAL-POSTMORTEM.md:34`).
+
+One pushback retained: their winner-vs-winner verdict leaned on these seams
+while calling them "correctable specification gaps, not reasons to discard"
+(`WIZARD_SCORES_GPT_SOL_5_6.md:61`). Patched, the two winners are what both
+reveal files now admit they are — the same architecture with one residual
+policy question (§7 of both reactions, resolved in §4 below).
+
+## 2. Their topology, steelmanned better than they steelmanned it
+
+Their Lean Steward deserves three arguments they under-made:
+
+1. **The transactional scratch cut is not a cost concession — it is the
+   *correct reading of the contract*.** Their reveal frames scratch-assembly
+   as accepting my economics critique (`WIZARD_REACTION_GPT_SOL_5_6.md:8-17`).
+   It is stronger than that: contract §14 attaches fresh validation to "the
+   resulting exact integrated or rebased subject" (`EVIDENCE_PACKET.md:275-278`)
+   — validation obligations attach to *published subjects*. Assembling in a
+   disposable scratch index and publishing **one** fenced integration-cut
+   commit per train doesn't economize on the contract; it minimizes the set
+   of subjects the contract binds, with zero stale-evidence reuse. Their
+   per-application deterministic checks in scratch also preserve most of the
+   localization their old per-merge validation bought: the *checks* find the
+   first incompatible candidate; only the *semantic* verdict waits for the
+   completed cut. That is better than my train-then-bisect design — bisect
+   pays O(log n) fresh validations after a failure; scratch checks localize
+   most failures for free before any fresh validation is spent. I adopt it.
+2. **The universal pair at the merge-eligible head has a decisive argument
+   they buried: the mixed-author head.** A train integrates Codex- and
+   Claude-authored candidates plus Refinery merge/regen commits. "Judge from
+   the non-author family" is *undefined* for that subject — every family is
+   an author. Requiring one fresh PASS from each family is not extra
+   conservatism; it is the only policy under which "author ≠ judge across
+   families" is well-defined at the one transition workers cannot undo. They
+   list this point mid-table (`WIZARD_REACTION_GPT_SOL_5_6.md:337-340`); it is
+   actually their whole case, and it wins the *first-eligibility* question.
+3. **Codex-Mayor + Claude-plan-reviewer is a real diversity design, not a
+   host default.** With the Mayor on one family and its plan reviewer
+   mandatorily on the other, both persistent-semantic seams (plan authored,
+   plan judged) are family-diverse by construction — the same membrane L7
+   proved matters (`/Users/bo/dev/control-plane/LEARNINGS.md:16-19`) applied
+   to the *plan*, which is the highest-leverage authored artifact in the
+   city. My proposal had the cross-family reviewer; theirs makes the pairing
+   structural. Adopt.
+
+## 3. The operator's rejection loop — incorporated as hard authority law
+
+New invariant, binding on every role and mechanism in v1:
+
+> **On `FAIL` or `NOT_PROVEN`:** the verdict is immutable and terminal for
+> that experiment. The reducer marks the graph node failed and releases its
+> lease. **Only the Mayor** (as a proposal, reducer-admitted; or the operator
+> directly) may rescope/replan and start a **new** AgentOps experiment — new
+> intent digest, new experiment identity, new isolated branch/worktree/index,
+> **fresh worker context**. The rejected worker's session is never resumed;
+> its branch is frozen as evidence. **Refinery cannot repair** a failed
+> candidate or admit it "with caution" (contract §15,
+> `EVIDENCE_PACKET.md:279-281`). **Changed product acceptance requires
+> operator approval** before the new experiment dispatches — changing
+> acceptance changes the caller-owned source
+> (`/Users/bo/dev/agentops/docs/architecture/operating-loop.md:100-107`).
+> No mechanism, transport close, or retry budget silently upgrades
+> FAIL/NOT_PROVEN (`gas-city-execution-adapter.md:111-114`).
+
+This is the Brownian ratchet made law — fresh context with failure feedback,
+never saturated-context resumption
+(`mt-olympus/docs/canonical/olympus-pantheon-synthesis.md:200-213`) — and it
+simplifies the design: the Mayor's "retry budget 2 then escalate" is now
+explicitly a budget on *new experiments per intent*, not on worker nudges.
+Validator REASONS travel into the new intent as failure feedback; the failed
+branch and verdict remain citable evidence. This rule also settles who may
+not request experiments: workers, validators, and Refinery never start one.
+Refinery's sole power on integration-time semantic failure is to **file a
+repair-needed finding bead** with evidence; the Mayor scopes it into a new
+experiment (or the operator does), preserving the same loop.
+
+## 4. The four posed questions, ruled
+
+**Q1 — Witness: resident LLM, event-triggered fresh judge, or deterministic
+observer + fresh judge pool?**
+**Ruling: deterministic observer + event-triggered fresh judge pool. Not
+resident — bilateral consensus, now final.** The decomposition: (a)
+deterministic observers — identity/freshness attestation, scope-vs-manifest
+checks, admission certificates, and scheduled audit orders (Argus-shape) over
+stale PRs, digest mismatches, and direct-main attempts; (b) *event-triggered*
+fresh judges — plan-review judge on plan-admission events, verdict judges on
+candidate/cut/head events, assurance sampler on a schedule with D's
+seeded-defect metrics but no HOLD, no residency
+(`WIZARD_REACTION_GPT_SOL_5_6.md:100-110` concedes the resident Governor;
+my §4 of `WIZARD_IDEAS_FABLE.md` predicted the collapse). Residency is
+reconsidered only if a controlled resident-vs-fresh comparison shows
+continuity-specific unique yield — a bar neither wizard expects to be met.
+
+**Q2 — Per-quest conductor in v1?**
+**Ruling: a mode, not a role.** v1 ships a dormant `quest-conduct` prompt
+mode plus the metrics to justify it; no conductor runtime is built. Two repo
+generations never produced a workload depending on live Apollo autonomy
+(`olympus-pantheon-synthesis.md:274`), and the GC control dispatcher already
+owns mechanical sequencing (`coming-from-gastown.md:116`). Promotion trigger
+in §6; their C's contract (quest-digest binding, TTL, one-owner lease,
+reversal-rate kill, `WIZARD_IDEAS_GPT_SOL_5_6.md:543-556`) is the spec that
+activates *if* the trigger fires.
+
+**Q3 — Smallest Refinery that earns existence; what stays deterministic?**
+**Ruling: a durable authority identity + fenced delivery record + delivery
+state machine, with a min-0/max-1 fresh triage pool. No resident LLM.**
+The role's irreducible judgment is exactly one recurring classification —
+mechanical maintenance vs semantic repair vs policy blockage — plus
+conflict-shape triage at cut assembly. Everything else is deterministic
+mechanism beneath it: fetch/freeze of exact candidate SHAs; scratch-index
+application in stable DAG order with per-application factual checks;
+regenerate-once + inbound-reference sweep (`LEARNINGS.md:35-47`); publish one
+fenced integration-cut commit (token-checked, CAS); PR create/update/label/
+draft-dependent management; CI polling and bounded flake re-run; rebase under
+fence on main movement; auto-merge enablement only after the deterministic
+merge-eligibility gate; landed-SHA verification and delivery receipts;
+post-receipt branch/worktree cleanup. Refinery never implements, judges,
+replans, closes beads (reducer does, on observed merge), starts experiments,
+or bypasses branch policy — each enforced by push rules, the diff-class
+guard, and the identity split, not prose. If ≥80% of triage wakes make no
+call the deterministic table couldn't, the pool absorbs into the engine
+(both addenda carry this criterion independently — it is consensus).
+
+**Q4 — Binding judgments, graph-state writers, experiment requesters?**
+- **Binding judgments:** fresh `verdict.v2`s combined by the deterministic
+  admission certificate; deterministic gate results (scope, digest, identity,
+  fence); the forge's protected-branch policy at `main`. Nothing else binds —
+  not Mayor opinion, not Refinery classification (a routing sidecar), not
+  assurance findings (advisory beads), not transport closes.
+- **Graph state:** written by the deterministic reducer **only**. Mayor
+  proposes; Refinery's record holds delivery state under its own reducer
+  path; workers/validators emit sidecars.
+- **New experiment after FAIL/NOT_PROVEN:** the Mayor (proposal,
+  reducer-admitted) or the operator — no one else, per §3. Refinery and the
+  assurance sampler may *file finding beads* that request one; the Mayor/
+  operator scope and start it. Changed acceptance → operator approval, always.
+
+## 5. The residual disagreement, resolved to its true size
+
+After both reactions, the only live question is **pair cardinality at the
+protected-main seam on *subsequent clean rebases*** — their reveal concedes
+everything earlier in the train (scratch cut, one published mutation, one
+fresh verdict per published cut; `WIZARD_REACTION_GPT_SOL_5_6.md:170-178`),
+and I concede the pair at every head's *first* merge-eligibility (§2 point 2:
+the mixed-author head makes any single-family policy ill-defined).
+
+Final position on the sliver: when `main` moves and the rebase is clean (zero
+conflict hunks, regen idempotent, full deterministic suite green, delta does
+not intersect the train's write scopes or generated surfaces, no high-stakes
+label), revalidation is **one fresh judge, alternating family per event**,
+plus the full deterministic suite; any conflict, regen diff, scope
+intersection, or stakes label restores the full pair. This respects the
+contract (fresh validation over the exact new subject — cardinality is the
+only open variable, as their own reaction states, `:139-148`) while refusing
+to make delivery availability a conjunction of both providers' uptime on
+every push to `main` by unrelated work. **Committed falsifier:** shadow-run
+the withheld family on every clean-rebase revalidation during the proof week;
+≥1 unique material catch ⇒ their universal pair wins and I adopt it; zero
+catches with judge-queue share under their own 35% threshold ⇒ tiering
+stands. Either way the seam closes on evidence.
+
+## 6. Final v1 topology, v1.5 promotion triggers, falsification tests
+
+### v1 — "Fenced Steward" (the merged architecture, final)
+
+- **Persistent LLM (exactly one):** Mayor — named session, Codex family;
+  human interface, DAG decomposition, replan-from-verdicts, rejection-loop
+  owner per §3; proposal-only; removable by config (collapse invariant → the
+  headless city). Kill: ≥80% mechanical actions, or fails to beat headless
+  on human reload/replan latency in week one.
+- **Fresh pools (event-triggered):** codex/claude implementers; codex/claude
+  validators; plan-review judge (Claude family, structural cross-family from
+  the Mayor; blocks dispatch on unresolved P1 findings); refinery triage
+  (min 0/max 1); scheduled assurance sampler (advisory only); repair
+  implementers via §3's loop.
+- **Refinery:** durable identity + fenced delivery record; scratch-cut
+  trains (cap ≤5 candidates or diff ceiling), one PR per train, draft
+  dependent PRs with dependency metadata; split forge identities; landed-SHA
+  receipts; pre-existing-failure non-waiver; per §4-Q3.
+- **Deterministic spine:** graph compiler + scope-intersection check;
+  worktree/index allocator; fenced node + delivery leases; sidecar reducer +
+  admission certificates; stakes classifier as city policy (integration
+  cuts, generated regens, plan revisions, security surfaces ⇒ high-stakes);
+  GC controller/health patrol; audit + cleanup orders; branch-namespace push
+  rules (`exp/**` only for workers; no LLM identity can push `main`).
+- **Judgment policy:** routine candidate = one fresh cross-family validator;
+  high-stakes + first merge-eligibility of every PR head = both-family pair;
+  clean-rebase revalidation = one fresh alternating-family judge (+ shadow
+  pair during proof); contested = re-panel once, then Bo.
+- **Authority:** the §3 rejection loop; reducer as sole graph writer; forge
+  policy as sole `main` writer; operator as sole acceptance-change authority.
+
+### v1.5 promotion triggers (all evidence-gated, none pre-built)
+
+1. **Quest-conduct mode → live conductor:** ≥3 genuinely concurrent quests,
+   or sustained Mayor SLO breach (replan latency, or context recycle >1/day
+   for 3+ days). Deactivate on >15% proposal-reversal or any authority
+   dispute.
+2. **Universal pair on clean rebases:** the §5 shadow falsifier fires (≥1
+   unique catch by the withheld family).
+3. **Refinery longer-lived session:** >~20 triage wakes/day with measured
+   same-state re-read thrash; trial with periodic reset, never permanent by
+   default.
+4. **Resident assurance (the dead Governor):** only if the fresh sampler
+   provably misses cross-wave defects in a controlled resident-vs-fresh
+   comparison — both wizards predict this never fires.
+5. **Inverse absorptions (demotions are promotions of simplicity):** Mayor →
+   headless on its kill criterion; triage pool → pure engine at ≥80%
+   mechanical wakes.
+
+### Three fastest falsification tests (run before the proof week)
+
+1. **Fence race (hour one).** Start a delivery, freeze the wake mid-train,
+   force lease reap, let a replacement acquire, then let the frozen session
+   attempt its queued push. The push must die on token/CAS rejection. Any
+   stale-token mutation landing falsifies the one-writer guarantee — their
+   −150 condition, now mine too.
+2. **Rejection-loop authority battery (hour two).** Inject a seeded FAIL.
+   Verify: rejected worker session never resumed; new experiment received a
+   new identity/branch/worktree and a fresh worker; Refinery produced zero
+   repair commits (diff-class guard log); an attempted acceptance change
+   without operator approval blocked dispatch. Any breach falsifies §3.
+3. **Plan-review earn-its-keep test (day one).** Seed a plan with two
+   disjoint-scope but semantically coupled beads (the compiler-invisible
+   case) and one missing-acceptance node. The deterministic compiler must
+   miss the coupling; the fresh plan-review judge must flag it P1 and block
+   dispatch. If the judge also misses it — or only ever repeats compiler
+   findings across the proof week — the plan-review role fails *my own*
+   irreducibility claim and is demoted to a checklist inside the compiler's
+   rejection messages. I falsify my contribution by the same standard I
+   applied to everyone else's.
+
+The duel ends where both independent derivations pointed: one steward, fresh
+judges, a fenced deterministic spine, delivery through policy — and every
+other character from the old pantheon either mechanized, made ephemeral, or
+left dead in the archive where the postmortem put it.

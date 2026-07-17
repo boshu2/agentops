@@ -34,6 +34,7 @@ def render() -> str:
         "- [Fitness goals](../GOALS.md)",
         "- [Program boundary](../PROGRAM.md)",
         "- [Operating loop](architecture/operating-loop.md)",
+        "- [Gas City factory](architecture/gas-city-factory.md)",
         "- [Agent workflow](agent-workflow-reference.md)",
         "- [Repository CI and delivery](CI-CD.md)",
         "- [Component map](architecture/component-map.md)",

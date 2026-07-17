@@ -1,0 +1,6 @@
+[pack]
+name = "agentops-executor"
+schema = 2
+version = "0.1.0"
+requires_gc = ">=1.1.1"
+description = "Dual-provider Gas City execution adapter for one supplied AgentOps role packet."

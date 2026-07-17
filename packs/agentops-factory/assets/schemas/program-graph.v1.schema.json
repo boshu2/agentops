@@ -1,0 +1,74 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agentops.local/schemas/program-graph.v1.schema.json",
+  "title": "AgentOps Gas City product program graph",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "program_id",
+    "intent_digest",
+    "repository",
+    "base_branch",
+    "base_sha",
+    "planning_notes",
+    "nodes"
+  ],
+  "properties": {
+    "schema_version": {"const": "program-graph.v1"},
+    "program_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$"},
+    "intent_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "repository": {"type": "string", "minLength": 1},
+    "base_branch": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._/-]{0,127}$"},
+    "base_sha": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+    "planning_notes": {"type": "string"},
+    "nodes": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 64,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "title",
+          "intent",
+          "acceptance",
+          "non_goals",
+          "depends_on",
+          "write_scope",
+          "generated_scope",
+          "subject",
+          "first_check",
+          "provider",
+          "validator_provider",
+          "risk"
+        ],
+        "properties": {
+          "id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$"},
+          "title": {"type": "string", "minLength": 1},
+          "intent": {"type": "string", "minLength": 1},
+          "acceptance": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}},
+          "non_goals": {"type": "array", "items": {"type": "string", "minLength": 1}},
+          "depends_on": {"type": "array", "uniqueItems": true, "items": {"type": "string"}},
+          "write_scope": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+          "generated_scope": {"type": "array", "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+          "subject": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["includes", "excludes"],
+            "properties": {
+              "includes": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+              "excludes": {"type": "array", "uniqueItems": true, "items": {"type": "string", "minLength": 1}}
+            }
+          },
+          "first_check": {"type": "string", "minLength": 1},
+          "provider": {"enum": ["codex", "claude"]},
+          "validator_provider": {"enum": ["codex", "claude"]},
+          "risk": {"enum": ["routine", "high"]},
+          "supersedes": {"type": "string", "minLength": 1}
+        }
+      }
+    }
+  }
+}
