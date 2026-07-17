@@ -1,0 +1,66 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agentops.dev/schemas/gc-execution-envelope.v1.schema.json",
+  "title": "gc-execution-envelope.v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "packet_id",
+    "role",
+    "provider",
+    "intent_source",
+    "intent_digest",
+    "workspace",
+    "subject",
+    "write_scope",
+    "evidence_dir",
+    "result_path"
+  ],
+  "properties": {
+    "schema_version": {"const": "gc-execution-envelope.v1"},
+    "packet_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"},
+    "role": {"enum": ["implement", "validate"]},
+    "provider": {"enum": ["codex", "claude"]},
+    "intent_source": {"type": "string", "minLength": 1},
+    "intent_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "workspace": {"type": "string", "minLength": 1},
+    "subject": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["includes", "excludes"],
+      "properties": {
+        "includes": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}, "uniqueItems": true},
+        "excludes": {"type": "array", "items": {"type": "string", "minLength": 1}, "uniqueItems": true}
+      }
+    },
+    "write_scope": {"type": "array", "items": {"type": "string", "minLength": 1}, "uniqueItems": true},
+    "evidence_dir": {"type": "string", "minLength": 1},
+    "result_path": {"type": "string", "minLength": 1},
+    "baseline_manifest": {"type": "string", "minLength": 1},
+    "subject_manifest": {"type": "string", "minLength": 1},
+    "scope_receipt": {"type": "string", "minLength": 1},
+    "author_context_id": {"type": "string", "minLength": 1}
+  },
+  "allOf": [
+    {
+      "if": {"properties": {"role": {"const": "implement"}}},
+      "then": {
+        "properties": {"write_scope": {"minItems": 1}},
+        "not": {"anyOf": [
+          {"required": ["baseline_manifest"]},
+          {"required": ["subject_manifest"]},
+          {"required": ["scope_receipt"]},
+          {"required": ["author_context_id"]}
+        ]}
+      }
+    },
+    {
+      "if": {"properties": {"role": {"const": "validate"}}},
+      "then": {
+        "required": ["baseline_manifest", "subject_manifest", "scope_receipt", "author_context_id"],
+        "properties": {"write_scope": {"maxItems": 0}}
+      }
+    }
+  ]
+}

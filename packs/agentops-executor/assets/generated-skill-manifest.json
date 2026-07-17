@@ -1,0 +1,126 @@
+{
+  "schema_version": "agentops.gc-skill-projection.v1",
+  "source": "skills",
+  "generator": "scripts/sync-gc-pack.py",
+  "files": [
+    {
+      "source": "skills/implement/SKILL.md",
+      "destination": "packs/agentops-executor/agents/implementer-claude/skills/implement/SKILL.md",
+      "source_sha256": "16a3faa2d3608fe75c03baa355996547b7c65f54334cd0d238e55134d9f929a8",
+      "sha256": "16a3faa2d3608fe75c03baa355996547b7c65f54334cd0d238e55134d9f929a8",
+      "mode": "0644"
+    },
+    {
+      "source": "skills/implement/references/implement.feature",
+      "destination": "packs/agentops-executor/agents/implementer-claude/skills/implement/references/implement.feature",
+      "source_sha256": "40176c5812d6a409f27d8eff53e9032cbe917e61ae255bdde1a5182390f3e756",
+      "sha256": "40176c5812d6a409f27d8eff53e9032cbe917e61ae255bdde1a5182390f3e756",
+      "mode": "0644"
+    },
+    {
+      "source": "skills/implement/scripts/validate.sh",
+      "destination": "packs/agentops-executor/agents/implementer-claude/skills/implement/scripts/validate.sh",
+      "source_sha256": "960779d9596d70ba95db1eb7c9373d84cab2612775d243fb1a791ae6ba2fd1d5",
+      "sha256": "960779d9596d70ba95db1eb7c9373d84cab2612775d243fb1a791ae6ba2fd1d5",
+      "mode": "0755"
+    },
+    {
+      "source": "skills/implement/SKILL.md",
+      "destination": "packs/agentops-executor/agents/implementer/skills/implement/SKILL.md",
+      "source_sha256": "16a3faa2d3608fe75c03baa355996547b7c65f54334cd0d238e55134d9f929a8",
+      "sha256": "16a3faa2d3608fe75c03baa355996547b7c65f54334cd0d238e55134d9f929a8",
+      "mode": "0644"
+    },
+    {
+      "source": "skills/implement/references/implement.feature",
+      "destination": "packs/agentops-executor/agents/implementer/skills/implement/references/implement.feature",
+      "source_sha256": "40176c5812d6a409f27d8eff53e9032cbe917e61ae255bdde1a5182390f3e756",
+      "sha256": "40176c5812d6a409f27d8eff53e9032cbe917e61ae255bdde1a5182390f3e756",
+      "mode": "0644"
+    },
+    {
+      "source": "skills/implement/scripts/validate.sh",
+      "destination": "packs/agentops-executor/agents/implementer/skills/implement/scripts/validate.sh",
+      "source_sha256": "960779d9596d70ba95db1eb7c9373d84cab2612775d243fb1a791ae6ba2fd1d5",
+      "sha256": "960779d9596d70ba95db1eb7c9373d84cab2612775d243fb1a791ae6ba2fd1d5",
+      "mode": "0755"
+    },
+    {
+      "source": "skills/validate/SKILL.md",
+      "destination": "packs/agentops-executor/agents/validator-claude/skills/validate/SKILL.md",
+      "source_sha256": "d2f7259a0e8160c47bcc7968459e0385d09e75c394c4d7af1626d15d69e95101",
+      "sha256": "d2f7259a0e8160c47bcc7968459e0385d09e75c394c4d7af1626d15d69e95101",
+      "mode": "0644"
+    },
+    {
+      "source": "skills/validate/references/validate.feature",
+      "destination": "packs/agentops-executor/agents/validator-claude/skills/validate/references/validate.feature",
+      "source_sha256": "c1cdc81c1c1ec7cd0dedcb70c6e3e28e64ec60b37b90e2c38bf803b7325d484a",
+      "sha256": "c1cdc81c1c1ec7cd0dedcb70c6e3e28e64ec60b37b90e2c38bf803b7325d484a",
+      "mode": "0644"
+    },
+    {
+      "source": "skills/validate/scripts/test_validate.py",
+      "destination": "packs/agentops-executor/agents/validator-claude/skills/validate/scripts/test_validate.py",
+      "source_sha256": "8e1b289cba8664bbd1662bbc41fb8bfe0b1741559b487a745535f4796cc8ac17",
+      "sha256": "8e1b289cba8664bbd1662bbc41fb8bfe0b1741559b487a745535f4796cc8ac17",
+      "mode": "0755"
+    },
+    {
+      "source": "skills/validate/scripts/validate.py",
+      "destination": "packs/agentops-executor/agents/validator-claude/skills/validate/scripts/validate.py",
+      "source_sha256": "adafe4e127f9ddeb534c633a2cb4c2321b47e8a6a6f3656a0872076427f72247",
+      "sha256": "adafe4e127f9ddeb534c633a2cb4c2321b47e8a6a6f3656a0872076427f72247",
+      "mode": "0755"
+    },
+    {
+      "source": "skills/validate/scripts/validate.sh",
+      "destination": "packs/agentops-executor/agents/validator-claude/skills/validate/scripts/validate.sh",
+      "source_sha256": "77940c43e7acc22a4c77f510f98fb27f62767ce445b12e69e6c048b8f8c9fddc",
+      "sha256": "77940c43e7acc22a4c77f510f98fb27f62767ce445b12e69e6c048b8f8c9fddc",
+      "mode": "0755"
+    },
+    {
+      "source": "skills/validate/SKILL.md",
+      "destination": "packs/agentops-executor/agents/validator/skills/validate/SKILL.md",
+      "source_sha256": "d2f7259a0e8160c47bcc7968459e0385d09e75c394c4d7af1626d15d69e95101",
+      "sha256": "d2f7259a0e8160c47bcc7968459e0385d09e75c394c4d7af1626d15d69e95101",
+      "mode": "0644"
+    },
+    {
+      "source": "skills/validate/references/validate.feature",
+      "destination": "packs/agentops-executor/agents/validator/skills/validate/references/validate.feature",
+      "source_sha256": "c1cdc81c1c1ec7cd0dedcb70c6e3e28e64ec60b37b90e2c38bf803b7325d484a",
+      "sha256": "c1cdc81c1c1ec7cd0dedcb70c6e3e28e64ec60b37b90e2c38bf803b7325d484a",
+      "mode": "0644"
+    },
+    {
+      "source": "skills/validate/scripts/test_validate.py",
+      "destination": "packs/agentops-executor/agents/validator/skills/validate/scripts/test_validate.py",
+      "source_sha256": "8e1b289cba8664bbd1662bbc41fb8bfe0b1741559b487a745535f4796cc8ac17",
+      "sha256": "8e1b289cba8664bbd1662bbc41fb8bfe0b1741559b487a745535f4796cc8ac17",
+      "mode": "0755"
+    },
+    {
+      "source": "skills/validate/scripts/validate.py",
+      "destination": "packs/agentops-executor/agents/validator/skills/validate/scripts/validate.py",
+      "source_sha256": "adafe4e127f9ddeb534c633a2cb4c2321b47e8a6a6f3656a0872076427f72247",
+      "sha256": "adafe4e127f9ddeb534c633a2cb4c2321b47e8a6a6f3656a0872076427f72247",
+      "mode": "0755"
+    },
+    {
+      "source": "skills/validate/scripts/validate.sh",
+      "destination": "packs/agentops-executor/agents/validator/skills/validate/scripts/validate.sh",
+      "source_sha256": "77940c43e7acc22a4c77f510f98fb27f62767ce445b12e69e6c048b8f8c9fddc",
+      "sha256": "77940c43e7acc22a4c77f510f98fb27f62767ce445b12e69e6c048b8f8c9fddc",
+      "mode": "0755"
+    },
+    {
+      "source": "skills/using-gc/SKILL.md",
+      "destination": "packs/agentops-executor/skills/using-gc/SKILL.md",
+      "source_sha256": "aba9635f3f3ce77e8c74095498667c1fa322f06db5e2b40d421e1a97d8a965c4",
+      "sha256": "aba9635f3f3ce77e8c74095498667c1fa322f06db5e2b40d421e1a97d8a965c4",
+      "mode": "0644"
+    }
+  ]
+}

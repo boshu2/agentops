@@ -121,11 +121,11 @@ MEMORY.md
 # Beads / Dolt files (added by bd init)
 .beads-credential-key
 
-# Local agent-runtime scratch — gitignored. AgentOps no longer ships or
-# references Gas City (ag-124p), but the external `gc` tool, if an operator
-# runs it locally, writes these at the repo root. Keep them out of git.
+# Local agent-runtime scratch written by `gc` at a repository root.
+# The managed deployment template under deploy/gc is product source.
 .gc/
 city.toml
+!deploy/gc/city.toml
 city.toml.bak
 
 evals/workbench/scorecard-latest.json

@@ -1,0 +1,9 @@
+scope = "rig"
+provider = "codex"
+session = "tmux"
+wake_mode = "fresh"
+min_active_sessions = 0
+max_active_sessions = 1
+option_defaults = { permission_mode = "auto-edit" }
+inject_assigned_skills = true
+nudge = "Claim exactly one routed packet with gc hook --claim --drain-ack --json, freshly judge the exact subject with the validate skill, write one verdict.v2 and the packet result, close only the transport bead, then drain-ack and exit."

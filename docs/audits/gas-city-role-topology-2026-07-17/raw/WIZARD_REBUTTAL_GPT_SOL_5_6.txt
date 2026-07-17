@@ -1,0 +1,438 @@
+# GPT-5.6-sol rebuttal
+
+## Final rebuttal position
+
+The preferred topology survives, but one implementation choice does not. Keep
+the **Fenced Steward** shape: one persistent proposal-only Mayor, deterministic
+observation/admission/operations, fresh Witness/Judge pools, and a durable
+logical Refinery with a fresh max-one triage pool. Replace published I1→I2→I3
+integration subjects with one transactional wave cut assembled in a disposable
+scratch index/tree, then freshly validate every published merge/rebase subject.
+
+The operator's rejection-loop ruling is now a hard authority invariant, not an
+implementation option:
+
+> **Any `FAIL` or `NOT_PROVEN` terminates that experiment identity. The immutable
+> result returns to the Mayor. The Mayor may rescope/replan and request a new
+> AgentOps experiment with a new identity, new isolated branch/worktree/index,
+> new lease, and fresh worker context. The rejected worker is never resumed.
+> Refinery cannot repair it. Any change to product acceptance waits for explicit
+> operator approval.**
+
+This ruling removes two older ambiguities at once: no automatic validator
+re-panel inside the rejected experiment, and no Refinery-driven bisect that
+silently launches diagnostic/repair experiments. A Mayor may propose a new
+diagnostic bisection as a new DAG of experiments, but the delivery engine cannot
+manufacture it.
+
+## 1. Answer to the strongest criticism: validation economics
+
+Fable's strongest criticism is that my old integration loop paid O(candidates +
+rebases) judge calls and then paid a final two-provider court, risking the same
+queue/cost failure that killed universal Two-Key validation
+([Fable reaction](/Users/bo/dev/gc-role-duel/WIZARD_REACTION_FABLE.md:210)). That
+criticism is correct against the old I1/I2/I3 publication policy.
+
+The topology itself does not require that waste. The revised integration
+transaction is:
+
+```text
+validated candidate SHAs + admission certificates
+  -> disposable scratch index/tree at recorded main SHA
+  -> apply candidates in stable DAG order
+       -> manifest/scope/build/test/reference checks after each application
+       -> on failure: freeze evidence and return SEMANTIC_REPAIR_NEEDED to Mayor
+  -> regenerate shared surfaces once
+  -> create one combined integration cut with exact parent/receipt manifest
+  -> publish once under current fencing token and expected-old-head CAS
+  -> fresh exact-subject validation
+  -> PR/CI/review
+  -> any later rebase/head mutation -> new subject -> fresh validation
+```
+
+This defends the hard evidence boundary by **reducing published subject
+mutations**, not by carrying an old verdict across a new one. The packet requires
+fresh validation for the resulting integrated or rebased subject and invalidates
+old validation whenever the subject changes
+([delivery contract](/Users/bo/dev/gc-role-duel/EVIDENCE_PACKET.md:272)).
+
+Fable's reaction proposed train-level validation plus automatic bisect-on-FAIL
+([revision 5](/Users/bo/dev/gc-role-duel/WIZARD_REACTION_FABLE.md:131)). The
+train-level common path is right; automatic bisect is now wrong under the
+operator-fixed rejection loop. A semantic `FAIL` or `NOT_PROVEN` returns to the
+Mayor. If localization is worth its cost, the Mayor requests new bisection
+experiments with fresh identities and workers. Refinery supplies exact failure
+receipts but neither diagnoses by mutation nor starts the follow-up.
+
+The final two-provider PR-head court is no longer a live duel disagreement.
+Fable's reaction also requires both families on every merge-eligible PR head
+([Fenced Steward policy](/Users/bo/dev/gc-role-duel/WIZARD_REACTION_FABLE.md:184)).
+V1 therefore uses:
+
+- one fresh author-distinct candidate Judge, normally the non-author provider;
+- Codex+Claude only for deterministically high-risk candidate subjects;
+- one fresh exact-subject Judge for a published integration cut while it is
+  draft/CI-bound;
+- fresh Codex **and** fresh Claude PASS for the exact merge-eligible PR head;
+- no duplicate “integration Judge then final court” if the initial cut is already
+  the exact current merge-eligible head—the two-key court satisfies fresh
+  integration validation;
+- any later base/head mutation invalidates prior readiness and requires a new
+  exact-subject court.
+
+That spends two judges at the irreversible protected-main seam, not at every
+worker node or scratch application. Cross-provider review has found real defects
+that same-provider review missed, while a distinct fresh context remains the
+minimum author/judge separation
+([provider evidence](/Users/bo/dev/control-plane/LEARNINGS.md:3)).
+
+## 2. Steelman of Fable's preferred topology
+
+Fable calls its merged preference **Fenced Steward**: one persistent Mayor,
+fresh plan/candidate/integration judges, stakes-tiered provider routing, a
+delivery-record-owned fenced Refinery, and mechanisms for everything else
+([Fable topology](/Users/bo/dev/gc-role-duel/WIZARD_REACTION_FABLE.md:153)). Here
+is the strongest case for it.
+
+### Why it is better than a role diagram
+
+Fenced Steward separates three genuinely different closed loops by the kind of
+state and authority each needs:
+
+1. **Product revision loop — Mayor.** Human intent and semantic tradeoffs require
+   continuity. The Mayor turns new evidence into proposed DAG revisions but
+   cannot grade, implement, merge, or write terminal state.
+2. **Truth loop — fresh Witness/Judges.** Plans and exact subjects receive
+   author-distinct fresh judgment. Truth does not benefit from a resident
+   transcript; it benefits from exact digests, identity separation, and immutable
+   outputs.
+3. **Delivery loop — Refinery.** PR shepherding is recurrent but mostly
+   mechanical. Continuity belongs in a durable delivery record and forge state;
+   mutual exclusion belongs in fencing; rare semantic routing belongs in a fresh
+   triage context.
+
+That is a better decomposition than either a headless factory or a pantheon. A
+headless factory has no owner for semantic replanning after evidence changes the
+product path. A pantheon gives multiple resident minds copies of the same graph.
+Fenced Steward persists only the human-facing loop, makes truth fresh, and makes
+mutation deterministic.
+
+### Strongest implementation path
+
+Build it in collapse order:
+
+1. **Headless substrate first:** digest-bound DAG, isolated worktrees/indexes,
+   claims, fencing, immutable sidecars, one graph reducer, fresh workers/Judges,
+   and transactional integration. Deleting all configured LLM officials still
+   leaves a valid execution/delivery machine.
+2. **Mayor second:** add one Codex Mayor on this host, proposal-only, with a
+   Claude fresh plan-review Judge before initial dispatch and after major replans.
+3. **Refinery third:** add a distinct `refinery-bot` Git identity, durable
+   delivery record, one fenced slot per repo/base, bounded train cap, expected-
+   old-head updates, PR/CI/review adapters, and landed-SHA receipt. Add a separate
+   `agentops-validation` forge identity/status check so PR author cannot approve
+   itself. Fable explicitly conceded this identity split after the reveal
+   ([identity correction](/Users/bo/dev/gc-role-duel/WIZARD_REACTION_FABLE.md:127)).
+4. **Fresh triage last:** wake a max-one Refinery context only for ambiguous
+   mechanical-versus-semantic routing. If replay shows no unique decisions,
+   absorb it into orders without changing the delivery record.
+
+### Second-order benefits
+
+- The rejection loop becomes auditable: every rejected identity remains frozen,
+  and every retry is visibly a new Mayor-authored experiment rather than a hidden
+  continuation.
+- Fencing makes crash recovery safe rather than merely available. A stale session
+  may still exist, but it cannot mutate current integration state. Fable correctly
+  identified this as the idea it most wished it had proposed
+  ([Fable concession](/Users/bo/dev/gc-role-duel/WIZARD_REACTION_FABLE.md:10)).
+- Fresh plan review applies no-self-grading to the DAG itself, catching semantic
+  coupling that path intersection cannot see.
+- Bounded trains convert high experiment concurrency into reviewable PRs without
+  making the forge the experiment scheduler.
+- Admission certificates preserve every component verdict while giving intake
+  one deterministic decision artifact, fixing quorum ambiguity without inventing
+  a GC semantic verdict.
+- The collapse invariant makes every optional role empirically removable. Mayor,
+  plan review, and Refinery triage can each be tested without rewriting the
+  mechanism plane.
+
+### Pre-emptive defense
+
+**“The Mayor will bottleneck everything.”** Not if formulas dispatch already-
+admitted ready nodes without Mayor turns. The Mayor re-enters only for product
+ambiguity, `FAIL`/`NOT_PROVEN`, major replan, or operator dialogue. Ready work
+continues while the Mayor considers a rejected branch.
+
+**“Refinery is the Olympus daemon reborn.”** Not if it has no semantic repair,
+verdict, graph-close, branch-policy bypass, or raw-main credential. Its formula
+and record are a narrow adapter between Gas City and the forge. The LLM context
+is fresh, max one, sidecar-only, and killable.
+
+### Honest residual weaknesses
+
+The high-stakes classifier can under-trigger; the Mayor can still accumulate
+context gravity; scratch integration needs exact provenance and reproducibility;
+and the final dual-provider court couples merge eligibility to two providers.
+Those are measurable policy risks. None justifies a second persistent semantic
+role.
+
+Steel-manning changes no ranking because Fable's preferred topology is now the
+same family as mine. It does sharpen why the topology wins: not because its cast
+is minimal, but because each of its three loops puts continuity, judgment, and
+mutation in different substrates.
+
+## 3. Hard rejection-loop authority
+
+### State transition
+
+```text
+experiment E1 / worker W1 / branch B1 / worktree T1
+  -> fresh Judge verdict
+     -> PASS
+        -> deterministic admission certificate -> candidate intake
+     -> FAIL | NOT_PROVEN
+        -> reducer records terminal rejected E1
+        -> freeze B1 and T1 evidence; W1 is never resumed
+        -> event + immutable verdict return to Mayor
+        -> Mayor proposes E2 with revised bounded intent/scope/dependencies
+           -> if acceptance changed: WAIT_OPERATOR_APPROVAL
+           -> else/current approval: fresh plan review when major
+        -> graph compiler/reducer admits E2
+        -> allocator creates new identity B2/T2/index/lease
+        -> formula dispatches fresh worker W2
+```
+
+Non-negotiable consequences:
+
+- The old experiment never reopens; “retry” is a relationship between E2 and E1,
+  not another attempt inside E1.
+- Mayor **starts** the new loop by writing a new-experiment proposal. The
+  deterministic compiler/reducer admits it, and the allocator/formula performs
+  branch/worktree/session instantiation.
+- Worker W1 cannot be selected for E2, even if its session remains healthy. The
+  allocator requires a new context identity and fresh worker.
+- Refinery freezes/removes the rejected SHA from delivery eligibility and emits
+  exact evidence. It cannot edit B1, resolve a semantic conflict, launch E2, or
+  ask a Judge to reconsider E1.
+- A Judge cannot recommend continuation as an authority-bearing action; its
+  binding output remains PASS, FAIL, or NOT_PROVEN for one exact subject.
+- A final two-key split containing any FAIL/NOT_PROVEN follows this same return
+  path. There is no automatic re-panel. The operator may request a new approach
+  or abandon work but cannot vote a failed subject into PASS.
+- If E2 changes acceptance, no graph admission or worker dispatch occurs until
+  the operator approves the new canonical acceptance digest.
+
+This is stricter than the old control-plane's re-panel behavior, but it matches
+AgentOps' evidence-bound “report and stop” boundary: scheduling, retry, and
+delivery remain caller/Gas City policy outside one experiment
+([AgentOps boundary](/Users/bo/dev/gc-role-duel/EVIDENCE_PACKET.md:25)).
+
+## 4. Witness ruling
+
+**Witness is a deterministic observer plus event-triggered fresh Judge pools. It
+is not a resident LLM.**
+
+| Witness surface | Runtime | Authority |
+|---|---|---|
+| Identity/digest/freshness/scope/dependency/coverage observation | Deterministic orders and reducer predicates | May reject malformed evidence or hold admission mechanically; never semantic PASS |
+| Plan review | Fresh Judge on initial DAG and major replan, normally Claude when Mayor is Codex | May emit binding P1 HOLD sidecar; cannot repair plan or write graph state |
+| Candidate/integration/PR-head judgment | Fresh Codex/Claude pools over exact subjects | Emits binding AgentOps PASS/FAIL/NOT_PROVEN; no Git or graph writes |
+| Cross-wave semantic sampling | Scheduled fresh read-only auditor | Findings only in v1; no PASS, HOLD, replan, repair, or merge authority |
+| Recovery/stall observation | Gas City controller, health patrol, lease/reap orders | Mechanical recovery only; this is the historical recovery-Witness responsibility, not Bo's Judge-Witness |
+
+Persistence would make the same context both longitudinal observer and repeated
+judge, increasing correlated error and context gravity without supplying a new
+input. Both reactions now kill a resident Governor and retain its prompt/metrics
+as fresh assurance
+([my reaction](/Users/bo/dev/gc-role-duel/WIZARD_REACTION_GPT_SOL_5_6.md:99),
+[Fable audit](/Users/bo/dev/gc-role-duel/WIZARD_REACTION_FABLE.md:199)).
+
+## 5. Per-quest conductor ruling
+
+**No separate conductor role in v1.** Gas City formulas own ready-node dispatch;
+the Mayor uses a `quest-conduct` prompt mode when it must reason within one
+quest. Shipping a second named session before measured overload would split one
+replan loop by grain rather than trust boundary.
+
+After measured overload, the Mayor may spawn a fresh quest-scoped conductor
+experiment with a quest digest, one-owner lease, TTL, context cap, proposal-only
+authority, and no judgment/Git/graph-write power. It is a v1.5 role-pool trial,
+not a permanent city identity. The activation contract stays dormant until the
+metrics in §10 fire; both reactions converge on this gate
+([my reaction](/Users/bo/dev/gc-role-duel/WIZARD_REACTION_GPT_SOL_5_6.md:88),
+[Fable reaction](/Users/bo/dev/gc-role-duel/WIZARD_REACTION_FABLE.md:189)).
+
+## 6. Smallest Refinery that earns existence
+
+Refinery earns a **standing bounded delivery identity**, not a persistent LLM:
+
+- one durable delivery record per wave/epoch;
+- one fenced delivery-slot lease per `<repo, base>`;
+- one dedicated integration worktree/index and integration branch;
+- a deterministic delivery formula/state machine;
+- one `min=0/max=1`, fresh-wake, sidecar-only triage pool for genuinely ambiguous
+  Git/CI/review classification;
+- a distinct PR-author identity, while validation posts from a separate identity;
+- no raw-main push, semantic repair, verdict, experiment request, graph close, or
+  policy-waiver authority.
+
+Deterministic mechanisms beneath the role perform:
+
+- exact-SHA/certificate intake, candidate freeze, dependency and scope checks;
+- lease acquire/fence/heartbeat/reap and token/CAS checks on every mutation;
+- scratch worktree/index creation at recorded `main`, stable candidate
+  application, manifests, canonical generation, format/build/test/reference
+  checks, and combined-cut publication;
+- clean conflict-free rebase, expected-old-head force-with-lease, branch update,
+  subject derivation, and old-verdict invalidation;
+- PR create/update, labels, reviewer requests, CI/status polling, bounded
+  infrastructure retry, merge-queue enrollment, and auto-merge enablement after
+  all gates;
+- landed-SHA verification, delivery receipt, dependent-draft refresh, and fenced
+  cleanup.
+
+The fresh Refinery triager may only classify an ambiguous event as mechanical,
+semantic, or policy-blocked. Mechanical routes invoke declared orders. Semantic
+routes create a delivery HOLD and evidence sidecar **to the Mayor**. Policy blocks
+wait/escalate. The triager does not repair, request the new experiment, or decide
+correctness. If at least 80% of wakes add no unique classification, absorb the
+pool into formulas while retaining the logical Refinery.
+
+This preserves the key post-reveal synthesis: identity/record persist; the LLM
+does not
+([my Refinery ruling](/Users/bo/dev/gc-role-duel/WIZARD_REACTION_GPT_SOL_5_6.md:303),
+[Fable ruling](/Users/bo/dev/gc-role-duel/WIZARD_REACTION_FABLE.md:163)).
+
+## 7. Binding judgments, graph writer, and new-experiment requester
+
+| Decision/artifact | Binding effect | Sole writer/requester | Explicit non-authorities |
+|---|---|---|---|
+| Canonical product acceptance digest | Defines what all experiments must prove | Operator | Mayor may propose clarification/change but cannot approve it |
+| Plan-review P1 HOLD | Blocks graph dispatch until revised and freshly cleared, or operator changes governing acceptance/policy | Fresh plan-review Judge writes immutable sidecar; reducer applies HOLD | Mayor cannot clear its own plan review; reviewer cannot repair the DAG |
+| Candidate/integration verdict | PASS admits toward policy; FAIL/NOT_PROVEN terminates exact experiment and returns it to Mayor | Fresh AgentOps Judge/validator | Worker, Mayor, Refinery, transport close, and operator cannot rewrite verdict |
+| Two-key final court certificate | PASS/PASS on same exact current PR subject permits merge-gate evaluation; any FAIL/NOT_PROVEN returns to Mayor | Fresh Codex + fresh Claude verdicts; deterministic reducer writes certificate | No synthesized tie-break, Mayor vote, or self-authored validation |
+| CI/review/branch-protection state | Gates delivery of the current exact PR head | Forge/authorized reviewers/repository policy | Refinery may shepherd but cannot forge, dismiss, waive, or admin-bypass |
+| Mechanical-versus-semantic routing | Selects delivery order versus Mayor return path; never says code is correct | Deterministic rules first; ambiguous fresh Refinery sidecar | Refinery cannot author repair or start an experiment |
+| Cross-wave assurance finding | Advisory evidence in v1 | Fresh sampling auditor | No binding HOLD/PASS or remediation authority |
+| Graph state transition | Opens/admit/holds/closes nodes from proposals and immutable sidecars | **One deterministic graph reducer only** | No LLM, including Mayor, writes graph state |
+| Delivery state transition | Advances fenced delivery record from receipts/forge state | One deterministic delivery reducer/CAS state machine | Fresh Refinery context cannot write terminal delivery state by assertion |
+| New AgentOps experiment after FAIL/NOT_PROVEN | Starts the only permitted rejection successor | **Mayor requests; compiler/reducer admits; allocator/formula instantiates** | Rejected worker, Judge, Refinery, assurance auditor, and automatic retry policy cannot request/start it |
+
+The operator remains the ultimate authority for acceptance changes and may direct
+the Mayor to abandon or take a new approach. It cannot convert an exact-subject
+FAIL into PASS. This keeps author, judge, graph writer, delivery writer, and
+acceptance owner as five non-collapsible authority seams.
+
+## 8. Final recommended v1 topology
+
+### Persistent
+
+**One Codex Mayor**, active only during a multi-wave program. It owns operator
+dialogue, DAG/replan proposals, the hard rejection return loop, and escalation.
+It never implements, judges, writes graph/delivery state, touches integration
+Git, or shepherds PRs. Deleting it by config yields the Headless Graph substrate.
+
+### Fresh pools/modes
+
+- Claude plan-review Judge by default against the Codex Mayor; fresh after every
+  major replan.
+- Codex and Claude workers, one new experiment identity/worktree/branch/lease per
+  context.
+- Codex and Claude candidate/integration/PR-head Judges, with one non-author
+  provider for routine candidates and both providers for high-risk/final heads.
+- max-one fresh Refinery triage.
+- scheduled fresh assurance sampling.
+- no worker resumption after rejection; all repair/localization work is a new
+  Mayor-requested experiment with a fresh worker.
+
+### Mechanisms
+
+Digest-bound intent; explicit DAG; semantic plan-review sidecar; compiler;
+isolated worktree/index allocator; scope and generated-surface ownership;
+claims/heartbeats/fencing/reap; provider/context attestation; immutable evidence;
+admission certificates; one graph reducer; controller/health/events/waits;
+transactional integration; one fenced Refinery delivery record/slot; protected
+PR/CI/review/merge-queue path; landed-SHA receipt; audit and cleanup orders.
+
+### Delivery shape
+
+Worker candidate branches have no PR and no `main`/integration push rights.
+Validated exact SHAs enter capped trains (≤5 candidates or diff ceiling). One
+transactional integration cut becomes one wave PR. At most one PR per base is
+merge-eligible; dependent PRs may remain draft. Semantic CI/review/conflict
+failure returns evidence to Mayor. Every published subject mutation gets fresh
+validation. The exact merge-eligible head requires fresh Codex+Claude PASS and
+current CI/reviews; the protected merge queue—not Refinery—writes `main`.
+
+### Roles explicitly absent
+
+No resident Witness/Governor, Apollo, Zeus, Deacon, Dog, Athena, Themis, Argus,
+Hades, Hermes, Chiron, Integrator, or Refinery LLM. Their useful work is fresh
+Judge/mode behavior or deterministic mechanisms. No second ledger or AgentOps
+queue/retry/delivery controller is introduced.
+
+## 9. V1.5 promotion triggers
+
+Promotion means a measured trial, not automatic permanent residency.
+
+1. **Quest conductor mode → TTL-bound ephemeral pool.** Trigger only when at
+   least three genuinely concurrent quests exist **and**, for two consecutive
+   operating days, either over 20% of ready-node wall time waits on Mayor
+   semantic replanning or Mayor context rolls more than once/day. Promote only if
+   a shadow/A-B trial cuts ready-to-dispatch latency by ≥30%, Mayor reverses <10%
+   of within-quest proposals, and there is no self-judgment or cross-quest scope
+   breach. Otherwise absorb back into Mayor mode.
+2. **Refinery triage policy.** If ≥80% of wakes are mechanical or add no unique
+   routing, absorb the pool into orders. A bounded warm-session trial is allowed
+   only if wakes exceed 20/day, more than half of tokens reread unchanged state,
+   and at least 30% of wakes make later-confirmed unique classifications. Even
+   then authority does not expand.
+3. **Assurance Governor research gate.** No deployment promotion from v1. A
+   resident shadow may be tested only after fresh scheduled audits miss the same
+   class of seeded cross-wave defect in two runs while a controlled resident
+   context catches it, plus one non-seeded material finding is confirmed. Any
+   write, HOLD, repair, or product-admission dependency kills the trial.
+4. **Validation cardinality policy.** Keep the v1 final pair for at least 20
+   merge-eligible PR heads. If the second provider finds zero unique material
+   issues while marginal judge time exceeds 35% of delivery wall time or cost
+   exceeds 2× single-judge validation, trial stakes-tiered final pairing. If a
+   shadow second provider catches one escaped material defect, retain/expand the
+   pair instead.
+5. **Mayor collapse trigger.** If ≥80% of Mayor actions mirror deterministic
+   suggestions, it makes fewer than two unique semantic course corrections across
+   three real DAGs, or it adds >10% execution latency without reducing operator
+   reload, remove the persistent session and make Headless Graph the primary.
+
+## 10. Three fastest falsification tests
+
+### 1. Rejection-ratchet identity test — target: 60 minutes
+
+Inject one Validator `FAIL` and one `NOT_PROVEN`. Assert that each
+old experiment becomes terminal, its worker is never resumed, its branch SHA is
+frozen and ineligible for Refinery, and only the Mayor emits the successor
+request. Each successor must have a new experiment/context/branch/worktree/index/
+lease and fresh worker. Change acceptance in one successor and verify dispatch is
+blocked until operator approval. Any old-worker continuation, Refinery repair,
+automatic re-panel, or silent acceptance change falsifies v1 immediately.
+
+### 2. Fenced delivery race — target: 90 minutes
+
+Start two fresh Refinery wakes against one delivery slot, expire/reap the first,
+then let the stale process attempt an integration push and PR update. The old
+token and wrong expected head must fail; only the new token may publish. In the
+same test, attempt worker pushes to the integration branch and `main`, then move
+`main` while the PR is ready. Both worker pushes must fail, merge readiness must
+clear, and the rebased exact head must receive a new court before protected
+merge. Any unfenced mutation or stale verdict falsifies safe parallelism.
+
+### 3. Mayor-collapse A/B — target: one working day
+
+Run the same six-node plan twice from identical intent: once with the persistent
+Mayor, once with Headless Graph/fresh planning. Inject a semantic plan-coupling
+finding and one rejected experiment. Measure operator reload time, unique semantic
+course corrections, ready-node wait on replanning, and percentage of Mayor acts
+that merely mirror formula state. If Mayor produces no unique correction, saves
+no operator reload, or is ≥80% mechanical, delete it. If the fresh plan reviewer
+cannot catch the seeded coupling or either run reuses the rejected worker, the
+Witness/rejection design is also falsified.

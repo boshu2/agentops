@@ -1,0 +1,99 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "agentops run-packet result",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "ok", "command", "action", "packet_id", "role", "provider", "outcome"],
+  "properties": {
+    "schema_version": {"const": "gc-execution-result.v1"},
+    "ok": {"type": "boolean"},
+    "command": {"const": "agentops run-packet"},
+    "action": {"enum": ["handled", "error"]},
+    "packet_id": {"type": "string"},
+    "role": {"enum": ["implement", "validate", "unknown"]},
+    "provider": {"enum": ["codex", "claude", "unknown"]},
+    "outcome": {"enum": ["candidate", "evidence", "error"]},
+    "intent_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "workspace": {"type": "string"},
+    "transport": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["bead_id", "target", "closed"],
+      "properties": {
+        "bead_id": {"type": "string"},
+        "target": {"type": "string"},
+        "closed": {"type": "boolean"},
+        "session_context_id": {"type": "string"},
+        "session_name": {"type": "string"}
+      }
+    },
+    "agent_response": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "packet_id",
+        "role",
+        "outcome",
+        "transport_bead_id",
+        "session_context_id",
+        "session_name",
+        "template",
+        "artifacts",
+        "message"
+      ],
+      "properties": {
+        "schema_version": {"const": "gc-agent-response.v1"},
+        "packet_id": {"type": "string"},
+        "role": {"enum": ["implement", "validate"]},
+        "outcome": {"enum": ["candidate", "evidence", "error"]},
+        "transport_bead_id": {"type": "string"},
+        "session_context_id": {"type": "string", "minLength": 1},
+        "session_name": {"type": "string"},
+        "template": {"type": "string"},
+        "artifacts": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["path", "sha256"],
+            "properties": {
+              "path": {"type": "string"},
+              "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+            }
+          }
+        },
+        "message": {"type": "string"}
+      },
+      "allOf": [
+        {
+          "if": {"properties": {"outcome": {"enum": ["candidate", "evidence"]}}},
+          "then": {"properties": {"artifacts": {"minItems": 1}}}
+        }
+      ]
+    },
+    "runtime_evidence": {"type": "object"},
+    "error": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["code", "message"],
+      "properties": {
+        "code": {"type": "string"},
+        "message": {"type": "string"}
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {"properties": {"ok": {"const": true}}},
+      "then": {
+        "required": ["intent_digest", "workspace", "transport", "agent_response", "runtime_evidence"],
+        "properties": {"action": {"const": "handled"}}
+      },
+      "else": {
+        "required": ["error"],
+        "properties": {"action": {"const": "error"}, "outcome": {"const": "error"}}
+      }
+    }
+  ]
+}

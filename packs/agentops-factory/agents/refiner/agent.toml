@@ -1,0 +1,10 @@
+scope = "rig"
+provider = "codex"
+session = "tmux"
+wake_mode = "fresh"
+work_dir = ".gc/agents/refiner"
+min_active_sessions = 0
+max_active_sessions = 1
+option_defaults = { permission_mode = "unrestricted" }
+inject_assigned_skills = true
+nudge = "Claim exactly one ready Refinery bead, use the deterministic fenced adapter to integrate, freshly validate, publish, and land it, then close only through the adapter and drain."
