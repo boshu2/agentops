@@ -85,7 +85,7 @@ influence current phase sequencing or verdict validity.
 
 ## Older releases
 
-The 3.x and 2.x migration record is historical. Read
-[MIGRATION-3.0.md](MIGRATION-3.0.md) and the versioned entries in
-[CHANGELOG.md](CHANGELOG.md) when maintaining an old installation; do not apply
-those old controller, daemon, hook, tracker, or plugin instructions to 3.3.
+The 3.x and 2.x migration record is historical. Read the versioned entries in
+[CHANGELOG.md](CHANGELOG.md) (the standalone 3.0 migration map was retired in
+the Cathedral Cut) when maintaining an old installation; do not apply those old
+controller, daemon, hook, tracker, or plugin instructions to 3.3.

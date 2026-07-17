@@ -69,6 +69,27 @@ func TestDefaultSpineMatchesCathedralCutAllowlist(t *testing.T) {
 	}
 }
 
+// TestCathedralCutTombstonesSurvivePruning pins the tombstone contract: every
+// Cathedral Cut verb must keep a removedCommands stub AND stay a member of
+// defaultSpineCommands. Dropping a verb from the spine map would let
+// pruneToDefaultSpine delete its tombstone, silently degrading the failure
+// from an actionable "no longer exists" stub to a bare unknown-command error.
+func TestCathedralCutTombstonesSurvivePruning(t *testing.T) {
+	for name := range cathedralCutCommands {
+		tomb, ok := removedCommands[name]
+		if !ok {
+			t.Errorf("cathedral cut verb %q has no removedCommands tombstone", name)
+			continue
+		}
+		if tomb.use == "" {
+			t.Errorf("tombstone for %q has an empty replacement hint", name)
+		}
+		if _, retained := defaultSpineCommands[name]; !retained {
+			t.Errorf("cathedral cut verb %q is not in defaultSpineCommands; its tombstone would be pruned from the shipped binary", name)
+		}
+	}
+}
+
 func TestDefaultChildSpineMatchesCathedralCutAllowlist(t *testing.T) {
 	removed := pruneToDefaultSpine(rootCmd)
 	t.Cleanup(func() { restorePrunedCommands(rootCmd, removed) })

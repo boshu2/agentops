@@ -18,7 +18,9 @@ if [[ -z "$AO_BIN" ]]; then
     if [[ -x "$REPO_ROOT/cli/bin/ao" ]]; then
         AO_BIN="$REPO_ROOT/cli/bin/ao"
     else
-        AO_BIN="/tmp/ao-fw-snapshot"
+        scratch="$(mktemp -d "${TMPDIR:-/tmp}/ao-fw-snapshot.XXXXXX")"
+        trap 'rm -rf "$scratch"' EXIT
+        AO_BIN="$scratch/ao"
         (cd "$REPO_ROOT/cli" && go build -o "$AO_BIN" ./cmd/ao) >/dev/null 2>&1 || {
             echo "FAIL: could not build ao for snapshot" >&2
             exit 1

@@ -62,7 +62,9 @@ if [[ -z "$AO" ]]; then
     elif command -v ao >/dev/null 2>&1; then
         AO="ao"
     else
-        AO="/tmp/ao-provenance-chain-check"
+        scratch="$(mktemp -d "${TMPDIR:-/tmp}/ao-provenance-chain-check.XXXXXX")"
+        trap 'rm -rf "$scratch"' EXIT
+        AO="$scratch/ao"
         (cd "$ROOT/cli" && go build -o "$AO" ./cmd/ao) >/dev/null 2>&1 \
             || { echo "PROVENANCE_CHAIN_GATE: FAIL — could not build ao for the chain gate" >&2; exit 1; }
     fi

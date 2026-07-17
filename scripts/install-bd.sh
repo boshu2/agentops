@@ -34,19 +34,39 @@ BD_REPO="steveyegge/beads"
 INSTALL_DIR="${INSTALL_DIR:-$HOME/.local/bin}"
 VERSION=""
 FORCE_INSTALL=0
+# shellcheck disable=SC2034  # consumed by the sourced installer-common.sh
 QUIET=0
+# shellcheck disable=SC2034  # consumed by the sourced installer-common.sh
 NO_GUM=0
 NO_VERIFY=0
 OFFLINE=0
 OFFLINE_TARBALL=""
+# shellcheck disable=SC2034  # consumed by the sourced installer-common.sh
 EASY_MODE=0
 FROM_SOURCE=0
+# shellcheck disable=SC2034  # consumed by the sourced installer-common.sh
 INSTALLER_NAME="bd"
+# shellcheck disable=SC2034  # consumed by the sourced installer-common.sh
 INSTALLER_TAGLINE="Install the beads (bd) CLI"
 
 # ── Load installer-workmanship common scaffold ────────────────────────────
+# Pin of scripts/lib/installer-common.sh for the curl|bash path. The drift
+# test in tests/scripts/install-bd.bats recomputes this on every change, so
+# an edit to installer-common.sh without a matching bump here fails CI.
+INSTALLER_COMMON_SHA256="6de10b1997a17e546cf4a9a75943b257de66df20708e881431917239b4bb2e28"
+
+_sha256_of() {
+  if command -v sha256sum >/dev/null 2>&1; then
+    sha256sum "$1" | awk '{print $1}'
+  elif command -v shasum >/dev/null 2>&1; then
+    shasum -a 256 "$1" | awk '{print $1}'
+  else
+    echo ""
+  fi
+}
+
 _load_installer_common() {
-  local here bootstrap
+  local here
   # shellcheck disable=SC1007
   here="$(CDPATH= cd "$(dirname "${BASH_SOURCE[0]:-$0}")" 2>/dev/null && pwd || true)"
   if [[ -n "$here" && -f "$here/lib/installer-bootstrap.sh" ]]; then
@@ -56,10 +76,27 @@ _load_installer_common() {
     return 0
   fi
   # curl|bash: fetch common lib (curl honors HTTPS_PROXY/HTTP_PROXY)
-  local url tmp
+  local url tmp actual
   url="${AGENTOPS_INSTALLER_COMMON_URL:-https://raw.githubusercontent.com/boshu2/agentops/main/scripts/lib/installer-common.sh}"
   tmp="$(mktemp "${TMPDIR:-/tmp}/agentops-installer-common.XXXXXX")"
   if command -v curl >/dev/null 2>&1 && curl -fsSL --connect-timeout 10 "${url}?$(date +%s)" -o "$tmp"; then
+    if [[ -z "${AGENTOPS_INSTALLER_COMMON_URL:-}" ]]; then
+      # Default URL: verify the fetched lib against the pin before sourcing.
+      # A custom AGENTOPS_INSTALLER_COMMON_URL is an explicit operator
+      # override and is sourced as supplied.
+      actual="$(_sha256_of "$tmp")"
+      if [[ -z "$actual" ]]; then
+        rm -f "$tmp"
+        echo "FATAL: no sha256sum/shasum available to verify installer-common.sh" >&2
+        exit 1
+      fi
+      if [[ "$actual" != "$INSTALLER_COMMON_SHA256" ]]; then
+        rm -f "$tmp"
+        echo "FATAL: installer-common.sh checksum mismatch (got $actual)" >&2
+        echo "Re-fetch this installer from the repo — the two files ship and update together." >&2
+        exit 1
+      fi
+    fi
     # shellcheck disable=SC1090
     . "$tmp"
     rm -f "$tmp"
@@ -72,9 +109,13 @@ _load_installer_common() {
 _load_installer_common
 
 # Cosign identity targets the beads upstream repo (not AgentOps).
+# shellcheck disable=SC2034  # all four consumed by the sourced installer-common.sh
 OWNER="steveyegge"
+# shellcheck disable=SC2034  # consumed by the sourced installer-common.sh
 REPO="beads"
+# shellcheck disable=SC2034  # consumed by the sourced installer-common.sh
 INSTALLER_NAME="bd"
+# shellcheck disable=SC2034  # consumed by the sourced installer-common.sh
 INSTALLER_TAGLINE="Install the beads (bd) CLI"
 
 usage() {
@@ -276,7 +317,9 @@ download_and_install() {
     if [[ "$NO_VERIFY" -eq 1 ]]; then
       warn "No published checksum found; continuing because --no-verify was set"
     else
-      warn "No published checksum found for $asset; proceeding without SHA256 (pass --no-verify to silence)"
+      err "No published checksum found for $asset; refusing to install an unverified binary"
+      err "Re-run with --no-verify to accept the download without SHA256 verification"
+      exit 1
     fi
   fi
 

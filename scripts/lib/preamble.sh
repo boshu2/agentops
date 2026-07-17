@@ -23,11 +23,16 @@ set -euo pipefail
 # to that other tree. Fall back to the lib's fixed position
 # (<root>/scripts/lib/preamble.sh → two dirs up) when not in a git checkout at
 # all (e.g. an extracted release tarball).
+# The git call scrubs git's hook-injected discovery env (age-ngtc): inside a
+# hook git exports GIT_DIR without GIT_WORK_TREE, which makes git treat the
+# CURRENT directory as the worktree top — `--show-toplevel` then returns
+# scripts/lib and every REPO_ROOT-relative path breaks (this refused every
+# worktree-origin push that touched cli/cmd/ao/**).
 # `CDPATH=` below is an intentional env-prefix (clears CDPATH for that one cd so
 # a caller's CDPATH can't hijack a relative path), not a botched assignment.
 # shellcheck disable=SC1007
 _preamble_dir="$(CDPATH= cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-if ! REPO_ROOT="$(git -C "$_preamble_dir" rev-parse --show-toplevel 2>/dev/null)"; then
+if ! REPO_ROOT="$(unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_PREFIX GIT_OBJECT_DIRECTORY GIT_COMMON_DIR GIT_NAMESPACE; git -C "$_preamble_dir" rev-parse --show-toplevel 2>/dev/null)"; then
   # shellcheck disable=SC1007
   REPO_ROOT="$(CDPATH= cd "$_preamble_dir/../.." && pwd)"
 fi
