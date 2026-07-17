@@ -73,6 +73,7 @@
 | `ao state` | `deprecated` | `allowlisted` | One-release failure stub for removed lifecycle admission. |
 | `ao status` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao validate` | `deprecated` | `allowlisted` | One-release failure stub for removed semantic CLI validation. |
+| `ao verify` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao version` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao worktree` | `deprecated` | `allowlisted` | One-release failure stub for removed Git mutation. |
 | `ao yield` | `deprecated` | `allowlisted` | One-release failure stub for removed throughput control. |
