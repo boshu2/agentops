@@ -2,7 +2,7 @@
   "schema_version": 1,
   "id": "agentops-core.distribution-install-update",
   "name": "AgentOps Distribution Install and Update Canary",
-  "description": "Offline public canary for the AgentOps 4 install surface (ao skills link), release bundle coherence, Windows ao installer smoke wiring, and public install docs.",
+  "description": "Offline public canary for the AgentOps 3.3 install surface (ao skills link), release bundle coherence, Windows ao installer smoke wiring, and public install docs.",
   "practices": ["llm-eval-harness", "ai-assisted-dev"],
   "domain": "mixed",
   "visibility": "public_canary",

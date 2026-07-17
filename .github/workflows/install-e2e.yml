@@ -1,5 +1,5 @@
 # End-to-end install against clean OS containers.
-# Canonical AgentOps 4 path: build/install ao + `ao skills link`.
+# Canonical AgentOps 3.3 path: build/install ao + `ao skills link`.
 #
 # Triggered:
 #   - Nightly (UTC 09:30)

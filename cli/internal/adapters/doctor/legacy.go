@@ -72,7 +72,7 @@ func SystemLegacyChecks(toolVersion string, ledgerPath func() string) LegacyChec
 
 var runtimeSkillRoots = []string{".claude", ".codex", ".gemini", ".cursor", ".pi"}
 
-// CheckSkillLinks verifies the v4 distribution contract: canonical skills are
+// CheckSkillLinks verifies the source-linked distribution contract: canonical skills are
 // consumed directly from one checkout through exact symlinks. Portable
 // ~/.agents/skills is always checked; installed runtime roots are checked when
 // their config directory exists. Plugin caches are intentionally irrelevant.

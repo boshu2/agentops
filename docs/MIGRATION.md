@@ -30,9 +30,30 @@ under `ao gate check`; semantic judgment is the Validate skill.
 | `ao skills edit` | Edit canonical `skills/<slug>/` sources directly; use normal repository Git policy outside `ao`. |
 | `ao goals trace` | Inspect current goal/scenario artifacts directly; the retired directive-to-bead lifecycle chain has no replacement. |
 | `ao session memory` | Use caller-authored `ao session handoff` evidence or maintain repository memory through the caller's own policy. |
+| `ao verify` | Use the Validate skill for semantic judgment and `ao gate check` for deterministic checks. Delete any `ao verify init` pre-push ratchet from `.git/hooks/pre-push` (restore `pre-push.agentops-orig` if one was set aside); `ao verify init --remove` no longer exists, and `git push --no-verify` bypasses a stale hook once. |
 
 These major public names have inert, nonzero-exit tombstones for this cut
 release only. They do not forward to old code or mutate old state.
+
+Other 3.2 bookkeeping and knowledge verbs (`ao beads`, `ao agents`, `ao canon`,
+`ao ci`, `ao citation`, `ao eval`, `ao findings`, `ao forge`, `ao knowledge`,
+`ao mcp`, `ao metrics`, `ao notebook`, `ao patterns`, `ao pool`, `ao ratchet`,
+`ao registry`, `ao scope`, `ao sessions`, `ao wiki`) were pruned from the
+default build without tombstones. They have no replacement inside AgentOps; use
+the caller's own tools, `ao gate check` for deterministic checks, or generic
+`ao provenance` records.
+
+## Config file location
+
+`~/.agentops/config.yaml` and `./.agentops/config.yaml` moved to
+`~/.agents/ao/config.yaml` and `./.agents/ao/config.yaml`. The legacy paths are
+still read as a fallback for this release (with a deprecation warning on
+stderr) when no file exists at the new path; move the file to silence the
+warning:
+
+```bash
+mkdir -p ~/.agents/ao && mv ~/.agentops/config.yaml ~/.agents/ao/config.yaml
+```
 
 ## Skills
 
@@ -60,7 +81,7 @@ outcomes.
 
 ## Install migration
 
-AgentOps 4 uses one canonical checkout plus source symlinks. A plugin cache is
+AgentOps 3.3 uses one canonical checkout plus source symlinks. A plugin cache is
 not part of the active skill path.
 
 ```bash

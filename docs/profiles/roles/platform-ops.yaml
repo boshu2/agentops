@@ -2,7 +2,7 @@
 # SRE, DevOps, infrastructure, monitoring, incidents, reliability
 
 name: platform-ops
-version: 4.0.0
+version: 3.3.0
 description: |
   Platform operations and site reliability engineering. Respond to production incidents,
   monitor system health and performance, debug errors, analyze logs, manage security

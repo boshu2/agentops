@@ -138,8 +138,8 @@ Test-PowerShellSyntax (Join-PathSegments -Base $RepoRoot -Segments 'scripts', 'i
 $codexTombstone = Join-PathSegments -Base $RepoRoot -Segments 'scripts', 'install-codex.ps1'
 Test-PowerShellSyntax $codexTombstone
 $tombstoneText = Get-Content -Raw -LiteralPath $codexTombstone
-if ($tombstoneText -notmatch 'removed in 4' -or $tombstoneText -notmatch 'ao skills link') {
-  throw "install-codex.ps1 must remain an AgentOps 4 tombstone pointing at ao skills link"
+if ($tombstoneText -notmatch 'removed in 3\.3' -or $tombstoneText -notmatch 'ao skills link') {
+  throw "install-codex.ps1 must remain an AgentOps 3.3 tombstone pointing at ao skills link"
 }
 
 # ---------------------------------------------------------------------------

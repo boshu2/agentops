@@ -2,7 +2,7 @@
 
 **Purpose**: Organize 12 domain skills into 3 discoverable profiles for different work contexts.
 
-**Version**: 4.0.0 (Updated for skills-based approach)
+**Version**: 3.3.0 (Updated for skills-based approach)
 
 ---
 

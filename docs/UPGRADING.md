@@ -1,10 +1,25 @@
 # Upgrading
 
-This page contains the action required for the AgentOps 4.0 Cathedral Cut. The
+This page contains the action required for the AgentOps 3.3 Cathedral Cut. The
 full history remains in [the changelog](CHANGELOG.md); the exact removed-command
 map is in [the migration guide](MIGRATION.md).
 
-## Upgrade to 4.0
+## Upgrade to 3.3
+
+AgentOps 3.3 removes public command surfaces despite the minor version number.
+Three actions prevent broken workflows after upgrading:
+
+1. **Remove the 3.2 pre-push verify hook.** If you ever ran `ao verify init`
+   in a repository, delete the `AGENTOPS-VERIFY-RATCHET` block from that
+   repository's `.git/hooks/pre-push` (restore `pre-push.agentops-orig` if one
+   was set aside). The hook calls removed commands and blocks every push with a
+   misleading "ao too old" error; `ao verify init --remove` no longer exists.
+   `git push --no-verify` bypasses it once.
+2. **Move your config file.** `~/.agentops/config.yaml` and
+   `./.agentops/config.yaml` moved to `~/.agents/ao/config.yaml` and
+   `./.agents/ao/config.yaml`. Legacy paths are still read as a fallback for
+   this release, with a deprecation warning.
+3. **Replace plugin installs with source links** (next section).
 
 The semantic loop is now:
 
@@ -47,7 +62,7 @@ directories or foreign symlinks.
 
 Removed lifecycle commands return nonzero, non-mutating tombstones for this
 release. They never forward to old implementations. Update integrations now;
-the tombstones are removed in the next major release.
+the tombstones are removed in the next release.
 
 Use:
 
@@ -73,4 +88,4 @@ influence current phase sequencing or verdict validity.
 The 3.x and 2.x migration record is historical. Read
 [MIGRATION-3.0.md](MIGRATION-3.0.md) and the versioned entries in
 [CHANGELOG.md](CHANGELOG.md) when maintaining an old installation; do not apply
-those old controller, daemon, hook, tracker, or plugin instructions to 4.0.
+those old controller, daemon, hook, tracker, or plugin instructions to 3.3.
