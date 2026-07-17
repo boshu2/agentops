@@ -92,8 +92,8 @@ run_json "provenance list JSON" bash -c "cd '$TMP_ROOT' && '$AO' provenance list
 run_json "source-link dry-run JSON" env HOME="$TMP_ROOT/home" "$AO" skills link --dest "$TMP_ROOT/skills" --dry-run --json
 
 for command in \
-  claim close constraint converge crank done governor land membrane next-work \
-  pawl plan-pawl reconcile state validate worktree yield; do
+  claim close constraint converge crank "done" governor land membrane next-work \
+  pawl plan-pawl reconcile state validate verify worktree yield; do
   run_tombstone "ao $command tombstone" "$AO" "$command"
 done
 run_tombstone "ao goals trace tombstone" "$AO" goals trace
