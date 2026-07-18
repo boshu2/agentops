@@ -148,6 +148,11 @@ func TestWorkspaceOversize_ThresholdEnvOverride(t *testing.T) {
 		{"unset/empty", "", 25 * mib},
 		{"valid one MiB", "1", mib},
 		{"valid large", "100", 100 * mib},
+		{"cap boundary accepted", "1048576", 1048576 * mib},
+		{"over cap falls back", "1048577", 25 * mib},
+		// The overflow class from the hardening finding: MiB counts above
+		// ~2^43 wrap the int64 byte product negative, flagging everything.
+		{"int64-overflow value falls back", "9000000000000", 25 * mib},
 		{"zero invalid", "0", 25 * mib},
 		{"negative invalid", "-5", 25 * mib},
 		{"garbage invalid", "abc", 25 * mib},

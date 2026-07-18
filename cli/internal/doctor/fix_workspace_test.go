@@ -1,6 +1,7 @@
 package doctor
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -355,10 +356,11 @@ func TestWorkspaceSymlinkedAgentsRoot(t *testing.T) {
 	}
 }
 
-// TestWorkspaceDirRename_JournalFailureCompensates forces the fsync'd
-// actions.jsonl append to fail AFTER the rename executed: the helper must
-// rename the directory back to its original path (so disk state matches the
-// empty journal and undo is never blind) and report both facts in the error.
+// TestWorkspaceDirRename_JournalFailureCompensates forces the actions.jsonl
+// append to fail at the WRITE stage (dead handle) AFTER the rename executed:
+// the record definitely never persisted, so the helper must rename the
+// directory back to its original path (disk state matches the empty journal;
+// undo is never blind) and report both facts in the error.
 func TestWorkspaceDirRename_JournalFailureCompensates(t *testing.T) {
 	repo := t.TempDir()
 	dir := filepath.Join(repo, ".agents", "doomed")
@@ -398,6 +400,161 @@ func TestWorkspaceDirRename_JournalFailureCompensates(t *testing.T) {
 	}
 }
 
+// TestWorkspaceDirRename_SyncFailureLeavesRenameInPlace: when the journal
+// WRITE succeeds and only the fsync fails, the record has probably been
+// persisted — a compensating rename-back would desync disk from the journal
+// (undo would replay an unnecessary reverse rename). The helper must leave
+// the rename in place and surface the durability uncertainty. The sync stage
+// is simulated through the workspaceAppendAction seam because forcing a real
+// fsync failure after a successful write is not portable.
+func TestWorkspaceDirRename_SyncFailureLeavesRenameInPlace(t *testing.T) {
+	repo := t.TempDir()
+	dir := filepath.Join(repo, ".agents", "doomed")
+	writeWorkspaceFile(t, filepath.Join(dir, "keep.md"), "payload", time.Now())
+
+	ra, err := NewRunArtifact(repo, "wssyncfail", time.Now())
+	if err != nil {
+		t.Fatalf("NewRunArtifact: %v", err)
+	}
+	af, err := ra.OpenActionsFile()
+	if err != nil {
+		t.Fatalf("OpenActionsFile: %v", err)
+	}
+	t.Cleanup(func() { _ = af.Close() })
+	caps := NewCapabilities("test")
+	locks := NewLockManager(filepath.Join(repo, ".doctor", "locks"))
+	ctx := NewMutateContext(ra, caps, t.TempDir(), locks, af, false).WithFixer("test-sync-fail")
+
+	// Seam override: write landed, fsync failed. Restored via t.Cleanup so no
+	// state leaks into shuffled test orders.
+	orig := workspaceAppendAction
+	t.Cleanup(func() { workspaceAppendAction = orig })
+	workspaceAppendAction = func(ctx *MutateContext, rec ActionRecord) (bool, error) {
+		if wrote, werr := orig(ctx, rec); werr != nil {
+			return wrote, werr // real write failure would be a test-setup bug
+		}
+		return true, fmt.Errorf("simulated fsync failure")
+	}
+
+	dest := workspaceQuarantineDest(ctx, "doomed")
+	renameErr := workspaceDirRename(ctx, dir, dest, nil)
+	if renameErr == nil {
+		t.Fatal("workspaceDirRename succeeded despite a failing journal sync")
+	}
+	if !strings.Contains(renameErr.Error(), "left in place") {
+		t.Errorf("error = %v, want it to report the rename left in place", renameErr)
+	}
+	if strings.Contains(renameErr.Error(), "compensated") {
+		t.Errorf("error = %v, must NOT report a compensating rename-back", renameErr)
+	}
+	// The rename stays applied: dest holds the content, the source is gone —
+	// consistent with the (written) journal record.
+	got, err := os.ReadFile(filepath.Join(dest, "keep.md"))
+	if err != nil || string(got) != "payload" {
+		t.Fatalf("dest content = %q err=%v, want the rename left in place", got, err)
+	}
+	if _, err := os.Lstat(dir); !os.IsNotExist(err) {
+		t.Errorf("source dir still present after a sync-stage failure (err=%v)", err)
+	}
+	// The record IS in the journal (the write succeeded), so undo can replay.
+	recs, err := readActions(ra.ActionsPath())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(recs) != 1 || recs[0].Op != "Rename" || recs[0].RenameTo != dest {
+		t.Fatalf("journal records = %+v, want the one written Rename record", recs)
+	}
+}
+
+// TestWorkspaceFileMoveNoClobber_DestExistsKernelRefusal calls the file-move
+// helper directly against an EXISTING destination: os.Link must refuse with
+// EEXIST (the kernel-atomic no-clobber, independent of any caller lstat
+// pre-check), nothing moves, and nothing is journaled.
+func TestWorkspaceFileMoveNoClobber_DestExistsKernelRefusal(t *testing.T) {
+	repo := t.TempDir()
+	src := filepath.Join(repo, ".agents", "retros", "dup.md")
+	dest := filepath.Join(repo, ".agents", "retro", "dup.md")
+	writeWorkspaceFile(t, src, "source body", time.Now())
+	writeWorkspaceFile(t, dest, "dest body", time.Now())
+
+	ra, err := NewRunArtifact(repo, "wsfilemove", time.Now())
+	if err != nil {
+		t.Fatalf("NewRunArtifact: %v", err)
+	}
+	af, err := ra.OpenActionsFile()
+	if err != nil {
+		t.Fatalf("OpenActionsFile: %v", err)
+	}
+	t.Cleanup(func() { _ = af.Close() })
+	caps := NewCapabilities("test")
+	locks := NewLockManager(filepath.Join(repo, ".doctor", "locks"))
+	ctx := NewMutateContext(ra, caps, t.TempDir(), locks, af, false).WithFixer("test-file-move")
+
+	collided, err := workspaceFileMoveNoClobber(ctx, src, dest)
+	if err != nil {
+		t.Fatalf("workspaceFileMoveNoClobber: %v", err)
+	}
+	if !collided {
+		t.Fatal("existing destination not reported as a collision")
+	}
+	if got, err := os.ReadFile(src); err != nil || string(got) != "source body" {
+		t.Errorf("source = %q err=%v, want untouched", got, err)
+	}
+	if got, err := os.ReadFile(dest); err != nil || string(got) != "dest body" {
+		t.Errorf("dest = %q err=%v, want untouched (never overwritten)", got, err)
+	}
+	recs, err := readActions(ra.ActionsPath())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(recs) != 0 {
+		t.Fatalf("collided move wrote %d action records, want 0", len(recs))
+	}
+}
+
+// TestWorkspaceFileMoveNoClobber_JournalWriteFailureCompensates: a WRITE-stage
+// journal failure after link+remove executed must move the file back (disk
+// matches the empty journal) and report the compensation.
+func TestWorkspaceFileMoveNoClobber_JournalWriteFailureCompensates(t *testing.T) {
+	repo := t.TempDir()
+	src := filepath.Join(repo, ".agents", "retros", "a.md")
+	dest := filepath.Join(repo, ".agents", "retro", "a.md")
+	writeWorkspaceFile(t, src, "payload", time.Now())
+
+	ra, err := NewRunArtifact(repo, "wsfilejournal", time.Now())
+	if err != nil {
+		t.Fatalf("NewRunArtifact: %v", err)
+	}
+	af, err := ra.OpenActionsFile()
+	if err != nil {
+		t.Fatalf("OpenActionsFile: %v", err)
+	}
+	// Close the handle NOW: the move will succeed, the journal write will fail.
+	if err := af.Close(); err != nil {
+		t.Fatalf("close actions file: %v", err)
+	}
+	caps := NewCapabilities("test")
+	locks := NewLockManager(filepath.Join(repo, ".doctor", "locks"))
+	ctx := NewMutateContext(ra, caps, t.TempDir(), locks, af, false).WithFixer("test-file-journal-fail")
+
+	collided, moveErr := workspaceFileMoveNoClobber(ctx, src, dest)
+	if moveErr == nil {
+		t.Fatal("workspaceFileMoveNoClobber succeeded despite a dead actions.jsonl handle")
+	}
+	if collided {
+		t.Error("journal failure misreported as a collision")
+	}
+	if !strings.Contains(moveErr.Error(), "compensated") {
+		t.Errorf("error = %v, want it to report the compensating move-back", moveErr)
+	}
+	if got, err := os.ReadFile(src); err != nil || string(got) != "payload" {
+		t.Fatalf("source not restored: content=%q err=%v", got, err)
+	}
+	if _, err := os.Lstat(dest); !os.IsNotExist(err) {
+		t.Errorf("dest still present after compensation (err=%v)", err)
+	}
+}
+
 func TestWorkspaceGCTTL(t *testing.T) {
 	tests := []struct {
 		name  string
@@ -407,6 +564,11 @@ func TestWorkspaceGCTTL(t *testing.T) {
 		{"default when unset", "", 14 * 24 * time.Hour},
 		{"override 7 days", "7", 7 * 24 * time.Hour},
 		{"override 1 day", "1", 24 * time.Hour},
+		{"cap boundary accepted", "3650", 3650 * 24 * time.Hour},
+		{"over cap falls back", "3651", 14 * 24 * time.Hour},
+		// The overflow class from the hardening finding: day counts above
+		// ~106751 wrap time.Duration negative, which would expire everything.
+		{"duration-overflow value falls back", "10675200", 14 * 24 * time.Hour},
 		{"zero falls back", "0", 14 * 24 * time.Hour},
 		{"negative falls back", "-3", 14 * 24 * time.Hour},
 		{"non-numeric falls back", "abc", 14 * 24 * time.Hour},

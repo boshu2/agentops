@@ -100,6 +100,13 @@ func workspaceEmptyDirCandidates(base string) ([]string, error) {
 // caller's scan, and a dir that gained files is refused, not quarantined.
 // Returns (true, nil) when the rename happened (or would happen, in dry-run),
 // and (false, err) when it was refused.
+//
+// TOCTOU bound: the lock is in-process advisory only, so for a writer OUTSIDE
+// this process a verify→rename window remains and cannot be eliminated here
+// (full closure would need filesystem transactions or stop-the-world, out of
+// scope by design). The consequence is bounded: a file that lands in the
+// window is MOVED with the directory into quarantine, journaled, and
+// restorable via `doctor undo` — never destroyed.
 func quarantineEmptyDir(ctx *MutateContext, base, name, dest string) (bool, error) {
 	verify := func(path string) error {
 		baseInv, err := workspaceDirInventory(base)

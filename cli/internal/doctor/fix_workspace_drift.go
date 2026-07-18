@@ -23,7 +23,9 @@ package doctor
 // run's quarantine directory (never removed).
 //
 // Detector is PURE (stat + readdir only). Every fixer disk write flows through
-// the mutation chokepoint: regular files via Mutate, and directories via
+// the mutation chokepoint discipline: regular files via
+// workspaceFileMoveNoClobber (a link+remove adaptation of Mutate's Rename
+// whose execute is kernel-atomic no-clobber), and directories via
 // workspaceRenameDir — an in-package directory adaptation of Mutate that
 // preserves the chokepoint's guarantees (per-path lock, write-scope check, op
 // check, dry-run, fsync'd actions.jsonl journal). Directory renames need no
@@ -193,7 +195,24 @@ func (f workspaceNamingDriftFixer) fixOneAlias(ctx *MutateContext, base, alias s
 		res.Skipped = append(res.Skipped, fmt.Sprintf("%s: alias path is not a real directory; resolve by hand", aliasRel))
 		return nil
 	}
-	canonicalDir := filepath.Join(base, workspaceCanonicalAliases[alias])
+	canonicalName := workspaceCanonicalAliases[alias]
+	canonicalDir := filepath.Join(base, canonicalName)
+	// Destination-root guard: the canonical dir may ITSELF be a symlink (or a
+	// regular file). Moving entries "into" a symlinked canonical dir would
+	// follow the link — potentially outside the repo — while every per-entry
+	// lexical scope check still passes. An ABSENT canonical dir is fine (the
+	// first move creates it); anything present must be a real directory, and a
+	// non-NotExist Lstat error means its state is unknown — never assume
+	// absent, skip the whole alias.
+	if cfi, cerr := os.Lstat(canonicalDir); cerr == nil {
+		if cfi.Mode()&os.ModeSymlink != 0 || !cfi.IsDir() {
+			res.Skipped = append(res.Skipped, fmt.Sprintf("%s: canonical dir .agents/%s is not a real directory; resolve by hand", aliasRel, canonicalName))
+			return nil
+		}
+	} else if !os.IsNotExist(cerr) {
+		res.Skipped = append(res.Skipped, fmt.Sprintf("%s: cannot verify canonical dir .agents/%s (%v); resolve by hand", aliasRel, canonicalName, cerr))
+		return nil
+	}
 	entries, err := os.ReadDir(aliasPath)
 	if err != nil {
 		return fmt.Errorf("doctor: %s: read %s: %w", f.ID(), aliasRel, err)
@@ -208,14 +227,14 @@ func (f workspaceNamingDriftFixer) fixOneAlias(ctx *MutateContext, base, alias s
 			res.Skipped = append(res.Skipped, fmt.Sprintf("%s: not a regular file or directory; resolve by hand", srcRel))
 			continue
 		}
-		collided, moveErr := f.moveEntryNoClobber(ctx, src, dest, e.IsDir())
+		skipReason, moveErr := f.moveEntryNoClobber(ctx, src, dest, e.IsDir())
 		if moveErr != nil {
 			return fmt.Errorf("doctor: %s: move %s: %w", f.ID(), srcRel, moveErr)
 		}
-		if collided {
-			// Destination name already exists: both old and new form present.
+		if skipReason != "" {
+			// Refused (destination collision, or destination state unknown).
 			// Never overwrite, never guess — leave the entry and report it.
-			res.Skipped = append(res.Skipped, fmt.Sprintf("%s: same name already exists in .agents/%s; resolve by hand", srcRel, workspaceCanonicalAliases[alias]))
+			res.Skipped = append(res.Skipped, fmt.Sprintf("%s: %s", srcRel, skipReason))
 			continue
 		}
 		res.ActionsTaken++
@@ -245,49 +264,68 @@ func (f workspaceNamingDriftFixer) fixOneAlias(ctx *MutateContext, base, alias s
 var errWorkspaceDriftDestExists = errors.New("destination appeared since scan; refusing to overwrite (refused_unsafe)")
 
 // moveEntryNoClobber moves one alias-directory entry to its canonical
-// destination WITHOUT ever overwriting: it takes the destination path's
-// advisory lock, re-checks destination non-existence immediately before the
-// rename, and only then routes the move through the chokepoint (Mutate for
-// regular files; workspaceDirRename — whose verify hook re-checks the
-// destination once more under the SOURCE lock — for directories). A
-// destination that (re)appears is reported as (collided=true, nil) and
-// nothing moves.
+// destination WITHOUT ever overwriting. It takes the destination path's
+// advisory lock, checks the destination, then routes the move through the
+// chokepoint discipline:
 //
-// Honesty note on the residual race: doctor's advisory locks are in-process
-// only. Holding the destination lock serializes against other chokepoint
-// mutations of the same destination path within this process, but an EXTERNAL
-// concurrent writer is not excluded — for such a writer this recheck only
-// narrows the overwrite window to lstat→rename. It does not eliminate it.
-func (workspaceNamingDriftFixer) moveEntryNoClobber(ctx *MutateContext, src, dest string, isDir bool) (collided bool, err error) {
+//   - Regular files go through workspaceFileMoveNoClobber, whose link+remove
+//     execute is kernel-atomic no-clobber: os.Link fails with EEXIST if the
+//     destination exists (or appears at ANY point, external writers
+//     included), so for files the lstat→rename overwrite window is closed
+//     for real, not merely narrowed.
+//   - Directories go through workspaceDirRename with a verify hook that
+//     re-checks destination non-existence under the SOURCE lock. Doctor's
+//     advisory locks are in-process only, so for an EXTERNAL writer a
+//     verify→rename window remains — but its worst case is bounded: POSIX
+//     rename refuses a non-empty destination directory (ENOTEMPTY), so the
+//     only thing the rename can silently replace is an EMPTY directory that
+//     appeared in the window. No content is lost, and the move is journaled
+//     and undoable.
+//
+// A non-empty skipReason means the entry was refused (destination collision,
+// or a destination whose state could not be verified) and nothing moved; the
+// caller records it in FixResult.Skipped.
+func (workspaceNamingDriftFixer) moveEntryNoClobber(ctx *MutateContext, src, dest string, isDir bool) (skipReason string, err error) {
+	collisionReason := fmt.Sprintf("same name already exists in .agents/%s; resolve by hand", filepath.Base(filepath.Dir(dest)))
 	if !ctx.DryRun {
 		guard, lerr := ctx.Locks.Acquire(dest)
 		if lerr != nil {
-			return false, lerr
+			return "", lerr
 		}
 		defer func() { _ = guard.Release() }()
 	}
 	if _, lerr := os.Lstat(dest); lerr == nil {
-		return true, nil
+		return collisionReason, nil
+	} else if !os.IsNotExist(lerr) {
+		// Permission or I/O failure: the destination's state is UNKNOWN, and
+		// unknown is never "absent". Refuse the move like a collision.
+		return fmt.Sprintf("cannot verify destination in .agents/%s (%v); resolve by hand", filepath.Base(filepath.Dir(dest)), lerr), nil
 	}
 	if isDir {
 		verify := func(string) error {
 			if _, lerr := os.Lstat(dest); lerr == nil {
 				return errWorkspaceDriftDestExists
+			} else if !os.IsNotExist(lerr) {
+				return fmt.Errorf("doctor: lstat %s: %v: %w", dest, lerr, errWorkspaceDriftDestExists)
 			}
 			return nil
 		}
 		if moveErr := workspaceDirRename(ctx, src, dest, verify); moveErr != nil {
 			if errors.Is(moveErr, errWorkspaceDriftDestExists) {
-				return true, nil
+				return collisionReason, nil
 			}
-			return false, moveErr
+			return "", moveErr
 		}
-		return false, nil
+		return "", nil
 	}
-	if _, moveErr := Mutate(ctx, src, Rename{To: dest}); moveErr != nil {
-		return false, moveErr
+	collided, moveErr := workspaceFileMoveNoClobber(ctx, src, dest)
+	if moveErr != nil {
+		return "", moveErr
 	}
-	return false, nil
+	if collided {
+		return collisionReason, nil
+	}
+	return "", nil
 }
 
 // workspaceRenameDir renames a directory through the shared workspace

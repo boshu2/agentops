@@ -14,6 +14,7 @@ package doctor
 // remove.
 
 import (
+	"encoding/json"
 	"fmt"
 	"io/fs"
 	"os"
@@ -204,15 +205,22 @@ const (
 	workspaceTTLEnvVar = "AO_DOCTOR_WS_TTL_DAYS"
 	// workspaceTTLDefaultDays is the default workspace GC TTL in days.
 	workspaceTTLDefaultDays = 14
+	// workspaceTTLMaxDays caps the env override at 10 years. The cap is a
+	// correctness guard, not just taste: an unbounded day count overflows
+	// time.Duration (day counts above ~106751 wrap the int64 nanosecond
+	// representation negative), which would push the GC cutoff into the far
+	// FUTURE and make every stale-named directory look expired at once.
+	workspaceTTLMaxDays = 3650
 )
 
 // workspaceGCTTL returns the workspace GC TTL: stale/retry directories whose
 // newest content is older than this are GC candidates. Defaults to 14 days;
-// AO_DOCTOR_WS_TTL_DAYS overrides with a positive integer day count, and any
-// invalid value falls back to the default.
+// AO_DOCTOR_WS_TTL_DAYS overrides with an integer day count in
+// [1, workspaceTTLMaxDays], and any invalid or out-of-range value falls back
+// to the default (never trusted — see workspaceTTLMaxDays for why).
 func workspaceGCTTL() time.Duration {
 	if raw := os.Getenv(workspaceTTLEnvVar); raw != "" {
-		if n, err := strconv.Atoi(raw); err == nil && n > 0 {
+		if n, err := strconv.Atoi(raw); err == nil && n >= 1 && n <= workspaceTTLMaxDays {
 			return time.Duration(n) * day
 		}
 	}
@@ -239,6 +247,15 @@ func workspaceGCTTL() time.Duration {
 // check and before any preconditions — fixers use it to re-validate state
 // that may have changed since their scan (e.g. "still empty"). A verify
 // error aborts the rename with no mutation.
+//
+// TOCTOU bound (external writers): the per-path lock is in-process advisory
+// only, so for a writer OUTSIDE this process a verify→rename window exists
+// and cannot be eliminated here — full closure would need filesystem
+// transactions or stop-the-world exclusivity, both out of scope by design.
+// The consequence is bounded, not destructive: content that lands inside the
+// directory during the window is MOVED with it to the journaled rename
+// destination (quarantine), remains restorable via `doctor undo`, and is
+// never deleted.
 func workspaceDirRename(ctx *MutateContext, path, dest string, verify func(path string) error) error {
 	op := Rename{To: dest}
 
@@ -290,12 +307,19 @@ func workspaceDirRename(ctx *MutateContext, path, dest string, verify func(path 
 	}
 
 	// Step 7/8 — fsync'd action record.
+	//
+	// Execute-before-journal parity: this order matches the file-shaped Mutate
+	// chokepoint (execute, then journal). A CRASH between the execute above
+	// and the append below is therefore undo-blind for BOTH shapes — the
+	// journal never sees the mutation — and the rename destination tree
+	// (quarantine) is the manual recovery path: the run dir's receipts list
+	// what moved, and nothing is ever deleted.
 	rel, relErr := filepath.Rel(ctx.RepoRoot, path)
 	if relErr != nil {
 		rel = path
 	}
 	emptyHash := sha256Hex(nil)
-	if err := ctx.appendAction(ActionRecord{
+	if wrote, aerr := workspaceAppendAction(ctx, ActionRecord{
 		Path:         rel,
 		Op:           op.kind(),
 		BeforeHash:   emptyHash,
@@ -308,19 +332,197 @@ func workspaceDirRename(ctx *MutateContext, path, dest string, verify func(path 
 		OK:           true,
 		RenameTo:     dest,
 		Existed:      true,
-	}); err != nil {
-		// The rename landed but its journal line did not, so `doctor undo`
-		// would be blind to the mutation. (The file-shaped Mutate chokepoint
-		// has the same execute-then-journal order and the same exposure; this
-		// directory adapter at least compensates.) Attempt a compensating
-		// rename-back so disk state matches the (empty) journal, and report
-		// both the journal error and the compensation outcome.
-		if backErr := os.Rename(dest, path); backErr != nil {
-			return fmt.Errorf("doctor: journal Rename of %s: %w; compensating rename-back FAILED (%v) — directory left at %s and is NOT recorded in actions.jsonl", path, err, backErr, dest)
+	}); aerr != nil {
+		if !wrote {
+			// WRITE-stage failure: the record definitely did not land as a
+			// parseable journal line, so `doctor undo` would be blind to the
+			// rename. Compensate with a rename-back so disk state matches the
+			// (empty) journal, and report both the journal error and the
+			// compensation outcome.
+			if backErr := os.Rename(dest, path); backErr != nil {
+				return fmt.Errorf("doctor: journal Rename of %s: %w; compensating rename-back FAILED (%v) — directory left at %s and is NOT recorded in actions.jsonl", path, aerr, backErr, dest)
+			}
+			return fmt.Errorf("doctor: journal Rename of %s: %w (compensated: directory renamed back to its original path; no mutation recorded)", path, aerr)
 		}
-		return fmt.Errorf("doctor: journal Rename of %s: %w (compensated: directory renamed back to its original path; no mutation recorded)", path, err)
+		// SYNC-stage failure: the write succeeded and only the fsync failed,
+		// so the record has PROBABLY been persisted. Compensating here would
+		// desync disk from the journal — a later `doctor undo` would replay an
+		// unnecessary reverse rename over the restored path. Leave the rename
+		// in place (state and record are consistent) and surface the
+		// journal-durability uncertainty instead.
+		return fmt.Errorf("doctor: journal Rename of %s: record written but not durably synced (%w) — rename left in place at %s; actions.jsonl durability is uncertain until the next successful sync", path, aerr, dest)
 	}
 	return nil
+}
+
+// workspaceAppendAction is the journal-append seam used by the workspace
+// directory/file chokepoint adapters. It is a package var ONLY so tests can
+// simulate the write-succeeded/fsync-failed stage deterministically (forcing a
+// real fsync failure while the write succeeds is not portable); production
+// always points at workspaceAppendActionStaged.
+var workspaceAppendAction = workspaceAppendActionStaged
+
+// workspaceAppendActionStaged appends one action record to the run's
+// actions.jsonl exactly as MutateContext.appendAction does (same mutex, same
+// handle, same fsync) but reports WHICH stage failed, so callers can pick the
+// right recovery:
+//
+//   - wrote == false: the record was definitely not persisted as a parseable
+//     line (marshal or write failed; at worst a partial, unparseable trailing
+//     fragment reached the file, which the journal reader rejects). The
+//     mutation is journal-invisible — compensating is safe and correct.
+//   - wrote == true with a non-nil error: the write succeeded and only the
+//     fsync failed. The line is in the OS page cache and has probably been (or
+//     will be) persisted, so the caller must NOT compensate by reversing the
+//     mutation — the on-disk journal likely records it.
+func workspaceAppendActionStaged(ctx *MutateContext, rec ActionRecord) (wrote bool, err error) {
+	line, merr := json.Marshal(rec)
+	if merr != nil {
+		return false, fmt.Errorf("doctor: marshal action record: %w", merr)
+	}
+	line = append(line, '\n')
+	ctx.actionsMu.Lock()
+	defer ctx.actionsMu.Unlock()
+	if _, werr := ctx.actionsFile.Write(line); werr != nil {
+		return false, fmt.Errorf("doctor: append actions.jsonl: %w", werr)
+	}
+	if serr := ctx.actionsFile.Sync(); serr != nil {
+		return true, fmt.Errorf("doctor: sync actions.jsonl: %w", serr)
+	}
+	return true, nil
+}
+
+// workspaceFileMoveNoClobber moves the regular file path to dest through the
+// Mutate eight-step discipline (per-path lock, before-hash, scope/op
+// preconditions on both endpoints, verbatim backup, dry-run transparency,
+// journal) but executes via os.Link + os.Remove instead of os.Rename:
+// link(2) fails with EEXIST when the destination exists, so link+remove is
+// the no-clobber implementation of Rename for regular files — the kernel
+// itself refuses the overwrite, closing the lstat→rename destination race
+// that a check-then-rename sequence merely narrows. An EEXIST is reported as
+// (collided=true, nil) with nothing moved.
+//
+// The action is journaled with the same record shape Mutate writes for a
+// Rename (Op "Rename", RenameTo=dest, before-hash of the source content,
+// empty after-hash at the vacated source path): it IS the move it performed,
+// only executed differently. engine.undoOne replays a Rename record with a
+// reverse os.Rename(RenameTo, Path), which works identically after
+// link+remove — the source is gone and the destination exists, exactly as
+// after a plain rename.
+func workspaceFileMoveNoClobber(ctx *MutateContext, path, dest string) (collided bool, err error) {
+	op := Rename{To: dest}
+
+	// Step 1 — per-path advisory lock on the source (callers moving toward a
+	// contended destination hold the destination lock; distinct paths, so no
+	// self-deadlock).
+	if !ctx.DryRun {
+		guard, lerr := ctx.Locks.Acquire(path)
+		if lerr != nil {
+			return false, lerr
+		}
+		defer func() { _ = guard.Release() }()
+	}
+
+	// Step 2 — before-state: the source must be a regular file (never follow
+	// a symlink into pretending it is one).
+	info, lerr := os.Lstat(path)
+	if lerr != nil {
+		return false, fmt.Errorf("doctor: lstat %s: %w", path, lerr)
+	}
+	if !info.Mode().IsRegular() {
+		return false, fmt.Errorf("doctor: move %s: not a regular file (refused_unsafe)", path)
+	}
+	beforeBytes, rerr := os.ReadFile(path)
+	if rerr != nil {
+		return false, fmt.Errorf("doctor: read %s: %w", path, rerr)
+	}
+	beforeHash := sha256Hex(beforeBytes)
+
+	// Step 3 — preconditions: both endpoints in scope, op executable.
+	if err := EnsureInScope(ctx.Capabilities, ctx.RepoRoot, ctx.HomeDir, path); err != nil {
+		return false, err
+	}
+	if err := EnsureInScope(ctx.Capabilities, ctx.RepoRoot, ctx.HomeDir, dest); err != nil {
+		return false, err
+	}
+	if err := EnsureOpAllowed(ctx.Capabilities, op); err != nil {
+		return false, err
+	}
+
+	// Step 4 — verbatim backup (same as Mutate for an existing file).
+	if !ctx.DryRun {
+		rel, relErr := filepath.Rel(ctx.RepoRoot, path)
+		if relErr != nil {
+			rel = filepath.Base(path)
+		}
+		backup := filepath.Join(ctx.RunDir, "backups", rel)
+		if err := copyVerbatim(path, backup); err != nil {
+			return false, fmt.Errorf("doctor: backup %s: %w", path, err)
+		}
+		if err := cmpStrict(path, backup); err != nil {
+			return false, err
+		}
+	}
+
+	// Step 5/6 — dry-run transparency, then atomic no-clobber execute.
+	startedNS := time.Since(ctx.start).Nanoseconds()
+	if ctx.DryRun {
+		fmt.Fprintf(os.Stderr, "[dry-run] would mutate %s: %s\n", path, DescribeOp(op))
+		return false, nil
+	}
+	if err := os.MkdirAll(filepath.Dir(dest), 0o755); err != nil {
+		return false, fmt.Errorf("doctor: mkdir %s: %w", filepath.Dir(dest), err)
+	}
+	if err := os.Link(path, dest); err != nil {
+		if os.IsExist(err) {
+			return true, nil // destination appeared — collision, nothing moved
+		}
+		return false, fmt.Errorf("doctor: link %s -> %s: %w", path, dest, err)
+	}
+	if err := os.Remove(path); err != nil {
+		// The link landed but the source could not be unlinked, leaving two
+		// paths to one inode. Compensate by removing the new link so the move
+		// stays all-or-nothing.
+		if unlinkErr := os.Remove(dest); unlinkErr != nil {
+			return false, fmt.Errorf("doctor: remove source %s after link: %w; compensating removal of %s ALSO failed (%v) — file is hard-linked at both paths and NOT recorded in actions.jsonl", path, err, dest, unlinkErr)
+		}
+		return false, fmt.Errorf("doctor: remove source %s after link: %w (compensated: link at %s removed; nothing moved)", path, err, dest)
+	}
+
+	// Step 7/8 — fsync'd action record; same execute-before-journal parity and
+	// crash exposure as workspaceDirRename (see the comment there), and the
+	// same staged write/sync recovery split.
+	rel, relErr := filepath.Rel(ctx.RepoRoot, path)
+	if relErr != nil {
+		rel = path
+	}
+	if wrote, aerr := workspaceAppendAction(ctx, ActionRecord{
+		Path:         rel,
+		Op:           op.kind(),
+		BeforeHash:   beforeHash,
+		AfterHash:    sha256Hex(nil), // the source path is empty after the move, matching Mutate's read-back
+		BeforeMode:   fmt.Sprintf("%o", info.Mode().Perm()),
+		StartedAtNS:  startedNS,
+		FinishedAtNS: time.Since(ctx.start).Nanoseconds(),
+		RunID:        ctx.RunID,
+		FixerID:      ctx.FixerID,
+		OK:           true,
+		RenameTo:     dest,
+		Existed:      true,
+	}); aerr != nil {
+		if !wrote {
+			// WRITE-stage failure: record definitely not persisted; move the
+			// file back so disk matches the (empty) journal.
+			if backErr := os.Rename(dest, path); backErr != nil {
+				return false, fmt.Errorf("doctor: journal Rename of %s: %w; compensating move-back FAILED (%v) — file left at %s and is NOT recorded in actions.jsonl", path, aerr, backErr, dest)
+			}
+			return false, fmt.Errorf("doctor: journal Rename of %s: %w (compensated: file moved back to its original path; no mutation recorded)", path, aerr)
+		}
+		// SYNC-stage failure: record probably persisted; leave the move in
+		// place so state and journal stay consistent (see workspaceDirRename).
+		return false, fmt.Errorf("doctor: journal Rename of %s: record written but not durably synced (%w) — move left in place at %s; actions.jsonl durability is uncertain until the next successful sync", path, aerr, dest)
+	}
+	return false, nil
 }
 
 // workspaceQuarantineDirByName validates name as a bare path element (a

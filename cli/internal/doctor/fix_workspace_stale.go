@@ -203,6 +203,13 @@ var errWorkspaceStaleVerifyRefused = errors.New("no longer GC-eligible; refusing
 // is still past the TTL, and the walk was complete (WalkErrs == 0 — unknown
 // content is never GC-able). Content arriving between the fixer's scan and
 // the rename therefore refuses the move instead of being quarantined.
+//
+// TOCTOU bound: the lock is in-process advisory only, so for a writer OUTSIDE
+// this process a verify→rename window remains and cannot be eliminated here
+// (full closure would need filesystem transactions or stop-the-world, out of
+// scope by design). The consequence is bounded: content that lands in the
+// window is MOVED with the directory into quarantine, journaled, and
+// restorable via `doctor undo` — never destroyed.
 func workspaceStaleQuarantineVerify(base string) func(path string) error {
 	return func(path string) error {
 		name := filepath.Base(path)

@@ -81,7 +81,8 @@ The workspace detectors are:
 
 Every mutating run writes receipts under
 `.doctor/runs/<timestamp>__<runid>/`: a `report.json` describing findings and
-applied fixes, and an `undo.sh` that reverses every mutation the run made.
+applied fixes, an `actions.jsonl` journal of every mutation, and an `undo.sh`
+wrapper for reversing them (see the exact undo contract below).
 `.doctor/latest` is a symlink to the most recent run.
 
 ## Safety envelope
@@ -95,9 +96,20 @@ applied fixes, and an `undo.sh` that reverses every mutation the run made.
   the knowledge subsystem's learnings consolidation) would collide with
   existing content and the right merge is not mechanically certain, the
   finding lands in a Skipped list with the reason, and nothing moves.
-- Detectors are pure reads; every disk write flows through the audited
-  mutation path and is backed up before it happens, so `undo.sh` can restore
-  the prior state.
+- **What undo can and cannot reverse.** Detectors are pure reads; every disk
+  write flows through the audited mutation path and lands as a journal line.
+  FILE mutations are content-hashed and backed up verbatim before they change,
+  and undo restores them from those backups. DIRECTORY renames (quarantines
+  and drift merges) carry **no byte backup** — the renamed/quarantined tree
+  itself *is* the preserved copy, byte for byte — and undo reverses them by
+  replaying the rename backwards. A crash in the narrow window between a
+  rename landing and its journal line being written leaves that one mutation
+  invisible to undo; recovery is manual, from the run's `quarantine/`
+  directory (the run receipts list what moved, and nothing is ever deleted).
+- **Concurrent external writers are bounded, not excluded.** Doctor's locks
+  are per-process. A writer outside doctor racing a fix can slip content into
+  a directory in the moment it is quarantined; that content is moved with the
+  directory — journaled, restorable via undo, never destroyed.
 
 ## What doctor will NOT decide
 

@@ -34,6 +34,11 @@ const (
 	workspaceSizeEnvVar = "AO_DOCTOR_WS_SIZE_MB"
 	// workspaceSizeDefaultMiB is the default directory size threshold in MiB.
 	workspaceSizeDefaultMiB = 25
+	// workspaceSizeMaxMiB caps the env override at 1 TiB (2^20 MiB). The cap
+	// is a correctness guard, not just taste: an unbounded MiB count overflows
+	// the int64 byte multiplication (values above ~2^43 wrap negative), which
+	// would make EVERY directory read as over-threshold at once.
+	workspaceSizeMaxMiB = 1 << 20
 	// mib is one mebibyte in bytes.
 	mib = 1024 * 1024
 	// workspaceLooseFileThresholdBytes is the FIXED threshold (2 MiB) for a
@@ -45,12 +50,13 @@ const (
 )
 
 // workspaceSizeThreshold returns the top-level directory size threshold in
-// bytes. Defaults to 25 MiB; AO_DOCTOR_WS_SIZE_MB overrides with a positive
-// integer MiB count, and any invalid value falls back to the default
-// (mirroring workspaceGCTTL).
+// bytes. Defaults to 25 MiB; AO_DOCTOR_WS_SIZE_MB overrides with an integer
+// MiB count in [1, workspaceSizeMaxMiB], and any invalid or out-of-range
+// value falls back to the default (mirroring workspaceGCTTL; see
+// workspaceSizeMaxMiB for why the cap exists).
 func workspaceSizeThreshold() int64 {
 	if raw := os.Getenv(workspaceSizeEnvVar); raw != "" {
-		if n, err := strconv.Atoi(raw); err == nil && n > 0 {
+		if n, err := strconv.Atoi(raw); err == nil && n >= 1 && n <= workspaceSizeMaxMiB {
 			return int64(n) * mib
 		}
 	}

@@ -377,12 +377,12 @@ func TestWorkspaceNamingDrift_LateDestinationCollisionSkipped(t *testing.T) {
 
 	ctx, ra := newNamingDriftCtx(t, repo, false)
 	fixer := workspaceNamingDriftFixer{}
-	collided, err := fixer.moveEntryNoClobber(ctx, filepath.Join(alias, "dup.md"), filepath.Join(canonical, "dup.md"), false)
+	skipReason, err := fixer.moveEntryNoClobber(ctx, filepath.Join(alias, "dup.md"), filepath.Join(canonical, "dup.md"), false)
 	if err != nil {
 		t.Fatalf("moveEntryNoClobber(file): %v", err)
 	}
-	if !collided {
-		t.Fatal("moveEntryNoClobber(file) did not report the late collision")
+	if !strings.Contains(skipReason, "already exists") {
+		t.Fatalf("moveEntryNoClobber(file) skipReason = %q, want the late collision reported", skipReason)
 	}
 	if got := readDriftFile(t, filepath.Join(alias, "dup.md")); got != "alias body" {
 		t.Errorf("alias dup.md = %q, want %q (source moved!)", got, "alias body")
@@ -397,12 +397,12 @@ func TestWorkspaceNamingDrift_LateDestinationCollisionSkipped(t *testing.T) {
 	if err := os.MkdirAll(filepath.Join(canonical, "subdir"), 0o755); err != nil {
 		t.Fatal(err)
 	}
-	collided, err = fixer.moveEntryNoClobber(ctx, filepath.Join(alias, "subdir"), filepath.Join(canonical, "subdir"), true)
+	skipReason, err = fixer.moveEntryNoClobber(ctx, filepath.Join(alias, "subdir"), filepath.Join(canonical, "subdir"), true)
 	if err != nil {
 		t.Fatalf("moveEntryNoClobber(dir): %v", err)
 	}
-	if !collided {
-		t.Fatal("moveEntryNoClobber(dir) did not report the late collision")
+	if !strings.Contains(skipReason, "already exists") {
+		t.Fatalf("moveEntryNoClobber(dir) skipReason = %q, want the late collision reported", skipReason)
 	}
 	if got := readDriftFile(t, filepath.Join(alias, "subdir", "n.md")); got != "nested body" {
 		t.Errorf("alias subdir/n.md = %q, want %q (source moved!)", got, "nested body")
@@ -418,6 +418,125 @@ func TestWorkspaceNamingDrift_LateDestinationCollisionSkipped(t *testing.T) {
 	}
 	if len(recs) != 0 {
 		t.Fatalf("collided moves wrote %d action records, want 0", len(recs))
+	}
+}
+
+// TestWorkspaceNamingDrift_CanonicalSymlinkSkipsWholeAlias: the canonical
+// DESTINATION dir may itself be a symlink (or a regular file). Moving alias
+// entries "into" it would follow the link outside the repo while every
+// per-entry lexical check passes. The fixer must skip the whole alias, touch
+// nothing, and journal nothing — the external target stays byte-intact.
+func TestWorkspaceNamingDrift_CanonicalSymlinkSkipsWholeAlias(t *testing.T) {
+	env, repo := namingDriftEnv(t)
+	agents := filepath.Join(repo, ".agents")
+	external := t.TempDir()
+	writeDriftFile(t, filepath.Join(external, "sentinel.md"), "external body")
+
+	// retros -> retro, where retro is a symlink to the external dir.
+	writeDriftFile(t, filepath.Join(agents, "retros", "r1.md"), "retro one")
+	if err := os.Symlink(external, filepath.Join(agents, "retro")); err != nil {
+		t.Fatalf("symlink: %v", err)
+	}
+	// proof -> proofs, where proofs is a regular FILE (same guard, other shape).
+	writeDriftFile(t, filepath.Join(agents, "proof", "p1.md"), "proof one")
+	writeDriftFile(t, filepath.Join(agents, "proofs"), "not a dir")
+
+	ctx, ra := newNamingDriftCtx(t, repo, false)
+	res, err := workspaceNamingDriftFixer{}.Fix(ctx, env, nil)
+	if err != nil {
+		t.Fatalf("Fix: %v", err)
+	}
+	if res.Fixed {
+		t.Error("Fix reported Fixed despite skipped aliases")
+	}
+	if res.ActionsTaken != 0 {
+		t.Errorf("ActionsTaken = %d, want 0", res.ActionsTaken)
+	}
+	if len(res.Skipped) != 2 {
+		t.Fatalf("Skipped = %v, want both aliases skipped whole", res.Skipped)
+	}
+	for _, s := range res.Skipped {
+		if !strings.Contains(s, "canonical dir") || !strings.Contains(s, "not a real directory") {
+			t.Errorf("Skipped entry = %q, want the canonical-dir reason", s)
+		}
+	}
+	// Alias content untouched, external target untouched (only its sentinel).
+	if got := readDriftFile(t, filepath.Join(agents, "retros", "r1.md")); got != "retro one" {
+		t.Errorf("alias r1.md = %q, want untouched", got)
+	}
+	if got := readDriftFile(t, filepath.Join(agents, "proof", "p1.md")); got != "proof one" {
+		t.Errorf("alias p1.md = %q, want untouched", got)
+	}
+	ents, err := os.ReadDir(external)
+	if err != nil || len(ents) != 1 || ents[0].Name() != "sentinel.md" {
+		t.Errorf("external dir entries = %v (err=%v), want only sentinel.md", ents, err)
+	}
+	if info, lerr := os.Lstat(filepath.Join(agents, "retro")); lerr != nil || info.Mode()&os.ModeSymlink == 0 {
+		t.Errorf("canonical retro is no longer a symlink (err=%v)", lerr)
+	}
+	recs, err := readActions(ra.ActionsPath())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(recs) != 0 {
+		t.Fatalf("skipped aliases wrote %d action records, want 0", len(recs))
+	}
+}
+
+// TestWorkspaceNamingDrift_DestLstatErrorSkipped: a destination Lstat that
+// fails with a NON-NotExist error (here EACCES via an unsearchable canonical
+// dir) means the destination's state is unknown — unknown is never "absent".
+// The entry must be refused (Skipped with the error text), not moved.
+func TestWorkspaceNamingDrift_DestLstatErrorSkipped(t *testing.T) {
+	if os.Geteuid() == 0 {
+		t.Skip("running as root; permission denial is not enforceable")
+	}
+	env, repo := namingDriftEnv(t)
+	agents := filepath.Join(repo, ".agents")
+	alias := filepath.Join(agents, "handoffs")
+	canonical := filepath.Join(agents, "handoff")
+	writeDriftFile(t, filepath.Join(alias, "x.md"), "x body")
+	if err := os.MkdirAll(canonical, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	// Search permission off: Lstat(canonical) itself still succeeds (a real
+	// dir, so the whole-alias guard passes) but Lstat(canonical/x.md) fails
+	// with EACCES — the exact "cannot verify destination" shape.
+	if err := os.Chmod(canonical, 0o000); err != nil {
+		t.Fatalf("chmod: %v", err)
+	}
+	t.Cleanup(func() { _ = os.Chmod(canonical, 0o755) })
+
+	ctx, ra := newNamingDriftCtx(t, repo, false)
+	res, err := workspaceNamingDriftFixer{}.Fix(ctx, env, nil)
+	if err != nil {
+		t.Fatalf("Fix: %v", err)
+	}
+	if res.Fixed {
+		t.Error("Fix reported Fixed despite an unverifiable destination")
+	}
+	if res.ActionsTaken != 0 {
+		t.Errorf("ActionsTaken = %d, want 0", res.ActionsTaken)
+	}
+	found := false
+	for _, s := range res.Skipped {
+		if strings.Contains(s, filepath.Join(".agents", "handoffs", "x.md")) && strings.Contains(s, "cannot verify destination") {
+			found = true
+		}
+	}
+	if !found {
+		t.Errorf("Skipped = %v, want the unverifiable-destination entry with the error text", res.Skipped)
+	}
+	// Source untouched, nothing journaled.
+	if got := readDriftFile(t, filepath.Join(alias, "x.md")); got != "x body" {
+		t.Errorf("alias x.md = %q, want untouched", got)
+	}
+	recs, err := readActions(ra.ActionsPath())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(recs) != 0 {
+		t.Fatalf("refused move wrote %d action records, want 0", len(recs))
 	}
 }
 
