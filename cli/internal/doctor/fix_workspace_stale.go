@@ -18,7 +18,6 @@ package doctor
 import (
 	"fmt"
 	"os"
-	"path/filepath"
 	"time"
 )
 
@@ -155,89 +154,9 @@ func (f workspaceStaleQueueDirsFixer) Fix(ctx *MutateContext, env *DetectEnv, _ 
 }
 
 // workspaceQuarantineRename moves the workspace DIRECTORY <base>/<name> to
-// dest with the full mutation-chokepoint discipline. Mutate itself cannot
-// take a directory path: its before/after hashing does os.ReadFile(path),
-// which fails with EISDIR on a directory. This helper is the directory
-// analogue of Mutate for the Rename op only — the same precedent as the
-// knowledge fixer's createDirViaRename and the workspace empty-dirs
-// quarantineEmptyDir, which bridge chokepoint gaps in-file. It reuses
-// Mutate's own primitives step for step: per-path lock, precondition checks,
-// atomic execute via executeAtomic, and an fsync'd actions.jsonl line via
-// appendAction. The source is gated by structural containment (name must be
-// a single plain path element under the fixed workspace root, matching the
-// fixer's WritesTo declaration of ".agents"); the destination (under the run
-// dir) goes through EnsureInScope, and the op through EnsureOpAllowed.
-// Hashes are the empty-content hash (directories have no byte content — the
-// same value Mutate records for an absent file). No backup copy is taken: a
-// Rename's undo path never consults backups (undoOne reverses it with
-// os.Rename, which handles directories), and the quarantined tree IS the
-// preserved copy, byte for byte.
+// dest through the shared workspace directory-rename chokepoint adapter
+// (workspaceDirRename), with the bare-path-element structural guard applied
+// by workspaceQuarantineDirByName.
 func workspaceQuarantineRename(ctx *MutateContext, base, name, dest string) error {
-	op := Rename{To: dest}
-
-	// Structural containment: name must be a single, plain path element.
-	if name != filepath.Base(name) || name == "." || name == ".." || name == "" {
-		return fmt.Errorf("doctor: invalid workspace dir name %q (refused_unsafe)", name)
-	}
-	path := filepath.Join(base, name)
-
-	// Step 1 — per-path advisory lock (skipped in dry-run, matching Mutate).
-	if !ctx.DryRun {
-		guard, err := ctx.Locks.Acquire(path)
-		if err != nil {
-			return err
-		}
-		defer func() { _ = guard.Release() }()
-	}
-
-	// Step 2 — before-state: the source must still exist and be a directory.
-	info, err := os.Stat(path)
-	if err != nil {
-		return fmt.Errorf("doctor: stat %s: %w", path, err)
-	}
-	if !info.IsDir() {
-		return fmt.Errorf("doctor: %s is not a directory (refused_unsafe)", path)
-	}
-	emptyHash := sha256Hex(nil)
-
-	// Step 3 — preconditions: in-scope destination + executable op. (The
-	// source is gated by the structural containment check above.)
-	if err := EnsureInScope(ctx.Capabilities, ctx.RepoRoot, ctx.HomeDir, dest); err != nil {
-		return err
-	}
-	if err := EnsureOpAllowed(ctx.Capabilities, op); err != nil {
-		return err
-	}
-
-	// Step 4 — backup: intentionally none (see the function comment).
-
-	// Step 5/6 — plan + atomic execute.
-	startedNS := time.Since(ctx.start).Nanoseconds()
-	if ctx.DryRun {
-		fmt.Fprintf(os.Stderr, "[dry-run] would mutate %s: %s\n", path, DescribeOp(op))
-		return nil
-	}
-	if err := executeAtomic(path, op); err != nil {
-		return fmt.Errorf("doctor: execute %s on %s: %w", op.kind(), path, err)
-	}
-
-	// Step 7/8 — record the action line, fsync'd.
-	rel, relErr := filepath.Rel(ctx.RepoRoot, path)
-	if relErr != nil {
-		rel = path
-	}
-	return ctx.appendAction(ActionRecord{
-		Path:         rel,
-		Op:           op.kind(),
-		BeforeHash:   emptyHash,
-		AfterHash:    emptyHash,
-		BeforeMode:   fmt.Sprintf("%o", info.Mode().Perm()),
-		StartedAtNS:  startedNS,
-		FinishedAtNS: time.Since(ctx.start).Nanoseconds(),
-		RunID:        ctx.RunID,
-		FixerID:      ctx.FixerID,
-		OK:           true,
-		RenameTo:     dest,
-		Existed:      true,
-	})
+	return workspaceQuarantineDirByName(ctx, base, name, dest, nil)
 }

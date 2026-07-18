@@ -14,6 +14,7 @@ package doctor
 // remove.
 
 import (
+	"fmt"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -165,4 +166,106 @@ func workspaceGCTTL() time.Duration {
 		}
 	}
 	return workspaceTTLDefaultDays * day
+}
+
+// workspaceDirRename is the single directory analogue of Mutate for the
+// Rename op, shared by every workspace fixer. Mutate itself is file-shaped —
+// its before-hash read and verbatim backup only work on regular files, so a
+// directory rename adapts its eight-step discipline here: the same per-path
+// advisory lock, the same EnsureInScope/EnsureOpAllowed preconditions (source
+// AND destination; `.agents` is a canonical write scope), the same dry-run
+// transparency, the same atomic execute via the chokepoint's executeAtomic
+// (which MkdirAll's the destination parent), and the same fsync'd
+// actions.jsonl record.
+//
+// A directory Rename needs no byte backup or content hash to be reversible:
+// engine.undoOne reverses a Rename record with a bare rename-back and never
+// consults backups or hashes, and the renamed tree IS the preserved copy,
+// byte for byte. Hash fields record the empty-content hash for journal-shape
+// consistency (the same value Mutate records for an absent file).
+//
+// verify, when non-nil, runs under the per-path lock after the directory
+// check and before any preconditions — fixers use it to re-validate state
+// that may have changed since their scan (e.g. "still empty"). A verify
+// error aborts the rename with no mutation.
+func workspaceDirRename(ctx *MutateContext, path, dest string, verify func(path string) error) error {
+	op := Rename{To: dest}
+
+	// Step 1 — per-path advisory lock (skipped in dry-run, matching Mutate).
+	if !ctx.DryRun {
+		guard, err := ctx.Locks.Acquire(path)
+		if err != nil {
+			return err
+		}
+		defer func() { _ = guard.Release() }()
+	}
+
+	// Step 2 — before-state: the source must exist and be a directory (never
+	// follow a symlink into pretending it is one).
+	info, err := os.Lstat(path)
+	if err != nil {
+		return fmt.Errorf("doctor: lstat %s: %w", path, err)
+	}
+	if !info.IsDir() {
+		return fmt.Errorf("doctor: rename-dir %s: not a directory (refused_unsafe)", path)
+	}
+	if verify != nil {
+		if err := verify(path); err != nil {
+			return err
+		}
+	}
+
+	// Step 3 — preconditions: both endpoints in scope, op executable.
+	if err := EnsureInScope(ctx.Capabilities, ctx.RepoRoot, ctx.HomeDir, path); err != nil {
+		return err
+	}
+	if err := EnsureInScope(ctx.Capabilities, ctx.RepoRoot, ctx.HomeDir, dest); err != nil {
+		return err
+	}
+	if err := EnsureOpAllowed(ctx.Capabilities, op); err != nil {
+		return err
+	}
+
+	// Step 4 — backup: intentionally none (see the function comment).
+
+	// Step 5/6 — dry-run transparency, then atomic execute.
+	startedNS := time.Since(ctx.start).Nanoseconds()
+	if ctx.DryRun {
+		fmt.Fprintf(os.Stderr, "[dry-run] would mutate %s: %s\n", path, DescribeOp(op))
+		return nil
+	}
+	if err := executeAtomic(path, op); err != nil {
+		return fmt.Errorf("doctor: execute Rename on %s: %w", path, err)
+	}
+
+	// Step 7/8 — fsync'd action record.
+	rel, relErr := filepath.Rel(ctx.RepoRoot, path)
+	if relErr != nil {
+		rel = path
+	}
+	emptyHash := sha256Hex(nil)
+	return ctx.appendAction(ActionRecord{
+		Path:         rel,
+		Op:           op.kind(),
+		BeforeHash:   emptyHash,
+		AfterHash:    emptyHash,
+		BeforeMode:   fmt.Sprintf("%o", info.Mode().Perm()),
+		StartedAtNS:  startedNS,
+		FinishedAtNS: time.Since(ctx.start).Nanoseconds(),
+		RunID:        ctx.RunID,
+		FixerID:      ctx.FixerID,
+		OK:           true,
+		RenameTo:     dest,
+		Existed:      true,
+	})
+}
+
+// workspaceQuarantineDirByName validates name as a bare path element (a
+// structural-containment guard on top of the scope check), then renames
+// base/name to dest through workspaceDirRename.
+func workspaceQuarantineDirByName(ctx *MutateContext, base, name, dest string, verify func(path string) error) error {
+	if name != filepath.Base(name) || name == "." || name == ".." || name == "" {
+		return fmt.Errorf("doctor: invalid workspace dir name %q (refused_unsafe)", name)
+	}
+	return workspaceDirRename(ctx, filepath.Join(base, name), dest, verify)
 }

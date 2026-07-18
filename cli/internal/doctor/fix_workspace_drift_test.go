@@ -20,15 +20,10 @@ func namingDriftEnv(t *testing.T) (*DetectEnv, string) {
 }
 
 // newNamingDriftCtx builds a real MutateContext rooted at repo, scoped to the
-// naming-drift fixer, with a live actions.jsonl handle.
-//
-// The capabilities write scopes are extended with ".agents": the committed
-// canonicalWriteScopes predates the workspace subsystem and only lists four
-// `.agents/<name>` subtrees, so every workspace fixer source path (e.g.
-// `.agents/post-mortem/x.md`) is refused by EnsureInScope until the
-// capabilities registry gains the workspace scope. This mirrors the scope
-// configuration the workspace subsystem requires in production; the
-// canonicalWriteScopes entry itself is owned by the capabilities lane.
+// naming-drift fixer, with a live actions.jsonl handle. It uses the
+// production capabilities verbatim: `.agents` is a canonical write scope, so
+// no test-side scope extension is needed (and none is applied — this test
+// proves the production envelope admits the workspace fixers).
 func newNamingDriftCtx(t *testing.T, repo string, dryRun bool) (*MutateContext, *RunArtifact) {
 	t.Helper()
 	ra, err := NewRunArtifact(repo, "wsdrift", time.Now())
@@ -41,7 +36,6 @@ func newNamingDriftCtx(t *testing.T, repo string, dryRun bool) (*MutateContext, 
 	}
 	t.Cleanup(func() { _ = af.Close() })
 	caps := NewCapabilities("2.0.0")
-	caps.WriteScopes = append(caps.WriteScopes, ".agents")
 	locks := NewLockManager(filepath.Join(repo, ".doctor", "locks"))
 	return NewMutateContext(ra, caps, t.TempDir(), locks, af, dryRun).WithFixer(fmWorkspaceNamingDriftID), ra
 }

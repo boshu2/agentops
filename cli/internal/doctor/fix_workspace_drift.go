@@ -35,7 +35,6 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
-	"time"
 )
 
 // fmWorkspaceNamingDriftID is the shared detector/fixer ID for this failure mode.
@@ -225,63 +224,10 @@ func (f workspaceNamingDriftFixer) fixOneAlias(ctx *MutateContext, base, alias s
 	return nil
 }
 
-// workspaceRenameDir renames a directory through the mutation chokepoint's
-// guarantees. Mutate itself is file-shaped (it hashes and backs up the path's
-// bytes, which fails with EISDIR on a directory), so this helper adapts its
-// steps for a directory: the same per-path lock, the same write-scope and op
-// preconditions, the same dry-run behavior, the same atomic execute
-// (executeAtomic MkdirAll's the destination parent), and the same fsync'd
-// actions.jsonl record. A directory Rename needs no byte backup or content
-// hash to be reversible: undoOne reverses a Rename record with a bare
-// rename-back and never consults backups or hashes for it. Hash fields are
-// recorded as the empty-content hash for journal-shape consistency.
+// workspaceRenameDir renames a directory through the shared workspace
+// directory-rename chokepoint adapter (workspaceDirRename): same per-path
+// lock, scope/op preconditions on both endpoints, dry-run transparency,
+// atomic execute, and fsync'd actions.jsonl record.
 func workspaceRenameDir(ctx *MutateContext, path string, to string) error {
-	if !ctx.DryRun {
-		guard, err := ctx.Locks.Acquire(path)
-		if err != nil {
-			return err
-		}
-		defer func() { _ = guard.Release() }()
-	}
-	info, err := os.Lstat(path)
-	if err != nil {
-		return fmt.Errorf("doctor: lstat %s: %w", path, err)
-	}
-	if !info.IsDir() {
-		return fmt.Errorf("doctor: rename-dir %s: not a directory", path)
-	}
-	op := Rename{To: to}
-	if err := EnsureInScope(ctx.Capabilities, ctx.RepoRoot, ctx.HomeDir, path); err != nil {
-		return err
-	}
-	if err := EnsureOpAllowed(ctx.Capabilities, op); err != nil {
-		return err
-	}
-	startedNS := time.Since(ctx.start).Nanoseconds()
-	if ctx.DryRun {
-		fmt.Fprintf(os.Stderr, "[dry-run] would mutate %s: %s\n", path, DescribeOp(op))
-		return nil
-	}
-	if err := executeAtomic(path, op); err != nil {
-		return fmt.Errorf("doctor: execute Rename on %s: %w", path, err)
-	}
-	rel, relErr := filepath.Rel(ctx.RepoRoot, path)
-	if relErr != nil {
-		rel = path
-	}
-	emptyHash := sha256Hex(nil)
-	return ctx.appendAction(ActionRecord{
-		Path:         rel,
-		Op:           op.kind(),
-		BeforeHash:   emptyHash,
-		AfterHash:    emptyHash,
-		BeforeMode:   fmt.Sprintf("%o", info.Mode().Perm()),
-		StartedAtNS:  startedNS,
-		FinishedAtNS: time.Since(ctx.start).Nanoseconds(),
-		RunID:        ctx.RunID,
-		FixerID:      ctx.FixerID,
-		OK:           true,
-		RenameTo:     to,
-		Existed:      true,
-	})
+	return workspaceDirRename(ctx, path, to, nil)
 }

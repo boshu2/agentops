@@ -26,11 +26,8 @@ package doctor
 
 import (
 	"fmt"
-	"io/fs"
 	"os"
-	"path/filepath"
 	"strings"
-	"time"
 )
 
 // fmWorkspaceEmptyDirsID is the shared detector/fixer ID for this failure mode.
@@ -81,133 +78,33 @@ func workspaceEmptyDirCandidates(base string) ([]string, error) {
 	return out, nil
 }
 
-// quarantineEmptyDir renames the verified-empty directory base/name to dest
-// with the same eight-step discipline as Mutate (per-path lock, hashes,
-// preconditions, dry-run transparency, atomic execute through the chokepoint's
-// executeAtomic, fsync'd actions.jsonl record). Mutate itself is byte-oriented
-// — its before-hash read and verbatim backup only work on regular files — so
-// this directory adaptation lives here.
-//
-// Scope: the static write-scope list cannot enumerate arbitrary top-level
-// `.agents/<name>` directories, so the source is gated STRUCTURALLY — name
-// must be a bare path element and base/name a still-empty immediate
-// subdirectory of the workspace root — which is strictly narrower than a
-// `.agents` scope entry. The destination (under the run dir) goes through
-// EnsureInScope, and the op through EnsureOpAllowed.
-//
-// Because the tree holds zero regular files there are no bytes to hash or back
-// up: both hashes record the empty hash, and the "backup" mirrors the empty
-// subtree shape under the run's backups/ dir. Undo of a Rename record replays
-// the rename in reverse (engine.undoOne), which is directory-safe, so the
-// quarantine remains fully reversible.
+// quarantineEmptyDir moves the still-empty workspace directory <base>/<name>
+// into quarantine through the shared workspace directory-rename chokepoint
+// adapter (workspaceDirRename). The still-empty re-verification runs UNDER
+// the per-path lock via the verify hook: a file may have landed since the
+// caller's scan, and a dir that gained files is refused, not quarantined.
+// Returns (true, nil) when the rename happened (or would happen, in dry-run),
+// and (false, err) when it was refused.
 func quarantineEmptyDir(ctx *MutateContext, base, name, dest string) (bool, error) {
-	// Structural containment: name must be a single, plain path element.
-	if name != filepath.Base(name) || name == "." || name == ".." || name == "" {
-		return false, fmt.Errorf("doctor: invalid workspace dir name %q (refused_unsafe)", name)
-	}
-	path := filepath.Join(base, name)
-
-	// Step 1 — per-path advisory lock.
-	if !ctx.DryRun {
-		guard, err := ctx.Locks.Acquire(path)
+	verify := func(path string) error {
+		baseInv, err := workspaceDirInventory(base)
 		if err != nil {
-			return false, err
+			return fmt.Errorf("doctor: re-inventory %s: %w", base, err)
 		}
-		defer func() { _ = guard.Release() }()
-	}
-
-	// Step 2 — before state. Refuse anything but a directory; verify the tree
-	// still holds zero transitive regular files (a file may have landed since
-	// the caller's scan).
-	info, err := os.Stat(path)
-	if err != nil {
-		return false, fmt.Errorf("doctor: stat %s: %w", path, err)
-	}
-	if !info.IsDir() {
-		return false, fmt.Errorf("doctor: %s is not a directory (refused_unsafe)", path)
-	}
-	baseInv, err := workspaceDirInventory(base)
-	if err != nil {
-		return false, fmt.Errorf("doctor: re-inventory %s: %w", base, err)
-	}
-	stillEmpty := false
-	for _, di := range baseInv {
-		if di.Name == name {
-			stillEmpty = di.FileCount == 0
-			break
+		for _, di := range baseInv {
+			if di.Name == name {
+				if di.FileCount == 0 {
+					return nil
+				}
+				break
+			}
 		}
+		return fmt.Errorf("doctor: %s gained files since scan; refusing to quarantine (refused_unsafe)", path)
 	}
-	if !stillEmpty {
-		return false, fmt.Errorf("doctor: %s gained files since scan; refusing to quarantine (refused_unsafe)", path)
-	}
-	emptyHash := sha256Hex(nil)
-	beforeMode := fmt.Sprintf("%o", info.Mode().Perm())
-
-	// Step 3 — preconditions: in-scope destination + executable op. (The
-	// source is gated by the structural containment check above.)
-	op := Rename{To: dest}
-	if err := EnsureInScope(ctx.Capabilities, ctx.RepoRoot, ctx.HomeDir, dest); err != nil {
-		return false, err
-	}
-	if err := EnsureOpAllowed(ctx.Capabilities, op); err != nil {
-		return false, err
-	}
-
-	rel, relErr := filepath.Rel(ctx.RepoRoot, path)
-	if relErr != nil {
-		rel = path
-	}
-
-	// Step 5/6 — dry-run transparency, then atomic execute through the
-	// chokepoint's executor. (Step 4, verbatim backup, degenerates to
-	// mirroring the empty subtree shape; Rename undo never reads backups.)
-	startedNS := time.Since(ctx.start).Nanoseconds()
-	if ctx.DryRun {
-		fmt.Fprintf(os.Stderr, "[dry-run] would mutate %s: %s\n", path, DescribeOp(op))
-		return true, nil
-	}
-	if err := mirrorEmptyTree(path, filepath.Join(ctx.RunDir, "backups", rel)); err != nil {
-		return false, fmt.Errorf("doctor: backup %s: %w", path, err)
-	}
-	if err := executeAtomic(path, op); err != nil {
-		return false, fmt.Errorf("doctor: execute Rename on %s: %w", path, err)
-	}
-
-	// Step 7/8 — after hash (path is gone; empty) + fsync'd action record.
-	rec := ActionRecord{
-		Path:         rel,
-		Op:           op.kind(),
-		BeforeHash:   emptyHash,
-		AfterHash:    emptyHash,
-		BeforeMode:   beforeMode,
-		StartedAtNS:  startedNS,
-		FinishedAtNS: time.Since(ctx.start).Nanoseconds(),
-		RunID:        ctx.RunID,
-		FixerID:      ctx.FixerID,
-		OK:           true,
-		RenameTo:     dest,
-		Existed:      true,
-	}
-	if err := ctx.appendAction(rec); err != nil {
+	if err := workspaceQuarantineDirByName(ctx, base, name, dest, verify); err != nil {
 		return false, err
 	}
 	return true, nil
-}
-
-// mirrorEmptyTree recreates src's directory structure (which holds no regular
-// files) under dst. It is the backup-step analogue for an empty tree: shape
-// only, since there are no bytes to copy.
-func mirrorEmptyTree(src, dst string) error {
-	return filepath.WalkDir(src, func(p string, d fs.DirEntry, walkErr error) error {
-		if walkErr != nil || !d.IsDir() {
-			return nil //nolint:nilerr // best-effort mirror; unreadable subtree skipped
-		}
-		rel, err := filepath.Rel(src, p)
-		if err != nil {
-			return nil //nolint:nilerr // unmappable entry contributes nothing
-		}
-		return os.MkdirAll(filepath.Join(dst, rel), 0o755)
-	})
 }
 
 // ---------------------------------------------------------------------------
