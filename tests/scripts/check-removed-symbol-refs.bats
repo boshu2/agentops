@@ -10,8 +10,9 @@ setup() {
     git init -b main "$WORK_REPO" >/dev/null
     git -C "$WORK_REPO" config user.name "Test User"
     git -C "$WORK_REPO" config user.email "test@example.com"
-    mkdir -p "$WORK_REPO/scripts" "$WORK_REPO/docs/releases" "$WORK_REPO/docs" "$WORK_REPO/skills/example" "$WORK_REPO/tests"
+    mkdir -p "$WORK_REPO/scripts/lib" "$WORK_REPO/docs/releases" "$WORK_REPO/docs" "$WORK_REPO/skills/example" "$WORK_REPO/tests"
     cp "$SCRIPT" "$WORK_REPO/scripts/check-removed-symbol-refs.sh"
+    cp "$BATS_TEST_DIRNAME/../../scripts/lib/repo-root.sh" "$WORK_REPO/scripts/lib/repo-root.sh"
     chmod +x "$WORK_REPO/scripts/check-removed-symbol-refs.sh"
 }
 

@@ -12,6 +12,9 @@ setup() {
     SCRIPT="$REPO_ROOT/scripts/capture-repo-metrics.sh"
     FIX="$BATS_TEST_TMPDIR/repo"
     mkdir -p "$FIX/bin"
+    # repo-root.sh resolves the REAL checkout unless overridden; without this
+    # the script under test writes into the live repo (fixture-pollution class).
+    export AGENTOPS_REPO_ROOT="$FIX"
     git -C "$FIX" init -q 2>/dev/null || { mkdir -p "$FIX"; git -C "$FIX" init -q; }
     git -C "$FIX" config user.email t@t.t
     git -C "$FIX" config user.name t

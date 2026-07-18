@@ -7,6 +7,8 @@ setup() {
   TMP="$(mktemp -d)"
   ORIG_DIR="$PWD"
   cd "$TMP"
+  # Route repo-root.sh's resolution at the fixture, not the live checkout.
+  export AGENTOPS_REPO_ROOT="$TMP"
   export GIT_TEMPLATE_DIR=""
   git init -q
   git config user.email t@t.t

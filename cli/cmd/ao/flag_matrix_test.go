@@ -18,6 +18,9 @@ var (
 	hermeticBinaryPath string
 	hermeticBinaryDir  string
 	hermeticBinaryErr  error
+	// hermeticBuildHome is the real $HOME captured by TestMain before it
+	// isolates HOME, so `go build` keeps its module/build caches.
+	hermeticBuildHome string
 )
 
 // aoBinary returns an ao binary built from this exact package source. It never
@@ -36,8 +39,17 @@ func aoBinary(t *testing.T) string {
 		}
 		hermeticBinaryDir = dir
 		out := filepath.Join(dir, "ao")
-		build := exec.Command("go", "build", "-o", out, ".")
+		build := exec.Command("go", "build", "-buildvcs=false", "-o", out, ".")
 		build.Dir = pkgDir
+		if hermeticBuildHome != "" {
+			env := make([]string, 0, len(os.Environ())+1)
+			for _, entry := range os.Environ() {
+				if !strings.HasPrefix(entry, "HOME=") {
+					env = append(env, entry)
+				}
+			}
+			build.Env = append(env, "HOME="+hermeticBuildHome)
+		}
 		if raw, err := build.CombinedOutput(); err != nil {
 			hermeticBinaryErr = &hermeticBuildError{output: string(raw), err: err}
 			return

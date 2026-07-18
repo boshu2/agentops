@@ -101,6 +101,160 @@
     },
     {
       "category": "public-tested",
+      "command": "eval baseline",
+      "coverage_status": "allowlisted",
+      "kind": "leaf",
+      "reason": "Promotion logic covered by internal/eval baseline tests; composition covered by cmd/ao eval tests."
+    },
+    {
+      "category": "public-tested",
+      "command": "eval baseline-audit",
+      "coverage_status": "allowlisted",
+      "kind": "leaf",
+      "reason": "Audit policy covered by internal/eval baseline_audit tests."
+    },
+    {
+      "category": "public-tested",
+      "command": "eval cleanup",
+      "coverage_status": "allowlisted",
+      "kind": "leaf",
+      "reason": "Covered by internal/eval cleanup_service tests."
+    },
+    {
+      "category": "public-tested",
+      "command": "eval compare",
+      "coverage_status": "covered",
+      "kind": "leaf",
+      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
+    },
+    {
+      "category": "public-tested",
+      "command": "eval coverage",
+      "coverage_status": "allowlisted",
+      "kind": "leaf",
+      "reason": "Covered by internal/eval coverage tests."
+    },
+    {
+      "category": "public-tested",
+      "command": "eval outcomes compile",
+      "coverage_status": "allowlisted",
+      "kind": "leaf",
+      "reason": "Covered by evalsubstrate rubric tests and module tests."
+    },
+    {
+      "category": "public-tested",
+      "command": "eval outcomes ingest",
+      "coverage_status": "allowlisted",
+      "kind": "leaf",
+      "reason": "Covered by internal/eval outcomes_service tests."
+    },
+    {
+      "category": "public-tested",
+      "command": "eval run",
+      "coverage_status": "covered",
+      "kind": "leaf",
+      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
+    },
+    {
+      "category": "public-tested",
+      "command": "eval scenario add",
+      "coverage_status": "allowlisted",
+      "kind": "leaf",
+      "reason": "Covered by internal/scenario and module tests."
+    },
+    {
+      "category": "public-tested",
+      "command": "eval scenario evaluate",
+      "coverage_status": "allowlisted",
+      "kind": "leaf",
+      "reason": "Covered by internal/eval scenario_service tests."
+    },
+    {
+      "category": "public-tested",
+      "command": "eval scenario init",
+      "coverage_status": "allowlisted",
+      "kind": "leaf",
+      "reason": "Covered by internal/scenario and module tests."
+    },
+    {
+      "category": "public-tested",
+      "command": "eval scenario list",
+      "coverage_status": "allowlisted",
+      "kind": "leaf",
+      "reason": "Covered by internal/scenario and module tests."
+    },
+    {
+      "category": "public-tested",
+      "command": "eval scenario validate",
+      "coverage_status": "allowlisted",
+      "kind": "leaf",
+      "reason": "Covered by internal/scenario and module tests."
+    },
+    {
+      "category": "unsafe-live",
+      "command": "eval scenario-ab",
+      "coverage_status": "allowlisted",
+      "kind": "leaf",
+      "reason": "Spawns a live model runtime (codex exec) per arm; exercised by adapter tests with fakes, never in smoke."
+    },
+    {
+      "category": "unsafe-live",
+      "command": "eval scenario-moat",
+      "coverage_status": "allowlisted",
+      "kind": "leaf",
+      "reason": "Aggregates live scenario-ab cards; adapter-tested with fixtures."
+    },
+    {
+      "category": "public-tested",
+      "command": "eval scorecard",
+      "coverage_status": "allowlisted",
+      "kind": "leaf",
+      "reason": "Covered by internal/eval scorecard tests."
+    },
+    {
+      "category": "public-tested",
+      "command": "eval suite n-required",
+      "coverage_status": "allowlisted",
+      "kind": "leaf",
+      "reason": "Covered by internal/eval suite_service and module tests."
+    },
+    {
+      "category": "public-tested",
+      "command": "eval suite verdict",
+      "coverage_status": "allowlisted",
+      "kind": "leaf",
+      "reason": "Covered by internal/eval suite_service and module tests."
+    },
+    {
+      "category": "public-tested",
+      "command": "eval task add",
+      "coverage_status": "allowlisted",
+      "kind": "leaf",
+      "reason": "Covered by internal/eval task_service and module tests."
+    },
+    {
+      "category": "public-tested",
+      "command": "eval task list",
+      "coverage_status": "allowlisted",
+      "kind": "leaf",
+      "reason": "Covered by internal/eval task_service and module tests."
+    },
+    {
+      "category": "public-tested",
+      "command": "eval task run",
+      "coverage_status": "allowlisted",
+      "kind": "leaf",
+      "reason": "Covered by internal/eval task_service and module tests."
+    },
+    {
+      "category": "public-tested",
+      "command": "eval task show",
+      "coverage_status": "allowlisted",
+      "kind": "leaf",
+      "reason": "Covered by internal/eval task_service and module tests."
+    },
+    {
+      "category": "public-tested",
       "command": "flywheel compare",
       "coverage_status": "covered",
       "kind": "leaf",

@@ -33,6 +33,11 @@ func TestMain(m *testing.M) {
 		os.Exit(1)
 	}
 	origHome, hadOrigHome := os.LookupEnv("HOME")
+	// The hermetic binary build (aoBinary) must keep using the real module and
+	// build caches: with HOME pointed at the temp dir, Go would resolve an
+	// empty GOMODCACHE and re-download modules on every test run (or fail
+	// offline). Capture the pre-isolation cache paths for the build env.
+	hermeticBuildHome = origHome
 	os.Setenv("HOME", tmpHome)
 
 	// Isolate the tmux socket. Several production paths (context-budget

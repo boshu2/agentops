@@ -31,3 +31,28 @@ public-tested|provenance show|Covered by generic provenance read tests.
 public-tested|session handoff|Covered by handoff artifact tests.
 public-tested|session rehydrate|Covered by rehydrate artifact tests.
 
+
+# Eval measurement surface (the Learn seat). `run` and `compare` have direct
+# cmd/ao composition tests; the leaves below are behavior-tested in
+# internal/commands/eval/module_test.go and internal/eval service tests, and
+# the composition path they share is covered by the cmd/ao eval tests.
+public-tested|eval baseline|Promotion logic covered by internal/eval baseline tests; composition covered by cmd/ao eval tests.
+public-tested|eval baseline-audit|Audit policy covered by internal/eval baseline_audit tests.
+public-tested|eval cleanup|Covered by internal/eval cleanup_service tests.
+public-tested|eval coverage|Covered by internal/eval coverage tests.
+public-tested|eval scorecard|Covered by internal/eval scorecard tests.
+public-tested|eval task add|Covered by internal/eval task_service and module tests.
+public-tested|eval task list|Covered by internal/eval task_service and module tests.
+public-tested|eval task show|Covered by internal/eval task_service and module tests.
+public-tested|eval task run|Covered by internal/eval task_service and module tests.
+public-tested|eval suite verdict|Covered by internal/eval suite_service and module tests.
+public-tested|eval suite n-required|Covered by internal/eval suite_service and module tests.
+public-tested|eval outcomes compile|Covered by evalsubstrate rubric tests and module tests.
+public-tested|eval outcomes ingest|Covered by internal/eval outcomes_service tests.
+public-tested|eval scenario init|Covered by internal/scenario and module tests.
+public-tested|eval scenario add|Covered by internal/scenario and module tests.
+public-tested|eval scenario list|Covered by internal/scenario and module tests.
+public-tested|eval scenario validate|Covered by internal/scenario and module tests.
+public-tested|eval scenario evaluate|Covered by internal/eval scenario_service tests.
+unsafe-live|eval scenario-ab|Spawns a live model runtime (codex exec) per arm; exercised by adapter tests with fakes, never in smoke.
+unsafe-live|eval scenario-moat|Aggregates live scenario-ab cards; adapter-tested with fixtures.

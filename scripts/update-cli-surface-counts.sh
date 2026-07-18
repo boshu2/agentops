@@ -33,7 +33,10 @@ fi
 
 actual_top="$(grep -Ec '^### `ao ' "$COMMANDS_PATH" || true)"
 actual_sub="$(grep -Ec '^#### `ao ' "$COMMANDS_PATH" || true)"
-actual_all="$(grep -Ec '^#{3,4} `ao ' "$COMMANDS_PATH" || true)"
+# all spans every command heading depth (###..#####); eval task/suite/scenario
+# children are the first three-level-deep commands (##### headings). Keep in
+# lockstep with scripts/regen-command-surfaces.sh.
+actual_all="$(grep -Ec '^#{3,5} `ao ' "$COMMANDS_PATH" || true)"
 
 smoke_line="$(grep -E '^\s*if \[\[ "\$top_count"' "$SMOKE_PATH" 2>/dev/null || true)"
 smoke_top="$(echo "$smoke_line" | sed -nE 's/.*"\$top_count" != "([0-9]+)".*/\1/p')"
