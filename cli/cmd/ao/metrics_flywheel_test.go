@@ -332,7 +332,7 @@ func TestRunFlywheelStatus_JSONOutput(t *testing.T) {
 	for _, rel := range []string{
 		filepath.Join(".agents", "findings"),
 		filepath.Join(".agents", "planning-rules"),
-		filepath.Join(".agents", "premortem-checks"),
+		filepath.Join(".agents", "pre-mortem-checks"),
 		filepath.Join(".agents", "rpi"),
 	} {
 		if err := os.MkdirAll(filepath.Join(dir, rel), 0o755); err != nil {
@@ -345,7 +345,7 @@ func TestRunFlywheelStatus_JSONOutput(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(dir, ".agents", "planning-rules", "f-1.md"), []byte("x"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(dir, ".agents", "premortem-checks", "f-1.md"), []byte("x"), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(dir, ".agents", "pre-mortem-checks", "f-1.md"), []byte("x"), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	queue := `{"source_epic":"ag-h83","timestamp":"2026-03-11T17:00:00Z","items":[{"title":"High one","type":"task","severity":"high","source":"council-finding","description":"d1","target_repo":"agentops","consumed":false}],"consumed":false,"claim_status":"available","claimed_by":null,"claimed_at":null,"consumed_by":null,"consumed_at":null}

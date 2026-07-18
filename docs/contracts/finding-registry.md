@@ -12,7 +12,7 @@ The v2 prevention ladder has four layers:
 
 1. `.agents/findings/registry.jsonl` — append-only intake ledger for normalized findings.
 2. `.agents/findings/<id>.md` — promoted finding artifact with YAML frontmatter matching [finding-artifact.schema.json](finding-artifact.schema.json).
-3. `.agents/planning-rules/<id>.md` and `.agents/premortem-checks/<id>.md` — compiled advisory outputs consumed before planning or judgment.
+3. `.agents/planning-rules/<id>.md` and `.agents/pre-mortem-checks/<id>.md` — compiled advisory outputs consumed before planning or judgment.
 4. `.agents/constraints/index.json` — replay-qualified warn-only shadows and precision-backed active constraints governed by [finding-compiler.md](finding-compiler.md).
 
 This contract governs only the registry ledger. The promotion ladder, executable constraint index, and runtime enforcement expectations are governed by [finding-compiler.md](finding-compiler.md).

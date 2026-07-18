@@ -112,7 +112,7 @@ type PathsConfig struct {
 	PatternsDir string `yaml:"patterns_dir" json:"patterns_dir"`
 
 	// RetrosDir is where retrospective artifacts are stored.
-	// Default: .agents/retros
+	// Default: .agents/retro
 	RetrosDir string `yaml:"retros_dir" json:"retros_dir"`
 
 	// ResearchDir is where research artifacts are stored.
@@ -342,7 +342,7 @@ func Default() *Config {
 		Paths: PathsConfig{
 			LearningsDir:       ".agents/learnings",
 			PatternsDir:        ".agents/patterns",
-			RetrosDir:          ".agents/retros",
+			RetrosDir:          ".agents/retro",
 			ResearchDir:        ".agents/research",
 			PlansDir:           ".agents/plans",
 			ClaudePlansDir:     filepath.Join(homeDir, ".claude", "plans"),
