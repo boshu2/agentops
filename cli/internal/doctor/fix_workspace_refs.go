@@ -168,6 +168,13 @@ func workspaceScanSourceRefs(repoRoot string) (workspaceRefScan, bool) {
 			continue
 		}
 		corpusFound = true
+		// Root-scoped reads: os.Root confines every ReadFile to rootPath and
+		// refuses symlink escapes, closing the walk-then-read TOCTOU window
+		// (gosec G122) the dirent checks alone cannot close.
+		rootHandle, rootErr := os.OpenRoot(rootPath)
+		if rootErr != nil {
+			continue
+		}
 		// WalkDir never follows symlinks; walk errors skip the subtree.
 		_ = filepath.WalkDir(rootPath, func(path string, d fs.DirEntry, walkErr error) error {
 			if walkErr != nil {
@@ -189,7 +196,11 @@ func workspaceScanSourceRefs(repoRoot string) (workspaceRefScan, bool) {
 			if err != nil || fi.Size() > workspaceRefMaxFileBytes {
 				return nil
 			}
-			data, err := os.ReadFile(path)
+			relInRoot, relInRootErr := filepath.Rel(rootPath, path)
+			if relInRootErr != nil {
+				return nil
+			}
+			data, err := rootHandle.ReadFile(relInRoot)
 			if err != nil {
 				return nil
 			}
@@ -226,6 +237,7 @@ func workspaceScanSourceRefs(repoRoot string) (workspaceRefScan, bool) {
 			}
 			return nil
 		})
+		_ = rootHandle.Close()
 	}
 	for file, perFile := range aliasLines {
 		for alias, lines := range perFile {
