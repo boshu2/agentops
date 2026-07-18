@@ -30,7 +30,7 @@ var canonicalWriteScopes = []string{
 	".doctor",
 	".agents",
 	".agents/daemon",
-	".agents/handoffs/sha256",
+	".agents/handoff/sha256",
 	".agents/ao",
 	".agents/learnings",
 	"~/.claude/settings.json",

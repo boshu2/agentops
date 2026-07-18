@@ -53,7 +53,7 @@ several ways. Doctor normalizes toward one canonical name per concept:
 | Canonical | Known drift aliases |
 |---|---|
 | `postmortem` | `post-mortem`, `post-mortems` |
-| `pre-mortem-checks` | `pre-mortem`, `pre-mortems` |
+| `pre-mortem-checks` | `pre-mortem`, `pre-mortems`, `premortem-checks` |
 | `handoff` | `handoffs`, `mto-handoff` |
 | `retro` | `retros` |
 | `proofs` | `proof` |

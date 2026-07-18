@@ -854,7 +854,7 @@ func TestDefault_Paths(t *testing.T) {
 	}{
 		{"LearningsDir", cfg.Paths.LearningsDir, ".agents/learnings"},
 		{"PatternsDir", cfg.Paths.PatternsDir, ".agents/patterns"},
-		{"RetrosDir", cfg.Paths.RetrosDir, ".agents/retros"},
+		{"RetrosDir", cfg.Paths.RetrosDir, ".agents/retro"},
 		{"ResearchDir", cfg.Paths.ResearchDir, ".agents/research"},
 		{"PlansDir", cfg.Paths.PlansDir, ".agents/plans"},
 		{"CitationsFile", cfg.Paths.CitationsFile, ".agents/ao/citations.jsonl"},
