@@ -66,7 +66,11 @@ func parseIndexTime(s string) (time.Time, error) {
 // one session `date` field was parsed. It is pure: stat + read only.
 func freshnessSignals(sessionsDir string, entries []os.DirEntry) (fsNewest, contentNewest time.Time, parsedAny bool) {
 	for _, e := range entries {
-		if e.IsDir() {
+		// File-level symlink gate: only REAL regular files contribute to either
+		// freshness signal. os.ReadFile below follows a symlinked session JSONL
+		// to a target outside the repository, and a symlink's own lstat mtime is
+		// a meaningless freshness signal — skip both.
+		if !e.Type().IsRegular() {
 			continue
 		}
 		if info, err := e.Info(); err == nil && info.ModTime().After(fsNewest) {
@@ -713,8 +717,12 @@ func (orphanedFlywheelLearningsDetector) Describe() string {
 	return "flywheel learnings split across .agents/learnings and .agents/ao/learnings"
 }
 
-// listLearningFiles returns the basenames of *.md and *.jsonl files directly
-// inside dir, sorted. A missing directory yields an empty slice.
+// listLearningFiles returns the basenames of *.md and *.jsonl REAL regular
+// files directly inside dir, sorted. Symlinked entries are excluded at the
+// file level (left in place, never swept): Mutate's before-read and backup
+// FOLLOW a symlinked source, so passing one to Mutate would copy external
+// bytes into the run backup and then rename the link. A missing directory
+// yields an empty slice.
 func listLearningFiles(dir string) []string {
 	entries, err := os.ReadDir(dir)
 	if err != nil {
@@ -722,8 +730,8 @@ func listLearningFiles(dir string) []string {
 	}
 	var out []string
 	for _, e := range entries {
-		if e.IsDir() {
-			continue
+		if !e.Type().IsRegular() {
+			continue // dirs and symlinks are never part of the sweep
 		}
 		ext := strings.ToLower(filepath.Ext(e.Name()))
 		if indexableExts[ext] {
@@ -732,6 +740,27 @@ func listLearningFiles(dir string) []string {
 	}
 	sort.Strings(out)
 	return out
+}
+
+// countSymlinkedLearningFiles returns how many learning-named (*.md/*.jsonl)
+// entries directly inside dir are symlinks — the files listLearningFiles
+// deliberately excludes from the sweep. Surfaced in the orphaned-learnings
+// finding Evidence so the exclusion is visible, not silent.
+func countSymlinkedLearningFiles(dir string) int {
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return 0
+	}
+	n := 0
+	for _, e := range entries {
+		if e.Type()&os.ModeSymlink == 0 {
+			continue
+		}
+		if indexableExts[strings.ToLower(filepath.Ext(e.Name()))] {
+			n++
+		}
+	}
+	return n
 }
 
 // flywheelLearningsDirs returns the canonical (primary) and fallback learnings
@@ -753,6 +782,10 @@ func (d orphanedFlywheelLearningsDetector) Detect(env *DetectEnv) ([]Finding, er
 	if len(primaryFiles) == 0 || len(fallbackFiles) == 0 {
 		return nil, nil
 	}
+	query := "ls .agents/learnings .agents/ao/learnings - both non-empty"
+	if excluded := countSymlinkedLearningFiles(primary) + countSymlinkedLearningFiles(fallback); excluded > 0 {
+		query += fmt.Sprintf("; %d symlinked learning file(s) excluded from the sweep", excluded)
+	}
 	return []Finding{{
 		ID:         d.ID(),
 		Severity:   d.Severity(),
@@ -761,7 +794,7 @@ func (d orphanedFlywheelLearningsDetector) Detect(env *DetectEnv) ([]Finding, er
 		Confidence: 1.0,
 		Evidence: Evidence{
 			File:  ".agents/learnings",
-			Query: "ls .agents/learnings .agents/ao/learnings - both non-empty",
+			Query: query,
 		},
 		Remediation: Remediation{
 			Command:          "ao doctor --fix --only " + d.ID(),
@@ -816,6 +849,16 @@ func (f orphanedFlywheelLearningsFixer) Fix(ctx *MutateContext, env *DetectEnv, 
 	for _, n := range fallbackFiles {
 		if primarySet[n] {
 			res.Err = fmt.Errorf("doctor: %s: name collision %q in both learnings dirs; resolve manually (refused_unsafe)", f.ID(), n)
+			return res, res.Err
+		}
+	}
+	// Refuse-before-mutate: re-verify every move source is still a REAL regular
+	// file NOW, before ANY rename lands. Mutate's before-read and backup follow
+	// a symlinked source, so a file that turned symlink between list and fix
+	// must refuse the whole run with zero actions — never reach Mutate.
+	for _, n := range fallbackFiles {
+		if src := filepath.Join(fallback, n); !realRegularFile(src) {
+			res.Err = fmt.Errorf("doctor: %s: %s is not a real regular file (refused_unsafe)", f.ID(), src)
 			return res, res.Err
 		}
 	}

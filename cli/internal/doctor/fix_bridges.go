@@ -206,6 +206,13 @@ func (openclawHealthUnreachableDetector) QuickPath() bool      { return false }
 // Detect reads the activation file and probes <base_url>/openclaw/v1/health
 // under a bounded 3s deadline. The probe is read-only (HTTP GET). PURE.
 func (openclawHealthUnreachableDetector) Detect(env *DetectEnv) ([]Finding, error) {
+	// Symlinked-root guard: gate on the same FULL chain the snapshot
+	// detector/fixer use (.agents/daemon/projections/openclaw), so a symlink
+	// anywhere in it silences both bridge FMs consistently — never health-silent
+	// while the snapshot path refuses the same tree.
+	if !realChainUnder(env.RepoRoot, bridgesSnapshotChain()...) {
+		return nil, nil // symlinked chain: unsafe to consume
+	}
 	act, ok := readDaemonActivation(env.RepoRoot)
 	if !ok {
 		if !openclawSnapshotDirExists(env.RepoRoot) {
@@ -287,9 +294,11 @@ func (openclawHealthUnreachableFixer) AutoFixable() bool { return false }
 // nothing and rewrites no activation file. The finding persists.
 func (openclawHealthUnreachableFixer) Fix(ctx *MutateContext, env *DetectEnv, _ []Finding) (FixResult, error) {
 	// Symlinked-root guard: this fixer writes only into the run dir, but a
-	// symlinked .agents makes the health surface unobservable — refuse rather
-	// than report a false "healthy" no-op.
-	if _, gerr := requireRealChainUnder(env.RepoRoot, ".agents"); gerr != nil {
+	// symlink anywhere in the bridge chain makes the health surface
+	// unobservable — refuse rather than report a false "healthy" no-op. Gate on
+	// the same FULL chain the snapshot fixer uses (.agents/daemon/projections/
+	// openclaw) so both bridge fixers refuse the same tree consistently.
+	if _, gerr := requireRealChainUnder(env.RepoRoot, bridgesSnapshotChain()...); gerr != nil {
 		gerr = fmt.Errorf("doctor: %s: %w", fmOpenClawHealthUnreachable, gerr)
 		return FixResult{FixerID: fmOpenClawHealthUnreachable, FindingIDs: []string{fmOpenClawHealthUnreachable}, Err: gerr}, gerr
 	}
@@ -359,9 +368,10 @@ func openclawHealthReport(kind, detail string) string {
 
 // snapshotObservation classifies the OpenClaw consumer snapshot state.
 type snapshotObservation struct {
-	kind            string // "not_configured" | "file_ok" | "latest_missing" | "schema_mismatch" | "torn_latest" | "torn_no_recovery"
-	schemaVersion   int
-	goodVersionFile string // basename of the recovery snap_*.json (torn_latest only)
+	kind              string // "not_configured" | "file_ok" | "latest_missing" | "schema_mismatch" | "torn_latest" | "torn_no_recovery" | "torn_symlinked_recovery"
+	schemaVersion     int
+	goodVersionFile   string   // basename of the recovery snap_*.json (torn_latest only)
+	symlinkedRecovery []string // snap_*.json candidates skipped because they are symlinks
 }
 
 // openclawSnapshotStaleDetector fires when the OpenClaw consumer snapshot is
@@ -407,11 +417,18 @@ func observeSnapshot(repoRoot string) snapshotObservation {
 		return snapshotObservation{kind: "schema_mismatch", schemaVersion: v}
 	}
 	// Torn/truncated/empty: look for a recoverable versioned sibling.
-	good := newestValidVersionSnapshot(snapDir)
+	good, symlinked := newestValidVersionSnapshot(snapDir)
 	if good == "" {
+		if len(symlinked) > 0 {
+			// Candidates exist but every one is a symlink: this must surface as
+			// its own refusal sub-case, never collapse into "no recovery" (the
+			// silent-advisory path) — importing a symlink target would pull
+			// external bytes into latest.json.
+			return snapshotObservation{kind: "torn_symlinked_recovery", symlinkedRecovery: symlinked}
+		}
 		return snapshotObservation{kind: "torn_no_recovery"}
 	}
-	return snapshotObservation{kind: "torn_latest", goodVersionFile: good}
+	return snapshotObservation{kind: "torn_latest", goodVersionFile: good, symlinkedRecovery: symlinked}
 }
 
 // schemaVersionOf extracts the schema_version field from raw JSON without full
@@ -428,17 +445,27 @@ func schemaVersionOf(raw []byte) (int, bool) {
 
 // newestValidVersionSnapshot scans snapDir for snap_*.json files that parse
 // cleanly as schema-v1 snapshots and returns the basename of the newest by
-// generated_at. Returns "" when none is recoverable. Pure.
-func newestValidVersionSnapshot(snapDir string) string {
+// generated_at, plus the basenames of candidates skipped because they are not
+// REAL regular files (symlinks). Every recovery file this path reads must pass
+// realRegularFile before open: os.ReadFile follows a symlink, and the bytes
+// read here are what fixTornLatest imports into latest.json — so a symlinked
+// candidate is skipped with a logged skip, never read. Returns "" when none is
+// recoverable.
+func newestValidVersionSnapshot(snapDir string) (best string, symlinked []string) {
 	entries, err := os.ReadDir(snapDir)
 	if err != nil {
-		return ""
+		return "", nil
 	}
 	var bestName string
 	var bestTime time.Time
 	for _, e := range entries {
 		name := e.Name()
 		if e.IsDir() || !strings.HasPrefix(name, "snap_") || !strings.HasSuffix(name, ".json") {
+			continue
+		}
+		if !realRegularFile(filepath.Join(snapDir, name)) {
+			fmt.Fprintf(os.Stderr, "doctor: %s: skipping symlinked recovery candidate %s\n", fmOpenClawSnapshotStale, name)
+			symlinked = append(symlinked, name)
 			continue
 		}
 		raw, err := os.ReadFile(filepath.Join(snapDir, name))
@@ -457,7 +484,7 @@ func newestValidVersionSnapshot(snapDir string) string {
 			bestName, bestTime = name, gen
 		}
 	}
-	return bestName
+	return bestName, symlinked
 }
 
 // Detect inspects the on-disk OpenClaw snapshot and emits a finding when it is
@@ -519,6 +546,14 @@ func (openclawSnapshotStaleFixer) Fix(ctx *MutateContext, env *DetectEnv, _ []Fi
 	if obs.kind == "not_configured" || obs.kind == "file_ok" {
 		return FixResult{FixerID: fmOpenClawSnapshotStale, Fixed: true}, nil
 	}
+	if obs.kind == "torn_symlinked_recovery" {
+		// Every recovery candidate is a symlink: refuse loudly rather than
+		// import nothing silently — reading one would pull external bytes into
+		// latest.json.
+		gerr := fmt.Errorf("doctor: %s: every recovery candidate is a symlink (%s); refusing to import external bytes (refused_unsafe)",
+			fmOpenClawSnapshotStale, strings.Join(obs.symlinkedRecovery, ", "))
+		return FixResult{FixerID: fmOpenClawSnapshotStale, FindingIDs: []string{fmOpenClawSnapshotStale}, Err: gerr}, gerr
+	}
 	if obs.kind == "torn_latest" {
 		return fixTornLatest(ctx, env, obs)
 	}
@@ -541,6 +576,14 @@ func (openclawSnapshotStaleFixer) Fix(ctx *MutateContext, env *DetectEnv, _ []Fi
 func fixTornLatest(ctx *MutateContext, env *DetectEnv, obs snapshotObservation) (FixResult, error) {
 	snapDir := filepath.Join(env.RepoRoot, openclaw.SnapshotDirRel)
 	goodPath := filepath.Join(snapDir, obs.goodVersionFile)
+	// Re-gate the recovery source NOW: a candidate that turned symlink between
+	// observation and fix must refuse before the read — its bytes would be
+	// imported into latest.json.
+	if !realRegularFile(goodPath) {
+		gerr := fmt.Errorf("doctor: %s: recovery source %s is not a real regular file (refused_unsafe)",
+			fmOpenClawSnapshotStale, obs.goodVersionFile)
+		return FixResult{FixerID: fmOpenClawSnapshotStale, FindingIDs: []string{fmOpenClawSnapshotStale}, Err: gerr}, gerr
+	}
 	goodBytes, err := os.ReadFile(goodPath)
 	if err != nil {
 		return FixResult{FixerID: fmOpenClawSnapshotStale, Err: err}, fmt.Errorf("doctor: read recovery snapshot: %w", err)

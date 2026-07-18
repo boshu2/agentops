@@ -914,16 +914,28 @@ func frontmatterHas(text, key string) bool {
 	return false
 }
 
-// scanSkillHygiene returns every skill-hygiene violation under repo/skills. It
-// is pure: stat + read only.
-func scanSkillHygiene(repo string) ([]hygieneFinding, error) {
+// scanSkillHygiene returns every skill-hygiene violation under repo/skills,
+// plus the names of skills EXCLUDED because their SKILL.md or references/ dir
+// is a symlink (file-level lstat gate: os.ReadFile/os.ReadDir follow the link
+// to a target outside the repository even though the lexical path is in
+// scope). An excluded skill produces NO findings at all — detector-silence —
+// so the fixer never receives it as a target; the fixer separately refuses the
+// whole run while any excluded skill exists. It is pure: stat + read only.
+func scanSkillHygiene(repo string) (out []hygieneFinding, symlinked []string, err error) {
 	skillsRoot := filepath.Join(repo, "skills")
-	var out []hygieneFinding
 	for _, name := range listSubdirs(skillsRoot) {
 		skillDir := filepath.Join(skillsRoot, name)
 		skillMD := filepath.Join(skillDir, "SKILL.md")
-		raw, err := os.ReadFile(skillMD)
-		if err != nil {
+		if info, lerr := os.Lstat(skillMD); lerr == nil && !info.Mode().IsRegular() {
+			symlinked = append(symlinked, name)
+			continue // symlinked SKILL.md: exclude the skill entirely
+		}
+		if info, lerr := os.Lstat(filepath.Join(skillDir, "references")); lerr == nil && info.Mode()&os.ModeSymlink != 0 {
+			symlinked = append(symlinked, name)
+			continue // symlinked references/ dir: exclude the skill entirely
+		}
+		raw, rerr := os.ReadFile(skillMD)
+		if rerr != nil {
 			continue // not a skill dir
 		}
 		text := string(raw)
@@ -949,10 +961,13 @@ func scanSkillHygiene(repo string) ([]hygieneFinding, error) {
 			}
 		}
 	}
-	return out, nil
+	return out, symlinked, nil
 }
 
-// listRefFiles returns the sorted *.md basenames directly inside dir.
+// listRefFiles returns the sorted *.md basenames of REAL regular files
+// directly inside dir. Symlinked entries are excluded (file-level lstat gate):
+// a symlinked reference resolves outside the repository, so it must never
+// drive an UNLINKED finding.
 func listRefFiles(dir string) []string {
 	entries, err := os.ReadDir(dir)
 	if err != nil {
@@ -960,7 +975,7 @@ func listRefFiles(dir string) []string {
 	}
 	var out []string
 	for _, e := range entries {
-		if !e.IsDir() && strings.HasSuffix(e.Name(), ".md") {
+		if e.Type().IsRegular() && strings.HasSuffix(e.Name(), ".md") {
 			out = append(out, e.Name())
 		}
 	}
@@ -1023,7 +1038,9 @@ func (d skillsIntegrityHygieneDetector) Detect(env *DetectEnv) ([]Finding, error
 	if !dirExists(filepath.Join(env.RepoRoot, "skills")) {
 		return nil, nil
 	}
-	hygiene, err := scanSkillHygiene(env.RepoRoot)
+	// Skills whose SKILL.md or references/ dir is a symlink are excluded from
+	// the scan entirely (detector-silence), so the fixer never sees them.
+	hygiene, _, err := scanSkillHygiene(env.RepoRoot)
 	if err != nil {
 		return nil, fmt.Errorf("doctor: scan skill hygiene: %w", err)
 	}
@@ -1094,9 +1111,19 @@ func (f skillsIntegrityHygieneFixer) Fix(ctx *MutateContext, env *DetectEnv, _ [
 		return res, res.Err
 	}
 	// 1. Re-scan.
-	hygiene, err := scanSkillHygiene(env.RepoRoot)
+	hygiene, symlinkedSkills, err := scanSkillHygiene(env.RepoRoot)
 	if err != nil {
 		res.Err = fmt.Errorf("doctor: %s: %w", f.ID(), err)
+		return res, res.Err
+	}
+	// All-or-refuse: a skill whose SKILL.md or references/ dir is a symlink is
+	// invisible to the detector, but the FIXER must not act in a tree that
+	// contains one — a target that turned symlink between detect and fix would
+	// otherwise let earlier real targets commit before the refusal (partial
+	// fix). Refuse the whole run with zero actions instead.
+	if len(symlinkedSkills) > 0 {
+		res.Err = fmt.Errorf("doctor: %s: skill(s) %s resolve through a symlink; refusing the whole run (refused_unsafe)",
+			f.ID(), strings.Join(symlinkedSkills, ", "))
 		return res, res.Err
 	}
 	if len(hygiene) == 0 {
@@ -1122,15 +1149,21 @@ func (f skillsIntegrityHygieneFixer) Fix(ctx *MutateContext, env *DetectEnv, _ [
 		skills = append(skills, name)
 	}
 	sort.Strings(skills)
+	// Refuse-before-mutate ordering: validate EVERY target as a real repo file
+	// BEFORE the first Mutate. A target that resolves through a symlink
+	// (symlinked skill dir or symlinked file) is outside the repository even
+	// though its lexical path passes the scope check; validating mid-loop would
+	// commit earlier targets before the refusal (partial fix), so the whole run
+	// refuses with zero actions instead.
 	for _, name := range skills {
 		skillMD := filepath.Join(env.RepoRoot, "skills", name, "SKILL.md")
-		// Per-target guard: a SKILL.md that resolves through a symlink
-		// (symlinked skill dir or symlinked file) is outside the repository
-		// even though its lexical path passes the scope check.
 		if !realRepoFile(env.RepoRoot, skillMD) {
 			res.Err = fmt.Errorf("doctor: %s: %s resolves through a symlink (refused_unsafe)", f.ID(), skillMD)
 			return res, res.Err
 		}
+	}
+	for _, name := range skills {
+		skillMD := filepath.Join(env.RepoRoot, "skills", name, "SKILL.md")
 		raw, err := os.ReadFile(skillMD)
 		if err != nil {
 			res.Err = fmt.Errorf("doctor: %s: read %s: %w", f.ID(), skillMD, err)
@@ -1152,7 +1185,7 @@ func (f skillsIntegrityHygieneFixer) Fix(ctx *MutateContext, env *DetectEnv, _ [
 	}
 	// 5. Verify: no UNLINKED finding may remain. Report-only findings may.
 	if !ctx.DryRun {
-		post, _ := scanSkillHygiene(env.RepoRoot)
+		post, _, _ := scanSkillHygiene(env.RepoRoot)
 		for _, h := range post {
 			if h.Kind == "UNLINKED" {
 				res.Err = fmt.Errorf("doctor: %s: fix did not eliminate the unlinked-reference findings", f.ID())

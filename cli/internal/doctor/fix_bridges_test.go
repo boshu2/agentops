@@ -584,3 +584,218 @@ func TestBridgesBaitTreeFiresOnRealRoot(t *testing.T) {
 		}
 	}
 }
+
+// TestBridgesSnapshotSymlinkedRecoveryCandidateSkipped: with a real snapshot
+// chain and a torn real latest.json, a symlinked snap_*.json recovery candidate
+// must be SKIPPED — even when it is the newest — so the torn-latest fix imports
+// the real candidate's bytes, never the symlink target's. The real candidate
+// doubles as the fixture-fidelity control: recovery still works, proving the
+// zero-import assertion is attributable to the skip, not a dead recovery path.
+func TestBridgesSnapshotSymlinkedRecoveryCandidateSkipped(t *testing.T) {
+	repo := t.TempDir()
+	external := t.TempDir()
+	snapDir := filepath.Join(repo, openclaw.SnapshotDirRel)
+	if err := os.MkdirAll(snapDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	// Real recovery candidate, older than the symlinked bait.
+	good := validSnapshotBytes(t, "snap_real", time.Now().Add(-time.Hour))
+	if err := os.WriteFile(filepath.Join(snapDir, "snap_evt0001.json"), good, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	// Symlinked candidate pointing at an external VALID snapshot that is NEWER —
+	// following it would both win the newest-by-generated_at race and import
+	// external bytes into latest.json.
+	evilBytes := validSnapshotBytes(t, "snap_evil", time.Now())
+	victim := filepath.Join(external, "valid.json")
+	if err := os.WriteFile(victim, evilBytes, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink(victim, filepath.Join(snapDir, "snap_evil.json")); err != nil {
+		t.Fatalf("symlink recovery candidate: %v", err)
+	}
+	torn := `{"schema_version"`
+	latestPath := filepath.Join(snapDir, "latest.json")
+	if err := os.WriteFile(latestPath, []byte(torn), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	env := &DetectEnv{RepoRoot: repo, CWD: repo, HomeDir: t.TempDir()}
+
+	fs, err := openclawSnapshotStaleDetector{}.Detect(env)
+	if err != nil {
+		t.Fatalf("Detect: %v", err)
+	}
+	if len(fs) != 1 {
+		t.Fatalf("findings = %d, want 1", len(fs))
+	}
+	if !strings.HasPrefix(fs[0].Evidence.File, "torn_latest:snap_evt0001.json") {
+		t.Errorf("evidence = %q, want recovery from the REAL candidate snap_evt0001.json", fs[0].Evidence.File)
+	}
+
+	ctx, _ := newBridgesTestCtx(t, repo)
+	res, err := openclawSnapshotStaleFixer{}.Fix(ctx, env, nil)
+	if err != nil {
+		t.Fatalf("Fix: %v", err)
+	}
+	if !res.Fixed || res.ActionsTaken != 1 {
+		t.Fatalf("Fix = fixed=%t actions=%d, want fixed=true actions=1", res.Fixed, res.ActionsTaken)
+	}
+	rebuilt, err := os.ReadFile(latestPath)
+	if err != nil {
+		t.Fatalf("read rebuilt latest.json: %v", err)
+	}
+	if string(rebuilt) != string(good) {
+		t.Error("latest.json not rebuilt from the real candidate")
+	}
+	if string(rebuilt) == string(evilBytes) {
+		t.Error("latest.json imported the symlink target's bytes")
+	}
+	gotVictim, err := os.ReadFile(victim)
+	if err != nil || string(gotVictim) != string(evilBytes) {
+		t.Errorf("external recovery target = %q err=%v, want byte-untouched", gotVictim, err)
+	}
+}
+
+// TestBridgesSnapshotAllSymlinkedRecoveryRefuses: when EVERY recovery candidate
+// is a symlink, the fixer must refuse loudly (refused_unsafe) rather than
+// import nothing silently, and the external target must stay byte-untouched.
+func TestBridgesSnapshotAllSymlinkedRecoveryRefuses(t *testing.T) {
+	repo := t.TempDir()
+	external := t.TempDir()
+	snapDir := filepath.Join(repo, openclaw.SnapshotDirRel)
+	if err := os.MkdirAll(snapDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	evilBytes := validSnapshotBytes(t, "snap_evil", time.Now())
+	victim := filepath.Join(external, "valid.json")
+	if err := os.WriteFile(victim, evilBytes, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink(victim, filepath.Join(snapDir, "snap_recovery.json")); err != nil {
+		t.Fatalf("symlink recovery candidate: %v", err)
+	}
+	torn := `{"schema_version"`
+	latestPath := filepath.Join(snapDir, "latest.json")
+	if err := os.WriteFile(latestPath, []byte(torn), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	env := &DetectEnv{RepoRoot: repo, CWD: repo, HomeDir: t.TempDir()}
+
+	fs, err := openclawSnapshotStaleDetector{}.Detect(env)
+	if err != nil {
+		t.Fatalf("Detect: %v", err)
+	}
+	if len(fs) != 1 {
+		t.Fatalf("findings = %d, want 1", len(fs))
+	}
+	if !strings.HasPrefix(fs[0].Evidence.File, "torn_symlinked_recovery:") {
+		t.Errorf("evidence = %q, want torn_symlinked_recovery classification", fs[0].Evidence.File)
+	}
+	if fs[0].Remediation.AutoFixable {
+		t.Error("torn_symlinked_recovery finding must NOT be auto-fixable")
+	}
+
+	ctx, ra := newBridgesTestCtx(t, repo)
+	res, err := openclawSnapshotStaleFixer{}.Fix(ctx, env, nil)
+	if err == nil || !strings.Contains(err.Error(), "refused_unsafe") {
+		t.Fatalf("Fix with all-symlink recovery: err=%v, want refused_unsafe", err)
+	}
+	if res.Fixed {
+		t.Error("Fix reported Fixed despite refusal")
+	}
+	if res.ActionsTaken != 0 {
+		t.Errorf("Fix took %d actions, want 0", res.ActionsTaken)
+	}
+	recs, rerr := readActions(ra.ActionsPath())
+	if rerr != nil {
+		t.Fatal(rerr)
+	}
+	if len(recs) != 0 {
+		t.Fatalf("action records = %d, want 0", len(recs))
+	}
+	after, err := os.ReadFile(latestPath)
+	if err != nil || string(after) != torn {
+		t.Errorf("latest.json = %q err=%v, want the torn bytes untouched", after, err)
+	}
+	gotVictim, err := os.ReadFile(victim)
+	if err != nil || string(gotVictim) != string(evilBytes) {
+		t.Errorf("external recovery target = %q err=%v, want byte-untouched", gotVictim, err)
+	}
+}
+
+// TestBridgesNestedDaemonSymlinkConsistent: a real .agents with a SYMLINKED
+// .agents/daemon must make the health and snapshot paths behave CONSISTENTLY —
+// both detectors silent, both fixers refused_unsafe — instead of the health
+// fixer reporting Fixed=true (gating on .agents alone) while the snapshot
+// fixer refuses the same tree.
+func TestBridgesNestedDaemonSymlinkConsistent(t *testing.T) {
+	repo := t.TempDir()
+	external := t.TempDir()
+	// External tree shaped like a daemon dir, with live bait for both FMs.
+	snapRel := filepath.Join("projections", "openclaw")
+	baits := map[string]string{
+		"activation.json":                            `{"base_url":""}`,
+		filepath.Join(snapRel, "latest.json"):        `{"schema_version"`, // torn
+		filepath.Join(snapRel, "snap_recovery.json"): string(validSnapshotBytes(t, "snap-1", time.Now())),
+	}
+	for rel, content := range baits {
+		p := filepath.Join(external, rel)
+		if err := os.MkdirAll(filepath.Dir(p), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(p, []byte(content), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	agents := filepath.Join(repo, ".agents")
+	if err := os.MkdirAll(agents, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink(external, filepath.Join(agents, "daemon")); err != nil {
+		t.Fatalf("symlink .agents/daemon: %v", err)
+	}
+	env := &DetectEnv{RepoRoot: repo, CWD: repo, HomeDir: t.TempDir(), Online: true}
+
+	for name, d := range map[string]Detector{
+		"health":   openclawHealthUnreachableDetector{},
+		"snapshot": openclawSnapshotStaleDetector{},
+	} {
+		findings, err := d.Detect(env)
+		if err != nil {
+			t.Errorf("%s Detect on nested daemon symlink: %v", name, err)
+		}
+		if len(findings) != 0 {
+			t.Errorf("%s Detect on nested daemon symlink = %d findings, want 0", name, len(findings))
+		}
+	}
+	ctx, ra := newBridgesTestCtx(t, repo)
+	for name, f := range map[string]Fixer{
+		"health":   openclawHealthUnreachableFixer{},
+		"snapshot": openclawSnapshotStaleFixer{},
+	} {
+		res, err := f.Fix(ctx, env, nil)
+		if err == nil || !strings.Contains(err.Error(), "refused_unsafe") {
+			t.Errorf("%s Fix on nested daemon symlink: err=%v, want refused_unsafe (consistent with the snapshot path)", name, err)
+			continue
+		}
+		if res.Fixed {
+			t.Errorf("%s Fix reported Fixed despite refusal", name)
+		}
+		if res.ActionsTaken != 0 {
+			t.Errorf("%s Fix took %d actions through a nested daemon symlink", name, res.ActionsTaken)
+		}
+	}
+	recs, err := readActions(ra.ActionsPath())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(recs) != 0 {
+		t.Fatalf("action records = %d, want 0", len(recs))
+	}
+	for rel, content := range baits {
+		got, rerr := os.ReadFile(filepath.Join(external, rel))
+		if rerr != nil || string(got) != content {
+			t.Errorf("external file %s = %q err=%v, want %q untouched", rel, got, rerr, content)
+		}
+	}
+}
