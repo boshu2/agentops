@@ -20,6 +20,10 @@ and everything in it is safe to regenerate. Two shapes of content live there:
 Left alone, the second class accumulates. The `workspace` subsystem of
 `ao doctor` exists to detect and garbage-collect that debris safely.
 
+Which state belongs in `.agents/` at all — versus beads, `.agents/ao/` proof,
+or docs — is governed by the state-tier contract in
+[ADR-0016](adr/ADR-0016-state-tiers.md).
+
 ## The ephemeral-dir contract
 
 Any writer that mints a queue- or run-shaped directory under `.agents/` MUST
