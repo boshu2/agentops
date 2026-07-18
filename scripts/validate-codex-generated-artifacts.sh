@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+# shellcheck disable=SC1007,SC1091
+. "$(CDPATH= cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib/repo-root.sh"
+ROOT="$(resolve_repo_root)"
 SCOPE="auto"
 SKILLS_ROOT="$ROOT/skills-codex"
 MANIFEST_FILE="$SKILLS_ROOT/.agentops-manifest.json"

@@ -22,7 +22,9 @@
 # is missing/unauthenticated or any endpoint cannot be fetched.
 set -euo pipefail
 
-repo_root="$(git rev-parse --show-toplevel)"
+# shellcheck disable=SC1007,SC1091
+. "$(CDPATH= cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib/repo-root.sh"
+repo_root="$(resolve_repo_root)"
 slug="boshu2/agentops"
 dry_run=0
 for arg in "$@"; do

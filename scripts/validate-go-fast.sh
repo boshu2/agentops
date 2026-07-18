@@ -52,9 +52,13 @@ case "$SCOPE" in
         ;;
 esac
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+# shellcheck disable=SC1007,SC1091
+. "$(CDPATH= cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib/repo-root.sh"
+REPO_ROOT="$(resolve_repo_root)"
 cd "$REPO_ROOT"
+# Hook-injected git env (GIT_DIR et al.) must not leak into the git calls
+# below or into `go test` children (age-gate-scripts-worktree-gitdir-p62wo).
+scrub_git_env
 
 if ! command -v go >/dev/null 2>&1; then
     echo "SKIP: go not installed"

@@ -8,7 +8,9 @@
 #   scripts/restore-branch-protection.sh --dry-run  # print PUT body, do not apply
 set -euo pipefail
 
-repo_root="$(git rev-parse --show-toplevel)"
+# shellcheck disable=SC1007,SC1091
+. "$(CDPATH= cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib/repo-root.sh"
+repo_root="$(resolve_repo_root)"
 backup="${repo_root}/scripts/branch-protection-backup.json"
 dry_run=false
 [[ "${1:-}" == "--dry-run" ]] && dry_run=true
