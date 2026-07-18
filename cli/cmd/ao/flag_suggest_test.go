@@ -4,6 +4,7 @@ package main
 import (
 	"bytes"
 	"errors"
+	"github.com/spf13/cobra"
 	"strings"
 	"testing"
 )
@@ -67,8 +68,11 @@ func TestFlagErrorWithSuggestion_NoSuggestionForGibberish(t *testing.T) {
 }
 
 func TestWriteRequiredFlagHint(t *testing.T) {
+	command := &cobra.Command{Use: "hinted"}
+	command.Flags().String("kind", "", "")
+	_ = command.MarkFlagRequired("kind")
 	var buf bytes.Buffer
-	writeRequiredFlagHint(&buf, citationCmd, errors.New("required flag(s) \"kind\" not set"))
+	writeRequiredFlagHint(&buf, command, errors.New("required flag(s) \"kind\" not set"))
 	got := buf.String()
 	if !strings.Contains(got, "Usage:") {
 		t.Errorf("expected a Usage line, got: %s", got)

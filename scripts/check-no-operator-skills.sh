@@ -59,13 +59,13 @@ done
 
 log() { [ "$QUIET" -eq 1 ] || printf '%s\n' "$*"; }
 
-# Resolve repo root: explicit arg, else git toplevel, else script's parent dir.
+# Resolve repo root: explicit arg, else hook-safe lib resolution (git
+# toplevel with scrubbed env, falling back to the lib's parent checkout).
+# shellcheck disable=SC1007,SC1091
+. "$(CDPATH= cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib/repo-root.sh"
 resolve_root() {
   if [ -n "$ROOT" ]; then printf '%s' "$ROOT"; return; fi
-  if git rev-parse --show-toplevel >/dev/null 2>&1; then
-    git rev-parse --show-toplevel; return
-  fi
-  cd "$(dirname "$0")/.." && pwd
+  resolve_repo_root
 }
 
 run_audit() {

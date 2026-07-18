@@ -1,0 +1,44 @@
+{
+  "name": "invalid-finding-without-evidence",
+  "description": "Findings require at least one evidence reference.",
+  "expected": "invalid",
+  "filename_digest": "429622d58af3d88720d6dc2ce04627de1c77eefcea0267eb14a8b2e28e206cd0",
+  "artifact": {
+    "schema_version": "verdict.v2",
+    "acceptance_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "subject_manifest_digest": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "author_context_id": "ctx-author",
+    "validator_context_id": "ctx-validator",
+    "freshness_attestation": {
+      "source": "runtime",
+      "attester_identity": "runtime:test"
+    },
+    "verdict": "FAIL",
+    "criteria": [
+      {
+        "id": "c1",
+        "result": "FAIL",
+        "evidence_refs": [
+          "gate:go.build"
+        ],
+        "reason": "checked"
+      }
+    ],
+    "findings": [
+      {
+        "id": "f1",
+        "summary": "no evidence",
+        "evidence_refs": []
+      }
+    ],
+    "evidence_refs": [
+      "gate:go.build"
+    ],
+    "checked": [
+      "cli/**"
+    ],
+    "not_checked": [],
+    "validated_at": "2026-07-18T12:00:00Z",
+    "artifact_digest": "429622d58af3d88720d6dc2ce04627de1c77eefcea0267eb14a8b2e28e206cd0"
+  }
+}

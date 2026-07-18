@@ -54,9 +54,9 @@ Each row is the membrane's own verdict + its verbatim `WHY:` — no summarizatio
 ## Reproduce
 
 ```bash
-# Re-run this exact calibration (frozen corpus + this adapter):
-ao membrane calibrate --membrane-label codex
-# or directly:
+# Re-run this exact calibration (frozen corpus + this adapter).
+# Historical note: this originally ran via the retired `membrane calibrate`
+# command (removed in the Cathedral Cut); the script below is the direct path.
 bash scripts/membrane-calibrate.sh --membrane-label codex
 ```
 

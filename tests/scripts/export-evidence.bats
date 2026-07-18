@@ -9,6 +9,8 @@ setup() {
 
   git init --quiet --initial-branch=main "$TMP/repo"
   cd "$TMP/repo"
+  # Route repo-root.sh's resolution at the fixture, not the live checkout.
+  export AGENTOPS_REPO_ROOT="$TMP/repo"
   git config user.email t@t.test
   git config user.name tester
   git commit --quiet --allow-empty -m "initial"

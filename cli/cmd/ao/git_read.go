@@ -1,10 +1,62 @@
 package main
 
 import (
+	"context"
 	"fmt"
+	"os"
 	"os/exec"
 	"strings"
+	"time"
 )
+
+// gitDiscoveryEnv strips GIT_DIR/GIT_WORK_TREE/GIT_COMMON_DIR/GIT_INDEX_FILE
+// from the environment so git discovery resolves the repository from the
+// working directory, never from a leaked parent-process override. A hook-leaked
+// GIT_DIR is not just a read hazard: a "scoped" `git -C <dir> config ...` under
+// it writes the LEAKED repo's shared config (age-gate-scripts-worktree-gitdir-p62wo).
+func gitDiscoveryEnv() []string {
+	env := make([]string, 0, len(os.Environ()))
+	for _, entry := range os.Environ() {
+		switch {
+		case strings.HasPrefix(entry, "GIT_DIR="):
+			continue
+		case strings.HasPrefix(entry, "GIT_WORK_TREE="):
+			continue
+		case strings.HasPrefix(entry, "GIT_COMMON_DIR="):
+			continue
+		case strings.HasPrefix(entry, "GIT_INDEX_FILE="):
+			continue
+		default:
+			env = append(env, entry)
+		}
+	}
+	return env
+}
+
+// gitChangedFiles lists worktree-modified paths (read-only, bounded) for
+// handoff evidence. Returns nil when git is unavailable or the tree is clean.
+func gitChangedFiles(cwd string, limit int) []string {
+	ctx, cancel := context.WithTimeout(context.Background(), 1200*time.Millisecond)
+	defer cancel()
+	command := exec.CommandContext(ctx, "git", "diff", "--name-only", "HEAD")
+	command.Dir = cwd
+	command.Env = gitDiscoveryEnv()
+	out, err := command.Output()
+	if err != nil || strings.TrimSpace(string(out)) == "" {
+		return nil
+	}
+	lines := strings.Split(strings.TrimSpace(string(out)), "\n")
+	if limit > 0 && len(lines) > limit {
+		lines = lines[:limit]
+	}
+	result := make([]string, 0, len(lines))
+	for _, line := range lines {
+		if line = strings.TrimSpace(line); line != "" {
+			result = append(result, line)
+		}
+	}
+	return result
+}
 
 // resolveRepoRoot is read-only discovery. AgentOps does not mutate Git state.
 func resolveRepoRoot(cwd string) (string, error) {

@@ -10,7 +10,7 @@ The prevention ladder has four layers:
    The canonical intake ledger governed by [finding-registry.md](finding-registry.md).
 2. `.agents/findings/<id>.md`
    The promoted finding artifact governed by [finding-artifact.schema.json](finding-artifact.schema.json).
-3. `.agents/planning-rules/<id>.md` and `.agents/premortem-checks/<id>.md`
+3. `.agents/planning-rules/<id>.md` and `.agents/pre-mortem-checks/<id>.md`
    Advisory outputs consumed by `/plan`, `/premortem`, and related judgment flows.
 4. `.agents/constraints/index.json`
    Mechanical detectors that begin as warn-only shadows and become blocking only
@@ -44,7 +44,7 @@ Promotion must preserve the reusable prevention content:
 | Target | Output path | Purpose |
 |--------|-------------|---------|
 | `plan` | `.agents/planning-rules/<id>.md` | Prevent known-bad decomposition or sequencing during planning |
-| `premortem` | `.agents/premortem-checks/<id>.md` | Surface prior failure modes during plan/spec validation |
+| `premortem` | `.agents/pre-mortem-checks/<id>.md` | Surface prior failure modes during plan/spec validation |
 | `constraint` | `.agents/constraints/index.json` | Observe mechanically detectable rules in shadow, then enforce only after measured activation |
 
 `premortem` and `premortem` remain accepted input aliases during migration,
@@ -110,8 +110,10 @@ A `regex` detector is matched against **whole-file text** — it cannot tell cod
 from a comment, string, or docstring. Compilation requires at least one stored
 positive and one explicit negative control; every positive must match and every
 negative must pass. The resulting constraint is `shadow` + `warn`, never blocking.
-`ao constraint activate` additionally requires cited shadow measurements with at
-least 95% precision before changing it to `active` + `block`.
+Promotion to `active` + `block` (via the retired `constraint activate` verb)
+additionally required cited shadow measurements with at least 95% precision;
+since the Cathedral Cut, accepted rules are encoded directly in
+repository-owned checks instead.
 
 - **Anchor over substring.** A bare substring has an unbounded false-positive tail. Line-anchor with
   `(?m)^...` and use `[ \t]` (space/tab) rather than `[[:space:]]` (which includes `\n` and can match
@@ -168,8 +170,9 @@ Rules:
 
 - `retired` or `superseded` findings must not leave active downstream outputs behind.
 - `superseded` findings should point to their replacement via `superseded_by`.
-- `ao constraint activate` accepts only precision-backed warn-only shadows.
-- `ao constraint retire` accepts only active entries.
+- Promotion accepted only precision-backed warn-only shadows; retirement
+  accepted only active entries (the retired `constraint activate` /
+  `constraint retire` verbs; policy now lives in repository-owned checks).
 
 ## Atomicity and Locking
 

@@ -59,8 +59,7 @@ if [[ "$mode" == regen ]]; then
   step "GC skill projection" gc_skill_projection
   step "Codex hashes" codex_hashes
   step "skill mesh" python3 scripts/generate-skill-mesh.py
-  step "embedded runtime files" make -C cli sync-hooks
-  step "CLI reference" bash scripts/generate-cli-reference.sh
+    step "CLI reference" bash scripts/generate-cli-reference.sh
   step "command heading projections" bash scripts/regen-command-surfaces.sh
   step "CLI surface inventory" bash scripts/check-cmdao-surface-parity.sh --write-surface
   step "documentation index" python3 scripts/generate-documentation-index.py
@@ -74,8 +73,7 @@ else
   step "skill mesh" python3 scripts/generate-skill-mesh.py --check
   step "Codex parity" bash scripts/audit-codex-parity.sh
   step "Codex runtime sections" bash scripts/validate-codex-runtime-sections.sh
-  step "embedded runtime files" bash scripts/validate-embedded-sync.sh
-  step "CLI reference" bash scripts/generate-cli-reference.sh --check
+    step "CLI reference" bash scripts/generate-cli-reference.sh --check
   step "command heading projections" bash scripts/regen-command-surfaces.sh --check
   step "CLI surface inventory" bash scripts/check-cmdao-surface-parity.sh
   step "documentation index" python3 scripts/generate-documentation-index.py --check

@@ -131,7 +131,7 @@ type CompiledOutput struct {
 // cross-repo finding ingester — depend on this port so the compile
 // behavior can be exercised against an in-memory adapter without
 // standing up the real `.agents/findings/`, planning-rules,
-// premortem-checks, and constraints surfaces.
+// pre-mortem-checks, and constraints surfaces.
 //
 // Contract:
 //

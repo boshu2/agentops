@@ -6,13 +6,8 @@
 | Command | Category | Coverage | Reason |
 |---------|----------|----------|--------|
 | `ao capabilities` | `public-tested` | `allowlisted` | Covered by capability contract tests. |
-| `ao claim` | `deprecated` | `allowlisted` | One-release failure stub for removed work ownership. |
-| `ao close` | `deprecated` | `allowlisted` | One-release failure stub for removed closure control. |
 | `ao completion` | `public-tested` | `allowlisted` | Framework completion root has focused generation tests. |
 | `ao config models` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
-| `ao constraint` | `deprecated` | `allowlisted` | One-release failure stub for removed constraint promotion. |
-| `ao converge` | `deprecated` | `allowlisted` | One-release failure stub for removed retry convergence. |
-| `ao crank` | `deprecated` | `allowlisted` | One-release failure stub for removed factory controller. |
 | `ao demo` | `manual-only` | `allowlisted` | Interactive demonstration requires a TTY. |
 | `ao doctor capabilities` | `public-stateful-fixture-needed` | `allowlisted` | Inspects local installation state. |
 | `ao doctor diff` | `public-stateful-fixture-needed` | `allowlisted` | Compares local installation state. |
@@ -23,7 +18,28 @@
 | `ao doctor ls` | `public-stateful-fixture-needed` | `allowlisted` | Lists local doctor artifacts. |
 | `ao doctor robot-docs` | `public-stateful-fixture-needed` | `allowlisted` | Generates docs from local installation state. |
 | `ao doctor undo` | `public-stateful-fixture-needed` | `allowlisted` | Reverts a doctor repair fixture. |
-| `ao done` | `deprecated` | `allowlisted` | One-release failure stub for removed closure control. |
+| `ao eval baseline` | `public-tested` | `allowlisted` | Promotion logic covered by internal/eval baseline tests; composition covered by cmd/ao eval tests. |
+| `ao eval baseline-audit` | `public-tested` | `allowlisted` | Audit policy covered by internal/eval baseline_audit tests. |
+| `ao eval cleanup` | `public-tested` | `allowlisted` | Covered by internal/eval cleanup_service tests. |
+| `ao eval compare` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
+| `ao eval coverage` | `public-tested` | `allowlisted` | Covered by internal/eval coverage tests. |
+| `ao eval outcomes compile` | `public-tested` | `allowlisted` | Covered by evalsubstrate rubric tests and module tests. |
+| `ao eval outcomes ingest` | `public-tested` | `allowlisted` | Covered by internal/eval outcomes_service tests. |
+| `ao eval run` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
+| `ao eval scenario add` | `public-tested` | `allowlisted` | Covered by internal/scenario and module tests. |
+| `ao eval scenario evaluate` | `public-tested` | `allowlisted` | Covered by internal/eval scenario_service tests. |
+| `ao eval scenario init` | `public-tested` | `allowlisted` | Covered by internal/scenario and module tests. |
+| `ao eval scenario list` | `public-tested` | `allowlisted` | Covered by internal/scenario and module tests. |
+| `ao eval scenario validate` | `public-tested` | `allowlisted` | Covered by internal/scenario and module tests. |
+| `ao eval scenario-ab` | `unsafe-live` | `allowlisted` | Spawns a live model runtime (codex exec) per arm; exercised by adapter tests with fakes, never in smoke. |
+| `ao eval scenario-moat` | `unsafe-live` | `allowlisted` | Aggregates live scenario-ab cards; adapter-tested with fixtures. |
+| `ao eval scorecard` | `public-tested` | `allowlisted` | Covered by internal/eval scorecard tests. |
+| `ao eval suite n-required` | `public-tested` | `allowlisted` | Covered by internal/eval suite_service and module tests. |
+| `ao eval suite verdict` | `public-tested` | `allowlisted` | Covered by internal/eval suite_service and module tests. |
+| `ao eval task add` | `public-tested` | `allowlisted` | Covered by internal/eval task_service and module tests. |
+| `ao eval task list` | `public-tested` | `allowlisted` | Covered by internal/eval task_service and module tests. |
+| `ao eval task run` | `public-tested` | `allowlisted` | Covered by internal/eval task_service and module tests. |
+| `ao eval task show` | `public-tested` | `allowlisted` | Covered by internal/eval task_service and module tests. |
 | `ao flywheel compare` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao flywheel status` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao gate check` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
@@ -34,16 +50,9 @@
 | `ao goals meta` | `public-tested` | `allowlisted` | Covered through goals measurement behavior. |
 | `ao goals render` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao goals scenarios` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
-| `ao goals trace` | `deprecated` | `allowlisted` | One-release failure stub for removed lifecycle tracing. |
 | `ao goals validate` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
-| `ao governor` | `deprecated` | `allowlisted` | One-release failure stub for removed retry control. |
 | `ao help` | `internal-hidden` | `allowlisted` | Built-in Cobra help dispatcher with no application handler. |
 | `ao init` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
-| `ao land` | `deprecated` | `allowlisted` | One-release failure stub for removed delivery control. |
-| `ao membrane` | `deprecated` | `allowlisted` | One-release failure stub for removed admission behavior. |
-| `ao next-work` | `deprecated` | `allowlisted` | One-release failure stub for removed work selection. |
-| `ao pawl` | `deprecated` | `allowlisted` | One-release failure stub for removed admission control. |
-| `ao plan-pawl` | `deprecated` | `allowlisted` | One-release failure stub for removed plan admission. |
 | `ao provenance add` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao provenance export` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao provenance list` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
@@ -53,16 +62,13 @@
 | `ao provenance trace` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao provenance verify` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao quick-start` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
-| `ao reconcile` | `deprecated` | `allowlisted` | One-release failure stub for removed lifecycle reconciliation. |
 | `ao redact` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao robot-docs` | `public-tested` | `allowlisted` | Covered by generated documentation tests. |
 | `ao session bootstrap` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao session handoff` | `public-tested` | `allowlisted` | Covered by handoff artifact tests. |
-| `ao session memory` | `deprecated` | `allowlisted` | One-release failure stub for removed repository-memory synchronization. |
 | `ao session rehydrate` | `public-tested` | `allowlisted` | Covered by rehydrate artifact tests. |
 | `ao skills check` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao skills consumers` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
-| `ao skills edit` | `deprecated` | `allowlisted` | One-release failure stub for removed skill-edit commit flow. |
 | `ao skills find` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao skills graph` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao skills link` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
@@ -70,10 +76,5 @@
 | `ao skills producers` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao skills resolve` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao skills unlink` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
-| `ao state` | `deprecated` | `allowlisted` | One-release failure stub for removed lifecycle admission. |
 | `ao status` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
-| `ao validate` | `deprecated` | `allowlisted` | One-release failure stub for removed semantic CLI validation. |
-| `ao verify` | `deprecated` | `allowlisted` | One-release failure stub for removed 3.2 verification front door. |
 | `ao version` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
-| `ao worktree` | `deprecated` | `allowlisted` | One-release failure stub for removed Git mutation. |
-| `ao yield` | `deprecated` | `allowlisted` | One-release failure stub for removed throughput control. |

@@ -15,8 +15,8 @@ func TestNegativePath_MissingArgs(t *testing.T) {
 		errSub string // substring expected in error message
 	}{
 		{
-			name:   "metrics cite missing artifact-path",
-			args:   []string{"metrics", "cite"},
+			name:   "provenance show missing id",
+			args:   []string{"provenance", "show"},
 			errSub: "accepts 1 arg(s), received 0",
 		},
 	}
@@ -43,13 +43,13 @@ func TestNegativePath_InvalidFlagValues(t *testing.T) {
 		errSub string
 	}{
 		{
-			name:   "metrics baseline --days not-a-number",
-			args:   []string{"metrics", "baseline", "--days", "abc"},
+			name:   "flywheel status --days not-a-number",
+			args:   []string{"flywheel", "status", "--days", "abc"},
 			errSub: "invalid argument",
 		},
 		{
-			name:   "metrics report --days not-a-number",
-			args:   []string{"metrics", "report", "--days", "xyz"},
+			name:   "goals measure --timeout not-a-number",
+			args:   []string{"goals", "measure", "--timeout", "xyz"},
 			errSub: "invalid argument",
 		},
 	}
@@ -88,27 +88,30 @@ func TestNegativePath_UnknownTopLevelCommand(t *testing.T) {
 // contains useful guidance.
 func TestNegativePath_UnknownNestedSubcommand(t *testing.T) {
 	tests := []struct {
-		name      string
-		args      []string
-		outputSub string // substring expected in output (help text)
+		name   string
+		args   []string
+		errSub string // substring expected in the returned error
 	}{
 		{
-			name:      "unknown goals subcommand shows help",
-			args:      []string{"goals", "nonexistent"},
-			outputSub: "Use \"ao goals [command] --help\"",
+			name:   "unknown goals subcommand errors",
+			args:   []string{"goals", "nonexistent"},
+			errSub: "unknown command",
 		},
 		{
-			name:      "unknown metrics subcommand shows help",
-			args:      []string{"metrics", "nonexistent"},
-			outputSub: "Use \"ao metrics [command] --help\"",
+			name:   "unknown flywheel subcommand errors",
+			args:   []string{"flywheel", "nonexistent"},
+			errSub: "unknown command",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			out, _ := executeCommand(tt.args...)
-			if !strings.Contains(out, tt.outputSub) {
-				t.Errorf("output for %v does not contain %q; got: %s", tt.args, tt.outputSub, out)
+			out, err := executeCommand(tt.args...)
+			if err == nil {
+				t.Fatalf("expected error for %v, got nil (output: %s)", tt.args, out)
+			}
+			if !strings.Contains(err.Error(), tt.errSub) {
+				t.Errorf("error %q for %v does not contain %q", err.Error(), tt.args, tt.errSub)
 			}
 		})
 	}
@@ -122,8 +125,8 @@ func TestNegativePath_ExcessArgs(t *testing.T) {
 		errSub string
 	}{
 		{
-			name:   "metrics cite with too many args",
-			args:   []string{"metrics", "cite", "path1", "path2"},
+			name:   "provenance show with too many args",
+			args:   []string{"provenance", "show", "id1", "id2"},
 			errSub: "accepts 1 arg(s), received 2",
 		},
 	}
@@ -149,8 +152,8 @@ func TestNegativePath_UnknownFlags(t *testing.T) {
 		errSub string
 	}{
 		{
-			name:   "metrics baseline with unknown flag",
-			args:   []string{"metrics", "baseline", "--nonexistent"},
+			name:   "flywheel status with unknown flag",
+			args:   []string{"flywheel", "status", "--nonexistent"},
 			errSub: "unknown flag",
 		},
 	}
@@ -180,7 +183,7 @@ func TestNegativePath_ErrorOutputNotEmpty(t *testing.T) {
 		name string
 		args []string
 	}{
-		{"missing args", []string{"metrics", "cite"}},
+		{"missing args", []string{"provenance", "show"}},
 		{"unknown command", []string{"nonexistent-command"}},
 		{"unknown flag", []string{"goals", "measure", "--bogus"}},
 	}

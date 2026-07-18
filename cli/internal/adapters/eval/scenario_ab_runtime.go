@@ -31,20 +31,18 @@ func (Runtime) WriteMoatResult(path string, result aoeval.MoatClaimResult) error
 
 type codexScenarioRunner struct{}
 
+// RunArm executes one A/B arm. The treatment is ENVIRONMENT-shaped: the
+// with-gold arm may read the corpus (.agents/.ao) inside the sandbox, the
+// control arm is denied it. Nothing is injected into the prompt — the retired
+// `ao lookup` pointer-injection left both arms corpus-blind at runtime, which
+// silently guaranteed a zero delta.
 func (codexScenarioRunner) RunArm(ctx context.Context, spec scenario.Scenario, withGold bool) (aoeval.ArmOutcome, error) {
 	var prompt strings.Builder
-	if withGold {
-		if pointers := goldPointers(ctx, spec.Goal); pointers != "" {
-			prompt.WriteString("Relevant prior knowledge (gold corpus pointers):\n")
-			prompt.WriteString(pointers)
-			prompt.WriteString("\n\n")
-		}
-	}
 	prompt.WriteString(spec.Narrative)
 	prompt.WriteString("\n\nGoal: ")
 	prompt.WriteString(spec.Goal)
 	prompt.WriteString("\n\nProduce your best attempt. Output only the result, no preamble.")
-	output, tokens, err := runCodexExec(ctx, prompt.String(), "")
+	output, tokens, err := runCodexExecArm(ctx, prompt.String(), "", withGold)
 	if err != nil {
 		return aoeval.ArmOutcome{}, err
 	}
@@ -103,21 +101,18 @@ func writeJudgeSchema() (string, func(), error) {
 	return name, cleanup, nil
 }
 
-func goldPointers(ctx context.Context, query string) string {
-	if _, err := os.Stat(".ao/wiki"); err != nil {
-		return ""
-	}
-	command := exec.CommandContext(ctx, "ao", "lookup", "--query", query, "--gold", "--pointers", "--limit", "3")
-	output, err := command.Output()
-	if err != nil {
-		return ""
-	}
-	return strings.TrimSpace(string(output))
-}
-
 var codexTokensRe = regexp.MustCompile(`(?i)tokens used[^\d]*([\d,]+)`)
 
+// runCodexExec runs Codex with the corpus DENIED — the safe default, used by
+// judges (grading must not be corpus-influenced) and legacy shims.
 func runCodexExec(ctx context.Context, prompt, outputSchemaPath string) (string, int, error) {
+	return runCodexExecArm(ctx, prompt, outputSchemaPath, false)
+}
+
+// runCodexExecArm runs Codex for one A/B arm. allowCorpus selects the
+// treatment: true leaves the corpus readable, false confines Codex away from
+// every corpus root (repo .agents/.ao, ~/.agents, env-resolved overrides).
+func runCodexExecArm(ctx context.Context, prompt, outputSchemaPath string, allowCorpus bool) (string, int, error) {
 	messageFile, err := os.CreateTemp("", "scenario-ab-codex-msg-*.txt")
 	if err != nil {
 		return "", 0, fmt.Errorf("codex last-message temp: %w", err)
@@ -130,9 +125,18 @@ func runCodexExec(ctx context.Context, prompt, outputSchemaPath string) (string,
 	if err != nil {
 		return "", 0, fmt.Errorf("resolve cwd for arm isolation: %w", err)
 	}
-	command, err := sandboxedCodexCmd(ctx, corpusDenyPaths(cwd), args)
-	if err != nil {
-		return "", 0, err
+	var command *exec.Cmd
+	if allowCorpus {
+		// Treatment arm: corpus stays readable, so no confinement wrapper.
+		// (sandboxedCodexCmd deliberately refuses empty deny lists — the
+		// fail-closed control-arm guard must not be weakened to express this.)
+		command = exec.CommandContext(ctx, "codex", args...)
+	} else {
+		confined, err := sandboxedCodexCmd(ctx, corpusDenyPaths(cwd), args)
+		if err != nil {
+			return "", 0, err
+		}
+		command = confined
 	}
 	command.Stdin = strings.NewReader("")
 	combined, err := command.CombinedOutput()

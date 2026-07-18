@@ -5,6 +5,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"github.com/boshu2/agentops/cli/internal/verdictcheck"
 	"os"
 	"path/filepath"
 	"strings"
@@ -226,7 +227,7 @@ func writeVerdictArtifact(t *testing.T, root string) string {
 
 func writeRawVerdictArtifact(t *testing.T, directory string, value map[string]any) string {
 	t.Helper()
-	canonical, err := canonicalJSON(value)
+	canonical, err := verdictcheck.CanonicalJSON(value)
 	if err != nil {
 		t.Fatal(err)
 	}

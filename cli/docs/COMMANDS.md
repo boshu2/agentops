@@ -258,6 +258,398 @@ ao version [flags]
 
 ---
 
+### `ao eval`
+
+Run deterministic AgentOps evaluation suites and compare run records.
+
+```
+ao eval [command]
+```
+
+**Subcommands:**
+
+#### `ao eval baseline`
+
+Promote an eval run record as a baseline
+
+```
+ao eval baseline <run.json> [flags]
+```
+
+**Flags:**
+
+```
+  -h, --help                 help for baseline
+      --out string           write promoted baseline run record to path
+      --promoted-by string   identity promoting the baseline
+      --rationale string     rationale for promoting the baseline
+```
+
+#### `ao eval baseline-audit`
+
+Audit eval suite baseline policy against promoted baselines
+
+```
+ao eval baseline-audit [suite.json ...] [flags]
+```
+
+**Flags:**
+
+```
+      --baseline-dir string   promoted baseline directory (default ".agents/evals/baselines")
+  -h, --help                  help for baseline-audit
+      --root string           suite root to scan when no suite paths are provided (default "evals/agentops-core")
+```
+
+#### `ao eval cleanup`
+
+Per SCHEMA.md §4 cleanup state-transition rule (rc2):
+
+```
+ao eval cleanup [flags]
+```
+
+**Flags:**
+
+```
+      --delete        Remove Run directories whose status is failed or aborted (never retracted)
+      --dry-run       Preview without mutations
+  -h, --help          help for cleanup
+      --tmp-age int   Minimum tmp-file age in seconds before sweep (0 = sweep all) (default 60)
+      --tmp-files     Sweep orphan *.tmp files older than --tmp-age
+```
+
+#### `ao eval compare`
+
+Compare an eval run against a baseline
+
+```
+ao eval compare <candidate-run.json> <baseline-run.json> [flags]
+```
+
+**Flags:**
+
+```
+  -h, --help                             help for compare
+      --max-aggregate-regression float   allowed aggregate regression before verdict becomes regression
+      --max-dimension-regression float   allowed per-dimension regression before verdict becomes regression
+      --out string                       write compared eval run record to path
+```
+
+#### `ao eval coverage`
+
+Summarize eval suite coverage
+
+```
+ao eval coverage [suite.json ...] [flags]
+```
+
+**Flags:**
+
+```
+  -h, --help                                help for coverage
+      --require-dimension stringArray       required score dimension for missing-dimension reporting (default [correctness,process_adherence,artifact_quality,runtime_compatibility,efficiency,safety,learning_closure])
+      --require-domain stringArray          required product domain for missing-domain reporting (default [cli,hook,skill,rpi,runtime,retrieval,scenario,mixed,security])
+      --require-evidence-kind stringArray   required evidence kind for missing-evidence-kind reporting
+      --require-runtime stringArray         required deterministic runtime for missing-runtime reporting (default [static,shell,mock])
+      --root string                         suite root to scan when no suite paths are provided (default "evals/agentops-core")
+```
+
+#### `ao eval outcomes`
+
+Outcomes is a derived projection of the locked eval substrate (SCHEMA.md), never an alternate authority.
+
+```
+ao eval outcomes [command]
+```
+
+##### `ao eval outcomes compile`
+
+Compile a holdout-safe Outcomes rubric payload from a locked Task + criteria
+
+```
+ao eval outcomes compile <input.json> [flags]
+```
+
+##### `ao eval outcomes ingest`
+
+Ingest an Outcomes score payload into the one council verdict record
+
+```
+ao eval outcomes ingest <score.json> [flags]
+```
+
+**Flags:**
+
+```
+      --burn-ledger string         path to a JSON HoldoutBurnLedger; when set, a holdout-split score registers a burn and is REFUSED if the (suite,gt) quota is exhausted (gate #3 runtime enforcement), persisted across invocations
+      --expect-judge-hash string   refuse the ingest if the score's judge_content_hash does not match this value (gate #2 rubric-drift parity)
+  -h, --help                       help for ingest
+      --manifest-out string        also write an eval-run.v1 manifest to <dir>/<run-id>/manifest.json so the verdict pipeline feeds the Knowledge Flywheel (closes the Outcomes→Flywheel loop)
+      --run-id string              run id for the --manifest-out manifest; defaults to the score's run_id, then source_task_id (sanitized to the eval-run.v1 pattern)
+```
+
+#### `ao eval run`
+
+Run a deterministic eval suite
+
+```
+ao eval run <suite.json> [flags]
+```
+
+**Flags:**
+
+```
+      --baseline string                 compare the run against a baseline run record
+      --baseline-mode string            skill-on | skill-off | both — runs the suite once with skills loaded, once with hooks suppressed, or both for a delta scorecard (default "skill-on")
+      --context-mode string             none | ab — run context-off/context-on legs over isolated AO_AGENTS_DIR roots (default "none")
+      --context-off-agents-dir string   AO_AGENTS_DIR root for the context-off leg (defaults to suite fixtures)
+      --context-on-agents-dir string    AO_AGENTS_DIR root for the context-on leg (defaults to suite fixtures)
+      --delta-out string                write delta scorecard JSON to path (with --baseline-mode=both or --context-mode=ab)
+  -h, --help                            help for run
+      --out string                      write eval run record to path
+      --run-id string                   stable run id to use in the run record
+      --runtime string                  runtime override (static, mock, shell, claude, codex)
+```
+
+#### `ao eval scenario`
+
+Create, list, validate, and evaluate holdout scenarios stored in .agents/holdout/.
+
+```
+ao eval scenario [command]
+```
+
+##### `ao eval scenario add`
+
+Author a holdout scenario from a goal description
+
+```
+ao eval scenario add <goal> [flags]
+```
+
+**Flags:**
+
+```
+      --expected-outcome string   Expected observable outcome (default: inferred from goal)
+  -h, --help                      help for add
+      --narrative string          Narrative description (default: inferred from goal)
+      --source string             Scenario source (human, agent, prod-telemetry) (default "human")
+      --status string             Scenario status (active, draft, retired) (default "draft")
+      --threshold float           Satisfaction threshold in [0,1] (default 0.8)
+```
+
+##### `ao eval scenario evaluate`
+
+Evaluate directive-linked scenarios and record satisfaction results
+
+```
+ao eval scenario evaluate [flags]
+```
+
+**Flags:**
+
+```
+      --all                Evaluate every directive's linked scenarios
+      --directive string   Evaluate only the directive with this stable Directive ID
+  -h, --help               help for evaluate
+      --json               Emit the machine-readable evaluation report
+      --run-id string      run_id recorded in the results artifact (default "ao-scenario-evaluate")
+      --timeout duration   Per-check execution timeout (default 2m0s)
+```
+
+##### `ao eval scenario init`
+
+Initialize .agents/holdout/ directory for scenario storage
+
+```
+ao eval scenario init [flags]
+```
+
+##### `ao eval scenario list`
+
+List holdout scenarios
+
+```
+ao eval scenario list [flags]
+```
+
+**Flags:**
+
+```
+  -h, --help            help for list
+      --status string   Filter by status (active, draft, retired)
+```
+
+##### `ao eval scenario validate`
+
+Validate holdout scenarios against schema
+
+```
+ao eval scenario validate [flags]
+```
+
+#### `ao eval scenario-ab`
+
+Run a knowledge-reuse holdout scenario with vs. without the gold pull (the discriminating A/B)
+
+```
+ao eval scenario-ab [flags]
+```
+
+**Flags:**
+
+```
+      --control-only       Run only the without-gold control arm and fail on ceiling/no-headroom
+  -h, --help               help for scenario-ab
+      --output string      Write the ScenarioDeltaScorecard JSON to this path
+      --scenario string    Path to the scenario.v1 JSON file (required)
+      --timeout duration   Per-arm timeout (0 = default 5m)
+      --token-budget int   Fail the gate if summed arm token cost exceeds this (0 = default 200000)
+```
+
+#### `ao eval scenario-moat`
+
+Aggregate moat-eligible scenario A/B scorecards into a publication verdict
+
+```
+ao eval scenario-moat [flags]
+```
+
+**Flags:**
+
+```
+  -h, --help                    help for scenario-moat
+      --output string           Write the MoatClaimResult JSON to this path
+      --scorecard stringArray   Path to a ScenarioDeltaScorecard JSON (repeatable)
+```
+
+#### `ao eval scorecard`
+
+Build an eval scorecard from run records
+
+```
+ao eval scorecard <candidate-run.json> [baseline-run.json] [flags]
+```
+
+**Flags:**
+
+```
+  -h, --help                            help for scorecard
+      --kind string                     scorecard kind (rpi, skill-change) (default "rpi")
+      --max-category-regression float   allowed per-category regression before verdict becomes regression
+      --out string                      write scorecard JSON to path
+```
+
+#### `ao eval suite`
+
+Suite-level operations against the §6.5 statistical contract.
+
+```
+ao eval suite [command]
+```
+
+##### `ao eval suite n-required`
+
+Compute power-derived n_required (gate #6 input on Day 3+)
+
+```
+ao eval suite n-required [flags]
+```
+
+**Flags:**
+
+```
+      --alpha float           Type-I error rate (default 0.05)
+      --baseline-rate float   Baseline rate (binomial worst-case fallback) (default 0.5)
+  -h, --help                  help for n-required
+      --mde float             Minimum detectable effect (default 0.05)
+      --paired                Paired comparison (default true)
+      --power float           Statistical power (1-beta) (default 0.8)
+```
+
+##### `ao eval suite verdict`
+
+Compute the §6.5 paired cluster-bootstrap verdict
+
+```
+ao eval suite verdict <suite-id> --arms a,b --inputs <bootstrap-inputs.json> [flags]
+```
+
+**Flags:**
+
+```
+      --B int            Bootstrap resamples (default 10000)
+      --arms string      Comma-separated arm ids (default: from suite varied_axis)
+  -h, --help             help for verdict
+      --inputs string    Path to canonical bootstrap-inputs JSON (REQUIRED)
+      --mde float        Minimum detectable effect (used for inconclusive_high_variance)
+      --n-required int   Override n_required (default: derived from suite power block)
+```
+
+#### `ao eval task`
+
+Operate on the §3 Task primitive of the eval substrate.
+
+```
+ao eval task [command]
+```
+
+##### `ao eval task add`
+
+Register a Task by copying its yaml + samples into the substrate
+
+```
+ao eval task add <task.yaml> [flags]
+```
+
+##### `ao eval task list`
+
+List registered Task ids
+
+```
+ao eval task list [flags]
+```
+
+##### `ao eval task run`
+
+Open a new Run manifest for <task-id>; refuses on gate failure
+
+```
+ao eval task run <task-id> [flags]
+```
+
+**Flags:**
+
+```
+      --allow-weak-labels        Allow runs against confidence=weak ground-truth rows (gate #7)
+      --cross-spec               Allow ModelSpec drift (gate #4)
+      --dry-run                  Run gates and exit without writing a Run manifest
+      --ground-truth string      Ground-truth row id (head of supersession chain)
+      --harness string           Harness id (recorded into manifest)
+      --harness-dir string       Path to harness source dir for snapshot + gate #8
+  -h, --help                     help for run
+      --inspect-command string   Inspect command recorded into the Run manifest (not executed yet)
+      --inspect-version string   Inspect AI version stamped into manifest (default "0.3.216")
+      --model-spec string        ModelSpec id (already captured via ao eval models capture)
+      --n-samples int            Override Suite.n_samples
+      --quick                    Mark Run as quick_session=true (excluded from --vs auto-baseline pool)
+      --rig-id string            Rig identifier stamped into the Run manifest
+      --sample-split string      Sample split (dev|holdout); default from suite
+      --seeds string             Comma-separated seeds (>=3, per §4)
+      --suite string             Suite id or path to suite.yaml (required)
+```
+
+##### `ao eval task show`
+
+Print a registered Task summary
+
+```
+ao eval task show <task-id> [flags]
+```
+
+---
+
 ### `ao goals`
 
 Track, measure, and validate project fitness goals.
@@ -406,14 +798,6 @@ ao goals scenarios [flags]
       --strict                With --lint, exit non-zero on warnings as well as errors
 ```
 
-#### `ao goals trace`
-
-Removed in the AgentOps Cathedral Cut
-
-```
-ao goals trace [flags]
-```
-
 ---
 
 ### `ao session`
@@ -457,14 +841,6 @@ ao session handoff [summary] [flags]
       --dry-run               Print the artifact without writing it
       --goal string           Caller-supplied goal
   -h, --help                  help for handoff
-```
-
-#### `ao session memory`
-
-Removed in the AgentOps Cathedral Cut
-
-```
-ao session memory [flags]
 ```
 
 #### `ao session rehydrate`
@@ -717,14 +1093,6 @@ ao skills consumers <skill> [flags]
       --json   Emit machine-readable JSON
 ```
 
-#### `ao skills edit`
-
-Removed in the AgentOps Cathedral Cut
-
-```
-ao skills edit [flags]
-```
-
 #### `ao skills find`
 
 Score every skills/<name>/SKILL.md against a free-text intent and
@@ -884,192 +1252,12 @@ ao flywheel status [flags]
 
 ---
 
-### `ao claim`
-
-Removed in the AgentOps Cathedral Cut
-
-```
-ao claim [flags]
-```
-
----
-
-### `ao close`
-
-Removed in the AgentOps Cathedral Cut
-
-```
-ao close [flags]
-```
-
----
-
-### `ao constraint`
-
-Removed in the AgentOps Cathedral Cut
-
-```
-ao constraint [flags]
-```
-
----
-
-### `ao converge`
-
-Removed in the AgentOps Cathedral Cut
-
-```
-ao converge [flags]
-```
-
----
-
-### `ao crank`
-
-Removed in the AgentOps Cathedral Cut
-
-```
-ao crank [flags]
-```
-
----
-
-### `ao done`
-
-Removed in the AgentOps Cathedral Cut
-
-```
-ao done [flags]
-```
-
----
-
-### `ao governor`
-
-Removed in the AgentOps Cathedral Cut
-
-```
-ao governor [flags]
-```
-
----
-
 ### `ao help`
 
 Help provides help for any command in the application.
 
 ```
 ao help [command] [flags]
-```
-
----
-
-### `ao land`
-
-Removed in the AgentOps Cathedral Cut
-
-```
-ao land [flags]
-```
-
----
-
-### `ao membrane`
-
-Removed in the AgentOps Cathedral Cut
-
-```
-ao membrane [flags]
-```
-
----
-
-### `ao next-work`
-
-Removed in the AgentOps Cathedral Cut
-
-```
-ao next-work [flags]
-```
-
----
-
-### `ao pawl`
-
-Removed in the AgentOps Cathedral Cut
-
-```
-ao pawl [flags]
-```
-
----
-
-### `ao plan-pawl`
-
-Removed in the AgentOps Cathedral Cut
-
-```
-ao plan-pawl [flags]
-```
-
----
-
-### `ao reconcile`
-
-Removed in the AgentOps Cathedral Cut
-
-```
-ao reconcile [flags]
-```
-
----
-
-### `ao state`
-
-Removed in the AgentOps Cathedral Cut
-
-```
-ao state [flags]
-```
-
----
-
-### `ao validate`
-
-Removed in the AgentOps Cathedral Cut
-
-```
-ao validate [flags]
-```
-
----
-
-### `ao verify`
-
-Removed in the AgentOps Cathedral Cut
-
-```
-ao verify [flags]
-```
-
----
-
-### `ao worktree`
-
-Removed in the AgentOps Cathedral Cut
-
-```
-ao worktree [flags]
-```
-
----
-
-### `ao yield`
-
-Removed in the AgentOps Cathedral Cut
-
-```
-ao yield [flags]
 ```
 
 ---

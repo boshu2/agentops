@@ -22,6 +22,7 @@ func init() {
 		}
 	}
 	declareMissingArgsPolicies(rootCmd)
+	requireKnownSubcommands(rootCmd)
 }
 
 func declareMissingArgsPolicies(parent *cobra.Command) {
@@ -75,4 +76,19 @@ func compatibleArgsPolicy(use string) cobra.PositionalArgs {
 		return cobra.ExactArgs(required)
 	}
 	return cobra.NoArgs
+}
+
+// requireKnownSubcommands walks the tree and installs the unknown-subcommand
+// guard on every non-runnable parent, so `ao <parent> <typo>` fails with an
+// unknown-command error (translated by removedCommandHint for retired
+// children) instead of printing help with exit 0.
+func requireKnownSubcommands(parent *cobra.Command) {
+	for _, command := range parent.Commands() {
+		if command.HasSubCommands() {
+			if !command.Runnable() {
+				requireKnownSubcommand(command)
+			}
+			requireKnownSubcommands(command)
+		}
+	}
 }

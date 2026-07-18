@@ -4,7 +4,9 @@
 # Exit 0 = pass (no drift), exit 1 = fail (drift detected)
 set -euo pipefail
 
-ROOT=$(git rev-parse --show-toplevel 2>/dev/null) || { echo "Not in a git repo"; exit 1; }
+# shellcheck disable=SC1007,SC1091
+. "$(CDPATH= cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib/repo-root.sh"
+ROOT=$(resolve_repo_root)
 
 AUDIT_PY="$ROOT/scripts/audit-codex-parity.py"
 if [[ ! -f "$AUDIT_PY" ]]; then

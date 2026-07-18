@@ -31,10 +31,10 @@ type workspaceCommandRunner func(ctx context.Context, workDir, command string) (
 
 // agenticRunnerHooks is the injectable seam for tests (no live codex).
 var agenticRunnerHooks = struct {
-	runCodex func(ctx context.Context, prompt, schemaPath string) (string, int, error)
+	runCodex func(ctx context.Context, prompt, schemaPath string, allowCorpus bool) (string, int, error)
 	runCmd   workspaceCommandRunner
 }{
-	runCodex: runCodexExec,
+	runCodex: runCodexExecArm,
 	runCmd:   defaultWorkspaceCommandRunner,
 }
 
@@ -56,8 +56,8 @@ func (agenticScenarioRunner) RunArm(ctx context.Context, sc scenario.Scenario, w
 	var history strings.Builder
 	totalTokens := 0
 	for turn := 0; turn < agenticMaxTurns; turn++ {
-		prompt := buildAgenticPrompt(ctx, sc, withGold, workDir, history.String())
-		out, tokens, err := agenticRunnerHooks.runCodex(ctx, prompt, schemaPath)
+		prompt := buildAgenticPrompt(sc, workDir, history.String())
+		out, tokens, err := agenticRunnerHooks.runCodex(ctx, prompt, schemaPath, withGold)
 		totalTokens += tokens
 		if err != nil {
 			return aoeval.ArmOutcome{}, fmt.Errorf("agentic turn %d: %w", turn+1, err)
@@ -92,17 +92,13 @@ func (agenticScenarioRunner) RunArm(ctx context.Context, sc scenario.Scenario, w
 	return aoeval.ArmOutcome{}, fmt.Errorf("agentic runner exceeded %d turns without done=true", agenticMaxTurns)
 }
 
-func buildAgenticPrompt(ctx context.Context, sc scenario.Scenario, withGold bool, workDir, history string) string {
+// buildAgenticPrompt renders one agentic turn. The with/without-gold treatment
+// is expressed through sandbox corpus access at exec time, never through
+// prompt injection (see codexScenarioRunner.RunArm).
+func buildAgenticPrompt(sc scenario.Scenario, workDir, history string) string {
 	var p strings.Builder
 	p.WriteString("You are an agentic worker in an isolated workspace. Execute the task by running shell commands in the workspace directory.\n")
 	p.WriteString("Return ONLY strict JSON matching the schema: commands (shell lines to run now), done (true when finished), summary (final result for grading when done=true).\n\n")
-	if withGold {
-		if pointers := goldPointers(ctx, sc.Goal); pointers != "" {
-			p.WriteString("Relevant prior knowledge (gold corpus pointers):\n")
-			p.WriteString(pointers)
-			p.WriteString("\n\n")
-		}
-	}
 	p.WriteString(sc.Narrative)
 	p.WriteString("\n\nGoal: ")
 	p.WriteString(sc.Goal)

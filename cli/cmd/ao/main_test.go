@@ -42,6 +42,11 @@ func TestMain(m *testing.M) {
 		os.Exit(1)
 	}
 	origHome, hadOrigHome := os.LookupEnv("HOME")
+	// The hermetic binary build (aoBinary) must keep using the real module and
+	// build caches: with HOME pointed at the temp dir, Go would resolve an
+	// empty GOMODCACHE and re-download modules on every test run (or fail
+	// offline). Capture the pre-isolation cache paths for the build env.
+	hermeticBuildHome = origHome
 	os.Setenv("HOME", tmpHome)
 
 	// Isolate the tmux socket. Several production paths (context-budget
@@ -71,6 +76,8 @@ func TestMain(m *testing.M) {
 
 	code := m.Run()
 
+	cleanupHermeticBinary()
+
 	// Tear down any tmux server the tests started on the isolated socket before
 	// removing its dir, so no orphan server lingers. Inherits the TMUX_TMPDIR
 	// set above, so this targets only the test socket, never the real one.
@@ -85,13 +92,6 @@ func TestMain(m *testing.M) {
 		os.Setenv("TMUX", origTmux)
 	} else {
 		os.Unsetenv("TMUX")
-	}
-
-	// Remove the flag-matrix test binary build dir (see aoBinary in
-	// flag_matrix_test.go) — shared across tests via sync.Once, so it can't
-	// be tied to any single test's t.Cleanup.
-	if aoBinaryDir != "" {
-		os.RemoveAll(aoBinaryDir)
 	}
 
 	os.RemoveAll(tmpHome)

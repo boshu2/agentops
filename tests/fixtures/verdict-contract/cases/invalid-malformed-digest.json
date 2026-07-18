@@ -1,0 +1,38 @@
+{
+  "name": "invalid-malformed-digest",
+  "description": "acceptance_digest is not 64-char lowercase hex.",
+  "expected": "invalid",
+  "filename_digest": "5b8a7dfd6fa6e4db00f4eac43188ff19f8b8ddabf0ebe7b4bb05bd31170c767c",
+  "artifact": {
+    "schema_version": "verdict.v2",
+    "acceptance_digest": "not-a-digest",
+    "subject_manifest_digest": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "author_context_id": "ctx-author",
+    "validator_context_id": "ctx-validator",
+    "freshness_attestation": {
+      "source": "runtime",
+      "attester_identity": "runtime:test"
+    },
+    "verdict": "FAIL",
+    "criteria": [
+      {
+        "id": "c1",
+        "result": "FAIL",
+        "evidence_refs": [
+          "gate:go.build"
+        ],
+        "reason": "checked"
+      }
+    ],
+    "findings": [],
+    "evidence_refs": [
+      "gate:go.build"
+    ],
+    "checked": [
+      "cli/**"
+    ],
+    "not_checked": [],
+    "validated_at": "2026-07-18T12:00:00Z",
+    "artifact_digest": "5b8a7dfd6fa6e4db00f4eac43188ff19f8b8ddabf0ebe7b4bb05bd31170c767c"
+  }
+}

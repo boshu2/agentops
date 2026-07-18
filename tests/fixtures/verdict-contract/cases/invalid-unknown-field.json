@@ -1,0 +1,39 @@
+{
+  "name": "invalid-unknown-field",
+  "description": "Unknown top-level field; the contract is closed (additionalProperties: false).",
+  "expected": "invalid",
+  "filename_digest": "e679283b349696c6c15ea8340dcfe0bfb49e1db5f9714976b0ad5e220a4c831f",
+  "artifact": {
+    "schema_version": "verdict.v2",
+    "acceptance_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "subject_manifest_digest": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "author_context_id": "ctx-author",
+    "validator_context_id": "ctx-validator",
+    "freshness_attestation": {
+      "source": "runtime",
+      "attester_identity": "runtime:test"
+    },
+    "verdict": "FAIL",
+    "criteria": [
+      {
+        "id": "c1",
+        "result": "FAIL",
+        "evidence_refs": [
+          "gate:go.build"
+        ],
+        "reason": "checked"
+      }
+    ],
+    "findings": [],
+    "evidence_refs": [
+      "gate:go.build"
+    ],
+    "checked": [
+      "cli/**"
+    ],
+    "not_checked": [],
+    "validated_at": "2026-07-18T12:00:00Z",
+    "surprise": "extra",
+    "artifact_digest": "e679283b349696c6c15ea8340dcfe0bfb49e1db5f9714976b0ad5e220a4c831f"
+  }
+}

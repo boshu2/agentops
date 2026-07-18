@@ -1,4 +1,4 @@
-# Decision: make `ao pawl review --strict` satisfiable
+# Decision: make `pawl review --strict` satisfiable (retired command)
 
 - **Bead:** age-pawl-intent-zhndq.8 (F8a) — decision only; implementation is .9 (F8b).
 - **Date:** 2026-07-11

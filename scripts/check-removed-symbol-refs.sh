@@ -3,6 +3,8 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+# shellcheck disable=SC1007,SC1091
+. "$SCRIPT_DIR/lib/repo-root.sh"
 MODE="fixed"
 SYMBOLS=()
 EXCLUDES=()
@@ -71,6 +73,9 @@ done
 
 cd "$REPO_ROOT"
 
+# Scrub hook-injected git env so the check (and every git call below) binds
+# to THIS checkout, not a leaked GIT_DIR (age-gate-scripts-worktree-gitdir-p62wo).
+scrub_git_env
 if ! git rev-parse --show-toplevel >/dev/null 2>&1; then
     die "not inside a git repository: $REPO_ROOT"
 fi

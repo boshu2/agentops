@@ -91,12 +91,10 @@ while [[ $# -gt 0 ]]; do
 done
 
 # Resolve the repo root.
+# shellcheck disable=SC1007,SC1091
+. "$(CDPATH= cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib/repo-root.sh"
 if [[ -z "$REPO_ROOT" ]]; then
-    if REPO_ROOT="$(git rev-parse --show-toplevel 2>/dev/null)"; then
-        :
-    else
-        REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-    fi
+    REPO_ROOT="$(resolve_repo_root)"
 fi
 if [[ ! -d "$REPO_ROOT" ]]; then
     fail "repo root does not exist: $REPO_ROOT"

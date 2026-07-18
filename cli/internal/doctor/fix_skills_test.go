@@ -1,6 +1,7 @@
 package doctor
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -394,7 +395,7 @@ func TestSkillsIntegrityHygieneFixer(t *testing.T) {
 	if len(post) != 1 {
 		t.Fatalf("expected MISSING_TIER report-only finding to remain, got %+v", post)
 	}
-	hygiene, _ := scanSkillHygiene(repo)
+	hygiene, _, _ := scanSkillHygiene(repo)
 	hasTier := false
 	for _, h := range hygiene {
 		if h.Kind == "MISSING_TIER" {
@@ -424,7 +425,7 @@ func TestSkillsHygiene_PlaceholderLinkNotDeadRef(t *testing.T) {
 		"Move section bodies to `references/<topic>.md`; reference inline as [text](references/<topic>.md).\n"
 	writeSkillsFile(t, skillMD, body)
 
-	hygiene, err := scanSkillHygiene(repo)
+	hygiene, _, err := scanSkillHygiene(repo)
 	if err != nil {
 		t.Fatalf("scanSkillHygiene: %v", err)
 	}
@@ -763,5 +764,316 @@ func TestSkillsHashDriftDetectorIsRemoved(t *testing.T) {
 		if d.ID() == id {
 			t.Fatal("fm-skills-hash-drift detector must NOT be registered (age-aau9: owned by make regen-check)")
 		}
+	}
+}
+
+// ---------------------------------------------------------------------------
+// Symlinked-root guards (age-knowledge-symlink-root-inbpg)
+// ---------------------------------------------------------------------------
+
+// TestSkillsSymlinkedSkillsRoot: a repo whose skills/ root is a symlink to an
+// external tree must silence the stale-command-refs and integrity-hygiene
+// detectors, make both repo-writing fixers refuse with refused_unsafe, record
+// zero actions, and leave the external tree byte-untouched.
+func TestSkillsSymlinkedSkillsRoot(t *testing.T) {
+	repo := t.TempDir()
+	home := t.TempDir()
+	external := t.TempDir()
+	// Baits: a stale command ref (rewrite bait) and an unlinked references
+	// file (hygiene append bait) in the external tree.
+	skillMDContent := "---\nname: sample\ndescription: d\ntier: core\n---\n\nRun `ao know inject` now.\n"
+	writeSkillsFile(t, filepath.Join(external, "sample", "SKILL.md"), skillMDContent)
+	refContent := "unlinked reference\n"
+	writeSkillsFile(t, filepath.Join(external, "sample", "references", "extra.md"), refContent)
+	if err := os.Symlink(external, filepath.Join(repo, "skills")); err != nil {
+		t.Fatalf("symlink skills: %v", err)
+	}
+	env := &DetectEnv{RepoRoot: repo, CWD: repo, HomeDir: home}
+
+	for name, d := range map[string]Detector{
+		"stale-command-refs": skillsStaleCommandRefsDetector{},
+		"integrity-hygiene":  skillsIntegrityHygieneDetector{},
+	} {
+		findings, err := d.Detect(env)
+		if err != nil {
+			t.Errorf("%s Detect on symlinked skills root: %v", name, err)
+		}
+		if len(findings) != 0 {
+			t.Errorf("%s Detect on symlinked skills root = %d findings, want 0", name, len(findings))
+		}
+	}
+
+	mctx, ra, closer := skillsTestCtx(t, repo, home)
+	defer closer()
+	for name, f := range map[string]Fixer{
+		"stale-command-refs": skillsStaleCommandRefsFixer{},
+		"integrity-hygiene":  skillsIntegrityHygieneFixer{},
+	} {
+		res, err := f.Fix(mctx.WithFixer(f.ID()), env, nil)
+		if err == nil || !strings.Contains(err.Error(), "refused_unsafe") {
+			t.Errorf("%s Fix on symlinked skills root: err=%v, want refused_unsafe", name, err)
+			continue
+		}
+		if res.Fixed {
+			t.Errorf("%s Fix reported Fixed despite refusal", name)
+		}
+		if res.ActionsTaken != 0 {
+			t.Errorf("%s Fix took %d actions through a symlinked skills root", name, res.ActionsTaken)
+		}
+	}
+	recs, err := readActions(ra.ActionsPath())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(recs) != 0 {
+		t.Fatalf("action records = %d, want 0", len(recs))
+	}
+	got, err := os.ReadFile(filepath.Join(external, "sample", "SKILL.md"))
+	if err != nil || string(got) != skillMDContent {
+		t.Errorf("external SKILL.md = %q err=%v, want untouched", got, err)
+	}
+	gotRef, err := os.ReadFile(filepath.Join(external, "sample", "references", "extra.md"))
+	if err != nil || string(gotRef) != refContent {
+		t.Errorf("external reference = %q err=%v, want untouched", gotRef, err)
+	}
+}
+
+// TestSkillsSymlinkedDocsRoot: the guard covers every stale-ref scan root, not
+// just skills/ — a symlinked docs/ silences the detector and refuses the fixer
+// even when skills/ is a real directory with its own bait.
+func TestSkillsSymlinkedDocsRoot(t *testing.T) {
+	repo := t.TempDir()
+	home := t.TempDir()
+	external := t.TempDir()
+	writeSkillsFile(t, filepath.Join(repo, "skills", "sample", "SKILL.md"), "Run `ao know inject` now.\n")
+	docContent := "Run `ao know inject` now.\n"
+	writeSkillsFile(t, filepath.Join(external, "sample.md"), docContent)
+	if err := os.Symlink(external, filepath.Join(repo, "docs")); err != nil {
+		t.Fatalf("symlink docs: %v", err)
+	}
+	env := &DetectEnv{RepoRoot: repo, CWD: repo, HomeDir: home}
+
+	findings, err := skillsStaleCommandRefsDetector{}.Detect(env)
+	if err != nil {
+		t.Fatalf("Detect: %v", err)
+	}
+	if len(findings) != 0 {
+		t.Fatalf("stale-refs Detect with symlinked docs root = %d findings, want 0", len(findings))
+	}
+	mctx, ra, closer := skillsTestCtx(t, repo, home)
+	defer closer()
+	res, err := skillsStaleCommandRefsFixer{}.Fix(mctx.WithFixer("fm-skills-stale-command-refs"), env, nil)
+	if err == nil || !strings.Contains(err.Error(), "refused_unsafe") {
+		t.Fatalf("stale-refs Fix with symlinked docs root: err=%v, want refused_unsafe", err)
+	}
+	if res.ActionsTaken != 0 {
+		t.Fatalf("stale-refs Fix took %d actions", res.ActionsTaken)
+	}
+	recs, rerr := readActions(ra.ActionsPath())
+	if rerr != nil {
+		t.Fatal(rerr)
+	}
+	if len(recs) != 0 {
+		t.Fatalf("action records = %d, want 0", len(recs))
+	}
+	gotDoc, err := os.ReadFile(filepath.Join(external, "sample.md"))
+	if err != nil || string(gotDoc) != docContent {
+		t.Fatalf("external doc = %q err=%v, want untouched", gotDoc, err)
+	}
+	// The repo-side bait is real: the skill file still holds its stale ref.
+	gotSkill, err := os.ReadFile(filepath.Join(repo, "skills", "sample", "SKILL.md"))
+	if err != nil || string(gotSkill) != "Run `ao know inject` now.\n" {
+		t.Fatalf("repo skill file = %q err=%v, want untouched", gotSkill, err)
+	}
+}
+
+// TestSkillsStaleRefsSkipsSymlinkedFile: with real roots, a scanned FILE that
+// is itself a symlink to an external target is invisible to the scan — the
+// detector reports only the real file, the fixer rewrites only the real file,
+// and the symlink target stays byte-untouched.
+func TestSkillsStaleRefsSkipsSymlinkedFile(t *testing.T) {
+	repo := t.TempDir()
+	home := t.TempDir()
+	external := t.TempDir()
+	realDoc := filepath.Join(repo, "docs", "real.md")
+	writeSkillsFile(t, realDoc, "Run `ao know inject` to load context.\n")
+	victim := filepath.Join(external, "victim.md")
+	victimContent := "Run `ao know inject` now.\n"
+	if err := os.WriteFile(victim, []byte(victimContent), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink(victim, filepath.Join(repo, "docs", "linked.md")); err != nil {
+		t.Fatalf("symlink doc file: %v", err)
+	}
+	env := &DetectEnv{RepoRoot: repo, CWD: repo, HomeDir: home}
+
+	findings, err := skillsStaleCommandRefsDetector{}.Detect(env)
+	if err != nil {
+		t.Fatalf("Detect: %v", err)
+	}
+	if len(findings) != 1 {
+		t.Fatalf("findings = %d, want 1 (real file only)", len(findings))
+	}
+	if q := findings[0].Evidence.Query; strings.Contains(q, "linked.md") {
+		t.Fatalf("evidence lists the symlinked file: %q", q)
+	}
+	mctx, _, closer := skillsTestCtx(t, repo, home)
+	defer closer()
+	res, err := skillsStaleCommandRefsFixer{}.Fix(mctx.WithFixer("fm-skills-stale-command-refs"), env, nil)
+	if err != nil {
+		t.Fatalf("Fix: %v", err)
+	}
+	if !res.Fixed || res.ActionsTaken != 1 {
+		t.Fatalf("Fix = fixed=%t actions=%d, want fixed=true actions=1", res.Fixed, res.ActionsTaken)
+	}
+	gotReal, _ := os.ReadFile(realDoc)
+	if string(gotReal) != "Run `ao inject` to load context.\n" {
+		t.Fatalf("real doc after fix = %q", gotReal)
+	}
+	gotVictim, err := os.ReadFile(victim)
+	if err != nil || string(gotVictim) != victimContent {
+		t.Fatalf("symlink target = %q err=%v, want untouched", gotVictim, err)
+	}
+}
+
+// TestSkillsHygieneSymlinkedTargetRefusesWholeRun covers the partial-fix
+// hazard: with a real skills/ root, skill "askill" is real (with an unlinked
+// reference) and skill "zskill"'s SKILL.md is a SYMLINK to an external file.
+// The detector must exclude zskill from its findings entirely
+// (detector-silence), and the fixer must refuse the WHOLE run with zero
+// actions — never fix askill first and then hit the symlink (action already
+// committed). The final control replaces the symlink with a real file and
+// proves both skills then fix, so the refusal is attributable to the symlink.
+func TestSkillsHygieneSymlinkedTargetRefusesWholeRun(t *testing.T) {
+	repo := t.TempDir()
+	home := t.TempDir()
+	external := t.TempDir()
+	frontmatter := "---\nname: %s\ndescription: d\ntier: core\n---\n\n# Body\n"
+	askillMD := fmt.Sprintf(frontmatter, "askill")
+	writeSkillsFile(t, filepath.Join(repo, "skills", "askill", "SKILL.md"), askillMD)
+	writeSkillsFile(t, filepath.Join(repo, "skills", "askill", "references", "extra.md"), "unlinked a\n")
+	// zskill: real dir + real unlinked reference, but SKILL.md is a symlink.
+	writeSkillsFile(t, filepath.Join(repo, "skills", "zskill", "references", "zref.md"), "unlinked z\n")
+	zskillContent := fmt.Sprintf(frontmatter, "zskill")
+	zVictim := filepath.Join(external, "zskill-SKILL.md")
+	if err := os.WriteFile(zVictim, []byte(zskillContent), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	zskillMD := filepath.Join(repo, "skills", "zskill", "SKILL.md")
+	if err := os.Symlink(zVictim, zskillMD); err != nil {
+		t.Fatalf("symlink zskill SKILL.md: %v", err)
+	}
+	env := &DetectEnv{RepoRoot: repo, CWD: repo, HomeDir: home}
+
+	// Detector-silence: findings cover askill only, never the symlinked zskill.
+	findings, err := skillsIntegrityHygieneDetector{}.Detect(env)
+	if err != nil {
+		t.Fatalf("Detect: %v", err)
+	}
+	if len(findings) != 1 {
+		t.Fatalf("findings = %d, want 1", len(findings))
+	}
+	if q := findings[0].Evidence.Query; !strings.Contains(q, "askill:UNLINKED") || strings.Contains(q, "zskill") {
+		t.Fatalf("evidence = %q, want askill:UNLINKED only, zskill excluded", q)
+	}
+
+	mctx, ra, closer := skillsTestCtx(t, repo, home)
+	defer closer()
+	res, err := skillsIntegrityHygieneFixer{}.Fix(mctx.WithFixer("fm-skills-integrity-hygiene"), env, nil)
+	if err == nil || !strings.Contains(err.Error(), "refused_unsafe") {
+		t.Fatalf("Fix with symlinked zskill: err=%v, want whole-run refused_unsafe", err)
+	}
+	if !strings.Contains(err.Error(), "zskill") {
+		t.Errorf("refusal error %v does not name the symlinked skill", err)
+	}
+	if res.Fixed {
+		t.Error("Fix reported Fixed despite refusal")
+	}
+	if res.ActionsTaken != 0 {
+		t.Errorf("Fix took %d actions, want 0 (whole-run refusal, no partial fix)", res.ActionsTaken)
+	}
+	recs, rerr := readActions(ra.ActionsPath())
+	if rerr != nil {
+		t.Fatal(rerr)
+	}
+	if len(recs) != 0 {
+		t.Fatalf("action records = %d, want 0", len(recs))
+	}
+	// askill untouched (no partial fix) and the external target byte-untouched.
+	gotA, err := os.ReadFile(filepath.Join(repo, "skills", "askill", "SKILL.md"))
+	if err != nil || string(gotA) != askillMD {
+		t.Fatalf("askill SKILL.md = %q err=%v, want byte-untouched", gotA, err)
+	}
+	gotZ, err := os.ReadFile(zVictim)
+	if err != nil || string(gotZ) != zskillContent {
+		t.Fatalf("external zskill target = %q err=%v, want byte-untouched", gotZ, err)
+	}
+
+	// Fidelity control: replace the symlink with a REAL file — the same run now
+	// fixes BOTH skills, proving the refusal above came from the symlink gate.
+	if err := os.Remove(zskillMD); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(zskillMD, []byte(zskillContent), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	res, err = skillsIntegrityHygieneFixer{}.Fix(mctx.WithFixer("fm-skills-integrity-hygiene"), env, nil)
+	if err != nil {
+		t.Fatalf("control Fix: %v", err)
+	}
+	if !res.Fixed || res.ActionsTaken != 2 {
+		t.Fatalf("control Fix = fixed=%t actions=%d, want fixed=true actions=2 (bait is dead)", res.Fixed, res.ActionsTaken)
+	}
+}
+
+// TestSkillsHygieneSymlinkedReferencesDirExcluded: a skill whose references/
+// dir is a symlink to an external directory must be excluded from hygiene
+// findings entirely (the detector never lists the external dir's contents),
+// and the fixer must refuse the whole run rather than act in a tree holding a
+// symlinked skill surface.
+func TestSkillsHygieneSymlinkedReferencesDirExcluded(t *testing.T) {
+	repo := t.TempDir()
+	home := t.TempDir()
+	external := t.TempDir()
+	bskillMD := "---\nname: bskill\ndescription: d\ntier: core\n---\n\n# Body\n"
+	writeSkillsFile(t, filepath.Join(repo, "skills", "bskill", "SKILL.md"), bskillMD)
+	// External references dir with a would-be UNLINKED bait.
+	extRefs := filepath.Join(external, "refs")
+	writeSkillsFile(t, filepath.Join(extRefs, "extra.md"), "external unlinked ref\n")
+	if err := os.Symlink(extRefs, filepath.Join(repo, "skills", "bskill", "references")); err != nil {
+		t.Fatalf("symlink references dir: %v", err)
+	}
+	env := &DetectEnv{RepoRoot: repo, CWD: repo, HomeDir: home}
+
+	findings, err := skillsIntegrityHygieneDetector{}.Detect(env)
+	if err != nil {
+		t.Fatalf("Detect: %v", err)
+	}
+	if len(findings) != 0 {
+		t.Fatalf("findings = %d, want 0 (skill with symlinked references dir excluded entirely): %+v", len(findings), findings)
+	}
+
+	mctx, ra, closer := skillsTestCtx(t, repo, home)
+	defer closer()
+	res, err := skillsIntegrityHygieneFixer{}.Fix(mctx.WithFixer("fm-skills-integrity-hygiene"), env, nil)
+	if err == nil || !strings.Contains(err.Error(), "refused_unsafe") {
+		t.Fatalf("Fix with symlinked references dir: err=%v, want refused_unsafe", err)
+	}
+	if res.Fixed || res.ActionsTaken != 0 {
+		t.Fatalf("Fix = fixed=%t actions=%d, want fixed=false actions=0", res.Fixed, res.ActionsTaken)
+	}
+	recs, rerr := readActions(ra.ActionsPath())
+	if rerr != nil {
+		t.Fatal(rerr)
+	}
+	if len(recs) != 0 {
+		t.Fatalf("action records = %d, want 0", len(recs))
+	}
+	gotRef, err := os.ReadFile(filepath.Join(extRefs, "extra.md"))
+	if err != nil || string(gotRef) != "external unlinked ref\n" {
+		t.Fatalf("external reference = %q err=%v, want untouched", gotRef, err)
+	}
+	if got, rerr := os.ReadFile(filepath.Join(repo, "skills", "bskill", "SKILL.md")); rerr != nil || string(got) != bskillMD {
+		t.Fatalf("bskill SKILL.md = %q err=%v, want byte-untouched", got, rerr)
 	}
 }
