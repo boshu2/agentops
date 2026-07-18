@@ -28,6 +28,7 @@ const (
 // analysis/safety_envelope.md. Any write outside this set refuses with exit 4.
 var canonicalWriteScopes = []string{
 	".doctor",
+	".agents",
 	".agents/daemon",
 	".agents/handoffs/sha256",
 	".agents/ao",
@@ -44,7 +45,7 @@ var canonicalWriteScopes = []string{
 
 // canonicalSubsystems is the fixed list of doctor subsystems.
 var canonicalSubsystems = []string{
-	"daemon", "bridges", "knowledge", "skills", "cli_config",
+	"daemon", "bridges", "knowledge", "skills", "cli_config", "workspace",
 }
 
 // canonicalExitCodes documents every exit code the doctor surface can return.
