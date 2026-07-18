@@ -765,3 +765,172 @@ func TestSkillsHashDriftDetectorIsRemoved(t *testing.T) {
 		}
 	}
 }
+
+// ---------------------------------------------------------------------------
+// Symlinked-root guards (age-knowledge-symlink-root-inbpg)
+// ---------------------------------------------------------------------------
+
+// TestSkillsSymlinkedSkillsRoot: a repo whose skills/ root is a symlink to an
+// external tree must silence the stale-command-refs and integrity-hygiene
+// detectors, make both repo-writing fixers refuse with refused_unsafe, record
+// zero actions, and leave the external tree byte-untouched.
+func TestSkillsSymlinkedSkillsRoot(t *testing.T) {
+	repo := t.TempDir()
+	home := t.TempDir()
+	external := t.TempDir()
+	// Baits: a stale command ref (rewrite bait) and an unlinked references
+	// file (hygiene append bait) in the external tree.
+	skillMDContent := "---\nname: sample\ndescription: d\ntier: core\n---\n\nRun `ao know inject` now.\n"
+	writeSkillsFile(t, filepath.Join(external, "sample", "SKILL.md"), skillMDContent)
+	refContent := "unlinked reference\n"
+	writeSkillsFile(t, filepath.Join(external, "sample", "references", "extra.md"), refContent)
+	if err := os.Symlink(external, filepath.Join(repo, "skills")); err != nil {
+		t.Fatalf("symlink skills: %v", err)
+	}
+	env := &DetectEnv{RepoRoot: repo, CWD: repo, HomeDir: home}
+
+	for name, d := range map[string]Detector{
+		"stale-command-refs": skillsStaleCommandRefsDetector{},
+		"integrity-hygiene":  skillsIntegrityHygieneDetector{},
+	} {
+		findings, err := d.Detect(env)
+		if err != nil {
+			t.Errorf("%s Detect on symlinked skills root: %v", name, err)
+		}
+		if len(findings) != 0 {
+			t.Errorf("%s Detect on symlinked skills root = %d findings, want 0", name, len(findings))
+		}
+	}
+
+	mctx, ra, closer := skillsTestCtx(t, repo, home)
+	defer closer()
+	for name, f := range map[string]Fixer{
+		"stale-command-refs": skillsStaleCommandRefsFixer{},
+		"integrity-hygiene":  skillsIntegrityHygieneFixer{},
+	} {
+		res, err := f.Fix(mctx.WithFixer(f.ID()), env, nil)
+		if err == nil || !strings.Contains(err.Error(), "refused_unsafe") {
+			t.Errorf("%s Fix on symlinked skills root: err=%v, want refused_unsafe", name, err)
+			continue
+		}
+		if res.Fixed {
+			t.Errorf("%s Fix reported Fixed despite refusal", name)
+		}
+		if res.ActionsTaken != 0 {
+			t.Errorf("%s Fix took %d actions through a symlinked skills root", name, res.ActionsTaken)
+		}
+	}
+	recs, err := readActions(ra.ActionsPath())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(recs) != 0 {
+		t.Fatalf("action records = %d, want 0", len(recs))
+	}
+	got, err := os.ReadFile(filepath.Join(external, "sample", "SKILL.md"))
+	if err != nil || string(got) != skillMDContent {
+		t.Errorf("external SKILL.md = %q err=%v, want untouched", got, err)
+	}
+	gotRef, err := os.ReadFile(filepath.Join(external, "sample", "references", "extra.md"))
+	if err != nil || string(gotRef) != refContent {
+		t.Errorf("external reference = %q err=%v, want untouched", gotRef, err)
+	}
+}
+
+// TestSkillsSymlinkedDocsRoot: the guard covers every stale-ref scan root, not
+// just skills/ — a symlinked docs/ silences the detector and refuses the fixer
+// even when skills/ is a real directory with its own bait.
+func TestSkillsSymlinkedDocsRoot(t *testing.T) {
+	repo := t.TempDir()
+	home := t.TempDir()
+	external := t.TempDir()
+	writeSkillsFile(t, filepath.Join(repo, "skills", "sample", "SKILL.md"), "Run `ao know inject` now.\n")
+	docContent := "Run `ao know inject` now.\n"
+	writeSkillsFile(t, filepath.Join(external, "sample.md"), docContent)
+	if err := os.Symlink(external, filepath.Join(repo, "docs")); err != nil {
+		t.Fatalf("symlink docs: %v", err)
+	}
+	env := &DetectEnv{RepoRoot: repo, CWD: repo, HomeDir: home}
+
+	findings, err := skillsStaleCommandRefsDetector{}.Detect(env)
+	if err != nil {
+		t.Fatalf("Detect: %v", err)
+	}
+	if len(findings) != 0 {
+		t.Fatalf("stale-refs Detect with symlinked docs root = %d findings, want 0", len(findings))
+	}
+	mctx, ra, closer := skillsTestCtx(t, repo, home)
+	defer closer()
+	res, err := skillsStaleCommandRefsFixer{}.Fix(mctx.WithFixer("fm-skills-stale-command-refs"), env, nil)
+	if err == nil || !strings.Contains(err.Error(), "refused_unsafe") {
+		t.Fatalf("stale-refs Fix with symlinked docs root: err=%v, want refused_unsafe", err)
+	}
+	if res.ActionsTaken != 0 {
+		t.Fatalf("stale-refs Fix took %d actions", res.ActionsTaken)
+	}
+	recs, rerr := readActions(ra.ActionsPath())
+	if rerr != nil {
+		t.Fatal(rerr)
+	}
+	if len(recs) != 0 {
+		t.Fatalf("action records = %d, want 0", len(recs))
+	}
+	gotDoc, err := os.ReadFile(filepath.Join(external, "sample.md"))
+	if err != nil || string(gotDoc) != docContent {
+		t.Fatalf("external doc = %q err=%v, want untouched", gotDoc, err)
+	}
+	// The repo-side bait is real: the skill file still holds its stale ref.
+	gotSkill, err := os.ReadFile(filepath.Join(repo, "skills", "sample", "SKILL.md"))
+	if err != nil || string(gotSkill) != "Run `ao know inject` now.\n" {
+		t.Fatalf("repo skill file = %q err=%v, want untouched", gotSkill, err)
+	}
+}
+
+// TestSkillsStaleRefsSkipsSymlinkedFile: with real roots, a scanned FILE that
+// is itself a symlink to an external target is invisible to the scan — the
+// detector reports only the real file, the fixer rewrites only the real file,
+// and the symlink target stays byte-untouched.
+func TestSkillsStaleRefsSkipsSymlinkedFile(t *testing.T) {
+	repo := t.TempDir()
+	home := t.TempDir()
+	external := t.TempDir()
+	realDoc := filepath.Join(repo, "docs", "real.md")
+	writeSkillsFile(t, realDoc, "Run `ao know inject` to load context.\n")
+	victim := filepath.Join(external, "victim.md")
+	victimContent := "Run `ao know inject` now.\n"
+	if err := os.WriteFile(victim, []byte(victimContent), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink(victim, filepath.Join(repo, "docs", "linked.md")); err != nil {
+		t.Fatalf("symlink doc file: %v", err)
+	}
+	env := &DetectEnv{RepoRoot: repo, CWD: repo, HomeDir: home}
+
+	findings, err := skillsStaleCommandRefsDetector{}.Detect(env)
+	if err != nil {
+		t.Fatalf("Detect: %v", err)
+	}
+	if len(findings) != 1 {
+		t.Fatalf("findings = %d, want 1 (real file only)", len(findings))
+	}
+	if q := findings[0].Evidence.Query; strings.Contains(q, "linked.md") {
+		t.Fatalf("evidence lists the symlinked file: %q", q)
+	}
+	mctx, _, closer := skillsTestCtx(t, repo, home)
+	defer closer()
+	res, err := skillsStaleCommandRefsFixer{}.Fix(mctx.WithFixer("fm-skills-stale-command-refs"), env, nil)
+	if err != nil {
+		t.Fatalf("Fix: %v", err)
+	}
+	if !res.Fixed || res.ActionsTaken != 1 {
+		t.Fatalf("Fix = fixed=%t actions=%d, want fixed=true actions=1", res.Fixed, res.ActionsTaken)
+	}
+	gotReal, _ := os.ReadFile(realDoc)
+	if string(gotReal) != "Run `ao inject` to load context.\n" {
+		t.Fatalf("real doc after fix = %q", gotReal)
+	}
+	gotVictim, err := os.ReadFile(victim)
+	if err != nil || string(gotVictim) != victimContent {
+		t.Fatalf("symlink target = %q err=%v, want untouched", gotVictim, err)
+	}
+}

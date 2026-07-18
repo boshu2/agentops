@@ -217,6 +217,12 @@ func (d skillsMissingDetector) Detect(env *DetectEnv) ([]Finding, error) {
 // skillsMissingFixer mirrors the repo skills/<name>/** tree into the canonical
 // Claude install root (~/.claude/skills) through Mutate. It refuses if no repo
 // skills/ source tree is resolvable.
+//
+// Symlinked-root audit (age-knowledge-symlink-root-inbpg): the repo-relative
+// symlink class does NOT apply to this fixer's writes — every write target is
+// an absolute home-dir install root, and ~/.claude/skills is LEGITIMATELY a
+// symlink farm on real deployments, so no guard is added here. The repo
+// skills/ tree is only READ as mirror source.
 type skillsMissingFixer struct{}
 
 func (skillsMissingFixer) ID() string { return "fm-skills-missing" }
@@ -358,6 +364,11 @@ func (d skillsStaleCodexSyncDetector) Detect(env *DetectEnv) ([]Finding, error) 
 // install-metadata JSON) from the repo into the Codex native cache through
 // Mutate. The metadata stamp is written last so a crash leaves the install
 // marked stale (safe) rather than falsely fresh.
+//
+// Symlinked-root audit (age-knowledge-symlink-root-inbpg): the repo-relative
+// symlink class does NOT apply to this fixer's writes — every write target is
+// an absolute home-dir path (~/.codex/**); the repo skills-codex/ tree is only
+// READ as mirror source. No guard is added here.
 type skillsStaleCodexSyncFixer struct{}
 
 func (skillsStaleCodexSyncFixer) ID() string { return "fm-skills-stale-codex-sync" }
@@ -555,6 +566,15 @@ func (skillsStaleCommandRefsDetector) Describe() string {
 	return "skill and doc files reference deprecated `ao` namespace commands"
 }
 
+// staleRefScanRoots returns the repo-relative root directories the
+// stale-command-refs scan resolves through. These are the symlinkable roots
+// this FM's symlinked-root guard covers (see fix_knowledge.go): the fixer
+// rewrites files found under them via Glob, which follows a symlinked
+// directory, while Mutate's scope check is lexical.
+func staleRefScanRoots() []string {
+	return []string{"skills", "skills-codex", "skills-codex-overrides", "docs", "scripts"}
+}
+
 // staleRefScanGlobs returns the glob set scanned for deprecated command refs,
 // rooted at repo.
 func staleRefScanGlobs(repo string) []string {
@@ -578,6 +598,13 @@ func scanStaleRefFiles(repo string) []string {
 	for _, pattern := range staleRefScanGlobs(repo) {
 		files, _ := filepath.Glob(pattern)
 		for _, file := range files {
+			// Symlinked-path guard: a file that resolves through a symlink
+			// (symlinked intermediate dir or symlinked file) sits outside the
+			// repository even though its lexical path is in scope; the fixer
+			// must never rewrite it, so the scan never reports it.
+			if !realRepoFile(repo, file) {
+				continue
+			}
 			if len(quality.ScanFileForDeprecatedCommands(file)) > 0 {
 				seen[file] = true
 			}
@@ -592,6 +619,11 @@ func scanStaleRefFiles(repo string) []string {
 }
 
 func (d skillsStaleCommandRefsDetector) Detect(env *DetectEnv) ([]Finding, error) {
+	for _, root := range staleRefScanRoots() {
+		if !realChainUnder(env.RepoRoot, root) {
+			return nil, nil // symlinked root: unsafe to consume
+		}
+	}
 	files := scanStaleRefFiles(env.RepoRoot)
 	if len(files) == 0 {
 		return nil, nil
@@ -773,6 +805,14 @@ func (skillsStaleCommandRefsFixer) AutoFixable() bool { return true }
 
 func (f skillsStaleCommandRefsFixer) Fix(ctx *MutateContext, env *DetectEnv, _ []Finding) (FixResult, error) {
 	res := FixResult{FixerID: f.ID(), FindingIDs: []string{f.ID()}}
+	// Symlinked-root guard (see fix_knowledge.go): refuse to rewrite through a
+	// scan root that exists but is not a real directory.
+	for _, root := range staleRefScanRoots() {
+		if _, gerr := requireRealChainUnder(env.RepoRoot, root); gerr != nil {
+			res.Err = fmt.Errorf("doctor: %s: %w", f.ID(), gerr)
+			return res, res.Err
+		}
+	}
 	// 1. Re-scan; do not trust the detector snapshot.
 	files := scanStaleRefFiles(env.RepoRoot)
 	if len(files) == 0 {
@@ -977,6 +1017,9 @@ func extractReferenceLinks(text string) []string {
 }
 
 func (d skillsIntegrityHygieneDetector) Detect(env *DetectEnv) ([]Finding, error) {
+	if !realChainUnder(env.RepoRoot, "skills") {
+		return nil, nil // symlinked root: unsafe to consume
+	}
 	if !dirExists(filepath.Join(env.RepoRoot, "skills")) {
 		return nil, nil
 	}
@@ -1044,6 +1087,12 @@ func renderReferencesBlock(refs []string) string {
 
 func (f skillsIntegrityHygieneFixer) Fix(ctx *MutateContext, env *DetectEnv, _ []Finding) (FixResult, error) {
 	res := FixResult{FixerID: f.ID(), FindingIDs: []string{f.ID()}}
+	// Symlinked-root guard (see fix_knowledge.go): refuse to rewrite through a
+	// skills/ root that exists but is not a real directory.
+	if _, gerr := requireRealChainUnder(env.RepoRoot, "skills"); gerr != nil {
+		res.Err = fmt.Errorf("doctor: %s: %w", f.ID(), gerr)
+		return res, res.Err
+	}
 	// 1. Re-scan.
 	hygiene, err := scanSkillHygiene(env.RepoRoot)
 	if err != nil {
@@ -1075,6 +1124,13 @@ func (f skillsIntegrityHygieneFixer) Fix(ctx *MutateContext, env *DetectEnv, _ [
 	sort.Strings(skills)
 	for _, name := range skills {
 		skillMD := filepath.Join(env.RepoRoot, "skills", name, "SKILL.md")
+		// Per-target guard: a SKILL.md that resolves through a symlink
+		// (symlinked skill dir or symlinked file) is outside the repository
+		// even though its lexical path passes the scope check.
+		if !realRepoFile(env.RepoRoot, skillMD) {
+			res.Err = fmt.Errorf("doctor: %s: %s resolves through a symlink (refused_unsafe)", f.ID(), skillMD)
+			return res, res.Err
+		}
 		raw, err := os.ReadFile(skillMD)
 		if err != nil {
 			res.Err = fmt.Errorf("doctor: %s: read %s: %w", f.ID(), skillMD, err)

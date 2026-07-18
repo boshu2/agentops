@@ -420,3 +420,167 @@ func assertActionLine(t *testing.T, ra *RunArtifact) ActionRecord {
 	}
 	return recs[len(recs)-1]
 }
+
+// ---------------------------------------------------------------------------
+// Symlinked-root guards (age-knowledge-symlink-root-inbpg)
+// ---------------------------------------------------------------------------
+
+// buildBridgesBaitTree populates dir as if it were `.agents`, carrying a
+// would-be finding for both bridge failure modes: an activation file whose
+// empty base_url makes the health probe report unreachable, and a torn
+// latest.json with an intact recovery snapshot (the torn_latest auto-fix
+// sub-case, which would rewrite latest.json in place). Returns rel->bytes for
+// untouched-verification.
+func buildBridgesBaitTree(t *testing.T, dir string) map[string]string {
+	t.Helper()
+	snapRel := filepath.Join("daemon", "projections", "openclaw")
+	files := map[string]string{
+		filepath.Join("daemon", "activation.json"):   `{"base_url":""}`,
+		filepath.Join(snapRel, "latest.json"):        `{"schema_version"`, // torn
+		filepath.Join(snapRel, "snap_recovery.json"): string(validSnapshotBytes(t, "snap-1", time.Now())),
+	}
+	for rel, content := range files {
+		p := filepath.Join(dir, rel)
+		if err := os.MkdirAll(filepath.Dir(p), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(p, []byte(content), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	return files
+}
+
+// TestBridgesSymlinkedAgentsRoot: a `.agents` root that is a symlink to an
+// external tree must silence both bridge detectors, make both fixers refuse
+// with refused_unsafe, record zero actions, and leave the external tree
+// byte-untouched — the lexical scope check alone would have let the torn-latest
+// auto-fix rewrite the external latest.json.
+func TestBridgesSymlinkedAgentsRoot(t *testing.T) {
+	repo := t.TempDir()
+	external := t.TempDir()
+	baits := buildBridgesBaitTree(t, external)
+	if err := os.Symlink(external, filepath.Join(repo, ".agents")); err != nil {
+		t.Fatalf("symlink .agents: %v", err)
+	}
+	env := &DetectEnv{RepoRoot: repo, CWD: repo, HomeDir: t.TempDir(), Online: true}
+
+	for name, d := range map[string]Detector{
+		"health":   openclawHealthUnreachableDetector{},
+		"snapshot": openclawSnapshotStaleDetector{},
+	} {
+		findings, err := d.Detect(env)
+		if err != nil {
+			t.Errorf("%s Detect on symlinked root: %v", name, err)
+		}
+		if len(findings) != 0 {
+			t.Errorf("%s Detect on symlinked root = %d findings, want 0", name, len(findings))
+		}
+	}
+
+	ctx, ra := newBridgesTestCtx(t, repo)
+	for name, f := range map[string]Fixer{
+		"health":   openclawHealthUnreachableFixer{},
+		"snapshot": openclawSnapshotStaleFixer{},
+	} {
+		res, err := f.Fix(ctx, env, nil)
+		if err == nil || !strings.Contains(err.Error(), "refused_unsafe") {
+			t.Errorf("%s Fix on symlinked root: err=%v, want refused_unsafe", name, err)
+			continue
+		}
+		if res.Fixed {
+			t.Errorf("%s Fix reported Fixed despite refusal", name)
+		}
+		if res.ActionsTaken != 0 {
+			t.Errorf("%s Fix took %d actions through a symlinked root", name, res.ActionsTaken)
+		}
+	}
+	recs, err := readActions(ra.ActionsPath())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(recs) != 0 {
+		t.Fatalf("action records = %d, want 0", len(recs))
+	}
+	for rel, content := range baits {
+		got, rerr := os.ReadFile(filepath.Join(external, rel))
+		if rerr != nil || string(got) != content {
+			t.Errorf("external file %s = %q err=%v, want %q untouched", rel, got, rerr, content)
+		}
+	}
+}
+
+// TestBridgesSymlinkedLatestJSON covers the file-level variant: the snapshot
+// chain is real but latest.json itself is a symlink to an external file. The
+// snapshot detector must no-op and the fixer must refuse, so the torn-latest
+// rewrite can never land on the external target.
+func TestBridgesSymlinkedLatestJSON(t *testing.T) {
+	repo := t.TempDir()
+	external := t.TempDir()
+	snapDir := filepath.Join(repo, openclaw.SnapshotDirRel)
+	if err := os.MkdirAll(snapDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	good := validSnapshotBytes(t, "snap-1", time.Now())
+	if err := os.WriteFile(filepath.Join(snapDir, "snap_recovery.json"), good, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	victim := filepath.Join(external, "victim.json")
+	torn := `{"schema_version"`
+	if err := os.WriteFile(victim, []byte(torn), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink(victim, filepath.Join(snapDir, "latest.json")); err != nil {
+		t.Fatalf("symlink latest.json: %v", err)
+	}
+	env := &DetectEnv{RepoRoot: repo, CWD: repo, HomeDir: t.TempDir(), Online: true}
+
+	findings, err := openclawSnapshotStaleDetector{}.Detect(env)
+	if err != nil {
+		t.Fatalf("Detect: %v", err)
+	}
+	if len(findings) != 0 {
+		t.Fatalf("snapshot Detect on symlinked latest.json = %d findings, want 0", len(findings))
+	}
+	ctx, ra := newBridgesTestCtx(t, repo)
+	res, err := openclawSnapshotStaleFixer{}.Fix(ctx, env, nil)
+	if err == nil || !strings.Contains(err.Error(), "refused_unsafe") {
+		t.Fatalf("snapshot Fix on symlinked latest.json: err=%v, want refused_unsafe", err)
+	}
+	if res.ActionsTaken != 0 {
+		t.Fatalf("snapshot Fix took %d actions through a symlinked latest.json", res.ActionsTaken)
+	}
+	recs, err := readActions(ra.ActionsPath())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(recs) != 0 {
+		t.Fatalf("action records = %d, want 0", len(recs))
+	}
+	got, err := os.ReadFile(victim)
+	if err != nil || string(got) != torn {
+		t.Fatalf("external latest.json target = %q err=%v, want untouched", got, err)
+	}
+}
+
+// TestBridgesBaitTreeFiresOnRealRoot is the fixture-fidelity control: the same
+// bait tree attached as a REAL .agents must trigger both bridge detectors,
+// proving the zero-finding assertions above are attributable to the symlink
+// guard, not to a dead bait.
+func TestBridgesBaitTreeFiresOnRealRoot(t *testing.T) {
+	repo := t.TempDir()
+	buildBridgesBaitTree(t, filepath.Join(repo, ".agents"))
+	env := &DetectEnv{RepoRoot: repo, CWD: repo, HomeDir: t.TempDir(), Online: true}
+	for name, d := range map[string]Detector{
+		"health":   openclawHealthUnreachableDetector{},
+		"snapshot": openclawSnapshotStaleDetector{},
+	} {
+		findings, err := d.Detect(env)
+		if err != nil {
+			t.Fatalf("%s Detect on real bait tree: %v", name, err)
+		}
+		if len(findings) == 0 {
+			t.Errorf("%s Detect on real bait tree = 0 findings, want >=1 (bait is dead)", name)
+		}
+	}
+}

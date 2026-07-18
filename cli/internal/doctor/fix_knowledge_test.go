@@ -3,6 +3,7 @@ package doctor
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 )
@@ -666,6 +667,227 @@ func TestKnowledgeDetectorsAndFixersRegistered(t *testing.T) {
 		}
 		if fx.AutoFixable() != want {
 			t.Fatalf("fixer %q AutoFixable() = %t, want %t", id, fx.AutoFixable(), want)
+		}
+	}
+}
+
+// ---------------------------------------------------------------------------
+// Symlinked-root guards (age-knowledge-symlink-root-inbpg)
+// ---------------------------------------------------------------------------
+
+// buildKnowledgeBaitTree populates dir with a would-be finding for every
+// knowledge failure mode, as if dir were a repository's `.agents` directory:
+//
+//	ao/provenance missing                → missing-substructure
+//	ao/index/search-index.jsonl          → corrupt line, torn tail, dead path
+//	ao/learnings + learnings both filled → orphaned-flywheel-learnings
+//	ao/sessions recent file, no dates    → false-freshness
+//
+// It returns the relative paths of every regular file written, so callers can
+// verify the tree stays byte-untouched.
+func buildKnowledgeBaitTree(t *testing.T, dir string) map[string]string {
+	t.Helper()
+	files := map[string]string{
+		filepath.Join("ao", "index", "search-index.jsonl"): validIndexLine("gone.md") + "\ncorrupt not json\n" + `{"path":`,
+		filepath.Join("ao", "learnings", "c.md"):           "canonical",
+		filepath.Join("learnings", "l.md"):                 "legacy",
+		filepath.Join("ao", "sessions", "s.txt"):           "recent but no session dates",
+	}
+	for rel, content := range files {
+		p := filepath.Join(dir, rel)
+		if err := os.MkdirAll(filepath.Dir(p), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(p, []byte(content), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	return files
+}
+
+// knowledgeDetectorsUnderTest returns every knowledge detector keyed by name.
+func knowledgeDetectorsUnderTest() map[string]Detector {
+	return map[string]Detector{
+		"missing-substructure": missingSubstructureDetector{},
+		"corrupt-index-lines":  corruptIndexLinesDetector{},
+		"torn-append-line":     tornAppendLineDetector{},
+		"orphaned-learnings":   orphanedFlywheelLearningsDetector{},
+		"stale-index-drift":    staleIndexDriftDetector{},
+		"false-freshness":      falseFreshnessDetector{},
+	}
+}
+
+// knowledgeMutatingFixersUnderTest returns the four knowledge fixers that can
+// write to disk, keyed by name. (The two detect-only fixers always refuse.)
+func knowledgeMutatingFixersUnderTest() map[string]Fixer {
+	return map[string]Fixer{
+		"missing-substructure": missingSubstructureFixer{},
+		"corrupt-index-lines":  corruptIndexLinesFixer{},
+		"torn-append-line":     tornAppendLineFixer{},
+		"orphaned-learnings":   orphanedFlywheelLearningsFixer{},
+	}
+}
+
+// assertKnowledgeSymlinkGuard drives every knowledge detector (want zero
+// findings) and every mutating knowledge fixer (want refused_unsafe, zero
+// actions) against env, then verifies zero action records and that every file
+// in external still holds its original bytes.
+func assertKnowledgeSymlinkGuard(t *testing.T, env *DetectEnv, repo, external string, baits map[string]string) {
+	t.Helper()
+	for name, d := range knowledgeDetectorsUnderTest() {
+		findings, err := d.Detect(env)
+		if err != nil {
+			t.Errorf("%s Detect on symlinked root: %v", name, err)
+		}
+		if len(findings) != 0 {
+			t.Errorf("%s Detect on symlinked root = %d findings, want 0", name, len(findings))
+		}
+	}
+	ctx, ra := newKnowledgeMutateCtx(t, repo, "knowledge-symlink-guard")
+	for name, f := range knowledgeMutatingFixersUnderTest() {
+		res, err := f.Fix(ctx, env, nil)
+		if err == nil || res.Err == nil {
+			t.Errorf("%s Fix on symlinked root: err=%v res.Err=%v, want refused_unsafe", name, err, res.Err)
+			continue
+		}
+		if !strings.Contains(err.Error(), "refused_unsafe") {
+			t.Errorf("%s Fix error = %v, want it to mention refused_unsafe", name, err)
+		}
+		if res.Fixed {
+			t.Errorf("%s Fix reported Fixed despite refusal", name)
+		}
+		if res.ActionsTaken != 0 {
+			t.Errorf("%s Fix took %d actions through a symlinked root", name, res.ActionsTaken)
+		}
+	}
+	recs, err := readActions(ra.ActionsPath())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(recs) != 0 {
+		t.Fatalf("action records = %d, want 0", len(recs))
+	}
+	for rel, content := range baits {
+		got, err := os.ReadFile(filepath.Join(external, rel))
+		if err != nil || string(got) != content {
+			t.Errorf("external file %s = %q err=%v, want %q untouched", rel, got, err, content)
+		}
+	}
+}
+
+// TestKnowledgeSymlinkedAgentsRoot is the F-mode fixture for a `.agents` root
+// that is a SYMLINK to a directory outside the repository: every knowledge
+// detector must report nothing, every mutating knowledge fixer must refuse
+// with refused_unsafe, and the external tree must remain byte-for-byte
+// untouched (the lexical scope check alone would have passed).
+func TestKnowledgeSymlinkedAgentsRoot(t *testing.T) {
+	repo := t.TempDir()
+	external := t.TempDir()
+	baits := buildKnowledgeBaitTree(t, external)
+	if err := os.Symlink(external, filepath.Join(repo, ".agents")); err != nil {
+		t.Fatalf("symlink .agents: %v", err)
+	}
+	env := &DetectEnv{RepoRoot: repo, CWD: repo, HomeDir: t.TempDir(), Logger: os.Stderr}
+	assertKnowledgeSymlinkGuard(t, env, repo, external, baits)
+}
+
+// TestKnowledgeSymlinkedAoRoot covers the nested variant: `.agents` is a real
+// directory but `.agents/ao` is a symlink to an external tree.
+func TestKnowledgeSymlinkedAoRoot(t *testing.T) {
+	repo := t.TempDir()
+	external := t.TempDir()
+	baits := buildKnowledgeBaitTree(t, external)
+	agents := filepath.Join(repo, ".agents")
+	if err := os.MkdirAll(agents, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	// The orphaned-learnings fallback dir lives under the REAL .agents; the
+	// primary resolves through the ao symlink.
+	if err := os.MkdirAll(filepath.Join(agents, "learnings"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(agents, "learnings", "l.md"), []byte("legacy"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink(filepath.Join(external, "ao"), filepath.Join(agents, "ao")); err != nil {
+		t.Fatalf("symlink .agents/ao: %v", err)
+	}
+	env := &DetectEnv{RepoRoot: repo, CWD: repo, HomeDir: t.TempDir(), Logger: os.Stderr}
+	assertKnowledgeSymlinkGuard(t, env, repo, external, baits)
+}
+
+// TestKnowledgeSymlinkedIndexFile covers the file-level variant: the store
+// chain is real but search-index.jsonl itself is a symlink to an external
+// file. The index detectors must no-op and the index fixers must refuse, so
+// the WriteFile rewrite can never land on the external target.
+func TestKnowledgeSymlinkedIndexFile(t *testing.T) {
+	env, repo := knowledgeTestEnv(t)
+	external := t.TempDir()
+	target := filepath.Join(external, "victim.jsonl")
+	content := validIndexLine("gone.md") + "\ncorrupt not json\n" + `{"path":`
+	if err := os.WriteFile(target, []byte(content), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	idx := searchIndexPath(env)
+	if err := os.Symlink(target, idx); err != nil {
+		t.Fatalf("symlink index: %v", err)
+	}
+
+	for name, d := range map[string]Detector{
+		"corrupt-index-lines": corruptIndexLinesDetector{},
+		"torn-append-line":    tornAppendLineDetector{},
+		"stale-index-drift":   staleIndexDriftDetector{},
+	} {
+		findings, err := d.Detect(env)
+		if err != nil {
+			t.Errorf("%s Detect on symlinked index: %v", name, err)
+		}
+		if len(findings) != 0 {
+			t.Errorf("%s Detect on symlinked index = %d findings, want 0", name, len(findings))
+		}
+	}
+	ctx, ra := newKnowledgeMutateCtx(t, repo, "knowledge-symlink-index")
+	for name, f := range map[string]Fixer{
+		"corrupt-index-lines": corruptIndexLinesFixer{},
+		"torn-append-line":    tornAppendLineFixer{},
+	} {
+		res, err := f.Fix(ctx, env, nil)
+		if err == nil || !strings.Contains(err.Error(), "refused_unsafe") {
+			t.Errorf("%s Fix on symlinked index: err=%v, want refused_unsafe", name, err)
+			continue
+		}
+		if res.ActionsTaken != 0 {
+			t.Errorf("%s Fix took %d actions through a symlinked index", name, res.ActionsTaken)
+		}
+	}
+	recs, err := readActions(ra.ActionsPath())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(recs) != 0 {
+		t.Fatalf("action records = %d, want 0", len(recs))
+	}
+	got, err := os.ReadFile(target)
+	if err != nil || string(got) != content {
+		t.Fatalf("external index target = %q err=%v, want untouched", got, err)
+	}
+}
+
+// TestKnowledgeBaitTreeFiresOnRealRoot is the fixture-fidelity control: the
+// exact bait tree used by the symlink tests, attached as a REAL .agents
+// directory, must trigger every knowledge detector — proving the zero-finding
+// assertions above are attributable to the symlink guard, not to a dead bait.
+func TestKnowledgeBaitTreeFiresOnRealRoot(t *testing.T) {
+	repo := t.TempDir()
+	buildKnowledgeBaitTree(t, filepath.Join(repo, ".agents"))
+	env := &DetectEnv{RepoRoot: repo, CWD: repo, HomeDir: t.TempDir(), Logger: os.Stderr}
+	for name, d := range knowledgeDetectorsUnderTest() {
+		findings, err := d.Detect(env)
+		if err != nil {
+			t.Fatalf("%s Detect on real bait tree: %v", name, err)
+		}
+		if len(findings) == 0 {
+			t.Errorf("%s Detect on real bait tree = 0 findings, want >=1 (bait is dead)", name)
 		}
 	}
 }

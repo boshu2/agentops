@@ -107,6 +107,101 @@ func searchIndexPath(env *DetectEnv) string {
 	return filepath.Join(knowledgeBaseDir(env), "index", "search-index.jsonl")
 }
 
+// ---------------------------------------------------------------------------
+// Symlinked-root guards (shared by the knowledge, bridges, and skills
+// subsystems; the workspace subsystem carries the originals in
+// fix_workspace.go).
+//
+// Stat/ReadDir/ReadFile follow symlinks and Mutate's EnsureInScope check is
+// LEXICAL (no EvalSymlinks), so a detector or fixer that resolves a
+// repo-relative root which is actually a symlink would read — and then
+// mutate — a tree OUTSIDE the repository while every scope check passes.
+// Every detector that consumes such a root must gate on realChainUnder
+// (unsafe root → zero findings); every fixer must gate on
+// requireRealChainUnder (unsafe root → refused_unsafe; absent root → the
+// fixer's existing no-op/refusal contract).
+// ---------------------------------------------------------------------------
+
+// realChainUnder is the detector-side guard: walking root/parts[0],
+// root/parts[0]/parts[1], ..., every component that EXISTS must be a real
+// (non-symlink) directory. The walk is safe to stop at the first absent
+// component — nothing deeper can resolve through it — and a component that
+// exists as a non-directory (symlink, regular file, ...) makes the chain
+// unsafe to consume.
+func realChainUnder(root string, parts ...string) bool {
+	p := root
+	for _, part := range parts {
+		p = filepath.Join(p, part)
+		if _, err := os.Lstat(p); err != nil {
+			return os.IsNotExist(err)
+		}
+		if !workspaceRealDir(p) {
+			return false
+		}
+	}
+	return true
+}
+
+// requireRealChainUnder is the fixer-side counterpart of realChainUnder,
+// built on workspaceRequireRealAgentsDir per component: a chain whose first
+// absent component ends the walk reports (false, nil) — nothing to fix — while
+// any component that exists but is not a real directory refuses with a
+// refused_unsafe error so no fixer ever mutates through it.
+func requireRealChainUnder(root string, parts ...string) (exists bool, err error) {
+	p := root
+	for _, part := range parts {
+		p = filepath.Join(p, part)
+		ex, rerr := workspaceRequireRealAgentsDir(p)
+		if rerr != nil {
+			return false, rerr
+		}
+		if !ex {
+			return false, nil
+		}
+	}
+	return true, nil
+}
+
+// realRegularFile Lstats path and reports whether it is a REAL regular file —
+// present and not a symlink (even a symlink to a regular file). Fixers that
+// WriteFile through a repo-relative path must gate on this: os.WriteFile (and
+// Mutate's WriteFile op) follows a symlinked destination and would overwrite
+// the external target.
+func realRegularFile(path string) bool {
+	info, err := os.Lstat(path)
+	return err == nil && info.Mode().IsRegular()
+}
+
+// requireRealIndexFile is the fixer-side guard for the search-index path: the
+// .agents/ao/index chain must contain no symlink, and the index file — when it
+// exists — must be a real regular file. An absent chain or absent index
+// returns nil so the caller's existing read-error contract still applies.
+func requireRealIndexFile(env *DetectEnv, idx, fixerID string) error {
+	if _, gerr := requireRealChainUnder(env.CWD, ".agents", "ao", "index"); gerr != nil {
+		return fmt.Errorf("doctor: %s: %w", fixerID, gerr)
+	}
+	if info, lerr := os.Lstat(idx); lerr == nil && !info.Mode().IsRegular() {
+		return fmt.Errorf("doctor: %s: %s is not a real regular file (refused_unsafe)", fixerID, idx)
+	}
+	return nil
+}
+
+// realRepoFile reports whether file — an absolute path expected to sit under
+// root — resolves through no symlink at all: file is lexically inside root,
+// every directory between root and the file is a real directory, and the file
+// itself is a regular file.
+func realRepoFile(root, file string) bool {
+	rel, err := filepath.Rel(root, file)
+	if err != nil || rel == "." || rel == ".." || strings.HasPrefix(rel, ".."+string(filepath.Separator)) {
+		return false
+	}
+	parts := strings.Split(rel, string(filepath.Separator))
+	if len(parts) > 1 && !realChainUnder(root, parts[:len(parts)-1]...) {
+		return false
+	}
+	return realRegularFile(file)
+}
+
 // requiredSubdirs is the three-subdir structural contract enforced by
 // storage.FileStorage.Init for the knowledge store.
 var requiredSubdirs = []string{"sessions", "index", "provenance"}
@@ -211,6 +306,9 @@ func missingSubdirs(base string) []string {
 }
 
 func (d missingSubstructureDetector) Detect(env *DetectEnv) ([]Finding, error) {
+	if !realChainUnder(env.CWD, ".agents", "ao") {
+		return nil, nil // symlinked root: unsafe to consume
+	}
 	base := knowledgeBaseDir(env)
 	if _, err := os.Stat(base); err != nil {
 		return nil, nil
@@ -258,6 +356,10 @@ func (missingSubstructureFixer) AutoFixable() bool  { return true }
 
 func (f missingSubstructureFixer) Fix(ctx *MutateContext, env *DetectEnv, _ []Finding) (FixResult, error) {
 	res := FixResult{FixerID: f.ID(), FindingIDs: []string{f.ID()}}
+	if _, gerr := requireRealChainUnder(env.CWD, ".agents", "ao"); gerr != nil {
+		res.Err = fmt.Errorf("doctor: %s: %w", f.ID(), gerr)
+		return res, res.Err
+	}
 	base := knowledgeBaseDir(env)
 	if info, err := os.Stat(base); err != nil || !info.IsDir() {
 		res.Err = fmt.Errorf("doctor: %s: .agents/ao absent or not a directory (refused_unsafe)", f.ID())
@@ -358,6 +460,9 @@ func corruptIndexLineNos(raw []byte) []int {
 
 func (d corruptIndexLinesDetector) Detect(env *DetectEnv) ([]Finding, error) {
 	idx := searchIndexPath(env)
+	if !realChainUnder(env.CWD, ".agents", "ao", "index") || !realRepoFile(env.CWD, idx) {
+		return nil, nil // symlinked root or index: unsafe to consume
+	}
 	info, err := os.Stat(idx)
 	if err != nil || info.Size() == 0 {
 		return nil, nil
@@ -412,6 +517,10 @@ func (corruptIndexLinesFixer) AutoFixable() bool { return true }
 func (f corruptIndexLinesFixer) Fix(ctx *MutateContext, env *DetectEnv, _ []Finding) (FixResult, error) {
 	res := FixResult{FixerID: f.ID(), FindingIDs: []string{f.ID()}}
 	idx := searchIndexPath(env)
+	if gerr := requireRealIndexFile(env, idx, f.ID()); gerr != nil {
+		res.Err = gerr
+		return res, res.Err
+	}
 	raw, err := os.ReadFile(idx)
 	if err != nil {
 		res.Err = fmt.Errorf("doctor: %s: read index: %w", f.ID(), err)
@@ -483,6 +592,9 @@ func indexTorn(raw []byte) bool {
 
 func (d tornAppendLineDetector) Detect(env *DetectEnv) ([]Finding, error) {
 	idx := searchIndexPath(env)
+	if !realChainUnder(env.CWD, ".agents", "ao", "index") || !realRepoFile(env.CWD, idx) {
+		return nil, nil // symlinked root or index: unsafe to consume
+	}
 	info, err := os.Stat(idx)
 	if err != nil || info.Size() == 0 {
 		return nil, nil
@@ -539,6 +651,10 @@ func (tornAppendLineFixer) AutoFixable() bool { return true }
 func (f tornAppendLineFixer) Fix(ctx *MutateContext, env *DetectEnv, _ []Finding) (FixResult, error) {
 	res := FixResult{FixerID: f.ID(), FindingIDs: []string{f.ID()}}
 	idx := searchIndexPath(env)
+	if gerr := requireRealIndexFile(env, idx, f.ID()); gerr != nil {
+		res.Err = gerr
+		return res, res.Err
+	}
 	raw, err := os.ReadFile(idx)
 	if err != nil {
 		res.Err = fmt.Errorf("doctor: %s: read index: %w", f.ID(), err)
@@ -627,6 +743,10 @@ func flywheelLearningsDirs(env *DetectEnv) (primary, fallback string) {
 }
 
 func (d orphanedFlywheelLearningsDetector) Detect(env *DetectEnv) ([]Finding, error) {
+	if !realChainUnder(env.CWD, ".agents", "ao", "learnings") ||
+		!realChainUnder(env.CWD, ".agents", "learnings") {
+		return nil, nil // symlinked root: unsafe to consume
+	}
 	primary, fallback := flywheelLearningsDirs(env)
 	primaryFiles := listLearningFiles(primary)
 	fallbackFiles := listLearningFiles(fallback)
@@ -676,6 +796,12 @@ func (orphanedFlywheelLearningsFixer) AutoFixable() bool { return true }
 
 func (f orphanedFlywheelLearningsFixer) Fix(ctx *MutateContext, env *DetectEnv, _ []Finding) (FixResult, error) {
 	res := FixResult{FixerID: f.ID(), FindingIDs: []string{f.ID()}}
+	for _, chain := range [][]string{{".agents", "ao", "learnings"}, {".agents", "learnings"}} {
+		if _, gerr := requireRealChainUnder(env.CWD, chain...); gerr != nil {
+			res.Err = fmt.Errorf("doctor: %s: %w", f.ID(), gerr)
+			return res, res.Err
+		}
+	}
 	primary, fallback := flywheelLearningsDirs(env)
 	primaryFiles := listLearningFiles(primary)
 	fallbackFiles := listLearningFiles(fallback)
@@ -788,6 +914,9 @@ func computeIndexDrift(env *DetectEnv, raw []byte) driftCounts {
 
 func (d staleIndexDriftDetector) Detect(env *DetectEnv) ([]Finding, error) {
 	idx := searchIndexPath(env)
+	if !realChainUnder(env.CWD, ".agents", "ao", "index") || !realRepoFile(env.CWD, idx) {
+		return nil, nil // symlinked root or index: unsafe to consume
+	}
 	info, err := os.Stat(idx)
 	if err != nil || info.Size() == 0 {
 		return nil, nil
@@ -857,6 +986,9 @@ func (falseFreshnessDetector) Describe() string {
 }
 
 func (d falseFreshnessDetector) Detect(env *DetectEnv) ([]Finding, error) {
+	if !realChainUnder(env.CWD, ".agents", "ao", "sessions") {
+		return nil, nil // symlinked root: unsafe to consume
+	}
 	sessionsDir := filepath.Join(knowledgeBaseDir(env), "sessions")
 	entries, err := os.ReadDir(sessionsDir)
 	if err != nil || len(entries) == 0 {

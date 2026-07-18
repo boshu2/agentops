@@ -96,9 +96,26 @@ type daemonActivation struct {
 	BaseURL string `json:"base_url"`
 }
 
+// bridgesSnapshotChain returns the path components of the repo-relative
+// OpenClaw snapshot directory (openclaw.SnapshotDirRel), for the symlinked-root
+// guards. SnapshotDirRel is declared with forward slashes.
+func bridgesSnapshotChain() []string {
+	return strings.Split(openclaw.SnapshotDirRel, "/")
+}
+
 // readDaemonActivation reads the per-project daemon activation file. Pure.
+// It refuses to resolve through a symlinked `.agents`/`.agents/daemon` root or
+// a symlinked activation file (see the symlinked-root guards in
+// fix_knowledge.go): the activation content steers a network probe, so it must
+// come from the repository itself, never from an external symlink target.
 func readDaemonActivation(repoRoot string) (daemonActivation, bool) {
+	if !realChainUnder(repoRoot, ".agents", "daemon") {
+		return daemonActivation{}, false
+	}
 	path := filepath.Join(repoRoot, ".agents", "daemon", "activation.json")
+	if !realRegularFile(path) {
+		return daemonActivation{}, false
+	}
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return daemonActivation{}, false
@@ -111,6 +128,9 @@ func readDaemonActivation(repoRoot string) (daemonActivation, bool) {
 }
 
 func openclawSnapshotDirExists(repoRoot string) bool {
+	if !realChainUnder(repoRoot, bridgesSnapshotChain()...) {
+		return false // symlinked root: unsafe to consume
+	}
 	info, err := os.Stat(filepath.Join(repoRoot, openclaw.SnapshotDirRel))
 	return err == nil && info.IsDir()
 }
@@ -136,6 +156,37 @@ func httpGetBounded(url string, deadline time.Duration) ([]byte, int, error) {
 		return nil, resp.StatusCode, err
 	}
 	return body, resp.StatusCode, nil
+}
+
+// bridgesSnapshotRootSafe is the detector-side symlinked-root guard for the
+// snapshot surface: the whole .agents/daemon/projections/openclaw chain must
+// contain no symlink, and latest.json — when it exists — must be a real
+// regular file (the fixer rewrites it in place; a symlinked latest.json would
+// route that write to an external target).
+func bridgesSnapshotRootSafe(repoRoot string) bool {
+	if !realChainUnder(repoRoot, bridgesSnapshotChain()...) {
+		return false
+	}
+	latest := filepath.Join(repoRoot, openclaw.SnapshotDirRel, "latest.json")
+	if info, err := os.Lstat(latest); err == nil && !info.Mode().IsRegular() {
+		return false
+	}
+	return true
+}
+
+// requireBridgesSnapshotRoot is the fixer-side counterpart: a symlink anywhere
+// in the snapshot chain, or a latest.json that exists as a non-regular file,
+// refuses with refused_unsafe. An absent chain or absent latest.json is fine —
+// the fixer's existing classification handles it as a no-op or advisory.
+func requireBridgesSnapshotRoot(repoRoot string) error {
+	if _, gerr := requireRealChainUnder(repoRoot, bridgesSnapshotChain()...); gerr != nil {
+		return fmt.Errorf("doctor: %s: %w", fmOpenClawSnapshotStale, gerr)
+	}
+	latest := filepath.Join(repoRoot, openclaw.SnapshotDirRel, "latest.json")
+	if info, err := os.Lstat(latest); err == nil && !info.Mode().IsRegular() {
+		return fmt.Errorf("doctor: %s: %s is not a real regular file (refused_unsafe)", fmOpenClawSnapshotStale, latest)
+	}
+	return nil
 }
 
 // openclawHealthUnreachableDetector fires when the OpenClaw consumer health
@@ -235,6 +286,13 @@ func (openclawHealthUnreachableFixer) AutoFixable() bool { return false }
 // Fix re-runs the detector and reports the remediation guidance. It starts
 // nothing and rewrites no activation file. The finding persists.
 func (openclawHealthUnreachableFixer) Fix(ctx *MutateContext, env *DetectEnv, _ []Finding) (FixResult, error) {
+	// Symlinked-root guard: this fixer writes only into the run dir, but a
+	// symlinked .agents makes the health surface unobservable — refuse rather
+	// than report a false "healthy" no-op.
+	if _, gerr := requireRealChainUnder(env.RepoRoot, ".agents"); gerr != nil {
+		gerr = fmt.Errorf("doctor: %s: %w", fmOpenClawHealthUnreachable, gerr)
+		return FixResult{FixerID: fmOpenClawHealthUnreachable, FindingIDs: []string{fmOpenClawHealthUnreachable}, Err: gerr}, gerr
+	}
 	fs, err := openclawHealthUnreachableDetector{}.Detect(env)
 	if err != nil {
 		return FixResult{FixerID: fmOpenClawHealthUnreachable, Err: err}, err
@@ -405,6 +463,9 @@ func newestValidVersionSnapshot(snapDir string) string {
 // Detect inspects the on-disk OpenClaw snapshot and emits a finding when it is
 // not healthy. auto_fixable is true ONLY for the torn-latest sub-case. PURE.
 func (openclawSnapshotStaleDetector) Detect(env *DetectEnv) ([]Finding, error) {
+	if !bridgesSnapshotRootSafe(env.RepoRoot) {
+		return nil, nil // symlinked root: unsafe to consume
+	}
 	obs := observeSnapshot(env.RepoRoot)
 	if obs.kind == "not_configured" || obs.kind == "file_ok" {
 		return nil, nil
@@ -451,6 +512,9 @@ func (openclawSnapshotStaleFixer) AutoFixable() bool { return true }
 // snapshot via a single Mutate WriteFile. For every other sub-case it refuses
 // and writes a detect-only advisory report through Mutate.
 func (openclawSnapshotStaleFixer) Fix(ctx *MutateContext, env *DetectEnv, _ []Finding) (FixResult, error) {
+	if gerr := requireBridgesSnapshotRoot(env.RepoRoot); gerr != nil {
+		return FixResult{FixerID: fmOpenClawSnapshotStale, FindingIDs: []string{fmOpenClawSnapshotStale}, Err: gerr}, gerr
+	}
 	obs := observeSnapshot(env.RepoRoot)
 	if obs.kind == "not_configured" || obs.kind == "file_ok" {
 		return FixResult{FixerID: fmOpenClawSnapshotStale, Fixed: true}, nil
