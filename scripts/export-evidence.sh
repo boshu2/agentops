@@ -46,7 +46,9 @@ if [ ! -r "$SRC" ]; then
   exit 3
 fi
 
-ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+# shellcheck disable=SC1007,SC1091
+. "$(CDPATH= cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib/repo-root.sh"
+ROOT="$(resolve_repo_root)"
 DEST_DIR="$ROOT/docs/evidence/$BEAD_ID"
 DEST_PATH="$DEST_DIR/$DEST_NAME"
 mkdir -p "$DEST_DIR"

@@ -32,7 +32,9 @@ if ! command -v git >/dev/null 2>&1; then
     exit 2
 fi
 
-REPO_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+# shellcheck disable=SC1007,SC1091
+. "$(CDPATH= cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib/repo-root.sh"
+REPO_ROOT="$(resolve_repo_root)"
 
 fail=0
 total=0

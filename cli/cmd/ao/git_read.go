@@ -9,9 +9,11 @@ import (
 	"time"
 )
 
-// gitDiscoveryEnv strips GIT_DIR/GIT_WORK_TREE/GIT_COMMON_DIR from the
-// environment so read-only git discovery resolves the repository from the
-// working directory, never from a leaked parent-process override.
+// gitDiscoveryEnv strips GIT_DIR/GIT_WORK_TREE/GIT_COMMON_DIR/GIT_INDEX_FILE
+// from the environment so git discovery resolves the repository from the
+// working directory, never from a leaked parent-process override. A hook-leaked
+// GIT_DIR is not just a read hazard: a "scoped" `git -C <dir> config ...` under
+// it writes the LEAKED repo's shared config (age-gate-scripts-worktree-gitdir-p62wo).
 func gitDiscoveryEnv() []string {
 	env := make([]string, 0, len(os.Environ()))
 	for _, entry := range os.Environ() {
@@ -21,6 +23,8 @@ func gitDiscoveryEnv() []string {
 		case strings.HasPrefix(entry, "GIT_WORK_TREE="):
 			continue
 		case strings.HasPrefix(entry, "GIT_COMMON_DIR="):
+			continue
+		case strings.HasPrefix(entry, "GIT_INDEX_FILE="):
 			continue
 		default:
 			env = append(env, entry)

@@ -10,7 +10,9 @@
 # Exit 0 = pass (empty or override), exit 1 = fail (populated without override).
 set -euo pipefail
 
-ROOT=$(git rev-parse --show-toplevel 2>/dev/null) || { echo "Not in a git repo"; exit 1; }
+# shellcheck disable=SC1007,SC1091
+. "$(CDPATH= cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib/repo-root.sh"
+ROOT=$(resolve_repo_root)
 QDIR="$ROOT/tests/_quarantine"
 
 if [[ "${ALLOW_QUARANTINE:-0}" == "1" ]]; then

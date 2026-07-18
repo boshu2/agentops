@@ -8,6 +8,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"slices"
+	"strings"
 	"testing"
 )
 
@@ -523,9 +524,29 @@ func writeFixture(t *testing.T, path string, data []byte) {
 	}
 }
 
+// scrubbedGitEnv returns os.Environ() minus git's repo-discovery overrides
+// (GIT_DIR et al.): under a hook-leaked GIT_DIR, `git -C <tmpdir>` alone does
+// NOT scope a mutation — `git config user.name Test` would write the LEAKED
+// repo's shared config (age-gate-scripts-worktree-gitdir-p62wo;
+// .claude/rules/go.md test isolation).
+func scrubbedGitEnv() []string {
+	env := make([]string, 0, len(os.Environ()))
+	for _, entry := range os.Environ() {
+		if strings.HasPrefix(entry, "GIT_DIR=") ||
+			strings.HasPrefix(entry, "GIT_WORK_TREE=") ||
+			strings.HasPrefix(entry, "GIT_COMMON_DIR=") ||
+			strings.HasPrefix(entry, "GIT_INDEX_FILE=") {
+			continue
+		}
+		env = append(env, entry)
+	}
+	return env
+}
+
 func runFixtureGit(t *testing.T, root string, args ...string) {
 	t.Helper()
 	command := exec.Command("git", append([]string{"-C", root}, args...)...)
+	command.Env = scrubbedGitEnv()
 	if output, err := command.CombinedOutput(); err != nil {
 		t.Fatalf("git %v: %v\n%s", args, err, output)
 	}
@@ -534,6 +555,7 @@ func runFixtureGit(t *testing.T, root string, args ...string) {
 func fixtureGitOutput(t *testing.T, root string, args ...string) string {
 	t.Helper()
 	command := exec.Command("git", append([]string{"-C", root}, args...)...)
+	command.Env = scrubbedGitEnv()
 	output, err := command.Output()
 	if err != nil {
 		t.Fatal(err)

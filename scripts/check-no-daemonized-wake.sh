@@ -20,7 +20,9 @@
 
 set -euo pipefail
 
-ROOT="${1:-$(git rev-parse --show-toplevel 2>/dev/null || pwd)}"
+# shellcheck disable=SC1007,SC1091
+. "$(CDPATH= cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib/repo-root.sh"
+ROOT="${1:-$(resolve_repo_root)}"
 BRIDGE="ntm-attention-tend"
 note() { printf '[check-no-daemonized-wake] %s\n' "$*" >&2; }
 

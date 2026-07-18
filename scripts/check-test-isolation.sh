@@ -52,7 +52,44 @@ if [ "$chdir" -lt "$BASELINE_CHDIR" ] || [ "$setenv" -lt "$BASELINE_SETENV" ]; t
   echo "      Lower BASELINE_CHDIR/BASELINE_SETENV in $(basename "$0") to lock the gain."
 fi
 
+# --- git-exec env-scrub rule (age-gate-scripts-worktree-gitdir-p62wo) ---
+# A *_test.go that shells out to git with cmd.Dir/-C but an INHERITED env is not
+# isolated: git hooks export GIT_DIR, and under that leak a "scoped"
+# `git config user.name Test` writes the LEAKED repo's shared config, and a
+# no-dir-arg `git init --bare` sets core.bare=true there (both observed
+# 2026-07-18; both empirically verified). House pattern: build the child env
+# from os.Environ() minus GIT_DIR/GIT_WORK_TREE/GIT_COMMON_DIR/GIT_INDEX_FILE
+# (see gitDiscoveryEnv in cli/cmd/ao/git_read.go and the scrubbedGitEnv test
+# helpers).
+#
+# WARN-only ratchet for now: 3 legacy files predate the rule (projectdir_test,
+# check_runtime_test, measure_cwd_test — read-mostly, but the init calls are
+# still exposed). Flip to FAIL (rc=1) once GIT_WARN_BASELINE reaches 0 and
+# stays there — like BASELINE_CHDIR above, the count only goes DOWN.
+GIT_WARN_BASELINE=3
+git_offenders=""
+while IFS= read -r f; do
+  # A file that execs git must carry an env-scrub marker: its own scrubbed-env
+  # helper, the cmd/ao production helper, or an explicit Env assignment.
+  if ! grep -qE 'scrubbedGitEnv|gitDiscoveryEnv|\.Env = ' "$f"; then
+    git_offenders="$git_offenders$f"$'\n'
+  fi
+done < <(grep -rl --include='*_test.go' 'exec\.Command(\(ctx, \)\?"git"' cli 2>/dev/null || true)
+git_count=$(printf '%s' "$git_offenders" | grep -c . || true)
+if [ "$git_count" -gt "$GIT_WARN_BASELINE" ]; then
+  echo "FAIL: *_test.go files exec-ing git WITHOUT env scrubbing rose to $git_count (baseline $GIT_WARN_BASELINE):"
+  printf '%s' "$git_offenders" | sed 's/^/      /'
+  echo "      Build cmd.Env from os.Environ() minus GIT_DIR/GIT_WORK_TREE/GIT_COMMON_DIR/GIT_INDEX_FILE"
+  echo "      (copy the scrubbedGitEnv helper; see cli/cmd/ao/git_read.go gitDiscoveryEnv)."
+  rc=1
+elif [ "$git_count" -gt 0 ]; then
+  echo "WARN: $git_count *_test.go file(s) exec git without env scrubbing (baseline $GIT_WARN_BASELINE, ratchet-only):"
+  printf '%s' "$git_offenders" | sed 's/^/      /'
+elif [ "$git_count" -lt "$GIT_WARN_BASELINE" ]; then
+  echo "NOTE: git env-scrub ratchet improved ($git_count<=$GIT_WARN_BASELINE). Lower GIT_WARN_BASELINE to lock the gain."
+fi
+
 if [ "$rc" -eq 0 ]; then
-  echo "PASS: test-isolation ratchet (os.Chdir=$chdir/$BASELINE_CHDIR, os.Setenv=$setenv/$BASELINE_SETENV)"
+  echo "PASS: test-isolation ratchet (os.Chdir=$chdir/$BASELINE_CHDIR, os.Setenv=$setenv/$BASELINE_SETENV, git-unscrubbed=$git_count/$GIT_WARN_BASELINE)"
 fi
 exit "$rc"

@@ -7,7 +7,9 @@
 # their output. Clean machines stay green via the drift check's absent=>SKIP.
 set -uo pipefail
 
-repo_root="$(git rev-parse --show-toplevel)"
+# shellcheck disable=SC1007,SC1091
+. "$(CDPATH= cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib/repo-root.sh"
+repo_root="$(resolve_repo_root)"
 
 status=0
 bash "$repo_root/scripts/check-workflow-drift.sh" || status=1

@@ -36,7 +36,9 @@ done
 [ -d "$TDIR" ] || { echo "skill-usage: FAIL — no transcripts dir at $TDIR (remedy: pass --dir)" >&2; exit 1; }
 command -v jq >/dev/null 2>&1 || { echo "skill-usage: FAIL — jq required" >&2; exit 1; }
 
-REPO_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+# shellcheck disable=SC1007,SC1091
+. "$(CDPATH= cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib/repo-root.sh"
+REPO_ROOT="$(resolve_repo_root)"
 
 # Library / read-not-invoked set: metadata.internal skills plus the known JIT
 # libraries — invocation counts do not apply to them.

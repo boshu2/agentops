@@ -13,7 +13,9 @@
 set -euo pipefail
 
 # Anchor to repo root to avoid pruning wrong .agents/ when cwd differs
-REPO_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+# shellcheck disable=SC1007,SC1091
+. "$(CDPATH= cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib/repo-root.sh"
+REPO_ROOT="$(resolve_repo_root)"
 AGENTS_DIR="${REPO_ROOT}/.agents"
 DRY_RUN=true
 TOTAL_FILES=0

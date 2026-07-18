@@ -55,7 +55,7 @@ for cmd in git tar mktemp bash; do
     fi
 done
 
-git -C "$REPO_ROOT" rev-parse --show-toplevel >/dev/null 2>&1 || {
+( unset GIT_DIR GIT_WORK_TREE; git -C "$REPO_ROOT" rev-parse --show-toplevel >/dev/null 2>&1; ) || {
     echo "Not a git repository: $REPO_ROOT" >&2
     exit 1
 }

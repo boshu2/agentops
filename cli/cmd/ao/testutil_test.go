@@ -494,14 +494,15 @@ func initHistoryFixtureGitRepo(t *testing.T, dir string) {
 }
 
 // runFixtureGit executes a git command in dir with optional extra environment
-// variables. Fatals the test on any non-zero exit.
+// variables. Fatals the test on any non-zero exit. Always scrubs git's
+// repo-discovery env (gitDiscoveryEnv): under a hook-leaked GIT_DIR, cmd.Dir
+// alone does NOT scope the command — `git config user.name Test` would write
+// the LEAKED repo's shared config (age-gate-scripts-worktree-gitdir-p62wo).
 func runFixtureGit(t *testing.T, dir string, extraEnv []string, args ...string) string {
 	t.Helper()
 	cmd := exec.Command("git", args...)
 	cmd.Dir = dir
-	if len(extraEnv) > 0 {
-		cmd.Env = append(os.Environ(), extraEnv...)
-	}
+	cmd.Env = append(gitDiscoveryEnv(), extraEnv...)
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		t.Fatalf("git %v in %s: %v\n%s", args, dir, err, out)

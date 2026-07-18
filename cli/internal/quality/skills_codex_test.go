@@ -149,11 +149,32 @@ func TestCheckSkillsWarnsForOverlappingInstallLayouts(t *testing.T) {
 	}
 }
 
+// scrubbedGitEnv returns os.Environ() minus git's repo-discovery overrides
+// (GIT_DIR et al.): under a hook-leaked GIT_DIR, `git -C <tmpdir>` alone does
+// NOT scope a mutation — `git config user.name Test` would write the LEAKED
+// repo's shared config (age-gate-scripts-worktree-gitdir-p62wo;
+// .claude/rules/go.md test isolation).
+func scrubbedGitEnv() []string {
+	env := make([]string, 0, len(os.Environ()))
+	for _, entry := range os.Environ() {
+		if strings.HasPrefix(entry, "GIT_DIR=") ||
+			strings.HasPrefix(entry, "GIT_WORK_TREE=") ||
+			strings.HasPrefix(entry, "GIT_COMMON_DIR=") ||
+			strings.HasPrefix(entry, "GIT_INDEX_FILE=") {
+			continue
+		}
+		env = append(env, entry)
+	}
+	return env
+}
+
 func setupCodexSyncRepo(t *testing.T) (string, string, string) {
 	t.Helper()
 	repo := t.TempDir()
 	for _, args := range [][]string{{"init"}, {"config", "user.email", "test@example.com"}, {"config", "user.name", "Test"}} {
-		if output, err := exec.Command("git", append([]string{"-C", repo}, args...)...).CombinedOutput(); err != nil {
+		cmd := exec.Command("git", append([]string{"-C", repo}, args...)...)
+		cmd.Env = scrubbedGitEnv()
+		if output, err := cmd.CombinedOutput(); err != nil {
 			t.Fatalf("git %v: %v\n%s", args, err, output)
 		}
 	}

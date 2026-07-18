@@ -20,12 +20,9 @@
 
 set -euo pipefail
 
-if REPO_ROOT="$(git rev-parse --show-toplevel 2>/dev/null)" && [[ -n "$REPO_ROOT" ]]; then
-    :
-else
-    SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-    REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
-fi
+# shellcheck disable=SC1007,SC1091
+. "$(CDPATH= cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib/repo-root.sh"
+REPO_ROOT="$(resolve_repo_root)"
 SERVER_DIR="$REPO_ROOT/cli/internal/daemon"
 
 if [[ ! -d "$SERVER_DIR" ]]; then

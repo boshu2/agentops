@@ -15,7 +15,9 @@ set -euo pipefail
 shopt -s lastpipe 2>/dev/null || true
 umask 022
 
-repo_root="$(git rev-parse --show-toplevel 2>/dev/null || cd "$(dirname "$0")/.." && pwd)"
+# shellcheck disable=SC1007,SC1091
+. "$(CDPATH= cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib/repo-root.sh"
+repo_root="$(resolve_repo_root)"
 src="${repo_root}/skills/cc-hooks/hooks/installed-skill-edit-guard.sh"
 [[ -f "$src" ]] || { echo "ERROR: guard script missing: ${src}" >&2; exit 1; }
 command -v jq >/dev/null || { echo "ERROR: jq required" >&2; exit 1; }

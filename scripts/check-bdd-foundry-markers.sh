@@ -13,7 +13,9 @@
 # floor SET is unchanged.
 set -euo pipefail
 
-repo_root="$(git rev-parse --show-toplevel)"
+# shellcheck disable=SC1007,SC1091
+. "$(CDPATH= cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib/repo-root.sh"
+repo_root="$(resolve_repo_root)"
 candidate="${1:-$repo_root/.claude/workflows/bdd-foundry.js}"
 if [ ! -f "$candidate" ]; then
   echo "FAIL: candidate file not found: $candidate"

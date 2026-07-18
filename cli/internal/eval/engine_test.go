@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 )
@@ -390,10 +391,30 @@ func writeEvalFile(t *testing.T, path, body string) {
 	}
 }
 
+// scrubbedGitEnv returns os.Environ() minus git's repo-discovery overrides
+// (GIT_DIR et al.): under a hook-leaked GIT_DIR, cmd.Dir alone does NOT scope
+// a mutation — `git config user.name Tester` would write the LEAKED repo's
+// shared config (age-gate-scripts-worktree-gitdir-p62wo; .claude/rules/go.md
+// test isolation).
+func scrubbedGitEnv() []string {
+	env := make([]string, 0, len(os.Environ()))
+	for _, entry := range os.Environ() {
+		if strings.HasPrefix(entry, "GIT_DIR=") ||
+			strings.HasPrefix(entry, "GIT_WORK_TREE=") ||
+			strings.HasPrefix(entry, "GIT_COMMON_DIR=") ||
+			strings.HasPrefix(entry, "GIT_INDEX_FILE=") {
+			continue
+		}
+		env = append(env, entry)
+	}
+	return env
+}
+
 func runGit(t *testing.T, dir string, args ...string) {
 	t.Helper()
 	cmd := exec.Command("git", args...)
 	cmd.Dir = dir
+	cmd.Env = scrubbedGitEnv()
 	if out, err := cmd.CombinedOutput(); err != nil {
 		t.Fatalf("git %v failed: %v\n%s", args, err, out)
 	}
