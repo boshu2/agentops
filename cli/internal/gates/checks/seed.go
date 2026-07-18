@@ -61,12 +61,9 @@ var (
 		"tests/scripts/check-honest-voice.bats",
 	}
 	ciPolicyPaths    = []string{".github/workflows/validate.yml", "docs/CI-CD.md", "AGENTS.md"}
-	contextMapPaths  = []string{"skills/**", "docs/contracts/context-map.md"}
-	swarmPaths       = []string{".agents/swarm/**", "schemas/swarm-*"}
 	agentsDocPaths   = []string{"AGENTS.md", "docs/agent-workflow-reference.md", "docs/CI-CD.md", "docs/contracts/codex-skill-api.md", ".github/workflows/validate.yml"}
 	corpusPaths      = []string{".agents/**", "docs/canon/**", "canon/**"}
 	cliContractPaths = []string{"cli/**", "docs/cli-surface.*", "scripts/check-cli-contract.sh", "scripts/check-docs-cli-snippets.sh", "scripts/generate-cli-reference.sh", "tests/cli_contract_gate.bats", "tests/cli_quality_zero_debt.bats"}
-	registryPaths    = []string{"skills/**", "hooks/**", "evals/**", "cli/cmd/ao/**", "cli/internal/**", "registry.json"}
 	// Widened to docs/** (--all-docs mode): the checker no longer scans a fixed
 	// 6-file set — it scans every LIVE docs/** file (plus the pinned doctrine
 	// files) and ratchets against scripts/.docs-skill-refs-baseline, so any live
