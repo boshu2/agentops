@@ -87,6 +87,13 @@ func TestMain(m *testing.M) {
 		os.Unsetenv("TMUX")
 	}
 
+	// Remove the flag-matrix test binary build dir (see aoBinary in
+	// flag_matrix_test.go) — shared across tests via sync.Once, so it can't
+	// be tied to any single test's t.Cleanup.
+	if aoBinaryDir != "" {
+		os.RemoveAll(aoBinaryDir)
+	}
+
 	os.RemoveAll(tmpHome)
 	if hadOrigHome {
 		os.Setenv("HOME", origHome)

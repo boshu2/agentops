@@ -3,26 +3,53 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"runtime"
 	"sort"
 	"strings"
+	"sync"
 	"testing"
 )
 
-// aoBinary resolves the path to the ao binary built by `make build`.
-// Tests that need the binary should call this and skip if it's missing.
+var (
+	aoBinaryOnce sync.Once
+	aoBinaryDir  string
+	aoBinaryPath string
+	aoBinaryErr  error
+)
+
+// aoBinary returns a production ao binary built from the CURRENT source,
+// compiling once per test process into a temp dir (removed by TestMain).
+// It deliberately does not use cli/bin/ao: a stale prebuilt binary makes
+// the matrix test the wrong code — e.g. a pre-tombstone-cleanup bin/ao
+// false-failed help-consistency with `unknown command "verify"` while the
+// source tree was green.
 func aoBinary(t *testing.T) string {
 	t.Helper()
-	// Walk up from the test file to find cli/bin/ao
-	_, thisFile, _, _ := runtime.Caller(0)
-	binPath := filepath.Join(filepath.Dir(thisFile), "..", "..", "bin", "ao")
-	if _, err := os.Stat(binPath); err != nil {
-		t.Skipf("ao binary not found at %s — run 'cd cli && make build' first", binPath)
+	aoBinaryOnce.Do(func() {
+		_, thisFile, _, _ := runtime.Caller(0)
+		pkgDir := filepath.Dir(thisFile)
+
+		aoBinaryDir, aoBinaryErr = os.MkdirTemp("", "ao-flag-matrix-bin-*")
+		if aoBinaryErr != nil {
+			return
+		}
+		bin := filepath.Join(aoBinaryDir, "ao")
+		cmd := exec.Command("go", "build", "-o", bin, ".")
+		cmd.Dir = pkgDir
+		if out, err := cmd.CombinedOutput(); err != nil {
+			aoBinaryErr = fmt.Errorf("go build ./cmd/ao failed: %w\n%s", err, out)
+			return
+		}
+		aoBinaryPath = bin
+	})
+	if aoBinaryErr != nil {
+		t.Fatalf("building ao test binary: %v", aoBinaryErr)
 	}
-	return binPath
+	return aoBinaryPath
 }
 
 func approvedDefaultSpineBinaryCommand(args []string) bool {
