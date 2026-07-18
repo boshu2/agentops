@@ -168,76 +168,7 @@ func workspaceScanSourceRefs(repoRoot string) (workspaceRefScan, bool) {
 			continue
 		}
 		corpusFound = true
-		// Root-scoped reads: os.Root confines every ReadFile to rootPath and
-		// refuses symlink escapes, closing the walk-then-read TOCTOU window
-		// (gosec G122) the dirent checks alone cannot close.
-		rootHandle, rootErr := os.OpenRoot(rootPath)
-		if rootErr != nil {
-			continue
-		}
-		// WalkDir never follows symlinks; walk errors skip the subtree.
-		_ = filepath.WalkDir(rootPath, func(path string, d fs.DirEntry, walkErr error) error {
-			if walkErr != nil {
-				if d != nil && d.IsDir() {
-					return fs.SkipDir
-				}
-				return nil
-			}
-			if d.IsDir() {
-				if workspaceRefSkipDirNames[d.Name()] {
-					return fs.SkipDir
-				}
-				return nil
-			}
-			if !d.Type().IsRegular() || !root.include(d.Name()) {
-				return nil
-			}
-			fi, err := d.Info()
-			if err != nil || fi.Size() > workspaceRefMaxFileBytes {
-				return nil
-			}
-			relInRoot, relInRootErr := filepath.Rel(rootPath, path)
-			if relInRootErr != nil {
-				return nil
-			}
-			data, err := rootHandle.ReadFile(relInRoot)
-			if err != nil {
-				return nil
-			}
-			rel, relErr := filepath.Rel(repoRoot, path)
-			if relErr != nil {
-				rel = path
-			}
-			rel = filepath.ToSlash(rel)
-			scan.FilesScanned++
-			exempt := workspaceDriftRefExemptFile(rel)
-			for i, line := range strings.Split(string(data), "\n") {
-				for _, m := range workspaceRefSegmentRe.FindAllStringSubmatch(line, -1) {
-					// Trailing dots are sentence punctuation, not path chars.
-					seg := strings.TrimRight(m[1], ".")
-					if seg == "" {
-						continue
-					}
-					scan.Referenced[seg] = true
-					canonical, isAlias := workspaceCanonicalAliases[seg]
-					if !isAlias {
-						continue
-					}
-					scan.Referenced[canonical] = true
-					if exempt {
-						continue
-					}
-					perFile := aliasLines[rel]
-					if perFile == nil {
-						perFile = make(map[string][]int)
-						aliasLines[rel] = perFile
-					}
-					perFile[seg] = append(perFile[seg], i+1)
-				}
-			}
-			return nil
-		})
-		_ = rootHandle.Close()
+		workspaceWalkRefRoot(repoRoot, rootPath, root.include, &scan, aliasLines)
 	}
 	for file, perFile := range aliasLines {
 		for alias, lines := range perFile {
@@ -251,6 +182,80 @@ func workspaceScanSourceRefs(repoRoot string) (workspaceRefScan, bool) {
 		return scan.AliasHits[i].Alias < scan.AliasHits[j].Alias
 	})
 	return scan, corpusFound
+}
+
+// workspaceWalkRefRoot walks one corpus root, accumulating referenced segments
+// into scan and alias occurrences into aliasLines. Root-scoped reads: os.Root
+// confines every ReadFile to rootPath and refuses symlink escapes, closing the
+// walk-then-read TOCTOU window (gosec G122) the dirent checks alone cannot
+// close. WalkDir never follows symlinks; walk errors skip the subtree.
+func workspaceWalkRefRoot(repoRoot, rootPath string, include func(string) bool, scan *workspaceRefScan, aliasLines map[string]map[string][]int) {
+	rootHandle, rootErr := os.OpenRoot(rootPath)
+	if rootErr != nil {
+		return
+	}
+	defer func() { _ = rootHandle.Close() }()
+	_ = filepath.WalkDir(rootPath, func(path string, d fs.DirEntry, walkErr error) error {
+		if walkErr != nil {
+			if d != nil && d.IsDir() {
+				return fs.SkipDir
+			}
+			return nil
+		}
+		if d.IsDir() {
+			if workspaceRefSkipDirNames[d.Name()] {
+				return fs.SkipDir
+			}
+			return nil
+		}
+		if !d.Type().IsRegular() || !include(d.Name()) {
+			return nil
+		}
+		fi, err := d.Info()
+		if err != nil || fi.Size() > workspaceRefMaxFileBytes {
+			return nil
+		}
+		relInRoot, relInRootErr := filepath.Rel(rootPath, path)
+		if relInRootErr != nil {
+			return nil
+		}
+		data, err := rootHandle.ReadFile(relInRoot)
+		if err != nil {
+			return nil
+		}
+		rel, relErr := filepath.Rel(repoRoot, path)
+		if relErr != nil {
+			rel = path
+		}
+		rel = filepath.ToSlash(rel)
+		scan.FilesScanned++
+		exempt := workspaceDriftRefExemptFile(rel)
+		for i, line := range strings.Split(string(data), "\n") {
+			for _, m := range workspaceRefSegmentRe.FindAllStringSubmatch(line, -1) {
+				// Trailing dots are sentence punctuation, not path chars.
+				seg := strings.TrimRight(m[1], ".")
+				if seg == "" {
+					continue
+				}
+				scan.Referenced[seg] = true
+				canonical, isAlias := workspaceCanonicalAliases[seg]
+				if !isAlias {
+					continue
+				}
+				scan.Referenced[canonical] = true
+				if exempt {
+					continue
+				}
+				perFile := aliasLines[rel]
+				if perFile == nil {
+					perFile = make(map[string][]int)
+					aliasLines[rel] = perFile
+				}
+				perFile[seg] = append(perFile[seg], i+1)
+			}
+		}
+		return nil
+	})
 }
 
 // ---------------------------------------------------------------------------
