@@ -32,7 +32,9 @@ if [ "${AGENTOPS_PREPUSH_SKIP_COMMIT_BUILD:-0}" = "1" ]; then
     exit 0
 fi
 
-REPO_ROOT="$(git rev-parse --show-toplevel 2>/dev/null)" || exit 0
+# shellcheck disable=SC1007,SC1091
+. "$(CDPATH= cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib/repo-root.sh"
+REPO_ROOT="$(resolve_repo_root)"
 BUILD_CMD="${AGENTOPS_COMMIT_BUILD_CMD:-cd cli && go build ./...}"
 # Intentional word-split of the space-separated pathspec list into array elements.
 # shellcheck disable=SC2206

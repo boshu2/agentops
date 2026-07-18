@@ -7,7 +7,9 @@
 #   2 = script error
 set -uo pipefail
 
-REPO_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+# shellcheck disable=SC1007,SC1091
+. "$(CDPATH= cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib/repo-root.sh"
+REPO_ROOT="$(resolve_repo_root)"
 LEDGER="${PROVENANCE_LEDGER:-$REPO_ROOT/docs/provenance/ledger.jsonl}"
 TRUNK="${AGENTOPS_PROVENANCE_TRUNK_REF:-origin/main}"
 STRICT="${AGENTOPS_PROVENANCE_MERGE_SHA_STRICT:-0}"
