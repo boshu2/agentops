@@ -1,0 +1,8 @@
+{
+  "name": "invalid-trailing-json",
+  "description": "Trailing JSON after the artifact object; a schema validates parsed values so only the readers can reject this.",
+  "expected": "invalid",
+  "schema_lenient": true,
+  "filename_digest": "2362a6d44cc361d799908d95058b156b1db9ea2615e240f71b88ad651308fb84",
+  "raw": "{\"schema_version\": \"verdict.v2\", \"acceptance_digest\": \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\", \"subject_manifest_digest\": \"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\", \"author_context_id\": \"ctx-author\", \"validator_context_id\": \"ctx-validator\", \"freshness_attestation\": {\"source\": \"runtime\", \"attester_identity\": \"runtime:test\"}, \"verdict\": \"FAIL\", \"criteria\": [{\"id\": \"c1\", \"result\": \"FAIL\", \"evidence_refs\": [\"gate:go.build\"], \"reason\": \"checked\"}], \"findings\": [], \"evidence_refs\": [\"gate:go.build\"], \"checked\": [\"cli/**\"], \"not_checked\": [], \"validated_at\": \"2026-07-18T12:00:00Z\", \"artifact_digest\": \"2362a6d44cc361d799908d95058b156b1db9ea2615e240f71b88ad651308fb84\"}\n{}"
+}

@@ -32,8 +32,9 @@ under `ao gate check`; semantic judgment is the Validate skill.
 | `ao session memory` | Use caller-authored `ao session handoff` evidence or maintain repository memory through the caller's own policy. |
 | `ao verify` | Use the Validate skill for semantic judgment and `ao gate check` for deterministic checks. Delete any `ao verify init` pre-push ratchet from `.git/hooks/pre-push` (restore `pre-push.agentops-orig` if one was set aside); `ao verify init --remove` no longer exists, and `git push --no-verify` bypasses a stale hook once. |
 
-These major public names have inert, nonzero-exit tombstones for this cut
-release only. They do not forward to old code or mutate old state.
+These names are no longer registered commands. Invoking one fails as an
+unknown command (exit 1) and prints the matching replacement pointer from the
+table above; nothing forwards to old code or mutates old state.
 
 Other 3.2 bookkeeping and knowledge verbs (`ao beads`, `ao agents`, `ao canon`,
 `ao ci`, `ao citation`, `ao eval`, `ao findings`, `ao forge`, `ao knowledge`,

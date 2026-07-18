@@ -26,8 +26,9 @@ ao --help
 ```
 
 The generated [command reference](docs/COMMANDS.md) follows the published Cobra
-tree. Removed lifecycle commands are inert one-release tombstones; no build tag
-or compatibility profile restores their implementation.
+tree. Removed lifecycle commands are not registered at all: invoking one fails
+as an unknown command with a pointer to its replacement, and no build tag or
+compatibility profile restores their implementation.
 
 ## Development
 
@@ -43,5 +44,5 @@ in the consumer repository.
 ## References
 
 - [Operating loop](../docs/architecture/operating-loop.md)
-- [CLI architecture](../docs/architecture/go-cli-architecture-guide.md)
+- [CLI architecture](../docs/architecture/go-cli.md)
 - [Migration map](../docs/MIGRATION.md)

@@ -11,21 +11,13 @@
 # Regenerate with:  bash scripts/check-jsonl-scanner-ratchet.sh --regenerate
 # (regenerate at LAND time, after the final rebase — sibling adoptions may
 #  have cleaned sites.)
-cli/cmd/ao/c2_event_reader.go
-cli/cmd/ao/extract.go
-cli/internal/adapters/vendorimage/codexruntime/runtime.go
-cli/internal/canon/ledger.go
 cli/internal/doctor/engine.go
 cli/internal/drrebuild/drrebuild.go
-cli/internal/forge/runmine.go
 cli/internal/notebook/notebook.go
-cli/internal/pool/pool.go
 cli/internal/quality/doctor.go
 cli/internal/quality/metrics_golden.go
 cli/internal/quality/metrics_run.go
-cli/internal/resolver/resolver.go
 cli/internal/search/index.go
 cli/internal/search/learnings.go
 cli/internal/search/search_cass.go
 cli/internal/search/sessions.go
-cli/internal/wiki/index.go

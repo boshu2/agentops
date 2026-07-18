@@ -9,8 +9,8 @@
     "schema_version": {"const": "verdict.v2"},
     "acceptance_digest": {"$ref": "#/$defs/digest"},
     "subject_manifest_digest": {"$ref": "#/$defs/digest"},
-    "author_context_id": {"type": ["string", "null"]},
-    "validator_context_id": {"type": ["string", "null"]},
+    "author_context_id": {"oneOf": [{"type": "null"}, {"type": "string", "minLength": 1}]},
+    "validator_context_id": {"oneOf": [{"type": "null"}, {"type": "string", "minLength": 1}]},
     "freshness_attestation": {
       "oneOf": [
         {"type": "null"},

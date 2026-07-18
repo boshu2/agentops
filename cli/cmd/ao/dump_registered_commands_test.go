@@ -11,7 +11,7 @@ import (
 // TestDumpRegisteredTopLevelCommands is the machine source-of-truth for the
 // command-landing regenerator (scripts/regen-command-surfaces.sh, bead ag-jy12).
 //
-// It applies the default-spine boundary to the test tree, then walks
+// It walks
 // rootCmd.Commands() — the same set the production CLI registers — and, when
 // AO_DUMP_REGISTERED_CMDS=1 is set, prints
 // every registered top-level command name (one per line, sorted, "help"
@@ -26,8 +26,6 @@ import (
 // When AO_DUMP_REGISTERED_CMDS is unset the test is a no-op assertion that the
 // command set is non-empty, so it stays cheap in the normal `go test ./...` run.
 func TestDumpRegisteredTopLevelCommands(t *testing.T) {
-	removed := pruneToDefaultSpine(rootCmd)
-	t.Cleanup(func() { restorePrunedCommands(rootCmd, removed) })
 	var names []string
 	for _, c := range rootCmd.Commands() {
 		if c.Name() == "help" {

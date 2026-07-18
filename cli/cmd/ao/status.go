@@ -2,18 +2,18 @@
 package main
 
 import (
-	"bytes"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"io"
 	"os"
 	"path/filepath"
 	"strings"
 	"time"
 
 	"github.com/spf13/cobra"
+
+	"github.com/boshu2/agentops/cli/internal/verdictcheck"
 )
 
 var statusCmd = &cobra.Command{
@@ -59,41 +59,6 @@ type evidenceSource struct {
 	suffix   string
 	count    *int
 	validate func(string, string) error
-}
-
-type storedFreshness struct {
-	Source           string `json:"source"`
-	AttesterIdentity string `json:"attester_identity"`
-}
-
-type storedCriterion struct {
-	ID           string    `json:"id"`
-	Result       string    `json:"result"`
-	EvidenceRefs *[]string `json:"evidence_refs"`
-	Reason       string    `json:"reason,omitempty"`
-}
-
-type storedFinding struct {
-	ID           string   `json:"id"`
-	Summary      string   `json:"summary"`
-	EvidenceRefs []string `json:"evidence_refs"`
-}
-
-type storedVerdict struct {
-	SchemaVersion         string            `json:"schema_version"`
-	AcceptanceDigest      string            `json:"acceptance_digest"`
-	SubjectManifestDigest string            `json:"subject_manifest_digest"`
-	AuthorContextID       *string           `json:"author_context_id"`
-	ValidatorContextID    *string           `json:"validator_context_id"`
-	FreshnessAttestation  *storedFreshness  `json:"freshness_attestation"`
-	Verdict               string            `json:"verdict"`
-	Criteria              []storedCriterion `json:"criteria"`
-	Findings              []storedFinding   `json:"findings"`
-	EvidenceRefs          []string          `json:"evidence_refs"`
-	Checked               []string          `json:"checked"`
-	NotChecked            []string          `json:"not_checked"`
-	ValidatedAt           string            `json:"validated_at"`
-	ArtifactDigest        string            `json:"artifact_digest"`
 }
 
 func runStatus(cmd *cobra.Command, args []string) error {
@@ -202,19 +167,7 @@ func artifactDigestFromName(name, suffix string) (string, bool) {
 		return "", false
 	}
 	digest := strings.TrimSuffix(name, suffix)
-	return digest, validDigest(digest)
-}
-
-func validDigest(value string) bool {
-	if len(value) != sha256.Size*2 {
-		return false
-	}
-	for _, char := range value {
-		if (char < '0' || char > '9') && (char < 'a' || char > 'f') {
-			return false
-		}
-	}
-	return true
+	return digest, verdictcheck.ValidDigest(digest)
 }
 
 func validateIntentArtifact(path, expectedDigest string) error {
@@ -229,170 +182,14 @@ func validateIntentArtifact(path, expectedDigest string) error {
 	return nil
 }
 
+// validateVerdictArtifact delegates verdict.v2 structural verification to
+// internal/verdictcheck (shape, exact field set, canonical digest binding).
 func validateVerdictArtifact(path, expectedDigest string) error {
 	payload, err := os.ReadFile(path)
 	if err != nil {
 		return fmt.Errorf("read: %w", err)
 	}
-
-	var raw map[string]any
-	decoder := json.NewDecoder(bytes.NewReader(payload))
-	decoder.UseNumber()
-	if err := decoder.Decode(&raw); err != nil {
-		return fmt.Errorf("invalid verdict JSON: %w", err)
-	}
-	if err := requireJSONEOF(decoder); err != nil {
-		return err
-	}
-	required := []string{
-		"schema_version", "acceptance_digest", "subject_manifest_digest",
-		"author_context_id", "validator_context_id", "freshness_attestation",
-		"verdict", "criteria", "findings", "evidence_refs", "checked",
-		"not_checked", "validated_at", "artifact_digest",
-	}
-	for _, key := range required {
-		if _, ok := raw[key]; !ok {
-			return fmt.Errorf("verdict.v2 missing required field %q", key)
-		}
-	}
-
-	var verdict storedVerdict
-	strict := json.NewDecoder(bytes.NewReader(payload))
-	strict.DisallowUnknownFields()
-	if err := strict.Decode(&verdict); err != nil {
-		return fmt.Errorf("invalid verdict.v2 shape: %w", err)
-	}
-	if err := requireJSONEOF(strict); err != nil {
-		return err
-	}
-	if err := validateVerdictShape(&verdict); err != nil {
-		return err
-	}
-	if verdict.ArtifactDigest != expectedDigest {
-		return fmt.Errorf("artifact_digest does not match filename")
-	}
-
-	delete(raw, "artifact_digest")
-	canonical, err := canonicalJSON(raw)
-	if err != nil {
-		return fmt.Errorf("canonicalize verdict: %w", err)
-	}
-	actual := sha256.Sum256(canonical)
-	if hex.EncodeToString(actual[:]) != expectedDigest {
-		return fmt.Errorf("canonical content digest does not match filename")
-	}
-	return nil
-}
-
-func requireJSONEOF(decoder *json.Decoder) error {
-	var trailing any
-	if err := decoder.Decode(&trailing); err != io.EOF {
-		if err == nil {
-			return fmt.Errorf("invalid verdict JSON: trailing value")
-		}
-		return fmt.Errorf("invalid verdict JSON: %w", err)
-	}
-	return nil
-}
-
-func canonicalJSON(value any) ([]byte, error) {
-	var buffer bytes.Buffer
-	encoder := json.NewEncoder(&buffer)
-	encoder.SetEscapeHTML(false)
-	if err := encoder.Encode(value); err != nil {
-		return nil, err
-	}
-	return bytes.TrimSuffix(buffer.Bytes(), []byte("\n")), nil
-}
-
-func validateVerdictShape(verdict *storedVerdict) error {
-	if verdict.SchemaVersion != "verdict.v2" {
-		return fmt.Errorf("schema_version is not verdict.v2")
-	}
-	if !validDigest(verdict.AcceptanceDigest) || !validDigest(verdict.SubjectManifestDigest) || !validDigest(verdict.ArtifactDigest) {
-		return fmt.Errorf("verdict.v2 contains an invalid digest")
-	}
-	if !validVerdictResult(verdict.Verdict) {
-		return fmt.Errorf("verdict.v2 has invalid verdict %q", verdict.Verdict)
-	}
-	if len(verdict.Criteria) == 0 {
-		return fmt.Errorf("verdict.v2 criteria must be nonempty")
-	}
-	if err := validateVerdictCriteria(verdict.Criteria); err != nil {
-		return err
-	}
-	if err := validateVerdictFindings(verdict.Findings); err != nil {
-		return err
-	}
-	if !nonemptyStrings(verdict.EvidenceRefs) || !nonemptyStrings(verdict.Checked) || !nonemptyStrings(verdict.NotChecked) {
-		return fmt.Errorf("verdict.v2 contains an empty evidence, checked, or not_checked item")
-	}
-	if err := validateFreshnessAttestation(verdict.FreshnessAttestation); err != nil {
-		return err
-	}
-	if _, err := time.Parse(time.RFC3339, verdict.ValidatedAt); err != nil {
-		return fmt.Errorf("verdict.v2 has invalid validated_at: %w", err)
-	}
-	if verdict.Verdict == "PASS" {
-		return validatePassVerdict(verdict)
-	}
-	return nil
-}
-
-func validateVerdictCriteria(criteria []storedCriterion) error {
-	for _, criterion := range criteria {
-		if criterion.ID == "" || !validVerdictResult(criterion.Result) || criterion.EvidenceRefs == nil || !nonemptyStrings(*criterion.EvidenceRefs) {
-			return fmt.Errorf("verdict.v2 contains an invalid criterion")
-		}
-	}
-	return nil
-}
-
-func validateVerdictFindings(findings []storedFinding) error {
-	for _, finding := range findings {
-		if finding.ID == "" || finding.Summary == "" || len(finding.EvidenceRefs) == 0 || !nonemptyStrings(finding.EvidenceRefs) {
-			return fmt.Errorf("verdict.v2 contains an invalid finding")
-		}
-	}
-	return nil
-}
-
-func validateFreshnessAttestation(attestation *storedFreshness) error {
-	if attestation == nil {
-		return nil
-	}
-	if (attestation.Source != "runtime" && attestation.Source != "caller") || attestation.AttesterIdentity == "" {
-		return fmt.Errorf("verdict.v2 has invalid freshness_attestation")
-	}
-	return nil
-}
-
-func validatePassVerdict(verdict *storedVerdict) error {
-	if verdict.AuthorContextID == nil || *verdict.AuthorContextID == "" || verdict.ValidatorContextID == nil || *verdict.ValidatorContextID == "" || *verdict.AuthorContextID == *verdict.ValidatorContextID {
-		return fmt.Errorf("PASS verdict requires distinct nonempty context identities")
-	}
-	if verdict.FreshnessAttestation == nil || len(verdict.EvidenceRefs) == 0 || len(verdict.Checked) == 0 || len(verdict.NotChecked) != 0 {
-		return fmt.Errorf("PASS verdict does not satisfy evidence and freshness requirements")
-	}
-	for _, criterion := range verdict.Criteria {
-		if criterion.Result != "PASS" || criterion.EvidenceRefs == nil || len(*criterion.EvidenceRefs) == 0 {
-			return fmt.Errorf("PASS verdict contains an unproven criterion")
-		}
-	}
-	return nil
-}
-
-func validVerdictResult(value string) bool {
-	return value == "PASS" || value == "FAIL" || value == "NOT_PROVEN"
-}
-
-func nonemptyStrings(values []string) bool {
-	for _, value := range values {
-		if value == "" {
-			return false
-		}
-	}
-	return true
+	return verdictcheck.VerifyArtifact(payload, expectedDigest)
 }
 
 func outputStatus(status *statusOutput) error {

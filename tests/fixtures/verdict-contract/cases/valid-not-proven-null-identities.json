@@ -1,0 +1,30 @@
+{
+  "name": "valid-not-proven-null-identities",
+  "description": "NOT_PROVEN with null identities and empty evidence is contract-valid.",
+  "expected": "valid",
+  "filename_digest": "c5c415a008fb3262ff903a3196558323a285d26f2757bd192e26afc74351c3d3",
+  "artifact": {
+    "schema_version": "verdict.v2",
+    "acceptance_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "subject_manifest_digest": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "author_context_id": null,
+    "validator_context_id": null,
+    "freshness_attestation": null,
+    "verdict": "NOT_PROVEN",
+    "criteria": [
+      {
+        "id": "c1",
+        "result": "NOT_PROVEN",
+        "evidence_refs": []
+      }
+    ],
+    "findings": [],
+    "evidence_refs": [],
+    "checked": [],
+    "not_checked": [
+      "everything"
+    ],
+    "validated_at": "2026-07-18T12:00:00Z",
+    "artifact_digest": "c5c415a008fb3262ff903a3196558323a285d26f2757bd192e26afc74351c3d3"
+  }
+}

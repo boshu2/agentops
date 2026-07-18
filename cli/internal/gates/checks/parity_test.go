@@ -32,7 +32,6 @@ func selectedIDs(t *testing.T, changed []string) map[string]bool {
 var alwaysIDs = []string{
 	"always.mutation-route",
 	"always.no-tracked-agents",
-	"always.embedded-sync",
 }
 
 func assertHas(t *testing.T, ids map[string]bool, want ...string) {

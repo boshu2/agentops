@@ -1,0 +1,39 @@
+{
+  "name": "invalid-pass-colliding-identities",
+  "description": "PASS requires distinct author and validator context identities.",
+  "expected": "invalid",
+  "schema_lenient": true,
+  "filename_digest": "491bc75acdee7176825eea08e053a824ddf3c0a1aa63d336204811abdf011bd4",
+  "artifact": {
+    "schema_version": "verdict.v2",
+    "acceptance_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "subject_manifest_digest": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "author_context_id": "ctx-author",
+    "validator_context_id": "ctx-author",
+    "freshness_attestation": {
+      "source": "runtime",
+      "attester_identity": "runtime:test"
+    },
+    "verdict": "PASS",
+    "criteria": [
+      {
+        "id": "c1",
+        "result": "PASS",
+        "evidence_refs": [
+          "gate:go.build"
+        ],
+        "reason": "checked"
+      }
+    ],
+    "findings": [],
+    "evidence_refs": [
+      "gate:go.build"
+    ],
+    "checked": [
+      "cli/**"
+    ],
+    "not_checked": [],
+    "validated_at": "2026-07-18T12:00:00Z",
+    "artifact_digest": "491bc75acdee7176825eea08e053a824ddf3c0a1aa63d336204811abdf011bd4"
+  }
+}

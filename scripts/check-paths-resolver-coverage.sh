@@ -17,7 +17,6 @@
 # not constructions, or are auto-generated):
 #   *_test.go   — fixture paths legitimately reference .agents/
 #   skills/, skills-codex/, docs/   — markdown prose and examples
-#   cli/embedded/                   — auto-synced from hooks/ + skills/
 #
 # Exit code: ALWAYS 0 (warn-only, per warn-then-fail-ratchet pattern).
 # Flip to blocking is a separate decision after 2+ weeks of baseline data —

@@ -188,8 +188,15 @@ func (Module) Contract() clicontract.CommandContract {
 	if err := os.Rename(baseline, parkedBaseline); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := Check(Options{Root: root, AllMigrated: true}); err == nil {
-		t.Fatal("cumulative mode forgot a family after both module and baseline were deleted")
+	// Module and baseline both removed = the family is fully retired from the
+	// product; the checker no longer enforces ownership for it. The published
+	// command-surface tests are the guard against removing a live command.
+	violations, err = Check(Options{Root: root, AllMigrated: true})
+	if err != nil {
+		t.Fatalf("retired family (module and baseline deleted) should drop out cleanly: %v", err)
+	}
+	if len(violations) != 0 {
+		t.Fatalf("retired family still reports violations: %v", violations)
 	}
 	if err := os.Rename(parkedBaseline, baseline); err != nil {
 		t.Fatal(err)

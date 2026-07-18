@@ -11,7 +11,6 @@ func TestSeedChecksRegistered(t *testing.T) {
 	want := []string{
 		"go.build",
 		"always.mutation-route",
-		"always.embedded-sync",
 		"skill.schema",
 		"contract.skill-mesh",
 		"ci.policy-parity",

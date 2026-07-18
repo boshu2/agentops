@@ -381,19 +381,6 @@ jobs:
             echo "✅ All test packages completed within ${THRESHOLD}s"
           fi
 
-      - name: Verify embedded lib/skills in sync
-        if: runner.os == 'Linux' && (needs.changes.outputs.go == 'true' || needs.changes.outputs.ci == 'true')
-        run: |
-          echo "=== Verifying embedded lib/skills are in sync ==="
-          cd cli && make sync-hooks
-          if ! git diff --exit-code -- embedded/; then
-            echo ""
-            echo "❌ Embedded lib/skills are out of sync with source files."
-            echo "   Run 'cd cli && make sync-hooks' and commit the result."
-            exit 1
-          fi
-          echo "✅ Embedded lib/skills are in sync"
-
       - name: Enforce Go complexity budget on changed files
         if: runner.os == 'Linux' && (needs.changes.outputs.go == 'true' || needs.changes.outputs.ci == 'true')
         env:

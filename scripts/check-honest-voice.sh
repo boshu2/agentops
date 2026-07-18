@@ -13,7 +13,7 @@
 # nothing gated it. This is that gate.
 #
 # SCOPE (scanned): cli/cmd + cli/internal Go source (excluding *_test.go) and the
-# seed/template assets (cli/embedded/templates, cli/internal/extract/templates).
+# seed/template assets.
 # NOT docs/** — narrative docs discuss the unproven hypothesis honestly.
 #
 # SUPPRESSION: a line with `honest-voice:allow` is skipped; per-entry
@@ -82,7 +82,6 @@ for c in claims:
 SCAN_GLOBS = [
     ("cli/cmd", "*.go"),
     ("cli/internal", "*.go"),
-    ("cli/embedded/templates", "*.yaml"),
     ("cli/internal/extract/templates", "*.yaml"),
 ]
 

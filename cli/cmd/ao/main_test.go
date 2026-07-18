@@ -62,6 +62,8 @@ func TestMain(m *testing.M) {
 
 	code := m.Run()
 
+	cleanupHermeticBinary()
+
 	// Tear down any tmux server the tests started on the isolated socket before
 	// removing its dir, so no orphan server lingers. Inherits the TMUX_TMPDIR
 	// set above, so this targets only the test socket, never the real one.

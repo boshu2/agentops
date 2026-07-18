@@ -11,8 +11,6 @@ func GoCLIArchitectureCheck() Check {
 		Match: []string{
 			"cli/internal/commands/**",
 			"cli/internal/adapters/**",
-			"cli/internal/composition/**",
-			"cli/internal/cliapp/**",
 			"cli/internal/clicontract/**",
 			"cli/cmd/ao/**",
 			"cli/testdata/compatibility-baseline/families/**",

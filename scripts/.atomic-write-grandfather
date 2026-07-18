@@ -18,11 +18,6 @@ cli/internal/doctor/runartifact.go
 cli/internal/evalsubstrate/atomic.go
 cli/internal/llm/review.go
 cli/internal/llm/session_writer.go
-cli/internal/llmwiki/atomic.go
-cli/internal/pool/pool.go
 cli/internal/scenarioresults/writer.go
 cli/internal/search/constraint.go
 cli/internal/search/findings_ops.go
-cli/internal/wiki/index.go
-cli/internal/wiki/pipeline.go
-cli/internal/wiki/source.go

@@ -1,0 +1,39 @@
+{
+  "name": "invalid-validated-at-no-offset",
+  "description": "Timestamps require an explicit offset; JSON Schema format is non-asserting so the schema alone cannot reject this.",
+  "expected": "invalid",
+  "schema_lenient": true,
+  "filename_digest": "b11beaaa85faf5d5f8e4a0ceafd61274ad58162f3315ef014d0515123bfed0c8",
+  "artifact": {
+    "schema_version": "verdict.v2",
+    "acceptance_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "subject_manifest_digest": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "author_context_id": "ctx-author",
+    "validator_context_id": "ctx-validator",
+    "freshness_attestation": {
+      "source": "runtime",
+      "attester_identity": "runtime:test"
+    },
+    "verdict": "FAIL",
+    "criteria": [
+      {
+        "id": "c1",
+        "result": "FAIL",
+        "evidence_refs": [
+          "gate:go.build"
+        ],
+        "reason": "checked"
+      }
+    ],
+    "findings": [],
+    "evidence_refs": [
+      "gate:go.build"
+    ],
+    "checked": [
+      "cli/**"
+    ],
+    "not_checked": [],
+    "validated_at": "2026-07-18T12:00:00",
+    "artifact_digest": "b11beaaa85faf5d5f8e4a0ceafd61274ad58162f3315ef014d0515123bfed0c8"
+  }
+}

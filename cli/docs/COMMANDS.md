@@ -406,14 +406,6 @@ ao goals scenarios [flags]
       --strict                With --lint, exit non-zero on warnings as well as errors
 ```
 
-#### `ao goals trace`
-
-Removed in the AgentOps Cathedral Cut
-
-```
-ao goals trace [flags]
-```
-
 ---
 
 ### `ao session`
@@ -457,14 +449,6 @@ ao session handoff [summary] [flags]
       --dry-run               Print the artifact without writing it
       --goal string           Caller-supplied goal
   -h, --help                  help for handoff
-```
-
-#### `ao session memory`
-
-Removed in the AgentOps Cathedral Cut
-
-```
-ao session memory [flags]
 ```
 
 #### `ao session rehydrate`
@@ -717,14 +701,6 @@ ao skills consumers <skill> [flags]
       --json   Emit machine-readable JSON
 ```
 
-#### `ao skills edit`
-
-Removed in the AgentOps Cathedral Cut
-
-```
-ao skills edit [flags]
-```
-
 #### `ao skills find`
 
 Score every skills/<name>/SKILL.md against a free-text intent and
@@ -884,192 +860,12 @@ ao flywheel status [flags]
 
 ---
 
-### `ao claim`
-
-Removed in the AgentOps Cathedral Cut
-
-```
-ao claim [flags]
-```
-
----
-
-### `ao close`
-
-Removed in the AgentOps Cathedral Cut
-
-```
-ao close [flags]
-```
-
----
-
-### `ao constraint`
-
-Removed in the AgentOps Cathedral Cut
-
-```
-ao constraint [flags]
-```
-
----
-
-### `ao converge`
-
-Removed in the AgentOps Cathedral Cut
-
-```
-ao converge [flags]
-```
-
----
-
-### `ao crank`
-
-Removed in the AgentOps Cathedral Cut
-
-```
-ao crank [flags]
-```
-
----
-
-### `ao done`
-
-Removed in the AgentOps Cathedral Cut
-
-```
-ao done [flags]
-```
-
----
-
-### `ao governor`
-
-Removed in the AgentOps Cathedral Cut
-
-```
-ao governor [flags]
-```
-
----
-
 ### `ao help`
 
 Help provides help for any command in the application.
 
 ```
 ao help [command] [flags]
-```
-
----
-
-### `ao land`
-
-Removed in the AgentOps Cathedral Cut
-
-```
-ao land [flags]
-```
-
----
-
-### `ao membrane`
-
-Removed in the AgentOps Cathedral Cut
-
-```
-ao membrane [flags]
-```
-
----
-
-### `ao next-work`
-
-Removed in the AgentOps Cathedral Cut
-
-```
-ao next-work [flags]
-```
-
----
-
-### `ao pawl`
-
-Removed in the AgentOps Cathedral Cut
-
-```
-ao pawl [flags]
-```
-
----
-
-### `ao plan-pawl`
-
-Removed in the AgentOps Cathedral Cut
-
-```
-ao plan-pawl [flags]
-```
-
----
-
-### `ao reconcile`
-
-Removed in the AgentOps Cathedral Cut
-
-```
-ao reconcile [flags]
-```
-
----
-
-### `ao state`
-
-Removed in the AgentOps Cathedral Cut
-
-```
-ao state [flags]
-```
-
----
-
-### `ao validate`
-
-Removed in the AgentOps Cathedral Cut
-
-```
-ao validate [flags]
-```
-
----
-
-### `ao verify`
-
-Removed in the AgentOps Cathedral Cut
-
-```
-ao verify [flags]
-```
-
----
-
-### `ao worktree`
-
-Removed in the AgentOps Cathedral Cut
-
-```
-ao worktree [flags]
-```
-
----
-
-### `ao yield`
-
-Removed in the AgentOps Cathedral Cut
-
-```
-ao yield [flags]
 ```
 
 ---

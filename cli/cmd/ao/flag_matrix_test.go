@@ -9,20 +9,59 @@ import (
 	"runtime"
 	"sort"
 	"strings"
+	"sync"
 	"testing"
 )
 
-// aoBinary resolves the path to the ao binary built by `make build`.
-// Tests that need the binary should call this and skip if it's missing.
+var (
+	hermeticBinaryOnce sync.Once
+	hermeticBinaryPath string
+	hermeticBinaryDir  string
+	hermeticBinaryErr  error
+)
+
+// aoBinary returns an ao binary built from this exact package source. It never
+// resolves cli/bin/ao or a PATH-installed ao: a stale prebuilt binary must not
+// make current source appear broken or green. Built once per test run into a
+// temp dir that TestMain removes.
 func aoBinary(t *testing.T) string {
 	t.Helper()
-	// Walk up from the test file to find cli/bin/ao
-	_, thisFile, _, _ := runtime.Caller(0)
-	binPath := filepath.Join(filepath.Dir(thisFile), "..", "..", "bin", "ao")
-	if _, err := os.Stat(binPath); err != nil {
-		t.Skipf("ao binary not found at %s — run 'cd cli && make build' first", binPath)
+	hermeticBinaryOnce.Do(func() {
+		_, thisFile, _, _ := runtime.Caller(0)
+		pkgDir := filepath.Dir(thisFile)
+		dir, err := os.MkdirTemp("", "ao-test-bin-*")
+		if err != nil {
+			hermeticBinaryErr = err
+			return
+		}
+		hermeticBinaryDir = dir
+		out := filepath.Join(dir, "ao")
+		build := exec.Command("go", "build", "-o", out, ".")
+		build.Dir = pkgDir
+		if raw, err := build.CombinedOutput(); err != nil {
+			hermeticBinaryErr = &hermeticBuildError{output: string(raw), err: err}
+			return
+		}
+		hermeticBinaryPath = out
+	})
+	if hermeticBinaryErr != nil {
+		t.Fatalf("building hermetic ao binary from source: %v", hermeticBinaryErr)
 	}
-	return binPath
+	return hermeticBinaryPath
+}
+
+type hermeticBuildError struct {
+	output string
+	err    error
+}
+
+func (e *hermeticBuildError) Error() string { return e.err.Error() + "\n" + e.output }
+
+// cleanupHermeticBinary removes the shared build dir; called from TestMain.
+func cleanupHermeticBinary() {
+	if hermeticBinaryDir != "" {
+		os.RemoveAll(hermeticBinaryDir)
+	}
 }
 
 func approvedDefaultSpineBinaryCommand(args []string) bool {
@@ -317,6 +356,58 @@ func TestFlagMatrix_NoCommandShowsHelp(t *testing.T) {
 	s := string(out)
 	if !strings.Contains(s, "Usage:") && !strings.Contains(s, "ao [command]") {
 		t.Errorf("ao (no args) should show usage info, got:\n%s", s)
+	}
+}
+
+// ---------------------------------------------------------------------------
+// TestHermeticBinaryMatchesSourceSurface
+//
+// The executed binary must present exactly the command surface this source
+// tree defines. A stale prebuilt or PATH-installed binary with a different
+// surface fails here, proving the binary under test is built from the subject.
+// ---------------------------------------------------------------------------
+
+func TestHermeticBinaryMatchesSourceSurface(t *testing.T) {
+	bin := aoBinary(t)
+
+	expected := map[string]bool{}
+	for _, command := range rootCmd.Commands() {
+		if command.Hidden || command.Name() == "help" || command.Name() == "completion" {
+			continue
+		}
+		expected[command.Name()] = true
+	}
+
+	cmd := exec.Command(bin, "capabilities")
+	cmd.Dir = findRepoRoot(t)
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		t.Fatalf("capabilities failed: %v\n%s", err, out)
+	}
+	var doc struct {
+		Commands []struct {
+			Path string `json:"path"`
+		} `json:"commands"`
+	}
+	if err := json.Unmarshal(out, &doc); err != nil {
+		t.Fatalf("parse capabilities JSON: %v", err)
+	}
+	actual := map[string]bool{}
+	for _, command := range doc.Commands {
+		fields := strings.Fields(command.Path)
+		if len(fields) == 2 { // "ao <top-level>"
+			actual[fields[1]] = true
+		}
+	}
+	for name := range expected {
+		if !actual[name] {
+			t.Errorf("source registers %q but the built binary does not advertise it", name)
+		}
+	}
+	for name := range actual {
+		if !expected[name] {
+			t.Errorf("built binary advertises %q which this source does not register", name)
+		}
 	}
 }
 

@@ -1,0 +1,263 @@
+// Package verdictcheck structurally verifies stored verdict.v2 artifacts.
+//
+// It is a READER for evidence inspection (`ao status`): it checks JSON shape,
+// canonical-form digest binding, and the PASS scope rules declared by
+// schemas/verdict.v2.schema.json. It never writes verdicts — the Validate
+// skill (skills/validate/scripts/validate.py) is the writer and the semantic
+// authority. Structural validity here is not a semantic verdict, and a
+// well-formed evidence_refs string is a declared reference only: this package
+// does not resolve or digest-bind the referenced evidence.
+//
+// The cross-language golden corpus at tests/fixtures/verdict-contract/ pins
+// this implementation, the Python validator, and the JSON schema to the same
+// judgments; change behavior only together with the corpus.
+package verdictcheck
+
+import (
+	"bytes"
+	"crypto/sha256"
+	"encoding/hex"
+	"encoding/json"
+	"fmt"
+	"io"
+	"time"
+)
+
+// Verdict mirrors the verdict.v2 artifact shape.
+type Verdict struct {
+	SchemaVersion         string      `json:"schema_version"`
+	AcceptanceDigest      string      `json:"acceptance_digest"`
+	SubjectManifestDigest string      `json:"subject_manifest_digest"`
+	AuthorContextID       *string     `json:"author_context_id"`
+	ValidatorContextID    *string     `json:"validator_context_id"`
+	FreshnessAttestation  *Freshness  `json:"freshness_attestation"`
+	Verdict               string      `json:"verdict"`
+	Criteria              []Criterion `json:"criteria"`
+	Findings              []Finding   `json:"findings"`
+	EvidenceRefs          []string    `json:"evidence_refs"`
+	Checked               []string    `json:"checked"`
+	NotChecked            []string    `json:"not_checked"`
+	ValidatedAt           string      `json:"validated_at"`
+	ArtifactDigest        string      `json:"artifact_digest"`
+}
+
+// Freshness mirrors the freshness_attestation object.
+type Freshness struct {
+	Source           string `json:"source"`
+	AttesterIdentity string `json:"attester_identity"`
+}
+
+// Criterion mirrors one acceptance criterion result.
+type Criterion struct {
+	ID           string    `json:"id"`
+	Result       string    `json:"result"`
+	EvidenceRefs *[]string `json:"evidence_refs"`
+	Reason       string    `json:"reason,omitempty"`
+}
+
+// Finding mirrors one verdict finding.
+type Finding struct {
+	ID           string   `json:"id"`
+	Summary      string   `json:"summary"`
+	EvidenceRefs []string `json:"evidence_refs"`
+}
+
+// ValidDigest reports whether value is a 64-char lowercase hex SHA-256.
+func ValidDigest(value string) bool {
+	if len(value) != sha256.Size*2 {
+		return false
+	}
+	for _, char := range value {
+		if (char < '0' || char > '9') && (char < 'a' || char > 'f') {
+			return false
+		}
+	}
+	return true
+}
+
+// VerifyArtifact checks a stored verdict payload against the digest its
+// filename declares: JSON well-formedness with no trailing data, exact
+// verdict.v2 field set, structural shape rules, and recomputed canonical-form
+// digest binding.
+func VerifyArtifact(payload []byte, expectedDigest string) error {
+	var raw map[string]any
+	decoder := json.NewDecoder(bytes.NewReader(payload))
+	decoder.UseNumber()
+	if err := decoder.Decode(&raw); err != nil {
+		return fmt.Errorf("invalid verdict JSON: %w", err)
+	}
+	if err := requireJSONEOF(decoder); err != nil {
+		return err
+	}
+	required := []string{
+		"schema_version", "acceptance_digest", "subject_manifest_digest",
+		"author_context_id", "validator_context_id", "freshness_attestation",
+		"verdict", "criteria", "findings", "evidence_refs", "checked",
+		"not_checked", "validated_at", "artifact_digest",
+	}
+	for _, key := range required {
+		if _, ok := raw[key]; !ok {
+			return fmt.Errorf("verdict.v2 missing required field %q", key)
+		}
+	}
+
+	var verdict Verdict
+	strict := json.NewDecoder(bytes.NewReader(payload))
+	strict.DisallowUnknownFields()
+	if err := strict.Decode(&verdict); err != nil {
+		return fmt.Errorf("invalid verdict.v2 shape: %w", err)
+	}
+	if err := requireJSONEOF(strict); err != nil {
+		return err
+	}
+	if err := ValidateShape(&verdict); err != nil {
+		return err
+	}
+	if verdict.ArtifactDigest != expectedDigest {
+		return fmt.Errorf("artifact_digest does not match filename")
+	}
+
+	delete(raw, "artifact_digest")
+	canonical, err := CanonicalJSON(raw)
+	if err != nil {
+		return fmt.Errorf("canonicalize verdict: %w", err)
+	}
+	actual := sha256.Sum256(canonical)
+	if hex.EncodeToString(actual[:]) != expectedDigest {
+		return fmt.Errorf("canonical content digest does not match filename")
+	}
+	return nil
+}
+
+func requireJSONEOF(decoder *json.Decoder) error {
+	var trailing any
+	if err := decoder.Decode(&trailing); err != io.EOF {
+		if err == nil {
+			return fmt.Errorf("invalid verdict JSON: trailing value")
+		}
+		return fmt.Errorf("invalid verdict JSON: %w", err)
+	}
+	return nil
+}
+
+// CanonicalJSON renders a value in the contract's canonical form: sorted keys,
+// compact separators, raw UTF-8 (no HTML escaping), no trailing newline.
+// Matches the Python writer's canonical_bytes.
+func CanonicalJSON(value any) ([]byte, error) {
+	var buffer bytes.Buffer
+	encoder := json.NewEncoder(&buffer)
+	encoder.SetEscapeHTML(false)
+	if err := encoder.Encode(value); err != nil {
+		return nil, err
+	}
+	return bytes.TrimSuffix(buffer.Bytes(), []byte("\n")), nil
+}
+
+// ValidateShape enforces the structural rules of verdict.v2, including the
+// PASS tightening (distinct nonempty identities, freshness, nonempty checked
+// scope, empty not_checked, every criterion PASS with evidence).
+func ValidateShape(verdict *Verdict) error {
+	if verdict.SchemaVersion != "verdict.v2" {
+		return fmt.Errorf("schema_version is not verdict.v2")
+	}
+	if !ValidDigest(verdict.AcceptanceDigest) || !ValidDigest(verdict.SubjectManifestDigest) || !ValidDigest(verdict.ArtifactDigest) {
+		return fmt.Errorf("verdict.v2 contains an invalid digest")
+	}
+	// Context identities are null (unattributed) or nonempty; an empty string
+	// is junk identity data on any verdict, not only PASS. Matches the Python
+	// validator and the schema's minLength.
+	if err := validContextID(verdict.AuthorContextID, "author_context_id"); err != nil {
+		return err
+	}
+	if err := validContextID(verdict.ValidatorContextID, "validator_context_id"); err != nil {
+		return err
+	}
+	if !validResult(verdict.Verdict) {
+		return fmt.Errorf("verdict.v2 has invalid verdict %q", verdict.Verdict)
+	}
+	if len(verdict.Criteria) == 0 {
+		return fmt.Errorf("verdict.v2 criteria must be nonempty")
+	}
+	if err := validateCriteria(verdict.Criteria); err != nil {
+		return err
+	}
+	if err := validateFindings(verdict.Findings); err != nil {
+		return err
+	}
+	if !nonemptyStrings(verdict.EvidenceRefs) || !nonemptyStrings(verdict.Checked) || !nonemptyStrings(verdict.NotChecked) {
+		return fmt.Errorf("verdict.v2 contains an empty evidence, checked, or not_checked item")
+	}
+	if err := validateFreshness(verdict.FreshnessAttestation); err != nil {
+		return err
+	}
+	if _, err := time.Parse(time.RFC3339, verdict.ValidatedAt); err != nil {
+		return fmt.Errorf("verdict.v2 has invalid validated_at: %w", err)
+	}
+	if verdict.Verdict == "PASS" {
+		return validatePass(verdict)
+	}
+	return nil
+}
+
+func validContextID(value *string, field string) error {
+	if value != nil && *value == "" {
+		return fmt.Errorf("verdict.v2 %s must be null or nonempty", field)
+	}
+	return nil
+}
+
+func validateCriteria(criteria []Criterion) error {
+	for _, criterion := range criteria {
+		if criterion.ID == "" || !validResult(criterion.Result) || criterion.EvidenceRefs == nil || !nonemptyStrings(*criterion.EvidenceRefs) {
+			return fmt.Errorf("verdict.v2 contains an invalid criterion")
+		}
+	}
+	return nil
+}
+
+func validateFindings(findings []Finding) error {
+	for _, finding := range findings {
+		if finding.ID == "" || finding.Summary == "" || len(finding.EvidenceRefs) == 0 || !nonemptyStrings(finding.EvidenceRefs) {
+			return fmt.Errorf("verdict.v2 contains an invalid finding")
+		}
+	}
+	return nil
+}
+
+func validateFreshness(attestation *Freshness) error {
+	if attestation == nil {
+		return nil
+	}
+	if (attestation.Source != "runtime" && attestation.Source != "caller") || attestation.AttesterIdentity == "" {
+		return fmt.Errorf("verdict.v2 has invalid freshness_attestation")
+	}
+	return nil
+}
+
+func validatePass(verdict *Verdict) error {
+	if verdict.AuthorContextID == nil || *verdict.AuthorContextID == "" || verdict.ValidatorContextID == nil || *verdict.ValidatorContextID == "" || *verdict.AuthorContextID == *verdict.ValidatorContextID {
+		return fmt.Errorf("PASS verdict requires distinct nonempty context identities")
+	}
+	if verdict.FreshnessAttestation == nil || len(verdict.EvidenceRefs) == 0 || len(verdict.Checked) == 0 || len(verdict.NotChecked) != 0 {
+		return fmt.Errorf("PASS verdict does not satisfy evidence and freshness requirements")
+	}
+	for _, criterion := range verdict.Criteria {
+		if criterion.Result != "PASS" || criterion.EvidenceRefs == nil || len(*criterion.EvidenceRefs) == 0 {
+			return fmt.Errorf("PASS verdict contains an unproven criterion")
+		}
+	}
+	return nil
+}
+
+func validResult(value string) bool {
+	return value == "PASS" || value == "FAIL" || value == "NOT_PROVEN"
+}
+
+func nonemptyStrings(values []string) bool {
+	for _, value := range values {
+		if value == "" {
+			return false
+		}
+	}
+	return true
+}

@@ -38,7 +38,3 @@ func filterCitationsByMetricNamespace(citations []types.CitationEvent, namespace
 	}
 	return filtered
 }
-
-func citationFeedbackNamespaceKey(baseDir, artifactPath, namespace string) string {
-	return canonicalArtifactKey(baseDir, artifactPath) + "|" + canonicalMetricNamespace(namespace)
-}

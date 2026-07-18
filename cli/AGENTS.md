@@ -3,7 +3,7 @@
 This file is **not** the issue-tracker or workflow source of truth. Read the repo root contracts first:
 
 - [`../AGENTS.md`](../AGENTS.md) — canonical operator contract
-- [`../docs/architecture/codebase-overview.md`](../docs/architecture/codebase-overview.md) — map, footguns, active waist
+- [`../docs/architecture/go-cli.md`](../docs/architecture/go-cli.md) — CLI composition, gate system, evidence boundary
 
 ## Issue tracker (br only)
 

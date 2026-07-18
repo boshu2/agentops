@@ -1,0 +1,36 @@
+{
+  "name": "invalid-pass-missing-evidence",
+  "description": "PASS requires nonempty top-level evidence_refs.",
+  "expected": "invalid",
+  "filename_digest": "2649302dc180b02adf7358018e7de70b901af64f70dbb88181dfaca65fbf96ab",
+  "artifact": {
+    "schema_version": "verdict.v2",
+    "acceptance_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "subject_manifest_digest": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "author_context_id": "ctx-author",
+    "validator_context_id": "ctx-validator",
+    "freshness_attestation": {
+      "source": "runtime",
+      "attester_identity": "runtime:test"
+    },
+    "verdict": "PASS",
+    "criteria": [
+      {
+        "id": "c1",
+        "result": "PASS",
+        "evidence_refs": [
+          "gate:go.build"
+        ],
+        "reason": "checked"
+      }
+    ],
+    "findings": [],
+    "evidence_refs": [],
+    "checked": [
+      "cli/**"
+    ],
+    "not_checked": [],
+    "validated_at": "2026-07-18T12:00:00Z",
+    "artifact_digest": "2649302dc180b02adf7358018e7de70b901af64f70dbb88181dfaca65fbf96ab"
+  }
+}
