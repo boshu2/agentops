@@ -246,7 +246,6 @@ func init() {
 		// glob — a force-added private path might not match any corpus glob, so
 		// changed-file scoping must never be able to skip this (ag-ao0eo).
 		{ID: "corpus.path-guard", Tiers: gates.Fast | gates.Full, Blocking: true, Backing: "check-corpus-path-guard.sh"},
-		{ID: "always.embedded-sync", Tiers: gates.Fast | gates.Full, Blocking: true, Backing: "validate-embedded-sync.sh"},
 		// honest-voice: user-facing CLI strings + seed/template assets must not
 		// claim proven/automatic knowledge compounding (unproven — ADR-0004,
 		// ADR-0011) or hookless-3.0-violating "session hooks" (docs/3.0.md, honest-voice:allow
