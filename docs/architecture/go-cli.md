@@ -70,6 +70,23 @@ A gate PASS is a deterministic fact, not a semantic verdict.
   PASS. Evidence references are reported as declared strings; `ao status` does
   not resolve or digest-bind their targets.
 
+## Eval — the Learn seat
+
+`ao eval` is the measurement surface: the operating contract's "Learn"
+consumer, wired as `cmd/ao/eval_composition.go` → `internal/commands/eval` →
+`internal/eval` services → `internal/adapters/eval`. It runs deterministic
+suites (`schemas/eval-suite.v1.schema.json`) into durable run records
+(`schemas/eval-run.v1.schema.json`, drift-guarded by tests in
+`internal/eval`), compares runs, manages locked Tasks and holdout scenarios
+(`internal/evalsubstrate`; rubric projections are leak-guarded by
+`schemas/outcomes-rubric.v1.schema.json`, and true holdout rubrics live in
+the external measurement register, not this repo), and aggregates A/B arms.
+The scenario-ab treatment is environment-shaped: the with-gold arm may read
+the corpus, the control arm runs sandbox-confined away from every corpus
+root, and judges are always corpus-denied. Eval reports numbers only — it
+owns no retry, scheduling, promotion, or lifecycle authority, and an eval
+score is not a semantic verdict.
+
 ## Related pages
 
 - [Operating loop](operating-loop.md)

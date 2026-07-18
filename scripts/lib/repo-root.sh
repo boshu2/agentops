@@ -38,6 +38,15 @@ if ! declare -F resolve_repo_root >/dev/null 2>&1; then
 # not hijack the relative cd), not a botched assignment.
 resolve_repo_root() {
   local lib_dir root
+  # Explicit override — the TEST SEAM. Fixture suites run real scripts against
+  # a temp repo; without this they would resolve the real checkout and mutate
+  # it (the 2026-07-18 fixture-pollution class: phantom docs/evidence/ dirs and
+  # traffic.jsonl rows written by bats runs). Must name an existing directory.
+  if [ -n "${AGENTOPS_REPO_ROOT:-}" ] && [ -d "${AGENTOPS_REPO_ROOT}" ]; then
+    printf '%s
+' "${AGENTOPS_REPO_ROOT}"
+    return 0
+  fi
   # BASH_SOURCE[0] inside a function names the file the function was DEFINED
   # in — this library — regardless of who calls it.
   # shellcheck disable=SC1007

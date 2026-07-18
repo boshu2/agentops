@@ -15,7 +15,7 @@ func withAgenticHooks(t *testing.T, steps []agenticStep) {
 	t.Helper()
 	orig := agenticRunnerHooks
 	call := 0
-	agenticRunnerHooks.runCodex = func(_ context.Context, _ string, _ string) (string, int, error) {
+	agenticRunnerHooks.runCodex = func(_ context.Context, _ string, _ string, _ bool) (string, int, error) {
 		idx := call
 		if len(steps) == 0 {
 			return "", 0, context.Canceled
