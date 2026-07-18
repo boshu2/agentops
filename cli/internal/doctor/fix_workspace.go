@@ -152,15 +152,16 @@ func workspaceDirInventory(base string) ([]workspaceDirInfo, error) {
 // table verbatim: a key present as a top-level directory is a drift finding
 // whose remediation is a merge/rename into the value directory.
 var workspaceCanonicalAliases = map[string]string{
-	"post-mortem":  "postmortem",
-	"post-mortems": "postmortem",
-	"pre-mortem":   "pre-mortem-checks",
-	"pre-mortems":  "pre-mortem-checks",
-	"handoffs":     "handoff",
-	"mto-handoff":  "handoff",
-	"retros":       "retro",
-	"proof":        "proofs",
-	"test":         "tests",
+	"post-mortem":      "postmortem",
+	"post-mortems":     "postmortem",
+	"pre-mortem":       "pre-mortem-checks",
+	"pre-mortems":      "pre-mortem-checks",
+	"premortem-checks": "pre-mortem-checks",
+	"handoffs":         "handoff",
+	"mto-handoff":      "handoff",
+	"retros":           "retro",
+	"proof":            "proofs",
+	"test":             "tests",
 }
 
 // workspaceStaleSuffixRe matches an explicit stale marker: a trailing

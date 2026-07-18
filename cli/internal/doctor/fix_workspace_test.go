@@ -156,6 +156,7 @@ func TestWorkspaceCanonicalAliases(t *testing.T) {
 		{"post-mortems", "postmortem"},
 		{"pre-mortem", "pre-mortem-checks"},
 		{"pre-mortems", "pre-mortem-checks"},
+		{"premortem-checks", "pre-mortem-checks"},
 		{"handoffs", "handoff"},
 		{"mto-handoff", "handoff"},
 		{"retros", "retro"},

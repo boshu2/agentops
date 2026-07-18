@@ -75,7 +75,7 @@ func (c *InMemoryFindingCompiler) Compile(ctx context.Context, artifact FindingA
 		case CompiledOutputPlanningRule:
 			p = path.Join(".agents", "planning-rules", artifact.ID+".md")
 		case CompiledOutputPremortemCheck:
-			p = path.Join(".agents", "premortem-checks", artifact.ID+".md")
+			p = path.Join(".agents", "pre-mortem-checks", artifact.ID+".md")
 		case CompiledOutputConstraint:
 			p = path.Join(".agents", "constraints", artifact.ID+".sh")
 		default:

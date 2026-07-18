@@ -10,7 +10,7 @@ The prevention ladder has four layers:
    The canonical intake ledger governed by [finding-registry.md](finding-registry.md).
 2. `.agents/findings/<id>.md`
    The promoted finding artifact governed by [finding-artifact.schema.json](finding-artifact.schema.json).
-3. `.agents/planning-rules/<id>.md` and `.agents/premortem-checks/<id>.md`
+3. `.agents/planning-rules/<id>.md` and `.agents/pre-mortem-checks/<id>.md`
    Advisory outputs consumed by `/plan`, `/premortem`, and related judgment flows.
 4. `.agents/constraints/index.json`
    Mechanical detectors that begin as warn-only shadows and become blocking only
@@ -44,7 +44,7 @@ Promotion must preserve the reusable prevention content:
 | Target | Output path | Purpose |
 |--------|-------------|---------|
 | `plan` | `.agents/planning-rules/<id>.md` | Prevent known-bad decomposition or sequencing during planning |
-| `premortem` | `.agents/premortem-checks/<id>.md` | Surface prior failure modes during plan/spec validation |
+| `premortem` | `.agents/pre-mortem-checks/<id>.md` | Surface prior failure modes during plan/spec validation |
 | `constraint` | `.agents/constraints/index.json` | Observe mechanically detectable rules in shadow, then enforce only after measured activation |
 
 `premortem` and `premortem` remain accepted input aliases during migration,

@@ -105,8 +105,8 @@ func TestInMemoryFindingCompiler_CompilePathsAreNamespacedByID(t *testing.T) {
 				t.Fatalf("plan kind path %q missing planning-rules/ segment", item.Path)
 			}
 		case CompiledOutputPremortemCheck:
-			if !strings.Contains(item.Path, "premortem-checks") {
-				t.Fatalf("premortem kind path %q missing premortem-checks/ segment", item.Path)
+			if !strings.Contains(item.Path, "pre-mortem-checks") {
+				t.Fatalf("premortem kind path %q missing pre-mortem-checks/ segment", item.Path)
 			}
 		case CompiledOutputConstraint:
 			if !strings.HasSuffix(item.Path, ".sh") {
