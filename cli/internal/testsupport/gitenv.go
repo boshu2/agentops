@@ -30,6 +30,6 @@ var GitDiscoveryEnvVars = []string{
 // after m.Run().
 func ScrubGitDiscoveryEnv() {
 	for _, key := range GitDiscoveryEnvVars {
-		os.Unsetenv(key)
+		_ = os.Unsetenv(key)
 	}
 }
