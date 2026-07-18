@@ -7,6 +7,8 @@ import (
 	"os/exec"
 	"strings"
 	"testing"
+
+	"github.com/boshu2/agentops/cli/internal/testsupport"
 )
 
 // TestMain clears AGENTOPS_RPI_RUNTIME* env vars AND forces HOME to a
@@ -26,6 +28,13 @@ func TestMain(m *testing.M) {
 			os.Unsetenv(key)
 		}
 	}
+
+	// Scrub git's hook-injected discovery env (GIT_DIR, GIT_WORK_TREE, ...).
+	// When this suite is launched from a git-hook context, those vars redirect
+	// every fixture `git init`/`git config` to the REAL repo — the ek8v
+	// core.bare corruption (recurred 2026-07-18 after the hook-side scrub was
+	// retired with the pre-push gate).
+	testsupport.ScrubGitDiscoveryEnv()
 
 	tmpHome, err := os.MkdirTemp("", "cmd-ao-test-home-*")
 	if err != nil {
