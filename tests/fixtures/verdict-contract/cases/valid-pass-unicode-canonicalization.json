@@ -1,0 +1,38 @@
+{
+  "name": "valid-pass-unicode-canonicalization",
+  "description": "Non-ASCII content: canonical form is raw UTF-8, unescaped, both languages must digest identically.",
+  "expected": "valid",
+  "filename_digest": "b5be34973de3403eb152684a7ce236c0a14c7f198ec8722bedfa20df7730131c",
+  "artifact": {
+    "schema_version": "verdict.v2",
+    "acceptance_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "subject_manifest_digest": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "author_context_id": "ctx-author",
+    "validator_context_id": "ctx-validator",
+    "freshness_attestation": {
+      "source": "runtime",
+      "attester_identity": "runtime:test"
+    },
+    "verdict": "PASS",
+    "criteria": [
+      {
+        "id": "c1",
+        "result": "PASS",
+        "evidence_refs": [
+          "gate:go.build"
+        ],
+        "reason": "unicode reason: café — 日本語 🧪"
+      }
+    ],
+    "findings": [],
+    "evidence_refs": [
+      "gate:go.build"
+    ],
+    "checked": [
+      "café/**"
+    ],
+    "not_checked": [],
+    "validated_at": "2026-07-18T12:00:00Z",
+    "artifact_digest": "b5be34973de3403eb152684a7ce236c0a14c7f198ec8722bedfa20df7730131c"
+  }
+}

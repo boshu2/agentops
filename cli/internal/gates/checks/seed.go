@@ -1,11 +1,14 @@
-// Package checks holds the gate registry: each check registers itself into
-// gates.Default via init(), so adding a check is one new registration in this
-// package — there is no central orchestrator switch or barrel file to edit
-// (the anti-monolith property; ag-qidx G2).
+// Package checks holds the gate check definitions registered into
+// gates.Default. Two registration shapes coexist deliberately:
 //
-// Phase A seeds a representative subset that shells to existing scripts/*.sh via
-// the ScriptRunner. Phase B ports individual checks to native Go Run funcs
-// opportunistically (see go_build.go for the native pattern).
+//   - script-backed checks are declared together in seed.go's init() — one
+//     table entry per check (ID, tiers, match globs, backing scripts/*.sh);
+//   - native Go checks register from their own file's init() with a Run func
+//     (go_build.go, native_inline.go, constraints.go, workflow_install.go).
+//
+// Adding a script-backed check is one seed.go entry plus its backing script;
+// porting a check to native Go moves it into its own file. Either way there is
+// no orchestrator switch to edit — the registry is the only coupling point.
 package checks
 
 import "github.com/boshu2/agentops/cli/internal/gates"
@@ -311,6 +314,15 @@ func init() {
 
 		// contract / context-map / swarm classes
 		{ID: "contract.compatibility", Tiers: gates.Fast | gates.Full, Match: contractPaths, Blocking: true, Backing: "check-contract-compatibility.sh"},
+		{ID: "contract.verdict-corpus", Tiers: gates.Fast | gates.Full, Match: []string{
+			"schemas/verdict.v2.schema.json",
+			"skills/validate/scripts/**",
+			"cli/internal/verdictcheck/**",
+			"cli/cmd/ao/status.go",
+			"tests/fixtures/verdict-contract/**",
+			"scripts/check-verdict-contract-corpus.sh",
+		}, Blocking: true, Backing: "check-verdict-contract-corpus.sh",
+			RepairHint: "the Go reader, Python validator, and JSON schema disagree over tests/fixtures/verdict-contract — change contract behavior only together with the corpus"},
 		{ID: "docs.agents-split", Tiers: gates.Full, Match: agentsDocPaths, Blocking: true, Backing: "validate-agents-split.sh"},
 
 		// always-run structural invariants (no Match)
