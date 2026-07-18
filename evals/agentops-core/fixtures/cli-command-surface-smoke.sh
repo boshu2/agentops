@@ -25,7 +25,7 @@ fi
 # shellcheck disable=SC2016 # literal backticks delimit generated Markdown command headings.
 mapfile -t commands < <(rg '^#{3,4} `ao ' "$DOCS_PATH" | sed -E 's/^.*`([^`]+)`.*/\1/')
 
-if [[ "${#commands[@]}" -ne 86 ]]; then
+if [[ "${#commands[@]}" -ne 73 ]]; then
   printf 'unexpected command matrix size: %s\n' "${#commands[@]}" >&2
   exit 1
 fi
