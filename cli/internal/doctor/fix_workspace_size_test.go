@@ -77,8 +77,8 @@ func TestWorkspaceOversize_DetectDirsAndLooseFiles(t *testing.T) {
 		if f.Subsystem != "workspace" {
 			t.Errorf("findings[%d].Subsystem = %q, want workspace", i, f.Subsystem)
 		}
-		if f.Severity != "P4" {
-			t.Errorf("findings[%d].Severity = %q, want P4", i, f.Severity)
+		if f.Severity != "P3" {
+			t.Errorf("findings[%d].Severity = %q, want P3", i, f.Severity)
 		}
 		if f.Confidence != 1.0 {
 			t.Errorf("findings[%d].Confidence = %v, want 1.0", i, f.Confidence)
@@ -247,8 +247,8 @@ func TestWorkspaceOversize_Registration(t *testing.T) {
 	if det.Subsystem() != "workspace" {
 		t.Errorf("detector subsystem = %q, want workspace", det.Subsystem())
 	}
-	if det.Severity() != "P4" {
-		t.Errorf("detector severity = %q, want P4", det.Severity())
+	if det.Severity() != "P3" {
+		t.Errorf("detector severity = %q, want P3", det.Severity())
 	}
 	if det.QuickPath() {
 		t.Error("detector QuickPath() = true, want false (full tree walk)")

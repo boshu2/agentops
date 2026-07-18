@@ -69,8 +69,8 @@ func TestWorkspaceEmptyDirsRegistration(t *testing.T) {
 			if d.Subsystem() != subsystemWorkspace {
 				t.Errorf("detector subsystem = %q, want %q", d.Subsystem(), subsystemWorkspace)
 			}
-			if d.Severity() != "P4" {
-				t.Errorf("detector severity = %q, want P4", d.Severity())
+			if d.Severity() != "P3" {
+				t.Errorf("detector severity = %q, want P3", d.Severity())
 			}
 			if !d.QuickPath() {
 				t.Error("detector QuickPath = false, want true")
@@ -109,8 +109,8 @@ func TestWorkspaceEmptyDirs_DetectAndFix(t *testing.T) {
 	if fd.ID != fmWorkspaceEmptyDirsID {
 		t.Fatalf("finding ID = %q, want %q", fd.ID, fmWorkspaceEmptyDirsID)
 	}
-	if fd.Severity != "P4" {
-		t.Errorf("finding severity = %q, want P4", fd.Severity)
+	if fd.Severity != "P3" {
+		t.Errorf("finding severity = %q, want P3", fd.Severity)
 	}
 	if !fd.Remediation.AutoFixable {
 		t.Error("finding not marked AutoFixable")
@@ -225,6 +225,91 @@ func TestWorkspaceEmptyDirs_SkipsDirThatGainedFiles(t *testing.T) {
 	}
 	if _, err := os.Stat(filepath.Join(agents, "nested-empty")); !os.IsNotExist(err) {
 		t.Errorf("nested-empty not quarantined (err=%v)", err)
+	}
+}
+
+// TestWorkspaceEmptyDirs_UnreadableDirNotFlagged: a directory whose content
+// cannot be read (permission-denied subtree) has FileCount 0 but is NOT
+// empty — its content is unknown, and unknown must never be quarantined.
+func TestWorkspaceEmptyDirs_UnreadableDirNotFlagged(t *testing.T) {
+	if os.Geteuid() == 0 {
+		t.Skip("running as root; permission denial is not enforceable")
+	}
+	repo := t.TempDir()
+	agents := filepath.Join(repo, ".agents")
+	hidden := filepath.Join(agents, "opaque", "locked")
+	if err := os.MkdirAll(hidden, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(hidden, "secret.md"), []byte("invisible"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Chmod(hidden, 0o000); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = os.Chmod(hidden, 0o755) })
+
+	env := &DetectEnv{RepoRoot: repo, CWD: repo, HomeDir: t.TempDir(), Logger: os.Stderr}
+	findings, err := workspaceEmptyDirsDetector{}.Detect(env)
+	if err != nil {
+		t.Fatalf("Detect: %v", err)
+	}
+	if len(findings) != 0 {
+		t.Fatalf("unreadable dir flagged as empty: %+v", findings)
+	}
+
+	// The fixer must not collect it either.
+	ctx, _ := newWorkspaceEmptyMutateCtx(t, repo)
+	res, err := workspaceEmptyDirsFixer{}.Fix(ctx, env, nil)
+	if err != nil {
+		t.Fatalf("Fix: %v", err)
+	}
+	if res.ActionsTaken != 0 {
+		t.Fatalf("Fix quarantined %d unreadable dir(s), want 0", res.ActionsTaken)
+	}
+	if st, err := os.Stat(filepath.Join(agents, "opaque")); err != nil || !st.IsDir() {
+		t.Fatalf("opaque dir gone after fix (err=%v)", err)
+	}
+}
+
+// TestWorkspaceEmptyDirs_SymlinkOnlyDirNotFlagged: a directory holding only a
+// symlink has zero regular files but is NOT empty — quarantining it would
+// relocate the link.
+func TestWorkspaceEmptyDirs_SymlinkOnlyDirNotFlagged(t *testing.T) {
+	repo := t.TempDir()
+	outside := t.TempDir()
+	agents := filepath.Join(repo, ".agents")
+	linksDir := filepath.Join(agents, "links-only")
+	if err := os.MkdirAll(linksDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	target := filepath.Join(outside, "target.md")
+	if err := os.WriteFile(target, []byte("elsewhere"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink(target, filepath.Join(linksDir, "link.md")); err != nil {
+		t.Fatal(err)
+	}
+
+	env := &DetectEnv{RepoRoot: repo, CWD: repo, HomeDir: t.TempDir(), Logger: os.Stderr}
+	findings, err := workspaceEmptyDirsDetector{}.Detect(env)
+	if err != nil {
+		t.Fatalf("Detect: %v", err)
+	}
+	if len(findings) != 0 {
+		t.Fatalf("symlink-only dir flagged as empty: %+v", findings)
+	}
+
+	ctx, _ := newWorkspaceEmptyMutateCtx(t, repo)
+	res, err := workspaceEmptyDirsFixer{}.Fix(ctx, env, nil)
+	if err != nil {
+		t.Fatalf("Fix: %v", err)
+	}
+	if res.ActionsTaken != 0 {
+		t.Fatalf("Fix quarantined %d symlink-only dir(s), want 0", res.ActionsTaken)
+	}
+	if info, err := os.Lstat(filepath.Join(linksDir, "link.md")); err != nil || info.Mode()&os.ModeSymlink == 0 {
+		t.Fatalf("symlink missing or changed after fix (err=%v)", err)
 	}
 }
 

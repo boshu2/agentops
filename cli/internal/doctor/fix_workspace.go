@@ -33,6 +33,38 @@ func workspaceAgentsDir(env *DetectEnv) string {
 	return filepath.Join(env.RepoRoot, ".agents")
 }
 
+// workspaceRealDir Lstats path and reports whether it is a REAL directory:
+// present, and not a symlink (even a symlink to a directory) or any other
+// non-directory entry. Every workspace detector that consumes the `.agents`
+// root must gate on this before reading it: ReadDir/WalkDir on a symlinked
+// root silently traverse the symlink target, so detectors would inventory —
+// and fixers would then rename — directories OUTSIDE the repository while the
+// lexical EnsureInScope check still passes.
+func workspaceRealDir(path string) bool {
+	info, err := os.Lstat(path)
+	return err == nil && info.Mode()&os.ModeSymlink == 0 && info.IsDir()
+}
+
+// workspaceRequireRealAgentsDir is the fixer-side counterpart of
+// workspaceRealDir for the `.agents` root: an absent root reports
+// (false, nil) — nothing to fix, a no-op success for idempotent fixers —
+// while a root that exists but is not a real directory (symlink, regular
+// file, ...) refuses with a refused_unsafe error so no fixer ever mutates
+// through it.
+func workspaceRequireRealAgentsDir(base string) (exists bool, err error) {
+	info, lerr := os.Lstat(base)
+	if lerr != nil {
+		if os.IsNotExist(lerr) {
+			return false, nil
+		}
+		return false, fmt.Errorf("doctor: lstat workspace root %s: %w", base, lerr)
+	}
+	if info.Mode()&os.ModeSymlink != 0 || !info.IsDir() {
+		return false, fmt.Errorf("doctor: workspace root %s is not a real directory (refused_unsafe)", base)
+	}
+	return true, nil
+}
+
 // workspaceDirInfo describes one immediate subdirectory of the workspace root.
 type workspaceDirInfo struct {
 	// Name is the directory's base name.
@@ -44,15 +76,25 @@ type workspaceDirInfo struct {
 	// NewestMTime is the newest regular-file modification time under the
 	// directory; zero when the directory contains no regular files.
 	NewestMTime time.Time
+	// OtherEntries is the transitive count of entries that are neither
+	// regular files nor directories (symlinks, sockets, FIFOs, ...). A dir
+	// with FileCount==0 but OtherEntries>0 is NOT empty.
+	OtherEntries int
+	// WalkErrs is the count of subpaths that could not be read (permission
+	// errors, races, stat failures). WalkErrs>0 means the inventory is
+	// incomplete: FileCount/ByteSize/NewestMTime are lower bounds, so
+	// consumers must treat the directory's content as UNKNOWN, never as
+	// provably empty or provably expired.
+	WalkErrs int
 }
 
 // workspaceDirInventory inventories the immediate subdirectories of base,
 // returning one workspaceDirInfo per directory in deterministic name order.
 // Symlinks are never followed: a top-level symlink (even to a directory) is
-// not inventoried, and symlinks encountered during the walk contribute
-// nothing. Unreadable entries are skipped, not fatal — the inventory is a
-// best-effort read of a possibly messy workspace. A missing or unreadable
-// base itself is the only error case.
+// not inventoried, and symlinks encountered during the walk count only
+// toward OtherEntries. Unreadable entries are skipped, not fatal — but each
+// skip is tallied in WalkErrs so consumers can tell "empty" from "could not
+// read". A missing or unreadable base itself is the only error case.
 func workspaceDirInventory(base string) ([]workspaceDirInfo, error) {
 	entries, err := os.ReadDir(base)
 	if err != nil {
@@ -67,19 +109,28 @@ func workspaceDirInventory(base string) ([]workspaceDirInfo, error) {
 		}
 		info := workspaceDirInfo{Name: e.Name()}
 		// WalkDir never follows symlinks; the error callback path tolerates
-		// permission failures by skipping the offending subtree.
+		// permission failures by skipping the offending subtree, but every
+		// skipped subpath is counted in WalkErrs (unknown ≠ empty).
 		_ = filepath.WalkDir(filepath.Join(base, e.Name()), func(_ string, d fs.DirEntry, walkErr error) error {
 			if walkErr != nil {
+				info.WalkErrs++
 				if d != nil && d.IsDir() {
 					return fs.SkipDir
 				}
 				return nil
 			}
+			if d.IsDir() {
+				return nil
+			}
 			if !d.Type().IsRegular() {
+				// Symlink, socket, FIFO, device, ...: invisible to the
+				// regular-file tallies but NOT ignorable content.
+				info.OtherEntries++
 				return nil
 			}
 			fi, infoErr := d.Info()
 			if infoErr != nil {
+				info.WalkErrs++
 				return nil
 			}
 			info.FileCount++
@@ -244,7 +295,7 @@ func workspaceDirRename(ctx *MutateContext, path, dest string, verify func(path 
 		rel = path
 	}
 	emptyHash := sha256Hex(nil)
-	return ctx.appendAction(ActionRecord{
+	if err := ctx.appendAction(ActionRecord{
 		Path:         rel,
 		Op:           op.kind(),
 		BeforeHash:   emptyHash,
@@ -257,7 +308,19 @@ func workspaceDirRename(ctx *MutateContext, path, dest string, verify func(path 
 		OK:           true,
 		RenameTo:     dest,
 		Existed:      true,
-	})
+	}); err != nil {
+		// The rename landed but its journal line did not, so `doctor undo`
+		// would be blind to the mutation. (The file-shaped Mutate chokepoint
+		// has the same execute-then-journal order and the same exposure; this
+		// directory adapter at least compensates.) Attempt a compensating
+		// rename-back so disk state matches the (empty) journal, and report
+		// both the journal error and the compensation outcome.
+		if backErr := os.Rename(dest, path); backErr != nil {
+			return fmt.Errorf("doctor: journal Rename of %s: %w; compensating rename-back FAILED (%v) — directory left at %s and is NOT recorded in actions.jsonl", path, err, backErr, dest)
+		}
+		return fmt.Errorf("doctor: journal Rename of %s: %w (compensated: directory renamed back to its original path; no mutation recorded)", path, err)
+	}
+	return nil
 }
 
 // workspaceQuarantineDirByName validates name as a bare path element (a

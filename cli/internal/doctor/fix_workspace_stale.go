@@ -16,8 +16,9 @@ package doctor
 // (see that helper for why Mutate itself cannot take a directory path).
 
 import (
+	"errors"
 	"fmt"
-	"os"
+	"path/filepath"
 	"time"
 )
 
@@ -34,8 +35,11 @@ func init() {
 // NAME classifies as stale/retry debris (isWorkspaceStaleDirName) AND whose
 // newest content mtime is older than the GC TTL relative to now. An empty
 // matched directory (no regular files, zero NewestMTime) counts as expired:
-// there is nothing fresh in it by definition. Non-matching or young
-// directories are simply not selected. Pure: stat + readdir only.
+// there is nothing fresh in it by definition — but ONLY when the inventory
+// walk was complete (WalkErrs == 0). An unreadable subtree means the
+// directory's true content is unknown, and unknown content is never GC-able
+// (fail-safe). Non-matching or young directories are simply not selected.
+// Pure: stat + readdir only.
 func workspaceExpiredStaleDirs(base string, now time.Time) ([]workspaceDirInfo, error) {
 	inv, err := workspaceDirInventory(base)
 	if err != nil {
@@ -45,6 +49,11 @@ func workspaceExpiredStaleDirs(base string, now time.Time) ([]workspaceDirInfo, 
 	var out []workspaceDirInfo
 	for _, d := range inv {
 		if !isWorkspaceStaleDirName(d.Name) {
+			continue
+		}
+		if d.WalkErrs > 0 {
+			// Incomplete read: newest-mtime is a lower bound, so expiry is
+			// unprovable. Never collect what could not be fully inventoried.
 			continue
 		}
 		if d.NewestMTime.IsZero() || d.NewestMTime.Before(cutoff) {
@@ -74,7 +83,10 @@ func (workspaceStaleQueueDirsDetector) Describe() string {
 
 func (d workspaceStaleQueueDirsDetector) Detect(env *DetectEnv) ([]Finding, error) {
 	base := workspaceAgentsDir(env)
-	if _, err := os.Stat(base); err != nil {
+	// Lstat guard: a symlinked `.agents` root would make this detector (and
+	// then the fixer) operate on a tree outside the repo. Not a real dir →
+	// nothing to report.
+	if !workspaceRealDir(base) {
 		return nil, nil
 	}
 	expired, err := workspaceExpiredStaleDirs(base, time.Now())
@@ -131,7 +143,15 @@ func (workspaceStaleQueueDirsFixer) AutoFixable() bool  { return true }
 func (f workspaceStaleQueueDirsFixer) Fix(ctx *MutateContext, env *DetectEnv, _ []Finding) (FixResult, error) {
 	res := FixResult{FixerID: f.ID(), FindingIDs: []string{f.ID()}}
 	base := workspaceAgentsDir(env)
-	if info, err := os.Stat(base); err != nil || !info.IsDir() {
+	// Never mutate through a `.agents` root that is not a real directory: a
+	// symlinked root would make every quarantine rename act on a tree OUTSIDE
+	// the repo while the lexical scope check still passes.
+	exists, err := workspaceRequireRealAgentsDir(base)
+	if err != nil {
+		res.Err = fmt.Errorf("doctor: %s: %w", f.ID(), err)
+		return res, res.Err
+	}
+	if !exists {
 		// Nothing to GC; the finding (if any) is stale.
 		res.Fixed = true
 		return res, nil
@@ -142,21 +162,78 @@ func (f workspaceStaleQueueDirsFixer) Fix(ctx *MutateContext, env *DetectEnv, _ 
 		return res, res.Err
 	}
 	for _, d := range expired {
-		dest := workspaceQuarantineDest(ctx, d.Name)
-		if err := workspaceQuarantineRename(ctx, base, d.Name, dest); err != nil {
-			res.Err = fmt.Errorf("doctor: %s: quarantine %s: %w", f.ID(), d.Name, err)
+		if err := f.quarantineOne(ctx, base, d.Name, &res); err != nil {
+			res.Err = err
 			return res, res.Err
 		}
-		res.ActionsTaken++
 	}
-	res.Fixed = true
+	// A skipped dir was deliberately refused (state changed under us); the
+	// fixer is honest about not being fully done, but other dirs proceeded.
+	res.Fixed = len(res.Skipped) == 0
 	return res, nil
+}
+
+// quarantineOne quarantines a single expired stale/retry directory. A
+// verify-hook refusal (the directory's state changed between the fixer's scan
+// and the under-lock recheck) is recorded in res.Skipped and is NOT fatal —
+// remaining directories still get collected. Any other error is fatal.
+func (f workspaceStaleQueueDirsFixer) quarantineOne(ctx *MutateContext, base, name string, res *FixResult) error {
+	dest := workspaceQuarantineDest(ctx, name)
+	err := workspaceQuarantineRename(ctx, base, name, dest, workspaceStaleQuarantineVerify(base))
+	if err == nil {
+		res.ActionsTaken++
+		return nil
+	}
+	if errors.Is(err, errWorkspaceStaleVerifyRefused) {
+		res.Skipped = append(res.Skipped, fmt.Sprintf(".agents/%s: %v", name, err))
+		return nil
+	}
+	return fmt.Errorf("doctor: %s: quarantine %s: %w", f.ID(), name, err)
+}
+
+// errWorkspaceStaleVerifyRefused is the sentinel wrapped by the stale-GC
+// verify hook when a directory selected at scan time no longer qualifies at
+// rename time. Callers treat it as skipped-not-fatal.
+var errWorkspaceStaleVerifyRefused = errors.New("no longer GC-eligible; refusing to quarantine (refused_unsafe)")
+
+// workspaceStaleQuarantineVerify returns the verify hook run by
+// workspaceDirRename UNDER the per-path lock, immediately before the rename.
+// It re-checks the full GC predicate against live disk state: the name still
+// classifies as stale/retry debris, the re-inventoried newest content mtime
+// is still past the TTL, and the walk was complete (WalkErrs == 0 — unknown
+// content is never GC-able). Content arriving between the fixer's scan and
+// the rename therefore refuses the move instead of being quarantined.
+func workspaceStaleQuarantineVerify(base string) func(path string) error {
+	return func(path string) error {
+		name := filepath.Base(path)
+		if !isWorkspaceStaleDirName(name) {
+			return fmt.Errorf("doctor: %s: name %w", path, errWorkspaceStaleVerifyRefused)
+		}
+		inv, err := workspaceDirInventory(base)
+		if err != nil {
+			return fmt.Errorf("doctor: re-inventory %s: %w", base, err)
+		}
+		cutoff := time.Now().Add(-workspaceGCTTL())
+		for _, d := range inv {
+			if d.Name != name {
+				continue
+			}
+			if d.WalkErrs > 0 {
+				return fmt.Errorf("doctor: %s: content unreadable, %w", path, errWorkspaceStaleVerifyRefused)
+			}
+			if d.NewestMTime.IsZero() || d.NewestMTime.Before(cutoff) {
+				return nil // still expired — proceed
+			}
+			return fmt.Errorf("doctor: %s: gained fresh content since scan, %w", path, errWorkspaceStaleVerifyRefused)
+		}
+		return fmt.Errorf("doctor: %s: no longer present, %w", path, errWorkspaceStaleVerifyRefused)
+	}
 }
 
 // workspaceQuarantineRename moves the workspace DIRECTORY <base>/<name> to
 // dest through the shared workspace directory-rename chokepoint adapter
 // (workspaceDirRename), with the bare-path-element structural guard applied
-// by workspaceQuarantineDirByName.
-func workspaceQuarantineRename(ctx *MutateContext, base, name, dest string) error {
-	return workspaceQuarantineDirByName(ctx, base, name, dest, nil)
+// by workspaceQuarantineDirByName. verify runs under the per-path lock.
+func workspaceQuarantineRename(ctx *MutateContext, base, name, dest string, verify func(path string) error) error {
+	return workspaceQuarantineDirByName(ctx, base, name, dest, verify)
 }

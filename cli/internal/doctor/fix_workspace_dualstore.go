@@ -8,11 +8,14 @@ package doctor
 //     <repo>/.agents/ao/learnings exist with content. The knowledge subsystem
 //     already OWNS the repair for this split —
 //     fm-knowledge-orphaned-flywheel-learnings consolidates the fallback dir
-//     into the canonical one via per-file Rename. This workspace finding is a
-//     broader report-only lens (RepoRoot-anchored, counts ALL regular files
-//     transitively, not just top-level *.md/*.jsonl) whose remediation defers
-//     to that existing fixer so the two subsystems never fight over the same
-//     files.
+//     into the canonical one via per-file Rename of TOP-LEVEL *.md/*.jsonl
+//     files (listLearningFiles). This workspace finding is a RepoRoot-anchored
+//     report-only lens whose FIRING CONDITION is aligned to exactly that
+//     fixer's movable set, so running the advertised remediation actually
+//     clears the finding (a nested or non-indexable file must not keep it
+//     alive forever). Total transitive file counts are still reported in
+//     Evidence.Query as context. Remediation defers to that existing fixer so
+//     the two subsystems never fight over the same files.
 //
 //   - fm-ws-nested-tree: an accidental nested runtime tree
 //     <repo>/<subdir>/.agents (e.g. cli/.agents), usually left behind by an
@@ -105,9 +108,25 @@ func (workspaceDualStoreDetector) Describe() string {
 
 func (d workspaceDualStoreDetector) Detect(env *DetectEnv) ([]Finding, error) {
 	base := workspaceAgentsDir(env)
-	legacyCount, legacyIsDir := workspaceTransitiveFileCount(filepath.Join(base, "learnings"))
-	canonicalCount, canonicalIsDir := workspaceTransitiveFileCount(filepath.Join(base, "ao", "learnings"))
-	if !legacyIsDir || !canonicalIsDir || legacyCount == 0 || canonicalCount == 0 {
+	// Lstat guard: a symlinked `.agents` root points outside the repo.
+	if !workspaceRealDir(base) {
+		return nil, nil
+	}
+	legacyDir := filepath.Join(base, "learnings")
+	canonicalDir := filepath.Join(base, "ao", "learnings")
+	legacyTotal, legacyIsDir := workspaceTransitiveFileCount(legacyDir)
+	canonicalTotal, canonicalIsDir := workspaceTransitiveFileCount(canonicalDir)
+	if !legacyIsDir || !canonicalIsDir {
+		return nil, nil
+	}
+	// Fire on exactly the set the advertised remediation can move: the
+	// knowledge fixer consolidates TOP-LEVEL *.md/*.jsonl files only
+	// (listLearningFiles), so counting anything broader would leave the
+	// finding permanently alive after a successful fix. Transitive totals are
+	// context, not the trigger.
+	legacyMovable := listLearningFiles(legacyDir)
+	canonicalLearnings := listLearningFiles(canonicalDir)
+	if len(legacyMovable) == 0 || len(canonicalLearnings) == 0 {
 		return nil, nil
 	}
 	// The knowledge subsystem owns the repair: point remediation at its fixer
@@ -118,11 +137,12 @@ func (d workspaceDualStoreDetector) Detect(env *DetectEnv) ([]Finding, error) {
 		ID:         d.ID(),
 		Severity:   d.Severity(),
 		Subsystem:  d.Subsystem(),
-		Title:      fmt.Sprintf("dual learnings stores: %d file(s) in .agents/learnings, %d in .agents/ao/learnings", legacyCount, canonicalCount),
+		Title:      fmt.Sprintf("dual learnings stores: %d movable file(s) in .agents/learnings, %d in .agents/ao/learnings", len(legacyMovable), len(canonicalLearnings)),
 		Confidence: 1.0,
 		Evidence: Evidence{
-			File:  ".agents/learnings",
-			Query: fmt.Sprintf("transitive regular-file counts: .agents/learnings=%d .agents/ao/learnings=%d", legacyCount, canonicalCount),
+			File: ".agents/learnings",
+			Query: fmt.Sprintf("movable top-level *.md/*.jsonl: .agents/learnings=%d .agents/ao/learnings=%d (transitive regular-file totals, context only: %d and %d)",
+				len(legacyMovable), len(canonicalLearnings), legacyTotal, canonicalTotal),
 		},
 		Remediation: Remediation{
 			Command:          "ao doctor --fix --only " + knowledgeFixerID,

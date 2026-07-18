@@ -3,8 +3,10 @@ package doctor
 // Workspace subsystem: fm-ws-empty-dirs (auto-fixable).
 //
 // Flags empty immediate subdirectories of the workspace root `.agents/` —
-// directories holding zero transitive regular files (truly empty, or holding
-// only empty substructure). These are abandoned scaffolding from crashed or
+// directories PROVABLY holding nothing: zero transitive regular files, zero
+// non-regular entries (symlinks, FIFOs, ...), and zero unreadable subpaths
+// (truly empty, or holding only empty substructure). These are abandoned
+// scaffolding from crashed or
 // half-finished lanes: they clutter inventory output and mislead tooling that
 // treats directory presence as a signal.
 //
@@ -53,11 +55,24 @@ func workspaceEmptyDirClaimed(name string) bool {
 	return isWorkspaceStaleDirName(name)
 }
 
+// workspaceEmptyDirInfoIsEmpty reports whether an inventoried directory is
+// PROVABLY empty: zero regular files, zero non-regular entries (a dir of only
+// symlinks/FIFOs is not empty), and zero walk errors (an unreadable subtree
+// means content is unknown, and unknown is never empty).
+func workspaceEmptyDirInfoIsEmpty(info workspaceDirInfo) bool {
+	return info.FileCount == 0 && info.OtherEntries == 0 && info.WalkErrs == 0
+}
+
 // workspaceEmptyDirCandidates inventories base and returns the names of
-// immediate subdirectories holding zero transitive regular files, excluding
-// claimed names, in deterministic (name-sorted) order. A missing base yields
-// nil candidates and a nil error — nothing to flag.
+// immediate subdirectories that are provably empty (see
+// workspaceEmptyDirInfoIsEmpty), excluding claimed names, in deterministic
+// (name-sorted) order. A missing base — or a base that is not a real
+// directory, e.g. a symlinked `.agents` root — yields nil candidates and a
+// nil error: nothing this failure mode may safely claim.
 func workspaceEmptyDirCandidates(base string) ([]string, error) {
+	if !workspaceRealDir(base) {
+		return nil, nil
+	}
 	inv, err := workspaceDirInventory(base)
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -67,7 +82,7 @@ func workspaceEmptyDirCandidates(base string) ([]string, error) {
 	}
 	var out []string
 	for _, info := range inv {
-		if info.FileCount != 0 {
+		if !workspaceEmptyDirInfoIsEmpty(info) {
 			continue
 		}
 		if workspaceEmptyDirClaimed(info.Name) {
@@ -93,13 +108,15 @@ func quarantineEmptyDir(ctx *MutateContext, base, name, dest string) (bool, erro
 		}
 		for _, di := range baseInv {
 			if di.Name == name {
-				if di.FileCount == 0 {
+				// Same bar as the detector: provably empty means zero regular
+				// files AND zero other entries AND zero walk errors.
+				if workspaceEmptyDirInfoIsEmpty(di) {
 					return nil
 				}
 				break
 			}
 		}
-		return fmt.Errorf("doctor: %s gained files since scan; refusing to quarantine (refused_unsafe)", path)
+		return fmt.Errorf("doctor: %s gained content (or became unreadable) since scan; refusing to quarantine (refused_unsafe)", path)
 	}
 	if err := workspaceQuarantineDirByName(ctx, base, name, dest, verify); err != nil {
 		return false, err
@@ -117,7 +134,7 @@ type workspaceEmptyDirsDetector struct{}
 
 func (workspaceEmptyDirsDetector) ID() string           { return fmWorkspaceEmptyDirsID }
 func (workspaceEmptyDirsDetector) Subsystem() string    { return subsystemWorkspace }
-func (workspaceEmptyDirsDetector) Severity() string     { return "P4" }
+func (workspaceEmptyDirsDetector) Severity() string     { return "P3" }
 func (workspaceEmptyDirsDetector) EstimatedCostMS() int { return 4 }
 func (workspaceEmptyDirsDetector) OnlineRequired() bool { return false }
 func (workspaceEmptyDirsDetector) QuickPath() bool      { return true }
@@ -173,6 +190,18 @@ func (workspaceEmptyDirsFixer) AutoFixable() bool  { return true }
 func (f workspaceEmptyDirsFixer) Fix(ctx *MutateContext, env *DetectEnv, _ []Finding) (FixResult, error) {
 	res := FixResult{FixerID: f.ID(), FindingIDs: []string{f.ID()}}
 	base := workspaceAgentsDir(env)
+	// Never mutate through a `.agents` root that is not a real directory: a
+	// symlinked root would make every rename act on a tree OUTSIDE the repo
+	// while the lexical scope check still passes.
+	exists, err := workspaceRequireRealAgentsDir(base)
+	if err != nil {
+		res.Err = fmt.Errorf("doctor: %s: %w", f.ID(), err)
+		return res, res.Err
+	}
+	if !exists {
+		res.Fixed = true // nothing to fix
+		return res, nil
+	}
 	candidates, err := workspaceEmptyDirCandidates(base)
 	if err != nil {
 		res.Err = fmt.Errorf("doctor: %s: inventory workspace: %w", f.ID(), err)

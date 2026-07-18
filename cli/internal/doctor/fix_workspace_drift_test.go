@@ -359,6 +359,68 @@ func TestWorkspaceNamingDrift_SymlinkEntrySkipped(t *testing.T) {
 	}
 }
 
+// TestWorkspaceNamingDrift_LateDestinationCollisionSkipped exercises the
+// under-lock destination recheck directly: a destination file that appears
+// AFTER the fixer's directory scan (the detect→rename window) is a collision
+// — the move is refused, nothing is overwritten, and nothing is journaled.
+// The fixer's early ReadDir-time collision check cannot see this file; only
+// the lock→lstat→rename recheck inside moveEntryNoClobber can.
+func TestWorkspaceNamingDrift_LateDestinationCollisionSkipped(t *testing.T) {
+	_, repo := namingDriftEnv(t)
+	agents := filepath.Join(repo, ".agents")
+	alias := filepath.Join(agents, "retros")
+	canonical := filepath.Join(agents, "retro")
+
+	// File case: dest file appears in the window.
+	writeDriftFile(t, filepath.Join(alias, "dup.md"), "alias body")
+	writeDriftFile(t, filepath.Join(canonical, "dup.md"), "late arrival")
+
+	ctx, ra := newNamingDriftCtx(t, repo, false)
+	fixer := workspaceNamingDriftFixer{}
+	collided, err := fixer.moveEntryNoClobber(ctx, filepath.Join(alias, "dup.md"), filepath.Join(canonical, "dup.md"), false)
+	if err != nil {
+		t.Fatalf("moveEntryNoClobber(file): %v", err)
+	}
+	if !collided {
+		t.Fatal("moveEntryNoClobber(file) did not report the late collision")
+	}
+	if got := readDriftFile(t, filepath.Join(alias, "dup.md")); got != "alias body" {
+		t.Errorf("alias dup.md = %q, want %q (source moved!)", got, "alias body")
+	}
+	if got := readDriftFile(t, filepath.Join(canonical, "dup.md")); got != "late arrival" {
+		t.Errorf("canonical dup.md = %q, want %q (dest overwritten!)", got, "late arrival")
+	}
+
+	// Directory case: dest dir appears in the window (an empty dest dir is
+	// exactly the shape os.Rename would silently replace).
+	writeDriftFile(t, filepath.Join(alias, "subdir", "n.md"), "nested body")
+	if err := os.MkdirAll(filepath.Join(canonical, "subdir"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	collided, err = fixer.moveEntryNoClobber(ctx, filepath.Join(alias, "subdir"), filepath.Join(canonical, "subdir"), true)
+	if err != nil {
+		t.Fatalf("moveEntryNoClobber(dir): %v", err)
+	}
+	if !collided {
+		t.Fatal("moveEntryNoClobber(dir) did not report the late collision")
+	}
+	if got := readDriftFile(t, filepath.Join(alias, "subdir", "n.md")); got != "nested body" {
+		t.Errorf("alias subdir/n.md = %q, want %q (source moved!)", got, "nested body")
+	}
+	if st, err := os.Stat(filepath.Join(canonical, "subdir")); err != nil || !st.IsDir() {
+		t.Errorf("canonical subdir gone (err=%v)", err)
+	}
+
+	// Neither refused move was journaled.
+	recs, err := readActions(ra.ActionsPath())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(recs) != 0 {
+		t.Fatalf("collided moves wrote %d action records, want 0", len(recs))
+	}
+}
+
 func TestWorkspaceNamingDrift_DryRunTouchesNothing(t *testing.T) {
 	env, repo := namingDriftEnv(t)
 	agents := filepath.Join(repo, ".agents")

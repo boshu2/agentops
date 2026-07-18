@@ -3,6 +3,7 @@ package doctor
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 )
@@ -71,7 +72,8 @@ func TestWorkspaceDirInventory(t *testing.T) {
 		t.Fatalf("workspaceDirInventory: %v", err)
 	}
 	want := []workspaceDirInfo{
-		{Name: "alpha", FileCount: 2, ByteSize: 8, NewestMTime: t2},
+		// alpha's symlink entry is counted as an OtherEntry, never followed.
+		{Name: "alpha", FileCount: 2, ByteSize: 8, NewestMTime: t2, OtherEntries: 1},
 		{Name: "beta", FileCount: 0, ByteSize: 0, NewestMTime: time.Time{}},
 		{Name: "gamma", FileCount: 1, ByteSize: 7, NewestMTime: t3},
 	}
@@ -90,6 +92,12 @@ func TestWorkspaceDirInventory(t *testing.T) {
 		}
 		if !got[i].NewestMTime.Equal(want[i].NewestMTime) {
 			t.Errorf("%s NewestMTime = %v, want %v", want[i].Name, got[i].NewestMTime, want[i].NewestMTime)
+		}
+		if got[i].OtherEntries != want[i].OtherEntries {
+			t.Errorf("%s OtherEntries = %d, want %d", want[i].Name, got[i].OtherEntries, want[i].OtherEntries)
+		}
+		if got[i].WalkErrs != 0 {
+			t.Errorf("%s WalkErrs = %d, want 0", want[i].Name, got[i].WalkErrs)
 		}
 	}
 }
@@ -124,6 +132,11 @@ func TestWorkspaceDirInventory_PermissionErrorSkipped(t *testing.T) {
 	}
 	if !got[0].NewestMTime.Equal(t1) {
 		t.Errorf("NewestMTime = %v, want %v", got[0].NewestMTime, t1)
+	}
+	// The skip is TALLIED: unreadable content means the inventory is a lower
+	// bound, and consumers must be able to tell "empty" from "could not read".
+	if got[0].WalkErrs == 0 {
+		t.Error("WalkErrs = 0, want > 0 for an unreadable subtree")
 	}
 }
 
@@ -204,6 +217,184 @@ func TestWorkspaceQuarantineDest(t *testing.T) {
 	want := filepath.Join("/repo", ".doctor", "runs", "r1", "quarantine", "workspace", "land-queue-age-h433.22-native-retry2")
 	if got != want {
 		t.Errorf("workspaceQuarantineDest = %q, want %q", got, want)
+	}
+}
+
+func TestWorkspaceRealDir(t *testing.T) {
+	base := t.TempDir()
+	realDir := filepath.Join(base, "real")
+	if err := os.MkdirAll(realDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	regFile := filepath.Join(base, "file.txt")
+	writeWorkspaceFile(t, regFile, "x", time.Now())
+	linkToDir := filepath.Join(base, "link-dir")
+	if err := os.Symlink(realDir, linkToDir); err != nil {
+		t.Fatal(err)
+	}
+
+	tests := []struct {
+		name string
+		path string
+		want bool
+	}{
+		{"real directory", realDir, true},
+		{"regular file", regFile, false},
+		{"symlink to a directory", linkToDir, false},
+		{"absent", filepath.Join(base, "nope"), false},
+	}
+	for _, tt := range tests {
+		if got := workspaceRealDir(tt.path); got != tt.want {
+			t.Errorf("workspaceRealDir(%s) = %v, want %v", tt.name, got, tt.want)
+		}
+	}
+
+	// Fixer-side counterpart: absent is a clean no-op, symlink/file refuse.
+	if exists, err := workspaceRequireRealAgentsDir(realDir); err != nil || !exists {
+		t.Errorf("workspaceRequireRealAgentsDir(real dir) = %v, %v, want true, nil", exists, err)
+	}
+	if exists, err := workspaceRequireRealAgentsDir(filepath.Join(base, "nope")); err != nil || exists {
+		t.Errorf("workspaceRequireRealAgentsDir(absent) = %v, %v, want false, nil", exists, err)
+	}
+	for _, path := range []string{regFile, linkToDir} {
+		exists, err := workspaceRequireRealAgentsDir(path)
+		if err == nil || exists {
+			t.Errorf("workspaceRequireRealAgentsDir(%s) = %v, %v, want refused_unsafe error", path, exists, err)
+			continue
+		}
+		if !strings.Contains(err.Error(), "refused_unsafe") {
+			t.Errorf("workspaceRequireRealAgentsDir(%s) error = %v, want it to mention refused_unsafe", path, err)
+		}
+	}
+}
+
+// TestWorkspaceSymlinkedAgentsRoot is the F-mode fixture for a `.agents` root
+// that is a SYMLINK to a directory outside the repository: every workspace
+// detector that consumes the root must report nothing, every workspace fixer
+// must refuse with refused_unsafe, and the external tree must remain
+// byte-for-byte untouched (the lexical scope check alone would have passed).
+func TestWorkspaceSymlinkedAgentsRoot(t *testing.T) {
+	repo := t.TempDir()
+	external := t.TempDir()
+	old := time.Now().Add(-30 * 24 * time.Hour)
+
+	// The external tree carries one would-be finding for each failure mode.
+	writeWorkspaceFile(t, filepath.Join(external, "post-mortems", "a.md"), "drift bait", old)
+	if err := os.MkdirAll(filepath.Join(external, "stub"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	writeWorkspaceFile(t, filepath.Join(external, "land-queue-x.stale-20260601T000000Z", "v.json"), "stale bait", old)
+	writeWorkspaceFile(t, filepath.Join(external, "learnings", "l.md"), "legacy", old)
+	writeWorkspaceFile(t, filepath.Join(external, "ao", "learnings", "c.md"), "canonical", old)
+
+	if err := os.Symlink(external, filepath.Join(repo, ".agents")); err != nil {
+		t.Fatalf("symlink .agents: %v", err)
+	}
+	env := &DetectEnv{RepoRoot: repo, CWD: repo, HomeDir: t.TempDir(), Logger: os.Stderr}
+
+	// Every root-consuming detector: zero findings.
+	detectors := map[string]Detector{
+		"drift":     workspaceNamingDriftDetector{},
+		"empty":     workspaceEmptyDirsDetector{},
+		"stale":     workspaceStaleQueueDirsDetector{},
+		"oversize":  workspaceOversizeDetector{},
+		"dualstore": workspaceDualStoreDetector{},
+	}
+	for name, d := range detectors {
+		findings, err := d.Detect(env)
+		if err != nil {
+			t.Errorf("%s Detect on symlinked root: %v", name, err)
+		}
+		if len(findings) != 0 {
+			t.Errorf("%s Detect on symlinked root = %d findings, want 0", name, len(findings))
+		}
+	}
+
+	// Every workspace fixer: refuse, mutate nothing.
+	ctx, ra := newWorkspaceStaleMutateCtx(t, repo)
+	fixers := map[string]Fixer{
+		"drift": workspaceNamingDriftFixer{},
+		"empty": workspaceEmptyDirsFixer{},
+		"stale": workspaceStaleQueueDirsFixer{},
+	}
+	for name, f := range fixers {
+		res, err := f.Fix(ctx, env, nil)
+		if err == nil || res.Err == nil {
+			t.Errorf("%s Fix on symlinked root: err=%v res.Err=%v, want refused_unsafe", name, err, res.Err)
+			continue
+		}
+		if !strings.Contains(err.Error(), "refused_unsafe") {
+			t.Errorf("%s Fix error = %v, want it to mention refused_unsafe", name, err)
+		}
+		if res.ActionsTaken != 0 {
+			t.Errorf("%s Fix took %d actions through a symlinked root", name, res.ActionsTaken)
+		}
+	}
+	recs, err := readActions(ra.ActionsPath())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(recs) != 0 {
+		t.Fatalf("action records = %d, want 0", len(recs))
+	}
+
+	// The external tree is untouched.
+	for path, content := range map[string]string{
+		filepath.Join(external, "post-mortems", "a.md"):                          "drift bait",
+		filepath.Join(external, "land-queue-x.stale-20260601T000000Z", "v.json"): "stale bait",
+		filepath.Join(external, "learnings", "l.md"):                             "legacy",
+		filepath.Join(external, "ao", "learnings", "c.md"):                       "canonical",
+	} {
+		got, err := os.ReadFile(path)
+		if err != nil || string(got) != content {
+			t.Errorf("external file %s = %q err=%v, want %q untouched", path, got, err, content)
+		}
+	}
+	if st, err := os.Stat(filepath.Join(external, "stub")); err != nil || !st.IsDir() {
+		t.Errorf("external stub dir missing after fix attempts (err=%v)", err)
+	}
+}
+
+// TestWorkspaceDirRename_JournalFailureCompensates forces the fsync'd
+// actions.jsonl append to fail AFTER the rename executed: the helper must
+// rename the directory back to its original path (so disk state matches the
+// empty journal and undo is never blind) and report both facts in the error.
+func TestWorkspaceDirRename_JournalFailureCompensates(t *testing.T) {
+	repo := t.TempDir()
+	dir := filepath.Join(repo, ".agents", "doomed")
+	writeWorkspaceFile(t, filepath.Join(dir, "keep.md"), "payload", time.Now())
+
+	ra, err := NewRunArtifact(repo, "wsjournalfail", time.Now())
+	if err != nil {
+		t.Fatalf("NewRunArtifact: %v", err)
+	}
+	af, err := ra.OpenActionsFile()
+	if err != nil {
+		t.Fatalf("OpenActionsFile: %v", err)
+	}
+	// Close the handle NOW: the rename will succeed, the journal append will fail.
+	if err := af.Close(); err != nil {
+		t.Fatalf("close actions file: %v", err)
+	}
+	caps := NewCapabilities("test")
+	locks := NewLockManager(filepath.Join(repo, ".doctor", "locks"))
+	ctx := NewMutateContext(ra, caps, t.TempDir(), locks, af, false).WithFixer("test-journal-fail")
+
+	dest := workspaceQuarantineDest(ctx, "doomed")
+	renameErr := workspaceDirRename(ctx, dir, dest, nil)
+	if renameErr == nil {
+		t.Fatal("workspaceDirRename succeeded despite a dead actions.jsonl handle")
+	}
+	if !strings.Contains(renameErr.Error(), "compensated") {
+		t.Errorf("error = %v, want it to report the compensating rename-back", renameErr)
+	}
+	// The directory is back at its original path, content intact; dest gone.
+	got, err := os.ReadFile(filepath.Join(dir, "keep.md"))
+	if err != nil || string(got) != "payload" {
+		t.Fatalf("dir not restored at original path: content=%q err=%v", got, err)
+	}
+	if _, err := os.Lstat(dest); !os.IsNotExist(err) {
+		t.Errorf("quarantine dest still present after compensation (err=%v)", err)
 	}
 }
 

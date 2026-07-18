@@ -68,7 +68,7 @@ type workspaceOversizeDetector struct{}
 
 func (workspaceOversizeDetector) ID() string           { return workspaceOversizeID }
 func (workspaceOversizeDetector) Subsystem() string    { return subsystemWorkspace }
-func (workspaceOversizeDetector) Severity() string     { return "P4" }
+func (workspaceOversizeDetector) Severity() string     { return "P3" }
 func (workspaceOversizeDetector) EstimatedCostMS() int { return 250 }
 func (workspaceOversizeDetector) OnlineRequired() bool { return false }
 func (workspaceOversizeDetector) QuickPath() bool      { return false }
@@ -78,7 +78,9 @@ func (workspaceOversizeDetector) Describe() string {
 
 func (d workspaceOversizeDetector) Detect(env *DetectEnv) ([]Finding, error) {
 	base := workspaceAgentsDir(env)
-	if _, err := os.Stat(base); err != nil {
+	// Lstat guard: a symlinked `.agents` root points outside the repo; size
+	// reporting on foreign trees is noise at best. Not a real dir → nothing.
+	if !workspaceRealDir(base) {
 		return nil, nil
 	}
 	inv, err := workspaceDirInventory(base)

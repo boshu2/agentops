@@ -1,8 +1,10 @@
 package doctor
 
 import (
+	"errors"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 )
@@ -280,6 +282,102 @@ func TestWorkspaceStaleQueueDirs_UndoRestoresQuarantinedDirs(t *testing.T) {
 	st, err := os.Stat(filepath.Join(agents, retryDirEmpty))
 	if err != nil || !st.IsDir() {
 		t.Fatalf("after undo %s not restored (err=%v)", retryDirEmpty, err)
+	}
+}
+
+// TestWorkspaceStaleQueueDirs_UnreadableNotCollected: a name-matched stale
+// dir with an unreadable subtree has an UNKNOWN newest mtime — its inventory
+// is a lower bound — so it is never provably expired and never GC'd.
+func TestWorkspaceStaleQueueDirs_UnreadableNotCollected(t *testing.T) {
+	if os.Geteuid() == 0 {
+		t.Skip("running as root; permission denial is not enforceable")
+	}
+	repo := t.TempDir()
+	agents := filepath.Join(repo, ".agents")
+	old := time.Now().Add(-30 * 24 * time.Hour)
+	locked := filepath.Join(agents, retryDirExpired, "locked")
+	writeWorkspaceFile(t, filepath.Join(locked, "hidden.txt"), "unknown freshness", old)
+	if err := os.Chmod(locked, 0o000); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = os.Chmod(locked, 0o755) })
+
+	env := &DetectEnv{RepoRoot: repo, CWD: repo, HomeDir: t.TempDir(), Logger: os.Stderr}
+	findings, err := workspaceStaleQueueDirsDetector{}.Detect(env)
+	if err != nil {
+		t.Fatalf("Detect: %v", err)
+	}
+	if len(findings) != 0 {
+		t.Fatalf("unreadable stale dir flagged as expired: %+v", findings)
+	}
+
+	ctx, _ := newWorkspaceStaleMutateCtx(t, repo)
+	res, err := workspaceStaleQueueDirsFixer{}.Fix(ctx, env, nil)
+	if err != nil {
+		t.Fatalf("Fix: %v", err)
+	}
+	if res.ActionsTaken != 0 {
+		t.Fatalf("Fix quarantined %d unreadable dir(s), want 0", res.ActionsTaken)
+	}
+	if st, err := os.Stat(filepath.Join(agents, retryDirExpired)); err != nil || !st.IsDir() {
+		t.Fatalf("unreadable stale dir gone after fix (err=%v)", err)
+	}
+}
+
+// TestWorkspaceStaleQueueDirs_VerifyRefusesFreshContent exercises the
+// under-lock verify hook directly: content arriving in the scan→rename window
+// refuses the quarantine (sentinel error, dir untouched, nothing journaled),
+// and the fixer's per-dir wrapper records that refusal as skipped-not-fatal.
+func TestWorkspaceStaleQueueDirs_VerifyRefusesFreshContent(t *testing.T) {
+	repo := t.TempDir()
+	agents := filepath.Join(repo, ".agents")
+	old := time.Now().Add(-30 * 24 * time.Hour)
+	writeWorkspaceFile(t, filepath.Join(agents, retryDirExpired, "old.txt"), "expired", old)
+
+	// A scan at this instant would select retryDirExpired. Simulate the race:
+	// fresh content lands before the rename path runs.
+	writeWorkspaceFile(t, filepath.Join(agents, retryDirExpired, "fresh.txt"), "just arrived", time.Now())
+
+	ctx, ra := newWorkspaceStaleMutateCtx(t, repo)
+	dest := workspaceQuarantineDest(ctx, retryDirExpired)
+	err := workspaceQuarantineRename(ctx, agents, retryDirExpired, dest, workspaceStaleQuarantineVerify(agents))
+	if err == nil {
+		t.Fatal("quarantine succeeded despite fresh content under the lock")
+	}
+	if !errors.Is(err, errWorkspaceStaleVerifyRefused) {
+		t.Fatalf("error = %v, want errWorkspaceStaleVerifyRefused", err)
+	}
+	// Dir untouched, both files intact, nothing journaled.
+	for name, content := range map[string]string{"old.txt": "expired", "fresh.txt": "just arrived"} {
+		got, rerr := os.ReadFile(filepath.Join(agents, retryDirExpired, name))
+		if rerr != nil || string(got) != content {
+			t.Errorf("%s = %q err=%v, want %q", name, got, rerr, content)
+		}
+	}
+	if _, err := os.Lstat(dest); !os.IsNotExist(err) {
+		t.Errorf("quarantine dest exists after refusal (err=%v)", err)
+	}
+	recs, err := readActions(ra.ActionsPath())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(recs) != 0 {
+		t.Fatalf("refused quarantine wrote %d action records, want 0", len(recs))
+	}
+
+	// Fixer-level classification: the refusal is skipped-not-fatal.
+	var res FixResult
+	if err := (workspaceStaleQueueDirsFixer{}).quarantineOne(ctx, agents, retryDirExpired, &res); err != nil {
+		t.Fatalf("quarantineOne treated a verify refusal as fatal: %v", err)
+	}
+	if res.ActionsTaken != 0 {
+		t.Errorf("ActionsTaken = %d, want 0", res.ActionsTaken)
+	}
+	if len(res.Skipped) != 1 {
+		t.Fatalf("Skipped = %v, want exactly one entry", res.Skipped)
+	}
+	if !strings.Contains(res.Skipped[0], retryDirExpired) {
+		t.Errorf("Skipped[0] = %q, want it to name %s", res.Skipped[0], retryDirExpired)
 	}
 }
 

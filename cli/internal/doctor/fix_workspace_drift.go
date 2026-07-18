@@ -31,6 +31,7 @@ package doctor
 // rename-back and consults neither backups nor hashes.
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -75,7 +76,13 @@ func (workspaceNamingDriftDetector) Describe() string {
 }
 
 func (d workspaceNamingDriftDetector) Detect(env *DetectEnv) ([]Finding, error) {
-	inv, err := workspaceDirInventory(workspaceAgentsDir(env))
+	base := workspaceAgentsDir(env)
+	// Lstat guard: a symlinked `.agents` root would make the inventory (and
+	// then the fixer's renames) traverse a tree outside the repo.
+	if !workspaceRealDir(base) {
+		return nil, nil
+	}
+	inv, err := workspaceDirInventory(base)
 	if err != nil {
 		if os.IsNotExist(err) {
 			return nil, nil
@@ -142,6 +149,18 @@ func (workspaceNamingDriftFixer) AutoFixable() bool  { return true }
 func (f workspaceNamingDriftFixer) Fix(ctx *MutateContext, env *DetectEnv, _ []Finding) (FixResult, error) {
 	res := FixResult{FixerID: f.ID(), FindingIDs: []string{f.ID()}}
 	base := workspaceAgentsDir(env)
+	// Never mutate through a `.agents` root that is not a real directory: a
+	// symlinked root would make every merge rename act on a tree OUTSIDE the
+	// repo while the lexical scope check still passes.
+	exists, err := workspaceRequireRealAgentsDir(base)
+	if err != nil {
+		res.Err = fmt.Errorf("doctor: %s: %w", f.ID(), err)
+		return res, res.Err
+	}
+	if !exists {
+		res.Fixed = true // no workspace, nothing drifted
+		return res, nil
+	}
 	for _, alias := range sortedDriftAliases() {
 		if err := f.fixOneAlias(ctx, base, alias, &res); err != nil {
 			res.Err = err
@@ -183,26 +202,21 @@ func (f workspaceNamingDriftFixer) fixOneAlias(ctx *MutateContext, base, alias s
 		src := filepath.Join(aliasPath, e.Name())
 		dest := filepath.Join(canonicalDir, e.Name())
 		srcRel := filepath.Join(aliasRel, e.Name())
-		if _, lerr := os.Lstat(dest); lerr == nil {
-			// Destination name already exists: both old and new form present.
-			// Never overwrite, never guess — leave the entry and report it.
-			res.Skipped = append(res.Skipped, fmt.Sprintf("%s: same name already exists in .agents/%s; resolve by hand", srcRel, workspaceCanonicalAliases[alias]))
-			continue
-		}
-		var moveErr error
-		switch {
-		case e.Type().IsRegular():
-			_, moveErr = Mutate(ctx, src, Rename{To: dest})
-		case e.IsDir():
-			moveErr = workspaceRenameDir(ctx, src, dest)
-		default:
+		if !e.Type().IsRegular() && !e.IsDir() {
 			// Symlink or other special file: moving it could silently change
 			// what it resolves to. Leave it in place.
 			res.Skipped = append(res.Skipped, fmt.Sprintf("%s: not a regular file or directory; resolve by hand", srcRel))
 			continue
 		}
+		collided, moveErr := f.moveEntryNoClobber(ctx, src, dest, e.IsDir())
 		if moveErr != nil {
 			return fmt.Errorf("doctor: %s: move %s: %w", f.ID(), srcRel, moveErr)
+		}
+		if collided {
+			// Destination name already exists: both old and new form present.
+			// Never overwrite, never guess — leave the entry and report it.
+			res.Skipped = append(res.Skipped, fmt.Sprintf("%s: same name already exists in .agents/%s; resolve by hand", srcRel, workspaceCanonicalAliases[alias]))
+			continue
 		}
 		res.ActionsTaken++
 	}
@@ -222,6 +236,58 @@ func (f workspaceNamingDriftFixer) fixOneAlias(ctx *MutateContext, base, alias s
 	}
 	res.ActionsTaken++
 	return nil
+}
+
+// errWorkspaceDriftDestExists is the sentinel raised by the under-lock
+// destination recheck when a same-named entry appeared at the destination
+// after the caller's scan. It is classified as a collision (Skipped), never
+// an overwrite.
+var errWorkspaceDriftDestExists = errors.New("destination appeared since scan; refusing to overwrite (refused_unsafe)")
+
+// moveEntryNoClobber moves one alias-directory entry to its canonical
+// destination WITHOUT ever overwriting: it takes the destination path's
+// advisory lock, re-checks destination non-existence immediately before the
+// rename, and only then routes the move through the chokepoint (Mutate for
+// regular files; workspaceDirRename — whose verify hook re-checks the
+// destination once more under the SOURCE lock — for directories). A
+// destination that (re)appears is reported as (collided=true, nil) and
+// nothing moves.
+//
+// Honesty note on the residual race: doctor's advisory locks are in-process
+// only. Holding the destination lock serializes against other chokepoint
+// mutations of the same destination path within this process, but an EXTERNAL
+// concurrent writer is not excluded — for such a writer this recheck only
+// narrows the overwrite window to lstat→rename. It does not eliminate it.
+func (workspaceNamingDriftFixer) moveEntryNoClobber(ctx *MutateContext, src, dest string, isDir bool) (collided bool, err error) {
+	if !ctx.DryRun {
+		guard, lerr := ctx.Locks.Acquire(dest)
+		if lerr != nil {
+			return false, lerr
+		}
+		defer func() { _ = guard.Release() }()
+	}
+	if _, lerr := os.Lstat(dest); lerr == nil {
+		return true, nil
+	}
+	if isDir {
+		verify := func(string) error {
+			if _, lerr := os.Lstat(dest); lerr == nil {
+				return errWorkspaceDriftDestExists
+			}
+			return nil
+		}
+		if moveErr := workspaceDirRename(ctx, src, dest, verify); moveErr != nil {
+			if errors.Is(moveErr, errWorkspaceDriftDestExists) {
+				return true, nil
+			}
+			return false, moveErr
+		}
+		return false, nil
+	}
+	if _, moveErr := Mutate(ctx, src, Rename{To: dest}); moveErr != nil {
+		return false, moveErr
+	}
+	return false, nil
 }
 
 // workspaceRenameDir renames a directory through the shared workspace

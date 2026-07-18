@@ -75,8 +75,8 @@ The workspace detectors are:
 | `fm-ws-stale-queue-dirs` | `.stale-*` / `-retry<N>` directories past TTL | quarantine (rename) |
 | `fm-ws-empty-dirs` | empty top-level dirs (abandoned scaffolding) | quarantine (rename) |
 | `fm-ws-naming-drift` | drift-alias directory names (table above) | merge/rename to canonical |
-| `fm-ws-dual-store` | same content class split across two directories | merge; refused if ambiguous |
-| `fm-ws-nested-tree` | a workspace tree nested where it should not be | merge/rename; refused if ambiguous |
+| `fm-ws-dual-store` | learnings split across `.agents/learnings` and `.agents/ao/learnings` | report-only; defers to `ao doctor --fix --only fm-knowledge-orphaned-flywheel-learnings` (moves top-level `*.md`/`*.jsonl` only) |
+| `fm-ws-nested-tree` | a `.agents` runtime tree nested under a repo subdirectory | report-only; manual review (may be an intentional nested project) |
 | `fm-ws-oversize` | unexpectedly large directories | report-only |
 
 Every mutating run writes receipts under
@@ -91,10 +91,10 @@ applied fixes, and an `undo.sh` that reverses every mutation the run made.
   (`.doctor/runs/<run>/quarantine/workspace/<dirname>`). Final disposal of
   quarantined content is always the human's call — for old runs,
   `ao doctor gc` requires explicit `--yes` and `--before <date>`.
-- **Ambiguous merges are refused, not guessed.** When a drift-alias or
-  dual-store fix would collide with existing content and the right merge is
-  not mechanically certain, the finding lands in a Skipped list with the
-  reason, and nothing moves.
+- **Ambiguous merges are refused, not guessed.** When a drift-alias merge (or
+  the knowledge subsystem's learnings consolidation) would collide with
+  existing content and the right merge is not mechanically certain, the
+  finding lands in a Skipped list with the reason, and nothing moves.
 - Detectors are pure reads; every disk write flows through the audited
   mutation path and is backed up before it happens, so `undo.sh` can restore
   the prior state.

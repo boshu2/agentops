@@ -48,11 +48,13 @@ func TestWorkspaceDualStore_DetectFinding(t *testing.T) {
 	if f.Confidence != 1.0 {
 		t.Errorf("confidence = %v, want 1.0", f.Confidence)
 	}
-	// Evidence carries the exact transitive file counts of both stores.
-	if want := "dual learnings stores: 2 file(s) in .agents/learnings, 1 in .agents/ao/learnings"; f.Title != want {
+	// Title counts the MOVABLE set (what the knowledge fixer will actually
+	// consolidate: top-level *.md/*.jsonl — a.md, not sub/b.txt); evidence
+	// keeps the transitive totals as context.
+	if want := "dual learnings stores: 1 movable file(s) in .agents/learnings, 1 in .agents/ao/learnings"; f.Title != want {
 		t.Errorf("title = %q, want %q", f.Title, want)
 	}
-	if want := "transitive regular-file counts: .agents/learnings=2 .agents/ao/learnings=1"; f.Evidence.Query != want {
+	if want := "movable top-level *.md/*.jsonl: .agents/learnings=1 .agents/ao/learnings=1 (transitive regular-file totals, context only: 2 and 1)"; f.Evidence.Query != want {
 		t.Errorf("evidence query = %q, want %q", f.Evidence.Query, want)
 	}
 	// Report-only: the knowledge fixer owns the repair, so the finding must
@@ -80,6 +82,13 @@ func TestWorkspaceDualStore_DetectSelection(t *testing.T) {
 		want           int
 	}{
 		{"both populated", []string{"a.md"}, false, []string{"c.md"}, false, 1},
+		// The advertised remediation moves only TOP-LEVEL *.md/*.jsonl: a
+		// store whose content the knowledge fixer cannot move must not fire
+		// (it would stay alive forever after the advertised fix).
+		{"legacy only nested file", []string{filepath.Join("sub", "n.md")}, false, []string{"c.md"}, false, 0},
+		{"legacy only non-indexable ext", []string{"a.txt"}, false, []string{"c.md"}, false, 0},
+		{"canonical only non-indexable ext", []string{"a.md"}, false, []string{"c.txt"}, false, 0},
+		{"legacy jsonl fires", []string{"a.jsonl"}, false, []string{"c.md"}, false, 1},
 		{"legacy empty dir", nil, true, []string{"c.md"}, false, 0},
 		{"canonical empty dir", []string{"a.md"}, false, nil, true, 0},
 		{"ao/learnings absent", []string{"a.md"}, false, nil, false, 0},
