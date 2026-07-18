@@ -28,8 +28,15 @@ type groupCommand struct {
 // maybeEmitGroupJSON reports whether cmd is a non-runnable parent command
 // invoked with --json, and if so writes a JSON listing of its subcommands.
 // Returns true when it handled the command (the caller should then stop).
+// groupGuardAnnotation marks a parent whose only Run function is the
+// unknown-subcommand guard; for help purposes it is still a group.
+const groupGuardAnnotation = "ao.unknown-subcommand-guard"
+
 func maybeEmitGroupJSON(cmd *cobra.Command) bool {
-	if cmd == nil || cmd.Runnable() || !cmd.HasAvailableSubCommands() {
+	if cmd == nil || !cmd.HasAvailableSubCommands() {
+		return false
+	}
+	if cmd.Runnable() && cmd.Annotations[groupGuardAnnotation] != "true" {
 		return false
 	}
 	// PersistentPreRunE (which syncs --json into output) is skipped by cobra

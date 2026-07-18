@@ -39,8 +39,6 @@ func TestDemoConceptsExcludeLifecycleAuthority(t *testing.T) {
 }
 
 func TestPublishedDemoQuick(t *testing.T) {
-	removed := pruneToDefaultSpine(rootCmd)
-	t.Cleanup(func() { restorePrunedCommands(rootCmd, removed) })
 
 	out, err := executeCommand("demo", "--quick")
 	if err != nil {

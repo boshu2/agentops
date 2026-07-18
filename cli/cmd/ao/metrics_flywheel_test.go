@@ -601,3 +601,22 @@ func TestRunFlywheelCompareReportsWithoutRecommendation(t *testing.T) {
 		t.Fatalf("flywheel compare emitted transition advice: %s", got)
 	}
 }
+
+func writeHealthCitations(t *testing.T, dir string, events []types.CitationEvent) {
+	t.Helper()
+	citDir := filepath.Join(dir, ".agents", "ao")
+	if err := os.MkdirAll(citDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	f, err := os.Create(filepath.Join(citDir, "citations.jsonl"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = f.Close() }()
+	enc := json.NewEncoder(f)
+	for _, e := range events {
+		if err := enc.Encode(e); err != nil {
+			t.Fatal(err)
+		}
+	}
+}

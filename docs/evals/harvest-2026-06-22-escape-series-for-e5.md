@@ -26,7 +26,7 @@ series under honest, labeled conditions.
 ## The reconciliation that makes catches into fuel
 
 A yield-ledger **escape** = a `CONFIRMED` gate-verdict that a later, higher-attempt
-`REFUTED` overturns (`ao membrane derive-checks`). The weak producer's self-declared
+`REFUTED` overturns (the retired `membrane derive-checks` command). The weak producer's self-declared
 "done" **is** the wrong `CONFIRMED@1`. So two real escape classes fall out of the
 harvest — and crucially, the *caught* class is fuel too, not just the misses:
 
@@ -57,8 +57,8 @@ class) rather than Phi-4-mini's cruder failures. Harness:
 ## Pipeline (validated end-to-end before the real run)
 
 scorecard → `.agents/membrane/harvest-2026-06-22/harvest-to-ledger.sh` → **isolated**
-yield ledger → `ao membrane derive-checks` (compiles a pre-mortem membrane check per
-escape) **and** `ao yield gauge` (computes `escape_rate` — E5's input metric).
+yield ledger → the retired `membrane derive-checks` command (compiles a pre-mortem membrane check per
+escape) **and** the retired `yield gauge` command (computes `escape_rate` — E5's input metric).
 
 De-risked on a synthetic 3-row scorecard (1 caught, 1 missed, 1 true-done) before
 the live run: the flow emitted the correct chains, `derive-checks` compiled 2
@@ -124,11 +124,11 @@ tails.
 - A real **escape series** in an isolated yield ledger
   (`.agents/membrane/harvest-2026-06-22/ledger-v2/`, gitignored — never the
   production ledger): 4 escape chains (3 caught + 1 missed).
-- `ao yield gauge` over it yields a real **cross-family catch_rate 0.75** —
+- the retired `yield gauge` command over it yields a real **cross-family catch_rate 0.75** —
   the kind of series E5 (the SPC governor) watches to decide when to harden.
   (The gauge's raw `catch_rate` reads lower — see the boxed note above — because
   its denominator includes the producer's self-`CONFIRMED@1` verdicts.)
-- `ao membrane derive-checks` compiled **4 membrane checks** (one per false-done
+- the retired `membrane derive-checks` command compiled **4 membrane checks** (one per false-done
   chain), including the high-value `rfd-nested-schema` miss-check committed at
   [`evals/membrane/harvest-2026-06-22/derived-check-rfd-nested-schema.md`](../../evals/membrane/harvest-2026-06-22/derived-check-rfd-nested-schema.md)
   (a fresh-context re-verification of the deterministic acceptance).

@@ -16,9 +16,8 @@ import (
 var commandHeadingPattern = regexp.MustCompile("(?m)^#{3,6} `(ao(?: [^`]+)+)`$")
 
 func TestCobraConformance(t *testing.T) {
-	// COMMANDS.md documents the published CLI surface.
-	removed := pruneToDefaultSpine(rootCmd)
-	t.Cleanup(func() { restorePrunedCommands(rootCmd, removed) })
+	// COMMANDS.md documents the published CLI surface; the registered tree
+	// IS the production tree (no prune step).
 	rootCmd.InitDefaultHelpCmd()
 
 	docsPath := filepath.Join("..", "..", "docs", "COMMANDS.md")

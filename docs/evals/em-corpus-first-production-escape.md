@@ -15,7 +15,7 @@ CONFIRMED** by the pawl (round 1, no holes found) and **landed on main**. Its
 unit test set `GateVerdictInput` fields directly. Then `EM.3`'s installed-binary
 e2e (`scripts/em-loop-donetest.sh`, commit `a48413029`) caught a real bug **in
 that CONFIRMED code**: `emitYieldEvent` parsed the new detector fields from the
-`ao yield emit gate-verdict --json` body but **dropped them** when building the
+the retired `yield emit gate-verdict --json` command body but **dropped them** when building the
 `GateVerdictInput` — the CLI *producer seam* the unit test bypassed by setting the
 struct directly. On the shipped binary, no constraint compiled.
 

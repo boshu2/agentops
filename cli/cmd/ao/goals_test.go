@@ -24,7 +24,7 @@ func TestGoalsCmd_HasExpectedSubcommands(t *testing.T) {
 
 	expected := []string{
 		"measure", "validate", "drift", "history", "export",
-		"meta", "render", "scenarios", "trace",
+		"meta", "render", "scenarios",
 	}
 	for _, name := range expected {
 		if !subNames[name] {

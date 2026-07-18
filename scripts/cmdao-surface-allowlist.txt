@@ -31,25 +31,3 @@ public-tested|provenance show|Covered by generic provenance read tests.
 public-tested|session handoff|Covered by handoff artifact tests.
 public-tested|session rehydrate|Covered by rehydrate artifact tests.
 
-# One-release inert Cathedral Cut tombstones.
-deprecated|pawl|One-release failure stub for removed admission control.
-deprecated|plan-pawl|One-release failure stub for removed plan admission.
-deprecated|land|One-release failure stub for removed delivery control.
-deprecated|done|One-release failure stub for removed closure control.
-deprecated|close|One-release failure stub for removed closure control.
-deprecated|governor|One-release failure stub for removed retry control.
-deprecated|yield|One-release failure stub for removed throughput control.
-deprecated|claim|One-release failure stub for removed work ownership.
-deprecated|next-work|One-release failure stub for removed work selection.
-deprecated|state|One-release failure stub for removed lifecycle admission.
-deprecated|worktree|One-release failure stub for removed Git mutation.
-deprecated|validate|One-release failure stub for removed semantic CLI validation.
-deprecated|verify|One-release failure stub for removed 3.2 verification front door.
-deprecated|converge|One-release failure stub for removed retry convergence.
-deprecated|reconcile|One-release failure stub for removed lifecycle reconciliation.
-deprecated|membrane|One-release failure stub for removed admission behavior.
-deprecated|crank|One-release failure stub for removed factory controller.
-deprecated|constraint|One-release failure stub for removed constraint promotion.
-deprecated|goals trace|One-release failure stub for removed lifecycle tracing.
-deprecated|session memory|One-release failure stub for removed repository-memory synchronization.
-deprecated|skills edit|One-release failure stub for removed skill-edit commit flow.
