@@ -18,7 +18,7 @@ func TestExperimentalHelpGroup(t *testing.T) {
 		t.Fatalf("experimental group title = %q, want %q", title, "Optional knowledge tools:")
 	}
 
-	demoted := []string{"flywheel", "store", "wiki"}
+	demoted := []string{"flywheel"}
 	for _, name := range demoted {
 		cmd, _, err := rootCmd.Find([]string{name})
 		if err != nil || cmd == nil || cmd.Name() != name {

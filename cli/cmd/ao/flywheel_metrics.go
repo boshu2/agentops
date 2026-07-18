@@ -6,128 +6,19 @@ import (
 	"strings"
 	"time"
 
-	"github.com/spf13/cobra"
-
 	ratchet "github.com/boshu2/agentops/cli/internal/evidence"
 	"github.com/boshu2/agentops/cli/internal/quality"
 	"github.com/boshu2/agentops/cli/internal/storage"
 	"github.com/boshu2/agentops/cli/internal/types"
 )
 
-var (
-	metricsDays int
+// metricsDays is the shared --days flag target for flywheel metric commands.
+var metricsDays int
+
+// The .agents knowledge sections the flywheel metrics scan.
+const (
+	SectionFindings = "findings"
 )
-
-var metricsCmd = &cobra.Command{
-	Use:   "metrics",
-	Short: "Knowledge flywheel metrics",
-	Long: `Track and report on knowledge flywheel metrics.
-
-The flywheel equation:
-  dK/dt = I(t) - δ·K + σ·ρ·K - B(K, K_crit)
-
-Where:
-  K     = Total knowledge artifacts
-  I(t)  = New knowledge inflow
-  δ     = Average age of active knowledge in days
-  σ     = Retrieval coverage (0-1)
-  ρ     = Decision influence rate among surfaced artifacts (0-1)
-  B()   = Breakdown function at capacity
-
-Operational escape velocity: σ × ρ > δ/100 → Knowledge compounds
-
-Commands:
-  baseline   Capture current flywheel state
-  report     Show metrics with escape velocity status`,
-}
-
-func init() {
-	metricsCmd.GroupID = "core"
-	rootCmd.AddCommand(metricsCmd)
-
-	// baseline subcommand
-	baselineCmd := &cobra.Command{
-		Use:   "baseline",
-		Short: "Capture current flywheel state",
-		Long: `Capture a baseline snapshot of the knowledge flywheel.
-
-Records:
-  - Total artifact counts by tier
-  - Citation counts and patterns
-  - Current σ, ρ estimates
-  - Escape velocity status
-
-Output is saved to .agents/ao/metrics/baseline-YYYY-MM-DD.json
-
-Examples:
-  ao metrics baseline
-  ao metrics baseline --days 7
-  ao metrics baseline --json`,
-		RunE: runMetricsBaseline,
-	}
-	baselineCmd.Flags().IntVar(&metricsDays, "days", 7, "Period in days for metrics calculation")
-	metricsCmd.AddCommand(baselineCmd)
-
-	// report subcommand
-	reportCmd := &cobra.Command{
-		Use:   "report",
-		Short: "Show flywheel metrics report",
-		Long: `Display a formatted report of knowledge flywheel metrics.
-
-Shows:
-  - Core parameters (δ, σ, ρ)
-  - Derived values (σ×ρ, velocity)
-  - Escape velocity status
-  - Artifact counts by tier
-  - Trend indicators
-
-Examples:
-  ao metrics report
-  ao metrics report --days 30
-  ao metrics report --json`,
-		RunE: runMetricsReport,
-	}
-	reportCmd.Flags().IntVar(&metricsDays, "days", 7, "Period in days for metrics calculation")
-	metricsCmd.AddCommand(reportCmd)
-
-	// cite subcommand - record a citation event
-	citeCmd := &cobra.Command{
-		Use:   "cite <artifact-path>",
-		Short: "Record a citation event",
-		Long: `Record that an artifact was cited in this session.
-
-Citation events drive the knowledge flywheel:
-  - Increases ρ (citation rate)
-  - Contributes to σ×ρ calculation
-  - Can trigger auto-promotion after threshold
-
-Examples:
-  ao metrics cite .agents/learnings/mutex-pattern.md
-  ao metrics cite .agents/patterns/error-handling.md --type used-in-final-artifact
-  ao metrics cite .agents/learnings/mutex-pattern.md --type helpful --artifact-author author-agent --cited-by-agent reviewer-agent
-  ao metrics cite .agents/research/oauth.md --session abc123`,
-		Args: cobra.ExactArgs(1),
-		RunE: runMetricsCite,
-	}
-	var citeType, citeSession, citeQuery, citeVendor, citeArtifactAuthor, citeByAgent, citeByFamily string
-	citeCmd.Flags().StringVar(&citeType, "type", types.CitationTypeReference, "Citation type: retrieved, used-in-final-artifact, helpful, harmful, refuted, applied, reference")
-	citeCmd.Flags().StringVar(&citeSession, "session", "", "Session ID (auto-detected if not provided)")
-	citeCmd.Flags().StringVar(&citeQuery, "query", "", "Search query that surfaced this artifact")
-	citeCmd.Flags().StringVar(&citeVendor, "vendor", "", "Model vendor attribution: claude, codex")
-	citeCmd.Flags().StringVar(&citeArtifactAuthor, "artifact-author", "", "Author/owner identity of the cited artifact")
-	citeCmd.Flags().StringVar(&citeByAgent, "cited-by-agent", "", "Agent identity recording the citation outcome")
-	citeCmd.Flags().StringVar(&citeByFamily, "cited-by-family", "", "Model family of the citing/reviewing agent")
-	_ = citeCmd.RegisterFlagCompletionFunc("type", staticCompletionFunc(
-		types.CitationTypeRetrieved,
-		types.CitationTypeUsedInFinalArtifact,
-		types.CitationTypeHelpful,
-		types.CitationTypeHarmful,
-		types.CitationTypeRefuted,
-		types.CitationTypeApplied,
-		types.CitationTypeReference,
-	))
-	metricsCmd.AddCommand(citeCmd)
-}
 
 // periodCitationStats holds citation statistics for a period
 type periodCitationStats struct {
@@ -366,15 +257,12 @@ func countNewArtifactsInDir(dir string, since time.Time) (int, error) {
 	return quality.CountNewArtifactsInDir(dir, since)
 }
 
-// retroHasLearnings checks whether a retro markdown file contains a learnings section.
-func retroHasLearnings(path string) bool {
-	return quality.RetroHasLearnings(path)
-}
-
 // countRetros counts retro artifacts and how many have associated learnings.
 func countRetros(baseDir string, since time.Time) (total int, withLearnings int, err error) {
 	return quality.CountRetros(baseDir, since)
 }
+
+func computeHealthDelta(baseDir string) float64 { return quality.ComputeHealthDelta(baseDir) }
 
 // utilityStats holds computed utility statistics.
 type utilityStats struct {
@@ -382,17 +270,6 @@ type utilityStats struct {
 	stdDev    float64
 	highCount int // utility > 0.7
 	lowCount  int // utility < 0.3
-}
-
-// computeUtilityStats calculates statistics from a slice of utility values.
-func computeUtilityStats(utilities []float64) utilityStats {
-	s := quality.ComputeUtilityStats(utilities)
-	return utilityStats{
-		mean:      s.Mean,
-		stdDev:    s.StdDev,
-		highCount: s.HighCount,
-		lowCount:  s.LowCount,
-	}
 }
 
 // computeUtilityMetrics calculates MemRL utility statistics from learnings.
@@ -409,22 +286,47 @@ func computeUtilityMetrics(baseDir string) utilityStats {
 	}
 }
 
-// parseUtilityFromFile extracts utility value from JSONL or markdown front matter.
-func parseUtilityFromFile(path string) float64 {
-	return quality.ParseUtilityFromFile(path)
+const highConfidenceCitationThreshold = 0.7
+
+func citationConfidenceScore(citationType string) float64 {
+	switch canonicalCitationType(citationType) {
+	case types.CitationTypeHelpful:
+		return 0.9
+	case types.CitationTypeUsedInFinalArtifact, types.CitationTypeApplied:
+		return 0.9
+	case types.CitationTypeReference:
+		return 0.7
+	case types.CitationTypeRetrieved:
+		return 0.5
+	default:
+		return 0
+	}
 }
 
-// collectUtilityValuesFromDir walks a directory and collects utility values from files.
-func collectUtilityValuesFromDir(dir string) []float64 {
-	return quality.CollectUtilityValuesFromDir(dir)
+func normalizeCitationMatchConfidence(confidence float64) float64 {
+	switch confidence {
+	case 0, 0.5, 0.7, 0.9:
+		return confidence
+	}
+	switch {
+	case confidence >= highConfidenceCitationThreshold:
+		return 0.9
+	case confidence >= 0.5:
+		return 0.7
+	case confidence > 0:
+		return 0.5
+	default:
+		return 0
+	}
 }
 
-// parseUtilityFromMarkdown extracts utility from markdown front matter.
-func parseUtilityFromMarkdown(path string) float64 {
-	return quality.ParseUtilityFromMarkdown(path)
-}
-
-// parseUtilityFromJSONL extracts utility from the first line of a JSONL file.
-func parseUtilityFromJSONL(path string) float64 {
-	return quality.ParseUtilityFromJSONL(path)
+func citationEventIsHighConfidence(citation types.CitationEvent) bool {
+	if canonicalCitationType(citation.CitationType) == types.CitationTypeHarmful ||
+		canonicalCitationType(citation.CitationType) == types.CitationTypeRefuted {
+		return false
+	}
+	if citation.MatchConfidence > 0 {
+		return normalizeCitationMatchConfidence(citation.MatchConfidence) >= highConfidenceCitationThreshold
+	}
+	return citationConfidenceScore(citation.CitationType) >= highConfidenceCitationThreshold
 }

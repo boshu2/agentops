@@ -370,7 +370,6 @@ func TestFlagMatrix_NoCommandShowsHelp(t *testing.T) {
 func TestHermeticBinaryMatchesSourceSurface(t *testing.T) {
 	bin := aoBinary(t)
 
-	removed := pruneToDefaultSpine(rootCmd)
 	expected := map[string]bool{}
 	for _, command := range rootCmd.Commands() {
 		if command.Hidden || command.Name() == "help" || command.Name() == "completion" {
@@ -378,7 +377,6 @@ func TestHermeticBinaryMatchesSourceSurface(t *testing.T) {
 		}
 		expected[command.Name()] = true
 	}
-	restorePrunedCommands(rootCmd, removed)
 
 	cmd := exec.Command(bin, "capabilities")
 	cmd.Dir = findRepoRoot(t)

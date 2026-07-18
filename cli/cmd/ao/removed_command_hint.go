@@ -9,21 +9,20 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// removedCommand is the tombstone for a verb the default build no longer
-// serves and what replaces it. The full map with the why lives in
-// docs/MIGRATION.md —
-// these one-liners exist so the pointer appears at the moment of failure,
-// where a dev (or an agent following error strings) actually hits the wall.
+// removedCommand names what replaces a verb the CLI no longer serves. The
+// full map with the why lives in docs/MIGRATION.md — these one-liners exist so
+// the pointer appears at the moment of failure, where a dev (or an agent
+// following error strings) actually hits the wall. Removed verbs are NOT
+// registered as commands: an unknown-command error plus this hint is the whole
+// mechanism, so no retired lifecycle API survives in the command tree.
 type removedCommand struct {
 	use string // what to use instead — one clause, plain words
 }
 
 // removedCommands maps every verb removed from the default `ao` build to its
-// tombstone. Keep in lockstep with docs/MIGRATION.md — the drift test
+// replacement hint. Keep in lockstep with docs/MIGRATION.md — the drift test
 // (TestRemovedVerbsHaveMigrationRows) fails when a verb here has no row there.
 var removedCommands = map[string]removedCommand{
-	// Cathedral Cut lifecycle removals. These are executable tombstones for one
-	// release: each fails without importing, forwarding to, or mutating old state.
 	"pawl":       {use: "semantic review no longer controls admission; invoke the Validate skill for an independent verdict"},
 	"plan-pawl":  {use: "plan admission was removed; invoke premortem when the caller wants an advisory plan challenge"},
 	"land":       {use: "AgentOps no longer owns delivery; use the repository's Git or CI process"},
@@ -44,6 +43,7 @@ var removedCommands = map[string]removedCommand{
 	"verify":     {use: "the 3.2 verification front door was removed; semantic judgment is the Validate skill. If `ao verify init` installed a pre-push hook, delete the AGENTOPS-VERIFY-RATCHET block from .git/hooks/pre-push (see docs/UPGRADING.md)"},
 }
 
+// removedChildCommands covers retired subcommands under retained parents.
 var removedChildCommands = map[string]map[string]removedCommand{
 	"goals": {
 		"trace": {use: "the directive-to-bead lifecycle chain was retired; inspect current goal and scenario artifacts directly"},
@@ -56,68 +56,29 @@ var removedChildCommands = map[string]map[string]removedCommand{
 	},
 }
 
-type removedCommandExitError struct{}
-
-func (removedCommandExitError) Error() string { return "" }
-func (removedCommandExitError) ExitCode() int { return 1 }
-
-func newRemovedCommand(name string, tomb removedCommand) *cobra.Command {
-	command := &cobra.Command{
-		Use:           name,
-		Short:         "Removed in the AgentOps Cathedral Cut",
-		Args:          cobra.ArbitraryArgs,
-		SilenceErrors: true,
-		SilenceUsage:  true,
-		RunE: func(cmd *cobra.Command, _ []string) error {
-			fmt.Fprintf(cmd.ErrOrStderr(), "%s no longer exists: %s.\n", name, tomb.use)
-			return removedCommandExitError{}
-		},
+// requireKnownSubcommand makes a non-runnable parent fail loudly on an
+// unknown subcommand instead of printing help with exit 0 (cobra's default
+// for parents without a Run function). The error uses cobra's canonical
+// unknown-command wording so removedCommandHint can attach the replacement
+// pointer for retired children.
+func requireKnownSubcommand(parent *cobra.Command) {
+	if parent.Annotations == nil {
+		parent.Annotations = map[string]string{}
 	}
-	command.FParseErrWhitelist.UnknownFlags = true
-	return command
-}
-
-func newRemovedChildCommand(parent, name string, tomb removedCommand) *cobra.Command {
-	command := newRemovedCommand(name, tomb)
-	command.RunE = func(cmd *cobra.Command, _ []string) error {
-		fmt.Fprintf(cmd.ErrOrStderr(), "%s %s no longer exists: %s.\n", parent, name, tomb.use)
-		return removedCommandExitError{}
-	}
-	return command
-}
-
-// installRemovedCommandTombstones replaces any legacy registrations with the
-// centralized inert stubs. No tombstone forwards to old implementation code.
-func installRemovedCommandTombstones(root *cobra.Command, exceptions ...string) {
-	excluded := map[string]struct{}{}
-	for _, name := range exceptions {
-		excluded[name] = struct{}{}
-	}
-	for name, tomb := range removedCommands {
-		if _, cathedralCut := cathedralCutCommands[name]; !cathedralCut {
-			continue
+	// Group JSON help treats guarded parents as groups even though the guard
+	// makes them technically Runnable (see maybeEmitGroupJSON).
+	parent.Annotations[groupGuardAnnotation] = "true"
+	parent.Args = cobra.ArbitraryArgs
+	parent.RunE = func(cmd *cobra.Command, args []string) error {
+		if len(args) == 0 {
+			return cmd.Help()
 		}
-		if _, skip := excluded[name]; skip {
-			continue
-		}
-		for _, command := range append([]*cobra.Command(nil), root.Commands()...) {
-			if command.Name() == name || command.HasAlias(name) {
-				root.RemoveCommand(command)
-			}
-		}
-		root.AddCommand(newRemovedCommand(name, tomb))
+		return fmt.Errorf("unknown command %q for %q", args[0], cmd.CommandPath())
 	}
+	parent.SilenceErrors = false
 }
 
-var cathedralCutCommands = map[string]struct{}{
-	"pawl": {}, "plan-pawl": {}, "land": {}, "done": {}, "close": {},
-	"governor": {}, "yield": {}, "claim": {}, "next-work": {}, "state": {},
-	"worktree": {}, "validate": {}, "converge": {}, "reconcile": {},
-	"membrane": {}, "crank": {},
-	"constraint": {}, "verify": {},
-}
-
-// removedCommandHint returns the tombstone hint for an "unknown command"
+// removedCommandHint returns the replacement hint for an "unknown command"
 // error whose verb was removed from the default build, or "" when the error
 // is anything else. A registered verb always wins so a usage error cannot be
 // mislabeled as removal.
@@ -125,11 +86,11 @@ func removedCommandHint(root *cobra.Command, err error) string {
 	if err == nil {
 		return ""
 	}
-	verb := parseUnknownCommand(err.Error())
+	verb, parent := parseUnknownCommand(err.Error())
 	if verb == "" {
 		return ""
 	}
-	tomb, ok := removedCommands[verb]
+	tomb, ok := lookupRemovedCommand(verb, parent)
 	if !ok {
 		return ""
 	}
@@ -140,13 +101,32 @@ func removedCommandHint(root *cobra.Command, err error) string {
 			}
 		}
 	}
+	label := verb
+	if parent != "" {
+		label = parent + " " + verb
+	}
 	var b strings.Builder
-	fmt.Fprintf(&b, "%q was removed from ao — %s.\n", verb, tomb.use)
+	fmt.Fprintf(&b, "%q was removed from ao — %s.\n", label, tomb.use)
 	b.WriteString("Full map of removed surfaces and replacements: docs/MIGRATION.md\n")
 	return b.String()
 }
 
-// printRemovedCommandHint writes the tombstone hint (if any) to w. Cobra has
+// lookupRemovedCommand resolves a removed verb against the root map or, when
+// the unknown command surfaced beneath a retained parent, the child map.
+func lookupRemovedCommand(verb, parent string) (removedCommand, bool) {
+	if parent == "" {
+		tomb, ok := removedCommands[verb]
+		return tomb, ok
+	}
+	children, ok := removedChildCommands[parent]
+	if !ok {
+		return removedCommand{}, false
+	}
+	tomb, ok := children[verb]
+	return tomb, ok
+}
+
+// printRemovedCommandHint writes the removed-verb hint (if any) to w. Cobra has
 // already printed the bare "Error: unknown command ..." line; this appends
 // the actionable part. Reports whether a hint was written.
 func printRemovedCommandHint(w io.Writer, root *cobra.Command, err error) bool {
@@ -158,18 +138,33 @@ func printRemovedCommandHint(w io.Writer, root *cobra.Command, err error) bool {
 	return true
 }
 
-// parseUnknownCommand extracts the offending verb from a cobra error string
-// such as `unknown command "watch" for "ao"`. Returns "" for any other error.
-func parseUnknownCommand(msg string) string {
+// parseUnknownCommand extracts the offending verb and (for nested commands)
+// the parent path from a cobra error string such as
+// `unknown command "watch" for "ao"` or `unknown command "trace" for "ao goals"`.
+// The parent return is "" for root-level verbs and the sub-path without the
+// leading "ao " otherwise. Returns "" verb for any other error.
+func parseUnknownCommand(msg string) (verb, parent string) {
 	const prefix = `unknown command "`
 	idx := strings.Index(msg, prefix)
 	if idx < 0 {
-		return ""
+		return "", ""
 	}
 	rest := msg[idx+len(prefix):]
 	end := strings.Index(rest, `"`)
 	if end <= 0 {
-		return ""
+		return "", ""
 	}
-	return rest[:end]
+	verb = rest[:end]
+	const forPrefix = ` for "`
+	rest = rest[end+1:]
+	if idx := strings.Index(rest, forPrefix); idx >= 0 {
+		tail := rest[idx+len(forPrefix):]
+		if end := strings.Index(tail, `"`); end > 0 {
+			path := tail[:end]
+			if path != "ao" {
+				parent = strings.TrimPrefix(path, "ao ")
+			}
+		}
+	}
+	return verb, parent
 }

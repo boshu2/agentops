@@ -215,18 +215,13 @@ func discoverMigratedFamilies(root string) ([]string, error) {
 			families = append(families, family)
 			continue
 		}
-		moduleRel := relative(root, filepath.Join(moduleDir, "module.go"))
-		introduced, _ := gitOutput(root, "log", "--diff-filter=A", "--format=%H", "--", moduleRel)
-		if strings.TrimSpace(introduced) != "" {
-			families = append(families, family)
-			continue
-		}
-		lineageBytes, err := os.ReadFile(filepath.Join(familiesRoot, family, "lineage.json"))
-		if err != nil {
-			continue
-		}
-		var lineage lineageRecord
-		if json.Unmarshal(lineageBytes, &lineage) == nil && (lineage.MigrationState == "migrating" || lineage.MigrationState == "migrated") {
+		// A family with no live module dir is enforced while its baseline dir
+		// still exists — including when lineage.json is corrupt, so a live
+		// migration cannot be evaded by tampering with the record. A fully
+		// retired family (module, command, and baseline all removed from the
+		// product) drops out: with no live owner there is no ownership left
+		// to enforce, and the published-surface tests pin the command tree.
+		if _, err := os.Stat(filepath.Join(familiesRoot, family)); err == nil {
 			families = append(families, family)
 		}
 	}
