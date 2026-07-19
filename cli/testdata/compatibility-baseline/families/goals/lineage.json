@@ -1,0 +1,7 @@
+{
+  "schema_version": 1,
+  "family": "goals",
+  "freeze_sha": "a5b3d3c2fc5f6213c68262df0b16e62e7ecb08fe",
+  "ownership_sha256": "ed5e288996ce6c35b9543f807828c3e056a810f19e59230bd49dbb5b893899c0",
+  "migration_state": "migrating"
+}
