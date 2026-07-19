@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "family": "version",
+  "checks": [
+    {
+      "id": "version-black-box",
+      "command": "tmp=$(mktemp -d /tmp/ao-version.XXXXXX); (cd cli && go build -o \"$tmp/ao\" ./cmd/ao); \"$tmp/ao\" version --help >\"$tmp/help\"; grep -Fq 'Show version information' \"$tmp/help\"; grep -Fq 'Display the version, build information, and runtime details' \"$tmp/help\"; \"$tmp/ao\" version >\"$tmp/text\"; grep -Fq 'ao version ' \"$tmp/text\"; grep -Fq 'Go version:' \"$tmp/text\"; grep -Fq 'Platform:' \"$tmp/text\"; \"$tmp/ao\" -o json version >\"$tmp/json\"; grep -Fq '\"go_version\"' \"$tmp/json\"; grep -Fq '\"platform\"' \"$tmp/json\"; \"$tmp/ao\" --version >\"$tmp/root\"; grep -Fq 'ao version ' \"$tmp/root\"; \"$tmp/ao\" -o json capabilities >\"$tmp/caps\"; grep -Fq 'ao.version' \"$tmp/caps\""
+    },
+    {
+      "id": "version-go-behavior",
+      "command": "cd cli && go test ./internal/commands/version/... -count=1"
+    }
+  ],
+  "dimensions": {
+    "path": {"status": "evidence", "evidence": ["version-black-box", "version-go-behavior"]},
+    "aliases": {"status": "not_applicable", "reason": "The version family declares no command aliases."},
+    "accepted_args": {"status": "evidence", "evidence": ["version-black-box", "version-go-behavior"]},
+    "rejected_args": {"status": "not_applicable", "reason": "version accepts arbitrary positional args and rejects none."},
+    "stdout": {"status": "evidence", "evidence": ["version-black-box", "version-go-behavior"]},
+    "stderr": {"status": "not_applicable", "reason": "version writes only to stdout on success."},
+    "exit_classes": {"status": "evidence", "evidence": ["version-go-behavior"]},
+    "tracker_selection": {"status": "not_applicable", "reason": "The version family does not select a repository issue tracker."},
+    "ordered_effects": {"status": "not_applicable", "reason": "version is a pure read of build/runtime metadata with no ordered effects."}
+  }
+}
