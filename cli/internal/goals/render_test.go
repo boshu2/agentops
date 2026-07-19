@@ -1,5 +1,4 @@
-// practices: [bdd-gherkin, llm-eval-harness]
-package main
+package goals
 
 import (
 	"bytes"
@@ -7,13 +6,11 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
-
-	"github.com/spf13/cobra"
 )
 
-// goalsRenderFixtureGoals is a minimal GOALS.md with a Directives section
-// holding the directives the render tests exercise.
-const goalsRenderFixtureGoals = `# Project Goals
+// renderFixtureGoals is a minimal GOALS.md with a Directives section holding
+// the directives the render tests exercise.
+const renderFixtureGoals = `# Project Goals
 
 ## Directives
 
@@ -35,11 +32,11 @@ const goalsRenderFixtureGoals = `# Project Goals
 `
 
 // writeRenderFixture writes a GOALS.md plus the two scenario JSON files the
-// render tests reference, and chdirs into the fixture project root.
+// render tests reference under a fresh project root, returning that root.
 func writeRenderFixture(t *testing.T) string {
 	t.Helper()
-	root := chdirTemp(t)
-	writeRenderFile(t, filepath.Join(root, "GOALS.md"), goalsRenderFixtureGoals)
+	root := t.TempDir()
+	writeRenderFile(t, filepath.Join(root, "GOALS.md"), renderFixtureGoals)
 	specDir := filepath.Join(root, "spec", "scenarios")
 	if err := os.MkdirAll(specDir, 0o755); err != nil {
 		t.Fatalf("mkdir spec/scenarios: %v", err)
@@ -74,7 +71,6 @@ func writeRenderFixture(t *testing.T) string {
 	return root
 }
 
-// writeRenderFile writes content to path, failing the test on error.
 func writeRenderFile(t *testing.T, path, content string) {
 	t.Helper()
 	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
@@ -82,33 +78,22 @@ func writeRenderFile(t *testing.T, path, content string) {
 	}
 }
 
-// newRenderTestCmd returns a cobra command whose output is captured in buf.
-func newRenderTestCmd(buf *bytes.Buffer) *cobra.Command {
-	c := &cobra.Command{}
-	c.SetOut(buf)
-	c.SetErr(buf)
-	return c
+// renderTo runs RunRender for the fixture at root, capturing stdout in buf.
+func renderTo(t *testing.T, root, out string, buf *bytes.Buffer) error {
+	t.Helper()
+	return RunRender(RenderOptions{
+		GoalsFile:   filepath.Join(root, "GOALS.md"),
+		ProjectRoot: root,
+		Out:         out,
+		Stdout:      buf,
+	})
 }
 
-func TestGoalsRender_RegisteredUnderGoals(t *testing.T) {
-	found := false
-	for _, c := range goalsCmd.Commands() {
-		if c.Name() == "render" {
-			found = true
-		}
-	}
-	if !found {
-		t.Fatal("ao goals render not registered under goals command")
-	}
-}
-
-func TestGoalsRender_GherkinContent(t *testing.T) {
-	writeRenderFixture(t)
-	goalsFile = ""
-	goalsRenderOut = ""
+func TestRunRender_GherkinContent(t *testing.T) {
+	root := writeRenderFixture(t)
 	buf := &bytes.Buffer{}
-	if err := runGoalsRender(newRenderTestCmd(buf), nil); err != nil {
-		t.Fatalf("runGoalsRender error: %v", err)
+	if err := renderTo(t, root, "", buf); err != nil {
+		t.Fatalf("RunRender error: %v", err)
 	}
 	out := buf.String()
 
@@ -138,16 +123,13 @@ func TestGoalsRender_GherkinContent(t *testing.T) {
 	}
 }
 
-func TestGoalsRender_PlainScenarioHasNoFabricatedSteps(t *testing.T) {
-	writeRenderFixture(t)
-	goalsFile = ""
-	goalsRenderOut = ""
+func TestRunRender_PlainScenarioHasNoFabricatedSteps(t *testing.T) {
+	root := writeRenderFixture(t)
 	buf := &bytes.Buffer{}
-	if err := runGoalsRender(newRenderTestCmd(buf), nil); err != nil {
-		t.Fatalf("runGoalsRender error: %v", err)
+	if err := renderTo(t, root, "", buf); err != nil {
+		t.Fatalf("RunRender error: %v", err)
 	}
 	out := buf.String()
-	// The plain scenario block must not contain a fabricated Given/When/Then.
 	plainIdx := strings.Index(out, "@s-2026-05-17-002")
 	if plainIdx < 0 {
 		t.Fatalf("plain scenario tag missing from output:\n%s", out)
@@ -163,16 +145,12 @@ func TestGoalsRender_PlainScenarioHasNoFabricatedSteps(t *testing.T) {
 	}
 }
 
-func TestGoalsRender_OutWritesFile(t *testing.T) {
+func TestRunRender_OutWritesFile(t *testing.T) {
 	root := writeRenderFixture(t)
-	goalsFile = ""
 	outPath := filepath.Join(root, "spec.feature")
-	goalsRenderOut = outPath
-	t.Cleanup(func() { goalsRenderOut = "" })
-
 	buf := &bytes.Buffer{}
-	if err := runGoalsRender(newRenderTestCmd(buf), nil); err != nil {
-		t.Fatalf("runGoalsRender error: %v", err)
+	if err := renderTo(t, root, outPath, buf); err != nil {
+		t.Fatalf("RunRender error: %v", err)
 	}
 	if !strings.Contains(buf.String(), "Wrote Gherkin spec to "+outPath) {
 		t.Errorf("stdout = %q, want confirmation of file write", buf.String())
@@ -184,30 +162,31 @@ func TestGoalsRender_OutWritesFile(t *testing.T) {
 	if !strings.Contains(string(data), "@d-fitness-gate-bdd\nFeature: Fitness gate is BDD-driven\n") {
 		t.Errorf("rendered file missing expected Feature block:\n%s", data)
 	}
-	// With --out, the Gherkin body must NOT be echoed to stdout.
 	if strings.Contains(buf.String(), "Feature:") {
 		t.Errorf("--out should suppress Gherkin on stdout, got: %s", buf.String())
 	}
 }
 
-func TestGoalsRender_StdoutDefault(t *testing.T) {
-	writeRenderFixture(t)
-	goalsFile = ""
-	goalsRenderOut = ""
+func TestRunRender_StdoutDefault(t *testing.T) {
+	root := writeRenderFixture(t)
 	buf := &bytes.Buffer{}
-	if err := runGoalsRender(newRenderTestCmd(buf), nil); err != nil {
-		t.Fatalf("runGoalsRender error: %v", err)
+	if err := renderTo(t, root, "", buf); err != nil {
+		t.Fatalf("RunRender error: %v", err)
 	}
 	out := buf.String()
 	if !strings.HasPrefix(out, "# Generated by `ao goals render`") {
-		t.Errorf("stdout default should emit Gherkin directly, got prefix: %q", out[:min(60, len(out))])
+		prefix := out
+		if len(prefix) > 60 {
+			prefix = prefix[:60]
+		}
+		t.Errorf("stdout default should emit Gherkin directly, got prefix: %q", prefix)
 	}
 	if strings.Contains(out, "Wrote Gherkin spec to") {
 		t.Error("stdout default must not print a file-write confirmation")
 	}
 }
 
-func TestGoalsRender_NeverModifiesGoalsMD(t *testing.T) {
+func TestRunRender_NeverModifiesGoalsMD(t *testing.T) {
 	root := writeRenderFixture(t)
 	goalsPath := filepath.Join(root, "GOALS.md")
 	before, err := os.ReadFile(goalsPath)
@@ -219,11 +198,9 @@ func TestGoalsRender_NeverModifiesGoalsMD(t *testing.T) {
 		t.Fatalf("stat GOALS.md: %v", err)
 	}
 
-	goalsFile = ""
-	goalsRenderOut = ""
 	buf := &bytes.Buffer{}
-	if err := runGoalsRender(newRenderTestCmd(buf), nil); err != nil {
-		t.Fatalf("runGoalsRender error: %v", err)
+	if err := renderTo(t, root, "", buf); err != nil {
+		t.Fatalf("RunRender error: %v", err)
 	}
 
 	after, err := os.ReadFile(goalsPath)
@@ -242,14 +219,13 @@ func TestGoalsRender_NeverModifiesGoalsMD(t *testing.T) {
 	}
 }
 
-// TestGoalsRender_UnresolvedScenarioEmitsFallbackComment verifies that when a
+// TestRunRender_UnresolvedScenarioEmitsFallbackComment verifies that when a
 // directive references a scenario that does not exist in spec/scenarios/ or
 // .agents/holdout/, the renderer emits a graceful fallback comment rather than
 // crashing or producing invalid Gherkin.
-func TestGoalsRender_UnresolvedScenarioEmitsFallbackComment(t *testing.T) {
-	root := chdirTemp(t)
-	// GOALS.md references a scenario that will not be written to disk.
-	goals := `# Goals
+func TestRunRender_UnresolvedScenarioEmitsFallbackComment(t *testing.T) {
+	root := t.TempDir()
+	writeRenderFile(t, filepath.Join(root, "GOALS.md"), `# Goals
 
 ## Directives
 
@@ -258,14 +234,11 @@ func TestGoalsRender_UnresolvedScenarioEmitsFallbackComment(t *testing.T) {
 **Directive ID:** d-missing-scenario
 **Steer:** test unresolved
 **Scenarios:** s-9999-99-99-001
-`
-	writeRenderFile(t, filepath.Join(root, "GOALS.md"), goals)
+`)
 
-	goalsFile = ""
-	goalsRenderOut = ""
 	buf := &bytes.Buffer{}
-	if err := runGoalsRender(newRenderTestCmd(buf), nil); err != nil {
-		t.Fatalf("runGoalsRender error: %v", err)
+	if err := renderTo(t, root, "", buf); err != nil {
+		t.Fatalf("RunRender error: %v", err)
 	}
 	out := buf.String()
 	if !strings.Contains(out, "@s-9999-99-99-001") {
@@ -274,7 +247,6 @@ func TestGoalsRender_UnresolvedScenarioEmitsFallbackComment(t *testing.T) {
 	if !strings.Contains(out, "does not resolve") {
 		t.Errorf("expected 'does not resolve' fallback comment in output:\n%s", out)
 	}
-	// Must not fabricate steps for an unresolved scenario.
 	for _, kw := range []string{"    Given ", "    When ", "    Then "} {
 		if strings.Contains(out, kw) {
 			t.Errorf("fabricated %q step for unresolved scenario:\n%s", strings.TrimSpace(kw), out)
@@ -282,11 +254,11 @@ func TestGoalsRender_UnresolvedScenarioEmitsFallbackComment(t *testing.T) {
 	}
 }
 
-// TestGoalsRender_HoldoutScenarioResolvedAsGherkin verifies that a scenario
+// TestRunRender_HoldoutScenarioResolvedAsGherkin verifies that a scenario
 // present only in .agents/holdout/ (not promoted to spec/scenarios/) is still
 // rendered with its structured steps.
-func TestGoalsRender_HoldoutScenarioResolvedAsGherkin(t *testing.T) {
-	root := chdirTemp(t)
+func TestRunRender_HoldoutScenarioResolvedAsGherkin(t *testing.T) {
+	root := t.TempDir()
 	writeRenderFile(t, filepath.Join(root, "GOALS.md"), `# Goals
 
 ## Directives
@@ -317,11 +289,9 @@ func TestGoalsRender_HoldoutScenarioResolvedAsGherkin(t *testing.T) {
 }
 `)
 
-	goalsFile = ""
-	goalsRenderOut = ""
 	buf := &bytes.Buffer{}
-	if err := runGoalsRender(newRenderTestCmd(buf), nil); err != nil {
-		t.Fatalf("runGoalsRender error: %v", err)
+	if err := renderTo(t, root, "", buf); err != nil {
+		t.Fatalf("RunRender error: %v", err)
 	}
 	out := buf.String()
 	if !strings.Contains(out, "Scenario: Holdout scenario goal") {

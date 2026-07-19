@@ -1,13 +1,12 @@
-// practices: [dora-metrics, lean-startup, bdd-gherkin]
-package main
+package goals
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
-	"os"
+	"time"
 
-	"github.com/boshu2/agentops/cli/internal/goals"
 	"github.com/boshu2/agentops/cli/internal/goalsfitness"
 )
 
@@ -30,16 +29,16 @@ type directiveScenarioReport struct {
 
 // measureScenarioJSON is the combined JSON payload emitted by `ao goals
 // measure -o json` once scenario satisfaction is wired in. The snapshot is the
-// pre-existing `goals.Snapshot` shape (unchanged); the new top-level keys are
-// purely additive so existing snapshot consumers keep working.
+// pre-existing Snapshot shape (unchanged); the new top-level keys are purely
+// additive so existing snapshot consumers keep working.
 type measureScenarioJSON struct {
-	// Mode records "scenarios-only" when --scenarios-only was used, and
-	// "full" for the default gate+scenario run. Snapshot/metadata consumers
-	// read this to know whether shell gate commands were executed.
+	// Mode records "scenarios-only" when --scenarios-only was used, and "full"
+	// for the default gate+scenario run. Snapshot/metadata consumers read this
+	// to know whether shell gate commands were executed.
 	Mode string `json:"mode"`
 	// Snapshot is the gate-measurement snapshot. It is omitted under
 	// --scenarios-only because no gate commands run in that mode.
-	Snapshot *goals.Snapshot `json:"snapshot,omitempty"`
+	Snapshot *Snapshot `json:"snapshot,omitempty"`
 	// Directives is the per-directive scenario-satisfaction roll-up.
 	Directives []directiveScenarioReport `json:"directives"`
 }
@@ -48,6 +47,92 @@ const (
 	measureModeFull          = "full"
 	measureModeScenariosOnly = "scenarios-only"
 )
+
+// MeasureScenariosOptions configures RunMeasureScenarios. It carries the gate
+// measurement inputs plus the scenario-satisfaction project root and the
+// presentation choices resolved by the command module.
+type MeasureScenariosOptions struct {
+	GoalsFile     string
+	ProjectRoot   string
+	GoalID        string
+	ExcludeTag    string
+	Directives    bool
+	Timeout       time.Duration
+	TotalTimeout  time.Duration
+	ScenariosOnly bool
+	JSON          bool
+	Verbose       bool
+	Stdout        io.Writer
+	Stderr        io.Writer
+}
+
+// RunMeasureScenarios runs the gate measurement AND appends the additive
+// per-directive scenario-satisfaction report. --scenarios-only skips the gate
+// run entirely; --directives defers to the plain directives dump.
+func RunMeasureScenarios(opts MeasureScenariosOptions) error {
+	if opts.ScenariosOnly {
+		return runScenariosOnly(opts.GoalsFile, opts.ProjectRoot, opts.JSON, opts.Stdout)
+	}
+	measureOpts := MeasureOptions{
+		GoalID:       opts.GoalID,
+		ExcludeTag:   opts.ExcludeTag,
+		Directives:   opts.Directives,
+		GoalsFile:    opts.GoalsFile,
+		Timeout:      opts.Timeout,
+		TotalTimeout: opts.TotalTimeout,
+		JSON:         opts.JSON,
+		Verbose:      opts.Verbose,
+		Stdout:       opts.Stdout,
+		Stderr:       opts.Stderr,
+	}
+	// --directives is a directives-only dump; scenario satisfaction does not
+	// apply, so defer entirely to the existing behavior.
+	if opts.Directives {
+		return RunMeasure(measureOpts)
+	}
+	if opts.JSON {
+		return runMeasureJSONWithScenarios(measureOpts, opts.GoalsFile, opts.ProjectRoot)
+	}
+	return runMeasureHumanWithScenarios(measureOpts, opts.GoalsFile, opts.ProjectRoot)
+}
+
+// runMeasureJSONWithScenarios captures RunMeasure's snapshot JSON, then
+// re-emits a combined payload carrying both the snapshot and the per-directive
+// scenario-satisfaction report. The snapshot shape itself is unchanged.
+func runMeasureJSONWithScenarios(opts MeasureOptions, goalsFile, projectRoot string) error {
+	// RunMeasure encodes the snapshot JSON directly to its Stdout. Redirect
+	// that into a buffer so the only thing on the real stdout is the combined
+	// snapshot+scenarios payload (a single valid JSON document).
+	realStdout := opts.Stdout
+	var buf bytes.Buffer
+	opts.Stdout = &buf
+	if err := RunMeasure(opts); err != nil {
+		return err
+	}
+	var snap Snapshot
+	if err := json.Unmarshal(buf.Bytes(), &snap); err != nil {
+		return fmt.Errorf("decoding measurement snapshot: %w", err)
+	}
+	reports, err := evaluateDirectiveScenarios(goalsFile, projectRoot)
+	if err != nil {
+		return err
+	}
+	return emitMeasureScenarioJSON(realStdout, measureModeFull, &snap, reports)
+}
+
+// runMeasureHumanWithScenarios runs the gate measurement (its human table
+// prints as before), then appends the scenario-satisfaction table below it.
+func runMeasureHumanWithScenarios(opts MeasureOptions, goalsFile, projectRoot string) error {
+	if err := RunMeasure(opts); err != nil {
+		return err
+	}
+	reports, err := evaluateDirectiveScenarios(goalsFile, projectRoot)
+	if err != nil {
+		return err
+	}
+	renderScenarioReports(opts.Stdout, measureModeFull, reports)
+	return nil
+}
 
 // evaluateDirectiveScenarios builds a per-directive scenario-satisfaction
 // report for every directive in GOALS.md.
@@ -62,7 +147,7 @@ const (
 // gate. A missing scenario-results artifact is NOT an error — the aggregator
 // yields an "unknown" verdict for every directive (clean skip, never a pass).
 func evaluateDirectiveScenarios(goalsFile, projectRoot string) ([]directiveScenarioReport, error) {
-	patcher, _, err := goals.LoadGoalsPatcher(goalsFile)
+	patcher, _, err := LoadGoalsPatcher(goalsFile)
 	if err != nil {
 		return nil, fmt.Errorf("loading directives: %w", err)
 	}
@@ -86,7 +171,7 @@ func evaluateDirectiveScenarios(goalsFile, projectRoot string) ([]directiveScena
 // buildDirectiveScenarioReport evaluates one directive's scenario satisfaction.
 // It calls Aggregate for the contributing scenario IDs (which feed Score) and
 // EvaluateSatisfaction for the durable verdict and satisfaction fraction.
-func buildDirectiveScenarioReport(agg *goalsfitness.Aggregator, d goals.ParsedDirective, threshold float64) directiveScenarioReport {
+func buildDirectiveScenarioReport(agg *goalsfitness.Aggregator, d ParsedDirective, threshold float64) directiveScenarioReport {
 	link := goalsfitness.DirectiveLink{
 		DirectiveID: d.StableID,
 		ScenarioIDs: d.Scenarios,
@@ -113,21 +198,14 @@ func buildDirectiveScenarioReport(agg *goalsfitness.Aggregator, d goals.ParsedDi
 }
 
 // runScenariosOnly evaluates ONLY the executable-spec scenario results and
-// SKIPS shell gate-command execution entirely. It never calls goals.RunMeasure
-// (and therefore never spawns a gate subprocess), so it is safe to run in
+// SKIPS shell gate-command execution entirely. It never calls RunMeasure (and
+// therefore never spawns a gate subprocess), so it is safe to run in
 // environments where gate commands are slow, unavailable, or undesired.
 //
-// Exit-code semantics (kept consistent with `ao goals measure`):
-//
-//	`ao goals measure` returns nil — and the process exits 0 — even when gate
-//	checks fail; only a structurally-invalid input (unloadable GOALS.md, a
-//	failed validation, a malformed scenario threshold) makes it return an
-//	error and exit non-zero. --scenarios-only follows the SAME contract: a
-//	failing scenario verdict is a measurement outcome, not an invocation
-//	error, so it exits 0; a structurally-invalid input exits non-zero. The two
-//	classes are deliberately distinct — callers gate on the JSON
-//	scenario_verdict field for red/green, and on the exit code for "could the
-//	measurement even run".
+// Exit-code semantics (kept consistent with `ao goals measure`): a failing
+// scenario verdict is a measurement outcome, not an invocation error, so it
+// returns nil; a structurally-invalid input (unloadable GOALS.md, a malformed
+// scenario threshold) returns an error.
 func runScenariosOnly(goalsFile, projectRoot string, asJSON bool, stdout io.Writer) error {
 	reports, err := evaluateDirectiveScenarios(goalsFile, projectRoot)
 	if err != nil {
@@ -141,7 +219,7 @@ func runScenariosOnly(goalsFile, projectRoot string, asJSON bool, stdout io.Writ
 }
 
 // emitMeasureScenarioJSON writes the combined measure+scenario JSON payload.
-func emitMeasureScenarioJSON(w io.Writer, mode string, snap *goals.Snapshot, reports []directiveScenarioReport) error {
+func emitMeasureScenarioJSON(w io.Writer, mode string, snap *Snapshot, reports []directiveScenarioReport) error {
 	payload := measureScenarioJSON{
 		Mode:       mode,
 		Snapshot:   snap,
@@ -171,14 +249,4 @@ func renderScenarioReports(w io.Writer, mode string, reports []directiveScenario
 			id, r.ScenarioVerdict, r.ScenarioSatisfaction*100, r.ScenarioThreshold*100,
 			r.EvaluatedCount, r.ScenarioCount, r.EvaluatedCount, r.MissingCount)
 	}
-}
-
-// measureProjectRoot returns the project root the scenario-results artifact is
-// resolved against. CLI invocations run from the project root, matching the
-// convention used by `ao goals trace`.
-func measureProjectRoot() string {
-	if wd, err := os.Getwd(); err == nil {
-		return wd
-	}
-	return "."
 }

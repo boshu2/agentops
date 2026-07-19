@@ -235,10 +235,6 @@ func resetCommandState(t *testing.T) {
 	// always the correct baseline, so clean (don't save/restore) them here.
 	rootCmd.SetOut(nil)
 	rootCmd.SetErr(nil)
-	goalsCmd.SetOut(nil)
-	goalsCmd.SetErr(nil)
-	goalsMeasureCmd.SetOut(nil)
-	goalsMeasureCmd.SetErr(nil)
 
 	// Save originals.
 	origDryRun := dryRun
@@ -249,20 +245,6 @@ func resetCommandState(t *testing.T) {
 	origDemoConcepts := demoConcepts
 	origDemoQuick := demoQuick
 	origConfigShow := configShow
-	origGoalsJSON := output
-	// Goals subcommand flag globals (ag-pah): cli/cmd/ao/goals_*.go
-	// declares these as package-level vars bound to cobra flags. Tests
-	// that mutate them must save+restore here or a panic in one test
-	// leaks state into the next. This was the root cause of the
-	// TestGoals_Integration_* flake family observed on PRs #551 and #553.
-	origGoalsFile := goalsFile
-	origGoalsTimeout := goalsTimeout
-	origGoalsMeasureGoalID := goalsMeasureGoalID
-	origGoalsMeasureDirectives := goalsMeasureDirectives
-	origGoalsMeasureExcludeTag := goalsMeasureExcludeTag
-	origGoalsMeasureTotalTimeout := goalsMeasureTotalTimeout
-	origGoalsMeasureScenariosOnly := goalsMeasureScenariosOnly
-	origGoalsRenderOut := goalsRenderOut
 	// No alternate lifecycle build exists; the helper remains a no-op so shared
 	// test setup has one stable call site.
 	resetArchivedCommandGlobals(t)
@@ -276,16 +258,6 @@ func resetCommandState(t *testing.T) {
 		demoConcepts = origDemoConcepts
 		demoQuick = origDemoQuick
 		configShow = origConfigShow
-		output = origGoalsJSON
-		// Goals subcommand flag globals (ag-pah): paired with saves above.
-		goalsFile = origGoalsFile
-		goalsTimeout = origGoalsTimeout
-		goalsMeasureGoalID = origGoalsMeasureGoalID
-		goalsMeasureDirectives = origGoalsMeasureDirectives
-		goalsMeasureExcludeTag = origGoalsMeasureExcludeTag
-		goalsMeasureTotalTimeout = origGoalsMeasureTotalTimeout
-		goalsMeasureScenariosOnly = origGoalsMeasureScenariosOnly
-		goalsRenderOut = origGoalsRenderOut
 	})
 
 	// Reset to defaults.
@@ -297,18 +269,6 @@ func resetCommandState(t *testing.T) {
 	demoConcepts = false
 	demoQuick = false
 	configShow = false
-	// Goals subcommand flag globals (ag-pah): explicit reset to flag defaults
-	// so a polluted prior-test state doesn't carry into the current test.
-	// Save+restore above handles after-test cleanup; this handles before-test
-	// hygiene.
-	goalsFile = ""
-	goalsTimeout = defaultGoalsTimeoutSeconds
-	goalsMeasureGoalID = ""
-	goalsMeasureDirectives = false
-	goalsMeasureExcludeTag = ""
-	goalsMeasureTotalTimeout = 0
-	goalsMeasureScenariosOnly = false
-	goalsRenderOut = ""
 	output = "table"
 	// Reset Cobra flag Changed state and values to defaults.
 	resetFlagChangesRecursive(rootCmd)

@@ -1,12 +1,14 @@
-// practices: [tdd, bdd-gherkin]
-package main
+package goals
 
 import (
+	"bytes"
 	"encoding/json"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 )
 
 // goalsMDWithScenarioGate is a GOALS.md fixture with one gate (whose Check
@@ -45,8 +47,8 @@ const scenarioResultsArtifact = `{
 }`
 
 // setupMeasureScenarioProject writes GOALS.md + the scenario-results artifact
-// into a fresh temp dir, chdir's into it (so both the goals file and the
-// artifact resolve against the same project root), and wires goalsFile.
+// into a fresh temp dir and chdir's into it so both the goals file and the
+// artifact resolve against the same project root. It returns that root.
 func setupMeasureScenarioProject(t *testing.T, goalsMD string, withArtifact bool) string {
 	t.Helper()
 	dir := t.TempDir()
@@ -62,69 +64,35 @@ func setupMeasureScenarioProject(t *testing.T, goalsMD string, withArtifact bool
 			t.Fatalf("write artifact: %v", err)
 		}
 	}
-
 	t.Chdir(dir)
-	// soc-hwgm/soc-xyt1: save+restore EVERY goalsMeasure package-level
-	// global the command body reads. Previously only goalsFile and
-	// goalsMeasureScenariosOnly were saved, leaving the other 4 measure
-	// globals + the `output` global open to leak across tests under
-	// -shuffle on. Symptom: TestGoalsMeasure_MissingArtifactYieldsUnknown
-	// got empty stdout (unmarshal error) because prior test left
-	// goalsMeasureDirectives=true, which made goalsMeasureCmd.RunE skip
-	// the scenario-only branch and call into a different code path.
-	oldGoalsFile := goalsFile
-	oldScenariosOnly := goalsMeasureScenariosOnly
-	oldGoalID := goalsMeasureGoalID
-	oldDirectives := goalsMeasureDirectives
-	oldExcludeTag := goalsMeasureExcludeTag
-	oldTotalTimeout := goalsMeasureTotalTimeout
-	oldOutput := output
-	oldDryRun := dryRun
-	t.Cleanup(func() {
-		goalsFile = oldGoalsFile
-		goalsMeasureScenariosOnly = oldScenariosOnly
-		goalsMeasureGoalID = oldGoalID
-		goalsMeasureDirectives = oldDirectives
-		goalsMeasureExcludeTag = oldExcludeTag
-		goalsMeasureTotalTimeout = oldTotalTimeout
-		output = oldOutput
-		dryRun = oldDryRun
-	})
-	// Zero out all measure globals on entry so a leaked value from a
-	// prior test cannot taint this test's read.
-	goalsMeasureScenariosOnly = false
-	goalsMeasureGoalID = ""
-	goalsMeasureDirectives = false
-	goalsMeasureExcludeTag = ""
-	goalsMeasureTotalTimeout = 0
-	dryRun = false
-	goalsFile = "GOALS.md"
-	// soc-n6vb: defensively clear cobra command writers so RunE invocations
-	// resolve cmd.OutOrStdout()/ErrOrStderr() to the current os.Stdout/os.Stderr
-	// (which the test's captureJSONStdout has redirected). Without this, an
-	// earlier test that leaked a writer on rootCmd or any ancestor (e.g. a
-	// panicking executeCommand caller) would have RunE write into a stale
-	// buffer and our captured stdout would be empty.
-	rootCmd.SetOut(nil)
-	rootCmd.SetErr(nil)
-	goalsCmd.SetOut(nil)
-	goalsCmd.SetErr(nil)
-	goalsMeasureCmd.SetOut(nil)
-	goalsMeasureCmd.SetErr(nil)
 	return dir
 }
 
-func TestGoalsMeasure_ScenariosOnlyDoesNotExecuteGateCommands(t *testing.T) {
-	dir := setupMeasureScenarioProject(t, goalsMDWithScenarioGate, true)
-	goalsMeasureScenariosOnly = true
-
-	out, err := captureStdout(t, func() error {
-		return goalsMeasureCmd.RunE(goalsMeasureCmd, nil)
+// runMeasureScenarios drives RunMeasureScenarios for a fixture rooted at dir,
+// capturing stdout in the returned string. It constructs options directly, with
+// no package-global command state.
+func runMeasureScenarios(t *testing.T, dir string, scenariosOnly, asJSON bool) (string, error) {
+	t.Helper()
+	var buf bytes.Buffer
+	err := RunMeasureScenarios(MeasureScenariosOptions{
+		GoalsFile:     "GOALS.md",
+		ProjectRoot:   dir,
+		ScenariosOnly: scenariosOnly,
+		Timeout:       240 * time.Second,
+		JSON:          asJSON,
+		Stdout:        &buf,
+		Stderr:        io.Discard,
 	})
-	if err != nil {
-		t.Fatalf("RunE returned error: %v", err)
-	}
+	return buf.String(), err
+}
 
+func TestRunMeasureScenarios_ScenariosOnlyDoesNotExecuteGateCommands(t *testing.T) {
+	dir := setupMeasureScenarioProject(t, goalsMDWithScenarioGate, true)
+
+	out, err := runMeasureScenarios(t, dir, true, false)
+	if err != nil {
+		t.Fatalf("RunMeasureScenarios returned error: %v", err)
+	}
 	// The gate command is `touch GATE_RAN.txt`. Under --scenarios-only no gate
 	// subprocess may spawn, so the sentinel must NOT exist.
 	if _, statErr := os.Stat(filepath.Join(dir, "GATE_RAN.txt")); !os.IsNotExist(statErr) {
@@ -135,36 +103,26 @@ func TestGoalsMeasure_ScenariosOnlyDoesNotExecuteGateCommands(t *testing.T) {
 	}
 }
 
-func TestGoalsMeasure_FullModeExecutesGateCommands(t *testing.T) {
+func TestRunMeasureScenarios_FullModeExecutesGateCommands(t *testing.T) {
 	dir := setupMeasureScenarioProject(t, goalsMDWithScenarioGate, true)
-	goalsMeasureScenariosOnly = false
 
-	_, err := captureStdout(t, func() error {
-		return goalsMeasureCmd.RunE(goalsMeasureCmd, nil)
-	})
-	if err != nil {
-		t.Fatalf("RunE returned error: %v", err)
+	if _, err := runMeasureScenarios(t, dir, false, false); err != nil {
+		t.Fatalf("RunMeasureScenarios returned error: %v", err)
 	}
-
-	// Contrast with --scenarios-only: a full run DOES execute the gate, so the
-	// sentinel must exist. This proves the --scenarios-only skip is real.
+	// A full run DOES execute the gate, so the sentinel must exist. This proves
+	// the --scenarios-only skip is real.
 	if _, statErr := os.Stat(filepath.Join(dir, "GATE_RAN.txt")); statErr != nil {
 		t.Fatalf("full run did not execute gate command: GATE_RAN.txt missing (%v)", statErr)
 	}
 }
 
-func TestGoalsMeasure_ScenariosOnlyJSONFields(t *testing.T) {
-	setupMeasureScenarioProject(t, goalsMDWithScenarioGate, true)
-	goalsMeasureScenariosOnly = true
-	oldOutput := output
-	t.Cleanup(func() { output = oldOutput })
-	output = "json"
+func TestRunMeasureScenarios_ScenariosOnlyJSONFields(t *testing.T) {
+	dir := setupMeasureScenarioProject(t, goalsMDWithScenarioGate, true)
 
-	raw := captureJSONStdout(t, func() {
-		if err := goalsMeasureCmd.RunE(goalsMeasureCmd, nil); err != nil {
-			t.Fatalf("RunE returned error: %v", err)
-		}
-	})
+	raw, err := runMeasureScenarios(t, dir, true, true)
+	if err != nil {
+		t.Fatalf("RunMeasureScenarios returned error: %v", err)
+	}
 
 	var payload measureScenarioJSON
 	if err := json.Unmarshal([]byte(raw), &payload); err != nil {
@@ -231,18 +189,13 @@ func TestGoalsMeasure_ScenariosOnlyJSONFields(t *testing.T) {
 	}
 }
 
-func TestGoalsMeasure_FullModeJSONCarriesSnapshotAndScenarios(t *testing.T) {
-	setupMeasureScenarioProject(t, goalsMDWithScenarioGate, true)
-	goalsMeasureScenariosOnly = false
-	oldOutput := output
-	t.Cleanup(func() { output = oldOutput })
-	output = "json"
+func TestRunMeasureScenarios_FullModeJSONCarriesSnapshotAndScenarios(t *testing.T) {
+	dir := setupMeasureScenarioProject(t, goalsMDWithScenarioGate, true)
 
-	raw := captureJSONStdout(t, func() {
-		if err := goalsMeasureCmd.RunE(goalsMeasureCmd, nil); err != nil {
-			t.Fatalf("RunE returned error: %v", err)
-		}
-	})
+	raw, err := runMeasureScenarios(t, dir, false, true)
+	if err != nil {
+		t.Fatalf("RunMeasureScenarios returned error: %v", err)
+	}
 
 	var payload measureScenarioJSON
 	if err := json.Unmarshal([]byte(raw), &payload); err != nil {
@@ -255,7 +208,6 @@ func TestGoalsMeasure_FullModeJSONCarriesSnapshotAndScenarios(t *testing.T) {
 	if payload.Snapshot == nil {
 		t.Fatal("full-mode JSON must carry the gate snapshot, got nil")
 	}
-	// The gate snapshot is preserved unchanged: the sentinel gate ran.
 	if len(payload.Snapshot.Goals) != 1 {
 		t.Errorf("Snapshot.Goals len = %d, want 1", len(payload.Snapshot.Goals))
 	}
@@ -264,20 +216,15 @@ func TestGoalsMeasure_FullModeJSONCarriesSnapshotAndScenarios(t *testing.T) {
 	}
 }
 
-func TestGoalsMeasure_MissingArtifactYieldsUnknownNotError(t *testing.T) {
+func TestRunMeasureScenarios_MissingArtifactYieldsUnknownNotError(t *testing.T) {
 	// No artifact written: a missing scenario-results artifact is a clean skip,
 	// never an invocation error and never a false pass.
-	setupMeasureScenarioProject(t, goalsMDWithScenarioGate, false)
-	goalsMeasureScenariosOnly = true
-	oldOutput := output
-	t.Cleanup(func() { output = oldOutput })
-	output = "json"
+	dir := setupMeasureScenarioProject(t, goalsMDWithScenarioGate, false)
 
-	raw := captureJSONStdout(t, func() {
-		if err := goalsMeasureCmd.RunE(goalsMeasureCmd, nil); err != nil {
-			t.Fatalf("RunE returned error for missing artifact: %v", err)
-		}
-	})
+	raw, err := runMeasureScenarios(t, dir, true, true)
+	if err != nil {
+		t.Fatalf("RunMeasureScenarios returned error for missing artifact: %v", err)
+	}
 
 	var payload measureScenarioJSON
 	if err := json.Unmarshal([]byte(raw), &payload); err != nil {
@@ -298,16 +245,13 @@ const goalsMDBadThreshold = "# Goals\n\nMission.\n\n" +
 	"**Scenarios:** s-2026-05-01-009\n" +
 	"**Scenario threshold:** 2.5\n"
 
-func TestGoalsMeasure_StructurallyInvalidThresholdIsError(t *testing.T) {
-	// A malformed scenario threshold is a structurally-invalid input, a
-	// distinct exit class from a failing scenario verdict: it must return an
-	// error so the invocation exits non-zero.
-	setupMeasureScenarioProject(t, goalsMDBadThreshold, true)
-	goalsMeasureScenariosOnly = true
+func TestRunMeasureScenarios_StructurallyInvalidThresholdIsError(t *testing.T) {
+	// A malformed scenario threshold is a structurally-invalid input, a distinct
+	// exit class from a failing scenario verdict: it must return an error so the
+	// invocation exits non-zero.
+	dir := setupMeasureScenarioProject(t, goalsMDBadThreshold, true)
 
-	_, err := captureStdout(t, func() error {
-		return goalsMeasureCmd.RunE(goalsMeasureCmd, nil)
-	})
+	_, err := runMeasureScenarios(t, dir, true, false)
 	if err == nil {
 		t.Fatal("expected error for out-of-range scenario threshold, got nil")
 	}
@@ -316,19 +260,127 @@ func TestGoalsMeasure_StructurallyInvalidThresholdIsError(t *testing.T) {
 	}
 }
 
-func TestGoalsMeasure_FailingScenarioVerdictExitsZero(t *testing.T) {
+func TestRunMeasureScenarios_FailingScenarioVerdictExitsZero(t *testing.T) {
 	// A failing scenario verdict is a measurement outcome, not an invocation
 	// error: consistent with `ao goals measure` exiting 0 on a red gate, a red
-	// scenario verdict must NOT make RunE return an error. Callers gate on the
-	// JSON scenario_verdict field instead.
-	setupMeasureScenarioProject(t, goalsMDWithScenarioGate, true)
-	goalsMeasureScenariosOnly = true
+	// scenario verdict must NOT make RunMeasureScenarios return an error.
+	dir := setupMeasureScenarioProject(t, goalsMDWithScenarioGate, true)
 
-	_, err := captureStdout(t, func() error {
-		return goalsMeasureCmd.RunE(goalsMeasureCmd, nil)
-	})
-	// d-harden-loader's scenario fails, but RunE must still return nil.
+	if _, err := runMeasureScenarios(t, dir, true, false); err != nil {
+		t.Fatalf("RunMeasureScenarios returned error for a failing scenario verdict, want nil: %v", err)
+	}
+}
+
+// goalsMDWithNoScenarios is a GOALS.md where both directives have no linked
+// scenarios — every directive should yield an unknown verdict.
+const goalsMDWithNoScenarios = "# Goals\n\n" +
+	"Mission.\n\n" +
+	"## Directives\n\n" +
+	"### 1. Alpha\n\n" +
+	"**Directive ID:** d-alpha\n" +
+	"**Steer:** maintain\n\n" +
+	"### 2. Beta\n\n" +
+	"**Directive ID:** d-beta\n" +
+	"**Steer:** maintain\n"
+
+func TestRunMeasureScenarios_JSONStdoutCarriesNoHumanWarnings(t *testing.T) {
+	// JSON output must be clean — the entire stdout stream must parse as valid
+	// JSON with no preamble or trailing prose.
+	dir := setupMeasureScenarioProject(t, goalsMDWithScenarioGate, false) // no artifact → unknown
+
+	raw, err := runMeasureScenarios(t, dir, true, true)
 	if err != nil {
-		t.Fatalf("RunE returned error for a failing scenario verdict, want nil: %v", err)
+		t.Fatalf("RunMeasureScenarios error: %v", err)
+	}
+
+	var payload measureScenarioJSON
+	if err := json.Unmarshal([]byte(raw), &payload); err != nil {
+		t.Fatalf("stdout is not clean JSON: %v\nraw stdout:\n%s", err, raw)
+	}
+	trimmed := strings.TrimSpace(raw)
+	if !strings.HasPrefix(trimmed, "{") {
+		t.Fatalf("stdout does not start with '{': %q", trimmed)
+	}
+	if !strings.HasSuffix(trimmed, "}") {
+		t.Fatalf("stdout does not end with '}': %q", trimmed)
+	}
+}
+
+func TestRunMeasureScenarios_ZeroLinkedScenariosYieldsUnknownWithWarning(t *testing.T) {
+	// A directive that links no scenarios must yield verdict "unknown" and carry
+	// a non-empty warning field in the JSON report (zero-linked warning).
+	dir := setupMeasureScenarioProject(t, goalsMDWithNoScenarios, true)
+
+	raw, err := runMeasureScenarios(t, dir, true, true)
+	if err != nil {
+		t.Fatalf("RunMeasureScenarios error: %v", err)
+	}
+
+	var payload measureScenarioJSON
+	if err := json.Unmarshal([]byte(raw), &payload); err != nil {
+		t.Fatalf("unmarshal: %v\nraw: %s", err, raw)
+	}
+	if len(payload.Directives) != 2 {
+		t.Fatalf("Directives len = %d, want 2", len(payload.Directives))
+	}
+	for _, d := range payload.Directives {
+		if d.ScenarioVerdict != "unknown" {
+			t.Errorf("directive %s verdict = %q, want unknown (zero linked scenarios)", d.DirectiveID, d.ScenarioVerdict)
+		}
+		if d.ScenarioCount != 0 {
+			t.Errorf("directive %s ScenarioCount = %d, want 0", d.DirectiveID, d.ScenarioCount)
+		}
+		if d.Warning == "" {
+			t.Errorf("directive %s Warning = empty, want zero-linked-scenarios warning", d.DirectiveID)
+		}
+	}
+}
+
+func TestRunMeasureScenarios_ScenariosOnlyJSONModeField(t *testing.T) {
+	dir := setupMeasureScenarioProject(t, goalsMDWithScenarioGate, true)
+
+	raw, err := runMeasureScenarios(t, dir, true, true)
+	if err != nil {
+		t.Fatalf("RunMeasureScenarios error: %v", err)
+	}
+	var payload measureScenarioJSON
+	if err := json.Unmarshal([]byte(raw), &payload); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+	if payload.Mode != measureModeScenariosOnly {
+		t.Fatalf("Mode = %q, want %q", payload.Mode, measureModeScenariosOnly)
+	}
+}
+
+func TestRunMeasureScenarios_FullModeJSONModeField(t *testing.T) {
+	dir := setupMeasureScenarioProject(t, goalsMDWithScenarioGate, true)
+
+	raw, err := runMeasureScenarios(t, dir, false, true)
+	if err != nil {
+		t.Fatalf("RunMeasureScenarios error: %v", err)
+	}
+	var payload measureScenarioJSON
+	if err := json.Unmarshal([]byte(raw), &payload); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+	if payload.Mode != measureModeFull {
+		t.Fatalf("Mode = %q, want %q", payload.Mode, measureModeFull)
+	}
+}
+
+func TestRunMeasureScenarios_ContributingIsEmptySliceNotNil(t *testing.T) {
+	// The "contributing" field in JSON must be an empty array (not null/nil)
+	// when no scenarios contribute.
+	dir := setupMeasureScenarioProject(t, goalsMDWithNoScenarios, true)
+
+	raw, err := runMeasureScenarios(t, dir, true, true)
+	if err != nil {
+		t.Fatalf("RunMeasureScenarios error: %v", err)
+	}
+	if strings.Contains(raw, `"contributing":null`) {
+		t.Fatalf("JSON contains 'contributing':null; want empty array []\nraw: %s", raw)
+	}
+	if strings.Contains(raw, `"contributing": null`) {
+		t.Fatalf("JSON contains 'contributing': null; want empty array []\nraw: %s", raw)
 	}
 }
