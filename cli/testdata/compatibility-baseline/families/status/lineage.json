@@ -3,5 +3,6 @@
   "family": "status",
   "freeze_sha": "9e36efd124e6ee727da4d8b0f5040e975e1f0d0d",
   "ownership_sha256": "5392cf0c43b6cd998f2ddeecfb147a6e79550033992fd53dc6f3c409f16896c7",
-  "migration_state": "migrating"
+  "migration_state": "migrated",
+  "accepted_sha": "e7ea300d1d2d61bd675ffb258b05f18e52946706"
 }
