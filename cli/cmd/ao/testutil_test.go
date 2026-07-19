@@ -227,8 +227,6 @@ func resetCommandState(t *testing.T) {
 	origOutput := output
 	origJSON := jsonFlag
 	origCfg := cfgFile
-	origDemoConcepts := demoConcepts
-	origDemoQuick := demoQuick
 	origConfigShow := configShow
 	// No alternate lifecycle build exists; the helper remains a no-op so shared
 	// test setup has one stable call site.
@@ -240,8 +238,6 @@ func resetCommandState(t *testing.T) {
 		output = origOutput
 		jsonFlag = origJSON
 		cfgFile = origCfg
-		demoConcepts = origDemoConcepts
-		demoQuick = origDemoQuick
 		configShow = origConfigShow
 	})
 
@@ -251,8 +247,6 @@ func resetCommandState(t *testing.T) {
 	output = ""
 	jsonFlag = false
 	cfgFile = ""
-	demoConcepts = false
-	demoQuick = false
 	configShow = false
 	output = "table"
 	// Reset Cobra flag Changed state and values to defaults.
