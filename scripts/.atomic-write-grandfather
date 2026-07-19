@@ -16,7 +16,4 @@
 cli/cmd/ao/handoff.go
 cli/internal/doctor/runartifact.go
 cli/internal/evalsubstrate/atomic.go
-cli/internal/llm/review.go
-cli/internal/llm/session_writer.go
 cli/internal/scenarioresults/writer.go
-cli/internal/search/findings_ops.go
