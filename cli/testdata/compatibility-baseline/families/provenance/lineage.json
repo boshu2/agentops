@@ -1,0 +1,7 @@
+{
+  "schema_version": 1,
+  "family": "provenance",
+  "freeze_sha": "85dc2d971d4645304466f897c73cb757eb22dbfe",
+  "ownership_sha256": "9046ba0890efe1f510d8c32f8f9f260ae743e079ce829bed411f8bc9f23a688e",
+  "migration_state": "migrating"
+}
