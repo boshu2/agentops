@@ -19,5 +19,4 @@ cli/internal/evalsubstrate/atomic.go
 cli/internal/llm/review.go
 cli/internal/llm/session_writer.go
 cli/internal/scenarioresults/writer.go
-cli/internal/search/constraint.go
 cli/internal/search/findings_ops.go

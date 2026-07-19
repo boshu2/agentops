@@ -1,4 +1,7 @@
-package llm
+// Package redact is the canonical secret redactor — the single source of truth for
+// the credential/home-path scrub patterns. Extracted out of internal/llm so its sole
+// consumer (the `ao redact` command) depends on just this self-contained surface.
+package redact
 
 import (
 	"os"
