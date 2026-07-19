@@ -312,23 +312,23 @@
     {
       "category": "public-tested",
       "command": "goals render",
-      "coverage_status": "covered",
+      "coverage_status": "allowlisted",
       "kind": "leaf",
-      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
+      "reason": "Covered by internal/goals render tests after the goals carve-out."
     },
     {
       "category": "public-tested",
       "command": "goals scenarios",
-      "coverage_status": "covered",
+      "coverage_status": "allowlisted",
       "kind": "leaf",
-      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
+      "reason": "Covered by internal/commands/goals module tests and internal/goals scenario tests after the goals carve-out."
     },
     {
       "category": "public-tested",
       "command": "goals validate",
-      "coverage_status": "covered",
+      "coverage_status": "allowlisted",
       "kind": "leaf",
-      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
+      "reason": "Covered by internal/commands/goals module tests and internal/goals validate tests after the goals carve-out."
     },
     {
       "category": "internal-hidden",
