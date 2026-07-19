@@ -48,6 +48,7 @@ type HistoryOptions struct {
 	JSON        bool
 	HistoryPath string
 	Stdout      io.Writer
+	Stderr      io.Writer
 }
 
 // RunHistory loads and displays goal measurement history.
@@ -58,15 +59,13 @@ func RunHistory(opts HistoryOptions) error {
 	if opts.Stdout == nil {
 		opts.Stdout = os.Stdout
 	}
+	if opts.Stderr == nil {
+		opts.Stderr = os.Stderr
+	}
 
 	entries, err := LoadHistory(opts.HistoryPath)
 	if err != nil {
 		return fmt.Errorf("loading history: %w", err)
-	}
-
-	if len(entries) == 0 {
-		fmt.Fprintln(opts.Stdout, "No history entries found. Run 'ao goals measure' first.")
-		return nil
 	}
 
 	if opts.Since != "" || opts.GoalID != "" {
@@ -82,9 +81,20 @@ func RunHistory(opts HistoryOptions) error {
 	}
 
 	if opts.JSON {
+		// stdout is exactly one JSON document; the empty store encodes as `[]`
+		// (LoadHistory/QueryHistory always return a non-nil slice). Any human
+		// hint goes to stderr so `ao goals history --json | jq` never breaks.
+		if len(entries) == 0 {
+			fmt.Fprintln(opts.Stderr, "No history entries found. Run 'ao goals measure' first.")
+		}
 		enc := json.NewEncoder(opts.Stdout)
 		enc.SetIndent("", "  ")
 		return enc.Encode(entries)
+	}
+
+	if len(entries) == 0 {
+		fmt.Fprintln(opts.Stdout, "No history entries found. Run 'ao goals measure' first.")
+		return nil
 	}
 
 	fmt.Fprintf(opts.Stdout, "%-20s  %4s  %5s  %7s  %s\n", "TIMESTAMP", "PASS", "TOTAL", "SCORE", "GIT SHA")

@@ -33,6 +33,14 @@ func runRehydrate(cmd *cobra.Command, _ []string) error {
 	}
 	path, err := pickLatestHandoff(cwd)
 	if err != nil {
+		// Under --json, stdout must be exactly one JSON document (`{}` for the
+		// empty state) so `ao session rehydrate --json | jq` never breaks; the
+		// human hint goes to stderr. Exit 0 either way.
+		if rehydrateJSON {
+			fmt.Fprintln(cmd.ErrOrStderr(), "rehydrate: no handoff found")
+			fmt.Fprintln(cmd.OutOrStdout(), "{}")
+			return nil
+		}
 		fmt.Fprintln(cmd.OutOrStdout(), "rehydrate: no handoff found")
 		return nil
 	}
