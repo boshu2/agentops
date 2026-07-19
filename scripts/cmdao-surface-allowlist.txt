@@ -30,6 +30,7 @@ public-stateful-fixture-needed|doctor undo|Reverts a doctor repair fixture.
 
 public-tested|capabilities|Covered by capability contract tests.
 public-tested|robot-docs|Covered by generated documentation tests.
+public-tested|init|Covered by internal/commands/init module tests and internal/initapp tests after the init carve-out.
 public-tested|provenance show|Covered by generic provenance read tests.
 public-tested|session handoff|Covered by handoff artifact tests.
 public-tested|session rehydrate|Covered by rehydrate artifact tests.

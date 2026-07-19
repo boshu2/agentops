@@ -340,9 +340,9 @@
     {
       "category": "public-tested",
       "command": "init",
-      "coverage_status": "covered",
+      "coverage_status": "allowlisted",
       "kind": "leaf",
-      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
+      "reason": "Covered by internal/commands/init module tests and internal/initapp tests after the init carve-out."
     },
     {
       "category": "public-tested",
