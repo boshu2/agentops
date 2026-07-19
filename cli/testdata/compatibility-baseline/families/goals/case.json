@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "family": "goals",
+  "checks": [
+    {
+      "id": "goals-black-box",
+      "command": "tmp=$(mktemp -d /tmp/ao-goals.XXXXXX); (cd cli && go build -o \"$tmp/ao\" ./cmd/ao); \"$tmp/ao\" goals --help >\"$tmp/help\"; grep -Fq 'ao goals [command]' \"$tmp/help\"; for child in drift export history measure meta render scenarios validate; do grep -Eq \"^[[:space:]]+$child([[:space:]]|,)\" \"$tmp/help\"; done; \"$tmp/ao\" goals --help | grep -Fq -- '--file'; \"$tmp/ao\" goals --help | grep -Fq -- '--timeout'; \"$tmp/ao\" goals measure --help >\"$tmp/measure\"; for flag in goal directives exclude-tag total-timeout scenarios-only; do grep -Fq -- \"--$flag\" \"$tmp/measure\"; done; \"$tmp/ao\" goals scenarios --help | grep -Fq -- '--lint'; \"$tmp/ao\" goals render --help | grep -Fq -- '--out'"
+    },
+    {
+      "id": "goals-go-behavior",
+      "command": "cd cli && go test ./internal/goals/... ./internal/commands/goals/... -count=1"
+    }
+  ],
+  "dimensions": {
+    "path": {"status": "evidence", "evidence": ["goals-black-box", "goals-go-behavior"]},
+    "aliases": {"status": "evidence", "evidence": ["goals-black-box"]},
+    "accepted_args": {"status": "evidence", "evidence": ["goals-black-box", "goals-go-behavior"]},
+    "rejected_args": {"status": "evidence", "evidence": ["goals-go-behavior"]},
+    "stdout": {"status": "evidence", "evidence": ["goals-black-box", "goals-go-behavior"]},
+    "stderr": {"status": "evidence", "evidence": ["goals-go-behavior"]},
+    "exit_classes": {"status": "evidence", "evidence": ["goals-go-behavior"]},
+    "tracker_selection": {"status": "not_applicable", "reason": "The goals family does not select a repository issue tracker."},
+    "ordered_effects": {"status": "evidence", "evidence": ["goals-go-behavior"]}
+  }
+}
