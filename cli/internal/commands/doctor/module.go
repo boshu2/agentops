@@ -67,7 +67,7 @@ func (Module) Contract() clicontract.CommandContract {
 		ID: "ao.doctor",
 		Profiles: clicontract.ProfileDefault | clicontract.ProfileFlywheel |
 			clicontract.ProfileLegacy | clicontract.ProfileCombined,
-		Args:    clicontract.ArgsPolicy{Name: "range", Validate: cobra.NoArgs},
+		Args:    clicontract.ArgsPolicy{Name: "no-args", Validate: cobra.NoArgs},
 		Output:  clicontract.OutputNone,
 		Effects: clicontract.EffectFilesystem | clicontract.EffectProcess | clicontract.EffectNetwork | clicontract.EffectEnvironment | clicontract.EffectClock,
 		ExitClasses: map[int]clicontract.ExitClass{

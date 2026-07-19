@@ -13,6 +13,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/boshu2/agentops/cli/internal/clicontract"
 	"github.com/boshu2/agentops/cli/internal/verdictcheck"
 )
 
@@ -31,8 +32,30 @@ Examples:
 	RunE: runStatus,
 }
 
+// statusContract declares status's real behavior: it accepts (and ignores)
+// arbitrary positional args exactly as Cobra does today, emits text (JSON under
+// -o json), reads the durable evidence stores on the filesystem and stamps
+// recency from the clock, and exits 0 on success or 1 on a working-directory
+// failure.
+func statusContract() clicontract.CommandContract {
+	return clicontract.CommandContract{
+		ID:       "ao.status",
+		Profiles: clicontract.ProfileDefault | clicontract.ProfileFlywheel | clicontract.ProfileLegacy | clicontract.ProfileCombined,
+		Args:     clicontract.ArgsPolicy{Name: "arbitrary", Validate: cobra.ArbitraryArgs},
+		Output:   clicontract.OutputText,
+		Effects:  clicontract.EffectFilesystem | clicontract.EffectClock,
+		ExitClasses: map[int]clicontract.ExitClass{
+			0: clicontract.ExitSuccess,
+			1: clicontract.ExitFailure,
+		},
+	}
+}
+
 func init() {
 	statusCmd.GroupID = "core"
+	if err := clicontract.Attach(statusCmd, statusContract()); err != nil {
+		panic(err)
+	}
 	rootCmd.AddCommand(statusCmd)
 }
 

@@ -30,6 +30,7 @@ func newGateCommand() *cobra.Command {
 	if err := clicontract.Attach(command, module.Contract()); err != nil {
 		panic(err)
 	}
+	attachChildContract(command, "check", module.CheckContract())
 	return command
 }
 

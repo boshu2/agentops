@@ -7,6 +7,8 @@ import (
 	"runtime"
 
 	"github.com/spf13/cobra"
+
+	"github.com/boshu2/agentops/cli/internal/clicontract"
 )
 
 type versionInfo struct {
@@ -24,8 +26,29 @@ var versionCmd = &cobra.Command{
 	RunE:  runVersion,
 }
 
+// versionContract declares version's real behavior: it accepts (and ignores)
+// arbitrary positional args exactly as Cobra does today, emits text (JSON under
+// -o json), is a pure read of build/runtime metadata, and exits 0 on success or
+// 1 on an output-encoding failure.
+func versionContract() clicontract.CommandContract {
+	return clicontract.CommandContract{
+		ID:       "ao.version",
+		Profiles: clicontract.ProfileDefault | clicontract.ProfileFlywheel | clicontract.ProfileLegacy | clicontract.ProfileCombined,
+		Args:     clicontract.ArgsPolicy{Name: "arbitrary", Validate: cobra.ArbitraryArgs},
+		Output:   clicontract.OutputText,
+		Effects:  clicontract.EffectPure,
+		ExitClasses: map[int]clicontract.ExitClass{
+			0: clicontract.ExitSuccess,
+			1: clicontract.ExitFailure,
+		},
+	}
+}
+
 func init() {
 	versionCmd.GroupID = "core"
+	if err := clicontract.Attach(versionCmd, versionContract()); err != nil {
+		panic(err)
+	}
 	rootCmd.AddCommand(versionCmd)
 }
 
