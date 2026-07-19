@@ -1,4 +1,5 @@
-package main
+// practices: [design-by-contract, code-complete]
+package skillsapp
 
 import (
 	"os"
@@ -7,23 +8,23 @@ import (
 	"testing"
 )
 
-// The command's --help is the user-facing contract for the optional track-main
-// install path (age-4asp) and for its multi-runtime coverage (age-ivcba):
-// documenting them there is the whole point, so guard against silent removal.
-func TestSkillsLinkHelp_DocumentsTrackMainAndRuntimes(t *testing.T) {
-	long := skillsLinkCmd.Long
-	for _, want := range []string{"Track main", "git pull && ao skills link", "~/.agents/skills", "~/.codex/skills", "~/.gemini/skills", "no reinstall or plugin cache"} {
-		if !strings.Contains(long, want) {
-			t.Errorf("`ao skills link --help` no longer documents %q", want)
-		}
+// mkSkill creates dir/<name>/SKILL.md so linkMissingSkills recognizes it as a skill.
+func mkSkill(t *testing.T, dir, name string) {
+	t.Helper()
+	sd := filepath.Join(dir, name)
+	if err := os.MkdirAll(sd, 0o755); err != nil {
+		t.Fatalf("mkdir %s: %v", sd, err)
+	}
+	if err := os.WriteFile(filepath.Join(sd, "SKILL.md"), []byte("# "+name+"\n"), 0o644); err != nil {
+		t.Fatalf("write SKILL.md: %v", err)
 	}
 }
 
-// resolveTargetDests must fan out to every INSTALLED runtime (Codex/AGY too, not
-// just Claude), honor an explicit --dest, and always include the portable root.
+// ResolveTargetDests must fan out to every INSTALLED runtime (Codex/AGY too, not
+// just Claude), honor an explicit dest, and always include the portable root.
 func TestResolveTargetDests(t *testing.T) {
 	t.Run("explicit dest wins", func(t *testing.T) {
-		got, err := resolveTargetDests("/custom/skills")
+		got, err := ResolveTargetDests("/custom/skills")
 		if err != nil {
 			t.Fatalf("err: %v", err)
 		}
@@ -35,13 +36,12 @@ func TestResolveTargetDests(t *testing.T) {
 	t.Run("fans out to installed runtimes", func(t *testing.T) {
 		home := t.TempDir()
 		t.Setenv("HOME", home)
-		// Codex + Gemini + Pi installed; Claude + Cursor absent.
 		for _, rt := range []string{".codex", ".gemini", ".pi"} {
 			if err := os.MkdirAll(filepath.Join(home, rt), 0o755); err != nil {
 				t.Fatal(err)
 			}
 		}
-		got, err := resolveTargetDests("")
+		got, err := ResolveTargetDests("")
 		if err != nil {
 			t.Fatalf("err: %v", err)
 		}
@@ -64,7 +64,7 @@ func TestResolveTargetDests(t *testing.T) {
 	t.Run("portable root exists even when no runtime is present", func(t *testing.T) {
 		home := t.TempDir()
 		t.Setenv("HOME", home)
-		got, err := resolveTargetDests("")
+		got, err := ResolveTargetDests("")
 		if err != nil {
 			t.Fatalf("err: %v", err)
 		}
@@ -93,18 +93,6 @@ func TestLinkMissingSkills_WrongSymlinkIsConflict(t *testing.T) {
 	}
 }
 
-// mkSkill creates dir/<name>/SKILL.md so linkMissingSkills recognizes it as a skill.
-func mkSkill(t *testing.T, dir, name string) {
-	t.Helper()
-	sd := filepath.Join(dir, name)
-	if err := os.MkdirAll(sd, 0o755); err != nil {
-		t.Fatalf("mkdir %s: %v", sd, err)
-	}
-	if err := os.WriteFile(filepath.Join(sd, "SKILL.md"), []byte("# "+name+"\n"), 0o644); err != nil {
-		t.Fatalf("write SKILL.md: %v", err)
-	}
-}
-
 func TestLinkMissingSkills_LinksAbsentAndResolves(t *testing.T) {
 	src := t.TempDir()
 	dest := t.TempDir()
@@ -127,7 +115,6 @@ func TestLinkMissingSkills_LinksAbsentAndResolves(t *testing.T) {
 	if got != want {
 		t.Fatalf("symlink target = %q, want %q", got, want)
 	}
-	// The linked skill's SKILL.md must be reachable THROUGH the link.
 	if _, err := os.Stat(filepath.Join(tgt, "SKILL.md")); err != nil {
 		t.Fatalf("SKILL.md not reachable through link: %v", err)
 	}
@@ -177,7 +164,6 @@ func TestLinkMissingSkills_RealDirIsConflictNotClobbered(t *testing.T) {
 	src := t.TempDir()
 	dest := t.TempDir()
 	mkSkill(t, src, "multi-pass-bug-hunting")
-	// Simulate a foreign corpus (jsm) real dir already owning the name.
 	foreign := filepath.Join(dest, "multi-pass-bug-hunting")
 	if err := os.MkdirAll(foreign, 0o755); err != nil {
 		t.Fatalf("mkdir foreign: %v", err)
@@ -197,7 +183,6 @@ func TestLinkMissingSkills_RealDirIsConflictNotClobbered(t *testing.T) {
 	if len(res.Linked) != 0 {
 		t.Fatalf("Linked = %v, want [] (must not clobber)", res.Linked)
 	}
-	// The foreign dir + its contents must be untouched.
 	info, err := os.Lstat(foreign)
 	if err != nil || info.Mode()&os.ModeSymlink != 0 || !info.IsDir() {
 		t.Fatalf("foreign dir was replaced; Lstat=%v mode=%v", err, info.Mode())
@@ -211,7 +196,6 @@ func TestLinkMissingSkills_SkipsNonSkillDirs(t *testing.T) {
 	src := t.TempDir()
 	dest := t.TempDir()
 	mkSkill(t, src, "real-skill")
-	// A directory with no SKILL.md must be ignored, not linked.
 	if err := os.MkdirAll(filepath.Join(src, "not-a-skill"), 0o755); err != nil {
 		t.Fatalf("mkdir not-a-skill: %v", err)
 	}
@@ -240,7 +224,6 @@ func TestLinkMissingSkills_EmptySrcFailsClosed(t *testing.T) {
 	if len(res.Linked) != 0 {
 		t.Fatalf("empty srcDir must link nothing, got Linked=%v", res.Linked)
 	}
-	// A whitespace-only path is equally unresolved and must also fail closed.
 	if _, werr := linkMissingSkills("   ", dest, false); werr == nil {
 		t.Fatal("whitespace-only srcDir must fail closed with an error, got nil")
 	}
@@ -248,15 +231,14 @@ func TestLinkMissingSkills_EmptySrcFailsClosed(t *testing.T) {
 
 // Cross-family refuter regression, round 2 (codex-fresh-review, age-u031): the
 // identity check must reject a directory that merely CONTAINS a stray skills/
-// subdir but is not the agentops repo (no skills-codex/ sibling), rather than
-// scanning that unintended tree. t.Chdir auto-restores cwd on cleanup.
+// subdir but is not the agentops repo (no skills-codex/ sibling).
 func TestResolveRepoSkillsDir_OutsideRepoFailsClosed(t *testing.T) {
 	tmp := t.TempDir()
 	if err := os.MkdirAll(filepath.Join(tmp, "skills"), 0o755); err != nil {
 		t.Fatalf("mkdir stray skills/: %v", err)
 	}
 	t.Chdir(tmp)
-	if got, err := resolveRepoSkillsDir(); err == nil {
+	if got, err := ResolveRepoSkillsDir(); err == nil {
 		t.Fatalf("outside the repo must fail closed, got dir=%q nil error", got)
 	}
 }
@@ -272,15 +254,15 @@ func TestResolveRepoSkillsDir_LookAlikeWithoutMarkersFailsClosed(t *testing.T) {
 		}
 	}
 	t.Chdir(tmp)
-	if got, err := resolveRepoSkillsDir(); err == nil {
+	if got, err := ResolveRepoSkillsDir(); err == nil {
 		t.Fatalf("a skills/+skills-codex/ look-alike without agentops root markers must fail closed, got dir=%q nil error", got)
 	}
 }
 
-// Inside the real repo (the test binary runs under cli/cmd/ao), the resolver
-// locates the skills/+skills-codex/ pair and returns an absolute path.
+// Inside the real repo (the test binary runs under cli/internal/skillsapp), the
+// resolver locates the skills/+skills-codex/ pair and returns an absolute path.
 func TestResolveRepoSkillsDir_InsideRepoResolvesAbsolute(t *testing.T) {
-	dir, err := resolveRepoSkillsDir()
+	dir, err := ResolveRepoSkillsDir()
 	if err != nil {
 		t.Fatalf("inside the agentops repo: %v", err)
 	}
@@ -291,22 +273,19 @@ func TestResolveRepoSkillsDir_InsideRepoResolvesAbsolute(t *testing.T) {
 
 // Cross-family refuter regression (codex-fresh-review, age-d686g): the fan-out
 // must be RESILIENT — a per-dest failure records an error on that dest but must
-// NOT abort the loop, so a failing runtime (listed first) never skips the ones
-// after it. Earlier: the loop returned on the first error.
+// NOT abort the loop.
 func TestLinkAllDests_ResilientAcrossDests(t *testing.T) {
 	src := t.TempDir()
 	mkSkill(t, src, "alpha")
 
 	good := t.TempDir()
-	// A bad dest whose PARENT is a regular file → os.MkdirAll(dest) fails.
 	badParent := filepath.Join(t.TempDir(), "afile")
 	if err := os.WriteFile(badParent, []byte("x"), 0o644); err != nil {
 		t.Fatalf("write bad parent: %v", err)
 	}
 	bad := filepath.Join(badParent, "skills")
 
-	// bad FIRST: the good dest after it must still be linked.
-	results, anyErr := linkAllDests(src, []string{bad, good}, false)
+	results, anyErr := LinkAllDests(src, []string{bad, good}, false)
 
 	if !anyErr {
 		t.Fatal("anyErr should be true when a dest fails")
@@ -323,19 +302,16 @@ func TestLinkAllDests_ResilientAcrossDests(t *testing.T) {
 	if len(results[1].Linked) != 1 || results[1].Linked[0] != "alpha" {
 		t.Fatalf("good dest Linked = %v, want [alpha]", results[1].Linked)
 	}
-	// The good dest was actually mutated (link exists on disk).
 	if _, err := os.Lstat(filepath.Join(good, "alpha")); err != nil {
 		t.Fatalf("good dest was skipped after the earlier failure: %v", err)
 	}
 }
 
-// renderLinkResult is the human-facing per-dest summary: the ERROR line must
+// RenderLinkResult is the human-facing per-dest summary: the ERROR line must
 // promise the fan-out continued, and dry-run must never claim links were made.
-// (Paired with the resilient linkAllDests contract above; added alongside the
-// semgrep-suppression annotation on that call site.)
 func TestRenderLinkResult_ErrorDryRunAndConflictLines(t *testing.T) {
 	var errBuf strings.Builder
-	renderLinkResult(&errBuf, skillLinkResult{Dest: "/d1", Err: "boom"})
+	RenderLinkResult(&errBuf, LinkResult{Dest: "/d1", Err: "boom"})
 	out := errBuf.String()
 	if !strings.Contains(out, "ERROR: boom") || !strings.Contains(out, "other runtimes still attempted") {
 		t.Errorf("error rendering must name the error and the continued fan-out, got:\n%s", out)
@@ -345,7 +321,7 @@ func TestRenderLinkResult_ErrorDryRunAndConflictLines(t *testing.T) {
 	}
 
 	var dryBuf strings.Builder
-	renderLinkResult(&dryBuf, skillLinkResult{Dest: "/d2", DryRun: true, Linked: []string{"alpha"}, Conflicts: []string{"gamma"}})
+	RenderLinkResult(&dryBuf, LinkResult{Dest: "/d2", DryRun: true, Linked: []string{"alpha"}, Conflicts: []string{"gamma"}})
 	out = dryBuf.String()
 	if !strings.Contains(out, "missing (dry-run, not linked): 1") {
 		t.Errorf("dry-run rendering must label links as not created, got:\n%s", out)

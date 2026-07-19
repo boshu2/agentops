@@ -1,39 +1,20 @@
 // practices: [design-by-contract, code-complete]
-package main
+package skills
 
 import (
-	"bytes"
 	"encoding/json"
 	"strings"
 	"testing"
 
-	"github.com/spf13/cobra"
-
 	"github.com/boshu2/agentops/cli/internal/skills"
 )
 
-// runFind invokes runSkillsFind with separate stdout/stderr buffers so tests
-// can assert the stdout-as-data / stderr-as-diagnostics contract. It resolves
-// skills/ from the live tree (test cwd walks up to the repo root).
-func runFind(t *testing.T, jsonMode bool, limit int, args ...string) (stdout, stderr string, err error) {
-	t.Helper()
-	prevJSON, prevLimit := skillsFindJSON, skillsFindLimit
-	defer func() { skillsFindJSON, skillsFindLimit = prevJSON, prevLimit }()
-	skillsFindJSON = jsonMode
-	skillsFindLimit = limit
-
-	var out, errb bytes.Buffer
-	c := &cobra.Command{}
-	c.SetOut(&out)
-	c.SetErr(&errb)
-	err = runSkillsFind(c, args)
-	return out.String(), errb.String(), err
-}
-
+// TestSkillsFind_JSONIsSortedArrayOnStdout resolves skills/ from the live tree
+// (test cwd walks up to the repo root).
 func TestSkillsFind_JSONIsSortedArrayOnStdout(t *testing.T) {
-	stdout, stderr, err := runFind(t, true, 5, "close", "the", "loop")
+	stdout, stderr, err := execSkills(t, "find", "--json", "close", "the", "loop")
 	if err != nil {
-		t.Fatalf("runSkillsFind: %v", err)
+		t.Fatalf("find: %v", err)
 	}
 	if stderr != "" {
 		t.Errorf("expected no diagnostics on stderr in JSON mode, got %q", stderr)
@@ -56,9 +37,9 @@ func TestSkillsFind_JSONIsSortedArrayOnStdout(t *testing.T) {
 }
 
 func TestSkillsFind_TextRanksOnStdout(t *testing.T) {
-	stdout, _, err := runFind(t, false, 5, "close the loop")
+	stdout, _, err := execSkills(t, "find", "close the loop")
 	if err != nil {
-		t.Fatalf("runSkillsFind: %v", err)
+		t.Fatalf("find: %v", err)
 	}
 	if !strings.Contains(stdout, "1.") {
 		t.Errorf("expected a ranked list on stdout, got %q", stdout)
@@ -66,7 +47,7 @@ func TestSkillsFind_TextRanksOnStdout(t *testing.T) {
 }
 
 func TestSkillsFind_UnmatchedReportsGracefully(t *testing.T) {
-	stdout, stderr, err := runFind(t, false, 5, "zzqqxx-nonsense-token")
+	stdout, stderr, err := execSkills(t, "find", "zzqqxx-nonsense-token")
 	if err != nil {
 		t.Fatalf("unmatched intent must exit 0, got error: %v", err)
 	}
@@ -79,9 +60,9 @@ func TestSkillsFind_UnmatchedReportsGracefully(t *testing.T) {
 }
 
 func TestSkillsFind_LimitCapsResultCount(t *testing.T) {
-	stdout, _, err := runFind(t, true, 3, "run")
+	stdout, _, err := execSkills(t, "find", "--json", "--limit", "3", "run")
 	if err != nil {
-		t.Fatalf("runSkillsFind: %v", err)
+		t.Fatalf("find: %v", err)
 	}
 	var got []skills.Match
 	if jerr := json.Unmarshal([]byte(stdout), &got); jerr != nil {
@@ -93,7 +74,7 @@ func TestSkillsFind_LimitCapsResultCount(t *testing.T) {
 }
 
 func TestSkillsFind_InvalidLimitNamesCorrection(t *testing.T) {
-	_, _, err := runFind(t, false, 0, "anything")
+	_, _, err := execSkills(t, "find", "--limit", "0", "anything")
 	if err == nil {
 		t.Fatal("expected an error for --limit 0")
 	}
@@ -103,8 +84,9 @@ func TestSkillsFind_InvalidLimitNamesCorrection(t *testing.T) {
 }
 
 func TestSkillsFind_RegisteredUnderSkills(t *testing.T) {
+	root := NewModule(HostOptions{DryRun: func() bool { return false }}).Command()
 	found := false
-	for _, c := range skillsCmd.Commands() {
+	for _, c := range root.Commands() {
 		if c.Name() == "find" {
 			found = true
 			if !c.Flags().HasAvailableFlags() {

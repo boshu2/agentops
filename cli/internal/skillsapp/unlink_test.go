@@ -1,4 +1,5 @@
-package main
+// practices: [design-by-contract, code-complete]
+package skillsapp
 
 import (
 	"os"
@@ -6,18 +7,6 @@ import (
 	"strings"
 	"testing"
 )
-
-// The command's --help is the user-facing contract for the documented rollback
-// path: it must name the inverse relationship, the multi-runtime coverage, and
-// the dry-run rehearsal. Guard against silent removal.
-func TestSkillsUnlinkHelp_DocumentsRollbackAndRuntimes(t *testing.T) {
-	long := skillsUnlinkCmd.Long
-	for _, want := range []string{"inverse", "track main", "~/.codex/skills", "~/.gemini/skills", "--dry-run"} {
-		if !strings.Contains(long, want) {
-			t.Errorf("`ao skills unlink --help` no longer documents %q", want)
-		}
-	}
-}
 
 // TestSkillsUnlink_RemovesOnlyOwnLinks is the core acceptance test: after a
 // round-trip (link → unlink) the runtime is restored to its pre-link state,
@@ -29,13 +18,10 @@ func TestSkillsUnlink_RemovesOnlyOwnLinks(t *testing.T) {
 	mkSkill(t, src, "goal-design")
 	mkSkill(t, src, "using-gc")
 
-	// Mint our own live-tier links exactly as `ao skills link` would.
 	if _, err := linkMissingSkills(src, dest, false); err != nil {
 		t.Fatalf("link setup: %v", err)
 	}
 
-	// A foreign symlink pointing OUTSIDE the repo (e.g. a hand-linked skill from
-	// another corpus) must be left alone.
 	otherSrc := t.TempDir()
 	mkSkill(t, otherSrc, "foreign-skill")
 	foreignLink := filepath.Join(dest, "foreign-skill")
@@ -43,7 +29,6 @@ func TestSkillsUnlink_RemovesOnlyOwnLinks(t *testing.T) {
 		t.Fatalf("make foreign symlink: %v", err)
 	}
 
-	// A real directory (a foreign corpus such as jsm) must be left alone.
 	realDir := filepath.Join(dest, "jsm-corpus")
 	if err := os.MkdirAll(realDir, 0o755); err != nil {
 		t.Fatalf("mkdir foreign corpus: %v", err)
@@ -58,11 +43,9 @@ func TestSkillsUnlink_RemovesOnlyOwnLinks(t *testing.T) {
 		t.Fatalf("unlinkOwnedSkills: %v", err)
 	}
 
-	// Exactly our two links were removed.
 	if len(res.Removed) != 2 || res.Removed[0] != "goal-design" || res.Removed[1] != "using-gc" {
 		t.Fatalf("Removed = %v, want [goal-design using-gc]", res.Removed)
 	}
-	// The foreign symlink and the real dir are both reported as foreign.
 	wantForeign := map[string]bool{"foreign-skill": true, "jsm-corpus": true}
 	if len(res.Foreign) != 2 {
 		t.Fatalf("Foreign = %v, want the 2 foreign entries", res.Foreign)
@@ -73,18 +56,15 @@ func TestSkillsUnlink_RemovesOnlyOwnLinks(t *testing.T) {
 		}
 	}
 
-	// Our links are gone from disk.
 	for _, name := range []string{"goal-design", "using-gc"} {
 		if _, err := os.Lstat(filepath.Join(dest, name)); !os.IsNotExist(err) {
 			t.Fatalf("owned link %q not removed; Lstat err = %v, want IsNotExist", name, err)
 		}
 	}
-	// The foreign symlink survives, still a symlink.
 	fi, err := os.Lstat(foreignLink)
 	if err != nil || fi.Mode()&os.ModeSymlink == 0 {
 		t.Fatalf("foreign symlink was removed or changed; Lstat=%v mode=%v", err, fi.Mode())
 	}
-	// The real dir + its sentinel survive untouched.
 	di, err := os.Lstat(realDir)
 	if err != nil || di.Mode()&os.ModeSymlink != 0 || !di.IsDir() {
 		t.Fatalf("foreign dir was replaced; Lstat=%v mode=%v", err, di.Mode())
@@ -114,7 +94,6 @@ func TestSkillsUnlink_DryRunWritesNothing(t *testing.T) {
 	if !res.DryRun {
 		t.Fatalf("res.DryRun = false, want true")
 	}
-	// The link is still on disk.
 	if _, err := os.Lstat(filepath.Join(dest, "gc-membrane")); err != nil {
 		t.Fatalf("dry-run removed the link; Lstat err = %v, want nil", err)
 	}
@@ -165,8 +144,6 @@ func TestSkillsUnlink_MissingDestIsNoop(t *testing.T) {
 func TestSkillsUnlink_RemovesStaleOwnedLink(t *testing.T) {
 	src := t.TempDir()
 	dest := t.TempDir()
-	// Link points into src but the target skill dir was never created (removed
-	// from the repo since it was linked).
 	stale := filepath.Join(dest, "retired-skill")
 	if err := os.Symlink(filepath.Join(src, "retired-skill"), stale); err != nil {
 		t.Fatalf("make stale link: %v", err)
@@ -185,8 +162,7 @@ func TestSkillsUnlink_RemovesStaleOwnedLink(t *testing.T) {
 }
 
 // Cross-family refuter regression, mirror of the link guard (age-u031): an empty
-// source dir must fail CLOSED — never fall through to filepath.Abs("")→cwd and
-// wrongly claim links pointing into cwd as owned, then delete them.
+// source dir must fail CLOSED.
 func TestSkillsUnlink_EmptySrcFailsClosed(t *testing.T) {
 	dest := t.TempDir()
 	res, err := unlinkOwnedSkills("", dest, false)
@@ -202,8 +178,7 @@ func TestSkillsUnlink_EmptySrcFailsClosed(t *testing.T) {
 }
 
 // The fan-out must be RESILIENT — a per-dest failure records an error on that
-// dest but must NOT abort the loop, so a failing runtime (listed first) never
-// skips the ones after it. Mirror of TestLinkAllDests_ResilientAcrossDests.
+// dest but must NOT abort the loop. Mirror of TestLinkAllDests_ResilientAcrossDests.
 func TestUnlinkAllDests_ResilientAcrossDests(t *testing.T) {
 	src := t.TempDir()
 	mkSkill(t, src, "alpha")
@@ -213,15 +188,12 @@ func TestUnlinkAllDests_ResilientAcrossDests(t *testing.T) {
 		t.Fatalf("link setup: %v", err)
 	}
 
-	// A bad dest that is a regular FILE (not a dir) → os.ReadDir fails with a
-	// non-IsNotExist error.
 	badFile := filepath.Join(t.TempDir(), "afile")
 	if err := os.WriteFile(badFile, []byte("x"), 0o644); err != nil {
 		t.Fatalf("write bad dest file: %v", err)
 	}
 
-	// bad FIRST: the good dest after it must still be swept.
-	results, anyErr := unlinkAllDests(src, []string{badFile, good}, false)
+	results, anyErr := UnlinkAllDests(src, []string{badFile, good}, false)
 
 	if !anyErr {
 		t.Fatal("anyErr should be true when a dest fails")
@@ -243,13 +215,11 @@ func TestUnlinkAllDests_ResilientAcrossDests(t *testing.T) {
 	}
 }
 
-// renderUnlinkResult is the human-facing per-dest summary: the ERROR line must
+// RenderUnlinkResult is the human-facing per-dest summary: the ERROR line must
 // promise the sweep continued, and dry-run must never claim removals happened.
-// (Paired with the resilient unlinkAllDests contract above; added alongside the
-// semgrep-suppression annotation on that call site.)
 func TestRenderUnlinkResult_ErrorDryRunAndForeignLines(t *testing.T) {
 	var errBuf strings.Builder
-	renderUnlinkResult(&errBuf, skillUnlinkResult{Dest: "/d1", Err: "boom"})
+	RenderUnlinkResult(&errBuf, UnlinkResult{Dest: "/d1", Err: "boom"})
 	out := errBuf.String()
 	if !strings.Contains(out, "ERROR: boom") || !strings.Contains(out, "other runtimes still attempted") {
 		t.Errorf("error rendering must name the error and the continued sweep, got:\n%s", out)
@@ -259,7 +229,7 @@ func TestRenderUnlinkResult_ErrorDryRunAndForeignLines(t *testing.T) {
 	}
 
 	var dryBuf strings.Builder
-	renderUnlinkResult(&dryBuf, skillUnlinkResult{Dest: "/d2", DryRun: true, Removed: []string{"alpha"}, Foreign: []string{"gamma"}})
+	RenderUnlinkResult(&dryBuf, UnlinkResult{Dest: "/d2", DryRun: true, Removed: []string{"alpha"}, Foreign: []string{"gamma"}})
 	out = dryBuf.String()
 	if !strings.Contains(out, "would remove (dry-run): 1") {
 		t.Errorf("dry-run rendering must label removals as not performed, got:\n%s", out)
