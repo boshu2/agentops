@@ -51,7 +51,8 @@ best-effort, read-only Git observations.`,
 }
 
 func init() {
-	sessionCmd.AddCommand(handoffCmd)
+	// handoffCmd is attached to the session parent by newSessionCommand in
+	// session_composition.go; the session parent now lives in the session module.
 	handoffCmd.Flags().StringVar(&handoffGoal, "goal", "", "Caller-supplied goal")
 	handoffCmd.Flags().StringVar(&handoffContinuation, "continuation", "", "Caller-supplied continuation note")
 	handoffCmd.Flags().BoolVar(&handoffCollect, "collect", false, "Collect best-effort read-only Git observations")
