@@ -1,0 +1,7 @@
+{
+  "schema_version": 1,
+  "family": "status",
+  "freeze_sha": "003f5265ab9f2de764fc36592a2e5abae3da15cb",
+  "ownership_sha256": "5392cf0c43b6cd998f2ddeecfb147a6e79550033992fd53dc6f3c409f16896c7",
+  "migration_state": "migrating"
+}
