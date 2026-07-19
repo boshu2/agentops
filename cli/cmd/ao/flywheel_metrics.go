@@ -39,12 +39,6 @@ func isRetrievableArtifactPath(baseDir, artifactPath string) bool {
 	return strings.HasPrefix(p, learningsRoot) || strings.HasPrefix(p, patternsRoot) || strings.HasPrefix(p, findingsRoot)
 }
 
-func isFindingArtifactPath(baseDir, artifactPath string) bool {
-	p := filepath.ToSlash(normalizeArtifactPath(baseDir, artifactPath))
-	findingsRoot := filepath.ToSlash(filepath.Join(baseDir, ".agents", SectionFindings)) + "/"
-	return strings.HasPrefix(p, findingsRoot)
-}
-
 func retrievableCitationStats(baseDir string, citations []types.CitationEvent) (uniqueCount, evidenceCount int) {
 	unique := make(map[string]bool)
 	evidence := make(map[string]bool)
@@ -109,11 +103,6 @@ func countBypassCitations(citations []types.CitationEvent) int {
 		}
 	}
 	return count
-}
-
-// computeMetrics calculates flywheel metrics for a period.
-func computeMetrics(baseDir string, days int) (*types.FlywheelMetrics, error) {
-	return computeMetricsForNamespace(baseDir, days, primaryMetricNamespace)
 }
 
 func computeMetricsForNamespace(baseDir string, days int, namespace string) (*types.FlywheelMetrics, error) {
@@ -207,50 +196,12 @@ func countNewArtifacts(baseDir string, since time.Time) (int, error) {
 	return quality.CountNewArtifacts(baseDir, since)
 }
 
-// buildLastCitedMap builds a map of normalized artifact path → last citation time.
-func buildLastCitedMap(baseDir string, citations []types.CitationEvent) map[string]time.Time {
-	return quality.BuildLastCitedMap(citations, func(p string) string {
-		return normalizeArtifactPath(baseDir, p)
-	})
-}
-
-// isKnowledgeFile returns true if path ends with .md or .jsonl.
-func isKnowledgeFile(path string) bool {
-	return quality.IsKnowledgeFile(path)
-}
-
-// isStaleArtifact returns true if the artifact was modified before staleThreshold and
-// has no citation at or after staleThreshold.
-func isStaleArtifact(baseDir, path string, modTime time.Time, staleThreshold time.Time, lastCited map[string]time.Time) bool {
-	return quality.IsStaleArtifact(path, modTime, staleThreshold, lastCited, func(p string) string {
-		return normalizeArtifactPath(baseDir, p)
-	})
-}
-
-// countStaleInDir counts stale artifacts in one directory.
-func countStaleInDir(baseDir, dir string, staleThreshold time.Time, lastCited map[string]time.Time) int {
-	return quality.CountStaleInDir(dir, staleThreshold, lastCited, func(p string) string {
-		return normalizeArtifactPath(baseDir, p)
-	})
-}
-
 // countStaleArtifacts counts artifacts not cited in N days.
 func countStaleArtifacts(baseDir string, citations []types.CitationEvent, staleDays int) (int, error) {
 	return quality.CountStaleArtifacts(baseDir, citations, staleDays, func(p string) string {
 		return normalizeArtifactPath(baseDir, p)
 	})
 }
-
-func printMetricsParameters(m *types.FlywheelMetrics) { quality.PrintMetricsParameters(m) }
-func printMetricsDerived(m *types.FlywheelMetrics)    { quality.PrintMetricsDerived(m) }
-func printMetricsCounts(m *types.FlywheelMetrics)     { quality.PrintMetricsCounts(m) }
-func printMetricsLoopClosure(m *types.FlywheelMetrics) {
-	quality.PrintMetricsLoopClosure(m)
-}
-func printMetricsUtility(m *types.FlywheelMetrics) { quality.PrintMetricsUtility(m) }
-
-// printMetricsTable prints a formatted metrics table.
-func printMetricsTable(m *types.FlywheelMetrics) { quality.PrintMetricsTable(m) }
 
 // countNewArtifactsInDir counts artifacts created after a time in a specific directory.
 func countNewArtifactsInDir(dir string, since time.Time) (int, error) {

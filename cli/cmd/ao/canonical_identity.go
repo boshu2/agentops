@@ -3,7 +3,6 @@ package main
 
 import (
 	"fmt"
-	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -38,20 +37,6 @@ func canonicalSessionID(raw string) string {
 		return "session-uuid-" + strings.ToLower(trimmed)
 	}
 	return trimmed
-}
-
-// resolveSessionID prefers an explicit session ID, then active runtime session
-// environment variables, and finally falls back to a timestamp-based session ID.
-func resolveSessionID(raw string) string {
-	if trimmed := strings.TrimSpace(raw); trimmed != "" {
-		return canonicalSessionID(trimmed)
-	}
-	for _, key := range []string{"CLAUDE_SESSION_ID", "CODEX_THREAD_ID", "OPENCODE_SESSION_ID"} {
-		if value := strings.TrimSpace(os.Getenv(key)); value != "" {
-			return canonicalSessionID(value)
-		}
-	}
-	return canonicalSessionID("")
 }
 
 // sessionIDAliases returns acceptable IDs for cross-version matching.
@@ -104,8 +89,4 @@ func canonicalArtifactPath(baseDir, artifactPath string) string {
 		p = abs
 	}
 	return filepath.Clean(p)
-}
-
-func canonicalArtifactKey(baseDir, artifactPath string) string {
-	return filepath.ToSlash(canonicalArtifactPath(baseDir, artifactPath))
 }

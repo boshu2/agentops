@@ -2,6 +2,7 @@ package eval
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -162,7 +163,8 @@ func (runtime Runtime) RunStats(args []string) ([]byte, error) {
 	output, err := command.Output()
 	if err != nil {
 		stderr := ""
-		if exit, ok := err.(*exec.ExitError); ok {
+		var exit *exec.ExitError
+		if errors.As(err, &exit) {
 			stderr = string(exit.Stderr)
 		}
 		return nil, fmt.Errorf("eval suite: stats CLI failed: %w (stderr: %s)", err, stderr)

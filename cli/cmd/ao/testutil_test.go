@@ -7,29 +7,14 @@ package main
 // makes cross-file dependencies explicit.
 
 import (
-	"fmt"
 	"io"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"sync"
 	"testing"
-	"time"
 
 	"github.com/spf13/pflag"
 )
-
-func equalStringSlices(a, b []string) bool {
-	if len(a) != len(b) {
-		return false
-	}
-	for i := range a {
-		if a[i] != b[i] {
-			return false
-		}
-	}
-	return true
-}
 
 // packageDir holds the absolute path to the test package directory, captured
 // at init time before any test can call os.Chdir. Use this as the base for
@@ -299,21 +284,6 @@ func chdirTemp(t *testing.T) string {
 	return cwd
 }
 
-// chdirTo changes to the specified directory, registers a cleanup to restore
-// the previous working directory, and returns the previous working directory
-// for backward compatibility.
-// Origin: constraint_cmd_test.go
-func chdirTo(t *testing.T, wd string) string {
-	t.Helper()
-	prev, err := os.Getwd()
-	if err != nil {
-		t.Fatalf("getwd: %v", err)
-	}
-	// ag-k38x: t.Chdir auto-restores + blocks parallel; prev is returned for callers.
-	t.Chdir(wd)
-	return prev
-}
-
 // ---------------------------------------------------------------------------
 // File / directory setup helpers
 // ---------------------------------------------------------------------------
@@ -355,117 +325,4 @@ func writeFile(t *testing.T, path, content string) {
 	if err := os.WriteFile(path, []byte(content), 0644); err != nil {
 		t.Fatal(err)
 	}
-}
-
-// ---------------------------------------------------------------------------
-// Git helpers
-// ---------------------------------------------------------------------------
-
-// gitCommitFixture describes a single commit to create in a test git repo.
-// Path and Content default to auto-generated values when left empty.
-type gitCommitFixture struct {
-	Path      string
-	Content   string
-	Message   string
-	Timestamp time.Time
-}
-
-// initGitHistoryFixtureRepo creates a temp directory with a git repo and
-// replays the given commits in order, preserving author/committer timestamps.
-func initGitHistoryFixtureRepo(t *testing.T, commits []gitCommitFixture) string {
-	t.Helper()
-	dir := t.TempDir()
-	initHistoryFixtureGitRepo(t, dir)
-	for i, commit := range commits {
-		path := commit.Path
-		if path == "" {
-			path = fmt.Sprintf("fixture-%d.txt", i)
-		}
-		content := commit.Content
-		if content == "" {
-			content = fmt.Sprintf("%s at %s\n", commit.Message, commit.Timestamp.Format(time.RFC3339))
-		}
-		writeFile(t, filepath.Join(dir, path), content)
-		runFixtureGit(
-			t,
-			dir,
-			nil,
-			"add",
-			path,
-		)
-		runFixtureGit(
-			t,
-			dir,
-			[]string{
-				"GIT_AUTHOR_DATE=" + commit.Timestamp.Format(time.RFC3339),
-				"GIT_COMMITTER_DATE=" + commit.Timestamp.Format(time.RFC3339),
-			},
-			"commit",
-			"-m",
-			commit.Message,
-		)
-	}
-	return dir
-}
-
-// initTestRepo creates a temp directory with a git repo containing one commit.
-// Origin: rpi_phased_worktree_test.go
-func initTestRepo(t *testing.T) string {
-	t.Helper()
-	return initGitHistoryFixtureRepo(t, []gitCommitFixture{{
-		Path:      "README.md",
-		Content:   "# Test\n",
-		Message:   "Initial commit",
-		Timestamp: time.Now().Add(-1 * time.Hour).UTC(),
-	}})
-}
-
-// realPathForTest resolves symlinks when possible and falls back to an absolute
-// path. Useful for Git worktree tests on hosts where temp dirs may be symlinked.
-func realPathForTest(t *testing.T, path string) string {
-	t.Helper()
-	resolved, err := filepath.EvalSymlinks(path)
-	if err == nil {
-		return resolved
-	}
-	abs, err := filepath.Abs(path)
-	if err != nil {
-		t.Fatalf("filepath.Abs(%q): %v", path, err)
-	}
-	return abs
-}
-
-// initMinimalGitRepo creates a git repo with one empty commit. Use this when
-// you need a valid git repo but don't care about file history.
-// Origin: uat_smoke_test.go (was initGitRepo)
-func initMinimalGitRepo(t *testing.T, dir string) {
-	t.Helper()
-	initHistoryFixtureGitRepo(t, dir)
-	runFixtureGit(t, dir, nil, "commit", "--allow-empty", "-m", "init")
-}
-
-// initHistoryFixtureGitRepo runs git init and configures a test user in dir.
-func initHistoryFixtureGitRepo(t *testing.T, dir string) {
-	t.Helper()
-	runFixtureGit(t, dir, nil, "init")
-	runFixtureGit(t, dir, nil, "config", "user.email", "test@test.com")
-	runFixtureGit(t, dir, nil, "config", "user.name", "Test")
-	runFixtureGit(t, dir, nil, "config", "commit.gpgsign", "false")
-}
-
-// runFixtureGit executes a git command in dir with optional extra environment
-// variables. Fatals the test on any non-zero exit. Always scrubs git's
-// repo-discovery env (gitDiscoveryEnv): under a hook-leaked GIT_DIR, cmd.Dir
-// alone does NOT scope the command — `git config user.name Test` would write
-// the LEAKED repo's shared config (age-gate-scripts-worktree-gitdir-p62wo).
-func runFixtureGit(t *testing.T, dir string, extraEnv []string, args ...string) string {
-	t.Helper()
-	cmd := exec.Command("git", args...)
-	cmd.Dir = dir
-	cmd.Env = append(gitDiscoveryEnv(), extraEnv...)
-	out, err := cmd.CombinedOutput()
-	if err != nil {
-		t.Fatalf("git %v in %s: %v\n%s", args, dir, err, out)
-	}
-	return string(out)
 }
