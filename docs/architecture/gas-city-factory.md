@@ -134,8 +134,10 @@ landing. A landed PR is still not a release verdict.
 `deploy/gc/bootstrap.sh` creates or repairs only
 a marked managed city, registers an explicit disposable rig, installs the local
 or pinned pack import, binds private runtime paths, checks provider readiness,
-and optionally starts the city. It does not start a Mayor, run an experiment,
-or infer completion.
+reconciles and verifies the primary executor roles' packet-workspace base, and
+optionally starts the city. Packet workspaces are directory names relative to
+that base, so the base is the registered rig's parent rather than the rig
+itself. It does not start a Mayor, run an experiment, or infer completion.
 
 `deploy/gc/materialize-toolchain.sh` checks out and builds the exact source pair
 before bootstrap. An ambient or same-version unlisted binary cannot become the

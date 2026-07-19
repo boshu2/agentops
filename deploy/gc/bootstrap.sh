@@ -1313,6 +1313,66 @@ PY
 		    rm -f "$project_gitignore"
 		  fi
     fi
+
+    # `gc rig add` also upgrades legacy whole-directory Beads ignores in the
+    # working copy after any bd-init commit/index activity. That projection is
+    # correct for a GC-owned repository, but registration must not rewrite a
+    # caller-owned branch. Accept only the exact upstream rig projection from
+    # the bytes captured immediately before this call, then restore those
+    # original bytes and mode. Any other .gitignore mutation is left in place
+    # and fails closed for inspection.
+    if [ -e "$project_gitignore" ] || [ "$gitignore_existed" -eq 1 ]; then
+      if ! cmp -s "$gitignore_backup" "$project_gitignore"; then
+        python3 - "$gitignore_backup" "$project_gitignore" <<'PY'
+import sys
+
+before_path, after_path = sys.argv[1:]
+with open(before_path, "rb") as handle:
+    before = handle.read()
+with open(after_path, "rb") as handle:
+    after = handle.read()
+
+legacy = {b".beads", b".beads/", b"/.beads", b"/.beads/"}
+obsolete = {
+    b"!.beads/config.yaml", b"!/.beads/config.yaml", b"!**/.beads/config.yaml",
+    b"!.beads/metadata.json", b"!/.beads/metadata.json", b"!**/.beads/metadata.json",
+}
+lines = before.split(b"\n")
+cleaned_lines = []
+present = set()
+removed = False
+for line in lines:
+    trimmed = line.strip()
+    if trimmed in legacy or trimmed in obsolete:
+        removed = True
+        continue
+    cleaned_lines.append(line)
+    present.add(trimmed)
+cleaned = b"\n".join(cleaned_lines)
+entries = (b".beads/*", b"!.beads/identity.toml")
+new_entries = [entry for entry in entries if entry not in present]
+if not new_entries:
+    expected = cleaned if removed else before
+else:
+    expected = cleaned
+    if expected:
+        if not expected.endswith(b"\n"):
+            expected += b"\n"
+        if not expected.endswith(b"\n\n"):
+            expected += b"\n"
+    expected += b"# Gas City\n" + b"".join(entry + b"\n" for entry in new_entries)
+if after != expected:
+    raise SystemExit(
+        "gc rig add changed .gitignore outside its canonical upstream rig projection"
+    )
+PY
+        if [ "$gitignore_existed" -eq 1 ]; then
+          cp -p "$gitignore_backup" "$project_gitignore"
+        else
+          rm -f "$project_gitignore"
+        fi
+      fi
+    fi
   fi
 )
 
@@ -1407,7 +1467,133 @@ with os.fdopen(fd, "w", encoding="utf-8") as handle:
 os.replace(temporary, path)
 PY
 
+executor_agents_before="$(mktemp "$city/.gc/executor-agents-before.XXXXXX")"
+executor_agents_after="$(mktemp "$city/.gc/executor-agents-after.XXXXXX")"
+trap 'rm -f "$executor_agents_before" "$executor_agents_after"' EXIT
+"$gc_bin" --city "$city" agent list --json >"$executor_agents_before"
+
+# Direct executor packets carry the candidate directory name in
+# gc.pack_workspace. Gas City resolves that value relative to the role's
+# work_dir, so the primary rig needs the same parent-root policy as every
+# dynamic factory worktree rig. Pointing these roles at the rig itself launches
+# them at <rig>/<rig>; leaving work_dir unset has the same effect through GC's
+# rig default. Reconcile only the four packet executor routes, then prove the
+# effective native projection below.
+python3 - "$city/city.toml" "$executor_agents_before" "$rig_name" "$binding" "$rig" <<'PY'
+import json
+import os
+import re
+import sys
+import tempfile
+import tomllib
+
+path, agents_path, rig_name, binding, rig_root = sys.argv[1:]
+with open(path, encoding="utf-8") as handle:
+    text = handle.read()
+with open(agents_path, encoding="utf-8") as handle:
+    value = json.load(handle)
+
+agents = value.get("agents") if isinstance(value, dict) else None
+if not isinstance(agents, list):
+    raise SystemExit("gc agent list returned no agent inventory")
+roles = ("implementer", "implementer-claude", "validator", "validator-claude")
+expected = {
+    f"{rig_name}/{binding}.{role}": f"{binding}.{role}"
+    for role in roles
+}
+for qualified_name in expected:
+    matches = [
+        agent for agent in agents
+        if isinstance(agent, dict) and agent.get("qualified_name") == qualified_name
+    ]
+    if len(matches) != 1:
+        raise SystemExit(
+            f"selected AgentOps pack must expose exactly one {qualified_name!r}; "
+            f"found {len(matches)}"
+        )
+    agent = matches[0]
+    if agent.get("dir") != rig_name or agent.get("scope") != "rig":
+        raise SystemExit(f"executor route {qualified_name!r} is not rig-scoped")
+    if agent.get("suspended") is True:
+        raise SystemExit(f"executor route {qualified_name!r} is suspended")
+
+markers = list(re.finditer(r"(?m)^\[\[(rigs|patches\.agent)\]\]\s*$", text))
+if not markers:
+    raise SystemExit("managed city contains neither rig nor agent patch blocks")
+base = text[:markers[0].start()].rstrip()
+rig_sections = []
+preserved_patches = []
+managed_names = set(expected.values())
+for index, match in enumerate(markers):
+    end = markers[index + 1].start() if index + 1 < len(markers) else len(text)
+    block = text[match.start():end].strip()
+    parsed = tomllib.loads(block)
+    if match.group(1) == "rigs":
+        rig_sections.append(block)
+        continue
+    patches = parsed.get("patches", {}).get("agent", [])
+    if len(patches) != 1:
+        raise SystemExit("managed city contains an invalid agent patch block")
+    patch = patches[0]
+    if patch.get("dir") == rig_name and patch.get("name") in managed_names:
+        continue
+    preserved_patches.append(block)
+
+session_work_dir = os.path.dirname(os.path.realpath(rig_root))
+managed_patches = [
+    "[[patches.agent]]\n"
+    f"dir = {json.dumps(rig_name)}\n"
+    f"name = {json.dumps(local_name)}\n"
+    f"work_dir = {json.dumps(session_work_dir)}"
+    for local_name in expected.values()
+]
+rendered = "\n\n".join([base, *rig_sections, *preserved_patches, *managed_patches]) + "\n"
+tomllib.loads(rendered)
+if rendered != text:
+    fd, temporary = tempfile.mkstemp(prefix=".city.toml.", dir=os.path.dirname(path))
+    os.fchmod(fd, os.stat(path).st_mode & 0o777)
+    with os.fdopen(fd, "w", encoding="utf-8") as handle:
+        handle.write(rendered)
+        handle.flush()
+        os.fsync(handle.fileno())
+    os.replace(temporary, path)
+    directory_fd = os.open(os.path.dirname(path), os.O_RDONLY)
+    try:
+        os.fsync(directory_fd)
+    finally:
+        os.close(directory_fd)
+PY
+
 "$gc_bin" --city "$city" config show >/dev/null
+"$gc_bin" --city "$city" agent list --json >"$executor_agents_after"
+python3 - "$executor_agents_after" "$rig_name" "$binding" "$rig" <<'PY'
+import json
+import os
+import sys
+
+path, rig_name, binding, rig_root = sys.argv[1:]
+with open(path, encoding="utf-8") as handle:
+    value = json.load(handle)
+agents = value.get("agents") if isinstance(value, dict) else None
+if not isinstance(agents, list):
+    raise SystemExit("gc agent list returned no agent inventory after workspace reconciliation")
+expected_work_dir = os.path.dirname(os.path.realpath(rig_root))
+for role in ("implementer", "implementer-claude", "validator", "validator-claude"):
+    qualified_name = f"{rig_name}/{binding}.{role}"
+    matches = [
+        agent for agent in agents
+        if isinstance(agent, dict) and agent.get("qualified_name") == qualified_name
+    ]
+    if len(matches) != 1 or matches[0].get("work_dir") != expected_work_dir:
+        actual = [agent.get("work_dir") for agent in matches]
+        raise SystemExit(
+            f"executor route {qualified_name!r} must resolve packet workspaces from "
+            f"{expected_work_dir!r}; found {actual!r}"
+        )
+PY
+rm -f "$executor_agents_before" "$executor_agents_after"
+trap - EXIT
+
 "$gc_bin" --city "$city" config explain >/dev/null
 for provider_name in codex claude; do
   "$gc_bin" --city "$city" config explain --provider "$provider_name" --json >/dev/null

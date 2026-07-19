@@ -209,6 +209,23 @@ case "$command_name" in
           fi
           printf '%s\n' '{"backend":"dolt"}' >"$rig_path/.beads/metadata.json"
         fi
+        if [ "${FAKE_GC_REWRITE_GITIGNORE:-0}" = "1" ]; then
+          python3 - "$rig_path/.gitignore" <<'PY'
+import sys
+
+path = sys.argv[1]
+with open(path, "rb") as handle:
+    before = handle.read()
+lines = [line for line in before.split(b"\n") if line.strip() != b".beads/"]
+cleaned = b"\n".join(lines)
+if cleaned and not cleaned.endswith(b"\n"):
+    cleaned += b"\n"
+if cleaned and not cleaned.endswith(b"\n\n"):
+    cleaned += b"\n"
+with open(path, "wb") as handle:
+    handle.write(cleaned + b"# Gas City\n.beads/*\n!.beads/identity.toml\n")
+PY
+        fi
         if [ ! -e "$FAKE_GC_STATE/rig-added" ]; then
           printf '\n[[rigs]]\nname = "%s"\nsuspended_on_start = true\n' \
             "$rig_name" >>"$city/city.toml"
@@ -224,6 +241,52 @@ case "$command_name" in
     ;;
   config)
     printf '%s\n' 'resolved config'
+    ;;
+  agent)
+    [ "${2:-}" = "list" ] || exit 2
+    [ "${3:-}" = "--json" ] || exit 2
+    python3 - "$city/city.toml" <<'PY'
+import json
+import sys
+import tomllib
+
+with open(sys.argv[1], "rb") as handle:
+    config = tomllib.load(handle)
+rigs = config.get("rigs", [])
+if not rigs:
+    raise SystemExit("fake gc expected at least one rig")
+rig = rigs[0]
+rig_name = rig["name"]
+imports = rig.get("imports", {})
+if len(imports) != 1:
+    raise SystemExit(f"fake gc expected one rig import, found {len(imports)}")
+binding = next(iter(imports))
+patches = config.get("patches", {}).get("agent", [])
+agents = []
+for role, provider in (
+    ("implementer", "codex"),
+    ("implementer-claude", "claude"),
+    ("validator", "codex"),
+    ("validator-claude", "claude"),
+):
+    local_name = f"{binding}.{role}"
+    workspace_patches = [
+        patch for patch in patches
+        if patch.get("dir") == rig_name and patch.get("name") == local_name
+    ]
+    agent = {
+        "name": role,
+        "qualified_name": f"{rig_name}/{local_name}",
+        "dir": rig_name,
+        "scope": "rig",
+        "provider": provider,
+        "suspended": False,
+    }
+    if len(workspace_patches) == 1 and "work_dir" in workspace_patches[0]:
+        agent["work_dir"] = workspace_patches[0]["work_dir"]
+    agents.append(agent)
+print(json.dumps({"ok": True, "agents": agents}))
+PY
     ;;
   import)
     [ "${2:-}" = "status" ] || exit 2
@@ -320,7 +383,7 @@ run_bootstrap() {
 
   run run_bootstrap
   [ "$status" -eq 0 ]
-  [ "$(grep -c '^\[\[patches.agent\]\]$' "$CITY/city.toml")" -eq 7 ]
+  [ "$(grep -c '^\[\[patches.agent\]\]$' "$CITY/city.toml")" -eq 11 ]
 }
 
 @test "bootstrap creates an isolated dual-provider city without starting it" {
@@ -388,6 +451,9 @@ import tomllib
 with open(sys.argv[1], "rb") as handle:
     config = tomllib.load(handle)
 patches = config["patches"]["agent"]
+city = os.path.realpath(os.path.dirname(sys.argv[1]))
+rig = os.path.realpath(os.path.join(city, "..", "rig"))
+workspace_parent = os.path.dirname(rig)
 assert [
     patch for patch in patches
     if patch.get("name") == "bd.dog" and not patch.get("dir") and patch.get("suspended") is True
@@ -416,8 +482,11 @@ assert [
     patch for patch in patches
     if patch.get("name") == "core.control-dispatcher" and patch.get("dir") == "agentops" and patch.get("suspended") is True
 ] == [{"dir": "agentops", "name": "core.control-dispatcher", "suspended": True}]
-city = os.path.realpath(os.path.dirname(sys.argv[1]))
-rig = os.path.realpath(os.path.join(city, "..", "rig"))
+for role in ("implementer", "implementer-claude", "validator", "validator-claude"):
+    assert [
+        patch for patch in patches
+        if patch.get("name") == f"agentops.{role}" and patch.get("dir") == "agentops"
+    ] == [{"dir": "agentops", "name": f"agentops.{role}", "work_dir": workspace_parent}]
 assert config["session"]["socket"] == (
     "agentops-" + hashlib.sha256(city.encode()).hexdigest()[:20]
 )
@@ -575,7 +644,7 @@ PY
   [ "$(grep -c 'ADOPT <1>' "$FAKE_LOG")" -eq 1 ]
   [ "$(grep -c '^\[imports.agentops\]$' "$CITY/pack.toml")" -eq 1 ]
   [ "$(grep -c '^\[rigs.imports.agentops\]$' "$CITY/city.toml")" -eq 1 ]
-  [ "$(grep -c '^\[\[patches.agent\]\]$' "$CITY/city.toml")" -eq 7 ]
+  [ "$(grep -c '^\[\[patches.agent\]\]$' "$CITY/city.toml")" -eq 11 ]
   [ "$(shasum -a 256 "$CITY/.gc-home/supervisor.toml" | awk '{print $1}')" = "$supervisor_config_digest" ]
   python3 - "$CITY/.gc/codex-home/config.toml" "$RIG" <<'PY'
 import os
@@ -587,6 +656,52 @@ with open(sys.argv[1], "rb") as handle:
 assert config["check_for_update_on_startup"] is False
 assert config["projects"][os.path.realpath(sys.argv[2])]["trust_level"] == "trusted"
 assert config["projects"]["/unrelated/project"]["trust_level"] == "trusted"
+PY
+}
+
+@test "bootstrap repairs primary executor workspace roots" {
+  run run_bootstrap
+  [ "$status" -eq 0 ]
+
+  python3 - "$CITY/city.toml" "$RIG" <<'PY'
+import json
+import os
+import sys
+
+path, rig = sys.argv[1:]
+expected = (
+    "[[patches.agent]]\n"
+    'dir = "agentops"\n'
+    'name = "agentops.validator"\n'
+    f"work_dir = {json.dumps(os.path.dirname(os.path.realpath(rig)))}"
+)
+wrong = expected.rsplit("\n", 1)[0] + f"\nwork_dir = {json.dumps(os.path.realpath(rig))}"
+with open(path, encoding="utf-8") as handle:
+    text = handle.read()
+if text.count(expected) != 1:
+    raise SystemExit("fixture has no unique managed validator workspace patch")
+with open(path, "w", encoding="utf-8") as handle:
+    handle.write(text.replace(expected, wrong))
+PY
+
+  run run_bootstrap
+  [ "$status" -eq 0 ]
+  python3 - "$CITY/city.toml" "$RIG" <<'PY'
+import os
+import sys
+import tomllib
+
+with open(sys.argv[1], "rb") as handle:
+    config = tomllib.load(handle)
+matches = [
+    patch for patch in config["patches"]["agent"]
+    if patch.get("dir") == "agentops" and patch.get("name") == "agentops.validator"
+]
+assert matches == [{
+    "dir": "agentops",
+    "name": "agentops.validator",
+    "work_dir": os.path.dirname(os.path.realpath(sys.argv[2])),
+}]
 PY
 }
 
@@ -739,6 +854,19 @@ PY
   run run_bootstrap
   [ "$status" -eq 0 ]
   git -C "$RIG" diff --cached --quiet
+}
+
+@test "bootstrap restores the exact caller gitignore after Gas City upgrades it" {
+  printf '%s\n' '# caller rules' '.beads/' 'dist/' >"$RIG/.gitignore"
+  git -C "$RIG" add .gitignore
+  git -C "$RIG" commit -qm "add caller gitignore"
+  before="$(shasum -a 256 "$RIG/.gitignore" | awk '{print $1}')"
+  export FAKE_GC_REWRITE_GITIGNORE=1
+
+  run run_bootstrap
+  [ "$status" -eq 0 ]
+  [ "$(shasum -a 256 "$RIG/.gitignore" | awk '{print $1}')" = "$before" ]
+  git -C "$RIG" diff --quiet -- .gitignore
 }
 
 @test "bootstrap refuses an existing unmanaged city" {

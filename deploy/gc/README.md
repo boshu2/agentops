@@ -62,14 +62,21 @@ cross-check its backend may still answer through the subprocess fallback, but
 AgentOps refuses to call that degraded and substantially slower path ready. Gas
 City records that resume as a persistent runtime preference, so it survives an
 ordinary city restart; use `gc rig suspend` when the rig must remain dormant.
+Rig registration validates and reverses only Gas City's canonical `.gitignore`
+projection, preserving the caller's exact tracked bytes while keeping the
+runtime-owned `.beads` state local.
 The deployment declares no always-on or named sessions. Gas City derives a
 generic sling target from each registered provider; bootstrap explicitly
 suspends those targets plus the scaffold's maintenance pools at city and
 managed-rig scope. Only roles explicitly supplied by the selected pack remain
-routable in the primary rig. The factory further patches every dynamic
-candidate rig so only its bead-selected Codex/Claude Worker and Validator
-routes remain active, and every integration rig so only its two Validator
-routes remain active.
+routable in the primary rig. Bootstrap also pins the four direct packet
+executor roles to the primary rig's parent directory and verifies that native
+`gc agent list` resolves the same roots. Because packet metadata contributes
+the candidate directory name, this launches the role in the exact supplied
+workspace instead of the invalid `<workspace>/<workspace>` path. The factory
+applies the same parent-root rule while patching every dynamic candidate rig so
+only its bead-selected Codex/Claude Worker and Validator routes remain active,
+and every integration rig so only its two Validator routes remain active.
 
 The private `CODEX_HOME` contains a symlink to the explicitly selected existing
 `auth.json`; credentials are not copied. When `--codex-auth` is omitted, the
