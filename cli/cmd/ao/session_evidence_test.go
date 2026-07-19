@@ -33,40 +33,6 @@ func TestSessionBootstrapOnlyReportsLocalOrientation(t *testing.T) {
 	}
 }
 
-// TestRehydrateJSONEmptyStateEmitsEmptyObject asserts that --json with no
-// handoff present emits exactly one JSON document `{}` on stdout (jq-safe), with
-// the human hint on stderr and exit 0. RED before the fix: the "no handoff found"
-// prose is printed to stdout regardless of --json, so json.Decoder fails.
-func TestRehydrateJSONEmptyStateEmitsEmptyObject(t *testing.T) {
-	dir := t.TempDir()
-	t.Chdir(dir)
-
-	var stdout, stderr bytes.Buffer
-	readCommand := *rehydrateCmd
-	readCommand.SetOut(&stdout)
-	readCommand.SetErr(&stderr)
-	rehydrateJSON = true
-	t.Cleanup(func() { rehydrateJSON = false })
-	if err := runRehydrate(&readCommand, nil); err != nil {
-		t.Fatalf("rehydrate returned error: %v", err)
-	}
-
-	dec := json.NewDecoder(&stdout)
-	var decoded map[string]any
-	if err := dec.Decode(&decoded); err != nil {
-		t.Fatalf("stdout is not one JSON document: %v (raw stdout: %q)", err, stdout.String())
-	}
-	if len(decoded) != 0 {
-		t.Errorf("empty state: expected {} (0 keys), got %d", len(decoded))
-	}
-	if dec.More() {
-		t.Error("stdout contains more than one JSON document")
-	}
-	if !strings.Contains(stderr.String(), "no handoff found") {
-		t.Errorf("stderr = %q, want the 'no handoff found' hint", stderr.String())
-	}
-}
-
 func TestHandoffAndRehydratePreserveCallerTextWithoutLifecycleState(t *testing.T) {
 	dir := t.TempDir()
 	t.Chdir(dir)

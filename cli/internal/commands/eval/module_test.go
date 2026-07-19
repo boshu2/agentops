@@ -3,7 +3,6 @@ package eval
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"strings"
@@ -90,16 +89,12 @@ func TestModuleScenarioListJSONEmptyStates(t *testing.T) {
 				t.Fatalf("Execute: %v", err)
 			}
 
-			dec := json.NewDecoder(&stdout)
-			var decoded []aoeval.ScenarioSummary
-			if err := dec.Decode(&decoded); err != nil {
-				t.Fatalf("stdout is not one JSON document: %v (raw stdout: %q)", err, stdout.String())
-			}
-			if len(decoded) != 0 {
-				t.Errorf("expected [] (0 scenarios), got %d", len(decoded))
-			}
-			if dec.More() {
-				t.Error("stdout contains more than one JSON document")
+			// Shape-exact: both empty states must print the literal `[]` and
+			// nothing else on stdout. A byte-exact check rejects `null` (which
+			// decodes into a nil slice and would pass len==0) and any second
+			// document, without relying on Decoder.More().
+			if got := strings.TrimSpace(stdout.String()); got != "[]" {
+				t.Fatalf("stdout = %q, want exactly \"[]\"", got)
 			}
 			if !strings.Contains(stderr.String(), tc.wantStderr) {
 				t.Errorf("stderr = %q, want it to contain %q", stderr.String(), tc.wantStderr)
