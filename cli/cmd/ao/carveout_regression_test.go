@@ -23,6 +23,10 @@ var carvedFamilies = map[string]string{
 	"status":     "status_composition.go",
 	"provenance": "provenance_composition.go",
 	"skills":     "skills_composition.go",
+	"session":    "session_composition.go",
+	"demo":       "demo_composition.go",
+	"init":       "init_composition.go",
+	"version":    "version_composition.go",
 }
 
 // packageGoFiles returns the non-test .go source files in the cmd/ao package
