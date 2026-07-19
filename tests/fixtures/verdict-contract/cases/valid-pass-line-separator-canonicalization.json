@@ -1,0 +1,38 @@
+{
+  "name": "valid-pass-line-separator-canonicalization",
+  "description": "Raw U+2028 AND U+2029 in string fields: canonical form is raw UTF-8 (Python ensure_ascii=False). Go must NOT emit \\u2028/\\u2029, or digests fork. Direct Go==Python digest parity.",
+  "expected": "valid",
+  "filename_digest": "9d569b6d5628ea09dadae944c71b6a6ab66ecc039f8a72a14bbcdb06ee807296",
+  "artifact": {
+    "schema_version": "verdict.v2",
+    "acceptance_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "subject_manifest_digest": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "author_context_id": "ctx-author",
+    "validator_context_id": "ctx-validator",
+    "freshness_attestation": {
+      "source": "runtime",
+      "attester_identity": "runtime:test"
+    },
+    "verdict": "PASS",
+    "criteria": [
+      {
+        "id": "c1",
+        "result": "PASS",
+        "evidence_refs": [
+          "gate:go.build"
+        ],
+        "reason": "line sep here"
+      }
+    ],
+    "findings": [],
+    "evidence_refs": [
+      "gate:go.build"
+    ],
+    "checked": [
+      "cli **"
+    ],
+    "not_checked": [],
+    "validated_at": "2026-07-18T12:00:00Z",
+    "artifact_digest": "9d569b6d5628ea09dadae944c71b6a6ab66ecc039f8a72a14bbcdb06ee807296"
+  }
+}
