@@ -31,7 +31,7 @@ func withAgenticHooks(t *testing.T, steps []agenticStep) {
 		}
 		return string(data), 10, nil
 	}
-	agenticRunnerHooks.runCmd = func(_ context.Context, workDir, command string) (string, int, error) {
+	agenticRunnerHooks.runCmd = func(_ context.Context, workDir, command string, _ bool) (string, int, error) {
 		if strings.Contains(command, "touch") {
 			name := strings.TrimSpace(strings.TrimPrefix(command, "touch"))
 			if err := os.WriteFile(filepath.Join(workDir, name), []byte("ok\n"), 0o644); err != nil {
