@@ -19,8 +19,10 @@ import (
 // composition file must declare no package-level var (constructor-scoped flag
 // state lives inside the module).
 var carvedFamilies = map[string]string{
-	"goals":  "goals_composition.go",
-	"status": "status_composition.go",
+	"goals":      "goals_composition.go",
+	"status":     "status_composition.go",
+	"provenance": "provenance_composition.go",
+	"skills":     "skills_composition.go",
 }
 
 // packageGoFiles returns the non-test .go source files in the cmd/ao package
