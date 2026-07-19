@@ -70,6 +70,7 @@ const (
 	ExitSuccess     ExitClass = "success"
 	ExitFailure     ExitClass = "failure"
 	ExitUsage       ExitClass = "usage"
+	ExitConfig      ExitClass = "invalid-configuration"
 	ExitNotFound    ExitClass = "not-found"
 	ExitConflict    ExitClass = "conflict"
 	ExitUnavailable ExitClass = "unavailable"
@@ -240,7 +241,7 @@ func (effects EffectSet) String() string {
 
 func validExitClass(class ExitClass) bool {
 	switch class {
-	case ExitSuccess, ExitFailure, ExitUsage, ExitNotFound, ExitConflict, ExitUnavailable, ExitPartial:
+	case ExitSuccess, ExitFailure, ExitUsage, ExitConfig, ExitNotFound, ExitConflict, ExitUnavailable, ExitPartial:
 		return true
 	default:
 		return false
