@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "family": "demo",
+  "checks": [
+    {
+      "id": "demo-black-box",
+      "command": "tmp=$(mktemp -d /tmp/ao-demo.XXXXXX); (cd cli && go build -o \"$tmp/ao\" ./cmd/ao); \"$tmp/ao\" demo --help >\"$tmp/help\"; grep -Fq 'Show the one-pass AgentOps evidence loop' \"$tmp/help\"; grep -Fq 'RPI -> Plan -> Implement -> fresh Validate' \"$tmp/help\"; grep -Fq 'quick' \"$tmp/help\"; grep -Fq 'concepts' \"$tmp/help\"; \"$tmp/ao\" demo >\"$tmp/default\"; grep -Fq 'AGENTOPS ONE-PASS DEMO' \"$tmp/default\"; \"$tmp/ao\" demo --quick >\"$tmp/quick\"; grep -Fq 'AGENTOPS ONE-PASS DEMO' \"$tmp/quick\"; grep -Fq 'subject-manifest.v1' \"$tmp/quick\"; \"$tmp/ao\" demo --concepts >\"$tmp/concepts\"; grep -Fq 'AGENTOPS PRODUCT BOUNDARY' \"$tmp/concepts\"; grep -Fq 'does not own retries' \"$tmp/concepts\""
+    },
+    {
+      "id": "demo-go-behavior",
+      "command": "cd cli && go test ./internal/commands/demo/... -count=1"
+    }
+  ],
+  "dimensions": {
+    "path": {"status": "evidence", "evidence": ["demo-black-box", "demo-go-behavior"]},
+    "aliases": {"status": "not_applicable", "reason": "The demo family declares no command aliases."},
+    "accepted_args": {"status": "evidence", "evidence": ["demo-black-box", "demo-go-behavior"]},
+    "rejected_args": {"status": "not_applicable", "reason": "demo accepts arbitrary positional args and rejects none."},
+    "stdout": {"status": "evidence", "evidence": ["demo-black-box", "demo-go-behavior"]},
+    "stderr": {"status": "not_applicable", "reason": "demo writes only to stdout on success."},
+    "exit_classes": {"status": "evidence", "evidence": ["demo-go-behavior"]},
+    "tracker_selection": {"status": "not_applicable", "reason": "The demo family does not select a repository issue tracker."},
+    "ordered_effects": {"status": "not_applicable", "reason": "demo is a pure render with no ordered effects."}
+  }
+}
