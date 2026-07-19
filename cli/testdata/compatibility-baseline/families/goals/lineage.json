@@ -3,5 +3,6 @@
   "family": "goals",
   "freeze_sha": "562f5b4e2af4bb1283216cbcd98ab12e62f81b96",
   "ownership_sha256": "ed5e288996ce6c35b9543f807828c3e056a810f19e59230bd49dbb5b893899c0",
-  "migration_state": "migrating"
+  "migration_state": "migrated",
+  "accepted_sha": "1bc5add153109b2a29ef894b646e57d5e58c6e90"
 }
