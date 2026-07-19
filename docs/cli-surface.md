@@ -52,7 +52,7 @@
 | `ao goals scenarios` | `public-tested` | `allowlisted` | Covered by internal/commands/goals module tests and internal/goals scenario tests after the goals carve-out. |
 | `ao goals validate` | `public-tested` | `allowlisted` | Covered by internal/commands/goals module tests and internal/goals validate tests after the goals carve-out. |
 | `ao help` | `internal-hidden` | `allowlisted` | Built-in Cobra help dispatcher with no application handler. |
-| `ao init` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
+| `ao init` | `public-tested` | `allowlisted` | Covered by internal/commands/init module tests and internal/initapp tests after the init carve-out. |
 | `ao provenance add` | `public-tested` | `allowlisted` | Covered by internal/commands/provenance module tests after the provenance carve-out. |
 | `ao provenance export` | `public-tested` | `allowlisted` | Covered by internal/commands/provenance module tests after the provenance carve-out. |
 | `ao provenance list` | `public-tested` | `allowlisted` | Covered by internal/commands/provenance module tests after the provenance carve-out. |
