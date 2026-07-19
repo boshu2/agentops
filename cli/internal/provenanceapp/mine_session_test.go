@@ -1,5 +1,5 @@
 // practices: [in-toto-provenance, ai-assisted-dev]
-package main
+package provenanceapp
 
 import (
 	"bytes"
@@ -12,12 +12,15 @@ import (
 	"github.com/santhosh-tekuri/jsonschema/v6"
 )
 
-// resetMineFlags restores the package-global cobra flag vars so a flag set by one
-// executeCommand call does not leak into the next test (cli/cmd/ao shares one
-// rootCmd; see .claude/rules/go.md test-isolation rule).
-func resetMineFlags(t *testing.T) {
+// mine runs MineSession into a captured stdout buffer, standing in for the
+// former cmd/ao executeCommand harness. Events default to JSONL exactly as the
+// command's --json flag default (true).
+func mine(t *testing.T, opts MineOptions) (string, error) {
 	t.Helper()
-	t.Cleanup(func() { mineFile = ""; mineState_ = ""; mineJSON = true })
+	opts.JSON = true
+	var buf bytes.Buffer
+	err := MineSession(opts, &buf)
+	return buf.String(), err
 }
 
 func writeMineSession(t *testing.T, dir, name, content string) string {
@@ -46,7 +49,6 @@ func parseMineEvents(t *testing.T, out string) []MineEvent {
 }
 
 func TestMineSession_ClaudeToolUses_FilterResults(t *testing.T) {
-	resetMineFlags(t)
 	dir := t.TempDir()
 	// A tool_result block must NOT become a tool_call event (it is an output).
 	sess := writeMineSession(t, dir, "claude.jsonl",
@@ -54,7 +56,7 @@ func TestMineSession_ClaudeToolUses_FilterResults(t *testing.T) {
 {"type":"assistant","message":{"role":"assistant","content":[{"type":"tool_use","name":"Read","input":{}},{"type":"tool_result","content":"x"}]}}
 {"type":"tool_use","tool_name":"Bash","tool_input":{"command":"ls"}}
 `)
-	out, err := executeCommand("provenance", "mine-session", "--file", sess)
+	out, err := mine(t, MineOptions{File: sess})
 	if err != nil {
 		t.Fatalf("mine-session: %v\n%s", err, out)
 	}
@@ -78,7 +80,7 @@ func TestMineSession_ClaudeToolUses_FilterResults(t *testing.T) {
 }
 
 // compileMineEventSchemaForTest loads schemas/provenance-mine-event.v1.schema.json
-// (cwd = cli/cmd/ao, so three levels up). Mirrors compileLearningSchemaForTest.
+// (cwd = cli/internal/provenanceapp, so three levels up to the repo root).
 func compileMineEventSchemaForTest(t *testing.T) *jsonschema.Schema {
 	t.Helper()
 	const path = "../../../schemas/provenance-mine-event.v1.schema.json"
@@ -106,14 +108,13 @@ func compileMineEventSchemaForTest(t *testing.T) *jsonschema.Schema {
 // "schema-validated events" claim real — it catches drift between the Go MineEvent
 // struct and schemas/provenance-mine-event.v1.schema.json.
 func TestMineSession_EventsValidateAgainstSchema(t *testing.T) {
-	resetMineFlags(t)
 	dir := t.TempDir()
 	sess := writeMineSession(t, dir, "mix.jsonl",
 		`{"type":"assistant","message":{"role":"assistant","content":[{"type":"tool_use","name":"Read","input":{}},{"type":"tool_result","content":"x"}]}}
 {"type":"tool_use","tool_name":"Bash","tool_input":{"command":"ls"}}
 {"timestamp":"t","type":"response_item","payload":{"type":"function_call","name":"exec_command","arguments":"{}"}}
 `)
-	out, err := executeCommand("provenance", "mine-session", "--file", sess)
+	out, err := mine(t, MineOptions{File: sess})
 	if err != nil {
 		t.Fatalf("mine-session: %v\n%s", err, out)
 	}
@@ -137,18 +138,17 @@ func TestMineSession_EventsValidateAgainstSchema(t *testing.T) {
 	}
 }
 
-// TestMineSession_TopLevelToolResultNotEmitted (SOUNDNESS regression, REFUTED
-// 2026-06-22 by cross-family pawl): a top-level Claude tool_result row carries
-// the REAL tool name (e.g. "Bash"), not the literal "tool_result", so a
-// name-only filter wrongly emitted it as a tool_call. The message Type is the
-// correct family-agnostic discriminator. An OUTPUT row must emit zero events.
+// TestMineSession_TopLevelToolResultNotEmitted (SOUNDNESS regression): a top-level
+// Claude tool_result row carries the REAL tool name (e.g. "Bash"), not the literal
+// "tool_result", so a name-only filter wrongly emitted it as a tool_call. The
+// message Type is the correct family-agnostic discriminator. An OUTPUT row must
+// emit zero events.
 func TestMineSession_TopLevelToolResultNotEmitted(t *testing.T) {
-	resetMineFlags(t)
 	dir := t.TempDir()
 	sess := writeMineSession(t, dir, "result.jsonl",
 		`{"type":"tool_result","tool_name":"Bash","tool_input":{"command":"ls"},"tool_output":"done"}
 `)
-	out, err := executeCommand("provenance", "mine-session", "--file", sess)
+	out, err := mine(t, MineOptions{File: sess})
 	if err != nil {
 		t.Fatalf("mine-session: %v\n%s", err, out)
 	}
@@ -157,12 +157,11 @@ func TestMineSession_TopLevelToolResultNotEmitted(t *testing.T) {
 	}
 }
 
-// TestMineSession_RollbackOnContentRewrite (ROLLBACK regression, REFUTED
-// 2026-06-22 by cross-family pawl): rewriting an already-mined line's tool
-// ARGUMENTS while keeping the same tool name must invalidate the watermark and
-// force a clean re-mine. Hashing tool names alone trusted the stale prefix.
+// TestMineSession_RollbackOnContentRewrite (ROLLBACK regression): rewriting an
+// already-mined line's tool ARGUMENTS while keeping the same tool name must
+// invalidate the watermark and force a clean re-mine. Hashing tool names alone
+// trusted the stale prefix.
 func TestMineSession_RollbackOnContentRewrite(t *testing.T) {
-	resetMineFlags(t)
 	dir := t.TempDir()
 	state := filepath.Join(dir, "state.json")
 	sess := writeMineSession(t, dir, "s.jsonl",
@@ -170,12 +169,9 @@ func TestMineSession_RollbackOnContentRewrite(t *testing.T) {
 {"type":"tool_use","tool_name":"Read","tool_input":{"file_path":"x.txt"}}
 `)
 	// Run 1: mine both lines.
-	if _, err := executeCommand("provenance", "mine-session", "--file", sess, "--state", state); err != nil {
+	if _, err := mine(t, MineOptions{File: sess, State: state}); err != nil {
 		t.Fatal(err)
 	}
-	// Rewrite line 1's args (a.txt -> b.txt, same tool name "Edit") AND append a
-	// new line. A name-only checksum would treat the prefix as unchanged and emit
-	// only the appended line; a content-sensitive checksum re-mines all of it.
 	rewritten := `{"type":"tool_use","tool_name":"Edit","tool_input":{"file_path":"b.txt"}}
 {"type":"tool_use","tool_name":"Read","tool_input":{"file_path":"x.txt"}}
 {"type":"tool_use","tool_name":"Bash","tool_input":{"command":"ls"}}
@@ -183,7 +179,7 @@ func TestMineSession_RollbackOnContentRewrite(t *testing.T) {
 	if err := os.WriteFile(sess, []byte(rewritten), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	out, err := executeCommand("provenance", "mine-session", "--file", sess, "--state", state)
+	out, err := mine(t, MineOptions{File: sess, State: state})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -193,27 +189,23 @@ func TestMineSession_RollbackOnContentRewrite(t *testing.T) {
 	}
 }
 
-// TestMineSession_StateBoundToFile (DROP-CASE regression, surfaced 2026-06-22 by
-// cross-family pawl): a --state watermark is bound to ONE transcript. Reusing it
-// against a DIFFERENT file (whose line-prefix happens to line up) must NOT trust
-// the stale line watermark and silently drop the new file's events — it must
-// re-mine the new file from the start.
+// TestMineSession_StateBoundToFile (DROP-CASE regression): a --state watermark is
+// bound to ONE transcript. Reusing it against a DIFFERENT file (whose line-prefix
+// happens to line up) must NOT trust the stale line watermark and silently drop
+// the new file's events — it must re-mine the new file from the start.
 func TestMineSession_StateBoundToFile(t *testing.T) {
-	resetMineFlags(t)
 	dir := t.TempDir()
 	state := filepath.Join(dir, "state.json")
 	fileA := writeMineSession(t, dir, "a.jsonl",
 		`{"type":"tool_use","tool_name":"Read","tool_input":{"file_path":"x"}}
 `)
-	// Mine file A with the shared state.
-	if _, err := executeCommand("provenance", "mine-session", "--file", fileA, "--state", state); err != nil {
+	if _, err := mine(t, MineOptions{File: fileA, State: state}); err != nil {
 		t.Fatal(err)
 	}
-	// A DIFFERENT file with identical content. Reusing A's state must not skip B.
 	fileB := writeMineSession(t, dir, "b.jsonl",
 		`{"type":"tool_use","tool_name":"Read","tool_input":{"file_path":"x"}}
 `)
-	out, err := executeCommand("provenance", "mine-session", "--file", fileB, "--state", state)
+	out, err := mine(t, MineOptions{File: fileB, State: state})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -223,14 +215,11 @@ func TestMineSession_StateBoundToFile(t *testing.T) {
 	}
 }
 
-// TestMineSession_StateBindingIsCwdIndependent (DROP-CASE refinement, REFUTED
-// 2026-06-22 by cross-family pawl): the File binding must be ABSOLUTE. Two
-// physically different transcripts with the SAME relative name (./session.jsonl)
-// run from DIFFERENT working dirs must not compare equal — storing the raw
-// relative path lets sameFile resolve both against the current cwd and skip the
-// second file's events.
+// TestMineSession_StateBindingIsCwdIndependent (DROP-CASE refinement): the File
+// binding must be ABSOLUTE. Two physically different transcripts with the SAME
+// relative name (./session.jsonl) run from DIFFERENT working dirs must not compare
+// equal.
 func TestMineSession_StateBindingIsCwdIndependent(t *testing.T) {
-	resetMineFlags(t)
 	root := t.TempDir()
 	dirA := filepath.Join(root, "a")
 	dirB := filepath.Join(root, "b")
@@ -249,14 +238,12 @@ func TestMineSession_StateBindingIsCwdIndependent(t *testing.T) {
 	}
 	state := filepath.Join(root, "shared.state")
 
-	// Mine ./session.jsonl from dirA (relative --file), then from dirB with the same
-	// relative name + same state. dirB's event must still be emitted.
 	t.Chdir(dirA)
-	if _, err := executeCommand("provenance", "mine-session", "--file", "session.jsonl", "--state", state); err != nil {
+	if _, err := mine(t, MineOptions{File: "session.jsonl", State: state}); err != nil {
 		t.Fatal(err)
 	}
 	t.Chdir(dirB)
-	out, err := executeCommand("provenance", "mine-session", "--file", "session.jsonl", "--state", state)
+	out, err := mine(t, MineOptions{File: "session.jsonl", State: state})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -265,19 +252,15 @@ func TestMineSession_StateBindingIsCwdIndependent(t *testing.T) {
 	}
 }
 
-// TestMineSession_DuplicateSameToolOneLineDistinctIDs (UNIQUENESS regression,
-// REFUTED 2026-06-22 by cross-family pawl): one assistant message can hold
-// several tool_use blocks of the SAME tool (parallel Bash/Read calls). Each is a
-// distinct real call and MUST get a distinct id, or a downstream id-dedup
-// collapses two real tool_call events into one. IDs must also stay stable across
-// reruns (idempotency must not regress for the disambiguated case).
+// TestMineSession_DuplicateSameToolOneLineDistinctIDs (UNIQUENESS regression): one
+// assistant message can hold several tool_use blocks of the SAME tool (parallel
+// Bash/Read calls). Each is a distinct real call and MUST get a distinct id.
 func TestMineSession_DuplicateSameToolOneLineDistinctIDs(t *testing.T) {
-	resetMineFlags(t)
 	dir := t.TempDir()
 	sess := writeMineSession(t, dir, "dup.jsonl",
 		`{"type":"assistant","message":{"role":"assistant","content":[{"type":"tool_use","name":"Bash","input":{"command":"ls"}},{"type":"tool_use","name":"Bash","input":{"command":"pwd"}}]}}
 `)
-	out, err := executeCommand("provenance", "mine-session", "--file", sess)
+	out, err := mine(t, MineOptions{File: sess})
 	if err != nil {
 		t.Fatalf("mine-session: %v\n%s", err, out)
 	}
@@ -288,8 +271,7 @@ func TestMineSession_DuplicateSameToolOneLineDistinctIDs(t *testing.T) {
 	if evs[0].ID == evs[1].ID {
 		t.Fatalf("duplicate same-tool calls on one line share id %s — a real tool_call would be lost to dedup", evs[0].ID)
 	}
-	// Idempotency: a re-mine yields the identical id set (the ordinal is stable).
-	out2, err := executeCommand("provenance", "mine-session", "--file", sess)
+	out2, err := mine(t, MineOptions{File: sess})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -303,14 +285,13 @@ func TestMineSession_DuplicateSameToolOneLineDistinctIDs(t *testing.T) {
 }
 
 func TestMineSession_CodexFunctionCalls(t *testing.T) {
-	resetMineFlags(t)
 	dir := t.TempDir()
 	// Codex function_call -> tool_call; function_call_output is the result, skipped.
 	sess := writeMineSession(t, dir, "codex.jsonl",
 		`{"timestamp":"t","type":"response_item","payload":{"type":"function_call","name":"exec_command","arguments":"{}"}}
 {"timestamp":"t","type":"response_item","payload":{"type":"function_call_output","output":"x"}}
 `)
-	out, err := executeCommand("provenance", "mine-session", "--file", sess)
+	out, err := mine(t, MineOptions{File: sess})
 	if err != nil {
 		t.Fatalf("mine-session: %v\n%s", err, out)
 	}
@@ -321,7 +302,6 @@ func TestMineSession_CodexFunctionCalls(t *testing.T) {
 }
 
 func TestMineSession_IncrementalIdempotentRollback(t *testing.T) {
-	resetMineFlags(t)
 	dir := t.TempDir()
 	state := filepath.Join(dir, "state.json")
 	sess := writeMineSession(t, dir, "s.jsonl",
@@ -330,7 +310,7 @@ func TestMineSession_IncrementalIdempotentRollback(t *testing.T) {
 `)
 
 	// Run 1: full mine -> 2 events.
-	out1, err := executeCommand("provenance", "mine-session", "--file", sess, "--state", state)
+	out1, err := mine(t, MineOptions{File: sess, State: state})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -341,7 +321,7 @@ func TestMineSession_IncrementalIdempotentRollback(t *testing.T) {
 	run1IDs := map[string]bool{ev1[0].ID: true, ev1[1].ID: true}
 
 	// Run 2: same file + state -> idempotent, 0 new.
-	out2, err := executeCommand("provenance", "mine-session", "--file", sess, "--state", state)
+	out2, err := mine(t, MineOptions{File: sess, State: state})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -356,7 +336,7 @@ func TestMineSession_IncrementalIdempotentRollback(t *testing.T) {
 	}
 	_, _ = f.WriteString(`{"type":"tool_use","tool_name":"Edit","tool_input":{}}` + "\n")
 	_ = f.Close()
-	out3, err := executeCommand("provenance", "mine-session", "--file", sess, "--state", state)
+	out3, err := mine(t, MineOptions{File: sess, State: state})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -373,7 +353,7 @@ func TestMineSession_IncrementalIdempotentRollback(t *testing.T) {
 	st.PrefixChecksum = "deadbeefdeadbeef"
 	nb, _ := json.MarshalIndent(st, "", "  ")
 	_ = os.WriteFile(state, nb, 0o644)
-	out4, err := executeCommand("provenance", "mine-session", "--file", sess, "--state", state)
+	out4, err := mine(t, MineOptions{File: sess, State: state})
 	if err != nil {
 		t.Fatal(err)
 	}

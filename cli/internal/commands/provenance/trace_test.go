@@ -1,5 +1,5 @@
 // practices: [design-by-contract, in-toto-provenance]
-package main
+package provenance
 
 import (
 	"encoding/json"
@@ -11,12 +11,11 @@ import (
 	"github.com/boshu2/agentops/cli/internal/provenancegraph"
 )
 
-// resetProvTraceFlags sets the trace flags to a known baseline.
-func resetProvTraceFlags() {
-	provTraceOrphans = true
-	provTraceStrict = false
-	provTraceJSON = false
-	provTraceGraph = ""
+// dirExists reports whether p is an existing directory (local helper so this
+// test file does not depend on the carved skills isDir).
+func dirExists(p string) bool {
+	info, err := os.Stat(p)
+	return err == nil && info.IsDir()
 }
 
 // repoRoot walks up from the test's cwd to the repo root (dir containing both
@@ -28,7 +27,7 @@ func repoRoot(t *testing.T) string {
 		t.Fatalf("getwd: %v", err)
 	}
 	for i := 0; i < 12; i++ {
-		if isDir(filepath.Join(dir, "tests", "fixtures", "provenance")) && isDir(filepath.Join(dir, "cli")) {
+		if dirExists(filepath.Join(dir, "tests", "fixtures", "provenance")) && dirExists(filepath.Join(dir, "cli")) {
 			return dir
 		}
 		parent := filepath.Dir(dir)
@@ -77,19 +76,14 @@ func TestProvenanceTrace_StrictCatchesEachSeededOrphan(t *testing.T) {
 	exp := loadExpected(t)
 	for _, fx := range exp.Fixtures {
 		t.Run(fx.File, func(t *testing.T) {
-			resetProvTraceFlags()
-			provTraceStrict = true
-			provTraceJSON = true
-			provTraceGraph = fixturePath(t, fx.File)
-
-			c, out := provTestCmd()
-			err := runProvenanceTrace(c, nil)
+			out, err := execProv(t, testLedger(t), "trace", "--orphans", "--strict", "--json",
+				"--graph", fixturePath(t, fx.File))
 			if err == nil {
 				t.Fatalf("--strict on %s expected non-zero exit, got nil", fx.File)
 			}
 
 			var got []provenancegraph.OrphanFinding
-			for _, ln := range strings.Split(strings.TrimSpace(out.String()), "\n") {
+			for _, ln := range strings.Split(strings.TrimSpace(out), "\n") {
 				if strings.TrimSpace(ln) == "" {
 					continue
 				}
@@ -102,9 +96,6 @@ func TestProvenanceTrace_StrictCatchesEachSeededOrphan(t *testing.T) {
 			if len(got) != 1 {
 				t.Fatalf("%s: want exactly 1 orphan finding, got %d: %+v", fx.File, len(got), got)
 			}
-			// expected_finding in the fixture omits orphan_artifact_id (it is
-			// carried separately as the fixture's orphan_artifact_id field), so
-			// compare the declared fields and the artifact id independently.
 			if got[0].OrphanArtifactID != fx.OrphanArtifactID {
 				t.Fatalf("%s orphan id = %q, want %q", fx.File, got[0].OrphanArtifactID, fx.OrphanArtifactID)
 			}
@@ -140,16 +131,12 @@ func TestProvenanceTrace_PassesOnceEdgeAdded(t *testing.T) {
 		t.Fatalf("write wired graph: %v", err)
 	}
 
-	resetProvTraceFlags()
-	provTraceStrict = true
-	provTraceGraph = path
-
-	c, out := provTestCmd()
-	if err := runProvenanceTrace(c, nil); err != nil {
+	out, err := execProv(t, testLedger(t), "trace", "--orphans", "--strict", "--graph", path)
+	if err != nil {
 		t.Fatalf("wired graph should pass --strict, got error: %v", err)
 	}
-	if !strings.Contains(out.String(), "No provenance orphans found.") {
-		t.Fatalf("wired graph output = %q, want no-orphans message", out.String())
+	if !strings.Contains(out, "No provenance orphans found.") {
+		t.Fatalf("wired graph output = %q, want no-orphans message", out)
 	}
 }
 
@@ -159,41 +146,29 @@ func TestProvenanceTrace_NonStrictReportsButExitsZero(t *testing.T) {
 	exp := loadExpected(t)
 	fx := exp.Fixtures[0]
 
-	resetProvTraceFlags()
-	provTraceStrict = false
-	provTraceGraph = fixturePath(t, fx.File)
-
-	c, out := provTestCmd()
-	if err := runProvenanceTrace(c, nil); err != nil {
+	out, err := execProv(t, testLedger(t), "trace", "--orphans", "--graph", fixturePath(t, fx.File))
+	if err != nil {
 		t.Fatalf("non-strict should exit 0, got: %v", err)
 	}
-	got := out.String()
-	if !strings.Contains(got, "1 orphan(s)") {
-		t.Fatalf("non-strict output = %q, want orphan count", got)
+	if !strings.Contains(out, "1 orphan(s)") {
+		t.Fatalf("non-strict output = %q, want orphan count", out)
 	}
-	if !strings.Contains(got, "pass --strict") {
-		t.Fatalf("non-strict output = %q, want --strict hint", got)
+	if !strings.Contains(out, "pass --strict") {
+		t.Fatalf("non-strict output = %q, want --strict hint", out)
 	}
 }
 
 // TestProvenanceTrace_RequiresOrphansMode rejects an invocation without
 // --orphans (the only supported mode).
 func TestProvenanceTrace_RequiresOrphansMode(t *testing.T) {
-	resetProvTraceFlags()
-	provTraceOrphans = false
-	provTraceGraph = "x"
-	c, _ := provTestCmd()
-	if err := runProvenanceTrace(c, nil); err == nil {
+	if _, err := execProv(t, testLedger(t), "trace", "--graph", "x"); err == nil {
 		t.Fatal("want error when --orphans not set")
 	}
 }
 
 // TestProvenanceTrace_RequiresGraph rejects --orphans without --graph.
 func TestProvenanceTrace_RequiresGraph(t *testing.T) {
-	resetProvTraceFlags()
-	provTraceGraph = ""
-	c, _ := provTestCmd()
-	if err := runProvenanceTrace(c, nil); err == nil {
+	if _, err := execProv(t, testLedger(t), "trace", "--orphans"); err == nil {
 		t.Fatal("want error when --graph not provided")
 	}
 }

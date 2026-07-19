@@ -1,16 +1,17 @@
-// practices: [design-by-contract, in-toto-provenance]
-package main
+// Package provenanceapp holds the effectful provenance use-case logic carved
+// out of package main. The command module in internal/commands/provenance owns
+// Cobra presentation and delegates every filesystem and clock effect here.
+package provenanceapp
 
 import (
 	"crypto/sha256"
 	"encoding/json"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"sort"
 	"strings"
-
-	"github.com/spf13/cobra"
 
 	"github.com/boshu2/agentops/cli/internal/parser"
 )
@@ -48,41 +49,22 @@ type mineState struct {
 	MinedCount     int    `json:"mined_count"`
 }
 
-var (
-	mineFile  string
-	mineState_ string
-	mineJSON  bool
-)
-
-var provenanceMineSessionCmd = &cobra.Command{
-	Use:   "mine-session --file <session.jsonl>",
-	Short: "Mine deterministic per-inference provenance events from a session transcript",
-	Long: `Parse a Claude Code or Codex session transcript and emit the per-inference
-provenance events it DETERMINISTICALLY evidences (E6, ADR-0010: build-native, own
-the PROV-O graph). Today that is one tool_call event per tool use, with a stable
-idempotent id; the Kind enum is extensible to context_entered/context_missed once
-their deterministic evidence is defined (never inferred speculatively).
-
-Incremental (--state): re-running mines only NEW lines (skip-consumed), keyed by
-a watermark + a prefix checksum. If the transcript's already-mined prefix changed
-(truncated/rewritten), the watermark is invalid and the whole file is re-mined
-(rollback) — borrowed from cass's incremental-index discipline (stale-is-usable,
-recover loudly, never rebuild expensive state unnecessarily).
-
-Output (--json, default): one JSON event per line on stdout. The events feed the
-PROV-O graph via a downstream step (e.g. wired as an ASSAY --mine-cmd); this
-command does not itself write the committed ledger.`,
-	RunE: runProvenanceMineSession,
+// MineOptions carries the mine-session flag inputs from the command module.
+type MineOptions struct {
+	File  string
+	State string
+	JSON  bool
 }
 
-func init() {
-	provenanceMineSessionCmd.Flags().StringVar(&mineFile, "file", "", "Path to the session transcript (.jsonl) to mine (required)")
-	provenanceMineSessionCmd.Flags().StringVar(&mineState_, "state", "", "Path to the incremental watermark state JSON (created/updated; omit for a full one-shot mine)")
-	provenanceMineSessionCmd.Flags().BoolVar(&mineJSON, "json", true, "Emit events as JSONL on stdout")
-	provenanceCmd.AddCommand(provenanceMineSessionCmd)
-}
+// MineSession parses a Claude Code or Codex session transcript and emits the
+// per-inference provenance events it deterministically evidences. It is the
+// carved body of the former runProvenanceMineSession: stdout receives the JSONL
+// events, and diagnostics go to os.Stderr exactly as before.
+func MineSession(opts MineOptions, out io.Writer) error {
+	mineFile := opts.File
+	mineStatePath := opts.State
+	mineJSON := opts.JSON
 
-func runProvenanceMineSession(cmd *cobra.Command, _ []string) error {
 	if mineFile == "" {
 		return fmt.Errorf("mine-session: --file is required")
 	}
@@ -101,8 +83,8 @@ func runProvenanceMineSession(cmd *cobra.Command, _ []string) error {
 	// --- incremental watermark + rollback detection ---------------------------
 	startAfter := 0 // mine messages with SourceLine > startAfter
 	var prior *mineState
-	if mineState_ != "" {
-		if b, rerr := os.ReadFile(mineState_); rerr == nil {
+	if mineStatePath != "" {
+		if b, rerr := os.ReadFile(mineStatePath); rerr == nil {
 			var st mineState
 			if json.Unmarshal(b, &st) == nil {
 				prior = &st
@@ -129,7 +111,6 @@ func runProvenanceMineSession(cmd *cobra.Command, _ []string) error {
 	// --- emit deterministically-evidenced events ------------------------------
 	events := mineToolCallEvents(result, sessionID, startAfter)
 
-	out := cmd.OutOrStdout()
 	if mineJSON {
 		enc := json.NewEncoder(out)
 		for _, ev := range events {
@@ -140,7 +121,7 @@ func runProvenanceMineSession(cmd *cobra.Command, _ []string) error {
 	}
 
 	// --- persist the watermark ------------------------------------------------
-	if mineState_ != "" {
+	if mineStatePath != "" {
 		highest := startAfter
 		for _, m := range result.Messages {
 			if m.MessageIndex > highest {
@@ -165,8 +146,8 @@ func runProvenanceMineSession(cmd *cobra.Command, _ []string) error {
 			PrefixChecksum: prefixChecksum(result, highest),
 			MinedCount:     minedCount,
 		}
-		if err := writeMineState(mineState_, next); err != nil {
-			return fmt.Errorf("mine-session: write state %s: %w", mineState_, err)
+		if err := writeMineState(mineStatePath, next); err != nil {
+			return fmt.Errorf("mine-session: write state %s: %w", mineStatePath, err)
 		}
 	}
 
