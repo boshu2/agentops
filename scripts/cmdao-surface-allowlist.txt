@@ -13,6 +13,9 @@ public-tested|goals meta|Covered through goals measurement behavior.
 public-tested|goals export|Covered through goals snapshot behavior.
 public-stateful-fixture-needed|goals drift|Requires two goal snapshots.
 public-tested|goals history|Historical view shares goals validation behavior.
+public-tested|goals validate|Covered by internal/commands/goals module tests and internal/goals validate tests after the goals carve-out.
+public-tested|goals scenarios|Covered by internal/commands/goals module tests and internal/goals scenario tests after the goals carve-out.
+public-tested|goals render|Covered by internal/goals render tests after the goals carve-out.
 public-stateful-fixture-needed|goals init|Initializes GOALS.md and may prompt.
 
 public-stateful-fixture-needed|doctor capabilities|Inspects local installation state.

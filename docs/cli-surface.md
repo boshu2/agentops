@@ -48,9 +48,9 @@
 | `ao goals history` | `public-tested` | `allowlisted` | Historical view shares goals validation behavior. |
 | `ao goals measure` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao goals meta` | `public-tested` | `allowlisted` | Covered through goals measurement behavior. |
-| `ao goals render` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
-| `ao goals scenarios` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
-| `ao goals validate` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
+| `ao goals render` | `public-tested` | `allowlisted` | Covered by internal/goals render tests after the goals carve-out. |
+| `ao goals scenarios` | `public-tested` | `allowlisted` | Covered by internal/commands/goals module tests and internal/goals scenario tests after the goals carve-out. |
+| `ao goals validate` | `public-tested` | `allowlisted` | Covered by internal/commands/goals module tests and internal/goals validate tests after the goals carve-out. |
 | `ao help` | `internal-hidden` | `allowlisted` | Built-in Cobra help dispatcher with no application handler. |
 | `ao init` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao provenance add` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
