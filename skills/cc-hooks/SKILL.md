@@ -165,6 +165,53 @@ positive value"), the criterion whose absence killed 2.x hooks (#511).
 
 Methodology: [GUARDRAIL-VALUE-PROOF.md](references/GUARDRAIL-VALUE-PROOF.md)
 
+## Policy Dispatch Engine (opt-in)
+
+The admission-control layer (epic age-4qw1): **one** PreToolUse dispatcher —
+[hooks/policy-dispatch.sh](hooks/policy-dispatch.sh) — evaluating a
+**policies-as-data** registry
+([policies/policies.json](policies/policies.json), contract
+`schemas/hooks-manifest.v2.schema.json`) instead of N hand-wired settings
+entries. This is the membrane at tool-call altitude: same vocabulary, lower
+altitude than the pawl/gate at push time.
+
+Per policy: dcg-style id (`domain.object:token`), `mode: deny | route | audit`,
+matchers (tool + `command`/`file_path` regex), a `route_message` that names THE
+correct tool, a rationale, and a pre-registered `value_proof` (the ADR-0002
+lease-on-life: no proof accruing → retire the policy).
+
+**Predicate discipline, schema-enforced** (the #511 anti-lesson): only
+`predicate_class: pure` — syntactic mistake-tokens over the command or file
+path — may `deny`/`route`. Lookup/stateful predicates ship `audit`-only until
+promoted with reviewed fires.
+[scripts/lint-policies.sh](scripts/lint-policies.sh) enforces this mechanically
+(jq-only; runs in bats and CI).
+
+Semantics: happy path = exit 0, zero output. `deny` = exit 2 + one stderr
+route line (full message once per session, short line after — every attempt
+still blocks). `route` = exit 0 + `permissionDecision:"ask"` JSON. `audit` =
+allow + record. Every fire appends one hashed guardrail-telemetry line
+(`token_class` = policy id, plus `mode`/`decision`). Waive once with
+`AOP_WAIVE=<policy-id>`, or a `policy-waivers` file line
+`<policy-id> <expiry-epoch>`. Missing registry or jq fails OPEN.
+
+Day-1 enforce cohort (age-wnyt, all pure-regex, high-pain):
+
+| Policy | Blocks | Routes to |
+|---|---|---|
+| `core.git:add-beads-ledger` | `git add` naming `_beads/` (private ledger leak is one-way) | push the ledger repo itself — never `git add _beads` in the public tree |
+| `core.provenance:ledger-hand-append` | redirect/`tee`/Edit/Write onto `docs/provenance/ledger.jsonl` (hash-chained, sealed) | `ao provenance add` |
+| `core.skills:copy-into-installed` | `cp`/`rsync`/`mv` INTO `~/.claude|.codex|.gemini/skills` (dest-position enforced) | `ao skills link` |
+
+Ships INERT — opt-in installer (lints the registry before wiring):
+
+```bash
+scripts/install-policy-dispatch.sh   # user scope; --project for project scope
+```
+
+Contract tests: `tests/scripts/policy-dispatch.bats` (block+message+telemetry
+per policy, stray-stdout hazard, waivers, audit/route modes, fail-open).
+
 ## Writing Your Own Hook
 
 **Minimal Python:**
