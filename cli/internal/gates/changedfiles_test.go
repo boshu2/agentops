@@ -160,6 +160,66 @@ func TestGitChangedFiles_RangeVsHead(t *testing.T) {
 	}
 }
 
+// initRepoWithHead builds a temp git repo whose single non-base commit adds
+// addFile, returning the repo root. Used to prove a git subprocess reads the
+// repo named by cmd.Dir, not a leaked GIT_DIR.
+func initRepoWithHead(t *testing.T, addFile string) string {
+	t.Helper()
+	root := t.TempDir()
+	run := func(args ...string) {
+		c := exec.Command("git", args...)
+		c.Dir = root
+		c.Env = append(os.Environ(),
+			"GIT_CONFIG_GLOBAL=/dev/null", "GIT_CONFIG_SYSTEM=/dev/null",
+			"GIT_AUTHOR_NAME=t", "GIT_AUTHOR_EMAIL=t@example.com",
+			"GIT_COMMITTER_NAME=t", "GIT_COMMITTER_EMAIL=t@example.com")
+		if out, err := c.CombinedOutput(); err != nil {
+			t.Fatalf("git %v: %v\n%s", args, err, out)
+		}
+	}
+	write := func(rel, body string) {
+		full := filepath.Join(root, rel)
+		if err := os.MkdirAll(filepath.Dir(full), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(full, []byte(body), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	run("init", "-q")
+	write("README.md", "base\n")
+	run("add", "-A")
+	run("commit", "-q", "-m", "base")
+	write(addFile, "x\n")
+	run("add", "-A")
+	run("commit", "-q", "-m", "add "+addFile)
+	return root
+}
+
+// TestGitChangedFiles_PollutedGitDirResolvesCorrectRepo is the acceptance for
+// the SECURITY-MED fix: git injects GIT_DIR/GIT_WORK_TREE/... into
+// hook-launched processes, and a leaked GIT_DIR overrides cwd-based discovery,
+// so an unscrubbed subprocess computes the changed set against the WRONG repo
+// (silently skipping blocking checks). The exec path must scrub the canonical
+// git-discovery env so cmd.Dir wins.
+func TestGitChangedFiles_PollutedGitDirResolvesCorrectRepo(t *testing.T) {
+	correct := initRepoWithHead(t, "correct_file.go")
+	polluted := initRepoWithHead(t, "wrong_file.go")
+
+	// Simulate git's hook-injected discovery env pointing at a DIFFERENT repo.
+	t.Setenv("GIT_DIR", filepath.Join(polluted, ".git"))
+
+	g := NewGitChangedFiles(correct)
+	got, err := g.Changed(context.Background(), ScopeHead)
+	if err != nil {
+		t.Fatalf("Changed: %v", err)
+	}
+	want := []string{"correct_file.go"}
+	if !equalSet(got, want) {
+		t.Fatalf("polluted GIT_DIR routed changed-set to %v, want %v (from cmd.Dir repo)", got, want)
+	}
+}
+
 // equalSet reports whether a and b hold the same elements (order-independent).
 func equalSet(a, b []string) bool {
 	if len(a) != len(b) {
