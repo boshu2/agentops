@@ -3,5 +3,6 @@
   "family": "skills",
   "freeze_sha": "a22aa6695f0c08b5971c3aee75089e4f33bd9d16",
   "ownership_sha256": "cbb5fdebea56ec0fd6d98bf185cb36abcbcb7a786aabb720070bf90926774f22",
-  "migration_state": "migrating"
+  "migration_state": "migrated",
+  "accepted_sha": "fa4eef5df902716c0429bf5979f9d4017bcc9c85"
 }
