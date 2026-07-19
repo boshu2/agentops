@@ -1,5 +1,5 @@
 // practices: [design-by-contract, in-toto-provenance]
-package main
+package provenance
 
 import (
 	"encoding/json"
@@ -10,17 +10,11 @@ import (
 	"github.com/boshu2/agentops/cli/internal/provenancegraph"
 )
 
-// resetProvExportFlags sets the export flags to a known baseline.
-func resetProvExportFlags() {
-	provExportJSON = false
-	provExportVerify = false
-}
-
 // seedLedger appends a fixed set of distinct edges (in a deliberately
-// non-canonical insertion order) to the ledger at the resolved path.
-func seedLedger(t *testing.T) {
+// non-canonical insertion order) to the ledger at the given path.
+func seedLedger(t *testing.T, ledger string) {
 	t.Helper()
-	store := provenancegraph.NewStore(resolveLedgerPath())
+	store := provenancegraph.NewStore(ledger)
 	edges := []provenancegraph.Edge{
 		{FromID: "ag-2", FromType: "decision", ToID: "b.go", ToType: "artifact",
 			Relation: "wasGeneratedBy", TrustTier: "authored", TS: "2026-05-31T02:00:00Z"},
@@ -37,24 +31,23 @@ func seedLedger(t *testing.T) {
 }
 
 func TestProvenanceExport_DeterministicBytesAcrossRuns(t *testing.T) {
-	chdirRepoFixture(t)
-	seedLedger(t)
-	resetProvExportFlags()
+	ledger := testLedger(t)
+	seedLedger(t, ledger)
 
-	c1, out1 := provTestCmd()
-	if err := runProvenanceExport(c1, nil); err != nil {
+	out1, err := execProv(t, ledger, "export")
+	if err != nil {
 		t.Fatalf("export 1: %v", err)
 	}
-	c2, out2 := provTestCmd()
-	if err := runProvenanceExport(c2, nil); err != nil {
+	out2, err := execProv(t, ledger, "export")
+	if err != nil {
 		t.Fatalf("export 2: %v", err)
 	}
-	if out1.String() != out2.String() {
-		t.Fatalf("export not byte-identical across runs:\n--- run1 ---\n%s\n--- run2 ---\n%s", out1.String(), out2.String())
+	if out1 != out2 {
+		t.Fatalf("export not byte-identical across runs:\n--- run1 ---\n%s\n--- run2 ---\n%s", out1, out2)
 	}
 
 	// JSONL: one edge per non-blank line, in canonical (ts) order.
-	lines := strings.Split(strings.TrimRight(out1.String(), "\n"), "\n")
+	lines := strings.Split(strings.TrimRight(out1, "\n"), "\n")
 	if len(lines) != 3 {
 		t.Fatalf("export emitted %d lines, want 3", len(lines))
 	}
@@ -72,18 +65,16 @@ func TestProvenanceExport_DeterministicBytesAcrossRuns(t *testing.T) {
 }
 
 func TestProvenanceExport_ChainVerifies(t *testing.T) {
-	chdirRepoFixture(t)
-	seedLedger(t)
-	resetProvExportFlags()
-	provExportJSON = true
+	ledger := testLedger(t)
+	seedLedger(t, ledger)
 
-	c, out := provTestCmd()
-	if err := runProvenanceExport(c, nil); err != nil {
+	out, err := execProv(t, ledger, "export", "--json")
+	if err != nil {
 		t.Fatalf("export: %v", err)
 	}
 	var chain []provenancegraph.Edge
-	if err := json.Unmarshal(out.Bytes(), &chain); err != nil {
-		t.Fatalf("export --json not an array: %v\n%s", err, out.String())
+	if err := json.Unmarshal([]byte(out), &chain); err != nil {
+		t.Fatalf("export --json not an array: %v\n%s", err, out)
 	}
 	if len(chain) != 3 {
 		t.Fatalf("exported %d edges, want 3", len(chain))
@@ -101,60 +92,52 @@ func TestProvenanceExport_ChainVerifies(t *testing.T) {
 }
 
 func TestProvenanceExport_EmptyLedger(t *testing.T) {
-	chdirRepoFixture(t)
-	resetProvExportFlags()
+	ledger := testLedger(t)
 
 	// Default JSONL on an empty ledger: no lines, no error.
-	c, out := provTestCmd()
-	if err := runProvenanceExport(c, nil); err != nil {
+	out, err := execProv(t, ledger, "export")
+	if err != nil {
 		t.Fatalf("export empty: %v", err)
 	}
-	if out.String() != "" {
-		t.Fatalf("empty-ledger JSONL export = %q, want empty", out.String())
+	if out != "" {
+		t.Fatalf("empty-ledger JSONL export = %q, want empty", out)
 	}
 
 	// --json on an empty ledger: a concrete empty array, never null.
-	resetProvExportFlags()
-	provExportJSON = true
-	c2, out2 := provTestCmd()
-	if err := runProvenanceExport(c2, nil); err != nil {
+	out2, err := execProv(t, ledger, "export", "--json")
+	if err != nil {
 		t.Fatalf("export empty json: %v", err)
 	}
-	if got := strings.TrimSpace(out2.String()); got != "[]" {
+	if got := strings.TrimSpace(out2); got != "[]" {
 		t.Fatalf("empty-ledger --json export = %q, want []", got)
 	}
 }
 
 func TestProvenanceExport_VerifyFlagSummary(t *testing.T) {
-	chdirRepoFixture(t)
-	seedLedger(t)
-	resetProvExportFlags()
-	provExportVerify = true
+	ledger := testLedger(t)
+	seedLedger(t, ledger)
 
-	c, out := provTestCmd()
-	if err := runProvenanceExport(c, nil); err != nil {
+	out, err := execProv(t, ledger, "export", "--verify")
+	if err != nil {
 		t.Fatalf("export --verify: %v", err)
 	}
-	got := out.String()
-	if !strings.Contains(got, "OK:") || !strings.Contains(got, "3 edge") {
-		t.Fatalf("--verify summary = %q, want OK with edge count", got)
+	if !strings.Contains(out, "OK:") || !strings.Contains(out, "3 edge") {
+		t.Fatalf("--verify summary = %q, want OK with edge count", out)
 	}
 	// --verify must NOT emit the JSONL/array body.
-	if strings.Contains(got, "schema_version") {
-		t.Fatalf("--verify leaked edge body: %q", got)
+	if strings.Contains(out, "schema_version") {
+		t.Fatalf("--verify leaked edge body: %q", out)
 	}
 }
 
 func TestProvenanceExport_TamperedLedgerRejected(t *testing.T) {
-	chdirRepoFixture(t)
-	seedLedger(t)
-	resetProvExportFlags()
+	ledger := testLedger(t)
+	seedLedger(t, ledger)
 
-	// Tamper: rewrite the ledger file with a record whose hash fields are wrong
-	// for its payload. Re-chaining recomputes hashes, but ValidateFields still
-	// runs; an invalid relation here makes the export fail loudly.
-	path := resolveLedgerPath()
-	store := provenancegraph.NewStore(path)
+	// Tamper: rewrite the ledger file with a record whose relation is invalid.
+	// Re-chaining recomputes hashes, but ValidateFields still runs; an invalid
+	// relation here makes the export fail loudly.
+	store := provenancegraph.NewStore(ledger)
 	edges, err := store.Read()
 	if err != nil {
 		t.Fatalf("read: %v", err)
@@ -165,12 +148,11 @@ func TestProvenanceExport_TamperedLedgerRejected(t *testing.T) {
 		b, _ := json.Marshal(e)
 		lines = append(lines, string(b))
 	}
-	if err := os.WriteFile(path, []byte(strings.Join(lines, "\n")+"\n"), 0o644); err != nil {
+	if err := os.WriteFile(ledger, []byte(strings.Join(lines, "\n")+"\n"), 0o644); err != nil {
 		t.Fatalf("rewrite ledger: %v", err)
 	}
 
-	c, _ := provTestCmd()
-	if err := runProvenanceExport(c, nil); err == nil {
+	if _, err := execProv(t, ledger, "export"); err == nil {
 		t.Fatal("expected export to reject a ledger with an invalid edge")
 	}
 }
