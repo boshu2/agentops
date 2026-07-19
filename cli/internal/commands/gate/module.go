@@ -47,6 +47,26 @@ func (Module) Contract() clicontract.CommandContract {
 	}
 }
 
+// CheckContract declares the real behavior of the `ao gate check` leaf, the
+// command that actually runs the deterministic check registry. It takes no
+// positional args, emits a human text report (JSON under --json), runs check
+// scripts (filesystem, process, environment, clock), and exits 0 when the
+// selected checks pass, 1 when a check fails, or 2 on a usage/config error.
+func (Module) CheckContract() clicontract.CommandContract {
+	return clicontract.CommandContract{
+		ID:       "ao.gate.check",
+		Profiles: clicontract.ProfileDefault | clicontract.ProfileFlywheel | clicontract.ProfileLegacy | clicontract.ProfileCombined,
+		Args:     clicontract.ArgsPolicy{Name: "no-args", Validate: cobra.NoArgs},
+		Output:   clicontract.OutputText,
+		Effects:  clicontract.EffectFilesystem | clicontract.EffectProcess | clicontract.EffectEnvironment | clicontract.EffectClock,
+		ExitClasses: map[int]clicontract.ExitClass{
+			0: clicontract.ExitSuccess,
+			1: clicontract.ExitFailure,
+			2: clicontract.ExitUsage,
+		},
+	}
+}
+
 type ExitError struct {
 	Code    int
 	Message string

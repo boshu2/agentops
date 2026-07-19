@@ -98,6 +98,23 @@ func (Module) Contract() clicontract.CommandContract {
 	}
 }
 
+// RunContract declares the real behavior of the `ao eval run <suite.json>`
+// leaf. It takes exactly one positional suite path, emits a human text summary
+// (JSON under -o json), reads the suite and writes a run record while executing
+// the deterministic runtime (filesystem, process, environment, clock), and
+// exits 0 on success or 1 on failure.
+func (Module) RunContract() clicontract.CommandContract {
+	return clicontract.CommandContract{
+		ID: "ao.eval.run",
+		Profiles: clicontract.ProfileDefault | clicontract.ProfileFlywheel |
+			clicontract.ProfileLegacy | clicontract.ProfileCombined,
+		Args:        clicontract.ArgsPolicy{Name: "exact", Validate: cobra.ExactArgs(1)},
+		Output:      clicontract.OutputText,
+		Effects:     clicontract.EffectFilesystem | clicontract.EffectProcess | clicontract.EffectEnvironment | clicontract.EffectClock,
+		ExitClasses: map[int]clicontract.ExitClass{0: clicontract.ExitSuccess, 1: clicontract.ExitFailure},
+	}
+}
+
 type runOptions struct {
 	output, runID, runtime, baseline, baselineMode     string
 	contextMode, contextOffDir, contextOnDir, deltaOut string

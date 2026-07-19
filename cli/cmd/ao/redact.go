@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/boshu2/agentops/cli/internal/clicontract"
 	"github.com/boshu2/agentops/cli/internal/redact"
 	"github.com/spf13/cobra"
 )
@@ -25,8 +26,29 @@ directly. Non-sensitive content passes through unchanged.`,
 	RunE: runRedact,
 }
 
+// redactContract declares redact's real behavior: it takes no positional args,
+// emits the scrubbed text to stdout, is a pure deterministic transform of stdin
+// (no filesystem, network, or state), and exits 0 on success or 1 on an I/O
+// failure reading stdin or writing stdout.
+func redactContract() clicontract.CommandContract {
+	return clicontract.CommandContract{
+		ID:       "ao.redact",
+		Profiles: clicontract.ProfileDefault | clicontract.ProfileFlywheel | clicontract.ProfileLegacy | clicontract.ProfileCombined,
+		Args:     clicontract.ArgsPolicy{Name: "no-args", Validate: cobra.NoArgs},
+		Output:   clicontract.OutputText,
+		Effects:  clicontract.EffectPure,
+		ExitClasses: map[int]clicontract.ExitClass{
+			0: clicontract.ExitSuccess,
+			1: clicontract.ExitFailure,
+		},
+	}
+}
+
 func init() {
 	redactCmd.GroupID = "core"
+	if err := clicontract.Attach(redactCmd, redactContract()); err != nil {
+		panic(err)
+	}
 	rootCmd.AddCommand(redactCmd)
 }
 
