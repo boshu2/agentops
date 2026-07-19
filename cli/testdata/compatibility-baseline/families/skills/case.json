@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "family": "skills",
+  "checks": [
+    {
+      "id": "skills-black-box",
+      "command": "tmp=$(mktemp -d /tmp/ao-skills.XXXXXX); (cd cli && go build -o \"$tmp/ao\" ./cmd/ao); \"$tmp/ao\" skills --help >\"$tmp/help\"; grep -Fq 'Inspect and validate the skills/ tree' \"$tmp/help\"; grep -Fq 'link' \"$tmp/help\"; grep -Fq 'find' \"$tmp/help\"; \"$tmp/ao\" skills link --help >\"$tmp/linkhelp\"; grep -Fq 'git pull && ao skills link' \"$tmp/linkhelp\"; grep -Fq '~/.codex/skills' \"$tmp/linkhelp\"; ( cd cli && \"$tmp/ao\" skills list --json >\"$tmp/list\" ); grep -Fq '\"hexagonal_role\"' \"$tmp/list\"; ( cd cli && \"$tmp/ao\" skills graph --format mermaid >\"$tmp/graph\" ); grep -Fq 'graph LR' \"$tmp/graph\""
+    },
+    {
+      "id": "skills-go-behavior",
+      "command": "cd cli && go test ./internal/commands/skills/... ./internal/skillsapp/... -count=1"
+    }
+  ],
+  "dimensions": {
+    "path": {"status": "evidence", "evidence": ["skills-black-box", "skills-go-behavior"]},
+    "aliases": {"status": "not_applicable", "reason": "The skills family declares no command aliases."},
+    "accepted_args": {"status": "evidence", "evidence": ["skills-black-box", "skills-go-behavior"]},
+    "rejected_args": {"status": "evidence", "evidence": ["skills-go-behavior"]},
+    "stdout": {"status": "evidence", "evidence": ["skills-black-box", "skills-go-behavior"]},
+    "stderr": {"status": "evidence", "evidence": ["skills-go-behavior"]},
+    "exit_classes": {"status": "evidence", "evidence": ["skills-go-behavior"]},
+    "tracker_selection": {"status": "not_applicable", "reason": "The skills family does not select a repository issue tracker."},
+    "ordered_effects": {"status": "evidence", "evidence": ["skills-go-behavior"]}
+  }
+}
