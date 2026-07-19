@@ -906,13 +906,11 @@ collect_parallel
 run_step_bg "CLI docs parity" ./scripts/generate-cli-reference.sh --check
 run_step_bg "ShellCheck" run_shellcheck
 run_step_bg "Markdownlint" run_markdownlint
-run_step_bg "Smoke tests" ./tests/smoke-test.sh --verbose
 run_step_bg "Skill lint" bash ./tests/skills/run-all.sh
 run_step_bg "Command/test pairing gate tests" ./tests/scripts/test-go-command-test-pair.sh
 run_step_bg "Go fast scope tests" bats ./tests/scripts/validate-go-fast.bats
 run_step_bg "Skill runtime parity tests" bash ./tests/scripts/test-skill-runtime-parity.sh
 run_step_bg "Skill CLI snippet tests" bash ./tests/scripts/test-skill-cli-snippets.sh
-run_step_bg "Install surface smoke" bash ./tests/install/test-install-smoke.sh
 run_step_bg "Codex artifact manifest tests" bash ./tests/scripts/test-codex-generated-manifest.sh
 run_step_bg "Codex artifact metadata tests" bash ./tests/scripts/test-codex-generated-artifacts.sh
 run_step_bg "Validate-local tests" bash ./tests/scripts/test-validate-local.sh
@@ -961,6 +959,8 @@ fi
 
 # ── Phase 5: CLI smoke tests (need built binary) ──
 
+run_step_bg "Smoke tests" ./tests/smoke-test.sh --verbose
+run_step_bg "Install surface smoke" bash ./tests/install/test-install-smoke.sh
 run_step_bg "ao init + live-waist smoke" run_init_live_waist_smoke
 run_step_bg "Release smoke test (all commands)" ./scripts/release-smoke-test.sh --skip-build
 
