@@ -9,7 +9,7 @@ See also: `skills/swarm/references/worker-pitfalls.md` for general platform pitf
 - **Cobra global state**: `rootCmd` flags are package-level variables. Tests that call `cmd.Execute()` must save/restore flag values and call `cmd.Flags().Set()` to reset Changed state. Use `executeCommand` helper when available.
 - **os.Chdir is process-global**: ~160 test sites use `os.Chdir` because production code calls `os.Getwd()`. Cannot use `t.Parallel()` with these tests. Do NOT try to refactor tests to avoid os.Chdir unless also refactoring production code.
 - **Go flat package model**: All `_test.go` files in a directory share a namespace. When multiple agents write tests in the same package, they WILL get duplicate symbol errors. Check `cli/cmd/ao/testutil_test.go` for existing shared helpers before declaring new ones.
-- **Stale binary**: Tests that shell out to `cli/bin/ao` (e.g., `flag_matrix_test.go`) require `make build` first. Always run `make build` before `make test`.
+- **Stale binary**: Go tests never resolve `cli/bin/ao` — `flag_matrix_test.go` builds the exec'd binary from the package source at test time. Shell suites that reuse a prebuilt `cli/bin/ao` when one exists can still pick up a stale build; set `PROOF_FORCE_BUILD=1` (e2e factory) or delete `cli/bin/ao` when in doubt.
 
 ## Shell Environment
 

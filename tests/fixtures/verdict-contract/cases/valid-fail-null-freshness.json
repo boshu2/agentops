@@ -1,0 +1,45 @@
+{
+  "name": "valid-fail-null-freshness",
+  "description": "FAIL with null freshness and a finding; not_checked disclosed.",
+  "expected": "valid",
+  "filename_digest": "65729d8540c658dac20acbe2349e684aff7b7116cc19012ddaf1b72ab406df43",
+  "artifact": {
+    "schema_version": "verdict.v2",
+    "acceptance_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "subject_manifest_digest": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "author_context_id": "ctx-author",
+    "validator_context_id": "ctx-validator",
+    "freshness_attestation": null,
+    "verdict": "FAIL",
+    "criteria": [
+      {
+        "id": "c1",
+        "result": "FAIL",
+        "evidence_refs": [
+          "gate:go.build"
+        ],
+        "reason": "checked"
+      }
+    ],
+    "findings": [
+      {
+        "id": "f1",
+        "summary": "gate failed",
+        "evidence_refs": [
+          "gate:go.build"
+        ]
+      }
+    ],
+    "evidence_refs": [
+      "gate:go.build"
+    ],
+    "checked": [
+      "cli/**"
+    ],
+    "not_checked": [
+      "docs/**"
+    ],
+    "validated_at": "2026-07-18T12:00:00Z",
+    "artifact_digest": "65729d8540c658dac20acbe2349e684aff7b7116cc19012ddaf1b72ab406df43"
+  }
+}

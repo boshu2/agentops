@@ -263,28 +263,9 @@ func resetCommandState(t *testing.T) {
 	origGoalsMeasureTotalTimeout := goalsMeasureTotalTimeout
 	origGoalsMeasureScenariosOnly := goalsMeasureScenariosOnly
 	origGoalsRenderOut := goalsRenderOut
-	origMemorySyncQuiet := memorySyncQuiet
-	origMemorySyncMaxEntries := memorySyncMaxEntries
-	origMemorySyncOutput := memorySyncOutput
-	origSearchLimit := searchLimit
-	origSearchType := searchType
-	origSearchCiteType := searchCiteType
-	origSearchSession := searchSession
-	origSearchUseSC := searchUseSC
-	origSearchUseCASS := searchUseCASS
-	origSearchUseLocal := searchUseLocal
 	// No alternate lifecycle build exists; the helper remains a no-op so shared
 	// test setup has one stable call site.
 	resetArchivedCommandGlobals(t)
-	origFindingsListLimit := findingsListLimit
-	origFindingsListAll := findingsListAll
-	origFindingsExportTo := findingsExportTo
-	origFindingsExportAll := findingsExportAll
-	origFindingsExportForce := findingsExportForce
-	origFindingsPullFrom := findingsPullFrom
-	origFindingsPullAll := findingsPullAll
-	origFindingsPullForce := findingsPullForce
-	origFindingsRetireBy := findingsRetireBy
 
 	t.Cleanup(func() {
 		dryRun = origDryRun
@@ -305,25 +286,6 @@ func resetCommandState(t *testing.T) {
 		goalsMeasureTotalTimeout = origGoalsMeasureTotalTimeout
 		goalsMeasureScenariosOnly = origGoalsMeasureScenariosOnly
 		goalsRenderOut = origGoalsRenderOut
-		memorySyncQuiet = origMemorySyncQuiet
-		memorySyncMaxEntries = origMemorySyncMaxEntries
-		memorySyncOutput = origMemorySyncOutput
-		searchLimit = origSearchLimit
-		searchType = origSearchType
-		searchCiteType = origSearchCiteType
-		searchSession = origSearchSession
-		searchUseSC = origSearchUseSC
-		searchUseCASS = origSearchUseCASS
-		searchUseLocal = origSearchUseLocal
-		findingsListLimit = origFindingsListLimit
-		findingsListAll = origFindingsListAll
-		findingsExportTo = origFindingsExportTo
-		findingsExportAll = origFindingsExportAll
-		findingsExportForce = origFindingsExportForce
-		findingsPullFrom = origFindingsPullFrom
-		findingsPullAll = origFindingsPullAll
-		findingsPullForce = origFindingsPullForce
-		findingsRetireBy = origFindingsRetireBy
 	})
 
 	// Reset to defaults.
@@ -348,25 +310,6 @@ func resetCommandState(t *testing.T) {
 	goalsMeasureScenariosOnly = false
 	goalsRenderOut = ""
 	output = "table"
-	memorySyncQuiet = false
-	memorySyncMaxEntries = 10
-	memorySyncOutput = ""
-	searchLimit = 10
-	searchType = ""
-	searchCiteType = ""
-	searchSession = ""
-	searchUseSC = false
-	searchUseCASS = false
-	searchUseLocal = false
-	findingsListLimit = 20
-	findingsListAll = false
-	findingsExportTo = ""
-	findingsExportAll = false
-	findingsExportForce = false
-	findingsPullFrom = ""
-	findingsPullAll = false
-	findingsPullForce = false
-	findingsRetireBy = ""
 	// Reset Cobra flag Changed state and values to defaults.
 	resetFlagChangesRecursive(rootCmd)
 	rootCmd.PersistentFlags().VisitAll(func(f *pflag.Flag) {
@@ -551,14 +494,15 @@ func initHistoryFixtureGitRepo(t *testing.T, dir string) {
 }
 
 // runFixtureGit executes a git command in dir with optional extra environment
-// variables. Fatals the test on any non-zero exit.
+// variables. Fatals the test on any non-zero exit. Always scrubs git's
+// repo-discovery env (gitDiscoveryEnv): under a hook-leaked GIT_DIR, cmd.Dir
+// alone does NOT scope the command — `git config user.name Test` would write
+// the LEAKED repo's shared config (age-gate-scripts-worktree-gitdir-p62wo).
 func runFixtureGit(t *testing.T, dir string, extraEnv []string, args ...string) string {
 	t.Helper()
 	cmd := exec.Command("git", args...)
 	cmd.Dir = dir
-	if len(extraEnv) > 0 {
-		cmd.Env = append(os.Environ(), extraEnv...)
-	}
+	cmd.Env = append(gitDiscoveryEnv(), extraEnv...)
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		t.Fatalf("git %v in %s: %v\n%s", args, dir, err, out)

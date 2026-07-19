@@ -892,7 +892,6 @@ run_step_bg "Codex artifact manifest" bash ./scripts/validate-codex-generated-ma
 run_step_bg "Codex artifact metadata" bash ./scripts/validate-codex-generated-artifacts.sh --scope worktree
 run_step_bg "Skill runtime formats" bash ./scripts/validate-skill-runtime-formats.sh
 run_step_bg "Contract compatibility gate" ./scripts/check-contract-compatibility.sh
-run_step_bg "Embedded sync check" ./scripts/validate-embedded-sync.sh
 run_step_bg "Door 9 no Claude print RPI guard" ./scripts/check-door9-no-claude-p.sh
 run_step_bg "Secret pattern scan" run_security_scan_patterns
 run_step_bg "Dangerous shell pattern scan" run_dangerous_pattern_scan

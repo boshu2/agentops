@@ -7,6 +7,8 @@ import (
 	"os/exec"
 	"strings"
 	"testing"
+
+	"github.com/boshu2/agentops/cli/internal/testsupport"
 )
 
 // TestMain clears AGENTOPS_RPI_RUNTIME* env vars AND forces HOME to a
@@ -27,12 +29,24 @@ func TestMain(m *testing.M) {
 		}
 	}
 
+	// Scrub git's hook-injected discovery env (GIT_DIR, GIT_WORK_TREE, ...).
+	// When this suite is launched from a git-hook context, those vars redirect
+	// every fixture `git init`/`git config` to the REAL repo — the ek8v
+	// core.bare corruption (recurred 2026-07-18 after the hook-side scrub was
+	// retired with the pre-push gate).
+	testsupport.ScrubGitDiscoveryEnv()
+
 	tmpHome, err := os.MkdirTemp("", "cmd-ao-test-home-*")
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "failed to create test HOME: %v\n", err)
 		os.Exit(1)
 	}
 	origHome, hadOrigHome := os.LookupEnv("HOME")
+	// The hermetic binary build (aoBinary) must keep using the real module and
+	// build caches: with HOME pointed at the temp dir, Go would resolve an
+	// empty GOMODCACHE and re-download modules on every test run (or fail
+	// offline). Capture the pre-isolation cache paths for the build env.
+	hermeticBuildHome = origHome
 	os.Setenv("HOME", tmpHome)
 
 	// Isolate the tmux socket. Several production paths (context-budget
@@ -61,6 +75,8 @@ func TestMain(m *testing.M) {
 	os.Unsetenv("TMUX")
 
 	code := m.Run()
+
+	cleanupHermeticBinary()
 
 	// Tear down any tmux server the tests started on the isolated socket before
 	// removing its dir, so no orphan server lingers. Inherits the TMUX_TMPDIR

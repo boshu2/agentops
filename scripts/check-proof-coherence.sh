@@ -57,7 +57,9 @@ set -euo pipefail
 
 PROG="check-proof-coherence"
 
-repo_root="$(git rev-parse --show-toplevel 2>/dev/null || pwd -P)"
+# shellcheck disable=SC1007,SC1091
+. "$(CDPATH= cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib/repo-root.sh"
+repo_root="$(resolve_repo_root)"
 
 ledger=""
 events=""

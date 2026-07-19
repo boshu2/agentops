@@ -24,9 +24,11 @@ if [[ "${AGENTOPS_PARITY_GATE_DISABLED:-}" == "1" ]]; then
     exit 0
 fi
 
+# shellcheck disable=SC1007,SC1091
+. "$(CDPATH= cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib/repo-root.sh"
 ROOT="${1:-}"
 if [[ -z "$ROOT" ]]; then
-    ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+    ROOT="$(resolve_repo_root)"
 fi
 
 HOOKS_DIR="$ROOT/hooks"

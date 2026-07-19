@@ -18,7 +18,9 @@ set -euo pipefail
 shopt -s lastpipe 2>/dev/null || true
 umask 022
 
-repo_root="$(git rev-parse --show-toplevel)"
+# shellcheck disable=SC1007,SC1091
+. "$(CDPATH= cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib/repo-root.sh"
+repo_root="$(resolve_repo_root)"
 src_dir="$repo_root/.claude/workflows"
 dest_dir="$HOME/.claude/workflows"
 mkdir -p "$dest_dir"

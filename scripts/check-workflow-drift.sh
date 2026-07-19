@@ -15,7 +15,9 @@
 # Repo root from cwd git; installed dir from $HOME. No hardcoded user paths.
 set -euo pipefail
 
-repo_root="$(git rev-parse --show-toplevel)"
+# shellcheck disable=SC1007,SC1091
+. "$(CDPATH= cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib/repo-root.sh"
+repo_root="$(resolve_repo_root)"
 canon_dir="$repo_root/.claude/workflows"
 inst_dir="$HOME/.claude/workflows"
 blocking_name="bdd-foundry.js"

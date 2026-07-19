@@ -17,7 +17,6 @@
 # not constructions, or are auto-generated):
 #   *_test.go   — fixture paths legitimately reference .agents/
 #   skills/, skills-codex/, docs/   — markdown prose and examples
-#   cli/embedded/                   — auto-synced from hooks/ + skills/
 #
 # Exit code: ALWAYS 0 (warn-only, per warn-then-fail-ratchet pattern).
 # Flip to blocking is a separate decision after 2+ weeks of baseline data —
@@ -29,7 +28,9 @@
 
 set -uo pipefail
 
-REPO_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+# shellcheck disable=SC1007,SC1091
+. "$(CDPATH= cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib/repo-root.sh"
+REPO_ROOT="$(resolve_repo_root)"
 cd "$REPO_ROOT" 2>/dev/null || exit 0
 
 SURFACES=("cli/cmd/ao" "cli/internal" "hooks" "lib" "scripts")

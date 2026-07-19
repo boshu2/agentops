@@ -16,20 +16,6 @@
       "reason": "Covered by capability contract tests."
     },
     {
-      "category": "deprecated",
-      "command": "claim",
-      "coverage_status": "allowlisted",
-      "kind": "leaf",
-      "reason": "One-release failure stub for removed work ownership."
-    },
-    {
-      "category": "deprecated",
-      "command": "close",
-      "coverage_status": "allowlisted",
-      "kind": "leaf",
-      "reason": "One-release failure stub for removed closure control."
-    },
-    {
       "category": "public-tested",
       "command": "completion",
       "coverage_status": "allowlisted",
@@ -42,27 +28,6 @@
       "coverage_status": "covered",
       "kind": "leaf",
       "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
-    },
-    {
-      "category": "deprecated",
-      "command": "constraint",
-      "coverage_status": "allowlisted",
-      "kind": "leaf",
-      "reason": "One-release failure stub for removed constraint promotion."
-    },
-    {
-      "category": "deprecated",
-      "command": "converge",
-      "coverage_status": "allowlisted",
-      "kind": "leaf",
-      "reason": "One-release failure stub for removed retry convergence."
-    },
-    {
-      "category": "deprecated",
-      "command": "crank",
-      "coverage_status": "allowlisted",
-      "kind": "leaf",
-      "reason": "One-release failure stub for removed factory controller."
     },
     {
       "category": "manual-only",
@@ -135,11 +100,158 @@
       "reason": "Reverts a doctor repair fixture."
     },
     {
-      "category": "deprecated",
-      "command": "done",
+      "category": "public-tested",
+      "command": "eval baseline",
       "coverage_status": "allowlisted",
       "kind": "leaf",
-      "reason": "One-release failure stub for removed closure control."
+      "reason": "Promotion logic covered by internal/eval baseline tests; composition covered by cmd/ao eval tests."
+    },
+    {
+      "category": "public-tested",
+      "command": "eval baseline-audit",
+      "coverage_status": "allowlisted",
+      "kind": "leaf",
+      "reason": "Audit policy covered by internal/eval baseline_audit tests."
+    },
+    {
+      "category": "public-tested",
+      "command": "eval cleanup",
+      "coverage_status": "allowlisted",
+      "kind": "leaf",
+      "reason": "Covered by internal/eval cleanup_service tests."
+    },
+    {
+      "category": "public-tested",
+      "command": "eval compare",
+      "coverage_status": "covered",
+      "kind": "leaf",
+      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
+    },
+    {
+      "category": "public-tested",
+      "command": "eval coverage",
+      "coverage_status": "allowlisted",
+      "kind": "leaf",
+      "reason": "Covered by internal/eval coverage tests."
+    },
+    {
+      "category": "public-tested",
+      "command": "eval outcomes compile",
+      "coverage_status": "allowlisted",
+      "kind": "leaf",
+      "reason": "Covered by evalsubstrate rubric tests and module tests."
+    },
+    {
+      "category": "public-tested",
+      "command": "eval outcomes ingest",
+      "coverage_status": "allowlisted",
+      "kind": "leaf",
+      "reason": "Covered by internal/eval outcomes_service tests."
+    },
+    {
+      "category": "public-tested",
+      "command": "eval run",
+      "coverage_status": "covered",
+      "kind": "leaf",
+      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
+    },
+    {
+      "category": "public-tested",
+      "command": "eval scenario add",
+      "coverage_status": "allowlisted",
+      "kind": "leaf",
+      "reason": "Covered by internal/scenario and module tests."
+    },
+    {
+      "category": "public-tested",
+      "command": "eval scenario evaluate",
+      "coverage_status": "allowlisted",
+      "kind": "leaf",
+      "reason": "Covered by internal/eval scenario_service tests."
+    },
+    {
+      "category": "public-tested",
+      "command": "eval scenario init",
+      "coverage_status": "allowlisted",
+      "kind": "leaf",
+      "reason": "Covered by internal/scenario and module tests."
+    },
+    {
+      "category": "public-tested",
+      "command": "eval scenario list",
+      "coverage_status": "allowlisted",
+      "kind": "leaf",
+      "reason": "Covered by internal/scenario and module tests."
+    },
+    {
+      "category": "public-tested",
+      "command": "eval scenario validate",
+      "coverage_status": "allowlisted",
+      "kind": "leaf",
+      "reason": "Covered by internal/scenario and module tests."
+    },
+    {
+      "category": "unsafe-live",
+      "command": "eval scenario-ab",
+      "coverage_status": "allowlisted",
+      "kind": "leaf",
+      "reason": "Spawns a live model runtime (codex exec) per arm; exercised by adapter tests with fakes, never in smoke."
+    },
+    {
+      "category": "unsafe-live",
+      "command": "eval scenario-moat",
+      "coverage_status": "allowlisted",
+      "kind": "leaf",
+      "reason": "Aggregates live scenario-ab cards; adapter-tested with fixtures."
+    },
+    {
+      "category": "public-tested",
+      "command": "eval scorecard",
+      "coverage_status": "allowlisted",
+      "kind": "leaf",
+      "reason": "Covered by internal/eval scorecard tests."
+    },
+    {
+      "category": "public-tested",
+      "command": "eval suite n-required",
+      "coverage_status": "allowlisted",
+      "kind": "leaf",
+      "reason": "Covered by internal/eval suite_service and module tests."
+    },
+    {
+      "category": "public-tested",
+      "command": "eval suite verdict",
+      "coverage_status": "allowlisted",
+      "kind": "leaf",
+      "reason": "Covered by internal/eval suite_service and module tests."
+    },
+    {
+      "category": "public-tested",
+      "command": "eval task add",
+      "coverage_status": "allowlisted",
+      "kind": "leaf",
+      "reason": "Covered by internal/eval task_service and module tests."
+    },
+    {
+      "category": "public-tested",
+      "command": "eval task list",
+      "coverage_status": "allowlisted",
+      "kind": "leaf",
+      "reason": "Covered by internal/eval task_service and module tests."
+    },
+    {
+      "category": "public-tested",
+      "command": "eval task run",
+      "coverage_status": "allowlisted",
+      "kind": "leaf",
+      "reason": "Covered by internal/eval task_service and module tests."
+    },
+    {
+      "category": "public-tested",
+      "command": "eval task show",
+      "coverage_status": "allowlisted",
+      "kind": "leaf",
+      "reason": "Covered by internal/eval task_service and module tests."
     },
     {
       "category": "public-tested",
@@ -212,25 +324,11 @@
       "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
     },
     {
-      "category": "deprecated",
-      "command": "goals trace",
-      "coverage_status": "allowlisted",
-      "kind": "leaf",
-      "reason": "One-release failure stub for removed lifecycle tracing."
-    },
-    {
       "category": "public-tested",
       "command": "goals validate",
       "coverage_status": "covered",
       "kind": "leaf",
       "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
-    },
-    {
-      "category": "deprecated",
-      "command": "governor",
-      "coverage_status": "allowlisted",
-      "kind": "leaf",
-      "reason": "One-release failure stub for removed retry control."
     },
     {
       "category": "internal-hidden",
@@ -245,41 +343,6 @@
       "coverage_status": "covered",
       "kind": "leaf",
       "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
-    },
-    {
-      "category": "deprecated",
-      "command": "land",
-      "coverage_status": "allowlisted",
-      "kind": "leaf",
-      "reason": "One-release failure stub for removed delivery control."
-    },
-    {
-      "category": "deprecated",
-      "command": "membrane",
-      "coverage_status": "allowlisted",
-      "kind": "leaf",
-      "reason": "One-release failure stub for removed admission behavior."
-    },
-    {
-      "category": "deprecated",
-      "command": "next-work",
-      "coverage_status": "allowlisted",
-      "kind": "leaf",
-      "reason": "One-release failure stub for removed work selection."
-    },
-    {
-      "category": "deprecated",
-      "command": "pawl",
-      "coverage_status": "allowlisted",
-      "kind": "leaf",
-      "reason": "One-release failure stub for removed admission control."
-    },
-    {
-      "category": "deprecated",
-      "command": "plan-pawl",
-      "coverage_status": "allowlisted",
-      "kind": "leaf",
-      "reason": "One-release failure stub for removed plan admission."
     },
     {
       "category": "public-tested",
@@ -345,13 +408,6 @@
       "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
     },
     {
-      "category": "deprecated",
-      "command": "reconcile",
-      "coverage_status": "allowlisted",
-      "kind": "leaf",
-      "reason": "One-release failure stub for removed lifecycle reconciliation."
-    },
-    {
       "category": "public-tested",
       "command": "redact",
       "coverage_status": "covered",
@@ -380,13 +436,6 @@
       "reason": "Covered by handoff artifact tests."
     },
     {
-      "category": "deprecated",
-      "command": "session memory",
-      "coverage_status": "allowlisted",
-      "kind": "leaf",
-      "reason": "One-release failure stub for removed repository-memory synchronization."
-    },
-    {
       "category": "public-tested",
       "command": "session rehydrate",
       "coverage_status": "allowlisted",
@@ -406,13 +455,6 @@
       "coverage_status": "covered",
       "kind": "leaf",
       "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
-    },
-    {
-      "category": "deprecated",
-      "command": "skills edit",
-      "coverage_status": "allowlisted",
-      "kind": "leaf",
-      "reason": "One-release failure stub for removed skill-edit commit flow."
     },
     {
       "category": "public-tested",
@@ -464,13 +506,6 @@
       "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
     },
     {
-      "category": "deprecated",
-      "command": "state",
-      "coverage_status": "allowlisted",
-      "kind": "leaf",
-      "reason": "One-release failure stub for removed lifecycle admission."
-    },
-    {
       "category": "public-tested",
       "command": "status",
       "coverage_status": "covered",
@@ -478,39 +513,11 @@
       "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
     },
     {
-      "category": "deprecated",
-      "command": "validate",
-      "coverage_status": "allowlisted",
-      "kind": "leaf",
-      "reason": "One-release failure stub for removed semantic CLI validation."
-    },
-    {
-      "category": "deprecated",
-      "command": "verify",
-      "coverage_status": "allowlisted",
-      "kind": "leaf",
-      "reason": "One-release failure stub for removed 3.2 verification front door."
-    },
-    {
       "category": "public-tested",
       "command": "version",
       "coverage_status": "covered",
       "kind": "leaf",
       "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
-    },
-    {
-      "category": "deprecated",
-      "command": "worktree",
-      "coverage_status": "allowlisted",
-      "kind": "leaf",
-      "reason": "One-release failure stub for removed Git mutation."
-    },
-    {
-      "category": "deprecated",
-      "command": "yield",
-      "coverage_status": "allowlisted",
-      "kind": "leaf",
-      "reason": "One-release failure stub for removed throughput control."
     }
   ],
   "generated_by": "scripts/check-cmdao-surface-parity.sh --write-surface",

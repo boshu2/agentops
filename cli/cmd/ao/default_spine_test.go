@@ -6,36 +6,31 @@ import (
 	"testing"
 )
 
+// approvedDefaultSpine is the published root-command allowlist. The registered
+// tree IS the production tree: there is no prune step, so drift here means a
+// command was registered (or dropped) without changing this contract.
 var approvedDefaultSpine = map[string]bool{
-	"capabilities": true, "config": true, "constraint": true, "doctor": true,
-	"demo": true, "gate": true, "goals": true, "init": true,
-	"flywheel":   true,
-	"provenance": true, "quick-start": true, "redact": true, "robot-docs": true,
-	"session": true, "skills": true, "status": true,
-	"version": true,
-	"pawl":    true, "plan-pawl": true, "land": true, "done": true,
-	"close": true, "governor": true, "yield": true, "claim": true,
-	"next-work": true, "state": true, "worktree": true, "validate": true,
-	"converge": true, "reconcile": true, "membrane": true, "crank": true,
-	"verify": true,
+	"capabilities": true, "config": true, "doctor": true,
+	"demo": true, "eval": true, "flywheel": true, "gate": true, "goals": true,
+	"init": true, "provenance": true, "quick-start": true,
+	"redact": true, "robot-docs": true, "session": true, "skills": true,
+	"status": true, "version": true,
 }
 
 var approvedDefaultChildren = map[string]map[string]bool{
 	"goals": {
 		"drift": true, "export": true, "history": true, "measure": true,
-		"meta": true, "render": true, "scenarios": true, "trace": true, "validate": true,
+		"meta": true, "render": true, "scenarios": true, "validate": true,
 	},
-	"session": {"bootstrap": true, "handoff": true, "memory": true, "rehydrate": true},
+	"session": {"bootstrap": true, "handoff": true, "rehydrate": true},
 	"skills": {
-		"check": true, "consumers": true, "edit": true, "find": true, "graph": true,
+		"check": true, "consumers": true, "find": true, "graph": true,
 		"link": true, "list": true, "producers": true, "resolve": true,
 		"unlink": true,
 	},
 }
 
 func TestDefaultSpineMatchesCathedralCutAllowlist(t *testing.T) {
-	removed := pruneToDefaultSpine(rootCmd)
-	t.Cleanup(func() { restorePrunedCommands(rootCmd, removed) })
 	var unexpected, missing []string
 	seen := map[string]bool{}
 	for _, command := range rootCmd.Commands() {
@@ -47,14 +42,6 @@ func TestDefaultSpineMatchesCathedralCutAllowlist(t *testing.T) {
 	for command := range approvedDefaultSpine {
 		if !seen[command] {
 			missing = append(missing, command)
-		}
-		if _, retained := defaultSpineCommands[command]; !retained {
-			missing = append(missing, command+"(boundary)")
-		}
-	}
-	for command := range defaultSpineCommands {
-		if !approvedDefaultSpine[command] {
-			unexpected = append(unexpected, command)
 		}
 	}
 	for command := range seen {
@@ -69,30 +56,39 @@ func TestDefaultSpineMatchesCathedralCutAllowlist(t *testing.T) {
 	}
 }
 
-// TestCathedralCutTombstonesSurvivePruning pins the tombstone contract: every
-// Cathedral Cut verb must keep a removedCommands stub AND stay a member of
-// defaultSpineCommands. Dropping a verb from the spine map would let
-// pruneToDefaultSpine delete its tombstone, silently degrading the failure
-// from an actionable "no longer exists" stub to a bare unknown-command error.
-func TestCathedralCutTombstonesSurvivePruning(t *testing.T) {
-	for name := range cathedralCutCommands {
-		tomb, ok := removedCommands[name]
-		if !ok {
-			t.Errorf("cathedral cut verb %q has no removedCommands tombstone", name)
-			continue
-		}
+// TestRetiredVerbsAreNotRegistered proves the retired lifecycle verbs are
+// genuinely absent from the command tree — not hidden, not pruned at runtime,
+// not stubbed. The only surviving surface is the unknown-command hint data.
+func TestRetiredVerbsAreNotRegistered(t *testing.T) {
+	for name, tomb := range removedCommands {
 		if tomb.use == "" {
-			t.Errorf("tombstone for %q has an empty replacement hint", name)
+			t.Errorf("removed verb %q has an empty replacement hint", name)
 		}
-		if _, retained := defaultSpineCommands[name]; !retained {
-			t.Errorf("cathedral cut verb %q is not in defaultSpineCommands; its tombstone would be pruned from the shipped binary", name)
+		for _, command := range rootCmd.Commands() {
+			if command.Name() == name || command.HasAlias(name) {
+				t.Errorf("retired verb %q is still registered", name)
+			}
+		}
+	}
+	for parentName, children := range removedChildCommands {
+		parent, _, err := rootCmd.Find([]string{parentName})
+		if err != nil || parent == nil || parent == rootCmd {
+			t.Fatalf("missing retained parent %q: %v", parentName, err)
+		}
+		for name, tomb := range children {
+			if tomb.use == "" {
+				t.Errorf("removed child %s %s has an empty replacement hint", parentName, name)
+			}
+			for _, command := range parent.Commands() {
+				if command.Name() == name || command.HasAlias(name) {
+					t.Errorf("retired child %s %s is still registered", parentName, name)
+				}
+			}
 		}
 	}
 }
 
 func TestDefaultChildSpineMatchesCathedralCutAllowlist(t *testing.T) {
-	removed := pruneToDefaultSpine(rootCmd)
-	t.Cleanup(func() { restorePrunedCommands(rootCmd, removed) })
 	for parentName, expected := range approvedDefaultChildren {
 		parent, _, err := rootCmd.Find([]string{parentName})
 		if err != nil || parent == nil {

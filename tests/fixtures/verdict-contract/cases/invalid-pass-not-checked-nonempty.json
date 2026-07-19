@@ -1,0 +1,40 @@
+{
+  "name": "invalid-pass-not-checked-nonempty",
+  "description": "PASS requires an empty not_checked scope.",
+  "expected": "invalid",
+  "filename_digest": "0dd75ba79fa3e2e364c58e805161e280e5b16eda174d8d857500d1cecbf77914",
+  "artifact": {
+    "schema_version": "verdict.v2",
+    "acceptance_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "subject_manifest_digest": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "author_context_id": "ctx-author",
+    "validator_context_id": "ctx-validator",
+    "freshness_attestation": {
+      "source": "runtime",
+      "attester_identity": "runtime:test"
+    },
+    "verdict": "PASS",
+    "criteria": [
+      {
+        "id": "c1",
+        "result": "PASS",
+        "evidence_refs": [
+          "gate:go.build"
+        ],
+        "reason": "checked"
+      }
+    ],
+    "findings": [],
+    "evidence_refs": [
+      "gate:go.build"
+    ],
+    "checked": [
+      "cli/**"
+    ],
+    "not_checked": [
+      "something"
+    ],
+    "validated_at": "2026-07-18T12:00:00Z",
+    "artifact_digest": "0dd75ba79fa3e2e364c58e805161e280e5b16eda174d8d857500d1cecbf77914"
+  }
+}

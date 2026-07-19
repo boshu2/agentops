@@ -12,6 +12,14 @@ package doctor
 // Two FMs (config-flag-not-threaded, dev-version-build-integrity) describe
 // defects in `ao`'s own source rather than user state; the detector still
 // observes the condition and the remediation points at the Phase-8 code fix.
+//
+// Symlinked-root audit (age-knowledge-symlink-root-inbpg): the repo-relative
+// symlink class (a symlinked .agents routing doctor MUTATIONS to an external
+// target past the lexical scope check) does NOT apply to this subsystem —
+// every fixer is a detect-only cliConfigRefuser that issues zero Mutate calls,
+// so there is no write path to guard. Detectors read the project
+// .agents/ao/config.yaml purely for evidence; reads produce findings, not
+// mutations, so no guard is added.
 
 import (
 	"fmt"
