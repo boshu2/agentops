@@ -16,8 +16,10 @@ Options:
   --rig-name NAME   Logical rig name (default: agentops)
   --binding NAME    Pack import binding at city and rig scopes (default: agentops)
   --gc-bin PATH     Gas City CLI (default: gc from PATH)
+  --replace-gc-bin  Permit a managed city to move to the supplied --gc-bin path
   --codex-auth PATH Existing Codex auth.json to link into the private home
   --max-active-sessions N  City-wide concurrent session cap (default: 1)
+  --start-timeout N Bounded seconds to wait for a usable started city (default: 120)
   --start           Start the city after all preflight checks pass
   -h, --help        Show this help
 EOF
@@ -34,10 +36,12 @@ pack=""
 rig_name="agentops"
 binding="agentops"
 gc_bin="gc"
+replace_gc_bin=0
 codex_auth=""
 source_codex_home="${CODEX_HOME:-${HOME:?HOME is required}/.codex}"
 start=0
 max_active_sessions=1
+start_timeout=120
 
 while [ "$#" -gt 0 ]; do
   case "$1" in
@@ -71,6 +75,10 @@ while [ "$#" -gt 0 ]; do
       gc_bin="$2"
       shift 2
       ;;
+    --replace-gc-bin)
+      replace_gc_bin=1
+      shift
+      ;;
     --codex-auth)
       [ "$#" -ge 2 ] || die "--codex-auth requires a path"
       codex_auth="$2"
@@ -79,6 +87,11 @@ while [ "$#" -gt 0 ]; do
     --max-active-sessions)
       [ "$#" -ge 2 ] || die "--max-active-sessions requires a value"
       max_active_sessions="$2"
+      shift 2
+      ;;
+    --start-timeout)
+      [ "$#" -ge 2 ] || die "--start-timeout requires a value"
+      start_timeout="$2"
       shift 2
       ;;
     --start)
@@ -102,6 +115,10 @@ done
 [[ "$binding" =~ ^[A-Za-z0-9_-]+$ ]] || die "--binding must contain only letters, digits, underscore, or hyphen"
 [[ "$max_active_sessions" =~ ^[1-9][0-9]*$ ]] || die "--max-active-sessions must be a positive integer"
 [ "$max_active_sessions" -le 64 ] || die "--max-active-sessions must be at most 64"
+[[ "$start_timeout" =~ ^[1-9][0-9]*$ ]] || die "--start-timeout must be a positive integer"
+[ "$start_timeout" -le 600 ] || die "--start-timeout must be at most 600"
+[ "$replace_gc_bin" -eq 0 ] || [ "$start" -eq 1 ] || \
+  die "--replace-gc-bin requires --start so the running supervisor can be replaced and verified"
 command -v python3 >/dev/null 2>&1 || die "python3 is required"
 
 canonical_path() {
@@ -111,6 +128,65 @@ import sys
 
 print(os.path.realpath(os.path.expanduser(sys.argv[1])))
 PY
+}
+
+require_beads_safe_path() {
+  local label="$1"
+  local path="$2"
+  local reason=""
+  if ! reason="$(python3 - "$path" <<'PY'
+import os
+import pwd
+import sys
+import tempfile
+
+path = os.path.realpath(os.path.abspath(os.path.expanduser(sys.argv[1])))
+
+
+def within(candidate, root):
+    root = os.path.realpath(root).rstrip(os.sep) or os.sep
+    return candidate == root or candidate.startswith(root + os.sep)
+
+
+# Match Beads' SEC-003 path-boundary contract. Its OS-designated temp
+# directory is an explicit exception, but arbitrary paths under /private or
+# /var are not. Catch this before gc creates or starts a city so an invalid
+# deployment cannot spend the entire readiness timeout failing `bd context`.
+temp_root = os.path.realpath(tempfile.gettempdir())
+if within(path, temp_root) or within(path, "/var/home"):
+    raise SystemExit(0)
+
+for root in (
+    "/etc",
+    "/usr",
+    "/var",
+    "/root",
+    "/System",
+    "/Library",
+    "/bin",
+    "/sbin",
+    "/opt",
+    "/private",
+):
+    if within(path, root):
+        print(f"system boundary {root} is rejected by Beads SEC-003")
+        raise SystemExit(1)
+
+if within(path, "/Users/Shared"):
+    raise SystemExit(0)
+
+try:
+    home = os.path.realpath(pwd.getpwuid(os.getuid()).pw_dir)
+except (KeyError, OSError):
+    home = os.path.realpath(os.path.expanduser("~"))
+
+if any(within(path, root) for root in ("/Users", "/home", "/var/home")) and not within(path, home):
+    print(f"peer home is outside the current user home {home}")
+    raise SystemExit(1)
+PY
+)"; then
+    die "$label path is unsafe for Beads: $path${reason:+ ($reason)}"
+  fi
 }
 
 city="$(canonical_path "$city")"
@@ -130,10 +206,18 @@ codex_auth="$(canonical_path "$codex_auth")"
 if [ -e "$city" ] && [ ! -d "$city" ]; then
   die "city path exists but is not a directory: $city"
 fi
+require_beads_safe_path "city" "$city"
+require_beads_safe_path "rig" "$rig"
 
 script_dir="$(CDPATH='' cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 city_template="$script_dir/city.toml"
+claude_wrapper_template="$script_dir/claude-interactive.sh"
+claude_settings_template="$script_dir/claude-settings.json"
+toolchain_lock="$script_dir/toolchain.lock.json"
 [ -f "$city_template" ] || die "city template not found: $city_template"
+[ -f "$claude_wrapper_template" ] || die "Claude wrapper template not found: $claude_wrapper_template"
+[ -f "$claude_settings_template" ] || die "Claude settings template not found: $claude_settings_template"
+[ -f "$toolchain_lock" ] || die "qualified toolchain lock not found: $toolchain_lock"
 
 marker="$city/.gc/agentops-bootstrap.json"
 city_has_content=0
@@ -152,22 +236,177 @@ else
   [ -n "$gc_bin" ] || die "Gas City CLI not found on PATH"
 fi
 
-if [ -f "$marker" ]; then
-  python3 - "$marker" "$city" "$rig" "$pack" "$rig_name" "$binding" "$gc_bin" "$codex_auth" "$max_active_sessions" <<'PY'
+# Development builds commonly place the matched gc and bd binaries together
+# outside the ambient PATH. Keep Gas City's Beads subprocesses on that pinned
+# toolchain so an unrelated Homebrew bd is neither required nor selected.
+gc_bin_dir="$(dirname "$gc_bin")"
+export PATH="$gc_bin_dir:$PATH"
+bd_bin="$gc_bin_dir/bd"
+[ -x "$bd_bin" ] || die "paired Beads CLI is not executable beside gc: $bd_bin"
+bd_bin="$(canonical_path "$bd_bin")"
+[ "$(dirname "$bd_bin")" = "$gc_bin_dir" ] || \
+  die "paired Beads CLI must resolve beside gc: $bd_bin"
+
+toolchain_json=""
+if ! toolchain_json="$(python3 - "$gc_bin" "$bd_bin" <<'PY'
+import hashlib
+import json
+import os
+import re
+import subprocess
+import sys
+
+gc_bin, bd_bin = map(os.path.realpath, sys.argv[1:])
+
+
+def run_json(command, label):
+    result = subprocess.run(command, check=False, capture_output=True, text=True)
+    if result.returncode != 0:
+        detail = (result.stderr or result.stdout).strip()
+        raise SystemExit(f"{label} failed ({result.returncode}): {detail}")
+    try:
+        return json.loads(result.stdout)
+    except json.JSONDecodeError as exc:
+        raise SystemExit(f"{label} did not return JSON: {exc}") from exc
+
+
+def sha256(path):
+    digest = hashlib.sha256()
+    with open(path, "rb") as handle:
+        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+gc = run_json([gc_bin, "version", "--json"], "gc version --json")
+if gc.get("ok") is not True:
+    raise SystemExit("gc version --json did not report ok=true")
+gc_version = str(gc.get("version", "")).strip()
+gc_commit = str(gc.get("commit", "")).strip()
+if gc_version == "dev":
+    if not re.fullmatch(r"[0-9a-f]{7,40}", gc_commit):
+        raise SystemExit("development gc build must embed a hexadecimal commit")
+else:
+    match = re.fullmatch(r"v?(\d+)\.(\d+)\.(\d+)(?:[-+].*)?", gc_version)
+    if match is None:
+        raise SystemExit(f"cannot parse gc version {gc_version!r}")
+    if tuple(map(int, match.groups())) < (1, 3, 5):
+        raise SystemExit(f"gc {gc_version} is unsupported; AgentOps requires >=1.3.5")
+
+bd_result = subprocess.run(
+    [bd_bin, "version"], check=False, capture_output=True, text=True
+)
+if bd_result.returncode != 0:
+    detail = (bd_result.stderr or bd_result.stdout).strip()
+    raise SystemExit(f"bd version failed ({bd_result.returncode}): {detail}")
+bd_match = re.search(r"^bd version (\S+) \(([^:)]+)", bd_result.stdout, re.MULTILINE)
+if bd_match is None:
+    raise SystemExit(f"cannot parse bd version output: {bd_result.stdout.strip()!r}")
+bd_version, bd_commit = bd_match.groups()
+if bd_version != "1.1.0":
+    raise SystemExit(
+        f"bd {bd_version} is unsupported; this Gas City deployment requires 1.1.0"
+    )
+
+print(json.dumps({
+    "gc": {
+        "path": gc_bin,
+        "sha256": sha256(gc_bin),
+        "version": gc_version,
+        "commit": gc_commit,
+        "date": str(gc.get("date", "")).strip(),
+    },
+    "bd": {
+        "path": bd_bin,
+        "sha256": sha256(bd_bin),
+        "version": bd_version,
+        "commit": bd_commit,
+    },
+}, sort_keys=True))
+PY
+)"; then
+  die "invalid paired gc/bd toolchain: $toolchain_json"
+fi
+
+qualified_toolchain_json=""
+if ! qualified_toolchain_json="$(python3 - "$toolchain_lock" "$toolchain_json" <<'PY'
 import json
 import sys
 
-marker_path, city, rig, pack, rig_name, binding, gc_bin, codex_auth, max_active_sessions = sys.argv[1:]
+lock_path, runtime_json = sys.argv[1:]
+with open(lock_path, encoding="utf-8") as handle:
+    lock = json.load(handle)
+runtime = json.loads(runtime_json)
+if lock.get("schema_version") != 1:
+    raise SystemExit("toolchain lock schema_version must be 1")
+entries = lock.get("accepted_pairs")
+if not isinstance(entries, list) or not entries:
+    raise SystemExit("toolchain lock must contain accepted_pairs")
+
+
+def commit_matches(actual, expected):
+    return (
+        isinstance(actual, str)
+        and isinstance(expected, str)
+        and len(actual) >= 7
+        and expected.startswith(actual)
+    )
+
+
+selected = None
+for entry in entries:
+    if not isinstance(entry, dict):
+        continue
+    gc = entry.get("gc", {})
+    bd = entry.get("bd", {})
+    if (
+        runtime["gc"]["version"] == gc.get("version")
+        and commit_matches(runtime["gc"]["commit"], gc.get("source_commit"))
+        and runtime["bd"]["version"] == bd.get("version")
+        and commit_matches(runtime["bd"]["commit"], bd.get("source_commit"))
+    ):
+        selected = entry
+        break
+if selected is None:
+    raise SystemExit(
+        "pair is not in toolchain.lock.json: "
+        f"gc {runtime['gc']['version']}@{runtime['gc']['commit']} + "
+        f"bd {runtime['bd']['version']}@{runtime['bd']['commit']}"
+    )
+runtime["qualification"] = {
+    "id": selected["id"],
+    "status": selected["status"],
+    "gc_source_commit": selected["gc"]["source_commit"],
+    "bd_source_commit": selected["bd"]["source_commit"],
+}
+print(json.dumps(runtime, sort_keys=True))
+PY
+)"; then
+  die "unsupported paired gc/bd toolchain: $qualified_toolchain_json"
+fi
+toolchain_json="$qualified_toolchain_json"
+
+previous_gc_bin=""
+toolchain_replacement=0
+if [ -f "$marker" ]; then
+  marker_identity=""
+  if ! marker_identity="$(python3 - "$marker" "$city" "$rig" "$pack" "$rig_name" "$binding" "$codex_auth" "$max_active_sessions" "$replace_gc_bin" "$toolchain_json" <<'PY'
+import json
+import os
+import sys
+
+marker_path, city, rig, pack, rig_name, binding, codex_auth, max_active_sessions, replace_gc_bin, toolchain_json = sys.argv[1:]
 with open(marker_path, encoding="utf-8") as handle:
     marker = json.load(handle)
+schema_version = marker.get("schema_version")
+if schema_version not in {2, 3}:
+    raise SystemExit(f"managed city marker has unsupported schema_version {schema_version!r}")
 expected = {
-    "schema_version": 2,
     "city": city,
     "rig": rig,
     "pack": pack,
     "rig_name": rig_name,
     "binding": binding,
-    "gc_bin": gc_bin,
     "codex_auth": codex_auth,
     "max_active_sessions": int(max_active_sessions),
 }
@@ -177,7 +416,28 @@ for key, value in expected.items():
         raise SystemExit(
             f"managed city mismatch for {key}: {actual!r} != {value!r}"
         )
+requested_toolchain = json.loads(toolchain_json)
+if schema_version == 2:
+    actual_gc = marker.get("gc_bin")
+    requested_gc = requested_toolchain["gc"]["path"]
+    replacement = actual_gc != requested_gc
+    if replace_gc_bin != "1" and replacement:
+        raise SystemExit(
+            f"managed city mismatch for gc_bin: {actual_gc!r} != {requested_gc!r}"
+        )
+else:
+    actual_gc = marker.get("toolchain", {}).get("gc", {}).get("path")
+    replacement = marker.get("toolchain") != requested_toolchain
+    if replace_gc_bin != "1" and replacement:
+        raise SystemExit("managed city mismatch for paired gc/bd toolchain identity")
+if not isinstance(actual_gc, str) or not actual_gc.strip():
+    raise SystemExit("managed city marker has no prior gc binary path")
+print(f"{os.path.realpath(os.path.expanduser(actual_gc))}\t{int(replacement)}")
 PY
+)"; then
+    die "invalid or mismatched managed-city marker: $marker_identity"
+  fi
+  IFS=$'\t' read -r previous_gc_bin toolchain_replacement <<<"$marker_identity"
 fi
 
 # A city must not inherit another city's discovery, store, or Dolt endpoint.
@@ -191,6 +451,10 @@ export GC_HOME="$city/.gc-home"
 export GC_ISOLATED=1
 export CODEX_HOME="$city/.gc/codex-home"
 export GC_BIN="$gc_bin"
+# A managed test/production city must not inherit desktop-wide OTLP endpoints.
+# Role sessions also receive this through city.toml, but bootstrap and the
+# supervisor perform foreground Beads/Dolt work before any role is launched.
+export OTEL_SDK_DISABLED=true
 # A Git remote is not necessarily a Dolt remote (local qualification clones are
 # the sharp edge). Never let rig registration synthesize or sync Dolt remotes
 # from Git URLs; off-box Beads replication is an explicit operator concern.
@@ -202,24 +466,24 @@ export BEADS_DOLT_SYNC_CLI_REMOTES=false
 write_marker() {
   local state="$1"
   mkdir -p "$city/.gc"
-  python3 - "$marker" "$city" "$rig" "$pack" "$rig_name" "$binding" "$gc_bin" "$codex_auth" "$max_active_sessions" "$state" <<'PY'
+  python3 - "$marker" "$city" "$rig" "$pack" "$rig_name" "$binding" "$codex_auth" "$max_active_sessions" "$state" "$toolchain_json" <<'PY'
 import json
 import os
 import sys
 import tempfile
 
-path, city, rig, pack, rig_name, binding, gc_bin, codex_auth, max_active_sessions, state = sys.argv[1:]
+path, city, rig, pack, rig_name, binding, codex_auth, max_active_sessions, state, toolchain_json = sys.argv[1:]
 payload = {
-    "schema_version": 2,
+    "schema_version": 3,
     "state": state,
     "city": city,
     "rig": rig,
     "pack": pack,
     "rig_name": rig_name,
     "binding": binding,
-    "gc_bin": gc_bin,
     "codex_auth": codex_auth,
     "max_active_sessions": int(max_active_sessions),
+    "toolchain": json.loads(toolchain_json),
 }
 fd, tmp = tempfile.mkstemp(prefix=".agentops-bootstrap.", dir=os.path.dirname(path))
 with os.fdopen(fd, "w", encoding="utf-8") as handle:
@@ -238,15 +502,89 @@ PY
 
 if [ ! -f "$marker" ]; then
   mkdir -p "$(dirname "$city")"
+  # Released Gas City builds resolve city patches before the scaffold imports
+  # have materialized their agents. Passing the final policy here therefore
+  # makes valid patches for bd.dog, core.control-dispatcher, codex, and claude
+  # fail as "agent not found". Initialize from the same provider/workspace
+  # policy without agent patches; after gc init has installed the SDK-owned
+  # scaffold, the normal reconciliation below writes the final fail-closed
+  # patch set.
+  init_template="$(mktemp "${TMPDIR:-/tmp}/gc-agentops-city-init.XXXXXX")"
+  trap 'rm -f "$init_template"' EXIT
+  python3 - "$city_template" "$init_template" <<'PY'
+import os
+import sys
+import tomllib
+
+source, destination = sys.argv[1:]
+with open(source, encoding="utf-8") as handle:
+    lines = handle.readlines()
+
+rendered = []
+skipping_agent_patch = False
+for line in lines:
+    stripped = line.strip()
+    if stripped == "[[patches.agent]]":
+        skipping_agent_patch = True
+        continue
+    if skipping_agent_patch and stripped.startswith("["):
+        skipping_agent_patch = False
+    if not skipping_agent_patch:
+        rendered.append(line)
+
+text = "".join(rendered).rstrip() + "\n"
+config = tomllib.loads(text)
+if config.get("patches", {}).get("agent"):
+    raise SystemExit("gc init policy must not contain agent patches")
+with open(destination, "w", encoding="utf-8") as handle:
+    handle.write(text)
+    handle.flush()
+    os.fsync(handle.fileno())
+PY
   "$gc_bin" init \
-    --file "$city_template" \
+    --file "$init_template" \
     --no-start \
     --skip-provider-readiness \
     "$city" >/dev/null
+  rm -f "$init_template"
+  trap - EXIT
   [ -f "$city/pack.toml" ] || die "gc init did not create pack.toml"
   [ -f "$city/city.toml" ] || die "gc init did not create city.toml"
   write_marker configuring
 fi
+
+# Managed Claude sessions must not inherit the operator's optional Remote
+# Control startup preference. A second interactive Claude process can supersede
+# that account-wide remote epoch and terminate a healthy GC worker. Gas City
+# owns this city-level source and projects it into .gc/settings.json together
+# with its hooks when the city starts or reloads.
+python3 - "$claude_settings_template" "$city/.claude/settings.json" <<'PY'
+import json
+import os
+import sys
+import tempfile
+
+source, destination = sys.argv[1:]
+with open(source, "rb") as handle:
+    data = handle.read()
+value = json.loads(data)
+if value != {"remoteControlAtStartup": False}:
+    raise SystemExit("managed Claude settings must disable Remote Control startup exactly")
+if os.path.islink(destination):
+    raise SystemExit(f"refusing managed Claude settings symlink: {destination}")
+os.makedirs(os.path.dirname(destination), mode=0o700, exist_ok=True)
+fd, temporary = tempfile.mkstemp(prefix=".settings.", dir=os.path.dirname(destination))
+try:
+    os.fchmod(fd, 0o600)
+    with os.fdopen(fd, "wb") as handle:
+        handle.write(data)
+        handle.flush()
+        os.fsync(handle.fileno())
+    os.replace(temporary, destination)
+finally:
+    if os.path.exists(temporary):
+        os.unlink(temporary)
+PY
 
 # GC_ISOLATED is consumed by the foreground CLI, but a launchd-managed
 # supervisor does not inherit that opt-in flag. Seed an explicit loopback port
@@ -308,6 +646,93 @@ if [ -e "$private_auth" ] || [ -L "$private_auth" ]; then
 else
   ln -s "$codex_auth" "$private_auth"
 fi
+# The city owns this isolated Codex profile. Pre-trust the caller-selected Git
+# root before the first managed session starts; otherwise Codex presents a
+# first-use workspace dialog. Prompt delivery is also configured through Gas
+# City's post-readiness nudge, which protects dynamic non-Git role directories.
+python3 - "$CODEX_HOME/config.toml" "$rig" <<'PY'
+import json
+import os
+import re
+import sys
+import tempfile
+import tomllib
+
+path, rig = sys.argv[1:]
+rig = os.path.realpath(rig)
+header = f"[projects.{json.dumps(rig)}]"
+text = ""
+if os.path.exists(path):
+    with open(path, encoding="utf-8") as handle:
+        text = handle.read()
+    tomllib.loads(text)
+
+# Managed interactive sessions must never stop at Codex's optional update
+# picker.  Keep this city-private so the factory does not mutate the operator's
+# normal Codex profile.
+first_table = re.search(r"(?m)^\[", text)
+root_end = first_table.start() if first_table else len(text)
+root = text[:root_end]
+tail = text[root_end:]
+update_match = re.search(
+    r"(?m)^check_for_update_on_startup[ \t]*=[ \t]*(?:true|false)[ \t]*$",
+    root,
+)
+if update_match:
+    root = (
+        root[:update_match.start()]
+        + "check_for_update_on_startup = false"
+        + root[update_match.end():]
+    )
+else:
+    root = "check_for_update_on_startup = false\n" + root
+text = root + tail
+
+header_match = re.search(rf"(?m)^{re.escape(header)}[ \t]*$", text)
+if header_match:
+    block_end_match = re.search(r"(?m)^\[", text[header_match.end():])
+    block_end = (
+        header_match.end() + block_end_match.start()
+        if block_end_match
+        else len(text)
+    )
+    block = text[header_match.end():block_end]
+    trust_match = re.search(r'(?m)^trust_level[ \t]*=[ \t]*"[^"]*"[ \t]*$', block)
+    if trust_match:
+        block = (
+            block[:trust_match.start()]
+            + 'trust_level = "trusted"'
+            + block[trust_match.end():]
+        )
+    else:
+        block = '\ntrust_level = "trusted"' + block
+    text = text[:header_match.end()] + block + text[block_end:]
+else:
+    if text and not text.endswith("\n"):
+        text += "\n"
+    if text:
+        text += "\n"
+    text += f'{header}\ntrust_level = "trusted"\n'
+
+parsed = tomllib.loads(text)
+if parsed.get("check_for_update_on_startup") is not False:
+    raise SystemExit("failed to disable the managed Codex startup update prompt")
+if parsed.get("projects", {}).get(rig, {}).get("trust_level") != "trusted":
+    raise SystemExit(f"failed to pre-trust managed Codex project {rig}")
+
+os.makedirs(os.path.dirname(path), mode=0o700, exist_ok=True)
+fd, temporary = tempfile.mkstemp(prefix=".config.toml.", dir=os.path.dirname(path))
+try:
+    os.fchmod(fd, 0o600)
+    with os.fdopen(fd, "w", encoding="utf-8") as handle:
+        handle.write(text)
+        handle.flush()
+        os.fsync(handle.fileno())
+    os.replace(temporary, path)
+finally:
+    if os.path.exists(temporary):
+        os.unlink(temporary)
+PY
 codex_bin="$(command -v codex || true)"
 [ -n "$codex_bin" ] || die "codex CLI is required for provider readiness"
 CODEX_HOME="$CODEX_HOME" "$codex_bin" login status >/dev/null 2>&1 || \
@@ -333,18 +758,43 @@ if status.get("authMethod") not in {"claude.ai", "oauth_token"}:
 if status.get("apiProvider") != "firstParty":
     raise SystemExit("Claude CLI apiProvider must be firstParty")
 PY
-"$claude_bin" auto-mode defaults >/dev/null 2>&1 || \
-  die "Claude CLI auto mode is unavailable; interactive AgentOps workers require it"
+claude_wrapper="$city/.gc/bin/claude-interactive"
+python3 - "$claude_wrapper_template" "$claude_wrapper" "$claude_bin" <<'PY'
+import os
+import sys
+import tempfile
 
-python3 - "$city/city.toml" "$city_template" "$CODEX_HOME" "$gc_bin" "$city" "$rig" "$max_active_sessions" <<'PY'
+template_path, destination, claude_bin = sys.argv[1:]
+with open(template_path, encoding="utf-8") as handle:
+    text = handle.read()
+sentinel = "__GC_AGENTOPS_CLAUDE_BIN__"
+if text.count(sentinel) != 1:
+    raise SystemExit(f"Claude wrapper template must contain exactly one {sentinel}")
+text = text.replace(sentinel, claude_bin)
+os.makedirs(os.path.dirname(destination), mode=0o700, exist_ok=True)
+fd, temporary = tempfile.mkstemp(prefix=".claude-interactive.", dir=os.path.dirname(destination))
+try:
+    os.fchmod(fd, 0o700)
+    with os.fdopen(fd, "w", encoding="utf-8") as handle:
+        handle.write(text)
+        handle.flush()
+        os.fsync(handle.fileno())
+    os.replace(temporary, destination)
+finally:
+    if os.path.exists(temporary):
+        os.unlink(temporary)
+PY
+
+python3 - "$city/city.toml" "$city_template" "$CODEX_HOME" "$gc_bin" "$city" "$rig" "$max_active_sessions" "$claude_wrapper" <<'PY'
 import json
+import hashlib
 import os
 import re
 import sys
 import tempfile
 import tomllib
 
-path, template_path, codex_home, gc_bin, city, requested_rig, max_active_sessions = sys.argv[1:]
+path, template_path, codex_home, gc_bin, city, requested_rig, max_active_sessions, claude_wrapper = sys.argv[1:]
 with open(path, encoding="utf-8") as handle:
     text = handle.read()
 with open(template_path, encoding="utf-8") as handle:
@@ -359,6 +809,10 @@ policy = re.sub(
 replacements = {
     "__GC_AGENTOPS_CODEX_HOME__": codex_home,
     "__GC_AGENTOPS_GC_BIN__": gc_bin,
+    "__GC_AGENTOPS_CLAUDE_WRAPPER__": claude_wrapper,
+    "__GC_AGENTOPS_TMUX_SOCKET__": (
+        "agentops-" + hashlib.sha256(os.path.realpath(city).encode()).hexdigest()[:20]
+    ),
 }
 for sentinel, value in replacements.items():
     policy = policy.replace(json.dumps(sentinel), json.dumps(value))
@@ -379,12 +833,12 @@ for root in scope_roots:
     if canonical not in canonical_scope_roots:
         canonical_scope_roots.append(canonical)
 
-codex_scope_args = []
+codex_scope_args = ["--dangerously-bypass-hook-trust"]
 for root in canonical_scope_roots:
     codex_scope_args.extend(["--add-dir", root])
-claude_scope_args = ["--add-dir", *canonical_scope_roots]
+claude_scope_args = ["--add-dir", *canonical_scope_roots, "--safe-mode"]
 scope_lines = {
-    'args_append = ["__GC_AGENTOPS_CODEX_SCOPE_ARGS__"]':
+    'args_append = ["--dangerously-bypass-hook-trust", "__GC_AGENTOPS_CODEX_SCOPE_ARGS__"]':
         f"args_append = {json.dumps(codex_scope_args)}",
     'args_append = ["__GC_AGENTOPS_CLAUDE_SCOPE_ARGS__"]':
         f"args_append = {json.dumps(claude_scope_args)}",
@@ -495,6 +949,7 @@ for rig in config.get("rigs", []):
     if control_matches != [{"dir": rig["name"], "name": "core.control-dispatcher", "suspended": True}]:
         raise SystemExit(f"rig {rig['name']!r} must suspend the scaffold control dispatcher")
 workspace = config.get("workspace", {})
+session = config.get("session", {})
 codex_provider = config.get("providers", {}).get("codex", {})
 claude_provider = config.get("providers", {}).get("claude", {})
 if workspace.get("provider"):
@@ -503,8 +958,17 @@ if workspace.get("max_active_sessions") != max_active_sessions:
     raise SystemExit(f"city workspace max_active_sessions must be {max_active_sessions}")
 if workspace.get("env", {}).get("GC_BIN") != gc_bin:
     raise SystemExit("city workspace must pin GC_BIN for managed sessions")
+if workspace.get("env", {}).get("OTEL_SDK_DISABLED") != "true":
+    raise SystemExit("city workspace must disable inherited OTLP exporters for managed sessions")
+expected_socket = "agentops-" + hashlib.sha256(os.path.realpath(city).encode()).hexdigest()[:20]
+if session.get("socket") != expected_socket:
+    raise SystemExit("city tmux socket must be bound to the canonical city path")
+if session.get("setup_timeout") != "60s":
+    raise SystemExit("city session setup timeout must cover cold skill materialization")
 if codex_provider.get("base") != "builtin:codex":
     raise SystemExit("city must register the builtin Codex provider")
+if codex_provider.get("prompt_mode") != "none":
+    raise SystemExit("Codex startup prompts must use Gas City's post-readiness nudge")
 if codex_provider.get("option_defaults", {}).get("permission_mode") != "auto-edit":
     raise SystemExit("Codex permission_mode must be auto-edit")
 if codex_provider.get("env", {}).get("CODEX_HOME") != codex_home:
@@ -520,22 +984,26 @@ for root in expected_scope_roots:
     canonical = os.path.realpath(root)
     if canonical not in canonical_expected_roots:
         canonical_expected_roots.append(canonical)
-expected_codex_args = []
+expected_codex_args = ["--dangerously-bypass-hook-trust"]
 for root in canonical_expected_roots:
     expected_codex_args.extend(["--add-dir", root])
 if codex_provider.get("args_append") != expected_codex_args:
     raise SystemExit("Codex writable roots must exactly match managed runtime and rig roots")
 if claude_provider.get("base") != "builtin:claude":
     raise SystemExit("city must register the builtin Claude provider")
+if claude_provider.get("command") != claude_wrapper:
+    raise SystemExit("Claude provider must use the city-local interactive diagnostics wrapper")
+if claude_provider.get("path_check") != "claude":
+    raise SystemExit("Claude provider readiness must check the real Claude CLI")
 if claude_provider.get("print_args") != []:
     raise SystemExit("Claude print_args must be empty; interactive sessions are mandatory")
-if claude_provider.get("args_append") != ["--add-dir", *canonical_expected_roots]:
-    raise SystemExit("Claude additional directories must exactly match managed runtime and rig roots")
+if claude_provider.get("args_append") != ["--add-dir", *canonical_expected_roots, "--safe-mode"]:
+    raise SystemExit("Claude must use only managed runtime/rig roots plus safe mode")
 for field in ("args", "args_append"):
     if any(value in {"-p", "--print"} for value in claude_provider.get(field, [])):
         raise SystemExit(f"Claude {field} must not contain print-mode flags")
-if claude_provider.get("option_defaults", {}).get("permission_mode") != "auto":
-    raise SystemExit("Claude permission_mode must be auto")
+if claude_provider.get("option_defaults", {}).get("permission_mode") != "unrestricted":
+    raise SystemExit("Claude permission_mode must bypass the remote auto-mode classifier")
 for provider_name, expected_default, expected_choices in (
     (
         "codex",
@@ -552,7 +1020,14 @@ for provider_name, expected_default, expected_choices in (
             "unrestricted": ["--dangerously-bypass-approvals-and-sandbox"],
         },
     ),
-    ("claude", "auto", {"auto": ["--permission-mode", "auto"]}),
+    (
+        "claude",
+        "unrestricted",
+        {
+            "auto": ["--permission-mode", "auto"],
+            "unrestricted": ["--dangerously-skip-permissions"],
+        },
+    ),
 ):
     if config["providers"][provider_name].get("options_schema_merge") != "replace":
         raise SystemExit(f"{provider_name} must replace the inherited options schema")
@@ -568,6 +1043,38 @@ for provider_name, expected_default, expected_choices in (
     for choice, expected_flags in expected_choices.items():
         if choices.get(choice, {}).get("flag_args") != expected_flags:
             raise SystemExit(f"{provider_name} {choice} permission flags are incompatible with the installed CLI")
+for provider_name, expected_default, expected_choices in (
+    (
+        "codex",
+        "gpt-5.6-terra",
+        {
+            "gpt-5.6-terra": ["--model", "gpt-5.6-terra"],
+            "gpt-5.6-sol": ["--model", "gpt-5.6-sol"],
+        },
+    ),
+    (
+        "claude",
+        "opus-4.8",
+        {
+            "opus-4.8": ["--model", "claude-opus-4-8"],
+        },
+    ),
+):
+    provider = config["providers"][provider_name]
+    if provider.get("option_defaults", {}).get("model") != expected_default:
+        raise SystemExit(f"{provider_name} model default must be {expected_default}")
+    selected = [
+        option for option in provider.get("options_schema", [])
+        if option.get("key") == "model"
+    ]
+    if len(selected) != 1 or selected[0].get("default") != expected_default:
+        raise SystemExit(f"{provider_name} must declare exactly one role-pinned model schema")
+    choices = {choice.get("value"): choice for choice in selected[0].get("choices", [])}
+    if set(choices) != set(expected_choices):
+        raise SystemExit(f"{provider_name} model schema exposes unexpected choices")
+    for choice, expected_flags in expected_choices.items():
+        if choices.get(choice, {}).get("flag_args") != expected_flags:
+            raise SystemExit(f"{provider_name} {choice} model flags are incompatible with the installed CLI")
 for forbidden in ("agent", "named_session"):
     if config.get(forbidden):
         raise SystemExit(f"city must not declare {forbidden}")
@@ -602,9 +1109,214 @@ elif current.get("source") != source or current.get("version"):
     raise SystemExit(f"city import {binding!r} already has a different source or pin")
 PY
 
-"$gc_bin" --city "$city" rig add "$rig" \
-  --name "$rig_name" \
-  --start-suspended >/dev/null
+# `bd init` treats a Git origin advertising refs/dolt/data as an instruction to
+# bootstrap from that remote.  This bootstrap owns an isolated, local Beads
+# store, so expose no Git origin while GC registers the rig.  Rename the whole
+# remote section instead of rewriting only its URL so fetch refspecs, push URLs,
+# and custom remote configuration survive byte-for-byte.  The reserved section
+# also lets a later invocation recover if this process was killed after the
+# rename but before the EXIT trap ran.
+add_rig_with_local_beads() (
+  local parked_remote="agentops-bootstrap-origin"
+  local origin_parked=0
+  local pre_add_head=""
+  local post_add_head=""
+  local unexpected_commit=0
+  local unexpected_index=0
+  local metadata="$rig/.beads/metadata.json"
+  local config="$rig/.beads/config.yaml"
+	local project_gitignore="$rig/.gitignore"
+	local gitignore_backup=""
+	local gitignore_existed=0
+  local -a add_args=(
+    --city "$city" rig add "$rig"
+    --name "$rig_name"
+    --start-suspended
+  )
+
+  remote_section_exists() {
+    git -C "$rig" config --local --get-regexp "^remote\\.$1\\." >/dev/null 2>&1
+  }
+
+  restore_origin() {
+    local status="$?"
+    trap - EXIT HUP INT TERM
+    if [ "$origin_parked" -eq 1 ]; then
+      if remote_section_exists origin; then
+        printf '%s\n' \
+          "gc-agentops bootstrap: cannot restore remote.origin because rig registration created a replacement" >&2
+        exit 1
+      fi
+      git -C "$rig" config --local --rename-section \
+        "remote.$parked_remote" remote.origin || exit 1
+    fi
+		[ -z "$gitignore_backup" ] || rm -f "$gitignore_backup"
+    exit "$status"
+  }
+
+  trap restore_origin EXIT
+  trap 'exit 129' HUP
+  trap 'exit 130' INT
+  trap 'exit 143' TERM
+
+  if remote_section_exists "$parked_remote"; then
+    if remote_section_exists origin; then
+      die "rig has both remote.origin and reserved remote.$parked_remote; refusing ambiguous recovery"
+    fi
+    git -C "$rig" config --local --rename-section \
+      "remote.$parked_remote" remote.origin
+  fi
+  if remote_section_exists origin; then
+    git -C "$rig" config --local --rename-section \
+      remote.origin "remote.$parked_remote"
+    origin_parked=1
+  fi
+
+  if git -C "$rig" rev-parse --verify HEAD >/dev/null 2>&1; then
+    git -C "$rig" diff --cached --quiet || \
+      die "rig index has staged changes; gc rig add may invoke bd init, so commit or unstage them first"
+    pre_add_head="$(git -C "$rig" rev-parse HEAD)"
+		[ ! -L "$project_gitignore" ] || \
+		  die "refusing project .gitignore symlink during gc rig add: $project_gitignore"
+		gitignore_backup="$(mktemp "$city/.gc/project-gitignore-before.XXXXXX")"
+		if [ -e "$project_gitignore" ]; then
+			cp -p "$project_gitignore" "$gitignore_backup"
+			gitignore_existed=1
+		fi
+  fi
+
+  if [ -e "$metadata" ] || [ -e "$config" ]; then
+    [ -f "$metadata" ] && [ -f "$config" ] || \
+      die "rig has an incomplete Beads initialization; expected both $metadata and $config"
+    add_args+=(--adopt)
+  fi
+
+  "$gc_bin" "${add_args[@]}" >/dev/null
+
+  # `bd init --init-if-missing` currently creates a host-endpoint metadata
+  # commit even on --adopt, after which GC correctly normalizes that metadata
+  # back to its portable form. The runtime must not advance the caller's base
+  # branch merely to attach a store. Rewind only commits created during this
+  # exact registration call, reset the previously-clean index to the original
+  # tree, and leave the normalized working files untouched.
+  if [ -n "$pre_add_head" ]; then
+    post_add_head="$(git -C "$rig" rev-parse HEAD)"
+    if [ "$post_add_head" != "$pre_add_head" ]; then
+      while IFS= read -r subject; do
+        [ "$subject" = "bd init: initialize beads issue tracking" ] || unexpected_commit=1
+      done <<EOF
+$(git -C "$rig" log --format=%s "$pre_add_head..$post_add_head")
+EOF
+      while IFS= read -r changed_path; do
+        case "$changed_path" in
+          .beads/*) ;;
+			  .gitignore) ;;
+          *) unexpected_commit=1 ;;
+        esac
+      done <<EOF
+$(git -C "$rig" diff --name-only "$pre_add_head" "$post_add_head")
+EOF
+		  if ! git -C "$rig" diff --quiet "$pre_add_head" "$post_add_head" -- .gitignore; then
+			  python3 - "$gitignore_backup" "$rig" "$post_add_head" <<'PY' || unexpected_commit=1
+import subprocess
+import sys
+
+backup, rig, commit = sys.argv[1:]
+with open(backup, "rb") as handle:
+    before = handle.read()
+after = subprocess.check_output(
+    ["git", "-C", rig, "show", f"{commit}:.gitignore"]
+)
+header = b"# Beads / Dolt files (added by bd init)\n"
+variants = (
+    (b".dolt/", b"*.db", b".beads-credential-key"),
+    (b".dolt/", b"*.db", b".beads-credential-key", b".beads/proxieddb/"),
+)
+lines = {line.strip() for line in before.splitlines()}
+for patterns in variants:
+    missing = [pattern for pattern in patterns if pattern not in lines]
+    if not missing:
+        continue
+    expected = before
+    if expected and not expected.endswith(b"\n"):
+        expected += b"\n"
+    expected += b"\n" + header + b"".join(pattern + b"\n" for pattern in missing)
+    if after == expected:
+        raise SystemExit(0)
+raise SystemExit("bd init commit changed .gitignore outside its canonical append-only stanza")
+PY
+		  fi
+      git -C "$rig" update-ref -m "gc rig add: discard transient bd init commit" \
+        HEAD "$pre_add_head" "$post_add_head"
+      git -C "$rig" read-tree "$pre_add_head^{tree}"
+      [ "$unexpected_commit" -eq 0 ] || \
+        die "gc rig add created an unexpected commit; HEAD was restored and its file changes were left in the worktree"
+		  if [ "$gitignore_existed" -eq 1 ]; then
+			  cp -p "$gitignore_backup" "$project_gitignore"
+		  else
+			  rm -f "$project_gitignore"
+		  fi
+    fi
+
+    # Newer Beads releases can leave the same canonical initialization files
+    # staged without creating the historical bd-init commit. The caller's
+    # index was proven clean above, so accept only Beads-owned paths, verify
+    # the exact append-only .gitignore stanza, and restore the original index.
+    if ! git -C "$rig" diff --cached --quiet; then
+      while IFS= read -r changed_path; do
+        case "$changed_path" in
+          .beads/*) ;;
+          .gitignore) ;;
+          *) unexpected_index=1 ;;
+        esac
+      done <<EOF
+$(git -C "$rig" diff --cached --name-only)
+EOF
+      if ! git -C "$rig" diff --cached --quiet -- .gitignore; then
+        python3 - "$gitignore_backup" "$rig" <<'PY' || unexpected_index=1
+import subprocess
+import sys
+
+backup, rig = sys.argv[1:]
+with open(backup, "rb") as handle:
+    before = handle.read()
+# Gas City may append its own runtime stanza to the working copy after Beads
+# stages initialization. Validate the Beads-owned index projection, which is
+# the exact content this cleanup is about, instead of conflating later
+# unstaged Gas City bytes with the staged bd-init change.
+after = subprocess.check_output(["git", "-C", rig, "show", ":.gitignore"])
+header = b"# Beads / Dolt files (added by bd init)\n"
+variants = (
+    (b".dolt/", b"*.db", b".beads-credential-key"),
+    (b".dolt/", b"*.db", b".beads-credential-key", b".beads/proxieddb/"),
+)
+lines = {line.strip() for line in before.splitlines()}
+for patterns in variants:
+    missing = [pattern for pattern in patterns if pattern not in lines]
+    if not missing:
+        continue
+    expected = before
+    if expected and not expected.endswith(b"\n"):
+        expected += b"\n"
+    expected += b"\n" + header + b"".join(pattern + b"\n" for pattern in missing)
+    if after == expected:
+        raise SystemExit(0)
+raise SystemExit("bd init staged .gitignore outside its canonical append-only stanza")
+PY
+      fi
+      git -C "$rig" read-tree "$pre_add_head^{tree}"
+      [ "$unexpected_index" -eq 0 ] || \
+        die "gc rig add staged unexpected paths; the index was restored and its file changes were left in the worktree"
+		  if [ "$gitignore_existed" -eq 1 ]; then
+		    cp -p "$gitignore_backup" "$project_gitignore"
+		  else
+		    rm -f "$project_gitignore"
+		  fi
+    fi
+  fi
+)
+
+add_rig_with_local_beads
 
 python3 - "$city/city.toml" "$rig_name" "$binding" "$pack" <<'PY'
 import json
@@ -701,11 +1413,124 @@ for provider_name in codex claude; do
   "$gc_bin" --city "$city" config explain --provider "$provider_name" --json >/dev/null
 done
 "$gc_bin" --city "$city" import status --json >/dev/null
-write_marker ready
+if [ "$toolchain_replacement" -eq 0 ]; then
+  write_marker ready
+fi
 
 if [ "$start" -eq 1 ]; then
-  "$gc_bin" --city "$city" start >/dev/null
+  previous_supervisor_pid=0
+  if [ "$toolchain_replacement" -eq 1 ]; then
+    stop_bin="$gc_bin"
+    if [ -x "$previous_gc_bin" ]; then
+      stop_bin="$previous_gc_bin"
+    fi
+    replacement_status="$(mktemp "$city/.gc/replacement-status.XXXXXX")"
+    if "$stop_bin" supervisor status --json >"$replacement_status" 2>/dev/null; then
+      previous_supervisor_pid="$(python3 - "$replacement_status" <<'PY'
+import json
+import sys
+
+with open(sys.argv[1], encoding="utf-8") as handle:
+    status = json.load(handle)
+pid = status.get("pid", 0)
+print(pid if isinstance(pid, int) and not isinstance(pid, bool) and pid > 0 else 0)
+PY
+)"
+    fi
+    rm -f "$replacement_status"
+    if [ "$previous_supervisor_pid" -gt 0 ]; then
+      "$stop_bin" supervisor stop --wait --wait-timeout "${start_timeout}s" >/dev/null
+    fi
+    "$gc_bin" supervisor install --force >/dev/null
+  fi
+
+  "$gc_bin" --city "$city" start --no-auto-restart >/dev/null
   "$gc_bin" --city "$city" rig resume "$rig_name" --json >/dev/null
+
+  start_status="$(mktemp "$city/.gc/start-status.XXXXXX")"
+  start_error="$(mktemp "$city/.gc/start-status-error.XXXXXX")"
+  start_deadline="$(( $(date +%s) + start_timeout ))"
+  started_usable=0
+  while [ "$(date +%s)" -le "$start_deadline" ]; do
+    if "$gc_bin" --city "$city" status --json >"$start_status" 2>"$start_error" && \
+        python3 - "$start_status" "$rig_name" <<'PY'
+import json
+import sys
+
+path, rig_name = sys.argv[1:]
+try:
+    with open(path, encoding="utf-8") as handle:
+        status = json.load(handle)
+except (OSError, json.JSONDecodeError):
+    raise SystemExit(1)
+matches = [
+    rig for rig in status.get("rigs", [])
+    if isinstance(rig, dict) and rig.get("name") == rig_name
+]
+beads = status.get("beads")
+healthy = (
+    status.get("ok") is True
+    and status.get("controller", {}).get("running") is True
+    and status.get("health", {}).get("usable") is True
+    and isinstance(beads, dict)
+    and beads.get("native_store_eligible") is True
+    and len(matches) == 1
+    and matches[0].get("suspended") is False
+)
+raise SystemExit(0 if healthy else 1)
+PY
+    then
+      # `status.health.usable` proves the controller can open its stores, but a
+      # cold Dolt provider may still make the first agent-side read stall. Do
+      # one bounded read in both scopes before declaring the deployment ready.
+      if "$gc_bin" --city "$city" bd list --json --limit 1 >/dev/null 2>>"$start_error" && \
+          "$gc_bin" --city "$city" --rig "$rig_name" bd list --json --limit 1 >/dev/null 2>>"$start_error"; then
+        started_usable=1
+        break
+      fi
+    fi
+    sleep 1
+  done
+  if [ "$started_usable" -ne 1 ]; then
+    printf 'last gc status:\n' >&2
+    python3 -m json.tool "$start_status" >&2 2>/dev/null || cat "$start_status" >&2
+    if [ -s "$start_error" ]; then
+      printf 'last gc status error:\n' >&2
+      cat "$start_error" >&2
+    fi
+    rm -f "$start_status" "$start_error"
+    die "started city did not become usable within ${start_timeout}s"
+  fi
+  started_supervisor_pid="$(python3 - "$start_status" <<'PY'
+import json
+import sys
+
+with open(sys.argv[1], encoding="utf-8") as handle:
+    status = json.load(handle)
+pid = status.get("controller", {}).get("pid")
+if not isinstance(pid, int) or isinstance(pid, bool) or pid <= 0:
+    raise SystemExit("started city status has no positive controller pid")
+print(pid)
+PY
+)"
+  if [ "$toolchain_replacement" -eq 1 ] && \
+      [ "$previous_supervisor_pid" -gt 0 ] && \
+      [ "$started_supervisor_pid" -eq "$previous_supervisor_pid" ]; then
+    die "replacement supervisor retained old pid $previous_supervisor_pid"
+  fi
+  rm -f "$start_status" "$start_error"
+  python3 - "$city/.gc/settings.json" <<'PY'
+import json
+import sys
+
+with open(sys.argv[1], encoding="utf-8") as handle:
+    settings = json.load(handle)
+if settings.get("remoteControlAtStartup") is not False:
+    raise SystemExit("started city did not project remoteControlAtStartup=false")
+PY
+  if [ "$toolchain_replacement" -eq 1 ]; then
+    write_marker ready
+  fi
 fi
 
 printf 'Gas City AgentOps deployment ready\n'
