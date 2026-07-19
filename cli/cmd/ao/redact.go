@@ -5,13 +5,13 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/boshu2/agentops/cli/internal/llm"
+	"github.com/boshu2/agentops/cli/internal/redact"
 	"github.com/spf13/cobra"
 )
 
 // redactCmd is the shell-callable git-safety chokepoint (ag-sz3h). Shell
 // callers (notably the compile render-write in skills/compile/scripts/compile.sh)
-// cannot invoke llm.Redact directly, so they pipe content through `ao redact`:
+// cannot invoke redact.Redact directly, so they pipe content through `ao redact`:
 // it reads stdin, applies the canonical secret redactor, and writes the
 // scrubbed bytes to stdout. Single source of truth for credential patterns.
 var redactCmd = &cobra.Command{
@@ -35,7 +35,7 @@ func runRedact(cmd *cobra.Command, _ []string) error {
 	if err != nil {
 		return fmt.Errorf("ao redact: read stdin: %w", err)
 	}
-	if _, err := cmd.OutOrStdout().Write(llm.RedactBytes(in)); err != nil {
+	if _, err := cmd.OutOrStdout().Write(redact.RedactBytes(in)); err != nil {
 		return fmt.Errorf("ao redact: write stdout: %w", err)
 	}
 	return nil

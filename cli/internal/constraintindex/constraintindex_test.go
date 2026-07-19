@@ -1,4 +1,4 @@
-package search
+package constraintindex
 
 import (
 	"encoding/json"

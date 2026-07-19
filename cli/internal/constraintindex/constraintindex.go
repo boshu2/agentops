@@ -1,4 +1,10 @@
-package search
+// Package constraintindex owns the .agents/constraints/index.json schema and its
+// read/write/lock/publish operations — the constraint-index domain extracted out of
+// internal/search so the constraint-enforcement gate (internal/gates/checks) can
+// depend on just this surface. Its cross-package dependencies are internal/ports
+// (for ports.DetectorReplayResult in BuildConstraintEntry) and internal/storage
+// (crash-safe index writes via AtomicWriteFile).
+package constraintindex
 
 import (
 	"encoding/json"
@@ -9,6 +15,7 @@ import (
 	"time"
 
 	"github.com/boshu2/agentops/cli/internal/ports"
+	"github.com/boshu2/agentops/cli/internal/storage"
 )
 
 // ConstraintIndex represents the .agents/constraints/index.json schema.
@@ -191,28 +198,8 @@ func SaveConstraintIndexUnlocked(idx *ConstraintIndex) error {
 	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 		return fmt.Errorf("create constraints dir: %w", err)
 	}
-	tmp, err := os.CreateTemp(filepath.Dir(path), "index.json.tmp.*")
-	if err != nil {
-		return fmt.Errorf("create temp constraint index: %w", err)
-	}
-	tmpPath := tmp.Name()
-	if _, err := tmp.Write(data); err != nil {
-		_ = tmp.Close()
-		_ = os.Remove(tmpPath)
-		return fmt.Errorf("write temp constraint index: %w", err)
-	}
-	if err := tmp.Chmod(0o600); err != nil {
-		_ = tmp.Close()
-		_ = os.Remove(tmpPath)
-		return fmt.Errorf("chmod temp constraint index: %w", err)
-	}
-	if err := tmp.Close(); err != nil {
-		_ = os.Remove(tmpPath)
-		return fmt.Errorf("close temp constraint index: %w", err)
-	}
-	if err := os.Rename(tmpPath, path); err != nil {
-		_ = os.Remove(tmpPath)
-		return fmt.Errorf("rename constraint index: %w", err)
+	if err := storage.AtomicWriteFile(path, data, 0o600); err != nil {
+		return fmt.Errorf("write constraint index: %w", err)
 	}
 	return nil
 }
@@ -408,23 +395,8 @@ func saveConstraintIndexAtPath(path string, idx *ConstraintIndex) error {
 	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 		return fmt.Errorf("create constraints dir: %w", err)
 	}
-	tmp, err := os.CreateTemp(filepath.Dir(path), "index.json.tmp.*")
-	if err != nil {
-		return fmt.Errorf("create temp constraint index: %w", err)
-	}
-	tmpPath := tmp.Name()
-	if _, err := tmp.Write(data); err != nil {
-		_ = tmp.Close()
-		_ = os.Remove(tmpPath)
-		return fmt.Errorf("write temp constraint index: %w", err)
-	}
-	if err := tmp.Close(); err != nil {
-		_ = os.Remove(tmpPath)
-		return fmt.Errorf("close temp constraint index: %w", err)
-	}
-	if err := os.Rename(tmpPath, path); err != nil {
-		_ = os.Remove(tmpPath)
-		return fmt.Errorf("rename constraint index: %w", err)
+	if err := storage.AtomicWriteFile(path, data, 0o600); err != nil {
+		return fmt.Errorf("write constraint index: %w", err)
 	}
 	return nil
 }
