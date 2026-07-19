@@ -347,37 +347,37 @@
     {
       "category": "public-tested",
       "command": "provenance add",
-      "coverage_status": "covered",
+      "coverage_status": "allowlisted",
       "kind": "leaf",
-      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
+      "reason": "Covered by internal/commands/provenance module tests after the provenance carve-out."
     },
     {
       "category": "public-tested",
       "command": "provenance export",
-      "coverage_status": "covered",
+      "coverage_status": "allowlisted",
       "kind": "leaf",
-      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
+      "reason": "Covered by internal/commands/provenance module tests after the provenance carve-out."
     },
     {
       "category": "public-tested",
       "command": "provenance list",
-      "coverage_status": "covered",
+      "coverage_status": "allowlisted",
       "kind": "leaf",
-      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
+      "reason": "Covered by internal/commands/provenance module tests after the provenance carve-out."
     },
     {
       "category": "public-tested",
       "command": "provenance mine-session",
-      "coverage_status": "covered",
+      "coverage_status": "allowlisted",
       "kind": "leaf",
-      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
+      "reason": "Covered by internal/provenanceapp mine-session tests after the provenance carve-out."
     },
     {
       "category": "public-tested",
       "command": "provenance position",
-      "coverage_status": "covered",
+      "coverage_status": "allowlisted",
       "kind": "leaf",
-      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
+      "reason": "Covered by internal/commands/provenance module tests after the provenance carve-out."
     },
     {
       "category": "public-tested",
@@ -388,17 +388,24 @@
     },
     {
       "category": "public-tested",
-      "command": "provenance trace",
-      "coverage_status": "covered",
+      "command": "provenance show",
+      "coverage_status": "allowlisted",
       "kind": "leaf",
-      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
+      "reason": "Covered by internal/commands/provenance module tests after the provenance carve-out."
+    },
+    {
+      "category": "public-tested",
+      "command": "provenance trace",
+      "coverage_status": "allowlisted",
+      "kind": "leaf",
+      "reason": "Covered by internal/commands/provenance module tests after the provenance carve-out."
     },
     {
       "category": "public-tested",
       "command": "provenance verify",
-      "coverage_status": "covered",
+      "coverage_status": "allowlisted",
       "kind": "leaf",
-      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
+      "reason": "Covered by internal/commands/provenance module tests after the provenance carve-out."
     },
     {
       "category": "public-tested",
@@ -445,65 +452,65 @@
     {
       "category": "public-tested",
       "command": "skills check",
-      "coverage_status": "covered",
+      "coverage_status": "allowlisted",
       "kind": "leaf",
-      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
+      "reason": "Covered by internal/commands/skills module tests after the skills carve-out."
     },
     {
       "category": "public-tested",
       "command": "skills consumers",
-      "coverage_status": "covered",
+      "coverage_status": "allowlisted",
       "kind": "leaf",
-      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
+      "reason": "Covered by internal/commands/skills module tests after the skills carve-out."
     },
     {
       "category": "public-tested",
       "command": "skills find",
-      "coverage_status": "covered",
+      "coverage_status": "allowlisted",
       "kind": "leaf",
-      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
+      "reason": "Covered by internal/commands/skills module tests after the skills carve-out."
     },
     {
       "category": "public-tested",
       "command": "skills graph",
-      "coverage_status": "covered",
+      "coverage_status": "allowlisted",
       "kind": "leaf",
-      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
+      "reason": "Covered by internal/commands/skills module tests after the skills carve-out."
     },
     {
       "category": "public-tested",
       "command": "skills link",
-      "coverage_status": "covered",
+      "coverage_status": "allowlisted",
       "kind": "leaf",
-      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
+      "reason": "Covered by internal/commands/skills help tests plus internal/skillsapp link tests after the skills carve-out."
     },
     {
       "category": "public-tested",
       "command": "skills list",
-      "coverage_status": "covered",
+      "coverage_status": "allowlisted",
       "kind": "leaf",
-      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
+      "reason": "Covered by internal/commands/skills module tests after the skills carve-out."
     },
     {
       "category": "public-tested",
       "command": "skills producers",
-      "coverage_status": "covered",
+      "coverage_status": "allowlisted",
       "kind": "leaf",
-      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
+      "reason": "Covered by internal/commands/skills module tests after the skills carve-out."
     },
     {
       "category": "public-tested",
       "command": "skills resolve",
-      "coverage_status": "covered",
+      "coverage_status": "allowlisted",
       "kind": "leaf",
-      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
+      "reason": "Covered by internal/commands/skills module tests after the skills carve-out."
     },
     {
       "category": "public-tested",
       "command": "skills unlink",
-      "coverage_status": "covered",
+      "coverage_status": "allowlisted",
       "kind": "leaf",
-      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
+      "reason": "Covered by internal/commands/skills help tests plus internal/skillsapp unlink tests after the skills carve-out."
     },
     {
       "category": "public-tested",
