@@ -341,7 +341,7 @@ func workspaceDirRename(ctx *MutateContext, path, dest string, verify func(path 
 			// (empty) journal, and report both the journal error and the
 			// compensation outcome.
 			if backErr := os.Rename(dest, path); backErr != nil {
-				return fmt.Errorf("doctor: journal Rename of %s: %w; compensating rename-back FAILED (%v) — directory left at %s and is NOT recorded in actions.jsonl", path, aerr, backErr, dest)
+				return fmt.Errorf("doctor: journal Rename of %s: %w; compensating rename-back FAILED (%w) — directory left at %s and is NOT recorded in actions.jsonl", path, aerr, backErr, dest)
 			}
 			return fmt.Errorf("doctor: journal Rename of %s: %w (compensated: directory renamed back to its original path; no mutation recorded)", path, aerr)
 		}
@@ -485,7 +485,7 @@ func workspaceFileMoveNoClobber(ctx *MutateContext, path, dest string) (collided
 		// paths to one inode. Compensate by removing the new link so the move
 		// stays all-or-nothing.
 		if unlinkErr := os.Remove(dest); unlinkErr != nil {
-			return false, fmt.Errorf("doctor: remove source %s after link: %w; compensating removal of %s ALSO failed (%v) — file is hard-linked at both paths and NOT recorded in actions.jsonl", path, err, dest, unlinkErr)
+			return false, fmt.Errorf("doctor: remove source %s after link: %w; compensating removal of %s ALSO failed (%w) — file is hard-linked at both paths and NOT recorded in actions.jsonl", path, err, dest, unlinkErr)
 		}
 		return false, fmt.Errorf("doctor: remove source %s after link: %w (compensated: link at %s removed; nothing moved)", path, err, dest)
 	}
@@ -515,7 +515,7 @@ func workspaceFileMoveNoClobber(ctx *MutateContext, path, dest string) (collided
 			// WRITE-stage failure: record definitely not persisted; move the
 			// file back so disk matches the (empty) journal.
 			if backErr := os.Rename(dest, path); backErr != nil {
-				return false, fmt.Errorf("doctor: journal Rename of %s: %w; compensating move-back FAILED (%v) — file left at %s and is NOT recorded in actions.jsonl", path, aerr, backErr, dest)
+				return false, fmt.Errorf("doctor: journal Rename of %s: %w; compensating move-back FAILED (%w) — file left at %s and is NOT recorded in actions.jsonl", path, aerr, backErr, dest)
 			}
 			return false, fmt.Errorf("doctor: journal Rename of %s: %w (compensated: file moved back to its original path; no mutation recorded)", path, aerr)
 		}

@@ -458,7 +458,7 @@ func withLockedFile(path string, fn func(f *os.File) error) (err error) {
 		// Close the file explicitly — the deferred Close will no-op on an
 		// already-closed file, and we must not leak the descriptor.
 		if closeErr := f.Close(); closeErr != nil {
-			return fmt.Errorf("lock file: %w; close file: %v", err, closeErr)
+			return fmt.Errorf("lock file: %w; close file: %w", err, closeErr)
 		}
 		return fmt.Errorf("lock file: %w", err)
 	}

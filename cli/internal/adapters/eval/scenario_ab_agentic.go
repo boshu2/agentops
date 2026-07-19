@@ -4,6 +4,7 @@ package eval
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -160,7 +161,8 @@ func defaultWorkspaceCommandRunner(ctx context.Context, workDir, command string,
 	out, err := cmd.CombinedOutput()
 	exitCode := 0
 	if err != nil {
-		if ee, ok := err.(*exec.ExitError); ok {
+		var ee *exec.ExitError
+		if errors.As(err, &ee) {
 			exitCode = ee.ExitCode()
 		} else {
 			return "", 0, err

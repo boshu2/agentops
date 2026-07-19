@@ -306,7 +306,7 @@ func (workspaceNamingDriftFixer) moveEntryNoClobber(ctx *MutateContext, src, des
 			if _, lerr := os.Lstat(dest); lerr == nil {
 				return errWorkspaceDriftDestExists
 			} else if !os.IsNotExist(lerr) {
-				return fmt.Errorf("doctor: lstat %s: %v: %w", dest, lerr, errWorkspaceDriftDestExists)
+				return fmt.Errorf("doctor: lstat %s: %w: %w", dest, lerr, errWorkspaceDriftDestExists)
 			}
 			return nil
 		}

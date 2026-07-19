@@ -2,7 +2,6 @@
 package main
 
 import (
-	"os"
 	"strings"
 
 	"github.com/boshu2/agentops/cli/internal/types"
@@ -16,14 +15,6 @@ func canonicalMetricNamespace(raw string) string {
 		return primaryMetricNamespace
 	}
 	return namespace
-}
-
-func defaultCitationMetricNamespace() string {
-	return canonicalMetricNamespace(os.Getenv("AO_CITATION_NAMESPACE"))
-}
-
-func isPrimaryMetricNamespace(raw string) bool {
-	return canonicalMetricNamespace(raw) == primaryMetricNamespace
 }
 
 func filterCitationsByMetricNamespace(citations []types.CitationEvent, namespace string) []types.CitationEvent {

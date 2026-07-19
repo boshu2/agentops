@@ -22,6 +22,7 @@ package doctor
 // mutations, so no guard is added.
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -308,7 +309,8 @@ func probeConfigFlag() (silentlyAccepted bool, exitCode int) {
 	runErr := cmd.Run()
 	exitCode = 0
 	if runErr != nil {
-		if ee, ok := runErr.(*exec.ExitError); ok {
+		var ee *exec.ExitError
+		if errors.As(runErr, &ee) {
 			exitCode = ee.ExitCode()
 		} else {
 			return false, -1

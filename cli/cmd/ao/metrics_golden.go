@@ -26,10 +26,6 @@ func computeResearchClosure(baseDir string) (orphanCount int, orphanPct float64,
 	return quality.ComputeResearchClosure(baseDir, SectionFindings)
 }
 
-func extractResearchRefsFromText(content string) []string {
-	return quality.ExtractResearchRefsFromText(content)
-}
-
 func computeReuseConcentration(baseDir string, days int) (gini, activePct, topBottomRatio float64, verdict string) {
 	return quality.ComputeReuseConcentration(baseDir, days)
 }

@@ -408,7 +408,7 @@ func evalConstraint(c constraintindex.ConstraintEntry, repoRoot string, files []
 		if err := validateGlobSupported(g); err != nil {
 			// A glob the gate's matcher cannot faithfully evaluate would route to
 			// zero files and silently pass — fail closed instead.
-			return nil, fmt.Errorf("%w: %v", errFailClosed, err)
+			return nil, fmt.Errorf("%w: %w", errFailClosed, err)
 		}
 	}
 
@@ -425,13 +425,13 @@ func evalConstraint(c constraintindex.ConstraintEntry, repoRoot string, files []
 	}
 	re, err := regexp.Compile(c.Detector.Pattern)
 	if err != nil {
-		return nil, fmt.Errorf("%w: bad regex %q: %v", errFailClosed, c.Detector.Pattern, err)
+		return nil, fmt.Errorf("%w: bad regex %q: %w", errFailClosed, c.Detector.Pattern, err)
 	}
 	var exclude *regexp.Regexp
 	if c.Detector.Exclude != "" {
 		exclude, err = regexp.Compile(c.Detector.Exclude)
 		if err != nil {
-			return nil, fmt.Errorf("%w: bad exclude regex %q: %v", errFailClosed, c.Detector.Exclude, err)
+			return nil, fmt.Errorf("%w: bad exclude regex %q: %w", errFailClosed, c.Detector.Exclude, err)
 		}
 	}
 
@@ -455,7 +455,7 @@ func evalConstraint(c constraintindex.ConstraintEntry, repoRoot string, files []
 			// Present-but-unreadable (directory, permissions, symlink loop): we
 			// cannot certify this file, so we cannot certify the constraint. Fail
 			// closed rather than conflate it with a safe deletion.
-			return nil, fmt.Errorf("%w: cannot read changed file %s: %v", errFailClosed, rel, readErr)
+			return nil, fmt.Errorf("%w: cannot read changed file %s: %w", errFailClosed, rel, readErr)
 		}
 		hits, evalErr := applyDetector(mode, re, exclude, c, rel, string(content))
 		if evalErr != nil {

@@ -107,7 +107,7 @@ func ParseConsumerSnapshot(raw []byte) (ConsumerSnapshot, error) {
 	var snapshot ConsumerSnapshot
 	dec := json.NewDecoder(bytes.NewReader(raw))
 	if err := dec.Decode(&snapshot); err != nil {
-		return ConsumerSnapshot{}, fmt.Errorf("%w: %v", ErrInvalidSnapshotSchema, err)
+		return ConsumerSnapshot{}, fmt.Errorf("%w: %w", ErrInvalidSnapshotSchema, err)
 	}
 	var extra struct{}
 	if err := dec.Decode(&extra); !errors.Is(err, io.EOF) {
@@ -130,7 +130,7 @@ func ValidateConsumerSnapshot(snapshot ConsumerSnapshot) error {
 		return fmt.Errorf("%w: generated_at is required", ErrInvalidSnapshotSchema)
 	}
 	if _, err := time.Parse(time.RFC3339Nano, snapshot.GeneratedAt); err != nil {
-		return fmt.Errorf("%w: generated_at: %v", ErrInvalidSnapshotSchema, err)
+		return fmt.Errorf("%w: generated_at: %w", ErrInvalidSnapshotSchema, err)
 	}
 	if strings.TrimSpace(snapshot.Source.Ledger) == "" {
 		return fmt.Errorf("%w: source.ledger is required", ErrInvalidSnapshotSchema)

@@ -47,7 +47,3 @@ func runConfigModels(command *cobra.Command, args []string) error {
 	models.SetOut(os.Stdout)
 	return models.RunE(command, args)
 }
-
-func handleModelsWrite() error {
-	return runConfigModels(&cobra.Command{}, nil)
-}

@@ -372,12 +372,3 @@ func TestModuleBenchDelegatesClosureLocalFlags(t *testing.T) {
 		t.Fatalf("request=%#v", useCases.request)
 	}
 }
-
-func findChild(t *testing.T, command *cobra.Command, name string) *cobra.Command {
-	t.Helper()
-	child, _, err := command.Find([]string{name})
-	if err != nil {
-		t.Fatal(err)
-	}
-	return child
-}

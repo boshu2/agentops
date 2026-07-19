@@ -1,6 +1,7 @@
 package doctor
 
 import (
+	"errors"
 	"os"
 	"path/filepath"
 	"testing"
@@ -118,7 +119,7 @@ func TestLock_Contention(t *testing.T) {
 		t.Fatalf("first Acquire failed: %v", err)
 	}
 	_, err = lm.Acquire(target)
-	if err != ErrLockHeld {
+	if !errors.Is(err, ErrLockHeld) {
 		t.Fatalf("second Acquire error = %v, want ErrLockHeld", err)
 	}
 	if err := g1.Release(); err != nil {
@@ -406,10 +407,10 @@ func TestDescribeOp(t *testing.T) {
 // TestEnsureOpAllowed_DBOpsRejected verifies DB ops are declared-but-unsupported.
 func TestEnsureOpAllowed_DBOpsRejected(t *testing.T) {
 	caps := NewCapabilities("2.0.0")
-	if err := EnsureOpAllowed(caps, DbExec{SQL: "SELECT 1"}); err != ErrDBOpsUnused {
+	if err := EnsureOpAllowed(caps, DbExec{SQL: "SELECT 1"}); !errors.Is(err, ErrDBOpsUnused) {
 		t.Fatalf("DbExec error = %v, want ErrDBOpsUnused", err)
 	}
-	if err := EnsureOpAllowed(caps, DbMigrate{From: 1, To: 2}); err != ErrDBOpsUnused {
+	if err := EnsureOpAllowed(caps, DbMigrate{From: 1, To: 2}); !errors.Is(err, ErrDBOpsUnused) {
 		t.Fatalf("DbMigrate error = %v, want ErrDBOpsUnused", err)
 	}
 	if err := EnsureOpAllowed(caps, WriteFile{}); err != nil {

@@ -3,6 +3,7 @@ package gates
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -138,7 +139,8 @@ func (s *ScriptRunner) Run(ctx context.Context, req ports.GateRunRequest) (ports
 	runErr := cmd.Run()
 
 	code := 0
-	if exitErr, ok := runErr.(*exec.ExitError); ok {
+	var exitErr *exec.ExitError
+	if errors.As(runErr, &exitErr) {
 		code = exitErr.ExitCode()
 	} else if runErr != nil {
 		reason := fmt.Sprintf("subprocess error: %v", runErr)

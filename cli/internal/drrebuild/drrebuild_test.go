@@ -5,6 +5,7 @@ package drrebuild
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"os"
 	"path/filepath"
 	"strings"
@@ -214,8 +215,8 @@ func TestRebuild_MissingBlobDetectedNotDropped(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected DanglingRefError, got nil (missing blob silently dropped — the do-not-ship failure)")
 	}
-	dre, ok := err.(*DanglingRefError)
-	if !ok {
+	var dre *DanglingRefError
+	if !errors.As(err, &dre) {
 		t.Fatalf("expected *DanglingRefError, got %T: %v", err, err)
 	}
 	if dre.ContentHash != missingOID {
