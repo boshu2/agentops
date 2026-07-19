@@ -1,0 +1,31 @@
+{
+  "schema_version": 1,
+  "family": "status",
+  "profiles": {
+    "default": "present",
+    "flywheel": "present",
+    "legacy": "present",
+    "combined": "present"
+  },
+  "legacy_symbols": [
+    "artifactDigestFromName",
+    "evidenceSource",
+    "formatDurationBrief",
+    "loadLoopEvidence",
+    "loopEvidenceStatus",
+    "outputStatus",
+    "printLoopEvidence",
+    "runStatus",
+    "statusContract",
+    "statusOutput",
+    "validateIntentArtifact",
+    "validateVerdictArtifact"
+  ],
+  "live_owner": "cli/internal/commands/status",
+  "allowed_paths": [
+    "cli/cmd/ao/status*.go",
+    "cli/internal/commands/status/**",
+    "cli/internal/statusapp/**",
+    "cli/testdata/compatibility-baseline/families/status/**"
+  ]
+}
