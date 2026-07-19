@@ -169,28 +169,59 @@ func sandboxedCodexArgs(profile string, codexArgs []string) []string {
 // macOSSandboxExec is the Seatbelt binary.
 const macOSSandboxExec = "/usr/bin/sandbox-exec"
 
+// sandboxExecGuard is the single fail-closed gate every scenario-ab arm executor
+// (codex exec AND the agentic shell runner) shares: it validates that isolation is
+// actually available for denyPaths and returns the Seatbelt deny profile to wrap the
+// command with, or an error.
+//
+// FAIL-CLOSED: returns an error — never an empty profile a caller could run bare —
+// when no corpus path was resolved or the platform isolation is unavailable. A
+// control arm that silently reads the corpus is precisely the failure this guards.
+// Callers must treat any error as "do not run this arm".
+func sandboxExecGuard(denyPaths []string) (profile string, err error) {
+	if len(denyPaths) == 0 {
+		return "", fmt.Errorf("arm isolation resolved no corpus paths to deny; refusing to run a potentially-unisolated control arm")
+	}
+	switch runtime.GOOS {
+	case "darwin":
+		if _, statErr := os.Stat(macOSSandboxExec); statErr != nil {
+			return "", fmt.Errorf("arm isolation requires %s (macOS Seatbelt); refusing to run an unisolated control arm: %w", macOSSandboxExec, statErr)
+		}
+		return sandboxExecDenyProfile(denyPaths), nil
+	default:
+		// Linux/WSL bwrap path is age-9a9 S2. Until it lands, fail closed rather
+		// than run an unisolated (corpus-readable) control arm.
+		return "", fmt.Errorf("scenario-ab arm isolation is not yet implemented for GOOS=%q (age-9a9 S2: bubblewrap); refusing to run an unisolated control arm", runtime.GOOS)
+	}
+}
+
 // sandboxedCodexCmd builds the *exec.Cmd that runs codex CONFINED so it cannot read
 // any of denyPaths. The inner codex runs --dangerously-bypass-approvals-and-sandbox
 // (documented for externally-sandboxed environments — the OUTER sandbox-exec is the
 // real confinement, and macOS Seatbelt is inherited by child processes).
 //
-// FAIL-CLOSED: returns an error — never a bare, unconfined codex command — when the
-// platform isolation is unavailable or no corpus path was resolved. A control arm
-// that silently reads the corpus is precisely the failure this guards.
+// FAIL-CLOSED via sandboxExecGuard: returns an error — never a bare, unconfined codex
+// command — when platform isolation is unavailable or no corpus path was resolved.
 func sandboxedCodexCmd(ctx context.Context, denyPaths []string, codexArgs []string) (*exec.Cmd, error) {
-	if len(denyPaths) == 0 {
-		return nil, fmt.Errorf("arm isolation resolved no corpus paths to deny; refusing to run a potentially-unisolated control arm")
+	profile, err := sandboxExecGuard(denyPaths)
+	if err != nil {
+		return nil, err
 	}
-	switch runtime.GOOS {
-	case "darwin":
-		if _, err := os.Stat(macOSSandboxExec); err != nil {
-			return nil, fmt.Errorf("arm isolation requires %s (macOS Seatbelt); refusing to run an unisolated control arm: %w", macOSSandboxExec, err)
-		}
-		profile := sandboxExecDenyProfile(denyPaths)
-		return exec.CommandContext(ctx, macOSSandboxExec, sandboxedCodexArgs(profile, codexArgs)...), nil
-	default:
-		// Linux/WSL bwrap path is age-9a9 S2. Until it lands, fail closed rather
-		// than run an unisolated (corpus-readable) control arm.
-		return nil, fmt.Errorf("scenario-ab arm isolation is not yet implemented for GOOS=%q (age-9a9 S2: bubblewrap); refusing to run an unisolated control arm", runtime.GOOS)
+	return exec.CommandContext(ctx, macOSSandboxExec, sandboxedCodexArgs(profile, codexArgs)...), nil
+}
+
+// sandboxedShellCmd builds the *exec.Cmd that runs a single emitted worker command
+// under a non-login shell (`bash -c`), CONFINED by the SAME Seatbelt deny machinery
+// as the codex arm so the control (without-gold) arm cannot read any of denyPaths.
+// The caller sets cmd.Dir to the isolated workspace; the deny set covers only the
+// corpus roots, so workspace reads/writes stay allowed.
+//
+// FAIL-CLOSED via sandboxExecGuard: returns an error — never a bare `bash -lc`
+// command — when platform isolation is unavailable or no corpus path was resolved.
+func sandboxedShellCmd(ctx context.Context, denyPaths []string, command string) (*exec.Cmd, error) {
+	profile, err := sandboxExecGuard(denyPaths)
+	if err != nil {
+		return nil, err
 	}
+	return exec.CommandContext(ctx, macOSSandboxExec, "-p", profile, "bash", "-c", command), nil
 }
