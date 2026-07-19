@@ -59,3 +59,26 @@ public-tested|eval scenario validate|Covered by internal/scenario and module tes
 public-tested|eval scenario evaluate|Covered by internal/eval scenario_service tests.
 unsafe-live|eval scenario-ab|Spawns a live model runtime (codex exec) per arm; exercised by adapter tests with fakes, never in smoke.
 unsafe-live|eval scenario-moat|Aggregates live scenario-ab cards; adapter-tested with fixtures.
+
+# provenance carve-out (age-a-plus-report-card-ieyp2.11): behavior now lives in
+# internal/commands/provenance (module) + internal/provenanceapp (mine-session).
+public-tested|provenance add|Covered by internal/commands/provenance module tests after the provenance carve-out.
+public-tested|provenance list|Covered by internal/commands/provenance module tests after the provenance carve-out.
+public-tested|provenance export|Covered by internal/commands/provenance module tests after the provenance carve-out.
+public-tested|provenance show|Covered by internal/commands/provenance module tests after the provenance carve-out.
+public-tested|provenance position|Covered by internal/commands/provenance module tests after the provenance carve-out.
+public-tested|provenance trace|Covered by internal/commands/provenance module tests after the provenance carve-out.
+public-tested|provenance verify|Covered by internal/commands/provenance module tests after the provenance carve-out.
+public-tested|provenance mine-session|Covered by internal/provenanceapp mine-session tests after the provenance carve-out.
+
+# skills carve-out (age-a-plus-report-card-ieyp2.11): behavior now lives in
+# internal/commands/skills (module) + internal/skillsapp (link/unlink/roots).
+public-tested|skills check|Covered by internal/commands/skills module tests after the skills carve-out.
+public-tested|skills resolve|Covered by internal/commands/skills module tests after the skills carve-out.
+public-tested|skills find|Covered by internal/commands/skills module tests after the skills carve-out.
+public-tested|skills list|Covered by internal/commands/skills module tests after the skills carve-out.
+public-tested|skills consumers|Covered by internal/commands/skills module tests after the skills carve-out.
+public-tested|skills producers|Covered by internal/commands/skills module tests after the skills carve-out.
+public-tested|skills graph|Covered by internal/commands/skills module tests after the skills carve-out.
+public-tested|skills link|Covered by internal/commands/skills help tests plus internal/skillsapp link tests after the skills carve-out.
+public-tested|skills unlink|Covered by internal/commands/skills help tests plus internal/skillsapp unlink tests after the skills carve-out.

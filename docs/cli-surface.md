@@ -53,28 +53,29 @@
 | `ao goals validate` | `public-tested` | `allowlisted` | Covered by internal/commands/goals module tests and internal/goals validate tests after the goals carve-out. |
 | `ao help` | `internal-hidden` | `allowlisted` | Built-in Cobra help dispatcher with no application handler. |
 | `ao init` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
-| `ao provenance add` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
-| `ao provenance export` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
-| `ao provenance list` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
-| `ao provenance mine-session` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
-| `ao provenance position` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
+| `ao provenance add` | `public-tested` | `allowlisted` | Covered by internal/commands/provenance module tests after the provenance carve-out. |
+| `ao provenance export` | `public-tested` | `allowlisted` | Covered by internal/commands/provenance module tests after the provenance carve-out. |
+| `ao provenance list` | `public-tested` | `allowlisted` | Covered by internal/commands/provenance module tests after the provenance carve-out. |
+| `ao provenance mine-session` | `public-tested` | `allowlisted` | Covered by internal/provenanceapp mine-session tests after the provenance carve-out. |
+| `ao provenance position` | `public-tested` | `allowlisted` | Covered by internal/commands/provenance module tests after the provenance carve-out. |
 | `ao provenance show` | `public-tested` | `allowlisted` | Covered by generic provenance read tests. |
-| `ao provenance trace` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
-| `ao provenance verify` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
+| `ao provenance show` | `public-tested` | `allowlisted` | Covered by internal/commands/provenance module tests after the provenance carve-out. |
+| `ao provenance trace` | `public-tested` | `allowlisted` | Covered by internal/commands/provenance module tests after the provenance carve-out. |
+| `ao provenance verify` | `public-tested` | `allowlisted` | Covered by internal/commands/provenance module tests after the provenance carve-out. |
 | `ao quick-start` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao redact` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao robot-docs` | `public-tested` | `allowlisted` | Covered by generated documentation tests. |
 | `ao session bootstrap` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao session handoff` | `public-tested` | `allowlisted` | Covered by handoff artifact tests. |
 | `ao session rehydrate` | `public-tested` | `allowlisted` | Covered by rehydrate artifact tests. |
-| `ao skills check` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
-| `ao skills consumers` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
-| `ao skills find` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
-| `ao skills graph` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
-| `ao skills link` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
-| `ao skills list` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
-| `ao skills producers` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
-| `ao skills resolve` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
-| `ao skills unlink` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
+| `ao skills check` | `public-tested` | `allowlisted` | Covered by internal/commands/skills module tests after the skills carve-out. |
+| `ao skills consumers` | `public-tested` | `allowlisted` | Covered by internal/commands/skills module tests after the skills carve-out. |
+| `ao skills find` | `public-tested` | `allowlisted` | Covered by internal/commands/skills module tests after the skills carve-out. |
+| `ao skills graph` | `public-tested` | `allowlisted` | Covered by internal/commands/skills module tests after the skills carve-out. |
+| `ao skills link` | `public-tested` | `allowlisted` | Covered by internal/commands/skills help tests plus internal/skillsapp link tests after the skills carve-out. |
+| `ao skills list` | `public-tested` | `allowlisted` | Covered by internal/commands/skills module tests after the skills carve-out. |
+| `ao skills producers` | `public-tested` | `allowlisted` | Covered by internal/commands/skills module tests after the skills carve-out. |
+| `ao skills resolve` | `public-tested` | `allowlisted` | Covered by internal/commands/skills module tests after the skills carve-out. |
+| `ao skills unlink` | `public-tested` | `allowlisted` | Covered by internal/commands/skills help tests plus internal/skillsapp unlink tests after the skills carve-out. |
 | `ao status` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao version` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
