@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "family": "init",
+  "profiles": {
+    "default": "present",
+    "flywheel": "present",
+    "legacy": "present",
+    "combined": "present"
+  },
+  "legacy_symbols": [
+    "initCmd",
+    "runInit"
+  ],
+  "live_owner": "cli/internal/commands/init",
+  "allowed_paths": [
+    "cli/cmd/ao/init*.go",
+    "cli/internal/commands/init/**",
+    "cli/internal/initapp/**",
+    "cli/testdata/compatibility-baseline/families/init/**"
+  ]
+}
