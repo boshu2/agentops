@@ -1,29 +1,21 @@
 // practices: [design-by-contract, code-complete]
-package main
+package skillsapp
 
 import (
-	"encoding/json"
 	"fmt"
 	"io"
 	"os"
 	"path/filepath"
 	"sort"
 	"strings"
-
-	"github.com/spf13/cobra"
 )
 
-var (
-	skillsUnlinkDest string
-	skillsUnlinkJSON bool
-)
-
-// skillUnlinkResult summarizes a `skills unlink` sweep of one destination: which
+// UnlinkResult summarizes a `skills unlink` sweep of one destination: which
 // AgentOps-owned live-tier symlinks were removed, and which entries were left
 // untouched because they are NOT ours — a foreign symlink pointing outside the
 // repo, or a real directory/file (a foreign corpus such as jsm). It is the exact
-// inverse of skillLinkResult.
-type skillUnlinkResult struct {
+// inverse of LinkResult.
+type UnlinkResult struct {
 	Dest    string   `json:"dest"`
 	DryRun  bool     `json:"dry_run"`
 	Removed []string `json:"removed"`
@@ -41,8 +33,8 @@ type skillUnlinkResult struct {
 // as Foreign and never removed. A stale link to a skill since removed from the
 // repo is still ours to clean up (the target need not exist). When dryRun is true
 // nothing is removed but the would-be removals are still reported under Removed.
-func unlinkOwnedSkills(srcDir, destDir string, dryRun bool) (skillUnlinkResult, error) {
-	res := skillUnlinkResult{Dest: destDir, DryRun: dryRun}
+func unlinkOwnedSkills(srcDir, destDir string, dryRun bool) (UnlinkResult, error) {
+	res := UnlinkResult{Dest: destDir, DryRun: dryRun}
 
 	// Fail-closed on an unresolved source, exactly as linkMissingSkills does: an
 	// empty srcDir would let filepath.Abs("") resolve to the CURRENT directory,
@@ -116,85 +108,13 @@ func symlinkResolvesInto(linkPath, destDir, absRoot string) (bool, string) {
 	return inRoot, dst
 }
 
-var skillsUnlinkCmd = &cobra.Command{
-	Use:   "unlink",
-	Short: "Remove the repo-skill symlinks that `skills link` minted",
-	Long: `The clean uninstall inverse of ` + "`ao skills link`" + `. Scan each runtime's
-live tier and remove EXACTLY the symlinks that link minted — those whose target
-resolves into THIS repo's skills/ tree. By DEFAULT it sweeps EVERY agent runtime
-you have installed — ~/.agents/skills, ~/.claude/skills, ~/.codex/skills,
-~/.gemini/skills, ~/.cursor/skills, and ~/.pi/skills — detected by the config
-root existing under $HOME; --dest overrides to a single dir. Idempotent and
-non-destructive: a foreign symlink pointing outside the repo and a name owned by
-a real directory (a foreign corpus such as jsm) are both reported as foreign and
-never removed. A stale link to a skill since removed from the repo is still
-cleaned up.
-
-This is the documented rollback for the clone-linked "track main" install path:
-after you stop following a repo clone, this leaves your runtimes with only the
-skills they had before. It removes only symlinks, never your own directories or
-another corpus.
-
-Must be run from inside the agentops repo (guarded) — it needs the repo skills/
-path to know which links are its own.
-
-  ao skills unlink                        # remove owned links from every installed runtime
-  ao skills unlink --dry-run              # show what would be removed without removing
-  ao skills unlink --dest ~/.codex/skills # sweep ONE specific dir only`,
-	Args: cobra.NoArgs,
-	RunE: runSkillsUnlink,
-}
-
-func init() {
-	skillsCmd.AddCommand(skillsUnlinkCmd)
-	skillsUnlinkCmd.Flags().StringVar(&skillsUnlinkDest, "dest", "", "Sweep this single dir instead of the auto-detected roots (default: ~/.agents plus every installed runtime)")
-	skillsUnlinkCmd.Flags().BoolVar(&skillsUnlinkJSON, "json", false, "Emit machine-readable JSON")
-}
-
-func runSkillsUnlink(cmd *cobra.Command, args []string) error {
-	skillsDir, err := resolveRepoSkillsDir()
-	if err != nil {
-		cmd.SilenceUsage = true
-		return err
-	}
-
-	dests, err := resolveTargetDests(skillsUnlinkDest)
-	if err != nil {
-		cmd.SilenceUsage = true
-		return err
-	}
-
-	results, anyErr := unlinkAllDests(skillsDir, dests, GetDryRun())
-
-	if skillsUnlinkJSON {
-		enc := json.NewEncoder(cmd.OutOrStdout())
-		enc.SetIndent("", "  ")
-		if eerr := enc.Encode(results); eerr != nil {
-			return eerr
-		}
-	} else {
-		out := cmd.OutOrStdout()
-		for _, res := range results {
-			renderUnlinkResult(out, res)
-		}
-	}
-
-	// A per-dest failure is reported per-dest above but must still surface as a
-	// non-zero exit — after every runtime was attempted, never before.
-	if anyErr {
-		cmd.SilenceUsage = true
-		return fmt.Errorf("one or more runtime skill dirs could not be swept (see per-runtime errors)")
-	}
-	return nil
-}
-
-// unlinkAllDests unlinks owned skills from every destination, RESILIENTLY: a
+// UnlinkAllDests unlinks owned skills from every destination, RESILIENTLY: a
 // per-dest error is captured on that dest's result and the sweep continues to
 // the remaining runtimes rather than aborting (which would leave earlier dests
 // mutated and later ones silently skipped). Returns the per-dest results and
 // whether any dest errored.
-func unlinkAllDests(srcDir string, dests []string, dryRun bool) ([]skillUnlinkResult, bool) {
-	results := make([]skillUnlinkResult, 0, len(dests))
+func UnlinkAllDests(srcDir string, dests []string, dryRun bool) ([]UnlinkResult, bool) {
+	results := make([]UnlinkResult, 0, len(dests))
 	anyErr := false
 	for _, dest := range dests {
 		res, err := unlinkOwnedSkills(srcDir, dest, dryRun) // nosemgrep -- res is a value struct (never nil); setting res.Err on error cannot nil-deref.
@@ -207,8 +127,8 @@ func unlinkAllDests(srcDir string, dests []string, dryRun bool) ([]skillUnlinkRe
 	return results, anyErr
 }
 
-// renderUnlinkResult prints one destination's unlink summary.
-func renderUnlinkResult(out io.Writer, res skillUnlinkResult) {
+// RenderUnlinkResult prints one destination's unlink summary.
+func RenderUnlinkResult(out io.Writer, res UnlinkResult) {
 	fmt.Fprintf(out, "Skills unlink → %s\n", res.Dest)
 	if res.Err != "" {
 		fmt.Fprintf(out, "  ERROR: %s (other runtimes still attempted)\n", res.Err)
