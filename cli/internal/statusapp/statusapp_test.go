@@ -1,16 +1,16 @@
-// practices: [dora-metrics, sre]
-package main
+package statusapp
 
 import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
-	"github.com/boshu2/agentops/cli/internal/verdictcheck"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/boshu2/agentops/cli/internal/verdictcheck"
 )
 
 func TestFormatDurationBrief(t *testing.T) {
@@ -25,8 +25,8 @@ func TestFormatDurationBrief(t *testing.T) {
 		{45 * 24 * time.Hour, "6w"},
 	}
 	for _, test := range tests {
-		if got := formatDurationBrief(test.input); got != test.want {
-			t.Errorf("formatDurationBrief(%s) = %q, want %q", test.input, got, test.want)
+		if got := FormatDurationBrief(test.input); got != test.want {
+			t.Errorf("FormatDurationBrief(%s) = %q, want %q", test.input, got, test.want)
 		}
 	}
 }
@@ -41,7 +41,7 @@ func TestLoadLoopEvidence_ReportsOnlyValidatedArtifacts(t *testing.T) {
 	setArtifactTime(t, second, now.Add(-5*time.Minute))
 	setArtifactTime(t, verdict, now.Add(-15*time.Minute))
 
-	got := loadLoopEvidence(tmp, now)
+	got := LoadLoopEvidence(tmp, now)
 	if got.IntentArtifacts != 2 || got.VerdictArtifacts != 1 {
 		t.Fatalf("unexpected counts: %+v", got)
 	}
@@ -57,7 +57,7 @@ func TestLoadLoopEvidence_ReportsOnlyValidatedArtifacts(t *testing.T) {
 }
 
 func TestLoadLoopEvidence_NoArtifactsIsExplicit(t *testing.T) {
-	got := loadLoopEvidence(t.TempDir(), time.Now())
+	got := LoadLoopEvidence(t.TempDir(), time.Now())
 	if got == nil || got.State != "no_evidence" || got.IntentArtifacts != 0 || got.VerdictArtifacts != 0 {
 		t.Fatalf("got %+v, want explicit no_evidence snapshot", got)
 	}
@@ -82,7 +82,7 @@ func TestLoadLoopEvidence_RejectsArbitraryAndCorruptFiles(t *testing.T) {
 	}
 	writeRawVerdictArtifact(t, verdictDir, map[string]any{"schema_version": "verdict.v2"})
 
-	got := loadLoopEvidence(tmp, time.Now())
+	got := LoadLoopEvidence(tmp, time.Now())
 	if got.IntentArtifacts != 1 || got.VerdictArtifacts != 0 {
 		t.Fatalf("corrupt files affected counts: %+v", got)
 	}
@@ -101,7 +101,7 @@ func TestLoadLoopEvidence_ReportsUnavailableStore(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	got := loadLoopEvidence(tmp, time.Now())
+	got := LoadLoopEvidence(tmp, time.Now())
 	if got.State != "evidence_unavailable" || len(got.Unavailable) != 1 {
 		t.Fatalf("expected explicit unavailable evidence, got %+v", got)
 	}
@@ -136,51 +136,6 @@ func TestValidateVerdictArtifact_DetectsMutation(t *testing.T) {
 	}
 	if err := validateVerdictArtifact(path, expected); err == nil || !strings.Contains(err.Error(), "canonical content digest") {
 		t.Fatalf("mutation error = %v, want canonical digest failure", err)
-	}
-}
-
-func TestRunStatus_HumanOutputIsEvidenceOnly(t *testing.T) {
-	resetCommandState(t)
-	tmp := t.TempDir()
-	writeIntentArtifact(t, tmp, "intent")
-	t.Chdir(tmp)
-
-	got, err := captureStdout(t, func() error { return runStatus(statusCmd, nil) })
-	if err != nil {
-		t.Fatal(err)
-	}
-	for _, want := range []string{"Loop Evidence", "intent_is_latest_evidence", "Checked:", "Not checked:"} {
-		if !strings.Contains(got, want) {
-			t.Errorf("output missing %q:\n%s", want, got)
-		}
-	}
-	for _, forbidden := range []string{"Sessions:", "Provenance:", "Flywheel", "Quality Signals", "Commands:", "ao init"} {
-		if strings.Contains(got, forbidden) {
-			t.Errorf("evidence-only output contains %q:\n%s", forbidden, got)
-		}
-	}
-}
-
-func TestRunStatus_JSONHasNoLegacySurfaces(t *testing.T) {
-	resetCommandState(t)
-	output = "json"
-	t.Chdir(t.TempDir())
-
-	got, err := captureStdout(t, func() error { return runStatus(statusCmd, nil) })
-	if err != nil {
-		t.Fatal(err)
-	}
-	var value map[string]any
-	if err := json.Unmarshal([]byte(got), &value); err != nil {
-		t.Fatalf("invalid JSON: %v\n%s", err, got)
-	}
-	if len(value) != 1 || value["loop_evidence"] == nil {
-		t.Fatalf("unexpected top-level status shape: %+v", value)
-	}
-	for _, forbidden := range []string{"initialized", "base_dir", "session_count", "recent_sessions", "provenance_stats", "flywheel", "quality_signals"} {
-		if _, ok := value[forbidden]; ok {
-			t.Errorf("JSON contains legacy field %q: %s", forbidden, got)
-		}
 	}
 }
 

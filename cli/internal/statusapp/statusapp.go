@@ -1,69 +1,43 @@
-// practices: [dora-metrics, sre]
-package main
+// Package statusapp inventories the durable AgentOps loop-evidence stores and
+// renders the `ao status` report. It owns the filesystem and clock effects that
+// the status command module is forbidden to perform directly, keeping the
+// command module a thin Cobra presentation seam over this application logic.
+package statusapp
 
 import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
 	"time"
 
-	"github.com/spf13/cobra"
-
-	"github.com/boshu2/agentops/cli/internal/clicontract"
 	"github.com/boshu2/agentops/cli/internal/verdictcheck"
 )
 
-var statusCmd = &cobra.Command{
-	Use:   "status",
-	Short: "Show durable AgentOps loop evidence",
-	Long: `Display the content-addressed intent and verdict evidence stored by AgentOps.
-
-The command validates artifact names, content identity, and verdict.v2 shape
-before counting evidence. It reports recency only; it does not infer an active
-runtime phase, elapsed execution time, tool activity, retries, or remaining work.
-
-Examples:
-  ao status
-  ao status --json`,
-	RunE: runStatus,
+// RunOptions carries the presentation choices resolved by the command module.
+// The working directory and clock are resolved inside Run so the module never
+// performs a direct filesystem or clock effect.
+type RunOptions struct {
+	// JSON selects machine-readable output when true.
+	JSON bool
+	// Stdout receives the rendered report. It is the command's output stream.
+	Stdout io.Writer
 }
 
-// statusContract declares status's real behavior: it accepts (and ignores)
-// arbitrary positional args exactly as Cobra does today, emits text (JSON under
-// -o json), reads the durable evidence stores on the filesystem and stamps
-// recency from the clock, and exits 0 on success or 1 on a working-directory
-// failure.
-func statusContract() clicontract.CommandContract {
-	return clicontract.CommandContract{
-		ID:       "ao.status",
-		Profiles: clicontract.ProfileDefault | clicontract.ProfileFlywheel | clicontract.ProfileLegacy | clicontract.ProfileCombined,
-		Args:     clicontract.ArgsPolicy{Name: "arbitrary", Validate: cobra.ArbitraryArgs},
-		Output:   clicontract.OutputText,
-		Effects:  clicontract.EffectFilesystem | clicontract.EffectClock,
-		ExitClasses: map[int]clicontract.ExitClass{
-			0: clicontract.ExitSuccess,
-			1: clicontract.ExitFailure,
-		},
-	}
+// Output is the top-level status document. Its only member is the durable loop
+// evidence; status deliberately reports nothing about live runtime state.
+type Output struct {
+	LoopEvidence *LoopEvidenceStatus `json:"loop_evidence"`
 }
 
-func init() {
-	statusCmd.GroupID = "core"
-	if err := clicontract.Attach(statusCmd, statusContract()); err != nil {
-		panic(err)
-	}
-	rootCmd.AddCommand(statusCmd)
-}
-
-type statusOutput struct {
-	LoopEvidence *loopEvidenceStatus `json:"loop_evidence"`
-}
-
-type loopEvidenceStatus struct {
+// LoopEvidenceStatus summarizes the content-addressed intent and verdict
+// evidence AgentOps stores on disk. It reports recency only, never active
+// runtime phase, elapsed time, tool activity, retries, or remaining work.
+type LoopEvidenceStatus struct {
 	IntentArtifacts  int      `json:"intent_artifacts"`
 	VerdictArtifacts int      `json:"verdict_artifacts"`
 	LatestKind       string   `json:"latest_kind,omitempty"`
@@ -84,18 +58,20 @@ type evidenceSource struct {
 	validate func(string, string) error
 }
 
-func runStatus(cmd *cobra.Command, args []string) error {
+// Run resolves the working directory and clock, inventories the durable stores,
+// and renders the report to the configured stream.
+func Run(opts RunOptions) error {
 	cwd, err := os.Getwd()
 	if err != nil {
 		return fmt.Errorf("get working directory: %w", err)
 	}
-	return outputStatus(&statusOutput{LoopEvidence: loadLoopEvidence(cwd, time.Now())})
+	return Render(opts.Stdout, opts.JSON, &Output{LoopEvidence: LoadLoopEvidence(cwd, time.Now())})
 }
 
-// loadLoopEvidence inventories only the two immutable stores AgentOps owns.
+// LoadLoopEvidence inventories only the two immutable stores AgentOps owns.
 // Recency describes durable evidence, never live process state or remaining work.
-func loadLoopEvidence(cwd string, now time.Time) *loopEvidenceStatus {
-	result := &loopEvidenceStatus{
+func LoadLoopEvidence(cwd string, now time.Time) *LoopEvidenceStatus {
+	result := &LoopEvidenceStatus{
 		NotChecked: []string{
 			"active runtime phase",
 			"execution elapsed time",
@@ -181,7 +157,7 @@ func loadLoopEvidence(cwd string, now time.Time) *loopEvidenceStatus {
 	if age < 0 {
 		age = 0
 	}
-	result.LastEvidenceAge = formatDurationBrief(age)
+	result.LastEvidenceAge = FormatDurationBrief(age)
 	return result
 }
 
@@ -215,39 +191,41 @@ func validateVerdictArtifact(path, expectedDigest string) error {
 	return verdictcheck.VerifyArtifact(payload, expectedDigest)
 }
 
-func outputStatus(status *statusOutput) error {
-	if GetOutput() == "json" {
-		encoder := json.NewEncoder(os.Stdout)
+// Render writes the status document to w, as indented JSON when asJSON is set
+// or the human evidence report otherwise.
+func Render(w io.Writer, asJSON bool, status *Output) error {
+	if asJSON {
+		encoder := json.NewEncoder(w)
 		encoder.SetIndent("", "  ")
 		return encoder.Encode(status)
 	}
 
-	fmt.Println("AgentOps Status")
-	fmt.Println("===============")
-	printLoopEvidence(status.LoopEvidence)
+	fmt.Fprintln(w, "AgentOps Status")
+	fmt.Fprintln(w, "===============")
+	printLoopEvidence(w, status.LoopEvidence)
 	return nil
 }
 
-func printLoopEvidence(loop *loopEvidenceStatus) {
-	fmt.Println("\nLoop Evidence")
-	fmt.Println("─────────────")
-	fmt.Printf("  Artifacts: %d intents, %d verdicts\n", loop.IntentArtifacts, loop.VerdictArtifacts)
-	fmt.Printf("  State:     %s\n", loop.State)
+func printLoopEvidence(w io.Writer, loop *LoopEvidenceStatus) {
+	fmt.Fprintln(w, "\nLoop Evidence")
+	fmt.Fprintln(w, "─────────────")
+	fmt.Fprintf(w, "  Artifacts: %d intents, %d verdicts\n", loop.IntentArtifacts, loop.VerdictArtifacts)
+	fmt.Fprintf(w, "  State:     %s\n", loop.State)
 	if loop.LastEvidenceAt != "" {
-		fmt.Printf("  Newest:    %s (%s ago)\n", loop.LastEvidenceAt, loop.LastEvidenceAge)
+		fmt.Fprintf(w, "  Newest:    %s (%s ago)\n", loop.LastEvidenceAt, loop.LastEvidenceAge)
 	}
 	if len(loop.Corrupt) > 0 {
-		fmt.Printf("  Corrupt:   %s\n", strings.Join(loop.Corrupt, "; "))
+		fmt.Fprintf(w, "  Corrupt:   %s\n", strings.Join(loop.Corrupt, "; "))
 	}
 	if len(loop.Unavailable) > 0 {
-		fmt.Printf("  Unavailable: %s\n", strings.Join(loop.Unavailable, "; "))
+		fmt.Fprintf(w, "  Unavailable: %s\n", strings.Join(loop.Unavailable, "; "))
 	}
-	fmt.Printf("  Checked:   %s\n", strings.Join(loop.Checked, ", "))
-	fmt.Printf("  Not checked: %s\n", strings.Join(loop.NotChecked, ", "))
+	fmt.Fprintf(w, "  Checked:   %s\n", strings.Join(loop.Checked, ", "))
+	fmt.Fprintf(w, "  Not checked: %s\n", strings.Join(loop.NotChecked, ", "))
 }
 
-// formatDurationBrief formats a duration as a human-friendly short string.
-func formatDurationBrief(duration time.Duration) string {
+// FormatDurationBrief formats a duration as a human-friendly short string.
+func FormatDurationBrief(duration time.Duration) string {
 	if duration < time.Minute {
 		return "<1m"
 	}
