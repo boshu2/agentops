@@ -42,7 +42,7 @@ func (Module) Contract() clicontract.CommandContract {
 		ExitClasses: map[int]clicontract.ExitClass{
 			0: clicontract.ExitSuccess,
 			1: clicontract.ExitFailure,
-			2: clicontract.ExitUsage,
+			2: clicontract.ExitConfig,
 		},
 	}
 }
@@ -51,7 +51,10 @@ func (Module) Contract() clicontract.CommandContract {
 // command that actually runs the deterministic check registry. It takes no
 // positional args, emits a human text report (JSON under --json), runs check
 // scripts (filesystem, process, environment, clock), and exits 0 when the
-// selected checks pass, 1 when a check fails, or 2 on a usage/config error.
+// selected checks pass, 1 when a check fails, or 2 on an invalid gate
+// configuration (for example a bad --scope value). Command-line misuse such as
+// an unknown flag or an extra positional arg exits 1 via cobra, not 2, so exit
+// 2 is not a generic "usage" class.
 func (Module) CheckContract() clicontract.CommandContract {
 	return clicontract.CommandContract{
 		ID:       "ao.gate.check",
@@ -62,7 +65,7 @@ func (Module) CheckContract() clicontract.CommandContract {
 		ExitClasses: map[int]clicontract.ExitClass{
 			0: clicontract.ExitSuccess,
 			1: clicontract.ExitFailure,
-			2: clicontract.ExitUsage,
+			2: clicontract.ExitConfig,
 		},
 	}
 }
