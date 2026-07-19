@@ -1,0 +1,7 @@
+{
+  "schema_version": 1,
+  "family": "skills",
+  "freeze_sha": "b7176711171507d46b3523f2419b69b5585aa18e",
+  "ownership_sha256": "cbb5fdebea56ec0fd6d98bf185cb36abcbcb7a786aabb720070bf90926774f22",
+  "migration_state": "migrating"
+}
