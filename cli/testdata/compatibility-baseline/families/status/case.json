@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "family": "status",
+  "checks": [
+    {
+      "id": "status-black-box",
+      "command": "tmp=$(mktemp -d /tmp/ao-status.XXXXXX); (cd cli && go build -o \"$tmp/ao\" ./cmd/ao); \"$tmp/ao\" status --help >\"$tmp/help\"; grep -Fq 'ao status [flags]' \"$tmp/help\"; grep -Fq 'durable AgentOps loop evidence' \"$tmp/help\" || grep -Fiq 'loop evidence' \"$tmp/help\"; work=$(mktemp -d /tmp/ao-status-run.XXXXXX); ( cd \"$work\"; \"$tmp/ao\" status >\"$tmp/human\"; grep -Fq 'AgentOps Status' \"$tmp/human\"; grep -Fq 'Loop Evidence' \"$tmp/human\"; grep -Fq 'no_evidence' \"$tmp/human\"; \"$tmp/ao\" status --json >\"$tmp/json\"; grep -Fq '\"loop_evidence\"' \"$tmp/json\"; grep -Fq '\"state\": \"no_evidence\"' \"$tmp/json\" )"
+    },
+    {
+      "id": "status-go-behavior",
+      "command": "cd cli && go test ./internal/statusapp/... ./internal/commands/status/... -count=1"
+    }
+  ],
+  "dimensions": {
+    "path": {"status": "evidence", "evidence": ["status-black-box", "status-go-behavior"]},
+    "aliases": {"status": "not_applicable", "reason": "The status family declares no command aliases."},
+    "accepted_args": {"status": "evidence", "evidence": ["status-black-box", "status-go-behavior"]},
+    "rejected_args": {"status": "not_applicable", "reason": "status accepts arbitrary positional args and rejects none."},
+    "stdout": {"status": "evidence", "evidence": ["status-black-box", "status-go-behavior"]},
+    "stderr": {"status": "not_applicable", "reason": "status emits its report on stdout only."},
+    "exit_classes": {"status": "evidence", "evidence": ["status-go-behavior"]},
+    "tracker_selection": {"status": "not_applicable", "reason": "The status family does not select a repository issue tracker."},
+    "ordered_effects": {"status": "evidence", "evidence": ["status-go-behavior"]}
+  }
+}
