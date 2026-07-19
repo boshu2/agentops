@@ -62,8 +62,8 @@
     {
       "source": "skills/validate/scripts/check_contract_corpus.py",
       "destination": "packs/agentops-executor/agents/validator-claude/skills/validate/scripts/check_contract_corpus.py",
-      "source_sha256": "5656196f904856f9cd6d380a59d0e0589bd82a51170fe5fabc0a7545be1c6131",
-      "sha256": "5656196f904856f9cd6d380a59d0e0589bd82a51170fe5fabc0a7545be1c6131",
+      "source_sha256": "b173fab958006f38d56950e72ac571d18eda2bbd085d92a665acc9feaa3083ce",
+      "sha256": "b173fab958006f38d56950e72ac571d18eda2bbd085d92a665acc9feaa3083ce",
       "mode": "0644"
     },
     {
@@ -104,8 +104,8 @@
     {
       "source": "skills/validate/scripts/check_contract_corpus.py",
       "destination": "packs/agentops-executor/agents/validator/skills/validate/scripts/check_contract_corpus.py",
-      "source_sha256": "5656196f904856f9cd6d380a59d0e0589bd82a51170fe5fabc0a7545be1c6131",
-      "sha256": "5656196f904856f9cd6d380a59d0e0589bd82a51170fe5fabc0a7545be1c6131",
+      "source_sha256": "b173fab958006f38d56950e72ac571d18eda2bbd085d92a665acc9feaa3083ce",
+      "sha256": "b173fab958006f38d56950e72ac571d18eda2bbd085d92a665acc9feaa3083ce",
       "mode": "0644"
     },
     {

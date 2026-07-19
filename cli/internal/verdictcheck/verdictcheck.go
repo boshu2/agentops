@@ -89,6 +89,19 @@ func VerifyArtifact(payload []byte, expectedDigest string) error {
 	if err := requireJSONEOF(decoder); err != nil {
 		return err
 	}
+	// Reject duplicate JSON keys anywhere in the tree. Go's map/struct decode is
+	// last-wins, so a duplicated key (a second top-level "verdict":"PASS", or a
+	// nested second "source") would silently hide the real value and bind a
+	// digest the stored bytes never canonicalize to. Detect it at the token
+	// level and fail closed. (Logic mirrors cli/internal/gates/checks
+	// duplicateKey; copied rather than imported — those helpers are unexported,
+	// and importing the gate-framework package into this leaf reader would
+	// invert the dependency direction and pull a heavy graph into it.)
+	if dupKey, err := duplicateKey(payload); err != nil {
+		return fmt.Errorf("invalid verdict JSON: %w", err)
+	} else if dupKey != "" {
+		return fmt.Errorf("verdict.v2 contains duplicate key %q", dupKey)
+	}
 	required := []string{
 		"schema_version", "acceptance_digest", "subject_manifest_digest",
 		"author_context_id", "validator_context_id", "freshness_attestation",
@@ -143,6 +156,13 @@ func requireJSONEOF(decoder *json.Decoder) error {
 // CanonicalJSON renders a value in the contract's canonical form: sorted keys,
 // compact separators, raw UTF-8 (no HTML escaping), no trailing newline.
 // Matches the Python writer's canonical_bytes.
+//
+// Go's encoding/json ALWAYS escapes U+2028 (LINE SEPARATOR) and U+2029
+// (PARAGRAPH SEPARATOR) to  /  for JSONP safety, regardless of
+// SetEscapeHTML(false). Python's json.dumps(ensure_ascii=False) — the writer
+// this reader must byte-match — emits them raw. Left alone, that forks the
+// canonical bytes and thus the digest, so ao status would false-reject legit
+// Python-written verdicts. unescapeLineSeparators undoes exactly that escape.
 func CanonicalJSON(value any) ([]byte, error) {
 	var buffer bytes.Buffer
 	encoder := json.NewEncoder(&buffer)
@@ -150,7 +170,122 @@ func CanonicalJSON(value any) ([]byte, error) {
 	if err := encoder.Encode(value); err != nil {
 		return nil, err
 	}
-	return bytes.TrimSuffix(buffer.Bytes(), []byte("\n")), nil
+	trimmed := bytes.TrimSuffix(buffer.Bytes(), []byte("\n"))
+	return unescapeLineSeparators(trimmed), nil
+}
+
+// unescapeLineSeparators rewrites Go's   /   escapes back to their raw
+// UTF-8 bytes so the canonical form matches Python's ensure_ascii=False output.
+//
+// It is backslash-parity aware: a REAL escape is a ` ` introduced by an odd
+// run of backslashes, while the LITERAL 6-char text backslash-u-2028 (a string
+// value that actually contains those characters) is encoded by Go as `\\u2028`
+// (an even run) and MUST NOT be mutated. Because backslashes inside a JSON
+// string only ever appear as part of an escape, consuming each `\<char>` escape
+// as a unit — including `\\` as one escaped backslash — naturally respects that
+// parity: after a `\\` pair the following `u2028` is plain text, not an escape.
+func unescapeLineSeparators(in []byte) []byte {
+	// Fast path: no separator ESCAPE present, return the input unchanged. We
+	// scan for the ASCII escape sequences Go emits (backslash-u-2028 /
+	// backslash-u-2029), never the raw runes (which encoded JSON never contains).
+	esc2028 := []byte{'\\', 'u', '2', '0', '2', '8'}
+	esc2029 := []byte{'\\', 'u', '2', '0', '2', '9'}
+	if !bytes.Contains(in, esc2028) && !bytes.Contains(in, esc2029) {
+		return in
+	}
+	out := make([]byte, 0, len(in))
+	for i := 0; i < len(in); {
+		if in[i] != '\\' {
+			out = append(out, in[i])
+			i++
+			continue
+		}
+		// A backslash always begins an escape sequence in encoded JSON. If it is
+		// ` ` / ` `, emit the raw rune; otherwise copy the escape (its
+		// two leading bytes at minimum) verbatim so `\\` is consumed as a unit
+		// and cannot be misread as an escape introducer for following text.
+		if i+5 < len(in) && in[i+1] == 'u' {
+			switch string(in[i+2 : i+6]) {
+			case "2028":
+				out = append(out, " "...)
+				i += 6
+				continue
+			case "2029":
+				out = append(out, " "...)
+				i += 6
+				continue
+			}
+		}
+		if i+1 < len(in) {
+			out = append(out, in[i], in[i+1])
+			i += 2
+		} else {
+			out = append(out, in[i])
+			i++
+		}
+	}
+	return out
+}
+
+// duplicateKey scans the ENTIRE JSON tree and returns the first object key that
+// repeats within the same object (or "" if none). Go's last-wins decode would
+// otherwise let a duplicate hide the real value at any depth — a second
+// top-level "verdict" dropping the real value, or a nested second "source"
+// downgrading a freshness attestation. Recursion closes the whole class, not
+// just the top level. Returns a non-nil error only on a malformed token stream
+// (which the strict decode also rejects).
+//
+// Copied from cli/internal/gates/checks/constraints.go rather than imported:
+// those helpers are unexported, and importing the gate-framework package into
+// this leaf reader would invert the dependency direction.
+func duplicateKey(raw []byte) (string, error) {
+	dec := json.NewDecoder(bytes.NewReader(raw))
+	return scanDuplicateKey(dec)
+}
+
+// scanDuplicateKey consumes exactly one JSON value from dec, recursing into
+// objects/arrays, and returns the first within-object duplicate key it finds.
+func scanDuplicateKey(dec *json.Decoder) (string, error) {
+	t, err := dec.Token()
+	if err != nil {
+		return "", err
+	}
+	d, ok := t.(json.Delim)
+	if !ok {
+		return "", nil // scalar value
+	}
+	switch d {
+	case '{':
+		seen := map[string]bool{}
+		for dec.More() {
+			keyTok, err := dec.Token()
+			if err != nil {
+				return "", err
+			}
+			key, ok := keyTok.(string)
+			if !ok {
+				return "", fmt.Errorf("malformed object key")
+			}
+			if seen[key] {
+				return key, nil
+			}
+			seen[key] = true
+			if dup, err := scanDuplicateKey(dec); err != nil || dup != "" {
+				return dup, err
+			}
+		}
+	case '[':
+		for dec.More() {
+			if dup, err := scanDuplicateKey(dec); err != nil || dup != "" {
+				return dup, err
+			}
+		}
+	}
+	// consume the matching close delimiter
+	if _, err := dec.Token(); err != nil {
+		return "", err
+	}
+	return "", nil
 }
 
 // ValidateShape enforces the structural rules of verdict.v2, including the

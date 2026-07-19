@@ -1,0 +1,8 @@
+{
+  "name": "invalid-duplicate-key-nested",
+  "description": "Top-level keys all unique, but freshness_attestation carries a DUPLICATED nested key (source). Forces the recursive scan past the top object; a top-level-only check would miss it.",
+  "expected": "invalid",
+  "schema_lenient": true,
+  "filename_digest": "79ebae0d871660d82d8ad201631f2953d3750f92a4b578754497d1a9d1380ce7",
+  "raw": "{\"acceptance_digest\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"artifact_digest\":\"79ebae0d871660d82d8ad201631f2953d3750f92a4b578754497d1a9d1380ce7\",\"author_context_id\":\"ctx-author\",\"checked\":[\"cli/**\"],\"criteria\":[{\"evidence_refs\":[\"gate:go.build\"],\"id\":\"c1\",\"reason\":\"checked\",\"result\":\"PASS\"}],\"evidence_refs\":[\"gate:go.build\"],\"findings\":[],\"freshness_attestation\":{\"source\":\"runtime\",\"attester_identity\":\"runtime:test\",\"source\":\"runtime\"},\"not_checked\":[],\"schema_version\":\"verdict.v2\",\"subject_manifest_digest\":\"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\",\"validated_at\":\"2026-07-18T12:00:00Z\",\"validator_context_id\":\"ctx-validator\",\"verdict\":\"PASS\"}"
+}
