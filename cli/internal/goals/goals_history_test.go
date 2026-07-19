@@ -51,17 +51,12 @@ func TestGoalsHistory_JSONEmptyStore_Decoder(t *testing.T) {
 		t.Fatalf("history returned error: %v", err)
 	}
 
-	dec := json.NewDecoder(&stdout)
-	var decoded []goals.HistoryEntry
-	if err := dec.Decode(&decoded); err != nil {
-		t.Fatalf("stdout is not one JSON document: %v (raw stdout: %q)", err, stdout.String())
-	}
-	if len(decoded) != 0 {
-		t.Errorf("empty store: expected [] (0 entries), got %d", len(decoded))
-	}
-	// Exactly one document: nothing but whitespace after it.
-	if dec.More() {
-		t.Error("stdout contains more than one JSON document")
+	// Shape-exact: the empty store must print the literal `[]` and nothing
+	// else on stdout. A byte-exact check rejects `null` (which decodes into a
+	// nil slice and would pass len==0) and any second document, without leaning
+	// on Decoder.More() for the one-document guarantee.
+	if got := strings.TrimSpace(stdout.String()); got != "[]" {
+		t.Fatalf("stdout = %q, want exactly \"[]\"", got)
 	}
 	// The human hint belongs on stderr, never stdout.
 	if !strings.Contains(stderr.String(), "No history entries found") {
