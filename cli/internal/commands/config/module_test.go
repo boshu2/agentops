@@ -6,6 +6,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/boshu2/agentops/cli/internal/clicontract"
 	configapp "github.com/boshu2/agentops/cli/internal/config"
 )
 
@@ -31,7 +32,7 @@ func (useCases *fakeUseCases) WriteModels(_ context.Context, request configapp.M
 
 func TestModuleShowJSONUsesCommandWriter(t *testing.T) {
 	useCases := &fakeUseCases{showResult: configapp.ShowResult{Resolved: &configapp.ResolvedConfig{}}}
-	command := NewModule(useCases, func() string { return "json" }, func() bool { return false }, func() bool { return false }).Command()
+	command := NewModule(useCases, clicontract.HostOptions{OutputMode: func() string { return "json" }, Verbose: func() bool { return false }, DryRun: func() bool { return false }}).Command()
 	var stdout bytes.Buffer
 	command.SetOut(&stdout)
 	command.SetArgs([]string{"--show"})
@@ -45,7 +46,7 @@ func TestModuleShowJSONUsesCommandWriter(t *testing.T) {
 
 func TestModuleModelsWriteParsesDelegatesAndRenders(t *testing.T) {
 	useCases := &fakeUseCases{writeResult: configapp.ModelsWriteResult{Updated: true, DefaultTier: "quality"}}
-	command := NewModule(useCases, func() string { return "table" }, func() bool { return false }, func() bool { return false }).Command()
+	command := NewModule(useCases, clicontract.HostOptions{OutputMode: func() string { return "table" }, Verbose: func() bool { return false }, DryRun: func() bool { return false }}).Command()
 	var stdout bytes.Buffer
 	command.SetOut(&stdout)
 	command.SetArgs([]string{"models", "--set-tier", "quality", "--set-skill", "council=budget"})
@@ -62,7 +63,7 @@ func TestModuleModelsWriteParsesDelegatesAndRenders(t *testing.T) {
 
 func TestModuleModelsDryRunDelegatesAndRendersPreview(t *testing.T) {
 	useCases := &fakeUseCases{writeResult: configapp.ModelsWriteResult{DryRun: true, DefaultTier: "quality"}}
-	command := NewModule(useCases, func() string { return "table" }, func() bool { return false }, func() bool { return true }).Command()
+	command := NewModule(useCases, clicontract.HostOptions{OutputMode: func() string { return "table" }, Verbose: func() bool { return false }, DryRun: func() bool { return true }}).Command()
 	var stdout bytes.Buffer
 	command.SetOut(&stdout)
 	command.SetArgs([]string{"models", "--set-tier", "quality"})

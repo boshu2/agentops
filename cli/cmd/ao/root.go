@@ -11,7 +11,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	doctorcommands "github.com/boshu2/agentops/cli/internal/commands/doctor"
+	"github.com/boshu2/agentops/cli/internal/clicontract"
 	"github.com/boshu2/agentops/cli/internal/doctor"
 )
 
@@ -90,16 +90,18 @@ func negotiateOutput(cmd *cobra.Command) error {
 func Execute() {
 	executedCmd, err := rootCmd.ExecuteC()
 	if err != nil {
-		var docErr *doctorcommands.ExitError
-		if errors.As(err, &docErr) {
-			// Exit 1 means findings are present — a normal diagnostic result,
-			// not a failure, so it carries no stderr noise. Higher codes are
-			// genuine failures; surface the reason on stderr (doctor commands
-			// set SilenceErrors, so cobra prints nothing itself).
-			if docErr.ExitCode() != doctor.ExitFindings && docErr.Error() != "" {
-				fmt.Fprintln(os.Stderr, "ao doctor: "+docErr.Error())
+		var exitErr *clicontract.ExitError
+		if errors.As(err, &exitErr) {
+			// A labeled ExitError (doctor) surfaces its reason on stderr: exit 1
+			// means findings are present — a normal diagnostic result carrying no
+			// stderr noise — while higher codes are genuine failures the module
+			// silenced (SilenceErrors), so the root prints them. An empty Label
+			// (gate) means the module already surfaced its own output; the root
+			// stays silent and only maps the process code.
+			if exitErr.Label != "" && exitErr.ExitCode() != doctor.ExitFindings && exitErr.Error() != "" {
+				fmt.Fprintln(os.Stderr, exitErr.Label+": "+exitErr.Error())
 			}
-			os.Exit(docErr.ExitCode())
+			os.Exit(exitErr.ExitCode())
 		}
 		var commandExit commandExitError
 		if errors.As(err, &commandExit) {

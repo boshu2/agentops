@@ -17,22 +17,13 @@ import (
 // to cover the repository's own long-running race gate.
 const defaultGoalsTimeoutSeconds = 240
 
-// HostOptions carries the ambient CLI seams the goals commands read: the global
-// output mode, verbosity, and the project root (working directory) used to
-// resolve scenario evidence.
-type HostOptions struct {
-	OutputMode  func() string
-	Verbose     func() bool
-	ProjectRoot func() string
-}
-
 // Module owns Cobra presentation for the goals command family.
 type Module struct {
-	host HostOptions
+	host clicontract.HostOptions
 }
 
 // NewModule constructs the goals command module from its host seams.
-func NewModule(host HostOptions) Module {
+func NewModule(host clicontract.HostOptions) Module {
 	return Module{host: host}
 }
 

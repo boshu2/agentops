@@ -14,11 +14,11 @@ import (
 
 type Module struct {
 	builder capabilitiesapp.Builder
-	output  func() string
+	host    clicontract.HostOptions
 }
 
-func NewModule(builder capabilitiesapp.Builder, output func() string) Module {
-	return Module{builder: builder, output: output}
+func NewModule(builder capabilitiesapp.Builder, host clicontract.HostOptions) Module {
+	return Module{builder: builder, host: host}
 }
 
 func (Module) Contract() clicontract.CommandContract {
@@ -56,7 +56,7 @@ contract_version).`,
 
 func (module Module) render(command *cobra.Command) error {
 	document := module.builder.Build()
-	if module.output != nil && module.output() == "yaml" {
+	if module.host.OutputMode != nil && module.host.OutputMode() == "yaml" {
 		data, err := yaml.Marshal(document)
 		if err != nil {
 			return err

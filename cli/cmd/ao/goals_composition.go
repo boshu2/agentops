@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/spf13/cobra"
+	"github.com/boshu2/agentops/cli/internal/clicontract"
 
 	goalscommands "github.com/boshu2/agentops/cli/internal/commands/goals"
 )
@@ -19,7 +20,7 @@ func init() {
 // clock effects to internal/goals. The goals family attaches no CommandContract
 // to the command tree, preserving its pre-migration capabilities surface.
 func newGoalsCommand() *cobra.Command {
-	module := goalscommands.NewModule(goalscommands.HostOptions{
+	module := goalscommands.NewModule(clicontract.HostOptions{
 		OutputMode:  GetOutput,
 		Verbose:     GetVerbose,
 		ProjectRoot: goalsProjectRoot,

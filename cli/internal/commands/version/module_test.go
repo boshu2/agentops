@@ -13,7 +13,7 @@ import (
 const testVersion = "9.9.9-test"
 
 func newTestModule(outputMode string) Module {
-	return NewModule(HostOptions{
+	return NewModule(clicontract.HostOptions{
 		Version:    func() string { return testVersion },
 		OutputMode: func() string { return outputMode },
 	})

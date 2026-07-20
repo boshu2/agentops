@@ -2,6 +2,7 @@
 package skills
 
 import (
+	"github.com/boshu2/agentops/cli/internal/clicontract"
 	"encoding/json"
 	"strings"
 	"testing"
@@ -84,7 +85,7 @@ func TestSkillsFind_InvalidLimitNamesCorrection(t *testing.T) {
 }
 
 func TestSkillsFind_RegisteredUnderSkills(t *testing.T) {
-	root := NewModule(HostOptions{DryRun: func() bool { return false }}).Command()
+	root := NewModule(clicontract.HostOptions{DryRun: func() bool { return false }}).Command()
 	found := false
 	for _, c := range root.Commands() {
 		if c.Name() == "find" {

@@ -6,13 +6,14 @@ import (
 	"testing"
 
 	"github.com/spf13/cobra"
+	"github.com/boshu2/agentops/cli/internal/clicontract"
 )
 
 // linkLong / unlinkLong fetch the built command's Long help so the help
 // contracts are asserted against the real module tree.
 func subcommandLong(t *testing.T, name string) string {
 	t.Helper()
-	root := NewModule(HostOptions{DryRun: func() bool { return false }}).Command()
+	root := NewModule(clicontract.HostOptions{DryRun: func() bool { return false }}).Command()
 	var found *cobra.Command
 	for _, c := range root.Commands() {
 		if c.Name() == name {

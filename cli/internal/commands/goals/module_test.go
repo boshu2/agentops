@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/spf13/cobra"
+	"github.com/boshu2/agentops/cli/internal/clicontract"
 
 	goalsapp "github.com/boshu2/agentops/cli/internal/goals"
 )
@@ -16,7 +17,7 @@ import (
 // newTestModule builds the goals module with a fixed output mode, constructing
 // the command tree directly instead of mutating any package-global state.
 func newTestModule(outputMode string) Module {
-	return NewModule(HostOptions{
+	return NewModule(clicontract.HostOptions{
 		OutputMode: func() string { return outputMode },
 		Verbose:    func() bool { return false },
 		ProjectRoot: func() string {

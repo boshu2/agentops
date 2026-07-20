@@ -2,6 +2,7 @@
 package provenance
 
 import (
+	"github.com/boshu2/agentops/cli/internal/clicontract"
 	"bytes"
 	"encoding/json"
 	"os"
@@ -26,7 +27,7 @@ func testLedger(t *testing.T) string {
 // newTestModule builds a provenance Module whose ledger-path and clock seams are
 // pinned for the test, standing in for the package-main host wiring.
 func newTestModule(ledger string) *Module {
-	return NewModule(HostOptions{
+	return NewModule(clicontract.HostOptions{
 		LedgerPath: func() string { return ledger },
 		Now:        func() time.Time { return fixedNow },
 	})

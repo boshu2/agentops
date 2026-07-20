@@ -6,11 +6,20 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/spf13/cobra"
-
+	"github.com/boshu2/agentops/cli/internal/clicontract"
 	doctorapp "github.com/boshu2/agentops/cli/internal/doctor"
 	"github.com/boshu2/agentops/cli/internal/quality"
 )
+
+// GlobalOptions is the doctor test's stand-in for the root's resolved global
+// flags. testModule translates it into the shared clicontract.HostOptions seams
+// the module actually reads (DryRun and OutputMode); the module derives its
+// JSON intent from OutputMode == "json", so a JSON-true row maps to "json".
+type GlobalOptions struct {
+	DryRun bool
+	JSON   bool
+	Output string
+}
 
 type fakeRead struct{}
 
@@ -61,7 +70,15 @@ func testModule(mutation *fakeMutation, maintenance *fakeMaintenance, globals Gl
 		LegacyChecks: func(context.Context) []quality.Check { return nil },
 		Read:         fakeRead{}, Mutation: mutation, Maintenance: maintenance,
 		DetectorCount: func() int { return 0 },
-	}, HostOptions{Globals: func(*cobra.Command) GlobalOptions { return globals }})
+	}, clicontract.HostOptions{
+		DryRun: func() bool { return globals.DryRun },
+		OutputMode: func() string {
+			if globals.JSON {
+				return "json"
+			}
+			return globals.Output
+		},
+	})
 }
 
 func TestInheritedDryRunProtectsFixGCAndUndo(t *testing.T) {

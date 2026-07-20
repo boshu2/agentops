@@ -10,35 +10,43 @@ import (
 	doctorapp "github.com/boshu2/agentops/cli/internal/doctor"
 )
 
+func init() {
+	rootCmd.AddCommand(newDoctorCommand())
+}
+
 func newLegacyDoctorService() doctorapp.LegacyService {
 	checks := doctoradapter.SystemLegacyChecks(version, resolveLedgerPath)
 	return doctorapp.NewLegacyService(version, checks)
 }
 
-var doctorReadService = doctorapp.NewReadService(version, doctoradapter.ReadRuntime{ToolVersion: version}, doctoradapter.ReadGateway{})
-var doctorMutationService = doctorapp.NewMutationService(doctoradapter.MutationRuntime{ToolVersion: version}, doctoradapter.MutationGateway{})
-var doctorMaintenanceService = doctorapp.NewMaintenanceService(doctoradapter.MaintenanceRuntime{}, doctoradapter.MaintenanceGateway{})
+// newDoctorCommand wires the doctor command module: its read/mutation/
+// maintenance services, the legacy check set, and the host seams (output mode,
+// dry-run, and flag-error enrichment). Constructor-scoped like the gate
+// composition — no package-level module, command, or service singleton.
+//
+// Doctor derives its JSON intent from OutputMode == "json"; the previous
+// GlobalOptions.JSON seam was redundant because negotiateOutput forces
+// output="json" whenever --json is set, so the two were always equal.
+func newDoctorCommand() *cobra.Command {
+	readService := doctorapp.NewReadService(version, doctoradapter.ReadRuntime{ToolVersion: version}, doctoradapter.ReadGateway{})
+	mutationService := doctorapp.NewMutationService(doctoradapter.MutationRuntime{ToolVersion: version}, doctoradapter.MutationGateway{})
+	maintenanceService := doctorapp.NewMaintenanceService(doctoradapter.MaintenanceRuntime{}, doctoradapter.MaintenanceGateway{})
 
-var doctorModule = doctorcommands.NewModule(doctorcommands.UseCases{
-	LegacyChecks:  newLegacyDoctorService().Checks,
-	Read:          doctorReadService,
-	Mutation:      doctorMutationService,
-	Maintenance:   doctorMaintenanceService,
-	DetectorCount: func() int { return len(doctorapp.Detectors()) },
-}, doctorcommands.HostOptions{
-	Globals: func(command *cobra.Command) doctorcommands.GlobalOptions {
-		app := AppFromContext(command.Context())
-		return doctorcommands.GlobalOptions{DryRun: app.DryRun, JSON: app.JSON, Output: app.Output}
-	},
-	EnrichFlagErr: flagErrorWithSuggestion,
-})
-
-var doctorCommand = doctorModule.Command()
-
-func init() {
-	doctorCommand.GroupID = "core"
-	if err := clicontract.Attach(doctorCommand, doctorModule.Contract()); err != nil {
+	module := doctorcommands.NewModule(doctorcommands.UseCases{
+		LegacyChecks:  newLegacyDoctorService().Checks,
+		Read:          readService,
+		Mutation:      mutationService,
+		Maintenance:   maintenanceService,
+		DetectorCount: func() int { return len(doctorapp.Detectors()) },
+	}, clicontract.HostOptions{
+		OutputMode:    GetOutput,
+		DryRun:        GetDryRun,
+		EnrichFlagErr: flagErrorWithSuggestion,
+	})
+	command := module.Command()
+	command.GroupID = "core"
+	if err := clicontract.Attach(command, module.Contract()); err != nil {
 		panic(err)
 	}
-	rootCmd.AddCommand(doctorCommand)
+	return command
 }

@@ -25,7 +25,7 @@ func (builder *recordingBuilder) Build() capabilitiesapp.Document {
 
 func TestCommandDelegatesAndRendersJSON(t *testing.T) {
 	builder := &recordingBuilder{}
-	module := NewModule(builder, func() string { return "json" })
+	module := NewModule(builder, clicontract.HostOptions{OutputMode: func() string { return "json" }})
 	command := module.Command()
 	var output bytes.Buffer
 	command.SetOut(&output)
@@ -46,7 +46,7 @@ func TestCommandDelegatesAndRendersJSON(t *testing.T) {
 
 func TestCommandDelegatesAndRendersYAML(t *testing.T) {
 	builder := &recordingBuilder{}
-	command := NewModule(builder, func() string { return "yaml" }).Command()
+	command := NewModule(builder, clicontract.HostOptions{OutputMode: func() string { return "yaml" }}).Command()
 	var output bytes.Buffer
 	command.SetOut(&output)
 	if err := command.Execute(); err != nil {
@@ -58,7 +58,7 @@ func TestCommandDelegatesAndRendersYAML(t *testing.T) {
 }
 
 func TestModuleOwnsFreshCommandsAndExplicitContract(t *testing.T) {
-	module := NewModule(&recordingBuilder{}, nil)
+	module := NewModule(&recordingBuilder{}, clicontract.HostOptions{})
 	first, second := module.Command(), module.Command()
 	if first == second {
 		t.Fatal("Command returned shared Cobra state")

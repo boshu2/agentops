@@ -3,7 +3,6 @@ package doctor
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 
@@ -34,12 +33,6 @@ type MaintenanceUseCases interface {
 	GC(context.Context, doctorapp.GCRequest) (doctorapp.GCResult, error)
 }
 
-type GlobalOptions struct {
-	DryRun bool
-	JSON   bool
-	Output string
-}
-
 type UseCases struct {
 	LegacyChecks  func(context.Context) []quality.Check
 	Read          ReadUseCases
@@ -48,17 +41,12 @@ type UseCases struct {
 	DetectorCount func() int
 }
 
-type HostOptions struct {
-	Globals       func(*cobra.Command) GlobalOptions
-	EnrichFlagErr func(*cobra.Command, error) error
-}
-
 type Module struct {
 	useCases UseCases
-	host     HostOptions
+	host     clicontract.HostOptions
 }
 
-func NewModule(useCases UseCases, host HostOptions) Module {
+func NewModule(useCases UseCases, host clicontract.HostOptions) Module {
 	return Module{useCases: useCases, host: host}
 }
 
@@ -87,22 +75,6 @@ type undoOptions struct{ strict, dryRun bool }
 type gcOptions struct {
 	before string
 	yes    bool
-}
-
-// ExitError carries a doctor process status through Cobra.
-type ExitError struct {
-	Code    int
-	Message string
-}
-
-func (failure *ExitError) Error() string { return failure.Message }
-func (failure *ExitError) ExitCode() int { return failure.Code }
-
-func (module Module) globals(command *cobra.Command) GlobalOptions {
-	if module.host.Globals == nil {
-		return GlobalOptions{}
-	}
-	return module.host.Globals(command)
 }
 
 func (module Module) Command() *cobra.Command {
@@ -154,13 +126,23 @@ Examples:
 	return command
 }
 
-func (module Module) wantsJSON(command *cobra.Command, options *rootOptions) bool {
-	global := module.globals(command)
-	return options.json || options.robot || global.JSON || global.Output == "json"
+func (module Module) wantsJSON(_ *cobra.Command, options *rootOptions) bool {
+	return options.json || options.robot || module.outputMode() == "json"
 }
 
-func (module Module) effectiveDryRun(command *cobra.Command, options *rootOptions, local bool) bool {
-	return local || options.dryRun || module.globals(command).DryRun
+func (module Module) outputMode() string {
+	if module.host.OutputMode == nil {
+		return ""
+	}
+	return module.host.OutputMode()
+}
+
+func (module Module) dryRun() bool {
+	return module.host.DryRun != nil && module.host.DryRun()
+}
+
+func (module Module) effectiveDryRun(_ *cobra.Command, options *rootOptions, local bool) bool {
+	return local || options.dryRun || module.dryRun()
 }
 
 func readRequest(options rootOptions, dryRun, jsonOutput bool) doctorapp.ReadRequest {
@@ -221,7 +203,9 @@ func advancedDiagnosticsRequested(command *cobra.Command) bool {
 	return false
 }
 
-func exit(code int, message string) error { return &ExitError{Code: code, Message: message} }
+func exit(code int, message string) error {
+	return &clicontract.ExitError{Code: code, Message: message, Label: "ao doctor"}
+}
 func resultExit(code int, message string) error {
 	if code == doctorapp.ExitHealthy {
 		return nil
@@ -230,12 +214,10 @@ func resultExit(code int, message string) error {
 }
 
 func writeJSON(command *cobra.Command, value any) error {
-	data, err := json.MarshalIndent(value, "", "  ")
-	if err != nil {
+	if err := clicontract.WriteJSON(command.OutOrStdout(), value); err != nil {
 		return exit(doctorapp.ExitIOError, err.Error())
 	}
-	_, err = fmt.Fprintln(command.OutOrStdout(), string(data))
-	return err
+	return nil
 }
 
 func renderFindings(command *cobra.Command, report *doctorapp.Report) {

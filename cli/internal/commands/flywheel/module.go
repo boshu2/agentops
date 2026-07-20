@@ -15,22 +15,13 @@ import (
 	"github.com/boshu2/agentops/cli/internal/flywheelapp"
 )
 
-// HostOptions carries the ambient CLI seams the flywheel commands read: the
-// global -o/--output mode and the verbose diagnostic printer. Output selection
-// and diagnostics flow through these seams so the module reads no package
-// global.
-type HostOptions struct {
-	OutputMode func() string
-	Verbosef   func(format string, args ...any)
-}
-
 // Module owns Cobra presentation for the flywheel command family.
 type Module struct {
-	host HostOptions
+	host clicontract.HostOptions
 }
 
 // NewModule constructs the flywheel command module from its host seams.
-func NewModule(host HostOptions) Module {
+func NewModule(host clicontract.HostOptions) Module {
 	return Module{host: host}
 }
 

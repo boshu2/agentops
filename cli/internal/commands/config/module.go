@@ -3,7 +3,6 @@ package config
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"sort"
 
@@ -31,9 +30,7 @@ type UseCases interface {
 
 type Module struct {
 	useCases UseCases
-	output   func() string
-	verbose  func() bool
-	dryRun   func() bool
+	host     clicontract.HostOptions
 }
 
 type options struct {
@@ -42,8 +39,8 @@ type options struct {
 	setSkill string
 }
 
-func NewModule(useCases UseCases, output func() string, verbose func() bool, dryRun func() bool) Module {
-	return Module{useCases: useCases, output: output, verbose: verbose, dryRun: dryRun}
+func NewModule(useCases UseCases, host clicontract.HostOptions) Module {
+	return Module{useCases: useCases, host: host}
 }
 
 func (Module) Contract() clicontract.CommandContract {
@@ -67,11 +64,11 @@ func (module Module) Command() *cobra.Command {
 		if !commandOptions.show {
 			return command.Help()
 		}
-		result, err := module.useCases.Show(command.Context(), module.output(), module.verbose())
+		result, err := module.useCases.Show(command.Context(), module.host.OutputMode(), module.host.Verbose())
 		if err != nil {
 			return err
 		}
-		return renderShow(command, module.output(), result)
+		return renderShow(command, module.host.OutputMode(), result)
 	}
 	models := module.modelsCommand(&commandOptions)
 	root.AddCommand(models)
@@ -86,18 +83,18 @@ func (module Module) modelsCommand(commandOptions *options) *cobra.Command {
 	command.RunE = func(command *cobra.Command, _ []string) error {
 		if commandOptions.setTier != "" || commandOptions.setSkill != "" {
 			result, err := module.useCases.WriteModels(command.Context(), configapp.ModelsWriteRequest{
-				DefaultTier: commandOptions.setTier, Skill: commandOptions.setSkill, DryRun: module.dryRun != nil && module.dryRun(),
+				DefaultTier: commandOptions.setTier, Skill: commandOptions.setSkill, DryRun: module.host.DryRun != nil && module.host.DryRun(),
 			})
 			if err != nil {
 				return err
 			}
-			return renderModelsWrite(command, module.output(), commandOptions.setTier, commandOptions.setSkill, result)
+			return renderModelsWrite(command, module.host.OutputMode(), commandOptions.setTier, commandOptions.setSkill, result)
 		}
 		result, err := module.useCases.Models(command.Context())
 		if err != nil {
 			return err
 		}
-		return renderModels(command, module.output(), result)
+		return renderModels(command, module.host.OutputMode(), result)
 	}
 	return command
 }
@@ -219,12 +216,10 @@ func splitSkill(value string) []string {
 }
 
 func writeJSON(command *cobra.Command, value any, label string) error {
-	data, err := json.MarshalIndent(value, "", "  ")
-	if err != nil {
+	if err := clicontract.WriteJSON(command.OutOrStdout(), value); err != nil {
 		return fmt.Errorf("%s: %w", label, err)
 	}
-	_, err = fmt.Fprintln(command.OutOrStdout(), string(data))
-	return err
+	return nil
 }
 
 func printConfigFile(w interface{ Write([]byte) (int, error) }, label, path string, exists bool) {

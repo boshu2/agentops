@@ -11,7 +11,7 @@ import (
 )
 
 func newTestModule(dryRun bool) Module {
-	return NewModule(HostOptions{DryRun: func() bool { return dryRun }})
+	return NewModule(clicontract.HostOptions{DryRun: func() bool { return dryRun }})
 }
 
 func TestModule_Contract(t *testing.T) {

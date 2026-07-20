@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/spf13/cobra"
+	"github.com/boshu2/agentops/cli/internal/clicontract"
 
 	aoeval "github.com/boshu2/agentops/cli/internal/eval"
 	"github.com/boshu2/agentops/cli/internal/evalsubstrate"
@@ -80,7 +80,7 @@ func TestModuleScenarioListJSONEmptyStates(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			spy := &scenarioListSpy{listResult: tc.result}
-			command := NewModule(UseCases{Core: &coreUseCasesSpy{}, Scenario: spy}, HostOptions{}).Command()
+			command := NewModule(UseCases{Core: &coreUseCasesSpy{}, Scenario: spy}, clicontract.HostOptions{}).Command()
 			command.SetArgs([]string{"scenario", "list"})
 			var stdout, stderr bytes.Buffer
 			command.SetOut(&stdout)
@@ -219,7 +219,7 @@ func (*coreUseCasesSpy) Coverage(context.Context, aoeval.CoreCoverageRequest) (*
 
 func TestModuleRunParsesClosureLocalFlagsAndDelegates(t *testing.T) {
 	useCases := &coreUseCasesSpy{}
-	command := NewModule(UseCases{Core: useCases}, HostOptions{}).Command()
+	command := NewModule(UseCases{Core: useCases}, clicontract.HostOptions{}).Command()
 	command.SetArgs([]string{"run", "suite.json", "--run-id", "run-1", "--runtime", "static", "--baseline-mode", "skill-on"})
 	var output strings.Builder
 	command.SetOut(&output)
@@ -236,8 +236,8 @@ func TestModuleRunParsesClosureLocalFlagsAndDelegates(t *testing.T) {
 }
 
 func TestModuleCommandsDoNotShareFlagState(t *testing.T) {
-	first := NewModule(UseCases{Core: &coreUseCasesSpy{}}, HostOptions{}).Command()
-	second := NewModule(UseCases{Core: &coreUseCasesSpy{}}, HostOptions{}).Command()
+	first := NewModule(UseCases{Core: &coreUseCasesSpy{}}, clicontract.HostOptions{}).Command()
+	second := NewModule(UseCases{Core: &coreUseCasesSpy{}}, clicontract.HostOptions{}).Command()
 	firstRun, _, err := first.Find([]string{"run"})
 	if err != nil {
 		t.Fatal(err)
@@ -256,7 +256,7 @@ func TestModuleCommandsDoNotShareFlagState(t *testing.T) {
 
 func TestModuleCleanupDelegatesClosureLocalOptions(t *testing.T) {
 	cleanup := &cleanupUseCasesSpy{}
-	command := NewModule(UseCases{Core: &coreUseCasesSpy{}, Cleanup: cleanup}, HostOptions{Verbose: func(*cobra.Command) bool { return true }}).Command()
+	command := NewModule(UseCases{Core: &coreUseCasesSpy{}, Cleanup: cleanup}, clicontract.HostOptions{Verbose: func() bool { return true }}).Command()
 	command.SetArgs([]string{"cleanup", "--delete", "--tmp-files", "--tmp-age", "7", "--dry-run"})
 	var output strings.Builder
 	command.SetOut(&output)
@@ -273,7 +273,7 @@ func TestModuleCleanupDelegatesClosureLocalOptions(t *testing.T) {
 
 func TestModuleTaskRunDelegatesClosureLocalFlags(t *testing.T) {
 	task := &taskUseCasesSpy{}
-	command := NewModule(UseCases{Core: &coreUseCasesSpy{}, Task: task}, HostOptions{}).Command()
+	command := NewModule(UseCases{Core: &coreUseCasesSpy{}, Task: task}, clicontract.HostOptions{}).Command()
 	command.SetArgs([]string{"task", "run", "task-1", "--suite", "suite-1", "--seeds", "1,2,3", "--rig-id", "rig-1", "--dry-run"})
 	var output strings.Builder
 	command.SetOut(&output)
@@ -290,7 +290,7 @@ func TestModuleTaskRunDelegatesClosureLocalFlags(t *testing.T) {
 
 func TestModuleSuiteVerdictDelegatesFlags(t *testing.T) {
 	suite := &suiteUseCasesSpy{}
-	command := NewModule(UseCases{Core: &coreUseCasesSpy{}, Suite: suite}, HostOptions{}).Command()
+	command := NewModule(UseCases{Core: &coreUseCasesSpy{}, Suite: suite}, clicontract.HostOptions{}).Command()
 	command.SetArgs([]string{"suite", "verdict", "suite-1", "--arms", "a,b", "--inputs", "in.json", "--B", "99"})
 	if err := command.Execute(); err != nil {
 		t.Fatalf("Execute: %v", err)
@@ -302,7 +302,7 @@ func TestModuleSuiteVerdictDelegatesFlags(t *testing.T) {
 
 func TestModuleOutcomesIngestDelegatesSafetyFlags(t *testing.T) {
 	outcomes := &outcomesUseCasesSpy{}
-	command := NewModule(UseCases{Core: &coreUseCasesSpy{}, Outcomes: outcomes}, HostOptions{}).Command()
+	command := NewModule(UseCases{Core: &coreUseCasesSpy{}, Outcomes: outcomes}, clicontract.HostOptions{}).Command()
 	command.SetArgs([]string{"outcomes", "ingest", "score.json", "--expect-judge-hash", "hash", "--burn-ledger", "burn.json", "--manifest-out", "runs"})
 	if err := command.Execute(); err != nil {
 		t.Fatalf("Execute: %v", err)
@@ -314,7 +314,7 @@ func TestModuleOutcomesIngestDelegatesSafetyFlags(t *testing.T) {
 
 func TestModuleScenarioAddDelegatesClosureLocalFlags(t *testing.T) {
 	useCases := &scenarioUseCasesSpy{}
-	command := NewModule(UseCases{Core: &coreUseCasesSpy{}, Scenario: useCases}, HostOptions{}).Command()
+	command := NewModule(UseCases{Core: &coreUseCasesSpy{}, Scenario: useCases}, clicontract.HostOptions{}).Command()
 	command.SetArgs([]string{"scenario", "add", "goal", "--threshold", "0.7", "--status", "active"})
 	if err := command.Execute(); err != nil {
 		t.Fatalf("Execute: %v", err)
@@ -326,7 +326,7 @@ func TestModuleScenarioAddDelegatesClosureLocalFlags(t *testing.T) {
 
 func TestModuleScenarioABDelegatesFlags(t *testing.T) {
 	useCases := &scenarioABUseCasesSpy{}
-	command := NewModule(UseCases{Core: &coreUseCasesSpy{}, ScenarioAB: useCases}, HostOptions{}).Command()
+	command := NewModule(UseCases{Core: &coreUseCasesSpy{}, ScenarioAB: useCases}, clicontract.HostOptions{}).Command()
 	command.SetArgs([]string{"scenario-ab", "--scenario", "s.json", "--token-budget", "9", "--control-only"})
 	if err := command.Execute(); err != nil {
 		t.Fatalf("Execute: %v", err)
@@ -338,7 +338,7 @@ func TestModuleScenarioABDelegatesFlags(t *testing.T) {
 
 func TestModuleSessionOutcomeDelegatesFlags(t *testing.T) {
 	useCases := &aliasUseCasesSpy{}
-	command := NewModule(UseCases{Core: &coreUseCasesSpy{}, Aliases: useCases}, HostOptions{}).Command()
+	command := NewModule(UseCases{Core: &coreUseCasesSpy{}, Aliases: useCases}, clicontract.HostOptions{}).Command()
 	command.SetArgs([]string{"session-outcome", "transcript.jsonl", "--session", "s-1"})
 	if err := command.Execute(); err != nil {
 		t.Fatalf("Execute: %v", err)
@@ -349,7 +349,7 @@ func TestModuleSessionOutcomeDelegatesFlags(t *testing.T) {
 }
 
 func TestModuleChaosRendersAdapterStreams(t *testing.T) {
-	command := NewModule(UseCases{Core: &coreUseCasesSpy{}, Aliases: &aliasUseCasesSpy{}}, HostOptions{}).Command()
+	command := NewModule(UseCases{Core: &coreUseCasesSpy{}, Aliases: &aliasUseCasesSpy{}}, clicontract.HostOptions{}).Command()
 	command.SetArgs([]string{"chaos"})
 	var stdout strings.Builder
 	command.SetOut(&stdout)
@@ -363,7 +363,7 @@ func TestModuleChaosRendersAdapterStreams(t *testing.T) {
 
 func TestModuleBenchDelegatesClosureLocalFlags(t *testing.T) {
 	useCases := &benchUseCasesSpy{}
-	command := NewModule(UseCases{Core: &coreUseCasesSpy{}, Bench: useCases}, HostOptions{}).Command()
+	command := NewModule(UseCases{Core: &coreUseCasesSpy{}, Bench: useCases}, clicontract.HostOptions{}).Command()
 	command.SetArgs([]string{"bench", "--corpus", "fixture", "--k", "7", "--json"})
 	if err := command.Execute(); err != nil {
 		t.Fatalf("Execute: %v", err)

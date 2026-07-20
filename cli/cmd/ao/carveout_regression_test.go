@@ -267,3 +267,205 @@ func loadFrozenLegacySymbols(t *testing.T, family string) []string {
 	}
 	return record.LegacySymbols
 }
+
+// ---------------------------------------------------------------------------
+// Seam-uniformity + drift guards (bead age-6j9ee.1 / B1)
+//
+// The cmd/ao carve-out finished with four incompatible host-seam shapes,
+// three re-rolled writeJSON bodies, and two duplicated ExitError types. The
+// checks below are the drift lock: they pin the single canonical host seam
+// (clicontract.HostOptions), keep command modules free of direct host effects,
+// and keep module/service singletons out of package main. All are AST-based and
+// cheap, mirroring the existing carve-out invariants above.
+// ---------------------------------------------------------------------------
+
+// commandModuleFiles returns every internal/commands/<family>/module.go, keyed
+// by family name, resolved against packageDir so concurrent os.Chdir in other
+// tests cannot break discovery.
+func commandModuleFiles(t *testing.T) map[string]string {
+	t.Helper()
+	base := filepath.Join(packageDir, "..", "..", "internal", "commands")
+	entries, err := os.ReadDir(base)
+	if err != nil {
+		t.Fatalf("read commands dir %s: %v", base, err)
+	}
+	modules := map[string]string{}
+	for _, entry := range entries {
+		if !entry.IsDir() {
+			continue
+		}
+		path := filepath.Join(base, entry.Name(), "module.go")
+		if _, statErr := os.Stat(path); statErr == nil {
+			modules[entry.Name()] = path
+		}
+	}
+	if len(modules) == 0 {
+		t.Fatalf("no command module.go files found under %s", base)
+	}
+	return modules
+}
+
+// importAliasMap maps each import's local alias to its full import path for one
+// parsed file. A dot or blank import is keyed by "." / "_".
+func importAliasMap(file *ast.File) map[string]string {
+	aliases := map[string]string{}
+	for _, spec := range file.Imports {
+		path := strings.Trim(spec.Path.Value, `"`)
+		alias := ""
+		if spec.Name != nil {
+			alias = spec.Name.Name
+		} else {
+			segments := strings.Split(path, "/")
+			alias = segments[len(segments)-1]
+		}
+		aliases[alias] = path
+	}
+	return aliases
+}
+
+// findNewModule returns the NewModule func declaration in a parsed file, if any.
+func findNewModule(file *ast.File) *ast.FuncDecl {
+	for _, decl := range file.Decls {
+		if function, ok := decl.(*ast.FuncDecl); ok && function.Recv == nil && function.Name.Name == "NewModule" {
+			return function
+		}
+	}
+	return nil
+}
+
+// TestModuleHostSeamIsSharedContract proves every command module receives its
+// host seam through the single shared clicontract.HostOptions type: no module
+// declares its own HostOptions struct, and no NewModule passes host wiring as a
+// bare positional func. Together these kill the four drifted seam shapes
+// (positional funcs, bespoke HostOptions structs, and the GlobalOptions bundle).
+func TestModuleHostSeamIsSharedContract(t *testing.T) {
+	for family, path := range commandModuleFiles(t) {
+		fset := token.NewFileSet()
+		file, err := parser.ParseFile(fset, path, nil, 0)
+		if err != nil {
+			t.Fatalf("parse %s: %v", path, err)
+		}
+		// (a) No bespoke seam struct type declared in the module package.
+		for _, decl := range file.Decls {
+			gen, ok := decl.(*ast.GenDecl)
+			if !ok || gen.Tok != token.TYPE {
+				continue
+			}
+			for _, spec := range gen.Specs {
+				typeSpec, ok := spec.(*ast.TypeSpec)
+				if !ok {
+					continue
+				}
+				if typeSpec.Name.Name == "HostOptions" || typeSpec.Name.Name == "GlobalOptions" {
+					t.Errorf("module %s declares bespoke seam type %q; the host seam must be the shared clicontract.HostOptions",
+						family, typeSpec.Name.Name)
+				}
+			}
+		}
+		// (b) NewModule passes no host wiring as a bare positional func.
+		newModule := findNewModule(file)
+		if newModule == nil || newModule.Type.Params == nil {
+			continue
+		}
+		for _, param := range newModule.Type.Params.List {
+			if _, isFunc := param.Type.(*ast.FuncType); isFunc {
+				names := make([]string, 0, len(param.Names))
+				for _, ident := range param.Names {
+					names = append(names, ident.Name)
+				}
+				t.Errorf("module %s NewModule takes bare positional func param %s; host seams must arrive via clicontract.HostOptions",
+					family, strings.Join(names, ", "))
+			}
+		}
+	}
+}
+
+// TestModuleImportsNoDirectHostEffects proves each module.go reaches for no
+// direct host effect: it imports neither os nor os/exec (filesystem/process
+// effects belong to injected adapters), and it never calls time.Now (the clock
+// arrives through clicontract.HostOptions.Now). Types and constants from time
+// (time.Duration, time.RFC3339) stay allowed, matching current legitimate use.
+func TestModuleImportsNoDirectHostEffects(t *testing.T) {
+	deniedImports := map[string]bool{"os": true, "os/exec": true}
+	for family, path := range commandModuleFiles(t) {
+		fset := token.NewFileSet()
+		file, err := parser.ParseFile(fset, path, nil, 0)
+		if err != nil {
+			t.Fatalf("parse %s: %v", path, err)
+		}
+		for _, spec := range file.Imports {
+			imported := strings.Trim(spec.Path.Value, `"`)
+			if deniedImports[imported] {
+				t.Errorf("module %s imports direct-effect package %q; delegate the effect to an adapter or a host seam",
+					family, imported)
+			}
+		}
+		ast.Inspect(file, func(node ast.Node) bool {
+			call, ok := node.(*ast.CallExpr)
+			if !ok {
+				return true
+			}
+			selector, ok := call.Fun.(*ast.SelectorExpr)
+			if !ok {
+				return true
+			}
+			pkg, ok := selector.X.(*ast.Ident)
+			if ok && pkg.Name == "time" && selector.Sel.Name == "Now" {
+				t.Errorf("module %s calls time.Now; inject the clock through clicontract.HostOptions.Now", family)
+			}
+			return true
+		})
+	}
+}
+
+// TestNoModuleOrServiceSingletonPackageVars proves package main declares no
+// package-level var whose value is a command module or an app service singleton
+// — the pattern that let config and doctor drift into package globals while gate
+// and eval used constructor funcs. A var initialized by a call into an
+// internal/commands/* package, or by any New*Service constructor, must instead
+// live inside a newXxxCommand() constructor.
+func TestNoModuleOrServiceSingletonPackageVars(t *testing.T) {
+	for name, path := range packageGoFiles(t) {
+		fset := token.NewFileSet()
+		file, err := parser.ParseFile(fset, path, nil, 0)
+		if err != nil {
+			t.Fatalf("parse %s: %v", name, err)
+		}
+		aliases := importAliasMap(file)
+		for _, decl := range file.Decls {
+			gen, ok := decl.(*ast.GenDecl)
+			if !ok || gen.Tok != token.VAR {
+				continue
+			}
+			for _, spec := range gen.Specs {
+				value, ok := spec.(*ast.ValueSpec)
+				if !ok {
+					continue
+				}
+				for _, expr := range value.Values {
+					call, ok := expr.(*ast.CallExpr)
+					if !ok {
+						continue
+					}
+					selector, ok := call.Fun.(*ast.SelectorExpr)
+					if !ok {
+						continue
+					}
+					pkg, ok := selector.X.(*ast.Ident)
+					if !ok {
+						continue
+					}
+					importPath := aliases[pkg.Name]
+					if strings.Contains(importPath, "/internal/commands/") {
+						t.Errorf("cmd/ao/%s declares package-level var initialized by module constructor %s.%s; move it into a newXxxCommand() constructor",
+							name, pkg.Name, selector.Sel.Name)
+					}
+					if strings.HasPrefix(selector.Sel.Name, "New") && strings.HasSuffix(selector.Sel.Name, "Service") {
+						t.Errorf("cmd/ao/%s declares package-level service singleton var via %s.%s; construct it inside a newXxxCommand() constructor",
+							name, pkg.Name, selector.Sel.Name)
+					}
+				}
+			}
+		}
+	}
+}

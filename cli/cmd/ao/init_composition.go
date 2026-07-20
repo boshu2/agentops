@@ -3,6 +3,7 @@ package main
 
 import (
 	"github.com/spf13/cobra"
+	"github.com/boshu2/agentops/cli/internal/clicontract"
 
 	initcommands "github.com/boshu2/agentops/cli/internal/commands/init"
 )
@@ -16,7 +17,7 @@ func init() {
 // delegated to internal/initapp. The init family attaches no CommandContract to
 // the command tree, preserving its pre-migration capabilities surface.
 func newInitCommand() *cobra.Command {
-	module := initcommands.NewModule(initcommands.HostOptions{
+	module := initcommands.NewModule(clicontract.HostOptions{
 		DryRun: GetDryRun,
 	})
 	return module.Command()

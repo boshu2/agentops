@@ -10,20 +10,13 @@ import (
 	"github.com/boshu2/agentops/cli/internal/statusapp"
 )
 
-// HostOptions carries the ambient CLI seams the status command reads. Output
-// mode comes from the global -o/--output flag rather than a local flag so
-// status honors the same output selection as the rest of the CLI.
-type HostOptions struct {
-	OutputMode func() string
-}
-
 // Module owns Cobra presentation for the status command family.
 type Module struct {
-	host HostOptions
+	host clicontract.HostOptions
 }
 
 // NewModule constructs the status command module from its host seams.
-func NewModule(host HostOptions) Module {
+func NewModule(host clicontract.HostOptions) Module {
 	return Module{host: host}
 }
 
