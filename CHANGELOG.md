@@ -46,6 +46,13 @@ before upgrading.
   project-local `.claude/workflows/` registry — a Claude-only runtime adapter,
   same doctrine as `skills-codex/`, with the same refuse-foreign link
   semantics as `ao skills link`.
+- An `rpi` workflow script (`workflows/rpi.js`) running the one-pass core loop
+  as a conveyor: Plan snapshots exact intent bytes under SHA-256 identity,
+  Implement runs one bounded RED->GREEN experiment inside its write scope, and
+  a structurally separate fresh Validate context — receiving only derived
+  facts, never the author's narrative — persists `verdict.v2` with distinct
+  context ids. Any dead stage degrades to `NOT_PROVEN`; no retry, no
+  lifecycle authority.
 
 ### Changed
 
