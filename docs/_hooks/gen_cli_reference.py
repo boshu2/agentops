@@ -58,24 +58,31 @@ utilities. Semantic workflows remain skills rather than CLI lifecycle commands.
 
 ## Installation
 
+The CLI is optional — skills install without it via
+`npx skills@latest add boshu2/agentops --all -g` or a runtime plugin.
+
 ```bash
-# Official install script
-bash <(curl -fsSL https://raw.githubusercontent.com/boshu2/agentops/main/scripts/install.sh)
+brew tap boshu2/agentops https://github.com/boshu2/homebrew-agentops
+brew install agentops
 ```
 
-This installs:
+Without Homebrew: `go install github.com/boshu2/agentops/cli/cmd/ao@latest`
 
-- The `ao` binary to `~/.local/bin/ao`
-- Skills to `~/.claude/skills/`
+To track skills from a source checkout instead, run `ao skills link` from that
+checkout (see [Install and day-2 operations](../install-day2-ops.md)).
 
 ## Quickstart
 
 ```bash
-ao --version              # Verify install
-ao rpi phased "fix the flaky auth test"  # Full Research -> Plan -> Implement -> Validate cycle
-ao status                 # Where was I?
-ao goals measure          # Fitness gate
+ao version                # Verify install
+ao doctor                 # Installation health
+ao init                   # Create local evidence directories
+ao status                 # Durable loop evidence
+ao gate check             # Deterministic repository checks
 ```
+
+The semantic loop (`rpi`, `plan`, `implement`, `validate`) runs as skills in
+your coding agent, not as CLI commands.
 """
     with mkdocs_gen_files.open("cli/index.md", "w") as fh:
         fh.write(body)

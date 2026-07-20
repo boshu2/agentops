@@ -112,25 +112,26 @@ func RetroHasLearnings(path string) bool {
 
 // CountRetros counts retro artifacts and how many have associated learnings since a time.
 func CountRetros(baseDir string, since time.Time) (total int, withLearnings int, err error) {
-	retrosDir := filepath.Join(baseDir, ".agents", "retro")
-	if _, statErr := os.Stat(retrosDir); os.IsNotExist(statErr) {
-		return 0, 0, nil
-	}
+	for _, retrosDir := range KnowledgeSectionDirs(baseDir, "retro") {
+		if _, statErr := os.Stat(retrosDir); os.IsNotExist(statErr) {
+			continue
+		}
 
-	if walkErr := filepath.Walk(retrosDir, func(path string, info os.FileInfo, walkErr error) error {
-		if walkErr != nil || info.IsDir() {
+		if walkErr := filepath.Walk(retrosDir, func(path string, info os.FileInfo, walkErr error) error {
+			if walkErr != nil || info.IsDir() {
+				return nil
+			}
+			if !strings.HasSuffix(path, ".md") || !info.ModTime().After(since) {
+				return nil
+			}
+			total++
+			if RetroHasLearnings(path) {
+				withLearnings++
+			}
 			return nil
+		}); walkErr != nil {
+			fmt.Fprintf(os.Stderr, "Warning: failed to walk %s: %v\n", retrosDir, walkErr)
 		}
-		if !strings.HasSuffix(path, ".md") || !info.ModTime().After(since) {
-			return nil
-		}
-		total++
-		if RetroHasLearnings(path) {
-			withLearnings++
-		}
-		return nil
-	}); walkErr != nil {
-		fmt.Fprintf(os.Stderr, "Warning: failed to walk %s: %v\n", retrosDir, walkErr)
 	}
 
 	return total, withLearnings, nil
@@ -173,6 +174,18 @@ func IsKnowledgeFile(path string) bool {
 	return strings.HasSuffix(path, ".md") || strings.HasSuffix(path, ".jsonl")
 }
 
+// KnowledgeSectionDirs returns both locations a knowledge section may live in:
+// the canonical .agents/ao/<section> (where doctor's split fixer migrates
+// files) and the legacy .agents/<section> fallback. Metrics read both so no
+// split or migrated state hides artifacts (see doctor's
+// fm-knowledge-orphaned-flywheel-learnings).
+func KnowledgeSectionDirs(baseDir, section string) []string {
+	return []string{
+		filepath.Join(baseDir, ".agents", "ao", section),
+		filepath.Join(baseDir, ".agents", section),
+	}
+}
+
 // CountArtifactsByTier counts knowledge artifacts by tier under baseDir/.agents.
 // sessionsDir, when non-empty, is included in the total count for sessions.
 func CountArtifactsByTier(baseDir, sessionsDir string) (int, map[string]int, error) {
@@ -186,39 +199,43 @@ func CountArtifactsByTier(baseDir, sessionsDir string) (int, map[string]int, err
 	}
 	total := 0
 
-	tierDirs := map[string]string{
-		"observation": filepath.Join(baseDir, ".agents", "candidates"),
-		"learning":    filepath.Join(baseDir, ".agents", "learnings"),
-		"pattern":     filepath.Join(baseDir, ".agents", "patterns"),
+	tierSections := map[string]string{
+		"observation": "candidates",
+		"learning":    "learnings",
+		"pattern":     "patterns",
 	}
 
-	for tier, dir := range tierDirs {
-		if _, err := os.Stat(dir); os.IsNotExist(err) {
-			continue
+	for tier, section := range tierSections {
+		for _, dir := range KnowledgeSectionDirs(baseDir, section) {
+			if _, err := os.Stat(dir); os.IsNotExist(err) {
+				continue
+			}
+			files, err := filepath.Glob(filepath.Join(dir, "*.md"))
+			if err != nil {
+				continue
+			}
+			jsonlFiles, _ := filepath.Glob(filepath.Join(dir, "*.jsonl"))
+			files = append(files, jsonlFiles...)
+
+			tierCounts[tier] += len(files)
+			total += len(files)
 		}
-		files, err := filepath.Glob(filepath.Join(dir, "*.md"))
-		if err != nil {
-			continue
+	}
+
+	for _, researchDir := range KnowledgeSectionDirs(baseDir, "research") {
+		if _, err := os.Stat(researchDir); err == nil {
+			files, _ := filepath.Glob(filepath.Join(researchDir, "*.md"))
+			tierCounts["observation"] += len(files)
+			total += len(files)
 		}
-		jsonlFiles, _ := filepath.Glob(filepath.Join(dir, "*.jsonl"))
-		files = append(files, jsonlFiles...)
-
-		tierCounts[tier] = len(files)
-		total += len(files)
 	}
 
-	researchDir := filepath.Join(baseDir, ".agents", "research")
-	if _, err := os.Stat(researchDir); err == nil {
-		files, _ := filepath.Glob(filepath.Join(researchDir, "*.md"))
-		tierCounts["observation"] += len(files)
-		total += len(files)
-	}
-
-	retrosDir := filepath.Join(baseDir, ".agents", "retro")
-	if _, err := os.Stat(retrosDir); err == nil {
-		files, _ := filepath.Glob(filepath.Join(retrosDir, "*.md"))
-		tierCounts["retro"] = len(files)
-		total += len(files)
+	for _, retrosDir := range KnowledgeSectionDirs(baseDir, "retro") {
+		if _, err := os.Stat(retrosDir); err == nil {
+			files, _ := filepath.Glob(filepath.Join(retrosDir, "*.md"))
+			tierCounts["retro"] += len(files)
+			total += len(files)
+		}
 	}
 
 	if sessionsDir != "" {
@@ -233,12 +250,9 @@ func CountArtifactsByTier(baseDir, sessionsDir string) (int, map[string]int, err
 
 // CountNewArtifacts counts new artifacts since a time across the standard agent dirs.
 func CountNewArtifacts(baseDir string, since time.Time) (int, error) {
-	dirs := []string{
-		filepath.Join(baseDir, ".agents", "learnings"),
-		filepath.Join(baseDir, ".agents", "patterns"),
-		filepath.Join(baseDir, ".agents", "candidates"),
-		filepath.Join(baseDir, ".agents", "research"),
-		filepath.Join(baseDir, ".agents", "retro"),
+	var dirs []string
+	for _, section := range []string{"learnings", "patterns", "candidates", "research", "retro"} {
+		dirs = append(dirs, KnowledgeSectionDirs(baseDir, section)...)
 	}
 	return CountNewArtifactsInDirs(dirs, since)
 }
@@ -294,9 +308,9 @@ func CountStaleArtifacts(baseDir string, citations []types.CitationEvent, staleD
 	staleThreshold := time.Now().AddDate(0, 0, -staleDays)
 	lastCited := BuildLastCitedMap(citations, normalize)
 
-	dirs := []string{
-		filepath.Join(baseDir, ".agents", "learnings"),
-		filepath.Join(baseDir, ".agents", "patterns"),
+	var dirs []string
+	for _, section := range []string{"learnings", "patterns"} {
+		dirs = append(dirs, KnowledgeSectionDirs(baseDir, section)...)
 	}
 	total := 0
 	for _, dir := range dirs {
