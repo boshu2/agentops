@@ -49,10 +49,12 @@ command -v jq >/dev/null 2>&1 || exit 0
 [ -f "$registry" ] || exit 0
 
 input="$(cat)"
-tool="$(printf '%s' "$input" | jq -r '.tool_name // ""')"
-cmd="$(printf '%s' "$input" | jq -r '.tool_input.command // ""')"
-fpath="$(printf '%s' "$input" | jq -r '.tool_input.file_path // ""')"
-sid="$(printf '%s' "$input" | jq -r '.session_id // "nosession"')"
+# 2>/dev/null: malformed stdin must be FULLY silent (fail open), not leak jq
+# parse errors to stderr (validator finding F3, 2026-07-20).
+tool="$(printf '%s' "$input" | jq -r '.tool_name // ""' 2>/dev/null)"
+cmd="$(printf '%s' "$input" | jq -r '.tool_input.command // ""' 2>/dev/null)"
+fpath="$(printf '%s' "$input" | jq -r '.tool_input.file_path // ""' 2>/dev/null)"
+sid="$(printf '%s' "$input" | jq -r '.session_id // "nosession"' 2>/dev/null)"
 [ -n "$tool" ] || exit 0
 
 hash_value() {
