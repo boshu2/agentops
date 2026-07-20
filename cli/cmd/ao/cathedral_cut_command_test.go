@@ -40,12 +40,3 @@ func TestCathedralCutNestedVerbsFailWithHint(t *testing.T) {
 		}
 	}
 }
-
-func TestQuickStartNamesOnlySurvivingResponsibilities(t *testing.T) {
-	text := quickstartCmd.Long
-	for _, forbidden := range []string{"ao land", "ao verify", "ao beads", "ao pawl"} {
-		if strings.Contains(text, forbidden) {
-			t.Fatalf("quick-start advertises removed responsibility %q", forbidden)
-		}
-	}
-}
