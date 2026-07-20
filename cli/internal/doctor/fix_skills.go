@@ -89,7 +89,9 @@ func countSkillMDSubdirs(dir string) int {
 }
 
 // skillMDSubdirNames returns the sorted names of immediate subdirectories of
-// dir that contain a SKILL.md file. A missing dir yields nil.
+// dir that contain a SKILL.md file. A missing dir yields nil. Entries that are
+// symlinks are resolved (os.Stat follows links), so a symlink farm like the
+// canonical `ao skills link` layout counts; a dangling symlink does not.
 func skillMDSubdirNames(dir string) []string {
 	entries, err := os.ReadDir(dir)
 	if err != nil {
@@ -98,7 +100,12 @@ func skillMDSubdirNames(dir string) []string {
 	var out []string
 	for _, e := range entries {
 		if !e.IsDir() {
-			continue
+			// e.IsDir is Lstat-based and false for symlinks; resolve
+			// through the link before rejecting the entry.
+			st, serr := os.Stat(filepath.Join(dir, e.Name()))
+			if serr != nil || !st.IsDir() {
+				continue
+			}
 		}
 		if st, serr := os.Stat(filepath.Join(dir, e.Name(), "SKILL.md")); serr == nil && !st.IsDir() {
 			out = append(out, e.Name())
@@ -208,7 +215,7 @@ func (d skillsMissingDetector) Detect(env *DetectEnv) ([]Finding, error) {
 		Confidence: 1.0,
 		Evidence: Evidence{
 			File:  ".claude/skills",
-			Query: "scan of 4 SkillInstallDirs found 0 SKILL.md subdirs: " + strings.Join(scanned, " "),
+			Query: "scan of 4 SkillInstallDirs (symlinked entries resolved) found 0 SKILL.md subdirs: " + strings.Join(scanned, " "),
 		},
 		Remediation: remediation(d.ID(), autoFixable, countSkillMDSubdirs(src)),
 	}}, nil
