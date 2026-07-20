@@ -344,6 +344,73 @@ func TestSkillsMissingNoFindingWhenPopulated(t *testing.T) {
 	}
 }
 
+// TestSkillsMissingSymlinkResolution verifies the detector counts a skill as
+// present when the install-dir entry is a symlink that resolves to a directory
+// containing SKILL.md (the canonical `ao skills link` layout), while a dangling
+// symlink still counts as absent.
+func TestSkillsMissingSymlinkResolution(t *testing.T) {
+	cases := []struct {
+		name         string
+		populate     func(t *testing.T, home string)
+		wantFindings int
+	}{
+		{
+			name: "real dir with SKILL.md counts as present",
+			populate: func(t *testing.T, home string) {
+				writeSkillsFile(t, filepath.Join(home, ".agents", "skills", "rpi", "SKILL.md"), "x\n")
+			},
+			wantFindings: 0,
+		},
+		{
+			name: "symlink resolving to dir with SKILL.md counts as present",
+			populate: func(t *testing.T, home string) {
+				src := filepath.Join(home, "checkout", "skills", "rpi")
+				writeSkillsFile(t, filepath.Join(src, "SKILL.md"), "x\n")
+				install := filepath.Join(home, ".agents", "skills")
+				if err := os.MkdirAll(install, 0o755); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.Symlink(src, filepath.Join(install, "rpi")); err != nil {
+					t.Fatal(err)
+				}
+			},
+			wantFindings: 0,
+		},
+		{
+			name: "dangling symlink still counts as absent",
+			populate: func(t *testing.T, home string) {
+				install := filepath.Join(home, ".agents", "skills")
+				if err := os.MkdirAll(install, 0o755); err != nil {
+					t.Fatal(err)
+				}
+				gone := filepath.Join(home, "checkout", "skills", "gone")
+				if err := os.Symlink(gone, filepath.Join(install, "rpi")); err != nil {
+					t.Fatal(err)
+				}
+			},
+			wantFindings: 1,
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			repo := t.TempDir()
+			home := t.TempDir()
+			tc.populate(t, home)
+			env := &DetectEnv{RepoRoot: repo, CWD: repo, HomeDir: home}
+			findings, err := skillsMissingDetector{}.Detect(env)
+			if err != nil {
+				t.Fatalf("Detect: %v", err)
+			}
+			if len(findings) != tc.wantFindings {
+				t.Fatalf("findings = %d, want %d: %+v", len(findings), tc.wantFindings, findings)
+			}
+			if tc.wantFindings == 1 && findings[0].ID != "fm-skills-missing" {
+				t.Fatalf("finding ID = %q, want fm-skills-missing", findings[0].ID)
+			}
+		})
+	}
+}
+
 // --- fm-skills-integrity-hygiene -------------------------------------------
 
 // TestSkillsIntegrityHygieneFixer verifies the partial fixer appends a link for

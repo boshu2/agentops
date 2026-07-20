@@ -48,15 +48,53 @@ func writeScript(t *testing.T, root, name, body string) {
 	}
 }
 
-func TestScriptRunner_MissingScriptIsUnknown(t *testing.T) {
-	r := NewScriptRunner(t.TempDir())
-	v, err := r.Run(context.Background(), ports.GateRunRequest{Name: "does-not-exist.sh"})
-	if err != nil {
-		t.Fatalf("Run: %v", err)
+// writeAgentopsMarker stamps root with the deterministic "this IS the agentops
+// repo" marker IsAgentOpsRepo keys on: cli/go.mod declaring the agentops CLI
+// module path.
+func writeAgentopsMarker(t *testing.T, root string) {
+	t.Helper()
+	if err := os.MkdirAll(filepath.Join(root, "cli"), 0o755); err != nil {
+		t.Fatalf("mkdir cli: %v", err)
 	}
-	if v.Status != ports.GateStatusUnknown {
-		t.Errorf("missing script -> %s, want UNKNOWN", v.Status)
+	gomod := "module " + agentopsCLIModulePath + "\n\ngo 1.22\n"
+	if err := os.WriteFile(filepath.Join(root, "cli", "go.mod"), []byte(gomod), 0o644); err != nil {
+		t.Fatalf("write cli/go.mod: %v", err)
 	}
+}
+
+// TestScriptRunner_MissingScript pins the two worlds a missing backing script
+// lives in: inside the agentops repo it is a lost gate (UNKNOWN, fail-closed);
+// in a foreign repo it is a first-class not-applicable SKIP (novice-test
+// edge 1 — foreign repos used to get ~10 blocking UNKNOWNs and exit 1).
+func TestScriptRunner_MissingScript(t *testing.T) {
+	t.Run("agentops repo stays UNKNOWN", func(t *testing.T) {
+		root := t.TempDir()
+		writeAgentopsMarker(t, root)
+		r := NewScriptRunner(root)
+		v, err := r.Run(context.Background(), ports.GateRunRequest{Name: "does-not-exist.sh"})
+		if err != nil {
+			t.Fatalf("Run: %v", err)
+		}
+		if v.Status != ports.GateStatusUnknown {
+			t.Errorf("missing script in agentops repo -> %s, want UNKNOWN", v.Status)
+		}
+		if want := "no script " + filepath.Join(root, "scripts", "does-not-exist.sh"); v.Reason != want {
+			t.Errorf("reason = %q, want %q", v.Reason, want)
+		}
+	})
+	t.Run("foreign repo is not-applicable SKIP", func(t *testing.T) {
+		r := NewScriptRunner(t.TempDir()) // no marker: foreign repo
+		v, err := r.Run(context.Background(), ports.GateRunRequest{Name: "does-not-exist.sh"})
+		if err != nil {
+			t.Fatalf("Run: %v", err)
+		}
+		if v.Status != ports.GateStatusSkip {
+			t.Errorf("missing script in foreign repo -> %s, want SKIP", v.Status)
+		}
+		if v.Reason != NotApplicableReason {
+			t.Errorf("reason = %q, want %q", v.Reason, NotApplicableReason)
+		}
+	})
 }
 
 func TestScriptRunner_PassAndFail(t *testing.T) {

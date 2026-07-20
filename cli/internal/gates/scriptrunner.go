@@ -122,6 +122,17 @@ func (s *ScriptRunner) Run(ctx context.Context, req ports.GateRunRequest) (ports
 		script = filepath.Join(s.repoRoot, name)
 	}
 	if fi, err := os.Stat(script); err != nil || fi.IsDir() {
+		// A missing backing artifact means two different things depending on
+		// which repository the gate is running in. Inside the agentops repo it
+		// is a lost gate: stay UNKNOWN, which is fail-closed for blocking
+		// checks (isBlockingFail) and protects agentops CI. In a FOREIGN repo
+		// the agentops-internal scripts legitimately do not exist, so the
+		// check is a first-class not-applicable SKIP (novice-test edge 1:
+		// `ao gate check` in any other repo used to print ~10 blocking
+		// UNKNOWNs and exit 1).
+		if !IsAgentOpsRepo(s.repoRoot) {
+			return ports.GateVerdict{Status: ports.GateStatusSkip, Reason: NotApplicableReason}, nil
+		}
 		return ports.GateVerdict{Status: ports.GateStatusUnknown, Reason: fmt.Sprintf("no script %s", script)}, nil
 	}
 

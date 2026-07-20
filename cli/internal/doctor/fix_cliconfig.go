@@ -355,11 +355,20 @@ func probeConfigSourceShape(repoRoot string) bool {
 
 const fmMissingRequiredCLI = "fm-cli-config-missing-required-cli"
 
-// missingRequiredCLIDetector flags a required external CLI absent from PATH, or
-// shadowed by a duplicate earlier on PATH. Only `git` is universally required;
-// `br` (this repo's own tracker) is required only when running inside an
-// agentops repo clone — an installed user who tracks work with `bd` (or nothing)
-// must never see `br` reported as a missing "required" CLI.
+// missingRequiredCLIDetector flags a required external CLI absent from PATH.
+// Only `git` is universally required; `br` (this repo's own tracker) is
+// required only when running inside an agentops repo clone — an installed user
+// who tracks work with `bd` (or nothing) must never see `br` reported as a
+// missing "required" CLI.
+//
+// PATH shadowing alone (multiple installs of a required CLI, the first
+// resolving fine) is NOT a failure mode: it is the default state of a macOS
+// dev machine (Homebrew git ahead of Apple's /usr/bin/git shim) and is usually
+// harmless. Any finding — even P3 — flips the doctor exit code, so a
+// shadow-only condition must stay silent on a pristine install (same policy as
+// the retired optional-codex FM below; novice-test edge 3). When a CLI is
+// genuinely missing, duplicate-resolution context still rides along in the
+// evidence query as informational detail.
 type missingRequiredCLIDetector struct{}
 
 func (missingRequiredCLIDetector) ID() string           { return fmMissingRequiredCLI }
@@ -369,7 +378,7 @@ func (missingRequiredCLIDetector) EstimatedCostMS() int { return 5 }
 func (missingRequiredCLIDetector) OnlineRequired() bool { return false }
 func (missingRequiredCLIDetector) QuickPath() bool      { return true }
 func (missingRequiredCLIDetector) Describe() string {
-	return "Detects required external CLIs (git always; br inside an agentops clone) missing from PATH or shadowed by a duplicate."
+	return "Detects required external CLIs (git always; br inside an agentops clone) missing from PATH; benign PATH shadowing alone is not flagged."
 }
 
 // Detect resolves every match for the required CLIs on PATH. It is pure:
@@ -391,18 +400,19 @@ func (missingRequiredCLIDetector) Detect(env *DetectEnv) ([]Finding, error) {
 			shadowed = append(shadowed, name+" -> "+strings.Join(resolved, ", "))
 		}
 	}
-	if len(missing) == 0 && len(shadowed) == 0 {
-		return nil, nil
-	}
-	title := "required external CLI missing from PATH"
+	// Shadow-only (nothing missing, first-resolved CLI works) is the default
+	// macOS dev-machine state — multiple installs on PATH with the first
+	// resolving first is usually harmless, so it never becomes a finding.
+	// The missing-CLI remediation template below therefore only renders when
+	// missing_clis is non-empty, with real CLI names interpolated.
 	if len(missing) == 0 {
-		title = "required external CLI shadowed by a duplicate on PATH"
+		return nil, nil
 	}
 	return []Finding{{
 		ID:         fmMissingRequiredCLI,
 		Severity:   "P1",
 		Subsystem:  "cli-config",
-		Title:      title,
+		Title:      "required external CLI missing from PATH",
 		Confidence: 1.0,
 		Evidence: Evidence{
 			Query: "missing_clis=" + strings.Join(missing, ",") +
