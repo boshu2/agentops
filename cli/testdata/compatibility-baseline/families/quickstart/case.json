@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "family": "quickstart",
+  "checks": [
+    {
+      "id": "quickstart-black-box",
+      "command": "tmp=$(mktemp -d /tmp/ao-quickstart.XXXXXX); (cd cli && go build -o \"$tmp/ao\" ./cmd/ao); \"$tmp/ao\" quick-start --help >\"$tmp/help\"; grep -Fq 'Show the single-pass AgentOps workflow' \"$tmp/help\"; grep -Fq 'AgentOps is a small semantic evidence layer around agent work' \"$tmp/help\"; \"$tmp/ao\" quick-start >\"$tmp/text\"; grep -Fq 'RPI -> Plan -> Implement -> fresh Validate -> durable verdict -> report and stop' \"$tmp/text\"; grep -Fq 'Deterministic checks: ao gate check' \"$tmp/text\"; grep -Fq 'Semantic judgment: invoke the Validate skill from a fresh context' \"$tmp/text\"; if \"$tmp/ao\" quick-start extra-arg >/dev/null 2>&1; then echo 'quick-start accepted a positional arg' >&2; exit 1; fi"
+    },
+    {
+      "id": "quickstart-go-behavior",
+      "command": "cd cli && go test ./internal/commands/quickstart/... -count=1"
+    }
+  ],
+  "dimensions": {
+    "path": {"status": "evidence", "evidence": ["quickstart-black-box", "quickstart-go-behavior"]},
+    "aliases": {"status": "not_applicable", "reason": "The quickstart family declares no command aliases."},
+    "accepted_args": {"status": "evidence", "evidence": ["quickstart-black-box", "quickstart-go-behavior"]},
+    "rejected_args": {"status": "evidence", "evidence": ["quickstart-black-box"]},
+    "stdout": {"status": "evidence", "evidence": ["quickstart-black-box", "quickstart-go-behavior"]},
+    "stderr": {"status": "not_applicable", "reason": "quick-start writes only to stdout on success."},
+    "exit_classes": {"status": "evidence", "evidence": ["quickstart-black-box"]},
+    "tracker_selection": {"status": "not_applicable", "reason": "The quickstart family does not select a repository issue tracker."},
+    "ordered_effects": {"status": "not_applicable", "reason": "quick-start prints a static workflow summary with no ordered effects."}
+  }
+}
