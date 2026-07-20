@@ -347,3 +347,23 @@ GO
     [ "$status" -eq 1 ]
     [[ "$output" == *"cli/internal/thing/gainer.go"* ]]
 }
+
+@test "a dying scan helper is rc 2 refusing to certify — never a silent PASS (CI flake 29785505667)" {
+    # Root of the one-off CI false-PASS: a helper (awk/grep) killed or failing
+    # under parallel-runner load used to read as "no signal" and the gate
+    # printed a clean PASS over an unchecked diff. Pin the tri-state: helper
+    # death is loud rc 2, never certification.
+    write_writer_shape "cli/internal/thing/writer.go"
+    commit_all "add writer"
+    mkdir -p "$TMP_DIR/bin"
+    cat > "$TMP_DIR/bin/awk" <<'SHIM'
+#!/usr/bin/env bash
+# Simulate the CI class: the scan helper dies (stray signal / fork pressure).
+kill -TERM $$
+SHIM
+    chmod +x "$TMP_DIR/bin/awk"
+    run bash -c "cd '$TMP_DIR' && PATH=\"$TMP_DIR/bin:\$PATH\" bash scripts/check-atomic-write-ratchet.sh --scope head"
+    [ "$status" -eq 2 ]
+    [[ "$output" == *"refusing to certify"* ]]
+    [[ "$output" != *"PASS"* ]]
+}

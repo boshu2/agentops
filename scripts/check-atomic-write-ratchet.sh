@@ -133,12 +133,35 @@ strip_go_comments() {
 # file_trips PATH -> 0 if the WHOLE FILE trips: a non-comment os.Rename(
 # invocation AND a non-comment temp-file signal (os.CreateTemp( or ".tmp
 # literal), evaluated AFTER strip_go_comments.
+# Tri-state: 0 trips · 1 does not trip (incl. path absent from the worktree —
+# a deleted file is no new site) · 2 helper failure, refusing to certify.
+# A dying awk/grep (fork failure, stray signal under parallel CI load) must
+# never read as "no signal": that exact conflation let the gate print a clean
+# PASS over an unchecked diff once on CI (run 29785505667, bats 4-way parallel)
+# — the same swallowed-failure class the ratchet-lib collectors guard against.
+# The signal greps read their whole input (no -q early-exit) so pipefail can
+# never surface a SIGPIPE'd printf as a phantom helper failure on large files.
 file_trips() {
-  local p="$1" stripped
+  local p="$1" stripped rc
   [[ -f "$p" ]] || return 1
-  stripped="$(strip_go_comments < "$p")" || return 1
-  printf '%s\n' "$stripped" | grep -q 'os\.Rename(' || return 1
-  printf '%s\n' "$stripped" | grep -qE 'os\.CreateTemp\(|"\.tmp' || return 1
+  if ! stripped="$(strip_go_comments < "$p")"; then
+    echo "check-atomic-write-ratchet: comment strip failed for '$p' — refusing to certify" >&2
+    return 2
+  fi
+  rc=0
+  printf '%s\n' "$stripped" | grep 'os\.Rename(' >/dev/null || rc=$?
+  if [[ "$rc" -gt 1 ]]; then
+    echo "check-atomic-write-ratchet: signal scan failed (rc $rc) for '$p' — refusing to certify" >&2
+    return 2
+  fi
+  [[ "$rc" -eq 0 ]] || return 1
+  rc=0
+  printf '%s\n' "$stripped" | grep -E 'os\.CreateTemp\(|"\.tmp' >/dev/null || rc=$?
+  if [[ "$rc" -gt 1 ]]; then
+    echo "check-atomic-write-ratchet: signal scan failed (rc $rc) for '$p' — refusing to certify" >&2
+    return 2
+  fi
+  [[ "$rc" -eq 0 ]] || return 1
   return 0
 }
 
@@ -146,10 +169,18 @@ file_trips() {
 # tripping, sorted. Same heuristic as the flagger, so a fresh regenerate is
 # authoritative for "what is grandfathered now".
 compute_grandfather_set() {
-  local f
+  local f rc
   while IFS= read -r f; do
     is_exempt_path "$f" && continue
-    file_trips "$f" || continue
+    rc=0
+    file_trips "$f" || rc=$?
+    # A helper failure must abort the regenerate (ratchet_regenerate then
+    # leaves the pinned file untouched) — a swallowed rc 2 here would silently
+    # drop entries and emit a truncated grandfather list.
+    if [[ "$rc" -eq 2 ]]; then
+      return 1
+    fi
+    [[ "$rc" -eq 0 ]] || continue
     printf '%s\n' "$f"
   done < <(grep -rl 'os\.Rename(' cli --include='*.go' 2>/dev/null || true) | LC_ALL=C sort
 }
@@ -208,11 +239,25 @@ elif [[ "$_shrink_rc" -ne 0 ]]; then
   done <<< "$added_entries"
 fi
 
+# Collect the changed set BEFORE iterating: a collector failure inside a
+# `< <(...)` process substitution is silently discarded and the loop would
+# certify an EMPTY change set — the exact fail-open the ratchet-lib header
+# warns about (and the silent-PASS shape of CI flake 29785505667). Captured
+# under pipefail, a collector rc 2 aborts loudly instead.
+changed_list="$(ratchet_changed_files "$SCOPE" | LC_ALL=C sort -u)" \
+  || { echo "check-atomic-write-ratchet: changed-file collection failed — refusing to certify an unchecked change set" >&2; exit 2; }
+
 new_hits=()
 while IFS= read -r f; do
   [[ -z "$f" ]] && continue
   is_exempt_path "$f" && continue
-  file_trips "$f" || continue
+  trip_rc=0
+  file_trips "$f" || trip_rc=$?
+  if [[ "$trip_rc" -eq 2 ]]; then
+    exit 2
+  elif [[ "$trip_rc" -ne 0 ]]; then
+    continue
+  fi
   # The added-hunk guard applies to EVERY tripping file — grandfathered or
   # not: a new rename site never rides an old exemption (premortem FM7).
   # It fires when the added hunk introduces EITHER half of the signature —
@@ -222,9 +267,16 @@ while IFS= read -r f; do
   # with NO // earlier on the added line (comment-only additions never trip);
   # an added line inside a multi-line /* block */ cannot be classified from a
   # diff hunk and MAY false-trip — advisory, pre-declared.
-  ratchet_added_hunk_matches "$SCOPE" "$f" '^([^/]|/[^/])*(os\.Rename\(|os\.CreateTemp\(|"\.tmp)' || continue
+  hunk_rc=0
+  ratchet_added_hunk_matches "$SCOPE" "$f" '^([^/]|/[^/])*(os\.Rename\(|os\.CreateTemp\(|"\.tmp)' || hunk_rc=$?
+  if [[ "$hunk_rc" -eq 1 ]]; then
+    continue
+  elif [[ "$hunk_rc" -ne 0 ]]; then
+    echo "check-atomic-write-ratchet: added-hunk guard failed (rc $hunk_rc) for '$f' — refusing to certify" >&2
+    exit 2
+  fi
   new_hits+=("$f")
-done < <(ratchet_changed_files "$SCOPE" | LC_ALL=C sort -u)
+done <<< "$changed_list"
 
 if [[ "${#new_hits[@]}" -gt 0 ]]; then
   rc=1
@@ -242,7 +294,11 @@ fi
 # SHRINK RATCHET: a grandfathered file that no longer trips must be pruned.
 stale=()
 for g in "${GRANDFATHER[@]}"; do
-  if ! file_trips "$g"; then
+  trip_rc=0
+  file_trips "$g" || trip_rc=$?
+  if [[ "$trip_rc" -eq 2 ]]; then
+    exit 2
+  elif [[ "$trip_rc" -ne 0 ]]; then
     stale+=("$g")
   fi
 done

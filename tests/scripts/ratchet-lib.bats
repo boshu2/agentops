@@ -291,6 +291,24 @@ SHIM
     [ "$status" -eq 0 ]
 }
 
+@test "added_hunk_matches with a DYING awk is rc 2 (helper failure never reads as no-match)" {
+    # Pin for the atomic-write CI false-PASS class (run 29785505667): a scan
+    # helper killed under parallel-runner load must be a loud rc 2, not rc 1 —
+    # rc 1 lets a consumer gate certify an unchecked diff as clean.
+    ( cd "$TMP_DIR" && printf 'package x\n' > f.go )
+    seed_commit "base f.go"
+    ( cd "$TMP_DIR" && printf 'package x\nfunc a() { os.Rename(p, q) }\n' > f.go && git add f.go && git commit -qm "add rename" )
+    mkdir -p "$TMP_DIR/binawk"
+    cat > "$TMP_DIR/binawk/awk" <<'SHIM'
+#!/usr/bin/env bash
+kill -TERM $$
+SHIM
+    chmod +x "$TMP_DIR/binawk/awk"
+    run bash -c "cd '$TMP_DIR' && source '$LIB' && PATH=\"$TMP_DIR/binawk:\$PATH\" ratchet_added_hunk_matches head f.go 'os\\.Rename\\('"
+    [ "$status" -eq 2 ]
+    [[ "$output" == *"refusing to certify"* ]]
+}
+
 # --- regenerate --------------------------------------------------------------
 
 @test "regenerate writes header + LC_ALL=C sorted body" {
