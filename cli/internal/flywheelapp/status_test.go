@@ -1,5 +1,5 @@
 // practices: [dora-metrics, sre]
-package main
+package flywheelapp
 
 import (
 	"bytes"
@@ -11,8 +11,11 @@ import (
 	"time"
 
 	"github.com/boshu2/agentops/cli/internal/types"
-	"github.com/spf13/cobra"
 )
+
+// noopVerbosef is the verbose-printer seam used by the app tests: diagnostics
+// are discarded so the tests assert only on rendered stdout.
+func noopVerbosef(string, ...any) {}
 
 func TestPrintFlywheelStatus_Compounding(t *testing.T) {
 	var buf bytes.Buffer
@@ -29,11 +32,7 @@ func TestPrintFlywheelStatus_Compounding(t *testing.T) {
 		TierCounts:          map[string]int{},
 	}
 
-	oldDays := metricsDays
-	metricsDays = 7
-	defer func() { metricsDays = oldDays }()
-
-	printFlywheelStatus(&buf, m)
+	printFlywheelStatus(&buf, m, 7)
 
 	got := buf.String()
 	if !strings.Contains(got, "[COMPOUNDING]") {
@@ -79,7 +78,7 @@ func TestComputeMetricsForNamespace_FiltersCitations(t *testing.T) {
 		},
 	})
 
-	primary, err := computeMetricsForNamespace(dir, 7, "")
+	primary, err := computeMetricsForNamespace(dir, 7, "", noopVerbosef)
 	if err != nil {
 		t.Fatalf("computeMetricsForNamespace(primary): %v", err)
 	}
@@ -90,7 +89,7 @@ func TestComputeMetricsForNamespace_FiltersCitations(t *testing.T) {
 		t.Fatalf("primary rho = %f, want ~1.0", primary.Rho)
 	}
 
-	shadow, err := computeMetricsForNamespace(dir, 7, "shadow")
+	shadow, err := computeMetricsForNamespace(dir, 7, "shadow", noopVerbosef)
 	if err != nil {
 		t.Fatalf("computeMetricsForNamespace(shadow): %v", err)
 	}
@@ -117,11 +116,7 @@ func TestPrintFlywheelStatus_NearEscape(t *testing.T) {
 		TierCounts:          map[string]int{},
 	}
 
-	oldDays := metricsDays
-	metricsDays = 7
-	defer func() { metricsDays = oldDays }()
-
-	printFlywheelStatus(&buf, m)
+	printFlywheelStatus(&buf, m, 7)
 
 	got := buf.String()
 	if !strings.Contains(got, "Flywheel Health: [ACCUMULATING]") {
@@ -151,11 +146,7 @@ func TestPrintFlywheelStatus_Decaying(t *testing.T) {
 		TierCounts:          map[string]int{},
 	}
 
-	oldDays := metricsDays
-	metricsDays = 7
-	defer func() { metricsDays = oldDays }()
-
-	printFlywheelStatus(&buf, m)
+	printFlywheelStatus(&buf, m, 7)
 
 	got := buf.String()
 	if !strings.Contains(got, "[DECAYING]") {
@@ -187,11 +178,7 @@ func TestPrintFlywheelStatus_SeparatesHealthFromEscapeVelocity(t *testing.T) {
 		TierCounts: map[string]int{},
 	}
 
-	oldDays := metricsDays
-	metricsDays = 7
-	defer func() { metricsDays = oldDays }()
-
-	printFlywheelStatus(&buf, m)
+	printFlywheelStatus(&buf, m, 7)
 
 	got := buf.String()
 	if !strings.Contains(got, "Flywheel Health: [ACCUMULATING]") {
@@ -237,11 +224,7 @@ func TestPrintFlywheelStatus_Recommendations(t *testing.T) {
 				TierCounts:          map[string]int{},
 			}
 
-			oldDays := metricsDays
-			metricsDays = 7
-			defer func() { metricsDays = oldDays }()
-
-			printFlywheelStatus(&buf, m)
+			printFlywheelStatus(&buf, m, 7)
 
 			if !strings.Contains(buf.String(), tt.wantRec) {
 				t.Errorf("expected recommendation %q in output, got: %q", tt.wantRec, buf.String())
@@ -271,21 +254,10 @@ func TestFlywheelStatus_GoldenSignalsAlwaysShown(t *testing.T) {
 
 	t.Chdir(dir)
 
-	oldOutput := output
-	defer func() { output = oldOutput }()
-
-	oldDays := metricsDays
-	metricsDays = 7
-	defer func() { metricsDays = oldDays }()
-
 	// Golden signals should appear in JSON output WITHOUT --golden flag
-	output = "json"
-	cmd := &cobra.Command{}
 	var buf bytes.Buffer
-	cmd.SetOut(&buf)
-
-	if err := runFlywheelStatus(cmd, nil); err != nil {
-		t.Fatalf("runFlywheelStatus failed: %v", err)
+	if err := Status(&buf, "json", 7, PrimaryMetricNamespace, noopVerbosef); err != nil {
+		t.Fatalf("Status failed: %v", err)
 	}
 
 	var parsed map[string]any
@@ -310,13 +282,8 @@ func TestFlywheelStatus_GoldenSignalsAlwaysShown(t *testing.T) {
 
 	// Golden signals should appear in table output WITHOUT --golden flag
 	buf.Reset()
-	output = "table"
-
-	cmd2 := &cobra.Command{}
-	cmd2.SetOut(&buf)
-
-	if err := runFlywheelStatus(cmd2, nil); err != nil {
-		t.Fatalf("runFlywheelStatus table failed: %v", err)
+	if err := Status(&buf, "table", 7, PrimaryMetricNamespace, noopVerbosef); err != nil {
+		t.Fatalf("Status table failed: %v", err)
 	}
 	got := buf.String()
 	if !strings.Contains(got, "GOLDEN SIGNALS") {
@@ -327,7 +294,7 @@ func TestFlywheelStatus_GoldenSignalsAlwaysShown(t *testing.T) {
 	}
 }
 
-func TestRunFlywheelStatus_JSONOutput(t *testing.T) {
+func TestStatus_JSONOutput(t *testing.T) {
 	dir := t.TempDir()
 	for _, rel := range []string{
 		filepath.Join(".agents", "findings"),
@@ -356,20 +323,9 @@ func TestRunFlywheelStatus_JSONOutput(t *testing.T) {
 
 	t.Chdir(dir)
 
-	oldOutput := output
-	output = "json"
-	defer func() { output = oldOutput }()
-
-	oldDays := metricsDays
-	metricsDays = 7
-	defer func() { metricsDays = oldDays }()
-
-	cmd := &cobra.Command{}
 	var buf bytes.Buffer
-	cmd.SetOut(&buf)
-
-	if err := runFlywheelStatus(cmd, nil); err != nil {
-		t.Fatalf("runFlywheelStatus failed: %v", err)
+	if err := Status(&buf, "json", 7, PrimaryMetricNamespace, noopVerbosef); err != nil {
+		t.Fatalf("Status failed: %v", err)
 	}
 
 	var parsed map[string]any
@@ -414,11 +370,7 @@ func TestPrintFlywheelStatus_IncludesScorecard(t *testing.T) {
 		},
 	}
 
-	oldDays := metricsDays
-	metricsDays = 7
-	defer func() { metricsDays = oldDays }()
-
-	printFlywheelStatus(&buf, m)
+	printFlywheelStatus(&buf, m, 7)
 
 	got := buf.String()
 	if !strings.Contains(got, "STIGMERGIC SCORECARD:") {
@@ -429,29 +381,16 @@ func TestPrintFlywheelStatus_IncludesScorecard(t *testing.T) {
 	}
 }
 
-func TestRunFlywheelStatus_YAMLOutput(t *testing.T) {
+func TestStatus_YAMLOutput(t *testing.T) {
 	dir := t.TempDir()
-
 	t.Chdir(dir)
 
-	oldOutput := output
-	output = "yaml"
-	defer func() { output = oldOutput }()
-
-	oldDays := metricsDays
-	metricsDays = 7
-	defer func() { metricsDays = oldDays }()
-
-	cmd := &cobra.Command{}
 	var buf bytes.Buffer
-	cmd.SetOut(&buf)
-
-	if err := runFlywheelStatus(cmd, nil); err != nil {
-		t.Fatalf("runFlywheelStatus failed: %v", err)
+	if err := Status(&buf, "yaml", 7, PrimaryMetricNamespace, noopVerbosef); err != nil {
+		t.Fatalf("Status failed: %v", err)
 	}
 
 	got := buf.String()
-	// YAML output should contain key fields
 	if !strings.Contains(got, "status:") {
 		t.Errorf("expected 'status:' in YAML output, got: %q", got)
 	}
@@ -460,25 +399,13 @@ func TestRunFlywheelStatus_YAMLOutput(t *testing.T) {
 	}
 }
 
-func TestRunFlywheelStatus_TableOutput(t *testing.T) {
+func TestStatus_TableOutput(t *testing.T) {
 	dir := t.TempDir()
-
 	t.Chdir(dir)
 
-	oldOutput := output
-	output = "table"
-	defer func() { output = oldOutput }()
-
-	oldDays := metricsDays
-	metricsDays = 7
-	defer func() { metricsDays = oldDays }()
-
-	cmd := &cobra.Command{}
 	var buf bytes.Buffer
-	cmd.SetOut(&buf)
-
-	if err := runFlywheelStatus(cmd, nil); err != nil {
-		t.Fatalf("runFlywheelStatus failed: %v", err)
+	if err := Status(&buf, "table", 7, PrimaryMetricNamespace, noopVerbosef); err != nil {
+		t.Fatalf("Status failed: %v", err)
 	}
 
 	got := buf.String()
@@ -502,11 +429,7 @@ func TestPrintFlywheelStatus_ContainsEquation(t *testing.T) {
 		TierCounts:  map[string]int{},
 	}
 
-	oldDays := metricsDays
-	metricsDays = 7
-	defer func() { metricsDays = oldDays }()
-
-	printFlywheelStatus(&buf, m)
+	printFlywheelStatus(&buf, m, 7)
 
 	got := buf.String()
 	if !strings.Contains(got, "dK/dt") {
@@ -525,11 +448,7 @@ func TestPrintFlywheelStatus_ShowsPeriod(t *testing.T) {
 		TierCounts:  map[string]int{},
 	}
 
-	oldDays := metricsDays
-	metricsDays = 14
-	defer func() { metricsDays = oldDays }()
-
-	printFlywheelStatus(&buf, m)
+	printFlywheelStatus(&buf, m, 14)
 
 	got := buf.String()
 	if !strings.Contains(got, start.Format("2006-01-02")) {
@@ -585,16 +504,11 @@ func TestPrintNamespaceComparison_ContainsMetrics(t *testing.T) {
 	}
 }
 
-func TestRunFlywheelCompareReportsWithoutRecommendation(t *testing.T) {
+func TestCompareReportsWithoutRecommendation(t *testing.T) {
 	t.Chdir(t.TempDir())
 	var buf bytes.Buffer
-	cmd := &cobra.Command{}
-	cmd.SetOut(&buf)
-	oldOutput := output
-	output = "table"
-	t.Cleanup(func() { output = oldOutput })
-	if err := runFlywheelCompare(cmd, nil); err != nil {
-		t.Fatalf("runFlywheelCompare: %v", err)
+	if err := Compare(&buf, "table", MetricsDaysDefault, "shadow", noopVerbosef); err != nil {
+		t.Fatalf("Compare: %v", err)
 	}
 	got := buf.String()
 	if strings.Contains(got, "PROMOTION") || strings.Contains(got, "Rollback") {

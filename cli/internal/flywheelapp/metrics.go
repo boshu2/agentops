@@ -1,5 +1,5 @@
 // practices: [dora-metrics, sre]
-package main
+package flywheelapp
 
 import (
 	"path/filepath"
@@ -12,8 +12,10 @@ import (
 	"github.com/boshu2/agentops/cli/internal/types"
 )
 
-// metricsDays is the shared --days flag target for flywheel metric commands.
-var metricsDays int
+// MetricsDaysDefault is the default period, in days, for flywheel metric
+// commands. It preserves the historical `--days` default carried by the
+// pre-carve package-global flag var.
+const MetricsDaysDefault = 7
 
 // The .agents knowledge sections the flywheel metrics scan.
 const (
@@ -105,7 +107,7 @@ func countBypassCitations(citations []types.CitationEvent) int {
 	return count
 }
 
-func computeMetricsForNamespace(baseDir string, days int, namespace string) (*types.FlywheelMetrics, error) {
+func computeMetricsForNamespace(baseDir string, days int, namespace string, verbosef func(format string, args ...any)) (*types.FlywheelMetrics, error) {
 	now := time.Now()
 	periodStart := now.AddDate(0, 0, -days)
 
@@ -122,7 +124,7 @@ func computeMetricsForNamespace(baseDir string, days int, namespace string) (*ty
 	// Count artifacts
 	totalArtifacts, tierCounts, err := countArtifacts(baseDir)
 	if err != nil {
-		VerbosePrintf("Warning: count artifacts: %v\n", err)
+		verbosef("Warning: count artifacts: %v\n", err)
 	}
 	metrics.TotalArtifacts = totalArtifacts
 	metrics.TierCounts = tierCounts
@@ -130,7 +132,7 @@ func computeMetricsForNamespace(baseDir string, days int, namespace string) (*ty
 	// Load and filter citations
 	citations, err := ratchet.LoadCitations(baseDir)
 	if err != nil {
-		VerbosePrintf("Warning: load citations: %v\n", err)
+		verbosef("Warning: load citations: %v\n", err)
 	}
 	for i := range citations {
 		citations[i].ArtifactPath = canonicalArtifactPath(baseDir, citations[i].ArtifactPath)
