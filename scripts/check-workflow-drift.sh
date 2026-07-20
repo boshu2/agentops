@@ -8,7 +8,7 @@
 #                                      checkout: gate run from a worktree) resolve to a target
 #                                      byte-equal to this repo's canonical; else exit 1
 #   - regular file                  -> cmp -s against the repo canonical, else exit 1
-# Report-only set: every other repo-tracked .claude/workflows/*.js
+# Report-only set: every other repo-tracked workflows/*.js
 #   (today: bead-crank.js, operating-loop.js) — the same comparison, but divergence
 #   emits 'DRIFT-REPORT: <name> ...' to stdout and NEVER affects the exit code.
 #
@@ -18,7 +18,7 @@ set -euo pipefail
 # shellcheck disable=SC1007,SC1091
 . "$(CDPATH= cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib/repo-root.sh"
 repo_root="$(resolve_repo_root)"
-canon_dir="$repo_root/.claude/workflows"
+canon_dir="$repo_root/workflows"
 inst_dir="$HOME/.claude/workflows"
 blocking_name="bdd-foundry.js"
 
@@ -72,6 +72,6 @@ while IFS= read -r tracked; do
   if ! detail="$(compare_install "$name")"; then
     echo "DRIFT-REPORT: $detail"
   fi
-done < <(git -C "$repo_root" ls-files '.claude/workflows/*.js')
+done < <(git -C "$repo_root" ls-files 'workflows/*.js')
 
 exit 0

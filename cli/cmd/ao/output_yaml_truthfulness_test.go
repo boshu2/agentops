@@ -228,6 +228,7 @@ func TestOutputYAMLProbeStalenessGuard(t *testing.T) {
 		"robot-docs":  "markdown handbook, not json/yaml",
 		"completion":  "shell completion script (cobra builtin)",
 		"help":        "cobra builtin help",
+		"workflows":   "side-effect symlink installer; local --json only, mirroring skills link/unlink",
 	}
 
 	var unclassified []string

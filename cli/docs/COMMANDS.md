@@ -1198,6 +1198,50 @@ ao skills unlink [flags]
 
 ---
 
+### `ao workflows`
+
+Tooling for the top-level workflows/ source-of-truth: the Claude-harness
+
+```
+ao workflows [command]
+```
+
+**Subcommands:**
+
+#### `ao workflows link`
+
+Scan the agentops checkout's workflows/ directory and create a symlink in
+
+```
+ao workflows link [flags]
+```
+
+**Flags:**
+
+```
+  -h, --help          help for link
+      --into string   Link into this single dir instead of <cwd-git-root>/.claude/workflows
+      --json          Emit machine-readable JSON
+```
+
+#### `ao workflows unlink`
+
+The clean uninstall inverse of `ao workflows link`. Sweep the target
+
+```
+ao workflows unlink [flags]
+```
+
+**Flags:**
+
+```
+  -h, --help          help for unlink
+      --into string   Sweep this single dir instead of <cwd-git-root>/.claude/workflows
+      --json          Emit machine-readable JSON
+```
+
+---
+
 ### `ao flywheel`
 
 Knowledge flywheel operations and status.

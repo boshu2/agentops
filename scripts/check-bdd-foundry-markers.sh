@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # check-bdd-foundry-markers.sh — bdd-foundry marker/enforcement floor check (ag-wi9w1).
 #
-# $1 = candidate file (default: the repo canonical .claude/workflows/bdd-foundry.js,
+# $1 = candidate file (default: the repo canonical workflows/bdd-foundry.js,
 # so the gate can run it argless). Fails non-zero NAMING the missing marker on the
 # first floor violated. Floors are exactly the S4 set of the
 # canonicalize-bdd-foundry-workflow plan (spec C4).
@@ -16,7 +16,7 @@ set -euo pipefail
 # shellcheck disable=SC1007,SC1091
 . "$(CDPATH= cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib/repo-root.sh"
 repo_root="$(resolve_repo_root)"
-candidate="${1:-$repo_root/.claude/workflows/bdd-foundry.js}"
+candidate="${1:-$repo_root/workflows/bdd-foundry.js}"
 if [ ! -f "$candidate" ]; then
   echo "FAIL: candidate file not found: $candidate"
   exit 1

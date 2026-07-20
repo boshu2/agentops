@@ -13,7 +13,7 @@
 // History (incident patches preserved as orchestrator-level guards): v8 adversarial
 // gap dimensions (now in the skill); v7 sentinel-slot guard; v6 args de-stringify;
 // v5 dir-misaim + base-snapshot; v4 mechanical drift-guard; v3 truncation fix; v2 red-team.
-// CANONICAL: .claude/workflows/bdd-foundry.js (git-tracked); ~/.claude/workflows/ is installed via scripts/install-workflows.sh
+// CANONICAL: workflows/bdd-foundry.js (git-tracked); project-local .claude/workflows/ is a runtime link minted by `ao workflows link`
 //
 // ─────────────────────────────────────────────────────────────────────────────
 // §6 CONFORMANCE (docs/architecture/control-loop-model.md §6 — loop-model-compliant)

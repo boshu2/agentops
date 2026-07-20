@@ -117,6 +117,39 @@ This does not remove foreign skills, real directories, the checkout, or data in
 project-local `.agents/` directories. Remove the checkout separately when it is
 no longer needed. If Homebrew installed the CLI, use `brew uninstall agentops`.
 
+## Workflows (Claude Code only)
+
+The canonical `workflows/` directory (a sibling of `skills/`) holds workflow
+scripts for the Claude Code Workflow tool — multi-agent orchestration conveyors
+such as `implement-wave` and `verify-fixes`. Workflows are a Claude-only
+runtime adapter, the same doctrine as the Codex-only `skills-codex/` tree;
+other runtimes ignore them.
+
+Install or update the links from the canonical checkout, inside the project
+where you want them available:
+
+```bash
+ao workflows link
+```
+
+Uninstall:
+
+```bash
+ao workflows unlink --dry-run
+ao workflows unlink
+```
+
+The command links each canonical `workflows/` script into the project-local
+`.claude/workflows/` directory, where the Claude Code harness resolves named
+workflows. It carries the same semantics as `ao skills link`: idempotent
+relinking, and it refuses to replace real files, foreign links, or user-owned
+entries — a reported conflict requires operator judgment, never silent
+replacement. `ao workflows unlink` removes only links that point back into the
+checkout.
+
+Claude Code snapshots its named-workflow registry at session start, so newly
+linked workflows appear in the next session, not a session already running.
+
 ## Recover
 
 If a runtime cannot see a skill:
