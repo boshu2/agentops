@@ -27,6 +27,7 @@ var carvedFamilies = map[string]string{
 	"demo":       "demo_composition.go",
 	"init":       "init_composition.go",
 	"version":    "version_composition.go",
+	"robotdocs":  "robotdocs_composition.go",
 }
 
 // packageGoFiles returns the non-test .go source files in the cmd/ao package

@@ -1,35 +1,67 @@
-// practices: [twelve-factor-app, ai-assisted-dev, pragmatic-programmer]
-package main
+// Package robotdocs owns Cobra presentation for the `ao robot-docs` command.
+// The module renders a paste-ready agent handbook whose command surface is
+// generated from the live command tree, so it performs no filesystem, process,
+// or clock effect — it is a pure read of the Cobra command graph reachable from
+// the invoked command's root.
+package robotdocs
 
 import (
 	"fmt"
 	"strings"
 
 	"github.com/spf13/cobra"
+
+	"github.com/boshu2/agentops/cli/internal/clicontract"
 )
 
-var robotDocsCmd = &cobra.Command{
-	Use:   "robot-docs",
-	Short: "Print the paste-ready agent handbook for the ao CLI (Markdown)",
-	Long: `Print a paste-ready, agent-targeted handbook for the whole ao CLI.
+// Module owns Cobra presentation for the robot-docs command.
+type Module struct{}
+
+// NewModule constructs the robot-docs command module.
+func NewModule() Module {
+	return Module{}
+}
+
+// Contract declares robot-docs's real behavior: it accepts (and ignores)
+// arbitrary positional args exactly as Cobra does today, emits Markdown text to
+// stdout, is a pure read of the live command tree (no filesystem, process, or
+// clock effect), and exits 0 on success or 1 on an output-write failure.
+func (Module) Contract() clicontract.CommandContract {
+	return clicontract.CommandContract{
+		ID:       "ao.robot-docs",
+		Profiles: clicontract.ProfileDefault | clicontract.ProfileFlywheel | clicontract.ProfileLegacy | clicontract.ProfileCombined,
+		Args:     clicontract.ArgsPolicy{Name: "arbitrary", Validate: cobra.ArbitraryArgs},
+		Output:   clicontract.OutputText,
+		Effects:  clicontract.EffectPure,
+		ExitClasses: map[int]clicontract.ExitClass{
+			0: clicontract.ExitSuccess,
+			1: clicontract.ExitFailure,
+		},
+	}
+}
+
+// Command builds the `ao robot-docs` command.
+func (Module) Command() *cobra.Command {
+	return &cobra.Command{
+		Use:   "robot-docs",
+		Short: "Print the paste-ready agent handbook for the ao CLI (Markdown)",
+		Long: `Print a paste-ready, agent-targeted handbook for the whole ao CLI.
 
 The handbook covers the output contract, exit codes, machine-readable
 surfaces, and the canonical agent workflow — everything an agent needs to
 drive ao without an external documentation lookup.`,
-	RunE: func(cmd *cobra.Command, _ []string) error {
-		fmt.Fprint(cmd.OutOrStdout(), robotDocsText())
-		return nil
-	},
+		GroupID: "core",
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			fmt.Fprint(cmd.OutOrStdout(), RenderHandbook(cmd.Root()))
+			return nil
+		},
+	}
 }
 
-func init() {
-	robotDocsCmd.GroupID = "core"
-	rootCmd.AddCommand(robotDocsCmd)
-}
-
-// robotDocsText renders the agent handbook. The command list is generated
-// from the live command tree so the handbook never drifts from registration.
-func robotDocsText() string {
+// RenderHandbook renders the agent handbook. The command list is generated from
+// the live command tree rooted at root so the handbook never drifts from
+// registration.
+func RenderHandbook(root *cobra.Command) string {
 	var b strings.Builder
 	b.WriteString(`# ao — Agent Handbook
 
@@ -84,9 +116,9 @@ ao gate check --fast --scope head   # ordinary deterministic repository checks
 ## Command surface
 
 `)
-	for _, g := range rootCmd.Groups() {
+	for _, g := range root.Groups() {
 		var lines []string
-		for _, c := range rootCmd.Commands() {
+		for _, c := range root.Commands() {
 			if c.Hidden || c.GroupID != g.ID {
 				continue
 			}
