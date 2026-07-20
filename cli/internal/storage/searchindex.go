@@ -58,11 +58,17 @@ type SearchIndexStats struct {
 // ArtifactSubdirs lists the subdirectories under .agents/ that contain indexable artifacts.
 var ArtifactSubdirs = []string{"learnings", "patterns", "research", "retros", "candidates"}
 
-// WalkIndexableFiles returns all .md and .jsonl files under dir.
+// WalkIndexableFiles returns all .md and .jsonl files under dir. A walk error
+// (for example, a missing root or an unreadable subdirectory) is surfaced to
+// the caller rather than swallowed, so an empty result unambiguously means
+// "no indexable files" instead of masking a failed traversal.
 func WalkIndexableFiles(dir string) ([]string, error) {
 	var files []string
 	err := filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
-		if err != nil || info.IsDir() {
+		if err != nil {
+			return err
+		}
+		if info.IsDir() {
 			return nil
 		}
 		if strings.HasSuffix(path, ".md") || strings.HasSuffix(path, ".jsonl") {
@@ -82,6 +88,7 @@ func ArtifactTypeFromPath(path string) string {
 		{"/learnings/", "learning"},
 		{"/patterns/", "pattern"},
 		{"/research/", "research"},
+		{"/retros/", "retro"},
 		{"/retro/", "retro"},
 		{"/candidates/", "candidate"},
 	}
@@ -215,7 +222,7 @@ func ParseBracketedList(s string) []string {
 	inner := strings.TrimSuffix(strings.TrimPrefix(s, "["), "]")
 	var out []string
 	for _, t := range strings.Split(inner, ",") {
-		tt := strings.TrimSpace(strings.Trim(t, "\"'"))
+		tt := strings.Trim(strings.TrimSpace(t), "\"'")
 		if tt != "" {
 			out = append(out, tt)
 		}

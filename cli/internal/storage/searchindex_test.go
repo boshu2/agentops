@@ -58,16 +58,13 @@ func TestWalkIndexableFiles(t *testing.T) {
 	}
 }
 
-func TestWalkIndexableFiles_MissingDirSwallowsError(t *testing.T) {
-	// Documents current behavior: the walkFn returns nil on any error, so a
-	// missing root yields an empty list and a nil error rather than surfacing
-	// the lstat failure.
-	got, err := WalkIndexableFiles(filepath.Join(t.TempDir(), "does-not-exist"))
-	if err != nil {
-		t.Fatalf("expected nil error (errors are swallowed), got %v", err)
-	}
-	if len(got) != 0 {
-		t.Errorf("expected empty result for missing dir, got %v", got)
+func TestWalkIndexableFiles_MissingDirSurfacesError(t *testing.T) {
+	// A missing root must surface the underlying lstat failure rather than
+	// silently returning an empty list, so callers can distinguish "no
+	// indexable files" from "the directory does not exist".
+	_, err := WalkIndexableFiles(filepath.Join(t.TempDir(), "does-not-exist"))
+	if err == nil {
+		t.Fatal("expected an error for a missing root, got nil")
 	}
 }
 
@@ -81,10 +78,10 @@ func TestArtifactTypeFromPath(t *testing.T) {
 		{"patterns", "/x/patterns/foo.md", "pattern"},
 		{"research", "/x/research/foo.md", "research"},
 		{"retro singular", "/x/retro/foo.md", "retro"},
-		// Documents a real mismatch: ArtifactSubdirs uses "retros" (plural) but
-		// ArtifactTypeFromPath only matches "/retro/", so a retros/ artifact is
-		// classified "unknown". See BUG report in the B5 handoff.
-		{"retros plural falls through", "/x/retros/foo.md", "unknown"},
+		// ArtifactSubdirs uses "retros" (plural), the real production directory
+		// name (see doctor/fix_workspace.go mapping "retros" -> "retro"), so a
+		// retros/ artifact must be typed "retro", not "unknown".
+		{"retros plural", "/x/retros/foo.md", "retro"},
 		{"candidates", "/x/candidates/foo.md", "candidate"},
 		{"unknown", "/x/misc/foo.md", "unknown"},
 	}
@@ -259,10 +256,9 @@ func TestParseBracketedList(t *testing.T) {
 		in   string
 		want []string
 	}{
-		// Trim(quotes) runs BEFORE TrimSpace, so a quote guarded by a leading
-		// space survives: " 'c'" -> Trim removes only the trailing quote -> " 'c"
-		// -> TrimSpace -> "'c". Documents that quirk (see BUG report).
-		{"quoted, spacing leaves inner quote", `["a", b, 'c']`, []string{"a", "b", "'c"}},
+		// TrimSpace runs BEFORE Trim(quotes), so a quoted token with leading
+		// space is fully unwrapped: " 'c'" -> TrimSpace -> "'c'" -> Trim -> "c".
+		{"quoted tokens fully unwrapped", `["a", b, 'c']`, []string{"a", "b", "c"}},
 		{"empty brackets", "[]", nil},
 		{"not a list", "a, b", nil},
 		{"blanks dropped", "[a, , b]", []string{"a", "b"}},
