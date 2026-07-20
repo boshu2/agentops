@@ -10,12 +10,21 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+
+	"github.com/boshu2/agentops/cli/internal/storage"
 )
 
 // evidenceDirs is the fixed, ordered set of local directories `ao init` creates.
+// It must cover both loop-evidence stores `ao status` reads (intents, verdicts)
+// and the knowledge-store substructure `ao doctor` enforces (the storage
+// package's sessions/index/provenance contract), so a fresh init is never
+// flagged incomplete by the CLI's own diagnostics.
 var evidenceDirs = []string{
-	filepath.Join(".agents", "ao", "verdicts", "sha256"),
-	filepath.Join(".agents", "ao", "provenance"),
+	filepath.Join(storage.DefaultBaseDir, "intents", "sha256"),
+	filepath.Join(storage.DefaultBaseDir, "verdicts", "sha256"),
+	filepath.Join(storage.DefaultBaseDir, storage.SessionsDir),
+	filepath.Join(storage.DefaultBaseDir, storage.IndexDir),
+	filepath.Join(storage.DefaultBaseDir, storage.ProvenanceDir),
 	filepath.Join(".agents", "handoff"),
 }
 
