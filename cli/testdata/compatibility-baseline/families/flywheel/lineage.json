@@ -1,0 +1,7 @@
+{
+  "schema_version": 1,
+  "family": "flywheel",
+  "freeze_sha": "ab98dc195659974b26444a00551ffc56209e6ef6",
+  "ownership_sha256": "0eb421a7fa25306c420e0884c62d674a0ab657d4624050cd9ce9041d4b34c0b9",
+  "migration_state": "migrating"
+}
