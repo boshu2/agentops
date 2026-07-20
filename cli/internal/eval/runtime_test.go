@@ -8,6 +8,8 @@ import (
 	"slices"
 	"strings"
 	"testing"
+
+	"github.com/boshu2/agentops/cli/internal/runtimecmd"
 )
 
 func TestRunLiveRuntimeSkipsWhenExecutableUnavailable(t *testing.T) {
@@ -16,7 +18,8 @@ func TestRunLiveRuntimeSkipsWhenExecutableUnavailable(t *testing.T) {
 		runtime    Runtime
 		executable string
 	}{
-		{name: "claude", runtime: RuntimeClaude, executable: "claude"},
+		// claude is refused at adapter construction (LAW 0) before the
+		// executable-availability skip path; see TestRunLiveRuntimeRefusesClaude.
 		{name: "codex", runtime: RuntimeCodex, executable: "codex"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
@@ -185,24 +188,26 @@ func TestRunLiveRuntimeIsolatesAndScrubsCodexEnvironment(t *testing.T) {
 }
 
 func TestRunLiveRuntimeCapturesTranscriptAndScorecardArtifacts(t *testing.T) {
-	suite := liveRuntimeSuite(RuntimeClaude)
-	transcriptPath := filepath.Join(t.TempDir(), "claude-transcript.jsonl")
+	// Uses codex: claude is refused at construction (LAW 0), so the transcript /
+	// scorecard artifact plumbing is exercised over the only live-invocable runtime.
+	suite := liveRuntimeSuite(RuntimeCodex)
+	transcriptPath := filepath.Join(t.TempDir(), "codex-transcript.jsonl")
 	scorecardPath := filepath.Join(t.TempDir(), "scorecard.json")
 
 	run, err := RunLiveRuntime(context.Background(), LiveRuntimeOptions{
 		Suite:          suite,
 		RunID:          "live-artifacts",
-		Runtime:        RuntimeClaude,
-		RuntimeCommand: "claude --model sonnet",
+		Runtime:        RuntimeCodex,
+		RuntimeCommand: "codex --model sonnet",
 		Enabled:        true,
 		LookPath: func(name string) (string, error) {
-			if name != "claude" {
-				t.Fatalf("lookPath name = %q, want claude", name)
+			if name != "codex" {
+				t.Fatalf("lookPath name = %q, want codex", name)
 			}
-			return "/fake/bin/claude", nil
+			return "/fake/bin/codex", nil
 		},
 		VersionRunner: func(ctx context.Context, cmd RuntimeCommand) (string, error) {
-			return "claude 2.0.0", nil
+			return "codex 2.0.0", nil
 		},
 		Runner: func(ctx context.Context, cmd RuntimeCommand) (RuntimeExecutionResult, error) {
 			return RuntimeExecutionResult{
@@ -221,8 +226,8 @@ func TestRunLiveRuntimeCapturesTranscriptAndScorecardArtifacts(t *testing.T) {
 		t.Fatalf("RunLiveRuntime returned error: %v", err)
 	}
 
-	if run.Runtime.Version != "claude 2.0.0" {
-		t.Fatalf("version = %q, want claude 2.0.0", run.Runtime.Version)
+	if run.Runtime.Version != "codex 2.0.0" {
+		t.Fatalf("version = %q, want codex 2.0.0", run.Runtime.Version)
 	}
 	if run.Runtime.Model != "sonnet" {
 		t.Fatalf("model = %q, want sonnet", run.Runtime.Model)
@@ -307,14 +312,14 @@ func assertArtifact(t *testing.T, artifacts []Artifact, want Artifact) {
 }
 
 func TestRunLiveRuntimePropagatesRunnerErrors(t *testing.T) {
-	suite := liveRuntimeSuite(RuntimeClaude)
+	suite := liveRuntimeSuite(RuntimeCodex)
 	run, err := RunLiveRuntime(context.Background(), LiveRuntimeOptions{
 		Suite:   suite,
 		RunID:   "live-error",
-		Runtime: RuntimeClaude,
+		Runtime: RuntimeCodex,
 		Enabled: true,
 		LookPath: func(name string) (string, error) {
-			return "/fake/bin/claude", nil
+			return "/fake/bin/codex", nil
 		},
 		VersionRunner: func(ctx context.Context, cmd RuntimeCommand) (string, error) {
 			return "", nil
@@ -332,6 +337,38 @@ func TestRunLiveRuntimePropagatesRunnerErrors(t *testing.T) {
 	}
 	if run.CaseResults[0].FailureMessage != "runtime failed" {
 		t.Fatalf("failure = %q, want runtime failed", run.CaseResults[0].FailureMessage)
+	}
+}
+
+// TestRunLiveRuntimeRefusesClaude is the LAW 0 fail-closed contract at the eval
+// layer (age-6j9ee.4): a suite may declare runtime=claude and parse fine, but
+// enabling a live claude run must be refused BEFORE any process spawns — no
+// version probe, no runner call, no `claude -p`. LookPath / VersionRunner / Runner
+// all fail the test if invoked, proving nothing external is touched.
+func TestRunLiveRuntimeRefusesClaude(t *testing.T) {
+	suite := liveRuntimeSuite(RuntimeClaude)
+	_, err := RunLiveRuntime(context.Background(), LiveRuntimeOptions{
+		Suite:          suite,
+		RunID:          "live-claude-refused",
+		Runtime:        RuntimeClaude,
+		RuntimeCommand: "claude --model sonnet",
+		Enabled:        true,
+		LookPath: func(name string) (string, error) {
+			t.Fatalf("LookPath must not be called for a refused claude runtime (got %q)", name)
+			return "", nil
+		},
+		VersionRunner: func(ctx context.Context, cmd RuntimeCommand) (string, error) {
+			t.Fatalf("VersionRunner must not be called for a refused claude runtime")
+			return "", nil
+		},
+		Runner: func(ctx context.Context, cmd RuntimeCommand) (RuntimeExecutionResult, error) {
+			t.Fatalf("Runner must not be called for a refused claude runtime")
+			return RuntimeExecutionResult{}, nil
+		},
+		Now: fixedEvalTime,
+	})
+	if !errors.Is(err, runtimecmd.ErrClaudeHeadlessProhibited) {
+		t.Fatalf("RunLiveRuntime(claude) err = %v, want ErrClaudeHeadlessProhibited", err)
 	}
 }
 

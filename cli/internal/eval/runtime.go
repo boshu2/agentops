@@ -16,13 +16,15 @@ import (
 	"github.com/boshu2/agentops/cli/internal/runtimecmd"
 )
 
-const (
-	claudeExecutable = "claude"
-	codexExecutable  = "codex"
-)
+// codexExecutable is the default binary for the codex live adapter. There is no
+// claude equivalent: a live claude adapter is refused at construction (LAW 0),
+// so no default claude command is ever built. See liveRuntimeAdapterFor.
+const codexExecutable = "codex"
 
 // LiveRuntimeOptions configures an optional live runtime adapter execution.
-// Callers must set Enabled=true before any external Claude/Codex process is run.
+// Callers must set Enabled=true before any external runtime process is run.
+// Codex is the only runtime that can be live-invoked; a claude live invocation is
+// refused (LAW 0), regardless of Enabled.
 type LiveRuntimeOptions struct {
 	Suite          *Suite
 	SuitePath      string
@@ -47,7 +49,7 @@ type LiveRuntimeOptions struct {
 	OverrideDisableHooks bool
 }
 
-// RuntimeCommand describes one Claude or Codex process invocation.
+// RuntimeCommand describes one live runtime (Codex) process invocation.
 type RuntimeCommand struct {
 	Executable     string
 	Args           []string
@@ -83,7 +85,7 @@ type RuntimeVersionRunner func(context.Context, RuntimeCommand) (string, error)
 type liveRuntimeAdapter interface {
 	DefaultCommand() string
 	VersionArgs() []string
-	DirectArgs(command, prompt string) []string
+	DirectArgs(command, prompt string) ([]string, error)
 }
 
 type staticLiveRuntimeAdapter struct {
@@ -99,13 +101,16 @@ func (a staticLiveRuntimeAdapter) VersionArgs() []string {
 	return append([]string{}, a.versionArgs...)
 }
 
-func (a staticLiveRuntimeAdapter) DirectArgs(command, prompt string) []string {
+func (a staticLiveRuntimeAdapter) DirectArgs(command, prompt string) ([]string, error) {
 	return runtimecmd.DirectArgs(command, prompt)
 }
 
-// RunLiveRuntime executes an optional Claude or Codex adapter run and returns a
-// normal eval run record. It skips instead of invoking external processes unless
-// opts.Enabled is true.
+// RunLiveRuntime executes an optional live Codex adapter run and returns a normal
+// eval run record. It skips instead of invoking external processes unless
+// opts.Enabled is true. The claude runtime is fail-closed (LAW 0): a suite may
+// declare and be scored against runtime=claude, but any attempt to *live-invoke*
+// claude is refused before a process spawns — a headless `claude -p` would bill
+// the Anthropic API / burn the Claude Max quota.
 func RunLiveRuntime(ctx context.Context, opts LiveRuntimeOptions) (*RunRecord, error) {
 	if ctx == nil {
 		ctx = context.Background()
@@ -181,9 +186,17 @@ func RunLiveRuntime(ctx context.Context, opts LiveRuntimeOptions) (*RunRecord, e
 	if runner == nil {
 		runner = defaultRuntimeRunner
 	}
+	// LAW 0 defense-in-depth: even though liveRuntimeAdapterFor already refuses
+	// the claude runtime, re-check the concrete argv here — DirectArgs fail-closes
+	// on any command resolving to the claude binary and never emits `-p`/`--print`.
+	directArgs, argErr := adapter.DirectArgs(command, liveRuntimePrompt(opts, suite))
+	if argErr != nil {
+		markRuntimeError(record, suite, argErr.Error())
+		return finishLiveRuntimeRun(opts, record, now)
+	}
 	result, attempts, runErr := runLiveRuntimeWithAttempts(ctx, runner, RuntimeCommand{
 		Executable:     executablePath,
-		Args:           adapter.DirectArgs(command, liveRuntimePrompt(opts, suite)),
+		Args:           directArgs,
 		Env:            env,
 		Dir:            workDir,
 		TimeoutSeconds: record.Runtime.TimeoutSeconds,
@@ -228,10 +241,12 @@ func probeRuntimeVersion(ctx context.Context, opts LiveRuntimeOptions, adapter l
 func liveRuntimeAdapterFor(runtimeName Runtime) (liveRuntimeAdapter, error) {
 	switch runtimeName {
 	case RuntimeClaude:
-		return staticLiveRuntimeAdapter{
-			defaultCommand: claudeExecutable,
-			versionArgs:    []string{"--version"},
-		}, nil
+		// LAW 0 (age-6j9ee.4): a live `claude` adapter would spawn a headless
+		// `claude -p` process, which bills the Anthropic API / burns the Claude
+		// Max quota. The runtime enum stays valid for suite parsing and scoring
+		// attribution, but live invocation is fail-closed here — no process is
+		// ever spawned for it (not even a version probe).
+		return nil, fmt.Errorf("%w", runtimecmd.ErrClaudeHeadlessProhibited)
 	case RuntimeCodex:
 		return staticLiveRuntimeAdapter{
 			defaultCommand: codexExecutable,
