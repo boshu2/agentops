@@ -2767,3 +2767,74 @@ func TestSave_MigratesLegacyProjectConfigToNewPath(t *testing.T) {
 			"json", "/legacy/base", "quality")
 	}
 }
+
+// TestResolve_LegacyFallbackRelabelsSources pins novice edge 8: values loaded
+// through a deprecated legacy config location must be attributed to the path
+// actually read, not to the canonical path (which does not exist) or "flag".
+func TestResolve_LegacyFallbackRelabelsSources(t *testing.T) {
+	tests := []struct {
+		name       string
+		layer      string // "home" or "project"
+		wantSource Source
+	}{
+		{name: "home legacy fallback", layer: "home", wantSource: SourceHomeLegacy},
+		{name: "project legacy fallback", layer: "project", wantSource: SourceProjectLegacy},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			clearConfigEnv(t)
+			isolateLegacyWarnings(t)
+			home := t.TempDir()
+			t.Setenv("HOME", home)
+			project := t.TempDir()
+			t.Chdir(project)
+
+			root := home
+			if tt.layer == "project" {
+				root = project
+			}
+			legacy := filepath.Join(root, ".agentops", "config.yaml")
+			if err := os.MkdirAll(filepath.Dir(legacy), 0o755); err != nil {
+				t.Fatalf("mkdir legacy dir: %v", err)
+			}
+			if err := os.WriteFile(legacy, []byte("output: json\nbase_dir: /legacy-base\n"), 0o644); err != nil {
+				t.Fatalf("write legacy config: %v", err)
+			}
+
+			rc := Resolve("", "", false)
+			if rc.Output.Value != "json" || rc.Output.Source != tt.wantSource {
+				t.Errorf("Output = (%v, %q), want (json, %q)", rc.Output.Value, rc.Output.Source, tt.wantSource)
+			}
+			if rc.BaseDir.Value != "/legacy-base" || rc.BaseDir.Source != tt.wantSource {
+				t.Errorf("BaseDir = (%v, %q), want (/legacy-base, %q)", rc.BaseDir.Value, rc.BaseDir.Source, tt.wantSource)
+			}
+			// Untouched values keep their default attribution.
+			if rc.Verbose.Source != SourceDefault {
+				t.Errorf("Verbose.Source = %q, want %q", rc.Verbose.Source, SourceDefault)
+			}
+		})
+	}
+}
+
+// TestResolve_NewPathKeepsCanonicalSource guards the relabel against firing
+// when the canonical home config exists (no legacy fallback active).
+func TestResolve_NewPathKeepsCanonicalSource(t *testing.T) {
+	clearConfigEnv(t)
+	isolateLegacyWarnings(t)
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	t.Chdir(t.TempDir())
+
+	path := filepath.Join(home, ".agents", "ao", "config.yaml")
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		t.Fatalf("mkdir config dir: %v", err)
+	}
+	if err := os.WriteFile(path, []byte("output: yaml\n"), 0o644); err != nil {
+		t.Fatalf("write config: %v", err)
+	}
+
+	rc := Resolve("", "", false)
+	if rc.Output.Value != "yaml" || rc.Output.Source != SourceHome {
+		t.Errorf("Output = (%v, %q), want (yaml, %q)", rc.Output.Value, rc.Output.Source, SourceHome)
+	}
+}

@@ -322,19 +322,40 @@ func buildReport(ra *RunArtifact, toolVersion, sha string, now time.Time, findin
 	}
 }
 
-// diagnoseNextSteps produces the next_steps hints for a diagnose run.
+// diagnoseNextSteps produces the next_steps hints for a diagnose run. It
+// recommends --fix only when at least one finding is auto-fixable — a
+// next-step instructing --fix over zero fixable findings is the edge-4a lie
+// one level up from the per-finding remediation.
 func diagnoseNextSteps(findings []Finding) []string {
 	if len(findings) == 0 {
 		return []string{"Workspace healthy. No action needed."}
 	}
-	steps := []string{"Run: ao doctor --fix"}
-	if len(findings) > 0 {
-		steps = append(steps,
-			"Or scope: ao doctor --fix --only "+findings[0].ID,
-			"Inspect: ao doctor explain "+findings[0].ID,
-		)
+	fixable := 0
+	for _, f := range findings {
+		if f.Remediation.AutoFixable {
+			fixable++
+		}
 	}
-	return steps
+	steps := []string{}
+	if fixable > 0 {
+		steps = append(steps,
+			"Run: ao doctor --fix",
+			"Or scope: ao doctor --fix --only "+firstFixableID(findings),
+		)
+	} else {
+		steps = append(steps, "No automatic fixes available; follow each finding's remediation.")
+	}
+	return append(steps, "Inspect: ao doctor explain "+findings[0].ID)
+}
+
+// firstFixableID returns the ID of the first auto-fixable finding.
+func firstFixableID(findings []Finding) string {
+	for _, f := range findings {
+		if f.Remediation.AutoFixable {
+			return f.ID
+		}
+	}
+	return findings[0].ID
 }
 
 // persistRun writes all run artifacts (report.json, report.md, stderr.log,
@@ -795,9 +816,12 @@ func Health(repoRoot, toolVersion string) (string, *HealthResult, error) {
 	if rep.Summary.TotalFindings > 0 {
 		hr.Status = "findings"
 		hr.ExitCode = ExitFindings
-		line := fmt.Sprintf("findings  ao=%s doctor=%s findings=%d P0=%d P2=%d last_run=%s run_id=%s",
+		// Report every severity bucket: omitting one (P1 was once dropped)
+		// hides the worst severity present from the one-line summary.
+		line := fmt.Sprintf("findings  ao=%s doctor=%s findings=%d P0=%d P1=%d P2=%d P3=%d last_run=%s run_id=%s",
 			toolVersion, DoctorVersion, rep.Summary.TotalFindings,
-			rep.Summary.BySeverity["P0"], rep.Summary.BySeverity["P2"], rep.StartedAt, rep.RunID)
+			rep.Summary.BySeverity["P0"], rep.Summary.BySeverity["P1"],
+			rep.Summary.BySeverity["P2"], rep.Summary.BySeverity["P3"], rep.StartedAt, rep.RunID)
 		return line, hr, nil
 	}
 	line := fmt.Sprintf("ok  ao=%s doctor=%s findings=0 last_run=%s run_id=%s",
@@ -900,7 +924,11 @@ func RobotTriage(opts Options) (*RobotTriageResult, *Report, error) {
 	sort.Strings(quick)
 	recommended := "ao doctor (healthy)"
 	if len(rep.Findings) > 0 {
-		recommended = "ao doctor --fix"
+		// Recommend --fix only when a fixer can actually act (edge 4a).
+		recommended = "ao doctor explain " + rep.Findings[0].ID
+		if rep.Summary.AutoFixable > 0 {
+			recommended = "ao doctor --fix"
+		}
 	}
 	return &RobotTriageResult{
 		SchemaVersion:      SchemaVersion,

@@ -283,6 +283,11 @@ type SearchConfig struct {
 	DefaultLimit int `yaml:"default_limit" json:"default_limit"`
 
 	// UseSmartConnections enables Smart Connections when available.
+	//
+	// Deprecated: dead knob. Nothing outside config plumbing (defaults,
+	// AGENTOPS_NO_SC applyEnv, merge) reads this field, so toggling it has
+	// no effect. It is no longer documented in `ao config` help; the field
+	// stays parseable so existing config files do not break.
 	UseSmartConnections bool `yaml:"use_smart_connections" json:"use_smart_connections"`
 
 	// UseSmartConnectionsSet tracks whether UseSmartConnections was explicitly set.
@@ -429,17 +434,26 @@ var (
 // stderr: the pre-3.3 `.agentops/` location is read-only compatibility for
 // this release. Writes (Save) always target the new path.
 func withLegacyFallback(newPath, legacyPath string) string {
+	path, _ := withLegacyFallbackInfo(newPath, legacyPath)
+	return path
+}
+
+// withLegacyFallbackInfo is withLegacyFallback plus a report of whether the
+// deprecated legacy fallback is the path actually being read, so display
+// surfaces (ao config --show) can label it instead of contradicting the
+// deprecation warning.
+func withLegacyFallbackInfo(newPath, legacyPath string) (string, bool) {
 	if newPath == "" || legacyPath == "" {
-		return newPath
+		return newPath, false
 	}
 	if _, err := os.Stat(newPath); err == nil {
-		return newPath
+		return newPath, false
 	}
 	if _, err := os.Stat(legacyPath); err != nil {
-		return newPath
+		return newPath, false
 	}
 	warnLegacyConfigOnce(legacyPath, newPath)
-	return legacyPath
+	return legacyPath, true
 }
 
 func warnLegacyConfigOnce(legacyPath, newPath string) {
@@ -457,11 +471,19 @@ func warnLegacyConfigOnce(legacyPath, newPath string) {
 // homeConfigReadPath returns the home config path for reads, falling back to
 // the legacy ~/.agentops/config.yaml location when the new path is absent.
 func homeConfigReadPath() string {
+	path, _ := homeConfigReadInfo()
+	return path
+}
+
+// homeConfigReadInfo returns the home config path actually consulted for
+// reads plus whether that path is the deprecated legacy fallback
+// (~/.agentops/config.yaml).
+func homeConfigReadInfo() (string, bool) {
 	home, err := os.UserHomeDir()
 	if err != nil {
-		return ""
+		return "", false
 	}
-	return withLegacyFallback(
+	return withLegacyFallbackInfo(
 		filepath.Join(home, ".agents", "ao", "config.yaml"),
 		filepath.Join(home, ".agentops", "config.yaml"),
 	)
@@ -471,11 +493,20 @@ func homeConfigReadPath() string {
 // back to the legacy ./.agentops/config.yaml location when the new path is
 // absent. An explicit AGENTOPS_CONFIG override is returned verbatim.
 func projectConfigReadPath() string {
+	path, _ := projectConfigReadInfo()
+	return path
+}
+
+// projectConfigReadInfo returns the project config path actually consulted
+// for reads plus whether that path is the deprecated legacy fallback
+// (./.agentops/config.yaml). An explicit AGENTOPS_CONFIG override is
+// returned verbatim and is never legacy.
+func projectConfigReadInfo() (string, bool) {
 	newPath, legacyPath := projectConfigPaths()
 	if legacyPath == "" {
-		return newPath
+		return newPath, false
 	}
-	return withLegacyFallback(newPath, legacyPath)
+	return withLegacyFallbackInfo(newPath, legacyPath)
 }
 
 // getwdFunc is the function used to get the current working directory.
@@ -832,6 +863,13 @@ const (
 	SourceProject Source = ".agents/ao/config.yaml"
 	SourceEnv     Source = "environment"
 	SourceFlag    Source = "flag"
+	// SourceHomeLegacy labels values read through the deprecated home
+	// fallback so --show matches the deprecation warning instead of
+	// attributing them to a path that does not exist.
+	SourceHomeLegacy Source = "~/.agentops/config.yaml (deprecated location)"
+	// SourceProjectLegacy labels values read through the deprecated project
+	// fallback (./.agentops/config.yaml).
+	SourceProjectLegacy Source = ".agentops/config.yaml (deprecated location)"
 )
 
 // getEnvString returns the value and whether the env var was set.
@@ -907,32 +945,39 @@ func resolveStringSliceField(home, project []string, def []string) resolved {
 }
 
 // ResolvedConfig shows config values with their sources.
+//
+// The RPI* and Dream* fields are excluded from serialization (`json:"-"`):
+// no `ao rpi` or `ao dream` command exists, so `ao config --show` must not
+// render resolved values for subsystems a user cannot invoke. The fields
+// themselves are retained for now because callers outside this package
+// (e.g. cmd/ao tests) still reference them; deleting the underlying Config
+// struct sections is a separate pass.
 type ResolvedConfig struct {
 	Output                resolved `json:"output"`
 	BaseDir               resolved `json:"base_dir"`
 	Verbose               resolved `json:"verbose"`
-	RPIWorktreeMode       resolved `json:"rpi_worktree_mode"`
-	RPIRuntimeMode        resolved `json:"rpi_runtime_mode"`
-	RPIRuntimeCommand     resolved `json:"rpi_runtime_command"`
-	RPIAOCommand          resolved `json:"rpi_ao_command"`
-	RPIBDCommand          resolved `json:"rpi_bd_command"`
-	RPITmuxCommand        resolved `json:"rpi_tmux_command"`
+	RPIWorktreeMode       resolved `json:"-"`
+	RPIRuntimeMode        resolved `json:"-"`
+	RPIRuntimeCommand     resolved `json:"-"`
+	RPIAOCommand          resolved `json:"-"`
+	RPIBDCommand          resolved `json:"-"`
+	RPITmuxCommand        resolved `json:"-"`
 	ModelsDefaultTier     resolved `json:"models_default_tier"`
-	DreamReportDir        resolved `json:"dream_report_dir"`
-	DreamRunTimeout       resolved `json:"dream_run_timeout"`
-	DreamKeepAwake        resolved `json:"dream_keep_awake"`
-	DreamRunners          resolved `json:"dream_runners"`
-	DreamScheduler        resolved `json:"dream_scheduler_mode"`
-	DreamScheduleAt       resolved `json:"dream_schedule_at"`
-	DreamConsensus        resolved `json:"dream_consensus_policy"`
-	DreamCreativeLane     resolved `json:"dream_creative_lane"`
-	DreamCuratorEnabled   resolved `json:"dream_curator_enabled"`
-	DreamCuratorEngine    resolved `json:"dream_curator_engine"`
-	DreamCuratorOllamaURL resolved `json:"dream_curator_ollama_url"`
-	DreamCuratorModel     resolved `json:"dream_curator_model"`
-	DreamCuratorWorkerDir resolved `json:"dream_curator_worker_dir"`
-	DreamCuratorVaultDir  resolved `json:"dream_curator_vault_dir"`
-	DreamCuratorJobKinds  resolved `json:"dream_curator_allowed_job_kinds"`
+	DreamReportDir        resolved `json:"-"`
+	DreamRunTimeout       resolved `json:"-"`
+	DreamKeepAwake        resolved `json:"-"`
+	DreamRunners          resolved `json:"-"`
+	DreamScheduler        resolved `json:"-"`
+	DreamScheduleAt       resolved `json:"-"`
+	DreamConsensus        resolved `json:"-"`
+	DreamCreativeLane     resolved `json:"-"`
+	DreamCuratorEnabled   resolved `json:"-"`
+	DreamCuratorEngine    resolved `json:"-"`
+	DreamCuratorOllamaURL resolved `json:"-"`
+	DreamCuratorModel     resolved `json:"-"`
+	DreamCuratorWorkerDir resolved `json:"-"`
+	DreamCuratorVaultDir  resolved `json:"-"`
+	DreamCuratorJobKinds  resolved `json:"-"`
 }
 
 type resolved struct {
@@ -1100,6 +1145,7 @@ func Resolve(flagOutput, flagBaseDir string, flagVerbose bool) *ResolvedConfig {
 	// has no error channel, so a failed explicit override is surfaced as a warning
 	// here (Load() is the authoritative fail-closed loader).
 	var home, project configFields
+	var homeLegacy, projectLegacy bool
 	if override := strings.TrimSpace(os.Getenv("AGENTOPS_CONFIG")); override != "" {
 		oc, err := loadFromPath(override)
 		if err != nil {
@@ -1107,12 +1153,14 @@ func Resolve(flagOutput, flagBaseDir string, flagVerbose bool) *ResolvedConfig {
 		}
 		project = extractFields(oc)
 	} else {
+		_, homeLegacy = homeConfigReadInfo()
+		_, projectLegacy = projectConfigReadInfo()
 		home = extractFields(loadHomeConfig())
 		project = extractFields(loadProjectConfig())
 	}
 	env := loadEnvFields()
 
-	return &ResolvedConfig{
+	rc := &ResolvedConfig{
 		Output:            resolveStringField(home.output, project.output, env.output, flagOutput, defaultOutput),
 		BaseDir:           resolveStringField(home.baseDir, project.baseDir, env.baseDir, flagBaseDir, defaultBaseDir),
 		Verbose:           resolveVerbose(home, project, env, flagVerbose),
@@ -1153,5 +1201,38 @@ func Resolve(flagOutput, flagBaseDir string, flagVerbose bool) *ResolvedConfig {
 		DreamCuratorWorkerDir: resolveStringField(home.dreamCuratorWorkerDir, project.dreamCuratorWorkerDir, env.dreamCuratorWorkerDir, "", ""),
 		DreamCuratorVaultDir:  resolveStringField(home.dreamCuratorVaultDir, project.dreamCuratorVaultDir, env.dreamCuratorVaultDir, "", ""),
 		DreamCuratorJobKinds:  resolveStringSliceField(home.dreamCuratorJobKinds, project.dreamCuratorJobKinds, []string{}),
+	}
+	// When a layer was read through the deprecated fallback path, attribute
+	// its values to the path actually read so --show agrees with the
+	// deprecation warning instead of citing a file that does not exist.
+	if homeLegacy {
+		rc.relabelSource(SourceHome, SourceHomeLegacy)
+	}
+	if projectLegacy {
+		rc.relabelSource(SourceProject, SourceProjectLegacy)
+	}
+	return rc
+}
+
+// relabelSource rewrites every resolved field attributed to from so it is
+// attributed to to. Used to mark values loaded via a deprecated legacy
+// config location.
+func (rc *ResolvedConfig) relabelSource(from, to Source) {
+	fields := []*resolved{
+		&rc.Output, &rc.BaseDir, &rc.Verbose,
+		&rc.RPIWorktreeMode, &rc.RPIRuntimeMode, &rc.RPIRuntimeCommand,
+		&rc.RPIAOCommand, &rc.RPIBDCommand, &rc.RPITmuxCommand,
+		&rc.ModelsDefaultTier,
+		&rc.DreamReportDir, &rc.DreamRunTimeout, &rc.DreamKeepAwake,
+		&rc.DreamRunners, &rc.DreamScheduler, &rc.DreamScheduleAt,
+		&rc.DreamConsensus, &rc.DreamCreativeLane,
+		&rc.DreamCuratorEnabled, &rc.DreamCuratorEngine, &rc.DreamCuratorOllamaURL,
+		&rc.DreamCuratorModel, &rc.DreamCuratorWorkerDir, &rc.DreamCuratorVaultDir,
+		&rc.DreamCuratorJobKinds,
+	}
+	for _, field := range fields {
+		if field.Source == from {
+			field.Source = to
+		}
 	}
 }

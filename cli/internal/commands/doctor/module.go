@@ -289,9 +289,40 @@ func (module Module) runExplain(command *cobra.Command, id string, jsonOutput bo
 	if jsonOutput {
 		return module.emitStructured(command, finding)
 	}
-	fmt.Fprintf(command.OutOrStdout(), "%s [%s] (%s)\n%s\n", finding.ID, finding.Severity, finding.Subsystem, finding.Title)
-	fmt.Fprintf(command.OutOrStdout(), "Remediation: %s\n", finding.Remediation.Command)
+	renderExplain(command, finding)
 	return nil
+}
+
+// renderExplain prints the full expansion of one finding — a superset of the
+// per-finding fields robot-triage emits: identity, confidence, every evidence
+// field, remediation, and fixability.
+func renderExplain(command *cobra.Command, finding *doctorapp.Finding) {
+	w := command.OutOrStdout()
+	fmt.Fprintf(w, "%s [%s] (%s)\n%s\n", finding.ID, finding.Severity, finding.Subsystem, finding.Title)
+	fmt.Fprintf(w, "Confidence: %.2f\n", finding.Confidence)
+	fmt.Fprintln(w, "Evidence:")
+	evidence := finding.Evidence
+	if evidence.File == "" && len(evidence.Lines) == 0 && evidence.Query == "" && evidence.Hash == "" {
+		fmt.Fprintln(w, "  (none recorded)")
+	}
+	if evidence.File != "" {
+		fmt.Fprintf(w, "  file: %s\n", evidence.File)
+	}
+	if len(evidence.Lines) > 0 {
+		fmt.Fprintf(w, "  lines: %v\n", evidence.Lines)
+	}
+	if evidence.Query != "" {
+		fmt.Fprintf(w, "  query: %s\n", evidence.Query)
+	}
+	if evidence.Hash != "" {
+		fmt.Fprintf(w, "  hash: %s\n", evidence.Hash)
+	}
+	fmt.Fprintf(w, "Remediation: %s\n", finding.Remediation.Command)
+	fmt.Fprintf(w, "Auto-fixable: %t (estimated actions: %d)\n",
+		finding.Remediation.AutoFixable, finding.Remediation.EstimatedActions)
+	if finding.Remediation.ExplainCommand != "" {
+		fmt.Fprintf(w, "Explain: %s\n", finding.Remediation.ExplainCommand)
+	}
 }
 
 func (module Module) fixCommand(options *rootOptions) *cobra.Command {
@@ -421,10 +452,32 @@ func (module Module) diffCommand(options *rootOptions) *cobra.Command {
 		if jsonOutput {
 			return module.emitStructured(command, report)
 		}
-		renderFindings(command, report)
-		if len(report.Findings) == 0 {
-			fmt.Fprintln(command.OutOrStdout(), "clean diff: --fix would change nothing")
-		}
+		renderFixPlan(command, report)
+		// Exit code stays 0 with findings present: diff is a read-only preview
+		// of the fix plan, not a health verdict — `ao doctor` / `ao doctor
+		// health` own the failing exit for findings.
 		return nil
 	}}
+}
+
+// renderFixPlan renders the diff output as an explicit fix PLAN: for each
+// finding it states whether --fix would act (and how many actions) or that
+// only a manual action exists. This keeps `ao doctor diff` distinct from the
+// plain findings list triage renders.
+func renderFixPlan(command *cobra.Command, report *doctorapp.Report) {
+	w := command.OutOrStdout()
+	if len(report.Findings) == 0 {
+		fmt.Fprintln(w, "clean diff: --fix would change nothing")
+		return
+	}
+	fmt.Fprintf(w, "Fix plan — what --fix would do (%d finding(s), read-only preview):\n", len(report.Findings))
+	for _, finding := range report.Findings {
+		fmt.Fprintf(w, "  [%s] %s — %s\n", finding.Severity, finding.ID, finding.Title)
+		if finding.Remediation.AutoFixable {
+			fmt.Fprintf(w, "      would auto-fix: %d estimated action(s) via %s\n",
+				finding.Remediation.EstimatedActions, finding.Remediation.Command)
+		} else {
+			fmt.Fprintf(w, "      no automatic fix; manual action: %s\n", finding.Remediation.Command)
+		}
+	}
 }

@@ -12,8 +12,11 @@ import (
 	configapp "github.com/boshu2/agentops/cli/internal/config"
 )
 
+// showEnvironmentKeys deliberately omits AGENTOPS_NO_SC: it only toggles the
+// dead Search.UseSmartConnections config field (no consumer outside config
+// plumbing), so surfacing it would document a knob that does nothing.
 var showEnvironmentKeys = []string{
-	"AGENTOPS_CONFIG", "AGENTOPS_OUTPUT", "AGENTOPS_BASE_DIR", "AGENTOPS_VERBOSE", "AGENTOPS_NO_SC",
+	"AGENTOPS_CONFIG", "AGENTOPS_OUTPUT", "AGENTOPS_BASE_DIR", "AGENTOPS_VERBOSE",
 }
 
 var modelEnvironmentKeys = []string{"AGENTOPS_MODEL_TIER", "AGENTOPS_COUNCIL_MODEL_TIER", "COUNCIL_CLAUDE_MODEL"}
@@ -60,7 +63,11 @@ func (module Module) Command() *cobra.Command {
 		if !commandOptions.show {
 			return command.Help()
 		}
-		result, err := module.useCases.Show(command.Context(), module.host.OutputMode(), module.host.Verbose())
+		// Only attribute the output format to "flag" when -o/--json was
+		// actually passed; the host seam returns the cobra default ("table")
+		// even when no flag was set, which used to misattribute config- or
+		// default-sourced values as "(from flag)".
+		result, err := module.useCases.Show(command.Context(), outputFlagValue(command, module.host.OutputMode()), module.host.Verbose())
 		if err != nil {
 			return err
 		}
@@ -95,6 +102,18 @@ func (module Module) modelsCommand(commandOptions *options) *cobra.Command {
 	return command
 }
 
+// outputFlagValue returns the negotiated output mode only when the user
+// actually passed -o/--output or --json on the command line; otherwise it
+// returns "" so resolution falls through to env, config files, and defaults.
+func outputFlagValue(command *cobra.Command, negotiated string) string {
+	for _, name := range []string{"output", "json"} {
+		if flag := command.Flags().Lookup(name); flag != nil && flag.Changed {
+			return negotiated
+		}
+	}
+	return ""
+}
+
 func renderShow(command *cobra.Command, output string, result configapp.ShowResult) error {
 	if output == "yaml" {
 		return writeYAML(command, result.Resolved, "marshal config")
@@ -107,32 +126,31 @@ func renderShow(command *cobra.Command, output string, result configapp.ShowResu
 	fmt.Fprintln(w, "=====================")
 	fmt.Fprintln(w)
 	fmt.Fprintln(w, "Config files:")
-	printConfigFile(w, "Home:   ", result.ConfigFiles.HomePath, result.ConfigFiles.HomeExists)
-	printConfigFile(w, "Project:", result.ConfigFiles.ProjectPath, result.ConfigFiles.ProjectExists)
+	files := result.ConfigFiles
+	printConfigLayer(w, "Home:   ", files.HomePath, files.HomeExists, files.HomeReadPath, files.HomeLegacy)
+	printConfigLayer(w, "Project:", files.ProjectPath, files.ProjectExists, files.ProjectReadPath, files.ProjectLegacy)
 	r := result.Resolved
 	fmt.Fprintln(w)
 	fmt.Fprintln(w, "Resolved values:")
 	fmt.Fprintf(w, "  output:   %v  (from %s)\n", r.Output.Value, r.Output.Source)
 	fmt.Fprintf(w, "  base_dir: %v  (from %s)\n", r.BaseDir.Value, r.BaseDir.Source)
 	fmt.Fprintf(w, "  verbose:  %v  (from %s)\n", r.Verbose.Value, r.Verbose.Source)
-	fmt.Fprintf(w, "  rpi.worktree_mode:  %v  (from %s)\n", r.RPIWorktreeMode.Value, r.RPIWorktreeMode.Source)
-	fmt.Fprintf(w, "  rpi.runtime_mode:   %v  (from %s)\n", r.RPIRuntimeMode.Value, r.RPIRuntimeMode.Source)
-	fmt.Fprintf(w, "  rpi.runtime_command: %v  (from %s)\n", r.RPIRuntimeCommand.Value, r.RPIRuntimeCommand.Source)
-	fmt.Fprintf(w, "  rpi.ao_command:     %v  (from %s)\n", r.RPIAOCommand.Value, r.RPIAOCommand.Source)
-	fmt.Fprintf(w, "  rpi.bd_command:     %v  (from %s)\n", r.RPIBDCommand.Value, r.RPIBDCommand.Source)
-	fmt.Fprintf(w, "  rpi.tmux_command:   %v  (from %s)\n", r.RPITmuxCommand.Value, r.RPITmuxCommand.Source)
-	fmt.Fprintf(w, "  dream.report_dir:   %v  (from %s)\n", r.DreamReportDir.Value, r.DreamReportDir.Source)
-	fmt.Fprintf(w, "  dream.run_timeout:  %v  (from %s)\n", r.DreamRunTimeout.Value, r.DreamRunTimeout.Source)
-	fmt.Fprintf(w, "  dream.keep_awake:   %v  (from %s)\n", r.DreamKeepAwake.Value, r.DreamKeepAwake.Source)
-	fmt.Fprintf(w, "  dream.runners:      %v  (from %s)\n", r.DreamRunners.Value, r.DreamRunners.Source)
-	fmt.Fprintf(w, "  dream.scheduler:    %v  (from %s)\n", r.DreamScheduler.Value, r.DreamScheduler.Source)
-	fmt.Fprintf(w, "  dream.schedule_at:  %v  (from %s)\n", r.DreamScheduleAt.Value, r.DreamScheduleAt.Source)
-	fmt.Fprintf(w, "  dream.consensus:    %v  (from %s)\n", r.DreamConsensus.Value, r.DreamConsensus.Source)
-	fmt.Fprintf(w, "  dream.creative:     %v  (from %s)\n", r.DreamCreativeLane.Value, r.DreamCreativeLane.Source)
 	fmt.Fprintln(w)
 	fmt.Fprintln(w, "Environment variables (if set):")
 	printEnvironment(w, showEnvironmentKeys, result.Environment, "  ")
 	return nil
+}
+
+// printConfigLayer renders one config-file line. When the layer was read
+// through a deprecated legacy fallback it shows the path actually loaded,
+// labeled as deprecated, instead of reporting the canonical path as missing
+// right after the loader warned about the legacy read.
+func printConfigLayer(w interface{ Write([]byte) (int, error) }, label, path string, exists bool, readPath string, legacy bool) {
+	if legacy && readPath != "" {
+		fmt.Fprintf(w, "  ✓ %s %s (deprecated location; move to %s)\n", label, readPath, path)
+		return
+	}
+	printConfigFile(w, label, path, exists)
 }
 
 func renderModels(command *cobra.Command, output string, result configapp.ModelsResult) error {
@@ -277,7 +295,6 @@ Environment variables:
   AGENTOPS_OUTPUT     - Default output format (table, json, yaml)
   AGENTOPS_BASE_DIR   - Data directory path
   AGENTOPS_VERBOSE    - Enable verbose output (true/1)
-  AGENTOPS_NO_SC      - Disable Smart Connections (true/1)
 
 Examples:
   ao config --show           # Show resolved configuration

@@ -90,6 +90,19 @@ before upgrading.
 
 ### Fixed
 
+- Doctor sub-surfaces agree with each other: remediation and the
+  triage/next-steps recommendations instruct `--fix` only when a fixer can
+  actually act (non-fixable findings name their real manual action),
+  `ao doctor health` reports every severity bucket present, `ao doctor diff`
+  renders an explicit read-only fix plan, and `ao doctor explain` is a
+  superset of the finding's triage entry.
+- `ao config --show` stops rendering configuration for removed subsystems
+  (`rpi.*`, `dream.*`) and, during the legacy `~/.agentops` fallback, shows
+  the actually-read path labeled as deprecated with correct value
+  attribution. The unused `AGENTOPS_NO_SC` variable is no longer documented.
+- The pruned 3.2 bookkeeping verbs (`ao beads`, `ao wiki`, `ao ratchet`, and
+  family) now fail with a migration pointer like every other removed
+  surface, instead of a bare unknown-command error.
 - `ao gate check` in a repository other than agentops itself no longer fails
   with a wall of UNKNOWN rows for agentops-internal checks: those checks skip
   as first-class not-applicable, the human report aggregates them into one

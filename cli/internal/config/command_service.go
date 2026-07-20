@@ -6,8 +6,11 @@ import (
 	"strings"
 )
 
+// showEnvironmentKeys deliberately omits AGENTOPS_NO_SC: it only toggles
+// Search.UseSmartConnections, a dead field nothing outside config plumbing
+// consumes.
 var showEnvironmentKeys = []string{
-	"AGENTOPS_CONFIG", "AGENTOPS_OUTPUT", "AGENTOPS_BASE_DIR", "AGENTOPS_VERBOSE", "AGENTOPS_NO_SC",
+	"AGENTOPS_CONFIG", "AGENTOPS_OUTPUT", "AGENTOPS_BASE_DIR", "AGENTOPS_VERBOSE",
 }
 
 var modelEnvironmentKeys = []string{"AGENTOPS_MODEL_TIER", "AGENTOPS_COUNCIL_MODEL_TIER", "COUNCIL_CLAUDE_MODEL"}
@@ -17,6 +20,15 @@ type ConfigFiles struct {
 	HomeExists    bool
 	ProjectPath   string
 	ProjectExists bool
+	// HomeReadPath is the home-layer path actually consulted for reads. It
+	// equals HomePath normally; when the deprecated ~/.agentops/config.yaml
+	// fallback is active it is that legacy path and HomeLegacy is true.
+	HomeReadPath string
+	HomeLegacy   bool
+	// ProjectReadPath mirrors HomeReadPath for the project layer
+	// (legacy fallback: ./.agentops/config.yaml).
+	ProjectReadPath string
+	ProjectLegacy   bool
 }
 
 type ShowResult struct {
@@ -65,6 +77,11 @@ func (service *CommandService) Show(_ context.Context, output string, verbose bo
 	if err != nil {
 		return ShowResult{}, err
 	}
+	// Overlay the read paths actually consulted (config.go owns the legacy
+	// fallback) so the files panel reports the file that was really loaded
+	// instead of contradicting the deprecation warning.
+	files.HomeReadPath, files.HomeLegacy = homeConfigReadInfo()
+	files.ProjectReadPath, files.ProjectLegacy = projectConfigReadInfo()
 	return ShowResult{
 		Resolved: service.gateway.Resolve(output, verbose), ConfigFiles: files,
 		Environment: service.gateway.Environment(showEnvironmentKeys),
