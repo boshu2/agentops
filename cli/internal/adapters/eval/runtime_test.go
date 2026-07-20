@@ -4,12 +4,108 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"runtime"
+	"sync"
 	"testing"
 
 	aoeval "github.com/boshu2/agentops/cli/internal/eval"
 	"github.com/boshu2/agentops/cli/internal/evalsubstrate"
 	"gopkg.in/yaml.v3"
 )
+
+// assertLedgerMode0600 asserts that the persisted burn ledger carries mode
+// 0o600 (holdout secrecy is load-bearing: a wider mode leaks which holdout
+// scenarios have been spent). On Windows the Unix permission bits are not
+// modeled, so we assert the file exists rather than skipping the test entirely.
+func assertLedgerMode0600(t *testing.T, path string) {
+	t.Helper()
+	info, err := os.Stat(path)
+	if err != nil {
+		t.Fatalf("stat ledger %s: %v", path, err)
+	}
+	if runtime.GOOS == "windows" {
+		if info.IsDir() {
+			t.Fatalf("ledger %s is a directory, want a file", path)
+		}
+		return
+	}
+	if got := info.Mode().Perm(); got != 0o600 {
+		t.Fatalf("ledger mode = %#o, want 0o600", got)
+	}
+}
+
+// TestSaveBurnLedger_FileMode0600 pins the fresh-file case: a ledger written to
+// a path that does not yet exist lands at 0o600.
+func TestSaveBurnLedger_FileMode0600(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "burn-ledger.json")
+	ledger := evalsubstrate.HoldoutBurnLedger{Budget: 3}
+	if err := (Runtime{}).SaveBurnLedger(path, ledger); err != nil {
+		t.Fatalf("SaveBurnLedger: %v", err)
+	}
+	assertLedgerMode0600(t, path)
+}
+
+// TestSaveBurnLedger_StaleTempFile0600 reproduces the validator probe: a stale
+// world-readable temp file (0644, left over from a crashed run) must NOT bleed
+// its mode into the final ledger. Under the old fixed-".tmp" scheme os.WriteFile
+// truncated the stale temp without changing its mode, so the rename left the
+// final ledger at 0644 (RED). The crash-safe writer creates a fresh unpredictable
+// temp at 0o600 and ignores the stale leftover (GREEN).
+func TestSaveBurnLedger_StaleTempFile0600(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "burn-ledger.json")
+
+	// Seed the exact stale state the validator probe pre-creates: a leftover
+	// path+".tmp" at 0644, and a pre-existing final ledger at 0644.
+	if err := os.WriteFile(path+".tmp", []byte("stale"), 0o644); err != nil {
+		t.Fatalf("seed stale temp: %v", err)
+	}
+	if err := os.WriteFile(path, []byte("{}"), 0o644); err != nil {
+		t.Fatalf("seed stale ledger: %v", err)
+	}
+
+	ledger := evalsubstrate.HoldoutBurnLedger{Budget: 5}
+	if err := (Runtime{}).SaveBurnLedger(path, ledger); err != nil {
+		t.Fatalf("SaveBurnLedger: %v", err)
+	}
+	assertLedgerMode0600(t, path)
+
+	// The persisted content must be the new ledger, not the stale seed.
+	got, err := (Runtime{}).LoadBurnLedger(path)
+	if err != nil {
+		t.Fatalf("LoadBurnLedger: %v", err)
+	}
+	if got.Budget != 5 {
+		t.Fatalf("ledger budget = %d, want 5", got.Budget)
+	}
+}
+
+// TestSaveBurnLedger_ConcurrentWritersDoNotCollide asserts the writer no longer
+// contends on a single predictable "path.tmp" name: concurrent saves converge
+// on a well-formed 0o600 ledger instead of racing to truncate one shared temp.
+func TestSaveBurnLedger_ConcurrentWritersDoNotCollide(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "burn-ledger.json")
+	const writers = 8
+	var wg sync.WaitGroup
+	errs := make([]error, writers)
+	for i := 0; i < writers; i++ {
+		wg.Add(1)
+		go func(i int) {
+			defer wg.Done()
+			errs[i] = (Runtime{}).SaveBurnLedger(path, evalsubstrate.HoldoutBurnLedger{Budget: i})
+		}(i)
+	}
+	wg.Wait()
+	for i, err := range errs {
+		if err != nil {
+			t.Fatalf("SaveBurnLedger[%d]: %v", i, err)
+		}
+	}
+	assertLedgerMode0600(t, path)
+	if _, err := (Runtime{}).LoadBurnLedger(path); err != nil {
+		t.Fatalf("final ledger unreadable: %v", err)
+	}
+}
 
 func TestRuntimeSatisfiesCorePortAndResolvesHostPaths(t *testing.T) {
 	var port aoeval.CoreRuntime = Runtime{}

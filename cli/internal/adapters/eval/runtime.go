@@ -16,6 +16,7 @@ import (
 	"github.com/boshu2/agentops/cli/internal/goals"
 	"github.com/boshu2/agentops/cli/internal/scenario"
 	"github.com/boshu2/agentops/cli/internal/scenarioresults"
+	"github.com/boshu2/agentops/cli/internal/storage"
 )
 
 type Runtime struct{}
@@ -207,12 +208,18 @@ func (Runtime) SaveBurnLedger(path string, ledger evalsubstrate.HoldoutBurnLedge
 	if err != nil {
 		return fmt.Errorf("encode burn ledger: %w", err)
 	}
-	temporary := path + ".tmp"
-	if err := os.WriteFile(temporary, data, 0o644); err != nil {
-		return fmt.Errorf("write burn ledger temp: %w", err)
-	}
-	if err := os.Rename(temporary, path); err != nil {
-		return fmt.Errorf("commit burn ledger: %w", err)
+	// 0o600: holdout burn state is load-bearing for holdout secrecy; a world- or
+	// group-readable ledger leaks which holdout scenarios have been spent
+	// (age-6j9ee.3). storage.AtomicWriteFile writes through a fresh, unpredictably
+	// named temp file (os.CreateTemp, 0o600), chmods it to 0o600, fsyncs, then
+	// renames over the target and removes the temp on any error. So the final
+	// ledger mode is 0o600 regardless of pre-existing state: a stale world-
+	// readable "<path>.tmp" left by a crashed run can no longer bleed its mode
+	// into the committed ledger (the old fixed-".tmp" scheme reused that leftover
+	// inode, and os.WriteFile does not narrow the mode of an existing file), and
+	// no reader ever observes a partial write.
+	if err := storage.AtomicWriteFile(path, data, 0o600); err != nil {
+		return fmt.Errorf("write burn ledger %s: %w", path, err)
 	}
 	return nil
 }
