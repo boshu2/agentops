@@ -40,7 +40,7 @@
 | `ao eval task list` | `public-tested` | `allowlisted` | Covered by internal/eval task_service and module tests. |
 | `ao eval task run` | `public-tested` | `allowlisted` | Covered by internal/eval task_service and module tests. |
 | `ao eval task show` | `public-tested` | `allowlisted` | Covered by internal/eval task_service and module tests. |
-| `ao flywheel compare` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
+| `ao flywheel compare` | `public-tested` | `allowlisted` | Covered by internal/flywheelapp Compare tests after the flywheel carve-out. |
 | `ao flywheel status` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao gate check` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao goals drift` | `public-stateful-fixture-needed` | `allowlisted` | Requires two goal snapshots. |
