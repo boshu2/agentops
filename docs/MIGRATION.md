@@ -109,9 +109,11 @@ that runtime before linking the checkout so only one corpus is visible:
 
 - Claude Code: `claude plugin uninstall agentops@agentops-marketplace`, then
   `claude plugin marketplace remove agentops-marketplace`.
-- Codex: remove `~/.codex/plugins/cache/agentops-marketplace` and
-  `~/.codex/.agentops-codex-install.json`, then remove the AgentOps plugin enable
-  entry from `~/.codex/config.toml`.
+- Codex: `codex plugin remove agentops@agentops-marketplace`, then
+  `codex plugin marketplace remove agentops-marketplace`. (Older Codex without
+  the plugin verb: remove `~/.codex/plugins/cache/agentops-marketplace` and
+  `~/.codex/.agentops-codex-install.json`, then remove the AgentOps plugin
+  enable entry from `~/.codex/config.toml`.)
 - Gemini/Antigravity: `agy plugin disable agentops-core-gemini`, then
   `agy plugin uninstall agentops-core-gemini`.
 

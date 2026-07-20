@@ -14,13 +14,14 @@ RPI -> Plan -> Implement -> fresh Validate -> durable verdict -> report and stop
 ## Quickstart
 
 ```bash
-brew install beads
 npx skills@latest add boshu2/agentops --all -g
 ```
 
 One command, every coding agent — `npx skills` installs the corpus into all
-your agents at once. Then use `plan`, `implement`, `validate`, and `learn` — or
-`rpi` to run the loop once.
+your agents at once. The loop runs as skills **inside your coding agent**
+(Claude Code, Codex, Cursor, …): type `/rpi` — or ask for `plan`,
+`implement`, `validate`, `learn` by name — in that agent's chat. No other
+runtime is required.
 
 ## Plugins (Claude Code / Codex)
 
@@ -64,7 +65,8 @@ directories.
 
 ## Intent lives in a bead
 
-[Beads](https://github.com/steveyegge/beads) is the preferred tracker. Plan
+[Beads](https://github.com/steveyegge/beads) is the preferred tracker
+(optional — `brew install beads`). Plan
 writes [BDD](https://cucumber.io/docs/bdd/) acceptance and DDD [ubiquitous
 language](https://martinfowler.com/bliki/UbiquitousLanguage.html) into the bead;
 Implement builds against it; Validate judges a hashed snapshot under
