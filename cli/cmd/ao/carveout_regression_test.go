@@ -149,6 +149,81 @@ func TestNoCarvedLegacySymbolsRemain(t *testing.T) {
 	}
 }
 
+// TestPackageVarsAreAllowlisted is the durable finish-line invariant for the
+// cmd/ao carve-out: every package-level `var` declared in a non-test source file
+// must appear on the committed allowlist (testdata/package-var-allowlist.json),
+// each carrying a one-line reason (root flag target / ldflags injection /
+// immutable wiring / documented test seam). The test fails two ways so the
+// allowlist cannot rot: (1) an unlisted package-level var (a new mutable global
+// snuck in — it almost always belongs constructor-scoped inside
+// internal/commands/<family>), and (2) a stale allowlist entry whose var no
+// longer exists. Keyed by name+file so a var moving files is caught too.
+func TestPackageVarsAreAllowlisted(t *testing.T) {
+	type allowEntry struct {
+		Name   string `json:"name"`
+		File   string `json:"file"`
+		Reason string `json:"reason"`
+	}
+	allowPath := filepath.Join(packageDir, "testdata", "package-var-allowlist.json")
+	data, err := os.ReadFile(allowPath)
+	if err != nil {
+		t.Fatalf("read package-var allowlist %s: %v", allowPath, err)
+	}
+	var doc struct {
+		Allowed []allowEntry `json:"allowed"`
+	}
+	if err := json.Unmarshal(data, &doc); err != nil {
+		t.Fatalf("decode package-var allowlist: %v", err)
+	}
+
+	key := func(name, file string) string { return file + "::" + name }
+	allowed := make(map[string]allowEntry, len(doc.Allowed))
+	for _, entry := range doc.Allowed {
+		if entry.Name == "" || entry.File == "" || strings.TrimSpace(entry.Reason) == "" {
+			t.Errorf("allowlist entry %+v is incomplete: name, file, and reason are all required", entry)
+			continue
+		}
+		allowed[key(entry.Name, entry.File)] = entry
+	}
+
+	// Collect the actual package-level vars from every non-test source file.
+	actual := map[string]bool{}
+	fset := token.NewFileSet()
+	for name, path := range packageGoFiles(t) {
+		file, err := parser.ParseFile(fset, path, nil, 0)
+		if err != nil {
+			t.Fatalf("parse %s: %v", name, err)
+		}
+		for _, decl := range file.Decls {
+			gen, ok := decl.(*ast.GenDecl)
+			if !ok || gen.Tok != token.VAR {
+				continue
+			}
+			for _, spec := range gen.Specs {
+				value, ok := spec.(*ast.ValueSpec)
+				if !ok {
+					continue
+				}
+				for _, ident := range value.Names {
+					actual[key(ident.Name, name)] = true
+					if _, ok := allowed[key(ident.Name, name)]; !ok {
+						t.Errorf("cmd/ao/%s declares un-allowlisted package-level var %q; add it to testdata/package-var-allowlist.json with a reason, or (better) move the state constructor-scoped into internal/commands/<family>",
+							name, ident.Name)
+					}
+				}
+			}
+		}
+	}
+
+	// Fail on stale allowlist entries so the list cannot drift from reality.
+	for k, entry := range allowed {
+		if !actual[k] {
+			t.Errorf("stale allowlist entry: %s (%s) no longer exists as a package-level var; remove it from testdata/package-var-allowlist.json",
+				entry.Name, entry.File)
+		}
+	}
+}
+
 // packageLevelNames returns every top-level declared identifier (var, const,
 // type, func) in the parsed file.
 func packageLevelNames(file *ast.File) []string {

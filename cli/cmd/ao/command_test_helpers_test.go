@@ -9,6 +9,19 @@ import (
 	"github.com/spf13/pflag"
 )
 
+// executeCommand runs the root command tree with args and returns everything it
+// wrote to both cobra's out/err buffer and os.Stdout.
+//
+// BOUNDED PURPOSE (carve-out finish line, age-a-plus-report-card-ieyp2.14): this
+// harness saves/restores ONLY still-existing root spine state — the five root
+// persistent-flag globals (dryRun/verbose/output/jsonFlag/cfgFile) plus cobra's
+// per-command Changed state. After the 12-family carve-out no module-scoped
+// global remains to save here; each carved family owns its flag state
+// constructor-scoped inside internal/commands/<family>, tested there. If you find
+// yourself adding another save/restore line, the state you are reaching for is
+// almost certainly a module global that should not exist — fix the module, not
+// this helper. TestPackageVarsAreAllowlisted enforces that no new such global
+// appears in cmd/ao.
 func executeCommand(args ...string) (string, error) {
 	originalDryRun, originalVerbose := dryRun, verbose
 	originalOutput, originalJSON, originalConfig := output, jsonFlag, cfgFile

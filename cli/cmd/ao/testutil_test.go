@@ -209,6 +209,14 @@ func captureJSONStdout(t *testing.T, fn func()) string {
 // to defaults, clears cobra flag Changed state, and registers t.Cleanup to
 // restore originals. Call this at the start of any test that uses rootCmd
 // directly instead of executeCommand.
+//
+// BOUNDED PURPOSE (carve-out finish line, age-a-plus-report-card-ieyp2.14):
+// after the 12-family carve-out the only saved state is the root spine — the
+// five root persistent-flag globals plus the configShow test shim. There is no
+// remaining module-scoped global to reset here; carved families own their flag
+// state constructor-scoped inside internal/commands/<family>. Do not grow this
+// list to reach into a module — fix the module. TestPackageVarsAreAllowlisted
+// keeps cmd/ao free of new mutable globals.
 func resetCommandState(t *testing.T) {
 	t.Helper()
 
