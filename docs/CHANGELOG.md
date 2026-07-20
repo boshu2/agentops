@@ -90,6 +90,12 @@ before upgrading.
 
 ### Fixed
 
+- Onboarding docs name the one real prerequisite: the loop runs as skills
+  inside a coding agent (Claude Code, Codex, Cursor, …) and `/rpi` is typed
+  in that agent's chat. The README Quickstart leads with the universal npx
+  install alone (beads is introduced as the optional tracker it is), and the
+  Codex plugin uninstall uses `codex plugin remove` with the manual cache
+  removal demoted to a fallback for older Codex.
 - Doctor sub-surfaces agree with each other: remediation and the
   triage/next-steps recommendations instruct `--fix` only when a fixer can
   actually act (non-fixable findings name their real manual action),

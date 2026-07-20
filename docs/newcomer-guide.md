@@ -11,9 +11,12 @@ small behavior and use RPI when you want the full loop.
 - A durable verdict records checked and unchecked claims.
 - The invocation stops.
 
-You do not need a tracker, Git repository, multi-agent substrate, or `ao` binary
-for the semantic loop. If your project has those systems, keep using their native
-workflow after AgentOps reports its verdict.
+The one thing you do need is a coding agent to run the skills in: AgentOps
+skills execute inside your agent runtime (Claude Code, Codex, Cursor, …), and
+`/rpi` is typed in that agent's chat. You do not need a tracker, Git
+repository, multi-agent substrate, or `ao` binary for the semantic loop. If
+your project has those systems, keep using their native workflow after
+AgentOps reports its verdict.
 
 Use [premortem](https://github.com/boshu2/agentops/blob/main/skills/premortem/SKILL.md)
 when a plan deserves an advisory challenge,

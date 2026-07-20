@@ -79,8 +79,14 @@ claude plugin marketplace remove agentops-marketplace
 
 ### Codex
 
-Remove the old cache and install manifest, then delete the AgentOps plugin enable
-entry from `~/.codex/config.toml`:
+```bash
+codex plugin remove agentops@agentops-marketplace
+codex plugin marketplace remove agentops-marketplace
+```
+
+If the `codex plugin` verb is unavailable (older Codex), remove the cache and
+install manifest by hand, then delete the AgentOps plugin enable entry from
+`~/.codex/config.toml`:
 
 ```bash
 rm -rf ~/.codex/plugins/cache/agentops-marketplace
