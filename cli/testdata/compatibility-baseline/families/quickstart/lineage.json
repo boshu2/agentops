@@ -3,5 +3,6 @@
   "family": "quickstart",
   "freeze_sha": "6cb2bd13428f2e5b01c88f002061e11b895fcd35",
   "ownership_sha256": "603ab53e2d86928dfae8cfc22979f24d3ffca651ba3787cdaee9bf13bab0dd39",
-  "migration_state": "migrating"
+  "migration_state": "migrated",
+  "accepted_sha": "e6cccb9e96c81eeffa90dd95f29da8a62beb61bc"
 }
