@@ -52,7 +52,10 @@ func TestCommandDelegatesAndRendersYAML(t *testing.T) {
 	if err := command.Execute(); err != nil {
 		t.Fatal(err)
 	}
-	if builder.calls != 1 || !strings.Contains(output.String(), "schemaversion: \"2.0\"") {
+	// The YAML keys mirror the json struct tags (schema_version), not the
+	// field-name-lowercased form a direct yaml.Marshal would emit, so -o yaml is
+	// a truthful sibling of -o json.
+	if builder.calls != 1 || !strings.Contains(output.String(), "schema_version: \"2.0\"") {
 		t.Fatalf("YAML output = %q, calls=%d", output.String(), builder.calls)
 	}
 }

@@ -7,6 +7,7 @@ package skills
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 
 	"github.com/spf13/cobra"
 
@@ -59,6 +60,32 @@ type Module struct {
 // NewModule constructs the skills command module from its host seams.
 func NewModule(host clicontract.HostOptions) *Module {
 	return &Module{host: host}
+}
+
+// outputMode returns the negotiated global output mode, or "" when unset.
+func (m *Module) outputMode() string {
+	if m.host.OutputMode == nil {
+		return ""
+	}
+	return m.host.OutputMode()
+}
+
+// emitStructured writes value as pretty JSON or YAML per the negotiated output,
+// reporting whether it handled the output. The local --json flag and the global
+// -o json both select JSON (byte-identical to the prior hand-rolled encoder);
+// -o yaml selects YAML with keys mirroring the json tags. A non-structured mode
+// returns handled=false so the caller renders its human view — there is no
+// silent yaml→table fallback for a subcommand that implements json.
+func (m *Module) emitStructured(out io.Writer, localJSON bool, value any) (handled bool, err error) {
+	if m.outputMode() == "yaml" {
+		return true, clicontract.WriteYAML(out, value)
+	}
+	if localJSON || m.outputMode() == "json" {
+		enc := json.NewEncoder(out)
+		enc.SetIndent("", "  ")
+		return true, enc.Encode(value)
+	}
+	return false, nil
 }
 
 // Contract declares skills's real behavior for the family architecture gate.
@@ -136,13 +163,11 @@ func (m *Module) runCheck(cmd *cobra.Command, _ []string) error {
 	}
 
 	out := cmd.OutOrStdout()
-	if m.checkJSON {
-		enc := json.NewEncoder(out)
-		enc.SetIndent("", "  ")
-		if err := enc.Encode(report); err != nil {
-			return err
-		}
-	} else {
+	handled, err := m.emitStructured(out, m.checkJSON, report)
+	if err != nil {
+		return err
+	}
+	if !handled {
 		fmt.Fprintf(out, "Skills audit (%s)\n", report.Generated)
 		fmt.Fprintf(out, "================\n")
 		fmt.Fprintf(out, "Skills audited: %d\n", len(report.Skills))
@@ -208,13 +233,11 @@ func (m *Module) runResolve(cmd *cobra.Command, _ []string) error {
 	}
 
 	out := cmd.OutOrStdout()
-	if m.resolveJSON {
-		enc := json.NewEncoder(out)
-		enc.SetIndent("", "  ")
-		if err := enc.Encode(report); err != nil {
-			return err
-		}
-	} else {
+	handled, err := m.emitStructured(out, m.resolveJSON, report)
+	if err != nil {
+		return err
+	}
+	if !handled {
 		fmt.Fprintf(out, "Skills MECE resolve (%s)\n", report.Generated)
 		fmt.Fprintf(out, "===================\n")
 		fmt.Fprintf(out, "Skills:               %d\n", report.SkillsCount)
@@ -292,9 +315,12 @@ func (m *Module) runFind(cmd *cobra.Command, args []string) error {
 
 	ranked := skills.Score(query, metas)
 	top := capResults(ranked, m.findLimit)
+	if top == nil {
+		top = []skills.Match{}
+	}
 
-	if m.findJSON {
-		return renderFindJSON(cmd, top)
+	if handled, err := m.emitStructured(cmd.OutOrStdout(), m.findJSON, top); handled || err != nil {
+		return err
 	}
 	return renderFindText(cmd, query, top)
 }
@@ -352,10 +378,8 @@ func (m *Module) runList(cmd *cobra.Command, _ []string) error {
 	matches := skills.List(cat.Skills, filter)
 
 	out := cmd.OutOrStdout()
-	if m.listJSON {
-		enc := json.NewEncoder(out)
-		enc.SetIndent("", "  ")
-		return enc.Encode(matches)
+	if handled, err := m.emitStructured(out, m.listJSON, matches); handled || err != nil {
+		return err
 	}
 	for _, e := range matches {
 		fmt.Fprintf(out, "%-28s %-16s %s\n", e.Name, e.HexagonalRole, e.Description)
@@ -389,7 +413,7 @@ func (m *Module) runConsumers(cmd *cobra.Command, args []string) error {
 		return err
 	}
 	got := skills.Consumers(cat.Skills, args[0])
-	return renderNameList(cmd, got, m.consumersJSON,
+	return m.renderNameList(cmd, got, m.consumersJSON,
 		fmt.Sprintf("no skills consume %q", args[0]))
 }
 
@@ -416,7 +440,7 @@ func (m *Module) runProducers(cmd *cobra.Command, args []string) error {
 		return err
 	}
 	got := skills.Producers(cat.Skills, args[0])
-	return renderNameList(cmd, got, m.producersJSON,
+	return m.renderNameList(cmd, got, m.producersJSON,
 		fmt.Sprintf("no skills produce %q", args[0]))
 }
 
@@ -638,17 +662,6 @@ func capResults(matches []skills.Match, limit int) []skills.Match {
 	return matches
 }
 
-// renderFindJSON writes the matches as a JSON array on stdout (data only;
-// diagnostics, if any, go to stderr).
-func renderFindJSON(cmd *cobra.Command, top []skills.Match) error {
-	if top == nil {
-		top = []skills.Match{}
-	}
-	enc := json.NewEncoder(cmd.OutOrStdout())
-	enc.SetIndent("", "  ")
-	return enc.Encode(top)
-}
-
 // renderFindText prints the positive-score matches as a ranked list on stdout.
 // When nothing scores above zero it reports gracefully on stderr and exits 0 —
 // an unmatched intent is not an error.
@@ -669,18 +682,16 @@ func renderFindText(cmd *cobra.Command, query string, top []skills.Match) error 
 	return nil
 }
 
-// renderNameList prints a sorted slice of skill names as JSON or one-per-line
-// text, with a stderr note when the list is empty (an empty result is not an
-// error — the query simply matched nothing).
-func renderNameList(cmd *cobra.Command, names []string, asJSON bool, emptyNote string) error {
+// renderNameList prints a sorted slice of skill names as JSON/YAML or
+// one-per-line text, with a stderr note when the list is empty (an empty result
+// is not an error — the query simply matched nothing).
+func (m *Module) renderNameList(cmd *cobra.Command, names []string, asJSON bool, emptyNote string) error {
 	out := cmd.OutOrStdout()
-	if asJSON {
-		if names == nil {
-			names = []string{}
-		}
-		enc := json.NewEncoder(out)
-		enc.SetIndent("", "  ")
-		return enc.Encode(names)
+	if names == nil {
+		names = []string{}
+	}
+	if handled, err := m.emitStructured(out, asJSON, names); handled || err != nil {
+		return err
 	}
 	for _, n := range names {
 		fmt.Fprintln(out, n)

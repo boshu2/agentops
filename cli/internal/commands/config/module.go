@@ -100,6 +100,9 @@ func (module Module) modelsCommand(commandOptions *options) *cobra.Command {
 }
 
 func renderShow(command *cobra.Command, output string, result configapp.ShowResult) error {
+	if output == "yaml" {
+		return writeYAML(command, result.Resolved, "marshal config")
+	}
 	if output == "json" {
 		return writeJSON(command, result.Resolved, "marshal config")
 	}
@@ -137,6 +140,9 @@ func renderShow(command *cobra.Command, output string, result configapp.ShowResu
 }
 
 func renderModels(command *cobra.Command, output string, result configapp.ModelsResult) error {
+	if output == "yaml" {
+		return writeYAML(command, result.Config.Models, "marshal models config")
+	}
 	if output == "json" {
 		return writeJSON(command, result.Config.Models, "marshal models config")
 	}
@@ -188,6 +194,9 @@ func renderModels(command *cobra.Command, output string, result configapp.Models
 }
 
 func renderModelsWrite(command *cobra.Command, output, tier, skill string, result configapp.ModelsWriteResult) error {
+	if output == "yaml" {
+		return writeYAML(command, result, "marshal models write result")
+	}
 	if output == "json" {
 		return writeJSON(command, result, "marshal models write result")
 	}
@@ -217,6 +226,13 @@ func splitSkill(value string) []string {
 
 func writeJSON(command *cobra.Command, value any, label string) error {
 	if err := clicontract.WriteJSON(command.OutOrStdout(), value); err != nil {
+		return fmt.Errorf("%s: %w", label, err)
+	}
+	return nil
+}
+
+func writeYAML(command *cobra.Command, value any, label string) error {
+	if err := clicontract.WriteYAML(command.OutOrStdout(), value); err != nil {
 		return fmt.Errorf("%s: %w", label, err)
 	}
 	return nil

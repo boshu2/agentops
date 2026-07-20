@@ -63,6 +63,9 @@ func (m Module) Command() *cobra.Command {
 		GroupID: "core",
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			info := currentVersionInfo(m.host.Version())
+			if m.host.OutputMode() == "yaml" {
+				return clicontract.WriteYAML(cmd.OutOrStdout(), info)
+			}
 			if m.host.OutputMode() == "json" {
 				enc := json.NewEncoder(cmd.OutOrStdout())
 				enc.SetIndent("", "  ")

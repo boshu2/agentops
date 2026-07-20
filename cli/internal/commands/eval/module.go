@@ -214,6 +214,9 @@ func (module Module) compareCommand() *cobra.Command {
 		if err != nil {
 			return err
 		}
+		if module.outputMode() == "yaml" {
+			return clicontract.WriteYAML(command.OutOrStdout(), result.Candidate)
+		}
 		if module.outputMode() == "json" {
 			return clicontract.WriteJSON(command.OutOrStdout(), result.Candidate)
 		}
@@ -241,6 +244,9 @@ func (module Module) baselineCommand() *cobra.Command {
 		if err != nil {
 			return err
 		}
+		if module.outputMode() == "yaml" {
+			return clicontract.WriteYAML(command.OutOrStdout(), result)
+		}
 		if module.outputMode() == "json" {
 			return clicontract.WriteJSON(command.OutOrStdout(), result)
 		}
@@ -263,6 +269,9 @@ func (module Module) baselineAuditCommand() *cobra.Command {
 		report, err := module.useCases.Core.AuditBaseline(command.Context(), aoeval.CoreBaselineAuditRequest{SuitePaths: args, Root: options.root, BaselineDir: options.baselineDir})
 		if err != nil {
 			return err
+		}
+		if module.outputMode() == "yaml" {
+			return clicontract.WriteYAML(command.OutOrStdout(), report)
 		}
 		if module.outputMode() == "json" {
 			return clicontract.WriteJSON(command.OutOrStdout(), report)
@@ -301,6 +310,9 @@ func (module Module) scorecardCommand() *cobra.Command {
 		if err != nil {
 			return err
 		}
+		if module.outputMode() == "yaml" {
+			return clicontract.WriteYAML(command.OutOrStdout(), card)
+		}
 		if module.outputMode() == "json" {
 			return clicontract.WriteJSON(command.OutOrStdout(), card)
 		}
@@ -325,6 +337,9 @@ func (module Module) coverageCommand() *cobra.Command {
 		report, err := module.useCases.Core.Coverage(command.Context(), aoeval.CoreCoverageRequest{SuitePaths: args, Root: options.root, RequiredDomains: options.domains, RequiredEvidenceKinds: options.evidenceKinds, RequiredDimensions: options.dimensions, RequiredRuntimes: options.runtimes})
 		if err != nil {
 			return err
+		}
+		if module.outputMode() == "yaml" {
+			return clicontract.WriteYAML(command.OutOrStdout(), report)
 		}
 		if module.outputMode() == "json" {
 			return clicontract.WriteJSON(command.OutOrStdout(), report)
@@ -367,6 +382,9 @@ never auto-removed — retraction is an audit trail.`,
 		report, err := module.useCases.Cleanup.Execute(command.Context(), options)
 		if err != nil {
 			return err
+		}
+		if module.outputMode() == "yaml" {
+			return clicontract.WriteYAML(command.OutOrStdout(), report)
 		}
 		if module.outputMode() == "json" {
 			return clicontract.WriteJSON(command.OutOrStdout(), report)
@@ -417,6 +435,9 @@ func (module Module) taskListCommand() *cobra.Command {
 		for _, summary := range result.Tasks {
 			ids = append(ids, summary.ID)
 		}
+		if module.outputMode() == "yaml" {
+			return clicontract.WriteYAML(command.OutOrStdout(), map[string]any{"tasks": ids, "root": result.Root})
+		}
 		if module.outputMode() == "json" {
 			return clicontract.WriteJSON(command.OutOrStdout(), map[string]any{"tasks": ids, "root": result.Root})
 		}
@@ -444,6 +465,9 @@ func (module Module) taskShowCommand() *cobra.Command {
 		task, err := module.useCases.Task.Show(command.Context(), args[0])
 		if err != nil {
 			return err
+		}
+		if module.outputMode() == "yaml" {
+			return clicontract.WriteYAML(command.OutOrStdout(), task)
 		}
 		if module.outputMode() == "json" {
 			return clicontract.WriteJSON(command.OutOrStdout(), task)
@@ -489,6 +513,9 @@ func (module Module) taskRunCommand() *cobra.Command {
 			fmt.Fprintln(command.OutOrStdout(), "Dry run: gates passed; no Run manifest written.")
 			return nil
 		}
+		if module.outputMode() == "yaml" {
+			return clicontract.WriteYAML(command.OutOrStdout(), result.Manifest)
+		}
 		if module.outputMode() == "json" {
 			return clicontract.WriteJSON(command.OutOrStdout(), result.Manifest)
 		}
@@ -519,6 +546,9 @@ func (module Module) suiteVerdictCommand() *cobra.Command {
 		if err != nil {
 			return err
 		}
+		if module.outputMode() == "yaml" {
+			return clicontract.JSONToYAML(command.OutOrStdout(), result.Raw)
+		}
 		if module.outputMode() == "json" {
 			_, err = command.OutOrStdout().Write(append(append([]byte(nil), result.Raw...), '\n'))
 			return err
@@ -542,6 +572,9 @@ func (module Module) suiteNRequiredCommand() *cobra.Command {
 		result, err := module.useCases.Suite.NRequired(command.Context(), options)
 		if err != nil {
 			return err
+		}
+		if module.outputMode() == "yaml" {
+			return clicontract.JSONToYAML(command.OutOrStdout(), result.Raw)
 		}
 		if module.outputMode() == "json" {
 			_, err = command.OutOrStdout().Write(append(append([]byte(nil), result.Raw...), '\n'))
@@ -587,7 +620,13 @@ func (module Module) outcomesIngestCommand() *cobra.Command {
 		if result.Warning != "" {
 			fmt.Fprintln(command.ErrOrStderr(), result.Warning)
 		}
-		if err := clicontract.WriteJSON(command.OutOrStdout(), result.Verdict); err != nil {
+		// ingest emits the verdict as structured output unconditionally (its
+		// default is JSON, not a human table); honor -o yaml when asked.
+		emit := clicontract.WriteJSON
+		if module.outputMode() == "yaml" {
+			emit = clicontract.WriteYAML
+		}
+		if err := emit(command.OutOrStdout(), result.Verdict); err != nil {
 			return err
 		}
 		if result.ManifestPath != "" {
@@ -631,6 +670,9 @@ func (module Module) scenarioAddCommand() *cobra.Command {
 		result, err := module.useCases.Scenario.Add(command.Context(), options)
 		if err != nil {
 			return err
+		}
+		if module.outputMode() == "yaml" {
+			return clicontract.WriteYAML(command.OutOrStdout(), result.Scenario)
 		}
 		if module.outputMode() == "json" {
 			return clicontract.WriteJSON(command.OutOrStdout(), result.Scenario)
@@ -710,6 +752,9 @@ func (module Module) scenarioEvaluateCommand() *cobra.Command {
 		report, err := module.useCases.Scenario.Evaluate(command.Context(), options)
 		if err != nil {
 			return err
+		}
+		if module.outputMode() == "yaml" {
+			return clicontract.WriteYAML(command.OutOrStdout(), report)
 		}
 		if jsonOutput || module.outputMode() == "json" {
 			return clicontract.WriteJSON(command.OutOrStdout(), report)
@@ -796,6 +841,9 @@ func (module Module) scenarioMoatCommand() *cobra.Command {
 			}
 			return err
 		}
+		if module.outputMode() == "yaml" {
+			return clicontract.WriteYAML(command.OutOrStdout(), result)
+		}
 		if module.outputMode() == "json" {
 			return clicontract.WriteJSON(command.OutOrStdout(), result)
 		}
@@ -826,6 +874,9 @@ func (module Module) sessionOutcomeCommand() *cobra.Command {
 		if result.DryRun {
 			fmt.Fprintf(command.OutOrStdout(), "[dry-run] Would analyze transcript: %s\n", result.Transcript)
 			return nil
+		}
+		if module.outputMode() == "yaml" {
+			return clicontract.WriteYAML(command.OutOrStdout(), result)
 		}
 		if format == "json" || module.outputMode() == "json" {
 			return clicontract.WriteJSON(command.OutOrStdout(), result)
@@ -892,6 +943,9 @@ func (module Module) renderRun(command *cobra.Command, result aoeval.CoreRunResu
 	}
 	if result.Mode == aoeval.CoreRunContextAB {
 		value = result.ContextDelta
+	}
+	if module.outputMode() == "yaml" {
+		return clicontract.WriteYAML(command.OutOrStdout(), value)
 	}
 	if module.outputMode() == "json" {
 		return clicontract.WriteJSON(command.OutOrStdout(), value)
