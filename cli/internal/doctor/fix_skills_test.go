@@ -1144,3 +1144,59 @@ func TestSkillsHygieneSymlinkedReferencesDirExcluded(t *testing.T) {
 		t.Fatalf("bskill SKILL.md = %q err=%v, want byte-untouched", got, rerr)
 	}
 }
+
+// TestSkillsMissingRemediationMatchesFixability verifies the remediation
+// contract (novice edge 4a): the command instructs `--fix` only when the
+// registered fixer can actually act; the non-auto-fixable state (no repo
+// skills/ source tree) names the real manual action instead of an inert
+// `--fix` invocation.
+func TestSkillsMissingRemediationMatchesFixability(t *testing.T) {
+	for _, tc := range []struct {
+		name       string
+		withSource bool
+		wantAuto   bool
+	}{
+		{name: "repo source present instructs --fix", withSource: true, wantAuto: true},
+		{name: "no repo source names manual action", withSource: false, wantAuto: false},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			repo, home := t.TempDir(), t.TempDir()
+			if tc.withSource {
+				writeSkillsFile(t, filepath.Join(repo, "skills", "rpi", "SKILL.md"), "---\nname: rpi\n---\nbody\n")
+			}
+			findings, err := skillsMissingDetector{}.Detect(&DetectEnv{RepoRoot: repo, CWD: repo, HomeDir: home})
+			if err != nil {
+				t.Fatalf("Detect: %v", err)
+			}
+			if len(findings) != 1 {
+				t.Fatalf("expected exactly one finding, got %+v", findings)
+			}
+			rem := findings[0].Remediation
+			if rem.AutoFixable != tc.wantAuto {
+				t.Fatalf("AutoFixable = %t, want %t", rem.AutoFixable, tc.wantAuto)
+			}
+			if rem.ExplainCommand != "ao doctor explain fm-skills-missing" {
+				t.Fatalf("ExplainCommand = %q", rem.ExplainCommand)
+			}
+			if tc.wantAuto {
+				if rem.Command != "ao doctor --fix --only fm-skills-missing" {
+					t.Fatalf("auto-fixable Command = %q, want the --fix invocation", rem.Command)
+				}
+				if rem.EstimatedActions != 1 {
+					t.Fatalf("EstimatedActions = %d, want 1 (one repo skill to mirror)", rem.EstimatedActions)
+				}
+				return
+			}
+			// Non-auto-fixable: must never instruct --fix, must name the manual path.
+			if strings.Contains(rem.Command, "--fix") {
+				t.Fatalf("non-fixable remediation instructs --fix: %q", rem.Command)
+			}
+			if !strings.Contains(rem.Command, "ao skills link") {
+				t.Fatalf("non-fixable remediation names no manual action: %q", rem.Command)
+			}
+			if rem.EstimatedActions != 0 {
+				t.Fatalf("EstimatedActions = %d, want 0", rem.EstimatedActions)
+			}
+		})
+	}
+}

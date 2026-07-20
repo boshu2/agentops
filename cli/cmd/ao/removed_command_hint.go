@@ -19,6 +19,16 @@ type removedCommand struct {
 	use string // what to use instead — one clause, plain words
 }
 
+// prunedFamilyHint is the shared replacement clause for the 3.2 bookkeeping
+// and knowledge family pruned from the default build without individual
+// tombstones (docs/MIGRATION.md "Other 3.2 bookkeeping and knowledge verbs").
+// There is no in-ao replacement, so every member points at the same escape
+// hatches. NOTE: `ao eval` returned in 3.3 as a live command and must never
+// appear here — cross-check any addition against the registered command tree
+// (TestHintedVerbsAreNotLiveCommands enforces this).
+const prunedFamilyHint = "it was pruned from the default build with no in-ao replacement; " +
+	"use your own tools, `ao gate check` for deterministic checks, or generic `ao provenance` records"
+
 // removedCommands maps every verb removed from the default `ao` build to its
 // replacement hint. Keep in lockstep with docs/MIGRATION.md — the drift test
 // (TestRemovedVerbsHaveMigrationRows) fails when a verb here has no row there.
@@ -42,6 +52,28 @@ var removedCommands = map[string]removedCommand{
 	"constraint": {use: "AgentOps no longer promotes findings into blocking policy; encode accepted rules in repository-owned checks"},
 	"inject":     {use: "AgentOps no longer retrieves prior knowledge; use the caller's own memory or context tooling"},
 	"verify":     {use: "the 3.2 verification front door was removed; semantic judgment is the Validate skill. If `ao verify init` installed a pre-push hook, delete the AGENTOPS-VERIFY-RATCHET block from .git/hooks/pre-push (see docs/UPGRADING.md)"},
+
+	// The pruned 3.2 bookkeeping/knowledge family — one shared clause, per the
+	// MIGRATION.md paragraph that lists them together (`eval` is deliberately
+	// absent: it returned in 3.3 as a live command).
+	"agents":    {use: prunedFamilyHint},
+	"beads":     {use: prunedFamilyHint},
+	"canon":     {use: prunedFamilyHint},
+	"ci":        {use: prunedFamilyHint},
+	"citation":  {use: prunedFamilyHint},
+	"findings":  {use: prunedFamilyHint},
+	"forge":     {use: prunedFamilyHint},
+	"knowledge": {use: prunedFamilyHint},
+	"mcp":       {use: prunedFamilyHint},
+	"metrics":   {use: prunedFamilyHint},
+	"notebook":  {use: prunedFamilyHint},
+	"patterns":  {use: prunedFamilyHint},
+	"pool":      {use: prunedFamilyHint},
+	"ratchet":   {use: prunedFamilyHint},
+	"registry":  {use: prunedFamilyHint},
+	"scope":     {use: prunedFamilyHint},
+	"sessions":  {use: prunedFamilyHint},
+	"wiki":      {use: prunedFamilyHint},
 }
 
 // removedChildCommands covers retired subcommands under retained parents.

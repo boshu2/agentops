@@ -77,12 +77,14 @@ func writeReport(ctx *MutateContext, name, content string) (int, error) {
 }
 
 // detectOnlyRemediation builds the standard detect-only remediation block.
+// Detect-only findings have no fixer, so the remediation must never instruct
+// --fix (novice-test edge 4a): the command points at the evidence instead.
 func detectOnlyRemediation(id string) Remediation {
 	return Remediation{
-		Command:          "ao doctor --fix --only " + id,
+		Command:          "no automatic fix; inspect: ao doctor explain " + id,
 		ExplainCommand:   "ao doctor explain " + id,
 		AutoFixable:      false,
-		EstimatedActions: 1,
+		EstimatedActions: 0,
 	}
 }
 
@@ -503,6 +505,12 @@ func (openclawSnapshotStaleDetector) Detect(env *DetectEnv) ([]Finding, error) {
 		ExplainCommand:   "ao doctor explain " + fmOpenClawSnapshotStale,
 		AutoFixable:      autoFixable,
 		EstimatedActions: 1,
+	}
+	if !autoFixable {
+		// Only the torn-latest sub-case has a fixer; every other stale kind
+		// needs the producing daemon regenerated, not --fix (edge 4a).
+		rem.Command = "regenerate the snapshot from its producer (restart the projection daemon), or inspect: ao doctor explain " + fmOpenClawSnapshotStale
+		rem.EstimatedActions = 0
 	}
 	return []Finding{{
 		ID:         fmOpenClawSnapshotStale,
