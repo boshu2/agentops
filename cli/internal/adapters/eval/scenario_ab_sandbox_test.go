@@ -232,7 +232,7 @@ func TestSymlinkClosureDenyTargets_SkipsDanglingSymlink(t *testing.T) {
 	if err := os.Symlink(filepath.Join(root, "does-not-exist"), filepath.Join(root, "dangling")); err != nil {
 		t.Fatal(err)
 	}
-	got, err := symlinkClosureDenyTargets([]string{root}, maxSymlinkClosureDirs, maxSymlinkDenyEntries, maxSymlinkWalkDepth)
+	got, err := symlinkClosureDenyTargets([]string{root}, maxSymlinkClosureDirs, maxSymlinkDenyEntries)
 	if err != nil {
 		t.Fatalf("symlinkClosureDenyTargets: %v", err)
 	}
@@ -328,6 +328,57 @@ func TestCorpusDenyPaths_DeeperChainClosure(t *testing.T) {
 	}
 }
 
+// TestCorpusDenyPaths_DeepUnderCapClosure (age-6j9ee.3, the validator's exact probe): a
+// corpus symlink into an external subtree whose PIVOT symlink sits DEEPER than the old
+// depth-8 bound, while the subtree's total dir/entry count stays UNDER the dir/entry caps.
+// The old depth bound SkipDir'd before reaching the pivot, so its canonical target was
+// SILENTLY omitted (no error, no overflow) and a control arm could read it — the "complete
+// closure OR refuse" property was violated by a THIRD, silent, truncating cap. With the
+// depth bound removed, the closure descends the full external subtree (bounded by the dir
+// cap) and denies the deep pivot's canonical target.
+func TestCorpusDenyPaths_DeepUnderCapClosure(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	root := t.TempDir()
+	agents := filepath.Join(root, ".agents")
+	if err := os.MkdirAll(agents, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	// External subtree: a linear chain of real dirs 12 levels deep (> old depth bound 8),
+	// but only ~13 dirs total — far under maxSymlinkClosureDirs (1024) and the entry cap.
+	external := t.TempDir()
+	deep := external
+	for i := 0; i < 12; i++ {
+		deep = filepath.Join(deep, fmt.Sprintf("d%d", i))
+	}
+	if err := os.MkdirAll(deep, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	ext2 := t.TempDir()
+	secret := filepath.Join(ext2, "secret.txt")
+	if err := os.WriteFile(secret, []byte("VALIDATOR-DEEP-UNDER-CAP-SECRET"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	// Pivot symlink at the DEEP level -> ext2/secret.txt (below the old depth bound).
+	if err := os.Symlink(secret, filepath.Join(deep, "pivot.md")); err != nil {
+		t.Fatal(err)
+	}
+	// Corpus symlink -> external subtree root.
+	if err := os.Symlink(external, filepath.Join(agents, "learnings")); err != nil {
+		t.Fatal(err)
+	}
+	wantTarget, err := filepath.EvalSymlinks(secret)
+	if err != nil {
+		t.Fatal(err)
+	}
+	deny, err := corpusDenyPaths(root)
+	if err != nil {
+		t.Fatalf("corpusDenyPaths must not error on a deep-but-small subtree (complete closure, not refuse): %v", err)
+	}
+	if joined := strings.Join(deny, "|"); !strings.Contains(joined, wantTarget) {
+		t.Fatalf("deep-under-cap pivot target %q must be in the closure (validator's silent-truncation leak); got %s", wantTarget, joined)
+	}
+}
+
 // TestSymlinkClosureDenyTargets_CycleTerminates (age-6j9ee.3): a symlink cycle
 // a/link -> b, b/link -> a must terminate (no infinite loop, no error) and deny both
 // canonical directory targets. Termination is proven by the test completing; the
@@ -341,7 +392,7 @@ func TestSymlinkClosureDenyTargets_CycleTerminates(t *testing.T) {
 	if err := os.Symlink(a, filepath.Join(b, "link")); err != nil {
 		t.Fatal(err) // b/link -> a (cycle)
 	}
-	got, err := symlinkClosureDenyTargets([]string{a}, maxSymlinkClosureDirs, maxSymlinkDenyEntries, maxSymlinkWalkDepth)
+	got, err := symlinkClosureDenyTargets([]string{a}, maxSymlinkClosureDirs, maxSymlinkDenyEntries)
 	if err != nil {
 		t.Fatalf("cycle must not error: %v", err)
 	}
@@ -370,7 +421,7 @@ func TestSymlinkClosureDenyTargets_DirOverflowFailsClosed(t *testing.T) {
 	if err := os.Symlink(external, filepath.Join(root, "escape")); err != nil {
 		t.Fatal(err)
 	}
-	got, err := symlinkClosureDenyTargets([]string{root}, 2, maxSymlinkDenyEntries, maxSymlinkWalkDepth)
+	got, err := symlinkClosureDenyTargets([]string{root}, 2, maxSymlinkDenyEntries)
 	if err == nil {
 		t.Fatalf("oversized external tree must fail closed; got %d entries, nil error", len(got))
 	}
@@ -396,12 +447,44 @@ func TestSymlinkClosureDenyTargets_EntryOverflowFailsClosed(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	got, err := symlinkClosureDenyTargets([]string{root}, maxSymlinkClosureDirs, 1, maxSymlinkWalkDepth)
+	got, err := symlinkClosureDenyTargets([]string{root}, maxSymlinkClosureDirs, 1)
 	if err == nil {
 		t.Fatalf("exceeding the entry cap must fail closed; got %d entries, nil error", len(got))
 	}
 	if !errors.Is(err, errSymlinkClosureOverflow) {
 		t.Fatalf("want errSymlinkClosureOverflow; got %v", err)
+	}
+}
+
+// TestSymlinkClosureDenyTargets_DeepOnlyGraphTerminatesViaDirCap (age-6j9ee.3): with the
+// depth bound REMOVED, the dir cap + seen-set are the SOLE termination guards. This proves
+// the reason a depth bound used to exist is covered: a pathological DEPTH-only external graph
+// — a long linear chain of real dirs, one dir per level (exactly the shape a depth cap would
+// have cut, silently hiding anything beyond it) — must still TERMINATE, by tripping the dir
+// cap and failing closed rather than descending without bound. Termination is proven by the
+// call returning at all; the overflow assertion proves it is bounded, not merely finite.
+func TestSymlinkClosureDenyTargets_DeepOnlyGraphTerminatesViaDirCap(t *testing.T) {
+	root := t.TempDir()
+	external := t.TempDir()
+	deep := external
+	for i := 0; i < 10; i++ { // linear chain: exactly one dir per level, 10 levels deep
+		deep = filepath.Join(deep, fmt.Sprintf("d%d", i))
+	}
+	if err := os.MkdirAll(deep, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink(external, filepath.Join(root, "escape")); err != nil {
+		t.Fatal(err)
+	}
+	// maxDirs=3: the 11-dir-deep external chain (external + d0..d9) exceeds the dir cap and
+	// fails closed. Depth is no longer a special case — a deep-only shape is bounded by the
+	// same dir cap that bounds a wide fan-out.
+	got, err := symlinkClosureDenyTargets([]string{root}, 3, maxSymlinkDenyEntries)
+	if !errors.Is(err, errSymlinkClosureOverflow) {
+		t.Fatalf("deep-only external chain must terminate by failing closed via the dir cap; got err=%v entries=%v", err, got)
+	}
+	if got != nil {
+		t.Errorf("fail-closed must return a nil set (never a partial one); got %v", got)
 	}
 }
 
@@ -584,6 +667,65 @@ func TestWorkspaceCommandRunner_Integration_ControlArmDeniesChainedSymlinkRead(t
 	}
 	if strings.Contains(stdout, "CHAINED-FINAL-CORPUS-SECRET") {
 		t.Fatalf("control arm leaked corpus bytes via chained symlink: stdout=%q", stdout)
+	}
+}
+
+// TestWorkspaceCommandRunner_Integration_ControlArmDeniesDeepUnderCapSymlinkRead
+// (age-6j9ee.3, darwin, the silent-truncation vector RUN): the validator's exact leak end
+// to end — .agents/learnings -> external; external/d0/.../d11/pivot.md -> ext2/secret.txt,
+// with the pivot BELOW the old depth-8 bound but the subtree UNDER the dir/entry caps. The
+// old depth cap SkipDir'd before the pivot, so its target escaped the deny set and the
+// control arm read it (exit 0, leaked). With the depth bound removed, the closure denies the
+// deep pivot's canonical target, so the read is now DENIED (nonzero exit, zero corpus bytes).
+func TestWorkspaceCommandRunner_Integration_ControlArmDeniesDeepUnderCapSymlinkRead(t *testing.T) {
+	if runtime.GOOS != "darwin" {
+		t.Skip("darwin-only: macOS Seatbelt sandbox-exec integration")
+	}
+	if _, err := os.Stat(macOSSandboxExec); err != nil {
+		t.Skipf("sandbox-exec unavailable: %v", err)
+	}
+
+	root := t.TempDir()
+	agents := filepath.Join(root, ".agents")
+	if err := os.MkdirAll(agents, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	external := t.TempDir()
+	deep := external
+	for i := 0; i < 12; i++ { // 12 levels deep (> old depth bound 8), ~13 dirs total (< cap)
+		deep = filepath.Join(deep, fmt.Sprintf("d%d", i))
+	}
+	if err := os.MkdirAll(deep, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	ext2 := t.TempDir()
+	secret := filepath.Join(ext2, "secret.txt")
+	if err := os.WriteFile(secret, []byte("VALIDATOR-DEEP-UNDER-CAP-SECRET"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink(secret, filepath.Join(deep, "pivot.md")); err != nil {
+		t.Fatal(err) // deep/pivot.md -> ext2/secret.txt (below the old depth bound)
+	}
+	if err := os.Symlink(external, filepath.Join(agents, "learnings")); err != nil {
+		t.Fatal(err) // .agents/learnings -> external
+	}
+	t.Setenv("HOME", t.TempDir())
+	t.Chdir(root)
+	workDir := t.TempDir()
+
+	resolved, err := filepath.EvalSymlinks(secret)
+	if err != nil {
+		t.Fatal(err)
+	}
+	stdout, exitCode, err := defaultWorkspaceCommandRunner(context.Background(), workDir, "cat "+resolved, false)
+	if err != nil {
+		t.Fatalf("runner returned a Go error (want a denied read = nonzero exit): %v", err)
+	}
+	if exitCode == 0 {
+		t.Fatalf("control arm read deep-under-cap pivot target (isolation void; silent truncation): exit=0 stdout=%q", stdout)
+	}
+	if strings.Contains(stdout, "VALIDATOR-DEEP-UNDER-CAP-SECRET") {
+		t.Fatalf("control arm leaked corpus bytes via deep-under-cap symlink: stdout=%q", stdout)
 	}
 }
 
