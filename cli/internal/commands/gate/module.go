@@ -74,6 +74,18 @@ The result means only that the selected checks passed or failed. It is not a
 semantic verdict and does not authorize Git, release, or delivery.`,
 	}
 	command.AddCommand(module.newCheckCommand())
+	// Silence cobra's own error/usage printing so the ExitError path is the sole
+	// error surface: a gate check failure returns an empty-Label ExitError whose
+	// report already sits on stdout, and the root stays silent (see cmd/ao
+	// Execute). Without this, cobra prints its own "Error: <msg>" to stderr,
+	// double-surfacing the failure and breaking the "quiet stderr on gate
+	// failure" contract. Mirrors doctor/module.go.
+	command.SilenceErrors = true
+	command.SilenceUsage = true
+	for _, child := range command.Commands() {
+		child.SilenceErrors = true
+		child.SilenceUsage = true
+	}
 	return command
 }
 
@@ -93,19 +105,19 @@ func (module Module) newCheckCommand() *cobra.Command {
 		RunE: func(command *cobra.Command, _ []string) error {
 			_ = fast
 			if module.useCases.Check == nil {
-				return &clicontract.ExitError{Code: 2, Message: "gate check: use case not configured"}
+				return &clicontract.ExitError{Code: 2, Message: "gate check: use case not configured", Label: "ao gate"}
 			}
 			result, err := module.useCases.Check.Execute(command.Context(), gateapp.CheckRequest{
 				Full: full, Scope: scope, FailFast: failFast,
 				WorkflowCoverage: workflowCoverage, RequireWorkflowParity: requireWorkflowParity, WorkflowPath: workflowPath,
 			})
 			if err != nil {
-				return &clicontract.ExitError{Code: 2, Message: err.Error()}
+				return &clicontract.ExitError{Code: 2, Message: err.Error(), Label: "ao gate"}
 			}
 			if jsonOutput {
 				raw, jsonErr := result.Report.JSON()
 				if jsonErr != nil {
-					return &clicontract.ExitError{Code: 2, Message: jsonErr.Error()}
+					return &clicontract.ExitError{Code: 2, Message: jsonErr.Error(), Label: "ao gate"}
 				}
 				fmt.Fprintln(command.OutOrStdout(), string(raw))
 			} else {
@@ -115,11 +127,16 @@ func (module Module) newCheckCommand() *cobra.Command {
 				result.Report.GitHubAnnotations(command.ErrOrStderr())
 			}
 			if result.ExitCode != 0 {
-				message := ""
+				// A check failure is not an error condition of the command: the
+				// report already sits on stdout and the process code carries the
+				// verdict. Surface only the workflow-parity note (a distinct,
+				// opt-in diagnostic that is not part of the report) on stderr, then
+				// return an empty-Label ExitError so the root maps the code and
+				// stays otherwise silent (quiet-stderr-on-gate-failure contract).
 				if result.WorkflowParityMissing > 0 {
-					message = fmt.Sprintf("workflow parity missing %d blocking script(s)", result.WorkflowParityMissing)
+					fmt.Fprintf(command.ErrOrStderr(), "workflow parity missing %d blocking script(s)\n", result.WorkflowParityMissing)
 				}
-				return &clicontract.ExitError{Code: result.ExitCode, Message: message}
+				return &clicontract.ExitError{Code: result.ExitCode}
 			}
 			return nil
 		},
