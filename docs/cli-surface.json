@@ -256,9 +256,9 @@
     {
       "category": "public-tested",
       "command": "flywheel compare",
-      "coverage_status": "covered",
+      "coverage_status": "allowlisted",
       "kind": "leaf",
-      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
+      "reason": "Covered by internal/flywheelapp Compare tests after the flywheel carve-out."
     },
     {
       "category": "public-tested",

@@ -61,6 +61,11 @@ public-tested|eval scenario evaluate|Covered by internal/eval scenario_service t
 unsafe-live|eval scenario-ab|Spawns a live model runtime (codex exec) per arm; exercised by adapter tests with fakes, never in smoke.
 unsafe-live|eval scenario-moat|Aggregates live scenario-ab cards; adapter-tested with fixtures.
 
+# flywheel carve-out (age-a-plus-report-card-ieyp2.13): behavior now lives in
+# internal/commands/flywheel (module) + internal/flywheelapp (metrics/status/compare).
+# `flywheel status` stays smoke-covered; `flywheel compare` coverage moved to the app package.
+public-tested|flywheel compare|Covered by internal/flywheelapp Compare tests after the flywheel carve-out.
+
 # provenance carve-out (age-a-plus-report-card-ieyp2.11): behavior now lives in
 # internal/commands/provenance (module) + internal/provenanceapp (mine-session).
 public-tested|provenance add|Covered by internal/commands/provenance module tests after the provenance carve-out.
