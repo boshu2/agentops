@@ -3,5 +3,6 @@
   "family": "init",
   "freeze_sha": "64c8c1a5f679154c1df0eac821703ac277ef92de",
   "ownership_sha256": "0002b22096351e8687f9b2515059d24a5bd7d8466551dde9e6383d080efbf206",
-  "migration_state": "migrating"
+  "migration_state": "migrated",
+  "accepted_sha": "0c8d2a4ab62e752ac2dbf38f6f26ffc6edef4c5c"
 }
