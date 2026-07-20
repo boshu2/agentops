@@ -95,10 +95,17 @@ func corpusDenyPaths(startDir string) []string {
 const maxSymlinkWalkDepth = 8
 
 // nestedSymlinkDenyTargets walks root and returns the canonical (symlink-resolved)
-// targets of every DIRECTORY symlink found within it, up to maxSymlinkWalkDepth levels.
-// These are the paths a read INSIDE the corpus canonicalizes to; denying them closes
-// the nested-symlink escape (a top-level resolveSymlink on the root does not reach a
-// symlink one or more levels down). A non-existent root walks to nothing.
+// targets of every DIRECTORY or regular-FILE symlink found within it, up to
+// maxSymlinkWalkDepth levels. These are the paths a read INSIDE the corpus canonicalizes
+// to; denying them closes the nested-symlink escape (a top-level resolveSymlink on the
+// root does not reach a symlink one or more levels down). Both target kinds must be
+// denied: a directory symlink (.agents/learnings -> /external) exposes a subtree, and a
+// FILE symlink (.agents/note.md -> /external/secret.txt) exposes a single file — reading
+// its canonical target leaked the corpus with exit 0 (a plain read through the symlink
+// node is masked by the .agents subpath deny, hiding the escape). Seatbelt `subpath` on a
+// canonical file path matches that file, so file targets are denied correctly by the same
+// renderer. EvalSymlinks follows a symlink CHAIN to its final target and returns an error
+// for a DANGLING symlink, which is skipped. A non-existent root walks to nothing.
 func nestedSymlinkDenyTargets(root string) []string {
 	var out []string
 	cleanRoot := filepath.Clean(root)
@@ -115,12 +122,18 @@ func nestedSymlinkDenyTargets(root string) []string {
 		}
 		target, rerr := filepath.EvalSymlinks(path)
 		if rerr != nil {
+			// Dangling symlink (target missing) or unresolvable chain — nothing to deny.
 			return nil
 		}
-		if fi, serr := os.Stat(target); serr != nil || !fi.IsDir() {
+		fi, serr := os.Stat(target)
+		if serr != nil {
 			return nil
 		}
-		out = append(out, target)
+		// Deny both directory targets (a subtree) and regular-file targets (a single
+		// corpus file). Skip anything else (devices, sockets, fifos) — not a corpus leak.
+		if fi.IsDir() || fi.Mode().IsRegular() {
+			out = append(out, target)
+		}
 		return nil
 	})
 	return out
