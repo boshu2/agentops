@@ -260,8 +260,8 @@ def process_rows(arguments):
 # city identity only in GC_CITY/GC_CITY_PATH. Keep an argv-only projection for
 # diagnostics so teardown never prints credentials inherited through the
 # process environment.
-expanded_rows = process_rows(["ps", "eww", "-axo", "pid=,ppid=,command="])
-plain_rows = process_rows(["ps", "-axo", "pid=,ppid=,command="])
+expanded_rows = process_rows(["ps", "eww", "-eo", "pid=,ppid=,command="])
+plain_rows = process_rows(["ps", "-eo", "pid=,ppid=,command="])
 plain_commands = {pid: command for pid, _ppid, command in plain_rows}
 parents = {pid: ppid for pid, ppid, _ in expanded_rows}
 ancestors = set()

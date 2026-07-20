@@ -174,7 +174,11 @@ checkout_exact() {
   local destination="$4"
   git init -q "$destination"
   git -C "$destination" remote add origin "$repository"
-  git -C "$destination" fetch -q --depth=1 origin "$ref"
+  # Fetch the immutable lock identity directly. A qualified pair may pin a
+  # commit behind a moving branch; a depth-one fetch of that branch stops
+  # materializing the pair as soon as the branch advances.
+  git -C "$destination" fetch -q --depth=1 origin "$commit" || \
+    die "cannot fetch exact commit $commit locked from $ref"
   git -C "$destination" checkout -q --detach "$commit"
   [ "$(git -C "$destination" rev-parse HEAD)" = "$commit" ] || \
     die "source checkout did not resolve exact commit $commit"

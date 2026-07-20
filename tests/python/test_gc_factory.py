@@ -712,6 +712,7 @@ class FactoryTests(unittest.TestCase):
 
         with (
             mock.patch.object(factory, "city_path", return_value=str(self.root / "city")),
+            mock.patch.object(factory, "gc_binary", return_value="/gc"),
             mock.patch.object(factory, "output", return_value='{"sessions": []}'),
             mock.patch.object(factory, "Beads", return_value=city_beads) as beads_class,
         ):
@@ -745,6 +746,7 @@ class FactoryTests(unittest.TestCase):
 
         with (
             mock.patch.object(factory, "city_path", return_value=str(self.root / "city")),
+            mock.patch.object(factory, "gc_binary", return_value="/gc"),
             mock.patch.object(factory, "output", return_value='{"sessions": []}'),
             mock.patch.object(factory, "Beads", return_value=city_beads),
         ):
@@ -767,6 +769,7 @@ class FactoryTests(unittest.TestCase):
         city_beads = FakeBeads({"mayor-session": record})
         with (
             mock.patch.object(factory, "city_path", return_value=str(self.root / "city")),
+            mock.patch.object(factory, "gc_binary", return_value="/gc"),
             mock.patch.object(factory, "output", return_value='{"sessions": []}'),
             mock.patch.object(factory, "Beads", return_value=city_beads),
         ):
@@ -2051,6 +2054,35 @@ class FactoryTests(unittest.TestCase):
             cwd=self.repo, check=True, capture_output=True, text=True,
         ).stdout.splitlines()
         self.assertEqual(restored, [first, second])
+
+    def test_dynamic_rig_registration_recovers_a_parked_origin(self) -> None:
+        url = "https://example.invalid/factory.git"
+        git(self.repo, "remote", "add", "agentops-factory-origin", url)
+        original_output = factory.output
+
+        def output_while_registering(argv, **kwargs):
+            if "rig" in argv and "add" in argv:
+                return '{"ok":true}'
+            return original_output(argv, **kwargs)
+
+        command = [
+            "/gc", "--city", str(self.root / "city"), "rig", "add", str(self.repo),
+            "--name", "fx-test", "--prefix", "fx-test", "--default-branch", "main", "--json",
+        ]
+
+        with (
+            mock.patch.object(factory, "output", side_effect=output_while_registering),
+            mock.patch.object(factory, "enforce_dynamic_rig_local_only"),
+        ):
+            result = factory.add_gc_rig_without_forge_origin(self.repo, command)
+
+        self.assertEqual(result, {"ok": True})
+        self.assertEqual(git(self.repo, "remote", "get-url", "origin"), url)
+        parked = subprocess.run(
+            ["git", "remote", "get-url", "agentops-factory-origin"],
+            cwd=self.repo, check=False, capture_output=True, text=True,
+        )
+        self.assertNotEqual(parked.returncode, 0)
 
     def test_dynamic_rig_local_only_enforcement_removes_synthesized_dolt_remotes(self) -> None:
         remote_lists = iter([

@@ -2232,21 +2232,43 @@ def add_gc_rig_without_forge_origin(worktree: Path, argv: list[str]) -> Any:
     """Initialize per-worktree beads without synthesizing a Dolt remote.
 
     Git worktrees share remote configuration. Registration is serialized, so
-    origin URLs are absent only for the duration of `gc rig add`, then restored
-    byte-for-byte. The caller supplies ``--default-branch`` explicitly; a local
-    filesystem URL is not a valid substitute because bd may adopt it as a Dolt
-    remote and misinterpret it as a DoltHub repository identifier.
+    the complete origin section is parked only for the duration of `gc rig add`,
+    then restored. The reserved section also makes an interrupted registration
+    recoverable on the next attempt. The caller supplies ``--default-branch``
+    explicitly; a local filesystem URL is not a valid substitute because bd may
+    adopt it as a Dolt remote and misinterpret it as a DoltHub repository
+    identifier.
     """
     common_dir_raw = output(["git", "rev-parse", "--git-common-dir"], cwd=worktree)
     common_dir = Path(common_dir_raw)
     if not common_dir.is_absolute():
         common_dir = (worktree / common_dir).resolve(strict=False)
     config_path = common_dir / "config"
-    urls_raw = run_process(
-        ["git", "config", "--file", str(config_path), "--get-all", "remote.origin.url"],
-        cwd=worktree, check=False,
-    )
-    urls = [line for line in urls_raw.stdout.splitlines() if line]
+    parked_remote = "agentops-factory-origin"
+
+    def remote_section_exists(name: str) -> bool:
+        probe = run_process(
+            [
+                "git", "config", "--file", str(config_path), "--get-regexp",
+                rf"^remote\.{re.escape(name)}\.",
+            ],
+            cwd=worktree, check=False,
+        )
+        return probe.returncode == 0
+
+    parked = remote_section_exists(parked_remote)
+    origin = remote_section_exists("origin")
+    if parked and origin:
+        raise FactoryError(
+            "origin_recovery_ambiguous",
+            f"repository has both remote.origin and reserved remote.{parked_remote}",
+        )
+    if parked:
+        run_process([
+            "git", "config", "--file", str(config_path), "--rename-section",
+            f"remote.{parked_remote}", "remote.origin",
+        ], cwd=worktree)
+        origin = True
     try:
         prefix_index = argv.index("--prefix")
         requested_prefix = argv[prefix_index + 1]
@@ -2256,8 +2278,13 @@ def add_gc_rig_without_forge_origin(worktree: Path, argv: list[str]) -> Any:
         raise FactoryError("invalid_contract", "dynamic rig registration requires explicit --name and --prefix") from exc
     adopt = prepare_worktree_beads_identity(worktree, requested_prefix)
     command = [*argv, "--adopt"] if adopt and "--adopt" not in argv else argv
-    if urls:
-        run_process(["git", "config", "--file", str(config_path), "--unset-all", "remote.origin.url"], cwd=worktree, check=False)
+    origin_parked = False
+    if origin:
+        run_process([
+            "git", "config", "--file", str(config_path), "--rename-section",
+            "remote.origin", f"remote.{parked_remote}",
+        ], cwd=worktree)
+        origin_parked = True
     try:
         raw = output(
             command,
@@ -2270,10 +2297,16 @@ def add_gc_rig_without_forge_origin(worktree: Path, argv: list[str]) -> Any:
         enforce_dynamic_rig_local_only(rig_name)
         return value
     finally:
-        if urls:
-            run_process(["git", "config", "--file", str(config_path), "--unset-all", "remote.origin.url"], cwd=worktree, check=False)
-            for url in urls:
-                run_process(["git", "config", "--file", str(config_path), "--add", "remote.origin.url", url], cwd=worktree)
+        if origin_parked:
+            if remote_section_exists("origin"):
+                raise FactoryError(
+                    "origin_restore_collision",
+                    "gc rig add created remote.origin while the original section was parked",
+                )
+            run_process([
+                "git", "config", "--file", str(config_path), "--rename-section",
+                f"remote.{parked_remote}", "remote.origin",
+            ], cwd=worktree)
 
 
 def enforce_dynamic_rig_local_only(rig_name: str) -> None:
