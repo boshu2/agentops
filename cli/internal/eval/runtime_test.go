@@ -372,6 +372,91 @@ func TestRunLiveRuntimeRefusesClaude(t *testing.T) {
 	}
 }
 
+// TestRunLiveRuntimeRefusesClaudeCommandBeforeSpawn is the finding-1 contract
+// (age-6j9ee.4): even when the runtime ENUM is a live-invocable adapter (codex),
+// a RESOLVED command that names the claude binary — as a bare token, an
+// env-wrapped form, or an absolute path — must be refused BEFORE any process is
+// spawned, including before the `claude --version` probe. LookPath / VersionRunner
+// / Runner are fatal-if-called, proving nothing external (not even --version) runs.
+func TestRunLiveRuntimeRefusesClaudeCommandBeforeSpawn(t *testing.T) {
+	for _, tc := range []struct {
+		name    string
+		command string
+	}{
+		{name: "flagged command", command: "claude --model sonnet"},
+		{name: "absolute path", command: "/fake/bin/claude"},
+		{name: "env wrapped", command: "env -i claude"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			_, err := RunLiveRuntime(context.Background(), LiveRuntimeOptions{
+				Suite:          liveRuntimeSuite(RuntimeCodex),
+				RunID:          "live-codex-claude-cmd",
+				Runtime:        RuntimeCodex, // enum is codex; the COMMAND smuggles claude
+				RuntimeCommand: tc.command,
+				Enabled:        true,
+				LookPath: func(name string) (string, error) {
+					t.Fatalf("LookPath must not run for a claude-resolving command (got %q)", name)
+					return "", nil
+				},
+				VersionRunner: func(ctx context.Context, cmd RuntimeCommand) (string, error) {
+					t.Fatalf("VersionRunner must not run — no `claude --version` may spawn")
+					return "", nil
+				},
+				Runner: func(ctx context.Context, cmd RuntimeCommand) (RuntimeExecutionResult, error) {
+					t.Fatalf("Runner must not run for a claude-resolving command")
+					return RuntimeExecutionResult{}, nil
+				},
+				Now: fixedEvalTime,
+			})
+			if !errors.Is(err, runtimecmd.ErrClaudeHeadlessProhibited) {
+				t.Fatalf("RunLiveRuntime(codex, %q) err = %v, want ErrClaudeHeadlessProhibited", tc.command, err)
+			}
+		})
+	}
+}
+
+// TestRunLiveRuntimeDisabledSkipsClaudeWithoutRefusal is the finding-3 contract
+// (age-6j9ee.4): a disabled live run spawns nothing, so it is the deterministic
+// parse/skip path. A suite declaring runtime=claude must parse and SKIP here
+// exactly as before — no LAW 0 refusal, no error — because the refusal fires only
+// on paths that would spawn a process. LookPath / VersionRunner / Runner are
+// fatal-if-called.
+func TestRunLiveRuntimeDisabledSkipsClaudeWithoutRefusal(t *testing.T) {
+	run, err := RunLiveRuntime(context.Background(), LiveRuntimeOptions{
+		Suite:          liveRuntimeSuite(RuntimeClaude),
+		RunID:          "live-claude-disabled",
+		Runtime:        RuntimeClaude,
+		RuntimeCommand: "claude --model sonnet",
+		Enabled:        false,
+		LookPath: func(name string) (string, error) {
+			t.Fatalf("LookPath must not run when live runtime is disabled (got %q)", name)
+			return "", nil
+		},
+		VersionRunner: func(ctx context.Context, cmd RuntimeCommand) (string, error) {
+			t.Fatalf("VersionRunner must not run when live runtime is disabled")
+			return "", nil
+		},
+		Runner: func(ctx context.Context, cmd RuntimeCommand) (RuntimeExecutionResult, error) {
+			t.Fatalf("Runner must not run when live runtime is disabled")
+			return RuntimeExecutionResult{}, nil
+		},
+		Now: fixedEvalTime,
+	})
+	if err != nil {
+		t.Fatalf("RunLiveRuntime(claude, disabled) returned error: %v", err)
+	}
+	if run.Status != StatusSkipped {
+		t.Fatalf("status = %s, want skipped", run.Status)
+	}
+	wantReason := "live runtime disabled; set LiveRuntimeOptions.Enabled to true"
+	if run.Runtime.SkippedReason != wantReason {
+		t.Fatalf("skipped_reason = %q, want %q", run.Runtime.SkippedReason, wantReason)
+	}
+	if run.Runtime.Name != RuntimeClaude || !run.Runtime.Live {
+		t.Fatalf("runtime = %+v, want live claude", run.Runtime)
+	}
+}
+
 // W1.1 — DisableHooks plumbing. Verifies the hook-suppression toggle propagates
 // through liveEnvironmentRecord, liveRuntimeEnv, and liveRuntimePrompt whether
 // it comes from the suite or the LiveRuntimeOptions override.

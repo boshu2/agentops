@@ -44,12 +44,16 @@ func Split(command string) (string, []string) {
 	return fields[0], fields[1:]
 }
 
-// containsClaudeToken reports whether any whitespace-separated token of command
+// ContainsClaudeToken reports whether any whitespace-separated token of command
 // resolves (by base name, case-insensitively, with an optional .exe suffix) to
-// the `claude` binary. This catches env-wrapped forms like `env -i claude` in
-// addition to a bare `claude`, so no framing can smuggle the prohibited binary
-// past the LAW 0 gate.
-func containsClaudeToken(command string) bool {
+// the `claude` binary. This catches env-wrapped forms like `env -i claude` and
+// absolute paths like `/fake/bin/claude` in addition to a bare `claude`, so no
+// framing can smuggle the prohibited binary past the LAW 0 gate.
+//
+// It is exported so spawn-side callers (e.g. the eval live runtime) can fail
+// closed on the RESOLVED command tokens BEFORE any process — including a version
+// probe — is launched, not only at argv construction time.
+func ContainsClaudeToken(command string) bool {
 	for _, field := range strings.Fields(strings.TrimSpace(command)) {
 		base := strings.ToLower(filepath.Base(field))
 		base = strings.TrimSuffix(base, ".exe")
@@ -69,7 +73,7 @@ func containsClaudeToken(command string) bool {
 // falling back to a `-p <prompt>` form, so this function can never emit the
 // prohibited flags.
 func DirectArgs(command, prompt string) ([]string, error) {
-	if containsClaudeToken(command) {
+	if ContainsClaudeToken(command) {
 		return nil, ErrClaudeHeadlessProhibited
 	}
 	_, prefixArgs := Split(command)
