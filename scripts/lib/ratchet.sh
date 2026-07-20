@@ -451,6 +451,7 @@ ratchet_changed_files_status() {
 # changed-content guard: editing a file without adding a matching line does
 # not re-flag it. A path with NO diff (untracked in worktree scope, missing
 # HEAD~1) is treated as entirely added and matched whole-file.
+# 1 = no added match · 2 = scan helper failed (loud; never conflated with 1).
 ratchet_added_hunk_matches() {
   local scope="${1:?ratchet_added_hunk_matches: scope required}"
   local p="${2:?ratchet_added_hunk_matches: path required}"
@@ -478,20 +479,35 @@ ratchet_added_hunk_matches() {
   esac
   local diff_out
   diff_out="$("${diffcmd[@]}" 2>/dev/null || true)"
+  # Tri-state from here down: 0 match · 1 no match · 2 helper failure. A grep
+  # or awk that DIES (fork failure, stray signal under parallel CI load) must
+  # never read as "no added match" — that conflation let a consumer gate
+  # certify a clean PASS over an unchecked diff (atomic-write ratchet, CI run
+  # 29785505667). Callers using `|| continue` still skip on rc 2 exactly as
+  # they did on the old passthrough rc, but the failure is now loud.
   if [[ -z "$diff_out" ]]; then
-    grep -Eq -- "$ere" "$p" 2>/dev/null && return 0
-    return 1
+    local grep_rc=0
+    grep -Eq -- "$ere" "$p" 2>/dev/null || grep_rc=$?
+    [[ "$grep_rc" -eq 0 ]] && return 0
+    [[ "$grep_rc" -eq 1 ]] && return 1
+    echo "ratchet_added_hunk_matches: whole-file scan failed (rc $grep_rc) for '$p' — refusing to certify" >&2
+    return 2
   fi
   # True iff an ADDED line (single leading '+', not the '+++' header) matches.
   # awk sidesteps the BSD-grep '+'-quantifier portability trap. The ERE rides
   # ENVIRON, not -v: -v applies C-escape processing that corrupts patterns
   # like 'os\.Rename\(' (the backslashes are load-bearing).
+  local awk_rc=0
   printf '%s\n' "$diff_out" | RATCHET_HUNK_ERE="$ere" awk '
     BEGIN { ere = ENVIRON["RATCHET_HUNK_ERE"] }
     /^\+\+\+/ { next }
     /^\+/ { if (substr($0, 2) ~ ere) found = 1 }
     END { exit found ? 0 : 1 }
-  '
+  ' || awk_rc=$?
+  [[ "$awk_rc" -eq 0 ]] && return 0
+  [[ "$awk_rc" -eq 1 ]] && return 1
+  echo "ratchet_added_hunk_matches: added-hunk scan failed (rc $awk_rc) for '$p' — refusing to certify" >&2
+  return 2
 }
 
 # --- regenerate ----------------------------------------------------------------
