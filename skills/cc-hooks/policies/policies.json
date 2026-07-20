@@ -60,6 +60,24 @@
       "route_message": "~/.claude/skills (and .codex/.gemini) are INSTALLED/symlinked copies — a cp/rsync/mv into them writes through the symlink into whatever branch the factory checkout is on, or is overwritten on install. Link instead: ao skills link (repo) or link-skill --all (dotfiles). Closes the Bash gap of the Edit|Write-only installed-skill-edit-guard.",
       "rationale": "Global CLAUDE.md 'Never cp into ~/.claude/skills'. Destination position is enforced: the installed-skills path must be the LAST token of the command segment, so copying FROM an installed dir out to the repo never fires.",
       "value_proof": "declining fire-attempt rate (token_class core.skills:copy-into-installed); retire on false-positive evidence"
+    },
+    {
+      "id": "core.skills:edit-installed-copy",
+      "predicate_class": "pure",
+      "mode": "deny",
+      "matchers": [
+        {
+          "tools": [
+            "Edit",
+            "Write"
+          ],
+          "field": "file_path",
+          "pattern": "/\\.(claude|codex|gemini)/skills/"
+        }
+      ],
+      "route_message": "This is an INSTALLED skill copy (overwritten on install, or symlinked through to the factory checkout) — editing it is lost work. Edit skills/<name>/ in the source repo instead.",
+      "rationale": "Registry twin of the standalone installed-skill-edit-guard: matches tool_input.file_path ONLY (prose that merely mentions claude/skills lands in tool_input.content and can never fire). Subsumes the standalone guard for dispatcher users; the standalone script remains for hosts wanting only that one guard.",
+      "value_proof": "declining fire-attempt rate (token_class core.skills:edit-installed-copy); 2 real fires already recorded by the standalone guard's telemetry; retire on false-positive evidence"
     }
   ]
 }

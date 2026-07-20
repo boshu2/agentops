@@ -9,12 +9,14 @@ authority.
 from __future__ import annotations
 
 import argparse
+import fcntl
 import hashlib
 import importlib.util
 import json
 import os
 from pathlib import Path, PurePosixPath
 import re
+import shlex
 import shutil
 import subprocess
 import sys
@@ -31,6 +33,7 @@ PROJECTION_MANIFEST = PACK_ROOT / "assets" / "generated-skill-manifest.json"
 VALIDATE_HELPER = PACK_ROOT / "agents" / "validator" / "skills" / "validate" / "scripts" / "validate.py"
 PACKET_ID_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$")
 DIGEST_RE = re.compile(r"^[0-9a-f]{64}$")
+SHA_RE = re.compile(r"^[0-9a-f]{40}$")
 COMMON_EXCLUDES = [
     ".git",
     "**/.git",
@@ -48,6 +51,13 @@ COMMON_EXCLUDES = [
     "**/__pycache__",
     "*.pyc",
 ]
+
+# Dynamic rig registration and reload can legitimately leave GC's durable
+# inventory reads waiting on the managed Dolt control plane for longer than the
+# CLI's ordinary interactive latency.  Keep these calls bounded, but do not
+# reject an otherwise healthy packet at the old 30-second threshold.
+CONTROL_PLANE_TIMEOUT_SECONDS = 120
+MINIMUM_GC_VERSION = (1, 3, 5)
 ALLOWED_KEYS = {
     "schema_version",
     "packet_id",
@@ -78,6 +88,12 @@ RESPONSE_KEYS = {
     "message",
 }
 ARTIFACT_KEYS = {"path", "sha256"}
+ROLE_MODELS = {
+    ("implement", "codex"): ("gpt-5.6-terra", "gpt-5.6-terra"),
+    ("validate", "codex"): ("gpt-5.6-sol", "gpt-5.6-sol"),
+    ("implement", "claude"): ("opus-4.8", "claude-opus-4-8"),
+    ("validate", "claude"): ("opus-4.8", "claude-opus-4-8"),
+}
 
 
 class PacketError(RuntimeError):
@@ -288,24 +304,37 @@ def validate_envelope(path: Path, allow_existing_result: bool = False) -> tuple[
         if not is_within(scope_path, workspace):
             raise PacketError("invalid_envelope", "scope_receipt must stay within workspace")
         receipt = load_object(scope_path, "scope_receipt")
-        if set(receipt) != {
-            "schema_version",
-            "packet_id",
-            "role",
-            "status",
-            "write_scope",
-            "actual_changed_paths",
-            "outside_scope",
-        }:
+        schema_version = receipt.get("schema_version")
+        v1_fields = {
+            "schema_version", "packet_id", "role", "status", "write_scope",
+            "actual_changed_paths", "outside_scope",
+        }
+        v2_fields = v1_fields | {
+            "workspace_base_sha", "subject_changed_paths", "outside_subject",
+        }
+        expected_fields = v2_fields if schema_version == "gc-scope-receipt.v2" else v1_fields
+        if set(receipt) != expected_fields:
             raise PacketError("invalid_scope_receipt", "scope_receipt fields are not exact")
-        if receipt.get("schema_version") != "gc-scope-receipt.v1" or receipt.get("role") != "implement":
+        if schema_version not in {"gc-scope-receipt.v1", "gc-scope-receipt.v2"} or receipt.get("role") != "implement":
             raise PacketError("invalid_scope_receipt", "scope_receipt identity is invalid")
         receipt_scope = string_list(receipt.get("write_scope"), "scope_receipt.write_scope", nonempty=True)
-        changes = changed_paths(manifest_values["baseline_manifest"], manifest_values["subject_manifest"])
-        expected_receipt = make_scope_receipt(
-            {"packet_id": receipt.get("packet_id"), "role": "implement", "write_scope": receipt_scope},
-            changes,
-        )
+        subject_changes = changed_paths(manifest_values["baseline_manifest"], manifest_values["subject_manifest"])
+        receipt_packet = {
+            "packet_id": receipt.get("packet_id"), "role": "implement",
+            "write_scope": receipt_scope, "subject": packet["subject"],
+        }
+        if schema_version == "gc-scope-receipt.v2":
+            base_sha = str(receipt.get("workspace_base_sha", ""))
+            if not SHA_RE.fullmatch(base_sha):
+                raise PacketError("invalid_scope_receipt", "scope_receipt workspace_base_sha is invalid")
+            expected_receipt = make_scope_receipt(
+                receipt_packet,
+                subject_changes,
+                workspace_changes=git_workspace_changes(workspace, base_sha),
+                workspace_base_sha=base_sha,
+            )
+        else:
+            expected_receipt = make_scope_receipt(receipt_packet, subject_changes)
         if receipt != expected_receipt:
             raise PacketError("invalid_scope_receipt", "scope_receipt does not match the supplied manifests and write scope")
         paths["scope_receipt"] = scope_path
@@ -400,56 +429,158 @@ def path_matches(path: str, pattern: str) -> bool:
     return path == pattern or path.startswith(pattern.rstrip("/") + "/")
 
 
-def make_scope_receipt(packet: dict[str, Any], changes: list[str]) -> dict[str, Any]:
-    outside = sorted(path for path in changes if not any(path_matches(path, item) for item in packet["write_scope"]))
+def git_workspace_head(workspace: Path) -> str:
+    completed = run_process(["git", "-C", str(workspace), "rev-parse", "HEAD"], timeout=30)
+    value = completed.stdout.strip()
+    if completed.returncode != 0 or not SHA_RE.fullmatch(value):
+        detail = completed.stderr.strip() or completed.stdout.strip()
+        raise PacketError("git_identity", f"cannot resolve workspace HEAD: {detail}")
+    return value
+
+
+def git_workspace_changes(workspace: Path, base_sha: str) -> list[str]:
+    if not SHA_RE.fullmatch(base_sha):
+        raise PacketError("git_identity", f"invalid workspace base SHA: {base_sha!r}")
+    commands = (
+        ["git", "-C", str(workspace), "diff", "--name-only", "-z", base_sha, "--"],
+        ["git", "-C", str(workspace), "ls-files", "--others", "--exclude-standard", "-z"],
+    )
+    changes: set[str] = set()
+    for command in commands:
+        completed = run_process(command, timeout=120)
+        if completed.returncode != 0:
+            detail = completed.stderr.strip() or completed.stdout.strip()
+            raise PacketError("git_identity", f"cannot inventory workspace changes: {detail}")
+        changes.update(path for path in completed.stdout.split("\0") if path)
+    return sorted(
+        path for path in changes
+        if not any(path_matches(path, pattern) for pattern in COMMON_EXCLUDES)
+    )
+
+
+def subject_matches(packet: dict[str, Any], path: str) -> bool:
+    subject = packet.get("subject")
+    if not isinstance(subject, dict):
+        return True
+    includes = subject.get("includes", [])
+    excludes = subject.get("excludes", [])
+    return (
+        any(path_matches(path, pattern) for pattern in includes)
+        and not any(path_matches(path, pattern) for pattern in excludes)
+    )
+
+
+def make_scope_receipt(packet: dict[str, Any], changes: list[str], *,
+                       workspace_changes: list[str] | None = None,
+                       workspace_base_sha: str | None = None) -> dict[str, Any]:
+    actual = sorted(set(workspace_changes if workspace_changes is not None else changes))
+    outside = sorted(path for path in actual if not any(path_matches(path, item) for item in packet["write_scope"]))
+    outside_subject = sorted(path for path in actual if not subject_matches(packet, path))
     if outside:
+        status = "FAIL"
+    elif workspace_changes is not None and outside_subject:
         status = "FAIL"
     elif packet["role"] == "implement" and not changes:
         status = "NOT_PROVEN"
-    elif packet["role"] == "validate" and changes:
+    elif packet["role"] == "validate" and actual:
         status = "FAIL"
     else:
         status = "PASS"
-    return {
+    receipt = {
         "schema_version": "gc-scope-receipt.v1",
         "packet_id": packet["packet_id"],
         "role": packet["role"],
         "status": status,
         "write_scope": packet["write_scope"],
-        "actual_changed_paths": changes,
+        "actual_changed_paths": actual,
         "outside_scope": outside,
     }
+    if workspace_changes is not None:
+        if workspace_base_sha is None or not SHA_RE.fullmatch(workspace_base_sha):
+            raise PacketError("git_identity", "workspace scope receipt requires a valid base SHA")
+        receipt.update({
+            "schema_version": "gc-scope-receipt.v2",
+            "workspace_base_sha": workspace_base_sha,
+            "subject_changed_paths": sorted(set(changes)),
+            "outside_subject": outside_subject,
+        })
+    return receipt
 
 
 def parse_json_output(raw: str, label: str) -> Any:
+    try:
+        return json.loads(raw)
+    except json.JSONDecodeError:
+        pass
     candidates = [line for line in raw.splitlines() if line.strip()]
     for line in reversed(candidates):
         try:
             return json.loads(line)
         except json.JSONDecodeError:
             continue
-    try:
-        return json.loads(raw)
-    except json.JSONDecodeError as exc:
-        raise PacketError("invalid_runtime_json", f"{label} did not return JSON: {raw[:400]}") from exc
+    raise PacketError("invalid_runtime_json", f"{label} did not return JSON: {raw[:400]}")
+
+
+def bootstrap_gc_identity() -> tuple[Path, str | None] | None:
+    city = os.environ.get("GC_CITY_PATH") or os.environ.get("GC_CITY")
+    if not city:
+        return None
+    marker = Path(city) / ".gc" / "agentops-bootstrap.json"
+    if not marker.is_file():
+        return None
+    value = load_object(marker, "AgentOps GC bootstrap marker")
+    schema_version = value.get("schema_version")
+    digest: str | None = None
+    if schema_version == 2:
+        raw_path = value.get("gc_bin", "")
+    elif schema_version == 3:
+        gc = value.get("toolchain", {}).get("gc", {})
+        raw_path = gc.get("path", "")
+        digest = gc.get("sha256")
+        if not isinstance(digest, str) or not DIGEST_RE.fullmatch(digest):
+            raise PacketError("gc_identity", "bootstrap marker GC digest is invalid")
+    else:
+        raise PacketError(
+            "gc_identity",
+            f"bootstrap marker schema_version is unsupported: {schema_version!r}",
+        )
+    candidate = Path(str(raw_path)).expanduser()
+    if not candidate.is_file() or not os.access(candidate, os.X_OK):
+        raise PacketError("gc_missing", f"bootstrap marker GC binary is not executable: {candidate}")
+    return candidate.resolve(), digest
 
 
 def gc_binary() -> str:
+    managed_identity = bootstrap_gc_identity()
     configured = os.environ.get("GC_BIN")
     if configured:
         candidate = Path(configured).expanduser()
         if not candidate.is_file() or not os.access(candidate, os.X_OK):
             raise PacketError("gc_missing", f"configured GC_BIN is not executable: {candidate}")
-        return str(candidate.resolve())
-    city = os.environ.get("GC_CITY_PATH") or os.environ.get("GC_CITY")
-    if city:
-        marker = Path(city) / ".gc" / "agentops-bootstrap.json"
-        if marker.is_file():
-            value = load_object(marker, "AgentOps GC bootstrap marker")
-            candidate = Path(str(value.get("gc_bin", ""))).expanduser()
-            if candidate.is_file() and os.access(candidate, os.X_OK):
-                return str(candidate.resolve())
-            raise PacketError("gc_missing", f"bootstrap marker GC binary is not executable: {candidate}")
+        candidate = candidate.resolve()
+        if managed_identity is not None and candidate != managed_identity[0]:
+            raise PacketError(
+                "gc_identity",
+                f"configured GC_BIN does not match managed marker: {candidate} != {managed_identity[0]}",
+            )
+        if managed_identity is not None and managed_identity[1] is not None:
+            actual = sha256_file(candidate)
+            if actual != managed_identity[1]:
+                raise PacketError(
+                    "gc_identity",
+                    f"configured GC_BIN digest does not match managed marker: {actual} != {managed_identity[1]}",
+                )
+        return str(candidate)
+    if managed_identity is not None:
+        candidate, digest = managed_identity
+        if digest is not None:
+            actual = sha256_file(candidate)
+            if actual != digest:
+                raise PacketError(
+                    "gc_identity",
+                    f"bootstrap marker GC digest mismatch: {actual} != {digest}",
+                )
+        return str(candidate)
     found = shutil.which("gc")
     if not found:
         raise PacketError("gc_missing", "gc binary is not available")
@@ -469,27 +600,44 @@ def selected_rig_record(rig: str) -> dict[str, Any]:
     city = os.environ.get("GC_CITY_PATH") or os.environ.get("GC_CITY")
     if not city:
         raise PacketError("city_missing", "GC_CITY_PATH is not set by the pack command runtime")
-    value = parse_json_output(
-        require_process([gc_binary(), "--city", city, "rig", "list", "--json"], timeout=30),
-        "gc rig list",
-    )
-    records = value.get("rigs") if isinstance(value, dict) else None
-    if not isinstance(records, list):
-        raise PacketError("rig_missing", "gc rig list returned no rigs array")
     requested_path = Path(rig).expanduser().resolve(strict=False) if Path(rig).is_absolute() else None
-    matches: list[dict[str, Any]] = []
-    for record in records:
-        if not isinstance(record, dict) or not isinstance(record.get("path"), str):
-            continue
-        root = Path(record["path"]).expanduser().resolve(strict=False)
-        if record.get("name") == rig or (requested_path is not None and root == requested_path):
-            matches.append({**record, "resolved_path": root})
-    if len(matches) != 1:
-        raise PacketError("rig_missing", f"expected exactly one configured rig matching {rig!r}")
-    prefix = matches[0].get("prefix")
-    if not isinstance(prefix, str) or not prefix:
-        raise PacketError("rig_missing", f"configured rig {rig!r} has no bead prefix")
-    return matches[0]
+    deadline = time.monotonic() + CONTROL_PLANE_TIMEOUT_SECONDS
+    last_matches: list[dict[str, Any]] = []
+    first_attempt = True
+    while True:
+        remaining = deadline - time.monotonic()
+        attempt_timeout = CONTROL_PLANE_TIMEOUT_SECONDS if first_attempt else max(1.0, remaining)
+        first_attempt = False
+        value = parse_json_output(
+            require_process(
+                [gc_binary(), "--city", city, "rig", "list", "--json"],
+                timeout=attempt_timeout,
+            ),
+            "gc rig list",
+        )
+        records = value.get("rigs") if isinstance(value, dict) else None
+        if not isinstance(records, list):
+            raise PacketError("rig_missing", "gc rig list returned no rigs array")
+        matches: list[dict[str, Any]] = []
+        for record in records:
+            if not isinstance(record, dict) or not isinstance(record.get("path"), str):
+                continue
+            root = Path(record["path"]).expanduser().resolve(strict=False)
+            if record.get("name") == rig or (requested_path is not None and root == requested_path):
+                matches.append({**record, "resolved_path": root})
+        if len(matches) == 1:
+            prefix = matches[0].get("prefix")
+            if not isinstance(prefix, str) or not prefix:
+                raise PacketError("rig_missing", f"configured rig {rig!r} has no bead prefix")
+            return matches[0]
+        last_matches = matches
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            raise PacketError(
+                "rig_missing",
+                f"expected exactly one configured rig matching {rig!r}; observed {len(last_matches)}",
+            )
+        time.sleep(min(2.0, remaining))
 
 
 def packet_transport_description(packet: dict[str, Any], paths: dict[str, Path]) -> str:
@@ -540,6 +688,11 @@ def prepare_packet_transport(packet: dict[str, Any], paths: dict[str, Path], rig
         "agentops.intent_digest": packet["intent_digest"],
         "agentops.target": target,
         "agentops.result_path": str(paths["result"]),
+        # The dynamic-rig policy sets the native executor work_dir base to the
+        # candidate's parent. Gas City's pack-workspace route then resolves the
+        # ready bead directly into the already-isolated candidate root instead
+        # of deriving a second bead-named sub-worktree.
+        "gc.pack_workspace": paths["workspace"].name,
     }
     record = transport_record(rig, bead_id)
     if record is None:
@@ -563,10 +716,13 @@ def prepare_packet_transport(packet: dict[str, Any], paths: dict[str, Path], rig
             json.dumps(identity, sort_keys=True, separators=(",", ":")),
             "--json",
         ]
-        value = parse_json_output(require_process(args, timeout=120), "gc bd create")
-        record = bead_record(value, bead_id)
+        require_process(args, timeout=120)
+        # Creation output is a command projection whose envelope has changed
+        # across GC/bd versions. The selected rig's durable bead is the
+        # authority: re-read it and verify every identity field below.
+        record = transport_record(rig, bead_id)
         if record is None:
-            raise PacketError("dispatch_failed", f"gc bd create returned no transport bead {bead_id}")
+            raise PacketError("dispatch_failed", f"gc bd create succeeded but transport bead is unreadable: {bead_id}")
     validate_transport_identity(record, bead_id, title, description, identity)
     return bead_id, target
 
@@ -630,7 +786,7 @@ def bead_record(value: Any, bead_id: str) -> dict[str, Any] | None:
 def transport_record(rig: str, bead_id: str) -> dict[str, Any] | None:
     city = os.environ.get("GC_CITY_PATH") or os.environ.get("GC_CITY") or ""
     args = [gc_binary(), "--city", city, "bd", "--rig", rig, "show", bead_id, "--json"]
-    completed = run_process(args, timeout=30)
+    completed = run_process(args, timeout=CONTROL_PLANE_TIMEOUT_SECONDS)
     if completed.returncode != 0:
         return None
     try:
@@ -655,17 +811,69 @@ def wait_for_response(result_path: Path, rig: str, bead_id: str, deadline: float
     raise PacketError("transport_timeout", f"packet {bead_id} wrote a response but did not close its transport bead")
 
 
+def command_model(command: str) -> str:
+    try:
+        tokens = shlex.split(command)
+    except ValueError as exc:
+        raise PacketError("runtime_identity_missing", f"GC runtime command cannot be parsed: {exc}") from exc
+    values = [tokens[index + 1] for index, token in enumerate(tokens[:-1]) if token in {"--model", "-m"}]
+    if len(values) != 1 or not values[0].strip():
+        raise PacketError("runtime_identity_missing", "GC runtime command must contain exactly one explicit model")
+    return values[0].strip()
+
+
 def runtime_session(context_id: str) -> dict[str, Any]:
     city = os.environ.get("GC_CITY_PATH") or os.environ.get("GC_CITY") or ""
-    raw = require_process([gc_binary(), "--city", city, "session", "list", "--state", "all", "--json"], timeout=30)
+    raw = require_process(
+        [gc_binary(), "--city", city, "session", "list", "--state", "all", "--json"],
+        timeout=CONTROL_PLANE_TIMEOUT_SECONDS,
+    )
     value = parse_json_output(raw, "gc session list")
     sessions = value.get("sessions") if isinstance(value, dict) else None
     if not isinstance(sessions, list):
         raise PacketError("runtime_identity_missing", "gc session list returned no sessions array")
     matches = [item for item in sessions if isinstance(item, dict) and str(item.get("id", "")) == context_id]
-    if len(matches) != 1:
+    if len(matches) > 1:
         raise PacketError("runtime_identity_missing", f"expected one GC runtime session {context_id}, found {len(matches)}")
-    return matches[0]
+    live = matches[0] if matches else None
+
+    # The durable city session bead owns the exact launch command. Use it for
+    # model attestation even while the live projection exists; transcript model
+    # discovery is optional and may disappear as soon as a fresh pool drains.
+    raw = require_process(
+        [gc_binary(), "--city", city, "bd", "show", context_id, "--json"],
+        timeout=CONTROL_PLANE_TIMEOUT_SECONDS,
+    )
+    record = bead_record(parse_json_output(raw, "gc bd show session"), context_id)
+    if (
+        record is None
+        or record.get("issue_type") != "session"
+        or (live is None and record.get("status") != "closed")
+    ):
+        raise PacketError("runtime_identity_missing", f"durable city session bead is missing for {context_id}")
+    meta = record.get("metadata")
+    if not isinstance(meta, dict):
+        raise PacketError("runtime_identity_missing", f"city session bead {context_id} has no metadata")
+    fields: dict[str, str] = {}
+    for field in ("provider", "template", "session_name", "state"):
+        value = (live or {}).get(field) or meta.get(field)
+        if not isinstance(value, str) or not value.strip():
+            raise PacketError("runtime_identity_missing", f"city session bead {context_id} has no {field}")
+        fields[field] = value
+    launched_model = command_model(str(meta.get("command", "")))
+    observed_model = (live or {}).get("model")
+    if isinstance(observed_model, str) and observed_model.strip() and observed_model.strip() != launched_model:
+        raise PacketError(
+            "runtime_model_mismatch",
+            f"GC transcript model {observed_model.strip()} does not match launched model {launched_model}",
+        )
+    return {
+        "id": context_id,
+        **fields,
+        "status": record.get("status"),
+        "model": launched_model,
+        "model_source": "launch_command",
+    }
 
 
 def load_validate_module() -> Any:
@@ -770,6 +978,12 @@ def validate_agent_response(
     for field, value in runtime_expected.items():
         if session.get(field) != value:
             raise PacketError("runtime_identity_mismatch", f"GC runtime session {field} does not match agent response")
+    configured_model, launched_model = ROLE_MODELS[(packet["role"], packet["provider"])]
+    if session.get("model") != launched_model:
+        raise PacketError(
+            "runtime_model_mismatch",
+            f"GC runtime model must be {configured_model} ({launched_model}) for {packet['role']}/{packet['provider']}",
+        )
     validate_response_artifacts(packet, paths, response)
 
 
@@ -825,6 +1039,8 @@ def load_transport_state(path: Path, packet: dict[str, Any], paths: dict[str, Pa
         "schema_version", "packet_id", "packet_digest", "intent_digest",
         "rig", "binding", "bead_id", "target", "dispatch_phase", "manifest_file_digests",
     }
+    if packet["role"] == "implement":
+        expected_keys.add("workspace_base_sha")
     if set(state) != expected_keys or state.get("schema_version") != "gc-packet-transport.v1":
         raise PacketError("transport_state_invalid", "runtime transport state fields are invalid")
     expected = {
@@ -893,9 +1109,19 @@ def recover_runtime_result(path: Path, packet: dict[str, Any], paths: dict[str, 
             packet, paths, paths["evidence"] / "runtime-recovery-subject-manifest.json",
             baseline_path,
         )
-        changes = changed_paths(baseline, recovered_subject)
-        receipt = make_scope_receipt(packet, changes)
-        if evidence.get("actual_changed_paths") != changes:
+        subject_changes = changed_paths(baseline, recovered_subject)
+        receipt_path = absolute_path(evidence.get("scope_receipt"), "scope receipt", must_exist=True)
+        stored_receipt = load_object(receipt_path, "scope receipt")
+        base_sha = str(stored_receipt.get("workspace_base_sha", ""))
+        receipt = make_scope_receipt(
+            packet,
+            subject_changes,
+            workspace_changes=git_workspace_changes(paths["workspace"], base_sha),
+            workspace_base_sha=base_sha,
+        )
+        if stored_receipt != receipt:
+            raise PacketError("runtime_result_mismatch", "cached scope receipt differs from the current workspace")
+        if evidence.get("actual_changed_paths") != receipt["actual_changed_paths"]:
             raise PacketError("runtime_result_mismatch", "cached changed paths differ from the current subject")
         if evidence.get("subject_manifest_digest") != recovered_subject.get("canonical_manifest_digest"):
             raise PacketError("runtime_result_mismatch", "cached subject digest differs from the current subject")
@@ -932,6 +1158,12 @@ def command_run(args: argparse.Namespace) -> int:
 
         if packet["role"] == "implement":
             baseline_path = paths["evidence"] / "runtime-baseline-manifest.json"
+            if transport_state:
+                workspace_base_sha = str(transport_state.get("workspace_base_sha", ""))
+                if not SHA_RE.fullmatch(workspace_base_sha):
+                    raise PacketError("transport_state_invalid", "transport state has no valid workspace base SHA")
+            else:
+                workspace_base_sha = git_workspace_head(paths["workspace"])
             if transport_state:
                 baseline = load_object(baseline_path, "runtime baseline manifest")
             else:
@@ -972,6 +1204,7 @@ def command_run(args: argparse.Namespace) -> int:
                 "target": target,
                 "dispatch_phase": "prepared",
                 "manifest_file_digests": manifest_file_digests,
+                **({"workspace_base_sha": workspace_base_sha} if packet["role"] == "implement" else {}),
             }
             write_json_atomic(transport_state_path, transport_state)
         ensure_transport_routed(args.rig, bead_id, target)
@@ -989,6 +1222,9 @@ def command_run(args: argparse.Namespace) -> int:
             "session_name": session.get("session_name"),
             "template": session.get("template"),
             "provider": session.get("provider"),
+            "model": session.get("model"),
+            "model_source": session.get("model_source"),
+            "model_policy": ROLE_MODELS[(packet["role"], packet["provider"])][0],
         }
 
         if packet["role"] == "implement":
@@ -996,8 +1232,14 @@ def command_run(args: argparse.Namespace) -> int:
                 raise PacketError("manifest_mutated", "runtime baseline manifest changed while implementer was running")
             subject_path = paths["evidence"] / "runtime-subject-manifest.json"
             subject = build_manifest(packet, paths, subject_path, baseline_path)
-            changes = changed_paths(baseline, subject)
-            receipt = make_scope_receipt(packet, changes)
+            subject_changes = changed_paths(baseline, subject)
+            workspace_changes = git_workspace_changes(paths["workspace"], workspace_base_sha)
+            receipt = make_scope_receipt(
+                packet,
+                subject_changes,
+                workspace_changes=workspace_changes,
+                workspace_base_sha=workspace_base_sha,
+            )
             receipt_path = paths["evidence"] / "runtime-scope-receipt.json"
             write_json_atomic(receipt_path, receipt)
             runtime_evidence.update(
@@ -1006,7 +1248,8 @@ def command_run(args: argparse.Namespace) -> int:
                     "subject_manifest_digest": subject["canonical_manifest_digest"],
                     "scope_receipt": str(receipt_path),
                     "scope_status": receipt["status"],
-                    "actual_changed_paths": changes,
+                    "actual_changed_paths": workspace_changes,
+                    "subject_changed_paths": subject_changes,
                 }
             )
         else:
@@ -1050,7 +1293,174 @@ def command_inspect(args: argparse.Namespace) -> int:
     packet, paths = validate_envelope(packet_path)
     summary = dict(packet)
     summary["packet_digest"] = sha256_file(paths["packet"])
+    success_outcome = "candidate" if packet["role"] == "implement" else "evidence"
+    response_message = f"one bounded {packet['role']} packet handled"
+    summary["response_emit"] = {
+        "command_template": (
+            f"python3 {shlex.quote(str(Path(__file__).resolve()))} emit "
+            f"--packet {shlex.quote(str(paths['packet']))} "
+            f"--bead <transport-bead-id> --outcome {success_outcome} "
+            "--artifact <absolute-evidence-artifact> "
+            f"--message {shlex.quote(response_message)}"
+        ),
+        "success_outcome": success_outcome,
+        "error_outcome": "error",
+        "artifact_rules": [
+            "successful responses require at least one existing artifact",
+            f"every artifact must be inside {paths['evidence']}",
+            "the bead argument is the exact transport bead returned by gc hook --claim",
+        ],
+    }
+    if packet["role"] == "validate":
+        summary["validate_helper"] = str(VALIDATE_HELPER.resolve())
+        draft_path = paths["evidence"] / "verdict-draft.json"
+        summary["verdict_store"] = {
+            "command": (
+                f"python3 {shlex.quote(str(Path(__file__).resolve()))} store-verdict "
+                f"--packet {shlex.quote(str(paths['packet']))} "
+                f"--draft {shlex.quote(str(draft_path))}"
+            ),
+            "draft_path": str(draft_path),
+            "verdict_dir": str(paths["evidence"] / "verdicts"),
+            "runtime_owned": [
+                "acceptance_digest", "subject_manifest_digest",
+                "author_context_id", "validator_context_id",
+                "freshness_attestation", "artifact_digest",
+            ],
+        }
+        summary["verdict_draft_contract"] = {
+            "required_top_level": [
+                "verdict", "criteria", "findings", "evidence_refs",
+                "checked", "not_checked", "validated_at",
+            ],
+            "criterion_fields": ["id", "result", "evidence_refs", "reason"],
+            "criterion_required": ["id", "result", "evidence_refs"],
+            "finding_fields": ["id", "summary", "evidence_refs"],
+            "result_values": ["PASS", "FAIL", "NOT_PROVEN"],
+            "field_types": {
+                "verdict": "string enum",
+                "criteria": "nonempty array of criterion objects",
+                "findings": "array of finding objects",
+                "evidence_refs": "array of nonempty strings",
+                "checked": "array of nonempty strings",
+                "not_checked": "array of nonempty strings",
+                "validated_at": "RFC3339 date-time string with timezone",
+                "criterion.id": "nonempty string",
+                "criterion.result": "string enum",
+                "criterion.evidence_refs": "array of nonempty strings",
+                "criterion.reason": "optional string",
+                "finding.id": "nonempty string",
+                "finding.summary": "nonempty string",
+                "finding.evidence_refs": "nonempty array of nonempty strings",
+            },
+            "pass_requirements": [
+                "not_checked must be an empty array",
+                "criteria must be nonempty and every criterion result must be PASS",
+                "every criterion evidence_refs must be nonempty",
+                "top-level evidence_refs must be nonempty",
+                "checked must be nonempty",
+            ],
+            "runtime_injected": [
+                "schema_version", "acceptance_digest", "subject_manifest_digest",
+                "author_context_id", "validator_context_id",
+                "freshness_attestation", "artifact_digest",
+            ],
+        }
     print(json.dumps(summary, indent=2, sort_keys=True))
+    return 0
+
+
+def command_store_verdict(args: argparse.Namespace) -> int:
+    packet_path = absolute_path(args.packet, "packet", must_exist=True)
+    packet, paths = validate_envelope(packet_path)
+    if packet["role"] != "validate":
+        raise PacketError("invalid_envelope", "store-verdict requires a validate packet")
+    draft = absolute_path(args.draft, "draft", must_exist=True)
+    if not is_within(draft, paths["evidence"]):
+        raise PacketError("invalid_verdict_artifact", "verdict draft must stay inside evidence_dir")
+    session_id = os.environ.get("GC_SESSION_ID", "").strip()
+    if not session_id:
+        raise PacketError("session_identity_missing", "GC_SESSION_ID is required to store a verdict")
+    if session_id == packet["author_context_id"]:
+        raise PacketError("freshness_collision", "validator and author context IDs collide")
+    if os.environ.get("GC_PROVIDER", "").strip() != packet["provider"]:
+        raise PacketError("runtime_identity_mismatch", "GC_PROVIDER does not match the validate packet")
+    template = os.environ.get("GC_TEMPLATE", "").strip()
+    if not template or template.rsplit(".", 1)[-1] != local_agent_name(packet):
+        raise PacketError("runtime_identity_mismatch", "GC_TEMPLATE does not match the validate packet")
+    scope_status = load_object(paths["scope_receipt"], "scope_receipt").get("status")
+    if scope_status not in {"PASS", "FAIL", "NOT_PROVEN"}:
+        raise PacketError("invalid_scope_receipt", "scope receipt has no valid status")
+    validator = load_validate_module()
+    try:
+        intent_bytes = paths["intent"].read_bytes()
+        manifest = load_object(paths["subject_manifest"], "subject_manifest")
+        draft_value = load_object(draft, "verdict draft")
+        verdict_dir = paths["evidence"] / "verdicts"
+        verdict_dir.mkdir(parents=True, exist_ok=True)
+        lock_path = paths["evidence"] / ".verdict-store.lock"
+        with lock_path.open("a+b") as lock:
+            fcntl.flock(lock.fileno(), fcntl.LOCK_EX)
+            snapshot, snapshot_existed = validator.snapshot_intent(
+                intent_bytes,
+                paths["evidence"] / ".agents" / "ao" / "intents" / "sha256",
+            )
+            candidate = validator.bind_runtime_facts(
+                draft_value,
+                intent_bytes,
+                manifest,
+                packet["author_context_id"],
+                scope_status,
+                session_id,
+                "runtime",
+                session_id,
+            )
+            candidate = validator.enforce_identity(candidate)
+            candidate["schema_version"] = "verdict.v2"
+            expected_artifact, expected_payload = validator.artifact_bytes(candidate)
+            validator.validate_verdict_v2(expected_artifact)
+            existing_paths = sorted(verdict_dir.glob("*.json"))
+            if len(existing_paths) > 1:
+                raise PacketError(
+                    "verdict_invariant_broken",
+                    f"packet already has multiple durable verdicts: {[str(path) for path in existing_paths]}",
+                )
+            if existing_paths:
+                verdict_path = existing_paths[0]
+                if (
+                    verdict_path.name != f"{expected_artifact['artifact_digest']}.json"
+                    or verdict_path.read_bytes() != expected_payload
+                ):
+                    raise PacketError(
+                        "verdict_already_recorded",
+                        f"packet already has a different terminal verdict: {verdict_path}",
+                    )
+                artifact = expected_artifact
+                existed = True
+            else:
+                artifact, verdict_path, existed = validator.store_verdict(
+                    draft_value,
+                    verdict_dir,
+                    intent_bytes,
+                    manifest,
+                    packet["author_context_id"],
+                    scope_status,
+                    session_id,
+                    "runtime",
+                    session_id,
+                )
+    except (OSError, validator.ContractError) as exc:
+        raise PacketError("invalid_verdict_artifact", f"cannot store verdict: {exc}") from exc
+    result = {
+        "acceptance_digest": sha256_bytes(intent_bytes),
+        "artifact_digest": artifact["artifact_digest"],
+        "idempotent": existed,
+        "intent_ref": str(snapshot),
+        "intent_snapshot_idempotent": snapshot_existed,
+        "path": str(verdict_path),
+        "verdict": artifact["verdict"],
+    }
+    print(json.dumps(result, indent=2, sort_keys=True))
     return 0
 
 
@@ -1135,15 +1545,15 @@ def command_doctor_contract() -> int:
             version_output = require_process([gc_binary(), "version"], timeout=10).strip()
             version_match = re.search(r"(\d+)\.(\d+)\.(\d+)", version_output)
             if version_match:
-                if tuple(int(part) for part in version_match.groups()) < (1, 1, 1):
-                    problems.append(f"gc >= 1.1.1 is required; found {version_output}")
+                if tuple(int(part) for part in version_match.groups()) < MINIMUM_GC_VERSION:
+                    problems.append(f"gc >= 1.3.5 is required; found {version_output}")
             elif version_output == "dev":
                 for probe in ([gc_binary(), "lint", "--help"], [gc_binary(), "runtime", "drain-ack", "--help"]):
                     completed = run_process(probe, timeout=10)
                     if completed.returncode != 0:
                         problems.append(f"development gc build lacks required surface: {' '.join(probe[1:])}")
             else:
-                problems.append(f"gc >= 1.1.1 is required; found {version_output or 'unknown'}")
+                problems.append(f"gc >= 1.3.5 is required; found {version_output or 'unknown'}")
         except PacketError as exc:
             problems.append(str(exc))
     if problems:
@@ -1176,7 +1586,13 @@ def command_doctor_roles() -> int:
         "implementer-claude": "claude",
         "validator-claude": "claude",
     }
-    permission_defaults = {"codex": "auto-edit", "claude": "auto"}
+    permission_defaults = {"codex": "auto-edit", "claude": "unrestricted"}
+    model_defaults = {
+        "implementer": "gpt-5.6-terra",
+        "validator": "gpt-5.6-sol",
+        "implementer-claude": "opus-4.8",
+        "validator-claude": "opus-4.8",
+    }
     expected_agents = sorted(providers)
     if actual != expected_agents:
         problems.append(f"expected bounded Codex and Claude implementer/validator roles only, found {actual}")
@@ -1195,6 +1611,8 @@ def command_doctor_roles() -> int:
             "max_active_sessions": "1",
             "inject_assigned_skills": "true",
         }
+        if provider == "claude":
+            expected["lifecycle"] = '"one_shot"'
         for key, value in expected.items():
             if values.get(key) != value:
                 problems.append(f"agents/{name}/agent.toml: {key} must be {value}")
@@ -1202,6 +1620,11 @@ def command_doctor_roles() -> int:
         if expected_permission not in values.get("option_defaults", ""):
             problems.append(
                 f"agents/{name}/agent.toml: permission_mode must be {expected_permission}"
+            )
+        expected_model = model_defaults[name]
+        if f'model = "{expected_model}"' not in values.get("option_defaults", ""):
+            problems.append(
+                f"agents/{name}/agent.toml: model must be {expected_model}"
             )
         for forbidden in ("args", "args_append", "start_command"):
             if forbidden in values:
@@ -1216,7 +1639,7 @@ def command_doctor_roles() -> int:
         for problem in problems:
             print(problem)
         return 2
-    print("Codex and interactive Claude implementer/validator roles are fresh zero-minimum pools")
+    print("Codex Terra workers, Codex Sol validators, and bounded one-shot Claude Opus 4.8 roles are fresh zero-minimum pools")
     return 0
 
 
@@ -1260,6 +1683,9 @@ def parser() -> argparse.ArgumentParser:
     run.add_argument("--timeout", type=float, default=1800)
     inspect = sub.add_parser("inspect")
     inspect.add_argument("--packet", required=True)
+    store_verdict = sub.add_parser("store-verdict")
+    store_verdict.add_argument("--packet", required=True)
+    store_verdict.add_argument("--draft", required=True)
     emit = sub.add_parser("emit")
     emit.add_argument("--packet", required=True)
     emit.add_argument("--bead", required=True)
@@ -1283,6 +1709,8 @@ def main(argv: list[str] | None = None) -> int:
             return command_run(args)
         if args.command == "inspect":
             return command_inspect(args)
+        if args.command == "store-verdict":
+            return command_store_verdict(args)
         if args.command == "emit":
             return command_emit(args)
         if args.command == "doctor-contract":

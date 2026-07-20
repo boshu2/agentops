@@ -34,6 +34,6 @@
     "integration_validation": {"type": ["object", "null"]},
     "pr": {"type": ["object", "null"]},
     "landed_sha": {"type": ["string", "null"]},
-    "status": {"enum": ["assembling", "validation_required", "validated", "published", "merge_eligible", "landed", "failed"]}
+    "status": {"enum": ["assembling", "validation_required", "validated", "published", "merge_eligible", "landed", "failed", "qualified"]}
   }
 }
