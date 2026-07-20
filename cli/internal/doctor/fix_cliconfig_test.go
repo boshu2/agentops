@@ -306,6 +306,99 @@ func TestCliConfigMissingRequiredCLI_SymlinkEquivalentPathIsNotShadowed(t *testi
 	}
 }
 
+// Two REAL duplicate git installs on PATH (the Homebrew-git-ahead-of-Apple-shim
+// shape) with nothing missing is the DEFAULT state of a macOS dev machine.
+// Shadow-only must not produce a finding at all: the first-resolved CLI works,
+// so this is usually harmless, and any finding here would flip the doctor exit
+// code on every pristine Mac (novice-test edge 3).
+func TestCliConfigMissingRequiredCLI_ShadowOnlyDuplicateGitIsNotAFinding(t *testing.T) {
+	tmp := t.TempDir()
+	brewbin := filepath.Join(tmp, "opt", "homebrew", "bin")
+	usrbin := filepath.Join(tmp, "usr", "bin")
+	for _, dir := range []string{brewbin, usrbin} {
+		p := filepath.Join(dir, "git")
+		writeFile(t, p, "#!/bin/sh\nexit 0\n")
+		if err := os.Chmod(p, 0o755); err != nil {
+			t.Fatalf("chmod: %v", err)
+		}
+	}
+	t.Setenv("PATH", brewbin+string(os.PathListSeparator)+usrbin)
+
+	fs, err := missingRequiredCLIDetector{}.Detect(&DetectEnv{})
+	if err != nil {
+		t.Fatalf("Detect error: %v", err)
+	}
+	if len(fs) != 0 {
+		t.Fatalf("shadow-only duplicate git must yield 0 findings, got %d: %+v", len(fs), fs)
+	}
+}
+
+// A genuinely missing CLI must render the missing-CLI remediation with the
+// actual CLI name interpolated — never the empty-slot "yourself —  — then"
+// rendering the shadow-only case used to produce (novice-test edge 3b).
+func TestCliConfigMissingRequiredCLI_MissingRemediationNamesTheCLI(t *testing.T) {
+	tmp := t.TempDir()
+	t.Setenv("PATH", filepath.Join(tmp, "empty"))
+
+	fs, err := missingRequiredCLIDetector{}.Detect(&DetectEnv{})
+	if err != nil {
+		t.Fatalf("Detect error: %v", err)
+	}
+	f := findByID(t, fs, fmMissingRequiredCLI)
+	if f.Title != "required external CLI missing from PATH" {
+		t.Errorf("Title = %q, want %q", f.Title, "required external CLI missing from PATH")
+	}
+	if !strings.Contains(f.Remediation.Command, "git:") {
+		t.Errorf("Remediation.Command lacks interpolated git install hint: %q", f.Remediation.Command)
+	}
+	if strings.Contains(f.Remediation.Command, "—  —") {
+		t.Errorf("Remediation.Command rendered an empty hint slot: %q", f.Remediation.Command)
+	}
+}
+
+// When a CLI is genuinely missing, the finding still fires as P1 and duplicate
+// evidence for another required CLI rides along in the evidence query — the
+// shadow signal is informational context, not its own failure mode.
+func TestCliConfigMissingRequiredCLI_MissingBrKeepsShadowedGitEvidence(t *testing.T) {
+	tmp := t.TempDir()
+	binA := filepath.Join(tmp, "binA")
+	binB := filepath.Join(tmp, "binB")
+	for _, dir := range []string{binA, binB} {
+		p := filepath.Join(dir, "git")
+		writeFile(t, p, "#!/bin/sh\nexit 0\n")
+		if err := os.Chmod(p, 0o755); err != nil {
+			t.Fatalf("chmod: %v", err)
+		}
+	}
+	t.Setenv("PATH", binA+string(os.PathListSeparator)+binB)
+
+	repoRoot := filepath.Join(tmp, "repo")
+	writeFakeCLIRepoRoot(t, repoRoot)
+	fs, err := missingRequiredCLIDetector{}.Detect(&DetectEnv{RepoRoot: repoRoot})
+	if err != nil {
+		t.Fatalf("Detect error: %v", err)
+	}
+	f := findByID(t, fs, fmMissingRequiredCLI)
+	if f.Severity != "P1" {
+		t.Errorf("Severity = %q, want P1", f.Severity)
+	}
+	if f.Title != "required external CLI missing from PATH" {
+		t.Errorf("Title = %q, want missing title even with shadow evidence", f.Title)
+	}
+	if !strings.Contains(f.Evidence.Query, "missing_clis=br") {
+		t.Errorf("Evidence.Query missing br: %q", f.Evidence.Query)
+	}
+	if !strings.Contains(f.Evidence.Query, "shadowed_clis=git -> ") {
+		t.Errorf("Evidence.Query lacks shadowed git context: %q", f.Evidence.Query)
+	}
+	if !strings.Contains(f.Remediation.Command, "beads_rust") {
+		t.Errorf("Remediation.Command lacks br install hint: %q", f.Remediation.Command)
+	}
+	if strings.Contains(f.Remediation.Command, "—  —") {
+		t.Errorf("Remediation.Command rendered an empty hint slot: %q", f.Remediation.Command)
+	}
+}
+
 func TestCliConfigMissingRequiredCLI_FixerRefuses(t *testing.T) {
 	fx := FixerByID(fmMissingRequiredCLI)
 	if fx == nil {

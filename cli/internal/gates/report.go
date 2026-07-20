@@ -21,6 +21,11 @@ type Report struct {
 	Results      []CheckResult
 	Skipped      []SkippedCheck
 	Coverage     *WorkflowCoverage
+	// ForeignRepo is true when the run root is not the agentops repository.
+	// Human suppresses per-check agentops-internal detail there (the
+	// not-applicable rows and the routing-skip wall name backing scripts that
+	// do not exist in the user's repo); JSON always carries every row.
+	ForeignRepo bool
 }
 
 // ExitCode is 1 if any blocking check failed the run, else 0. A blocking check
@@ -59,6 +64,20 @@ func (r *Report) Summary() Summary {
 		}
 	}
 	return s
+}
+
+// NotApplicableCount tallies checks that SKIPped as not-applicable outside the
+// agentops repository (see NotApplicableReason), so Human can end the report
+// with one honest aggregate line instead of leaving N per-check SKIP rows
+// unexplained.
+func (r *Report) NotApplicableCount() int {
+	n := 0
+	for _, res := range r.Results {
+		if res.Verdict.Status == ports.GateStatusSkip && res.Verdict.Reason == NotApplicableReason {
+			n++
+		}
+	}
+	return n
 }
 
 // Summary is the per-status tally of a run.
@@ -207,10 +226,16 @@ func lastLines(s string, n int) string {
 func (r *Report) Human(w io.Writer) {
 	s := r.Summary()
 	for _, res := range r.Results {
+		if r.ForeignRepo && res.Verdict.Status == ports.GateStatusSkip && res.Verdict.Reason == NotApplicableReason {
+			continue // aggregated into the not-applicable line below
+		}
 		mark := string(res.Verdict.Status)
 		fmt.Fprintf(w, "%-5s %s%s\n", mark, res.Check.ID, humanCheckDetails(res.Check, res.SelectedReason))
 	}
-	if len(r.Skipped) > 0 {
+	// In a foreign repo the per-gate routing-skip detail names agentops-internal
+	// backing scripts that do not exist in the user's repository — noise for the
+	// novice the summary lines below already cover. JSON keeps every row.
+	if len(r.Skipped) > 0 && !r.ForeignRepo {
 		fmt.Fprintln(w, "\nskipped gates:")
 		for _, skip := range r.Skipped {
 			fmt.Fprintf(w, "SKIP  %s | %s | backing: %s | artifact: %s | repair: %s\n",
@@ -222,8 +247,14 @@ func (r *Report) Human(w io.Writer) {
 			)
 		}
 	}
-	fmt.Fprintf(w, "\n%s/%s: %d checks — %d pass, %d warn, %d fail, %d skip (%dms)\n",
-		modeString(r.Mode), r.Scope, s.Total, s.Passed, s.Warned, s.Failed, s.Skipped, r.Elapsed.Milliseconds())
+	// The summary counts UNKNOWN in its own bucket: a run with blocking
+	// UNKNOWNs exits 1, so the one-line summary must never read all-clear
+	// ("0 fail, 0 skip") while UNKNOWN rows exist above it.
+	fmt.Fprintf(w, "\n%s/%s: %d checks — %d pass, %d warn, %d fail, %d unknown, %d skip (%dms)\n",
+		modeString(r.Mode), r.Scope, s.Total, s.Passed, s.Warned, s.Failed, s.Unknown, s.Skipped, r.Elapsed.Milliseconds())
+	if n := r.NotApplicableCount(); n > 0 {
+		fmt.Fprintf(w, "%d agentops-repo checks not applicable outside the agentops repository\n", n)
+	}
 	if len(r.Skipped) > 0 {
 		fmt.Fprintf(w, "not run: %d gates (routing/tier/fail-fast)\n", len(r.Skipped))
 	}

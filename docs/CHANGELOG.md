@@ -90,6 +90,20 @@ before upgrading.
 
 ### Fixed
 
+- `ao gate check` in a repository other than agentops itself no longer fails
+  with a wall of UNKNOWN rows for agentops-internal checks: those checks skip
+  as first-class not-applicable, the human report aggregates them into one
+  honest line, and the summary now counts UNKNOWN in its own bucket so it can
+  never read all-clear while unknowns exist. Inside the agentops repo a
+  missing backing script remains fail-closed UNKNOWN.
+- `ao doctor` no longer reports a permanent false `fm-skills-missing` P1 for
+  source-linked installs: the detector follows symlinked skill directories
+  (dangling links still count as absent), matching the `ao skills link`
+  install path.
+- `ao doctor` no longer raises a P1 for benign PATH shadowing of a required
+  CLI (e.g. Homebrew git alongside Apple's `/usr/bin/git`), and the
+  missing-CLI remediation renders only when a CLI is actually missing —
+  eliminating the empty "Install the missing CLI yourself — —" template.
 - `ao init` creates the complete evidence layout — both loop-evidence stores
   `ao status` reads (intents, verdicts) and the sessions/index/provenance
   substructure `ao doctor` enforces — so a fresh init is never flagged

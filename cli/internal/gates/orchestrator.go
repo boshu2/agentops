@@ -101,6 +101,7 @@ func (o *Orchestrator) Run(ctx context.Context, opts RunOptions) (*Report, error
 		Elapsed:      o.now().Sub(started),
 		Results:      results,
 		Skipped:      skipped,
+		ForeignRepo:  !IsAgentOpsRepo(o.repoRoot),
 	}, nil
 }
 
