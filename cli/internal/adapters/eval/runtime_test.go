@@ -4,12 +4,34 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 
 	aoeval "github.com/boshu2/agentops/cli/internal/eval"
 	"github.com/boshu2/agentops/cli/internal/evalsubstrate"
 	"gopkg.in/yaml.v3"
 )
+
+// TestSaveBurnLedger_FileMode0600 (age-6j9ee.3): the holdout burn ledger pins 0o600 —
+// holdout secrecy is load-bearing, so a world/group-readable ledger (which leaks which
+// holdout scenarios have been spent) is a regression. POSIX-mode assert is skipped on
+// windows via a GOOS branch (not t.Skip) so the write itself is still exercised there.
+func TestSaveBurnLedger_FileMode0600(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "burn.json")
+	if err := (Runtime{}).SaveBurnLedger(path, evalsubstrate.HoldoutBurnLedger{Budget: 1}); err != nil {
+		t.Fatalf("SaveBurnLedger: %v", err)
+	}
+	if runtime.GOOS == "windows" {
+		return
+	}
+	info, err := os.Stat(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := info.Mode().Perm(); got != 0o600 {
+		t.Fatalf("burn ledger mode = %o, want 0600 (holdout secrecy)", got)
+	}
+}
 
 func TestRuntimeSatisfiesCorePortAndResolvesHostPaths(t *testing.T) {
 	var port aoeval.CoreRuntime = Runtime{}

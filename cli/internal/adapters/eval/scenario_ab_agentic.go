@@ -12,6 +12,7 @@ import (
 	"strings"
 
 	aoeval "github.com/boshu2/agentops/cli/internal/eval"
+	"github.com/boshu2/agentops/cli/internal/redact"
 	"github.com/boshu2/agentops/cli/internal/scenario"
 )
 
@@ -80,7 +81,13 @@ func (agenticScenarioRunner) RunArm(ctx context.Context, sc scenario.Scenario, w
 			if runErr != nil {
 				return aoeval.ArmOutcome{}, fmt.Errorf("agentic command %q: %w", command, runErr)
 			}
-			fmt.Fprintf(&history, "$ %s\nexit=%d\n%s\n\n", command, exitCode, strings.TrimSpace(stdout))
+			// Egress choke point: raw command stdout is RUNTIME output that becomes
+			// model-bound — history feeds the next turn's prompt and (via the done
+			// fallback) the judge-graded arm output. Scrub credentials/home-paths here,
+			// once, per redact's caller contract. The redactor is pattern-based and a
+			// no-op on non-secret text, so gold-doc content a with-gold command legitimately
+			// reads passes through unchanged; only secret-shaped substrings are replaced.
+			fmt.Fprintf(&history, "$ %s\nexit=%d\n%s\n\n", command, exitCode, redact.Redact(strings.TrimSpace(stdout)))
 		}
 		if step.Done {
 			summary := strings.TrimSpace(step.Summary)

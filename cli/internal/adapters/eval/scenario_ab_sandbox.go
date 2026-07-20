@@ -64,14 +64,65 @@ func corpusDenyPaths(startDir string) []string {
 	}
 	seen := map[string]bool{}
 	var out []string
-	for _, p := range cand {
-		for _, q := range []string{p, resolveSymlink(p)} {
-			if q != "" && !seen[q] {
-				seen[q] = true
-				out = append(out, q)
-			}
+	add := func(p string) {
+		if p != "" && !seen[p] {
+			seen[p] = true
+			out = append(out, p)
 		}
 	}
+	for _, p := range cand {
+		add(p)
+		add(resolveSymlink(p))
+	}
+	// Nested-symlink Seatbelt gap: a directory symlink INSIDE a corpus root (e.g.
+	// .agents/learnings -> /external/dir) canonicalizes OUTSIDE every denied subpath,
+	// so Seatbelt (which matches the real, canonical path) would ALLOW a read through
+	// it, voiding the A/B. Walk each resolved deny root and deny the canonical target
+	// of any directory symlink found within it. Iterate a snapshot so the appends below
+	// don't extend the loop.
+	for _, root := range append([]string(nil), out...) {
+		for _, target := range nestedSymlinkDenyTargets(root) {
+			add(target)
+		}
+	}
+	return out
+}
+
+// maxSymlinkWalkDepth bounds the nested-symlink descent (directory levels below a
+// deny root). Corpus dirs are small, so this caps the walk cheaply; filepath.WalkDir
+// does not follow symlinks (Lstat), so symlink cycles cannot inflate it — the bound
+// only guards against an unexpectedly deep real tree.
+const maxSymlinkWalkDepth = 8
+
+// nestedSymlinkDenyTargets walks root and returns the canonical (symlink-resolved)
+// targets of every DIRECTORY symlink found within it, up to maxSymlinkWalkDepth levels.
+// These are the paths a read INSIDE the corpus canonicalizes to; denying them closes
+// the nested-symlink escape (a top-level resolveSymlink on the root does not reach a
+// symlink one or more levels down). A non-existent root walks to nothing.
+func nestedSymlinkDenyTargets(root string) []string {
+	var out []string
+	cleanRoot := filepath.Clean(root)
+	rootDepth := strings.Count(cleanRoot, string(filepath.Separator))
+	_ = filepath.WalkDir(root, func(path string, d os.DirEntry, err error) error {
+		if err != nil {
+			return nil
+		}
+		if d.IsDir() && strings.Count(filepath.Clean(path), string(filepath.Separator))-rootDepth > maxSymlinkWalkDepth {
+			return filepath.SkipDir
+		}
+		if d.Type()&os.ModeSymlink == 0 {
+			return nil
+		}
+		target, rerr := filepath.EvalSymlinks(path)
+		if rerr != nil {
+			return nil
+		}
+		if fi, serr := os.Stat(target); serr != nil || !fi.IsDir() {
+			return nil
+		}
+		out = append(out, target)
+		return nil
+	})
 	return out
 }
 

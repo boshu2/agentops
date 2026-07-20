@@ -208,7 +208,9 @@ func (Runtime) SaveBurnLedger(path string, ledger evalsubstrate.HoldoutBurnLedge
 		return fmt.Errorf("encode burn ledger: %w", err)
 	}
 	temporary := path + ".tmp"
-	if err := os.WriteFile(temporary, data, 0o644); err != nil {
+	// 0o600: holdout burn state is load-bearing for holdout secrecy; a world/group-
+	// readable ledger leaks which holdout scenarios have been spent (age-6j9ee.3).
+	if err := os.WriteFile(temporary, data, 0o600); err != nil {
 		return fmt.Errorf("write burn ledger temp: %w", err)
 	}
 	if err := os.Rename(temporary, path); err != nil {
