@@ -39,7 +39,10 @@ jobs:
         uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6
 
       - name: Build site
-        run: mkdocs build --strict
+        # Not --strict: mkdocs.yml declares strict false (docs deliberately link
+        # outside docs_dir; tests/docs/validate-links.sh, run by the doc-release
+        # checks, owns link checking).
+        run: mkdocs build
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5

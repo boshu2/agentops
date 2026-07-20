@@ -18,7 +18,8 @@ brew install beads
 npx skills@latest add boshu2/agentops --all -g
 ```
 
-Use `plan`, `implement`, `validate`, and `learn` — or
+One command, every coding agent — `npx skills` installs the corpus into all
+your agents at once. Then use `plan`, `implement`, `validate`, and `learn` — or
 `rpi` to run the loop once.
 
 ## Plugins (Claude Code / Codex)
@@ -35,10 +36,12 @@ codex plugin marketplace add boshu2/agentops
 codex plugin add agentops@agentops-marketplace
 ```
 
-Two install paths:
+Three install paths:
 
-- **npx / [skills.sh](https://skills.sh)** copies skills you can edit.
-- **Plugins** keep a read-only bundle current with the repo.
+- **npx / [skills.sh](https://skills.sh)** — universal; copies skills you can edit.
+- **Plugins** — a read-only bundle that stays current with the repo.
+- **Checkout + `ao skills link`** — source-tracked symlinks for contributors
+  (see [Install and day-2 operations](docs/install-day2-ops.md)).
 
 ## Admission-control hooks (on by default)
 

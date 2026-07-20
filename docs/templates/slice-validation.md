@@ -2,8 +2,8 @@
 
 Use this worksheet to record evidence from one bounded experiment and its
 independent Validate review. The current machine contracts are
-[`subject-manifest.v1`](../../schemas/subject-manifest.v1.schema.json) and
-[`verdict.v2`](../../schemas/verdict.v2.schema.json).
+[`subject-manifest.v1`](https://github.com/boshu2/agentops/blob/main/schemas/subject-manifest.v1.schema.json) and
+[`verdict.v2`](https://github.com/boshu2/agentops/blob/main/schemas/verdict.v2.schema.json).
 
 ## Pinned inputs
 

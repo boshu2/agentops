@@ -10,12 +10,28 @@ edit_uri: edit/main/docs/
 docs_dir: docs
 site_dir: _site
 
-# Operationalized methodology corpora are repo artifacts (kernel + operator library
-# + validators + a fair-use quote bank), not website content — kept tracked in the
-# repo but excluded from the published site (avoids re-hosting source material and
-# keeps internal scaffolding out of nav/search).
+# Internal working artifacts (audits, plans, handoffs, research, council logs,
+# operationalized corpora, temp scratch docs) are repo artifacts, not website
+# content — kept tracked in the repo but excluded from the published site so
+# they never enter nav, search, or public URLs.
 exclude_docs: |
-  convergence/operationalized/
+  audits/
+  brainstorms/
+  code-map/
+  constraints/
+  convergence/
+  council-log/
+  decisions/
+  evals/
+  evidence/
+  handoffs/
+  learnings/
+  migration-trackers/
+  plans/
+  rescope/
+  research/
+  sovereignty-proof/
+  TEMP-*.md
 
 # Keep building even when the knowledge graph links outside docs/ (e.g., ../skills/).
 # Strict link checking runs as a separate CI job via tests/docs/validate-links.sh + lychee.

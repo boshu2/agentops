@@ -29,6 +29,7 @@ under `ao gate check`; semantic judgment is the Validate skill.
 | `ao constraint` | Encode accepted mechanical policy in repository-owned linters or checks; AgentOps no longer promotes findings into blocking state. |
 | `ao skills edit` | Edit canonical `skills/<slug>/` sources directly; use normal repository Git policy outside `ao`. |
 | `ao goals trace` | Inspect current goal/scenario artifacts directly; the retired directive-to-bead lifecycle chain has no replacement. |
+| `ao inject` | AgentOps no longer retrieves prior knowledge; use the caller's own memory or context tooling. |
 | `ao session memory` | Use caller-authored `ao session handoff` evidence or maintain repository memory through the caller's own policy. |
 | `ao verify` | Use the Validate skill for semantic judgment and `ao gate check` for deterministic checks. Delete any `ao verify init` pre-push ratchet from `.git/hooks/pre-push` (restore `pre-push.agentops-orig` if one was set aside); `ao verify init --remove` no longer exists, and `git push --no-verify` bypasses a stale hook once. |
 
@@ -40,7 +41,7 @@ Other 3.2 bookkeeping and knowledge verbs (`ao beads`, `ao agents`, `ao canon`,
 `ao ci`, `ao citation`, `ao findings`, `ao forge`, `ao knowledge`,
 `ao mcp`, `ao metrics`, `ao notebook`, `ao patterns`, `ao pool`, `ao ratchet`,
 `ao registry`, `ao scope`, `ao sessions`, `ao wiki`) were pruned from the
-default build without tombstones. (`ao eval` returned in 3.4 as the wired
+default build without tombstones. (`ao eval` returned in 3.3 as the wired
 measurement surface — deterministic suites, locked Tasks, holdout scenarios —
 still with no lifecycle authority.) They have no replacement inside AgentOps; use
 the caller's own tools, `ao gate check` for deterministic checks, or generic
@@ -84,8 +85,11 @@ outcomes.
 
 ## Install migration
 
-AgentOps 3.3 uses one canonical checkout plus source symlinks. A plugin cache is
-not part of the active skill path.
+AgentOps 3.3 supports three install paths: `npx skills@latest add
+boshu2/agentops --all -g` (universal across coding agents), runtime plugins for
+Claude Code and Codex (managed bundles that update with the release), and one
+canonical checkout plus source symlinks for users who edit skills or
+contribute:
 
 ```bash
 git clone https://github.com/boshu2/agentops.git ~/.local/share/agentops
@@ -96,11 +100,12 @@ ao skills link
 
 The 3.x curl installers (`scripts/install.sh`, `install-claude.sh`,
 `install-codex.sh`, `install-agy.sh`, `install-opencode.sh`, and
-`install-codex.ps1`) are tombstones: they refuse to install and print this
-path. Internal helpers (`install-codex-plugin.sh`,
+`install-codex.ps1`) are tombstones: they refuse to install and print the
+supported paths. Internal helpers (`install-codex-plugin.sh`,
 `install-codex-native-skills.sh`) were deleted.
 
-Remove a 3.x runtime plugin through that runtime before linking the checkout:
+If you switch from a plugin to source links, remove the runtime plugin through
+that runtime before linking the checkout so only one corpus is visible:
 
 - Claude Code: `claude plugin uninstall agentops@agentops-marketplace`, then
   `claude plugin marketplace remove agentops-marketplace`.

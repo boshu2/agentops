@@ -26,27 +26,27 @@ func CountFilesInDir(dir string) int {
 
 // ComputeHealthDelta computes the average age in days of active learnings.
 func ComputeHealthDelta(baseDir string) float64 {
-	learningsDir := filepath.Join(baseDir, ".agents", "learnings")
-	if _, err := os.Stat(learningsDir); os.IsNotExist(err) {
-		return 0
-	}
-
 	now := time.Now()
 	var totalAge float64
 	var count int
 
-	_ = filepath.Walk(learningsDir, func(path string, info os.FileInfo, err error) error {
-		if err != nil || info.IsDir() {
-			return nil
+	for _, learningsDir := range KnowledgeSectionDirs(baseDir, "learnings") {
+		if _, err := os.Stat(learningsDir); os.IsNotExist(err) {
+			continue
 		}
-		if !strings.HasSuffix(path, ".md") && !strings.HasSuffix(path, ".jsonl") && !strings.HasSuffix(path, ".json") {
+		_ = filepath.Walk(learningsDir, func(path string, info os.FileInfo, err error) error {
+			if err != nil || info.IsDir() {
+				return nil
+			}
+			if !strings.HasSuffix(path, ".md") && !strings.HasSuffix(path, ".jsonl") && !strings.HasSuffix(path, ".json") {
+				return nil
+			}
+			age := now.Sub(info.ModTime()).Hours() / 24.0
+			totalAge += age
+			count++
 			return nil
-		}
-		age := now.Sub(info.ModTime()).Hours() / 24.0
-		totalAge += age
-		count++
-		return nil
-	})
+		})
+	}
 
 	if count == 0 {
 		return 0
