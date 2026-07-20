@@ -369,8 +369,8 @@
     {
       "name": "cc-hooks",
       "source_skill": "skills/cc-hooks",
-      "source_hash": "db4cdf0960a2fb7f184f4ff8a05e3dcc5c948abc56380a74d0ff04cb54d48a2b",
-      "generated_hash": "4d7866732fefa0a7d98fa7d3d4c3cbad82baaaf5786021a2878b72485e149ac4"
+      "source_hash": "1e17e091dea81183aef666cf27321f8f03992ef1cdcdfbc7b3890d842a474b51",
+      "generated_hash": "06a47649e0d36e8ec423031df8f769a181ea10f1d2bcc369063f9bf11017d227"
     },
     {
       "name": "codebase-recon",

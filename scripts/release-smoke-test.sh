@@ -61,13 +61,15 @@ run_json() {
 run_tombstone() {
   local label="$1"
   shift
-  local output rc=0 lines
+  local output rc=0
   output=$("$@" 2>&1) || rc=$?
-  lines=$(awk 'NF { count++ } END { print count+0 }' <<<"$output")
-  if [[ "$rc" -ne 0 && "$lines" -eq 1 ]] && grep -qiE 'removed|no longer' <<<"$output"; then
+  if [[ "$rc" -ne 0 ]] \
+      && grep -qE '^Error: unknown command ' <<<"$output" \
+      && grep -q 'was removed from ao' <<<"$output" \
+      && grep -q 'docs/MIGRATION.md' <<<"$output"; then
     pass "$label"
   else
-    fail "$label (expected one-line nonzero tombstone, got exit $rc and $lines lines)"
+    fail "$label (expected nonzero unknown-command error plus removal and migration hints; got exit $rc)"
     sed -n '1,8p' <<<"$output" >&2
   fi
 }
