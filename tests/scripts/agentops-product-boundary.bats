@@ -9,7 +9,7 @@ setup() {
     docs/CI-CD.md
     docs/architecture/operating-loop.md
     cli/cmd/ao/root.go
-    cli/cmd/ao/demo.go
+    cli/internal/commands/demo/module.go
   )
 }
 
