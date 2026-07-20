@@ -217,7 +217,11 @@ func TestJudgeAndControlArmShareCorpusDenyMachinery(t *testing.T) {
 		t.Fatal(err)
 	}
 	t.Setenv("HOME", t.TempDir())
-	if len(corpusDenyPaths(root)) == 0 {
+	deny, err := corpusDenyPaths(root)
+	if err != nil {
+		t.Fatalf("corpusDenyPaths: %v", err)
+	}
+	if len(deny) == 0 {
 		t.Fatal("shared corpusDenyPaths must be non-empty for a repo with .agents")
 	}
 	// Both executors refuse an empty deny set on every platform (fail-closed).

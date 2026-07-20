@@ -2,6 +2,7 @@ package eval
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -41,7 +42,14 @@ func corpusRoot(startDir string) string {
 // NOT read: the repo corpus (<corpusRoot>/.agents, /.ao — resolved from any subdir)
 // AND the global corpus (~/.agents), each plus its symlink-resolved canonical path
 // (Seatbelt matches the real path). A leak in ANY of these voids the A/B.
-func corpusDenyPaths(startDir string) []string {
+//
+// FAIL-CLOSED: returns an error (never a partial deny set) when the symlink-reachability
+// closure cannot be computed completely — a pathological symlink graph that exceeds the
+// closure bounds, or an unreadable directory. The caller (sandboxExecGuard) then refuses
+// to run the arm, exactly like the no-Seatbelt case. This is the property that kills the
+// nested/chained-symlink escape class: there is no symlink shape that leaks, because any
+// shape either lands FULLY in the closure or trips the refusal.
+func corpusDenyPaths(startDir string) ([]string, error) {
 	root := corpusRoot(startDir)
 	cand := []string{filepath.Join(root, ".agents"), filepath.Join(root, ".ao")}
 	if home, err := os.UserHomeDir(); err == nil && home != "" {
@@ -74,69 +82,171 @@ func corpusDenyPaths(startDir string) []string {
 		add(p)
 		add(resolveSymlink(p))
 	}
-	// Nested-symlink Seatbelt gap: a directory symlink INSIDE a corpus root (e.g.
-	// .agents/learnings -> /external/dir) canonicalizes OUTSIDE every denied subpath,
-	// so Seatbelt (which matches the real, canonical path) would ALLOW a read through
-	// it, voiding the A/B. Walk each resolved deny root and deny the canonical target
-	// of any directory symlink found within it. Iterate a snapshot so the appends below
-	// don't extend the loop.
-	for _, root := range append([]string(nil), out...) {
-		for _, target := range nestedSymlinkDenyTargets(root) {
-			add(target)
-		}
+	// Nested/chained-symlink Seatbelt gap: a symlink INSIDE a corpus root (e.g.
+	// .agents/learnings -> /external/dir, or .agents/note.md -> /external/secret.txt)
+	// canonicalizes OUTSIDE every denied subpath, so Seatbelt (which matches the real,
+	// canonical path) would ALLOW a read through it, voiding the A/B. A single-pass walk
+	// that only enumerates the FIRST hop is NOT a closure: .agents/learnings -> ext1 and
+	// ext1/pivot.md -> ext2/secret.txt leaks ext2 because the walk never descends INTO the
+	// resolved external target ext1 (the round-3 refute). The deny set is instead the full
+	// symlink-reachability CLOSURE (fixpoint), computed with fail-closed bounds so no
+	// symlink shape can escape: every shape either lands fully in the closure or refuses.
+	closure, err := symlinkClosureDenyTargets(append([]string(nil), out...), maxSymlinkClosureDirs, maxSymlinkDenyEntries, maxSymlinkWalkDepth)
+	if err != nil {
+		return nil, err
 	}
-	return out
+	for _, target := range closure {
+		add(target)
+	}
+	return out, nil
 }
 
-// maxSymlinkWalkDepth bounds the nested-symlink descent (directory levels below a
-// deny root). Corpus dirs are small, so this caps the walk cheaply; filepath.WalkDir
-// does not follow symlinks (Lstat), so symlink cycles cannot inflate it — the bound
-// only guards against an unexpectedly deep real tree.
-const maxSymlinkWalkDepth = 8
+// Bounds for the symlink-reachability closure. They are the fail-closed guard that kills
+// the escape class: a pathological symlink graph (a fan-out, a deep chain, or a symlink to
+// a huge external tree such as `/`) trips a bound and the whole arm refuses to run, rather
+// than silently computing an incomplete deny set. The bounds apply to the EXTERNAL subtrees
+// reached THROUGH symlinks — where explosion happens — not the legitimate corpus roots
+// (which are already denied wholesale by subpath and are bounded by reality; the global
+// ~/.agents is routinely tens of thousands of dirs, so a global dir cap would false-close
+// every real run). symlinkClosureDenyTargets takes the caps as parameters so overflow is
+// unit-testable with tiny caps + tiny fixtures; corpusDenyPaths passes these consts.
+const (
+	// maxSymlinkClosureDirs caps directories walked in symlink-reached external subtrees.
+	// It must clear the REAL environment (measured ~129 external dirs on a machine whose
+	// ~/.agents symlinks the repo skill corpus) with headroom, while a symlink to `/` (or
+	// any large external tree) blows past it and fails closed. If a legitimate corpus ever
+	// exceeds it, the arm safely refuses (never leaks); bump this const. Not a security
+	// primitive — the fail-closed refusal is.
+	maxSymlinkClosureDirs = 1024
+	// maxSymlinkDenyEntries caps distinct canonical targets the closure may add (real
+	// environment measured ~58; headroom below).
+	maxSymlinkDenyEntries = 2048
+	// maxSymlinkWalkDepth bounds per-walk directory descent (a cheap secondary guard;
+	// the dir cap above is the real bound). filepath.WalkDir uses Lstat and does not
+	// follow symlinks, so a cycle cannot inflate a single walk — the closure's own
+	// visited-set + dir cap terminate the cross-walk graph.
+	maxSymlinkWalkDepth = 8
+)
 
-// nestedSymlinkDenyTargets walks root and returns the canonical (symlink-resolved)
-// targets of every DIRECTORY or regular-FILE symlink found within it, up to
-// maxSymlinkWalkDepth levels. These are the paths a read INSIDE the corpus canonicalizes
-// to; denying them closes the nested-symlink escape (a top-level resolveSymlink on the
-// root does not reach a symlink one or more levels down). Both target kinds must be
-// denied: a directory symlink (.agents/learnings -> /external) exposes a subtree, and a
-// FILE symlink (.agents/note.md -> /external/secret.txt) exposes a single file — reading
-// its canonical target leaked the corpus with exit 0 (a plain read through the symlink
-// node is masked by the .agents subpath deny, hiding the escape). Seatbelt `subpath` on a
-// canonical file path matches that file, so file targets are denied correctly by the same
-// renderer. EvalSymlinks follows a symlink CHAIN to its final target and returns an error
-// for a DANGLING symlink, which is skipped. A non-existent root walks to nothing.
-func nestedSymlinkDenyTargets(root string) []string {
+// errSymlinkClosureOverflow is returned (wrapped) when the symlink closure exceeds its
+// bounds. It makes the arm FAIL CLOSED via sandboxExecGuard — the same refusal path as an
+// unavailable sandbox — because an incomplete deny set could leak the corpus.
+var errSymlinkClosureOverflow = errors.New("symlink deny closure exceeded bounds (pathological corpus symlink graph); refusing to run a potentially-unisolated control arm")
+
+// symlinkClosureDenyTargets computes the full symlink-reachability CLOSURE of the deny
+// roots: the set of canonical paths a read that starts anywhere in the corpus can reach by
+// following symlinks. It is a fixpoint over a worklist —
+//
+//  1. Walk each root. Every symlink found (file OR dir) is resolved (EvalSymlinks) to its
+//     canonical target, which is added to the deny set. Every resolved DIRECTORY target is
+//     ALSO pushed onto the worklist, so its interior symlinks get resolved too — this is
+//     what closes a CHAINED escape (.agents/learnings -> ext1; ext1/pivot.md -> ext2).
+//  2. Repeat until the worklist is empty. The result is the complete closure.
+//
+// Cycle safety: a target is deduped via the seen-set BEFORE being pushed, and each root is
+// walked at most once (a->b->a terminates). Dangling symlinks (unresolvable chains) are
+// skipped; device/socket/fifo targets are skipped (not a corpus leak). initialRoots (the
+// legitimate corpus dirs) are walked depth-bounded but NOT dir-capped — they are bounded by
+// reality and already denied by subpath. Directories reached THROUGH symlinks are dir-capped
+// (maxDirs): that is where a pathological graph would explode, and exceeding the cap — or the
+// deny-entry cap (maxEntries), or hitting an unreadable directory (a non-NotExist walk error)
+// — returns an error so the arm fails closed. A missing/NotExist root walks to nothing. Caps
+// are parameters so overflow is unit-testable with tiny caps; corpusDenyPaths passes the
+// package consts.
+func symlinkClosureDenyTargets(initialRoots []string, maxDirs, maxEntries, maxDepth int) ([]string, error) {
 	var out []string
-	cleanRoot := filepath.Clean(root)
-	rootDepth := strings.Count(cleanRoot, string(filepath.Separator))
-	_ = filepath.WalkDir(root, func(path string, d os.DirEntry, err error) error {
-		if err != nil {
+	denySeen := map[string]bool{} // canonical targets already added (output dedup)
+	walked := map[string]bool{}   // roots already walked (cross-walk cycle guard)
+	var worklist []string         // EXTERNAL dir targets reached via symlinks; dir-capped
+	dirsWalked := 0               // dirs walked in symlink-reached subtrees only
+
+	addTarget := func(target string, isDir bool) error {
+		if denySeen[target] {
 			return nil
 		}
-		if d.IsDir() && strings.Count(filepath.Clean(path), string(filepath.Separator))-rootDepth > maxSymlinkWalkDepth {
-			return filepath.SkipDir
+		denySeen[target] = true
+		out = append(out, target)
+		if len(out) > maxEntries {
+			return errSymlinkClosureOverflow
 		}
-		if d.Type()&os.ModeSymlink == 0 {
-			return nil
-		}
-		target, rerr := filepath.EvalSymlinks(path)
-		if rerr != nil {
-			// Dangling symlink (target missing) or unresolvable chain — nothing to deny.
-			return nil
-		}
-		fi, serr := os.Stat(target)
-		if serr != nil {
-			return nil
-		}
-		// Deny both directory targets (a subtree) and regular-file targets (a single
-		// corpus file). Skip anything else (devices, sockets, fifos) — not a corpus leak.
-		if fi.IsDir() || fi.Mode().IsRegular() {
-			out = append(out, target)
+		if isDir {
+			// Descend into the resolved external dir so a CHAINED escape is closed.
+			worklist = append(worklist, target)
 		}
 		return nil
-	})
-	return out
+	}
+
+	walkOne := func(root string, countDirs bool) error {
+		cleanRoot := filepath.Clean(root)
+		rootDepth := strings.Count(cleanRoot, string(filepath.Separator))
+		return filepath.WalkDir(root, func(path string, d os.DirEntry, err error) error {
+			if err != nil {
+				if os.IsNotExist(err) {
+					// A never-created corpus root (e.g. missing .ao): nothing to walk.
+					return nil
+				}
+				// Unreadable dir / permission error: cannot prove the closure is complete.
+				return err
+			}
+			if d.IsDir() {
+				if countDirs {
+					dirsWalked++
+					if dirsWalked > maxDirs {
+						return errSymlinkClosureOverflow
+					}
+				}
+				if strings.Count(filepath.Clean(path), string(filepath.Separator))-rootDepth > maxDepth {
+					return filepath.SkipDir
+				}
+				return nil
+			}
+			if d.Type()&os.ModeSymlink == 0 {
+				return nil
+			}
+			target, rerr := filepath.EvalSymlinks(path)
+			if rerr != nil {
+				// Dangling symlink or unresolvable chain — nothing to deny.
+				return nil
+			}
+			fi, serr := os.Stat(target)
+			if serr != nil {
+				return nil
+			}
+			switch {
+			case fi.IsDir():
+				return addTarget(target, true)
+			case fi.Mode().IsRegular():
+				return addTarget(target, false)
+			default:
+				// device / socket / fifo — not a corpus leak; do not deny, do not descend.
+				return nil
+			}
+		})
+	}
+
+	// Phase 1: the legitimate corpus roots — depth-bounded, NOT dir-capped.
+	for _, r := range initialRoots {
+		if walked[r] {
+			continue
+		}
+		walked[r] = true
+		if err := walkOne(r, false); err != nil {
+			return nil, fmt.Errorf("symlink deny closure walk of %q: %w", r, err)
+		}
+	}
+	// Phase 2: external subtrees reached via symlinks — dir-capped fixpoint.
+	for len(worklist) > 0 {
+		r := worklist[len(worklist)-1]
+		worklist = worklist[:len(worklist)-1]
+		if walked[r] {
+			continue
+		}
+		walked[r] = true
+		if err := walkOne(r, true); err != nil {
+			return nil, fmt.Errorf("symlink deny closure walk of %q: %w", r, err)
+		}
+	}
+	return out, nil
 }
 
 // configCorpusDenyPaths returns the global corpus directories `ao lookup` resolves

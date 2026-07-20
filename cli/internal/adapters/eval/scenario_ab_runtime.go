@@ -132,7 +132,11 @@ func runCodexExecArm(ctx context.Context, prompt, outputSchemaPath string, allow
 		// fail-closed control-arm guard must not be weakened to express this.)
 		command = exec.CommandContext(ctx, "codex", args...)
 	} else {
-		confined, err := sandboxedCodexCmd(ctx, corpusDenyPaths(cwd), args)
+		denyPaths, err := corpusDenyPaths(cwd)
+		if err != nil {
+			return "", 0, err
+		}
+		confined, err := sandboxedCodexCmd(ctx, denyPaths, args)
 		if err != nil {
 			return "", 0, err
 		}

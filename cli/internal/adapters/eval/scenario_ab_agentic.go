@@ -199,7 +199,11 @@ func workspaceCommand(ctx context.Context, workDir, command string, withGold boo
 	if err != nil {
 		return nil, fmt.Errorf("resolve cwd for arm isolation: %w", err)
 	}
-	cmd, err := sandboxedShellCmd(ctx, corpusDenyPaths(cwd), command)
+	denyPaths, err := corpusDenyPaths(cwd)
+	if err != nil {
+		return nil, err
+	}
+	cmd, err := sandboxedShellCmd(ctx, denyPaths, command)
 	if err != nil {
 		return nil, err
 	}
