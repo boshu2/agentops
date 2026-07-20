@@ -1,9 +1,9 @@
 # Gas City Factory — Live Bead Canary
 
-This document is a live factory canary. It is a small, real exercise of the
-bead-native factory to confirm that the lifecycle and delivery invariants below
-hold when work actually flows through Gas City. It is a canary, not a release,
-and it does not prove rejection, rebase, outage, or recovery paths.
+This document records live factory canaries. They are small, real exercises of
+the bead-native factory to confirm that the lifecycle, parallel-isolation, and
+delivery invariants below hold when work actually flows through Gas City. They
+are canaries, not releases, and they do not prove every failure path.
 
 ## Invariants
 
@@ -21,13 +21,13 @@ and it does not prove rejection, rebase, outage, or recovery paths.
    agents do not push directly to main; every change reaches main only through a
    reviewed, protected pull request.
 
-## Scope
+## Protected-delivery scope
 
 This canary confirms that a single bounded unit of work moved through the
 bead-native lifecycle and honored protected delivery. It is not a release and
 is not proof of every failure mode.
 
-## Live evidence
+## Protected-delivery evidence
 
 The isolated city `/Users/bo/dev/gc-agentops-factory-v1b` admitted and delivered
 this canary on 2026-07-17:
@@ -48,10 +48,39 @@ The JSON graph, review, verdict, admission certificate, manifests, and delivery
 record remain evidence referenced by bead metadata; none is a work queue or
 lifecycle replacement.
 
+## Mixed-provider parallel qualification
+
+The isolated city `gc-agentops-deterministic-city-20260719-v16` ran the current
+qualified toolchain pair on 2026-07-19. The Mayor admitted two dependency-free,
+disjoint write scopes, so Gas City ran both experiments concurrently in
+separate Git worktrees. Qualification delivery exercised the real Refiner and
+integration Validator but intentionally performed no push, PR, merge, or
+base-branch mutation.
+
+| Stage | Durable identity and result |
+|---|---|
+| Toolchain | GC source `8dc1f0dfc8164b751d0c63bed051a468a44a3d51`; official Beads 1.1.0 source `8e4e59d39f3459a43cf21a3236a13eca4dd874f7` |
+| Mayor planning | Claude/Opus 4.8 context `gadc2v-neh`; planning bead `gadc2v-37t`; graph digest `50528f1e520af47448c1930bf9f049e66479358e9f6cc18e9e1f438f15258c7b` |
+| Fresh plan review | Codex/Sol context `gadc2v-3r0`; review bead `ag-911`; PASS; program bead `ag-nrt` |
+| Codex experiment | bead `ag-t0b`; Terra Worker context `gadc2v-7g6`; candidate `8c7c036864372e7c1e62cf9838d4fddcf4562be7`; Claude/Opus Validator context `gadc2v-mgp`; PASS |
+| Claude experiment | bead `ag-m59`; Opus 4.8 Worker context `gadc2v-thg`; candidate `a5dfa026094aea04dc7e0d4be53a04b603f6db8f`; Codex/Sol Validator context `gadc2v-261`; PASS |
+| Refinery | bead `ag-zmk`; Claude/Opus Refiner context `gadc2v-qyk`; integration SHA `55f09b95cfd80ee127d93f0d0d8f9a1e67cfb653` |
+| Integration judgment | fresh Codex/Sol context `gadc2v-j1y`; PASS; verdict digest `889313f59443bd538723540a79fe04be4ae029fe9a360ea3b3b52fe3a7887dc0` |
+| Qualification receipt | delivery-record digest `a100d68d327a3fd3bf64a1daf6d83e9b09cc59715a1b0297dcf357da7d6f06fd`; program and Refinery beads closed `qualified` |
+
+Every listed role completed on its original context. No replacement session,
+manual nudge, or retry command was used. The two experiments ran in one parallel
+wave, the GC-owned Refiner launched the opposite-family integration Validator,
+and the original Refiner process waited for and consumed its verdict. An
+independent Git tree check found exactly the two declared files with their exact
+newline-terminated bytes. Managed teardown then stopped the private supervisor,
+Dolt service, tmux socket, and city-scoped processes cleanly.
+
 ## Qualification boundary
 
-This proves the real single-bead happy path, provider interchange across author
-and judge roles, exact-subject validation, fenced integration, and protected
-landing. It does not prove multiple simultaneous writers, dependent waves,
-rejection/rescope, stale fences, moved subjects, dead workers, provider outage,
-or rebase recovery; those remain the proof-week fault matrix.
+Together these canaries prove the real single-bead protected-delivery path,
+provider interchange across author and judge roles, two simultaneous isolated
+writers with disjoint scopes, exact-subject validation, fenced integration,
+qualification-only delivery, and protected landing. They do not prove dependent
+multi-wave execution, rejection/rescope, stale fences, moved subjects, dead
+workers, provider outage, or rebase recovery; those remain fault-matrix work.

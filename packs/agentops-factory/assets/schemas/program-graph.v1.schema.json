@@ -40,8 +40,11 @@
           "generated_scope",
           "subject",
           "first_check",
+          "execution_role",
           "provider",
+          "worker_model_policy",
           "validator_provider",
+          "validator_model_policy",
           "risk"
         ],
         "properties": {
@@ -62,9 +65,16 @@
               "excludes": {"type": "array", "uniqueItems": true, "items": {"type": "string", "minLength": 1}}
             }
           },
-          "first_check": {"type": "string", "minLength": 1},
+          "first_check": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Post-implementation shell command that exits zero for a correct candidate; never a RED precondition."
+          },
+          "execution_role": {"const": "implementation"},
           "provider": {"enum": ["codex", "claude"]},
+          "worker_model_policy": {"enum": ["gpt-5.6-terra", "opus-4.8"]},
           "validator_provider": {"enum": ["codex", "claude"]},
+          "validator_model_policy": {"enum": ["gpt-5.6-sol", "opus-4.8"]},
           "risk": {"enum": ["routine", "high"]},
           "supersedes": {"type": "string", "minLength": 1}
         }
