@@ -59,8 +59,15 @@ case "$mode" in
         # DISPOSITIONED warnings — intentional cross-references from docs/ pages to real
         # repo artifacts outside the published site (skills/, scripts/, schemas/, evals/,
         # repo-root docs). Any strict warning NOT in the allowlist still fails the check,
-        # so new/accidental broken links break the build. See
-        # docs/docs-build-dispositions.md + tests/docs/mkdocs-strict-allowlist.txt.
+        # so new/accidental broken links break the build.
+        #
+        # Policy consistency with mkdocs.yml: the PUBLISHED build declares
+        # `strict: false` (docs deliberately link outside docs_dir), and
+        # tests/docs/validate-links.sh owns link checking for the doc-release
+        # checks. This mode is the deliberate strict BACKSTOP layered on top:
+        # strict-with-curated-allowlist, per-entry rationale in
+        # tests/docs/mkdocs-strict-allowlist.txt (its header is the disposition
+        # doc).
         allowlist="$REPO_ROOT/tests/docs/mkdocs-strict-allowlist.txt"
         tmp_site="$(mktemp -d)"
         build_log="$(mktemp)"

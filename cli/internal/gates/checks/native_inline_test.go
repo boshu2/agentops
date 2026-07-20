@@ -110,6 +110,69 @@ func TestRunShellcheckChanged_MissingShellcheckFailsClosed(t *testing.T) {
 	}
 }
 
+// TestLearningCoherence_RoutesBothLearningRoots pins the routing globs of the
+// learning.coherence gate: a learning changed under the CANONICAL
+// .agents/ao/learnings/ (where doctor's split fixer migrates files) must select
+// the gate exactly like the legacy .agents/learnings/ root — otherwise a
+// migrated learning silently skips the frontmatter check.
+func TestLearningCoherence_RoutesBothLearningRoots(t *testing.T) {
+	var check gates.Check
+	found := false
+	for _, c := range gates.Default.All() {
+		if c.ID == "learning.coherence" {
+			check, found = c, true
+			break
+		}
+	}
+	if !found {
+		t.Fatal("learning.coherence is not registered in the default gate registry")
+	}
+	for _, f := range []string{".agents/ao/learnings/x.md", ".agents/learnings/x.md"} {
+		if !gates.PathMatchesAny(check.Match, f) {
+			t.Errorf("learning.coherence Match %v must route changed file %q", check.Match, f)
+		}
+	}
+}
+
+// TestRunLearningCoherence_ChecksCanonicalAoRoot: the Run func must inspect a
+// changed learning under the canonical .agents/ao/learnings/ root, not only the
+// legacy .agents/learnings/ one. A frontmatter-less file under the canonical
+// root is a FAIL; adding frontmatter turns it PASS.
+func TestRunLearningCoherence_ChecksCanonicalAoRoot(t *testing.T) {
+	root := t.TempDir()
+	rel := filepath.Join(".agents", "ao", "learnings", "bad.md")
+	full := filepath.Join(root, rel)
+	if err := os.MkdirAll(filepath.Dir(full), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(full, []byte("no frontmatter here\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	rc := gates.RunContext{RepoRoot: root, ChangedFiles: []string{".agents/ao/learnings/bad.md"}}
+	verdict, err := runLearningCoherence(context.Background(), rc)
+	if err != nil {
+		t.Fatalf("runLearningCoherence: %v", err)
+	}
+	if verdict.Status != ports.GateStatusFail {
+		t.Fatalf("status = %s, want FAIL for a frontmatter-less canonical-root learning", verdict.Status)
+	}
+	if !strings.Contains(verdict.Reason, ".agents/ao/learnings/bad.md") {
+		t.Fatalf("reason = %q, want the canonical-root file listed", verdict.Reason)
+	}
+
+	if err := os.WriteFile(full, []byte("---\ntitle: x\n---\nbody\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	verdict, err = runLearningCoherence(context.Background(), rc)
+	if err != nil {
+		t.Fatalf("runLearningCoherence: %v", err)
+	}
+	if verdict.Status != ports.GateStatusPass {
+		t.Fatalf("status = %s, want PASS once frontmatter is present (reason %q)", verdict.Status, verdict.Reason)
+	}
+}
+
 // equalSetChecks reports whether a and b hold the same elements (order-independent).
 func equalSetChecks(a, b []string) bool {
 	if len(a) != len(b) {

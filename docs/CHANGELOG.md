@@ -90,6 +90,22 @@ before upgrading.
 
 ### Fixed
 
+- A from-source `ao` build whose version matches its checkout is no longer
+  flagged by doctor: the dev-version detector reuses the Binary Freshness
+  resolution and fires only on genuine drift, shadowed duplicate binaries,
+  or (outside a checkout) an informational from-source note. `ao doctor
+  diff --only <id>` scopes the fix-plan preview.
+- The dead `ao config models` surface was removed (nothing consumed model
+  tiers); existing `models:` config sections still parse and are ignored,
+  and the removed subcommand points at the migration map.
+- The remaining single-rooted knowledge readers follow the canonical
+  `.agents/ao/<section>` directories alongside the legacy roots: the
+  learning-coherence gate, constraint counting, and the eval sandbox
+  corpus deny-list.
+- The strict docs-link backstop's allowlist was refreshed (all 53 entries
+  referenced Cathedral-Cut-deleted docs); ROADMAP, the documentation
+  index generator, and the doc skill's references no longer point at
+  files that don't exist.
 - Onboarding docs name the one real prerequisite: the loop runs as skills
   inside a coding agent (Claude Code, Codex, Cursor, …) and `/rpi` is typed
   in that agent's chat. The README Quickstart leads with the universal npx

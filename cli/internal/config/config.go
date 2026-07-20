@@ -154,6 +154,11 @@ type PathsConfig struct {
 }
 
 // ModelsConfig holds model tier configuration.
+//
+// Deprecated: dead section. The `ao config models` subcommand that displayed
+// and wrote these fields was removed; nothing outside config plumbing
+// (defaults, applyEnv, merge, ResolveTier) reads them. The struct stays
+// parseable so existing config files with a models: section do not break.
 type ModelsConfig struct {
 	// DefaultTier is the default model tier (quality, balanced, budget, inherit).
 	DefaultTier string `yaml:"default_tier" json:"default_tier"`

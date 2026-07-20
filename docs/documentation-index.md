@@ -5,10 +5,10 @@ Dated plans, audits, releases, and archive material are historical evidence, not
 
 ## Product and workflow
 
-- [README](../README.md)
-- [Product boundary](../PRODUCT.md)
-- [Fitness goals](../GOALS.md)
-- [Program boundary](../PROGRAM.md)
+- [README](https://github.com/boshu2/agentops/blob/main/README.md)
+- [Product boundary](https://github.com/boshu2/agentops/blob/main/PRODUCT.md)
+- [Fitness goals](https://github.com/boshu2/agentops/blob/main/GOALS.md)
+- [Program boundary](https://github.com/boshu2/agentops/blob/main/PROGRAM.md)
 - [Operating loop](architecture/operating-loop.md)
 - [Gas City factory](architecture/gas-city-factory.md)
 - [Agent workflow](agent-workflow-reference.md)

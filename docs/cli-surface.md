@@ -7,7 +7,7 @@
 |---------|----------|----------|--------|
 | `ao capabilities` | `public-tested` | `allowlisted` | Covered by capability contract tests. |
 | `ao completion` | `public-tested` | `allowlisted` | Framework completion root has focused generation tests. |
-| `ao config models` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
+| `ao config` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao demo` | `manual-only` | `allowlisted` | Interactive demonstration requires a TTY. |
 | `ao doctor capabilities` | `public-stateful-fixture-needed` | `allowlisted` | Inspects local installation state. |
 | `ao doctor diff` | `public-stateful-fixture-needed` | `allowlisted` | Compares local installation state. |

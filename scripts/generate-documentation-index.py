@@ -11,6 +11,10 @@ import sys
 ROOT = Path(__file__).resolve().parents[1]
 TARGET = ROOT / "docs" / "documentation-index.md"
 
+# Repo-root files sit OUTSIDE the MkDocs docs_dir, so a relative ../README.md
+# link 404s on the published site. Emit absolute GitHub URLs for those targets.
+GITHUB_BLOB = "https://github.com/boshu2/agentops/blob/main"
+
 
 def title(path: Path) -> str:
     if path.suffix == ".md":
@@ -29,10 +33,10 @@ def render() -> str:
         "",
         "## Product and workflow",
         "",
-        "- [README](../README.md)",
-        "- [Product boundary](../PRODUCT.md)",
-        "- [Fitness goals](../GOALS.md)",
-        "- [Program boundary](../PROGRAM.md)",
+        f"- [README]({GITHUB_BLOB}/README.md)",
+        f"- [Product boundary]({GITHUB_BLOB}/PRODUCT.md)",
+        f"- [Fitness goals]({GITHUB_BLOB}/GOALS.md)",
+        f"- [Program boundary]({GITHUB_BLOB}/PROGRAM.md)",
         "- [Operating loop](architecture/operating-loop.md)",
         "- [Gas City factory](architecture/gas-city-factory.md)",
         "- [Agent workflow](agent-workflow-reference.md)",

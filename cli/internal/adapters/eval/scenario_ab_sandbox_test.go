@@ -70,6 +70,57 @@ func TestConfigCorpusDenyPaths_CustomGlobalRoots(t *testing.T) {
 	}
 }
 
+// TestConfigCorpusDenyPaths_CanonicalAoCounterparts: the config Paths defaults are
+// single-rooted legacy section dirs (<base>/learnings etc.), but doctor's split
+// fixer migrates the corpus to the CANONICAL <base>/ao/<section>. A deny set built
+// only from the legacy config dirs leaves the migrated canonical dirs readable by
+// the control arm. The deny set must contain BOTH roots for every config-resolved
+// section (learnings, derived findings, patterns).
+func TestConfigCorpusDenyPaths_CanonicalAoCounterparts(t *testing.T) {
+	got := configCorpusDenyPaths("/data/corpus/learnings", "/opt/patterns")
+	joined := strings.Join(got, "|")
+	for _, want := range []string{
+		"/data/corpus/learnings", // legacy root
+		filepath.Join("/data/corpus", "ao", "learnings"),
+		filepath.Join("/data/corpus", "findings"),
+		filepath.Join("/data/corpus", "ao", "findings"),
+		"/opt/patterns", // legacy root
+		filepath.Join("/opt", "ao", "patterns"),
+	} {
+		if !strings.Contains(joined, want) {
+			t.Errorf("deny set must contain both legacy and canonical ao roots; missing %q in %v", want, got)
+		}
+	}
+}
+
+// TestLocalCorpusDenyPaths_CanonicalAoCounterparts: an absolute config-local
+// section dir outside <root>/.agents must be denied together with its canonical
+// ao counterpart (<parent>/ao/<section>), so a doctor-migrated local corpus is
+// not readable by the control arm.
+func TestLocalCorpusDenyPaths_CanonicalAoCounterparts(t *testing.T) {
+	root := t.TempDir()
+	got := localCorpusDenyPaths(root, "/custom/learnings", "/opt/patterns")
+	joined := strings.Join(got, "|")
+	for _, want := range []string{
+		"/custom/learnings",
+		filepath.Join("/custom", "ao", "learnings"),
+		"/opt/patterns",
+		filepath.Join("/opt", "ao", "patterns"),
+	} {
+		if !strings.Contains(joined, want) {
+			t.Errorf("deny set must contain both legacy and canonical ao roots; missing %q in %v", want, got)
+		}
+	}
+
+	// A dir that IS already canonical (<parent>/ao/<section>) gets no ao/ao/... echo.
+	got = localCorpusDenyPaths(root, "/custom/ao/learnings", "")
+	for _, p := range got {
+		if strings.Contains(p, filepath.Join("ao", "ao")) {
+			t.Errorf("already-canonical dir must not produce an ao/ao counterpart; got %v", got)
+		}
+	}
+}
+
 // TestEnvCorpusDenyPaths_NonDefaultOverride: a NON-DEFAULT AO_AGENTS_DIR (or AO_HOME)
 // redirects where `ao` reads the corpus OUTSIDE <root>/.agents, so the resolved
 // override must enter the deny set; with no override (or the default), nothing is

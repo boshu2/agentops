@@ -109,6 +109,13 @@ Show what --fix would change (read-only)
 ao doctor diff [flags]
 ```
 
+**Flags:**
+
+```
+  -h, --help           help for diff
+      --only strings   Scope the fix-plan preview to finding ids or subsystems (comma-separated), mirroring --fix --only
+```
+
 #### `ao doctor explain`
 
 Expand a single finding with full evidence
@@ -875,7 +882,7 @@ ao completion [bash|zsh|fish|powershell]
 View and manage AgentOps configuration.
 
 ```
-ao config [command]
+ao config [flags]
 ```
 
 **Flags:**
@@ -883,24 +890,6 @@ ao config [command]
 ```
   -h, --help   help for config
       --show   Show resolved configuration with sources
-```
-
-**Subcommands:**
-
-#### `ao config models`
-
-Display the current model cost tier settings with sources.
-
-```
-ao config models [flags]
-```
-
-**Flags:**
-
-```
-  -h, --help               help for models
-      --set-skill string   Set a skill-specific tier override (e.g. council=quality)
-      --set-tier string    Set the default model cost tier (quality, balanced, budget)
 ```
 
 ---

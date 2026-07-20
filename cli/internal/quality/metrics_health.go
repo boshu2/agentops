@@ -54,21 +54,25 @@ func ComputeHealthDelta(baseDir string) float64 {
 	return totalAge / float64(count)
 }
 
-// CountConstraints counts constraint files in .agents/constraints/.
+// CountConstraints counts constraint files in both constraint roots — the
+// canonical .agents/ao/constraints (where doctor's split fixer migrates files)
+// and the legacy .agents/constraints — via KnowledgeSectionDirs, like every
+// other section, so a migrated corpus does not hide constraints.
 func CountConstraints(baseDir string) int {
-	constraintsDir := filepath.Join(baseDir, ".agents", "constraints")
-	if _, err := os.Stat(constraintsDir); os.IsNotExist(err) {
-		return 0
-	}
 	count := 0
-	mdFiles, _ := filepath.Glob(filepath.Join(constraintsDir, "*.md"))
-	count += len(mdFiles)
-	yamlFiles, _ := filepath.Glob(filepath.Join(constraintsDir, "*.yaml"))
-	count += len(yamlFiles)
-	jsonFiles, _ := filepath.Glob(filepath.Join(constraintsDir, "*.json"))
-	for _, f := range jsonFiles {
-		if filepath.Base(f) != "index.json" {
-			count++
+	for _, constraintsDir := range KnowledgeSectionDirs(baseDir, "constraints") {
+		if _, err := os.Stat(constraintsDir); os.IsNotExist(err) {
+			continue
+		}
+		mdFiles, _ := filepath.Glob(filepath.Join(constraintsDir, "*.md"))
+		count += len(mdFiles)
+		yamlFiles, _ := filepath.Glob(filepath.Join(constraintsDir, "*.yaml"))
+		count += len(yamlFiles)
+		jsonFiles, _ := filepath.Glob(filepath.Join(constraintsDir, "*.json"))
+		for _, f := range jsonFiles {
+			if filepath.Base(f) != "index.json" {
+				count++
+			}
 		}
 	}
 	return count

@@ -6,6 +6,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"sort"
+	"strings"
 
 	"github.com/spf13/cobra"
 
@@ -443,11 +445,30 @@ func (module Module) listCommand(options *rootOptions) *cobra.Command {
 }
 
 func (module Module) diffCommand(options *rootOptions) *cobra.Command {
-	return &cobra.Command{Use: "diff", Short: "Show what --fix would change (read-only)", Args: cobra.NoArgs, RunE: func(command *cobra.Command, _ []string) error {
+	var only []string
+	command := &cobra.Command{Use: "diff", Short: "Show what --fix would change (read-only)", Args: cobra.NoArgs}
+	// --only mirrors `ao doctor --fix --only <id[,id...]>` (same StringSlice
+	// parsing) so the remediation text's scoped fix has a scoped preview.
+	command.Flags().StringSliceVar(&only, "only", nil, "Scope the fix-plan preview to finding ids or subsystems (comma-separated), mirroring --fix --only")
+	command.RunE = func(command *cobra.Command, _ []string) error {
 		jsonOutput := module.wantsJSON(command, options)
-		report, err := module.useCases.Read.Diff(command.Context(), readRequest(*options, true, jsonOutput))
+		request := readRequest(*options, true, jsonOutput)
+		request.Only = append(request.Only, only...)
+		report, err := module.useCases.Read.Diff(command.Context(), request)
 		if err != nil {
 			return exit(doctorapp.ExitIOError, err.Error())
+		}
+		if len(only) > 0 {
+			kept, unknown := filterFindingsByOnly(report.Findings, only)
+			if len(unknown) > 0 {
+				// A typo'd id gets a clear message; the exit code stays
+				// unchanged (0) because diff is a read-only preview.
+				fmt.Fprintf(command.ErrOrStderr(),
+					"ao doctor diff: unknown --only id(s): %s — no such detector, subsystem, or finding; list detector ids with: ao doctor capabilities\n",
+					strings.Join(unknown, ", "))
+				return nil
+			}
+			report.Findings = kept
 		}
 		if jsonOutput {
 			return module.emitStructured(command, report)
@@ -457,7 +478,40 @@ func (module Module) diffCommand(options *rootOptions) *cobra.Command {
 		// of the fix plan, not a health verdict — `ao doctor` / `ao doctor
 		// health` own the failing exit for findings.
 		return nil
-	}}
+	}
+	return command
+}
+
+// filterFindingsByOnly filters the fix-plan findings to the requested --only
+// values (finding/detector ids or subsystems, the same vocabulary --fix --only
+// scopes by) and reports values naming no registered detector, subsystem, or
+// rendered finding as unknown.
+func filterFindingsByOnly(findings []doctorapp.Finding, only []string) (kept []doctorapp.Finding, unknown []string) {
+	want := make(map[string]bool, len(only))
+	for _, value := range only {
+		if value = strings.TrimSpace(value); value != "" {
+			want[value] = true
+		}
+	}
+	known := make(map[string]bool)
+	for _, detector := range doctorapp.Detectors() {
+		known[detector.ID()] = true
+		known[detector.Subsystem()] = true
+	}
+	for _, finding := range findings {
+		known[finding.ID] = true
+		known[finding.Subsystem] = true
+		if want[finding.ID] || want[finding.Subsystem] {
+			kept = append(kept, finding)
+		}
+	}
+	for value := range want {
+		if !known[value] {
+			unknown = append(unknown, value)
+		}
+	}
+	sort.Strings(unknown)
+	return kept, unknown
 }
 
 // renderFixPlan renders the diff output as an explicit fix PLAN: for each
