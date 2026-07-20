@@ -3,5 +3,6 @@
   "family": "robotdocs",
   "freeze_sha": "40db49583e1bf61e8ec3e410dc6c2396b3ad0353",
   "ownership_sha256": "b059b1f1b296dfb3f50be2440b58b6effb43124d0312d4a19e788c7856f39675",
-  "migration_state": "migrating"
+  "migration_state": "migrated",
+  "accepted_sha": "c5522feebcfb092d07e843e8d65a364b5d969ef1"
 }
