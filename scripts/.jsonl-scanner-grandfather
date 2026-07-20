@@ -13,11 +13,6 @@
 #  have cleaned sites.)
 cli/internal/doctor/engine.go
 cli/internal/drrebuild/drrebuild.go
-cli/internal/notebook/notebook.go
 cli/internal/quality/doctor.go
 cli/internal/quality/metrics_golden.go
 cli/internal/quality/metrics_run.go
-cli/internal/search/index.go
-cli/internal/search/learnings.go
-cli/internal/search/search_cass.go
-cli/internal/search/sessions.go

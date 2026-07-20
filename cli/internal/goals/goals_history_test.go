@@ -31,6 +31,39 @@ func TestGoalsHistory_NoHistoryFile(t *testing.T) {
 	}
 }
 
+// TestGoalsHistory_JSONEmptyStore_Decoder asserts that --json over an empty
+// store emits exactly one JSON document `[]` on stdout (jq-safe), with any human
+// hint on stderr and exit 0. RED before the fix: empty-state prose is printed to
+// stdout, so json.Decoder fails to parse it.
+func TestGoalsHistory_JSONEmptyStore_Decoder(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	historyPath := filepath.Join(dir, ".agents/ao/goals/history.jsonl")
+
+	var stdout, stderr bytes.Buffer
+	err := goals.RunHistory(goals.HistoryOptions{
+		JSON:        true,
+		HistoryPath: historyPath,
+		Stdout:      &stdout,
+		Stderr:      &stderr,
+	})
+	if err != nil {
+		t.Fatalf("history returned error: %v", err)
+	}
+
+	// Shape-exact: the empty store must print the literal `[]` and nothing
+	// else on stdout. A byte-exact check rejects `null` (which decodes into a
+	// nil slice and would pass len==0) and any second document, without leaning
+	// on Decoder.More() for the one-document guarantee.
+	if got := strings.TrimSpace(stdout.String()); got != "[]" {
+		t.Fatalf("stdout = %q, want exactly \"[]\"", got)
+	}
+	// The human hint belongs on stderr, never stdout.
+	if !strings.Contains(stderr.String(), "No history entries found") {
+		t.Errorf("stderr = %q, want the 'No history entries found' hint", stderr.String())
+	}
+}
+
 func TestGoalsHistory_WithEntries(t *testing.T) {
 	t.Parallel()
 	dir := t.TempDir()

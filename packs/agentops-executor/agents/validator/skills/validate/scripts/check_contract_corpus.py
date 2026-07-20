@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import os
 import pathlib
 import sys
 
@@ -29,19 +30,39 @@ def load_validate_module():
     return module
 
 
+def _reject_duplicate_keys(pairs: list[tuple[str, object]]) -> dict:
+    """object_pairs_hook that fails closed on a duplicate key at any depth.
+
+    Python's default json decode is last-wins (like Go's map decode), so a
+    duplicated key would silently hide the real value and let a payload bind a
+    digest its bytes never canonicalize to. The Go reader
+    (cli/internal/verdictcheck) rejects the same class; this keeps the Python
+    leg of the cross-language corpus in agreement.
+    """
+    seen: set[str] = set()
+    for key, _ in pairs:
+        if key in seen:
+            raise ValueError(f"duplicate key: {key}")
+        seen.add(key)
+    return dict(pairs)
+
+
 def python_verdict(module, case) -> tuple[bool, str]:
     raw = case.get("raw")
     if raw is not None:
         # The Python storage layer parses exactly one JSON document; simulate
-        # its read of a payload with trailing data.
+        # its read of a payload with trailing data, and fail closed on any
+        # duplicate key (mirrors the Go reader).
         try:
-            decoder = json.JSONDecoder()
+            decoder = json.JSONDecoder(object_pairs_hook=_reject_duplicate_keys)
             value, end = decoder.raw_decode(raw)
             if raw[end:].strip():
                 return False, "trailing data"
             artifact = value
         except json.JSONDecodeError as exc:
             return False, f"parse: {exc}"
+        except ValueError as exc:
+            return False, str(exc)
     else:
         artifact = case["artifact"]
     try:
@@ -76,6 +97,7 @@ def schema_verdict(validator, case) -> tuple[bool, str]:
 def main() -> int:
     module = load_validate_module()
 
+    require_schema = os.environ.get("CONTRACT_CORPUS_REQUIRE_SCHEMA") == "1"
     validator = None
     try:
         import jsonschema
@@ -83,6 +105,10 @@ def main() -> int:
         schema = json.loads(SCHEMA.read_text())
         validator = jsonschema.Draft202012Validator(schema)
     except ImportError:
+        if require_schema:
+            print("check-contract-corpus: FAIL — jsonschema unavailable but the "
+                  "schema leg is required (CONTRACT_CORPUS_REQUIRE_SCHEMA=1)", file=sys.stderr)
+            return 1
         print("check-contract-corpus: jsonschema unavailable — schema leg skipped", file=sys.stderr)
 
     failures = []

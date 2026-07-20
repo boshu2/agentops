@@ -30,6 +30,9 @@ func changedFilesFor(ctx context.Context, rc gates.RunContext) []string {
 	}
 	cmd := exec.CommandContext(ctx, "git", "diff", "--name-only", "origin/main...HEAD")
 	cmd.Dir = rc.RepoRoot
+	// Scrub git's hook-injected discovery env (GIT_DIR, ...) so a leaked GIT_DIR
+	// cannot route this fallback change set at the wrong repo (SECURITY-MED).
+	cmd.Env = gates.ScrubbedGitEnv()
 	out, err := cmd.Output()
 	if err != nil {
 		return nil
@@ -73,7 +76,11 @@ func runChangelogSync(_ context.Context, rc gates.RunContext) (ports.GateVerdict
 
 func runShellcheckChanged(ctx context.Context, rc gates.RunContext) (ports.GateVerdict, error) {
 	if _, err := exec.LookPath("shellcheck"); err != nil {
-		return ports.GateVerdict{Status: ports.GateStatusSkip, Reason: "shellcheck not installed"}, nil
+		// Fail closed: this is a BLOCKING check over shell files. A SKIP clears a
+		// blocking check (orchestrator.isBlockingFail), so returning SKIP here
+		// would let a missing shellcheck silently pass changed .sh files. Treat
+		// absence like ScriptRunner treats UNKNOWN — a FAIL (SECURITY-MED).
+		return ports.GateVerdict{Status: ports.GateStatusFail, Reason: "shellcheck not installed: cannot verify changed shell files (install shellcheck)"}, nil
 	}
 	var failed []string
 	var logs bytes.Buffer

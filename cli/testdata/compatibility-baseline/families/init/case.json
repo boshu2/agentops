@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "family": "init",
+  "checks": [
+    {
+      "id": "init-black-box",
+      "command": "tmp=$(mktemp -d /tmp/ao-init.XXXXXX); (cd cli && go build -o \"$tmp/ao\" ./cmd/ao); \"$tmp/ao\" init --help >\"$tmp/help\"; grep -Fq 'Create local AgentOps evidence directories' \"$tmp/help\"; grep -Fq 'does not' \"$tmp/help\"; grep -Fq 'install hooks, select work, or start a runtime' \"$tmp/help\"; work=$(mktemp -d /tmp/ao-init-work.XXXXXX); ( cd \"$work\" && \"$tmp/ao\" init >\"$tmp/create\" ); grep -Fq 'created' \"$tmp/create\"; test -d \"$work/.agents/ao/verdicts/sha256\"; test -d \"$work/.agents/handoff\"; dry=$(mktemp -d /tmp/ao-init-dry.XXXXXX); ( cd \"$dry\" && \"$tmp/ao\" --dry-run init >\"$tmp/dry\" ); grep -Fq 'would create' \"$tmp/dry\"; test ! -d \"$dry/.agents\"; ( cd \"$dry\" && \"$tmp/ao\" init extra >/dev/null 2>&1 ) && exit 1; true"
+    },
+    {
+      "id": "init-go-behavior",
+      "command": "cd cli && go test ./internal/commands/init/... ./internal/initapp/... -count=1"
+    }
+  ],
+  "dimensions": {
+    "path": {"status": "evidence", "evidence": ["init-black-box", "init-go-behavior"]},
+    "aliases": {"status": "not_applicable", "reason": "The init family declares no command aliases."},
+    "accepted_args": {"status": "evidence", "evidence": ["init-black-box", "init-go-behavior"]},
+    "rejected_args": {"status": "evidence", "evidence": ["init-black-box"]},
+    "stdout": {"status": "evidence", "evidence": ["init-black-box", "init-go-behavior"]},
+    "stderr": {"status": "not_applicable", "reason": "init writes only to stdout on success."},
+    "exit_classes": {"status": "evidence", "evidence": ["init-black-box", "init-go-behavior"]},
+    "tracker_selection": {"status": "not_applicable", "reason": "The init family does not select a repository issue tracker."},
+    "ordered_effects": {"status": "evidence", "evidence": ["init-go-behavior"]}
+  }
+}

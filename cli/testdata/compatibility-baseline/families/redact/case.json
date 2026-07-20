@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "family": "redact",
+  "checks": [
+    {
+      "id": "redact-black-box",
+      "command": "tmp=$(mktemp -d /tmp/ao-redact.XXXXXX); (cd cli && go build -o \"$tmp/ao\" ./cmd/ao); \"$tmp/ao\" redact --help >\"$tmp/help\"; grep -Fq 'Scrub secrets from stdin to stdout (canonical redactor)' \"$tmp/help\"; grep -Fq 'Read text on stdin, apply the canonical secret redactor' \"$tmp/help\"; secret=\"sk-ant-api03-$(printf 'A%.0s' $(seq 1 45))\"; printf 'This article is about caching strategy.\\ntoken: %s\\n' \"$secret\" | \"$tmp/ao\" redact >\"$tmp/scrubbed\"; grep -Fq '[REDACTED]' \"$tmp/scrubbed\"; grep -Fq 'This article is about caching strategy.' \"$tmp/scrubbed\"; if grep -Fq \"$secret\" \"$tmp/scrubbed\"; then echo 'ao redact leaked the secret' >&2; exit 1; fi; if \"$tmp/ao\" redact extra-arg </dev/null >/dev/null 2>&1; then echo 'ao redact accepted a positional arg' >&2; exit 1; fi; \"$tmp/ao\" -o json capabilities >\"$tmp/caps\"; grep -Fq '\"ao.redact\"' \"$tmp/caps\"; python3 -c 'import json,sys; d=json.load(open(sys.argv[1])); c=[x for x in d[\"commands\"] if x.get(\"id\")==\"ao.redact\"][0]; assert c[\"args\"]==\"no-args\" and c[\"output\"]==\"text\" and c[\"effects\"]==\"pure\", c' \"$tmp/caps\""
+    },
+    {
+      "id": "redact-go-behavior",
+      "command": "cd cli && go test ./internal/commands/redact/... -count=1"
+    }
+  ],
+  "dimensions": {
+    "path": {"status": "evidence", "evidence": ["redact-black-box", "redact-go-behavior"]},
+    "aliases": {"status": "not_applicable", "reason": "The redact family declares no command aliases."},
+    "accepted_args": {"status": "evidence", "evidence": ["redact-black-box", "redact-go-behavior"]},
+    "rejected_args": {"status": "evidence", "evidence": ["redact-black-box"]},
+    "stdout": {"status": "evidence", "evidence": ["redact-black-box", "redact-go-behavior"]},
+    "stderr": {"status": "not_applicable", "reason": "redact writes only the scrubbed bytes to stdout on success."},
+    "exit_classes": {"status": "evidence", "evidence": ["redact-black-box", "redact-go-behavior"]},
+    "tracker_selection": {"status": "not_applicable", "reason": "The redact family does not select a repository issue tracker."},
+    "ordered_effects": {"status": "not_applicable", "reason": "redact is a pure deterministic transform of stdin with no ordered effects."}
+  }
+}

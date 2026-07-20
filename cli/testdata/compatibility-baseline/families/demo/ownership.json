@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "family": "demo",
+  "profiles": {
+    "default": "present",
+    "flywheel": "present",
+    "legacy": "present",
+    "combined": "present"
+  },
+  "legacy_symbols": [
+    "demoCmd",
+    "demoConcepts",
+    "demoQuick",
+    "quickDemo",
+    "runDemo",
+    "showConcepts"
+  ],
+  "live_owner": "cli/internal/commands/demo",
+  "allowed_paths": [
+    "cli/cmd/ao/demo*.go",
+    "cli/cmd/ao/testutil_test.go",
+    "cli/internal/commands/demo/**",
+    "cli/testdata/compatibility-baseline/families/demo/**"
+  ]
+}

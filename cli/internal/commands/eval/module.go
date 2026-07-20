@@ -98,6 +98,23 @@ func (Module) Contract() clicontract.CommandContract {
 	}
 }
 
+// RunContract declares the real behavior of the `ao eval run <suite.json>`
+// leaf. It takes exactly one positional suite path, emits a human text summary
+// (JSON under -o json), reads the suite and writes a run record while executing
+// the deterministic runtime (filesystem, process, environment, clock), and
+// exits 0 on success or 1 on failure.
+func (Module) RunContract() clicontract.CommandContract {
+	return clicontract.CommandContract{
+		ID: "ao.eval.run",
+		Profiles: clicontract.ProfileDefault | clicontract.ProfileFlywheel |
+			clicontract.ProfileLegacy | clicontract.ProfileCombined,
+		Args:        clicontract.ArgsPolicy{Name: "exact", Validate: cobra.ExactArgs(1)},
+		Output:      clicontract.OutputText,
+		Effects:     clicontract.EffectFilesystem | clicontract.EffectProcess | clicontract.EffectEnvironment | clicontract.EffectClock,
+		ExitClasses: map[int]clicontract.ExitClass{0: clicontract.ExitSuccess, 1: clicontract.ExitFailure},
+	}
+}
+
 type runOptions struct {
 	output, runID, runtime, baseline, baselineMode     string
 	contextMode, contextOffDir, contextOnDir, deltaOut string
@@ -163,7 +180,15 @@ func (module Module) outputMode(command *cobra.Command) string {
 
 func (module Module) runCommand() *cobra.Command {
 	options := runOptions{baselineMode: string(aoeval.BaselineModeSkillOn), contextMode: string(aoeval.ContextModeNone)}
-	command := &cobra.Command{Use: "run <suite.json>", Short: "Run a deterministic eval suite", Args: cobra.ExactArgs(1)}
+	command := &cobra.Command{
+		Use:   "run <suite.json>",
+		Short: "Run a deterministic eval suite",
+		Long: "Run a deterministic eval suite.\n\n" +
+			"The suite file must conform to the JSON Schema at schemas/eval-suite.v1.schema.json.\n" +
+			"See evals/agentops-core for working example suites (e.g. evals/agentops-core/rpi-behavior.json).\n\n" +
+			"Example:\n  ao eval run evals/agentops-core/rpi-behavior.json",
+		Args: cobra.ExactArgs(1),
+	}
 	flags := command.Flags()
 	flags.StringVar(&options.output, "out", "", "write eval run record to path")
 	flags.StringVar(&options.runID, "run-id", "", "stable run id to use in the run record")
@@ -180,7 +205,7 @@ func (module Module) runCommand() *cobra.Command {
 	command.RunE = func(command *cobra.Command, args []string) error {
 		result, err := module.useCases.Core.Run(command.Context(), aoeval.CoreRunRequest{SuitePath: args[0], RunID: options.runID, Runtime: options.runtime, OutputPath: options.output, BaselinePath: options.baseline, BaselineMode: options.baselineMode, ContextMode: options.contextMode, ContextOffDir: options.contextOffDir, ContextOnDir: options.contextOnDir, DeltaOut: options.deltaOut})
 		if err != nil {
-			return err
+			return annotateSuiteParseError(err)
 		}
 		return module.renderRun(command, result)
 	}
@@ -634,13 +659,16 @@ func (module Module) scenarioListCommand() *cobra.Command {
 		if err != nil {
 			return err
 		}
+		// stdout is always exactly one JSON document (`[]` for both empty
+		// states) so `ao eval scenario list | jq` never breaks; any human hint
+		// goes to stderr. Exit 0.
 		if result.MissingDirectory {
-			fmt.Fprintln(command.OutOrStdout(), "No holdout directory found. Run 'ao scenario init' first.")
-			return nil
+			fmt.Fprintln(command.ErrOrStderr(), "No holdout directory found. Run 'ao eval scenario init' first.")
+			return writeJSON(command, []aoeval.ScenarioSummary{})
 		}
 		if len(result.Scenarios) == 0 {
-			fmt.Fprintln(command.OutOrStdout(), "No scenarios found.")
-			return nil
+			fmt.Fprintln(command.ErrOrStderr(), "No scenarios found.")
+			return writeJSON(command, []aoeval.ScenarioSummary{})
 		}
 		return writeJSON(command, result.Scenarios)
 	}
@@ -908,6 +936,28 @@ func renderCoverage(command *cobra.Command, label string, missing, required []st
 	if len(required) > 0 {
 		fmt.Fprintf(command.OutOrStdout(), "Required %s covered\n", label)
 	}
+}
+
+// suiteSchemaHint cites the authoritative suite schema and a working example so
+// a failed `ao eval run` points the caller at the exact shape to fix.
+const suiteSchemaHint = "see schemas/eval-suite.v1.schema.json for the suite schema and evals/agentops-core for a working example"
+
+// annotateSuiteParseError appends the schema/example citation to the three
+// suite-load failure modes surfaced by cli/internal/eval.LoadSuite — missing
+// file ("read eval suite"), malformed JSON ("decode eval suite"), and
+// schema-invalid ("eval suite validation failed"). Command-layer decoration
+// only; the underlying error text in cli/internal/eval is unchanged.
+func annotateSuiteParseError(err error) error {
+	if err == nil {
+		return nil
+	}
+	msg := err.Error()
+	for _, sig := range []string{"read eval suite", "decode eval suite", "eval suite validation failed"} {
+		if strings.Contains(msg, sig) {
+			return fmt.Errorf("%w (%s)", err, suiteSchemaHint)
+		}
+	}
+	return err
 }
 
 func writeJSON(command *cobra.Command, value any) error {

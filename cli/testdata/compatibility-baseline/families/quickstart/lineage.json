@@ -1,0 +1,8 @@
+{
+  "schema_version": 1,
+  "family": "quickstart",
+  "freeze_sha": "2c81b8c95c588a911e396c25b5bb2ab99acaf1c9",
+  "ownership_sha256": "603ab53e2d86928dfae8cfc22979f24d3ffca651ba3787cdaee9bf13bab0dd39",
+  "migration_state": "migrated",
+  "accepted_sha": "bc4ab7970f2ca5bd25c20918f7ebc1a908d11af0"
+}

@@ -4,6 +4,7 @@ package eval
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -26,8 +27,12 @@ type agenticStep struct {
 	Summary  string   `json:"summary"`
 }
 
-// workspaceCommandRunner executes shell commands inside the isolated workspace.
-type workspaceCommandRunner func(ctx context.Context, workDir, command string) (stdout string, exitCode int, err error)
+// workspaceCommandRunner executes shell commands inside the isolated workspace. The
+// withGold bit selects the A/B treatment exactly as the codex arm does: the with-gold
+// arm runs unconfined (corpus readable), the control arm is confined by the shared
+// corpus-deny Seatbelt machinery. Dropping this bit is what let the control arm cat
+// the corpus and void isolation.
+type workspaceCommandRunner func(ctx context.Context, workDir, command string, withGold bool) (stdout string, exitCode int, err error)
 
 // agenticRunnerHooks is the injectable seam for tests (no live codex).
 var agenticRunnerHooks = struct {
@@ -71,7 +76,7 @@ func (agenticScenarioRunner) RunArm(ctx context.Context, sc scenario.Scenario, w
 			if command == "" {
 				continue
 			}
-			stdout, exitCode, runErr := agenticRunnerHooks.runCmd(ctx, workDir, command)
+			stdout, exitCode, runErr := agenticRunnerHooks.runCmd(ctx, workDir, command, withGold)
 			if runErr != nil {
 				return aoeval.ArmOutcome{}, fmt.Errorf("agentic command %q: %w", command, runErr)
 			}
@@ -148,19 +153,51 @@ func parseAgenticStep(text string) (agenticStep, error) {
 	return step, nil
 }
 
-func defaultWorkspaceCommandRunner(ctx context.Context, workDir, command string) (string, int, error) {
-	cmd := exec.CommandContext(ctx, "bash", "-lc", command)
-	cmd.Dir = workDir
+func defaultWorkspaceCommandRunner(ctx context.Context, workDir, command string, withGold bool) (string, int, error) {
+	cmd, err := workspaceCommand(ctx, workDir, command, withGold)
+	if err != nil {
+		return "", 0, err
+	}
 	out, err := cmd.CombinedOutput()
 	exitCode := 0
 	if err != nil {
-		if ee, ok := err.(*exec.ExitError); ok {
+		var ee *exec.ExitError
+		if errors.As(err, &ee) {
 			exitCode = ee.ExitCode()
 		} else {
 			return "", 0, err
 		}
 	}
 	return string(out), exitCode, nil
+}
+
+// workspaceCommand builds the *exec.Cmd for one emitted worker command, mirroring the
+// codex arm's treatment shaping (runCodexExecArm):
+//   - with-gold arm: corpus stays readable, so the command runs unconfined via a
+//     non-login shell (`bash -c`, never `-lc`) with cmd.Dir set to the workspace.
+//   - control arm: routed through the SAME corpusDenyPaths + Seatbelt machinery the
+//     codex path uses (sandboxedShellCmd), which FAILS CLOSED when isolation is
+//     unavailable rather than silently running an unisolated, corpus-readable arm.
+//
+// The corpus root is resolved from os.Getwd() exactly as the codex arm does, so the
+// deny set is identical; the temp workspace is never in it, keeping workspace
+// reads/writes allowed.
+func workspaceCommand(ctx context.Context, workDir, command string, withGold bool) (*exec.Cmd, error) {
+	if withGold {
+		cmd := exec.CommandContext(ctx, "bash", "-c", command)
+		cmd.Dir = workDir
+		return cmd, nil
+	}
+	cwd, err := os.Getwd()
+	if err != nil {
+		return nil, fmt.Errorf("resolve cwd for arm isolation: %w", err)
+	}
+	cmd, err := sandboxedShellCmd(ctx, corpusDenyPaths(cwd), command)
+	if err != nil {
+		return nil, err
+	}
+	cmd.Dir = workDir
+	return cmd, nil
 }
 
 func summarizeWorkspace(workDir string) (string, error) {

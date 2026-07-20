@@ -14,9 +14,9 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/boshu2/agentops/cli/internal/constraintindex"
 	"github.com/boshu2/agentops/cli/internal/gates"
 	"github.com/boshu2/agentops/cli/internal/ports"
-	"github.com/boshu2/agentops/cli/internal/search"
 )
 
 // The constraint-enforcement gate is the MECHANICAL half of the self-improving
@@ -74,7 +74,7 @@ func runConstraintEnforceGate(_ context.Context, rc gates.RunContext) (ports.Gat
 		return ports.GateVerdict{
 			Status:  ports.GateStatusFail,
 			Reason:  "constraint index malformed — failing closed",
-			LogTail: fmt.Sprintf("%s: %v", search.ConstraintIndexPath(), parseErr),
+			LogTail: fmt.Sprintf("%s: %v", constraintindex.ConstraintIndexPath(), parseErr),
 		}, nil
 	}
 
@@ -160,7 +160,7 @@ func runConstraintEnforceGate(_ context.Context, rc gates.RunContext) (ports.Gat
 // STRICT (DisallowUnknownFields + schema-version + no trailing data) so a
 // JSON-valid but structurally-wrong index (e.g. a typo'd "constraint" key that
 // drops every constraint) fails closed instead of silently passing. It does not
-// use search.LoadConstraintIndex because that resolves a CWD-relative path and
+// use constraintindex.LoadConstraintIndex because that resolves a CWD-relative path and
 // is permissive.
 // loadConstraintIndexAt loads the constraints to enforce: the UNION of the local
 // (gitignored .agents/) index and the TRACKED published surface (docs/constraints/
@@ -169,12 +169,12 @@ func runConstraintEnforceGate(_ context.Context, rc gates.RunContext) (ports.Gat
 // EITHER source fails CLOSED. Entries are merged by id with active-wins precedence
 // (a constraint active in either source enforces), so retiring a published rule is
 // a tracked change to the published file, not a silent local override.
-func loadConstraintIndexAt(root string) (idx *search.ConstraintIndex, missing bool, parseErr error) {
-	local, localMissing, err := loadIndexFile(filepath.Join(root, search.ConstraintIndexPath()))
+func loadConstraintIndexAt(root string) (idx *constraintindex.ConstraintIndex, missing bool, parseErr error) {
+	local, localMissing, err := loadIndexFile(filepath.Join(root, constraintindex.ConstraintIndexPath()))
 	if err != nil {
 		return nil, false, err
 	}
-	published, pubMissing, err := loadIndexFile(filepath.Join(root, search.PublishedConstraintIndexRelPath()))
+	published, pubMissing, err := loadIndexFile(filepath.Join(root, constraintindex.PublishedConstraintIndexRelPath()))
 	if err != nil {
 		return nil, false, fmt.Errorf("published constraints: %w", err)
 	}
@@ -188,10 +188,10 @@ func loadConstraintIndexAt(root string) (idx *search.ConstraintIndex, missing bo
 // precedence: when the same id appears in both, the merged entry is active if it
 // is active in EITHER source (the safe direction — toward enforcement). Order is
 // stable: local entries first, then published-only entries.
-func mergeConstraintIndexes(local, published *search.ConstraintIndex) *search.ConstraintIndex {
-	byID := map[string]search.ConstraintEntry{}
+func mergeConstraintIndexes(local, published *constraintindex.ConstraintIndex) *constraintindex.ConstraintIndex {
+	byID := map[string]constraintindex.ConstraintEntry{}
 	var order []string
-	add := func(idx *search.ConstraintIndex) {
+	add := func(idx *constraintindex.ConstraintIndex) {
 		if idx == nil {
 			return
 		}
@@ -208,7 +208,7 @@ func mergeConstraintIndexes(local, published *search.ConstraintIndex) *search.Co
 	}
 	add(local)
 	add(published)
-	out := &search.ConstraintIndex{SchemaVersion: constraintSchemaVersion}
+	out := &constraintindex.ConstraintIndex{SchemaVersion: constraintSchemaVersion}
 	for _, id := range order {
 		out.Constraints = append(out.Constraints, byID[id])
 	}
@@ -228,7 +228,7 @@ func constraintStatusRank(status string) int {
 
 // loadIndexFile reads + strictly parses one constraint-index JSON file. missing=true
 // when the file does not exist (no feature in use); a read/parse error fails closed.
-func loadIndexFile(path string) (idx *search.ConstraintIndex, missing bool, parseErr error) {
+func loadIndexFile(path string) (idx *constraintindex.ConstraintIndex, missing bool, parseErr error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -239,7 +239,7 @@ func loadIndexFile(path string) (idx *search.ConstraintIndex, missing bool, pars
 	}
 	dec := json.NewDecoder(bytes.NewReader(data))
 	dec.DisallowUnknownFields()
-	var parsed search.ConstraintIndex
+	var parsed constraintindex.ConstraintIndex
 	if err := dec.Decode(&parsed); err != nil {
 		return nil, false, err
 	}
@@ -267,7 +267,7 @@ var knownConstraintStatuses = map[string]bool{"active": true, "shadow": true, "d
 // version, an absent "constraints" array (a truncated write), and any entry
 // missing an id or carrying an unknown status (status routes active-vs-not, so a
 // blank/garbage status would silently drop a would-be-active constraint).
-func validateIndexStructure(raw []byte, parsed *search.ConstraintIndex) error {
+func validateIndexStructure(raw []byte, parsed *constraintindex.ConstraintIndex) error {
 	if parsed.SchemaVersion != constraintSchemaVersion {
 		return fmt.Errorf("unsupported schema_version %d (want %d)", parsed.SchemaVersion, constraintSchemaVersion)
 	}
@@ -397,7 +397,7 @@ func walkRepoFiles(root string) ([]string, error) {
 // evalConstraint enforces one active constraint against the candidate files,
 // returning violation messages. A returned error means the constraint itself is
 // malformed/unsupported (fail-closed), distinct from a clean violation.
-func evalConstraint(c search.ConstraintEntry, repoRoot string, files []string) ([]string, error) {
+func evalConstraint(c constraintindex.ConstraintEntry, repoRoot string, files []string) ([]string, error) {
 	globs := c.AppliesTo.PathGlobs
 	if len(globs) == 0 {
 		// path_globs IS the routing; an active mechanical constraint with none is
@@ -408,7 +408,7 @@ func evalConstraint(c search.ConstraintEntry, repoRoot string, files []string) (
 		if err := validateGlobSupported(g); err != nil {
 			// A glob the gate's matcher cannot faithfully evaluate would route to
 			// zero files and silently pass — fail closed instead.
-			return nil, fmt.Errorf("%w: %v", errFailClosed, err)
+			return nil, fmt.Errorf("%w: %w", errFailClosed, err)
 		}
 	}
 
@@ -425,13 +425,13 @@ func evalConstraint(c search.ConstraintEntry, repoRoot string, files []string) (
 	}
 	re, err := regexp.Compile(c.Detector.Pattern)
 	if err != nil {
-		return nil, fmt.Errorf("%w: bad regex %q: %v", errFailClosed, c.Detector.Pattern, err)
+		return nil, fmt.Errorf("%w: bad regex %q: %w", errFailClosed, c.Detector.Pattern, err)
 	}
 	var exclude *regexp.Regexp
 	if c.Detector.Exclude != "" {
 		exclude, err = regexp.Compile(c.Detector.Exclude)
 		if err != nil {
-			return nil, fmt.Errorf("%w: bad exclude regex %q: %v", errFailClosed, c.Detector.Exclude, err)
+			return nil, fmt.Errorf("%w: bad exclude regex %q: %w", errFailClosed, c.Detector.Exclude, err)
 		}
 	}
 
@@ -455,7 +455,7 @@ func evalConstraint(c search.ConstraintEntry, repoRoot string, files []string) (
 			// Present-but-unreadable (directory, permissions, symlink loop): we
 			// cannot certify this file, so we cannot certify the constraint. Fail
 			// closed rather than conflate it with a safe deletion.
-			return nil, fmt.Errorf("%w: cannot read changed file %s: %v", errFailClosed, rel, readErr)
+			return nil, fmt.Errorf("%w: cannot read changed file %s: %w", errFailClosed, rel, readErr)
 		}
 		hits, evalErr := applyDetector(mode, re, exclude, c, rel, string(content))
 		if evalErr != nil {
@@ -496,7 +496,7 @@ func validateGlobSupported(p string) error {
 
 // applyDetector applies the compiled regex in the given mode to one file's
 // content, returning violation messages. An unknown mode is fail-closed.
-func applyDetector(mode string, re, exclude *regexp.Regexp, c search.ConstraintEntry, rel, content string) ([]string, error) {
+func applyDetector(mode string, re, exclude *regexp.Regexp, c constraintindex.ConstraintEntry, rel, content string) ([]string, error) {
 	msg := c.Detector.Message
 	if msg == "" {
 		msg = c.Title

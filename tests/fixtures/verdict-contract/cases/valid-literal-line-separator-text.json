@@ -1,0 +1,38 @@
+{
+  "name": "valid-literal-line-separator-text",
+  "description": "String field contains the LITERAL 6-char text backslash-u-2028 (and 2029), not a real separator. Must be preserved unchanged (Go writes \\\\u2028); digests match Go==Python.",
+  "expected": "valid",
+  "filename_digest": "2850355db123275575ef29055cc63271c57f6a32820fad85f4040ecc381d0473",
+  "artifact": {
+    "schema_version": "verdict.v2",
+    "acceptance_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "subject_manifest_digest": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "author_context_id": "ctx-author",
+    "validator_context_id": "ctx-validator",
+    "freshness_attestation": {
+      "source": "runtime",
+      "attester_identity": "runtime:test"
+    },
+    "verdict": "PASS",
+    "criteria": [
+      {
+        "id": "c1",
+        "result": "PASS",
+        "evidence_refs": [
+          "gate:go.build"
+        ],
+        "reason": "literal-\\u2028-and-\\u2029-text"
+      }
+    ],
+    "findings": [],
+    "evidence_refs": [
+      "gate:go.build"
+    ],
+    "checked": [
+      "cli/**"
+    ],
+    "not_checked": [],
+    "validated_at": "2026-07-18T12:00:00Z",
+    "artifact_digest": "2850355db123275575ef29055cc63271c57f6a32820fad85f4040ecc381d0473"
+  }
+}

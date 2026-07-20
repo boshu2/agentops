@@ -391,7 +391,7 @@ ao eval outcomes ingest <score.json> [flags]
 
 #### `ao eval run`
 
-Run a deterministic eval suite
+Run a deterministic eval suite.
 
 ```
 ao eval run <suite.json> [flags]

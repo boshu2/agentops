@@ -63,23 +63,39 @@ func stableID(path string) string {
 	return strings.ReplaceAll(strings.TrimSpace(path), " ", ".")
 }
 
+// argsPolicy reports only what the live Cobra tree actually proves. A command
+// with no handler is structurally subcommands-only; a runnable command whose
+// Args is unset is Cobra-default arbitrary. When a runnable command carries an
+// opaque positional validator we cannot recover its class, so we report
+// "unknown" rather than fabricate a "range". Commands that declare a
+// CommandContract never reach this path — ProjectContract supplies their real
+// args policy.
 func argsPolicy(command *cobra.Command) string {
-	if command.Run == nil && command.RunE == nil {
+	switch {
+	case command.Run == nil && command.RunE == nil:
 		return "subcommands-only"
-	}
-	if command.Args == nil {
+	case command.Args == nil:
 		return "arbitrary"
+	default:
+		return "unknown"
 	}
-	return "range"
 }
 
+// effectsPolicy never guesses a runnable command's side effects. Cobra exposes
+// nothing about effects, so an uncontracted runnable is honestly "unknown"; a
+// pure structural parent (no handler) does nothing itself. Contracted commands
+// bypass this via ProjectContract.
 func effectsPolicy(command *cobra.Command) string {
 	if command.Run == nil && command.RunE == nil {
 		return "pure"
 	}
-	return "mixed"
+	return "unknown"
 }
 
+// exitsFor returns declared exit codes only when they are actually declared.
+// Absent a caller-supplied map entry (and absent a CommandContract, which is
+// projected elsewhere), it reports no exit codes rather than fabricating the
+// {0:success,1:error} default that misrepresented every command.
 func exitsFor(path string, commandExits map[string]map[string]string) map[string]string {
 	key := strings.TrimPrefix(path, "ao ")
 	if exits, ok := commandExits[key]; ok {
@@ -89,7 +105,7 @@ func exitsFor(path string, commandExits map[string]map[string]string) map[string
 		}
 		return copyOf
 	}
-	return map[string]string{"0": "success", "1": "error"}
+	return nil
 }
 
 func flagRecord(flag *pflag.Flag, origin string, command *cobra.Command) Flag {

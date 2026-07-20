@@ -1,7 +1,10 @@
 package eval
 
 import (
+	"bytes"
 	"context"
+	"errors"
+	"fmt"
 	"strings"
 	"testing"
 
@@ -11,6 +14,97 @@ import (
 	"github.com/boshu2/agentops/cli/internal/evalsubstrate"
 	scenarioapp "github.com/boshu2/agentops/cli/internal/scenario"
 )
+
+// scenarioListSpy is a configurable ScenarioUseCases double whose List result
+// the test controls, so both empty-state paths (missing directory / empty list)
+// can be exercised.
+type scenarioListSpy struct{ listResult aoeval.ScenarioListResult }
+
+func (*scenarioListSpy) Add(context.Context, aoeval.ScenarioAddRequest) (*scenarioapp.CreateResult, error) {
+	return &scenarioapp.CreateResult{}, nil
+}
+func (*scenarioListSpy) Init(context.Context) (string, error) { return ".agents/holdout", nil }
+func (spy *scenarioListSpy) List(context.Context, string) (aoeval.ScenarioListResult, error) {
+	return spy.listResult, nil
+}
+func (*scenarioListSpy) Validate(context.Context) (aoeval.ScenarioValidationResult, error) {
+	return aoeval.ScenarioValidationResult{}, nil
+}
+func (*scenarioListSpy) Evaluate(context.Context, aoeval.ScenarioEvaluateRequest) (*aoeval.ScenarioEvaluateReport, error) {
+	return &aoeval.ScenarioEvaluateReport{}, nil
+}
+
+// TestAnnotateSuiteParseError asserts that each of the three suite-load failure
+// modes surfaced by LoadSuite gets the schema + example citation, and that an
+// unrelated runtime error is passed through untouched.
+func TestAnnotateSuiteParseError(t *testing.T) {
+	cases := []struct {
+		name     string
+		in       error
+		wantCite bool
+	}{
+		{name: "missing file", in: fmt.Errorf("read eval suite: open missing.json: no such file or directory"), wantCite: true},
+		{name: "malformed json", in: fmt.Errorf("decode eval suite: invalid character '}' looking for beginning of value"), wantCite: true},
+		{name: "schema invalid", in: fmt.Errorf("eval suite validation failed: schema_version must be 1"), wantCite: true},
+		{name: "unrelated error", in: fmt.Errorf("runtime static: check failed"), wantCite: false},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			got := annotateSuiteParseError(tc.in)
+			hasCite := strings.Contains(got.Error(), "schemas/eval-suite.v1.schema.json") && strings.Contains(got.Error(), "evals/agentops-core")
+			if hasCite != tc.wantCite {
+				t.Fatalf("annotateSuiteParseError(%q) = %q; wantCite=%v", tc.in, got, tc.wantCite)
+			}
+			if !errors.Is(got, tc.in) {
+				t.Errorf("wrapped error must preserve the original: errors.Is == false")
+			}
+		})
+	}
+}
+
+// TestModuleScenarioListJSONEmptyStates asserts that `eval scenario list` emits
+// exactly one JSON document `[]` on stdout in BOTH empty states (missing holdout
+// directory and empty scenario list), routes the human hint to stderr, and names
+// the REAL init command. RED before the fix: empty-state prose is printed to
+// stdout (breaking jq) and the missing-dir hint names 'ao scenario init', which
+// does not exist.
+func TestModuleScenarioListJSONEmptyStates(t *testing.T) {
+	cases := []struct {
+		name       string
+		result     aoeval.ScenarioListResult
+		wantStderr string
+	}{
+		{name: "missing directory", result: aoeval.ScenarioListResult{MissingDirectory: true}, wantStderr: "ao eval scenario init"},
+		{name: "empty list", result: aoeval.ScenarioListResult{}, wantStderr: "No scenarios found"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			spy := &scenarioListSpy{listResult: tc.result}
+			command := NewModule(UseCases{Core: &coreUseCasesSpy{}, Scenario: spy}, HostOptions{}).Command()
+			command.SetArgs([]string{"scenario", "list"})
+			var stdout, stderr bytes.Buffer
+			command.SetOut(&stdout)
+			command.SetErr(&stderr)
+			if err := command.Execute(); err != nil {
+				t.Fatalf("Execute: %v", err)
+			}
+
+			// Shape-exact: both empty states must print the literal `[]` and
+			// nothing else on stdout. A byte-exact check rejects `null` (which
+			// decodes into a nil slice and would pass len==0) and any second
+			// document, without relying on Decoder.More().
+			if got := strings.TrimSpace(stdout.String()); got != "[]" {
+				t.Fatalf("stdout = %q, want exactly \"[]\"", got)
+			}
+			if !strings.Contains(stderr.String(), tc.wantStderr) {
+				t.Errorf("stderr = %q, want it to contain %q", stderr.String(), tc.wantStderr)
+			}
+			if strings.Contains(stderr.String(), "ao scenario init") {
+				t.Errorf("stderr names the nonexistent 'ao scenario init': %q", stderr.String())
+			}
+		})
+	}
+}
 
 type coreUseCasesSpy struct {
 	runRequest aoeval.CoreRunRequest
@@ -277,13 +371,4 @@ func TestModuleBenchDelegatesClosureLocalFlags(t *testing.T) {
 	if useCases.request.Corpus != "fixture" || useCases.request.K != 7 || !useCases.request.JSON || !useCases.request.KChanged {
 		t.Fatalf("request=%#v", useCases.request)
 	}
-}
-
-func findChild(t *testing.T, command *cobra.Command, name string) *cobra.Command {
-	t.Helper()
-	child, _, err := command.Find([]string{name})
-	if err != nil {
-		t.Fatal(err)
-	}
-	return child
 }

@@ -3,9 +3,58 @@ package gates
 import (
 	"context"
 	"fmt"
+	"os"
 	"os/exec"
 	"strings"
 )
+
+// gitDiscoveryEnvVars is the canonical set of git repository-discovery
+// environment variables. Git injects these into hook-launched processes
+// (GIT_DIR points at the triggering repo's gitdir, GIT_WORK_TREE at its
+// worktree, etc.). A subprocess that inherits them resolves git operations
+// against the WRONG repository even when cmd.Dir names the intended one —
+// GIT_DIR overrides cwd-based discovery. This is the exact 7-var set scrubbed
+// by scripts/lib/repo-root.sh so the Go and shell paths stay in lockstep.
+var gitDiscoveryEnvVars = []string{
+	"GIT_DIR",
+	"GIT_WORK_TREE",
+	"GIT_INDEX_FILE",
+	"GIT_PREFIX",
+	"GIT_OBJECT_DIRECTORY",
+	"GIT_COMMON_DIR",
+	"GIT_NAMESPACE",
+}
+
+// ScrubbedGitEnv returns a copy of the current process environment with git's
+// hook-injected repository-discovery variables (gitDiscoveryEnvVars) removed.
+// Every git subprocess in the gates package MUST set cmd.Env to this so a
+// leaked GIT_DIR cannot route the changed-set computation at the wrong repo —
+// a leaked GIT_DIR silently skips blocking checks (SECURITY-MED). cmd.Dir then
+// resolves the intended repo via normal cwd-based discovery.
+func ScrubbedGitEnv() []string {
+	return scrubGitEnv(os.Environ())
+}
+
+// scrubGitEnv filters gitDiscoveryEnvVars out of a KEY=VALUE environment slice.
+func scrubGitEnv(env []string) []string {
+	out := make([]string, 0, len(env))
+	for _, kv := range env {
+		if isGitDiscoveryVar(kv) {
+			continue
+		}
+		out = append(out, kv)
+	}
+	return out
+}
+
+func isGitDiscoveryVar(kv string) bool {
+	for _, name := range gitDiscoveryEnvVars {
+		if strings.HasPrefix(kv, name+"=") {
+			return true
+		}
+	}
+	return false
+}
 
 // Scope selects which git diff defines the change set.
 type Scope string
@@ -81,6 +130,7 @@ func (g *GitChangedFiles) exec(ctx context.Context, args ...string) (string, err
 	}
 	cmd := exec.CommandContext(ctx, "git", args...)
 	cmd.Dir = g.RepoRoot
+	cmd.Env = ScrubbedGitEnv()
 	out, err := cmd.Output()
 	if err != nil {
 		return "", fmt.Errorf("git %s: %w", strings.Join(args, " "), err)

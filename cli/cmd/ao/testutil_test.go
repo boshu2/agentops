@@ -7,29 +7,14 @@ package main
 // makes cross-file dependencies explicit.
 
 import (
-	"fmt"
 	"io"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"sync"
 	"testing"
-	"time"
 
 	"github.com/spf13/pflag"
 )
-
-func equalStringSlices(a, b []string) bool {
-	if len(a) != len(b) {
-		return false
-	}
-	for i := range a {
-		if a[i] != b[i] {
-			return false
-		}
-	}
-	return true
-}
 
 // packageDir holds the absolute path to the test package directory, captured
 // at init time before any test can call os.Chdir. Use this as the base for
@@ -224,6 +209,14 @@ func captureJSONStdout(t *testing.T, fn func()) string {
 // to defaults, clears cobra flag Changed state, and registers t.Cleanup to
 // restore originals. Call this at the start of any test that uses rootCmd
 // directly instead of executeCommand.
+//
+// BOUNDED PURPOSE (carve-out finish line, age-a-plus-report-card-ieyp2.14):
+// after the 12-family carve-out the only saved state is the root spine — the
+// five root persistent-flag globals plus the configShow test shim. There is no
+// remaining module-scoped global to reset here; carved families own their flag
+// state constructor-scoped inside internal/commands/<family>. Do not grow this
+// list to reach into a module — fix the module. TestPackageVarsAreAllowlisted
+// keeps cmd/ao free of new mutable globals.
 func resetCommandState(t *testing.T) {
 	t.Helper()
 
@@ -235,10 +228,6 @@ func resetCommandState(t *testing.T) {
 	// always the correct baseline, so clean (don't save/restore) them here.
 	rootCmd.SetOut(nil)
 	rootCmd.SetErr(nil)
-	goalsCmd.SetOut(nil)
-	goalsCmd.SetErr(nil)
-	goalsMeasureCmd.SetOut(nil)
-	goalsMeasureCmd.SetErr(nil)
 
 	// Save originals.
 	origDryRun := dryRun
@@ -246,23 +235,7 @@ func resetCommandState(t *testing.T) {
 	origOutput := output
 	origJSON := jsonFlag
 	origCfg := cfgFile
-	origDemoConcepts := demoConcepts
-	origDemoQuick := demoQuick
 	origConfigShow := configShow
-	origGoalsJSON := output
-	// Goals subcommand flag globals (ag-pah): cli/cmd/ao/goals_*.go
-	// declares these as package-level vars bound to cobra flags. Tests
-	// that mutate them must save+restore here or a panic in one test
-	// leaks state into the next. This was the root cause of the
-	// TestGoals_Integration_* flake family observed on PRs #551 and #553.
-	origGoalsFile := goalsFile
-	origGoalsTimeout := goalsTimeout
-	origGoalsMeasureGoalID := goalsMeasureGoalID
-	origGoalsMeasureDirectives := goalsMeasureDirectives
-	origGoalsMeasureExcludeTag := goalsMeasureExcludeTag
-	origGoalsMeasureTotalTimeout := goalsMeasureTotalTimeout
-	origGoalsMeasureScenariosOnly := goalsMeasureScenariosOnly
-	origGoalsRenderOut := goalsRenderOut
 	// No alternate lifecycle build exists; the helper remains a no-op so shared
 	// test setup has one stable call site.
 	resetArchivedCommandGlobals(t)
@@ -273,19 +246,7 @@ func resetCommandState(t *testing.T) {
 		output = origOutput
 		jsonFlag = origJSON
 		cfgFile = origCfg
-		demoConcepts = origDemoConcepts
-		demoQuick = origDemoQuick
 		configShow = origConfigShow
-		output = origGoalsJSON
-		// Goals subcommand flag globals (ag-pah): paired with saves above.
-		goalsFile = origGoalsFile
-		goalsTimeout = origGoalsTimeout
-		goalsMeasureGoalID = origGoalsMeasureGoalID
-		goalsMeasureDirectives = origGoalsMeasureDirectives
-		goalsMeasureExcludeTag = origGoalsMeasureExcludeTag
-		goalsMeasureTotalTimeout = origGoalsMeasureTotalTimeout
-		goalsMeasureScenariosOnly = origGoalsMeasureScenariosOnly
-		goalsRenderOut = origGoalsRenderOut
 	})
 
 	// Reset to defaults.
@@ -294,21 +255,7 @@ func resetCommandState(t *testing.T) {
 	output = ""
 	jsonFlag = false
 	cfgFile = ""
-	demoConcepts = false
-	demoQuick = false
 	configShow = false
-	// Goals subcommand flag globals (ag-pah): explicit reset to flag defaults
-	// so a polluted prior-test state doesn't carry into the current test.
-	// Save+restore above handles after-test cleanup; this handles before-test
-	// hygiene.
-	goalsFile = ""
-	goalsTimeout = defaultGoalsTimeoutSeconds
-	goalsMeasureGoalID = ""
-	goalsMeasureDirectives = false
-	goalsMeasureExcludeTag = ""
-	goalsMeasureTotalTimeout = 0
-	goalsMeasureScenariosOnly = false
-	goalsRenderOut = ""
 	output = "table"
 	// Reset Cobra flag Changed state and values to defaults.
 	resetFlagChangesRecursive(rootCmd)
@@ -337,21 +284,6 @@ func chdirTemp(t *testing.T) string {
 		t.Fatalf("getwd after chdir: %v", err)
 	}
 	return cwd
-}
-
-// chdirTo changes to the specified directory, registers a cleanup to restore
-// the previous working directory, and returns the previous working directory
-// for backward compatibility.
-// Origin: constraint_cmd_test.go
-func chdirTo(t *testing.T, wd string) string {
-	t.Helper()
-	prev, err := os.Getwd()
-	if err != nil {
-		t.Fatalf("getwd: %v", err)
-	}
-	// ag-k38x: t.Chdir auto-restores + blocks parallel; prev is returned for callers.
-	t.Chdir(wd)
-	return prev
 }
 
 // ---------------------------------------------------------------------------
@@ -395,117 +327,4 @@ func writeFile(t *testing.T, path, content string) {
 	if err := os.WriteFile(path, []byte(content), 0644); err != nil {
 		t.Fatal(err)
 	}
-}
-
-// ---------------------------------------------------------------------------
-// Git helpers
-// ---------------------------------------------------------------------------
-
-// gitCommitFixture describes a single commit to create in a test git repo.
-// Path and Content default to auto-generated values when left empty.
-type gitCommitFixture struct {
-	Path      string
-	Content   string
-	Message   string
-	Timestamp time.Time
-}
-
-// initGitHistoryFixtureRepo creates a temp directory with a git repo and
-// replays the given commits in order, preserving author/committer timestamps.
-func initGitHistoryFixtureRepo(t *testing.T, commits []gitCommitFixture) string {
-	t.Helper()
-	dir := t.TempDir()
-	initHistoryFixtureGitRepo(t, dir)
-	for i, commit := range commits {
-		path := commit.Path
-		if path == "" {
-			path = fmt.Sprintf("fixture-%d.txt", i)
-		}
-		content := commit.Content
-		if content == "" {
-			content = fmt.Sprintf("%s at %s\n", commit.Message, commit.Timestamp.Format(time.RFC3339))
-		}
-		writeFile(t, filepath.Join(dir, path), content)
-		runFixtureGit(
-			t,
-			dir,
-			nil,
-			"add",
-			path,
-		)
-		runFixtureGit(
-			t,
-			dir,
-			[]string{
-				"GIT_AUTHOR_DATE=" + commit.Timestamp.Format(time.RFC3339),
-				"GIT_COMMITTER_DATE=" + commit.Timestamp.Format(time.RFC3339),
-			},
-			"commit",
-			"-m",
-			commit.Message,
-		)
-	}
-	return dir
-}
-
-// initTestRepo creates a temp directory with a git repo containing one commit.
-// Origin: rpi_phased_worktree_test.go
-func initTestRepo(t *testing.T) string {
-	t.Helper()
-	return initGitHistoryFixtureRepo(t, []gitCommitFixture{{
-		Path:      "README.md",
-		Content:   "# Test\n",
-		Message:   "Initial commit",
-		Timestamp: time.Now().Add(-1 * time.Hour).UTC(),
-	}})
-}
-
-// realPathForTest resolves symlinks when possible and falls back to an absolute
-// path. Useful for Git worktree tests on hosts where temp dirs may be symlinked.
-func realPathForTest(t *testing.T, path string) string {
-	t.Helper()
-	resolved, err := filepath.EvalSymlinks(path)
-	if err == nil {
-		return resolved
-	}
-	abs, err := filepath.Abs(path)
-	if err != nil {
-		t.Fatalf("filepath.Abs(%q): %v", path, err)
-	}
-	return abs
-}
-
-// initMinimalGitRepo creates a git repo with one empty commit. Use this when
-// you need a valid git repo but don't care about file history.
-// Origin: uat_smoke_test.go (was initGitRepo)
-func initMinimalGitRepo(t *testing.T, dir string) {
-	t.Helper()
-	initHistoryFixtureGitRepo(t, dir)
-	runFixtureGit(t, dir, nil, "commit", "--allow-empty", "-m", "init")
-}
-
-// initHistoryFixtureGitRepo runs git init and configures a test user in dir.
-func initHistoryFixtureGitRepo(t *testing.T, dir string) {
-	t.Helper()
-	runFixtureGit(t, dir, nil, "init")
-	runFixtureGit(t, dir, nil, "config", "user.email", "test@test.com")
-	runFixtureGit(t, dir, nil, "config", "user.name", "Test")
-	runFixtureGit(t, dir, nil, "config", "commit.gpgsign", "false")
-}
-
-// runFixtureGit executes a git command in dir with optional extra environment
-// variables. Fatals the test on any non-zero exit. Always scrubs git's
-// repo-discovery env (gitDiscoveryEnv): under a hook-leaked GIT_DIR, cmd.Dir
-// alone does NOT scope the command — `git config user.name Test` would write
-// the LEAKED repo's shared config (age-gate-scripts-worktree-gitdir-p62wo).
-func runFixtureGit(t *testing.T, dir string, extraEnv []string, args ...string) string {
-	t.Helper()
-	cmd := exec.Command("git", args...)
-	cmd.Dir = dir
-	cmd.Env = append(gitDiscoveryEnv(), extraEnv...)
-	out, err := cmd.CombinedOutput()
-	if err != nil {
-		t.Fatalf("git %v in %s: %v\n%s", args, dir, err, out)
-	}
-	return string(out)
 }

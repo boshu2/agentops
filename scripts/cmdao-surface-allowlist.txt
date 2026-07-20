@@ -13,6 +13,9 @@ public-tested|goals meta|Covered through goals measurement behavior.
 public-tested|goals export|Covered through goals snapshot behavior.
 public-stateful-fixture-needed|goals drift|Requires two goal snapshots.
 public-tested|goals history|Historical view shares goals validation behavior.
+public-tested|goals validate|Covered by internal/commands/goals module tests and internal/goals validate tests after the goals carve-out.
+public-tested|goals scenarios|Covered by internal/commands/goals module tests and internal/goals scenario tests after the goals carve-out.
+public-tested|goals render|Covered by internal/goals render tests after the goals carve-out.
 public-stateful-fixture-needed|goals init|Initializes GOALS.md and may prompt.
 
 public-stateful-fixture-needed|doctor capabilities|Inspects local installation state.
@@ -27,6 +30,7 @@ public-stateful-fixture-needed|doctor undo|Reverts a doctor repair fixture.
 
 public-tested|capabilities|Covered by capability contract tests.
 public-tested|robot-docs|Covered by generated documentation tests.
+public-tested|init|Covered by internal/commands/init module tests and internal/initapp tests after the init carve-out.
 public-tested|provenance show|Covered by generic provenance read tests.
 public-tested|session handoff|Covered by handoff artifact tests.
 public-tested|session rehydrate|Covered by rehydrate artifact tests.
@@ -56,3 +60,31 @@ public-tested|eval scenario validate|Covered by internal/scenario and module tes
 public-tested|eval scenario evaluate|Covered by internal/eval scenario_service tests.
 unsafe-live|eval scenario-ab|Spawns a live model runtime (codex exec) per arm; exercised by adapter tests with fakes, never in smoke.
 unsafe-live|eval scenario-moat|Aggregates live scenario-ab cards; adapter-tested with fixtures.
+
+# flywheel carve-out (age-a-plus-report-card-ieyp2.13): behavior now lives in
+# internal/commands/flywheel (module) + internal/flywheelapp (metrics/status/compare).
+# `flywheel status` stays smoke-covered; `flywheel compare` coverage moved to the app package.
+public-tested|flywheel compare|Covered by internal/flywheelapp Compare tests after the flywheel carve-out.
+
+# provenance carve-out (age-a-plus-report-card-ieyp2.11): behavior now lives in
+# internal/commands/provenance (module) + internal/provenanceapp (mine-session).
+public-tested|provenance add|Covered by internal/commands/provenance module tests after the provenance carve-out.
+public-tested|provenance list|Covered by internal/commands/provenance module tests after the provenance carve-out.
+public-tested|provenance export|Covered by internal/commands/provenance module tests after the provenance carve-out.
+public-tested|provenance show|Covered by internal/commands/provenance module tests after the provenance carve-out.
+public-tested|provenance position|Covered by internal/commands/provenance module tests after the provenance carve-out.
+public-tested|provenance trace|Covered by internal/commands/provenance module tests after the provenance carve-out.
+public-tested|provenance verify|Covered by internal/commands/provenance module tests after the provenance carve-out.
+public-tested|provenance mine-session|Covered by internal/provenanceapp mine-session tests after the provenance carve-out.
+
+# skills carve-out (age-a-plus-report-card-ieyp2.11): behavior now lives in
+# internal/commands/skills (module) + internal/skillsapp (link/unlink/roots).
+public-tested|skills check|Covered by internal/commands/skills module tests after the skills carve-out.
+public-tested|skills resolve|Covered by internal/commands/skills module tests after the skills carve-out.
+public-tested|skills find|Covered by internal/commands/skills module tests after the skills carve-out.
+public-tested|skills list|Covered by internal/commands/skills module tests after the skills carve-out.
+public-tested|skills consumers|Covered by internal/commands/skills module tests after the skills carve-out.
+public-tested|skills producers|Covered by internal/commands/skills module tests after the skills carve-out.
+public-tested|skills graph|Covered by internal/commands/skills module tests after the skills carve-out.
+public-tested|skills link|Covered by internal/commands/skills help tests plus internal/skillsapp link tests after the skills carve-out.
+public-tested|skills unlink|Covered by internal/commands/skills help tests plus internal/skillsapp unlink tests after the skills carve-out.

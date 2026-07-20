@@ -1,0 +1,8 @@
+{
+  "name": "invalid-duplicate-key-top-level",
+  "description": "Otherwise-valid PASS with a DUPLICATED top-level key (schema_version). Last-wins decode hides the dup; the token scanner rejects it. Early-returns at the top object before recursion.",
+  "expected": "invalid",
+  "schema_lenient": true,
+  "filename_digest": "79ebae0d871660d82d8ad201631f2953d3750f92a4b578754497d1a9d1380ce7",
+  "raw": "{\"schema_version\":\"verdict.v2\",\"acceptance_digest\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"artifact_digest\":\"79ebae0d871660d82d8ad201631f2953d3750f92a4b578754497d1a9d1380ce7\",\"author_context_id\":\"ctx-author\",\"checked\":[\"cli/**\"],\"criteria\":[{\"evidence_refs\":[\"gate:go.build\"],\"id\":\"c1\",\"reason\":\"checked\",\"result\":\"PASS\"}],\"evidence_refs\":[\"gate:go.build\"],\"findings\":[],\"freshness_attestation\":{\"attester_identity\":\"runtime:test\",\"source\":\"runtime\"},\"not_checked\":[],\"schema_version\":\"verdict.v2\",\"subject_manifest_digest\":\"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\",\"validated_at\":\"2026-07-18T12:00:00Z\",\"validator_context_id\":\"ctx-validator\",\"verdict\":\"PASS\"}"
+}

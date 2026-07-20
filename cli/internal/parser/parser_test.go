@@ -1270,7 +1270,7 @@ func TestParseFile_CloseError(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected close error, got nil")
 	}
-	if err != closeErr {
+	if !errors.Is(err, closeErr) {
 		t.Errorf("expected injected close error, got: %v", err)
 	}
 	if result == nil {

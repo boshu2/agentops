@@ -1,0 +1,80 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://agentops.dev/schemas/hooks-manifest.v2.schema.json",
+  "title": "hooks-manifest.v2 — policies-as-data admission-control registry",
+  "description": "Registry consumed by skills/cc-hooks/hooks/policy-dispatch.sh (age-bhsz, epic age-4qw1). v2 replaces v1's event->matcher->command wiring with declarative policies evaluated by ONE dispatcher per event slot. The predicate discipline encodes the #511 anti-lesson structurally: only pure syntactic predicates (regex over tool_input.command or tool_input.file_path) may block; lookup/stateful predicates are audit-only until promoted with reviewed-fire evidence.",
+  "type": "object",
+  "required": ["schema", "policies"],
+  "properties": {
+    "schema": { "const": "hooks-manifest.v2" },
+    "comment": { "type": "string" },
+    "policies": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/definitions/policy" }
+    }
+  },
+  "additionalProperties": false,
+  "definitions": {
+    "policy": {
+      "type": "object",
+      "required": ["id", "predicate_class", "mode", "matchers", "route_message", "rationale", "value_proof"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "dcg-style namespaced id: domain.object:token",
+          "pattern": "^[a-z][a-z0-9-]*\\.[a-z][a-z0-9-]*:[a-z][a-z0-9-]*$"
+        },
+        "predicate_class": {
+          "type": "string",
+          "enum": ["pure", "lookup", "stateful"],
+          "description": "pure = regex over command/file_path alone; lookup = one deterministic local check; stateful = coordination state. Only pure may deny or route."
+        },
+        "mode": {
+          "type": "string",
+          "enum": ["deny", "route", "audit"]
+        },
+        "matchers": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": ["tools", "field", "pattern"],
+            "properties": {
+              "tools": {
+                "type": "array",
+                "minItems": 1,
+                "items": { "type": "string", "enum": ["Bash", "Edit", "Write"] }
+              },
+              "field": { "type": "string", "enum": ["command", "file_path"] },
+              "pattern": { "type": "string", "minLength": 1 }
+            },
+            "additionalProperties": false
+          }
+        },
+        "route_message": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Every deny/route names THE correct tool (tools-truth rule): one actionable redirect, not a bare refusal."
+        },
+        "rationale": { "type": "string", "minLength": 1 },
+        "value_proof": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Pre-registered lease-on-life metric per ADR-0002:51-59; no proof accruing -> retire the policy."
+        }
+      },
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": { "predicate_class": { "enum": ["lookup", "stateful"] } }
+          },
+          "then": {
+            "properties": { "mode": { "const": "audit" } }
+          }
+        }
+      ]
+    }
+  }
+}

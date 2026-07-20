@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "family": "session",
+  "checks": [
+    {
+      "id": "session-black-box",
+      "command": "tmp=$(mktemp -d /tmp/ao-session.XXXXXX); (cd cli && go build -o \"$tmp/ao\" ./cmd/ao); \"$tmp/ao\" session --help >\"$tmp/help\"; grep -Fq 'Inspect or export session evidence' \"$tmp/help\"; grep -Fq 'bootstrap' \"$tmp/help\"; grep -Fq 'rehydrate' \"$tmp/help\"; grep -Fq 'handoff' \"$tmp/help\"; \"$tmp/ao\" session bootstrap --help >\"$tmp/boot\"; grep -Fq 'Report local orientation files without starting runtimes' \"$tmp/boot\"; \"$tmp/ao\" session rehydrate --help >\"$tmp/rehy\"; grep -Fq 'without consuming it, claiming work' \"$tmp/rehy\"; work=$(mktemp -d /tmp/ao-session-work.XXXXXX); printf 'x' >\"$work/AGENTS.md\"; ( cd \"$work\" && \"$tmp/ao\" session bootstrap --json >\"$tmp/boot.json\" ); grep -Fq '\"orientation_files\"' \"$tmp/boot.json\"; grep -Fq 'AGENTS.md' \"$tmp/boot.json\"; empty=$(mktemp -d /tmp/ao-session-empty.XXXXXX); ( cd \"$empty\" && \"$tmp/ao\" session rehydrate --json >\"$tmp/rehy.out\" 2>\"$tmp/rehy.err\" ); test \"$(tr -d '[:space:]' <\"$tmp/rehy.out\")\" = '{}'; grep -Fq 'no handoff found' \"$tmp/rehy.err\""
+    },
+    {
+      "id": "session-go-behavior",
+      "command": "cd cli && go test ./internal/commands/session/... ./internal/sessionapp/... -count=1"
+    }
+  ],
+  "dimensions": {
+    "path": {"status": "evidence", "evidence": ["session-black-box", "session-go-behavior"]},
+    "aliases": {"status": "not_applicable", "reason": "The session family declares no command aliases."},
+    "accepted_args": {"status": "evidence", "evidence": ["session-black-box", "session-go-behavior"]},
+    "rejected_args": {"status": "evidence", "evidence": ["session-go-behavior"]},
+    "stdout": {"status": "evidence", "evidence": ["session-black-box", "session-go-behavior"]},
+    "stderr": {"status": "evidence", "evidence": ["session-black-box", "session-go-behavior"]},
+    "exit_classes": {"status": "evidence", "evidence": ["session-go-behavior"]},
+    "tracker_selection": {"status": "not_applicable", "reason": "The session family does not select a repository issue tracker."},
+    "ordered_effects": {"status": "evidence", "evidence": ["session-go-behavior"]}
+  }
+}

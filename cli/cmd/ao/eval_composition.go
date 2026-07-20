@@ -47,5 +47,6 @@ func newEvalCommand() *cobra.Command {
 	if err := clicontract.Attach(command, module.Contract()); err != nil {
 		panic(err)
 	}
+	attachChildContract(command, "run", module.RunContract())
 	return command
 }
