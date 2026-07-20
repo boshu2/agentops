@@ -3,9 +3,13 @@ package runtimecmd
 
 import (
 	"errors"
+	"go/ast"
+	"go/parser"
+	"go/token"
 	"os"
 	"path/filepath"
 	"reflect"
+	"strconv"
 	"strings"
 	"testing"
 )
@@ -121,12 +125,50 @@ func TestDirectArgs_NeverEmitsDashP(t *testing.T) {
 	}
 }
 
-// TestNoUnreviewedDashPArgvInCLI is a repo-wide tripwire (age-6j9ee.4): it walks
+// headlessPrintLiteral reports whether the CONTENT of a single Go string literal
+// is a headless-print argv smell. It flags two shapes (age-6j9ee.4):
+//
+//  1. the argv-element form — the literal is exactly `-p` or `--print`, i.e. a
+//     single argv token passed straight to a runtime; and
+//  2. the smuggled-command form — one whitespace-separated literal that carries a
+//     `claude` token AND a standalone `-p` / `--print` flag token, e.g.
+//     `var x = "claude -p"`, `"env -i claude --print"`. The old byte-substring
+//     tripwire matched only the exact `"-p"` / `"--print"` source token and missed
+//     this entirely (validator finding: `var TripwireScratch = "claude -p"`
+//     slipped through).
+//
+// Matching is token-based (not raw substring) so it does NOT trip on identifiers
+// that merely embed the characters — e.g. the gate id `"always.door9-no-claude-p"`
+// or help text `"...default: claude..."` — which are legitimate and would only
+// bloat the allowlist.
+func headlessPrintLiteral(value string) bool {
+	if value == "-p" || value == "--print" {
+		return true
+	}
+	var hasClaude, hasPrintFlag bool
+	for _, field := range strings.Fields(value) {
+		if field == "-p" || field == "--print" {
+			hasPrintFlag = true
+			continue
+		}
+		base := strings.ToLower(filepath.Base(field))
+		base = strings.TrimSuffix(base, ".exe")
+		if base == "claude" {
+			hasClaude = true
+		}
+	}
+	return hasClaude && hasPrintFlag
+}
+
+// TestNoUnreviewedDashPArgvInCLI is a repo-wide tripwire (age-6j9ee.4): it parses
 // every non-test .go file in the cli module and asserts that the set of files
-// constructing a `-p` / `--print` argv string literal matches a known, reviewed
-// allowlist. This would have caught the original runtimecmd `claude -p` path, and
-// fails loudly if any new file reintroduces such a literal — forcing a human to
-// confirm it is not a headless-claude invocation before it can be allowlisted.
+// containing a headless-print string LITERAL (see headlessPrintLiteral) matches a
+// known, reviewed allowlist. Unlike the original byte-substring scan, it inspects
+// the parsed contents of each string literal, so it also catches a `-p`/`--print`
+// flag hidden inside a larger claude command literal (e.g. `"claude -p"`), not
+// only a bare `"-p"` argv token. It fails loudly if any new file reintroduces such
+// a literal — forcing a human to confirm it is not a headless-claude invocation
+// before it can be allowlisted.
 //
 // Known-safe today:
 //   - internal/adapters/eval/scenario_ab_sandbox.go — `sandbox-exec -p <profile>`
@@ -145,6 +187,7 @@ func TestNoUnreviewedDashPArgvInCLI(t *testing.T) {
 		t.Fatalf("cli root %q has no go.mod (test cwd assumption broke): %v", cliRoot, statErr)
 	}
 
+	fset := token.NewFileSet()
 	found := map[string]bool{}
 	walkErr := filepath.WalkDir(cliRoot, func(path string, d os.DirEntry, err error) error {
 		if err != nil {
@@ -159,18 +202,28 @@ func TestNoUnreviewedDashPArgvInCLI(t *testing.T) {
 		if !strings.HasSuffix(path, ".go") || strings.HasSuffix(path, "_test.go") {
 			return nil
 		}
-		data, readErr := os.ReadFile(path)
-		if readErr != nil {
-			return readErr
+		file, parseErr := parser.ParseFile(fset, path, nil, 0)
+		if parseErr != nil {
+			return parseErr
 		}
-		content := string(data)
-		if strings.Contains(content, `"-p"`) || strings.Contains(content, `"--print"`) {
-			rel, relErr := filepath.Rel(cliRoot, path)
-			if relErr != nil {
-				return relErr
+		rel, relErr := filepath.Rel(cliRoot, path)
+		if relErr != nil {
+			return relErr
+		}
+		ast.Inspect(file, func(n ast.Node) bool {
+			lit, ok := n.(*ast.BasicLit)
+			if !ok || lit.Kind != token.STRING {
+				return true
 			}
-			found[rel] = true
-		}
+			value, unquoteErr := strconv.Unquote(lit.Value)
+			if unquoteErr != nil {
+				return true
+			}
+			if headlessPrintLiteral(value) {
+				found[rel] = true
+			}
+			return true
+		})
 		return nil
 	})
 	if walkErr != nil {
@@ -179,7 +232,7 @@ func TestNoUnreviewedDashPArgvInCLI(t *testing.T) {
 
 	for rel := range found {
 		if !allowed[rel] {
-			t.Errorf("unreviewed `-p`/`--print` argv literal in %s — if this is NOT a headless "+
+			t.Errorf("unreviewed `-p`/`--print` string literal in %s — if this is NOT a headless "+
 				"claude invocation (LAW 0), review it and add it to the allowlist in this test", rel)
 		}
 	}

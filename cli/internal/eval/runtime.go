@@ -127,13 +127,9 @@ func RunLiveRuntime(ctx context.Context, opts LiveRuntimeOptions) (*RunRecord, e
 			return nil, err
 		}
 	}
-	adapter, err := liveRuntimeAdapterFor(runtimeName)
-	if err != nil {
-		return nil, err
-	}
-
 	workDir := opts.WorkDir
 	if workDir == "" {
+		var err error
 		workDir, err = os.Getwd()
 		if err != nil {
 			return nil, fmt.Errorf("get working directory: %w", err)
@@ -149,15 +145,41 @@ func RunLiveRuntime(ctx context.Context, opts LiveRuntimeOptions) (*RunRecord, e
 	record.Runtime.Model = firstNonEmpty(opts.Model, model)
 	record.Runtime.Profile = firstNonEmpty(opts.Profile, profile)
 
+	// Live disabled: no external process is ever spawned, so this is the
+	// deterministic parse/skip path. It must NOT apply the LAW 0 spawn guard and
+	// must NOT construct a live adapter — a suite may declare runtime=claude and
+	// still be parsed and skipped here exactly as before (finding 3, age-6j9ee.4).
+	// The claude refusal fires only on the process-spawning path below.
 	if !opts.Enabled {
 		markRuntimeSkipped(record, suite, "live runtime disabled; set LiveRuntimeOptions.Enabled to true")
 		return finishLiveRuntimeRun(opts, record, now)
+	}
+
+	// From here on we are on the live (process-spawning) path.
+	//
+	// Enum-level LAW 0 gate: a claude runtime *enum* never has a live adapter, so
+	// no default claude command is ever built.
+	adapter, err := liveRuntimeAdapterFor(runtimeName)
+	if err != nil {
+		return nil, err
 	}
 
 	command := strings.TrimSpace(opts.RuntimeCommand)
 	if command == "" {
 		command = adapter.DefaultCommand()
 	}
+
+	// Command-level LAW 0 gate, BEFORE any process spawn (finding 1, age-6j9ee.4):
+	// even when the runtime enum is a live-invocable adapter (e.g. codex), the
+	// RESOLVED command may still name the claude binary — a bare `claude`, an
+	// env-wrapped form (`env -i claude`), or an absolute path (`/fake/bin/claude`).
+	// Refuse on the resolved tokens here, before LookPath and before the version
+	// probe, so no `claude --version` (or any other) process is ever launched.
+	// DirectArgs re-checks this at argv construction as defense-in-depth.
+	if runtimecmd.ContainsClaudeToken(command) {
+		return nil, fmt.Errorf("%w", runtimecmd.ErrClaudeHeadlessProhibited)
+	}
+
 	executable, _ := runtimecmd.Split(command)
 	if executable == "" {
 		markRuntimeSkipped(record, suite, "runtime command is empty")
@@ -186,9 +208,10 @@ func RunLiveRuntime(ctx context.Context, opts LiveRuntimeOptions) (*RunRecord, e
 	if runner == nil {
 		runner = defaultRuntimeRunner
 	}
-	// LAW 0 defense-in-depth: even though liveRuntimeAdapterFor already refuses
-	// the claude runtime, re-check the concrete argv here — DirectArgs fail-closes
-	// on any command resolving to the claude binary and never emits `-p`/`--print`.
+	// LAW 0 defense-in-depth: the enum gate (liveRuntimeAdapterFor) and the
+	// resolved-command gate (ContainsClaudeToken above) already refuse claude
+	// before any spawn; re-check at argv construction so DirectArgs remains the
+	// final chokepoint that never emits `-p`/`--print` for the claude binary.
 	directArgs, argErr := adapter.DirectArgs(command, liveRuntimePrompt(opts, suite))
 	if argErr != nil {
 		markRuntimeError(record, suite, argErr.Error())
