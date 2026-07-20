@@ -35,10 +35,14 @@ func normalizeArtifactPath(baseDir, artifactPath string) string {
 
 func isRetrievableArtifactPath(baseDir, artifactPath string) bool {
 	p := filepath.ToSlash(normalizeArtifactPath(baseDir, artifactPath))
-	learningsRoot := filepath.ToSlash(filepath.Join(baseDir, ".agents", "learnings")) + "/"
-	patternsRoot := filepath.ToSlash(filepath.Join(baseDir, ".agents", "patterns")) + "/"
-	findingsRoot := filepath.ToSlash(filepath.Join(baseDir, ".agents", SectionFindings)) + "/"
-	return strings.HasPrefix(p, learningsRoot) || strings.HasPrefix(p, patternsRoot) || strings.HasPrefix(p, findingsRoot)
+	for _, section := range []string{"learnings", "patterns", SectionFindings} {
+		for _, root := range quality.KnowledgeSectionDirs(baseDir, section) {
+			if strings.HasPrefix(p, filepath.ToSlash(root)+"/") {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 func retrievableCitationStats(baseDir string, citations []types.CitationEvent) (uniqueCount, evidenceCount int) {
@@ -87,7 +91,7 @@ func escapeVelocityThreshold(delta float64) float64 {
 
 // countLoopMetrics counts learnings created vs found for loop closure
 func countLoopMetrics(baseDir string, periodStart time.Time, periodCitations []types.CitationEvent) (created, found int) {
-	created, _ = countNewArtifactsInDir(filepath.Join(baseDir, ".agents", "learnings"), periodStart)
+	created, _ = quality.CountNewArtifactsInDirs(quality.KnowledgeSectionDirs(baseDir, "learnings"), periodStart)
 	for _, c := range periodCitations {
 		if strings.Contains(filepath.ToSlash(canonicalArtifactPath(baseDir, c.ArtifactPath)), "/learnings/") {
 			found++
@@ -205,11 +209,6 @@ func countStaleArtifacts(baseDir string, citations []types.CitationEvent, staleD
 	})
 }
 
-// countNewArtifactsInDir counts artifacts created after a time in a specific directory.
-func countNewArtifactsInDir(dir string, since time.Time) (int, error) {
-	return quality.CountNewArtifactsInDir(dir, since)
-}
-
 // countRetros counts retro artifacts and how many have associated learnings.
 func countRetros(baseDir string, since time.Time) (total int, withLearnings int, err error) {
 	return quality.CountRetros(baseDir, since)
@@ -227,10 +226,10 @@ type utilityStats struct {
 
 // computeUtilityMetrics calculates MemRL utility statistics from learnings.
 func computeUtilityMetrics(baseDir string) utilityStats {
-	s := quality.ComputeUtilityMetrics([]string{
-		filepath.Join(baseDir, ".agents", "learnings"),
-		filepath.Join(baseDir, ".agents", "patterns"),
-	})
+	s := quality.ComputeUtilityMetrics(append(
+		quality.KnowledgeSectionDirs(baseDir, "learnings"),
+		quality.KnowledgeSectionDirs(baseDir, "patterns")...,
+	))
 	return utilityStats{
 		mean:      s.Mean,
 		stdDev:    s.StdDev,

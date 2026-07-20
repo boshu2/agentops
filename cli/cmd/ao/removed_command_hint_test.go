@@ -47,6 +47,14 @@ func TestRemovedCommandHint_TombstonedVerbs(t *testing.T) {
 				"dispatch_once",
 			},
 		},
+		{
+			verb: "inject",
+			wantFrag: []string{
+				`"inject" was removed`,
+				"docs/MIGRATION.md",
+				"memory or context tooling",
+			},
+		},
 	}
 	for _, tc := range cases {
 		t.Run(tc.verb, func(t *testing.T) {

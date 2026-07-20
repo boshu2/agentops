@@ -6,7 +6,7 @@
 > **Status:** contract · **Epic:** ag-k7tq9 (corpus private/public separation) · **Slice:** S3 (ag-2srq1)
 > **Authority:** the unanimous cross-family council verdict
 > (private: `.agents/council/2026-06-15-corpus-private-public-seam-verdict.md`, not tracked in this public repo).
-> **Schema:** [`schemas/learning.v1.schema.json`](../../schemas/learning.v1.schema.json).
+> **Schema:** [`schemas/learning.v1.schema.json`](https://github.com/boshu2/agentops/blob/main/schemas/learning.v1.schema.json).
 > **Migration:** `ao corpus classify` (`cli/internal/corpus/classify.go`).
 
 The corpus (`boshu2/agentops-corpus`, mounted at `.agents/learnings/`) is **lossless

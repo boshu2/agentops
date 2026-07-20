@@ -15,7 +15,9 @@ You do not need a tracker, Git repository, multi-agent substrate, or `ao` binary
 for the semantic loop. If your project has those systems, keep using their native
 workflow after AgentOps reports its verdict.
 
-Use [premortem](../skills/premortem/SKILL.md) when a plan deserves an advisory
-challenge, [council](../skills/council/SKILL.md) when multiple independent views
-justify the cost, and [postmortem](../skills/postmortem/SKILL.md) only for an
-explicit causal question.
+Use [premortem](https://github.com/boshu2/agentops/blob/main/skills/premortem/SKILL.md)
+when a plan deserves an advisory challenge,
+[council](https://github.com/boshu2/agentops/blob/main/skills/council/SKILL.md)
+when multiple independent views justify the cost, and
+[postmortem](https://github.com/boshu2/agentops/blob/main/skills/postmortem/SKILL.md)
+only for an explicit causal question.

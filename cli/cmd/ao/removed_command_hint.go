@@ -40,6 +40,7 @@ var removedCommands = map[string]removedCommand{
 	"membrane":   {use: "admission was removed; record observations as verdict findings or generic provenance"},
 	"crank":      {use: "factory control was removed; call an executor directly or use optional `dispatch_once`"},
 	"constraint": {use: "AgentOps no longer promotes findings into blocking policy; encode accepted rules in repository-owned checks"},
+	"inject":     {use: "AgentOps no longer retrieves prior knowledge; use the caller's own memory or context tooling"},
 	"verify":     {use: "the 3.2 verification front door was removed; semantic judgment is the Validate skill. If `ao verify init` installed a pre-push hook, delete the AGENTOPS-VERIFY-RATCHET block from .git/hooks/pre-push (see docs/UPGRADING.md)"},
 }
 

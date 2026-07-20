@@ -242,18 +242,22 @@ func ComputeCitationPipeline(baseDir string, days int) (highPct, medianDelta, ap
 
 // ComputeResearchClosure measures whether research is being mined into learnings.
 func ComputeResearchClosure(baseDir, findingsSection string) (orphanCount int, orphanPct float64, avgAgeDays float64, verdict string) {
-	researchDir := filepath.Join(baseDir, ".agents", "research")
-	learningsDir := filepath.Join(baseDir, ".agents", "learnings")
-	findingsDir := filepath.Join(baseDir, ".agents", findingsSection)
-
-	researchFiles, err := os.ReadDir(researchDir)
-	if err != nil || len(researchFiles) == 0 {
+	var researchFiles []os.DirEntry
+	for _, researchDir := range KnowledgeSectionDirs(baseDir, "research") {
+		if entries, err := os.ReadDir(researchDir); err == nil {
+			researchFiles = append(researchFiles, entries...)
+		}
+	}
+	if len(researchFiles) == 0 {
 		return 0, 0, 0, "starved"
 	}
 
 	researchRefs := make(map[string]bool)
-	collectResearchRefsFromDir(learningsDir, researchRefs)
-	collectResearchRefsFromDir(findingsDir, researchRefs)
+	for _, section := range []string{"learnings", findingsSection} {
+		for _, dir := range KnowledgeSectionDirs(baseDir, section) {
+			collectResearchRefsFromDir(dir, researchRefs)
+		}
+	}
 
 	now := time.Now()
 	var totalAgeDays float64
@@ -402,13 +406,17 @@ func Top10BottomRatio(sorted []float64) float64 {
 // ComputeReuseConcentration measures whether the knowledge pool is active.
 func ComputeReuseConcentration(baseDir string, days int) (gini, activePct, topBottomRatio float64, verdict string) {
 	citationsPath := filepath.Join(baseDir, ".agents", "ao", "citations.jsonl")
-	learningsDir := filepath.Join(baseDir, ".agents", "learnings")
 	cutoff := time.Now().AddDate(0, 0, -days)
 
 	citationCounts := CountCitationsInPeriod(citationsPath, cutoff)
 
-	learningEntries, err := os.ReadDir(learningsDir)
-	if err != nil {
+	var learningEntries []os.DirEntry
+	for _, learningsDir := range KnowledgeSectionDirs(baseDir, "learnings") {
+		if entries, err := os.ReadDir(learningsDir); err == nil {
+			learningEntries = append(learningEntries, entries...)
+		}
+	}
+	if len(learningEntries) == 0 {
 		return 0, 0, 0, "dormant"
 	}
 

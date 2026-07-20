@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [3.3.0] - 2026-07-17
+## [3.3.0] - 2026-07-20
 
 AgentOps 3.3 is the Cathedral Cut: the product returns to one small trust
 boundary—shape one behavior, run one bounded experiment, validate the exact
@@ -33,20 +33,37 @@ before upgrading.
   including newest-evidence recency without runtime-phase inference.
 - One-shot MCP-backed `ms` search for environments without an attached MCP
   tool, plus multi-report synthesis guidance in Research.
+- `ao eval` — deterministic local evaluation suites over locked tasks and
+  holdout scenarios, wired as the Learn seat's measurement surface. It runs
+  and reports; it holds no lifecycle authority (#921).
+- A PreToolUse policy dispatcher (deterministic guard registry) under
+  `cc-hooks`, shipped by default across every install path — automatic with
+  the Claude Code plugin; one installer script for npx/skills.sh copies and
+  source checkouts. Injection hooks remain absent (#932).
 
 ### Changed
 
 - RPI is now exactly `Plan -> Implement -> fresh Validate -> report and stop`.
   Plan absorbs Discovery, behavior-first planning, and goal design; Learn moves
   off-path as optional later analysis.
-- The canonical corpus is 50 metadata-owned skills. Every skill passes the deep
+- The canonical corpus is 48 metadata-owned skills. Every skill passes the deep
   strict auditor, generated registry/graph/router/count projections agree, and
   Codex/Gemini artifacts regenerate from the canonical tree.
 - The retained Go CLI is a deterministic repository-check and inspection tool.
   Its default public surface no longer controls semantic validation, retries,
   work lifecycle, Git, or delivery.
-- New installations use one canonical checkout plus symlinks. Runtime plugin
-  installers remain migration-only compatibility for this release.
+- Three supported install paths: `npx skills add` (universal across coding
+  agents), runtime plugin marketplaces for Claude Code and Codex (managed
+  bundles that update with the release), and one canonical checkout plus
+  `ao skills link` for source-tracked installs. The 3.x curl installer
+  scripts are refusing tombstones.
+- `ao flywheel` knowledge metrics returned to the default build as optional
+  read-side tooling (no more `-tags "flywheel legacy"`), carved into dedicated
+  internal modules, and now read the canonical `.agents/ao/<section>` knowledge
+  directories alongside the legacy `.agents/<section>` fallback.
+- The post-Cathedral-Cut Go cleanup removed the retired 3.2 implementation
+  (~88k lines). Removed verbs fail as unknown commands with a replacement
+  hint; nothing forwards to old code.
 - Published `ao demo` now presents the packet-free one-pass loop; active docs,
   templates, and smoke tests use caller-owned intent plus runtime-derived
   subject evidence. The old Plan, Candidate, and revision schemas are labeled

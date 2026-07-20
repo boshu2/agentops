@@ -19,7 +19,11 @@ Three actions prevent broken workflows after upgrading:
    `./.agentops/config.yaml` moved to `~/.agents/ao/config.yaml` and
    `./.agents/ao/config.yaml`. Legacy paths are still read as a fallback for
    this release, with a deprecation warning.
-3. **Replace plugin installs with source links** (next section).
+3. **Refresh your install.** Plugin installs keep working — update the bundle
+   through your runtime's plugin update. npx installs re-run
+   `npx skills@latest add boshu2/agentops --all -g`. The 3.x curl installer
+   scripts are refusing tombstones. To track skills from source instead, see
+   the next section.
 
 The semantic loop is now:
 
@@ -32,9 +36,10 @@ delivery state. Plan shapes one behavior, Implement runs one bounded experiment,
 Validate judges the exact candidate from fresh context, and RPI reports the
 result once.
 
-### Replace plugin installs with source links
+### Optional: track skills from a source checkout
 
-Remove a 3.x runtime plugin using the commands in
+To edit skills or contribute, switch from a plugin or npx copy to source links.
+Remove the runtime plugin first using the commands in
 [Install and day-2 operations](install-day2-ops.md), then install one canonical
 checkout:
 

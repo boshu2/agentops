@@ -84,7 +84,7 @@ handbook is the contract — read it once, then drive ao without guessing.
 |------|---------|
 | 0 | success |
 | 1 | error: usage error, runtime failure, or (for diagnostic commands) findings present |
-| 2 | diagnostic: partial result or bead claimed (command-specific) |
+| 2 | diagnostic: partial result (command-specific) |
 
 Diagnostic commands extend this dictionary. Read the precise codes with
 ` + "`ao doctor capabilities`" + ` (doctor surface) or a command's own ` + "`--help`" + `.
@@ -104,7 +104,6 @@ Diagnostic commands extend this dictionary. Read the precise codes with
 ao capabilities                 # discover the contract
 ao status --json                # where am I, what's initialized
 ao doctor --robot-triage        # one-call health + remediation
-ao inject "<topic>"             # pull relevant prior knowledge
 ao gate check --fast --scope head   # ordinary deterministic repository checks
 ` + "```" + `
 

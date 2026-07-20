@@ -5,7 +5,7 @@ Fenced Steward product factory. It is the canonical walkthrough for the
 implemented architecture. The binding decision is
 [ADR-0015](../adr/ADR-0015-gas-city-fenced-steward.md); the dated research and
 duel remain historical evidence in the
-[role-topology audit](../audits/gas-city-role-topology-2026-07-17/README.md).
+[role-topology audit](https://github.com/boshu2/agentops/blob/main/docs/audits/gas-city-role-topology-2026-07-17/README.md).
 
 ## Status and scope
 
@@ -35,7 +35,7 @@ Claude/Opus 4.8 Worker judged by Codex/Sol, followed by a Claude Refiner and a
 fresh Codex/Sol integration verdict. It completed on the original sessions
 without an operator nudge or retry command. These canaries do not yet prove
 dependent multi-wave execution or the full injected-fault matrix. The exact
-evidence is in the [live bead canary](../audits/gas-city-factory-live-bead-canary.md).
+evidence is in the [live bead canary](https://github.com/boshu2/agentops/blob/main/docs/audits/gas-city-factory-live-bead-canary.md).
 
 AgentOps remains a semantic work-and-proof protocol, not a queue, Git workflow,
 retry controller, or release system. The factory is an optional caller-selected
@@ -489,7 +489,7 @@ The factory adopts those mechanisms with stricter lifecycle authority:
 It rejects Bun's mega-PR, shared-writer collisions, authority collapse, and any
 claim that green compilation/tests prove equivalence or memory safety. The
 primary-source ledger and unresolved contradictions are in
-[the Bun research note](../audits/gas-city-role-topology-2026-07-17/bun-rust-port-research.md).
+[the Bun research note](https://github.com/boshu2/agentops/blob/main/docs/audits/gas-city-role-topology-2026-07-17/bun-rust-port-research.md).
 
 ## Qualification status and remaining proof
 
@@ -523,5 +523,5 @@ trial demonstrating unique, acted-on value.
 - [AgentOps operating loop](operating-loop.md)
 - [Gas City execution adapter contract](../contracts/gas-city-execution-adapter.md)
 - Gas City deployment: `deploy/gc/README.md`
-- [Role-topology audit](../audits/gas-city-role-topology-2026-07-17/README.md)
-- [Bun Rust-port research](../audits/gas-city-role-topology-2026-07-17/bun-rust-port-research.md)
+- [Role-topology audit](https://github.com/boshu2/agentops/blob/main/docs/audits/gas-city-role-topology-2026-07-17/README.md)
+- [Bun Rust-port research](https://github.com/boshu2/agentops/blob/main/docs/audits/gas-city-role-topology-2026-07-17/bun-rust-port-research.md)

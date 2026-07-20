@@ -1,10 +1,18 @@
 # Install And Day-2 Operations
 
-AgentOps 3.3 uses one canonical checkout and source symlinks. The checkout is the
-source of truth; runtime plugin caches and copied skill mirrors are not part of
-the active path.
+AgentOps 3.3 supports three install paths:
 
-## Install
+- `npx skills@latest add boshu2/agentops --all -g` — universal; one command
+  installs the skills into all your coding agents.
+- Runtime plugins for Claude Code and Codex — managed bundles that update with
+  the release.
+- One canonical checkout plus `ao skills link` — source-tracked symlinks for
+  users who edit skills or contribute.
+
+With npx or a plugin, install and updates are handled by that tool. The rest of
+this page covers the checkout path and its day-2 operations.
+
+## Install (source checkout)
 
 Install the optional `ao` CLI, clone AgentOps, and link its skills:
 
@@ -56,10 +64,11 @@ canonical source. `conflicts` are deliberately untouched and require operator
 judgment. A conflict is not evidence that the user-owned entry should be
 deleted.
 
-## Migrate from 3.x plugins
+## Switch from plugins to source links
 
-Remove the old runtime plugin before enabling source links so only one AgentOps
-corpus is visible.
+Running the plugin bundle is fully supported. If you switch to a source-linked
+checkout (to edit skills or contribute), remove the plugin first so only one
+AgentOps corpus is visible.
 
 ### Claude Code
 
@@ -85,8 +94,8 @@ agy plugin disable agentops-core-gemini
 agy plugin uninstall agentops-core-gemini
 ```
 
-The legacy runtime-specific installers remain in this release only as migration
-compatibility. They are not the recommended install path.
+The 3.x curl installer scripts are refusing tombstones; install via npx, a
+runtime plugin, or the checkout above.
 
 ## Uninstall
 

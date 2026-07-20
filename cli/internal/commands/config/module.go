@@ -14,10 +14,6 @@ import (
 
 var showEnvironmentKeys = []string{
 	"AGENTOPS_CONFIG", "AGENTOPS_OUTPUT", "AGENTOPS_BASE_DIR", "AGENTOPS_VERBOSE", "AGENTOPS_NO_SC",
-	"AGENTOPS_RPI_WORKTREE_MODE", "AGENTOPS_RPI_RUNTIME", "AGENTOPS_RPI_RUNTIME_MODE",
-	"AGENTOPS_RPI_RUNTIME_COMMAND", "AGENTOPS_RPI_AO_COMMAND", "AGENTOPS_RPI_BD_COMMAND", "AGENTOPS_RPI_TMUX_COMMAND",
-	"AGENTOPS_FLYWHEEL_AUTO_PROMOTE_THRESHOLD", "AGENTOPS_MODEL_TIER", "AGENTOPS_COUNCIL_MODEL_TIER",
-	"AGENTOPS_DREAM_REPORT_DIR", "AGENTOPS_DREAM_RUN_TIMEOUT", "AGENTOPS_DREAM_KEEP_AWAKE",
 }
 
 var modelEnvironmentKeys = []string{"AGENTOPS_MODEL_TIER", "AGENTOPS_COUNCIL_MODEL_TIER", "COUNCIL_CLAUDE_MODEL"}
@@ -282,18 +278,6 @@ Environment variables:
   AGENTOPS_BASE_DIR   - Data directory path
   AGENTOPS_VERBOSE    - Enable verbose output (true/1)
   AGENTOPS_NO_SC      - Disable Smart Connections (true/1)
-  AGENTOPS_RPI_WORKTREE_MODE - RPI worktree policy (auto|always|never)
-  AGENTOPS_RPI_RUNTIME / AGENTOPS_RPI_RUNTIME_MODE - RPI runtime mode (auto|direct|stream)
-  AGENTOPS_RPI_RUNTIME_COMMAND - Runtime command used by legacy internal RPI paths (default: claude)
-  AGENTOPS_RPI_AO_COMMAND - ao command used for ratchet/checkpoint calls (default: ao)
-  AGENTOPS_RPI_BD_COMMAND - bd command used for epic/child checks (default: bd)
-  AGENTOPS_RPI_TMUX_COMMAND - tmux command used for status liveness probes (default: tmux)
-  AGENTOPS_FLYWHEEL_AUTO_PROMOTE_THRESHOLD - Default auto-promote age threshold (e.g. 24h)
-  AGENTOPS_MODEL_TIER - Default model cost tier (quality/balanced/budget)
-  AGENTOPS_COUNCIL_MODEL_TIER - Council-specific model tier override
-  AGENTOPS_DREAM_REPORT_DIR - Default output directory for overnight Dream reports
-  AGENTOPS_DREAM_RUN_TIMEOUT - Default timeout for overnight Dream runs
-  AGENTOPS_DREAM_KEEP_AWAKE - Default keep-awake behavior for overnight Dream runs
 
 Examples:
   ao config --show           # Show resolved configuration
