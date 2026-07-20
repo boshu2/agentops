@@ -91,7 +91,7 @@ func corpusDenyPaths(startDir string) ([]string, error) {
 	// resolved external target ext1 (the round-3 refute). The deny set is instead the full
 	// symlink-reachability CLOSURE (fixpoint), computed with fail-closed bounds so no
 	// symlink shape can escape: every shape either lands fully in the closure or refuses.
-	closure, err := symlinkClosureDenyTargets(append([]string(nil), out...), maxSymlinkClosureDirs, maxSymlinkDenyEntries, maxSymlinkWalkDepth)
+	closure, err := symlinkClosureDenyTargets(append([]string(nil), out...), maxSymlinkClosureDirs, maxSymlinkDenyEntries)
 	if err != nil {
 		return nil, err
 	}
@@ -121,11 +121,6 @@ const (
 	// maxSymlinkDenyEntries caps distinct canonical targets the closure may add (real
 	// environment measured ~58; headroom below).
 	maxSymlinkDenyEntries = 2048
-	// maxSymlinkWalkDepth bounds per-walk directory descent (a cheap secondary guard;
-	// the dir cap above is the real bound). filepath.WalkDir uses Lstat and does not
-	// follow symlinks, so a cycle cannot inflate a single walk — the closure's own
-	// visited-set + dir cap terminate the cross-walk graph.
-	maxSymlinkWalkDepth = 8
 )
 
 // errSymlinkClosureOverflow is returned (wrapped) when the symlink closure exceeds its
@@ -143,17 +138,22 @@ var errSymlinkClosureOverflow = errors.New("symlink deny closure exceeded bounds
 //     what closes a CHAINED escape (.agents/learnings -> ext1; ext1/pivot.md -> ext2).
 //  2. Repeat until the worklist is empty. The result is the complete closure.
 //
-// Cycle safety: a target is deduped via the seen-set BEFORE being pushed, and each root is
-// walked at most once (a->b->a terminates). Dangling symlinks (unresolvable chains) are
-// skipped; device/socket/fifo targets are skipped (not a corpus leak). initialRoots (the
-// legitimate corpus dirs) are walked depth-bounded but NOT dir-capped — they are bounded by
-// reality and already denied by subpath. Directories reached THROUGH symlinks are dir-capped
-// (maxDirs): that is where a pathological graph would explode, and exceeding the cap — or the
-// deny-entry cap (maxEntries), or hitting an unreadable directory (a non-NotExist walk error)
-// — returns an error so the arm fails closed. A missing/NotExist root walks to nothing. Caps
-// are parameters so overflow is unit-testable with tiny caps; corpusDenyPaths passes the
-// package consts.
-func symlinkClosureDenyTargets(initialRoots []string, maxDirs, maxEntries, maxDepth int) ([]string, error) {
+// Termination and completeness: there is NO depth bound — a depth cap can only either
+// silently truncate the closure (omitting a deep symlink target — the leak this replaced) or
+// false-close on a legitimately deep corpus, both of which break "complete closure OR refuse".
+// The closure instead walks each subtree in FULL, and terminates on two guards: (1) a target
+// is deduped via the seen-set BEFORE being pushed and each root is walked at most once
+// (a->b->a terminates; filepath.WalkDir uses Lstat and does not follow symlinks, so no single
+// walk can cycle); (2) directories reached THROUGH symlinks are dir-capped (maxDirs), so a
+// pathological EXTERNAL graph — a wide fan-out OR a deep linear chain — is bounded and fails
+// closed. Exceeding the dir cap, the deny-entry cap (maxEntries), or hitting an unreadable
+// directory (a non-NotExist walk error) returns an error so the arm fails closed. Dangling
+// symlinks (unresolvable chains) are skipped; device/socket/fifo targets are skipped (not a
+// corpus leak). initialRoots (the legitimate corpus dirs) are walked in full but NOT dir-capped
+// — they are bounded by reality and already denied by subpath. A missing/NotExist root walks to
+// nothing. Caps are parameters so overflow is unit-testable with tiny caps; corpusDenyPaths
+// passes the package consts.
+func symlinkClosureDenyTargets(initialRoots []string, maxDirs, maxEntries int) ([]string, error) {
 	var out []string
 	denySeen := map[string]bool{} // canonical targets already added (output dedup)
 	walked := map[string]bool{}   // roots already walked (cross-walk cycle guard)
@@ -177,8 +177,6 @@ func symlinkClosureDenyTargets(initialRoots []string, maxDirs, maxEntries, maxDe
 	}
 
 	walkOne := func(root string, countDirs bool) error {
-		cleanRoot := filepath.Clean(root)
-		rootDepth := strings.Count(cleanRoot, string(filepath.Separator))
 		return filepath.WalkDir(root, func(path string, d os.DirEntry, err error) error {
 			if err != nil {
 				if os.IsNotExist(err) {
@@ -194,9 +192,6 @@ func symlinkClosureDenyTargets(initialRoots []string, maxDirs, maxEntries, maxDe
 					if dirsWalked > maxDirs {
 						return errSymlinkClosureOverflow
 					}
-				}
-				if strings.Count(filepath.Clean(path), string(filepath.Separator))-rootDepth > maxDepth {
-					return filepath.SkipDir
 				}
 				return nil
 			}
