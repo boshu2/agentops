@@ -20,6 +20,7 @@ import os
 from pathlib import Path, PurePosixPath
 import re
 import secrets
+import shlex
 import shutil
 import subprocess
 import sys
@@ -39,6 +40,27 @@ DIGEST_RE = re.compile(r"^[0-9a-f]{64}$")
 SHA_RE = re.compile(r"^[0-9a-f]{40}$")
 PROVIDERS = {"codex", "claude"}
 VERDICTS = {"PASS", "FAIL", "NOT_PROVEN"}
+DELIVERY_MODES = {"pr", "qualify"}
+FACTORY_GIT_NAME = "AgentOps Gas City Factory"
+FACTORY_GIT_EMAIL = "agentops-factory@localhost.invalid"
+# Dynamic rig reconciliation and a busy managed Dolt control plane can make a
+# legitimate GC/Beads read exceed the ordinary interactive threshold. Keep the
+# operation bounded while matching the executor adapter's production floor.
+CONTROL_PLANE_TIMEOUT_SECONDS = 120
+FACTORY_ROLE_MODELS = {
+    ("implement", "codex"): ("gpt-5.6-terra", "gpt-5.6-terra"),
+    ("implement", "claude"): ("opus-4.8", "claude-opus-4-8"),
+    ("validate", "codex"): ("gpt-5.6-sol", "gpt-5.6-sol"),
+    ("validate", "claude"): ("opus-4.8", "claude-opus-4-8"),
+    ("mayor", "codex"): ("gpt-5.6-sol", "gpt-5.6-sol"),
+    ("mayor", "claude"): ("opus-4.8", "claude-opus-4-8"),
+    ("rescope", "codex"): ("gpt-5.6-sol", "gpt-5.6-sol"),
+    ("rescope", "claude"): ("opus-4.8", "claude-opus-4-8"),
+    ("plan-review", "codex"): ("gpt-5.6-sol", "gpt-5.6-sol"),
+    ("plan-review", "claude"): ("opus-4.8", "claude-opus-4-8"),
+    ("refiner", "codex"): ("gpt-5.6-sol", "gpt-5.6-sol"),
+    ("refiner", "claude"): ("opus-4.8", "claude-opus-4-8"),
+}
 ROLE_REQUEST_KEYS = {
     "schema_version", "request_id", "role", "provider", "program_id",
     "workspace", "intent_source", "intent_digest", "repository", "base_branch",
@@ -48,7 +70,8 @@ ROLE_REQUEST_KEYS = {
 NODE_KEYS = {
     "id", "title", "intent", "acceptance", "non_goals", "depends_on",
     "write_scope", "generated_scope", "subject", "first_check", "provider",
-    "validator_provider", "risk", "supersedes",
+    "validator_provider", "execution_role", "worker_model_policy",
+    "validator_model_policy", "risk", "supersedes",
 }
 
 
@@ -98,9 +121,11 @@ def write_json_atomic(path: Path, value: dict[str, Any]) -> None:
 
 
 def write_text_atomic(path: Path, payload: str) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    mode = path.stat().st_mode & 0o777 if path.exists() else 0o644
     fd, temporary = tempfile.mkstemp(prefix=f".{path.name}.", dir=path.parent)
     try:
-        os.fchmod(fd, path.stat().st_mode & 0o777)
+        os.fchmod(fd, mode)
         with os.fdopen(fd, "w", encoding="utf-8") as handle:
             handle.write(payload)
             handle.flush()
@@ -144,6 +169,31 @@ def require_list(value: Any, label: str, nonempty: bool = False) -> list[Any]:
     if not isinstance(value, list) or (nonempty and not value):
         raise FactoryError("invalid_contract", f"{label} must be a{' nonempty' if nonempty else ''} array")
     return value
+
+
+def require_provider(value: Any, label: str) -> str:
+    provider = require_string(value, label)
+    if provider not in PROVIDERS:
+        raise FactoryError("invalid_contract", f"{label} must be one of {sorted(PROVIDERS)}")
+    return provider
+
+
+def opposite_provider(provider: str) -> str:
+    selected = require_provider(provider, "provider")
+    return "claude" if selected == "codex" else "codex"
+
+
+def lifecycle_agent_name(role: str, provider: str) -> str:
+    selected = require_provider(provider, f"{role} provider")
+    if role not in {"mayor", "plan-review", "refiner"}:
+        raise FactoryError("invalid_contract", f"unsupported lifecycle role: {role}")
+    base = {"mayor": "mayor", "plan-review": "plan-reviewer", "refiner": "refiner"}[role]
+    return f"{base}-claude" if selected == "claude" else base
+
+
+def lifecycle_target(role: str, provider: str, rig: str, binding: str) -> str:
+    local = lifecycle_agent_name(role, provider)
+    return f"{binding}.{local}" if role == "mayor" else f"{rig}/{binding}.{local}"
 
 
 def exact_keys(value: dict[str, Any], required: set[str], allowed: set[str], label: str) -> None:
@@ -195,6 +245,39 @@ def output(argv: list[str], **kwargs: Any) -> str:
     return run_process(argv, **kwargs).stdout.strip()
 
 
+def factory_git_command(*args: str) -> list[str]:
+    """Build a Git command for a commit owned by the factory runtime.
+
+    Disposable rigs must not depend on a caller's global or repository-local
+    author configuration. The explicit identity applies only to this command;
+    it does not mutate either Git config surface.
+    """
+    return [
+        "git",
+        "-c", f"user.name={FACTORY_GIT_NAME}",
+        "-c", f"user.email={FACTORY_GIT_EMAIL}",
+        *args,
+    ]
+
+
+def abort_interrupted_factory_cherry_pick(worktree: Path) -> bool:
+    """Abort only a Git-proven interrupted factory cherry-pick transaction."""
+    marker = run_process(
+        ["git", "rev-parse", "--verify", "CHERRY_PICK_HEAD"],
+        cwd=worktree,
+        check=False,
+    )
+    if marker.returncode != 0:
+        return False
+    prior_head = git_head(worktree)
+    run_process(factory_git_command("cherry-pick", "--abort"), cwd=worktree, timeout=120)
+    if git_head(worktree) != prior_head:
+        raise FactoryError("assembly_recovery_failed", "aborting interrupted cherry-pick moved the integration head")
+    if output(["git", "status", "--porcelain", "--untracked-files=no"], cwd=worktree):
+        raise FactoryError("assembly_recovery_failed", "aborting interrupted cherry-pick left tracked changes")
+    return True
+
+
 def parse_json_output(raw: str, label: str) -> Any:
     try:
         return json.loads(raw)
@@ -205,6 +288,19 @@ def parse_json_output(raw: str, label: str) -> Any:
             return json.loads(line)
         except json.JSONDecodeError:
             continue
+    # Some native Beads commands currently print human progress before a
+    # pretty-printed JSON object even with --json. Accept one complete trailing
+    # JSON value without weakening the requirement that nothing follows it.
+    decoder = json.JSONDecoder()
+    for index in range(len(raw) - 1, -1, -1):
+        if raw[index] not in "[{":
+            continue
+        try:
+            value, end = decoder.raw_decode(raw[index:])
+        except json.JSONDecodeError:
+            continue
+        if not raw[index + end:].strip():
+            return value
     raise FactoryError("invalid_runtime_json", f"{label} did not return JSON: {raw[:400]}")
 
 
@@ -242,7 +338,12 @@ class Beads:
     def __init__(self, rig: str | None):
         self.rig = require_string(rig, "rig") if rig is not None else None
 
-    def run(self, *args: str, check: bool = True, timeout: float = 60) -> subprocess.CompletedProcess[str]:
+    def run(
+        self,
+        *args: str,
+        check: bool = True,
+        timeout: float = CONTROL_PLANE_TIMEOUT_SECONDS,
+    ) -> subprocess.CompletedProcess[str]:
         command = [gc_binary(), "--city", city_path(), "bd"]
         if self.rig is not None:
             command += ["--rig", self.rig]
@@ -313,11 +414,136 @@ class Beads:
             args += ["--set-metadata", f"{key}={rendered}"]
         self.run(*args)
 
-    def close(self, bead_id: str, reason: str) -> None:
+    def close(self, bead_id: str, reason: str, work_outcome: str,
+              commit: str | None = None, branch: str | None = None,
+              work_dir: str | Path | None = None) -> None:
+        if work_outcome not in {"shipped", "no-op", "blocked", "abandoned"}:
+            raise FactoryError("invalid_work_outcome", f"invalid gc.work_outcome {work_outcome!r}")
+        fields: dict[str, Any] = {
+            "gc.outcome": "fail" if work_outcome in {"blocked", "abandoned"} else "pass",
+            "gc.work_outcome": work_outcome,
+        }
+        if work_outcome == "shipped":
+            fields["gc.work_commit"] = require_string(commit, "gc.work_commit", SHA_RE)
+            fields["gc.work_branch"] = require_string(branch, "gc.work_branch")
+            if work_dir is not None:
+                fields["gc.work_dir"] = str(Path(work_dir).resolve(strict=False))
+        elif commit is not None or branch is not None:
+            raise FactoryError("invalid_work_outcome", f"{work_outcome} must not carry commit/branch evidence")
+        self.update_metadata(bead_id, fields)
         self.run("close", bead_id, "--reason", reason)
+
+    def defer(self, bead_id: str, reason: str) -> None:
+        self.run("defer", bead_id, "--reason", reason)
+
+    def hold_delivery(self, bead_id: str) -> None:
+        """Atomically park delivery and release every GC runtime identity.
+
+        Gas City deliberately projects Beads' non-terminal statuses (including
+        ``deferred``) onto its smaller ``open`` work-state vocabulary.  A
+        deferred bead that remains routed or assigned can therefore keep a
+        Refiner pool hot forever.  A delivery hold is not runnable work: retain
+        the durable hold facts on the bead, but remove its route, assignee, and
+        ephemeral session workspace in the same Beads update that defers it.
+        """
+        self.run(
+            "update", bead_id,
+            "--status", "deferred",
+            "--assignee", "",
+            "--unset-metadata", "gc.routed_to",
+            "--unset-metadata", "gc.session_name",
+            "--unset-metadata", "gc.work_dir",
+        )
+
+    def retry_delivery(self, bead_id: str, route: str) -> None:
+        route = require_string(route, "Refiner retry route")
+        self.run(
+            "update", bead_id,
+            "--status", "open",
+            "--assignee", "",
+            "--set-metadata", f"gc.routed_to={route}",
+            "--unset-metadata", "factory.delivery_hold",
+            "--unset-metadata", "factory.delivery_hold_code",
+            "--unset-metadata", "factory.delivery_hold_reason",
+            "--unset-metadata", "factory.refiner_context_id",
+            "--unset-metadata", "factory.refiner_model",
+            "--unset-metadata", "factory.refiner_model_policy",
+            "--unset-metadata", "factory.refiner_model_source",
+            "--unset-metadata", "gc.session_name",
+            "--unset-metadata", "gc.work_branch",
+            "--unset-metadata", "gc.work_dir",
+        )
 
     def dep_add(self, blocked: str, blocker: str, dep_type: str = "blocks") -> None:
         self.run("dep", "add", blocked, blocker, "--type", dep_type)
+
+    def acquire_merge_slot(self, holder: str, timeout: float) -> str:
+        """Acquire this rig's native Beads merge slot with bounded waiting."""
+        holder = require_string(holder, "merge slot holder")
+        if timeout <= 0:
+            raise FactoryError("invalid_argument", "merge slot timeout must be positive")
+        created = parse_json_output(
+            self.run("merge-slot", "create", "--json", timeout=120).stdout,
+            "bd merge-slot create",
+        )
+        slot_id = require_string(
+            created.get("id") if isinstance(created, dict) else None,
+            "merge slot id",
+        )
+        deadline = time.monotonic() + timeout
+        while True:
+            completed = self.run(
+                "merge-slot", "acquire", "--holder", holder, "--wait", "--json",
+                check=False, timeout=min(60, max(5, timeout)),
+            )
+            value = parse_json_output(completed.stdout, "bd merge-slot acquire")
+            if not isinstance(value, dict):
+                raise FactoryError("merge_slot_invalid", "bd merge-slot acquire returned no object")
+            if value.get("id") != slot_id:
+                raise FactoryError("merge_slot_invalid", "Beads changed merge slot identity while acquiring")
+            # Beads returns exit 1/acquired:false when the same stable holder
+            # retries after process recovery. Its holder field is still the
+            # authoritative ownership proof.
+            if value.get("acquired") is True or value.get("holder") == holder:
+                return slot_id
+            if value.get("waiting") is not True:
+                detail = completed.stderr.strip() or repr(value)
+                raise FactoryError("merge_slot_failed", f"cannot queue for native merge slot: {detail}")
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                raise FactoryError(
+                    "merge_slot_timeout",
+                    f"native merge slot {slot_id} remained held by {value.get('holder')!r}",
+                )
+            time.sleep(min(2.0, remaining))
+
+    def release_merge_slot(self, holder: str, slot_id: str) -> None:
+        holder = require_string(holder, "merge slot holder")
+        slot_id = require_string(slot_id, "merge slot id")
+        completed = self.run(
+            "merge-slot", "release", "--holder", holder, "--json",
+            check=False, timeout=120,
+        )
+        value = parse_json_output(completed.stdout, "bd merge-slot release")
+        if (
+            completed.returncode != 0
+            or not isinstance(value, dict)
+            or value.get("id") != slot_id
+            or value.get("released") is not True
+        ):
+            detail = completed.stderr.strip() or repr(value)
+            raise FactoryError("merge_slot_release_failed", f"cannot release native merge slot: {detail}")
+
+
+@contextlib.contextmanager
+def refinery_merge_slot(beads: Beads, refinery_bead: str, timeout: float) -> Any:
+    """Serialize only candidate assembly; fresh validation runs outside it."""
+    holder = f"factory-refinery:{require_string(refinery_bead, 'refinery bead')}"
+    slot_id = beads.acquire_merge_slot(holder, timeout)
+    try:
+        yield {"id": slot_id, "holder": holder}
+    finally:
+        beads.release_merge_slot(holder, slot_id)
 
 
 def ensure_dependency(beads: Beads, blocked: str, blocker: str,
@@ -343,8 +569,6 @@ def validate_role_request(path: Path) -> tuple[dict[str, Any], dict[str, Path]]:
     provider = request.get("provider")
     if role not in {"mayor", "plan-review", "rescope"} or provider not in PROVIDERS:
         raise FactoryError("invalid_role_request", "role or provider is invalid")
-    if role in {"mayor", "rescope"} and provider != "codex":
-        raise FactoryError("invalid_role_request", "the v1 Mayor and rescope roles use the Codex city role")
     require_string(request.get("program_id"), "program_id", ID_RE)
     workspace = absolute_path(request.get("workspace"), "workspace", True, True)
     repository = absolute_path(request.get("repository"), "repository", True, True)
@@ -388,6 +612,80 @@ def command_inspect_role(args: argparse.Namespace) -> int:
     request, paths = validate_role_request(path)
     rendered = dict(request)
     rendered["request_path"] = str(paths["request"])
+
+    def field_contracts(properties: dict[str, Any]) -> dict[str, dict[str, Any]]:
+        visible = ("type", "const", "enum", "pattern", "minLength", "minItems", "maxItems", "uniqueItems")
+        return {
+            name: {key: definition[key] for key in visible if key in definition}
+            for name, definition in properties.items()
+        }
+
+    def model_policy_contract() -> dict[str, Any]:
+        return {
+            "worker": {
+                provider: FACTORY_ROLE_MODELS[("implement", provider)][0]
+                for provider in sorted(PROVIDERS)
+            },
+            "validator": {
+                provider: FACTORY_ROLE_MODELS[("validate", provider)][0]
+                for provider in sorted(PROVIDERS)
+            },
+            "lifecycle": {
+                role: {
+                    provider: FACTORY_ROLE_MODELS[(role, provider)][0]
+                    for provider in sorted(PROVIDERS)
+                }
+                for role in ("mayor", "plan-review", "refiner")
+            },
+        }
+
+    if request["role"] == "plan-review":
+        schema_path = SCHEMA_ROOT / "plan-review.v1.schema.json"
+        schema = load_object(schema_path, "plan-review schema")
+        rendered["artifact_contract"] = {
+            "schema_path": str(schema_path.resolve()),
+            "required_top_level": schema["required"],
+            "allowed_top_level": sorted(schema["properties"]),
+            "criterion_required": schema["properties"]["criteria"]["items"]["required"],
+            "criterion_allowed": sorted(schema["properties"]["criteria"]["items"]["properties"]),
+            "finding_required": schema["properties"]["findings"]["items"]["required"],
+            "finding_allowed": sorted(schema["properties"]["findings"]["items"]["properties"]),
+            "verdict_values": sorted(VERDICTS),
+            "top_level_fields": field_contracts(schema["properties"]),
+            "criterion_fields": field_contracts(schema["properties"]["criteria"]["items"]["properties"]),
+            "finding_fields": field_contracts(schema["properties"]["findings"]["items"]["properties"]),
+            "model_policy": model_policy_contract(),
+        }
+    else:
+        schema_path = SCHEMA_ROOT / "program-graph.v1.schema.json"
+        schema = load_object(schema_path, "program-graph schema")
+        node = schema["properties"]["nodes"]["items"]
+        rendered["artifact_contract"] = {
+            "schema_path": str(schema_path.resolve()),
+            "artifact_kind": "program-graph" if request["role"] == "mayor" else "successor-node",
+            "required_top_level": schema["required"] if request["role"] == "mayor" else node["required"],
+            "allowed_top_level": (
+                sorted(schema["properties"])
+                if request["role"] == "mayor"
+                else sorted(node["properties"])
+            ),
+            "node_required": node["required"],
+            "node_allowed": sorted(node["properties"]),
+            "provider_values": sorted(PROVIDERS),
+            "execution_role": "implementation",
+            "model_policy": model_policy_contract(),
+            "risk_values": ["high", "routine"],
+            "first_check_semantics": (
+                "A post-implementation shell command run by the factory in the candidate worktree; "
+                "it must exit 0 for a correct candidate. It is not a RED precondition or an assertion "
+                "that the requested product is absent. It must be scoped to the node's product paths "
+                "and acceptance, independent of factory/runtime scaffolding (.gc/**, .claude/**, "
+                ".codex/**), sibling worktrees, and unrelated pre-existing caller changes."
+            ),
+            "top_level_fields": field_contracts(schema["properties"]),
+            "node_fields": field_contracts(node["properties"]),
+            "subject_fields": field_contracts(node["properties"]["subject"]["properties"]),
+        }
     print(json.dumps(rendered, sort_keys=True))
     return 0
 
@@ -404,9 +702,8 @@ def command_emit_role(args: argparse.Namespace) -> int:
     provider = require_string(os.environ.get("GC_PROVIDER"), "GC_PROVIDER")
     if provider != request["provider"]:
         raise FactoryError("provider_mismatch", "runtime provider differs from role request")
-    expected_suffix = ".mayor" if request["role"] in {"mayor", "rescope"} else (
-        ".plan-reviewer-claude" if provider == "claude" else ".plan-reviewer"
-    )
+    lifecycle_role = "mayor" if request["role"] == "rescope" else request["role"]
+    expected_suffix = f".{lifecycle_agent_name(lifecycle_role, provider)}"
     if not template.endswith(expected_suffix):
         raise FactoryError("template_mismatch", f"runtime template must end with {expected_suffix}")
     if request["role"] == "mayor":
@@ -421,7 +718,7 @@ def command_emit_role(args: argparse.Namespace) -> int:
         )
         validate_review(
             load_object(artifact, "plan review"), graph, request["subject_digest"],
-            request["mayor_context_id"],
+            request["mayor_context_id"], request["provider"],
         )
     else:
         context = validate_rescope_context(load_object(paths["subject"], "rescope context"))
@@ -563,10 +860,24 @@ def validate_node(node: dict[str, Any], label: str, allow_supersedes: bool = Tru
         "excludes": [normalize_path(item, f"{label}.subject.excludes") for item in require_list(subject.get("excludes"), "subject.excludes")],
     }
     require_string(node.get("first_check"), f"{label}.first_check")
+    if node.get("execution_role") != "implementation":
+        raise FactoryError("invalid_graph", f"node {node_id} execution_role must be implementation")
     if node.get("provider") not in PROVIDERS or node.get("validator_provider") not in PROVIDERS:
         raise FactoryError("invalid_graph", f"node {node_id} providers must be codex or claude")
     if node["provider"] == node["validator_provider"]:
         raise FactoryError("invalid_graph", f"node {node_id} must use an opposite-family Validator")
+    expected_worker = FACTORY_ROLE_MODELS[("implement", node["provider"])][0]
+    expected_validator = FACTORY_ROLE_MODELS[("validate", node["validator_provider"])][0]
+    if node.get("worker_model_policy") != expected_worker:
+        raise FactoryError(
+            "invalid_graph",
+            f"node {node_id} worker_model_policy must be {expected_worker} for {node['provider']}",
+        )
+    if node.get("validator_model_policy") != expected_validator:
+        raise FactoryError(
+            "invalid_graph",
+            f"node {node_id} validator_model_policy must be {expected_validator} for {node['validator_provider']}",
+        )
     if node.get("risk") not in {"routine", "high"}:
         raise FactoryError("invalid_graph", f"node {node_id} risk must be routine or high")
     if "supersedes" in node:
@@ -653,7 +964,7 @@ def validate_graph(value: dict[str, Any], intent_digest: str | None = None,
 
 
 def validate_review(value: dict[str, Any], graph: dict[str, Any], graph_digest: str,
-                    mayor_context: str) -> dict[str, Any]:
+                    mayor_context: str, expected_provider: str | None = None) -> dict[str, Any]:
     fields = {"schema_version", "program_id", "intent_digest", "graph_digest", "mayor_context_id",
               "reviewer_context_id", "provider", "verdict", "criteria", "findings"}
     exact_keys(value, fields, fields, "plan review")
@@ -669,6 +980,11 @@ def validate_review(value: dict[str, Any], graph: dict[str, Any], graph_digest: 
         raise FactoryError("freshness_collision", "plan reviewer context collides with Mayor")
     if value.get("provider") not in PROVIDERS or value.get("verdict") not in VERDICTS:
         raise FactoryError("invalid_review", "plan review provider or verdict is invalid")
+    if expected_provider is not None and value["provider"] != expected_provider:
+        raise FactoryError(
+            "provider_mismatch",
+            f"plan review provider must be {expected_provider!r}, got {value['provider']!r}",
+        )
     criteria = require_list(value.get("criteria"), "criteria", True)
     nonpass = False
     for item in criteria:
@@ -698,6 +1014,17 @@ ROLE_RESPONSE_KEYS = {
 }
 
 
+def command_model(command: str) -> str:
+    try:
+        tokens = shlex.split(command)
+    except ValueError as exc:
+        raise FactoryError("runtime_identity_missing", f"GC runtime command cannot be parsed: {exc}") from exc
+    values = [tokens[index + 1] for index, token in enumerate(tokens[:-1]) if token in {"--model", "-m"}]
+    if len(values) != 1 or not values[0].strip():
+        raise FactoryError("runtime_identity_missing", "GC runtime command must contain exactly one explicit model")
+    return values[0].strip()
+
+
 def runtime_session(context_id: str) -> dict[str, Any]:
     value = parse_json_output(
         output([gc_binary(), "--city", city_path(), "session", "list", "--state", "all", "--json"]),
@@ -707,9 +1034,43 @@ def runtime_session(context_id: str) -> dict[str, Any]:
     if not isinstance(sessions, list):
         raise FactoryError("runtime_identity_missing", "gc session list returned no sessions")
     matches = [item for item in sessions if isinstance(item, dict) and str(item.get("id", "")) == context_id]
-    if len(matches) != 1:
+    if len(matches) > 1:
         raise FactoryError("runtime_identity_missing", f"expected one runtime session {context_id}, found {len(matches)}")
-    return matches[0]
+    live = matches[0] if matches else None
+
+    # The durable city-scoped session bead owns the exact launch command. Read
+    # it even while the live projection exists so model policy is attested from
+    # the process GC actually launched, not from ambient CLI defaults.
+    try:
+        record = Beads(None).show(context_id)
+    except FactoryError as exc:
+        raise FactoryError(
+            "runtime_identity_missing",
+            f"runtime session {context_id} is absent from both the live projection and city session beads",
+        ) from exc
+    if str(record.get("id", "")) != context_id or record.get("issue_type") != "session":
+        raise FactoryError("runtime_identity_missing", f"city bead {context_id} is not the requested session identity")
+    if live is None and record.get("status") != "closed":
+        raise FactoryError("runtime_identity_missing", f"runtime session {context_id} is not live and its bead is not closed")
+    meta = metadata(record)
+    fields: dict[str, str] = {}
+    for field in ("provider", "template", "session_name", "state"):
+        value = (live or {}).get(field) or meta.get(field)
+        fields[field] = require_string(value, f"session {field}")
+    launched_model = command_model(str(meta.get("command", "")))
+    observed_model = (live or {}).get("model")
+    if isinstance(observed_model, str) and observed_model.strip() and observed_model.strip() != launched_model:
+        raise FactoryError(
+            "runtime_model_mismatch",
+            f"GC transcript model {observed_model.strip()} does not match launched model {launched_model}",
+        )
+    return {
+        "id": context_id,
+        **fields,
+        "status": record.get("status"),
+        "model": launched_model,
+        "model_source": "launch_command",
+    }
 
 
 def dispatch_role(request_path: Path, rig: str, binding: str, timeout: float,
@@ -720,10 +1081,9 @@ def dispatch_role(request_path: Path, rig: str, binding: str, timeout: float,
     kind = {"mayor": "planning", "plan-review": "plan-review", "rescope": "rescope-planning"}[request["role"]]
     request_digest = digest_file(request_path)
     if request["role"] in {"mayor", "rescope"}:
-        target = f"{binding}.mayor"
+        target = lifecycle_target("mayor", request["provider"], rig, binding)
     else:
-        local = "plan-reviewer-claude" if request["provider"] == "claude" else "plan-reviewer"
-        target = f"{rig}/{binding}.{local}"
+        target = lifecycle_target("plan-review", request["provider"], rig, binding)
     description = "\n".join([
         f"Factory {kind} bead {request['request_id']}",
         "This bead is the durable unit of work; close it only after the requested artifact is emitted.",
@@ -793,16 +1153,20 @@ def dispatch_role(request_path: Path, rig: str, binding: str, timeout: float,
     response: dict[str, Any] | None = None
     record: dict[str, Any] | None = None
     while time.monotonic() < deadline:
-        if response is None and paths["result"].is_file():
-            response = load_object(paths["result"], "factory role response")
         record = beads.show(bead_id)
-        if response is not None and record.get("status") == "closed":
+        if record.get("status") == "closed" and paths["result"].is_file():
+            # The bead close is the role's commit point. A response emitted by
+            # a process that crashes before closure is provisional and may be
+            # replaced when the same session/bead recovers. Loading it early
+            # would cache stale evidence across that legitimate recovery.
+            response = load_object(paths["result"], "factory role response")
             break
         time.sleep(1)
     else:
-        if response is None:
-            raise FactoryError("role_timeout", f"role bead {bead_id} produced no response")
-        raise FactoryError("role_timeout", f"role bead {bead_id} emitted but did not close")
+        if paths["result"].is_file():
+            raise FactoryError("role_timeout", f"role bead {bead_id} emitted but did not close")
+        raise FactoryError("role_timeout", f"role bead {bead_id} produced no response")
+    assert response is not None and record is not None
     exact_keys(response, ROLE_RESPONSE_KEYS, ROLE_RESPONSE_KEYS, "factory role response")
     expected = {
         "schema_version": "factory-role-response.v1",
@@ -827,12 +1191,21 @@ def dispatch_role(request_path: Path, rig: str, binding: str, timeout: float,
     }.items():
         if session.get(key) != wanted:
             raise FactoryError("runtime_identity_mismatch", f"runtime session {key} differs from the response")
+    configured_model, launched_model = FACTORY_ROLE_MODELS[(request["role"], request["provider"])]
+    if session.get("model") != launched_model:
+        raise FactoryError(
+            "runtime_model_mismatch",
+            f"GC runtime model must be {configured_model} ({launched_model}) for {request['role']}/{request['provider']}",
+        )
     if record.get("assignee") != response["session_name"]:
         raise FactoryError("runtime_identity_mismatch", "role bead assignee differs from the response session")
     beads.update_metadata(bead_id, {
         "factory.status": "completed",
         "factory.target": target,
         "factory.session_context_id": session_id,
+        "factory.model": session["model"],
+        "factory.model_policy": configured_model,
+        "factory.model_source": session["model_source"],
         "factory.artifact_path": str(paths["artifact"]),
         "factory.artifact_digest": response["artifact_digest"],
     })
@@ -845,7 +1218,7 @@ def node_description(parent_digest: str, node: dict[str, Any]) -> str:
     return (
         f"{node['intent'].strip()}\n\nParent intent digest: {parent_digest}\n\n"
         f"Acceptance:\n{acceptance}\n\nNon-goals:\n{non_goals}\n\n"
-        f"First deterministic check: {node['first_check']}\n"
+        f"First post-implementation GREEN check: {node['first_check']}\n"
     )
 
 
@@ -868,7 +1241,10 @@ def experiment_metadata(graph: dict[str, Any], node: dict[str, Any], graph_diges
         "factory.base_branch": graph["base_branch"],
         "factory.base_sha": graph["base_sha"],
         "factory.provider": node["provider"],
+        "factory.execution_role": node["execution_role"],
+        "factory.worker_model_policy": node["worker_model_policy"],
         "factory.validator_provider": node["validator_provider"],
+        "factory.validator_model_policy": node["validator_model_policy"],
         "factory.write_scope": json.dumps(node["write_scope"], separators=(",", ":")),
         "factory.generated_scope": json.dumps(node["generated_scope"], separators=(",", ":")),
         "factory.subject": json.dumps(node["subject"], sort_keys=True, separators=(",", ":")),
@@ -879,7 +1255,10 @@ def experiment_metadata(graph: dict[str, Any], node: dict[str, Any], graph_diges
 
 
 def compile_bead_plan(graph: dict[str, Any], graph_digest: str, review_digest: str,
-                      intent_source: Path, mayor_context: str, reviewer_context: str) -> dict[str, Any]:
+                      intent_source: Path, mayor_context: str, reviewer_context: str,
+                      mayor_provider: str = "codex", reviewer_provider: str = "claude",
+                      refiner_provider: str = "codex",
+                      integration_validator_provider: str = "claude") -> dict[str, Any]:
     root_key = "program"
     refinery_key = "refinery"
     root = {
@@ -897,7 +1276,11 @@ def compile_bead_plan(graph: dict[str, Any], graph_digest: str, review_digest: s
             "factory.graph_digest": graph_digest,
             "factory.review_digest": review_digest,
             "factory.mayor_context_id": mayor_context,
+            "factory.mayor_provider": mayor_provider,
             "factory.reviewer_context_id": reviewer_context,
+            "factory.plan_reviewer_provider": reviewer_provider,
+            "factory.refiner_provider": refiner_provider,
+            "factory.integration_validator_provider": integration_validator_provider,
             "factory.repository": graph["repository"],
             "factory.base_branch": graph["base_branch"],
             "factory.base_sha": graph["base_sha"],
@@ -938,6 +1321,9 @@ def compile_bead_plan(graph: dict[str, Any], graph_digest: str, review_digest: s
             "factory.base_sha": graph["base_sha"],
             "factory.intent_digest": graph["intent_digest"],
             "factory.graph_digest": graph_digest,
+            "factory.mayor_provider": mayor_provider,
+            "factory.refiner_provider": refiner_provider,
+            "factory.integration_validator_provider": integration_validator_provider,
         },
         "metadata_refs": {"factory.program_bead": root_key},
     })
@@ -951,13 +1337,38 @@ def compile_bead_plan(graph: dict[str, Any], graph_digest: str, review_digest: s
 
 
 def admit_program(intent: Path, graph_path: Path, review_path: Path,
-                  mayor_context: str, rig: str, binding: str = "factory") -> dict[str, Any]:
+                  mayor_context: str, rig: str, binding: str = "factory",
+                  delivery_mode: str = "pr", mayor_provider: str = "codex",
+                  reviewer_provider: str = "claude", refiner_provider: str = "codex",
+                  integration_validator_provider: str = "claude") -> dict[str, Any]:
+    if delivery_mode not in DELIVERY_MODES:
+        raise FactoryError("invalid_contract", f"delivery_mode must be one of {sorted(DELIVERY_MODES)}")
+    mayor_provider = require_provider(mayor_provider, "mayor_provider")
+    reviewer_provider = require_provider(reviewer_provider, "reviewer_provider")
+    refiner_provider = require_provider(refiner_provider, "refiner_provider")
+    integration_validator_provider = require_provider(
+        integration_validator_provider, "integration_validator_provider",
+    )
+    if mayor_provider == reviewer_provider:
+        raise FactoryError("provider_collision", "plan review must use the opposite provider from the Mayor")
+    if refiner_provider == integration_validator_provider:
+        raise FactoryError(
+            "provider_collision",
+            "integration validation must use the opposite provider from the Refiner",
+        )
     graph = validate_graph(load_object(graph_path, "program graph"), digest_file(intent))
     mayor = require_string(mayor_context, "mayor context")
-    review = validate_review(load_object(review_path, "plan review"), graph, digest_file(graph_path), mayor)
+    review = validate_review(
+        load_object(review_path, "plan review"), graph, digest_file(graph_path),
+        mayor, reviewer_provider,
+    )
     if review["verdict"] != "PASS":
         raise FactoryError("plan_rejected", f"plan review is {review['verdict']}; no beads were admitted")
-    plan = compile_bead_plan(graph, digest_file(graph_path), digest_file(review_path), intent, mayor, review["reviewer_context_id"])
+    plan = compile_bead_plan(
+        graph, digest_file(graph_path), digest_file(review_path), intent, mayor,
+        review["reviewer_context_id"], mayor_provider, reviewer_provider,
+        refiner_provider, integration_validator_provider,
+    )
     beads = Beads(rig)
     expected = {"program", "refinery", *{f"experiment-{node['id']}" for node in graph["nodes"]}}
     existing = [
@@ -982,6 +1393,16 @@ def admit_program(intent: Path, graph_path: Path, review_path: Path,
                 raise FactoryError("admission_collision", "existing program bead graph has a different graph digest")
             if item_meta.get("factory.kind") in {"program", "experiment"} and item_meta.get("factory.review_digest") != review_digest:
                 raise FactoryError("admission_collision", "existing program bead graph has a different review digest")
+        expected_policy = {
+            "factory.mayor_provider": mayor_provider,
+            "factory.refiner_provider": refiner_provider,
+            "factory.integration_validator_provider": integration_validator_provider,
+        }
+        for item in (*programs, *refineries):
+            item_meta = metadata(item)
+            for key, wanted in expected_policy.items():
+                if item_meta.get(key) != wanted:
+                    raise FactoryError("admission_collision", f"existing program lifecycle policy {key} differs")
         ids = {
             "program": require_string(programs[0].get("id"), "program bead id"),
             "refinery": require_string(refineries[0].get("id"), "refinery bead id"),
@@ -1001,6 +1422,12 @@ def admit_program(intent: Path, graph_path: Path, review_path: Path,
     }
     for bead_id in ids.values():
         beads.update_metadata(bead_id, runtime_fields)
+    for key in ("program", "refinery"):
+        bead_id = ids[key]
+        current_mode = metadata(beads.show(bead_id)).get("factory.delivery_mode")
+        if current_mode is not None and current_mode != delivery_mode:
+            raise FactoryError("admission_collision", f"existing {key} bead has delivery mode {current_mode!r}")
+        beads.update_metadata(bead_id, {"factory.delivery_mode": delivery_mode})
     return {
         "schema_version": "factory-admission-result.v1",
         "program_id": graph["program_id"],
@@ -1009,6 +1436,11 @@ def admit_program(intent: Path, graph_path: Path, review_path: Path,
         "experiment_beads": {node["id"]: ids[f"experiment-{node['id']}"] for node in graph["nodes"]},
         "graph_digest": digest_file(graph_path),
         "review_digest": digest_file(review_path),
+        "delivery_mode": delivery_mode,
+        "mayor_provider": mayor_provider,
+        "reviewer_provider": reviewer_provider,
+        "refiner_provider": refiner_provider,
+        "integration_validator_provider": integration_validator_provider,
     }
 
 
@@ -1016,7 +1448,14 @@ def command_admit(args: argparse.Namespace) -> int:
     intent = absolute_path(args.intent, "intent", True)
     graph_path = absolute_path(args.graph, "graph", True)
     review_path = absolute_path(args.review, "review", True)
-    result = admit_program(intent, graph_path, review_path, args.mayor_context, args.rig, args.binding)
+    result = admit_program(
+        intent, graph_path, review_path, args.mayor_context, args.rig, args.binding,
+        getattr(args, "delivery_mode", "pr"),
+        getattr(args, "mayor_provider", "codex"),
+        getattr(args, "reviewer_provider", "claude"),
+        getattr(args, "refiner_provider", "codex"),
+        getattr(args, "integration_validator_provider", "claude"),
+    )
     if args.result:
         write_json_atomic(absolute_path(args.result, "result"), result)
     print(json.dumps(result, sort_keys=True))
@@ -1030,6 +1469,23 @@ def command_plan(args: argparse.Namespace) -> int:
     base_branch = require_string(args.base_branch, "base_branch")
     base_sha = output(["git", "rev-parse", base_branch], cwd=repository)
     require_string(base_sha, "base_sha", SHA_RE)
+    mayor_provider = require_provider(args.mayor_provider, "mayor_provider")
+    reviewer_provider = require_provider(
+        args.reviewer_provider or opposite_provider(mayor_provider),
+        "reviewer_provider",
+    )
+    refiner_provider = require_provider(args.refiner_provider, "refiner_provider")
+    integration_validator_provider = require_provider(
+        args.integration_validator_provider or opposite_provider(refiner_provider),
+        "integration_validator_provider",
+    )
+    if mayor_provider == reviewer_provider:
+        raise FactoryError("provider_collision", "plan review must use the opposite provider from the Mayor")
+    if refiner_provider == integration_validator_provider:
+        raise FactoryError(
+            "provider_collision",
+            "integration validation must use the opposite provider from the Refiner",
+        )
     evidence = absolute_path(
         args.evidence_dir or str(repository / ".gc" / "agentops-factory" / "planning" / program_id),
         "evidence-dir",
@@ -1043,7 +1499,7 @@ def command_plan(args: argparse.Namespace) -> int:
         "schema_version": "factory-role-request.v1",
         "request_id": f"{program_id}-mayor",
         "role": "mayor",
-        "provider": "codex",
+        "provider": mayor_provider,
         "program_id": program_id,
         "workspace": str(repository),
         "intent_source": str(intent),
@@ -1060,7 +1516,6 @@ def command_plan(args: argparse.Namespace) -> int:
     write_or_verify_json(mayor_request_path, mayor_request, "Mayor role request")
     mayor = dispatch_role(mayor_request_path, args.rig, args.binding, args.timeout)
     graph_path = Path(mayor["artifact_path"])
-    reviewer_provider = args.reviewer_provider
     review_request = {
         "schema_version": "factory-role-request.v1",
         "request_id": f"{program_id}-plan-review",
@@ -1083,7 +1538,12 @@ def command_plan(args: argparse.Namespace) -> int:
     write_or_verify_json(review_request_path, review_request, "plan-review role request")
     reviewer = dispatch_role(review_request_path, args.rig, args.binding, args.timeout)
     review_path = Path(reviewer["artifact_path"])
-    admission = admit_program(intent, graph_path, review_path, mayor["session_context_id"], args.rig, args.binding)
+    admission = admit_program(
+        intent, graph_path, review_path, mayor["session_context_id"], args.rig, args.binding,
+        getattr(args, "delivery_mode", "pr"),
+        mayor_provider, reviewer_provider, refiner_provider,
+        integration_validator_provider,
+    )
     beads = Beads(args.rig)
     for work_bead in (mayor["work_bead"], reviewer["work_bead"]):
         ensure_dependency(beads, admission["program_bead"], work_bead, "discovered-from")
@@ -1099,6 +1559,10 @@ def command_plan(args: argparse.Namespace) -> int:
         "plan_review_bead": reviewer["work_bead"],
         "mayor_context_id": mayor["session_context_id"],
         "reviewer_context_id": reviewer["session_context_id"],
+        "mayor_provider": mayor_provider,
+        "reviewer_provider": reviewer_provider,
+        "refiner_provider": refiner_provider,
+        "integration_validator_provider": integration_validator_provider,
         "graph_path": str(graph_path),
         "review_path": str(review_path),
         "admission": admission,
@@ -1237,7 +1701,7 @@ def lease_experiment(rig: str, bead_id: str, worktree_root: Path) -> dict[str, A
         raise FactoryError("lease_dirty", "preparing candidate worktree has tracked changes")
     for predecessor_sha in predecessor_shas:
         if not commit_patch_present(worktree, predecessor_sha):
-            run_process(["git", "cherry-pick", predecessor_sha], cwd=worktree, timeout=120)
+            run_process(factory_git_command("cherry-pick", predecessor_sha), cwd=worktree, timeout=120)
     candidate_base_sha = git_head(worktree)
     index_raw = output(["git", "rev-parse", "--git-path", "index"], cwd=worktree)
     index = Path(index_raw) if Path(index_raw).is_absolute() else (worktree / index_raw).resolve(strict=False)
@@ -1308,7 +1772,55 @@ def city_config_lock() -> Any:
         os.close(descriptor)
 
 
-def enforce_rig_agent_policy(rig_name: str, binding: str, allowed_roles: set[str]) -> None:
+def remove_duplicate_factory_imports(rig_name: str, binding: str) -> list[str]:
+    """Remove rig-local aliases for the city-inherited factory pack.
+
+    `gc rig add` discovers packs in a worktree and may add the same pack under
+    its manifest name even though the city already exposes it under the
+    program's selected binding.  Both aliases materialize the same agents and
+    skills, so suspension patches cannot make the resulting city healthy.
+    """
+    require_string(rig_name, "rig name", ID_RE)
+    require_string(binding, "factory binding", ID_RE)
+    city_config = Path(city_path()) / "city.toml"
+    try:
+        config = tomllib.loads(city_config.read_text(encoding="utf-8"))
+    except (OSError, tomllib.TOMLDecodeError) as exc:
+        raise FactoryError("city_config_invalid", f"cannot read city config {city_config}: {exc}") from exc
+    rigs = [
+        item for item in config.get("rigs", [])
+        if isinstance(item, dict) and item.get("name") == rig_name
+    ]
+    if len(rigs) != 1:
+        raise FactoryError("rig_missing", f"dynamic rig {rig_name!r} is not uniquely configured")
+
+    canonical_pack = PACK_ROOT.resolve(strict=False)
+    duplicate_bindings: list[str] = []
+    imports = rigs[0].get("imports", {})
+    if not isinstance(imports, dict):
+        raise FactoryError("city_config_invalid", f"dynamic rig {rig_name!r} has invalid imports")
+    for import_binding, import_spec in imports.items():
+        if import_binding == binding or not isinstance(import_binding, str) or not isinstance(import_spec, dict):
+            continue
+        source = import_spec.get("source")
+        if not isinstance(source, str) or not source:
+            continue
+        source_path = Path(source).expanduser()
+        if not source_path.is_absolute():
+            source_path = city_config.parent / source_path
+        if source_path.resolve(strict=False) == canonical_pack:
+            duplicate_bindings.append(import_binding)
+
+    for duplicate in sorted(duplicate_bindings):
+        output([
+            gc_binary(), "--city", city_path(), "--rig", rig_name,
+            "import", "remove", duplicate,
+        ])
+    return sorted(duplicate_bindings)
+
+
+def enforce_rig_agent_policy(rig_name: str, binding: str, allowed_roles: set[str],
+                             rig_root: Path) -> bool:
     """Make a dedicated worktree rig expose only the bead-selected role routes.
 
     Gas City composes city imports into every rig and injects provider targets.
@@ -1321,6 +1833,12 @@ def enforce_rig_agent_policy(rig_name: str, binding: str, allowed_roles: set[str
         {"implementer", "implementer-claude", "validator", "validator-claude"}
     ):
         raise FactoryError("invalid_agent_policy", f"invalid allowed role set: {sorted(allowed_roles)}")
+    rig_root = rig_root.resolve(strict=False)
+    # Routed packet beads set gc.pack_workspace to the candidate directory
+    # name. Gas City resolves that workspace relative to the configured agent
+    # base, so patch the base to the candidate's parent. Using rig_root here
+    # would launch every worker at <candidate>/<candidate>.
+    session_work_dir = str(rig_root.parent)
     prefix = f"{rig_name}/"
     expected = {f"{prefix}{binding}.{role}" for role in allowed_roles}
     agents = [item for item in configured_agents() if item.get("dir") == rig_name]
@@ -1344,7 +1862,6 @@ def enforce_rig_agent_policy(rig_name: str, binding: str, allowed_roles: set[str
         if qualified in expected:
             if agent.get("suspended") is True:
                 raise FactoryError("agent_suspended", f"bead-selected route is suspended: {qualified}")
-            continue
         local_name = qualified.removeprefix(prefix)
         matches = [
             patch for patch in patches
@@ -1352,6 +1869,25 @@ def enforce_rig_agent_policy(rig_name: str, binding: str, allowed_roles: set[str
             and patch.get("dir") == rig_name
             and patch.get("name") == local_name
         ]
+        if qualified in expected:
+            if matches:
+                if (
+                    len(matches) != 1
+                    or matches[0].get("suspended") is True
+                    or matches[0].get("work_dir") != session_work_dir
+                ):
+                    raise FactoryError(
+                        "agent_policy_collision",
+                        f"invalid workspace patch for bead-selected route {qualified}",
+                    )
+                continue
+            additions.append(
+                "[[patches.agent]]\n"
+                f"dir = {json.dumps(rig_name)}\n"
+                f"name = {json.dumps(local_name)}\n"
+                f"work_dir = {json.dumps(session_work_dir)}"
+            )
+            continue
         if matches:
             if len(matches) != 1 or matches[0].get("suspended") is not True:
                 raise FactoryError("agent_policy_collision", f"invalid suspension patch for {qualified}")
@@ -1382,6 +1918,214 @@ def enforce_rig_agent_policy(rig_name: str, binding: str, allowed_roles: set[str
             "agent_policy_mismatch",
             f"worktree rig active routes differ from bead policy; expected={sorted(expected)} actual={sorted(active)}",
         )
+    wrong_work_dirs = {
+        str(item.get("qualified_name", "")): item.get("work_dir")
+        for item in refreshed
+        if item.get("qualified_name") in expected and item.get("work_dir") != session_work_dir
+    }
+    if wrong_work_dirs:
+        raise FactoryError(
+            "agent_policy_mismatch",
+            f"worktree rig executor roots differ from {session_work_dir!r}: {wrong_work_dirs!r}",
+        )
+    return bool(additions)
+
+
+def controller_rig_agents(rig_name: str) -> list[dict[str, Any]]:
+    """Read one rig's live controller projection through the native GC API."""
+    completed = run_process([
+        gc_binary(), "--city", city_path(), "rig", "status", rig_name, "--json",
+    ], timeout=45, check=False)
+    if completed.returncode != 0:
+        detail = completed.stderr.strip() or completed.stdout.strip()
+        raise FactoryError("rig_status_failed", f"cannot read live rig status for {rig_name}: {detail}")
+    value = parse_json_output(completed.stdout, "gc rig status")
+    agents = value.get("agents") if isinstance(value, dict) else None
+    if not isinstance(agents, list):
+        raise FactoryError("rig_status_failed", f"gc rig status returned no agents for {rig_name}")
+    return [item for item in agents if isinstance(item, dict)]
+
+
+def reload_city_config(rig_name: str, binding: str, allowed_roles: set[str], timeout: float = 120) -> None:
+    """Publish a dynamic-rig policy and wait on GC's live status projection.
+
+    ``gc rig add`` already performs its own controller reload.  The factory
+    edits only the later pack-derived suspension patches, so request that
+    second reload asynchronously and use ``gc rig status`` as the native
+    completion signal.  This avoids coupling the program driver to all work a
+    synchronous controller tick happens to perform under host pressure.
+    """
+    require_string(rig_name, "rig name", ID_RE)
+    require_string(binding, "factory binding", ID_RE)
+    expected = {f"{rig_name}/{binding}.{role}" for role in allowed_roles}
+    deadline = time.monotonic() + timeout
+    last_active: set[str] = set()
+    last_error = ""
+    polls_since_request = 5
+    while time.monotonic() < deadline:
+        try:
+            agents = controller_rig_agents(rig_name)
+            last_active = {
+                str(item.get("qualified_name", ""))
+                for item in agents
+                if item.get("suspended") is not True
+            }
+            if last_active == expected:
+                return
+        except FactoryError as exc:
+            last_error = str(exc)
+        if polls_since_request >= 5:
+            completed = run_process([
+                gc_binary(), "--city", city_path(), "reload", "--async", "--json",
+            ], timeout=45, check=False)
+            value: Any = {}
+            if completed.stdout.strip():
+                value = parse_json_output(completed.stdout, "gc reload --async")
+            outcome = value.get("outcome") if isinstance(value, dict) else None
+            busy = outcome == "busy" or "another reload is already in progress" in completed.stderr
+            accepted = (
+                completed.returncode == 0
+                and isinstance(value, dict)
+                and value.get("ok") is True
+                and outcome in {"accepted", "applied", "no_change"}
+            )
+            if not accepted and not busy:
+                detail = completed.stderr.strip() or repr(value)
+                raise FactoryError("city_reload_failed", f"dynamic rig config reload was not accepted: {detail}")
+            polls_since_request = 0
+        time.sleep(2.0)
+        polls_since_request += 1
+    detail = f"expected={sorted(expected)} active={sorted(last_active)}"
+    if last_error:
+        detail += f" last_error={last_error}"
+    raise FactoryError("city_reload_failed", f"dynamic rig policy did not become live: {detail}")
+
+
+def git_blob(ref: str, path: str, worktree: Path) -> bytes | None:
+    completed = subprocess.run(
+        ["git", "show", f"{ref}:{path}"], cwd=worktree,
+        stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=False,
+    )
+    if completed.returncode == 0:
+        return completed.stdout
+    return None
+
+
+def is_canonical_beads_gitignore_append(before: bytes, after: bytes) -> bool:
+    header = b"# Beads / Dolt files (added by bd init)\n"
+    variants = (
+        (b".dolt/", b"*.db", b".beads-credential-key"),
+        (b".dolt/", b"*.db", b".beads-credential-key", b".beads/proxieddb/"),
+    )
+    existing = {line.strip() for line in before.splitlines()}
+    for patterns in variants:
+        missing = [pattern for pattern in patterns if pattern not in existing]
+        if not missing:
+            continue
+        expected = before
+        if expected and not expected.endswith(b"\n"):
+            expected += b"\n"
+        expected += b"\n" + header + b"".join(pattern + b"\n" for pattern in missing)
+        if after == expected:
+            return True
+    return False
+
+
+def install_worktree_runtime_excludes(worktree: Path) -> Path:
+    """Hide an ephemeral rig store without changing the product tree.
+
+    Gas City intentionally writes a project ``.gitignore`` for ordinary rigs.
+    Factory rigs are disposable product worktrees, so use Git's native
+    worktree-local config instead. This preserves any previously configured
+    excludes while keeping every ``.beads`` runtime file out of worker diffs.
+    """
+    existing = run_process(
+        ["git", "config", "--get", "core.excludesFile"],
+        cwd=worktree, check=False,
+    ).stdout.strip()
+    run_process(["git", "config", "extensions.worktreeConfig", "true"], cwd=worktree)
+    git_dir = Path(output(["git", "rev-parse", "--absolute-git-dir"], cwd=worktree))
+    exclude_path = git_dir / "agentops-factory-exclude"
+    inherited = b""
+    if existing:
+        inherited_path = Path(os.path.expanduser(existing))
+        if not inherited_path.is_absolute():
+            inherited_path = worktree / inherited_path
+        if inherited_path.resolve(strict=False) != exclude_path.resolve(strict=False):
+            try:
+                inherited = inherited_path.read_bytes()
+            except FileNotFoundError:
+                inherited = b""
+    rendered = inherited
+    if rendered and not rendered.endswith(b"\n"):
+        rendered += b"\n"
+    if b".beads/" not in {line.strip() for line in rendered.splitlines()}:
+        rendered += b".beads/\n"
+    write_text_atomic(exclude_path, rendered.decode("utf-8"))
+    run_process(
+        ["git", "config", "--worktree", "core.excludesFile", str(exclude_path)],
+        cwd=worktree,
+    )
+    return exclude_path
+
+
+def discard_transient_rig_init_commits(worktree: Path, expected_head: str) -> list[str]:
+    """Rewind only canonical Git changes created by ``gc rig add``."""
+    base = require_string(expected_head, "candidate base SHA", SHA_RE)
+    current = git_head(worktree)
+    before_gitignore = git_blob(base, ".gitignore", worktree) or b""
+    changed: list[str] = []
+    if current != base:
+        ancestor = run_process(
+            ["git", "merge-base", "--is-ancestor", base, current],
+            cwd=worktree, check=False,
+        )
+        if ancestor.returncode != 0:
+            raise FactoryError("rig_init_commit_unexpected", "gc rig add moved the candidate away from its base ancestry")
+        subjects = output(["git", "log", "--format=%s", f"{base}..{current}"], cwd=worktree).splitlines()
+        changed = output(["git", "diff", "--name-only", base, current], cwd=worktree).splitlines()
+        allowed_paths = all(path == ".gitignore" or path.startswith(".beads/") for path in changed)
+        if not subjects or any(subject != "bd init: initialize beads issue tracking" for subject in subjects) or not allowed_paths:
+            raise FactoryError(
+                "rig_init_commit_unexpected",
+                f"gc rig add created unexpected commits or paths: subjects={subjects!r} paths={changed!r}",
+            )
+        after_gitignore = git_blob(current, ".gitignore", worktree)
+        if ".gitignore" in changed and not is_canonical_beads_gitignore_append(
+            before_gitignore, after_gitignore or b"",
+        ):
+            raise FactoryError("rig_init_commit_unexpected", "bd init changed .gitignore outside its canonical append-only stanza")
+        run_process(["git", "update-ref", "-m", "gc rig add: discard transient bd init commit", "HEAD", base, current], cwd=worktree)
+        run_process(["git", "read-tree", f"{base}^{{tree}}"], cwd=worktree)
+
+    staged = output(["git", "diff", "--cached", "--name-only"], cwd=worktree).splitlines()
+    allowed_staged = all(path == ".gitignore" or path.startswith(".beads/") for path in staged)
+    if not allowed_staged:
+        raise FactoryError("rig_init_index_unexpected", f"gc rig add staged unexpected paths: {staged!r}")
+    if ".gitignore" in staged:
+        staged_gitignore = run_process(
+            ["git", "show", ":.gitignore"], cwd=worktree, check=False,
+        )
+        if staged_gitignore.returncode != 0 or not is_canonical_beads_gitignore_append(
+            before_gitignore, staged_gitignore.stdout.encode(),
+        ):
+            raise FactoryError("rig_init_index_unexpected", "bd init staged .gitignore outside its canonical append-only stanza")
+    if staged:
+        run_process(["git", "read-tree", f"{base}^{{tree}}"], cwd=worktree)
+
+    project_gitignore = worktree / ".gitignore"
+    if git_blob(base, ".gitignore", worktree) is None:
+        project_gitignore.unlink(missing_ok=True)
+    else:
+        project_gitignore.write_bytes(before_gitignore)
+    install_worktree_runtime_excludes(worktree)
+    tracked_beads = [
+        path for path in run_process(["git", "ls-files", "-z", "--", ".beads"], cwd=worktree).stdout.split("\0")
+        if path
+    ]
+    if tracked_beads:
+        run_process(["git", "update-index", "--skip-worktree", "--", *tracked_beads], cwd=worktree)
+    return sorted(set(changed + staged))
 
 
 def restore_rig_scaffolding(worktree: Path) -> list[str]:
@@ -1407,100 +2151,302 @@ def restore_rig_scaffolding(worktree: Path) -> list[str]:
     return changed
 
 
-def primary_worktree(worktree: Path) -> Path:
-    raw = output(["git", "worktree", "list", "--porcelain"], cwd=worktree)
-    for line in raw.splitlines():
-        if line.startswith("worktree "):
-            return Path(line.removeprefix("worktree ")).resolve(strict=False)
-    raise FactoryError("git_identity", f"cannot find primary worktree for {worktree}")
+def beads_config_prefix(path: Path) -> str | None:
+    try:
+        lines = path.read_text(encoding="utf-8").splitlines()
+    except FileNotFoundError:
+        return None
+    except OSError as exc:
+        raise FactoryError("beads_identity_invalid", f"cannot read {path}: {exc}") from exc
+    values: list[str] = []
+    for line in lines:
+        match = re.match(r"^\s*issue[-_]prefix\s*:\s*([^#]+?)\s*$", line)
+        if match:
+            value = match.group(1).strip().strip("\"'").lower()
+            if value:
+                values.append(value)
+    if not values:
+        return None
+    if len(set(values)) != 1:
+        raise FactoryError("beads_identity_invalid", f"conflicting issue prefixes in {path}")
+    return values[0]
 
 
-def add_gc_rig_with_local_origin(worktree: Path, argv: list[str]) -> Any:
-    """Initialize per-worktree beads without adopting a forge's Dolt refs.
+def prepare_worktree_beads_identity(worktree: Path, requested_prefix: str) -> bool:
+    """Fence a linked worktree from its tracked parent Beads identity.
+
+    Git copies tracked `.beads` control files into every linked worktree. The
+    identity markers must not be adopted by a factory candidate rig, and GC's
+    local interaction log must not make the candidate Git subject dirty. Hide
+    every tracked `.beads` path in this worktree's private index, then remove
+    only the two identity-marker working copies so `gc rig add` can initialize
+    a distinct store. On a retry, matching marker bytes prove that the
+    candidate store itself can be adopted.
+    """
+    requested = require_string(requested_prefix, "candidate beads prefix", ID_RE).lower()
+    marker_paths = [Path(".beads/config.yaml"), Path(".beads/metadata.json")]
+    markers = [worktree / relative for relative in marker_paths]
+    present = [path.is_file() for path in markers]
+    current_prefix = beads_config_prefix(markers[0])
+    marker_tracked = [
+        run_process(
+            ["git", "ls-files", "--error-unmatch", "--", relative.as_posix()],
+            cwd=worktree, check=False,
+        ).returncode == 0
+        for relative in marker_paths
+    ]
+    if all(marker_tracked):
+        listed = run_process(
+            ["git", "ls-files", "-z", "--", ".beads"],
+            cwd=worktree,
+        ).stdout
+        tracked_beads = sorted(path for path in listed.split("\0") if path)
+        if not tracked_beads:
+            raise FactoryError("beads_identity_invalid", "tracked parent Beads identity has no index paths")
+        run_process(
+            ["git", "update-index", "--skip-worktree", "--", *tracked_beads],
+            cwd=worktree,
+        )
+        if all(present) and current_prefix == requested:
+            return True
+        for marker in markers:
+            try:
+                marker.unlink()
+            except FileNotFoundError:
+                pass
+        return False
+
+    if all(present) and current_prefix == requested:
+        return True
+
+    if any(present):
+        found = current_prefix or "unknown"
+        raise FactoryError(
+            "beads_identity_collision",
+            f"candidate worktree has an unowned Beads identity {found!r}; expected {requested!r}",
+        )
+    return False
+
+
+def add_gc_rig_without_forge_origin(worktree: Path, argv: list[str]) -> Any:
+    """Initialize per-worktree beads without synthesizing a Dolt remote.
 
     Git worktrees share remote configuration. Registration is serialized, so
-    the forge URL is replaced with the local primary worktree only for the
-    duration of `gc rig add`, then restored byte-for-byte as config values.
+    the complete origin section is parked only for the duration of `gc rig add`,
+    then restored. The reserved section also makes an interrupted registration
+    recoverable on the next attempt. The caller supplies ``--default-branch``
+    explicitly; a local filesystem URL is not a valid substitute because bd may
+    adopt it as a Dolt remote and misinterpret it as a DoltHub repository
+    identifier.
     """
     common_dir_raw = output(["git", "rev-parse", "--git-common-dir"], cwd=worktree)
     common_dir = Path(common_dir_raw)
     if not common_dir.is_absolute():
         common_dir = (worktree / common_dir).resolve(strict=False)
     config_path = common_dir / "config"
-    urls_raw = run_process(
-        ["git", "config", "--file", str(config_path), "--get-all", "remote.origin.url"],
-        cwd=worktree, check=False,
-    )
-    urls = [line for line in urls_raw.stdout.splitlines() if line]
-    beads_dir = worktree / ".beads"
-    has_adoptable_store = all(
-        (beads_dir / name).is_file() for name in ("metadata.json", "config.yaml")
-    )
-    command = [*argv, "--adopt"] if has_adoptable_store and "--adopt" not in argv else argv
-    if urls:
-        run_process(["git", "config", "--file", str(config_path), "--unset-all", "remote.origin.url"], cwd=worktree, check=False)
-        run_process(["git", "config", "--file", str(config_path), "--add", "remote.origin.url", str(primary_worktree(worktree))], cwd=worktree)
+    parked_remote = "agentops-factory-origin"
+
+    def remote_section_exists(name: str) -> bool:
+        probe = run_process(
+            [
+                "git", "config", "--file", str(config_path), "--get-regexp",
+                rf"^remote\.{re.escape(name)}\.",
+            ],
+            cwd=worktree, check=False,
+        )
+        return probe.returncode == 0
+
+    parked = remote_section_exists(parked_remote)
+    origin = remote_section_exists("origin")
+    if parked and origin:
+        raise FactoryError(
+            "origin_recovery_ambiguous",
+            f"repository has both remote.origin and reserved remote.{parked_remote}",
+        )
+    if parked:
+        run_process([
+            "git", "config", "--file", str(config_path), "--rename-section",
+            f"remote.{parked_remote}", "remote.origin",
+        ], cwd=worktree)
+        origin = True
+    try:
+        prefix_index = argv.index("--prefix")
+        requested_prefix = argv[prefix_index + 1]
+        name_index = argv.index("--name")
+        rig_name = argv[name_index + 1]
+    except (ValueError, IndexError) as exc:
+        raise FactoryError("invalid_contract", "dynamic rig registration requires explicit --name and --prefix") from exc
+    adopt = prepare_worktree_beads_identity(worktree, requested_prefix)
+    command = [*argv, "--adopt"] if adopt and "--adopt" not in argv else argv
+    origin_parked = False
+    if origin:
+        run_process([
+            "git", "config", "--file", str(config_path), "--rename-section",
+            "remote.origin", f"remote.{parked_remote}",
+        ], cwd=worktree)
+        origin_parked = True
     try:
         raw = output(
             command,
             env={"BD_DOLT_SYNC_CLI_REMOTES": "false", "BEADS_DOLT_SYNC_CLI_REMOTES": "false"},
         )
-        return parse_json_output(raw, "gc rig add")
+        value = parse_json_output(raw, "gc rig add")
+        # gc rig add can return before the rig's store is first opened. Force
+        # that first open while the forge origin is still hidden, then fence
+        # the ephemeral rig to local-only Dolt state.
+        enforce_dynamic_rig_local_only(rig_name)
+        return value
     finally:
-        if urls:
-            run_process(["git", "config", "--file", str(config_path), "--unset-all", "remote.origin.url"], cwd=worktree, check=False)
-            for url in urls:
-                run_process(["git", "config", "--file", str(config_path), "--add", "remote.origin.url", url], cwd=worktree)
+        if origin_parked:
+            if remote_section_exists("origin"):
+                raise FactoryError(
+                    "origin_restore_collision",
+                    "gc rig add created remote.origin while the original section was parked",
+                )
+            run_process([
+                "git", "config", "--file", str(config_path), "--rename-section",
+                f"remote.{parked_remote}", "remote.origin",
+            ], cwd=worktree)
+
+
+def enforce_dynamic_rig_local_only(rig_name: str) -> None:
+    """Force-init an ephemeral rig and remove every synthesized Dolt remote."""
+    rig = require_string(rig_name, "dynamic rig", ID_RE)
+    env = {"BD_DOLT_SYNC_CLI_REMOTES": "false", "BEADS_DOLT_SYNC_CLI_REMOTES": "false"}
+    prefix = [gc_binary(), "--city", city_path(), "bd", "--rig", rig]
+    output([*prefix, "list", "--json"], env=env)
+    listed = parse_json_output(
+        output([*prefix, "dolt", "remote", "list", "--json"], env=env),
+        "dynamic rig dolt remote list",
+    )
+    if not isinstance(listed, list):
+        raise FactoryError("invalid_runtime_json", "dynamic rig Dolt remote list is not an array")
+    names: list[str] = []
+    for item in listed:
+        if not isinstance(item, dict):
+            raise FactoryError("invalid_runtime_json", "dynamic rig Dolt remote entry is not an object")
+        names.append(require_string(item.get("name"), "dynamic rig Dolt remote name", ID_RE))
+    for name in names:
+        output([*prefix, "dolt", "remote", "remove", name, "--json"], env=env)
+    remaining = parse_json_output(
+        output([*prefix, "dolt", "remote", "list", "--json"], env=env),
+        "dynamic rig Dolt remote verification",
+    )
+    if remaining != []:
+        raise FactoryError("dolt_remote_leak", f"dynamic rig retained Dolt remotes: {remaining!r}")
+
+
+def candidate_rig_prefix(rig_name: str) -> str:
+    """Return a short Beads prefix unique to the full candidate rig identity."""
+    return safe_identifier(
+        "fx", "candidate",
+        require_string(rig_name, "candidate rig", ID_RE),
+        limit=16,
+    )
 
 
 def register_candidate_rig(lease: dict[str, Any], record: dict[str, Any]) -> tuple[str, str]:
     meta = metadata(record)
     rig_name = safe_identifier("fx", meta["factory.program_id"], meta["factory.node_id"], str(meta.get("factory.attempt", "1")))
+    recorded_rig = meta.get("factory.candidate_rig")
+    if recorded_rig is not None and recorded_rig != rig_name:
+        raise FactoryError(
+            "identity_mismatch",
+            f"experiment records candidate rig {recorded_rig!r}, not derived rig {rig_name!r}",
+        )
+    registration_previously_completed = recorded_rig == rig_name
     worktree = Path(lease["worktree"])
     binding = require_string(meta.get("factory.binding"), "factory.binding", ID_RE)
     with city_config_lock():
         matches = [item for item in configured_rigs() if item.get("name") == rig_name]
+        rig_added = False
         if matches:
             if len(matches) != 1 or Path(str(matches[0].get("path", ""))).resolve(strict=False) != worktree:
                 raise FactoryError("rig_collision", f"candidate rig name {rig_name} is already bound elsewhere")
+            enforce_dynamic_rig_local_only(rig_name)
         else:
-            value = add_gc_rig_with_local_origin(
+            value = add_gc_rig_without_forge_origin(
                 worktree,
                 [
                     gc_binary(), "--city", city_path(), "rig", "add", str(worktree),
-                    "--name", rig_name, "--prefix", safe_identifier("fx", meta["factory.node_id"], limit=16),
+                    "--name", rig_name, "--prefix", candidate_rig_prefix(rig_name),
                     "--default-branch", lease["branch"], "--json",
                 ],
             )
             if isinstance(value, dict) and value.get("ok") is False:
                 raise FactoryError("rig_add_failed", f"candidate rig add failed: {value!r}")
+            rig_added = True
         provider = require_string(meta.get("factory.provider"), "factory.provider")
         validator_provider = require_string(meta.get("factory.validator_provider"), "factory.validator_provider")
         worker_role = "implementer-claude" if provider == "claude" else "implementer"
         validator_role = "validator-claude" if validator_provider == "claude" else "validator"
-        enforce_rig_agent_policy(rig_name, binding, {worker_role, validator_role})
-    restore_rig_scaffolding(worktree)
+        duplicate_imports = remove_duplicate_factory_imports(rig_name, binding)
+        policy_changed = enforce_rig_agent_policy(
+            rig_name, binding, {worker_role, validator_role}, worktree,
+        )
+        # The bead records factory.candidate_rig only after a successful reload.
+        # Until that proof exists, reload even if recovery finds the expected
+        # bytes already on disk. Once proven, avoid a redundant synchronous
+        # reload unless registration or policy actually changed.
+        if not registration_previously_completed or rig_added or duplicate_imports or policy_changed:
+            reload_city_config(rig_name, binding, {worker_role, validator_role})
+    # The caller writes factory.candidate_rig only after this cleanup returns.
+    # Its exact value is therefore the durable proof that first registration
+    # completed. On recovery, preserve legitimate staged/committed candidate
+    # bytes instead of misclassifying them as fresh rig scaffolding.
+    if not registration_previously_completed:
+        discard_transient_rig_init_commits(worktree, require_string(lease.get("candidate_base_sha"), "candidate base SHA", SHA_RE))
+        restore_rig_scaffolding(worktree)
     return rig_name, binding
 
 
-def register_integration_rig(worktree: Path, refinery_bead: str, branch: str, binding: str) -> tuple[str, str]:
+def integration_rig_prefix(refinery_bead: str, epoch: str) -> str:
+    """Return a short Beads prefix unique to one Refinery integration epoch."""
+    return safe_identifier(
+        "fx", "ref",
+        require_string(refinery_bead, "Refinery bead", ID_RE),
+        require_string(epoch, "integration branch epoch", ID_RE),
+        limit=16,
+    )
+
+
+def register_integration_rig(worktree: Path, refinery_bead: str, branch: str, binding: str,
+                             recorded_rig: str | None = None) -> tuple[str, str]:
     epoch = require_string(branch.rsplit("/", 1)[-1], "integration branch epoch", ID_RE)
     rig_name = safe_identifier("fx", "refinery", refinery_bead, epoch)
+    if recorded_rig is not None and recorded_rig != rig_name:
+        raise FactoryError(
+            "identity_mismatch",
+            f"Refinery records integration rig {recorded_rig!r}, not derived rig {rig_name!r}",
+        )
     binding = require_string(binding, "factory.binding", ID_RE)
+    pre_registration_head = git_head(worktree)
     with city_config_lock():
         matches = [item for item in configured_rigs() if item.get("name") == rig_name]
+        rig_added = False
         if matches:
             if len(matches) != 1 or Path(str(matches[0].get("path", ""))).resolve(strict=False) != worktree:
                 raise FactoryError("rig_collision", f"integration rig name {rig_name} is already bound elsewhere")
+            enforce_dynamic_rig_local_only(rig_name)
         else:
-            value = add_gc_rig_with_local_origin(worktree, [
+            value = add_gc_rig_without_forge_origin(worktree, [
                 gc_binary(), "--city", city_path(), "rig", "add", str(worktree),
-                "--name", rig_name, "--prefix", safe_identifier("fx", "ref", limit=16),
+                "--name", rig_name, "--prefix", integration_rig_prefix(refinery_bead, epoch),
                 "--default-branch", branch, "--json",
             ])
             if isinstance(value, dict) and value.get("ok") is False:
                 raise FactoryError("rig_add_failed", f"integration rig add failed: {value!r}")
-        enforce_rig_agent_policy(rig_name, binding, {"validator", "validator-claude"})
+            rig_added = True
+        duplicate_imports = remove_duplicate_factory_imports(rig_name, binding)
+        policy_changed = enforce_rig_agent_policy(
+            rig_name, binding, {"validator", "validator-claude"}, worktree,
+        )
+        # factory.integration_rig is written only after the first successful
+        # reload. A later validation pass can therefore verify the rig and skip
+        # the second five-minute controller round trip when nothing changed.
+        if recorded_rig is None or rig_added or duplicate_imports or policy_changed:
+            reload_city_config(rig_name, binding, {"validator", "validator-claude"})
+    discard_transient_rig_init_commits(worktree, pre_registration_head)
     restore_rig_scaffolding(worktree)
     return rig_name, binding
 
@@ -1516,6 +2462,32 @@ def run_executor_packet(packet_path: Path, rig: str, binding: str, timeout: floa
     if completed.returncode != 0 or not isinstance(value, dict) or value.get("ok") is not True:
         raise FactoryError("executor_failed", f"executor packet failed: {value!r} {completed.stderr.strip()}")
     return value
+
+
+def executor_session_attestation(result: dict[str, Any], role: str, provider: str) -> dict[str, str]:
+    """Validate and return the exact executor runtime/model identity."""
+    expected_policy, expected_model = FACTORY_ROLE_MODELS[(role, provider)]
+    session = result.get("runtime_evidence", {}).get("session")
+    if not isinstance(session, dict):
+        raise FactoryError("runtime_identity_missing", f"{role} result has no runtime session attestation")
+    context_id = require_string(
+        result.get("transport", {}).get("session_context_id"),
+        f"{role} session context",
+    )
+    expected = {
+        "id": context_id,
+        "provider": provider,
+        "model": expected_model,
+        "model_policy": expected_policy,
+        "model_source": "launch_command",
+    }
+    for field, wanted in expected.items():
+        if session.get(field) != wanted:
+            raise FactoryError(
+                "runtime_model_mismatch" if field in {"model", "model_policy", "model_source"} else "runtime_identity_mismatch",
+                f"{role} runtime {field} must be {wanted!r}, got {session.get(field)!r}",
+            )
+    return {field: str(value) for field, value in expected.items()}
 
 
 def load_executor_adapter() -> Any:
@@ -1568,14 +2540,18 @@ def execute_experiment(base_rig: str, bead_id: str, lease: dict[str, Any],
     }
     write_or_verify_json(implement_packet_path, implement_packet, "implement packet")
     implement_result = run_executor_packet(implement_packet_path, candidate_rig, binding, timeout)
+    implement_attestation = executor_session_attestation(
+        implement_result, "implement", require_string(meta.get("factory.provider"), "factory.provider"),
+    )
     implement_result_path = evidence / "implement-runtime-result.json"
     write_or_verify_json(implement_result_path, implement_result, "implement runtime result")
     runtime = implement_result.get("runtime_evidence", {})
-    if runtime.get("scope_status") != "PASS":
-        raise FactoryError("scope_failed", f"implementer scope is {runtime.get('scope_status')}")
+    scope_status = runtime.get("scope_status")
+    if scope_status not in VERDICTS:
+        raise FactoryError("scope_failed", f"implementer scope is {scope_status}")
     changed = runtime.get("actual_changed_paths")
-    if not isinstance(changed, list) or not changed or not all(isinstance(path, str) and path for path in changed):
-        raise FactoryError("empty_candidate", "implementer produced no committable changed paths")
+    if not isinstance(changed, list) or not all(isinstance(path, str) and path for path in changed):
+        raise FactoryError("invalid_candidate", "implementer changed-path evidence is malformed")
     first_check = require_string(meta.get("factory.first_check"), "factory.first_check")
     check = run_process(["/bin/sh", "-lc", first_check], cwd=worktree, timeout=600, check=False)
     check_path = evidence / "first-check.json"
@@ -1583,16 +2559,27 @@ def execute_experiment(base_rig: str, bead_id: str, lease: dict[str, Any],
         "command": first_check, "exit_code": check.returncode,
         "stdout": check.stdout[-20000:], "stderr": check.stderr[-20000:],
     })
-    if check.returncode != 0:
-        raise FactoryError("first_check_failed", f"first check failed for {bead_id}: {check.stderr.strip() or check.stdout.strip()}")
+    beads.update_metadata(bead_id, {
+        "factory.first_check_path": str(check_path),
+        "factory.first_check_digest": digest_file(check_path),
+        "factory.first_check_exit_code": str(check.returncode),
+    })
+    candidate_gate_status = scope_status if check.returncode == 0 else "FAIL"
     current_head = git_head(worktree)
     candidate_base_sha = require_string(meta.get("factory.candidate_base_sha"), "factory.candidate_base_sha", SHA_RE)
     if current_head == candidate_base_sha:
-        run_process(["git", "add", "-A", "--", *changed], cwd=worktree)
-        staged = output(["git", "diff", "--cached", "--name-only"], cwd=worktree).splitlines()
-        if sorted(staged) != sorted(changed):
-            raise FactoryError("stage_mismatch", f"staged paths differ from runtime receipt: staged={staged} changed={changed}")
-        run_process(["git", "commit", "-m", f"factory({meta['factory.node_id']}): admitted candidate"], cwd=worktree, timeout=120)
+        if changed:
+            run_process(["git", "add", "-A", "--", *changed], cwd=worktree)
+            staged = output(["git", "diff", "--cached", "--name-only"], cwd=worktree).splitlines()
+            if sorted(staged) != sorted(changed):
+                raise FactoryError("stage_mismatch", f"staged paths differ from runtime receipt: staged={staged} changed={changed}")
+            run_process(
+                factory_git_command("commit", "-m", f"factory({meta['factory.node_id']}): frozen candidate"),
+                cwd=worktree,
+                timeout=120,
+            )
+        elif output(["git", "status", "--porcelain", "--untracked-files=no"], cwd=worktree):
+            raise FactoryError("candidate_dirty", "empty changed-path receipt disagrees with tracked worktree state")
     else:
         commit_count = output(["git", "rev-list", "--count", f"{candidate_base_sha}..HEAD"], cwd=worktree)
         committed = output(["git", "diff", "--name-only", f"{candidate_base_sha}..HEAD"], cwd=worktree).splitlines()
@@ -1601,14 +2588,17 @@ def execute_experiment(base_rig: str, bead_id: str, lease: dict[str, Any],
         if output(["git", "status", "--porcelain", "--untracked-files=no"], cwd=worktree):
             raise FactoryError("candidate_dirty", "recovered candidate worktree has tracked changes")
     candidate_sha = git_head(worktree)
-    author_context = require_string(
-        implement_result.get("transport", {}).get("session_context_id"), "implementer session context",
-    )
+    author_context = implement_attestation["id"]
     beads.update_metadata(bead_id, {
         "factory.execution_phase": "validation_pending",
         "factory.candidate_sha": candidate_sha,
         "factory.implement_result": str(implement_result_path),
+        "factory.runtime_scope_status": scope_status,
+        "factory.implementation_scope_status": candidate_gate_status,
         "factory.author_context_id": author_context,
+        "factory.author_model": implement_attestation["model"],
+        "factory.author_model_policy": implement_attestation["model_policy"],
+        "factory.author_model_source": implement_attestation["model_source"],
     })
     validate_packet_id = safe_identifier(bead_id, "validate", limit=120)
     validate_dir = worktree / ".gc" / "agentops" / validate_packet_id
@@ -1632,20 +2622,44 @@ def execute_experiment(base_rig: str, bead_id: str, lease: dict[str, Any],
     }
     write_or_verify_json(validate_packet_path, validate_packet, "validate packet")
     validate_result = run_executor_packet(validate_packet_path, candidate_rig, binding, timeout)
+    validate_attestation = executor_session_attestation(
+        validate_result, "validate", require_string(meta.get("factory.validator_provider"), "factory.validator_provider"),
+    )
     validate_result_path = evidence / "validate-runtime-result.json"
     write_or_verify_json(validate_result_path, validate_result, "validate runtime result")
     artifacts = validate_result.get("agent_response", {}).get("artifacts")
     if not isinstance(artifacts, list) or len(artifacts) != 1 or not isinstance(artifacts[0], dict):
         raise FactoryError("verdict_missing", "Validator returned no exact verdict artifact")
     verdict_path = absolute_path(artifacts[0].get("path"), "verdict artifact", True)
+    verdict_artifact = load_object(verdict_path, "verdict artifact")
+    verdict_value = verdict_artifact.get("verdict")
+    if verdict_artifact.get("validator_context_id") != validate_attestation["id"]:
+        raise FactoryError(
+            "runtime_identity_mismatch",
+            "verdict validator context does not match the attested Validator runtime",
+        )
+    if candidate_gate_status != "PASS" and verdict_value == "PASS":
+        raise FactoryError(
+            "verdict_binding_mismatch",
+            "Validator cannot PASS a candidate whose deterministic candidate gate "
+            f"is {candidate_gate_status} (scope={scope_status}, first_check={check.returncode})",
+        )
+    beads.update_metadata(bead_id, {
+        "factory.validator_context_id": validate_attestation["id"],
+        "factory.validator_model": validate_attestation["model"],
+        "factory.validator_model_policy": validate_attestation["model_policy"],
+        "factory.validator_model_source": validate_attestation["model_source"],
+    })
     verdict_args = argparse.Namespace(
         rig=base_rig, bead=bead_id, lease_token=lease["lease_token"],
         fence_epoch=lease["fence_epoch"], candidate_sha=candidate_sha,
         subject_manifest=runtime["subject_manifest"], author_context=author_context,
         verdict=str(verdict_path),
     )
-    with open(os.devnull, "w", encoding="utf-8") as sink, contextlib.redirect_stdout(sink):
-        command_record_verdict(verdict_args)
+    # This reducer runs inside command_execute's worker pool. Redirecting
+    # sys.stdout here is process-global, so overlapping lanes can restore a
+    # sibling's already-closed sink and make the parent result print fail.
+    command_record_verdict(verdict_args, emit=False)
     final_record = Beads(base_rig).show(bead_id)
     final_meta = metadata(final_record)
     result = {
@@ -1656,7 +2670,7 @@ def execute_experiment(base_rig: str, bead_id: str, lease: dict[str, Any],
         "candidate_sha": candidate_sha,
         "verdict": final_meta.get("factory.verdict"),
         "implementer_context_id": author_context,
-        "validator_context_id": validate_result["transport"]["session_context_id"],
+        "validator_context_id": validate_attestation["id"],
     }
     if result["verdict"] in {"FAIL", "NOT_PROVEN"}:
         rescope_bead = require_string(final_meta.get("factory.rescope_bead"), "factory.rescope_bead")
@@ -1684,6 +2698,50 @@ def lease_snapshot(bead_id: str, meta: dict[str, Any]) -> dict[str, Any]:
         "predecessor_beads": metadata_list(meta, "factory.predecessor_beads"),
         "predecessor_shas": metadata_list(meta, "factory.predecessor_shas"),
     }
+
+
+def route_ready_refinery(beads: Beads, rig: str, program_meta: dict[str, Any]) -> str | None:
+    """Route one dependency-ready Refinery bead to its selected Refiner exactly once."""
+    refinery_bead = require_string(program_meta.get("factory.refinery_bead"), "factory.refinery_bead")
+    if refinery_bead not in beads.ready_ids():
+        return None
+    record = beads.show(refinery_bead)
+    meta = metadata(record)
+    if meta.get("factory.kind") != "refinery":
+        raise FactoryError("invalid_contract", f"{refinery_bead} is not a Refinery bead")
+    binding = require_string(
+        meta.get("factory.binding", program_meta.get("factory.binding")),
+        "factory.binding",
+        ID_RE,
+    )
+    refiner_provider = require_provider(meta.get("factory.refiner_provider"), "factory.refiner_provider")
+    validator_provider = require_provider(
+        meta.get("factory.integration_validator_provider"),
+        "factory.integration_validator_provider",
+    )
+    if refiner_provider == validator_provider:
+        raise FactoryError("provider_collision", "Refiner and integration Validator must use opposite providers")
+    target = lifecycle_target("refiner", refiner_provider, rig, binding)
+    routed_to = meta.get("gc.routed_to")
+    assignee = record.get("assignee")
+    if routed_to is not None and routed_to != target:
+        raise FactoryError("identity_mismatch", f"Refinery {refinery_bead} is routed to {routed_to!r}, not {target!r}")
+    if routed_to == target:
+        return target
+    if assignee:
+        raise FactoryError("identity_mismatch", f"Refinery {refinery_bead} has assignee {assignee!r} without its required route")
+    if record.get("status") != "open":
+        raise FactoryError("invalid_transition", f"ready Refinery {refinery_bead} has status {record.get('status')!r}")
+    value = parse_json_output(
+        output([
+            gc_binary(), "--city", city_path(), "sling", target, refinery_bead,
+            "--no-formula", "--no-convoy", "--json",
+        ]),
+        "gc sling Refinery bead",
+    )
+    if not isinstance(value, dict) or not value.get("success") or str(value.get("bead_id")) != refinery_bead:
+        raise FactoryError("dispatch_failed", f"gc sling did not route {refinery_bead} to {target}: {value!r}")
+    return target
 
 
 def command_execute(args: argparse.Namespace) -> int:
@@ -1813,15 +2871,18 @@ def command_execute(args: argparse.Namespace) -> int:
             selected.difference_update(item["bead"] for item in results)
             if not selected:
                 break
+    refinery_ready = program_meta.get("factory.refinery_bead") in beads.ready_ids()
+    refinery_route = route_ready_refinery(beads, args.rig, program_meta) if refinery_ready else None
     result = {
         "schema_version": "factory-execution-result.v1",
         "program_bead": args.program_bead,
         "waves": waves,
         "executed": sum(len(wave) for wave in waves),
         "reconciled": recoveries,
-        "refinery_ready": program_meta.get("factory.refinery_bead") in beads.ready_ids(),
+        "refinery_ready": refinery_ready,
+        "refinery_route": refinery_route,
     }
-    if not waves and not recoveries:
+    if not waves and not recoveries and not refinery_route:
         raise FactoryError("no_ready_experiments", "program has no admitted ready experiment beads")
     if args.result:
         write_json_atomic(absolute_path(args.result, "result"), result)
@@ -1855,6 +2916,14 @@ def command_resume_experiment(args: argparse.Namespace) -> int:
         args.rig, args.bead, lease, candidate_rig, binding,
         args.timeout, args.max_attempts,
     )
+    program_bead = require_string(meta.get("factory.program_bead"), "factory.program_bead")
+    program = beads.show(program_bead)
+    program_meta = metadata(program)
+    refinery_bead = require_string(program_meta.get("factory.refinery_bead"), "factory.refinery_bead")
+    refinery_ready = refinery_bead in beads.ready_ids()
+    refinery_route = route_ready_refinery(beads, args.rig, program_meta) if refinery_ready else None
+    result["refinery_ready"] = refinery_ready
+    result["refinery_route"] = refinery_route
     if args.result:
         write_json_atomic(absolute_path(args.result, "result"), result)
     print(json.dumps(result, sort_keys=True))
@@ -1881,7 +2950,29 @@ def validate_verdict(verdict: dict[str, Any], meta: dict[str, Any], subject_dige
     return verdict["verdict"], validator
 
 
-def command_record_verdict(args: argparse.Namespace) -> int:
+def validate_recorded_executor_attestations(meta: dict[str, Any], author_context: str,
+                                            validator_context: str) -> None:
+    for role, prefix, provider_key, context in (
+        ("implement", "author", "factory.provider", author_context),
+        ("validate", "validator", "factory.validator_provider", validator_context),
+    ):
+        provider = require_provider(meta.get(provider_key), provider_key)
+        expected_policy, expected_model = FACTORY_ROLE_MODELS[(role, provider)]
+        expected = {
+            f"factory.{prefix}_context_id": context,
+            f"factory.{prefix}_model": expected_model,
+            f"factory.{prefix}_model_policy": expected_policy,
+            f"factory.{prefix}_model_source": "launch_command",
+        }
+        for field, wanted in expected.items():
+            if meta.get(field) != wanted:
+                raise FactoryError(
+                    "runtime_attestation_missing",
+                    f"durable {role} attestation {field} must be {wanted!r}, got {meta.get(field)!r}",
+                )
+
+
+def command_record_verdict(args: argparse.Namespace, *, emit: bool = True) -> int:
     beads = Beads(args.rig)
     record = beads.show(args.bead)
     meta = metadata(record)
@@ -1902,6 +2993,27 @@ def command_record_verdict(args: argparse.Namespace) -> int:
     verdict_path = absolute_path(args.verdict, "verdict", True)
     verdict = load_object(verdict_path, "verdict")
     result, validator = validate_verdict(verdict, meta, subject_digest, args.author_context)
+    validate_recorded_executor_attestations(meta, args.author_context, validator)
+    if result == "PASS":
+        if meta.get("factory.implementation_scope_status") != "PASS":
+            raise FactoryError(
+                "admission_gate_failed",
+                "PASS requires a durable implementation_scope_status=PASS",
+            )
+        first_check_exit_code = meta.get("factory.first_check_exit_code")
+        first_check_passed = (
+            first_check_exit_code == "0"
+            or (
+                isinstance(first_check_exit_code, int)
+                and not isinstance(first_check_exit_code, bool)
+                and first_check_exit_code == 0
+            )
+        )
+        if not first_check_passed:
+            raise FactoryError(
+                "admission_gate_failed",
+                "PASS requires a durable first_check_exit_code=0",
+            )
     if phase in {"passed", "rejection_preparing", "rejected"}:
         stored_result = meta.get("factory.verdict")
         if stored_result != result or meta.get("factory.verdict_digest") != digest_file(verdict_path):
@@ -1948,11 +3060,16 @@ def command_record_verdict(args: argparse.Namespace) -> int:
         })
         beads.update_metadata(args.bead, common)
         if record.get("status") != "closed":
-            beads.close(args.bead, "Factory experiment PASS: exact candidate admitted to Refinery")
+            beads.close(
+                args.bead, "Factory experiment PASS: exact candidate admitted to Refinery",
+                "shipped", candidate_sha,
+                require_string(meta.get("factory.branch"), "factory.branch"), worktree,
+            )
         refinery = require_string(meta.get("factory.refinery_bead"), "factory.refinery_bead")
         if refinery in beads.ready_ids():
             beads.update_metadata(refinery, {"factory.status": "ready"})
-        print(json.dumps({"bead": args.bead, "verdict": "PASS", "admission": str(certificate_path)}, sort_keys=True))
+        if emit:
+            print(json.dumps({"bead": args.bead, "verdict": "PASS", "admission": str(certificate_path)}, sort_keys=True))
         return 0
 
     refinery = require_string(meta.get("factory.refinery_bead"), "factory.refinery_bead")
@@ -2029,8 +3146,12 @@ def command_record_verdict(args: argparse.Namespace) -> int:
     common.update({"factory.status": "rejected", "factory.rescope_bead": rescope})
     beads.update_metadata(args.bead, common)
     if record.get("status") != "closed":
-        beads.close(args.bead, f"Factory experiment {result}: returned to Mayor as {rescope}")
-    print(json.dumps({"bead": args.bead, "verdict": result, "rescope_bead": rescope}, sort_keys=True))
+        beads.close(
+            args.bead, f"Factory experiment {result}: returned to Mayor as {rescope}",
+            "blocked",
+        )
+    if emit:
+        print(json.dumps({"bead": args.bead, "verdict": result, "rescope_bead": rescope}, sort_keys=True))
     return 0
 
 
@@ -2074,13 +3195,12 @@ def rescope_rejection(rig: str, rescope_bead: str, timeout: float) -> dict[str, 
             proposal_path = absolute_path(proposal_value, "factory.successor_proposal", True)
             if digest_file(proposal_path) != rescope_meta.get("factory.successor_proposal_digest"):
                 raise FactoryError("identity_mismatch", "recorded successor proposal changed")
-            with open(os.devnull, "w", encoding="utf-8") as sink, contextlib.redirect_stdout(sink):
-                command_successor(argparse.Namespace(
-                    rig=rig,
-                    rejected_bead=rescope_meta["factory.rejected_bead"],
-                    rescope_bead=rescope_bead,
-                    proposal=str(proposal_path),
-                ))
+            command_successor(argparse.Namespace(
+                rig=rig,
+                rejected_bead=rescope_meta["factory.rejected_bead"],
+                rescope_bead=rescope_bead,
+                proposal=str(proposal_path),
+            ), emit=False)
         reconcile_rescope_transport(metadata(beads.show(rescope_bead)), rescope_bead, successor_id)
         return {
             "rescope_bead": rescope_bead,
@@ -2094,13 +3214,12 @@ def rescope_rejection(rig: str, rescope_bead: str, timeout: float) -> dict[str, 
         )
         if digest_file(proposal_path) != rescope_meta.get("factory.successor_proposal_digest"):
             raise FactoryError("identity_mismatch", "preparing successor proposal changed")
-        with open(os.devnull, "w", encoding="utf-8") as sink, contextlib.redirect_stdout(sink):
-            command_successor(argparse.Namespace(
-                rig=rig,
-                rejected_bead=rescope_meta["factory.rejected_bead"],
-                rescope_bead=rescope_bead,
-                proposal=str(proposal_path),
-            ))
+        command_successor(argparse.Namespace(
+            rig=rig,
+            rejected_bead=rescope_meta["factory.rejected_bead"],
+            rescope_bead=rescope_bead,
+            proposal=str(proposal_path),
+        ), emit=False)
         refreshed = metadata(beads.show(rescope_bead))
         successor_id = require_string(refreshed.get("factory.successor_bead"), "factory.successor_bead")
         reconcile_rescope_transport(refreshed, rescope_bead, successor_id)
@@ -2160,7 +3279,7 @@ def rescope_rejection(rig: str, rescope_bead: str, timeout: float) -> dict[str, 
         "schema_version": "factory-role-request.v1",
         "request_id": safe_identifier(rescope_bead, "mayor", limit=120),
         "role": "rescope",
-        "provider": "codex",
+        "provider": require_provider(program_meta.get("factory.mayor_provider"), "factory.mayor_provider"),
         "program_id": context["program_id"],
         "workspace": str(repository),
         "intent_source": str(intent_source),
@@ -2193,11 +3312,10 @@ def rescope_rejection(rig: str, rescope_bead: str, timeout: float) -> dict[str, 
         "factory.rescope_transport_bead": mayor["work_bead"],
         "factory.rescope_mayor_context_id": mayor["session_context_id"],
     })
-    with open(os.devnull, "w", encoding="utf-8") as sink, contextlib.redirect_stdout(sink):
-        command_successor(argparse.Namespace(
-            rig=rig, rejected_bead=rejected_bead, rescope_bead=rescope_bead,
-            proposal=str(proposal_path),
-        ))
+    command_successor(argparse.Namespace(
+        rig=rig, rejected_bead=rejected_bead, rescope_bead=rescope_bead,
+        proposal=str(proposal_path),
+    ), emit=False)
     refreshed = metadata(beads.show(rescope_bead))
     successor = require_string(refreshed.get("factory.successor_bead"), "factory.successor_bead")
     reconcile_rescope_transport(refreshed, rescope_bead, successor)
@@ -2215,7 +3333,7 @@ def command_rescope(args: argparse.Namespace) -> int:
     return 0
 
 
-def command_successor(args: argparse.Namespace) -> int:
+def command_successor(args: argparse.Namespace, *, emit: bool = True) -> int:
     beads = Beads(args.rig)
     rejected = beads.show(args.rejected_bead)
     rejected_meta = metadata(rejected)
@@ -2241,7 +3359,8 @@ def command_successor(args: argparse.Namespace) -> int:
         raise FactoryError("acceptance_changed", "successor changed acceptance or non-goals")
     rescope_fields = (
         "intent", "depends_on", "write_scope", "generated_scope", "subject",
-        "first_check", "provider", "validator_provider",
+        "first_check", "provider", "worker_model_policy", "validator_provider",
+        "validator_model_policy",
     )
     if all(proposal[field] == rejected_spec[field] for field in rescope_fields):
         raise FactoryError("invalid_successor", "successor must rescope at least one execution field")
@@ -2328,21 +3447,71 @@ def command_successor(args: argparse.Namespace) -> int:
         "factory.successor_proposal_digest": digest_file(proposal_path),
     })
     if rescope.get("status") != "closed":
-        beads.close(args.rescope_bead, f"Mayor successor admitted as {successor}")
-    print(json.dumps({"rejected_bead": args.rejected_bead, "rescope_bead": args.rescope_bead, "successor_bead": successor}, sort_keys=True))
+        beads.close(args.rescope_bead, f"Mayor successor admitted as {successor}", "no-op")
+    if emit:
+        print(json.dumps({"rejected_bead": args.rejected_bead, "rescope_bead": args.rescope_bead, "successor_bead": successor}, sort_keys=True))
     return 0
+
+
+def attest_refiner_claim(beads: Beads, rig: str, refinery_bead: str,
+                         refinery: dict[str, Any], meta: dict[str, Any]) -> dict[str, Any]:
+    """Require and attest the routed Refiner that owns a delivery transition."""
+    if meta.get("factory.kind") != "refinery" or refinery.get("status") != "in_progress":
+        raise FactoryError("refinery_claim_invalid", "delivery requires a Refiner-claimed Refinery bead")
+    refiner_provider = require_provider(meta.get("factory.refiner_provider"), "factory.refiner_provider")
+    binding = require_string(meta.get("factory.binding"), "factory.binding", ID_RE)
+    expected_route = lifecycle_target("refiner", refiner_provider, rig, binding)
+    session_name = require_string(os.environ.get("GC_SESSION_NAME"), "GC_SESSION_NAME")
+    recorded_session_name = meta.get("gc.session_name")
+    if (
+        meta.get("gc.routed_to") != expected_route
+        or refinery.get("assignee") != session_name
+        or (recorded_session_name is not None and recorded_session_name != session_name)
+    ):
+        raise FactoryError("refinery_claim_invalid", "Refinery bead is not owned by its routed Refiner session")
+    session_id = require_string(os.environ.get("GC_SESSION_ID"), "GC_SESSION_ID")
+    session = runtime_session(session_id)
+    configured_model, launched_model = FACTORY_ROLE_MODELS[("refiner", refiner_provider)]
+    for field, wanted in {
+        "session_name": session_name,
+        "template": expected_route,
+        "provider": refiner_provider,
+        "model": launched_model,
+    }.items():
+        if session.get(field) != wanted:
+            raise FactoryError(
+                "runtime_identity_mismatch" if field != "model" else "runtime_model_mismatch",
+                f"Refiner runtime {field} must be {wanted!r}, got {session.get(field)!r}",
+            )
+    attestation = {
+        "factory.refiner_context_id": session_id,
+        "factory.refiner_model": session["model"],
+        "factory.refiner_model_policy": configured_model,
+        "factory.refiner_model_source": session["model_source"],
+    }
+    for field, value in attestation.items():
+        if field in meta and meta[field] != value:
+            raise FactoryError("runtime_identity_mismatch", f"Refinery {field} changed after attestation")
+    beads.update_metadata(refinery_bead, attestation)
+    return {**meta, **attestation}
 
 
 def command_refinery_assemble(args: argparse.Namespace) -> int:
     beads = Beads(args.rig)
     refinery = beads.show(args.refinery_bead)
     meta = metadata(refinery)
-    status = refinery.get("status")
-    if meta.get("factory.kind") != "refinery" or status not in {"open", "in_progress"}:
-        raise FactoryError("not_refinery", "only an open or Refiner-claimed Refinery bead may assemble")
+    if meta.get("factory.kind") != "refinery":
+        raise FactoryError("not_refinery", "only a Refinery bead may assemble")
     factory_phase = meta.get("factory.status")
     if factory_phase not in {"blocked", "ready", "assembling", "reassembly_required"}:
         raise FactoryError("invalid_transition", f"Refinery cannot assemble from phase {factory_phase!r}")
+    refiner_provider = require_provider(meta.get("factory.refiner_provider"), "factory.refiner_provider")
+    integration_validator_provider = require_provider(
+        meta.get("factory.integration_validator_provider"),
+        "factory.integration_validator_provider",
+    )
+    if refiner_provider == integration_validator_provider:
+        raise FactoryError("provider_collision", "Refiner and integration Validator must use opposite providers")
     unresolved = [
         str(item.get("id"))
         for item in refinery.get("dependencies", [])
@@ -2352,18 +3521,7 @@ def command_refinery_assemble(args: argparse.Namespace) -> int:
     ]
     if unresolved:
         raise FactoryError("refinery_blocked", f"Refinery bead has unresolved dependencies: {sorted(unresolved)}")
-    if status == "open" and factory_phase in {"blocked", "ready"} and args.refinery_bead not in beads.ready_ids():
-        raise FactoryError("refinery_blocked", "Refinery bead is open but not Ready-visible")
-    if status == "in_progress":
-        expected_route = f"{args.rig}/{meta.get('factory.binding')}.refiner"
-        session_name = meta.get("gc.session_name")
-        if (
-            meta.get("gc.routed_to") != expected_route
-            or not isinstance(session_name, str)
-            or not session_name
-            or refinery.get("assignee") != session_name
-        ):
-            raise FactoryError("refinery_claim_invalid", "in-progress Refinery bead is not owned by its routed Refiner session")
+    meta = attest_refiner_claim(beads, args.rig, args.refinery_bead, refinery, meta)
     if factory_phase in {"blocked", "ready"}:
         beads.update_metadata(args.refinery_bead, {"factory.status": "ready"})
         meta["factory.status"] = "ready"
@@ -2463,15 +3621,49 @@ def command_refinery_assemble(args: argparse.Namespace) -> int:
         run_process(["git", "worktree", "add", str(worktree), branch], cwd=repository, timeout=120)
     else:
         run_process(["git", "worktree", "add", "-b", branch, str(worktree), base_sha], cwd=repository, timeout=120)
+    if preparing:
+        abort_interrupted_factory_cherry_pick(worktree)
     if output(["git", "status", "--porcelain", "--untracked-files=no"], cwd=worktree):
         raise FactoryError("integration_dirty", "preparing integration worktree has tracked changes")
+    binding = require_string(meta.get("factory.binding"), "factory.binding", ID_RE)
+    integration_rig, binding = register_integration_rig(
+        worktree, args.refinery_bead, branch, binding,
+        meta.get("factory.integration_rig") if preparing else None,
+    )
+    recorded_scaffold = meta.get("factory.integration_scaffold_sha") if preparing else None
+    if recorded_scaffold is not None:
+        scaffold_sha = require_string(recorded_scaffold, "factory.integration_scaffold_sha", SHA_RE)
+        if run_process(
+            ["git", "merge-base", "--is-ancestor", scaffold_sha, "HEAD"],
+            cwd=worktree, check=False,
+        ).returncode != 0:
+            raise FactoryError("integration_moved", "integration rig scaffolding is not an ancestor of the recovering branch")
+    else:
+        scaffold_sha = git_head(worktree)
+    beads.update_metadata(args.refinery_bead, {
+        "factory.integration_rig": integration_rig,
+        "factory.executor_binding": binding,
+        "factory.integration_scaffold_sha": scaffold_sha,
+    })
+    meta.update({
+        "factory.integration_rig": integration_rig,
+        "factory.executor_binding": binding,
+        "factory.integration_scaffold_sha": scaffold_sha,
+    })
     evidence = worktree / ".gc" / "agentops-factory" / args.refinery_bead
     evidence.mkdir(parents=True, exist_ok=True)
     executor = load_executor_adapter()
+    # Node-local exclusions prevent a candidate from touching a sibling's
+    # product while experiments run in isolation. Once certified candidates are
+    # assembled, any path included by one node is part of the integrated
+    # subject even if another node excluded it locally. Carry forward only
+    # exclusions that are not an integration include, or the combined manifest
+    # can erase every independently-owned product and become NOT_PROVEN.
+    integration_excludes = subject_excludes.difference(subject_includes)
     manifest_packet = {
         "packet_id": safe_identifier(args.refinery_bead, "integration", limit=120),
         "role": "implement",
-        "subject": {"includes": sorted(subject_includes), "excludes": sorted(subject_excludes)},
+        "subject": {"includes": sorted(subject_includes), "excludes": sorted(integration_excludes)},
         "write_scope": sorted(integration_scope),
     }
     baseline_path = evidence / "integration-baseline-manifest.json"
@@ -2481,43 +3673,49 @@ def command_refinery_assemble(args: argparse.Namespace) -> int:
         if stored_baseline_digest and digest_file(baseline_path) != stored_baseline_digest:
             raise FactoryError("manifest_mutated", "integration baseline manifest changed during assembly")
     else:
-        if git_head(worktree) != base_sha:
+        if git_head(worktree) != scaffold_sha:
             raise FactoryError("assembly_recovery_missing", "integration moved before its baseline manifest was persisted")
         baseline = executor.build_manifest(manifest_packet, {"workspace": worktree}, baseline_path)
     beads.update_metadata(args.refinery_bead, {
         "factory.integration_baseline_manifest": str(baseline_path),
         "factory.integration_baseline_digest": digest_file(baseline_path),
     })
-    for _bead_id, candidate_sha in candidates:
-        if not commit_patch_present(worktree, candidate_sha):
-            run_process(["git", "cherry-pick", candidate_sha], cwd=worktree, timeout=120)
-    integration_sha = git_head(worktree)
-    subject_path = evidence / "integration-subject-manifest.json"
-    subject_manifest = executor.build_manifest(manifest_packet, {"workspace": worktree}, subject_path, baseline_path)
-    changed = executor.changed_paths(baseline, subject_manifest)
-    scope_receipt = executor.make_scope_receipt(manifest_packet, changed)
-    scope_path = evidence / "integration-scope-receipt.json"
-    write_json_atomic(scope_path, scope_receipt)
-    if scope_receipt.get("status") != "PASS":
-        raise FactoryError("integration_scope_failed", f"integration scope is {scope_receipt.get('status')}")
-    beads.update_metadata(args.refinery_bead, {
-        "factory.status": "validation_required",
-        "factory.fence_epoch": str(epoch),
-        "factory.fence_token": token,
-        "factory.integration_branch": branch,
-        "factory.integration_worktree": str(worktree),
-        "factory.integration_sha": integration_sha,
-        "factory.delivery_remote": args.remote,
-        "factory.delivery_base_sha": base_sha,
-        "factory.candidate_beads": [item[0] for item in candidates],
-        "factory.candidate_shas": [item[1] for item in candidates],
-        "factory.integration_subject": manifest_packet["subject"],
-        "factory.integration_scope": manifest_packet["write_scope"],
-        "factory.integration_baseline_manifest": str(baseline_path),
-        "factory.integration_baseline_digest": digest_file(baseline_path),
-        "factory.integration_subject_manifest": str(subject_path),
-        "factory.integration_scope_receipt": str(scope_path),
-    })
+    with refinery_merge_slot(beads, args.refinery_bead, args.merge_slot_timeout) as slot:
+        for _bead_id, candidate_sha in candidates:
+            if not commit_patch_present(worktree, candidate_sha):
+                run_process(factory_git_command("cherry-pick", candidate_sha), cwd=worktree, timeout=120)
+        integration_sha = git_head(worktree)
+        subject_path = evidence / "integration-subject-manifest.json"
+        subject_manifest = executor.build_manifest(
+            manifest_packet, {"workspace": worktree}, subject_path, baseline_path,
+        )
+        changed = executor.changed_paths(baseline, subject_manifest)
+        scope_receipt = executor.make_scope_receipt(manifest_packet, changed)
+        scope_path = evidence / "integration-scope-receipt.json"
+        write_json_atomic(scope_path, scope_receipt)
+        if scope_receipt.get("status") != "PASS":
+            raise FactoryError("integration_scope_failed", f"integration scope is {scope_receipt.get('status')}")
+        beads.update_metadata(args.refinery_bead, {
+            "factory.status": "validation_required",
+            "factory.fence_epoch": str(epoch),
+            "factory.fence_token": token,
+            "factory.integration_branch": branch,
+            "factory.integration_worktree": str(worktree),
+            "factory.integration_sha": integration_sha,
+            "factory.delivery_remote": args.remote,
+            "factory.delivery_base_sha": base_sha,
+            "factory.candidate_beads": [item[0] for item in candidates],
+            "factory.candidate_shas": [item[1] for item in candidates],
+            "factory.integration_subject": manifest_packet["subject"],
+            "factory.integration_scope": manifest_packet["write_scope"],
+            "factory.integration_baseline_manifest": str(baseline_path),
+            "factory.integration_baseline_digest": digest_file(baseline_path),
+            "factory.integration_subject_manifest": str(subject_path),
+            "factory.integration_scope_receipt": str(scope_path),
+            "factory.merge_slot_id": slot["id"],
+            "factory.merge_slot_holder": slot["holder"],
+        })
+    beads.update_metadata(args.refinery_bead, {"factory.merge_slot_released": "true"})
     print(json.dumps({"refinery_bead": args.refinery_bead, "epoch": epoch, "fence_token": token, "branch": branch, "worktree": str(worktree), "integration_sha": integration_sha, "candidate_beads": [item[0] for item in candidates]}, sort_keys=True))
     return 0
 
@@ -2565,13 +3763,29 @@ def command_refinery_run_validation(args: argparse.Namespace) -> int:
     meta = metadata(record)
     if meta.get("factory.kind") != "refinery" or meta.get("factory.status") != "validation_required":
         raise FactoryError("invalid_transition", "Refinery is not awaiting integration validation")
+    configured_provider = require_provider(
+        meta.get("factory.integration_validator_provider"),
+        "factory.integration_validator_provider",
+    )
+    refiner_provider = require_provider(meta.get("factory.refiner_provider"), "factory.refiner_provider")
+    if refiner_provider == configured_provider:
+        raise FactoryError("provider_collision", "Refiner and integration Validator must use opposite providers")
+    provider = require_provider(args.provider or configured_provider, "integration validator provider")
+    if provider != configured_provider:
+        raise FactoryError(
+            "provider_mismatch",
+            f"integration validator provider must remain {configured_provider!r}",
+        )
     epoch = int(meta.get("factory.fence_epoch", "0"))
     token = require_string(meta.get("factory.fence_token"), "factory.fence_token")
     integration_sha = require_string(meta.get("factory.integration_sha"), "factory.integration_sha", SHA_RE)
     worktree = check_fence(meta, epoch, token, integration_sha)
     branch = require_string(meta.get("factory.integration_branch"), "factory.integration_branch")
     binding = require_string(meta.get("factory.binding"), "factory.binding", ID_RE)
-    candidate_rig, binding = register_integration_rig(worktree, args.refinery_bead, branch, binding)
+    candidate_rig, binding = register_integration_rig(
+        worktree, args.refinery_bead, branch, binding,
+        meta.get("factory.integration_rig"),
+    )
     program = beads.show(require_string(meta.get("factory.program_bead"), "factory.program_bead"))
     program_meta = metadata(program)
     source_intent = absolute_path(program_meta.get("factory.intent_source"), "factory.intent_source", True)
@@ -2591,7 +3805,7 @@ def command_refinery_run_validation(args: argparse.Namespace) -> int:
         "schema_version": "gc-execution-envelope.v1",
         "packet_id": packet_id,
         "role": "validate",
-        "provider": args.provider,
+        "provider": provider,
         "intent_source": str(intent_source),
         "intent_digest": intent_digest,
         "workspace": str(worktree),
@@ -2606,6 +3820,7 @@ def command_refinery_run_validation(args: argparse.Namespace) -> int:
     }
     write_json_atomic(packet_path, packet)
     validation = run_executor_packet(packet_path, candidate_rig, binding, args.timeout)
+    validation_attestation = executor_session_attestation(validation, "validate", provider)
     artifacts = validation.get("agent_response", {}).get("artifacts")
     if not isinstance(artifacts, list) or len(artifacts) != 1 or not isinstance(artifacts[0], dict):
         raise FactoryError("verdict_missing", "integration Validator returned no exact verdict artifact")
@@ -2621,13 +3836,16 @@ def command_refinery_run_validation(args: argparse.Namespace) -> int:
         "factory.integration_rig": candidate_rig,
         "factory.executor_binding": binding,
         "factory.integration_validation_packet": str(packet_path),
-        "factory.integration_validator_context_id": validation["transport"]["session_context_id"],
+        "factory.integration_validator_context_id": validation_attestation["id"],
+        "factory.integration_validator_model": validation_attestation["model"],
+        "factory.integration_validator_model_policy": validation_attestation["model_policy"],
+        "factory.integration_validator_model_source": validation_attestation["model_source"],
     })
     result = {
         "refinery_bead": args.refinery_bead,
         "integration_sha": integration_sha,
         "verdict": load_object(verdict_path, "integration verdict").get("verdict"),
-        "validator_context_id": validation["transport"]["session_context_id"],
+        "validator_context_id": validation_attestation["id"],
         "verdict_path": str(verdict_path),
     }
     print(json.dumps(result, sort_keys=True))
@@ -2657,6 +3875,9 @@ def delivery_record(meta: dict[str, Any], status: str, pr: dict[str, Any] | None
             "verdict_digest": meta.get("factory.integration_verdict_digest"),
             "subject_manifest_digest": meta.get("factory.integration_subject_digest"),
             "validator_context_id": meta.get("factory.integration_validator_context_id"),
+            "validator_model": meta.get("factory.integration_validator_model"),
+            "validator_model_policy": meta.get("factory.integration_validator_model_policy"),
+            "validator_model_source": meta.get("factory.integration_validator_model_source"),
         }
     return {
         "schema_version": "delivery-record.v1",
@@ -2687,6 +3908,66 @@ def persist_delivery_record(beads: Beads, refinery_bead: str, meta: dict[str, An
         "factory.delivery_record_digest": digest_file(path),
     })
     return path
+
+
+def command_refinery_qualify(args: argparse.Namespace) -> int:
+    """Complete a no-publish canary after the exact integration PASS gate."""
+    beads = Beads(args.rig)
+    refinery = beads.show(args.refinery_bead)
+    meta = metadata(refinery)
+    if meta.get("factory.kind") != "refinery" or meta.get("factory.delivery_mode") != "qualify":
+        raise FactoryError("invalid_transition", "qualification requires a qualify-mode Refinery bead")
+    if meta.get("factory.status") == "qualified":
+        record_path = absolute_path(meta.get("factory.delivery_record"), "factory.delivery_record", True)
+        if digest_file(record_path) != meta.get("factory.delivery_record_digest"):
+            raise FactoryError("identity_mismatch", "qualification record changed")
+    else:
+        if meta.get("factory.status") != "validated" or meta.get("factory.integration_verdict") != "PASS":
+            raise FactoryError("invalid_transition", "qualification requires an exact PASSed integration")
+        epoch = int(meta.get("factory.fence_epoch", "0"))
+        token = require_string(meta.get("factory.fence_token"), "factory.fence_token")
+        integration_sha = require_string(meta.get("factory.integration_sha"), "factory.integration_sha", SHA_RE)
+        check_fence(meta, epoch, token, integration_sha)
+        record_path = persist_delivery_record(beads, args.refinery_bead, meta, "qualified", None, None)
+        beads.update_metadata(args.refinery_bead, {
+            "factory.status": "qualified",
+            "factory.qualified_sha": integration_sha,
+            "factory.qualification_record": str(record_path),
+            "factory.qualification_record_digest": digest_file(record_path),
+        })
+        meta = metadata(beads.show(args.refinery_bead))
+    program_bead = require_string(meta.get("factory.program_bead"), "factory.program_bead")
+    program = beads.show(program_bead)
+    beads.update_metadata(program_bead, {
+        "factory.status": "qualified",
+        "factory.qualified_sha": meta["factory.integration_sha"],
+        "factory.qualification_record": str(record_path),
+        "factory.qualification_record_digest": digest_file(record_path),
+    })
+    if program.get("status") != "closed":
+        beads.close(
+            program_bead,
+            f"Refinery qualification passed at {meta['factory.integration_sha']} without publish or merge",
+            "shipped", meta["factory.integration_sha"], meta["factory.integration_branch"],
+            meta["factory.integration_worktree"],
+        )
+    refinery = beads.show(args.refinery_bead)
+    if refinery.get("status") != "closed":
+        beads.close(
+            args.refinery_bead,
+            f"Qualification-only integration PASS at {meta['factory.integration_sha']}",
+            "shipped", meta["factory.integration_sha"], meta["factory.integration_branch"],
+            meta["factory.integration_worktree"],
+        )
+    result = {
+        "refinery_bead": args.refinery_bead,
+        "program_bead": program_bead,
+        "status": "qualified",
+        "integration_sha": meta["factory.integration_sha"],
+        "qualification_record": str(record_path),
+    }
+    print(json.dumps(result, sort_keys=True))
+    return 0
 
 
 def command_refinery_publish(args: argparse.Namespace) -> int:
@@ -2776,9 +4057,16 @@ def reconcile_landed_delivery(beads: Beads, refinery_bead: str) -> dict[str, Any
         "factory.delivery_record": str(delivery_path),
     })
     if refinery.get("status") != "closed":
-        beads.close(refinery_bead, f"Factory delivery landed at {landed_sha}")
+        beads.close(
+            refinery_bead, f"Factory delivery landed at {landed_sha}",
+            "shipped", landed_sha, meta["factory.base_branch"], meta["factory.integration_worktree"],
+        )
     if program.get("status") != "closed":
-        beads.close(program_bead, f"Factory program landed through {meta['factory.pr_url']} at {landed_sha}")
+        beads.close(
+            program_bead,
+            f"Factory program landed through {meta['factory.pr_url']} at {landed_sha}",
+            "shipped", landed_sha, meta["factory.base_branch"], meta["factory.integration_worktree"],
+        )
     return {
         "refinery_bead": refinery_bead,
         "program_bead": program_bead,
@@ -2865,41 +4153,103 @@ def command_refinery_land(args: argparse.Namespace) -> int:
 
 def command_refinery_deliver(args: argparse.Namespace) -> int:
     beads = Beads(args.rig)
-    phase = metadata(beads.show(args.refinery_bead)).get("factory.status")
-    with open(os.devnull, "w", encoding="utf-8") as sink, contextlib.redirect_stdout(sink):
-        if phase in {"blocked", "ready", "assembling", "reassembly_required"}:
-            command_refinery_assemble(argparse.Namespace(
-                rig=args.rig, refinery_bead=args.refinery_bead,
-                worktree_root=args.worktree_root, max_candidates=args.max_candidates,
-                remote=args.remote,
-            ))
-            phase = metadata(beads.show(args.refinery_bead)).get("factory.status")
-        if phase == "validation_required":
-            command_refinery_run_validation(argparse.Namespace(
-                rig=args.rig, refinery_bead=args.refinery_bead,
-                provider=args.provider, timeout=args.timeout,
-            ))
-            phase = metadata(beads.show(args.refinery_bead)).get("factory.status")
-        if phase == "validated":
-            command_refinery_publish(argparse.Namespace(
-                rig=args.rig, refinery_bead=args.refinery_bead, remote=args.remote,
-                title=args.title, draft=args.draft,
-            ))
-            phase = metadata(beads.show(args.refinery_bead)).get("factory.status")
-        if phase == "published":
-            command_refinery_land(argparse.Namespace(
-                rig=args.rig, refinery_bead=args.refinery_bead,
-                merge_method=args.merge_method, timeout=args.timeout,
-            ))
-            phase = metadata(beads.show(args.refinery_bead)).get("factory.status")
-    if phase == "integration_rejected":
-        rejected = metadata(beads.show(args.refinery_bead))
-        raise FactoryError("integration_rejected", f"integration verdict is {rejected.get('factory.integration_verdict')}")
-    if phase != "landed":
-        raise FactoryError("invalid_transition", f"Refinery delivery cannot resume from phase {phase!r}")
+    try:
+        refinery = beads.show(args.refinery_bead)
+        meta = attest_refiner_claim(beads, args.rig, args.refinery_bead, refinery, metadata(refinery))
+        phase = meta.get("factory.status")
+        with open(os.devnull, "w", encoding="utf-8") as sink, contextlib.redirect_stdout(sink):
+            if phase in {"blocked", "ready", "assembling", "reassembly_required"}:
+                command_refinery_assemble(argparse.Namespace(
+                    rig=args.rig, refinery_bead=args.refinery_bead,
+                    worktree_root=args.worktree_root, max_candidates=args.max_candidates,
+                    remote=args.remote, merge_slot_timeout=args.merge_slot_timeout,
+                ))
+                phase = metadata(beads.show(args.refinery_bead)).get("factory.status")
+            if phase == "validation_required":
+                command_refinery_run_validation(argparse.Namespace(
+                    rig=args.rig, refinery_bead=args.refinery_bead,
+                    provider=args.provider, timeout=args.timeout,
+                ))
+                phase = metadata(beads.show(args.refinery_bead)).get("factory.status")
+            delivery_mode = metadata(beads.show(args.refinery_bead)).get("factory.delivery_mode", "pr")
+            if phase == "validated" and delivery_mode == "qualify":
+                command_refinery_qualify(argparse.Namespace(
+                    rig=args.rig, refinery_bead=args.refinery_bead,
+                ))
+                phase = metadata(beads.show(args.refinery_bead)).get("factory.status")
+            if phase == "validated":
+                command_refinery_publish(argparse.Namespace(
+                    rig=args.rig, refinery_bead=args.refinery_bead, remote=args.remote,
+                    title=args.title, draft=args.draft,
+                ))
+                phase = metadata(beads.show(args.refinery_bead)).get("factory.status")
+            if phase == "published":
+                command_refinery_land(argparse.Namespace(
+                    rig=args.rig, refinery_bead=args.refinery_bead,
+                    merge_method=args.merge_method, timeout=args.timeout,
+                ))
+                phase = metadata(beads.show(args.refinery_bead)).get("factory.status")
+        if phase == "qualified":
+            qualified = metadata(beads.show(args.refinery_bead))
+            result = {
+                "refinery_bead": args.refinery_bead,
+                "program_bead": qualified.get("factory.program_bead"),
+                "status": "qualified",
+                "integration_sha": qualified.get("factory.integration_sha"),
+                "qualification_record": qualified.get("factory.qualification_record"),
+            }
+            print(json.dumps(result, sort_keys=True))
+            return 0
+        if phase == "integration_rejected":
+            rejected = metadata(beads.show(args.refinery_bead))
+            raise FactoryError("integration_rejected", f"integration verdict is {rejected.get('factory.integration_verdict')}")
+        if phase != "landed":
+            raise FactoryError("invalid_transition", f"Refinery delivery cannot resume from phase {phase!r}")
+    except FactoryError as exc:
+        hold_fields: dict[str, Any] = {
+            "factory.delivery_hold": "true",
+            "factory.delivery_hold_code": exc.code,
+            "factory.delivery_hold_reason": str(exc)[:4000],
+        }
+        if exc.code == "integration_moved":
+            hold_fields["factory.status"] = "reassembly_required"
+        beads.update_metadata(args.refinery_bead, hold_fields)
+        beads.hold_delivery(args.refinery_bead)
+        raise
     result = reconcile_landed_delivery(Beads(args.rig), args.refinery_bead)
     result["status"] = "landed"
     print(json.dumps(result, sort_keys=True))
+    return 0
+
+
+def command_refinery_retry(args: argparse.Namespace) -> int:
+    """Return an explicitly held delivery to its canonical Refiner route."""
+    beads = Beads(args.rig)
+    refinery = beads.show(args.refinery_bead)
+    meta = metadata(refinery)
+    if meta.get("factory.kind") != "refinery":
+        raise FactoryError("not_refinery", "only a Refinery bead may retry delivery")
+    if refinery.get("status") != "deferred" or meta.get("factory.delivery_hold") not in (True, "true"):
+        raise FactoryError("invalid_transition", "retry requires a deferred Refinery delivery hold")
+    phase = meta.get("factory.status")
+    if phase in {"integration_rejected", "qualified", "landed"}:
+        raise FactoryError("invalid_transition", f"Refinery phase {phase!r} is not retryable")
+    binding = require_string(meta.get("factory.binding"), "factory.binding", ID_RE)
+    refiner_provider = require_provider(meta.get("factory.refiner_provider"), "factory.refiner_provider")
+    expected_route = lifecycle_target("refiner", refiner_provider, args.rig, binding)
+    held_route = meta.get("gc.routed_to")
+    if held_route not in (None, "", expected_route):
+        raise FactoryError(
+            "identity_mismatch",
+            f"held Refinery route must be absent or {expected_route!r}, got {held_route!r}",
+        )
+    beads.retry_delivery(args.refinery_bead, expected_route)
+    print(json.dumps({
+        "refinery_bead": args.refinery_bead,
+        "status": "open",
+        "factory_status": phase,
+        "route": expected_route,
+    }, sort_keys=True))
     return 0
 
 
@@ -2909,8 +4259,34 @@ def command_doctor() -> int:
     if "[imports.executor]" not in pack:
         problems.append("factory pack must import the thin executor")
     agents = {path.name for path in (PACK_ROOT / "agents").iterdir() if path.is_dir()}
-    if agents != {"mayor", "plan-reviewer", "plan-reviewer-claude", "refiner"}:
+    if agents != {
+        "mayor", "mayor-claude", "plan-reviewer", "plan-reviewer-claude",
+        "refiner", "refiner-claude",
+    }:
         problems.append(f"unexpected semantic roles: {sorted(agents)}")
+    role_models = {
+        "mayor": ("codex", "gpt-5.6-sol"),
+        "mayor-claude": ("claude", "opus-4.8"),
+        "plan-reviewer": ("codex", "gpt-5.6-sol"),
+        "plan-reviewer-claude": ("claude", "opus-4.8"),
+        "refiner": ("codex", "gpt-5.6-sol"),
+        "refiner-claude": ("claude", "opus-4.8"),
+    }
+    for role, (provider, model) in role_models.items():
+        path = PACK_ROOT / "agents" / role / "agent.toml"
+        if not path.is_file():
+            problems.append(f"missing agents/{role}/agent.toml")
+            continue
+        config = tomllib.loads(path.read_text(encoding="utf-8"))
+        if config.get("provider") != provider:
+            problems.append(f"agents/{role}/agent.toml: provider must be {provider}")
+        if provider == "claude" and config.get("lifecycle") == "one_shot":
+            problems.append(f"agents/{role}/agent.toml: Claude must use an interactive GC session")
+        if config.get("option_defaults", {}).get("model") != model:
+            problems.append(f"agents/{role}/agent.toml: model must be {model}")
+        expected_work_dir = f".gc/agents/{role}"
+        if config.get("work_dir") != expected_work_dir:
+            problems.append(f"agents/{role}/agent.toml: work_dir must be {expected_work_dir}")
     forbidden_state = [
         str(path.relative_to(PACK_ROOT))
         for path in PACK_ROOT.rglob("*")
@@ -2938,7 +4314,7 @@ def command_doctor() -> int:
         for problem in problems:
             print(problem)
         return 2
-    print("agentops-factory is bead-native: roles/methods in the pack, work and lifecycle in the bead graph")
+    print("agentops-factory is bead-native with selectable Sol or Opus 4.8 Mayor/Refiner roles and opposite-family judges")
     return 0
 
 
@@ -2951,8 +4327,12 @@ def parser() -> argparse.ArgumentParser:
     plan.add_argument("--program-id", required=True)
     plan.add_argument("--base-branch", default="main")
     plan.add_argument("--rig", required=True)
-    plan.add_argument("--binding", default="factory")
-    plan.add_argument("--reviewer-provider", choices=sorted(PROVIDERS), default="claude")
+    plan.add_argument("--binding", default="agentops")
+    plan.add_argument("--mayor-provider", choices=sorted(PROVIDERS), default="codex")
+    plan.add_argument("--reviewer-provider", choices=sorted(PROVIDERS))
+    plan.add_argument("--refiner-provider", choices=sorted(PROVIDERS), default="codex")
+    plan.add_argument("--integration-validator-provider", choices=sorted(PROVIDERS))
+    plan.add_argument("--delivery-mode", choices=sorted(DELIVERY_MODES), default="pr")
     plan.add_argument("--evidence-dir")
     plan.add_argument("--timeout", type=float, default=1800)
     plan.add_argument("--result")
@@ -2962,7 +4342,12 @@ def parser() -> argparse.ArgumentParser:
     admit.add_argument("--review", required=True)
     admit.add_argument("--mayor-context", required=True)
     admit.add_argument("--rig", required=True)
-    admit.add_argument("--binding", default="factory")
+    admit.add_argument("--binding", default="agentops")
+    admit.add_argument("--delivery-mode", choices=sorted(DELIVERY_MODES), default="pr")
+    admit.add_argument("--mayor-provider", choices=sorted(PROVIDERS), default="codex")
+    admit.add_argument("--reviewer-provider", choices=sorted(PROVIDERS), default="claude")
+    admit.add_argument("--refiner-provider", choices=sorted(PROVIDERS), default="codex")
+    admit.add_argument("--integration-validator-provider", choices=sorted(PROVIDERS), default="claude")
     admit.add_argument("--result")
     lease = sub.add_parser("lease")
     lease.add_argument("--rig", required=True)
@@ -3008,6 +4393,7 @@ def parser() -> argparse.ArgumentParser:
     assemble.add_argument("--refinery-bead", required=True)
     assemble.add_argument("--worktree-root", required=True)
     assemble.add_argument("--max-candidates", type=int, default=5)
+    assemble.add_argument("--merge-slot-timeout", type=float, default=300)
     assemble.add_argument("--remote", default="origin")
     validate = refinery_sub.add_parser("validate")
     validate.add_argument("--rig", required=True)
@@ -3020,8 +4406,11 @@ def parser() -> argparse.ArgumentParser:
     run_validation = refinery_sub.add_parser("run-validation")
     run_validation.add_argument("--rig", required=True)
     run_validation.add_argument("--refinery-bead", required=True)
-    run_validation.add_argument("--provider", choices=sorted(PROVIDERS), default="claude")
+    run_validation.add_argument("--provider", choices=sorted(PROVIDERS))
     run_validation.add_argument("--timeout", type=float, default=1800)
+    qualify = refinery_sub.add_parser("qualify")
+    qualify.add_argument("--rig", required=True)
+    qualify.add_argument("--refinery-bead", required=True)
     publish = refinery_sub.add_parser("publish")
     publish.add_argument("--rig", required=True)
     publish.add_argument("--refinery-bead", required=True)
@@ -3038,12 +4427,16 @@ def parser() -> argparse.ArgumentParser:
     deliver.add_argument("--refinery-bead", required=True)
     deliver.add_argument("--worktree-root", required=True)
     deliver.add_argument("--max-candidates", type=int, default=8)
-    deliver.add_argument("--provider", choices=sorted(PROVIDERS), default="claude")
+    deliver.add_argument("--merge-slot-timeout", type=float, default=300)
+    deliver.add_argument("--provider", choices=sorted(PROVIDERS))
     deliver.add_argument("--remote", default="origin")
     deliver.add_argument("--title")
     deliver.add_argument("--draft", action="store_true")
     deliver.add_argument("--merge-method", choices=("merge", "squash", "rebase"), default="squash")
     deliver.add_argument("--timeout", type=float, default=3600)
+    retry = refinery_sub.add_parser("retry")
+    retry.add_argument("--rig", required=True)
+    retry.add_argument("--refinery-bead", required=True)
     inspect_role = sub.add_parser("inspect-role")
     inspect_role.add_argument("--request", required=True)
     emit_role = sub.add_parser("emit-role")
@@ -3087,6 +4480,11 @@ def main(argv: list[str] | None = None) -> int:
             return command_doctor()
         if args.command == "refinery":
             if args.refinery_command == "assemble":
+                if args.max_candidates < 1 or args.merge_slot_timeout <= 0:
+                    raise FactoryError(
+                        "invalid_argument",
+                        "--max-candidates and --merge-slot-timeout must be positive",
+                    )
                 return command_refinery_assemble(args)
             if args.refinery_command == "validate":
                 return command_refinery_validate(args)
@@ -3094,6 +4492,8 @@ def main(argv: list[str] | None = None) -> int:
                 if args.timeout <= 0:
                     raise FactoryError("invalid_argument", "--timeout must be positive")
                 return command_refinery_run_validation(args)
+            if args.refinery_command == "qualify":
+                return command_refinery_qualify(args)
             if args.refinery_command == "publish":
                 return command_refinery_publish(args)
             if args.refinery_command == "land":
@@ -3101,9 +4501,14 @@ def main(argv: list[str] | None = None) -> int:
                     raise FactoryError("invalid_argument", "--timeout must be positive")
                 return command_refinery_land(args)
             if args.refinery_command == "deliver":
-                if args.timeout <= 0 or args.max_candidates < 1:
-                    raise FactoryError("invalid_argument", "--timeout and --max-candidates must be positive")
+                if args.timeout <= 0 or args.max_candidates < 1 or args.merge_slot_timeout <= 0:
+                    raise FactoryError(
+                        "invalid_argument",
+                        "--timeout, --max-candidates, and --merge-slot-timeout must be positive",
+                    )
                 return command_refinery_deliver(args)
+            if args.refinery_command == "retry":
+                return command_refinery_retry(args)
     except FactoryError as exc:
         print(json.dumps({"ok": False, "error": {"code": exc.code, "message": str(exc)}}, sort_keys=True))
         return 2

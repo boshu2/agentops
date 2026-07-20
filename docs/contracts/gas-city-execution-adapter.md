@@ -35,12 +35,13 @@ The deployment is intentionally smaller than a traditional Gas Town:
   not exactly the selected rig root;
 - one caller-selected AgentOps pack binding at city and primary-rig scopes;
 - the built-in Codex and Claude providers with full SDK option-schema
-  replacements exposing Codex's bounded auto-edit default, a Refiner-only
-  unrestricted delivery choice, and Claude's interactive safety-classified
-  `auto` mode;
+  replacements exposing Codex's bounded auto-edit default, Refiner-only
+  unrestricted delivery choices, Claude's safety-classified `auto` mode, and
+  explicit role-selectable model choices;
 - Codex workspace-write network access enabled for the private loopback Dolt
   endpoint, without broadening its declared writable roots;
-- `print_args = []` for Claude, forbidding inherited `-p` one-shot mode;
+- GC-owned interactive tmux sessions for every Claude role, with empty
+  `print_args` and deployment rejection of `-p` / `--print`;
 - a workspace-wide cap that defaults to one active session and must be raised
   explicitly for bounded factory qualification;
 - no `workspace.provider`; the required explicit provider catalog entries still
@@ -53,14 +54,19 @@ The deployment is intentionally smaller than a traditional Gas Town:
   around the same packet boundary.
 
 The thin AgentOps pack defines explicit Codex and Claude single-packet
-Implementer and Validator roles. Every agent selects its provider explicitly
-and uses fresh wake mode; every packet also names `provider = codex | claude`,
-and the adapter verifies that Gas City's runtime session used that provider.
-The pack declares no formula or lifecycle-owned one-shot policy. A fresh
+Implementer and Validator roles. Every agent selects its provider and model
+explicitly; every packet also names `provider = codex | claude`, and the adapter
+verifies Gas City's runtime session, provider, and exact launch model. Codex
+uses Terra for implementation and Sol for validation. Claude uses Opus 4.8 for
+implementation and validation, with a fresh interactive GC session. A fresh
 Validator context must not reuse the Implementer's context identity.
 
-When selected, `agentops-factory` imports that executor and adds Mayor,
-plan-review, deterministic reducer, and fenced Refiner surfaces. The work unit
+When selected, `agentops-factory` imports that executor and adds provider-specific
+Mayor, plan-review, deterministic reducer, and fenced Refiner surfaces. Codex
+Mayor/plan-review/Refiner roles use Sol; Claude variants use Opus 4.8. The
+program bead records those provider choices, and plan review plus integration
+validation must use the opposite provider family from the Mayor or Refiner they
+judge. The work unit
 is still a bead, never the pack. Every dynamic candidate rig is patched and
 verified to expose exactly the bead-selected Implementer route and its selected
 opposite-family Validator route; every integration rig exposes only its two
@@ -71,13 +77,14 @@ authority.
 
 | Artifact | Authority and mutation rule |
 |---|---|
+| AgentOps `deploy/gc/toolchain.lock.json` | Exact accepted GC/official-Beads source pairs and qualification state; same-version unlisted builds are not equivalent |
 | AgentOps executor `pack.toml` | Portable role, prompt, and command contract; edited in AgentOps and linted before deployment |
 | Live city `pack.toml` | Created by the current `gc init`; its built-in imports and pins remain SDK-owned; bootstrap adds only `[imports.agentops]` |
 | Live `city.toml` | Created from `deploy/gc/city.toml`; `gc rig add` owns logical rig entries; bootstrap adds the primary rig import and generic-target patches; the factory adds serialized, fail-closed rig patches for dedicated worktree rigs |
 | Live `.gc/site.toml` | Machine-local SDK state containing workspace identity and physical rig paths; never copied into portable config |
 | `.gc-home/supervisor.toml` | Bootstrap-owned private loopback address, selected once before start and preserved on managed reruns |
 | `.gc-home` and `.gc/codex-home` | Remaining runtime/session state private to this city; only the selected external Codex auth file is linked in |
-| `.gc/agentops-bootstrap.json` | Recoverable bootstrap identity, including the exact GC binary and auth source; packet commands use its GC path when ambient `GC_BIN` is absent |
+| `.gc/agentops-bootstrap.json` | Recoverable bootstrap identity, including the selected pair id/status, full source commits, exact GC/Beads paths and binary digests, and auth source; packet commands use its GC path when ambient `GC_BIN` is absent |
 
 For a local pack with uncommitted changes, direct TOML with a plain absolute
 `source` is the current Gas City SDK's documented behavior; `gc import add`
@@ -102,7 +109,7 @@ For a released pack, use the normal import command and a durable commit pin.
    factual scope/check receipts. The implementer does not transcribe a
    candidate packet by hand.
 5. The controller supplies a second explicit packet for a distinct fresh
-   Codex or Claude context to validate the exact subject, intent digest, scope,
+   Sol or Opus 4.8 context to validate the exact subject, intent digest, scope,
    evidence, and every acceptance criterion. Cross-provider validation is a
    caller choice, not an implicit router decision.
 6. Validate emits exactly one `verdict.v2` beneath the evidence workspace. The
@@ -113,7 +120,7 @@ The packet evidence directory also contains digest-bound
 `runtime-transport.json` and `runtime-result.json` receipts. They make a
 controller restart replayable: a prepared transport resumes from its existing
 bead, and a completed runtime result is revalidated against the closed bead,
-actual provider session, artifacts, and current exact subject before it is
+actual provider session and launch model, artifacts, and current exact subject before it is
 returned. These receipts do not own work status, semantic retry, or verdict
 authority; the bead and `verdict.v2` retain those meanings.
 
@@ -125,7 +132,8 @@ GC, Git, Beads, and provider metadata directories are excluded from subject
 manifests, including GC's per-item session scaffolding. A validation response
 must reference exactly one valid `verdict.v2`; its intent, subject, author,
 validator, and runtime freshness facts must match the packet, manifests, and
-the actual provider session reported by Gas City. The validate envelope also binds
+the actual provider session and role-pinned launch model reported by Gas City.
+The validate envelope also binds
 the implementer's runtime-derived scope receipt, which is recomputed from the
 two manifests before dispatch. Response schemas are enforced by the adapter
 itself because an SDK-exposed command result schema is not an execution-time
@@ -139,7 +147,12 @@ a closed transport item cannot upgrade `FAIL` or `NOT_PROVEN` to `PASS`.
 ## Bootstrap and stability gate
 
 `deploy/gc/bootstrap.sh` refuses any nonempty city it did not previously mark as
-managed. It clears inherited Gas City and Dolt selectors, sets
+managed. Before city creation it requires `gc` and `bd` to be colocated and to
+match one exact entry in `deploy/gc/toolchain.lock.json`; version-only matches
+are rejected. `deploy/gc/materialize-toolchain.sh` builds the default qualified
+pair from its two exact source commits and emits a local digest receipt without
+modifying installed binaries. Bootstrap then clears inherited Gas City and
+Dolt selectors, sets
 `GC_HOME=<city>/.gc-home` and `GC_ISOLATED=1`, persists a private loopback
 supervisor port for service-manager launches, links and checks Codex auth,
 checks first-party Claude authentication without starting a session,
@@ -159,6 +172,12 @@ gc config show
 gc config explain
 gc import status --json
 ```
+
+`deploy/gc/teardown.sh` consumes that same marker and exact GC binary. It binds
+supervisor shutdown to the private `GC_HOME`, waits for the supervisor's
+destructive stop to finish, idempotently stops managed Dolt once more, and
+refuses success while the city's tmux socket or path-scoped processes remain.
+It does not delete the city or its bead history.
 
 A deployment is stable enough for AgentOps use only after a real negative test
 rejects an invalid envelope and three consecutive independent experiments

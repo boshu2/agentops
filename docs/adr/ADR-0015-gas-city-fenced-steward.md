@@ -158,14 +158,22 @@ Use separate forge identities for PR authorship and semantic validation.
 ## Provider policy
 
 Codex and Claude are physical routing variants of the same semantic roles.
-Each `agent.toml` selects one provider, each packet names `codex` or `claude`,
-and runtime evidence must match.
+Each `agent.toml` selects one provider and role-specific model, each packet
+names `codex` or `claude`, and runtime evidence must match the provider and the
+exact launched model. The default capability split is Sol for Codex semantic
+planning and judgment, Terra for Codex implementation, and Opus 4.8 for every
+Claude role.
 
-Do not run two simultaneous Mayors merely to use both providers. On bo-mac,
-start with a Codex Mayor and bounded fresh Claude plan-review, worker, and
-Validator lanes because the host contract records a Claude long-running
-process-spawn failure mode. Provider unavailability must be visible policy data;
-it cannot silently lower validation requirements.
+Do not run two simultaneous Mayors merely to use both providers. Mayor and
+Refiner provider choices are independent: Codex variants use Sol and Claude
+variants use Opus 4.8. Their plan-review and integration Validator roles must use
+the opposite provider family. Codex implementation nodes use Terra; Claude
+implementation nodes use Opus 4.8. The default is Sol Mayor, Opus plan review,
+Sol Refiner, and Opus integration validation. Claude roles use fresh GC-owned
+interactive tmux sessions; the deployment rejects `claude -p` and
+`claude --print`. Provider or model unavailability must be visible policy data;
+it cannot silently lower validation requirements or fall back to an ambient
+model.
 
 ## Role disposition
 

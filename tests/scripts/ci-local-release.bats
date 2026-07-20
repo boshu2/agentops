@@ -78,6 +78,24 @@ teardown() {
     [ "$status" -eq 0 ]
 }
 
+@test "binary-dependent smoke tests run only after the build phase" {
+    phase_five_line="$(grep -n '# ── Phase 5: CLI smoke tests (need built binary)' "$SCRIPT" | cut -d: -f1)"
+    smoke_line="$(grep -n 'run_step_bg "Smoke tests"' "$SCRIPT" | cut -d: -f1)"
+    install_line="$(grep -n 'run_step_bg "Install surface smoke"' "$SCRIPT" | cut -d: -f1)"
+
+    [ "$(grep -c 'run_step_bg "Smoke tests"' "$SCRIPT")" -eq 1 ]
+    [ "$(grep -c 'run_step_bg "Install surface smoke"' "$SCRIPT")" -eq 1 ]
+    [ "$smoke_line" -gt "$phase_five_line" ]
+    [ "$install_line" -gt "$phase_five_line" ]
+}
+
+@test "Makefile fast target uses the supported quick mode" {
+    run grep -A1 '^local-ci-fast:' "$REPO_ROOT/Makefile"
+    [ "$status" -eq 0 ]
+    [[ "$output" == *'./scripts/ci-local-release.sh --quick'* ]]
+    [[ "$output" != *'--skip-e2e-install'* ]]
+}
+
 @test "release gate does not wire retired local lifecycle checks" {
     run grep -q 'Worktree disposition gate' "$SCRIPT"
     [ "$status" -eq 1 ]

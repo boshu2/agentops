@@ -9,8 +9,8 @@ SHELL := /usr/bin/env bash
 local-ci: ## Run full local CI release gate (includes build and release binary validation)
 	./scripts/ci-local-release.sh
 
-local-ci-fast: ## Run local CI without e2e install test, using quick security mode
-	./scripts/ci-local-release.sh --skip-e2e-install --security-mode quick
+local-ci-fast: ## Run the fast pre-tag code-correctness gate
+	./scripts/ci-local-release.sh --quick
 
 ci: local-ci ## Alias for local-ci
 
@@ -26,10 +26,10 @@ docs-check: ## Run docs and hook safety drift checks
 	./tests/docs/validate-doc-release.sh
 
 regen-all: ## Regenerate every derived artifact after adding a skill/command (one-command finalizer)
-	./scripts/regen-all.sh
+	bash ./scripts/regen-all.sh
 
 regen-check: ## Run the derived-artifact drift/gate sweep (no writes; pre-push gate)
-	./scripts/regen-all.sh --check
+	bash ./scripts/regen-all.sh --check
 
 clean: ## Clean CLI build artifacts
 	$(MAKE) -C cli clean
