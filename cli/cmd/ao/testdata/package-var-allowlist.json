@@ -1,0 +1,29 @@
+{
+  "_comment": "Durable carve-out invariant (bead age-a-plus-report-card-ieyp2.14). Every package-level var declared in a cmd/ao non-test .go file MUST appear here with a one-line reason. TestPackageVarsAreAllowlisted (carveout_regression_test.go) fails on any unlisted var AND on any stale entry. After the 12-family carve-out the only legitimate package-level state is: the root cobra spine + its persistent-flag targets, host-resident module/command wiring, const-like data maps, the ldflags version string, and one documented test seam. Do NOT add a new entry to make a test pass without justifying it; a new mutable global almost always belongs constructor-scoped inside internal/commands/<family>.",
+  "allowed": [
+    { "name": "appKey", "file": "app.go", "reason": "immutable wiring: context-key sentinel (appKeyType{}) for App injection" },
+    { "name": "completionCmd", "file": "completion.go", "reason": "immutable wiring: shell-completion cobra.Command tree node" },
+    { "name": "configCommand", "file": "config_module.go", "reason": "immutable wiring: config module command tree ref" },
+    { "name": "configModule", "file": "config_module.go", "reason": "immutable wiring: config module singleton" },
+    { "name": "doctorCommand", "file": "doctor_module.go", "reason": "immutable wiring: doctor module command tree ref" },
+    { "name": "doctorMaintenanceService", "file": "doctor_module.go", "reason": "immutable wiring: doctor maintenance service singleton" },
+    { "name": "doctorModule", "file": "doctor_module.go", "reason": "immutable wiring: doctor module singleton" },
+    { "name": "doctorMutationService", "file": "doctor_module.go", "reason": "immutable wiring: doctor mutation service singleton" },
+    { "name": "doctorReadService", "file": "doctor_module.go", "reason": "immutable wiring: doctor read service singleton" },
+    { "name": "handoffCmd", "file": "handoff.go", "reason": "immutable wiring: handoff cobra.Command tree node (host-resident leaf)" },
+    { "name": "handoffGoal", "file": "handoff.go", "reason": "flag target: --goal for host-resident handoff command" },
+    { "name": "handoffContinuation", "file": "handoff.go", "reason": "flag target: --continuation for host-resident handoff command" },
+    { "name": "handoffCollect", "file": "handoff.go", "reason": "flag target: --collect for host-resident handoff command" },
+    { "name": "handoffDryRun", "file": "handoff.go", "reason": "flag target: --dry-run for host-resident handoff command" },
+    { "name": "version", "file": "main.go", "reason": "ldflags injection: build-time version string (-X main.version)" },
+    { "name": "testProjectDir", "file": "projectdir.go", "reason": "test seam: cross-file mutable override of resolveProjectDir; production never sets it. FOLLOW-UP: could migrate onto App to remove the last non-flag mutable global." },
+    { "name": "removedChildCommands", "file": "removed_command_hint.go", "reason": "immutable wiring: const-like data map of removed subcommand hints" },
+    { "name": "removedCommands", "file": "removed_command_hint.go", "reason": "immutable wiring: const-like data map of removed command hints" },
+    { "name": "cfgFile", "file": "root.go", "reason": "root flag target: --config persistent flag" },
+    { "name": "dryRun", "file": "root.go", "reason": "root flag target: --dry-run persistent flag" },
+    { "name": "jsonFlag", "file": "root.go", "reason": "root flag target: --json persistent flag" },
+    { "name": "output", "file": "root.go", "reason": "root flag target: -o/--output persistent flag (negotiated in negotiateOutput)" },
+    { "name": "rootCmd", "file": "root.go", "reason": "immutable wiring: the root cobra.Command spine" },
+    { "name": "verbose", "file": "root.go", "reason": "root flag target: -v/--verbose persistent flag" }
+  ]
+}
