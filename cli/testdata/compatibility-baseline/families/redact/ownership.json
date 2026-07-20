@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "family": "redact",
+  "profiles": {
+    "default": "present",
+    "flywheel": "present",
+    "legacy": "present",
+    "combined": "present"
+  },
+  "legacy_symbols": [
+    "redactCmd",
+    "redactContract",
+    "runRedact"
+  ],
+  "live_owner": "cli/internal/commands/redact",
+  "allowed_paths": [
+    "cli/cmd/ao/redact*.go",
+    "cli/cmd/ao/carveout_regression_test.go",
+    "cli/internal/commands/redact/**",
+    "cli/testdata/compatibility-baseline/families/redact/**"
+  ]
+}
