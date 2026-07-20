@@ -64,7 +64,7 @@ The published spine is pinned by `cmd/ao/default_spine_test.go` (plus
 <!-- spine:begin — keep in lockstep with approvedDefaultSpine in cmd/ao/default_spine_test.go; verified by TestGoCLIDocSpineMatchesApprovedSpine -->
 `capabilities` `config` `demo` `doctor` `eval` `flywheel` `gate` `goals`
 `init` `provenance` `quick-start` `redact` `robot-docs` `session` `skills`
-`status` `version`
+`status` `version` `workflows`
 <!-- spine:end -->
 
 `ao capabilities` emits the machine-readable contract;

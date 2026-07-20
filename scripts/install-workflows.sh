@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
-# install-workflows.sh — install repo-canonical Claude workflows into
-# $HOME/.claude/workflows as symlinks (ag-wi9w1).
+# install-workflows.sh — install repo-canonical Claude workflows (workflows/)
+# into $HOME/.claude/workflows as symlinks (ag-wi9w1). Project-local installs
+# use `ao workflows link` instead.
 #
 # Usage: bash scripts/install-workflows.sh [name.js ...]
-#   No args: install every repo-tracked .claude/workflows/*.js.
+#   No args: install every repo-tracked workflows/*.js.
 #   With args: install only the named workflows (arg-scoped).
 #
 # Semantics (per the canonicalize-bdd-foundry-workflow spec, C2):
@@ -21,7 +22,7 @@ umask 022
 # shellcheck disable=SC1007,SC1091
 . "$(CDPATH= cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib/repo-root.sh"
 repo_root="$(resolve_repo_root)"
-src_dir="$repo_root/.claude/workflows"
+src_dir="$repo_root/workflows"
 dest_dir="$HOME/.claude/workflows"
 mkdir -p "$dest_dir"
 
