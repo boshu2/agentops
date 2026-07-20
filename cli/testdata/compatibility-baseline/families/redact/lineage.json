@@ -1,0 +1,7 @@
+{
+  "schema_version": 1,
+  "family": "redact",
+  "freeze_sha": "e5f8dfe2c2b6c6188d36427eb871b936d3128327",
+  "ownership_sha256": "c7bcc1237db949e0085d0ff5ca3c36c532d0033df26b0786af936461a4f8765d",
+  "migration_state": "migrating"
+}
