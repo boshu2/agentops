@@ -5,6 +5,8 @@
 package goals
 
 import (
+	"bytes"
+	"io"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -45,6 +47,29 @@ func (Module) Contract() clicontract.CommandContract {
 }
 
 func (module Module) jsonOutput() bool { return module.host.OutputMode() == "json" }
+
+// renderStructured runs a goalsapp entry point and honors the negotiated output
+// mode. Under -o yaml it captures the app's JSON document (goalsapp emits one
+// JSON document to Stdout in JSON mode) and re-emits it as YAML, so `-o yaml` is
+// the same data yaml-marshaled instead of a silent human-table fallback. The
+// run error (which may carry a non-zero exit, e.g. a drift regression) is still
+// surfaced after the YAML is written, preserving json/yaml parity.
+func (module Module) renderStructured(cmd *cobra.Command, run func(w io.Writer, asJSON bool) error) error {
+	if module.host.OutputMode() == "yaml" {
+		var buf bytes.Buffer
+		runErr := run(&buf, true)
+		if buf.Len() > 0 {
+			if convErr := clicontract.JSONToYAML(cmd.OutOrStdout(), buf.Bytes()); convErr != nil {
+				if runErr != nil {
+					return runErr
+				}
+				return convErr
+			}
+		}
+		return runErr
+	}
+	return run(cmd.OutOrStdout(), module.jsonOutput())
+}
 
 // Command builds the `ao goals` command tree with constructor-scoped flag
 // state. No package-level command or flag variable is used.
@@ -109,19 +134,21 @@ func (module Module) newMeasureCommand(resolveFile func() string, timeout func()
 		Short:   "Run goal checks and produce a snapshot",
 		GroupID: "measurement",
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			return goalsapp.RunMeasureScenarios(goalsapp.MeasureScenariosOptions{
-				GoalsFile:     resolveFile(),
-				ProjectRoot:   module.host.ProjectRoot(),
-				GoalID:        goalID,
-				ExcludeTag:    excludeTag,
-				Directives:    directives,
-				Timeout:       timeout(),
-				TotalTimeout:  time.Duration(totalTimeout) * time.Second,
-				ScenariosOnly: scenariosOnly,
-				JSON:          module.jsonOutput(),
-				Verbose:       module.host.Verbose(),
-				Stdout:        cmd.OutOrStdout(),
-				Stderr:        cmd.ErrOrStderr(),
+			return module.renderStructured(cmd, func(w io.Writer, asJSON bool) error {
+				return goalsapp.RunMeasureScenarios(goalsapp.MeasureScenariosOptions{
+					GoalsFile:     resolveFile(),
+					ProjectRoot:   module.host.ProjectRoot(),
+					GoalID:        goalID,
+					ExcludeTag:    excludeTag,
+					Directives:    directives,
+					Timeout:       timeout(),
+					TotalTimeout:  time.Duration(totalTimeout) * time.Second,
+					ScenariosOnly: scenariosOnly,
+					JSON:          asJSON,
+					Verbose:       module.host.Verbose(),
+					Stdout:        w,
+					Stderr:        cmd.ErrOrStderr(),
+				})
 			})
 		},
 	}
@@ -140,10 +167,12 @@ func (module Module) newValidateCommand(resolveFile func() string) *cobra.Comman
 		Short:   "Validate GOALS.yaml structure and wiring",
 		GroupID: "measurement",
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			return goalsapp.RunValidate(goalsapp.ValidateOptions{
-				GoalsFile: resolveFile(),
-				JSON:      module.jsonOutput(),
-				Stdout:    cmd.OutOrStdout(),
+			return module.renderStructured(cmd, func(w io.Writer, asJSON bool) error {
+				return goalsapp.RunValidate(goalsapp.ValidateOptions{
+					GoalsFile: resolveFile(),
+					JSON:      asJSON,
+					Stdout:    w,
+				})
 			})
 		},
 	}
@@ -155,11 +184,14 @@ func (module Module) newDriftCommand(resolveFile func() string, timeout func() t
 		Aliases: []string{"d"},
 		Short:   "Compare snapshots for regressions",
 		GroupID: "analysis",
-		RunE: func(_ *cobra.Command, _ []string) error {
-			return goalsapp.RunDrift(goalsapp.DriftOptions{
-				GoalsFile: resolveFile(),
-				Timeout:   timeout(),
-				JSON:      module.jsonOutput(),
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			return module.renderStructured(cmd, func(w io.Writer, asJSON bool) error {
+				return goalsapp.RunDrift(goalsapp.DriftOptions{
+					GoalsFile: resolveFile(),
+					Timeout:   timeout(),
+					JSON:      asJSON,
+					Stdout:    w,
+				})
 			})
 		},
 	}
@@ -175,11 +207,14 @@ func (module Module) newHistoryCommand() *cobra.Command {
 		Aliases: []string{"h"},
 		Short:   "Show goal measurement history",
 		GroupID: "analysis",
-		RunE: func(_ *cobra.Command, _ []string) error {
-			return goalsapp.RunHistory(goalsapp.HistoryOptions{
-				GoalID: goalID,
-				Since:  since,
-				JSON:   module.jsonOutput(),
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			return module.renderStructured(cmd, func(w io.Writer, asJSON bool) error {
+				return goalsapp.RunHistory(goalsapp.HistoryOptions{
+					GoalID: goalID,
+					Since:  since,
+					JSON:   asJSON,
+					Stdout: w,
+				})
 			})
 		},
 	}
@@ -194,10 +229,16 @@ func (module Module) newExportCommand(resolveFile func() string, timeout func() 
 		Aliases: []string{"e"},
 		Short:   "Export latest snapshot as JSON (for CI)",
 		GroupID: "analysis",
-		RunE: func(_ *cobra.Command, _ []string) error {
-			return goalsapp.RunExport(goalsapp.ExportOptions{
-				GoalsFile: resolveFile(),
-				Timeout:   timeout(),
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			// export is always structured (its default is JSON, not a human
+			// table); honor -o yaml by capturing the JSON snapshot and re-emitting
+			// it as YAML.
+			return module.renderStructured(cmd, func(w io.Writer, _ bool) error {
+				return goalsapp.RunExport(goalsapp.ExportOptions{
+					GoalsFile: resolveFile(),
+					Timeout:   timeout(),
+					Stdout:    w,
+				})
 			})
 		},
 	}
@@ -243,20 +284,24 @@ spec/scenarios/ then .agents/holdout/ (see docs/adr/ADR-0003).
   ao goals scenarios --lint                report link-graph defects`,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			if lint {
-				return goalsapp.RunLint(goalsapp.LintOptions{
-					GoalsFile: resolveFile(),
-					Strict:    strict,
-					JSON:      module.jsonOutput(),
-					Stdout:    cmd.OutOrStdout(),
+				return module.renderStructured(cmd, func(w io.Writer, asJSON bool) error {
+					return goalsapp.RunLint(goalsapp.LintOptions{
+						GoalsFile: resolveFile(),
+						Strict:    strict,
+						JSON:      asJSON,
+						Stdout:    w,
+					})
 				})
 			}
-			return goalsapp.RunScenarios(goalsapp.ScenariosOptions{
-				GoalsFile:    resolveFile(),
-				DirectiveNum: directive,
-				DirectiveID:  directiveID,
-				JSON:         module.jsonOutput(),
-				Stdout:       cmd.OutOrStdout(),
-				Stderr:       cmd.ErrOrStderr(),
+			return module.renderStructured(cmd, func(w io.Writer, asJSON bool) error {
+				return goalsapp.RunScenarios(goalsapp.ScenariosOptions{
+					GoalsFile:    resolveFile(),
+					DirectiveNum: directive,
+					DirectiveID:  directiveID,
+					JSON:         asJSON,
+					Stdout:       w,
+					Stderr:       cmd.ErrOrStderr(),
+				})
 			})
 		},
 	}

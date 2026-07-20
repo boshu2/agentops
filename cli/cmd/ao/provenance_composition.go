@@ -23,6 +23,7 @@ func newProvenanceCommand() *cobra.Command {
 	module := provenancecommands.NewModule(clicontract.HostOptions{
 		LedgerPath: resolveLedgerPath,
 		Now:        time.Now,
+		OutputMode: GetOutput,
 	})
 	return module.Command()
 }

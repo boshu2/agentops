@@ -2,6 +2,7 @@
 package doctor
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -127,7 +128,22 @@ Examples:
 }
 
 func (module Module) wantsJSON(_ *cobra.Command, options *rootOptions) bool {
-	return options.json || options.robot || module.outputMode() == "json"
+	return options.json || options.robot || module.outputMode() == "json" || module.outputMode() == "yaml"
+}
+
+// emitStructured writes a module-built report as JSON, or as YAML when the
+// negotiated global output mode is yaml. The doctor render paths reach here only
+// after wantsJSON already selected structured output; the local --json and
+// --robot flags leave outputMode() at "table"/"json", so YAML is chosen only for
+// an explicit global `-o yaml` — never for a robot/local-json json contract.
+func (module Module) emitStructured(command *cobra.Command, value any) error {
+	if module.outputMode() == "yaml" {
+		if err := clicontract.WriteYAML(command.OutOrStdout(), value); err != nil {
+			return exit(doctorapp.ExitIOError, err.Error())
+		}
+		return nil
+	}
+	return writeJSON(command, value)
 }
 
 func (module Module) outputMode() string {
@@ -182,7 +198,7 @@ func (module Module) runRoot(command *cobra.Command, options rootOptions) error 
 			return exit(doctorapp.ExitIOError, err.Error())
 		}
 		if jsonOutput {
-			if err := writeJSON(command, report); err != nil {
+			if err := module.emitStructured(command, report); err != nil {
 				return err
 			}
 		} else {
@@ -191,6 +207,16 @@ func (module Module) runRoot(command *cobra.Command, options rootOptions) error 
 		return resultExit(report.ExitCode, "doctor findings present")
 	}
 	checks := module.useCases.LegacyChecks(command.Context())
+	if module.outputMode() == "yaml" {
+		// quality.RunDoctor emits exactly one JSON document in JSON mode; capture
+		// and re-emit as YAML so `ao doctor -o yaml` is the same data
+		// yaml-marshaled, not a silent human-summary fallback.
+		var buf bytes.Buffer
+		if err := quality.RunDoctor(quality.DoctorOptions{JSON: true, Checks: checks, Stdout: &buf}); err != nil {
+			return err
+		}
+		return clicontract.JSONToYAML(command.OutOrStdout(), buf.Bytes())
+	}
 	return quality.RunDoctor(quality.DoctorOptions{JSON: jsonOutput, Checks: checks, Stdout: command.OutOrStdout()})
 }
 
@@ -238,7 +264,7 @@ func (module Module) runFix(command *cobra.Command, request doctorapp.MutationRe
 		return exit(doctorapp.ExitIOError, err.Error())
 	}
 	if jsonOutput {
-		if err := writeJSON(command, report); err != nil {
+		if err := module.emitStructured(command, report); err != nil {
 			return err
 		}
 	} else {
@@ -261,7 +287,7 @@ func (module Module) runExplain(command *cobra.Command, id string, jsonOutput bo
 		return exit(doctorapp.ExitNoInput, err.Error())
 	}
 	if jsonOutput {
-		return writeJSON(command, finding)
+		return module.emitStructured(command, finding)
 	}
 	fmt.Fprintf(command.OutOrStdout(), "%s [%s] (%s)\n%s\n", finding.ID, finding.Severity, finding.Subsystem, finding.Title)
 	fmt.Fprintf(command.OutOrStdout(), "Remediation: %s\n", finding.Remediation.Command)
@@ -287,14 +313,14 @@ func (module Module) undoCommand(options *rootOptions) *cobra.Command {
 		result, err := module.useCases.Maintenance.Undo(command.Context(), request)
 		if err != nil {
 			if jsonOutput {
-				_ = writeJSON(command, map[string]any{"run_id": args[0], "exit_code": doctorapp.ExitIOError, "error": err.Error()})
+				_ = module.emitStructured(command, map[string]any{"run_id": args[0], "exit_code": doctorapp.ExitIOError, "error": err.Error()})
 			} else {
 				fmt.Fprintf(command.ErrOrStderr(), "undo failed: %v\n", err)
 			}
 			return exit(doctorapp.ExitIOError, err.Error())
 		}
 		if jsonOutput {
-			return writeJSON(command, result)
+			return module.emitStructured(command, result)
 		}
 		fmt.Fprintf(command.OutOrStdout(), "undo %s: restored=%d skipped=%d\n", result.RunID, result.Restored, result.Skipped)
 		return nil
@@ -310,7 +336,7 @@ func (module Module) explainCommand(options *rootOptions) *cobra.Command {
 
 func (module Module) capabilitiesCommand() *cobra.Command {
 	return &cobra.Command{Use: "capabilities", Short: "Print the machine-readable doctor contract (JSON)", Args: cobra.NoArgs, RunE: func(command *cobra.Command, _ []string) error {
-		return writeJSON(command, module.useCases.Read.Capabilities(command.Context()))
+		return module.emitStructured(command, module.useCases.Read.Capabilities(command.Context()))
 	}}
 }
 
@@ -321,7 +347,7 @@ func (module Module) healthCommand(options *rootOptions) *cobra.Command {
 			return exit(doctorapp.ExitIOError, err.Error())
 		}
 		if module.wantsJSON(command, options) {
-			if err := writeJSON(command, result); err != nil {
+			if err := module.emitStructured(command, result); err != nil {
 				return err
 			}
 		} else {
@@ -353,7 +379,7 @@ func (module Module) gcCommand(options *rootOptions) *cobra.Command {
 			return exit(doctorapp.ExitIOError, err.Error())
 		}
 		if module.wantsJSON(command, options) {
-			return writeJSON(command, result)
+			return module.emitStructured(command, result)
 		}
 		if result.DryRun {
 			fmt.Fprintf(command.OutOrStdout(), "would prune %d run(s)\n", result.Matched)
@@ -372,7 +398,7 @@ func (module Module) listCommand(options *rootOptions) *cobra.Command {
 			return exit(doctorapp.ExitIOError, err.Error())
 		}
 		if module.wantsJSON(command, options) {
-			return writeJSON(command, map[string]any{"runs": runs})
+			return module.emitStructured(command, map[string]any{"runs": runs})
 		}
 		if len(runs) == 0 {
 			fmt.Fprintln(command.OutOrStdout(), "no doctor runs")
@@ -393,7 +419,7 @@ func (module Module) diffCommand(options *rootOptions) *cobra.Command {
 			return exit(doctorapp.ExitIOError, err.Error())
 		}
 		if jsonOutput {
-			return writeJSON(command, report)
+			return module.emitStructured(command, report)
 		}
 		renderFindings(command, report)
 		if len(report.Findings) == 0 {

@@ -20,7 +20,8 @@ func init() {
 // unchanged.
 func newSkillsCommand() *cobra.Command {
 	module := skillscommands.NewModule(clicontract.HostOptions{
-		DryRun: GetDryRun,
+		DryRun:     GetDryRun,
+		OutputMode: GetOutput,
 	})
 	return module.Command()
 }

@@ -89,6 +89,32 @@ func (m *Module) ledgerStore() *provenancegraph.Store {
 	return provenancegraph.NewStore(m.host.LedgerPath())
 }
 
+// outputMode returns the negotiated global output mode, or "" when unset.
+func (m *Module) outputMode() string {
+	if m.host.OutputMode == nil {
+		return ""
+	}
+	return m.host.OutputMode()
+}
+
+// emitStructured writes value as pretty JSON or YAML for a single-document read
+// path, reporting whether it handled the output. The local --json flag and the
+// global -o json both select JSON (byte-identical to the prior hand-rolled
+// encoder); -o yaml selects YAML with keys mirroring the json tags. A non-
+// structured mode returns handled=false so the caller renders its human view —
+// there is no silent yaml→table fallback for a command that implements json.
+func (m *Module) emitStructured(out io.Writer, localJSON bool, value any) (handled bool, err error) {
+	if m.outputMode() == "yaml" {
+		return true, clicontract.WriteYAML(out, value)
+	}
+	if localJSON || m.outputMode() == "json" {
+		enc := json.NewEncoder(out)
+		enc.SetIndent("", "  ")
+		return true, enc.Encode(value)
+	}
+	return false, nil
+}
+
 // Command builds the `ao provenance` command tree.
 func (m *Module) Command() *cobra.Command {
 	root := &cobra.Command{
@@ -168,10 +194,8 @@ func (m *Module) runAdd(cmd *cobra.Command, args []string) error {
 	}
 
 	out := cmd.OutOrStdout()
-	if m.addJSON {
-		enc := json.NewEncoder(out)
-		enc.SetIndent("", "  ")
-		return enc.Encode(res.Edge)
+	if handled, err := m.emitStructured(out, m.addJSON, res.Edge); handled || err != nil {
+		return err
 	}
 	if res.Skipped {
 		fmt.Fprintf(out, "edge already present (idempotent no-op): %s --%s--> %s\n",
@@ -223,10 +247,8 @@ func (m *Module) runList(cmd *cobra.Command, _ []string) error {
 	}
 
 	out := cmd.OutOrStdout()
-	if m.listJSON {
-		enc := json.NewEncoder(out)
-		enc.SetIndent("", "  ")
-		return enc.Encode(filtered)
+	if handled, err := m.emitStructured(out, m.listJSON, filtered); handled || err != nil {
+		return err
 	}
 	if len(filtered) == 0 {
 		fmt.Fprintln(out, "no provenance edges")
@@ -297,14 +319,15 @@ func (m *Module) runExport(cmd *cobra.Command, _ []string) error {
 		return nil
 	}
 
-	if m.exportJSON {
-		enc := json.NewEncoder(out)
-		enc.SetIndent("", "  ")
-		// Always emit a concrete (possibly empty) array, never null.
+	// Always emit a concrete (possibly empty) array, never null, for the
+	// single-document structured forms.
+	if m.exportJSON || m.outputMode() == "json" || m.outputMode() == "yaml" {
 		if chain == nil {
 			chain = []provenancegraph.Edge{}
 		}
-		return enc.Encode(chain)
+		if handled, err := m.emitStructured(out, m.exportJSON, chain); handled || err != nil {
+			return err
+		}
 	}
 
 	// Default: deterministic JSONL — one compact line per edge, fixed field
@@ -393,10 +416,8 @@ func (m *Module) runShow(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
-	if m.showJSON {
-		enc := json.NewEncoder(cmd.OutOrStdout())
-		enc.SetIndent("", "  ")
-		return enc.Encode(report)
+	if handled, err := m.emitStructured(cmd.OutOrStdout(), m.showJSON, report); handled || err != nil {
+		return err
 	}
 	renderShowReport(cmd.OutOrStdout(), report)
 	return nil
@@ -445,10 +466,8 @@ func (m *Module) runPosition(cmd *cobra.Command, _ []string) error {
 		return fmt.Errorf("read provenance ledger: %w", err)
 	}
 	report := buildPositionReport(edges)
-	if m.positionJSON {
-		enc := json.NewEncoder(cmd.OutOrStdout())
-		enc.SetIndent("", "  ")
-		return enc.Encode(report)
+	if handled, err := m.emitStructured(cmd.OutOrStdout(), m.positionJSON, report); handled || err != nil {
+		return err
 	}
 	if report.Latest == nil {
 		fmt.Fprintln(cmd.OutOrStdout(), "provenance ledger is empty")
@@ -577,17 +596,17 @@ func (m *Module) runVerify(cmd *cobra.Command, _ []string) error {
 	}
 
 	out := cmd.OutOrStdout()
-	if m.verifyJSON {
-		enc := json.NewEncoder(out)
-		enc.SetIndent("", "  ")
-		if encErr := enc.Encode(res); encErr != nil {
-			return encErr
+	handled, err := m.emitStructured(out, m.verifyJSON, res)
+	if err != nil {
+		return err
+	}
+	if !handled {
+		if res.Pass {
+			fmt.Fprintf(out, "OK: provenance ledger chain intact (%d record(s))\n", res.RecordCount)
+		} else {
+			fmt.Fprintf(out, "BROKEN: provenance ledger chain breaks at line %d: %s\n",
+				res.FirstBrokenLine, res.Message)
 		}
-	} else if res.Pass {
-		fmt.Fprintf(out, "OK: provenance ledger chain intact (%d record(s))\n", res.RecordCount)
-	} else {
-		fmt.Fprintf(out, "BROKEN: provenance ledger chain breaks at line %d: %s\n",
-			res.FirstBrokenLine, res.Message)
 	}
 
 	if !res.Pass {

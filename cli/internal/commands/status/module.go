@@ -4,6 +4,8 @@
 package status
 
 import (
+	"bytes"
+
 	"github.com/spf13/cobra"
 
 	"github.com/boshu2/agentops/cli/internal/clicontract"
@@ -55,6 +57,16 @@ Examples:
   ao status --json`,
 		GroupID: "core",
 		RunE: func(cmd *cobra.Command, _ []string) error {
+			if module.host.OutputMode() == "yaml" {
+				// statusapp emits exactly one JSON document to Stdout in JSON
+				// mode; capture it and re-emit as YAML so -o yaml is the same
+				// data yaml-marshaled rather than a silent human-table fallback.
+				var buf bytes.Buffer
+				if err := statusapp.Run(statusapp.RunOptions{JSON: true, Stdout: &buf}); err != nil {
+					return err
+				}
+				return clicontract.JSONToYAML(cmd.OutOrStdout(), buf.Bytes())
+			}
 			return statusapp.Run(statusapp.RunOptions{
 				JSON:   module.host.OutputMode() == "json",
 				Stdout: cmd.OutOrStdout(),

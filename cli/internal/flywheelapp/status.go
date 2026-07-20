@@ -12,8 +12,7 @@ import (
 	"io"
 	"os"
 
-	"gopkg.in/yaml.v3"
-
+	"github.com/boshu2/agentops/cli/internal/clicontract"
 	"github.com/boshu2/agentops/cli/internal/types"
 )
 
@@ -53,6 +52,8 @@ func Compare(w io.Writer, outputMode string, days int, shadowNamespace string, v
 		enc := json.NewEncoder(w)
 		enc.SetIndent("", "  ")
 		return enc.Encode(comp)
+	case "yaml":
+		return clicontract.WriteYAML(w, comp)
 	default:
 		printNamespaceComparison(w, comp)
 	}
@@ -101,46 +102,35 @@ func Status(w io.Writer, outputMode string, days int, statusNamespace string, ve
 	// Always compute golden signals — they provide the honest health assessment.
 	populateGoldenSignals(cwd, days, metrics)
 
+	// Build the structured payload once so -o json and -o yaml are the same data
+	// with the same keys — previously the yaml branch omitted "metrics" and, via
+	// a direct yaml.Marshal, lowercased the nested struct field names, so yaml
+	// and json disagreed. WriteYAML round-trips through the json tags, keeping
+	// yaml a truthful sibling of json.
+	payload := map[string]any{
+		"metric_namespace":            metricNamespace,
+		"status":                      metrics.HealthStatus(),
+		"delta":                       metrics.Delta,
+		"sigma":                       metrics.Sigma,
+		"rho":                         metrics.Rho,
+		"sigma_rho":                   metrics.SigmaRho,
+		"velocity":                    metrics.Velocity,
+		"compounding":                 metrics.HealthCompounding(),
+		"escape_velocity_status":      metrics.EscapeVelocityStatus(),
+		"escape_velocity_compounding": metrics.AboveEscapeVelocity,
+		"scorecard":                   metrics.StigmergicScorecard,
+		"golden_signals":              metrics.GoldenSignals,
+		"metrics":                     metrics,
+	}
+
 	switch outputMode {
 	case "json":
 		enc := json.NewEncoder(w)
 		enc.SetIndent("", "  ")
-		return enc.Encode(map[string]any{
-			"metric_namespace":            metricNamespace,
-			"status":                      metrics.HealthStatus(),
-			"delta":                       metrics.Delta,
-			"sigma":                       metrics.Sigma,
-			"rho":                         metrics.Rho,
-			"sigma_rho":                   metrics.SigmaRho,
-			"velocity":                    metrics.Velocity,
-			"compounding":                 metrics.HealthCompounding(),
-			"escape_velocity_status":      metrics.EscapeVelocityStatus(),
-			"escape_velocity_compounding": metrics.AboveEscapeVelocity,
-			"scorecard":                   metrics.StigmergicScorecard,
-			"golden_signals":              metrics.GoldenSignals,
-			"metrics":                     metrics,
-		})
+		return enc.Encode(payload)
 
 	case "yaml":
-		enc := yaml.NewEncoder(w)
-		if err := enc.Encode(map[string]any{
-			"metric_namespace":            metricNamespace,
-			"status":                      metrics.HealthStatus(),
-			"delta":                       metrics.Delta,
-			"sigma":                       metrics.Sigma,
-			"rho":                         metrics.Rho,
-			"sigma_rho":                   metrics.SigmaRho,
-			"velocity":                    metrics.Velocity,
-			"compounding":                 metrics.HealthCompounding(),
-			"escape_velocity_status":      metrics.EscapeVelocityStatus(),
-			"escape_velocity_compounding": metrics.AboveEscapeVelocity,
-			"scorecard":                   metrics.StigmergicScorecard,
-			"golden_signals":              metrics.GoldenSignals,
-		}); err != nil {
-			_ = enc.Close()
-			return err
-		}
-		return enc.Close()
+		return clicontract.WriteYAML(w, payload)
 
 	default:
 		printFlywheelStatus(w, metrics, days)

@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 
 	"github.com/spf13/cobra"
-	"gopkg.in/yaml.v3"
 
 	capabilitiesapp "github.com/boshu2/agentops/cli/internal/capabilities"
 	"github.com/boshu2/agentops/cli/internal/clicontract"
@@ -57,12 +56,11 @@ contract_version).`,
 func (module Module) render(command *cobra.Command) error {
 	document := module.builder.Build()
 	if module.host.OutputMode != nil && module.host.OutputMode() == "yaml" {
-		data, err := yaml.Marshal(document)
-		if err != nil {
-			return err
-		}
-		_, err = command.OutOrStdout().Write(data)
-		return err
+		// Route through the shared WriteYAML so the YAML keys mirror the json
+		// struct tags (schema_version, not schemaversion) and are semantically
+		// identical to the JSON output — the truthfulness the -o yaml contract
+		// advertises.
+		return clicontract.WriteYAML(command.OutOrStdout(), document)
 	}
 	encoder := json.NewEncoder(command.OutOrStdout())
 	encoder.SetIndent("", "  ")

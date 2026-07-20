@@ -4,6 +4,7 @@ package main
 import (
 	"github.com/spf13/cobra"
 
+	"github.com/boshu2/agentops/cli/internal/clicontract"
 	sessioncommands "github.com/boshu2/agentops/cli/internal/commands/session"
 )
 
@@ -18,7 +19,7 @@ func init() {
 // to internal/sessionapp. The session family attaches no CommandContract to the
 // command tree, preserving its pre-migration capabilities surface.
 func newSessionCommand() *cobra.Command {
-	command := sessioncommands.NewModule().Command()
+	command := sessioncommands.NewModule(clicontract.HostOptions{OutputMode: GetOutput}).Command()
 	command.AddCommand(handoffCmd)
 	return command
 }

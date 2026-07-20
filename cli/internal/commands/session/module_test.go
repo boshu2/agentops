@@ -18,7 +18,7 @@ import (
 // module directly instead of mutating any package-global command state.
 func subcommand(t *testing.T, name string) (root, child *cobra.Command) {
 	t.Helper()
-	root = NewModule().Command()
+	root = NewModule(clicontract.HostOptions{}).Command()
 	for _, candidate := range root.Commands() {
 		if candidate.Name() == name {
 			return root, candidate
@@ -29,7 +29,7 @@ func subcommand(t *testing.T, name string) (root, child *cobra.Command) {
 }
 
 func TestModule_Contract(t *testing.T) {
-	contract := NewModule().Contract()
+	contract := NewModule(clicontract.HostOptions{}).Contract()
 	if contract.ID != "ao.session" {
 		t.Fatalf("contract ID = %q, want ao.session", contract.ID)
 	}
@@ -42,7 +42,7 @@ func TestModule_Contract(t *testing.T) {
 }
 
 func TestModule_CommandAttributes(t *testing.T) {
-	root := NewModule().Command()
+	root := NewModule(clicontract.HostOptions{}).Command()
 	if root.Use != "session" {
 		t.Fatalf("Use = %q, want session", root.Use)
 	}

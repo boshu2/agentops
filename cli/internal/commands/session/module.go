@@ -7,6 +7,9 @@
 package session
 
 import (
+	"bytes"
+	"io"
+
 	"github.com/spf13/cobra"
 
 	"github.com/boshu2/agentops/cli/internal/clicontract"
@@ -14,13 +17,24 @@ import (
 )
 
 // Module owns Cobra presentation for the session command family.
-type Module struct{}
+type Module struct {
+	host clicontract.HostOptions
+}
 
-// NewModule constructs the session command module. The session evidence
-// commands read no ambient CLI seams; the working directory is resolved inside
-// internal/sessionapp.
-func NewModule() Module {
-	return Module{}
+// NewModule constructs the session command module. The only ambient seam it
+// reads is the negotiated output mode (so the global -o json/-o yaml flags emit
+// structured output, not a silent human-table fallback); the working directory
+// is resolved inside internal/sessionapp.
+func NewModule(host clicontract.HostOptions) Module {
+	return Module{host: host}
+}
+
+// outputMode returns the negotiated global output mode, or "" when unset.
+func (m Module) outputMode() string {
+	if m.host.OutputMode == nil {
+		return ""
+	}
+	return m.host.OutputMode()
 }
 
 // Contract declares the session family's real behavior for the family
@@ -46,20 +60,36 @@ func (Module) Contract() clicontract.CommandContract {
 // Command builds the `ao session` command with its bootstrap and rehydrate
 // subcommands. The RunE closures delegate entirely to internal/sessionapp so
 // this module performs no direct filesystem effect.
-func (Module) Command() *cobra.Command {
+func (m Module) Command() *cobra.Command {
 	root := &cobra.Command{
 		Use:     "session",
 		Short:   "Inspect or export session evidence",
 		GroupID: "workflow",
 	}
-	root.AddCommand(bootstrapCommand())
-	root.AddCommand(rehydrateCommand())
+	root.AddCommand(m.bootstrapCommand())
+	root.AddCommand(m.rehydrateCommand())
 	return root
+}
+
+// emitStructured runs a sessionapp entry point and honors the negotiated output
+// mode. The local --json flag and global -o json both take the JSON path
+// directly; -o yaml captures the app's single JSON document and re-emits it as
+// YAML (the app emits exactly one JSON document in JSON mode), so `-o yaml` is
+// the same data yaml-marshaled rather than a silent human-table fallback.
+func (m Module) emitStructured(cmd *cobra.Command, localJSON bool, run func(w io.Writer, asJSON bool) error) error {
+	if m.outputMode() == "yaml" {
+		var buf bytes.Buffer
+		if err := run(&buf, true); err != nil {
+			return err
+		}
+		return clicontract.JSONToYAML(cmd.OutOrStdout(), buf.Bytes())
+	}
+	return run(cmd.OutOrStdout(), localJSON || m.outputMode() == "json")
 }
 
 // bootstrapCommand builds `ao session bootstrap` with a constructor-scoped
 // --json flag.
-func bootstrapCommand() *cobra.Command {
+func (m Module) bootstrapCommand() *cobra.Command {
 	var jsonOut bool
 	command := &cobra.Command{
 		Use:   "bootstrap",
@@ -68,9 +98,8 @@ func bootstrapCommand() *cobra.Command {
 trackers, selecting work, inspecting queues, or installing hooks.`,
 		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			return sessionapp.Bootstrap(sessionapp.BootstrapOptions{
-				JSON:   jsonOut,
-				Stdout: cmd.OutOrStdout(),
+			return m.emitStructured(cmd, jsonOut, func(w io.Writer, asJSON bool) error {
+				return sessionapp.Bootstrap(sessionapp.BootstrapOptions{JSON: asJSON, Stdout: w})
 			})
 		},
 	}
@@ -80,7 +109,7 @@ trackers, selecting work, inspecting queues, or installing hooks.`,
 
 // rehydrateCommand builds `ao session rehydrate` with a constructor-scoped
 // --json flag.
-func rehydrateCommand() *cobra.Command {
+func (m Module) rehydrateCommand() *cobra.Command {
 	var jsonOut bool
 	command := &cobra.Command{
 		Use:   "rehydrate",
@@ -88,10 +117,8 @@ func rehydrateCommand() *cobra.Command {
 		Long:  "Read a handoff without consuming it, claiming work, or choosing a next action.",
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			return sessionapp.Rehydrate(sessionapp.RehydrateOptions{
-				JSON:   jsonOut,
-				Stdout: cmd.OutOrStdout(),
-				Stderr: cmd.ErrOrStderr(),
+			return m.emitStructured(cmd, jsonOut, func(w io.Writer, asJSON bool) error {
+				return sessionapp.Rehydrate(sessionapp.RehydrateOptions{JSON: asJSON, Stdout: w, Stderr: cmd.ErrOrStderr()})
 			})
 		},
 	}
