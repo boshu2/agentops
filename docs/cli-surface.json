@@ -24,7 +24,7 @@
     },
     {
       "category": "public-tested",
-      "command": "config models",
+      "command": "config",
       "coverage_status": "covered",
       "kind": "leaf",
       "reason": "Covered by release smoke tests, direct command tests, or command handler tests."

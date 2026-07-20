@@ -100,26 +100,28 @@ func TestRunConfig_NoFlags_ShowsHelp(t *testing.T) {
 	}
 }
 
-func TestConfigModuleHonorsGlobalDryRun(t *testing.T) {
-	home := t.TempDir()
-	t.Setenv("HOME", home)
-	t.Setenv("AGENTOPS_CONFIG", filepath.Join(home, "config.yaml"))
-	originalDryRun, originalOutput := dryRun, output
-	dryRun, output = true, "table"
-	t.Cleanup(func() { dryRun, output = originalDryRun, originalOutput })
-
+// TestConfigModelsRemoved_UnknownCommand pins the removal of the `ao config
+// models` surface: "models" must now be rejected exactly like any other
+// unknown token under config, and the config tree must not register a models
+// subcommand or its --set-tier/--set-skill flags.
+func TestConfigModelsRemoved_UnknownCommand(t *testing.T) {
 	command := newConfigCommand()
-	var stdout strings.Builder
-	command.SetOut(&stdout)
-	command.SetArgs([]string{"models", "--set-tier", "quality"})
-	if err := command.Execute(); err != nil {
-		t.Fatal(err)
+	for _, child := range command.Commands() {
+		if child.Name() == "models" {
+			t.Fatal("config still registers a models subcommand")
+		}
 	}
-	if _, err := os.Stat(os.Getenv("AGENTOPS_CONFIG")); !os.IsNotExist(err) {
-		t.Fatalf("global dry-run wrote config: %v", err)
+
+	fresh := newConfigCommand()
+	fresh.SetOut(&strings.Builder{})
+	fresh.SetErr(&strings.Builder{})
+	fresh.SetArgs([]string{"models"})
+	err := fresh.Execute()
+	if err == nil {
+		t.Fatal("expected error for removed `config models` subcommand, got nil")
 	}
-	if !strings.Contains(stdout.String(), "Would set default model tier") {
-		t.Fatalf("dry-run preview missing: %q", stdout.String())
+	if want := `unknown command "models" for "config"`; err.Error() != want {
+		t.Errorf("error = %q, want %q", err.Error(), want)
 	}
 }
 
@@ -243,255 +245,6 @@ func TestRunConfig_ShowTable_WithEnvVars(t *testing.T) {
 	}
 }
 
-func TestRunConfigModels_Table(t *testing.T) {
-	dir := t.TempDir()
-	t.Chdir(dir)
-
-	oldOutput := output
-	output = "table"
-	defer func() { output = oldOutput }()
-
-	stdout, err := captureStdout(t, func() error {
-		return runConfigModels(&cobra.Command{}, nil)
-	})
-	if err != nil {
-		t.Fatalf("runConfigModels: %v", err)
-	}
-
-	if !strings.Contains(stdout, "Model Cost Tiers") {
-		t.Errorf("expected 'Model Cost Tiers' header, got: %q", stdout)
-	}
-	if !strings.Contains(stdout, "Default tier: balanced") {
-		t.Errorf("expected default tier balanced, got: %q", stdout)
-	}
-	if !strings.Contains(stdout, "quality") {
-		t.Errorf("expected 'quality' tier listed, got: %q", stdout)
-	}
-	if !strings.Contains(stdout, "opus") {
-		t.Errorf("expected 'opus' model for quality tier, got: %q", stdout)
-	}
-}
-
-func TestRunConfigModels_JSON(t *testing.T) {
-	dir := t.TempDir()
-	t.Chdir(dir)
-
-	oldOutput := output
-	output = "json"
-	defer func() { output = oldOutput }()
-
-	stdout, err := captureStdout(t, func() error {
-		return runConfigModels(&cobra.Command{}, nil)
-	})
-	if err != nil {
-		t.Fatalf("runConfigModels --json: %v", err)
-	}
-
-	var parsed config.ModelsConfig
-	if err := json.Unmarshal([]byte(stdout), &parsed); err != nil {
-		t.Fatalf("expected valid JSON, got: %q (%v)", stdout, err)
-	}
-
-	if parsed.DefaultTier != "balanced" {
-		t.Errorf("expected default_tier=balanced, got %q", parsed.DefaultTier)
-	}
-	if len(parsed.Tiers) != 3 {
-		t.Errorf("expected 3 tiers, got %d", len(parsed.Tiers))
-	}
-}
-
-func TestRunConfigModels_WithEnvOverride(t *testing.T) {
-	dir := t.TempDir()
-	t.Chdir(dir)
-
-	t.Setenv("AGENTOPS_MODEL_TIER", "budget")
-
-	oldOutput := output
-	output = "table"
-	defer func() { output = oldOutput }()
-
-	stdout, err := captureStdout(t, func() error {
-		return runConfigModels(&cobra.Command{}, nil)
-	})
-	if err != nil {
-		t.Fatalf("runConfigModels: %v", err)
-	}
-
-	if !strings.Contains(stdout, "Default tier: budget") {
-		t.Errorf("expected default tier budget from env, got: %q", stdout)
-	}
-	if !strings.Contains(stdout, "AGENTOPS_MODEL_TIER=budget") {
-		t.Errorf("expected env var in output, got: %q", stdout)
-	}
-}
-
-func TestConfigModels_SetTier(t *testing.T) {
-	dir := t.TempDir()
-	t.Chdir(dir)
-
-	// Clear env so project config is used from cwd
-	t.Setenv("AGENTOPS_CONFIG", "")
-
-	oldSetTier := modelsSetTier
-	oldSetSkill := modelsSetSkill
-	modelsSetTier = "quality"
-	modelsSetSkill = ""
-	defer func() {
-		modelsSetTier = oldSetTier
-		modelsSetSkill = oldSetSkill
-	}()
-
-	stdout, err := captureStdout(t, func() error {
-		return runConfigModels(&cobra.Command{}, nil)
-	})
-	if err != nil {
-		t.Fatalf("runConfigModels --set-tier: %v", err)
-	}
-
-	if !strings.Contains(stdout, `Set default model tier to "quality"`) {
-		t.Errorf("expected confirmation message, got: %q", stdout)
-	}
-
-	// Verify config was written
-	cfg, loadErr := config.Load(nil)
-	if loadErr != nil {
-		t.Fatalf("Load after set-tier: %v", loadErr)
-	}
-	if cfg.Models.DefaultTier != "quality" {
-		t.Errorf("saved DefaultTier = %q, want %q", cfg.Models.DefaultTier, "quality")
-	}
-}
-
-func TestConfigModels_SetSkill(t *testing.T) {
-	dir := t.TempDir()
-	t.Chdir(dir)
-
-	t.Setenv("AGENTOPS_CONFIG", "")
-
-	oldSetTier := modelsSetTier
-	oldSetSkill := modelsSetSkill
-	modelsSetTier = ""
-	modelsSetSkill = "council=quality"
-	defer func() {
-		modelsSetTier = oldSetTier
-		modelsSetSkill = oldSetSkill
-	}()
-
-	stdout, err := captureStdout(t, func() error {
-		return runConfigModels(&cobra.Command{}, nil)
-	})
-	if err != nil {
-		t.Fatalf("runConfigModels --set-skill: %v", err)
-	}
-
-	if !strings.Contains(stdout, `Set skill "council" tier to "quality"`) {
-		t.Errorf("expected confirmation message, got: %q", stdout)
-	}
-
-	cfg, loadErr := config.Load(nil)
-	if loadErr != nil {
-		t.Fatalf("Load after set-skill: %v", loadErr)
-	}
-	if cfg.Models.SkillOverrides["council"] != "quality" {
-		t.Errorf("saved SkillOverrides[council] = %q, want %q", cfg.Models.SkillOverrides["council"], "quality")
-	}
-}
-
-func TestConfigModels_SetTierAndSkill_JSON(t *testing.T) {
-	dir := t.TempDir()
-	t.Chdir(dir)
-
-	t.Setenv("AGENTOPS_CONFIG", "")
-
-	oldOutput := output
-	oldSetTier := modelsSetTier
-	oldSetSkill := modelsSetSkill
-	output = "json"
-	modelsSetTier = "budget"
-	modelsSetSkill = "council=quality"
-	defer func() {
-		output = oldOutput
-		modelsSetTier = oldSetTier
-		modelsSetSkill = oldSetSkill
-	}()
-
-	stdout, err := captureStdout(t, func() error {
-		return runConfigModels(&cobra.Command{}, nil)
-	})
-	if err != nil {
-		t.Fatalf("runConfigModels --set-tier --set-skill --json: %v", err)
-	}
-	if strings.Contains(stdout, "Set default model tier") || strings.Contains(stdout, "Set skill") {
-		t.Fatalf("expected JSON-only output, got human text: %q", stdout)
-	}
-
-	var parsed configModelsWriteResult
-	if err := json.Unmarshal([]byte(stdout), &parsed); err != nil {
-		t.Fatalf("expected valid JSON, got: %q (%v)", stdout, err)
-	}
-	if !parsed.Updated {
-		t.Fatal("expected updated=true")
-	}
-	if parsed.DefaultTier != "budget" {
-		t.Errorf("default_tier = %q, want %q", parsed.DefaultTier, "budget")
-	}
-	if parsed.SkillOverrides["council"] != "quality" {
-		t.Errorf("skill_overrides[council] = %q, want %q", parsed.SkillOverrides["council"], "quality")
-	}
-
-	cfg, loadErr := config.Load(nil)
-	if loadErr != nil {
-		t.Fatalf("Load after JSON write: %v", loadErr)
-	}
-	if cfg.Models.DefaultTier != "budget" {
-		t.Errorf("saved DefaultTier = %q, want %q", cfg.Models.DefaultTier, "budget")
-	}
-	if cfg.Models.SkillOverrides["council"] != "quality" {
-		t.Errorf("saved SkillOverrides[council] = %q, want %q", cfg.Models.SkillOverrides["council"], "quality")
-	}
-}
-
-func TestConfigModels_SetTier_InvalidTier(t *testing.T) {
-	oldSetTier := modelsSetTier
-	oldSetSkill := modelsSetSkill
-	defer func() {
-		modelsSetTier = oldSetTier
-		modelsSetSkill = oldSetSkill
-	}()
-
-	tests := []struct {
-		name    string
-		tier    string
-		wantErr string
-	}{
-		{
-			name:    "unknown tier",
-			tier:    "premium",
-			wantErr: "invalid tier",
-		},
-		{
-			name:    "inherit not allowed for default",
-			tier:    "inherit",
-			wantErr: "inherit",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			modelsSetTier = tt.tier
-			modelsSetSkill = ""
-
-			err := runConfigModels(&cobra.Command{}, nil)
-			if err == nil {
-				t.Fatal("expected error for invalid tier, got nil")
-			}
-			if !strings.Contains(err.Error(), tt.wantErr) {
-				t.Errorf("error = %q, want to contain %q", err.Error(), tt.wantErr)
-			}
-		})
-	}
-}
-
 func TestRunConfig_ShowTable_NoEnvVars(t *testing.T) {
 	dir := t.TempDir()
 	t.Chdir(dir)
@@ -531,33 +284,5 @@ func TestRunConfig_ShowTable_NoEnvVars(t *testing.T) {
 func TestConfigCommandsRejectPositionalArgs(t *testing.T) {
 	if err := configCmd.Args(configCmd, []string{"junk"}); err == nil {
 		t.Fatal("config accepted an unexpected positional argument")
-	}
-	if err := configModelsCmd.Args(configModelsCmd, []string{"junk"}); err == nil {
-		t.Fatal("config models accepted an unexpected positional argument")
-	}
-}
-
-func TestRunConfigModelsSortsSkillOverrides(t *testing.T) {
-	dir := t.TempDir()
-	t.Chdir(dir)
-	t.Setenv("AGENTOPS_CONFIG", "")
-	if err := os.MkdirAll(filepath.Join(dir, ".agents", "ao"), 0o755); err != nil {
-		t.Fatal(err)
-	}
-	body := "models:\n  skill_overrides:\n    zebra: budget\n    alpha: quality\n"
-	if err := os.WriteFile(filepath.Join(dir, ".agents", "ao", "config.yaml"), []byte(body), 0o644); err != nil {
-		t.Fatal(err)
-	}
-	oldOutput := output
-	output = "table"
-	defer func() { output = oldOutput }()
-	stdout, err := captureStdout(t, func() error { return runConfigModels(&cobra.Command{}, nil) })
-	if err != nil {
-		t.Fatal(err)
-	}
-	alpha := strings.Index(stdout, "alpha")
-	zebra := strings.Index(stdout, "zebra")
-	if alpha < 0 || zebra < 0 || alpha > zebra {
-		t.Fatalf("skill overrides are not sorted:\n%s", stdout)
 	}
 }

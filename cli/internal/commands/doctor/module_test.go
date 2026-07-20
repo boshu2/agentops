@@ -270,6 +270,73 @@ func TestDiffRendersFixPlan(t *testing.T) {
 	}
 }
 
+// TestDiffOnlyScopesFixPlan guards wave-4 residual 2: `ao doctor diff` must
+// accept --only <id[,id...]> (mirroring `--fix --only`) so a scoped fix-plan
+// preview is possible — remediation text tells operators to run
+// `--fix --only <id>`, so the read-only preview must scope the same way.
+func TestDiffOnlyScopesFixPlan(t *testing.T) {
+	diffReport := func() *doctorapp.Report {
+		return &doctorapp.Report{ExitCode: doctorapp.ExitFindings, Findings: []doctorapp.Finding{
+			{ID: "fm-manual-only", Severity: "P1", Title: "needs a human",
+				Remediation: doctorapp.Remediation{Command: "install skills manually: run `ao skills link`"}},
+			{ID: "fm-auto", Severity: "P2", Title: "machine can fix",
+				Remediation: doctorapp.Remediation{Command: "ao doctor --fix --only fm-auto", AutoFixable: true, EstimatedActions: 3}},
+		}}
+	}
+	t.Run("--only filters the rendered plan to the named finding", func(t *testing.T) {
+		command := testModuleWithRead(stubRead{diff: diffReport()}, &fakeMutation{}, &fakeMaintenance{}, GlobalOptions{}).Command()
+		var stdout, stderr bytes.Buffer
+		command.SetOut(&stdout)
+		command.SetErr(&stderr)
+		command.SetArgs([]string{"diff", "--only", "fm-auto"})
+		if err := command.Execute(); err != nil {
+			t.Fatalf("diff --only must exit 0, got %v (stderr: %s)", err, stderr.String())
+		}
+		for _, want := range []string{
+			"Fix plan — what --fix would do (1 finding(s), read-only preview):",
+			"[P2] fm-auto — machine can fix",
+			"would auto-fix: 3 estimated action(s) via ao doctor --fix --only fm-auto",
+		} {
+			if !bytes.Contains(stdout.Bytes(), []byte(want)) {
+				t.Fatalf("diff --only output missing %q:\n%s", want, stdout.String())
+			}
+		}
+		if bytes.Contains(stdout.Bytes(), []byte("fm-manual-only")) {
+			t.Fatalf("diff --only fm-auto must not render fm-manual-only:\n%s", stdout.String())
+		}
+	})
+	t.Run("--only accepts a comma-separated list like --fix --only", func(t *testing.T) {
+		command := testModuleWithRead(stubRead{diff: diffReport()}, &fakeMutation{}, &fakeMaintenance{}, GlobalOptions{}).Command()
+		var stdout bytes.Buffer
+		command.SetOut(&stdout)
+		command.SetArgs([]string{"diff", "--only", "fm-auto,fm-manual-only"})
+		if err := command.Execute(); err != nil {
+			t.Fatal(err)
+		}
+		if !bytes.Contains(stdout.Bytes(), []byte("(2 finding(s)")) ||
+			!bytes.Contains(stdout.Bytes(), []byte("fm-auto")) ||
+			!bytes.Contains(stdout.Bytes(), []byte("fm-manual-only")) {
+			t.Fatalf("comma-separated --only must keep both findings:\n%s", stdout.String())
+		}
+	})
+	t.Run("unknown id yields a clear message and leaves the exit unchanged", func(t *testing.T) {
+		command := testModuleWithRead(stubRead{diff: diffReport()}, &fakeMutation{}, &fakeMaintenance{}, GlobalOptions{}).Command()
+		var stdout, stderr bytes.Buffer
+		command.SetOut(&stdout)
+		command.SetErr(&stderr)
+		command.SetArgs([]string{"diff", "--only", "fm-does-not-exist"})
+		if err := command.Execute(); err != nil {
+			t.Fatalf("unknown --only id must leave the exit unchanged (0), got %v", err)
+		}
+		if !bytes.Contains(stderr.Bytes(), []byte("unknown --only id(s): fm-does-not-exist")) {
+			t.Fatalf("stderr lacks the unknown-id message:\n%s", stderr.String())
+		}
+		if bytes.Contains(stdout.Bytes(), []byte("Fix plan")) {
+			t.Fatalf("unknown --only id must not render a plan:\n%s", stdout.String())
+		}
+	})
+}
+
 // TestExplainRendersSupersetOfTriageFields guards novice edge 4d: the human
 // `ao doctor explain <id>` output must be a superset of the per-finding fields
 // robot-triage emits — identity, confidence, every evidence field,

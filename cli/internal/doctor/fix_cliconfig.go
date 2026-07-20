@@ -89,17 +89,17 @@ func lookPathAll(name string) []string {
 // agentopsModuleLine identifies the agentops CLI module in cli/go.mod.
 const agentopsModuleLine = "module github.com/boshu2/agentops/cli"
 
-// insideAgentopsRepo reports whether dir is within an agentops repo clone,
-// walking up a bounded number of parents looking for cli/go.mod declaring the
-// agentops module. It is read-only. An empty dir is treated as "not in repo".
-func insideAgentopsRepo(dir string) bool {
+// agentopsRepoRootFrom walks up a bounded number of parents from dir looking
+// for cli/go.mod declaring the agentops module, and returns the repo root.
+// It is read-only. An empty dir is treated as "not in repo".
+func agentopsRepoRootFrom(dir string) (string, bool) {
 	if dir == "" {
-		return false
+		return "", false
 	}
 	for range 12 {
 		data, err := os.ReadFile(filepath.Join(dir, "cli", "go.mod"))
 		if err == nil && strings.Contains(string(data), agentopsModuleLine) {
-			return true
+			return dir, true
 		}
 		parent := filepath.Dir(dir)
 		if parent == dir {
@@ -107,7 +107,13 @@ func insideAgentopsRepo(dir string) bool {
 		}
 		dir = parent
 	}
-	return false
+	return "", false
+}
+
+// insideAgentopsRepo reports whether dir is within an agentops repo clone.
+func insideAgentopsRepo(dir string) bool {
+	_, ok := agentopsRepoRootFrom(dir)
+	return ok
 }
 
 // installHintFor returns a platform-specific install command for a CLI.
@@ -446,9 +452,47 @@ const fmDevVersionBuildIntegrity = "fm-cli-config-dev-version-build-integrity"
 // documented source fallback used before the v3.1.0 tag is cut ("3.1.0-rc").
 var aoReleaseVersion = regexp.MustCompile(`^v?\d+\.\d+\.\d+(-rc(\.\d+)?)?$`)
 
-// devVersionBuildIntegrityDetector flags an `ao` binary that reports a
-// non-release version (dev/empty/non-semver) or is shadowed by another `ao`
-// on PATH. This is a build-time / install-integrity concern.
+// repoDeclaredVersionPattern mirrors the legacy "Binary Freshness" check's
+// resolution of the repo's declared CLI version (adapters/doctor
+// RepoDeclaredVersion): `var version = "..."` in cli/cmd/ao/main.go. The
+// adapters package imports this one, so the resolution is mirrored here
+// rather than imported.
+var repoDeclaredVersionPattern = regexp.MustCompile(`var version = "([^"]+)"`)
+
+// repoDeclaredCLIVersion returns the repo's declared CLI version at root,
+// resolved exactly the way Binary Freshness resolves it. Read-only.
+func repoDeclaredCLIVersion(root string) (string, bool) {
+	data, err := os.ReadFile(filepath.Join(root, "cli", "cmd", "ao", "main.go"))
+	if err != nil {
+		return "", false
+	}
+	match := repoDeclaredVersionPattern.FindSubmatch(data)
+	if len(match) != 2 {
+		return "", false
+	}
+	return string(match[1]), true
+}
+
+// versionMatchesRepoDeclared mirrors the Binary Freshness PASS conditions: the
+// reported version equals the repo's declared version, or is the release build
+// of the declared "-rc" source series.
+func versionMatchesRepoDeclared(reported, repoDeclared string) bool {
+	return reported == repoDeclared || strings.TrimSuffix(repoDeclared, "-rc") == reported
+}
+
+// devVersionBuildIntegrityDetector flags an `ao` binary whose version drifts
+// from the repo's declared CLI version (inside a checkout), a non-release
+// version outside any checkout (informational: a from-source build), or an
+// `ao` shadowed by another `ao` on PATH.
+//
+// Coherence rule (wave-4 residual 1): inside a repo checkout the legacy
+// "Binary Freshness" check is the authority on version health. A binary whose
+// reported version equals the repo's declared version is a healthy from-source
+// build — the documented no-Homebrew install path — dev/rc-shaped or not, so a
+// dev version alone is NOT a finding there. The detector fires only on genuine
+// drift (binary != declared repo version) or on shadowed duplicates. The two
+// surfaces must never disagree ("non-release version" P2 while Binary
+// Freshness passes).
 type devVersionBuildIntegrityDetector struct{}
 
 func (devVersionBuildIntegrityDetector) ID() string           { return fmDevVersionBuildIntegrity }
@@ -458,18 +502,37 @@ func (devVersionBuildIntegrityDetector) EstimatedCostMS() int { return 40 }
 func (devVersionBuildIntegrityDetector) OnlineRequired() bool { return false }
 func (devVersionBuildIntegrityDetector) QuickPath() bool      { return false }
 func (devVersionBuildIntegrityDetector) Describe() string {
-	return "Detects an ao binary reporting a non-release version, or multiple ao binaries shadowing each other."
+	return "Detects an ao binary drifting from the repo's declared version (or a non-release version outside a checkout), or multiple ao binaries shadowing each other; a from-source build matching its checkout is healthy."
 }
 
-// Detect inspects the running binary's reported version (via env.ToolVersion)
-// and resolves every `ao` on PATH. All read-only.
-func (devVersionBuildIntegrityDetector) Detect(_ *DetectEnv) ([]Finding, error) {
+// Detect inspects the reported version of the `ao` resolved on PATH, compares
+// it against the repo's declared CLI version when inside a checkout (reusing
+// the Binary Freshness resolution), and resolves every `ao` on PATH for
+// shadowing. All read-only.
+func (devVersionBuildIntegrityDetector) Detect(env *DetectEnv) ([]Finding, error) {
 	reported := aoReportedVersion()
-	suspect := reported == "" || reported == "dev" || reported == "vdev" ||
+	nonRelease := reported == "" || reported == "dev" || reported == "vdev" ||
 		!aoReleaseVersion.MatchString(reported)
 
 	aoPaths := lookPathAll("ao")
 	shadowed := len(aoPaths) > 1
+
+	repoDeclared := ""
+	if env != nil {
+		if root, ok := agentopsRepoRootFrom(env.RepoRoot); ok {
+			repoDeclared, _ = repoDeclaredCLIVersion(root)
+		}
+	}
+	drift := false
+	suspect := nonRelease
+	if reported != "" && repoDeclared != "" {
+		// Inside a checkout with a resolvable declared version, Binary
+		// Freshness is the authority: only genuine drift is suspect. A
+		// dev/rc version equal to the declared version is a healthy
+		// from-source build and never a finding.
+		drift = !versionMatchesRepoDeclared(reported, repoDeclared)
+		suspect = drift
+	}
 
 	if !suspect && !shadowed {
 		return nil, nil
@@ -480,26 +543,48 @@ func (devVersionBuildIntegrityDetector) Detect(_ *DetectEnv) ([]Finding, error) 
 	} else {
 		pathDesc = describeAOPaths(aoPaths)
 	}
+	title, remediation := devVersionFindingText(reported, repoDeclared, drift, suspect)
 	return []Finding{{
 		ID:         fmDevVersionBuildIntegrity,
 		Severity:   "P2",
 		Subsystem:  "cli-config",
-		Title:      "`ao` reports a non-release version, or multiple `ao` binaries shadow each other",
+		Title:      title,
 		Confidence: 0.9,
 		Evidence: Evidence{
-			Query: fmt.Sprintf("reported_version=%q suspect_version=%t shadowed=%t ao_paths=[%s]",
-				reported, suspect, shadowed, pathDesc),
+			Query: fmt.Sprintf("reported_version=%q suspect_version=%t shadowed=%t repo_declared_version=%q drift_from_repo=%t ao_paths=[%s]",
+				reported, suspect, shadowed, repoDeclared, drift, pathDesc),
 		},
 		Remediation: Remediation{
-			Command: "Reinstall a release build: " +
-				"brew upgrade agentops " +
-				"— or, if developing, rebuild with ldflags: cd cli && make build. " +
-				"If `which -a ao` shows duplicates, remove the stale one from PATH.",
+			Command:          remediation,
 			ExplainCommand:   "ao doctor explain " + fmDevVersionBuildIntegrity,
 			AutoFixable:      false,
 			EstimatedActions: 0,
 		},
 	}}, nil
+}
+
+// devVersionFindingText picks title and remediation wording per cause, keeping
+// the finding coherent with the Binary Freshness check: genuine drift names
+// both versions, a non-release version outside a checkout is stated plainly as
+// an informational from-source build (never a failure), and a shadow-only
+// finding talks about the duplicate binaries, not about version quality.
+func devVersionFindingText(reported, repoDeclared string, drift, suspect bool) (title, remediation string) {
+	const dedupe = "If `which -a ao` shows duplicates, remove the stale one from PATH."
+	switch {
+	case drift:
+		title = fmt.Sprintf("`ao` reports %s but this checkout declares %s — the binary drifts from the repo", reported, repoDeclared)
+		remediation = "Rebuild and reinstall from this checkout: cd cli && make build " +
+			"(or scripts/preflight-uat-binary.sh) — or reinstall a release build: brew upgrade agentops. " + dedupe
+	case suspect:
+		title = "`ao` reports a non-release version — you are running a from-source build (informational)"
+		remediation = "Informational: you are running a from-source build. For a release build: " +
+			"brew upgrade agentops — or, if developing, rebuild with ldflags: cd cli && make build. " + dedupe
+	default: // shadow-only: version itself is healthy
+		title = "multiple `ao` binaries shadow each other on PATH"
+		remediation = dedupe + " The first-resolved binary's version is healthy; " +
+			"if developing, rebuild with ldflags: cd cli && make build."
+	}
+	return title, remediation
 }
 
 // aoReportedVersion returns the `ao` binary's reported version string by
@@ -664,7 +749,7 @@ func init() {
 	})
 	RegisterFixer(cliConfigRefuser{
 		id:          fmDevVersionBuildIntegrity,
-		reason:      "ao reports a non-release version; the doctor does not recompile or replace binaries",
+		reason:      "the ao binary drifts from the repo's declared version or is shadowed on PATH; the doctor does not recompile or replace binaries",
 		operatorCmd: "ao doctor explain " + fmDevVersionBuildIntegrity,
 	})
 	RegisterFixer(cliConfigRefuser{

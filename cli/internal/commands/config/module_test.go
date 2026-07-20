@@ -19,23 +19,11 @@ import (
 )
 
 type fakeUseCases struct {
-	showResult   configapp.ShowResult
-	modelsResult configapp.ModelsResult
-	writeRequest configapp.ModelsWriteRequest
-	writeResult  configapp.ModelsWriteResult
+	showResult configapp.ShowResult
 }
 
 func (useCases *fakeUseCases) Show(context.Context, string, bool) (configapp.ShowResult, error) {
 	return useCases.showResult, nil
-}
-
-func (useCases *fakeUseCases) Models(context.Context) (configapp.ModelsResult, error) {
-	return useCases.modelsResult, nil
-}
-
-func (useCases *fakeUseCases) WriteModels(_ context.Context, request configapp.ModelsWriteRequest) (configapp.ModelsWriteResult, error) {
-	useCases.writeRequest = request
-	return useCases.writeResult, nil
 }
 
 func TestModuleShowJSONUsesCommandWriter(t *testing.T) {
@@ -52,37 +40,25 @@ func TestModuleShowJSONUsesCommandWriter(t *testing.T) {
 	}
 }
 
-func TestModuleModelsWriteParsesDelegatesAndRenders(t *testing.T) {
-	useCases := &fakeUseCases{writeResult: configapp.ModelsWriteResult{Updated: true, DefaultTier: "quality"}}
-	command := NewModule(useCases, clicontract.HostOptions{OutputMode: func() string { return "table" }, Verbose: func() bool { return false }, DryRun: func() bool { return false }}).Command()
+// TestModuleModelsSubcommandRemoved pins the retirement of `ao config models`:
+// the module tree registers no models child, so cobra rejects the token via
+// the root's NoArgs validator exactly like any unknown token.
+func TestModuleModelsSubcommandRemoved(t *testing.T) {
+	useCases := &fakeUseCases{showResult: configapp.ShowResult{Resolved: &configapp.ResolvedConfig{}}}
+	command := NewModule(useCases, realHost("table")).Command()
+	if command.HasSubCommands() {
+		t.Fatalf("config registers subcommands, want none: %v", command.Commands())
+	}
 	var stdout bytes.Buffer
 	command.SetOut(&stdout)
-	command.SetArgs([]string{"models", "--set-tier", "quality", "--set-skill", "council=budget"})
-	if err := command.Execute(); err != nil {
-		t.Fatal(err)
+	command.SetErr(&stdout)
+	command.SetArgs([]string{"models"})
+	err := command.Execute()
+	if err == nil {
+		t.Fatal("expected error for removed `models` subcommand, got nil")
 	}
-	if useCases.writeRequest.DefaultTier != "quality" || useCases.writeRequest.Skill != "council=budget" {
-		t.Fatalf("request = %+v", useCases.writeRequest)
-	}
-	if got := stdout.String(); got != "Set default model tier to \"quality\"\nSet skill \"council\" tier to \"budget\"\n" {
-		t.Fatalf("stdout = %q", got)
-	}
-}
-
-func TestModuleModelsDryRunDelegatesAndRendersPreview(t *testing.T) {
-	useCases := &fakeUseCases{writeResult: configapp.ModelsWriteResult{DryRun: true, DefaultTier: "quality"}}
-	command := NewModule(useCases, clicontract.HostOptions{OutputMode: func() string { return "table" }, Verbose: func() bool { return false }, DryRun: func() bool { return true }}).Command()
-	var stdout bytes.Buffer
-	command.SetOut(&stdout)
-	command.SetArgs([]string{"models", "--set-tier", "quality"})
-	if err := command.Execute(); err != nil {
-		t.Fatal(err)
-	}
-	if !useCases.writeRequest.DryRun {
-		t.Fatal("dry-run was not passed to the use case")
-	}
-	if got := stdout.String(); got != "Would set default model tier to \"quality\"\n" {
-		t.Fatalf("stdout = %q", got)
+	if want := `unknown command "models" for "config"`; err.Error() != want {
+		t.Errorf("error = %q, want %q", err.Error(), want)
 	}
 }
 

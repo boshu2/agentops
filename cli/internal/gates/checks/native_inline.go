@@ -19,7 +19,7 @@ func init() {
 	gates.Register(gates.Check{ID: "go.vet", Tiers: gates.Fast | gates.Full, Match: []string{"cli/**", "go.mod", "go.sum"}, Blocking: true, Run: runGoVet})
 	gates.Register(gates.Check{ID: "changelog.sync", Tiers: gates.Fast | gates.Full, Match: []string{"CHANGELOG.md", "docs/CHANGELOG.md"}, Blocking: true, Run: runChangelogSync})
 	gates.Register(gates.Check{ID: "shell.shellcheck-changed", Tiers: gates.Fast | gates.Full, Match: []string{"**/*.sh"}, Blocking: true, Run: runShellcheckChanged})
-	gates.Register(gates.Check{ID: "learning.coherence", Tiers: gates.Fast | gates.Full, Match: []string{".agents/learnings/**"}, Blocking: true, Run: runLearningCoherence})
+	gates.Register(gates.Check{ID: "learning.coherence", Tiers: gates.Fast | gates.Full, Match: learningRootGlobs, Blocking: true, Run: runLearningCoherence})
 }
 
 // changedFilesFor returns the routed change set, falling back to the diff vs
@@ -106,10 +106,30 @@ func runShellcheckChanged(ctx context.Context, rc gates.RunContext) (ports.GateV
 	return ports.GateVerdict{Status: ports.GateStatusPass, Reason: "shellcheck clean (changed .sh)"}, nil
 }
 
+// Learnings live under BOTH roots: the canonical .agents/ao/learnings (where
+// doctor's split fixer migrates files) and the legacy .agents/learnings. The
+// routing globs and the Run func prefix filter must stay in lockstep — a root
+// present in one but not the other either never routes or routes-then-skips.
+var (
+	learningRootPrefixes = []string{".agents/ao/learnings/", ".agents/learnings/"}
+	learningRootGlobs    = []string{".agents/ao/learnings/**", ".agents/learnings/**"}
+)
+
+// underLearningRoot reports whether a repo-relative path sits under either
+// learnings root.
+func underLearningRoot(f string) bool {
+	for _, p := range learningRootPrefixes {
+		if strings.HasPrefix(f, p) {
+			return true
+		}
+	}
+	return false
+}
+
 func runLearningCoherence(ctx context.Context, rc gates.RunContext) (ports.GateVerdict, error) {
 	var missing []string
 	for _, f := range changedFilesFor(ctx, rc) {
-		if !strings.HasPrefix(f, ".agents/learnings/") || !strings.HasSuffix(f, ".md") {
+		if !underLearningRoot(f) || !strings.HasSuffix(f, ".md") {
 			continue
 		}
 		data, err := os.ReadFile(filepath.Join(rc.RepoRoot, f))

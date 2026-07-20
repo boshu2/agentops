@@ -78,6 +78,9 @@ var removedCommands = map[string]removedCommand{
 
 // removedChildCommands covers retired subcommands under retained parents.
 var removedChildCommands = map[string]map[string]removedCommand{
+	"config": {
+		"models": {use: "model-tier configuration was removed; nothing consumed it — model choice belongs to the caller's runtime"},
+	},
 	"goals": {
 		"trace": {use: "the directive-to-bead lifecycle chain was retired; inspect current goal and scenario artifacts directly"},
 	},

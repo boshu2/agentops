@@ -532,6 +532,132 @@ func TestCliConfigDevVersion_DuplicateAOEvidenceIncludesPerPathVersions(t *testi
 	}
 }
 
+// TestCliConfigDevVersion_CoherentWithBinaryFreshness locks in the wave-4
+// residual-1 decision rule: inside a repo checkout the detector reuses the
+// legacy "Binary Freshness" resolution (cli/cmd/ao/main.go `var version`) and
+// a binary whose reported version equals the repo's declared version is a
+// healthy from-source build — a dev/rc-shaped version alone is NOT a finding.
+// The detector fires only on genuine drift (binary != declared repo version)
+// or on shadowed duplicate `ao` binaries. Outside any checkout a bare
+// dev-version binary stays a finding but is worded as informational-grade
+// ("from-source build"), never as a failure Binary Freshness would pass.
+func TestCliConfigDevVersion_CoherentWithBinaryFreshness(t *testing.T) {
+	writeRepo := func(t *testing.T, declared string) string {
+		t.Helper()
+		root := t.TempDir()
+		writeFile(t, filepath.Join(root, "cli", "go.mod"), agentopsModuleLine+"\n\ngo 1.24\n")
+		writeFile(t, filepath.Join(root, "cli", "cmd", "ao", "main.go"),
+			"package main\n\nvar version = \""+declared+"\"\n")
+		return root
+	}
+	stubAO := func(t *testing.T, dir, reports string) {
+		t.Helper()
+		path := filepath.Join(dir, "ao")
+		writeFile(t, path, "#!/bin/sh\necho 'ao version "+reports+"'\n")
+		if err := os.Chmod(path, 0o755); err != nil {
+			t.Fatalf("chmod %s: %v", path, err)
+		}
+	}
+	tests := []struct {
+		name         string
+		declared     string // "" = outside any agentops checkout
+		reported     string
+		secondAO     string // "" = no shadowing duplicate
+		wantFinding  bool
+		wantTitleSub string
+		wantQuerySub []string
+	}{
+		{
+			name: "dev build matching checkout declared version is healthy",
+			declared: "9.9.9-dev", reported: "9.9.9-dev",
+			wantFinding: false,
+		},
+		{
+			name: "rc source fallback matching checkout is healthy",
+			declared: "3.3.0-rc", reported: "3.3.0-rc",
+			wantFinding: false,
+		},
+		{
+			name: "release build of the declared rc series is healthy",
+			declared: "3.3.0-rc", reported: "3.3.0",
+			wantFinding: false,
+		},
+		{
+			name: "git-describe binary inside checkout is genuine drift",
+			declared: "3.3.0-rc", reported: "v3.2.0-64-gabc123",
+			wantFinding:  true,
+			wantTitleSub: "drift",
+			wantQuerySub: []string{`repo_declared_version="3.3.0-rc"`, "drift_from_repo=true"},
+		},
+		{
+			name: "stale release binary inside checkout is genuine drift",
+			declared: "3.3.0-rc", reported: "3.1.0",
+			wantFinding:  true,
+			wantTitleSub: "drift",
+			wantQuerySub: []string{`reported_version="3.1.0"`, "drift_from_repo=true"},
+		},
+		{
+			name: "shadowed duplicates stay a finding even when versions match",
+			declared: "9.9.9-dev", reported: "9.9.9-dev", secondAO: "2.41.1",
+			wantFinding:  true,
+			wantTitleSub: "shadow",
+			wantQuerySub: []string{"shadowed=true", "drift_from_repo=false"},
+		},
+		{
+			name: "outside checkout dev build is an informational from-source finding",
+			declared: "", reported: "dev",
+			wantFinding:  true,
+			wantTitleSub: "from-source build",
+			wantQuerySub: []string{`reported_version="dev"`, "suspect_version=true"},
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			tmp := t.TempDir()
+			fakebin := filepath.Join(tmp, "fakebin")
+			stubAO(t, fakebin, test.reported)
+			path := fakebin
+			if test.secondAO != "" {
+				secondbin := filepath.Join(tmp, "secondbin")
+				stubAO(t, secondbin, test.secondAO)
+				path = fakebin + string(os.PathListSeparator) + secondbin
+			}
+			t.Setenv("PATH", path)
+			env := &DetectEnv{}
+			if test.declared != "" {
+				env.RepoRoot = writeRepo(t, test.declared)
+			}
+			fs, err := devVersionBuildIntegrityDetector{}.Detect(env)
+			if err != nil {
+				t.Fatalf("Detect error: %v", err)
+			}
+			if !test.wantFinding {
+				if len(fs) != 0 {
+					t.Fatalf("expected 0 findings, got %d: %+v", len(fs), fs)
+				}
+				return
+			}
+			f := findByID(t, fs, fmDevVersionBuildIntegrity)
+			if !strings.Contains(f.Title, test.wantTitleSub) {
+				t.Errorf("Title = %q, want substring %q", f.Title, test.wantTitleSub)
+			}
+			for _, sub := range test.wantQuerySub {
+				if !strings.Contains(f.Evidence.Query, sub) {
+					t.Errorf("Evidence.Query lacks %q: %q", sub, f.Evidence.Query)
+				}
+			}
+			// Wording coherence: never call a non-release version a failure in
+			// a state where Binary Freshness passes; drift wording must name
+			// both versions so the operator sees the disagreement.
+			if strings.Contains(test.wantTitleSub, "drift") {
+				if !strings.Contains(f.Title, test.reported) || !strings.Contains(f.Title, test.declared) {
+					t.Errorf("drift Title must name both versions, got %q", f.Title)
+				}
+			}
+		})
+	}
+}
+
 func TestCliConfigDevVersion_FixerRefuses(t *testing.T) {
 	fx := FixerByID(fmDevVersionBuildIntegrity)
 	if fx == nil {

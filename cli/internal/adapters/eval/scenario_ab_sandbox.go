@@ -253,12 +253,31 @@ func symlinkClosureDenyTargets(initialRoots []string, maxDirs, maxEntries int) (
 func configCorpusDenyPaths(globalLearningsDir, globalPatternsDir string) []string {
 	var out []string
 	if d := strings.TrimSpace(globalLearningsDir); d != "" {
-		out = append(out, d, filepath.Join(filepath.Dir(d), "findings"))
+		out = appendWithCanonicalAo(out, d)
+		out = appendWithCanonicalAo(out, filepath.Join(filepath.Dir(d), "findings"))
 	}
 	if d := strings.TrimSpace(globalPatternsDir); d != "" {
-		out = append(out, d)
+		out = appendWithCanonicalAo(out, d)
 	}
 	return out
+}
+
+// appendWithCanonicalAo appends the section dir d AND its canonical ao
+// counterpart (<parent>/ao/<section>). The config Paths defaults are
+// single-rooted LEGACY section dirs (<base>/learnings etc.), but doctor's
+// split fixer migrates the corpus to the canonical <base>/ao/<section>; a deny
+// set built only from the legacy dirs leaves the migrated canonical dirs
+// readable by the control arm. A dir that is already canonical (its parent is
+// named "ao") gets no ao/ao echo. Extra deny entries for a counterpart that
+// does not exist on disk are harmless: the closure walk treats NotExist roots
+// as empty and Seatbelt subpath denies of absent paths deny nothing.
+func appendWithCanonicalAo(out []string, d string) []string {
+	out = append(out, d)
+	parent := filepath.Dir(d)
+	if filepath.Base(parent) == "ao" {
+		return out
+	}
+	return append(out, filepath.Join(parent, "ao", filepath.Base(d)))
 }
 
 // envCorpusDenyPaths returns the corpus dir an AO_AGENTS_DIR / AO_HOME env override
@@ -294,7 +313,10 @@ func localCorpusDenyPaths(root, learningsDir, patternsDir string) []string {
 		if within(d, filepath.Join(root, ".agents")) {
 			continue
 		}
-		out = append(out, d)
+		// Deny the canonical ao counterpart too (see appendWithCanonicalAo): the
+		// config default is the legacy single-rooted dir, but a doctor-migrated
+		// corpus lives at <parent>/ao/<section>.
+		out = appendWithCanonicalAo(out, d)
 	}
 	return out
 }
