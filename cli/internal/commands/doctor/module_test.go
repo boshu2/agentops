@@ -65,10 +65,29 @@ func (fake *fakeMaintenance) GC(_ context.Context, request doctorapp.GCRequest) 
 	return doctorapp.GCResult{Matched: 2, DryRun: request.DryRun}, nil
 }
 
+// stubRead overrides the read seams a rendering test needs while inheriting
+// the inert fakeRead behavior for everything else.
+type stubRead struct {
+	fakeRead
+	diff    *doctorapp.Report
+	explain *doctorapp.Finding
+}
+
+func (stub stubRead) Diff(context.Context, doctorapp.ReadRequest) (*doctorapp.Report, error) {
+	return stub.diff, nil
+}
+func (stub stubRead) Explain(context.Context, string) (*doctorapp.Finding, error) {
+	return stub.explain, nil
+}
+
 func testModule(mutation *fakeMutation, maintenance *fakeMaintenance, globals GlobalOptions) Module {
+	return testModuleWithRead(fakeRead{}, mutation, maintenance, globals)
+}
+
+func testModuleWithRead(read ReadUseCases, mutation *fakeMutation, maintenance *fakeMaintenance, globals GlobalOptions) Module {
 	return NewModule(UseCases{
 		LegacyChecks: func(context.Context) []quality.Check { return nil },
-		Read:         fakeRead{}, Mutation: mutation, Maintenance: maintenance,
+		Read:         read, Mutation: mutation, Maintenance: maintenance,
 		DetectorCount: func() int { return 0 },
 	}, clicontract.HostOptions{
 		DryRun: func() bool { return globals.DryRun },
@@ -186,5 +205,112 @@ func TestDoctorFlagOwnershipRemainsLocal(t *testing.T) {
 	undo, _, _ := command.Find([]string{"undo"})
 	if undo.Flags().Lookup("dry-run") == nil || undo.Flags().Lookup("strict") == nil {
 		t.Fatal("undo local flags missing")
+	}
+}
+
+// TestDiffRendersFixPlan guards novice edge 4c: the human `ao doctor diff`
+// output must frame itself as the --fix PLAN — per finding it states whether
+// --fix would act (with the estimated action count) and prints an explicit
+// "no automatic fix; manual action: ..." line for non-fixable findings —
+// instead of the plain findings list triage already renders. The exit code
+// deliberately stays 0 with findings present: diff is a read-only preview of
+// the plan, not a health verdict — `ao doctor` / `ao doctor health` own the
+// failing exit for findings.
+func TestDiffRendersFixPlan(t *testing.T) {
+	for _, test := range []struct {
+		name    string
+		report  *doctorapp.Report
+		want    []string
+		notWant []string
+	}{
+		{
+			name: "findings render as plan with fixability per finding",
+			report: &doctorapp.Report{ExitCode: doctorapp.ExitFindings, Findings: []doctorapp.Finding{
+				{ID: "fm-manual-only", Severity: "P1", Title: "needs a human",
+					Remediation: doctorapp.Remediation{Command: "install skills manually: run `ao skills link`", AutoFixable: false, EstimatedActions: 0}},
+				{ID: "fm-auto", Severity: "P2", Title: "machine can fix",
+					Remediation: doctorapp.Remediation{Command: "ao doctor --fix --only fm-auto", AutoFixable: true, EstimatedActions: 3}},
+			}},
+			want: []string{
+				"Fix plan — what --fix would do (2 finding(s), read-only preview):",
+				"[P1] fm-manual-only — needs a human",
+				"no automatic fix; manual action: install skills manually: run `ao skills link`",
+				"[P2] fm-auto — machine can fix",
+				"would auto-fix: 3 estimated action(s) via ao doctor --fix --only fm-auto",
+			},
+		},
+		{
+			name:   "clean report renders clean-diff line",
+			report: &doctorapp.Report{},
+			want:   []string{"clean diff: --fix would change nothing"},
+			notWant: []string{
+				"Fix plan",
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			command := testModuleWithRead(stubRead{diff: test.report}, &fakeMutation{}, &fakeMaintenance{}, GlobalOptions{}).Command()
+			var stdout bytes.Buffer
+			command.SetOut(&stdout)
+			command.SetArgs([]string{"diff"})
+			if err := command.Execute(); err != nil {
+				t.Fatalf("diff must exit 0 (read-only plan preview), got %v", err)
+			}
+			for _, want := range test.want {
+				if !bytes.Contains(stdout.Bytes(), []byte(want)) {
+					t.Fatalf("diff output missing %q:\n%s", want, stdout.String())
+				}
+			}
+			for _, notWant := range test.notWant {
+				if bytes.Contains(stdout.Bytes(), []byte(notWant)) {
+					t.Fatalf("diff output unexpectedly contains %q:\n%s", notWant, stdout.String())
+				}
+			}
+		})
+	}
+}
+
+// TestExplainRendersSupersetOfTriageFields guards novice edge 4d: the human
+// `ao doctor explain <id>` output must be a superset of the per-finding fields
+// robot-triage emits — identity, confidence, every evidence field,
+// remediation, and fixability — not just title plus remediation command.
+func TestExplainRendersSupersetOfTriageFields(t *testing.T) {
+	finding := &doctorapp.Finding{
+		ID: "fm-skills-missing", Severity: "P1", Subsystem: "skills",
+		Title:      "no installed skills found in any known install location",
+		Confidence: 1.0,
+		Evidence: doctorapp.Evidence{
+			File: ".claude/skills", Lines: []int{7, 9},
+			Query: "scan of 4 SkillInstallDirs found 0 SKILL.md subdirs",
+			Hash:  "deadbeef",
+		},
+		Remediation: doctorapp.Remediation{
+			Command:        "install skills manually: run `ao skills link`",
+			ExplainCommand: "ao doctor explain fm-skills-missing",
+			AutoFixable:    false, EstimatedActions: 0,
+		},
+	}
+	command := testModuleWithRead(stubRead{explain: finding}, &fakeMutation{}, &fakeMaintenance{}, GlobalOptions{}).Command()
+	var stdout bytes.Buffer
+	command.SetOut(&stdout)
+	command.SetArgs([]string{"explain", "fm-skills-missing"})
+	if err := command.Execute(); err != nil {
+		t.Fatal(err)
+	}
+	for _, want := range []string{
+		"fm-skills-missing [P1] (skills)",
+		"no installed skills found in any known install location",
+		"Confidence: 1.00",
+		"file: .claude/skills",
+		"lines: [7 9]",
+		"query: scan of 4 SkillInstallDirs found 0 SKILL.md subdirs",
+		"hash: deadbeef",
+		"Remediation: install skills manually: run `ao skills link`",
+		"Auto-fixable: false (estimated actions: 0)",
+		"Explain: ao doctor explain fm-skills-missing",
+	} {
+		if !bytes.Contains(stdout.Bytes(), []byte(want)) {
+			t.Fatalf("explain output missing %q:\n%s", want, stdout.String())
+		}
 	}
 }

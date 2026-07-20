@@ -167,6 +167,19 @@ func remediation(id string, autoFixable bool, actions int) Remediation {
 	}
 }
 
+// manualOnlyRemediation builds a Remediation for a state the registered fixer
+// cannot repair. Invariant: a finding's remediation never instructs
+// `--fix` when auto_fixable is false — the command names the real manual
+// action instead.
+func manualOnlyRemediation(id, action string) Remediation {
+	return Remediation{
+		Command:          action,
+		ExplainCommand:   "ao doctor explain " + id,
+		AutoFixable:      false,
+		EstimatedActions: 0,
+	}
+}
+
 // ---------------------------------------------------------------------------
 // FM: fm-skills-missing (auto-fixable; refuses when no repo skills/ source)
 // ---------------------------------------------------------------------------
@@ -207,6 +220,14 @@ func (d skillsMissingDetector) Detect(env *DetectEnv) ([]Finding, error) {
 	for _, dir := range skillInstallDirs(env.HomeDir) {
 		scanned = append(scanned, fmt.Sprintf("%s=%d", dir, countSkillMDSubdirs(dir)))
 	}
+	rem := remediation(d.ID(), true, countSkillMDSubdirs(src))
+	if !autoFixable {
+		// The fixer refuses without a repo skills/ source tree, so pointing at
+		// `--fix` would be a lie. Name the real manual action instead.
+		rem = manualOnlyRemediation(d.ID(),
+			"install skills manually: clone an agentops checkout and run `ao skills link` "+
+				"(or install the AgentOps plugin); this repo has no skills/ source tree for the auto-fixer to mirror")
+	}
 	return []Finding{{
 		ID:         d.ID(),
 		Severity:   d.Severity(),
@@ -217,7 +238,7 @@ func (d skillsMissingDetector) Detect(env *DetectEnv) ([]Finding, error) {
 			File:  ".claude/skills",
 			Query: "scan of 4 SkillInstallDirs (symlinked entries resolved) found 0 SKILL.md subdirs: " + strings.Join(scanned, " "),
 		},
-		Remediation: remediation(d.ID(), autoFixable, countSkillMDSubdirs(src)),
+		Remediation: rem,
 	}}, nil
 }
 

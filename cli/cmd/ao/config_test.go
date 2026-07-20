@@ -148,8 +148,10 @@ func TestRunConfig_ShowJSON(t *testing.T) {
 	if parsed.Output.Value == nil {
 		t.Error("expected output value in resolved config")
 	}
-	if parsed.DreamReportDir.Value == nil {
-		t.Error("expected dream_report_dir in resolved config")
+	// Removed-subsystem config (rpi.*, dream.*) must not serialize: no `ao rpi`
+	// or `ao dream` command exists in 3.3 (novice-test edge 6).
+	if strings.Contains(stdout, "dream_report_dir") || strings.Contains(stdout, "rpi_") {
+		t.Errorf("resolved config JSON leaks removed-subsystem keys:\n%s", stdout)
 	}
 }
 
@@ -181,8 +183,9 @@ func TestRunConfig_ShowTable(t *testing.T) {
 	if !strings.Contains(stdout, "output:") {
 		t.Errorf("expected 'output:' in resolved values, got: %q", stdout)
 	}
-	if !strings.Contains(stdout, "dream.report_dir:") {
-		t.Errorf("expected dream.report_dir in resolved values, got: %q", stdout)
+	// Removed-subsystem config (rpi.*, dream.*) must not render (edge 6).
+	if strings.Contains(stdout, "dream.") || strings.Contains(stdout, "rpi.") {
+		t.Errorf("resolved values render removed-subsystem keys, got: %q", stdout)
 	}
 	if !strings.Contains(stdout, "Environment variables") {
 		t.Errorf("expected 'Environment variables' section, got: %q", stdout)
