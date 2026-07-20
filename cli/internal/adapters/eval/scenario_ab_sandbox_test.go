@@ -145,6 +145,76 @@ func TestLocalCorpusDenyPaths_AbsoluteOutsideRoot(t *testing.T) {
 	}
 }
 
+// TestCorpusDenyPaths_NestedSymlinkTargetDenied (age-6j9ee.3, construction, no GOOS
+// skip): a directory symlink INSIDE a corpus root (.agents/learnings -> /external)
+// canonicalizes outside the (subpath .agents) deny, so its resolved target must be
+// added to the deny set. A top-level resolveSymlink on .agents never reaches it.
+func TestCorpusDenyPaths_NestedSymlinkTargetDenied(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	root := t.TempDir()
+	agents := filepath.Join(root, ".agents")
+	if err := os.MkdirAll(agents, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	external := t.TempDir()
+	if err := os.WriteFile(filepath.Join(external, "secret.txt"), []byte("x"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink(external, filepath.Join(agents, "learnings")); err != nil {
+		t.Fatal(err)
+	}
+	// Seatbelt matches the canonical path, so assert against the resolved target.
+	wantTarget, err := filepath.EvalSymlinks(external)
+	if err != nil {
+		t.Fatal(err)
+	}
+	joined := strings.Join(corpusDenyPaths(root), "|")
+	if !strings.Contains(joined, wantTarget) {
+		t.Fatalf("nested symlink target %q must be in the deny set; got %s", wantTarget, joined)
+	}
+}
+
+// TestWorkspaceCommandRunner_Integration_ControlArmDeniesNestedSymlinkRead
+// (age-6j9ee.3, darwin): a control-arm command reading THROUGH a nested corpus symlink
+// (.agents/learnings -> /external) must be DENIED — the read canonicalizes to the
+// external target, which the nested-symlink walk added to the deny set.
+func TestWorkspaceCommandRunner_Integration_ControlArmDeniesNestedSymlinkRead(t *testing.T) {
+	if runtime.GOOS != "darwin" {
+		t.Skip("darwin-only: macOS Seatbelt sandbox-exec integration")
+	}
+	if _, err := os.Stat(macOSSandboxExec); err != nil {
+		t.Skipf("sandbox-exec unavailable: %v", err)
+	}
+
+	root := t.TempDir()
+	agents := filepath.Join(root, ".agents")
+	if err := os.MkdirAll(agents, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	external := t.TempDir()
+	if err := os.WriteFile(filepath.Join(external, "sentinel.txt"), []byte("NESTED-CORPUS-SECRET"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	link := filepath.Join(agents, "learnings")
+	if err := os.Symlink(external, link); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("HOME", t.TempDir())
+	t.Chdir(root)
+	workDir := t.TempDir()
+
+	stdout, exitCode, err := defaultWorkspaceCommandRunner(context.Background(), workDir, "cat "+filepath.Join(link, "sentinel.txt"), false)
+	if err != nil {
+		t.Fatalf("runner returned a Go error (want a denied read = nonzero exit): %v", err)
+	}
+	if exitCode == 0 {
+		t.Fatalf("control arm read through nested corpus symlink (isolation void): exit=0 stdout=%q", stdout)
+	}
+	if strings.Contains(stdout, "NESTED-CORPUS-SECRET") {
+		t.Fatalf("control arm leaked corpus bytes via nested symlink: stdout=%q", stdout)
+	}
+}
+
 // TestSandboxExecDenyProfile_DeniesAllPaths: every deny path appears in a
 // (deny file-read* (subpath ...)) clause, and non-corpus reads remain allowed.
 func TestSandboxExecDenyProfile_DeniesAllPaths(t *testing.T) {
