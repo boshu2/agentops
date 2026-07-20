@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"sync"
 	"testing"
 
 	aoeval "github.com/boshu2/agentops/cli/internal/eval"
@@ -90,5 +91,75 @@ func TestRuntimeTaskServiceDryRunUsesRealFilesystemAdapter(t *testing.T) {
 	}
 	if !result.DryRun {
 		t.Fatalf("result = %#v", result)
+	}
+}
+
+func TestSaveBurnLedger_StaleTempFile0600(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "burn-ledger.json")
+
+	// Seed the exact stale state the validator probe pre-creates: a leftover
+	// path+".tmp" at 0644, and a pre-existing final ledger at 0644.
+	if err := os.WriteFile(path+".tmp", []byte("stale"), 0o644); err != nil {
+		t.Fatalf("seed stale temp: %v", err)
+	}
+	if err := os.WriteFile(path, []byte("{}"), 0o644); err != nil {
+		t.Fatalf("seed stale ledger: %v", err)
+	}
+
+	ledger := evalsubstrate.HoldoutBurnLedger{Budget: 5}
+	if err := (Runtime{}).SaveBurnLedger(path, ledger); err != nil {
+		t.Fatalf("SaveBurnLedger: %v", err)
+	}
+	assertLedgerMode0600(t, path)
+
+	// The persisted content must be the new ledger, not the stale seed.
+	got, err := (Runtime{}).LoadBurnLedger(path)
+	if err != nil {
+		t.Fatalf("LoadBurnLedger: %v", err)
+	}
+	if got.Budget != 5 {
+		t.Fatalf("ledger budget = %d, want 5", got.Budget)
+	}
+}
+
+func TestSaveBurnLedger_ConcurrentWritersDoNotCollide(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "burn-ledger.json")
+	const writers = 8
+	var wg sync.WaitGroup
+	errs := make([]error, writers)
+	for i := 0; i < writers; i++ {
+		wg.Add(1)
+		go func(i int) {
+			defer wg.Done()
+			errs[i] = (Runtime{}).SaveBurnLedger(path, evalsubstrate.HoldoutBurnLedger{Budget: i})
+		}(i)
+	}
+	wg.Wait()
+	for i, err := range errs {
+		if err != nil {
+			t.Fatalf("SaveBurnLedger[%d]: %v", i, err)
+		}
+	}
+	assertLedgerMode0600(t, path)
+	if _, err := (Runtime{}).LoadBurnLedger(path); err != nil {
+		t.Fatalf("final ledger unreadable: %v", err)
+	}
+}
+
+func assertLedgerMode0600(t *testing.T, path string) {
+	t.Helper()
+	info, err := os.Stat(path)
+	if err != nil {
+		t.Fatalf("stat ledger %s: %v", path, err)
+	}
+	if runtime.GOOS == "windows" {
+		if info.IsDir() {
+			t.Fatalf("ledger %s is a directory, want a file", path)
+		}
+		return
+	}
+	if got := info.Mode().Perm(); got != 0o600 {
+		t.Fatalf("ledger mode = %#o, want 0o600", got)
 	}
 }
