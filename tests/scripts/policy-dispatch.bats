@@ -134,6 +134,33 @@ telemetry_lines() {
   [ "$status" -eq 2 ]
 }
 
+# ---------- policy (d): core.skills:edit-installed-copy ---------------------
+
+@test "FIRE deny: Edit of an installed skill copy blocks, routes to repo skills/" {
+  run run_dispatch Edit file_path "$HOME/.claude/skills/evolve/SKILL.md"
+  [ "$status" -eq 2 ]
+  [[ "$output" == *"core.skills:edit-installed-copy"* ]]
+  [[ "$output" == *"INSTALLED skill copy"* ]]
+}
+
+@test "SILENT: Edit of a repo skills/ source path does not fire" {
+  run run_dispatch Edit file_path "/Users/dev/agentops/skills/cc-hooks/SKILL.md"
+  [ "$status" -eq 0 ]
+  [ -z "$output" ]
+}
+
+# ---------- plugin layout -----------------------------------------------------
+
+@test "plugin layout: dispatcher resolves ../policies/policies.json without AOP_POLICIES" {
+  plugin="$TMPDIR/plugin/skills/cc-hooks"
+  mkdir -p "$plugin"
+  cp -R "$BATS_TEST_DIRNAME/../../skills/cc-hooks/hooks" "$plugin/hooks"
+  cp -R "$BATS_TEST_DIRNAME/../../skills/cc-hooks/policies" "$plugin/policies"
+  run bash -c 'unset AOP_POLICIES; jq -nc "{tool_name:\"Bash\", tool_input:{command:\"git add _beads/x\"}, session_id:\"plugin-sess\"}" | bash "$1/hooks/policy-dispatch.sh"' _ "$plugin"
+  [ "$status" -eq 2 ]
+  [[ "$output" == *"core.git:add-beads-ledger"* ]]
+}
+
 @test "SILENT: copying FROM an installed skills dir OUT to the repo does not fire" {
   run run_dispatch Bash command "cp $HOME/.claude/skills/foo/SKILL.md /tmp/inspect.md"
   [ "$status" -eq 0 ]
