@@ -90,6 +90,10 @@ before upgrading.
 
 ### Fixed
 
+- `ao init` creates the complete evidence layout — both loop-evidence stores
+  `ao status` reads (intents, verdicts) and the sessions/index/provenance
+  substructure `ao doctor` enforces — so a fresh init is never flagged
+  incomplete by the CLI's own diagnostics.
 - `ao doctor` is now a fast installation-health check over binary identity,
   exact source-skill links, optional provenance integrity, and host safety. It
   no longer implicitly runs the 3.2 plugin/tracker/reviewer/fixer diagnostics,
