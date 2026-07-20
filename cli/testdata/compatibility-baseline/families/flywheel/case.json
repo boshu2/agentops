@@ -1,0 +1,29 @@
+{
+  "schema_version": 1,
+  "family": "flywheel",
+  "checks": [
+    {
+      "id": "flywheel-black-box",
+      "command": "tmp=$(mktemp -d /tmp/ao-flywheel.XXXXXX); (cd cli && go build -o \"$tmp/ao\" ./cmd/ao); \"$tmp/ao\" flywheel --help >\"$tmp/help\"; grep -Fq 'Knowledge flywheel operations' \"$tmp/help\"; grep -Fq 'dK/dt = I(t) - δ·K + σ·ρ·K - B(K, K_crit)' \"$tmp/help\"; \"$tmp/ao\" flywheel status --help >\"$tmp/shelp\"; grep -Fq 'Show flywheel health status' \"$tmp/shelp\"; grep -Fq 'Period in days for metrics calculation' \"$tmp/shelp\"; \"$tmp/ao\" flywheel compare --help >\"$tmp/chelp\"; grep -Fq 'Compare primary vs shadow namespace metrics' \"$tmp/chelp\"; grep -Fq 'It does not recommend or perform' \"$tmp/chelp\"; (cd \"$tmp\" && \"$tmp/ao\" flywheel status >\"$tmp/status\"); grep -Fq 'Flywheel Health:' \"$tmp/status\"; grep -Fq 'EQUATION: dK/dt = I(t) - δ·K + σ·ρ·K' \"$tmp/status\"; (cd \"$tmp\" && \"$tmp/ao\" -o json flywheel status >\"$tmp/statusjson\"); grep -Fq '\"golden_signals\"' \"$tmp/statusjson\"; (cd \"$tmp\" && \"$tmp/ao\" flywheel compare >\"$tmp/compare\"); grep -Fq 'Namespace Comparison: primary vs' \"$tmp/compare\"; if grep -Eq 'PROMOTION|Rollback' \"$tmp/compare\"; then echo 'flywheel compare emitted transition advice' >&2; exit 1; fi"
+    },
+    {
+      "id": "flywheel-evidence-deps",
+      "command": "cd cli && go list -deps ./cmd/... | grep -qx 'github.com/boshu2/agentops/cli/internal/evidence'"
+    },
+    {
+      "id": "flywheel-go-behavior",
+      "command": "cd cli && go test ./internal/commands/flywheel/... -count=1"
+    }
+  ],
+  "dimensions": {
+    "path": {"status": "evidence", "evidence": ["flywheel-black-box", "flywheel-go-behavior"]},
+    "aliases": {"status": "not_applicable", "reason": "The flywheel family declares no command aliases."},
+    "accepted_args": {"status": "evidence", "evidence": ["flywheel-black-box", "flywheel-go-behavior"]},
+    "rejected_args": {"status": "not_applicable", "reason": "flywheel and its subcommands accept arbitrary positional args and reject none."},
+    "stdout": {"status": "evidence", "evidence": ["flywheel-black-box", "flywheel-go-behavior"]},
+    "stderr": {"status": "not_applicable", "reason": "flywheel status and compare write their reports to stdout on success."},
+    "exit_classes": {"status": "evidence", "evidence": ["flywheel-black-box", "flywheel-go-behavior"]},
+    "tracker_selection": {"status": "not_applicable", "reason": "The flywheel family does not select a repository issue tracker."},
+    "ordered_effects": {"status": "evidence", "evidence": ["flywheel-evidence-deps"]}
+  }
+}
