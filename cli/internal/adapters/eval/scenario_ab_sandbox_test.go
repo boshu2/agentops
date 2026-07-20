@@ -174,6 +174,103 @@ func TestCorpusDenyPaths_NestedSymlinkTargetDenied(t *testing.T) {
 	}
 }
 
+// TestCorpusDenyPaths_NestedFileSymlinkTargetDenied (age-6j9ee.3, construction, no
+// GOOS skip): a FILE symlink INSIDE a corpus root (.agents/note.md -> /external/secret.txt)
+// canonicalizes outside the (subpath .agents) deny, so its resolved file target must be
+// added to the deny set. The nested walk previously only appended DIRECTORY targets, so
+// a file symlink's target was silently dropped and stayed readable by the control arm.
+func TestCorpusDenyPaths_NestedFileSymlinkTargetDenied(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	root := t.TempDir()
+	agents := filepath.Join(root, ".agents")
+	if err := os.MkdirAll(agents, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	external := t.TempDir()
+	secretFile := filepath.Join(external, "secret.txt")
+	if err := os.WriteFile(secretFile, []byte("x"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink(secretFile, filepath.Join(agents, "note.md")); err != nil {
+		t.Fatal(err)
+	}
+	// Seatbelt matches the canonical path, so assert against the resolved file target.
+	wantTarget, err := filepath.EvalSymlinks(secretFile)
+	if err != nil {
+		t.Fatal(err)
+	}
+	joined := strings.Join(corpusDenyPaths(root), "|")
+	if !strings.Contains(joined, wantTarget) {
+		t.Fatalf("nested FILE symlink target %q must be in the deny set; got %s", wantTarget, joined)
+	}
+}
+
+// TestNestedSymlinkDenyTargets_SkipsDanglingSymlink (age-6j9ee.3): a dangling nested
+// symlink (target does not exist) resolves to nothing via EvalSymlinks and must be
+// skipped without error, contributing no deny path.
+func TestNestedSymlinkDenyTargets_SkipsDanglingSymlink(t *testing.T) {
+	root := t.TempDir()
+	if err := os.Symlink(filepath.Join(root, "does-not-exist"), filepath.Join(root, "dangling")); err != nil {
+		t.Fatal(err)
+	}
+	if got := nestedSymlinkDenyTargets(root); len(got) != 0 {
+		t.Errorf("dangling symlink must contribute no deny target; got %v", got)
+	}
+}
+
+// TestWorkspaceCommandRunner_Integration_ControlArmDeniesNestedFileSymlinkRead
+// (age-6j9ee.3, darwin): replicates the cross-family validator's probe EXACTLY — a
+// control-arm command reading THROUGH a nested corpus FILE symlink
+// (.agents/note.md -> <external secret file>) must be DENIED. Before the fix the read
+// returned exit 0 and leaked the secret; after, the read canonicalizes to the external
+// file target the nested-symlink walk now adds to the deny set.
+func TestWorkspaceCommandRunner_Integration_ControlArmDeniesNestedFileSymlinkRead(t *testing.T) {
+	if runtime.GOOS != "darwin" {
+		t.Skip("darwin-only: macOS Seatbelt sandbox-exec integration")
+	}
+	if _, err := os.Stat(macOSSandboxExec); err != nil {
+		t.Skipf("sandbox-exec unavailable: %v", err)
+	}
+
+	root := t.TempDir()
+	agents := filepath.Join(root, ".agents")
+	if err := os.MkdirAll(agents, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	external := t.TempDir()
+	secretFile := filepath.Join(external, "secret.txt")
+	if err := os.WriteFile(secretFile, []byte("NESTED-FILE-CORPUS-SECRET"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	link := filepath.Join(agents, "note.md")
+	if err := os.Symlink(secretFile, link); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("HOME", t.TempDir())
+	t.Chdir(root)
+	workDir := t.TempDir()
+
+	// The real leak: the corpus reader RESOLVES the symlink and reads the canonical
+	// target path (a plain read of .agents/note.md is denied because the symlink NODE
+	// sits under the denied .agents subpath, masking the escape; reading the resolved
+	// target is what leaked with exit 0 — the validator's observed vector). Reading the
+	// canonical target must be denied because the nested-symlink walk added it.
+	resolved, err := filepath.EvalSymlinks(link)
+	if err != nil {
+		t.Fatal(err)
+	}
+	stdout, exitCode, err := defaultWorkspaceCommandRunner(context.Background(), workDir, "cat "+resolved, false)
+	if err != nil {
+		t.Fatalf("runner returned a Go error (want a denied read = nonzero exit): %v", err)
+	}
+	if exitCode == 0 {
+		t.Fatalf("control arm read canonical target of nested corpus FILE symlink (isolation void): exit=0 stdout=%q", stdout)
+	}
+	if strings.Contains(stdout, "NESTED-FILE-CORPUS-SECRET") {
+		t.Fatalf("control arm leaked corpus bytes via nested FILE symlink target: stdout=%q", stdout)
+	}
+}
+
 // TestWorkspaceCommandRunner_Integration_ControlArmDeniesNestedSymlinkRead
 // (age-6j9ee.3, darwin): a control-arm command reading THROUGH a nested corpus symlink
 // (.agents/learnings -> /external) must be DENIED — the read canonicalizes to the
