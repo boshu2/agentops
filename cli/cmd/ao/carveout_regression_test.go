@@ -380,6 +380,102 @@ func TestModuleHostSeamIsSharedContract(t *testing.T) {
 	}
 }
 
+// newModuleTakesHostOptions reports whether a module's NewModule signature
+// includes a parameter of the shared clicontract.HostOptions type. It resolves
+// the clicontract import alias so a renamed import is still detected.
+func newModuleTakesHostOptions(file *ast.File, newModule *ast.FuncDecl) bool {
+	if newModule == nil || newModule.Type.Params == nil {
+		return false
+	}
+	aliases := importAliasMap(file)
+	for _, param := range newModule.Type.Params.List {
+		// A HostOptions param may arrive by value (clicontract.HostOptions) or by
+		// pointer (*clicontract.HostOptions); unwrap the star.
+		typ := param.Type
+		if star, ok := typ.(*ast.StarExpr); ok {
+			typ = star.X
+		}
+		selector, ok := typ.(*ast.SelectorExpr)
+		if !ok {
+			continue
+		}
+		pkg, ok := selector.X.(*ast.Ident)
+		if !ok {
+			continue
+		}
+		if aliases[pkg.Name] == "github.com/boshu2/agentops/cli/internal/clicontract" && selector.Sel.Name == "HostOptions" {
+			return true
+		}
+	}
+	return false
+}
+
+// TestEveryModuleTakesHostSeamOrIsExempt closes the coverage hole that let five
+// modules bypass the shared host seam undetected: the shape guard
+// (TestModuleHostSeamIsSharedContract) only checks that IF a module takes a host
+// seam it is the shared type — it never required a seam to exist. This test
+// requires coverage: every internal/commands/<family>/module.go NewModule must
+// EITHER take clicontract.HostOptions OR appear in the committed
+// testdata/seamless-module-exemptions.json with a reason. It fails three ways so
+// the exemption list cannot drift from reality: (1) a zero-seam module that is
+// not exempted (a new bypasser), (2) a module that gained a HostOptions seam but
+// is still exempted (a stale exemption), and (3) an exemption for a module that
+// no longer exists.
+func TestEveryModuleTakesHostSeamOrIsExempt(t *testing.T) {
+	type exemption struct {
+		Module string `json:"module"`
+		Reason string `json:"reason"`
+	}
+	exemptPath := filepath.Join(packageDir, "testdata", "seamless-module-exemptions.json")
+	data, err := os.ReadFile(exemptPath)
+	if err != nil {
+		t.Fatalf("read seamless-module exemptions %s: %v", exemptPath, err)
+	}
+	var doc struct {
+		Exempt []exemption `json:"exempt"`
+	}
+	if err := json.Unmarshal(data, &doc); err != nil {
+		t.Fatalf("decode seamless-module exemptions: %v", err)
+	}
+	exempt := make(map[string]string, len(doc.Exempt))
+	for _, entry := range doc.Exempt {
+		if entry.Module == "" || strings.TrimSpace(entry.Reason) == "" {
+			t.Errorf("exemption entry %+v is incomplete: module and reason are both required", entry)
+			continue
+		}
+		exempt[entry.Module] = entry.Reason
+	}
+
+	seen := map[string]bool{}
+	for family, path := range commandModuleFiles(t) {
+		fset := token.NewFileSet()
+		file, err := parser.ParseFile(fset, path, nil, 0)
+		if err != nil {
+			t.Fatalf("parse %s: %v", path, err)
+		}
+		seen[family] = true
+		takesSeam := newModuleTakesHostOptions(file, findNewModule(file))
+		_, isExempt := exempt[family]
+		switch {
+		case takesSeam && isExempt:
+			t.Errorf("module %q NewModule takes clicontract.HostOptions but is still listed in testdata/seamless-module-exemptions.json; remove the stale exemption",
+				family)
+		case !takesSeam && !isExempt:
+			t.Errorf("module %q NewModule takes no clicontract.HostOptions and is not in testdata/seamless-module-exemptions.json; wire the shared host seam or add a reasoned seam-less exemption",
+				family)
+		}
+	}
+
+	// Fail on an exemption for a module that no longer exists so the list cannot
+	// carry dead entries.
+	for family := range exempt {
+		if !seen[family] {
+			t.Errorf("stale exemption %q: no such command module under internal/commands/; remove it from testdata/seamless-module-exemptions.json",
+				family)
+		}
+	}
+}
+
 // TestModuleImportsNoDirectHostEffects proves each module.go reaches for no
 // direct host effect: it imports neither os nor os/exec (filesystem/process
 // effects belong to injected adapters), and it never calls time.Now (the clock

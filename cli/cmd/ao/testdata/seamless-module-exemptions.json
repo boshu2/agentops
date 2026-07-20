@@ -1,0 +1,9 @@
+{
+  "_comment": "Seam-coverage exemptions (bead age-6j9ee.1 / B1). Every internal/commands/<family>/module.go NewModule MUST either take a clicontract.HostOptions parameter (the shared host seam) OR appear here with a one-line reason justifying why it is genuinely seam-less (pure static text or a pure deterministic transform with no output-mode / dry-run / verbose / project-root / clock dependency). TestEveryModuleTakesHostSeamOrIsExempt (carveout_regression_test.go) fails three ways so this list cannot rot: (1) a zero-seam module missing from this list, (2) a module that gained a HostOptions seam but is still listed here (stale), and (3) an exemption for a module that no longer exists. Do NOT add an entry to dodge wiring a real seam: if a module reads output mode, dry-run, verbose, the project root, or the clock, it takes clicontract.HostOptions instead.",
+  "exempt": [
+    { "module": "demo", "reason": "pure static text: renders fixed explanatory strings to stdout; no output-mode, dry-run, verbose, project-root, or clock dependency" },
+    { "module": "quickstart", "reason": "pure static text: prints a fixed single-pass workflow summary to stdout; no host seam of any kind" },
+    { "module": "redact", "reason": "pure deterministic transform: reads stdin, applies the canonical secret redactor, writes raw scrubbed bytes to stdout; a byte passthrough with no structured output mode or other host seam" },
+    { "module": "robotdocs", "reason": "pure read of the live cobra command tree: renders a Markdown-only handbook; no JSON/YAML variant and no other host seam" }
+  ]
+}
