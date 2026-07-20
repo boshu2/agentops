@@ -14,6 +14,7 @@ The v1 implementation includes the thin executor and the bead-native factory:
 | Surface | Current state |
 |---|---|
 | Isolated Gas City deployment | Implemented in `deploy/gc/` |
+| Exact GC/Beads provenance and materialization | Implemented with `toolchain.lock.json`, source builds, runtime identity checks, and per-city binary digests |
 | Explicit Codex/Claude Implementer and Validator pools | Implemented in `packs/agentops-executor/` |
 | Exact packet, provider, workspace, manifest, evidence, and freshness binding | Implemented and covered by the GC executor gate |
 | Mayor, plan-review, and Refiner pools | Implemented in `packs/agentops-factory/` |
@@ -25,11 +26,16 @@ The factory lives in the separate optional pack
 `packs/agentops-factory/`. It imports `agentops-executor` rather than expanding
 the executor's responsibility.
 
-The live canary proves one complete single-experiment bead path with both
-providers, a fresh candidate Validator, a fresh integration Validator, the
-actual Refiner, protected CI, and merge to `main`. It does not yet prove the
-multi-wave concurrency and injected-fault matrix. The exact evidence is in the
-[live bead canary](../audits/gas-city-factory-live-bead-canary.md).
+The protected-delivery canary proves one complete single-experiment bead path
+with both providers, a fresh candidate Validator, a fresh integration
+Validator, the actual Refiner, protected CI, and merge to `main`. The later
+qualification canary proves two disjoint experiments running in parallel in
+separate worktrees: one Codex/Terra Worker judged by Claude/Opus 4.8 and one
+Claude/Opus 4.8 Worker judged by Codex/Sol, followed by a Claude Refiner and a
+fresh Codex/Sol integration verdict. It completed on the original sessions
+without an operator nudge or retry command. These canaries do not yet prove
+dependent multi-wave execution or the full injected-fault matrix. The exact
+evidence is in the [live bead canary](../audits/gas-city-factory-live-bead-canary.md).
 
 AgentOps remains a semantic work-and-proof protocol, not a queue, Git workflow,
 retry controller, or release system. The factory is an optional caller-selected
@@ -113,6 +119,9 @@ landing. A landed PR is still not a release verdict.
 
 `deploy/gc/city.toml` defines:
 
+- an exact colocated GC/official-Beads pair selected from
+  `deploy/gc/toolchain.lock.json`, with version, commit, and binary digest
+  identity persisted per city;
 - built-in Codex and Claude providers with full option-schema replacement;
 - a private `CODEX_HOME` and explicitly selected authentication link;
 - interactive Claude with inherited `print_args` cleared;
@@ -125,8 +134,14 @@ landing. A landed PR is still not a release verdict.
 `deploy/gc/bootstrap.sh` creates or repairs only
 a marked managed city, registers an explicit disposable rig, installs the local
 or pinned pack import, binds private runtime paths, checks provider readiness,
-and optionally starts the city. It does not start a Mayor, run an experiment,
-or infer completion.
+reconciles and verifies the primary executor roles' packet-workspace base, and
+optionally starts the city. Packet workspaces are directory names relative to
+that base, so the base is the registered rig's parent rather than the rig
+itself. It does not start a Mayor, run an experiment, or infer completion.
+
+`deploy/gc/materialize-toolchain.sh` checks out and builds the exact source pair
+before bootstrap. An ambient or same-version unlisted binary cannot become the
+managed runtime, and AgentOps never patches an installed GC or Beads binary.
 
 The deployment guide is `deploy/gc/README.md`.
 
@@ -134,16 +149,20 @@ The deployment guide is `deploy/gc/README.md`.
 
 The executor has four physical pools and two semantic roles:
 
-| Target | Scope | Provider | Wake | Capacity per rig |
-|---|---|---|---|---|
-| `agentops.implementer` | rig | Codex | fresh | min 0, max 1 |
-| `agentops.implementer-claude` | rig | Claude | fresh | min 0, max 1 |
-| `agentops.validator` | rig | Codex | fresh | min 0, max 1 |
-| `agentops.validator-claude` | rig | Claude | fresh | min 0, max 1 |
+| Target | Scope | Provider | Model policy | Lifecycle | Capacity per rig |
+|---|---|---|---|---|---|
+| `agentops.implementer` | rig | Codex | Terra | fresh interactive | min 0, max 1 |
+| `agentops.implementer-claude` | rig | Claude | Opus 4.8 | fresh interactive | min 0, max 1 |
+| `agentops.validator` | rig | Codex | Sol | fresh interactive | min 0, max 1 |
+| `agentops.validator-claude` | rig | Claude | Opus 4.8 | fresh interactive | min 0, max 1 |
 
-Each `agent.toml` fixes its provider. Every packet also declares
-`provider = codex | claude`; the adapter verifies that the actual Gas City
-session used the requested provider.
+Each `agent.toml` fixes its provider and role model. Every packet also declares
+`provider = codex | claude`; the adapter verifies the actual Gas City session,
+provider, and exact launch model. The factory assigns Sol to its Codex Mayor,
+Codex plan-review, Validator, and Refiner roles; Terra to Codex implementation;
+and Opus 4.8 to every Claude role. There is no Fable alias. Claude roles are
+interactive GC-owned tmux sessions; `claude -p` and `claude --print` are denied
+by both repository policy and deployment validation.
 
 ### Packet path
 
@@ -176,8 +195,9 @@ The current binding contract is
 
 ### Mayor
 
-The Mayor is the operator-facing semantic planner and the only persistent
-semantic identity in v1. It owns conversation, product interpretation, proposed
+The Mayor is the operator-facing semantic planner. It may be a Codex Sol role
+(`factory.mayor`) or a Claude Opus 4.8 role (`factory.mayor-claude`). It owns
+conversation, product interpretation, proposed
 acceptance-preserving decomposition, dependency and scope proposals, provider
 routing, and explicit successor proposals.
 
@@ -192,8 +212,8 @@ admission. The Judge searches for missing acceptance, semantic coupling hidden
 behind disjoint file paths, shared generated surfaces, unsafe dependencies, and
 unowned scope. It emits an immutable sidecar and cannot repair the graph.
 
-Normally choose a provider family unlike the Mayor. High-risk plans may use both
-families.
+The reducer requires a provider family unlike the Mayor. The default is Sol
+Mayor plus Opus 4.8 review; choosing an Opus Mayor selects a Sol reviewer.
 
 ### Graph compiler and reducer
 
@@ -384,9 +404,11 @@ packs/agentops-factory/
   pack.toml
   agents/
     mayor/
+    mayor-claude/
     plan-reviewer/
     plan-reviewer-claude/
     refiner/
+    refiner-claude/
   commands/
   assets/schemas/
     program-graph.v1
@@ -397,6 +419,14 @@ packs/agentops-factory/
     factory-role-response.v1
     rescope-context.v1
 ```
+
+`factory plan` independently selects `--mayor-provider` and
+`--refiner-provider`. The reviewer and integration Validator default to the
+opposite provider and same-family pairs are rejected. These four provider
+choices are persisted on program and Refinery bead metadata, so rescope,
+restart, retry, and delivery cannot silently drift models. Codex lifecycle roles
+mean Sol; Claude lifecycle roles mean Opus 4.8. Implementation nodes remain
+Terra for Codex or Opus 4.8 for Claude.
 
 Initial proof-week capacity is at most four writer lanes inside an explicitly
 configured city cap, with fresh Validator sessions and on-demand Mayor/Refiner

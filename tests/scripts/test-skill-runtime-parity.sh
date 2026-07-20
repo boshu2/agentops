@@ -20,8 +20,9 @@ trap 'rm -rf "$TMP_DIR"' EXIT
 
 setup_fixture() {
   local fixture="$1"
-  mkdir -p "$fixture/scripts" "$fixture/cli/internal/quality" "$fixture/skills/fixture" "$fixture/skills-codex/fixture"
+  mkdir -p "$fixture/scripts/lib" "$fixture/cli/internal/quality" "$fixture/skills/fixture" "$fixture/skills-codex/fixture"
   cp "$SCRIPT" "$fixture/scripts/validate-skill-runtime-parity.sh"
+  cp "$ROOT/scripts/lib/repo-root.sh" "$fixture/scripts/lib/repo-root.sh"
 
   cat > "$fixture/cli/internal/quality/stale_refs.go" <<'EOF'
 package quality

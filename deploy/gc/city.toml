@@ -3,13 +3,39 @@
 
 [workspace]
 max_active_sessions = 1
-env = { GC_BIN = "__GC_AGENTOPS_GC_BIN__" }
+# Managed local sessions must not inherit a stale machine-wide OTLP endpoint.
+# A dead collector otherwise delays nearly every GC/bd command.
+env = { GC_BIN = "__GC_AGENTOPS_GC_BIN__", OTEL_SDK_DISABLED = "true" }
+
+[session]
+# The bootstrap replaces this with a stable digest of the canonical city path.
+# City basenames are not unique (disposable canaries commonly end in `/city`),
+# while tmux socket names are machine-global.  A path-bound socket prevents one
+# city's controller or teardown from observing or killing another city's agents.
+socket = "__GC_AGENTOPS_TMUX_SOCKET__"
+# GC materializes the role's assigned skill catalog in PreStart. On a cold city
+# that operation can contend with the controller's scope-wide materialization;
+# the SDK's 10s default is too short and converts harmless contention into a
+# failed-create/retry storm.
+setup_timeout = "60s"
+# Each managed session has a nudge-poller sidecar. The upstream 2s default is
+# optimized for latency; a 5s cycle keeps prompt delivery responsive while
+# reducing standing process/database pressure in four-lane AgentOps cities.
+nudge_poll_interval = "5s"
 
 [providers.codex]
 base = "builtin:codex"
-args_append = ["__GC_AGENTOPS_CODEX_SCOPE_ARGS__"]
+# Codex discards a positional startup prompt when a first-use workspace trust
+# dialog precedes the TUI. Gas City's supported `none` mode delivers the
+# rendered prompt as a native post-readiness nudge, after startup dialogs have
+# been handled, so a fresh managed worktree cannot silently lose its packet.
+prompt_mode = "none"
+# GC projects a fixed, reviewed hook set into every disposable worktree. Fresh
+# Codex sessions cannot persist per-worktree trust before claiming their bead,
+# so automation must explicitly bypass that otherwise-interactive prompt.
+args_append = ["--dangerously-bypass-hook-trust", "__GC_AGENTOPS_CODEX_SCOPE_ARGS__"]
 options_schema_merge = "replace"
-option_defaults = { permission_mode = "auto-edit" }
+option_defaults = { permission_mode = "auto-edit", model = "gpt-5.6-terra" }
 env = { CODEX_HOME = "__GC_AGENTOPS_CODEX_HOME__" }
 
 [[providers.codex.options_schema]]
@@ -28,23 +54,62 @@ default = "auto-edit"
   label = "Git delivery authority (Refiner only)"
   flag_args = ["--dangerously-bypass-approvals-and-sandbox"]
 
+[[providers.codex.options_schema]]
+key = "model"
+label = "Role-pinned model"
+type = "select"
+default = "gpt-5.6-terra"
+
+  [[providers.codex.options_schema.choices]]
+  value = "gpt-5.6-terra"
+  label = "GPT-5.6 Terra worker"
+  flag_args = ["--model", "gpt-5.6-terra"]
+
+  [[providers.codex.options_schema.choices]]
+  value = "gpt-5.6-sol"
+  label = "GPT-5.6 Sol judge"
+  flag_args = ["--model", "gpt-5.6-sol"]
+
 [providers.claude]
 base = "builtin:claude"
+command = "__GC_AGENTOPS_CLAUDE_WRAPPER__"
+path_check = "claude"
+# Claude roles run in GC-owned interactive tmux sessions. AgentOps never uses
+# Claude's headless print sink; fresh role contexts come from GC wake_mode and
+# the session/bead identity attested by the adapter. bootstrap.sh also adds
+# --safe-mode after the exact managed writable roots so factory roles do not
+# inherit the operator's unrelated hooks, plugins, MCP servers, or CLAUDE.md.
 args_append = ["__GC_AGENTOPS_CLAUDE_SCOPE_ARGS__"]
 print_args = []
 options_schema_merge = "replace"
-option_defaults = { permission_mode = "auto" }
+option_defaults = { permission_mode = "unrestricted", model = "opus-4.8" }
 
 [[providers.claude.options_schema]]
 key = "permission_mode"
 label = "Permission Mode"
 type = "select"
-default = "auto"
+default = "unrestricted"
 
   [[providers.claude.options_schema.choices]]
   value = "auto"
   label = "Auto mode with safety checks"
   flag_args = ["--permission-mode", "auto"]
+
+  [[providers.claude.options_schema.choices]]
+  value = "unrestricted"
+  label = "Git delivery authority (Refiner only)"
+  flag_args = ["--dangerously-skip-permissions"]
+
+[[providers.claude.options_schema]]
+key = "model"
+label = "Role-pinned model"
+type = "select"
+default = "opus-4.8"
+
+  [[providers.claude.options_schema.choices]]
+  value = "opus-4.8"
+  label = "Claude Opus 4.8"
+  flag_args = ["--model", "claude-opus-4-8"]
 
 
 # Gas City's scaffold imports maintenance workers and turns every provider

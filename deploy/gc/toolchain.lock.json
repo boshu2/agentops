@@ -1,0 +1,59 @@
+{
+  "schema_version": 1,
+  "accepted_pairs": [
+    {
+      "id": "agentops-gc-v16-20260719",
+      "status": "qualified",
+      "gc": {
+        "repository": "https://github.com/boshu2/gascity.git",
+        "ref": "codex/deterministic-toolchain",
+        "version": "dev",
+        "source_commit": "8dc1f0dfc8164b751d0c63bed051a468a44a3d51",
+        "runtime_commit": "8dc1f0dfc"
+      },
+      "bd": {
+        "repository": "https://github.com/steveyegge/beads.git",
+        "ref": "v1.1.0",
+        "version": "1.1.0",
+        "source_commit": "8e4e59d39f3459a43cf21a3236a13eca4dd874f7",
+        "runtime_commit": "8e4e59d39"
+      }
+    },
+    {
+      "id": "agentops-gc-v15-20260719",
+      "status": "compatible",
+      "gc": {
+        "repository": "https://github.com/boshu2/gascity.git",
+        "ref": "codex/deterministic-toolchain",
+        "version": "dev",
+        "source_commit": "33aacacef08fa3ef35ed34d74d3fcb99f4d42f33",
+        "runtime_commit": "33aacacef"
+      },
+      "bd": {
+        "repository": "https://github.com/steveyegge/beads.git",
+        "ref": "v1.1.0",
+        "version": "1.1.0",
+        "source_commit": "8e4e59d39f3459a43cf21a3236a13eca4dd874f7",
+        "runtime_commit": "8e4e59d39"
+      }
+    },
+    {
+      "id": "gascity-v1.3.5-sdk-release",
+      "status": "compatible",
+      "gc": {
+        "repository": "https://github.com/gastownhall/gascity.git",
+        "ref": "v1.3.5",
+        "version": "1.3.5",
+        "source_commit": "8ffc009ded781a2ada2077f3a29bd712b2def0bf",
+        "runtime_commit": "8ffc009d"
+      },
+      "bd": {
+        "repository": "https://github.com/steveyegge/beads.git",
+        "ref": "v1.1.0",
+        "version": "1.1.0",
+        "source_commit": "8e4e59d39f3459a43cf21a3236a13eca4dd874f7",
+        "runtime_commit": "8e4e59d39"
+      }
+    }
+  ]
+}

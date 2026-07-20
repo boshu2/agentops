@@ -5,6 +5,7 @@ wake_mode = "fresh"
 work_dir = ".gc/agents/refiner"
 min_active_sessions = 0
 max_active_sessions = 1
-option_defaults = { permission_mode = "unrestricted" }
+work_query = '''sh -c 'trigger="${GC_TRIGGER_WORK_BEAD_ID:-}"; if [ -n "$trigger" ]; then candidate=$(bd show "$trigger" --json 2>/dev/null | jq '\''[.[] | select(.status == "open" or .status == "in_progress")]'\'' 2>/dev/null) || candidate=""; if [ -n "$candidate" ] && [ "$candidate" != "[]" ]; then printf "%s" "$candidate"; exit 0; fi; fi; for id in "$GC_SESSION_ID" "$GC_SESSION_NAME" "$GC_ALIAS"; do [ -z "$id" ] && continue; candidate=$(bd list --status in_progress --assignee="$id" --json --limit=1 2>/dev/null); [ -n "$candidate" ] && [ "$candidate" != "[]" ] && printf "%s" "$candidate" && exit 0; candidate=$(bd ready --assignee="$id" --json --limit=1 2>/dev/null); [ -n "$candidate" ] && [ "$candidate" != "[]" ] && printf "%s" "$candidate" && exit 0; done; target="${GC_TEMPLATE:-${GC_ALIAS:-$GC_AGENT}}"; bd ready --metadata-field "gc.routed_to=$target" --unassigned --exclude-type=epic --json --sort oldest --limit=20 2>/dev/null' '''
+option_defaults = { permission_mode = "unrestricted", model = "gpt-5.6-sol" }
+install_agent_hooks = ["codex"]
 inject_assigned_skills = true
-nudge = "Claim exactly one ready Refinery bead, use the deterministic fenced adapter to integrate, freshly validate, publish, and land it, then close only through the adapter and drain."

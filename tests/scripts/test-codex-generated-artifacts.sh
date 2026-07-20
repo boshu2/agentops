@@ -24,11 +24,12 @@ trap 'rm -rf "$TMP_DIR"' EXIT
 setup_repo() {
   local repo="$1"
 
-  mkdir -p "$repo/scripts" "$repo/skills/example" "$repo/skills-codex/example" "$repo/skills-codex-overrides"
+  mkdir -p "$repo/scripts/lib" "$repo/skills/example" "$repo/skills-codex/example" "$repo/skills-codex-overrides"
   cp "$SCRIPT" "$repo/scripts/validate-codex-generated-artifacts.sh"
   cp "$MANIFEST_SCRIPT" "$repo/scripts/validate-codex-generated-manifest.sh"
   cp "$AUDIT_SCRIPT" "$repo/scripts/audit-codex-parity.sh"
   cp "$AUDIT_IMPL" "$repo/scripts/audit-codex-parity.py"
+  cp "$ROOT/scripts/lib/repo-root.sh" "$repo/scripts/lib/repo-root.sh"
   chmod +x "$repo/scripts/validate-codex-generated-artifacts.sh"
   chmod +x "$repo/scripts/validate-codex-generated-manifest.sh"
   chmod +x "$repo/scripts/audit-codex-parity.sh"
