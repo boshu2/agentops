@@ -16,7 +16,7 @@ func init() {
 // reads the global -o/--output flag for its output mode and delegates all
 // filesystem and clock effects to internal/statusapp.
 func newStatusCommand() *cobra.Command {
-	module := statuscommands.NewModule(statuscommands.HostOptions{
+	module := statuscommands.NewModule(clicontract.HostOptions{
 		OutputMode: GetOutput,
 	})
 	command := module.Command()

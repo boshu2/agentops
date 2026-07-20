@@ -32,10 +32,10 @@ func newEvalCommand() *cobra.Command {
 		Outcomes:   evalapp.OutcomesService{Runtime: runtime},
 		Scenario:   evalapp.ScenarioService{Runtime: runtime},
 		ScenarioAB: evalapp.ScenarioABService{Runtime: runtime},
-	}, evalcommands.HostOptions{
-		OutputMode: func(*cobra.Command) string { return GetOutput() },
-		Verbose:    func(*cobra.Command) bool { return GetVerbose() },
-		DryRun:     func(*cobra.Command) bool { return GetDryRun() },
+	}, clicontract.HostOptions{
+		OutputMode: GetOutput,
+		Verbose:    GetVerbose,
+		DryRun:     GetDryRun,
 		ProjectRoot: func() string {
 			if dir, err := resolveProjectDir(); err == nil {
 				return dir

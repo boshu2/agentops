@@ -3,6 +3,7 @@ package main
 
 import (
 	"github.com/spf13/cobra"
+	"github.com/boshu2/agentops/cli/internal/clicontract"
 
 	skillscommands "github.com/boshu2/agentops/cli/internal/commands/skills"
 )
@@ -18,7 +19,7 @@ func init() {
 // does not attach the module's contract either — the capabilities surface is
 // unchanged.
 func newSkillsCommand() *cobra.Command {
-	module := skillscommands.NewModule(skillscommands.HostOptions{
+	module := skillscommands.NewModule(clicontract.HostOptions{
 		DryRun: GetDryRun,
 	})
 	return module.Command()

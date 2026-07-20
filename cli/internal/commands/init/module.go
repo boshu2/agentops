@@ -11,19 +11,13 @@ import (
 	"github.com/boshu2/agentops/cli/internal/initapp"
 )
 
-// HostOptions carries the ambient CLI seams the init command reads. The dry-run
-// selection comes from the global --dry-run flag.
-type HostOptions struct {
-	DryRun func() bool
-}
-
 // Module owns Cobra presentation for the init command.
 type Module struct {
-	host HostOptions
+	host clicontract.HostOptions
 }
 
 // NewModule constructs the init command module from its host seams.
-func NewModule(host HostOptions) Module {
+func NewModule(host clicontract.HostOptions) Module {
 	return Module{host: host}
 }
 

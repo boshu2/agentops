@@ -1,6 +1,7 @@
 package gate
 
 import (
+	"github.com/boshu2/agentops/cli/internal/clicontract"
 	"context"
 	"testing"
 
@@ -17,7 +18,7 @@ func (fake *fakeChecks) Execute(context.Context, gateapp.CheckRequest) (gateapp.
 
 func TestGateExposesOnlyDeterministicCheck(t *testing.T) {
 	fake := &fakeChecks{}
-	command := NewModule(UseCases{Check: fake}, HostOptions{}).Command()
+	command := NewModule(UseCases{Check: fake}, clicontract.HostOptions{}).Command()
 	children := command.Commands()
 	if len(children) != 1 || children[0].Name() != "check" {
 		t.Fatalf("gate children = %v, want only check", children)

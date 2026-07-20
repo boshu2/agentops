@@ -25,21 +25,13 @@ type versionInfo struct {
 	Platform  string `json:"platform"`
 }
 
-// HostOptions carries the ambient CLI seams the version command reads. The
-// build-time version string and the global -o/--output mode are injected here
-// so the module reads no package-global build metadata directly.
-type HostOptions struct {
-	Version    func() string
-	OutputMode func() string
-}
-
 // Module owns Cobra presentation for the version command.
 type Module struct {
-	host HostOptions
+	host clicontract.HostOptions
 }
 
 // NewModule constructs the version command module from its host seams.
-func NewModule(host HostOptions) Module {
+func NewModule(host clicontract.HostOptions) Module {
 	return Module{host: host}
 }
 

@@ -17,16 +17,9 @@ import (
 	"github.com/boshu2/agentops/cli/internal/skillsresolve"
 )
 
-// HostOptions carries the ambient CLI seams the skills commands read. The
-// global dry-run flag drives link/unlink; it is injected so the module stays
-// free of direct host access.
-type HostOptions struct {
-	DryRun func() bool
-}
-
 // Module owns Cobra presentation for the skills command family.
 type Module struct {
-	host HostOptions
+	host clicontract.HostOptions
 
 	// check
 	checkJSON   bool
@@ -64,7 +57,7 @@ type Module struct {
 }
 
 // NewModule constructs the skills command module from its host seams.
-func NewModule(host HostOptions) *Module {
+func NewModule(host clicontract.HostOptions) *Module {
 	return &Module{host: host}
 }
 

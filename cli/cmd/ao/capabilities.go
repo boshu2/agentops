@@ -14,7 +14,7 @@ func init() {
 		capabilitiesadapter.NewCobraSurface(rootCmd),
 		capabilitiesadapter.RuntimePlatform{},
 	)
-	module := capabilitiescommands.NewModule(service, GetOutput)
+	module := capabilitiescommands.NewModule(service, clicontract.HostOptions{OutputMode: GetOutput})
 	command := module.Command()
 	command.GroupID = "core"
 	if err := clicontract.Attach(command, module.Contract()); err != nil {

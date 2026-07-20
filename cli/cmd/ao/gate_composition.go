@@ -22,9 +22,9 @@ func init() {
 func newGateCommand() *cobra.Command {
 	module := gatecommands.NewModule(gatecommands.UseCases{
 		Check: gateCheckUseCases{},
-	}, gatecommands.HostOptions{
-		DryRun:       GetDryRun,
-		OutputFormat: GetOutput,
+	}, clicontract.HostOptions{
+		DryRun:     GetDryRun,
+		OutputMode: GetOutput,
 	})
 	command := module.Command()
 	if err := clicontract.Attach(command, module.Contract()); err != nil {

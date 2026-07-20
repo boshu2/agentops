@@ -19,19 +19,9 @@ import (
 	"github.com/boshu2/agentops/cli/internal/provenancegraph"
 )
 
-// HostOptions carries the ambient CLI seams the provenance commands read. The
-// ledger path and clock are host effects injected here so the module stays
-// free of direct filesystem and clock access.
-type HostOptions struct {
-	// LedgerPath resolves docs/provenance/ledger.jsonl for the current tree.
-	LedgerPath func() string
-	// Now supplies the wall clock for the default add timestamp.
-	Now func() time.Time
-}
-
 // Module owns Cobra presentation for the provenance command family.
 type Module struct {
-	host HostOptions
+	host clicontract.HostOptions
 
 	// add
 	addFromType  string
@@ -73,7 +63,7 @@ type Module struct {
 }
 
 // NewModule constructs the provenance command module from its host seams.
-func NewModule(host HostOptions) *Module {
+func NewModule(host clicontract.HostOptions) *Module {
 	return &Module{host: host}
 }
 

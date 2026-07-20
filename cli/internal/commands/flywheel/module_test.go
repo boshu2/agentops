@@ -10,7 +10,7 @@ import (
 )
 
 func newTestModule(outputMode string) Module {
-	return NewModule(HostOptions{
+	return NewModule(clicontract.HostOptions{
 		OutputMode: func() string { return outputMode },
 		Verbosef:   func(string, ...any) {},
 	})

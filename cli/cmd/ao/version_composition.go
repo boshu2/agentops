@@ -18,7 +18,7 @@ func init() {
 // CommandContract; this composition attaches it to the command tree so the
 // capabilities surface is unchanged by the carve-out.
 func newVersionCommand() *cobra.Command {
-	module := versioncommands.NewModule(versioncommands.HostOptions{
+	module := versioncommands.NewModule(clicontract.HostOptions{
 		Version:    func() string { return version },
 		OutputMode: GetOutput,
 	})

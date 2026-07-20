@@ -108,7 +108,7 @@ func TestConfigModuleHonorsGlobalDryRun(t *testing.T) {
 	dryRun, output = true, "table"
 	t.Cleanup(func() { dryRun, output = originalDryRun, originalOutput })
 
-	command := configModule.Command()
+	command := newConfigCommand()
 	var stdout strings.Builder
 	command.SetOut(&stdout)
 	command.SetArgs([]string{"models", "--set-tier", "quality"})

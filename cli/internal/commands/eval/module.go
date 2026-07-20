@@ -3,7 +3,6 @@ package eval
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"strings"
@@ -69,20 +68,12 @@ type UseCases struct {
 	Bench      aoeval.BenchUseCases
 }
 
-type HostOptions struct {
-	OutputMode  func(*cobra.Command) string
-	Verbose     func(*cobra.Command) bool
-	ProjectRoot func() string
-	GoalsPath   func() string
-	DryRun      func(*cobra.Command) bool
-}
-
 type Module struct {
 	useCases UseCases
-	host     HostOptions
+	host     clicontract.HostOptions
 }
 
-func NewModule(useCases UseCases, host HostOptions) Module {
+func NewModule(useCases UseCases, host clicontract.HostOptions) Module {
 	return Module{useCases: useCases, host: host}
 }
 
@@ -171,11 +162,11 @@ release. Live Claude and Codex adapters are evaluated by a later runtime tier.`,
 	return command
 }
 
-func (module Module) outputMode(command *cobra.Command) string {
+func (module Module) outputMode() string {
 	if module.host.OutputMode == nil {
 		return ""
 	}
-	return module.host.OutputMode(command)
+	return module.host.OutputMode()
 }
 
 func (module Module) runCommand() *cobra.Command {
@@ -223,8 +214,8 @@ func (module Module) compareCommand() *cobra.Command {
 		if err != nil {
 			return err
 		}
-		if module.outputMode(command) == "json" {
-			return writeJSON(command, result.Candidate)
+		if module.outputMode() == "json" {
+			return clicontract.WriteJSON(command.OutOrStdout(), result.Candidate)
 		}
 		delta := 0.0
 		if result.Candidate.BaselineComparison != nil {
@@ -250,8 +241,8 @@ func (module Module) baselineCommand() *cobra.Command {
 		if err != nil {
 			return err
 		}
-		if module.outputMode(command) == "json" {
-			return writeJSON(command, result)
+		if module.outputMode() == "json" {
+			return clicontract.WriteJSON(command.OutOrStdout(), result)
 		}
 		path := ""
 		if result.Baseline != nil {
@@ -273,8 +264,8 @@ func (module Module) baselineAuditCommand() *cobra.Command {
 		if err != nil {
 			return err
 		}
-		if module.outputMode(command) == "json" {
-			return writeJSON(command, report)
+		if module.outputMode() == "json" {
+			return clicontract.WriteJSON(command.OutOrStdout(), report)
 		}
 		fmt.Fprintf(command.OutOrStdout(), "Eval baseline audit: %d suites, %d baselines, %d policy mismatches\n", report.SuiteCount, report.BaselineCount, report.PolicyMismatchCount)
 		if len(report.MissingCompareBaselines) > 0 {
@@ -310,8 +301,8 @@ func (module Module) scorecardCommand() *cobra.Command {
 		if err != nil {
 			return err
 		}
-		if module.outputMode(command) == "json" {
-			return writeJSON(command, card)
+		if module.outputMode() == "json" {
+			return clicontract.WriteJSON(command.OutOrStdout(), card)
 		}
 		fmt.Fprintf(command.OutOrStdout(), "Eval scorecard %s: %s (%s, categories %d)\n", card.CandidateRunID, card.Verdict, card.Kind, len(card.Categories))
 		if options.output != "" {
@@ -335,8 +326,8 @@ func (module Module) coverageCommand() *cobra.Command {
 		if err != nil {
 			return err
 		}
-		if module.outputMode(command) == "json" {
-			return writeJSON(command, report)
+		if module.outputMode() == "json" {
+			return clicontract.WriteJSON(command.OutOrStdout(), report)
 		}
 		fmt.Fprintf(command.OutOrStdout(), "Eval coverage: %d suites, %d cases, %d critical cases\n", report.SuiteCount, report.CaseCount, report.CriticalCaseCount)
 		renderCoverage(command, "domains", report.MissingRequiredDomains, report.RequiredDomains)
@@ -377,11 +368,11 @@ never auto-removed — retraction is an audit trail.`,
 		if err != nil {
 			return err
 		}
-		if module.outputMode(command) == "json" {
-			return writeJSON(command, report)
+		if module.outputMode() == "json" {
+			return clicontract.WriteJSON(command.OutOrStdout(), report)
 		}
 		fmt.Fprintf(command.OutOrStdout(), "Eval cleanup:\n  transitions->aborted: %d\n  transitions->failed:  %d\n  runs deleted:         %d\n  tmp files swept:      %d\n", report.TransitionsAborted, report.TransitionsFailed, report.RunsDeleted, report.TmpFilesSwept)
-		verbose := module.host.Verbose != nil && module.host.Verbose(command)
+		verbose := module.host.Verbose != nil && module.host.Verbose()
 		if len(report.Touched) > 0 && verbose {
 			fmt.Fprintln(command.OutOrStdout(), "Touched:")
 			for _, touched := range report.Touched {
@@ -426,8 +417,8 @@ func (module Module) taskListCommand() *cobra.Command {
 		for _, summary := range result.Tasks {
 			ids = append(ids, summary.ID)
 		}
-		if module.outputMode(command) == "json" {
-			return writeJSON(command, map[string]any{"tasks": ids, "root": result.Root})
+		if module.outputMode() == "json" {
+			return clicontract.WriteJSON(command.OutOrStdout(), map[string]any{"tasks": ids, "root": result.Root})
 		}
 		if len(result.Tasks) == 0 {
 			fmt.Fprintln(command.OutOrStdout(), "No tasks registered")
@@ -454,8 +445,8 @@ func (module Module) taskShowCommand() *cobra.Command {
 		if err != nil {
 			return err
 		}
-		if module.outputMode(command) == "json" {
-			return writeJSON(command, task)
+		if module.outputMode() == "json" {
+			return clicontract.WriteJSON(command.OutOrStdout(), task)
 		}
 		fmt.Fprintf(command.OutOrStdout(), "Task: %s\n", task.ID)
 		fmt.Fprintf(command.OutOrStdout(), "  schema_version: %d\n  domain:         %s\n  description:    %s\n  harness_ref:    %s\n", task.SchemaVersion, task.Domain, task.Description, task.HarnessRef)
@@ -498,8 +489,8 @@ func (module Module) taskRunCommand() *cobra.Command {
 			fmt.Fprintln(command.OutOrStdout(), "Dry run: gates passed; no Run manifest written.")
 			return nil
 		}
-		if module.outputMode(command) == "json" {
-			return writeJSON(command, result.Manifest)
+		if module.outputMode() == "json" {
+			return clicontract.WriteJSON(command.OutOrStdout(), result.Manifest)
 		}
 		manifest := result.Manifest
 		fmt.Fprintf(command.OutOrStdout(), "Run opened: %s\n  status:    %s\n  manifest:  %s\n  rig_id:    %s\n  task_ref:  %s\n  suite_ref: %s\n", manifest.ID, manifest.Status, result.Path, manifest.RigID, manifest.TaskRef, manifest.SuiteRef)
@@ -528,7 +519,7 @@ func (module Module) suiteVerdictCommand() *cobra.Command {
 		if err != nil {
 			return err
 		}
-		if module.outputMode(command) == "json" {
+		if module.outputMode() == "json" {
 			_, err = command.OutOrStdout().Write(append(append([]byte(nil), result.Raw...), '\n'))
 			return err
 		}
@@ -552,7 +543,7 @@ func (module Module) suiteNRequiredCommand() *cobra.Command {
 		if err != nil {
 			return err
 		}
-		if module.outputMode(command) == "json" {
+		if module.outputMode() == "json" {
 			_, err = command.OutOrStdout().Write(append(append([]byte(nil), result.Raw...), '\n'))
 			return err
 		}
@@ -575,7 +566,7 @@ func (module Module) outcomesCompileCommand() *cobra.Command {
 		if err != nil {
 			return err
 		}
-		return writeJSON(command, rubric)
+		return clicontract.WriteJSON(command.OutOrStdout(), rubric)
 	}
 	return command
 }
@@ -596,7 +587,7 @@ func (module Module) outcomesIngestCommand() *cobra.Command {
 		if result.Warning != "" {
 			fmt.Fprintln(command.ErrOrStderr(), result.Warning)
 		}
-		if err := writeJSON(command, result.Verdict); err != nil {
+		if err := clicontract.WriteJSON(command.OutOrStdout(), result.Verdict); err != nil {
 			return err
 		}
 		if result.ManifestPath != "" {
@@ -641,8 +632,8 @@ func (module Module) scenarioAddCommand() *cobra.Command {
 		if err != nil {
 			return err
 		}
-		if module.outputMode(command) == "json" {
-			return writeJSON(command, result.Scenario)
+		if module.outputMode() == "json" {
+			return clicontract.WriteJSON(command.OutOrStdout(), result.Scenario)
 		}
 		fmt.Fprintf(command.OutOrStdout(), "Created scenario %s at %s\n", result.Scenario.ID, result.Path)
 		return nil
@@ -664,13 +655,13 @@ func (module Module) scenarioListCommand() *cobra.Command {
 		// goes to stderr. Exit 0.
 		if result.MissingDirectory {
 			fmt.Fprintln(command.ErrOrStderr(), "No holdout directory found. Run 'ao eval scenario init' first.")
-			return writeJSON(command, []aoeval.ScenarioSummary{})
+			return clicontract.WriteJSON(command.OutOrStdout(), []aoeval.ScenarioSummary{})
 		}
 		if len(result.Scenarios) == 0 {
 			fmt.Fprintln(command.ErrOrStderr(), "No scenarios found.")
-			return writeJSON(command, []aoeval.ScenarioSummary{})
+			return clicontract.WriteJSON(command.OutOrStdout(), []aoeval.ScenarioSummary{})
 		}
-		return writeJSON(command, result.Scenarios)
+		return clicontract.WriteJSON(command.OutOrStdout(), result.Scenarios)
 	}
 	return command
 }
@@ -720,8 +711,8 @@ func (module Module) scenarioEvaluateCommand() *cobra.Command {
 		if err != nil {
 			return err
 		}
-		if jsonOutput || module.outputMode(command) == "json" {
-			return writeJSON(command, report)
+		if jsonOutput || module.outputMode() == "json" {
+			return clicontract.WriteJSON(command.OutOrStdout(), report)
 		}
 		return renderScenarioEvaluate(command, report)
 	}
@@ -805,8 +796,8 @@ func (module Module) scenarioMoatCommand() *cobra.Command {
 			}
 			return err
 		}
-		if module.outputMode(command) == "json" {
-			return writeJSON(command, result)
+		if module.outputMode() == "json" {
+			return clicontract.WriteJSON(command.OutOrStdout(), result)
 		}
 		fmt.Fprintf(command.OutOrStdout(), "scenario-moat: verdict=%s scenarios=%d mean_delta=%.4f\n  %s\n", result.Verdict, result.ScenarioCount, result.MeanAggregateDelta, result.Reason)
 		if options.OutputPath != "" {
@@ -827,7 +818,7 @@ func (module Module) sessionOutcomeCommand() *cobra.Command {
 		if len(args) > 0 {
 			path = args[0]
 		}
-		dryRun := module.host.DryRun != nil && module.host.DryRun(command)
+		dryRun := module.host.DryRun != nil && module.host.DryRun()
 		result, err := module.useCases.Aliases.SessionOutcome(command.Context(), aoeval.SessionOutcomeRequest{TranscriptPath: path, SessionID: sessionID, DryRun: dryRun})
 		if err != nil {
 			return err
@@ -836,8 +827,8 @@ func (module Module) sessionOutcomeCommand() *cobra.Command {
 			fmt.Fprintf(command.OutOrStdout(), "[dry-run] Would analyze transcript: %s\n", result.Transcript)
 			return nil
 		}
-		if format == "json" || module.outputMode(command) == "json" {
-			return writeJSON(command, result)
+		if format == "json" || module.outputMode() == "json" {
+			return clicontract.WriteJSON(command.OutOrStdout(), result)
 		}
 		fmt.Fprintln(command.OutOrStdout(), "Session Outcome Analysis\n========================")
 		fmt.Fprintf(command.OutOrStdout(), "Session ID:  %s\nReward:      %.2f\nLines:       %d\n\nSignals detected:\n", result.SessionID, result.Reward, result.TotalLines)
@@ -902,8 +893,8 @@ func (module Module) renderRun(command *cobra.Command, result aoeval.CoreRunResu
 	if result.Mode == aoeval.CoreRunContextAB {
 		value = result.ContextDelta
 	}
-	if module.outputMode(command) == "json" {
-		return writeJSON(command, value)
+	if module.outputMode() == "json" {
+		return clicontract.WriteJSON(command.OutOrStdout(), value)
 	}
 	switch result.Mode {
 	case aoeval.CoreRunContextAB:
@@ -958,12 +949,6 @@ func annotateSuiteParseError(err error) error {
 		}
 	}
 	return err
-}
-
-func writeJSON(command *cobra.Command, value any) error {
-	encoder := json.NewEncoder(command.OutOrStdout())
-	encoder.SetIndent("", "  ")
-	return encoder.Encode(value)
 }
 
 func staticCompletion(values ...string) func(*cobra.Command, []string, string) ([]string, cobra.ShellCompDirective) {

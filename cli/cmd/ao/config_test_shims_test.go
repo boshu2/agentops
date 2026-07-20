@@ -11,9 +11,9 @@ var (
 	configShow      bool
 	modelsSetTier   string
 	modelsSetSkill  string
-	configCmd       = configCommand
+	configCmd       = newConfigCommand()
 	configModelsCmd = func() *cobra.Command {
-		command, _, err := configCommand.Find([]string{"models"})
+		command, _, err := configCmd.Find([]string{"models"})
 		if err != nil {
 			panic(err)
 		}
@@ -24,7 +24,7 @@ var (
 type configModelsWriteResult = configapp.ModelsWriteResult
 
 func runConfig(command *cobra.Command, args []string) error {
-	fresh := configModule.Command()
+	fresh := newConfigCommand()
 	if configShow {
 		_ = fresh.Flags().Set("show", "true")
 	}
@@ -33,7 +33,7 @@ func runConfig(command *cobra.Command, args []string) error {
 }
 
 func runConfigModels(command *cobra.Command, args []string) error {
-	fresh := configModule.Command()
+	fresh := newConfigCommand()
 	models, _, err := fresh.Find([]string{"models"})
 	if err != nil {
 		return err

@@ -28,15 +28,33 @@ no hidden build-tag variant, and no parallel root builder. (The experimental
 `internal/cliapp.BuildRoot` composition path was deleted in the post-Cathedral
 Cut cleanup; `internal/clicontract` remains the contract carrier.)
 
-Newer command families are **modules**: presentation lives in
-`cli/internal/commands/<family>` (returns a fresh `*cobra.Command` plus a
-`clicontract.CommandContract`), application services live in a focused package
-(for example `cli/internal/gate`), and effects live behind small
-consumer-owned ports implemented in `cli/internal/adapters/<family>`.
-`cmd/ao/<family>_composition.go` (or `<family>_module.go`) is the thin glue
-that wires module → service → adapters onto `rootCmd`. `config`, `doctor`,
-`gate`, `capabilities`, and `eval` follow this shape; older spine commands
-still keep presentation in `cmd/ao` and are extracted opportunistically.
+Every command family is a **module**: presentation lives in
+`cli/internal/commands/<family>` (each returns a fresh `*cobra.Command` plus a
+`clicontract.CommandContract`), and `cmd/ao/<family>_composition.go` (or
+`<family>_module.go`) is the thin glue that wires it onto `rootCmd`. A module
+receives all of its host wiring — output mode, verbosity, dry-run, project root,
+clock, version string, and flag-error enrichment — through the single shared
+`clicontract.HostOptions` seam. No family declares its own seam struct or passes
+host funcs positionally, and no module reaches for a direct host effect (`os`,
+`os/exec`, `time.Now`); the drift guards in
+`cmd/ao/carveout_regression_test.go` pin all of this.
+
+The tree is **intentionally two-tiered**, and both tiers are production shapes —
+not an unfinished carve-out:
+
+- **Five families run the full hexagonal stack, `module → service → adapters`.**
+  `capabilities`, `config`, `doctor`, `eval`, and `gate` each own a focused
+  application-service package (for example `cli/internal/gate`) and push effects
+  behind small consumer-owned ports implemented in
+  `cli/internal/adapters/<family>`. These are the families with real domain
+  logic or external effects worth isolating.
+- **The other twelve families run `module → app-seam`.** `demo`, `flywheel`,
+  `goals`, `init`, `provenance`, `quick-start`, `redact`, `robot-docs`,
+  `session`, `skills`, `status`, and `version` call a focused app package
+  directly through the host seams and carry no dedicated adapters layer, because
+  they have no effect boundary that a port would earn. Adding an adapters tier to
+  an app-seam family is a deliberate non-goal until that family grows an effect
+  worth isolating.
 
 ## Published surface
 

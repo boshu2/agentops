@@ -2,6 +2,7 @@
 package skills
 
 import (
+	"github.com/boshu2/agentops/cli/internal/clicontract"
 	"bytes"
 	"encoding/json"
 	"os"
@@ -15,7 +16,7 @@ import (
 // the former cmd/ao command-capture harness for this carved family.
 func execSkills(t *testing.T, args ...string) (stdout, stderr string, err error) {
 	t.Helper()
-	root := NewModule(HostOptions{DryRun: func() bool { return false }}).Command()
+	root := NewModule(clicontract.HostOptions{DryRun: func() bool { return false }}).Command()
 	var out, errb bytes.Buffer
 	root.SetOut(&out)
 	root.SetErr(&errb)
@@ -40,7 +41,7 @@ func withCwd(t *testing.T, dir string, fn func()) {
 // TestSkillsCommandTreeRegistered asserts the module builds the full subcommand
 // tree with the documented flags.
 func TestSkillsCommandTreeRegistered(t *testing.T) {
-	root := NewModule(HostOptions{DryRun: func() bool { return false }}).Command()
+	root := NewModule(clicontract.HostOptions{DryRun: func() bool { return false }}).Command()
 	if root.Name() != "skills" {
 		t.Fatalf("root command = %q, want skills", root.Name())
 	}

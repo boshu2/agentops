@@ -3,13 +3,6 @@
   "allowed": [
     { "name": "appKey", "file": "app.go", "reason": "immutable wiring: context-key sentinel (appKeyType{}) for App injection" },
     { "name": "completionCmd", "file": "completion.go", "reason": "immutable wiring: shell-completion cobra.Command tree node" },
-    { "name": "configCommand", "file": "config_module.go", "reason": "immutable wiring: config module command tree ref" },
-    { "name": "configModule", "file": "config_module.go", "reason": "immutable wiring: config module singleton" },
-    { "name": "doctorCommand", "file": "doctor_module.go", "reason": "immutable wiring: doctor module command tree ref" },
-    { "name": "doctorMaintenanceService", "file": "doctor_module.go", "reason": "immutable wiring: doctor maintenance service singleton" },
-    { "name": "doctorModule", "file": "doctor_module.go", "reason": "immutable wiring: doctor module singleton" },
-    { "name": "doctorMutationService", "file": "doctor_module.go", "reason": "immutable wiring: doctor mutation service singleton" },
-    { "name": "doctorReadService", "file": "doctor_module.go", "reason": "immutable wiring: doctor read service singleton" },
     { "name": "handoffCmd", "file": "handoff.go", "reason": "immutable wiring: handoff cobra.Command tree node (host-resident leaf)" },
     { "name": "handoffGoal", "file": "handoff.go", "reason": "flag target: --goal for host-resident handoff command" },
     { "name": "handoffContinuation", "file": "handoff.go", "reason": "flag target: --continuation for host-resident handoff command" },

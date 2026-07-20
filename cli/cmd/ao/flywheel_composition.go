@@ -3,6 +3,7 @@ package main
 
 import (
 	"github.com/spf13/cobra"
+	"github.com/boshu2/agentops/cli/internal/clicontract"
 
 	flywheelcommands "github.com/boshu2/agentops/cli/internal/commands/flywheel"
 )
@@ -16,7 +17,7 @@ func init() {
 // version, flywheel carries no attached CommandContract; this composition does
 // not attach one, preserving flywheel's synthesized capabilities surface.
 func newFlywheelCommand() *cobra.Command {
-	module := flywheelcommands.NewModule(flywheelcommands.HostOptions{
+	module := flywheelcommands.NewModule(clicontract.HostOptions{
 		OutputMode: GetOutput,
 		Verbosef:   VerbosePrintf,
 	})

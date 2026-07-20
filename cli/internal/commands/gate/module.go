@@ -16,19 +16,12 @@ type CheckUseCases interface {
 
 type UseCases struct{ Check CheckUseCases }
 
-// HostOptions is retained as the command-module host seam. Gate check does not
-// use lifecycle or review state from the host.
-type HostOptions struct {
-	DryRun       func() bool
-	OutputFormat func() string
-}
-
 type Module struct {
 	useCases UseCases
-	host     HostOptions
+	host     clicontract.HostOptions
 }
 
-func NewModule(useCases UseCases, host HostOptions) Module {
+func NewModule(useCases UseCases, host clicontract.HostOptions) Module {
 	return Module{useCases: useCases, host: host}
 }
 
@@ -70,14 +63,6 @@ func (Module) CheckContract() clicontract.CommandContract {
 	}
 }
 
-type ExitError struct {
-	Code    int
-	Message string
-}
-
-func (failure *ExitError) Error() string { return failure.Message }
-func (failure *ExitError) ExitCode() int { return failure.Code }
-
 func (module Module) Command() *cobra.Command {
 	command := &cobra.Command{
 		Use:     "gate",
@@ -108,19 +93,19 @@ func (module Module) newCheckCommand() *cobra.Command {
 		RunE: func(command *cobra.Command, _ []string) error {
 			_ = fast
 			if module.useCases.Check == nil {
-				return &ExitError{Code: 2, Message: "gate check: use case not configured"}
+				return &clicontract.ExitError{Code: 2, Message: "gate check: use case not configured"}
 			}
 			result, err := module.useCases.Check.Execute(command.Context(), gateapp.CheckRequest{
 				Full: full, Scope: scope, FailFast: failFast,
 				WorkflowCoverage: workflowCoverage, RequireWorkflowParity: requireWorkflowParity, WorkflowPath: workflowPath,
 			})
 			if err != nil {
-				return &ExitError{Code: 2, Message: err.Error()}
+				return &clicontract.ExitError{Code: 2, Message: err.Error()}
 			}
 			if jsonOutput {
 				raw, jsonErr := result.Report.JSON()
 				if jsonErr != nil {
-					return &ExitError{Code: 2, Message: jsonErr.Error()}
+					return &clicontract.ExitError{Code: 2, Message: jsonErr.Error()}
 				}
 				fmt.Fprintln(command.OutOrStdout(), string(raw))
 			} else {
@@ -134,7 +119,7 @@ func (module Module) newCheckCommand() *cobra.Command {
 				if result.WorkflowParityMissing > 0 {
 					message = fmt.Sprintf("workflow parity missing %d blocking script(s)", result.WorkflowParityMissing)
 				}
-				return &ExitError{Code: result.ExitCode, Message: message}
+				return &clicontract.ExitError{Code: result.ExitCode, Message: message}
 			}
 			return nil
 		},

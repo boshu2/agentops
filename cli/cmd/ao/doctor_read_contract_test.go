@@ -3,6 +3,7 @@ package main
 import "testing"
 
 func TestDoctorReadCommandsRejectJunkArguments(t *testing.T) {
+	doctorCommand := newDoctorCommand()
 	if err := doctorCommand.ValidateArgs([]string{"junk"}); err == nil {
 		t.Fatal("doctor accepted junk positional argument")
 	}

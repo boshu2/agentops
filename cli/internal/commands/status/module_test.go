@@ -16,7 +16,7 @@ import (
 // newTestModule builds the status module with a fixed output mode, constructing
 // the command directly instead of mutating any package-global command state.
 func newTestModule(outputMode string) Module {
-	return NewModule(HostOptions{OutputMode: func() string { return outputMode }})
+	return NewModule(clicontract.HostOptions{OutputMode: func() string { return outputMode }})
 }
 
 func TestModule_Contract(t *testing.T) {
