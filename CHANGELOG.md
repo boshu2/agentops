@@ -40,6 +40,12 @@ before upgrading.
   `cc-hooks`, shipped by default across every install path — automatic with
   the Claude Code plugin; one installer script for npx/skills.sh copies and
   source checkouts. Injection hooks remain absent (#932).
+- A canonical top-level `workflows/` directory (sibling of `skills/`) holding
+  the Claude Code workflow scripts as first-class tracked source, plus
+  `ao workflows link`/`unlink` to install them as runtime links in the
+  project-local `.claude/workflows/` registry — a Claude-only runtime adapter,
+  same doctrine as `skills-codex/`, with the same refuse-foreign link
+  semantics as `ao skills link`.
 
 ### Changed
 

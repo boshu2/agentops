@@ -79,3 +79,5 @@
 | `ao skills unlink` | `public-tested` | `allowlisted` | Covered by internal/commands/skills help tests plus internal/skillsapp unlink tests after the skills carve-out. |
 | `ao status` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao version` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
+| `ao workflows link` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
+| `ao workflows unlink` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
