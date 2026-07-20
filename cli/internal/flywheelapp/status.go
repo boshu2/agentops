@@ -1,5 +1,10 @@
-// practices: [dora-metrics, sre]
-package main
+// Package flywheelapp owns the filesystem and clock effects behind the
+// `ao flywheel` command family: it reads the durable citation ledger (via
+// internal/evidence) and knowledge stores, computes flywheel metrics, and
+// renders the status and namespace-comparison reports. The flywheel command
+// module is a thin Cobra presentation seam over this application logic and
+// performs no direct effect itself.
+package flywheelapp
 
 import (
 	"encoding/json"
@@ -10,83 +15,7 @@ import (
 	"gopkg.in/yaml.v3"
 
 	"github.com/boshu2/agentops/cli/internal/types"
-	"github.com/spf13/cobra"
 )
-
-// flywheelGolden keeps the hidden historical flag parseable; it has no effect.
-var flywheelGolden bool
-var flywheelStatusNamespace string
-
-// flywheelCmd provides a convenient alias for flywheel status operations.
-var flywheelCmd = &cobra.Command{
-	Use:   "flywheel",
-	Short: "Knowledge flywheel operations",
-	Long: `Knowledge flywheel operations and status.
-
-The flywheel equation:
-  dK/dt = I(t) - δ·K + σ·ρ·K - B(K, K_crit)
-
-Operational escape velocity: σρ > δ/100 → Knowledge compounds
-
-Commands:
-  status   Show comprehensive flywheel health
-  compare  Compare read-only metric namespaces
-
-Examples:
-  ao flywheel status
-  ao flywheel status --json`,
-}
-
-func init() {
-	flywheelCmd.GroupID = "experimental"
-	rootCmd.AddCommand(flywheelCmd)
-
-	// flywheel status subcommand
-	statusCmd := &cobra.Command{
-		Use:   "status",
-		Short: "Show flywheel health status",
-		Long: `Display comprehensive flywheel health status.
-
-Shows:
-  - Delta (δ): Average age of active knowledge in days
-  - Sigma (σ): Retrieval coverage
-  - Rho (ρ): Decision influence among surfaced artifacts
-  - Velocity: σρ - δ/100 (net operational growth)
-  - Status: COMPOUNDING / NEAR ESCAPE / DECAYING
-
-Examples:
-  ao flywheel status
-  ao flywheel status --days 30
-  ao flywheel status --json`,
-		RunE: runFlywheelStatus,
-	}
-	statusCmd.Flags().IntVar(&metricsDays, "days", 7, "Period in days for metrics calculation")
-	statusCmd.Flags().StringVar(&flywheelStatusNamespace, "namespace", primaryMetricNamespace, "Citation namespace to evaluate (primary by default)")
-	statusCmd.Flags().BoolVar(&flywheelGolden, "golden", false, "Show golden signals (always shown; flag kept for compatibility)")
-	_ = statusCmd.Flags().MarkHidden("golden")
-	flywheelCmd.AddCommand(statusCmd)
-
-	// flywheel compare subcommand
-	compareCmd := &cobra.Command{
-		Use:   "compare",
-		Short: "Compare primary vs shadow namespace metrics",
-		Long: `Compare retrieval quality between primary and shadow namespaces.
-
-Shows sigma, rho, and escape velocity side-by-side.
-This command reports measurements only. It does not recommend or perform
-promotion, routing, activation, rollback, or any other state transition.
-
-Examples:
-  ao flywheel compare
-  ao flywheel compare --shadow experimental
-  ao flywheel compare --json`,
-		RunE: runFlywheelCompare,
-	}
-	compareCmd.Flags().StringVar(&flywheelCompareNamespace, "shadow", "shadow", "Shadow namespace to compare against primary")
-	flywheelCmd.AddCommand(compareCmd)
-}
-
-var flywheelCompareNamespace string
 
 // namespaceComparison holds side-by-side metrics for two namespaces.
 type namespaceComparison struct {
@@ -98,26 +27,28 @@ type namespaceComparison struct {
 	VelocityDelta float64                `json:"velocity_delta"`
 }
 
-func runFlywheelCompare(cmd *cobra.Command, args []string) error {
+// Compare computes and renders the primary-vs-shadow namespace comparison. It
+// reports measurements only; it performs no promotion, routing, activation, or
+// rollback.
+func Compare(w io.Writer, outputMode string, days int, shadowNamespace string, verbosef func(format string, args ...any)) error {
 	cwd, err := os.Getwd()
 	if err != nil {
 		return fmt.Errorf("get working directory: %w", err)
 	}
 
-	primaryMetrics, err := computeMetricsForNamespace(cwd, metricsDays, primaryMetricNamespace)
+	primaryMetrics, err := computeMetricsForNamespace(cwd, days, primaryMetricNamespace, verbosef)
 	if err != nil {
 		return fmt.Errorf("compute primary metrics: %w", err)
 	}
 
-	shadowMetrics, err := computeMetricsForNamespace(cwd, metricsDays, flywheelCompareNamespace)
+	shadowMetrics, err := computeMetricsForNamespace(cwd, days, shadowNamespace, verbosef)
 	if err != nil {
 		return fmt.Errorf("compute shadow metrics: %w", err)
 	}
 
-	comp := buildNamespaceComparison(primaryMetrics, shadowMetrics, flywheelCompareNamespace)
+	comp := buildNamespaceComparison(primaryMetrics, shadowMetrics, shadowNamespace)
 
-	w := cmd.OutOrStdout()
-	switch GetOutput() {
+	switch outputMode {
 	case "json":
 		enc := json.NewEncoder(w)
 		enc.SetIndent("", "  ")
@@ -155,23 +86,22 @@ func printNamespaceComparison(w io.Writer, comp *namespaceComparison) {
 	fmt.Fprintln(w)
 }
 
-// runFlywheelStatus displays comprehensive flywheel health.
-func runFlywheelStatus(cmd *cobra.Command, args []string) error {
+// Status computes and renders comprehensive flywheel health.
+func Status(w io.Writer, outputMode string, days int, statusNamespace string, verbosef func(format string, args ...any)) error {
 	cwd, err := os.Getwd()
 	if err != nil {
 		return fmt.Errorf("get working directory: %w", err)
 	}
 
-	metrics, err := computeMetricsForNamespace(cwd, metricsDays, flywheelStatusNamespace)
+	metrics, err := computeMetricsForNamespace(cwd, days, statusNamespace, verbosef)
 	if err != nil {
 		return fmt.Errorf("compute metrics: %w", err)
 	}
-	metricNamespace := canonicalMetricNamespace(flywheelStatusNamespace)
+	metricNamespace := canonicalMetricNamespace(statusNamespace)
 	// Always compute golden signals — they provide the honest health assessment.
-	populateGoldenSignals(cwd, metricsDays, metrics)
+	populateGoldenSignals(cwd, days, metrics)
 
-	w := cmd.OutOrStdout()
-	switch GetOutput() {
+	switch outputMode {
 	case "json":
 		enc := json.NewEncoder(w)
 		enc.SetIndent("", "  ")
@@ -213,7 +143,7 @@ func runFlywheelStatus(cmd *cobra.Command, args []string) error {
 		return enc.Close()
 
 	default:
-		printFlywheelStatus(w, metrics)
+		printFlywheelStatus(w, metrics, days)
 		fprintGoldenSignals(w, metrics.GoldenSignals)
 	}
 
@@ -221,7 +151,7 @@ func runFlywheelStatus(cmd *cobra.Command, args []string) error {
 }
 
 // printFlywheelStatus prints a focused flywheel status display.
-func printFlywheelStatus(w io.Writer, m *types.FlywheelMetrics) {
+func printFlywheelStatus(w io.Writer, m *types.FlywheelMetrics, days int) {
 	status := m.HealthStatus()
 	escapeStatus := m.EscapeVelocityStatus()
 
@@ -291,7 +221,7 @@ func printFlywheelStatus(w io.Writer, m *types.FlywheelMetrics) {
 	fmt.Fprintf(w, "  Period: %s to %s (%d days)\n",
 		m.PeriodStart.Format("2006-01-02"),
 		m.PeriodEnd.Format("2006-01-02"),
-		metricsDays)
+		days)
 	if m.StigmergicScorecard != nil {
 		fmt.Fprintln(w)
 		fmt.Fprintln(w, "  STIGMERGIC SCORECARD:")

@@ -1,5 +1,5 @@
 // practices: [wiki-knowledge-surface, design-by-contract]
-package main
+package flywheelapp
 
 import (
 	"fmt"

@@ -1,5 +1,5 @@
 // practices: [dora-metrics, sre]
-package main
+package flywheelapp
 
 import (
 	"encoding/json"

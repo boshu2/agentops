@@ -1,5 +1,5 @@
 // practices: [wiki-knowledge-surface, distributed-tracing]
-package main
+package flywheelapp
 
 import (
 	"strings"
@@ -7,7 +7,12 @@ import (
 	"github.com/boshu2/agentops/cli/internal/types"
 )
 
-const primaryMetricNamespace = "primary"
+// PrimaryMetricNamespace is the default citation namespace evaluated by the
+// flywheel commands.
+const PrimaryMetricNamespace = "primary"
+
+// primaryMetricNamespace is the internal alias for PrimaryMetricNamespace.
+const primaryMetricNamespace = PrimaryMetricNamespace
 
 func canonicalMetricNamespace(raw string) string {
 	namespace := strings.ToLower(strings.TrimSpace(raw))
