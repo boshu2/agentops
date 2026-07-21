@@ -15,7 +15,8 @@ Required:
 Options:
   --rig-name NAME   Logical rig name (default: agentops)
   --binding NAME    Pack import binding at city and rig scopes (default: agentops)
-  --gc-bin PATH     Gas City CLI (default: gc from PATH)
+  --gc-bin PATH     Absolute Gas City CLI path (required; never resolved from PATH)
+  --ao-bin PATH     Absolute built AgentOps reducer path (required; never resolved from PATH)
   --replace-gc-bin  Permit a managed city to move to the supplied --gc-bin path
   --codex-auth PATH Existing Codex auth.json to link into the private home
   --max-active-sessions N  City-wide concurrent session cap (default: 1)
@@ -35,7 +36,8 @@ rig=""
 pack=""
 rig_name="agentops"
 binding="agentops"
-gc_bin="gc"
+gc_bin=""
+ao_bin=""
 replace_gc_bin=0
 codex_auth=""
 source_codex_home="${CODEX_HOME:-${HOME:?HOME is required}/.codex}"
@@ -75,6 +77,11 @@ while [ "$#" -gt 0 ]; do
       gc_bin="$2"
       shift 2
       ;;
+    --ao-bin)
+      [ "$#" -ge 2 ] || die "--ao-bin requires a path"
+      ao_bin="$2"
+      shift 2
+      ;;
     --replace-gc-bin)
       replace_gc_bin=1
       shift
@@ -111,6 +118,8 @@ done
 [ -n "$city" ] || die "--city is required"
 [ -n "$rig" ] || die "--rig is required"
 [ -n "$pack" ] || die "--pack is required"
+[ -n "$gc_bin" ] || die "--gc-bin is required"
+[ -n "$ao_bin" ] || die "--ao-bin is required"
 [[ "$rig_name" =~ ^[A-Za-z0-9_-]+$ ]] || die "--rig-name must contain only letters, digits, underscore, or hyphen"
 [[ "$binding" =~ ^[A-Za-z0-9_-]+$ ]] || die "--binding must contain only letters, digits, underscore, or hyphen"
 [[ "$max_active_sessions" =~ ^[1-9][0-9]*$ ]] || die "--max-active-sessions must be a positive integer"
@@ -228,13 +237,12 @@ if [ "$city_has_content" -eq 1 ] && [ ! -f "$marker" ]; then
   die "refusing existing unmanaged city: $city"
 fi
 
-if [[ "$gc_bin" == */* ]]; then
-  [ -x "$gc_bin" ] || die "Gas City CLI is not executable: $gc_bin"
-  gc_bin="$(canonical_path "$gc_bin")"
-else
-  gc_bin="$(command -v "$gc_bin" || true)"
-  [ -n "$gc_bin" ] || die "Gas City CLI not found on PATH"
-fi
+[[ "$gc_bin" == */* ]] || die "--gc-bin must be an absolute or explicit path; PATH resolution is forbidden"
+[[ "$ao_bin" == */* ]] || die "--ao-bin must be an absolute or explicit path; PATH resolution is forbidden"
+[ -x "$gc_bin" ] || die "Gas City CLI is not executable: $gc_bin"
+[ -x "$ao_bin" ] || die "AgentOps reducer is not executable: $ao_bin"
+gc_bin="$(canonical_path "$gc_bin")"
+ao_bin="$(canonical_path "$ao_bin")"
 
 # Development builds commonly place the matched gc and bd binaries together
 # outside the ambient PATH. Keep Gas City's Beads subprocesses on that pinned
@@ -246,6 +254,8 @@ bd_bin="$gc_bin_dir/bd"
 bd_bin="$(canonical_path "$bd_bin")"
 [ "$(dirname "$bd_bin")" = "$gc_bin_dir" ] || \
   die "paired Beads CLI must resolve beside gc: $bd_bin"
+
+ao_reducer_json=""
 
 toolchain_json=""
 if ! toolchain_json="$(python3 - "$gc_bin" "$bd_bin" <<'PY'
@@ -386,20 +396,130 @@ PY
 fi
 toolchain_json="$qualified_toolchain_json"
 
+# AO is admitted only from the same materialized toolchain receipt as gc/bd.
+# The receipt, not this checkout's current HEAD, is the authority for the
+# reducer source commit and committed CLI tree.
+toolchain_receipt="$(dirname "$gc_bin_dir")/toolchain.json"
+if ! ao_reducer_json="$(python3 - "$toolchain_receipt" "$toolchain_lock" "$toolchain_json" "$ao_bin" "$gc_bin" "$bd_bin" "$pack" "$city_template" "$script_dir/../.." <<'PY'
+import hashlib
+import json
+import os
+import re
+import subprocess
+import sys
+
+receipt_path, lock_path, runtime_json, ao_bin, gc_bin, bd_bin, pack, city_template, repository = sys.argv[1:]
+receipt_path, lock_path, ao_bin, gc_bin, bd_bin, pack, city_template, repository = map(
+    os.path.realpath,
+    (receipt_path, lock_path, ao_bin, gc_bin, bd_bin, pack, city_template, repository),
+)
+if not os.path.isfile(receipt_path) or os.path.islink(receipt_path):
+    raise SystemExit("admitted gc/bd pair has no regular toolchain.json receipt beside bin")
+
+def digest(path):
+    value = hashlib.sha256()
+    with open(path, "rb") as handle:
+        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+            value.update(chunk)
+    return value.hexdigest()
+
+def portable_path(value, label):
+    if not isinstance(value, str) or not value or os.path.isabs(value):
+        raise SystemExit(f"toolchain receipt has invalid {label}.path")
+    normalized = os.path.normpath(value)
+    if normalized.startswith(".." + os.sep) or normalized == "..":
+        raise SystemExit(f"toolchain receipt has escaping {label}.path")
+    return normalized
+
+def exact_digest(value, label):
+    if not isinstance(value, str) or re.fullmatch(r"[0-9a-f]{64}", value) is None:
+        raise SystemExit(f"toolchain receipt has invalid {label} sha256")
+    return value
+
+try:
+    receipt = json.load(open(receipt_path, encoding="utf-8"))
+    lock = json.load(open(lock_path, encoding="utf-8"))
+    runtime = json.loads(runtime_json)
+except (OSError, json.JSONDecodeError) as exc:
+    raise SystemExit(f"cannot read toolchain receipt: {exc}") from exc
+if receipt.get("schema_version") != 2:
+    raise SystemExit("toolchain receipt schema_version must be 2")
+qualification = runtime.get("qualification", {})
+pair_id = qualification.get("id")
+selected = next((entry for entry in lock.get("accepted_pairs", []) if entry.get("id") == pair_id), None)
+if not isinstance(selected, dict) or receipt.get("pair") != selected:
+    raise SystemExit("toolchain receipt pair does not match admitted gc/bd pair")
+entries = receipt.get("runtime")
+if not isinstance(entries, dict) or set(entries) != {"gc", "bd", "ao"}:
+    raise SystemExit("toolchain receipt runtime must contain exactly gc, bd, and ao")
+root = os.path.dirname(receipt_path)
+for label, actual in (("gc", gc_bin), ("bd", bd_bin), ("ao", ao_bin)):
+    item = entries.get(label)
+    if not isinstance(item, dict):
+        raise SystemExit(f"toolchain receipt has no {label} runtime")
+    path = portable_path(item.get("path"), label)
+    if os.path.realpath(os.path.join(root, path)) != actual:
+        raise SystemExit(f"toolchain receipt {label} path does not match admitted binary")
+    if exact_digest(item.get("sha256"), label) != digest(actual):
+        raise SystemExit(f"toolchain receipt {label} digest does not match admitted binary")
+for label in ("gc", "bd"):
+    item = entries[label]
+    observed = runtime[label]
+    if item.get("version") != observed.get("version") or item.get("commit") != observed.get("commit"):
+        raise SystemExit(f"toolchain receipt {label} runtime identity does not match admitted binary")
+ao = entries["ao"]
+source_commit = ao.get("source_commit")
+cli_tree = ao.get("cli_tree")
+build_version = ao.get("build_version")
+if not isinstance(source_commit, str) or re.fullmatch(r"[0-9a-f]{40}", source_commit) is None:
+    raise SystemExit("toolchain receipt has invalid ao source_commit")
+if not isinstance(cli_tree, str) or re.fullmatch(r"[0-9a-f]{40}", cli_tree) is None:
+    raise SystemExit("toolchain receipt has invalid ao cli_tree")
+if not isinstance(build_version, str) or not build_version:
+    raise SystemExit("toolchain receipt has invalid ao build_version")
+result = subprocess.run(["git", "-C", repository, "rev-parse", "--verify", source_commit + ":cli"], capture_output=True, text=True)
+if result.returncode or result.stdout.strip() != cli_tree:
+    raise SystemExit("toolchain receipt ao cli_tree does not resolve from its source_commit")
+inputs = [city_template, lock_path]
+pack_inputs = []
+for current_root, _dirs, files in os.walk(pack):
+    for name in files:
+        path = os.path.join(current_root, name)
+        if not os.path.isfile(path) or os.path.islink(path):
+            raise SystemExit(f"ao reducer pack input is not a regular file: {path}")
+        pack_inputs.append(path)
+        if name.endswith((".toml", ".json", ".py")):
+            inputs.append(path)
+config_entries = [(path, digest(path)) for path in sorted(set(inputs))]
+pack_entries = [(os.path.relpath(path, pack).replace(os.sep, "/"), digest(path)) for path in sorted(pack_inputs)]
+print(json.dumps({
+    "path": ao_bin,
+    "binary_sha256": digest(ao_bin),
+    "source_commit": source_commit,
+    "cli_tree": cli_tree,
+    "build_version": build_version,
+    "pack_content_sha256": hashlib.sha256(json.dumps(pack_entries, separators=(",", ":"), ensure_ascii=True).encode()).hexdigest(),
+    "schema_config_sha256": hashlib.sha256(json.dumps(config_entries, separators=(",", ":"), ensure_ascii=True).encode()).hexdigest(),
+}, sort_keys=True))
+PY
+)"; then
+  die "invalid admitted ao reducer identity: $ao_reducer_json"
+fi
+
 previous_gc_bin=""
 toolchain_replacement=0
 if [ -f "$marker" ]; then
   marker_identity=""
-  if ! marker_identity="$(python3 - "$marker" "$city" "$rig" "$pack" "$rig_name" "$binding" "$codex_auth" "$max_active_sessions" "$replace_gc_bin" "$toolchain_json" <<'PY'
+  if ! marker_identity="$(python3 - "$marker" "$city" "$rig" "$pack" "$rig_name" "$binding" "$codex_auth" "$max_active_sessions" "$replace_gc_bin" "$toolchain_json" "$ao_reducer_json" <<'PY'
 import json
 import os
 import sys
 
-marker_path, city, rig, pack, rig_name, binding, codex_auth, max_active_sessions, replace_gc_bin, toolchain_json = sys.argv[1:]
+marker_path, city, rig, pack, rig_name, binding, codex_auth, max_active_sessions, replace_gc_bin, toolchain_json, ao_reducer_json = sys.argv[1:]
 with open(marker_path, encoding="utf-8") as handle:
     marker = json.load(handle)
 schema_version = marker.get("schema_version")
-if schema_version not in {2, 3}:
+if schema_version not in {2, 3, 4}:
     raise SystemExit(f"managed city marker has unsupported schema_version {schema_version!r}")
 expected = {
     "city": city,
@@ -430,6 +550,18 @@ else:
     replacement = marker.get("toolchain") != requested_toolchain
     if replace_gc_bin != "1" and replacement:
         raise SystemExit("managed city mismatch for paired gc/bd toolchain identity")
+if schema_version != 4 or marker.get("ao_reducer") != json.loads(ao_reducer_json):
+    raise SystemExit("managed city mismatch for ao reducer identity")
+packs_lock = os.path.join(city, "packs.lock")
+recorded_lock = marker.get("packs_lock_sha256")
+if not isinstance(recorded_lock, str) or len(recorded_lock) != 64:
+    raise SystemExit("managed city marker has no packs.lock digest")
+if not os.path.isfile(packs_lock) or os.path.islink(packs_lock):
+    raise SystemExit("managed city packs.lock is missing or unsafe")
+import hashlib
+actual_lock = hashlib.sha256(open(packs_lock, "rb").read()).hexdigest()
+if actual_lock != recorded_lock:
+    raise SystemExit("managed city mismatch for packs.lock identity")
 if not isinstance(actual_gc, str) or not actual_gc.strip():
     raise SystemExit("managed city marker has no prior gc binary path")
 print(f"{os.path.realpath(os.path.expanduser(actual_gc))}\t{int(replacement)}")
@@ -451,6 +583,7 @@ export GC_HOME="$city/.gc-home"
 export GC_ISOLATED=1
 export CODEX_HOME="$city/.gc/codex-home"
 export GC_BIN="$gc_bin"
+export AO_BIN="$ao_bin"
 # A managed test/production city must not inherit desktop-wide OTLP endpoints.
 # Role sessions also receive this through city.toml, but bootstrap and the
 # supervisor perform foreground Beads/Dolt work before any role is launched.
@@ -466,15 +599,19 @@ export BEADS_DOLT_SYNC_CLI_REMOTES=false
 write_marker() {
   local state="$1"
   mkdir -p "$city/.gc"
-  python3 - "$marker" "$city" "$rig" "$pack" "$rig_name" "$binding" "$codex_auth" "$max_active_sessions" "$state" "$toolchain_json" <<'PY'
+  python3 - "$marker" "$city" "$rig" "$pack" "$rig_name" "$binding" "$codex_auth" "$max_active_sessions" "$state" "$toolchain_json" "$ao_reducer_json" "$city/packs.lock" <<'PY'
 import json
 import os
 import sys
 import tempfile
 
-path, city, rig, pack, rig_name, binding, codex_auth, max_active_sessions, state, toolchain_json = sys.argv[1:]
+path, city, rig, pack, rig_name, binding, codex_auth, max_active_sessions, state, toolchain_json, ao_reducer_json, packs_lock = sys.argv[1:]
+if not os.path.isfile(packs_lock) or os.path.islink(packs_lock):
+    raise SystemExit("managed city must have a regular packs.lock generated by Gas City")
+with open(packs_lock, "rb") as handle:
+    packs_lock_sha256 = __import__("hashlib").sha256(handle.read()).hexdigest()
 payload = {
-    "schema_version": 3,
+    "schema_version": 4,
     "state": state,
     "city": city,
     "rig": rig,
@@ -484,6 +621,8 @@ payload = {
     "codex_auth": codex_auth,
     "max_active_sessions": int(max_active_sessions),
     "toolchain": json.loads(toolchain_json),
+    "ao_reducer": json.loads(ao_reducer_json),
+    "packs_lock_sha256": packs_lock_sha256,
 }
 fd, tmp = tempfile.mkstemp(prefix=".agentops-bootstrap.", dir=os.path.dirname(path))
 with os.fdopen(fd, "w", encoding="utf-8") as handle:
@@ -785,7 +924,7 @@ finally:
         os.unlink(temporary)
 PY
 
-python3 - "$city/city.toml" "$city_template" "$CODEX_HOME" "$gc_bin" "$city" "$rig" "$max_active_sessions" "$claude_wrapper" <<'PY'
+python3 - "$city/city.toml" "$city_template" "$CODEX_HOME" "$gc_bin" "$ao_bin" "$city" "$rig" "$max_active_sessions" "$claude_wrapper" <<'PY'
 import json
 import hashlib
 import os
@@ -794,7 +933,7 @@ import sys
 import tempfile
 import tomllib
 
-path, template_path, codex_home, gc_bin, city, requested_rig, max_active_sessions, claude_wrapper = sys.argv[1:]
+path, template_path, codex_home, gc_bin, ao_bin, city, requested_rig, max_active_sessions, claude_wrapper = sys.argv[1:]
 with open(path, encoding="utf-8") as handle:
     text = handle.read()
 with open(template_path, encoding="utf-8") as handle:
@@ -809,6 +948,7 @@ policy = re.sub(
 replacements = {
     "__GC_AGENTOPS_CODEX_HOME__": codex_home,
     "__GC_AGENTOPS_GC_BIN__": gc_bin,
+    "__GC_AGENTOPS_AO_BIN__": ao_bin,
     "__GC_AGENTOPS_CLAUDE_WRAPPER__": claude_wrapper,
     "__GC_AGENTOPS_TMUX_SOCKET__": (
         "agentops-" + hashlib.sha256(os.path.realpath(city).encode()).hexdigest()[:20]

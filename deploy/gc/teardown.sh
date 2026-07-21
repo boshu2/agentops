@@ -86,8 +86,10 @@ marker_path, expected_city = sys.argv[1:]
 with open(marker_path, encoding="utf-8") as handle:
     marker = json.load(handle)
 schema_version = marker.get("schema_version")
-if schema_version not in {2, 3}:
-    raise SystemExit("managed-city marker schema_version must be 2 or 3")
+if schema_version not in {2, 3, 4}:
+    raise SystemExit("managed-city marker schema_version must be 2, 3, or 4")
+ao_bin = ""
+ao_sha256 = ""
 actual_city = os.path.realpath(os.path.expanduser(str(marker.get("city", ""))))
 if actual_city != expected_city:
     raise SystemExit(f"managed-city marker city mismatch: {actual_city!r} != {expected_city!r}")
@@ -108,6 +110,9 @@ else:
     gc_sha256 = gc.get("sha256")
     bd_bin = bd.get("path")
     bd_sha256 = bd.get("sha256")
+    ao = marker.get("ao_reducer", {}) if schema_version == 4 else {}
+    ao_bin = ao.get("path", "")
+    ao_sha256 = ao.get("binary_sha256", "")
 if not isinstance(gc_bin, str) or not gc_bin.strip():
     raise SystemExit("managed-city marker has no gc path")
 for label, value in (("gc", gc_sha256), ("bd", bd_sha256)):
@@ -119,24 +124,29 @@ for label, value in (("gc", gc_sha256), ("bd", bd_sha256)):
         raise SystemExit(f"managed-city marker has invalid {label} sha256")
 if schema_version == 3 and (not isinstance(bd_bin, str) or not bd_bin.strip()):
     raise SystemExit("managed-city marker has no bd path")
+if schema_version == 4:
+    if not isinstance(ao_bin, str) or not ao_bin.strip():
+        raise SystemExit("managed-city marker has no ao reducer path")
+    if not isinstance(ao_sha256, str) or len(ao_sha256) != 64 or any(char not in "0123456789abcdef" for char in ao_sha256):
+        raise SystemExit("managed-city marker has invalid ao reducer sha256")
 print("\t".join((
     os.path.realpath(os.path.expanduser(gc_bin)),
     gc_sha256,
     os.path.realpath(os.path.expanduser(bd_bin)) if bd_bin else "",
     bd_sha256,
+    os.path.realpath(os.path.expanduser(ao_bin)) if ao_bin else "",
+    ao_sha256,
 )))
 PY
 )" || die "invalid managed-city marker: $marker"
-IFS=$'\t' read -r marker_gc_bin marker_gc_sha256 marker_bd_bin marker_bd_sha256 <<<"$marker_toolchain"
+IFS=$'\t' read -r marker_gc_bin marker_gc_sha256 marker_bd_bin marker_bd_sha256 marker_ao_bin marker_ao_sha256 <<<"$marker_toolchain"
 
 if [ -z "$gc_bin" ]; then
   gc_bin="$marker_gc_bin"
 elif [[ "$gc_bin" == */* ]]; then
   gc_bin="$(canonical_path "$gc_bin")"
 else
-  gc_bin="$(command -v "$gc_bin" || true)"
-  [ -n "$gc_bin" ] || die "Gas City CLI not found on PATH"
-  gc_bin="$(canonical_path "$gc_bin")"
+  die "--gc-bin must be an absolute or explicit path; PATH resolution is forbidden"
 fi
 [ "$gc_bin" = "$marker_gc_bin" ] || die "--gc-bin does not match managed-city marker: $gc_bin != $marker_gc_bin"
 [ -x "$gc_bin" ] || die "Gas City CLI is not executable: $gc_bin"
@@ -169,6 +179,22 @@ PY
 )"
   [ "$actual_bd_sha256" = "$marker_bd_sha256" ] || \
     die "managed bd binary digest mismatch: $actual_bd_sha256 != $marker_bd_sha256"
+  if [ -n "$marker_ao_bin" ]; then
+    [ -x "$marker_ao_bin" ] || die "managed ao reducer is not executable: $marker_ao_bin"
+    actual_ao_sha256="$(python3 - "$marker_ao_bin" <<'PY'
+import hashlib
+import sys
+
+digest = hashlib.sha256()
+with open(sys.argv[1], "rb") as handle:
+    for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+        digest.update(chunk)
+print(digest.hexdigest())
+PY
+)"
+    [ "$actual_ao_sha256" = "$marker_ao_sha256" ] || \
+      die "managed ao reducer binary digest mismatch: $actual_ao_sha256 != $marker_ao_sha256"
+  fi
 fi
 
 # A teardown must resolve the same private supervisor and store namespace as

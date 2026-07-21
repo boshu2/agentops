@@ -14,8 +14,8 @@ configuration and bootstrap require an explicit caller-supplied target.
 ## Exact toolchain
 
 AgentOps does not trust a version string or the ambient `PATH` to select Gas
-City. `toolchain.lock.json` lists the exact GC and official Beads source commits
-that this deployment accepts. Materialize the default, fully qualified pair
+City. `toolchain.lock.json` pins the official Gas City v1.3.5 and Beads v1.1.0
+source commits and their official release-checksum asset digests. Materialize the default pair
 from those commits into a new directory:
 
 ```sh
@@ -29,12 +29,10 @@ binary digests. It never edits an installed Homebrew or user binary. Use
 `--describe` to inspect the default pair or `--pair ID --describe` to inspect
 another accepted entry without building it.
 
-The first lock entry with `status=qualified` is the default. It is the exact
-AgentOps fork commit that passed the mixed Codex/Claude parallel factory
-canary. A `compatible` entry satisfies the SDK and command contracts but has
-not passed that same AgentOps qualification matrix. Bootstrap accepts either
-only because both are explicit lock entries; an unlisted build is rejected even
-when it reports the same version.
+The first lock entry with `status=qualified` is the default. The PR #3985
+exception is deliberately absent: it may be admitted only after an exact,
+current reproducer proves stable v1.3.5 fails and the exact PR head passes.
+An unlisted build is rejected even when it reports the same version.
 
 ## Bootstrap
 
@@ -48,6 +46,7 @@ deploy/gc/bootstrap.sh \
   --rig /path/to/disposable/agentops-rig \
   --pack /path/to/agentops-factory-pack \
   --gc-bin /path/to/agentops-gc-toolchain/bin/gc \
+  --ao-bin /path/to/agentops-gc-toolchain/bin/ao \
   --codex-auth /path/to/codex/auth.json
 ```
 
@@ -82,12 +81,16 @@ The private `CODEX_HOME` contains a symlink to the explicitly selected existing
 `auth.json`; credentials are not copied. When `--codex-auth` is omitted, the
 bootstrap uses the `auth.json` under the caller's original `CODEX_HOME` (or
 `$HOME/.codex`). It fails before starting unless `codex login status` succeeds
-through the private home. `--gc-bin` must have its paired `bd` beside it. Both
-runtime identities must match one exact entry in `toolchain.lock.json` before
-the city is created. The marker records the selected qualification id, full
-source commits, runtime identities, paths, and binary digests; workspace
-sessions inherit the same pair and cannot drift to another `gc` or `bd` on
-`PATH`. Moving an existing managed city to a different pair or binary path
+through the private home. `--gc-bin` and `--ao-bin` are explicit paths;
+bootstrap never resolves `gc`, `bd`, or `ao` from ambient `PATH` after
+admission. `--gc-bin` must have its paired `bd` beside it. Both runtime
+identities must match one exact entry in `toolchain.lock.json` before the city
+is created. The marker records selected source commits, release checksum
+provenance, runtime paths/digests, the built ao source commit/exact committed
+`cli` tree and reported build version, exact pack
+content, `AO_BIN`, reducer and schema/config digests, and the Gas City-generated `packs.lock`
+digest; workspace sessions inherit the same pair and cannot drift to another
+`gc`, `bd`, or `ao` on `PATH`. Moving an existing managed city to a different pair or binary path
 requires `--replace-gc-bin --start`; every other recorded city identity field
 must still match, and bootstrap replaces the supervisor then verifies the new
 pair before rewriting the marker. Bootstrap prepends the pair's directory to
@@ -194,7 +197,7 @@ supplied, must match the exact paired toolchain recorded by bootstrap.
 | `<city>/.gc-home` | Gas City runtime | Remaining private supervisor/store discovery state |
 | `<city>/.gc/codex-home` | Codex runtime | Private session state plus a symlink to the selected external `auth.json` |
 | Caller home | Claude runtime | Existing authenticated interactive Claude state; no auth material is copied into the city |
-| `<city>/.gc/agentops-bootstrap.json` | Bootstrap | Exact city/rig/pack/auth/paired-toolchain identity, qualification, binary digests, and recovery state |
+| `<city>/.gc/agentops-bootstrap.json` | Bootstrap | Exact city/rig/pack/auth/paired-toolchain and reducer identity, `packs.lock` digest, qualification, binary digests, and recovery state |
 
 Do not source-control `.gc/site.toml`, `.gc-home`, or the generated city. To
 promote a stable release, point `--pack` at a clean committed pack and let the

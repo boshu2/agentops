@@ -5,7 +5,7 @@
 max_active_sessions = 1
 # Managed local sessions must not inherit a stale machine-wide OTLP endpoint.
 # A dead collector otherwise delays nearly every GC/bd command.
-env = { GC_BIN = "__GC_AGENTOPS_GC_BIN__", OTEL_SDK_DISABLED = "true" }
+env = { GC_BIN = "__GC_AGENTOPS_GC_BIN__", AO_BIN = "__GC_AGENTOPS_AO_BIN__", OTEL_SDK_DISABLED = "true" }
 
 [session]
 # The bootstrap replaces this with a stable digest of the canonical city path.
