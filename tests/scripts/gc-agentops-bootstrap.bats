@@ -75,6 +75,13 @@ printf '%s\n' 'bd version 1.1.0 (8e4e59d39: test-build)'
 EOF
   chmod +x "$BIN/bd"
 
+  cat >"$BIN/ao" <<'EOF'
+#!/usr/bin/env bash
+set -euo pipefail
+printf '%s\n' 'ao fixture reducer'
+EOF
+  chmod +x "$BIN/ao"
+
   FAKE_GC="$BIN/gc"
   cat >"$FAKE_GC" <<'EOF'
 #!/usr/bin/env bash
@@ -145,6 +152,12 @@ case "$command_name" in
       'source = "builtin:core"' \
       'version = "sha:generated"' >"$target/pack.toml"
     cp "$template" "$target/city.toml"
+    printf '%s\n' \
+      'schema = 1' \
+      '' \
+      '[packs."builtin:fixture"]' \
+      'version = "sha:fixture"' \
+      'commit = "fixture"' >"$target/packs.lock"
     printf '%s\n' 'workspace_name = "generated-city"' >"$target/.gc/site.toml"
     ;;
   rig)
@@ -350,6 +363,31 @@ esac
 EOF
   chmod +x "$FAKE_GC"
 
+  python3 - "$TMP/toolchain.json" "$REPO_ROOT" "$FAKE_GC" "$BIN/bd" "$BIN/ao" <<'PY'
+import hashlib
+import json
+import os
+import subprocess
+import sys
+
+path, repository, gc, bd, ao = sys.argv[1:]
+pair = json.load(open(os.path.join(repository, "deploy/gc/toolchain.lock.json"), encoding="utf-8"))["accepted_pairs"][0]
+digest = lambda item: hashlib.sha256(open(item, "rb").read()).hexdigest()
+commit = subprocess.check_output(["git", "-C", repository, "rev-parse", "HEAD"], text=True).strip()
+cli_tree = subprocess.check_output(["git", "-C", repository, "rev-parse", "HEAD:cli"], text=True).strip()
+with open(path, "w", encoding="utf-8") as handle:
+    json.dump({
+        "schema_version": 2,
+        "pair": pair,
+        "runtime": {
+            "gc": {"path": "bin/gc", "version": "1.3.5", "commit": "8ffc009d", "sha256": digest(gc)},
+            "bd": {"path": "bin/bd", "version": "1.1.0", "commit": "8e4e59d39", "sha256": digest(bd)},
+            "ao": {"path": "bin/ao", "sha256": digest(ao), "source_commit": commit, "cli_tree": cli_tree, "build_version": "fixture"},
+        },
+    }, handle, sort_keys=True)
+    handle.write("\n")
+PY
+
 }
 
 teardown() {
@@ -362,8 +400,36 @@ run_bootstrap() {
     --rig "$RIG" \
     --pack "$PACK" \
     --gc-bin "$FAKE_GC" \
+    --ao-bin "$BIN/ao" \
     --codex-auth "$CODEX_AUTH" \
     "$@"
+}
+
+@test "bootstrap refuses ambient gc or ao selection before admission" {
+  run env PATH="$BIN:$PATH" "$BOOTSTRAP" \
+    --city "$CITY" --rig "$RIG" --pack "$PACK" --codex-auth "$CODEX_AUTH"
+
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"--gc-bin is required"* ]]
+  [ ! -s "$FAKE_LOG" ]
+
+  run env PATH="$BIN:$PATH" "$BOOTSTRAP" \
+    --city "$CITY" --rig "$RIG" --pack "$PACK" --gc-bin "$FAKE_GC" \
+    --codex-auth "$CODEX_AUTH"
+
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"--ao-bin is required"* ]]
+  [ ! -s "$FAKE_LOG" ]
+}
+
+@test "bootstrap refuses an arbitrary ao binary without a matching toolchain receipt" {
+  rm -f "$TMP/toolchain.json"
+
+  run run_bootstrap
+
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"no regular toolchain.json receipt"* ]]
+  [ ! -e "$CITY/.gc/agentops-bootstrap.json" ]
 }
 
 @test "bootstrap rejects a Beads-unsafe city root before invoking gc" {
@@ -399,7 +465,7 @@ run_bootstrap() {
   [ -f "$CITY/.gc-home/supervisor.toml" ]
   [ ! -e "$FAKE_STATE/started" ]
 
-  python3 - "$CITY/.gc/agentops-bootstrap.json" "$FAKE_GC" "$BIN/bd" <<'PY'
+  python3 - "$CITY/.gc/agentops-bootstrap.json" "$FAKE_GC" "$BIN/bd" "$BIN/ao" <<'PY'
 import json
 import os
 import re
@@ -407,17 +473,24 @@ import sys
 
 with open(sys.argv[1], encoding="utf-8") as handle:
     marker = json.load(handle)
-assert marker["schema_version"] == 3
+assert marker["schema_version"] == 4
 assert marker["toolchain"]["gc"]["path"] == os.path.realpath(sys.argv[2])
 assert marker["toolchain"]["gc"]["version"] == "1.3.5"
 assert marker["toolchain"]["gc"]["commit"] == "8ffc009d"
 assert marker["toolchain"]["bd"]["path"] == os.path.realpath(sys.argv[3])
 assert marker["toolchain"]["bd"]["version"] == "1.1.0"
 assert marker["toolchain"]["bd"]["commit"] == "8e4e59d39"
-assert marker["toolchain"]["qualification"]["id"] == "gascity-v1.3.5-sdk-release"
-assert marker["toolchain"]["qualification"]["status"] == "compatible"
+assert marker["toolchain"]["qualification"]["id"] == "gascity-v1.3.5-beads-v1.1.0"
+assert marker["toolchain"]["qualification"]["status"] == "qualified"
 assert re.fullmatch(r"[0-9a-f]{64}", marker["toolchain"]["gc"]["sha256"])
 assert re.fullmatch(r"[0-9a-f]{64}", marker["toolchain"]["bd"]["sha256"])
+assert marker["ao_reducer"]["path"] == os.path.realpath(sys.argv[4])
+assert re.fullmatch(r"[0-9a-f]{64}", marker["ao_reducer"]["binary_sha256"])
+assert re.fullmatch(r"[0-9a-f]{40}", marker["ao_reducer"]["source_commit"])
+assert re.fullmatch(r"[0-9a-f]{40}", marker["ao_reducer"]["cli_tree"])
+assert marker["ao_reducer"]["build_version"] == "fixture"
+assert re.fullmatch(r"[0-9a-f]{64}", marker["ao_reducer"]["pack_content_sha256"])
+assert re.fullmatch(r"[0-9a-f]{64}", marker["ao_reducer"]["schema_config_sha256"])
 PY
 
   grep -Fq '[supervisor]' "$CITY/.gc-home/supervisor.toml"
@@ -595,6 +668,17 @@ PY
   grep -Fq '<import> <status> <--json>' "$FAKE_LOG"
 }
 
+@test "bootstrap refuses a changed admitted ao reducer binary" {
+  run run_bootstrap
+  [ "$status" -eq 0 ]
+
+  printf '%s\n' '# changed' >>"$BIN/ao"
+  run run_bootstrap
+
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"ao reducer identity"* ]]
+}
+
 @test "cities with the same basename receive different tmux sockets" {
   run run_bootstrap
   [ "$status" -eq 0 ]
@@ -615,6 +699,7 @@ PY
     --rig "$RIG" \
     --pack "$PACK" \
     --gc-bin "$FAKE_GC" \
+    --ao-bin "$BIN/ao" \
     --codex-auth "$CODEX_AUTH"
   [ "$status" -eq 0 ]
 
@@ -714,7 +799,22 @@ PY
 
   run run_bootstrap --gc-bin "$upgraded_gc"
   [ "$status" -ne 0 ]
-  [[ "$output" == *"managed city mismatch for paired gc/bd toolchain identity"* ]]
+  [[ "$output" == *"toolchain receipt gc path does not match admitted binary"* ]]
+
+  python3 - "$TMP/toolchain.json" "$upgraded_gc" <<'PY'
+import hashlib
+import json
+import sys
+
+path, gc = sys.argv[1:]
+with open(path, encoding="utf-8") as handle:
+    receipt = json.load(handle)
+receipt["runtime"]["gc"]["path"] = "bin/gc-upgraded"
+receipt["runtime"]["gc"]["sha256"] = hashlib.sha256(open(gc, "rb").read()).hexdigest()
+with open(path, "w", encoding="utf-8") as handle:
+    json.dump(receipt, handle, sort_keys=True)
+    handle.write("\n")
+PY
 
   run run_bootstrap --gc-bin "$upgraded_gc" --replace-gc-bin --start
   [ "$status" -eq 0 ]
@@ -732,7 +832,7 @@ with open(marker_path, encoding="utf-8") as handle:
     marker = json.load(handle)
 with open(city_config_path, "rb") as handle:
     city_config = tomllib.load(handle)
-assert marker["schema_version"] == 3
+assert marker["schema_version"] == 4
 assert marker["toolchain"]["gc"]["path"] == expected
 assert city_config["workspace"]["env"]["GC_BIN"] == expected
 PY
@@ -746,7 +846,21 @@ PY
 
   run run_bootstrap
   [ "$status" -ne 0 ]
-  [[ "$output" == *"managed city mismatch for paired gc/bd toolchain identity"* ]]
+  [[ "$output" == *"toolchain receipt gc digest does not match admitted binary"* ]]
+
+  python3 - "$TMP/toolchain.json" "$FAKE_GC" <<'PY'
+import hashlib
+import json
+import sys
+
+path, gc = sys.argv[1:]
+with open(path, encoding="utf-8") as handle:
+    receipt = json.load(handle)
+receipt["runtime"]["gc"]["sha256"] = hashlib.sha256(open(gc, "rb").read()).hexdigest()
+with open(path, "w", encoding="utf-8") as handle:
+    json.dump(receipt, handle, sort_keys=True)
+    handle.write("\n")
+PY
 
   run run_bootstrap --replace-gc-bin --start
   [ "$status" -eq 0 ]

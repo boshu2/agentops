@@ -67,6 +67,14 @@ printf '%s\n' 'bd version 1.1.0 (test)'
 EOF
   chmod +x "$FAKE_BD"
 
+  FAKE_AO="$BIN/ao"
+  cat >"$FAKE_AO" <<'EOF'
+#!/usr/bin/env bash
+set -euo pipefail
+printf '%s\n' 'ao fixture reducer'
+EOF
+  chmod +x "$FAKE_AO"
+
   cat >"$BIN/tmux" <<'EOF'
 #!/usr/bin/env bash
 set -euo pipefail
@@ -91,13 +99,13 @@ EOF
 socket = "agentops-teardown-test"
 EOF
 	CANONICAL_CITY="$(python3 -c 'import os,sys; print(os.path.realpath(sys.argv[1]))' "$CITY")"
-  python3 - "$CITY/.gc/agentops-bootstrap.json" "$CITY" "$FAKE_GC" "$FAKE_BD" <<'PY'
+  python3 - "$CITY/.gc/agentops-bootstrap.json" "$CITY" "$FAKE_GC" "$FAKE_BD" "$FAKE_AO" <<'PY'
 import hashlib
 import json
 import os
 import sys
 
-path, city, gc_bin, bd_bin = sys.argv[1:]
+path, city, gc_bin, bd_bin, ao_bin = sys.argv[1:]
 
 
 def sha256(filename):
@@ -106,7 +114,7 @@ def sha256(filename):
 
 with open(path, "w", encoding="utf-8") as handle:
     json.dump({
-        "schema_version": 3,
+        "schema_version": 4,
         "state": "ready",
         "city": os.path.realpath(city),
         "toolchain": {
@@ -118,6 +126,13 @@ with open(path, "w", encoding="utf-8") as handle:
                 "path": os.path.realpath(bd_bin),
                 "sha256": sha256(bd_bin),
             },
+        },
+        "ao_reducer": {
+            "path": os.path.realpath(ao_bin),
+            "binary_sha256": sha256(ao_bin),
+            "source_commit": "0" * 40,
+            "source_tree": "0" * 40,
+            "schema_config_sha256": "0" * 64,
         },
     }, handle)
     handle.write("\n")
@@ -169,6 +184,21 @@ teardown() {
 
   [ "$status" -ne 0 ]
   [[ "$output" == *"managed gc binary digest mismatch"* ]]
+  [ ! -e "$STATE/supervisor-stopped" ]
+}
+
+@test "teardown refuses ambient gc substitution and changed reducer bytes" {
+  run env PATH="$BIN:$PATH" "$TEARDOWN" --city "$CITY" --gc-bin gc
+
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"PATH resolution is forbidden"* ]]
+  [ ! -e "$STATE/supervisor-stopped" ]
+
+  printf '%s\n' '# replaced' >>"$FAKE_AO"
+  run env PATH="$BIN:$PATH" "$TEARDOWN" --city "$CITY"
+
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"ao reducer binary digest mismatch"* ]]
   [ ! -e "$STATE/supervisor-stopped" ]
 }
 
