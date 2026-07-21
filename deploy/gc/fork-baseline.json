@@ -1,0 +1,48 @@
+{
+  "schema_version": 1,
+  "observed_at": "2026-07-21T04:03:51Z",
+  "upstream": "gastownhall/gascity",
+  "fork": "boshu2/gascity",
+  "upstream_main": "aff460dee793d2dcd62d51a099f77ea36cd184ee",
+  "fork_main": "aff460dee793d2dcd62d51a099f77ea36cd184ee",
+  "local_pre_push": {
+    "result": "prior_official_main_failure_reused",
+    "subject_sha": "409bbf17553238218b7ff77ae4fcbb50b9c39431",
+    "log_sha256": "27b4a0edd09fd02a0d01f57595ec3cb978b21bc3c88df2066618d7ed67d06b55",
+    "bypass_used": true,
+    "reason": "The immediately preceding exact official upstream tree failed unrelated local timing, path-normalization, and environment-sensitive tests. This sync fast-forwarded by one already-merged upstream commit, carried no fork-only content, and reused upstream hosted CI as authority rather than replaying the known-unreliable local suite."
+  },
+  "retained_branches": [
+    {
+      "branch": "pr/tmux-session-teardown-safety",
+      "head": "d5f8c6958c0f639c820d23974a42387cca2f9ca6",
+      "upstream_kind": "pr",
+      "upstream_number": 3985,
+      "upstream_url": "https://github.com/gastownhall/gascity/pull/3985",
+      "state": "open"
+    }
+  ],
+  "removed_merged_branches": [
+    {
+      "branch": "codex/fix-bundled-pack-refresh",
+      "head": "3718d7552110fb649ded7bf002b383591e931abe",
+      "upstream_number": 4412,
+      "upstream_url": "https://github.com/gastownhall/gascity/pull/4412",
+      "state": "merged"
+    },
+    {
+      "branch": "codex/fix-pack-command-gc-bin",
+      "head": "8ffdd56991bc37fa818d3a9263ff819f8417f421",
+      "upstream_number": 4410,
+      "upstream_url": "https://github.com/gastownhall/gascity/pull/4410",
+      "state": "merged"
+    },
+    {
+      "branch": "codex/fix-private-helper-pack-discovery",
+      "head": "446e6b4bc265802a0e0328942925be292c9846c4",
+      "upstream_number": 4411,
+      "upstream_url": "https://github.com/gastownhall/gascity/pull/4411",
+      "state": "merged"
+    }
+  ]
+}
