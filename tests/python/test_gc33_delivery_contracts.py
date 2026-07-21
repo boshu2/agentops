@@ -62,10 +62,10 @@ class GC33DeliveryContractTest(unittest.TestCase):
     def test_delivery_state_machine_rejects_illegal_combinations(self) -> None:
         validator = self.validator("delivery.v1.schema.json")
         valid = self.delivery("published")
-        valid.update({"state": "merge_requested", "effect_gate": {"committed_handoff_digest": "c" * 64, "base_sha": "d" * 40, "expected_remote_head": "e" * 40}})
+        valid.update({"state": "merge_armed", "effect_gate": {"committed_handoff_digest": "c" * 64, "base_sha": "d" * 40, "expected_remote_head": "e" * 40}})
         self.assertTrue(validator.is_valid(valid))
         cases = {
-            "manual_merge_requested": {"mode": "manual"},
+            "manual_merge_armed": {"mode": "manual"},
             "auto_manual_review": {"state": "manual_review", "effect_gate": {"committed_handoff_digest": "c" * 64, "base_sha": "d" * 40, "expected_remote_head": "e" * 40}},
             "manual_review_nonroutable": {"state": "manual_review", "mode": "manual", "publication": "non_routable", "effect_gate": None},
             "manual_review_no_gate": {"state": "manual_review", "mode": "manual", "effect_gate": None},
