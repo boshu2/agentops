@@ -31,6 +31,7 @@ import tempfile
 import time
 import tomllib
 from typing import Any
+from urllib.parse import quote
 
 from jsonschema import Draft202012Validator, FormatChecker
 
@@ -4884,6 +4885,65 @@ def gh_json(worktree: Path, *args: str) -> dict[str, Any]:
     return value
 
 
+def protected_merge_identity(worktree: Path, base_branch: str) -> dict[str, Any]:
+    protection = gh_json(
+        worktree, "api",
+        f"repos/{{owner}}/{{repo}}/branches/{quote(base_branch, safe='')}/protection",
+    )
+    required = protection.get("required_status_checks")
+    if not isinstance(required, dict) or not isinstance(required.get("strict"), bool):
+        raise FactoryError("merge_policy_unproven", "target branch has no exact required-status-check policy")
+    raw_checks = required.get("checks")
+    if not isinstance(raw_checks, list) or not raw_checks:
+        raise FactoryError("merge_policy_unproven", "target branch has no required hosted checks")
+    checks: list[dict[str, Any]] = []
+    for item in raw_checks:
+        if not isinstance(item, dict):
+            raise FactoryError("merge_policy_unproven", "required hosted-check identity is malformed")
+        context = require_string(item.get("context"), "required check context")
+        app_id = item.get("app_id")
+        if isinstance(app_id, bool) or not isinstance(app_id, int) or app_id <= 0:
+            raise FactoryError("merge_policy_unproven", f"required check {context!r} is not bound to one hosted app")
+        checks.append({"context": context, "app_id": app_id})
+    checks.sort(key=lambda item: (item["context"], item["app_id"]))
+    if len({(item["context"], item["app_id"]) for item in checks}) != len(checks):
+        raise FactoryError("merge_policy_unproven", "required hosted-check identities are duplicated")
+    return {
+        "protection_digest": digest_bytes(canonical_bytes(protection)),
+        "strict": required["strict"],
+        "checks": checks,
+    }
+
+
+def recorded_merge_arm_outcome(meta: dict[str, Any], marker_digest: str, marker_path: Path) -> str | None:
+    outcome = meta.get("factory.merge_arm_outcome")
+    if outcome is None:
+        return None
+    if outcome not in {"armed", "refused"}:
+        raise FactoryError("merge_arm_result_invalid", f"unknown merge arm outcome: {outcome!r}")
+    result_path = absolute_path(meta.get("factory.merge_arm_result_path"), "factory.merge_arm_result_path", True)
+    if result_path != marker_path.with_name("merge-arm-result.v1.json"):
+        raise FactoryError("merge_arm_result_invalid", "merge arm result evidence path changed")
+    if digest_file(result_path) != meta.get("factory.merge_arm_result_digest"):
+        raise FactoryError("merge_arm_result_invalid", "merge arm result evidence changed")
+    result = load_object(result_path, "merge arm result")
+    if set(result) != {"schema_version", "marker_digest", "outcome", "returncode", "response_digest"}:
+        raise FactoryError("merge_arm_result_invalid", "merge arm result evidence has unexpected fields")
+    returncode = result.get("returncode")
+    if (
+        result.get("schema_version") != "merge-arm-result.v1"
+        or result.get("marker_digest") != marker_digest
+        or result.get("outcome") != outcome
+        or not isinstance(returncode, int)
+        or (outcome == "armed" and returncode != 0)
+        or (outcome == "refused" and returncode <= 0)
+        or not isinstance(result.get("response_digest"), str)
+        or not DIGEST_RE.fullmatch(result["response_digest"])
+    ):
+        raise FactoryError("merge_arm_result_invalid", "merge arm result evidence is inconsistent")
+    return outcome
+
+
 def delivery_record(meta: dict[str, Any], status: str, pr: dict[str, Any] | None,
                     landed_sha: str | None) -> dict[str, Any]:
     validation = None
@@ -5063,6 +5123,10 @@ def reconcile_landed_delivery(beads: Beads, refinery_bead: str) -> dict[str, Any
     if meta.get("factory.status") != "landed":
         raise FactoryError("invalid_transition", "delivery reconciliation requires landed Refinery metadata")
     landed_sha = require_string(meta.get("factory.landed_sha"), "factory.landed_sha", SHA_RE)
+    landed_tree = require_string(meta.get("factory.landed_tree"), "factory.landed_tree", SHA_RE)
+    landed_base_parent = require_string(
+        meta.get("factory.landed_base_parent"), "factory.landed_base_parent", SHA_RE,
+    )
     delivery_path = absolute_path(meta.get("factory.delivery_record"), "factory.delivery_record", True)
     if digest_file(delivery_path) != meta.get("factory.delivery_record_digest"):
         raise FactoryError("identity_mismatch", "landed delivery record changed")
@@ -5071,6 +5135,8 @@ def reconcile_landed_delivery(beads: Beads, refinery_bead: str) -> dict[str, Any
     beads.update_metadata(program_bead, {
         "factory.status": "landed",
         "factory.landed_sha": landed_sha,
+        "factory.landed_tree": landed_tree,
+        "factory.landed_base_parent": landed_base_parent,
         "factory.pr_url": require_string(meta.get("factory.pr_url"), "factory.pr_url"),
         "factory.delivery_record": str(delivery_path),
     })
@@ -5090,6 +5156,8 @@ def reconcile_landed_delivery(beads: Beads, refinery_bead: str) -> dict[str, Any
         "program_bead": program_bead,
         "pr_url": meta["factory.pr_url"],
         "landed_sha": landed_sha,
+        "landed_tree": landed_tree,
+        "landed_base_parent": landed_base_parent,
         "delivery_record": str(delivery_path),
     }
 
@@ -5098,9 +5166,11 @@ def command_refinery_land(args: argparse.Namespace) -> int:
     beads = Beads(args.rig)
     record = beads.show(args.refinery_bead)
     meta = metadata(record)
-    if meta.get("factory.kind") != "refinery" or meta.get("factory.status") != "published":
-        raise FactoryError("invalid_transition", "only a published Refinery bead may land")
+    if meta.get("factory.kind") != "refinery" or meta.get("factory.status") not in {"published", "merge_armed"}:
+        raise FactoryError("invalid_transition", "only a published or merge_armed Refinery bead may land")
     integration_sha = require_string(meta.get("factory.integration_sha"), "factory.integration_sha", SHA_RE)
+    expected_base_sha = require_string(meta.get("factory.delivery_base_sha"), "factory.delivery_base_sha", SHA_RE)
+    base_branch = require_string(meta.get("factory.base_branch"), "factory.base_branch")
     worktree = check_fence(
         meta, int(meta["factory.fence_epoch"]),
         require_string(meta.get("factory.fence_token"), "factory.fence_token"), integration_sha,
@@ -5108,59 +5178,121 @@ def command_refinery_land(args: argparse.Namespace) -> int:
     pr_url = require_string(meta.get("factory.pr_url"), "factory.pr_url")
     pr = gh_json(
         worktree, "pr", "view", pr_url, "--json",
-        "url,number,state,isDraft,headRefOid,headRefName,baseRefName,statusCheckRollup",
+        "url,id,number,state,isDraft,headRefOid,headRefName,baseRefName,baseRefOid,mergeStateStatus,autoMergeRequest,mergedAt,mergeCommit",
     )
-    if pr.get("headRefOid") != integration_sha or pr.get("baseRefName") != meta.get("factory.base_branch"):
-        raise FactoryError("pr_binding_mismatch", "PR head or base moved after publication")
-    if pr.get("state") != "MERGED":
-        if pr.get("isDraft"):
-            run_process([gh_binary(), "pr", "ready", pr_url], cwd=worktree, timeout=60)
-        checks = pr.get("statusCheckRollup")
-        if isinstance(checks, list) and checks:
-            watched = run_process(
-                [gh_binary(), "pr", "checks", pr_url, "--watch", "--fail-fast", "--interval", "10"],
-                cwd=worktree, timeout=args.timeout, check=False,
-            )
-            if watched.returncode != 0:
-                raise FactoryError(
-                    "checks_failed",
-                    watched.stderr.strip() or watched.stdout.strip() or "PR checks failed",
-                )
-        method_flag = {"merge": "--merge", "squash": "--squash", "rebase": "--rebase"}[args.merge_method]
-        merged = run_process(
-            [gh_binary(), "pr", "merge", pr_url, method_flag, "--delete-branch"],
-            cwd=worktree, timeout=300, check=False,
+    if (
+        pr.get("headRefOid") != integration_sha
+        or pr.get("baseRefName") != base_branch
+        or pr.get("baseRefOid") != expected_base_sha
+    ):
+        raise FactoryError("pr_binding_mismatch", "PR head, base branch, or base OID moved after publication")
+    state = pr.get("state")
+    if state not in {"OPEN", "MERGED"}:
+        raise FactoryError("merge_admission_unproven", "exact PR must remain open until the forge lands it")
+    if meta.get("factory.status") == "published":
+        if state == "MERGED":
+            raise FactoryError("merge_arm_unproven", "published PR merged without this reducer's arm evidence")
+        if pr.get("isDraft") or pr.get("mergeStateStatus") != "BLOCKED":
+            raise FactoryError("merge_admission_unproven", "exact non-draft PR must be BLOCKED before auto-merge arm")
+        if pr.get("autoMergeRequest") is not None:
+            raise FactoryError("merge_arm_unproven", "published PR already has an unowned auto-merge request")
+    protection = protected_merge_identity(worktree, base_branch)
+    marker = {
+        "schema_version": "merge-arm.v1",
+        "actor": "forge_native_auto_merge",
+        "refinery_bead": args.refinery_bead,
+        "pr_id": require_string(pr.get("id"), "PR node id"),
+        "pr_url": pr_url,
+        "head": integration_sha,
+        "base_branch": base_branch,
+        "base_sha": expected_base_sha,
+        "method": "SQUASH",
+        "protection": protection,
+    }
+    marker_path = worktree / ".gc" / "agentops-factory" / args.refinery_bead / "merge-arm.v1.json"
+    marker_digest: str
+    arm_outcome: str | None = None
+    if meta.get("factory.status") == "merge_armed":
+        recorded_marker_path = absolute_path(
+            meta.get("factory.merge_marker_path"), "factory.merge_marker_path", True,
         )
-        if merged.returncode != 0:
-            auto = run_process(
-                [gh_binary(), "pr", "merge", pr_url, method_flag, "--auto", "--delete-branch"],
-                cwd=worktree, timeout=120, check=False,
-            )
-            if auto.returncode != 0:
-                detail = auto.stderr.strip() or auto.stdout.strip() or merged.stderr.strip() or merged.stdout.strip()
-                raise FactoryError("merge_failed", detail)
-    deadline = time.monotonic() + args.timeout
-    final: dict[str, Any] = {}
-    while time.monotonic() < deadline:
-        final = gh_json(worktree, "pr", "view", pr_url, "--json", "url,number,state,mergedAt,mergeCommit,headRefOid,baseRefName")
-        if final.get("state") == "MERGED":
-            break
-        time.sleep(10)
+        if recorded_marker_path != marker_path:
+            raise FactoryError("merge_marker_invalid", "merge arm evidence path changed")
+        if (
+            digest_file(recorded_marker_path) != meta.get("factory.merge_marker_digest")
+            or load_object(recorded_marker_path, "merge arm") != marker
+            or meta.get("factory.merge_policy_digest") != protection["protection_digest"]
+        ):
+            raise FactoryError("merge_marker_invalid", "merge arm evidence changed")
+        marker_digest = require_string(meta.get("factory.merge_marker_digest"), "factory.merge_marker_digest", DIGEST_RE)
+        arm_outcome = recorded_merge_arm_outcome(meta, marker_digest, marker_path)
+        if arm_outcome == "refused":
+            raise FactoryError("merge_refused_terminal", "forge definitively refused this exact merge arm")
     else:
-        raise FactoryError("merge_timeout", f"PR did not reach MERGED before timeout: {pr_url}")
-    merge_commit = final.get("mergeCommit")
+        write_or_verify_json(marker_path, marker, "merge arm")
+        marker_digest = digest_file(marker_path)
+        beads.update_metadata(args.refinery_bead, {
+            "factory.status": "merge_armed",
+            "factory.merge_marker_path": str(marker_path),
+            "factory.merge_marker_digest": marker_digest,
+            "factory.merge_policy_digest": protection["protection_digest"],
+        })
+        mutation = "mutation($pullRequestId:ID!,$expectedHeadOid:GitObjectID!,$mergeMethod:PullRequestMergeMethod!){enablePullRequestAutoMerge(input:{pullRequestId:$pullRequestId,expectedHeadOid:$expectedHeadOid,mergeMethod:$mergeMethod}){pullRequest{id}}}"
+        armed = run_process([gh_binary(), "api", "graphql", "-f", f"query={mutation}", "-f", f"pullRequestId={marker['pr_id']}", "-f", f"expectedHeadOid={integration_sha}", "-f", "mergeMethod=SQUASH"], cwd=worktree, timeout=120, check=False)
+        arm_outcome = "armed" if armed.returncode == 0 else "refused"
+        response_digest = digest_bytes((armed.stdout + "\0" + armed.stderr).encode("utf-8"))
+        result = {
+            "schema_version": "merge-arm-result.v1",
+            "marker_digest": marker_digest,
+            "outcome": arm_outcome,
+            "returncode": armed.returncode,
+            "response_digest": response_digest,
+        }
+        result_path = marker_path.with_name("merge-arm-result.v1.json")
+        write_or_verify_json(result_path, result, "merge arm result")
+        beads.update_metadata(args.refinery_bead, {
+            "factory.merge_arm_outcome": arm_outcome,
+            "factory.merge_arm_result_path": str(result_path),
+            "factory.merge_arm_result_digest": digest_file(result_path),
+        })
+        if arm_outcome == "refused":
+            detail = armed.stderr.strip() or armed.stdout.strip() or "forge rejected auto-merge admission"
+            raise FactoryError("merge_refused_terminal", detail)
+        print(json.dumps({"refinery_bead": args.refinery_bead, "status": "merge_armed", "marker": str(marker_path)}, sort_keys=True))
+        return 0
+    if state == "OPEN":
+        request = pr.get("autoMergeRequest")
+        if not isinstance(request, dict) or request.get("mergeMethod") != "SQUASH":
+            raise FactoryError("merge_arm_unproven", "exact auto-merge request is absent or mismatched")
+        print(json.dumps({"refinery_bead": args.refinery_bead, "status": "merge_armed", "pending": True}, sort_keys=True))
+        return 0
+    merge_commit = pr.get("mergeCommit")
     landed_sha = merge_commit.get("oid") if isinstance(merge_commit, dict) else None
     require_string(landed_sha, "landed SHA", SHA_RE)
+    remote_commit = gh_json(worktree, "api", f"repos/{{owner}}/{{repo}}/git/commits/{landed_sha}")
+    remote_tree = remote_commit.get("tree")
+    landed_tree = remote_tree.get("sha") if isinstance(remote_tree, dict) else None
+    require_string(landed_tree, "landed tree", SHA_RE)
+    parents = remote_commit.get("parents")
+    parent_shas = [item.get("sha") for item in parents if isinstance(item, dict)] if isinstance(parents, list) else []
+    expected_tree = output(["git", "rev-parse", f"{integration_sha}^{{tree}}"], cwd=worktree)
+    if landed_tree != expected_tree or parent_shas != [expected_base_sha]:
+        raise FactoryError("landed_identity_mismatch", "landed tree or base parent differs from the exact admitted epoch")
     pr_summary = {
-        "url": final.get("url"), "number": final.get("number"), "state": final.get("state"),
-        "head_sha": final.get("headRefOid"), "base_branch": final.get("baseRefName"),
-        "merged_at": final.get("mergedAt"), "merge_commit": landed_sha,
+        "url": pr.get("url"), "number": pr.get("number"), "state": state,
+        "head_sha": pr.get("headRefOid"), "base_branch": pr.get("baseRefName"),
+        "base_sha": expected_base_sha, "merged_at": pr.get("mergedAt"),
+        "merge_commit": landed_sha, "landed_tree": landed_tree,
+        "merge_policy_digest": protection["protection_digest"],
     }
-    delivery_path = persist_delivery_record(beads, args.refinery_bead, meta, "landed", pr_summary, landed_sha)
+    refreshed = metadata(beads.show(args.refinery_bead))
+    delivery_path = persist_delivery_record(beads, args.refinery_bead, refreshed, "landed", pr_summary, landed_sha)
     beads.update_metadata(args.refinery_bead, {
         "factory.status": "landed",
         "factory.landed_sha": landed_sha,
-        "factory.merged_at": str(final.get("mergedAt", "")),
+        "factory.landed_tree": landed_tree,
+        "factory.landed_base_parent": expected_base_sha,
+        "factory.merged_at": str(pr.get("mergedAt", "")),
         "factory.delivery_record": str(delivery_path),
         "factory.delivery_record_digest": digest_file(delivery_path),
     })
@@ -5201,7 +5333,7 @@ def command_refinery_deliver(args: argparse.Namespace) -> int:
                     title=args.title, draft=args.draft,
                 ))
                 phase = metadata(beads.show(args.refinery_bead)).get("factory.status")
-            if phase == "published":
+            if phase in {"published", "merge_armed"}:
                 command_refinery_land(argparse.Namespace(
                     rig=args.rig, refinery_bead=args.refinery_bead,
                     merge_method=args.merge_method, timeout=args.timeout,
@@ -5217,6 +5349,14 @@ def command_refinery_deliver(args: argparse.Namespace) -> int:
                 "qualification_record": qualified.get("factory.qualification_record"),
             }
             print(json.dumps(result, sort_keys=True))
+            return 0
+        if phase == "merge_armed":
+            print(json.dumps({
+                "refinery_bead": args.refinery_bead,
+                "program_bead": metadata(beads.show(args.refinery_bead)).get("factory.program_bead"),
+                "status": "merge_armed",
+                "pending": True,
+            }, sort_keys=True))
             return 0
         if phase == "integration_rejected":
             rejected = metadata(beads.show(args.refinery_bead))

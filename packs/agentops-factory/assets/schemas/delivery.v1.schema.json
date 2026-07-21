@@ -16,7 +16,7 @@
     "epoch": {"type": "integer", "minimum": 1},
     "predecessor_receipt_digest": {"type": ["string", "null"], "pattern": "^[0-9a-f]{64}$"},
     "mode": {"enum": ["auto", "manual"]},
-    "state": {"enum": ["queued", "preparing", "branch_ready", "pr_open", "ci_wait", "rebase_needed", "merge_eligible", "merge_requested", "landed", "repair_wait", "manual_review", "stalled", "delivery_failed", "successor_required", "cancelled"]},
+    "state": {"enum": ["queued", "preparing", "branch_ready", "pr_open", "ci_wait", "rebase_needed", "merge_eligible", "merge_armed", "landed", "repair_wait", "manual_review", "stalled", "delivery_failed", "successor_required", "cancelled"]},
     "publication": {"enum": ["non_routable", "published"]},
     "deadline": {"type": "string", "format": "date-time"},
     "effect_gate": {
@@ -33,11 +33,11 @@
   },
   "allOf": [
     {
-      "if": {"properties": {"state": {"enum": ["branch_ready", "pr_open", "ci_wait", "rebase_needed", "merge_eligible", "merge_requested", "landed"]}}},
+      "if": {"properties": {"state": {"enum": ["branch_ready", "pr_open", "ci_wait", "rebase_needed", "merge_eligible", "merge_armed", "landed"]}}},
       "then": {"properties": {"publication": {"const": "published"}, "effect_gate": {"type": "object"}, "successor_bead_id": {"const": null}}}
     },
     {
-      "if": {"properties": {"state": {"const": "merge_requested"}}},
+      "if": {"properties": {"state": {"const": "merge_armed"}}},
       "then": {"properties": {"mode": {"const": "auto"}}}
     },
     {

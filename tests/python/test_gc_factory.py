@@ -2616,6 +2616,7 @@ class FactoryTests(unittest.TestCase):
                 "factory.kind": "refinery", "factory.status": "landed",
                 "factory.program_bead": "bd-program", "factory.pr_url": "https://example.invalid/pr/7",
                 "factory.landed_sha": "a" * 40, "factory.delivery_record": str(delivery),
+                "factory.landed_tree": "b" * 40, "factory.landed_base_parent": "c" * 40,
                 "factory.delivery_record_digest": hashlib.sha256(delivery.read_bytes()).hexdigest(),
                 "factory.base_branch": "main", "factory.integration_worktree": str(self.repo),
             },
@@ -2632,35 +2633,437 @@ class FactoryTests(unittest.TestCase):
         self.assertEqual(sum(event[0] == "close" for event in beads.events), close_count)
         self.assertEqual(program["metadata"]["factory.status"], "landed")
         self.assertEqual(program["metadata"]["factory.landed_sha"], "a" * 40)
+        self.assertEqual(program["metadata"]["factory.landed_tree"], "b" * 40)
+        self.assertEqual(program["metadata"]["factory.landed_base_parent"], "c" * 40)
         self.assertEqual(refinery["metadata"]["gc.work_outcome"], "shipped")
         self.assertEqual(program["metadata"]["gc.work_outcome"], "shipped")
+
+    def refinery_land_fixture(self, bead_id: str = "bd-refinery", status: str = "published") -> tuple[dict, FakeBeads, dict]:
+        refinery = {
+            "id": bead_id,
+            "status": "open",
+            "metadata": {
+                "factory.kind": "refinery",
+                "factory.status": status,
+                "factory.program_bead": "bd-program",
+                "factory.integration_sha": self.base_sha,
+                "factory.fence_epoch": "1",
+                "factory.fence_token": "token",
+                "factory.pr_url": "https://example.invalid/pr/9",
+                "factory.base_branch": "main",
+                "factory.delivery_base_sha": self.base_sha,
+                "factory.integration_worktree": str(self.repo),
+            },
+        }
+        program = {"id": "bd-program", "status": "open", "metadata": {"factory.kind": "program"}}
+        pr = {
+            "url": refinery["metadata"]["factory.pr_url"],
+            "id": "PR_node_9",
+            "number": 9,
+            "state": "OPEN",
+            "isDraft": False,
+            "headRefOid": self.base_sha,
+            "headRefName": "gc/integration/test",
+            "baseRefName": "main",
+            "baseRefOid": self.base_sha,
+            "mergeStateStatus": "BLOCKED",
+            "autoMergeRequest": None,
+            "mergedAt": None,
+            "mergeCommit": None,
+        }
+        return refinery, FakeBeads({bead_id: refinery, "bd-program": program}), pr
+
+    @staticmethod
+    def protected_policy(app_id: int | None = 15368) -> dict:
+        return {
+            "required_status_checks": {
+                "strict": False,
+                "contexts": ["summary"],
+                "checks": [{"context": "summary", "app_id": app_id}],
+            },
+            "required_pull_request_reviews": None,
+            "enforce_admins": {"enabled": False},
+            "allow_force_pushes": {"enabled": False},
+        }
+
+    def record_merge_arm(self, refinery: dict, pr: dict, policy: dict | None = None) -> Path:
+        bead_id = refinery["id"]
+        marker_path = self.repo / ".gc" / "agentops-factory" / bead_id / "merge-arm.v1.json"
+        protection = policy or self.protected_policy()
+        marker = {
+            "schema_version": "merge-arm.v1",
+            "actor": "forge_native_auto_merge",
+            "refinery_bead": bead_id,
+            "pr_id": pr["id"],
+            "pr_url": pr["url"],
+            "head": pr["headRefOid"],
+            "base_branch": pr["baseRefName"],
+            "base_sha": pr["baseRefOid"],
+            "method": "SQUASH",
+            "protection": {
+                "protection_digest": factory.digest_bytes(factory.canonical_bytes(protection)),
+                "strict": False,
+                "checks": [{"context": "summary", "app_id": 15368}],
+            },
+        }
+        factory.write_json_atomic(marker_path, marker)
+        refinery["metadata"].update({
+            "factory.status": "merge_armed",
+            "factory.merge_marker_path": str(marker_path),
+            "factory.merge_marker_digest": hashlib.sha256(marker_path.read_bytes()).hexdigest(),
+            "factory.merge_policy_digest": marker["protection"]["protection_digest"],
+        })
+        return marker_path
+
+    def test_refinery_land_arms_one_exact_blocked_pr_and_returns_without_polling(self) -> None:
+        refinery, beads, pr = self.refinery_land_fixture()
+        policy = self.protected_policy()
+        args = types.SimpleNamespace(
+            rig="repo", refinery_bead=refinery["id"], merge_method="squash", timeout=30,
+        )
+        completed = subprocess.CompletedProcess([], 0, stdout='{"data":{}}\n', stderr="")
+
+        with (
+            mock.patch.object(factory, "Beads", return_value=beads),
+            mock.patch.object(factory, "check_fence", return_value=self.repo),
+            mock.patch.object(factory, "gh_json", side_effect=[pr, policy]) as gh_json,
+            mock.patch.object(factory, "run_process", return_value=completed) as process,
+            contextlib.redirect_stdout(io.StringIO()),
+        ):
+            self.assertEqual(factory.command_refinery_land(args), 0)
+
+        self.assertEqual(gh_json.call_count, 2)
+        process.assert_called_once()
+        argv = process.call_args.args[0]
+        self.assertEqual(argv[:3], [factory.gh_binary(), "api", "graphql"])
+        self.assertTrue(any("enablePullRequestAutoMerge" in item for item in argv))
+        self.assertIn(f"pullRequestId={pr['id']}", argv)
+        self.assertIn(f"expectedHeadOid={self.base_sha}", argv)
+        self.assertIn("mergeMethod=SQUASH", argv)
+        self.assertNotIn("checks", argv)
+        self.assertNotIn("merge", argv[:3])
+        self.assertEqual(refinery["metadata"]["factory.status"], "merge_armed")
+        marker_path = Path(refinery["metadata"]["factory.merge_marker_path"])
+        self.assertEqual(
+            hashlib.sha256(marker_path.read_bytes()).hexdigest(),
+            refinery["metadata"]["factory.merge_marker_digest"],
+        )
+        self.assertEqual(json.loads(marker_path.read_text(encoding="utf-8")), {
+            "schema_version": "merge-arm.v1",
+            "actor": "forge_native_auto_merge",
+            "refinery_bead": refinery["id"],
+            "pr_id": pr["id"],
+            "pr_url": pr["url"],
+            "head": self.base_sha,
+            "base_branch": "main",
+            "base_sha": self.base_sha,
+            "method": "SQUASH",
+            "protection": {
+                "protection_digest": factory.digest_bytes(factory.canonical_bytes(policy)),
+                "strict": False,
+                "checks": [{"context": "summary", "app_id": 15368}],
+            },
+        })
+        result_path = marker_path.with_name("merge-arm-result.v1.json")
+        result = json.loads(result_path.read_text(encoding="utf-8"))
+        self.assertEqual(result["outcome"], "armed")
+        self.assertEqual(result["returncode"], 0)
+        self.assertEqual(refinery["metadata"]["factory.merge_arm_outcome"], "armed")
+
+    def test_refinery_land_cold_resumes_an_exact_auto_merge_arm_read_only(self) -> None:
+        refinery, beads, pr = self.refinery_land_fixture(status="merge_armed")
+        policy = self.protected_policy()
+        marker_path = self.record_merge_arm(refinery, pr, policy)
+        pr["autoMergeRequest"] = {"mergeMethod": "SQUASH"}
+        args = types.SimpleNamespace(
+            rig="repo", refinery_bead=refinery["id"], merge_method="squash", timeout=30,
+        )
+
+        with (
+            mock.patch.object(factory, "Beads", return_value=beads),
+            mock.patch.object(factory, "check_fence", return_value=self.repo),
+            mock.patch.object(factory, "gh_json", side_effect=[pr, policy]) as gh_json,
+            mock.patch.object(factory, "run_process") as process,
+            contextlib.redirect_stdout(io.StringIO()) as output,
+        ):
+            self.assertEqual(factory.command_refinery_land(args), 0)
+
+        self.assertEqual(gh_json.call_count, 2)
+        process.assert_not_called()
+        self.assertTrue(marker_path.exists())
+        self.assertEqual(json.loads(output.getvalue())["status"], "merge_armed")
+
+    def test_refinery_land_never_rearms_when_a_recorded_arm_is_absent_or_mismatched(self) -> None:
+        for request in (None, {"mergeMethod": "MERGE"}):
+            with self.subTest(request=request):
+                refinery, beads, pr = self.refinery_land_fixture(status="merge_armed")
+                policy = self.protected_policy()
+                self.record_merge_arm(refinery, pr, policy)
+                pr["autoMergeRequest"] = request
+                args = types.SimpleNamespace(
+                    rig="repo", refinery_bead=refinery["id"], merge_method="squash", timeout=30,
+                )
+                with (
+                    mock.patch.object(factory, "Beads", return_value=beads),
+                    mock.patch.object(factory, "check_fence", return_value=self.repo),
+                    mock.patch.object(factory, "gh_json", side_effect=[pr, policy]),
+                    mock.patch.object(factory, "run_process") as process,
+                    self.assertRaisesRegex(factory.FactoryError, "absent or mismatched"),
+                ):
+                    factory.command_refinery_land(args)
+                process.assert_not_called()
+
+    def test_refinery_land_rejects_unowned_or_ineligible_pr_without_mutation(self) -> None:
+        cases = {
+            "draft": {"isDraft": True},
+            "not_blocked": {"mergeStateStatus": "CLEAN"},
+            "closed": {"state": "CLOSED"},
+            "unowned_arm": {"autoMergeRequest": {"mergeMethod": "SQUASH"}},
+            "unowned_merged": {"state": "MERGED", "mergeCommit": {"oid": "f" * 40}},
+        }
+        for name, changes in cases.items():
+            with self.subTest(name=name):
+                refinery, beads, pr = self.refinery_land_fixture(bead_id=f"bd-{name}")
+                pr.update(changes)
+                args = types.SimpleNamespace(
+                    rig="repo", refinery_bead=refinery["id"], merge_method="squash", timeout=30,
+                )
+                with (
+                    mock.patch.object(factory, "Beads", return_value=beads),
+                    mock.patch.object(factory, "check_fence", return_value=self.repo),
+                    mock.patch.object(factory, "gh_json", return_value=pr),
+                    mock.patch.object(factory, "run_process") as process,
+                    self.assertRaises(factory.FactoryError),
+                ):
+                    factory.command_refinery_land(args)
+                process.assert_not_called()
+                self.assertEqual(refinery["metadata"]["factory.status"], "published")
+
+    def test_refinery_land_requires_an_app_bound_protected_check(self) -> None:
+        refinery, beads, pr = self.refinery_land_fixture()
+        args = types.SimpleNamespace(
+            rig="repo", refinery_bead=refinery["id"], merge_method="squash", timeout=30,
+        )
+        for policy in (
+            {"required_status_checks": {"strict": False, "checks": []}},
+            self.protected_policy(app_id=None),
+        ):
+            with self.subTest(policy=policy):
+                with (
+                    mock.patch.object(factory, "Beads", return_value=beads),
+                    mock.patch.object(factory, "check_fence", return_value=self.repo),
+                    mock.patch.object(factory, "gh_json", side_effect=[pr, policy]),
+                    mock.patch.object(factory, "run_process") as process,
+                    self.assertRaisesRegex(factory.FactoryError, "required (hosted|check)"),
+                ):
+                    factory.command_refinery_land(args)
+                process.assert_not_called()
+                self.assertEqual(refinery["metadata"]["factory.status"], "published")
+
+    def test_refinery_land_rejects_target_protection_drift_read_only(self) -> None:
+        refinery, beads, pr = self.refinery_land_fixture(status="merge_armed")
+        original_policy = self.protected_policy()
+        self.record_merge_arm(refinery, pr, original_policy)
+        pr["autoMergeRequest"] = {"mergeMethod": "SQUASH"}
+        changed_policy = self.protected_policy(app_id=99999)
+        args = types.SimpleNamespace(
+            rig="repo", refinery_bead=refinery["id"], merge_method="squash", timeout=30,
+        )
+        with (
+            mock.patch.object(factory, "Beads", return_value=beads),
+            mock.patch.object(factory, "check_fence", return_value=self.repo),
+            mock.patch.object(factory, "gh_json", side_effect=[pr, changed_policy]),
+            mock.patch.object(factory, "run_process") as process,
+            self.assertRaisesRegex(factory.FactoryError, "merge arm evidence changed"),
+        ):
+            factory.command_refinery_land(args)
+        process.assert_not_called()
+
+    def test_refinery_land_fails_closed_on_moved_identity_or_altered_marker(self) -> None:
+        for name in ("moved_head", "moved_base", "moved_base_oid", "altered_marker"):
+            with self.subTest(name=name):
+                refinery, beads, pr = self.refinery_land_fixture(bead_id=f"bd-{name}", status="merge_armed")
+                policy = self.protected_policy()
+                marker_path = self.record_merge_arm(refinery, pr, policy)
+                pr["autoMergeRequest"] = {"mergeMethod": "SQUASH"}
+                if name == "moved_head":
+                    pr["headRefOid"] = "f" * 40
+                elif name == "moved_base":
+                    pr["baseRefName"] = "release"
+                elif name == "moved_base_oid":
+                    pr["baseRefOid"] = "f" * 40
+                else:
+                    marker_path.write_text('{"altered":true}\n', encoding="utf-8")
+                args = types.SimpleNamespace(
+                    rig="repo", refinery_bead=refinery["id"], merge_method="squash", timeout=30,
+                )
+                with (
+                    mock.patch.object(factory, "Beads", return_value=beads),
+                    mock.patch.object(factory, "check_fence", return_value=self.repo),
+                    mock.patch.object(
+                        factory, "gh_json",
+                        side_effect=[pr] if name != "altered_marker" else [pr, policy],
+                    ),
+                    mock.patch.object(factory, "run_process") as process,
+                    self.assertRaises(factory.FactoryError),
+                ):
+                    factory.command_refinery_land(args)
+                process.assert_not_called()
+
+    def test_refinery_land_records_terminal_refusal_and_never_resends(self) -> None:
+        refinery, beads, pr = self.refinery_land_fixture()
+        policy = self.protected_policy()
+        args = types.SimpleNamespace(
+            rig="repo", refinery_bead=refinery["id"], merge_method="squash", timeout=30,
+        )
+        refused = subprocess.CompletedProcess([], 1, stdout="", stderr="GraphQL: auto-merge is not allowed")
+        with (
+            mock.patch.object(factory, "Beads", return_value=beads),
+            mock.patch.object(factory, "check_fence", return_value=self.repo),
+            mock.patch.object(factory, "gh_json", side_effect=[pr, policy]),
+            mock.patch.object(factory, "run_process", return_value=refused) as process,
+            self.assertRaisesRegex(factory.FactoryError, "auto-merge is not allowed"),
+        ):
+            factory.command_refinery_land(args)
+        process.assert_called_once()
+        self.assertEqual(refinery["metadata"]["factory.status"], "merge_armed")
+        self.assertTrue(Path(refinery["metadata"]["factory.merge_marker_path"]).exists())
+        self.assertEqual(refinery["metadata"]["factory.merge_arm_outcome"], "refused")
+        result_path = Path(refinery["metadata"]["factory.merge_arm_result_path"])
+        self.assertEqual(json.loads(result_path.read_text(encoding="utf-8"))["outcome"], "refused")
+
+        pr["autoMergeRequest"] = {"mergeMethod": "SQUASH"}
+        with (
+            mock.patch.object(factory, "Beads", return_value=beads),
+            mock.patch.object(factory, "check_fence", return_value=self.repo),
+            mock.patch.object(factory, "gh_json", side_effect=[pr, policy]),
+            mock.patch.object(factory, "run_process") as resend,
+            self.assertRaisesRegex(factory.FactoryError, "definitively refused"),
+        ):
+            factory.command_refinery_land(args)
+        resend.assert_not_called()
+
+    def test_refinery_land_ambiguous_transport_failure_leaves_a_no_resend_marker(self) -> None:
+        refinery, beads, pr = self.refinery_land_fixture()
+        policy = self.protected_policy()
+        args = types.SimpleNamespace(
+            rig="repo", refinery_bead=refinery["id"], merge_method="squash", timeout=30,
+        )
+        with (
+            mock.patch.object(factory, "Beads", return_value=beads),
+            mock.patch.object(factory, "check_fence", return_value=self.repo),
+            mock.patch.object(factory, "gh_json", side_effect=[pr, policy]),
+            mock.patch.object(
+                factory, "run_process",
+                side_effect=factory.FactoryError("process_error", "GraphQL transport timed out"),
+            ) as process,
+            self.assertRaisesRegex(factory.FactoryError, "timed out"),
+        ):
+            factory.command_refinery_land(args)
+        process.assert_called_once()
+        self.assertEqual(refinery["metadata"]["factory.status"], "merge_armed")
+        self.assertTrue(Path(refinery["metadata"]["factory.merge_marker_path"]).exists())
+
+        with (
+            mock.patch.object(factory, "Beads", return_value=beads),
+            mock.patch.object(factory, "check_fence", return_value=self.repo),
+            mock.patch.object(factory, "gh_json", side_effect=[pr, policy]),
+            mock.patch.object(factory, "run_process") as resend,
+            self.assertRaisesRegex(factory.FactoryError, "absent or mismatched"),
+        ):
+            factory.command_refinery_land(args)
+        resend.assert_not_called()
+
+    def test_refinery_deliver_treats_merge_armed_as_normal_pending_state(self) -> None:
+        refinery, beads, _pr = self.refinery_land_fixture(status="merge_armed")
+        args = types.SimpleNamespace(
+            rig="repo", refinery_bead=refinery["id"],
+            worktree_root=str(self.root / "integration-worktrees"),
+            max_candidates=5, remote="origin", merge_slot_timeout=30,
+            provider="claude", timeout=30, title=None, draft=False, merge_method="squash",
+        )
+        with (
+            mock.patch.object(factory, "Beads", return_value=beads),
+            mock.patch.object(factory, "attest_refiner_claim", return_value=refinery["metadata"]),
+            mock.patch.object(factory, "command_refinery_land", return_value=0) as land,
+            mock.patch.object(factory, "reconcile_landed_delivery") as reconcile,
+            contextlib.redirect_stdout(io.StringIO()) as output,
+        ):
+            self.assertEqual(factory.command_refinery_deliver(args), 0)
+
+        land.assert_called_once()
+        reconcile.assert_not_called()
+        self.assertFalse(any(event[0] == "hold_delivery" for event in beads.events))
+        self.assertEqual(json.loads(output.getvalue())["status"], "merge_armed")
+
+    def test_refinery_land_rejects_wrong_landed_tree_or_base_parent(self) -> None:
+        expected_tree = git(self.repo, "rev-parse", f"{self.base_sha}^{{tree}}")
+        for name, landed_tree, parent in (
+            ("tree", "f" * 40, self.base_sha),
+            ("parent", expected_tree, "f" * 40),
+        ):
+            with self.subTest(name=name):
+                refinery, beads, pr = self.refinery_land_fixture(
+                    bead_id=f"bd-landed-{name}", status="merge_armed",
+                )
+                policy = self.protected_policy()
+                self.record_merge_arm(refinery, pr, policy)
+                pr.update({
+                    "state": "MERGED",
+                    "mergedAt": "2026-07-17T00:00:00Z",
+                    "mergeCommit": {"oid": "c" * 40},
+                })
+                remote_commit = {
+                    "tree": {"sha": landed_tree},
+                    "parents": [{"sha": parent}],
+                }
+                args = types.SimpleNamespace(
+                    rig="repo", refinery_bead=refinery["id"], merge_method="squash", timeout=30,
+                )
+                with (
+                    mock.patch.object(factory, "Beads", return_value=beads),
+                    mock.patch.object(factory, "check_fence", return_value=self.repo),
+                    mock.patch.object(factory, "gh_json", side_effect=[pr, policy, remote_commit]),
+                    mock.patch.object(factory, "run_process", wraps=factory.run_process) as process,
+                    mock.patch.object(factory, "persist_delivery_record") as persist,
+                    self.assertRaisesRegex(factory.FactoryError, "landed tree or base parent"),
+                ):
+                    factory.command_refinery_land(args)
+                self.assertTrue(all(call.args[0][:2] == ["git", "rev-parse"] for call in process.call_args_list))
+                persist.assert_not_called()
 
     def test_refinery_land_reconciles_an_already_merged_pr_without_merging_again(self) -> None:
         delivery = self.root / "already-merged-delivery.json"
         delivery.write_text("{}\n", encoding="utf-8")
-        integration_sha = "b" * 40
+        integration_sha = self.base_sha
         landed_sha = "c" * 40
+        landed_tree = git(self.repo, "rev-parse", f"{integration_sha}^{{tree}}")
         refinery = {
             "id": "bd-refinery", "status": "open",
             "metadata": {
-                "factory.kind": "refinery", "factory.status": "published",
+                "factory.kind": "refinery", "factory.status": "merge_armed",
                 "factory.program_bead": "bd-program", "factory.integration_sha": integration_sha,
                 "factory.fence_epoch": "1", "factory.fence_token": "token",
                 "factory.pr_url": "https://example.invalid/pr/8", "factory.base_branch": "main",
+                "factory.delivery_base_sha": self.base_sha,
                 "factory.integration_worktree": str(self.repo),
             },
         }
         program = {"id": "bd-program", "status": "open", "metadata": {"factory.kind": "program"}}
         beads = FakeBeads({"bd-refinery": refinery, "bd-program": program})
         initial = {
-            "url": refinery["metadata"]["factory.pr_url"], "number": 8, "state": "MERGED",
+            "url": refinery["metadata"]["factory.pr_url"], "id": "PR_node_8", "number": 8, "state": "MERGED",
             "isDraft": False, "headRefOid": integration_sha, "headRefName": "gc/integration/test",
-            "baseRefName": "main", "statusCheckRollup": [],
-        }
-        final = {
-            "url": initial["url"], "number": 8, "state": "MERGED",
+            "baseRefName": "main", "baseRefOid": self.base_sha,
+            "mergeStateStatus": "UNKNOWN", "autoMergeRequest": None,
             "mergedAt": "2026-07-17T00:00:00Z", "mergeCommit": {"oid": landed_sha},
-            "headRefOid": integration_sha, "baseRefName": "main",
+        }
+        policy = self.protected_policy()
+        self.record_merge_arm(refinery, initial, policy)
+        remote_commit = {
+            "sha": landed_sha,
+            "tree": {"sha": landed_tree},
+            "parents": [{"sha": self.base_sha}],
         }
         args = types.SimpleNamespace(
             rig="repo", refinery_bead="bd-refinery", merge_method="squash", timeout=30,
@@ -2668,16 +3071,18 @@ class FactoryTests(unittest.TestCase):
         with (
             mock.patch.object(factory, "Beads", return_value=beads),
             mock.patch.object(factory, "check_fence", return_value=self.repo),
-            mock.patch.object(factory, "gh_json", side_effect=[initial, final]),
-            mock.patch.object(factory, "run_process") as process,
+            mock.patch.object(factory, "gh_json", side_effect=[initial, policy, remote_commit]),
+            mock.patch.object(factory, "run_process", wraps=factory.run_process) as process,
             mock.patch.object(factory, "persist_delivery_record", return_value=delivery),
             contextlib.redirect_stdout(io.StringIO()),
         ):
             self.assertEqual(factory.command_refinery_land(args), 0)
 
-        process.assert_not_called()
+        self.assertTrue(all(call.args[0][:2] == ["git", "rev-parse"] for call in process.call_args_list))
         self.assertEqual(refinery["metadata"]["factory.status"], "landed")
         self.assertEqual(refinery["metadata"]["factory.landed_sha"], landed_sha)
+        self.assertEqual(refinery["metadata"]["factory.landed_tree"], landed_tree)
+        self.assertEqual(refinery["metadata"]["factory.landed_base_parent"], self.base_sha)
         self.assertEqual(refinery["status"], "closed")
         self.assertEqual(program["status"], "closed")
 
