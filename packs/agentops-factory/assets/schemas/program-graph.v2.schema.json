@@ -1,0 +1,73 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agentops.local/schemas/program-graph.v2.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "program_id", "intent_digest", "nodes", "max_parallel", "role_policy", "delivery_group_id", "prefix_safety"],
+  "properties": {
+    "schema_version": {"const": "program-graph.v2"},
+    "program_id": {"type": "string", "minLength": 1},
+    "intent_digest": {"$ref": "#/$defs/digest"},
+    "max_parallel": {"type": "integer", "minimum": 1},
+    "delivery_group_id": {"type": "string", "minLength": 1},
+    "prefix_safety": {"enum": ["safe", "atomic_group", "externally_gated"]},
+    "role_policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mayor", "planner", "worker_pool", "validator", "refiner", "luna"],
+      "properties": {
+        "mayor": {"$ref": "#/$defs/fable"},
+        "planner": {"$ref": "#/$defs/sol"},
+        "validator": {"$ref": "#/$defs/sol"},
+        "refiner": {"$ref": "#/$defs/refiner"},
+        "luna": {"$ref": "#/$defs/luna"},
+        "worker_pool": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["default", "overflow", "fallback"],
+          "properties": {
+            "default": {"$ref": "#/$defs/terra"},
+            "overflow": {"$ref": "#/$defs/opus"},
+            "fallback": {"$ref": "#/$defs/no_fallback"}
+          }
+        }
+      }
+    },
+    "nodes": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "bead_class", "intent_digest", "depends_on", "write_scope", "generated_companions", "role", "model", "reasoning", "provider", "fallback"],
+        "properties": {
+          "id": {"type": "string"},
+          "bead_class": {"enum": ["product", "delivery_repair"]},
+          "intent_digest": {"$ref": "#/$defs/digest"},
+          "depends_on": {"type": "array", "items": {"type": "string"}},
+          "write_scope": {"type": "array", "minItems": 1, "items": {"type": "string"}},
+          "generated_companions": {"type": "array", "items": {"type": "string"}},
+          "role": {"const": "implementation"},
+          "model": {"enum": ["terra", "opus"]},
+          "reasoning": {"enum": ["high", "medium"]},
+          "provider": {"enum": ["codex", "claude"]},
+          "fallback": {"$ref": "#/$defs/no_fallback"}
+        },
+        "allOf": [
+          {"if": {"properties": {"model": {"const": "terra"}}}, "then": {"properties": {"reasoning": {"const": "high"}, "provider": {"const": "codex"}}}},
+          {"if": {"properties": {"model": {"const": "opus"}}}, "then": {"properties": {"reasoning": {"const": "medium"}, "provider": {"const": "claude"}}}}
+        ]
+      }
+    }
+  },
+  "$defs": {
+    "digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "no_fallback": {"type": "object", "additionalProperties": false, "required": ["allowed", "used", "reason"], "properties": {"allowed": {"const": false}, "used": {"const": false}, "reason": {"const": null}}},
+    "fable": {"type": "object", "additionalProperties": false, "required": ["model", "reasoning", "provider", "fallback"], "properties": {"model": {"const": "fable"}, "reasoning": {"const": "adaptive"}, "provider": {"const": "claude"}, "fallback": {"$ref": "#/$defs/no_fallback"}}},
+    "sol": {"type": "object", "additionalProperties": false, "required": ["model", "reasoning", "provider", "fallback"], "properties": {"model": {"const": "sol"}, "reasoning": {"const": "high"}, "provider": {"const": "codex"}, "fallback": {"$ref": "#/$defs/no_fallback"}}},
+    "terra": {"type": "object", "additionalProperties": false, "required": ["model", "reasoning", "provider", "fallback"], "properties": {"model": {"const": "terra"}, "reasoning": {"const": "high"}, "provider": {"const": "codex"}, "fallback": {"$ref": "#/$defs/no_fallback"}}},
+    "opus": {"type": "object", "additionalProperties": false, "required": ["model", "reasoning", "provider", "fallback"], "properties": {"model": {"const": "opus"}, "reasoning": {"const": "medium"}, "provider": {"const": "claude"}, "fallback": {"$ref": "#/$defs/no_fallback"}}},
+    "refiner": {"type": "object", "additionalProperties": false, "required": ["model", "reasoning", "provider", "fallback", "ambiguity_only"], "properties": {"model": {"const": "fable"}, "reasoning": {"const": "adaptive"}, "provider": {"const": "claude"}, "fallback": {"$ref": "#/$defs/no_fallback"}, "ambiguity_only": {"const": true}}},
+    "luna": {"type": "object", "additionalProperties": false, "required": ["model", "reasoning", "provider", "fallback", "support_only"], "properties": {"model": {"const": "luna"}, "reasoning": {"const": "high"}, "provider": {"const": "codex"}, "fallback": {"$ref": "#/$defs/no_fallback"}, "support_only": {"const": true}}}
+  }
+}

@@ -1,0 +1,200 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agentops.local/schemas/admission-certificate.v2.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "semantic_bead_id",
+    "intent_digest",
+    "verdict",
+    "candidate",
+    "store",
+    "changed_path_manifest",
+    "verdict_digest",
+    "evidence_digest",
+    "attestations",
+    "delivery_group_id",
+    "prefix_safety"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "admission-certificate.v2"
+    },
+    "semantic_bead_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "intent_digest": {
+      "$ref": "#/$defs/digest"
+    },
+    "verdict": {
+      "const": "PASS"
+    },
+    "candidate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "commit",
+        "tree",
+        "content_digest"
+      ],
+      "properties": {
+        "commit": {
+          "$ref": "#/$defs/sha"
+        },
+        "tree": {
+          "$ref": "#/$defs/sha"
+        },
+        "content_digest": {
+          "$ref": "#/$defs/digest"
+        }
+      }
+    },
+    "store": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "identity",
+        "digest"
+      ],
+      "properties": {
+        "identity": {
+          "type": "string",
+          "minLength": 1
+        },
+        "digest": {
+          "$ref": "#/$defs/digest"
+        }
+      }
+    },
+    "changed_path_manifest": {
+      "$ref": "#/$defs/digest"
+    },
+    "verdict_digest": {
+      "$ref": "#/$defs/digest"
+    },
+    "evidence_digest": {
+      "$ref": "#/$defs/digest"
+    },
+    "attestations": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "author",
+        "validator"
+      ],
+      "properties": {
+        "author": {
+          "oneOf": [
+            {"$ref": "#/$defs/terra_author"},
+            {"$ref": "#/$defs/opus_author"}
+          ]
+        },
+        "validator": {
+          "$ref": "#/$defs/sol_validator"
+        }
+      }
+    },
+    "delivery_group_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "prefix_safety": {
+      "enum": [
+        "safe",
+        "atomic_group",
+        "externally_gated"
+      ]
+    }
+  },
+  "$defs": {
+    "digest": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "sha": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{40}$"
+    },
+    "no_fallback": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "allowed",
+        "used",
+        "reason"
+      ],
+      "properties": {
+        "allowed": {
+          "const": false
+        },
+        "used": {
+          "const": false
+        },
+        "reason": {
+          "const": null
+        }
+      }
+    },
+    "runtime": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "context_id",
+        "requested_model",
+        "requested_reasoning",
+        "requested_provider",
+        "actual_model",
+        "actual_reasoning",
+        "actual_provider",
+        "fallback"
+      ],
+      "properties": {
+        "context_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "requested_model": {
+          "type": "string"
+        },
+        "requested_reasoning": {
+          "type": "string"
+        },
+        "requested_provider": {
+          "type": "string"
+        },
+        "actual_model": {
+          "type": "string"
+        },
+        "actual_reasoning": {
+          "type": "string"
+        },
+        "actual_provider": {
+          "type": "string"
+        },
+        "fallback": {
+          "$ref": "#/$defs/no_fallback"
+        }
+      }
+    },
+    "terra_author": {
+      "allOf": [
+        {"$ref": "#/$defs/runtime"},
+        {"properties": {"requested_model": {"const": "terra"}, "requested_reasoning": {"const": "high"}, "requested_provider": {"const": "codex"}, "actual_model": {"const": "terra"}, "actual_reasoning": {"const": "high"}, "actual_provider": {"const": "codex"}}}
+      ]
+    },
+    "opus_author": {
+      "allOf": [
+        {"$ref": "#/$defs/runtime"},
+        {"properties": {"requested_model": {"const": "opus"}, "requested_reasoning": {"const": "medium"}, "requested_provider": {"const": "claude"}, "actual_model": {"const": "opus"}, "actual_reasoning": {"const": "medium"}, "actual_provider": {"const": "claude"}}}
+      ]
+    },
+    "sol_validator": {
+      "allOf": [
+        {"$ref": "#/$defs/runtime"},
+        {"properties": {"requested_model": {"const": "sol"}, "requested_reasoning": {"const": "high"}, "requested_provider": {"const": "codex"}, "actual_model": {"const": "sol"}, "actual_reasoning": {"const": "high"}, "actual_provider": {"const": "codex"}}}
+      ]
+    }
+  }
+}
