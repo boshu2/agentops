@@ -76,7 +76,7 @@
             "$ref": "#/$defs/fable"
           },
           "actual": {
-            "$ref": "#/$defs/fable"
+            "$ref": "#/$defs/fable_launch"
           }
         }
       }
@@ -98,7 +98,7 @@
             "$ref": "#/$defs/sol"
           },
           "actual": {
-            "$ref": "#/$defs/sol"
+            "$ref": "#/$defs/sol_launch"
           }
         }
       }
@@ -119,7 +119,7 @@
                 "$ref": "#/$defs/terra"
               },
               "actual": {
-                "$ref": "#/$defs/terra"
+                "$ref": "#/$defs/terra_launch"
               }
             }
           },
@@ -129,7 +129,7 @@
                 "$ref": "#/$defs/opus"
               },
               "actual": {
-                "$ref": "#/$defs/opus"
+                "$ref": "#/$defs/opus_launch"
               }
             }
           }
@@ -150,7 +150,7 @@
             "$ref": "#/$defs/fable"
           },
           "actual": {
-            "$ref": "#/$defs/fable"
+            "$ref": "#/$defs/fable_launch"
           }
         }
       }
@@ -169,7 +169,7 @@
             "$ref": "#/$defs/luna"
           },
           "actual": {
-            "$ref": "#/$defs/luna"
+            "$ref": "#/$defs/luna_launch"
           }
         }
       }
@@ -255,6 +255,9 @@
         },
         "provider": {
           "type": "string"
+        },
+        "effort": {
+          "type": ["string", "null"]
         },
         "fallback": {
           "$ref": "#/$defs/fallback"
@@ -395,6 +398,11 @@
           }
         }
       ]
-    }
+    },
+    "fable_launch": {"allOf": [{"$ref": "#/$defs/runtime"}, {"required": ["effort"], "properties": {"model": {"const": "claude-fable-5"}, "reasoning": {"const": "adaptive"}, "provider": {"const": "claude"}, "effort": {"const": null}, "fallback": {"$ref": "#/$defs/no_fallback"}}}]},
+    "sol_launch": {"allOf": [{"$ref": "#/$defs/runtime"}, {"required": ["effort"], "properties": {"model": {"const": "gpt-5.6-sol"}, "reasoning": {"const": "high"}, "provider": {"const": "codex"}, "effort": {"const": "high"}, "fallback": {"$ref": "#/$defs/no_fallback"}}}]},
+    "terra_launch": {"allOf": [{"$ref": "#/$defs/runtime"}, {"required": ["effort"], "properties": {"model": {"const": "gpt-5.6-terra"}, "reasoning": {"const": "high"}, "provider": {"const": "codex"}, "effort": {"const": "high"}, "fallback": {"$ref": "#/$defs/no_fallback"}}}]},
+    "opus_launch": {"allOf": [{"$ref": "#/$defs/runtime"}, {"required": ["effort"], "properties": {"model": {"const": "claude-opus-4-8"}, "reasoning": {"const": "medium"}, "provider": {"const": "claude"}, "effort": {"const": "medium"}, "fallback": {"$ref": "#/$defs/no_fallback"}}}]},
+    "luna_launch": {"allOf": [{"$ref": "#/$defs/runtime"}, {"required": ["effort"], "properties": {"model": {"const": "gpt-5.6-luna"}, "reasoning": {"const": "high"}, "provider": {"const": "codex"}, "effort": {"const": "high"}, "fallback": {"$ref": "#/$defs/no_fallback"}}}]}
   }
 }

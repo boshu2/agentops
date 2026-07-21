@@ -14,7 +14,21 @@ exit_file="$diagnostics_dir/$invocation.exit"
 
 # Keep the provider interactive. --debug-file only redirects Claude's own
 # diagnostic stream; prompts and responses remain attached to the GC tmux pane.
-"$claude_bin" --debug-file "$debug_file" "$@"
+# The declared Fable adviser has no forge/Git credential surface in GC33-3.
+# This is credential denial, not write isolation; its ambiguity dispatch stays
+# closed until GC33-4 supplies the required per-process namespace.
+fable_adviser=false
+for argument in "$@"; do
+  if [[ "$argument" == "claude-fable-5" ]]; then
+    fable_adviser=true
+  fi
+done
+if "$fable_adviser"; then
+  env -u GITHUB_TOKEN -u GH_TOKEN -u GIT_ASKPASS -u SSH_ASKPASS -u SSH_AUTH_SOCK \
+    "$claude_bin" --debug-file "$debug_file" "$@"
+else
+  "$claude_bin" --debug-file "$debug_file" "$@"
+fi
 status=$?
 printf 'exit_code=%s\nfinished_at=%s\n' \
   "$status" "$(date -u '+%Y-%m-%dT%H:%M:%SZ')" >"$exit_file"

@@ -4,13 +4,18 @@
   "title": "3.3 authoritative factory semantic-role request",
   "type": "object",
   "additionalProperties": false,
-  "required": ["schema_version", "request_id", "program_id", "semantic_bead_id", "intent_digest", "role", "requested", "artifact_path", "result_path"],
+  "required": ["schema_version", "request_id", "program_id", "semantic_bead_id", "workspace", "intent_source", "intent_digest", "subject_path", "subject_digest", "evidence_refs", "prior_context_id", "role", "requested", "artifact_path", "result_path"],
   "properties": {
     "schema_version": {"const": "factory-role-request.v2"}, "request_id": {"type": "string", "minLength": 1}, "program_id": {"type": "string", "minLength": 1}, "semantic_bead_id": {"type": "string", "minLength": 1}, "intent_digest": {"$ref": "#/$defs/digest"},
+    "workspace": {"type": "string", "minLength": 1}, "intent_source": {"type": "string", "minLength": 1}, "subject_path": {"type": "string", "minLength": 1}, "subject_digest": {"$ref": "#/$defs/digest"},
+    "evidence_refs": {"type": "array", "minItems": 1, "items": {"type": "object", "additionalProperties": false, "required": ["path", "digest"], "properties": {"path": {"type": "string", "minLength": 1}, "digest": {"$ref": "#/$defs/digest"}}}},
+    "prior_context_id": {"type": ["string", "null"]},
     "role": {"enum": ["mayor", "plan", "implementation", "validation", "ambiguity_advice", "support"]}, "requested": {"$ref": "#/$defs/runtime"}, "artifact_path": {"type": "string", "minLength": 1}, "result_path": {"type": "string", "minLength": 1}
   },
   "allOf": [
     {"if": {"properties": {"role": {"const": "mayor"}}}, "then": {"properties": {"requested": {"$ref": "#/$defs/fable"}}}},
+    {"if": {"properties": {"role": {"const": "mayor"}}}, "then": {"properties": {"prior_context_id": {"const": null}}}},
+    {"if": {"properties": {"role": {"enum": ["plan", "ambiguity_advice"]}}}, "then": {"properties": {"prior_context_id": {"type": "string", "minLength": 1}}}},
     {"if": {"properties": {"role": {"enum": ["plan", "validation"]}}}, "then": {"properties": {"requested": {"$ref": "#/$defs/sol"}}}},
     {"if": {"properties": {"role": {"const": "implementation"}}}, "then": {"properties": {"requested": {"anyOf": [{"$ref": "#/$defs/terra"}, {"$ref": "#/$defs/opus"}]}}}},
     {"if": {"properties": {"role": {"const": "ambiguity_advice"}}}, "then": {"properties": {"requested": {"$ref": "#/$defs/fable"}}}},

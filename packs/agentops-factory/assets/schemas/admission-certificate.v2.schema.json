@@ -148,6 +148,7 @@
         "actual_model",
         "actual_reasoning",
         "actual_provider",
+        "actual_effort",
         "fallback"
       ],
       "properties": {
@@ -173,6 +174,9 @@
         "actual_provider": {
           "type": "string"
         },
+        "actual_effort": {
+          "type": ["string", "null"]
+        },
         "fallback": {
           "$ref": "#/$defs/no_fallback"
         }
@@ -181,19 +185,19 @@
     "terra_author": {
       "allOf": [
         {"$ref": "#/$defs/runtime"},
-        {"properties": {"requested_model": {"const": "terra"}, "requested_reasoning": {"const": "high"}, "requested_provider": {"const": "codex"}, "actual_model": {"const": "terra"}, "actual_reasoning": {"const": "high"}, "actual_provider": {"const": "codex"}}}
+        {"properties": {"requested_model": {"const": "terra"}, "requested_reasoning": {"const": "high"}, "requested_provider": {"const": "codex"}, "actual_model": {"const": "gpt-5.6-terra"}, "actual_reasoning": {"const": "high"}, "actual_provider": {"const": "codex"}, "actual_effort": {"const": "high"}}}
       ]
     },
     "opus_author": {
       "allOf": [
         {"$ref": "#/$defs/runtime"},
-        {"properties": {"requested_model": {"const": "opus"}, "requested_reasoning": {"const": "medium"}, "requested_provider": {"const": "claude"}, "actual_model": {"const": "opus"}, "actual_reasoning": {"const": "medium"}, "actual_provider": {"const": "claude"}}}
+        {"properties": {"requested_model": {"const": "opus"}, "requested_reasoning": {"const": "medium"}, "requested_provider": {"const": "claude"}, "actual_model": {"const": "claude-opus-4-8"}, "actual_reasoning": {"const": "medium"}, "actual_provider": {"const": "claude"}, "actual_effort": {"const": "medium"}}}
       ]
     },
     "sol_validator": {
       "allOf": [
         {"$ref": "#/$defs/runtime"},
-        {"properties": {"requested_model": {"const": "sol"}, "requested_reasoning": {"const": "high"}, "requested_provider": {"const": "codex"}, "actual_model": {"const": "sol"}, "actual_reasoning": {"const": "high"}, "actual_provider": {"const": "codex"}}}
+        {"properties": {"requested_model": {"const": "sol"}, "requested_reasoning": {"const": "high"}, "requested_provider": {"const": "codex"}, "actual_model": {"const": "gpt-5.6-sol"}, "actual_reasoning": {"const": "high"}, "actual_provider": {"const": "codex"}, "actual_effort": {"const": "high"}}}
       ]
     }
   }

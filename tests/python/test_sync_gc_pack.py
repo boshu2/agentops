@@ -67,7 +67,11 @@ class SyncGCPackTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr)
 
         for skill in ("implement", "validate", "using-gc"):
-            providers = ("codex", "claude") if skill != "using-gc" else ("codex",)
+            providers = {
+                "implement": ("codex", "claude"),
+                "validate": ("codex",),
+                "using-gc": ("codex",),
+            }[skill]
             for provider in providers:
                 destination = self.destination(skill, provider)
                 self.assertEqual((destination / "SKILL.md").read_text(encoding="utf-8"), f"# {skill}\n")
@@ -75,8 +79,6 @@ class SyncGCPackTests(unittest.TestCase):
                 self.assertFalse((destination / ".agentops-generated.json").exists())
         self.assertFalse((self.destination("validate") / "scripts" / "__pycache__").exists())
         self.assertFalse((self.destination("validate") / "scripts" / "helper.pyc").exists())
-        self.assertFalse((self.destination("validate", "claude") / "scripts" / "__pycache__").exists())
-        self.assertFalse((self.destination("validate", "claude") / "scripts" / "helper.pyc").exists())
         self.assertTrue((self.destination("implement") / "scripts" / "validate.sh").stat().st_mode & stat.S_IXUSR)
         self.assertTrue((self.destination("implement", "claude") / "scripts" / "validate.sh").stat().st_mode & stat.S_IXUSR)
 
@@ -103,23 +105,31 @@ class SyncGCPackTests(unittest.TestCase):
         self.assertEqual(self.run_sync().returncode, 0)
         drifted = self.destination("implement") / "SKILL.md"
         drifted.write_text("manual drift\n", encoding="utf-8")
+        retired = self.destination("validate", "claude") / "stale.txt"
+        retired.parent.mkdir(parents=True)
+        retired.write_text("retired\n", encoding="utf-8")
         before = self.snapshot()
 
         result = self.run_sync("--check")
 
         self.assertEqual(result.returncode, 1)
         self.assertIn("implement", result.stderr)
+        self.assertIn("retired projection", result.stderr)
         self.assertEqual(self.snapshot(), before)
 
     def test_regen_exact_deletes_stale_destination_files(self) -> None:
         self.assertEqual(self.run_sync().returncode, 0)
         stale = self.destination("validate") / "stale.txt"
         stale.write_text("stale\n", encoding="utf-8")
+        retired = self.destination("validate", "claude") / "stale.txt"
+        retired.parent.mkdir(parents=True)
+        retired.write_text("retired\n", encoding="utf-8")
 
         result = self.run_sync()
 
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertFalse(stale.exists())
+        self.assertFalse(retired.parent.exists())
 
     def test_check_on_missing_projection_is_nonmutating(self) -> None:
         before = self.snapshot()

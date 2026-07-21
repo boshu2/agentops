@@ -1197,6 +1197,7 @@ for provider_name, expected_default, expected_choices in (
         "opus-4.8",
         {
             "opus-4.8": ["--model", "claude-opus-4-8"],
+            "fable-5": ["--model", "claude-fable-5"],
         },
     ),
 ):
@@ -1215,6 +1216,32 @@ for provider_name, expected_default, expected_choices in (
     for choice, expected_flags in expected_choices.items():
         if choices.get(choice, {}).get("flag_args") != expected_flags:
             raise SystemExit(f"{provider_name} {choice} model flags are incompatible with the installed CLI")
+for provider_name, expected_default, expected_choices in (
+    ("codex", "high", {"high": ["-c", "model_reasoning_effort=high"]}),
+    (
+        "claude",
+        "medium",
+        {
+            "medium": ["--effort", "medium"],
+            "adaptive": [],
+        },
+    ),
+):
+    provider = config["providers"][provider_name]
+    if provider.get("option_defaults", {}).get("effort") != expected_default:
+        raise SystemExit(f"{provider_name} effort default must be {expected_default}")
+    selected = [
+        option for option in provider.get("options_schema", [])
+        if option.get("key") == "effort"
+    ]
+    if len(selected) != 1 or selected[0].get("default") != expected_default:
+        raise SystemExit(f"{provider_name} must declare exactly one role-pinned effort schema")
+    choices = {choice.get("value"): choice for choice in selected[0].get("choices", [])}
+    if set(choices) != set(expected_choices):
+        raise SystemExit(f"{provider_name} effort schema exposes unexpected choices")
+    for choice, expected_flags in expected_choices.items():
+        if choices.get(choice, {}).get("flag_args") != expected_flags:
+            raise SystemExit(f"{provider_name} {choice} effort flags are incompatible with the installed CLI")
 for forbidden in ("agent", "named_session"):
     if config.get(forbidden):
         raise SystemExit(f"city must not declare {forbidden}")
@@ -1617,7 +1644,7 @@ trap 'rm -f "$executor_agents_before" "$executor_agents_after"' EXIT
 # work_dir, so the primary rig needs the same parent-root policy as every
 # dynamic factory worktree rig. Pointing these roles at the rig itself launches
 # them at <rig>/<rig>; leaving work_dir unset has the same effect through GC's
-# rig default. Reconcile only the four packet executor routes, then prove the
+# rig default. Reconcile only the three packet executor routes, then prove the
 # effective native projection below.
 python3 - "$city/city.toml" "$executor_agents_before" "$rig_name" "$binding" "$rig" <<'PY'
 import json
@@ -1636,7 +1663,7 @@ with open(agents_path, encoding="utf-8") as handle:
 agents = value.get("agents") if isinstance(value, dict) else None
 if not isinstance(agents, list):
     raise SystemExit("gc agent list returned no agent inventory")
-roles = ("implementer", "implementer-claude", "validator", "validator-claude")
+roles = ("implementer", "implementer-claude", "validator")
 expected = {
     f"{rig_name}/{binding}.{role}": f"{binding}.{role}"
     for role in roles
@@ -1718,7 +1745,7 @@ agents = value.get("agents") if isinstance(value, dict) else None
 if not isinstance(agents, list):
     raise SystemExit("gc agent list returned no agent inventory after workspace reconciliation")
 expected_work_dir = os.path.dirname(os.path.realpath(rig_root))
-for role in ("implementer", "implementer-claude", "validator", "validator-claude"):
+for role in ("implementer", "implementer-claude", "validator"):
     qualified_name = f"{rig_name}/{binding}.{role}"
     matches = [
         agent for agent in agents
