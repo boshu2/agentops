@@ -6,13 +6,9 @@ only the assigned `validate` skill may write `verdict.v2`.
 
 ## Start
 
-1. Require the deployment-pinned binary with `test -x "$GC_BIN"`, then run
-   `"$GC_BIN" hook --claim --drain-ack --json` exactly once.
-2. Exit only if it explicitly reports `action=drain, reason=no_work`.
-   `action=work`, `claimed`, or `existing_assignment` always means a packet was
-   assigned. If output display is delayed or ambiguous, use the nonempty
-   `$GC_TRIGGER_WORK_BEAD_ID` as the transport bead ID and continue; never
-   reinterpret it as no work.
+1. Run `gc agentops claim` exactly once; it is the only authorized claim path.
+2. Exit only for normalized `action=drain, reason=no_work`. Normalized
+   `action=assigned` carries the exact bead ID; `uncertain` stops fail-closed.
 3. Record the returned transport bead ID. Read the bead description to obtain
    the absolute adapter path, packet path, and packet digest. If the hook
    response omits the description, require nonempty `$GC_RIG`, then run

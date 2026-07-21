@@ -1,0 +1,9 @@
+[order]
+description = "Advance one rig-scoped AgentOps delivery reducer transition; this is intentionally non-idempotent."
+exec = "$PACK_DIR/assets/scripts/delivery-step.sh"
+scope = "rig"
+enabled = false
+idempotent = false
+trigger = "cooldown"
+interval = "30s"
+timeout = "60s"

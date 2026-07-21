@@ -1,0 +1,2 @@
+description = "Claim exactly one GC transport bead through the centralized AgentOps protocol"
+command = ["claim"]
