@@ -27,13 +27,16 @@ without moving AgentOps lifecycle authority into the adapter.
 
 ## Product decision
 
-The release has two independent loops joined by one immutable handoff:
+The release has one agentic semantic-production loop followed by one
+asynchronous mechanical delivery state machine, joined by one immutable
+handoff:
 
 1. **Semantic production:** intake bead -> Fable Mayor -> Sol plan review ->
    Terra/Opus implementation -> fresh Sol validation -> terminal semantic bead.
-2. **Delivery:** `PASS` -> `admission-certificate.v2` -> replayable prepared
-   handoff -> linked delivery bead -> crash-only deterministic delivery reducer
-   on the native GC substrate -> PR/CI/rebase/merge -> landed receipt.
+2. **Mechanical delivery:** `PASS` -> `admission-certificate.v2` ->
+   replayable prepared handoff -> linked delivery bead -> crash-only
+   deterministic delivery reducer on the native GC substrate ->
+   PR/CI/rebase/merge -> landed receipt.
 
 The original semantic bead closes after its exact candidate receives
 `PASS | FAIL | NOT_PROVEN`. Delivery never reopens that bead. If moving `main`
@@ -44,12 +47,12 @@ successor bead.
 `main` is never frozen. There is no branch-wide mutex and semantic validation
 does not wait for the Refiner to merge anything.
 
-Loop B is not an optional embellishment. Removing it would either keep the
-semantic bead open until delivery, coupling throughput to CI and merge, or
-close the bead without a durable owner for admitted work. It is not a second
-model-driven factory: it is one linked bead plus short deterministic
-reconciliations. `Refinery` names the subsystem; `Refiner` names only the
-triggered Fable ambiguity role.
+The delivery state machine is not an optional embellishment. Removing it would
+either keep the semantic bead open until delivery, coupling throughput to CI
+and merge, or close the bead without a durable owner for admitted work. It is
+not a second agentic loop or model-driven factory: it is one linked bead plus
+short deterministic reconciliations. `Refinery` names the delivery subsystem;
+`Refiner` names only the triggered Fable ambiguity role.
 
 The routine delivery engine is typed `ao` Go product code invoked by thin GC
 exec-order glue. Each invocation re-reads durable state, reconciles remote
@@ -133,8 +136,9 @@ unique support result that changed an operator or controller action.
 
 ## Refinery subsystem shape
 
-`Refinery` names Loop B. `Refiner` names only the Fable reasoning role within
-that subsystem.
+`Refinery` names the asynchronous mechanical delivery state machine. `Refiner`
+names only the Fable reasoning role triggered for genuine ambiguity within
+that subsystem. There is no second model loop or resident Refiner worker pool.
 
 The ordinary path is mechanical: validate the certificate, reconcile one
 bead-native delivery state, construct a current-base epoch in an ephemeral
@@ -333,7 +337,7 @@ to change in one run.
 |---|---|
 | GC33-0 Clean baseline | Inventory forks, branches, worktrees, toolchains, processes, Dolt servers, and experiment roots. Keep the v17 city suspended. Give every known error an owner, reproducer, disposition, and release relevance before safely removing obsolete owned state. |
 | GC33-1 Provenance/bootstrap | Select official v1.3.5/Beads v1.1.0 by default; qualify the single #3985 exception; pin the `ao` reducer binary; prove absolute binary identity and clean, idempotent bootstrap/teardown. |
-| GC33-2 Substrate and contracts | Run the real Beads/GC capability envelope; choose in-place or successor-bead epochs; finalize graph, certificate, marker-first handoff, linked delivery type, terminal semantic behavior, liveness deadlines, and replay rules. Reconcile `docs/architecture/gas-city-factory.md` and `docs/contracts/gas-city-execution-adapter.md` to the selected Fable/Sol, bead-native deterministic Loop B contract. Stop if neither bead representation is safe without a private ledger. |
+| GC33-2 Substrate and contracts | Run the real Beads/GC capability envelope; choose in-place or successor-bead epochs; finalize graph, certificate, marker-first handoff, linked delivery type, terminal semantic behavior, liveness deadlines, and replay rules. Reconcile `docs/architecture/gas-city-factory.md` and `docs/contracts/gas-city-execution-adapter.md` to the selected Fable/Sol, bead-native deterministic delivery-state-machine contract. Stop if neither bead representation is safe without a private ledger. |
 | GC33-3 Role pack | Install only the approved Fable/Sol/Terra/Opus/Luna matrix, native sling/claim paths, and exact runtime attestation. |
 | GC33-4 Isolation/routing | Prove disjoint width-two writers, conflict-domain serialization, worktree/process containment, writer-pool capacity policy, disjoint delivery/ambiguity schemas, construction-interleaving safety, composed-config predicate isolation, and zero clean-path Refiner wakes. |
 | GC33-5 Merge selection | Record forge protection and distinct identity authority; run bounded controller-merge versus forge-auto conformance probes on protected fixture branches; select exactly one engine and delete the loser. |
