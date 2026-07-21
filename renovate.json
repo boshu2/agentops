@@ -8,8 +8,7 @@
   "prHourlyLimit": 4,
   "packageRules": [
     {
-      "matchDepTypes": ["devDependencies"],
-      "matchUpdateTypes": ["patch", "minor", "digest"],
+      "matchUpdateTypes": ["minor", "patch", "pin", "digest"],
       "automerge": true
     },
     {
