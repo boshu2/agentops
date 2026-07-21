@@ -53,6 +53,14 @@ before upgrading.
   facts, never the author's narrative — persists `verdict.v2` with distinct
   context ids. Any dead stage degrades to `NOT_PROVEN`; no retry, no
   lifecycle authority.
+- Caller-selected cross-vendor validation for the `rpi` workflow: an optional
+  `validator: { kind: 'spawned' | 'command', command? }` arg. With `command`,
+  the fresh Validate context brokers the unchanged evidence packet to an
+  opaque external judge command, captures its raw transcript under the run's
+  `.agents/ao/` evidence area, and persists `verdict.v2` carrying the judge's
+  own ruling — no verdict laundering (an ambiguous ruling is `NOT_PROVEN`),
+  no silent fallback to the spawned judge, and the broker attests under its
+  own context id, distinct from both the author and the external validator.
 
 ### Changed
 

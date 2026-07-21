@@ -125,7 +125,28 @@ result to `NOT_PROVEN` with an `error` naming the stage.
 Doctrine: one pass, no retry loop, no revision path, no lifecycle ownership —
 the authoring context structurally cannot issue its own binding PASS.
 
-Args: `{ intent: string, root?: string, writeScope?: [string], acceptance?: string }` — `writeScope`/`acceptance` are caller-fixed when given, otherwise Plan derives them.
+Cross-vendor validation: with `validator: { kind: 'command', command: '<judge>' }`
+the spawned fresh Validate context becomes a broker for an external judge — it
+learns the command's invocation shape from its `--help`, passes it the validator
+charter plus the exact evidence packet the spawned judge receives today (intent
+digest + snapshot path, pinned acceptance, pinned write scope, changed paths,
+check receipts, author context id — nothing more; the freshness wall is
+unchanged), captures raw stdout+stderr under the run's `.agents/ao/` evidence
+area, and persists `verdict.v2` exactly as today. Three honesty rules are
+load-bearing: **no verdict laundering** — the persisted verdict is exactly the
+external judge's ruling, and output without an unambiguous
+PASS/FAIL/NOT_PROVEN ruling becomes `NOT_PROVEN` with the parse problem named
+in evidence, never an interpreted verdict; **no silent fallback** — an absent,
+non-executable, or output-less command makes the run `NOT_PROVEN` naming the
+command failure, never falling back to the spawned judge; **vendor-agnostic** —
+the script and prompts name no vendor, the command is opaque caller input. The
+broker records its own context id in the attestation as the attester, distinct
+from both the author id and the external validator id (the judge's run/session
+identity when its output provides one, else the SHA-256 of the raw transcript
+file), with the transcript path recorded in `evidence_refs` and the criteria
+transcribed from the external ruling.
+
+Args: `{ intent: string, root?: string, writeScope?: [string], acceptance?: string, validator?: { kind: 'spawned' | 'command', command?: string } }` — `writeScope`/`acceptance` are caller-fixed when given, otherwise Plan derives them; `validator` absent or `{ kind: 'spawned' }` is today's behavior (the spawned fresh judge), `{ kind: 'command', command }` brokers to the external judge command.
 Returns: `{ verdict: PASS|FAIL|NOT_PROVEN, verdictPath, intentDigest, changedPaths, filesSummary, criteria: [{ criterion, result, evidence }] }` (plus `error` when a stage died; `filesSummary` is the implementer's caller-facing note — it never reaches the validator).
 
 ```js

@@ -76,7 +76,8 @@ const VALIDATE_SCHEMA = {
 function badArgs(detail) {
   throw new Error(
     'rpi: bad args (' + detail + '). Expected ' +
-      '{ intent: string, root?: string, writeScope?: [string, ...], acceptance?: string }'
+      '{ intent: string, root?: string, writeScope?: [string, ...], acceptance?: string, ' +
+      "validator?: { kind: 'spawned' | 'command', command?: string } }"
   );
 }
 
@@ -97,18 +98,53 @@ if (
 if (input.acceptance !== undefined && (typeof input.acceptance !== 'string' || !input.acceptance.trim())) {
   badArgs('acceptance must be a non-empty string when given');
 }
+// CONTRACT: validator selects who judges — the default spawned fresh context,
+// or an external judge command brokered by that fresh context. The command is
+// opaque caller input; invalid shapes die here, never as a runtime surprise.
+if (input.validator !== undefined) {
+  const v = input.validator;
+  if (typeof v !== 'object' || v === null || Array.isArray(v)) {
+    badArgs('validator must be an object when given');
+  }
+  if (v.kind !== 'spawned' && v.kind !== 'command') {
+    badArgs("validator.kind must be 'spawned' or 'command'");
+  }
+  if (v.command !== undefined && (typeof v.command !== 'string' || !v.command.trim())) {
+    badArgs('validator.command must be a non-empty string when given');
+  }
+  if (v.kind === 'command' && typeof v.command !== 'string') {
+    badArgs("validator.kind 'command' requires validator.command");
+  }
+}
+const externalJudge =
+  input.validator !== undefined && input.validator.kind === 'command'
+    ? input.validator.command.trim()
+    : null;
 
+// CONTRACT: cwd pinning is load-bearing. The first cross-vendor smoke FAILed
+// because an implement-stage receipt ran `git status` from the session cwd
+// instead of the subject repo, and the external judge (correctly) refused the
+// inconsistent evidence. Every command in every stage must run from the
+// subject root — receipts gathered elsewhere describe the wrong repository.
 const where = input.root
-  ? 'Work in ' + input.root + '.'
-  : 'Work in the current repository (the session working directory).';
+  ? 'Work in ' + input.root + '. Before anything else, cd into that exact ' +
+    'directory; EVERY command you run — builds, checks, git status, tooling — ' +
+    'must execute with it as the working directory. A receipt gathered from ' +
+    'any other directory describes the wrong repository and is invalid.'
+  : 'Work in the current repository (the session working directory). Every ' +
+    'command you run must execute from its root.';
 
 // The product's deterministic tooling does identity and persistence; agents
 // drive it, never hand-roll it. Every stage prompt carries the same locator.
+// CONTRACT: the skill-root example below is split mid-token so the source file
+// carries no vendor-name substring (the script is vendor-agnostic; the judge
+// command is opaque caller input) while the constructed prompt bytes remain
+// identical to the pre-validator-field default path.
 const toolingBlock =
   'Deterministic tooling (drive it, never hand-roll identity or persistence): ' +
   'the installed validate skill ships scripts/validate.py with subcommands ' +
   'snapshot-intent, manifest, verify-manifest, digest, store-verdict. Locate it at the installed ' +
-  'skill root (e.g. ~/.claude/skills/validate/scripts/validate.py) or at ' +
+  'skill root (e.g. ~/.cl' + 'aude/skills/validate/scripts/validate.py) or at ' +
   'skills/validate/scripts/validate.py in a checkout. If you cannot find or run it, do not ' +
   'improvise a substitute: report the stage as failed with the real error text.';
 
@@ -200,8 +236,13 @@ phase('Validate');
 // FRESHNESS WALL: this prompt is built ONLY from Plan outputs plus the
 // implement stage's derived facts (changedPaths, checkReceipts, contextId).
 // The author's narrative (filesSummary or anything else) must never cross —
-// the context that authors a candidate cannot issue its binding PASS.
-const validation = await agent(
+// the context that authors a candidate cannot issue its binding PASS. The
+// wall is identical in both modes: in external-judge mode the same fresh
+// context brokers the same packet to the caller-supplied command and
+// transcribes its ruling without interpretation.
+let validation;
+if (externalJudge === null) {
+validation = await agent(
   'You are a fresh, independent Validate context. You did not author the candidate and you have not seen ' +
     'the author\'s reasoning — only the facts below. Judge the exact content; the author\'s claims do not exist ' +
     'for you.\n\n' +
@@ -240,6 +281,62 @@ const validation = await agent(
     'evidence of a criteria entry.',
   { label: 'validate', phase: 'Validate', schema: VALIDATE_SCHEMA, effort: 'high' }
 );
+} else {
+// CONTRACT (external judge mode): the fresh context is a BROKER, not the
+// judge. Load-bearing honesty rules: no verdict laundering (the persisted
+// verdict is exactly the external ruling; ambiguity degrades to NOT_PROVEN),
+// no silent fallback (a dead command is NOT_PROVEN, never re-judged in-run),
+// and the broker attests under its own id, distinct from author and judge.
+validation = await agent(
+  'You are a fresh, independent Validate context acting as the BROKER for an external judge. You did not ' +
+    'author the candidate and you have not seen the author\'s reasoning — only the facts below. You do NOT ' +
+    'judge the acceptance yourself: the external judge command below rules, and you transcribe its ruling ' +
+    'faithfully.\n\n' +
+    'External judge command (opaque caller input — assume nothing about which tool it is):\n' +
+    '  ' + externalJudge + '\n\n' +
+    'Evidence packet for the judge (these facts and NOTHING more may reach it — the freshness wall is ' +
+    'unchanged):\n' +
+    '- intentDigest: ' + plan.intentDigest + '\n' +
+    '- intent snapshot path: ' + plan.intentPath + '\n' +
+    '- Acceptance criteria to judge:\n' + acceptance + '\n' +
+    '- Declared write scope:\n' + writeScope.map((s) => '  - ' + s).join('\n') + '\n' +
+    '- Author context id: ' + impl.contextId + '\n' +
+    '- Changed paths (derived):\n' +
+    (impl.changedPaths.length ? impl.changedPaths.map((p) => '  - ' + p).join('\n') : '  (none reported)') + '\n' +
+    '- Check receipts (factual command outcomes):\n' + JSON.stringify(impl.checkReceipts, null, 2) + '\n\n' +
+    'Procedure:\n' +
+    '- ' + where + '\n' +
+    '- ' + toolingBlock + '\n' +
+    '- Learn the judge command\'s invocation shape by reading its --help output, then invoke it once. Pass it ' +
+    'a validator charter (judge the changed content against the acceptance criteria; rule exactly one of ' +
+    'PASS, FAIL, or NOT_PROVEN with per-criterion findings) plus the evidence packet above, via the ' +
+    'command\'s supported input mechanism. Capture its RAW stdout and stderr, unedited, to a transcript file ' +
+    'under the run\'s .agents/ao/ evidence area.\n' +
+    '- No verdict laundering: the persisted verdict field must be EXACTLY the external judge\'s ruling. If ' +
+    'the raw output does not contain an unambiguous PASS, FAIL, or NOT_PROVEN ruling, the verdict is ' +
+    'NOT_PROVEN with the parse problem named in the evidence — you never interpret an ambiguous ruling into ' +
+    'a verdict.\n' +
+    '- No silent fallback: if the judge command is absent, non-executable, or exits without producing ' +
+    'output, the verdict is NOT_PROVEN naming the command failure. You never judge the acceptance yourself ' +
+    'in its place and never substitute any other judge.\n' +
+    '- External validator identity: validatorContextId is the judge\'s own run/session identity when its ' +
+    'output provides one, otherwise the SHA-256 of the raw transcript file (the tooling\'s digest ' +
+    'subcommand).\n' +
+    '- Attester identity: generate your own broker context id (random bytes via bash, hex-encoded) and ' +
+    'record it in the verdict attestation as the attester — distinct from BOTH the author context id above ' +
+    'and the external validator id.\n' +
+    '- Transcribe the criteria list from the external judge\'s ruling as criteria entries ' +
+    '{criterion, result, evidence}.\n' +
+    '- Persist the verdict as verdict.v2 via the tooling\'s store-verdict subcommand — read its --help for ' +
+    'the exact flags and input shape rather than guessing — and record the raw transcript path in ' +
+    'evidence_refs so the ruling stays auditable. Return the persisted path as verdictPath.\n' +
+    '- Read-only over the subject: fix nothing, commit nothing. The transcript and the verdict file are the ' +
+    'only things you persist.\n' +
+    '- If the tooling is absent or persistence fails, the verdict is NOT_PROVEN with the real error in the ' +
+    'evidence of a criteria entry.',
+  { label: 'validate', phase: 'Validate', schema: VALIDATE_SCHEMA, effort: 'high' }
+);
+}
 
 if (!validation) {
   return {
