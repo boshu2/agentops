@@ -9,12 +9,14 @@ and process identity drift.
 from __future__ import annotations
 
 import argparse
+from collections import Counter
 import datetime as dt
 import hashlib
 import json
 import os
 from pathlib import Path
 import plistlib
+import secrets
 import shutil
 import signal
 import stat
@@ -234,6 +236,10 @@ def git_worktrees(repo: Path) -> list[dict[str, Any]]:
             if current:
                 path = Path(current["path"])
                 current["git"] = git_status(path) if path.exists() else None
+                if path.exists():
+                    raw_index = run(["git", "-C", str(path), "rev-parse", "--git-path", "index"]).strip()
+                    index = Path(raw_index)
+                    current["git_index"] = str(index if index.is_absolute() else (path / index).resolve())
                 records.append(current)
                 current = {}
             continue
@@ -907,6 +913,226 @@ def git_audit(before: dict[str, Any], after: dict[str, Any]) -> dict[str, Any]:
         if left_status != right_status:
             findings.append(f"content/status changed: {path}")
     return {"result": "PASS" if not findings else "FAIL", "findings": findings}
+
+
+def _status_paths(status: list[str]) -> list[str]:
+    paths: list[str] = []
+    for line in status:
+        if not isinstance(line, str) or len(line) < 4:
+            paths.append("<invalid-status>")
+            continue
+        paths.extend(part for part in line[3:].split(" -> ") if part)
+    return paths
+
+
+def _declared_path(path: str, declared: list[str]) -> bool:
+    for item in declared:
+        root = item.rstrip("/") if item.endswith("/") else item
+        if root and (path == root or path.startswith(f"{root}/")):
+            return True
+    return False
+
+
+def _reflog_additions(before: list[Any], after: list[Any]) -> list[str]:
+    """Return added reflog entries without trusting their presentation order."""
+    remaining = Counter(item for item in before if isinstance(item, str))
+    additions: list[str] = []
+    for item in after:
+        if not isinstance(item, str):
+            additions.append("<invalid-reflog-entry>")
+        elif remaining[item]:
+            remaining[item] -= 1
+        else:
+            additions.append(item)
+    return additions
+
+
+def _candidate_reflog_action(entry: str, *, branch: str, index: str) -> str | None:
+    """Classify one candidate reflog action, or None when it belongs elsewhere.
+
+    The candidate branch and its linked-worktree HEAD are the only reflogs it
+    may change.  Ref ownership alone is insufficient: only ordinary commit
+    actions are allowed, and the snapshot audit separately proves the ref is a
+    forward move whose diff remains in declared scope.
+    """
+    fields = entry.split("|", 2)
+    if len(fields) != 3:
+        return None
+    _object_id, selector, subject = fields
+    worktree_head = f"worktrees/{Path(index).parent.name}/HEAD@{{"
+    if not (selector.startswith(f"refs/heads/{branch}@{{") or selector.startswith(worktree_head)):
+        return None
+    return subject.partition(":")[0]
+
+
+def _valid_process_receipt(receipt: Any) -> bool:
+    fields = {
+        "schema_version", "isolation_token", "runner_pgid", "completed",
+        "outcome", "timeout", "leak_detected", "cleanup_required",
+        "cleanup_complete", "surviving_pids",
+    }
+    if not isinstance(receipt, dict) or set(receipt) != fields:
+        return False
+    token = receipt.get("isolation_token")
+    return (
+        receipt.get("schema_version") == "candidate-process-receipt.v1"
+        and isinstance(token, str)
+        and len(token) == 64
+        and all(character in "0123456789abcdef" for character in token)
+        and isinstance(receipt.get("runner_pgid"), int)
+        and receipt["runner_pgid"] > 0
+        and all(isinstance(receipt.get(key), bool) for key in (
+            "completed", "timeout", "leak_detected", "cleanup_required", "cleanup_complete",
+        ))
+        and isinstance(receipt.get("outcome"), str)
+        and isinstance(receipt.get("surviving_pids"), list)
+        and all(isinstance(pid, int) and pid > 0 for pid in receipt["surviving_pids"])
+    )
+
+
+def candidate_git_audit(before: dict[str, Any], after: dict[str, Any], candidate: dict[str, Any], *, process_receipt: dict[str, Any] | None) -> dict[str, Any]:
+    """Audit one candidate while allowing only its branch, tree, index and paths.
+
+    This is intentionally snapshot-only: it never scans or kills by process
+    name.  The bounded runner supplies the exact isolation-token receipt.
+    """
+    findings: list[str] = []
+    worktree, branch, index = candidate.get("worktree"), candidate.get("branch"), candidate.get("index")
+    declared = candidate.get("declared_paths", [])
+    generated = candidate.get("generated_paths", [])
+    if not all(isinstance(value, str) and value for value in (worktree, branch, index)) or not isinstance(declared, list) or not isinstance(generated, list) or not all(isinstance(item, str) and item for item in [*declared, *generated]):
+        raise ReliabilityError("candidate audit requires exact worktree, branch, index, and declared paths")
+    allowed_paths = [*declared, *generated]
+    if before.get("repo") != after.get("repo") or before.get("common_dir") != after.get("common_dir"):
+        findings.append("repository identity changed")
+    if before.get("stash") != after.get("stash"):
+        findings.append("stash state changed")
+    before_trees = {str(Path(item["path"]).resolve()): item for item in before.get("worktrees", [])}
+    after_trees = {str(Path(item["path"]).resolve()): item for item in after.get("worktrees", [])}
+    worktree = str(Path(worktree).resolve())
+    if set(before_trees) != set(after_trees):
+        findings.append("worktree set changed")
+    if worktree not in before_trees or worktree not in after_trees:
+        findings.append("candidate worktree missing from snapshot")
+    for path in sorted(set(before_trees) & set(after_trees)):
+        left, right = before_trees[path], after_trees[path]
+        if path != worktree:
+            if left.get("head") != right.get("head") or left.get("branch") != right.get("branch") or (left.get("git") or {}).get("status", []) != (right.get("git") or {}).get("status", []):
+                findings.append(f"non-candidate worktree changed: {path}")
+            continue
+        if left.get("branch") != branch or right.get("branch") != branch or left.get("git_index") != index or right.get("git_index") != index:
+            findings.append("candidate identity changed")
+        for snapshot in (left, right):
+            for changed in _status_paths((snapshot.get("git") or {}).get("status", [])):
+                if not _declared_path(changed, allowed_paths):
+                    findings.append(f"undeclared candidate write: {changed}")
+    before_refs, after_refs = set(before.get("refs", [])), set(after.get("refs", []))
+    changed_refs = before_refs ^ after_refs
+    candidate_ref = f"refs/heads/{branch}|"
+    if any(not ref.startswith(candidate_ref) for ref in changed_refs):
+        findings.append("non-candidate ref changed")
+    before_reflog, after_reflog = before.get("reflog", []), after.get("reflog", [])
+    if not isinstance(before_reflog, list) or not isinstance(after_reflog, list):
+        findings.append("reflog snapshot is invalid")
+    else:
+        additions = _reflog_additions(before_reflog, after_reflog)
+        if len(after_reflog) < len(before_reflog) or any(not isinstance(item, str) for item in before_reflog):
+            findings.append("reflog history removed or invalid")
+        for entry in additions:
+            action = _candidate_reflog_action(entry, branch=branch, index=index)
+            if action is None:
+                findings.append("non-candidate reflog changed")
+            elif action != "commit":
+                findings.append("candidate reflog action is not an allowed forward commit")
+    if worktree in before_trees and worktree in after_trees and before_trees[worktree].get("head") != after_trees[worktree].get("head") and Path(worktree).is_dir():
+        ancestor = subprocess.run(["git", "-C", worktree, "merge-base", "--is-ancestor", str(before_trees[worktree].get("head")), str(after_trees[worktree].get("head"))], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=False)
+        if ancestor.returncode:
+            findings.append("candidate identity rewrote history")
+        diff = subprocess.run(["git", "-C", worktree, "diff", "--name-status", "--no-renames", str(before_trees[worktree].get("head")), str(after_trees[worktree].get("head"))], text=True, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, check=False)
+        if diff.returncode:
+            findings.append("candidate committed diff unavailable")
+        else:
+            for line in diff.stdout.splitlines():
+                fields = line.split("\t")
+                for changed in fields[1:]:
+                    if not _declared_path(changed, allowed_paths):
+                        findings.append(f"undeclared committed candidate write: {changed}")
+    receipt_proven = False
+    if process_receipt is None:
+        findings.append("isolation receipt is not proven")
+    elif not _valid_process_receipt(process_receipt):
+        findings.append("isolation receipt is invalid")
+    elif process_receipt.get("completed") is True and process_receipt.get("outcome") == "clean" and process_receipt.get("timeout") is False and process_receipt.get("leak_detected") is False and process_receipt.get("cleanup_required") is False and process_receipt.get("cleanup_complete") is True and not process_receipt["surviving_pids"]:
+        receipt_proven = True
+    else:
+        findings.append("process isolation reported non-clean outcome")
+    git_findings = [item for item in findings if not item.startswith("isolation receipt")]
+    return {"result": "PASS" if not findings else ("NOT_PROVEN" if not git_findings else "FAIL"), "git_result": "PASS" if not git_findings else "FAIL", "findings": findings,
+            "candidate": {"worktree": worktree, "branch": branch, "index": index, "declared_paths": declared, "generated_paths": generated},
+            "process_receipt": process_receipt, "process_receipt_proven": receipt_proven}
+
+
+def _process_group_pids(pgid: int) -> list[int]:
+    """List only a known child session's process group; never match names."""
+    result = subprocess.run(["ps", "-axo", "pid=,pgid="], text=True, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, check=False)
+    if result.returncode:
+        return []
+    return sorted({int(fields[0]) for line in result.stdout.splitlines() if len(fields := line.split()) == 2 and fields[0].isdigit() and fields[1].isdigit() and int(fields[1]) == pgid})
+
+
+def run_bounded_isolation(argv: list[str], *, timeout_seconds: float) -> dict[str, Any]:
+    """Run one command in a fresh owned process group and return its receipt.
+
+    The token correlates this invocation; accounting and signalling are only by
+    the exact fresh PGID.  This deliberately makes no hostile-detachment claim.
+    """
+    if not argv or timeout_seconds <= 0:
+        raise ReliabilityError("bounded isolation requires argv and a positive timeout")
+    token = secrets.token_hex(32)
+    child = subprocess.Popen(argv, stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, env={**os.environ, "AGENTOPS_GC_ISOLATION_TOKEN": token}, start_new_session=True)
+    pgid = child.pid
+    completed = False
+    timed_out = False
+    try:
+        child.wait(timeout=timeout_seconds)
+        completed = True
+    except subprocess.TimeoutExpired:
+        timed_out = True
+    time.sleep(0.03)
+    survivors = _process_group_pids(pgid)
+    leaked = bool(survivors)
+    cleanup_required = timed_out or leaked
+    cleanup_complete = not cleanup_required
+    if cleanup_required:
+        try:
+            os.killpg(pgid, signal.SIGTERM)
+        except (ProcessLookupError, PermissionError):
+            pass
+        try:
+            child.wait(timeout=0.25)
+        except subprocess.TimeoutExpired:
+            pass
+        deadline = time.monotonic() + 0.5
+        while _process_group_pids(pgid) and time.monotonic() < deadline:
+            time.sleep(0.02)
+        if _process_group_pids(pgid):
+            try:
+                os.killpg(pgid, signal.SIGKILL)
+            except (ProcessLookupError, PermissionError):
+                pass
+            try:
+                child.wait(timeout=0.25)
+            except subprocess.TimeoutExpired:
+                pass
+            time.sleep(0.03)
+        cleanup_complete = not _process_group_pids(pgid)
+    outcome = "clean" if not cleanup_required else ("timeout_cleanup_required" if timed_out else "leak_cleanup_required")
+    if not cleanup_complete:
+        outcome = "cleanup_failed"
+    return {"schema_version": "candidate-process-receipt.v1", "isolation_token": token, "runner_pgid": pgid,
+            "completed": completed, "outcome": outcome, "timeout": timed_out, "leak_detected": leaked,
+            "cleanup_required": cleanup_required, "cleanup_complete": cleanup_complete,
+            "surviving_pids": _process_group_pids(pgid)}
 
 
 def find_path(inventory_payload: dict[str, Any], target: str) -> dict[str, Any] | None:

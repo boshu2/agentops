@@ -10,9 +10,12 @@ metadata.
 from __future__ import annotations
 
 import argparse
+import copy
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import contextlib
+from datetime import datetime
 import fcntl
+from functools import lru_cache
 import hashlib
 import importlib.util
 import json
@@ -29,8 +32,28 @@ import time
 import tomllib
 from typing import Any
 
+from jsonschema import Draft202012Validator, FormatChecker
+
 
 sys.dont_write_bytecode = True
+
+# jsonschema's optional RFC 3339 dependency is not installed in every supported
+# local toolchain.  Register the standard-library equivalent on the real
+# FormatChecker so a missing extra cannot silently turn off date-time checks.
+PAYLOAD_FORMAT_CHECKER = FormatChecker()
+
+
+@PAYLOAD_FORMAT_CHECKER.checks("date-time")
+def _rfc3339_date_time(value: object) -> bool:
+    if not isinstance(value, str):
+        return True
+    if not re.fullmatch(r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})", value):
+        return False
+    try:
+        parsed = datetime.fromisoformat(value[:-1] + "+00:00" if value.endswith("Z") else value)
+    except ValueError:
+        return False
+    return parsed.tzinfo is not None
 
 PACK_ROOT = Path(__file__).resolve().parents[2]
 SCHEMA_ROOT = PACK_ROOT / "assets" / "schemas"
@@ -348,6 +371,598 @@ def canonical_v2_scope_paths(values: Any, label: str, *, nonempty: bool) -> list
     if len(set(normalized)) != len(normalized):
         raise FactoryError("invalid_scope", f"{label} contains duplicate normalized paths")
     return normalized
+
+
+# GC33-4 is deliberately a proof kernel.  These helpers consume an immutable
+# ready-set snapshot; they do not create Beads, sessions, locks, or a queue.
+def _writer_paths(writer: dict[str, Any]) -> set[str]:
+    paths = canonical_v2_scope_paths(writer.get("write_scope", []), "writer.write_scope", nonempty=True)
+    generated = canonical_v2_scope_paths(writer.get("generated_companions", []), "writer.generated_companions", nonempty=False)
+    return set(paths + generated)
+
+
+def _path_overlaps(left: str, right: str) -> bool:
+    return left == right or left.startswith(f"{right}/") or right.startswith(f"{left}/")
+
+
+def writer_conflicts(left: dict[str, Any], right: dict[str, Any]) -> bool:
+    """Return whether two declared candidate envelopes must serialize."""
+    left_paths, right_paths = _writer_paths(left), _writer_paths(right)
+    if any(_path_overlaps(a, b) for a in left_paths for b in right_paths):
+        return True
+    left_group = left.get("atomic_group_id", left.get("delivery_group_id"))
+    right_group = right.get("atomic_group_id", right.get("delivery_group_id"))
+    return isinstance(left_group, str) and bool(left_group) and left_group == right_group
+
+
+def candidate_identity_receipt(candidate: dict[str, Any]) -> dict[str, str | int]:
+    """Validate the independent identity facts a bounded inert runner records."""
+    required = ("worktree", "branch", "git_index", "lease_token", "fence_epoch")
+    if any(not candidate.get(field) for field in required):
+        raise FactoryError("candidate_identity_invalid", "candidate identity is incomplete")
+    worktree = absolute_path(candidate["worktree"], "candidate worktree", directory=True)
+    branch = output(["git", "-C", str(worktree), "branch", "--show-current"])
+    expected_branch = require_string(candidate["branch"], "candidate branch")
+    if branch != expected_branch:
+        raise FactoryError("candidate_identity_invalid", "candidate branch does not match its live worktree")
+    raw_index = output(["git", "-C", str(worktree), "rev-parse", "--git-path", "index"])
+    actual_index = Path(raw_index)
+    if not actual_index.is_absolute():
+        actual_index = (worktree / actual_index).resolve(strict=False)
+    git_index = Path(require_string(candidate["git_index"], "candidate git index")).resolve(strict=False)
+    if git_index != actual_index or not git_index.is_file():
+        raise FactoryError("candidate_identity_invalid", "candidate Git index is not the live worktree index")
+    if not isinstance(candidate["fence_epoch"], int) or isinstance(candidate["fence_epoch"], bool) or candidate["fence_epoch"] <= 0:
+        raise FactoryError("candidate_identity_invalid", "candidate fence epoch must be positive")
+    return {
+        "worktree": str(worktree), "branch": expected_branch,
+        "git_index": str(git_index), "lease_token": require_string(candidate["lease_token"], "candidate lease token"),
+        "fence_epoch": candidate["fence_epoch"],
+    }
+
+
+def lease_receipt_is_current(bead_id: str, receipt: dict[str, Any], current: dict[str, Any]) -> bool:
+    """Check one semantic bead's token/generation pair; no global epoch exists."""
+    try:
+        semantic_bead_id = require_string(bead_id, "semantic bead id")
+        return (require_string(receipt.get("semantic_bead_id"), "receipt semantic bead id") == semantic_bead_id
+                and require_string(current.get("semantic_bead_id"), "current semantic bead id") == semantic_bead_id
+                and require_string(receipt.get("lease_token"), "receipt lease token")
+                == require_string(current.get("lease_token"), "current lease token")
+                and int(receipt.get("fence_epoch", 0)) == int(current.get("fence_epoch", 0))
+                and int(current.get("fence_epoch", 0)) > 0)
+    except (FactoryError, TypeError, ValueError):
+        return False
+
+
+def _eligible_writers(ready: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    eligible = [item for item in ready if item.get("ready", True) and item.get("dependencies_ready", True)]
+    for item in eligible:
+        if item.get("bead_class") not in {"product", "delivery_repair"}:
+            raise FactoryError("invalid_writer_class", "admission accepts only product or delivery_repair writers")
+        require_string(item.get("id"), "writer id")
+        _writer_paths(item)
+    return sorted(eligible, key=lambda item: (item.get("admitted_at", 0), str(item["id"])))
+
+
+def admit_semantic_writers(ready: list[dict[str, Any]], *, capacity: int, repair_streak: int) -> dict[str, Any]:
+    """Apply the GC33-4 fixed-width fairness policy without side effects."""
+    if capacity not in {1, 2, 3, 4}:
+        raise FactoryError("invalid_capacity", "writer capacity must be in 1..4")
+    if repair_streak < 0:
+        raise FactoryError("invalid_repair_streak", "repair streak cannot be negative")
+    eligible = _eligible_writers(ready)
+    product = [item for item in eligible if item["bead_class"] == "product"]
+    repair = [item for item in eligible if item["bead_class"] == "delivery_repair"]
+    if capacity == 1:
+        preferred = (product + repair) if product and repair and repair_streak >= 2 else (repair + product if repair else product)
+    else:
+        repair_slots = {2: 1, 3: 2, 4: 3}[capacity]
+        product_slots = 1
+        preferred = product[:product_slots] + repair[:repair_slots]
+        used = {id(item) for item in preferred}
+        preferred += [item for item in eligible if id(item) not in used]
+    selected: list[dict[str, Any]] = []
+    for writer in preferred:
+        if len(selected) == capacity:
+            break
+        if not any(writer_conflicts(writer, admitted) for admitted in selected):
+            selected.append(writer)
+    result_selected = []
+    for writer in selected:
+        rendered = dict(writer)
+        candidate = writer.get("candidate")
+        if candidate is not None:
+            rendered["candidate"] = candidate_identity_receipt(candidate)
+        else:
+            rendered.pop("candidate", None)
+        result_selected.append(rendered)
+    if len(result_selected) == 2 and all(isinstance(item.get("candidate"), dict) for item in result_selected):
+        identities = ("worktree", "branch", "git_index", "lease_token")
+        for identity in identities:
+            if result_selected[0]["candidate"][identity] == result_selected[1]["candidate"][identity]:
+                raise FactoryError("candidate_identity_invalid", f"candidate identities collide: {identity}")
+        # Epochs are per-bead lease generations, not a repository-wide clock.
+        # Two first leases may therefore both be generation one.  What must
+        # never recur is a complete lease identity for the same semantic bead.
+        complete = {
+            (str(item["id"]), item["candidate"]["lease_token"], item["candidate"]["fence_epoch"])
+            for item in result_selected
+        }
+        if len(complete) != len(result_selected):
+            raise FactoryError("candidate_identity_invalid", "duplicate complete per-bead lease identity")
+    consecutive = repair_streak + 1 if selected and selected[0]["bead_class"] == "delivery_repair" else 0
+    return {"selected": result_selected, "repair_streak": consecutive, "eligible": [item["id"] for item in eligible]}
+
+
+def _payload(work: dict[str, Any]) -> dict[str, Any]:
+    return work.get("payload", work)
+
+
+@lru_cache(maxsize=2)
+def _payload_validator(schema_version: str) -> Draft202012Validator:
+    """Compile the checked-in payload schema; it is the sole payload authority."""
+    name = {"delivery.v1": "delivery.v1.schema.json", "ambiguity-request.v1": "ambiguity-request.v1.schema.json"}.get(schema_version)
+    if name is None:
+        raise FactoryError("invalid_payload", f"unsupported payload schema version: {schema_version!r}")
+    schema = load_object(SCHEMA_ROOT / name, name)
+    try:
+        Draft202012Validator.check_schema(schema)
+        return Draft202012Validator(schema, format_checker=PAYLOAD_FORMAT_CHECKER)
+    except Exception as exc:  # jsonschema reports several concrete schema errors.
+        raise FactoryError("invalid_schema", f"cannot compile {name}: {exc}") from exc
+
+
+def payload_shape_valid(payload: dict[str, Any]) -> bool:
+    """Validate payloads with Draft 2020-12 and its registered format checks."""
+    if not isinstance(payload, dict):
+        return False
+    version = payload.get("schema_version")
+    if not isinstance(version, str):
+        return False
+    try:
+        return not any(_payload_validator(version).iter_errors(payload))
+    except FactoryError:
+        return False
+
+
+def _published_delivery(work: dict[str, Any], delivery_route: str) -> bool:
+    payload = _payload(work)
+    return (payload.get("schema_version") == "delivery.v1" and payload.get("kind") == "delivery"
+            and payload.get("publication") == "published" and work.get("state") == "ready"
+            and work.get("assignee") is None and work.get("delivery_route") == delivery_route
+            and not work.get("gc.routed_to"))
+
+
+def _published_ambiguity(work: dict[str, Any]) -> bool:
+    payload = _payload(work)
+    return (payload.get("schema_version") == "ambiguity-request.v1" and payload.get("kind") == "ambiguity_request"
+            and payload.get("publication") == "published")
+
+
+def stock_model_predicate(work: dict[str, Any], qualified_route: str) -> bool:
+    """Pinned v1.3.5 characterization: assigned tiers or exact ready sling."""
+    if work.get("state") in {"in_progress", "ready"} and work.get("assignee") == qualified_route:
+        return True
+    return work.get("state") == "ready" and work.get("assignee") is None and work.get("gc.routed_to") == qualified_route
+
+
+def refiner_predicate(work: dict[str, Any], refiner_route: str) -> bool:
+    return stock_model_predicate(work, refiner_route) and _published_ambiguity(work)
+
+
+def delivery_predicate(work: dict[str, Any], delivery_route: str) -> bool:
+    return _published_delivery(work, delivery_route)
+
+
+def _delivery_payload() -> dict[str, Any]:
+    return {"schema_version": "delivery.v1", "kind": "delivery", "handoff_id": "a" * 64,
+            "semantic_bead_id": "semantic", "semantic_terminal_ref": "beads:semantic",
+            "admission_certificate_digest": "b" * 64, "delivery_bead_id": "delivery",
+            "external_ref": "handoff", "epoch": 1, "predecessor_receipt_digest": None,
+            "mode": "auto", "state": "queued", "publication": "non_routable",
+            "deadline": "2026-07-22T00:00:00Z", "effect_gate": None, "successor_bead_id": None}
+
+
+def _ambiguity_payload() -> dict[str, Any]:
+    return {"schema_version": "ambiguity-request.v1", "kind": "ambiguity_request",
+            "delivery_bead_id": "delivery", "question": "fact?", "facts": ["fact"],
+            "deadline": "2026-07-22T00:00:00Z", "publication": "non_routable"}
+
+
+def _route_spec(spec: Any) -> dict[str, Any]:
+    if isinstance(spec, str):
+        return {"qualified_name": spec, "effective_work_query": "stock", "effective_sling_query": f"gc.routed_to={spec}"}
+    if isinstance(spec, dict):
+        route = spec.get("qualified_name", spec.get("route"))
+        if not isinstance(route, str):
+            raise FactoryError("invalid_route", "model route has no qualified name")
+        return {"qualified_name": route,
+                "effective_work_query": spec.get("effective_work_query", spec.get("work_query", "stock")),
+                "effective_sling_query": spec.get("effective_sling_query", spec.get("sling_query", f"gc.routed_to={route}"))}
+    raise FactoryError("invalid_route", "model route is invalid")
+
+
+def model_consumers(work: dict[str, Any], routes: dict[str, Any]) -> list[str]:
+    """Evaluate every effective model work query, never only the Refiner route."""
+    consumers: list[str] = []
+    for role, raw_spec in routes.items():
+        spec = _route_spec(raw_spec)
+        if spec["effective_work_query"] == "ready+unassigned":
+            matches = work.get("state") == "ready" and work.get("assignee") is None
+        elif spec["effective_work_query"] == "stock":
+            matches = stock_model_predicate(work, spec["qualified_name"])
+        else:
+            matches = False
+        if matches:
+            consumers.append(role)
+    return consumers
+
+
+def consumers_for_work(work: dict[str, Any], *, delivery_route: str, routes: dict[str, Any]) -> list[str]:
+    consumers = ["delivery"] if delivery_predicate(work, delivery_route) else []
+    consumers.extend(model_consumers(work, routes))
+    return consumers
+
+
+class FakePublicationStore:
+    """The sole inert boundary for staged typed work and fake reconciliation."""
+    def __init__(self) -> None:
+        self.records: dict[str, dict[str, Any]] = {}
+        self.provider_records: dict[str, dict[str, list[dict[str, str]]]] = {}
+        self.delivery_selections: list[dict[str, str]] = []
+        self.claim_expirations: list[dict[str, str]] = []
+
+    def create(self, identity: str, kind: str) -> None:
+        if kind not in {"delivery", "ambiguity"} or identity in self.records:
+            raise FactoryError("invalid_store_create", "fake work record identity or kind is invalid")
+        self.records[identity] = {"kind": kind, "payload": {}, "state": "blocked", "assignee": None,
+                                  "claims": {}, "delivery_selection": None, "advice_results": {}}
+
+    def apply(self, identity: str, field: str, value: Any, *, ready: bool | None = None) -> None:
+        record = self.records[identity]
+        if record.get("delivery_route") or record.get("gc.routed_to") or record["payload"].get("publication") == "published":
+            raise FactoryError("construction_visible", "construction writes are forbidden after publication")
+        record["payload"][field] = copy.deepcopy(value)
+        if ready is not None:
+            record["state"] = "ready" if ready else "blocked"
+
+    def snapshot(self, identity: str) -> dict[str, Any]:
+        return copy.deepcopy(self.records[identity])
+
+    def publish(self, identity: str, *, delivery_route: str, refiner_route: str) -> dict[str, Any]:
+        """Validate first, then make payload/readiness/one selector visible atomically."""
+        record = self.records[identity]
+        payload = copy.deepcopy(record["payload"])
+        expected_version = "delivery.v1" if record["kind"] == "delivery" else "ambiguity-request.v1"
+        if payload.get("schema_version") != expected_version or not payload_shape_valid(payload):
+            raise FactoryError("premature_publication", "incomplete or invalid construction payload cannot publish")
+        published = dict(payload, publication="published")
+        if not payload_shape_valid(published):
+            raise FactoryError("premature_publication", "published payload violates its checked-in schema")
+        final = copy.deepcopy(record)
+        final["payload"] = published
+        final["state"] = "ready"
+        final["assignee"] = None
+        if record["kind"] == "delivery":
+            final["delivery_route"] = delivery_route
+            final.pop("gc.routed_to", None)
+        else:
+            final["gc.routed_to"] = refiner_route
+            final.pop("delivery_route", None)
+        self.records[identity] = final
+        return self.snapshot(identity)
+
+    def select_delivery(self, identity: str) -> None:
+        record = self.records[identity]
+        selection = f"fake-delivery:{identity}"
+        if record["delivery_selection"] is None:
+            record["delivery_selection"] = selection
+            self.delivery_selections.append({"record": identity, "selection": selection})
+
+    def acquire_model_claim(self, identity: str, role: str) -> bool:
+        record = self.records[identity]
+        prior = record["claims"].get(role)
+        if prior == "active":
+            return False
+        record["claims"][role] = "active"
+        ledger = self.provider_records.setdefault(role, {"claims": [], "starts": [], "results": []})
+        ledger["claims"].append({"record": identity, "claim_identity": f"fake-{role}:{identity}"})
+        return True
+
+    def expire_model_claim(self, identity: str, role: str) -> None:
+        record = self.records[identity]
+        if record["claims"].get(role) == "active":
+            record["claims"][role] = "expired"
+            self.claim_expirations.append({"record": identity, "role": role})
+
+    def record_nonbinding_advice(self, identity: str, role: str) -> None:
+        record = self.records[identity]
+        advice_identity = f"fake-{role}:{identity}"
+        if advice_identity in record["advice_results"]:
+            return
+        record["advice_results"][advice_identity] = "complete"
+        ledger = self.provider_records.setdefault(role, {"claims": [], "starts": [], "results": []})
+        ledger["starts"].append({"record": identity, "start_identity": advice_identity})
+        ledger["results"].append({"record": identity, "result_identity": advice_identity, "nonbinding": "true"})
+
+
+def routing_truth_table(*, refiner_route: str | None = None, delivery_route: str,
+                        model_routes: dict[str, Any] | None = None) -> list[dict[str, Any]]:
+    inventory = composed_route_doctor()["inventory"] if model_routes is None else model_routes
+    routes = inventory if all(isinstance(value, dict) and "qualified_name" in value for value in inventory.values()) else inventory
+    refiner_route = refiner_route or _route_spec(routes["refiner"])["qualified_name"]
+    store = FakePublicationStore()
+    rows: list[dict[str, Any]] = []
+    for name, kind, payload in (("delivery", "delivery", _delivery_payload()), ("ambiguity", "ambiguity", _ambiguity_payload())):
+        store.create(name, kind)
+        for field, value in payload.items():
+            store.apply(name, field, value, ready=True)
+        staged = store.snapshot(name)
+        rows.append({"name": f"staged_{name}", "work": staged,
+                     "consumers": consumers_for_work(staged, delivery_route=delivery_route, routes=routes)})
+        published = store.publish(name, delivery_route=delivery_route, refiner_route=refiner_route)
+        rows.append({"name": f"published_{name}", "work": published,
+                     "consumers": consumers_for_work(published, delivery_route=delivery_route, routes=routes)})
+    return rows
+
+
+def validate_routing_truth_table(rows: list[dict[str, Any]]) -> bool:
+    required = {"staged_delivery": [], "published_delivery": ["delivery"], "staged_ambiguity": [], "published_ambiguity": ["refiner"]}
+    observed = {str(row.get("name")): row.get("consumers") for row in rows}
+    if observed != required or any(len(consumers) > 1 for consumers in observed.values() if isinstance(consumers, list)):
+        return False
+    return True
+
+
+def publishable_route(work: dict[str, Any], refiner_route: str, delivery_route: str) -> bool:
+    """Reject construction rows that expose any composed consumer before publish."""
+    staged = _payload(work).get("publication") == "non_routable"
+    payload = _payload(work)
+    if not payload_shape_valid(payload):
+        return False
+    if (payload.get("schema_version") == "ambiguity-request.v1" and payload.get("kind") != "ambiguity_request") or (payload.get("schema_version") == "delivery.v1" and payload.get("kind") != "delivery"):
+        return False
+    if not staged:
+        is_delivery = payload.get("schema_version") == "delivery.v1"
+        has_delivery_selector = work.get("delivery_route") == delivery_route
+        has_model_selector = isinstance(work.get("gc.routed_to"), str) and bool(work.get("gc.routed_to"))
+        if (is_delivery and (not has_delivery_selector or has_model_selector)) or (
+            not is_delivery and (has_delivery_selector or not has_model_selector)
+        ):
+            return False
+        if not is_delivery and work.get("gc.routed_to") != refiner_route:
+            return False
+    routes = composed_route_doctor()["inventory"]
+    if staged and model_consumers(work, routes):
+        return False
+    consumers = len(consumers_for_work(work, delivery_route=delivery_route, routes=routes))
+    return consumers == 0 if staged else consumers == 1
+
+
+class _CountingFakeProvider:
+    """A capability-free fake provider whose observable facts are store-owned."""
+    __slots__ = ("role",)
+    def __init__(self, role: str) -> None:
+        self.role = role
+    def reconcile(self, store: FakePublicationStore, identity: str) -> None:
+        if store.acquire_model_claim(identity, self.role):
+            store.record_nonbinding_advice(identity, self.role)
+
+
+def run_inert_routing_harness() -> dict[str, Any]:
+    """Store-derived loss/duplicate/expiry proof with no live providers or effects."""
+    composition = composed_route_doctor()
+    if not composition["ok"]:
+        raise FactoryError("composition_failed", composition["reason"] or "invalid composition")
+    routes = composition["inventory"]
+    store = FakePublicationStore()
+    for identity, kind, payload in (("delivery", "delivery", _delivery_payload()), ("ambiguity", "ambiguity", _ambiguity_payload())):
+        store.create(identity, kind)
+        for field, value in payload.items(): store.apply(identity, field, value)
+    refiner_route = routes["refiner"]["qualified_name"]
+    store.publish("delivery", delivery_route="agentops.delivery", refiner_route=refiner_route)
+    providers = {role: _CountingFakeProvider(role) for role in routes}
+    def reconcile() -> None:
+        for identity in sorted(store.records):
+            record = store.snapshot(identity)
+            consumers = consumers_for_work(record, delivery_route="agentops.delivery", routes=routes)
+            if consumers == ["delivery"]:
+                store.select_delivery(identity)
+            elif len(consumers) == 1 and consumers[0] in providers:
+                providers[consumers[0]].reconcile(store, identity)
+            elif consumers:
+                raise FactoryError("routing_firewall_failed", f"multiple or unknown consumers: {consumers}")
+    for _event in ("notification_lost", "duplicate"):
+        reconcile()
+    # A valid ambiguity goes through the identical creation/validation/publication boundary.
+    store.publish("ambiguity", delivery_route="agentops.delivery", refiner_route=refiner_route)
+    reconcile(); store.expire_model_claim("ambiguity", "refiner"); reconcile()
+    provider_records = copy.deepcopy(store.provider_records)
+    refiner_records = provider_records.get("refiner", {"claims": [], "starts": [], "results": []})
+    routine_claims = [entry for ledger in provider_records.values() for entry in ledger["claims"] if entry["record"] == "delivery"]
+    routine_starts = [entry for ledger in provider_records.values() for entry in ledger["starts"] if entry["record"] == "delivery"]
+    routine_refiner_starts = [entry for entry in refiner_records["starts"] if entry["record"] == "delivery"]
+    unique_claims = {entry["claim_identity"] for ledger in provider_records.values() for entry in ledger["claims"]}
+    return {"refiner_starts": len(refiner_records["starts"]), "routine_refiner_starts": len(routine_refiner_starts),
+            "model_claims": len(unique_claims), "claim_acquisitions": sum(len(ledger["claims"]) for ledger in provider_records.values()),
+            "claim_expirations": len(store.claim_expirations),
+            "routine_model_claims": len(routine_claims), "routine_model_starts": len(routine_starts),
+            "delivery_selections": len(store.delivery_selections), "ambiguity_starts": len(refiner_records["starts"]),
+            "nonbinding_only": len(refiner_records["results"]) == 1 and all(result.get("nonbinding") == "true" for result in refiner_records["results"]),
+            "identities": {"delivery": store.delivery_selections[0]["selection"] if store.delivery_selections else None,
+                           "ambiguity": refiner_records["starts"][0]["start_identity"] if refiner_records["starts"] else None},
+            "providers": provider_records}
+
+
+_COMPOSED_ROLE_SOURCES = {
+    "mayor": PACK_ROOT / "agents" / "mayor" / "agent.toml",
+    "plan-reviewer": PACK_ROOT / "agents" / "plan-reviewer" / "agent.toml",
+    "refiner": PACK_ROOT / "agents" / "refiner" / "agent.toml",
+    "implementer": PACK_ROOT.parent / "agentops-executor" / "agents" / "implementer" / "agent.toml",
+    "implementer-claude": PACK_ROOT.parent / "agentops-executor" / "agents" / "implementer-claude" / "agent.toml",
+    "validator": PACK_ROOT.parent / "agentops-executor" / "agents" / "validator" / "agent.toml",
+}
+
+# Pinned one-rig `gc agent list --json` projection.  The proof deliberately
+# keeps this inert fixture beside its source/config composer; GC33-10 owns a
+# live clean-city comparison.
+_PINNED_INERT_AGENT_FIXTURE = {
+    "mayor": ("claude", "city"),
+    "plan-reviewer": ("codex", "rig"),
+    "refiner": ("claude", "rig"),
+    "implementer": ("codex", "rig"),
+    "implementer-claude": ("claude", "rig"),
+    "validator": ("codex", "rig"),
+}
+
+
+def composed_inventory_parity(inventory: dict[str, dict[str, Any]], *, rig: str = "rig",
+                              binding: str = "agentops") -> bool:
+    """Compare every active-route fact to the pinned inert agent-list fixture."""
+    if set(inventory) != set(_PINNED_INERT_AGENT_FIXTURE):
+        return False
+    for role, (provider, scope) in _PINNED_INERT_AGENT_FIXTURE.items():
+        qualified = f"{binding}.{role}" if scope == "city" else f"{rig}/{binding}.{role}"
+        spec = inventory[role]
+        if {"qualified_name": spec.get("qualified_name"), "provider": spec.get("provider"),
+            "scope": spec.get("scope"), "binding": spec.get("binding"), "suspended": spec.get("suspended"),
+            "configured_work_query": spec.get("configured_work_query"), "configured_sling_query": spec.get("configured_sling_query"),
+            "effective_work_query": spec.get("effective_work_query"), "effective_sling_query": spec.get("effective_sling_query")} != {
+                "qualified_name": qualified, "provider": provider, "scope": scope, "binding": binding, "suspended": False,
+                "configured_work_query": None, "configured_sling_query": None,
+                "effective_work_query": "stock", "effective_sling_query": f"gc.routed_to={qualified}"}:
+            return False
+    return True
+
+
+def _stock_work_query(qualified_name: str) -> str:
+    return f"assigned(in_progress|ready,{qualified_name}) || ready+unassigned+gc.routed_to={qualified_name}"
+
+
+def _managed_city_patches() -> set[str]:
+    city = tomllib.loads((PACK_ROOT.parents[1] / "deploy" / "gc" / "city.toml").read_text(encoding="utf-8"))
+    patches = city.get("patches", {}).get("agent", [])
+    if not isinstance(patches, list):
+        return set()
+    return {patch.get("name") for patch in patches if isinstance(patch, dict) and patch.get("suspended") is True and isinstance(patch.get("name"), str)}
+
+
+def composed_route_doctor(overrides: dict[str, Any] | None = None, *, delivery_route: str = "agentops.delivery",
+                          rig: str = "rig", binding: str = "agentops") -> dict[str, Any]:
+    """Purely compose the factory/executor import graph and managed city patches.
+
+    It intentionally models the one-rig inert inventory rather than invoking GC.
+    The role TOMLs own provider/scope while the city template owns generic-role
+    suspension; native work/sling facts are rendered from the pinned stock model.
+    """
+    problems: list[str] = []
+    try:
+        pack = tomllib.loads((PACK_ROOT / "pack.toml").read_text(encoding="utf-8"))
+        if pack.get("imports", {}).get("executor", {}).get("source") != "../agentops-executor":
+            problems.append("factory executor import graph is not pinned")
+        required_patches = {"bd.dog", "core.control-dispatcher", "codex", "claude"}
+        if not required_patches <= _managed_city_patches():
+            problems.append("managed generic/provider roles are not all suspended")
+    except (OSError, tomllib.TOMLDecodeError) as exc:
+        problems.append(f"cannot compose city/import configuration: {exc}")
+    inventory: dict[str, dict[str, Any]] = {}
+    for role, path in _COMPOSED_ROLE_SOURCES.items():
+        try:
+            config = tomllib.loads(path.read_text(encoding="utf-8"))
+        except (OSError, tomllib.TOMLDecodeError) as exc:
+            problems.append(f"cannot load {role}: {exc}")
+            continue
+        provider, scope = config.get("provider"), config.get("scope")
+        if provider not in PROVIDERS or scope not in {"city", "rig"}:
+            problems.append(f"{role} has invalid provider or scope")
+            continue
+        qualified = f"{binding}.{role}" if scope == "city" else f"{rig}/{binding}.{role}"
+        inventory[role] = {"qualified_name": qualified, "route": qualified, "provider": provider,
+                           "scope": scope, "binding": binding, "suspended": False,
+                           "configured_work_query": config.get("work_query"),
+                           "configured_sling_query": config.get("sling_query"),
+                           "effective_work_query": "stock",
+                           "effective_work_query_text": _stock_work_query(qualified),
+                           "effective_sling_query": f"gc.routed_to={qualified}"}
+    if set(inventory) != set(_COMPOSED_ROLE_SOURCES):
+        problems.append("composed inventory does not contain exactly six selected roles")
+    if overrides:
+        for role, mutation in overrides.items():
+            if role not in inventory:
+                problems.append(f"unknown inventory mutation: {role}")
+                continue
+            if isinstance(mutation, str):
+                inventory[role]["effective_work_query"] = "ready+unassigned"
+                inventory[role]["effective_work_query_text"] = mutation
+            elif isinstance(mutation, dict):
+                inventory[role].update(mutation)
+            else:
+                problems.append(f"invalid inventory mutation for {role}")
+    for role, spec in inventory.items():
+        qualified = spec["qualified_name"]
+        config = tomllib.loads(_COMPOSED_ROLE_SOURCES[role].read_text(encoding="utf-8"))
+        expected_scope = config.get("scope")
+        expected_qualified = f"{binding}.{role}" if expected_scope == "city" else f"{rig}/{binding}.{role}"
+        if spec["suspended"] is not False:
+            problems.append(f"selected role is suspended: {role}")
+        if spec["scope"] != expected_scope or spec["binding"] != binding or qualified != expected_qualified:
+            problems.append(f"selected role has invalid scope, binding, or qualified name: {role}")
+        if spec["configured_work_query"] is not None or spec["configured_sling_query"] is not None:
+            problems.append(f"selected role configures a custom query: {role}")
+        if spec["effective_work_query"] != "stock" or spec["effective_work_query_text"] != _stock_work_query(qualified):
+            problems.append(f"selected role has a broadened effective work query: {role}")
+        if spec["effective_sling_query"] != f"gc.routed_to={qualified}":
+            problems.append(f"selected role has a redirected effective sling: {role}")
+    if delivery_route in {spec["qualified_name"] for spec in inventory.values()} or any(
+        spec["effective_sling_query"] == f"gc.routed_to={delivery_route}" for spec in inventory.values()
+    ):
+        problems.append("deterministic delivery selector collides with a model route")
+    if not composed_inventory_parity(inventory, rig=rig, binding=binding):
+        problems.append("composed inventory differs from pinned inert agent-list fixture")
+    return {"ok": not problems, "routes": {role: spec["qualified_name"] for role, spec in inventory.items()},
+            "inventory": inventory, "roles": sorted(inventory), "custom_query_roles": [
+                role for role, spec in inventory.items() if spec["configured_work_query"] is not None or spec["configured_sling_query"] is not None],
+            "reason": "; ".join(problems) if problems else None}
+
+
+def exhaustive_construction_proof(*, delivery_route: str = "agentops.delivery") -> dict[str, int]:
+    """Traverse every payload-field subset × readiness state through one store boundary."""
+    composition = composed_route_doctor(delivery_route=delivery_route)
+    if not composition["ok"]:
+        raise FactoryError("composition_failed", composition["reason"] or "invalid route composition")
+    routes = composition["inventory"]
+    refiner_route = routes["refiner"]["qualified_name"]
+    checked = 0
+    published = 0
+    for kind, payload in (("delivery", _delivery_payload()), ("ambiguity", _ambiguity_payload())):
+        fields = tuple(payload)
+        full_mask = (1 << len(fields)) - 1
+        for mask in range(1 << len(fields)):
+            for ready in (False, True):
+                store = FakePublicationStore(); identity = f"{kind}-{mask}-{int(ready)}"; store.create(identity, kind)
+                for index, field in enumerate(fields):
+                    if mask & (1 << index): store.apply(identity, field, payload[field], ready=ready)
+                staged = store.snapshot(identity)
+                if consumers_for_work(staged, delivery_route=delivery_route, routes=routes):
+                    raise FactoryError("routing_firewall_failed", f"construction state is visible: {identity}")
+                before = canonical_bytes(staged)
+                if mask != full_mask:
+                    try:
+                        store.publish(identity, delivery_route=delivery_route, refiner_route=refiner_route)
+                    except FactoryError:
+                        if canonical_bytes(store.snapshot(identity)) != before:
+                            raise FactoryError("non_atomic_publication", "rejected publication changed fake store")
+                    else:
+                        raise FactoryError("premature_publication", "incomplete construction payload published")
+                else:
+                    final = store.publish(identity, delivery_route=delivery_route, refiner_route=refiner_route)
+                    expected = ["delivery"] if kind == "delivery" else ["refiner"]
+                    if consumers_for_work(final, delivery_route=delivery_route, routes=routes) != expected:
+                        raise FactoryError("routing_firewall_failed", f"published {kind} lacks exactly one consumer")
+                    published += 1
+                checked += 1
+    return {"construction_states": checked, "published_states": published, "model_routes": len(routes)}
 
 
 def fable_adviser_launch_contract() -> dict[str, Any]:
@@ -4719,12 +5334,29 @@ def command_doctor() -> int:
             load_object(schema, schema.name)
         except FactoryError as exc:
             problems.append(str(exc))
+    # These are ordinary doctor checks, not helper-only tests: a green doctor
+    # attests the composed six-role firewall and every finite staged state.
+    try:
+        composition = composed_route_doctor()
+        if not composition["ok"]:
+            problems.append(f"composed routing firewall: {composition['reason']}")
+        else:
+            proof = exhaustive_construction_proof()
+            if proof["construction_states"] <= 0 or proof["model_routes"] != 6:
+                problems.append("exhaustive construction proof returned an incomplete receipt")
+            harness = run_inert_routing_harness()
+            if (harness["routine_model_claims"] != 0 or harness["routine_model_starts"] != 0
+                    or harness["routine_refiner_starts"] != 0 or harness["refiner_starts"] != 1
+                    or harness["delivery_selections"] != 1 or harness["ambiguity_starts"] != 1):
+                problems.append("fake-store reconciliation counts violate the delivery firewall")
+    except FactoryError as exc:
+        problems.append(f"routing proof failed: {exc}")
     if problems:
         print(f"agentops-factory doctor found {len(problems)} problem(s)")
         for problem in problems:
             print(problem)
         return 2
-    print("agentops-factory exposes Fable-adaptive Mayor/ambiguity and Sol-high plan roles at min 0 / max 1; ambiguity dispatch is closed pending GC33-4")
+    print("agentops-factory proves inert routing only; live Fable remains closed pending supported confinement and GC33-11")
     return 0
 
 
