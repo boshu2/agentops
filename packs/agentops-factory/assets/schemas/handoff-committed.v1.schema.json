@@ -1,0 +1,105 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agentops.local/schemas/handoff-committed.v1.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "handoff_id",
+    "prepared_digest",
+    "semantic_bead_id",
+    "semantic_terminal_verdict",
+    "semantic_terminal_ref",
+    "admission_certificate_digest",
+    "delivery_bead_id",
+    "expected_external_ref",
+    "epoch",
+    "delivery_payload_ref",
+    "delivery_payload_digest",
+    "mode",
+    "state",
+    "deadline",
+    "committed_at"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "handoff-committed.v1"
+    },
+    "handoff_id": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "prepared_digest": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "semantic_bead_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "semantic_terminal_verdict": {
+      "const": "PASS"
+    },
+    "semantic_terminal_ref": {
+      "type": "string",
+      "minLength": 1
+    },
+    "admission_certificate_digest": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "delivery_bead_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "expected_external_ref": {
+      "type": "string",
+      "minLength": 1
+    },
+    "epoch": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "delivery_payload_ref": {
+      "type": "string",
+      "minLength": 1
+    },
+    "delivery_payload_digest": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "mode": {
+      "enum": [
+        "auto",
+        "manual"
+      ]
+    },
+    "state": {
+      "enum": [
+        "queued",
+        "preparing",
+        "branch_ready",
+        "pr_open",
+        "ci_wait",
+        "rebase_needed",
+        "merge_eligible",
+        "merge_requested",
+        "landed",
+        "repair_wait",
+        "manual_review",
+        "stalled",
+        "delivery_failed",
+        "successor_required",
+        "cancelled"
+      ]
+    },
+    "deadline": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "committed_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+}

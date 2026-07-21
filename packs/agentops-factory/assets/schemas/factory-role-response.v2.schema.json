@@ -1,0 +1,400 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agentops.local/schemas/factory-role-response.v2.schema.json",
+  "title": "3.3 authoritative factory semantic-role response",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "request_id",
+    "request_digest",
+    "role",
+    "semantic_bead_id",
+    "session_context_id",
+    "requested",
+    "actual",
+    "artifact_path",
+    "artifact_digest"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "factory-role-response.v2"
+    },
+    "request_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "request_digest": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "role": {
+      "enum": [
+        "mayor",
+        "plan",
+        "implementation",
+        "validation",
+        "ambiguity_advice",
+        "support"
+      ]
+    },
+    "semantic_bead_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "session_context_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "requested": {
+      "$ref": "#/$defs/runtime"
+    },
+    "actual": {
+      "$ref": "#/$defs/runtime"
+    },
+    "artifact_path": {
+      "type": "string",
+      "minLength": 1
+    },
+    "artifact_digest": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "role": {
+            "const": "mayor"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "requested": {
+            "$ref": "#/$defs/fable"
+          },
+          "actual": {
+            "$ref": "#/$defs/fable"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "role": {
+            "enum": [
+              "plan",
+              "validation"
+            ]
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "requested": {
+            "$ref": "#/$defs/sol"
+          },
+          "actual": {
+            "$ref": "#/$defs/sol"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "role": {
+            "const": "implementation"
+          }
+        }
+      },
+      "then": {
+        "oneOf": [
+          {
+            "properties": {
+              "requested": {
+                "$ref": "#/$defs/terra"
+              },
+              "actual": {
+                "$ref": "#/$defs/terra"
+              }
+            }
+          },
+          {
+            "properties": {
+              "requested": {
+                "$ref": "#/$defs/opus"
+              },
+              "actual": {
+                "$ref": "#/$defs/opus"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "role": {
+            "const": "ambiguity_advice"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "requested": {
+            "$ref": "#/$defs/fable"
+          },
+          "actual": {
+            "$ref": "#/$defs/fable"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "role": {
+            "const": "support"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "requested": {
+            "$ref": "#/$defs/luna"
+          },
+          "actual": {
+            "$ref": "#/$defs/luna"
+          }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "fallback": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "allowed",
+        "used",
+        "reason"
+      ],
+      "properties": {
+        "allowed": {
+          "type": "boolean"
+        },
+        "used": {
+          "type": "boolean"
+        },
+        "reason": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "used": {
+                "const": true
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "allowed": {
+                "const": true
+              },
+              "reason": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "used": {
+                "const": false
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "reason": {
+                "const": null
+              }
+            }
+          }
+        }
+      ]
+    },
+    "runtime": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "model",
+        "reasoning",
+        "provider",
+        "fallback"
+      ],
+      "properties": {
+        "model": {
+          "type": "string"
+        },
+        "reasoning": {
+          "type": "string"
+        },
+        "provider": {
+          "type": "string"
+        },
+        "fallback": {
+          "$ref": "#/$defs/fallback"
+        }
+      }
+    },
+    "no_fallback": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "allowed",
+        "used",
+        "reason"
+      ],
+      "properties": {
+        "allowed": {
+          "const": false
+        },
+        "used": {
+          "const": false
+        },
+        "reason": {
+          "const": null
+        }
+      }
+    },
+    "fable": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/runtime"
+        },
+        {
+          "properties": {
+            "model": {
+              "const": "fable"
+            },
+            "reasoning": {
+              "const": "adaptive"
+            },
+            "provider": {
+              "const": "claude"
+            },
+            "fallback": {
+              "$ref": "#/$defs/no_fallback"
+            }
+          }
+        }
+      ]
+    },
+    "sol": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/runtime"
+        },
+        {
+          "properties": {
+            "model": {
+              "const": "sol"
+            },
+            "reasoning": {
+              "const": "high"
+            },
+            "provider": {
+              "const": "codex"
+            },
+            "fallback": {
+              "$ref": "#/$defs/no_fallback"
+            }
+          }
+        }
+      ]
+    },
+    "terra": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/runtime"
+        },
+        {
+          "properties": {
+            "model": {
+              "const": "terra"
+            },
+            "reasoning": {
+              "const": "high"
+            },
+            "provider": {
+              "const": "codex"
+            },
+            "fallback": {
+              "$ref": "#/$defs/no_fallback"
+            }
+          }
+        }
+      ]
+    },
+    "opus": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/runtime"
+        },
+        {
+          "properties": {
+            "model": {
+              "const": "opus"
+            },
+            "reasoning": {
+              "const": "medium"
+            },
+            "provider": {
+              "const": "claude"
+            },
+            "fallback": {
+              "$ref": "#/$defs/no_fallback"
+            }
+          }
+        }
+      ]
+    },
+    "luna": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/runtime"
+        },
+        {
+          "properties": {
+            "model": {
+              "const": "luna"
+            },
+            "reasoning": {
+              "const": "high"
+            },
+            "provider": {
+              "const": "codex"
+            },
+            "fallback": {
+              "$ref": "#/$defs/no_fallback"
+            }
+          }
+        }
+      ]
+    }
+  }
+}

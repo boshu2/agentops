@@ -1,0 +1,92 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agentops.local/schemas/effect-receipt.v1.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "effect_id",
+    "handoff_id",
+    "epoch",
+    "expected_remote_head",
+    "resulting_sha",
+    "outcome"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "effect-receipt.v1"
+    },
+    "effect_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "handoff_id": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "epoch": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "expected_remote_head": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{40}$"
+    },
+    "resulting_sha": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^[0-9a-f]{40}$"
+    },
+    "outcome": {
+      "enum": [
+        "applied",
+        "already_applied",
+        "refused",
+        "unknown"
+      ]
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "outcome": {
+            "enum": [
+              "applied",
+              "already_applied"
+            ]
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "resulting_sha": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{40}$"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "outcome": {
+            "enum": [
+              "refused",
+              "unknown"
+            ]
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "resulting_sha": {
+            "const": null
+          }
+        }
+      }
+    }
+  ]
+}

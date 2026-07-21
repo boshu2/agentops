@@ -1,0 +1,64 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agentops.local/schemas/delivery.v1.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "kind", "handoff_id", "semantic_bead_id", "semantic_terminal_ref", "admission_certificate_digest", "delivery_bead_id", "external_ref", "epoch", "predecessor_receipt_digest", "mode", "state", "publication", "deadline", "effect_gate", "successor_bead_id"],
+  "properties": {
+    "schema_version": {"const": "delivery.v1"},
+    "kind": {"const": "delivery"},
+    "handoff_id": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "semantic_bead_id": {"type": "string", "minLength": 1},
+    "semantic_terminal_ref": {"type": "string", "minLength": 1},
+    "admission_certificate_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "delivery_bead_id": {"type": "string", "minLength": 1},
+    "external_ref": {"type": "string", "minLength": 1},
+    "epoch": {"type": "integer", "minimum": 1},
+    "predecessor_receipt_digest": {"type": ["string", "null"], "pattern": "^[0-9a-f]{64}$"},
+    "mode": {"enum": ["auto", "manual"]},
+    "state": {"enum": ["queued", "preparing", "branch_ready", "pr_open", "ci_wait", "rebase_needed", "merge_eligible", "merge_requested", "landed", "repair_wait", "manual_review", "stalled", "delivery_failed", "successor_required", "cancelled"]},
+    "publication": {"enum": ["non_routable", "published"]},
+    "deadline": {"type": "string", "format": "date-time"},
+    "effect_gate": {
+      "type": ["object", "null"],
+      "additionalProperties": false,
+      "required": ["committed_handoff_digest", "base_sha", "expected_remote_head"],
+      "properties": {
+        "committed_handoff_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "base_sha": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+        "expected_remote_head": {"type": "string", "pattern": "^[0-9a-f]{40}$"}
+      }
+    },
+    "successor_bead_id": {"type": ["string", "null"], "minLength": 1}
+  },
+  "allOf": [
+    {
+      "if": {"properties": {"state": {"enum": ["branch_ready", "pr_open", "ci_wait", "rebase_needed", "merge_eligible", "merge_requested", "landed"]}}},
+      "then": {"properties": {"publication": {"const": "published"}, "effect_gate": {"type": "object"}, "successor_bead_id": {"const": null}}}
+    },
+    {
+      "if": {"properties": {"state": {"const": "merge_requested"}}},
+      "then": {"properties": {"mode": {"const": "auto"}}}
+    },
+    {
+      "if": {"properties": {"state": {"const": "manual_review"}}},
+      "then": {"properties": {"mode": {"const": "manual"}, "publication": {"const": "published"}, "effect_gate": {"type": "object"}, "successor_bead_id": {"const": null}}}
+    },
+    {
+      "if": {"properties": {"state": {"const": "successor_required"}}},
+      "then": {"properties": {"successor_bead_id": {"type": "string", "minLength": 1}}}
+    },
+    {
+      "if": {"properties": {"state": {"not": {"const": "successor_required"}}}},
+      "then": {"properties": {"successor_bead_id": {"const": null}}}
+    },
+    {
+      "if": {"properties": {"publication": {"const": "non_routable"}}},
+      "then": {"properties": {"effect_gate": {"const": null}}}
+    },
+    {
+      "if": {"properties": {"publication": {"const": "published"}, "state": {"enum": ["queued", "preparing", "repair_wait", "stalled", "delivery_failed", "successor_required", "cancelled"]}}},
+      "then": {"properties": {"effect_gate": {"const": null}}}
+    }
+  ]
+}

@@ -1,7 +1,9 @@
 # ADR-0015: Gas City Fenced Steward Factory
 
-- **Status:** Accepted; v1 implemented and single-bead qualified (2026-07-17),
-  multi-wave fault matrix pending
+- **Status:** Superseded for 3.3 by the canonical one-loop, marker-first
+  factory contract in `docs/architecture/gas-city-factory.md` (2026-07-21).
+  Accepted v1 historical record; v1 implemented and single-bead qualified
+  (2026-07-17), multi-wave fault matrix pending.
 - **Author:** AgentOps maintainers
 - **Scope:** Optional Gas City product-factory adapter; no expansion of the
   AgentOps core loop

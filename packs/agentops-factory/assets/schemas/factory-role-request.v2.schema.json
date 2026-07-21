@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agentops.local/schemas/factory-role-request.v2.schema.json",
+  "title": "3.3 authoritative factory semantic-role request",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "request_id", "program_id", "semantic_bead_id", "intent_digest", "role", "requested", "artifact_path", "result_path"],
+  "properties": {
+    "schema_version": {"const": "factory-role-request.v2"}, "request_id": {"type": "string", "minLength": 1}, "program_id": {"type": "string", "minLength": 1}, "semantic_bead_id": {"type": "string", "minLength": 1}, "intent_digest": {"$ref": "#/$defs/digest"},
+    "role": {"enum": ["mayor", "plan", "implementation", "validation", "ambiguity_advice", "support"]}, "requested": {"$ref": "#/$defs/runtime"}, "artifact_path": {"type": "string", "minLength": 1}, "result_path": {"type": "string", "minLength": 1}
+  },
+  "allOf": [
+    {"if": {"properties": {"role": {"const": "mayor"}}}, "then": {"properties": {"requested": {"$ref": "#/$defs/fable"}}}},
+    {"if": {"properties": {"role": {"enum": ["plan", "validation"]}}}, "then": {"properties": {"requested": {"$ref": "#/$defs/sol"}}}},
+    {"if": {"properties": {"role": {"const": "implementation"}}}, "then": {"properties": {"requested": {"anyOf": [{"$ref": "#/$defs/terra"}, {"$ref": "#/$defs/opus"}]}}}},
+    {"if": {"properties": {"role": {"const": "ambiguity_advice"}}}, "then": {"properties": {"requested": {"$ref": "#/$defs/fable"}}}},
+    {"if": {"properties": {"role": {"const": "support"}}}, "then": {"properties": {"requested": {"$ref": "#/$defs/luna"}}}}
+  ],
+  "$defs": {
+    "digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "no_fallback": {"type": "object", "additionalProperties": false, "required": ["allowed", "used", "reason"], "properties": {"allowed": {"const": false}, "used": {"const": false}, "reason": {"const": null}}},
+    "runtime": {"type": "object", "additionalProperties": false, "required": ["model", "reasoning", "provider", "fallback"], "properties": {"model": {"type": "string"}, "reasoning": {"type": "string"}, "provider": {"type": "string"}, "fallback": {"$ref": "#/$defs/no_fallback"}}},
+    "fable": {"allOf": [{"$ref": "#/$defs/runtime"}, {"properties": {"model": {"const": "fable"}, "reasoning": {"const": "adaptive"}, "provider": {"const": "claude"}}}]},
+    "sol": {"allOf": [{"$ref": "#/$defs/runtime"}, {"properties": {"model": {"const": "sol"}, "reasoning": {"const": "high"}, "provider": {"const": "codex"}}}]},
+    "terra": {"allOf": [{"$ref": "#/$defs/runtime"}, {"properties": {"model": {"const": "terra"}, "reasoning": {"const": "high"}, "provider": {"const": "codex"}}}]},
+    "opus": {"allOf": [{"$ref": "#/$defs/runtime"}, {"properties": {"model": {"const": "opus"}, "reasoning": {"const": "medium"}, "provider": {"const": "claude"}}}]},
+    "luna": {"allOf": [{"$ref": "#/$defs/runtime"}, {"properties": {"model": {"const": "luna"}, "reasoning": {"const": "high"}, "provider": {"const": "codex"}}}]}
+  }
+}

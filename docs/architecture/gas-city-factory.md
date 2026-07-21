@@ -2,14 +2,15 @@
 
 This document explains how the AgentOps Gas City executor composes with the
 Fenced Steward product factory. It is the canonical walkthrough for the
-implemented architecture. The binding decision is
-[ADR-0015](../adr/ADR-0015-gas-city-fenced-steward.md); the dated research and
-duel remain historical evidence in the
+implemented baseline plus 3.3 target. ADR-0015 is superseded historical
+context, not binding authority for 3.3; the dated research and duel remain
+historical evidence in the
 [role-topology audit](https://github.com/boshu2/agentops/blob/main/docs/audits/gas-city-role-topology-2026-07-17/README.md).
 
 ## Status and scope
 
-The v1 implementation includes the thin executor and the bead-native factory:
+The following is the implemented legacy baseline; it is not a qualification
+claim for the 3.3 target:
 
 | Surface | Current state |
 |---|---|
@@ -17,33 +18,29 @@ The v1 implementation includes the thin executor and the bead-native factory:
 | Exact GC/Beads provenance and materialization | Implemented with `toolchain.lock.json`, source builds, runtime identity checks, and per-city binary digests |
 | Explicit Codex/Claude Implementer and Validator pools | Implemented in `packs/agentops-executor/` |
 | Exact packet, provider, workspace, manifest, evidence, and freshness binding | Implemented and covered by the GC executor gate |
-| Mayor, plan-review, and Refiner pools | Implemented in `packs/agentops-factory/` |
+| Legacy Mayor, reviewer, and Refiner routes | Present salvage surfaces; not the 3.3 authority |
 | Program bead graph, reducer, admission certificate, worktree allocator, fencing | Implemented with atomic `bd create --graph` admission and bead metadata transitions |
-| Refinery integration and PR delivery | Implemented as fenced pack commands and qualified through protected PR #916 |
+| Legacy Refinery delivery | Historical evidence only; replaced by linked delivery beads in 3.3 |
 | Parallel factory capacity | Bootstrap supports an explicit bounded city cap; default remains one and factory qualification uses eight |
 
 The factory lives in the separate optional pack
 `packs/agentops-factory/`. It imports `agentops-executor` rather than expanding
 the executor's responsibility.
 
-The protected-delivery canary proves one complete single-experiment bead path
-with both providers, a fresh candidate Validator, a fresh integration
-Validator, the actual Refiner, protected CI, and merge to `main`. The later
-qualification canary proves two disjoint experiments running in parallel in
-separate worktrees: one Codex/Terra Worker judged by Claude/Opus 4.8 and one
-Claude/Opus 4.8 Worker judged by Codex/Sol, followed by a Claude Refiner and a
-fresh Codex/Sol integration verdict. It completed on the original sessions
-without an operator nudge or retry command. These canaries do not yet prove
-dependent multi-wave execution or the full injected-fault matrix. The exact
-evidence is in the [live bead canary](https://github.com/boshu2/agentops/blob/main/docs/audits/gas-city-factory-live-bead-canary.md).
+Those historical canaries demonstrate packet isolation, protected CI, and a
+landed PR, but not the 3.3 delivery authority. They do not prove the terminal
+semantic handoff, model-free delivery replay, or zero clean-path Refiner wakes.
+The exact evidence remains in the [live bead canary](https://github.com/boshu2/agentops/blob/main/docs/audits/gas-city-factory-live-bead-canary.md).
 
 AgentOps remains a semantic work-and-proof protocol, not a queue, Git workflow,
 retry controller, or release system. The factory is an optional caller-selected
 adapter around independent AgentOps invocations.
 
-## Mental model: two nested loops
+## Mental model: one semantic loop and one mechanical delivery machine
 
-The system has two different meanings of orchestration.
+The 3.3 target replaces the legacy factory authority described below. Gas City
+still supplies sessions, Orders, health, events, and durable beads; it does not
+add another semantic loop.
 
 Gas City's role-agnostic orchestrator runs formulas, beads, sessions, waits,
 events, orders, health reconciliation, and scaling. The Mayor is a configured
@@ -53,8 +50,8 @@ mechanism plane.
 ```mermaid
 flowchart TD
     U["Operator and canonical product intent"] --> M["Mayor proposes product DAG"]
-    M --> PJ["Fresh plan-review Judge"]
-    PJ -->|"clear"| G["Deterministic graph reducer and admission"]
+    M --> PJ["Fresh Sol plan"]
+    PJ -->|"clear"| G["Deterministic graph admission"]
     PJ -->|"semantic defect"| M
 
     G --> C1["Fresh Codex experiment<br/>one branch, worktree, index, and scope"]
@@ -64,17 +61,13 @@ flowchart TD
     C1 --> V["Fresh exact-subject Validators"]
     C2 --> V
     CN --> V
-    V -->|"PASS"| A["Deterministic admission certificate"]
+    V -->|"PASS"| A["admission-certificate.v2"]
     V -->|"FAIL or NOT_PROVEN"| M
 
-    A --> R["Fenced Refinery integration train"]
-    R --> I["Published integration cut"]
-    I --> IV["Fresh integrated-subject court"]
-    IV -->|"PASS"| PR["Protected PR, CI, review, merge queue"]
-    IV -->|"FAIL or NOT_PROVEN"| M
-    PR -->|"semantic failure"| M
-    PR -->|"main moved or bytes changed"| R
-    PR -->|"all gates satisfied"| MAIN["Protected main"]
+    A --> R["marker-first successor delivery bead"]
+    R --> PR["serialized model-free Refinery"]
+    PR -->|"changed bytes or meaning"| M
+    PR -->|"moving main / CI / merge"| MAIN["Protected main"]
     MAIN --> D["Landed-SHA delivery receipt"]
 ```
 
@@ -89,8 +82,20 @@ resolved intent bytes and digest
   -> report and stop
 ```
 
-The outer graph may create a later successor experiment. It cannot revise,
-continue, or reinterpret the completed inner experiment.
+The semantic ready set has one shared Terra/Opus writer fabric. `product` and
+`delivery_repair` are bead classes with bounded fairness, not queues or pools.
+A repair is a successor experiment through this same loop. The outer graph may
+not revise, continue, or reinterpret a completed inner experiment.
+
+The fixed 3.3 semantic policy is one Fable Mayor, one Sol-high/Codex plan, one
+admitted Terra-high/Codex or Opus-medium/Claude writer, and fresh
+Sol-high/Codex validation. Admission chooses the writer profile; a provider
+outage reduces capacity and never switches an admitted role. Every recorded
+fallback object is exactly `allowed=false`, `used=false`, and `reason=null`.
+Fable Refiner is read-only, zero-or-one ambiguity advice only; Luna-high is support-only
+and cannot create, route, judge, or mutate delivery. Refinery is
+a model-free, serialized delivery state machine. There is no second loop,
+worker pool, or base/main mutex.
 
 ## Vocabulary
 
@@ -104,13 +109,13 @@ continue, or reinterpret the completed inner experiment.
 | Session | A disposable live process for one configured agent identity or pool member |
 | Packet | One explicit AgentOps Implement or Validate request with exact identity and boundaries |
 | Experiment | One bounded Implement plus fresh Validate cycle ending in a durable result |
-| Program graph | Mayor proposal that admission atomically materializes as program, experiment, dependency, and Refinery beads |
+| Program graph | Mayor proposal that admission atomically materializes as program, semantic experiment, dependency, and linked delivery beads |
 | Admission certificate | Deterministic reference proving that exact component verdicts satisfy intake policy |
-| Delivery record | Immutable Refinery evidence connecting candidates, integration cuts, PR state, and landed SHA; the Refinery bead remains lifecycle truth |
+| Delivery record | Immutable effect and epoch evidence connecting one admitted candidate, delivery state, and landed SHA; the linked delivery bead remains lifecycle truth |
 
 The most important distinction is that a thin-executor transport bead closing
 is not an AgentOps verdict. A factory experiment bead closes only after its
-exact verdict is recorded, and a Refinery bead closes only after protected
+exact verdict is recorded, and a linked delivery bead closes only after protected
 landing. A landed PR is still not a release verdict.
 
 ## Current thin executor
@@ -158,9 +163,11 @@ The executor has four physical pools and two semantic roles:
 
 Each `agent.toml` fixes its provider and role model. Every packet also declares
 `provider = codex | claude`; the adapter verifies the actual Gas City session,
-provider, and exact launch model. The factory assigns Sol to its Codex Mayor,
-Codex plan-review, Validator, and Refiner roles; Terra to Codex implementation;
-and Opus 4.8 to every Claude role. There is no Fable alias. Claude roles are
+provider, and exact launch model. The 3.3 factory assigns Fable to Mayor, Sol
+to plan and fresh validation, and exactly one admission-selected Terra-high or
+Opus-medium writer profile to each implementation. A provider outage reduces
+capacity; it cannot switch that admitted profile. Fable may answer at most one read-only
+delivery ambiguity and has no delivery mutation authority. Claude roles are
 interactive GC-owned tmux sessions; `claude -p` and `claude --print` are denied
 by both repository policy and deployment validation.
 
@@ -195,8 +202,7 @@ The current binding contract is
 
 ### Mayor
 
-The Mayor is the operator-facing semantic planner. It may be a Codex Sol role
-(`factory.mayor`) or a Claude Opus 4.8 role (`factory.mayor-claude`). It owns
+The Mayor is the Fable operator-facing semantic planner. It owns
 conversation, product interpretation, proposed
 acceptance-preserving decomposition, dependency and scope proposals, provider
 routing, and explicit successor proposals.
@@ -212,8 +218,8 @@ admission. The Judge searches for missing acceptance, semantic coupling hidden
 behind disjoint file paths, shared generated surfaces, unsafe dependencies, and
 unowned scope. It emits an immutable sidecar and cannot repair the graph.
 
-The reducer requires a provider family unlike the Mayor. The default is Sol
-Mayor plus Opus 4.8 review; choosing an Opus Mayor selects a Sol reviewer.
+Sol performs the fresh plan review. Provider diversity may be requested by a
+caller, but is not a binding opposite-provider rule.
 
 ### Graph compiler and reducer
 
@@ -267,47 +273,51 @@ Codex and Claude workers are fresh, fungible, and horizontally scalable. Each
 gets one experiment, one worktree, one Git index, one candidate branch, one
 lease, and one declared write scope.
 
-Shared paths serialize. Generated outputs either belong to one declared owner
-or are regenerated once in Refinery. A worker cannot use stash/reset, unscoped
+Shared paths serialize. Generated outputs either belong to one declared owner.
+A worker cannot use stash/reset, unscoped
 Git commands, peer branches, integration branches, or `main`.
 
 ### Validator pools
 
-The same semantic Validator role serves different judgment events:
+The same fresh Sol Validator judges the semantic candidate and any later
+byte-changing repair subject:
 
 1. Mayor-authored plan or replan review;
-2. candidate judgment before Refinery intake;
-3. combined integration-cut judgment; and
-4. current merge-eligible PR-head judgment after any published mutation.
+2. candidate judgment before delivery admission; and
+3. successor repair judgment after changed bytes.
 
-Every event binds a different immutable subject. A candidate PASS cannot be
-carried across a combined integration cut or rebase.
-
-Routine candidates normally receive one opposite-family fresh Validator.
-High-risk or disputed candidates use Codex and Claude. During the proof period,
-the first merge-eligible mixed-author PR head requires both providers to PASS the
-same subject. Measure second-provider unique catches, queue share, outage
-blocking, latency, and cost before relaxing that policy.
+Every event binds a different immutable subject. A clean moving-base replay is
+mechanical and does not itself require a validator; changed bytes always do.
 
 ### Refinery
 
-Refinery is one logical delivery authority per rig, backed by a durable delivery
-record and a dedicated integration worktree. Its deterministic engine owns
+Refinery is a serialized, model-free delivery state machine, backed by linked
+delivery beads and immutable receipts. Its deterministic engine owns
 unambiguous Git, regeneration, PR, CI-status, review-status, and receipt
-operations. A fresh zero-minimum/max-one triage pool may classify genuinely
-ambiguous delivery events; it cannot repair code, judge semantics, or start new
-experiments.
+operations. Fable may give zero or one bounded read-only ambiguity answer; it
+cannot repair code, judge semantics, or start an experiment.
 
-Refinery's lease is fenced by a monotonic epoch per repository and target
-branch. Reaping invalidates the previous token before another wake acquires the
-slot. Every push or PR mutation supplies the token and expected head.
+The capability receipt rejects mutable metadata and claims as a fence. Claim
+holder death is therefore not a relied-on store property: a mutable claim can
+never authorize a delivery effect. Epochs are deterministic successor beads
+with immutable predecessor/effect receipts; every remote mutation later
+supplies an expected head. The selected 3.3 controller has exactly one
+serialized creator/sweep authority, so concurrent same-identity successor
+creation is also not a relied-on store property. No base lock is held.
+
+The successful live-attempt-2 receipt remains an immutable observation of the
+then-executed `deploy/gc/beads-capability.py` harness (SHA-256
+`b5d6d4490492de047554c984008289282aab82cd3e89bf67d5ae8ea71bcbc48e`).
+The later pure `beads_capability_static_reference.py` is a corrected contract
+reference, not a claim that the real store executed that correction. A new
+explicit live attempt is required to establish any new store behavior.
 
 ### Protected repository gate
 
-Branch protection, required CI, semantic validation status, human review, and a
-merge queue or explicit operator policy are the only path to `main`. Separate
-forge identities author PRs and post semantic status so delivery cannot
-self-approve.
+`delivery.mode = auto` creates/adopts a PR, requires nonempty protected hosted
+CI, and uses the selected lawful merge identity; `manual` waits in
+`manual_review` for external merge or cancellation. Separate forge identities
+prevent self-approval and neither mode bypasses protection.
 
 ## Product workflow
 
@@ -348,51 +358,46 @@ fresh Worker. The automatic path stops after three attempts by default and
 leaves the rescope bead in `hold`; an operator may resume that exact bead with
 the `rescope` command. Product acceptance changes require operator approval.
 
-### 6. Assemble a bounded integration train
+### 6. Admit and hand off one delivery bead
 
-Refinery accepts only exact SHAs with valid admission certificates. One train is
-limited by the configured candidate count (five by default). In stable DAG
-order it:
-
-1. applies each candidate in a disposable scratch tree/index;
-2. runs deterministic manifest, scope, build/test, and inbound-reference checks
-   after each application;
-3. regenerates shared artifacts once;
-4. publishes one fenced integration-cut commit; and
-5. obtains fresh semantic validation over that cut.
+PASS produces `admission-certificate.v2`, then a marker-first handoff:
+`handoff-prepared.v1`, terminal semantic references, deterministic non-routable
+delivery successor create-or-discover, payload publication, and
+`handoff-committed.v1`. The committed marker must match the prepared handoff,
+semantic bead and terminal reference, admission certificate, successor bead,
+external reference, epoch, mode, state, deadline, and both prepared/published
+payload digests; a sweep refuses any mismatch. No effect is legal before
+terminal PASS plus that exact committed handoff.
 
 ### 7. Shepherd the PR
 
-Refinery opens or updates one PR for the train, observes CI and review state,
-and requests protected merge only when all repository policy is satisfied.
-Dependent later waves may be drafts; only one wave per target is merge-eligible
-in v1.
+Refinery opens or adopts one PR for that linked delivery bead, observes CI and
+review state, and requests protected merge only when repository policy is met.
 
-If `main` moves, Refinery marks the bead `reassembly_required`, allocates a new
-fence epoch and integration worktree from the current protected base, replays
-the exact admitted candidate deltas, reruns checks, invalidates stale semantic
-validation, registers an epoch-specific integration rig, and obtains a fresh
-exact-head certificate. Semantic CI or review failure returns evidence to the
-Mayor rather than triggering hidden repair.
+If `main` moves, Refinery creates a new mechanical epoch from the current base,
+replays the exact admitted delta, and reruns deterministic gates. Changed bytes
+or new product meaning creates a successor repair bead for the same semantic
+loop; clean replay does not reopen the terminal semantic bead.
 
 ### 8. Record delivery
 
 After protected merge, Refinery verifies the landed SHA and writes a receipt
 connecting program intent, candidate SHAs, component verdicts, integration
 digest, validation certificate, PR/CI/review state, and landed commit. Cleanup is
-receipt- and fence-gated. Delivery does not imply release.
+receipt- and fence-gated. `effect-receipt.v1` records the resulting SHA for
+`applied` and `already_applied`; `refused` and `unknown` record no resulting
+SHA. Delivery does not imply release.
 
 ## Branch and PR topology
 
 ```text
 main                                           protected; no raw LLM push
 gc/candidate/<program>/<node>/<attempt>        worker-owned exact candidate
-gc/integration/<program>/<wave>/<epoch>        Refinery-owned integration cut
+gc/delivery/<handoff>/<epoch>                  linked delivery successor
 ```
 
-Do not default to one PR per Worker: that moves integration coherence and shared
-generation races into GitHub. Do not default to a mega-PR: that destroys review
-and rollback granularity. Bounded trains provide a deliberate middle layer.
+Each admitted candidate has a linked delivery identity. Atomic groups are
+explicit; unrelated candidates are not silently composed by a standing process.
 
 ## Configuration shape
 
@@ -402,47 +407,51 @@ executor's exact packet roles:
 ```text
 packs/agentops-factory/
   pack.toml
-  agents/
-    mayor/
-    mayor-claude/
-    plan-reviewer/
-    plan-reviewer-claude/
-    refiner/
-    refiner-claude/
+  agents/                              legacy routes retained pending deletion
   commands/
   assets/schemas/
-    program-graph.v1
-    plan-review.v1
-    admission-certificate.v1
-    delivery-record.v1
-    factory-role-request.v1
-    factory-role-response.v1
+    program-graph.v2
+    admission-certificate.v2
+    handoff-prepared.v1
+    handoff-committed.v1
+    delivery.v1
+    ambiguity-request.v1
+    effect-receipt.v1
+    epoch-receipt.v1
+    factory-role-request.v2
+    factory-role-response.v2
     rescope-context.v1
 ```
 
-`factory plan` independently selects `--mayor-provider` and
-`--refiner-provider`. The reviewer and integration Validator default to the
-opposite provider and same-family pairs are rejected. These four provider
-choices are persisted on program and Refinery bead metadata, so rescope,
-restart, retry, and delivery cannot silently drift models. Codex lifecycle roles
-mean Sol; Claude lifecycle roles mean Opus 4.8. Implementation nodes remain
-Terra for Codex or Opus 4.8 for Claude.
+For 3.3, `factory-role-request.v2` and `factory-role-response.v2` are the
+admissible runtime contracts. They bind requested and actual role, model,
+reasoning, provider, and fallback facts on semantic beads, and reject a
+role-policy violation or silent downgrade (including Sol-high validation being
+reported as Terra-low). The 3.3 fixed roles admit no fallback: every recorded
+fallback object is exactly `allowed=false`, `used=false`, and `reason=null`.
+`program-graph.v2` also binds the same fixed policy and an admission
+certificate requires an author attestation for exactly one admitted
+Terra-high/Codex or Opus-medium/Claude writer and a Validator attestation for
+exact Sol-high/Codex. The `.v1` request,
+response, and `delivery-record.v1` schemas are retained only as 3.2 historical
+consumer contracts and are non-admissible for any 3.3 handoff or delivery.
+The delivery payload is not routed to a model. There is no opposite-provider
+rule; the one writer fabric is Terra/Opus and fresh validation is Sol.
 
 Initial proof-week capacity is at most four writer lanes inside an explicitly
-configured city cap, with fresh Validator sessions and on-demand Mayor/Refiner
+configured city cap, with fresh Validator sessions and on-demand Mayor support
 capacity. The allocator, scope compiler, isolated indexes, leases, and fencing
 must pass their gates before raising that cap.
 
 Dynamic worktree rigs are route-minimized from the bead's admitted
-`factory.binding`. A candidate rig exposes exactly two routes: the bead-selected
-Codex-or-Claude Implementer and its bead-selected opposite-family Validator.
-Integration rigs expose only the binding's two Validator routes. Rig
+`factory.binding`. A candidate rig exposes its admitted Terra/Opus writer and a
+fresh Sol Validator; linked delivery exposes no model route or integration rig. Rig
 registration and the durable suspension patches share a city-config lock, and
 dispatch stops unless the resolved active inventory is exactly the expected
 set.
 
 AgentOps skills remain semantic sources of truth. Thin role prompts inject the
-appropriate Mayor, plan-review, Implement, Validate, or Refinery-triage skill.
+appropriate Mayor, plan-review, Implement, or Validate skill.
 Worktree allocation, scope intersections, leases, Git commands, regeneration,
 PR updates, status checks, receipts, and cleanup belong in schema-checked pack
 commands, formulas, and exec orders rather than prompt prose.
@@ -453,11 +462,11 @@ commands, formulas, and exec orders rather than prompt prose.
 |---|---|
 | Session or controller crash | Re-enter through the same request digest or deterministic packet bead; reconcile bead routing and preparation metadata without manufacturing a verdict or duplicate work |
 | Unauthorized or stale-token Git write | Deterministic hook/credential/fencing rejection |
-| Candidate PASS but branch moves | Invalidate intake; exact SHA no longer matches |
+| Candidate PASS but branch moves | Keep terminal PASS; delivery creates a mechanical current-base epoch |
 | Candidate `FAIL` or `NOT_PROVEN` | Close the exact experiment, create a blocking rescope bead, and route that bead through a fresh Mayor context for a new successor proposal; stop in HOLD at the attempt ceiling |
-| Clean `main` movement | Mark `reassembly_required`; build a new fenced epoch from current protected base; rerun checks and freshly validate the new subject |
-| Canonical regeneration changes bytes | Refinery mechanism; invalidate and freshly validate subject |
-| Semantic conflict, test defect, or substantive review request | Freeze evidence and return to Mayor; no Refinery repair |
+| Clean `main` movement | Reproduce the exact delta in a new epoch and run deterministic gates; no Sol unless bytes or meaning change |
+| Canonical regeneration changes bytes | Create a `delivery_repair` bead in the shared semantic ready set and obtain fresh Sol validation |
+| Semantic conflict, test defect, or substantive review request | Terminalize delivery and return a successor request to Mayor |
 | Flaky CI covered by explicit bounded repository policy | Deterministic rerun with receipt |
 | Branch-protection or reviewer block | Wait or escalate; never bypass |
 | Provider outage | Surface degraded capacity; never silently lower semantic policy |
@@ -493,19 +502,18 @@ primary-source ledger and unresolved contradictions are in
 
 ## Qualification status and remaining proof
 
-The thin executor, schemas, reducer, worktree/index allocation, scope checks,
-leases, fencing, Mayor, fresh plan review, provider-specific Worker/Validator
-routes, Refinery delivery record, integration validation, PR state machine, and
-protected merge path are implemented. On 2026-07-17 a live program moved one
-Claude-authored experiment through a fresh Codex candidate Validator, a Codex
-Refiner, a fresh Claude integration Validator, required CI, and protected PR
-[#916](https://github.com/boshu2/agentops/pull/916), landing as
+The thin executor, schemas, worktree/index allocation, scope checks, leases,
+fencing, packet transport, and protected merge path are implemented legacy
+surfaces. The 3.3 delivery state machine is a target qualified separately. On
+2026-07-17 a live program moved one Claude-authored experiment through required
+CI and protected PR [#916](https://github.com/boshu2/agentops/pull/916), landing as
 `b80a752aad3843af66160b08a823aaed57e07169`.
 
-Promotion beyond the v1 canary still requires one real multi-wave product with
-both providers and deliberate stale-token, moved-SHA, dead-worker,
-generated-file collision, semantic-failure, unrelated-`main` movement,
-dependent-wave, provider-outage, and author-collapsed-validation faults.
+The 3.3 target is NOT qualified until its bounded canary proves the selected
+merge actor, moving-main delivery, marker-first crash replay, zero routine
+Fable wakes, terminal semantic beads before delivery, and the declared
+Terra/Opus writer fabric. Legacy multi-wave/integration evidence is not a
+substitute.
 
 Measure Mayor semantic yield, operator reload time, candidate-ready-to-PR time,
 Validator queue share, second-provider unique catches, provider-outage blocking,

@@ -1,0 +1,310 @@
+{
+  "cleanup": {
+    "first_server_stopped": true,
+    "no_attributed_process_remains": true
+  },
+  "properties": {
+    "claim_race_exclusive": {
+      "observed": true,
+      "trial_count": 3,
+      "trials": [
+        {
+          "claimants": [
+            "claimant-a",
+            "claimant-b"
+          ],
+          "exit_codes": [
+            0,
+            1
+          ],
+          "expected_final_assignee": "claimant-a",
+          "final_assignee": "claimant-a",
+          "observed": true,
+          "successful_actor": "claimant-a",
+          "successful_claimants": 1,
+          "trial": 1
+        },
+        {
+          "claimants": [
+            "claimant-a",
+            "claimant-b"
+          ],
+          "exit_codes": [
+            1,
+            0
+          ],
+          "expected_final_assignee": "claimant-b",
+          "final_assignee": "claimant-b",
+          "observed": true,
+          "successful_actor": "claimant-b",
+          "successful_claimants": 1,
+          "trial": 2
+        },
+        {
+          "claimants": [
+            "claimant-a",
+            "claimant-b"
+          ],
+          "exit_codes": [
+            0,
+            1
+          ],
+          "expected_final_assignee": "claimant-a",
+          "final_assignee": "claimant-a",
+          "observed": true,
+          "successful_actor": "claimant-a",
+          "successful_claimants": 1,
+          "trial": 3
+        }
+      ]
+    },
+    "cross_process_visibility_and_clean_restart": {
+      "after_count": 5,
+      "before_count": 5,
+      "observed": true
+    },
+    "deterministic_successor_create_or_discover": {
+      "created_after_absent_discovery": true,
+      "epoch": 1,
+      "external_ref": "handoff:63702a76d1993ed1847dfdebd47e32978073d107f61b78d7898024672fde8a7c:epoch:1",
+      "handoff_id": "63702a76d1993ed1847dfdebd47e32978073d107f61b78d7898024672fde8a7c",
+      "observed": true,
+      "positive_rediscovery": true,
+      "same_id_count": 1,
+      "same_identity_race": "not separately issued; deterministic reread is non-mutating",
+      "successor_id": "cap-delivery-63702a76d1993ed1847d-e000001"
+    },
+    "event_single_flight": {
+      "reason": "GC runtime/event was not exercised; event wake remains disabled",
+      "result": "NOT_PROVEN"
+    },
+    "kill_mid_update_recovery": {
+      "observed": true,
+      "pair": [
+        null,
+        null
+      ],
+      "process_returncode": -15
+    },
+    "marker_first_cross_store_handoff": {
+      "late_conflicting_terminal": {
+        "action": "refuse_conflicting_terminal",
+        "effect_authorized": false
+      },
+      "late_conflicting_terminal_observed": true,
+      "negative_preexisting_conflicting_child": {
+        "action": "refuse_conflicting_delivery_identity",
+        "committed": false,
+        "delivery_count": 1,
+        "effect_authorized": false,
+        "published": false
+      },
+      "negative_preexisting_conflicting_child_observed": true,
+      "observed": true,
+      "per_cut": [
+        {
+          "converged": true,
+          "cut": 0,
+          "exactly_one_delivery_bead": true,
+          "precommit_authorizations": 0,
+          "schema_valid_artifacts": {
+            "committed": true,
+            "nonroutable_delivery": true,
+            "prepared": true,
+            "published_delivery": true
+          },
+          "steps": [
+            {
+              "action": "await_terminal",
+              "effect_authorized": false
+            },
+            {
+              "action": "created_successor",
+              "effect_authorized": false
+            },
+            {
+              "action": "published",
+              "effect_authorized": false
+            },
+            {
+              "action": "committed",
+              "effect_authorized": false
+            },
+            {
+              "action": "converged",
+              "effect_authorized": true
+            }
+          ]
+        },
+        {
+          "converged": true,
+          "cut": 1,
+          "exactly_one_delivery_bead": true,
+          "precommit_authorizations": 0,
+          "schema_valid_artifacts": {
+            "committed": true,
+            "nonroutable_delivery": true,
+            "prepared": true,
+            "published_delivery": true
+          },
+          "steps": [
+            {
+              "action": "created_successor",
+              "effect_authorized": false
+            },
+            {
+              "action": "published",
+              "effect_authorized": false
+            },
+            {
+              "action": "committed",
+              "effect_authorized": false
+            },
+            {
+              "action": "converged",
+              "effect_authorized": true
+            }
+          ]
+        },
+        {
+          "converged": true,
+          "cut": 2,
+          "exactly_one_delivery_bead": true,
+          "precommit_authorizations": 0,
+          "schema_valid_artifacts": {
+            "committed": true,
+            "nonroutable_delivery": true,
+            "prepared": true,
+            "published_delivery": true
+          },
+          "steps": [
+            {
+              "action": "published",
+              "effect_authorized": false
+            },
+            {
+              "action": "committed",
+              "effect_authorized": false
+            },
+            {
+              "action": "converged",
+              "effect_authorized": true
+            }
+          ]
+        },
+        {
+          "converged": true,
+          "cut": 3,
+          "exactly_one_delivery_bead": true,
+          "precommit_authorizations": 0,
+          "schema_valid_artifacts": {
+            "committed": true,
+            "nonroutable_delivery": true,
+            "prepared": true,
+            "published_delivery": true
+          },
+          "steps": [
+            {
+              "action": "committed",
+              "effect_authorized": false
+            },
+            {
+              "action": "converged",
+              "effect_authorized": true
+            }
+          ]
+        },
+        {
+          "converged": true,
+          "cut": 4,
+          "exactly_one_delivery_bead": true,
+          "precommit_authorizations": 0,
+          "schema_valid_artifacts": {
+            "committed": true,
+            "nonroutable_delivery": true,
+            "prepared": true,
+            "published_delivery": true
+          },
+          "steps": [
+            {
+              "action": "converged",
+              "effect_authorized": true
+            }
+          ]
+        }
+      ]
+    },
+    "metadata_race_visibility": {
+      "metadata_cas": "NOT_EXPOSED_BY_CLI",
+      "result": "BOTH_WRITES_VISIBLE",
+      "writers": [
+        0,
+        0
+      ]
+    },
+    "multifield_metadata_update": {
+      "atomicity_claim": "sampled CLI call only; no CAS or claimant fence",
+      "result": "OBSERVED_COMPLETE_PAIR"
+    },
+    "stale_claimant_can_mutate": {
+      "observed": true,
+      "returncode": 0
+    },
+    "terminal_semantic_immutability": {
+      "late_duplicate_returncode": 0,
+      "result": "NOT_ENFORCED_BY_BD"
+    },
+    "tested_safe_metadata_envelope": {
+      "claim": "accepted safe envelope; not a maximum limit",
+      "key_bytes": 128,
+      "observed": true,
+      "returncode": 0,
+      "value_bytes": 4096
+    }
+  },
+  "schema_version": "beads-capability-selection.v1",
+  "selected_representation": "B-successor-delivery-bead",
+  "selection_reason": "A stale former claimant can mutate ordinary metadata, so it is not a fence. Exact immutable successor id plus exact external_ref/handoff/epoch rediscovery supports one non-routable delivery successor; delivery remains marker-first and effects remain blocked until committed.",
+  "toolchain": {
+    "bd": {
+      "path": "/Users/bo/.local/share/agentops/gc-toolchain/bin/bd",
+      "sha256": "21cd2d2e8583f4ad9144ed7fb991801a1dd6fd5ce4b8575e441698c1a183b52f",
+      "source_commit": "8e4e59d39f3459a43cf21a3236a13eca4dd874f7",
+      "version": "bd version 1.1.0 (8e4e59d)"
+    },
+    "dolt": {
+      "path": "/opt/homebrew/Cellar/dolt/2.1.10/bin/dolt",
+      "sha256": "89e01b1c05e5d372c1873abc2192f52769d90480e492d9ca313c0e93dad63596",
+      "version": "dolt version 2.1.10\nWarning: you are on an old version of Dolt. The newest version is 2.2.1."
+    },
+    "gc_lock_provenance": {
+      "bd": {
+        "ref": "v1.1.0",
+        "repository": "https://github.com/steveyegge/beads.git",
+        "source_commit": "8e4e59d39f3459a43cf21a3236a13eca4dd874f7",
+        "version": "1.1.0"
+      },
+      "gc": {
+        "ref": "v1.3.5",
+        "repository": "https://github.com/gastownhall/gascity.git",
+        "source_commit": "8ffc009ded781a2ada2077f3a29bd712b2def0bf",
+        "version": "1.3.5"
+      },
+      "pair_id": "gascity-v1.3.5-beads-v1.1.0",
+      "path": "deploy/gc/toolchain.lock.json",
+      "sha256": "aecc3e4b097e8e873f2a92478da4535b85bc70fdc31c9605aa4a4462a0482fa0",
+      "status": "LOCK_PROVENANCE_NOT_EXERCISED"
+    },
+    "gc_runtime": {
+      "reason": "Beads/Dolt-only probe; Gas City event wake disabled",
+      "status": "NOT_EXERCISED"
+    },
+    "harness_sha256": "b5d6d4490492de047554c984008289282aab82cd3e89bf67d5ae8ea71bcbc48e",
+    "lock_sha256": "aecc3e4b097e8e873f2a92478da4535b85bc70fdc31c9605aa4a4462a0482fa0",
+    "managed_store": {
+      "host": "127.0.0.1",
+      "port": 52885,
+      "topology": "private external Dolt sql-server"
+    }
+  }
+}
