@@ -83,7 +83,7 @@
         "ci_wait",
         "rebase_needed",
         "merge_eligible",
-        "merge_requested",
+        "merge_armed",
         "landed",
         "repair_wait",
         "manual_review",

@@ -241,13 +241,19 @@ Explicit atomic groups may share one delivery unit. Delivery progresses by
 base-sensitive epochs:
 
 `queued -> preparing -> branch_ready -> pr_open -> ci_wait -> rebase_needed ->
-preparing | merge_eligible -> merge_requested | merge_armed -> landed`
+preparing | merge_eligible -> merge_armed -> landed`
 
-The exact release schema contains `merge_requested` or `merge_armed`, never
-both. Waiting and terminal alternatives are `repair_wait`, `manual_review`,
+The exact release schema contains `merge_armed` only. Waiting and terminal alternatives are `repair_wait`, `manual_review`,
 `stalled`, `delivery_failed`, `successor_required`, and `cancelled`.
 Artifacts are immutable evidence referenced by bead metadata; they are not a
 second lifecycle ledger.
+
+Before its sole auto-merge mutation, `merge_armed` binds the exact PR head,
+base branch and base OID, the target protection digest, and every required
+hosted-check context/app identity. A definitive refusal is recorded separately
+from an ambiguous transport result. Landing is accepted only when the forge
+commit has the admitted integration tree and the epoch's base as its sole
+parent.
 
 Deployment policy exposes:
 
