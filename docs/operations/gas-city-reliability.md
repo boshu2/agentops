@@ -16,7 +16,9 @@ dependency the owner.
   telemetry, and working-directory observations until exact identity is proven.
 
 The machine-readable observations and dispositions live in
-`deploy/gc/known-errors.json`.
+`deploy/gc/known-errors.json`. Every row records its release relevance; fixed,
+rejected, and historical observations remain evidence but cannot silently
+become release blockers or fork patches.
 
 ## Contribution-first fork
 
@@ -31,18 +33,40 @@ temporarily admitted GC binary may stack exact open PR commits when a verified
 process-safety bug blocks use, but the stack is recorded in provenance and is
 never merged into fork `main`.
 
+Record each fork cleanup in `deploy/gc/fork-baseline.json` and run
+`validate-fork-manifest`. The observed fork and upstream `main` SHAs must be
+equal, every retained branch must reference open upstream work, and deleted
+branches must reference merged upstream pull requests. The manifest is dated
+evidence and must be regenerated after either remote changes.
+
 ## Clean-room workflow
 
 1. Run `deploy/gc/reliability.py inventory` into a durable evidence directory.
-2. Create a cleanup plan containing exact absolute targets and expected process
+   Pass every relevant top-level namespace with `--scan-root`, every retained
+   or required-but-missing city with an exact `--path`, both canonical source
+   repositories with `--git-repo`, and any proposed release pair with two
+   `--selected-binary` arguments. The inventory records missing paths, declared
+   Dolt state, live GC/Dolt/compiler processes, tmux sockets and sessions,
+   repository worktrees/branches/remotes, ambient binaries, and the exact
+   selected toolchain identity without starting a city or store.
+   Inventory hashes observed binaries but never executes them; even a nominal
+   `version` command can mutate registered runtime state in an old or unknown
+   binary. Version/provenance comes from the selected lock and receipt in the
+   next gate, not from probing ambient executables.
+2. Run `validate-inventory` over the written artifact. The content digest,
+   path/process identity uniqueness, ownership classifications, Dolt/tmux
+   sections, and selected-toolchain ambiguity check must pass before using the
+   artifact for cleanup admission.
+3. Create a cleanup plan containing exact absolute targets and expected process
    commands. Never use a glob or name-only deletion rule.
-3. Export dirty or unique material outside the target before admitting it.
-4. Run `validate-cleanup`, then `apply-cleanup` without `--execute`.
-5. Review the returned plan digest. Execution requires that exact digest in
+4. Export dirty or unique material outside the target before admitting it.
+5. Run `validate-cleanup`, then `apply-cleanup` without `--execute`.
+6. Review the returned plan digest. Execution requires that exact digest in
    `--confirm`; process command drift and dirty worktrees fail closed.
-6. Execute once. A second execution must be an idempotent no-op.
-7. Re-inventory and explain every retained noncanonical process, path, and
-   binary.
+7. Execute once. A second execution must be an idempotent no-op.
+8. Re-inventory and explain every retained noncanonical process, path, binary,
+   Dolt declaration, tmux server, and selected-toolchain result. An ambiguous
+   selected pair is a stop, even when an ambient alias happens to work.
 
 Cleanup moves ordinary experiment directories to a recoverable archive rather
 than recursively deleting them. Gas City Git worktrees use `git worktree

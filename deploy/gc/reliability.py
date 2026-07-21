@@ -17,6 +17,7 @@ from pathlib import Path
 import plistlib
 import shutil
 import signal
+import stat
 import subprocess
 import sys
 import tarfile
@@ -43,8 +44,10 @@ REGISTRY_REQUIRED = {
     "live_check",
     "upstream",
     "disposition",
+    "release_relevance",
 }
 EVIDENCE_EXCLUDED_PARTS = {".git", ".gc", ".beads", ".codex", ".claude"}
+PROCESS_TOOL_NAMES = {"asm", "cgo", "compile", "go", "link"}
 
 
 class ReliabilityError(RuntimeError):
@@ -117,9 +120,12 @@ def git_status(path: Path) -> dict[str, Any] | None:
         return None
     top = Path(probe.stdout.strip()).resolve()
     status = run(["git", "-C", str(top), "status", "--porcelain=v1"], check=True)
+    head = run(
+        ["git", "-C", str(top), "rev-parse", "--verify", "HEAD"], check=False
+    ).strip()
     return {
         "top": str(top),
-        "head": run(["git", "-C", str(top), "rev-parse", "HEAD"]).strip(),
+        "head": head or None,
         "branch": run(
             ["git", "-C", str(top), "symbolic-ref", "--quiet", "--short", "HEAD"],
             check=False,
@@ -152,11 +158,38 @@ def safe_marker(path: Path) -> dict[str, Any] | None:
     return {key: payload[key] for key in sorted(allowed) if key in payload}
 
 
+def safe_dolt_state(path: Path) -> dict[str, Any] | None:
+    state = path / ".gc" / "runtime" / "packs" / "dolt" / "dolt-state.json"
+    if not state.is_file():
+        return None
+    try:
+        payload = json.loads(state.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        return {"path": str(state), "error": str(exc)}
+    allowed = {
+        "database",
+        "host",
+        "pid",
+        "port",
+        "running",
+        "started_at",
+        "version",
+    }
+    result = {key: payload[key] for key in sorted(allowed) if key in payload}
+    result["path"] = str(state)
+    return result
+
+
 def path_record(path: Path) -> dict[str, Any]:
     resolved = path.resolve()
     name = path.name
-    if name.startswith(AGENTOPS_GC_PREFIXES):
-        ownership = "agentops_gc_named"
+    marker = safe_marker(path)
+    if marker is not None and "error" not in marker:
+        ownership = "proven_agentops_marker"
+    elif name.startswith(AGENTOPS_GC_TEMP_PREFIX):
+        ownership = "proven_agentops_tool_prefix"
+    elif name.startswith(AGENTOPS_GC_PREFIXES):
+        ownership = "name_only_agentops_gc"
     elif name in AMBIGUOUS_GC_NAMES:
         ownership = "ambiguous_gc_named"
     else:
@@ -165,8 +198,10 @@ def path_record(path: Path) -> dict[str, Any]:
         "path": str(path),
         "realpath": str(resolved),
         "name": name,
+        "exists": path.exists(),
         "ownership": ownership,
-        "agentops_marker": safe_marker(path),
+        "agentops_marker": marker,
+        "dolt_state": safe_dolt_state(path),
         "gc_site": (path / ".gc" / "site.toml").is_file(),
         "git": git_status(path),
     }
@@ -214,9 +249,125 @@ def git_worktrees(repo: Path) -> list[dict[str, Any]]:
     return records
 
 
+def git_repository_record(repo: Path) -> dict[str, Any]:
+    repo = repo.resolve()
+    status = git_status(repo)
+    if status is None:
+        return {
+            "path": str(repo),
+            "exists": repo.exists(),
+            "error": "not a Git worktree",
+        }
+    remotes = []
+    for line in run(["git", "-C", str(repo), "remote", "-v"]).splitlines():
+        fields = line.split()
+        if len(fields) == 3:
+            remotes.append(
+                {
+                    "name": fields[0],
+                    "url": fields[1],
+                    "direction": fields[2].strip("()"),
+                }
+            )
+    branches = []
+    branch_output = run(
+        [
+            "git",
+            "-C",
+            str(repo),
+            "for-each-ref",
+            "--format=%(refname:short)%09%(objectname)%09%(upstream:short)",
+            "refs/heads",
+        ]
+    )
+    for line in branch_output.splitlines():
+        name, head, upstream = (line.split("\t") + ["", ""])[:3]
+        branches.append({"name": name, "head": head, "upstream": upstream or None})
+    return {
+        "path": str(repo),
+        "exists": True,
+        "git": status,
+        "remotes": remotes,
+        "branches": branches,
+        "worktrees": git_worktrees(repo),
+    }
+
+
+def parse_tmux_sessions(raw: str) -> list[dict[str, Any]]:
+    sessions = []
+    for line in raw.splitlines():
+        fields = line.split("\t")
+        if len(fields) != 4:
+            raise ReliabilityError(f"invalid tmux session record: {line!r}")
+        name, windows, pid, attached = fields
+        if not windows.isdigit() or not pid.isdigit() or attached not in {"0", "1"}:
+            raise ReliabilityError(f"invalid tmux session record: {line!r}")
+        sessions.append(
+            {
+                "name": name,
+                "windows": int(windows),
+                "pid": int(pid),
+                "attached": attached == "1",
+            }
+        )
+    return sessions
+
+
+def tmux_records(socket_root: Path) -> list[dict[str, Any]]:
+    if not socket_root.is_dir() or shutil.which("tmux") is None:
+        return []
+    records = []
+    for socket in sorted(socket_root.iterdir(), key=lambda item: item.name):
+        try:
+            mode = socket.lstat().st_mode
+        except OSError:
+            continue
+        if not stat.S_ISSOCK(mode):
+            continue
+        result = subprocess.run(
+            [
+                "tmux",
+                "-S",
+                str(socket),
+                "list-sessions",
+                "-F",
+                "#{session_name}\t#{session_windows}\t#{pid}\t#{session_attached}",
+            ],
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            timeout=5,
+            check=False,
+        )
+        sessions = parse_tmux_sessions(result.stdout) if result.returncode == 0 else []
+        records.append(
+            {
+                "socket": str(socket),
+                "active": result.returncode == 0,
+                "sessions": sessions,
+                "error": result.stderr.strip() or None,
+            }
+        )
+    return records
+
+
+def path_ownership_is_proven(ownership: Any) -> bool:
+    return ownership in {"proven_agentops_marker", "proven_agentops_tool_prefix"}
+
+
+def process_path_ownership(paths_by_realpath: dict[str, dict[str, Any]], owner: str | None) -> str:
+    if owner is None:
+        return "ambiguous"
+    record = paths_by_realpath.get(owner)
+    if record is not None and path_ownership_is_proven(record.get("ownership")):
+        return "proven_path"
+    return "ambiguous_named_path"
+
+
 def launchd_records(paths: list[dict[str, Any]]) -> list[dict[str, Any]]:
     launchd_root = Path.home() / "Library" / "LaunchAgents"
-    known = sorted((item["realpath"] for item in paths), key=len, reverse=True)
+    paths_by_realpath = {item["realpath"]: item for item in paths}
+    known = sorted(paths_by_realpath, key=len, reverse=True)
     loaded: dict[str, int | None] = {}
     for line in run(["launchctl", "list"], check=False).splitlines()[1:]:
         fields = line.split(maxsplit=2)
@@ -247,12 +398,12 @@ def launchd_records(paths: list[dict[str, Any]]) -> list[dict[str, Any]]:
             ),
             None,
         )
-        ownership = "proven_path" if owner else "ambiguous"
+        ownership = process_path_ownership(paths_by_realpath, owner)
         if owner is None and isinstance(gc_home, str):
             experiment = agentops_experiment_ancestor(Path(gc_home))
             if experiment is not None:
                 owner = str(experiment)
-                ownership = "proven_named_gc_home"
+                ownership = process_path_ownership(paths_by_realpath, owner)
         label = payload.get("Label")
         records.append(
             {
@@ -273,7 +424,8 @@ def process_records(
     paths: list[dict[str, Any]], launchd: list[dict[str, Any]]
 ) -> list[dict[str, Any]]:
     output = run(["ps", "-axo", "pid=,ppid=,command="])
-    known = sorted((item["realpath"] for item in paths), key=len, reverse=True)
+    paths_by_realpath = {item["realpath"]: item for item in paths}
+    known = sorted(paths_by_realpath, key=len, reverse=True)
     launchd_by_pid = {item.get("pid"): item for item in launchd if item.get("pid")}
     records = []
     for raw in output.splitlines():
@@ -281,10 +433,16 @@ def process_records(
         if len(fields) != 3:
             continue
         pid_text, ppid_text, command = fields
-        if not any(
-            marker in command
-            for marker in ("gc supervisor run", "dolt sql-server", "__gc-managed-dolt-scope-watchdog")
-        ):
+        executable = Path(command.split(maxsplit=1)[0]).name
+        if "gc supervisor run" in command:
+            category = "gc_supervisor"
+        elif "dolt sql-server" in command:
+            category = "dolt_server"
+        elif "__gc-managed-dolt-scope-watchdog" in command:
+            category = "dolt_watchdog"
+        elif executable in PROCESS_TOOL_NAMES:
+            category = "go_toolchain"
+        else:
             continue
         launchd_item = launchd_by_pid.get(int(pid_text))
         owner = next(
@@ -303,76 +461,227 @@ def process_records(
                     break
         if owner is None and launchd_item is not None:
             owner = launchd_item.get("owned_path")
+        ownership = process_path_ownership(paths_by_realpath, owner)
+        if launchd_item is not None and launchd_item.get("ownership") == "proven_path":
+            ownership = "proven_path"
         records.append(
             {
                 "pid": int(pid_text),
                 "ppid": int(ppid_text),
                 "command": command,
+                "category": category,
                 "owned_path": owner,
-                "ownership": launchd_item.get("ownership") if launchd_item and owner else (
-                    "proven_path" if owner else "ambiguous"
-                ),
+                "ownership": ownership,
                 "launchd_label": launchd_item.get("label") if launchd_item else None,
             }
         )
     return records
 
 
-def binary_records(dev_root: Path, gascity_repo: Path) -> list[dict[str, Any]]:
-    candidates: set[Path] = set()
+def binary_records(
+    dev_root: Path, gascity_repo: Path, selected_paths: list[Path] | None = None
+) -> list[dict[str, Any]]:
+    candidates: dict[Path, set[str]] = {}
+
+    def add(path: Path, source: str) -> None:
+        candidates.setdefault(path, set()).add(source)
+
     for command in ("gc", "bd"):
         output = run(["which", "-a", command], check=False)
-        candidates.update(Path(line) for line in output.splitlines() if line.strip())
-    candidates.add(gascity_repo / "bin" / "gc")
+        for line in output.splitlines():
+            if line.strip():
+                add(Path(line), "ambient")
+    add(gascity_repo / "bin" / "gc", "gascity_repo")
     for path in dev_root.glob("*toolchain*/bin/gc"):
-        candidates.add(path)
+        add(path, "dev_root")
+    for path in selected_paths or []:
+        add(path, "selected")
     records = []
     for path in sorted(candidates, key=str):
         if not path.is_file():
             continue
         resolved = path.resolve()
         command = "bd" if path.name == "bd" else "gc"
-        version = run([str(path), "version"], check=False).strip().splitlines()
         records.append(
             {
                 "path": str(path),
                 "realpath": str(resolved),
                 "command": command,
                 "sha256": sha256_file(resolved),
-                "version": version[:4],
+                "version": None,
+                "version_source": "not_executed",
+                "sources": sorted(candidates[path]),
+                "selected": "selected" in candidates[path],
             }
         )
     return records
 
 
-def inventory(dev_root: Path, gascity_repo: Path, generated_at: str | None) -> dict[str, Any]:
+def selected_toolchain(records: list[dict[str, Any]]) -> dict[str, Any]:
+    identities: dict[str, set[tuple[str, str]]] = {"gc": set(), "bd": set()}
+    for item in records:
+        command = item.get("command")
+        if item.get("selected") and command in identities:
+            identities[command].add(
+                (str(item.get("realpath")), str(item.get("sha256")))
+            )
+    counts = {command: len(values) for command, values in identities.items()}
+    duplicate = any(count > 1 for count in counts.values())
+    if duplicate:
+        status = "ambiguous"
+    elif counts == {"gc": 1, "bd": 1}:
+        status = "exact"
+    elif counts == {"gc": 0, "bd": 0}:
+        status = "not_selected"
+    else:
+        status = "incomplete"
+    return {
+        "status": status,
+        "duplicate_active_identity": duplicate,
+        "identity_counts": counts,
+        "identities": {
+            command: [
+                {"realpath": realpath, "sha256": sha256}
+                for realpath, sha256 in sorted(values)
+            ]
+            for command, values in identities.items()
+        },
+    }
+
+
+def inventory(
+    dev_root: Path,
+    gascity_repo: Path,
+    generated_at: str | None,
+    *,
+    scan_roots: list[Path] | None = None,
+    explicit_paths: list[Path] | None = None,
+    git_repos: list[Path] | None = None,
+    selected_binaries: list[Path] | None = None,
+    tmux_root: Path | None = None,
+) -> dict[str, Any]:
     dev_root = dev_root.resolve()
     gascity_repo = gascity_repo.resolve()
-    paths = []
-    for candidate in sorted(dev_root.iterdir(), key=lambda item: item.name):
-        if not candidate.is_dir():
+    roots = [dev_root, *(scan_roots or [])]
+    candidates: dict[str, Path] = {}
+    for root in roots:
+        root = root.resolve()
+        if not root.is_dir():
             continue
-        if candidate.name.startswith(AGENTOPS_GC_PREFIXES) or candidate.name in AMBIGUOUS_GC_NAMES:
-            paths.append(path_record(candidate))
+        for candidate in sorted(root.iterdir(), key=lambda item: item.name):
+            if not candidate.is_dir():
+                continue
+            if (
+                candidate.name.startswith(AGENTOPS_GC_PREFIXES)
+                or candidate.name in AMBIGUOUS_GC_NAMES
+            ):
+                candidates[str(candidate.resolve())] = candidate
     temp_root = Path("/tmp").resolve()
-    for candidate in sorted(temp_root.glob(f"{AGENTOPS_GC_TEMP_PREFIX}*"), key=lambda item: item.name):
-        paths.append(path_record(candidate))
+    for candidate in sorted(
+        temp_root.glob(f"{AGENTOPS_GC_TEMP_PREFIX}*"), key=lambda item: item.name
+    ):
+        candidates[str(candidate.resolve())] = candidate
+    for candidate in explicit_paths or []:
+        candidates[str(candidate.resolve())] = candidate
+    paths = [path_record(candidates[key]) for key in sorted(candidates)]
     launchd = launchd_records(paths)
+    processes = process_records(paths, launchd)
+    binaries = binary_records(dev_root, gascity_repo, selected_binaries)
+    repositories = [git_repository_record(path) for path in git_repos or []]
+    socket_root = tmux_root or Path("/private/tmp") / f"tmux-{os.getuid()}"
     payload = {
         "schema_version": SCHEMA_VERSION,
         "generated_at": generated_at or dt.datetime.now(dt.UTC).isoformat(),
         "dev_root": str(dev_root),
+        "scan_roots": sorted({str(path.resolve()) for path in roots}),
         "gascity_repo": str(gascity_repo),
         "experiment_paths": paths,
         "gascity_worktrees": git_worktrees(gascity_repo),
-        "processes": process_records(paths, launchd),
-        "binaries": binary_records(dev_root, gascity_repo),
+        "git_repositories": repositories,
+        "processes": processes,
+        "dolt": {
+            "declared_states": [
+                {"experiment": item["realpath"], **item["dolt_state"]}
+                for item in paths
+                if item.get("dolt_state")
+            ],
+            "live_processes": [
+                item for item in processes if item["category"].startswith("dolt_")
+            ],
+        },
+        "tmux": {"socket_root": str(socket_root), "servers": tmux_records(socket_root)},
+        "binaries": binaries,
+        "selected_toolchain": selected_toolchain(binaries),
         "launchd": launchd,
     }
     stable = dict(payload)
     stable.pop("generated_at")
     payload["inventory_digest"] = digest(stable)
     return payload
+
+
+def validate_inventory_payload(payload: dict[str, Any]) -> dict[str, Any]:
+    required = {
+        "schema_version",
+        "generated_at",
+        "inventory_digest",
+        "experiment_paths",
+        "processes",
+        "dolt",
+        "tmux",
+        "binaries",
+        "selected_toolchain",
+        "git_repositories",
+    }
+    if payload.get("schema_version") != SCHEMA_VERSION or not required.issubset(payload):
+        raise ReliabilityError("inventory payload is missing required fields")
+    stable = dict(payload)
+    stable.pop("generated_at")
+    recorded_digest = stable.pop("inventory_digest")
+    if recorded_digest != digest(stable):
+        raise ReliabilityError("inventory digest does not match payload")
+    paths = payload["experiment_paths"]
+    processes = payload["processes"]
+    if not isinstance(paths, list) or not isinstance(processes, list):
+        raise ReliabilityError("inventory paths and processes must be lists")
+    allowed_ownership = {
+        "proven_agentops_marker",
+        "proven_agentops_tool_prefix",
+        "name_only_agentops_gc",
+        "ambiguous_gc_named",
+        "unclassified",
+    }
+    seen_paths: set[str] = set()
+    for index, item in enumerate(paths):
+        realpath = item.get("realpath") if isinstance(item, dict) else None
+        if not isinstance(realpath, str) or realpath in seen_paths:
+            raise ReliabilityError(f"duplicate experiment path identity at index {index}")
+        seen_paths.add(realpath)
+        if item.get("ownership") not in allowed_ownership:
+            raise ReliabilityError(f"invalid experiment ownership at index {index}")
+    seen_pids: set[int] = set()
+    for index, item in enumerate(processes):
+        pid = item.get("pid") if isinstance(item, dict) else None
+        if not isinstance(pid, int) or pid in seen_pids or not isinstance(item.get("category"), str):
+            raise ReliabilityError(f"invalid process identity at index {index}")
+        seen_pids.add(pid)
+    tmux = payload["tmux"]
+    dolt = payload["dolt"]
+    if not isinstance(tmux, dict) or not isinstance(tmux.get("servers"), list):
+        raise ReliabilityError("inventory tmux section is invalid")
+    if not isinstance(dolt, dict) or not isinstance(dolt.get("declared_states"), list):
+        raise ReliabilityError("inventory Dolt section is invalid")
+    selected = payload["selected_toolchain"]
+    if not isinstance(selected, dict) or selected.get("duplicate_active_identity") is True:
+        raise ReliabilityError("inventory selected toolchain is ambiguous")
+    return {
+        "inventory_digest": recorded_digest,
+        "experiment_paths": len(paths),
+        "processes": len(processes),
+        "tmux_servers": len(tmux["servers"]),
+        "dolt_states": len(dolt["declared_states"]),
+        "selected_toolchain_status": selected.get("status"),
+    }
 
 
 def validate_registry(path: Path) -> dict[str, Any]:
@@ -391,6 +700,113 @@ def validate_registry(path: Path) -> dict[str, Any]:
         if entry["owner"] not in {"agentops", "gascity", "beads", "environment", "unknown"}:
             raise ReliabilityError(f"invalid owner for {entry['id']}: {entry['owner']}")
     return {"entries": len(entries), "registry_digest": digest(payload)}
+
+
+def valid_git_sha(value: Any) -> bool:
+    return (
+        isinstance(value, str)
+        and len(value) == 40
+        and all(character in "0123456789abcdef" for character in value)
+    )
+
+
+def validate_fork_manifest(payload: dict[str, Any]) -> dict[str, Any]:
+    required = {
+        "schema_version",
+        "observed_at",
+        "upstream",
+        "fork",
+        "upstream_main",
+        "fork_main",
+        "local_pre_push",
+        "retained_branches",
+        "removed_merged_branches",
+    }
+    if set(payload) != required or payload.get("schema_version") != SCHEMA_VERSION:
+        raise ReliabilityError("fork manifest fields are invalid")
+    if not valid_git_sha(payload["upstream_main"]) or not valid_git_sha(
+        payload["fork_main"]
+    ):
+        raise ReliabilityError("fork manifest requires exact Git SHAs")
+    if payload["upstream_main"] != payload["fork_main"]:
+        raise ReliabilityError("fork main does not equal observed upstream main")
+    pre_push = payload.get("local_pre_push")
+    if not isinstance(pre_push, dict) or set(pre_push) != {
+        "result",
+        "subject_sha",
+        "log_sha256",
+        "bypass_used",
+        "reason",
+    }:
+        raise ReliabilityError("fork manifest local pre-push evidence is invalid")
+    if pre_push["result"] not in {
+        "passed",
+        "failed_on_observed_official_main",
+        "prior_official_main_failure_reused",
+    }:
+        raise ReliabilityError("fork manifest local pre-push result is invalid")
+    if not valid_git_sha(pre_push["subject_sha"]):
+        raise ReliabilityError("fork manifest local pre-push subject is invalid")
+    if (
+        pre_push["result"] in {"passed", "failed_on_observed_official_main"}
+        and pre_push["subject_sha"] != payload["fork_main"]
+    ):
+        raise ReliabilityError("fork manifest local pre-push subject does not match fork main")
+    log_sha256 = pre_push["log_sha256"]
+    if (
+        not isinstance(log_sha256, str)
+        or len(log_sha256) != 64
+        or not all(character in "0123456789abcdef" for character in log_sha256)
+    ):
+        raise ReliabilityError("fork manifest local pre-push digest is invalid")
+    if pre_push["bypass_used"] is True and pre_push["result"] not in {
+        "failed_on_observed_official_main",
+        "prior_official_main_failure_reused",
+    }:
+        raise ReliabilityError("fork manifest pre-push bypass lacks a failed official-main gate")
+    if (
+        pre_push["result"] == "prior_official_main_failure_reused"
+        and pre_push["bypass_used"] is not True
+    ):
+        raise ReliabilityError("fork manifest prior failure reuse requires a bypass")
+    if not isinstance(pre_push["reason"], str) or not pre_push["reason"].strip():
+        raise ReliabilityError("fork manifest pre-push bypass lacks a reason")
+    retained = payload.get("retained_branches")
+    removed = payload.get("removed_merged_branches")
+    if not isinstance(retained, list) or not isinstance(removed, list):
+        raise ReliabilityError("fork manifest branch collections must be lists")
+    seen: set[str] = {"main"}
+    for index, entry in enumerate(retained):
+        branch = entry.get("branch") if isinstance(entry, dict) else None
+        if not isinstance(branch, str) or not branch or branch in seen:
+            raise ReliabilityError(f"invalid retained fork branch at index {index}")
+        seen.add(branch)
+        if not valid_git_sha(entry.get("head")):
+            raise ReliabilityError(f"retained branch {branch} requires exact head")
+        if entry.get("upstream_kind") not in {"issue", "pr"}:
+            raise ReliabilityError(f"retained branch {branch} lacks upstream kind")
+        if entry.get("state") != "open" or not isinstance(
+            entry.get("upstream_number"), int
+        ):
+            raise ReliabilityError(f"retained branch {branch} lacks open upstream work")
+        if not str(entry.get("upstream_url", "")).startswith("https://github.com/"):
+            raise ReliabilityError(f"retained branch {branch} lacks upstream URL")
+    for index, entry in enumerate(removed):
+        branch = entry.get("branch") if isinstance(entry, dict) else None
+        if not isinstance(branch, str) or not branch or branch in seen:
+            raise ReliabilityError(f"invalid removed fork branch at index {index}")
+        seen.add(branch)
+        if not valid_git_sha(entry.get("head")) or entry.get("state") != "merged":
+            raise ReliabilityError(f"removed branch {branch} lacks merged evidence")
+        if not isinstance(entry.get("upstream_number"), int) or not str(
+            entry.get("upstream_url", "")
+        ).startswith("https://github.com/"):
+            raise ReliabilityError(f"removed branch {branch} lacks upstream evidence")
+    return {
+        "retained_branches": len(retained),
+        "removed_merged_branches": len(removed),
+        "manifest_digest": digest(payload),
+    }
 
 
 def evidence_safe_untracked(path: str) -> bool:
@@ -516,8 +932,13 @@ def validate_cleanup_plan(inventory_payload: dict[str, Any], plan: dict[str, Any
                 raise ReliabilityError(f"action {index}: archive must be an exact absolute path")
             item = find_path(inventory_payload, target)
             if item is None:
-                raise ReliabilityError(f"action {index}: target absent from inventory: {target}")
-            if item.get("ownership") != "agentops_gc_named":
+                raise ReliabilityError(
+                    f"action {index}: target absent from inventory: {target}"
+                )
+            if item.get("ownership") not in {
+                "proven_agentops_marker",
+                "proven_agentops_tool_prefix",
+            }:
                 raise ReliabilityError(f"action {index}: ambiguous ownership: {target}")
             dirty = bool((item.get("git") or {}).get("dirty"))
             evidence = action.get("evidence_ref")
@@ -529,7 +950,7 @@ def validate_cleanup_plan(inventory_payload: dict[str, Any], plan: dict[str, Any
             matches = [item for item in inventory_payload.get("processes", []) if item.get("pid") == pid]
             if len(matches) != 1 or matches[0].get("command") != expected:
                 raise ReliabilityError(f"action {index}: process identity not exact")
-            if matches[0].get("ownership") not in {"proven_path", "proven_named_gc_home"}:
+            if matches[0].get("ownership") != "proven_path":
                 raise ReliabilityError(f"action {index}: process ownership is ambiguous")
         elif operation == "git_worktree_remove":
             target = action.get("target")
@@ -559,7 +980,7 @@ def validate_cleanup_plan(inventory_payload: dict[str, Any], plan: dict[str, Any
             ]
             if len(matches) != 1:
                 raise ReliabilityError(f"action {index}: launchd identity not exact")
-            if matches[0].get("ownership") not in {"proven_path", "proven_named_gc_home"}:
+            if matches[0].get("ownership") != "proven_path":
                 raise ReliabilityError(f"action {index}: launchd ownership is ambiguous")
             archive = action.get("archive")
             if not isinstance(archive, str) or not Path(archive).is_absolute():
@@ -666,11 +1087,22 @@ def parse_args() -> argparse.Namespace:
     inv = sub.add_parser("inventory")
     inv.add_argument("--dev-root", required=True, type=Path)
     inv.add_argument("--gascity-repo", required=True, type=Path)
+    inv.add_argument("--scan-root", action="append", default=[], type=Path)
+    inv.add_argument("--path", action="append", default=[], type=Path)
+    inv.add_argument("--git-repo", action="append", default=[], type=Path)
+    inv.add_argument("--selected-binary", action="append", default=[], type=Path)
+    inv.add_argument("--tmux-root", type=Path)
     inv.add_argument("--generated-at")
     inv.add_argument("--output", required=True, type=Path)
 
+    validate_inv = sub.add_parser("validate-inventory")
+    validate_inv.add_argument("--inventory", required=True, type=Path)
+
     registry = sub.add_parser("validate-registry")
     registry.add_argument("--registry", required=True, type=Path)
+
+    fork = sub.add_parser("validate-fork-manifest")
+    fork.add_argument("--manifest", required=True, type=Path)
 
     preserve = sub.add_parser("preserve-git")
     preserve.add_argument("--path", required=True, type=Path)
@@ -702,14 +1134,29 @@ def main() -> int:
     args = parse_args()
     try:
         if args.command == "inventory":
-            payload = inventory(args.dev_root, args.gascity_repo, args.generated_at)
+            payload = inventory(
+                args.dev_root,
+                args.gascity_repo,
+                args.generated_at,
+                scan_roots=args.scan_root,
+                explicit_paths=args.path,
+                git_repos=args.git_repo,
+                selected_binaries=args.selected_binary,
+                tmux_root=args.tmux_root,
+            )
             atomic_json(args.output, payload)
             result: dict[str, Any] = {
                 "inventory": str(args.output),
                 "inventory_digest": payload["inventory_digest"],
             }
+        elif args.command == "validate-inventory":
+            payload = json.loads(args.inventory.read_text(encoding="utf-8"))
+            result = validate_inventory_payload(payload)
         elif args.command == "validate-registry":
             result = validate_registry(args.registry)
+        elif args.command == "validate-fork-manifest":
+            manifest = json.loads(args.manifest.read_text(encoding="utf-8"))
+            result = validate_fork_manifest(manifest)
         elif args.command == "preserve-git":
             result = preserve_git(args.path, args.output)
         elif args.command == "git-snapshot":
