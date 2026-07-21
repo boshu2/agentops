@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://agentops.local/schemas/delivery-record.v1.schema.json",
-  "title": "Fenced Refinery delivery record",
+  "title": "Legacy 3.2 integration-train delivery record (non-admissible for 3.3)",
   "type": "object",
   "additionalProperties": false,
   "required": [

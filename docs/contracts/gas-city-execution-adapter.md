@@ -58,20 +58,23 @@ Implementer and Validator roles. Every agent selects its provider and model
 explicitly; every packet also names `provider = codex | claude`, and the adapter
 verifies Gas City's runtime session, provider, and exact launch model. Codex
 uses Terra for implementation and Sol for validation. Claude uses Opus 4.8 for
-implementation and validation, with a fresh interactive GC session. A fresh
-Validator context must not reuse the Implementer's context identity.
+implementation with a fresh interactive GC session; it is not a 3.3 validation
+route. A fresh Validator context must not reuse the Implementer's context
+identity.
 
-When selected, `agentops-factory` imports that executor and adds provider-specific
-Mayor, plan-review, deterministic reducer, and fenced Refiner surfaces. Codex
-Mayor/plan-review/Refiner roles use Sol; Claude variants use Opus 4.8. The
-program bead records those provider choices, and plan review plus integration
-validation must use the opposite provider family from the Mayor or Refiner they
-judge. The work unit
-is still a bead, never the pack. Every dynamic candidate rig is patched and
-verified to expose exactly the bead-selected Implementer route and its selected
-opposite-family Validator route; every integration rig exposes only its two
-Validator routes. The factory does not broaden the executor packet's semantic
-authority.
+When selected, `agentops-factory` imports the one-loop target: Fable Mayor,
+Sol plan and fresh validation, Terra-high/Opus-medium implementation, and a
+model-free serialized Refinery. Fable Refiner is zero-or-one read-only ambiguity
+advice; Luna-high is support-only. The program records requested and actual
+role, model, provider, reasoning, and fallback facts in the 3.3-authoritative
+`factory-role-request.v2` and `factory-role-response.v2` contracts. The work
+unit is still a bead, never the pack. Candidate rigs expose their admitted
+writer and fresh Sol validator; routine delivery exposes no model route. The
+factory does not broaden the executor packet's semantic authority. The adapter
+rejects an actual runtime that violates the requested fixed role policy or
+silently downgrades it; in particular validation is requested and actual
+Sol-high/Codex, and every fallback object is exactly `allowed=false`,
+`used=false`, and `reason=null`, never Terra-low.
 
 ## SDK-owned configuration
 
@@ -109,9 +112,9 @@ For a released pack, use the normal import command and a durable commit pin.
    factual scope/check receipts. The implementer does not transcribe a
    candidate packet by hand.
 5. The controller supplies a second explicit packet for a distinct fresh
-   Sol or Opus 4.8 context to validate the exact subject, intent digest, scope,
-   evidence, and every acceptance criterion. Cross-provider validation is a
-   caller choice, not an implicit router decision.
+   Sol-high/Codex context to validate the exact subject, intent digest, scope,
+   evidence, and every acceptance criterion. 3.3 has no cross-provider
+   validation route or runtime fallback.
 6. Validate emits exactly one `verdict.v2` beneath the evidence workspace. The
    GC adapter returns the artifact reference and transport/runtime evidence,
    without copying the semantic result into its own response, then stops.
