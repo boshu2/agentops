@@ -5,5 +5,15 @@ version = "0.1.0"
 requires_gc = ">=1.3.5"
 description = "Fenced Steward product factory: Mayor semantics, deterministic graph admission, isolated AgentOps experiments, and fenced PR delivery."
 
+[[named_session]]
+template = "mayor"
+scope = "city"
+mode = "on_demand"
+
+[[named_session]]
+template = "refiner"
+scope = "rig"
+mode = "on_demand"
+
 [imports.executor]
 source = "../agentops-executor"

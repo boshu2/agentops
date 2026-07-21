@@ -384,7 +384,7 @@ class PacketContractTests(unittest.TestCase):
 
     def test_executor_prompts_read_transport_beads_from_explicit_dynamic_rig(self) -> None:
         agents = ROOT / "packs" / "agentops-executor" / "agents"
-        for role in ("implementer", "implementer-claude", "validator", "validator-claude"):
+        for role in ("implementer", "implementer-claude", "validator"):
             with self.subTest(role=role):
                 prompt = (agents / role / "prompt.template.md").read_text(encoding="utf-8")
                 self.assertIn(
@@ -428,6 +428,64 @@ class PacketContractTests(unittest.TestCase):
                 "agentops.implementer-claude",
             )
 
+    def test_runtime_launch_policy_derives_the_only_enabled_routes_from_toml(self) -> None:
+        expected = {
+            ("implement", "codex"): ("implementer", "gpt-5.6-terra", "high"),
+            ("implement", "claude"): ("implementer-claude", "claude-opus-4-8", "medium"),
+            ("validate", "codex"): ("validator", "gpt-5.6-sol", "high"),
+        }
+        for (role, provider), route in expected.items():
+            with self.subTest(role=role, provider=provider):
+                policy = packet_module.runtime_launch_policy({"role": role, "provider": provider})
+                self.assertEqual((policy["agent"], policy["model"], policy["effort"]), route)
+
+    def test_validator_claude_route_is_unroutable(self) -> None:
+        fixture = PacketFixture(self.root, role="validate", provider="claude")
+        with self.assertRaisesRegex(packet_module.PacketError, "no enabled validate/claude role route"):
+            packet_module.validate_envelope(fixture.packet_path)
+
+    def test_launch_command_parses_provider_specific_effort_flags(self) -> None:
+        self.assertEqual(
+            packet_module.command_launch_identity(
+                "codex --model gpt-5.6-terra -c model_reasoning_effort=high", "codex",
+            ),
+            ("gpt-5.6-terra", "high"),
+        )
+        self.assertEqual(
+            packet_module.command_launch_identity(
+                "claude --model claude-opus-4-8 --effort medium", "claude",
+            ),
+            ("claude-opus-4-8", "medium"),
+        )
+        with self.assertRaisesRegex(packet_module.PacketError, "explicit codex effort"):
+            packet_module.command_launch_identity("codex --model gpt-5.6-terra", "codex")
+
+    def test_runtime_attestation_rejects_missing_effort_or_fallback(self) -> None:
+        fixture = PacketFixture(self.root)
+        packet, paths = packet_module.validate_envelope(fixture.packet_path)
+        artifact = fixture.evidence / "receipt.txt"
+        artifact.write_text("ok\n", encoding="utf-8")
+        response = {
+            "schema_version": "gc-agent-response.v1", "packet_id": packet["packet_id"],
+            "role": "implement", "outcome": "candidate", "transport_bead_id": "ao-attest",
+            "session_context_id": "gc-attest", "session_name": "implementer-attest",
+            "template": "agentops.implementer",
+            "artifacts": [{"path": str(artifact), "sha256": hashlib.sha256(artifact.read_bytes()).hexdigest()}],
+            "message": "",
+        }
+        transport = {"id": "ao-attest", "status": "closed", "assignee": "implementer-attest"}
+        session = {
+            "id": "gc-attest", "session_name": "implementer-attest", "template": "agentops.implementer",
+            "provider": "codex", "model": "gpt-5.6-terra", "context_source": "gc_session",
+            "fallback": {"allowed": False, "used": False, "reason": None},
+        }
+        with self.assertRaisesRegex(packet_module.PacketError, "runtime effort"):
+            packet_module.validate_agent_response(packet, paths, response, "ao-attest", transport, session, response["template"])
+        session["effort"] = "high"
+        session.pop("fallback")
+        with self.assertRaisesRegex(packet_module.PacketError, "fallback attestation"):
+            packet_module.validate_agent_response(packet, paths, response, "ao-attest", transport, session, response["template"])
+
     def test_runtime_session_falls_back_to_closed_city_session_bead(self) -> None:
         session_bead = [{
             "id": "gc-session-drained",
@@ -435,10 +493,10 @@ class PacketContractTests(unittest.TestCase):
             "status": "closed",
             "metadata": {
                 "provider": "claude",
-                "template": "agentops/agentops.validator-claude",
-                "session_name": "validator-claude-1",
+                "template": "agentops/agentops.implementer-claude",
+                "session_name": "implementer-claude-1",
                 "state": "drained",
-                "command": "claude --model claude-opus-4-8 --permission-mode auto",
+                "command": "claude --model claude-opus-4-8 --effort medium --permission-mode auto",
             },
         }]
         with (
@@ -454,12 +512,17 @@ class PacketContractTests(unittest.TestCase):
         self.assertEqual(session, {
             "id": "gc-session-drained",
             "provider": "claude",
-            "template": "agentops/agentops.validator-claude",
-            "session_name": "validator-claude-1",
+            "template": "agentops/agentops.implementer-claude",
+            "session_name": "implementer-claude-1",
             "state": "drained",
             "status": "closed",
             "model": "claude-opus-4-8",
             "model_source": "launch_command",
+            "effort": "medium",
+            "reasoning": "medium",
+            "effort_source": "launch_command",
+            "context_source": "city_session_bead",
+            "fallback": {"allowed": False, "used": False, "reason": None},
         })
 
     def test_emit_binds_gc_session_identity_and_artifact_digest(self) -> None:
@@ -536,6 +599,9 @@ class PacketContractTests(unittest.TestCase):
             "template": "agentops.implementer",
             "provider": "codex",
             "model": "gpt-5.6-terra",
+            "effort": "high",
+            "context_source": "gc_session",
+            "fallback": {"allowed": False, "used": False, "reason": None},
         }
         with self.assertRaisesRegex(packet_module.PacketError, "unknown=\\['verdict'\\]"):
             packet_module.validate_agent_response(
@@ -703,6 +769,9 @@ class PacketContractTests(unittest.TestCase):
             "id": "gc-recover-session", "session_name": "implementer-1",
             "template": "agentops/agentops.implementer", "provider": "codex",
             "model": "gpt-5.6-terra",
+            "effort": "high",
+            "context_source": "gc_session",
+            "fallback": {"allowed": False, "used": False, "reason": None},
         }
         # The target is the exact runtime template for packet validation.
         response["template"] = "agentops/agentops.implementer"
@@ -770,6 +839,9 @@ class PacketContractTests(unittest.TestCase):
             "id": "gc-resumed-session", "session_name": "implementer-resumed",
             "template": target, "provider": "codex",
             "model": "gpt-5.6-terra",
+            "effort": "high",
+            "context_source": "gc_session",
+            "fallback": {"allowed": False, "used": False, "reason": None},
         }
         args = types.SimpleNamespace(
             packet=str(fixture.packet_path), rig="agentops", binding="agentops",
@@ -790,7 +862,7 @@ class PacketContractTests(unittest.TestCase):
         self.assertTrue(json.loads(stdout.getvalue())["ok"])
 
     def test_inspect_validation_packet_exposes_exact_local_helper_contract(self) -> None:
-        fixture = PacketFixture(self.root, role="validate", provider="claude")
+        fixture = PacketFixture(self.root, role="validate", provider="codex")
         args = types.SimpleNamespace(packet=str(fixture.packet_path))
         with contextlib.redirect_stdout(io.StringIO()) as stdout:
             self.assertEqual(packet_module.command_inspect(args), 0)
@@ -829,7 +901,7 @@ class PacketContractTests(unittest.TestCase):
         self.assertIn("--artifact <absolute-evidence-artifact>", emit["command_template"])
 
     def test_store_verdict_binds_packet_and_fresh_runtime_identity(self) -> None:
-        fixture = PacketFixture(self.root, role="validate", provider="claude")
+        fixture = PacketFixture(self.root, role="validate", provider="codex")
         validator = packet_module.load_validate_module()
         exclusions = sorted(set(fixture.packet["subject"]["excludes"] + packet_module.COMMON_EXCLUDES))
         baseline = validator.build_manifest(
@@ -875,8 +947,8 @@ class PacketContractTests(unittest.TestCase):
         }) + "\n", encoding="utf-8")
         runtime = {
             "GC_SESSION_ID": "gc-validator-session",
-            "GC_PROVIDER": "claude",
-            "GC_TEMPLATE": "agentops.validator-claude",
+            "GC_PROVIDER": "codex",
+            "GC_TEMPLATE": "agentops.validator",
         }
         args = types.SimpleNamespace(packet=str(fixture.packet_path), draft=str(draft_path))
         with mock.patch.dict(os.environ, runtime, clear=False), contextlib.redirect_stdout(io.StringIO()) as stdout:

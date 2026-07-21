@@ -61,11 +61,62 @@ FACTORY_ROLE_MODELS = {
     ("refiner", "codex"): ("gpt-5.6-sol", "gpt-5.6-sol"),
     ("refiner", "claude"): ("opus-4.8", "claude-opus-4-8"),
 }
+# Locators identify canonical pack declarations only. Provider, model, and
+# effort are derived at runtime from those TOMLs and deploy/gc/city.toml.
+ROLE_TEMPLATES = {
+    "mayor": PACK_ROOT / "agents" / "mayor" / "agent.toml",
+    "plan": PACK_ROOT / "agents" / "plan-reviewer" / "agent.toml",
+    "ambiguity_advice": PACK_ROOT / "agents" / "refiner" / "agent.toml",
+    "implementation": PACK_ROOT.parent / "agentops-executor" / "agents" / "implementer" / "agent.toml",
+    "implementation_overflow": PACK_ROOT.parent / "agentops-executor" / "agents" / "implementer-claude" / "agent.toml",
+    "validation": PACK_ROOT.parent / "agentops-executor" / "agents" / "validator" / "agent.toml",
+}
+
+
+def requested_role_policy(role: str, provider: str) -> dict[str, Any]:
+    """Read the abstract policy aliases from the versioned request schema."""
+    schema_role = "implementation" if role == "implementation_overflow" else role
+    schema = load_object(SCHEMA_ROOT / "factory-role-request.v2.schema.json", "factory role request schema")
+    for clause in schema.get("allOf", []):
+        selector = clause.get("if", {}).get("properties", {}).get("role", {})
+        matches = selector.get("const") == schema_role or schema_role in selector.get("enum", [])
+        requested_spec = clause.get("then", {}).get("properties", {}).get("requested", {})
+        requested_refs = [requested_spec["$ref"]] if isinstance(requested_spec.get("$ref"), str) else [item["$ref"] for item in requested_spec.get("anyOf", []) if isinstance(item.get("$ref"), str)]
+        if not matches:
+            continue
+        for requested_ref in requested_refs:
+            definition = schema["$defs"][requested_ref.rsplit("/", 1)[-1]]
+            properties = definition["allOf"][-1]["properties"]
+            if properties["provider"]["const"] == provider:
+                return {
+                    "provider": provider,
+                    "model": properties["model"]["const"],
+                    "reasoning": properties["reasoning"]["const"],
+                    "fallback": {"allowed": False, "used": False, "reason": None},
+                }
+    raise FactoryError("invalid_role_policy", f"no request policy exists for {role}")
 ROLE_REQUEST_KEYS = {
     "schema_version", "request_id", "role", "provider", "program_id",
     "workspace", "intent_source", "intent_digest", "repository", "base_branch",
     "base_sha", "subject_path", "subject_digest", "mayor_context_id",
     "artifact_path", "result_path",
+}
+ROLE_REQUEST_V2_KEYS = {
+    "schema_version", "request_id", "program_id", "semantic_bead_id",
+    "workspace", "intent_source", "intent_digest", "subject_path",
+    "subject_digest", "evidence_refs", "prior_context_id", "role", "requested",
+    "artifact_path", "result_path",
+}
+ROLE_RESPONSE_V2_KEYS = {
+    "schema_version", "request_id", "request_digest", "role",
+    "semantic_bead_id", "session_context_id", "requested", "actual",
+    "artifact_path", "artifact_digest",
+}
+V2_ROUTABLE_ROLES = {"mayor", "plan", "ambiguity_advice"}
+V2_ROLE_TEMPLATES = {
+    "mayor": "mayor",
+    "plan": "plan-reviewer",
+    "ambiguity_advice": "refiner",
 }
 NODE_KEYS = {
     "id", "title", "intent", "acceptance", "non_goals", "depends_on",
@@ -185,15 +236,74 @@ def opposite_provider(provider: str) -> str:
 
 def lifecycle_agent_name(role: str, provider: str) -> str:
     selected = require_provider(provider, f"{role} provider")
-    if role not in {"mayor", "plan-review", "refiner"}:
+    physical = {"mayor": "mayor", "plan-review": "plan-reviewer", "refiner": "refiner"}
+    if role not in physical:
         raise FactoryError("invalid_contract", f"unsupported lifecycle role: {role}")
-    base = {"mayor": "mayor", "plan-review": "plan-reviewer", "refiner": "refiner"}[role]
-    return f"{base}-claude" if selected == "claude" else base
+    configured = tomllib.loads((PACK_ROOT / "agents" / physical[role] / "agent.toml").read_text(encoding="utf-8"))
+    if configured.get("provider") != selected:
+        raise FactoryError("unroutable_role", f"{role} is only composed for {configured.get('provider')}")
+    return physical[role]
 
 
 def lifecycle_target(role: str, provider: str, rig: str, binding: str) -> str:
     local = lifecycle_agent_name(role, provider)
     return f"{binding}.{local}" if role == "mayor" else f"{rig}/{binding}.{local}"
+
+
+def attest_role_runtime(role: str, requested: dict[str, Any], actual: dict[str, Any],
+                        context_id: str, fallback_observed: bool) -> dict[str, Any]:
+    """Fail closed unless a resolved 3.3 launch exactly matches its role policy.
+
+    This adapter is intentionally pure so composition tests can exercise it
+    without starting GC, tmux, or a provider process.
+    """
+    template = ROLE_TEMPLATES.get(role)
+    if template is None:
+        raise FactoryError("unroutable_role", f"role is not enabled: {role}")
+    config = tomllib.loads(template.read_text(encoding="utf-8"))
+    defaults = config.get("option_defaults", {})
+    provider = config.get("provider")
+    expected_requested = requested_role_policy(role, provider)
+    if requested != expected_requested:
+        raise FactoryError("requested_policy_mismatch", f"{role} requested policy is not exact")
+    city_path = PACK_ROOT.parents[1] / "deploy" / "gc" / "city.toml"
+    city = tomllib.loads(city_path.read_text(encoding="utf-8"))
+    provider_config = city["providers"][provider]
+    choices = {entry["key"]: entry["choices"] for entry in provider_config["options_schema"]}
+
+    def launch_value(key: str, option: Any) -> Any:
+        try:
+            selected = next(choice for choice in choices[key] if choice["value"] == option)
+        except (KeyError, StopIteration) as exc:
+            raise FactoryError("runtime_identity_missing", f"{key} option has no declared launch choice") from exc
+        args = selected.get("flag_args", [])
+        if key == "model":
+            try:
+                return args[args.index("--model") + 1]
+            except (ValueError, IndexError) as exc:
+                raise FactoryError("runtime_identity_missing", "model option has no --model launch value") from exc
+        return option if args else None
+
+    expected_actual = {
+        "provider": provider,
+        "model": launch_value("model", defaults.get("model")),
+        "reasoning": expected_requested["reasoning"],
+        "effort": launch_value("effort", defaults.get("effort")),
+        "fallback": expected_requested["fallback"],
+    }
+    if actual != expected_actual:
+        raise FactoryError("runtime_identity_mismatch", f"{role} resolved launch is not exact")
+    if not isinstance(context_id, str) or not context_id.strip():
+        raise FactoryError("runtime_identity_missing", "session context identity is required")
+    if fallback_observed:
+        raise FactoryError("not_proven", "fallback was observed")
+    return {
+        "role": role,
+        "requested": requested,
+        "actual": actual,
+        "context_id": context_id,
+        "fallback_observed": False,
+    }
 
 
 def exact_keys(value: dict[str, Any], required: set[str], allowed: set[str], label: str) -> None:
@@ -218,10 +328,67 @@ def absolute_path(value: Any, label: str, exists: bool = False, directory: bool 
 
 def normalize_path(value: Any, label: str) -> str:
     raw = require_string(value, label)
-    path = PurePosixPath(raw.replace("\\", "/"))
+    portable = raw.replace("\\", "/")
+    if re.match(r"^[A-Za-z]:($|/)", portable):
+        raise FactoryError("invalid_scope", f"{label} uses a drive path: {raw}")
+    path = PurePosixPath(portable)
     if path.is_absolute() or ".." in path.parts:
         raise FactoryError("invalid_scope", f"{label} escapes the repository: {raw}")
-    return path.as_posix().removeprefix("./") or "."
+    normalized = path.as_posix()
+    while normalized.startswith("./"):
+        normalized = normalized[2:]
+    if normalized in {"", "."}:
+        raise FactoryError("invalid_scope", f"{label} normalizes to an empty path")
+    return normalized
+
+
+def canonical_v2_scope_paths(values: Any, label: str, *, nonempty: bool) -> list[str]:
+    raw_paths = require_list(values, label, nonempty=nonempty)
+    normalized = [normalize_path(item, f"{label}[{index}]") for index, item in enumerate(raw_paths)]
+    if len(set(normalized)) != len(normalized):
+        raise FactoryError("invalid_scope", f"{label} contains duplicate normalized paths")
+    return normalized
+
+
+def fable_adviser_launch_contract() -> dict[str, Any]:
+    """Describe the deliberately credential-free, still-unisolated Fable launch."""
+    return {
+        "credential_environment": [],
+        "forbidden_environment": ["GITHUB_TOKEN", "GH_TOKEN", "GIT_ASKPASS", "SSH_ASKPASS", "SSH_AUTH_SOCK"],
+        "stripped_environment": ["GITHUB_TOKEN", "GH_TOKEN", "GIT_ASKPASS", "SSH_ASKPASS", "SSH_AUTH_SOCK"],
+        "interactive_unrestricted": True,
+        "isolation": "gc33-4-required",
+    }
+
+
+def adviser_dispatch_decision() -> dict[str, Any]:
+    return {"status": "adviser_isolation_unproven", "eligible": False}
+
+
+def require_adviser_isolation() -> None:
+    decision = adviser_dispatch_decision()
+    raise FactoryError(decision["status"], "adviser_isolation_unproven: GC33-4 process isolation is required before Fable dispatch")
+
+
+def protected_root_manifest(root: Path, allowed_paths: set[Path]) -> dict[str, str]:
+    """Hash every protected file, including .git, except exact transport outputs."""
+    manifest: dict[str, str] = {}
+    for path in sorted(root.rglob("*")):
+        if path.is_file() and path.resolve() not in allowed_paths:
+            manifest[str(path.relative_to(root))] = digest_file(path)
+    return manifest
+
+
+def guard_ambiguity_advice_transport(paths: dict[str, Path], environment: dict[str, str], before: dict[str, str], after: dict[str, str]) -> None:
+    forbidden = set(fable_adviser_launch_contract()["forbidden_environment"]) & set(environment)
+    if forbidden:
+        raise FactoryError("credential_exposed", f"Fable adviser launch exposes credentials: {sorted(forbidden)}")
+    allowed = {paths["artifact"].resolve(), paths["result"].resolve()}
+    if before != after:
+        raise FactoryError("protected_root_mutated", "Fable adviser changed protected workspace or Git state")
+    workspace = paths["workspace"].resolve()
+    if paths["artifact"].resolve() == paths["result"].resolve() or not all(is_within(path, workspace) for path in allowed):
+        raise FactoryError("invalid_path", "Fable adviser transport paths are not exact workspace outputs")
 
 
 def run_process(argv: list[str], *, cwd: Path | None = None, input_text: str | None = None,
@@ -750,6 +917,254 @@ def command_emit_role(args: argparse.Namespace) -> int:
     return 0
 
 
+def validate_role_request_v2(path: Path) -> tuple[dict[str, Any], dict[str, Path]]:
+    """Validate the composed 3.3 request without changing legacy v1 routing."""
+    request = load_object(path, "factory role v2 request")
+    exact_keys(request, ROLE_REQUEST_V2_KEYS, ROLE_REQUEST_V2_KEYS, "factory role v2 request")
+    if request.get("schema_version") != "factory-role-request.v2":
+        raise FactoryError("invalid_role_request", "schema_version must be factory-role-request.v2")
+    for field in ("request_id", "program_id", "semantic_bead_id"):
+        require_string(request.get(field), field)
+    require_string(request.get("intent_digest"), "intent_digest", DIGEST_RE)
+    role = request.get("role")
+    if role == "support":
+        raise FactoryError("unroutable_role", "support/Luna remains fail-closed and unroutable")
+    if role not in V2_ROUTABLE_ROLES:
+        raise FactoryError("unroutable_role", f"role is not enabled for the v2 adapter: {role!r}")
+    if role == "mayor":
+        if request.get("prior_context_id") is not None:
+            raise FactoryError("invalid_role_request", "Mayor v2 request must not name a prior context")
+    else:
+        require_string(request.get("prior_context_id"), "prior_context_id")
+    workspace = absolute_path(request.get("workspace"), "workspace", True, True)
+    intent = absolute_path(request.get("intent_source"), "intent_source", True)
+    subject = absolute_path(request.get("subject_path"), "subject_path", True)
+    if not is_within(intent, workspace) or not is_within(subject, workspace):
+        raise FactoryError("invalid_path", "intent and subject paths must stay inside workspace")
+    if request["intent_digest"] != digest_file(intent):
+        raise FactoryError("identity_mismatch", "request intent digest is stale")
+    require_string(request.get("subject_digest"), "subject_digest", DIGEST_RE)
+    if request["subject_digest"] != digest_file(subject):
+        raise FactoryError("identity_mismatch", "request subject digest is stale")
+    evidence = require_list(request.get("evidence_refs"), "evidence_refs", nonempty=True)
+    for index, reference in enumerate(evidence):
+        if not isinstance(reference, dict):
+            raise FactoryError("invalid_contract", f"evidence_refs[{index}] must be an object")
+        exact_keys(reference, {"path", "digest"}, {"path", "digest"}, f"evidence_refs[{index}]")
+        evidence_path = absolute_path(reference.get("path"), f"evidence_refs[{index}].path", True)
+        if not is_within(evidence_path, workspace):
+            raise FactoryError("invalid_path", f"evidence_refs[{index}] escapes workspace")
+        digest = require_string(reference.get("digest"), f"evidence_refs[{index}].digest", DIGEST_RE)
+        if digest != digest_file(evidence_path):
+            raise FactoryError("identity_mismatch", f"evidence_refs[{index}] digest is stale")
+    configured = tomllib.loads(ROLE_TEMPLATES[role].read_text(encoding="utf-8"))
+    expected = requested_role_policy(role, configured["provider"])
+    if request.get("requested") != expected:
+        raise FactoryError("requested_policy_mismatch", f"{role} requested policy is not exact")
+    artifact = absolute_path(request.get("artifact_path"), "artifact_path")
+    result = absolute_path(request.get("result_path"), "result_path")
+    if not is_within(artifact, workspace) or not is_within(result, workspace):
+        raise FactoryError("invalid_path", "role artifacts must stay inside workspace")
+    if len({path, artifact, result}) != 3:
+        raise FactoryError("invalid_role_request", "request, artifact, and result paths must differ")
+    return request, {
+        "request": path, "workspace": workspace, "intent": intent, "subject": subject,
+        "artifact": artifact, "result": result,
+    }
+
+
+def validate_program_graph_v2(value: dict[str, Any], intent_digest: str) -> dict[str, Any]:
+    """Strictly enforce the intentionally small 3.3 graph contract."""
+    fields = {"schema_version", "program_id", "intent_digest", "nodes", "max_parallel", "role_policy", "delivery_group_id", "prefix_safety"}
+    exact_keys(value, fields, fields, "program graph v2")
+    if value.get("schema_version") != "program-graph.v2":
+        raise FactoryError("invalid_graph", "schema_version must be program-graph.v2")
+    require_string(value.get("program_id"), "program_id")
+    if value.get("intent_digest") != intent_digest:
+        raise FactoryError("identity_mismatch", "program graph intent digest is stale")
+    if not isinstance(value.get("max_parallel"), int) or isinstance(value["max_parallel"], bool) or value["max_parallel"] < 1:
+        raise FactoryError("invalid_graph", "max_parallel must be a positive integer")
+    require_string(value.get("delivery_group_id"), "delivery_group_id")
+    if value.get("prefix_safety") not in {"safe", "atomic_group", "externally_gated"}:
+        raise FactoryError("invalid_graph", "prefix_safety is invalid")
+    no_fallback = {"allowed": False, "used": False, "reason": None}
+
+    def runtime(policy: Any, name: str, model: str, reasoning: str, provider: str, extra: dict[str, Any] | None = None) -> None:
+        required = {"model", "reasoning", "provider", "fallback", *(extra or {})}
+        if not isinstance(policy, dict):
+            raise FactoryError("invalid_graph", f"role_policy.{name} must be an object")
+        exact_keys(policy, required, required, f"role_policy.{name}")
+        expected = {"model": model, "reasoning": reasoning, "provider": provider, "fallback": no_fallback, **(extra or {})}
+        if policy != expected:
+            raise FactoryError("invalid_graph", f"role_policy.{name} is not exact")
+
+    role_policy = value.get("role_policy")
+    role_keys = {"mayor", "planner", "worker_pool", "validator", "refiner", "luna"}
+    if not isinstance(role_policy, dict):
+        raise FactoryError("invalid_graph", "role_policy must be an object")
+    exact_keys(role_policy, role_keys, role_keys, "role_policy")
+    runtime(role_policy["mayor"], "mayor", "fable", "adaptive", "claude")
+    runtime(role_policy["planner"], "planner", "sol", "high", "codex")
+    runtime(role_policy["validator"], "validator", "sol", "high", "codex")
+    runtime(role_policy["refiner"], "refiner", "fable", "adaptive", "claude", {"ambiguity_only": True})
+    runtime(role_policy["luna"], "luna", "luna", "high", "codex", {"support_only": True})
+    workers = role_policy["worker_pool"]
+    if not isinstance(workers, dict):
+        raise FactoryError("invalid_graph", "role_policy.worker_pool must be an object")
+    exact_keys(workers, {"default", "overflow", "fallback"}, {"default", "overflow", "fallback"}, "role_policy.worker_pool")
+    runtime(workers["default"], "worker_pool.default", "terra", "high", "codex")
+    runtime(workers["overflow"], "worker_pool.overflow", "opus", "medium", "claude")
+    if workers["fallback"] != no_fallback:
+        raise FactoryError("invalid_graph", "role_policy.worker_pool fallback is not exact")
+    nodes = require_list(value.get("nodes"), "nodes", nonempty=True)
+    ids: set[str] = set()
+    dependencies: dict[str, list[str]] = {}
+    node_fields = {"id", "bead_class", "intent_digest", "depends_on", "write_scope", "generated_companions", "role", "model", "reasoning", "provider", "fallback"}
+    for index, node in enumerate(nodes):
+        if not isinstance(node, dict):
+            raise FactoryError("invalid_graph", f"nodes[{index}] must be an object")
+        exact_keys(node, node_fields, node_fields, f"nodes[{index}]")
+        node_id = require_string(node.get("id"), f"nodes[{index}].id")
+        if node_id in ids:
+            raise FactoryError("invalid_graph", f"duplicate node id {node_id}")
+        ids.add(node_id)
+        if node.get("bead_class") not in {"product", "delivery_repair"} or node.get("intent_digest") != intent_digest:
+            raise FactoryError("invalid_graph", f"nodes[{index}] has an invalid class or intent digest")
+        if node.get("role") != "implementation" or node.get("fallback") != no_fallback:
+            raise FactoryError("invalid_graph", f"nodes[{index}] role or fallback is invalid")
+        pair = (node.get("model"), node.get("reasoning"), node.get("provider"))
+        if pair not in {("terra", "high", "codex"), ("opus", "medium", "claude")}:
+            raise FactoryError("invalid_graph", f"nodes[{index}] model/provider/reasoning is invalid")
+        depends = require_list(node.get("depends_on"), f"nodes[{index}].depends_on")
+        if any(not isinstance(dep, str) or not dep for dep in depends) or len(set(depends)) != len(depends):
+            raise FactoryError("invalid_graph", f"nodes[{index}] dependencies are invalid")
+        if node_id in depends:
+            raise FactoryError("invalid_graph", f"nodes[{index}] cannot depend on itself")
+        dependencies[node_id] = depends
+        write_scope = canonical_v2_scope_paths(node.get("write_scope"), f"nodes[{index}].write_scope", nonempty=True)
+        generated = canonical_v2_scope_paths(node.get("generated_companions"), f"nodes[{index}].generated_companions", nonempty=False)
+        if set(write_scope) & set(generated):
+            raise FactoryError("invalid_scope", f"nodes[{index}] reuses a normalized path across scope classes")
+        node["write_scope"] = write_scope
+        node["generated_companions"] = generated
+    if any(dep not in ids for deps in dependencies.values() for dep in deps):
+        raise FactoryError("invalid_graph", "node dependency is not in the graph")
+    pending = {node_id: set(deps) for node_id, deps in dependencies.items()}
+    while pending:
+        ready = {node_id for node_id, deps in pending.items() if not deps}
+        if not ready:
+            raise FactoryError("invalid_graph", "program graph contains a dependency cycle")
+        for node_id in ready:
+            pending.pop(node_id)
+        for deps in pending.values():
+            deps.difference_update(ready)
+    return value
+
+
+def role_artifact_contract_v2(role: str) -> dict[str, Any]:
+    if role not in V2_ROUTABLE_ROLES:
+        raise FactoryError("unroutable_role", f"role is not enabled for the v2 adapter: {role!r}")
+    schema_names = {
+        "mayor": "program-graph.v2.schema.json",
+        "plan": "plan-review.v1.schema.json",
+        "ambiguity_advice": "ambiguity-advice.v1.schema.json",
+    }
+    schema_path = SCHEMA_ROOT / schema_names[role]
+    schema = load_object(schema_path, f"{role} artifact schema")
+    return {
+        "schema_path": str(schema_path.resolve()),
+        "schema_version": schema["properties"]["schema_version"]["const"],
+        "required_top_level": schema["required"],
+        "allowed_top_level": sorted(schema["properties"]),
+        "schema": schema,
+        "nonbinding_no_byte": role == "ambiguity_advice",
+    }
+
+
+def command_inspect_role_v2(args: argparse.Namespace) -> int:
+    path = absolute_path(args.request, "request", True)
+    request, paths = validate_role_request_v2(path)
+    rendered = dict(request)
+    rendered["request_path"] = str(paths["request"])
+    rendered["request_digest"] = digest_file(paths["request"])
+    rendered["artifact_contract"] = role_artifact_contract_v2(request["role"])
+    print(json.dumps(rendered, sort_keys=True))
+    return 0
+
+
+def validate_v2_artifact(request: dict[str, Any], artifact: Path, context_id: str) -> None:
+    role = request["role"]
+    value = load_object(artifact, f"{role} artifact")
+    if role == "ambiguity_advice":
+        exact_keys(
+            value,
+            {"schema_version", "request_id", "context_id", "finding", "nonbinding", "mutates_artifacts"},
+            {"schema_version", "request_id", "context_id", "finding", "nonbinding", "mutates_artifacts"},
+            f"{role} artifact",
+        )
+        expected_schema = role_artifact_contract_v2(role)["schema_version"]
+        if value.get("schema_version") != expected_schema or value.get("request_id") != request["request_id"]:
+            raise FactoryError("artifact_mismatch", f"{role} artifact does not bind the exact request")
+        if value.get("context_id") != context_id:
+            raise FactoryError("runtime_identity_mismatch", f"{role} artifact context differs from the runtime session")
+        if value.get("nonbinding") is not True or value.get("mutates_artifacts") is not False:
+            raise FactoryError("invalid_contract", f"{role} artifact must be nonbinding and no-byte")
+        require_string(value.get("finding"), f"{role} finding")
+    elif role == "mayor":
+        graph = validate_program_graph_v2(value, request["intent_digest"])
+        if graph["program_id"] != request["program_id"]:
+            raise FactoryError("artifact_mismatch", "Mayor artifact does not bind the requested program")
+    else:
+        graph = validate_program_graph_v2(load_object(Path(request["subject_path"]), "plan subject graph"), request["intent_digest"])
+        if graph["program_id"] != request["program_id"]:
+            raise FactoryError("artifact_mismatch", "plan subject graph does not bind the requested program")
+        validate_review(value, graph, request["subject_digest"], request["prior_context_id"], "codex")
+        if value["reviewer_context_id"] != context_id:
+            raise FactoryError("runtime_identity_mismatch", "plan artifact context differs from the runtime session")
+
+
+def command_emit_role_v2(args: argparse.Namespace) -> int:
+    request_path = absolute_path(args.request, "request", True)
+    request, paths = validate_role_request_v2(request_path)
+    artifact = absolute_path(args.artifact, "artifact", True)
+    if artifact != paths["artifact"]:
+        raise FactoryError("artifact_mismatch", "emitted artifact differs from requested artifact_path")
+    if request["role"] == "ambiguity_advice":
+        before = protected_root_manifest(paths["workspace"], {paths["artifact"].resolve(), paths["result"].resolve()})
+        guard_ambiguity_advice_transport(paths, dict(os.environ), before, before)
+        require_adviser_isolation()
+    context_id = require_string(os.environ.get("GC_SESSION_ID"), "GC_SESSION_ID")
+    if request["role"] != "mayor" and context_id == request["prior_context_id"]:
+        raise FactoryError("freshness_collision", "v2 role context collides with its prior context")
+    session = runtime_session(context_id)
+    expected_template = f".{V2_ROLE_TEMPLATES[request['role']]}"
+    if session.get("template", "").endswith(expected_template) is False:
+        raise FactoryError("template_mismatch", f"runtime template must end with {expected_template}")
+    if session.get("provider") != request["requested"]["provider"]:
+        raise FactoryError("provider_mismatch", "runtime provider differs from role request")
+    if session.get("live_model_observed") is not True:
+        raise FactoryError("runtime_identity_missing", "v2 emit requires a live session model observation")
+    fallback = {"allowed": False, "used": False, "reason": None}
+    actual = {
+        "provider": session["provider"], "model": session["model"],
+        "reasoning": request["requested"]["reasoning"],
+        "effort": command_effort(session["command"]), "fallback": fallback,
+    }
+    attest_role_runtime(request["role"], request["requested"], actual, context_id, False)
+    validate_v2_artifact(request, artifact, context_id)
+    response = {
+        "schema_version": "factory-role-response.v2", "request_id": request["request_id"],
+        "request_digest": digest_file(request_path), "role": request["role"],
+        "semantic_bead_id": request["semantic_bead_id"], "session_context_id": context_id,
+        "requested": request["requested"], "actual": actual, "artifact_path": str(artifact),
+        "artifact_digest": digest_file(artifact),
+    }
+    exact_keys(response, ROLE_RESPONSE_V2_KEYS, ROLE_RESPONSE_V2_KEYS, "factory role v2 response")
+    write_json_atomic(paths["result"], response)
+    print(json.dumps(response, sort_keys=True))
+    return 0
+
+
 def metadata(record: dict[str, Any]) -> dict[str, Any]:
     value = record.get("metadata", {})
     if isinstance(value, str):
@@ -1025,6 +1440,23 @@ def command_model(command: str) -> str:
     return values[0].strip()
 
 
+def command_effort(command: str) -> str | None:
+    """Read the concrete effort launch option; Fable adaptive has no flag."""
+    try:
+        tokens = shlex.split(command)
+    except ValueError as exc:
+        raise FactoryError("runtime_identity_missing", f"GC runtime command cannot be parsed: {exc}") from exc
+    values: list[str] = []
+    for index, token in enumerate(tokens[:-1]):
+        if token == "--effort":
+            values.append(tokens[index + 1])
+        elif token == "-c" and tokens[index + 1].startswith("model_reasoning_effort="):
+            values.append(tokens[index + 1].split("=", 1)[1])
+    if len(values) > 1 or any(not value.strip() for value in values):
+        raise FactoryError("runtime_identity_missing", "GC runtime command has ambiguous effort")
+    return values[0] if values else None
+
+
 def runtime_session(context_id: str) -> dict[str, Any]:
     value = parse_json_output(
         output([gc_binary(), "--city", city_path(), "session", "list", "--state", "all", "--json"]),
@@ -1070,6 +1502,8 @@ def runtime_session(context_id: str) -> dict[str, Any]:
         "status": record.get("status"),
         "model": launched_model,
         "model_source": "launch_command",
+        "command": require_string(meta.get("command"), "session command"),
+        "live_model_observed": isinstance(observed_model, str) and bool(observed_model.strip()),
     }
 
 
@@ -1830,7 +2264,7 @@ def enforce_rig_agent_policy(rig_name: str, binding: str, allowed_roles: set[str
     require_string(rig_name, "rig name", ID_RE)
     require_string(binding, "factory binding", ID_RE)
     if not allowed_roles or not allowed_roles.issubset(
-        {"implementer", "implementer-claude", "validator", "validator-claude"}
+        {"implementer", "implementer-claude", "validator"}
     ):
         raise FactoryError("invalid_agent_policy", f"invalid allowed role set: {sorted(allowed_roles)}")
     rig_root = rig_root.resolve(strict=False)
@@ -2379,7 +2813,9 @@ def register_candidate_rig(lease: dict[str, Any], record: dict[str, Any]) -> tup
         provider = require_string(meta.get("factory.provider"), "factory.provider")
         validator_provider = require_string(meta.get("factory.validator_provider"), "factory.validator_provider")
         worker_role = "implementer-claude" if provider == "claude" else "implementer"
-        validator_role = "validator-claude" if validator_provider == "claude" else "validator"
+        if validator_provider != "codex":
+            raise FactoryError("unroutable_role", "3.3 candidate validation is Sol-high/Codex only")
+        validator_role = "validator"
         duplicate_imports = remove_duplicate_factory_imports(rig_name, binding)
         policy_changed = enforce_rig_agent_policy(
             rig_name, binding, {worker_role, validator_role}, worktree,
@@ -2439,13 +2875,13 @@ def register_integration_rig(worktree: Path, refinery_bead: str, branch: str, bi
             rig_added = True
         duplicate_imports = remove_duplicate_factory_imports(rig_name, binding)
         policy_changed = enforce_rig_agent_policy(
-            rig_name, binding, {"validator", "validator-claude"}, worktree,
+            rig_name, binding, {"validator"}, worktree,
         )
         # factory.integration_rig is written only after the first successful
         # reload. A later validation pass can therefore verify the rig and skip
         # the second five-minute controller round trip when nothing changed.
         if recorded_rig is None or rig_added or duplicate_imports or policy_changed:
-            reload_city_config(rig_name, binding, {"validator", "validator-claude"})
+            reload_city_config(rig_name, binding, {"validator"})
     discard_transient_rig_init_commits(worktree, pre_registration_head)
     restore_rig_scaffolding(worktree)
     return rig_name, binding
@@ -2701,47 +3137,14 @@ def lease_snapshot(bead_id: str, meta: dict[str, Any]) -> dict[str, Any]:
 
 
 def route_ready_refinery(beads: Beads, rig: str, program_meta: dict[str, Any]) -> str | None:
-    """Route one dependency-ready Refinery bead to its selected Refiner exactly once."""
-    refinery_bead = require_string(program_meta.get("factory.refinery_bead"), "factory.refinery_bead")
-    if refinery_bead not in beads.ready_ids():
-        return None
-    record = beads.show(refinery_bead)
-    meta = metadata(record)
-    if meta.get("factory.kind") != "refinery":
-        raise FactoryError("invalid_contract", f"{refinery_bead} is not a Refinery bead")
-    binding = require_string(
-        meta.get("factory.binding", program_meta.get("factory.binding")),
-        "factory.binding",
-        ID_RE,
-    )
-    refiner_provider = require_provider(meta.get("factory.refiner_provider"), "factory.refiner_provider")
-    validator_provider = require_provider(
-        meta.get("factory.integration_validator_provider"),
-        "factory.integration_validator_provider",
-    )
-    if refiner_provider == validator_provider:
-        raise FactoryError("provider_collision", "Refiner and integration Validator must use opposite providers")
-    target = lifecycle_target("refiner", refiner_provider, rig, binding)
-    routed_to = meta.get("gc.routed_to")
-    assignee = record.get("assignee")
-    if routed_to is not None and routed_to != target:
-        raise FactoryError("identity_mismatch", f"Refinery {refinery_bead} is routed to {routed_to!r}, not {target!r}")
-    if routed_to == target:
-        return target
-    if assignee:
-        raise FactoryError("identity_mismatch", f"Refinery {refinery_bead} has assignee {assignee!r} without its required route")
-    if record.get("status") != "open":
-        raise FactoryError("invalid_transition", f"ready Refinery {refinery_bead} has status {record.get('status')!r}")
-    value = parse_json_output(
-        output([
-            gc_binary(), "--city", city_path(), "sling", target, refinery_bead,
-            "--no-formula", "--no-convoy", "--json",
-        ]),
-        "gc sling Refinery bead",
-    )
-    if not isinstance(value, dict) or not value.get("success") or str(value.get("bead_id")) != refinery_bead:
-        raise FactoryError("dispatch_failed", f"gc sling did not route {refinery_bead} to {target}: {value!r}")
-    return target
+    """Keep the salvaged v1 executor from waking any model for delivery.
+
+    GC33-3 has no model-facing delivery lane.  The crash-only delivery reducer
+    is introduced by later beads through a new entry point; this legacy helper
+    deliberately performs no Beads, GC, or session operation.
+    """
+    del beads, rig, program_meta
+    return None
 
 
 def command_execute(args: argparse.Namespace) -> int:
@@ -4258,21 +4661,18 @@ def command_doctor() -> int:
     pack = (PACK_ROOT / "pack.toml").read_text(encoding="utf-8")
     if "[imports.executor]" not in pack:
         problems.append("factory pack must import the thin executor")
-    agents = {path.name for path in (PACK_ROOT / "agents").iterdir() if path.is_dir()}
-    if agents != {
-        "mayor", "mayor-claude", "plan-reviewer", "plan-reviewer-claude",
-        "refiner", "refiner-claude",
-    }:
+    agents = {
+        path.name for path in (PACK_ROOT / "agents").iterdir()
+        if path.is_dir() and (path / "agent.toml").is_file()
+    }
+    if agents != {"mayor", "plan-reviewer", "refiner"}:
         problems.append(f"unexpected semantic roles: {sorted(agents)}")
     role_models = {
-        "mayor": ("codex", "gpt-5.6-sol"),
-        "mayor-claude": ("claude", "opus-4.8"),
-        "plan-reviewer": ("codex", "gpt-5.6-sol"),
-        "plan-reviewer-claude": ("claude", "opus-4.8"),
-        "refiner": ("codex", "gpt-5.6-sol"),
-        "refiner-claude": ("claude", "opus-4.8"),
+        "mayor": ("claude", "fable-5", "adaptive", "city"),
+        "plan-reviewer": ("codex", "gpt-5.6-sol", "high", "rig"),
+        "refiner": ("claude", "fable-5", "adaptive", "rig"),
     }
-    for role, (provider, model) in role_models.items():
+    for role, (provider, model, effort, scope) in role_models.items():
         path = PACK_ROOT / "agents" / role / "agent.toml"
         if not path.is_file():
             problems.append(f"missing agents/{role}/agent.toml")
@@ -4280,10 +4680,20 @@ def command_doctor() -> int:
         config = tomllib.loads(path.read_text(encoding="utf-8"))
         if config.get("provider") != provider:
             problems.append(f"agents/{role}/agent.toml: provider must be {provider}")
-        if provider == "claude" and config.get("lifecycle") == "one_shot":
+        if provider == "claude" and config.get("session") != "tmux":
             problems.append(f"agents/{role}/agent.toml: Claude must use an interactive GC session")
         if config.get("option_defaults", {}).get("model") != model:
             problems.append(f"agents/{role}/agent.toml: model must be {model}")
+        if config.get("option_defaults", {}).get("effort") != effort:
+            problems.append(f"agents/{role}/agent.toml: effort must be {effort}")
+        if config.get("scope") != scope:
+            problems.append(f"agents/{role}/agent.toml: scope must be {scope}")
+        if config.get("wake_mode") != "fresh" or config.get("lifecycle") != "one_shot":
+            problems.append(f"agents/{role}/agent.toml: wake_mode/lifecycle must be fresh/one_shot")
+        if config.get("min_active_sessions") != 0 or config.get("max_active_sessions") != 1:
+            problems.append(f"agents/{role}/agent.toml: session bounds must be min 0 / max 1")
+        if "work_query" in config or "sling_query" in config:
+            problems.append(f"agents/{role}/agent.toml: native GC demand/claim must not be replaced")
         expected_work_dir = f".gc/agents/{role}"
         if config.get("work_dir") != expected_work_dir:
             problems.append(f"agents/{role}/agent.toml: work_dir must be {expected_work_dir}")
@@ -4314,135 +4724,18 @@ def command_doctor() -> int:
         for problem in problems:
             print(problem)
         return 2
-    print("agentops-factory is bead-native with selectable Sol or Opus 4.8 Mayor/Refiner roles and opposite-family judges")
+    print("agentops-factory exposes Fable-adaptive Mayor/ambiguity and Sol-high plan roles at min 0 / max 1; ambiguity dispatch is closed pending GC33-4")
     return 0
 
 
 def parser() -> argparse.ArgumentParser:
     root = argparse.ArgumentParser(description=__doc__)
     sub = root.add_subparsers(dest="command", required=True)
-    plan = sub.add_parser("plan")
-    plan.add_argument("--intent", required=True)
-    plan.add_argument("--repository", required=True)
-    plan.add_argument("--program-id", required=True)
-    plan.add_argument("--base-branch", default="main")
-    plan.add_argument("--rig", required=True)
-    plan.add_argument("--binding", default="agentops")
-    plan.add_argument("--mayor-provider", choices=sorted(PROVIDERS), default="codex")
-    plan.add_argument("--reviewer-provider", choices=sorted(PROVIDERS))
-    plan.add_argument("--refiner-provider", choices=sorted(PROVIDERS), default="codex")
-    plan.add_argument("--integration-validator-provider", choices=sorted(PROVIDERS))
-    plan.add_argument("--delivery-mode", choices=sorted(DELIVERY_MODES), default="pr")
-    plan.add_argument("--evidence-dir")
-    plan.add_argument("--timeout", type=float, default=1800)
-    plan.add_argument("--result")
-    admit = sub.add_parser("admit")
-    admit.add_argument("--intent", required=True)
-    admit.add_argument("--graph", required=True)
-    admit.add_argument("--review", required=True)
-    admit.add_argument("--mayor-context", required=True)
-    admit.add_argument("--rig", required=True)
-    admit.add_argument("--binding", default="agentops")
-    admit.add_argument("--delivery-mode", choices=sorted(DELIVERY_MODES), default="pr")
-    admit.add_argument("--mayor-provider", choices=sorted(PROVIDERS), default="codex")
-    admit.add_argument("--reviewer-provider", choices=sorted(PROVIDERS), default="claude")
-    admit.add_argument("--refiner-provider", choices=sorted(PROVIDERS), default="codex")
-    admit.add_argument("--integration-validator-provider", choices=sorted(PROVIDERS), default="claude")
-    admit.add_argument("--result")
-    lease = sub.add_parser("lease")
-    lease.add_argument("--rig", required=True)
-    lease.add_argument("--bead", required=True)
-    lease.add_argument("--worktree-root", required=True)
-    execute = sub.add_parser("execute")
-    execute.add_argument("--rig", required=True)
-    execute.add_argument("--program-bead", required=True)
-    execute.add_argument("--bead", action="append")
-    execute.add_argument("--worktree-root")
-    execute.add_argument("--max-parallel", type=int, default=4)
-    execute.add_argument("--max-attempts", type=int, default=3)
-    execute.add_argument("--timeout", type=float, default=1800)
-    execute.add_argument("--result")
-    resume = sub.add_parser("resume-experiment")
-    resume.add_argument("--rig", required=True)
-    resume.add_argument("--bead", required=True)
-    resume.add_argument("--max-attempts", type=int, default=3)
-    resume.add_argument("--timeout", type=float, default=1800)
-    resume.add_argument("--result")
-    verdict = sub.add_parser("record-verdict")
-    verdict.add_argument("--rig", required=True)
-    verdict.add_argument("--bead", required=True)
-    verdict.add_argument("--lease-token", required=True)
-    verdict.add_argument("--fence-epoch", type=int, required=True)
-    verdict.add_argument("--candidate-sha", required=True)
-    verdict.add_argument("--subject-manifest", required=True)
-    verdict.add_argument("--author-context", required=True)
-    verdict.add_argument("--verdict", required=True)
-    successor = sub.add_parser("successor")
-    successor.add_argument("--rig", required=True)
-    successor.add_argument("--rejected-bead", required=True)
-    successor.add_argument("--rescope-bead", required=True)
-    successor.add_argument("--proposal", required=True)
-    rescope = sub.add_parser("rescope")
-    rescope.add_argument("--rig", required=True)
-    rescope.add_argument("--rescope-bead", required=True)
-    rescope.add_argument("--timeout", type=float, default=1800)
-    refinery = sub.add_parser("refinery")
-    refinery_sub = refinery.add_subparsers(dest="refinery_command", required=True)
-    assemble = refinery_sub.add_parser("assemble")
-    assemble.add_argument("--rig", required=True)
-    assemble.add_argument("--refinery-bead", required=True)
-    assemble.add_argument("--worktree-root", required=True)
-    assemble.add_argument("--max-candidates", type=int, default=5)
-    assemble.add_argument("--merge-slot-timeout", type=float, default=300)
-    assemble.add_argument("--remote", default="origin")
-    validate = refinery_sub.add_parser("validate")
-    validate.add_argument("--rig", required=True)
-    validate.add_argument("--refinery-bead", required=True)
-    validate.add_argument("--epoch", type=int, required=True)
-    validate.add_argument("--fence-token", required=True)
-    validate.add_argument("--integration-sha", required=True)
-    validate.add_argument("--subject-manifest", required=True)
-    validate.add_argument("--verdict", required=True)
-    run_validation = refinery_sub.add_parser("run-validation")
-    run_validation.add_argument("--rig", required=True)
-    run_validation.add_argument("--refinery-bead", required=True)
-    run_validation.add_argument("--provider", choices=sorted(PROVIDERS))
-    run_validation.add_argument("--timeout", type=float, default=1800)
-    qualify = refinery_sub.add_parser("qualify")
-    qualify.add_argument("--rig", required=True)
-    qualify.add_argument("--refinery-bead", required=True)
-    publish = refinery_sub.add_parser("publish")
-    publish.add_argument("--rig", required=True)
-    publish.add_argument("--refinery-bead", required=True)
-    publish.add_argument("--remote", default="origin")
-    publish.add_argument("--title")
-    publish.add_argument("--draft", action="store_true")
-    land = refinery_sub.add_parser("land")
-    land.add_argument("--rig", required=True)
-    land.add_argument("--refinery-bead", required=True)
-    land.add_argument("--merge-method", choices=("merge", "squash", "rebase"), default="squash")
-    land.add_argument("--timeout", type=float, default=3600)
-    deliver = refinery_sub.add_parser("deliver")
-    deliver.add_argument("--rig", required=True)
-    deliver.add_argument("--refinery-bead", required=True)
-    deliver.add_argument("--worktree-root", required=True)
-    deliver.add_argument("--max-candidates", type=int, default=8)
-    deliver.add_argument("--merge-slot-timeout", type=float, default=300)
-    deliver.add_argument("--provider", choices=sorted(PROVIDERS))
-    deliver.add_argument("--remote", default="origin")
-    deliver.add_argument("--title")
-    deliver.add_argument("--draft", action="store_true")
-    deliver.add_argument("--merge-method", choices=("merge", "squash", "rebase"), default="squash")
-    deliver.add_argument("--timeout", type=float, default=3600)
-    retry = refinery_sub.add_parser("retry")
-    retry.add_argument("--rig", required=True)
-    retry.add_argument("--refinery-bead", required=True)
-    inspect_role = sub.add_parser("inspect-role")
-    inspect_role.add_argument("--request", required=True)
-    emit_role = sub.add_parser("emit-role")
-    emit_role.add_argument("--request", required=True)
-    emit_role.add_argument("--bead", required=True)
-    emit_role.add_argument("--artifact", required=True)
+    inspect_role_v2 = sub.add_parser("inspect-role-v2")
+    inspect_role_v2.add_argument("--request", required=True)
+    emit_role_v2 = sub.add_parser("emit-role-v2")
+    emit_role_v2.add_argument("--request", required=True)
+    emit_role_v2.add_argument("--artifact", required=True)
     sub.add_parser("doctor")
     return root
 
@@ -4450,65 +4743,12 @@ def parser() -> argparse.ArgumentParser:
 def main(argv: list[str] | None = None) -> int:
     args = parser().parse_args(argv)
     try:
-        if args.command == "plan":
-            return command_plan(args)
-        if args.command == "admit":
-            return command_admit(args)
-        if args.command == "lease":
-            return command_lease(args)
-        if args.command == "execute":
-            if args.max_parallel < 1 or args.max_attempts < 1 or args.timeout <= 0:
-                raise FactoryError("invalid_argument", "--max-parallel, --max-attempts, and --timeout must be positive")
-            return command_execute(args)
-        if args.command == "resume-experiment":
-            if args.max_attempts < 1 or args.timeout <= 0:
-                raise FactoryError("invalid_argument", "--max-attempts and --timeout must be positive")
-            return command_resume_experiment(args)
-        if args.command == "record-verdict":
-            return command_record_verdict(args)
-        if args.command == "successor":
-            return command_successor(args)
-        if args.command == "rescope":
-            if args.timeout <= 0:
-                raise FactoryError("invalid_argument", "--timeout must be positive")
-            return command_rescope(args)
-        if args.command == "inspect-role":
-            return command_inspect_role(args)
-        if args.command == "emit-role":
-            return command_emit_role(args)
+        if args.command == "inspect-role-v2":
+            return command_inspect_role_v2(args)
+        if args.command == "emit-role-v2":
+            return command_emit_role_v2(args)
         if args.command == "doctor":
             return command_doctor()
-        if args.command == "refinery":
-            if args.refinery_command == "assemble":
-                if args.max_candidates < 1 or args.merge_slot_timeout <= 0:
-                    raise FactoryError(
-                        "invalid_argument",
-                        "--max-candidates and --merge-slot-timeout must be positive",
-                    )
-                return command_refinery_assemble(args)
-            if args.refinery_command == "validate":
-                return command_refinery_validate(args)
-            if args.refinery_command == "run-validation":
-                if args.timeout <= 0:
-                    raise FactoryError("invalid_argument", "--timeout must be positive")
-                return command_refinery_run_validation(args)
-            if args.refinery_command == "qualify":
-                return command_refinery_qualify(args)
-            if args.refinery_command == "publish":
-                return command_refinery_publish(args)
-            if args.refinery_command == "land":
-                if args.timeout <= 0:
-                    raise FactoryError("invalid_argument", "--timeout must be positive")
-                return command_refinery_land(args)
-            if args.refinery_command == "deliver":
-                if args.timeout <= 0 or args.max_candidates < 1 or args.merge_slot_timeout <= 0:
-                    raise FactoryError(
-                        "invalid_argument",
-                        "--timeout, --max-candidates, and --merge-slot-timeout must be positive",
-                    )
-                return command_refinery_deliver(args)
-            if args.refinery_command == "retry":
-                return command_refinery_retry(args)
     except FactoryError as exc:
         print(json.dumps({"ok": False, "error": {"code": exc.code, "message": str(exc)}}, sort_keys=True))
         return 2

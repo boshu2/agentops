@@ -92,8 +92,9 @@ admitted Terra-high/Codex or Opus-medium/Claude writer, and fresh
 Sol-high/Codex validation. Admission chooses the writer profile; a provider
 outage reduces capacity and never switches an admitted role. Every recorded
 fallback object is exactly `allowed=false`, `used=false`, and `reason=null`.
-Fable Refiner is read-only, zero-or-one ambiguity advice only; Luna-high is support-only
-and cannot create, route, judge, or mutate delivery. Refinery is
+Fable Refiner is a declared zero-or-one ambiguity adviser, but its dispatch is
+closed pending GC33-4 process isolation; Luna-high is support-only and cannot
+create, route, judge, or mutate delivery. Refinery is
 a model-free, serialized delivery state machine. There is no second loop,
 worker pool, or base/main mutex.
 
@@ -152,22 +153,22 @@ The deployment guide is `deploy/gc/README.md`.
 
 ### Physical roles
 
-The executor has four physical pools and two semantic roles:
+The executor has three physical pools and two semantic roles:
 
 | Target | Scope | Provider | Model policy | Lifecycle | Capacity per rig |
 |---|---|---|---|---|---|
 | `agentops.implementer` | rig | Codex | Terra | fresh interactive | min 0, max 1 |
 | `agentops.implementer-claude` | rig | Claude | Opus 4.8 | fresh interactive | min 0, max 1 |
 | `agentops.validator` | rig | Codex | Sol | fresh interactive | min 0, max 1 |
-| `agentops.validator-claude` | rig | Claude | Opus 4.8 | fresh interactive | min 0, max 1 |
 
 Each `agent.toml` fixes its provider and role model. Every packet also declares
 `provider = codex | claude`; the adapter verifies the actual Gas City session,
 provider, and exact launch model. The 3.3 factory assigns Fable to Mayor, Sol
 to plan and fresh validation, and exactly one admission-selected Terra-high or
 Opus-medium writer profile to each implementation. A provider outage reduces
-capacity; it cannot switch that admitted profile. Fable may answer at most one read-only
-delivery ambiguity and has no delivery mutation authority. Claude roles are
+capacity; it cannot switch that admitted profile. Fable may answer at most one
+nonbinding ambiguity request, but its adviser route stays closed until the
+GC33-4 isolation proof; it has no delivery mutation authority. Claude roles are
 interactive GC-owned tmux sessions; `claude -p` and `claude --print` are denied
 by both repository policy and deployment validation.
 
@@ -294,8 +295,9 @@ mechanical and does not itself require a validator; changed bytes always do.
 Refinery is a serialized, model-free delivery state machine, backed by linked
 delivery beads and immutable receipts. Its deterministic engine owns
 unambiguous Git, regeneration, PR, CI-status, review-status, and receipt
-operations. Fable may give zero or one bounded read-only ambiguity answer; it
-cannot repair code, judge semantics, or start an experiment.
+operations. Fable may give zero or one bounded ambiguity answer only after
+GC33-4 proves its process isolation; GC33-3 keeps that route closed. It cannot
+repair code, judge semantics, or start an experiment.
 
 The capability receipt rejects mutable metadata and claims as a fence. Claim
 holder death is therefore not a relied-on store property: a mutable claim can
@@ -401,14 +403,17 @@ explicit; unrelated candidates are not silently composed by a standing process.
 
 ## Configuration shape
 
-The factory pack owns reusable program and delivery policy while importing the
-executor's exact packet roles:
+The factory pack owns reusable semantic-role contracts while importing the
+executor's exact packet roles. The later crash-only reducer owns delivery; no
+model-facing delivery-policy role is composed:
 
 ```text
 packs/agentops-factory/
   pack.toml
-  agents/                              legacy routes retained pending deletion
-  commands/
+  agents/
+    mayor/                             Fable semantic planning
+    plan-reviewer/                     Sol-high plan binding
+    refiner/                           gated Fable ambiguity advice
   assets/schemas/
     program-graph.v2
     admission-certificate.v2

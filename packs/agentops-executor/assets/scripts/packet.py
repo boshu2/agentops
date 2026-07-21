@@ -22,6 +22,7 @@ import subprocess
 import sys
 import tempfile
 import time
+import tomllib
 from typing import Any
 
 
@@ -31,6 +32,7 @@ PACK_ROOT = Path(__file__).resolve().parents[2]
 ENVELOPE_SCHEMA = PACK_ROOT / "assets" / "schemas" / "gc-execution-envelope.v1.schema.json"
 PROJECTION_MANIFEST = PACK_ROOT / "assets" / "generated-skill-manifest.json"
 VALIDATE_HELPER = PACK_ROOT / "agents" / "validator" / "skills" / "validate" / "scripts" / "validate.py"
+CITY_CONFIG = PACK_ROOT.parents[1] / "deploy" / "gc" / "city.toml"
 PACKET_ID_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$")
 DIGEST_RE = re.compile(r"^[0-9a-f]{64}$")
 SHA_RE = re.compile(r"^[0-9a-f]{40}$")
@@ -51,6 +53,7 @@ COMMON_EXCLUDES = [
     "**/__pycache__",
     "*.pyc",
 ]
+NO_RUNTIME_FALLBACK = {"allowed": False, "used": False, "reason": None}
 
 # Dynamic rig registration and reload can legitimately leave GC's durable
 # inventory reads waiting on the managed Dolt control plane for longer than the
@@ -88,14 +91,6 @@ RESPONSE_KEYS = {
     "message",
 }
 ARTIFACT_KEYS = {"path", "sha256"}
-ROLE_MODELS = {
-    ("implement", "codex"): ("gpt-5.6-terra", "gpt-5.6-terra"),
-    ("validate", "codex"): ("gpt-5.6-sol", "gpt-5.6-sol"),
-    ("implement", "claude"): ("opus-4.8", "claude-opus-4-8"),
-    ("validate", "claude"): ("opus-4.8", "claude-opus-4-8"),
-}
-
-
 class PacketError(RuntimeError):
     """A fail-closed envelope or transport error."""
 
@@ -217,6 +212,7 @@ def validate_envelope(path: Path, allow_existing_result: bool = False) -> tuple[
     provider = packet.get("provider")
     if provider not in {"codex", "claude"}:
         raise PacketError("invalid_envelope", "provider must be codex or claude")
+    runtime_launch_policy(packet)
     digest = packet.get("intent_digest")
     if not isinstance(digest, str) or not DIGEST_RE.fullmatch(digest):
         raise PacketError("invalid_envelope", "intent_digest must be a lowercase SHA-256 digest")
@@ -587,13 +583,88 @@ def gc_binary() -> str:
     return found
 
 
-def local_agent_name(packet: dict[str, Any]) -> str:
+def load_toml(path: Path, label: str) -> dict[str, Any]:
+    try:
+        value = tomllib.loads(path.read_text(encoding="utf-8"))
+    except (OSError, tomllib.TOMLDecodeError) as exc:
+        raise PacketError("runtime_policy_invalid", f"cannot read {label} {path}: {exc}") from exc
+    if not isinstance(value, dict):
+        raise PacketError("runtime_policy_invalid", f"{label} must be a TOML table: {path}")
+    return value
+
+
+def runtime_launch_policy(packet: dict[str, Any]) -> dict[str, str]:
+    """Derive one enabled role launch from the pack and city source of truth."""
+    provider = packet["provider"]
+    role = packet["role"]
+    agents_root = PACK_ROOT / "agents"
+    candidates: list[tuple[str, dict[str, Any]]] = []
+    for config in sorted(agents_root.glob("*/agent.toml")):
+        name = config.parent.name
+        # The role's agent names begin with its verb stem (implementer, validator);
+        # provider and launch options remain entirely TOML-owned.
+        if not name.startswith(role.removesuffix("e")):
+            continue
+        agent = load_toml(config, "role agent configuration")
+        if agent.get("provider") == provider:
+            candidates.append((name, agent))
+    if len(candidates) != 1:
+        state = "no" if not candidates else "multiple"
+        raise PacketError(
+            "route_unavailable",
+            f"{state} enabled {role}/{provider} role route is declared by pack agent TOMLs",
+        )
+    agent_name, agent = candidates[0]
+    selected = agent.get("option_defaults")
+    if not isinstance(selected, dict):
+        raise PacketError("runtime_policy_invalid", f"agents/{agent_name}/agent.toml has no option_defaults table")
+    configured_model = selected.get("model")
+    configured_effort = selected.get("effort")
+    if not isinstance(configured_model, str) or not configured_model:
+        raise PacketError("runtime_policy_invalid", f"agents/{agent_name}/agent.toml has no model default")
+    if not isinstance(configured_effort, str) or not configured_effort:
+        raise PacketError("runtime_policy_invalid", f"agents/{agent_name}/agent.toml has no effort default")
+
+    city = load_toml(CITY_CONFIG, "city provider configuration")
+    providers = city.get("providers")
+    city_provider = providers.get(provider) if isinstance(providers, dict) else None
+    schemas = city_provider.get("options_schema") if isinstance(city_provider, dict) else None
+    if not isinstance(schemas, list):
+        raise PacketError("runtime_policy_invalid", f"city TOML has no options schema for provider {provider}")
+
+    def selected_flag(option: str, configured: str) -> str:
+        matching = [item for item in schemas if isinstance(item, dict) and item.get("key") == option]
+        if len(matching) != 1 or not isinstance(matching[0].get("choices"), list):
+            raise PacketError("runtime_policy_invalid", f"city TOML has no {option} schema for provider {provider}")
+        choices = [item for item in matching[0]["choices"] if isinstance(item, dict) and item.get("value") == configured]
+        if len(choices) != 1 or not isinstance(choices[0].get("flag_args"), list):
+            raise PacketError("runtime_policy_invalid", f"city TOML has no launch flag for {provider} {option}={configured}")
+        flags = choices[0]["flag_args"]
+        if len(flags) != 2 or not all(isinstance(flag, str) and flag for flag in flags):
+            raise PacketError("runtime_policy_invalid", f"city TOML {provider} {option} flag must be an exact pair")
+        return "\x00".join(flags)
+
+    model_flag = selected_flag("model", configured_model)
+    effort_flag = selected_flag("effort", configured_effort)
+    model_tokens = model_flag.split("\x00")
+    effort_tokens = effort_flag.split("\x00")
+    if model_tokens[0] not in {"--model", "-m"}:
+        raise PacketError("runtime_policy_invalid", f"city TOML {provider} model flag is not a model argument")
+    if provider == "codex" and effort_tokens != ["-c", f"model_reasoning_effort={configured_effort}"]:
+        raise PacketError("runtime_policy_invalid", "city TOML Codex effort flag must be -c model_reasoning_effort=<effort>")
+    if provider == "claude" and effort_tokens != ["--effort", configured_effort]:
+        raise PacketError("runtime_policy_invalid", "city TOML Claude effort flag must be --effort <effort>")
     return {
-        ("implement", "codex"): "implementer",
-        ("validate", "codex"): "validator",
-        ("implement", "claude"): "implementer-claude",
-        ("validate", "claude"): "validator-claude",
-    }[(packet["role"], packet["provider"])]
+        "agent": agent_name,
+        "provider": provider,
+        "configured_model": configured_model,
+        "model": model_tokens[1],
+        "effort": configured_effort,
+    }
+
+
+def local_agent_name(packet: dict[str, Any]) -> str:
+    return runtime_launch_policy(packet)["agent"]
 
 
 def selected_rig_record(rig: str) -> dict[str, Any]:
@@ -811,15 +882,27 @@ def wait_for_response(result_path: Path, rig: str, bead_id: str, deadline: float
     raise PacketError("transport_timeout", f"packet {bead_id} wrote a response but did not close its transport bead")
 
 
-def command_model(command: str) -> str:
+def command_launch_identity(command: str, provider: str) -> tuple[str, str]:
     try:
         tokens = shlex.split(command)
     except ValueError as exc:
         raise PacketError("runtime_identity_missing", f"GC runtime command cannot be parsed: {exc}") from exc
-    values = [tokens[index + 1] for index, token in enumerate(tokens[:-1]) if token in {"--model", "-m"}]
-    if len(values) != 1 or not values[0].strip():
+    models = [tokens[index + 1] for index, token in enumerate(tokens[:-1]) if token in {"--model", "-m"}]
+    if len(models) != 1 or not models[0].strip():
         raise PacketError("runtime_identity_missing", "GC runtime command must contain exactly one explicit model")
-    return values[0].strip()
+    if provider == "codex":
+        efforts = [
+            token.partition("=")[2]
+            for token in (tokens[index + 1] for index, value in enumerate(tokens[:-1]) if value == "-c")
+            if token.startswith("model_reasoning_effort=")
+        ]
+    elif provider == "claude":
+        efforts = [tokens[index + 1] for index, token in enumerate(tokens[:-1]) if token == "--effort"]
+    else:
+        raise PacketError("runtime_identity_missing", f"GC runtime provider is unsupported: {provider}")
+    if len(efforts) != 1 or not efforts[0].strip():
+        raise PacketError("runtime_identity_missing", f"GC runtime command must contain exactly one explicit {provider} effort")
+    return models[0].strip(), efforts[0].strip()
 
 
 def runtime_session(context_id: str) -> dict[str, Any]:
@@ -860,7 +943,8 @@ def runtime_session(context_id: str) -> dict[str, Any]:
         if not isinstance(value, str) or not value.strip():
             raise PacketError("runtime_identity_missing", f"city session bead {context_id} has no {field}")
         fields[field] = value
-    launched_model = command_model(str(meta.get("command", "")))
+    provider = fields["provider"]
+    launched_model, launched_effort = command_launch_identity(str(meta.get("command", "")), provider)
     observed_model = (live or {}).get("model")
     if isinstance(observed_model, str) and observed_model.strip() and observed_model.strip() != launched_model:
         raise PacketError(
@@ -873,6 +957,11 @@ def runtime_session(context_id: str) -> dict[str, Any]:
         "status": record.get("status"),
         "model": launched_model,
         "model_source": "launch_command",
+        "effort": launched_effort,
+        "reasoning": launched_effort,
+        "effort_source": "launch_command",
+        "context_source": "gc_session" if live is not None else "city_session_bead",
+        "fallback": NO_RUNTIME_FALLBACK,
     }
 
 
@@ -978,11 +1067,22 @@ def validate_agent_response(
     for field, value in runtime_expected.items():
         if session.get(field) != value:
             raise PacketError("runtime_identity_mismatch", f"GC runtime session {field} does not match agent response")
-    configured_model, launched_model = ROLE_MODELS[(packet["role"], packet["provider"])]
-    if session.get("model") != launched_model:
+    context_source = session.get("context_source")
+    fallback = session.get("fallback")
+    if context_source not in {"gc_session", "city_session_bead"}:
+        raise PacketError("runtime_identity_missing", "GC runtime context source is missing or invalid")
+    if fallback != NO_RUNTIME_FALLBACK:
+        raise PacketError("runtime_identity_missing", "GC runtime context fallback attestation is missing or invalid")
+    policy = runtime_launch_policy(packet)
+    if session.get("model") != policy["model"]:
         raise PacketError(
             "runtime_model_mismatch",
-            f"GC runtime model must be {configured_model} ({launched_model}) for {packet['role']}/{packet['provider']}",
+            f"GC runtime model must be {policy['configured_model']} ({policy['model']}) for {packet['role']}/{packet['provider']}",
+        )
+    if session.get("effort") != policy["effort"]:
+        raise PacketError(
+            "runtime_effort_mismatch",
+            f"GC runtime effort must be {policy['effort']} for {packet['role']}/{packet['provider']}",
         )
     validate_response_artifacts(packet, paths, response)
 
@@ -1224,7 +1324,13 @@ def command_run(args: argparse.Namespace) -> int:
             "provider": session.get("provider"),
             "model": session.get("model"),
             "model_source": session.get("model_source"),
-            "model_policy": ROLE_MODELS[(packet["role"], packet["provider"])][0],
+            "effort": session.get("effort"),
+            "reasoning": session.get("effort"),
+            "effort_source": session.get("effort_source"),
+            "context_source": session.get("context_source"),
+            "fallback": session.get("fallback"),
+            "model_policy": runtime_launch_policy(packet)["configured_model"],
+            "effort_policy": runtime_launch_policy(packet)["effort"],
         }
 
         if packet["role"] == "implement":
@@ -1578,20 +1684,24 @@ def parse_simple_toml(path: Path) -> dict[str, str]:
 
 def command_doctor_roles() -> int:
     agents_root = PACK_ROOT / "agents"
-    actual = sorted(path.name for path in agents_root.iterdir() if path.is_dir() and not path.name.startswith("_"))
+    actual = sorted(
+        path.name for path in agents_root.iterdir()
+        if path.is_dir() and not path.name.startswith("_") and (path / "agent.toml").is_file()
+    )
     problems = []
     providers = {
-        "implementer": "codex",
-        "validator": "codex",
-        "implementer-claude": "claude",
-        "validator-claude": "claude",
+        "implementer": "codex", "validator": "codex", "implementer-claude": "claude",
     }
     permission_defaults = {"codex": "auto-edit", "claude": "unrestricted"}
     model_defaults = {
         "implementer": "gpt-5.6-terra",
         "validator": "gpt-5.6-sol",
         "implementer-claude": "opus-4.8",
-        "validator-claude": "opus-4.8",
+    }
+    effort_defaults = {
+        "implementer": "high",
+        "validator": "high",
+        "implementer-claude": "medium",
     }
     expected_agents = sorted(providers)
     if actual != expected_agents:
@@ -1611,8 +1721,7 @@ def command_doctor_roles() -> int:
             "max_active_sessions": "1",
             "inject_assigned_skills": "true",
         }
-        if provider == "claude":
-            expected["lifecycle"] = '"one_shot"'
+        expected["lifecycle"] = '"one_shot"'
         for key, value in expected.items():
             if values.get(key) != value:
                 problems.append(f"agents/{name}/agent.toml: {key} must be {value}")
@@ -1625,6 +1734,11 @@ def command_doctor_roles() -> int:
         if f'model = "{expected_model}"' not in values.get("option_defaults", ""):
             problems.append(
                 f"agents/{name}/agent.toml: model must be {expected_model}"
+            )
+        expected_effort = effort_defaults[name]
+        if f'effort = "{expected_effort}"' not in values.get("option_defaults", ""):
+            problems.append(
+                f"agents/{name}/agent.toml: effort must be {expected_effort}"
             )
         for forbidden in ("args", "args_append", "start_command"):
             if forbidden in values:
@@ -1639,7 +1753,7 @@ def command_doctor_roles() -> int:
         for problem in problems:
             print(problem)
         return 2
-    print("Codex Terra workers, Codex Sol validators, and bounded one-shot Claude Opus 4.8 roles are fresh zero-minimum pools")
+    print("Terra-high default and Opus-medium overflow writers plus one fresh Sol-high validator are zero-minimum pools")
     return 0
 
 

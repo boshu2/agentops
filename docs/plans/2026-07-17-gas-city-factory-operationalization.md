@@ -119,8 +119,7 @@ digest creates a new qualification identity.
 | Product executor | Terra, high | Default implementation writer |
 | Challenger/overflow | Opus 4.8, medium | Mixed-runtime work and bounded overflow |
 | Candidate Validator | Sol, high, fresh and read-only | Issue exact `verdict.v2` |
-| Refiner | Fable 5, adaptive, min 0 / max 1 | Triggered composition planning and ambiguity triage only |
-| Delivery-policy Judge | Sol, high, triggered | Judge real cross-candidate/base interactions |
+| Refiner | Fable 5, adaptive, min 0 / max 1 | One nonbinding ambiguity finding only; dispatch remains closed until GC33-4 proves process isolation |
 | Luna | Luna, high, support-only | Read-only status, log, and CI summaries |
 
 Remove legacy Sol Mayor, Opus plan-reviewer, and Sol Refiner routes. Use native
@@ -183,9 +182,9 @@ a shared interface, generated artifact, or behavioral interaction. A clean
 tree-preserving rebase does not automatically spend a Sol judgment.
 
 A byte-changing repair always creates a new exact subject and therefore
-requires a fresh binding `verdict.v2` plus new admission evidence. A no-byte
-interaction may use non-binding `delivery-policy-finding.v1`; that finding can
-never substitute for a binding verdict or directly transition the bead.
+requires a fresh binding `verdict.v2` plus new admission evidence. The only
+Fable ambiguity artifact is nonbinding `ambiguity-advice.v1`; until GC33-4
+proves process isolation it cannot be dispatched or transition a bead.
 
 Every waiting state has a finite operator-configured deadline. Expiry becomes
 an operator-visible `stalled` state with a structured reason, never a silent
