@@ -24,6 +24,15 @@ for argument in "$@"; do
   fi
 done
 if "$fable_adviser"; then
+  # There is no portable per-process filesystem namespace available in this
+  # wrapper.  Refuse the live adviser path until a future bounded runner can
+  # attest one; credential stripping alone is not isolation.
+  if [[ -z "${GC33_FABLE_WORKSPACE:-}" || -z "${GC33_FABLE_OUTPUT:-}" || -z "${GC33_FABLE_ISOLATION_RECEIPT:-}" ]]; then
+    printf '%s\n' 'adviser_isolation_unproven: exact workspace/output/receipt contract is required' >&2
+    exit 125
+  fi
+  printf '%s\n' 'adviser_isolation_unproven: portable per-process filesystem confinement is unavailable' >&2
+  exit 125
   env -u GITHUB_TOKEN -u GH_TOKEN -u GIT_ASKPASS -u SSH_ASKPASS -u SSH_AUTH_SOCK \
     "$claude_bin" --debug-file "$debug_file" "$@"
 else

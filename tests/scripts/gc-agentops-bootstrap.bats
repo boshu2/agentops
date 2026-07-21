@@ -902,7 +902,7 @@ PY
   ! grep -Eq '(^|[[:space:]])(-p|--print)($|[[:space:]])' "$TMP/claude-interactive.log"
 }
 
-@test "Claude wrapper strips forge and Git credentials from Fable launches" {
+@test "Claude wrapper keeps Fable closed when portable confinement is unavailable" {
   run run_bootstrap
   [ "$status" -eq 0 ]
 
@@ -910,12 +910,9 @@ PY
     SSH_ASKPASS=ssh-askpass SSH_AUTH_SOCK=ssh-agent \
     "$CITY/.gc/bin/claude-interactive" \
     --model claude-fable-5 --dangerously-skip-permissions
-  [ "$status" -eq 0 ]
-
-  grep -Fq 'ARGS <--model> <claude-fable-5> <--dangerously-skip-permissions>' \
-    "$TMP/claude-interactive.log"
-  grep -Fq 'CREDENTIALS GITHUB_TOKEN=<unset> GH_TOKEN=<unset> GIT_ASKPASS=<unset> SSH_ASKPASS=<unset> SSH_AUTH_SOCK=<unset>' \
-    "$TMP/claude-interactive.log"
+  [ "$status" -eq 125 ]
+  [[ "$output" == *'adviser_isolation_unproven'* ]]
+  [ ! -e "$TMP/claude-interactive.log" ]
 }
 
 @test "bootstrap preserves interleaved extra rigs and refreshes provider directory grants" {

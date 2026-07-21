@@ -2,7 +2,11 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import os
 from pathlib import Path
+import shutil
+import subprocess
+import sys
 import tempfile
 import unittest
 
@@ -115,6 +119,44 @@ class CleanupAdmissionTest(unittest.TestCase):
 
 
 class GitAuditTest(unittest.TestCase):
+    def temporary_worktrees(self) -> tuple[tempfile.TemporaryDirectory[str], Path, Path, Path]:
+        temporary = tempfile.TemporaryDirectory()
+        root = Path(temporary.name) / "repo"
+        root.mkdir()
+        MODULE.run(["git", "init", "-b", "main", str(root)])
+        MODULE.run(["git", "-C", str(root), "config", "user.email", "test@example.invalid"])
+        MODULE.run(["git", "-C", str(root), "config", "user.name", "test"])
+        (root / "README").write_text("base\n", encoding="utf-8")
+        MODULE.run(["git", "-C", str(root), "add", "README"])
+        MODULE.run(["git", "-C", str(root), "commit", "-m", "base"])
+        candidate = root.parent / "candidate"
+        peer = root.parent / "peer"
+        MODULE.run(["git", "-C", str(root), "worktree", "add", "-b", "candidate", str(candidate)])
+        MODULE.run(["git", "-C", str(root), "worktree", "add", "-b", "peer", str(peer)])
+        return temporary, root, candidate, peer
+
+    def candidate_record(self, root: Path, candidate: Path) -> dict[str, object]:
+        snapshot = MODULE.git_snapshot(root)
+        candidate_path = str(candidate.resolve())
+        index = next(
+            item["git_index"]
+            for item in snapshot["worktrees"]
+            if str(Path(item["path"]).resolve()) == candidate_path
+        )
+        return {
+            "worktree": candidate_path,
+            "branch": "candidate",
+            "index": index,
+            "declared_paths": ["allowed.txt"],
+            "generated_paths": ["generated/"],
+        }
+
+    def clean_process_receipt(self) -> dict[str, object]:
+        return MODULE.run_bounded_isolation(
+            [sys.executable, "-c", "import os; assert len(os.environ['AGENTOPS_GC_ISOLATION_TOKEN']) == 64"],
+            timeout_seconds=1,
+        )
+
     def snapshot(self) -> dict[str, object]:
         return {
             "repo": "/repo",
@@ -167,6 +209,279 @@ class GitAuditTest(unittest.TestCase):
         after["worktrees"][1]["git"]["status"] = [" M outside.txt"]
         findings = MODULE.git_audit(before, after)["findings"]
         self.assertIn("content/status changed: /repo-worker", findings)
+
+    def test_candidate_guard_rejects_transient_and_cross_scope_effects(self) -> None:
+        before = self.snapshot()
+        after = json.loads(json.dumps(before))
+        after["worktrees"][1]["head"] = "def"
+        after["worktrees"][1]["git"]["status"] = [" M outside.txt"]
+        after["refs"] = ["refs/heads/main|abc", "refs/heads/worker|def"]
+        for record in (before, after):
+            record["worktrees"][1]["git_index"] = "/repo/.git/worktrees/worker/index"
+        receipt = MODULE.candidate_git_audit(before, after, {"worktree": "/repo-worker", "branch": "worker", "index": "/repo/.git/worktrees/worker/index", "declared_paths": ["allowed"]}, process_receipt=None)
+        self.assertEqual(receipt["git_result"], "FAIL")
+        self.assertIn("undeclared candidate write: outside.txt", receipt["findings"])
+        self.assertIn("isolation receipt is not proven", receipt["findings"])
+
+    def test_candidate_reflog_rejects_switch_to_peer_and_back(self) -> None:
+        temporary, root, candidate_path, _peer_path = self.temporary_worktrees()
+        try:
+            candidate = self.candidate_record(root, candidate_path)
+            MODULE.run(["git", "-C", str(root), "branch", "switch-peer"])
+            before = MODULE.git_snapshot(root)
+            MODULE.run(["git", "-C", str(candidate_path), "checkout", "switch-peer"])
+            MODULE.run(["git", "-C", str(candidate_path), "checkout", "candidate"])
+            after = MODULE.git_snapshot(root)
+            receipt = MODULE.candidate_git_audit(
+                before, after, candidate, process_receipt=self.clean_process_receipt()
+            )
+            self.assertEqual(receipt["git_result"], "FAIL", receipt)
+            self.assertIn("candidate reflog action is not an allowed forward commit", receipt["findings"])
+        finally:
+            temporary.cleanup()
+
+    def test_real_candidate_git_audit_allows_only_declared_forward_commit(self) -> None:
+        temporary, root, candidate_path, _peer_path = self.temporary_worktrees()
+        try:
+            candidate = self.candidate_record(root, candidate_path)
+            before = MODULE.git_snapshot(root)
+            (candidate_path / "allowed.txt").write_text("allowed\n", encoding="utf-8")
+            MODULE.run(["git", "-C", str(candidate_path), "add", "allowed.txt"])
+            MODULE.run(["git", "-C", str(candidate_path), "commit", "-m", "allowed forward"])
+            after = MODULE.git_snapshot(root)
+            receipt = MODULE.candidate_git_audit(
+                before, after, candidate, process_receipt=self.clean_process_receipt()
+            )
+            self.assertEqual(receipt["result"], "PASS", receipt)
+        finally:
+            temporary.cleanup()
+
+    def test_real_candidate_git_audit_allows_generated_directory_root_with_trailing_slash(self) -> None:
+        temporary, root, candidate_path, _peer_path = self.temporary_worktrees()
+        try:
+            candidate = self.candidate_record(root, candidate_path)
+            before = MODULE.git_snapshot(root)
+            generated = candidate_path / "generated"
+            generated.mkdir()
+            (generated / "receipt.json").write_text("{}\n", encoding="utf-8")
+            MODULE.run(["git", "-C", str(candidate_path), "add", "generated/receipt.json"])
+            after = MODULE.git_snapshot(root)
+            receipt = MODULE.candidate_git_audit(
+                before, after, candidate, process_receipt=self.clean_process_receipt()
+            )
+            self.assertEqual(receipt["result"], "PASS", receipt)
+        finally:
+            temporary.cleanup()
+
+    def test_real_candidate_git_audit_rejects_candidate_escapes(self) -> None:
+        def audit_after(operation: object) -> dict[str, object]:
+            temporary, root, candidate_path, _peer_path = self.temporary_worktrees()
+            try:
+                candidate = self.candidate_record(root, candidate_path)
+                before = MODULE.git_snapshot(root)
+                operation(root, candidate_path, candidate)
+                after = MODULE.git_snapshot(root)
+                return MODULE.candidate_git_audit(
+                    before, after, candidate, process_receipt=self.clean_process_receipt()
+                )
+            finally:
+                temporary.cleanup()
+
+        with self.subTest("candidate untracked undeclared write"):
+            receipt = audit_after(lambda _root, candidate, _record: (candidate / "outside.txt").write_text("x\n", encoding="utf-8"))
+            self.assertEqual(receipt["git_result"], "FAIL", receipt)
+        with self.subTest("candidate tracked undeclared write"):
+            def tracked(_root: Path, candidate: Path, _record: dict[str, object]) -> None:
+                (candidate / "outside.txt").write_text("x\n", encoding="utf-8")
+                MODULE.run(["git", "-C", str(candidate), "add", "outside.txt"])
+            receipt = audit_after(tracked)
+            self.assertEqual(receipt["git_result"], "FAIL", receipt)
+        with self.subTest("candidate reset rewrite"):
+            def reset(_root: Path, candidate: Path, _record: dict[str, object]) -> None:
+                (candidate / "allowed.txt").write_text("allowed\n", encoding="utf-8")
+                MODULE.run(["git", "-C", str(candidate), "add", "allowed.txt"])
+                MODULE.run(["git", "-C", str(candidate), "commit", "-m", "allowed"])
+                MODULE.run(["git", "-C", str(candidate), "reset", "--hard", "HEAD~1"])
+            receipt = audit_after(reset)
+            self.assertEqual(receipt["git_result"], "FAIL", receipt)
+            self.assertIn("candidate reflog action is not an allowed forward commit", receipt["findings"])
+        with self.subTest("candidate branch substitution"):
+            def switch(root: Path, candidate: Path, _record: dict[str, object]) -> None:
+                MODULE.run(["git", "-C", str(root), "branch", "switch-peer"])
+                MODULE.run(["git", "-C", str(candidate), "checkout", "switch-peer"])
+            receipt = audit_after(switch)
+            self.assertEqual(receipt["git_result"], "FAIL", receipt)
+            self.assertIn("candidate identity changed", receipt["findings"])
+        with self.subTest("candidate git-index substitution"):
+            temporary, root, candidate_path, _peer_path = self.temporary_worktrees()
+            try:
+                candidate = self.candidate_record(root, candidate_path)
+                before = MODULE.git_snapshot(root)
+                substitute = candidate_path / "substitute.index"
+                shutil.copyfile(str(candidate["index"]), substitute)
+                after = MODULE.git_snapshot(root)
+                substituted = next(
+                    item for item in after["worktrees"]
+                    if str(Path(item["path"]).resolve()) == candidate["worktree"]
+                )
+                substituted["git_index"] = str(substitute)
+                receipt = MODULE.candidate_git_audit(
+                    before, after, candidate, process_receipt=self.clean_process_receipt()
+                )
+            finally:
+                temporary.cleanup()
+            self.assertEqual(receipt["git_result"], "FAIL", receipt)
+            self.assertIn("candidate identity changed", receipt["findings"])
+
+    def test_real_candidate_git_audit_rejects_shared_repository_escapes(self) -> None:
+        def audit_after(operation: object) -> dict[str, object]:
+            temporary, root, candidate_path, peer_path = self.temporary_worktrees()
+            try:
+                candidate = self.candidate_record(root, candidate_path)
+                before = MODULE.git_snapshot(root)
+                operation(root, candidate_path, peer_path)
+                after = MODULE.git_snapshot(root)
+                return MODULE.candidate_git_audit(
+                    before, after, candidate, process_receipt=self.clean_process_receipt()
+                )
+            finally:
+                temporary.cleanup()
+
+        with self.subTest("stash"):
+            def stash(_root: Path, candidate: Path, _peer: Path) -> None:
+                (candidate / "stash.txt").write_text("stash\n", encoding="utf-8")
+                MODULE.run(["git", "-C", str(candidate), "stash", "push", "--include-untracked", "-m", "bad"])
+            receipt = audit_after(stash)
+            self.assertEqual(receipt["git_result"], "FAIL", receipt)
+            self.assertIn("stash state changed", receipt["findings"])
+        with self.subTest("noncandidate ref and reflog"):
+            receipt = audit_after(lambda root, _candidate, _peer: MODULE.run(["git", "-C", str(root), "branch", "other"]))
+            self.assertEqual(receipt["git_result"], "FAIL", receipt)
+            self.assertIn("non-candidate ref changed", receipt["findings"])
+            self.assertIn("non-candidate reflog changed", receipt["findings"])
+        with self.subTest("worktree addition"):
+            receipt = audit_after(lambda root, _candidate, _peer: MODULE.run(["git", "-C", str(root), "worktree", "add", "-b", "extra", str(root.parent / "extra")]))
+            self.assertEqual(receipt["git_result"], "FAIL", receipt)
+            self.assertIn("worktree set changed", receipt["findings"])
+        with self.subTest("worktree removal"):
+            receipt = audit_after(lambda root, _candidate, peer: MODULE.run(["git", "-C", str(root), "worktree", "remove", "--force", str(peer)]))
+            self.assertEqual(receipt["git_result"], "FAIL", receipt)
+            self.assertIn("worktree set changed", receipt["findings"])
+        for name, target, tracked in (
+            ("primary tracked", "primary", True),
+            ("primary untracked", "primary", False),
+            ("peer tracked", "peer", True),
+            ("peer untracked", "peer", False),
+        ):
+            with self.subTest(name):
+                def mutate(root: Path, _candidate: Path, peer: Path, *, target: str = target, tracked: bool = tracked) -> None:
+                    worktree = root if target == "primary" else peer
+                    path = worktree / ("README" if tracked else "outside.txt")
+                    path.write_text("changed\n", encoding="utf-8")
+                receipt = audit_after(mutate)
+                self.assertEqual(receipt["git_result"], "FAIL", receipt)
+                self.assertTrue(any(item.startswith("non-candidate worktree changed") for item in receipt["findings"]))
+
+    def test_candidate_guard_proves_local_git_scope_but_keeps_process_receipt_not_proven(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary) / "repo"; root.mkdir()
+            MODULE.run(["git", "init", "-b", "main", str(root)])
+            MODULE.run(["git", "-C", str(root), "config", "user.email", "test@example.invalid"])
+            MODULE.run(["git", "-C", str(root), "config", "user.name", "test"])
+            (root / "README").write_text("base\n", encoding="utf-8")
+            MODULE.run(["git", "-C", str(root), "add", "README"]); MODULE.run(["git", "-C", str(root), "commit", "-m", "base"])
+            candidate_path = root.parent / "candidate"
+            MODULE.run(["git", "-C", str(root), "worktree", "add", "-b", "candidate", str(candidate_path)])
+            before = MODULE.git_snapshot(root)
+            candidate_realpath = str(candidate_path.resolve())
+            index = next(item["git_index"] for item in before["worktrees"] if str(Path(item["path"]).resolve()) == candidate_realpath)
+            candidate = {"worktree": candidate_realpath, "branch": "candidate", "index": index, "declared_paths": ["allowed.txt"]}
+            (candidate_path / "allowed.txt").write_text("allowed\n", encoding="utf-8")
+            dirty = MODULE.git_snapshot(root)
+            receipt = MODULE.candidate_git_audit(before, dirty, candidate, process_receipt=None)
+            self.assertEqual(receipt["git_result"], "PASS", receipt)
+            self.assertEqual(receipt["result"], "NOT_PROVEN")
+            MODULE.run(["git", "-C", str(candidate_path), "add", "allowed.txt"]); MODULE.run(["git", "-C", str(candidate_path), "commit", "-m", "allowed"])
+            committed = MODULE.git_snapshot(root)
+            receipt = MODULE.candidate_git_audit(dirty, committed, candidate, process_receipt=None)
+            self.assertEqual(receipt["git_result"], "PASS", receipt)
+            process_receipt = MODULE.run_bounded_isolation([sys.executable, "-c", "import os; assert os.environ['AGENTOPS_GC_ISOLATION_TOKEN']"], timeout_seconds=1)
+            self.assertEqual(MODULE.candidate_git_audit(committed, committed, candidate, process_receipt=process_receipt)["result"], "PASS")
+            for outcome in ("timeout_cleanup_required", "leak_cleanup_required"):
+                non_clean = dict(process_receipt); non_clean.update({"outcome": outcome, "completed": False, "timeout": outcome.startswith("timeout"), "leak_detected": outcome.startswith("leak"), "cleanup_required": True})
+                self.assertEqual(MODULE.candidate_git_audit(committed, committed, candidate, process_receipt=non_clean)["result"], "FAIL")
+            (candidate_path / "undeclared.txt").write_text("no\n", encoding="utf-8")
+            MODULE.run(["git", "-C", str(candidate_path), "add", "undeclared.txt"]); MODULE.run(["git", "-C", str(candidate_path), "commit", "-m", "undeclared"])
+            undeclared = MODULE.git_snapshot(root)
+            self.assertEqual(MODULE.candidate_git_audit(committed, undeclared, candidate, process_receipt=process_receipt)["git_result"], "FAIL")
+            for mutate in (
+                lambda state: state.__setitem__("stash", ["stash@{0}|dead|bad"]),
+                lambda state: state["refs"].append("refs/heads/main|dead"),
+                lambda state: state["worktrees"][0]["git"].__setitem__("status", [" M main.txt"]),
+            ):
+                broken = json.loads(json.dumps(committed)); mutate(broken)
+                self.assertEqual(MODULE.candidate_git_audit(committed, broken, candidate, process_receipt=None)["git_result"], "FAIL")
+
+    def test_bounded_isolation_receipts_are_strict_and_cleanup_only_the_child_group(self) -> None:
+        clean = MODULE.run_bounded_isolation([sys.executable, "-c", "import os; assert len(os.environ['AGENTOPS_GC_ISOLATION_TOKEN']) == 64"], timeout_seconds=1)
+        self.assertEqual(clean["outcome"], "clean")
+        self.assertTrue(clean["completed"])
+        self.assertFalse(clean["leak_detected"])
+        self.assertEqual(clean["surviving_pids"], [])
+        another_clean = MODULE.run_bounded_isolation([sys.executable, "-c", "pass"], timeout_seconds=1)
+        self.assertNotEqual(clean["isolation_token"], another_clean["isolation_token"])
+        timed_out = MODULE.run_bounded_isolation([sys.executable, "-c", "import time; time.sleep(5)"], timeout_seconds=0.05)
+        self.assertEqual(timed_out["outcome"], "timeout_cleanup_required")
+        self.assertTrue(timed_out["timeout"])
+        self.assertTrue(timed_out["cleanup_required"])
+        self.assertTrue(timed_out["cleanup_complete"])
+        term_resistant = MODULE.run_bounded_isolation(
+            [sys.executable, "-c", "import signal, time; signal.signal(signal.SIGTERM, lambda *_: None); time.sleep(5)"],
+            timeout_seconds=0.05,
+        )
+        self.assertEqual(term_resistant["outcome"], "timeout_cleanup_required")
+        self.assertTrue(term_resistant["cleanup_complete"])
+        sentinel = subprocess.Popen([sys.executable, "-c", "import time; time.sleep(5)"], start_new_session=True)
+        try:
+            leaked = MODULE.run_bounded_isolation([sys.executable, "-c", "import subprocess, sys; subprocess.Popen([sys.executable, '-c', 'import time; time.sleep(5)'])"], timeout_seconds=1)
+            self.assertEqual(leaked["outcome"], "leak_cleanup_required")
+            self.assertTrue(leaked["leak_detected"])
+            self.assertTrue(leaked["cleanup_required"])
+            self.assertTrue(leaked["cleanup_complete"])
+            self.assertEqual(leaked["surviving_pids"], [])
+            self.assertIsNone(sentinel.poll())
+            self.assertNotEqual(os.getpgid(sentinel.pid), leaked["runner_pgid"])
+            grandchild = MODULE.run_bounded_isolation(
+                [sys.executable, "-c", "import subprocess, sys; subprocess.Popen([sys.executable, '-c', \"import subprocess, sys, time; subprocess.Popen([sys.executable, '-c', 'import time; time.sleep(5)']); time.sleep(5)\"])",],
+                timeout_seconds=1,
+            )
+            self.assertEqual(grandchild["outcome"], "leak_cleanup_required")
+            self.assertTrue(grandchild["leak_detected"])
+            self.assertTrue(grandchild["cleanup_complete"])
+        finally:
+            sentinel.terminate()
+            sentinel.wait(timeout=2)
+
+    def test_invalid_process_receipt_is_not_proven(self) -> None:
+        before = self.snapshot()
+        for record in before["worktrees"]:
+            if record["path"] == "/repo-worker":
+                record["git_index"] = "/repo/.git/worktrees/worker/index"
+        invalid = self.clean_process_receipt()
+        invalid["isolation_token"] = "not-a-fresh-token"
+        receipt = MODULE.candidate_git_audit(
+            before,
+            json.loads(json.dumps(before)),
+            {
+                "worktree": "/repo-worker",
+                "branch": "worker",
+                "index": "/repo/.git/worktrees/worker/index",
+                "declared_paths": ["allowed"],
+            },
+            process_receipt=invalid,
+        )
+        self.assertEqual(receipt["result"], "NOT_PROVEN", receipt)
+        self.assertIn("isolation receipt is invalid", receipt["findings"])
 
     def test_unborn_repository_is_inventoryable(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
