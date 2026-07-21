@@ -58,7 +58,7 @@ jobs:
       markdown: ${{ steps.release.outputs.release == 'true' || steps.filter.outputs.markdown }}
       corpus: ${{ steps.release.outputs.release == 'true' || steps.filter.outputs.corpus }}
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - name: Detect release tag push or merge-queue (force full run)
         id: release
         shell: bash
@@ -180,7 +180,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           # Full history keeps changed-scope and repository checks reproducible
           # for tag, PR, and manual runs.
@@ -268,7 +268,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           # Full history keeps range-sensitive tests reproducible.
           fetch-depth: 0
@@ -488,7 +488,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
       - name: Scan for secrets
         if: needs.changes.outputs.go == 'true' || needs.changes.outputs.shell == 'true' || needs.changes.outputs.skills == 'true' || needs.changes.outputs.ci == 'true'
