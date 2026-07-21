@@ -35,9 +35,9 @@ The deployment is intentionally smaller than a traditional Gas Town:
   not exactly the selected rig root;
 - one caller-selected AgentOps pack binding at city and primary-rig scopes;
 - the built-in Codex and Claude providers with full SDK option-schema
-  replacements exposing Codex's bounded auto-edit default, Refiner-only
-  unrestricted delivery choices, Claude's safety-classified `auto` mode, and
-  explicit role-selectable model choices;
+  replacements exposing Codex's bounded auto-edit default, interactive
+  unrestricted sessions where explicitly selected, Claude's safety-classified
+  `auto` mode, and explicit role-selectable model choices;
 - Codex workspace-write network access enabled for the private loopback Dolt
   endpoint, without broadening its declared writable roots;
 - GC-owned interactive tmux sessions for every Claude role, with empty
@@ -64,8 +64,9 @@ identity.
 
 When selected, `agentops-factory` imports the one-loop target: Fable Mayor,
 Sol plan and fresh validation, Terra-high/Opus-medium implementation, and a
-model-free serialized Refinery. Fable Refiner is zero-or-one read-only ambiguity
-advice; Luna-high is support-only. The program records requested and actual
+model-free serialized Refinery. Fable Refiner is zero-or-one nonbinding
+ambiguity advice, but GC33-3 keeps its dispatch closed pending GC33-4 process
+isolation; Luna-high is support-only. The program records requested and actual
 role, model, provider, reasoning, and fallback facts in the 3.3-authoritative
 `factory-role-request.v2` and `factory-role-response.v2` contracts. The work
 unit is still a bead, never the pack. Candidate rigs expose their admitted

@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agentops.local/schemas/ambiguity-advice.v1.schema.json",
+  "title": "Nonbinding ambiguity advice",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "request_id", "context_id", "finding", "nonbinding", "mutates_artifacts"],
+  "properties": {
+    "schema_version": {"const": "ambiguity-advice.v1"},
+    "request_id": {"type": "string", "minLength": 1},
+    "context_id": {"type": "string", "minLength": 1},
+    "finding": {"type": "string", "minLength": 1},
+    "nonbinding": {"const": true},
+    "mutates_artifacts": {"const": false}
+  }
+}

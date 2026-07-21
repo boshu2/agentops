@@ -60,6 +60,10 @@ case "${1:-}" in
     printf 'ARGS' >"$fake_root/claude-interactive.log"
     printf ' <%s>' "$@" >>"$fake_root/claude-interactive.log"
     printf '\n' >>"$fake_root/claude-interactive.log"
+    printf 'CREDENTIALS GITHUB_TOKEN=%s GH_TOKEN=%s GIT_ASKPASS=%s SSH_ASKPASS=%s SSH_AUTH_SOCK=%s\n' \
+      "${GITHUB_TOKEN-<unset>}" "${GH_TOKEN-<unset>}" \
+      "${GIT_ASKPASS-<unset>}" "${SSH_ASKPASS-<unset>}" \
+      "${SSH_AUTH_SOCK-<unset>}" >>"$fake_root/claude-interactive.log"
     exit "${FAKE_CLAUDE_INTERACTIVE_EXIT:-0}"
     ;;
   *) exit 2 ;;
@@ -280,7 +284,6 @@ for role, provider in (
     ("implementer", "codex"),
     ("implementer-claude", "claude"),
     ("validator", "codex"),
-    ("validator-claude", "claude"),
 ):
     local_name = f"{binding}.{role}"
     workspace_patches = [
@@ -449,7 +452,7 @@ run_bootstrap() {
 
   run run_bootstrap
   [ "$status" -eq 0 ]
-  [ "$(grep -c '^\[\[patches.agent\]\]$' "$CITY/city.toml")" -eq 11 ]
+  [ "$(grep -c '^\[\[patches.agent\]\]$' "$CITY/city.toml")" -eq 10 ]
 }
 
 @test "bootstrap creates an isolated dual-provider city without starting it" {
@@ -555,7 +558,7 @@ assert [
     patch for patch in patches
     if patch.get("name") == "core.control-dispatcher" and patch.get("dir") == "agentops" and patch.get("suspended") is True
 ] == [{"dir": "agentops", "name": "core.control-dispatcher", "suspended": True}]
-for role in ("implementer", "implementer-claude", "validator", "validator-claude"):
+for role in ("implementer", "implementer-claude", "validator"):
     assert [
         patch for patch in patches
         if patch.get("name") == f"agentops.{role}" and patch.get("dir") == "agentops"
@@ -577,11 +580,12 @@ assert config["providers"]["claude"]["command"] == os.path.join(city, ".gc", "bi
 assert config["providers"]["claude"]["path_check"] == "claude"
 assert "-p" not in config["providers"]["claude"]["args_append"]
 assert "--print" not in config["providers"]["claude"]["args_append"]
-for provider_name, expected_default, expected_model, expected_choices, expected_models in (
+for provider_name, expected_default, expected_model, expected_effort, expected_choices, expected_models, expected_efforts in (
     (
         "codex",
         "auto-edit",
         "gpt-5.6-terra",
+        "high",
         {
             "auto-edit": [
                 "--sandbox",
@@ -597,23 +601,31 @@ for provider_name, expected_default, expected_model, expected_choices, expected_
             "gpt-5.6-terra": ["--model", "gpt-5.6-terra"],
             "gpt-5.6-sol": ["--model", "gpt-5.6-sol"],
         },
+        {"high": ["-c", "model_reasoning_effort=high"]},
     ),
     (
         "claude",
         "unrestricted",
         "opus-4.8",
+        "medium",
         {
             "auto": ["--permission-mode", "auto"],
             "unrestricted": ["--dangerously-skip-permissions"],
         },
         {
             "opus-4.8": ["--model", "claude-opus-4-8"],
+            "fable-5": ["--model", "claude-fable-5"],
+        },
+        {
+            "medium": ["--effort", "medium"],
+            "adaptive": [],
         },
     ),
 ):
     provider = config["providers"][provider_name]
     assert provider["option_defaults"]["permission_mode"] == expected_default
     assert provider["option_defaults"]["model"] == expected_model
+    assert provider["option_defaults"]["effort"] == expected_effort
     assert provider["options_schema_merge"] == "replace"
     options = {option["key"]: option for option in provider["options_schema"]}
     option = options["permission_mode"]
@@ -626,6 +638,11 @@ for provider_name, expected_default, expected_model, expected_choices, expected_
         choice["value"]: choice["flag_args"] for choice in model_option["choices"]
     }
     assert actual_models == expected_models
+    effort_option = options["effort"]
+    actual_efforts = {
+        choice["value"]: choice["flag_args"] for choice in effort_option["choices"]
+    }
+    assert actual_efforts == expected_efforts
 PY
   python3 - "$CITY/.gc/codex-home/config.toml" "$RIG" <<'PY'
 import os
@@ -729,7 +746,7 @@ PY
   [ "$(grep -c 'ADOPT <1>' "$FAKE_LOG")" -eq 1 ]
   [ "$(grep -c '^\[imports.agentops\]$' "$CITY/pack.toml")" -eq 1 ]
   [ "$(grep -c '^\[rigs.imports.agentops\]$' "$CITY/city.toml")" -eq 1 ]
-  [ "$(grep -c '^\[\[patches.agent\]\]$' "$CITY/city.toml")" -eq 11 ]
+  [ "$(grep -c '^\[\[patches.agent\]\]$' "$CITY/city.toml")" -eq 10 ]
   [ "$(shasum -a 256 "$CITY/.gc-home/supervisor.toml" | awk '{print $1}')" = "$supervisor_config_digest" ]
   python3 - "$CITY/.gc/codex-home/config.toml" "$RIG" <<'PY'
 import os
@@ -883,6 +900,22 @@ PY
   [ "$(find "$diagnostics" -name '*.exit' | wc -l | tr -d ' ')" -eq 1 ]
   grep -Fq 'exit_code=17' "$diagnostics"/*.exit
   ! grep -Eq '(^|[[:space:]])(-p|--print)($|[[:space:]])' "$TMP/claude-interactive.log"
+}
+
+@test "Claude wrapper strips forge and Git credentials from Fable launches" {
+  run run_bootstrap
+  [ "$status" -eq 0 ]
+
+  run env GITHUB_TOKEN=github GH_TOKEN=gh GIT_ASKPASS=git-askpass \
+    SSH_ASKPASS=ssh-askpass SSH_AUTH_SOCK=ssh-agent \
+    "$CITY/.gc/bin/claude-interactive" \
+    --model claude-fable-5 --dangerously-skip-permissions
+  [ "$status" -eq 0 ]
+
+  grep -Fq 'ARGS <--model> <claude-fable-5> <--dangerously-skip-permissions>' \
+    "$TMP/claude-interactive.log"
+  grep -Fq 'CREDENTIALS GITHUB_TOKEN=<unset> GH_TOKEN=<unset> GIT_ASKPASS=<unset> SSH_ASKPASS=<unset> SSH_AUTH_SOCK=<unset>' \
+    "$TMP/claude-interactive.log"
 }
 
 @test "bootstrap preserves interleaved extra rigs and refreshes provider directory grants" {

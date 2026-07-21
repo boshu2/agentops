@@ -35,7 +35,7 @@ prompt_mode = "none"
 # so automation must explicitly bypass that otherwise-interactive prompt.
 args_append = ["--dangerously-bypass-hook-trust", "__GC_AGENTOPS_CODEX_SCOPE_ARGS__"]
 options_schema_merge = "replace"
-option_defaults = { permission_mode = "auto-edit", model = "gpt-5.6-terra" }
+option_defaults = { permission_mode = "auto-edit", model = "gpt-5.6-terra", effort = "high" }
 env = { CODEX_HOME = "__GC_AGENTOPS_CODEX_HOME__" }
 
 [[providers.codex.options_schema]]
@@ -51,7 +51,7 @@ default = "auto-edit"
 
   [[providers.codex.options_schema.choices]]
   value = "unrestricted"
-  label = "Git delivery authority (Refiner only)"
+  label = "Unrestricted managed session"
   flag_args = ["--dangerously-bypass-approvals-and-sandbox"]
 
 [[providers.codex.options_schema]]
@@ -70,6 +70,17 @@ default = "gpt-5.6-terra"
   label = "GPT-5.6 Sol judge"
   flag_args = ["--model", "gpt-5.6-sol"]
 
+[[providers.codex.options_schema]]
+key = "effort"
+label = "Role-pinned reasoning effort"
+type = "select"
+default = "high"
+
+  [[providers.codex.options_schema.choices]]
+  value = "high"
+  label = "High reasoning"
+  flag_args = ["-c", "model_reasoning_effort=high"]
+
 [providers.claude]
 base = "builtin:claude"
 command = "__GC_AGENTOPS_CLAUDE_WRAPPER__"
@@ -82,7 +93,7 @@ path_check = "claude"
 args_append = ["__GC_AGENTOPS_CLAUDE_SCOPE_ARGS__"]
 print_args = []
 options_schema_merge = "replace"
-option_defaults = { permission_mode = "unrestricted", model = "opus-4.8" }
+option_defaults = { permission_mode = "unrestricted", model = "opus-4.8", effort = "medium" }
 
 [[providers.claude.options_schema]]
 key = "permission_mode"
@@ -97,7 +108,7 @@ default = "unrestricted"
 
   [[providers.claude.options_schema.choices]]
   value = "unrestricted"
-  label = "Git delivery authority (Refiner only)"
+  label = "Unrestricted interactive session"
   flag_args = ["--dangerously-skip-permissions"]
 
 [[providers.claude.options_schema]]
@@ -110,6 +121,27 @@ default = "opus-4.8"
   value = "opus-4.8"
   label = "Claude Opus 4.8"
   flag_args = ["--model", "claude-opus-4-8"]
+
+  [[providers.claude.options_schema.choices]]
+  value = "fable-5"
+  label = "Claude Fable 5"
+  flag_args = ["--model", "claude-fable-5"]
+
+[[providers.claude.options_schema]]
+key = "effort"
+label = "Role-pinned reasoning effort"
+type = "select"
+default = "medium"
+
+  [[providers.claude.options_schema.choices]]
+  value = "medium"
+  label = "Medium reasoning"
+  flag_args = ["--effort", "medium"]
+
+  [[providers.claude.options_schema.choices]]
+  value = "adaptive"
+  label = "Adaptive role policy (no launch flag)"
+  flag_args = []
 
 
 # Gas City's scaffold imports maintenance workers and turns every provider

@@ -326,47 +326,57 @@ class FactoryTests(unittest.TestCase):
         with self.assertRaisesRegex(factory.FactoryError, "validator_model_policy must be opus-4.8"):
             factory.validate_graph(wrong_validator)
 
-    def test_role_inventory_maps_terra_sol_and_opus_without_a_fable_alias(self) -> None:
-        self.assertEqual(factory.FACTORY_ROLE_MODELS[("implement", "codex")], ("gpt-5.6-terra", "gpt-5.6-terra"))
-        for role in ("validate", "mayor", "rescope", "plan-review", "refiner"):
-            self.assertEqual(factory.FACTORY_ROLE_MODELS[(role, "codex")], ("gpt-5.6-sol", "gpt-5.6-sol"))
-        for role in ("implement", "validate", "mayor", "rescope", "plan-review", "refiner"):
-            self.assertEqual(factory.FACTORY_ROLE_MODELS[(role, "claude")], ("opus-4.8", "claude-opus-4-8"))
-        self.assertNotIn("fable", repr(factory.FACTORY_ROLE_MODELS).lower())
-        self.assertEqual(factory.lifecycle_target("mayor", "claude", "repo", "factory"), "factory.mayor-claude")
-        self.assertEqual(factory.lifecycle_target("refiner", "claude", "repo", "factory"), "repo/factory.refiner-claude")
+    def test_role_inventory_uses_the_locked_concrete_role_pack(self) -> None:
+        expected = {
+            "mayor": ("claude", "fable-5", "adaptive"),
+            "plan-reviewer": ("codex", "gpt-5.6-sol", "high"),
+            "refiner": ("claude", "fable-5", "adaptive"),
+        }
+        for role, (provider, model, effort) in expected.items():
+            config = factory.tomllib.loads(
+                (factory.PACK_ROOT / "agents" / role / "agent.toml").read_text(encoding="utf-8")
+            )
+            self.assertEqual(config["provider"], provider)
+            self.assertEqual(config["option_defaults"]["model"], model)
+            self.assertEqual(config["option_defaults"]["effort"], effort)
+        self.assertEqual(factory.lifecycle_target("mayor", "claude", "repo", "factory"), "factory.mayor")
+        self.assertEqual(factory.lifecycle_target("refiner", "claude", "repo", "factory"), "repo/factory.refiner")
 
     def test_lifecycle_prompts_keep_candidate_validator_policy_distinct_from_workers(self) -> None:
-        for role in ("mayor", "mayor-claude", "plan-reviewer", "plan-reviewer-claude"):
+        for role in ("mayor", "plan-reviewer"):
             prompt = (factory.PACK_ROOT / "agents" / role / "prompt.template.md").read_text(encoding="utf-8")
-            self.assertIn("Codex candidate Validator", prompt, role)
+            self.assertIn("Sol-high", prompt, role)
             self.assertIn("Sol", prompt, role)
-            self.assertIn("Never infer Validator policy from Worker policy", prompt, role)
+            self.assertIn("Never infer Validator policy", prompt, role)
             self.assertIn(
                 '--set-metadata gc.outcome=pass --set-metadata gc.work_outcome=no-op',
                 prompt,
                 role,
             )
 
-    def test_refiners_continue_one_long_running_delivery_process(self) -> None:
-        for role in ("refiner", "refiner-claude"):
-            prompt = (factory.PACK_ROOT / "agents" / role / "prompt.template.md").read_text(encoding="utf-8")
-            self.assertIn("600000 milliseconds", prompt, role)
-            self.assertIn("Never launch a second delivery process", prompt, role)
-            self.assertIn("same background task or session handle", prompt, role)
+    def test_refiner_is_a_bounded_nonbinding_ambiguity_adviser(self) -> None:
+        prompt = (factory.PACK_ROOT / "agents" / "refiner" / "prompt.template.md").read_text(encoding="utf-8")
+        self.assertIn("ambiguity", prompt)
+        self.assertIn("nonbinding", prompt)
+        self.assertIn("must not", prompt.lower())
+        self.assertIn("run a Refinery or delivery transition", prompt)
 
-    def test_factory_commands_default_to_the_deployment_import_binding(self) -> None:
+    def test_legacy_v1_factory_entry_points_are_not_composable(self) -> None:
         command_action = next(action for action in factory.parser()._actions if action.dest == "command")
-        for command in ("plan", "admit"):
-            command_parser = command_action.choices[command]
-            binding_action = next(action for action in command_parser._actions if action.dest == "binding")
-            self.assertEqual(binding_action.default, "agentops", command)
+        self.assertEqual(
+            set(command_action.choices),
+            {"inspect-role-v2", "emit-role-v2", "doctor"},
+        )
+
+    def test_removed_program_and_refinery_pack_commands_are_unreachable(self) -> None:
+        for command in ("program", "refinery"):
+            self.assertFalse(
+                (factory.PACK_ROOT / "commands" / command / "command.toml").is_file(),
+                command,
+            )
 
     def test_lifecycle_roles_use_stable_role_work_directories(self) -> None:
-        for role in (
-            "mayor", "mayor-claude", "plan-reviewer", "plan-reviewer-claude",
-            "refiner", "refiner-claude",
-        ):
+        for role in ("mayor", "plan-reviewer", "refiner"):
             config = factory.tomllib.loads(
                 (factory.PACK_ROOT / "agents" / role / "agent.toml").read_text(encoding="utf-8")
             )
@@ -378,9 +388,8 @@ class FactoryTests(unittest.TestCase):
             ROOT / "packs" / "agentops-executor" / "agents",
         )
         seen: set[str] = set()
-        work_queries: set[str] = set()
         for role_root in role_roots:
-            for role_dir in sorted(path for path in role_root.iterdir() if path.is_dir()):
+            for role_dir in sorted(path for path in role_root.iterdir() if (path / "agent.toml").is_file()):
                 config = factory.tomllib.loads(
                     (role_dir / "agent.toml").read_text(encoding="utf-8")
                 )
@@ -388,20 +397,14 @@ class FactoryTests(unittest.TestCase):
                 self.assertEqual(config.get("wake_mode"), "fresh", role_dir.name)
                 self.assertEqual(config.get("install_agent_hooks"), [provider], role_dir.name)
                 self.assertNotIn("nudge", config, role_dir.name)
-                work_query = config.get("work_query", "")
-                self.assertIn("GC_TRIGGER_WORK_BEAD_ID", work_query, role_dir.name)
-                self.assertIn('bd show "$trigger" --json', work_query, role_dir.name)
-                self.assertLess(work_query.index("bd show"), work_query.index("bd list"), role_dir.name)
-                self.assertLess(work_query.index("bd show"), work_query.rindex("bd ready"), role_dir.name)
-                subprocess.run(["/bin/sh", "-n", "-c", work_query], check=True)
-                work_queries.add(work_query)
+                self.assertNotIn("work_query", config, role_dir.name)
                 prompt = (role_dir / "prompt.template.md").read_text(encoding="utf-8")
-                self.assertIn("$GC_TRIGGER_WORK_BEAD_ID", prompt, role_dir.name)
-                self.assertIn("action=drain", prompt, role_dir.name)
-                self.assertIn("reason=no_work", prompt, role_dir.name)
+                self.assertNotIn("work_query", prompt, role_dir.name)
                 seen.add(role_dir.name)
-        self.assertEqual(len(seen), 10)
-        self.assertEqual(len(work_queries), 1)
+        self.assertEqual(seen, {
+            "mayor", "plan-reviewer", "refiner",
+            "implementer", "implementer-claude", "validator",
+        })
 
     def test_admission_atomically_materializes_one_bead_graph(self) -> None:
         graph = self.graph([self.node("alpha", "src/alpha")])
@@ -439,7 +442,7 @@ class FactoryTests(unittest.TestCase):
             "schema_version": "factory-role-request.v1",
             "request_id": "factory-test-mayor",
             "role": "mayor",
-            "provider": "codex",
+            "provider": "claude",
             "program_id": "factory-test",
             "workspace": str(self.repo),
             "intent_source": str(self.intent),
@@ -458,7 +461,7 @@ class FactoryTests(unittest.TestCase):
             "GC_SESSION_ID": "mayor-session",
             "GC_SESSION_NAME": "mayor-1",
             "GC_TEMPLATE": "factory.mayor",
-            "GC_PROVIDER": "codex",
+            "GC_PROVIDER": "claude",
         }
 
         with mock.patch.dict(factory.os.environ, runtime, clear=False), contextlib.redirect_stdout(io.StringIO()):
@@ -640,7 +643,7 @@ class FactoryTests(unittest.TestCase):
             "schema_version": "factory-role-request.v1",
             "request_id": "factory-test-mayor-resume",
             "role": "mayor",
-            "provider": "codex",
+            "provider": "claude",
             "program_id": "factory-test",
             "workspace": str(self.repo),
             "intent_source": str(self.intent),
@@ -659,7 +662,7 @@ class FactoryTests(unittest.TestCase):
             "schema_version": "factory-role-response.v1",
             "request_id": request["request_id"],
             "role": "mayor",
-            "provider": "codex",
+            "provider": "claude",
             "bead_id": "hq-planning",
             "session_context_id": "mayor-session",
             "session_name": "mayor-1",
@@ -678,8 +681,8 @@ class FactoryTests(unittest.TestCase):
             },
         })
         session = {
-            "session_name": "mayor-1", "template": "factory.mayor", "provider": "codex",
-            "model": "gpt-5.6-sol", "model_source": "launch_command",
+            "session_name": "mayor-1", "template": "factory.mayor", "provider": "claude",
+            "model": "claude-opus-4-8", "model_source": "launch_command",
         }
 
         with (
@@ -691,7 +694,7 @@ class FactoryTests(unittest.TestCase):
 
         self.assertEqual(resumed["work_bead"], "hq-planning")
         self.assertEqual(resumed["session_context_id"], "mayor-session")
-        self.assertEqual(beads.records["hq-planning"]["metadata"]["factory.model"], "gpt-5.6-sol")
+        self.assertEqual(beads.records["hq-planning"]["metadata"]["factory.model"], "claude-opus-4-8")
         self.assertEqual(beads.records["hq-planning"]["metadata"]["factory.model_source"], "launch_command")
 
     def test_runtime_session_falls_back_to_closed_city_session_bead(self) -> None:
@@ -728,6 +731,8 @@ class FactoryTests(unittest.TestCase):
             "status": "closed",
             "model": "gpt-5.6-sol",
             "model_source": "launch_command",
+            "command": "codex --model gpt-5.6-sol",
+            "live_model_observed": False,
         })
 
     def test_runtime_session_rejects_malformed_durable_session_identity(self) -> None:
@@ -791,7 +796,7 @@ class FactoryTests(unittest.TestCase):
             "schema_version": "factory-role-request.v1",
             "request_id": "factory-test-mayor-crash-recovery",
             "role": "mayor",
-            "provider": "codex",
+            "provider": "claude",
             "program_id": "factory-test",
             "workspace": str(self.repo),
             "intent_source": str(self.intent),
@@ -812,7 +817,7 @@ class FactoryTests(unittest.TestCase):
                 "schema_version": "factory-role-response.v1",
                 "request_id": request["request_id"],
                 "role": "mayor",
-                "provider": "codex",
+                "provider": "claude",
                 "bead_id": "hq-planning",
                 "session_context_id": "mayor-session",
                 "session_name": "mayor-1",
@@ -847,8 +852,8 @@ class FactoryTests(unittest.TestCase):
 
         beads.show = close_with_final_response  # type: ignore[method-assign]
         session = {
-            "session_name": "mayor-1", "template": "factory.mayor", "provider": "codex",
-            "model": "gpt-5.6-sol", "model_source": "launch_command",
+            "session_name": "mayor-1", "template": "factory.mayor", "provider": "claude",
+            "model": "claude-opus-4-8", "model_source": "launch_command",
         }
         with (
             mock.patch.object(factory, "Beads", return_value=beads),
@@ -966,75 +971,6 @@ class FactoryTests(unittest.TestCase):
         result = json.loads(stdout.getvalue())
         self.assertEqual(result["executed"], 1)
         self.assertEqual(result["waves"][0][0]["bead"], "bd-experiment")
-
-    def test_program_execute_routes_dependency_ready_refinery_to_sol_refiner(self) -> None:
-        beads = FakeBeads({
-            "bd-program": {
-                "id": "bd-program", "status": "open",
-                "metadata": {
-                    "factory.kind": "program",
-                    "factory.refinery_bead": "bd-refinery",
-                    "factory.binding": "factory",
-                    "factory.refiner_provider": "codex",
-                },
-            },
-            "bd-refinery": {
-                "id": "bd-refinery", "status": "open", "assignee": None,
-                "metadata": {
-                    "factory.kind": "refinery",
-                    "factory.program_bead": "bd-program",
-                    "factory.binding": "factory",
-                    "factory.refiner_provider": "codex",
-                    "factory.integration_validator_provider": "claude",
-                },
-            },
-        }, {"bd-refinery"})
-        args = types.SimpleNamespace(
-            rig="repo", program_bead="bd-program", bead=[],
-            worktree_root=str(self.root / "route-refinery-worktrees"),
-            max_parallel=1, max_attempts=3, timeout=30, result=None,
-        )
-        sling_result = json.dumps({"success": True, "bead_id": "bd-refinery"})
-        with (
-            mock.patch.object(factory, "Beads", return_value=beads),
-            mock.patch.object(factory, "gc_binary", return_value="/gc"),
-            mock.patch.object(factory, "city_path", return_value=str(self.root / "city")),
-            mock.patch.object(factory, "output", return_value=sling_result) as output,
-            contextlib.redirect_stdout(io.StringIO()) as stdout,
-        ):
-            self.assertEqual(factory.command_execute(args), 0)
-
-        command = output.call_args.args[0]
-        self.assertIn("repo/factory.refiner", command)
-        self.assertIn("bd-refinery", command)
-        result = json.loads(stdout.getvalue())
-        self.assertTrue(result["refinery_ready"])
-        self.assertEqual(result["refinery_route"], "repo/factory.refiner")
-        self.assertEqual(result["executed"], 0)
-
-    def test_ready_refinery_can_route_to_opus_refiner_with_sol_integration_validator(self) -> None:
-        beads = FakeBeads({
-            "bd-refinery": {
-                "id": "bd-refinery", "status": "open", "assignee": None,
-                "metadata": {
-                    "factory.kind": "refinery", "factory.binding": "factory",
-                    "factory.refiner_provider": "claude",
-                    "factory.integration_validator_provider": "codex",
-                },
-            },
-        }, {"bd-refinery"})
-        sling_result = json.dumps({"success": True, "bead_id": "bd-refinery"})
-        with (
-            mock.patch.object(factory, "gc_binary", return_value="/gc"),
-            mock.patch.object(factory, "city_path", return_value=str(self.root / "city")),
-            mock.patch.object(factory, "output", return_value=sling_result) as output,
-        ):
-            target = factory.route_ready_refinery(
-                beads, "repo", {"factory.refinery_bead": "bd-refinery"},
-            )
-
-        self.assertEqual(target, "repo/factory.refiner-claude")
-        self.assertIn("repo/factory.refiner-claude", output.call_args.args[0])
 
     def test_resume_experiment_rejoins_the_automatic_refinery_route(self) -> None:
         beads, record, _verdict_args = self.leased_experiment("PASS")
@@ -1657,293 +1593,6 @@ class FactoryTests(unittest.TestCase):
             with self.assertRaisesRegex(factory.FactoryError, "lease token or fence epoch is stale"):
                 factory.command_record_verdict(args)
         self.assertEqual(beads.events, [])
-
-    def test_refinery_integrates_pass_certificates_in_predecessor_order(self) -> None:
-        alpha_tree = self.root / "ref-alpha"
-        git(self.repo, "worktree", "add", "-b", "ref-alpha", str(alpha_tree), self.base_sha)
-        (alpha_tree / "alpha.txt").write_text("alpha\n", encoding="utf-8")
-        git(alpha_tree, "add", "alpha.txt")
-        git(alpha_tree, "commit", "-m", "alpha")
-        alpha_sha = git(alpha_tree, "rev-parse", "HEAD")
-
-        beta_tree = self.root / "ref-beta"
-        git(self.repo, "worktree", "add", "-b", "ref-beta", str(beta_tree), self.base_sha)
-        git(beta_tree, "cherry-pick", alpha_sha)
-        beta_base = git(beta_tree, "rev-parse", "HEAD")
-        (beta_tree / "beta.txt").write_text("beta\n", encoding="utf-8")
-        git(beta_tree, "add", "beta.txt")
-        git(beta_tree, "commit", "-m", "beta")
-        beta_sha = git(beta_tree, "rev-parse", "HEAD")
-
-        def admitted(bead_id: str, node_id: str, candidate_sha: str, candidate_base: str,
-                     predecessors: list[str], predecessor_shas: list[str], scope: str) -> dict:
-            certificate = self.root / f"{bead_id}-admission.json"
-            certificate.write_text(json.dumps({
-                "candidate_sha": candidate_sha,
-                "candidate_base_sha": candidate_base,
-                "predecessor_beads": predecessors,
-                "predecessor_shas": predecessor_shas,
-                "verdict": "PASS",
-            }) + "\n", encoding="utf-8")
-            return {
-                "id": bead_id,
-                "status": "closed",
-                "metadata": {
-                    "factory.kind": "experiment",
-                    "factory.program_bead": "bd-program",
-                    "factory.node_id": node_id,
-                    "factory.verdict": "PASS",
-                    "factory.candidate_sha": candidate_sha,
-                    "factory.candidate_base_sha": candidate_base,
-                    "factory.predecessor_beads": predecessors,
-                    "factory.predecessor_shas": predecessor_shas,
-                    "factory.admission_path": str(certificate),
-                    "factory.admission_digest": hashlib.sha256(certificate.read_bytes()).hexdigest(),
-                    "factory.subject": json.dumps({"includes": [scope], "excludes": []}),
-                    "factory.write_scope": json.dumps([scope]),
-                    "factory.generated_scope": "[]",
-                },
-            }
-
-        alpha = admitted("bd-alpha", "alpha", alpha_sha, self.base_sha, [], [], "alpha.txt")
-        beta = admitted("bd-beta", "beta", beta_sha, beta_base, ["bd-alpha"], [alpha_sha], "beta.txt")
-        # Local experiment scopes exclude their sibling to prevent concurrent
-        # writers from crossing ownership boundaries. Those local exclusions
-        # must not erase the sibling from the assembled integration subject.
-        alpha["metadata"]["factory.subject"] = json.dumps({
-            "includes": ["alpha.txt"], "excludes": ["beta.txt"],
-        })
-        beta["metadata"]["factory.subject"] = json.dumps({
-            "includes": ["beta.txt"], "excludes": ["alpha.txt"],
-        })
-        refinery = {
-            "id": "bd-refinery",
-            "status": "in_progress",
-            "assignee": "refiner-session",
-            "dependencies": [
-                {"id": "bd-alpha", "dependency_type": "blocks", "status": "closed"},
-                {"id": "bd-beta", "dependency_type": "blocks", "status": "closed"},
-            ],
-            "metadata": {
-                "factory.kind": "refinery",
-                "factory.status": "blocked",
-                "factory.program_id": "factory-test",
-                "factory.program_bead": "bd-program",
-                "factory.binding": "factory",
-                "factory.repository": str(self.repo),
-                "factory.base_branch": "main",
-                "factory.base_sha": self.base_sha,
-                "factory.intent_digest": "5" * 64,
-                "factory.fence_epoch": "0",
-                "factory.refiner_provider": "codex",
-                "factory.integration_validator_provider": "claude",
-                "gc.routed_to": "repo/factory.refiner",
-                "gc.session_name": "refiner-session",
-            },
-        }
-        beads = FakeBeads({
-            "bd-alpha": alpha, "bd-beta": beta, "bd-refinery": refinery,
-        }, {"bd-refinery"})
-        args = types.SimpleNamespace(
-            rig="repo", refinery_bead="bd-refinery",
-            worktree_root=str(self.root / "integration-worktrees"),
-            max_candidates=5, remote="origin", merge_slot_timeout=30,
-        )
-        refiner_runtime = {
-            "id": "refiner-context",
-            "session_name": "refiner-session",
-            "template": "repo/factory.refiner",
-            "provider": "codex",
-            "model": "gpt-5.6-sol",
-            "model_source": "launch_command",
-        }
-        runtime = mock.patch.object(factory, "runtime_session", return_value=refiner_runtime)
-        environment = mock.patch.dict(factory.os.environ, {
-            "GC_SESSION_ID": "refiner-context",
-            "GC_SESSION_NAME": "refiner-session",
-        }, clear=False)
-        with mock.patch.object(factory, "Beads", return_value=beads), mock.patch.object(
-            factory, "register_integration_rig", return_value=("fx-refinery", "factory"),
-        ), runtime, environment, contextlib.redirect_stdout(io.StringIO()):
-            self.assertEqual(factory.command_refinery_assemble(args), 0)
-
-        meta = refinery["metadata"]
-        integration = Path(meta["factory.integration_worktree"])
-        self.assertEqual((integration / "alpha.txt").read_text(encoding="utf-8"), "alpha\n")
-        self.assertEqual((integration / "beta.txt").read_text(encoding="utf-8"), "beta\n")
-        self.assertEqual(meta["factory.candidate_beads"], ["bd-alpha", "bd-beta"])
-        self.assertEqual(meta["factory.refiner_context_id"], "refiner-context")
-        self.assertEqual(meta["factory.refiner_model"], "gpt-5.6-sol")
-        self.assertEqual(meta["factory.refiner_model_policy"], "gpt-5.6-sol")
-        self.assertEqual(meta["factory.status"], "validation_required")
-        self.assertEqual(meta["factory.merge_slot_id"], "bd-merge-slot")
-        self.assertEqual(meta["factory.merge_slot_holder"], "factory-refinery:bd-refinery")
-        self.assertEqual(meta["factory.merge_slot_released"], "true")
-        self.assertIn(("merge_slot_acquire", "factory-refinery:bd-refinery", 30), beads.events)
-        self.assertIn(("merge_slot_release", "factory-refinery:bd-refinery", "bd-merge-slot"), beads.events)
-        self.assertTrue(Path(meta["factory.integration_subject_manifest"]).is_file())
-        self.assertEqual(meta["factory.integration_subject"], {
-            "includes": ["alpha.txt", "beta.txt"], "excludes": [],
-        })
-        subject_manifest = json.loads(
-            Path(meta["factory.integration_subject_manifest"]).read_text(encoding="utf-8")
-        )
-        self.assertEqual(
-            [entry["path"] for entry in subject_manifest["entries"]],
-            ["alpha.txt", "beta.txt"],
-        )
-        scope = json.loads(Path(meta["factory.integration_scope_receipt"]).read_text(encoding="utf-8"))
-        self.assertEqual(scope["status"], "PASS")
-        integration_sha = meta["factory.integration_sha"]
-        meta["factory.status"] = "assembling"
-        with mock.patch.object(factory, "Beads", return_value=beads), mock.patch.object(
-            factory, "register_integration_rig", return_value=("fx-refinery", "factory"),
-        ), runtime, environment, contextlib.redirect_stdout(io.StringIO()):
-            self.assertEqual(factory.command_refinery_assemble(args), 0)
-        self.assertEqual(meta["factory.integration_sha"], integration_sha)
-        self.assertEqual(meta["factory.status"], "validation_required")
-        first_worktree = meta["factory.integration_worktree"]
-        meta["factory.status"] = "reassembly_required"
-        with mock.patch.object(factory, "Beads", return_value=beads), mock.patch.object(
-            factory, "register_integration_rig", return_value=("fx-refinery-2", "factory"),
-        ), runtime, environment, contextlib.redirect_stdout(io.StringIO()):
-            self.assertEqual(factory.command_refinery_assemble(args), 0)
-        self.assertEqual(meta["factory.fence_epoch"], "2")
-        self.assertNotEqual(meta["factory.integration_worktree"], first_worktree)
-        self.assertEqual((Path(meta["factory.integration_worktree"]) / "alpha.txt").read_text(), "alpha\n")
-        self.assertEqual((Path(meta["factory.integration_worktree"]) / "beta.txt").read_text(), "beta\n")
-
-    def test_refinery_claim_requires_closed_dependencies_and_exact_refiner_session(self) -> None:
-        refinery = {
-            "id": "bd-refinery",
-            "status": "in_progress",
-            "assignee": "wrong-session",
-            "dependencies": [
-                {"id": "bd-alpha", "dependency_type": "blocks", "status": "closed"},
-            ],
-            "metadata": {
-                "factory.kind": "refinery",
-                "factory.status": "blocked",
-                "factory.binding": "factory",
-                "factory.refiner_provider": "codex",
-                "factory.integration_validator_provider": "claude",
-                "gc.routed_to": "repo/factory.refiner",
-                "gc.session_name": "refiner-session",
-            },
-        }
-        beads = FakeBeads({"bd-refinery": refinery})
-        args = types.SimpleNamespace(
-            rig="repo", refinery_bead="bd-refinery",
-            worktree_root=str(self.root / "integration-worktrees"),
-            max_candidates=5, remote="origin", merge_slot_timeout=30,
-        )
-        with (
-            mock.patch.object(factory, "Beads", return_value=beads),
-            mock.patch.dict(factory.os.environ, {"GC_SESSION_NAME": "refiner-session"}, clear=False),
-        ):
-            with self.assertRaisesRegex(factory.FactoryError, "not owned by its routed Refiner session"):
-                factory.command_refinery_assemble(args)
-
-        refinery["assignee"] = "refiner-session"
-        with (
-            mock.patch.object(factory, "Beads", return_value=beads),
-            mock.patch.dict(factory.os.environ, {"GC_SESSION_NAME": "different-session"}, clear=False),
-            self.assertRaisesRegex(factory.FactoryError, "not owned by its routed Refiner session"),
-        ):
-            factory.command_refinery_assemble(args)
-
-        refinery["dependencies"][0]["status"] = "open"
-        with (
-            mock.patch.object(factory, "Beads", return_value=beads),
-            mock.patch.dict(factory.os.environ, {"GC_SESSION_NAME": "refiner-session"}, clear=False),
-        ):
-            with self.assertRaisesRegex(factory.FactoryError, "unresolved dependencies"):
-                factory.command_refinery_assemble(args)
-
-    def test_refinery_claim_accepts_canonical_gc_assignee_without_redundant_session_metadata(self) -> None:
-        refinery = {
-            "id": "bd-refinery",
-            "status": "in_progress",
-            "assignee": "refiner-session",
-            "dependencies": [],
-            "metadata": {
-                "factory.kind": "refinery",
-                "factory.status": "ready",
-                "factory.binding": "factory",
-                "factory.program_bead": "bd-program",
-                "factory.refiner_provider": "codex",
-                "factory.integration_validator_provider": "claude",
-                "gc.routed_to": "repo/factory.refiner",
-            },
-        }
-        beads = FakeBeads({"bd-refinery": refinery}, {"bd-refinery"})
-        args = types.SimpleNamespace(
-            rig="repo", refinery_bead="bd-refinery",
-            worktree_root=str(self.root / "integration-worktrees"),
-            max_candidates=5, remote="origin", merge_slot_timeout=30,
-        )
-        runtime = {
-            "id": "refiner-context",
-            "session_name": "refiner-session",
-            "template": "repo/factory.refiner",
-            "provider": "codex",
-            "model": "gpt-5.6-sol",
-            "model_source": "launch_command",
-        }
-        with (
-            mock.patch.object(factory, "Beads", return_value=beads),
-            mock.patch.object(factory, "runtime_session", return_value=runtime),
-            mock.patch.dict(factory.os.environ, {
-                "GC_SESSION_ID": "refiner-context",
-                "GC_SESSION_NAME": "refiner-session",
-            }, clear=False),
-            self.assertRaisesRegex(factory.FactoryError, "no PASSed experiment beads"),
-        ):
-            factory.command_refinery_assemble(args)
-        self.assertEqual(refinery["metadata"]["factory.refiner_context_id"], "refiner-context")
-        self.assertEqual(refinery["metadata"]["factory.refiner_model"], "gpt-5.6-sol")
-
-    def test_refinery_rejects_claimed_runtime_with_worker_model(self) -> None:
-        refinery = {
-            "id": "bd-refinery",
-            "status": "in_progress",
-            "assignee": "refiner-session",
-            "dependencies": [],
-            "metadata": {
-                "factory.kind": "refinery",
-                "factory.status": "ready",
-                "factory.binding": "factory",
-                "factory.refiner_provider": "codex",
-                "factory.integration_validator_provider": "claude",
-                "gc.routed_to": "repo/factory.refiner",
-                "gc.session_name": "refiner-session",
-            },
-        }
-        beads = FakeBeads({"bd-refinery": refinery}, {"bd-refinery"})
-        args = types.SimpleNamespace(
-            rig="repo", refinery_bead="bd-refinery",
-            worktree_root=str(self.root / "integration-worktrees"),
-            max_candidates=5, remote="origin", merge_slot_timeout=30,
-        )
-        worker_runtime = {
-            "id": "refiner-context",
-            "session_name": "refiner-session",
-            "template": "repo/factory.refiner",
-            "provider": "codex",
-            "model": "gpt-5.6-terra",
-            "model_source": "launch_command",
-        }
-        with (
-            mock.patch.object(factory, "Beads", return_value=beads),
-            mock.patch.object(factory, "runtime_session", return_value=worker_runtime),
-            mock.patch.dict(factory.os.environ, {
-                "GC_SESSION_ID": "refiner-context",
-                "GC_SESSION_NAME": "refiner-session",
-            }, clear=False),
-            self.assertRaisesRegex(factory.FactoryError, "Refiner runtime model"),
-        ):
-            factory.command_refinery_assemble(args)
-        self.assertNotIn("factory.refiner_model", refinery["metadata"])
 
     def test_dynamic_rig_policy_exposes_only_bead_selected_routes(self) -> None:
         city = self.root / "city"
@@ -2773,7 +2422,7 @@ class FactoryTests(unittest.TestCase):
         )
         reload_city.assert_called_once_with(
             "fx-refinery-bd-refinery-2", "factory",
-            {"validator", "validator-claude"},
+            {"validator"},
         )
 
     def test_refinery_deliver_resumes_at_the_recorded_bead_phase(self) -> None:
@@ -2935,48 +2584,6 @@ class FactoryTests(unittest.TestCase):
         self.assertNotIn("gc.session_name", refinery["metadata"])
         self.assertNotIn("gc.work_dir", refinery["metadata"])
         self.assertEqual(sum(event[0] == "hold_delivery" for event in beads.events), 1)
-
-    def test_refinery_retry_returns_a_delivery_hold_to_its_canonical_route(self) -> None:
-        refinery = {
-            "id": "bd-refinery",
-            "status": "deferred",
-            "assignee": "stale-refiner-session",
-            "metadata": {
-                "factory.kind": "refinery",
-                "factory.status": "ready",
-                "factory.binding": "factory",
-                "factory.delivery_hold": True,
-                "factory.delivery_hold_code": "refinery_claim_invalid",
-                "factory.delivery_hold_reason": "old adapter contract",
-                "factory.refiner_context_id": "old-refiner-context",
-                "factory.refiner_model": "gpt-5.6-sol",
-                "factory.refiner_model_policy": "gpt-5.6-sol",
-                "factory.refiner_model_source": "launch_command",
-                "factory.refiner_provider": "codex",
-                "factory.integration_validator_provider": "claude",
-                "gc.routed_to": "repo/factory.refiner",
-                "gc.session_name": "stale-refiner-session",
-                "gc.work_branch": "main",
-                "gc.work_dir": "/tmp/stale-refiner",
-            },
-        }
-        beads = FakeBeads({"bd-refinery": refinery})
-        args = types.SimpleNamespace(rig="repo", refinery_bead="bd-refinery")
-
-        with (
-            mock.patch.object(factory, "Beads", return_value=beads),
-            contextlib.redirect_stdout(io.StringIO()),
-        ):
-            self.assertEqual(factory.command_refinery_retry(args), 0)
-
-        self.assertEqual(refinery["status"], "open")
-        self.assertEqual(refinery["assignee"], "")
-        self.assertEqual(refinery["metadata"]["gc.routed_to"], "repo/factory.refiner")
-        self.assertNotIn("factory.delivery_hold", refinery["metadata"])
-        self.assertNotIn("factory.refiner_context_id", refinery["metadata"])
-        self.assertNotIn("gc.session_name", refinery["metadata"])
-        self.assertNotIn("gc.work_dir", refinery["metadata"])
-        self.assertIn(("retry_delivery", "bd-refinery"), beads.events)
 
     def test_refinery_retry_rejects_semantic_integration_rejection(self) -> None:
         refinery = {

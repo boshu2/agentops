@@ -105,38 +105,40 @@ class GC33DeliveryContractTest(unittest.TestCase):
                 self.assertFalse(validator.is_valid(candidate))
 
     def test_admission_and_role_runtime_fallback_facts_are_consistent(self) -> None:
-        terra_author = {"context_id": "author", "requested_model": "terra", "requested_reasoning": "high", "requested_provider": "codex", "actual_model": "terra", "actual_reasoning": "high", "actual_provider": "codex", "fallback": self.fallback()}
-        sol_validator = {"context_id": "validator", "requested_model": "sol", "requested_reasoning": "high", "requested_provider": "codex", "actual_model": "sol", "actual_reasoning": "high", "actual_provider": "codex", "fallback": self.fallback()}
+        terra_author = {"context_id": "author", "requested_model": "terra", "requested_reasoning": "high", "requested_provider": "codex", "actual_model": "gpt-5.6-terra", "actual_reasoning": "high", "actual_provider": "codex", "actual_effort": "high", "fallback": self.fallback()}
+        sol_validator = {"context_id": "validator", "requested_model": "sol", "requested_reasoning": "high", "requested_provider": "codex", "actual_model": "gpt-5.6-sol", "actual_reasoning": "high", "actual_provider": "codex", "actual_effort": "high", "fallback": self.fallback()}
         admission = {"schema_version": "admission-certificate.v2", "semantic_bead_id": "semantic", "intent_digest": DIGEST, "verdict": "PASS", "candidate": {"commit": "a" * 40, "tree": "b" * 40, "content_digest": "c" * 64}, "store": {"identity": "beads", "digest": "d" * 64}, "changed_path_manifest": "e" * 64, "verdict_digest": "f" * 64, "evidence_digest": "0" * 64, "attestations": {"author": terra_author, "validator": sol_validator}, "delivery_group_id": "group", "prefix_safety": "safe"}
         validator = self.validator("admission-certificate.v2.schema.json")
         self.assertTrue(validator.is_valid(admission))
-        opus_author = deepcopy(terra_author); opus_author.update({"requested_model": "opus", "requested_reasoning": "medium", "requested_provider": "claude", "actual_model": "opus", "actual_reasoning": "medium", "actual_provider": "claude"})
+        opus_author = deepcopy(terra_author); opus_author.update({"requested_model": "opus", "requested_reasoning": "medium", "requested_provider": "claude", "actual_model": "claude-opus-4-8", "actual_reasoning": "medium", "actual_provider": "claude", "actual_effort": "medium"})
         opus_admission = deepcopy(admission); opus_admission["attestations"]["author"] = opus_author
         self.assertTrue(validator.is_valid(opus_admission))
         empty_store = deepcopy(admission); empty_store["store"]["identity"] = ""
         self.assertFalse(validator.is_valid(empty_store))
         invalid = deepcopy(admission); invalid["attestations"]["author"]["fallback"] = self.fallback(allowed=False, used=True, reason="forbidden")
         self.assertFalse(validator.is_valid(invalid))
-        wrong_author = deepcopy(admission); wrong_author["attestations"]["author"]["actual_model"] = "opus"
+        wrong_author = deepcopy(admission); wrong_author["attestations"]["author"]["actual_model"] = "claude-opus-4-8"
         self.assertFalse(validator.is_valid(wrong_author))
-        wrong_validator = deepcopy(admission); wrong_validator["attestations"]["validator"]["actual_model"] = "terra"
+        wrong_validator = deepcopy(admission); wrong_validator["attestations"]["validator"]["actual_model"] = "gpt-5.6-terra"
         self.assertFalse(validator.is_valid(wrong_validator))
-        request = {"schema_version": "factory-role-request.v2", "request_id": "request", "program_id": "program", "semantic_bead_id": "semantic", "intent_digest": DIGEST, "role": "validation", "requested": {"model": "sol", "reasoning": "high", "provider": "codex", "fallback": self.fallback()}, "artifact_path": "artifact", "result_path": "result"}
+        request = {"schema_version": "factory-role-request.v2", "request_id": "request", "program_id": "program", "semantic_bead_id": "semantic", "workspace": "workspace", "intent_source": "intent", "intent_digest": DIGEST, "subject_path": "subject", "subject_digest": "b" * 64, "evidence_refs": [{"path": "evidence", "digest": "c" * 64}], "prior_context_id": None, "role": "validation", "requested": {"model": "sol", "reasoning": "high", "provider": "codex", "fallback": self.fallback()}, "artifact_path": "artifact", "result_path": "result"}
         request_validator = self.validator("factory-role-request.v2.schema.json")
         self.assertTrue(request_validator.is_valid(request))
         wrong = deepcopy(request); wrong["requested"]["model"] = "terra"
         self.assertFalse(request_validator.is_valid(wrong))
         allowed_request_fallback = deepcopy(request); allowed_request_fallback["requested"]["fallback"] = self.fallback(allowed=True)
         self.assertFalse(request_validator.is_valid(allowed_request_fallback))
-        response = {"schema_version": "factory-role-response.v2", "request_id": "request", "request_digest": DIGEST, "role": "validation", "semantic_bead_id": "semantic", "session_context_id": "ctx", "requested": request["requested"], "actual": request["requested"], "artifact_path": "artifact", "artifact_digest": "b" * 64}
+        response = {"schema_version": "factory-role-response.v2", "request_id": "request", "request_digest": DIGEST, "role": "validation", "semantic_bead_id": "semantic", "session_context_id": "ctx", "requested": request["requested"], "actual": {"model": "gpt-5.6-sol", "reasoning": "high", "provider": "codex", "effort": "high", "fallback": self.fallback()}, "artifact_path": "artifact", "artifact_digest": "b" * 64}
         response_validator = self.validator("factory-role-response.v2.schema.json")
         self.assertTrue(response_validator.is_valid(response))
         silent_downgrade = deepcopy(response); silent_downgrade["actual"] = {"model": "terra", "reasoning": "low", "provider": "codex", "fallback": self.fallback()}
         self.assertFalse(response_validator.is_valid(silent_downgrade))
-        implementation = deepcopy(response); implementation["role"] = "implementation"; implementation["requested"] = {"model": "terra", "reasoning": "high", "provider": "codex", "fallback": self.fallback()}; implementation["actual"] = {"model": "opus", "reasoning": "medium", "provider": "claude", "fallback": self.fallback()}
+        implementation = deepcopy(response); implementation["role"] = "implementation"; implementation["requested"] = {"model": "terra", "reasoning": "high", "provider": "codex", "fallback": self.fallback()}; implementation["actual"] = {"model": "claude-opus-4-8", "reasoning": "medium", "provider": "claude", "effort": "medium", "fallback": self.fallback()}
         self.assertFalse(response_validator.is_valid(implementation))
         bad_response = deepcopy(response); bad_response["actual"]["fallback"] = self.fallback(allowed=True, used=False, reason="must be null")
         self.assertFalse(response_validator.is_valid(bad_response))
+        delivery_policy = deepcopy(response); delivery_policy["role"] = "delivery_policy"
+        self.assertFalse(response_validator.is_valid(delivery_policy))
 
     def test_effect_receipts_bind_only_actual_landed_heads(self) -> None:
         validator = self.validator("effect-receipt.v1.schema.json")

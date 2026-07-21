@@ -38,11 +38,12 @@ PROJECTIONS = (
         Path("skills/validate"),
         Path("packs/agentops-executor/agents/validator/skills/validate"),
     ),
-    (
-        "validate-claude",
-        Path("skills/validate"),
-        Path("packs/agentops-executor/agents/validator-claude/skills/validate"),
-    ),
+)
+# Removed projection roots stay explicit until the release that deletes their
+# last tracked bytes. This prevents a regenerated manifest from making an old
+# provider role invisible to --check.
+RETIRED_DESTINATIONS = (
+    Path("packs/agentops-executor/agents/validator-claude"),
 )
 EXCLUDED_NAMES = {
     ".DS_Store",
@@ -216,6 +217,10 @@ def sync(repo_root: Path, *, check: bool) -> int:
         else:
             if actual_manifest != expected_manifest:
                 errors.append(f"manifest: generated content drift {manifest_path}")
+        for destination in RETIRED_DESTINATIONS:
+            retired = repo_root / destination
+            if retired.exists():
+                errors.append(f"retired projection: stale destination {retired}")
         if errors:
             for error in errors:
                 print(f"sync-gc-pack: {error}", file=sys.stderr)
@@ -226,6 +231,10 @@ def sync(repo_root: Path, *, check: bool) -> int:
     try:
         for skill, _source, destination in PROJECTIONS:
             replace_tree(repo_root / destination, sources[skill])
+        for destination in RETIRED_DESTINATIONS:
+            retired = repo_root / destination
+            if retired.exists():
+                shutil.rmtree(retired)
         atomic_write(repo_root / MANIFEST_REL, expected_manifest)
     except OSError as exc:
         print(f"sync-gc-pack: {exc}", file=sys.stderr)
