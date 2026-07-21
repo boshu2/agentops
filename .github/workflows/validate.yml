@@ -23,7 +23,7 @@ on:
       - 'v*'
   workflow_dispatch:
   pull_request:
-    branches: [main]
+    branches: [main, gc33-5a/20260721-gc33-5a-f02/base]
   # Merge queue: GitHub validates queued PRs on the combined merge_group ref.
   # The `summary` required check MUST run here or the queue hangs forever. The
   # `changes` job forces a full run on merge_group (see the release step) so the
