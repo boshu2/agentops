@@ -16,10 +16,7 @@ setup() {
 #!/usr/bin/env bash
 set -euo pipefail
 root="$(cd "$(dirname "$0")/.." && pwd)"
-requested_city=""
-if [ "${1-}" = "--city" ] && [ -n "${2-}" ]; then
-  requested_city="$(cd "$2" && pwd -P)"
-fi
+requested_city="$root/city"
 current_dir="$(pwd -P)"
 if [ "$current_dir" != "$requested_city" ]; then
   for argument in "$@"; do
@@ -29,6 +26,12 @@ if [ "$current_dir" != "$requested_city" ]; then
     fi
   done
 fi
+for argument in "$@"; do
+  if [ "$argument" = "--city" ] || [ "$argument" = "--" ]; then
+    printf 'program_start.py: error: unrecognized forwarded root argument: %s\n' "$argument" >&2
+    exit 2
+  fi
+done
 printf 'CWD <%s>\n' "$current_dir" >>"$root/gc.log"
 printf 'ENV GC_HOME=<%s> GC_ISOLATED=<%s> OTEL_SDK_DISABLED=<%s> OTEL_EXPORTER_OTLP_ENDPOINT=<%s> GC_OTEL_METRICS_URL=<%s> GC_OTEL_LOGS_URL=<%s> BD_OTEL_METRICS_URL=<%s> BD_OTEL_LOGS_URL=<%s>\n' \
   "${GC_HOME-}" "${GC_ISOLATED-}" "${OTEL_SDK_DISABLED-}" \
@@ -93,7 +96,8 @@ teardown() {
   canonical_city="$(python3 -c 'import os,sys; print(os.path.realpath(sys.argv[1]))' "$CITY")"
   grep -Fq "CWD <$canonical_city>" "$LOG"
   grep -Fq "ENV GC_HOME=<$canonical_city/.gc-home> GC_ISOLATED=<1> OTEL_SDK_DISABLED=<false> OTEL_EXPORTER_OTLP_ENDPOINT=<> GC_OTEL_METRICS_URL=<http://127.0.0.1:8428/opentelemetry/api/v1/push> GC_OTEL_LOGS_URL=<http://127.0.0.1:9428/insert/opentelemetry/v1/logs> BD_OTEL_METRICS_URL=<http://127.0.0.1:8428/opentelemetry/api/v1/push> BD_OTEL_LOGS_URL=<http://127.0.0.1:9428/insert/opentelemetry/v1/logs>" "$LOG"
-  grep -Fq "ARGS <--city> <$canonical_city> <agentops> <program> <start> <--source-bead> <ag-blj> <--max-parallel> <2>" "$LOG"
+  grep -Fq "ARGS <agentops> <program> <start> <--source-bead> <ag-blj> <--max-parallel> <2>" "$LOG"
+  ! grep -Fq ' <--city> ' "$LOG"
   ! grep -Fq ' <--> ' "$LOG"
 }
 
@@ -143,5 +147,6 @@ PY
   rg -Fq 'deploy/gc/invoke.sh --city /path/to/city --' "$README"
   rg -Fq 'agentops program start --source-bead age-example --max-parallel 2' "$README"
   rg -Fq 'enters the exact managed city before executing GC' "$README"
+  rg -Fq 'omits the redundant root `--city`' "$README"
   rg -Fq 'gc agentops program start --source-bead ID' "$HELP"
 }

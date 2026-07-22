@@ -123,6 +123,32 @@ cleanly. This stopped subject is `NOT_READY`. The GC behavior is a verified
 upstream defect, but 3.3 changes no GC or Beads fork: AgentOps uses the bounded
 managed-cwd workaround and retains the exact upstream provenance separately.
 
+### Third 3.3 release canary entrypoint stop
+
+The next landed subject `d8c1ddc41143ca580c6f5e804be0ea80bd314d54`
+had exact tree `8e57f213f9253e6880ee5f183783500dad729abb` and ran in a
+third new standalone root. Fresh materialization, configure-only bootstrap,
+idempotent start, required telemetry, and the rig-native Beads context all
+passed. Source bead `ag-lb2` was the sole rig bead and prescribed exactly two
+disjoint Terra-high/Codex and Opus-medium/Claude nodes.
+
+The one invocation again stopped before admission. The invoker entered the
+managed city, so eager discovery found the imported leaf, but it still supplied
+the redundant root `--city` pair to GC. An eagerly discovered
+`DisableFlagParsing` leaf intentionally owns the remaining argv, so
+`program_start.py` received `--city <path>` and rejected it as unrecognized.
+This behavior was already classified in `gc-pack-root-selector-leak` as a GC
+compatibility contract that the AgentOps invocation boundary must accommodate,
+not as a new GC defect.
+
+Only `ag-lb2` existed after the stop; no planning, program, semantic, delivery,
+or session bead and no factory evidence file was created. No role ran, the rig
+Git tree remained clean, native telemetry produced eight GC/BD metric families
+and 45 structured log records, and the city, collectors, ports, and scoped
+processes stopped cleanly. The subject was not replayed. The bounded AgentOps
+correction is to validate the marker, enter its exact city, select its private
+supervisor, and execute GC without a redundant root selector or separator.
+
 Together these canaries prove the real single-bead protected-delivery path,
 provider interchange across author and judge roles, two simultaneous isolated
 writers with disjoint scopes, exact-subject validation, fenced integration,

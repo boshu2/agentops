@@ -181,9 +181,11 @@ Gas City binary digest, selects the private supervisor, projects the effective
 telemetry pair (or explicit disabled state), and clears an ambient generic OTLP
 fallback. It enters the exact managed city before executing GC because GC v1.3.5
 discovers imported commands while constructing its command tree, before a later
-`--city` flag is parsed. Its `--` is the wrapper boundary and is consumed; do
-not put another `--` between the discovered `program start` leaf and
-`--source-bead`.
+`--city` flag is parsed. Once inside, it omits the redundant root `--city`
+selector because imported leaves intentionally own their remaining argv and
+would receive that selector as a leaf argument. Its `--` is the wrapper boundary
+and is consumed; do not put another `--` between the discovered `program start`
+leaf and `--source-bead`.
 
 The command snapshots that exact source Bead once, freezes the first observed
 base OID for the program, runs Fable Mayor and fresh Sol plan binding, and then
