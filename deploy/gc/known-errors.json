@@ -292,6 +292,23 @@
       "disposition": "Work around deterministically in AgentOps 3.3; retain exact provenance for a bounded upstream contribution after release stabilization."
     },
     {
+      "id": "agentops-managed-invoker-delivery-binding-omission",
+      "kind": "verified_deployment_defect",
+      "observed": "2026-07-22",
+      "location": "AgentOps deploy/gc/invoke.sh managed operator boundary",
+      "identities": {"landed_subject": "b8ad0c6851b4bab390f097590650a2ae222b98a3", "source_bead": "ag-854", "gc_release": "v1.3.5", "bd_release": "v1.1.0"},
+      "symptom": "The imported program-start leaf exited before admission because AGENTOPS_GC_DELIVERY_NATIVE_CONTEXT was absent even though bootstrap had generated and projected the context for managed agents and orders.",
+      "reproduction": "Bootstrap and start a fresh city, create one source Bead, then invoke agentops program start through deploy/gc/invoke.sh. Before this correction the wrapper projected GC and telemetry identity but omitted the native delivery environment required by program_start.py.",
+      "owner": "agentops",
+      "fix_location": "AgentOps ready-marker generation and marker-bound managed invoker",
+      "build": "Ready markers bind the canonical native delivery context digest, evidence root, and deadline. The invoker verifies those bytes plus the exact GC, Beads, Git, GitHub CLI, Bash, AO, and delivery-reducer executable digests before exporting the complete fixed delivery environment.",
+      "deterministic_test": "gc-agentops-bootstrap.bats proves the ready-marker binding; gc-agentops-invoke.bats proves complete environment projection and fail-closed rejection of changed native context or executable bytes.",
+      "live_check": "A wholly new source Bead must pass the same managed operator entrypoint and complete the mixed-provider protected-delivery canary without ambient delivery variables.",
+      "upstream": "Not a Gas City or Beads defect; their managed session/order environment was correct.",
+      "release_relevance": "Blocks every operator-started AgentOps 3.3 factory program before Mayor admission.",
+      "disposition": "Correct externally in AgentOps, repeat deterministic qualification, and never replay the stopped source Bead."
+    },
+    {
       "id": "environment-production-rig-reserved-dolt-database",
       "kind": "configuration_migration_required",
       "observed": "2026-07-19",
