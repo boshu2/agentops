@@ -275,6 +275,23 @@
       "disposition": "Resolved in the AgentOps managed invocation boundary; direct ambient gc invocation remains outside the qualified deployment path."
     },
     {
+      "id": "gascity-v1.3.5-city-flag-pack-command-discovery",
+      "kind": "verified_upstream_defect",
+      "observed": "2026-07-22",
+      "location": "Gas City cmd/gc root construction and lazy discovered-command fallback",
+      "identities": {"gc_release": "v1.3.5", "gc_source_commit": "8ffc009ded781a2ada2077f3a29bd712b2def0bf", "agentops_landed_subject": "c0a68c29ea62a4c6680ef1011def0f950a745973"},
+      "symptom": "From outside a city, gc --city PATH BINDING COMMAND --leaf-flag rejects the pack leaf flag at Cobra root parsing. Adding a literal -- reaches lazy dispatch but forwards that separator to the pack script.",
+      "reproduction": "Invoke the AgentOps program-start leaf from outside the managed city. Direct --source-bead is rejected as an unknown GC flag; a literal separator is forwarded and makes argparse report --source-bead missing.",
+      "owner": "gascity",
+      "fix_location": "Gas City eager pack-command discovery must account for an explicit --city before Cobra parses pack leaf flags, or lazy dispatch must define and remove an argument boundary.",
+      "build": "AgentOps deploy/gc/invoke.sh enters the exact marker-bound city before exec so GC v1.3.5 eager discovery registers the imported leaf with DisableFlagParsing=true.",
+      "deterministic_test": "gc-agentops-invoke.bats models GC v1.3.5 rejecting pack leaf flags outside the city and proves the managed invoker executes from the exact marker city while forwarding no literal separator.",
+      "live_check": "The next corrected-subject canary must admit the exact source bead through the managed invoker without either unknown-flag or argparse boundary errors.",
+      "upstream": "Real Gas City v1.3.5 CLI discovery defect. Keep AgentOps on the official release; propose an upstream-focused test/fix separately rather than patching the local fork for 3.3.",
+      "release_relevance": "Blocks AgentOps 3.3 program admission only when the imported command is invoked from outside the city through --city.",
+      "disposition": "Work around deterministically in AgentOps 3.3; retain exact provenance for a bounded upstream contribution after release stabilization."
+    },
+    {
       "id": "environment-production-rig-reserved-dolt-database",
       "kind": "configuration_migration_required",
       "observed": "2026-07-19",

@@ -78,7 +78,7 @@ Dolt service, tmux socket, and city-scoped processes cleanly.
 
 ## Qualification boundary
 
-### 3.3 release canary entrypoint stop
+### First 3.3 release canary entrypoint stop
 
 The first post-merge 3.3 release-canary entrypoint stopped before admission on
 2026-07-22. The exact landed subject was `faff55ac2a6df3fd862be100ff46df9f568bbb2c`
@@ -96,6 +96,32 @@ v1.148.0 and VictoriaLogs v1.52.0 assets. This is an AgentOps operator-entrypoin
 and regression-coverage defect, not a GC or Beads source defect. The stopped
 subject is `NOT_READY` and is not retried; a corrected subject must repeat the
 external qualification chain before another live attempt is authorized.
+
+### Second 3.3 release canary entrypoint stop
+
+The corrected landed subject `c0a68c29ea62a4c6680ef1011def0f950a745973`
+used the same official GC and Beads source commits in a new standalone root with
+fresh telemetry stores and source bead `ag-gc33c0`. The managed invoker removed
+the literal separator and passed direct leaf flags, but the call originated
+outside the city. GC rejected `--source-bead` as an unknown root flag before the
+pack script ran. The canary stopped immediately and was not retried.
+
+Official GC source establishes the exact ownership boundary. GC v1.3.5 performs
+best-effort imported-command discovery while constructing the Cobra root,
+before its persistent `--city` flag is parsed. Outside the city the command is
+therefore absent from the eager tree; lazy dispatch cannot receive flag-like
+arguments without a separator, and it forwards that separator unchanged. The
+AgentOps managed invocation correction is to enter the exact marker-bound city
+before exec so eager discovery registers the imported leaf and its
+`DisableFlagParsing` contract.
+
+Again, no planning, program, semantic, delivery, or session bead was created;
+the disposable rig contained only `ag-gc33c0`, and no factory evidence directory
+existed. Required native telemetry produced the same eight GC/BD metric families
+and structured logs. City, collectors, and scoped processes then stopped
+cleanly. This stopped subject is `NOT_READY`. The GC behavior is a verified
+upstream defect, but 3.3 changes no GC or Beads fork: AgentOps uses the bounded
+managed-cwd workaround and retains the exact upstream provenance separately.
 
 Together these canaries prove the real single-bead protected-delivery path,
 provider interchange across author and judge roles, two simultaneous isolated
