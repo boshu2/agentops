@@ -247,7 +247,9 @@ teardown() {
 @test "teardown does not accept a quiet gap before a late scoped helper" {
   touch "$STATE/spawn-late-helper"
 
-  run env PATH="$BIN:$PATH" "$TEARDOWN" --city "$CITY" --wait-timeout 6
+  # A late helper can first appear immediately after a census. Leave room for
+  # its cleanup plus the teardown contract's five subsequent quiet censuses.
+  run env PATH="$BIN:$PATH" "$TEARDOWN" --city "$CITY" --wait-timeout 9
 
   [ "$status" -eq 0 ]
   [ -e "$STATE/late-helper-finished" ]

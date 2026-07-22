@@ -4,7 +4,7 @@ set -euo pipefail
 # through GC_ARTIFACT_DIR. The agent writes the exact role request/result
 # there; this wrapper never guesses a bead or scans another workflow.
 : "${GC_ARTIFACT_DIR:?Gas City check artifact directory required}"
-script_dir="$(CDPATH= cd -- "$(dirname -- "$0")" && pwd -P)"
+script_dir="$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd -P)"
 feeder="$script_dir/agentops-factory-feeder"
 [[ "$feeder" = /* && -x "$feeder" && ! -L "$feeder" ]] || { echo "projected factory feeder must be an executable regular sibling" >&2; exit 2; }
 request="$GC_ARTIFACT_DIR/agentops-factory-check-request.json"
