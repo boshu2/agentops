@@ -149,6 +149,32 @@ processes stopped cleanly. The subject was not replayed. The bounded AgentOps
 correction is to validate the marker, enter its exact city, select its private
 supervisor, and execute GC without a redundant root selector or separator.
 
+### Fourth 3.3 release canary entrypoint stop
+
+The selector correction landed as `b8ad0c6851b4bab390f097590650a2ae222b98a3`
+with tree `ee9764561bebf0e196b5c2ac927dc866eb72d9c6`. A fourth fresh
+standalone root materialized the same official GC and Beads commits, passed
+required telemetry, clean bootstrap and start, imported help from outside the
+city, and a native rig-Dolt context check. Its only durable source bead was
+`ag-854`, carrying the exact two-node Terra-high/Codex and
+Opus-medium/Claude contract.
+
+The single invocation reached the imported leaf, then stopped before admission:
+`program_start.py` required `AGENTOPS_GC_DELIVERY_NATIVE_CONTEXT`, but the
+operator invoker had not exported it. Bootstrap had correctly generated the
+canonical context and supplied it to managed sessions and orders through
+`city.toml`; the external wrapper restored only GC and telemetry variables.
+This is an AgentOps managed-invoker binding omission, not a GC or Beads defect.
+
+No Mayor, planner, worker, validator, Refiner, or delivery process ran. There
+were zero sessions and no factory evidence files; `ag-854` remained the sole
+ordinary bead and the rig stayed Git-clean. The subject was not replayed. The
+city, private supervisor, telemetry collectors, listeners, and scoped processes
+were stopped cleanly. The correction binds the native-context digest and fixed
+delivery inputs into the ready marker, verifies every executable and canonical
+context byte at invocation, and exports that admitted environment rather than
+trusting ambient variables or an unbound configuration file.
+
 Together these canaries prove the real single-bead protected-delivery path,
 provider interchange across author and judge roles, two simultaneous isolated
 writers with disjoint scopes, exact-subject validation, fenced integration,
