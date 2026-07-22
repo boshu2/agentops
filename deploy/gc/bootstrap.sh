@@ -1450,6 +1450,18 @@ if {override.get("name") for override in core_order_overrides} != core_order_nam
     override.get("env") != expected_core_order_env for override in core_order_overrides
 ):
     raise SystemExit("city core order toolchain binding differs from bootstrap identity")
+disabled_event_orders = {
+    override.get("name") for override in core_order_overrides
+    if override.get("enabled") is False
+}
+if disabled_event_orders != {"cascade-nudge-on-blocker-close", "nudge-on-route"}:
+    raise SystemExit("city must disable only the two self-exciting stable event orders")
+if any(
+    override.get("enabled") is not None
+    for override in core_order_overrides
+    if override.get("name") not in disabled_event_orders
+):
+    raise SystemExit("city must leave stable non-event maintenance orders enabled by default")
 delivery_order_env = {
     "GC_BIN": gc_bin,
     "PATH": order_path,

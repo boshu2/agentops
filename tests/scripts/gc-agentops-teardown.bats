@@ -232,3 +232,15 @@ teardown() {
   [ -e "$STATE/late-helper-finished" ]
   [[ "$output" == *"Gas City stopped cleanly"* ]]
 }
+
+@test "teardown does not certify a three-second quiet gap" {
+  printf '%s\n' "$CANONICAL_CITY" >"$STATE/city-path"
+  python3 -c 'import pathlib,subprocess,sys,time; time.sleep(3); city=pathlib.Path(sys.argv[1], "city-path").read_text().strip(); subprocess.run([sys.executable, "-c", "import time; time.sleep(0.5)", city], check=True)' "$STATE" &
+  helper_pid="$!"
+
+  run env PATH="$BIN:$PATH" "$TEARDOWN" --city "$CITY" --wait-timeout 9
+  wait "$helper_pid" 2>/dev/null || true
+
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"Gas City stopped cleanly"* ]]
+}

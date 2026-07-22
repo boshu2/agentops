@@ -323,17 +323,18 @@ PY
 
 # Supervisor shutdown terminates its process groups, but a canceled provider
 # helper can need a short final interval to reap its own child after the
-# supervisor socket is already gone. Require three consecutive quiet
+# supervisor socket is already gone. Require five consecutive quiet
 # observations so a short argv/env handoff cannot be mistaken for quiescence.
 # If a late scoped helper appears, repeat GC's supported idempotent Dolt stop;
 # never signal an unverified PID here.
 residual_deadline="$(( $(date +%s) + wait_timeout ))"
 quiet_observations=0
+required_quiet_observations=5
 while :; do
   residual_processes="$(find_residual_processes)"
   if [ -z "$residual_processes" ]; then
     quiet_observations="$(( quiet_observations + 1 ))"
-    [ "$quiet_observations" -lt 3 ] || break
+    [ "$quiet_observations" -lt "$required_quiet_observations" ] || break
   else
     quiet_observations=0
     "$gc_bin" dolt-state stop-managed --city "$city" >/dev/null

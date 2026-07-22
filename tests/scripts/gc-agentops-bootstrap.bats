@@ -658,6 +658,14 @@ core_overrides = [
 ]
 assert {override["name"] for override in core_overrides} == core_order_names
 assert all(override["env"] == {"GC_BIN": config["workspace"]["env"]["GC_BIN"], "PATH": order_path} for override in core_overrides)
+assert {
+    override["name"] for override in core_overrides
+    if override.get("enabled") is False
+} == {"cascade-nudge-on-blocker-close", "nudge-on-route"}
+assert all(
+    "enabled" not in override for override in core_overrides
+    if override["name"] not in {"cascade-nudge-on-blocker-close", "nudge-on-route"}
+)
 scope_roots = [os.path.join(city, ".gc"), os.path.join(city, ".gc-home"), rig]
 expected_codex_args = ["--dangerously-bypass-hook-trust"]
 for root in scope_roots:

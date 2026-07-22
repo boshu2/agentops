@@ -16,6 +16,7 @@ env = { GC_BIN = "__GC_AGENTOPS_GC_BIN__", PATH = "__GC_AGENTOPS_ORDER_PATH__" }
 
 [[orders.overrides]]
 name = "cascade-nudge-on-blocker-close"
+enabled = false
 env = { GC_BIN = "__GC_AGENTOPS_GC_BIN__", PATH = "__GC_AGENTOPS_ORDER_PATH__" }
 
 [[orders.overrides]]
@@ -36,6 +37,7 @@ env = { GC_BIN = "__GC_AGENTOPS_GC_BIN__", PATH = "__GC_AGENTOPS_ORDER_PATH__" }
 
 [[orders.overrides]]
 name = "nudge-on-route"
+enabled = false
 env = { GC_BIN = "__GC_AGENTOPS_GC_BIN__", PATH = "__GC_AGENTOPS_ORDER_PATH__" }
 
 [[orders.overrides]]
