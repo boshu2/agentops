@@ -175,6 +175,54 @@ delivery inputs into the ready marker, verifies every executable and canonical
 context byte at invocation, and exports that admitted environment rather than
 trusting ambient variables or an unbound configuration file.
 
+### Fifth 3.3 release canary Formula-target stop
+
+The native-context correction landed as
+`d7224b87a3da3baa526a805a5b42711be0f2626e`. A fifth fresh standalone root
+materialized official GC `8ffc009ded781a2ada2077f3a29bd712b2def0bf` and Beads
+`8e4e59d39f3459a43cf21a3236a13eca4dd874f7`, passed clean bootstrap, required
+telemetry, marker-bound native delivery context, imported help, and rig-native
+Dolt checks. Its only source bead was `ag-60x`; GC created synthetic input
+convoy `ag-qyi` before Formula admission.
+
+The single invocation stopped before Mayor or any model launch with
+`unknown formulas v2 target "rig/agentops.plan-reviewer"`. A subsequent exact
+negative qualification then proved that `agentops.plan-reviewer` also fails in
+the same `gc formula cook` path. GC v1.3.5 decorates Formula recipes without a
+current-rig route context: `rig/...` is a literal rig name, while a
+binding-local selector has no rig to resolve against. The original pseudo-route
+is an AgentOps defect; the binding-local failure is also a stable-GC limitation
+that upstream later corrected in `b58d802ab` / #3945. AgentOps 3.3 does not
+patch its fork or consume unreleased GC: the compatible correction is to
+derive sealed concrete role targets from the digest-bound native `rig_id`, pass
+them as Formula vars, and require both authored `gc.run_target` and resolved
+`gc.routed_to` to equal those values. The city Mayor remains the explicit
+city-scoped `agentops.mayor` target.
+
+The same stable source contract matters after cook: GC persists top-level
+Ralph attempt `gc.step_ref` values relative to the formula (`mayor.iteration.1`,
+`plan.iteration.1`, `implement.iteration.1`, and `validate.iteration.1`), while
+AgentOps records canonical formula-qualified workflow keys. The feeder now
+uses an explicit four-entry persisted-to-canonical map, rejects canonical or
+foreign attempt spellings, and validates the stable graph.v2 root, source-spec
+(`gc.spec_for` and `gc.spec_for_ref` are bare role names), control, and attempt
+identities. This is a stable-GC compatibility rule, not an upstream defect.
+
+That rule was discovered in two fresh zero-model qualification roots for the
+local, unpushed candidate `629a71a8c2f884177d89eebf9c33be549f968466`.
+Formula cook proved the sealed Mayor and Plan routes in workflow roots
+`rfe-83o` and `rff-dcx`, then the feeder stopped on the first relative attempt
+ref before closing admission. In `rfe-83o`, attempt `rfe-h8t` carried
+`plan.iteration.1` and linked to exact control `rfe-5fe`; attempt `rfe-y5s`
+carried `mayor.iteration.1` and linked to control `rfe-6ys`. Both proof cities
+reported zero running agents and were stopped without a model launch. They
+remain negative evidence; neither root may be replayed.
+
+There were zero sessions, model launches, program graph nodes, or delivery
+actions. The rig Git tree remained clean, and the city, supervisor, collectors,
+listeners, and scoped processes tore down cleanly. `ag-60x` and `ag-qyi` are
+preserved as stop evidence; the subject was not replayed.
+
 Together these canaries prove the real single-bead protected-delivery path,
 provider interchange across author and judge roles, two simultaneous isolated
 writers with disjoint scopes, exact-subject validation, fenced integration,

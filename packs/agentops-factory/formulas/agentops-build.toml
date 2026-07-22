@@ -17,6 +17,12 @@ required = true
 [vars.plan_request]
 description = "Absolute future factory-role-request.v2 for Plan"
 required = true
+[vars.mayor_target]
+description = "Exact city Mayor target admitted by the one-shot feeder"
+required = true
+[vars.plan_target]
+description = "Exact rig-qualified Plan target admitted by the one-shot feeder"
+required = true
 [vars.factory_check]
 description = "Absolute trusted city-projected controller check"
 required = true
@@ -31,7 +37,7 @@ id = "mayor"
 title = "Fable Mayor proposes one exact program graph for {{convoy_id}}"
 description = "adapter_path={{role_adapter}}\nrequest_path={{mayor_request}}\nsource_convoy={{convoy_id}}"
 needs = ["admission"]
-metadata = { "gc.run_target" = "agentops.mayor", "work_dir" = "{{work_dir}}" }
+metadata = { "gc.run_target" = "{{mayor_target}}", "work_dir" = "{{work_dir}}" }
 
 [steps.check]
 max_attempts = 1
@@ -46,7 +52,7 @@ id = "plan"
 title = "Fresh Sol-high validates the proposed graph for {{convoy_id}}"
 description = "adapter_path={{role_adapter}}\nrequest_path={{plan_request}}\nsource_convoy={{convoy_id}}"
 needs = ["mayor"]
-metadata = { "gc.run_target" = "rig/agentops.plan-reviewer", "work_dir" = "{{work_dir}}" }
+metadata = { "gc.run_target" = "{{plan_target}}", "work_dir" = "{{work_dir}}" }
 
 [steps.check]
 max_attempts = 1
