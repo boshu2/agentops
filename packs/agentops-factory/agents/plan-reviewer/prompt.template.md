@@ -37,7 +37,7 @@ graph. Then run:
 
 ```sh
 python3 <adapter_path> emit-role-v2 --request <request_path> \
-  --artifact <artifact_path>
+  --artifact <artifact_path> --bead <claimed-bead-id>
 ```
 
 Record the review transport as a native Beads no-op, close only the assigned

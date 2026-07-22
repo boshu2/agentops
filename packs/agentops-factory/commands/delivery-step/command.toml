@@ -1,2 +1,0 @@
-description = "Advance exactly one caller-selected AgentOps GC delivery transition"
-command = ["delivery"]

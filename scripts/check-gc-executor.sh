@@ -26,7 +26,7 @@ python3 "$FACTORY/assets/scripts/role_adapter.py" doctor
 # offline fake remains test-only and must never be reachable from the Order or
 # command binary.
 if rg -n 'fixture-state|fake-terminal|OpenFixtureProviders|NewFakeProviders' \
-  cli/cmd/agentops-gc-delivery packs/agentops-factory/assets/scripts/delivery-step.sh; then
+  cli/cmd/agentops-gc-delivery packs/agentops-factory/assets/scripts/delivery-sweep.sh; then
   echo "production GC delivery reaches an offline fake provider" >&2
   exit 1
 fi

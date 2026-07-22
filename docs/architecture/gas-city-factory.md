@@ -134,8 +134,9 @@ landing. A landed PR is still not a release verdict.
 - a deployment-pinned `GC_BIN` in workspace session environment;
 - generic Codex and Claude targets suspended;
 - scaffold Dog and control-dispatcher pools suspended; and
-- a configurable `workspace.max_active_sessions` (default one; bounded factory
-  qualification passes eight explicitly).
+- a configurable `workspace.max_active_sessions` (default one; the release
+  canary admits only a width-two semantic graph and sizes total role capacity
+  explicitly).
 
 `deploy/gc/bootstrap.sh` creates or repairs only
 a marked managed city, registers an explicit disposable rig, installs the local
@@ -252,21 +253,11 @@ the controller restarted. Packet transport/result JSON and graph, verdict,
 admission, and delivery JSON are digest-bound evidence referenced by beads; they
 are not a second factory lifecycle machine.
 
-Rerunning `program execute` reduces any open `lease_preparing`, `leased`,
-`passed`, `rejection_preparing`, or `rejected` experiment before selecting new
-Ready work, and routes a recovered `mayor_required` rescope before admitting
-its successor. The chosen
-`max_attempts` policy is persisted on the program and experiment before work;
-the verdict reducer writes an at-ceiling rescope directly to `hold`, so a crash
-cannot accidentally make another automatic attempt dispatchable. Operator
-`rescope` remains the explicit override for that held bead.
-
-If a rescope bead exists while its rejected experiment is still
-`rejection_preparing`, program execution reduces the experiment first. The
-Mayor cannot receive the rescope until the rejected experiment bead itself
-records the terminal `rejected` phase and is closed. An open experiment with
-`factory.status=rejected` is still a reducer-recovery state, not dispatchable
-Mayor work.
+GC33 native workflows have no Mayor rescope retry. Every checked Formula v2
+role has `max_attempts = 1`; `FAIL` and `NOT_PROVEN` terminalize the semantic
+bead and stop before graph admission or delivery. A later operator-approved
+revision is a new bead/program, never an automatic successor of the failed
+one.
 
 ### Worker pools
 
@@ -317,17 +308,19 @@ explicit live attempt is required to establish any new store behavior.
 ### Protected repository gate
 
 `delivery.mode = auto` creates/adopts a PR, requires nonempty protected hosted
-CI, and uses the selected lawful merge identity; `manual` waits in
-`manual_review` for external merge or cancellation. Separate forge identities
-prevent self-approval and neither mode bypasses protection.
+CI, and uses the caller's ordinary configured GitHub identity; `manual` waits in
+`manual_review` for external merge or cancellation. The factory does not invent
+per-role forge identities, and neither mode bypasses protection.
 
 ## Product workflow
 
 ### 1. Capture canonical intent
 
-The operator gives the Mayor a product source such as an issue, bead, product
-document, or explicit conversation intent. Acceptance, non-goals, required
-evidence, and product-level changes remain in that canonical source.
+The operator starts `gc agentops program start -- --source-bead ID`. The command
+snapshots that exact Bead once as canonical intent; an optional explicit intent
+artifact may refine the bytes without replacing the Bead as work unit.
+Acceptance, non-goals, required evidence, and product-level changes remain in
+that canonical source.
 
 ### 2. Propose and review the graph
 
@@ -348,17 +341,11 @@ Each Worker runs one AgentOps packet. AgentOps derives the content manifest,
 changed paths, scope receipt, and factual checks. A distinct fresh Validator
 judges the exact candidate.
 
-### 5. Apply the rejection ratchet
+### 5. Stop a rejected semantic experiment
 
-`FAIL` or `NOT_PROVEN` freezes the exact experiment and returns the immutable
-finding on a rescope bead. The adapter creates a separate HQ transport bead and
-slings that rescope bead to a fresh Mayor context; the Mayor emits one proposal,
-but only the reducer may create the successor experiment bead. A successor
-preserves exact acceptance and non-goals while changing at least one execution
-field, and receives a new experiment ID, branch, worktree/index, lease, and
-fresh Worker. The automatic path stops after three attempts by default and
-leaves the rescope bead in `hold`; an operator may resume that exact bead with
-the `rescope` command. Product acceptance changes require operator approval.
+`FAIL` or `NOT_PROVEN` writes only its exact terminal evidence. It neither
+wakes Mayor/Refiner nor mutates a successor graph. This intentionally replaces
+the historical three-attempt rejection ratchet for the 3.3 canary.
 
 ### 6. Admit and hand off one delivery bead
 
@@ -470,7 +457,7 @@ commands, formulas, and exec orders rather than prompt prose.
 | Session or controller crash | Re-enter through the same request digest or deterministic packet bead; reconcile bead routing and preparation metadata without manufacturing a verdict or duplicate work |
 | Unauthorized or stale-token Git write | Deterministic hook/credential/fencing rejection |
 | Candidate PASS but branch moves | Keep terminal PASS; delivery creates a mechanical current-base epoch |
-| Candidate `FAIL` or `NOT_PROVEN` | Close the exact experiment, create a blocking rescope bead, and route that bead through a fresh Mayor context for a new successor proposal; stop in HOLD at the attempt ceiling |
+| Candidate `FAIL` or `NOT_PROVEN` | Close the exact semantic experiment with its terminal evidence; no graph admission, delivery, Mayor, Refiner, or support wake follows |
 | Clean `main` movement | Reproduce the exact delta in a new epoch and run deterministic gates; no Sol unless bytes or meaning change |
 | Canonical regeneration changes bytes | Create a `delivery_repair` bead in the shared semantic ready set and obtain fresh Sol validation |
 | Semantic conflict, test defect, or substantive review request | Terminalize delivery and return a successor request to Mayor |
@@ -516,11 +503,13 @@ surfaces. The 3.3 delivery state machine is a target qualified separately. On
 CI and protected PR [#916](https://github.com/boshu2/agentops/pull/916), landing as
 `b80a752aad3843af66160b08a823aaed57e07169`.
 
-The 3.3 target is NOT qualified until its bounded canary proves the selected
-merge actor, moving-main delivery, marker-first crash replay, zero routine
-Fable wakes, terminal semantic beads before delivery, and the declared
-Terra/Opus writer fabric. Legacy multi-wave/integration evidence is not a
-substitute.
+The 3.3 target is NOT qualified until one bounded width-two canary in a clean
+city proves the ordinary GitHub merge actor, required native telemetry,
+moving-main delivery, marker-first crash replay, zero routine Refiner/Luna
+wakes, terminal semantic beads before delivery, and one Terra plus one Opus
+candidate with fresh Sol validation. The first canary failure stops; the
+candidate is repaired from outside the city and must be requalified as a new
+subject. Legacy multi-wave/integration evidence is not a substitute.
 
 Measure Mayor semantic yield, operator reload time, candidate-ready-to-PR time,
 Validator queue share, second-provider unique catches, provider-outage blocking,

@@ -81,8 +81,10 @@ class PacketContractTests(unittest.TestCase):
     def setUp(self) -> None:
         self.temporary = tempfile.TemporaryDirectory()
         self.root = Path(self.temporary.name).resolve()
+        self.linked_temporary = tempfile.TemporaryDirectory()
 
     def tearDown(self) -> None:
+        self.linked_temporary.cleanup()
         self.temporary.cleanup()
 
     def init_workspace_git(self, fixture: PacketFixture) -> str:
@@ -95,6 +97,17 @@ class PacketContractTests(unittest.TestCase):
             ["git", "rev-parse", "HEAD"], cwd=self.root, check=True,
             capture_output=True, text=True,
         ).stdout.strip()
+
+    def linked_worktree_fixture(self, *, provider: str = "codex") -> tuple[PacketFixture, Path]:
+        rig_fixture = PacketFixture(self.root)
+        self.init_workspace_git(rig_fixture)
+        workspace = Path(self.linked_temporary.name) / "candidate"
+        subprocess.run(
+            ["git", "worktree", "add", "-qb", "candidate", str(workspace), "HEAD"],
+            cwd=self.root,
+            check=True,
+        )
+        return PacketFixture(workspace, provider=provider), workspace
 
     def test_gc_binary_verifies_managed_v3_identity_and_digest(self) -> None:
         city = self.root / "city"
@@ -254,7 +267,7 @@ class PacketContractTests(unittest.TestCase):
             packet_module.validate_envelope(fixture.packet_path)
 
     def test_claude_packet_prepares_deterministic_bead_and_routes_explicit_role(self) -> None:
-        fixture = PacketFixture(self.root, provider="claude")
+        fixture, workspace = self.linked_worktree_fixture(provider="claude")
         packet, paths = packet_module.validate_envelope(fixture.packet_path)
         packet_digest = hashlib.sha256(fixture.packet_path.read_bytes()).hexdigest()
         bead_id = f"ao-pkt-{packet_digest[:16]}"
@@ -265,7 +278,7 @@ class PacketContractTests(unittest.TestCase):
             "agentops.intent_digest": packet["intent_digest"],
             "agentops.target": target,
             "agentops.result_path": str(paths["result"]),
-            "gc.pack_workspace": paths["workspace"].name,
+            "work_dir": str(paths["workspace"].resolve()),
         }
         created = {
             "id": bead_id,
@@ -303,8 +316,9 @@ class PacketContractTests(unittest.TestCase):
         metadata = json.loads(
             run.call_args_list[1].args[0][run.call_args_list[1].args[0].index("--metadata") + 1]
         )
-        self.assertEqual(metadata["gc.pack_workspace"], paths["workspace"].name)
-        self.assertNotIn("work_dir", metadata)
+        self.assertEqual(metadata["work_dir"], str(paths["workspace"].resolve()))
+        self.assertEqual(metadata["work_dir"], str(workspace.resolve()))
+        self.assertNotIn("gc.pack_workspace", metadata)
         self.assertEqual(run.call_args_list[2].args[0][-4], bead_id)
 
     def test_already_routed_transport_is_not_slung_twice(self) -> None:
@@ -322,10 +336,10 @@ class PacketContractTests(unittest.TestCase):
             packet_module.ensure_transport_routed("agentops", record["id"], target)
         run.assert_not_called()
 
-    def test_packet_workspace_must_equal_selected_rig_root(self) -> None:
+    def test_packet_workspace_must_be_linked_sibling_of_selected_rig_root(self) -> None:
         fixture = PacketFixture(self.root)
+        self.init_workspace_git(fixture)
         packet, paths = packet_module.validate_envelope(fixture.packet_path)
-        other_root = self.root.parent / "other-rig"
         with (
             mock.patch.dict(os.environ, {"GC_CITY_PATH": "/tmp/city"}, clear=False),
             mock.patch.object(packet_module, "gc_binary", return_value="/tmp/gc"),
@@ -334,13 +348,70 @@ class PacketContractTests(unittest.TestCase):
                 "require_process",
                 return_value=json.dumps({
                     "ok": True,
-                    "rigs": [{"name": "agentops", "path": str(other_root), "prefix": "ao"}],
+                    "rigs": [{"name": "agentops", "path": str(self.root), "prefix": "ao"}],
                 }),
             ) as run,
         ):
-            with self.assertRaisesRegex(packet_module.PacketError, "workspace must equal configured rig root"):
+            with self.assertRaisesRegex(packet_module.PacketError, "linked sibling worktree"):
                 packet_module.prepare_packet_transport(packet, paths, "agentops", "agentops")
         self.assertEqual(run.call_count, 1)
+
+    def test_linked_worktree_authorization_uses_stable_head_and_clean_candidate(self) -> None:
+        fixture, workspace = self.linked_worktree_fixture()
+        _, paths = packet_module.validate_envelope(fixture.packet_path)
+
+        base = packet_module.authorize_linked_worktree(paths["workspace"], self.root)
+
+        self.assertEqual(base, packet_module.git_workspace_head(workspace))
+        self.assertNotEqual(
+            packet_module.git_worktree_layout(workspace)["git_dir"],
+            packet_module.git_worktree_layout(self.root)["git_dir"],
+        )
+        self.assertEqual(
+            packet_module.git_worktree_layout(workspace)["common_dir"],
+            packet_module.git_worktree_layout(self.root)["common_dir"],
+        )
+
+    def test_linked_worktree_authorization_rejects_unrelated_repository(self) -> None:
+        rig_fixture = PacketFixture(self.root)
+        self.init_workspace_git(rig_fixture)
+        unrelated = Path(self.linked_temporary.name) / "unrelated"
+        unrelated.mkdir()
+        fixture = PacketFixture(unrelated)
+        subprocess.run(["git", "init", "-q"], cwd=unrelated, check=True)
+        subprocess.run(["git", "config", "user.name", "AgentOps Test"], cwd=unrelated, check=True)
+        subprocess.run(["git", "config", "user.email", "agentops-test@example.invalid"], cwd=unrelated, check=True)
+        subprocess.run(["git", "add", "intent.md"], cwd=unrelated, check=True)
+        subprocess.run(["git", "commit", "-qm", "unrelated base"], cwd=unrelated, check=True)
+        _, paths = packet_module.validate_envelope(fixture.packet_path)
+
+        with self.assertRaisesRegex(packet_module.PacketError, "Git common directory"):
+            packet_module.authorize_linked_worktree(paths["workspace"], self.root)
+
+    def test_linked_worktree_authorization_rejects_shared_index(self) -> None:
+        rig_fixture = PacketFixture(self.root)
+        self.init_workspace_git(rig_fixture)
+        candidate = Path(self.linked_temporary.name) / "candidate"
+        candidate.mkdir()
+        layout = {
+            "top_level": self.root,
+            "common_dir": self.root / ".git",
+            "git_dir": self.root / ".git",
+            "head": packet_module.git_workspace_head(self.root),
+        }
+
+        with mock.patch.object(packet_module, "git_worktree_layout", side_effect=[layout, dict(layout)]):
+            with self.assertRaisesRegex(packet_module.PacketError, "Git directory/index"):
+                packet_module.authorize_linked_worktree(candidate, self.root)
+
+    def test_linked_worktree_authorization_rejects_preexisting_candidate_edits(self) -> None:
+        fixture, workspace = self.linked_worktree_fixture()
+        (workspace / "src").mkdir()
+        (workspace / "src" / "preexisting.txt").write_text("not this packet\n", encoding="utf-8")
+        _, paths = packet_module.validate_envelope(fixture.packet_path)
+
+        with self.assertRaisesRegex(packet_module.PacketError, "preexisting changes"):
+            packet_module.authorize_linked_worktree(paths["workspace"], self.root)
 
     def test_rig_inventory_uses_bounded_control_plane_timeout(self) -> None:
         with (
@@ -548,6 +619,35 @@ class PacketContractTests(unittest.TestCase):
         self.assertEqual(response["session_context_id"], "gc-session-impl")
         self.assertEqual(response["transport_bead_id"], "ao-transport-1")
         self.assertEqual(response["artifacts"][0]["sha256"], hashlib.sha256(artifact.read_bytes()).hexdigest())
+
+    def test_emit_factory_check_pointer_is_create_only_and_exact_replay_is_safe(self) -> None:
+        fixture = PacketFixture(self.root)
+        artifact = fixture.evidence / "receipt.txt"
+        artifact.write_text("check exited 0\n", encoding="utf-8")
+        artifact_dir = self.root / "factory-artifacts"
+        args = types.SimpleNamespace(
+            packet=str(fixture.packet_path), bead="ao-transport-pointer", outcome="candidate",
+            artifact=[str(artifact)], message="handled once",
+        )
+        with mock.patch.dict(os.environ, {
+            "GC_SESSION_ID": "gc-session-impl",
+            "GC_SESSION_NAME": "impl-1",
+            "GC_PROVIDER": "codex",
+            "GC_TEMPLATE": "agentops.implementer",
+            "GC_ARTIFACT_DIR": str(artifact_dir),
+        }, clear=False):
+            with contextlib.redirect_stdout(io.StringIO()):
+                self.assertEqual(packet_module.command_emit(args), 0)
+
+        pointer_path = artifact_dir / "agentops-factory-check-request.json"
+        pointer = json.loads(pointer_path.read_text(encoding="utf-8"))
+        self.assertEqual(pointer["kind"], "packet")
+        self.assertEqual(pointer["checked_bead_id"], "ao-transport-pointer")
+        packet_module.write_canonical_once(pointer_path, pointer, "factory check request")
+        conflicting = dict(pointer)
+        conflicting["checked_bead_id"] = "ao-other"
+        with self.assertRaisesRegex(packet_module.PacketError, "conflicts"):
+            packet_module.write_canonical_once(pointer_path, conflicting, "factory check request")
 
     def test_validator_context_must_differ_from_author(self) -> None:
         fixture = PacketFixture(self.root, "validate")

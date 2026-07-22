@@ -17,6 +17,11 @@ Options:
   --binding NAME    Pack import binding at city and rig scopes (default: agentops)
   --gc-bin PATH     Absolute Gas City CLI path (required; never resolved from PATH)
   --ao-bin PATH     Absolute built AgentOps reducer path (required; never resolved from PATH)
+  --delivery-mode MODE  PR delivery policy: auto (default) or manual review
+  --repository OWNER/REPO  GitHub repository identity (default: derive from origin)
+  --telemetry-mode MODE  GC v1.3.5 OTel policy: auto (default), required, or off
+  --otel-metrics-url URL  OTLP metrics endpoint (default: GC v1.3.5 VictoriaMetrics URL)
+  --otel-logs-url URL     OTLP logs endpoint (default: GC v1.3.5 VictoriaLogs URL)
   --replace-gc-bin  Permit a managed city to move to the supplied --gc-bin path
   --codex-auth PATH Existing Codex auth.json to link into the private home
   --max-active-sessions N  City-wide concurrent session cap (default: 1)
@@ -38,6 +43,11 @@ rig_name="agentops"
 binding="agentops"
 gc_bin=""
 ao_bin=""
+delivery_mode="auto"
+repository_slug=""
+otel_metrics_url=""
+otel_logs_url=""
+telemetry_mode="auto"
 replace_gc_bin=0
 codex_auth=""
 source_codex_home="${CODEX_HOME:-${HOME:?HOME is required}/.codex}"
@@ -82,6 +92,31 @@ while [ "$#" -gt 0 ]; do
       ao_bin="$2"
       shift 2
       ;;
+    --delivery-mode)
+      [ "$#" -ge 2 ] || die "--delivery-mode requires auto or manual"
+      delivery_mode="$2"
+      shift 2
+      ;;
+    --repository)
+      [ "$#" -ge 2 ] || die "--repository requires OWNER/REPO"
+      repository_slug="$2"
+      shift 2
+      ;;
+    --otel-metrics-url)
+      [ "$#" -ge 2 ] || die "--otel-metrics-url requires a URL"
+      otel_metrics_url="$2"
+      shift 2
+      ;;
+    --telemetry-mode)
+      [ "$#" -ge 2 ] || die "--telemetry-mode requires auto, required, or off"
+      telemetry_mode="$2"
+      shift 2
+      ;;
+    --otel-logs-url)
+      [ "$#" -ge 2 ] || die "--otel-logs-url requires a URL"
+      otel_logs_url="$2"
+      shift 2
+      ;;
     --replace-gc-bin)
       replace_gc_bin=1
       shift
@@ -120,6 +155,56 @@ done
 [ -n "$pack" ] || die "--pack is required"
 [ -n "$gc_bin" ] || die "--gc-bin is required"
 [ -n "$ao_bin" ] || die "--ao-bin is required"
+case "$delivery_mode" in auto|manual) ;; *) die "--delivery-mode must be auto or manual" ;; esac
+if [ -n "$repository_slug" ]; then
+  [[ "$repository_slug" =~ ^[^/[:space:]]+/[^/[:space:]]+$ ]] || die "--repository must be OWNER/REPO"
+fi
+case "$telemetry_mode" in auto|required|off) ;; *) die "--telemetry-mode must be auto, required, or off" ;; esac
+if { [ -n "$otel_metrics_url" ] && [ -z "$otel_logs_url" ]; } || { [ -z "$otel_metrics_url" ] && [ -n "$otel_logs_url" ]; }; then
+  die "OTel metrics and logs endpoints must be supplied together"
+fi
+if [ "$telemetry_mode" = "off" ] && { [ -n "$otel_metrics_url" ] || [ -n "$otel_logs_url" ]; }; then
+  die "--telemetry-mode off cannot accept OTel endpoints"
+fi
+requested_otel_metrics_url="$otel_metrics_url"
+requested_otel_logs_url="$otel_logs_url"
+telemetry_status="off"
+if [ "$telemetry_mode" != "off" ]; then
+  [ -n "$requested_otel_metrics_url" ] || requested_otel_metrics_url="http://localhost:8428/opentelemetry/api/v1/push"
+  [ -n "$requested_otel_logs_url" ] || requested_otel_logs_url="http://localhost:9428/insert/opentelemetry/v1/logs"
+  if python3 - "$requested_otel_metrics_url" "$requested_otel_logs_url" <<'PY'
+import socket
+import sys
+from urllib.parse import urlparse
+
+for value in sys.argv[1:]:
+    parsed = urlparse(value)
+    if parsed.scheme not in {"http", "https"} or not parsed.hostname:
+        raise SystemExit(1)
+    port = parsed.port or (443 if parsed.scheme == "https" else 80)
+    with socket.create_connection((parsed.hostname, port), timeout=0.5):
+        pass
+PY
+  then
+    telemetry_status="enabled"
+    otel_metrics_url="$requested_otel_metrics_url"
+    otel_logs_url="$requested_otel_logs_url"
+  elif [ "$telemetry_mode" = "required" ]; then
+    die "required GC OTel metrics/logs endpoints are unavailable"
+  else
+    telemetry_status="degraded"
+    otel_metrics_url=""
+    otel_logs_url=""
+  fi
+fi
+telemetry_json="$(python3 - "$telemetry_mode" "$telemetry_status" "$requested_otel_metrics_url" "$requested_otel_logs_url" "$otel_metrics_url" "$otel_logs_url" <<'PY'
+import json
+import sys
+
+mode, status, requested_metrics, requested_logs, effective_metrics, effective_logs = sys.argv[1:]
+print(json.dumps({"mode": mode, "status": status, "requested_metrics_url": requested_metrics, "requested_logs_url": requested_logs, "effective_metrics_url": effective_metrics, "effective_logs_url": effective_logs}, sort_keys=True, separators=(",", ":")))
+PY
+)"
 [[ "$rig_name" =~ ^[A-Za-z0-9_-]+$ ]] || die "--rig-name must contain only letters, digits, underscore, or hyphen"
 [[ "$binding" =~ ^[A-Za-z0-9_-]+$ ]] || die "--binding must contain only letters, digits, underscore, or hyphen"
 [[ "$max_active_sessions" =~ ^[1-9][0-9]*$ ]] || die "--max-active-sessions must be a positive integer"
@@ -254,6 +339,34 @@ bd_bin="$gc_bin_dir/bd"
 bd_bin="$(canonical_path "$bd_bin")"
 [ "$(dirname "$bd_bin")" = "$gc_bin_dir" ] || \
   die "paired Beads CLI must resolve beside gc: $bd_bin"
+delivery_bin="$gc_bin_dir/agentops-gc-delivery"
+[ -x "$delivery_bin" ] || die "AgentOps GC delivery reducer is not executable beside gc: $delivery_bin"
+delivery_bin="$(canonical_path "$delivery_bin")"
+git_bin="$(command -v git || true)"
+gh_bin="$(command -v gh || true)"
+bash_bin="/bin/bash"
+[ -n "$git_bin" ] && [ -x "$git_bin" ] || die "git is required for delivery"
+[ -n "$gh_bin" ] && [ -x "$gh_bin" ] || die "gh is required for delivery"
+[ -x "$bash_bin" ] || die "/bin/bash is required for delivery gates"
+git_bin="$(canonical_path "$git_bin")"
+gh_bin="$(canonical_path "$gh_bin")"
+bash_bin="$(canonical_path "$bash_bin")"
+if [ -z "$repository_slug" ]; then
+  origin_url="$(git -C "$rig" remote get-url origin 2>/dev/null || true)"
+  repository_slug="$(python3 - "$origin_url" <<'PY'
+import re
+import sys
+
+value = sys.argv[1].strip()
+match = re.fullmatch(r"(?:https://github\.com/|ssh://git@github\.com/|git@github\.com:)([^/\s]+/[^/\s]+?)(?:\.git)?", value)
+print(match.group(1) if match else "")
+PY
+)"
+  [ -n "$repository_slug" ] || die "cannot derive GitHub OWNER/REPO from origin; pass --repository"
+fi
+delivery_native_context="$city/.gc/agentops/delivery-native-context.v1.json"
+delivery_evidence_root="$rig/.gc/agentops/factory/evidence/delivery"
+delivery_worktree_root="$(dirname "$rig")/$(basename "$rig")-gc33-delivery-worktrees"
 
 ao_reducer_json=""
 
@@ -400,7 +513,7 @@ toolchain_json="$qualified_toolchain_json"
 # The receipt, not this checkout's current HEAD, is the authority for the
 # reducer source commit and committed CLI tree.
 toolchain_receipt="$(dirname "$gc_bin_dir")/toolchain.json"
-if ! ao_reducer_json="$(python3 - "$toolchain_receipt" "$toolchain_lock" "$toolchain_json" "$ao_bin" "$gc_bin" "$bd_bin" "$pack" "$city_template" "$script_dir/../.." <<'PY'
+if ! ao_reducer_json="$(python3 - "$toolchain_receipt" "$toolchain_lock" "$toolchain_json" "$ao_bin" "$delivery_bin" "$gc_bin" "$bd_bin" "$pack" "$city_template" "$script_dir/../.." <<'PY'
 import hashlib
 import json
 import os
@@ -408,10 +521,10 @@ import re
 import subprocess
 import sys
 
-receipt_path, lock_path, runtime_json, ao_bin, gc_bin, bd_bin, pack, city_template, repository = sys.argv[1:]
-receipt_path, lock_path, ao_bin, gc_bin, bd_bin, pack, city_template, repository = map(
+receipt_path, lock_path, runtime_json, ao_bin, delivery_bin, gc_bin, bd_bin, pack, city_template, repository = sys.argv[1:]
+receipt_path, lock_path, ao_bin, delivery_bin, gc_bin, bd_bin, pack, city_template, repository = map(
     os.path.realpath,
-    (receipt_path, lock_path, ao_bin, gc_bin, bd_bin, pack, city_template, repository),
+    (receipt_path, lock_path, ao_bin, delivery_bin, gc_bin, bd_bin, pack, city_template, repository),
 )
 if not os.path.isfile(receipt_path) or os.path.islink(receipt_path):
     raise SystemExit("admitted gc/bd pair has no regular toolchain.json receipt beside bin")
@@ -442,18 +555,18 @@ try:
     runtime = json.loads(runtime_json)
 except (OSError, json.JSONDecodeError) as exc:
     raise SystemExit(f"cannot read toolchain receipt: {exc}") from exc
-if receipt.get("schema_version") != 2:
-    raise SystemExit("toolchain receipt schema_version must be 2")
+if receipt.get("schema_version") != 3:
+    raise SystemExit("toolchain receipt schema_version must be 3")
 qualification = runtime.get("qualification", {})
 pair_id = qualification.get("id")
 selected = next((entry for entry in lock.get("accepted_pairs", []) if entry.get("id") == pair_id), None)
 if not isinstance(selected, dict) or receipt.get("pair") != selected:
     raise SystemExit("toolchain receipt pair does not match admitted gc/bd pair")
 entries = receipt.get("runtime")
-if not isinstance(entries, dict) or set(entries) != {"gc", "bd", "ao"}:
-    raise SystemExit("toolchain receipt runtime must contain exactly gc, bd, and ao")
+if not isinstance(entries, dict) or set(entries) != {"gc", "bd", "ao", "agentops-gc-delivery"}:
+    raise SystemExit("toolchain receipt runtime must contain exactly gc, bd, ao, and agentops-gc-delivery")
 root = os.path.dirname(receipt_path)
-for label, actual in (("gc", gc_bin), ("bd", bd_bin), ("ao", ao_bin)):
+for label, actual in (("gc", gc_bin), ("bd", bd_bin), ("ao", ao_bin), ("agentops-gc-delivery", delivery_bin)):
     item = entries.get(label)
     if not isinstance(item, dict):
         raise SystemExit(f"toolchain receipt has no {label} runtime")
@@ -468,6 +581,7 @@ for label in ("gc", "bd"):
     if item.get("version") != observed.get("version") or item.get("commit") != observed.get("commit"):
         raise SystemExit(f"toolchain receipt {label} runtime identity does not match admitted binary")
 ao = entries["ao"]
+delivery = entries["agentops-gc-delivery"]
 source_commit = ao.get("source_commit")
 cli_tree = ao.get("cli_tree")
 build_version = ao.get("build_version")
@@ -477,6 +591,8 @@ if not isinstance(cli_tree, str) or re.fullmatch(r"[0-9a-f]{40}", cli_tree) is N
     raise SystemExit("toolchain receipt has invalid ao cli_tree")
 if not isinstance(build_version, str) or not build_version:
     raise SystemExit("toolchain receipt has invalid ao build_version")
+if delivery.get("source_commit") != source_commit or delivery.get("cli_tree") != cli_tree:
+    raise SystemExit("toolchain receipt delivery reducer does not share the admitted AgentOps CLI tree")
 result = subprocess.run(["git", "-C", repository, "rev-parse", "--verify", source_commit + ":cli"], capture_output=True, text=True)
 if result.returncode or result.stdout.strip() != cli_tree:
     raise SystemExit("toolchain receipt ao cli_tree does not resolve from its source_commit")
@@ -495,6 +611,8 @@ pack_entries = [(os.path.relpath(path, pack).replace(os.sep, "/"), digest(path))
 print(json.dumps({
     "path": ao_bin,
     "binary_sha256": digest(ao_bin),
+    "delivery_path": delivery_bin,
+    "delivery_binary_sha256": digest(delivery_bin),
     "source_commit": source_commit,
     "cli_tree": cli_tree,
     "build_version": build_version,
@@ -510,16 +628,16 @@ previous_gc_bin=""
 toolchain_replacement=0
 if [ -f "$marker" ]; then
   marker_identity=""
-  if ! marker_identity="$(python3 - "$marker" "$city" "$rig" "$pack" "$rig_name" "$binding" "$codex_auth" "$max_active_sessions" "$replace_gc_bin" "$toolchain_json" "$ao_reducer_json" <<'PY'
+  if ! marker_identity="$(python3 - "$marker" "$city" "$rig" "$pack" "$rig_name" "$binding" "$codex_auth" "$max_active_sessions" "$delivery_mode" "$repository_slug" "$telemetry_json" "$replace_gc_bin" "$toolchain_json" "$ao_reducer_json" <<'PY'
 import json
 import os
 import sys
 
-marker_path, city, rig, pack, rig_name, binding, codex_auth, max_active_sessions, replace_gc_bin, toolchain_json, ao_reducer_json = sys.argv[1:]
+marker_path, city, rig, pack, rig_name, binding, codex_auth, max_active_sessions, delivery_mode, repository_slug, telemetry_json, replace_gc_bin, toolchain_json, ao_reducer_json = sys.argv[1:]
 with open(marker_path, encoding="utf-8") as handle:
     marker = json.load(handle)
 schema_version = marker.get("schema_version")
-if schema_version not in {2, 3, 4}:
+if schema_version not in {2, 3, 4, 5}:
     raise SystemExit(f"managed city marker has unsupported schema_version {schema_version!r}")
 expected = {
     "city": city,
@@ -529,9 +647,13 @@ expected = {
     "binding": binding,
     "codex_auth": codex_auth,
     "max_active_sessions": int(max_active_sessions),
+    "delivery_mode": delivery_mode,
+    "repository": repository_slug,
+    "telemetry": json.loads(telemetry_json),
 }
 for key, value in expected.items():
-    actual = marker.get(key, 1 if key == "max_active_sessions" else None)
+    default = 1 if key == "max_active_sessions" else ("auto" if key == "delivery_mode" and schema_version < 5 else None)
+    actual = marker.get(key, default)
     if actual != value:
         raise SystemExit(
             f"managed city mismatch for {key}: {actual!r} != {value!r}"
@@ -550,7 +672,7 @@ else:
     replacement = marker.get("toolchain") != requested_toolchain
     if replace_gc_bin != "1" and replacement:
         raise SystemExit("managed city mismatch for paired gc/bd toolchain identity")
-if schema_version != 4 or marker.get("ao_reducer") != json.loads(ao_reducer_json):
+if schema_version not in {4, 5} or marker.get("ao_reducer") != json.loads(ao_reducer_json):
     raise SystemExit("managed city mismatch for ao reducer identity")
 packs_lock = os.path.join(city, "packs.lock")
 recorded_lock = marker.get("packs_lock_sha256")
@@ -584,10 +706,14 @@ export GC_ISOLATED=1
 export CODEX_HOME="$city/.gc/codex-home"
 export GC_BIN="$gc_bin"
 export AO_BIN="$ao_bin"
-# A managed test/production city must not inherit desktop-wide OTLP endpoints.
-# Role sessions also receive this through city.toml, but bootstrap and the
-# supervisor perform foreground Beads/Dolt work before any role is launched.
-export OTEL_SDK_DISABLED=true
+# GC v1.3.5's native OTel recorders are opt-in. Explicit bootstrap endpoints
+# flow to the foreground controller and managed roles; absent endpoints remain
+# the upstream no-op instead of inheriting stale desktop-wide exporter state.
+unset OTEL_SDK_DISABLED GC_OTEL_METRICS_URL GC_OTEL_LOGS_URL \
+  OTEL_EXPORTER_OTLP_ENDPOINT OTEL_EXPORTER_OTLP_METRICS_ENDPOINT \
+  OTEL_EXPORTER_OTLP_LOGS_ENDPOINT || true
+[ -z "$otel_metrics_url" ] || export GC_OTEL_METRICS_URL="$otel_metrics_url"
+[ -z "$otel_logs_url" ] || export GC_OTEL_LOGS_URL="$otel_logs_url"
 # A Git remote is not necessarily a Dolt remote (local qualification clones are
 # the sharp edge). Never let rig registration synthesize or sync Dolt remotes
 # from Git URLs; off-box Beads replication is an explicit operator concern.
@@ -599,19 +725,19 @@ export BEADS_DOLT_SYNC_CLI_REMOTES=false
 write_marker() {
   local state="$1"
   mkdir -p "$city/.gc"
-  python3 - "$marker" "$city" "$rig" "$pack" "$rig_name" "$binding" "$codex_auth" "$max_active_sessions" "$state" "$toolchain_json" "$ao_reducer_json" "$city/packs.lock" <<'PY'
+  python3 - "$marker" "$city" "$rig" "$pack" "$rig_name" "$binding" "$codex_auth" "$max_active_sessions" "$delivery_mode" "$repository_slug" "$telemetry_json" "$state" "$toolchain_json" "$ao_reducer_json" "$city/packs.lock" <<'PY'
 import json
 import os
 import sys
 import tempfile
 
-path, city, rig, pack, rig_name, binding, codex_auth, max_active_sessions, state, toolchain_json, ao_reducer_json, packs_lock = sys.argv[1:]
+path, city, rig, pack, rig_name, binding, codex_auth, max_active_sessions, delivery_mode, repository_slug, telemetry_json, state, toolchain_json, ao_reducer_json, packs_lock = sys.argv[1:]
 if not os.path.isfile(packs_lock) or os.path.islink(packs_lock):
     raise SystemExit("managed city must have a regular packs.lock generated by Gas City")
 with open(packs_lock, "rb") as handle:
     packs_lock_sha256 = __import__("hashlib").sha256(handle.read()).hexdigest()
 payload = {
-    "schema_version": 4,
+    "schema_version": 5,
     "state": state,
     "city": city,
     "rig": rig,
@@ -620,6 +746,9 @@ payload = {
     "binding": binding,
     "codex_auth": codex_auth,
     "max_active_sessions": int(max_active_sessions),
+    "delivery_mode": delivery_mode,
+    "repository": repository_slug,
+    "telemetry": json.loads(telemetry_json),
     "toolchain": json.loads(toolchain_json),
     "ao_reducer": json.loads(ao_reducer_json),
     "packs_lock_sha256": packs_lock_sha256,
@@ -924,7 +1053,147 @@ finally:
         os.unlink(temporary)
 PY
 
-python3 - "$city/city.toml" "$city_template" "$CODEX_HOME" "$gc_bin" "$ao_bin" "$city" "$rig" "$max_active_sessions" "$claude_wrapper" <<'PY'
+# Bind the refinery once at bootstrap. Per-delivery Beads carry only immutable
+# request references; they can never select executables, repositories, or gates.
+mkdir -p "$delivery_evidence_root" "$delivery_worktree_root" "$(dirname "$delivery_native_context")"
+native_context_digest="$(python3 - "$delivery_native_context" "$rig" "$delivery_worktree_root" "$rig/.beads" "$rig_name" "$repository_slug" "$toolchain_receipt" "$gc_bin" "$bd_bin" "$git_bin" "$gh_bin" "$bash_bin" "$delivery_bin" "$replace_gc_bin" <<'PY'
+import hashlib
+import json
+import os
+import sys
+import tempfile
+
+(path, repository_dir, worktree_root, beads_dir, rig_id, repository, receipt,
+ gc, bd, git, gh, bash, delivery, replace_toolchain) = sys.argv[1:]
+lock = os.path.join(repository_dir, "deploy", "gc", "toolchain.lock.json")
+capability = os.path.join(repository_dir, "deploy", "gc", "beads-capability-selection.v1.json")
+for source in (lock, capability, receipt, gc, bd, git, gh, bash, delivery):
+    if not os.path.isfile(source) or os.path.islink(source):
+        raise SystemExit(f"native delivery input is missing or unsafe: {source}")
+
+def digest(item):
+    value = hashlib.sha256()
+    with open(item, "rb") as handle:
+        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+            value.update(chunk)
+    return value.hexdigest()
+
+lock_digest = digest(lock)
+capability_digest = digest(capability)
+if lock_digest != "aecc3e4b097e8e873f2a92478da4535b85bc70fdc31c9605aa4a4462a0482fa0":
+    raise SystemExit("native delivery toolchain lock differs from the qualified GC33 contract")
+if capability_digest != "1ea4f0946fd713c02d5ef0855f47f41bf108fe6ca33c76959f173350816a1359":
+    raise SystemExit("native delivery Beads capability differs from the qualified GC33 contract")
+payload = {
+    "schema_version": "gc-delivery-native-context.v1",
+    "rig_id": rig_id,
+    "repository": repository,
+    "repository_dir": repository_dir,
+    "worktree_root": worktree_root,
+    "beads_dir": beads_dir,
+    "remote": "origin",
+    "base_ref": "main",
+    "successor_capability_digest": capability_digest,
+    "toolchain_lock_digest": lock_digest,
+    "toolchain_receipt_path": receipt,
+    "toolchain_receipt_digest": digest(receipt),
+    "beads_representation": "B-successor-delivery-bead",
+    "executables": {
+        "gc": {"path": gc, "digest": digest(gc)},
+        "bd": {"path": bd, "digest": digest(bd)},
+        "git": {"path": git, "digest": digest(git)},
+        "gh": {"path": gh, "digest": digest(gh)},
+        "bash": {"path": bash, "digest": digest(bash)},
+        "agentops-gc-delivery": {"path": delivery, "digest": digest(delivery)},
+    },
+    "check_only_gate_argv": [[bash, "scripts/check-gc-executor.sh"]],
+}
+raw = json.dumps(payload, ensure_ascii=True, separators=(",", ":"), sort_keys=True).encode() + b"\n"
+existing = open(path, "rb").read() if os.path.exists(path) and not os.path.islink(path) else None
+if os.path.islink(path):
+    raise SystemExit("managed native delivery context is a symlink")
+if existing != raw:
+    if existing is not None and replace_toolchain != "1":
+        raise SystemExit("managed native delivery context conflicts with requested bootstrap identity")
+    fd, temporary = tempfile.mkstemp(prefix=".delivery-context.", dir=os.path.dirname(path))
+    try:
+        os.fchmod(fd, 0o600)
+        with os.fdopen(fd, "wb") as handle:
+            handle.write(raw)
+            handle.flush()
+            os.fsync(handle.fileno())
+        os.replace(temporary, path)
+    finally:
+        if os.path.exists(temporary):
+            os.unlink(temporary)
+print(hashlib.sha256(raw).hexdigest())
+PY
+)"
+
+# Formula v2 check paths are resolved inside the city.  Project the tiny
+# wrapper atomically from the imported pack; it is deliberately a wrapper, not
+# another controller or a mutable city-local policy source.
+python3 - "$pack" "$city/.gc/scripts" "$city/.gc/schemas/agentops-factory" <<'PY'
+import os
+import sys
+import tempfile
+import tomllib
+
+pack, destination, schema_destination = sys.argv[1:]
+with open(os.path.join(pack, "pack.toml"), "rb") as handle:
+    pack_name = tomllib.load(handle).get("pack", {}).get("name")
+# The bootstrap test fixture exercises the generic executor pack.  It has no
+# Formula-v2 controller bridge and must not acquire one by implication.
+if pack_name != "agentops-factory":
+    raise SystemExit(0)
+sources = {
+    "agentops-factory-check": os.path.join(pack, "assets", "scripts", "agentops-factory-check.sh"),
+    "agentops-factory-feeder": os.path.join(pack, "assets", "scripts", "factory_feeder.py"),
+}
+os.makedirs(destination, mode=0o700, exist_ok=True)
+for name, source in sources.items():
+    if not os.path.isfile(source) or os.path.islink(source):
+        raise SystemExit(f"missing regular factory projection source: {source}")
+    target = os.path.join(destination, name)
+    data = open(source, "rb").read()
+    fd, temporary = tempfile.mkstemp(prefix=f".{name}.", dir=destination)
+    try:
+        os.fchmod(fd, 0o700)
+        with os.fdopen(fd, "wb") as handle:
+            handle.write(data)
+            handle.flush()
+            os.fsync(handle.fileno())
+        os.replace(temporary, target)
+    finally:
+        if os.path.exists(temporary):
+            os.unlink(temporary)
+schema_source = os.path.join(pack, "assets", "schemas")
+if not os.path.isdir(schema_source) or os.path.islink(schema_source):
+    raise SystemExit(f"missing regular factory schema source: {schema_source}")
+os.makedirs(schema_destination, mode=0o700, exist_ok=True)
+schema_names = sorted(name for name in os.listdir(schema_source) if name.endswith(".schema.json"))
+if not schema_names:
+    raise SystemExit("factory projection has no schemas")
+for name in schema_names:
+    source = os.path.join(schema_source, name)
+    if not os.path.isfile(source) or os.path.islink(source):
+        raise SystemExit(f"factory schema projection source is not a regular file: {source}")
+    target = os.path.join(schema_destination, name)
+    data = open(source, "rb").read()
+    fd, temporary = tempfile.mkstemp(prefix=f".{name}.", dir=schema_destination)
+    try:
+        os.fchmod(fd, 0o600)
+        with os.fdopen(fd, "wb") as handle:
+            handle.write(data)
+            handle.flush()
+            os.fsync(handle.fileno())
+        os.replace(temporary, target)
+    finally:
+        if os.path.exists(temporary):
+            os.unlink(temporary)
+PY
+
+python3 - "$city/city.toml" "$city_template" "$CODEX_HOME" "$gc_bin" "$ao_bin" "$city" "$rig" "$rig_name" "$max_active_sessions" "$claude_wrapper" "$delivery_bin" "$bd_bin" "$git_bin" "$gh_bin" "$bash_bin" "$delivery_evidence_root" "$delivery_native_context" "$native_context_digest" "$repository_slug" "$delivery_mode" "$otel_metrics_url" "$otel_logs_url" <<'PY'
 import json
 import hashlib
 import os
@@ -933,7 +1202,7 @@ import sys
 import tempfile
 import tomllib
 
-path, template_path, codex_home, gc_bin, ao_bin, city, requested_rig, max_active_sessions, claude_wrapper = sys.argv[1:]
+path, template_path, codex_home, gc_bin, ao_bin, city, requested_rig, requested_rig_name, max_active_sessions, claude_wrapper, delivery_bin, bd_bin, git_bin, gh_bin, bash_bin, delivery_root, delivery_context, delivery_context_digest, repository, delivery_mode, otel_metrics_url, otel_logs_url = sys.argv[1:]
 with open(path, encoding="utf-8") as handle:
     text = handle.read()
 with open(template_path, encoding="utf-8") as handle:
@@ -949,6 +1218,20 @@ replacements = {
     "__GC_AGENTOPS_CODEX_HOME__": codex_home,
     "__GC_AGENTOPS_GC_BIN__": gc_bin,
     "__GC_AGENTOPS_AO_BIN__": ao_bin,
+    "__GC_AGENTOPS_FACTORY_FEEDER__": os.path.join(city, ".gc", "scripts", "agentops-factory-feeder"),
+    "__GC_AGENTOPS_DELIVERY_BIN__": delivery_bin,
+    "__GC_AGENTOPS_BD_BIN__": bd_bin,
+    "__GC_AGENTOPS_GIT_BIN__": git_bin,
+    "__GC_AGENTOPS_GH_BIN__": gh_bin,
+    "__GC_AGENTOPS_BASH_BIN__": bash_bin,
+    "__GC_AGENTOPS_DELIVERY_ROOT__": delivery_root,
+    "__GC_AGENTOPS_DELIVERY_NATIVE_CONTEXT__": delivery_context,
+    "__GC_AGENTOPS_DELIVERY_NATIVE_CONTEXT_DIGEST__": delivery_context_digest,
+    "__GC_AGENTOPS_DELIVERY_REPOSITORY__": repository,
+    "__GC_AGENTOPS_DELIVERY_RIG__": requested_rig_name,
+    "__GC_AGENTOPS_DELIVERY_MODE__": delivery_mode,
+    "__GC_AGENTOPS_OTEL_METRICS_URL__": otel_metrics_url,
+    "__GC_AGENTOPS_OTEL_LOGS_URL__": otel_logs_url,
     "__GC_AGENTOPS_CLAUDE_WRAPPER__": claude_wrapper,
     "__GC_AGENTOPS_TMUX_SOCKET__": (
         "agentops-" + hashlib.sha256(os.path.realpath(city).encode()).hexdigest()[:20]
@@ -1098,8 +1381,32 @@ if workspace.get("max_active_sessions") != max_active_sessions:
     raise SystemExit(f"city workspace max_active_sessions must be {max_active_sessions}")
 if workspace.get("env", {}).get("GC_BIN") != gc_bin:
     raise SystemExit("city workspace must pin GC_BIN for managed sessions")
-if workspace.get("env", {}).get("OTEL_SDK_DISABLED") != "true":
-    raise SystemExit("city workspace must disable inherited OTLP exporters for managed sessions")
+delivery_env = {
+    "AO_BIN": ao_bin,
+    "AGENTOPS_GC_DELIVERY_BIN": delivery_bin,
+    "AGENTOPS_GC_BEADS_BIN": bd_bin,
+    "AGENTOPS_GC_GIT_BIN": git_bin,
+    "AGENTOPS_GC_GH_BIN": gh_bin,
+    "AGENTOPS_GC_BASH_BIN": bash_bin,
+    "AGENTOPS_GC_DELIVERY_ROOT": delivery_root,
+    "AGENTOPS_GC_DELIVERY_NATIVE_CONTEXT": delivery_context,
+    "AGENTOPS_GC_DELIVERY_NATIVE_CONTEXT_DIGEST": delivery_context_digest,
+    "AGENTOPS_GC_DELIVERY_RIG": requested_rig_name,
+    "AGENTOPS_GC_DELIVERY_REPOSITORY": repository,
+    "AGENTOPS_GC_DELIVERY_REMOTE": "origin",
+    "AGENTOPS_GC_DELIVERY_MODE": delivery_mode,
+    "AGENTOPS_GC_DELIVERY_DEADLINE_SECONDS": "86400",
+}
+if any(workspace.get("env", {}).get(key) != value for key, value in delivery_env.items()):
+    raise SystemExit("city workspace delivery controller binding differs from bootstrap identity")
+if workspace.get("env", {}).get("AGENTOPS_FACTORY_FEEDER") != os.path.join(city, ".gc", "scripts", "agentops-factory-feeder"):
+    raise SystemExit("city workspace must pin the generated factory feeder")
+if workspace.get("env", {}).get("GC_OTEL_METRICS_URL") != otel_metrics_url or workspace.get("env", {}).get("GC_OTEL_LOGS_URL") != otel_logs_url:
+    raise SystemExit("city workspace must bind explicit GC v1.3.5 OTel endpoints")
+if workspace.get("env", {}).get("OTEL_EXPORTER_OTLP_ENDPOINT") != "":
+    raise SystemExit("city workspace must clear the ambient generic OTLP fallback")
+if "OTEL_SDK_DISABLED" in workspace.get("env", {}):
+    raise SystemExit("city workspace must not disable GC v1.3.5 native OTel recorders")
 expected_socket = "agentops-" + hashlib.sha256(os.path.realpath(city).encode()).hexdigest()[:20]
 if session.get("socket") != expected_socket:
     raise SystemExit("city tmux socket must be bound to the canonical city path")
@@ -1634,133 +1941,41 @@ with os.fdopen(fd, "w", encoding="utf-8") as handle:
 os.replace(temporary, path)
 PY
 
-executor_agents_before="$(mktemp "$city/.gc/executor-agents-before.XXXXXX")"
-executor_agents_after="$(mktemp "$city/.gc/executor-agents-after.XXXXXX")"
-trap 'rm -f "$executor_agents_before" "$executor_agents_after"' EXIT
-"$gc_bin" --city "$city" agent list --json >"$executor_agents_before"
+executor_agents="$(mktemp "$city/.gc/executor-agents.XXXXXX")"
+trap 'rm -f "$executor_agents"' EXIT
+"$gc_bin" --city "$city" agent list --json >"$executor_agents"
 
-# Direct executor packets carry the candidate directory name in
-# gc.pack_workspace. Gas City resolves that value relative to the role's
-# work_dir, so the primary rig needs the same parent-root policy as every
-# dynamic factory worktree rig. Pointing these roles at the rig itself launches
-# them at <rig>/<rig>; leaving work_dir unset has the same effect through GC's
-# rig default. Reconcile only the three packet executor routes, then prove the
-# effective native projection below.
-python3 - "$city/city.toml" "$executor_agents_before" "$rig_name" "$binding" "$rig" <<'PY'
+# GC v1.3.5 reads each task's absolute work_dir. The checked Formula stamps
+# that task field directly, so bootstrap must preserve the imported role
+# configs instead of patching a shared base directory around gc.pack_workspace.
+python3 - "$executor_agents" "$rig_name" "$binding" <<'PY'
 import json
-import os
-import re
 import sys
-import tempfile
-import tomllib
 
-path, agents_path, rig_name, binding, rig_root = sys.argv[1:]
+path, rig_name, binding = sys.argv[1:]
 with open(path, encoding="utf-8") as handle:
-    text = handle.read()
-with open(agents_path, encoding="utf-8") as handle:
     value = json.load(handle)
-
 agents = value.get("agents") if isinstance(value, dict) else None
 if not isinstance(agents, list):
     raise SystemExit("gc agent list returned no agent inventory")
-roles = ("implementer", "implementer-claude", "validator")
-expected = {
-    f"{rig_name}/{binding}.{role}": f"{binding}.{role}"
-    for role in roles
-}
-for qualified_name in expected:
-    matches = [
-        agent for agent in agents
-        if isinstance(agent, dict) and agent.get("qualified_name") == qualified_name
-    ]
-    if len(matches) != 1:
-        raise SystemExit(
-            f"selected AgentOps pack must expose exactly one {qualified_name!r}; "
-            f"found {len(matches)}"
-        )
-    agent = matches[0]
-    if agent.get("dir") != rig_name or agent.get("scope") != "rig":
-        raise SystemExit(f"executor route {qualified_name!r} is not rig-scoped")
-    if agent.get("suspended") is True:
-        raise SystemExit(f"executor route {qualified_name!r} is suspended")
-
-markers = list(re.finditer(r"(?m)^\[\[(rigs|patches\.agent)\]\]\s*$", text))
-if not markers:
-    raise SystemExit("managed city contains neither rig nor agent patch blocks")
-base = text[:markers[0].start()].rstrip()
-rig_sections = []
-preserved_patches = []
-managed_names = set(expected.values())
-for index, match in enumerate(markers):
-    end = markers[index + 1].start() if index + 1 < len(markers) else len(text)
-    block = text[match.start():end].strip()
-    parsed = tomllib.loads(block)
-    if match.group(1) == "rigs":
-        rig_sections.append(block)
-        continue
-    patches = parsed.get("patches", {}).get("agent", [])
-    if len(patches) != 1:
-        raise SystemExit("managed city contains an invalid agent patch block")
-    patch = patches[0]
-    if patch.get("dir") == rig_name and patch.get("name") in managed_names:
-        continue
-    preserved_patches.append(block)
-
-session_work_dir = os.path.dirname(os.path.realpath(rig_root))
-managed_patches = [
-    "[[patches.agent]]\n"
-    f"dir = {json.dumps(rig_name)}\n"
-    f"name = {json.dumps(local_name)}\n"
-    f"work_dir = {json.dumps(session_work_dir)}"
-    for local_name in expected.values()
-]
-rendered = "\n\n".join([base, *rig_sections, *preserved_patches, *managed_patches]) + "\n"
-tomllib.loads(rendered)
-if rendered != text:
-    fd, temporary = tempfile.mkstemp(prefix=".city.toml.", dir=os.path.dirname(path))
-    os.fchmod(fd, os.stat(path).st_mode & 0o777)
-    with os.fdopen(fd, "w", encoding="utf-8") as handle:
-        handle.write(rendered)
-        handle.flush()
-        os.fsync(handle.fileno())
-    os.replace(temporary, path)
-    directory_fd = os.open(os.path.dirname(path), os.O_RDONLY)
-    try:
-        os.fsync(directory_fd)
-    finally:
-        os.close(directory_fd)
-PY
-
-"$gc_bin" --city "$city" config show >/dev/null
-"$gc_bin" --city "$city" agent list --json >"$executor_agents_after"
-python3 - "$executor_agents_after" "$rig_name" "$binding" "$rig" <<'PY'
-import json
-import os
-import sys
-
-path, rig_name, binding, rig_root = sys.argv[1:]
-with open(path, encoding="utf-8") as handle:
-    value = json.load(handle)
-agents = value.get("agents") if isinstance(value, dict) else None
-if not isinstance(agents, list):
-    raise SystemExit("gc agent list returned no agent inventory after workspace reconciliation")
-expected_work_dir = os.path.dirname(os.path.realpath(rig_root))
 for role in ("implementer", "implementer-claude", "validator"):
     qualified_name = f"{rig_name}/{binding}.{role}"
     matches = [
         agent for agent in agents
         if isinstance(agent, dict) and agent.get("qualified_name") == qualified_name
     ]
-    if len(matches) != 1 or matches[0].get("work_dir") != expected_work_dir:
-        actual = [agent.get("work_dir") for agent in matches]
+    if len(matches) != 1:
         raise SystemExit(
-            f"executor route {qualified_name!r} must resolve packet workspaces from "
-            f"{expected_work_dir!r}; found {actual!r}"
+            f"selected AgentOps pack must expose exactly one {qualified_name!r}; found {len(matches)}"
         )
+    agent = matches[0]
+    if agent.get("dir") != rig_name or agent.get("scope") != "rig" or agent.get("suspended") is True:
+        raise SystemExit(f"executor route {qualified_name!r} is not one active rig-scoped role")
 PY
-rm -f "$executor_agents_before" "$executor_agents_after"
+rm -f "$executor_agents"
 trap - EXIT
 
+"$gc_bin" --city "$city" config show >/dev/null
 "$gc_bin" --city "$city" config explain >/dev/null
 for provider_name in codex claude; do
   "$gc_bin" --city "$city" config explain --provider "$provider_name" --json >/dev/null

@@ -28,7 +28,9 @@ The deployment is intentionally smaller than a traditional Gas Town:
   machine-wide supervisor configuration;
 - one private `CODEX_HOME` that links, but does not copy, an explicitly selected
   authenticated `auth.json`;
-- one deployment-pinned `GC_BIN` shared by pack commands and managed sessions;
+- one deployment-pinned schema-3 toolchain receipt containing exact `gc`, `bd`,
+  `ao`, and `agentops-gc-delivery` binaries; delivery also binds the exact Git,
+  GitHub CLI, and Bash executables it may invoke;
 - one caller-supplied disposable rig, registered suspended;
 - exact additional-directory grants for the private GC runtime paths and every
   configured physical rig root; packet dispatch rejects any workspace that is
@@ -49,9 +51,9 @@ The deployment is intentionally smaller than a traditional Gas Town:
   at city and managed-rig scope;
 - scaffold maintenance pools (`bd.dog` and `core.control-dispatcher`) are also
   suspended so they cannot consume the execution-only city's session cap;
-- no `[[named_session]]` or always-on session. The thin executor pack has no
-  Mayor or Refiner; the optional factory pack adds on-demand semantic roles
-  around the same packet boundary.
+- no always-on model session. The thin executor pack has no Mayor or Refiner;
+  the optional factory pack exposes on-demand Fable Mayor and gated ambiguity
+  sessions around the same packet boundary.
 
 The thin AgentOps pack defines explicit Codex and Claude single-packet
 Implementer and Validator roles. Every agent selects its provider and model
@@ -62,11 +64,13 @@ implementation with a fresh interactive GC session; it is not a 3.3 validation
 route. A fresh Validator context must not reuse the Implementer's context
 identity.
 
-When selected, `agentops-factory` imports the one-loop target: Fable Mayor,
-Sol plan and fresh validation, Terra-high/Opus-medium implementation, and a
-model-free serialized Refinery. Fable Refiner is zero-or-one nonbinding
-ambiguity advice, but GC33-3 keeps its dispatch closed pending GC33-4 process
-isolation; Luna-high is support-only. The program records requested and actual
+When selected, `agentops-factory` imports one bounded native chain: Fable
+Mayor and fresh Sol plan checks run once, a one-shot feeder admits only a
+checked PASS graph, then explicitly routed Terra-high or Opus-medium
+implementation and fresh Sol validation terminalize semantics before the
+model-free delivery reducer. There is no Mayor rescope retry, Formula drain,
+or clean-path Refiner wake; Fable Refiner is nonbinding ambiguity advice only
+and Luna-high is support-only. The program records requested and actual
 role, model, provider, reasoning, and fallback facts in the 3.3-authoritative
 `factory-role-request.v2` and `factory-role-response.v2` contracts. The work
 unit is still a bead, never the pack. Candidate rigs expose their admitted
@@ -119,6 +123,9 @@ For a released pack, use the normal import command and a durable commit pin.
 6. Validate emits exactly one `verdict.v2` beneath the evidence workspace. The
    GC adapter returns the artifact reference and transport/runtime evidence,
    without copying the semantic result into its own response, then stops.
+7. The optional factory writes and closes the immutable semantic terminal before
+   PASS-only delivery admission. Its deterministic reducer may later reconcile
+   moving `main`, PR, protected CI, and merge without reopening that terminal.
 
 The packet evidence directory also contains digest-bound
 `runtime-transport.json` and `runtime-result.json` receipts. They make a
@@ -151,12 +158,12 @@ a closed transport item cannot upgrade `FAIL` or `NOT_PROVEN` to `PASS`.
 ## Bootstrap and stability gate
 
 `deploy/gc/bootstrap.sh` refuses any nonempty city it did not previously mark as
-managed. Before city creation it requires `gc` and `bd` to be colocated and to
-match one exact entry in `deploy/gc/toolchain.lock.json`; version-only matches
-are rejected. `deploy/gc/materialize-toolchain.sh` builds the default qualified
-pair from its two exact source commits and emits a local digest receipt without
-modifying installed binaries. Bootstrap then clears inherited Gas City and
-Dolt selectors, sets
+managed. Before city creation it requires `gc`, `bd`, `ao`, and the delivery
+reducer to match one schema-3 receipt rooted in the exact accepted
+GC/official-Beads pair; version-only matches and extra receipt runtimes are
+rejected. `deploy/gc/materialize-toolchain.sh` builds those four binaries from
+the exact sources without modifying installed binaries. Bootstrap clears
+inherited Gas City, Dolt, and generic OTel selectors, sets
 `GC_HOME=<city>/.gc-home` and `GC_ISOLATED=1`, persists a private loopback
 supervisor port for service-manager launches, links and checks Codex auth,
 checks first-party Claude authentication without starting a session,
@@ -177,17 +184,28 @@ gc config explain
 gc import status --json
 ```
 
+GC v1.3.5 native metrics and logs are enabled with an explicit endpoint pair.
+Telemetry mode `auto` records a durable degraded state when the pair is absent,
+`required` fails before mutation, and `off` is explicit. The generic
+`OTEL_EXPORTER_OTLP_ENDPOINT` fallback is always cleared so desktop-wide state
+cannot silently override the managed policy.
+
 `deploy/gc/teardown.sh` consumes that same marker and exact GC binary. It binds
 supervisor shutdown to the private `GC_HOME`, waits for the supervisor's
 destructive stop to finish, idempotently stops managed Dolt once more, and
 refuses success while the city's tmux socket or path-scoped processes remain.
 It does not delete the city or its bead history.
 
-A deployment is stable enough for AgentOps use only after a real negative test
-rejects an invalid envelope and three consecutive independent experiments
-produce correct durable outcomes without operator nudges, retries, manual
-session restarts, or transport repair. Restart the city between the first and
-second successful experiments, require native-store/doctor checks to remain
-clean, verify distinct implementer and validator context identities, exercise
-both provider families (including cross-provider validation), and confirm that
-no AGY process/config and no historical city state was used or modified.
+A 3.3 candidate is release-ready only after the deterministic repository gate,
+exact official GC v1.3.5 pack/Formula inspection, materialized-toolchain and two
+clean-bootstrap proofs, and a fresh Sol binding verdict all PASS over the frozen
+subject. It then gets one bounded width-two live canary in a new city and rig,
+with telemetry `required`: one admitted Terra-high and one admitted Opus-medium
+implementation, fresh author-distinct Sol-high validation, semantic terminal
+closure before delivery, moving-main PR/CI/rebase/merge convergence, cold replay
+without duplicate effects, and zero clean-path Refiner or Luna wakes. The old
+controller city remains suspended. The first live failure stops qualification;
+there is no recursive repair through that city and no second attempt under the
+same candidate. Missing provenance, telemetry signals, exact role identity,
+terminal/certificate binding, protected delivery evidence, or clean teardown is
+`NOT_READY`, not a discretionary waiver.

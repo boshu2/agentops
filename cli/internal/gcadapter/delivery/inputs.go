@@ -137,15 +137,15 @@ func DecodeExactNativeContext(raw []byte, digest string) (NativeContext, error) 
 			return NativeContext{}, errors.New("native context paths must be absolute")
 		}
 	}
-	for _, name := range []string{"gc", "bd", "git", "gh", "agentops-gc-delivery"} {
+	for _, name := range []string{"gc", "bd", "git", "gh", "bash", "agentops-gc-delivery"} {
 		binding, ok := native.Executables[name]
 		if !ok || !filepath.IsAbs(binding.Path) || !isHex(binding.Digest, 64) {
 			return NativeContext{}, errors.New("native executable binding is invalid")
 		}
 	}
 	for _, gate := range native.CheckOnlyGateArgv {
-		if len(gate) == 0 || !filepath.IsAbs(gate[0]) {
-			return NativeContext{}, errors.New("native context gate must begin with an absolute executable")
+		if len(gate) == 0 || gate[0] != native.Executables["bash"].Path {
+			return NativeContext{}, errors.New("native context gate must begin with the bound bash executable")
 		}
 	}
 	return native, nil

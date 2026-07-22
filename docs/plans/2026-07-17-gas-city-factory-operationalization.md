@@ -289,6 +289,11 @@ one durable degraded result when unavailable. `required` is used for release
 qualification. The 3.3 canary must observe lifecycle, sling/pool, and Beads
 signals through both endpoints.
 
+Bootstrap also clears `OTEL_EXPORTER_OTLP_ENDPOINT` and the per-signal generic
+SDK endpoint variables before invoking GC. Official v1.3.5 treats the generic
+endpoint as a fallback when the GC-specific pair is empty, so leaving ambient
+desktop state inherited would make `auto` degradation false and nondeterministic.
+
 3.3 does not ship a collector stack, Grafana dashboards, distributed traces,
 or model-cost analytics. Those belong to the 3.3.1 plan.
 
@@ -321,7 +326,10 @@ scope.
 The delivery product surface is limited to one transition/reconciliation core,
 one certificate/handoff adapter, one Beads adapter, one Git/worktree adapter,
 one forge/CI/merge adapter, and immutable receipt/capsule schemas. The pack may
-configure and invoke those commands; it may not own lifecycle Python.
+configure and invoke those commands. Its one-shot Python feeder may only bridge
+checked Formula output to exact graph admission, semantic terminalization, and
+PASS-only handoff; it may not poll, schedule, retry, select delivery work, or
+stay resident.
 
 The release prohibits a resident delivery daemon, webhook control plane,
 general scheduler, second merge engine, private lifecycle ledger, default
@@ -329,9 +337,15 @@ trains, nested integration courts, dynamic delivery rigs, or model-authored
 Git/queue/lifecycle transitions. A thin vertical slice measures the actual
 surface before full implementation. A projection beyond roughly 3,000
 non-test Go lines is a re-scope tripwire, not a correctness target. The
-completed GC33-7 subject contains 4,621 physical non-test Go lines across the optional
-command, typed reducer, and Beads/Git/PR/hosted providers. This exceeds the
-tripwire by 1,621 lines and is therefore recorded as a review fact. The added
+GC33 native workflow binding grows the fixed seven-file baseline (4,621
+physical / 4,278 nonblank-noncomment lines) to a fixed nine-file delivery
+surface of 5,267 physical / 4,850 nonblank-noncomment non-test Go lines. The two
+new files are the bounded native status and sweep reducers. The named
+command-input-reducer-native-provider core grows from 3,728 / 3,445 to 4,010 /
+3,705. The total increase is therefore 646 physical / 572 substantive lines,
+including 282 / 260 in the existing core. This exceeds the original tripwire
+and is recorded as a review fact rather than hidden by changing the measured
+set. The added
 surface remains within the admitted components: it adds no daemon, scheduler,
 model-authored transition, second merge engine, or private lifecycle ledger.
 
@@ -451,11 +465,11 @@ cannot land without the exact expected head and nonempty required hosted CI.
 
 ### Exact-subject proof
 
-Given all deterministic and live checks have completed, when
-`refinery-qualification.v1` is verified, then it transitively binds the exact
-source, `ao` binary, pack, config, toolchain, store, forge policy, semantic
+Given all deterministic and live checks have completed, when the release
+evidence manifest is verified, then it transitively binds the exact source,
+schema-3 toolchain receipt, pack, config, store, forge policy, semantic
 certificate, PR head, required checks, selected merge actor, landed SHA/tree,
-zero-wake result, deletion inventory, clean-start receipts, and explicit
+telemetry receipts, zero-wake result, clean-start receipts, and explicit
 checked/not-checked scope. Any mismatch or missing edge is `NOT_PROVEN`.
 
 ### Fork discipline
@@ -496,10 +510,11 @@ Before a live start, require:
 12. a deterministic verifier accepting the exact-subject qualification
     capsule and rejecting every negative release rule.
 
-The live canary has a hard maximum of two starts total, regardless of whether
-`live_effect_begins` is reached. That marker classifies effect exposure but
-never authorizes a third start. A fix requires a new identity and a complete
-deterministic-gate rerun. Stop after the second total start.
+The frozen candidate has exactly one live canary attempt. Any canary failure
+stops qualification immediately. Diagnosis and repair happen outside Gas City;
+a fix creates a new candidate identity and reruns the complete deterministic,
+fresh-validation, materialization, and clean-bootstrap sequence before another
+live attempt can be authorized.
 
 ## Stop conditions
 
@@ -529,16 +544,16 @@ Stop and return to external diagnosis when:
   losing merge engine remains reachable;
 - teardown leaves owned sessions, compiles, tmux servers, worktrees, or Dolt
   instances;
-- the qualification capsule does not verify or the live subject differs from
+- the release evidence manifest does not verify or the live subject differs from
   its bound identities;
-- the two-attempt live budget is spent.
+- the single live canary attempt fails or is interrupted before proof completes.
 
 The existing `/Users/bo/dev/gc-agentops-v17-controller-city-20260719` remains
 suspended throughout implementation and qualification.
 
 ## Release-ready verdict
 
-`READY` requires the verified `refinery-qualification.v1` capsule over the exact
+`READY` requires a verified release evidence manifest over the exact
 post-deletion subject, all deterministic checks, two clean bootstrap/teardown
 cycles, the width-two moving-main canary within budget, terminal semantic beads
 before delivery, one-PR crash and cold-resurrection replay, zero routine Refiner

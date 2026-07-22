@@ -3,7 +3,12 @@
 This directory is the source-controlled deployment projection for running an
 AgentOps Gas City pack. It creates a new, isolated city with explicit Codex and
 interactive Claude role pools. Use `agentops-executor` for caller-supplied
-single packets or `agentops-factory` for Mayor-to-Refinery bead orchestration.
+single packets or `agentops-factory` for checked, bead-native workflow
+orchestration. In 3.3 the factory is Fable Mayor → fresh Sol plan check →
+one-shot graph admission → Terra/Opus implementation → fresh Sol validation
+→ semantic terminal → deterministic delivery. Refiner is not a clean-path
+worker and Luna is support-only; no Mayor retry/rescope or drain topology is
+enabled.
 Bootstrap does not migrate an older city, start a role session, or make Gas
 City the owner of AgentOps completion.
 
@@ -23,9 +28,10 @@ deploy/gc/materialize-toolchain.sh --output /path/to/agentops-gc-toolchain
 ```
 
 The command checks out both declared commits, uses each project’s canonical
-build, verifies the resulting runtime identities, colocates `bin/gc` and
-`bin/bd`, and writes `toolchain.json` with the source identities and local
-binary digests. It never edits an installed Homebrew or user binary. Use
+build, verifies the resulting runtime identities, builds `bin/ao` and
+`bin/agentops-gc-delivery` from one exact committed AgentOps CLI tree, and
+writes a schema-3 `toolchain.json` with all four source and binary identities.
+It never edits an installed Homebrew or user binary. Use
 `--describe` to inspect the default pair or `--pair ID --describe` to inspect
 another accepted entry without building it.
 
@@ -64,33 +70,31 @@ ordinary city restart; use `gc rig suspend` when the rig must remain dormant.
 Rig registration validates and reverses only Gas City's canonical `.gitignore`
 projection, preserving the caller's exact tracked bytes while keeping the
 runtime-owned `.beads` state local.
-The deployment declares no always-on or named sessions. Gas City derives a
+The deployment declares no always-on sessions. Gas City derives a
 generic sling target from each registered provider; bootstrap explicitly
 suspends those targets plus the scaffold's maintenance pools at city and
 managed-rig scope. Only roles explicitly supplied by the selected pack remain
-routable in the primary rig. Bootstrap also pins the four direct packet
-executor roles to the primary rig's parent directory and verifies that native
-`gc agent list` resolves the same roots. Because packet metadata contributes
-the candidate directory name, this launches the role in the exact supplied
-workspace instead of the invalid `<workspace>/<workspace>` path. The factory
-applies the same parent-root rule while patching every dynamic candidate rig so
-only its bead-selected Codex/Claude Worker and Validator routes remain active,
-and every integration rig so only its two Validator routes remain active.
+routable. Direct packet work uses the registered rig root. Factory Formula
+tasks instead stamp the exact absolute `work_dir` selected for that bead;
+official GC v1.3.5 launches the fresh Terra/Opus/Sol session there. The 3.3
+factory does not create a second rig, Dolt server, or integration rig per
+candidate.
 
 The private `CODEX_HOME` contains a symlink to the explicitly selected existing
 `auth.json`; credentials are not copied. When `--codex-auth` is omitted, the
 bootstrap uses the `auth.json` under the caller's original `CODEX_HOME` (or
 `$HOME/.codex`). It fails before starting unless `codex login status` succeeds
 through the private home. `--gc-bin` and `--ao-bin` are explicit paths;
-bootstrap never resolves `gc`, `bd`, or `ao` from ambient `PATH` after
-admission. `--gc-bin` must have its paired `bd` beside it. Both runtime
-identities must match one exact entry in `toolchain.lock.json` before the city
-is created. The marker records selected source commits, release checksum
-provenance, runtime paths/digests, the built ao source commit/exact committed
-`cli` tree and reported build version, exact pack
-content, `AO_BIN`, reducer and schema/config digests, and the Gas City-generated `packs.lock`
-digest; workspace sessions inherit the same pair and cannot drift to another
-`gc`, `bd`, or `ao` on `PATH`. Moving an existing managed city to a different pair or binary path
+bootstrap never resolves `gc`, `bd`, `ao`, or the delivery reducer from ambient
+`PATH` after admission. `--gc-bin` must have its paired `bd`, `ao`,
+`agentops-gc-delivery`, and schema-3 `toolchain.json` beside it. The receipt
+must contain exactly those four runtimes; `ao` and the delivery reducer must
+bind the same source commit and committed CLI tree. The marker records selected
+source commits, release-checksum provenance, runtime paths/digests, exact pack
+content, reducer and schema/config digests, and the Gas City-generated
+`packs.lock` digest. The native delivery context separately binds the exact
+Git, GitHub CLI, and `/bin/bash` bytes used for delivery effects and check-only
+gates. Moving an existing managed city to a different pair or binary path
 requires `--replace-gc-bin --start`; every other recorded city identity field
 must still match, and bootstrap replaces the supervisor then verifies the new
 pair before rewriting the marker. Bootstrap prepends the pair's directory to
@@ -121,23 +125,24 @@ an operator's optional account-wide Remote Control preference from joining GC
 workers to one competing remote epoch and terminating an otherwise healthy
 interactive session; it does not disable Claude authentication or interaction.
 The city fully replaces Gas City's inherited option schemas. Codex defaults to
-workspace-write/no-prompts and exposes one additional unrestricted choice used
-only by the fenced Refiner for GitHub delivery. Claude roles default to the
+workspace-write/no-prompts; delivery is model-free and does not need a Refiner
+session. Claude roles default to the
 interactive unrestricted mode inside their GC-managed worktrees because Claude's
 `auto` mode delegates each tool call to a remote permission classifier that can
 stall indefinitely; managed roots, safe mode, bead fences, and role-specific
-write-scope checks remain enforced. Model choice is role policy, not an ambient CLI
-default: the Codex pool exposes Terra for implementation and Sol for
-Mayor/Judge/Validator/Refiner work; the Claude pool exposes Opus 4.8 for both
-implementation and higher-reasoning roles. There is no Fable alias. Factory
-planning records the selected Mayor, plan-review Judge, Refiner, and integration
-Validator providers on the program/Refinery beads; judges must use the opposite
-provider family from the authoring lifecycle role. Codex's
+write-scope checks remain enforced. Model choice is role policy, not an ambient
+CLI default: Fable-adaptive owns Mayor and at most one ambiguity consultation,
+Sol-high owns plan binding and fresh validation, Terra-high is the default
+implementer, and Opus-medium is the explicitly admitted overflow implementer.
+Luna has no execution route. No role may silently fall back to another profile.
+Codex's
 workspace-write profile enables network access because GC's private Dolt service
 is a loopback TCP endpoint; this does not expand Codex's writable filesystem
-roots. Managed role sessions explicitly disable inherited OpenTelemetry SDK
-exporters so a stale machine-wide collector endpoint cannot delay every GC/bd
-command. Both providers receive only the managed city runtime directories and
+roots. GC v1.3.5 telemetry policy is `auto`, `required`, or `off` (default
+`auto`). Bootstrap clears the generic ambient OTLP fallback and sets only the
+explicit GC metrics/logs pair. `auto` records a durable degraded state when
+either endpoint is unavailable; `required` fails before city mutation and is
+the release-canary mode. Both providers receive only the managed city runtime directories and
 configured rig roots as additional writable directories. Packets name
 `provider = codex | claude`; generic provider targets remain suspended and
 cannot receive packet work.
@@ -156,17 +161,23 @@ city creation but before rig registration. A nonempty city without
 historical cities as evidence and choose a fresh path instead of rewriting them
 in place.
 
-Factory planning defaults to `--delivery-mode pr`. Reliability canaries may use
-`--delivery-mode qualify`: the selected Sol or Opus 4.8 Refiner still assembles the certified train
-and obtains a fresh integration verdict, but an exact PASS produces a durable
-qualification receipt and closes the canary beads without any push, PR, merge,
-or base-branch mutation. Qualification is runtime evidence, not proof of the
-external forge/checks/merge portion of PR delivery.
+Factory delivery defaults to `--delivery-mode auto`: the deterministic reducer
+creates or adopts the PR, observes protected CI, rebases against moving `main`,
+and requests the lawful merge. `--delivery-mode manual` keeps the same checked
+path but waits for external review/merge. Neither mode locks the base branch or
+makes delivery a condition of semantic bead closure.
 
-Factory `program plan` and `program admit` default to the bootstrap import
-binding, `agentops`. Pass `--binding` only when bootstrap used the same explicit
-nondefault binding; the persisted binding is then reused for lifecycle routing
-and dynamic worktree rigs.
+Start one bounded factory program through the imported pack command:
+
+```sh
+gc --city /path/to/city agentops program start -- \
+  --source-bead age-example --max-parallel 2
+```
+
+The command snapshots that exact source Bead once, freezes the first observed
+base OID for the program, runs Fable Mayor and fresh Sol plan binding, and then
+admits only the checked graph. A later replay adopts the same program identity
+even if `main` has moved; moving-base reconciliation belongs to delivery.
 
 ## Teardown
 
@@ -197,7 +208,7 @@ supplied, must match the exact paired toolchain recorded by bootstrap.
 | `<city>/.gc-home` | Gas City runtime | Remaining private supervisor/store discovery state |
 | `<city>/.gc/codex-home` | Codex runtime | Private session state plus a symlink to the selected external `auth.json` |
 | Caller home | Claude runtime | Existing authenticated interactive Claude state; no auth material is copied into the city |
-| `<city>/.gc/agentops-bootstrap.json` | Bootstrap | Exact city/rig/pack/auth/paired-toolchain and reducer identity, `packs.lock` digest, qualification, binary digests, and recovery state |
+| `<city>/.gc/agentops-bootstrap.json` | Bootstrap | Exact city/rig/pack/auth/toolchain, telemetry, reducer identity, `packs.lock` digest, binary digests, and recovery state |
 
 Do not source-control `.gc/site.toml`, `.gc-home`, or the generated city. To
 promote a stable release, point `--pack` at a clean committed pack and let the

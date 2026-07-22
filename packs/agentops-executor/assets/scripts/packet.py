@@ -73,6 +73,8 @@ ALLOWED_KEYS = {
     "write_scope",
     "evidence_dir",
     "result_path",
+    "factory_admission_receipt",
+    "factory_node_id",
     "baseline_manifest",
     "subject_manifest",
     "scope_receipt",
@@ -136,6 +138,33 @@ def write_json_atomic(path: Path, value: dict[str, Any]) -> None:
     finally:
         if os.path.exists(temporary):
             os.unlink(temporary)
+
+
+def write_canonical_once(path: Path, value: dict[str, Any], label: str) -> None:
+    """Atomically create one immutable compact JSON object or adopt exact bytes."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    payload = canonical_bytes(value) + b"\n"
+    if path.exists():
+        if path.is_symlink() or path.read_bytes() != payload:
+            raise PacketError("immutable_conflict", f"existing {label} conflicts: {path}")
+        return
+    fd, temporary = tempfile.mkstemp(prefix=f".{path.name}.", dir=path.parent)
+    try:
+        os.fchmod(fd, 0o600)
+        with os.fdopen(fd, "wb") as handle:
+            handle.write(payload)
+            handle.flush()
+            os.fsync(handle.fileno())
+        try:
+            os.link(temporary, path)
+        except FileExistsError:
+            if path.is_symlink() or path.read_bytes() != payload:
+                raise PacketError("immutable_conflict", f"racing {label} conflicts: {path}")
+    finally:
+        try:
+            os.unlink(temporary)
+        except FileNotFoundError:
+            pass
 
 
 def normalize_relative(raw: Any, label: str) -> str:
@@ -257,6 +286,16 @@ def validate_envelope(path: Path, allow_existing_result: bool = False) -> tuple[
     packet["subject"] = {"includes": includes, "excludes": excludes}
     packet["write_scope"] = write_scope
 
+    factory_fields = {"factory_admission_receipt", "factory_node_id"}
+    present_factory = factory_fields & set(packet)
+    if present_factory and present_factory != factory_fields:
+        raise PacketError("invalid_envelope", "factory admission receipt and node ID must be supplied together")
+    if present_factory:
+        factory_node = packet.get("factory_node_id")
+        if not isinstance(factory_node, str) or not PACKET_ID_RE.fullmatch(factory_node):
+            raise PacketError("invalid_envelope", "factory_node_id has an invalid shape")
+        paths_factory_receipt = absolute_path(packet["factory_admission_receipt"], "factory_admission_receipt")
+
     paths: dict[str, Path] = {
         "packet": packet_resolved,
         "workspace": workspace,
@@ -264,6 +303,8 @@ def validate_envelope(path: Path, allow_existing_result: bool = False) -> tuple[
         "evidence": evidence,
         "result": result,
     }
+    if present_factory:
+        paths["factory_admission_receipt"] = paths_factory_receipt
     role_fields = {"baseline_manifest", "subject_manifest", "scope_receipt", "author_context_id"}
     if role == "implement":
         present = sorted(role_fields & set(packet))
@@ -434,6 +475,81 @@ def git_workspace_head(workspace: Path) -> str:
     return value
 
 
+def git_required_value(workspace: Path, *arguments: str) -> str:
+    completed = run_process(["git", "-C", str(workspace), *arguments], timeout=30)
+    value = completed.stdout.strip()
+    if completed.returncode != 0 or not value:
+        detail = completed.stderr.strip() or completed.stdout.strip()
+        raise PacketError("git_identity", f"cannot resolve Git identity for {workspace}: {detail}")
+    return value
+
+
+def git_worktree_layout(workspace: Path) -> dict[str, Path | str]:
+    """Return the resolved Git identity of one checked-out worktree.
+
+    The packet format deliberately has no rig or worktree lifecycle fields.
+    Transport authorization therefore derives its identity from Git's own
+    checked-out-worktree records instead of trusting a caller-supplied path.
+    """
+    top_level = git_required_value(workspace, "rev-parse", "--show-toplevel")
+    common_dir = git_required_value(workspace, "rev-parse", "--path-format=absolute", "--git-common-dir")
+    git_dir = git_required_value(workspace, "rev-parse", "--path-format=absolute", "--git-dir")
+    resolved_top_level = Path(top_level).resolve(strict=False)
+    if resolved_top_level != workspace.resolve():
+        raise PacketError(
+            "git_identity",
+            f"workspace is not its Git checkout root: workspace={workspace} git_root={resolved_top_level}",
+        )
+    return {
+        "top_level": resolved_top_level,
+        "common_dir": Path(common_dir).resolve(strict=False),
+        "git_dir": Path(git_dir).resolve(strict=False),
+        "head": git_workspace_head(resolved_top_level),
+    }
+
+
+def authorize_linked_worktree(workspace: Path, rig_root: Path) -> str:
+    """Fail closed unless ``workspace`` is a clean sibling worktree of ``rig_root``.
+
+    GC v1.3.5 accepts an absolute task ``work_dir``.  That is safe only when
+    the candidate checkout is linked to the selected rig's repository, has a
+    distinct per-worktree Git directory/index, and is clean before the
+    implement baseline is captured.  No packet lifecycle fields are needed:
+    Git supplies the binding and the HEAD becomes the recorded base identity.
+    """
+    workspace = workspace.resolve(strict=True)
+    rig_root = rig_root.resolve(strict=True)
+    if workspace == rig_root:
+        raise PacketError(
+            "workspace_rig_mismatch",
+            "packet workspace must be a linked sibling worktree, not the configured rig root",
+        )
+    rig = git_worktree_layout(rig_root)
+    candidate = git_worktree_layout(workspace)
+    if candidate["common_dir"] != rig["common_dir"]:
+        raise PacketError(
+            "workspace_rig_mismatch",
+            "packet workspace does not share the configured rig Git common directory",
+        )
+    if candidate["git_dir"] == rig["git_dir"]:
+        raise PacketError(
+            "workspace_rig_mismatch",
+            "packet workspace reuses the configured rig Git directory/index",
+        )
+    base_sha = str(candidate["head"])
+    unexpected = git_workspace_changes(workspace, base_sha)
+    if unexpected:
+        raise PacketError(
+            "workspace_dirty",
+            "packet workspace has preexisting changes before the implement baseline: " + ", ".join(unexpected),
+        )
+    # A branch move or checkout racing this probe changes the inferred base.
+    # Re-read the exact candidate HEAD after the inventory before dispatch.
+    if git_workspace_head(workspace) != base_sha:
+        raise PacketError("git_identity", "packet workspace HEAD changed while authorizing its baseline")
+    return base_sha
+
+
 def git_workspace_changes(workspace: Path, base_sha: str) -> list[str]:
     if not SHA_RE.fullmatch(base_sha):
         raise PacketError("git_identity", f"invalid workspace base SHA: {base_sha!r}")
@@ -529,7 +645,7 @@ def bootstrap_gc_identity() -> tuple[Path, str | None] | None:
     digest: str | None = None
     if schema_version == 2:
         raw_path = value.get("gc_bin", "")
-    elif schema_version == 3:
+    elif schema_version in {3, 4, 5}:
         gc = value.get("toolchain", {}).get("gc", {})
         raw_path = gc.get("path", "")
         digest = gc.get("sha256")
@@ -742,11 +858,7 @@ def prepare_packet_transport(packet: dict[str, Any], paths: dict[str, Path], rig
         raise PacketError("city_missing", "GC_CITY_PATH is not set by the pack command runtime")
     rig_record = selected_rig_record(rig)
     rig_root = rig_record["resolved_path"]
-    if paths["workspace"] != rig_root:
-        raise PacketError(
-            "workspace_rig_mismatch",
-            f"packet workspace must equal configured rig root {rig_root}: {paths['workspace']}",
-        )
+    authorize_linked_worktree(paths["workspace"], rig_root)
     local_agent = local_agent_name(packet)
     target = f"{rig}/{binding}.{local_agent}"
     packet_digest = sha256_file(paths["packet"])
@@ -759,11 +871,9 @@ def prepare_packet_transport(packet: dict[str, Any], paths: dict[str, Path], rig
         "agentops.intent_digest": packet["intent_digest"],
         "agentops.target": target,
         "agentops.result_path": str(paths["result"]),
-        # The dynamic-rig policy sets the native executor work_dir base to the
-        # candidate's parent. Gas City's pack-workspace route then resolves the
-        # ready bead directly into the already-isolated candidate root instead
-        # of deriving a second bead-named sub-worktree.
-        "gc.pack_workspace": paths["workspace"].name,
+        # GC v1.3.5 reads an absolute work_dir directly from the assigned bead
+        # before launch. It does not support the later gc.pack_workspace key.
+        "work_dir": str(paths["workspace"].resolve()),
     }
     record = transport_record(rig, bead_id)
     if record is None:
@@ -1263,11 +1373,20 @@ def command_run(args: argparse.Namespace) -> int:
                 if not SHA_RE.fullmatch(workspace_base_sha):
                     raise PacketError("transport_state_invalid", "transport state has no valid workspace base SHA")
             else:
-                workspace_base_sha = git_workspace_head(paths["workspace"])
+                # Check the selected-rig linkage and a clean candidate before
+                # taking the implement baseline.  The follow-up transport
+                # creation rechecks the same facts immediately before it
+                # stamps GC v1.3.5's absolute task work_dir.
+                rig_record = selected_rig_record(args.rig)
+                workspace_base_sha = authorize_linked_worktree(
+                    paths["workspace"], rig_record["resolved_path"],
+                )
             if transport_state:
                 baseline = load_object(baseline_path, "runtime baseline manifest")
             else:
                 baseline = build_manifest(packet, paths, baseline_path)
+                if git_workspace_head(paths["workspace"]) != workspace_base_sha:
+                    raise PacketError("git_identity", "packet workspace HEAD changed while capturing implement baseline")
             initial_manifest_digests = {"baseline_manifest": sha256_file(baseline_path)}
             runtime_evidence["baseline_manifest"] = str(baseline_path)
             runtime_evidence["baseline_manifest_digest"] = baseline["canonical_manifest_digest"]
@@ -1615,6 +1734,18 @@ def command_emit(args: argparse.Namespace) -> int:
     }
     validate_response_artifacts(packet, paths, response)
     write_json_atomic(paths["result"], response)
+    artifact_dir = os.environ.get("GC_ARTIFACT_DIR", "").strip()
+    if artifact_dir:
+        directory = absolute_path(artifact_dir, "GC_ARTIFACT_DIR", directory=True)
+        directory.mkdir(mode=0o700, parents=True, exist_ok=True)
+        pointer = {
+            "schema_version": "agentops-factory-check.v1", "kind": "packet",
+            "phase": packet["role"], "checked_bead_id": args.bead,
+            "session_context_id": session_id, "packet_path": str(paths["packet"]),
+            "packet_digest": sha256_file(paths["packet"]), "result_path": str(paths["result"]),
+            "result_digest": sha256_file(paths["result"]),
+        }
+        write_canonical_once(directory / "agentops-factory-check-request.json", pointer, "factory check request")
     print(str(paths["result"]))
     return 0
 
