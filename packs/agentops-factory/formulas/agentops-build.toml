@@ -1,0 +1,22 @@
+formula = "agentops-build"
+description = "Compile an admitted AgentOps build into separately drained experiment units."
+
+[requires]
+formula_compiler = ">=2.0.0"
+
+[[steps]]
+id = "admit"
+title = "Admit the caller-supplied build graph"
+metadata = { "gc.run_target" = "agentops.mayor" }
+
+[[steps]]
+id = "drain-experiments"
+title = "Drain admitted experiment units into isolated sessions"
+needs = ["admit"]
+metadata = { "gc.run_target" = "agentops.implementer" }
+
+[steps.drain]
+context = "separate"
+formula = "agentops-experiment"
+member_access = "exclusive"
+max_units = 20

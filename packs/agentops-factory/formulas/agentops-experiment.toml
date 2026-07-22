@@ -1,0 +1,16 @@
+formula = "agentops-experiment"
+description = "Run one already-admitted AgentOps experiment with the selected cohort target."
+
+[requires]
+formula_compiler = ">=2.0.0"
+
+[[steps]]
+id = "execute"
+title = "Execute one admitted experiment"
+metadata = { "gc.run_target" = "agentops.implementer" }
+
+[[steps]]
+id = "validate"
+title = "Fresh Sol validation for the exact subject"
+needs = ["execute"]
+metadata = { "gc.run_target" = "agentops.validator" }

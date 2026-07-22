@@ -9,6 +9,8 @@ from copy import deepcopy
 from pathlib import Path
 import tempfile
 import unittest
+import os
+import subprocess
 from unittest import mock
 
 from jsonschema import Draft202012Validator
@@ -44,6 +46,34 @@ def graph() -> dict:
 
 
 class GC33RolePackTest(unittest.TestCase):
+    def test_central_claim_is_one_shot_and_fails_closed(self) -> None:
+        claim = ROOT / "packs/agentops-executor/assets/scripts/claim.py"
+        self.assertIn('command = ["claim"]', (ROOT / "packs/agentops-executor/commands/claim/command.toml").read_text(encoding="utf-8"))
+        self.assertIn('command = ["claim"]', (ROOT / "packs/agentops-factory/commands/claim/command.toml").read_text(encoding="utf-8"))
+        self.assertIn("../agentops-executor/assets/scripts/claim.py", (ROOT / "packs/agentops-factory/commands/claim/run.sh").read_text(encoding="utf-8"))
+        prompts = [ROOT / path for path in ("packs/agentops-executor/agents/implementer/prompt.template.md", "packs/agentops-executor/agents/implementer-claude/prompt.template.md", "packs/agentops-executor/agents/validator/prompt.template.md", "packs/agentops-factory/agents/mayor/prompt.template.md", "packs/agentops-factory/agents/plan-reviewer/prompt.template.md", "packs/agentops-factory/agents/refiner/prompt.template.md")]
+        for prompt in prompts:
+            body = prompt.read_text(encoding="utf-8")
+            self.assertIn("gc agentops claim", body)
+            self.assertNotIn("hook --claim", body)
+            self.assertNotIn("action=work", body)
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory); calls = root / "calls"; fake = root / "gc"
+            fake.write_text("#!/usr/bin/env bash\necho x >> \"$GC_FAKE_CALLS\"\nprintf '%s' \"$GC_FAKE_OUTPUT\"\nexit \"${GC_FAKE_EXIT:-0}\"\n", encoding="utf-8")
+            fake.chmod(0o755)
+            base = {"GC_BIN": str(fake), "GC_FAKE_CALLS": str(calls)}
+            work = '{"schema_version":"1","ok":true,"command":"hook","action":"work","reason":"claimed","bead_id":"b-1","assignee":"agent"}'
+            ready = '{"schema_version":"1","ok":true,"command":"hook","action":"work","reason":"ready_assignment","bead_id":"b-1","assignee":"agent","route":"agentops"}'
+            drain = '{"schema_version":"1","ok":true,"command":"hook","action":"drain","reason":"no_work","drain_acknowledged":true}'
+            bad_extra = '{"schema_version":"1","ok":true,"command":"hook","action":"work","reason":"claimed","bead_id":"b-1","assignee":"agent","extra":true}'
+            for label, output, code, expected_ok, expected_action in (("assigned", work, "0", True, "assigned"), ("ready", ready, "0", True, "assigned"), ("drain", drain, "0", True, "drain"), ("extra", bad_extra, "0", False, "uncertain"), ("invalid", 'not-json', "0", False, "uncertain"), ("nonzero", work, "7", False, "uncertain")):
+                with self.subTest(label=label):
+                    calls.unlink(missing_ok=True)
+                    result = subprocess.run(["python3", str(claim)], env={**os.environ, **base, "GC_FAKE_OUTPUT": output, "GC_FAKE_EXIT": code}, text=True, capture_output=True, check=False)
+                    value = json.loads(result.stdout)
+                    self.assertEqual(value["ok"], expected_ok)
+                    self.assertEqual(value["action"], expected_action)
+                    self.assertEqual(calls.read_text(encoding="utf-8").count("x\n"), 1)
     def test_delivery_policy_is_absent_at_every_composition_boundary(self) -> None:
         factory_agents = ROOT / "packs/agentops-factory/agents"
         self.assertEqual({p.name for p in factory_agents.iterdir() if (p / "agent.toml").is_file()}, {"mayor", "plan-reviewer", "refiner"})
