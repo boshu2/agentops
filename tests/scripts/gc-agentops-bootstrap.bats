@@ -18,7 +18,11 @@ setup() {
   git -C "$RIG" config user.name "GC Bootstrap Test"
   git -C "$RIG" config user.email "gc-bootstrap@example.invalid"
   printf '%s\n' 'bootstrap fixture' >"$RIG/README.md"
-  git -C "$RIG" add README.md
+  mkdir -p "$RIG/deploy/gc" "$RIG/scripts"
+  cp "$REPO_ROOT/deploy/gc/toolchain.lock.json" "$RIG/deploy/gc/toolchain.lock.json"
+  cp "$REPO_ROOT/deploy/gc/beads-capability-selection.v1.json" "$RIG/deploy/gc/beads-capability-selection.v1.json"
+  cp "$REPO_ROOT/scripts/check-gc-executor.sh" "$RIG/scripts/check-gc-executor.sh"
+  git -C "$RIG" add README.md deploy/gc scripts/check-gc-executor.sh
   git -C "$RIG" commit -qm "bootstrap fixture"
   git init -q --bare "$REMOTE"
   git -C "$RIG" remote add origin "$REMOTE"
@@ -86,6 +90,20 @@ printf '%s\n' 'ao fixture reducer'
 EOF
   chmod +x "$BIN/ao"
 
+  cat >"$BIN/agentops-gc-delivery" <<'EOF'
+#!/usr/bin/env bash
+set -euo pipefail
+printf '%s\n' 'delivery fixture reducer'
+EOF
+  chmod +x "$BIN/agentops-gc-delivery"
+
+  cat >"$BIN/gh" <<'EOF'
+#!/usr/bin/env bash
+set -euo pipefail
+printf '%s\n' 'gh fixture'
+EOF
+  chmod +x "$BIN/gh"
+
   FAKE_GC="$BIN/gc"
   cat >"$FAKE_GC" <<'EOF'
 #!/usr/bin/env bash
@@ -95,12 +113,13 @@ fake_root="$(cd "$(dirname "$0")/.." && pwd)"
 FAKE_GC_LOG="$fake_root/gc.log"
 FAKE_GC_STATE="$fake_root/fake-state"
 
-printf 'ENV GC_HOME=%s GC_ISOLATED=%s CODEX_HOME=%s OTEL_SDK_DISABLED=%s GC_BEADS=%s GC_DOLT_PORT=%s BEADS_DOLT_SERVER_PORT=%s GC_CITY=%s BD_DOLT_SYNC_CLI_REMOTES=%s BEADS_DOLT_SYNC_CLI_REMOTES=%s\n' \
+printf 'ENV GC_HOME=%s GC_ISOLATED=%s CODEX_HOME=%s OTEL_SDK_DISABLED=%s OTEL_EXPORTER_OTLP_ENDPOINT=%s GC_BEADS=%s GC_DOLT_PORT=%s BEADS_DOLT_SERVER_PORT=%s GC_CITY=%s BD_DOLT_SYNC_CLI_REMOTES=%s BEADS_DOLT_SYNC_CLI_REMOTES=%s GC_BIN=%s\n' \
   "${GC_HOME-<unset>}" "${GC_ISOLATED-<unset>}" "${CODEX_HOME-<unset>}" \
-  "${OTEL_SDK_DISABLED-<unset>}" \
+  "${OTEL_SDK_DISABLED-<unset>}" "${OTEL_EXPORTER_OTLP_ENDPOINT-<unset>}" \
   "${GC_BEADS-<unset>}" "${GC_DOLT_PORT-<unset>}" \
   "${BEADS_DOLT_SERVER_PORT-<unset>}" "${GC_CITY-<unset>}" \
-  "${BD_DOLT_SYNC_CLI_REMOTES-<unset>}" "${BEADS_DOLT_SYNC_CLI_REMOTES-<unset>}" >>"$FAKE_GC_LOG"
+  "${BD_DOLT_SYNC_CLI_REMOTES-<unset>}" "${BEADS_DOLT_SYNC_CLI_REMOTES-<unset>}" \
+  "${GC_BIN-<unset>}" >>"$FAKE_GC_LOG"
 printf 'ARGS' >>"$FAKE_GC_LOG"
 printf ' <%s>' "$@" >>"$FAKE_GC_LOG"
 printf '\n' >>"$FAKE_GC_LOG"
@@ -189,7 +208,7 @@ case "$command_name" in
         if [ "$adopt" -eq 0 ] && [ -n "$origin_url" ] && \
             [ -n "$(git ls-remote "$origin_url" refs/dolt/data 2>/dev/null)" ]; then
           mkdir -p "$rig_path/.beads"
-          printf '%s\n' '{"backend":"dolt"}' >"$rig_path/.beads/metadata.json"
+          printf '%s\n' '{"backend":"dolt","dolt_database":"ag","dolt_mode":"server","project_id":"fixture-project-id"}' >"$rig_path/.beads/metadata.json"
           printf '%s\n' 'issue_prefix: test' >"$rig_path/.beads/config.yaml"
           printf '%s\n' "bd init refuses: remote 'origin' already has Dolt history (refs/dolt/data)." >&2
           exit 10
@@ -197,12 +216,12 @@ case "$command_name" in
         if [ "${FAKE_GC_FAIL_RIG_ADD_ONCE:-0}" = "1" ] && [ ! -e "$FAKE_GC_STATE/rig-add-failed" ]; then
           touch "$FAKE_GC_STATE/rig-add-failed"
           mkdir -p "$rig_path/.beads"
-          printf '%s\n' '{"backend":"dolt"}' >"$rig_path/.beads/metadata.json"
+          printf '%s\n' '{"backend":"dolt","dolt_database":"ag","dolt_mode":"server","project_id":"fixture-project-id"}' >"$rig_path/.beads/metadata.json"
           printf '%s\n' 'issue_prefix: test' >"$rig_path/.beads/config.yaml"
           exit 7
         fi
         mkdir -p "$rig_path/.beads"
-        printf '%s\n' '{"backend":"dolt"}' >"$rig_path/.beads/metadata.json"
+        printf '%s\n' '{"backend":"dolt","dolt_database":"ag","dolt_mode":"server","project_id":"fixture-project-id"}' >"$rig_path/.beads/metadata.json"
         printf '%s\n' 'issue_prefix: test' >"$rig_path/.beads/config.yaml"
         if [ "${FAKE_GC_COMMIT_ON_RIG_ADD:-0}" = "1" ] || \
             [ "${FAKE_GC_STAGE_ON_RIG_ADD:-0}" = "1" ]; then
@@ -224,7 +243,7 @@ case "$command_name" in
           if [ "${FAKE_GC_COMMIT_ON_RIG_ADD:-0}" = "1" ]; then
             git -C "$rig_path" commit -qm "bd init: initialize beads issue tracking"
           fi
-          printf '%s\n' '{"backend":"dolt"}' >"$rig_path/.beads/metadata.json"
+          printf '%s\n' '{"backend":"dolt","dolt_database":"ag","dolt_mode":"server","project_id":"fixture-project-id"}' >"$rig_path/.beads/metadata.json"
         fi
         if [ "${FAKE_GC_REWRITE_GITIGNORE:-0}" = "1" ]; then
           python3 - "$rig_path/.gitignore" <<'PY'
@@ -248,6 +267,7 @@ PY
             "$rig_name" >>"$city/city.toml"
           printf '\n[rigs.%s]\npath = "%s"\n' "$rig_name" "$rig_path" >>"$city/.gc/site.toml"
         fi
+        printf '%s\n' "$rig_path" >"$FAKE_GC_STATE/rig-path"
         touch "$FAKE_GC_STATE/rig-added"
         ;;
       resume)
@@ -280,6 +300,20 @@ if len(imports) != 1:
 binding = next(iter(imports))
 patches = config.get("patches", {}).get("agent", [])
 agents = []
+for role, provider, qualified_name, scope, directory in (
+    ("codex", "codex", "codex", "city", ""),
+    ("claude", "claude", "claude", "city", ""),
+    ("codex", "codex", f"{rig_name}/{binding}.codex", "rig", rig_name),
+    ("claude", "claude", f"{rig_name}/{binding}.claude", "rig", rig_name),
+):
+    agents.append({
+        "name": role,
+        "qualified_name": qualified_name,
+        "dir": directory,
+        "scope": scope,
+        "provider": provider,
+        "suspended": True,
+    })
 for role, provider in (
     ("implementer", "codex"),
     ("implementer-claude", "claude"),
@@ -349,14 +383,38 @@ PY
     if [ "${FAKE_GC_STATUS_UNUSABLE:-0}" = "1" ]; then
       printf '{"ok":true,"controller":{"running":false,"pid":%s,"status":"starting_bead_store"},"health":{"usable":false},"beads":{"native_store_eligible":true},"rigs":[{"name":"agentops","suspended":false}]}\n' "$pid"
     elif [ "${FAKE_GC_NATIVE_STORE_INELIGIBLE:-0}" = "1" ]; then
-      printf '{"ok":true,"controller":{"running":true,"pid":%s},"health":{"usable":true},"beads":{"native_store_eligible":false,"preflight_gate":"bd_context_agreement","preflight_reason":"bd context is unreachable"},"rigs":[{"name":"agentops","suspended":false}]}\n' "$pid"
+      printf '{"ok":true,"controller":{"running":true,"pid":%s},"health":{"usable":true},"beads":{"beads_store":"BdStore","native_store_eligible":false,"preflight_gate":"force_fallback","preflight_reason":"GC_BEADS_FORCE_FALLBACK=1"},"rigs":[{"name":"agentops","suspended":false}]}\n' "$pid"
     else
-      printf '{"ok":true,"controller":{"running":true,"pid":%s},"health":{"usable":true},"beads":{"native_store_eligible":true},"rigs":[{"name":"agentops","suspended":false}]}\n' "$pid"
+      printf '{"ok":true,"controller":{"running":true,"pid":%s},"health":{"usable":true},"beads":{"beads_store":"BdStore","native_store_eligible":false,"preflight_gate":"bd_context_agreement","preflight_reason":"bd context is unreachable; cannot cross-verify backend agreement"},"rigs":[{"name":"agentops","suspended":false}]}\n' "$pid"
     fi
     ;;
   bd)
-    [ "${2:-}" = "list" ] || exit 2
-    printf '%s\n' '[]'
+    case "${2:-}" in
+      list)
+        printf '%s\n' '[]'
+        ;;
+      context)
+        rig_path="$(cat "$FAKE_GC_STATE/rig-path")"
+        python3 - "$rig_path" <<'PY'
+import json
+import os
+import sys
+
+rig = os.path.realpath(sys.argv[1])
+print(json.dumps({
+    "backend": "dolt",
+    "bd_version": "1.1.0",
+    "beads_dir": os.path.join(rig, ".beads"),
+    "database": "ag",
+    "dolt_mode": "server",
+    "project_id": "fixture-project-id",
+    "repo_root": rig,
+    "schema_version": 1,
+}))
+PY
+        ;;
+      *) exit 2 ;;
+    esac
     ;;
   *)
     printf 'unexpected fake gc invocation: %s\n' "$command_name" >&2
@@ -366,26 +424,27 @@ esac
 EOF
   chmod +x "$FAKE_GC"
 
-  python3 - "$TMP/toolchain.json" "$REPO_ROOT" "$FAKE_GC" "$BIN/bd" "$BIN/ao" <<'PY'
+  python3 - "$TMP/toolchain.json" "$REPO_ROOT" "$FAKE_GC" "$BIN/bd" "$BIN/ao" "$BIN/agentops-gc-delivery" <<'PY'
 import hashlib
 import json
 import os
 import subprocess
 import sys
 
-path, repository, gc, bd, ao = sys.argv[1:]
+path, repository, gc, bd, ao, delivery = sys.argv[1:]
 pair = json.load(open(os.path.join(repository, "deploy/gc/toolchain.lock.json"), encoding="utf-8"))["accepted_pairs"][0]
 digest = lambda item: hashlib.sha256(open(item, "rb").read()).hexdigest()
 commit = subprocess.check_output(["git", "-C", repository, "rev-parse", "HEAD"], text=True).strip()
 cli_tree = subprocess.check_output(["git", "-C", repository, "rev-parse", "HEAD:cli"], text=True).strip()
 with open(path, "w", encoding="utf-8") as handle:
     json.dump({
-        "schema_version": 2,
+        "schema_version": 3,
         "pair": pair,
         "runtime": {
             "gc": {"path": "bin/gc", "version": "1.3.5", "commit": "8ffc009d", "sha256": digest(gc)},
             "bd": {"path": "bin/bd", "version": "1.1.0", "commit": "8e4e59d39", "sha256": digest(bd)},
             "ao": {"path": "bin/ao", "sha256": digest(ao), "source_commit": commit, "cli_tree": cli_tree, "build_version": "fixture"},
+            "agentops-gc-delivery": {"path": "bin/agentops-gc-delivery", "sha256": digest(delivery), "source_commit": commit, "cli_tree": cli_tree},
         },
     }, handle, sort_keys=True)
     handle.write("\n")
@@ -404,6 +463,8 @@ run_bootstrap() {
     --pack "$PACK" \
     --gc-bin "$FAKE_GC" \
     --ao-bin "$BIN/ao" \
+    --repository boshu2/agentops \
+    --telemetry-mode off \
     --codex-auth "$CODEX_AUTH" \
     "$@"
 }
@@ -452,7 +513,7 @@ run_bootstrap() {
 
   run run_bootstrap
   [ "$status" -eq 0 ]
-  [ "$(grep -c '^\[\[patches.agent\]\]$' "$CITY/city.toml")" -eq 10 ]
+  [ "$(grep -c '^\[\[patches.agent\]\]$' "$CITY/city.toml")" -eq 3 ]
 }
 
 @test "bootstrap creates an isolated dual-provider city without starting it" {
@@ -461,6 +522,7 @@ run_bootstrap() {
   export BEADS_DOLT_SERVER_PORT=39998
   export GC_CITY=/old/city
   export CODEX_HOME=/old/codex-home
+  export OTEL_EXPORTER_OTLP_ENDPOINT=http://ambient.invalid:4318
 
   run run_bootstrap
   [ "$status" -eq 0 ]
@@ -468,7 +530,7 @@ run_bootstrap() {
   [ -f "$CITY/.gc-home/supervisor.toml" ]
   [ ! -e "$FAKE_STATE/started" ]
 
-  python3 - "$CITY/.gc/agentops-bootstrap.json" "$FAKE_GC" "$BIN/bd" "$BIN/ao" <<'PY'
+  python3 - "$CITY/.gc/agentops-bootstrap.json" "$FAKE_GC" "$BIN/bd" "$BIN/ao" "$BIN/agentops-gc-delivery" <<'PY'
 import json
 import os
 import re
@@ -476,7 +538,7 @@ import sys
 
 with open(sys.argv[1], encoding="utf-8") as handle:
     marker = json.load(handle)
-assert marker["schema_version"] == 4
+assert marker["schema_version"] == 5
 assert marker["toolchain"]["gc"]["path"] == os.path.realpath(sys.argv[2])
 assert marker["toolchain"]["gc"]["version"] == "1.3.5"
 assert marker["toolchain"]["gc"]["commit"] == "8ffc009d"
@@ -488,6 +550,10 @@ assert marker["toolchain"]["qualification"]["status"] == "qualified"
 assert re.fullmatch(r"[0-9a-f]{64}", marker["toolchain"]["gc"]["sha256"])
 assert re.fullmatch(r"[0-9a-f]{64}", marker["toolchain"]["bd"]["sha256"])
 assert marker["ao_reducer"]["path"] == os.path.realpath(sys.argv[4])
+assert marker["ao_reducer"]["delivery_path"] == os.path.realpath(sys.argv[5])
+assert marker["delivery_mode"] == "auto"
+assert marker["repository"] == "boshu2/agentops"
+assert marker["telemetry"] == {"mode": "off", "status": "off", "requested_metrics_url": "", "requested_logs_url": "", "effective_metrics_url": "", "effective_logs_url": ""}
 assert re.fullmatch(r"[0-9a-f]{64}", marker["ao_reducer"]["binary_sha256"])
 assert re.fullmatch(r"[0-9a-f]{40}", marker["ao_reducer"]["source_commit"])
 assert re.fullmatch(r"[0-9a-f]{40}", marker["ao_reducer"]["cli_tree"])
@@ -538,36 +604,75 @@ assert [
     patch for patch in patches
     if patch.get("name") == "core.control-dispatcher" and not patch.get("dir") and patch.get("suspended") is True
 ] == [{"name": "core.control-dispatcher", "suspended": True}]
-assert [
-    patch for patch in patches
-    if patch.get("name") == "codex" and not patch.get("dir") and patch.get("suspended") is True
-] == [{"name": "codex", "suspended": True}]
-assert [
-    patch for patch in patches
-    if patch.get("name") == "claude" and not patch.get("dir") and patch.get("suspended") is True
-] == [{"name": "claude", "suspended": True}]
-assert [
-    patch for patch in patches
-    if patch.get("name") == "codex" and patch.get("dir") == "agentops" and patch.get("suspended") is True
-] == [{"dir": "agentops", "name": "codex", "suspended": True}]
-assert [
-    patch for patch in patches
-    if patch.get("name") == "claude" and patch.get("dir") == "agentops" and patch.get("suspended") is True
-] == [{"dir": "agentops", "name": "claude", "suspended": True}]
+assert not [patch for patch in patches if patch.get("name") in {"codex", "claude"}]
 assert [
     patch for patch in patches
     if patch.get("name") == "core.control-dispatcher" and patch.get("dir") == "agentops" and patch.get("suspended") is True
 ] == [{"dir": "agentops", "name": "core.control-dispatcher", "suspended": True}]
 for role in ("implementer", "implementer-claude", "validator"):
-    assert [
+    assert not [
         patch for patch in patches
         if patch.get("name") == f"agentops.{role}" and patch.get("dir") == "agentops"
-    ] == [{"dir": "agentops", "name": f"agentops.{role}", "work_dir": workspace_parent}]
+    ]
 assert config["session"]["socket"] == (
     "agentops-" + hashlib.sha256(city.encode()).hexdigest()[:20]
 )
 assert config["session"]["setup_timeout"] == "60s"
-assert config["session"]["nudge_poll_interval"] == "5s"
+assert config["beads"]["event_hooks"] is False
+city_delivery_overrides = [
+    override for override in config["orders"]["overrides"]
+    if override["name"] == "agentops-delivery-sweep" and "rig" not in override
+]
+assert city_delivery_overrides == [{"name": "agentops-delivery-sweep", "enabled": False}]
+delivery_overrides = [
+    override for override in config["orders"]["overrides"]
+    if override["name"] == "agentops-delivery-sweep" and override.get("rig") == "agentops"
+]
+assert len(delivery_overrides) == 1
+delivery_order_env = dict(delivery_overrides[0]["env"])
+order_path = delivery_order_env.pop("PATH")
+assert order_path.split(os.pathsep)[0] == os.path.dirname(config["workspace"]["env"]["GC_BIN"])
+expected_order_env = {
+    key: value for key, value in config["workspace"]["env"].items()
+    if key == "GC_BIN" or key.startswith("AGENTOPS_GC_DELIVERY_")
+    or key in {
+        "AGENTOPS_GC_DELIVERY_BIN",
+        "AGENTOPS_GC_BEADS_BIN",
+        "AGENTOPS_GC_GIT_BIN",
+        "AGENTOPS_GC_GH_BIN",
+        "AGENTOPS_GC_BASH_BIN",
+    }
+}
+assert delivery_order_env == expected_order_env
+core_order_names = {
+    "beads-health",
+    "cascade-nudge-on-blocker-close",
+    "cross-rig-deps",
+    "gate-sweep",
+    "jsonl-export",
+    "nudge-mail-sweep",
+    "nudge-on-route",
+    "order-tracking-sweep",
+    "orphan-sweep",
+    "prune-branches",
+    "reaper",
+    "spawn-storm-detect",
+    "wisp-compact",
+}
+core_overrides = [
+    override for override in config["orders"]["overrides"]
+    if override["name"] in core_order_names and "rig" not in override
+]
+assert {override["name"] for override in core_overrides} == core_order_names
+assert all(override["env"] == {"GC_BIN": config["workspace"]["env"]["GC_BIN"], "PATH": order_path} for override in core_overrides)
+assert {
+    override["name"] for override in core_overrides
+    if override.get("enabled") is False
+} == {"cascade-nudge-on-blocker-close", "nudge-on-route"}
+assert all(
+    "enabled" not in override for override in core_overrides
+    if override["name"] not in {"cascade-nudge-on-blocker-close", "nudge-on-route"}
+)
 scope_roots = [os.path.join(city, ".gc"), os.path.join(city, ".gc-home"), rig]
 expected_codex_args = ["--dangerously-bypass-hook-trust"]
 for root in scope_roots:
@@ -644,6 +749,13 @@ for provider_name, expected_default, expected_model, expected_effort, expected_c
     }
     assert actual_efforts == expected_efforts
 PY
+  for root in "$CITY" "$RIG"; do
+    [ ! -e "$root/.beads/hooks/on_create" ]
+    [ ! -e "$root/.beads/hooks/on_update" ]
+    [ ! -e "$root/.beads/hooks/on_close" ]
+  done
+  cmp "$REPO_ROOT/deploy/gc/agents/codex/agent.toml" "$CITY/agents/codex/agent.toml"
+  cmp "$REPO_ROOT/deploy/gc/agents/claude/agent.toml" "$CITY/agents/claude/agent.toml"
   python3 - "$CITY/.gc/codex-home/config.toml" "$RIG" <<'PY'
 import os
 import sys
@@ -656,7 +768,11 @@ assert config["projects"][os.path.realpath(sys.argv[2])]["trust_level"] == "trus
 PY
   canonical_gc="$(python3 -c 'import os,sys; print(os.path.realpath(sys.argv[1]))' "$FAKE_GC")"
   grep -Fq "GC_BIN = \"$canonical_gc\"" "$CITY/city.toml"
-  grep -Fq 'OTEL_SDK_DISABLED = "true"' "$CITY/city.toml"
+  grep -Fq "GC_BIN=$canonical_gc" "$FAKE_LOG"
+  grep -Fq 'GC_OTEL_METRICS_URL = ""' "$CITY/city.toml"
+  grep -Fq 'GC_OTEL_LOGS_URL = ""' "$CITY/city.toml"
+  grep -Fq 'OTEL_EXPORTER_OTLP_ENDPOINT = ""' "$CITY/city.toml"
+  ! grep -Fq 'OTEL_SDK_DISABLED' "$CITY/city.toml"
   ! grep -Eq 'antigravity|agy|named_session|\[\[agent\]\]' "$CITY/city.toml"
   ! grep -Fq "path = \"$RIG\"" "$CITY/city.toml"
   grep -Fq 'path = "' "$CITY/.gc/site.toml"
@@ -667,7 +783,8 @@ PY
   grep -Fq "$expected_home" "$FAKE_LOG"
   grep -Fq 'GC_ISOLATED=1' "$FAKE_LOG"
   grep -Fq "$expected_codex" "$FAKE_LOG"
-  grep -Fq 'OTEL_SDK_DISABLED=true' "$FAKE_LOG"
+  grep -Fq 'OTEL_SDK_DISABLED=<unset>' "$FAKE_LOG"
+  grep -Fq 'OTEL_EXPORTER_OTLP_ENDPOINT=<unset>' "$FAKE_LOG"
   grep -Fq 'BD_DOLT_SYNC_CLI_REMOTES=false BEADS_DOLT_SYNC_CLI_REMOTES=false' "$FAKE_LOG"
   ! grep -Ev 'GC_BEADS=<unset>.*GC_DOLT_PORT=<unset>.*BEADS_DOLT_SERVER_PORT=<unset>.*GC_CITY=<unset>' \
     < <(grep '^ENV ' "$FAKE_LOG")
@@ -696,6 +813,46 @@ PY
   [[ "$output" == *"ao reducer identity"* ]]
 }
 
+@test "telemetry auto records a durable degraded state when both collectors are absent" {
+  run run_bootstrap --telemetry-mode auto \
+    --otel-metrics-url http://127.0.0.1:1/v1/metrics \
+    --otel-logs-url http://127.0.0.1:1/v1/logs
+  [ "$status" -eq 0 ]
+
+  python3 - "$CITY/.gc/agentops-bootstrap.json" "$CITY/city.toml" <<'PY'
+import json
+import sys
+import tomllib
+
+with open(sys.argv[1], encoding="utf-8") as handle:
+    marker = json.load(handle)
+with open(sys.argv[2], "rb") as handle:
+    city = tomllib.load(handle)
+assert marker["telemetry"] == {
+    "mode": "auto",
+    "status": "degraded",
+    "requested_metrics_url": "http://127.0.0.1:1/v1/metrics",
+    "requested_logs_url": "http://127.0.0.1:1/v1/logs",
+    "effective_metrics_url": "",
+    "effective_logs_url": "",
+}
+assert city["workspace"]["env"]["GC_OTEL_METRICS_URL"] == ""
+assert city["workspace"]["env"]["GC_OTEL_LOGS_URL"] == ""
+assert city["workspace"]["env"]["OTEL_EXPORTER_OTLP_ENDPOINT"] == ""
+assert "OTEL_SDK_DISABLED" not in city["workspace"]["env"]
+PY
+}
+
+@test "telemetry required fails before city mutation when either collector is absent" {
+  run run_bootstrap --telemetry-mode required \
+    --otel-metrics-url http://127.0.0.1:1/v1/metrics \
+    --otel-logs-url http://127.0.0.1:1/v1/logs
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"required GC OTel metrics/logs endpoints are unavailable"* ]]
+  [ ! -e "$CITY" ]
+  [ ! -s "$FAKE_LOG" ]
+}
+
 @test "cities with the same basename receive different tmux sockets" {
   run run_bootstrap
   [ "$status" -eq 0 ]
@@ -717,6 +874,8 @@ PY
     --pack "$PACK" \
     --gc-bin "$FAKE_GC" \
     --ao-bin "$BIN/ao" \
+    --repository boshu2/agentops \
+    --telemetry-mode off \
     --codex-auth "$CODEX_AUTH"
   [ "$status" -eq 0 ]
 
@@ -746,7 +905,7 @@ PY
   [ "$(grep -c 'ADOPT <1>' "$FAKE_LOG")" -eq 1 ]
   [ "$(grep -c '^\[imports.agentops\]$' "$CITY/pack.toml")" -eq 1 ]
   [ "$(grep -c '^\[rigs.imports.agentops\]$' "$CITY/city.toml")" -eq 1 ]
-  [ "$(grep -c '^\[\[patches.agent\]\]$' "$CITY/city.toml")" -eq 10 ]
+  [ "$(grep -c '^\[\[patches.agent\]\]$' "$CITY/city.toml")" -eq 3 ]
   [ "$(shasum -a 256 "$CITY/.gc-home/supervisor.toml" | awk '{print $1}')" = "$supervisor_config_digest" ]
   python3 - "$CITY/.gc/codex-home/config.toml" "$RIG" <<'PY'
 import os
@@ -761,49 +920,46 @@ assert config["projects"]["/unrelated/project"]["trust_level"] == "trusted"
 PY
 }
 
-@test "bootstrap repairs primary executor workspace roots" {
+@test "bootstrap removes only legacy GC event hooks under the official opt-out" {
   run run_bootstrap
   [ "$status" -eq 0 ]
 
-  python3 - "$CITY/city.toml" "$RIG" <<'PY'
-import json
-import os
-import sys
-
-path, rig = sys.argv[1:]
-expected = (
-    "[[patches.agent]]\n"
-    'dir = "agentops"\n'
-    'name = "agentops.validator"\n'
-    f"work_dir = {json.dumps(os.path.dirname(os.path.realpath(rig)))}"
-)
-wrong = expected.rsplit("\n", 1)[0] + f"\nwork_dir = {json.dumps(os.path.realpath(rig))}"
-with open(path, encoding="utf-8") as handle:
-    text = handle.read()
-if text.count(expected) != 1:
-    raise SystemExit("fixture has no unique managed validator workspace patch")
-with open(path, "w", encoding="utf-8") as handle:
-    handle.write(text.replace(expected, wrong))
-PY
+  for root in "$CITY" "$RIG"; do
+    mkdir -p "$root/.beads/hooks"
+    printf '%s\n' '#!/bin/sh' '# gc-hook-stamp: legacy' '# Installed by gc' 'exit 0' \
+      >"$root/.beads/hooks/on_close"
+    chmod 755 "$root/.beads/hooks/on_close"
+  done
 
   run run_bootstrap
   [ "$status" -eq 0 ]
-  python3 - "$CITY/city.toml" "$RIG" <<'PY'
-import os
+  [ ! -e "$CITY/.beads/hooks/on_close" ]
+  [ ! -e "$RIG/.beads/hooks/on_close" ]
+
+  printf '%s\n' '#!/bin/sh' '# caller-owned hook' 'exit 0' >"$RIG/.beads/hooks/on_close"
+  chmod 755 "$RIG/.beads/hooks/on_close"
+
+  run run_bootstrap
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"refusing foreign Beads event hook under event_hooks=false"* ]]
+  [ -e "$RIG/.beads/hooks/on_close" ]
+}
+
+@test "bootstrap leaves task-specific executor work_dir unpatched" {
+  run run_bootstrap
+  [ "$status" -eq 0 ]
+
+  python3 - "$CITY/city.toml" <<'PY'
 import sys
 import tomllib
 
 with open(sys.argv[1], "rb") as handle:
     config = tomllib.load(handle)
-matches = [
-    patch for patch in config["patches"]["agent"]
-    if patch.get("dir") == "agentops" and patch.get("name") == "agentops.validator"
-]
-assert matches == [{
-    "dir": "agentops",
-    "name": "agentops.validator",
-    "work_dir": os.path.dirname(os.path.realpath(sys.argv[2])),
-}]
+for role in ("implementer", "implementer-claude", "validator"):
+    assert not [
+        patch for patch in config["patches"]["agent"]
+        if patch.get("dir") == "agentops" and patch.get("name") == f"agentops.{role}"
+    ]
 PY
 }
 
@@ -849,7 +1005,7 @@ with open(marker_path, encoding="utf-8") as handle:
     marker = json.load(handle)
 with open(city_config_path, "rb") as handle:
     city_config = tomllib.load(handle)
-assert marker["schema_version"] == 4
+assert marker["schema_version"] == 5
 assert marker["toolchain"]["gc"]["path"] == expected
 assert city_config["workspace"]["env"]["GC_BIN"] == expected
 PY
@@ -937,11 +1093,7 @@ with open(sys.argv[1], "rb") as handle:
 extra = os.path.realpath(sys.argv[2])
 assert [rig["name"] for rig in config["rigs"]] == ["agentops", "extra"]
 patches = config["patches"]["agent"]
-for provider in ("codex", "claude"):
-    assert [
-        patch for patch in patches
-        if patch.get("name") == provider and patch.get("dir") == "extra"
-    ] == [{"dir": "extra", "name": provider, "suspended": True}]
+assert not [patch for patch in patches if patch.get("name") in {"codex", "claude"}]
 assert [
     patch for patch in patches
     if patch.get("name") == "core.control-dispatcher" and patch.get("dir") == "extra"
@@ -1055,7 +1207,7 @@ PY
   [ -e "$FAKE_STATE/rig-resumed" ]
 }
 
-@test "start fails closed when Gas City cannot use its native Beads store" {
+@test "start accepts only the official city fallback and rejects other store downgrades" {
   export FAKE_GC_NATIVE_STORE_INELIGIBLE=1
   run run_bootstrap --start --start-timeout 1
 
@@ -1080,6 +1232,43 @@ with open(sys.argv[2], encoding="utf-8") as handle:
     marker = json.load(handle)
 assert config["workspace"]["max_active_sessions"] == 8
 assert marker["max_active_sessions"] == 8
+PY
+}
+
+@test "factory bootstrap projects its checked native bridge" {
+  PACK="$REPO_ROOT/packs/agentops-factory"
+
+  run run_bootstrap --max-active-sessions 8
+  [ "$status" -eq 0 ]
+
+  [ -x "$CITY/.gc/scripts/agentops-factory-check" ]
+  [ -x "$CITY/.gc/scripts/agentops-factory-feeder" ]
+  cmp "$PACK/assets/scripts/agentops-factory-check.sh" \
+    "$CITY/.gc/scripts/agentops-factory-check"
+  cmp "$PACK/assets/scripts/factory_feeder.py" \
+    "$CITY/.gc/scripts/agentops-factory-feeder"
+  grep -Fq 'suspended = true' "$PACK/../agentops-executor/agents/codex/agent.toml"
+  grep -Fq 'suspended = true' "$PACK/../agentops-executor/agents/claude/agent.toml"
+
+  python3 - "$PACK/assets/schemas" "$CITY/.gc/schemas/agentops-factory" "$CITY/city.toml" "$CITY" <<'PY'
+import os
+import sys
+import tomllib
+
+source, projected, city_toml, city = sys.argv[1:]
+names = sorted(name for name in os.listdir(source) if name.endswith(".schema.json"))
+assert names
+assert names == sorted(os.listdir(projected))
+for name in names:
+    with open(os.path.join(source, name), "rb") as handle:
+        expected = handle.read()
+    with open(os.path.join(projected, name), "rb") as handle:
+        assert handle.read() == expected
+with open(city_toml, "rb") as handle:
+    config = tomllib.load(handle)
+assert config["workspace"]["env"]["AGENTOPS_FACTORY_FEEDER"] == os.path.join(
+    os.path.realpath(city), ".gc", "scripts", "agentops-factory-feeder"
+)
 PY
 }
 

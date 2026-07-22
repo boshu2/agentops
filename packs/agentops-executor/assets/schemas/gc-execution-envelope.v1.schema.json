@@ -37,12 +37,18 @@
     "write_scope": {"type": "array", "items": {"type": "string", "minLength": 1}, "uniqueItems": true},
     "evidence_dir": {"type": "string", "minLength": 1},
     "result_path": {"type": "string", "minLength": 1},
+    "factory_admission_receipt": {"type": "string", "pattern": "^/"},
+    "factory_node_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"},
     "baseline_manifest": {"type": "string", "minLength": 1},
     "subject_manifest": {"type": "string", "minLength": 1},
     "scope_receipt": {"type": "string", "minLength": 1},
     "author_context_id": {"type": "string", "minLength": 1}
   },
   "allOf": [
+    {
+      "if": {"anyOf": [{"required": ["factory_admission_receipt"]}, {"required": ["factory_node_id"]}]},
+      "then": {"required": ["factory_admission_receipt", "factory_node_id"]}
+    },
     {
       "if": {"properties": {"role": {"const": "implement"}}},
       "then": {

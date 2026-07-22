@@ -1,8 +1,8 @@
 [order]
-description = "Advance one rig-scoped AgentOps delivery reducer transition; this is intentionally non-idempotent."
-exec = "$PACK_DIR/assets/scripts/delivery-step.sh"
+description = "Snapshot at most eight ready AgentOps delivery leaves and advance each exactly once."
+exec = "$PACK_DIR/assets/scripts/delivery-sweep.sh"
 scope = "rig"
-enabled = false
+enabled = true
 idempotent = false
 trigger = "cooldown"
 interval = "30s"

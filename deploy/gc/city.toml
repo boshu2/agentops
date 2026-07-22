@@ -5,7 +5,103 @@
 max_active_sessions = 1
 # Managed local sessions must not inherit a stale machine-wide OTLP endpoint.
 # A dead collector otherwise delays nearly every GC/bd command.
-env = { GC_BIN = "__GC_AGENTOPS_GC_BIN__", AO_BIN = "__GC_AGENTOPS_AO_BIN__", OTEL_SDK_DISABLED = "true" }
+env = { GC_BIN = "__GC_AGENTOPS_GC_BIN__", AO_BIN = "__GC_AGENTOPS_AO_BIN__", AGENTOPS_FACTORY_FEEDER = "__GC_AGENTOPS_FACTORY_FEEDER__", AGENTOPS_GC_DELIVERY_BIN = "__GC_AGENTOPS_DELIVERY_BIN__", AGENTOPS_GC_BEADS_BIN = "__GC_AGENTOPS_BD_BIN__", AGENTOPS_GC_GIT_BIN = "__GC_AGENTOPS_GIT_BIN__", AGENTOPS_GC_GH_BIN = "__GC_AGENTOPS_GH_BIN__", AGENTOPS_GC_BASH_BIN = "__GC_AGENTOPS_BASH_BIN__", AGENTOPS_GC_DELIVERY_ROOT = "__GC_AGENTOPS_DELIVERY_ROOT__", AGENTOPS_GC_DELIVERY_NATIVE_CONTEXT = "__GC_AGENTOPS_DELIVERY_NATIVE_CONTEXT__", AGENTOPS_GC_DELIVERY_NATIVE_CONTEXT_DIGEST = "__GC_AGENTOPS_DELIVERY_NATIVE_CONTEXT_DIGEST__", AGENTOPS_GC_DELIVERY_RIG = "__GC_AGENTOPS_DELIVERY_RIG__", AGENTOPS_GC_DELIVERY_REPOSITORY = "__GC_AGENTOPS_DELIVERY_REPOSITORY__", AGENTOPS_GC_DELIVERY_REMOTE = "origin", AGENTOPS_GC_DELIVERY_MODE = "__GC_AGENTOPS_DELIVERY_MODE__", AGENTOPS_GC_DELIVERY_DEADLINE_SECONDS = "86400", GC_OTEL_METRICS_URL = "__GC_AGENTOPS_OTEL_METRICS_URL__", GC_OTEL_LOGS_URL = "__GC_AGENTOPS_OTEL_LOGS_URL__", OTEL_EXPORTER_OTLP_ENDPOINT = "" }
+
+# AgentOps 3.3 uses explicit program admission plus cooldown delivery. The two
+# stable event-propulsion orders are disabled below, so per-write event hooks
+# add only detached subprocess churn. This is GC v1.3.5's supported opt-out;
+# controller cache reconciliation remains the bead-observation path.
+[beads]
+event_hooks = false
+
+# GC v1.3.5's stable core exec orders include scripts that call bare `gc`.
+# Bind both PATH and GC_BIN through the supported order override so multiple
+# installed GC versions cannot mix inside one city.
+[[orders.overrides]]
+name = "beads-health"
+env = { GC_BIN = "__GC_AGENTOPS_GC_BIN__", PATH = "__GC_AGENTOPS_ORDER_PATH__" }
+
+[[orders.overrides]]
+name = "cascade-nudge-on-blocker-close"
+enabled = false
+env = { GC_BIN = "__GC_AGENTOPS_GC_BIN__", PATH = "__GC_AGENTOPS_ORDER_PATH__" }
+
+[[orders.overrides]]
+name = "cross-rig-deps"
+env = { GC_BIN = "__GC_AGENTOPS_GC_BIN__", PATH = "__GC_AGENTOPS_ORDER_PATH__" }
+
+[[orders.overrides]]
+name = "gate-sweep"
+env = { GC_BIN = "__GC_AGENTOPS_GC_BIN__", PATH = "__GC_AGENTOPS_ORDER_PATH__" }
+
+[[orders.overrides]]
+name = "jsonl-export"
+env = { GC_BIN = "__GC_AGENTOPS_GC_BIN__", PATH = "__GC_AGENTOPS_ORDER_PATH__" }
+
+[[orders.overrides]]
+name = "nudge-mail-sweep"
+env = { GC_BIN = "__GC_AGENTOPS_GC_BIN__", PATH = "__GC_AGENTOPS_ORDER_PATH__" }
+
+[[orders.overrides]]
+name = "nudge-on-route"
+enabled = false
+env = { GC_BIN = "__GC_AGENTOPS_GC_BIN__", PATH = "__GC_AGENTOPS_ORDER_PATH__" }
+
+[[orders.overrides]]
+name = "order-tracking-sweep"
+env = { GC_BIN = "__GC_AGENTOPS_GC_BIN__", PATH = "__GC_AGENTOPS_ORDER_PATH__" }
+
+[[orders.overrides]]
+name = "orphan-sweep"
+env = { GC_BIN = "__GC_AGENTOPS_GC_BIN__", PATH = "__GC_AGENTOPS_ORDER_PATH__" }
+
+[[orders.overrides]]
+name = "prune-branches"
+env = { GC_BIN = "__GC_AGENTOPS_GC_BIN__", PATH = "__GC_AGENTOPS_ORDER_PATH__" }
+
+[[orders.overrides]]
+name = "reaper"
+env = { GC_BIN = "__GC_AGENTOPS_GC_BIN__", PATH = "__GC_AGENTOPS_ORDER_PATH__" }
+
+[[orders.overrides]]
+name = "spawn-storm-detect"
+env = { GC_BIN = "__GC_AGENTOPS_GC_BIN__", PATH = "__GC_AGENTOPS_ORDER_PATH__" }
+
+[[orders.overrides]]
+name = "wisp-compact"
+env = { GC_BIN = "__GC_AGENTOPS_GC_BIN__", PATH = "__GC_AGENTOPS_ORDER_PATH__" }
+
+# The factory pack is imported once at city scope for the Mayor and once at rig
+# scope for rig workers. GC therefore scans one city instance and one rig
+# instance of a rig-scoped pack order. Only the rig instance owns delivery;
+# quiesce the city duplicate explicitly instead of letting an unbound copy run.
+[[orders.overrides]]
+name = "agentops-delivery-sweep"
+enabled = false
+
+# Workspace env is session-scoped in Gas City. Exec orders run on the
+# controller, so bind the deterministic Refiner sweep through GC's supported
+# per-order override instead of the supervisor's ambient process environment.
+[[orders.overrides]]
+name = "agentops-delivery-sweep"
+rig = "__GC_AGENTOPS_DELIVERY_RIG__"
+
+[orders.overrides.env]
+GC_BIN = "__GC_AGENTOPS_GC_BIN__"
+PATH = "__GC_AGENTOPS_ORDER_PATH__"
+AGENTOPS_GC_DELIVERY_BIN = "__GC_AGENTOPS_DELIVERY_BIN__"
+AGENTOPS_GC_BEADS_BIN = "__GC_AGENTOPS_BD_BIN__"
+AGENTOPS_GC_GIT_BIN = "__GC_AGENTOPS_GIT_BIN__"
+AGENTOPS_GC_GH_BIN = "__GC_AGENTOPS_GH_BIN__"
+AGENTOPS_GC_BASH_BIN = "__GC_AGENTOPS_BASH_BIN__"
+AGENTOPS_GC_DELIVERY_ROOT = "__GC_AGENTOPS_DELIVERY_ROOT__"
+AGENTOPS_GC_DELIVERY_NATIVE_CONTEXT = "__GC_AGENTOPS_DELIVERY_NATIVE_CONTEXT__"
+AGENTOPS_GC_DELIVERY_NATIVE_CONTEXT_DIGEST = "__GC_AGENTOPS_DELIVERY_NATIVE_CONTEXT_DIGEST__"
+AGENTOPS_GC_DELIVERY_RIG = "__GC_AGENTOPS_DELIVERY_RIG__"
+AGENTOPS_GC_DELIVERY_REPOSITORY = "__GC_AGENTOPS_DELIVERY_REPOSITORY__"
+AGENTOPS_GC_DELIVERY_REMOTE = "origin"
+AGENTOPS_GC_DELIVERY_MODE = "__GC_AGENTOPS_DELIVERY_MODE__"
+AGENTOPS_GC_DELIVERY_DEADLINE_SECONDS = "86400"
 
 [session]
 # The bootstrap replaces this with a stable digest of the canonical city path.
@@ -18,11 +114,6 @@ socket = "__GC_AGENTOPS_TMUX_SOCKET__"
 # the SDK's 10s default is too short and converts harmless contention into a
 # failed-create/retry storm.
 setup_timeout = "60s"
-# Each managed session has a nudge-poller sidecar. The upstream 2s default is
-# optimized for latency; a 5s cycle keeps prompt delivery responsive while
-# reducing standing process/database pressure in four-lane AgentOps cities.
-nudge_poll_interval = "5s"
-
 [providers.codex]
 base = "builtin:codex"
 # Codex discards a positional startup prompt when a first-use workspace trust
@@ -144,24 +235,16 @@ default = "medium"
   flag_args = []
 
 
-# Gas City's scaffold imports maintenance workers and turns every provider
-# catalog entry into a generic sling target. This managed city routes neither
-# surface: only roles explicitly declared by the selected AgentOps pack may
-# consume its bounded session capacity. bootstrap.sh adds equivalent
-# rig-scoped patches after gc rig add supplies each logical rig name; the
-# factory narrows its dynamic worktree rigs further from bead metadata.
+# Gas City's scaffold imports maintenance workers. Provider-derived implicit
+# agents are injected only after patches are applied, so they cannot lawfully
+# be suspended with patches in GC v1.3.5. bootstrap.sh projects explicit,
+# suspended city convention agents and the executor pack supplies equivalent
+# rig agents; those exact identities shadow implicit injection. Only checked
+# AgentOps roles may consume bounded session capacity.
 [[patches.agent]]
 name = "bd.dog"
 suspended = true
 
 [[patches.agent]]
 name = "core.control-dispatcher"
-suspended = true
-
-[[patches.agent]]
-name = "codex"
-suspended = true
-
-[[patches.agent]]
-name = "claude"
 suspended = true

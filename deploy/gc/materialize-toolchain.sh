@@ -10,11 +10,11 @@ usage() {
   cat <<'EOF'
 Usage: materialize-toolchain.sh --output DIR [options]
 
-Build one exact gc/bd/ao toolchain from deploy/gc/toolchain.lock.json.
+Build one exact gc/bd/AgentOps toolchain from deploy/gc/toolchain.lock.json.
 
 Options:
   --output DIR  New or empty directory that will receive bin/gc, bin/bd, bin/ao,
-                and toolchain.json
+                bin/agentops-gc-delivery, and toolchain.json
   --pair ID     Accepted pair id (default: first pair with status=qualified)
   --lock PATH   Alternate lock for isolated testing (default: adjacent lock)
   --describe    Print the selected lock entry and exit without building
@@ -225,15 +225,16 @@ mkdir -p "$stage/bin"
 install -m 0755 "$sources/gc/bin/gc" "$stage/bin/gc"
 install -m 0755 "$sources/bd/bd" "$stage/bin/bd"
 go -C "$agentops_root/cli" build -ldflags "-X main.version=$ao_build_version" -o "$stage/bin/ao" ./cmd/ao
+go -C "$agentops_root/cli" build -o "$stage/bin/agentops-gc-delivery" ./cmd/agentops-gc-delivery
 
-python3 - "$stage/bin/gc" "$stage/bin/bd" "$stage/bin/ao" "$selection" "$stage/toolchain.json" "$ao_source_commit" "$ao_cli_tree" <<'PY'
+python3 - "$stage/bin/gc" "$stage/bin/bd" "$stage/bin/ao" "$stage/bin/agentops-gc-delivery" "$selection" "$stage/toolchain.json" "$ao_source_commit" "$ao_cli_tree" <<'PY'
 import hashlib
 import json
 import re
 import subprocess
 import sys
 
-gc_path, bd_path, ao_path, selection_json, receipt_path, ao_source_commit, ao_cli_tree = sys.argv[1:]
+gc_path, bd_path, ao_path, delivery_path, selection_json, receipt_path, ao_source_commit, ao_cli_tree = sys.argv[1:]
 selected = json.loads(selection_json)
 
 
@@ -274,12 +275,13 @@ def digest(path):
 
 
 receipt = {
-    "schema_version": 2,
+    "schema_version": 3,
     "pair": selected,
     "runtime": {
         "gc": {"path": "bin/gc", "version": gc["version"], "commit": gc["commit"], "sha256": digest(gc_path)},
         "bd": {"path": "bin/bd", "version": match.group(1), "commit": match.group(2), "sha256": digest(bd_path)},
         "ao": {"path": "bin/ao", "sha256": digest(ao_path), "source_commit": ao_source_commit, "cli_tree": ao_cli_tree, "build_version": ao_version},
+        "agentops-gc-delivery": {"path": "bin/agentops-gc-delivery", "sha256": digest(delivery_path), "source_commit": ao_source_commit, "cli_tree": ao_cli_tree},
     },
 }
 with open(receipt_path, "w", encoding="utf-8") as handle:

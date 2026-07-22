@@ -18,7 +18,9 @@ Options:
 This quiesces the managed city without deleting its durable state. It stops the
 private supervisor selected by <city>/.gc-home, reaps the city's private agent
 socket, performs a final managed-Dolt stop, and refuses success while the
-socket or scoped processes are still live.
+socket or scoped processes are still live. GC-owned Beads hooks remain present
+but non-executable while the city is stopped; the managed 3.3 bootstrap removes
+that legacy projection under the supported event_hooks=false policy.
 EOF
 }
 
@@ -86,8 +88,8 @@ marker_path, expected_city = sys.argv[1:]
 with open(marker_path, encoding="utf-8") as handle:
     marker = json.load(handle)
 schema_version = marker.get("schema_version")
-if schema_version not in {2, 3, 4}:
-    raise SystemExit("managed-city marker schema_version must be 2, 3, or 4")
+if schema_version not in {2, 3, 4, 5}:
+    raise SystemExit("managed-city marker schema_version must be 2, 3, 4, or 5")
 ao_bin = ""
 ao_sha256 = ""
 actual_city = os.path.realpath(os.path.expanduser(str(marker.get("city", ""))))
@@ -110,21 +112,21 @@ else:
     gc_sha256 = gc.get("sha256")
     bd_bin = bd.get("path")
     bd_sha256 = bd.get("sha256")
-    ao = marker.get("ao_reducer", {}) if schema_version == 4 else {}
+    ao = marker.get("ao_reducer", {}) if schema_version in {4, 5} else {}
     ao_bin = ao.get("path", "")
     ao_sha256 = ao.get("binary_sha256", "")
 if not isinstance(gc_bin, str) or not gc_bin.strip():
     raise SystemExit("managed-city marker has no gc path")
 for label, value in (("gc", gc_sha256), ("bd", bd_sha256)):
-    if schema_version == 3 and (
+    if schema_version >= 3 and (
         not isinstance(value, str)
         or len(value) != 64
         or any(char not in "0123456789abcdef" for char in value)
     ):
         raise SystemExit(f"managed-city marker has invalid {label} sha256")
-if schema_version == 3 and (not isinstance(bd_bin, str) or not bd_bin.strip()):
+if schema_version >= 3 and (not isinstance(bd_bin, str) or not bd_bin.strip()):
     raise SystemExit("managed-city marker has no bd path")
-if schema_version == 4:
+if schema_version >= 4:
     if not isinstance(ao_bin, str) or not ao_bin.strip():
         raise SystemExit("managed-city marker has no ao reducer path")
     if not isinstance(ao_sha256, str) or len(ao_sha256) != 64 or any(char not in "0123456789abcdef" for char in ao_sha256):
@@ -140,6 +142,24 @@ print("\t".join((
 PY
 )" || die "invalid managed-city marker: $marker"
 IFS=$'\t' read -r marker_gc_bin marker_gc_sha256 marker_bd_bin marker_bd_sha256 marker_ao_bin marker_ao_sha256 <<<"$marker_toolchain"
+
+# Detached Beads hooks are launched from the rig and may carry no city path in
+# argv. Keep the marker-owned rig as a second exact process-scope identity so a
+# hook cannot outlive a short city-only quiet window and restart managed Dolt.
+marker_rig="$(python3 - "$marker" <<'PY'
+import json
+import os
+import sys
+
+with open(sys.argv[1], encoding="utf-8") as handle:
+    marker = json.load(handle)
+rig = marker.get("rig", "")
+if rig:
+    if not isinstance(rig, str):
+        raise SystemExit("managed-city marker rig must be a path string")
+    print(os.path.realpath(os.path.expanduser(rig)))
+PY
+)" || die "invalid managed-city rig in marker: $marker"
 
 if [ -z "$gc_bin" ]; then
   gc_bin="$marker_gc_bin"
@@ -211,7 +231,84 @@ export GC_BIN="$gc_bin"
 export OTEL_SDK_DISABLED=true
 
 status_file="$(mktemp "${TMPDIR:-/tmp}/gc-agentops-teardown-status.XXXXXX")"
-trap 'rm -f "$status_file"' EXIT
+hook_fence_file="$(mktemp "${TMPDIR:-/tmp}/gc-agentops-teardown-hooks.XXXXXX")"
+
+verify_gc_hooks_fenced() {
+  python3 - "$hook_fence_file" <<'PY'
+import hashlib
+import json
+import os
+import stat
+import sys
+
+with open(sys.argv[1], encoding="utf-8") as handle:
+    entries = json.load(handle)
+for entry in entries:
+    path = entry["path"]
+    info = os.lstat(path)
+    if not stat.S_ISREG(info.st_mode) or stat.S_ISLNK(info.st_mode):
+        raise SystemExit(f"GC hook changed type while fenced: {path}")
+    with open(path, "rb") as handle:
+        digest = hashlib.sha256(handle.read()).hexdigest()
+    if digest != entry["sha256"]:
+        raise SystemExit(f"GC hook changed bytes while fenced: {path}")
+    if stat.S_IMODE(info.st_mode) & 0o111:
+        raise SystemExit(f"GC hook became executable while city was stopping: {path}")
+PY
+}
+
+cleanup() {
+  rm -f "$status_file" "$hook_fence_file"
+}
+trap cleanup EXIT
+
+# GC's installed Beads hooks intentionally detach their event/autoclose chain.
+# Fence only exact GC-stamped hooks before shutdown so no new hook exec can be
+# accepted after teardown begins. This does not identify a chain that was
+# already running before the fence; 3.3 prevents that case at bootstrap by not
+# installing the event hooks at all.
+# Existing detached helpers are still drained below, and the stamped hooks are
+# left non-executable after quiescence. This closes the unavoidable gap where
+# Beads has accepted an asynchronous hook in memory but has not called exec(2)
+# yet: no process census can observe that future process, and restoring execute
+# permission would let it start after teardown returned. AgentOps 3.3 disables
+# these hooks through GC's supported event_hooks=false policy; bootstrap removes
+# any legacy stamped projection before admitting another managed runtime.
+python3 - "$hook_fence_file" "$city" "$marker_rig" <<'PY'
+import hashlib
+import json
+import os
+import stat
+import sys
+
+snapshot, city, rig = sys.argv[1:]
+entries = []
+for root in (city, rig):
+    if not root:
+        continue
+    hooks = os.path.join(root, ".beads", "hooks")
+    for name in ("on_create", "on_update", "on_close"):
+        path = os.path.join(hooks, name)
+        if not os.path.exists(path):
+            continue
+        info = os.lstat(path)
+        if not stat.S_ISREG(info.st_mode) or stat.S_ISLNK(info.st_mode):
+            raise SystemExit(f"refusing non-regular managed hook: {path}")
+        with open(path, "rb") as handle:
+            raw = handle.read()
+        if b"# gc-hook-stamp:" not in raw or b"# Installed by gc" not in raw:
+            raise SystemExit(f"refusing to fence non-GC hook: {path}")
+        entries.append({
+            "path": path,
+            "mode": stat.S_IMODE(info.st_mode),
+            "sha256": hashlib.sha256(raw).hexdigest(),
+        })
+with open(snapshot, "w", encoding="utf-8") as handle:
+    json.dump(entries, handle, sort_keys=True, separators=(",", ":"))
+    handle.write("\n")
+for entry in entries:
+    os.chmod(entry["path"], entry["mode"] & ~0o111)
+PY
 
 supervisor_running() {
   "$gc_bin" supervisor status --json >"$status_file"
@@ -260,12 +357,12 @@ if [ -n "$tmux_socket" ] && command -v tmux >/dev/null 2>&1; then
 fi
 
 find_residual_processes() {
-  python3 - "$city" <<'PY'
+  python3 - "$city" "$marker_rig" <<'PY'
 import os
 import subprocess
 import sys
 
-city = sys.argv[1]
+scope_roots = [root for root in sys.argv[1:] if root]
 
 
 def process_rows(arguments):
@@ -282,6 +379,44 @@ def process_rows(arguments):
     return rows
 
 
+def process_cwds():
+    result = {}
+    proc_root = "/proc"
+    if os.path.isdir(proc_root):
+        for name in os.listdir(proc_root):
+            if not name.isdigit():
+                continue
+            try:
+                result[int(name)] = os.path.realpath(os.readlink(os.path.join(proc_root, name, "cwd")))
+            except OSError:
+                pass
+        return result
+    try:
+        lines = subprocess.check_output(
+            ["lsof", "-a", "-d", "cwd", "-Fn", "-Fp"],
+            text=True,
+            stderr=subprocess.DEVNULL,
+        ).splitlines()
+    except (FileNotFoundError, subprocess.CalledProcessError):
+        return result
+    pid = None
+    for line in lines:
+        if line.startswith("p") and line[1:].isdigit():
+            pid = int(line[1:])
+        elif pid is not None and line.startswith("n"):
+            result[pid] = os.path.realpath(line[1:])
+    return result
+
+
+def within(path, root):
+    if not path or not root:
+        return False
+    try:
+        return os.path.commonpath((path, root)) == root
+    except ValueError:
+        return False
+
+
 # Match over argv plus environment because a GC maintenance helper can carry
 # city identity only in GC_CITY/GC_CITY_PATH. Keep an argv-only projection for
 # diagnostics so teardown never prints credentials inherited through the
@@ -290,6 +425,7 @@ expanded_rows = process_rows(["ps", "eww", "-eo", "pid=,ppid=,command="])
 plain_rows = process_rows(["ps", "-eo", "pid=,ppid=,command="])
 plain_commands = {pid: command for pid, _ppid, command in plain_rows}
 parents = {pid: ppid for pid, ppid, _ in expanded_rows}
+cwd_by_pid = process_cwds()
 ancestors = set()
 pid = os.getpid()
 while pid > 0 and pid not in ancestors:
@@ -316,24 +452,28 @@ for pid, ppid, expanded_command in expanded_rows:
     rows.append((pid, ppid, expanded_command, plain_commands.get(pid, "<command unavailable>")))
 
 for pid, ppid, expanded_command, plain_command in rows:
-    if city in expanded_command:
-        print(f"{pid}\t{ppid}\t{plain_command}")
+    cwd = cwd_by_pid.get(pid, "")
+    if any(root in expanded_command or within(cwd, root) for root in scope_roots):
+        suffix = f" [cwd={cwd}]" if cwd else ""
+        print(f"{pid}\t{ppid}\t{plain_command}{suffix}")
 PY
 }
 
 # Supervisor shutdown terminates its process groups, but a canceled provider
 # helper can need a short final interval to reap its own child after the
-# supervisor socket is already gone. Require three consecutive quiet
-# observations so a short argv/env handoff cannot be mistaken for quiescence.
+# supervisor socket is already gone. Match both the city and marker-owned rig,
+# then require five consecutive quiet observations so a short argv/env handoff
+# cannot be mistaken for quiescence.
 # If a late scoped helper appears, repeat GC's supported idempotent Dolt stop;
 # never signal an unverified PID here.
 residual_deadline="$(( $(date +%s) + wait_timeout ))"
 quiet_observations=0
+required_quiet_observations=5
 while :; do
   residual_processes="$(find_residual_processes)"
   if [ -z "$residual_processes" ]; then
     quiet_observations="$(( quiet_observations + 1 ))"
-    [ "$quiet_observations" -lt 3 ] || break
+    [ "$quiet_observations" -lt "$required_quiet_observations" ] || break
   else
     quiet_observations=0
     "$gc_bin" dolt-state stop-managed --city "$city" >/dev/null
@@ -343,5 +483,7 @@ while :; do
   fi
   sleep 1
 done
+
+verify_gc_hooks_fenced || die "GC-stamped Beads hooks did not remain fenced"
 
 printf 'Gas City stopped cleanly: %s\n' "$city"

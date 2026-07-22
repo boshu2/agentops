@@ -5,10 +5,17 @@ setup() {
   TEARDOWN="$REPO_ROOT/deploy/gc/teardown.sh"
   TMP="$(mktemp -d "${TMPDIR:-/tmp}/gc-agentops-teardown.XXXXXX")"
   CITY="$TMP/city"
+  RIG="$TMP/rig"
   BIN="$TMP/bin"
   LOG="$TMP/gc.log"
   STATE="$TMP/state"
-  mkdir -p "$CITY/.gc" "$CITY/.gc-home" "$BIN" "$STATE"
+  mkdir -p "$CITY/.gc" "$CITY/.gc-home" "$CITY/.beads/hooks" "$RIG/.beads/hooks" "$BIN" "$STATE"
+  for hooks in "$CITY/.beads/hooks" "$RIG/.beads/hooks"; do
+    for name in on_create on_update on_close; do
+      printf '%s\n' '#!/bin/sh' '# gc-hook-stamp: fixture' '# Installed by gc' 'exit 0' >"$hooks/$name"
+      chmod 755 "$hooks/$name"
+    done
+  done
 
   FAKE_GC="$BIN/gc"
   cat >"$FAKE_GC" <<'EOF'
@@ -34,6 +41,11 @@ case "${1:-} ${2:-}" in
   "supervisor stop")
     [ "${3:-}" = "--wait" ]
     [ "${4:-}" = "--wait-timeout" ]
+    city="${GC_HOME%/.gc-home}"
+    [ ! -x "$city/.beads/hooks/on_create" ]
+    [ ! -x "$city/.beads/hooks/on_update" ]
+    [ ! -x "$city/.beads/hooks/on_close" ]
+    touch "$state/hooks-fenced-at-stop"
     rm -f "$state/supervisor-running"
     touch "$state/supervisor-stopped"
     ;;
@@ -99,13 +111,14 @@ EOF
 socket = "agentops-teardown-test"
 EOF
 	CANONICAL_CITY="$(python3 -c 'import os,sys; print(os.path.realpath(sys.argv[1]))' "$CITY")"
-  python3 - "$CITY/.gc/agentops-bootstrap.json" "$CITY" "$FAKE_GC" "$FAKE_BD" "$FAKE_AO" <<'PY'
+  CANONICAL_RIG="$(python3 -c 'import os,sys; print(os.path.realpath(sys.argv[1]))' "$RIG")"
+  python3 - "$CITY/.gc/agentops-bootstrap.json" "$CITY" "$RIG" "$FAKE_GC" "$FAKE_BD" "$FAKE_AO" <<'PY'
 import hashlib
 import json
 import os
 import sys
 
-path, city, gc_bin, bd_bin, ao_bin = sys.argv[1:]
+path, city, rig, gc_bin, bd_bin, ao_bin = sys.argv[1:]
 
 
 def sha256(filename):
@@ -114,9 +127,10 @@ def sha256(filename):
 
 with open(path, "w", encoding="utf-8") as handle:
     json.dump({
-        "schema_version": 4,
+        "schema_version": 5,
         "state": "ready",
         "city": os.path.realpath(city),
+        "rig": os.path.realpath(rig),
         "toolchain": {
             "gc": {
                 "path": os.path.realpath(gc_bin),
@@ -151,6 +165,13 @@ teardown() {
   [[ "$output" == *"Gas City stopped cleanly"* ]]
   [ -e "$STATE/supervisor-stopped" ]
   [ -e "$STATE/dolt-stopped" ]
+  [ -e "$STATE/hooks-fenced-at-stop" ]
+  [ ! -x "$CITY/.beads/hooks/on_create" ]
+  [ ! -x "$CITY/.beads/hooks/on_update" ]
+  [ ! -x "$CITY/.beads/hooks/on_close" ]
+  [ ! -x "$RIG/.beads/hooks/on_create" ]
+  [ ! -x "$RIG/.beads/hooks/on_update" ]
+  [ ! -x "$RIG/.beads/hooks/on_close" ]
   grep -Fq "GC_HOME=<$CANONICAL_CITY/.gc-home> GC_ISOLATED=<1> OTEL_SDK_DISABLED=<true>" "$LOG"
   grep -Fq 'ARGS <supervisor> <stop> <--wait> <--wait-timeout> <17s>' "$LOG"
   grep -Fq "ARGS <dolt-state> <stop-managed> <--city> <$CANONICAL_CITY>" "$LOG"
@@ -216,7 +237,9 @@ teardown() {
   python3 -c 'import time; time.sleep(1)' "$CANONICAL_CITY" &
   helper_pid="$!"
 
-  run env PATH="$BIN:$PATH" "$TEARDOWN" --city "$CITY" --wait-timeout 6
+  # Five quiet censuses follow the helper's one-second lifetime. Leave enough
+  # budget for process enumeration on a loaded four-way Linux Bats runner.
+  run env PATH="$BIN:$PATH" "$TEARDOWN" --city "$CITY" --wait-timeout 12
   wait "$helper_pid" 2>/dev/null || true
 
   [ "$status" -eq 0 ]
@@ -226,9 +249,65 @@ teardown() {
 @test "teardown does not accept a quiet gap before a late scoped helper" {
   touch "$STATE/spawn-late-helper"
 
-  run env PATH="$BIN:$PATH" "$TEARDOWN" --city "$CITY" --wait-timeout 6
+  # A late helper can first appear immediately after a census. Leave room for
+  # its cleanup plus the teardown contract's five subsequent quiet censuses.
+  run env PATH="$BIN:$PATH" "$TEARDOWN" --city "$CITY" --wait-timeout 9
 
   [ "$status" -eq 0 ]
   [ -e "$STATE/late-helper-finished" ]
+  [[ "$output" == *"Gas City stopped cleanly"* ]]
+}
+
+@test "teardown does not certify a three-second quiet gap" {
+  printf '%s\n' "$CANONICAL_CITY" >"$STATE/city-path"
+  python3 -c 'import pathlib,subprocess,sys,time; time.sleep(3); city=pathlib.Path(sys.argv[1], "city-path").read_text().strip(); subprocess.run([sys.executable, "-c", "import time; time.sleep(0.5)", city], check=True)' "$STATE" &
+  helper_pid="$!"
+
+  run env PATH="$BIN:$PATH" "$TEARDOWN" --city "$CITY" --wait-timeout 9
+  wait "$helper_pid" 2>/dev/null || true
+
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"Gas City stopped cleanly"* ]]
+}
+
+@test "teardown waits for detached helpers identified only by managed cwd" {
+  (
+    cd "$RIG"
+    python3 -c 'import pathlib,sys,time; time.sleep(6); pathlib.Path(sys.argv[1]).touch()' \
+      "$STATE/rig-helper-finished"
+  ) &
+  helper_pid="$!"
+
+  run env PATH="$BIN:$PATH" "$TEARDOWN" --city "$CITY" --wait-timeout 15
+  wait "$helper_pid" 2>/dev/null || true
+
+  [ "$status" -eq 0 ]
+  [ -e "$STATE/rig-helper-finished" ]
+  [[ "$output" == *"Gas City stopped cleanly"* ]]
+}
+
+@test "teardown keeps a preaccepted but not-yet-execed hook fenced" {
+  cat >"$CITY/.beads/hooks/on_create" <<'EOF'
+#!/bin/sh
+# gc-hook-stamp: fixture
+# Installed by gc
+touch "$(dirname "$0")/unexpected-late-exec"
+EOF
+  chmod 755 "$CITY/.beads/hooks/on_create"
+  printf '%s\n' "$CITY/.beads/hooks/on_create" >"$STATE/pending-hook-path"
+
+  (
+    sleep 7
+    pending_hook="$(cat "$STATE/pending-hook-path")"
+    "$pending_hook" fixture create
+  ) &
+  helper_pid="$!"
+
+  run env PATH="$BIN:$PATH" "$TEARDOWN" --city "$CITY" --wait-timeout 12
+  wait "$helper_pid" 2>/dev/null || true
+
+  [ "$status" -eq 0 ]
+  [ ! -e "$CITY/.beads/hooks/unexpected-late-exec" ]
+  [ ! -x "$CITY/.beads/hooks/on_create" ]
   [[ "$output" == *"Gas City stopped cleanly"* ]]
 }

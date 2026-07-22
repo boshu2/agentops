@@ -1,0 +1,4 @@
+description = "Disabled generic Claude target; use the checked Opus Implementer role."
+scope = "rig"
+provider = "claude"
+suspended = true

@@ -40,7 +40,9 @@ class GC33DeliveryContractTest(unittest.TestCase):
         return {"allowed": allowed, "used": used, "reason": reason}
 
     def test_every_33_schema_is_a_valid_draft_2020_12_schema(self) -> None:
-        names = ("program-graph.v2.schema.json", "admission-certificate.v2.schema.json", "handoff-prepared.v1.schema.json", "handoff-committed.v1.schema.json", "delivery.v1.schema.json", "gc.delivery.v1.schema.json", "branch-receipt.v1.schema.json", "pr-open-receipt.v1.schema.json", "ambiguity-request.v1.schema.json", "epoch-receipt.v1.schema.json", "effect-receipt.v1.schema.json", "factory-role-request.v2.schema.json", "factory-role-response.v2.schema.json")
+        names = sorted(path.name for path in SCHEMAS.glob("*.schema.json"))
+        self.assertIn("graph-admission-receipt.v1.schema.json", names)
+        self.assertIn("factory-build-context.v1.schema.json", names)
         for name in names:
             with self.subTest(name=name):
                 Draft202012Validator.check_schema(self.load(name))
@@ -60,30 +62,34 @@ class GC33DeliveryContractTest(unittest.TestCase):
         build = (pack / "formulas" / "agentops-build.toml").read_text(encoding="utf-8")
         experiment = (pack / "formulas" / "agentops-experiment.toml").read_text(encoding="utf-8")
         order = (pack / "orders" / "agentops-delivery-sweep.toml").read_text(encoding="utf-8")
-        script = (pack / "assets" / "scripts" / "delivery-step.sh").read_text(encoding="utf-8")
-        command = (pack / "commands" / "delivery-step" / "command.toml").read_text(encoding="utf-8")
+        sweep = (pack / "assets" / "scripts" / "delivery-sweep.sh").read_text(encoding="utf-8")
+        feeder = (pack / "assets" / "scripts" / "factory_feeder.py").read_text(encoding="utf-8")
+        program = (pack / "assets" / "scripts" / "program_start.py").read_text(encoding="utf-8")
+        command = (pack / "commands" / "program-start" / "command.toml").read_text(encoding="utf-8")
         self.assertIn('formula = "agentops-build"', build)
-        self.assertIn('formula = "agentops-experiment"', build)
-        self.assertIn('context = "separate"', build)
-        self.assertIn('max_units = 20', build)
+        self.assertIn('id = "mayor"', build)
+        self.assertIn('id = "plan"', build)
+        self.assertNotIn('drain-experiments', build)
+        self.assertIn('max_attempts = 1', build)
         self.assertIn('formula = "agentops-experiment"', experiment)
-        self.assertIn('command = ["delivery"]', command)
+        self.assertIn('id = "admission"', experiment)
+        self.assertIn('id = "implement"', experiment)
+        self.assertIn('id = "validate"', experiment)
         self.assertIn('trigger = "cooldown"', order)
-        self.assertIn('enabled = false', order)
+        self.assertIn('enabled = true', order)
         self.assertIn('idempotent = false', order)
-        self.assertIn('AGENTOPS_GC_DELIVERY_BIN', script)
-        self.assertIn('GC_BIN', script)
-        self.assertIn('AGENTOPS_GC_BEADS_BIN', script)
-        self.assertIn('AGENTOPS_GC_GH_BIN', script)
-        self.assertIn('AGENTOPS_GC_DELIVERY_SUBJECT_MANIFEST', script)
-        self.assertIn('--subject-manifest', script)
-        self.assertIn('AGENTOPS_GC_DELIVERY_NATIVE_CONTEXT', script)
-        self.assertIn('--native-context', script)
-        self.assertIn('must be an absolute executable', script)
-        self.assertNotIn('factory.py', script)
-        self.assertNotIn('ao gc', script)
-        self.assertNotIn('FIXTURE_STATE', script)
-        self.assertNotIn('FAKE_TERMINAL', script)
+        self.assertIn('AGENTOPS_GC_DELIVERY_BIN', sweep)
+        self.assertIn('sweep', sweep)
+        self.assertIn('AGENTOPS_GC_BEADS_BIN', sweep)
+        self.assertIn('--subject-manifest', sweep)
+        self.assertIn('--native-context', sweep)
+        self.assertNotIn('factory.py', sweep)
+        self.assertNotIn('FIXTURE_STATE', sweep)
+        self.assertIn('create", "--graph"', feeder)
+        self.assertNotIn('while True', feeder)
+        self.assertIn('command = ["program", "start"]', command)
+        self.assertIn('factory-bead-intent.v1', program)
+        self.assertNotIn('while True', program)
 
     def test_actual_marker_artifacts_are_schema_conformant(self) -> None:
         cases = (("handoff-prepared.v1.schema.json", self.prepared()), ("delivery.v1.schema.json", self.handoff_delivery()), ("delivery.v1.schema.json", self.handoff_delivery("published")), ("handoff-committed.v1.schema.json", self.committed()), ("gc.delivery.v1.schema.json", self.delivery_record()))
@@ -131,7 +137,7 @@ class GC33DeliveryContractTest(unittest.TestCase):
         self.assertFalse(validator.is_valid(invalid))
 
     def test_program_graph_role_policy_and_fallback_are_exact(self) -> None:
-        graph = {"schema_version": "program-graph.v2", "program_id": "gc33-program", "intent_digest": DIGEST, "max_parallel": 1, "delivery_group_id": "group", "prefix_safety": "safe", "role_policy": {"mayor": {"model": "fable", "reasoning": "adaptive", "provider": "claude", "fallback": self.fallback()}, "planner": {"model": "sol", "reasoning": "high", "provider": "codex", "fallback": self.fallback()}, "validator": {"model": "sol", "reasoning": "high", "provider": "codex", "fallback": self.fallback()}, "worker_pool": {"default": {"model": "terra", "reasoning": "high", "provider": "codex", "fallback": self.fallback()}, "overflow": {"model": "opus", "reasoning": "medium", "provider": "claude", "fallback": self.fallback()}, "fallback": self.fallback()}, "refiner": {"model": "fable", "reasoning": "adaptive", "provider": "claude", "fallback": self.fallback(), "ambiguity_only": True}, "luna": {"model": "luna", "reasoning": "high", "provider": "codex", "fallback": self.fallback(), "support_only": True}}, "nodes": [{"id": "semantic", "bead_class": "product", "intent_digest": DIGEST, "depends_on": [], "write_scope": ["deploy/gc"], "generated_companions": [], "role": "implementation", "model": "terra", "reasoning": "high", "provider": "codex", "fallback": self.fallback()}]}
+        graph = {"schema_version": "program-graph.v2", "program_id": "gc33-program", "intent_digest": DIGEST, "repository_dir": "/repo", "base_ref": "main", "base_oid": "a" * 40, "workspace_root": "/worktrees", "packet_root": "/packets", "max_parallel": 1, "delivery_group_id": "group", "prefix_safety": "safe", "role_policy": {"mayor": {"model": "fable", "reasoning": "adaptive", "provider": "claude", "fallback": self.fallback()}, "planner": {"model": "sol", "reasoning": "high", "provider": "codex", "fallback": self.fallback()}, "validator": {"model": "sol", "reasoning": "high", "provider": "codex", "fallback": self.fallback()}, "worker_pool": {"default": {"model": "terra", "reasoning": "high", "provider": "codex", "fallback": self.fallback()}, "overflow": {"model": "opus", "reasoning": "medium", "provider": "claude", "fallback": self.fallback()}, "fallback": self.fallback()}, "refiner": {"model": "fable", "reasoning": "adaptive", "provider": "claude", "fallback": self.fallback(), "ambiguity_only": True}, "luna": {"model": "luna", "reasoning": "high", "provider": "codex", "fallback": self.fallback(), "support_only": True}}, "nodes": [{"id": "semantic", "title": "Semantic unit", "intent": "Make one bounded change.", "acceptance": ["Focused check passes."], "non_goals": ["No unrelated change."], "subject": {"includes": ["deploy/gc"], "excludes": [".git"]}, "first_check": "bash scripts/check-gc-executor.sh", "bead_class": "product", "intent_digest": DIGEST, "depends_on": [], "write_scope": ["deploy/gc"], "generated_companions": [], "role": "implementation", "model": "terra", "reasoning": "high", "provider": "codex", "fallback": self.fallback()}]}
         validator = self.validator("program-graph.v2.schema.json")
         self.assertTrue(validator.is_valid(graph))
         for path, value in ((["role_policy", "worker_pool", "default", "reasoning"], "medium"), (["role_policy", "luna", "support_only"], False), (["nodes", 0, "fallback"], self.fallback(allowed=False, used=True, reason="no"))):
