@@ -237,7 +237,9 @@ teardown() {
   python3 -c 'import time; time.sleep(1)' "$CANONICAL_CITY" &
   helper_pid="$!"
 
-  run env PATH="$BIN:$PATH" "$TEARDOWN" --city "$CITY" --wait-timeout 6
+  # Five quiet censuses follow the helper's one-second lifetime. Leave enough
+  # budget for process enumeration on a loaded four-way Linux Bats runner.
+  run env PATH="$BIN:$PATH" "$TEARDOWN" --city "$CITY" --wait-timeout 12
   wait "$helper_pid" 2>/dev/null || true
 
   [ "$status" -eq 0 ]
