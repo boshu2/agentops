@@ -9,7 +9,13 @@ setup() {
   BIN="$TMP/bin"
   LOG="$TMP/gc.log"
   STATE="$TMP/state"
-  mkdir -p "$CITY/.gc" "$CITY/.gc-home" "$RIG" "$BIN" "$STATE"
+  mkdir -p "$CITY/.gc" "$CITY/.gc-home" "$CITY/.beads/hooks" "$RIG/.beads/hooks" "$BIN" "$STATE"
+  for hooks in "$CITY/.beads/hooks" "$RIG/.beads/hooks"; do
+    for name in on_create on_update on_close; do
+      printf '%s\n' '#!/bin/sh' '# gc-hook-stamp: fixture' '# Installed by gc' 'exit 0' >"$hooks/$name"
+      chmod 755 "$hooks/$name"
+    done
+  done
 
   FAKE_GC="$BIN/gc"
   cat >"$FAKE_GC" <<'EOF'
@@ -35,6 +41,11 @@ case "${1:-} ${2:-}" in
   "supervisor stop")
     [ "${3:-}" = "--wait" ]
     [ "${4:-}" = "--wait-timeout" ]
+    city="${GC_HOME%/.gc-home}"
+    [ ! -x "$city/.beads/hooks/on_create" ]
+    [ ! -x "$city/.beads/hooks/on_update" ]
+    [ ! -x "$city/.beads/hooks/on_close" ]
+    touch "$state/hooks-fenced-at-stop"
     rm -f "$state/supervisor-running"
     touch "$state/supervisor-stopped"
     ;;
@@ -154,6 +165,13 @@ teardown() {
   [[ "$output" == *"Gas City stopped cleanly"* ]]
   [ -e "$STATE/supervisor-stopped" ]
   [ -e "$STATE/dolt-stopped" ]
+  [ -e "$STATE/hooks-fenced-at-stop" ]
+  [ -x "$CITY/.beads/hooks/on_create" ]
+  [ -x "$CITY/.beads/hooks/on_update" ]
+  [ -x "$CITY/.beads/hooks/on_close" ]
+  [ -x "$RIG/.beads/hooks/on_create" ]
+  [ -x "$RIG/.beads/hooks/on_update" ]
+  [ -x "$RIG/.beads/hooks/on_close" ]
   grep -Fq "GC_HOME=<$CANONICAL_CITY/.gc-home> GC_ISOLATED=<1> OTEL_SDK_DISABLED=<true>" "$LOG"
   grep -Fq 'ARGS <supervisor> <stop> <--wait> <--wait-timeout> <17s>' "$LOG"
   grep -Fq "ARGS <dolt-state> <stop-managed> <--city> <$CANONICAL_CITY>" "$LOG"
@@ -248,9 +266,12 @@ teardown() {
   [[ "$output" == *"Gas City stopped cleanly"* ]]
 }
 
-@test "teardown waits for detached helpers identified only by the managed rig" {
-  python3 -c 'import pathlib,sys,time; time.sleep(6); pathlib.Path(sys.argv[2]).touch()' \
-    "$CANONICAL_RIG" "$STATE/rig-helper-finished" &
+@test "teardown waits for detached helpers identified only by managed cwd" {
+  (
+    cd "$RIG"
+    python3 -c 'import pathlib,sys,time; time.sleep(6); pathlib.Path(sys.argv[1]).touch()' \
+      "$STATE/rig-helper-finished"
+  ) &
   helper_pid="$!"
 
   run env PATH="$BIN:$PATH" "$TEARDOWN" --city "$CITY" --wait-timeout 15

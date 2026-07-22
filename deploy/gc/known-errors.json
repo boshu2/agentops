@@ -433,16 +433,16 @@
       "observed": "2026-07-22 after failed clean bootstrap cycle on AgentOps cb0e0659b3492b88e6e0c5ac618eba10eaf0003e",
       "location": "deploy/gc/teardown.sh residual process census",
       "identities": {"failed_candidate": "cb0e0659b3492b88e6e0c5ac618eba10eaf0003e", "late_watchdog_binary": "/Users/bo/.local/bin/gc", "late_dolt_port": 29798},
-      "symptom": "Teardown reported clean after five city-only observations, then a detached Beads hook identified only by the rig restarted a managed-Dolt watchdog six seconds later.",
-      "reproduction": "Keep a detached helper whose argv or environment contains only the marker-owned rig path while tearing down; the old city-only census returns before it exits.",
+      "symptom": "Teardown reported clean after sampled observations, then BD's asynchronous runner launched GC's backgrounded shutdown hook chain and an ambient managed-Dolt watchdog appeared after the quiet gap.",
+      "reproduction": "Close an in-flight order-tracking Bead during supervisor shutdown; GC's installed on_close script backgrounds its event/autoclose chain, which can restart the stopped city store after a sample-only census returns.",
       "owner": "agentops",
       "fix_location": "deploy/gc/bootstrap.sh supervisor environment and deploy/gc/teardown.sh marker-scoped process census",
       "build": "No Gas City or Beads source change; use the exact qualified binaries.",
-      "deterministic_test": "Teardown regression holds a rig-only detached helper beyond the old quiet window and refuses to certify until it finishes; bootstrap asserts exact GC_BIN inheritance.",
+      "deterministic_test": "Teardown proves exact GC-stamped hooks are non-executable during supervisor stop, restores their original modes and bytes afterward, and holds a cwd-only rig helper beyond the old quiet window; bootstrap also asserts exact GC_BIN inheritance.",
       "live_check": "After checked teardown, wait beyond the observed six-second gap and prove no city/rig-scoped process or supervisor PID survives.",
-      "upstream": "The installed hook fallback is stable GC behavior; AgentOps failed to bind and observe its complete managed scope.",
+      "upstream": "GC's installed hook deliberately backgrounds work and BD's hook runner is asynchronous; AgentOps teardown failed to establish a scheduling fence before sampling quiescence.",
       "release_relevance": "Hard 3.3 clean-bootstrap repeatability and host-safety gate.",
-      "disposition": "Export the exact GC binary into the private supervisor lineage and match both city and marker-owned rig during teardown."
+      "disposition": "Fence only GC-stamped city/rig hooks before shutdown, drain argv/env/cwd-scoped helpers, stop managed Dolt, then restore the exact hook bytes and modes."
     },
     {
       "id": "agentops-full-delivery-topology-unproven",

@@ -229,7 +229,84 @@ export GC_BIN="$gc_bin"
 export OTEL_SDK_DISABLED=true
 
 status_file="$(mktemp "${TMPDIR:-/tmp}/gc-agentops-teardown-status.XXXXXX")"
-trap 'rm -f "$status_file"' EXIT
+hook_fence_file="$(mktemp "${TMPDIR:-/tmp}/gc-agentops-teardown-hooks.XXXXXX")"
+hook_fence_active=0
+
+restore_gc_hooks() {
+  [ "$hook_fence_active" -eq 1 ] || return 0
+  python3 - "$hook_fence_file" <<'PY'
+import hashlib
+import json
+import os
+import stat
+import sys
+
+with open(sys.argv[1], encoding="utf-8") as handle:
+    entries = json.load(handle)
+for entry in entries:
+    path = entry["path"]
+    info = os.lstat(path)
+    if not stat.S_ISREG(info.st_mode) or stat.S_ISLNK(info.st_mode):
+        raise SystemExit(f"GC hook changed type while fenced: {path}")
+    with open(path, "rb") as handle:
+        digest = hashlib.sha256(handle.read()).hexdigest()
+    if digest != entry["sha256"]:
+        raise SystemExit(f"GC hook changed bytes while fenced: {path}")
+for entry in entries:
+    os.chmod(entry["path"], entry["mode"])
+PY
+  hook_fence_active=0
+}
+
+cleanup() {
+  if [ "$hook_fence_active" -eq 1 ]; then
+    restore_gc_hooks || true
+  fi
+  rm -f "$status_file" "$hook_fence_file"
+}
+trap cleanup EXIT
+
+# GC's installed Beads hooks intentionally detach their event/autoclose chain.
+# Fence only exact GC-stamped hooks before shutdown so closing an in-flight
+# tracking bead cannot schedule new work after the supervisor socket is gone.
+# Existing detached helpers are still drained below, and original modes are
+# restored byte-for-byte after quiescence so a later bootstrap/start is intact.
+python3 - "$hook_fence_file" "$city" "$marker_rig" <<'PY'
+import hashlib
+import json
+import os
+import stat
+import sys
+
+snapshot, city, rig = sys.argv[1:]
+entries = []
+for root in (city, rig):
+    if not root:
+        continue
+    hooks = os.path.join(root, ".beads", "hooks")
+    for name in ("on_create", "on_update", "on_close"):
+        path = os.path.join(hooks, name)
+        if not os.path.exists(path):
+            continue
+        info = os.lstat(path)
+        if not stat.S_ISREG(info.st_mode) or stat.S_ISLNK(info.st_mode):
+            raise SystemExit(f"refusing non-regular managed hook: {path}")
+        with open(path, "rb") as handle:
+            raw = handle.read()
+        if b"# gc-hook-stamp:" not in raw or b"# Installed by gc" not in raw:
+            raise SystemExit(f"refusing to fence non-GC hook: {path}")
+        entries.append({
+            "path": path,
+            "mode": stat.S_IMODE(info.st_mode),
+            "sha256": hashlib.sha256(raw).hexdigest(),
+        })
+with open(snapshot, "w", encoding="utf-8") as handle:
+    json.dump(entries, handle, sort_keys=True, separators=(",", ":"))
+    handle.write("\n")
+for entry in entries:
+    os.chmod(entry["path"], entry["mode"] & ~0o111)
+PY
+hook_fence_active=1
 
 supervisor_running() {
   "$gc_bin" supervisor status --json >"$status_file"
@@ -300,6 +377,44 @@ def process_rows(arguments):
     return rows
 
 
+def process_cwds():
+    result = {}
+    proc_root = "/proc"
+    if os.path.isdir(proc_root):
+        for name in os.listdir(proc_root):
+            if not name.isdigit():
+                continue
+            try:
+                result[int(name)] = os.path.realpath(os.readlink(os.path.join(proc_root, name, "cwd")))
+            except OSError:
+                pass
+        return result
+    try:
+        lines = subprocess.check_output(
+            ["lsof", "-a", "-d", "cwd", "-Fn", "-Fp"],
+            text=True,
+            stderr=subprocess.DEVNULL,
+        ).splitlines()
+    except (FileNotFoundError, subprocess.CalledProcessError):
+        return result
+    pid = None
+    for line in lines:
+        if line.startswith("p") and line[1:].isdigit():
+            pid = int(line[1:])
+        elif pid is not None and line.startswith("n"):
+            result[pid] = os.path.realpath(line[1:])
+    return result
+
+
+def within(path, root):
+    if not path or not root:
+        return False
+    try:
+        return os.path.commonpath((path, root)) == root
+    except ValueError:
+        return False
+
+
 # Match over argv plus environment because a GC maintenance helper can carry
 # city identity only in GC_CITY/GC_CITY_PATH. Keep an argv-only projection for
 # diagnostics so teardown never prints credentials inherited through the
@@ -308,6 +423,7 @@ expanded_rows = process_rows(["ps", "eww", "-eo", "pid=,ppid=,command="])
 plain_rows = process_rows(["ps", "-eo", "pid=,ppid=,command="])
 plain_commands = {pid: command for pid, _ppid, command in plain_rows}
 parents = {pid: ppid for pid, ppid, _ in expanded_rows}
+cwd_by_pid = process_cwds()
 ancestors = set()
 pid = os.getpid()
 while pid > 0 and pid not in ancestors:
@@ -334,8 +450,10 @@ for pid, ppid, expanded_command in expanded_rows:
     rows.append((pid, ppid, expanded_command, plain_commands.get(pid, "<command unavailable>")))
 
 for pid, ppid, expanded_command, plain_command in rows:
-    if any(root in expanded_command for root in scope_roots):
-        print(f"{pid}\t{ppid}\t{plain_command}")
+    cwd = cwd_by_pid.get(pid, "")
+    if any(root in expanded_command or within(cwd, root) for root in scope_roots):
+        suffix = f" [cwd={cwd}]" if cwd else ""
+        print(f"{pid}\t{ppid}\t{plain_command}{suffix}")
 PY
 }
 
@@ -363,5 +481,7 @@ while :; do
   fi
   sleep 1
 done
+
+restore_gc_hooks || die "failed to restore GC-stamped Beads hook modes"
 
 printf 'Gas City stopped cleanly: %s\n' "$city"
