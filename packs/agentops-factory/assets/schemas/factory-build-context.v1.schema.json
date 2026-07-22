@@ -6,7 +6,7 @@
   "additionalProperties": false,
   "required": [
     "schema_version", "program_id", "source_bead_id", "intent_path",
-    "intent_digest", "repository_dir", "base_ref", "base_oid", "root",
+    "intent_digest", "repository_dir", "base_ref", "base_oid", "rig_id", "routes", "root",
     "workspace", "candidate_workspace_root", "packet_root", "max_parallel",
     "graph_path", "mayor_request_path", "mayor_result_path",
     "plan_request_path", "plan_result_path", "plan_artifact_path",
@@ -22,6 +22,19 @@
     "repository_dir": {"$ref": "#/$defs/absolute_path"},
     "base_ref": {"type": "string", "minLength": 1},
     "base_oid": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+    "rig_id": {"$ref": "#/$defs/rig_id"},
+    "routes": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mayor", "plan", "implementer", "implementer_claude", "validator"],
+      "properties": {
+        "mayor": {"const": "agentops.mayor"},
+        "plan": {"$ref": "#/$defs/route_target"},
+        "implementer": {"$ref": "#/$defs/route_target"},
+        "implementer_claude": {"$ref": "#/$defs/route_target"},
+        "validator": {"$ref": "#/$defs/route_target"}
+      }
+    },
     "root": {"$ref": "#/$defs/absolute_path"},
     "workspace": {"$ref": "#/$defs/absolute_path"},
     "candidate_workspace_root": {"$ref": "#/$defs/absolute_path"},
@@ -68,6 +81,8 @@
   },
   "$defs": {
     "id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"},
+    "rig_id": {"type": "string", "pattern": "^[A-Za-z0-9_-]+$"},
+    "route_target": {"type": "string", "pattern": "^[A-Za-z0-9_-]+/agentops\\.[A-Za-z0-9_-]+$"},
     "digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
     "absolute_path": {"type": "string", "pattern": "^/"}
   }
