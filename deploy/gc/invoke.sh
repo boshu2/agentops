@@ -188,4 +188,4 @@ else
 fi
 
 cd -- "$city" || die "cannot enter managed city directory: $city"
-exec "$gc_bin" --city "$city" "$@"
+exec "$gc_bin" "$@"
