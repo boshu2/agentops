@@ -94,8 +94,8 @@ var (
 		"packs/agentops-executor/**",
 		"packs/agentops-factory/**",
 		"deploy/gc/**",
-		"docs/contracts/gas-city-execution-adapter.md",
-		"docs/architecture/gas-city-factory.md",
+		"docs/contracts/gc33-migration-provenance.md",
+		"docs/operations/gas-city-reliability.md",
 		"docs/adr/ADR-0015-gas-city-fenced-steward.md",
 		"docs/audits/gas-city-factory-live-bead-canary.md",
 		"docs/plans/2026-07-17-gas-city-factory-operationalization.md",
@@ -105,12 +105,9 @@ var (
 		"scripts/sync-gc-pack.py",
 		"scripts/check-gc-executor.sh",
 		"scripts/regen-all.sh",
-		"tests/python/test_gc_packet.py",
-		"tests/python/test_gc33_factory_migration.py",
-		"tests/python/test_gc33_delivery_contracts.py",
+		"tests/python/test_gc33_thin_pack.py",
 		"tests/python/test_sync_gc_pack.py",
 		"tests/scripts/check-gc-executor.bats",
-		"tests/scripts/gc-agentops-bootstrap.bats",
 	}
 	// docs.cli-snippets resolves every `ao …` command cited in a live doc against
 	// the cobra tree; a rename/removal of a command silently strands a golden-path

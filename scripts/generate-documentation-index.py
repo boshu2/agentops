@@ -38,7 +38,7 @@ def render() -> str:
         f"- [Fitness goals]({GITHUB_BLOB}/GOALS.md)",
         f"- [Program boundary]({GITHUB_BLOB}/PROGRAM.md)",
         "- [Operating loop](architecture/operating-loop.md)",
-        "- [Gas City factory](architecture/gas-city-factory.md)",
+        "- [Gas City reliability boundary](operations/gas-city-reliability.md)",
         "- [Agent workflow](agent-workflow-reference.md)",
         "- [Repository CI and delivery](CI-CD.md)",
         "- [Component map](architecture/component-map.md)",
