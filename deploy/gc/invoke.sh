@@ -13,7 +13,8 @@ Required:
 
 This executes the exact gc binary recorded by the managed-city marker. It binds
 the city's private supervisor home and effective telemetry policy and removes an
-ambient generic OTLP fallback before invoking `gc --city PATH ...`.
+ambient generic OTLP fallback. It executes from the managed city directory so
+GC can register imported pack commands before parsing their leaf flags.
 EOF
 }
 
@@ -186,4 +187,5 @@ else
   export BD_OTEL_LOGS_URL=""
 fi
 
+cd -- "$city" || die "cannot enter managed city directory: $city"
 exec "$gc_bin" --city "$city" "$@"
