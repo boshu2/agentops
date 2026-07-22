@@ -339,11 +339,12 @@ surface before full implementation. A projection beyond roughly 3,000
 non-test Go lines is a re-scope tripwire, not a correctness target. The
 GC33 native workflow binding grows the fixed seven-file baseline (4,621
 physical / 4,278 nonblank-noncomment lines) to a fixed nine-file delivery
-surface of 5,267 physical / 4,850 nonblank-noncomment non-test Go lines. The two
-new files are the bounded native status and sweep reducers. The named
-command-input-reducer-native-provider core grows from 3,728 / 3,445 to 4,010 /
-3,705. The total increase is therefore 646 physical / 572 substantive lines,
-including 282 / 260 in the existing core. This exceeds the original tripwire
+surface of 5,304 physical / 4,879 nonblank-noncomment non-test Go lines after
+the bounded reliability and hosted-CI repairs. The two new files are the
+bounded native status and sweep reducers. The named
+command-input-reducer-native-provider core grows from 3,728 / 3,445 to 4,039 /
+3,727. The total increase is therefore 683 physical / 601 substantive lines,
+including 311 / 282 in the existing core. This exceeds the original tripwire
 and is recorded as a review fact rather than hidden by changing the measured
 set. The added
 surface remains within the admitted components: it adds no daemon, scheduler,
