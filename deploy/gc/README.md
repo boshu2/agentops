@@ -173,9 +173,14 @@ makes delivery a condition of semantic bead closure.
 Start one bounded factory program through the imported pack command:
 
 ```sh
-gc --city /path/to/city agentops program start -- \
-  --source-bead age-example --max-parallel 2
+deploy/gc/invoke.sh --city /path/to/city -- agentops program start --source-bead age-example --max-parallel 2
 ```
+
+The managed invoker reads the bootstrap marker, verifies the exact recorded
+Gas City binary digest, selects the private supervisor, projects the effective
+telemetry pair (or explicit disabled state), and clears an ambient generic OTLP
+fallback. Its `--` is the wrapper boundary and is consumed; do not put another
+`--` between the discovered `program start` leaf and `--source-bead`.
 
 The command snapshots that exact source Bead once, freezes the first observed
 base OID for the program, runs Fable Mayor and fresh Sol plan binding, and then
@@ -210,6 +215,7 @@ recorded by bootstrap.
 | `deploy/gc/agents/*/agent.toml` | AgentOps source | Explicit suspended city agents that shadow GC's late implicit provider injection |
 | `deploy/gc/toolchain.lock.json` | AgentOps source | Accepted exact GC/Beads source pairs and their qualification state |
 | `deploy/gc/materialize-toolchain.sh` | AgentOps source | Fail-closed source checkout, canonical builds, runtime verification, and local receipt |
+| `deploy/gc/invoke.sh` | AgentOps source | Marker-bound operator invocation, private supervisor selection, exact GC digest, and effective telemetry environment |
 | `<city>/pack.toml` | `gc init`, then bootstrap | Current built-in pins plus the city-scoped `agentops` import |
 | `<city>/city.toml` | `gc init`, `gc rig add`, then bootstrap | Portable runtime policy, logical rig declaration, and rig-scoped `agentops` import |
 | `<city>/.gc/site.toml` | Gas City SDK/CLI | Machine-local workspace identity and physical rig path |
@@ -228,9 +234,7 @@ documented read-in-place case.
 After starting, inspect the deployment with the same isolated environment:
 
 ```sh
-GC_HOME=/Users/bo/dev/gc-agentops/.gc-home \
-GC_ISOLATED=1 \
-/path/to/gc --city /Users/bo/dev/gc-agentops status
+deploy/gc/invoke.sh --city /Users/bo/dev/gc-agentops -- status
 ```
 
 See `docs/contracts/gas-city-execution-adapter.md` for the semantic boundary

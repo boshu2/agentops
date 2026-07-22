@@ -12,7 +12,7 @@ python3 scripts/sync-gc-pack.py --check
 python3 -m unittest discover -s tests/python -p 'test_gc_packet.py' -v
 python3 -m unittest discover -s tests/python -p 'test_gc33_*.py' -v
 python3 -m unittest discover -s tests/python -p 'test_sync_gc_pack.py' -v
-bats tests/scripts/gc-agentops-bootstrap.bats
+bats tests/scripts/gc-agentops-bootstrap.bats tests/scripts/gc-agentops-invoke.bats
 
 PACK="$REPO_ROOT/packs/agentops-executor"
 FACTORY="$REPO_ROOT/packs/agentops-factory"
