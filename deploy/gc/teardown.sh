@@ -86,8 +86,8 @@ marker_path, expected_city = sys.argv[1:]
 with open(marker_path, encoding="utf-8") as handle:
     marker = json.load(handle)
 schema_version = marker.get("schema_version")
-if schema_version not in {2, 3, 4}:
-    raise SystemExit("managed-city marker schema_version must be 2, 3, or 4")
+if schema_version not in {2, 3, 4, 5}:
+    raise SystemExit("managed-city marker schema_version must be 2, 3, 4, or 5")
 ao_bin = ""
 ao_sha256 = ""
 actual_city = os.path.realpath(os.path.expanduser(str(marker.get("city", ""))))
@@ -110,21 +110,21 @@ else:
     gc_sha256 = gc.get("sha256")
     bd_bin = bd.get("path")
     bd_sha256 = bd.get("sha256")
-    ao = marker.get("ao_reducer", {}) if schema_version == 4 else {}
+    ao = marker.get("ao_reducer", {}) if schema_version in {4, 5} else {}
     ao_bin = ao.get("path", "")
     ao_sha256 = ao.get("binary_sha256", "")
 if not isinstance(gc_bin, str) or not gc_bin.strip():
     raise SystemExit("managed-city marker has no gc path")
 for label, value in (("gc", gc_sha256), ("bd", bd_sha256)):
-    if schema_version == 3 and (
+    if schema_version >= 3 and (
         not isinstance(value, str)
         or len(value) != 64
         or any(char not in "0123456789abcdef" for char in value)
     ):
         raise SystemExit(f"managed-city marker has invalid {label} sha256")
-if schema_version == 3 and (not isinstance(bd_bin, str) or not bd_bin.strip()):
+if schema_version >= 3 and (not isinstance(bd_bin, str) or not bd_bin.strip()):
     raise SystemExit("managed-city marker has no bd path")
-if schema_version == 4:
+if schema_version >= 4:
     if not isinstance(ao_bin, str) or not ao_bin.strip():
         raise SystemExit("managed-city marker has no ao reducer path")
     if not isinstance(ao_sha256, str) or len(ao_sha256) != 64 or any(char not in "0123456789abcdef" for char in ao_sha256):

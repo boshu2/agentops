@@ -18,11 +18,6 @@ socket = "__GC_AGENTOPS_TMUX_SOCKET__"
 # the SDK's 10s default is too short and converts harmless contention into a
 # failed-create/retry storm.
 setup_timeout = "60s"
-# Each managed session has a nudge-poller sidecar. The upstream 2s default is
-# optimized for latency; a 5s cycle keeps prompt delivery responsive while
-# reducing standing process/database pressure in four-lane AgentOps cities.
-nudge_poll_interval = "5s"
-
 [providers.codex]
 base = "builtin:codex"
 # Codex discards a positional startup prompt when a first-use workspace trust
@@ -144,24 +139,16 @@ default = "medium"
   flag_args = []
 
 
-# Gas City's scaffold imports maintenance workers and turns every provider
-# catalog entry into a generic sling target. This managed city routes neither
-# surface: only roles explicitly declared by the selected AgentOps pack may
-# consume its bounded session capacity. bootstrap.sh adds equivalent
-# rig-scoped patches after gc rig add supplies each logical rig name; the
-# factory narrows its dynamic worktree rigs further from bead metadata.
+# Gas City's scaffold imports maintenance workers. Provider-derived implicit
+# agents are injected only after patches are applied, so they cannot lawfully
+# be suspended with patches in GC v1.3.5. bootstrap.sh projects explicit,
+# suspended city convention agents and the executor pack supplies equivalent
+# rig agents; those exact identities shadow implicit injection. Only checked
+# AgentOps roles may consume bounded session capacity.
 [[patches.agent]]
 name = "bd.dog"
 suspended = true
 
 [[patches.agent]]
 name = "core.control-dispatcher"
-suspended = true
-
-[[patches.agent]]
-name = "codex"
-suspended = true
-
-[[patches.agent]]
-name = "claude"
 suspended = true

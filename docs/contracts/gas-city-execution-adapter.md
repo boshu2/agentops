@@ -47,8 +47,9 @@ The deployment is intentionally smaller than a traditional Gas Town:
 - a workspace-wide cap that defaults to one active session and must be raised
   explicitly for bounded factory qualification;
 - no `workspace.provider`; the required explicit provider catalog entries still
-  materialize SDK-defined generic targets, so deployment patches suspend them
-  at city and managed-rig scope;
+  materialize SDK-defined generic targets after patch application, so explicit
+  suspended city convention agents and executor-pack rig agents shadow those
+  identities before GC's implicit-injection phase;
 - scaffold maintenance pools (`bd.dog` and `core.control-dispatcher`) are also
   suspended so they cannot consume the execution-only city's session cap;
 - no always-on model session. The thin executor pack has no Mayor or Refiner;
@@ -88,7 +89,7 @@ Sol-high/Codex, and every fallback object is exactly `allowed=false`,
 | AgentOps `deploy/gc/toolchain.lock.json` | Exact accepted GC/official-Beads source pairs and qualification state; same-version unlisted builds are not equivalent |
 | AgentOps executor `pack.toml` | Portable role, prompt, and command contract; edited in AgentOps and linted before deployment |
 | Live city `pack.toml` | Created by the current `gc init`; its built-in imports and pins remain SDK-owned; bootstrap adds only `[imports.agentops]` |
-| Live `city.toml` | Created from `deploy/gc/city.toml`; `gc rig add` owns logical rig entries; bootstrap adds the primary rig import and generic-target patches; the factory adds serialized, fail-closed rig patches for dedicated worktree rigs |
+| Live `city.toml` | Created from `deploy/gc/city.toml`; `gc rig add` owns logical rig entries; bootstrap adds the primary rig import and maintenance patches only; generic routes are blocked by explicit suspended agent definitions, while the factory adds serialized fail-closed rig patches for dedicated worktree rigs |
 | Live `.gc/site.toml` | Machine-local SDK state containing workspace identity and physical rig paths; never copied into portable config |
 | `.gc-home/supervisor.toml` | Bootstrap-owned private loopback address, selected once before start and preserved on managed reruns |
 | `.gc-home` and `.gc/codex-home` | Remaining runtime/session state private to this city; only the selected external Codex auth file is linked in |

@@ -1834,9 +1834,13 @@ def command_doctor_roles() -> int:
         "validator": "high",
         "implementer-claude": "medium",
     }
-    expected_agents = sorted(providers)
+    blockers = {"codex": "codex", "claude": "claude"}
+    expected_agents = sorted([*providers, *blockers])
     if actual != expected_agents:
-        problems.append(f"expected bounded Codex and Claude implementer/validator roles only, found {actual}")
+        problems.append(
+            "expected bounded implementer/validator roles plus disabled generic-provider blockers, "
+            f"found {actual}"
+        )
     for name, provider in providers.items():
         config = agents_root / name / "agent.toml"
         if not config.is_file():
@@ -1876,6 +1880,26 @@ def command_doctor_roles() -> int:
                 problems.append(f"agents/{name}/agent.toml: {forbidden} is forbidden")
         if "default_sling_formula" in values:
             problems.append(f"agents/{name}/agent.toml: default_sling_formula is forbidden")
+    for name, provider in blockers.items():
+        config = agents_root / name / "agent.toml"
+        if not config.is_file():
+            problems.append(f"missing agents/{name}/agent.toml")
+            continue
+        values = parse_simple_toml(config)
+        expected = {
+            "scope": '"rig"',
+            "provider": f'"{provider}"',
+            "suspended": "true",
+        }
+        for key, value in expected.items():
+            if values.get(key) != value:
+                problems.append(f"agents/{name}/agent.toml: {key} must be {value}")
+        allowed = {"description", *expected}
+        extras = sorted(set(values) - allowed)
+        if extras:
+            problems.append(
+                f"agents/{name}/agent.toml: disabled generic blocker has active fields {extras}"
+            )
     for forbidden_dir in ("formulas", "orders"):
         if (PACK_ROOT / forbidden_dir).exists():
             problems.append(f"top-level {forbidden_dir}/ is forbidden for the single-pass adapter")

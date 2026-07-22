@@ -50,6 +50,22 @@ class GC33FactoryMigrationTest(unittest.TestCase):
         self.assertFalse(adapter.composed_route_doctor({"refiner": {"work_query": "ready+unassigned"}})["ok"])
         self.assertFalse(adapter.composed_route_doctor(delivery_route="rig/agentops.refiner")["ok"])
 
+    def test_explicit_suspended_agents_shadow_late_generic_injection(self) -> None:
+        for path, scope, provider in (
+            (ROOT / "deploy/gc/agents/codex/agent.toml", "city", "codex"),
+            (ROOT / "deploy/gc/agents/claude/agent.toml", "city", "claude"),
+            (ROOT / "packs/agentops-executor/agents/codex/agent.toml", "rig", "codex"),
+            (ROOT / "packs/agentops-executor/agents/claude/agent.toml", "rig", "claude"),
+        ):
+            import tomllib
+            value = tomllib.loads(path.read_text(encoding="utf-8"))
+            self.assertEqual(value["scope"], scope)
+            self.assertEqual(value["provider"], provider)
+            self.assertIs(value["suspended"], True)
+        city = (ROOT / "deploy/gc/city.toml").read_text(encoding="utf-8")
+        self.assertNotIn('name = "codex"\nsuspended = true', city)
+        self.assertNotIn('name = "claude"\nsuspended = true', city)
+
     def test_request_contract_rejects_policy_or_identity_drift(self) -> None:
         adapter = self.adapter()
         with tempfile.TemporaryDirectory() as directory:

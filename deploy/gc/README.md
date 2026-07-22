@@ -70,11 +70,14 @@ ordinary city restart; use `gc rig suspend` when the rig must remain dormant.
 Rig registration validates and reverses only Gas City's canonical `.gitignore`
 projection, preserving the caller's exact tracked bytes while keeping the
 runtime-owned `.beads` state local.
-The deployment declares no always-on sessions. Gas City derives a
-generic sling target from each registered provider; bootstrap explicitly
-suspends those targets plus the scaffold's maintenance pools at city and
-managed-rig scope. Only roles explicitly supplied by the selected pack remain
-routable. Direct packet work uses the registered rig root. Factory Formula
+The deployment declares no always-on sessions. Gas City derives a generic
+sling target from each registered provider only after applying patches.
+Bootstrap therefore projects explicit suspended city convention agents, and
+the executor pack supplies explicit suspended rig agents, so GC's documented
+"explicit wins" rule prevents those generic identities from being injected.
+Scaffold maintenance pools are suspended with ordinary patches because they
+already exist when patches run. Only roles explicitly supplied by the selected
+pack remain routable. Direct packet work uses the registered rig root. Factory Formula
 tasks instead stamp the exact absolute `work_dir` selected for that bead;
 official GC v1.3.5 launches the fresh Terra/Opus/Sol session there. The 3.3
 factory does not create a second rig, Dolt server, or integration rig per
@@ -144,7 +147,7 @@ explicit GC metrics/logs pair. `auto` records a durable degraded state when
 either endpoint is unavailable; `required` fails before city mutation and is
 the release-canary mode. Both providers receive only the managed city runtime directories and
 configured rig roots as additional writable directories. Packets name
-`provider = codex | claude`; generic provider targets remain suspended and
+`provider = codex | claude`; explicit disabled agents keep generic provider targets unroutable and
 cannot receive packet work.
 
 At dispatch, the adapter requires the packet `workspace` to equal the physical
@@ -199,6 +202,7 @@ supplied, must match the exact paired toolchain recorded by bootstrap.
 | File | Owner | Contents |
 |---|---|---|
 | `deploy/gc/city.toml` | AgentOps source | Portable dual-provider policy, safe CLI flag mappings, and workspace concurrency cap |
+| `deploy/gc/agents/*/agent.toml` | AgentOps source | Explicit suspended city agents that shadow GC's late implicit provider injection |
 | `deploy/gc/toolchain.lock.json` | AgentOps source | Accepted exact GC/Beads source pairs and their qualification state |
 | `deploy/gc/materialize-toolchain.sh` | AgentOps source | Fail-closed source checkout, canonical builds, runtime verification, and local receipt |
 | `<city>/pack.toml` | `gc init`, then bootstrap | Current built-in pins plus the city-scoped `agentops` import |

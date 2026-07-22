@@ -305,10 +305,13 @@ require_beads_safe_path "rig" "$rig"
 
 script_dir="$(CDPATH='' cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 city_template="$script_dir/city.toml"
+generic_agent_template_root="$script_dir/agents"
 claude_wrapper_template="$script_dir/claude-interactive.sh"
 claude_settings_template="$script_dir/claude-settings.json"
 toolchain_lock="$script_dir/toolchain.lock.json"
 [ -f "$city_template" ] || die "city template not found: $city_template"
+[ -f "$generic_agent_template_root/codex/agent.toml" ] || die "managed Codex blocker not found"
+[ -f "$generic_agent_template_root/claude/agent.toml" ] || die "managed Claude blocker not found"
 [ -f "$claude_wrapper_template" ] || die "Claude wrapper template not found: $claude_wrapper_template"
 [ -f "$claude_settings_template" ] || die "Claude settings template not found: $claude_settings_template"
 [ -f "$toolchain_lock" ] || die "qualified toolchain lock not found: $toolchain_lock"
@@ -771,12 +774,11 @@ PY
 if [ ! -f "$marker" ]; then
   mkdir -p "$(dirname "$city")"
   # Released Gas City builds resolve city patches before the scaffold imports
-  # have materialized their agents. Passing the final policy here therefore
-  # makes valid patches for bd.dog, core.control-dispatcher, codex, and claude
-  # fail as "agent not found". Initialize from the same provider/workspace
+  # have materialized their agents. Initialize from the same provider/workspace
   # policy without agent patches; after gc init has installed the SDK-owned
-  # scaffold, the normal reconciliation below writes the final fail-closed
-  # patch set.
+  # scaffold, the normal reconciliation below writes the final maintenance
+  # patches. Generic provider targets are blocked by explicit agents below,
+  # because GC injects implicit provider agents only after applying patches.
   init_template="$(mktemp "${TMPDIR:-/tmp}/gc-agentops-city-init.XXXXXX")"
   trap 'rm -f "$init_template"' EXIT
   python3 - "$city_template" "$init_template" <<'PY'
@@ -820,6 +822,46 @@ PY
   [ -f "$city/city.toml" ] || die "gc init did not create city.toml"
   write_marker configuring
 fi
+
+# GC v1.3.5 injects implicit provider agents after it applies city patches.
+# Project explicit suspended convention agents so the supported "explicit
+# wins" rule prevents generic city targets from being injected at all.
+python3 - "$generic_agent_template_root" "$city/agents" <<'PY'
+import os
+import sys
+import tempfile
+
+source_root, destination_root = sys.argv[1:]
+for name in ("codex", "claude"):
+    source = os.path.join(source_root, name, "agent.toml")
+    if not os.path.isfile(source) or os.path.islink(source):
+        raise SystemExit(f"managed generic-agent source is not a regular file: {source}")
+    destination_dir = os.path.join(destination_root, name)
+    if os.path.lexists(destination_dir) and os.path.islink(destination_dir):
+        raise SystemExit(f"managed generic-agent directory is a symlink: {destination_dir}")
+    os.makedirs(destination_dir, mode=0o700, exist_ok=True)
+    extras = sorted(item for item in os.listdir(destination_dir) if item != "agent.toml")
+    if extras:
+        raise SystemExit(f"managed generic-agent directory has unexpected entries: {name}: {extras}")
+    destination = os.path.join(destination_dir, "agent.toml")
+    if os.path.islink(destination):
+        raise SystemExit(f"managed generic-agent target is a symlink: {destination}")
+    data = open(source, "rb").read()
+    existing = open(destination, "rb").read() if os.path.isfile(destination) else None
+    if existing == data:
+        continue
+    fd, temporary = tempfile.mkstemp(prefix=".agent.toml.", dir=destination_dir)
+    try:
+        os.fchmod(fd, 0o600)
+        with os.fdopen(fd, "wb") as handle:
+            handle.write(data)
+            handle.flush()
+            os.fsync(handle.fileno())
+        os.replace(temporary, destination)
+    finally:
+        if os.path.exists(temporary):
+            os.unlink(temporary)
+PY
 
 # Managed Claude sessions must not inherit the operator's optional Remote
 # Control startup preference. A second interactive Claude process can supersede
@@ -1274,7 +1316,7 @@ tomllib.loads(policy)
 
 policy_patch = re.search(r"(?m)^\[\[patches\.agent\]\]\s*$", policy)
 if policy_patch is None:
-    raise SystemExit("city template must declare provider suspension patches")
+    raise SystemExit("city template must declare maintenance suspension patches")
 policy = policy[:policy_patch.start()].rstrip()
 
 markers = list(re.finditer(r"(?m)^\[\[(rigs|patches\.agent)\]\]\s*$", text))
@@ -1302,21 +1344,16 @@ managed_patches = [
     '[[patches.agent]]\nname = "bd.dog"\nsuspended = true',
     '[[patches.agent]]\nname = "core.control-dispatcher"\nsuspended = true',
 ]
-for provider_name in ("codex", "claude"):
-    managed_patches.append(
-        f'[[patches.agent]]\nname = "{provider_name}"\nsuspended = true'
-    )
 for rig in live_config.get("rigs", []):
     rig_name = rig.get("name")
     if not isinstance(rig_name, str) or not rig_name:
         raise SystemExit("managed city contains a rig without a name")
-    for provider_name in ("core.control-dispatcher", "codex", "claude"):
-        managed_patches.append(
-            "[[patches.agent]]\n"
-            f'dir = "{rig_name}"\n'
-            f'name = "{provider_name}"\n'
-            "suspended = true"
-        )
+    managed_patches.append(
+        "[[patches.agent]]\n"
+        f'dir = "{rig_name}"\n'
+        'name = "core.control-dispatcher"\n'
+        "suspended = true"
+    )
 
 parts = [policy]
 parts.extend(rig_sections)
@@ -1348,22 +1385,8 @@ if city_maintenance != {
     "core.control-dispatcher": {"name": "core.control-dispatcher", "suspended": True},
 }:
     raise SystemExit("city must suspend scaffold maintenance workers")
-for provider_name in ("codex", "claude"):
-    city_matches = [
-        patch for patch in patches
-        if patch.get("name") == provider_name and not patch.get("dir")
-    ]
-    if city_matches != [{"name": provider_name, "suspended": True}]:
-        raise SystemExit(f"city must suspend the provider-derived generic {provider_name} target")
-    for rig in config.get("rigs", []):
-        rig_matches = [
-            patch for patch in patches
-            if patch.get("name") == provider_name and patch.get("dir") == rig["name"]
-        ]
-        if rig_matches != [{"dir": rig["name"], "name": provider_name, "suspended": True}]:
-            raise SystemExit(
-                f"rig {rig['name']!r} must suspend the generic {provider_name} target"
-            )
+if any(patch.get("name") in {"codex", "claude"} for patch in patches):
+    raise SystemExit("provider-derived implicit agents cannot be patch targets in GC v1.3.5")
 for rig in config.get("rigs", []):
     control_matches = [
         patch for patch in patches
@@ -1895,9 +1918,9 @@ else:
     raise SystemExit(f"could not locate TOML block for rig {rig_name!r}")
 PY
 
-# The scaffold control dispatcher and provider catalog entries inject generic
-# targets into every rig. Keep those SDK surfaces visible but non-routable: only
-# roles explicitly declared by the selected AgentOps pack remain active.
+# The scaffold control dispatcher exists before patches are applied. Generic
+# provider agents do not: the selected executor pack must shadow those later
+# implicit identities with explicit suspended rig agents.
 python3 - "$city/city.toml" "$rig_name" <<'PY'
 import os
 import sys
@@ -1909,17 +1932,17 @@ with open(path, encoding="utf-8") as handle:
     text = handle.read()
 config = tomllib.loads(text)
 changed = False
-for provider_name in ("core.control-dispatcher", "codex", "claude"):
-    matches = [
-        patch for patch in config.get("patches", {}).get("agent", [])
-        if patch.get("name") == provider_name and patch.get("dir") == rig_name
-    ]
-    if matches:
-        if len(matches) != 1 or matches[0].get("suspended") is not True:
-            raise SystemExit(
-                f"rig {rig_name!r} has an invalid managed {provider_name} suspension patch"
-            )
-        continue
+provider_name = "core.control-dispatcher"
+matches = [
+    patch for patch in config.get("patches", {}).get("agent", [])
+    if patch.get("name") == provider_name and patch.get("dir") == rig_name
+]
+if matches:
+    if len(matches) != 1 or matches[0].get("suspended") is not True:
+        raise SystemExit(
+            f"rig {rig_name!r} has an invalid managed {provider_name} suspension patch"
+        )
+else:
     if text and not text.endswith("\n"):
         text += "\n"
     text += (
@@ -1929,7 +1952,6 @@ for provider_name in ("core.control-dispatcher", "codex", "claude"):
         "suspended = true\n"
     )
     changed = True
-    config = tomllib.loads(text)
 if not changed:
     raise SystemExit(0)
 fd, temporary = tempfile.mkstemp(prefix=".city.toml.", dir=os.path.dirname(path))
@@ -1971,6 +1993,23 @@ for role in ("implementer", "implementer-claude", "validator"):
     agent = matches[0]
     if agent.get("dir") != rig_name or agent.get("scope") != "rig" or agent.get("suspended") is True:
         raise SystemExit(f"executor route {qualified_name!r} is not one active rig-scoped role")
+for provider_name in ("codex", "claude"):
+    expected = (
+        (provider_name, "city", ""),
+        (f"{rig_name}/{binding}.{provider_name}", "rig", rig_name),
+    )
+    for qualified_name, scope, directory in expected:
+        matches = [
+            agent for agent in agents
+            if isinstance(agent, dict) and agent.get("qualified_name") == qualified_name
+        ]
+        if len(matches) != 1:
+            raise SystemExit(
+                f"selected AgentOps deployment must expose exactly one disabled {qualified_name!r}; found {len(matches)}"
+            )
+        agent = matches[0]
+        if agent.get("provider") != provider_name or agent.get("scope") != scope or agent.get("dir", "") != directory or agent.get("suspended") is not True:
+            raise SystemExit(f"generic provider route {qualified_name!r} is not explicitly disabled")
 PY
 rm -f "$executor_agents"
 trap - EXIT

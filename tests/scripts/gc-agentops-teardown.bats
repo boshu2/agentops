@@ -114,7 +114,7 @@ def sha256(filename):
 
 with open(path, "w", encoding="utf-8") as handle:
     json.dump({
-        "schema_version": 4,
+        "schema_version": 5,
         "state": "ready",
         "city": os.path.realpath(city),
         "toolchain": {

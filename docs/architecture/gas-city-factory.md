@@ -132,7 +132,7 @@ landing. A landed PR is still not a release verdict.
 - a private `CODEX_HOME` and explicitly selected authentication link;
 - interactive Claude with inherited `print_args` cleared;
 - a deployment-pinned `GC_BIN` in workspace session environment;
-- generic Codex and Claude targets suspended;
+- explicit suspended Codex and Claude identities shadow GC's late generic-target injection;
 - scaffold Dog and control-dispatcher pools suspended; and
 - a configurable `workspace.max_active_sessions` (default one; the release
   canary admits only a width-two semantic graph and sizes total role capacity

@@ -1,0 +1,4 @@
+description = "Disabled generic Claude target; AgentOps routes only explicit checked roles."
+scope = "city"
+provider = "claude"
+suspended = true

@@ -298,6 +298,20 @@ if len(imports) != 1:
 binding = next(iter(imports))
 patches = config.get("patches", {}).get("agent", [])
 agents = []
+for role, provider, qualified_name, scope, directory in (
+    ("codex", "codex", "codex", "city", ""),
+    ("claude", "claude", "claude", "city", ""),
+    ("codex", "codex", f"{rig_name}/{binding}.codex", "rig", rig_name),
+    ("claude", "claude", f"{rig_name}/{binding}.claude", "rig", rig_name),
+):
+    agents.append({
+        "name": role,
+        "qualified_name": qualified_name,
+        "dir": directory,
+        "scope": scope,
+        "provider": provider,
+        "suspended": True,
+    })
 for role, provider in (
     ("implementer", "codex"),
     ("implementer-claude", "claude"),
@@ -473,7 +487,7 @@ run_bootstrap() {
 
   run run_bootstrap
   [ "$status" -eq 0 ]
-  [ "$(grep -c '^\[\[patches.agent\]\]$' "$CITY/city.toml")" -eq 7 ]
+  [ "$(grep -c '^\[\[patches.agent\]\]$' "$CITY/city.toml")" -eq 3 ]
 }
 
 @test "bootstrap creates an isolated dual-provider city without starting it" {
@@ -564,22 +578,7 @@ assert [
     patch for patch in patches
     if patch.get("name") == "core.control-dispatcher" and not patch.get("dir") and patch.get("suspended") is True
 ] == [{"name": "core.control-dispatcher", "suspended": True}]
-assert [
-    patch for patch in patches
-    if patch.get("name") == "codex" and not patch.get("dir") and patch.get("suspended") is True
-] == [{"name": "codex", "suspended": True}]
-assert [
-    patch for patch in patches
-    if patch.get("name") == "claude" and not patch.get("dir") and patch.get("suspended") is True
-] == [{"name": "claude", "suspended": True}]
-assert [
-    patch for patch in patches
-    if patch.get("name") == "codex" and patch.get("dir") == "agentops" and patch.get("suspended") is True
-] == [{"dir": "agentops", "name": "codex", "suspended": True}]
-assert [
-    patch for patch in patches
-    if patch.get("name") == "claude" and patch.get("dir") == "agentops" and patch.get("suspended") is True
-] == [{"dir": "agentops", "name": "claude", "suspended": True}]
+assert not [patch for patch in patches if patch.get("name") in {"codex", "claude"}]
 assert [
     patch for patch in patches
     if patch.get("name") == "core.control-dispatcher" and patch.get("dir") == "agentops" and patch.get("suspended") is True
@@ -593,7 +592,6 @@ assert config["session"]["socket"] == (
     "agentops-" + hashlib.sha256(city.encode()).hexdigest()[:20]
 )
 assert config["session"]["setup_timeout"] == "60s"
-assert config["session"]["nudge_poll_interval"] == "5s"
 scope_roots = [os.path.join(city, ".gc"), os.path.join(city, ".gc-home"), rig]
 expected_codex_args = ["--dangerously-bypass-hook-trust"]
 for root in scope_roots:
@@ -670,6 +668,8 @@ for provider_name, expected_default, expected_model, expected_effort, expected_c
     }
     assert actual_efforts == expected_efforts
 PY
+  cmp "$REPO_ROOT/deploy/gc/agents/codex/agent.toml" "$CITY/agents/codex/agent.toml"
+  cmp "$REPO_ROOT/deploy/gc/agents/claude/agent.toml" "$CITY/agents/claude/agent.toml"
   python3 - "$CITY/.gc/codex-home/config.toml" "$RIG" <<'PY'
 import os
 import sys
@@ -818,7 +818,7 @@ PY
   [ "$(grep -c 'ADOPT <1>' "$FAKE_LOG")" -eq 1 ]
   [ "$(grep -c '^\[imports.agentops\]$' "$CITY/pack.toml")" -eq 1 ]
   [ "$(grep -c '^\[rigs.imports.agentops\]$' "$CITY/city.toml")" -eq 1 ]
-  [ "$(grep -c '^\[\[patches.agent\]\]$' "$CITY/city.toml")" -eq 7 ]
+  [ "$(grep -c '^\[\[patches.agent\]\]$' "$CITY/city.toml")" -eq 3 ]
   [ "$(shasum -a 256 "$CITY/.gc-home/supervisor.toml" | awk '{print $1}')" = "$supervisor_config_digest" ]
   python3 - "$CITY/.gc/codex-home/config.toml" "$RIG" <<'PY'
 import os
@@ -981,11 +981,7 @@ with open(sys.argv[1], "rb") as handle:
 extra = os.path.realpath(sys.argv[2])
 assert [rig["name"] for rig in config["rigs"]] == ["agentops", "extra"]
 patches = config["patches"]["agent"]
-for provider in ("codex", "claude"):
-    assert [
-        patch for patch in patches
-        if patch.get("name") == provider and patch.get("dir") == "extra"
-    ] == [{"dir": "extra", "name": provider, "suspended": True}]
+assert not [patch for patch in patches if patch.get("name") in {"codex", "claude"}]
 assert [
     patch for patch in patches
     if patch.get("name") == "core.control-dispatcher" and patch.get("dir") == "extra"
@@ -1139,6 +1135,8 @@ PY
     "$CITY/.gc/scripts/agentops-factory-check"
   cmp "$PACK/assets/scripts/factory_feeder.py" \
     "$CITY/.gc/scripts/agentops-factory-feeder"
+  grep -Fq 'suspended = true' "$PACK/../agentops-executor/agents/codex/agent.toml"
+  grep -Fq 'suspended = true' "$PACK/../agentops-executor/agents/claude/agent.toml"
 
   python3 - "$PACK/assets/schemas" "$CITY/.gc/schemas/agentops-factory" "$CITY/city.toml" "$CITY" <<'PY'
 import os
