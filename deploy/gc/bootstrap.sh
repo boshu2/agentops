@@ -334,8 +334,11 @@ ao_bin="$(canonical_path "$ao_bin")"
 
 # Development builds commonly place the matched gc and bd binaries together
 # outside the ambient PATH. Keep Gas City's Beads subprocesses on that pinned
-# toolchain so an unrelated Homebrew bd is neither required nor selected.
+# toolchain so an unrelated Homebrew bd is neither required nor selected. The
+# installed Beads hooks resolve `${GC_BIN:-gc}` asynchronously, so export the
+# exact binary into the private supervisor lineage as well as pinning PATH.
 gc_bin_dir="$(dirname "$gc_bin")"
+export GC_BIN="$gc_bin"
 export PATH="$gc_bin_dir:$PATH"
 order_path="$PATH"
 bd_bin="$gc_bin_dir/bd"

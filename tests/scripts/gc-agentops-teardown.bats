@@ -5,10 +5,11 @@ setup() {
   TEARDOWN="$REPO_ROOT/deploy/gc/teardown.sh"
   TMP="$(mktemp -d "${TMPDIR:-/tmp}/gc-agentops-teardown.XXXXXX")"
   CITY="$TMP/city"
+  RIG="$TMP/rig"
   BIN="$TMP/bin"
   LOG="$TMP/gc.log"
   STATE="$TMP/state"
-  mkdir -p "$CITY/.gc" "$CITY/.gc-home" "$BIN" "$STATE"
+  mkdir -p "$CITY/.gc" "$CITY/.gc-home" "$RIG" "$BIN" "$STATE"
 
   FAKE_GC="$BIN/gc"
   cat >"$FAKE_GC" <<'EOF'
@@ -99,13 +100,14 @@ EOF
 socket = "agentops-teardown-test"
 EOF
 	CANONICAL_CITY="$(python3 -c 'import os,sys; print(os.path.realpath(sys.argv[1]))' "$CITY")"
-  python3 - "$CITY/.gc/agentops-bootstrap.json" "$CITY" "$FAKE_GC" "$FAKE_BD" "$FAKE_AO" <<'PY'
+  CANONICAL_RIG="$(python3 -c 'import os,sys; print(os.path.realpath(sys.argv[1]))' "$RIG")"
+  python3 - "$CITY/.gc/agentops-bootstrap.json" "$CITY" "$RIG" "$FAKE_GC" "$FAKE_BD" "$FAKE_AO" <<'PY'
 import hashlib
 import json
 import os
 import sys
 
-path, city, gc_bin, bd_bin, ao_bin = sys.argv[1:]
+path, city, rig, gc_bin, bd_bin, ao_bin = sys.argv[1:]
 
 
 def sha256(filename):
@@ -117,6 +119,7 @@ with open(path, "w", encoding="utf-8") as handle:
         "schema_version": 5,
         "state": "ready",
         "city": os.path.realpath(city),
+        "rig": os.path.realpath(rig),
         "toolchain": {
             "gc": {
                 "path": os.path.realpath(gc_bin),
@@ -242,5 +245,18 @@ teardown() {
   wait "$helper_pid" 2>/dev/null || true
 
   [ "$status" -eq 0 ]
+  [[ "$output" == *"Gas City stopped cleanly"* ]]
+}
+
+@test "teardown waits for detached helpers identified only by the managed rig" {
+  python3 -c 'import pathlib,sys,time; time.sleep(6); pathlib.Path(sys.argv[2]).touch()' \
+    "$CANONICAL_RIG" "$STATE/rig-helper-finished" &
+  helper_pid="$!"
+
+  run env PATH="$BIN:$PATH" "$TEARDOWN" --city "$CITY" --wait-timeout 15
+  wait "$helper_pid" 2>/dev/null || true
+
+  [ "$status" -eq 0 ]
+  [ -e "$STATE/rig-helper-finished" ]
   [[ "$output" == *"Gas City stopped cleanly"* ]]
 }

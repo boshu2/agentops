@@ -64,6 +64,14 @@ env = { GC_BIN = "__GC_AGENTOPS_GC_BIN__", PATH = "__GC_AGENTOPS_ORDER_PATH__" }
 name = "wisp-compact"
 env = { GC_BIN = "__GC_AGENTOPS_GC_BIN__", PATH = "__GC_AGENTOPS_ORDER_PATH__" }
 
+# The factory pack is imported once at city scope for the Mayor and once at rig
+# scope for rig workers. GC therefore scans one city instance and one rig
+# instance of a rig-scoped pack order. Only the rig instance owns delivery;
+# quiesce the city duplicate explicitly instead of letting an unbound copy run.
+[[orders.overrides]]
+name = "agentops-delivery-sweep"
+enabled = false
+
 # Workspace env is session-scoped in Gas City. Exec orders run on the
 # controller, so bind the deterministic Refiner sweep through GC's supported
 # per-order override instead of the supervisor's ambient process environment.

@@ -141,6 +141,24 @@ PY
 )" || die "invalid managed-city marker: $marker"
 IFS=$'\t' read -r marker_gc_bin marker_gc_sha256 marker_bd_bin marker_bd_sha256 marker_ao_bin marker_ao_sha256 <<<"$marker_toolchain"
 
+# Detached Beads hooks are launched from the rig and may carry no city path in
+# argv. Keep the marker-owned rig as a second exact process-scope identity so a
+# hook cannot outlive a short city-only quiet window and restart managed Dolt.
+marker_rig="$(python3 - "$marker" <<'PY'
+import json
+import os
+import sys
+
+with open(sys.argv[1], encoding="utf-8") as handle:
+    marker = json.load(handle)
+rig = marker.get("rig", "")
+if rig:
+    if not isinstance(rig, str):
+        raise SystemExit("managed-city marker rig must be a path string")
+    print(os.path.realpath(os.path.expanduser(rig)))
+PY
+)" || die "invalid managed-city rig in marker: $marker"
+
 if [ -z "$gc_bin" ]; then
   gc_bin="$marker_gc_bin"
 elif [[ "$gc_bin" == */* ]]; then
@@ -260,12 +278,12 @@ if [ -n "$tmux_socket" ] && command -v tmux >/dev/null 2>&1; then
 fi
 
 find_residual_processes() {
-  python3 - "$city" <<'PY'
+  python3 - "$city" "$marker_rig" <<'PY'
 import os
 import subprocess
 import sys
 
-city = sys.argv[1]
+scope_roots = [root for root in sys.argv[1:] if root]
 
 
 def process_rows(arguments):
@@ -316,15 +334,16 @@ for pid, ppid, expanded_command in expanded_rows:
     rows.append((pid, ppid, expanded_command, plain_commands.get(pid, "<command unavailable>")))
 
 for pid, ppid, expanded_command, plain_command in rows:
-    if city in expanded_command:
+    if any(root in expanded_command for root in scope_roots):
         print(f"{pid}\t{ppid}\t{plain_command}")
 PY
 }
 
 # Supervisor shutdown terminates its process groups, but a canceled provider
 # helper can need a short final interval to reap its own child after the
-# supervisor socket is already gone. Require five consecutive quiet
-# observations so a short argv/env handoff cannot be mistaken for quiescence.
+# supervisor socket is already gone. Match both the city and marker-owned rig,
+# then require five consecutive quiet observations so a short argv/env handoff
+# cannot be mistaken for quiescence.
 # If a late scoped helper appears, repeat GC's supported idempotent Dolt stop;
 # never signal an unverified PID here.
 residual_deadline="$(( $(date +%s) + wait_timeout ))"

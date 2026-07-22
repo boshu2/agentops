@@ -109,10 +109,7 @@ func TestNativeProviderBindsEntireReducerReceiptAndGateExecutable(t *testing.T) 
 	delete(receipt["runtime"].(map[string]any), "extra")
 	native.ToolchainReceiptSum = writeReceipt()
 	native.CheckOnlyGateArgv = [][]string{{paths["git"], "status"}}
-	raw, err := json.Marshal(native)
-	if err != nil {
-		t.Fatal(err)
-	}
+	raw := canonicalWire(t, native)
 	sum := sha256.Sum256(raw)
 	if _, err := DecodeExactNativeContext(raw, fmt.Sprintf("%x", sum)); err == nil || !strings.Contains(err.Error(), "bound bash") {
 		t.Fatalf("unbound gate executable = %v", err)

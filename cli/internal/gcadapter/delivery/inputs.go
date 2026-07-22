@@ -177,7 +177,15 @@ func decodeExactJSON(raw []byte, digest string, target any) error {
 	if err := decodeStrict(raw, target); err != nil {
 		return err
 	}
-	canonical, err := json.Marshal(target)
+	// Canonical input is authored by the shared Python writer, which sorts
+	// object keys. Re-marshaling a Go struct preserves declaration order and
+	// therefore false-rejects the same logical canonical object. Canonicalize a
+	// generic JSON value so wire key order—not Go field order—owns the check.
+	var wire any
+	if err := json.Unmarshal(raw, &wire); err != nil {
+		return err
+	}
+	canonical, err := verdictcheck.CanonicalJSON(wire)
 	if err != nil {
 		return err
 	}

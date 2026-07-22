@@ -113,12 +113,13 @@ fake_root="$(cd "$(dirname "$0")/.." && pwd)"
 FAKE_GC_LOG="$fake_root/gc.log"
 FAKE_GC_STATE="$fake_root/fake-state"
 
-printf 'ENV GC_HOME=%s GC_ISOLATED=%s CODEX_HOME=%s OTEL_SDK_DISABLED=%s OTEL_EXPORTER_OTLP_ENDPOINT=%s GC_BEADS=%s GC_DOLT_PORT=%s BEADS_DOLT_SERVER_PORT=%s GC_CITY=%s BD_DOLT_SYNC_CLI_REMOTES=%s BEADS_DOLT_SYNC_CLI_REMOTES=%s\n' \
+printf 'ENV GC_HOME=%s GC_ISOLATED=%s CODEX_HOME=%s OTEL_SDK_DISABLED=%s OTEL_EXPORTER_OTLP_ENDPOINT=%s GC_BEADS=%s GC_DOLT_PORT=%s BEADS_DOLT_SERVER_PORT=%s GC_CITY=%s BD_DOLT_SYNC_CLI_REMOTES=%s BEADS_DOLT_SYNC_CLI_REMOTES=%s GC_BIN=%s\n' \
   "${GC_HOME-<unset>}" "${GC_ISOLATED-<unset>}" "${CODEX_HOME-<unset>}" \
   "${OTEL_SDK_DISABLED-<unset>}" "${OTEL_EXPORTER_OTLP_ENDPOINT-<unset>}" \
   "${GC_BEADS-<unset>}" "${GC_DOLT_PORT-<unset>}" \
   "${BEADS_DOLT_SERVER_PORT-<unset>}" "${GC_CITY-<unset>}" \
-  "${BD_DOLT_SYNC_CLI_REMOTES-<unset>}" "${BEADS_DOLT_SYNC_CLI_REMOTES-<unset>}" >>"$FAKE_GC_LOG"
+  "${BD_DOLT_SYNC_CLI_REMOTES-<unset>}" "${BEADS_DOLT_SYNC_CLI_REMOTES-<unset>}" \
+  "${GC_BIN-<unset>}" >>"$FAKE_GC_LOG"
 printf 'ARGS' >>"$FAKE_GC_LOG"
 printf ' <%s>' "$@" >>"$FAKE_GC_LOG"
 printf '\n' >>"$FAKE_GC_LOG"
@@ -617,9 +618,14 @@ assert config["session"]["socket"] == (
     "agentops-" + hashlib.sha256(city.encode()).hexdigest()[:20]
 )
 assert config["session"]["setup_timeout"] == "60s"
+city_delivery_overrides = [
+    override for override in config["orders"]["overrides"]
+    if override["name"] == "agentops-delivery-sweep" and "rig" not in override
+]
+assert city_delivery_overrides == [{"name": "agentops-delivery-sweep", "enabled": False}]
 delivery_overrides = [
     override for override in config["orders"]["overrides"]
-    if override["name"] == "agentops-delivery-sweep" and override["rig"] == "agentops"
+    if override["name"] == "agentops-delivery-sweep" and override.get("rig") == "agentops"
 ]
 assert len(delivery_overrides) == 1
 delivery_order_env = dict(delivery_overrides[0]["env"])
@@ -756,6 +762,7 @@ assert config["projects"][os.path.realpath(sys.argv[2])]["trust_level"] == "trus
 PY
   canonical_gc="$(python3 -c 'import os,sys; print(os.path.realpath(sys.argv[1]))' "$FAKE_GC")"
   grep -Fq "GC_BIN = \"$canonical_gc\"" "$CITY/city.toml"
+  grep -Fq "GC_BIN=$canonical_gc" "$FAKE_LOG"
   grep -Fq 'GC_OTEL_METRICS_URL = ""' "$CITY/city.toml"
   grep -Fq 'GC_OTEL_LOGS_URL = ""' "$CITY/city.toml"
   grep -Fq 'OTEL_EXPORTER_OTLP_ENDPOINT = ""' "$CITY/city.toml"

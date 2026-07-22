@@ -110,10 +110,7 @@ func writeSweepRequest(t *testing.T, root, semantic, readyAt string) (ReadyDeliv
 		t.Fatal(err)
 	}
 	native := NativeContext{SchemaVersion: "gc-delivery-native-context.v1", RigID: "rig-a", Repository: "boshu2/agentops", RepositoryDir: "/repo", WorktreeRoot: "/worktrees", BeadsDir: "/beads", Remote: "origin", BaseRef: "main", SuccessorCapability: strings.Repeat("a", 64), ToolchainLock: strings.Repeat("b", 64), ToolchainReceipt: "/receipt", ToolchainReceiptSum: strings.Repeat("c", 64), BeadsRepresentation: "B-successor-delivery-bead", Executables: map[string]ExecutableBinding{"gc": {Path: "/gc", Digest: strings.Repeat("1", 64)}, "bd": {Path: "/bd", Digest: strings.Repeat("2", 64)}, "git": {Path: "/git", Digest: strings.Repeat("3", 64)}, "gh": {Path: "/gh", Digest: strings.Repeat("4", 64)}, "bash": {Path: "/bash", Digest: strings.Repeat("5", 64)}, "agentops-gc-delivery": {Path: "/delivery", Digest: strings.Repeat("6", 64)}}, CheckOnlyGateArgv: [][]string{{"/bash", "check"}}}
-	nativeBytes, err := json.Marshal(native)
-	if err != nil {
-		t.Fatal(err)
-	}
+	nativeBytes := canonicalWire(t, native)
 	certificate := AdmissionCertificate{SchemaVersion: "admission-certificate.v2", SemanticBeadID: semantic, IntentDigest: strings.Repeat("a", 64), Verdict: "PASS", Candidate: Candidate{Commit: strings.Repeat("a", 40), Tree: strings.Repeat("b", 40), ContentDigest: strings.Repeat("c", 64)}, Store: Store{Identity: "beads", Digest: strings.Repeat("d", 64)}, ChangedPathManifest: manifest.CanonicalManifestDigest, VerdictDigest: strings.Repeat("f", 64), EvidenceDigest: strings.Repeat("0", 64), Attestations: sweepAttestations(), DeliveryGroupID: "group", PrefixSafety: "safe"}
 	certificateBytes, err := json.Marshal(certificate)
 	if err != nil {
