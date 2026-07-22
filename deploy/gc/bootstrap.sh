@@ -337,6 +337,7 @@ ao_bin="$(canonical_path "$ao_bin")"
 # toolchain so an unrelated Homebrew bd is neither required nor selected.
 gc_bin_dir="$(dirname "$gc_bin")"
 export PATH="$gc_bin_dir:$PATH"
+order_path="$PATH"
 bd_bin="$gc_bin_dir/bd"
 [ -x "$bd_bin" ] || die "paired Beads CLI is not executable beside gc: $bd_bin"
 bd_bin="$(canonical_path "$bd_bin")"
@@ -1235,7 +1236,7 @@ for name in schema_names:
             os.unlink(temporary)
 PY
 
-python3 - "$city/city.toml" "$city_template" "$CODEX_HOME" "$gc_bin" "$ao_bin" "$city" "$rig" "$rig_name" "$max_active_sessions" "$claude_wrapper" "$delivery_bin" "$bd_bin" "$git_bin" "$gh_bin" "$bash_bin" "$delivery_evidence_root" "$delivery_native_context" "$native_context_digest" "$repository_slug" "$delivery_mode" "$otel_metrics_url" "$otel_logs_url" <<'PY'
+python3 - "$city/city.toml" "$city_template" "$CODEX_HOME" "$gc_bin" "$ao_bin" "$city" "$rig" "$rig_name" "$max_active_sessions" "$claude_wrapper" "$delivery_bin" "$bd_bin" "$git_bin" "$gh_bin" "$bash_bin" "$delivery_evidence_root" "$delivery_native_context" "$native_context_digest" "$repository_slug" "$delivery_mode" "$otel_metrics_url" "$otel_logs_url" "$order_path" <<'PY'
 import json
 import hashlib
 import os
@@ -1244,7 +1245,7 @@ import sys
 import tempfile
 import tomllib
 
-path, template_path, codex_home, gc_bin, ao_bin, city, requested_rig, requested_rig_name, max_active_sessions, claude_wrapper, delivery_bin, bd_bin, git_bin, gh_bin, bash_bin, delivery_root, delivery_context, delivery_context_digest, repository, delivery_mode, otel_metrics_url, otel_logs_url = sys.argv[1:]
+path, template_path, codex_home, gc_bin, ao_bin, city, requested_rig, requested_rig_name, max_active_sessions, claude_wrapper, delivery_bin, bd_bin, git_bin, gh_bin, bash_bin, delivery_root, delivery_context, delivery_context_digest, repository, delivery_mode, otel_metrics_url, otel_logs_url, order_path = sys.argv[1:]
 with open(path, encoding="utf-8") as handle:
     text = handle.read()
 with open(template_path, encoding="utf-8") as handle:
@@ -1272,6 +1273,7 @@ replacements = {
     "__GC_AGENTOPS_DELIVERY_REPOSITORY__": repository,
     "__GC_AGENTOPS_DELIVERY_RIG__": requested_rig_name,
     "__GC_AGENTOPS_DELIVERY_MODE__": delivery_mode,
+    "__GC_AGENTOPS_ORDER_PATH__": order_path,
     "__GC_AGENTOPS_OTEL_METRICS_URL__": otel_metrics_url,
     "__GC_AGENTOPS_OTEL_LOGS_URL__": otel_logs_url,
     "__GC_AGENTOPS_CLAUDE_WRAPPER__": claude_wrapper,
@@ -1422,6 +1424,44 @@ delivery_env = {
 }
 if any(workspace.get("env", {}).get(key) != value for key, value in delivery_env.items()):
     raise SystemExit("city workspace delivery controller binding differs from bootstrap identity")
+core_order_names = {
+    "beads-health",
+    "cascade-nudge-on-blocker-close",
+    "cross-rig-deps",
+    "gate-sweep",
+    "jsonl-export",
+    "nudge-mail-sweep",
+    "nudge-on-route",
+    "order-tracking-sweep",
+    "orphan-sweep",
+    "prune-branches",
+    "reaper",
+    "spawn-storm-detect",
+    "wisp-compact",
+}
+core_order_overrides = [
+    override for override in config.get("orders", {}).get("overrides", [])
+    if override.get("name") in core_order_names and not override.get("rig")
+]
+if len(core_order_overrides) != len(core_order_names):
+    raise SystemExit("city must bind every stable core exec order exactly once")
+expected_core_order_env = {"GC_BIN": gc_bin, "PATH": order_path}
+if {override.get("name") for override in core_order_overrides} != core_order_names or any(
+    override.get("env") != expected_core_order_env for override in core_order_overrides
+):
+    raise SystemExit("city core order toolchain binding differs from bootstrap identity")
+delivery_order_env = {
+    "GC_BIN": gc_bin,
+    "PATH": order_path,
+    **{key: value for key, value in delivery_env.items() if key != "AO_BIN"},
+}
+delivery_overrides = [
+    override for override in config.get("orders", {}).get("overrides", [])
+    if override.get("name") == "agentops-delivery-sweep"
+    and override.get("rig") == requested_rig_name
+]
+if len(delivery_overrides) != 1 or delivery_overrides[0].get("env") != delivery_order_env:
+    raise SystemExit("city delivery order override differs from the sealed controller binding")
 if workspace.get("env", {}).get("AGENTOPS_FACTORY_FEEDER") != os.path.join(city, ".gc", "scripts", "agentops-factory-feeder"):
     raise SystemExit("city workspace must pin the generated factory feeder")
 if workspace.get("env", {}).get("GC_OTEL_METRICS_URL") != otel_metrics_url or workspace.get("env", {}).get("GC_OTEL_LOGS_URL") != otel_logs_url:
@@ -2075,12 +2115,20 @@ matches = [
     if isinstance(rig, dict) and rig.get("name") == rig_name
 ]
 beads = status.get("beads")
+city_store_supported = isinstance(beads, dict) and (
+    beads.get("native_store_eligible") is True
+    or (
+        beads.get("beads_store") == "BdStore"
+        and beads.get("native_store_eligible") is False
+        and beads.get("preflight_gate") == "bd_context_agreement"
+        and beads.get("preflight_reason") == "bd context is unreachable; cannot cross-verify backend agreement"
+    )
+)
 healthy = (
     status.get("ok") is True
     and status.get("controller", {}).get("running") is True
     and status.get("health", {}).get("usable") is True
-    and isinstance(beads, dict)
-    and beads.get("native_store_eligible") is True
+    and city_store_supported
     and len(matches) == 1
     and matches[0].get("suspended") is False
 )
@@ -2090,9 +2138,39 @@ PY
       # `status.health.usable` proves the controller can open its stores, but a
       # cold Dolt provider may still make the first agent-side read stall. Do
       # one bounded read in both scopes before declaring the deployment ready.
-      if "$gc_bin" --city "$city" bd list --json --limit 1 >/dev/null 2>>"$start_error" && \
-          "$gc_bin" --city "$city" --rig "$rig_name" bd list --json --limit 1 >/dev/null 2>>"$start_error"; then
-        started_usable=1
+      rig_context="$(mktemp "$city/.gc/rig-context.XXXXXX")"
+      if "$gc_bin" --city "$city" --rig "$rig_name" bd context --json >"$rig_context" 2>>"$start_error" && \
+          python3 - "$rig_context" "$rig" <<'PY'
+import json
+import os
+import sys
+
+context_path, rig = sys.argv[1:]
+with open(context_path, encoding="utf-8") as handle:
+    context = json.load(handle)
+with open(os.path.join(rig, ".beads", "metadata.json"), encoding="utf-8") as handle:
+    metadata = json.load(handle)
+expected = {
+    "backend": "dolt",
+    "bd_version": "1.1.0",
+    "beads_dir": os.path.join(os.path.realpath(rig), ".beads"),
+    "database": metadata.get("dolt_database"),
+    "dolt_mode": "server",
+    "project_id": metadata.get("project_id"),
+    "repo_root": os.path.realpath(rig),
+    "schema_version": 1,
+}
+if any(context.get(key) != value for key, value in expected.items()):
+    raise SystemExit(1)
+PY
+      then
+        if "$gc_bin" --city "$city" bd list --json --limit 1 >/dev/null 2>>"$start_error" && \
+            "$gc_bin" --city "$city" --rig "$rig_name" bd list --json --limit 1 >/dev/null 2>>"$start_error"; then
+          started_usable=1
+        fi
+      fi
+      rm -f "$rig_context"
+      if [ "$started_usable" -eq 1 ]; then
         break
       fi
     fi

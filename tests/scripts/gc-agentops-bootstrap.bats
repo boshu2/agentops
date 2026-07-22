@@ -207,7 +207,7 @@ case "$command_name" in
         if [ "$adopt" -eq 0 ] && [ -n "$origin_url" ] && \
             [ -n "$(git ls-remote "$origin_url" refs/dolt/data 2>/dev/null)" ]; then
           mkdir -p "$rig_path/.beads"
-          printf '%s\n' '{"backend":"dolt"}' >"$rig_path/.beads/metadata.json"
+          printf '%s\n' '{"backend":"dolt","dolt_database":"ag","dolt_mode":"server","project_id":"fixture-project-id"}' >"$rig_path/.beads/metadata.json"
           printf '%s\n' 'issue_prefix: test' >"$rig_path/.beads/config.yaml"
           printf '%s\n' "bd init refuses: remote 'origin' already has Dolt history (refs/dolt/data)." >&2
           exit 10
@@ -215,12 +215,12 @@ case "$command_name" in
         if [ "${FAKE_GC_FAIL_RIG_ADD_ONCE:-0}" = "1" ] && [ ! -e "$FAKE_GC_STATE/rig-add-failed" ]; then
           touch "$FAKE_GC_STATE/rig-add-failed"
           mkdir -p "$rig_path/.beads"
-          printf '%s\n' '{"backend":"dolt"}' >"$rig_path/.beads/metadata.json"
+          printf '%s\n' '{"backend":"dolt","dolt_database":"ag","dolt_mode":"server","project_id":"fixture-project-id"}' >"$rig_path/.beads/metadata.json"
           printf '%s\n' 'issue_prefix: test' >"$rig_path/.beads/config.yaml"
           exit 7
         fi
         mkdir -p "$rig_path/.beads"
-        printf '%s\n' '{"backend":"dolt"}' >"$rig_path/.beads/metadata.json"
+        printf '%s\n' '{"backend":"dolt","dolt_database":"ag","dolt_mode":"server","project_id":"fixture-project-id"}' >"$rig_path/.beads/metadata.json"
         printf '%s\n' 'issue_prefix: test' >"$rig_path/.beads/config.yaml"
         if [ "${FAKE_GC_COMMIT_ON_RIG_ADD:-0}" = "1" ] || \
             [ "${FAKE_GC_STAGE_ON_RIG_ADD:-0}" = "1" ]; then
@@ -242,7 +242,7 @@ case "$command_name" in
           if [ "${FAKE_GC_COMMIT_ON_RIG_ADD:-0}" = "1" ]; then
             git -C "$rig_path" commit -qm "bd init: initialize beads issue tracking"
           fi
-          printf '%s\n' '{"backend":"dolt"}' >"$rig_path/.beads/metadata.json"
+          printf '%s\n' '{"backend":"dolt","dolt_database":"ag","dolt_mode":"server","project_id":"fixture-project-id"}' >"$rig_path/.beads/metadata.json"
         fi
         if [ "${FAKE_GC_REWRITE_GITIGNORE:-0}" = "1" ]; then
           python3 - "$rig_path/.gitignore" <<'PY'
@@ -266,6 +266,7 @@ PY
             "$rig_name" >>"$city/city.toml"
           printf '\n[rigs.%s]\npath = "%s"\n' "$rig_name" "$rig_path" >>"$city/.gc/site.toml"
         fi
+        printf '%s\n' "$rig_path" >"$FAKE_GC_STATE/rig-path"
         touch "$FAKE_GC_STATE/rig-added"
         ;;
       resume)
@@ -381,14 +382,38 @@ PY
     if [ "${FAKE_GC_STATUS_UNUSABLE:-0}" = "1" ]; then
       printf '{"ok":true,"controller":{"running":false,"pid":%s,"status":"starting_bead_store"},"health":{"usable":false},"beads":{"native_store_eligible":true},"rigs":[{"name":"agentops","suspended":false}]}\n' "$pid"
     elif [ "${FAKE_GC_NATIVE_STORE_INELIGIBLE:-0}" = "1" ]; then
-      printf '{"ok":true,"controller":{"running":true,"pid":%s},"health":{"usable":true},"beads":{"native_store_eligible":false,"preflight_gate":"bd_context_agreement","preflight_reason":"bd context is unreachable"},"rigs":[{"name":"agentops","suspended":false}]}\n' "$pid"
+      printf '{"ok":true,"controller":{"running":true,"pid":%s},"health":{"usable":true},"beads":{"beads_store":"BdStore","native_store_eligible":false,"preflight_gate":"force_fallback","preflight_reason":"GC_BEADS_FORCE_FALLBACK=1"},"rigs":[{"name":"agentops","suspended":false}]}\n' "$pid"
     else
-      printf '{"ok":true,"controller":{"running":true,"pid":%s},"health":{"usable":true},"beads":{"native_store_eligible":true},"rigs":[{"name":"agentops","suspended":false}]}\n' "$pid"
+      printf '{"ok":true,"controller":{"running":true,"pid":%s},"health":{"usable":true},"beads":{"beads_store":"BdStore","native_store_eligible":false,"preflight_gate":"bd_context_agreement","preflight_reason":"bd context is unreachable; cannot cross-verify backend agreement"},"rigs":[{"name":"agentops","suspended":false}]}\n' "$pid"
     fi
     ;;
   bd)
-    [ "${2:-}" = "list" ] || exit 2
-    printf '%s\n' '[]'
+    case "${2:-}" in
+      list)
+        printf '%s\n' '[]'
+        ;;
+      context)
+        rig_path="$(cat "$FAKE_GC_STATE/rig-path")"
+        python3 - "$rig_path" <<'PY'
+import json
+import os
+import sys
+
+rig = os.path.realpath(sys.argv[1])
+print(json.dumps({
+    "backend": "dolt",
+    "bd_version": "1.1.0",
+    "beads_dir": os.path.join(rig, ".beads"),
+    "database": "ag",
+    "dolt_mode": "server",
+    "project_id": "fixture-project-id",
+    "repo_root": rig,
+    "schema_version": 1,
+}))
+PY
+        ;;
+      *) exit 2 ;;
+    esac
     ;;
   *)
     printf 'unexpected fake gc invocation: %s\n' "$command_name" >&2
@@ -592,6 +617,47 @@ assert config["session"]["socket"] == (
     "agentops-" + hashlib.sha256(city.encode()).hexdigest()[:20]
 )
 assert config["session"]["setup_timeout"] == "60s"
+delivery_overrides = [
+    override for override in config["orders"]["overrides"]
+    if override["name"] == "agentops-delivery-sweep" and override["rig"] == "agentops"
+]
+assert len(delivery_overrides) == 1
+delivery_order_env = dict(delivery_overrides[0]["env"])
+order_path = delivery_order_env.pop("PATH")
+assert order_path.split(os.pathsep)[0] == os.path.dirname(config["workspace"]["env"]["GC_BIN"])
+expected_order_env = {
+    key: value for key, value in config["workspace"]["env"].items()
+    if key == "GC_BIN" or key.startswith("AGENTOPS_GC_DELIVERY_")
+    or key in {
+        "AGENTOPS_GC_DELIVERY_BIN",
+        "AGENTOPS_GC_BEADS_BIN",
+        "AGENTOPS_GC_GIT_BIN",
+        "AGENTOPS_GC_GH_BIN",
+        "AGENTOPS_GC_BASH_BIN",
+    }
+}
+assert delivery_order_env == expected_order_env
+core_order_names = {
+    "beads-health",
+    "cascade-nudge-on-blocker-close",
+    "cross-rig-deps",
+    "gate-sweep",
+    "jsonl-export",
+    "nudge-mail-sweep",
+    "nudge-on-route",
+    "order-tracking-sweep",
+    "orphan-sweep",
+    "prune-branches",
+    "reaper",
+    "spawn-storm-detect",
+    "wisp-compact",
+}
+core_overrides = [
+    override for override in config["orders"]["overrides"]
+    if override["name"] in core_order_names and "rig" not in override
+]
+assert {override["name"] for override in core_overrides} == core_order_names
+assert all(override["env"] == {"GC_BIN": config["workspace"]["env"]["GC_BIN"], "PATH": order_path} for override in core_overrides)
 scope_roots = [os.path.join(city, ".gc"), os.path.join(city, ".gc-home"), rig]
 expected_codex_args = ["--dangerously-bypass-hook-trust"]
 for root in scope_roots:
@@ -1095,7 +1161,7 @@ PY
   [ -e "$FAKE_STATE/rig-resumed" ]
 }
 
-@test "start fails closed when Gas City cannot use its native Beads store" {
+@test "start accepts only the official city fallback and rejects other store downgrades" {
   export FAKE_GC_NATIVE_STORE_INELIGIBLE=1
   run run_bootstrap --start --start-timeout 1
 
