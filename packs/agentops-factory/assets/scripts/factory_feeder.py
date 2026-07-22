@@ -441,6 +441,52 @@ def close_inert_step(bd_bin: str, root: Path, record: dict[str, Any], reason: st
     run_checked([bd_bin, "close", str(record["id"]), "--reason", reason, "--json"], root)
 
 
+def bind_city_mayor_attempt(bd_bin: str, root: Path, records: dict[str, dict[str, Any]],
+                            context: dict[str, Any]) -> dict[str, Any]:
+    """Direct the one ready Mayor attempt to its configured city named session."""
+    attempt_ref = "agentops-build.mayor.iteration.1"
+    control_ref = "agentops-build.mayor"
+    attempt_id = context["workflow_steps"][attempt_ref]
+    control_id = context["workflow_steps"][control_ref]
+    root_id = context["workflow_root_id"]
+    route = context["routes"]["mayor"]
+    control = records.get(control_ref)
+    if not isinstance(control, dict) or control.get("id") != control_id:
+        raise FeederError("Mayor control identity differs from the stable workflow")
+    control_metadata = bead_metadata(control, "Mayor control")
+    if (control_metadata.get("gc.kind") != "ralph"
+            or control_metadata.get("gc.step_id") != "mayor"
+            or control_metadata.get("gc.root_bead_id") != root_id):
+        raise FeederError("Mayor control relationship differs from the stable workflow")
+
+    def exact_attempt(row: dict[str, Any], require_assignee: bool) -> None:
+        metadata = bead_metadata(row, "Mayor attempt")
+        if (row.get("id") != attempt_id or row.get("status") != "open"
+                or metadata.get("gc.root_bead_id") != root_id
+                or metadata.get("gc.logical_bead_id") != control_id
+                or metadata.get("gc.step_ref") != "mayor.iteration.1"
+                or metadata.get("gc.step_id") != "mayor"
+                or metadata.get("gc.ralph_step_id") != "mayor"
+                or metadata.get("gc.attempt") != "1"
+                or metadata.get("gc.run_target") != route
+                or metadata.get("gc.routed_to") != route
+                or metadata.get("work_dir") != context["workspace"]):
+            raise FeederError("Mayor attempt differs from the sealed ready workflow")
+        if require_assignee and row.get("assignee") != route:
+            raise FeederError("Mayor attempt did not re-read with the configured named assignee")
+
+    mayor = show_bead(bd_bin, root, attempt_id, "Mayor attempt")
+    exact_attempt(mayor, require_assignee=False)
+    assignee = mayor.get("assignee")
+    if assignee in (None, ""):
+        run_checked([bd_bin, "update", attempt_id, "--assignee", route, "--json"], root)
+        mayor = show_bead(bd_bin, root, attempt_id, "assigned Mayor attempt")
+    elif assignee != route:
+        raise FeederError("Mayor attempt has a foreign assignee")
+    exact_attempt(mayor, require_assignee=True)
+    return mayor
+
+
 def start(args: argparse.Namespace) -> int:
     root = Path(args.root).resolve(strict=True)
     repository = Path(args.repository).resolve(strict=True)
@@ -530,6 +576,7 @@ def start(args: argparse.Namespace) -> int:
     records = seal_compiled_control_dispatcher_routes(
         bd_bin, root, "agentops-build", records, requested_rig_id,
     )
+    mayor_row = bind_city_mayor_attempt(bd_bin, root, records, context)
 
     mayor_request = {
         "schema_version": "factory-role-request.v2", "request_id": program_id + ".mayor",
@@ -542,7 +589,6 @@ def start(args: argparse.Namespace) -> int:
     }
     validate_schema(mayor_request, "factory-role-request.v2.schema.json", "Mayor request")
     atomic_write(mayor_request_path, mayor_request)
-    mayor_row = records["agentops-build.mayor.iteration.1"]
     mayor_meta = mayor_row.get("metadata") if isinstance(mayor_row.get("metadata"), dict) else {}
     if (mayor_meta.get("gc.run_target") != context["routes"]["mayor"]
             or mayor_meta.get("gc.routed_to") != context["routes"]["mayor"]
