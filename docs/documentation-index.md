@@ -36,6 +36,7 @@ Dated plans, audits, releases, and archive material are historical evidence, not
 - [Finding Registry.Schema](contracts/finding-registry.schema.json)
 - [Forbidden Claims](contracts/forbidden-claims.yaml)
 - [Gas City execution adapter](contracts/gas-city-execution-adapter.md)
+- [GC33 migration provenance map](contracts/gc33-migration-provenance.md)
 - [Contracts](contracts/index.md)
 - [Optional Lesson Format](contracts/lesson-format.md)
 - [Superseded Historical ADR: Local Push-Gate Experiments](contracts/local-pre-push-gate-retirement.md)
