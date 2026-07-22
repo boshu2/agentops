@@ -430,19 +430,19 @@
     {
       "id": "agentops-teardown-misses-rig-scoped-hook",
       "kind": "verified_agentops_teardown_defect",
-      "observed": "2026-07-22 after failed clean bootstrap cycle on AgentOps cb0e0659b3492b88e6e0c5ac618eba10eaf0003e",
+      "observed": "2026-07-22 across failed clean bootstrap cycles on AgentOps cb0e0659b3492b88e6e0c5ac618eba10eaf0003e and f4a568c1786376b0bf198ddd0d7e1dbd87a140e1, plus a focused post-f4a restart experiment",
       "location": "deploy/gc/teardown.sh residual process census",
-      "identities": {"failed_candidate": "cb0e0659b3492b88e6e0c5ac618eba10eaf0003e", "late_watchdog_binary": "/Users/bo/.local/bin/gc", "late_dolt_port": 29798},
-      "symptom": "Teardown reported clean after sampled observations, then BD's asynchronous runner launched GC's backgrounded shutdown hook chain and an ambient managed-Dolt watchdog appeared after the quiet gap.",
-      "reproduction": "Close an in-flight order-tracking Bead during supervisor shutdown; GC's installed on_close script backgrounds its event/autoclose chain, which can restart the stopped city store after a sample-only census returns.",
+      "identities": {"first_failed_candidate": "cb0e0659b3492b88e6e0c5ac618eba10eaf0003e", "second_failed_candidate": "f4a568c1786376b0bf198ddd0d7e1dbd87a140e1", "late_watchdog_binary": "/Users/bo/.local/bin/gc", "first_late_dolt_port": 29798, "second_late_dolt_port": 13333, "second_late_watchdog_started": "2026-07-22T07:10:58-04:00", "already_running_chain_watchdog_started": "2026-07-22T07:22:08-04:00"},
+      "symptom": "Teardown reported clean and a detached on_close chain restarted managed Dolt after the scoped-process quiet window. Restoring execute bits created one race, but a focused repair that kept them disabled proved a second case: an already-running background shell can remain unidentifiable until its next gc subprocess appears.",
+      "reproduction": "Let GC's stamped on_close script enter its background event/autoclose chain before supervisor shutdown. Between child commands the surviving shell can expose neither city path nor exported hook identity to the host census, then start an ambient gc subprocess after teardown returns.",
       "owner": "agentops",
-      "fix_location": "deploy/gc/bootstrap.sh supervisor environment and deploy/gc/teardown.sh marker-scoped process census",
+      "fix_location": "deploy/gc/city.toml event_hooks policy, deploy/gc/bootstrap.sh managed projection cleanup, and deploy/gc/teardown.sh legacy defense",
       "build": "No Gas City or Beads source change; use the exact qualified binaries.",
-      "deterministic_test": "Teardown proves exact GC-stamped hooks are non-executable during supervisor stop, restores their original modes and bytes afterward, and holds a cwd-only rig helper beyond the old quiet window; bootstrap also asserts exact GC_BIN inheritance.",
-      "live_check": "After checked teardown, wait beyond the observed six-second gap and prove no city/rig-scoped process or supervisor PID survives.",
-      "upstream": "GC's installed hook deliberately backgrounds work and BD's hook runner is asynchronous; AgentOps teardown failed to establish a scheduling fence before sampling quiescence.",
+      "deterministic_test": "Bootstrap requires GC v1.3.5's supported event_hooks=false policy, proves city and rig event hooks absent, and refuses to delete foreign hook bytes. Teardown still fences any legacy stamped hooks, drains argv/env/cwd-scoped helpers, and rejects delayed executable work.",
+      "live_check": "A pristine managed city must start with all six city/rig event-hook paths absent, complete the cooldown delivery check through controller reconciliation, then remain process-free beyond the observed restart gap after teardown.",
+      "upstream": "GC v1.3.5 deliberately backgrounds the installed event/autoclose chain but also ships event_hooks=false for deployments whose controller cache observes changes. AgentOps 3.3 uses that official opt-out because its event-propulsion orders are disabled.",
       "release_relevance": "Hard 3.3 clean-bootstrap repeatability and host-safety gate.",
-      "disposition": "Fence only GC-stamped city/rig hooks before shutdown, drain argv/env/cwd-scoped helpers, stop managed Dolt, then restore the exact hook bytes and modes."
+      "disposition": "Disable per-write event hooks through the official city config, remove only legacy GC-stamped projections before start, retain teardown's legacy fence, and carry no Gas City or Beads fork patch."
     },
     {
       "id": "agentops-full-delivery-topology-unproven",

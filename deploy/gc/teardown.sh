@@ -18,7 +18,9 @@ Options:
 This quiesces the managed city without deleting its durable state. It stops the
 private supervisor selected by <city>/.gc-home, reaps the city's private agent
 socket, performs a final managed-Dolt stop, and refuses success while the
-socket or scoped processes are still live.
+socket or scoped processes are still live. GC-owned Beads hooks remain present
+but non-executable while the city is stopped; the managed 3.3 bootstrap removes
+that legacy projection under the supported event_hooks=false policy.
 EOF
 }
 
@@ -230,10 +232,8 @@ export OTEL_SDK_DISABLED=true
 
 status_file="$(mktemp "${TMPDIR:-/tmp}/gc-agentops-teardown-status.XXXXXX")"
 hook_fence_file="$(mktemp "${TMPDIR:-/tmp}/gc-agentops-teardown-hooks.XXXXXX")"
-hook_fence_active=0
 
-restore_gc_hooks() {
-  [ "$hook_fence_active" -eq 1 ] || return 0
+verify_gc_hooks_fenced() {
   python3 - "$hook_fence_file" <<'PY'
 import hashlib
 import json
@@ -252,25 +252,28 @@ for entry in entries:
         digest = hashlib.sha256(handle.read()).hexdigest()
     if digest != entry["sha256"]:
         raise SystemExit(f"GC hook changed bytes while fenced: {path}")
-for entry in entries:
-    os.chmod(entry["path"], entry["mode"])
+    if stat.S_IMODE(info.st_mode) & 0o111:
+        raise SystemExit(f"GC hook became executable while city was stopping: {path}")
 PY
-  hook_fence_active=0
 }
 
 cleanup() {
-  if [ "$hook_fence_active" -eq 1 ]; then
-    restore_gc_hooks || true
-  fi
   rm -f "$status_file" "$hook_fence_file"
 }
 trap cleanup EXIT
 
 # GC's installed Beads hooks intentionally detach their event/autoclose chain.
-# Fence only exact GC-stamped hooks before shutdown so closing an in-flight
-# tracking bead cannot schedule new work after the supervisor socket is gone.
-# Existing detached helpers are still drained below, and original modes are
-# restored byte-for-byte after quiescence so a later bootstrap/start is intact.
+# Fence only exact GC-stamped hooks before shutdown so no new hook exec can be
+# accepted after teardown begins. This does not identify a chain that was
+# already running before the fence; 3.3 prevents that case at bootstrap by not
+# installing the event hooks at all.
+# Existing detached helpers are still drained below, and the stamped hooks are
+# left non-executable after quiescence. This closes the unavoidable gap where
+# Beads has accepted an asynchronous hook in memory but has not called exec(2)
+# yet: no process census can observe that future process, and restoring execute
+# permission would let it start after teardown returned. AgentOps 3.3 disables
+# these hooks through GC's supported event_hooks=false policy; bootstrap removes
+# any legacy stamped projection before admitting another managed runtime.
 python3 - "$hook_fence_file" "$city" "$marker_rig" <<'PY'
 import hashlib
 import json
@@ -306,7 +309,6 @@ with open(snapshot, "w", encoding="utf-8") as handle:
 for entry in entries:
     os.chmod(entry["path"], entry["mode"] & ~0o111)
 PY
-hook_fence_active=1
 
 supervisor_running() {
   "$gc_bin" supervisor status --json >"$status_file"
@@ -482,6 +484,6 @@ while :; do
   sleep 1
 done
 
-restore_gc_hooks || die "failed to restore GC-stamped Beads hook modes"
+verify_gc_hooks_fenced || die "GC-stamped Beads hooks did not remain fenced"
 
 printf 'Gas City stopped cleanly: %s\n' "$city"

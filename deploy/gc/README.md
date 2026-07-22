@@ -194,8 +194,13 @@ This preserves the city and its durable beads for a later restart. It selects
 the private supervisor with `GC_HOME=<city>/.gc-home`—`--city` alone does not
 select supervisor identity—waits for destructive supervisor shutdown, performs
 one final idempotent managed-Dolt stop, and fails closed if the path-bound tmux
-socket or a city-scoped process remains live. `--gc-bin` is optional and, when
-supplied, must match the exact paired toolchain recorded by bootstrap.
+socket or a city-scoped process remains live. AgentOps 3.3 sets GC v1.3.5's
+supported `event_hooks = false` because its event-propulsion orders are also
+disabled; clean managed cities therefore have no per-write Beads hook chain.
+Teardown defensively leaves a legacy GC-stamped hook non-executable, and the
+next managed bootstrap removes that projection before runtime admission.
+`--gc-bin` is optional and, when supplied, must match the exact paired toolchain
+recorded by bootstrap.
 
 ## Configuration ownership
 

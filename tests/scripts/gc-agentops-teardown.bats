@@ -166,12 +166,12 @@ teardown() {
   [ -e "$STATE/supervisor-stopped" ]
   [ -e "$STATE/dolt-stopped" ]
   [ -e "$STATE/hooks-fenced-at-stop" ]
-  [ -x "$CITY/.beads/hooks/on_create" ]
-  [ -x "$CITY/.beads/hooks/on_update" ]
-  [ -x "$CITY/.beads/hooks/on_close" ]
-  [ -x "$RIG/.beads/hooks/on_create" ]
-  [ -x "$RIG/.beads/hooks/on_update" ]
-  [ -x "$RIG/.beads/hooks/on_close" ]
+  [ ! -x "$CITY/.beads/hooks/on_create" ]
+  [ ! -x "$CITY/.beads/hooks/on_update" ]
+  [ ! -x "$CITY/.beads/hooks/on_close" ]
+  [ ! -x "$RIG/.beads/hooks/on_create" ]
+  [ ! -x "$RIG/.beads/hooks/on_update" ]
+  [ ! -x "$RIG/.beads/hooks/on_close" ]
   grep -Fq "GC_HOME=<$CANONICAL_CITY/.gc-home> GC_ISOLATED=<1> OTEL_SDK_DISABLED=<true>" "$LOG"
   grep -Fq 'ARGS <supervisor> <stop> <--wait> <--wait-timeout> <17s>' "$LOG"
   grep -Fq "ARGS <dolt-state> <stop-managed> <--city> <$CANONICAL_CITY>" "$LOG"
@@ -279,5 +279,31 @@ teardown() {
 
   [ "$status" -eq 0 ]
   [ -e "$STATE/rig-helper-finished" ]
+  [[ "$output" == *"Gas City stopped cleanly"* ]]
+}
+
+@test "teardown keeps a preaccepted but not-yet-execed hook fenced" {
+  cat >"$CITY/.beads/hooks/on_create" <<'EOF'
+#!/bin/sh
+# gc-hook-stamp: fixture
+# Installed by gc
+touch "$(dirname "$0")/unexpected-late-exec"
+EOF
+  chmod 755 "$CITY/.beads/hooks/on_create"
+  printf '%s\n' "$CITY/.beads/hooks/on_create" >"$STATE/pending-hook-path"
+
+  (
+    sleep 7
+    pending_hook="$(cat "$STATE/pending-hook-path")"
+    "$pending_hook" fixture create
+  ) &
+  helper_pid="$!"
+
+  run env PATH="$BIN:$PATH" "$TEARDOWN" --city "$CITY" --wait-timeout 12
+  wait "$helper_pid" 2>/dev/null || true
+
+  [ "$status" -eq 0 ]
+  [ ! -e "$CITY/.beads/hooks/unexpected-late-exec" ]
+  [ ! -x "$CITY/.beads/hooks/on_create" ]
   [[ "$output" == *"Gas City stopped cleanly"* ]]
 }

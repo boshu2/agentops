@@ -618,6 +618,7 @@ assert config["session"]["socket"] == (
     "agentops-" + hashlib.sha256(city.encode()).hexdigest()[:20]
 )
 assert config["session"]["setup_timeout"] == "60s"
+assert config["beads"]["event_hooks"] is False
 city_delivery_overrides = [
     override for override in config["orders"]["overrides"]
     if override["name"] == "agentops-delivery-sweep" and "rig" not in override
@@ -748,6 +749,11 @@ for provider_name, expected_default, expected_model, expected_effort, expected_c
     }
     assert actual_efforts == expected_efforts
 PY
+  for root in "$CITY" "$RIG"; do
+    [ ! -e "$root/.beads/hooks/on_create" ]
+    [ ! -e "$root/.beads/hooks/on_update" ]
+    [ ! -e "$root/.beads/hooks/on_close" ]
+  done
   cmp "$REPO_ROOT/deploy/gc/agents/codex/agent.toml" "$CITY/agents/codex/agent.toml"
   cmp "$REPO_ROOT/deploy/gc/agents/claude/agent.toml" "$CITY/agents/claude/agent.toml"
   python3 - "$CITY/.gc/codex-home/config.toml" "$RIG" <<'PY'
@@ -912,6 +918,31 @@ assert config["check_for_update_on_startup"] is False
 assert config["projects"][os.path.realpath(sys.argv[2])]["trust_level"] == "trusted"
 assert config["projects"]["/unrelated/project"]["trust_level"] == "trusted"
 PY
+}
+
+@test "bootstrap removes only legacy GC event hooks under the official opt-out" {
+  run run_bootstrap
+  [ "$status" -eq 0 ]
+
+  for root in "$CITY" "$RIG"; do
+    mkdir -p "$root/.beads/hooks"
+    printf '%s\n' '#!/bin/sh' '# gc-hook-stamp: legacy' '# Installed by gc' 'exit 0' \
+      >"$root/.beads/hooks/on_close"
+    chmod 755 "$root/.beads/hooks/on_close"
+  done
+
+  run run_bootstrap
+  [ "$status" -eq 0 ]
+  [ ! -e "$CITY/.beads/hooks/on_close" ]
+  [ ! -e "$RIG/.beads/hooks/on_close" ]
+
+  printf '%s\n' '#!/bin/sh' '# caller-owned hook' 'exit 0' >"$RIG/.beads/hooks/on_close"
+  chmod 755 "$RIG/.beads/hooks/on_close"
+
+  run run_bootstrap
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"refusing foreign Beads event hook under event_hooks=false"* ]]
+  [ -e "$RIG/.beads/hooks/on_close" ]
 }
 
 @test "bootstrap leaves task-specific executor work_dir unpatched" {

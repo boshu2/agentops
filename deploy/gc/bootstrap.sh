@@ -1407,6 +1407,8 @@ if workspace.get("provider"):
     raise SystemExit("city workspace provider must stay unset; roles select providers explicitly")
 if workspace.get("max_active_sessions") != max_active_sessions:
     raise SystemExit(f"city workspace max_active_sessions must be {max_active_sessions}")
+if config.get("beads", {}).get("event_hooks") is not False:
+    raise SystemExit("city must disable per-write Beads event hooks")
 if workspace.get("env", {}).get("GC_BIN") != gc_bin:
     raise SystemExit("city workspace must pin GC_BIN for managed sessions")
 delivery_env = {
@@ -2068,6 +2070,33 @@ for provider_name in ("codex", "claude"):
 PY
 rm -f "$executor_agents"
 trap - EXIT
+
+# event_hooks=false is GC v1.3.5's supported path when controller cache events
+# are the observation plane. A clean init creates no event hooks; a managed
+# rerun may encounter stamped hooks from an earlier config. Remove only those
+# exact GC-owned projections and refuse foreign hook bytes rather than silently
+# deleting caller policy. This runs before start, so no 3.3 runtime can admit
+# the detached event/autoclose chain that defeated bounded teardown censuses.
+python3 - "$city" "$rig" <<'PY'
+import os
+import stat
+import sys
+
+for root in sys.argv[1:]:
+    hooks = os.path.join(root, ".beads", "hooks")
+    for name in ("on_create", "on_update", "on_close"):
+        path = os.path.join(hooks, name)
+        if not os.path.lexists(path):
+            continue
+        info = os.lstat(path)
+        if not stat.S_ISREG(info.st_mode) or stat.S_ISLNK(info.st_mode):
+            raise SystemExit(f"refusing non-regular Beads event hook under event_hooks=false: {path}")
+        with open(path, "rb") as handle:
+            raw = handle.read()
+        if b"# gc-hook-stamp:" not in raw or b"# Installed by gc" not in raw:
+            raise SystemExit(f"refusing foreign Beads event hook under event_hooks=false: {path}")
+        os.unlink(path)
+PY
 
 "$gc_bin" --city "$city" config show >/dev/null
 "$gc_bin" --city "$city" config explain >/dev/null
