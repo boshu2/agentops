@@ -1,63 +1,49 @@
 formula = "agentops-experiment"
-description = "Run one feeder-admitted AgentOps experiment for {{convoy_id}}; semantic terminalization precedes delivery."
+description = "Plan, implement, validate, then offer one validated candidate to the Refiner."
 
 [requires]
 formula_compiler = ">=2.0.0"
 
 [vars]
 [vars.work_dir]
-description = "Absolute isolated candidate worktree"
+description = "Absolute isolated Git worktree prepared for this source bead"
 required = true
-[vars.implement_packet]
-description = "Absolute valid implement envelope"
-required = true
-[vars.validate_packet]
-description = "Absolute future validate envelope"
+[vars.plan_target]
+description = "Rig-qualified Sol planner"
 required = true
 [vars.implement_target]
-description = "Explicit Terra-high or Opus-medium route"
+description = "Rig-qualified Terra-high or Opus-medium implementer"
 required = true
 [vars.validate_target]
-description = "Exact rig-qualified Sol-high validation route"
+description = "Rig-qualified fresh Sol validator"
 required = true
-[vars.packet_adapter]
-description = "Absolute selected-pack packet adapter"
-required = true
-[vars.factory_check]
-description = "Absolute trusted city-projected controller check"
+[vars.refiner_target]
+description = "Rig-qualified Fable Refiner"
 required = true
 
 [[steps]]
-id = "admission"
-title = "Inert admission gate for {{convoy_id}}"
-description = "The one-shot feeder closes this plain inert step only after every attachment and predecessor dependency is durable."
+id = "plan"
+title = "Plan {{convoy_id}}"
+description = "source_bead={{convoy_id}}\nrole=plan\nRefine acceptance and write scope in the source bead."
+metadata = { "gc.run_target" = "{{plan_target}}", "work_dir" = "{{work_dir}}" }
 
 [[steps]]
 id = "implement"
-title = "Execute the explicitly admitted experiment for {{convoy_id}}"
-description = "adapter_path={{packet_adapter}}\npacket_path={{implement_packet}}\nsource_convoy={{convoy_id}}"
-needs = ["admission"]
-metadata = { "gc.run_target" = "{{implement_target}}", "work_dir" = "{{work_dir}}", "gc.packet_path" = "{{implement_packet}}" }
-
-[steps.check]
-max_attempts = 1
-
-[steps.check.check]
-mode = "exec"
-path = "{{factory_check}}"
-timeout = "15m"
+title = "Implement {{convoy_id}}"
+description = "source_bead={{convoy_id}}\nrole=implement\nProduce one committed candidate in the isolated worktree."
+needs = ["plan"]
+metadata = { "gc.run_target" = "{{implement_target}}", "work_dir" = "{{work_dir}}" }
 
 [[steps]]
 id = "validate"
-title = "Fresh Sol-high validates the exact subject for {{convoy_id}}"
-description = "adapter_path={{packet_adapter}}\npacket_path={{validate_packet}}\nsource_convoy={{convoy_id}}"
+title = "Validate {{convoy_id}}"
+description = "source_bead={{convoy_id}}\nrole=validate\nFreshly validate the exact committed candidate against the source bead."
 needs = ["implement"]
-metadata = { "gc.run_target" = "{{validate_target}}", "work_dir" = "{{work_dir}}", "gc.packet_path" = "{{validate_packet}}" }
+metadata = { "gc.run_target" = "{{validate_target}}", "work_dir" = "{{work_dir}}" }
 
-[steps.check]
-max_attempts = 1
-
-[steps.check.check]
-mode = "exec"
-path = "{{factory_check}}"
-timeout = "15m"
+[[steps]]
+id = "deliver"
+title = "Deliver {{convoy_id}}"
+description = "source_bead={{convoy_id}}\nrole=deliver\nRebase, check, open or adopt the PR, and apply configured merge policy."
+needs = ["validate"]
+metadata = { "gc.run_target" = "{{refiner_target}}", "work_dir" = "{{work_dir}}" }

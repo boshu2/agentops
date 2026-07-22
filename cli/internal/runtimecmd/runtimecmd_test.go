@@ -173,13 +173,9 @@ func headlessPrintLiteral(value string) bool {
 // Known-safe today:
 //   - internal/adapters/eval/scenario_ab_sandbox.go — `sandbox-exec -p <profile>`
 //     (the macOS sandbox profile flag), wrapping *codex*, never claude.
-//   - internal/gcadapter/delivery/native_provider.go — `git commit-tree -p
-//     <parent>` (the Git parent flag); this provider invokes only its exact
-//     bound Git binary at that call site and has no agent-runtime path.
 func TestNoUnreviewedDashPArgvInCLI(t *testing.T) {
 	allowed := map[string]bool{
-		filepath.FromSlash("internal/adapters/eval/scenario_ab_sandbox.go"):  true,
-		filepath.FromSlash("internal/gcadapter/delivery/native_provider.go"): true,
+		filepath.FromSlash("internal/adapters/eval/scenario_ab_sandbox.go"): true,
 	}
 
 	cliRoot, err := filepath.Abs(filepath.Join("..", ".."))

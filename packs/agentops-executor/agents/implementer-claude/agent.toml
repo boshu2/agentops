@@ -6,5 +6,4 @@ lifecycle = "one_shot"
 min_active_sessions = 0
 max_active_sessions = 1
 option_defaults = { permission_mode = "unrestricted", model = "opus-4.8", effort = "medium" }
-install_agent_hooks = ["claude"]
 inject_assigned_skills = true
