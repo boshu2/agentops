@@ -65,7 +65,7 @@ flowchart TD
     V -->|"FAIL or NOT_PROVEN"| M
 
     A --> R["marker-first successor delivery bead"]
-    R --> PR["serialized model-free Refinery"]
+    R --> PR["serialized deterministic delivery reducer"]
     PR -->|"changed bytes or meaning"| M
     PR -->|"moving main / CI / merge"| MAIN["Protected main"]
     MAIN --> D["Landed-SHA delivery receipt"]
@@ -373,20 +373,22 @@ terminal PASS plus that exact committed handoff.
 
 ### 7. Shepherd the PR
 
-Refinery opens or adopts one PR for that linked delivery bead, observes CI and
-review state, and requests protected merge only when repository policy is met.
+The deterministic delivery reducer opens or adopts one PR for that linked
+delivery bead, observes CI and review state, and requests protected merge only
+when repository policy is met.
 
-If `main` moves, Refinery creates a new mechanical epoch from the current base,
-replays the exact admitted delta, and reruns deterministic gates. Changed bytes
-or new product meaning creates a successor repair bead for the same semantic
-loop; clean replay does not reopen the terminal semantic bead.
+If `main` moves, the reducer creates a deterministic successor-bead epoch from
+the current base, replays the exact admitted delta, and reruns deterministic
+gates. Changed bytes or new product meaning creates a successor repair bead for
+the same semantic loop; clean replay does not reopen the terminal semantic
+bead.
 
 ### 8. Record delivery
 
-After protected merge, Refinery verifies the landed SHA and writes a receipt
+After protected merge, the reducer verifies the landed SHA and writes a receipt
 connecting program intent, candidate SHAs, component verdicts, integration
-digest, validation certificate, PR/CI/review state, and landed commit. Cleanup is
-receipt- and fence-gated. `effect-receipt.v1` records the resulting SHA for
+digest, validation certificate, PR/CI/review state, and landed commit. Cleanup
+is receipt- and fence-gated. `effect-receipt.v1` records the resulting SHA for
 `applied` and `already_applied`; `refused` and `unknown` record no resulting
 SHA. Delivery does not imply release.
 
@@ -395,7 +397,7 @@ SHA. Delivery does not imply release.
 ```text
 main                                           protected; no raw LLM push
 gc/candidate/<program>/<node>/<attempt>        worker-owned exact candidate
-gc/delivery/<handoff>/<epoch>                  linked delivery successor
+gc/delivery/<handoff-prefix>                   one stable branch across epochs
 ```
 
 Each admitted candidate has a linked delivery identity. Atomic groups are
@@ -419,13 +421,13 @@ packs/agentops-factory/
     admission-certificate.v2
     handoff-prepared.v1
     handoff-committed.v1
-    delivery.v1
+    gc.delivery.v1
+    delivery.v1                       marker-first handoff payload only
     ambiguity-request.v1
     effect-receipt.v1
     epoch-receipt.v1
     factory-role-request.v2
     factory-role-response.v2
-    rescope-context.v1
 ```
 
 For 3.3, `factory-role-request.v2` and `factory-role-response.v2` are the
@@ -437,9 +439,9 @@ fallback object is exactly `allowed=false`, `used=false`, and `reason=null`.
 `program-graph.v2` also binds the same fixed policy and an admission
 certificate requires an author attestation for exactly one admitted
 Terra-high/Codex or Opus-medium/Claude writer and a Validator attestation for
-exact Sol-high/Codex. The `.v1` request,
-response, and `delivery-record.v1` schemas are retained only as 3.2 historical
-consumer contracts and are non-admissible for any 3.3 handoff or delivery.
+exact Sol-high/Codex. The unread legacy v1 request, response, graph, and
+delivery-record schemas were removed during the 3.3 migration; no historical
+consumer contract remains in the release subject.
 The delivery payload is not routed to a model. There is no opposite-provider
 rule; the one writer fabric is Terra/Opus and fresh validation is Sol.
 

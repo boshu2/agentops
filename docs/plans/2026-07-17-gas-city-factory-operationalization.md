@@ -146,7 +146,7 @@ nonempty hosted CI, execute the one selected protected-merge effect, and verify
 the landed SHA/tree. It must not require Fable or Sol merely to move a known
 state machine forward.
 
-Routine `delivery.v1` beads and `ambiguity-request.v1` beads are disjoint staged
+Routine `gc.delivery.v1` beads and `ambiguity-request.v1` beads are disjoint staged
 types. A new object is non-routable until all required metadata validates; one
 publication transition makes it visible to exactly one selector. The fully
 composed city config must prove the delivery selector intersects no model
@@ -218,7 +218,7 @@ transition.
 
 ## Evidence and delivery interfaces
 
-`program-graph.v1` binds the intent digest, nodes, dependencies,
+`program-graph.v2` binds the intent digest, nodes, dependencies,
 `max_parallel`, role/model policy, write scopes and generated companions,
 `delivery_group_id`, and `prefix_safety = safe | atomic_group |
 externally_gated`.
@@ -240,7 +240,7 @@ The reducer creates one linked delivery bead per certificate by default.
 Explicit atomic groups may share one delivery unit. Delivery progresses by
 base-sensitive epochs:
 
-`queued -> preparing -> branch_ready -> pr_open -> ci_wait -> rebase_needed ->
+`queued -> preparing -> branch_ready -> pr_prepared -> pr_open -> ci_wait -> rebase_needed ->
 preparing | merge_eligible -> merge_armed -> landed`
 
 The exact release schema contains `merge_armed` only. Waiting and terminal alternatives are `repair_wait`, `manual_review`,
@@ -254,6 +254,14 @@ hosted-check context/app identity. A definitive refusal is recorded separately
 from an ambiguous transport result. Landing is accepted only when the forge
 commit has the admitted integration tree and the epoch's base as its sole
 parent.
+
+The merge attempt uses a durable, handoff-wide fuse. Once the reducer records
+that fuse it may issue at most one `enablePullRequestAutoMerge` mutation for the
+handoff, even after a cold restart or a moving-main successor epoch. A crash
+after recording the fuse but before the remote effect is intentionally
+`stalled`: 3.3 sacrifices automatic liveness at that cut rather than risk an
+ambiguous duplicate mutation. Exact remote landing may still be observed and
+adopted without resending the effect.
 
 Deployment policy exposes:
 
@@ -320,7 +328,12 @@ general scheduler, second merge engine, private lifecycle ledger, default
 trains, nested integration courts, dynamic delivery rigs, or model-authored
 Git/queue/lifecycle transitions. A thin vertical slice measures the actual
 surface before full implementation. A projection beyond roughly 3,000
-non-test Go lines is a re-scope tripwire, not a correctness target.
+non-test Go lines is a re-scope tripwire, not a correctness target. The
+completed GC33-7 subject contains 4,465 non-test Go lines across the optional
+command, typed reducer, and Beads/Git/PR/hosted providers. This exceeds the
+tripwire by 1,465 lines and is therefore recorded as a review fact. The added
+surface remains within the admitted components: it adds no daemon, scheduler,
+model-authored transition, second merge engine, or private lifecycle ledger.
 
 Before each implementation bead freezes its scope, inspect:
 
