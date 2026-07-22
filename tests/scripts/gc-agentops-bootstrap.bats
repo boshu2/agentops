@@ -531,6 +531,7 @@ run_bootstrap() {
   [ ! -e "$FAKE_STATE/started" ]
 
   python3 - "$CITY/.gc/agentops-bootstrap.json" "$FAKE_GC" "$BIN/bd" "$BIN/ao" "$BIN/agentops-gc-delivery" <<'PY'
+import hashlib
 import json
 import os
 import re
@@ -553,6 +554,12 @@ assert marker["ao_reducer"]["path"] == os.path.realpath(sys.argv[4])
 assert marker["ao_reducer"]["delivery_path"] == os.path.realpath(sys.argv[5])
 assert marker["delivery_mode"] == "auto"
 assert marker["repository"] == "boshu2/agentops"
+native_path = marker["delivery"]["native_context_path"]
+with open(native_path, "rb") as handle:
+    native_raw = handle.read()
+assert marker["delivery"]["native_context_digest"] == hashlib.sha256(native_raw).hexdigest()
+assert marker["delivery"]["evidence_root"] == os.path.join(marker["rig"], ".gc", "agentops", "factory", "evidence", "delivery")
+assert marker["delivery"]["deadline_seconds"] == 86400
 assert marker["telemetry"] == {"mode": "off", "status": "off", "requested_metrics_url": "", "requested_logs_url": "", "effective_metrics_url": "", "effective_logs_url": ""}
 assert re.fullmatch(r"[0-9a-f]{64}", marker["ao_reducer"]["binary_sha256"])
 assert re.fullmatch(r"[0-9a-f]{40}", marker["ao_reducer"]["source_commit"])

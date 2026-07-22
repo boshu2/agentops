@@ -177,9 +177,11 @@ deploy/gc/invoke.sh --city /path/to/city -- agentops program start --source-bead
 ```
 
 The managed invoker reads the bootstrap marker, verifies the exact recorded
-Gas City binary digest, selects the private supervisor, projects the effective
+Gas City/Beads/reducer/executable digests and canonical native-delivery context,
+selects the private supervisor, projects that delivery binding plus the effective
 telemetry pair (or explicit disabled state), and clears an ambient generic OTLP
-fallback. It enters the exact managed city before executing GC because GC v1.3.5
+fallback. It never sources ambient delivery variables or trusts an unbound
+`city.toml`. It enters the exact managed city before executing GC because GC v1.3.5
 discovers imported commands while constructing its command tree, before a later
 `--city` flag is parsed. Once inside, it omits the redundant root `--city`
 selector because imported leaves intentionally own their remaining argv and
@@ -220,7 +222,7 @@ recorded by bootstrap.
 | `deploy/gc/agents/*/agent.toml` | AgentOps source | Explicit suspended city agents that shadow GC's late implicit provider injection |
 | `deploy/gc/toolchain.lock.json` | AgentOps source | Accepted exact GC/Beads source pairs and their qualification state |
 | `deploy/gc/materialize-toolchain.sh` | AgentOps source | Fail-closed source checkout, canonical builds, runtime verification, and local receipt |
-| `deploy/gc/invoke.sh` | AgentOps source | Marker-bound operator invocation, private supervisor selection, exact GC digest, and effective telemetry environment |
+| `deploy/gc/invoke.sh` | AgentOps source | Marker-bound operator invocation, private supervisor selection, exact tool/delivery identity, and effective telemetry environment |
 | `<city>/pack.toml` | `gc init`, then bootstrap | Current built-in pins plus the city-scoped `agentops` import |
 | `<city>/city.toml` | `gc init`, `gc rig add`, then bootstrap | Portable runtime policy, logical rig declaration, and rig-scoped `agentops` import |
 | `<city>/.gc/site.toml` | Gas City SDK/CLI | Machine-local workspace identity and physical rig path |
@@ -228,7 +230,7 @@ recorded by bootstrap.
 | `<city>/.gc-home` | Gas City runtime | Remaining private supervisor/store discovery state |
 | `<city>/.gc/codex-home` | Codex runtime | Private session state plus a symlink to the selected external `auth.json` |
 | Caller home | Claude runtime | Existing authenticated interactive Claude state; no auth material is copied into the city |
-| `<city>/.gc/agentops-bootstrap.json` | Bootstrap | Exact city/rig/pack/auth/toolchain, telemetry, reducer identity, `packs.lock` digest, binary digests, and recovery state |
+| `<city>/.gc/agentops-bootstrap.json` | Bootstrap | Exact city/rig/pack/auth/toolchain, telemetry, reducer identity, canonical native-delivery binding, `packs.lock` digest, binary digests, and recovery state |
 
 Do not source-control `.gc/site.toml`, `.gc-home`, or the generated city. To
 promote a stable release, point `--pack` at a clean committed pack and let the
