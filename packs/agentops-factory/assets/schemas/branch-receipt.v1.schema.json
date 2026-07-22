@@ -12,11 +12,12 @@
     "rig_id": {"type": "string", "minLength": 1},
     "repository": {"type": "string", "minLength": 1},
     "remote": {"type": "string", "minLength": 1},
-    "branch": {"type": "string", "minLength": 1},
+    "branch": {"type": "string", "pattern": "^gc/delivery/[0-9a-f]{20}$"},
     "base_ref": {"type": "string", "minLength": 1},
     "base_oid": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
     "expected_head": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
-    "outcome": {"enum": ["created", "adopted"]},
+    "lease_oid": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+    "outcome": {"const": "observed"},
     "response_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
   }
 }

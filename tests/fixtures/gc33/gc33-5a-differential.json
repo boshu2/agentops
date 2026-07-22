@@ -1,0 +1,16 @@
+{
+  "schema_version": "gc33-5a-differential.v1",
+  "sources": {
+    "gas_city": {"version": "v1.3.5", "commit": "8ffc009ded781a2ada2077f3a29bd712b2def0bf"},
+    "beads": {"version": "v1.1.0", "commit": "8e4e59d39f3459a43cf21a3236a13eca4dd874f7"},
+    "embedded_packs": {"commit": "33d3a430a67d1782ad364556cb566bdb01d0afe3"}
+  },
+  "forge_auto_merge": {
+    "actor": "enablePullRequestAutoMerge",
+    "method": "SQUASH",
+    "requires": ["open", "non_draft", "merge_state_clean", "no_existing_auto_merge", "exact_head", "exact_base", "protection_digest", "app_qualified_required_checks"],
+    "replay": "marker_first_observe_only_no_resend"
+  },
+  "retained_pack_surface": ["inspect-role-v2", "emit-role-v2", "doctor"],
+  "removed_pack_surface": ["factory.py", "program", "refinery", "delivery-record.v1"]
+}

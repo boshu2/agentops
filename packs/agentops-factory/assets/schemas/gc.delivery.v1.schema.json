@@ -1,0 +1,197 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agentops.local/schemas/gc.delivery.v1.schema.json",
+  "title": "Canonical gc.delivery.v1 Beads envelope",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "revision", "handoff_id", "epoch", "pr", "state", "current_receipt", "publication", "ready_at", "deadline", "semantic_bead_id", "semantic_terminal_ref", "admission_certificate_digest", "committed_handoff_digest", "mode", "rig_id", "repository", "remote", "candidate_oid", "subject_manifest_digest", "auto_merge_attempt"],
+  "properties": {
+    "schema_version": {"const": "gc.delivery.v1"},
+    "revision": {"type": "integer", "minimum": 1},
+    "handoff_id": {"$ref": "#/$defs/digest"},
+    "epoch": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["number", "base_ref", "base_oid", "branch"],
+      "properties": {
+        "number": {"type": "integer", "minimum": 1},
+        "base_ref": {"type": "string", "minLength": 1},
+        "base_oid": {"$ref": "#/$defs/oid"},
+        "branch": {"type": "string", "pattern": "^gc/delivery/[0-9a-f]{20}$"},
+        "head": {"$ref": "#/$defs/oid"},
+        "tree": {"$ref": "#/$defs/oid"},
+        "lease_oid": {"$ref": "#/$defs/oid"}
+      }
+    },
+    "pr": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "effect_id", "repository", "base_ref", "branch"],
+      "properties": {
+        "id": {"type": "string"},
+        "effect_id": {"type": "string"},
+        "repository": {"type": "string"},
+        "base_ref": {"type": "string"},
+        "branch": {"type": "string"},
+        "node_id": {"type": "string", "minLength": 1},
+        "number": {"type": "string", "minLength": 1},
+        "url": {"type": "string", "pattern": "^https://"}
+      }
+    },
+    "state": {"enum": ["queued", "preparing", "branch_ready", "pr_prepared", "pr_open", "ci_wait", "rebase_needed", "merge_eligible", "merge_armed", "landed", "repair_wait", "manual_review", "stalled", "delivery_failed", "successor_required", "cancelled"]},
+    "current_receipt": {"$ref": "#/$defs/receipt"},
+    "publication": {"enum": ["pending", "published"]},
+    "ready_at": {"type": "string", "format": "date-time"},
+    "deadline": {"type": "string", "format": "date-time"},
+    "semantic_bead_id": {"type": "string", "minLength": 1},
+    "semantic_terminal_ref": {"type": "string", "minLength": 1},
+    "admission_certificate_digest": {"$ref": "#/$defs/digest"},
+    "committed_handoff_digest": {"type": "string"},
+    "mode": {"enum": ["auto", "manual"]},
+    "rig_id": {"type": "string", "minLength": 1},
+    "repository": {"type": "string", "pattern": "^[^/]+/[^/]+$"},
+    "remote": {"type": "string", "minLength": 1},
+    "candidate_oid": {"$ref": "#/$defs/oid"},
+    "subject_manifest_digest": {"$ref": "#/$defs/digest"},
+    "gate_digest": {"$ref": "#/$defs/digest"},
+    "arm_id": {"$ref": "#/$defs/digest"},
+    "auto_merge_effect_id": {"$ref": "#/$defs/digest"},
+    "auto_merge_attempt": {"$ref": "#/$defs/receipt"},
+    "landing_digest": {"$ref": "#/$defs/digest"},
+    "landed_sha": {"$ref": "#/$defs/oid"},
+    "deadline_outcome": {"type": "string", "minLength": 1},
+    "delivery_outcome": {"type": "string", "minLength": 1},
+    "epoch_successor_id": {"type": "string", "pattern": "^delivery-[0-9a-f]{20}-e[0-9]{6}$"},
+    "repair_bead_id": {"type": "string", "minLength": 1},
+    "semantic_successor_id": {"type": "string", "minLength": 1},
+    "predecessor_receipt_digest": {"$ref": "#/$defs/digest"},
+    "predecessor": {"type": "string", "pattern": "^delivery-[0-9a-f]{20}-e[0-9]{6}$"}
+  },
+  "$defs": {
+    "digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "oid": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+    "receipt": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "digest"],
+      "properties": {
+        "path": {"type": "string"},
+        "digest": {"type": "string"}
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {"properties": {"publication": {"const": "pending"}}},
+      "then": {"properties": {"state": {"const": "queued"}, "current_receipt": {"properties": {"path": {"const": ""}, "digest": {"const": ""}}}}}
+    },
+    {
+      "if": {"properties": {"publication": {"const": "pending"}, "epoch": {"properties": {"number": {"maximum": 1}}}}},
+      "then": {"properties": {"committed_handoff_digest": {"const": ""}}}
+    },
+    {
+      "if": {"properties": {"publication": {"const": "pending"}, "epoch": {"properties": {"number": {"minimum": 2}}}}},
+      "then": {"properties": {"committed_handoff_digest": {"$ref": "#/$defs/digest"}}}
+    },
+    {
+      "if": {"properties": {"publication": {"const": "published"}}},
+      "then": {"properties": {"committed_handoff_digest": {"$ref": "#/$defs/digest"}, "current_receipt": {"properties": {"path": {"pattern": "^handoffs/[0-9a-f]{64}/epochs/[0-9]{6}/[^/]+\\.json$"}, "digest": {"$ref": "#/$defs/digest"}}}}}
+    },
+    {
+      "if": {"properties": {"state": {"not": {"const": "queued"}}}},
+      "then": {"properties": {"publication": {"const": "published"}}}
+    },
+    {
+      "if": {"properties": {"state": {"enum": ["branch_ready", "pr_prepared", "pr_open", "ci_wait", "merge_eligible", "merge_armed", "manual_review", "landed"]}}},
+      "then": {"properties": {"epoch": {"required": ["head", "tree"]}}}
+    },
+    {
+      "if": {"properties": {"state": {"enum": ["pr_prepared", "pr_open", "ci_wait", "merge_eligible", "merge_armed", "manual_review", "landed"]}}},
+      "then": {"properties": {"pr": {"properties": {"id": {"minLength": 1}, "effect_id": {"$ref": "#/$defs/digest"}, "repository": {"pattern": "^[^/]+/[^/]+$"}, "base_ref": {"minLength": 1}, "branch": {"pattern": "^gc/delivery/[0-9a-f]{20}$"}}}}}
+    },
+    {
+      "if": {"properties": {"state": {"enum": ["pr_open", "ci_wait", "merge_eligible", "merge_armed", "manual_review", "landed"]}}},
+      "then": {"properties": {"pr": {"required": ["node_id", "number", "url"]}}}
+    },
+    {
+      "if": {"properties": {"state": {"enum": ["merge_eligible", "merge_armed", "manual_review"]}}},
+      "then": {"required": ["gate_digest"]}
+    },
+    {
+      "if": {"properties": {"state": {"const": "merge_armed"}}},
+      "then": {"required": ["arm_id", "auto_merge_effect_id"], "properties": {"mode": {"const": "auto"}}}
+    },
+    {
+      "if": {"properties": {"state": {"const": "manual_review"}}},
+      "then": {"properties": {"mode": {"const": "manual"}}}
+    },
+    {
+      "if": {"properties": {"state": {"const": "queued"}, "publication": {"const": "published"}}},
+      "then": {"properties": {"current_receipt": {"properties": {"path": {"pattern": "/activation\\.json$"}}}}}
+    },
+    {
+      "if": {"properties": {"state": {"const": "preparing"}}},
+      "then": {"properties": {"current_receipt": {"properties": {"path": {"pattern": "/activation\\.json$"}}}}}
+    },
+    {
+      "if": {"properties": {"state": {"const": "branch_ready"}}},
+      "then": {"properties": {"current_receipt": {"properties": {"path": {"pattern": "/branch\\.json$"}}}}}
+    },
+    {
+      "if": {"properties": {"state": {"const": "pr_prepared"}}},
+      "then": {"properties": {"current_receipt": {"properties": {"path": {"pattern": "/pr-intent\\.json$"}}}}}
+    },
+    {
+      "if": {"properties": {"state": {"const": "pr_open"}}},
+      "then": {"properties": {"current_receipt": {"properties": {"path": {"pattern": "/pr-open\\.json$"}}}}}
+    },
+    {
+      "if": {"properties": {"state": {"const": "ci_wait"}}},
+      "then": {"properties": {"current_receipt": {"properties": {"path": {"pattern": "/(?:pr-open|hosted-gate)\\.json$"}}}}}
+    },
+    {
+      "if": {"properties": {"state": {"const": "rebase_needed"}}},
+      "then": {"properties": {"current_receipt": {"properties": {"path": {"pattern": "/(?:base-move|successor-created)\\.json$"}}}}}
+    },
+    {
+      "if": {"properties": {"state": {"const": "merge_eligible"}}},
+      "then": {"properties": {"current_receipt": {"properties": {"path": {"pattern": "/hosted-gate\\.json$"}}}}}
+    },
+    {
+      "if": {"properties": {"state": {"const": "merge_armed"}}},
+      "then": {"properties": {"current_receipt": {"properties": {"path": {"pattern": "/merge-arm\\.json$"}}}}}
+    },
+    {
+      "if": {"properties": {"state": {"const": "manual_review"}}},
+      "then": {"properties": {"current_receipt": {"properties": {"path": {"pattern": "/hosted-gate\\.json$"}}}}}
+    },
+    {
+      "if": {"properties": {"state": {"const": "landed"}}},
+      "then": {"properties": {"current_receipt": {"properties": {"path": {"pattern": "/landing\\.json$"}}}}}
+    },
+    {
+      "if": {"properties": {"state": {"const": "repair_wait"}}},
+      "then": {"properties": {"current_receipt": {"properties": {"path": {"pattern": "/(?:delivery-outcome|auto-merge-attempt|merge-refusal)\\.json$"}}}}}
+    },
+    {
+      "if": {"properties": {"state": {"const": "stalled"}}},
+      "then": {"properties": {"current_receipt": {"properties": {"path": {"pattern": "/(?:deadline|delivery-outcome|auto-merge-attempt|merge-refusal)\\.json$"}}}}}
+    },
+    {
+      "if": {"properties": {"state": {"enum": ["delivery_failed", "successor_required", "cancelled"]}}},
+      "then": {"properties": {"current_receipt": {"properties": {"path": {"pattern": "/delivery-outcome\\.json$"}}}}}
+    },
+    {
+      "if": {"properties": {"state": {"const": "landed"}}},
+      "then": {"required": ["landing_digest", "landed_sha"]}
+    },
+    {
+      "if": {"properties": {"epoch": {"properties": {"number": {"minimum": 2}}}}},
+      "then": {"required": ["predecessor", "predecessor_receipt_digest"]}
+    },
+    {
+      "if": {"properties": {"auto_merge_attempt": {"properties": {"path": {"minLength": 1}}}}},
+      "then": {"required": ["auto_merge_effect_id"], "properties": {"auto_merge_attempt": {"properties": {"path": {"pattern": "^handoffs/[0-9a-f]{64}/epochs/[0-9]{6}/auto-merge-attempt\\.json$"}, "digest": {"$ref": "#/$defs/digest"}}}}}
+    }
+  ]
+}

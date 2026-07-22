@@ -33,6 +33,17 @@ make_skeleton_without_linter() {
     # Deliberately DO NOT copy scripts/golangci-lint-v2.sh.
 }
 
+# Build a self-contained lint tree for a finding probe.  The Bats suite runs
+# files concurrently, so inserting a source file into the checkout can race a
+# toolchain materializer that correctly refuses untracked CLI sources.
+make_lint_skeleton() {
+    mkdir -p "$TMP_DIR/scripts"
+    cp "$SCRIPT" "$TMP_DIR/scripts/check-go-lint.sh"
+    cp "$REPO_ROOT/scripts/golangci-lint-v2.sh" "$TMP_DIR/scripts/golangci-lint-v2.sh"
+    chmod +x "$TMP_DIR/scripts/check-go-lint.sh" "$TMP_DIR/scripts/golangci-lint-v2.sh"
+    cp -R "$REPO_ROOT/cli" "$TMP_DIR/cli"
+}
+
 @test "the real repo tree is lint-clean (exit 0, reports clean)" {
     run bash "$SCRIPT"
     [ "$status" -eq 0 ]
@@ -52,10 +63,10 @@ make_skeleton_without_linter() {
 }
 
 @test "a real lint finding FAILS the gate and names file:line + class" {
-    # Inject a temp Go file into the real cli tree that trips a mechanical
-    # staticcheck finding (S1008 De Morgan / early-return), run the gate, then
-    # remove it. The injected file is uniquely named and always cleaned up.
-    probe="$REPO_ROOT/cli/internal/config/zz_bats_lint_probe.go"
+    # Isolate the probe from the checkout: other Bats files materialize an ao
+    # binary and must observe a clean CLI source tree throughout their run.
+    make_lint_skeleton
+    probe="$TMP_DIR/cli/internal/config/zz_bats_lint_probe.go"
     cat > "$probe" <<'GO'
 package config
 
@@ -68,9 +79,8 @@ func zzBatsLintProbe(s string) bool {
 	return false
 }
 GO
-    run bash "$SCRIPT"
+    run bash "$TMP_DIR/scripts/check-go-lint.sh"
     local st="$status" out="$output"
-    rm -f "$probe"
 
     [ "$st" -ne 0 ]
     [[ "$out" == *"reported findings"* ]]

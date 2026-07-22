@@ -27,7 +27,7 @@ to use exactly the `program-graph.v2` node contract: `role=implementation`,
     nonempty write scope, Terra/high/Codex default or explicitly justified
     Opus/medium/Claude overflow, and no fallback. Reject lifecycle-role nodes and
     any policy that turns Luna into a routed role, turns Sol into a worker, or
-    permits fallback. Do not invent `program-graph.v1` fields or a second lifecycle
+    permits fallback. Do not invent legacy graph fields or a second lifecycle
     state machine. Every exact candidate verdict belongs to a fresh
 Sol-high Validator context outside implementation. Never infer Validator policy from Worker policy.
 
