@@ -8,6 +8,7 @@ import stat
 import subprocess
 import tempfile
 import textwrap
+import time
 import tomllib
 import unittest
 
@@ -172,6 +173,66 @@ class ThinPackTests(unittest.TestCase):
             self.assertTrue(path.stat().st_mode & stat.S_IXUSR, path)
             result = run("/bin/bash", "-n", str(path))
             self.assertEqual(result.returncode, 0, result.stderr)
+
+    def test_lifecycle_helpers_export_the_pinned_gc_binary(self) -> None:
+        for name in ("bootstrap.sh", "invoke.sh", "teardown.sh"):
+            text = (DEPLOY / name).read_text(encoding="utf-8")
+            self.assertIn("export GC_BIN\n", text, name)
+
+    def test_teardown_waits_for_scoped_drain_and_fails_with_exact_residue(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            city = root / "city"
+            marker = city / ".gc/agentops-bootstrap.json"
+            marker.parent.mkdir(parents=True)
+            fake_gc = root / "gc-stub.sh"
+            calls = root / "gc.log"
+            fake_gc.write_text(textwrap.dedent("""\
+                #!/bin/sh
+                printf '%s\\t%s\\n' "${GC_BIN:-}" "$*" >> "$FAKE_GC_LOG"
+                exit 0
+                """), encoding="utf-8")
+            fake_gc.chmod(0o755)
+            marker.write_text(json.dumps({
+                "schema_version": 1,
+                "city": str(city.resolve()),
+                "toolchain": {"gc": {"path": str(fake_gc.resolve())}},
+                "supervisor_port": 65534,
+                "telemetry": {"sdk_disabled": True},
+            }), encoding="utf-8")
+            env = os.environ.copy()
+            env["FAKE_GC_LOG"] = str(calls)
+
+            draining = subprocess.Popen([
+                "python3", "-c", "import time; time.sleep(0.8)", str(city.resolve()),
+            ])
+            started = time.monotonic()
+            result = run(
+                str(DEPLOY / "teardown.sh"), "--city", str(city), "--wait-timeout", "3",
+                env=env,
+            )
+            elapsed = time.monotonic() - started
+            draining.wait(timeout=3)
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+            self.assertGreaterEqual(elapsed, 0.3)
+            log = calls.read_text(encoding="utf-8")
+            self.assertIn(f"{fake_gc.resolve()}\t--city {city.resolve()} stop --force", log)
+            self.assertIn(f"{fake_gc.resolve()}\tsupervisor stop --wait --wait-timeout 3s", log)
+
+            stuck = subprocess.Popen([
+                "python3", "-c", "import time; time.sleep(10)", str(city.resolve()),
+            ])
+            try:
+                failed = run(
+                    str(DEPLOY / "teardown.sh"), "--city", str(city), "--wait-timeout", "1",
+                    env=env,
+                )
+                self.assertNotEqual(failed.returncode, 0)
+                self.assertIn("managed city processes remain", failed.stderr)
+                self.assertIn(str(city.resolve()), failed.stderr)
+            finally:
+                stuck.terminate()
+                stuck.wait(timeout=3)
 
     def test_worktree_helper_creates_one_isolated_idempotent_branch(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:

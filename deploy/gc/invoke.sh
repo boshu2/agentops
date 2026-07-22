@@ -54,6 +54,8 @@ print("\x1f".join((gc["path"],t["metrics_url"],t["logs_url"],str(t.get("sdk_disa
 PY
 )" || die "invalid managed city identity"
 IFS=$'\x1f' read -r gc_bin metrics_url logs_url otel_disabled <<<"$identity"
+GC_BIN="$gc_bin"
+export GC_BIN
 export GC_HOME="$city/.gc-home"
 gc_bin_dir="$(dirname "$gc_bin")"
 PATH="$gc_bin_dir:$PATH"; export PATH

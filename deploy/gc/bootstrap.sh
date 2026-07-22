@@ -55,6 +55,8 @@ PY
 }
 city="$(canonical "$city")"; rig="$(canonical "$rig")"; pack="$(canonical "$pack")"; gc_bin="$(canonical "$gc_bin")"
 gc_bin_dir="$(dirname "$gc_bin")"
+GC_BIN="$gc_bin"
+export GC_BIN
 [ -d "$rig/.git" ] || git -C "$rig" rev-parse --git-dir >/dev/null 2>&1 || die "rig is not a Git repository: $rig"
 [ -f "$rig/.beads/metadata.json" ] && [ -f "$rig/.beads/config.yaml" ] || die "rig must already contain a GC-compatible Beads store and the source bead"
 bead_prefix="$(python3 - "$rig/.beads/config.yaml" <<'PY'
