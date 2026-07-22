@@ -94,6 +94,29 @@ func (p *NativeProviders) VerifySubject(ctx context.Context, request Request) er
 	if len(request.SubjectBytes) == 0 {
 		return nil
 	}
+	if err := p.verifySubjectRequest(ctx, request); err != nil {
+		return err
+	}
+	candidate, parent, err := p.verifySubjectCandidate(ctx, request)
+	if err != nil {
+		return err
+	}
+	if err := p.verifySubjectManifest(ctx, parent, candidate, request.SubjectManifest); err != nil {
+		return err
+	}
+	p.manifest, p.candidate = request.SubjectManifest, candidate
+	if p.requests == nil {
+		p.requests = make(map[string]Request)
+	}
+	key := request.Target.DeliveryBeadID
+	if key == "" {
+		key = makePrepared(request).DeliveryBeadID
+	}
+	p.requests[key] = request
+	return nil
+}
+
+func (p *NativeProviders) verifySubjectRequest(ctx context.Context, request Request) error {
 	if request.NativeDigest == "" || !reflect.DeepEqual(request.NativeContext, p.context) {
 		return errors.New("delivery request native context does not match the controller binding")
 	}
@@ -103,25 +126,32 @@ func (p *NativeProviders) VerifySubject(ctx context.Context, request Request) er
 	if overlap, err := pathsOverlap(p.context.WorktreeRoot, request.Root); err != nil || overlap {
 		return errors.New("ephemeral worktree root must be disjoint from evidence root")
 	}
-	manifest := request.SubjectManifest
+	return nil
+}
+
+func (p *NativeProviders) verifySubjectCandidate(ctx context.Context, request Request) (string, string, error) {
 	candidate := request.Certificate.Candidate.Commit
 	if tree, err := p.git(ctx, "rev-parse", candidate+"^{tree}"); err != nil || tree != request.Certificate.Candidate.Tree {
-		return errors.New("candidate tree differs from certificate")
+		return "", "", errors.New("candidate tree differs from certificate")
 	}
 	parentLine, err := p.git(ctx, "rev-list", "--parents", "-n", "1", candidate)
 	if err != nil {
-		return err
+		return "", "", err
 	}
 	parts := strings.Fields(parentLine)
 	if len(parts) != 2 {
-		return errors.New("candidate must have exactly one parent")
+		return "", "", errors.New("candidate must have exactly one parent")
 	}
 	parent := parts[1]
 	if ok, err := p.git(ctx, "merge-base", "--is-ancestor", parent, request.Target.BaseOID); err != nil || ok != "" { // successful git exits without output
 		if err != nil {
-			return errors.New("candidate parent is not an ancestor of epoch base")
+			return "", "", errors.New("candidate parent is not an ancestor of epoch base")
 		}
 	}
+	return candidate, parent, nil
+}
+
+func (p *NativeProviders) verifySubjectManifest(ctx context.Context, parent, candidate string, manifest SubjectManifest) error {
 	changed, err := p.changedPaths(ctx, parent, candidate)
 	if err != nil {
 		return err
@@ -146,15 +176,6 @@ func (p *NativeProviders) VerifySubject(ctx context.Context, request Request) er
 			return err
 		}
 	}
-	p.manifest, p.candidate = manifest, candidate
-	if p.requests == nil {
-		p.requests = make(map[string]Request)
-	}
-	key := request.Target.DeliveryBeadID
-	if key == "" {
-		key = makePrepared(request).DeliveryBeadID
-	}
-	p.requests[key] = request
 	return nil
 }
 

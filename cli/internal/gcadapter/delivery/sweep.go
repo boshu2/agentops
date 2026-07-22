@@ -87,25 +87,9 @@ func evidencePath(root, ref string) (string, error) {
 }
 
 func requestFromReference(root string, item ReadyDelivery) (Request, error) {
-	path, err := evidencePath(root, item.RequestPath)
+	wire, err := readExactDeliveryRequest(root, item)
 	if err != nil {
 		return Request{}, err
-	}
-	raw, err := os.ReadFile(path)
-	if err != nil {
-		return Request{}, err
-	}
-	sum := sha256.Sum256(raw)
-	if item.RequestDigest != hex.EncodeToString(sum[:]) {
-		return Request{}, errors.New("delivery request digest does not match exact bytes")
-	}
-	var wire deliveryRequest
-	if err := decodeStrict(raw, &wire); err != nil {
-		return Request{}, err
-	}
-	canonical, err := jsonCanonical(wire)
-	if err != nil || string(canonical) != string(raw) || wire.SchemaVersion != "delivery-request.v1" {
-		return Request{}, errors.New("delivery request is not canonical delivery-request.v1")
 	}
 	certificatePath, err := evidencePath(root, wire.CertificateRef)
 	if err != nil {
@@ -141,6 +125,30 @@ func requestFromReference(root string, item ReadyDelivery) (Request, error) {
 	}
 	request := Request{Root: root, Certificate: certificate, CertificateBytes: certificateBytes, CertificateDigest: wire.CertificateDigest, Target: Target{DeliveryBeadID: item.ID, SemanticBeadID: wire.SemanticBeadID, SemanticTerminalRef: wire.SemanticTerminalRef, RigID: wire.RigID, Repository: wire.Repository, Remote: wire.Remote, Epoch: wire.Epoch, Mode: wire.Mode, Deadline: wire.Deadline, PreparedAt: wire.PreparedAt, CommittedAt: wire.CommittedAt, BaseRef: wire.BaseRef, BaseOID: wire.BaseOID}, SubjectManifest: subject, SubjectBytes: subjectBytes, SubjectDigest: wire.SubjectDigest, NativeContext: native, NativeBytes: nativeBytes, NativeDigest: wire.NativeDigest}
 	return exactRequest(request)
+}
+
+func readExactDeliveryRequest(root string, item ReadyDelivery) (deliveryRequest, error) {
+	path, err := evidencePath(root, item.RequestPath)
+	if err != nil {
+		return deliveryRequest{}, err
+	}
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		return deliveryRequest{}, err
+	}
+	sum := sha256.Sum256(raw)
+	if item.RequestDigest != hex.EncodeToString(sum[:]) {
+		return deliveryRequest{}, errors.New("delivery request digest does not match exact bytes")
+	}
+	var wire deliveryRequest
+	if err := decodeStrict(raw, &wire); err != nil {
+		return deliveryRequest{}, err
+	}
+	canonical, err := jsonCanonical(wire)
+	if err != nil || string(canonical) != string(raw) || wire.SchemaVersion != "delivery-request.v1" {
+		return deliveryRequest{}, errors.New("delivery request is not canonical delivery-request.v1")
+	}
+	return wire, nil
 }
 
 // jsonCanonical is kept here so both request emission and loading use the
