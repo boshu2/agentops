@@ -10,6 +10,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"reflect"
 	"sort"
 	"strings"
 	"time"
@@ -21,7 +22,7 @@ import (
 // delivery binary. A caller cannot substitute an arbitrary lifecycle script:
 // Beads/GC own substrate state, git owns worktree effects, and gh is the sole
 // selected forge-native auto-merge actor.
-type NativeBinaries struct{ GC, Beads, Git, GH, Delivery string }
+type NativeBinaries struct{ GC, Beads, Git, GH, Bash, Delivery string }
 
 const (
 	canonicalToolchainLockDigest   = "aecc3e4b097e8e873f2a92478da4535b85bc70fdc31c9605aa4a4462a0482fa0"
@@ -38,14 +39,14 @@ type NativeProviders struct {
 	context   NativeContext
 	manifest  SubjectManifest
 	candidate string
-	request   Request
+	requests  map[string]Request
 	ghRun     func(context.Context, ...string) ([]byte, error)
 }
 
 func NewNativeProviders(binaries NativeBinaries, native NativeContext) (*NativeProviders, error) {
 	bound := map[string]string{
 		"gc": binaries.GC, "bd": binaries.Beads, "git": binaries.Git,
-		"gh": binaries.GH, "agentops-gc-delivery": binaries.Delivery,
+		"gh": binaries.GH, "bash": binaries.Bash, "agentops-gc-delivery": binaries.Delivery,
 	}
 	for name, value := range bound {
 		if !filepath.IsAbs(value) {
@@ -93,31 +94,64 @@ func (p *NativeProviders) VerifySubject(ctx context.Context, request Request) er
 	if len(request.SubjectBytes) == 0 {
 		return nil
 	}
+	if err := p.verifySubjectRequest(ctx, request); err != nil {
+		return err
+	}
+	candidate, parent, err := p.verifySubjectCandidate(ctx, request)
+	if err != nil {
+		return err
+	}
+	if err := p.verifySubjectManifest(ctx, parent, candidate, request.SubjectManifest); err != nil {
+		return err
+	}
+	p.manifest, p.candidate = request.SubjectManifest, candidate
+	if p.requests == nil {
+		p.requests = make(map[string]Request)
+	}
+	key := request.Target.DeliveryBeadID
+	if key == "" {
+		key = makePrepared(request).DeliveryBeadID
+	}
+	p.requests[key] = request
+	return nil
+}
+
+func (p *NativeProviders) verifySubjectRequest(ctx context.Context, request Request) error {
+	if request.NativeDigest == "" || !reflect.DeepEqual(request.NativeContext, p.context) {
+		return errors.New("delivery request native context does not match the controller binding")
+	}
 	if err := p.verifyRepository(ctx); err != nil {
 		return err
 	}
 	if overlap, err := pathsOverlap(p.context.WorktreeRoot, request.Root); err != nil || overlap {
 		return errors.New("ephemeral worktree root must be disjoint from evidence root")
 	}
-	manifest := request.SubjectManifest
+	return nil
+}
+
+func (p *NativeProviders) verifySubjectCandidate(ctx context.Context, request Request) (string, string, error) {
 	candidate := request.Certificate.Candidate.Commit
 	if tree, err := p.git(ctx, "rev-parse", candidate+"^{tree}"); err != nil || tree != request.Certificate.Candidate.Tree {
-		return errors.New("candidate tree differs from certificate")
+		return "", "", errors.New("candidate tree differs from certificate")
 	}
 	parentLine, err := p.git(ctx, "rev-list", "--parents", "-n", "1", candidate)
 	if err != nil {
-		return err
+		return "", "", err
 	}
 	parts := strings.Fields(parentLine)
 	if len(parts) != 2 {
-		return errors.New("candidate must have exactly one parent")
+		return "", "", errors.New("candidate must have exactly one parent")
 	}
 	parent := parts[1]
 	if ok, err := p.git(ctx, "merge-base", "--is-ancestor", parent, request.Target.BaseOID); err != nil || ok != "" { // successful git exits without output
 		if err != nil {
-			return errors.New("candidate parent is not an ancestor of epoch base")
+			return "", "", errors.New("candidate parent is not an ancestor of epoch base")
 		}
 	}
+	return candidate, parent, nil
+}
+
+func (p *NativeProviders) verifySubjectManifest(ctx context.Context, parent, candidate string, manifest SubjectManifest) error {
 	changed, err := p.changedPaths(ctx, parent, candidate)
 	if err != nil {
 		return err
@@ -142,7 +176,6 @@ func (p *NativeProviders) VerifySubject(ctx context.Context, request Request) er
 			return err
 		}
 	}
-	p.manifest, p.candidate, p.request = manifest, candidate, request
 	return nil
 }
 
@@ -182,41 +215,56 @@ func (p *NativeProviders) verifyComposedManifest(ctx context.Context, epoch stri
 // existing materializer output: its runtime gc/bd paths and hashes must agree
 // with the fixed executable bindings before a reducer can reach an effect.
 func verifyToolchainBindings(native NativeContext, bound map[string]string) error {
-	if native.ToolchainLock != canonicalToolchainLockDigest || native.SuccessorCapability != canonicalBeadsCapabilityDigest || native.BeadsRepresentation != "B-successor-delivery-bead" {
-		return errors.New("native context does not bind the repository toolchain and B-successor capability SOT")
-	}
-	lockPath := filepath.Join(native.RepositoryDir, "deploy", "gc", "toolchain.lock.json")
-	if err := fileHasDigest(lockPath, native.ToolchainLock); err != nil {
-		return fmt.Errorf("toolchain lock: %w", err)
-	}
-	capabilityPath := filepath.Join(native.RepositoryDir, "deploy", "gc", "beads-capability-selection.v1.json")
-	if err := fileHasDigest(capabilityPath, native.SuccessorCapability); err != nil {
-		return fmt.Errorf("successor capability: %w", err)
-	}
-	if err := fileHasDigest(native.ToolchainReceipt, native.ToolchainReceiptSum); err != nil {
-		return fmt.Errorf("toolchain receipt: %w", err)
-	}
-	lock, err := jsonObject(lockPath)
-	if err != nil {
-		return err
-	}
-	capability, err := jsonObject(capabilityPath)
-	if err != nil {
-		return err
-	}
-	receipt, err := jsonObject(native.ToolchainReceipt)
+	lock, capability, receipt, err := loadBoundToolchainDocuments(native)
 	if err != nil {
 		return err
 	}
 	if stringAt(capability, "selected_representation") != native.BeadsRepresentation || stringAt(capability, "toolchain", "lock_sha256") != native.ToolchainLock {
 		return errors.New("successor capability does not bind the selected locked representation")
 	}
+	if numberAt(receipt, "schema_version") != 3 || !exactObjectKeys(receipt, "runtime", []string{"agentops-gc-delivery", "ao", "bd", "gc"}) {
+		return errors.New("toolchain receipt is not the exact schema-3 runtime set")
+	}
+	if err := verifyNativeGCBDReceipts(native, bound, lock, receipt); err != nil {
+		return err
+	}
+	return verifyNativeAgentOpsReceipts(native, bound, receipt)
+}
+
+func loadBoundToolchainDocuments(native NativeContext) (map[string]any, map[string]any, map[string]any, error) {
+	if native.ToolchainLock != canonicalToolchainLockDigest || native.SuccessorCapability != canonicalBeadsCapabilityDigest || native.BeadsRepresentation != "B-successor-delivery-bead" {
+		return nil, nil, nil, errors.New("native context does not bind the repository toolchain and B-successor capability SOT")
+	}
+	lockPath := filepath.Join(native.RepositoryDir, "deploy", "gc", "toolchain.lock.json")
+	if err := fileHasDigest(lockPath, native.ToolchainLock); err != nil {
+		return nil, nil, nil, fmt.Errorf("toolchain lock: %w", err)
+	}
+	capabilityPath := filepath.Join(native.RepositoryDir, "deploy", "gc", "beads-capability-selection.v1.json")
+	if err := fileHasDigest(capabilityPath, native.SuccessorCapability); err != nil {
+		return nil, nil, nil, fmt.Errorf("successor capability: %w", err)
+	}
+	if err := fileHasDigest(native.ToolchainReceipt, native.ToolchainReceiptSum); err != nil {
+		return nil, nil, nil, fmt.Errorf("toolchain receipt: %w", err)
+	}
+	lock, err := jsonObject(lockPath)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+	capability, err := jsonObject(capabilityPath)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+	receipt, err := jsonObject(native.ToolchainReceipt)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+	return lock, capability, receipt, nil
+}
+
+func verifyNativeGCBDReceipts(native NativeContext, bound map[string]string, lock, receipt map[string]any) error {
 	for _, name := range []string{"gc", "bd"} {
 		binding := native.Executables[name]
-		receiptPath := stringAt(receipt, "runtime", name, "path")
-		if !filepath.IsAbs(receiptPath) {
-			receiptPath = filepath.Join(filepath.Dir(native.ToolchainReceipt), receiptPath)
-		}
+		receiptPath := runtimeReceiptPath(native.ToolchainReceipt, receipt, name)
 		if receiptPath != bound[name] || stringAt(receipt, "runtime", name, "sha256") != binding.Digest {
 			return errors.New("toolchain receipt does not bind native gc/bd bytes")
 		}
@@ -228,6 +276,60 @@ func verifyToolchainBindings(native NativeContext, bound map[string]string) erro
 		return errors.New("toolchain receipt source provenance is not a qualified lock pair")
 	}
 	return nil
+}
+
+func verifyNativeAgentOpsReceipts(native NativeContext, bound map[string]string, receipt map[string]any) error {
+	for _, name := range []string{"ao", "agentops-gc-delivery"} {
+		receiptPath := runtimeReceiptPath(native.ToolchainReceipt, receipt, name)
+		digest := stringAt(receipt, "runtime", name, "sha256")
+		if err := fileHasDigest(receiptPath, digest); err != nil {
+			return errors.New("toolchain receipt does not bind native AgentOps reducer bytes")
+		}
+		if name == "agentops-gc-delivery" && (receiptPath != bound[name] || digest != native.Executables[name].Digest) {
+			return errors.New("toolchain receipt does not bind native AgentOps reducer bytes")
+		}
+	}
+	if source, tree := stringAt(receipt, "runtime", "ao", "source_commit"), stringAt(receipt, "runtime", "ao", "cli_tree"); len(source) != 40 || len(tree) != 40 || source != stringAt(receipt, "runtime", "agentops-gc-delivery", "source_commit") || tree != stringAt(receipt, "runtime", "agentops-gc-delivery", "cli_tree") {
+		return errors.New("toolchain receipt does not bind one AgentOps source and CLI tree")
+	}
+	return nil
+}
+
+func runtimeReceiptPath(receiptPath string, receipt map[string]any, name string) string {
+	path := stringAt(receipt, "runtime", name, "path")
+	if filepath.IsAbs(path) {
+		return path
+	}
+	return filepath.Join(filepath.Dir(receiptPath), path)
+}
+
+func numberAt(object map[string]any, keys ...string) int {
+	var current any = object
+	for _, key := range keys {
+		mapped, ok := current.(map[string]any)
+		if !ok {
+			return -1
+		}
+		current = mapped[key]
+	}
+	value, ok := current.(float64)
+	if !ok || value != float64(int(value)) {
+		return -1
+	}
+	return int(value)
+}
+
+func exactObjectKeys(object map[string]any, key string, expected []string) bool {
+	mapped, ok := object[key].(map[string]any)
+	if !ok || len(mapped) != len(expected) {
+		return false
+	}
+	for _, item := range expected {
+		if _, ok := mapped[item]; !ok {
+			return false
+		}
+	}
+	return true
 }
 
 func fileHasDigest(path, want string) error {
@@ -454,9 +556,8 @@ type bdRecord struct {
 	ExternalRef string         `json:"external_ref"`
 	Metadata    map[string]any `json:"metadata"`
 }
-type ReadyDelivery struct{ ID, ReadyAt, Envelope string }
-type deliveryRequestPath struct {
-	SchemaVersion, CertificateDigest, SubjectDigest, NativeDigest string
+type ReadyDelivery struct {
+	ID, ReadyAt, RequestPath, RequestDigest string
 }
 
 func (p *NativeProviders) bd(ctx context.Context, args ...string) ([]bdRecord, error) {
@@ -539,7 +640,7 @@ func (p *NativeProviders) CreateDelivery(ctx context.Context, expected DeliveryB
 	if err != nil {
 		return DeliveryBead{}, err
 	}
-	requestEnvelope, err := p.canonicalRequestEnvelope()
+	requestEnvelope, err := p.createRequestEnvelope(expected)
 	if err != nil {
 		return DeliveryBead{}, err
 	}
@@ -610,12 +711,9 @@ func (p *NativeProviders) PublishRoute(ctx context.Context, id string) error {
 	if err != nil || !found || bead.Record.Publication != "published" || !isHex(bead.Record.Committed, 64) {
 		return errors.New("route publication lacks committed delivery.v1 envelope")
 	}
-	encoded, err := p.canonicalRequestEnvelope()
-	if err != nil {
-		return err
-	}
 	record, found, err := p.bead(ctx, id)
-	if err != nil || !found || metadataString(record, "gc.delivery_request") != encoded {
+	encoded := metadataString(record, "gc.delivery_request")
+	if err != nil || !found || encoded == "" {
 		return errors.New("route publication lacks its exact immutable request envelope")
 	}
 	if _, err := runNative(ctx, p.context.RepositoryDir, p.binaries.Beads, nil, "update", id, "--set-metadata", "gc.kind=delivery", "--set-metadata", "gc.routed_to=agentops.delivery"); err != nil {
@@ -631,13 +729,93 @@ func (p *NativeProviders) PublishRoute(ctx context.Context, id string) error {
 	return nil
 }
 
-func (p *NativeProviders) canonicalRequestEnvelope() (string, error) {
-	envelope := deliveryRequestPath{"gc.delivery.request-path.v1", p.request.CertificateDigest, p.request.SubjectDigest, p.request.NativeDigest}
-	if !isHex(envelope.CertificateDigest, 64) || !isHex(envelope.SubjectDigest, 64) || !isHex(envelope.NativeDigest, 64) {
-		return "", errors.New("delivery request path lacks exact digest binding")
+func (p *NativeProviders) createRequestEnvelope(expected DeliveryBead) (string, error) {
+	request, err := p.requestForDelivery(expected)
+	if err != nil {
+		return "", err
 	}
-	encoded, err := verdictcheck.CanonicalJSON(envelope)
+	if err := p.writeDeliveryRequest(expected.Record, request); err != nil {
+		return "", err
+	}
+	path := requestRefPath(expected.Record)
+	fullPath, err := evidencePath(request.Root, path)
+	if err != nil {
+		return "", err
+	}
+	bytes, err := os.ReadFile(fullPath)
+	if err != nil {
+		return "", err
+	}
+	sum := sha256.Sum256(bytes)
+	ref := deliveryRequestRef{SchemaVersion: "gc.delivery.request-ref.v1", Path: path, Digest: fmt.Sprintf("%x", sum)}
+	encoded, err := verdictcheck.CanonicalJSON(ref)
 	return string(encoded), err
+}
+
+func (p *NativeProviders) requestForDelivery(expected DeliveryBead) (Request, error) {
+	if p.requests == nil {
+		return Request{}, errors.New("delivery request material was not prevalidated")
+	}
+	if request, ok := p.requests[expected.ID]; ok {
+		return requestForRecord(request, expected.Record), nil
+	}
+	var source Request
+	found := false
+	for _, request := range p.requests {
+		probe := request
+		probe.Target.Epoch = 1
+		if makePrepared(probe).HandoffID != expected.Record.HandoffID {
+			continue
+		}
+		if found {
+			return Request{}, errors.New("delivery request material is ambiguous for successor")
+		}
+		source, found = request, true
+	}
+	if !found {
+		return Request{}, errors.New("delivery request material is absent for selected bead")
+	}
+	return requestForRecord(source, expected.Record), nil
+}
+
+func requestForRecord(request Request, record DeliveryRecord) Request {
+	request.Target.DeliveryBeadID = ""
+	request.Target.SemanticBeadID = record.SemanticBead
+	request.Target.SemanticTerminalRef = record.TerminalRef
+	request.Target.RigID, request.Target.Repository, request.Target.Remote = record.Rig, record.Repository, record.Remote
+	request.Target.Epoch, request.Target.Mode = record.Epoch.Number, record.Mode
+	request.Target.Deadline, request.Target.PreparedAt = record.Deadline, record.ReadyAt
+	request.Target.BaseRef, request.Target.BaseOID = record.Epoch.BaseRef, record.Epoch.BaseOID
+	return request
+}
+
+func deliveryRequestFor(record DeliveryRecord, request Request) deliveryRequest {
+	prefix := filepath.Join("handoffs", record.HandoffID)
+	return deliveryRequest{SchemaVersion: "delivery-request.v1", CertificateRef: filepath.Join(prefix, "certificate.json"), CertificateDigest: request.CertificateDigest, SubjectRef: filepath.Join(prefix, "subject-manifest.json"), SubjectDigest: request.SubjectDigest, NativeRef: filepath.Join(prefix, "native-context.json"), NativeDigest: request.NativeDigest, SemanticBeadID: record.SemanticBead, SemanticTerminalRef: record.TerminalRef, RigID: record.Rig, Repository: record.Repository, Remote: record.Remote, Epoch: record.Epoch.Number, Mode: record.Mode, Deadline: record.Deadline, PreparedAt: record.ReadyAt, CommittedAt: request.Target.CommittedAt, BaseRef: record.Epoch.BaseRef, BaseOID: record.Epoch.BaseOID}
+}
+
+func (p *NativeProviders) writeDeliveryRequest(record DeliveryRecord, request Request) error {
+	if request.Root == "" || !filepath.IsAbs(request.Root) || len(request.CertificateBytes) == 0 || len(request.SubjectBytes) == 0 || len(request.NativeBytes) == 0 {
+		return errors.New("delivery request material lacks exact evidence bytes")
+	}
+	prefix := filepath.Join("handoffs", record.HandoffID)
+	state := markerStore{root: request.Root, prefix: prefix}
+	if err := state.matchesBytes("certificate.json", request.CertificateBytes); err != nil {
+		return err
+	}
+	if err := state.writeBytesImmutable("subject-manifest.json", request.SubjectBytes); err != nil {
+		return err
+	}
+	if err := state.writeBytesImmutable("native-context.json", request.NativeBytes); err != nil {
+		return err
+	}
+	wire := deliveryRequestFor(record, request)
+	encoded, err := verdictcheck.CanonicalJSON(wire)
+	if err != nil {
+		return err
+	}
+	epoch := markerStore{root: request.Root, prefix: filepath.Dir(requestRefPath(record))}
+	return epoch.writeBytesImmutable(filepath.Base(requestRefPath(record)), encoded)
 }
 func (p *NativeProviders) RetireRoute(ctx context.Context, id string) error {
 	bead, found, err := p.FindDelivery(ctx, id)
@@ -652,6 +830,34 @@ func (p *NativeProviders) RetireRoute(ctx context.Context, id string) error {
 		return errors.New("route retirement did not reread empty route")
 	}
 	return nil
+}
+
+// RecordSweepFailure is intentionally native-only.  A deterministic bad
+// request is visible in the Beads-owned delivery state; cancellation or
+// process death never calls this method and therefore records nothing.
+func (p *NativeProviders) RecordSweepFailure(ctx context.Context, root, id string, cause error) error {
+	bead, found, err := p.FindDelivery(ctx, id)
+	if err != nil || !found {
+		return errors.New("delivery sweep failure could not reread selected bead")
+	}
+	if bead.Record.Publication != "published" || bead.Record.State == DeliveryStateStalled || bead.Record.State == DeliveryStateFailed || bead.Record.State == DeliveryStateCancelled || bead.Record.State == DeliveryStateLanded {
+		return nil
+	}
+	if root == "" || !filepath.IsAbs(root) {
+		return errors.New("delivery sweep failure has no controller evidence root")
+	}
+	state := markerStore{root: root, prefix: receiptNamespaceFor(bead.Record)}
+	receipt := DeliveryOutcomeReceipt{SchemaVersion: "delivery-outcome-receipt.v1", HandoffID: bead.Record.HandoffID, Epoch: bead.Record.Epoch.Number, State: DeliveryStateStalled, Reason: "sweep_prevalidation_failed"}
+	if err := state.writeImmutable("delivery-outcome.json", receipt); err != nil {
+		return err
+	}
+	want := bead.Record
+	want.State, want.Current, want.DeliveryOutcome, want.Revision = DeliveryStateStalled, receiptRef("delivery-outcome", state), receipt.Reason, bead.Record.Revision+1
+	if err := validDeliveryRecord(want); err != nil {
+		return err
+	}
+	_, err = p.StoreTransition(ctx, bead, want)
+	return err
 }
 func (p *NativeProviders) ReadyDeliveries(ctx context.Context, limit int) ([]ReadyDelivery, error) {
 	if limit < 1 || limit > 8 {
@@ -690,7 +896,15 @@ func selectReadyDeliveries(records []bdRecord, limit int) ([]ReadyDelivery, erro
 			return nil, err
 		}
 		if ok {
-			ready = append(ready, ReadyDelivery{ID: selected.record.ID, ReadyAt: selected.record.CreatedAt, Envelope: selected.envelope})
+			readyAt := selected.bead.Record.ReadyAt
+			if _, err := time.Parse(time.RFC3339, readyAt); err != nil {
+				return nil, errors.New("ready delivery has no schema ready_at")
+			}
+			var ref deliveryRequestRef
+			if err := decodeStrict([]byte(selected.envelope), &ref); err != nil || ref.SchemaVersion != "gc.delivery.request-ref.v1" || !safeRelativePath(ref.Path, false) || !isHex(ref.Digest, 64) {
+				return nil, errors.New("ready delivery has invalid request reference")
+			}
+			ready = append(ready, ReadyDelivery{ID: selected.record.ID, ReadyAt: readyAt, RequestPath: ref.Path, RequestDigest: ref.Digest})
 		}
 	}
 	sort.SliceStable(ready, func(i, j int) bool {
@@ -711,12 +925,12 @@ func readyDeliveryCandidateFromRecord(record bdRecord) (readyDeliveryCandidate, 
 		return readyDeliveryCandidate{}, err
 	}
 	envelope := metadataString(record, "gc.delivery_request")
-	var identity deliveryRequestPath
-	if err := decodeStrict([]byte(envelope), &identity); err != nil || identity.SchemaVersion != "gc.delivery.request-path.v1" || !isHex(identity.CertificateDigest, 64) || !isHex(identity.SubjectDigest, 64) || !isHex(identity.NativeDigest, 64) {
+	var identity deliveryRequestRef
+	if err := decodeStrict([]byte(envelope), &identity); err != nil || identity.SchemaVersion != "gc.delivery.request-ref.v1" || !safeRelativePath(identity.Path, false) || !isHex(identity.Digest, 64) {
 		return readyDeliveryCandidate{}, errors.New("ready delivery has invalid request envelope")
 	}
 	canonical, err := verdictcheck.CanonicalJSON(identity)
-	if err != nil || string(canonical) != envelope || record.CreatedAt == "" {
+	if err != nil || string(canonical) != envelope {
 		return readyDeliveryCandidate{}, errors.New("ready delivery request or ready time is non-canonical")
 	}
 	return readyDeliveryCandidate{record: record, bead: bead, envelope: envelope}, nil

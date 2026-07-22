@@ -45,7 +45,7 @@ an effort flag for Claude Fable 5.
 
    ```sh
    python3 <adapter_path> emit-role-v2 --request <request_path> \
-     --artifact <artifact_path>
+     --artifact <artifact_path> --bead <claimed-bead-id>
    ```
 
 6. Record the planning transport as a native Beads no-op, close only the

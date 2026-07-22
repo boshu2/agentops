@@ -1,22 +1,57 @@
 formula = "agentops-build"
-description = "Compile an admitted AgentOps build into separately drained experiment units."
+description = "Independently check one Fable build proposal for {{convoy_id}} before the one-shot feeder may admit its graph."
 
 [requires]
 formula_compiler = ">=2.0.0"
 
-[[steps]]
-id = "admit"
-title = "Admit the caller-supplied build graph"
-metadata = { "gc.run_target" = "agentops.mayor" }
+[vars]
+[vars.work_dir]
+description = "Absolute planning workspace prepared by the one-shot feeder"
+required = true
+[vars.role_adapter]
+description = "Absolute selected-pack role adapter"
+required = true
+[vars.mayor_request]
+description = "Absolute factory-role-request.v2 for Mayor"
+required = true
+[vars.plan_request]
+description = "Absolute future factory-role-request.v2 for Plan"
+required = true
+[vars.factory_check]
+description = "Absolute trusted city-projected controller check"
+required = true
 
 [[steps]]
-id = "drain-experiments"
-title = "Drain admitted experiment units into isolated sessions"
-needs = ["admit"]
-metadata = { "gc.run_target" = "agentops.implementer" }
+id = "admission"
+title = "Inert checked-build admission for {{convoy_id}}"
+description = "The one-shot feeder closes this only after the exact Mayor request and workflow identity are durable."
 
-[steps.drain]
-context = "separate"
-formula = "agentops-experiment"
-member_access = "exclusive"
-max_units = 20
+[[steps]]
+id = "mayor"
+title = "Fable Mayor proposes one exact program graph for {{convoy_id}}"
+description = "adapter_path={{role_adapter}}\nrequest_path={{mayor_request}}\nsource_convoy={{convoy_id}}"
+needs = ["admission"]
+metadata = { "gc.run_target" = "agentops.mayor", "work_dir" = "{{work_dir}}" }
+
+[steps.check]
+max_attempts = 1
+
+[steps.check.check]
+mode = "exec"
+path = "{{factory_check}}"
+timeout = "2m"
+
+[[steps]]
+id = "plan"
+title = "Fresh Sol-high validates the proposed graph for {{convoy_id}}"
+description = "adapter_path={{role_adapter}}\nrequest_path={{plan_request}}\nsource_convoy={{convoy_id}}"
+needs = ["mayor"]
+metadata = { "gc.run_target" = "rig/agentops.plan-reviewer", "work_dir" = "{{work_dir}}" }
+
+[steps.check]
+max_attempts = 1
+
+[steps.check.check]
+mode = "exec"
+path = "{{factory_check}}"
+timeout = "2m"

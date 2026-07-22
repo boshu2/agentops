@@ -1,0 +1,4 @@
+description = "Disabled generic Codex target; use the checked Implementer or Validator role."
+scope = "rig"
+provider = "codex"
+suspended = true

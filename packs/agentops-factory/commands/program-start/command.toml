@@ -1,0 +1,2 @@
+description = "Start one bounded AgentOps program from one exact source Bead"
+command = ["program", "start"]

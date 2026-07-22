@@ -1,0 +1,53 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agentops.local/schemas/graph-admission-receipt.v1.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "program_id", "program_digest", "plan_digest", "graph_digest", "graph_bead_ids", "context_path", "context_digest", "intent_path", "intent_digest", "packet_adapter", "factory_check", "attached_formulas", "nodes", "initial_admission_ids", "created_at"],
+  "properties": {
+    "schema_version": {"const": "graph-admission-receipt.v1"},
+    "program_id": {"type": "string", "minLength": 1},
+    "program_digest": {"$ref": "#/$defs/digest"},
+    "plan_digest": {"$ref": "#/$defs/digest"},
+    "graph_digest": {"$ref": "#/$defs/digest"},
+    "graph_bead_ids": {"type": "object", "minProperties": 1, "additionalProperties": {"type": "string", "minLength": 1}},
+    "context_path": {"$ref": "#/$defs/absolutePath"},
+    "context_digest": {"$ref": "#/$defs/digest"},
+    "intent_path": {"$ref": "#/$defs/absolutePath"},
+    "intent_digest": {"$ref": "#/$defs/digest"},
+    "packet_adapter": {"$ref": "#/$defs/absolutePath"},
+    "factory_check": {"$ref": "#/$defs/absolutePath"},
+    "attached_formulas": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}, "uniqueItems": true},
+    "nodes": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": {"$ref": "#/$defs/node"}
+    },
+    "initial_admission_ids": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}, "uniqueItems": true},
+    "created_at": {"type": "string", "format": "date-time"}
+  },
+  "$defs": {
+    "digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "absolutePath": {"type": "string", "pattern": "^/"},
+    "node": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["semantic_bead_id", "workflow_root_id", "workflow_steps", "work_dir", "implement_packet", "implement_packet_digest", "validate_packet", "predecessor_semantic_bead_ids"],
+      "properties": {
+        "semantic_bead_id": {"type": "string", "minLength": 1},
+        "workflow_root_id": {"type": "string", "minLength": 1},
+        "workflow_steps": {
+          "type": "object",
+          "minProperties": 9,
+          "maxProperties": 9,
+          "additionalProperties": {"type": "string", "minLength": 1}
+        },
+        "work_dir": {"$ref": "#/$defs/absolutePath"},
+        "implement_packet": {"$ref": "#/$defs/absolutePath"},
+        "implement_packet_digest": {"$ref": "#/$defs/digest"},
+        "validate_packet": {"$ref": "#/$defs/absolutePath"},
+        "predecessor_semantic_bead_ids": {"type": "array", "items": {"type": "string", "minLength": 1}, "uniqueItems": true}
+      }
+    }
+  }
+}

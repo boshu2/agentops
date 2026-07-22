@@ -1,0 +1,53 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agentops.local/schemas/semantic-terminal.v1.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "program_id", "program_digest", "node_id", "semantic_bead_id", "intent_digest", "status", "candidate_freeze_ref", "candidate_freeze_digest", "verdict_ref", "verdict_digest", "author_context_id", "validator_context_id", "error", "created_at"],
+  "properties": {
+    "schema_version": {"const": "semantic-terminal.v1"},
+    "program_id": {"type": "string", "minLength": 1},
+    "program_digest": {"$ref": "#/$defs/digest"},
+    "node_id": {"type": "string", "minLength": 1},
+    "semantic_bead_id": {"type": "string", "minLength": 1},
+    "intent_digest": {"$ref": "#/$defs/digest"},
+    "status": {"enum": ["PASS", "FAIL", "NOT_PROVEN", "NOT_BUILT"]},
+    "candidate_freeze_ref": {"oneOf": [{"type": "null"}, {"$ref": "#/$defs/absolutePath"}]},
+    "candidate_freeze_digest": {"oneOf": [{"type": "null"}, {"$ref": "#/$defs/digest"}]},
+    "verdict_ref": {"oneOf": [{"type": "null"}, {"$ref": "#/$defs/absolutePath"}]},
+    "verdict_digest": {"oneOf": [{"type": "null"}, {"$ref": "#/$defs/digest"}]},
+    "author_context_id": {"oneOf": [{"type": "null"}, {"type": "string", "minLength": 1}]},
+    "validator_context_id": {"oneOf": [{"type": "null"}, {"type": "string", "minLength": 1}]},
+    "error": {
+      "oneOf": [
+        {"type": "null"},
+        {"type": "object", "additionalProperties": false, "required": ["code", "message"], "properties": {"code": {"type": "string", "minLength": 1}, "message": {"type": "string", "minLength": 1}}}
+      ]
+    },
+    "created_at": {"type": "string", "format": "date-time"}
+  },
+  "allOf": [
+    {
+      "if": {"properties": {"status": {"enum": ["PASS", "FAIL"]}}},
+      "then": {"properties": {"candidate_freeze_ref": {"type": "string"}, "candidate_freeze_digest": {"type": "string"}, "verdict_ref": {"type": "string"}, "verdict_digest": {"type": "string"}, "author_context_id": {"type": "string"}, "validator_context_id": {"type": "string"}, "error": {"type": "null"}}}
+    },
+    {
+      "if": {"properties": {"status": {"const": "NOT_BUILT"}}},
+      "then": {"properties": {"candidate_freeze_ref": {"type": "null"}, "candidate_freeze_digest": {"type": "null"}, "verdict_ref": {"type": "null"}, "verdict_digest": {"type": "null"}, "validator_context_id": {"type": "null"}, "error": {"type": "object"}}}
+    },
+    {
+      "if": {"properties": {"status": {"const": "NOT_PROVEN"}}},
+      "then": {
+        "oneOf": [
+          {"properties": {"candidate_freeze_ref": {"type": "string"}, "candidate_freeze_digest": {"type": "string"}, "verdict_ref": {"type": "string"}, "verdict_digest": {"type": "string"}, "author_context_id": {"type": "string"}, "validator_context_id": {"type": "string"}, "error": {"type": "null"}}},
+          {"properties": {"candidate_freeze_ref": {"type": "string"}, "candidate_freeze_digest": {"type": "string"}, "verdict_ref": {"type": "null"}, "verdict_digest": {"type": "null"}, "author_context_id": {"type": "string"}, "validator_context_id": {"type": "string"}, "error": {"type": "object"}}},
+          {"properties": {"candidate_freeze_ref": {"type": "null"}, "candidate_freeze_digest": {"type": "null"}, "verdict_ref": {"type": "null"}, "verdict_digest": {"type": "null"}, "author_context_id": {"type": "string"}, "validator_context_id": {"type": "string"}, "error": {"type": "object"}}}
+        ]
+      }
+    }
+  ],
+  "$defs": {
+    "digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "absolutePath": {"type": "string", "pattern": "^/"}
+  }
+}

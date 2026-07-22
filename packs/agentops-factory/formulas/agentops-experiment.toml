@@ -1,16 +1,60 @@
 formula = "agentops-experiment"
-description = "Run one already-admitted AgentOps experiment with the selected cohort target."
+description = "Run one feeder-admitted AgentOps experiment for {{convoy_id}}; semantic terminalization precedes delivery."
 
 [requires]
 formula_compiler = ">=2.0.0"
 
+[vars]
+[vars.work_dir]
+description = "Absolute isolated candidate worktree"
+required = true
+[vars.implement_packet]
+description = "Absolute valid implement envelope"
+required = true
+[vars.validate_packet]
+description = "Absolute future validate envelope"
+required = true
+[vars.implement_target]
+description = "Explicit Terra-high or Opus-medium route"
+required = true
+[vars.packet_adapter]
+description = "Absolute selected-pack packet adapter"
+required = true
+[vars.factory_check]
+description = "Absolute trusted city-projected controller check"
+required = true
+
 [[steps]]
-id = "execute"
-title = "Execute one admitted experiment"
-metadata = { "gc.run_target" = "agentops.implementer" }
+id = "admission"
+title = "Inert admission gate for {{convoy_id}}"
+description = "The one-shot feeder closes this plain inert step only after every attachment and predecessor dependency is durable."
+
+[[steps]]
+id = "implement"
+title = "Execute the explicitly admitted experiment for {{convoy_id}}"
+description = "adapter_path={{packet_adapter}}\npacket_path={{implement_packet}}\nsource_convoy={{convoy_id}}"
+needs = ["admission"]
+metadata = { "gc.run_target" = "{{implement_target}}", "work_dir" = "{{work_dir}}", "gc.packet_path" = "{{implement_packet}}" }
+
+[steps.check]
+max_attempts = 1
+
+[steps.check.check]
+mode = "exec"
+path = "{{factory_check}}"
+timeout = "15m"
 
 [[steps]]
 id = "validate"
-title = "Fresh Sol validation for the exact subject"
-needs = ["execute"]
-metadata = { "gc.run_target" = "agentops.validator" }
+title = "Fresh Sol-high validates the exact subject for {{convoy_id}}"
+description = "adapter_path={{packet_adapter}}\npacket_path={{validate_packet}}\nsource_convoy={{convoy_id}}"
+needs = ["implement"]
+metadata = { "gc.run_target" = "rig/agentops.validator", "work_dir" = "{{work_dir}}", "gc.packet_path" = "{{validate_packet}}" }
+
+[steps.check]
+max_attempts = 1
+
+[steps.check.check]
+mode = "exec"
+path = "{{factory_check}}"
+timeout = "15m"

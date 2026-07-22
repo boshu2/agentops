@@ -124,7 +124,7 @@ with open(sys.argv[1], encoding="utf-8") as handle:
     receipt = json.load(handle)
 root = sys.argv[3]
 assert receipt["pair"]["gc"]["source_commit"] == sys.argv[2]
-assert receipt["schema_version"] == 2
+assert receipt["schema_version"] == 3
 assert receipt["runtime"]["gc"]["commit"] == sys.argv[2][:7]
 assert receipt["runtime"]["bd"]["commit"] == sys.argv[2][:7]
 assert receipt["runtime"]["gc"]["path"] == "bin/gc"
@@ -134,5 +134,8 @@ assert os.path.isfile(os.path.join(os.path.dirname(sys.argv[1]), "bin", "ao"))
 assert receipt["runtime"]["ao"]["source_commit"] == subprocess.check_output(["git", "-C", root, "rev-parse", "HEAD"], text=True).strip()
 assert receipt["runtime"]["ao"]["cli_tree"] == subprocess.check_output(["git", "-C", root, "rev-parse", "HEAD:cli"], text=True).strip()
 assert receipt["runtime"]["ao"]["build_version"]
+assert receipt["runtime"]["agentops-gc-delivery"]["path"] == "bin/agentops-gc-delivery"
+assert receipt["runtime"]["agentops-gc-delivery"]["source_commit"] == receipt["runtime"]["ao"]["source_commit"]
+assert receipt["runtime"]["agentops-gc-delivery"]["cli_tree"] == receipt["runtime"]["ao"]["cli_tree"]
 PY
 }

@@ -1,0 +1,4 @@
+description = "Disabled generic Codex target; AgentOps routes only explicit checked roles."
+scope = "city"
+provider = "codex"
+suspended = true

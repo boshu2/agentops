@@ -1,0 +1,74 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agentops.local/schemas/factory-build-context.v1.schema.json",
+  "title": "Immutable one-shot AgentOps build workflow context",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version", "program_id", "source_bead_id", "intent_path",
+    "intent_digest", "repository_dir", "base_ref", "base_oid", "root",
+    "workspace", "candidate_workspace_root", "packet_root", "max_parallel",
+    "graph_path", "mayor_request_path", "mayor_result_path",
+    "plan_request_path", "plan_result_path", "plan_artifact_path",
+    "workflow_root_id", "workflow_steps", "role_adapter", "packet_adapter",
+    "factory_check", "bd_bin", "gc_bin", "git_bin", "delivery", "created_at"
+  ],
+  "properties": {
+    "schema_version": {"const": "factory-build-context.v1"},
+    "program_id": {"$ref": "#/$defs/id"},
+    "source_bead_id": {"type": "string", "minLength": 1},
+    "intent_path": {"$ref": "#/$defs/absolute_path"},
+    "intent_digest": {"$ref": "#/$defs/digest"},
+    "repository_dir": {"$ref": "#/$defs/absolute_path"},
+    "base_ref": {"type": "string", "minLength": 1},
+    "base_oid": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+    "root": {"$ref": "#/$defs/absolute_path"},
+    "workspace": {"$ref": "#/$defs/absolute_path"},
+    "candidate_workspace_root": {"$ref": "#/$defs/absolute_path"},
+    "packet_root": {"$ref": "#/$defs/absolute_path"},
+    "max_parallel": {"type": "integer", "minimum": 1},
+    "graph_path": {"$ref": "#/$defs/absolute_path"},
+    "mayor_request_path": {"$ref": "#/$defs/absolute_path"},
+    "mayor_result_path": {"$ref": "#/$defs/absolute_path"},
+    "plan_request_path": {"$ref": "#/$defs/absolute_path"},
+    "plan_result_path": {"$ref": "#/$defs/absolute_path"},
+    "plan_artifact_path": {"$ref": "#/$defs/absolute_path"},
+    "workflow_root_id": {"type": "string", "minLength": 1},
+    "workflow_steps": {
+      "type": "object",
+      "additionalProperties": {"type": "string", "minLength": 1},
+      "required": [
+        "agentops-build", "agentops-build.admission", "agentops-build.mayor",
+        "agentops-build.mayor.spec", "agentops-build.mayor.iteration.1",
+        "agentops-build.plan", "agentops-build.plan.spec",
+        "agentops-build.plan.iteration.1", "agentops-build.workflow-finalize"
+      ],
+      "minProperties": 9,
+      "maxProperties": 9
+    },
+    "role_adapter": {"$ref": "#/$defs/absolute_path"},
+    "packet_adapter": {"$ref": "#/$defs/absolute_path"},
+    "factory_check": {"$ref": "#/$defs/absolute_path"},
+    "bd_bin": {"$ref": "#/$defs/absolute_path"},
+    "gc_bin": {"$ref": "#/$defs/absolute_path"},
+    "git_bin": {"$ref": "#/$defs/absolute_path"},
+    "delivery": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["native_context_path", "native_context_digest", "evidence_root", "mode", "deadline_seconds"],
+      "properties": {
+        "native_context_path": {"$ref": "#/$defs/absolute_path"},
+        "native_context_digest": {"$ref": "#/$defs/digest"},
+        "evidence_root": {"$ref": "#/$defs/absolute_path"},
+        "mode": {"enum": ["auto", "manual"]},
+        "deadline_seconds": {"type": "integer", "minimum": 300, "maximum": 604800}
+      }
+    },
+    "created_at": {"type": "string", "format": "date-time"}
+  },
+  "$defs": {
+    "id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"},
+    "digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "absolute_path": {"type": "string", "pattern": "^/"}
+  }
+}

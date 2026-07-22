@@ -3,6 +3,7 @@ package delivery
 import (
 	"context"
 	"crypto/sha256"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
@@ -10,9 +11,110 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/boshu2/agentops/cli/internal/verdictcheck"
 )
+
+func TestNativeProviderBindsEntireReducerReceiptAndGateExecutable(t *testing.T) {
+	root := t.TempDir()
+	repository := filepath.Join(root, "repository")
+	worktrees := filepath.Join(root, "worktrees")
+	beads := filepath.Join(repository, ".beads")
+	for _, directory := range []string{filepath.Join(repository, "deploy", "gc"), worktrees, beads, filepath.Join(root, "bin")} {
+		if err := os.MkdirAll(directory, 0o755); err != nil {
+			t.Fatal(err)
+		}
+	}
+	sourceRoot := filepath.Clean(filepath.Join("..", "..", "..", ".."))
+	for _, name := range []string{"toolchain.lock.json", "beads-capability-selection.v1.json"} {
+		raw, err := os.ReadFile(filepath.Join(sourceRoot, "deploy", "gc", name))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(filepath.Join(repository, "deploy", "gc", name), raw, 0o600); err != nil {
+			t.Fatal(err)
+		}
+	}
+	paths := map[string]string{}
+	bindings := map[string]ExecutableBinding{}
+	for _, name := range []string{"gc", "bd", "ao", "git", "gh", "bash", "agentops-gc-delivery"} {
+		path := filepath.Join(root, "bin", name)
+		raw := []byte("#!/bin/sh\n# " + name + "\nexit 0\n")
+		if err := os.WriteFile(path, raw, 0o700); err != nil {
+			t.Fatal(err)
+		}
+		sum := sha256.Sum256(raw)
+		paths[name] = path
+		bindings[name] = ExecutableBinding{Path: path, Digest: fmt.Sprintf("%x", sum)}
+	}
+	lockRaw, err := os.ReadFile(filepath.Join(repository, "deploy", "gc", "toolchain.lock.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var lock map[string]any
+	if err := json.Unmarshal(lockRaw, &lock); err != nil {
+		t.Fatal(err)
+	}
+	pair := lock["accepted_pairs"].([]any)[0]
+	receipt := map[string]any{
+		"schema_version": 3,
+		"pair":           pair,
+		"runtime": map[string]any{
+			"gc":                   map[string]any{"path": "bin/gc", "sha256": bindings["gc"].Digest},
+			"bd":                   map[string]any{"path": "bin/bd", "sha256": bindings["bd"].Digest},
+			"ao":                   map[string]any{"path": "bin/ao", "sha256": bindings["ao"].Digest, "source_commit": strings.Repeat("a", 40), "cli_tree": strings.Repeat("b", 40)},
+			"agentops-gc-delivery": map[string]any{"path": "bin/agentops-gc-delivery", "sha256": bindings["agentops-gc-delivery"].Digest, "source_commit": strings.Repeat("a", 40), "cli_tree": strings.Repeat("b", 40)},
+		},
+	}
+	receiptPath := filepath.Join(root, "toolchain.json")
+	writeReceipt := func() string {
+		t.Helper()
+		raw, err := json.Marshal(receipt)
+		if err != nil {
+			t.Fatal(err)
+		}
+		raw = append(raw, '\n')
+		if err := os.WriteFile(receiptPath, raw, 0o600); err != nil {
+			t.Fatal(err)
+		}
+		sum := sha256.Sum256(raw)
+		return fmt.Sprintf("%x", sum)
+	}
+	native := NativeContext{
+		SchemaVersion: "gc-delivery-native-context.v1", RigID: "agentops", Repository: "boshu2/agentops",
+		RepositoryDir: repository, WorktreeRoot: worktrees, BeadsDir: beads, Remote: "origin", BaseRef: "main",
+		SuccessorCapability: canonicalBeadsCapabilityDigest, ToolchainLock: canonicalToolchainLockDigest,
+		ToolchainReceipt: receiptPath, ToolchainReceiptSum: writeReceipt(), BeadsRepresentation: "B-successor-delivery-bead",
+		Executables:       map[string]ExecutableBinding{"gc": bindings["gc"], "bd": bindings["bd"], "git": bindings["git"], "gh": bindings["gh"], "bash": bindings["bash"], "agentops-gc-delivery": bindings["agentops-gc-delivery"]},
+		CheckOnlyGateArgv: [][]string{{paths["bash"], "scripts/check-gc-executor.sh"}},
+	}
+	binaries := NativeBinaries{GC: paths["gc"], Beads: paths["bd"], Git: paths["git"], GH: paths["gh"], Bash: paths["bash"], Delivery: paths["agentops-gc-delivery"]}
+	if _, err := NewNativeProviders(binaries, native); err != nil {
+		t.Fatalf("valid provider identity: %v", err)
+	}
+
+	receipt["runtime"].(map[string]any)["ao"].(map[string]any)["sha256"] = strings.Repeat("0", 64)
+	native.ToolchainReceiptSum = writeReceipt()
+	if _, err := NewNativeProviders(binaries, native); err == nil || !strings.Contains(err.Error(), "AgentOps reducer bytes") {
+		t.Fatalf("tampered ao receipt = %v", err)
+	}
+	receipt["runtime"].(map[string]any)["ao"].(map[string]any)["sha256"] = bindings["ao"].Digest
+	receipt["runtime"].(map[string]any)["extra"] = map[string]any{}
+	native.ToolchainReceiptSum = writeReceipt()
+	if _, err := NewNativeProviders(binaries, native); err == nil || !strings.Contains(err.Error(), "exact schema-3 runtime") {
+		t.Fatalf("expanded runtime receipt = %v", err)
+	}
+
+	delete(receipt["runtime"].(map[string]any), "extra")
+	native.ToolchainReceiptSum = writeReceipt()
+	native.CheckOnlyGateArgv = [][]string{{paths["git"], "status"}}
+	raw := canonicalWire(t, native)
+	sum := sha256.Sum256(raw)
+	if _, err := DecodeExactNativeContext(raw, fmt.Sprintf("%x", sum)); err == nil || !strings.Contains(err.Error(), "bound bash") {
+		t.Fatalf("unbound gate executable = %v", err)
+	}
+}
 
 func TestSelectReadyDeliveriesChoosesOneLeafAcrossRouteTransfer(t *testing.T) {
 	handoff := strings.Repeat("a", 64)
@@ -39,6 +141,9 @@ func TestSelectReadyDeliveriesChoosesOneLeafAcrossRouteTransfer(t *testing.T) {
 	ready, err := selectReadyDeliveries([]bdRecord{childRecord, parentRecord}, 2)
 	if err != nil || len(ready) != 1 || ready[0].ID != parentID {
 		t.Fatalf("pending child selection = %#v, %v", ready, err)
+	}
+	if ready[0].ReadyAt != parent.ReadyAt {
+		t.Fatalf("ready ordering time = %q, want schema ready_at %q", ready[0].ReadyAt, parent.ReadyAt)
 	}
 
 	child.Revision, child.Publication = 2, "published"
@@ -73,13 +178,68 @@ func TestSelectReadyDeliveriesRecoversLinkedPredecessorBeforeChildCreation(t *te
 	}
 }
 
+func TestDeliveryStatusScansBlockedNonRoutableAndSuccessorChains(t *testing.T) {
+	handoff := strings.Repeat("a", 64)
+	parentID, childID := "delivery-"+handoff[:20]+"-e000001", "delivery-"+handoff[:20]+"-e000002"
+	parent := statusRecord(handoff, 1, "2026-07-20T01:00:00Z")
+	parent.State, parent.Current, parent.Epoch.Head, parent.Epoch.Tree, parent.EpochSuccessorID = DeliveryStateRebaseNeeded, ReceiptRef{Path: "handoffs/" + handoff + "/epochs/000001/base-move.json", Digest: strings.Repeat("b", 64)}, strings.Repeat("1", 40), strings.Repeat("2", 40), childID
+	parent.Publication, parent.Committed = "published", strings.Repeat("f", 64)
+	child := statusRecord(handoff, 2, "2026-07-21T01:00:00Z")
+	child.Predecessor, child.PredecessorReceiptDigest, child.Epoch.LeaseOID, child.Committed = parentID, parent.Current.Digest, parent.Epoch.Head, parent.Committed
+
+	parentBead := readyBDRecord(t, parentID, "2026-07-22T01:00:00Z", "agentops.delivery", parent)
+	parentBead.Status = "blocked"
+	childBead := readyBDRecord(t, childID, "2026-07-22T02:00:00Z", "", child)
+	childBead.Status = "open" // pending successor is deliberately non-routable.
+	status, err := deliveryStatusFromRecords([]bdRecord{childBead, parentBead}, time.Date(2026, 7, 22, 3, 0, 0, 0, time.UTC))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if status.ObservedAt != "2026-07-22T03:00:00Z" || len(status.WIP) != 1 {
+		t.Fatalf("status = %#v", status)
+	}
+	got := status.WIP[0]
+	if got.DeliveryBeadID != parentID || got.BeadStatus != "blocked" || got.Route != "agentops.delivery" {
+		t.Fatalf("status WIP = %#v", got)
+	}
+	if got.ReadyAt != parent.ReadyAt {
+		t.Fatalf("status ready_at = %q, want minimum schema time %q", got.ReadyAt, parent.ReadyAt)
+	}
+	if got.AgeSeconds != 50*60*60 {
+		t.Fatalf("status age_seconds = %d, want caller-observed 180000", got.AgeSeconds)
+	}
+}
+
+func TestDeliveryStatusRejectsInvalidCanonicalRecordAndObservation(t *testing.T) {
+	handoff := strings.Repeat("a", 64)
+	record := readyBDRecord(t, "delivery-"+handoff[:20]+"-e000001", "2026-07-22T01:00:00Z", "", statusRecord(handoff, 1, "2026-07-21T01:00:00Z"))
+	record.Status = "open"
+	record.Metadata["gc.delivery_request"] = "{}"
+	if _, err := deliveryStatusFromRecords([]bdRecord{record}, time.Date(2026, 7, 22, 3, 0, 0, 0, time.UTC)); err == nil {
+		t.Fatal("status accepted invalid request envelope")
+	}
+	if _, err := deliveryStatusFromRecords(nil, time.Time{}); err == nil {
+		t.Fatal("status accepted caller-unattested observation time")
+	}
+}
+
+func statusRecord(handoff string, epoch int, readyAt string) DeliveryRecord {
+	return DeliveryRecord{
+		SchemaVersion: "gc.delivery.v1", Revision: 1, HandoffID: handoff,
+		Epoch: DeliveryEpoch{Number: epoch, BaseRef: "main", BaseOID: strings.Repeat("a", 40), Branch: "gc/delivery/" + handoff[:20]},
+		State: DeliveryStateQueued, Publication: "pending", ReadyAt: readyAt, Deadline: "2026-07-23T00:00:00Z",
+		SemanticBead: "semantic", TerminalRef: "beads:semantic#terminal", Certificate: strings.Repeat("c", 64),
+		Mode: "auto", Rig: "rig", Repository: "boshu2/agentops", Remote: "origin", Candidate: strings.Repeat("d", 40), Manifest: strings.Repeat("e", 64),
+	}
+}
+
 func readyBDRecord(t *testing.T, id, createdAt, route string, record DeliveryRecord) bdRecord {
 	t.Helper()
 	encoded, err := verdictcheck.CanonicalJSON(record)
 	if err != nil {
 		t.Fatal(err)
 	}
-	request, err := verdictcheck.CanonicalJSON(deliveryRequestPath{"gc.delivery.request-path.v1", strings.Repeat("1", 64), strings.Repeat("2", 64), strings.Repeat("3", 64)})
+	request, err := verdictcheck.CanonicalJSON(deliveryRequestRef{SchemaVersion: "gc.delivery.request-ref.v1", Path: fmt.Sprintf("handoffs/%s/epochs/%06d/delivery-request.json", record.HandoffID, record.Epoch.Number), Digest: strings.Repeat("1", 64)})
 	if err != nil {
 		t.Fatal(err)
 	}
