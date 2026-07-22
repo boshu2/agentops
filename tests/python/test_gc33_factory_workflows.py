@@ -107,7 +107,11 @@ class FactoryWorkflowTests(unittest.TestCase):
                     metadata.update({"gc.run_target": target, "gc.routed_to": target, "work_dir": "/work"})
             elif suffix in {"mayor", "plan", "implement", "validate"}:
                 controls[suffix] = f"{formula}-{suffix}"
-                metadata.update({"gc.kind": "ralph", "gc.step_id": suffix})
+                metadata.update({"gc.kind": "ralph", "gc.step_id": suffix,
+                                 "gc.routed_to": "core.control-dispatcher"})
+            elif suffix == "workflow-finalize":
+                metadata.update({"gc.kind": "workflow-finalize",
+                                 "gc.routed_to": "core.control-dispatcher"})
             rows.append({"id": f"{formula}-{suffix.replace('.', '-')}", "metadata": metadata})
         return rows
 
@@ -156,6 +160,86 @@ class FactoryWorkflowTests(unittest.TestCase):
         self.assertEqual(steps["agentops-build.mayor.iteration.1"], "agentops-build-mayor-iteration-1")
         self.assertEqual(records["agentops-build.plan.iteration.1"]["metadata"]["gc.step_ref"], "plan.iteration.1")
 
+    def test_control_dispatcher_routes_are_sealed_only_on_compiled_controls(self) -> None:
+        feeder = self.feeder()
+        rows = self.stable_workflow_rows("agentops-build", "build-root", self.routes())
+        original_all, original_run = feeder.all_beads, feeder.run_checked
+        updates: list[str] = []
+
+        def fake(argv, _cwd):
+            if argv[1] == "update":
+                row = next(item for item in rows if item["id"] == argv[2])
+                row["metadata"]["gc.routed_to"] = next(
+                    value.removeprefix("gc.routed_to=") for value in argv if value.startswith("gc.routed_to=")
+                )
+                row["metadata"]["gc.execution_rig_context"] = next(
+                    value.removeprefix("gc.execution_rig_context=") for value in argv if value.startswith("gc.execution_rig_context=")
+                )
+                updates.append(argv[2])
+                return canonical({"id": argv[2]})
+            if argv[1] == "show":
+                return canonical(next(item for item in rows if item["id"] == argv[2]))
+            raise AssertionError(argv)
+
+        feeder.all_beads = lambda *_args: rows
+        feeder.run_checked = fake
+        try:
+            _, records = feeder.workflow_rows("bd", Path("/repo"), "build-root", "agentops-build", feeder.BUILD_STEP_REF_MAP)
+            sealed = feeder.seal_compiled_control_dispatcher_routes("bd", Path("/repo"), "agentops-build", records, "named-rig")
+        finally:
+            feeder.all_beads, feeder.run_checked = original_all, original_run
+        controls = feeder.formula_control_references("agentops-build")
+        self.assertEqual(set(updates), {records[reference]["id"] for reference in controls})
+        for reference in controls:
+            metadata = sealed[reference]["metadata"]
+            self.assertEqual(metadata["gc.routed_to"], "named-rig/core.control-dispatcher")
+            self.assertEqual(metadata["gc.execution_rig_context"], "named-rig")
+        attempt = sealed["agentops-build.mayor.iteration.1"]["metadata"]
+        self.assertNotIn("gc.execution_rig_context", attempt)
+        self.assertEqual(attempt["gc.routed_to"], self.routes()["mayor"])
+
+    def test_control_dispatcher_route_rejects_foreign_compiler_drift(self) -> None:
+        feeder = self.feeder()
+        rows = self.stable_workflow_rows("agentops-experiment", "experiment-root", self.routes())
+        control = next(row for row in rows if row["metadata"].get("gc.step_ref") == "agentops-experiment.validate")
+        control["metadata"]["gc.routed_to"] = "other/core.control-dispatcher"
+        original = feeder.all_beads
+        feeder.all_beads = lambda *_args: rows
+        try:
+            _, records = feeder.workflow_rows("bd", Path("/repo"), "experiment-root", "agentops-experiment", feeder.EXPERIMENT_STEP_REF_MAP)
+            with self.assertRaisesRegex(feeder.FeederError, "foreign route"):
+                feeder.seal_compiled_control_dispatcher_routes("bd", Path("/repo"), "agentops-experiment", records, "named-rig")
+        finally:
+            feeder.all_beads = original
+
+    def test_control_dispatcher_route_requires_exact_persisted_reread(self) -> None:
+        feeder = self.feeder()
+        rows = self.stable_workflow_rows("agentops-build", "build-root", self.routes())
+        original_all, original_run = feeder.all_beads, feeder.run_checked
+        updates: list[str] = []
+
+        def fake(argv, _cwd):
+            if argv[1] == "update":
+                updates.append(argv[2])
+                return canonical({"id": argv[2]})
+            if argv[1] == "show":
+                return canonical(next(item for item in rows if item["id"] == argv[2]))
+            raise AssertionError(argv)
+
+        feeder.all_beads = lambda *_args: rows
+        feeder.run_checked = fake
+        try:
+            _, records = feeder.workflow_rows(
+                "bd", Path("/repo"), "build-root", "agentops-build", feeder.BUILD_STEP_REF_MAP,
+            )
+            with self.assertRaisesRegex(feeder.FeederError, "did not re-read"):
+                feeder.seal_compiled_control_dispatcher_routes(
+                    "bd", Path("/repo"), "agentops-build", records, "named-rig",
+                )
+        finally:
+            feeder.all_beads, feeder.run_checked = original_all, original_run
+        self.assertEqual(len(updates), 1)
+
     def test_workflow_rows_rejects_foreign_or_canonical_attempt_refs_and_bad_structure(self) -> None:
         feeder = self.feeder()
         cases: list[tuple[str, list[dict[str, object]]]] = []
@@ -195,12 +279,13 @@ class FactoryWorkflowTests(unittest.TestCase):
             tools = {}
             for name in ("bd", "gc", "git", "gh", "bash", "delivery", "role-adapter", "packet-adapter", "factory-check"):
                 path = root / name; path.write_text("#!/bin/sh\nexit 0\n", encoding="utf-8"); path.chmod(0o700); tools[name] = str(path.resolve())
-            state = {"cook": 0, "close": 0, "workspace": "", "mayor_request": "", "base": "a" * 40, "malformed": True}
+            state = {"cook": 0, "close": 0, "workspace": "", "mayor_request": "", "base": "a" * 40, "malformed": True, "sealed_controls": {}}
 
             def rows():
                 values = self.stable_workflow_rows("agentops-build", "workflow-1", self.routes())
                 for row in values:
                     metadata = row["metadata"]
+                    metadata.update(state["sealed_controls"].get(row["id"], {}))
                     description = ""
                     if metadata.get("gc.step_ref") == "mayor.iteration.1":
                         metadata.update({"work_dir": state["workspace"]})
@@ -225,6 +310,14 @@ class FactoryWorkflowTests(unittest.TestCase):
                     return canonical({"schema_version": "1", "ok": True, "formula": "agentops-build", "mode": "attach", "attach_bead_id": "source-1", "root_id": "workflow-1", "workflow_root_id": "workflow-1", "created": 9})
                 if argv[0] == tools["bd"] and argv[1] == "list":
                     return canonical(rows())
+                if argv[0] == tools["bd"] and argv[1] == "update":
+                    state["sealed_controls"][argv[2]] = {
+                        "gc.routed_to": next(value.removeprefix("gc.routed_to=") for value in argv if value.startswith("gc.routed_to=")),
+                        "gc.execution_rig_context": next(value.removeprefix("gc.execution_rig_context=") for value in argv if value.startswith("gc.execution_rig_context=")),
+                    }
+                    return canonical({"id": argv[2]})
+                if argv[0] == tools["bd"] and argv[1] == "show":
+                    return canonical(next(row for row in rows() if row["id"] == argv[2]))
                 if argv[0] == tools["bd"] and argv[1] == "close":
                     self.assertTrue(Path(state["mayor_request"]).is_file(), "request must exist before admission close")
                     state["close"] += 1
@@ -433,6 +526,7 @@ class FactoryWorkflowTests(unittest.TestCase):
                 rows = self.stable_workflow_rows("agentops-experiment", "experiment-root", self.routes())
                 for row in rows:
                     metadata = row["metadata"]
+                    metadata.update(state["sealed_controls"].get(row["id"], {}))
                     description = ""
                     if metadata.get("gc.step_ref") == "implement.iteration.1":
                         metadata.update({"work_dir": str(work_dir), "gc.packet_path": str(implement_packet)})
@@ -442,7 +536,7 @@ class FactoryWorkflowTests(unittest.TestCase):
                         description = "packet_path=" + str(validate_packet)
                     row.update({"status": "closed" if metadata.get("gc.step_ref") == "agentops-experiment.admission" and state["closed"] else "open", "assignee": None, "description": description})
                 return rows
-            state = {"created": False, "cooks": 0, "cooked": False, "closed": False}
+            state = {"created": False, "cooks": 0, "cooked": False, "closed": False, "sealed_controls": {}}
             original = feeder.run_checked
             original_workspace = feeder.prepare_node_workspace
             def fake(argv, _cwd):
@@ -462,6 +556,12 @@ class FactoryWorkflowTests(unittest.TestCase):
                     return canonical({"ok": True, "formula": "agentops-experiment", "attach_bead_id": "semantic-1", "workflow_root_id": "experiment-root"})
                 if argv[0] == tools["bd"] and argv[1:3] == ["dep", "list"]:
                     return b"[]\n"
+                if argv[0] == tools["bd"] and argv[1] == "update":
+                    state["sealed_controls"][argv[2]] = {
+                        "gc.routed_to": next(value.removeprefix("gc.routed_to=") for value in argv if value.startswith("gc.routed_to=")),
+                        "gc.execution_rig_context": next(value.removeprefix("gc.execution_rig_context=") for value in argv if value.startswith("gc.execution_rig_context=")),
+                    }
+                    return canonical({"id": argv[2]})
                 if argv[0] == tools["bd"] and argv[1] == "show":
                     if argv[2] == "semantic-1":
                         return canonical(semantic_row)

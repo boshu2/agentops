@@ -80,8 +80,14 @@ the executor pack supplies explicit suspended rig agents, so GC's documented
 "explicit wins" rule prevents those generic identities from being injected.
 Scaffold maintenance pools are suspended with ordinary patches because they
 already exist when patches run. Only roles explicitly supplied by the selected
-pack remain routable. Direct packet work uses the registered rig root. Factory Formula
-tasks instead stamp the exact absolute `work_dir` selected for that bead;
+pack remain routable. The city control dispatcher stays suspended; exactly the
+selected primary rig's `core.control-dispatcher` is active, while every extra
+rig dispatcher remains suspended. Immediately after each Formula cook, the
+feeder seals only the compiled control records to that rig's dispatcher and
+records its `gc.execution_rig_context`; it rejects foreign or incomplete
+routing before opening an admission gate. Direct packet work uses the
+registered rig root. Factory Formula tasks instead stamp the exact absolute
+`work_dir` selected for that bead;
 official GC v1.3.5 launches the fresh Terra/Opus/Sol session there. The 3.3
 factory does not create a second rig, Dolt server, or integration rig per
 candidate.

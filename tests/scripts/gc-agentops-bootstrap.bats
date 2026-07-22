@@ -314,6 +314,33 @@ for role, provider, qualified_name, scope, directory in (
         "provider": provider,
         "suspended": True,
     })
+city_controls = [
+    patch for patch in patches
+    if patch.get("name") == "core.control-dispatcher" and not patch.get("dir")
+]
+if city_controls != [{"name": "core.control-dispatcher", "suspended": True}]:
+    raise SystemExit("fake gc expected one suspended city control dispatcher")
+agents.append({
+    "name": "control-dispatcher",
+    "qualified_name": "core.control-dispatcher",
+    "dir": "",
+    "scope": "city",
+    "suspended": True,
+})
+for configured_rig in rigs:
+    directory = configured_rig["name"]
+    control_patches = [
+        patch for patch in patches
+        if patch.get("name") == "core.control-dispatcher" and patch.get("dir") == directory
+    ]
+    if len(control_patches) != 1 or not isinstance(control_patches[0].get("suspended"), bool):
+        raise SystemExit(f"fake gc expected one control dispatcher patch for {directory!r}")
+    agents.append({
+        "name": "control-dispatcher",
+        "qualified_name": f"{directory}/core.control-dispatcher",
+        "dir": directory,
+        "suspended": control_patches[0]["suspended"],
+    })
 for role, provider in (
     ("implementer", "codex"),
     ("implementer-claude", "claude"),
@@ -614,8 +641,8 @@ assert [
 assert not [patch for patch in patches if patch.get("name") in {"codex", "claude"}]
 assert [
     patch for patch in patches
-    if patch.get("name") == "core.control-dispatcher" and patch.get("dir") == "agentops" and patch.get("suspended") is True
-] == [{"dir": "agentops", "name": "core.control-dispatcher", "suspended": True}]
+    if patch.get("name") == "core.control-dispatcher" and patch.get("dir") == "agentops" and patch.get("suspended") is False
+] == [{"dir": "agentops", "name": "core.control-dispatcher", "suspended": False}]
 for role in ("implementer", "implementer-claude", "validator"):
     assert not [
         patch for patch in patches

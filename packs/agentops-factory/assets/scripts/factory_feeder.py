@@ -67,6 +67,26 @@ def formula_routes(rig_id: object) -> dict[str, str]:
     }
 
 
+def control_dispatcher_route(rig_id: object) -> tuple[str, str]:
+    """Return the one store-qualified Formula-v2 control route for this run."""
+    rig = sealed_rig_id(rig_id)
+    return f"{rig}/core.control-dispatcher", rig
+
+
+def formula_control_references(formula: str) -> dict[str, str]:
+    """Exact control-dispatcher-owned records synthesized by graph.v2 cook."""
+    if formula == "agentops-build":
+        roles = ("mayor", "plan")
+    elif formula == "agentops-experiment":
+        roles = ("implement", "validate")
+    else:
+        raise FeederError(f"unsupported workflow formula {formula!r}")
+    return {
+        **{f"{formula}.{role}": "ralph" for role in roles},
+        f"{formula}.workflow-finalize": "workflow-finalize",
+    }
+
+
 def validate_build_context(context: dict[str, Any]) -> None:
     validate_schema(context, "factory-build-context.v1.schema.json", "build context")
     if context.get("routes") != formula_routes(context.get("rig_id")):
@@ -246,6 +266,9 @@ def workflow_rows(bd_bin: str, root: Path, root_id: str, formula: str,
         if (attempt_meta.get("gc.step_id") != role or attempt_meta.get("gc.ralph_step_id") != role
                 or attempt_meta.get("gc.attempt") != "1" or attempt_meta.get("gc.logical_bead_id") != control["id"]):
             raise FeederError(f"workflow {root_id} {role} attempt metadata differs from stable Ralph contract")
+    finalizer = records[f"{formula}.workflow-finalize"]
+    if finalizer["metadata"].get("gc.kind") != "workflow-finalize":
+        raise FeederError(f"workflow {root_id} finalizer metadata differs from stable graph.v2 contract")
     return {key: str(row["id"]) for key, row in records.items()}, records
 
 
@@ -284,6 +307,60 @@ EXPERIMENT_STEP_REF_MAP = {
     "validate.iteration.1": "agentops-experiment.validate.iteration.1",
     "agentops-experiment.workflow-finalize": "agentops-experiment.workflow-finalize",
 }
+
+
+def seal_compiled_control_dispatcher_routes(bd_bin: str, root: Path, formula: str,
+                                            records: dict[str, dict[str, Any]], rig_id: object) -> dict[str, dict[str, Any]]:
+    """Bind every Formula-v2 control record to one sealed rig dispatcher.
+
+    GC v1.3.5 initially compiles controls with the known unqualified city
+    default.  The factory owns this post-cook bridge, but never overwrites an
+    arbitrary route or rig context: a foreign value is a failed admission.
+    Every target row is read again after mutation before any admission gate can
+    close.
+    """
+    route, context = control_dispatcher_route(rig_id)
+    controls = formula_control_references(formula)
+    if set(controls) - set(records):
+        raise FeederError(f"workflow {formula} is missing a compiled control record")
+    identifiers: list[str] = []
+    for reference, kind in controls.items():
+        row = records[reference]
+        identifier = row.get("id")
+        metadata = bead_metadata(row, f"compiled control {reference}")
+        if not isinstance(identifier, str) or not identifier or metadata.get("gc.kind") != kind:
+            raise FeederError(f"workflow {formula} has an invalid compiled control record {reference}")
+        if metadata.get("gc.routed_to") not in ("core.control-dispatcher", route):
+            raise FeederError(f"compiled control {reference} has a foreign route")
+        if metadata.get("gc.execution_rig_context") not in (None, context):
+            raise FeederError(f"compiled control {reference} has a foreign execution rig context")
+        identifiers.append(identifier)
+    if len(identifiers) != len(set(identifiers)):
+        raise FeederError(f"workflow {formula} has duplicate compiled control records")
+
+    sealed = dict(records)
+    for reference, kind in controls.items():
+        identifier = str(records[reference]["id"])
+        metadata = bead_metadata(records[reference], f"compiled control {reference}")
+        prior_route = metadata.get("gc.routed_to")
+        prior_context = metadata.get("gc.execution_rig_context")
+        if prior_route != route or prior_context != context:
+            run_checked([
+                bd_bin, "update", identifier,
+                "--set-metadata", "gc.routed_to=" + route,
+                "--set-metadata", "gc.execution_rig_context=" + context,
+                "--json",
+            ], root)
+        reread = show_bead(bd_bin, root, identifier, f"sealed compiled control {reference}")
+        reread_metadata = bead_metadata(reread, f"sealed compiled control {reference}")
+        if (reread_metadata.get("gc.kind") != kind
+                or any(reread_metadata.get(key) != metadata.get(key)
+                       for key in ("gc.step_ref", "gc.root_bead_id", "gc.step_id"))
+                or reread_metadata.get("gc.routed_to") != route
+                or reread_metadata.get("gc.execution_rig_context") != context):
+            raise FeederError(f"compiled control {reference} did not re-read with the sealed dispatcher binding")
+        sealed[reference] = reread
+    return sealed
 
 
 def executable(path: object, label: str) -> str:
@@ -447,6 +524,12 @@ def start(args: argparse.Namespace) -> int:
         }
         validate_build_context(context)
         atomic_write(context_path, context)
+
+    # This is deliberately immediately after the Formula cook/recovery read and
+    # before the inert admission can become eligible for a controller.
+    records = seal_compiled_control_dispatcher_routes(
+        bd_bin, root, "agentops-build", records, requested_rig_id,
+    )
 
     mayor_request = {
         "schema_version": "factory-role-request.v2", "request_id": program_id + ".mayor",
@@ -1865,6 +1948,9 @@ def admit(args: argparse.Namespace) -> int:
         if not isinstance(workflow_root, str) or not workflow_root:
             raise FeederError(f"gc formula cook returned no workflow root for {node['id']}")
         steps, records = workflow_rows(args.bd_bin, root, workflow_root, "agentops-experiment", EXPERIMENT_STEP_REF_MAP)
+        records = seal_compiled_control_dispatcher_routes(
+            args.bd_bin, root, "agentops-experiment", records, context["rig_id"],
+        )
         experiment_binding(records, steps, node, work_dir, implement_packet, validate_packet, routes)
         packet_raw = Path(implement_packet).read_bytes()
         admitted_nodes[node["id"]] = {
