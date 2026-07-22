@@ -267,12 +267,12 @@
       "reproduction": "Run status with that explicit telemetry configuration while the endpoint is closed.",
       "owner": "agentops",
       "fix_location": "AgentOps deployment telemetry configuration or optional-collector policy",
-      "build": "No build.",
-      "deterministic_test": "Bootstrap/resolved-config test must declare whether telemetry is disabled or reachable.",
-      "live_check": "No telemetry error during the bounded clean canary, or explicit disabled state.",
+      "build": "deploy/gc/invoke.sh reads the schema-5 bootstrap marker, verifies the exact GC digest, selects the private supervisor, projects the effective GC/BD signal pair or explicit disabled state, and clears the ambient generic OTLP fallback.",
+      "deterministic_test": "gc-agentops-invoke.bats seeds a conflicting localhost:4318 ambient endpoint and proves exact marker-bound GC/BD metrics/logs URLs, disabled-mode behavior, binary identity, and discovered-command argument forwarding.",
+      "live_check": "The bounded clean canary must use the managed invoker and produce native metrics/logs at the marker-bound endpoints without an ambient 4318 error.",
       "upstream": "Not a Gas City core or Beads defect.",
       "release_relevance": "3.3 OTel gate must either collect at the declared endpoint or prove an explicit intentional disabled state.",
-      "disposition": "Resolve in AgentOps configuration before live qualification."
+      "disposition": "Resolved in the AgentOps managed invocation boundary; direct ambient gc invocation remains outside the qualified deployment path."
     },
     {
       "id": "environment-production-rig-reserved-dolt-database",
