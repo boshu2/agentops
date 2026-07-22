@@ -50,8 +50,9 @@ The deployment is intentionally smaller than a traditional Gas Town:
   materialize SDK-defined generic targets after patch application, so explicit
   suspended city convention agents and executor-pack rig agents shadow those
   identities before GC's implicit-injection phase;
-- scaffold maintenance pools (`bd.dog` and `core.control-dispatcher`) are also
-  suspended so they cannot consume the execution-only city's session cap;
+- the scaffold `bd.dog`, city control dispatcher, and all non-primary rig
+  dispatchers are suspended; exactly the primary rig's providerless
+  `core.control-dispatcher` is active for Formula-v2 control work;
 - no always-on model session. The thin executor pack has no Mayor or Refiner;
   the optional factory pack exposes on-demand Fable Mayor and gated ambiguity
   sessions around the same packet boundary.
@@ -81,6 +82,14 @@ rejects an actual runtime that violates the requested fixed role policy or
 silently downgrades it; in particular validation is requested and actual
 Sol-high/Codex, and every fallback object is exactly `allowed=false`,
 `used=false`, and `reason=null`, never Terra-low.
+
+Stable GC v1.3.5 cooks Formula-v2 control rows with the unqualified city
+dispatcher route even when the workflow store is a rig. Before any admission
+gate opens, the one-shot feeder validates the exact compiled row set, rejects
+foreign routing, and seals only Ralph and workflow-finalize controls to
+`<rig>/core.control-dispatcher` with `gc.execution_rig_context=<rig>`. It then
+re-reads every mutation. Workflow roots, specs, and model attempts are not
+rewritten.
 
 ## SDK-owned configuration
 

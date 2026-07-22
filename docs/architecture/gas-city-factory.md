@@ -133,7 +133,8 @@ landing. A landed PR is still not a release verdict.
 - interactive Claude with inherited `print_args` cleared;
 - a deployment-pinned `GC_BIN` in workspace session environment;
 - explicit suspended Codex and Claude identities shadow GC's late generic-target injection;
-- scaffold Dog and control-dispatcher pools suspended; and
+- scaffold Dog, city dispatcher, and non-primary rig dispatchers suspended,
+  with exactly the primary rig's deterministic control dispatcher active; and
 - a configurable `workspace.max_active_sessions` (default one; the release
   canary admits only a width-two semantic graph and sizes total role capacity
   explicitly).
@@ -145,6 +146,15 @@ reconciles and verifies the primary executor roles' packet-workspace base, and
 optionally starts the city. Packet workspaces are directory names relative to
 that base, so the base is the registered rig's parent rather than the rig
 itself. It does not start a Mayor, run an experiment, or infer completion.
+
+Formula cook and control execution must resolve to the same Beads store.
+Official GC v1.3.5 initially decorates Formula-v2 control rows with the city
+route, while AgentOps cooks the workflow in the primary rig store. The feeder
+therefore treats route sealing as part of admission: it accepts only the known
+compiler route or the already sealed primary-rig route, updates the exact Ralph
+and workflow-finalize controls, stamps the rig execution context used by later
+attempts, and re-reads every row. A missing, duplicate, foreign, or partially
+persisted binding leaves admission closed.
 
 `deploy/gc/materialize-toolchain.sh` checks out and builds the exact source pair
 before bootstrap. An ambient or same-version unlisted binary cannot become the
@@ -439,10 +449,10 @@ must pass their gates before raising that cap.
 
 Dynamic worktree rigs are route-minimized from the bead's admitted
 `factory.binding`. A candidate rig exposes its admitted Terra/Opus writer and a
-fresh Sol Validator; linked delivery exposes no model route or integration rig. Rig
-registration and the durable suspension patches share a city-config lock, and
-dispatch stops unless the resolved active inventory is exactly the expected
-set.
+fresh Sol Validator; linked delivery exposes no model route or integration rig.
+Rig registration and the durable suspension patches share a city-config lock,
+and dispatch stops unless the resolved inventory contains exactly one active
+control dispatcher at the primary rig plus the expected model roles.
 
 AgentOps skills remain semantic sources of truth. Thin role prompts inject the
 appropriate Mayor, plan-review, Implement, or Validate skill.

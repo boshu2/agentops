@@ -239,8 +239,11 @@ default = "medium"
 # agents are injected only after patches are applied, so they cannot lawfully
 # be suspended with patches in GC v1.3.5. bootstrap.sh projects explicit,
 # suspended city convention agents and the executor pack supplies equivalent
-# rig agents; those exact identities shadow implicit injection. Only checked
-# AgentOps roles may consume bounded session capacity.
+# rig agents; those exact identities shadow implicit injection. The template
+# keeps the city control dispatcher suspended; after the primary rig import is
+# resolved, bootstrap activates exactly that rig's deterministic dispatcher and
+# leaves every other copy suspended. Only checked AgentOps roles may consume
+# model-backed session capacity.
 [[patches.agent]]
 name = "bd.dog"
 suspended = true
