@@ -32,9 +32,11 @@ PY
 IFS=$'\t' read -r gc_bin port otel_disabled <<<"$identity"
 [ -x "$gc_bin" ] || die "managed gc binary is unavailable"
 gc_bin_dir="$(dirname "$gc_bin")"
+GC_BIN="$gc_bin"
+export GC_BIN
 GC_HOME="$city/.gc-home"; PATH="$gc_bin_dir:$PATH"; export GC_HOME PATH
 export OTEL_SDK_DISABLED="$otel_disabled"
-"$gc_bin" --city "$city" stop >/dev/null 2>&1 || true
+"$gc_bin" --city "$city" stop --force >/dev/null 2>&1 || true
 "$gc_bin" supervisor stop --wait --wait-timeout "${wait_timeout}s" >/dev/null 2>&1 || true
 python3 - "$port" <<'PY'
 import socket,sys
@@ -43,14 +45,25 @@ try: s.connect(("127.0.0.1",int(sys.argv[1])))
 except OSError: raise SystemExit(0)
 raise SystemExit("private supervisor still accepts connections")
 PY
-python3 - "$city" "$$" "$PPID" <<'PY'
-import os,subprocess,sys
-root=os.path.realpath(sys.argv[1]); excluded={os.getpid(), *(int(x) for x in sys.argv[2:])}
-rows=subprocess.check_output(["ps","-axo","pid=,command="],text=True).splitlines()
-live=[]
-for row in rows:
-    fields=row.strip().split(None,1)
-    if len(fields)==2 and int(fields[0]) not in excluded and root in fields[1]: live.append(row.strip())
-if live: raise SystemExit("managed city processes remain:\n"+"\n".join(live))
+python3 - "$city" "$wait_timeout" "$$" "$PPID" <<'PY'
+import os,subprocess,sys,time
+root=os.path.realpath(sys.argv[1]); timeout=float(sys.argv[2])
+excluded={os.getpid(), *(int(x) for x in sys.argv[3:])}
+deadline=time.monotonic()+timeout; quiet_since=None; live=[]
+while True:
+    rows=subprocess.check_output(["ps","-axo","pid=,command="],text=True).splitlines()
+    live=[]
+    for row in rows:
+        fields=row.strip().split(None,1)
+        if len(fields)==2 and int(fields[0]) not in excluded and root in fields[1]: live.append(row.strip())
+    now=time.monotonic()
+    if live:
+        quiet_since=None
+    else:
+        quiet_since=quiet_since or now
+        if now-quiet_since >= .5 or now >= deadline: break
+    if now >= deadline:
+        raise SystemExit("managed city processes remain:\n"+"\n".join(live))
+    time.sleep(.1)
 PY
 printf 'Gas City stopped cleanly: %s\n' "$city"
