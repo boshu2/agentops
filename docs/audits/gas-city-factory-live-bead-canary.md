@@ -78,6 +78,25 @@ Dolt service, tmux socket, and city-scoped processes cleanly.
 
 ## Qualification boundary
 
+### 3.3 release canary entrypoint stop
+
+The first post-merge 3.3 release-canary entrypoint stopped before admission on
+2026-07-22. The exact landed subject was `faff55ac2a6df3fd862be100ff46df9f568bbb2c`
+with official GC `8ffc009ded781a2ada2077f3a29bd712b2def0bf` and official Beads
+`8e4e59d39f3459a43cf21a3236a13eca4dd874f7`. The deployment README put a
+literal `--` after the discovered `program start` leaf. GC correctly forwarded
+that literal argument; Python `argparse` treated it as the end of options and
+reported required `--source-bead` missing.
+
+No planning, program, semantic, delivery, or session bead was created; the
+disposable rig still contained only source bead `ag-blj`. The city then tore
+down cleanly. Required native telemetry had already produced eight GC/BD metric
+families and 21 structured log records through the verified VictoriaMetrics
+v1.148.0 and VictoriaLogs v1.52.0 assets. This is an AgentOps operator-entrypoint
+and regression-coverage defect, not a GC or Beads source defect. The stopped
+subject is `NOT_READY` and is not retried; a corrected subject must repeat the
+external qualification chain before another live attempt is authorized.
+
 Together these canaries prove the real single-bead protected-delivery path,
 provider interchange across author and judge roles, two simultaneous isolated
 writers with disjoint scopes, exact-subject validation, fenced integration,
