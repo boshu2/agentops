@@ -1374,15 +1374,19 @@ managed_patches = [
     '[[patches.agent]]\nname = "bd.dog"\nsuspended = true',
     '[[patches.agent]]\nname = "core.control-dispatcher"\nsuspended = true',
 ]
-for rig in live_config.get("rigs", []):
+configured_rigs = live_config.get("rigs", [])
+if [rig.get("name") for rig in configured_rigs].count(requested_rig_name) > 1:
+    raise SystemExit("managed city has duplicate selected primary rigs")
+for rig in configured_rigs:
     rig_name = rig.get("name")
     if not isinstance(rig_name, str) or not rig_name:
         raise SystemExit("managed city contains a rig without a name")
+    suspended = rig_name != requested_rig_name
     managed_patches.append(
         "[[patches.agent]]\n"
         f'dir = "{rig_name}"\n'
         'name = "core.control-dispatcher"\n'
-        "suspended = true"
+        f"suspended = {str(suspended).lower()}"
     )
 
 parts = [policy]
@@ -1422,8 +1426,9 @@ for rig in config.get("rigs", []):
         patch for patch in patches
         if patch.get("name") == "core.control-dispatcher" and patch.get("dir") == rig["name"]
     ]
-    if control_matches != [{"dir": rig["name"], "name": "core.control-dispatcher", "suspended": True}]:
-        raise SystemExit(f"rig {rig['name']!r} must suspend the scaffold control dispatcher")
+    expected = {"dir": rig["name"], "name": "core.control-dispatcher", "suspended": rig["name"] != requested_rig_name}
+    if control_matches != [expected]:
+        raise SystemExit(f"rig {rig['name']!r} has an invalid primary control dispatcher projection")
 workspace = config.get("workspace", {})
 session = config.get("session", {})
 codex_provider = config.get("providers", {}).get("codex", {})
@@ -2000,9 +2005,10 @@ else:
     raise SystemExit(f"could not locate TOML block for rig {rig_name!r}")
 PY
 
-# The scaffold control dispatcher exists before patches are applied. Generic
-# provider agents do not: the selected executor pack must shadow those later
-# implicit identities with explicit suspended rig agents.
+# The scaffold control dispatcher exists before patches are applied. Exactly
+# the selected primary rig owns its Formula-v2 control queue; the city and any
+# extra rigs remain suspended. Generic provider agents do not exist yet, so the
+# selected executor pack must shadow those later implicit identities explicitly.
 python3 - "$city/city.toml" "$rig_name" <<'PY'
 import os
 import sys
@@ -2020,9 +2026,9 @@ matches = [
     if patch.get("name") == provider_name and patch.get("dir") == rig_name
 ]
 if matches:
-    if len(matches) != 1 or matches[0].get("suspended") is not True:
+    if len(matches) != 1 or matches[0].get("suspended") is not False:
         raise SystemExit(
-            f"rig {rig_name!r} has an invalid managed {provider_name} suspension patch"
+            f"rig {rig_name!r} has an invalid managed primary {provider_name} patch"
         )
 else:
     if text and not text.endswith("\n"):
@@ -2031,7 +2037,7 @@ else:
         "\n[[patches.agent]]\n"
         f'dir = "{rig_name}"\n'
         f'name = "{provider_name}"\n'
-        "suspended = true\n"
+        "suspended = false\n"
     )
     changed = True
 if not changed:
@@ -2052,16 +2058,38 @@ trap 'rm -f "$executor_agents"' EXIT
 # GC v1.3.5 reads each task's absolute work_dir. The checked Formula stamps
 # that task field directly, so bootstrap must preserve the imported role
 # configs instead of patching a shared base directory around gc.pack_workspace.
-python3 - "$executor_agents" "$rig_name" "$binding" <<'PY'
+python3 - "$executor_agents" "$city/city.toml" "$rig_name" "$binding" <<'PY'
 import json
 import sys
+import tomllib
 
-path, rig_name, binding = sys.argv[1:]
+path, config_path, rig_name, binding = sys.argv[1:]
 with open(path, encoding="utf-8") as handle:
     value = json.load(handle)
 agents = value.get("agents") if isinstance(value, dict) else None
 if not isinstance(agents, list):
     raise SystemExit("gc agent list returned no agent inventory")
+with open(config_path, "rb") as handle:
+    config = tomllib.load(handle)
+if [rig.get("name") for rig in config.get("rigs", [])].count(rig_name) != 1:
+    raise SystemExit("effective city inventory has no unique selected primary rig")
+dispatchers = [
+    agent for agent in agents
+    if isinstance(agent, dict) and (
+        agent.get("qualified_name") == "core.control-dispatcher"
+        or (isinstance(agent.get("qualified_name"), str)
+            and agent["qualified_name"].endswith("/core.control-dispatcher"))
+    )
+]
+active_dispatchers = [agent for agent in dispatchers if agent.get("suspended") is False]
+expected_dispatcher = {
+    "qualified_name": f"{rig_name}/core.control-dispatcher",
+    "dir": rig_name,
+}
+if len(active_dispatchers) != 1 or any(
+    active_dispatchers[0].get(key) != value for key, value in expected_dispatcher.items()
+):
+    raise SystemExit("effective agent inventory must expose exactly one active primary rig control dispatcher")
 for role in ("implementer", "implementer-claude", "validator"):
     qualified_name = f"{rig_name}/{binding}.{role}"
     matches = [
