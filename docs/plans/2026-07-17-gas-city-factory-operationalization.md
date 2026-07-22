@@ -290,9 +290,10 @@ Implementation is limited to these ownership classes:
 
 - AgentOps GC deployment sources under `deploy/gc/`, including lock/provenance,
   bootstrap, teardown, reliability, and their generated qualification outputs;
-- focused `ao gc delivery` command and internal Go packages under `cli/cmd/ao/`
-  and `cli/internal/`, plus the generated command documentation owned by that
-  surface;
+- focused optional `agentops-gc-delivery` binary and its one typed adapter
+  package under `cli/cmd/agentops-gc-delivery/` and
+  `cli/internal/gcadapter/delivery/`; it is pack-selected delivery policy, not
+  an `ao` command or default-installed surface;
 - the `agentops-factory` and thin `agentops-executor` pack sources, including
   pack-generated schemas, command projections, role prompts, and doctor checks;
 - Gas City architecture, execution-adapter, operations, release, migration,
@@ -346,7 +347,7 @@ to change in one run.
 | GC33-3 Role pack | Install only the approved Fable/Sol/Terra/Opus/Luna matrix, native sling/claim paths, and exact runtime attestation. |
 | GC33-4 Isolation/routing | Prove disjoint width-two writers, conflict-domain serialization, worktree/process containment, writer-pool capacity policy, disjoint delivery/ambiguity schemas, construction-interleaving safety, composed-config predicate isolation, and zero clean-path Refiner wakes. |
 | GC33-5 Merge selection | Record forge protection and distinct identity authority; run bounded controller-merge versus forge-auto conformance probes on protected fixture branches; select exactly one engine and delete the loser. |
-| GC33-6 Thin vertical slice | Implement certificate -> prepared handoff -> non-routable linked bead -> committed publication -> fake-forge branch preparation -> PR create/adopt. Enforce the complexity and prohibited-surface tripwires before continuing. |
+| GC33-6 Thin vertical slice | Implement the separately built optional `agentops-gc-delivery` adapter: exact certificate bytes -> prepared handoff -> route-empty linked bead -> validated published payload -> committed marker -> exact delivery route -> fake branch -> fake PR. The rig-scoped cooldown Order invokes one reducer transition through explicit pinned reducer and `GC_BIN` paths. No `ao gc`, default install, real forge, CI, moving-main, merge, daemon, or scheduler; enforce the complexity tripwire before continuing. |
 | GC33-7 Crash-only Refinery | Complete the typed one-step reducer, moving-main epochs, current-base gates, PR adoption, selected merge actor, landed verification, auto/manual modes, liveness, repair/fresh-verdict, successor, and bounded infrastructure lanes. Port only allowlisted helpers and delete the old lifecycle center and obsolete routes before qualification. |
 | GC33-8 OTel baseline | Enable both native signal paths, reachability/degraded policy, and qualification receipts without making telemetry lifecycle authority. |
 | GC33-9 External qualification | Run deterministic transition, handoff, route, Git/forge, authority, replay, deadline, provenance-differential, inventory/deletion, kill-anywhere, and cold-resurrection gates from clean external Codex/shell. Qualification fails if opposite-provider binding validation, integration-train lifecycle, clean-rebase Sol revalidation, or other superseded v17 authority remains normative. Generate and verify the exact-subject qualification capsule. |

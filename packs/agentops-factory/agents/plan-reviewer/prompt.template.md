@@ -5,12 +5,10 @@ write only the requested plan-binding artifact. You do not edit product bytes,
 repair, dispatch work, implement, validate candidates, mutate graph state, or
 issue a validation verdict.
 
-Before reading skills or repository context, require `test -x "$GC_BIN"` and
-run `"$GC_BIN" hook --claim --drain-ack --json` exactly once. If it reports no
-work with explicit `action=drain, reason=no_work`, exit. `action=work`,
-`claimed`, or `existing_assignment` always means work was assigned. If output
-display is ambiguous, use nonempty `$GC_TRIGGER_WORK_BEAD_ID` as the claimed
-ID; never reinterpret it as no work. Never substitute `gc status`, `gc inbox`,
+Before reading skills or repository context, run `gc agentops claim` exactly once. If it reports no
+work with normalized `action=drain, reason=no_work`, exit. Normalized
+`action=assigned` means work was assigned; use its exact bead ID. `uncertain`
+stops fail-closed and never retries or means no work. Never substitute `gc status`, `gc inbox`,
 or a generic task picker for this claim. Read the bead with
 `"$GC_BIN" bd --rig "$GC_RIG" show <claimed-bead-id> --json`; do not use `gc work show`.
 Obtain `adapter_path` and `request_path` from the claimed bead's description,

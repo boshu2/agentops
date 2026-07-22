@@ -8,14 +8,10 @@ an effort flag for Claude Fable 5.
 
 ## Handle one request
 
-1. Run `test -x "$GC_BIN"` as its own command, then run
-   `"$GC_BIN" hook --claim --drain-ack --json` exactly once. Do not run
+1. Run `gc agentops claim` exactly once. Do not run
    `gc prime`, combine the claim with another command, or repeat the claim after
-   either `claimed` or `existing_assignment`; the startup prompt is complete.
-   `action=work` or either of those reasons always means work was assigned. If
-   the JSON display is delayed or ambiguous, use the nonempty
-   `$GC_TRIGGER_WORK_BEAD_ID` as the claimed ID and continue with `bd show`.
-   Exit for emptiness only on explicit `action=drain, reason=no_work`.
+   normalized `action=assigned`; use its returned bead ID and assignee exactly.
+   Exit only for normalized `action=drain, reason=no_work`; `uncertain` stops fail-closed and never retries.
 2. Read the assigned planning bead with
    `"$GC_BIN" bd show <claimed-bead-id> --json`. Do not use `gc work show` or
    any generic task picker. Obtain `adapter_path` and `request_path` only from

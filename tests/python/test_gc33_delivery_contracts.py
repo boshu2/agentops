@@ -36,10 +36,42 @@ class GC33DeliveryContractTest(unittest.TestCase):
         return {"allowed": allowed, "used": used, "reason": reason}
 
     def test_every_33_schema_is_a_valid_draft_2020_12_schema(self) -> None:
-        names = ("program-graph.v2.schema.json", "admission-certificate.v2.schema.json", "handoff-prepared.v1.schema.json", "handoff-committed.v1.schema.json", "delivery.v1.schema.json", "ambiguity-request.v1.schema.json", "epoch-receipt.v1.schema.json", "effect-receipt.v1.schema.json", "factory-role-request.v2.schema.json", "factory-role-response.v2.schema.json")
+        names = ("program-graph.v2.schema.json", "admission-certificate.v2.schema.json", "handoff-prepared.v1.schema.json", "handoff-committed.v1.schema.json", "delivery.v1.schema.json", "branch-receipt.v1.schema.json", "pr-open-receipt.v1.schema.json", "ambiguity-request.v1.schema.json", "epoch-receipt.v1.schema.json", "effect-receipt.v1.schema.json", "factory-role-request.v2.schema.json", "factory-role-response.v2.schema.json")
         for name in names:
             with self.subTest(name=name):
                 Draft202012Validator.check_schema(self.load(name))
+
+    def test_branch_and_pr_receipts_bind_exact_target_identity(self) -> None:
+        branch = {"schema_version": "branch-receipt.v1", "handoff_id": DIGEST, "epoch": 1, "rig_id": "rig", "repository": "boshu2/agentops", "remote": "origin", "branch": "delivery/abc", "base_ref": "main", "base_oid": "a" * 40, "expected_head": "b" * 40, "outcome": "created", "response_digest": "c" * 64}
+        pr = {"schema_version": "pr-open-receipt.v1", "handoff_id": DIGEST, "epoch": 1, "rig_id": "rig", "repository": "boshu2/agentops", "remote": "origin", "pr_id": "pr-abc", "branch": "delivery/abc", "base_ref": "main", "base_oid": "a" * 40, "expected_head": "b" * 40, "effect_id": "d" * 64, "outcome": "adopted", "response_digest": "c" * 64}
+        self.assertTrue(self.validator("branch-receipt.v1.schema.json").is_valid(branch))
+        self.assertTrue(self.validator("pr-open-receipt.v1.schema.json").is_valid(pr))
+        for schema, payload in (("branch-receipt.v1.schema.json", branch), ("pr-open-receipt.v1.schema.json", pr)):
+            broken = deepcopy(payload); broken["invented"] = True
+            self.assertFalse(self.validator(schema).is_valid(broken))
+
+    def test_native_formula_and_one_step_order_surfaces_remain_pack_owned(self) -> None:
+        pack = ROOT / "packs" / "agentops-factory"
+        build = (pack / "formulas" / "agentops-build.toml").read_text(encoding="utf-8")
+        experiment = (pack / "formulas" / "agentops-experiment.toml").read_text(encoding="utf-8")
+        order = (pack / "orders" / "agentops-delivery-sweep.toml").read_text(encoding="utf-8")
+        script = (pack / "assets" / "scripts" / "delivery-step.sh").read_text(encoding="utf-8")
+        command = (pack / "commands" / "delivery-step" / "command.toml").read_text(encoding="utf-8")
+        self.assertIn('formula = "agentops-build"', build)
+        self.assertIn('formula = "agentops-experiment"', build)
+        self.assertIn('context = "separate"', build)
+        self.assertIn('max_units = 20', build)
+        self.assertIn('formula = "agentops-experiment"', experiment)
+        self.assertIn('command = ["delivery"]', command)
+        self.assertIn('trigger = "cooldown"', order)
+        self.assertIn('enabled = false', order)
+        self.assertIn('idempotent = false', order)
+        self.assertIn('AGENTOPS_GC_DELIVERY_BIN', script)
+        self.assertIn('GC_BIN', script)
+        self.assertIn('FIXTURE_STATE', script)
+        self.assertIn('must be an absolute executable', script)
+        self.assertNotIn('factory.py', script)
+        self.assertNotIn('ao gc', script)
 
     def test_actual_marker_artifacts_are_schema_conformant(self) -> None:
         cases = (("handoff-prepared.v1.schema.json", self.prepared()), ("delivery.v1.schema.json", self.delivery()), ("delivery.v1.schema.json", self.delivery("published")), ("handoff-committed.v1.schema.json", self.committed()))

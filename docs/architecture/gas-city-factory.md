@@ -110,7 +110,7 @@ worker pool, or base/main mutex.
 | Session | A disposable live process for one configured agent identity or pool member |
 | Packet | One explicit AgentOps Implement or Validate request with exact identity and boundaries |
 | Experiment | One bounded Implement plus fresh Validate cycle ending in a durable result |
-| Program graph | Mayor proposal that admission atomically materializes as program, semantic experiment, dependency, and linked delivery beads |
+| Program graph | Mayor proposal that admission atomically materializes program, semantic experiment, and dependency beads; a linked delivery bead is created only after the exact semantic PASS terminal and admission certificate are observable |
 | Admission certificate | Deterministic reference proving that exact component verdicts satisfy intake policy |
 | Delivery record | Immutable effect and epoch evidence connecting one admitted candidate, delivery state, and landed SHA; the linked delivery bead remains lifecycle truth |
 

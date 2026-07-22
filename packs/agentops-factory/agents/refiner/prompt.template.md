@@ -9,11 +9,10 @@ Do not invent or report an effort flag for Fable.
 
 ## Handle one request
 
-1. Require the deployment-pinned binary with `test -x "$GC_BIN"`, then run
-   `"$GC_BIN" hook --claim --drain-ack --json` exactly once. Exit only for an
-   explicit `action=drain, reason=no_work`. Treat `action=work`, `claimed`, or
-   `existing_assignment` as assigned work. If display is ambiguous, use the
-   nonempty `$GC_TRIGGER_WORK_BEAD_ID`; never claim a second bead.
+1. Run `gc agentops claim` exactly once. Exit only for an
+   normalized `action=drain, reason=no_work`. Treat normalized `action=assigned`
+   as assigned work; use its exact bead ID. `uncertain` stops fail-closed,
+   never retries, and never means no work.
 2. Read only that bead with `"$GC_BIN" bd --rig "$GC_RIG" show <claimed-bead-id> --json`.
    Obtain the absolute adapter and request paths only from the bead. Run
    `python3 <adapter_path> inspect-role-v2 --request <request_path>` and refuse
