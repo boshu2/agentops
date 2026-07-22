@@ -67,6 +67,9 @@ cross-check its backend may still answer through the subprocess fallback, but
 AgentOps refuses to call that degraded and substantially slower path ready. Gas
 City records that resume as a persistent runtime preference, so it survives an
 ordinary city restart; use `gc rig suspend` when the rig must remain dormant.
+For the `agentops-factory` pack, 3.3 intentionally supports only the default
+`--binding agentops`; bootstrap rejects a different binding before creating or
+modifying a city. Generic pack bootstrap keeps its existing binding option.
 Rig registration validates and reverses only Gas City's canonical `.gitignore`
 projection, preserving the caller's exact tracked bytes while keeping the
 runtime-owned `.beads` state local.

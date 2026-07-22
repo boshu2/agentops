@@ -295,6 +295,17 @@ codex_auth="$(canonical_path "$codex_auth")"
 [ -d "$rig" ] || die "rig directory does not exist: $rig"
 [ -d "$pack" ] || die "pack directory does not exist: $pack"
 [ -f "$pack/pack.toml" ] || die "pack.toml not found in pack directory: $pack"
+[ "$binding" = "agentops" ] || {
+  pack_name="$(python3 - "$pack/pack.toml" <<'PY'
+import sys
+import tomllib
+with open(sys.argv[1], "rb") as handle:
+    value = tomllib.load(handle)
+print(value.get("pack", {}).get("name", ""))
+PY
+)"
+  [ "$pack_name" != "agentops-factory" ] || die "AgentOps factory 3.3 requires --binding agentops"
+}
 [ -f "$codex_auth" ] || die "Codex auth file does not exist: $codex_auth"
 [ -r "$codex_auth" ] || die "Codex auth file is not readable: $codex_auth"
 if [ -e "$city" ] && [ ! -d "$city" ]; then

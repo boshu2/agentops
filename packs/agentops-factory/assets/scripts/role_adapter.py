@@ -419,7 +419,9 @@ def composed_route_doctor(overrides: dict[str, dict[str, Any]] | None = None,
         provider, scope = config.get("provider"), config.get("scope")
         if provider not in {"codex", "claude"} or scope not in {"city", "rig"}:
             problems.append(f"invalid provider or scope: {role}")
-        qualified = f"agentops.{role}" if scope == "city" else f"rig/agentops.{role}"
+        # This is a static binding-qualified inventory for role inspection.
+        # Formula cook receives sealed concrete rig targets from the feeder.
+        qualified = f"agentops.{role}"
         inventory[role] = {"qualified_name": qualified, "provider": provider, "scope": scope,
                            "work_query": config.get("work_query"), "sling_query": config.get("sling_query")}
     if overrides:

@@ -1192,6 +1192,17 @@ PY
   [ ! -e "$CITY/.gc/agentops-bootstrap.json" ]
 }
 
+@test "factory bootstrap rejects a non-default binding before city mutation" {
+  printf '%s\n' '[pack]' 'name = "agentops-factory"' 'schema = 2' >"$PACK/pack.toml"
+
+  run run_bootstrap --binding another
+
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"AgentOps factory 3.3 requires --binding agentops"* ]]
+  [ ! -e "$CITY" ]
+  [ ! -s "$FAKE_LOG" ]
+}
+
 @test "start is opt-in" {
   run run_bootstrap --start
   [ "$status" -eq 0 ]

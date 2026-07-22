@@ -47,8 +47,13 @@ class GC33FactoryMigrationTest(unittest.TestCase):
         composition = adapter.composed_route_doctor()
         self.assertTrue(composition["ok"], composition["reason"])
         self.assertEqual(set(composition["inventory"]), {"mayor", "plan-reviewer", "refiner", "implementer", "implementer-claude", "validator"})
+        self.assertEqual(composition["routes"], {
+            "mayor": "agentops.mayor", "plan-reviewer": "agentops.plan-reviewer",
+            "refiner": "agentops.refiner", "implementer": "agentops.implementer",
+            "implementer-claude": "agentops.implementer-claude", "validator": "agentops.validator",
+        })
         self.assertFalse(adapter.composed_route_doctor({"refiner": {"work_query": "ready+unassigned"}})["ok"])
-        self.assertFalse(adapter.composed_route_doctor(delivery_route="rig/agentops.refiner")["ok"])
+        self.assertFalse(adapter.composed_route_doctor(delivery_route="agentops.refiner")["ok"])
 
     def test_explicit_suspended_agents_shadow_late_generic_injection(self) -> None:
         for path, scope, provider in (
@@ -127,7 +132,7 @@ class GC33FactoryMigrationTest(unittest.TestCase):
     def test_role_emission_rejects_silent_sol_downgrade(self) -> None:
         adapter = self.adapter()
         request = {"role": "plan", "requested": adapter.requested_role_policy("plan"), "workspace": Path("/work")}
-        session = {"id": "session", "provider": "codex", "template": "rig/agentops.plan-reviewer", "session_name": "plan-1", "state": "working", "model": "gpt-5.6-terra", "effort": "high", "reasoning": "high", "fallback": {"allowed": False, "used": False, "reason": None}}
+        session = {"id": "session", "provider": "codex", "template": "agentops/agentops.plan-reviewer", "session_name": "plan-1", "state": "working", "model": "gpt-5.6-terra", "effort": "high", "reasoning": "high", "fallback": {"allowed": False, "used": False, "reason": None}}
         with self.assertRaises(adapter.RoleAdapterError):
             adapter.validate_actual_identity(request, session)
 

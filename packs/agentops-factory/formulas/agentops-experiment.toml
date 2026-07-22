@@ -17,6 +17,9 @@ required = true
 [vars.implement_target]
 description = "Explicit Terra-high or Opus-medium route"
 required = true
+[vars.validate_target]
+description = "Exact rig-qualified Sol-high validation route"
+required = true
 [vars.packet_adapter]
 description = "Absolute selected-pack packet adapter"
 required = true
@@ -49,7 +52,7 @@ id = "validate"
 title = "Fresh Sol-high validates the exact subject for {{convoy_id}}"
 description = "adapter_path={{packet_adapter}}\npacket_path={{validate_packet}}\nsource_convoy={{convoy_id}}"
 needs = ["implement"]
-metadata = { "gc.run_target" = "rig/agentops.validator", "work_dir" = "{{work_dir}}", "gc.packet_path" = "{{validate_packet}}" }
+metadata = { "gc.run_target" = "{{validate_target}}", "work_dir" = "{{work_dir}}", "gc.packet_path" = "{{validate_packet}}" }
 
 [steps.check]
 max_attempts = 1

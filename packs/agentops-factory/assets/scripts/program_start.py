@@ -51,6 +51,12 @@ def exact_object(path: Path, expected_digest: str, label: str) -> dict[str, Any]
     return value
 
 
+def rig_id(value: object) -> str:
+    if not isinstance(value, str) or re.fullmatch(r"[A-Za-z0-9_-]+", value) is None:
+        raise ValueError("native delivery rig_id has an unsafe identity")
+    return value
+
+
 def nested_records(value: Any, identifier: str) -> list[dict[str, Any]]:
     matches: list[dict[str, Any]] = []
     if isinstance(value, list):
@@ -140,6 +146,7 @@ def main(argv: list[str] | None = None) -> int:
     factory_check = exact_file(str(Path(required("GC_CITY")) / ".gc/scripts/agentops-factory-check"), "factory check", executable=True)
     native_path = exact_file(required("AGENTOPS_GC_DELIVERY_NATIVE_CONTEXT"), "native delivery context")
     native = exact_object(native_path, required("AGENTOPS_GC_DELIVERY_NATIVE_CONTEXT_DIGEST"), "native delivery context")
+    native_rig_id = rig_id(native.get("rig_id"))
     requested_repository = Path(str(native.get("repository_dir", "")))
     if requested_repository.is_symlink():
         raise ValueError("native delivery repository must not be a symlink")
@@ -160,6 +167,7 @@ def main(argv: list[str] | None = None) -> int:
         "--max-parallel", str(args.max_parallel), "--bd-bin", str(bd_bin), "--gc-bin", str(gc_bin),
         "--git-bin", str(git_bin), "--role-adapter", str(role_adapter), "--packet-adapter", str(packet_adapter),
         "--factory-check", str(factory_check), "--created-at", created_at,
+        "--rig-id", native_rig_id,
     ]
     return subprocess.run(command, cwd=repository, check=False).returncode
 

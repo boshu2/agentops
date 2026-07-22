@@ -36,6 +36,7 @@ SCHEMA_ROOT = next(
     SCHEMA_CANDIDATES[0],
 )
 SAFE_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$")
+SAFE_RIG_ID = re.compile(r"^[A-Za-z0-9_-]+$")
 
 
 class FeederError(ValueError):
@@ -46,6 +47,30 @@ class PhaseFailure(FeederError):
     def __init__(self, code: str, message: str):
         super().__init__(message)
         self.code = code
+
+
+def sealed_rig_id(value: object, label: str = "rig_id") -> str:
+    if not isinstance(value, str) or SAFE_RIG_ID.fullmatch(value) is None:
+        raise FeederError(f"{label} has an unsafe identity")
+    return value
+
+
+def formula_routes(rig_id: object) -> dict[str, str]:
+    """Derive Formula-cook targets from the digest-bound native rig only."""
+    rig = sealed_rig_id(rig_id)
+    return {
+        "mayor": "agentops.mayor",
+        "plan": f"{rig}/agentops.plan-reviewer",
+        "implementer": f"{rig}/agentops.implementer",
+        "implementer_claude": f"{rig}/agentops.implementer-claude",
+        "validator": f"{rig}/agentops.validator",
+    }
+
+
+def validate_build_context(context: dict[str, Any]) -> None:
+    validate_schema(context, "factory-build-context.v1.schema.json", "build context")
+    if context.get("routes") != formula_routes(context.get("rig_id")):
+        raise FeederError("build context routes differ from its sealed rig_id")
 
 
 def canonical(value: Any) -> bytes:
@@ -155,25 +180,72 @@ def all_beads(bd_bin: str, root: Path) -> list[dict[str, Any]]:
     return value
 
 
-def workflow_rows(bd_bin: str, root: Path, root_id: str, expected_refs: set[str]) -> tuple[dict[str, str], dict[str, dict[str, Any]]]:
+def workflow_rows(bd_bin: str, root: Path, root_id: str, formula: str,
+                  persisted_to_canonical: dict[str, str]) -> tuple[dict[str, str], dict[str, dict[str, Any]]]:
     rows = all_beads(bd_bin, root)
+    expected_refs = set(persisted_to_canonical.values())
+    if (persisted_to_canonical.get(formula) != formula
+            or len(expected_refs) != len(persisted_to_canonical)):
+        raise FeederError("workflow reference map is not an exact one-to-one stable contract")
     matches: dict[str, list[dict[str, Any]]] = {reference: [] for reference in expected_refs}
+    selected: list[dict[str, Any]] = []
     for row in rows:
         metadata = row.get("metadata")
-        if not isinstance(metadata, dict):
+        if row.get("id") != root_id and (not isinstance(metadata, dict) or metadata.get("gc.root_bead_id") != root_id):
             continue
-        if row.get("id") != root_id and metadata.get("gc.root_bead_id") != root_id:
+        selected.append(row)
+    identifiers = [row.get("id") for row in selected]
+    if (not selected or any(not isinstance(identifier, str) or not identifier for identifier in identifiers)
+            or len(set(identifiers)) != len(identifiers)):
+        raise FeederError(f"workflow {root_id} has missing or duplicate row ids")
+    roots = [row for row in selected if row["id"] == root_id]
+    if len(roots) != 1:
+        raise FeederError(f"workflow {root_id} has no unique root row")
+    root_metadata = roots[0].get("metadata")
+    if (not isinstance(root_metadata, dict) or "gc.step_ref" in root_metadata
+            or "gc.root_bead_id" in root_metadata
+            or root_metadata.get("gc.kind") != "workflow"
+            or root_metadata.get("gc.formula_contract") != "graph.v2"):
+        raise FeederError(f"workflow {root_id} root is not an exact graph.v2 workflow")
+    matches[formula].append(roots[0])
+    for row in selected:
+        if row["id"] == root_id:
             continue
-        reference = metadata.get("gc.step_ref")
-        if row.get("id") == root_id and not isinstance(reference, str):
-            reference = min(expected_refs, key=len)
-        if reference not in matches:
-            raise FeederError(f"workflow {root_id} contains unknown step_ref {reference!r}")
-        matches[reference].append(row)
+        metadata = row.get("metadata")
+        if not isinstance(metadata, dict) or metadata.get("gc.root_bead_id") != root_id:
+            raise FeederError(f"workflow {root_id} nonroot lacks exact root identity")
+        persisted = metadata.get("gc.step_ref")
+        if not isinstance(persisted, str) or persisted not in persisted_to_canonical:
+            raise FeederError(f"workflow {root_id} contains unknown persisted step_ref {persisted!r}")
+        canonical_ref = persisted_to_canonical[persisted]
+        if canonical_ref == formula:
+            raise FeederError(f"workflow {root_id} nonroot claims the root reference")
+        matches[canonical_ref].append(row)
     if any(len(items) != 1 for items in matches.values()):
         counts = {key: len(items) for key, items in matches.items()}
         raise FeederError(f"workflow {root_id} is partial or duplicate: {counts}")
     records = {key: items[0] for key, items in matches.items()}
+    if formula == "agentops-build":
+        roles = ("mayor", "plan")
+    elif formula == "agentops-experiment":
+        roles = ("implement", "validate")
+    else:
+        raise FeederError(f"unsupported workflow formula {formula!r}")
+    for role in roles:
+        control = records[f"{formula}.{role}"]
+        spec = records[f"{formula}.{role}.spec"]
+        attempt = records[f"{formula}.{role}.iteration.1"]
+        control_meta = control["metadata"]
+        spec_meta = spec["metadata"]
+        attempt_meta = attempt["metadata"]
+        if control_meta.get("gc.kind") != "ralph" or control_meta.get("gc.step_id") != role:
+            raise FeederError(f"workflow {root_id} {role} control metadata differs from stable Ralph contract")
+        if (spec_meta.get("gc.kind") != "spec" or spec_meta.get("gc.spec_for") != role
+                or spec_meta.get("gc.spec_for_ref") != role):
+            raise FeederError(f"workflow {root_id} {role} spec metadata differs from stable source-spec contract")
+        if (attempt_meta.get("gc.step_id") != role or attempt_meta.get("gc.ralph_step_id") != role
+                or attempt_meta.get("gc.attempt") != "1" or attempt_meta.get("gc.logical_bead_id") != control["id"]):
+            raise FeederError(f"workflow {root_id} {role} attempt metadata differs from stable Ralph contract")
     return {key: str(row["id"]) for key, row in records.items()}, records
 
 
@@ -188,6 +260,29 @@ EXPERIMENT_STEP_REFS = {
     "agentops-experiment.implement.spec", "agentops-experiment.implement.iteration.1",
     "agentops-experiment.validate", "agentops-experiment.validate.spec",
     "agentops-experiment.validate.iteration.1", "agentops-experiment.workflow-finalize",
+}
+
+BUILD_STEP_REF_MAP = {
+    "agentops-build": "agentops-build",
+    "agentops-build.admission": "agentops-build.admission",
+    "agentops-build.mayor": "agentops-build.mayor",
+    "agentops-build.mayor.spec": "agentops-build.mayor.spec",
+    "mayor.iteration.1": "agentops-build.mayor.iteration.1",
+    "agentops-build.plan": "agentops-build.plan",
+    "agentops-build.plan.spec": "agentops-build.plan.spec",
+    "plan.iteration.1": "agentops-build.plan.iteration.1",
+    "agentops-build.workflow-finalize": "agentops-build.workflow-finalize",
+}
+EXPERIMENT_STEP_REF_MAP = {
+    "agentops-experiment": "agentops-experiment",
+    "agentops-experiment.admission": "agentops-experiment.admission",
+    "agentops-experiment.implement": "agentops-experiment.implement",
+    "agentops-experiment.implement.spec": "agentops-experiment.implement.spec",
+    "implement.iteration.1": "agentops-experiment.implement.iteration.1",
+    "agentops-experiment.validate": "agentops-experiment.validate",
+    "agentops-experiment.validate.spec": "agentops-experiment.validate.spec",
+    "validate.iteration.1": "agentops-experiment.validate.iteration.1",
+    "agentops-experiment.workflow-finalize": "agentops-experiment.workflow-finalize",
 }
 
 
@@ -213,7 +308,7 @@ def regular_file(path: object, label: str) -> str:
 
 
 def delivery_configuration(args: argparse.Namespace, root: Path, repository: Path, base_ref: str,
-                           gc_bin: str, bd_bin: str, git_bin: str) -> dict[str, Any]:
+                           gc_bin: str, bd_bin: str, git_bin: str) -> tuple[dict[str, Any], str]:
     def selected(attribute: str, environment: str) -> str:
         value = getattr(args, attribute, None) or os.environ.get(environment)
         if not isinstance(value, str) or not value:
@@ -253,10 +348,11 @@ def delivery_configuration(args: argparse.Namespace, root: Path, repository: Pat
         path = executable(binding["path"], f"native delivery {name}")
         if binding["digest"] != digest(Path(path).read_bytes()):
             raise FeederError(f"native delivery {name} digest differs from executable bytes")
-    return {
+    delivery = {
         "native_context_path": str(native_path), "native_context_digest": native_digest,
         "evidence_root": str(evidence_root), "mode": mode, "deadline_seconds": deadline_seconds,
     }
+    return delivery, sealed_rig_id(native.get("rig_id"), "native delivery rig_id")
 
 
 def close_inert_step(bd_bin: str, root: Path, record: dict[str, Any], reason: str) -> None:
@@ -275,6 +371,7 @@ def start(args: argparse.Namespace) -> int:
         raise FeederError("repository is not a directory")
     if root != repository:
         raise FeederError("factory root must be the selected rig repository")
+    requested_rig_id = sealed_rig_id(getattr(args, "rig_id", None), "--rig-id")
     intent_source = Path(args.intent).resolve(strict=True)
     if not intent_source.is_file() or intent_source.is_symlink():
         raise FeederError("intent source must be a regular file")
@@ -286,8 +383,11 @@ def start(args: argparse.Namespace) -> int:
     role_adapter = regular_file(args.role_adapter, "role adapter")
     packet_adapter = regular_file(args.packet_adapter, "packet adapter")
     factory_check = executable(args.factory_check, "factory check")
-    delivery = delivery_configuration(args, root, repository, args.base_ref, gc_bin, bd_bin, git_bin)
-    stable_identity = {"source_bead_id": args.source_bead, "intent_digest": intent_digest, "repository_dir": str(repository), "base_ref": args.base_ref, "delivery": delivery}
+    delivery, native_rig_id = delivery_configuration(args, root, repository, args.base_ref, gc_bin, bd_bin, git_bin)
+    if requested_rig_id != native_rig_id:
+        raise FeederError("--rig-id differs from the digest-bound native delivery rig_id")
+    routes = formula_routes(requested_rig_id)
+    stable_identity = {"source_bead_id": args.source_bead, "intent_digest": intent_digest, "repository_dir": str(repository), "base_ref": args.base_ref, "rig_id": requested_rig_id, "routes": routes, "delivery": delivery}
     program_id = "gc33-" + digest(canonical(stable_identity))[:24]
     workspace = root / ".gc" / "agentops" / "factory" / "builds" / program_id
     candidate_workspace_root = repository.parent / (repository.name + "-gc33-workers")
@@ -307,12 +407,12 @@ def start(args: argparse.Namespace) -> int:
     records: dict[str, dict[str, Any]]
     if context_path.exists():
         context, _ = read_exact(context_path)
-        validate_schema(context, "factory-build-context.v1.schema.json", "build context")
+        validate_build_context(context)
         if (any(context.get(key) != value for key, value in stable_identity.items())
                 or context.get("program_id") != program_id or context.get("max_parallel") != args.max_parallel):
             raise FeederError("existing build context belongs to different inputs")
         base_oid = context["base_oid"]
-        steps, records = workflow_rows(bd_bin, root, str(context["workflow_root_id"]), BUILD_STEP_REFS)
+        steps, records = workflow_rows(bd_bin, root, str(context["workflow_root_id"]), "agentops-build", BUILD_STEP_REF_MAP)
         if steps != context["workflow_steps"]:
             raise FeederError("existing build workflow identity changed")
     else:
@@ -324,6 +424,7 @@ def start(args: argparse.Namespace) -> int:
             gc_bin, "formula", "cook", "agentops-build", "--attach", args.source_bead,
             "--var", "work_dir=" + str(workspace), "--var", "role_adapter=" + role_adapter,
             "--var", "mayor_request=" + str(mayor_request_path), "--var", "plan_request=" + str(plan_request_path),
+            "--var", "mayor_target=" + routes["mayor"], "--var", "plan_target=" + routes["plan"],
             "--var", "factory_check=" + factory_check, "--json",
         ], root), "gc formula cook agentops-build")
         if not isinstance(cook, dict) or cook.get("ok") is not True or cook.get("formula") != "agentops-build" or cook.get("attach_bead_id") != args.source_bead:
@@ -331,7 +432,7 @@ def start(args: argparse.Namespace) -> int:
         workflow_root_id = cook.get("workflow_root_id") or cook.get("root_id")
         if not isinstance(workflow_root_id, str) or not workflow_root_id:
             raise FeederError("gc formula cook returned no workflow root")
-        steps, records = workflow_rows(bd_bin, root, workflow_root_id, BUILD_STEP_REFS)
+        steps, records = workflow_rows(bd_bin, root, workflow_root_id, "agentops-build", BUILD_STEP_REF_MAP)
         context = {
             "schema_version": "factory-build-context.v1", "program_id": program_id,
             **identity, "intent_path": str(intent_path), "root": str(root), "workspace": str(workspace),
@@ -344,7 +445,7 @@ def start(args: argparse.Namespace) -> int:
             "role_adapter": role_adapter, "packet_adapter": packet_adapter, "factory_check": factory_check,
             "bd_bin": bd_bin, "gc_bin": gc_bin, "git_bin": git_bin, "created_at": args.created_at,
         }
-        validate_schema(context, "factory-build-context.v1.schema.json", "build context")
+        validate_build_context(context)
         atomic_write(context_path, context)
 
     mayor_request = {
@@ -360,7 +461,10 @@ def start(args: argparse.Namespace) -> int:
     atomic_write(mayor_request_path, mayor_request)
     mayor_row = records["agentops-build.mayor.iteration.1"]
     mayor_meta = mayor_row.get("metadata") if isinstance(mayor_row.get("metadata"), dict) else {}
-    if mayor_meta.get("gc.run_target") != "agentops.mayor" or mayor_meta.get("work_dir") != str(workspace) or str(mayor_request_path) not in str(mayor_row.get("description", "")):
+    if (mayor_meta.get("gc.run_target") != context["routes"]["mayor"]
+            or mayor_meta.get("gc.routed_to") != context["routes"]["mayor"]
+            or mayor_meta.get("work_dir") != str(workspace)
+            or str(mayor_request_path) not in str(mayor_row.get("description", ""))):
         raise FeederError("effective Mayor step does not bind request, target, and work_dir")
     close_inert_step(bd_bin, root, records["agentops-build.admission"], "AgentOps checked build request admitted")
     print(json.dumps(context, sort_keys=True))
@@ -421,7 +525,7 @@ def load_build_context(role_request: dict[str, Any]) -> tuple[dict[str, Any], Pa
     workspace = Path(str(role_request.get("workspace", ""))).resolve(strict=True)
     context_path = workspace / "build-context.v1.json"
     context, _ = read_exact(context_path)
-    validate_schema(context, "factory-build-context.v1.schema.json", "build context")
+    validate_build_context(context)
     if context.get("workspace") != str(workspace) or context.get("program_id") != role_request.get("program_id"):
         raise FeederError("role request does not bind its immutable build context")
     if context.get("intent_digest") != role_request.get("intent_digest") or context.get("intent_path") != role_request.get("intent_source"):
@@ -510,7 +614,8 @@ def prepare_plan_request(role_request: dict[str, Any], response: dict[str, Any],
     raw = run_checked([context["bd_bin"], "show", plan_request["semantic_bead_id"], "--json"], Path(context["root"]))
     row = nested_record(parse_json(raw, "bd show Plan attempt"), plan_request["semantic_bead_id"])
     metadata = row.get("metadata") if isinstance(row, dict) and isinstance(row.get("metadata"), dict) else {}
-    if (row is None or metadata.get("gc.run_target") != "rig/agentops.plan-reviewer"
+    if (row is None or metadata.get("gc.run_target") != context["routes"]["plan"]
+            or metadata.get("gc.routed_to") != context["routes"]["plan"]
             or metadata.get("work_dir") != context["workspace"]
             or context["plan_request_path"] not in str(row.get("description", ""))):
         raise FeederError("effective Plan attempt does not bind its future request, target, and work_dir")
@@ -549,7 +654,7 @@ def packet_binding(pointer: dict[str, Any]) -> dict[str, Any]:
         raise PhaseFailure("packet_binding", "implement packet digest differs from immutable graph admission")
     context_path = Path(receipt["context_path"]).resolve(strict=True)
     context, context_raw = read_exact(context_path)
-    validate_schema(context, "factory-build-context.v1.schema.json", "build context")
+    validate_build_context(context)
     if digest(context_raw) != receipt["context_digest"] or digest(receipt_raw) != digest(receipt_path.read_bytes()):
         raise PhaseFailure("context_binding", "admission context or receipt changed")
     graph, graph_raw = read_exact(Path(context["graph_path"]).resolve(strict=True))
@@ -1587,18 +1692,20 @@ def adopted_graph_ids(bd_bin: str, root: Path, graph: dict[str, Any], program_di
 
 
 def experiment_binding(records: dict[str, dict[str, Any]], steps: dict[str, str], node: dict[str, Any],
-                       work_dir: str, implement_packet: str, validate_packet: str) -> None:
+                       work_dir: str, implement_packet: str, validate_packet: str, routes: dict[str, str]) -> None:
     implement = records["agentops-experiment.implement.iteration.1"]
     validate = records["agentops-experiment.validate.iteration.1"]
     implement_metadata = bead_metadata(implement, "effective Implement attempt")
     validate_metadata = bead_metadata(validate, "effective Validate attempt")
-    implement_target = "rig/agentops.implementer" if node["model"] == "terra" else "rig/agentops.implementer-claude"
+    implement_target = routes["implementer"] if node["model"] == "terra" else routes["implementer_claude"]
     if (implement_metadata.get("gc.run_target") != implement_target
+            or implement_metadata.get("gc.routed_to") != implement_target
             or implement_metadata.get("work_dir") != work_dir
             or implement_metadata.get("gc.packet_path") != implement_packet
             or implement_packet not in str(implement.get("description", ""))):
         raise FeederError(f"effective Implement attempt does not bind node {node['id']}")
-    if (validate_metadata.get("gc.run_target") != "rig/agentops.validator"
+    if (validate_metadata.get("gc.run_target") != routes["validator"]
+            or validate_metadata.get("gc.routed_to") != routes["validator"]
             or validate_metadata.get("work_dir") != work_dir
             or validate_metadata.get("gc.packet_path") != validate_packet
             or validate_packet not in str(validate.get("description", ""))):
@@ -1639,6 +1746,8 @@ def wire_predecessors(bd_bin: str, root: Path, admission_id: str, predecessors: 
 def reconcile_admission(receipt: dict[str, Any], args: argparse.Namespace, graph: dict[str, Any],
                         program_digest: str, plan_digest: str) -> None:
     validate_schema(receipt, "graph-admission-receipt.v1.schema.json", "graph admission receipt")
+    context, _ = read_exact(Path(args.context).resolve(strict=True))
+    validate_build_context(context)
     exact = {
         "program_id": graph["program_id"], "program_digest": program_digest,
         "plan_digest": plan_digest, "graph_digest": program_digest,
@@ -1664,10 +1773,10 @@ def reconcile_admission(receipt: dict[str, Any], args: argparse.Namespace, graph
         packet, packet_raw = read_exact(Path(recorded["implement_packet"]))
         if digest(packet_raw) != recorded["implement_packet_digest"] or packet.get("workspace") != recorded["work_dir"]:
             raise FeederError("recorded implement packet identity changed")
-        steps, records = workflow_rows(args.bd_bin, Path(args.root).resolve(), recorded["workflow_root_id"], EXPERIMENT_STEP_REFS)
+        steps, records = workflow_rows(args.bd_bin, Path(args.root).resolve(), recorded["workflow_root_id"], "agentops-experiment", EXPERIMENT_STEP_REF_MAP)
         if steps != recorded["workflow_steps"]:
             raise FeederError("recorded experiment workflow identity changed")
-        experiment_binding(records, steps, node, recorded["work_dir"], recorded["implement_packet"], recorded["validate_packet"])
+        experiment_binding(records, steps, node, recorded["work_dir"], recorded["implement_packet"], recorded["validate_packet"], context["routes"])
         predecessors = {identifiers[parent] for parent in node["depends_on"]}
         if sorted(predecessors) != recorded["predecessor_semantic_bead_ids"]:
             raise FeederError("recorded predecessor identity changed")
@@ -1687,7 +1796,7 @@ def admit(args: argparse.Namespace) -> int:
     plan, plan_raw = object_bytes(Path(args.plan), "plan review")
     program_id, program_digest, plan_digest = graph_request(graph, graph_raw, plan, plan_raw)
     context, context_raw = read_exact(Path(args.context).resolve(strict=True))
-    validate_schema(context, "factory-build-context.v1.schema.json", "build context")
+    validate_build_context(context)
     exact_context = {
         "root": str(root), "program_id": program_id, "graph_path": str(Path(args.graph).resolve(strict=True)),
         "plan_artifact_path": str(Path(args.plan).resolve(strict=True)), "intent_path": str(Path(args.intent).resolve(strict=True)),
@@ -1738,11 +1847,13 @@ def admit(args: argparse.Namespace) -> int:
         work_dir, implement_packet, validate_packet = prepare_node_workspace(
             args.git_bin, graph, node, program_digest, args.intent, args.packet_adapter, receipt_path,
         )
-        target = "rig/agentops.implementer" if node["model"] == "terra" else "rig/agentops.implementer-claude"
+        routes = context["routes"]
+        target = routes["implementer"] if node["model"] == "terra" else routes["implementer_claude"]
         cooked = parse_json(run_checked([
             args.gc_bin, "formula", "cook", "agentops-experiment", "--attach", graph_bead_ids[node["id"]],
             "--var", "work_dir=" + work_dir, "--var", "implement_packet=" + implement_packet,
             "--var", "validate_packet=" + validate_packet, "--var", "implement_target=" + target,
+            "--var", "validate_target=" + routes["validator"],
             "--var", "packet_adapter=" + str(Path(args.packet_adapter).resolve(strict=True)),
             "--var", "factory_check=" + str(Path(args.factory_check).resolve(strict=True)), "--json",
         ], root), f"gc formula cook agentops-experiment {node['id']}")
@@ -1753,8 +1864,8 @@ def admit(args: argparse.Namespace) -> int:
         workflow_root = cooked.get("workflow_root_id") or cooked.get("root_id")
         if not isinstance(workflow_root, str) or not workflow_root:
             raise FeederError(f"gc formula cook returned no workflow root for {node['id']}")
-        steps, records = workflow_rows(args.bd_bin, root, workflow_root, EXPERIMENT_STEP_REFS)
-        experiment_binding(records, steps, node, work_dir, implement_packet, validate_packet)
+        steps, records = workflow_rows(args.bd_bin, root, workflow_root, "agentops-experiment", EXPERIMENT_STEP_REF_MAP)
+        experiment_binding(records, steps, node, work_dir, implement_packet, validate_packet, routes)
         packet_raw = Path(implement_packet).read_bytes()
         admitted_nodes[node["id"]] = {
             "semantic_bead_id": graph_bead_ids[node["id"]], "workflow_root_id": workflow_root,
@@ -1807,6 +1918,7 @@ def parser() -> argparse.ArgumentParser:
     item.add_argument("--role-adapter", required=True)
     item.add_argument("--packet-adapter", required=True)
     item.add_argument("--factory-check", required=True)
+    item.add_argument("--rig-id", required=True)
     item.add_argument("--delivery-native-context")
     item.add_argument("--delivery-native-context-digest")
     item.add_argument("--delivery-root")
