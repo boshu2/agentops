@@ -270,7 +270,7 @@ class FactoryWorkflowTests(unittest.TestCase):
         # replay-adoptable workflow instead of an unbound duplicate.
         self.assertIn("{{convoy_id}}", experiment)
 
-    def test_start_binds_mayor_request_before_releasing_build_admission(self) -> None:
+    def test_start_binds_city_mayor_assignment_before_releasing_build_admission(self) -> None:
         feeder = self.feeder()
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
@@ -279,7 +279,8 @@ class FactoryWorkflowTests(unittest.TestCase):
             tools = {}
             for name in ("bd", "gc", "git", "gh", "bash", "delivery", "role-adapter", "packet-adapter", "factory-check"):
                 path = root / name; path.write_text("#!/bin/sh\nexit 0\n", encoding="utf-8"); path.chmod(0o700); tools[name] = str(path.resolve())
-            state = {"cook": 0, "close": 0, "workspace": "", "mayor_request": "", "base": "a" * 40, "malformed": True, "sealed_controls": {}}
+            state = {"cook": 0, "close": 0, "workspace": "", "mayor_request": "", "base": "a" * 40,
+                     "malformed": True, "sealed_controls": {}, "mayor_assignee": None, "mayor_assigns": 0}
 
             def rows():
                 values = self.stable_workflow_rows("agentops-build", "workflow-1", self.routes())
@@ -294,7 +295,9 @@ class FactoryWorkflowTests(unittest.TestCase):
                         metadata.update({"work_dir": state["workspace"]})
                     if state["malformed"] and metadata.get("gc.step_ref") == "mayor.iteration.1":
                         metadata["gc.step_ref"] = "agentops-build.mayor.iteration.1"
-                    row.update({"status": "closed" if metadata.get("gc.step_ref") == "agentops-build.admission" and state["close"] else "open", "assignee": None, "description": description})
+                    row.update({"status": "closed" if metadata.get("gc.step_ref") == "agentops-build.admission" and state["close"] else "open",
+                                "assignee": state["mayor_assignee"] if metadata.get("gc.step_ref") == "mayor.iteration.1" else None,
+                                "description": description})
                 return values
 
             original = feeder.run_checked
@@ -311,6 +314,11 @@ class FactoryWorkflowTests(unittest.TestCase):
                 if argv[0] == tools["bd"] and argv[1] == "list":
                     return canonical(rows())
                 if argv[0] == tools["bd"] and argv[1] == "update":
+                    if argv[2] == "agentops-build-mayor-iteration-1":
+                        self.assertEqual(argv[3:], ["--assignee", "agentops.mayor", "--json"])
+                        state["mayor_assignee"] = "agentops.mayor"
+                        state["mayor_assigns"] += 1
+                        return canonical({"id": argv[2]})
                     state["sealed_controls"][argv[2]] = {
                         "gc.routed_to": next(value.removeprefix("gc.routed_to=") for value in argv if value.startswith("gc.routed_to=")),
                         "gc.execution_rig_context": next(value.removeprefix("gc.execution_rig_context=") for value in argv if value.startswith("gc.execution_rig_context=")),
@@ -333,9 +341,16 @@ class FactoryWorkflowTests(unittest.TestCase):
                 state["malformed"] = False
                 with redirect_stdout(io.StringIO()):
                     self.assertEqual(feeder.start(args), 0)
+                self.assertEqual(state["mayor_assignee"], "agentops.mayor")
+                self.assertEqual(state["mayor_assigns"], 1)
                 state["base"] = "b" * 40
                 with redirect_stdout(io.StringIO()):
                     self.assertEqual(feeder.start(args), 0)
+                self.assertEqual(state["mayor_assigns"], 1, "exact Mayor assignment must be adopted")
+                state["mayor_assignee"] = "foreign.mayor"
+                with self.assertRaises(feeder.FeederError):
+                    feeder.start(args)
+                self.assertEqual(state["close"], 1, "foreign Mayor assignment must stop before admission close")
             finally:
                 feeder.run_checked = original
             self.assertEqual((state["cook"], state["close"]), (2, 1))
