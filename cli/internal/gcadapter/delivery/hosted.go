@@ -243,36 +243,58 @@ func (r *Reducer) prepareMergeArm(ctx context.Context, state markerStore, bead D
 }
 
 func (r *Reducer) advanceMergeArm(ctx context.Context, state markerStore, bead DeliveryBead, prepared Prepared, providers HostedDeliveryProviders) (Result, error) {
-	var gateReceipt GateReceipt
-	if found, err := state.read("hosted-gate.json", &gateReceipt); err != nil || !found || gateReceipt.GateDigest != bead.Record.GateDigest {
-		return Result{}, errors.New("merge_armed lacks exact hosted gate receipt")
-	}
-	arm := expectedMergeArm(bead, gateReceipt.Gate.ProtectionDigest)
-	var receipt MergeArmReceipt
-	if found, err := state.read("merge-arm.json", &receipt); err != nil || !found || receipt.Arm != arm || bead.Record.ArmID != arm.ID || bead.Record.AutoMergeEffectID != autoMergeEffectID(arm) {
-		return Result{}, errors.New("merge_armed lacks exact immutable arm intent")
+	arm, err := mergeArmForRecord(state, bead)
+	if err != nil {
+		return Result{}, err
 	}
 	gate, err := providers.HostedGate(ctx, bead.Record.PR)
 	if err != nil {
 		return Result{}, err
 	}
-	qualified, reason, err := qualifyHostedGate(gate, bead)
-	if err != nil {
-		return r.recordDeliveryOutcome(ctx, state, bead, DeliveryStateRepairWait, "protection_ambiguity")
-	}
-	if !qualified {
-		return Result{Status: "merge_armed", Reason: reason}, nil
-	}
-	if gate.AutoMergeEnabled && !hasOwnedAutoMergeAttempt(state.root, bead.Record) {
-		return r.recordDeliveryOutcome(ctx, state, bead, DeliveryStateRepairWait, "existing_auto_merge")
-	}
-	if digest, err := hostedGateDigest(gate); err != nil || digest != bead.Record.GateDigest {
-		return r.recordDeliveryOutcome(ctx, state, bead, DeliveryStateRepairWait, "protection_changed")
+	if result, done, err := r.reconcileMergeArmGate(ctx, state, bead, gate); err != nil || done {
+		return result, err
 	}
 	observation, err := providers.ObserveMerge(ctx, arm)
 	if err != nil {
 		return Result{}, err
 	}
+	return r.advanceMergeObservation(ctx, state, bead, prepared, providers, arm, observation)
+}
+
+func mergeArmForRecord(state markerStore, bead DeliveryBead) (MergeArm, error) {
+	var gateReceipt GateReceipt
+	if found, err := state.read("hosted-gate.json", &gateReceipt); err != nil || !found || gateReceipt.GateDigest != bead.Record.GateDigest {
+		return MergeArm{}, errors.New("merge_armed lacks exact hosted gate receipt")
+	}
+	arm := expectedMergeArm(bead, gateReceipt.Gate.ProtectionDigest)
+	var receipt MergeArmReceipt
+	if found, err := state.read("merge-arm.json", &receipt); err != nil || !found || receipt.Arm != arm || bead.Record.ArmID != arm.ID || bead.Record.AutoMergeEffectID != autoMergeEffectID(arm) {
+		return MergeArm{}, errors.New("merge_armed lacks exact immutable arm intent")
+	}
+	return arm, nil
+}
+
+func (r *Reducer) reconcileMergeArmGate(ctx context.Context, state markerStore, bead DeliveryBead, gate HostedGate) (Result, bool, error) {
+	qualified, reason, err := qualifyHostedGate(gate, bead)
+	if err != nil {
+		result, recordErr := r.recordDeliveryOutcome(ctx, state, bead, DeliveryStateRepairWait, "protection_ambiguity")
+		return result, true, recordErr
+	}
+	if !qualified {
+		return Result{Status: "merge_armed", Reason: reason}, true, nil
+	}
+	if gate.AutoMergeEnabled && !hasOwnedAutoMergeAttempt(state.root, bead.Record) {
+		result, recordErr := r.recordDeliveryOutcome(ctx, state, bead, DeliveryStateRepairWait, "existing_auto_merge")
+		return result, true, recordErr
+	}
+	if digest, err := hostedGateDigest(gate); err != nil || digest != bead.Record.GateDigest {
+		result, recordErr := r.recordDeliveryOutcome(ctx, state, bead, DeliveryStateRepairWait, "protection_changed")
+		return result, true, recordErr
+	}
+	return Result{}, false, nil
+}
+
+func (r *Reducer) advanceMergeObservation(ctx context.Context, state markerStore, bead DeliveryBead, prepared Prepared, providers HostedDeliveryProviders, arm MergeArm, observation MergeObservation) (Result, error) {
 	switch observation.State {
 	case "armed":
 		if bead.Record.AutoMergeAttempt.Path == "" && state.exists("auto-merge-attempt.json") {

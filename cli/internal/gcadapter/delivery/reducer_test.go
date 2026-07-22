@@ -1703,8 +1703,6 @@ func handoffID(t *testing.T, root string) string {
 	}
 	return artifact.HandoffID
 }
-func identifierForTest(parts ...string) string { return digest([]byte(strings.Join(parts, "\x00"))) }
-
 func digest(value []byte) string { sum := sha256.Sum256(value); return hex.EncodeToString(sum[:]) }
 
 func requestForTest(t *testing.T, root string) delivery.Request {

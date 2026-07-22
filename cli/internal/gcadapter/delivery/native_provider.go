@@ -668,62 +668,30 @@ func (p *NativeProviders) ReadyDeliveries(ctx context.Context, limit int) ([]Rea
 	return selectReadyDeliveries(records, limit)
 }
 
+type readyDeliveryCandidate struct {
+	record   bdRecord
+	bead     DeliveryBead
+	envelope string
+}
+
 func selectReadyDeliveries(records []bdRecord, limit int) ([]ReadyDelivery, error) {
-	type candidate struct {
-		record   bdRecord
-		bead     DeliveryBead
-		envelope string
-	}
-	byHandoff := map[string][]candidate{}
+	byHandoff := map[string][]readyDeliveryCandidate{}
 	for _, record := range records {
-		bead, err := deliveryFromBDRecord(record)
+		candidate, err := readyDeliveryCandidateFromRecord(record)
 		if err != nil {
 			return nil, err
 		}
-		envelope := metadataString(record, "gc.delivery_request")
-		var identity deliveryRequestPath
-		if err := decodeStrict([]byte(envelope), &identity); err != nil || identity.SchemaVersion != "gc.delivery.request-path.v1" || !isHex(identity.CertificateDigest, 64) || !isHex(identity.SubjectDigest, 64) || !isHex(identity.NativeDigest, 64) {
-			return nil, errors.New("ready delivery has invalid request envelope")
-		}
-		canonical, err := verdictcheck.CanonicalJSON(identity)
-		if err != nil || string(canonical) != envelope || record.CreatedAt == "" {
-			return nil, errors.New("ready delivery request or ready time is non-canonical")
-		}
-		byHandoff[bead.Record.HandoffID] = append(byHandoff[bead.Record.HandoffID], candidate{record: record, bead: bead, envelope: envelope})
+		byHandoff[candidate.bead.Record.HandoffID] = append(byHandoff[candidate.bead.Record.HandoffID], candidate)
 	}
 	ready := make([]ReadyDelivery, 0, len(byHandoff))
 	for _, chain := range byHandoff {
-		sort.Slice(chain, func(i, j int) bool { return chain[i].bead.Record.Epoch.Number < chain[j].bead.Record.Epoch.Number })
-		for index := range chain {
-			wantEpoch := index + 1
-			if chain[index].bead.Record.Epoch.Number != wantEpoch {
-				return nil, errors.New("delivery handoff has a non-contiguous epoch chain")
-			}
-			if index == 0 {
-				if chain[index].bead.Record.Predecessor != "" {
-					return nil, errors.New("delivery epoch one has a predecessor")
-				}
-				continue
-			}
-			parent, child := chain[index-1].bead, chain[index].bead
-			if child.Record.Predecessor != parent.ID || parent.Record.EpochSuccessorID != child.ID {
-				return nil, errors.New("delivery handoff successor chain is ambiguous")
-			}
+		selected, ok, err := selectReadyDelivery(chain)
+		if err != nil {
+			return nil, err
 		}
-		leaf := chain[len(chain)-1]
-		if leaf.bead.Record.EpochSuccessorID != "" {
-			if !recoverableAbsentSuccessor(leaf.bead) {
-				return nil, errors.New("delivery handoff leaf references an absent successor")
-			}
+		if ok {
+			ready = append(ready, ReadyDelivery{ID: selected.record.ID, ReadyAt: selected.record.CreatedAt, Envelope: selected.envelope})
 		}
-		selected := leaf
-		if leaf.bead.Record.Publication == "pending" && len(chain) > 1 {
-			selected = chain[len(chain)-2]
-		}
-		if !selectableDeliveryState(selected.bead.Record.State) {
-			continue
-		}
-		ready = append(ready, ReadyDelivery{ID: selected.record.ID, ReadyAt: selected.record.CreatedAt, Envelope: selected.envelope})
 	}
 	sort.SliceStable(ready, func(i, j int) bool {
 		if ready[i].ReadyAt != ready[j].ReadyAt {
@@ -735,6 +703,58 @@ func selectReadyDeliveries(records []bdRecord, limit int) ([]ReadyDelivery, erro
 		ready = ready[:limit]
 	}
 	return ready, nil
+}
+
+func readyDeliveryCandidateFromRecord(record bdRecord) (readyDeliveryCandidate, error) {
+	bead, err := deliveryFromBDRecord(record)
+	if err != nil {
+		return readyDeliveryCandidate{}, err
+	}
+	envelope := metadataString(record, "gc.delivery_request")
+	var identity deliveryRequestPath
+	if err := decodeStrict([]byte(envelope), &identity); err != nil || identity.SchemaVersion != "gc.delivery.request-path.v1" || !isHex(identity.CertificateDigest, 64) || !isHex(identity.SubjectDigest, 64) || !isHex(identity.NativeDigest, 64) {
+		return readyDeliveryCandidate{}, errors.New("ready delivery has invalid request envelope")
+	}
+	canonical, err := verdictcheck.CanonicalJSON(identity)
+	if err != nil || string(canonical) != envelope || record.CreatedAt == "" {
+		return readyDeliveryCandidate{}, errors.New("ready delivery request or ready time is non-canonical")
+	}
+	return readyDeliveryCandidate{record: record, bead: bead, envelope: envelope}, nil
+}
+
+func selectReadyDelivery(chain []readyDeliveryCandidate) (readyDeliveryCandidate, bool, error) {
+	sort.Slice(chain, func(i, j int) bool { return chain[i].bead.Record.Epoch.Number < chain[j].bead.Record.Epoch.Number })
+	if err := validReadyDeliveryChain(chain); err != nil {
+		return readyDeliveryCandidate{}, false, err
+	}
+	leaf := chain[len(chain)-1]
+	if leaf.bead.Record.EpochSuccessorID != "" && !recoverableAbsentSuccessor(leaf.bead) {
+		return readyDeliveryCandidate{}, false, errors.New("delivery handoff leaf references an absent successor")
+	}
+	selected := leaf
+	if leaf.bead.Record.Publication == "pending" && len(chain) > 1 {
+		selected = chain[len(chain)-2]
+	}
+	return selected, selectableDeliveryState(selected.bead.Record.State), nil
+}
+
+func validReadyDeliveryChain(chain []readyDeliveryCandidate) error {
+	for index := range chain {
+		if chain[index].bead.Record.Epoch.Number != index+1 {
+			return errors.New("delivery handoff has a non-contiguous epoch chain")
+		}
+		if index == 0 {
+			if chain[index].bead.Record.Predecessor != "" {
+				return errors.New("delivery epoch one has a predecessor")
+			}
+			continue
+		}
+		parent, child := chain[index-1].bead, chain[index].bead
+		if child.Record.Predecessor != parent.ID || parent.Record.EpochSuccessorID != child.ID {
+			return errors.New("delivery handoff successor chain is ambiguous")
+		}
+	}
+	return nil
 }
 
 // The predecessor link is persisted before the child is atomically created.
@@ -763,58 +783,12 @@ func (p *NativeProviders) FindBranch(ctx context.Context, name string) (Branch, 
 	return Branch{Name: name, Head: head}, true, nil
 }
 func (p *NativeProviders) PrepareBranch(ctx context.Context, planned Branch) (branch Branch, err error) {
-	if planned.Head != p.candidate || planned.Proof == "" {
-		return Branch{}, errors.New("epoch composition lacks the verified admitted candidate")
-	}
-	base, err := p.remoteOID(ctx, planned.BaseRef)
+	parent, err := p.validateBranchPlan(ctx, planned)
 	if err != nil {
 		return Branch{}, err
 	}
-	if base != planned.BaseOID {
-		return Branch{}, errTargetRegression
-	}
-	if err := p.ensureCommitObject(ctx, base); err != nil {
-		return Branch{}, err
-	}
-	if existing, exists, err := p.remoteOIDOptional(ctx, "refs/heads/"+planned.Name); err != nil {
-		return Branch{}, err
-	} else if planned.LeaseOID == "" && exists {
-		return Branch{}, errors.New("delivery branch appeared during epoch composition")
-	} else if planned.LeaseOID != "" && (!exists || existing != planned.LeaseOID) {
-		return Branch{}, errors.New("delivery branch does not match exact epoch lease")
-	}
-	parentLine, err := p.git(ctx, "rev-list", "--parents", "-n", "1", planned.Head)
+	worktree, err := p.prepareBranchWorktree(ctx, planned)
 	if err != nil {
-		return Branch{}, err
-	}
-	parts := strings.Fields(parentLine)
-	if len(parts) != 2 {
-		return Branch{}, errors.New("epoch candidate must have one parent")
-	}
-	if collide, err := p.hasPathCollision(ctx, parts[1], planned.Head, planned.BaseOID); err != nil {
-		return Branch{}, err
-	} else if collide {
-		return Branch{}, errPathCollision
-	}
-	worktree, err := nativeWorktreePath(p.context.WorktreeRoot, planned)
-	if err != nil {
-		return Branch{}, err
-	}
-	// A prior process may have died after worktree creation. When Git still
-	// registers this exact plan path but its directory is gone, re-materialize
-	// only that registration at the immutable planned base before exact cleanup.
-	exactWorktree, registered, err := p.registeredWorktreePath(worktree)
-	if err != nil {
-		return Branch{}, err
-	}
-	if _, statErr := os.Lstat(worktree); errors.Is(statErr, os.ErrNotExist) && registered {
-		if _, err := runNative(ctx, p.context.RepositoryDir, p.binaries.Git, nil, "worktree", "add", "--force", "--detach", exactWorktree, planned.BaseOID); err != nil {
-			return Branch{}, err
-		}
-	} else if statErr != nil && !errors.Is(statErr, os.ErrNotExist) {
-		return Branch{}, statErr
-	}
-	if err := p.cleanupWorktree(worktree); err != nil {
 		return Branch{}, err
 	}
 	defer func() {
@@ -822,10 +796,79 @@ func (p *NativeProviders) PrepareBranch(ctx context.Context, planned Branch) (br
 			branch, err = Branch{}, cleanupErr
 		}
 	}()
-	if _, err := runNative(ctx, p.context.RepositoryDir, p.binaries.Git, nil, "worktree", "add", "--detach", worktree, planned.BaseOID); err != nil {
-		return Branch{}, err
+	return p.composePreparedBranch(ctx, worktree, planned, parent)
+}
+
+func (p *NativeProviders) validateBranchPlan(ctx context.Context, planned Branch) (string, error) {
+	if planned.Head != p.candidate || planned.Proof == "" {
+		return "", errors.New("epoch composition lacks the verified admitted candidate")
 	}
-	patch, err := p.gitBytes(ctx, "diff", "--binary", parts[1], planned.Head)
+	base, err := p.remoteOID(ctx, planned.BaseRef)
+	if err != nil {
+		return "", err
+	}
+	if base != planned.BaseOID {
+		return "", errTargetRegression
+	}
+	if err := p.ensureCommitObject(ctx, base); err != nil {
+		return "", err
+	}
+	if existing, exists, err := p.remoteOIDOptional(ctx, "refs/heads/"+planned.Name); err != nil {
+		return "", err
+	} else if planned.LeaseOID == "" && exists {
+		return "", errors.New("delivery branch appeared during epoch composition")
+	} else if planned.LeaseOID != "" && (!exists || existing != planned.LeaseOID) {
+		return "", errors.New("delivery branch does not match exact epoch lease")
+	}
+	parentLine, err := p.git(ctx, "rev-list", "--parents", "-n", "1", planned.Head)
+	if err != nil {
+		return "", err
+	}
+	parts := strings.Fields(parentLine)
+	if len(parts) != 2 {
+		return "", errors.New("epoch candidate must have one parent")
+	}
+	if collide, err := p.hasPathCollision(ctx, parts[1], planned.Head, planned.BaseOID); err != nil {
+		return "", err
+	} else if collide {
+		return "", errPathCollision
+	}
+	return parts[1], nil
+}
+
+func (p *NativeProviders) prepareBranchWorktree(ctx context.Context, planned Branch) (string, error) {
+	worktree, err := nativeWorktreePath(p.context.WorktreeRoot, planned)
+	if err != nil {
+		return "", err
+	}
+	// A prior process may have died after worktree creation. When Git still
+	// registers this exact plan path but its directory is gone, re-materialize
+	// only that registration at the immutable planned base before exact cleanup.
+	exactWorktree, registered, err := p.registeredWorktreePath(worktree)
+	if err != nil {
+		return "", err
+	}
+	if _, statErr := os.Lstat(worktree); errors.Is(statErr, os.ErrNotExist) && registered {
+		if _, err := runNative(ctx, p.context.RepositoryDir, p.binaries.Git, nil, "worktree", "add", "--force", "--detach", exactWorktree, planned.BaseOID); err != nil {
+			return "", err
+		}
+	} else if statErr != nil && !errors.Is(statErr, os.ErrNotExist) {
+		return "", statErr
+	}
+	if err := p.cleanupWorktree(worktree); err != nil {
+		return "", err
+	}
+	if _, err := runNative(ctx, p.context.RepositoryDir, p.binaries.Git, nil, "worktree", "add", "--detach", worktree, planned.BaseOID); err != nil {
+		// Preserve the original failure-path guarantee: worktree add can leave a
+		// partial registration or directory even when it returns an error.
+		_ = p.cleanupWorktree(worktree)
+		return "", err
+	}
+	return worktree, nil
+}
+
+func (p *NativeProviders) composePreparedBranch(ctx context.Context, worktree string, planned Branch, parent string) (Branch, error) {
+	patch, err := p.gitBytes(ctx, "diff", "--binary", parent, planned.Head)
 	if err != nil {
 		return Branch{}, err
 	}
@@ -869,7 +912,7 @@ func (p *NativeProviders) PrepareBranch(ctx context.Context, planned Branch) (br
 	if err != nil {
 		return Branch{}, err
 	}
-	parts = strings.Split(strings.TrimSuffix(string(metadata), "\n"), "\x00")
+	parts := strings.Split(strings.TrimSuffix(string(metadata), "\n"), "\x00")
 	if len(parts) != 6 || hasEmpty(parts) {
 		return Branch{}, errors.New("candidate has incomplete immutable identity metadata")
 	}

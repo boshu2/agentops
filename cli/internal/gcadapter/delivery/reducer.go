@@ -421,34 +421,40 @@ func (r *Reducer) stepDelivery(ctx context.Context, request Request, observedBas
 		return Result{}, err
 	}
 	if !found {
-		// Initial admission binds the provider observation. Existing delivery
-		// beads retain their immutable epoch base and compare it separately.
-		request.Target.BaseOID = observedBase
-		prepared = makePrepared(request)
-		if deadlineExpired(request.Target) {
-			return Result{Status: "stalled", Reason: "deadline_expired_before_delivery"}, nil
-		}
-		if result, done, err := r.ensureInitialPrepared(request, prepared); err != nil || done {
-			return result, err
-		}
-		if err := r.requireTerminal(ctx, request); err != nil {
-			return Result{}, err
-		}
-		if err := r.cut("before_successor_create"); err != nil {
-			return Result{}, err
-		}
-		created, err := r.providers.CreateDelivery(ctx, DeliveryBead{ID: prepared.DeliveryBeadID, ExternalRef: prepared.ExternalRef, Record: initialDeliveryRecord(prepared, request)})
-		if err != nil {
-			return Result{}, err
-		}
-		if !matchesDeliveryRecord(created, prepared, request) || created.Route != "" {
-			return Result{}, errors.New("delivery create returned conflicting delivery.v1 identity")
-		}
-		if err := r.cut("after_successor_create"); err != nil {
-			return Result{}, err
-		}
-		return Result{Status: "successor_created", Effect: "beads.create"}, nil
+		return r.createInitialDelivery(ctx, request, observedBase)
 	}
+	return r.advanceExistingDelivery(ctx, request, observedBase, prepared, bead)
+}
+
+func (r *Reducer) createInitialDelivery(ctx context.Context, request Request, observedBase string) (Result, error) {
+	request.Target.BaseOID = observedBase
+	prepared := makePrepared(request)
+	if deadlineExpired(request.Target) {
+		return Result{Status: "stalled", Reason: "deadline_expired_before_delivery"}, nil
+	}
+	if result, done, err := r.ensureInitialPrepared(request, prepared); err != nil || done {
+		return result, err
+	}
+	if err := r.requireTerminal(ctx, request); err != nil {
+		return Result{}, err
+	}
+	if err := r.cut("before_successor_create"); err != nil {
+		return Result{}, err
+	}
+	created, err := r.providers.CreateDelivery(ctx, DeliveryBead{ID: prepared.DeliveryBeadID, ExternalRef: prepared.ExternalRef, Record: initialDeliveryRecord(prepared, request)})
+	if err != nil {
+		return Result{}, err
+	}
+	if !matchesDeliveryRecord(created, prepared, request) || created.Route != "" {
+		return Result{}, errors.New("delivery create returned conflicting delivery.v1 identity")
+	}
+	if err := r.cut("after_successor_create"); err != nil {
+		return Result{}, err
+	}
+	return Result{Status: "successor_created", Effect: "beads.create"}, nil
+}
+
+func (r *Reducer) advanceExistingDelivery(ctx context.Context, request Request, observedBase string, prepared Prepared, bead DeliveryBead) (Result, error) {
 	if request.Target.DeliveryBeadID == "" {
 		request.Target.Epoch = bead.Record.Epoch.Number
 		request.Target.BaseRef = bead.Record.Epoch.BaseRef
@@ -480,61 +486,13 @@ func (r *Reducer) stepDelivery(ctx context.Context, request Request, observedBas
 	if request.Target.DeliveryBeadID != "" && bead.Record.Epoch.BaseOID != observedBase && canRebaseEpoch(bead.Record.State) {
 		return r.observeBaseMove(ctx, state, bead, observedBase)
 	}
+	return r.advanceDeliveryState(ctx, state, bead, prepared, request, observedBase)
+}
+
+func (r *Reducer) advanceDeliveryState(ctx context.Context, state markerStore, bead DeliveryBead, prepared Prepared, request Request, observedBase string) (Result, error) {
 	switch bead.Record.State {
 	case DeliveryStateQueued:
-		if bead.Record.Predecessor != "" {
-			if bead.Record.Publication != "published" {
-				return Result{}, errors.New("selected successor is not published")
-			}
-			predecessor, found, err := r.providers.FindDelivery(ctx, bead.Record.Predecessor)
-			if err != nil || !found || predecessor.Record.HandoffID != bead.Record.HandoffID || predecessor.Record.EpochSuccessorID != bead.ID || predecessor.Record.Epoch.Number+1 != bead.Record.Epoch.Number {
-				return Result{}, errors.New("selected successor lacks its exact predecessor link")
-			}
-			if predecessor.Route != "" {
-				if predecessor.Route != "agentops.delivery" {
-					return Result{}, errors.New("successor predecessor has an unexpected route")
-				}
-				if err := r.providers.RetireRoute(ctx, predecessor.ID); err != nil {
-					return Result{}, err
-				}
-				return Result{Status: "predecessor_route_retired", Effect: "beads.retire_route"}, nil
-			}
-			if bead.Route == "" {
-				if err := r.providers.PublishRoute(ctx, bead.ID); err != nil {
-					return Result{}, err
-				}
-				return Result{Status: "successor_route_published", Effect: "beads.publish"}, nil
-			}
-			if bead.Route != "agentops.delivery" {
-				return Result{}, errors.New("selected successor has an unexpected route")
-			}
-			return r.storeDeliveryTransition(ctx, bead, DeliveryStatePreparing, bead.Record.Current)
-		}
-		if result, done, err := r.ensureInitialCommitted(request, prepared); err != nil || done {
-			return result, err
-		}
-		if bead.Route != "" {
-			return Result{}, errors.New("delivery bead has unexpected route")
-		}
-		handoffState := markerStore{root: request.Root, prefix: filepath.Join("handoffs", prepared.HandoffID)}
-		committedDigest := handoffState.digest("committed.json")
-		if !isHex(committedDigest, 64) {
-			return Result{}, errors.New("delivery committed handoff is absent")
-		}
-		epochState := markerStore{root: request.Root, prefix: receiptNamespace(prepared)}
-		activation := struct {
-			SchemaVersion string `json:"schema_version"`
-			Committed     string `json:"committed_handoff_digest"`
-		}{SchemaVersion: "delivery-activation.v1", Committed: committedDigest}
-		if !epochState.exists("activation.json") {
-			return Result{}, errors.New("delivery activation receipt is absent")
-		}
-		if err := epochState.matches("activation.json", activation); err != nil {
-			return Result{}, err
-		}
-		want := bead.Record
-		want.Publication, want.Committed, want.State, want.Current, want.Revision = "published", committedDigest, DeliveryStatePreparing, receiptRef("activation", epochState), bead.Record.Revision+1
-		return r.storeDeliveryRecord(ctx, bead, want)
+		return r.advanceQueuedDelivery(ctx, bead, prepared, request)
 	case DeliveryStatePreparing:
 		if bead.Route == "" {
 			if bead.Record.Publication != "published" || bead.Record.Committed == "" {
@@ -572,6 +530,66 @@ func (r *Reducer) stepDelivery(ctx context.Context, request Request, observedBas
 	default:
 		return Result{}, errors.New("delivery.v1 contains an illegal state")
 	}
+}
+
+func (r *Reducer) advanceQueuedDelivery(ctx context.Context, bead DeliveryBead, prepared Prepared, request Request) (Result, error) {
+	if bead.Record.Predecessor != "" {
+		return r.activateSuccessorRoute(ctx, bead)
+	}
+	if result, done, err := r.ensureInitialCommitted(request, prepared); err != nil || done {
+		return result, err
+	}
+	if bead.Route != "" {
+		return Result{}, errors.New("delivery bead has unexpected route")
+	}
+	handoffState := markerStore{root: request.Root, prefix: filepath.Join("handoffs", prepared.HandoffID)}
+	committedDigest := handoffState.digest("committed.json")
+	if !isHex(committedDigest, 64) {
+		return Result{}, errors.New("delivery committed handoff is absent")
+	}
+	epochState := markerStore{root: request.Root, prefix: receiptNamespace(prepared)}
+	activation := struct {
+		SchemaVersion string `json:"schema_version"`
+		Committed     string `json:"committed_handoff_digest"`
+	}{SchemaVersion: "delivery-activation.v1", Committed: committedDigest}
+	if !epochState.exists("activation.json") {
+		return Result{}, errors.New("delivery activation receipt is absent")
+	}
+	if err := epochState.matches("activation.json", activation); err != nil {
+		return Result{}, err
+	}
+	want := bead.Record
+	want.Publication, want.Committed, want.State, want.Current, want.Revision = "published", committedDigest, DeliveryStatePreparing, receiptRef("activation", epochState), bead.Record.Revision+1
+	return r.storeDeliveryRecord(ctx, bead, want)
+}
+
+func (r *Reducer) activateSuccessorRoute(ctx context.Context, bead DeliveryBead) (Result, error) {
+	if bead.Record.Publication != "published" {
+		return Result{}, errors.New("selected successor is not published")
+	}
+	predecessor, found, err := r.providers.FindDelivery(ctx, bead.Record.Predecessor)
+	if err != nil || !found || predecessor.Record.HandoffID != bead.Record.HandoffID || predecessor.Record.EpochSuccessorID != bead.ID || predecessor.Record.Epoch.Number+1 != bead.Record.Epoch.Number {
+		return Result{}, errors.New("selected successor lacks its exact predecessor link")
+	}
+	if predecessor.Route != "" {
+		if predecessor.Route != "agentops.delivery" {
+			return Result{}, errors.New("successor predecessor has an unexpected route")
+		}
+		if err := r.providers.RetireRoute(ctx, predecessor.ID); err != nil {
+			return Result{}, err
+		}
+		return Result{Status: "predecessor_route_retired", Effect: "beads.retire_route"}, nil
+	}
+	if bead.Route == "" {
+		if err := r.providers.PublishRoute(ctx, bead.ID); err != nil {
+			return Result{}, err
+		}
+		return Result{Status: "successor_route_published", Effect: "beads.publish"}, nil
+	}
+	if bead.Route != "agentops.delivery" {
+		return Result{}, errors.New("selected successor has an unexpected route")
+	}
+	return r.storeDeliveryTransition(ctx, bead, DeliveryStatePreparing, bead.Record.Current)
 }
 
 func canRebaseEpoch(state DeliveryState) bool {
@@ -718,7 +736,6 @@ func (r *Reducer) advanceCreatedSuccessor(ctx context.Context, state markerStore
 	if found, err := state.read(name, &storedReceipt); err != nil || !found || storedReceipt.ChildID != child.ID || storedReceipt.Intent != intent || storedReceipt.ChildDigest != digest {
 		return Result{}, errors.New("successor created receipt conflicts")
 	}
-	receipt = storedReceipt
 	ref := receiptRef("successor-created", state)
 	if predecessor.Record.EpochSuccessorID != child.ID {
 		return Result{}, errors.New("predecessor successor link conflicts")
@@ -988,21 +1005,11 @@ func (r *Reducer) storeDeliveryRecord(ctx context.Context, bead DeliveryBead, wa
 }
 
 func validDeliveryRecord(record DeliveryRecord) error {
-	states := map[DeliveryState]bool{DeliveryStateQueued: true, DeliveryStatePreparing: true, DeliveryStateBranchReady: true, DeliveryStatePRPrepared: true, DeliveryStatePROpen: true, DeliveryStateCIWait: true, DeliveryStateRebaseNeeded: true, DeliveryStateMergeEligible: true, DeliveryStateMergeArmed: true, DeliveryStateLanded: true, DeliveryStateRepairWait: true, DeliveryStateManualReview: true, DeliveryStateStalled: true, DeliveryStateFailed: true, DeliveryStateSuccessorRequired: true, DeliveryStateCancelled: true}
-	if record.SchemaVersion != "gc.delivery.v1" || record.Revision < 1 || !isHex(record.HandoffID, 64) || !states[record.State] || (record.Publication != "pending" && record.Publication != "published") || record.SemanticBead == "" || record.TerminalRef == "" || (record.Mode != "auto" && record.Mode != "manual") || !isHex(record.Certificate, 64) || !isHex(record.Candidate, 40) || !isHex(record.Manifest, 64) || record.Epoch.Number < 1 || !isHex(record.Epoch.BaseOID, 40) || record.Epoch.BaseRef == "" || record.Epoch.Branch != "gc/delivery/"+record.HandoffID[:20] || !isTime(record.ReadyAt) || !isTime(record.Deadline) {
+	if !validDeliveryIdentity(record) {
 		return errors.New("gc.delivery.v1 has incomplete typed identity")
 	}
-	if record.Publication == "published" && !isHex(record.Committed, 64) {
-		return errors.New("published gc.delivery.v1 lacks committed handoff digest")
-	}
-	if record.Publication == "pending" && (record.State != DeliveryStateQueued || record.Current != (ReceiptRef{})) {
-		return errors.New("pending gc.delivery.v1 is not an untouched queued creation envelope")
-	}
-	if record.Publication == "pending" && ((record.Epoch.Number == 1 && record.Committed != "") || (record.Epoch.Number > 1 && !isHex(record.Committed, 64))) {
-		return errors.New("pending gc.delivery.v1 has the wrong committed-handoff binding")
-	}
-	if record.State != DeliveryStateQueued && record.Publication != "published" {
-		return errors.New("active gc.delivery.v1 is not published")
+	if err := validDeliveryPublication(record); err != nil {
+		return err
 	}
 	if record.Publication == "published" || record.State != DeliveryStateQueued || record.Current != (ReceiptRef{}) {
 		if !validCurrentReceipt(record) {
@@ -1018,6 +1025,27 @@ func validDeliveryRecord(record DeliveryRecord) error {
 	bytes, err := verdictcheck.CanonicalJSON(record)
 	if err != nil || len(bytes) > 4096 {
 		return errors.New("gc.delivery.v1 exceeds strict canonical envelope bound")
+	}
+	return nil
+}
+
+func validDeliveryIdentity(record DeliveryRecord) bool {
+	states := map[DeliveryState]bool{DeliveryStateQueued: true, DeliveryStatePreparing: true, DeliveryStateBranchReady: true, DeliveryStatePRPrepared: true, DeliveryStatePROpen: true, DeliveryStateCIWait: true, DeliveryStateRebaseNeeded: true, DeliveryStateMergeEligible: true, DeliveryStateMergeArmed: true, DeliveryStateLanded: true, DeliveryStateRepairWait: true, DeliveryStateManualReview: true, DeliveryStateStalled: true, DeliveryStateFailed: true, DeliveryStateSuccessorRequired: true, DeliveryStateCancelled: true}
+	return record.SchemaVersion == "gc.delivery.v1" && record.Revision >= 1 && isHex(record.HandoffID, 64) && states[record.State] && (record.Publication == "pending" || record.Publication == "published") && record.SemanticBead != "" && record.TerminalRef != "" && (record.Mode == "auto" || record.Mode == "manual") && isHex(record.Certificate, 64) && isHex(record.Candidate, 40) && isHex(record.Manifest, 64) && record.Epoch.Number >= 1 && isHex(record.Epoch.BaseOID, 40) && record.Epoch.BaseRef != "" && record.Epoch.Branch == "gc/delivery/"+record.HandoffID[:20] && isTime(record.ReadyAt) && isTime(record.Deadline)
+}
+
+func validDeliveryPublication(record DeliveryRecord) error {
+	if record.Publication == "published" && !isHex(record.Committed, 64) {
+		return errors.New("published gc.delivery.v1 lacks committed handoff digest")
+	}
+	if record.Publication == "pending" && (record.State != DeliveryStateQueued || record.Current != (ReceiptRef{})) {
+		return errors.New("pending gc.delivery.v1 is not an untouched queued creation envelope")
+	}
+	if record.Publication == "pending" && ((record.Epoch.Number == 1 && record.Committed != "") || (record.Epoch.Number > 1 && !isHex(record.Committed, 64))) {
+		return errors.New("pending gc.delivery.v1 has the wrong committed-handoff binding")
+	}
+	if record.State != DeliveryStateQueued && record.Publication != "published" {
+		return errors.New("active gc.delivery.v1 is not published")
 	}
 	return nil
 }
@@ -1041,16 +1069,15 @@ func validCurrentReceipt(record DeliveryRecord) bool {
 	return allowed[record.State][name]
 }
 
-// validateCurrentReceipt binds the persisted lifecycle selector to its exact
-// immutable evidence before a terminal return or another provider effect.  The
-// record remains the selector; this finite switch only verifies the receipt
-// admitted by that selector's state and name.
+// validateCurrentReceipt binds the persisted lifecycle selector to the typed
+// immutable receipt admitted by its state.  Receipt-specific checks are kept
+// separate so a new receipt cannot accidentally enlarge another's authority.
 func validateCurrentReceipt(root string, record DeliveryRecord) error {
 	if record.Current == (ReceiptRef{}) {
 		return nil
 	}
-	epoch, name, ok := deliveryReceiptLocation(record, record.Current)
-	if !ok || epoch != record.Epoch.Number || !validCurrentReceipt(record) {
+	_, name, ok := deliveryReceiptLocation(record, record.Current)
+	if !ok || !validCurrentReceipt(record) {
 		return errors.New("delivery.v1 current receipt has an illegal location")
 	}
 	bytes, err := os.ReadFile(filepath.Join(root, record.Current.Path))
@@ -1061,148 +1088,196 @@ func validateCurrentReceipt(root string, record DeliveryRecord) error {
 	if hex.EncodeToString(sum[:]) != record.Current.Digest {
 		return errors.New("delivery.v1 current receipt digest conflicts")
 	}
-	decode := func(into any) error {
-		if err := decodeStrict(bytes, into); err != nil {
-			return fmt.Errorf("delivery.v1 current receipt is not strict JSON: %w", err)
-		}
-		return nil
-	}
-	matchBranch := func(receipt BranchReceipt) bool {
-		digest, err := valueDigest(branchPublicIdentity(Branch{Name: record.Epoch.Branch, BaseRef: record.Epoch.BaseRef, BaseOID: record.Epoch.BaseOID, Head: record.Epoch.Head, LeaseOID: record.Epoch.LeaseOID}))
-		return err == nil && receipt.SchemaVersion == "branch-receipt.v1" && (receipt.Outcome == "created" || receipt.Outcome == "adopted" || receipt.Outcome == "observed") && receipt.HandoffID == record.HandoffID && receipt.Epoch == record.Epoch.Number && receipt.RigID == record.Rig && receipt.Repository == record.Repository && receipt.Remote == record.Remote && receipt.Branch == record.Epoch.Branch && receipt.BaseRef == record.Epoch.BaseRef && receipt.BaseOID == record.Epoch.BaseOID && receipt.ExpectedHead == record.Epoch.Head && receipt.LeaseOID == record.Epoch.LeaseOID && receipt.ResponseDigest == digest
-	}
+	return validateNamedCurrentReceipt(root, record, name, bytes)
+}
+
+func validateNamedCurrentReceipt(root string, record DeliveryRecord, name string, bytes []byte) error {
 	switch name {
 	case "activation.json":
-		if record.Predecessor == "" {
-			var receipt struct {
-				SchemaVersion string `json:"schema_version"`
-				Committed     string `json:"committed_handoff_digest"`
-			}
-			if err := decode(&receipt); err != nil || receipt.SchemaVersion != "delivery-activation.v1" || receipt.Committed != record.Committed {
-				return errors.New("delivery activation does not bind the published record")
-			}
-			return nil
-		}
-		var receipt struct {
-			SchemaVersion string `json:"schema_version"`
-			ChildDigest   string `json:"child_digest"`
-			ReceiptDigest string `json:"successor_receipt_digest"`
-		}
-		if err := decode(&receipt); err != nil || receipt.SchemaVersion != "successor-activation.v1" {
-			return errors.New("successor activation is invalid")
-		}
-		childDigest, err := valueDigest(successorCreationRecord(record))
-		if err != nil || receipt.ChildDigest != childDigest || !isHex(receipt.ReceiptDigest, 64) {
-			return errors.New("successor activation does not bind child creation")
-		}
-		createdPath := filepath.Join(receiptNamespaceFor(DeliveryRecord{HandoffID: record.HandoffID, Epoch: DeliveryEpoch{Number: record.Epoch.Number - 1}}), "successor-created.json")
-		createdBytes, err := os.ReadFile(filepath.Join(root, createdPath))
-		if err != nil {
-			return errors.New("successor activation lacks predecessor creation receipt")
-		}
-		createdSum := sha256.Sum256(createdBytes)
-		var created SuccessorCreatedReceipt
-		if receipt.ReceiptDigest != hex.EncodeToString(createdSum[:]) || decodeStrict(createdBytes, &created) != nil || created.SchemaVersion != "successor-created-receipt.v1" || created.ChildID != "delivery-"+record.HandoffID[:20]+fmt.Sprintf("-e%06d", record.Epoch.Number) || created.ChildDigest != childDigest || created.Intent.HandoffID != record.HandoffID || created.Intent.PredecessorID != record.Predecessor || created.Intent.ChildID != created.ChildID || created.Intent.Epoch != record.Epoch.Number {
-			return errors.New("successor activation conflicts with predecessor creation")
-		}
-		return nil
+		return validateActivationReceipt(root, record, bytes)
 	case "branch.json":
-		var receipt BranchReceipt
-		if err := decode(&receipt); err != nil || !matchBranch(receipt) {
-			return errors.New("branch receipt does not bind the delivery record")
-		}
-		return nil
+		return validateBranchReceipt(record, bytes)
 	case "pr-intent.json":
-		var receipt PRIntent
-		if err := decode(&receipt); err != nil || receipt != expectedPRIntent(Prepared{HandoffID: record.HandoffID}, record.Repository, record.Epoch, record.PR) {
-			return errors.New("PR intent does not bind the delivery record")
-		}
-		return nil
+		return validatePRIntentReceipt(record, bytes)
 	case "pr-open.json":
-		var receipt PROpenReceipt
-		if err := decode(&receipt); err != nil {
-			return err
-		}
-		observation := PRObservation{State: receipt.State, Draft: receipt.Draft, BaseOID: receipt.ObservedBaseOID, Head: receipt.ObservedHead, PR: PullRequest{ID: receipt.PRID, EffectID: receipt.EffectID, Repository: receipt.Repository, Branch: receipt.Branch, BaseRef: receipt.BaseRef, NodeID: receipt.NodeID, Number: receipt.Number, URL: receipt.URL}}
-		intent := expectedPRIntent(Prepared{HandoffID: record.HandoffID}, record.Repository, record.Epoch, record.PR)
-		firstEpochIntent := expectedPRIntent(Prepared{HandoffID: record.HandoffID}, record.Repository, record.Epoch, PullRequest{})
-		intentDigest, digestErr := valueDigest(intent)
-		firstEpochDigest, firstEpochErr := valueDigest(firstEpochIntent)
-		responseDigest, responseErr := valueDigest(observation)
-		intentMatches := receipt.IntentDigest == intentDigest && matchesPRObservation(observation, intent)
-		if record.Epoch.Number == 1 {
-			intentMatches = intentMatches || (receipt.IntentDigest == firstEpochDigest && matchesPRObservation(observation, firstEpochIntent))
-		}
-		if digestErr != nil || firstEpochErr != nil || responseErr != nil || receipt.SchemaVersion != "pr-open-receipt.v1" || !intentMatches || receipt.HandoffID != record.HandoffID || receipt.Epoch != record.Epoch.Number || receipt.RigID != record.Rig || receipt.Remote != record.Remote || receipt.Repository != record.Repository || receipt.PRID != record.PR.ID || receipt.Branch != record.PR.Branch || receipt.BaseRef != record.PR.BaseRef || receipt.BaseOID != record.Epoch.BaseOID || receipt.ExpectedHead != record.Epoch.Head || receipt.ObservedBaseOID != record.Epoch.BaseOID || receipt.ObservedHead != record.Epoch.Head || receipt.EffectID != record.PR.EffectID || receipt.NodeID != record.PR.NodeID || receipt.Number != record.PR.Number || receipt.URL != record.PR.URL || receipt.ResponseDigest != responseDigest {
-			return errors.New("PR receipt does not bind the delivery record")
-		}
-		return nil
+		return validatePROpenReceipt(record, bytes)
 	case "hosted-gate.json":
-		var receipt GateReceipt
-		if err := decode(&receipt); err != nil {
-			return err
-		}
-		digest, digestErr := hostedGateDigest(receipt.Gate)
-		qualified, _, qualifyErr := qualifyHostedGate(receipt.Gate, DeliveryBead{Record: record})
-		if digestErr != nil || qualifyErr != nil || !qualified || receipt.SchemaVersion != "hosted-gate-receipt.v1" || receipt.HandoffID != record.HandoffID || receipt.Epoch != record.Epoch.Number || receipt.PRID != record.PR.ID || receipt.Head != record.Epoch.Head || receipt.BaseRef != record.Epoch.BaseRef || receipt.BaseOID != record.Epoch.BaseOID || receipt.GateDigest != digest || record.GateDigest != digest || (receipt.Gate.AutoMergeEnabled && !hasOwnedAutoMergeAttempt(root, record)) {
-			return errors.New("hosted gate receipt does not bind the delivery record")
-		}
-		return nil
+		return validateHostedGateReceipt(root, record, bytes)
 	case "base-move.json":
-		var receipt BaseMoveReceipt
-		if err := decode(&receipt); err != nil || receipt.SchemaVersion != "base-move-receipt.v1" || receipt.HandoffID != record.HandoffID || receipt.Epoch != record.Epoch.Number || receipt.PreviousBaseOID != record.Epoch.BaseOID || !isHex(receipt.CurrentBaseOID, 40) || receipt.CurrentBaseOID == receipt.PreviousBaseOID {
-			return errors.New("base-move receipt does not bind the delivery record")
-		}
-		return nil
+		return validateBaseMoveReceipt(record, bytes)
 	case "successor-created.json":
-		var receipt SuccessorCreatedReceipt
-		if err := decode(&receipt); err != nil || receipt.SchemaVersion != "successor-created-receipt.v1" || receipt.Intent.HandoffID != record.HandoffID || receipt.Intent.PredecessorID != "delivery-"+record.HandoffID[:20]+fmt.Sprintf("-e%06d", record.Epoch.Number) || receipt.Intent.Epoch != record.Epoch.Number+1 || receipt.ChildID != record.EpochSuccessorID || receipt.Intent.ChildID != record.EpochSuccessorID || !isHex(receipt.ChildDigest, 64) {
-			return errors.New("successor creation receipt does not bind the delivery record")
-		}
-		return nil
+		return validateSuccessorCreatedReceipt(record, bytes)
 	case "merge-arm.json":
-		var receipt MergeArmReceipt
-		if err := decode(&receipt); err != nil || receipt.SchemaVersion != "merge-arm-receipt.v1" || receipt.HandoffID != record.HandoffID || receipt.Epoch != record.Epoch.Number || receipt.Arm != expectedMergeArm(DeliveryBead{Record: record}, receipt.Arm.ProtectionDigest) || receipt.Arm.ID != record.ArmID || receipt.Arm.EffectID != record.AutoMergeEffectID {
-			return errors.New("merge-arm receipt does not bind the delivery record")
-		}
-		return nil
+		return validateMergeArmReceipt(record, bytes)
 	case "landing.json":
-		var receipt LandingReceipt
-		if err := decode(&receipt); err != nil {
-			return err
-		}
-		landing := Landing{PRID: receipt.PRID, Head: receipt.Head, SHA: receipt.LandedSHA, Tree: receipt.Tree, Parents: receipt.Parents}
-		digest, digestErr := valueDigest(landing)
-		if digestErr != nil || receipt.SchemaVersion != "landing-receipt.v1" || receipt.HandoffID != record.HandoffID || receipt.Epoch != record.Epoch.Number || receipt.PRID != record.PR.ID || receipt.Head != record.Epoch.Head || receipt.Tree != record.Epoch.Tree || len(receipt.Parents) != 1 || receipt.Parents[0] != record.Epoch.BaseOID || !isHex(receipt.LandedSHA, 40) || record.LandingDigest != digest || record.LandedSHA != receipt.LandedSHA {
-			return errors.New("landing receipt does not bind the canonical record")
-		}
-		return nil
+		return validateLandingReceipt(record, bytes)
 	case "delivery-outcome.json":
-		var receipt DeliveryOutcomeReceipt
-		if err := decode(&receipt); err != nil || receipt.SchemaVersion != "delivery-outcome-receipt.v1" || receipt.HandoffID != record.HandoffID || receipt.Epoch != record.Epoch.Number || receipt.State != record.State || receipt.Reason == "" || receipt.Reason != record.DeliveryOutcome {
-			return errors.New("delivery outcome receipt does not bind the delivery record")
-		}
-		return nil
+		return validateDeliveryOutcomeReceipt(record, bytes)
 	case "auto-merge-attempt.json":
 		if record.AutoMergeAttempt != record.Current || validateAutoMergeAttemptRef(root, record, record.Current) != nil {
 			return errors.New("auto-merge attempt receipt does not bind the delivery record")
 		}
 		return nil
 	case "merge-refusal.json":
-		var receipt MergeRefusalReceipt
-		if err := decode(&receipt); err != nil || receipt.SchemaVersion != "merge-refusal-receipt.v1" || receipt.HandoffID != record.HandoffID || receipt.Epoch != record.Epoch.Number || (receipt.Observation.State != "refused" && receipt.Observation.State != "unknown") || receipt.Arm != expectedMergeArm(DeliveryBead{Record: record}, receipt.Arm.ProtectionDigest) {
-			return errors.New("merge-refusal receipt does not bind the delivery record")
-		}
-		return nil
+		return validateMergeRefusalReceipt(record, bytes)
 	case "deadline.json":
-		var receipt DeadlineReceipt
-		if err := decode(&receipt); err != nil || receipt.SchemaVersion != "delivery-deadline-receipt.v1" || receipt.HandoffID != record.HandoffID || receipt.Epoch != record.Epoch.Number || receipt.Deadline != record.Deadline || !isTime(receipt.ObservedAt) || receipt.Outcome != "expired" || record.DeadlineOutcome != receipt.Outcome {
-			return errors.New("deadline receipt does not bind the delivery record")
-		}
-		return nil
+		return validateDeadlineReceipt(record, bytes)
 	default:
 		return errors.New("delivery.v1 current receipt name is unsupported")
 	}
+}
+
+func decodeCurrentReceipt(bytes []byte, into any) error {
+	if err := decodeStrict(bytes, into); err != nil {
+		return fmt.Errorf("delivery.v1 current receipt is not strict JSON: %w", err)
+	}
+	return nil
+}
+
+func validateActivationReceipt(root string, record DeliveryRecord, bytes []byte) error {
+	if record.Predecessor == "" {
+		var receipt struct {
+			SchemaVersion string `json:"schema_version"`
+			Committed     string `json:"committed_handoff_digest"`
+		}
+		if err := decodeCurrentReceipt(bytes, &receipt); err != nil || receipt.SchemaVersion != "delivery-activation.v1" || receipt.Committed != record.Committed {
+			return errors.New("delivery activation does not bind the published record")
+		}
+		return nil
+	}
+	var receipt struct {
+		SchemaVersion string `json:"schema_version"`
+		ChildDigest   string `json:"child_digest"`
+		ReceiptDigest string `json:"successor_receipt_digest"`
+	}
+	if err := decodeCurrentReceipt(bytes, &receipt); err != nil || receipt.SchemaVersion != "successor-activation.v1" {
+		return errors.New("successor activation is invalid")
+	}
+	childDigest, err := valueDigest(successorCreationRecord(record))
+	if err != nil || receipt.ChildDigest != childDigest || !isHex(receipt.ReceiptDigest, 64) {
+		return errors.New("successor activation does not bind child creation")
+	}
+	createdPath := filepath.Join(receiptNamespaceFor(DeliveryRecord{HandoffID: record.HandoffID, Epoch: DeliveryEpoch{Number: record.Epoch.Number - 1}}), "successor-created.json")
+	createdBytes, err := os.ReadFile(filepath.Join(root, createdPath))
+	if err != nil {
+		return errors.New("successor activation lacks predecessor creation receipt")
+	}
+	createdSum := sha256.Sum256(createdBytes)
+	var created SuccessorCreatedReceipt
+	if receipt.ReceiptDigest != hex.EncodeToString(createdSum[:]) || decodeStrict(createdBytes, &created) != nil || created.SchemaVersion != "successor-created-receipt.v1" || created.ChildID != "delivery-"+record.HandoffID[:20]+fmt.Sprintf("-e%06d", record.Epoch.Number) || created.ChildDigest != childDigest || created.Intent.HandoffID != record.HandoffID || created.Intent.PredecessorID != record.Predecessor || created.Intent.ChildID != created.ChildID || created.Intent.Epoch != record.Epoch.Number {
+		return errors.New("successor activation conflicts with predecessor creation")
+	}
+	return nil
+}
+
+func validateBranchReceipt(record DeliveryRecord, bytes []byte) error {
+	var receipt BranchReceipt
+	digest, digestErr := valueDigest(branchPublicIdentity(Branch{Name: record.Epoch.Branch, BaseRef: record.Epoch.BaseRef, BaseOID: record.Epoch.BaseOID, Head: record.Epoch.Head, LeaseOID: record.Epoch.LeaseOID}))
+	if err := decodeCurrentReceipt(bytes, &receipt); err != nil || digestErr != nil || receipt.SchemaVersion != "branch-receipt.v1" || (receipt.Outcome != "created" && receipt.Outcome != "adopted" && receipt.Outcome != "observed") || receipt.HandoffID != record.HandoffID || receipt.Epoch != record.Epoch.Number || receipt.RigID != record.Rig || receipt.Repository != record.Repository || receipt.Remote != record.Remote || receipt.Branch != record.Epoch.Branch || receipt.BaseRef != record.Epoch.BaseRef || receipt.BaseOID != record.Epoch.BaseOID || receipt.ExpectedHead != record.Epoch.Head || receipt.LeaseOID != record.Epoch.LeaseOID || receipt.ResponseDigest != digest {
+		return errors.New("branch receipt does not bind the delivery record")
+	}
+	return nil
+}
+
+func validatePRIntentReceipt(record DeliveryRecord, bytes []byte) error {
+	var receipt PRIntent
+	if err := decodeCurrentReceipt(bytes, &receipt); err != nil || receipt != expectedPRIntent(Prepared{HandoffID: record.HandoffID}, record.Repository, record.Epoch, record.PR) {
+		return errors.New("PR intent does not bind the delivery record")
+	}
+	return nil
+}
+
+func validatePROpenReceipt(record DeliveryRecord, bytes []byte) error {
+	var receipt PROpenReceipt
+	if err := decodeCurrentReceipt(bytes, &receipt); err != nil {
+		return err
+	}
+	observation := PRObservation{State: receipt.State, Draft: receipt.Draft, BaseOID: receipt.ObservedBaseOID, Head: receipt.ObservedHead, PR: PullRequest{ID: receipt.PRID, EffectID: receipt.EffectID, Repository: receipt.Repository, Branch: receipt.Branch, BaseRef: receipt.BaseRef, NodeID: receipt.NodeID, Number: receipt.Number, URL: receipt.URL}}
+	intent := expectedPRIntent(Prepared{HandoffID: record.HandoffID}, record.Repository, record.Epoch, record.PR)
+	first := expectedPRIntent(Prepared{HandoffID: record.HandoffID}, record.Repository, record.Epoch, PullRequest{})
+	intentDigest, digestErr := valueDigest(intent)
+	firstDigest, firstErr := valueDigest(first)
+	responseDigest, responseErr := valueDigest(observation)
+	matches := receipt.IntentDigest == intentDigest && matchesPRObservation(observation, intent)
+	if record.Epoch.Number == 1 {
+		matches = matches || (receipt.IntentDigest == firstDigest && matchesPRObservation(observation, first))
+	}
+	if digestErr != nil || firstErr != nil || responseErr != nil || !matchesPROpenRecord(receipt, record, matches, responseDigest) {
+		return errors.New("PR receipt does not bind the delivery record")
+	}
+	return nil
+}
+
+func matchesPROpenRecord(receipt PROpenReceipt, record DeliveryRecord, intentMatches bool, responseDigest string) bool {
+	return receipt.SchemaVersion == "pr-open-receipt.v1" && intentMatches && receipt.HandoffID == record.HandoffID && receipt.Epoch == record.Epoch.Number && receipt.RigID == record.Rig && receipt.Remote == record.Remote && receipt.Repository == record.Repository && receipt.PRID == record.PR.ID && receipt.Branch == record.PR.Branch && receipt.BaseRef == record.PR.BaseRef && receipt.BaseOID == record.Epoch.BaseOID && receipt.ExpectedHead == record.Epoch.Head && receipt.ObservedBaseOID == record.Epoch.BaseOID && receipt.ObservedHead == record.Epoch.Head && receipt.EffectID == record.PR.EffectID && receipt.NodeID == record.PR.NodeID && receipt.Number == record.PR.Number && receipt.URL == record.PR.URL && receipt.ResponseDigest == responseDigest
+}
+
+func validateHostedGateReceipt(root string, record DeliveryRecord, bytes []byte) error {
+	var receipt GateReceipt
+	if err := decodeCurrentReceipt(bytes, &receipt); err != nil {
+		return err
+	}
+	digest, digestErr := hostedGateDigest(receipt.Gate)
+	qualified, _, qualifyErr := qualifyHostedGate(receipt.Gate, DeliveryBead{Record: record})
+	if digestErr != nil || qualifyErr != nil || !qualified || receipt.SchemaVersion != "hosted-gate-receipt.v1" || receipt.HandoffID != record.HandoffID || receipt.Epoch != record.Epoch.Number || receipt.PRID != record.PR.ID || receipt.Head != record.Epoch.Head || receipt.BaseRef != record.Epoch.BaseRef || receipt.BaseOID != record.Epoch.BaseOID || receipt.GateDigest != digest || record.GateDigest != digest || (receipt.Gate.AutoMergeEnabled && !hasOwnedAutoMergeAttempt(root, record)) {
+		return errors.New("hosted gate receipt does not bind the delivery record")
+	}
+	return nil
+}
+
+func validateBaseMoveReceipt(record DeliveryRecord, bytes []byte) error {
+	var receipt BaseMoveReceipt
+	if err := decodeCurrentReceipt(bytes, &receipt); err != nil || receipt.SchemaVersion != "base-move-receipt.v1" || receipt.HandoffID != record.HandoffID || receipt.Epoch != record.Epoch.Number || receipt.PreviousBaseOID != record.Epoch.BaseOID || !isHex(receipt.CurrentBaseOID, 40) || receipt.CurrentBaseOID == receipt.PreviousBaseOID {
+		return errors.New("base-move receipt does not bind the delivery record")
+	}
+	return nil
+}
+func validateSuccessorCreatedReceipt(record DeliveryRecord, bytes []byte) error {
+	var receipt SuccessorCreatedReceipt
+	if err := decodeCurrentReceipt(bytes, &receipt); err != nil || receipt.SchemaVersion != "successor-created-receipt.v1" || receipt.Intent.HandoffID != record.HandoffID || receipt.Intent.PredecessorID != "delivery-"+record.HandoffID[:20]+fmt.Sprintf("-e%06d", record.Epoch.Number) || receipt.Intent.Epoch != record.Epoch.Number+1 || receipt.ChildID != record.EpochSuccessorID || receipt.Intent.ChildID != record.EpochSuccessorID || !isHex(receipt.ChildDigest, 64) {
+		return errors.New("successor creation receipt does not bind the delivery record")
+	}
+	return nil
+}
+func validateMergeArmReceipt(record DeliveryRecord, bytes []byte) error {
+	var receipt MergeArmReceipt
+	if err := decodeCurrentReceipt(bytes, &receipt); err != nil || receipt.SchemaVersion != "merge-arm-receipt.v1" || receipt.HandoffID != record.HandoffID || receipt.Epoch != record.Epoch.Number || receipt.Arm != expectedMergeArm(DeliveryBead{Record: record}, receipt.Arm.ProtectionDigest) || receipt.Arm.ID != record.ArmID || receipt.Arm.EffectID != record.AutoMergeEffectID {
+		return errors.New("merge-arm receipt does not bind the delivery record")
+	}
+	return nil
+}
+
+func validateLandingReceipt(record DeliveryRecord, bytes []byte) error {
+	var receipt LandingReceipt
+	if err := decodeCurrentReceipt(bytes, &receipt); err != nil {
+		return err
+	}
+	digest, digestErr := valueDigest(Landing{PRID: receipt.PRID, Head: receipt.Head, SHA: receipt.LandedSHA, Tree: receipt.Tree, Parents: receipt.Parents})
+	if digestErr != nil || receipt.SchemaVersion != "landing-receipt.v1" || receipt.HandoffID != record.HandoffID || receipt.Epoch != record.Epoch.Number || receipt.PRID != record.PR.ID || receipt.Head != record.Epoch.Head || receipt.Tree != record.Epoch.Tree || len(receipt.Parents) != 1 || receipt.Parents[0] != record.Epoch.BaseOID || !isHex(receipt.LandedSHA, 40) || record.LandingDigest != digest || record.LandedSHA != receipt.LandedSHA {
+		return errors.New("landing receipt does not bind the canonical record")
+	}
+	return nil
+}
+func validateDeliveryOutcomeReceipt(record DeliveryRecord, bytes []byte) error {
+	var receipt DeliveryOutcomeReceipt
+	if err := decodeCurrentReceipt(bytes, &receipt); err != nil || receipt.SchemaVersion != "delivery-outcome-receipt.v1" || receipt.HandoffID != record.HandoffID || receipt.Epoch != record.Epoch.Number || receipt.State != record.State || receipt.Reason == "" || receipt.Reason != record.DeliveryOutcome {
+		return errors.New("delivery outcome receipt does not bind the delivery record")
+	}
+	return nil
+}
+func validateMergeRefusalReceipt(record DeliveryRecord, bytes []byte) error {
+	var receipt MergeRefusalReceipt
+	if err := decodeCurrentReceipt(bytes, &receipt); err != nil || receipt.SchemaVersion != "merge-refusal-receipt.v1" || receipt.HandoffID != record.HandoffID || receipt.Epoch != record.Epoch.Number || (receipt.Observation.State != "refused" && receipt.Observation.State != "unknown") || receipt.Arm != expectedMergeArm(DeliveryBead{Record: record}, receipt.Arm.ProtectionDigest) {
+		return errors.New("merge-refusal receipt does not bind the delivery record")
+	}
+	return nil
+}
+func validateDeadlineReceipt(record DeliveryRecord, bytes []byte) error {
+	var receipt DeadlineReceipt
+	if err := decodeCurrentReceipt(bytes, &receipt); err != nil || receipt.SchemaVersion != "delivery-deadline-receipt.v1" || receipt.HandoffID != record.HandoffID || receipt.Epoch != record.Epoch.Number || receipt.Deadline != record.Deadline || !isTime(receipt.ObservedAt) || receipt.Outcome != "expired" || record.DeadlineOutcome != receipt.Outcome {
+		return errors.New("deadline receipt does not bind the delivery record")
+	}
+	return nil
 }
 
 // validateAutoMergeAttemptRef validates the handoff-wide fuse independently
@@ -1225,12 +1300,16 @@ func validateAutoMergeAttemptRef(root string, record DeliveryRecord, ref Receipt
 		return fmt.Errorf("auto-merge attempt is not strict JSON: %w", err)
 	}
 	effectID := identifier("agentops.gc.delivery.auto-merge-effect.v1", record.HandoffID, record.Repository, record.PR.NodeID, record.Epoch.BaseRef, record.Epoch.Branch)
-	arm := receipt.Arm
-	wantArmID := identifier("agentops.gc.delivery.merge-arm.v1", arm.EffectID, strconv.Itoa(receipt.Epoch), arm.BaseOID, arm.Head, arm.GateDigest, "SQUASH")
-	if receipt.SchemaVersion != "auto-merge-attempt-receipt.v1" || receipt.HandoffID != record.HandoffID || receipt.Epoch != epoch || receipt.Outcome != "prepared" || receipt.EffectID != effectID || record.AutoMergeEffectID != effectID || arm.ID != wantArmID || arm.EffectID != receipt.EffectID || arm.PRID != record.PR.ID || arm.Repository != record.Repository || arm.NodeID != record.PR.NodeID || arm.Number != record.PR.Number || arm.Branch != record.Epoch.Branch || arm.BaseRef != record.Epoch.BaseRef || !isHex(arm.BaseOID, 40) || !isHex(arm.Head, 40) || !isHex(arm.ProtectionDigest, 64) || !isHex(arm.GateDigest, 64) {
+	if !matchesAutoMergeAttempt(receipt, record, epoch, effectID) {
 		return errors.New("auto-merge attempt does not bind stable handoff identity")
 	}
 	return nil
+}
+
+func matchesAutoMergeAttempt(receipt AutoMergeAttemptReceipt, record DeliveryRecord, epoch int, effectID string) bool {
+	arm := receipt.Arm
+	wantArmID := identifier("agentops.gc.delivery.merge-arm.v1", arm.EffectID, strconv.Itoa(receipt.Epoch), arm.BaseOID, arm.Head, arm.GateDigest, "SQUASH")
+	return receipt.SchemaVersion == "auto-merge-attempt-receipt.v1" && receipt.HandoffID == record.HandoffID && receipt.Epoch == epoch && receipt.Outcome == "prepared" && receipt.EffectID == effectID && record.AutoMergeEffectID == effectID && arm.ID == wantArmID && arm.EffectID == receipt.EffectID && arm.PRID == record.PR.ID && arm.Repository == record.Repository && arm.NodeID == record.PR.NodeID && arm.Number == record.PR.Number && arm.Branch == record.Epoch.Branch && arm.BaseRef == record.Epoch.BaseRef && isHex(arm.BaseOID, 40) && isHex(arm.Head, 40) && isHex(arm.ProtectionDigest, 64) && isHex(arm.GateDigest, 64)
 }
 
 func validateRecordAutoMergeAttempt(root string, record DeliveryRecord) error {
@@ -1332,58 +1411,62 @@ func validStateFields(record DeliveryRecord) bool {
 	if (record.Epoch.Head == "") != (record.Epoch.Tree == "") {
 		return false
 	}
-	if record.Epoch.Number == 1 {
-		if record.Predecessor != "" || record.PredecessorReceiptDigest != "" || record.Epoch.LeaseOID != "" {
-			return false
-		}
-	} else if record.Predecessor == "" || !isHex(record.PredecessorReceiptDigest, 64) {
-		return false
-	}
-	if record.EpochSuccessorID != "" && record.EpochSuccessorID != "delivery-"+record.HandoffID[:20]+fmt.Sprintf("-e%06d", record.Epoch.Number+1) {
+	if !validEpochLineage(record) || !validEpochSuccessor(record) {
 		return false
 	}
 	emptyPR, stablePR, actualPR := validPRShape(record)
+	return validStatePR(record, hasEpoch, emptyPR, stablePR, actualPR) && validMergeState(record) && validAttemptState(record)
+}
+
+func validEpochLineage(record DeliveryRecord) bool {
+	if record.Epoch.Number == 1 {
+		return record.Predecessor == "" && record.PredecessorReceiptDigest == "" && record.Epoch.LeaseOID == ""
+	}
+	return record.Predecessor != "" && isHex(record.PredecessorReceiptDigest, 64)
+}
+
+func validEpochSuccessor(record DeliveryRecord) bool {
+	return record.EpochSuccessorID == "" || record.EpochSuccessorID == "delivery-"+record.HandoffID[:20]+fmt.Sprintf("-e%06d", record.Epoch.Number+1)
+}
+
+func validStatePR(record DeliveryRecord, hasEpoch, emptyPR, stablePR, actualPR bool) bool {
 	if !emptyPR && !stablePR {
 		return false
 	}
 	switch record.State {
 	case DeliveryStateBranchReady:
-		if !hasEpoch {
-			return false
-		}
+		return hasEpoch
 	case DeliveryStatePRPrepared:
-		if !hasEpoch || !stablePR {
-			return false
-		}
+		return hasEpoch && stablePR
 	case DeliveryStatePROpen, DeliveryStateCIWait, DeliveryStateMergeEligible, DeliveryStateMergeArmed, DeliveryStateManualReview, DeliveryStateLanded:
-		if !hasEpoch || !actualPR {
-			return false
-		}
+		return hasEpoch && actualPR
+	default:
+		return true
 	}
-	if record.State == DeliveryStateMergeEligible || record.State == DeliveryStateMergeArmed || record.State == DeliveryStateManualReview {
-		if !isHex(record.GateDigest, 64) {
-			return false
-		}
+}
+
+func validMergeState(record DeliveryRecord) bool {
+	if (record.State == DeliveryStateMergeEligible || record.State == DeliveryStateMergeArmed || record.State == DeliveryStateManualReview) && !isHex(record.GateDigest, 64) {
+		return false
 	}
 	if record.State == DeliveryStateManualReview && record.Mode != "manual" {
 		return false
 	}
-	if record.ArmID != "" && !isHex(record.ArmID, 64) || record.AutoMergeEffectID != "" && !isHex(record.AutoMergeEffectID, 64) {
+	if (record.ArmID != "" && !isHex(record.ArmID, 64)) || (record.AutoMergeEffectID != "" && !isHex(record.AutoMergeEffectID, 64)) {
 		return false
 	}
 	if record.State == DeliveryStateMergeArmed && (record.Mode != "auto" || !isHex(record.ArmID, 64) || !isHex(record.AutoMergeEffectID, 64)) {
 		return false
 	}
-	if record.State == DeliveryStateLanded && (!isHex(record.LandingDigest, 64) || !isHex(record.LandedSHA, 40)) {
-		return false
+	return record.State != DeliveryStateLanded || (isHex(record.LandingDigest, 64) && isHex(record.LandedSHA, 40))
+}
+
+func validAttemptState(record DeliveryRecord) bool {
+	if record.AutoMergeAttempt == (ReceiptRef{}) {
+		return true
 	}
-	if record.AutoMergeAttempt != (ReceiptRef{}) {
-		epoch, name, ok := deliveryReceiptLocation(record, record.AutoMergeAttempt)
-		if !ok || epoch > record.Epoch.Number || name != "auto-merge-attempt.json" || !isHex(record.AutoMergeEffectID, 64) {
-			return false
-		}
-	}
-	return true
+	epoch, name, ok := deliveryReceiptLocation(record, record.AutoMergeAttempt)
+	return ok && epoch <= record.Epoch.Number && name == "auto-merge-attempt.json" && isHex(record.AutoMergeEffectID, 64)
 }
 
 func (r *Reducer) composeEpoch(ctx context.Context, state markerStore, bead DeliveryBead, prepared Prepared, request Request) (Result, error) {
@@ -1524,28 +1607,36 @@ func (r *Reducer) openPreparedPR(ctx context.Context, state markerStore, bead De
 		return Result{}, errors.New("prepared PR lacks exact intent")
 	}
 	if state.exists("pr-open.json") {
-		var receipt PROpenReceipt
-		if found, err := state.read("pr-open.json", &receipt); err != nil || !found {
-			return Result{}, errors.New("PR receipt disappeared")
-		}
-		observation := PRObservation{State: receipt.State, Draft: receipt.Draft, BaseOID: receipt.ObservedBaseOID, Head: receipt.ObservedHead, PR: PullRequest{ID: receipt.PRID, Repository: receipt.Repository, Branch: receipt.Branch, BaseRef: receipt.BaseRef, EffectID: receipt.EffectID, NodeID: receipt.NodeID, Number: receipt.Number, URL: receipt.URL}}
-		if !matchesPROpenReceipt(receipt, observation, prepared, request.Target, intent) || !matchesPRObservation(observation, intent) {
-			return Result{}, errors.New("PR receipt conflicts with intent")
-		}
-		want := bead.Record
-		want.PR, want.State, want.Current, want.Revision = observation.PR, DeliveryStatePROpen, receiptRef("pr-open", state), bead.Record.Revision+1
-		if err := r.cut("before_pr_open"); err != nil {
-			return Result{}, err
-		}
-		result, err := r.storeDeliveryRecord(ctx, bead, want)
-		if err != nil {
-			return Result{}, err
-		}
-		if err := r.cut("after_pr_open"); err != nil {
-			return Result{}, err
-		}
-		return result, nil
+		return r.replayPreparedPR(ctx, state, bead, prepared, request.Target, intent)
 	}
+	return r.observePreparedPR(ctx, state, bead, prepared, request, observedBase, intent)
+}
+
+func (r *Reducer) replayPreparedPR(ctx context.Context, state markerStore, bead DeliveryBead, prepared Prepared, target Target, intent PRIntent) (Result, error) {
+	var receipt PROpenReceipt
+	if found, err := state.read("pr-open.json", &receipt); err != nil || !found {
+		return Result{}, errors.New("PR receipt disappeared")
+	}
+	observation := PRObservation{State: receipt.State, Draft: receipt.Draft, BaseOID: receipt.ObservedBaseOID, Head: receipt.ObservedHead, PR: PullRequest{ID: receipt.PRID, Repository: receipt.Repository, Branch: receipt.Branch, BaseRef: receipt.BaseRef, EffectID: receipt.EffectID, NodeID: receipt.NodeID, Number: receipt.Number, URL: receipt.URL}}
+	if !matchesPROpenReceipt(receipt, observation, prepared, target, intent) || !matchesPRObservation(observation, intent) {
+		return Result{}, errors.New("PR receipt conflicts with intent")
+	}
+	want := bead.Record
+	want.PR, want.State, want.Current, want.Revision = observation.PR, DeliveryStatePROpen, receiptRef("pr-open", state), bead.Record.Revision+1
+	if err := r.cut("before_pr_open"); err != nil {
+		return Result{}, err
+	}
+	result, err := r.storeDeliveryRecord(ctx, bead, want)
+	if err != nil {
+		return Result{}, err
+	}
+	if err := r.cut("after_pr_open"); err != nil {
+		return Result{}, err
+	}
+	return result, nil
+}
+
+func (r *Reducer) observePreparedPR(ctx context.Context, state markerStore, bead DeliveryBead, prepared Prepared, request Request, observedBase string, intent PRIntent) (Result, error) {
 	providers, ok := r.providers.(PRProviders)
 	if !ok {
 		return Result{}, errors.New("delivery provider does not implement PR boundary")

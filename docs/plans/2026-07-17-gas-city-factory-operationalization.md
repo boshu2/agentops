@@ -329,9 +329,9 @@ trains, nested integration courts, dynamic delivery rigs, or model-authored
 Git/queue/lifecycle transitions. A thin vertical slice measures the actual
 surface before full implementation. A projection beyond roughly 3,000
 non-test Go lines is a re-scope tripwire, not a correctness target. The
-completed GC33-7 subject contains 4,465 non-test Go lines across the optional
+completed GC33-7 subject contains 4,621 physical non-test Go lines across the optional
 command, typed reducer, and Beads/Git/PR/hosted providers. This exceeds the
-tripwire by 1,465 lines and is therefore recorded as a review fact. The added
+tripwire by 1,621 lines and is therefore recorded as a review fact. The added
 surface remains within the admitted components: it adds no daemon, scheduler,
 model-authored transition, second merge engine, or private lifecycle ledger.
 
