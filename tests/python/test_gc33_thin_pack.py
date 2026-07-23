@@ -147,11 +147,17 @@ class ThinPackTests(unittest.TestCase):
             EXECUTOR / "agents/implementer-claude/agent.toml": ("claude", "opus-4.8", "medium"),
             EXECUTOR / "agents/validator/agent.toml": ("codex", "gpt-5.6-sol", "high"),
         }
+        mayor_agent = FACTORY / "agents/mayor/agent.toml"
         for path, (provider, model, effort) in expected.items():
             config = tomllib.loads(path.read_text(encoding="utf-8"))
             self.assertEqual(config["provider"], provider, path)
             self.assertEqual(config["option_defaults"], {"permission_mode": config["option_defaults"]["permission_mode"], "model": model, "effort": effort}, path)
-            self.assertEqual(config["lifecycle"], "one_shot", path)
+            # Every role is a one_shot worker except the Mayor, which is the
+            # standing dispatch shepherd (asserted separately).
+            if path == mayor_agent:
+                self.assertNotIn("lifecycle", config, path)
+            else:
+                self.assertEqual(config["lifecycle"], "one_shot", path)
         runtime_text = "\n".join(path.read_text(encoding="utf-8") for path in expected)
         self.assertNotIn("luna", runtime_text.lower())
 
@@ -424,16 +430,17 @@ class ThinPackTests(unittest.TestCase):
             self.assertIn("export GC_BIN\n", text, name)
 
     def test_intake_never_routes_through_the_city_scoped_mayor(self) -> None:
-        # Static consistency proof: no default-flow surface in deploy/gc or the
-        # factory pack slings work to agentops.mayor, and the Mayor prompt no
-        # longer claims. Intake homes rig beads on the rig planner instead.
+        # Static consistency proof: intake (feed) homes rig beads on the rig
+        # planner and never slings the source bead to agentops.mayor. The Mayor
+        # is a dispatch shepherd (it slings ready STEP beads to their rig
+        # run-targets), so it must never be a sling *target* on the intake path.
         surfaces = list(DEPLOY.glob("*.sh")) + list(FACTORY.rglob("*.md"))
         for path in surfaces:
             text = path.read_text(encoding="utf-8")
             self.assertNotIn("sling agentops.mayor", text, path)
         mayor_prompt = (FACTORY / "agents/mayor/prompt.template.md").read_text(encoding="utf-8")
-        # The Mayor is an observe-only coordinator: it explicitly forbids the
-        # cross-store claim and never carries an instruction to run it.
+        # Doctrine invariant: the Mayor dispatches but never claims. It forbids
+        # the cross-store claim and never carries an instruction to run it.
         self.assertIn("Do not run `gc hook --claim`", mayor_prompt)
         self.assertNotIn('Run `"$GC_BIN" hook --claim', mayor_prompt)
 
@@ -454,14 +461,30 @@ class ThinPackTests(unittest.TestCase):
 
     # gc/bd stubs record one argv element per line so tests assert on exact argv
     # arrays (argument boundaries and quoting survive), never a flattened "$*".
-    # Content is constant so its digest is stable; behavior is driven by env.
+    # Behavior is driven by env; the fixture records the stub's digest
+    # dynamically, so the content may change freely.
+    #
+    # Fidelity: the gc stub REJECTS (nonzero + stderr) any first verb not on the
+    # allowlist of verified v1.3.5 surfaces the pack actually drives through gc
+    # (bd goes through the separate bd stub). This makes a test fail loudly if the
+    # pack ever calls an unverified gc verb. GC_STUB_FAIL=<verb> forces a nonzero
+    # exit for an allowlisted verb, to exercise fail-closed error propagation.
     _GC_STUB = (
         "#!/usr/bin/env python3\n"
         "import os, sys\n"
+        "argv = sys.argv[1:]\n"
         "log = os.environ.get('GC_ARGV_LOG')\n"
         "if log:\n"
         "    with open(log, 'a', encoding='utf-8') as f:\n"
-        "        f.write('\\n'.join(sys.argv[1:]) + '\\n')\n"
+        "        f.write('\\n'.join(argv) + '\\n')\n"
+        "allowed = {'sling', 'status', 'doctor', 'session', 'mail'}\n"
+        "if not argv or argv[0] not in allowed:\n"
+        "    sys.stderr.write('gc stub: refusing non-allowlisted command: %s\\n' % (argv[0] if argv else '<none>'))\n"
+        "    sys.exit(2)\n"
+        "fail = os.environ.get('GC_STUB_FAIL')\n"
+        "if fail and argv[0] == fail:\n"
+        "    sys.stderr.write('gc stub: forced failure for %s\\n' % fail)\n"
+        "    sys.exit(1)\n"
         "sys.exit(0)\n"
     )
     _BD_STUB = (
@@ -485,7 +508,12 @@ class ThinPackTests(unittest.TestCase):
     )
 
     def _invoke_env(
-        self, *, gc_log: Path | None = None, bd_log: Path | None = None, bd_mode: str = "ok"
+        self,
+        *,
+        gc_log: Path | None = None,
+        bd_log: Path | None = None,
+        bd_mode: str = "ok",
+        gc_fail: str | None = None,
     ) -> dict[str, str]:
         env = os.environ.copy()
         if gc_log is not None:
@@ -493,6 +521,8 @@ class ThinPackTests(unittest.TestCase):
         if bd_log is not None:
             env["BD_ARGV_LOG"] = str(bd_log)
         env["BD_STUB_MODE"] = bd_mode
+        if gc_fail is not None:
+            env["GC_STUB_FAIL"] = gc_fail
         return env
 
     def _managed_city_fixture(self, base: Path, *, rig: Path) -> dict[str, object]:
@@ -671,6 +701,189 @@ class ThinPackTests(unittest.TestCase):
                 "-C", str(rig.resolve()), "create", "--title", "no description",
                 "--type", "task", "--json",
             ])
+
+    def test_mayor_start_wakes_the_named_shepherd_session(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            base = Path(temporary) / "has space"  # exercises argv quoting
+            base.mkdir()
+            rig = base / "rig"
+            rig.mkdir()
+            fixture = self._managed_city_fixture(base, rig=rig)
+            gc_log = base / "gc.argv"
+            result = run(
+                str(DEPLOY / "invoke.sh"), "--city", str(fixture["city"]), "mayor", "start",
+                env=self._invoke_env(gc_log=gc_log),
+            )
+            self.assertEqual(result.returncode, 0, result.stderr)
+            # Native start verb: wake the city-scoped mayor named session.
+            self.assertEqual(
+                gc_log.read_text(encoding="utf-8").splitlines(),
+                ["session", "wake", "agentops.mayor"],
+            )
+
+    def test_mayor_tell_delivers_a_notified_mail_message(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            base = Path(temporary) / "has space"
+            base.mkdir()
+            rig = base / "rig"
+            rig.mkdir()
+            fixture = self._managed_city_fixture(base, rig=rig)
+            gc_log = base / "gc.argv"
+            result = run(
+                str(DEPLOY / "invoke.sh"), "--city", str(fixture["city"]),
+                "mayor", "tell", "dispatch testrig-12",
+                env=self._invoke_env(gc_log=gc_log),
+            )
+            self.assertEqual(result.returncode, 0, result.stderr)
+            # The clean v1.3.5 primitive: a notified mail message to the mayor.
+            # The whole quoted instruction survives as one argv element.
+            self.assertEqual(
+                gc_log.read_text(encoding="utf-8").splitlines(),
+                ["mail", "send", "--to", "agentops.mayor", "--notify", "-m", "dispatch testrig-12"],
+            )
+
+    def test_mayor_tell_refuses_empty_message_without_calling_gc(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            base = Path(temporary) / "has space"
+            base.mkdir()
+            rig = base / "rig"
+            rig.mkdir()
+            fixture = self._managed_city_fixture(base, rig=rig)
+            gc_log = base / "gc.argv"
+            for empty in ("", "   "):
+                result = run(
+                    str(DEPLOY / "invoke.sh"), "--city", str(fixture["city"]),
+                    "mayor", "tell", empty,
+                    env=self._invoke_env(gc_log=gc_log),
+                )
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn("non-empty message", result.stderr)
+            self.assertFalse(gc_log.exists(), "no mail must be sent for an empty message")
+
+    def test_mayor_status_reports_the_socket_before_the_session_exists(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            base = Path(temporary) / "has space"
+            base.mkdir()
+            rig = base / "rig"
+            rig.mkdir()
+            fixture = self._managed_city_fixture(base, rig=rig)
+            gc_log = base / "gc.argv"
+            result = run(
+                str(DEPLOY / "invoke.sh"), "--city", str(fixture["city"]), "mayor", "status",
+                env=self._invoke_env(gc_log=gc_log),
+            )
+            self.assertEqual(result.returncode, 0, result.stderr)
+            # Status reads the native session list (stub returns none -> not started).
+            self.assertEqual(
+                gc_log.read_text(encoding="utf-8").splitlines(),
+                ["session", "list", "--state", "all", "--json"],
+            )
+            expected_socket = "agentops-" + hashlib.sha256(
+                os.path.realpath(str(fixture["city"])).encode()
+            ).hexdigest()[:20]
+            self.assertIn("not started", result.stdout)
+            self.assertIn(expected_socket, result.stdout)
+
+    def test_mayor_rejects_unknown_subcommand(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            base = Path(temporary)
+            rig = base / "rig"
+            rig.mkdir()
+            fixture = self._managed_city_fixture(base, rig=rig)
+            result = run(
+                str(DEPLOY / "invoke.sh"), "--city", str(fixture["city"]), "mayor", "claim",
+                env=self._invoke_env(),
+            )
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("unknown mayor operation", result.stderr)
+
+    def test_mayor_status_fails_closed_when_gc_query_fails(self) -> None:
+        # Tri-state case (a): a failed gc query must NOT read as "no session".
+        # It exits nonzero with "status unavailable" and surfaces the stderr tail.
+        with tempfile.TemporaryDirectory() as temporary:
+            base = Path(temporary) / "has space"
+            base.mkdir()
+            rig = base / "rig"
+            rig.mkdir()
+            fixture = self._managed_city_fixture(base, rig=rig)
+            result = run(
+                str(DEPLOY / "invoke.sh"), "--city", str(fixture["city"]), "mayor", "status",
+                env=self._invoke_env(gc_fail="session"),
+            )
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("status unavailable", result.stderr)
+            self.assertNotIn("not started", result.stdout)
+
+    def test_gc_stub_rejects_non_allowlisted_verbs(self) -> None:
+        # Fidelity guard: the pack must only drive gc through verified v1.3.5
+        # verbs. A non-allowlisted verb passthrough fails loudly.
+        with tempfile.TemporaryDirectory() as temporary:
+            base = Path(temporary)
+            rig = base / "rig"
+            rig.mkdir()
+            fixture = self._managed_city_fixture(base, rig=rig)
+            result = run(
+                str(DEPLOY / "invoke.sh"), "--city", str(fixture["city"]),
+                "--", "totally-made-up-verb",
+                env=self._invoke_env(),
+            )
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("non-allowlisted command", result.stderr)
+
+    def test_heartbeat_order_is_a_valid_cooldown_nudge(self) -> None:
+        # Finding 1: liveness. The pack ships a scheduled order that re-nudges the
+        # Mayor. Schema-lint it against the v1.3.5 order surface and the 2-5m band.
+        order_path = FACTORY / "orders/shepherd-heartbeat.toml"
+        self.assertTrue(order_path.is_file(), order_path)
+        order = tomllib.loads(order_path.read_text(encoding="utf-8"))["order"]
+        self.assertEqual(order["trigger"], "cooldown")
+        self.assertEqual(order.get("scope"), "city")
+        # Interval must be a Go duration in the 2-5 minute band.
+        self.assertRegex(order["interval"], r"^[1-9][0-9]*m$")
+        minutes = int(order["interval"][:-1])
+        self.assertGreaterEqual(minutes, 2)
+        self.assertLessEqual(minutes, 5)
+        # It nudges the Mayor via the same mail-send primitive, with --notify.
+        exec_cmd = order["exec"]
+        self.assertIn("gc mail send", exec_cmd)
+        self.assertIn("--to agentops.mayor", exec_cmd)
+        self.assertIn("--notify", exec_cmd)
+
+    def test_routed_bead_recovery_is_wake_not_resling(self) -> None:
+        # Finding 3 sanity: the docs must state that re-dispatching an already
+        # routed bead is a no-op, and that recovery is waking the worker session —
+        # so an agent does not cargo-cult a dead re-sling retry.
+        skill = (REPO_ROOT / "skills/using-gc/SKILL.md").read_text(encoding="utf-8")
+        self.assertIn("NO-OP", skill)
+        self.assertIn("gc session wake <run_target>", skill)
+        prompt = (FACTORY / "agents/mayor/prompt.template.md").read_text(encoding="utf-8")
+        self.assertIn("re-slinging a routed bead is a NO-OP", prompt)
+        self.assertIn("gc session wake <run_target>", prompt)
+
+    def test_mayor_mail_authority_has_no_pause_resume(self) -> None:
+        # Finding 5: mail authority is exactly dispatch/status; pause/resume is
+        # dropped (stateful, incompatible with wake_mode=fresh), and mail bodies
+        # are untrusted data, not instructions.
+        prompt = (FACTORY / "agents/mayor/prompt.template.md").read_text(encoding="utf-8")
+        self.assertNotIn("resume shepherding", prompt)  # the old stateful verb
+        self.assertIn("no pause/resume", prompt.lower())
+        self.assertIn("UNTRUSTED DATA", prompt)
+        self.assertIn("NEVER executed", prompt)
+
+    def test_named_mayor_session_is_a_standing_always_shepherd(self) -> None:
+        # The 3.3 human-and-agent door needs a resident session: mode=always so
+        # the controller keeps it live with no demand, and no one_shot lifecycle
+        # so the pane stays attachable rather than exiting after one run.
+        pack = tomllib.loads((FACTORY / "pack.toml").read_text(encoding="utf-8"))
+        mayor_sessions = [
+            s for s in pack.get("named_session", []) if s.get("template") == "mayor"
+        ]
+        self.assertEqual(len(mayor_sessions), 1)
+        self.assertEqual(mayor_sessions[0].get("scope"), "city")
+        self.assertEqual(mayor_sessions[0].get("mode"), "always")
+        agent = tomllib.loads((FACTORY / "agents/mayor/agent.toml").read_text(encoding="utf-8"))
+        self.assertNotIn("lifecycle", agent)
+        self.assertLessEqual(agent.get("min_active_sessions", 0), agent["max_active_sessions"])
 
     def test_teardown_waits_for_scoped_drain_and_fails_with_exact_residue(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
