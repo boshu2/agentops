@@ -36,6 +36,32 @@ condition: every reported finding is backed by a defeat attempt — constructed,
 or attempted with the blocking fact cited; a finding with neither is deleted,
 not softened.
 
+## Derivation-diff challenge
+
+A challenger that critiques the handed plan is a yes-man with extra steps: it
+anchors on the author's design and rationalizes it. Derive independently, then
+diff. Give one fresh context ONLY the intent source and the plan's declared
+ground truth — the vendor docs and stock behavior for integration work, the
+repo's patterns and behavior spec for extension — and never the author's design.
+Have it sketch its own design from that ground truth alone. The diff between that
+independent design and the working plan is the challenge artifact; each
+divergence is a finding to defend or adopt. Convergence is weak evidence the plan
+follows the ground truth; divergence names where it may not.
+
+Two questions the challenger answers with an artifact, not an opinion:
+
+- Cathedral: is this the smallest real thing, or does it rebuild what already
+  exists? Artifact — the simplest version that satisfies acceptance, plus the
+  named reason it is insufficient. No named reason means build the simple one.
+- Grain: for integration work, does every component the plan writes have a native
+  counterpart in the substrate? Artifact — the native-counterpart list, one row
+  per component the plan authors, naming the substrate feature it duplicates or
+  the reason none exists.
+
+These are integration- and extension-class checks. The Grain question's
+native-counterpart list applies only to integration-class work; do not impose it
+on routine feature work.
+
 ## Boundary
 
 - Emit advisory findings, not `verdict.v2`, readiness, admission, or permission.
