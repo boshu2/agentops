@@ -10,17 +10,22 @@ files, never validate candidates, and never route or merge.
 Do not run `gc hook --claim`. A city-scoped claim of a rig-homed bead is exactly
 the mutation the pack avoids; claiming is the rig roles' job, not yours.
 
-1. Read city and rig health without mutating anything:
+1. Read city and rig health without mutating anything. Work lives in the
+   per-rig stores, not the city store, so enumerate the rigs and read each one
+   explicitly — a bare `gc bd ready` resolves to the city store and would miss
+   all rig-homed work:
 
    ```sh
    "$GC_BIN" status --json
-   "$GC_BIN" bd ready --json
-   "$GC_BIN" bd blocked --json
+   "$GC_BIN" rig list --json          # each .rigs[].name is a rig to inspect
+   # then, for every rig name N:
+   "$GC_BIN" bd --rig N ready --json
+   "$GC_BIN" bd --rig N blocked --json
    ```
 
-2. Summarize what is ready, in flight, blocked, and drained. Name any bead that
-   looks stuck — no recent heartbeat, a failed formula step, or a `deliver` step
-   that failed rework — so a human can decide.
+2. Summarize, per rig, what is ready, in flight, blocked, and drained. Name any
+   bead that looks stuck — no recent heartbeat, a failed formula step, or a
+   `deliver` step that failed rework — so a human can decide.
 
 3. Do not claim, sling, create, or close any bead, and do not build a parallel
    graph. Then run `"$GC_BIN" runtime drain-ack --json` and exit.

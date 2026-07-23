@@ -452,38 +452,92 @@ class ThinPackTests(unittest.TestCase):
                 h.update(rel.encode() + b"\0" + Path(p).read_bytes() + b"\0")
         return h.hexdigest()
 
-    def _managed_city_fixture(
-        self, root: Path, *, gc_script: str, bd_script: str, worktree_script: str
-    ) -> dict[str, object]:
-        """Build the minimal on-disk managed-city surface invoke.sh validates.
+    # gc/bd stubs record one argv element per line so tests assert on exact argv
+    # arrays (argument boundaries and quoting survive), never a flattened "$*".
+    # Content is constant so its digest is stable; behavior is driven by env.
+    _GC_STUB = (
+        "#!/usr/bin/env python3\n"
+        "import os, sys\n"
+        "log = os.environ.get('GC_ARGV_LOG')\n"
+        "if log:\n"
+        "    with open(log, 'a', encoding='utf-8') as f:\n"
+        "        f.write('\\n'.join(sys.argv[1:]) + '\\n')\n"
+        "sys.exit(0)\n"
+    )
+    _BD_STUB = (
+        "#!/usr/bin/env python3\n"
+        "import json, os, sys\n"
+        "argv = sys.argv[1:]\n"
+        "log = os.environ.get('BD_ARGV_LOG')\n"
+        "if log:\n"
+        "    with open(log, 'a', encoding='utf-8') as f:\n"
+        "        f.write('\\n'.join(argv) + '\\n---\\n')\n"
+        "mode = os.environ.get('BD_STUB_MODE', 'ok')\n"
+        "if 'create' in argv:\n"
+        "    print(json.dumps({'id': 'testrig-9'})); sys.exit(0)\n"
+        "if 'show' in argv:\n"
+        "    bead = argv[argv.index('show') + 1]\n"
+        "    if mode == 'notfound':\n"
+        "        sys.stderr.write('Issue %s not found\\n' % bead); sys.exit(1)\n"
+        "    returned = 'totally-different' if mode == 'mismatch' else bead\n"
+        "    print(json.dumps([{'id': returned}])); sys.exit(0)\n"
+        "sys.exit(2)\n"
+    )
 
-        Mirrors the exact marker identity checks in invoke.sh: gc/bd binary
-        digests, the pack-snapshot tree digest, and the city.toml digest. Stub
-        binaries stand in for gc and bd so feed/create are exercised fully
-        offline with no network and no live gc/bd.
+    def _invoke_env(
+        self, *, gc_log: Path | None = None, bd_log: Path | None = None, bd_mode: str = "ok"
+    ) -> dict[str, str]:
+        env = os.environ.copy()
+        if gc_log is not None:
+            env["GC_ARGV_LOG"] = str(gc_log)
+        if bd_log is not None:
+            env["BD_ARGV_LOG"] = str(bd_log)
+        env["BD_STUB_MODE"] = bd_mode
+        return env
+
+    def _managed_city_fixture(self, base: Path, *, rig: Path) -> dict[str, object]:
+        """Build a managed-city surface invoke.sh accepts, anchored to the real
+        pack lock and the toolchain receipt (not the mutable marker).
+
+        gc and bd are stub binaries whose digests are recorded in a schema-2
+        receipt whose pinned pair matches deploy/gc/toolchain.lock.json. The
+        worktree helper is the real deploy/gc/worktree.sh, so feed's provenance
+        check passes and a real isolated worktree is prepared, fully offline.
         """
-        city = root / "city"
+        toolchain = base / "toolchain"
+        (toolchain / "bin").mkdir(parents=True)
+        gc_bin = toolchain / "bin/gc"
+        gc_bin.write_text(self._GC_STUB, encoding="utf-8")
+        gc_bin.chmod(0o755)
+        bd_bin = toolchain / "bin/bd"
+        bd_bin.write_text(self._BD_STUB, encoding="utf-8")
+        bd_bin.chmod(0o755)
+        receipt = {
+            "schema_version": 2,
+            "runtime": {
+                "gc": {"path": "bin/gc", "sha256": self._sha256_file(gc_bin)},
+                "bd": {"path": "bin/bd", "sha256": self._sha256_file(bd_bin)},
+            },
+            "pair": {
+                "status": "qualified",
+                "gc": {"source_commit": GC_COMMIT},
+                "bd": {"source_commit": BD_COMMIT},
+            },
+        }
+        (toolchain / "toolchain.json").write_text(json.dumps(receipt), encoding="utf-8")
+
+        city = base / "city"
         (city / ".gc/agentops-packs/agentops-factory").mkdir(parents=True)
         (city / ".gc/agentops-packs/agentops-factory/pack.toml").write_text("name = 'x'\n", encoding="utf-8")
         (city / ".gc/scripts").mkdir(parents=True)
         (city / ".beads").mkdir(parents=True)
         (city / "city.toml").write_text("[workspace]\n", encoding="utf-8")
         (city / ".beads/dolt-server.port").write_text("3306\n", encoding="utf-8")
+        installed_wt = city / ".gc/scripts/agentops-worktree"
+        installed_wt.write_bytes((DEPLOY / "worktree.sh").read_bytes())
+        installed_wt.chmod(0o755)
 
-        gc_bin = root / "gc"
-        gc_bin.write_text(gc_script, encoding="utf-8")
-        gc_bin.chmod(0o755)
-        bd_bin = root / "bd"
-        bd_bin.write_text(bd_script, encoding="utf-8")
-        bd_bin.chmod(0o755)
-        wt = city / ".gc/scripts/agentops-worktree"
-        wt.write_text(worktree_script, encoding="utf-8")
-        wt.chmod(0o755)
-
-        rig = root / "rig"
-        rig.mkdir()
-        workers = root / "workers"
-
+        workers = base / "workers"
         marker = city / ".gc/agentops-bootstrap.json"
         marker.write_text(json.dumps({
             "schema_version": 1,
@@ -503,88 +557,120 @@ class ThinPackTests(unittest.TestCase):
             },
             "telemetry": {"metrics_url": "", "logs_url": "", "sdk_disabled": True},
         }), encoding="utf-8")
-        return {"city": city, "rig": rig, "workers": workers, "gc_bin": gc_bin, "bd_bin": bd_bin}
+        return {"city": city, "rig": rig, "workers": workers, "gc_bin": gc_bin, "bd_bin": bd_bin, "toolchain": toolchain}
 
-    def test_feed_prepares_worktree_and_slings_rig_formula(self) -> None:
+    def test_feed_verifies_bead_then_slings_full_flag_set(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
-            root = Path(temporary)
-            gc_log = root / "gc.log"
-            worktree_out = root / "worker-tree"
-            gc_script = f'#!/bin/sh\nprintf \'%s\\n\' "$*" >> "{gc_log}"\nexit 0\n'
-            worktree_script = (
-                '#!/bin/sh\n'
-                f'printf \'{{"bead":"b","branch":"gc/b","worktree":"{worktree_out}"}}\\n\'\n'
-                'exit 0\n'
-            )
-            fixture = self._managed_city_fixture(
-                root, gc_script=gc_script, bd_script="#!/bin/sh\nexit 1\n",
-                worktree_script=worktree_script,
-            )
+            base = Path(temporary) / "has space"  # exercises argv quoting
+            base.mkdir()
+            repo, _ = self.make_repository(base)
+            fixture = self._managed_city_fixture(base, rig=repo)
+            gc_log = base / "gc.argv"
+            bd_log = base / "bd.argv"
+            env = self._invoke_env(gc_log=gc_log, bd_log=bd_log)
             result = run(
                 str(DEPLOY / "invoke.sh"), "--city", str(fixture["city"]), "feed", "testrig-1",
+                env=env,
             )
             self.assertEqual(result.returncode, 0, result.stderr)
-            logged = gc_log.read_text(encoding="utf-8")
-            self.assertIn("sling testrig/agentops.plan-reviewer testrig-1", logged)
-            self.assertIn("--on agentops-experiment", logged)
-            self.assertIn("--nudge", logged)
-            self.assertIn("--json", logged)
-            self.assertIn(f"--var work_dir={worktree_out}", logged)
-            self.assertIn("--var plan_target=testrig/agentops.plan-reviewer", logged)
-            self.assertIn("--var implement_target=testrig/agentops.implementer", logged)
-            self.assertIn("--var validate_target=testrig/agentops.validator", logged)
-            self.assertIn("--var refiner_target=testrig/agentops.refiner", logged)
-            self.assertNotIn("agentops.mayor", logged)
+            # Bead existence was verified in the rig store before any sling.
+            self.assertEqual(
+                bd_log.read_text(encoding="utf-8").splitlines(),
+                ["-C", str(repo.resolve()), "show", "testrig-1", "--json", "---"],
+            )
+            # The full production sling flag set, one argv element per line.
+            expected_worktree = str(Path(os.path.realpath(fixture["workers"])) / "testrig-1")
+            self.assertEqual(gc_log.read_text(encoding="utf-8").splitlines(), [
+                "sling", "testrig/agentops.plan-reviewer", "testrig-1",
+                "--on", "agentops-experiment", "--nudge", "--json",
+                "--var", f"work_dir={expected_worktree}",
+                "--var", "plan_target=testrig/agentops.plan-reviewer",
+                "--var", "implement_target=testrig/agentops.implementer",
+                "--var", "validate_target=testrig/agentops.validator",
+                "--var", "refiner_target=testrig/agentops.refiner",
+            ])
+            # The worktree was really prepared by the pinned pack helper.
+            self.assertTrue((Path(expected_worktree) / ".git").exists())
+
+    def test_feed_refuses_missing_bead_without_slinging(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            base = Path(temporary) / "has space"
+            base.mkdir()
+            repo, _ = self.make_repository(base)
+            fixture = self._managed_city_fixture(base, rig=repo)
+            gc_log = base / "gc.argv"
+            env = self._invoke_env(gc_log=gc_log, bd_log=base / "bd.argv", bd_mode="notfound")
+            result = run(
+                str(DEPLOY / "invoke.sh"), "--city", str(fixture["city"]), "feed", "testrig-404",
+                env=env,
+            )
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("bead not found in the rig store", result.stderr)
+            self.assertFalse(gc_log.exists(), "sling must not run for a missing bead")
+            self.assertFalse((Path(str(fixture["workers"])) / "testrig-404").exists())
+
+    def test_feed_refuses_bead_id_mismatch_without_slinging(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            base = Path(temporary) / "has space"
+            base.mkdir()
+            repo, _ = self.make_repository(base)
+            fixture = self._managed_city_fixture(base, rig=repo)
+            gc_log = base / "gc.argv"
+            env = self._invoke_env(gc_log=gc_log, bd_log=base / "bd.argv", bd_mode="mismatch")
+            result = run(
+                str(DEPLOY / "invoke.sh"), "--city", str(fixture["city"]), "feed", "testrig-1",
+                env=env,
+            )
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("exact single match", result.stderr)
+            self.assertFalse(gc_log.exists(), "sling must not run on an inexact match")
 
     def test_feed_rejects_unsafe_bead_id(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
-            root = Path(temporary)
-            fixture = self._managed_city_fixture(
-                root, gc_script="#!/bin/sh\nexit 0\n", bd_script="#!/bin/sh\nexit 1\n",
-                worktree_script="#!/bin/sh\nexit 0\n",
-            )
+            base = Path(temporary)
+            rig = base / "rig"
+            rig.mkdir()
+            fixture = self._managed_city_fixture(base, rig=rig)
             result = run(
                 str(DEPLOY / "invoke.sh"), "--city", str(fixture["city"]), "feed", "bad id;rm",
+                env=self._invoke_env(),
             )
             self.assertNotEqual(result.returncode, 0)
             self.assertIn("unsafe bead id", result.stderr)
 
     def test_create_writes_managed_rig_store_and_prints_id(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
-            root = Path(temporary)
-            bd_log = root / "bd.log"
-            bd_script = (
-                '#!/bin/sh\n'
-                f'printf \'%s\\n\' "$*" >> "{bd_log}"\n'
-                'printf \'{"id":"testrig-9"}\\n\'\n'
-                'exit 0\n'
-            )
-            fixture = self._managed_city_fixture(
-                root, gc_script="#!/bin/sh\nexit 1\n", bd_script=bd_script,
-                worktree_script="#!/bin/sh\nexit 0\n",
-            )
+            base = Path(temporary) / "has space"  # exercises argv quoting
+            base.mkdir()
+            rig = base / "rig"
+            rig.mkdir()
+            fixture = self._managed_city_fixture(base, rig=rig)
+            bd_log = base / "bd.argv"
+            env = self._invoke_env(bd_log=bd_log)
             plain = run(
                 str(DEPLOY / "invoke.sh"), "--city", str(fixture["city"]),
-                "create", "add a widget", "-d", "with a description",
+                "create", "add a widget", "-d", "with a description", env=env,
             )
             self.assertEqual(plain.returncode, 0, plain.stderr)
             self.assertEqual(plain.stdout, "testrig-9\n")
-            logged = bd_log.read_text(encoding="utf-8")
-            self.assertIn(f"-C {fixture['rig'].resolve()} create", logged)
-            self.assertIn("--title add a widget", logged)
-            self.assertIn("--type task", logged)
-            self.assertIn("--json", logged)
-            self.assertIn("-d with a description", logged)
+            first_call = bd_log.read_text(encoding="utf-8").split("---\n")[0].splitlines()
+            self.assertEqual(first_call, [
+                "-C", str(rig.resolve()), "create", "--title", "add a widget",
+                "--type", "task", "--json", "-d", "with a description",
+            ])
 
             json_out = run(
                 str(DEPLOY / "invoke.sh"), "--city", str(fixture["city"]),
-                "create", "no description", "--json",
+                "create", "no description", "--json", env=env,
             )
             self.assertEqual(json_out.returncode, 0, json_out.stderr)
             self.assertEqual(json.loads(json_out.stdout)["id"], "testrig-9")
-            # No description supplied -> no -d flag forwarded to bd.
-            second = bd_log.read_text(encoding="utf-8").splitlines()[-1]
-            self.assertNotIn("-d ", second)
+            # No description supplied -> no -d flag forwarded to bd (exact argv).
+            calls = [c for c in bd_log.read_text(encoding="utf-8").split("---\n") if c.strip()]
+            self.assertEqual(calls[-1].splitlines(), [
+                "-C", str(rig.resolve()), "create", "--title", "no description",
+                "--type", "task", "--json",
+            ])
 
     def test_teardown_waits_for_scoped_drain_and_fails_with_exact_residue(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
