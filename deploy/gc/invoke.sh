@@ -10,7 +10,17 @@ Usage:
   invoke.sh --city PATH create TITLE [-d DESCRIPTION] [--json]
   invoke.sh --city PATH status
   invoke.sh --city PATH doctor
+  invoke.sh --city PATH mayor start
+  invoke.sh --city PATH mayor status
+  invoke.sh --city PATH mayor tell "MESSAGE"
+  invoke.sh --city PATH mayor attach-hint
   invoke.sh --city PATH -- GC_COMMAND [ARG...]
+
+The Mayor is the dispatch shepherd: it propels ready step beads to their
+run-targets. Drive it through the same door a human uses. `mayor tell` messages
+must reference BEAD IDS (e.g. "dispatch testrig-12"), never describe work — the
+Mayor dispatches existing beads and never authors intent. Author intent with
+`create`, then start it with `feed`.
 EOF
 }
 # The running pack (this script's own directory) is the trust anchor: its
@@ -122,6 +132,59 @@ run_bd() {
     "$bd_bin" -C "$rig" "$@"
 }
 
+# The city-scoped Mayor shepherd is the `agentops`-bound "mayor" named session.
+mayor_alias="agentops.mayor"
+
+# Report the Mayor session state and/or the raw tmux human-door line. `gc session
+# list --json` carries the tmux session_name; the socket is derived exactly as
+# the bootstrap templates it (agentops-<sha256(realpath city)[:20]>). Robust to
+# an absent session so `status` works before `mayor start`.
+mayor_report() {
+  local report_mode="$1" listing
+  listing="$("$gc_bin" session list --state all --json 2>/dev/null || true)"
+  MAYOR_LISTING="$listing" python3 - "$mayor_alias" "$city" "$report_mode" <<'PY'
+import hashlib, json, os, sys
+alias, city, report_mode = sys.argv[1:4]
+socket = "agentops-" + hashlib.sha256(city.encode()).hexdigest()[:20]
+raw = os.environ.get("MAYOR_LISTING", "").strip()
+entry = None
+if raw:
+    try:
+        data = json.loads(raw)
+        sessions = data.get("sessions", []) if isinstance(data, dict) else data
+        if isinstance(sessions, list):
+            for item in sessions:
+                if isinstance(item, dict) and (item.get("alias") == alias or item.get("template") == "mayor"):
+                    entry = item
+                    break
+    except (ValueError, TypeError):
+        entry = None
+session_name = (entry or {}).get("session_name") or ""
+if report_mode == "hint":
+    if session_name:
+        print("tmux -L %s attach -t %s" % (socket, session_name))
+    else:
+        print("# Mayor not started. Run: invoke.sh --city %s mayor start" % city)
+        print("# Then: invoke.sh --city %s mayor status  (prints the tmux attach line)" % city)
+    sys.exit(0)
+if entry is None:
+    print("mayor (%s): not started" % alias)
+    print("  start it:   invoke.sh mayor start")
+    print("  socket:     %s (tmux session name appears here once started)" % socket)
+    sys.exit(0)
+print("mayor (%s):" % alias)
+print("  state:       %s" % (entry.get("state") or "unknown"))
+print("  running:     %s" % entry.get("running", False))
+print("  attached:    %s" % entry.get("attached", False))
+print("  last_active: %s" % (entry.get("last_active") or "n/a"))
+last = (entry.get("last_output") or "").strip().replace("\n", " ")
+if last:
+    print("  last_output: %s" % last[:200])
+if session_name:
+    print("  human door:  tmux -L %s attach -t %s" % (socket, session_name))
+PY
+}
+
 command="$1"; shift
 cd "$city"
 case "$command" in
@@ -182,6 +245,38 @@ if not isinstance(data,list) or len(data) != 1 or data[0].get("id") != sys.argv[
   doctor)
     [ "$#" -eq 0 ] || die "doctor accepts no arguments"
     exec "$gc_bin" doctor --json
+    ;;
+  mayor)
+    [ "$#" -ge 1 ] || { usage; exit 2; }
+    sub="$1"; shift
+    case "$sub" in
+      start)
+        [ "$#" -eq 0 ] || die "mayor start accepts no arguments"
+        # The Mayor is a mode=always named session, so the controller keeps it
+        # live; wake requests an immediate start rather than waiting for a
+        # patrol tick. It dispatches only; it never claims (see the mayor prompt).
+        exec "$gc_bin" session wake "$mayor_alias"
+        ;;
+      status)
+        [ "$#" -eq 0 ] || die "mayor status accepts no arguments"
+        mayor_report summary
+        ;;
+      attach-hint)
+        [ "$#" -eq 0 ] || die "mayor attach-hint accepts no arguments"
+        mayor_report hint
+        ;;
+      tell)
+        [ "$#" -eq 1 ] || die "mayor tell requires exactly one quoted message"
+        message="$1"
+        # Drivers hand the Mayor BEAD IDS, never prose work (e.g. "dispatch
+        # testrig-12"). Refuse an empty/whitespace message so a fat-fingered
+        # driver never nudges the Mayor with nothing to act on.
+        [ -n "$(printf '%s' "$message" | tr -d '[:space:]')" ] || die "mayor tell requires a non-empty message (reference a bead id, e.g. 'dispatch testrig-12')"
+        # gc mail send delivers a message bead and --notify nudges the Mayor.
+        exec "$gc_bin" mail send --to "$mayor_alias" --notify -m "$message"
+        ;;
+      *) die "unknown mayor operation: $sub" ;;
+    esac
     ;;
   --)
     [ "$#" -gt 0 ] || die "a GC command is required after --"

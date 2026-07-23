@@ -147,11 +147,17 @@ class ThinPackTests(unittest.TestCase):
             EXECUTOR / "agents/implementer-claude/agent.toml": ("claude", "opus-4.8", "medium"),
             EXECUTOR / "agents/validator/agent.toml": ("codex", "gpt-5.6-sol", "high"),
         }
+        mayor_agent = FACTORY / "agents/mayor/agent.toml"
         for path, (provider, model, effort) in expected.items():
             config = tomllib.loads(path.read_text(encoding="utf-8"))
             self.assertEqual(config["provider"], provider, path)
             self.assertEqual(config["option_defaults"], {"permission_mode": config["option_defaults"]["permission_mode"], "model": model, "effort": effort}, path)
-            self.assertEqual(config["lifecycle"], "one_shot", path)
+            # Every role is a one_shot worker except the Mayor, which is the
+            # standing dispatch shepherd (asserted separately).
+            if path == mayor_agent:
+                self.assertNotIn("lifecycle", config, path)
+            else:
+                self.assertEqual(config["lifecycle"], "one_shot", path)
         runtime_text = "\n".join(path.read_text(encoding="utf-8") for path in expected)
         self.assertNotIn("luna", runtime_text.lower())
 
@@ -424,16 +430,17 @@ class ThinPackTests(unittest.TestCase):
             self.assertIn("export GC_BIN\n", text, name)
 
     def test_intake_never_routes_through_the_city_scoped_mayor(self) -> None:
-        # Static consistency proof: no default-flow surface in deploy/gc or the
-        # factory pack slings work to agentops.mayor, and the Mayor prompt no
-        # longer claims. Intake homes rig beads on the rig planner instead.
+        # Static consistency proof: intake (feed) homes rig beads on the rig
+        # planner and never slings the source bead to agentops.mayor. The Mayor
+        # is a dispatch shepherd (it slings ready STEP beads to their rig
+        # run-targets), so it must never be a sling *target* on the intake path.
         surfaces = list(DEPLOY.glob("*.sh")) + list(FACTORY.rglob("*.md"))
         for path in surfaces:
             text = path.read_text(encoding="utf-8")
             self.assertNotIn("sling agentops.mayor", text, path)
         mayor_prompt = (FACTORY / "agents/mayor/prompt.template.md").read_text(encoding="utf-8")
-        # The Mayor is an observe-only coordinator: it explicitly forbids the
-        # cross-store claim and never carries an instruction to run it.
+        # Doctrine invariant: the Mayor dispatches but never claims. It forbids
+        # the cross-store claim and never carries an instruction to run it.
         self.assertIn("Do not run `gc hook --claim`", mayor_prompt)
         self.assertNotIn('Run `"$GC_BIN" hook --claim', mayor_prompt)
 
@@ -671,6 +678,116 @@ class ThinPackTests(unittest.TestCase):
                 "-C", str(rig.resolve()), "create", "--title", "no description",
                 "--type", "task", "--json",
             ])
+
+    def test_mayor_start_wakes_the_named_shepherd_session(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            base = Path(temporary) / "has space"  # exercises argv quoting
+            base.mkdir()
+            rig = base / "rig"
+            rig.mkdir()
+            fixture = self._managed_city_fixture(base, rig=rig)
+            gc_log = base / "gc.argv"
+            result = run(
+                str(DEPLOY / "invoke.sh"), "--city", str(fixture["city"]), "mayor", "start",
+                env=self._invoke_env(gc_log=gc_log),
+            )
+            self.assertEqual(result.returncode, 0, result.stderr)
+            # Native start verb: wake the city-scoped mayor named session.
+            self.assertEqual(
+                gc_log.read_text(encoding="utf-8").splitlines(),
+                ["session", "wake", "agentops.mayor"],
+            )
+
+    def test_mayor_tell_delivers_a_notified_mail_message(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            base = Path(temporary) / "has space"
+            base.mkdir()
+            rig = base / "rig"
+            rig.mkdir()
+            fixture = self._managed_city_fixture(base, rig=rig)
+            gc_log = base / "gc.argv"
+            result = run(
+                str(DEPLOY / "invoke.sh"), "--city", str(fixture["city"]),
+                "mayor", "tell", "dispatch testrig-12",
+                env=self._invoke_env(gc_log=gc_log),
+            )
+            self.assertEqual(result.returncode, 0, result.stderr)
+            # The clean v1.3.5 primitive: a notified mail message to the mayor.
+            # The whole quoted instruction survives as one argv element.
+            self.assertEqual(
+                gc_log.read_text(encoding="utf-8").splitlines(),
+                ["mail", "send", "--to", "agentops.mayor", "--notify", "-m", "dispatch testrig-12"],
+            )
+
+    def test_mayor_tell_refuses_empty_message_without_calling_gc(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            base = Path(temporary) / "has space"
+            base.mkdir()
+            rig = base / "rig"
+            rig.mkdir()
+            fixture = self._managed_city_fixture(base, rig=rig)
+            gc_log = base / "gc.argv"
+            for empty in ("", "   "):
+                result = run(
+                    str(DEPLOY / "invoke.sh"), "--city", str(fixture["city"]),
+                    "mayor", "tell", empty,
+                    env=self._invoke_env(gc_log=gc_log),
+                )
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn("non-empty message", result.stderr)
+            self.assertFalse(gc_log.exists(), "no mail must be sent for an empty message")
+
+    def test_mayor_status_reports_the_socket_before_the_session_exists(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            base = Path(temporary) / "has space"
+            base.mkdir()
+            rig = base / "rig"
+            rig.mkdir()
+            fixture = self._managed_city_fixture(base, rig=rig)
+            gc_log = base / "gc.argv"
+            result = run(
+                str(DEPLOY / "invoke.sh"), "--city", str(fixture["city"]), "mayor", "status",
+                env=self._invoke_env(gc_log=gc_log),
+            )
+            self.assertEqual(result.returncode, 0, result.stderr)
+            # Status reads the native session list (stub returns none -> not started).
+            self.assertEqual(
+                gc_log.read_text(encoding="utf-8").splitlines(),
+                ["session", "list", "--state", "all", "--json"],
+            )
+            expected_socket = "agentops-" + hashlib.sha256(
+                os.path.realpath(str(fixture["city"])).encode()
+            ).hexdigest()[:20]
+            self.assertIn("not started", result.stdout)
+            self.assertIn(expected_socket, result.stdout)
+
+    def test_mayor_rejects_unknown_subcommand(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            base = Path(temporary)
+            rig = base / "rig"
+            rig.mkdir()
+            fixture = self._managed_city_fixture(base, rig=rig)
+            result = run(
+                str(DEPLOY / "invoke.sh"), "--city", str(fixture["city"]), "mayor", "claim",
+                env=self._invoke_env(),
+            )
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("unknown mayor operation", result.stderr)
+
+    def test_named_mayor_session_is_a_standing_always_shepherd(self) -> None:
+        # The 3.3 human-and-agent door needs a resident session: mode=always so
+        # the controller keeps it live with no demand, and no one_shot lifecycle
+        # so the pane stays attachable rather than exiting after one run.
+        pack = tomllib.loads((FACTORY / "pack.toml").read_text(encoding="utf-8"))
+        mayor_sessions = [
+            s for s in pack.get("named_session", []) if s.get("template") == "mayor"
+        ]
+        self.assertEqual(len(mayor_sessions), 1)
+        self.assertEqual(mayor_sessions[0].get("scope"), "city")
+        self.assertEqual(mayor_sessions[0].get("mode"), "always")
+        agent = tomllib.loads((FACTORY / "agents/mayor/agent.toml").read_text(encoding="utf-8"))
+        self.assertNotIn("lifecycle", agent)
+        self.assertLessEqual(agent.get("min_active_sessions", 0), agent["max_active_sessions"])
 
     def test_teardown_waits_for_scoped_drain_and_fails_with_exact_residue(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
