@@ -157,7 +157,7 @@ PY
 
 marker="$city/.gc/agentops-bootstrap.json"
 if [ -f "$marker" ]; then
-  python3 - "$marker" "$city" "$rig" "$pack" "$pair_id" "$delivery_mode" "$bead_prefix" "$bead_database" "$request_digest" <<'PY'
+  python3 - "$marker" "$city" "$rig" "$pack" "$pair_id" "$delivery_mode" "$bead_prefix" "$bead_database" "$request_digest" "$gc_bin" "$gc_sha" "$bd_bin" "$bd_sha" <<'PY'
 import hashlib, json, os, sys
 m = json.load(open(sys.argv[1], encoding="utf-8"))
 expected = {"city": sys.argv[2], "rig": sys.argv[3], "pack_source": sys.argv[4], "toolchain_pair": sys.argv[5], "delivery_mode": sys.argv[6], "bead_prefix": sys.argv[7], "bead_database": sys.argv[8]}
@@ -165,6 +165,27 @@ if m.get("schema_version") != 1 or any(m.get(k) != v for k, v in expected.items(
     raise SystemExit("existing managed city identity differs from request")
 if m.get("configuration_digest") != sys.argv[9]:
     raise SystemExit("existing managed city configuration differs from current request or source bytes")
+def sha(path):
+    h = hashlib.sha256()
+    with open(path, "rb") as f:
+        for b in iter(lambda: f.read(1024 * 1024), b""): h.update(b)
+    return h.hexdigest()
+# Re-materializing the toolchain can move it or change its bytes. The existing
+# marker's fast path must not silently succeed while pointing at a stale or
+# deleted toolchain: compare the marker's recorded gc/bd paths and digests to
+# this invocation's toolchain, and confirm both binaries still exist and match.
+gc_now, gc_now_sha, bd_now, bd_now_sha = sys.argv[10:14]
+tc = m.get("toolchain", {})
+recorded = {"gc": (tc.get("gc", {}).get("path"), tc.get("gc", {}).get("sha256")),
+            "bd": (tc.get("bd", {}).get("path"), tc.get("bd", {}).get("sha256"))}
+requested = {"gc": (gc_now, gc_now_sha), "bd": (bd_now, bd_now_sha)}
+if recorded != requested:
+    raise SystemExit("existing managed city points at a different toolchain (paths or digests changed); re-materializing moves it — re-bootstrap a fresh --city, or restore the toolchain at the marker's recorded path")
+for name, (path, expected_sha) in recorded.items():
+    if not path or not os.path.exists(path):
+        raise SystemExit(f"managed {name} binary is missing at {path}; re-bootstrap a fresh --city")
+    if sha(path) != expected_sha:
+        raise SystemExit(f"managed {name} binary changed on disk; re-bootstrap a fresh --city")
 def tree_sha(root):
     h=hashlib.sha256()
     for parent,dirs,files in os.walk(root):
