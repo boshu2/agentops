@@ -183,7 +183,20 @@ class ThinPackTests(unittest.TestCase):
             return None
         return f"{system}_{machine}"
 
-    def build_offline_fixture(self, root: Path) -> dict[str, object]:
+    def build_offline_fixture(
+        self,
+        root: Path,
+        *,
+        gc_reported_version: str = "1.3.5",
+        gc_reported_commit: str = "8ffc009ded781a2ada2077f3a29bd712b2def0bf",
+        bd_reported_version: str = "1.1.0",
+        bd_reported_commit: str = "8e4e59d39",
+    ) -> dict[str, object]:
+        # The lock always pins the correct locked identity; only what the stub
+        # binaries *report* varies. The checksum chain stays internally valid for
+        # any stub content (checksums file and lock are derived from the actual
+        # archive digests), so a reported-identity mismatch isolates the final
+        # version/commit binding step from the earlier hash links.
         tag = self.platform_tag()
         if tag is None:
             self.skipTest(f"no release-archive mapping for {platform.system()}/{platform.machine()}")
@@ -192,8 +205,8 @@ class ThinPackTests(unittest.TestCase):
         gc_script = (
             '#!/bin/sh\n'
             'if [ "$1" = "version" ] && [ "$2" = "--json" ]; then\n'
-            '  printf \'{"version":"1.3.5","commit":"%s-dirty","ok":true}\\n\' '
-            '"8ffc009ded781a2ada2077f3a29bd712b2def0bf"\n'
+            '  printf \'{"version":"' + gc_reported_version + '","commit":"'
+            + gc_reported_commit + '-dirty","ok":true}\\n\'\n'
             '  exit 0\n'
             'fi\n'
             'exit 1\n'
@@ -201,7 +214,8 @@ class ThinPackTests(unittest.TestCase):
         bd_script = (
             '#!/bin/sh\n'
             'if [ "$1" = "version" ]; then\n'
-            '  printf \'bd version 1.1.0 (8e4e59d39: fixture@8e4e59d39f34)\\n\'\n'
+            '  printf \'bd version ' + bd_reported_version + ' ('
+            + bd_reported_commit + ': fixture)\\n\'\n'
             '  exit 0\n'
             'fi\n'
             'exit 1\n'
@@ -362,6 +376,33 @@ class ThinPackTests(unittest.TestCase):
             )
             self.assertNotEqual(result.returncode, 0)
             self.assertIn("unsupported operating system", result.stderr)
+            self.assertFalse(output.exists())
+
+    def test_materialize_offline_rejects_gc_commit_mismatch(self) -> None:
+        # Valid checksum chain, but the installed gc binary reports a different
+        # commit than the lock pins. Exercises the gc version/commit binding.
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            fixture = self.build_offline_fixture(
+                root, gc_reported_commit="1234567890abcdef1234567890abcdef12345678",
+            )
+            output = root / "toolchain"
+            result = self.run_materialize(output, fixture["lock"], fixture["cache"])
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("installed gc commit", result.stderr)
+            self.assertFalse(output.exists())
+
+    def test_materialize_offline_rejects_bd_version_mismatch(self) -> None:
+        # Valid checksum chain, but the installed bd binary reports a different
+        # version than the lock pins. Exercises the bd version/commit binding.
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            fixture = self.build_offline_fixture(root, bd_reported_version="9.9.9")
+            output = root / "toolchain"
+            result = self.run_materialize(output, fixture["lock"], fixture["cache"])
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("installed bd version", result.stderr)
+            self.assertIn("9.9.9", result.stderr)
             self.assertFalse(output.exists())
 
     def test_executable_helper_budget_and_shell_syntax(self) -> None:
