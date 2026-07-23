@@ -103,8 +103,10 @@ deploy/gc/invoke.sh --city /path/to/city mayor tell "dispatch test-abc"
 deploy/gc/invoke.sh --city /path/to/city create "Add a widget" -d "why and how"
 deploy/gc/invoke.sh --city /path/to/city feed BEAD-ID
 
-# 4. The Mayor shepherds each ready step to its run-target (sling + nudge):
-#    plan -> implement -> validate -> deliver. Watch it flow.
+# 4. Propulsion is automatic: a scheduled heartbeat order re-nudges the Mayor
+#    every few minutes to run a dispatch pass, so each ready step is slung to its
+#    run-target (plan -> implement -> validate -> deliver) as it becomes ready.
+#    `mayor tell "dispatch <id>"` is for on-demand nudges between heartbeats.
 deploy/gc/invoke.sh --city /path/to/city mayor status
 deploy/gc/invoke.sh --city /path/to/city status
 deploy/gc/invoke.sh --city /path/to/city doctor
@@ -129,11 +131,17 @@ Only rig-scoped roles claim, so the v1.3.5 cross-store claim bug is never
 exercised. No AgentOps program graph or delivery ledger is created; the Beads
 graph is the program graph.
 
-**Why the Mayor propels.** On v1.3.5 demand-driven spawning is broken for rig
-work (#4586), so ready formula steps would otherwise sit un-run. The standing
-Mayor shepherd watches ready rig work and sling-nudges each ready step bead to
-its run-target — the supported propulsion path, and also the stock Gas City
-mayor pattern, so it survives the upstream fix (see Known upstream issues).
+**Why the Mayor propels — and how it stays awake.** On v1.3.5 demand-driven
+spawning is broken for rig work (#4586), so ready formula steps would otherwise
+sit un-run. The standing Mayor shepherd sling-nudges each ready step bead to its
+run-target — the supported propulsion path, and also the stock Gas City mayor
+pattern, so it survives the upstream fix (see Known upstream issues). But
+`mode=always` only keeps the session RESIDENT; nothing re-prompts it when a step
+completes. So the pack ships a scheduled heartbeat order
+(`packs/agentops-factory/orders/shepherd-heartbeat.toml`, a `cooldown` order on a
+few-minute interval) that re-nudges the Mayor to run a fresh dispatch pass. Each
+pass is cheap when nothing is ready. `mayor tell` remains the on-demand path for
+dispatching a specific bead id between heartbeats.
 
 ### Provider wedge prerequisite
 

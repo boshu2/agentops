@@ -34,10 +34,13 @@ the stock GC mayor pattern, so this flow survives the upstream fix.
    "<why/how>"` writes one source bead with EXACT acceptance; `invoke.sh --city C
    feed <bead-id>` homes it and attaches the native formula. Intent lives in the
    bead, never in a chat paraphrase.
-2. **Dispatch by id.** `invoke.sh --city C mayor tell "dispatch <bead-id>"`. Hand
-   the Mayor BEAD IDS ONLY — never prose work. A paraphrased task is a telephone
-   game that drifts from the acceptance the bead already carries; the id is the
-   one unambiguous reference.
+2. **Dispatch by id (on-demand).** `invoke.sh --city C mayor tell "dispatch
+   <bead-id>"`. Hand the Mayor BEAD IDS ONLY — never prose work. A paraphrased
+   task is a telephone game that drifts from the acceptance the bead already
+   carries; the id is the one unambiguous reference. Steady-state propulsion is
+   the scheduled heartbeat (the Mayor runs a dispatch pass every few minutes);
+   `mayor tell` is for on-demand nudges. Dispatch each bead once — for a bead
+   already routed, see Stall protocol (re-dispatch is a no-op).
 3. **Read state from GC, not from prose.** The exact surfaces:
    - `invoke.sh --city C mayor status` — Mayor session state + attach line.
    - `invoke.sh --city C status` — city/session health.
@@ -65,14 +68,28 @@ When the roster says active but the pane is wedged, the pane wins.
 
 ## Stall protocol
 
-One nudge or re-tell, maximum, then STOP and classify — do not loop.
+First classify what is stalled — the fix differs, and the obvious retry is a
+dead path.
 
-- Re-drive once: `invoke.sh --city C mayor tell "dispatch <bead-id>"` (or wake:
-  `mayor start`).
-- Still stuck: capture the pane (`tmux -L <socket> capture-pane`) and run
-  `invoke.sh --city C doctor`, then report the classification. No hidden retries,
-  no lifecycle bypass. **Never repair the city from inside the city** — diagnose
-  from the invoke surface and hand the finding out.
+- **A bead that is still `ready` (never routed).** `mayor tell "dispatch <id>"`
+  once to route it, then STOP and classify.
+- **A bead already routed to its run-target (`in_progress`).** Re-telling
+  `dispatch <id>` or re-slinging it is a **NO-OP** — do not cargo-cult it. `gc
+  sling` takes an idempotent early-return for an already-routed bead and sends NO
+  nudge, and an `in_progress` bead is not in `gc bd ready`, so nothing re-fires.
+  The recovery is to wake the WORKER that holds it, not to re-dispatch the bead:
+
+  ```sh
+  gc session wake <run_target>    # the rig-qualified worker alias, e.g.
+                                  # <rig>/agentops.implementer, from gc.run_target
+  ```
+
+  Then inspect pane-truth (below). One wake, maximum, then STOP and classify.
+
+Ground-truth every stall before you report it: capture the pane (`tmux -L
+<socket> capture-pane -pt <session>`) and run `invoke.sh --city C doctor`. No
+hidden retries, no lifecycle bypass. **Never repair the city from inside the
+city** — diagnose from the invoke surface and hand the finding out.
 
 ## Boundaries (kept)
 

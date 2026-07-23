@@ -461,14 +461,30 @@ class ThinPackTests(unittest.TestCase):
 
     # gc/bd stubs record one argv element per line so tests assert on exact argv
     # arrays (argument boundaries and quoting survive), never a flattened "$*".
-    # Content is constant so its digest is stable; behavior is driven by env.
+    # Behavior is driven by env; the fixture records the stub's digest
+    # dynamically, so the content may change freely.
+    #
+    # Fidelity: the gc stub REJECTS (nonzero + stderr) any first verb not on the
+    # allowlist of verified v1.3.5 surfaces the pack actually drives through gc
+    # (bd goes through the separate bd stub). This makes a test fail loudly if the
+    # pack ever calls an unverified gc verb. GC_STUB_FAIL=<verb> forces a nonzero
+    # exit for an allowlisted verb, to exercise fail-closed error propagation.
     _GC_STUB = (
         "#!/usr/bin/env python3\n"
         "import os, sys\n"
+        "argv = sys.argv[1:]\n"
         "log = os.environ.get('GC_ARGV_LOG')\n"
         "if log:\n"
         "    with open(log, 'a', encoding='utf-8') as f:\n"
-        "        f.write('\\n'.join(sys.argv[1:]) + '\\n')\n"
+        "        f.write('\\n'.join(argv) + '\\n')\n"
+        "allowed = {'sling', 'status', 'doctor', 'session', 'mail'}\n"
+        "if not argv or argv[0] not in allowed:\n"
+        "    sys.stderr.write('gc stub: refusing non-allowlisted command: %s\\n' % (argv[0] if argv else '<none>'))\n"
+        "    sys.exit(2)\n"
+        "fail = os.environ.get('GC_STUB_FAIL')\n"
+        "if fail and argv[0] == fail:\n"
+        "    sys.stderr.write('gc stub: forced failure for %s\\n' % fail)\n"
+        "    sys.exit(1)\n"
         "sys.exit(0)\n"
     )
     _BD_STUB = (
@@ -492,7 +508,12 @@ class ThinPackTests(unittest.TestCase):
     )
 
     def _invoke_env(
-        self, *, gc_log: Path | None = None, bd_log: Path | None = None, bd_mode: str = "ok"
+        self,
+        *,
+        gc_log: Path | None = None,
+        bd_log: Path | None = None,
+        bd_mode: str = "ok",
+        gc_fail: str | None = None,
     ) -> dict[str, str]:
         env = os.environ.copy()
         if gc_log is not None:
@@ -500,6 +521,8 @@ class ThinPackTests(unittest.TestCase):
         if bd_log is not None:
             env["BD_ARGV_LOG"] = str(bd_log)
         env["BD_STUB_MODE"] = bd_mode
+        if gc_fail is not None:
+            env["GC_STUB_FAIL"] = gc_fail
         return env
 
     def _managed_city_fixture(self, base: Path, *, rig: Path) -> dict[str, object]:
@@ -773,6 +796,79 @@ class ThinPackTests(unittest.TestCase):
             )
             self.assertNotEqual(result.returncode, 0)
             self.assertIn("unknown mayor operation", result.stderr)
+
+    def test_mayor_status_fails_closed_when_gc_query_fails(self) -> None:
+        # Tri-state case (a): a failed gc query must NOT read as "no session".
+        # It exits nonzero with "status unavailable" and surfaces the stderr tail.
+        with tempfile.TemporaryDirectory() as temporary:
+            base = Path(temporary) / "has space"
+            base.mkdir()
+            rig = base / "rig"
+            rig.mkdir()
+            fixture = self._managed_city_fixture(base, rig=rig)
+            result = run(
+                str(DEPLOY / "invoke.sh"), "--city", str(fixture["city"]), "mayor", "status",
+                env=self._invoke_env(gc_fail="session"),
+            )
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("status unavailable", result.stderr)
+            self.assertNotIn("not started", result.stdout)
+
+    def test_gc_stub_rejects_non_allowlisted_verbs(self) -> None:
+        # Fidelity guard: the pack must only drive gc through verified v1.3.5
+        # verbs. A non-allowlisted verb passthrough fails loudly.
+        with tempfile.TemporaryDirectory() as temporary:
+            base = Path(temporary)
+            rig = base / "rig"
+            rig.mkdir()
+            fixture = self._managed_city_fixture(base, rig=rig)
+            result = run(
+                str(DEPLOY / "invoke.sh"), "--city", str(fixture["city"]),
+                "--", "totally-made-up-verb",
+                env=self._invoke_env(),
+            )
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("non-allowlisted command", result.stderr)
+
+    def test_heartbeat_order_is_a_valid_cooldown_nudge(self) -> None:
+        # Finding 1: liveness. The pack ships a scheduled order that re-nudges the
+        # Mayor. Schema-lint it against the v1.3.5 order surface and the 2-5m band.
+        order_path = FACTORY / "orders/shepherd-heartbeat.toml"
+        self.assertTrue(order_path.is_file(), order_path)
+        order = tomllib.loads(order_path.read_text(encoding="utf-8"))["order"]
+        self.assertEqual(order["trigger"], "cooldown")
+        self.assertEqual(order.get("scope"), "city")
+        # Interval must be a Go duration in the 2-5 minute band.
+        self.assertRegex(order["interval"], r"^[1-9][0-9]*m$")
+        minutes = int(order["interval"][:-1])
+        self.assertGreaterEqual(minutes, 2)
+        self.assertLessEqual(minutes, 5)
+        # It nudges the Mayor via the same mail-send primitive, with --notify.
+        exec_cmd = order["exec"]
+        self.assertIn("gc mail send", exec_cmd)
+        self.assertIn("--to agentops.mayor", exec_cmd)
+        self.assertIn("--notify", exec_cmd)
+
+    def test_routed_bead_recovery_is_wake_not_resling(self) -> None:
+        # Finding 3 sanity: the docs must state that re-dispatching an already
+        # routed bead is a no-op, and that recovery is waking the worker session —
+        # so an agent does not cargo-cult a dead re-sling retry.
+        skill = (REPO_ROOT / "skills/using-gc/SKILL.md").read_text(encoding="utf-8")
+        self.assertIn("NO-OP", skill)
+        self.assertIn("gc session wake <run_target>", skill)
+        prompt = (FACTORY / "agents/mayor/prompt.template.md").read_text(encoding="utf-8")
+        self.assertIn("re-slinging a routed bead is a NO-OP", prompt)
+        self.assertIn("gc session wake <run_target>", prompt)
+
+    def test_mayor_mail_authority_has_no_pause_resume(self) -> None:
+        # Finding 5: mail authority is exactly dispatch/status; pause/resume is
+        # dropped (stateful, incompatible with wake_mode=fresh), and mail bodies
+        # are untrusted data, not instructions.
+        prompt = (FACTORY / "agents/mayor/prompt.template.md").read_text(encoding="utf-8")
+        self.assertNotIn("resume shepherding", prompt)  # the old stateful verb
+        self.assertIn("no pause/resume", prompt.lower())
+        self.assertIn("UNTRUSTED DATA", prompt)
+        self.assertIn("NEVER executed", prompt)
 
     def test_named_mayor_session_is_a_standing_always_shepherd(self) -> None:
         # The 3.3 human-and-agent door needs a resident session: mode=always so

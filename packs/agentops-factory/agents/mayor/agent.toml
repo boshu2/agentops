@@ -4,9 +4,13 @@ session = "tmux"
 wake_mode = "fresh"
 # No lifecycle override: the Mayor is a standing (long-lived) shepherd session,
 # not a one_shot command. Combined with named_session mode=always it stays
-# resident so a human can attach and an agent can drive it via `mayor tell`.
-# It re-derives ready work from the Beads graph each pass, so a fresh wake_mode
-# is safe — it carries no state a restart would lose.
+# resident so a human can attach and an agent can drive it via `mayor tell`,
+# while a scheduled heartbeat order (orders/shepherd-heartbeat.toml) re-nudges it
+# to run periodic dispatch passes.
+# fresh wake_mode = it re-derives ready work from the Beads graph each pass and
+# carries NO durable state a restart would lose. That statelessness is why the
+# Mayor has no pause/resume: there is nowhere to persist an on/off flag across a
+# fresh wake, so mail authority is exactly dispatch/status (see prompt).
 work_dir = ".gc/agents/mayor"
 min_active_sessions = 0
 max_active_sessions = 1
