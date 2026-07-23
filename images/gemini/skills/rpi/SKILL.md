@@ -29,7 +29,7 @@ metadata:
   effects: [dispatch_core_phases]
   canonical_status: canonical
   disposition: keep
-output_contract: rpi-report.v1
+output_contract: 'rpi-report.v1 machine artifact plus a concise human-readable interactive summary'
 ---
 
 # RPI
@@ -120,18 +120,24 @@ disjoint regen surfaces may run in parallel.
 
 ## Report
 
-Return exactly the useful boundary facts:
+RPI has two report surfaces. Keep them distinct:
 
-```yaml
-schema_version: rpi-report.v1
-status: PASS | FAIL | NOT_PROVEN | NOT_PLANNED | NOT_BUILT
-intent_ref: <bead, issue, conversation, or null>
-acceptance_digest: <sha256 or null>
-subject_manifest_digest: <sha256 or null>
-verdict_ref: <path or null>
-verdict_digest: <sha256 or null>
-checked: []
-not_checked: []
-```
+1. **Machine artifact:** return or persist the exact
+   [`rpi-report.v1`](../../schemas/rpi-report.v1.schema.json) object for
+   adapters, automation, and audit.
+2. **Interactive response:** summarize that object for the caller in natural
+   language. This is the default assistant response.
+
+Lead the interactive response with the status and one sentence stating the
+caller-visible outcome. Follow with only the strongest proof, any material
+unchecked scope, and a clickable verdict reference when one exists. Name why
+no subject exists for `NOT_PLANNED` or `NOT_BUILT`. Keep the response to one
+short paragraph or at most four bullets.
+
+The machine artifact remains behind the verdict/report link. Emit its full
+JSON or YAML object only when the caller explicitly requests machine-readable
+output or an adapter consumes the response. Raw digests, schema fields, and
+exhaustive check lists stay in the artifact unless an integrity failure makes
+one necessary to explain the result.
 
 Do not append a next action. The caller owns continuation.

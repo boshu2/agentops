@@ -28,6 +28,7 @@
 | `codebase-recon` | `customer-of` | `research` |
 | `codebase-recon` | `customer-of` | `validate` |
 | `codex-exec` | `supplier-to` | `validate` |
+| `craft-goal` | `supplier-to` | `plan` |
 | `goals` | `shared-kernel` | `standards` |
 | `idea-genie` | `customer-of` | `research` |
 | `idea-genie` | `supplier-to` | `plan` |
@@ -82,6 +83,10 @@
 | `council` | consumes | `explicit-question` |
 | `council` | consumes | `evidence` |
 | `council` | produces | `council-report.v1` |
+| `craft-goal` | consumes | `caller-outcome` |
+| `craft-goal` | consumes | `goal-acceptance` |
+| `craft-goal` | produces | `outer-goal-prompt` |
+| `craft-goal` | produces | `goal-safety-report` |
 | `doc` | consumes | `repo-context` |
 | `doc` | produces | `documentation` |
 | `domain` | produces | `stdout` |
