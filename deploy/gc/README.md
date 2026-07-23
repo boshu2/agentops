@@ -28,18 +28,15 @@ The adjacent lock pins Gas City v1.3.5 at
 
 ## Known upstream issues (Gas City v1.3.5)
 
-**Cross-store claim failure — the default automated feed loop does not work on
-v1.3.5.** The pack's default automated path feeds a rig-owned source bead to the
-city-scoped Mayor: `invoke.sh` (line ~69) runs `gc sling agentops.mayor BEAD
---nudge`, and the Mayor is `scope = "city"` (`agents/mayor/agent.toml` line 1,
-wired through `packs/agentops-factory/pack.toml` line ~8). On v1.3.5 the
-city-scoped Mayor federated-reads the bead across rig stores and finds it, but
-the claim mutation runs against the Mayor's own city store and returns `bead not
-found`. This is deterministic: the first Mayor claim of a rig-fed bead fails
-every time, for every default user. The preview is usable at v1.3.5 for
-bootstrap, inspection, teardown, and manual flows; the automated feed loop
-becomes functional at the next official Gas City release (fix already merged
-upstream in commits `a135117945e2` and `3fa9bb38e916`).
+**Cross-store claim bug — not exercised by the pack's default flow.** On v1.3.5,
+a *city-scoped* agent that claims a *rig-homed* bead federated-reads it across
+rig stores and finds it, but the claim mutation runs against the agent's own
+city store and returns `bead not found`. The pack's default intake never does
+this: `invoke.sh feed` homes the source bead in the rig store and slings the
+native `agentops-experiment` formula to the *rig-scoped* planner, so only rig
+roles ever claim it (a rig-scoped agent claiming a rig-homed bead is unchanged
+and safe). The bug affects only city-scoped agents that claim — for example a
+custom Mayor rewired to claim source beads. It is fixed upstream after v1.3.5.
 
 **Teardown hang.** On v1.3.5 the tmux teardown can rarely hang under process
 churn, from a recursive live process-walk with PID reuse. Workaround: kill the
@@ -67,18 +64,47 @@ deploy/gc/bootstrap.sh \
 `manual` delivery leaves a checked PR open. `auto` asks GitHub to merge it after
 hosted checks. The bootstrap uses the user default Git and GitHub identity.
 
-## Feed and observe
+## Default flow: create, feed, observe, refine, teardown
+
+After bootstrap, the loop is create a bead, feed it, watch it flow through the
+native formula onto `main`, then tear the city down:
 
 ```sh
+# 1. Create a source bead directly in the managed rig store.
+deploy/gc/invoke.sh --city /path/to/city create "Add a widget" -d "why and how"
+
+# 2. Feed it. This homes the bead in the rig store, prepares one isolated
+#    worktree, and slings the native agentops-experiment formula to the
+#    rig-scoped planner (plan -> implement -> validate -> deliver).
 deploy/gc/invoke.sh --city /path/to/city feed BEAD-ID
+
+# 3. Observe.
 deploy/gc/invoke.sh --city /path/to/city status
 deploy/gc/invoke.sh --city /path/to/city doctor
+
+# 4. The Refiner rebases the validated candidate and delivers it. In auto mode
+#    GitHub merges it onto main after hosted checks; in manual mode a checked PR
+#    is left open.
+
+# 5. Teardown (see below).
 ```
 
-`feed` is intentionally a small wrapper around native `gc sling
-agentops.mayor BEAD-ID --nudge`. The Mayor creates Beads and attaches the native
-`agentops-experiment` formula. No AgentOps program graph or delivery ledger is
-created.
+`create` writes one `task` bead into the city's single managed Dolt server —
+the same store `feed`, the rig roles, and the formula read — using the pinned
+`bd` binary and the exact server environment the bootstrap uses. It prints the
+new bead id (or the raw `bd` JSON with `--json`). This removes any need to drive
+`bd` by hand.
+
+`feed` is the official single-bead intake: `gc sling
+RIG/agentops.plan-reviewer BEAD --on agentops-experiment --nudge`, plus the role
+targets as formula vars. Because the bead is rig-homed and only rig-scoped roles
+claim it, the v1.3.5 cross-store claim bug is never exercised (see Known upstream
+issues). No AgentOps program graph or delivery ledger is created. The Beads
+graph is the program graph.
+
+The city-scoped Mayor is now an optional, observe-only coordinator: intake does
+not route through it, and it never claims, routes, or edits. You can leave it
+unused, or wake it to summarize ready, in-flight, blocked, and stuck work.
 
 ## Teardown
 
