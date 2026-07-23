@@ -16,6 +16,7 @@ graph LR
   codex_exec["codex-exec"]
   converter["converter"]
   council["council"]
+  craft_goal["craft-goal"]
   dcg["dcg"]
   doc["doc"]
   domain["domain"]

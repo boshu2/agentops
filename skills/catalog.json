@@ -1,6 +1,6 @@
 {
   "schema_version": "3",
-  "skill_count": 48,
+  "skill_count": 49,
   "skills": [
     {
       "canonical_status": "canonical",
@@ -395,6 +395,42 @@
         "council-report.v1"
       ],
       "references_count": 0,
+      "tier": "judgment",
+      "user_invocable": true
+    },
+    {
+      "canonical_status": "canonical",
+      "capabilities": [
+        "goal_prompt_design",
+        "goal_prompt_lint"
+      ],
+      "codex_override_present": true,
+      "consumes": [
+        "caller-outcome",
+        "goal-acceptance"
+      ],
+      "context_rel": [
+        {
+          "kind": "supplier-to",
+          "with": "plan"
+        }
+      ],
+      "dependencies": [],
+      "description": "Compile or lint a persistent Mayor-style goal that ratchets a bead graph through bounded RPI experiments toward one larger outcome. Triggers: \"craft a goal prompt\", \"turn this into a goal\", \"create a bounded goal\", \"lint this goal\", \"is this goal safe\".",
+      "disposition": "keep_specialist",
+      "effects": [],
+      "graph_root": false,
+      "hexagonal_role": "supporting",
+      "name": "craft-goal",
+      "practices": [
+        "lean-startup",
+        "design-by-contract"
+      ],
+      "produces": [
+        "outer-goal-prompt",
+        "goal-safety-report"
+      ],
+      "references_count": 1,
       "tier": "judgment",
       "user_invocable": true
     },

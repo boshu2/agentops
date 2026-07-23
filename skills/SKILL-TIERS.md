@@ -12,7 +12,7 @@
 
 ## judgment
 
-`council`, `postmortem`, `premortem`, `reality-check`, `validate`
+`council`, `craft-goal`, `postmortem`, `premortem`, `reality-check`, `validate`
 
 ## knowledge
 
@@ -54,6 +54,7 @@
 | `codex-exec` | orchestration | `keep_optional_adapter` | - | `codex_exec` | - |
 | `converter` | cross-vendor | `keep_specialist` | - | `converter` | - |
 | `council` | judgment | `keep_strategy` | - | `collect_independent_judgments`, `synthesize_disagreement` | `write_advisory_council_report` |
+| `craft-goal` | judgment | `keep_specialist` | - | `goal_prompt_design`, `goal_prompt_lint` | - |
 | `dcg` | execution | `keep_specialist` | - | `dcg` | - |
 | `doc` | product | `keep_specialist` | - | `doc` | - |
 | `domain` | knowledge | `keep_specialist` | - | `domain` | - |
