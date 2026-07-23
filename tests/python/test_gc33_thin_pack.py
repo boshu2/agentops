@@ -111,7 +111,11 @@ class ThinPackTests(unittest.TestCase):
         )
 
         invoke = (DEPLOY / "invoke.sh").read_text(encoding="utf-8")
-        self.assertIn('sling agentops.mayor "$1" --nudge --json', invoke)
+        # Official single-bead intake: feed slings to the rig-scoped planner with
+        # the native formula attached; it never slings to the city-scoped Mayor.
+        self.assertIn('sling "$rig_name/agentops.plan-reviewer" "$1"', invoke)
+        self.assertIn("--on agentops-experiment", invoke)
+        self.assertNotIn("sling agentops.mayor", invoke)
         for obsolete in ("program start", "factory_feeder", "role_adapter", "run-packet"):
             self.assertNotIn(obsolete, invoke)
 
@@ -419,6 +423,169 @@ class ThinPackTests(unittest.TestCase):
             text = (DEPLOY / name).read_text(encoding="utf-8")
             self.assertIn("export GC_BIN\n", text, name)
 
+    def test_intake_never_routes_through_the_city_scoped_mayor(self) -> None:
+        # Static consistency proof: no default-flow surface in deploy/gc or the
+        # factory pack slings work to agentops.mayor, and the Mayor prompt no
+        # longer claims. Intake homes rig beads on the rig planner instead.
+        surfaces = list(DEPLOY.glob("*.sh")) + list(FACTORY.rglob("*.md"))
+        for path in surfaces:
+            text = path.read_text(encoding="utf-8")
+            self.assertNotIn("sling agentops.mayor", text, path)
+        mayor_prompt = (FACTORY / "agents/mayor/prompt.template.md").read_text(encoding="utf-8")
+        # The Mayor is an observe-only coordinator: it explicitly forbids the
+        # cross-store claim and never carries an instruction to run it.
+        self.assertIn("Do not run `gc hook --claim`", mayor_prompt)
+        self.assertNotIn('Run `"$GC_BIN" hook --claim', mayor_prompt)
+
+    @staticmethod
+    def _sha256_file(path: Path) -> str:
+        return hashlib.sha256(path.read_bytes()).hexdigest()
+
+    @staticmethod
+    def _tree_sha(root: Path) -> str:
+        h = hashlib.sha256()
+        for parent, dirs, files in os.walk(root):
+            dirs.sort()
+            for name in sorted(files):
+                p = os.path.join(parent, name)
+                rel = os.path.relpath(p, root)
+                h.update(rel.encode() + b"\0" + Path(p).read_bytes() + b"\0")
+        return h.hexdigest()
+
+    def _managed_city_fixture(
+        self, root: Path, *, gc_script: str, bd_script: str, worktree_script: str
+    ) -> dict[str, object]:
+        """Build the minimal on-disk managed-city surface invoke.sh validates.
+
+        Mirrors the exact marker identity checks in invoke.sh: gc/bd binary
+        digests, the pack-snapshot tree digest, and the city.toml digest. Stub
+        binaries stand in for gc and bd so feed/create are exercised fully
+        offline with no network and no live gc/bd.
+        """
+        city = root / "city"
+        (city / ".gc/agentops-packs/agentops-factory").mkdir(parents=True)
+        (city / ".gc/agentops-packs/agentops-factory/pack.toml").write_text("name = 'x'\n", encoding="utf-8")
+        (city / ".gc/scripts").mkdir(parents=True)
+        (city / ".beads").mkdir(parents=True)
+        (city / "city.toml").write_text("[workspace]\n", encoding="utf-8")
+        (city / ".beads/dolt-server.port").write_text("3306\n", encoding="utf-8")
+
+        gc_bin = root / "gc"
+        gc_bin.write_text(gc_script, encoding="utf-8")
+        gc_bin.chmod(0o755)
+        bd_bin = root / "bd"
+        bd_bin.write_text(bd_script, encoding="utf-8")
+        bd_bin.chmod(0o755)
+        wt = city / ".gc/scripts/agentops-worktree"
+        wt.write_text(worktree_script, encoding="utf-8")
+        wt.chmod(0o755)
+
+        rig = root / "rig"
+        rig.mkdir()
+        workers = root / "workers"
+
+        marker = city / ".gc/agentops-bootstrap.json"
+        marker.write_text(json.dumps({
+            "schema_version": 1,
+            "state": "ready",
+            "city": str(city.resolve()),
+            "rig": str(rig.resolve()),
+            "rig_name": "testrig",
+            "base_ref": "main",
+            "worktree_root": str(workers.resolve()),
+            "bead_database": "testdb",
+            "pack_snapshot": str((city / ".gc/agentops-packs/agentops-factory").resolve()),
+            "pack_sha256": self._tree_sha(city / ".gc/agentops-packs"),
+            "city_config_sha256": self._sha256_file(city / "city.toml"),
+            "toolchain": {
+                "gc": {"path": str(gc_bin.resolve()), "sha256": self._sha256_file(gc_bin)},
+                "bd": {"path": str(bd_bin.resolve()), "sha256": self._sha256_file(bd_bin)},
+            },
+            "telemetry": {"metrics_url": "", "logs_url": "", "sdk_disabled": True},
+        }), encoding="utf-8")
+        return {"city": city, "rig": rig, "workers": workers, "gc_bin": gc_bin, "bd_bin": bd_bin}
+
+    def test_feed_prepares_worktree_and_slings_rig_formula(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            gc_log = root / "gc.log"
+            worktree_out = root / "worker-tree"
+            gc_script = f'#!/bin/sh\nprintf \'%s\\n\' "$*" >> "{gc_log}"\nexit 0\n'
+            worktree_script = (
+                '#!/bin/sh\n'
+                f'printf \'{{"bead":"b","branch":"gc/b","worktree":"{worktree_out}"}}\\n\'\n'
+                'exit 0\n'
+            )
+            fixture = self._managed_city_fixture(
+                root, gc_script=gc_script, bd_script="#!/bin/sh\nexit 1\n",
+                worktree_script=worktree_script,
+            )
+            result = run(
+                str(DEPLOY / "invoke.sh"), "--city", str(fixture["city"]), "feed", "testrig-1",
+            )
+            self.assertEqual(result.returncode, 0, result.stderr)
+            logged = gc_log.read_text(encoding="utf-8")
+            self.assertIn("sling testrig/agentops.plan-reviewer testrig-1", logged)
+            self.assertIn("--on agentops-experiment", logged)
+            self.assertIn("--nudge", logged)
+            self.assertIn("--json", logged)
+            self.assertIn(f"--var work_dir={worktree_out}", logged)
+            self.assertIn("--var plan_target=testrig/agentops.plan-reviewer", logged)
+            self.assertIn("--var implement_target=testrig/agentops.implementer", logged)
+            self.assertIn("--var validate_target=testrig/agentops.validator", logged)
+            self.assertIn("--var refiner_target=testrig/agentops.refiner", logged)
+            self.assertNotIn("agentops.mayor", logged)
+
+    def test_feed_rejects_unsafe_bead_id(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            fixture = self._managed_city_fixture(
+                root, gc_script="#!/bin/sh\nexit 0\n", bd_script="#!/bin/sh\nexit 1\n",
+                worktree_script="#!/bin/sh\nexit 0\n",
+            )
+            result = run(
+                str(DEPLOY / "invoke.sh"), "--city", str(fixture["city"]), "feed", "bad id;rm",
+            )
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("unsafe bead id", result.stderr)
+
+    def test_create_writes_managed_rig_store_and_prints_id(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            bd_log = root / "bd.log"
+            bd_script = (
+                '#!/bin/sh\n'
+                f'printf \'%s\\n\' "$*" >> "{bd_log}"\n'
+                'printf \'{"id":"testrig-9"}\\n\'\n'
+                'exit 0\n'
+            )
+            fixture = self._managed_city_fixture(
+                root, gc_script="#!/bin/sh\nexit 1\n", bd_script=bd_script,
+                worktree_script="#!/bin/sh\nexit 0\n",
+            )
+            plain = run(
+                str(DEPLOY / "invoke.sh"), "--city", str(fixture["city"]),
+                "create", "add a widget", "-d", "with a description",
+            )
+            self.assertEqual(plain.returncode, 0, plain.stderr)
+            self.assertEqual(plain.stdout, "testrig-9\n")
+            logged = bd_log.read_text(encoding="utf-8")
+            self.assertIn(f"-C {fixture['rig'].resolve()} create", logged)
+            self.assertIn("--title add a widget", logged)
+            self.assertIn("--type task", logged)
+            self.assertIn("--json", logged)
+            self.assertIn("-d with a description", logged)
+
+            json_out = run(
+                str(DEPLOY / "invoke.sh"), "--city", str(fixture["city"]),
+                "create", "no description", "--json",
+            )
+            self.assertEqual(json_out.returncode, 0, json_out.stderr)
+            self.assertEqual(json.loads(json_out.stdout)["id"], "testrig-9")
+            # No description supplied -> no -d flag forwarded to bd.
+            second = bd_log.read_text(encoding="utf-8").splitlines()[-1]
+            self.assertNotIn("-d ", second)
+
     def test_teardown_waits_for_scoped_drain_and_fails_with_exact_residue(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
@@ -666,12 +833,15 @@ class ThinPackTests(unittest.TestCase):
             )
             self.assertEqual(compiled.returncode, 0, compiled.stderr)
             self.assertEqual(json.loads(compiled.stdout)["name"], "agentops-experiment")
+            # Intake resolves to the rig-scoped planner (official single-bead
+            # dispatch), not the city-scoped Mayor.
+            planner_target = f"{marker['rig_name']}/agentops.plan-reviewer"
             route = run(
-                str(gc_bin), "--city", str(city), "sling", "agentops.mayor", source_bead,
-                "--dry-run", "--force", "--json", env=native_env,
+                str(gc_bin), "--city", str(city), "sling", planner_target, source_bead,
+                "--dry-run", "--json", env=native_env,
             )
             self.assertEqual(route.returncode, 0, route.stderr)
-            self.assertEqual(json.loads(route.stdout)["target"], "agentops.mayor")
+            self.assertIn("agentops.plan-reviewer", json.loads(route.stdout)["target"])
             status = run(str(DEPLOY / "invoke.sh"), "--city", str(city), "status", env=native_env)
             self.assertEqual(status.returncode, 0, status.stderr)
             self.assertEqual(json.loads(status.stdout)["schema_version"], "1")
