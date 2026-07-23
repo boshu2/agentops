@@ -35,8 +35,10 @@ and hash the same source. Do not make the model restate those facts in a packet.
    is not already durable, have the runtime pass its exact bytes to
    `python3 skills/validate/scripts/validate.py snapshot-intent --source -` and
    use the returned `intent_ref` for later phases.
-2. Inspect only enough real context to make paths, interfaces, and evidence
-   concrete. Existing research and specialist skills are advisory inputs.
+2. Route the work by type (see **Ground-truth routing**) and name its ground
+   truth first. Then inspect only enough real context to make paths, interfaces,
+   and evidence concrete. Existing research and specialist skills are advisory
+   inputs.
 3. Ensure the source contains acceptance examples, important non-goals, and the
    allowed write scope. Use lightweight prose or Given/When/Then only where it
    removes ambiguity; do not require both normal and edge ceremony for every
@@ -69,6 +71,29 @@ generated companions, parity twins (for example a `skills-codex/` mirror), and
 test files that assert on the paths being changed. Anything this pass finds
 that the scope does not admit will surface later as an out-of-scope diff or a
 broken gate.
+
+## Ground-truth routing
+
+Every plan needs a ground truth outside the planner's own reasoning. Before
+freezing acceptance, classify the work and name its ground truth, its control
+experiment, and its deviation ledger from the row below.
+
+| Work type | Ground truth | Control experiment | Deviation ledger |
+|---|---|---|---|
+| Integrate an external substrate, runtime, tracker, or service | the vendor's own docs plus stock behavior | run their vanilla quickstart on pinned versions with zero local code, before designing | each deviation from the documented flow, each justified; and every component you write that has a native counterpart in the substrate |
+| Extend this project | the repo's existing patterns and behavior spec | the simplest version that satisfies acceptance, and why it is insufficient | each novelty introduced — new abstraction, dependency, or pattern |
+| Greenfield | reference experience and domain prior art | a walking skeleton | each deviation from the boring default, ~one novelty per change |
+
+The Extend row is already the repo's default discipline: behavior-first
+acceptance, RED -> GREEN, the smallest real change. The Integrate row is the one
+that is cheap to skip and expensive to have skipped — run the stock control
+experiment *before* you design, or you will re-plumb what the substrate already
+documents and inherit bugs you built yourself.
+
+Trigger: the Integrate-row mechanics — the stock-quickstart control run and the
+deviation ledger from the documented flow — apply only to integration-class work
+(adopting or wiring in an external substrate, runtime, tracker, or service).
+Routine feature work on this project uses the Extend row and does not incur them.
 
 A plan is done only when it passes the fresh-context test: a cold context,
 given the intent source alone, could execute it without the author's
