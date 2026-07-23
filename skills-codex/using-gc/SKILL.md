@@ -1,6 +1,6 @@
 ---
 name: using-gc
-description: Orchestrate a caller-selected Gas City
+description: Drive a caller-selected Gas City through its
 ---
 # Using GC
 
