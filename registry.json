@@ -525,6 +525,15 @@
     },
     {
       "driven_by_skills": [
+        "using-gc"
+      ],
+      "id": "skill:using-gc:drive_mayor_shepherd",
+      "name": "drive_mayor_shepherd",
+      "path": "skills/using-gc/SKILL.md",
+      "type": "skill"
+    },
+    {
+      "driven_by_skills": [
         "validate"
       ],
       "id": "skill:validate:compute_subject_identity",
@@ -564,13 +573,13 @@
     "cli_commands": 0,
     "gates": 0,
     "reference_impls": 0,
-    "skills": 62,
-    "total": 62
+    "skills": 63,
+    "total": 63
   },
   "cli_top_level_commands": [],
   "schema_version": 3,
   "summary": {
-    "capabilities": 62,
+    "capabilities": 63,
     "cli_commands": 0,
     "eval_files": 0,
     "hooks": 0,
@@ -1217,7 +1226,8 @@
       {
         "capabilities": [
           "dispatch_explicit_packet",
-          "observe_gc_runtime"
+          "observe_gc_runtime",
+          "drive_mayor_shepherd"
         ],
         "disposition": "keep_optional_adapter",
         "effects": [

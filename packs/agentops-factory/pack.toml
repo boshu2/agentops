@@ -8,7 +8,10 @@ description = "Thin AgentOps role pack over native Gas City routing, formulas, a
 [[named_session]]
 template = "mayor"
 scope = "city"
-mode = "on_demand"
+# always: the controller keeps the standing shepherd session live even with no
+# ready demand, so a human can attach to it and an agent can `mayor tell` it at
+# any time. This is the 3.3 human-and-agent door.
+mode = "always"
 
 [[named_session]]
 template = "refiner"
