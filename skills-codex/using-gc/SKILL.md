@@ -91,6 +91,29 @@ Ground-truth every stall before you report it: capture the pane (`tmux -L
 hidden retries, no lifecycle bypass. **Never repair the city from inside the
 city** — diagnose from the invoke surface and hand the finding out.
 
+## Visibility: the four layers
+
+Every canary stall was invisible to at least one layer and visible in another.
+Cycle all four; each lies in its own way.
+
+- **Layer 1 — Robot state.** `gc session list` / `invoke.sh --city C status` —
+  reports "active" even when the provider pane is wedged on a prompt or the
+  network is dead. Lifecycle shape only, never proof of thinking.
+- **Layer 2 — Bead graph.** `gc bd --rig <rig> ready` / `gc bd --rig <rig> show
+  <id>` (workflow/step statuses) — the only completion truth; but a claimed step
+  with a wedged worker looks identical to a working one from here.
+- **Layer 3 — Pane truth.** `tmux -L <socket> capture-pane -t <session> -p` —
+  ground truth for wedges (update nags, trust prompts, API/DNS failures print
+  here first). It is a snapshot, not history.
+- **Layer 4 — Health machinery.** `gc doctor`, `gc order history <order>` (e.g.
+  shepherd-heartbeat) — proves the city's metabolism (orders firing, stores
+  resolving), not whether any specific work is progressing.
+
+Native `gc dashboard` aggregates layers 1-2; the metrics/logs plane (OTel to
+local collectors, Grafana) is the 3.3.1 roadmap layer and not required for
+operating a city today. When layers disagree, trust the LOWER layer (pane over
+robot state) and run the Stall protocol.
+
 ## Boundaries (kept)
 
 - GC state stays in GC. GC quests, attempts, stalls, and internal `close` do not

@@ -90,8 +90,8 @@
     {
       "source": "skills/using-gc/SKILL.md",
       "destination": "packs/agentops-executor/skills/using-gc/SKILL.md",
-      "source_sha256": "482a25c6fce8d0a84b65d5770bd98c5229084d4a40520d71751833465b2fecc8",
-      "sha256": "482a25c6fce8d0a84b65d5770bd98c5229084d4a40520d71751833465b2fecc8",
+      "source_sha256": "277c56846658aecafbd3ec62b48279e898dd84311e51a892f077daf38eb3e911",
+      "sha256": "277c56846658aecafbd3ec62b48279e898dd84311e51a892f077daf38eb3e911",
       "mode": "0644"
     }
   ]
