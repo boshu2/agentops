@@ -1,7 +1,7 @@
 {
   "image": "codex",
   "schema_version": "skill-image.v1",
-  "skill_count": 48,
+  "skill_count": 49,
   "skills": [
     {
       "disposition": "keep_specialist",
@@ -74,6 +74,12 @@
       "slug": "council",
       "source_path": "skills/council/",
       "twin_path": "skills-codex/council/"
+    },
+    {
+      "disposition": "keep_specialist",
+      "slug": "craft-goal",
+      "source_path": "skills/craft-goal/",
+      "twin_path": "skills-codex/craft-goal/"
     },
     {
       "disposition": "keep_specialist",

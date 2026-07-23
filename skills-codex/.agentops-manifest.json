@@ -2,7 +2,7 @@
   "generator": "manual-maintained",
   "source_root": "skills",
   "layout": "modular",
-  "codex_override_catalog_hash": "d05da256388554908b917c51baebc47425925df7cbee17d004dcc1e124f04edc",
+  "codex_override_catalog_hash": "fae62f93c46c2111ea890e25afff256a081b6b07c6944f8f5ac2a94115943437",
   "codex_override_catalog": {
     "version": 1,
     "description": "Machine-readable Codex treatment map for the full skill catalog.",
@@ -320,6 +320,12 @@
         "treatment": "parity_only",
         "wave": "catalog-parity",
         "reason": "Live source skill; generate a parity twin and keep runtime-specific behavior in the source contract."
+      },
+      {
+        "name": "craft-goal",
+        "treatment": "parity_only",
+        "wave": "catalog-parity",
+        "reason": "Auto-generated parity twin (codex-sync): skills/craft-goal is the source of truth; no durable Codex-specific divergence yet."
       }
     ]
   },
@@ -395,6 +401,12 @@
       "source_skill": "skills/council",
       "source_hash": "99b8347b53316514350139dcae1ffdd11ca025820395bc72c700e86823ba914e",
       "generated_hash": "7f43f5ac4f8fe296e36370245c4c9db44f56b841c5c5139c1b06abde1619ae2a"
+    },
+    {
+      "name": "craft-goal",
+      "source_skill": "skills/craft-goal",
+      "source_hash": "5f5ce0aa57b749cbd7367e55c2afabcc0c977f9c0b6a8daa89aeab2ec76d964f",
+      "generated_hash": "dcf692b00ca40f83b7ec56ad980692e7cf3de060a599079f0207be7100decd3d"
     },
     {
       "name": "dcg",
@@ -525,8 +537,8 @@
     {
       "name": "rpi",
       "source_skill": "skills/rpi",
-      "source_hash": "8483b9800e8c0d0a9247271cc67f8c7bb51fe8ed50fc1f6dcd379006530c53fc",
-      "generated_hash": "98669531f0481581d7ad115c54371dbf88b16dd7ff8a9cf0476c641f9d07eee4"
+      "source_hash": "927af465bfa536352c3364921fbe99c40ae6fb3d79fba13f012005937ba4391f",
+      "generated_hash": "3a5b79fcfd13ac1d36a7c9d74729b2277c914a104954f3690d78f9baf10bc00c"
     },
     {
       "name": "sbh",
@@ -613,5 +625,5 @@
       "generated_hash": "30f72769961a244749883e03cb04e329cd0feb03dd5b641d2a73a2e5dc8e9d42"
     }
   ],
-  "package_count": 48
+  "package_count": 49
 }
