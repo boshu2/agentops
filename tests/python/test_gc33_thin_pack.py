@@ -4,8 +4,10 @@ import hashlib
 import json
 import os
 from pathlib import Path
+import platform
 import stat
 import subprocess
+import tarfile
 import tempfile
 import textwrap
 import time
@@ -164,6 +166,244 @@ class ThinPackTests(unittest.TestCase):
         self.assertIn(BD_COMMIT, bootstrap)
         self.assertIn('--prefix "$bead_prefix" --start-suspended --adopt', bootstrap)
         self.assertNotIn('"$bd_bin" init', bootstrap)
+
+    # --- Offline materialize-toolchain fixtures -------------------------------
+    #
+    # materialize-toolchain.sh downloads official prebuilt release archives and
+    # verifies them against the pinned official checksums. These fixtures drive
+    # the identical verification chain fully offline: AGENTOPS_GC_ARCHIVE_CACHE
+    # supplies pre-placed assets instead of the network, and --lock supplies a
+    # fixture lock that pins the fabricated fixture shas. No test hits GitHub.
+
+    @staticmethod
+    def platform_tag() -> str | None:
+        system = {"Darwin": "darwin", "Linux": "linux"}.get(platform.system())
+        machine = {"arm64": "arm64", "aarch64": "arm64", "x86_64": "amd64", "amd64": "amd64"}.get(platform.machine())
+        if not system or not machine:
+            return None
+        return f"{system}_{machine}"
+
+    def build_offline_fixture(
+        self,
+        root: Path,
+        *,
+        gc_reported_version: str = "1.3.5",
+        gc_reported_commit: str = "8ffc009ded781a2ada2077f3a29bd712b2def0bf",
+        bd_reported_version: str = "1.1.0",
+        bd_reported_commit: str = "8e4e59d39",
+    ) -> dict[str, object]:
+        # The lock always pins the correct locked identity; only what the stub
+        # binaries *report* varies. The checksum chain stays internally valid for
+        # any stub content (checksums file and lock are derived from the actual
+        # archive digests), so a reported-identity mismatch isolates the final
+        # version/commit binding step from the earlier hash links.
+        tag = self.platform_tag()
+        if tag is None:
+            self.skipTest(f"no release-archive mapping for {platform.system()}/{platform.machine()}")
+        cache = root / "cache"
+        cache.mkdir()
+        gc_script = (
+            '#!/bin/sh\n'
+            'if [ "$1" = "version" ] && [ "$2" = "--json" ]; then\n'
+            '  printf \'{"version":"' + gc_reported_version + '","commit":"'
+            + gc_reported_commit + '-dirty","ok":true}\\n\'\n'
+            '  exit 0\n'
+            'fi\n'
+            'exit 1\n'
+        )
+        bd_script = (
+            '#!/bin/sh\n'
+            'if [ "$1" = "version" ]; then\n'
+            '  printf \'bd version ' + bd_reported_version + ' ('
+            + bd_reported_commit + ': fixture)\\n\'\n'
+            '  exit 0\n'
+            'fi\n'
+            'exit 1\n'
+        )
+
+        def make_archive(archive_name: str, binname: str, script: str) -> Path:
+            src = root / (binname + "_src")
+            src.mkdir(exist_ok=True)
+            binpath = src / binname
+            binpath.write_text(script, encoding="utf-8")
+            binpath.chmod(0o755)
+            archive_path = cache / archive_name
+            with tarfile.open(archive_path, "w:gz") as tf:
+                tf.add(binpath, arcname=binname)
+            return archive_path
+
+        def sha256(path: Path) -> str:
+            return hashlib.sha256(path.read_bytes()).hexdigest()
+
+        gc_archive_name = f"gascity_1.3.5_{tag}.tar.gz"
+        bd_archive_name = f"beads_1.1.0_{tag}.tar.gz"
+        gc_archive = make_archive(gc_archive_name, "gc", gc_script)
+        bd_archive = make_archive(bd_archive_name, "bd", bd_script)
+
+        gc_ck = cache / "gascity_1.3.5_checksums.txt"
+        gc_ck.write_text(f"{sha256(gc_archive)}  {gc_archive_name}\n", encoding="utf-8")
+        bd_ck = cache / "checksums.txt"
+        bd_ck.write_text(f"{sha256(bd_archive)}  {bd_archive_name}\n", encoding="utf-8")
+
+        lock = {
+            "schema_version": 1,
+            "accepted_pairs": [
+                {
+                    "id": "gascity-v1.3.5-beads-v1.1.0",
+                    "status": "qualified",
+                    "gc": {
+                        "repository": "https://github.com/gastownhall/gascity.git",
+                        "ref": "v1.3.5",
+                        "version": "1.3.5",
+                        "source_commit": GC_COMMIT,
+                        "runtime_commit": "8ffc009d",
+                        "release_checksum_asset": "gascity_1.3.5_checksums.txt",
+                        "release_checksum_sha256": sha256(gc_ck),
+                    },
+                    "bd": {
+                        "repository": "https://github.com/steveyegge/beads.git",
+                        "ref": "v1.1.0",
+                        "version": "1.1.0",
+                        "source_commit": BD_COMMIT,
+                        "runtime_commit": "8e4e59d39",
+                        "release_checksum_asset": "checksums.txt",
+                        "release_checksum_sha256": sha256(bd_ck),
+                    },
+                }
+            ],
+        }
+        lock_path = root / "toolchain.lock.json"
+        lock_path.write_text(json.dumps(lock, indent=2), encoding="utf-8")
+        return {
+            "cache": cache,
+            "lock": lock_path,
+            "gc_ck": gc_ck,
+            "bd_ck": bd_ck,
+            "gc_archive_name": gc_archive_name,
+            "bd_archive_name": bd_archive_name,
+            "tag": tag,
+        }
+
+    def run_materialize(self, output: Path, lock: Path, cache: Path, extra_env: dict[str, str] | None = None) -> subprocess.CompletedProcess[str]:
+        env = os.environ.copy()
+        env["AGENTOPS_GC_ARCHIVE_CACHE"] = str(cache)
+        if extra_env:
+            env.update(extra_env)
+        return run(
+            str(DEPLOY / "materialize-toolchain.sh"), "--output", str(output), "--lock", str(lock),
+            env=env,
+        )
+
+    def test_materialize_offline_happy_path_installs_verified_pair(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            fixture = self.build_offline_fixture(root)
+            output = root / "toolchain"
+            result = self.run_materialize(output, fixture["lock"], fixture["cache"])
+            self.assertEqual(result.returncode, 0, result.stderr)
+            gc_bin = output / "bin/gc"
+            bd_bin = output / "bin/bd"
+            self.assertTrue(gc_bin.is_file())
+            self.assertTrue(bd_bin.is_file())
+            self.assertTrue(gc_bin.stat().st_mode & stat.S_IXUSR)
+            self.assertTrue(bd_bin.stat().st_mode & stat.S_IXUSR)
+            receipt = json.loads((output / "toolchain.json").read_text(encoding="utf-8"))
+            self.assertEqual(receipt["schema_version"], 2)
+            self.assertEqual(set(receipt["runtime"]), {"gc", "bd"})
+            self.assertEqual(receipt["runtime"]["gc"]["path"], "bin/gc")
+            self.assertEqual(receipt["runtime"]["bd"]["path"], "bin/bd")
+            self.assertEqual(receipt["runtime"]["gc"]["version"], "1.3.5")
+            self.assertEqual(receipt["runtime"]["bd"]["version"], "1.1.0")
+            self.assertEqual(receipt["runtime"]["gc"]["commit"], GC_COMMIT)
+            self.assertEqual(receipt["runtime"]["bd"]["commit"], "8e4e59d39")
+            self.assertEqual(receipt["runtime"]["gc"]["sha256"], hashlib.sha256(gc_bin.read_bytes()).hexdigest())
+            self.assertEqual(receipt["runtime"]["bd"]["sha256"], hashlib.sha256(bd_bin.read_bytes()).hexdigest())
+            self.assertEqual(receipt["pair"]["status"], "qualified")
+            self.assertEqual(receipt["pair"]["gc"]["source_commit"], GC_COMMIT)
+            self.assertEqual(receipt["pair"]["bd"]["source_commit"], BD_COMMIT)
+
+    def test_materialize_offline_rejects_checksums_file_tamper(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            fixture = self.build_offline_fixture(root)
+            lock_path = fixture["lock"]
+            lock = json.loads(lock_path.read_text(encoding="utf-8"))
+            lock["accepted_pairs"][0]["gc"]["release_checksum_sha256"] = "0" * 64
+            lock_path.write_text(json.dumps(lock, indent=2), encoding="utf-8")
+            output = root / "toolchain"
+            result = self.run_materialize(output, lock_path, fixture["cache"])
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("checksums asset", result.stderr)
+            self.assertIn("sha256 mismatch", result.stderr)
+            self.assertFalse(output.exists())
+
+    def test_materialize_offline_rejects_archive_tamper(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            fixture = self.build_offline_fixture(root)
+            # Point the checksums file at a wrong archive digest, then re-pin the
+            # lock to the tampered checksums file so its own digest still passes.
+            gc_ck = fixture["gc_ck"]
+            tampered = f"{'0' * 64}  {fixture['gc_archive_name']}\n"
+            gc_ck.write_text(tampered, encoding="utf-8")
+            lock_path = fixture["lock"]
+            lock = json.loads(lock_path.read_text(encoding="utf-8"))
+            lock["accepted_pairs"][0]["gc"]["release_checksum_sha256"] = hashlib.sha256(tampered.encode()).hexdigest()
+            lock_path.write_text(json.dumps(lock, indent=2), encoding="utf-8")
+            output = root / "toolchain"
+            result = self.run_materialize(output, lock_path, fixture["cache"])
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("archive", result.stderr)
+            self.assertIn("sha256 mismatch", result.stderr)
+            self.assertFalse(output.exists())
+
+    def test_materialize_rejects_unsupported_platform(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            fixture = self.build_offline_fixture(root)
+            stub_dir = root / "stub"
+            stub_dir.mkdir()
+            uname = stub_dir / "uname"
+            uname.write_text(
+                '#!/bin/sh\nif [ "$1" = "-s" ]; then echo Plan9; else echo sparc; fi\n',
+                encoding="utf-8",
+            )
+            uname.chmod(0o755)
+            output = root / "toolchain"
+            result = self.run_materialize(
+                output, fixture["lock"], fixture["cache"],
+                extra_env={"PATH": f"{stub_dir}:{os.environ['PATH']}"},
+            )
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("unsupported operating system", result.stderr)
+            self.assertFalse(output.exists())
+
+    def test_materialize_offline_rejects_gc_commit_mismatch(self) -> None:
+        # Valid checksum chain, but the installed gc binary reports a different
+        # commit than the lock pins. Exercises the gc version/commit binding.
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            fixture = self.build_offline_fixture(
+                root, gc_reported_commit="1234567890abcdef1234567890abcdef12345678",
+            )
+            output = root / "toolchain"
+            result = self.run_materialize(output, fixture["lock"], fixture["cache"])
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("installed gc commit", result.stderr)
+            self.assertFalse(output.exists())
+
+    def test_materialize_offline_rejects_bd_version_mismatch(self) -> None:
+        # Valid checksum chain, but the installed bd binary reports a different
+        # version than the lock pins. Exercises the bd version/commit binding.
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            fixture = self.build_offline_fixture(root, bd_reported_version="9.9.9")
+            output = root / "toolchain"
+            result = self.run_materialize(output, fixture["lock"], fixture["cache"])
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("installed bd version", result.stderr)
+            self.assertIn("9.9.9", result.stderr)
+            self.assertFalse(output.exists())
 
     def test_executable_helper_budget_and_shell_syntax(self) -> None:
         scripts = sorted(DEPLOY.glob("*.sh"))
