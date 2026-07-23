@@ -150,6 +150,21 @@ the rig and worktree-root paths must be trusted in `~/.codex/config.toml` as
 exact-path `trust_level` entries; the bootstrap does not yet write them, so add
 them yourself before the first run.
 
+### Visibility
+
+Four observability layers; each lies in its own way, so cycle all four:
+
+- **Robot state** — `invoke.sh --city C status` / `gc session list`: lifecycle
+  shape only; reports "active" through a wedged pane or dead network.
+- **Bead graph** — `gc bd --rig <rig> ready|show <id>`: the only completion truth.
+- **Pane truth** — `tmux -L <socket> capture-pane -t <session> -p`: ground truth
+  for wedges (update nags, trust prompts, API/DNS failures print here first).
+- **Health machinery** — `gc doctor`, `gc order history <order>`: the city's
+  metabolism, not any specific work's progress.
+
+Robot state lies by omission; pane capture is ground truth — when they disagree,
+trust the pane. Full discipline: the `using-gc` skill.
+
 ## Teardown
 
 ```sh
