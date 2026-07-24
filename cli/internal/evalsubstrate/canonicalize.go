@@ -120,12 +120,23 @@ func ContentHash(canonical []byte) string {
 }
 
 func ContentHashFile(path string) (string, error) {
-	raw, err := os.ReadFile(path)
+	parent := filepath.Dir(path)
+	store, err := OpenRootStore(parent)
 	if err != nil {
 		return "", fmt.Errorf("read %q: %w", path, err)
 	}
-	suffix := strings.ToLower(filepath.Ext(path))
+	defer func() { _ = store.Close() }()
+	raw, err := store.ReadFile(filepath.Base(path))
+	if err != nil {
+		return "", fmt.Errorf("read %q: %w", path, err)
+	}
+	return contentHashBytes(path, raw)
+}
+
+func contentHashBytes(name string, raw []byte) (string, error) {
+	suffix := strings.ToLower(filepath.Ext(name))
 	var canon []byte
+	var err error
 	switch suffix {
 	case ".yaml", ".yml":
 		canon, err = CanonicalizeYAML(raw)
@@ -143,27 +154,32 @@ func ContentHashFile(path string) (string, error) {
 }
 
 func ContentHashDirectory(root string) (string, error) {
+	store, err := OpenRootStore(root)
+	if err != nil {
+		return "", fmt.Errorf("walk %q: %w", root, err)
+	}
+	defer func() { _ = store.Close() }()
 	var entries []string
-	err := filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
+	err = store.WalkDir(func(relative string, info os.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
 		if info.IsDir() {
 			return nil
 		}
-		base := filepath.Base(path)
+		base := filepath.Base(relative)
 		if base == "harness.lock.json" {
 			return nil
 		}
-		rel, err := filepath.Rel(root, path)
+		raw, err := store.ReadFile(relative)
 		if err != nil {
 			return err
 		}
-		h, err := ContentHashFile(path)
+		h, err := contentHashBytes(relative, raw)
 		if err != nil {
 			return err
 		}
-		entries = append(entries, rel+"\x00"+h)
+		entries = append(entries, filepath.FromSlash(relative)+"\x00"+h)
 		return nil
 	})
 	if err != nil {

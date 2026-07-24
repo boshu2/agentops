@@ -111,7 +111,7 @@ func (a staticLiveRuntimeAdapter) DirectArgs(command, prompt string) ([]string, 
 // declare and be scored against runtime=claude, but any attempt to *live-invoke*
 // claude is refused before a process spawns — a headless `claude -p` would bill
 // the Anthropic API / burn the Claude Max quota.
-func RunLiveRuntime(ctx context.Context, opts LiveRuntimeOptions) (*RunRecord, error) {
+func RunLiveRuntime(ctx context.Context, opts LiveRuntimeOptions) (runRecord *RunRecord, runErr error) {
 	if ctx == nil {
 		ctx = context.Background()
 	}
@@ -196,11 +196,23 @@ func RunLiveRuntime(ctx context.Context, opts LiveRuntimeOptions) (*RunRecord, e
 		return finishLiveRuntimeRun(opts, record, now)
 	}
 
-	env, hostNotes, err := liveRuntimeEnv(opts, suite)
+	runtimeEnv, err := liveRuntimeEnv(opts, suite)
 	if err != nil {
 		return nil, err
 	}
-	record.Environment.HostNotes = append(record.Environment.HostNotes, hostNotes...)
+	defer func() {
+		if cleanupErr := runtimeEnv.Close(); cleanupErr != nil {
+			cleanupErr = fmt.Errorf("clean runtime isolation root: %w", cleanupErr)
+			if runErr != nil {
+				runErr = errors.Join(runErr, cleanupErr)
+			} else {
+				runRecord = nil
+				runErr = cleanupErr
+			}
+		}
+	}()
+	env := runtimeEnv.Values
+	record.Environment.HostNotes = append(record.Environment.HostNotes, runtimeEnv.Notes...)
 
 	probeRuntimeVersion(ctx, opts, adapter, record, executablePath, env, workDir)
 
@@ -359,48 +371,94 @@ func liveEnvironmentRecord(opts LiveRuntimeOptions, suite Suite) EnvironmentReco
 	}
 }
 
-func liveRuntimeEnv(opts LiveRuntimeOptions, suite Suite) ([]string, []string, error) {
+type liveRuntimeEnvironment struct {
+	Values        []string
+	Notes         []string
+	isolationRoot string
+	owned         bool
+	removeAll     func(string) error
+	closed        bool
+}
+
+func (environment *liveRuntimeEnvironment) Close() error {
+	if environment == nil || environment.closed {
+		return nil
+	}
+	environment.closed = true
+	if !environment.owned || environment.isolationRoot == "" {
+		return nil
+	}
+	return environment.removeAll(environment.isolationRoot)
+}
+
+type liveIsolationOps struct {
+	mkdirTemp func(string, string) (string, error)
+	mkdirAll  func(string, os.FileMode) error
+	removeAll func(string) error
+}
+
+var defaultLiveIsolationOps = liveIsolationOps{
+	mkdirTemp: os.MkdirTemp,
+	mkdirAll:  os.MkdirAll,
+	removeAll: os.RemoveAll,
+}
+
+func liveRuntimeEnv(opts LiveRuntimeOptions, suite Suite) (*liveRuntimeEnvironment, error) {
+	return liveRuntimeEnvWithOps(opts, suite, defaultLiveIsolationOps)
+}
+
+func liveRuntimeEnvWithOps(opts LiveRuntimeOptions, suite Suite, ops liveIsolationOps) (*liveRuntimeEnvironment, error) {
 	base := opts.Env
 	if base == nil {
 		base = os.Environ()
 	}
-	env := scrubbedEnv(base, liveScrubPrefixes(suite))
-	var notes []string
+	environment := &liveRuntimeEnvironment{
+		Values:    scrubbedEnv(base, liveScrubPrefixes(suite)),
+		removeAll: ops.removeAll,
+	}
+	fail := func(err error) (*liveRuntimeEnvironment, error) {
+		if cleanupErr := environment.Close(); cleanupErr != nil {
+			err = errors.Join(err, fmt.Errorf("clean partial runtime isolation root: %w", cleanupErr))
+		}
+		return nil, err
+	}
 	if suite.Environment.IsolateHome || suite.Environment.IsolateCodexHome {
 		root := opts.IsolationRoot
 		if root == "" {
 			var err error
-			root, err = os.MkdirTemp("", "agentops-eval-runtime-*")
+			root, err = ops.mkdirTemp("", "agentops-eval-runtime-*")
 			if err != nil {
-				return nil, nil, fmt.Errorf("create runtime isolation root: %w", err)
+				return nil, fmt.Errorf("create runtime isolation root: %w", err)
 			}
+			environment.owned = true
 		}
+		environment.isolationRoot = root
 		if suite.Environment.IsolateHome {
 			home := filepath.Join(root, "home")
-			if err := os.MkdirAll(home, 0o700); err != nil {
-				return nil, nil, fmt.Errorf("create isolated home: %w", err)
+			if err := ops.mkdirAll(home, 0o700); err != nil {
+				return fail(fmt.Errorf("create isolated home: %w", err))
 			}
-			env = setEnvValue(env, "HOME", home)
+			environment.Values = setEnvValue(environment.Values, "HOME", home)
 			if goruntime.GOOS == "windows" {
-				env = setEnvValue(env, "USERPROFILE", home)
+				environment.Values = setEnvValue(environment.Values, "USERPROFILE", home)
 			}
-			notes = append(notes, "HOME isolated")
+			environment.Notes = append(environment.Notes, "HOME isolated")
 		}
 		if suite.Environment.IsolateCodexHome {
 			codexHome := filepath.Join(root, "codex-home")
-			if err := os.MkdirAll(codexHome, 0o700); err != nil {
-				return nil, nil, fmt.Errorf("create isolated Codex home: %w", err)
+			if err := ops.mkdirAll(codexHome, 0o700); err != nil {
+				return fail(fmt.Errorf("create isolated Codex home: %w", err))
 			}
-			env = setEnvValue(env, "CODEX_HOME", codexHome)
-			notes = append(notes, "CODEX_HOME isolated")
+			environment.Values = setEnvValue(environment.Values, "CODEX_HOME", codexHome)
+			environment.Notes = append(environment.Notes, "CODEX_HOME isolated")
 		}
 	}
-	notes = append(notes, fmt.Sprintf("scrubbed env prefixes: %s", strings.Join(liveScrubPrefixes(suite), ",")))
+	environment.Notes = append(environment.Notes, fmt.Sprintf("scrubbed env prefixes: %s", strings.Join(liveScrubPrefixes(suite), ",")))
 	if effectiveDisableHooks(opts, suite) {
-		env = append(env, "AGENTOPS_HOOKS_DISABLED=1")
-		notes = append(notes, "hooks disabled (AGENTOPS_HOOKS_DISABLED=1)")
+		environment.Values = append(environment.Values, "AGENTOPS_HOOKS_DISABLED=1")
+		environment.Notes = append(environment.Notes, "hooks disabled (AGENTOPS_HOOKS_DISABLED=1)")
 	}
-	return env, notes, nil
+	return environment, nil
 }
 
 func liveScrubPrefixes(suite Suite) []string {

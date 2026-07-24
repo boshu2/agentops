@@ -4,40 +4,77 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"os"
+	"io/fs"
 	"path/filepath"
 	"strings"
 	"time"
 )
 
-func ManifestPath(evalsRoot, runID string) string {
-	return filepath.Join(evalsRoot, "runs", runID, "manifest.json")
+func ManifestPath(evalsRoot, runID string) (string, error) {
+	relative, err := manifestRelative(runID)
+	if err != nil {
+		return "", err
+	}
+	return filepath.Join(evalsRoot, filepath.FromSlash(relative)), nil
 }
 
-func RunDir(evalsRoot, runID string) string {
-	return filepath.Join(evalsRoot, "runs", runID)
+func RunDir(evalsRoot, runID string) (string, error) {
+	relative, err := runDirRelative(runID)
+	if err != nil {
+		return "", err
+	}
+	return filepath.Join(evalsRoot, filepath.FromSlash(relative)), nil
+}
+
+func runDirRelative(runID string) (string, error) {
+	id, err := ParseIdentifier(IdentifierRun, runID)
+	if err != nil {
+		return "", fmt.Errorf("run path: %w", err)
+	}
+	return filepath.ToSlash(filepath.Join("runs", id.StorageName())), nil
+}
+
+func manifestRelative(runID string) (string, error) {
+	dir, err := runDirRelative(runID)
+	if err != nil {
+		return "", err
+	}
+	return filepath.ToSlash(filepath.Join(dir, "manifest.json")), nil
 }
 
 // RunWriter manages the §4 lifecycle of a single Run manifest.
 // All mutations go through WriteAtomic — never plain os.WriteFile.
 type RunWriter struct {
-	root     string
-	runID    string
-	manifest *Manifest
+	root             string
+	runDirRelative   string
+	manifestRelative string
+	manifest         *Manifest
 }
 
 func NewRunWriter(root, runID string, m Manifest) (*RunWriter, error) {
 	if root == "" {
 		return nil, errors.New("NewRunWriter: empty root")
 	}
-	if runID == "" {
-		return nil, errors.New("NewRunWriter: empty runID")
+	runDir, err := runDirRelative(runID)
+	if err != nil {
+		return nil, fmt.Errorf("NewRunWriter: %w", err)
 	}
-	dir := RunDir(root, runID)
-	if _, err := os.Stat(dir); err == nil {
+	manifestPath, err := manifestRelative(runID)
+	if err != nil {
+		return nil, fmt.Errorf("NewRunWriter: %w", err)
+	}
+	store, err := CreateRootStore(root, 0o755)
+	if err != nil {
+		return nil, fmt.Errorf("NewRunWriter: %w", err)
+	}
+	defer func() { _ = store.Close() }()
+	if _, err := store.Stat(runDir); err == nil {
+		dir, _ := store.Path(runDir)
 		return nil, fmt.Errorf("NewRunWriter: run dir already exists: %s", dir)
+	} else if !errors.Is(err, fs.ErrNotExist) {
+		return nil, fmt.Errorf("NewRunWriter: inspect run dir: %w", err)
 	}
-	if err := os.MkdirAll(dir, 0o755); err != nil {
+	if err := store.MkdirAll(runDir, 0o755); err != nil {
 		return nil, fmt.Errorf("NewRunWriter: mkdir: %w", err)
 	}
 
@@ -66,16 +103,21 @@ func NewRunWriter(root, runID string, m Manifest) (*RunWriter, error) {
 		m.ValidityGatesPassed = []string{}
 	}
 
-	w := &RunWriter{root: root, runID: runID, manifest: &m}
-	if err := w.flush(); err != nil {
+	w := &RunWriter{root: root, runDirRelative: runDir, manifestRelative: manifestPath, manifest: &m}
+	if err := w.flushAt(store); err != nil {
+		_ = store.RemoveAll(runDir)
 		return nil, err
 	}
 	return w, nil
 }
 
 func (w *RunWriter) Manifest() Manifest { return *w.manifest }
-func (w *RunWriter) Path() string       { return ManifestPath(w.root, w.runID) }
-func (w *RunWriter) Dir() string        { return RunDir(w.root, w.runID) }
+func (w *RunWriter) Path() string {
+	return filepath.Join(w.root, filepath.FromSlash(w.manifestRelative))
+}
+func (w *RunWriter) Dir() string {
+	return filepath.Join(w.root, filepath.FromSlash(w.runDirRelative))
+}
 
 func (w *RunWriter) Transition(next RunStatus, mut func(*Manifest)) error {
 	if !legalTransition(w.manifest.Status, next) {
@@ -100,22 +142,54 @@ func (w *RunWriter) Transition(next RunStatus, mut func(*Manifest)) error {
 }
 
 func (w *RunWriter) flush() error {
+	store, err := OpenRootStore(w.root)
+	if err != nil {
+		return fmt.Errorf("RunWriter: %w", err)
+	}
+	defer func() { _ = store.Close() }()
+	return w.flushAt(store)
+}
+
+func (w *RunWriter) flushAt(store *RootStore) error {
 	data, err := json.MarshalIndent(w.manifest, "", "  ")
 	if err != nil {
 		return fmt.Errorf("RunWriter: marshal: %w", err)
 	}
 	data = append(data, '\n')
-	return WriteAtomic(w.Path(), data)
+	return store.WriteAtomic(w.manifestRelative, data, 0o644)
 }
 
-func LoadManifest(path string) (*Manifest, error) {
-	raw, err := os.ReadFile(path)
+func LoadManifest(root, runID string) (*Manifest, error) {
+	id, err := ParseIdentifier(IdentifierRun, runID)
 	if err != nil {
-		return nil, fmt.Errorf("LoadManifest %q: %w", path, err)
+		return nil, fmt.Errorf("LoadManifest: %w", err)
+	}
+	store, err := OpenRootStore(root)
+	if err != nil {
+		return nil, fmt.Errorf("LoadManifest: %w", err)
+	}
+	defer func() { _ = store.Close() }()
+	var raw []byte
+	var used string
+	for _, storageName := range id.CompatibilityStorageNames() {
+		used = filepath.ToSlash(filepath.Join("runs", storageName, "manifest.json"))
+		raw, err = store.ReadFile(used)
+		if err == nil {
+			break
+		}
+		if !errors.Is(err, fs.ErrNotExist) {
+			return nil, fmt.Errorf("LoadManifest %q: %w", used, err)
+		}
+	}
+	if err != nil {
+		return nil, fmt.Errorf("LoadManifest %q: %w", used, err)
 	}
 	var m Manifest
 	if err := json.Unmarshal(raw, &m); err != nil {
-		return nil, fmt.Errorf("LoadManifest %q: parse: %w", path, err)
+		return nil, fmt.Errorf("LoadManifest %q: parse: %w", used, err)
+	}
+	if m.ID != "" && m.ID != id.String() {
+		return nil, fmt.Errorf("LoadManifest %q: manifest id %q does not match requested run id %q", used, m.ID, id.String())
 	}
 	return &m, nil
 }

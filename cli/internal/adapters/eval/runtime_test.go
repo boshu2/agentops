@@ -2,11 +2,13 @@ package eval
 
 import (
 	"context"
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"runtime"
 	"sync"
 	"testing"
+	"time"
 
 	aoeval "github.com/boshu2/agentops/cli/internal/eval"
 	"github.com/boshu2/agentops/cli/internal/evalsubstrate"
@@ -91,6 +93,98 @@ func TestRuntimeTaskServiceDryRunUsesRealFilesystemAdapter(t *testing.T) {
 	}
 	if !result.DryRun {
 		t.Fatalf("result = %#v", result)
+	}
+	if _, err := (aoeval.TaskService{Runtime: Runtime{}}).Run(context.Background(), aoeval.TaskRunRequest{
+		TaskID: task.ID, SuiteRef: suite.ID, Seeds: "1,2,3", HarnessRef: "harness-1",
+		GroundTruthRef: "gt-1", ModelSpecID: "../escape", DryRun: true,
+	}); err == nil {
+		t.Fatal("dry run accepted hostile --model-spec id")
+	}
+}
+
+func TestRuntimeTaskServiceRejectsSymlinkParentEscape(t *testing.T) {
+	root := t.TempDir()
+	outside := t.TempDir()
+	t.Setenv("AGENTOPS_EVALS_ROOT", root)
+	if err := os.Symlink(outside, filepath.Join(root, "tasks")); err != nil {
+		t.Skipf("symlink unavailable: %v", err)
+	}
+	source := filepath.Join(t.TempDir(), "task.yaml")
+	data, err := yaml.Marshal(evalsubstrate.Task{SchemaVersion: 1, ID: "task-escape", Stats: evalsubstrate.TaskStat{MinNSamples: 3}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(source, data, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := (aoeval.TaskService{Runtime: Runtime{}}).Add(context.Background(), aoeval.TaskAddRequest{SourcePath: source}); err == nil {
+		t.Fatal("TaskService.Add through escaping symlink unexpectedly succeeded")
+	}
+	if _, err := os.Stat(filepath.Join(outside, "task-escape", "task.yaml")); !os.IsNotExist(err) {
+		t.Fatalf("outside task was created: %v", err)
+	}
+}
+
+func TestRuntimeDeleteRunRejectsHostileIDAndSymlinkEscape(t *testing.T) {
+	root := t.TempDir()
+	outside := t.TempDir()
+	sentinel := filepath.Join(outside, "sentinel")
+	if err := os.WriteFile(sentinel, []byte("keep"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink(outside, filepath.Join(root, "runs")); err != nil {
+		t.Skipf("symlink unavailable: %v", err)
+	}
+	runtime := Runtime{}
+	if err := runtime.DeleteRun(root, "../escape"); err == nil {
+		t.Fatal("DeleteRun accepted traversal")
+	}
+	if err := runtime.DeleteRun(root, "run-escape"); err == nil {
+		t.Fatal("DeleteRun through escaping symlink unexpectedly succeeded")
+	}
+	if got, err := os.ReadFile(sentinel); err != nil || string(got) != "keep" {
+		t.Fatalf("outside sentinel changed: content=%q err=%v", got, err)
+	}
+}
+
+func TestRuntimeLegacyColonRunCompatibilityStaysOnBoundedLegacyPath(t *testing.T) {
+	root := t.TempDir()
+	legacyDir := filepath.Join(root, "runs", "Run:legacy")
+	if err := os.MkdirAll(legacyDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	manifest := evalsubstrate.Manifest{
+		SchemaVersion:   1,
+		ID:              "Run:legacy",
+		Status:          evalsubstrate.StatusPending,
+		StartedAtUnixMs: 1,
+	}
+	data, err := json.Marshal(manifest)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(legacyDir, "manifest.json"), data, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	runtime := Runtime{}
+	if err := runtime.Transition(root, "Run:legacy", evalsubstrate.StatusAborted, "test", time.Unix(10, 0)); err != nil {
+		t.Fatalf("Transition legacy run: %v", err)
+	}
+	if _, err := os.Stat(filepath.Join(root, "runs", "Run%3Alegacy")); !os.IsNotExist(err) {
+		t.Fatalf("transition created a competing canonical directory: %v", err)
+	}
+	loaded, err := evalsubstrate.LoadManifest(root, "Run:legacy")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if loaded.Status != evalsubstrate.StatusAborted {
+		t.Fatalf("status = %s, want aborted", loaded.Status)
+	}
+	if err := runtime.DeleteRun(root, "Run:legacy"); err != nil {
+		t.Fatalf("DeleteRun legacy run: %v", err)
+	}
+	if _, err := os.Stat(legacyDir); !os.IsNotExist(err) {
+		t.Fatalf("legacy run directory was not removed: %v", err)
 	}
 }
 

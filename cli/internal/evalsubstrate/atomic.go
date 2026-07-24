@@ -5,71 +5,49 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-
-	"github.com/boshu2/agentops/cli/internal/storage"
+	"strings"
 )
 
 // WriteAtomic implements the §4 Run-manifest atomic-write contract:
-//  1. Write data to <path>.tmp
+//  1. Write data to a unique sibling temporary
 //  2. fsync(temp_fd) — durability of file body BEFORE rename
-//  3. Atomic rename <path>.tmp → <path>
+//  3. Atomic rename temp → <path>
 //  4. fsync(parent_dir_fd) — durability of the rename itself
 func WriteAtomic(path string, data []byte) error {
 	if path == "" {
 		return errors.New("WriteAtomic: empty path")
 	}
-	tmp := path + ".tmp"
 	parent := filepath.Dir(path)
-	if err := os.MkdirAll(parent, 0o755); err != nil {
-		return fmt.Errorf("WriteAtomic: mkdir parent: %w", err)
-	}
-	f, err := os.OpenFile(tmp, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0o644)
+	store, err := CreateRootStore(parent, 0o755)
 	if err != nil {
-		return fmt.Errorf("WriteAtomic: open temp: %w", err)
+		return fmt.Errorf("WriteAtomic: %w", err)
 	}
-	if _, err := f.Write(data); err != nil {
-		// Best-effort cleanup; the write error below is the actionable one.
-		_ = f.Close()
-		_ = os.Remove(tmp)
-		return fmt.Errorf("WriteAtomic: write temp: %w", err)
-	}
-	if err := f.Sync(); err != nil {
-		_ = f.Close()
-		_ = os.Remove(tmp)
-		return fmt.Errorf("WriteAtomic: fsync temp: %w", err)
-	}
-	if err := f.Close(); err != nil {
-		_ = os.Remove(tmp)
-		return fmt.Errorf("WriteAtomic: close temp: %w", err)
-	}
-	if err := os.Rename(tmp, path); err != nil {
-		_ = os.Remove(tmp)
-		return fmt.Errorf("WriteAtomic: rename: %w", err)
-	}
-	if err := storage.FsyncDir(parent); err != nil {
-		return fmt.Errorf("WriteAtomic: fsync parent: %w", err)
+	defer func() { _ = store.Close() }()
+	if err := store.WriteAtomic(filepath.Base(path), data, 0o644); err != nil {
+		return fmt.Errorf("WriteAtomic: %w", err)
 	}
 	return nil
 }
 
-// SweepTempFiles removes orphan `*.tmp` files older than maxAgeSeconds.
+// SweepTempFiles removes orphan legacy `*.tmp` and unique `*.tmp-*` files
+// older than maxAgeSeconds.
 // Used by `ao eval cleanup --tmp-files` to recover from rename-step crashes.
 func SweepTempFiles(root string, maxAgeSeconds int64) ([]string, error) {
 	var removed []string
-	rootHandle, err := os.OpenRoot(root)
+	store, err := OpenRootStore(root)
 	if err != nil {
 		return removed, fmt.Errorf("SweepTempFiles: open root %q: %w", root, err)
 	}
-	defer func() { _ = rootHandle.Close() }()
+	defer func() { _ = store.Close() }()
 
-	err = filepath.WalkDir(root, func(path string, entry os.DirEntry, err error) error {
+	err = store.WalkDir(func(relative string, entry os.DirEntry, err error) error {
 		if err != nil {
 			return nil
 		}
 		if entry.IsDir() {
 			return nil
 		}
-		if filepath.Ext(path) != ".tmp" {
+		if !isEvalTempName(entry.Name()) {
 			return nil
 		}
 		info, err := entry.Info()
@@ -82,12 +60,11 @@ func SweepTempFiles(root string, maxAgeSeconds int64) ([]string, error) {
 				return nil
 			}
 		}
-		rel, err := filepath.Rel(root, path)
-		if err != nil || rel == "." {
+		if relative == "." {
 			return nil
 		}
-		if rerr := rootHandle.Remove(rel); rerr == nil {
-			removed = append(removed, path)
+		if rerr := store.Remove(filepath.ToSlash(relative)); rerr == nil {
+			removed = append(removed, filepath.Join(root, filepath.FromSlash(relative)))
 		}
 		return nil
 	})
@@ -95,4 +72,8 @@ func SweepTempFiles(root string, maxAgeSeconds int64) ([]string, error) {
 		return removed, fmt.Errorf("SweepTempFiles: walk %q: %w", root, err)
 	}
 	return removed, nil
+}
+
+func isEvalTempName(name string) bool {
+	return strings.HasSuffix(name, ".tmp") || strings.Contains(name, ".tmp-")
 }

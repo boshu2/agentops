@@ -346,6 +346,19 @@ func TestPromoteBaselineWritesRunRecord(t *testing.T) {
 	}
 }
 
+func TestPromoteBaselineEncodesColonInDerivedFilename(t *testing.T) {
+	workDir := t.TempDir()
+	run := minimalRunRecord("Run:candidate", 1, map[Dimension]float64{DimensionCorrectness: 1})
+	promoted, err := PromoteBaseline(run, BaselineOptions{WorkDir: workDir, Now: fixedEvalTime})
+	if err != nil {
+		t.Fatalf("PromoteBaseline: %v", err)
+	}
+	base := filepath.Base(promoted.Baseline.BaselinePath)
+	if strings.Contains(base, ":") || !strings.Contains(base, "%3A") {
+		t.Fatalf("baseline filename = %q, want reversible colon encoding", base)
+	}
+}
+
 func TestCollectGitRecordPreservesDirtyPathNames(t *testing.T) {
 	dir := t.TempDir()
 	runGit(t, dir, "init")

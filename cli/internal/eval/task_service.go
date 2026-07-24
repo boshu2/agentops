@@ -73,6 +73,10 @@ func (service TaskService) Add(_ context.Context, request TaskAddRequest) (TaskA
 	if task.ID == "" {
 		return TaskAddResult{}, fmt.Errorf("eval task add: missing required field id")
 	}
+	taskID, err := evalsubstrate.ParseIdentifier(evalsubstrate.IdentifierTask, task.ID)
+	if err != nil {
+		return TaskAddResult{}, fmt.Errorf("eval task add: %w", err)
+	}
 	if task.Stats.MinNSamples <= 0 {
 		return TaskAddResult{}, fmt.Errorf("eval task add: task %q has no stats.min_n_samples (gate #6 cannot enforce)", task.ID)
 	}
@@ -80,7 +84,7 @@ func (service TaskService) Add(_ context.Context, request TaskAddRequest) (TaskA
 	if err != nil {
 		return TaskAddResult{}, fmt.Errorf("eval task add: canonicalize: %w", err)
 	}
-	destination := filepath.Join(service.Runtime.Root(), "tasks", task.ID, "task.yaml")
+	destination := filepath.Join(service.Runtime.Root(), "tasks", taskID.StorageName(), "task.yaml")
 	if err := service.Runtime.WriteAtomic(destination, canonical); err != nil {
 		return TaskAddResult{}, fmt.Errorf("eval task add: write: %w", err)
 	}
@@ -95,13 +99,18 @@ func (service TaskService) List(_ context.Context) (TaskListResult, error) {
 	}
 	sort.Strings(ids)
 	result := TaskListResult{Root: root, Tasks: make([]TaskSummary, 0, len(ids))}
-	for _, id := range ids {
-		task, err := service.loadTask(id)
-		if err != nil {
-			result.Tasks = append(result.Tasks, TaskSummary{ID: id, Error: err.Error()})
+	for _, storageID := range ids {
+		id, parseErr := evalsubstrate.ParseStorageIdentifier(evalsubstrate.IdentifierTask, storageID)
+		if parseErr != nil {
+			result.Tasks = append(result.Tasks, TaskSummary{ID: storageID, Error: parseErr.Error()})
 			continue
 		}
-		result.Tasks = append(result.Tasks, TaskSummary{ID: id, Task: task})
+		task, err := service.loadTask(id.String())
+		if err != nil {
+			result.Tasks = append(result.Tasks, TaskSummary{ID: id.String(), Error: err.Error()})
+			continue
+		}
+		result.Tasks = append(result.Tasks, TaskSummary{ID: id.String(), Task: task})
 	}
 	return result, nil
 }
@@ -121,6 +130,11 @@ func (service TaskService) Run(_ context.Context, request TaskRunRequest) (TaskR
 	suite, err := service.loadSuite(request.SuiteRef)
 	if err != nil {
 		return TaskRunResult{}, err
+	}
+	if request.ModelSpecID != "" {
+		if _, err := evalsubstrate.ParseIdentifier(evalsubstrate.IdentifierModel, request.ModelSpecID); err != nil {
+			return TaskRunResult{}, fmt.Errorf("eval task run: --model-spec: %w", err)
+		}
 	}
 	seeds, err := parseTaskSeeds(request.Seeds)
 	if err != nil {
@@ -186,7 +200,11 @@ func (failure *TaskGateError) Error() string {
 }
 
 func (service TaskService) loadTask(id string) (*evalsubstrate.Task, error) {
-	path := filepath.Join(service.Runtime.Root(), "tasks", id, "task.yaml")
+	taskID, err := evalsubstrate.ParseIdentifier(evalsubstrate.IdentifierTask, id)
+	if err != nil {
+		return nil, fmt.Errorf("loadTask %q: %w", id, err)
+	}
+	path := filepath.Join(service.Runtime.Root(), "tasks", taskID.StorageName(), "task.yaml")
 	raw, err := service.Runtime.ReadFile(path)
 	if err != nil {
 		return nil, fmt.Errorf("loadTask %q: %w", id, err)
@@ -195,13 +213,20 @@ func (service TaskService) loadTask(id string) (*evalsubstrate.Task, error) {
 	if err := yaml.Unmarshal(raw, &task); err != nil {
 		return nil, fmt.Errorf("loadTask %q: parse: %w", id, err)
 	}
+	if task.ID != taskID.String() {
+		return nil, fmt.Errorf("loadTask %q: task id %q does not match requested id", id, task.ID)
+	}
 	return &task, nil
 }
 
 func (service TaskService) loadSuite(ref string) (*evalsubstrate.Suite, error) {
 	path := ref
 	if !strings.HasSuffix(ref, ".yaml") && !strings.HasSuffix(ref, ".yml") {
-		path = filepath.Join(service.Runtime.Root(), "suites", ref, "suite.yaml")
+		suiteID, err := evalsubstrate.ParseIdentifier(evalsubstrate.IdentifierSuite, ref)
+		if err != nil {
+			return nil, fmt.Errorf("loadSuite %q: %w", ref, err)
+		}
+		path = filepath.Join(service.Runtime.Root(), "suites", suiteID.StorageName(), "suite.yaml")
 	}
 	raw, err := service.Runtime.ReadFile(path)
 	if err != nil {
@@ -210,6 +235,9 @@ func (service TaskService) loadSuite(ref string) (*evalsubstrate.Suite, error) {
 	var suite evalsubstrate.Suite
 	if err := yaml.Unmarshal(raw, &suite); err != nil {
 		return nil, fmt.Errorf("loadSuite %q: parse: %w", ref, err)
+	}
+	if !strings.HasSuffix(ref, ".yaml") && !strings.HasSuffix(ref, ".yml") && suite.ID != ref {
+		return nil, fmt.Errorf("loadSuite %q: suite id %q does not match requested id", ref, suite.ID)
 	}
 	return &suite, nil
 }
@@ -237,6 +265,9 @@ func (service TaskService) taskManifest(request TaskRunRequest, task *evalsubstr
 		manifest.HarnessContentHash = gates.Harness.ContentHash
 	}
 	if request.ModelSpecID != "" {
+		if _, err := evalsubstrate.ParseIdentifier(evalsubstrate.IdentifierModel, request.ModelSpecID); err != nil {
+			return evalsubstrate.Manifest{}, fmt.Errorf("model spec: %w", err)
+		}
 		if spec, err := service.Runtime.LoadModelSpec(service.Runtime.Root(), request.ModelSpecID); err == nil {
 			manifest.ModelSpecHash = spec.ContentHash
 		}

@@ -41,7 +41,10 @@ func (service SuiteService) Verdict(_ context.Context, request SuiteVerdictReque
 	if request.InputsPath == "" {
 		return SuiteVerdictResult{}, fmt.Errorf("eval suite verdict: --inputs is required")
 	}
-	suite, _ := service.loadSuite(request.SuiteID)
+	suite, err := service.loadSuite(request.SuiteID)
+	if err != nil {
+		return SuiteVerdictResult{}, fmt.Errorf("eval suite verdict: load suite %q: %w", request.SuiteID, err)
+	}
 	arms := strings.Join(suiteArmIDs(suite, request.Arms), ",")
 	if strings.TrimSpace(arms) == "" {
 		return SuiteVerdictResult{}, fmt.Errorf("eval suite verdict: --arms required when suite has no varied_axis on disk")
@@ -87,7 +90,11 @@ func (service SuiteService) NRequired(_ context.Context, request SuiteNRequiredR
 func (service SuiteService) loadSuite(id string) (*evalsubstrate.Suite, error) {
 	path := id
 	if !strings.HasSuffix(id, ".yaml") && !strings.HasSuffix(id, ".yml") {
-		path = filepath.Join(service.Runtime.Root(), "suites", id, "suite.yaml")
+		suiteID, err := evalsubstrate.ParseIdentifier(evalsubstrate.IdentifierSuite, id)
+		if err != nil {
+			return nil, err
+		}
+		path = filepath.Join(service.Runtime.Root(), "suites", suiteID.StorageName(), "suite.yaml")
 	}
 	raw, err := service.Runtime.ReadFile(path)
 	if err != nil {
@@ -96,6 +103,9 @@ func (service SuiteService) loadSuite(id string) (*evalsubstrate.Suite, error) {
 	var suite evalsubstrate.Suite
 	if err := yaml.Unmarshal(raw, &suite); err != nil {
 		return nil, err
+	}
+	if !strings.HasSuffix(id, ".yaml") && !strings.HasSuffix(id, ".yml") && suite.ID != id {
+		return nil, fmt.Errorf("suite id %q does not match requested id %q", suite.ID, id)
 	}
 	return &suite, nil
 }

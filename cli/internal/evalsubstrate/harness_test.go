@@ -87,6 +87,23 @@ func TestSnapshotHarness_CRLFNotChangeHash(t *testing.T) {
 	}
 }
 
+func TestSnapshotHarnessRejectsSymlinkFileEscape(t *testing.T) {
+	dir := t.TempDir()
+	outside := filepath.Join(t.TempDir(), "secret.md")
+	if err := os.WriteFile(outside, []byte("secret\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink(outside, filepath.Join(dir, "linked.md")); err != nil {
+		t.Skipf("symlink unavailable: %v", err)
+	}
+	if _, _, err := SnapshotHarness(dir, "id", "test"); err == nil {
+		t.Fatal("SnapshotHarness followed a symlink outside its declared root")
+	}
+	if _, err := ContentHashDirectory(dir); err == nil {
+		t.Fatal("ContentHashDirectory followed a symlink outside its declared root")
+	}
+}
+
 func TestVerifyHarnessLock_DetectsDrift(t *testing.T) {
 	root := t.TempDir()
 	dir := filepath.Join(root, "skill")
