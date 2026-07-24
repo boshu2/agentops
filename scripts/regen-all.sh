@@ -32,50 +32,34 @@ step() {
   fi
 }
 
-codex_sync() {
-  local args=()
-  [[ "$mode" == check ]] && args+=(--check)
-  [[ -n "$skills" ]] && args+=(--only "$skills")
-  bash scripts/codex-sync.sh "${args[@]}"
-}
-
-codex_hashes() {
-  local args=()
-  [[ "$mode" == check ]] && args+=(--check)
-  [[ -n "$skills" ]] && args+=(--only "$skills")
-  bash scripts/regen-codex-hashes.sh "${args[@]}"
-}
-
-gc_skill_projection() {
-  local args=()
-  [[ "$mode" == check ]] && args+=(--check)
-  python3 scripts/sync-gc-pack.py "${args[@]}"
+publish_generated_projections() {
+  local args=(
+    --repository "$ROOT"
+    --owner-map docs/contracts/generated-projection-owners.v1.json
+  )
+  if [[ "$mode" == check ]]; then
+    args+=(--check)
+  else
+    args+=(--write)
+  fi
+  # Shared publication is intentionally complete even when a caller supplies
+  # --skills. The selector remains available to staged generators as provenance,
+  # but it may not narrow the transaction into a mixed live generation.
+  REGEN_SKILLS="$skills" \
+    PYTHONDONTWRITEBYTECODE=1 \
+    python3 -B scripts/publish-generated-projections.py "${args[@]}"
 }
 
 if [[ "$mode" == regen ]]; then
   echo "== regenerate metadata-owned projections =="
-  step "Codex twins" codex_sync
-  step "GC skill projection" gc_skill_projection
-  step "Codex hashes" codex_hashes
-  step "skill mesh" python3 scripts/generate-skill-mesh.py
-    step "CLI reference" bash scripts/generate-cli-reference.sh
-  step "command heading projections" bash scripts/regen-command-surfaces.sh
-  step "CLI surface inventory" bash scripts/check-cmdao-surface-parity.sh --write-surface
-  step "documentation index" python3 scripts/generate-documentation-index.py
+  step "transactional generated projections" publish_generated_projections
   echo
   echo "Regeneration complete. Review the diff and run scripts/regen-all.sh --check."
 else
   echo "== check metadata-owned projections =="
-  step "Codex twins" codex_sync
-  step "GC skill projection" gc_skill_projection
-  step "Codex hashes" codex_hashes
-  step "skill mesh" python3 scripts/generate-skill-mesh.py --check
+  step "transactional generated projections" publish_generated_projections
   step "Codex parity" bash scripts/audit-codex-parity.sh
   step "Codex runtime sections" bash scripts/validate-codex-runtime-sections.sh
-    step "CLI reference" bash scripts/generate-cli-reference.sh --check
-  step "command heading projections" bash scripts/regen-command-surfaces.sh --check
-  step "CLI surface inventory" bash scripts/check-cmdao-surface-parity.sh
-  step "documentation index" python3 scripts/generate-documentation-index.py --check
   step "documentation release checks" bash tests/docs/validate-doc-release.sh
   echo
   echo "All generated projections are current."

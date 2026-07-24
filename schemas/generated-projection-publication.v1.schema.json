@@ -1,0 +1,133 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agentops.dev/schemas/generated-projection-publication.v1.schema.json",
+  "title": "generated-projection-publication.v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "transaction_id",
+    "owner_map_digest",
+    "input_digest",
+    "rendered_digest",
+    "targets",
+    "published_at",
+    "artifact_digest"
+  ],
+  "properties": {
+    "schema_version": {"const": "generated-projection-publication.v1"},
+    "transaction_id": {"type": "string", "minLength": 1},
+    "owner_map_digest": {"$ref": "#/$defs/digest"},
+    "input_digest": {"$ref": "#/$defs/digest"},
+    "rendered_digest": {"$ref": "#/$defs/digest"},
+    "targets": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["owner", "path", "declared_kind", "state"],
+        "properties": {
+          "owner": {"type": "string", "minLength": 1},
+          "path": {"$ref": "#/$defs/ref"},
+          "declared_kind": {"enum": ["file", "tree", "symlink", "any"]},
+          "state": {"$ref": "#/$defs/state"}
+        }
+      }
+    },
+    "published_at": {"type": "string", "format": "date-time"},
+    "artifact_digest": {"$ref": "#/$defs/digest"}
+  },
+  "$defs": {
+    "digest": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "ref": {"type": "string", "minLength": 1},
+    "state": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "state_digest"],
+          "properties": {
+            "kind": {"const": "missing"},
+            "state_digest": {"$ref": "#/$defs/digest"}
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "mode", "content_digest", "state_digest"],
+          "properties": {
+            "kind": {"const": "file"},
+            "mode": {"$ref": "#/$defs/mode"},
+            "content_digest": {"$ref": "#/$defs/digest"},
+            "state_digest": {"$ref": "#/$defs/digest"}
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "mode", "link_target", "content_digest", "state_digest"],
+          "properties": {
+            "kind": {"const": "symlink"},
+            "mode": {"$ref": "#/$defs/mode"},
+            "link_target": {"type": "string"},
+            "content_digest": {"$ref": "#/$defs/digest"},
+            "state_digest": {"$ref": "#/$defs/digest"}
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "mode", "entries", "state_digest"],
+          "properties": {
+            "kind": {"const": "directory"},
+            "mode": {"$ref": "#/$defs/mode"},
+            "entries": {
+              "type": "array",
+              "items": {"$ref": "#/$defs/entry"}
+            },
+            "state_digest": {"$ref": "#/$defs/digest"}
+          }
+        }
+      ]
+    },
+    "entry": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["path", "kind", "mode"],
+          "properties": {
+            "path": {"$ref": "#/$defs/ref"},
+            "kind": {"const": "directory"},
+            "mode": {"$ref": "#/$defs/mode"}
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["path", "kind", "mode", "content_digest"],
+          "properties": {
+            "path": {"$ref": "#/$defs/ref"},
+            "kind": {"const": "file"},
+            "mode": {"$ref": "#/$defs/mode"},
+            "content_digest": {"$ref": "#/$defs/digest"}
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["path", "kind", "mode", "link_target", "content_digest"],
+          "properties": {
+            "path": {"$ref": "#/$defs/ref"},
+            "kind": {"const": "symlink"},
+            "mode": {"$ref": "#/$defs/mode"},
+            "link_target": {"type": "string"},
+            "content_digest": {"$ref": "#/$defs/digest"}
+          }
+        }
+      ]
+    },
+    "mode": {"type": "string", "pattern": "^[0-7]{4}$"}
+  }
+}

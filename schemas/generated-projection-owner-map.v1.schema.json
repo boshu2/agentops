@@ -1,0 +1,79 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agentops.dev/schemas/generated-projection-owner-map.v1.schema.json",
+  "title": "generated-projection-owner-map.v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "publication", "owners", "artifact_digest"],
+  "properties": {
+    "schema_version": {"const": "generated-projection-owner-map.v1"},
+    "publication": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["lock_ref", "manifest_ref", "receipt_dir_ref", "transaction_dir_ref"],
+      "properties": {
+        "lock_ref": {"$ref": "#/$defs/ref"},
+        "manifest_ref": {"$ref": "#/$defs/ref"},
+        "receipt_dir_ref": {"$ref": "#/$defs/ref"},
+        "transaction_dir_ref": {"$ref": "#/$defs/ref"}
+      }
+    },
+    "owners": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "generator_refs", "source_refs", "commands", "targets"],
+        "properties": {
+          "id": {"$ref": "#/$defs/id"},
+          "generator_refs": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": {"$ref": "#/$defs/ref"}
+          },
+          "source_refs": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": {"$ref": "#/$defs/ref"}
+          },
+          "commands": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "array",
+              "minItems": 1,
+              "items": {"type": "string", "minLength": 1}
+            }
+          },
+          "targets": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["path", "kind", "allow_missing"],
+              "properties": {
+                "path": {"$ref": "#/$defs/ref"},
+                "kind": {"enum": ["file", "tree", "symlink", "any"]},
+                "allow_missing": {"type": "boolean"}
+              }
+            }
+          }
+        }
+      }
+    },
+    "artifact_digest": {"$ref": "#/$defs/digest"}
+  },
+  "$defs": {
+    "digest": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "id": {"type": "string", "pattern": "^[a-z][a-z0-9-]*$"},
+    "ref": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^(?!/)(?!\\.?(?:/|$))(?!.*(?:^|/)(?:\\.|\\.\\.)(?:/|$))(?!.*\\\\)(?!.*//$).+$"
+    }
+  }
+}
