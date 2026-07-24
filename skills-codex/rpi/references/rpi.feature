@@ -8,10 +8,13 @@ Feature: RPI runs one exact bounded experiment
     And it contains no next action
 
   @covered-by:skills/rpi/tests/test_run_once.py::test_whitespace_and_unicode_bytes_remain_distinct
+  @covered-by:skills/rpi/tests/test_run_once.py::test_serialized_remote_boundary_preserves_single_mint_identity
   Scenario: Exact intent bytes cross every phase
     Given intent bytes with Unicode or whitespace
     When Plan mints the intent
-    Then Implement and Validate receive the exact snapshot reference and digest
+    Then Implement and Validate receive the exact snapshot reference, digest, and byte length
+    And a serialized remote phase packet preserves that exact identity
+    And RPI does not mint the Plan snapshot a second time
     And a byte-different representation has a different identity
 
   @covered-by:skills/rpi/tests/test_run_once.py::test_fail_and_not_proven_report_and_stop

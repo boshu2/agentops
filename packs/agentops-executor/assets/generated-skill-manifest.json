@@ -6,15 +6,15 @@
     {
       "source": "skills/implement/SKILL.md",
       "destination": "packs/agentops-executor/agents/implementer-claude/skills/implement/SKILL.md",
-      "source_sha256": "27d7b0da5f0867ac0827893367b1a41d1dbc2c308276170708f274efc427e444",
-      "sha256": "27d7b0da5f0867ac0827893367b1a41d1dbc2c308276170708f274efc427e444",
+      "source_sha256": "bcbb2156409af426769e77dc90aaeed43371dfd54f4ae886caac2b8f49359e8b",
+      "sha256": "bcbb2156409af426769e77dc90aaeed43371dfd54f4ae886caac2b8f49359e8b",
       "mode": "0644"
     },
     {
       "source": "skills/implement/references/implement.feature",
       "destination": "packs/agentops-executor/agents/implementer-claude/skills/implement/references/implement.feature",
-      "source_sha256": "49cf4b981cbdc9bd30fb0de4956f316d23314f3de75d49f0ffa0a4355d735af7",
-      "sha256": "49cf4b981cbdc9bd30fb0de4956f316d23314f3de75d49f0ffa0a4355d735af7",
+      "source_sha256": "90a737a9aaba69ee32397c07a5a023ba7b4dab96bc515879f72a2ad087e6eff1",
+      "sha256": "90a737a9aaba69ee32397c07a5a023ba7b4dab96bc515879f72a2ad087e6eff1",
       "mode": "0644"
     },
     {
@@ -34,15 +34,15 @@
     {
       "source": "skills/implement/SKILL.md",
       "destination": "packs/agentops-executor/agents/implementer/skills/implement/SKILL.md",
-      "source_sha256": "27d7b0da5f0867ac0827893367b1a41d1dbc2c308276170708f274efc427e444",
-      "sha256": "27d7b0da5f0867ac0827893367b1a41d1dbc2c308276170708f274efc427e444",
+      "source_sha256": "bcbb2156409af426769e77dc90aaeed43371dfd54f4ae886caac2b8f49359e8b",
+      "sha256": "bcbb2156409af426769e77dc90aaeed43371dfd54f4ae886caac2b8f49359e8b",
       "mode": "0644"
     },
     {
       "source": "skills/implement/references/implement.feature",
       "destination": "packs/agentops-executor/agents/implementer/skills/implement/references/implement.feature",
-      "source_sha256": "49cf4b981cbdc9bd30fb0de4956f316d23314f3de75d49f0ffa0a4355d735af7",
-      "sha256": "49cf4b981cbdc9bd30fb0de4956f316d23314f3de75d49f0ffa0a4355d735af7",
+      "source_sha256": "90a737a9aaba69ee32397c07a5a023ba7b4dab96bc515879f72a2ad087e6eff1",
+      "sha256": "90a737a9aaba69ee32397c07a5a023ba7b4dab96bc515879f72a2ad087e6eff1",
       "mode": "0644"
     },
     {
@@ -62,15 +62,15 @@
     {
       "source": "skills/validate/SKILL.md",
       "destination": "packs/agentops-executor/agents/validator/skills/validate/SKILL.md",
-      "source_sha256": "b96e8935f96c49c1f1f091eec51415c21fcfcdd633e68cf024229224edbb2bb5",
-      "sha256": "b96e8935f96c49c1f1f091eec51415c21fcfcdd633e68cf024229224edbb2bb5",
+      "source_sha256": "8ecc121b6d7a63946a903d062f6913a8e32663ecb1418f193002490946e9158d",
+      "sha256": "8ecc121b6d7a63946a903d062f6913a8e32663ecb1418f193002490946e9158d",
       "mode": "0644"
     },
     {
       "source": "skills/validate/references/validate.feature",
       "destination": "packs/agentops-executor/agents/validator/skills/validate/references/validate.feature",
-      "source_sha256": "849d7183b44d4d9bb22a81b1e69fd843576b0e28e966660a1b84bb90baf56da2",
-      "sha256": "849d7183b44d4d9bb22a81b1e69fd843576b0e28e966660a1b84bb90baf56da2",
+      "source_sha256": "bc9ab49fb81c4cd8c94313307da59c35df4eb12691c0da5a5e36cb16d140f127",
+      "sha256": "bc9ab49fb81c4cd8c94313307da59c35df4eb12691c0da5a5e36cb16d140f127",
       "mode": "0644"
     },
     {
@@ -83,15 +83,15 @@
     {
       "source": "skills/validate/scripts/check_kernel_v3_corpus.py",
       "destination": "packs/agentops-executor/agents/validator/skills/validate/scripts/check_kernel_v3_corpus.py",
-      "source_sha256": "450ec208ee935c125b2800f8d1f91bb301b209567797f499b1c086deb2d9f857",
-      "sha256": "450ec208ee935c125b2800f8d1f91bb301b209567797f499b1c086deb2d9f857",
+      "source_sha256": "173e862c1a65e5ff2b0a6b3ba36d7eb21a53e3bc2ef9fc0990ae11adb5dc9a73",
+      "sha256": "173e862c1a65e5ff2b0a6b3ba36d7eb21a53e3bc2ef9fc0990ae11adb5dc9a73",
       "mode": "0755"
     },
     {
       "source": "skills/validate/scripts/kernel_v3.py",
       "destination": "packs/agentops-executor/agents/validator/skills/validate/scripts/kernel_v3.py",
-      "source_sha256": "4e847b907863eb35b9476429afc3101b5bddf96b081899c7c7903d68a3da04b6",
-      "sha256": "4e847b907863eb35b9476429afc3101b5bddf96b081899c7c7903d68a3da04b6",
+      "source_sha256": "f7787f4505c6f49c77890411a49387a02beec7a267595e158af6e4184ca6ef70",
+      "sha256": "f7787f4505c6f49c77890411a49387a02beec7a267595e158af6e4184ca6ef70",
       "mode": "0755"
     },
     {
@@ -104,8 +104,8 @@
     {
       "source": "skills/validate/scripts/test_kernel_v3.py",
       "destination": "packs/agentops-executor/agents/validator/skills/validate/scripts/test_kernel_v3.py",
-      "source_sha256": "e5e431b16c7c585b14c51157f624860d1b3409f82e58c2bb28e4661caab2a766",
-      "sha256": "e5e431b16c7c585b14c51157f624860d1b3409f82e58c2bb28e4661caab2a766",
+      "source_sha256": "a9642b27a4ae4da474a874a93a5faba403bf7d6299b85c82c96efe3a8104ff4e",
+      "sha256": "a9642b27a4ae4da474a874a93a5faba403bf7d6299b85c82c96efe3a8104ff4e",
       "mode": "0644"
     },
     {
@@ -132,8 +132,8 @@
     {
       "source": "skills/validate/scripts/validate_v3.py",
       "destination": "packs/agentops-executor/agents/validator/skills/validate/scripts/validate_v3.py",
-      "source_sha256": "04631e16e269e7777f1508f7d45f3f05691800c00735082df59f45e0dd5bf409",
-      "sha256": "04631e16e269e7777f1508f7d45f3f05691800c00735082df59f45e0dd5bf409",
+      "source_sha256": "055c0f4b9afe9934dbd8948115323a5ff2706aae809888e75efeacb5fdff0841",
+      "sha256": "055c0f4b9afe9934dbd8948115323a5ff2706aae809888e75efeacb5fdff0841",
       "mode": "0755"
     },
     {

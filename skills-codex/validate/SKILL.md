@@ -12,7 +12,8 @@ source. `verdict.v2` is an immutable legacy read format; all new judgments use
 
 ## Preconditions
 
-- The pre-minted intent snapshot and expected exact-byte digest are supplied.
+- The exact three-field Plan packet is supplied: pre-minted intent snapshot
+  ref, expected exact-byte digest, and verified nonnegative byte length.
 - The frozen criterion/scope index, before/final manifests, typed receipts,
   invocation ID, and author context ID are supplied.
 - The final manifest matches the subject at validation start.
@@ -39,10 +40,11 @@ mutation is still candidate mutation and terminates judgment.
 
 ## Workflow
 
-1. Consume `--intent-snapshot` with `--expected-intent-digest` through
-   `skills/validate/scripts/validate_v3.py`. Never re-snapshot a live source.
-   Any byte drift, including whitespace or Unicode normalization, is terminal
-   `NOT_PROVEN`.
+1. Consume the same `intent_ref`, `intent_digest`, and `byte_length` packet that
+   Implement received. Verify the snapshot bytes against both digest and
+   length through `skills/validate/scripts/validate_v3.py`. Never re-snapshot a
+   live source. Any byte drift, including whitespace or Unicode normalization,
+   is terminal `NOT_PROVEN`.
 2. Verify the before/final `subject-manifest.v2` artifacts and derive complete
    repository-wide changes from their identical observation policy. Recompute
    the final manifest at validation start and end. Mutation after candidate
@@ -55,19 +57,24 @@ mutation is still candidate mutation and terminates judgment.
    uncertain, or insufficiently evidenced checks. Judge exactly the stable IDs
    in `scope-index.v1`. Required IDs cannot become exclusions; an unchecked
    required ID is `NOT_PROVEN`.
-5. Choose exactly one semantic result: `PASS`, `FAIL`, or `NOT_PROVEN`. PASS
+5. Persist each factual check to a named `check-receipt.v1` output with
+   `validate_v3.py record-check`; the command derives hashes through
+   `build_check_receipt` and writes with flush, fsync, and atomic rename.
+   Manifest, scope, effect, report, and verdict outputs retain the same named
+   durable-write contract.
+6. Choose exactly one semantic result: `PASS`, `FAIL`, or `NOT_PROVEN`. PASS
    requires distinct identities, freshness, complete scope, nonempty checked
    evidence, and a typed receipt for every non-excluded criterion.
-6. Load the currently activated proof identity. Bind its contract digest,
+7. Load the currently activated proof identity. Bind its contract digest,
    activation transition digest, and the exact verdict/report/manifest/scope/
    receipt schema digests. Refuse a candidate changing
    `docs/contracts/proof-contracts/active.json`; a candidate proof contract
    cannot activate or judge itself.
-7. Persist one canonical `verdict.v3` with
+8. Persist one canonical `verdict.v3` with
    `validate_v3.py store-verdict`, using the supplied invocation and unique
    judgment IDs. Reject a second unlinked judgment for the same invocation or
    exact intent/final-subject pair. Never re-snapshot intent during storage.
-8. Persist durable manifests, receipts, verdict, and `rpi-report.v2`. Return the
+9. Persist durable manifests, receipts, verdict, and `rpi-report.v2`. Return the
    verdict path and digest. Stop.
 
 Artifact digests are SHA-256 over canonical JSON with `artifact_digest`

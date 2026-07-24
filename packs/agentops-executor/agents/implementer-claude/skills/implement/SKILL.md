@@ -36,8 +36,10 @@ candidate packet, retry, or judge meaning.
 
 ## Workflow
 
-1. Consume the pre-minted intent snapshot with its expected digest. Never read
-   or reserialize the living source. Read acceptance IDs and scope classes from
+1. Consume the exact three-field Plan identity packet: repository-relative
+   `intent_ref`, SHA-256 `intent_digest`, and nonnegative `byte_length`.
+   Verify all three against the pre-minted snapshot. Never mint again, read, or
+   reserialize the living source. Read acceptance IDs and scope classes from
    the frozen `scope-index.v1`.
 2. Before editing, derive `subject-manifest.v2` over the repository root. Only
    narrow runtime-owned intent, verdict, and report stores may be excluded;

@@ -49,6 +49,27 @@ REQUIRED_IDS = {
     "proof.transitive-component-mutation",
     "correlation.opaque-preserved",
     "correlation.over-property-bound",
+    "artifact.subject-manifest.valid",
+    "artifact.subject-manifest.dot-entry",
+    "artifact.scope-index.valid",
+    "artifact.scope-index.required-exclusion",
+    "artifact.check-receipt.valid",
+    "artifact.check-receipt.pass-nonzero",
+    "artifact.check-receipt.duplicate-key",
+    "artifact.effect-receipt.valid",
+    "artifact.effect-receipt.dot-ref",
+    "artifact.proof-transition.valid",
+    "artifact.proof-transition.dot-ref",
+    "artifact.proof-transition.trailing",
+    "artifact.proof-identity.valid",
+    "artifact.proof-identity.dot-ref",
+    "artifact.verdict.valid",
+    "artifact.verdict.dot-ref",
+    "artifact.rpi-report.valid",
+    "artifact.rpi-report.dot-ref",
+    "artifact.subject-manifest.missing-field",
+    "artifact.scope-index.unknown-field",
+    "artifact.check-receipt.digest-mutation",
 }
 
 
@@ -155,6 +176,28 @@ def outcome(case: dict) -> str:
         except kernel.ContractError:
             return "REJECT"
         return "PASS"
+    if case_class == "artifact-reader":
+        payload = (
+            case["payload_text"].encode("utf-8")
+            if "payload_text" in case
+            else kernel.canonical_bytes(case["payload"])
+        )
+        try:
+            artifact = kernel.load_json_bytes(payload, case["contract"])
+            validators = {
+                "subject-manifest.v2": kernel.validate_manifest_v2,
+                "scope-index.v1": kernel.validate_scope_index,
+                "check-receipt.v1": kernel.validate_check_receipt,
+                "effect-receipt.v1": kernel.validate_effect_receipt,
+                "proof-contract-transition.v1": kernel.validate_proof_transition_v1,
+                "proof-identity": kernel.validate_proof_identity,
+                "verdict.v3": kernel.validate_verdict_v3,
+                "rpi-report.v2": kernel.validate_rpi_report_v2,
+            }
+            validators[case["contract"]](artifact)
+        except (kernel.ContractError, KeyError, TypeError) as exc:
+            return f"REJECT:{exc}"
+        return "ACCEPT"
     raise kernel.ContractError(f"unknown corpus class: {case_class}")
 
 
@@ -187,6 +230,18 @@ def main() -> int:
         expected = case["expected"]
         if case["class"] == "dispatch":
             expected = "PASS"
+        if case["class"] == "artifact-reader" and expected == "REJECT":
+            reason = (case.get("error_contains") or {}).get("python")
+            if (
+                not observed.startswith("REJECT:")
+                or not isinstance(reason, str)
+                or reason not in observed
+            ):
+                failures.append(
+                    f"{case['id']}: expected intended rejection containing "
+                    f"{reason!r}, observed {observed}"
+                )
+            continue
         if observed != expected:
             failures.append(
                 f"{case['id']}: expected {expected}, observed {observed}"

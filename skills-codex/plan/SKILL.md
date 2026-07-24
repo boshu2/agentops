@@ -25,9 +25,11 @@ expected SHA-256 digest. They never re-read the living source.
    parity twins, and tests that assert on the changed surface before freeze.
 5. Mint the exact resolved bytes once with
    `python3 skills/plan/scripts/mint_intent.py --source <source>
-   --intent-dir <dir>`. Retain both `intent_ref` and `intent_digest`, then
-   freeze the IDs, statement digests, scope classes, and prior exclusions in
-   `scope-index.v1`.
+   --intent-dir <dir> --intent-ref-root <repository-relative-root>`. Return
+   only the single-mint identity packet containing `intent_ref`,
+   `intent_digest`, and exact nonnegative `byte_length`; RPI verifies all three
+   against that snapshot and must not mint it again. Then freeze the IDs,
+   statement digests, scope classes, and prior exclusions in `scope-index.v1`.
 
 Planning produces no AgentOps plan packet and no campaign graph. The
 content-addressed snapshot is runtime-derived identity, not a model-authored
