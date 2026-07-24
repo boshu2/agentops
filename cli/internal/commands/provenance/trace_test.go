@@ -83,15 +83,8 @@ func TestProvenanceTrace_StrictCatchesEachSeededOrphan(t *testing.T) {
 			}
 
 			var got []provenancegraph.OrphanFinding
-			for _, ln := range strings.Split(strings.TrimSpace(out), "\n") {
-				if strings.TrimSpace(ln) == "" {
-					continue
-				}
-				var f provenancegraph.OrphanFinding
-				if jerr := json.Unmarshal([]byte(ln), &f); jerr != nil {
-					t.Fatalf("finding line not JSON: %v\n%s", jerr, ln)
-				}
-				got = append(got, f)
+			if jerr := json.Unmarshal([]byte(out), &got); jerr != nil {
+				t.Fatalf("findings are not one JSON array: %v\n%s", jerr, out)
 			}
 			if len(got) != 1 {
 				t.Fatalf("%s: want exactly 1 orphan finding, got %d: %+v", fx.File, len(got), got)

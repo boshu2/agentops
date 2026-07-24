@@ -2,6 +2,8 @@
 package main
 
 import (
+	"path/filepath"
+
 	"github.com/spf13/cobra"
 
 	evaladapter "github.com/boshu2/agentops/cli/internal/adapters/eval"
@@ -39,6 +41,12 @@ func newEvalCommand() *cobra.Command {
 		ProjectRoot: func() string {
 			if dir, err := resolveProjectDir(); err == nil {
 				return dir
+			}
+			return ""
+		},
+		GoalsPath: func() string {
+			if dir, err := resolveProjectDir(); err == nil {
+				return filepath.Join(dir, "GOALS.md")
 			}
 			return ""
 		},

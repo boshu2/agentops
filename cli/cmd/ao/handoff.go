@@ -75,7 +75,8 @@ func runHandoff(cmd *cobra.Command, args []string) error {
 	if len(args) == 1 {
 		artifact.Summary = args[0]
 	}
-	if handoffCollect {
+	effectiveDryRun := handoffDryRun || GetDryRun()
+	if handoffCollect && !effectiveDryRun {
 		artifact.State = collectHandoffState(cwd)
 	}
 
@@ -84,13 +85,17 @@ func runHandoff(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("marshal handoff: %w", err)
 	}
 	data = append(data, '\n')
-	if handoffDryRun {
+	if effectiveDryRun {
 		_, err = cmd.OutOrStdout().Write(data)
 		return err
 	}
 
 	path, err := writeHandoffArtifact(cwd, &artifact, data)
 	if err != nil {
+		return err
+	}
+	if GetOutput() == "json" {
+		_, err = cmd.OutOrStdout().Write(data)
 		return err
 	}
 	fmt.Fprintf(cmd.OutOrStdout(), "Handoff written: %s\n", path)

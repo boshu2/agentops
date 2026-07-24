@@ -53,7 +53,8 @@ func (module Module) Command() *cobra.Command {
 	}
 	root.Flags().BoolVar(&commandOptions.show, "show", false, "Show resolved configuration with sources")
 	root.RunE = func(command *cobra.Command, _ []string) error {
-		if !commandOptions.show {
+		structured := module.host.OutputMode() == "json" || module.host.OutputMode() == "yaml"
+		if !commandOptions.show && !structured {
 			return command.Help()
 		}
 		// Only attribute the output format to "flag" when -o/--json was

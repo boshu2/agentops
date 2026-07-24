@@ -73,8 +73,9 @@ handbook is the contract — read it once, then drive ao without guessing.
 
 - stdout is data; stderr is diagnostics. ` + "`ao <cmd> --json | jq ...`" + ` works
   without filtering log lines.
-- Append ` + "`--json`" + ` (or ` + "`-o json`" + `) to any read-side command for a stable,
-  parseable structure. ` + "`-o yaml`" + ` and the default ` + "`-o table`" + ` are also available.
+- Read each command's ` + "`output_formats`" + ` in ` + "`ao capabilities`" + `. Where JSON is
+  advertised, ` + "`--json`" + ` and ` + "`-o json`" + ` are equivalent. Unsupported formats
+  fail before the command handler runs.
 - Output is deterministic where possible: stable ordering, no timestamp
   leakage into free text.
 

@@ -64,8 +64,8 @@ while IFS= read -r sess; do
   [ -f "$state" ] && { cp "$state" "$bak"; had_state=1; }
   tmp="$(mktemp "${TMPDIR:-/tmp}/mine-all.XXXXXX")" || { failed=$((failed+1)); continue; }
   # mine NEW events (incremental via --state); state advances + events go to stdout.
-  if "$AO" provenance mine-session --file "$sess" --state "$state" --json >"$tmp" 2>/dev/null; then
-    # The --json miner emits JSONL: one event object per line, each carrying exactly one
+  if "$AO" provenance mine-session --file "$sess" --state "$state" >"$tmp" 2>/dev/null; then
+    # The miner emits JSONL by default: one event object per line, each carrying exactly one
     # "schema_version" -> matching-line count == event count for this producer's contract.
     n="$(grep -c '"schema_version"' "$tmp" 2>/dev/null)"; n="${n:-0}"
     appended=1

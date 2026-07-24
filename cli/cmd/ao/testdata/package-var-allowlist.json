@@ -15,6 +15,11 @@
     { "name": "cfgFile", "file": "root.go", "reason": "root flag target: --config persistent flag" },
     { "name": "dryRun", "file": "root.go", "reason": "root flag target: --dry-run persistent flag" },
     { "name": "jsonFlag", "file": "root.go", "reason": "root flag target: --json persistent flag" },
+    { "name": "textOutput", "file": "operation_contracts.go", "reason": "immutable contract vocabulary: text-only output set" },
+    { "name": "structuredOutput", "file": "operation_contracts.go", "reason": "immutable contract vocabulary: text/JSON/YAML output set" },
+    { "name": "jsonOutput", "file": "operation_contracts.go", "reason": "immutable contract vocabulary: JSON-only output set" },
+    { "name": "jsonYAMLOutput", "file": "operation_contracts.go", "reason": "immutable contract vocabulary: JSON/YAML output set" },
+    { "name": "commandOperationContracts", "file": "operation_contracts.go", "reason": "immutable wiring: exhaustive typed effect/output contract inventory for shipped runnable commands" },
     { "name": "output", "file": "root.go", "reason": "root flag target: -o/--output persistent flag (negotiated in negotiateOutput)" },
     { "name": "rootCmd", "file": "root.go", "reason": "immutable wiring: the root cobra.Command spine" },
     { "name": "verbose", "file": "root.go", "reason": "root flag target: -v/--verbose persistent flag" }

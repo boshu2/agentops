@@ -6,6 +6,7 @@
 package provenance
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -59,7 +60,6 @@ type Module struct {
 	// mine-session
 	mineFile  string
 	mineState string
-	mineJSON  bool
 }
 
 // NewModule constructs the provenance command module from its host seams.
@@ -328,6 +328,7 @@ func (m *Module) runExport(cmd *cobra.Command, _ []string) error {
 		if handled, err := m.emitStructured(out, m.exportJSON, chain); handled || err != nil {
 			return err
 		}
+		return nil
 	}
 
 	// Default: deterministic JSONL — one compact line per edge, fixed field
@@ -483,10 +484,9 @@ func (m *Module) traceCommand() *cobra.Command {
 		Use:   "trace",
 		Short: "Audit the provenance graph for orphan artifacts (no inbound edge)",
 		Long: `Audit a provenance trace-graph for orphans: engineered artifact nodes
-that have NO inbound authored/inferred provenance edge. This generalizes
-'ao goals trace --orphans' (the directive→scenario→bead→artifact→learning
-chain-gap audit) onto the provenance graph, where the orphan condition is "an
-artifact node that nothing produces".
+that have NO inbound authored/inferred provenance edge. It applies the
+directive→scenario→bead→artifact→learning chain-gap audit to the provenance
+graph, where the orphan condition is "an artifact node that nothing produces".
 
 The graph is a JSONL file using the goalstrace Node/Edge JSON contract
 (cli/internal/goalstrace/graph.go) with a leading "record" discriminator. Read
@@ -495,7 +495,7 @@ trace-graph is the node/edge projection) or a fixture passed with --graph.
 
   --orphans   audit for artifact nodes with no inbound edge (required mode).
   --strict    exit non-zero when any orphan exists (the CI gate uses this).
-  --json      emit one finding object per line (line-delimited JSON).
+  --json      emit one JSON array of findings.
   --graph     path to the JSONL trace-graph to audit (required).
 
 Without --strict the audit reports orphans but exits 0 (advisory). With
@@ -511,7 +511,7 @@ Examples:
 	}
 	cmd.Flags().BoolVar(&m.traceOrphans, "orphans", false, "Audit for artifact nodes with no inbound provenance edge")
 	cmd.Flags().BoolVar(&m.traceStrict, "strict", false, "Exit non-zero when any orphan exists")
-	cmd.Flags().BoolVar(&m.traceJSON, "json", false, "Emit each finding as one JSON object per line")
+	cmd.Flags().BoolVar(&m.traceJSON, "json", false, "Emit one JSON array of findings")
 	cmd.Flags().StringVar(&m.traceGraph, "graph", "", "Path to the JSONL trace-graph to audit (required)")
 	return cmd
 }
@@ -533,13 +533,10 @@ func (m *Module) runTrace(cmd *cobra.Command, _ []string) error {
 	findings := provenancegraph.FindOrphans(recs)
 
 	out := cmd.OutOrStdout()
-	if m.traceJSON {
-		enc := json.NewEncoder(out)
-		for _, f := range findings {
-			if err := enc.Encode(f); err != nil {
-				return fmt.Errorf("encode orphan finding: %w", err)
-			}
-		}
+	if handled, structuredErr := m.emitStructured(out, m.traceJSON, findings); structuredErr != nil {
+		return structuredErr
+	} else if handled {
+		// The shared renderer emitted the complete findings array.
 	} else if len(findings) == 0 {
 		fmt.Fprintln(out, "No provenance orphans found.")
 	} else {
@@ -633,23 +630,42 @@ a watermark + a prefix checksum. If the transcript's already-mined prefix change
 (rollback) — borrowed from cass's incremental-index discipline (stale-is-usable,
 recover loudly, never rebuild expensive state unnecessarily).
 
-Output (--json, default): one JSON event per line on stdout. The events feed the
-PROV-O graph via a downstream step (e.g. wired as an ASSAY --mine-cmd); this
-command does not itself write the committed ledger.`,
+Output is JSONL by default: one event per line on stdout. Global --json and
+-o json emit the same events as one JSON array. The events feed the PROV-O
+graph via a downstream step (e.g. wired as an ASSAY --mine-cmd); this command
+does not itself write the committed ledger.`,
 		RunE: m.runMineSession,
 	}
 	cmd.Flags().StringVar(&m.mineFile, "file", "", "Path to the session transcript (.jsonl) to mine (required)")
 	cmd.Flags().StringVar(&m.mineState, "state", "", "Path to the incremental watermark state JSON (created/updated; omit for a full one-shot mine)")
-	cmd.Flags().BoolVar(&m.mineJSON, "json", true, "Emit events as JSONL on stdout")
 	return cmd
 }
 
 func (m *Module) runMineSession(cmd *cobra.Command, _ []string) error {
-	return provenanceapp.MineSession(provenanceapp.MineOptions{
+	var jsonl bytes.Buffer
+	if err := provenanceapp.MineSession(provenanceapp.MineOptions{
 		File:  m.mineFile,
 		State: m.mineState,
-		JSON:  m.mineJSON,
-	}, cmd.OutOrStdout())
+		JSON:  true,
+	}, &jsonl); err != nil {
+		return err
+	}
+	if m.outputMode() == "json" {
+		events := make([]provenanceapp.MineEvent, 0)
+		for _, line := range bytes.Split(jsonl.Bytes(), []byte{'\n'}) {
+			if len(bytes.TrimSpace(line)) == 0 {
+				continue
+			}
+			var event provenanceapp.MineEvent
+			if err := json.Unmarshal(line, &event); err != nil {
+				return fmt.Errorf("mine-session: decode generated event: %w", err)
+			}
+			events = append(events, event)
+		}
+		return clicontract.WriteJSON(cmd.OutOrStdout(), events)
+	}
+	_, err := jsonl.WriteTo(cmd.OutOrStdout())
+	return err
 }
 
 // shortHash returns the first 12 chars of a hash for human-readable output.

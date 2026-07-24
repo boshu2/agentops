@@ -320,7 +320,6 @@ ao eval cleanup [flags]
 
 ```
       --delete        Remove Run directories whose status is failed or aborted (never retracted)
-      --dry-run       Preview without mutations
   -h, --help          help for cleanup
       --tmp-age int   Minimum tmp-file age in seconds before sweep (0 = sweep all) (default 60)
       --tmp-files     Sweep orphan *.tmp files older than --tmp-age
@@ -509,7 +508,7 @@ ao eval scenario-ab [flags]
 ```
       --control-only       Run only the without-gold control arm and fail on ceiling/no-headroom
   -h, --help               help for scenario-ab
-      --output string      Write the ScenarioDeltaScorecard JSON to this path
+      --out string         Write the ScenarioDeltaScorecard JSON to this path
       --scenario string    Path to the scenario.v1 JSON file (required)
       --timeout duration   Per-arm timeout (0 = default 5m)
       --token-budget int   Fail the gate if summed arm token cost exceeds this (0 = default 200000)
@@ -527,7 +526,7 @@ ao eval scenario-moat [flags]
 
 ```
   -h, --help                    help for scenario-moat
-      --output string           Write the MoatClaimResult JSON to this path
+      --out string              Write the MoatClaimResult JSON to this path
       --scorecard stringArray   Path to a ScenarioDeltaScorecard JSON (repeatable)
 ```
 
@@ -631,14 +630,13 @@ ao eval task run <task-id> [flags]
 ```
       --allow-weak-labels        Allow runs against confidence=weak ground-truth rows (gate #7)
       --cross-spec               Allow ModelSpec drift (gate #4)
-      --dry-run                  Run gates and exit without writing a Run manifest
       --ground-truth string      Ground-truth row id (head of supersession chain)
       --harness string           Harness id (recorded into manifest)
       --harness-dir string       Path to harness source dir for snapshot + gate #8
   -h, --help                     help for run
       --inspect-command string   Inspect command recorded into the Run manifest (not executed yet)
       --inspect-version string   Inspect AI version stamped into manifest (default "0.3.216")
-      --model-spec string        ModelSpec id (already captured via ao eval models capture)
+      --model-spec string        ModelSpec id already present in the eval substrate's model-specs store
       --n-samples int            Override Suite.n_samples
       --quick                    Mark Run as quick_session=true (excluded from --vs auto-baseline pool)
       --rig-id string            Rig identifier stamped into the Run manifest
@@ -971,7 +969,6 @@ ao provenance mine-session --file <session.jsonl> [flags]
 ```
       --file string    Path to the session transcript (.jsonl) to mine (required)
   -h, --help           help for mine-session
-      --json           Emit events as JSONL on stdout (default true)
       --state string   Path to the incremental watermark state JSON (created/updated; omit for a full one-shot mine)
 ```
 
@@ -1018,7 +1015,7 @@ ao provenance trace [flags]
 ```
       --graph string   Path to the JSONL trace-graph to audit (required)
   -h, --help           help for trace
-      --json           Emit each finding as one JSON object per line
+      --json           Emit one JSON array of findings
       --orphans        Audit for artifact nodes with no inbound provenance edge
       --strict         Exit non-zero when any orphan exists
 ```

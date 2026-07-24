@@ -378,6 +378,7 @@ never auto-removed — retraction is an audit trail.`,
 	command.Flags().BoolVar(&options.TmpFiles, "tmp-files", false, "Sweep orphan *.tmp files older than --tmp-age")
 	command.Flags().Int64Var(&options.TmpAgeSeconds, "tmp-age", 60, "Minimum tmp-file age in seconds before sweep (0 = sweep all)")
 	command.Flags().BoolVar(&options.DryRun, "dry-run", false, "Preview without mutations")
+	_ = command.Flags().MarkHidden("dry-run")
 	command.RunE = func(command *cobra.Command, _ []string) error {
 		report, err := module.useCases.Cleanup.Execute(command.Context(), options)
 		if err != nil {
@@ -489,7 +490,7 @@ func (module Module) taskRunCommand() *cobra.Command {
 	flags.StringVar(&options.Seeds, "seeds", "", "Comma-separated seeds (>=3, per §4)")
 	flags.StringVar(&options.HarnessRef, "harness", "", "Harness id (recorded into manifest)")
 	flags.StringVar(&options.HarnessDir, "harness-dir", "", "Path to harness source dir for snapshot + gate #8")
-	flags.StringVar(&options.ModelSpecID, "model-spec", "", "ModelSpec id (already captured via ao eval models capture)")
+	flags.StringVar(&options.ModelSpecID, "model-spec", "", "ModelSpec id already present in the eval substrate's model-specs store")
 	flags.StringVar(&options.GroundTruthRef, "ground-truth", "", "Ground-truth row id (head of supersession chain)")
 	flags.StringVar(&options.SampleSplit, "sample-split", "", "Sample split (dev|holdout); default from suite")
 	flags.IntVar(&options.NSamples, "n-samples", 0, "Override Suite.n_samples")
@@ -499,6 +500,7 @@ func (module Module) taskRunCommand() *cobra.Command {
 	flags.BoolVar(&options.AllowWeak, "allow-weak-labels", false, "Allow runs against confidence=weak ground-truth rows (gate #7)")
 	flags.BoolVar(&options.QuickSession, "quick", false, "Mark Run as quick_session=true (excluded from --vs auto-baseline pool)")
 	flags.BoolVar(&options.DryRun, "dry-run", false, "Run gates and exit without writing a Run manifest")
+	_ = flags.MarkHidden("dry-run")
 	command.RunE = func(command *cobra.Command, args []string) error {
 		options.TaskID = args[0]
 		result, err := module.useCases.Task.Run(command.Context(), options)
@@ -716,7 +718,7 @@ func (module Module) scenarioValidateCommand() *cobra.Command {
 			return err
 		}
 		if result.MissingDirectory {
-			fmt.Fprintln(command.OutOrStdout(), "No holdout directory found. Run 'ao scenario init' first.")
+			fmt.Fprintln(command.OutOrStdout(), "No holdout directory found. Run 'ao eval scenario init' first.")
 			return nil
 		}
 		if len(result.Errors) > 0 {
@@ -784,14 +786,24 @@ func (module Module) scenarioABCommand() *cobra.Command {
 	var options aoeval.ScenarioABRequest
 	command := &cobra.Command{Use: "scenario-ab", Short: "Run a knowledge-reuse holdout scenario with vs. without the gold pull (the discriminating A/B)", Args: cobra.NoArgs, SilenceUsage: true}
 	command.Flags().StringVar(&options.ScenarioPath, "scenario", "", "Path to the scenario.v1 JSON file (required)")
-	command.Flags().StringVar(&options.OutputPath, "output", "", "Write the ScenarioDeltaScorecard JSON to this path")
+	command.Flags().StringVar(&options.OutputPath, "out", "", "Write the ScenarioDeltaScorecard JSON to this path")
 	command.Flags().IntVar(&options.TokenBudget, "token-budget", 0, "Fail the gate if summed arm token cost exceeds this (0 = default 200000)")
 	command.Flags().DurationVar(&options.Timeout, "timeout", 0, "Per-arm timeout (0 = default 5m)")
 	command.Flags().BoolVar(&options.ControlOnly, "control-only", false, "Run only the without-gold control arm and fail on ceiling/no-headroom")
 	command.RunE = func(command *cobra.Command, _ []string) error {
 		result, err := module.useCases.ScenarioAB.Run(command.Context(), options)
 		if result.Card.ScenarioID != "" {
-			renderScenarioAB(command, result.Card)
+			if module.outputMode() == "yaml" {
+				if renderErr := clicontract.WriteYAML(command.OutOrStdout(), result.Card); renderErr != nil {
+					return renderErr
+				}
+			} else if module.outputMode() == "json" {
+				if renderErr := clicontract.WriteJSON(command.OutOrStdout(), result.Card); renderErr != nil {
+					return renderErr
+				}
+			} else {
+				renderScenarioAB(command, result.Card)
+			}
 		}
 		if err != nil {
 			var gate *aoeval.ScenarioABGateError
@@ -831,7 +843,7 @@ func (module Module) scenarioMoatCommand() *cobra.Command {
 	var options aoeval.ScenarioMoatRequest
 	command := &cobra.Command{Use: "scenario-moat", Short: "Aggregate moat-eligible scenario A/B scorecards into a publication verdict", Args: cobra.NoArgs, SilenceUsage: true}
 	command.Flags().StringArrayVar(&options.ScorecardPaths, "scorecard", nil, "Path to a ScenarioDeltaScorecard JSON (repeatable)")
-	command.Flags().StringVar(&options.OutputPath, "output", "", "Write the MoatClaimResult JSON to this path")
+	command.Flags().StringVar(&options.OutputPath, "out", "", "Write the MoatClaimResult JSON to this path")
 	command.RunE = func(command *cobra.Command, _ []string) error {
 		result, err := module.useCases.ScenarioAB.Moat(command.Context(), options)
 		if err != nil {
@@ -857,10 +869,9 @@ func (module Module) scenarioMoatCommand() *cobra.Command {
 }
 
 func (module Module) sessionOutcomeCommand() *cobra.Command {
-	var sessionID, format string
+	var sessionID string
 	command := &cobra.Command{Use: "session-outcome [transcript-path]", Short: "Analyze session transcript to derive reward signal", Args: cobra.MaximumNArgs(1)}
 	command.Flags().StringVar(&sessionID, "session", "", "Session ID (extracted from transcript if not provided)")
-	command.Flags().StringVar(&format, "output", "text", "Output format: text, json")
 	command.RunE = func(command *cobra.Command, args []string) error {
 		path := ""
 		if len(args) > 0 {
@@ -878,7 +889,7 @@ func (module Module) sessionOutcomeCommand() *cobra.Command {
 		if module.outputMode() == "yaml" {
 			return clicontract.WriteYAML(command.OutOrStdout(), result)
 		}
-		if format == "json" || module.outputMode() == "json" {
+		if module.outputMode() == "json" {
 			return clicontract.WriteJSON(command.OutOrStdout(), result)
 		}
 		fmt.Fprintln(command.OutOrStdout(), "Session Outcome Analysis\n========================")
@@ -924,6 +935,7 @@ func (module Module) benchCommand() *cobra.Command {
 	command.Flags().StringVar(&options.CompareBackends, "search-compare-backends", "", "Comma-separated search backends to compare for --search-eval")
 	command.RunE = func(command *cobra.Command, _ []string) error {
 		options.KChanged = command.Flags().Changed("k")
+		options.JSON = options.JSON || module.outputMode() == "json"
 		output, err := module.useCases.Bench.Bench(command.Context(), options)
 		if output.Stdout != "" {
 			fmt.Fprint(command.OutOrStdout(), output.Stdout)
