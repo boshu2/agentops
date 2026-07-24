@@ -53,8 +53,14 @@
     {
       "from": "epoch-0 proof contract",
       "to": "epoch-1 activation",
+      "status": "USED_UNSOUND",
+      "evidence": "immutable rejected recorder accepted nonexistent and subject-unbound candidate components; FAIL bf865e3233c1e19e6346d37403db775e9fb0fa6b252d14af88e4c9aaa081d804"
+    },
+    {
+      "from": "epoch-0b proof contract",
+      "to": "epoch-1 activation",
       "status": "USED_SOUND",
-      "evidence": "frozen standalone recorder uses a locked atomic CAS, exact descriptor/corpus/manifest/verdict checks, and hostile tests"
+      "evidence": "operator-authorized pre-PASS bootstrap replacement selects a strict wrapper that validates every candidate component and future recorder against live bytes, exact mode, and the judged manifest inside the active-pointer lock"
     },
     {
       "from": "generated skill catalog v3",
@@ -88,5 +94,10 @@
     "durable report and one-judgment index",
     "proof identity in verdict/report",
     "remote exact-byte transport"
-  ]
+  ],
+  "bootstrap_root_replacement": {
+    "record": "docs/contracts/proof-contracts/bootstrap-root-replacements/2026-07-24-epoch-0-to-0b.json",
+    "rejected_verdict": "bf865e3233c1e19e6346d37403db775e9fb0fa6b252d14af88e4c9aaa081d804",
+    "pass_minted_under_rejected_root": false
+  }
 }

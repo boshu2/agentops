@@ -72,6 +72,11 @@ def check(repository: Path, evidence_root: Path) -> dict[str, Any]:
         if item.get("load_bearing"):
             require(item.get("status") == "GREEN", f"load-bearing check is not GREEN: {item.get('id')}")
             require(bool(item.get("negative_witness")), f"load-bearing check lacks a negative witness: {item.get('id')}")
+            witness_path = str(item["negative_witness"]).split()[0]
+            require(
+                (repository / witness_path).exists(),
+                f"load-bearing negative witness is missing: {item.get('id')}: {witness_path}",
+            )
 
     chain = load(evidence_root / "t0-proof-chain.json")
     classifications = set(chain.get("classification", []))

@@ -7,7 +7,7 @@
       "command": "bash skills/skill-builder/scripts/heal.sh --check --strict skills/<slug>",
       "status": "GREEN",
       "result": "49/49 structurally clean",
-      "negative_witness": "tests/integration/test_skill_audit.bats",
+      "negative_witness": "tests/scripts/heal-negative.bats",
       "load_bearing": true
     },
     {
@@ -87,7 +87,7 @@
       "id": "bootstrap-proof-freeze",
       "command": "python3 scripts/check-proof-contract.py",
       "status": "GREEN",
-      "result": "epoch 0 pointer, seven components, corpus, modes, and transition recorder agree",
+      "result": "active epoch 0b pointer, eight components, corpus, modes, and strict transition recorder agree; rejected epoch 0 remains immutable",
       "negative_witness": "tests/python/test_check_proof_contract.py",
       "load_bearing": true
     },
@@ -95,7 +95,7 @@
       "id": "bootstrap-transition",
       "command": "python3 -m unittest tests/python/test_bootstrap_proof_transition.py -v",
       "status": "GREEN",
-      "result": "single CAS activation and four hostile cases pass",
+      "result": "single CAS activation and nine hostile classes pass, including missing, byte/mode-mutated, subject-unbound, and missing future-recorder cases",
       "negative_witness": "tests/python/test_bootstrap_proof_transition.py",
       "load_bearing": true
     },

@@ -6,30 +6,32 @@
   "landed_or_frozen": [
     "origin/main base edc018f6e",
     "seed plan/audit commit b6794d76e",
+    "stable initial T0 candidate commit 932187258",
+    "immutable T0 FAIL bf865e3233c1e19e6346d37403db775e9fb0fa6b252d14af88e4c9aaa081d804",
     "49-skill exact-byte ledger",
-    "epoch-0 proof descriptor and active pointer",
-    "standalone bootstrap transition recorder and hostile tests",
+    "rejected epoch-0 proof descriptor retained as history",
+    "active corrected epoch-0b proof descriptor and strict bootstrap transition recorder",
     "T0 gate liveness and proof-chain ledgers",
     "routing oracle baseline",
     "installed-estate and #988 reconciliation"
   ],
   "in_flight": [
-    "T0 candidate changes are not yet a stable commit or fresh semantic verdict",
+    "T0 repair invocation is not yet a stable commit or fresh semantic verdict",
     "T1 exact-kernel implementation has not started",
     "T2 compiler and Go CLI release tranches are reconnaissance only"
   ],
   "authority": {
     "semantic_skill_source": "skills/<slug>/SKILL.md",
     "generated_projection_owner": "scripts/regen-all.sh and owning generators",
-    "proof_contract_pointer": "docs/contracts/proof-contracts/active.json",
+    "proof_contract_pointer": "docs/contracts/proof-contracts/active.json -> epoch-0b",
     "migration_plan": "docs/plans/2026-07-24-skill-system-overhaul.md",
     "landing_policy": "caller-authorized feature branch integration to origin/main"
   },
-  "safe_stop_claim": "Current generated projections describe only API1 sources. skill-contract.v3 and verdict.v3 are plan-only and have not been advertised as live authority.",
+  "safe_stop_claim": "Current generated projections describe only API1 sources. The rejected T0 result is durable, epoch 0b is the bootstrap authority, and skill-contract.v3 plus verdict.v3 remain plan-only.",
   "known_gaps": [
     "CASS historical routing search unavailable because checkpoint is incomplete",
     "remote required-CI job wiring not proven",
     "installed skill roots still target the preserved original worktree",
-    "T0 fresh semantic validation and stable commit still required"
+    "T0 repair fresh semantic validation and stable commit still required"
   ]
 }
