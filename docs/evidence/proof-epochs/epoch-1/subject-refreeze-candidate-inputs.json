@@ -1,0 +1,15 @@
+{
+  "schema_version": "proof-candidate-inputs.v1",
+  "candidate_epoch": 1,
+  "prior_failed_verdict_digest": "7e0e0dd26eefdc9c53660a56ed7a7840668d033aac493f6f0d5bca2930d46e60",
+  "prior_not_proven_verdict_digest": "b00b1fc309de43843670cf4e8f24a2de968a511b75143a5810f964dcfdd5da9b",
+  "refreeze_intent_ref": "docs/evidence/proof-epochs/epoch-1/t1-subject-refreeze-intent.md",
+  "repair_candidate_commit": "5b6bf22dad6a855fa385d946fecc0eb58605228d",
+  "refreeze_base_commit": "f298fd695fbb9f31d7e51ef187c4b0ab1944f36b",
+  "qualification_subject_manifest_digest": "bd108e791c84e13152a49561c824c2b9efa101e6ca0834c9de007357bbf5d599",
+  "qualification_verdict_digest": null,
+  "activation_transition_digest": null,
+  "qualification_state": "NOT_PROVEN",
+  "subject_rule": "The qualification manifest binds the unchanged repaired core and generated/read-side companions under the prior 37 declared roots while excluding only CPython __pycache__ directories and .pyc files. Descriptor, intent, manifests, verdicts, and transition evidence are outside their own subject.",
+  "activation_rule": "Epoch 0b must judge the exact refrozen subject directly with verdict.v2. The candidate cannot issue its own binding verdict or mutate the active pointer during qualification."
+}
