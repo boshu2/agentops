@@ -36,6 +36,7 @@ Dated plans, audits, releases, and archive material are historical evidence, not
 - [Finding Registry.Schema](contracts/finding-registry.schema.json)
 - [Forbidden Claims](contracts/forbidden-claims.yaml)
 - [GC 3.3 migration provenance](contracts/gc33-migration-provenance.md)
+- [Generated Projection Owners.V1](contracts/generated-projection-owners.v1.json)
 - [Contracts](contracts/index.md)
 - [Optional Lesson Format](contracts/lesson-format.md)
 - [Superseded Historical ADR: Local Push-Gate Experiments](contracts/local-pre-push-gate-retirement.md)

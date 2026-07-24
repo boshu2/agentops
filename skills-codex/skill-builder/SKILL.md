@@ -22,6 +22,8 @@ Extend an existing skill when it already owns the requested behavior.
 | "check skill package" | check | `scripts/heal.sh --check [--strict]` |
 | "heal skill", "repair skill hygiene" | heal | `scripts/heal.sh --fix` |
 | "audit skill structure" | audit | `scripts/audit.sh` |
+| "compile skill contract", "check contract v3" | compile (check) | `scripts/compile_contracts.py check` |
+| "record skill contract receipt" | compile (record) | `scripts/compile_contracts.py record` |
 
 ## Constraints
 
@@ -112,6 +114,34 @@ advisory quality score. It is not the core `Validate` phase, does not write a
 [audit-checks.md](references/audit-checks.md); density scoring is described in
 [context-density-checks.md](references/context-density-checks.md).
 
+## Contract compile mode
+
+The shadow compiler validates one explicitly named `metadata.contract_v3`
+declaration without changing live API1 or catalog-v3 authority:
+
+```bash
+python3 skills/skill-builder/scripts/compile_contracts.py check \
+  --skill <slug>
+python3 skills/skill-builder/scripts/compile_contracts.py record \
+  --skill <slug> --output <receipt-path>
+```
+
+`check` emits deterministic receipt bytes to stdout and never writes.
+`record` writes those same bytes atomically to the explicit contained output.
+The compiler rejects duplicate YAML keys, unknown contract fields, malformed
+semantics, forbidden authority, invalid references, and illegal hard
+dependencies. The grammar and stable failure codes are documented in
+[skill-contract-v3.md](references/skill-contract-v3.md).
+
+Run and record the contract's declared isolated proof separately:
+
+```bash
+python3 skills/skill-builder/scripts/run_contract_probe.py check \
+  --skill <slug>
+python3 skills/skill-builder/scripts/run_contract_probe.py record \
+  --skill <slug> --output <probe-receipt-path>
+```
+
 ## Output
 
 A created source package contains:
@@ -124,9 +154,10 @@ skills/<slug>/
 
 The build report is `.agents/audits/<slug>-build.json` and conforms to
 `schemas/build-report.json`. Deep audit JSON conforms to
-`schemas/audit-report.json`. Generated inventories and runtime projections are
-not additional sources of truth. The caller owns any subsequent edit or
-invocation.
+`schemas/audit-report.json`. Contract compilation emits
+`schemas/compile-report.json`; proof runs emit `schemas/probe-report.json`.
+Generated inventories, the readiness ledger, and shadow contract receipts are
+not live routing authority. The caller owns any subsequent edit or invocation.
 
 ## Checks
 
@@ -140,6 +171,8 @@ invocation.
   useful; its content is not copied.
 - Check mode never mutates files; fix mode changes only an explicit source
   target and its owned projections.
+- Contract-v3 check mode is read-only, and its rendered receipt bytes equal
+  record mode's bytes.
 
 ## Failure behavior
 
@@ -150,6 +183,7 @@ or invoke the builder again.
 ## References
 
 - [skill template](references/skill-template.md)
+- [shadow skill-contract.v3 grammar](references/skill-contract-v3.md)
 - [authoring doctrine](references/authoring-doctrine.md) — prose-quality
   principles behind the advisory `authoring` audit block
 - [heal.feature](references/heal.feature)
