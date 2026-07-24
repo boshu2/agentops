@@ -195,3 +195,6 @@ outputs/
 
 # Provenance ledger advisory-lock sidecar (cross-process append lock; never committed)
 docs/provenance/*.lock
+
+# Proof-pointer compare-and-swap lock sidecar (persistent runtime coordination).
+docs/contracts/proof-contracts/*.lock

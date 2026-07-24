@@ -2,7 +2,7 @@
 id: plan-2026-07-24-skill-system-overhaul
 type: plan
 date: 2026-07-24
-status: in_progress/T1-repair
+status: in_progress/T1-complete
 goal: Overhaul every canonical AgentOps skill around the campaign-to-experiment architecture
 architecture_ref: docs/contracts/skill-ports-and-adapters.md
 duel_ref: docs/audits/skill-system-overhaul-duel-2026-07-24/README.md

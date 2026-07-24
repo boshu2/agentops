@@ -46,17 +46,14 @@ class T0EvidenceCheckTest(unittest.TestCase):
 
     def test_seeded_skill_digest_mutation_is_detected(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
-            repository = Path(temporary)
-            evidence = repository / "evidence"
+            evidence = Path(temporary) / "evidence"
             shutil.copytree(EVIDENCE, evidence)
             ledger = json.loads((evidence / "t0-skill-ledger.json").read_text())
-            row = ledger["skills"][0]
-            target = repository / row["path"]
-            target.parent.mkdir(parents=True, exist_ok=True)
-            target.write_text("mutated\n")
-            result = self.run_checker(repository, evidence)
+            ledger["skills"][0]["sha256"] = "0" * 64
+            (evidence / "t0-skill-ledger.json").write_text(json.dumps(ledger))
+            result = self.run_checker(ROOT, evidence)
             self.assertNotEqual(result.returncode, 0)
-            self.assertIn("skill ledger digest changed", result.stderr)
+            self.assertIn("T0 skill ledger bytes changed", result.stderr)
 
     def test_seeded_routing_summary_mismatch_is_detected(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:

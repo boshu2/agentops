@@ -1,0 +1,24 @@
+{
+  "schema_version": "agentops.skill-overhaul-tranche-completion.v1",
+  "plan_ref": "docs/plans/2026-07-24-skill-system-overhaul.md",
+  "rows": [
+    {
+      "tranche": "T0",
+      "state": "PASS",
+      "subject_manifest_digest": "c7cb66d707aa75c0cb2bb07a82678964f9e285c9d2c783969507554c8d9f17b0",
+      "verdict_digest": "b4d8bd3b9db67ef51a251a928b749d5f95b1262570751e9890033937bd678f40",
+      "judged_under_proof_digest": "b9735c94f7de98c4d31db93081351a6a1a78f8e03897dad61792277bb36a0302",
+      "activated_proof_digest": "b9735c94f7de98c4d31db93081351a6a1a78f8e03897dad61792277bb36a0302",
+      "activation_transition_digest": null
+    },
+    {
+      "tranche": "T1",
+      "state": "PASS",
+      "subject_manifest_digest": "bd108e791c84e13152a49561c824c2b9efa101e6ca0834c9de007357bbf5d599",
+      "verdict_digest": "2cd9a4a369f3b1bdc7b11c272949401f83b6b55de6c4e8fd481bf311e8d96b5f",
+      "judged_under_proof_digest": "b9735c94f7de98c4d31db93081351a6a1a78f8e03897dad61792277bb36a0302",
+      "activated_proof_digest": "f6358e3858d4e6f67844966334547d6df88b58c5a2e9f7f5889ac2d1fadd2340",
+      "activation_transition_digest": "2f9e95bcb7841030a96b97e5bf1b9d4936ca3247c6f340e70e77abf11f045e8a"
+    }
+  ]
+}
