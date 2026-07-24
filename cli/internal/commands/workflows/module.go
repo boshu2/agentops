@@ -6,7 +6,7 @@
 package workflows
 
 import (
-	"encoding/json"
+	"path/filepath"
 
 	"github.com/spf13/cobra"
 
@@ -23,6 +23,13 @@ type Module struct {
 	linkJSON   bool
 	unlinkInto string
 	unlinkJSON bool
+}
+
+func (m *Module) outputMode() string {
+	if m.host.OutputMode == nil {
+		return ""
+	}
+	return m.host.OutputMode()
 }
 
 // NewModule constructs the workflows command module from its host seams.
@@ -89,7 +96,7 @@ func (m *Module) runLink(cmd *cobra.Command, _ []string) error {
 		cmd.SilenceUsage = true
 		return err
 	}
-	dest, err := workflowsapp.ResolveTargetDir(m.linkInto)
+	dest, err := m.resolveTarget(srcDir, m.linkInto)
 	if err != nil {
 		cmd.SilenceUsage = true
 		return err
@@ -101,10 +108,11 @@ func (m *Module) runLink(cmd *cobra.Command, _ []string) error {
 		return err
 	}
 
-	if m.linkJSON {
-		enc := json.NewEncoder(cmd.OutOrStdout())
-		enc.SetIndent("", "  ")
-		return enc.Encode(res)
+	if m.outputMode() == "yaml" {
+		return clicontract.WriteYAML(cmd.OutOrStdout(), res)
+	}
+	if m.linkJSON || m.outputMode() == "json" {
+		return clicontract.WriteJSON(cmd.OutOrStdout(), res)
 	}
 	workflowsapp.RenderLinkResult(cmd.OutOrStdout(), res)
 	return nil
@@ -141,7 +149,7 @@ func (m *Module) runUnlink(cmd *cobra.Command, _ []string) error {
 		cmd.SilenceUsage = true
 		return err
 	}
-	dest, err := workflowsapp.ResolveTargetDir(m.unlinkInto)
+	dest, err := m.resolveTarget(srcDir, m.unlinkInto)
 	if err != nil {
 		cmd.SilenceUsage = true
 		return err
@@ -153,13 +161,29 @@ func (m *Module) runUnlink(cmd *cobra.Command, _ []string) error {
 		return err
 	}
 
-	if m.unlinkJSON {
-		enc := json.NewEncoder(cmd.OutOrStdout())
-		enc.SetIndent("", "  ")
-		return enc.Encode(res)
+	if m.outputMode() == "yaml" {
+		return clicontract.WriteYAML(cmd.OutOrStdout(), res)
+	}
+	if m.unlinkJSON || m.outputMode() == "json" {
+		return clicontract.WriteJSON(cmd.OutOrStdout(), res)
 	}
 	workflowsapp.RenderUnlinkResult(cmd.OutOrStdout(), res)
 	return nil
+}
+
+// resolveTarget avoids launching Git during a dry-run. ResolveRepoWorkflowsDir
+// already proved that cwd is inside the canonical agentops checkout, so its
+// parent is the same git root ResolveTargetDir would return. An explicit target
+// never needs discovery.
+func (m *Module) resolveTarget(srcDir, explicit string) (string, error) {
+	if m.host.DryRun != nil && m.host.DryRun() && explicit == "" {
+		root, err := filepath.EvalSymlinks(filepath.Dir(srcDir))
+		if err != nil {
+			return "", err
+		}
+		return filepath.Join(root, ".claude", "workflows"), nil
+	}
+	return workflowsapp.ResolveTargetDir(explicit)
 }
 
 // Contract documents the workflows family's effect and profile shape for the

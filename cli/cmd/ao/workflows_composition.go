@@ -20,7 +20,8 @@ func init() {
 // Like skills, the family attaches no capabilities contract.
 func newWorkflowsCommand() *cobra.Command {
 	module := workflowscommands.NewModule(clicontract.HostOptions{
-		DryRun: GetDryRun,
+		DryRun:     GetDryRun,
+		OutputMode: GetOutput,
 	})
 	return module.Command()
 }

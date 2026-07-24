@@ -94,9 +94,9 @@ func (service Service) Build() Document {
 			"NO_COLOR":            "disable ANSI styling",
 		},
 		RobotSurfaces: map[string]string{
-			"capabilities":    "ao capabilities — this contract",
-			"robot_docs":      "ao robot-docs — generated CLI handbook",
-			"json_everywhere": "append --json (or -o json) to read-side commands",
+			"capabilities":     "ao capabilities — this contract",
+			"robot_docs":       "ao robot-docs — generated CLI handbook",
+			"json_equivalence": "where a command advertises JSON in output_formats, --json and -o json are equivalent",
 		},
 		CommandGroups: snapshot.CommandGroups,
 		Commands:      snapshot.Commands,

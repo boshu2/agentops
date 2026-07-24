@@ -34,6 +34,13 @@ func Inspect(root *cobra.Command, commandExits map[string]map[string]string) []C
 				// projection cannot fail without an internal contract bug.
 				record, _ = ProjectContract(record, contract)
 			}
+			if operation, ok := OperationFor(child); ok {
+				readOnly := operation.ReadOnly
+				record.EffectDetails = append([]Effect(nil), operation.Effects...)
+				record.OutputFormats = append([]OutputFormat(nil), operation.Outputs...)
+				record.DryRun = operation.DryRun
+				record.ReadOnly = &readOnly
+			}
 			if path == "ao capabilities" {
 				record.Output = "structured"
 				record.Effects = "pure"

@@ -36,7 +36,8 @@ ownership, and continuation belong to the caller and repository.
 For AI agents:
   ao capabilities     Machine-readable CLI contract (JSON) — run this first.
   ao robot-docs       Paste-ready agent handbook.
-  Append --json to any read-side command for structured output.
+  Read each command's output_formats; where JSON is advertised, --json and
+  -o json are equivalent.
 
 If a command you relied on is gone, see docs/MIGRATION.md — every removed
 surface has a row naming its replacement (and the restore path when one exists).
@@ -44,7 +45,13 @@ surface has a row naming its replacement (and the restore path when one exists).
 Use "ao <command> --help" for more information about a command.`,
 	SilenceUsage: true,
 	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+		if err := applyOperationContracts(cmd.Root()); err != nil {
+			return err
+		}
 		if err := negotiateOutput(cmd); err != nil {
+			return err
+		}
+		if err := enforceOperationContract(cmd); err != nil {
 			return err
 		}
 		syncConfigFlagToEnv()
@@ -67,21 +74,25 @@ Use "ao <command> --help" for more information about a command.`,
 }
 
 func negotiateOutput(cmd *cobra.Command) error {
-	outputFlag := cmd.Root().PersistentFlags().Lookup("output")
-	jsonOutputFlag := cmd.Root().PersistentFlags().Lookup("json")
-	requestedOutput := outputFlag != nil && outputFlag.Changed
-	requestedJSON := jsonOutputFlag != nil && jsonOutputFlag.Changed && jsonFlag
+	outputValue, requestedOutput := changedFlagValue(cmd, "output")
+	requestedJSON := booleanFlagRequested(cmd, "json")
+	requestedMode := output
+	if requestedOutput {
+		requestedMode = outputValue
+	}
 
-	switch output {
+	switch requestedMode {
 	case "table", "json", "yaml":
 	default:
-		return fmt.Errorf("unsupported output format %q (want table, json, or yaml)", output)
+		return fmt.Errorf("unsupported output format %q (want table, json, or yaml)", requestedMode)
 	}
-	if requestedJSON && requestedOutput && output != "json" {
-		return fmt.Errorf("conflicting output formats: --json requests json while --output requests %s", output)
+	if requestedJSON && requestedOutput && requestedMode != "json" {
+		return fmt.Errorf("conflicting output formats: --json requests json while --output requests %s", requestedMode)
 	}
 	if requestedJSON {
 		output = "json"
+	} else {
+		output = requestedMode
 	}
 	return nil
 }
@@ -92,13 +103,15 @@ func Execute() {
 	if err != nil {
 		var exitErr *clicontract.ExitError
 		if errors.As(err, &exitErr) {
-			// A labeled ExitError (doctor) surfaces its reason on stderr: exit 1
+			// A doctor-labeled ExitError surfaces its reason on stderr: exit 1
 			// means findings are present — a normal diagnostic result carrying no
 			// stderr noise — while higher codes are genuine failures the module
-			// silenced (SilenceErrors), so the root prints them. An empty Label
-			// (gate) means the module already surfaced its own output; the root
-			// stays silent and only maps the process code.
-			if exitErr.Label != "" && exitErr.ExitCode() != doctor.ExitFindings && exitErr.Error() != "" {
+			// silenced (SilenceErrors), so the root prints them. Other labels
+			// (including operation-contract refusals) are always surfaced. An
+			// empty Label (gate) means the module already surfaced its own output;
+			// the root stays silent and only maps the process code.
+			doctorFindings := exitErr.Label == "ao doctor" && exitErr.ExitCode() == doctor.ExitFindings
+			if exitErr.Label != "" && !doctorFindings && exitErr.Error() != "" {
 				fmt.Fprintln(os.Stderr, exitErr.Label+": "+exitErr.Error())
 			}
 			os.Exit(exitErr.ExitCode())

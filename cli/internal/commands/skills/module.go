@@ -468,7 +468,14 @@ func (m *Module) runGraph(cmd *cobra.Command, _ []string) error {
 	if err != nil {
 		return err
 	}
-	switch m.graphFormat {
+	format := m.graphFormat
+	if m.outputMode() == "json" {
+		if cmd.Flags().Changed("format") && format != "json" {
+			return fmt.Errorf("conflicting output formats: -o json and --format %s", format)
+		}
+		format = "json"
+	}
+	switch format {
 	case "mermaid":
 		fmt.Fprint(cmd.OutOrStdout(), skills.Mermaid(cat.Skills))
 		return nil
@@ -537,11 +544,13 @@ func (m *Module) runLink(cmd *cobra.Command, _ []string) error {
 
 	results, anyErr := skillsapp.LinkAllDests(skillsDir, dests, m.host.DryRun())
 
-	if m.linkJSON {
-		enc := json.NewEncoder(cmd.OutOrStdout())
-		enc.SetIndent("", "  ")
-		if eerr := enc.Encode(results); eerr != nil {
-			return eerr
+	if m.outputMode() == "yaml" {
+		if err := clicontract.WriteYAML(cmd.OutOrStdout(), results); err != nil {
+			return err
+		}
+	} else if m.linkJSON || m.outputMode() == "json" {
+		if err := clicontract.WriteJSON(cmd.OutOrStdout(), results); err != nil {
+			return err
 		}
 	} else {
 		out := cmd.OutOrStdout()
@@ -608,11 +617,13 @@ func (m *Module) runUnlink(cmd *cobra.Command, _ []string) error {
 
 	results, anyErr := skillsapp.UnlinkAllDests(skillsDir, dests, m.host.DryRun())
 
-	if m.unlinkJSON {
-		enc := json.NewEncoder(cmd.OutOrStdout())
-		enc.SetIndent("", "  ")
-		if eerr := enc.Encode(results); eerr != nil {
-			return eerr
+	if m.outputMode() == "yaml" {
+		if err := clicontract.WriteYAML(cmd.OutOrStdout(), results); err != nil {
+			return err
+		}
+	} else if m.unlinkJSON || m.outputMode() == "json" {
+		if err := clicontract.WriteJSON(cmd.OutOrStdout(), results); err != nil {
+			return err
 		}
 	} else {
 		out := cmd.OutOrStdout()

@@ -114,12 +114,22 @@ func (module Module) newCheckCommand() *cobra.Command {
 			if err != nil {
 				return &clicontract.ExitError{Code: 2, Message: err.Error(), Label: "ao gate"}
 			}
-			if jsonOutput {
+			outputMode := ""
+			if module.host.OutputMode != nil {
+				outputMode = module.host.OutputMode()
+			}
+			if jsonOutput || outputMode == "json" || outputMode == "yaml" {
 				raw, jsonErr := result.Report.JSON()
 				if jsonErr != nil {
 					return &clicontract.ExitError{Code: 2, Message: jsonErr.Error(), Label: "ao gate"}
 				}
-				fmt.Fprintln(command.OutOrStdout(), string(raw))
+				if outputMode == "yaml" {
+					if yamlErr := clicontract.JSONToYAML(command.OutOrStdout(), raw); yamlErr != nil {
+						return &clicontract.ExitError{Code: 2, Message: yamlErr.Error(), Label: "ao gate"}
+					}
+				} else {
+					fmt.Fprintln(command.OutOrStdout(), string(raw))
+				}
 			} else {
 				result.Report.Human(command.OutOrStdout())
 			}
