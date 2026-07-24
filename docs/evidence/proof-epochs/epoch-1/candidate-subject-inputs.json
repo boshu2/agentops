@@ -61,8 +61,8 @@
     "cli/internal/verdictcheck/kernel_corpus_test.go",
     "cli/internal/statusapp/statusapp.go"
   ],
-  "qualification_state": "NOT_PROVEN",
+  "qualification_state": "FAIL",
   "qualification_subject_manifest_digest": "c8cdb44f723a63c17d948e5423fdbfa7ff91283f87a61d8d3eef2613e3dbf32c",
-  "qualification_verdict_digest": null,
+  "qualification_verdict_digest": "7e0e0dd26eefdc9c53660a56ed7a7840668d033aac493f6f0d5bca2930d46e60",
   "activation_transition_digest": null
 }

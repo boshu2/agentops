@@ -1,0 +1,185 @@
+{
+  "verdict": "FAIL",
+  "criteria": [
+    {
+      "id": "T1-1",
+      "result": "FAIL",
+      "evidence_refs": [
+        "skills/plan/scripts/mint_intent.py",
+        "skills/rpi/scripts/run_once.py",
+        "skills/validate/scripts/check_kernel_v3_corpus.py",
+        "tests/fixtures/rpi-kernel-v3/corpus.json",
+        "validator-hostile-probe:plan-adapter-identity-rejected-by-rpi-bytes-contract"
+      ],
+      "reason": "The exact-byte primitives hash correctly, but the callable Plan adapter returns an intent identity while RPI requires Plan to return raw bytes and mints again; the shared corpus does not compose Plan, Implement, RPI, a remote boundary, and Validate over one snapshot."
+    },
+    {
+      "id": "T1-2",
+      "result": "PASS",
+      "evidence_refs": [
+        "skills/rpi/scripts/run_once.py",
+        "skills/rpi/tests/test_run_once.py::test_each_phase_runs_once_and_pass_reports",
+        "skills/rpi/tests/test_run_once.py::test_fail_and_not_proven_report_and_stop",
+        "skills/rpi/tests/test_run_once.py::test_opaque_correlation_is_preserved_without_interpretation",
+        "skills/rpi/tests/test_run_once.py::test_opaque_correlation_bounds_are_enforced"
+      ],
+      "reason": "The dispatcher calls each phase at most once, emits every terminal report without continuation state, and preserves only the bounded opaque correlation object."
+    },
+    {
+      "id": "T1-3",
+      "result": "PASS",
+      "evidence_refs": [
+        "skills/validate/scripts/kernel_v3.py::build_manifest_v2",
+        "skills/validate/scripts/kernel_v3.py::derive_effect_receipt",
+        "skills/validate/scripts/test_kernel_v3.py::test_repository_observation_includes_generated_companions_and_deletions",
+        "skills/validate/scripts/test_kernel_v3.py::test_mutation_outside_write_scope_is_observed_and_forces_fail",
+        "skills/validate/scripts/test_kernel_v3.py::test_partial_observation_forces_not_proven",
+        "skills/validate/scripts/test_kernel_v3.py::test_forged_complete_empty_effect_cannot_hide_real_changes"
+      ],
+      "reason": "Repository-root before/final observation derives additions, modifications, deletions, mode/type changes, generated companions, incomplete coverage, and undeclared changes."
+    },
+    {
+      "id": "T1-4",
+      "result": "PASS",
+      "evidence_refs": [
+        "skills/validate/scripts/kernel_v3.py::validate_scope_index",
+        "skills/validate/scripts/kernel_v3.py::validate_verdict_v3",
+        "skills/validate/scripts/test_kernel_v3.py::test_required_criterion_cannot_be_absorbed_by_exclusion",
+        "skills/validate/scripts/test_kernel_v3.py::test_duplicate_criterion_ids_are_rejected",
+        "skills/validate/scripts/test_kernel_v3.py::test_pass_requires_nonempty_checked_evidence"
+      ],
+      "reason": "Frozen criterion IDs are exact and unique, required criteria cannot be excluded, and PASS requires evidence-backed coverage with no unchecked items."
+    },
+    {
+      "id": "T1-5",
+      "result": "PASS",
+      "evidence_refs": [
+        "skills/validate/scripts/kernel_v3.py::verify_manifest_v2",
+        "skills/validate/scripts/test_kernel_v3.py::test_candidate_mutation_after_freeze_is_terminal",
+        "skills/validate/scripts/test_kernel_v3.py::test_candidate_mutation_between_validation_recomputations_is_terminal"
+      ],
+      "reason": "The final subject is recomputed before and after judgment and any post-freeze mutation terminates validation."
+    },
+    {
+      "id": "T1-6",
+      "result": "PASS",
+      "evidence_refs": [
+        "skills/validate/scripts/kernel_v3.py::_find_duplicate_judgment",
+        "skills/validate/scripts/test_kernel_v3.py::test_duplicate_intent_final_subject_judgment_is_rejected",
+        "tests/fixtures/rpi-kernel-v3/corpus.json#judgment.duplicate-intent-subject"
+      ],
+      "reason": "Invocation and judgment identities are distinct and duplicate unlinked judgments sharing an invocation, judgment, or exact intent/final-subject pair are rejected."
+    },
+    {
+      "id": "T1-7",
+      "result": "FAIL",
+      "evidence_refs": [
+        "skills/validate/scripts/check_kernel_v3_corpus.py",
+        "cli/internal/verdictcheck/kernel_corpus_test.go",
+        "cli/internal/verdictcheck/verdict_v3.go",
+        "cli/internal/verdictcheck/report_v2.go",
+        "validator-coverage-probe:go-readers-only-verdict-v3-and-rpi-report-v2",
+        "validator-coverage-probe:shared-corpus-does-not-call-manifest-scope-check-effect-or-transition-readers"
+      ],
+      "reason": "The shared Python/Go corpus uses shallow case-specific outcome logic and does not drive strict readers for subject-manifest.v2, scope-index.v1, check-receipt.v1, effect-receipt.v1, or proof transition; Go strict readers exist only for verdict.v3 and rpi-report.v2."
+    },
+    {
+      "id": "T1-8",
+      "result": "PASS",
+      "evidence_refs": [
+        "docs/contracts/proof-contracts/active.json",
+        "docs/contracts/proof-contracts/epoch-0b/descriptor.json",
+        "docs/evidence/proof-epochs/epoch-1/candidate-descriptor.json",
+        "docs/evidence/proof-epochs/epoch-1/t1-qualification-subject-manifest.json",
+        "scripts/bootstrap-proof-transition-v2.py",
+        "skills/validate/scripts/record_proof_transition.py",
+        "tests/python/test_bootstrap_proof_transition.py",
+        "skills/validate/scripts/test_kernel_v3.py::test_general_recorder_advances_epoch_one_to_two_content_addressed",
+        "skills/validate/scripts/test_kernel_v3.py::test_general_recorder_cas_refuses_races_and_keeps_active_pointer",
+        "validator-binding-check:15-components-plus-recorder-match-bytes-modes-and-subject"
+      ],
+      "reason": "The active pointer remains epoch 0b, the epoch-1 descriptor binds every component and recorder to exact subject bytes and modes, bootstrap qualification is external, and the general recorder enforces prior-proof PASS, membership, content-addressed transition bytes, CAS, and active-pointer-last ordering."
+    },
+    {
+      "id": "T1-9",
+      "result": "FAIL",
+      "evidence_refs": [
+        "skills/validate/scripts/kernel_v3.py::normalize_rel",
+        "cli/internal/verdictcheck/strict.go::validRepositoryRef",
+        "skills/validate/scripts/validate_v3.py",
+        "validator-hostile-probe:raw-dot-reference-accepted-and-joined-to-repository-root",
+        "validator-writer-inventory:no-callable-named-check-receipt-output"
+      ],
+      "reason": "Both Python and Go explicitly accept the raw dot repository reference instead of rejecting it lexically, and no production command or call site atomically writes a named check-receipt artifact."
+    }
+  ],
+  "findings": [
+    {
+      "id": "t1.exact-transport-composition",
+      "summary": "The shipped Plan adapter and RPI dispatcher expose incompatible Plan result shapes, and the shared corpus does not compose an exact snapshot through the required remote boundary.",
+      "evidence_refs": [
+        "skills/plan/scripts/mint_intent.py",
+        "skills/rpi/scripts/run_once.py",
+        "validator-hostile-probe:plan-adapter-identity-rejected-by-rpi-bytes-contract"
+      ]
+    },
+    {
+      "id": "t1.shared-corpus-reader-coverage",
+      "summary": "The shared Python/Go corpus does not exercise strict readers for five of the required typed proof surfaces.",
+      "evidence_refs": [
+        "skills/validate/scripts/check_kernel_v3_corpus.py",
+        "cli/internal/verdictcheck/kernel_corpus_test.go",
+        "validator-coverage-probe:missing-manifest-scope-check-effect-transition-readers"
+      ]
+    },
+    {
+      "id": "t1.dot-reference-accepted",
+      "summary": "A raw dot repository reference is accepted and resolves to the repository root in both candidate implementations.",
+      "evidence_refs": [
+        "skills/validate/scripts/kernel_v3.py::normalize_rel",
+        "cli/internal/verdictcheck/strict.go::validRepositoryRef",
+        "validator-hostile-probe:dot-ref-accepted"
+      ]
+    },
+    {
+      "id": "t1.check-receipt-writer-missing",
+      "summary": "The kernel can construct a check receipt in memory but exposes no callable named atomic output writer for it.",
+      "evidence_refs": [
+        "skills/validate/scripts/kernel_v3.py::build_check_receipt",
+        "skills/validate/scripts/validate_v3.py",
+        "validator-writer-inventory:no-production-check-receipt-writer-call"
+      ]
+    }
+  ],
+  "evidence_refs": [
+    "git:d1847ba261fdaea63ff3636301a668ec8a79cb0e",
+    "proof-epoch-0b:b9735c94f7de98c4d31db93081351a6a1a78f8e03897dad61792277bb36a0302",
+    "subject-manifest:c8cdb44f723a63c17d948e5423fdbfa7ff91283f87a61d8d3eef2613e3dbf32c",
+    "candidate-descriptor:4ca0cadfc55623ef26d62595990ad176dc27173da2141447de698f4a57e0b526",
+    "validator-replay:24-kernel-tests-10-rpi-tests-22-kernel-corpus-cases",
+    "validator-replay:23-legacy-v2-corpus-cases-16-legacy-writer-tests",
+    "validator-replay:3114-go-tests-in-70-packages",
+    "validator-replay:all-generated-projections-current",
+    "validator-hostile-probes:composition-reader-coverage-dot-ref-check-receipt-writer"
+  ],
+  "checked": [
+    "exact candidate commit and clean pre-verdict worktree",
+    "active epoch-0b pointer, descriptor digest, frozen legacy contract, and unchanged validate.py",
+    "T1 subject manifest canonical digest and all 120 live entries across 30 roots",
+    "candidate descriptor, 15 components, modes, qualification corpus, subject binding, and transition recorder",
+    "semantic source inspection for Plan, Implement, RPI, Validate, schemas, Go readers, bootstrap recorder, and general recorder",
+    "24 Python kernel tests and hostile transition/CAS scenarios",
+    "10 composed RPI cardinality, terminal-report, exact-byte, and correlation tests",
+    "22-case shared Python/Go kernel corpus",
+    "23-case legacy verdict.v2 Python/schema/Go corpus and 16 legacy validator tests",
+    "109 focused Go tests in verdictcheck/statusapp and 3114 full Go tests across 70 packages",
+    "source skill validators and complete generated projection drift checks",
+    "contract compatibility and structural-floor gates",
+    "10 frozen bootstrap transition tests",
+    "legacy epoch-0 proof-contract test: 1 of 4 passed; three detect candidate-mutated frozen component paths before reaching their seeded witness",
+    "hostile exact-byte composition, reader inventory, lexical reference, and check-receipt writer probes",
+    "final exact HEAD, active proof identity, legacy validator digest, and subject-manifest recheck"
+  ],
+  "not_checked": [],
+  "validated_at": "2026-07-24T22:03:08Z"
+}
