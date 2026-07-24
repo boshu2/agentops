@@ -15,6 +15,9 @@
     "stable T0 pause-repair candidate commit b5b5f5617",
     "immutable T0 pause-repair FAIL b27793442f1e1067b9ab6d22dec797b263d4dcb93e080ab8b93ff2c4da6695e2",
     "T0 pause-repair failure-evidence commit 60485a476",
+    "stable T0 typed-pause candidate commit 3dd99abbc",
+    "immutable T0 typed-pause FAIL bc97dc05ced93855a0e2326f5ddd92dc4814db9b114158e8acc5298e63051d5b",
+    "T0 typed-pause failure-evidence commit eccb1abf1",
     "49-skill exact-byte ledger",
     "rejected epoch-0 proof descriptor retained as history",
     "active corrected epoch-0b proof descriptor and strict bootstrap transition recorder",
@@ -23,7 +26,7 @@
     "installed-estate and #988 reconciliation"
   ],
   "progress": {
-    "current_invocation_ref": "docs/evidence/proof-epochs/epoch-0b/t0-pause-repair-2-intent.md",
+    "current_invocation_ref": "docs/evidence/proof-epochs/epoch-0b/t0-transition-schema-repair-intent.md",
     "current_candidate_identity": "enclosing subject manifest and fresh verdict",
     "states": {
       "T0": "VALIDATION_PENDING",
@@ -67,7 +70,13 @@
     "pause_failed_subject_file_sha256": "3bad6ac553eb72694ca760f7e36c316d1a6183e9d38b14d37f7514846a2f3b3c",
     "pause_failed_report_file_sha256": "d32e39fc01b39a3e2747804bbd45c37af2590349d88a84e2add8385be1eb8a35",
     "pause_failure_evidence_commit": "60485a4767bababd1994262043a5e73a03d15b6e",
-    "current_invocation": "docs/evidence/proof-epochs/epoch-0b/t0-pause-repair-2-intent.md",
+    "typed_pause_candidate_commit": "3dd99abbc76b079b69c97cda26b9706f1e8bd6e1",
+    "typed_pause_fail_artifact_digest": "bc97dc05ced93855a0e2326f5ddd92dc4814db9b114158e8acc5298e63051d5b",
+    "typed_pause_fail_file_sha256": "5df88394b4755c3629e43d8f8eff599019cded4ef80e84feadea48dc0d4d967c",
+    "typed_pause_failed_subject_file_sha256": "424f339286de1b91dbc452f3a34b742d8bd364dd04d57c6c88e91bf8bb04a57b",
+    "typed_pause_failed_report_file_sha256": "851cfc9a9597f65298dafcbfa57713b1577bc0d65e6a6abd9ebaafccb9811972",
+    "typed_pause_failure_evidence_commit": "eccb1abf180d5ee79d36798d2e40c1eb67cf2ff6",
+    "current_invocation": "docs/evidence/proof-epochs/epoch-0b/t0-transition-schema-repair-intent.md",
     "current_candidate_identity": "enclosing subject manifest and fresh verdict"
   },
   "authority": {
@@ -84,7 +93,7 @@
     "CASS historical routing search unavailable because checkpoint is incomplete",
     "remote required-CI job wiring not proven",
     "installed skill roots still target the preserved original worktree",
-    "T0 typed-pause repair requires a fresh semantic verdict over its exact subject",
+    "T0 transition-schema repair requires a fresh semantic verdict over its exact subject",
     "T1 exact-kernel implementation and epoch-1 activation have not started"
   ]
 }

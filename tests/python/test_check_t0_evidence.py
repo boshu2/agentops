@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import copy
 import hashlib
 import importlib.util
 import json
@@ -144,11 +145,130 @@ class T0EvidenceCheckTest(unittest.TestCase):
             descriptor = repository / CHECK_MODULE.PAUSE_PROOF_REF
             descriptor.parent.mkdir(parents=True, exist_ok=True)
             shutil.copy2(ROOT / CHECK_MODULE.PAUSE_PROOF_REF, descriptor)
+            for reference in (
+                CHECK_MODULE.ACTIVE_SCHEMA_REF,
+                CHECK_MODULE.TRANSITION_SCHEMA_REF,
+                CHECK_MODULE.PROOF_SCHEMA_REF,
+                CHECK_MODULE.SUBJECT_SCHEMA_REF,
+                CHECK_MODULE.VERDICT_SCHEMA_REF,
+                "scripts/bootstrap-proof-transition.py",
+            ):
+                target = repository / reference
+                target.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(ROOT / reference, target)
+
+            corpus_ref = "tests/fixtures/t0-epoch1-corpus"
+            corpus = repository / corpus_ref
+            corpus.mkdir(parents=True)
+            (corpus / "case.json").write_text('{"case":"pass"}\n')
+            bootstrap = CHECK_MODULE.load_bootstrap_module(repository)
+            corpus_digest = bootstrap.tree_digest(corpus)
+
+            components = []
+            for role in [
+                "validator-contract",
+                "validator-implementation",
+                "verdict-schema",
+                "rpi-report-schema",
+                "subject-manifest-schema",
+            ]:
+                reference = f"components/{role}"
+                path = repository / reference
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_text(f"{role}\n")
+                path.chmod(0o644)
+                components.append(
+                    {
+                        "role": role,
+                        "ref": reference,
+                        "digest": hashlib.sha256(path.read_bytes()).hexdigest(),
+                        "mode": "0644",
+                    }
+                )
+            recorder_ref = "scripts/future-transition.py"
+            recorder_path = repository / recorder_ref
+            recorder_path.write_text("#!/usr/bin/env python3\n")
+            recorder_path.chmod(0o755)
+            recorder = {
+                "ref": recorder_ref,
+                "digest": hashlib.sha256(recorder_path.read_bytes()).hexdigest(),
+                "mode": "0755",
+            }
+            frozen_items = components + [recorder]
+            subject_ref = "docs/evidence/proof-epochs/epoch-1/subject.json"
+            subject_path = repository / subject_ref
+            subject_path.parent.mkdir(parents=True, exist_ok=True)
+            subject = {
+                "schema_version": "subject-manifest.v1",
+                "declared_roots": [item["ref"] for item in frozen_items],
+                "exclusions": [],
+                "entries": [
+                    {
+                        "path": item["ref"],
+                        "kind": "file",
+                        "executable": item["mode"] == "0755",
+                        "digest": item["digest"],
+                    }
+                    for item in frozen_items
+                ],
+            }
+            subject["canonical_manifest_digest"] = CHECK_MODULE.canonical_digest(
+                subject
+            )
+            subject_path.write_text(json.dumps(subject, sort_keys=True))
+
+            verdict_ref_prefix = "docs/evidence/proof-epochs/epoch-1/verdicts"
+            verdict = {
+                "schema_version": "verdict.v2",
+                "acceptance_digest": "b" * 64,
+                "subject_manifest_digest": subject["canonical_manifest_digest"],
+                "author_context_id": "author",
+                "validator_context_id": "validator",
+                "freshness_attestation": {
+                    "source": "runtime",
+                    "attester_identity": "validator",
+                },
+                "verdict": "PASS",
+                "criteria": [
+                    {
+                        "id": "Q-1",
+                        "result": "PASS",
+                        "evidence_refs": ["fixture"],
+                    }
+                ],
+                "findings": [],
+                "evidence_refs": ["fixture"],
+                "checked": ["fixture"],
+                "not_checked": [],
+                "validated_at": "2026-07-24T20:00:00Z",
+            }
+            verdict["artifact_digest"] = CHECK_MODULE.canonical_digest(verdict)
+            verdict_ref = (
+                f"{verdict_ref_prefix}/{verdict['artifact_digest']}.json"
+            )
+            verdict_path = repository / verdict_ref
+            verdict_path.parent.mkdir(parents=True, exist_ok=True)
+            verdict_path.write_text(json.dumps(verdict, sort_keys=True))
 
             candidate_ref = "docs/contracts/proof-contracts/epoch-1/descriptor.json"
             candidate = repository / candidate_ref
             candidate.parent.mkdir(parents=True, exist_ok=True)
-            candidate.write_text("{}\n")
+            candidate_value = {
+                "schema_version": "proof-contract.v1",
+                "epoch": 1,
+                "components": components,
+                "qualification_corpus": {
+                    "algorithm": "sha256-tree-v1",
+                    "ref": corpus_ref,
+                    "digest": corpus_digest,
+                },
+                "qualification_subject_manifest_digest": subject[
+                    "canonical_manifest_digest"
+                ],
+                "transition_recorder": recorder,
+                "known_gaps": [],
+            }
+            candidate.write_text(json.dumps(candidate_value, sort_keys=True))
             candidate_digest = hashlib.sha256(candidate.read_bytes()).hexdigest()
             transition = {
                 "schema_version": "proof-contract-transition.v1",
@@ -162,7 +282,19 @@ class T0EvidenceCheckTest(unittest.TestCase):
                     "epoch": 1,
                     "contract_ref": candidate_ref,
                     "contract_digest": candidate_digest,
+                    "subject_manifest_ref": subject_ref,
+                    "subject_manifest_digest": subject[
+                        "canonical_manifest_digest"
+                    ],
+                    "qualification_corpus_ref": corpus_ref,
+                    "qualification_corpus_digest": corpus_digest,
                 },
+                "qualification_verdict": {
+                    "ref": verdict_ref,
+                    "digest": verdict["artifact_digest"],
+                },
+                "validator_identity": "validator",
+                "activated_at": "2026-07-24T20:01:00Z",
             }
             transition_payload = (
                 json.dumps(transition, sort_keys=True, separators=(",", ":")) + "\n"
@@ -206,6 +338,73 @@ class T0EvidenceCheckTest(unittest.TestCase):
                 )
             )
             CHECK_MODULE.check_pause_state(repository, evidence, pause)
+
+            malformed_cases: list[tuple[str, dict[str, object]]] = []
+            extra_transition = copy.deepcopy(transition)
+            extra_transition["unexpected"] = True
+            malformed_cases.append(("extra transition field", extra_transition))
+            extra_candidate = copy.deepcopy(transition)
+            extra_candidate["candidate"]["unexpected"] = True
+            malformed_cases.append(("extra candidate field", extra_candidate))
+            escaping_verdict = copy.deepcopy(transition)
+            escaping_verdict["qualification_verdict"]["ref"] = "../escape.json"
+            malformed_cases.append(("escaping qualification ref", escaping_verdict))
+            boolean_epoch = copy.deepcopy(transition)
+            boolean_epoch["candidate"]["epoch"] = True
+            malformed_cases.append(("boolean candidate epoch", boolean_epoch))
+            malformed_time = copy.deepcopy(transition)
+            malformed_time["activated_at"] = "not-a-time"
+            malformed_cases.append(("malformed activation time", malformed_time))
+            for label, malformed_case in malformed_cases:
+                with self.subTest(label=label):
+                    with self.assertRaisesRegex(
+                        CHECK_MODULE.EvidenceError,
+                        "active transition violates its schema",
+                    ):
+                        CHECK_MODULE.validate_schema_instance(
+                            repository,
+                            schema_ref=CHECK_MODULE.TRANSITION_SCHEMA_REF,
+                            schema_digest=CHECK_MODULE.TRANSITION_SCHEMA_DIGEST,
+                            instance=malformed_case,
+                            label="active transition",
+                        )
+
+            malformed = dict(transition)
+            malformed.pop("qualification_verdict")
+            malformed_payload = (
+                json.dumps(malformed, sort_keys=True, separators=(",", ":")) + "\n"
+            ).encode()
+            malformed_digest = hashlib.sha256(malformed_payload).hexdigest()
+            malformed_ref = (
+                f"docs/contracts/proof-contracts/transitions/{malformed_digest}.json"
+            )
+            malformed_path = repository / malformed_ref
+            malformed_path.write_bytes(malformed_payload)
+            active_path.write_text(
+                json.dumps(
+                    {
+                        "schema_version": "proof-contract-active.v1",
+                        "epoch": 1,
+                        "contract_ref": candidate_ref,
+                        "contract_digest": candidate_digest,
+                        "activation_transition_ref": malformed_ref,
+                        "activation_transition_digest": malformed_digest,
+                    }
+                )
+            )
+            with self.assertRaisesRegex(
+                CHECK_MODULE.EvidenceError,
+                "active transition violates its schema",
+            ):
+                CHECK_MODULE.check_pause_state(repository, evidence, pause)
+
+            duplicate_path = repository / "duplicate.json"
+            duplicate_path.write_text('{"epoch":1,"epoch":1}\n')
+            with self.assertRaisesRegex(
+                CHECK_MODULE.EvidenceError,
+                "duplicate JSON key",
+            ):
+                CHECK_MODULE.load(duplicate_path)
 
     def test_rejected_verdict_byte_mutation_is_detected(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:

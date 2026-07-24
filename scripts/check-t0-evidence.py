@@ -5,9 +5,13 @@ from __future__ import annotations
 
 import argparse
 from collections import Counter
+from datetime import datetime
 import hashlib
+import importlib.util
 import json
 from pathlib import Path
+import re
+import stat
 import sys
 from typing import Any
 
@@ -37,12 +41,28 @@ PAUSE_LINEAGE = {
     "pause_failed_subject_file_sha256": "3bad6ac553eb72694ca760f7e36c316d1a6183e9d38b14d37f7514846a2f3b3c",
     "pause_failed_report_file_sha256": "d32e39fc01b39a3e2747804bbd45c37af2590349d88a84e2add8385be1eb8a35",
     "pause_failure_evidence_commit": "60485a4767bababd1994262043a5e73a03d15b6e",
-    "current_invocation": "docs/evidence/proof-epochs/epoch-0b/t0-pause-repair-2-intent.md",
+    "typed_pause_candidate_commit": "3dd99abbc76b079b69c97cda26b9706f1e8bd6e1",
+    "typed_pause_fail_artifact_digest": "bc97dc05ced93855a0e2326f5ddd92dc4814db9b114158e8acc5298e63051d5b",
+    "typed_pause_fail_file_sha256": "5df88394b4755c3629e43d8f8eff599019cded4ef80e84feadea48dc0d4d967c",
+    "typed_pause_failed_subject_file_sha256": "424f339286de1b91dbc452f3a34b742d8bd364dd04d57c6c88e91bf8bb04a57b",
+    "typed_pause_failed_report_file_sha256": "851cfc9a9597f65298dafcbfa57713b1577bc0d65e6a6abd9ebaafccb9811972",
+    "typed_pause_failure_evidence_commit": "eccb1abf180d5ee79d36798d2e40c1eb67cf2ff6",
+    "current_invocation": "docs/evidence/proof-epochs/epoch-0b/t0-transition-schema-repair-intent.md",
     "current_candidate_identity": "enclosing subject manifest and fresh verdict",
 }
 
 PAUSE_PROOF_REF = "docs/contracts/proof-contracts/epoch-0b/descriptor.json"
 PAUSE_PROOF_DIGEST = "b9735c94f7de98c4d31db93081351a6a1a78f8e03897dad61792277bb36a0302"
+TRANSITION_SCHEMA_REF = "schemas/proof-contract-transition.v1.schema.json"
+TRANSITION_SCHEMA_DIGEST = "854d252c7af4feb83cfce211edcd2eacda3b1741eca08f6f38a5eaa638596ce3"
+ACTIVE_SCHEMA_REF = "schemas/proof-contract-active.v1.schema.json"
+ACTIVE_SCHEMA_DIGEST = "0110acf9131aa09e4ace6a12fe58a79c6b59c2cffa405601186573d2d3204282"
+PROOF_SCHEMA_REF = "schemas/proof-contract.v1.schema.json"
+PROOF_SCHEMA_DIGEST = "22ecac3c127779aeef265b63e0c68405f344f67b8e02dcaf2686c3b9a417e87a"
+SUBJECT_SCHEMA_REF = "schemas/subject-manifest.v1.schema.json"
+SUBJECT_SCHEMA_DIGEST = "bd2816ef184d080041d703f834973e55bf9ee9ef7f35aaf7648ac56baa38afb3"
+VERDICT_SCHEMA_REF = "schemas/verdict.v2.schema.json"
+VERDICT_SCHEMA_DIGEST = "848af783786a33ee505d3a1e19afdb1b97c6875d68c4fe817a21ca012bdfedab"
 PAUSE_TOP_LEVEL_KEYS = {
     "schema_version",
     "performed_on",
@@ -67,6 +87,9 @@ PAUSE_LANDED_OR_FROZEN = [
     "stable T0 pause-repair candidate commit b5b5f5617",
     f"immutable T0 pause-repair FAIL {PAUSE_LINEAGE['pause_fail_artifact_digest']}",
     "T0 pause-repair failure-evidence commit 60485a476",
+    "stable T0 typed-pause candidate commit 3dd99abbc",
+    f"immutable T0 typed-pause FAIL {PAUSE_LINEAGE['typed_pause_fail_artifact_digest']}",
+    "T0 typed-pause failure-evidence commit eccb1abf1",
     "49-skill exact-byte ledger",
     "rejected epoch-0 proof descriptor retained as history",
     "active corrected epoch-0b proof descriptor and strict bootstrap transition recorder",
@@ -112,13 +135,24 @@ PAUSE_KNOWN_GAPS = [
     "CASS historical routing search unavailable because checkpoint is incomplete",
     "remote required-CI job wiring not proven",
     "installed skill roots still target the preserved original worktree",
-    "T0 typed-pause repair requires a fresh semantic verdict over its exact subject",
+    "T0 transition-schema repair requires a fresh semantic verdict over its exact subject",
     "T1 exact-kernel implementation and epoch-1 activation have not started",
 ]
 
 
+def reject_duplicate_keys(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
+    result: dict[str, Any] = {}
+    for key, value in pairs:
+        require(key not in result, f"duplicate JSON key: {key}")
+        result[key] = value
+    return result
+
+
 def load(path: Path) -> dict[str, Any]:
-    value = json.loads(path.read_text(encoding="utf-8"))
+    value = json.loads(
+        path.read_text(encoding="utf-8"),
+        object_pairs_hook=reject_duplicate_keys,
+    )
     if not isinstance(value, dict):
         raise EvidenceError(f"expected JSON object: {path}")
     return value
@@ -131,6 +165,33 @@ def require(condition: bool, message: str) -> None:
 
 def sha256(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def file_mode(path: Path) -> str:
+    return f"{stat.S_IMODE(path.lstat().st_mode):04o}"
+
+
+def canonical_digest(value: Any) -> str:
+    payload = json.dumps(
+        value,
+        ensure_ascii=False,
+        separators=(",", ":"),
+        sort_keys=True,
+    ).encode("utf-8")
+    return hashlib.sha256(payload).hexdigest()
+
+
+def is_rfc3339_datetime(value: Any) -> bool:
+    if not isinstance(value, str) or not re.fullmatch(
+        r"\d{4}-\d{2}-\d{2}[Tt]\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:[Zz]|[+-]\d{2}:\d{2})",
+        value,
+    ):
+        return False
+    try:
+        parsed = datetime.fromisoformat(value.replace("Z", "+00:00").replace("z", "+00:00"))
+    except ValueError:
+        return False
+    return parsed.tzinfo is not None
 
 
 def check_failed_invocation(
@@ -178,6 +239,221 @@ def resolve_repository_ref(repository: Path, reference: Any, label: str) -> Path
     return path
 
 
+def validate_schema_instance(
+    repository: Path,
+    *,
+    schema_ref: str,
+    schema_digest: str,
+    instance: dict[str, Any],
+    label: str,
+) -> None:
+    try:
+        from jsonschema import Draft202012Validator, FormatChecker
+        from jsonschema.exceptions import SchemaError
+    except ImportError as exc:
+        raise EvidenceError("python jsonschema is required for proof validation") from exc
+    schema_path = resolve_repository_ref(repository, schema_ref, f"{label} schema")
+    require(sha256(schema_path) == schema_digest, f"{label} schema bytes changed")
+    schema = load(schema_path)
+    try:
+        Draft202012Validator.check_schema(schema)
+    except SchemaError as exc:
+        raise EvidenceError(f"{label} schema is invalid: {exc.message}") from exc
+    format_checker = FormatChecker()
+    format_checker.checks("date-time")(is_rfc3339_datetime)
+    validator = Draft202012Validator(schema, format_checker=format_checker)
+    errors = sorted(
+        validator.iter_errors(instance),
+        key=lambda error: tuple(str(part) for part in error.absolute_path),
+    )
+    require(not errors, f"{label} violates its schema: {errors[0].message if errors else ''}")
+
+
+def load_bootstrap_module(repository: Path) -> Any:
+    path = resolve_repository_ref(
+        repository,
+        "scripts/bootstrap-proof-transition.py",
+        "bootstrap transition recorder",
+    )
+    specification = importlib.util.spec_from_file_location(
+        "agentops_t0_evidence_bootstrap",
+        path,
+    )
+    require(
+        specification is not None and specification.loader is not None,
+        "cannot load bootstrap transition recorder",
+    )
+    module = importlib.util.module_from_spec(specification)
+    specification.loader.exec_module(module)
+    return module
+
+
+def check_epoch1_transition(
+    repository: Path,
+    active: dict[str, Any],
+    transition_path: Path,
+    transition: dict[str, Any],
+) -> None:
+    validate_schema_instance(
+        repository,
+        schema_ref=TRANSITION_SCHEMA_REF,
+        schema_digest=TRANSITION_SCHEMA_DIGEST,
+        instance=transition,
+        label="active transition",
+    )
+    candidate = transition["candidate"]
+    require(
+        candidate["epoch"] == active["epoch"]
+        and candidate["contract_ref"] == active["contract_ref"]
+        and candidate["contract_digest"] == active["contract_digest"],
+        "active pointer is not bound to the transition candidate",
+    )
+    require(
+        transition["prior"]
+        == {
+            "epoch": 0,
+            "contract_ref": PAUSE_PROOF_REF,
+            "contract_digest": PAUSE_PROOF_DIGEST,
+            "activation_transition_digest": None,
+        },
+        "active transition is not descended from the pause authority",
+    )
+
+    bootstrap = load_bootstrap_module(repository)
+    descriptor_path = resolve_repository_ref(
+        repository,
+        candidate["contract_ref"],
+        "active proof descriptor",
+    )
+    require(
+        sha256(descriptor_path) == candidate["contract_digest"],
+        "active proof descriptor bytes do not match the transition",
+    )
+    descriptor = load(descriptor_path)
+    validate_schema_instance(
+        repository,
+        schema_ref=PROOF_SCHEMA_REF,
+        schema_digest=PROOF_SCHEMA_DIGEST,
+        instance=descriptor,
+        label="active proof descriptor",
+    )
+    try:
+        bootstrap.validate_descriptor(descriptor, expected_epoch=1)
+    except ValueError as exc:
+        raise EvidenceError(f"active proof descriptor is invalid: {exc}") from exc
+
+    subject_path = resolve_repository_ref(
+        repository,
+        candidate["subject_manifest_ref"],
+        "qualification subject manifest",
+    )
+    subject = load(subject_path)
+    validate_schema_instance(
+        repository,
+        schema_ref=SUBJECT_SCHEMA_REF,
+        schema_digest=SUBJECT_SCHEMA_DIGEST,
+        instance=subject,
+        label="qualification subject manifest",
+    )
+    try:
+        subject_digest = bootstrap.manifest_digest(subject)
+    except ValueError as exc:
+        raise EvidenceError(f"qualification subject manifest is invalid: {exc}") from exc
+    require(
+        subject_digest == candidate["subject_manifest_digest"]
+        and descriptor["qualification_subject_manifest_digest"] == subject_digest,
+        "qualification subject manifest is not bound to the transition and descriptor",
+    )
+    subject_entries = {
+        entry.get("path"): entry
+        for entry in subject.get("entries", [])
+        if isinstance(entry, dict) and isinstance(entry.get("path"), str)
+    }
+    require(
+        len(subject_entries) == len(subject.get("entries", [])),
+        "qualification subject manifest has duplicate or invalid entries",
+    )
+    frozen_items = list(descriptor["components"]) + [descriptor["transition_recorder"]]
+    for index, item in enumerate(frozen_items):
+        reference = item["ref"]
+        path = resolve_repository_ref(repository, reference, f"frozen candidate item {index}")
+        require(path.is_file() and not path.is_symlink(), f"frozen candidate item is missing: {reference}")
+        require(sha256(path) == item["digest"], f"frozen candidate item bytes changed: {reference}")
+        require(file_mode(path) == item["mode"], f"frozen candidate item mode changed: {reference}")
+        subject_entry = subject_entries.get(reference)
+        require(
+            isinstance(subject_entry, dict)
+            and subject_entry.get("kind") == "file"
+            and subject_entry.get("digest") == item["digest"]
+            and subject_entry.get("executable")
+            == bool(path.lstat().st_mode & (stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)),
+            f"frozen candidate item is not bound to the qualification subject: {reference}",
+        )
+
+    corpus_path = resolve_repository_ref(
+        repository,
+        candidate["qualification_corpus_ref"],
+        "qualification corpus",
+    )
+    try:
+        corpus_digest = bootstrap.tree_digest(corpus_path)
+    except ValueError as exc:
+        raise EvidenceError(f"qualification corpus is invalid: {exc}") from exc
+    require(
+        corpus_digest == candidate["qualification_corpus_digest"]
+        and descriptor["qualification_corpus"]["ref"]
+        == candidate["qualification_corpus_ref"]
+        and descriptor["qualification_corpus"]["digest"] == corpus_digest,
+        "qualification corpus is not bound to the transition and descriptor",
+    )
+
+    qualification = transition["qualification_verdict"]
+    verdict_path = resolve_repository_ref(
+        repository,
+        qualification["ref"],
+        "qualification verdict",
+    )
+    verdict = load(verdict_path)
+    validate_schema_instance(
+        repository,
+        schema_ref=VERDICT_SCHEMA_REF,
+        schema_digest=VERDICT_SCHEMA_DIGEST,
+        instance=verdict,
+        label="qualification verdict",
+    )
+    try:
+        verdict_digest = bootstrap.verdict_digest(verdict)
+    except ValueError as exc:
+        raise EvidenceError(f"qualification verdict is invalid: {exc}") from exc
+    require(
+        verdict_digest == qualification["digest"]
+        and verdict_path.name == f"{verdict_digest}.json",
+        "qualification verdict bytes or filename do not match the transition",
+    )
+    require(
+        verdict["subject_manifest_digest"] == subject_digest,
+        "qualification verdict judged a different subject",
+    )
+    require(
+        transition["validator_identity"] == verdict["validator_context_id"],
+        "transition validator identity does not match the qualification verdict",
+    )
+    activation_time = datetime.fromisoformat(
+        transition["activated_at"].replace("Z", "+00:00").replace("z", "+00:00")
+    )
+    validation_time = datetime.fromisoformat(
+        verdict["validated_at"].replace("Z", "+00:00").replace("z", "+00:00")
+    )
+    require(
+        activation_time >= validation_time,
+        "transition activation predates the qualification verdict",
+    )
+    require(
+        transition_path.name == f"{active['activation_transition_digest']}.json",
+        "active transition filename changed during validation",
+    )
+
+
 def check_pause_state(repository: Path, evidence_root: Path, pause: dict[str, Any]) -> None:
     require(set(pause) == PAUSE_TOP_LEVEL_KEYS, "pause drill fields are not closed-world")
     require(
@@ -208,6 +484,13 @@ def check_pause_state(repository: Path, evidence_root: Path, pause: dict[str, An
         "active proof pointer",
     )
     active = load(active_path)
+    validate_schema_instance(
+        repository,
+        schema_ref=ACTIVE_SCHEMA_REF,
+        schema_digest=ACTIVE_SCHEMA_DIGEST,
+        instance=active,
+        label="active proof pointer",
+    )
     require(
         set(active)
         == {
@@ -244,37 +527,7 @@ def check_pause_state(repository: Path, evidence_root: Path, pause: dict[str, An
             "active transition bytes or filename do not match the pointer",
         )
         transition = load(transition_path)
-        require(
-            transition.get("schema_version") == "proof-contract-transition.v1",
-            "active transition schema changed",
-        )
-        require(
-            transition.get("prior")
-            == {
-                "epoch": 0,
-                "contract_ref": PAUSE_PROOF_REF,
-                "contract_digest": PAUSE_PROOF_DIGEST,
-                "activation_transition_digest": None,
-            },
-            "active transition is not descended from the pause authority",
-        )
-        candidate = transition.get("candidate")
-        require(isinstance(candidate, dict), "active transition candidate is missing")
-        require(
-            candidate.get("epoch") == active.get("epoch")
-            and candidate.get("contract_ref") == active.get("contract_ref")
-            and candidate.get("contract_digest") == active.get("contract_digest"),
-            "active pointer is not bound to the transition candidate",
-        )
-        active_descriptor = resolve_repository_ref(
-            repository,
-            active.get("contract_ref"),
-            "active proof descriptor",
-        )
-        require(
-            sha256(active_descriptor) == active.get("contract_digest"),
-            "active proof descriptor bytes do not match the pointer",
-        )
+        check_epoch1_transition(repository, active, transition_path, transition)
 
     require(
         resolve_repository_ref(
@@ -317,6 +570,17 @@ def check_pause_state(repository: Path, evidence_root: Path, pause: dict[str, An
         verdict_file_sha256=PAUSE_LINEAGE["pause_fail_file_sha256"],
         subject_file_sha256=PAUSE_LINEAGE["pause_failed_subject_file_sha256"],
         report_file_sha256=PAUSE_LINEAGE["pause_failed_report_file_sha256"],
+    )
+    check_failed_invocation(
+        verdict_path=epoch0b
+        / "verdicts"
+        / f"{PAUSE_LINEAGE['typed_pause_fail_artifact_digest']}.json",
+        subject_path=epoch0b / "t0pp-failed-subject-manifest.json",
+        report_path=epoch0b / "t0pp-failed-report.json",
+        artifact_digest=PAUSE_LINEAGE["typed_pause_fail_artifact_digest"],
+        verdict_file_sha256=PAUSE_LINEAGE["typed_pause_fail_file_sha256"],
+        subject_file_sha256=PAUSE_LINEAGE["typed_pause_failed_subject_file_sha256"],
+        report_file_sha256=PAUSE_LINEAGE["typed_pause_failed_report_file_sha256"],
     )
 
 
