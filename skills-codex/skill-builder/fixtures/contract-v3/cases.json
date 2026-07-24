@@ -1,0 +1,426 @@
+{
+  "schema_version": "skill-contract-v3-hostile-fixtures.v1",
+  "cases": [
+    {
+      "id": "unknown-top-level-field",
+      "expected_code": "UNKNOWN_FIELD",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/future_authority",
+          "value": true
+        }
+      ]
+    },
+    {
+      "id": "duplicate-lifecycle-seam",
+      "expected_code": "DUPLICATE_MEMBER",
+      "mutations": [
+        {
+          "op": "append",
+          "path": "/lifecycle_seams",
+          "value": "implement_method"
+        }
+      ]
+    },
+    {
+      "id": "unknown-authority",
+      "expected_code": "AUTHORITY_INVALID",
+      "mutations": [
+        {
+          "op": "append",
+          "path": "/authority",
+          "value": "select_experiment"
+        }
+      ]
+    },
+    {
+      "id": "campaign-continuation-is-not-a-seam",
+      "expected_code": "SCHEMA_INVALID",
+      "mutations": [
+        {
+          "op": "append",
+          "path": "/lifecycle_seams",
+          "value": "campaign_continuation"
+        }
+      ]
+    },
+    {
+      "id": "forbidden-verdict-authority",
+      "expected_code": "FORBIDDEN_AUTHORITY",
+      "mutations": [
+        {
+          "op": "append",
+          "path": "/authority",
+          "value": "write_verdict"
+        }
+      ]
+    },
+    {
+      "id": "unknown-effect-field",
+      "expected_code": "UNKNOWN_FIELD",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/effects/0/retries",
+          "value": 3
+        }
+      ]
+    },
+    {
+      "id": "malformed-effect-kind",
+      "expected_code": "EFFECT_INVALID",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/effects/0/kind",
+          "value": "git.push"
+        }
+      ]
+    },
+    {
+      "id": "missing-effect-scope",
+      "expected_code": "EFFECT_INVALID",
+      "mutations": [
+        {
+          "op": "delete",
+          "path": "/effects/0/scope"
+        }
+      ]
+    },
+    {
+      "id": "malformed-effect-authorization",
+      "expected_code": "EFFECT_INVALID",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/effects/0/authorization",
+          "value": "self"
+        }
+      ]
+    },
+    {
+      "id": "malformed-effect-cleanup",
+      "expected_code": "EFFECT_INVALID",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/effects/0/cleanup",
+          "value": "eventually"
+        }
+      ]
+    },
+    {
+      "id": "malformed-effect-receipt",
+      "expected_code": "EFFECT_INVALID",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/effects/0/receipt",
+          "value": "implicit"
+        }
+      ]
+    },
+    {
+      "id": "mutation-receipt-required",
+      "expected_code": "EFFECT_RECEIPT_REQUIRED",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/effects/1/receipt",
+          "value": "optional"
+        }
+      ]
+    },
+    {
+      "id": "process-cleanup-required",
+      "expected_code": "EFFECT_CLEANUP_REQUIRED",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/effects/3/cleanup",
+          "value": "none"
+        }
+      ]
+    },
+    {
+      "id": "duplicate-effect-id",
+      "expected_code": "DUPLICATE_MEMBER",
+      "mutations": [
+        {
+          "op": "copy_append",
+          "path": "/effects",
+          "source": "/effects/0"
+        }
+      ]
+    },
+    {
+      "id": "mutation-authority-required",
+      "expected_code": "MUTATION_AUTHORITY_REQUIRED",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/authority",
+          "value": [
+            "read_evidence"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "mutation-effect-required",
+      "expected_code": "MUTATION_EFFECT_REQUIRED",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/effects",
+          "value": [
+            {
+              "id": "read-only",
+              "kind": "filesystem.read",
+              "scope": "one explicit source",
+              "authorization": "caller",
+              "cleanup": "none",
+              "receipt": "optional"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "unknown-artifact-field",
+      "expected_code": "UNKNOWN_FIELD",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/artifacts/consumes/0/owner",
+          "value": "rpi"
+        }
+      ]
+    },
+    {
+      "id": "malformed-artifact-kind",
+      "expected_code": "ARTIFACT_INVALID",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/artifacts/consumes/0/kind",
+          "value": "mystery"
+        }
+      ]
+    },
+    {
+      "id": "binding-artifact-needs-schema",
+      "expected_code": "BINDING_ARTIFACT_UNVALIDATED",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/artifacts/produces/0/schema_ref",
+          "value": null
+        }
+      ]
+    },
+    {
+      "id": "artifact-reference-must-exist",
+      "expected_code": "ARTIFACT_INVALID",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/artifacts/produces/0/schema_ref",
+          "value": "schemas/does-not-exist.json"
+        }
+      ]
+    },
+    {
+      "id": "duplicate-artifact-name",
+      "expected_code": "DUPLICATE_MEMBER",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/artifacts/produces/0/name",
+          "value": "build-request"
+        }
+      ]
+    },
+    {
+      "id": "missing-trigger-family",
+      "expected_code": "TRIGGER_INCOMPLETE",
+      "mutations": [
+        {
+          "op": "delete",
+          "path": "/triggers/negative"
+        }
+      ]
+    },
+    {
+      "id": "empty-trigger-family",
+      "expected_code": "TRIGGER_INCOMPLETE",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/triggers/ambiguity",
+          "value": []
+        }
+      ]
+    },
+    {
+      "id": "wrong-trigger-expectation",
+      "expected_code": "TRIGGER_EXPECTATION_INVALID",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/triggers/negative/0/expected",
+          "value": "route"
+        }
+      ]
+    },
+    {
+      "id": "trigger-prompt-collision",
+      "expected_code": "TRIGGER_COLLISION",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/triggers/negative/0/prompt",
+          "value": "  CREATE a metadata-complete skill source package. "
+        }
+      ]
+    },
+    {
+      "id": "unknown-alias-target",
+      "expected_code": "TRIGGER_REFERENCE_INVALID",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/triggers/aliases/0/canonical_skill",
+          "value": "missing-skill"
+        }
+      ]
+    },
+    {
+      "id": "wrong-alias-owner",
+      "expected_code": "TRIGGER_REFERENCE_INVALID",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/triggers/aliases/0/canonical_skill",
+          "value": "workflow-builder"
+        }
+      ]
+    },
+    {
+      "id": "invalid-nearest-neighbor",
+      "expected_code": "TRIGGER_REFERENCE_INVALID",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/triggers/nearest_neighbors/0/skill",
+          "value": "skill-builder"
+        }
+      ]
+    },
+    {
+      "id": "missing-failure-family",
+      "expected_code": "FAILURE_INCOMPLETE",
+      "mutations": [
+        {
+          "op": "delete",
+          "path": "/failure/timeout"
+        }
+      ]
+    },
+    {
+      "id": "incomplete-failure-case",
+      "expected_code": "FAILURE_INCOMPLETE",
+      "mutations": [
+        {
+          "op": "delete",
+          "path": "/failure/partial_mutation/detail"
+        }
+      ]
+    },
+    {
+      "id": "unknown-failure-field",
+      "expected_code": "UNKNOWN_FIELD",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/failure/cleanup/retry",
+          "value": true
+        }
+      ]
+    },
+    {
+      "id": "invalid-proof-class",
+      "expected_code": "PROOF_INVALID",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/proof/class",
+          "value": "trust_me"
+        }
+      ]
+    },
+    {
+      "id": "multiline-proof-command",
+      "expected_code": "PROOF_INVALID",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/proof/command",
+          "value": "true\nfalse"
+        }
+      ]
+    },
+    {
+      "id": "missing-proof-fixture",
+      "expected_code": "PROOF_INVALID",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/proof/fixture_refs/0",
+          "value": "skills/skill-builder/fixtures/contract-v3/missing.json"
+        }
+      ]
+    },
+    {
+      "id": "duplicate-proof-fixture",
+      "expected_code": "DUPLICATE_MEMBER",
+      "mutations": [
+        {
+          "op": "append",
+          "path": "/proof/fixture_refs",
+          "value": "skills/skill-builder/fixtures/contract-v3/cases.json"
+        }
+      ]
+    },
+    {
+      "id": "non-rpi-hard-dependency",
+      "expected_code": "HARD_DEPENDENCY_FORBIDDEN",
+      "dependencies": [
+        "plan"
+      ],
+      "mutations": []
+    },
+    {
+      "id": "rpi-hard-dependency-set-is-exact",
+      "expected_code": "HARD_DEPENDENCY_FORBIDDEN",
+      "skill_name": "rpi",
+      "dependencies": [
+        "plan",
+        "implement"
+      ],
+      "mutations": [
+        {
+          "op": "append",
+          "path": "/authority",
+          "value": "dispatch_phase"
+        },
+        {
+          "op": "set",
+          "path": "/triggers/aliases/0/canonical_skill",
+          "value": "rpi"
+        }
+      ]
+    }
+  ]
+}
