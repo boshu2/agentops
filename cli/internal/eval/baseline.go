@@ -1,8 +1,12 @@
 package eval
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
+	"fmt"
 	"path/filepath"
-	"strings"
+
+	"github.com/boshu2/agentops/cli/internal/evalsubstrate"
 )
 
 func PromoteBaseline(run *RunRecord, opts BaselineOptions) (*RunRecord, error) {
@@ -24,7 +28,11 @@ func PromoteBaseline(run *RunRecord, opts BaselineOptions) (*RunRecord, error) {
 		if workDir == "" {
 			workDir = "."
 		}
-		outputPath = filepath.Join(workDir, ".agents", "evals", "baselines", sanitizeBaselineFilename(run.Suite.ID+"-"+run.RunID)+".json")
+		filename, err := baselineFilename(run.Suite.ID, run.RunID)
+		if err != nil {
+			return nil, fmt.Errorf("promote baseline path: %w", err)
+		}
+		outputPath = filepath.Join(workDir, ".agents", "evals", "baselines", filename+".json")
 	}
 	promoted.Baseline = &BaselineRecord{
 		Mode:              BaselineModePromote,
@@ -46,11 +54,19 @@ func PromoteBaseline(run *RunRecord, opts BaselineOptions) (*RunRecord, error) {
 	return promoted, nil
 }
 
-func sanitizeBaselineFilename(value string) string {
-	value = sanitizeRunID(value)
-	value = strings.Trim(value, ".")
-	if value == "" {
-		return "baseline"
+func baselineFilename(suiteID, runID string) (string, error) {
+	suite, err := evalsubstrate.ParseIdentifier(evalsubstrate.IdentifierSuite, suiteID)
+	if err != nil {
+		return "", err
 	}
-	return value
+	run, err := evalsubstrate.ParseIdentifier(evalsubstrate.IdentifierRun, runID)
+	if err != nil {
+		return "", err
+	}
+	filename := suite.StorageName() + "-" + run.StorageName()
+	if len(filename) <= 200 {
+		return filename, nil
+	}
+	digest := sha256.Sum256([]byte(filename))
+	return filename[:160] + "-" + hex.EncodeToString(digest[:8]), nil
 }

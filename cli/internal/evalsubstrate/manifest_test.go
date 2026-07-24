@@ -38,6 +38,29 @@ func TestNewRunWriter_RefusesDuplicateRunDir(t *testing.T) {
 	}
 }
 
+func TestNewRunWriterRejectsHostileRunIDs(t *testing.T) {
+	root := t.TempDir()
+	for _, id := range []string{"../escape", `..\escape`, "/absolute", `C:\escape`, " run-1"} {
+		if _, err := NewRunWriter(root, id, Manifest{}); err == nil {
+			t.Fatalf("NewRunWriter(%q) unexpectedly succeeded", id)
+		}
+	}
+}
+
+func TestNewRunWriterRejectsSymlinkParentEscape(t *testing.T) {
+	root := t.TempDir()
+	outside := t.TempDir()
+	if err := os.Symlink(outside, filepath.Join(root, "runs")); err != nil {
+		t.Skipf("symlink unavailable: %v", err)
+	}
+	if _, err := NewRunWriter(root, "run-escape", Manifest{}); err == nil {
+		t.Fatal("NewRunWriter through escaping symlink unexpectedly succeeded")
+	}
+	if _, err := os.Stat(filepath.Join(outside, "run-escape")); !os.IsNotExist(err) {
+		t.Fatalf("outside run directory was created: %v", err)
+	}
+}
+
 func TestRunWriter_PendingToRunningToComplete(t *testing.T) {
 	root := t.TempDir()
 	w, err := NewRunWriter(root, "run-2", Manifest{TaskRef: "t"})
@@ -52,7 +75,7 @@ func TestRunWriter_PendingToRunningToComplete(t *testing.T) {
 	}); err != nil {
 		t.Fatalf("running->complete: %v", err)
 	}
-	loaded, err := LoadManifest(w.Path())
+	loaded, err := LoadManifest(root, "run-2")
 	if err != nil {
 		t.Fatal(err)
 	}

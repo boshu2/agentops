@@ -81,6 +81,26 @@ func TestSweepTempFiles_RemovesOrphans(t *testing.T) {
 	}
 }
 
+func TestSweepTempFilesRemovesUniqueAtomicOrphans(t *testing.T) {
+	dir := t.TempDir()
+	orphan := filepath.Join(dir, "run-x", ".manifest.json.tmp-0123456789abcdef")
+	if err := os.MkdirAll(filepath.Dir(orphan), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(orphan, []byte("partial"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	old := time.Now().Add(-10 * time.Minute)
+	_ = os.Chtimes(orphan, old, old)
+	removed, err := SweepTempFiles(dir, 60)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(removed) != 1 || removed[0] != orphan {
+		t.Fatalf("expected removal of %q, got %v", orphan, removed)
+	}
+}
+
 func TestSweepTempFiles_RespectsMinAge(t *testing.T) {
 	dir := t.TempDir()
 	fresh := filepath.Join(dir, "manifest.json.tmp")

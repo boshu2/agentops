@@ -3,11 +3,13 @@ package eval
 import (
 	"context"
 	"errors"
+	"os"
 	"os/exec"
 	"path/filepath"
 	"slices"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/boshu2/agentops/cli/internal/runtimecmd"
 )
@@ -340,6 +342,176 @@ func TestRunLiveRuntimePropagatesRunnerErrors(t *testing.T) {
 	}
 }
 
+func TestRunLiveRuntimeCleansOwnedIsolationAfterSuccess(t *testing.T) {
+	suite := liveRuntimeSuite(RuntimeCodex)
+	suite.Environment.IsolateHome = true
+	suite.Environment.IsolateCodexHome = true
+	var ownedRoot string
+	run, err := RunLiveRuntime(context.Background(), liveIsolationTestOptions(suite, func(_ context.Context, command RuntimeCommand) (RuntimeExecutionResult, error) {
+		ownedRoot = filepath.Dir(envValue(t, command.Env, "HOME"))
+		if err := os.WriteFile(filepath.Join(envValue(t, command.Env, "CODEX_HOME"), "state.json"), []byte("{}"), 0o600); err != nil {
+			t.Fatal(err)
+		}
+		return RuntimeExecutionResult{Status: StatusInconclusive, Verdict: VerdictInconclusive}, nil
+	}))
+	if err != nil {
+		t.Fatalf("RunLiveRuntime: %v", err)
+	}
+	if run == nil {
+		t.Fatal("RunLiveRuntime returned nil run")
+	}
+	assertRemovedOwnedIsolation(t, ownedRoot)
+}
+
+func TestRunLiveRuntimeCleansOwnedIsolationAfterRunnerError(t *testing.T) {
+	suite := liveRuntimeSuite(RuntimeCodex)
+	suite.Environment.IsolateHome = true
+	var ownedRoot string
+	run, err := RunLiveRuntime(context.Background(), liveIsolationTestOptions(suite, func(_ context.Context, command RuntimeCommand) (RuntimeExecutionResult, error) {
+		ownedRoot = filepath.Dir(envValue(t, command.Env, "HOME"))
+		return RuntimeExecutionResult{}, errors.New("runner failed")
+	}))
+	if err != nil {
+		t.Fatalf("RunLiveRuntime: %v", err)
+	}
+	if run.Status != StatusError {
+		t.Fatalf("status = %s, want error", run.Status)
+	}
+	assertRemovedOwnedIsolation(t, ownedRoot)
+}
+
+func TestRunLiveRuntimeCleansOwnedIsolationAfterTimeout(t *testing.T) {
+	suite := liveRuntimeSuite(RuntimeCodex)
+	suite.Environment.IsolateHome = true
+	var ownedRoot string
+	ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond)
+	defer cancel()
+	run, err := RunLiveRuntime(ctx, liveIsolationTestOptions(suite, func(ctx context.Context, command RuntimeCommand) (RuntimeExecutionResult, error) {
+		ownedRoot = filepath.Dir(envValue(t, command.Env, "HOME"))
+		<-ctx.Done()
+		return RuntimeExecutionResult{}, ctx.Err()
+	}))
+	if err != nil {
+		t.Fatalf("RunLiveRuntime: %v", err)
+	}
+	if run.Status != StatusError || !strings.Contains(run.CaseResults[0].FailureMessage, "timed out") {
+		t.Fatalf("run = %#v, want timeout error", run)
+	}
+	assertRemovedOwnedIsolation(t, ownedRoot)
+}
+
+func TestRunLiveRuntimeCleansOwnedIsolationAfterOutputFailure(t *testing.T) {
+	suite := liveRuntimeSuite(RuntimeCodex)
+	suite.Environment.IsolateHome = true
+	var ownedRoot string
+	options := liveIsolationTestOptions(suite, func(_ context.Context, command RuntimeCommand) (RuntimeExecutionResult, error) {
+		ownedRoot = filepath.Dir(envValue(t, command.Env, "HOME"))
+		return RuntimeExecutionResult{Status: StatusInconclusive, Verdict: VerdictInconclusive}, nil
+	})
+	options.OutputPath = t.TempDir() // A directory cannot be replaced with the run JSON file.
+	if _, err := RunLiveRuntime(context.Background(), options); err == nil {
+		t.Fatal("RunLiveRuntime unexpectedly wrote output over a directory")
+	}
+	assertRemovedOwnedIsolation(t, ownedRoot)
+}
+
+func TestLiveRuntimeEnvCleansOwnedIsolationAfterPartialSetup(t *testing.T) {
+	parent := t.TempDir()
+	ownedRoot := filepath.Join(parent, "owned")
+	mkdirCalls := 0
+	removeCalls := 0
+	ops := liveIsolationOps{
+		mkdirTemp: func(_, _ string) (string, error) {
+			if err := os.Mkdir(ownedRoot, 0o700); err != nil {
+				return "", err
+			}
+			return ownedRoot, nil
+		},
+		mkdirAll: func(path string, mode os.FileMode) error {
+			mkdirCalls++
+			if mkdirCalls == 2 {
+				return errors.New("codex home setup failed")
+			}
+			return os.MkdirAll(path, mode)
+		},
+		removeAll: func(path string) error {
+			removeCalls++
+			return os.RemoveAll(path)
+		},
+	}
+	suite := *liveRuntimeSuite(RuntimeCodex)
+	suite.Environment.IsolateHome = true
+	suite.Environment.IsolateCodexHome = true
+	if _, err := liveRuntimeEnvWithOps(LiveRuntimeOptions{Env: []string{}}, suite, ops); err == nil {
+		t.Fatal("liveRuntimeEnvWithOps unexpectedly succeeded")
+	}
+	if removeCalls != 1 {
+		t.Fatalf("remove calls = %d, want 1", removeCalls)
+	}
+	assertRemovedOwnedIsolation(t, ownedRoot)
+}
+
+func TestRunLiveRuntimeNeverRemovesCallerIsolationRoot(t *testing.T) {
+	suite := liveRuntimeSuite(RuntimeCodex)
+	suite.Environment.IsolateHome = true
+	suite.Environment.IsolateCodexHome = true
+	explicitRoot := t.TempDir()
+	sentinel := filepath.Join(explicitRoot, "caller-owned.txt")
+	if err := os.WriteFile(sentinel, []byte("keep"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	options := liveIsolationTestOptions(suite, func(_ context.Context, _ RuntimeCommand) (RuntimeExecutionResult, error) {
+		return RuntimeExecutionResult{Status: StatusInconclusive, Verdict: VerdictInconclusive}, nil
+	})
+	options.IsolationRoot = explicitRoot
+	if _, err := RunLiveRuntime(context.Background(), options); err != nil {
+		t.Fatalf("RunLiveRuntime: %v", err)
+	}
+	if got, err := os.ReadFile(sentinel); err != nil || string(got) != "keep" {
+		t.Fatalf("caller isolation root changed: content=%q err=%v", got, err)
+	}
+}
+
+func liveIsolationTestOptions(suite *Suite, runner RuntimeRunner) LiveRuntimeOptions {
+	return LiveRuntimeOptions{
+		Suite:   suite,
+		RunID:   "live-isolation",
+		Runtime: RuntimeCodex,
+		Enabled: true,
+		Env:     []string{},
+		LookPath: func(string) (string, error) {
+			return "/fake/bin/codex", nil
+		},
+		VersionRunner: func(context.Context, RuntimeCommand) (string, error) {
+			return "codex test", nil
+		},
+		Runner: runner,
+		Now:    fixedEvalTime,
+	}
+}
+
+func envValue(t *testing.T, env []string, key string) string {
+	t.Helper()
+	prefix := key + "="
+	for _, entry := range env {
+		if strings.HasPrefix(entry, prefix) {
+			return strings.TrimPrefix(entry, prefix)
+		}
+	}
+	t.Fatalf("environment missing %s", key)
+	return ""
+}
+
+func assertRemovedOwnedIsolation(t *testing.T, root string) {
+	t.Helper()
+	if root == "" {
+		t.Fatal("test did not capture owned isolation root")
+	}
+	if _, err := os.Stat(root); !os.IsNotExist(err) {
+		t.Fatalf("owned isolation root %q was not removed: %v", root, err)
+	}
+}
+
 // TestRunLiveRuntimeRefusesClaude is the LAW 0 fail-closed contract at the eval
 // layer (age-6j9ee.4): a suite may declare runtime=claude and parse fine, but
 // enabling a live claude run must be refused BEFORE any process spawns — no
@@ -487,24 +659,26 @@ func TestEffectiveDisableHooksOrsSuiteAndOverride(t *testing.T) {
 func TestLiveRuntimeEnvEmitsAgentopsHooksDisabled(t *testing.T) {
 	suite := Suite{Environment: SuiteEnvironment{DisableHooks: true}}
 	opts := LiveRuntimeOptions{Env: []string{}}
-	env, notes, err := liveRuntimeEnv(opts, suite)
+	environment, err := liveRuntimeEnv(opts, suite)
 	if err != nil {
 		t.Fatalf("liveRuntimeEnv: %v", err)
 	}
-	assertEnvContains(t, env, "AGENTOPS_HOOKS_DISABLED=1")
-	if !slices.ContainsFunc(notes, func(n string) bool { return strings.Contains(n, "hooks disabled") }) {
-		t.Fatalf("notes missing hooks-disabled entry: %v", notes)
+	defer func() { _ = environment.Close() }()
+	assertEnvContains(t, environment.Values, "AGENTOPS_HOOKS_DISABLED=1")
+	if !slices.ContainsFunc(environment.Notes, func(n string) bool { return strings.Contains(n, "hooks disabled") }) {
+		t.Fatalf("notes missing hooks-disabled entry: %v", environment.Notes)
 	}
 }
 
 func TestLiveRuntimeEnvOmitsHooksDisabledWhenInactive(t *testing.T) {
 	suite := Suite{Environment: SuiteEnvironment{}}
 	opts := LiveRuntimeOptions{Env: []string{}}
-	env, _, err := liveRuntimeEnv(opts, suite)
+	environment, err := liveRuntimeEnv(opts, suite)
 	if err != nil {
 		t.Fatalf("liveRuntimeEnv: %v", err)
 	}
-	for _, e := range env {
+	defer func() { _ = environment.Close() }()
+	for _, e := range environment.Values {
 		if strings.HasPrefix(e, "AGENTOPS_HOOKS_DISABLED=") {
 			t.Fatalf("env unexpectedly contains AGENTOPS_HOOKS_DISABLED entry: %q", e)
 		}
@@ -514,11 +688,12 @@ func TestLiveRuntimeEnvOmitsHooksDisabledWhenInactive(t *testing.T) {
 func TestLiveRuntimeEnvHonorsOverrideDisableHooks(t *testing.T) {
 	suite := Suite{Environment: SuiteEnvironment{}}
 	opts := LiveRuntimeOptions{Env: []string{}, OverrideDisableHooks: true}
-	env, _, err := liveRuntimeEnv(opts, suite)
+	environment, err := liveRuntimeEnv(opts, suite)
 	if err != nil {
 		t.Fatalf("liveRuntimeEnv: %v", err)
 	}
-	assertEnvContains(t, env, "AGENTOPS_HOOKS_DISABLED=1")
+	defer func() { _ = environment.Close() }()
+	assertEnvContains(t, environment.Values, "AGENTOPS_HOOKS_DISABLED=1")
 }
 
 func TestLiveRuntimePromptAppendsNegationWhenDisabled(t *testing.T) {

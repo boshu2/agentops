@@ -36,37 +36,35 @@ type HarnessLock struct {
 // content_hash per §7.
 func SnapshotHarness(srcDir, harnessID, capturedBy string) (*Harness, *HarnessLock, error) {
 	srcDir = filepath.Clean(srcDir)
-	info, err := os.Stat(srcDir)
+	store, err := OpenRootStore(srcDir)
 	if err != nil {
-		return nil, nil, fmt.Errorf("SnapshotHarness: stat: %w", err)
+		return nil, nil, fmt.Errorf("SnapshotHarness: open root: %w", err)
 	}
-	if !info.IsDir() {
-		return nil, nil, fmt.Errorf("SnapshotHarness: %q is not a directory", srcDir)
-	}
+	defer func() { _ = store.Close() }()
 
 	var entries []HarnessLockEntry
-	err = filepath.Walk(srcDir, func(path string, fi os.FileInfo, werr error) error {
+	err = store.WalkDir(func(relative string, fi os.DirEntry, werr error) error {
 		if werr != nil {
 			return werr
 		}
 		if fi.IsDir() {
 			return nil
 		}
-		if filepath.Base(path) == "harness.lock.json" {
+		if filepath.Base(relative) == "harness.lock.json" {
 			return nil
 		}
-		rel, rerr := filepath.Rel(srcDir, path)
+		raw, rerr := store.ReadFile(relative)
 		if rerr != nil {
-			return rerr
+			return fmt.Errorf("read %q: %w", relative, rerr)
 		}
-		h, herr := ContentHashFile(path)
+		h, herr := contentHashBytes(relative, raw)
 		if herr != nil {
-			return fmt.Errorf("hash %q: %w", path, herr)
+			return fmt.Errorf("hash %q: %w", relative, herr)
 		}
 		entries = append(entries, HarnessLockEntry{
-			Path:   filepath.ToSlash(rel),
+			Path:   filepath.ToSlash(relative),
 			SHA256: strings.TrimPrefix(h, "sha256:"),
-			Role:   inferRole(rel),
+			Role:   inferRole(relative),
 		})
 		return nil
 	})
@@ -106,24 +104,32 @@ func SnapshotHarness(srcDir, harnessID, capturedBy string) (*Harness, *HarnessLo
 // to the lock's recorded content_hash. Returns true on match — gate #8 fires
 // when this returns false.
 func VerifyHarnessLock(srcDir string, lock *HarnessLock) (bool, string, error) {
+	store, err := OpenRootStore(srcDir)
+	if err != nil {
+		return false, "", err
+	}
+	defer func() { _ = store.Close() }()
 	var entries []HarnessLockEntry
-	err := filepath.Walk(srcDir, func(path string, fi os.FileInfo, werr error) error {
+	err = store.WalkDir(func(relative string, fi os.DirEntry, werr error) error {
 		if werr != nil {
 			return werr
 		}
 		if fi.IsDir() {
 			return nil
 		}
-		if filepath.Base(path) == "harness.lock.json" {
+		if filepath.Base(relative) == "harness.lock.json" {
 			return nil
 		}
-		rel, _ := filepath.Rel(srcDir, path)
-		h, herr := ContentHashFile(path)
+		raw, rerr := store.ReadFile(relative)
+		if rerr != nil {
+			return rerr
+		}
+		h, herr := contentHashBytes(relative, raw)
 		if herr != nil {
 			return herr
 		}
 		entries = append(entries, HarnessLockEntry{
-			Path:   filepath.ToSlash(rel),
+			Path:   filepath.ToSlash(relative),
 			SHA256: strings.TrimPrefix(h, "sha256:"),
 		})
 		return nil
@@ -142,11 +148,21 @@ func WriteHarnessLock(srcDir string, lock *HarnessLock) error {
 		return fmt.Errorf("WriteHarnessLock: marshal: %w", err)
 	}
 	data = append(data, '\n')
-	return WriteAtomic(filepath.Join(srcDir, "harness.lock.json"), data)
+	store, err := OpenRootStore(srcDir)
+	if err != nil {
+		return fmt.Errorf("WriteHarnessLock: %w", err)
+	}
+	defer func() { _ = store.Close() }()
+	return store.WriteAtomic("harness.lock.json", data, 0o644)
 }
 
 func LoadHarnessLock(srcDir string) (*HarnessLock, error) {
-	raw, err := os.ReadFile(filepath.Join(srcDir, "harness.lock.json"))
+	store, err := OpenRootStore(srcDir)
+	if err != nil {
+		return nil, fmt.Errorf("LoadHarnessLock: %w", err)
+	}
+	defer func() { _ = store.Close() }()
+	raw, err := store.ReadFile("harness.lock.json")
 	if err != nil {
 		return nil, fmt.Errorf("LoadHarnessLock: %w", err)
 	}
@@ -158,7 +174,12 @@ func LoadHarnessLock(srcDir string) (*HarnessLock, error) {
 }
 
 func LoadHarnessYAML(path string) (*Harness, error) {
-	raw, err := os.ReadFile(path)
+	store, err := OpenRootStore(filepath.Dir(path))
+	if err != nil {
+		return nil, fmt.Errorf("LoadHarnessYAML: %w", err)
+	}
+	defer func() { _ = store.Close() }()
+	raw, err := store.ReadFile(filepath.Base(path))
 	if err != nil {
 		return nil, fmt.Errorf("LoadHarnessYAML: %w", err)
 	}

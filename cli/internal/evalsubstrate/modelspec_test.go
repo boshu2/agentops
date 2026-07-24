@@ -1,8 +1,11 @@
 package evalsubstrate
 
 import (
+	"os"
 	"path/filepath"
 	"testing"
+
+	"gopkg.in/yaml.v3"
 )
 
 func TestCaptureModelSpec_StampsHashAndPersists(t *testing.T) {
@@ -30,8 +33,11 @@ func TestCaptureModelSpec_StampsHashAndPersists(t *testing.T) {
 	if spec.ContentHash != hash {
 		t.Fatalf("spec.ContentHash not stamped: %s vs %s", spec.ContentHash, hash)
 	}
-	dest := ModelSpecPath(root, spec.ID)
-	if dest != filepath.Join(root, "models", spec.ID, "spec.yaml") {
+	dest, err := ModelSpecPath(root, spec.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if dest != filepath.Join(root, "models", "ms%3Atest-2026-05-01", "spec.yaml") {
 		t.Fatalf("unexpected path: %s", dest)
 	}
 	loaded, err := LoadModelSpec(root, spec.ID)
@@ -66,6 +72,56 @@ func TestCaptureModelSpec_StableAcrossRecaptures(t *testing.T) {
 	}
 	if h1 != h2 {
 		t.Fatalf("re-capture hash mismatch: %s vs %s", h1, h2)
+	}
+}
+
+func TestCaptureModelSpecRejectsHostileIDs(t *testing.T) {
+	root := t.TempDir()
+	for _, id := range []string{"../escape", `..\escape`, "/absolute", `C:\escape`, "model-1", "ms:Upper"} {
+		spec := &ModelSpec{ID: id}
+		if _, _, err := CaptureModelSpec(root, spec); err == nil {
+			t.Fatalf("CaptureModelSpec(%q) unexpectedly succeeded", id)
+		}
+	}
+}
+
+func TestCaptureModelSpecRejectsSymlinkParentEscape(t *testing.T) {
+	root := t.TempDir()
+	outside := t.TempDir()
+	if err := os.Symlink(outside, filepath.Join(root, "models")); err != nil {
+		t.Skipf("symlink unavailable: %v", err)
+	}
+	spec := &ModelSpec{ID: "ms:escape"}
+	if _, _, err := CaptureModelSpec(root, spec); err == nil {
+		t.Fatal("CaptureModelSpec through escaping symlink unexpectedly succeeded")
+	}
+	if _, err := os.Stat(filepath.Join(outside, "ms%3Aescape", "spec.yaml")); !os.IsNotExist(err) {
+		t.Fatalf("outside model spec was created: %v", err)
+	}
+}
+
+func TestLoadModelSpecReadsOneBoundedLegacyColonPath(t *testing.T) {
+	root := t.TempDir()
+	legacyDir := filepath.Join(root, "models", "ms:legacy")
+	if err := os.MkdirAll(legacyDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	data, err := yaml.Marshal(ModelSpec{ID: "ms:legacy", ContentHash: "sha256:legacy"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(legacyDir, "spec.yaml"), data, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	spec, err := LoadModelSpec(root, "ms:legacy")
+	if err != nil {
+		t.Fatalf("LoadModelSpec legacy path: %v", err)
+	}
+	if spec.ID != "ms:legacy" {
+		t.Fatalf("loaded id = %q", spec.ID)
+	}
+	if _, err := os.Stat(filepath.Join(root, "models", "ms%3Alegacy")); !os.IsNotExist(err) {
+		t.Fatalf("compatibility read unexpectedly wrote canonical storage: %v", err)
 	}
 }
 

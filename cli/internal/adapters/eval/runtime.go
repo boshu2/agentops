@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -70,17 +71,34 @@ func (Runtime) Root() string {
 }
 
 func (Runtime) ListRunIDs(root string) ([]string, error) {
-	entries, err := os.ReadDir(filepath.Join(root, "runs"))
-	if os.IsNotExist(err) {
+	store, err := evalsubstrate.OpenRootStore(root)
+	if errors.Is(err, os.ErrNotExist) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = store.Close() }()
+	entries, err := store.ReadDir("runs")
+	if errors.Is(err, os.ErrNotExist) {
 		return nil, nil
 	}
 	if err != nil {
 		return nil, err
 	}
 	ids := make([]string, 0, len(entries))
+	seen := make(map[string]string, len(entries))
 	for _, entry := range entries {
 		if entry.IsDir() {
-			ids = append(ids, entry.Name())
+			id, err := evalsubstrate.ParseStorageIdentifier(evalsubstrate.IdentifierRun, entry.Name())
+			if err != nil {
+				return nil, fmt.Errorf("list run ids: invalid directory %q: %w", entry.Name(), err)
+			}
+			if prior, ok := seen[id.String()]; ok {
+				return nil, fmt.Errorf("list run ids: storage collision for logical run id %q: %q and %q", id.String(), prior, entry.Name())
+			}
+			seen[id.String()] = entry.Name()
+			ids = append(ids, id.String())
 		}
 	}
 	sort.Strings(ids)
@@ -88,12 +106,11 @@ func (Runtime) ListRunIDs(root string) ([]string, error) {
 }
 
 func (Runtime) LoadManifest(root, id string) (*evalsubstrate.Manifest, error) {
-	return evalsubstrate.LoadManifest(evalsubstrate.ManifestPath(root, id))
+	return evalsubstrate.LoadManifest(root, id)
 }
 
 func (Runtime) Transition(root, id string, next evalsubstrate.RunStatus, reason string, now time.Time) error {
-	path := evalsubstrate.ManifestPath(root, id)
-	manifest, err := evalsubstrate.LoadManifest(path)
+	manifest, err := evalsubstrate.LoadManifest(root, id)
 	if err != nil {
 		return fmt.Errorf("transitionStale: load: %w", err)
 	}
@@ -108,26 +125,96 @@ func (Runtime) Transition(root, id string, next evalsubstrate.RunStatus, reason 
 	if err != nil {
 		return fmt.Errorf("transitionStale: marshal: %w", err)
 	}
-	return evalsubstrate.WriteAtomic(path, append(data, '\n'))
+	runID, err := evalsubstrate.ParseIdentifier(evalsubstrate.IdentifierRun, id)
+	if err != nil {
+		return fmt.Errorf("transitionStale: %w", err)
+	}
+	store, err := evalsubstrate.OpenRootStore(root)
+	if err != nil {
+		return fmt.Errorf("transitionStale: %w", err)
+	}
+	defer func() { _ = store.Close() }()
+	storageName, err := storedRunDirectoryName(store, runID)
+	if err != nil {
+		return fmt.Errorf("transitionStale: %w", err)
+	}
+	path := filepath.ToSlash(filepath.Join("runs", storageName, "manifest.json"))
+	return store.WriteAtomic(path, append(data, '\n'), 0o644)
 }
 
 func legalCleanupTransition(current, next evalsubstrate.RunStatus) bool {
 	return current == evalsubstrate.StatusPending && next == evalsubstrate.StatusAborted || current == evalsubstrate.StatusRunning && next == evalsubstrate.StatusFailed
 }
 
-func (Runtime) DeleteRun(root, id string) error { return os.RemoveAll(filepath.Join(root, "runs", id)) }
+func (Runtime) DeleteRun(root, id string) error {
+	runID, err := evalsubstrate.ParseIdentifier(evalsubstrate.IdentifierRun, id)
+	if err != nil {
+		return fmt.Errorf("delete run: %w", err)
+	}
+	store, err := evalsubstrate.OpenRootStore(root)
+	if err != nil {
+		return fmt.Errorf("delete run: %w", err)
+	}
+	defer func() { _ = store.Close() }()
+	storageName, err := storedRunDirectoryName(store, runID)
+	if err != nil {
+		return fmt.Errorf("delete run: %w", err)
+	}
+	return store.RemoveAll(filepath.ToSlash(filepath.Join("runs", storageName)))
+}
 func (Runtime) SweepTempFiles(root string, age int64) ([]string, error) {
 	return evalsubstrate.SweepTempFiles(root, age)
 }
 func (Runtime) Now() time.Time { return time.Now().UTC() }
 
-func (Runtime) ReadFile(path string) ([]byte, error) { return os.ReadFile(path) }
-func (Runtime) WriteAtomic(path string, data []byte) error {
-	return evalsubstrate.WriteAtomic(path, data)
+func (runtime Runtime) ReadFile(path string) ([]byte, error) {
+	relative, owned, err := evalOwnedRelative(runtime.Root(), path)
+	if err != nil {
+		return nil, err
+	}
+	if !owned {
+		return os.ReadFile(path)
+	}
+	store, err := evalsubstrate.OpenRootStore(runtime.Root())
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = store.Close() }()
+	return store.ReadFile(relative)
 }
-func (Runtime) ListDirectories(path string) ([]string, error) {
-	entries, err := os.ReadDir(path)
-	if os.IsNotExist(err) {
+func (runtime Runtime) WriteAtomic(path string, data []byte) error {
+	relative, owned, err := evalOwnedRelative(runtime.Root(), path)
+	if err != nil {
+		return err
+	}
+	if !owned {
+		return fmt.Errorf("write eval artifact %q: path is outside eval root %q", path, runtime.Root())
+	}
+	store, err := evalsubstrate.CreateRootStore(runtime.Root(), 0o755)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = store.Close() }()
+	return store.WriteAtomic(relative, data, 0o644)
+}
+func (runtime Runtime) ListDirectories(path string) ([]string, error) {
+	relative, owned, err := evalOwnedRelative(runtime.Root(), path)
+	if err != nil {
+		return nil, err
+	}
+	if !owned {
+		return nil, fmt.Errorf("list eval directories %q: path is outside eval root %q", path, runtime.Root())
+	}
+	store, err := evalsubstrate.OpenRootStore(runtime.Root())
+	if errors.Is(err, os.ErrNotExist) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = store.Close() }()
+	entries, err := store.ReadDir(relative)
+	if errors.Is(err, os.ErrNotExist) {
 		return nil, nil
 	}
 	if err != nil {
@@ -224,19 +311,59 @@ func (Runtime) SaveBurnLedger(path string, ledger evalsubstrate.HoldoutBurnLedge
 	return nil
 }
 func (Runtime) WriteOutcomesManifest(dir, runID string, record aoeval.RunRecord) (string, error) {
-	runDir := filepath.Join(dir, runID)
-	if err := os.MkdirAll(runDir, 0o750); err != nil {
-		return "", fmt.Errorf("create manifest dir %s: %w", runDir, err)
+	id, err := evalsubstrate.ParseIdentifier(evalsubstrate.IdentifierRun, runID)
+	if err != nil {
+		return "", fmt.Errorf("write outcomes manifest: %w", err)
 	}
+	store, err := evalsubstrate.CreateRootStore(dir, 0o750)
+	if err != nil {
+		return "", fmt.Errorf("create outcomes manifest root %s: %w", dir, err)
+	}
+	defer func() { _ = store.Close() }()
 	data, err := json.MarshalIndent(record, "", "  ")
 	if err != nil {
 		return "", fmt.Errorf("encode eval-run manifest: %w", err)
 	}
-	path := filepath.Join(runDir, "manifest.json")
-	if err := os.WriteFile(path, append(data, '\n'), 0o600); err != nil {
-		return "", fmt.Errorf("write eval-run manifest %s: %w", path, err)
+	relative := filepath.ToSlash(filepath.Join(id.StorageName(), "manifest.json"))
+	if err := store.WriteAtomic(relative, append(data, '\n'), 0o600); err != nil {
+		return "", fmt.Errorf("write eval-run manifest %s: %w", relative, err)
+	}
+	path, err := store.Path(relative)
+	if err != nil {
+		return "", err
 	}
 	return path, nil
+}
+
+func evalOwnedRelative(root, target string) (string, bool, error) {
+	absoluteRoot, err := filepath.Abs(root)
+	if err != nil {
+		return "", false, fmt.Errorf("resolve eval root %q: %w", root, err)
+	}
+	absoluteTarget, err := filepath.Abs(target)
+	if err != nil {
+		return "", false, fmt.Errorf("resolve eval path %q: %w", target, err)
+	}
+	relative, err := filepath.Rel(absoluteRoot, absoluteTarget)
+	if err != nil {
+		return "", false, fmt.Errorf("relativize eval path %q to %q: %w", target, root, err)
+	}
+	if relative == "." || relative == ".." || strings.HasPrefix(relative, ".."+string(filepath.Separator)) || filepath.IsAbs(relative) {
+		return "", false, nil
+	}
+	return filepath.ToSlash(relative), true, nil
+}
+
+func storedRunDirectoryName(store *evalsubstrate.RootStore, id evalsubstrate.Identifier) (string, error) {
+	for _, storageName := range id.CompatibilityStorageNames() {
+		relative := filepath.ToSlash(filepath.Join("runs", storageName))
+		if _, err := store.Stat(relative); err == nil {
+			return storageName, nil
+		} else if !errors.Is(err, fs.ErrNotExist) {
+			return "", err
+		}
+	}
+	return "", fmt.Errorf("run %q does not exist", id.String())
 }
 
 func (Runtime) Create(options scenario.CreateOptions) (*scenario.CreateResult, error) {
