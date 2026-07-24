@@ -2,7 +2,7 @@
 id: plan-2026-07-24-skill-system-overhaul
 type: plan
 date: 2026-07-24
-status: in_progress/T0-repair-candidate
+status: in_progress/T0-pause-repair-candidate
 goal: Overhaul every canonical AgentOps skill around the campaign-to-experiment architecture
 architecture_ref: docs/contracts/skill-ports-and-adapters.md
 duel_ref: docs/audits/skill-system-overhaul-duel-2026-07-24/README.md
@@ -196,6 +196,13 @@ judged subject. That descriptor and FAIL remain immutable. An explicit
 operator-authorized bootstrap-root replacement selects corrected epoch 0b;
 this pre-activation escape hatch is unavailable after any PASS or epoch
 transition.
+
+Fresh validation of the first repair then rejected only its pause-state
+criterion: the ledger still described its now-stable candidate as uncommitted,
+and the T0 checker trusted `result: PASS` without checking lineage or progress
+claims. That second FAIL is also immutable. A separate metadata-only invocation
+now owns the pause ledger and its hostile semantic checks; it does not reopen
+the accepted bootstrap repairs or start T1.
 
 ### D3. Required gaps and declared exclusions are different types
 

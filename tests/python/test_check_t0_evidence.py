@@ -63,6 +63,54 @@ class T0EvidenceCheckTest(unittest.TestCase):
             self.assertNotEqual(result.returncode, 0)
             self.assertIn("routing assessment summary", result.stderr)
 
+    def test_pause_lineage_removal_is_detected_despite_pass_result(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            evidence = Path(temporary)
+            shutil.copytree(EVIDENCE, evidence, dirs_exist_ok=True)
+            pause_path = evidence / "t0-pause-drill.json"
+            pause = json.loads(pause_path.read_text())
+            pause["lineage"] = {}
+            pause_path.write_text(json.dumps(pause))
+            result = self.run_checker(ROOT, evidence)
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("pause drill lineage", result.stderr)
+
+    def test_pause_rejected_proof_authority_is_detected(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            evidence = Path(temporary)
+            shutil.copytree(EVIDENCE, evidence, dirs_exist_ok=True)
+            pause_path = evidence / "t0-pause-drill.json"
+            pause = json.loads(pause_path.read_text())
+            pause["authority"]["proof_contract_ref"] = (
+                "docs/contracts/proof-contracts/epoch-0/descriptor.json"
+            )
+            pause_path.write_text(json.dumps(pause))
+            result = self.run_checker(ROOT, evidence)
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("pause drill proof authority", result.stderr)
+
+    def test_pause_false_t1_completion_is_detected(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            evidence = Path(temporary)
+            shutil.copytree(EVIDENCE, evidence, dirs_exist_ok=True)
+            pause_path = evidence / "t0-pause-drill.json"
+            pause = json.loads(pause_path.read_text())
+            pause["in_flight"] = ["T1 complete"]
+            pause_path.write_text(json.dumps(pause))
+            result = self.run_checker(ROOT, evidence)
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("pause drill in-flight state", result.stderr)
+
+    def test_rejected_verdict_byte_mutation_is_detected(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            evidence = Path(temporary)
+            shutil.copytree(EVIDENCE, evidence, dirs_exist_ok=True)
+            verdict = next((evidence / "verdicts").glob("*.json"))
+            verdict.write_bytes(verdict.read_bytes() + b" ")
+            result = self.run_checker(ROOT, evidence)
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("failed verdict bytes changed", result.stderr)
+
 
 if __name__ == "__main__":
     unittest.main()

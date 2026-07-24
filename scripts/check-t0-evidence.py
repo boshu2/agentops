@@ -16,6 +16,29 @@ class EvidenceError(ValueError):
     pass
 
 
+PAUSE_LINEAGE = {
+    "origin_main_base_commit": "edc018f6e15a00648736bed84c2ea93265443094",
+    "seed_commit": "b6794d76e62c4aca2ba682474090b6de0026a0f3",
+    "initial_candidate_commit": "9321872587afcf77ac9cd0b3e7aa758704a564e4",
+    "initial_fail_artifact_digest": "bf865e3233c1e19e6346d37403db775e9fb0fa6b252d14af88e4c9aaa081d804",
+    "initial_fail_file_sha256": "2eb46f2da1ff1c5671725bd949efd4975961b5db60778245dcce3a0c55b11a8d",
+    "initial_failed_subject_file_sha256": "4cbbdfbfed3c5a3af2e5d0d050a8899c77db5c0e98e1c9c6a92489fd713ab7db",
+    "initial_failed_report_file_sha256": "1f97efd1754ae72e135d3e23136a654eaa09ac571e94ddce47d934171489d700",
+    "initial_failure_evidence_commit": "50e20ed07d9dd612add428cd3b5530df0e82d821",
+    "repair_candidate_commit": "0e4bc0d90575593cb4c3a048fc0cb69e96837ee5",
+    "repair_fail_artifact_digest": "3c297141dd11978fc3c741733773373a57028b88f24e73b24df5c55fa4e932f7",
+    "repair_fail_file_sha256": "a515fd4abc6a15125889c7d05518e9b5f64dd0eb27260c450c950284f1034a54",
+    "repair_failed_subject_file_sha256": "8a1201dc2a9b74210c81db273d8e973994a4023a7895b6476dab03e049c2bd7c",
+    "repair_failed_report_file_sha256": "f04f821a65979b99dbe72e73cf9b9d79e7094ccc29292e1596dad3bebaec0153",
+    "repair_failure_evidence_commit": "45268dbeb900ec9a99a51eb9cf451573371ff175",
+    "current_invocation": "docs/evidence/proof-epochs/epoch-0b/t0-pause-repair-intent.md",
+    "current_candidate_identity": "enclosing subject manifest and fresh verdict",
+}
+
+PAUSE_PROOF_REF = "docs/contracts/proof-contracts/epoch-0b/descriptor.json"
+PAUSE_PROOF_DIGEST = "b9735c94f7de98c4d31db93081351a6a1a78f8e03897dad61792277bb36a0302"
+
+
 def load(path: Path) -> dict[str, Any]:
     value = json.loads(path.read_text(encoding="utf-8"))
     if not isinstance(value, dict):
@@ -26,6 +49,43 @@ def load(path: Path) -> dict[str, Any]:
 def require(condition: bool, message: str) -> None:
     if not condition:
         raise EvidenceError(message)
+
+
+def sha256(path: Path) -> str:
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def check_failed_invocation(
+    *,
+    verdict_path: Path,
+    subject_path: Path,
+    report_path: Path,
+    artifact_digest: str,
+    verdict_file_sha256: str,
+    subject_file_sha256: str,
+    report_file_sha256: str,
+) -> None:
+    require(sha256(verdict_path) == verdict_file_sha256, f"failed verdict bytes changed: {verdict_path}")
+    require(sha256(subject_path) == subject_file_sha256, f"failed subject bytes changed: {subject_path}")
+    require(sha256(report_path) == report_file_sha256, f"failed report bytes changed: {report_path}")
+    verdict = load(verdict_path)
+    subject = load(subject_path)
+    report = load(report_path)
+    require(verdict.get("verdict") == "FAIL", f"rejected verdict is not FAIL: {verdict_path}")
+    require(
+        verdict.get("artifact_digest") == artifact_digest,
+        f"rejected verdict artifact identity changed: {verdict_path}",
+    )
+    require(
+        verdict.get("subject_manifest_digest") == subject.get("canonical_manifest_digest"),
+        f"rejected verdict and subject do not agree: {verdict_path}",
+    )
+    require(report.get("status") == "FAIL", f"rejected report is not FAIL: {report_path}")
+    require(
+        report.get("verdict_digest") == artifact_digest
+        and report.get("subject_manifest_digest") == subject.get("canonical_manifest_digest"),
+        f"rejected report lineage changed: {report_path}",
+    )
 
 
 def check(repository: Path, evidence_root: Path) -> dict[str, Any]:
@@ -100,7 +160,111 @@ def check(repository: Path, evidence_root: Path) -> dict[str, Any]:
     )
 
     pause = load(evidence_root / "t0-pause-drill.json")
+    require(
+        pause.get("schema_version") == "agentops.t0-pause-drill.v1",
+        "pause drill schema version changed",
+    )
     require(pause.get("result") == "PASS", "pause drill is not PASS")
+    require(pause.get("lineage") == PAUSE_LINEAGE, "pause drill lineage is missing or inaccurate")
+    require(
+        pause.get("in_flight")
+        == [
+            "T0 pause-metadata repair is the current bounded invocation; its exact candidate identity is supplied by the enclosing subject manifest and fresh verdict",
+            "T1 exact-kernel implementation has not started",
+            "T2 compiler and Go CLI release tranches are reconnaissance only",
+        ],
+        "pause drill in-flight state is missing or inaccurate",
+    )
+    landed = pause.get("landed_or_frozen")
+    require(isinstance(landed, list), "pause drill landed/frozen state must be an array")
+    for required_entry in (
+        "stable initial T0 candidate commit 932187258",
+        f"immutable T0 FAIL {PAUSE_LINEAGE['initial_fail_artifact_digest']}",
+        "stable T0 repair candidate commit 0e4bc0d90",
+        f"immutable T0 repair FAIL {PAUSE_LINEAGE['repair_fail_artifact_digest']}",
+        "active corrected epoch-0b proof descriptor and strict bootstrap transition recorder",
+    ):
+        require(required_entry in landed, f"pause drill omits stable state: {required_entry}")
+    known_gaps = pause.get("known_gaps")
+    require(isinstance(known_gaps, list), "pause drill known gaps must be an array")
+    require(
+        "T0 pause-metadata repair requires a fresh semantic verdict over its exact subject"
+        in known_gaps,
+        "pause drill omits the current validation gap",
+    )
+    require(
+        "T1 exact-kernel implementation and epoch-1 activation have not started"
+        in known_gaps,
+        "pause drill falsely advances T1",
+    )
+    flattened_pause = json.dumps(pause, sort_keys=True).lower()
+    require("t1 complete" not in flattened_pause, "pause drill falsely claims T1 complete")
+    require(
+        "repair invocation is not yet a stable commit" not in flattened_pause,
+        "pause drill still claims the committed repair is unstable",
+    )
+
+    authority = pause.get("authority")
+    require(isinstance(authority, dict), "pause drill authority must be an object")
+    require(
+        authority.get("proof_contract_pointer")
+        == "docs/contracts/proof-contracts/active.json"
+        and authority.get("proof_contract_ref") == PAUSE_PROOF_REF
+        and authority.get("proof_contract_digest") == PAUSE_PROOF_DIGEST,
+        "pause drill proof authority is missing or inaccurate",
+    )
+    pause_descriptor = repository / PAUSE_PROOF_REF
+    require(
+        sha256(pause_descriptor) == PAUSE_PROOF_DIGEST,
+        "pause drill proof descriptor bytes changed",
+    )
+    active = load(repository / authority["proof_contract_pointer"])
+    if active.get("epoch") == 0:
+        require(
+            active.get("contract_ref") == PAUSE_PROOF_REF
+            and active.get("contract_digest") == PAUSE_PROOF_DIGEST,
+            "live proof pointer does not match the pause authority",
+        )
+    else:
+        transition_ref = active.get("activation_transition_ref")
+        require(
+            isinstance(transition_ref, str) and bool(transition_ref),
+            "advanced proof pointer lacks an activation transition",
+        )
+        transition = load(repository / transition_ref)
+        require(
+            transition.get("prior", {}).get("contract_ref") == PAUSE_PROOF_REF
+            and transition.get("prior", {}).get("contract_digest") == PAUSE_PROOF_DIGEST,
+            "advanced proof pointer is not descended from the pause authority",
+        )
+
+    require(
+        (repository / PAUSE_LINEAGE["current_invocation"]).is_file(),
+        "pause drill current invocation is missing",
+    )
+    epoch0b = repository / "docs/evidence/proof-epochs/epoch-0b"
+    check_failed_invocation(
+        verdict_path=evidence_root
+        / "verdicts"
+        / f"{PAUSE_LINEAGE['initial_fail_artifact_digest']}.json",
+        subject_path=evidence_root / "t0-failed-subject-manifest.json",
+        report_path=evidence_root / "t0-failed-report.json",
+        artifact_digest=PAUSE_LINEAGE["initial_fail_artifact_digest"],
+        verdict_file_sha256=PAUSE_LINEAGE["initial_fail_file_sha256"],
+        subject_file_sha256=PAUSE_LINEAGE["initial_failed_subject_file_sha256"],
+        report_file_sha256=PAUSE_LINEAGE["initial_failed_report_file_sha256"],
+    )
+    check_failed_invocation(
+        verdict_path=epoch0b
+        / "verdicts"
+        / f"{PAUSE_LINEAGE['repair_fail_artifact_digest']}.json",
+        subject_path=epoch0b / "t0r-failed-subject-manifest.json",
+        report_path=epoch0b / "t0r-failed-report.json",
+        artifact_digest=PAUSE_LINEAGE["repair_fail_artifact_digest"],
+        verdict_file_sha256=PAUSE_LINEAGE["repair_fail_file_sha256"],
+        subject_file_sha256=PAUSE_LINEAGE["repair_failed_subject_file_sha256"],
+        report_file_sha256=PAUSE_LINEAGE["repair_failed_report_file_sha256"],
+    )
     estate = load(evidence_root / "t0-installed-estate.json")
     require(len(estate.get("source_links", [])) == 4, "installed-estate link-root count changed")
 

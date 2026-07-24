@@ -2,7 +2,7 @@
 id: audit-skill-system-overhaul-t0-2026-07-24
 type: audit
 date: 2026-07-24
-status: repair-candidate
+status: pause-repair-candidate
 plan_ref: docs/plans/2026-07-24-skill-system-overhaul.md
 proof_contract_ref: docs/contracts/proof-contracts/active.json
 ---
@@ -22,9 +22,18 @@ It proved that the claimed heal witness did not invoke `heal.sh`, the bootstrap
 recorder accepted nonexistent candidate components, the corresponding proof
 edge was misclassified, and the pause state predated the stable commit.
 
-That invocation stopped. A new exact repair intent under `epoch-0b/` owns only
-those findings. It does not claim that the exact kernel, catalog compiler,
-publisher, or Go CLI repairs are built.
+That invocation stopped. Its bounded repair at commit `0e4bc0d90` supplied a
+direct hostile heal fixture, component-bound bootstrap activation, and an
+explicit rejected-root replacement. Fresh validation accepted those three
+criteria but returned immutable FAIL
+`3c297141dd11978fc3c741733773373a57028b88f24e73b24df5c55fa4e932f7`
+for the pause criterion: the ledger still called the committed repair unstable,
+and its checker trusted `result: PASS` without verifying any resume semantics.
+
+That repair invocation also stopped. A third, metadata-only exact intent under
+`epoch-0b/` owns the pause ledger and its fail-closed semantic checker. It does
+not reopen either rejected subject or claim that the exact kernel, catalog
+compiler, publisher, or Go CLI repairs are built.
 
 ## Starting state
 
@@ -149,11 +158,20 @@ Estate ledger:
 
 ## Pause drill
 
-A fresh context can resolve the landing base, frozen proof authority,
-in-flight tranche, generated owner, and known gaps from repository artifacts
-without campaign memory. API1 skill sources and catalog v3 remain live;
-`skill-contract.v3`, catalog v4, and `verdict.v3` are still shadow or planned
-concepts.
+The current metadata-only candidate records both stable rejected subjects,
+both immutable FAILs, corrected epoch-0b authority, and the exact in-flight
+tranche without embedding its own future commit hash. The enclosing subject
+manifest and fresh verdict own that current candidate identity.
+
+The checker no longer treats `result: PASS` as sufficient. It verifies the
+historical file bytes and cross-artifact lineage, proof descriptor and active
+ancestry, current invocation, known gaps, and the explicit fact that T1 has not
+started. Seeded copies that erase lineage, select rejected epoch-0 authority,
+claim T1 complete, or mutate a rejected verdict fail.
+
+API1 skill sources and catalog v3 remain live; `skill-contract.v3`, catalog v4,
+and `verdict.v3` are still shadow or planned concepts. T0 remains unproven
+until a distinct fresh context judges this exact metadata-only subject.
 
 Machine result:
 [`t0-pause-drill.json`](../evidence/proof-epochs/epoch-0/t0-pause-drill.json).
