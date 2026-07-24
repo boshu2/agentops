@@ -1,9 +1,12 @@
 Feature: Plan freezes one exact intent
   @covered-by:skills/validate/scripts/test_kernel_v3.py::test_exact_bytes_survive_and_living_source_is_never_rederived
+  @covered-by:skills/rpi/tests/test_run_once.py::test_serialized_remote_boundary_preserves_single_mint_identity
   Scenario: Resolved bytes are minted once
     Given a shaped caller intent
     When Plan freezes it
     Then exact bytes are stored under their SHA-256 digest
+    And Plan returns exactly intent_ref, intent_digest, and byte_length
+    And RPI verifies that identity without minting again
     And later phases never re-read the living source
 
   @covered-by:skills/validate/scripts/test_kernel_v3.py::test_duplicate_criterion_ids_are_rejected

@@ -50,9 +50,11 @@ Git, `ao`, or a tracker.
 
 ## Contract
 
-1. Invoke Plan once with the existing bead or caller intent. Plan returns the
-   exact resolved bytes, or no usable intent. The runtime mints those bytes
-   once under their SHA-256 digest. If no usable intent can be frozen, report
+1. Invoke Plan once with the existing bead or caller intent. Plan mints the
+   exact resolved bytes once and returns only the immutable `intent_ref`,
+   `intent_digest`, and exact nonnegative `byte_length` identity packet, or no
+   usable intent. RPI verifies all three against that already-minted snapshot
+   and never mints a second copy. If no usable intent can be frozen, report
    `NOT_PLANNED` and stop.
 2. Invoke Implement once with only the immutable intent reference and expected
    digest. Implement performs one bounded experiment and returns durable

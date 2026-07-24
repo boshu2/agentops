@@ -1,4 +1,11 @@
 Feature: Implement freezes one exact candidate
+  @covered-by:skills/rpi/tests/test_run_once.py::test_serialized_remote_boundary_preserves_single_mint_identity
+  Scenario: Implement consumes the single-mint Plan identity
+    Given Plan minted one exact intent snapshot
+    When Implement receives the phase packet
+    Then it verifies the same intent_ref, intent_digest, and byte_length
+    And it never mints or re-derives the living source
+
   @covered-by:skills/validate/scripts/test_kernel_v3.py::test_repository_observation_includes_generated_companions_and_deletions
   Scenario: Actual effects are runtime-derived
     Given repository-wide before and final manifests

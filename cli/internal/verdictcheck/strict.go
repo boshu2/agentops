@@ -124,10 +124,7 @@ func requireID(value any, label string) (string, error) {
 }
 
 func validRepositoryRef(value string) bool {
-	if value == "." {
-		return true
-	}
-	if value == "" || strings.Contains(value, "\\") || strings.HasPrefix(value, "/") ||
+	if value == "" || value == "." || strings.Contains(value, "\\") || strings.HasPrefix(value, "/") ||
 		strings.HasPrefix(value, "//") || strings.HasSuffix(value, "/") {
 		return false
 	}
@@ -147,6 +144,21 @@ func validRepositoryRef(value string) bool {
 		}
 	}
 	return true
+}
+
+func validObservationRootRef(value string) bool {
+	return value == "." || validRepositoryRef(value)
+}
+
+func requireObservationRootRef(value any, label string) (string, error) {
+	text, err := stringValue(value, label, true)
+	if err != nil {
+		return "", err
+	}
+	if !validObservationRootRef(text) {
+		return "", fmt.Errorf("%s is not a canonical observation-root reference", label)
+	}
+	return text, nil
 }
 
 func requireRepositoryRef(value any, label string) (string, error) {

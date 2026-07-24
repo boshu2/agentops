@@ -1,4 +1,11 @@
 Feature: Validate writes one exact fresh verdict
+  @covered-by:skills/rpi/tests/test_run_once.py::test_serialized_remote_boundary_preserves_single_mint_identity
+  Scenario: Validate consumes the same serialized intent identity
+    Given Plan minted and Implement affirmed one exact identity packet
+    When the packet crosses the fresh validation boundary
+    Then intent_ref, intent_digest, and byte_length remain exact
+    And living-source mutation cannot replace the snapshot
+
   @covered-by:skills/validate/scripts/test_kernel_v3.py::test_partial_observation_forces_not_proven
   Scenario: Incomplete observation stays unproven
     Given before and final manifests do not observe the repository root
@@ -29,3 +36,11 @@ Feature: Validate writes one exact fresh verdict
     Given a candidate at epoch N plus one passed under exact active epoch N
     When the external transition recorder verifies its frozen proof bindings
     Then it writes a content-addressed transition and replaces active last
+
+  @covered-by:skills/validate/scripts/test_kernel_v3.py::test_record_check_writes_named_atomic_durable_receipt
+  @covered-by:skills/validate/scripts/test_kernel_v3.py::test_record_check_rejects_hostile_input_and_cleans_failed_atomic_write
+  Scenario: A factual check receives one named durable receipt
+    Given captured command, exit, subject manifest, stdout, and stderr facts
+    When Validate records check-receipt.v1 to a named output
+    Then it flushes and fsyncs before atomic rename
+    And hostile input or a failed rename leaves no artifact or temporary file

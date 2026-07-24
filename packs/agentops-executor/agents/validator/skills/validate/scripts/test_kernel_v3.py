@@ -30,6 +30,13 @@ assert SPEC and SPEC.loader
 kernel = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(kernel)
 sys.modules["kernel_v3"] = kernel
+VALIDATE_CLI_SPEC = importlib.util.spec_from_file_location(
+    "validate_v3",
+    Path(__file__).with_name("validate_v3.py"),
+)
+assert VALIDATE_CLI_SPEC and VALIDATE_CLI_SPEC.loader
+validate_cli = importlib.util.module_from_spec(VALIDATE_CLI_SPEC)
+VALIDATE_CLI_SPEC.loader.exec_module(validate_cli)
 RECORDER_SPEC = importlib.util.spec_from_file_location(
     "record_proof_transition",
     Path(__file__).with_name("record_proof_transition.py"),
@@ -490,6 +497,7 @@ class KernelV3Tests(unittest.TestCase):
             judgment_id=judgment_id,
             intent_ref=values["intent"].relative_to(repository).as_posix(),
             expected_intent_digest=values["intent_digest"],
+            expected_intent_byte_length=len(values["intent"].read_bytes()),
             before_manifest_ref=values["before_ref"],
             final_manifest_ref=values["final_ref"],
             scope_index_ref=values["scope_ref"],
@@ -742,6 +750,154 @@ class KernelV3Tests(unittest.TestCase):
                 [],
             )
 
+    def test_record_check_writes_named_atomic_durable_receipt(self):
+        with tempfile.TemporaryDirectory() as raw:
+            repository = self.prepare_repository(raw)
+            manifest = kernel.build_manifest_v2(
+                repository,
+                kernel.REPOSITORY_OBSERVATION,
+                kernel.COMPLETE_RUNTIME_EXCLUSIONS,
+            )
+            manifest_path = repository / "artifacts/final-manifest.json"
+            command_path = repository / "inputs/command.json"
+            stdout_path = repository / "inputs/stdout.bin"
+            stderr_path = repository / "inputs/stderr.bin"
+            output_path = repository / "artifacts/checks/focused.json"
+            self.write_json(manifest_path, manifest)
+            command_path.parent.mkdir(parents=True, exist_ok=True)
+            command_path.write_text('["go","test","./..."]\n', encoding="utf-8")
+            stdout_path.write_bytes(b"ok\n")
+            stderr_path.write_bytes(b"")
+            argv = [
+                "validate_v3.py",
+                "record-check",
+                "--receipt-id",
+                "check:focused",
+                "--command-json",
+                str(command_path),
+                "--exit-code",
+                "0",
+                "--subject-manifest",
+                str(manifest_path),
+                "--stdout",
+                str(stdout_path),
+                "--stderr",
+                str(stderr_path),
+                "--observed-at",
+                "2026-07-24T12:01:00Z",
+                "--output",
+                str(output_path),
+            ]
+            with mock.patch.object(sys, "argv", argv), mock.patch.object(
+                kernel.os,
+                "fsync",
+                wraps=kernel.os.fsync,
+            ) as fsync, mock.patch.object(
+                kernel.os,
+                "replace",
+                wraps=kernel.os.replace,
+            ) as replace:
+                self.assertEqual(validate_cli.main(), 0)
+            receipt = kernel.load_json(output_path)
+            kernel.validate_check_receipt(receipt)
+            self.assertEqual(receipt["command"], ["go", "test", "./..."])
+            self.assertEqual(
+                receipt["subject_manifest_digest"],
+                manifest["canonical_manifest_digest"],
+            )
+            self.assertEqual(receipt["stdout_digest"], kernel.sha256(b"ok\n"))
+            self.assertGreaterEqual(fsync.call_count, 2)
+            replace.assert_called_once()
+            self.assertEqual(
+                [path for path in output_path.parent.iterdir() if path != output_path],
+                [],
+            )
+
+    def test_record_check_rejects_hostile_input_and_cleans_failed_atomic_write(self):
+        with tempfile.TemporaryDirectory() as raw:
+            repository = self.prepare_repository(raw)
+            manifest = kernel.build_manifest_v2(
+                repository,
+                kernel.REPOSITORY_OBSERVATION,
+                kernel.COMPLETE_RUNTIME_EXCLUSIONS,
+            )
+            manifest_path = repository / "manifest.json"
+            command_path = repository / "command.json"
+            stdout_path = repository / "stdout.bin"
+            stderr_path = repository / "stderr.bin"
+            output_path = repository / "checks/focused.json"
+            self.write_json(manifest_path, manifest)
+            command_path.write_text("[]\n", encoding="utf-8")
+            stdout_path.write_bytes(b"")
+            stderr_path.write_bytes(b"")
+            argv = [
+                "validate_v3.py",
+                "record-check",
+                "--receipt-id",
+                "check:focused",
+                "--command-json",
+                str(command_path),
+                "--exit-code",
+                "0",
+                "--subject-manifest",
+                str(manifest_path),
+                "--stdout",
+                str(stdout_path),
+                "--stderr",
+                str(stderr_path),
+                "--observed-at",
+                "2026-07-24T12:01:00Z",
+                "--output",
+                str(output_path),
+            ]
+            with mock.patch.object(sys, "argv", argv):
+                self.assertEqual(validate_cli.main(), 2)
+            self.assertFalse(output_path.exists())
+
+            command_path.write_text('["go","test","./..."]\n', encoding="utf-8")
+            with mock.patch.object(sys, "argv", argv), mock.patch.object(
+                kernel.os,
+                "replace",
+                side_effect=OSError("seeded rename failure"),
+            ):
+                self.assertEqual(validate_cli.main(), 2)
+            self.assertFalse(output_path.exists())
+            self.assertEqual(list(output_path.parent.iterdir()), [])
+
+    def test_consume_intent_requires_exact_nonboolean_byte_length(self):
+        with tempfile.TemporaryDirectory() as raw:
+            root = Path(raw)
+            payload = b"acceptance: exact\n"
+            snapshot, digest, _ = kernel.mint_intent_snapshot(payload, root)
+            base = [
+                "validate_v3.py",
+                "consume-intent",
+                "--intent-snapshot",
+                str(snapshot),
+                "--expected-digest",
+                digest,
+            ]
+            with mock.patch.object(sys, "argv", base), self.assertRaises(SystemExit):
+                validate_cli.arguments()
+            with mock.patch.object(
+                sys,
+                "argv",
+                [*base, "--expected-byte-length", "true"],
+            ), self.assertRaises(SystemExit):
+                validate_cli.arguments()
+            with mock.patch.object(
+                sys,
+                "argv",
+                [*base, "--expected-byte-length", str(len(payload) + 1)],
+            ):
+                self.assertEqual(validate_cli.main(), 2)
+            with mock.patch.object(
+                sys,
+                "argv",
+                [*base, "--expected-byte-length", str(len(payload))],
+            ):
+                self.assertEqual(validate_cli.main(), 0)
+
     def test_effect_reader_rejects_noncanonical_lists(self):
         with tempfile.TemporaryDirectory() as raw:
             repository = self.prepare_repository(raw)
@@ -774,6 +930,7 @@ class KernelV3Tests(unittest.TestCase):
                     judgment_id="judgment:one",
                     intent_ref=values["intent"].relative_to(repository).as_posix(),
                     expected_intent_digest=values["intent_digest"],
+                    expected_intent_byte_length=len(values["intent"].read_bytes()),
                     before_manifest_ref=values["before_ref"],
                     final_manifest_ref=values["final_ref"],
                     scope_index_ref=values["scope_ref"],

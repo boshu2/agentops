@@ -42,6 +42,7 @@ def arguments() -> argparse.Namespace:
     )
     consume.add_argument("--intent-snapshot", required=True)
     consume.add_argument("--expected-digest", required=True)
+    consume.add_argument("--expected-byte-length", required=True, type=int)
 
     manifest = commands.add_parser("manifest", help="compute subject-manifest.v2")
     manifest.add_argument("--root", required=True)
@@ -74,6 +75,27 @@ def arguments() -> argparse.Namespace:
     effect.add_argument("--check-receipt-ref", action="append", default=[])
     effect.add_argument("--output")
 
+    check = commands.add_parser(
+        "record-check",
+        help="derive and atomically persist one named check-receipt.v1",
+    )
+    check.add_argument("--receipt-id", required=True)
+    check.add_argument(
+        "--command-json",
+        required=True,
+        help="JSON file containing one nonempty string array",
+    )
+    check.add_argument("--exit-code", required=True, type=int)
+    check.add_argument("--subject-manifest", required=True)
+    check.add_argument("--stdout", required=True, help="captured stdout bytes")
+    check.add_argument("--stderr", required=True, help="captured stderr bytes")
+    check.add_argument("--observed-at", required=True)
+    check.add_argument(
+        "--output",
+        required=True,
+        help="named check-receipt path written with fsync and atomic rename",
+    )
+
     store = commands.add_parser(
         "store-verdict",
         help="bind runtime facts and atomically persist one verdict.v3",
@@ -85,6 +107,7 @@ def arguments() -> argparse.Namespace:
     store.add_argument("--judgment-id", required=True)
     store.add_argument("--intent-snapshot", required=True)
     store.add_argument("--expected-intent-digest", required=True)
+    store.add_argument("--expected-intent-byte-length", required=True, type=int)
     store.add_argument("--before-manifest", required=True)
     store.add_argument("--final-manifest", required=True)
     store.add_argument("--scope-index", required=True)
@@ -134,6 +157,13 @@ def main() -> int:
                 Path(args.intent_snapshot),
                 args.expected_digest,
             )
+            if (
+                args.expected_byte_length < 0
+                or len(payload) != args.expected_byte_length
+            ):
+                raise kernel.TerminalValidation(
+                    "exact intent byte_length does not match the pre-minted snapshot"
+                )
             write_json(
                 {"intent_digest": kernel.sha256(payload), "byte_length": len(payload)},
                 None,
@@ -189,6 +219,33 @@ def main() -> int:
                 references,
             )
             write_json(value, args.output)
+        elif args.command == "record-check":
+            manifest = kernel.load_json(
+                Path(args.subject_manifest),
+                "record-check subject-manifest.v2",
+            )
+            kernel.validate_manifest_v2(manifest)
+            command_value = json.loads(
+                Path(args.command_json).read_text(encoding="utf-8")
+            )
+            if (
+                not isinstance(command_value, list)
+                or not command_value
+                or any(not isinstance(item, str) for item in command_value)
+            ):
+                raise kernel.ContractError(
+                    "record-check command JSON must be a nonempty string array"
+                )
+            value = kernel.build_check_receipt(
+                receipt_id=args.receipt_id,
+                command=command_value,
+                exit_code=args.exit_code,
+                subject_manifest_digest=manifest["canonical_manifest_digest"],
+                stdout=Path(args.stdout).read_bytes(),
+                stderr=Path(args.stderr).read_bytes(),
+                observed_at=args.observed_at,
+            )
+            kernel.atomic_write_json(Path(args.output), value)
         elif args.command == "store-verdict":
             repository = Path(args.repository).resolve()
             artifact, path, existed = kernel.store_verdict_v3(
@@ -199,6 +256,7 @@ def main() -> int:
                 judgment_id=args.judgment_id,
                 intent_ref=repo_ref(repository, args.intent_snapshot),
                 expected_intent_digest=args.expected_intent_digest,
+                expected_intent_byte_length=args.expected_intent_byte_length,
                 before_manifest_ref=repo_ref(repository, args.before_manifest),
                 final_manifest_ref=repo_ref(repository, args.final_manifest),
                 scope_index_ref=repo_ref(repository, args.scope_index),

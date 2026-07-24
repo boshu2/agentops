@@ -181,7 +181,7 @@ def normalize_rel(raw: str) -> str:
     if not isinstance(raw, str) or not raw:
         raise ContractError("path must be a nonempty string")
     if raw == ".":
-        return "."
+        raise ContractError("path cannot be the repository root")
     if "\\" in raw:
         raise ContractError(f"path contains a backslash: {raw}")
     if raw.startswith("/") or raw.startswith("//") or re.match(r"^[A-Za-z]:", raw):
@@ -197,6 +197,13 @@ def normalize_rel(raw: str) -> str:
     if path.is_absolute() or path.as_posix() != raw:
         raise ContractError(f"path is not canonical POSIX-relative form: {raw}")
     return raw
+
+
+def normalize_observation_root(raw: str) -> str:
+    """Validate one observation include; only this path grammar admits root."""
+    if raw == ".":
+        return "."
+    return normalize_rel(raw)
 
 
 def path_matches(path: str, pattern: str) -> bool:
@@ -290,7 +297,9 @@ def _normalize_observation_roots(
         includes = item["includes"]
         if not isinstance(includes, list) or not includes:
             raise ContractError(f"observation_roots[{index}].includes must be nonempty")
-        normalized_includes = sorted({normalize_rel(path) for path in includes})
+        normalized_includes = sorted(
+            {normalize_observation_root(path) for path in includes}
+        )
         if len(normalized_includes) != len(includes):
             raise ContractError(f"observation_roots[{index}].includes contains duplicates")
         normalized.append({"id": identifier, "includes": normalized_includes})
@@ -795,6 +804,19 @@ def validate_effect_receipt(receipt: dict[str, Any]) -> None:
         for field in ("before_digest", "after_digest"):
             if change[field] is not None and not valid_digest(change[field]):
                 raise ContractError(f"changes[{position}].{field} is invalid")
+        if (
+            change["change_kind"] == "ADDED"
+            and (change["before_digest"] is not None or change["after_digest"] is None)
+        ) or (
+            change["change_kind"] == "DELETED"
+            and (change["before_digest"] is None or change["after_digest"] is not None)
+        ) or (
+            change["change_kind"] in {"MODIFIED", "MODE_CHANGED", "TYPE_CHANGED"}
+            and (change["before_digest"] is None or change["after_digest"] is None)
+        ):
+            raise ContractError(
+                f"changes[{position}] digest nullability contradicts change_kind"
+            )
     if changed_paths != sorted(set(changed_paths)):
         raise ContractError("effect-receipt.v1 changes must be sorted and unique")
     if receipt["actual_changed_paths"] != changed_paths:
@@ -907,6 +929,35 @@ def schema_digests(repository: Path) -> dict[str, str]:
     for role, reference in SCHEMAS.items():
         result[role] = sha256((repository / reference).read_bytes())
     return result
+
+
+def validate_proof_identity(
+    proof: dict[str, Any],
+    label: str = "proof identity",
+) -> None:
+    if not isinstance(proof, dict):
+        raise ContractError(f"{label} must be an object")
+    require_exact_keys(
+        proof,
+        required=(
+            "epoch",
+            "contract_ref",
+            "contract_digest",
+            "activation_transition_digest",
+        ),
+        label=label,
+    )
+    if (
+        type(proof["epoch"]) is not int
+        or proof["epoch"] < 0
+        or normalize_rel(proof["contract_ref"]) != proof["contract_ref"]
+        or not valid_digest(proof["contract_digest"])
+        or (
+            proof["activation_transition_digest"] is not None
+            and not valid_digest(proof["activation_transition_digest"])
+        )
+    ):
+        raise ContractError(f"{label} is invalid")
 
 
 def resolve_repository_ref(repository: Path, reference: str) -> Path:
@@ -1288,30 +1339,10 @@ def validate_verdict_v3(
     ):
         if normalize_rel(artifact[field]) != artifact[field]:
             raise ContractError(f"verdict.v3 {field} is not canonical")
-    proof = artifact["proof_identity"]
-    if not isinstance(proof, dict):
-        raise ContractError("verdict.v3 proof_identity must be an object")
-    require_exact_keys(
-        proof,
-        required=(
-            "epoch",
-            "contract_ref",
-            "contract_digest",
-            "activation_transition_digest",
-        ),
-        label="verdict.v3 proof_identity",
+    validate_proof_identity(
+        artifact["proof_identity"],
+        "verdict.v3 proof_identity",
     )
-    if (
-        not isinstance(proof["epoch"], int)
-        or proof["epoch"] < 0
-        or normalize_rel(proof["contract_ref"]) != proof["contract_ref"]
-        or not valid_digest(proof["contract_digest"])
-        or (
-            proof["activation_transition_digest"] is not None
-            and not valid_digest(proof["activation_transition_digest"])
-        )
-    ):
-        raise ContractError("verdict.v3 proof_identity is invalid")
     schemas = artifact["schema_digests"]
     if not isinstance(schemas, dict) or set(schemas) != set(SCHEMAS):
         raise ContractError("verdict.v3 schema_digests has invalid fields")
@@ -1513,6 +1544,7 @@ def store_verdict_v3(
     judgment_id: str,
     intent_ref: str,
     expected_intent_digest: str,
+    expected_intent_byte_length: int,
     before_manifest_ref: str,
     final_manifest_ref: str,
     scope_index_ref: str,
@@ -1524,7 +1556,15 @@ def store_verdict_v3(
 ) -> tuple[dict[str, Any], Path, bool]:
     repository = repository.resolve()
     intent_path = resolve_repository_ref(repository, intent_ref)
-    consume_intent_snapshot(intent_path, expected_intent_digest)
+    intent_payload = consume_intent_snapshot(intent_path, expected_intent_digest)
+    if (
+        type(expected_intent_byte_length) is not int
+        or expected_intent_byte_length < 0
+        or len(intent_payload) != expected_intent_byte_length
+    ):
+        raise TerminalValidation(
+            "exact intent byte_length does not match the pre-minted snapshot"
+        )
     before = load_json(resolve_repository_ref(repository, before_manifest_ref))
     final = load_json(resolve_repository_ref(repository, final_manifest_ref))
     scope_index = load_json(resolve_repository_ref(repository, scope_index_ref))
@@ -1772,30 +1812,10 @@ def validate_rpi_report_v2(report: dict[str, Any]) -> None:
     ):
         raise ContractError("report-only rpi-report.v2 cannot claim subject or verdict proof")
     if report["proof_identity"] is not None:
-        proof = report["proof_identity"]
-        if not isinstance(proof, dict):
-            raise ContractError("rpi-report.v2 proof_identity must be an object")
-        require_exact_keys(
-            proof,
-            required=(
-                "epoch",
-                "contract_ref",
-                "contract_digest",
-                "activation_transition_digest",
-            ),
-            label="rpi-report.v2 proof_identity",
+        validate_proof_identity(
+            report["proof_identity"],
+            "rpi-report.v2 proof_identity",
         )
-        if (
-            not isinstance(proof["epoch"], int)
-            or proof["epoch"] < 0
-            or normalize_rel(proof["contract_ref"]) != proof["contract_ref"]
-            or not valid_digest(proof["contract_digest"])
-            or (
-                proof["activation_transition_digest"] is not None
-                and not valid_digest(proof["activation_transition_digest"])
-            )
-        ):
-            raise ContractError("rpi-report.v2 proof_identity is invalid")
     verify_artifact_digest(report, "rpi-report.v2")
 
 
@@ -1950,8 +1970,9 @@ def validate_proof_transition_v1(transition: dict[str, Any]) -> None:
         label="proof transition candidate",
     )
     if (
-        not isinstance(prior["epoch"], int)
-        or not isinstance(candidate["epoch"], int)
+        type(prior["epoch"]) is not int
+        or type(candidate["epoch"]) is not int
+        or prior["epoch"] < 0
         or candidate["epoch"] != prior["epoch"] + 1
     ):
         raise ContractError("proof transition candidate epoch must follow prior epoch")

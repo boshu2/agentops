@@ -4,37 +4,60 @@ import (
 	"bytes"
 	"crypto/sha256"
 	"encoding/json"
+	"fmt"
 	"math/big"
 	"os"
 	"path/filepath"
 	"reflect"
 	"sort"
+	"strings"
 	"testing"
 )
 
 var requiredKernelCorpusIDs = map[string]struct{}{
-	"intent.exact-utf8":                   {},
-	"intent.living-source-mutation":       {},
-	"dispatch.each-phase-at-most-once":    {},
-	"coverage.generated-companion":        {},
-	"coverage.outside-write-scope":        {},
-	"coverage.partial-observation":        {},
-	"criteria.required-exclusion":         {},
-	"criteria.duplicate-id":               {},
-	"candidate.post-freeze-mutation":      {},
-	"terminal.fail":                       {},
-	"terminal.not-proven":                 {},
-	"judgment.duplicate-intent-subject":   {},
-	"proof.self-activation":               {},
-	"proof.transition-next-epoch":         {},
-	"proof.transition-skipped-epoch":      {},
-	"contract.unknown-field":              {},
-	"path.windows-drive":                  {},
-	"path.backslash":                      {},
-	"effect.forged-empty-complete":        {},
-	"proof.transitive-component-mutation": {},
-	"correlation.opaque-preserved":        {},
-	"correlation.over-property-bound":     {},
+	"intent.exact-utf8":                       {},
+	"intent.living-source-mutation":           {},
+	"dispatch.each-phase-at-most-once":        {},
+	"coverage.generated-companion":            {},
+	"coverage.outside-write-scope":            {},
+	"coverage.partial-observation":            {},
+	"criteria.required-exclusion":             {},
+	"criteria.duplicate-id":                   {},
+	"candidate.post-freeze-mutation":          {},
+	"terminal.fail":                           {},
+	"terminal.not-proven":                     {},
+	"judgment.duplicate-intent-subject":       {},
+	"proof.self-activation":                   {},
+	"proof.transition-next-epoch":             {},
+	"proof.transition-skipped-epoch":          {},
+	"contract.unknown-field":                  {},
+	"path.windows-drive":                      {},
+	"path.backslash":                          {},
+	"effect.forged-empty-complete":            {},
+	"proof.transitive-component-mutation":     {},
+	"correlation.opaque-preserved":            {},
+	"correlation.over-property-bound":         {},
+	"artifact.subject-manifest.valid":         {},
+	"artifact.subject-manifest.dot-entry":     {},
+	"artifact.scope-index.valid":              {},
+	"artifact.scope-index.required-exclusion": {},
+	"artifact.check-receipt.valid":            {},
+	"artifact.check-receipt.pass-nonzero":     {},
+	"artifact.check-receipt.duplicate-key":    {},
+	"artifact.effect-receipt.valid":           {},
+	"artifact.effect-receipt.dot-ref":         {},
+	"artifact.proof-transition.valid":         {},
+	"artifact.proof-transition.dot-ref":       {},
+	"artifact.proof-transition.trailing":      {},
+	"artifact.proof-identity.valid":           {},
+	"artifact.proof-identity.dot-ref":         {},
+	"artifact.verdict.valid":                  {},
+	"artifact.verdict.dot-ref":                {},
+	"artifact.rpi-report.valid":               {},
+	"artifact.rpi-report.dot-ref":             {},
+	"artifact.subject-manifest.missing-field": {},
+	"artifact.scope-index.unknown-field":      {},
+	"artifact.check-receipt.digest-mutation":  {},
 }
 
 func TestKernelV3SharedCorpus(t *testing.T) {
@@ -83,6 +106,18 @@ func TestKernelV3SharedCorpus(t *testing.T) {
 			want, ok := testCase["expected"].(string)
 			if !ok {
 				t.Fatalf("expected outcome is not a string")
+			}
+			if testCase["class"] == "artifact-reader" && want == "REJECT" {
+				reasons, ok := testCase["error_contains"].(map[string]any)
+				if !ok {
+					t.Fatal("hostile artifact case lacks error_contains")
+				}
+				reason, _ := reasons["go"].(string)
+				if !strings.HasPrefix(got, "REJECT:") || reason == "" ||
+					!strings.Contains(got, reason) {
+					t.Fatalf("outcome = %q, want intended rejection containing %q", got, reason)
+				}
+				return
 			}
 			if got != want {
 				t.Fatalf("outcome = %q, want %q", got, want)
@@ -216,9 +251,58 @@ func kernelCorpusOutcome(testCase map[string]any) (string, error) {
 			return "REJECT", nil
 		}
 		return "PASS", nil
+	case "artifact-reader":
+		var payload []byte
+		if raw, ok := testCase["payload_text"].(string); ok {
+			payload = []byte(raw)
+		} else {
+			var err error
+			payload, err = json.Marshal(testCase["payload"])
+			if err != nil {
+				return "", err
+			}
+		}
+		var err error
+		expectedDigest := corpusArtifactDigest(payload)
+		switch testCase["contract"] {
+		case "subject-manifest.v2":
+			_, err = ReadSubjectManifestV2(payload)
+		case "scope-index.v1":
+			_, err = ReadScopeIndexV1(payload, expectedDigest)
+		case "check-receipt.v1":
+			_, err = ReadCheckReceiptV1(payload, expectedDigest)
+		case "effect-receipt.v1":
+			_, err = ReadEffectReceiptV1(payload, expectedDigest)
+		case "proof-contract-transition.v1":
+			_, err = ReadProofContractTransitionV1(payload)
+		case "proof-identity":
+			_, err = ReadProofIdentity(payload)
+		case "verdict.v3":
+			_, err = ReadArtifact(payload, expectedDigest)
+		case "rpi-report.v2":
+			_, err = ReadRPIReportArtifact(payload, expectedDigest)
+		default:
+			return "", &unknownCorpusClass{class: fmt.Sprint(testCase["contract"])}
+		}
+		if err != nil {
+			return "REJECT:" + err.Error(), nil
+		}
+		return "ACCEPT", nil
 	default:
 		return "", &unknownCorpusClass{class: class}
 	}
+}
+
+func corpusArtifactDigest(payload []byte) string {
+	var value map[string]any
+	if json.Unmarshal(payload, &value) != nil {
+		return strings.Repeat("0", 64)
+	}
+	digest, _ := value["artifact_digest"].(string)
+	if !ValidDigest(digest) {
+		return strings.Repeat("0", 64)
+	}
+	return digest
 }
 
 type unknownCorpusClass struct {

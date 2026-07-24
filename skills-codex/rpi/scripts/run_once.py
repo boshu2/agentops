@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """Pure reference behavior for one exact RPI invocation.
 
-Plan returns resolved intent bytes.  The runtime mints those bytes once and
-passes only the immutable ref+digest identity to Implement and Validate.  Each
-phase is called at most once and every terminal status is reported immediately.
+Plan returns the single-mint immutable ref+digest+byte-length identity. RPI
+verifies the already-minted snapshot and passes that same packet to Implement
+and Validate; it never mints a second snapshot. Each phase is called at most
+once and every terminal status is reported immediately.
 """
 
 from __future__ import annotations
@@ -11,6 +12,7 @@ from __future__ import annotations
 from collections.abc import Callable, Mapping
 import importlib.util
 from pathlib import Path
+from types import MappingProxyType
 from typing import Any
 
 
@@ -29,10 +31,10 @@ def invoke_once(
     intent_ref_root: str = ".agents/ao/intents",
     correlation: dict[str, str] | None = None,
     report_dir: Path | None = None,
-    plan_phase: Callable[[Any], bytes | None],
-    implement_phase: Callable[[Mapping[str, str]], Mapping[str, Any] | None],
+    plan_phase: Callable[[Any], Mapping[str, Any] | None],
+    implement_phase: Callable[[Mapping[str, Any]], Mapping[str, Any] | None],
     validate_phase: Callable[
-        [Mapping[str, str], Mapping[str, Any]],
+        [Mapping[str, Any], Mapping[str, Any]],
         Mapping[str, Any],
     ],
 ) -> dict[str, Any]:
@@ -42,8 +44,8 @@ def invoke_once(
             kernel.store_rpi_report_v2(report, report_dir)
         return report
 
-    resolved_bytes = plan_phase(intent)
-    if resolved_bytes is None:
+    planned_identity = plan_phase(intent)
+    if planned_identity is None:
         return finish(kernel.build_rpi_report_v2(
             invocation_id=invocation_id,
             correlation=correlation,
@@ -59,21 +61,43 @@ def invoke_once(
             checked=[],
             not_checked=["implement", "validate"],
         ))
-    if not isinstance(resolved_bytes, bytes):
-        raise TypeError("Plan must return exact resolved intent bytes")
-    intent_path, intent_digest, _ = kernel.mint_intent_snapshot(
-        resolved_bytes,
-        intent_dir,
-    )
-    intent_ref = (
+    if not isinstance(planned_identity, Mapping) or set(planned_identity) != {
+        "intent_ref",
+        "intent_digest",
+        "byte_length",
+    }:
+        raise TypeError("Plan must return one exact intent identity packet")
+    intent_ref = kernel.normalize_rel(planned_identity["intent_ref"])
+    intent_digest = planned_identity["intent_digest"]
+    if not kernel.valid_digest(intent_digest):
+        raise kernel.ContractError("Plan intent_digest is invalid")
+    byte_length = planned_identity["byte_length"]
+    if type(byte_length) is not int or byte_length < 0:
+        raise kernel.ContractError("Plan byte_length must be a nonnegative integer")
+    expected_ref = (
         kernel.normalize_rel(intent_ref_root).rstrip("/")
         + "/"
-        + intent_path.name
+        + f"{intent_digest}.intent"
     )
-    intent_identity = {
-        "intent_ref": intent_ref,
-        "intent_digest": intent_digest,
-    }
+    if intent_ref != expected_ref:
+        raise kernel.ContractError(
+            f"Plan intent_ref does not bind the minted digest: expected {expected_ref}"
+        )
+    snapshot_bytes = kernel.consume_intent_snapshot(
+        intent_dir / f"{intent_digest}.intent",
+        intent_digest,
+    )
+    if len(snapshot_bytes) != byte_length:
+        raise kernel.ContractError(
+            "Plan byte_length does not match the exact intent snapshot"
+        )
+    intent_identity = MappingProxyType(
+        {
+            "intent_ref": intent_ref,
+            "intent_digest": intent_digest,
+            "byte_length": byte_length,
+        }
+    )
 
     subject = implement_phase(intent_identity)
     if subject is None:

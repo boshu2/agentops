@@ -172,6 +172,166 @@
         "key8": "value"
       },
       "expected": "REJECT"
+    },
+    {
+      "id": "artifact.subject-manifest.valid",
+      "class": "artifact-reader",
+      "contract": "subject-manifest.v2",
+      "payload_text": "{\"canonical_manifest_digest\":\"e94005e15b70a95780c91e7b4d8541e996fd8f3a7337c157e8cf3b6e6207b7a0\",\"entries\":[{\"digest\":\"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\",\"executable\":false,\"kind\":\"file\",\"path\":\"src/input.txt\"}],\"exclusions\":[\".agents/ao/intents\",\".agents/ao/reports\",\".agents/ao/verdicts\",\".git\"],\"observation_roots\":[{\"id\":\"repository\",\"includes\":[\".\"]}],\"schema_version\":\"subject-manifest.v2\"}",
+      "expected": "ACCEPT"
+    },
+    {
+      "id": "artifact.subject-manifest.dot-entry",
+      "class": "artifact-reader",
+      "contract": "subject-manifest.v2",
+      "payload_text": "{\"canonical_manifest_digest\":\"c02377fd63e289a65e6a022f487a8b346015a1b2e72e5defd71519b8e64cc09a\",\"entries\":[{\"digest\":\"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\",\"executable\":false,\"kind\":\"file\",\"path\":\".\"}],\"exclusions\":[\".agents/ao/intents\",\".agents/ao/reports\",\".agents/ao/verdicts\",\".git\"],\"observation_roots\":[{\"id\":\"repository\",\"includes\":[\".\"]}],\"schema_version\":\"subject-manifest.v2\"}",
+      "error_contains": {"python": "repository root", "go": "repository-relative"},
+      "expected": "REJECT"
+    },
+    {
+      "id": "artifact.scope-index.valid",
+      "class": "artifact-reader",
+      "contract": "scope-index.v1",
+      "payload_text": "{\"artifact_digest\":\"284b9c3ca49f6d52642a67343322581c7ceca63d0d0170eb1e5930802461d018\",\"criteria\":[{\"id\":\"required-1\",\"required\":true,\"statement_digest\":\"93f6e11d9ce3e407e0eef9c87aacabf3f31235a92403845bb5093b4c6f01f2e5\"},{\"id\":\"optional-1\",\"required\":false,\"statement_digest\":\"e186022d0931afe9fe0690857e32f85e50165e7fbe0966d49609ef1981f920c6\"}],\"declared_exclusions\":[{\"criterion_ids\":[\"optional-1\"],\"id\":\"skip-optional\",\"reason\":\"caller excluded\"}],\"frozen_at\":\"2026-07-24T12:00:00Z\",\"intent_digest\":\"cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc\",\"schema_version\":\"scope-index.v1\",\"scope_classes\":[{\"id\":\"candidate\",\"patterns\":[\"src\"]}]}",
+      "expected": "ACCEPT"
+    },
+    {
+      "id": "artifact.scope-index.required-exclusion",
+      "class": "artifact-reader",
+      "contract": "scope-index.v1",
+      "payload_text": "{\"artifact_digest\":\"4f4fd9e65bbcfd830668375526e8dc1b74284d0e971d38ddbd9e8df65a8b13ed\",\"criteria\":[{\"id\":\"required-1\",\"required\":true,\"statement_digest\":\"93f6e11d9ce3e407e0eef9c87aacabf3f31235a92403845bb5093b4c6f01f2e5\"}],\"declared_exclusions\":[{\"criterion_ids\":[\"required-1\"],\"id\":\"skip-required\",\"reason\":\"hostile\"}],\"frozen_at\":\"2026-07-24T12:00:00Z\",\"intent_digest\":\"cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc\",\"schema_version\":\"scope-index.v1\",\"scope_classes\":[{\"id\":\"candidate\",\"patterns\":[\"src\"]}]}",
+      "error_contains": {"python": "cannot absorb required", "go": "cannot absorb required"},
+      "expected": "REJECT"
+    },
+    {
+      "id": "artifact.check-receipt.valid",
+      "class": "artifact-reader",
+      "contract": "check-receipt.v1",
+      "payload_text": "{\"artifact_digest\":\"7420fe0ee0db4257ba6e31fad8d559050de53792ce3902375c72d9890c69eefb\",\"command\":[\"go\",\"test\",\"./...\"],\"exit_code\":0,\"observed_at\":\"2026-07-24T12:01:00Z\",\"receipt_id\":\"check:one\",\"result\":\"PASS\",\"schema_version\":\"check-receipt.v1\",\"stderr_digest\":\"e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855\",\"stdout_digest\":\"dc51b8c96c2d745df3bd5590d990230a482fd247123599548e0632fdbf97fc22\",\"subject_manifest_digest\":\"e94005e15b70a95780c91e7b4d8541e996fd8f3a7337c157e8cf3b6e6207b7a0\"}",
+      "expected": "ACCEPT"
+    },
+    {
+      "id": "artifact.check-receipt.pass-nonzero",
+      "class": "artifact-reader",
+      "contract": "check-receipt.v1",
+      "payload_text": "{\"artifact_digest\":\"eb3764c9e5e6c7dff4502387c8c40e866e92836c6fdbcd20a5720edefa3f2737\",\"command\":[\"go\",\"test\",\"./...\"],\"exit_code\":1,\"observed_at\":\"2026-07-24T12:01:00Z\",\"receipt_id\":\"check:one\",\"result\":\"PASS\",\"schema_version\":\"check-receipt.v1\",\"stderr_digest\":\"e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855\",\"stdout_digest\":\"dc51b8c96c2d745df3bd5590d990230a482fd247123599548e0632fdbf97fc22\",\"subject_manifest_digest\":\"e94005e15b70a95780c91e7b4d8541e996fd8f3a7337c157e8cf3b6e6207b7a0\"}",
+      "error_contains": {"python": "PASS requires exit_code 0", "go": "PASS requires exit_code 0"},
+      "expected": "REJECT"
+    },
+    {
+      "id": "artifact.check-receipt.duplicate-key",
+      "class": "artifact-reader",
+      "contract": "check-receipt.v1",
+      "payload_text": "{\"artifact_digest\":\"7420fe0ee0db4257ba6e31fad8d559050de53792ce3902375c72d9890c69eefb\",\"command\":[\"go\"],\"exit_code\":0,\"observed_at\":\"2026-07-24T12:01:00Z\",\"receipt_id\":\"check:one\",\"result\":\"FAIL\",\"result\":\"PASS\",\"schema_version\":\"check-receipt.v1\",\"stderr_digest\":\"e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855\",\"stdout_digest\":\"dc51b8c96c2d745df3bd5590d990230a482fd247123599548e0632fdbf97fc22\",\"subject_manifest_digest\":\"e94005e15b70a95780c91e7b4d8541e996fd8f3a7337c157e8cf3b6e6207b7a0\"}",
+      "error_contains": {"python": "duplicate", "go": "duplicate"},
+      "expected": "REJECT"
+    },
+    {
+      "id": "artifact.effect-receipt.valid",
+      "class": "artifact-reader",
+      "contract": "effect-receipt.v1",
+      "payload_text": "{\"actual_changed_paths\":[\"src/input.txt\"],\"artifact_digest\":\"a69b37a5afd091167a439d29d4112b7aba63b7fdfe7c0c9c5598a3820a3109b2\",\"before_manifest_digest\":\"dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd\",\"changes\":[{\"after_digest\":\"0000000000000000000000000000000000000000000000000000000000000000\",\"before_digest\":\"ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff\",\"change_kind\":\"MODIFIED\",\"path\":\"src/input.txt\"}],\"check_receipt_refs\":[{\"digest\":\"7420fe0ee0db4257ba6e31fad8d559050de53792ce3902375c72d9890c69eefb\",\"ref\":\".agents/ao/reports/check.json\"}],\"coverage\":\"COMPLETE\",\"final_manifest_digest\":\"eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee\",\"schema_version\":\"effect-receipt.v1\",\"undeclared_paths\":[]}",
+      "expected": "ACCEPT"
+    },
+    {
+      "id": "artifact.effect-receipt.dot-ref",
+      "class": "artifact-reader",
+      "contract": "effect-receipt.v1",
+      "payload_text": "{\"actual_changed_paths\":[\"src/input.txt\"],\"artifact_digest\":\"ff926bc5eadb9772e00d1cd4780af8f07825093827eb9fab55d646a2188851f9\",\"before_manifest_digest\":\"dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd\",\"changes\":[{\"after_digest\":\"0000000000000000000000000000000000000000000000000000000000000000\",\"before_digest\":\"ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff\",\"change_kind\":\"MODIFIED\",\"path\":\"src/input.txt\"}],\"check_receipt_refs\":[{\"digest\":\"7420fe0ee0db4257ba6e31fad8d559050de53792ce3902375c72d9890c69eefb\",\"ref\":\".\"}],\"coverage\":\"COMPLETE\",\"final_manifest_digest\":\"eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee\",\"schema_version\":\"effect-receipt.v1\",\"undeclared_paths\":[]}",
+      "error_contains": {"python": "repository root", "go": "repository-relative"},
+      "expected": "REJECT"
+    },
+    {
+      "id": "artifact.proof-transition.valid",
+      "class": "artifact-reader",
+      "contract": "proof-contract-transition.v1",
+      "payload_text": "{\"activated_at\":\"2026-07-24T12:02:00Z\",\"candidate\":{\"contract_digest\":\"3333333333333333333333333333333333333333333333333333333333333333\",\"contract_ref\":\"docs/contracts/proof-contracts/epoch-2.json\",\"epoch\":2,\"qualification_corpus_digest\":\"5555555555555555555555555555555555555555555555555555555555555555\",\"qualification_corpus_ref\":\"tests/fixtures/rpi-kernel-v3\",\"subject_manifest_digest\":\"4444444444444444444444444444444444444444444444444444444444444444\",\"subject_manifest_ref\":\"docs/evidence/subject.json\"},\"prior\":{\"activation_transition_digest\":\"2222222222222222222222222222222222222222222222222222222222222222\",\"contract_digest\":\"1111111111111111111111111111111111111111111111111111111111111111\",\"contract_ref\":\"docs/contracts/proof-contracts/epoch-1.json\",\"epoch\":1},\"qualification_verdict\":{\"digest\":\"6666666666666666666666666666666666666666666666666666666666666666\",\"ref\":\".agents/ao/verdicts/pass.json\"},\"schema_version\":\"proof-contract-transition.v1\",\"validator_identity\":\"validator:fresh\"}",
+      "expected": "ACCEPT"
+    },
+    {
+      "id": "artifact.proof-transition.dot-ref",
+      "class": "artifact-reader",
+      "contract": "proof-contract-transition.v1",
+      "payload_text": "{\"activated_at\":\"2026-07-24T12:02:00Z\",\"candidate\":{\"contract_digest\":\"3333333333333333333333333333333333333333333333333333333333333333\",\"contract_ref\":\".\",\"epoch\":2,\"qualification_corpus_digest\":\"5555555555555555555555555555555555555555555555555555555555555555\",\"qualification_corpus_ref\":\"tests/fixtures/rpi-kernel-v3\",\"subject_manifest_digest\":\"4444444444444444444444444444444444444444444444444444444444444444\",\"subject_manifest_ref\":\"docs/evidence/subject.json\"},\"prior\":{\"activation_transition_digest\":\"2222222222222222222222222222222222222222222222222222222222222222\",\"contract_digest\":\"1111111111111111111111111111111111111111111111111111111111111111\",\"contract_ref\":\"docs/contracts/proof-contracts/epoch-1.json\",\"epoch\":1},\"qualification_verdict\":{\"digest\":\"6666666666666666666666666666666666666666666666666666666666666666\",\"ref\":\".agents/ao/verdicts/pass.json\"},\"schema_version\":\"proof-contract-transition.v1\",\"validator_identity\":\"validator:fresh\"}",
+      "error_contains": {"python": "repository root", "go": "repository-relative"},
+      "expected": "REJECT"
+    },
+    {
+      "id": "artifact.proof-transition.trailing",
+      "class": "artifact-reader",
+      "contract": "proof-contract-transition.v1",
+      "payload_text": "{\"activated_at\":\"2026-07-24T12:02:00Z\",\"candidate\":{\"contract_digest\":\"3333333333333333333333333333333333333333333333333333333333333333\",\"contract_ref\":\"docs/contracts/proof-contracts/epoch-2.json\",\"epoch\":2,\"qualification_corpus_digest\":\"5555555555555555555555555555555555555555555555555555555555555555\",\"qualification_corpus_ref\":\"tests/fixtures/rpi-kernel-v3\",\"subject_manifest_digest\":\"4444444444444444444444444444444444444444444444444444444444444444\",\"subject_manifest_ref\":\"docs/evidence/subject.json\"},\"prior\":{\"activation_transition_digest\":\"2222222222222222222222222222222222222222222222222222222222222222\",\"contract_digest\":\"1111111111111111111111111111111111111111111111111111111111111111\",\"contract_ref\":\"docs/contracts/proof-contracts/epoch-1.json\",\"epoch\":1},\"qualification_verdict\":{\"digest\":\"6666666666666666666666666666666666666666666666666666666666666666\",\"ref\":\".agents/ao/verdicts/pass.json\"},\"schema_version\":\"proof-contract-transition.v1\",\"validator_identity\":\"validator:fresh\"}{}",
+      "error_contains": {"python": "trailing", "go": "trailing"},
+      "expected": "REJECT"
+    },
+    {
+      "id": "artifact.proof-identity.valid",
+      "class": "artifact-reader",
+      "contract": "proof-identity",
+      "payload_text": "{\"activation_transition_digest\":\"2222222222222222222222222222222222222222222222222222222222222222\",\"contract_digest\":\"1111111111111111111111111111111111111111111111111111111111111111\",\"contract_ref\":\"docs/contracts/proof-contracts/epoch-1.json\",\"epoch\":1}",
+      "expected": "ACCEPT"
+    },
+    {
+      "id": "artifact.proof-identity.dot-ref",
+      "class": "artifact-reader",
+      "contract": "proof-identity",
+      "payload_text": "{\"activation_transition_digest\":\"2222222222222222222222222222222222222222222222222222222222222222\",\"contract_digest\":\"1111111111111111111111111111111111111111111111111111111111111111\",\"contract_ref\":\".\",\"epoch\":1}",
+      "error_contains": {"python": "repository root", "go": "repository-relative"},
+      "expected": "REJECT"
+    },
+    {
+      "id": "artifact.verdict.valid",
+      "class": "artifact-reader",
+      "contract": "verdict.v3",
+      "payload_text": "{\"artifact_digest\":\"b70ed41b2e1d69019b85ab506b0c8ebee45f07e5667a903eabee5ed3ce7ee029\",\"author_context_id\":\"author:one\",\"before_manifest_digest\":\"8888888888888888888888888888888888888888888888888888888888888888\",\"before_manifest_ref\":\".agents/ao/reports/before.json\",\"checked\":[\"all acceptance\"],\"criteria\":[{\"evidence_receipt_digests\":[\"7777777777777777777777777777777777777777777777777777777777777777\"],\"id\":\"required-1\",\"reason\":\"proved\",\"result\":\"PASS\"}],\"effect_receipt_digest\":\"3333333333333333333333333333333333333333333333333333333333333333\",\"effect_receipt_ref\":\".agents/ao/reports/effect.json\",\"final_manifest_digest\":\"9999999999999999999999999999999999999999999999999999999999999999\",\"final_manifest_ref\":\".agents/ao/reports/final.json\",\"findings\":[],\"freshness_attestation\":{\"attester_identity\":\"runtime:one\",\"source\":\"runtime\"},\"intent_digest\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"intent_ref\":\".agents/ao/intents/a.intent\",\"invocation_id\":\"invocation:corpus\",\"judgment_id\":\"judgment:corpus\",\"not_checked\":[],\"proof_identity\":{\"activation_transition_digest\":\"2222222222222222222222222222222222222222222222222222222222222222\",\"contract_digest\":\"1111111111111111111111111111111111111111111111111111111111111111\",\"contract_ref\":\"docs/contracts/proof-contracts/epoch-1.json\",\"epoch\":1},\"schema_digests\":{\"check_receipt\":\"ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff\",\"effect_receipt\":\"eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee\",\"rpi_report\":\"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\",\"scope_index\":\"dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd\",\"subject_manifest\":\"cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc\",\"verdict\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"},\"schema_version\":\"verdict.v3\",\"scope_index_digest\":\"0000000000000000000000000000000000000000000000000000000000000000\",\"scope_index_ref\":\".agents/ao/reports/scope.json\",\"validated_at\":\"2026-07-24T12:03:00Z\",\"validator_context_id\":\"validator:one\",\"verdict\":\"PASS\"}",
+      "expected": "ACCEPT"
+    },
+    {
+      "id": "artifact.verdict.dot-ref",
+      "class": "artifact-reader",
+      "contract": "verdict.v3",
+      "payload_text": "{\"artifact_digest\":\"60ab46c603e6e5122cfb172adb8060955568a96f448a33928255042ccf20ae39\",\"author_context_id\":\"author:one\",\"before_manifest_digest\":\"8888888888888888888888888888888888888888888888888888888888888888\",\"before_manifest_ref\":\".agents/ao/reports/before.json\",\"checked\":[\"all acceptance\"],\"criteria\":[{\"evidence_receipt_digests\":[\"7777777777777777777777777777777777777777777777777777777777777777\"],\"id\":\"required-1\",\"reason\":\"proved\",\"result\":\"PASS\"}],\"effect_receipt_digest\":\"3333333333333333333333333333333333333333333333333333333333333333\",\"effect_receipt_ref\":\".agents/ao/reports/effect.json\",\"final_manifest_digest\":\"9999999999999999999999999999999999999999999999999999999999999999\",\"final_manifest_ref\":\".agents/ao/reports/final.json\",\"findings\":[],\"freshness_attestation\":{\"attester_identity\":\"runtime:one\",\"source\":\"runtime\"},\"intent_digest\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"intent_ref\":\".\",\"invocation_id\":\"invocation:corpus\",\"judgment_id\":\"judgment:corpus\",\"not_checked\":[],\"proof_identity\":{\"activation_transition_digest\":\"2222222222222222222222222222222222222222222222222222222222222222\",\"contract_digest\":\"1111111111111111111111111111111111111111111111111111111111111111\",\"contract_ref\":\"docs/contracts/proof-contracts/epoch-1.json\",\"epoch\":1},\"schema_digests\":{\"check_receipt\":\"ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff\",\"effect_receipt\":\"eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee\",\"rpi_report\":\"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\",\"scope_index\":\"dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd\",\"subject_manifest\":\"cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc\",\"verdict\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"},\"schema_version\":\"verdict.v3\",\"scope_index_digest\":\"0000000000000000000000000000000000000000000000000000000000000000\",\"scope_index_ref\":\".agents/ao/reports/scope.json\",\"validated_at\":\"2026-07-24T12:03:00Z\",\"validator_context_id\":\"validator:one\",\"verdict\":\"PASS\"}",
+      "error_contains": {"python": "repository root", "go": "repository-relative"},
+      "expected": "REJECT"
+    },
+    {
+      "id": "artifact.rpi-report.valid",
+      "class": "artifact-reader",
+      "contract": "rpi-report.v2",
+      "payload_text": "{\"artifact_digest\":\"7a49b30a0b57c56b3c5e58239cc6a5444217a0807e128c2d9200eaac77423bf6\",\"before_manifest_digest\":\"8888888888888888888888888888888888888888888888888888888888888888\",\"checked\":[\"all acceptance\"],\"correlation\":{\"goal_id\":\"goal:one\"},\"effect_receipt_digest\":\"3333333333333333333333333333333333333333333333333333333333333333\",\"final_manifest_digest\":\"9999999999999999999999999999999999999999999999999999999999999999\",\"intent_digest\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"intent_ref\":\".agents/ao/intents/a.intent\",\"invocation_id\":\"invocation:corpus\",\"not_checked\":[],\"proof_identity\":{\"activation_transition_digest\":\"2222222222222222222222222222222222222222222222222222222222222222\",\"contract_digest\":\"1111111111111111111111111111111111111111111111111111111111111111\",\"contract_ref\":\"docs/contracts/proof-contracts/epoch-1.json\",\"epoch\":1},\"schema_version\":\"rpi-report.v2\",\"status\":\"PASS\",\"verdict_digest\":\"b70ed41b2e1d69019b85ab506b0c8ebee45f07e5667a903eabee5ed3ce7ee029\",\"verdict_ref\":\".agents/ao/verdicts/pass.json\"}",
+      "expected": "ACCEPT"
+    },
+    {
+      "id": "artifact.rpi-report.dot-ref",
+      "class": "artifact-reader",
+      "contract": "rpi-report.v2",
+      "payload_text": "{\"artifact_digest\":\"3005b2acbbbeb2b3c8b3fedf75b373368c70aa75dc342c769c810b17d4e849e1\",\"before_manifest_digest\":\"8888888888888888888888888888888888888888888888888888888888888888\",\"checked\":[\"all acceptance\"],\"correlation\":{\"goal_id\":\"goal:one\"},\"effect_receipt_digest\":\"3333333333333333333333333333333333333333333333333333333333333333\",\"final_manifest_digest\":\"9999999999999999999999999999999999999999999999999999999999999999\",\"intent_digest\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"intent_ref\":\".\",\"invocation_id\":\"invocation:corpus\",\"not_checked\":[],\"proof_identity\":{\"activation_transition_digest\":\"2222222222222222222222222222222222222222222222222222222222222222\",\"contract_digest\":\"1111111111111111111111111111111111111111111111111111111111111111\",\"contract_ref\":\"docs/contracts/proof-contracts/epoch-1.json\",\"epoch\":1},\"schema_version\":\"rpi-report.v2\",\"status\":\"PASS\",\"verdict_digest\":\"b70ed41b2e1d69019b85ab506b0c8ebee45f07e5667a903eabee5ed3ce7ee029\",\"verdict_ref\":\".agents/ao/verdicts/pass.json\"}",
+      "error_contains": {"python": "repository root", "go": "repository-relative"},
+      "expected": "REJECT"
+    },
+    {
+      "id": "artifact.subject-manifest.missing-field",
+      "class": "artifact-reader",
+      "contract": "subject-manifest.v2",
+      "payload_text": "{\"canonical_manifest_digest\":\"e94005e15b70a95780c91e7b4d8541e996fd8f3a7337c157e8cf3b6e6207b7a0\",\"exclusions\":[\".agents/ao/intents\",\".agents/ao/reports\",\".agents/ao/verdicts\",\".git\"],\"observation_roots\":[{\"id\":\"repository\",\"includes\":[\".\"]}],\"schema_version\":\"subject-manifest.v2\"}",
+      "error_contains": {"python": "missing required field", "go": "missing required field"},
+      "expected": "REJECT"
+    },
+    {
+      "id": "artifact.scope-index.unknown-field",
+      "class": "artifact-reader",
+      "contract": "scope-index.v1",
+      "payload_text": "{\"artifact_digest\":\"284b9c3ca49f6d52642a67343322581c7ceca63d0d0170eb1e5930802461d018\",\"criteria\":[{\"id\":\"required-1\",\"required\":true,\"statement_digest\":\"93f6e11d9ce3e407e0eef9c87aacabf3f31235a92403845bb5093b4c6f01f2e5\"},{\"id\":\"optional-1\",\"required\":false,\"statement_digest\":\"e186022d0931afe9fe0690857e32f85e50165e7fbe0966d49609ef1981f920c6\"}],\"declared_exclusions\":[{\"criterion_ids\":[\"optional-1\"],\"id\":\"skip-optional\",\"reason\":\"caller excluded\"}],\"frozen_at\":\"2026-07-24T12:00:00Z\",\"intent_digest\":\"cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc\",\"next_action\":\"retry\",\"schema_version\":\"scope-index.v1\",\"scope_classes\":[{\"id\":\"candidate\",\"patterns\":[\"src\"]}]}",
+      "error_contains": {"python": "unknown field", "go": "unknown field"},
+      "expected": "REJECT"
+    },
+    {
+      "id": "artifact.check-receipt.digest-mutation",
+      "class": "artifact-reader",
+      "contract": "check-receipt.v1",
+      "payload_text": "{\"artifact_digest\":\"0000000000000000000000000000000000000000000000000000000000000000\",\"command\":[\"go\",\"test\",\"./...\"],\"exit_code\":0,\"observed_at\":\"2026-07-24T12:01:00Z\",\"receipt_id\":\"check:one\",\"result\":\"PASS\",\"schema_version\":\"check-receipt.v1\",\"stderr_digest\":\"e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855\",\"stdout_digest\":\"dc51b8c96c2d745df3bd5590d990230a482fd247123599548e0632fdbf97fc22\",\"subject_manifest_digest\":\"e94005e15b70a95780c91e7b4d8541e996fd8f3a7337c157e8cf3b6e6207b7a0\"}",
+      "error_contains": {"python": "artifact_digest is invalid", "go": "canonical content digest"},
+      "expected": "REJECT"
     }
   ]
 }
