@@ -1,0 +1,15 @@
+{
+  "schema_version": "rpi-report.v1",
+  "status": "PASS",
+  "intent_ref": "docs/evidence/proof-epochs/epoch-0b/t0-ref-safety-repair-intent.md",
+  "acceptance_digest": "888257eab3c062f61ed94e12ebc964ea0de2de405ca781ebdc00346d7d742043",
+  "subject_manifest_digest": "c7cb66d707aa75c0cb2bb07a82678964f9e285c9d2c783969507554c8d9f17b0",
+  "verdict_ref": "docs/evidence/proof-epochs/epoch-0b/verdicts/b4d8bd3b9db67ef51a251a928b749d5f95b1262570751e9890033937bd678f40.json",
+  "verdict_digest": "b4d8bd3b9db67ef51a251a928b749d5f95b1262570751e9890033937bd678f40",
+  "checked": [
+    "T0RS-1",
+    "T0RS-2",
+    "T0RS-3"
+  ],
+  "not_checked": []
+}
