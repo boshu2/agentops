@@ -7,14 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [3.3.0] - 2026-07-20
+## [3.3.0] - 2026-07-23
 
-AgentOps 3.3 is the Cathedral Cut: the product returns to one small trust
-boundary—shape one behavior, run one bounded experiment, validate the exact
-result from fresh context, persist the verdict, and stop. Git, CI, retries,
-queues, work ownership, closure, release, and delivery are caller-owned.
-This release removes public command surfaces despite the minor version
-number; read [docs/UPGRADING.md](https://github.com/boshu2/agentops/blob/main/docs/UPGRADING.md)
+AgentOps 3.3 is the **Cathedral Cut**: the deliberate subtraction of the
+guardrail machinery built to steer weaker models. Strict verbose step contracts,
+enforcement gates, injection hooks, one-release command tombstones, retired
+lifecycle command surfaces, and the heavy out-of-session orchestration layer are
+gone — that scaffolding does not help a frontier-class model and actively
+degrades one, turning dense process into meta-work it spirals on. What remains is
+the judgment-boundary membrane: shape one behavior, run one bounded experiment,
+validate the exact result from a fresh independent context, persist a durable
+verdict, and stop — caller-owned intent in, pinned provenance out. Git, CI,
+retries, queues, work ownership, closure, release, and delivery stay caller-owned.
+
+The subtraction is concrete: the Go CLI shed 36 of its 79 internal packages
+(79 -> 43), and the reference out-of-session orchestrator collapsed from a
+~29k-line layer to a ~1,300-line thin pack (one commit removed 29,418 lines for
+1,334). On that lean base the release keeps terse metadata-owned skill contracts
+(48 skills, audited for concise executable contracts, not ceremonial length),
+adds the Gas City factory pack as a labeled **preview**, and grounds plan and
+premortem judgment in executable ground truth. This release removes public
+command surfaces despite the minor version number; read
+[docs/UPGRADING.md](https://github.com/boshu2/agentops/blob/main/docs/UPGRADING.md)
 before upgrading.
 
 ### Added
@@ -61,6 +75,40 @@ before upgrading.
   own ruling — no verdict laundering (an ambiguous ruling is `NOT_PROVEN`),
   no silent fallback to the spawned judge, and the broker attests under its
   own context id, distinct from both the author and the external validator.
+- **Gas City factory pack (preview)** — a thin AgentOps role pack over official
+  Gas City that runs the one-loop factory (`deploy/gc/`, `packs/agentops-*`).
+  `deploy/gc/materialize-toolchain.sh` fetches the official prebuilt
+  gastownhall/gascity v1.3.5 and steveyegge/beads v1.1.0 release archives and
+  verifies each through a fail-closed checksum chain (pinned sha256 of the
+  official checksums asset -> archive digest -> installed-binary version/commit
+  binding); no compiler, `git`, or `make` is required — only `curl`, `tar`,
+  `python3`, and `shasum`. Gas City owns sessions/routing/formulas/OTEL, Beads
+  owns work, Git owns candidate commits, GitHub owns PR/CI/merge, and AgentOps
+  owns only the final semantic verdict — GC runtime state never enters an
+  AgentOps verdict.
+- **Mayor-driven door with a heartbeat shepherd.** The city runs one standing
+  city-scoped Mayor that is a dispatch shepherd: it watches ready rig step beads
+  and sling-nudges each to its run-target (workers claim; the Mayor never claims
+  and never authors work), propelled by a scheduled heartbeat dispatch pass. Two
+  doors reach the one session — a human attaches to the tmux session and drives
+  interactively, or an orchestrating agent drives it by handing bead ids through
+  native GC mail/sling (`mayor tell "dispatch <id>"`), with no keystroke
+  injection.
+- **`using-gc` mayor-orchestration skill** documents the drive loop (author
+  intent as a bead -> feed -> dispatch by id -> read state from GC rather than
+  prose -> completion is bead/verdict state, never pane output) and a four-layer
+  visibility doctrine: robot/session state, the bead graph, tmux pane truth, and
+  health machinery. Pack intake routes through rig-scoped dispatch per the stock
+  Gas City mayor pattern, so the flow survives the upstream fix.
+- The pack is labeled **preview** and discloses three Gas City v1.3.5 upstream
+  defects it is built around: demand-driven worker spawn is broken for rig work
+  (the shepherd nudge is the workaround; upstream #4586), a cross-store
+  city-scoped claim returns `bead not found` (never exercised by the pack's
+  rig-scoped flow; claim fix landed upstream after v1.3.5), and a rare tmux
+  teardown hang under process churn (upstream PR gastownhall/gascity#3985).
+  Preview is promoted to supported only after the next official Gas City release
+  is pinned, deterministically qualified, and one clean mixed-provider canary
+  passes.
 
 ### Changed
 
@@ -93,6 +141,11 @@ before upgrading.
   discovered/indexed/error accounting instead of a hard-coded corpus floor.
 - CASS guidance distinguishes authoritative rebuild fallback and timed-out
   concurrent reads from empty results or source loss.
+- Plan and premortem now route their judgment to executable ground truth: Plan
+  binds acceptance to the real runnable check surface rather than a narrative
+  restatement, and premortem adds a derivation-diff challenge that tests a
+  proposed change against the diff it would actually produce — keeping planning
+  and pre-mortem reasoning anchored to evidence, not prose.
 
 ### Removed
 

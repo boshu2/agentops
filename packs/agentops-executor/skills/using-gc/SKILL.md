@@ -1,6 +1,6 @@
 ---
 name: using-gc
-description: 'Orchestrate a caller-selected Gas City through its Mayor: drive the standing dispatch shepherd (human attaches, or an agent tells it bead ids), and keep GC runtime state out of AgentOps verdicts. Triggers: "using gc", "gas city", "drive the mayor", "dispatch through gc".'
+description: 'Drive a caller-selected Gas City through its Mayor dispatch shepherd; keep GC runtime state out of AgentOps verdicts. Triggers: "using gc", "gas city", "drive the mayor", "dispatch through gc".'
 practices: [team-topologies, design-by-contract]
 hexagonal_role: driving-adapter
 consumes: [explicit-packets]
