@@ -1,7 +1,6 @@
 package eval
 
 import (
-	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -14,6 +13,7 @@ import (
 	"time"
 
 	"github.com/boshu2/agentops/cli/internal/runtimecmd"
+	"github.com/boshu2/agentops/cli/internal/subprocess"
 )
 
 // codexExecutable is the default binary for the codex live adapter. There is no
@@ -140,7 +140,7 @@ func RunLiveRuntime(ctx context.Context, opts LiveRuntimeOptions) (runRecord *Ru
 		now = defaultNow
 	}
 	started := now().UTC()
-	record := newLiveRuntimeRecord(opts, suite, runtimeName, workDir, started)
+	record := newLiveRuntimeRecord(ctx, opts, suite, runtimeName, workDir, started)
 	model, profile := runtimeMetadataFromCommand(opts.RuntimeCommand)
 	record.Runtime.Model = firstNonEmpty(opts.Model, model)
 	record.Runtime.Profile = firstNonEmpty(opts.Profile, profile)
@@ -315,7 +315,7 @@ func inferLiveRuntime(suite Suite) (Runtime, error) {
 	return "", fmt.Errorf("live runtime is ambiguous")
 }
 
-func newLiveRuntimeRecord(opts LiveRuntimeOptions, suite Suite, runtimeName Runtime, workDir string, started time.Time) *RunRecord {
+func newLiveRuntimeRecord(ctx context.Context, opts LiveRuntimeOptions, suite Suite, runtimeName Runtime, workDir string, started time.Time) *RunRecord {
 	runID := strings.TrimSpace(opts.RunID)
 	if runID == "" {
 		runID = defaultRunID(suite.ID, started)
@@ -337,7 +337,7 @@ func newLiveRuntimeRecord(opts LiveRuntimeOptions, suite Suite, runtimeName Runt
 		StartedAt: started,
 		Status:    StatusInconclusive,
 		Verdict:   VerdictInconclusive,
-		Git:       collectGitRecord(workDir),
+		Git:       collectGitRecordContext(ctx, workDir),
 		Runtime: RuntimeRecord{
 			Name:           runtimeName,
 			Live:           true,
@@ -514,29 +514,44 @@ func runLiveRuntimeWithAttempts(ctx context.Context, runner RuntimeRunner, comma
 }
 
 func defaultRuntimeVersionRunner(ctx context.Context, command RuntimeCommand) (string, error) {
-	cmd := exec.CommandContext(ctx, command.Executable, command.Args...)
-	cmd.Dir = command.Dir
-	cmd.Env = command.Env
-	out, err := cmd.CombinedOutput()
+	result, err := subprocess.Run(ctx, subprocess.Command{
+		Name:           command.Executable,
+		Args:           command.Args,
+		Dir:            command.Dir,
+		Env:            command.Env,
+		CombinedOutput: true,
+		OutputLimit:    subprocess.CaptureLimit{HeadBytes: 64 * 1024},
+	})
 	if err != nil {
 		return "", fmt.Errorf("probe runtime version: %w", err)
 	}
-	return strings.TrimSpace(string(out)), nil
+	if result.Combined.Truncated {
+		return "", fmt.Errorf("probe runtime version: output exceeded 64 KiB capture bound (%d bytes)", result.Combined.TotalBytes)
+	}
+	return strings.TrimSpace(result.Combined.String()), nil
 }
 
 func defaultRuntimeRunner(ctx context.Context, command RuntimeCommand) (RuntimeExecutionResult, error) {
-	cmd := exec.CommandContext(ctx, command.Executable, command.Args...)
-	cmd.Dir = command.Dir
-	cmd.Env = command.Env
-	var stdout bytes.Buffer
-	var stderr bytes.Buffer
-	cmd.Stdout = &stdout
-	cmd.Stderr = &stderr
-	err := cmd.Run()
+	runResult, err := subprocess.Run(ctx, subprocess.Command{
+		Name:        command.Executable,
+		Args:        command.Args,
+		Dir:         command.Dir,
+		Env:         command.Env,
+		StdoutLimit: subprocess.CaptureLimit{HeadBytes: 512 * 1024, TailBytes: 512 * 1024},
+		StderrLimit: subprocess.CaptureLimit{HeadBytes: 512 * 1024, TailBytes: 512 * 1024},
+	})
+	diagnostics := []string{}
+	if runResult.Stdout.Truncated {
+		diagnostics = append(diagnostics, fmt.Sprintf("stdout truncated after %d bytes", runResult.Stdout.TotalBytes))
+	}
+	if runResult.Stderr.Truncated {
+		diagnostics = append(diagnostics, fmt.Sprintf("stderr truncated after %d bytes", runResult.Stderr.TotalBytes))
+	}
+	diagnostics = append(diagnostics, runResult.Stdout.String(), runResult.Stderr.String())
 	result := RuntimeExecutionResult{
 		Status:      StatusInconclusive,
 		Verdict:     VerdictInconclusive,
-		Diagnostics: compactStrings([]string{stdout.String(), stderr.String()}),
+		Diagnostics: compactStrings(diagnostics),
 	}
 	if err == nil {
 		return result, nil

@@ -120,6 +120,35 @@ func TestScriptRunner_PassAndFail(t *testing.T) {
 	}
 }
 
+func TestScriptRunner_HighOutputRetainsBoundedTail(t *testing.T) {
+	root := t.TempDir()
+	writeScript(t, root, "noisy.sh", `#!/usr/bin/env bash
+i=0
+while [ "$i" -lt 4096 ]; do
+  printf '%512s' ''
+  i=$((i + 1))
+done
+printf 'GATE_TAIL_HINT'
+`)
+
+	v, err := NewScriptRunner(root).Run(context.Background(), ports.GateRunRequest{Name: "noisy.sh"})
+	if err != nil {
+		t.Fatalf("Run noisy.sh: %v", err)
+	}
+	if v.Status != ports.GateStatusPass {
+		t.Fatalf("noisy.sh -> %s, want PASS", v.Status)
+	}
+	if !strings.Contains(v.LogTail, "bytes omitted") {
+		t.Fatalf("LogTail lacks truncation telemetry: %q", v.LogTail)
+	}
+	if !strings.Contains(v.LogTail, "GATE_TAIL_HINT") {
+		t.Fatalf("LogTail lost trailing diagnostic: %q", v.LogTail)
+	}
+	if len(v.LogTail) > 4600 {
+		t.Fatalf("LogTail retained %d bytes, want a 4096-byte tail plus a small marker", len(v.LogTail))
+	}
+}
+
 func TestScriptRunner_PythonUsesPythonInterpreter(t *testing.T) {
 	root := t.TempDir()
 	writeScript(t, root, "check.py", "#!/usr/bin/env python3\nprint('python gate ran')\n")

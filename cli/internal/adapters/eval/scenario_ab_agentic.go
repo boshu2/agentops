@@ -4,7 +4,6 @@ package eval
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -14,6 +13,7 @@ import (
 	aoeval "github.com/boshu2/agentops/cli/internal/eval"
 	"github.com/boshu2/agentops/cli/internal/redact"
 	"github.com/boshu2/agentops/cli/internal/scenario"
+	"github.com/boshu2/agentops/cli/internal/subprocess"
 )
 
 const (
@@ -165,17 +165,19 @@ func defaultWorkspaceCommandRunner(ctx context.Context, workDir, command string,
 	if err != nil {
 		return "", 0, err
 	}
-	out, err := cmd.CombinedOutput()
-	exitCode := 0
-	if err != nil {
-		var ee *exec.ExitError
-		if errors.As(err, &ee) {
-			exitCode = ee.ExitCode()
-		} else {
-			return "", 0, err
-		}
+	result, runErr := subprocess.Run(ctx, subprocess.Command{
+		Name:           cmd.Path,
+		Args:           cmd.Args[1:],
+		Dir:            cmd.Dir,
+		Env:            cmd.Env,
+		Stdin:          cmd.Stdin,
+		CombinedOutput: true,
+		OutputLimit:    subprocess.CaptureLimit{HeadBytes: 512 * 1024, TailBytes: 512 * 1024},
+	})
+	if runErr != nil && result.ExitCode < 0 {
+		return "", 0, runErr
 	}
-	return string(out), exitCode, nil
+	return result.Combined.String(), result.ExitCode, nil
 }
 
 // workspaceCommand builds the *exec.Cmd for one emitted worker command, mirroring the

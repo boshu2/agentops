@@ -1,7 +1,6 @@
 package gates
 
 import (
-	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -11,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/boshu2/agentops/cli/internal/ports"
+	"github.com/boshu2/agentops/cli/internal/subprocess"
 )
 
 // ScriptRunner runs a script-backed check and maps its exit code to a
@@ -141,13 +141,17 @@ func (s *ScriptRunner) Run(ctx context.Context, req ports.GateRunRequest) (ports
 		interpreter = resolveBash()
 	}
 	interpreterArgs := append([]string{script}, req.Args...)
-	cmd := exec.CommandContext(ctx, interpreter, interpreterArgs...)
-	cmd.Dir = s.repoRoot
-	cmd.Env = buildCheckEnv(cmd.Environ(), req.Env)
-	var out bytes.Buffer
-	cmd.Stdout = &out
-	cmd.Stderr = &out
-	runErr := cmd.Run()
+	result, runErr := subprocess.Run(ctx, subprocess.Command{
+		Name:           interpreter,
+		Args:           interpreterArgs,
+		Dir:            s.repoRoot,
+		Env:            buildCheckEnv(os.Environ(), req.Env),
+		CombinedOutput: true,
+		OutputLimit:    subprocess.CaptureLimit{TailBytes: 4096},
+	})
+	if ctxErr := ctx.Err(); ctxErr != nil {
+		return ports.GateVerdict{}, ctxErr
+	}
 
 	code := 0
 	var exitErr *exec.ExitError
@@ -155,7 +159,7 @@ func (s *ScriptRunner) Run(ctx context.Context, req ports.GateRunRequest) (ports
 		code = exitErr.ExitCode()
 	} else if runErr != nil {
 		reason := fmt.Sprintf("subprocess error: %v", runErr)
-		logTail := tailBytes(out.Bytes(), 4096)
+		logTail := strings.TrimSpace(result.Combined.String())
 		if strings.TrimSpace(logTail) == "" {
 			logTail = reason
 		}
@@ -166,7 +170,7 @@ func (s *ScriptRunner) Run(ctx context.Context, req ports.GateRunRequest) (ports
 		}, nil
 	}
 	v := exitCodeToVerdict(code)
-	v.LogTail = tailBytes(out.Bytes(), 4096)
+	v.LogTail = strings.TrimSpace(result.Combined.String())
 	return v, nil
 }
 
@@ -195,14 +199,6 @@ func exitCodeToVerdict(code int) ports.GateVerdict {
 		return ports.GateVerdict{Status: ports.GateStatusSkip, Reason: "exit 75 (structural skip)"}
 	}
 	return ports.GateVerdict{Status: ports.GateStatusFail, Reason: fmt.Sprintf("exit %d", code)}
-}
-
-// tailBytes returns at most n trailing bytes of b, trimmed.
-func tailBytes(b []byte, n int) string {
-	if len(b) <= n {
-		return string(b)
-	}
-	return strings.TrimSpace(string(b[len(b)-n:]))
 }
 
 var _ ports.GateRunnerPort = (*ScriptRunner)(nil)

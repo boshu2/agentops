@@ -1,38 +1,8 @@
 package goals
 
 import (
-	"os/exec"
-	"runtime"
 	"testing"
 )
-
-func TestConfigureProcGroup_SetsSysProcAttr(t *testing.T) {
-	if runtime.GOOS == "windows" {
-		// On Windows configureProcGroup is a different implementation;
-		// this test exercises the POSIX path.
-		t.Skip("POSIX-specific behavior tested elsewhere on Windows")
-	}
-	cmd := exec.Command("true")
-	configureProcGroup(cmd)
-	if cmd.SysProcAttr == nil {
-		t.Fatal("SysProcAttr should be set on POSIX")
-	}
-	if cmd.Cancel == nil {
-		t.Error("Cancel should be set on POSIX")
-	}
-}
-
-func TestConfigureProcGroup_CancelHandlesNilProcess(t *testing.T) {
-	if runtime.GOOS == "windows" {
-		t.Skip("POSIX-specific behavior")
-	}
-	cmd := exec.Command("true")
-	configureProcGroup(cmd)
-	// Process is nil until Start() is called; Cancel must tolerate that.
-	if err := cmd.Cancel(); err != nil {
-		t.Errorf("Cancel with nil Process should return nil, got %v", err)
-	}
-}
 
 func TestTrackAndUntrackChild(t *testing.T) {
 	// Record state

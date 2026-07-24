@@ -12,6 +12,7 @@ import (
 
 	aoeval "github.com/boshu2/agentops/cli/internal/eval"
 	"github.com/boshu2/agentops/cli/internal/scenario"
+	"github.com/boshu2/agentops/cli/internal/subprocess"
 )
 
 func (Runtime) LoadScenario(path string) (*scenario.Scenario, error) { return scenario.Load(path) }
@@ -142,16 +143,27 @@ func runCodexExecArm(ctx context.Context, prompt, outputSchemaPath string, allow
 		}
 		command = confined
 	}
-	command.Stdin = strings.NewReader("")
-	combined, err := command.CombinedOutput()
+	result, err := subprocess.Run(ctx, subprocess.Command{
+		Name:           command.Path,
+		Args:           command.Args[1:],
+		Dir:            command.Dir,
+		Env:            command.Env,
+		Stdin:          strings.NewReader(""),
+		CombinedOutput: true,
+		OutputLimit:    subprocess.CaptureLimit{HeadBytes: 512 * 1024, TailBytes: 512 * 1024},
+	})
 	if err != nil {
 		return "", 0, fmt.Errorf("codex exec: %w", err)
 	}
-	tokens := parseCodexTokens(string(combined))
+	if result.Combined.Truncated {
+		return "", 0, fmt.Errorf("codex exec: output exceeded 1 MiB capture bound (%d bytes)", result.Combined.TotalBytes)
+	}
+	combined := result.Combined.String()
+	tokens := parseCodexTokens(combined)
 	if message, readErr := os.ReadFile(messagePath); readErr == nil && strings.TrimSpace(string(message)) != "" {
 		return strings.TrimSpace(string(message)), tokens, nil
 	}
-	return string(combined), tokens, nil
+	return combined, tokens, nil
 }
 
 // RunCodexExec exposes the sandboxed Codex execution adapter to other legacy

@@ -1,12 +1,12 @@
 package eval
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io/fs"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -18,21 +18,22 @@ import (
 	"github.com/boshu2/agentops/cli/internal/scenario"
 	"github.com/boshu2/agentops/cli/internal/scenarioresults"
 	"github.com/boshu2/agentops/cli/internal/storage"
+	"github.com/boshu2/agentops/cli/internal/subprocess"
 )
 
 type Runtime struct{}
 
-func (Runtime) RunSuite(options aoeval.RunOptions) (*aoeval.RunRecord, error) {
-	return aoeval.RunSuite(options)
+func (Runtime) RunSuiteContext(ctx context.Context, options aoeval.RunOptions) (*aoeval.RunRecord, error) {
+	return aoeval.RunSuiteContext(ctx, options)
 }
-func (Runtime) RunBaselineAB(options aoeval.RunOptions) (aoeval.DeltaScorecard, *aoeval.RunRecord, *aoeval.RunRecord, error) {
-	return aoeval.RunBaselineAB(options)
+func (Runtime) RunBaselineABContext(ctx context.Context, options aoeval.RunOptions) (aoeval.DeltaScorecard, *aoeval.RunRecord, *aoeval.RunRecord, error) {
+	return aoeval.RunBaselineABContext(ctx, options)
 }
 func (Runtime) WriteDeltaScorecard(card aoeval.DeltaScorecard, path string) error {
 	return aoeval.WriteDeltaScorecard(card, path)
 }
-func (Runtime) RunContextAB(options aoeval.RunOptions, contextOptions aoeval.ContextABOptions) (aoeval.ContextDeltaScorecard, *aoeval.RunRecord, *aoeval.RunRecord, error) {
-	return aoeval.RunContextAB(options, contextOptions)
+func (Runtime) RunContextABContext(ctx context.Context, options aoeval.RunOptions, contextOptions aoeval.ContextABOptions) (aoeval.ContextDeltaScorecard, *aoeval.RunRecord, *aoeval.RunRecord, error) {
+	return aoeval.RunContextABContext(ctx, options, contextOptions)
 }
 func (Runtime) WriteContextDeltaScorecard(card aoeval.ContextDeltaScorecard, path string) error {
 	return aoeval.WriteContextDeltaScorecard(card, path)
@@ -241,23 +242,25 @@ func (Runtime) OpenRun(root, id string, manifest evalsubstrate.Manifest) (aoeval
 	return evalsubstrate.NewRunWriter(root, id, manifest)
 }
 
-func (runtime Runtime) RunStats(args []string) ([]byte, error) {
+func (runtime Runtime) RunStats(ctx context.Context, args []string) ([]byte, error) {
 	python := runtime.pythonBinary()
 	if python == "" {
 		return nil, fmt.Errorf("eval suite: substrate venv not found; provision via `python3 -m venv ~/.agents/evals/.venv && pip install numpy scipy`")
 	}
-	command := exec.Command(python, args...)
-	command.Env = append(os.Environ(), "PYTHONPATH="+runtime.Root())
-	output, err := command.Output()
+	result, err := subprocess.Run(ctx, subprocess.Command{
+		Name:        python,
+		Args:        args,
+		Env:         append(os.Environ(), "PYTHONPATH="+runtime.Root()),
+		StdoutLimit: subprocess.CaptureLimit{HeadBytes: 4 * 1024 * 1024},
+		StderrLimit: subprocess.CaptureLimit{TailBytes: 64 * 1024},
+	})
 	if err != nil {
-		stderr := ""
-		var exit *exec.ExitError
-		if errors.As(err, &exit) {
-			stderr = string(exit.Stderr)
-		}
-		return nil, fmt.Errorf("eval suite: stats CLI failed: %w (stderr: %s)", err, stderr)
+		return nil, fmt.Errorf("eval suite: stats CLI failed: %w (stderr: %s)", err, result.Stderr.String())
 	}
-	return output, nil
+	if result.Stdout.Truncated {
+		return nil, fmt.Errorf("eval suite: stats CLI output exceeded 4 MiB capture bound (%d bytes)", result.Stdout.TotalBytes)
+	}
+	return result.Stdout.Bytes(), nil
 }
 
 func (runtime Runtime) pythonBinary() string {
