@@ -31,12 +31,90 @@ PAUSE_LINEAGE = {
     "repair_failed_subject_file_sha256": "8a1201dc2a9b74210c81db273d8e973994a4023a7895b6476dab03e049c2bd7c",
     "repair_failed_report_file_sha256": "f04f821a65979b99dbe72e73cf9b9d79e7094ccc29292e1596dad3bebaec0153",
     "repair_failure_evidence_commit": "45268dbeb900ec9a99a51eb9cf451573371ff175",
-    "current_invocation": "docs/evidence/proof-epochs/epoch-0b/t0-pause-repair-intent.md",
+    "pause_candidate_commit": "b5b5f561785d8f41d1d18eb7e79d3284bebeff80",
+    "pause_fail_artifact_digest": "b27793442f1e1067b9ab6d22dec797b263d4dcb93e080ab8b93ff2c4da6695e2",
+    "pause_fail_file_sha256": "27eddbc7b4e25d088ec63c421f7b71de061248d19b333e23771593c17095c4e3",
+    "pause_failed_subject_file_sha256": "3bad6ac553eb72694ca760f7e36c316d1a6183e9d38b14d37f7514846a2f3b3c",
+    "pause_failed_report_file_sha256": "d32e39fc01b39a3e2747804bbd45c37af2590349d88a84e2add8385be1eb8a35",
+    "pause_failure_evidence_commit": "60485a4767bababd1994262043a5e73a03d15b6e",
+    "current_invocation": "docs/evidence/proof-epochs/epoch-0b/t0-pause-repair-2-intent.md",
     "current_candidate_identity": "enclosing subject manifest and fresh verdict",
 }
 
 PAUSE_PROOF_REF = "docs/contracts/proof-contracts/epoch-0b/descriptor.json"
 PAUSE_PROOF_DIGEST = "b9735c94f7de98c4d31db93081351a6a1a78f8e03897dad61792277bb36a0302"
+PAUSE_TOP_LEVEL_KEYS = {
+    "schema_version",
+    "performed_on",
+    "fresh_context",
+    "result",
+    "landed_or_frozen",
+    "progress",
+    "lineage",
+    "authority",
+    "safe_stop_claim",
+    "known_gaps",
+}
+PAUSE_LANDED_OR_FROZEN = [
+    "origin/main base edc018f6e",
+    "seed plan/audit commit b6794d76e",
+    "stable initial T0 candidate commit 932187258",
+    f"immutable T0 FAIL {PAUSE_LINEAGE['initial_fail_artifact_digest']}",
+    "initial T0 failure-evidence commit 50e20ed07",
+    "stable T0 repair candidate commit 0e4bc0d90",
+    f"immutable T0 repair FAIL {PAUSE_LINEAGE['repair_fail_artifact_digest']}",
+    "T0 repair failure-evidence commit 45268dbeb",
+    "stable T0 pause-repair candidate commit b5b5f5617",
+    f"immutable T0 pause-repair FAIL {PAUSE_LINEAGE['pause_fail_artifact_digest']}",
+    "T0 pause-repair failure-evidence commit 60485a476",
+    "49-skill exact-byte ledger",
+    "rejected epoch-0 proof descriptor retained as history",
+    "active corrected epoch-0b proof descriptor and strict bootstrap transition recorder",
+    "T0 gate liveness and proof-chain ledgers",
+    "routing oracle baseline",
+    "installed-estate and #988 reconciliation",
+]
+PAUSE_PROGRESS = {
+    "current_invocation_ref": PAUSE_LINEAGE["current_invocation"],
+    "current_candidate_identity": PAUSE_LINEAGE["current_candidate_identity"],
+    "states": {
+        "T0": "VALIDATION_PENDING",
+        "T1": "NOT_STARTED",
+        "T2": "NOT_STARTED",
+        "T3": "NOT_STARTED",
+        "T4": "NOT_STARTED",
+        "T5": "NOT_STARTED",
+        "T6": "NOT_STARTED",
+        "T7a": "NOT_STARTED",
+        "T7b": "NOT_STARTED",
+        "T8": "NOT_STARTED",
+        "G0": "NOT_STARTED",
+        "G1": "NOT_STARTED",
+        "G2": "NOT_STARTED",
+    },
+    "reconnaissance_complete": ["T1", "T2", "G0"],
+}
+PAUSE_AUTHORITY = {
+    "semantic_skill_source": "skills/<slug>/SKILL.md",
+    "generated_projection_owner": "scripts/regen-all.sh and owning generators",
+    "proof_contract_pointer": "docs/contracts/proof-contracts/active.json",
+    "proof_contract_ref": PAUSE_PROOF_REF,
+    "proof_contract_digest": PAUSE_PROOF_DIGEST,
+    "migration_plan": "docs/plans/2026-07-24-skill-system-overhaul.md",
+    "landing_policy": "caller-authorized feature branch integration to origin/main",
+}
+PAUSE_SAFE_STOP_CLAIM = (
+    "This is a historical T0 snapshot: API1 and catalog v3 are live, epoch 0b "
+    "is the bootstrap authority, and skill-contract.v3, catalog v4, verdict.v3, "
+    "T1 through T8, and G0 through G2 are not implemented."
+)
+PAUSE_KNOWN_GAPS = [
+    "CASS historical routing search unavailable because checkpoint is incomplete",
+    "remote required-CI job wiring not proven",
+    "installed skill roots still target the preserved original worktree",
+    "T0 typed-pause repair requires a fresh semantic verdict over its exact subject",
+    "T1 exact-kernel implementation and epoch-1 activation have not started",
+]
 
 
 def load(path: Path) -> dict[str, Any]:
@@ -85,6 +163,160 @@ def check_failed_invocation(
         report.get("verdict_digest") == artifact_digest
         and report.get("subject_manifest_digest") == subject.get("canonical_manifest_digest"),
         f"rejected report lineage changed: {report_path}",
+    )
+
+
+def resolve_repository_ref(repository: Path, reference: Any, label: str) -> Path:
+    require(isinstance(reference, str) and bool(reference), f"{label} must be a nonempty reference")
+    require(not Path(reference).is_absolute(), f"{label} must be repository-relative")
+    root = repository.resolve()
+    path = (root / reference).resolve()
+    try:
+        path.relative_to(root)
+    except ValueError as exc:
+        raise EvidenceError(f"{label} escapes the repository") from exc
+    return path
+
+
+def check_pause_state(repository: Path, evidence_root: Path, pause: dict[str, Any]) -> None:
+    require(set(pause) == PAUSE_TOP_LEVEL_KEYS, "pause drill fields are not closed-world")
+    require(
+        pause.get("schema_version") == "agentops.t0-pause-drill.v1",
+        "pause drill schema version changed",
+    )
+    require(pause.get("performed_on") == "2026-07-24", "pause drill date changed")
+    require(pause.get("fresh_context") == "native Codex subagent", "pause drill context changed")
+    require(pause.get("result") == "PASS", "pause drill is not PASS")
+    require(
+        pause.get("landed_or_frozen") == PAUSE_LANDED_OR_FROZEN,
+        "pause drill landed/frozen state is missing or contradictory",
+    )
+    require(pause.get("progress") == PAUSE_PROGRESS, "pause drill typed progress is missing or contradictory")
+    require(pause.get("lineage") == PAUSE_LINEAGE, "pause drill lineage is missing or inaccurate")
+    require(pause.get("authority") == PAUSE_AUTHORITY, "pause drill authority is missing or inaccurate")
+    require(
+        pause.get("safe_stop_claim") == PAUSE_SAFE_STOP_CLAIM,
+        "pause drill safe-stop claim is missing or contradictory",
+    )
+    require(pause.get("known_gaps") == PAUSE_KNOWN_GAPS, "pause drill known gaps are missing or contradictory")
+
+    pause_descriptor = resolve_repository_ref(repository, PAUSE_PROOF_REF, "pause proof descriptor")
+    require(sha256(pause_descriptor) == PAUSE_PROOF_DIGEST, "pause drill proof descriptor bytes changed")
+    active_path = resolve_repository_ref(
+        repository,
+        PAUSE_AUTHORITY["proof_contract_pointer"],
+        "active proof pointer",
+    )
+    active = load(active_path)
+    require(
+        set(active)
+        == {
+            "schema_version",
+            "epoch",
+            "contract_ref",
+            "contract_digest",
+            "activation_transition_ref",
+            "activation_transition_digest",
+        }
+        and active.get("schema_version") == "proof-contract-active.v1",
+        "live proof pointer has invalid fields",
+    )
+    if active.get("epoch") == 0:
+        require(
+            active.get("contract_ref") == PAUSE_PROOF_REF
+            and active.get("contract_digest") == PAUSE_PROOF_DIGEST
+            and active.get("activation_transition_ref") is None
+            and active.get("activation_transition_digest") is None,
+            "live epoch-0 proof pointer does not match the pause authority",
+        )
+    else:
+        require(active.get("epoch") == 1, "pause checker is not qualified beyond proof epoch 1")
+        transition_path = resolve_repository_ref(
+            repository,
+            active.get("activation_transition_ref"),
+            "active transition",
+        )
+        transition_digest = active.get("activation_transition_digest")
+        require(
+            isinstance(transition_digest, str)
+            and sha256(transition_path) == transition_digest
+            and transition_path.name == f"{transition_digest}.json",
+            "active transition bytes or filename do not match the pointer",
+        )
+        transition = load(transition_path)
+        require(
+            transition.get("schema_version") == "proof-contract-transition.v1",
+            "active transition schema changed",
+        )
+        require(
+            transition.get("prior")
+            == {
+                "epoch": 0,
+                "contract_ref": PAUSE_PROOF_REF,
+                "contract_digest": PAUSE_PROOF_DIGEST,
+                "activation_transition_digest": None,
+            },
+            "active transition is not descended from the pause authority",
+        )
+        candidate = transition.get("candidate")
+        require(isinstance(candidate, dict), "active transition candidate is missing")
+        require(
+            candidate.get("epoch") == active.get("epoch")
+            and candidate.get("contract_ref") == active.get("contract_ref")
+            and candidate.get("contract_digest") == active.get("contract_digest"),
+            "active pointer is not bound to the transition candidate",
+        )
+        active_descriptor = resolve_repository_ref(
+            repository,
+            active.get("contract_ref"),
+            "active proof descriptor",
+        )
+        require(
+            sha256(active_descriptor) == active.get("contract_digest"),
+            "active proof descriptor bytes do not match the pointer",
+        )
+
+    require(
+        resolve_repository_ref(
+            repository,
+            PAUSE_LINEAGE["current_invocation"],
+            "pause current invocation",
+        ).is_file(),
+        "pause drill current invocation is missing",
+    )
+    epoch0b = repository / "docs/evidence/proof-epochs/epoch-0b"
+    check_failed_invocation(
+        verdict_path=evidence_root
+        / "verdicts"
+        / f"{PAUSE_LINEAGE['initial_fail_artifact_digest']}.json",
+        subject_path=evidence_root / "t0-failed-subject-manifest.json",
+        report_path=evidence_root / "t0-failed-report.json",
+        artifact_digest=PAUSE_LINEAGE["initial_fail_artifact_digest"],
+        verdict_file_sha256=PAUSE_LINEAGE["initial_fail_file_sha256"],
+        subject_file_sha256=PAUSE_LINEAGE["initial_failed_subject_file_sha256"],
+        report_file_sha256=PAUSE_LINEAGE["initial_failed_report_file_sha256"],
+    )
+    check_failed_invocation(
+        verdict_path=epoch0b
+        / "verdicts"
+        / f"{PAUSE_LINEAGE['repair_fail_artifact_digest']}.json",
+        subject_path=epoch0b / "t0r-failed-subject-manifest.json",
+        report_path=epoch0b / "t0r-failed-report.json",
+        artifact_digest=PAUSE_LINEAGE["repair_fail_artifact_digest"],
+        verdict_file_sha256=PAUSE_LINEAGE["repair_fail_file_sha256"],
+        subject_file_sha256=PAUSE_LINEAGE["repair_failed_subject_file_sha256"],
+        report_file_sha256=PAUSE_LINEAGE["repair_failed_report_file_sha256"],
+    )
+    check_failed_invocation(
+        verdict_path=epoch0b
+        / "verdicts"
+        / f"{PAUSE_LINEAGE['pause_fail_artifact_digest']}.json",
+        subject_path=epoch0b / "t0p-failed-subject-manifest.json",
+        report_path=epoch0b / "t0p-failed-report.json",
+        artifact_digest=PAUSE_LINEAGE["pause_fail_artifact_digest"],
+        verdict_file_sha256=PAUSE_LINEAGE["pause_fail_file_sha256"],
+        subject_file_sha256=PAUSE_LINEAGE["pause_failed_subject_file_sha256"],
+        report_file_sha256=PAUSE_LINEAGE["pause_failed_report_file_sha256"],
     )
 
 
@@ -160,111 +392,7 @@ def check(repository: Path, evidence_root: Path) -> dict[str, Any]:
     )
 
     pause = load(evidence_root / "t0-pause-drill.json")
-    require(
-        pause.get("schema_version") == "agentops.t0-pause-drill.v1",
-        "pause drill schema version changed",
-    )
-    require(pause.get("result") == "PASS", "pause drill is not PASS")
-    require(pause.get("lineage") == PAUSE_LINEAGE, "pause drill lineage is missing or inaccurate")
-    require(
-        pause.get("in_flight")
-        == [
-            "T0 pause-metadata repair is the current bounded invocation; its exact candidate identity is supplied by the enclosing subject manifest and fresh verdict",
-            "T1 exact-kernel implementation has not started",
-            "T2 compiler and Go CLI release tranches are reconnaissance only",
-        ],
-        "pause drill in-flight state is missing or inaccurate",
-    )
-    landed = pause.get("landed_or_frozen")
-    require(isinstance(landed, list), "pause drill landed/frozen state must be an array")
-    for required_entry in (
-        "stable initial T0 candidate commit 932187258",
-        f"immutable T0 FAIL {PAUSE_LINEAGE['initial_fail_artifact_digest']}",
-        "stable T0 repair candidate commit 0e4bc0d90",
-        f"immutable T0 repair FAIL {PAUSE_LINEAGE['repair_fail_artifact_digest']}",
-        "active corrected epoch-0b proof descriptor and strict bootstrap transition recorder",
-    ):
-        require(required_entry in landed, f"pause drill omits stable state: {required_entry}")
-    known_gaps = pause.get("known_gaps")
-    require(isinstance(known_gaps, list), "pause drill known gaps must be an array")
-    require(
-        "T0 pause-metadata repair requires a fresh semantic verdict over its exact subject"
-        in known_gaps,
-        "pause drill omits the current validation gap",
-    )
-    require(
-        "T1 exact-kernel implementation and epoch-1 activation have not started"
-        in known_gaps,
-        "pause drill falsely advances T1",
-    )
-    flattened_pause = json.dumps(pause, sort_keys=True).lower()
-    require("t1 complete" not in flattened_pause, "pause drill falsely claims T1 complete")
-    require(
-        "repair invocation is not yet a stable commit" not in flattened_pause,
-        "pause drill still claims the committed repair is unstable",
-    )
-
-    authority = pause.get("authority")
-    require(isinstance(authority, dict), "pause drill authority must be an object")
-    require(
-        authority.get("proof_contract_pointer")
-        == "docs/contracts/proof-contracts/active.json"
-        and authority.get("proof_contract_ref") == PAUSE_PROOF_REF
-        and authority.get("proof_contract_digest") == PAUSE_PROOF_DIGEST,
-        "pause drill proof authority is missing or inaccurate",
-    )
-    pause_descriptor = repository / PAUSE_PROOF_REF
-    require(
-        sha256(pause_descriptor) == PAUSE_PROOF_DIGEST,
-        "pause drill proof descriptor bytes changed",
-    )
-    active = load(repository / authority["proof_contract_pointer"])
-    if active.get("epoch") == 0:
-        require(
-            active.get("contract_ref") == PAUSE_PROOF_REF
-            and active.get("contract_digest") == PAUSE_PROOF_DIGEST,
-            "live proof pointer does not match the pause authority",
-        )
-    else:
-        transition_ref = active.get("activation_transition_ref")
-        require(
-            isinstance(transition_ref, str) and bool(transition_ref),
-            "advanced proof pointer lacks an activation transition",
-        )
-        transition = load(repository / transition_ref)
-        require(
-            transition.get("prior", {}).get("contract_ref") == PAUSE_PROOF_REF
-            and transition.get("prior", {}).get("contract_digest") == PAUSE_PROOF_DIGEST,
-            "advanced proof pointer is not descended from the pause authority",
-        )
-
-    require(
-        (repository / PAUSE_LINEAGE["current_invocation"]).is_file(),
-        "pause drill current invocation is missing",
-    )
-    epoch0b = repository / "docs/evidence/proof-epochs/epoch-0b"
-    check_failed_invocation(
-        verdict_path=evidence_root
-        / "verdicts"
-        / f"{PAUSE_LINEAGE['initial_fail_artifact_digest']}.json",
-        subject_path=evidence_root / "t0-failed-subject-manifest.json",
-        report_path=evidence_root / "t0-failed-report.json",
-        artifact_digest=PAUSE_LINEAGE["initial_fail_artifact_digest"],
-        verdict_file_sha256=PAUSE_LINEAGE["initial_fail_file_sha256"],
-        subject_file_sha256=PAUSE_LINEAGE["initial_failed_subject_file_sha256"],
-        report_file_sha256=PAUSE_LINEAGE["initial_failed_report_file_sha256"],
-    )
-    check_failed_invocation(
-        verdict_path=epoch0b
-        / "verdicts"
-        / f"{PAUSE_LINEAGE['repair_fail_artifact_digest']}.json",
-        subject_path=epoch0b / "t0r-failed-subject-manifest.json",
-        report_path=epoch0b / "t0r-failed-report.json",
-        artifact_digest=PAUSE_LINEAGE["repair_fail_artifact_digest"],
-        verdict_file_sha256=PAUSE_LINEAGE["repair_fail_file_sha256"],
-        subject_file_sha256=PAUSE_LINEAGE["repair_failed_subject_file_sha256"],
-        report_file_sha256=PAUSE_LINEAGE["repair_failed_report_file_sha256"],
-    )
+    check_pause_state(repository, evidence_root, pause)
     estate = load(evidence_root / "t0-installed-estate.json")
     require(len(estate.get("source_links", [])) == 4, "installed-estate link-root count changed")
 

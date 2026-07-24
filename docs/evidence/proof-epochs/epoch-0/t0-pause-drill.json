@@ -12,6 +12,9 @@
     "stable T0 repair candidate commit 0e4bc0d90",
     "immutable T0 repair FAIL 3c297141dd11978fc3c741733773373a57028b88f24e73b24df5c55fa4e932f7",
     "T0 repair failure-evidence commit 45268dbeb",
+    "stable T0 pause-repair candidate commit b5b5f5617",
+    "immutable T0 pause-repair FAIL b27793442f1e1067b9ab6d22dec797b263d4dcb93e080ab8b93ff2c4da6695e2",
+    "T0 pause-repair failure-evidence commit 60485a476",
     "49-skill exact-byte ledger",
     "rejected epoch-0 proof descriptor retained as history",
     "active corrected epoch-0b proof descriptor and strict bootstrap transition recorder",
@@ -19,11 +22,30 @@
     "routing oracle baseline",
     "installed-estate and #988 reconciliation"
   ],
-  "in_flight": [
-    "T0 pause-metadata repair is the current bounded invocation; its exact candidate identity is supplied by the enclosing subject manifest and fresh verdict",
-    "T1 exact-kernel implementation has not started",
-    "T2 compiler and Go CLI release tranches are reconnaissance only"
-  ],
+  "progress": {
+    "current_invocation_ref": "docs/evidence/proof-epochs/epoch-0b/t0-pause-repair-2-intent.md",
+    "current_candidate_identity": "enclosing subject manifest and fresh verdict",
+    "states": {
+      "T0": "VALIDATION_PENDING",
+      "T1": "NOT_STARTED",
+      "T2": "NOT_STARTED",
+      "T3": "NOT_STARTED",
+      "T4": "NOT_STARTED",
+      "T5": "NOT_STARTED",
+      "T6": "NOT_STARTED",
+      "T7a": "NOT_STARTED",
+      "T7b": "NOT_STARTED",
+      "T8": "NOT_STARTED",
+      "G0": "NOT_STARTED",
+      "G1": "NOT_STARTED",
+      "G2": "NOT_STARTED"
+    },
+    "reconnaissance_complete": [
+      "T1",
+      "T2",
+      "G0"
+    ]
+  },
   "lineage": {
     "origin_main_base_commit": "edc018f6e15a00648736bed84c2ea93265443094",
     "seed_commit": "b6794d76e62c4aca2ba682474090b6de0026a0f3",
@@ -39,7 +61,13 @@
     "repair_failed_subject_file_sha256": "8a1201dc2a9b74210c81db273d8e973994a4023a7895b6476dab03e049c2bd7c",
     "repair_failed_report_file_sha256": "f04f821a65979b99dbe72e73cf9b9d79e7094ccc29292e1596dad3bebaec0153",
     "repair_failure_evidence_commit": "45268dbeb900ec9a99a51eb9cf451573371ff175",
-    "current_invocation": "docs/evidence/proof-epochs/epoch-0b/t0-pause-repair-intent.md",
+    "pause_candidate_commit": "b5b5f561785d8f41d1d18eb7e79d3284bebeff80",
+    "pause_fail_artifact_digest": "b27793442f1e1067b9ab6d22dec797b263d4dcb93e080ab8b93ff2c4da6695e2",
+    "pause_fail_file_sha256": "27eddbc7b4e25d088ec63c421f7b71de061248d19b333e23771593c17095c4e3",
+    "pause_failed_subject_file_sha256": "3bad6ac553eb72694ca760f7e36c316d1a6183e9d38b14d37f7514846a2f3b3c",
+    "pause_failed_report_file_sha256": "d32e39fc01b39a3e2747804bbd45c37af2590349d88a84e2add8385be1eb8a35",
+    "pause_failure_evidence_commit": "60485a4767bababd1994262043a5e73a03d15b6e",
+    "current_invocation": "docs/evidence/proof-epochs/epoch-0b/t0-pause-repair-2-intent.md",
     "current_candidate_identity": "enclosing subject manifest and fresh verdict"
   },
   "authority": {
@@ -51,12 +79,12 @@
     "migration_plan": "docs/plans/2026-07-24-skill-system-overhaul.md",
     "landing_policy": "caller-authorized feature branch integration to origin/main"
   },
-  "safe_stop_claim": "Current generated projections describe only API1 sources. The rejected T0 result is durable, epoch 0b is the bootstrap authority, and skill-contract.v3 plus verdict.v3 remain plan-only.",
+  "safe_stop_claim": "This is a historical T0 snapshot: API1 and catalog v3 are live, epoch 0b is the bootstrap authority, and skill-contract.v3, catalog v4, verdict.v3, T1 through T8, and G0 through G2 are not implemented.",
   "known_gaps": [
     "CASS historical routing search unavailable because checkpoint is incomplete",
     "remote required-CI job wiring not proven",
     "installed skill roots still target the preserved original worktree",
-    "T0 pause-metadata repair requires a fresh semantic verdict over its exact subject",
+    "T0 typed-pause repair requires a fresh semantic verdict over its exact subject",
     "T1 exact-kernel implementation and epoch-1 activation have not started"
   ]
 }
