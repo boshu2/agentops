@@ -1,0 +1,14 @@
+{
+  "schema_version": "proof-candidate-inputs.v1",
+  "candidate_epoch": 1,
+  "prior_failed_verdict_digest": "7e0e0dd26eefdc9c53660a56ed7a7840668d033aac493f6f0d5bca2930d46e60",
+  "repair_intent_ref": "docs/evidence/proof-epochs/epoch-1/t1-repair-intent.md",
+  "repair_base_commit": "bc711ea6fccc2173acfb8f7c8109c5263a3fd43a",
+  "repair_candidate_commit": "5b6bf22dad6a855fa385d946fecc0eb58605228d",
+  "qualification_subject_manifest_digest": "000cf482f87567e36a5d7ea5a24598a1b4b7da7426cd962f8471af03c74de29d",
+  "qualification_verdict_digest": null,
+  "activation_transition_digest": null,
+  "qualification_state": "NOT_PROVEN",
+  "subject_rule": "The qualification manifest binds the complete repaired core and its generated/read-side companions. Descriptor, intent, manifest, verdict, and transition are external evidence and are not members of their own subject.",
+  "activation_rule": "Epoch 0b must judge the exact repair subject directly with verdict.v2. The candidate cannot issue its own binding verdict or mutate the active pointer during qualification."
+}
