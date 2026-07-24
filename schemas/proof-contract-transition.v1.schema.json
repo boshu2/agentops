@@ -1,0 +1,77 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agentops.dev/schemas/proof-contract-transition.v1.schema.json",
+  "title": "proof-contract-transition.v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "prior",
+    "candidate",
+    "qualification_verdict",
+    "validator_identity",
+    "activated_at"
+  ],
+  "properties": {
+    "schema_version": {"const": "proof-contract-transition.v1"},
+    "prior": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "epoch",
+        "contract_ref",
+        "contract_digest",
+        "activation_transition_digest"
+      ],
+      "properties": {
+        "epoch": {"type": "integer", "minimum": 0},
+        "contract_ref": {"$ref": "#/$defs/ref"},
+        "contract_digest": {"$ref": "#/$defs/digest"},
+        "activation_transition_digest": {
+          "oneOf": [{"type": "null"}, {"$ref": "#/$defs/digest"}]
+        }
+      }
+    },
+    "candidate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "epoch",
+        "contract_ref",
+        "contract_digest",
+        "subject_manifest_ref",
+        "subject_manifest_digest",
+        "qualification_corpus_ref",
+        "qualification_corpus_digest"
+      ],
+      "properties": {
+        "epoch": {"type": "integer", "minimum": 1},
+        "contract_ref": {"$ref": "#/$defs/ref"},
+        "contract_digest": {"$ref": "#/$defs/digest"},
+        "subject_manifest_ref": {"$ref": "#/$defs/ref"},
+        "subject_manifest_digest": {"$ref": "#/$defs/digest"},
+        "qualification_corpus_ref": {"$ref": "#/$defs/ref"},
+        "qualification_corpus_digest": {"$ref": "#/$defs/digest"}
+      }
+    },
+    "qualification_verdict": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["ref", "digest"],
+      "properties": {
+        "ref": {"$ref": "#/$defs/ref"},
+        "digest": {"$ref": "#/$defs/digest"}
+      }
+    },
+    "validator_identity": {"type": "string", "minLength": 1},
+    "activated_at": {"type": "string", "format": "date-time"}
+  },
+  "$defs": {
+    "digest": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "ref": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$)).+$"
+    }
+  }
+}

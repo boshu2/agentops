@@ -1,0 +1,65 @@
+{
+  "schema_version": "proof-contract.v1",
+  "epoch": 0,
+  "components": [
+    {
+      "role": "go-verdict-reader",
+      "ref": "cli/internal/verdictcheck/verdictcheck.go",
+      "digest": "565531c34b1901b39b70b01e7bfad1a0b98b785a6d09d02e987161de8fd3016f",
+      "mode": "0644"
+    },
+    {
+      "role": "qualification-corpus-runner",
+      "ref": "skills/validate/scripts/check_contract_corpus.py",
+      "digest": "b173fab958006f38d56950e72ac571d18eda2bbd085d92a665acc9feaa3083ce",
+      "mode": "0644"
+    },
+    {
+      "role": "rpi-report-schema",
+      "ref": "schemas/rpi-report.v1.schema.json",
+      "digest": "d4ec15a2a6a96882a02ee0d712cf89706bed91e0beafada565d61b2b74c109af",
+      "mode": "0644"
+    },
+    {
+      "role": "subject-manifest-schema",
+      "ref": "schemas/subject-manifest.v1.schema.json",
+      "digest": "bd2816ef184d080041d703f834973e55bf9ee9ef7f35aaf7648ac56baa38afb3",
+      "mode": "0644"
+    },
+    {
+      "role": "validator-contract",
+      "ref": "skills/validate/SKILL.md",
+      "digest": "d2f7259a0e8160c47bcc7968459e0385d09e75c394c4d7af1626d15d69e95101",
+      "mode": "0644"
+    },
+    {
+      "role": "validator-implementation",
+      "ref": "skills/validate/scripts/validate.py",
+      "digest": "adafe4e127f9ddeb534c633a2cb4c2321b47e8a6a6f3656a0872076427f72247",
+      "mode": "0755"
+    },
+    {
+      "role": "verdict-schema",
+      "ref": "schemas/verdict.v2.schema.json",
+      "digest": "848af783786a33ee505d3a1e19afdb1b97c6875d68c4fe817a21ca012bdfedab",
+      "mode": "0644"
+    }
+  ],
+  "qualification_corpus": {
+    "algorithm": "sha256-tree-v1",
+    "ref": "tests/fixtures/verdict-contract/cases",
+    "digest": "e053761eea786f45c04f30fc825758b5e3e4e8480a9d2e1e1f44f5aa68ff9bf9"
+  },
+  "qualification_subject_manifest_digest": null,
+  "transition_recorder": {
+    "ref": "scripts/bootstrap-proof-transition.py",
+    "digest": "9ad0714a36709cf4a4fe66fd9a23d139c3acec12bfe2487345c99942937b588d",
+    "mode": "0644"
+  },
+  "known_gaps": [
+    "RPI hashes a canonicalized mapping while Validate hashes exact intent bytes.",
+    "Epoch 0 may qualify epoch 1 directly but may not traverse the broken RPI dispatcher edge.",
+    "Subject coverage is limited to caller-declared roots and cannot prove mutation outside them.",
+    "verdict.v2 does not bind proof identity, before/final manifests, effect receipts, or exact required-criterion sets."
+  ]
+}

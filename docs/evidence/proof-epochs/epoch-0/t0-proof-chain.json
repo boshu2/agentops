@@ -1,0 +1,92 @@
+{
+  "schema_version": "agentops.t0-proof-chain.v1",
+  "classification": ["USED_SOUND", "USED_UNSOUND", "PROVEN_UNUSED", "UNKNOWN"],
+  "edges": [
+    {
+      "from": "exact intent bytes",
+      "to": "Validate acceptance_digest",
+      "status": "USED_SOUND",
+      "evidence": "validate.py hashes the exact supplied bytes and content-addresses the snapshot"
+    },
+    {
+      "from": "RPI resolved intent mapping",
+      "to": "Validate exact-byte digest",
+      "status": "USED_UNSOUND",
+      "evidence": "run_once.py hashes canonical JSON while Validate hashes exact bytes; existing unit and Cathedral fixtures share or canonicalize the producer algorithm"
+    },
+    {
+      "from": "declared subject roots",
+      "to": "subject manifest",
+      "status": "USED_SOUND",
+      "evidence": "deterministic content hashing inside declared roots"
+    },
+    {
+      "from": "actual repository mutations",
+      "to": "complete checked scope",
+      "status": "USED_UNSOUND",
+      "evidence": "caller supplies scope_status and mutations outside declared roots are invisible"
+    },
+    {
+      "from": "frozen intent criteria",
+      "to": "verdict criterion IDs",
+      "status": "USED_UNSOUND",
+      "evidence": "verdict.v2 accepts arbitrary and duplicate criterion IDs and conflates required gaps with not_checked"
+    },
+    {
+      "from": "fresh validator identity",
+      "to": "binding independent judgment",
+      "status": "UNKNOWN",
+      "evidence": "epoch 0 trusts caller-provided identity strings and freshness attestation"
+    },
+    {
+      "from": "verdict.v2 writer",
+      "to": "schema and Go reader",
+      "status": "USED_SOUND",
+      "evidence": "shared 23-case Python/schema/Go corpus"
+    },
+    {
+      "from": "verdict",
+      "to": "rpi-report.v1",
+      "status": "USED_UNSOUND",
+      "evidence": "runner neither validates nor durably persists the report and report v1 lacks proof/effect/before-final identity"
+    },
+    {
+      "from": "epoch-0 proof contract",
+      "to": "epoch-1 activation",
+      "status": "USED_SOUND",
+      "evidence": "frozen standalone recorder uses a locked atomic CAS, exact descriptor/corpus/manifest/verdict checks, and hostile tests"
+    },
+    {
+      "from": "generated skill catalog v3",
+      "to": "current Go catalog reader",
+      "status": "USED_UNSOUND",
+      "evidence": "reader ignores version and drops required semantic fields"
+    },
+    {
+      "from": "known Go CLI product defects",
+      "to": "T1 Python exact kernel",
+      "status": "PROVEN_UNUSED",
+      "evidence": "T1 qualification uses no ao, Git, tracker, eval command, or CLI subprocess"
+    },
+    {
+      "from": "remote exact-byte transport",
+      "to": "Validate",
+      "status": "UNKNOWN",
+      "evidence": "no composed remote transport fixture exists at epoch 0"
+    },
+    {
+      "from": "CASS history index",
+      "to": "historical routing observation",
+      "status": "UNKNOWN",
+      "evidence": "full rebuild timed out in preparing and robot search returns checkpoint_incomplete"
+    }
+  ],
+  "t1_blockers": [
+    "RPI exact-byte edge",
+    "complete mutation observation",
+    "stable required criterion set",
+    "durable report and one-judgment index",
+    "proof identity in verdict/report",
+    "remote exact-byte transport"
+  ]
+}
