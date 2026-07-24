@@ -1,0 +1,248 @@
+{
+  "schema_version": "agentops.skill-overhaul-pause-drill.v1",
+  "performed_on": "2026-07-24",
+  "result": "PASS",
+  "git": {
+    "worktree": "/Users/bo/dev/agentops-worktrees/skill-overhaul",
+    "branch": "codex/skill-overhaul-20260724",
+    "head": "58cc8ece41942995151200a30a8d4293c5d6d681",
+    "upstream_ref": "origin/main",
+    "ahead_of_upstream": 25,
+    "behind_upstream": 2,
+    "status_porcelain_v1_before_write": [],
+    "clean_worktree_before_write": true
+  },
+  "active_proof_contract": {
+    "active_pointer_ref": "docs/contracts/proof-contracts/active.json",
+    "epoch": 1,
+    "contract_ref": "docs/evidence/proof-epochs/epoch-1/subject-refreeze-candidate-descriptor.json",
+    "contract_digest": "f6358e3858d4e6f67844966334547d6df88b58c5a2e9f7f5889ac2d1fadd2340",
+    "activation_transition_ref": "docs/contracts/proof-contracts/transitions/2f9e95bcb7841030a96b97e5bf1b9d4936ca3247c6f340e70e77abf11f045e8a.json",
+    "activation_transition_digest": "2f9e95bcb7841030a96b97e5bf1b9d4936ca3247c6f340e70e77abf11f045e8a"
+  },
+  "epoch_1_qualification": {
+    "descriptor": {
+      "ref": "docs/evidence/proof-epochs/epoch-1/subject-refreeze-candidate-descriptor.json",
+      "digest": "f6358e3858d4e6f67844966334547d6df88b58c5a2e9f7f5889ac2d1fadd2340",
+      "known_gaps": []
+    },
+    "subject_manifest": {
+      "ref": "docs/evidence/proof-epochs/epoch-1/t1-subject-refreeze-manifest.json",
+      "digest": "bd108e791c84e13152a49561c824c2b9efa101e6ca0834c9de007357bbf5d599"
+    },
+    "qualification_corpus": {
+      "algorithm": "sha256-tree-v1",
+      "ref": "tests/fixtures/rpi-kernel-v3",
+      "digest": "eb06ca4171980efe1f8cfd3b084514a7b04ca4f9b1b163e79ff7a34e4e61d018"
+    },
+    "pass_verdict": {
+      "ref": "docs/evidence/proof-epochs/epoch-1/verdicts/2cd9a4a369f3b1bdc7b11c272949401f83b6b55de6c4e8fd481bf311e8d96b5f.json",
+      "digest": "2cd9a4a369f3b1bdc7b11c272949401f83b6b55de6c4e8fd481bf311e8d96b5f",
+      "result": "PASS",
+      "findings": [],
+      "not_checked": []
+    },
+    "judged_under_proof": {
+      "label": "epoch-0b",
+      "epoch": 0,
+      "ref": "docs/contracts/proof-contracts/epoch-0b/descriptor.json",
+      "digest": "b9735c94f7de98c4d31db93081351a6a1a78f8e03897dad61792277bb36a0302"
+    },
+    "activation_transition": {
+      "ref": "docs/contracts/proof-contracts/transitions/2f9e95bcb7841030a96b97e5bf1b9d4936ca3247c6f340e70e77abf11f045e8a.json",
+      "digest": "2f9e95bcb7841030a96b97e5bf1b9d4936ca3247c6f340e70e77abf11f045e8a",
+      "activated_proof_ref": "docs/evidence/proof-epochs/epoch-1/subject-refreeze-candidate-descriptor.json",
+      "activated_proof_digest": "f6358e3858d4e6f67844966334547d6df88b58c5a2e9f7f5889ac2d1fadd2340"
+    }
+  },
+  "completed_tranches": [
+    {
+      "tranche": "T0",
+      "state": "PASS",
+      "subject_manifest": {
+        "ref": "docs/evidence/proof-epochs/epoch-0b/t0rs-passed-subject-manifest.json",
+        "digest": "c7cb66d707aa75c0cb2bb07a82678964f9e285c9d2c783969507554c8d9f17b0"
+      },
+      "verdict": {
+        "ref": "docs/evidence/proof-epochs/epoch-0b/verdicts/b4d8bd3b9db67ef51a251a928b749d5f95b1262570751e9890033937bd678f40.json",
+        "digest": "b4d8bd3b9db67ef51a251a928b749d5f95b1262570751e9890033937bd678f40",
+        "result": "PASS"
+      },
+      "judged_under_proof": {
+        "label": "epoch-0b",
+        "epoch": 0,
+        "ref": "docs/contracts/proof-contracts/epoch-0b/descriptor.json",
+        "digest": "b9735c94f7de98c4d31db93081351a6a1a78f8e03897dad61792277bb36a0302"
+      },
+      "activated_proof": {
+        "label": "epoch-0b",
+        "epoch": 0,
+        "ref": "docs/contracts/proof-contracts/epoch-0b/descriptor.json",
+        "digest": "b9735c94f7de98c4d31db93081351a6a1a78f8e03897dad61792277bb36a0302",
+        "activation_transition_ref": null,
+        "activation_transition_digest": null
+      }
+    },
+    {
+      "tranche": "T1",
+      "state": "PASS",
+      "subject_manifest": {
+        "ref": "docs/evidence/proof-epochs/epoch-1/t1-subject-refreeze-manifest.json",
+        "digest": "bd108e791c84e13152a49561c824c2b9efa101e6ca0834c9de007357bbf5d599"
+      },
+      "verdict": {
+        "ref": "docs/evidence/proof-epochs/epoch-1/verdicts/2cd9a4a369f3b1bdc7b11c272949401f83b6b55de6c4e8fd481bf311e8d96b5f.json",
+        "digest": "2cd9a4a369f3b1bdc7b11c272949401f83b6b55de6c4e8fd481bf311e8d96b5f",
+        "result": "PASS"
+      },
+      "judged_under_proof": {
+        "label": "epoch-0b",
+        "epoch": 0,
+        "ref": "docs/contracts/proof-contracts/epoch-0b/descriptor.json",
+        "digest": "b9735c94f7de98c4d31db93081351a6a1a78f8e03897dad61792277bb36a0302"
+      },
+      "activated_proof": {
+        "label": "epoch-1",
+        "epoch": 1,
+        "ref": "docs/evidence/proof-epochs/epoch-1/subject-refreeze-candidate-descriptor.json",
+        "digest": "f6358e3858d4e6f67844966334547d6df88b58c5a2e9f7f5889ac2d1fadd2340",
+        "activation_transition_ref": "docs/contracts/proof-contracts/transitions/2f9e95bcb7841030a96b97e5bf1b9d4936ca3247c6f340e70e77abf11f045e8a.json",
+        "activation_transition_digest": "2f9e95bcb7841030a96b97e5bf1b9d4936ca3247c6f340e70e77abf11f045e8a"
+      }
+    }
+  ],
+  "go_workstream": {
+    "program_ref": "docs/plans/2026-07-24-skill-system-overhaul.md",
+    "program_state": "implementation_integrated_validation_pending",
+    "tranches": [
+      {
+        "tranche": "G0",
+        "implementation_state": "integrated",
+        "implementation_commit": "2e1f32a2d50bf94733fe0de935704010da92cfba",
+        "integrated_in_head": true,
+        "fresh_semantic_validation_state": "pending"
+      },
+      {
+        "tranche": "G1",
+        "implementation_state": "integrated",
+        "implementation_commit": "7d74854d8b7539a2a6c81a9fd1dc7dd432fe32aa",
+        "integrated_in_head": true,
+        "fresh_semantic_validation_state": "pending"
+      },
+      {
+        "tranche": "G2",
+        "implementation_state": "integrated",
+        "implementation_commit": "bc711ea6fccc2173acfb8f7c8109c5263a3fd43a",
+        "integrated_in_head": true,
+        "fresh_semantic_validation_state": "pending"
+      }
+    ]
+  },
+  "tranche_state": {
+    "next": {
+      "tranche": "T2",
+      "state": "not_started"
+    },
+    "remaining": [
+      {
+        "tranche": "T3",
+        "state": "not_started"
+      },
+      {
+        "tranche": "T4",
+        "state": "not_started"
+      },
+      {
+        "tranche": "T5",
+        "state": "not_started"
+      },
+      {
+        "tranche": "T6",
+        "state": "not_started"
+      },
+      {
+        "tranche": "T7a",
+        "state": "not_started"
+      },
+      {
+        "tranche": "T7b",
+        "state": "not_started"
+      },
+      {
+        "tranche": "T8",
+        "state": "not_started"
+      }
+    ]
+  },
+  "authority_sources": {
+    "repository_operating_contract": "AGENTS.md",
+    "migration_plan": "docs/plans/2026-07-24-skill-system-overhaul.md",
+    "architecture_contract": "docs/contracts/skill-ports-and-adapters.md",
+    "completion_ledger": "docs/evidence/skill-overhaul-tranche-completion.json",
+    "active_proof_pointer": "docs/contracts/proof-contracts/active.json",
+    "semantic_skill_sources": [
+      "skills/rpi/SKILL.md",
+      "skills/plan/SKILL.md",
+      "skills/implement/SKILL.md",
+      "skills/validate/SKILL.md",
+      "skills/skill-builder/SKILL.md"
+    ],
+    "generated_projection_owner": "scripts/regen-all.sh",
+    "preserved_worktree_reconciliation": "docs/evidence/proof-epochs/epoch-0/t0-worktree-reconciliation.json"
+  },
+  "known_gaps": [
+    {
+      "id": "go-workstream-fresh-semantic-validation",
+      "state": "pending",
+      "detail": "G0, G1, and G2 implementation commits are integrated in HEAD, but the sibling Go release program has no fresh semantic completion verdict."
+    },
+    {
+      "id": "future-skill-tranches",
+      "state": "not_started",
+      "detail": "T2, T3, T4, T5, T6, T7a, T7b, and T8 remain unimplemented and unvalidated."
+    },
+    {
+      "id": "installed-estate-and-release-channel-convergence",
+      "state": "pending",
+      "detail": "Installed skill roots and mixed release channels remain outside this branch's completed T0/T1 subject and require the later compatibility audit."
+    },
+    {
+      "id": "upstream-divergence",
+      "state": "observed",
+      "detail": "The local branch is 25 commits ahead of and 2 commits behind the local origin/main tracking ref."
+    }
+  ],
+  "resume_instructions": [
+    "Re-read AGENTS.md, the migration plan, the completion ledger, and the active proof pointer; require epoch 1 digest f6358e3858d4e6f67844966334547d6df88b58c5a2e9f7f5889ac2d1fadd2340 and transition digest 2f9e95bcb7841030a96b97e5bf1b9d4936ca3247c6f340e70e77abf11f045e8a to remain unchanged.",
+    "Treat this receipt as the only expected new path in the landing worktree and preserve every path in /Users/bo/dev/agentops as caller-owned, out-of-scope state.",
+    "Resume with T2 only: freeze one caller-owned T2 intent for skill-builder, keep legacy API1 sources and skill-catalog.v3 authoritative while skill-contract.v3 remains a shadow readiness rail, and do not start T3.",
+    "Close T2 only with an exact subject manifest, a fresh semantic verdict under the active epoch-1 proof contract, a completion-ledger row, truthful regenerated views, a plan status update, and a new pause drill.",
+    "Validate the integrated G0, G1, and G2 program in a separate fresh semantic judgment before claiming the Go workstream complete."
+  ],
+  "preserved_original_worktree": {
+    "worktree": "/Users/bo/dev/agentops",
+    "branch": "codex/skill-overhaul-seed",
+    "head": "41ee7ebe81ce6de255997489163b8257f7dd2e1b",
+    "observed_dirty": true,
+    "disposition": "OUT_OF_SCOPE",
+    "evidence_ref": "docs/evidence/proof-epochs/epoch-0/t0-worktree-reconciliation.json",
+    "note": "Preserve the original dirty worktree and all caller-owned paths exactly; it is neither the landing branch nor a regeneration, restore, or overwrite source for this overhaul."
+  },
+  "verification": {
+    "active_proof_pointer_descriptor_components_corpus_transition_and_verdict": "PASS",
+    "active_descriptor_component_count": 25,
+    "t0_subject_manifest_canonical_identity_and_historical_candidate_bytes": "PASS",
+    "t0_verdict_canonical_artifact_identity": "PASS",
+    "t0_proof_descriptor_exact_file_identity": "PASS",
+    "t1_subject_manifest_canonical_identity_and_live_subject_bytes": "PASS",
+    "t1_verdict_canonical_artifact_identity": "PASS",
+    "completion_ledger_cross_links": "PASS",
+    "go_implementation_commits_are_ancestors_of_head": "PASS",
+    "digest_methods": {
+      "proof_descriptor_and_transition": "sha256-exact-file-bytes",
+      "subject_manifest": "sha256-canonical-json-with-canonical_manifest_digest-and-git_metadata-omitted",
+      "verdict": "sha256-canonical-json-with-artifact_digest-omitted",
+      "qualification_corpus": "sha256-tree-v1"
+    }
+  }
+}
