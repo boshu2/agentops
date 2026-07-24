@@ -19,6 +19,27 @@ func TestVersion_VersionVariableHasDefault(t *testing.T) {
 	}
 }
 
+// TestVersion_ReleaseFallbackHasNoPrereleaseMarker guards the release-cut
+// invariant that the checked-in `version` fallback (what `go install` builds
+// self-report, since they carry no ldflags-injected tag) is a clean release
+// string, never a pre-release like "3.3.0-rc". Release-readiness audit
+// (docs/audits/release-readiness-3.3-2026-07-20.md, minor 1) flagged a stale
+// "-rc" fallback shipping against 3.3.0 manifests. ldflags-injected
+// git-describe strings (e.g. "v3.2.0-901-g<sha>-dirty") are exempt: they are
+// build-injected, not the checked-in release fallback.
+func TestVersion_ReleaseFallbackHasNoPrereleaseMarker(t *testing.T) {
+	// git-describe strings carry a "-g<hash>" commit segment or a "-dirty"
+	// suffix; the checked-in release fallback does not.
+	if strings.Contains(version, "-g") || strings.HasSuffix(version, "-dirty") {
+		t.Skipf("version %q is an ldflags-injected build-describe string, not the checked-in fallback", version)
+	}
+	for _, marker := range []string{"-rc", "-alpha", "-beta", "-pre", "-dev", "-snapshot"} {
+		if strings.Contains(version, marker) {
+			t.Errorf("release fallback version %q carries pre-release marker %q; a tagged release fallback must be a clean MAJOR.MINOR.PATCH", version, marker)
+		}
+	}
+}
+
 func TestVersion_RegisteredOnRoot(t *testing.T) {
 	found := false
 	for _, cmd := range rootCmd.Commands() {
