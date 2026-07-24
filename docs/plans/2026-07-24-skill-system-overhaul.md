@@ -2,7 +2,7 @@
 id: plan-2026-07-24-skill-system-overhaul
 type: plan
 date: 2026-07-24
-status: ready
+status: in_progress/T0-candidate
 goal: Overhaul every canonical AgentOps skill around the campaign-to-experiment architecture
 architecture_ref: docs/contracts/skill-ports-and-adapters.md
 duel_ref: docs/audits/skill-system-overhaul-duel-2026-07-24/README.md
@@ -81,9 +81,11 @@ The plan is based on the live worktree and executable behavior, not only on
 `AGENTS.md` or architecture prose:
 
 - the worktree exposes 49 `skills/*/SKILL.md` sources;
-- `craft-goal` and its generated projections are untracked or modified
-  remnants associated with commit `16d764b5a`, while the corresponding RPI
-  half is absent or diverged;
+- current `origin/main` already contains commit `16d764b5a`: 28 of its 30
+  paths remain byte-identical and the two generated divergences are explained
+  by later `using-gc` and `skill-builder` source changes; the partial
+  `craft-goal` state exists only in the preserved stale local worktree and is
+  outside the landing baseline;
 - `skills/rpi/scripts/run_once.py` hashes a canonical JSON mapping, while
   `skills/validate/scripts/validate.py` hashes the exact intent bytes;
 - the RPI unit test mocks Validate with RPI's own digest function, so both unit
@@ -96,9 +98,11 @@ The plan is based on the live worktree and executable behavior, not only on
   schema;
 - `scripts/regen-all.sh` continues after a failed generation step, and shared
   generated surfaces are already dirty in the current worktree;
-- `make regen-check` currently exits 126 because that script is not executable;
-  direct Bash invocation then reports pre-existing `implement` twin, hash, GC
-  projection, and generated pack-manifest drift;
+- the original stale local worktree's `make regen-check` exited 126 and direct
+  Bash invocation reported `implement` twin, hash, GC projection, and pack
+  drift; current `origin/main` already invokes the owner through Bash and
+  contains the #988 projection set, so those facts are preserved as
+  reconciliation evidence rather than copied into the landing candidate;
 - `scripts/check-orchestration-skill-boundaries.sh` references a deleted Go
   path, is not wired into the effective gate set, and checks stale wording;
 - the Go CLI has two high-severity defects and five additional verified
@@ -127,7 +131,7 @@ single-mint intent snapshot
   -> before/final subject manifests
   -> complete actual changed paths + factual receipts
   -> one fresh Validate
-  -> verdict.v2
+  -> verdict.v3
   -> rpi-report.v2
   -> stop
 ```
@@ -144,6 +148,14 @@ not a validation-only retry or hidden repair lane.
 `rpi-report.v2` carries a narrow, size-bounded opaque correlation object for
 caller or Goal identifiers. RPI preserves those values but never interprets
 campaign state.
+
+`verdict.v2` remains an immutable legacy statement and its existing schema is
+never widened into a second shape. New writers emit `verdict.v3`; readers
+dispatch strictly by `schema_version` and retain a read-only v2 branch.
+Likewise, `rpi-report.v1` remains legacy-readable while new runs emit only
+`rpi-report.v2`. New contracts use `intent_digest` for the digest of the whole
+exact intent snapshot rather than preserving the misleading
+`acceptance_digest` name.
 
 ### D2. Proof contracts advance by non-self-certifying epochs
 
@@ -228,10 +240,13 @@ axes. Tier is derived or retired. Disposition is curation status only.
 Taxonomy additions require a design review that proves the concept cannot be
 derived from existing axes.
 
-The v3 compiler is a shadow readiness rail while v2 remains authoritative.
-Owning tranches populate v3 data and fixtures without publishing it as live
-authority. One all-catalog cutover activates v3 and retires the old writers;
-there is never a period with two authoritative schemas.
+The `skill-contract.v3` compiler is a shadow readiness rail while legacy API1
+source contracts and the generated `skill-catalog.v3` remain authoritative.
+Owning tranches populate `metadata.contract_v3` data and fixtures without
+publishing them as live authority. One all-catalog cutover promotes the strict
+source shape, emits `skill-catalog.v4`, and retires the old writers; there is
+never a period with two authoritative schemas or two incompatible catalogs
+claiming version 3.
 
 ### D5. Proof follows transitive dependencies
 
@@ -361,8 +376,9 @@ The final catalog must prove all of the following:
 2. **Core graph:** only RPI hard-depends on Plan, Implement, and Validate.
 3. **Campaign separation:** no skill selects another experiment or owns
    cumulative campaign state.
-4. **Verdict authority:** only Validate writes `verdict.v2`, under an activated
-   proof contract.
+4. **Verdict authority:** only Validate writes binding verdicts. Historical
+   `verdict.v2` stays immutable and read-only; the activated exact kernel emits
+   strict `verdict.v3`.
 5. **Identity:** intent, subject, proof contract, and result lineage use exact
    digest references with single-mint transport.
 6. **Criterion coverage:** every required stable criterion ID has evidence;
@@ -383,9 +399,9 @@ The final catalog must prove all of the following:
     facts resolve to living owners.
 14. **Context discipline:** the current 250-line kernel cap remains an interim
     warning and gate until an always-loaded byte/token metric replaces it.
-15. **Compatibility:** v3 readers negotiate legacy inputs across declared
-    release channels, and deprecated names are removed only by observed-zero
-    policy.
+15. **Compatibility:** `skill-catalog.v4` readers negotiate legacy catalog
+    v1/v2/v3 inputs across declared release channels, and deprecated names are
+    removed only by observed-zero policy.
 16. **Reachability:** every retained skill wins at least one justified
     portfolio scenario and cannot acquire forbidden authority through routing.
 
@@ -438,7 +454,7 @@ repairs.
 | `scope` | judgment; plan_review | Frontload constraints, type review findings, model generated companions as scope classes, and remain advisory. | T4 |
 | `security` | evidence; validate_evidence, standalone | Separate read-only collection from explicitly authorized mutating modes, type taxonomy/gap/findings evidence, and forbid risk acceptance or policy approval. | T4 |
 | `shared` | support; cross_cutting | Relocate neutral contracts to declared owners, migrate all consumers, semantically retire the empty skill root, and delay physical deletion until observed-zero evidence. | T7b |
-| `skill-builder` | implementation; implement_method | Own v3 placement support, semantic stocktake, effect/output/trigger grammar, accurate fix receipts, and hostile behavioral fixtures. | T2 |
+| `skill-builder` | implementation; implement_method | Own `skill-contract.v3` placement support, semantic stocktake, effect/output/trigger grammar, accurate fix receipts, and hostile behavioral fixtures. | T2 |
 | `standards` | evidence; plan_input, implement_method, validate_evidence | Repair practice slugs, validate reference currency, type cited findings, and distinguish advice from acceptance. | T4 |
 | `status` | support; goal_observe | Move runtime-specific hints to projections, narrow triggers, type JSON output, and test corrupt or unavailable evidence stores. | T7b |
 | `swarm` | runtime; runtime_transport | Require path, resource, and external-effect isolation; type admission, deadlines, cancellation, cleanup, and batch results. | T7a |
@@ -455,7 +471,8 @@ repairs.
 Scope:
 
 - freeze the 49-skill path and digest ledger;
-- reconcile commit `16d764b5a` and dirty worktree paths as
+- reconcile commit `16d764b5a`, the clean origin-based landing tree, and the
+  preserved stale worktree as
   `PRESENT_IDENTICAL | PRESENT_DIVERGED | ABSENT | RESCHEDULED | OUT_OF_SCOPE`;
 - capture the pre-change routing corpus and live-model baseline;
 - classify every plan-named check for liveness and seed negative witnesses;
@@ -474,7 +491,8 @@ Acceptance:
   proven with a seeded generator failure;
 - every proof edge is classified, with no UNKNOWN edge claimed as PASS support;
 - the routing baseline can be replayed after descriptions change;
-- the #988/craft-goal partial state has an explicit disposition; and
+- the #988/craft-goal state and the stale local worktree have explicit,
+  distinct dispositions; and
 - stopping after T0 leaves current authority and generated views truthful.
 
 ### T1 — Exact kernel and proof epoch 1
@@ -520,11 +538,12 @@ skill-builder
 
 Scope:
 
-- one v3 grammar/compiler and hostile fixture corpus;
+- one `skill-contract.v3` grammar/compiler and hostile fixture corpus;
 - primary layer, seams, authority, effects, typed artifacts, triggers, failure
   semantics, and proof class;
 - explicit retirement/derivation of redundant taxonomy;
-- a v3 strict reader and legacy-tolerant compatibility branch;
+- a strict `skill-catalog.v4` reader and legacy-tolerant v1/v2/v3
+  compatibility branches;
 - a migration-readiness ledger for all 49 skills;
 - one projection owner map and fail-fast regeneration command; and
 - staging, pre-run recovery bundle, manifest-last publication, and fault
@@ -532,7 +551,8 @@ Scope:
 
 Acceptance:
 
-- v2 remains the sole live authority while v3 shadow validation is incomplete;
+- legacy API1 source contracts and `skill-catalog.v3` remain the sole live
+  authority while `skill-contract.v3` shadow validation is incomplete;
 - unknown or forbidden authority, undeclared effects, bad artifacts, trigger
   collisions, and stale projections fail hostile fixtures;
 - check and write modes render identical bytes;
@@ -563,7 +583,7 @@ Acceptance:
 
 - product, fitness, campaign policy, and advisory admission have disjoint
   authority and trigger probes;
-- v3 metadata is readiness-complete but remains non-authoritative;
+- `metadata.contract_v3` is readiness-complete but remains non-authoritative;
 - live-model routing does not regress on the frozen T0 scenarios; and
 - the `ao goals` CLI command remains explicitly outside the rename.
 
@@ -581,7 +601,7 @@ Acceptance:
 - every advisory/evidence result names sources, omissions, uncertainty, and its
   downstream seam;
 - no strategy emits readiness, risk acceptance, work selection, or
-  `verdict.v2`;
+  a binding verdict;
 - citations, authorization, disagreement, missing evidence, and false-positive
   boundaries are executable;
 - `security` emits typed specialist evidence and separately authorizes any
@@ -661,16 +681,18 @@ Acceptance:
   physical deletion; and
 - compatibility/tombstone counters are ready for the observed-zero window.
 
-### T8 — v3 cutover and portfolio convergence
+### T8 — skill-contract.v3 / skill-catalog.v4 cutover and portfolio convergence
 
 Scope:
 
-- freeze all 49 v3-ready sources;
+- freeze all 49 `skill-contract.v3`-ready sources;
 - compile the global routing corpus and adversarial cross-product;
-- run current versus v3 routing plus a pre/post live-model sample;
+- run legacy versus `skill-contract.v3` routing plus a pre/post live-model
+  sample;
 - perform the installed-estate/channel compatibility audit;
 - transactionally publish every generated projection once;
-- activate v3 strict authority and retire old schema writers;
+- activate strict `skill-contract.v3` source authority, publish
+  `skill-catalog.v4`, and retire old schema writers;
 - produce the per-skill completion matrix keyed by verdict and epoch digests;
 - conformance-check this matrix against the generated catalog; and
 - remove the architecture contract's temporary pointer to this dated plan.
@@ -681,7 +703,8 @@ Acceptance:
   effects, and backed by the required probe;
 - every changed routing decision is explained and wrong-authority behavior does
   not regress;
-- v3 and legacy reader branches pass their support-window fixtures;
+- catalog v4 and legacy v1/v2/v3 reader branches pass their support-window
+  fixtures;
 - regeneration is complete, byte-idempotent, drift-free, and recoverable;
 - no canonical placement or lifecycle fact remains owned only by this plan;
 - this plan is marked `superseded-by` the generated contract/catalog; and
@@ -766,11 +789,13 @@ bash skills/skill-builder/scripts/audit.sh --strict skills/<slug>
 bash scripts/validate-skill-frontmatter.sh --strict
 python3 scripts/generate-skill-mesh.py --check
 bash scripts/validate-codex-generated-artifacts.sh --scope worktree
-bash scripts/validate-codex-api-parity.sh
+bash scripts/validate-codex-api-conformance.sh
 bash scripts/validate-codex-override-coverage.sh
-bash scripts/validate-image-manifests.sh
 bash scripts/check-orchestration-skill-boundaries.sh
 ```
+
+Image manifest parity is owned by `generate-skill-mesh.py --check`; the
+retired standalone image-manifest command is not a second gate.
 
 Each owning tranche adds its focused RED witnesses. A Go reader change also
 runs focused package tests, `go test ./...`, `go vet ./...`, the pinned lint

@@ -1,0 +1,124 @@
+{
+  "schema_version": "agentops.t0-check-liveness.v1",
+  "classification": ["GREEN", "RED_FOR_CAUSE", "DEAD"],
+  "checks": [
+    {
+      "id": "skill-heal",
+      "command": "bash skills/skill-builder/scripts/heal.sh --check --strict skills/<slug>",
+      "status": "GREEN",
+      "result": "49/49 structurally clean",
+      "negative_witness": "tests/integration/test_skill_audit.bats",
+      "load_bearing": true
+    },
+    {
+      "id": "skill-audit",
+      "command": "bash skills/skill-builder/scripts/audit.sh --strict skills/<slug>",
+      "status": "RED_FOR_CAUSE",
+      "result": "12/49 nonzero: hard failures for implement and plan; warning exits for cass, cc-hooks, idea-genie, ntm, research, rpi, scope, toil-mining, using-gc, validate",
+      "negative_witness": "tests/scripts/skill-audit-rubric-pass.bats",
+      "load_bearing": false,
+      "reason": "Real later-tranche semantic debt; not used to claim T0 PASS."
+    },
+    {
+      "id": "strict-frontmatter",
+      "command": "bash scripts/validate-skill-frontmatter.sh --strict",
+      "status": "GREEN",
+      "result": "49/49",
+      "negative_witness": "tests/scripts/validate-skill-frontmatter-negative.bats",
+      "load_bearing": true
+    },
+    {
+      "id": "skill-mesh",
+      "command": "python3 scripts/generate-skill-mesh.py --check",
+      "status": "GREEN",
+      "result": "all mesh projections current",
+      "negative_witness": "scripts/check-skill-mesh.py plus generated-artifact negative harnesses",
+      "load_bearing": true
+    },
+    {
+      "id": "codex-generated-artifacts",
+      "command": "bash scripts/validate-codex-generated-artifacts.sh --scope worktree",
+      "status": "GREEN",
+      "result": "source/twin/marker/hash relationships agree",
+      "negative_witness": "tests/scripts/test-codex-generated-artifacts.sh (11/11)",
+      "load_bearing": true
+    },
+    {
+      "id": "codex-api-conformance",
+      "command": "bash scripts/validate-codex-api-conformance.sh",
+      "status": "GREEN",
+      "result": "current declared API projection conforms",
+      "negative_witness": "tests/scripts/test-codex-parity-audit.sh",
+      "load_bearing": true
+    },
+    {
+      "id": "codex-override-coverage",
+      "command": "bash scripts/validate-codex-override-coverage.sh",
+      "status": "GREEN",
+      "result": "repository catalog validates end to end",
+      "negative_witness": "tests/skills/test-codex-override-coverage.sh (6/6)",
+      "load_bearing": true
+    },
+    {
+      "id": "orchestration-boundary",
+      "command": "bash scripts/check-orchestration-skill-boundaries.sh",
+      "status": "GREEN",
+      "result": "current source-only boundary; deleted adapters retired",
+      "negative_witness": "tests/scripts/orchestration-skill-boundaries.bats",
+      "load_bearing": true
+    },
+    {
+      "id": "regen-all",
+      "command": "make regen-check",
+      "status": "GREEN",
+      "result": "11 owner stages current and fail-fast",
+      "negative_witness": "tests/scripts/regen-all-fail-fast.bats",
+      "load_bearing": true
+    },
+    {
+      "id": "documentation",
+      "command": "make docs-check",
+      "status": "GREEN",
+      "result": "402 links and 49-skill inventory",
+      "negative_witness": "tests/docs/validate-doc-release.sh fixtures",
+      "load_bearing": true
+    },
+    {
+      "id": "bootstrap-proof-freeze",
+      "command": "python3 scripts/check-proof-contract.py",
+      "status": "GREEN",
+      "result": "epoch 0 pointer, seven components, corpus, modes, and transition recorder agree",
+      "negative_witness": "tests/python/test_check_proof_contract.py",
+      "load_bearing": true
+    },
+    {
+      "id": "bootstrap-transition",
+      "command": "python3 -m unittest tests/python/test_bootstrap_proof_transition.py -v",
+      "status": "GREEN",
+      "result": "single CAS activation and four hostile cases pass",
+      "negative_witness": "tests/python/test_bootstrap_proof_transition.py",
+      "load_bearing": true
+    },
+    {
+      "id": "t0-evidence-ledgers",
+      "command": "python3 scripts/check-t0-evidence.py",
+      "status": "GREEN",
+      "result": "49 skills, 32 routes, liveness, proof chain, reconciliation, estate, and pause ledgers agree",
+      "negative_witness": "tests/python/test_check_t0_evidence.py",
+      "load_bearing": true
+    }
+  ],
+  "retired_checks": [
+    {
+      "command": "bash scripts/validate-codex-api-parity.sh",
+      "status": "DEAD",
+      "replacement": "bash scripts/validate-codex-api-conformance.sh"
+    },
+    {
+      "command": "bash scripts/validate-image-manifests.sh",
+      "status": "DEAD",
+      "replacement": "python3 scripts/generate-skill-mesh.py --check"
+    }
+  ],
+  "remote_ci_gap": "Local checks are live. Explicit required-job wiring for heal/frontmatter/regen is not independently proven and cannot support a remote-CI claim."
+}

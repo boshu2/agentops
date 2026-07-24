@@ -1,0 +1,71 @@
+{
+  "schema_version": "agentops.t0-worktree-reconciliation.v1",
+  "landing": {
+    "worktree": "/Users/bo/dev/agentops-worktrees/skill-overhaul",
+    "branch": "codex/skill-overhaul-20260724",
+    "origin_main_base": "edc018f6ef1e9ff53ae9068c3e218711ce9e6c04",
+    "seed_commit": "b6794d76e62c4aca2ba682474090b6de0026a0f3",
+    "disposition": "authoritative_landing_candidate"
+  },
+  "preserved_original": {
+    "worktree": "/Users/bo/dev/agentops",
+    "branch": "codex/skill-overhaul-seed",
+    "seed_commit": "41ee7ebe8",
+    "disposition": "OUT_OF_SCOPE",
+    "reason": "Preserved stale history and caller-owned dirty paths; never a regeneration or restore source for this landing candidate.",
+    "caller_owned_paths": [
+      "skills/implement/scripts/validate.sh",
+      "tests/scripts/tranche-candidate-boundary.bats"
+    ]
+  },
+  "commit_16d764b5a": {
+    "ancestor_of_origin_main": true,
+    "counts": {
+      "PRESENT_IDENTICAL": 28,
+      "PRESENT_DIVERGED": 2,
+      "ABSENT": 0,
+      "RESCHEDULED": 0,
+      "OUT_OF_SCOPE": 0
+    },
+    "PRESENT_DIVERGED": [
+      {
+        "path": "skills/catalog.json",
+        "reason": "Later generated using-gc description change."
+      },
+      {
+        "path": "skills-codex/.agentops-manifest.json",
+        "reason": "Later generated hashes plus the T0 skill-builder metadata repair."
+      }
+    ],
+    "PRESENT_IDENTICAL": [
+      "docs/SKILL-ROUTER.md",
+      "docs/SKILLS.md",
+      "docs/contracts/context-map.md",
+      "docs/reference/agentops-skill-domain-map.md",
+      "docs/reference/agentops-skill-graph.md",
+      "images/claude/manifest.json",
+      "images/codex/manifest.json",
+      "images/gemini/plugin.json",
+      "images/gemini/skills/craft-goal/SKILL.md",
+      "images/gemini/skills/rpi/SKILL.md",
+      "registry.json",
+      "skills-codex-overrides/catalog.json",
+      "skills-codex/craft-goal/.agentops-generated.json",
+      "skills-codex/craft-goal/SKILL.md",
+      "skills-codex/craft-goal/prompt.md",
+      "skills-codex/craft-goal/references/goal-prompt.md",
+      "skills-codex/craft-goal/scripts/validate.sh",
+      "skills-codex/rpi/.agentops-generated.json",
+      "skills-codex/rpi/SKILL.md",
+      "skills-codex/rpi/references/rpi.feature",
+      "skills-codex/rpi/scripts/validate.sh",
+      "skills/SKILL-TIERS.md",
+      "skills/craft-goal/SKILL.md",
+      "skills/craft-goal/references/goal-prompt.md",
+      "skills/craft-goal/scripts/validate.sh",
+      "skills/rpi/SKILL.md",
+      "skills/rpi/references/rpi.feature",
+      "skills/rpi/scripts/validate.sh"
+    ]
+  }
+}

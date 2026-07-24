@@ -1,0 +1,73 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agentops.dev/schemas/proof-contract.v1.schema.json",
+  "title": "proof-contract.v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "epoch",
+    "components",
+    "qualification_corpus",
+    "qualification_subject_manifest_digest",
+    "transition_recorder",
+    "known_gaps"
+  ],
+  "properties": {
+    "schema_version": {"const": "proof-contract.v1"},
+    "epoch": {"type": "integer", "minimum": 0},
+    "components": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["role", "ref", "digest", "mode"],
+        "properties": {
+          "role": {"type": "string", "minLength": 1},
+          "ref": {"$ref": "#/$defs/ref"},
+          "digest": {"$ref": "#/$defs/digest"},
+          "mode": {"$ref": "#/$defs/mode"}
+        }
+      }
+    },
+    "qualification_corpus": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["algorithm", "ref", "digest"],
+      "properties": {
+        "algorithm": {"const": "sha256-tree-v1"},
+        "ref": {"$ref": "#/$defs/ref"},
+        "digest": {"$ref": "#/$defs/digest"}
+      }
+    },
+    "qualification_subject_manifest_digest": {
+      "oneOf": [
+        {"type": "null"},
+        {"$ref": "#/$defs/digest"}
+      ]
+    },
+    "transition_recorder": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["ref", "digest", "mode"],
+      "properties": {
+        "ref": {"$ref": "#/$defs/ref"},
+        "digest": {"$ref": "#/$defs/digest"},
+        "mode": {"$ref": "#/$defs/mode"}
+      }
+    },
+    "known_gaps": {
+      "type": "array",
+      "items": {"type": "string", "minLength": 1}
+    }
+  },
+  "$defs": {
+    "digest": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "mode": {"type": "string", "pattern": "^[0-7]{4}$"},
+    "ref": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$)).+$"
+    }
+  }
+}

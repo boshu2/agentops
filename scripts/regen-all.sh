@@ -17,7 +17,6 @@ while [[ $# -gt 0 ]]; do
   shift
 done
 
-fail=0
 log="$(mktemp "${TMPDIR:-/tmp}/regen-all.XXXXXX")"
 trap 'rm -f "$log"' EXIT
 
@@ -29,7 +28,7 @@ step() {
   else
     printf '  ✗ %s\n' "$label"
     tail -n 12 "$log" | sed 's/^/      /'
-    fail=1
+    return 1
   fi
 }
 
@@ -64,7 +63,7 @@ if [[ "$mode" == regen ]]; then
   step "CLI surface inventory" bash scripts/check-cmdao-surface-parity.sh --write-surface
   step "documentation index" python3 scripts/generate-documentation-index.py
   echo
-  [[ $fail -eq 0 ]] && echo "Regeneration complete. Review the diff and run scripts/regen-all.sh --check." || echo "Regeneration failed."
+  echo "Regeneration complete. Review the diff and run scripts/regen-all.sh --check."
 else
   echo "== check metadata-owned projections =="
   step "Codex twins" codex_sync
@@ -79,7 +78,5 @@ else
   step "documentation index" python3 scripts/generate-documentation-index.py --check
   step "documentation release checks" bash tests/docs/validate-doc-release.sh
   echo
-  [[ $fail -eq 0 ]] && echo "All generated projections are current." || echo "Projection drift or validation failure detected."
+  echo "All generated projections are current."
 fi
-
-exit "$fail"

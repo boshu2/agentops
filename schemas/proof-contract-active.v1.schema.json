@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agentops.dev/schemas/proof-contract-active.v1.schema.json",
+  "title": "proof-contract-active.v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "epoch",
+    "contract_ref",
+    "contract_digest",
+    "activation_transition_ref",
+    "activation_transition_digest"
+  ],
+  "properties": {
+    "schema_version": {"const": "proof-contract-active.v1"},
+    "epoch": {"type": "integer", "minimum": 0},
+    "contract_ref": {"$ref": "#/$defs/ref"},
+    "contract_digest": {"$ref": "#/$defs/digest"},
+    "activation_transition_ref": {
+      "oneOf": [{"type": "null"}, {"$ref": "#/$defs/ref"}]
+    },
+    "activation_transition_digest": {
+      "oneOf": [{"type": "null"}, {"$ref": "#/$defs/digest"}]
+    }
+  },
+  "$defs": {
+    "digest": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "ref": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$)).+$"
+    }
+  }
+}

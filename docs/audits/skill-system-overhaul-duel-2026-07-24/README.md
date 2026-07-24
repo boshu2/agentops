@@ -258,15 +258,16 @@ The final synthesis was checked independently of the wizard prose:
 - `git diff --check` passed;
 - `make docs-check` passed, including 424 links, exact 49-skill metadata
   coverage, and the documentation release gate;
-- `make regen-check` did not run its owner: it exits 126 because
-  `scripts/regen-all.sh` is not executable; and
-- direct `bash scripts/regen-all.sh --check` confirmed pre-existing drift in
-  the `implement` Codex twin and hashes, GC projections, and generated pack
-  manifest.
+- in the original stale local worktree, `make regen-check` did not run its
+  owner because the old Make target executed a non-executable script; and
+- direct `bash scripts/regen-all.sh --check` in that original worktree
+  confirmed pre-existing drift in the `implement` Codex twin and hashes, GC
+  projections, and generated pack manifest.
 
-The last two results are not plan-document failures. They are concrete T0
-check-liveness and dirty-baseline defects and are therefore retained as
-blocking evidence rather than repaired during this analysis.
+The landing branch is based on current `origin/main`, whose Make target already
+invokes the script through Bash and whose #988 projections are complete. The
+old results remain concrete T0 check-liveness and dirty-baseline evidence; they
+are not copied forward as candidate defects.
 
 ## Raw record
 

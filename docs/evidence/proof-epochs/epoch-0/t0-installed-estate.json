@@ -1,0 +1,62 @@
+{
+  "schema_version": "agentops.t0-installed-estate.v1",
+  "captured_on": "2026-07-24",
+  "source_links": [
+    {
+      "root": "/Users/bo/.claude/skills",
+      "rpi_target": "/Users/bo/dev/agentops/skills/rpi",
+      "status": "targets_preserved_original_not_landing_candidate"
+    },
+    {
+      "root": "/Users/bo/.codex/skills",
+      "rpi_target": "/Users/bo/dev/agentops/skills/rpi",
+      "status": "targets_preserved_original_not_landing_candidate"
+    },
+    {
+      "root": "/Users/bo/.gemini/skills",
+      "rpi_target": "/Users/bo/dev/agentops/skills/rpi",
+      "status": "targets_preserved_original_not_landing_candidate"
+    },
+    {
+      "root": "/Users/bo/.cursor/skills",
+      "rpi_target": "/Users/bo/dev/agentops/skills/rpi",
+      "status": "targets_preserved_original_not_landing_candidate"
+    }
+  ],
+  "known_copy_conflicts": [
+    "agent-mail",
+    "cass",
+    "cc-hooks",
+    "dcg",
+    "ntm",
+    "rch"
+  ],
+  "cli_binaries": [
+    {
+      "path": "/Users/bo/go/bin/ao",
+      "version": "v3.2.0-486-ge72ddfc51",
+      "channel": "development"
+    },
+    {
+      "path": "/Users/bo/.local/bin/ao",
+      "version": "3.2.0-rc",
+      "channel": "local_default"
+    },
+    {
+      "path": "/opt/homebrew/bin/ao",
+      "version": "3.3.0-rc",
+      "target": "/Users/bo/dev/agentops/cli/bin/ao",
+      "channel": "repository_link"
+    }
+  ],
+  "release_channels_requiring_compatibility": [
+    "git checkout plus ao skills link symlinks",
+    "frozen npx skills add copies",
+    "Claude plugin bundles",
+    "versioned Codex plugin caches",
+    "generated Gemini image",
+    "separately released Homebrew or Go CLI binary",
+    "mixed old-binary/new-repo and new-binary/old-copy estates"
+  ],
+  "mutation_performed": false
+}

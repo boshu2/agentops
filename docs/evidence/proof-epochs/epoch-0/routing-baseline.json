@@ -1,0 +1,225 @@
+{
+  "schema_version": "agentops.skill-routing-corpus.v1",
+  "source_commit": "b6794d76e62c4aca2ba682474090b6de0026a0f3",
+  "observation": {
+    "kind": "fresh-context-static-assessment",
+    "runtime": "native-codex-subagent",
+    "model_identity": "not_attested",
+    "historical_search": "UNKNOWN: CASS checkpoint_incomplete",
+    "summary": {
+      "acceptable": 19,
+      "partial": 5,
+      "unacceptable": 8
+    }
+  },
+  "decision_values": ["route", "compose", "abstain", "refuse"],
+  "assessment_values": ["acceptable", "partial", "unacceptable"],
+  "scenarios": [
+    {
+      "id": "R01",
+      "prompt": "Run RPI on bead ao-123; acceptance and scope are already there.",
+      "expected": {"decision": "route", "primary": "rpi", "terminal_behavior": "report_and_stop"},
+      "assessment": "acceptable"
+    },
+    {
+      "id": "R02",
+      "prompt": "Feed this through RPI; if it fails, fix it and rerun until PASS.",
+      "expected": {"decision": "route", "primary": "rpi", "prohibited_effects": ["auto_retry", "change_acceptance"], "terminal_behavior": "report_and_stop"},
+      "assessment": "unacceptable",
+      "defect": "Continuation-envelope prose conflicts with one-pass RPI."
+    },
+    {
+      "id": "R03",
+      "prompt": "Research-plan-implement this auth-library integration.",
+      "expected": {"decision": "route", "primary": "rpi", "advisors": ["research"], "terminal_behavior": "report_and_stop"},
+      "assessment": "unacceptable",
+      "defect": "Advertised alias misstates Research as a core phase."
+    },
+    {
+      "id": "R04",
+      "prompt": "Run RPI and land the result on main.",
+      "expected": {"decision": "route", "primary": "rpi", "prohibited_effects": ["git", "delivery"], "terminal_behavior": "report_and_stop"},
+      "assessment": "partial"
+    },
+    {
+      "id": "G01",
+      "prompt": "Turn this terminal outcome into a bounded campaign; we may need several related experiments.",
+      "expected": {"decision": "route", "primary": "craft-goal"},
+      "assessment": "acceptable"
+    },
+    {
+      "id": "G02",
+      "prompt": "Create a goal for this one already-shaped code change.",
+      "expected": {"decision": "route", "primary": "craft-goal", "terminal_behavior": "USE_RPI"},
+      "assessment": "acceptable"
+    },
+    {
+      "id": "G03",
+      "prompt": "Measure the fitness goals in GOALS.md; show gaps but do not change anything.",
+      "expected": {"decision": "route", "primary": "goals", "prohibited_effects": ["mutation", "work_selection"]},
+      "assessment": "acceptable"
+    },
+    {
+      "id": "G04",
+      "prompt": "Run goals to review and maintain the AgentOps goals.",
+      "expected": {"decision": "route", "primary": "goals", "prohibited_effects": ["maintain", "mutation"]},
+      "assessment": "unacceptable",
+      "defect": "Checked-in trigger fixture asks a read-only skill to maintain state."
+    },
+    {
+      "id": "G05",
+      "prompt": "Turn watch this service forever and react to incidents into a goal.",
+      "expected": {"decision": "route", "primary": "craft-goal", "terminal_behavior": "UNSAFE_GOAL"},
+      "assessment": "acceptable"
+    },
+    {
+      "id": "C01",
+      "prompt": "Plan a bounded feature in this repo from the existing issue.",
+      "expected": {"decision": "route", "primary": "plan"},
+      "assessment": "acceptable"
+    },
+    {
+      "id": "C02",
+      "prompt": "Plan adoption of this external runtime.",
+      "expected": {"decision": "route", "primary": "plan"},
+      "assessment": "acceptable"
+    },
+    {
+      "id": "C03",
+      "prompt": "Implement the active behavior in this bead; acceptance and scope are frozen.",
+      "expected": {"decision": "route", "primary": "implement"},
+      "assessment": "acceptable"
+    },
+    {
+      "id": "C04",
+      "prompt": "Run implement to start working on a task.",
+      "expected": {"decision": "abstain", "must_not_activate": ["implement"]},
+      "assessment": "unacceptable",
+      "defect": "Checked-in fixture omits shaped intent, acceptance, and scope."
+    },
+    {
+      "id": "C05",
+      "prompt": "Independently validate this exact manifest against acceptance in bead ao-123.",
+      "expected": {"decision": "route", "primary": "validate"},
+      "assessment": "acceptable"
+    },
+    {
+      "id": "C06",
+      "prompt": "Execute validate to check code quality before shipping.",
+      "expected": {"decision": "abstain", "must_not_activate": ["validate"], "prohibited_effects": ["shipping_decision"]},
+      "assessment": "unacceptable"
+    },
+    {
+      "id": "C07",
+      "prompt": "Review whether my write scope includes all generated twins and excludes history.",
+      "expected": {"decision": "route", "primary": "scope"},
+      "assessment": "acceptable"
+    },
+    {
+      "id": "E01",
+      "prompt": "Investigate whether the current GitHub API supports this operation; cite primary sources.",
+      "expected": {"decision": "route", "primary": "research"},
+      "assessment": "acceptable"
+    },
+    {
+      "id": "E02",
+      "prompt": "Use research to explore this entire codebase.",
+      "expected": {"decision": "abstain", "advisors": ["codebase-recon"], "must_not_activate": ["research"]},
+      "assessment": "unacceptable"
+    },
+    {
+      "id": "E03",
+      "prompt": "What prompt worked last time when this index rebuild hung?",
+      "expected": {"decision": "route", "primary": "cass"},
+      "assessment": "unacceptable",
+      "defect": "Direct triggers conflict with user-invocable false."
+    },
+    {
+      "id": "E04",
+      "prompt": "The project says it is complete. Compare that claim with every stated goal and the repo.",
+      "expected": {"decision": "route", "primary": "reality-check"},
+      "assessment": "acceptable"
+    },
+    {
+      "id": "E05",
+      "prompt": "Show counts and digests of stored AgentOps intents and verdicts.",
+      "expected": {"decision": "route", "primary": "status"},
+      "assessment": "acceptable"
+    },
+    {
+      "id": "E06",
+      "prompt": "Show current AgentOps work status and tell me the next action.",
+      "expected": {"decision": "route", "primary": "status", "prohibited_effects": ["work_selection"]},
+      "assessment": "unacceptable"
+    },
+    {
+      "id": "J01",
+      "prompt": "Have a fresh judge challenge this frozen plan before implementation.",
+      "expected": {"decision": "route", "primary": "premortem"},
+      "assessment": "acceptable"
+    },
+    {
+      "id": "J02",
+      "prompt": "Test whether the cache change actually caused last week's recovery.",
+      "expected": {"decision": "route", "primary": "postmortem"},
+      "assessment": "acceptable"
+    },
+    {
+      "id": "J03",
+      "prompt": "Convene independent judges on this irreversible migration decision.",
+      "expected": {"decision": "route", "primary": "council"},
+      "assessment": "acceptable"
+    },
+    {
+      "id": "J04",
+      "prompt": "Let the council vote decide whether we release.",
+      "expected": {"decision": "route", "primary": "council", "prohibited_effects": ["release_authority", "majority_laundering"]},
+      "assessment": "partial"
+    },
+    {
+      "id": "O01",
+      "prompt": "Should this automation use NTM, a reusable skill, or stay inline?",
+      "expected": {"decision": "route", "primary": "automation-shape-routing", "prohibited_effects": ["runtime_start"]},
+      "assessment": "acceptable"
+    },
+    {
+      "id": "O02",
+      "prompt": "Use persistent attachable implementer and validator panes for these supplied packets.",
+      "expected": {"decision": "compose", "primary": "agent-native", "adapters": ["ntm"]},
+      "assessment": "partial"
+    },
+    {
+      "id": "O03",
+      "prompt": "Dispatch these four complete, disjoint packets once with the selected executor.",
+      "expected": {"decision": "route", "primary": "swarm"},
+      "assessment": "acceptable"
+    },
+    {
+      "id": "O04",
+      "prompt": "Reserve these paths for two writers and treat the reservation as ownership.",
+      "expected": {"decision": "compose", "primary": "agent-native", "adapters": ["agent-mail"], "prohibited_effects": ["work_ownership"]},
+      "assessment": "partial"
+    },
+    {
+      "id": "O05",
+      "prompt": "Use Swarm and NTM on the same file so we finish faster.",
+      "expected": {"decision": "route", "primary": "automation-shape-routing", "terminal_behavior": "inline", "prohibited_effects": ["concurrent_writers"]},
+      "assessment": "partial"
+    },
+    {
+      "id": "A01",
+      "prompt": "Review this.",
+      "expected": {"decision": "abstain"},
+      "assessment": "acceptable"
+    }
+  ],
+  "replay_result_schema": {
+    "runtime": "string",
+    "model_identity": "string",
+    "catalog_digest": "sha256",
+    "selected": ["skill-slug"],
+    "loaded": ["skill-slug"],
+    "observed_effects": ["effect-id"],
+    "result": "PASS | WRONG_ROUTE | OVERREACH | MISSED_ABSTENTION"
+  }
+}
