@@ -2,7 +2,7 @@
 id: plan-2026-07-24-skill-system-overhaul
 type: plan
 date: 2026-07-24
-status: in_progress/T0-candidate
+status: in_progress/T0-repair-candidate
 goal: Overhaul every canonical AgentOps skill around the campaign-to-experiment architecture
 architecture_ref: docs/contracts/skill-ports-and-adapters.md
 duel_ref: docs/audits/skill-system-overhaul-duel-2026-07-24/README.md
@@ -189,6 +189,13 @@ epoch 0. Its known composed RPI digest defect remains an explicit proof gap:
 epoch 0 may judge the candidate directly under its frozen rules, but no
 qualification may rely on the broken RPI dispatcher edge. The first qualified
 and activated revision becomes epoch 1.
+
+Fresh T0 validation rejected the first frozen root before it minted any PASS:
+its recorder did not bind candidate components to live bytes, modes, and the
+judged subject. That descriptor and FAIL remain immutable. An explicit
+operator-authorized bootstrap-root replacement selects corrected epoch 0b;
+this pre-activation escape hatch is unavailable after any PASS or epoch
+transition.
 
 ### D3. Required gaps and declared exclusions are different types
 

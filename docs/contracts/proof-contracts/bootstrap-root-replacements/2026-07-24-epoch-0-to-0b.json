@@ -1,0 +1,12 @@
+{
+  "schema_version": "proof-bootstrap-root-replacement.v1",
+  "rejected_contract_ref": "docs/contracts/proof-contracts/epoch-0/descriptor.json",
+  "rejected_contract_digest": "743555ffa5e5b30a03499cb6c800be69a21689932da0aec98e22e8699ecb4907",
+  "rejecting_verdict_ref": "docs/evidence/proof-epochs/epoch-0/verdicts/bf865e3233c1e19e6346d37403db775e9fb0fa6b252d14af88e4c9aaa081d804.json",
+  "rejecting_verdict_digest": "bf865e3233c1e19e6346d37403db775e9fb0fa6b252d14af88e4c9aaa081d804",
+  "replacement_contract_ref": "docs/contracts/proof-contracts/epoch-0b/descriptor.json",
+  "replacement_contract_digest": "b9735c94f7de98c4d31db93081351a6a1a78f8e03897dad61792277bb36a0302",
+  "authority": "caller-authorized-orchestrator:/root",
+  "reason": "No PASS was minted under epoch 0. Fresh validation proved that its recorder could activate nonexistent and unbound candidate components, so the rejected root remains immutable while a corrected bootstrap root is selected before epoch 1 qualification.",
+  "replaced_at": "2026-07-24T19:31:00Z"
+}

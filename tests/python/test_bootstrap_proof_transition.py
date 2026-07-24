@@ -10,7 +10,7 @@ import unittest
 
 
 ROOT = Path(__file__).resolve().parents[2]
-RECORDER = ROOT / "scripts" / "bootstrap-proof-transition.py"
+RECORDER = ROOT / "scripts" / "bootstrap-proof-transition-v2.py"
 
 
 def canonical(value: object) -> bytes:
@@ -93,18 +93,61 @@ class BootstrapTransitionTest(unittest.TestCase):
             },
         )
 
-        manifest = {
-            "schema_version": "subject-manifest.v1",
-            "declared_roots": ["proof/candidate"],
-            "exclusions": [],
-            "entries": [
+        required_roles = sorted(
+            {
+                "validator-contract",
+                "validator-implementation",
+                "verdict-schema",
+                "rpi-report-schema",
+                "subject-manifest-schema",
+            }
+        )
+        component_root = self.repository / "proof" / "components"
+        component_root.mkdir()
+        components = []
+        entries = []
+        declared_roots = []
+        for role in required_roles:
+            component = component_root / role
+            component.write_text(f"{role}\n")
+            reference = component.relative_to(self.repository).as_posix()
+            component_digest = digest(component.read_bytes())
+            components.append(
                 {
-                    "path": "proof/candidate/file",
+                    "role": role,
+                    "ref": reference,
+                    "digest": component_digest,
+                    "mode": "0644",
+                }
+            )
+            entries.append(
+                {
+                    "path": reference,
                     "kind": "file",
                     "executable": False,
-                    "digest": "1" * 64,
+                    "digest": component_digest,
                 }
-            ],
+            )
+            declared_roots.append(reference)
+        future_recorder = component_root / "future-transition-recorder.py"
+        future_recorder.write_text("# future recorder\n")
+        future_recorder_ref = future_recorder.relative_to(self.repository).as_posix()
+        future_recorder_digest = digest(future_recorder.read_bytes())
+        entries.append(
+            {
+                "path": future_recorder_ref,
+                "kind": "file",
+                "executable": False,
+                "digest": future_recorder_digest,
+            }
+        )
+        declared_roots.append(future_recorder_ref)
+
+        manifest = {
+            "schema_version": "subject-manifest.v1",
+            "declared_roots": sorted(declared_roots),
+            "exclusions": [],
+            "entries": sorted(entries, key=lambda item: item["path"]),
         }
         manifest["canonical_manifest_digest"] = digest(canonical(manifest))
         write_json(self.manifest, manifest)
@@ -114,23 +157,7 @@ class BootstrapTransitionTest(unittest.TestCase):
             {
                 "schema_version": "proof-contract.v1",
                 "epoch": 1,
-                "components": [
-                    {
-                        "role": role,
-                        "ref": f"proof/{role}",
-                        "digest": "2" * 64,
-                        "mode": "0644",
-                    }
-                    for role in sorted(
-                        {
-                            "validator-contract",
-                            "validator-implementation",
-                            "verdict-schema",
-                            "rpi-report-schema",
-                            "subject-manifest-schema",
-                        }
-                    )
-                ],
+                "components": components,
                 "qualification_corpus": {
                     "algorithm": "sha256-tree-v1",
                     "ref": "proof/corpus",
@@ -140,8 +167,8 @@ class BootstrapTransitionTest(unittest.TestCase):
                     "canonical_manifest_digest"
                 ],
                 "transition_recorder": {
-                    "ref": "scripts/bootstrap-proof-transition.py",
-                    "digest": digest(RECORDER.read_bytes()),
+                    "ref": future_recorder_ref,
+                    "digest": future_recorder_digest,
                     "mode": "0644",
                 },
                 "known_gaps": [],
@@ -231,6 +258,63 @@ class BootstrapTransitionTest(unittest.TestCase):
         result = self.run_recorder()
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("corpus digest does not match", result.stderr)
+        self.assertEqual(json.loads(self.active.read_text())["epoch"], 0)
+
+    def test_missing_candidate_component_is_refused(self) -> None:
+        candidate = json.loads(self.candidate.read_text())
+        target = self.repository / candidate["components"][0]["ref"]
+        target.unlink()
+        result = self.run_recorder()
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("candidate component is unavailable", result.stderr)
+        self.assertEqual(json.loads(self.active.read_text())["epoch"], 0)
+
+    def test_candidate_component_byte_mutation_is_refused(self) -> None:
+        candidate = json.loads(self.candidate.read_text())
+        target = self.repository / candidate["components"][0]["ref"]
+        target.write_text("mutated component\n")
+        result = self.run_recorder()
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("candidate component digest changed", result.stderr)
+        self.assertEqual(json.loads(self.active.read_text())["epoch"], 0)
+
+    def test_candidate_component_mode_mutation_is_refused(self) -> None:
+        candidate = json.loads(self.candidate.read_text())
+        target = self.repository / candidate["components"][0]["ref"]
+        target.chmod(0o755)
+        result = self.run_recorder()
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("candidate component mode changed", result.stderr)
+        self.assertEqual(json.loads(self.active.read_text())["epoch"], 0)
+
+    def test_component_absent_from_judged_subject_is_refused(self) -> None:
+        unbound = self.repository / "proof" / "components" / "unbound"
+        unbound.write_text("unbound\n")
+        candidate = json.loads(self.candidate.read_text())
+        candidate["components"].append(
+            {
+                "role": "extra-unbound-component",
+                "ref": unbound.relative_to(self.repository).as_posix(),
+                "digest": digest(unbound.read_bytes()),
+                "mode": "0644",
+            }
+        )
+        write_json(self.candidate, candidate)
+        result = self.run_recorder()
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("absent from judged subject", result.stderr)
+        self.assertEqual(json.loads(self.active.read_text())["epoch"], 0)
+
+    def test_missing_future_transition_recorder_is_refused(self) -> None:
+        candidate = json.loads(self.candidate.read_text())
+        target = self.repository / candidate["transition_recorder"]["ref"]
+        target.unlink()
+        result = self.run_recorder()
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn(
+            "candidate component is unavailable: transition-recorder",
+            result.stderr,
+        )
         self.assertEqual(json.loads(self.active.read_text())["epoch"], 0)
 
     def test_subject_mismatch_is_refused(self) -> None:

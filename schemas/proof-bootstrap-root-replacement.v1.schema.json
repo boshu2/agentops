@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agentops.dev/schemas/proof-bootstrap-root-replacement.v1.schema.json",
+  "title": "proof-bootstrap-root-replacement.v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "rejected_contract_ref",
+    "rejected_contract_digest",
+    "rejecting_verdict_ref",
+    "rejecting_verdict_digest",
+    "replacement_contract_ref",
+    "replacement_contract_digest",
+    "authority",
+    "reason",
+    "replaced_at"
+  ],
+  "properties": {
+    "schema_version": {"const": "proof-bootstrap-root-replacement.v1"},
+    "rejected_contract_ref": {"$ref": "#/$defs/ref"},
+    "rejected_contract_digest": {"$ref": "#/$defs/digest"},
+    "rejecting_verdict_ref": {"$ref": "#/$defs/ref"},
+    "rejecting_verdict_digest": {"$ref": "#/$defs/digest"},
+    "replacement_contract_ref": {"$ref": "#/$defs/ref"},
+    "replacement_contract_digest": {"$ref": "#/$defs/digest"},
+    "authority": {"type": "string", "minLength": 1},
+    "reason": {"type": "string", "minLength": 1},
+    "replaced_at": {"type": "string", "format": "date-time"}
+  },
+  "$defs": {
+    "digest": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "ref": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$)).+$"
+    }
+  }
+}

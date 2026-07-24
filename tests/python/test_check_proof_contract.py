@@ -14,7 +14,11 @@ CHECKER = ROOT / "scripts" / "check-proof-contract.py"
 FROZEN_PATHS = [
     "docs/contracts/proof-contracts/active.json",
     "docs/contracts/proof-contracts/epoch-0/descriptor.json",
+    "docs/contracts/proof-contracts/epoch-0b/descriptor.json",
+    "docs/contracts/proof-contracts/bootstrap-root-replacements/2026-07-24-epoch-0-to-0b.json",
+    "docs/evidence/proof-epochs/epoch-0/verdicts/bf865e3233c1e19e6346d37403db775e9fb0fa6b252d14af88e4c9aaa081d804.json",
     "scripts/bootstrap-proof-transition.py",
+    "scripts/bootstrap-proof-transition-v2.py",
     "skills/validate/SKILL.md",
     "skills/validate/scripts/validate.py",
     "skills/validate/scripts/check_contract_corpus.py",
@@ -83,6 +87,24 @@ class ProofContractCheckTest(unittest.TestCase):
             result = self.run_checker(repository)
             self.assertNotEqual(result.returncode, 0)
             self.assertIn("qualification corpus digest changed", result.stderr)
+
+    def test_seeded_rejecting_verdict_byte_mutation_is_detected(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            repository = Path(temporary)
+            self.build_fixture(repository)
+            verdict = (
+                repository
+                / "docs"
+                / "evidence"
+                / "proof-epochs"
+                / "epoch-0"
+                / "verdicts"
+                / "bf865e3233c1e19e6346d37403db775e9fb0fa6b252d14af88e4c9aaa081d804.json"
+            )
+            verdict.write_bytes(verdict.read_bytes() + b"\n")
+            result = self.run_checker(repository)
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("rejecting verdict bytes", result.stderr)
 
 
 if __name__ == "__main__":

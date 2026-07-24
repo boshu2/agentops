@@ -10,11 +10,14 @@
 | [`proof-contract.v1`](https://github.com/boshu2/agentops/blob/main/schemas/proof-contract.v1.schema.json) | Exact proof implementation, schema, corpus, and known-gap identity |
 | [`proof-contract-active.v1`](https://github.com/boshu2/agentops/blob/main/schemas/proof-contract-active.v1.schema.json) | Atomic pointer to the active proof epoch |
 | [`proof-contract-transition.v1`](https://github.com/boshu2/agentops/blob/main/schemas/proof-contract-transition.v1.schema.json) | Prior-contract-qualified activation of the next proof epoch |
+| [`proof-bootstrap-root-replacement.v1`](https://github.com/boshu2/agentops/blob/main/schemas/proof-bootstrap-root-replacement.v1.schema.json) | Operator-authorized replacement of a rejected bootstrap root before any PASS is minted |
 
-The bootstrap epoch is frozen under
-`docs/contracts/proof-contracts/epoch-0/`. Its standalone recorder can perform
-only the epoch-0 to epoch-1 transition. This prevents the candidate validator
-from qualifying or activating itself.
+The rejected bootstrap epoch is preserved under
+`docs/contracts/proof-contracts/epoch-0/`; its binding FAIL identified a
+component-verification bypass. The active corrected root is frozen under
+`epoch-0b/`. Its recorder can perform only the epoch-0b to epoch-1 transition.
+The replacement is explicit because no PASS was minted under the rejected
+root; ordinary activated epochs must advance through a proof transition.
 
 ## Legacy compatibility
 

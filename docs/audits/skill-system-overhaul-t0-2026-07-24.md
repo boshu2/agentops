@@ -2,7 +2,7 @@
 id: audit-skill-system-overhaul-t0-2026-07-24
 type: audit
 date: 2026-07-24
-status: candidate
+status: repair-candidate
 plan_ref: docs/plans/2026-07-24-skill-system-overhaul.md
 proof_contract_ref: docs/contracts/proof-contracts/active.json
 ---
@@ -16,9 +16,15 @@ routing oracle, negative witnesses for every T0 load-bearing local gate, and a
 frozen bootstrap proof epoch whose activation recorder is outside the T1
 candidate.
 
-This is candidate evidence until a fresh context judges the exact T0 subject.
-It does not claim that the exact kernel, catalog compiler, publisher, or Go CLI
-repairs are built.
+Fresh validation of commit `932187258` returned immutable FAIL
+`bf865e3233c1e19e6346d37403db775e9fb0fa6b252d14af88e4c9aaa081d804`.
+It proved that the claimed heal witness did not invoke `heal.sh`, the bootstrap
+recorder accepted nonexistent candidate components, the corresponding proof
+edge was misclassified, and the pause state predated the stable commit.
+
+That invocation stopped. A new exact repair intent under `epoch-0b/` owns only
+those findings. It does not claim that the exact kernel, catalog compiler,
+publisher, or Go CLI repairs are built.
 
 ## Starting state
 
@@ -80,17 +86,20 @@ Epoch 0 freezes exact bytes and modes for:
 - a standalone bootstrap transition recorder.
 
 The active pointer is
-[`active.json`](../contracts/proof-contracts/active.json); its descriptor is
-[`descriptor.json`](../contracts/proof-contracts/epoch-0/descriptor.json).
-The descriptor deliberately records the known RPI digest, subject-coverage,
-criterion, and proof-identity gaps.
+[`active.json`](../contracts/proof-contracts/active.json). The rejected
+descriptor remains immutable under `epoch-0/`; corrected bootstrap authority
+is `epoch-0b/descriptor.json`. The explicit root-replacement record binds both
+descriptors to the rejecting verdict. This pre-activation correction is legal
+only because no PASS was minted under the rejected root.
 
-The bootstrap recorder can only activate epoch 1. It locks and rereads the
+The corrected bootstrap recorder can only activate epoch 1. It locks and rereads the
 active pointer, compares the claimed prior digest, verifies exact candidate
 descriptor/corpus/manifest/verdict identities, requires a fresh PASS under
-legacy `verdict.v2`, writes a content-addressed transition, and atomically
-replaces the active pointer. It rejects stale CAS, corpus mutation, subject
-mismatch, colliding identities, and a repeated activation.
+legacy `verdict.v2`, and binds every candidate component plus its future
+transition recorder to live bytes, exact mode, and the judged subject. It then
+writes a content-addressed transition and atomically replaces the pointer. It
+rejects stale CAS, corpus mutation, missing or unbound components, subject
+mismatch, colliding identities, and repeated activation.
 
 T1 must exclude the epoch-0 descriptor, active pointer, recorder, its schemas,
 tests, and these T0 ledgers from its candidate subject.
