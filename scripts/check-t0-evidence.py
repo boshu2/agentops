@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Verify the machine-readable T0 evidence ledgers against the live tree."""
+"""Verify the immutable T0 snapshot and its live proof-transition bindings."""
 
 from __future__ import annotations
 
@@ -69,6 +69,9 @@ SUBJECT_SCHEMA_REF = "schemas/subject-manifest.v1.schema.json"
 SUBJECT_SCHEMA_DIGEST = "bd2816ef184d080041d703f834973e55bf9ee9ef7f35aaf7648ac56baa38afb3"
 VERDICT_SCHEMA_REF = "schemas/verdict.v2.schema.json"
 VERDICT_SCHEMA_DIGEST = "848af783786a33ee505d3a1e19afdb1b97c6875d68c4fe817a21ca012bdfedab"
+T0_SKILL_LEDGER_FILE_SHA256 = (
+    "e60f91f6dbd8956bf2a8d049ca8ead5516cd36f035859939163af9176c1f3a85"
+)
 PAUSE_TOP_LEVEL_KEYS = {
     "schema_version",
     "performed_on",
@@ -632,7 +635,12 @@ def check_pause_state(repository: Path, evidence_root: Path, pause: dict[str, An
 
 
 def check(repository: Path, evidence_root: Path) -> dict[str, Any]:
-    skills = load(evidence_root / "t0-skill-ledger.json")
+    skill_ledger_path = evidence_root / "t0-skill-ledger.json"
+    require(
+        sha256(skill_ledger_path) == T0_SKILL_LEDGER_FILE_SHA256,
+        "T0 skill ledger bytes changed",
+    )
+    skills = load(skill_ledger_path)
     rows = skills.get("skills")
     require(isinstance(rows, list), "skill ledger rows must be an array")
     require(skills.get("skill_count") == 49 == len(rows), "skill ledger must contain exactly 49 rows")
@@ -645,10 +653,11 @@ def check(repository: Path, evidence_root: Path) -> dict[str, Any]:
             and isinstance(row.get("sha256"), str),
             "skill ledger row has invalid fields",
         )
-        path = repository / row["path"]
-        require(path.is_file(), f"skill ledger path is missing: {row['path']}")
-        actual = hashlib.sha256(path.read_bytes()).hexdigest()
-        require(actual == row["sha256"], f"skill ledger digest changed: {row['path']}")
+        require(
+            len(row["sha256"]) == 64
+            and all(character in "0123456789abcdef" for character in row["sha256"]),
+            f"skill ledger digest is invalid: {row['path']}",
+        )
 
     routing = load(evidence_root / "routing-baseline.json")
     scenarios = routing.get("scenarios")
