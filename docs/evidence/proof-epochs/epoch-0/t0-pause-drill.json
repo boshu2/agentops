@@ -8,6 +8,10 @@
     "seed plan/audit commit b6794d76e",
     "stable initial T0 candidate commit 932187258",
     "immutable T0 FAIL bf865e3233c1e19e6346d37403db775e9fb0fa6b252d14af88e4c9aaa081d804",
+    "initial T0 failure-evidence commit 50e20ed07",
+    "stable T0 repair candidate commit 0e4bc0d90",
+    "immutable T0 repair FAIL 3c297141dd11978fc3c741733773373a57028b88f24e73b24df5c55fa4e932f7",
+    "T0 repair failure-evidence commit 45268dbeb",
     "49-skill exact-byte ledger",
     "rejected epoch-0 proof descriptor retained as history",
     "active corrected epoch-0b proof descriptor and strict bootstrap transition recorder",
@@ -16,14 +20,34 @@
     "installed-estate and #988 reconciliation"
   ],
   "in_flight": [
-    "T0 repair invocation is not yet a stable commit or fresh semantic verdict",
+    "T0 pause-metadata repair is the current bounded invocation; its exact candidate identity is supplied by the enclosing subject manifest and fresh verdict",
     "T1 exact-kernel implementation has not started",
     "T2 compiler and Go CLI release tranches are reconnaissance only"
   ],
+  "lineage": {
+    "origin_main_base_commit": "edc018f6e15a00648736bed84c2ea93265443094",
+    "seed_commit": "b6794d76e62c4aca2ba682474090b6de0026a0f3",
+    "initial_candidate_commit": "9321872587afcf77ac9cd0b3e7aa758704a564e4",
+    "initial_fail_artifact_digest": "bf865e3233c1e19e6346d37403db775e9fb0fa6b252d14af88e4c9aaa081d804",
+    "initial_fail_file_sha256": "2eb46f2da1ff1c5671725bd949efd4975961b5db60778245dcce3a0c55b11a8d",
+    "initial_failed_subject_file_sha256": "4cbbdfbfed3c5a3af2e5d0d050a8899c77db5c0e98e1c9c6a92489fd713ab7db",
+    "initial_failed_report_file_sha256": "1f97efd1754ae72e135d3e23136a654eaa09ac571e94ddce47d934171489d700",
+    "initial_failure_evidence_commit": "50e20ed07d9dd612add428cd3b5530df0e82d821",
+    "repair_candidate_commit": "0e4bc0d90575593cb4c3a048fc0cb69e96837ee5",
+    "repair_fail_artifact_digest": "3c297141dd11978fc3c741733773373a57028b88f24e73b24df5c55fa4e932f7",
+    "repair_fail_file_sha256": "a515fd4abc6a15125889c7d05518e9b5f64dd0eb27260c450c950284f1034a54",
+    "repair_failed_subject_file_sha256": "8a1201dc2a9b74210c81db273d8e973994a4023a7895b6476dab03e049c2bd7c",
+    "repair_failed_report_file_sha256": "f04f821a65979b99dbe72e73cf9b9d79e7094ccc29292e1596dad3bebaec0153",
+    "repair_failure_evidence_commit": "45268dbeb900ec9a99a51eb9cf451573371ff175",
+    "current_invocation": "docs/evidence/proof-epochs/epoch-0b/t0-pause-repair-intent.md",
+    "current_candidate_identity": "enclosing subject manifest and fresh verdict"
+  },
   "authority": {
     "semantic_skill_source": "skills/<slug>/SKILL.md",
     "generated_projection_owner": "scripts/regen-all.sh and owning generators",
-    "proof_contract_pointer": "docs/contracts/proof-contracts/active.json -> epoch-0b",
+    "proof_contract_pointer": "docs/contracts/proof-contracts/active.json",
+    "proof_contract_ref": "docs/contracts/proof-contracts/epoch-0b/descriptor.json",
+    "proof_contract_digest": "b9735c94f7de98c4d31db93081351a6a1a78f8e03897dad61792277bb36a0302",
     "migration_plan": "docs/plans/2026-07-24-skill-system-overhaul.md",
     "landing_policy": "caller-authorized feature branch integration to origin/main"
   },
@@ -32,6 +56,7 @@
     "CASS historical routing search unavailable because checkpoint is incomplete",
     "remote required-CI job wiring not proven",
     "installed skill roots still target the preserved original worktree",
-    "T0 repair fresh semantic validation and stable commit still required"
+    "T0 pause-metadata repair requires a fresh semantic verdict over its exact subject",
+    "T1 exact-kernel implementation and epoch-1 activation have not started"
   ]
 }
