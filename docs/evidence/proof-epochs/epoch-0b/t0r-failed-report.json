@@ -1,0 +1,17 @@
+{
+  "schema_version": "rpi-report.v1",
+  "status": "FAIL",
+  "intent_ref": "docs/evidence/proof-epochs/epoch-0b/t0-repair-intent.md",
+  "acceptance_digest": "401d62c7629ddb7a9a859978f0a8d712820153edd15a67c5c0723146d59fcd9d",
+  "subject_manifest_digest": "335bb620da03f8e82d7da0badde1f38e9e791b9f62df1c2f21748eafe12d2e7e",
+  "verdict_ref": "docs/evidence/proof-epochs/epoch-0b/verdicts/3c297141dd11978fc3c741733773373a57028b88f24e73b24df5c55fa4e932f7.json",
+  "verdict_digest": "3c297141dd11978fc3c741733773373a57028b88f24e73b24df5c55fa4e932f7",
+  "checked": ["T0R-1", "T0R-2", "T0R-3", "T0R-4"],
+  "not_checked": [
+    "T1 exact-kernel behavior and epoch-1 activation",
+    "Go CLI G0 through G2",
+    "installed skill links, external systems, credentials, and release channels",
+    "unrelated full repository test suites",
+    "cryptographic proof of context isolation beyond runtime freshness attestation"
+  ]
+}
