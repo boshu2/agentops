@@ -83,6 +83,31 @@ The default loop is one agent, one writer. When you need a fleet,
 [`ntm`](skills/ntm/SKILL.md), and [`using-gc`](skills/using-gc/SKILL.md)
 orchestrate multi-agent work. They dispatch; they do not own the verdict.
 
+### The Gas City pack (preview)
+
+[Gas City](https://github.com/gastownhall/gascity) runs teams of coding agents
+as long-lived, supervised sessions. The pack in
+[`deploy/gc/`](deploy/gc/README.md) stands up a "city" that runs the AgentOps
+loop end to end: workers implement in isolated worktrees, a fresh agent
+validates, a refiner merges to your repo's main branch. The installer fetches
+official checksummed Gas City and Beads binaries; you build nothing.
+
+You drive it by talking to one agent, the Mayor: attach to its session in your
+terminal, or let another agent steer it.
+
+```bash
+deploy/gc/invoke.sh --city <city> create "task title"       # define work
+deploy/gc/invoke.sh --city <city> feed <bead-id>            # hand it to the city
+deploy/gc/invoke.sh --city <city> mayor tell "dispatch <bead-id>"
+```
+
+The [`using-gc`](skills/using-gc/SKILL.md) skill is the operating manual,
+including the four observability layers and what to do when they disagree.
+**Preview:** pinned to official Gas City v1.3.5, which carries three upstream
+defects we found and filed; the label comes off at the next official pin bump.
+Setup and details: [`deploy/gc/README.md`](deploy/gc/README.md) and the
+[v3.3.0 release notes](https://github.com/boshu2/agentops/releases/tag/v3.3.0).
+
 AgentOps already borrows heavily from that ecosystem. Two stacks people run
 around the same loop:
 
