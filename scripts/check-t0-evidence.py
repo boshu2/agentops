@@ -9,7 +9,7 @@ from datetime import datetime
 import hashlib
 import importlib.util
 import json
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 import re
 import stat
 import sys
@@ -47,7 +47,13 @@ PAUSE_LINEAGE = {
     "typed_pause_failed_subject_file_sha256": "424f339286de1b91dbc452f3a34b742d8bd364dd04d57c6c88e91bf8bb04a57b",
     "typed_pause_failed_report_file_sha256": "851cfc9a9597f65298dafcbfa57713b1577bc0d65e6a6abd9ebaafccb9811972",
     "typed_pause_failure_evidence_commit": "eccb1abf180d5ee79d36798d2e40c1eb67cf2ff6",
-    "current_invocation": "docs/evidence/proof-epochs/epoch-0b/t0-transition-schema-repair-intent.md",
+    "transition_schema_candidate_commit": "759c78de1aa1bfa93a36b3231060e5a1c83fdbcc",
+    "transition_schema_terminal_artifact_digest": "4255446100319be16e31553e51278d94f029d6b4942a4f90a27ae9293c47978e",
+    "transition_schema_terminal_file_sha256": "dd1c500ba8b10797e713a87fbe8611709efff4cc1dbbf54abf9c7605821e7e92",
+    "transition_schema_terminal_subject_file_sha256": "393446cf840cc407a6426dac25aab5417a162d2f40da635d020e0b28699d4e8f",
+    "transition_schema_terminal_report_file_sha256": "33abb5dce6fb815a2680625e9d57019957cb5ea422cf353bb3f79fe2fb4b3c65",
+    "transition_schema_terminal_evidence_commit": "1016ae749f1656be692b159f1e13ceb9e868c28b",
+    "current_invocation": "docs/evidence/proof-epochs/epoch-0b/t0-ref-safety-repair-intent.md",
     "current_candidate_identity": "enclosing subject manifest and fresh verdict",
 }
 
@@ -90,6 +96,9 @@ PAUSE_LANDED_OR_FROZEN = [
     "stable T0 typed-pause candidate commit 3dd99abbc",
     f"immutable T0 typed-pause FAIL {PAUSE_LINEAGE['typed_pause_fail_artifact_digest']}",
     "T0 typed-pause failure-evidence commit eccb1abf1",
+    "stable T0 transition-schema candidate commit 759c78de1",
+    f"immutable T0 transition-schema NOT_PROVEN {PAUSE_LINEAGE['transition_schema_terminal_artifact_digest']}",
+    "T0 transition-schema terminal-evidence commit 1016ae749",
     "49-skill exact-byte ledger",
     "rejected epoch-0 proof descriptor retained as history",
     "active corrected epoch-0b proof descriptor and strict bootstrap transition recorder",
@@ -135,7 +144,7 @@ PAUSE_KNOWN_GAPS = [
     "CASS historical routing search unavailable because checkpoint is incomplete",
     "remote required-CI job wiring not proven",
     "installed skill roots still target the preserved original worktree",
-    "T0 transition-schema repair requires a fresh semantic verdict over its exact subject",
+    "T0 reference-safety repair requires a fresh semantic verdict over its exact subject",
     "T1 exact-kernel implementation and epoch-1 activation have not started",
 ]
 
@@ -203,6 +212,7 @@ def check_failed_invocation(
     verdict_file_sha256: str,
     subject_file_sha256: str,
     report_file_sha256: str,
+    expected_result: str = "FAIL",
 ) -> None:
     require(sha256(verdict_path) == verdict_file_sha256, f"failed verdict bytes changed: {verdict_path}")
     require(sha256(subject_path) == subject_file_sha256, f"failed subject bytes changed: {subject_path}")
@@ -210,7 +220,10 @@ def check_failed_invocation(
     verdict = load(verdict_path)
     subject = load(subject_path)
     report = load(report_path)
-    require(verdict.get("verdict") == "FAIL", f"rejected verdict is not FAIL: {verdict_path}")
+    require(
+        verdict.get("verdict") == expected_result,
+        f"terminal verdict is not {expected_result}: {verdict_path}",
+    )
     require(
         verdict.get("artifact_digest") == artifact_digest,
         f"rejected verdict artifact identity changed: {verdict_path}",
@@ -219,7 +232,10 @@ def check_failed_invocation(
         verdict.get("subject_manifest_digest") == subject.get("canonical_manifest_digest"),
         f"rejected verdict and subject do not agree: {verdict_path}",
     )
-    require(report.get("status") == "FAIL", f"rejected report is not FAIL: {report_path}")
+    require(
+        report.get("status") == expected_result,
+        f"terminal report is not {expected_result}: {report_path}",
+    )
     require(
         report.get("verdict_digest") == artifact_digest
         and report.get("subject_manifest_digest") == subject.get("canonical_manifest_digest"),
@@ -229,9 +245,24 @@ def check_failed_invocation(
 
 def resolve_repository_ref(repository: Path, reference: Any, label: str) -> Path:
     require(isinstance(reference, str) and bool(reference), f"{label} must be a nonempty reference")
-    require(not Path(reference).is_absolute(), f"{label} must be repository-relative")
+    require("\\" not in reference and "\x00" not in reference, f"{label} is not a normalized POSIX reference")
+    lexical = PurePosixPath(reference)
+    require(
+        not lexical.is_absolute()
+        and lexical.as_posix() == reference
+        and reference not in {".", ".."}
+        and all(part not in {"", ".", ".."} for part in lexical.parts),
+        f"{label} is not a normalized repository-relative reference",
+    )
     root = repository.resolve()
-    path = (root / reference).resolve()
+    lexical_path = root
+    for part in lexical.parts:
+        lexical_path = lexical_path / part
+        require(
+            not lexical_path.is_symlink(),
+            f"{label} uses a symlinked path component: {reference}",
+        )
+    path = lexical_path.resolve()
     try:
         path.relative_to(root)
     except ValueError as exc:
@@ -581,6 +612,22 @@ def check_pause_state(repository: Path, evidence_root: Path, pause: dict[str, An
         verdict_file_sha256=PAUSE_LINEAGE["typed_pause_fail_file_sha256"],
         subject_file_sha256=PAUSE_LINEAGE["typed_pause_failed_subject_file_sha256"],
         report_file_sha256=PAUSE_LINEAGE["typed_pause_failed_report_file_sha256"],
+    )
+    check_failed_invocation(
+        verdict_path=epoch0b
+        / "verdicts"
+        / f"{PAUSE_LINEAGE['transition_schema_terminal_artifact_digest']}.json",
+        subject_path=epoch0b / "t0ps-not-proven-subject-manifest.json",
+        report_path=epoch0b / "t0ps-not-proven-report.json",
+        artifact_digest=PAUSE_LINEAGE["transition_schema_terminal_artifact_digest"],
+        verdict_file_sha256=PAUSE_LINEAGE["transition_schema_terminal_file_sha256"],
+        subject_file_sha256=PAUSE_LINEAGE[
+            "transition_schema_terminal_subject_file_sha256"
+        ],
+        report_file_sha256=PAUSE_LINEAGE[
+            "transition_schema_terminal_report_file_sha256"
+        ],
+        expected_result="NOT_PROVEN",
     )
 
 
