@@ -2,7 +2,7 @@
 id: audit-skill-system-overhaul-t0-2026-07-24
 type: audit
 date: 2026-07-24
-status: transition-schema-repair-candidate
+status: reference-safety-repair-candidate
 plan_ref: docs/plans/2026-07-24-skill-system-overhaul.md
 proof_contract_ref: docs/contracts/proof-contracts/active.json
 ---
@@ -57,6 +57,18 @@ whole frozen transition schema with format checking and duplicate-key
 rejection, then verifies every candidate, subject, corpus, verdict, identity,
 digest, and repository-contained reference. No T1 or Go implementation is in
 this subject.
+
+Its fresh validator confirmed initial intent/manifest identity and focused
+checks, then reported that internal symlink aliases could be accepted because
+reference resolution preceded component checks. The validator context
+terminated before completing its matrix or final identity recheck. The
+invocation is therefore immutable NOT_PROVEN
+`4255446100319be16e31553e51278d94f029d6b4942a4f90a27ae9293c47978e`,
+not a hidden validation retry.
+
+A sixth exact intent owns only reference normalization and symlink-component
+rejection. It checks lexical POSIX identity before resolution, walks every
+existing component without following aliases, and then proves containment.
 
 ## Starting state
 
@@ -181,8 +193,9 @@ Estate ledger:
 
 ## Pause drill
 
-The current metadata-only candidate records all four stable rejected subjects,
-all four immutable FAILs, corrected epoch-0b authority, and the exact
+The current metadata-only candidate records all five stable terminal subjects,
+the four immutable FAILs and one NOT_PROVEN result, corrected epoch-0b
+authority, and the exact
 in-flight tranche without embedding its own future commit hash. The enclosing
 subject manifest and fresh verdict own that current candidate identity.
 
@@ -200,6 +213,8 @@ subject manifest, and qualification verdict against their frozen schemas. The
 qualification corpus tree digest, manifest identity, PASS verdict identity and
 freshness, validator identity, timestamps, filenames, and every nested
 repository ref must agree before the simulated epoch-1 state is accepted.
+References must also be normalized POSIX-relative paths and contain no
+symlinked parent or final component before containment is resolved.
 
 API1 skill sources and catalog v3 remain live; `skill-contract.v3`, catalog v4,
 and `verdict.v3` are still shadow or planned concepts. T0 remains unproven

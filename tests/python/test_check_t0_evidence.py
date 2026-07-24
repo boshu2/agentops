@@ -406,6 +406,58 @@ class T0EvidenceCheckTest(unittest.TestCase):
             ):
                 CHECK_MODULE.load(duplicate_path)
 
+            alias_parent = repository / "component-alias"
+            alias_parent.symlink_to(repository / "components", target_is_directory=True)
+            with self.assertRaisesRegex(
+                CHECK_MODULE.EvidenceError,
+                "uses a symlinked path component",
+            ):
+                CHECK_MODULE.resolve_repository_ref(
+                    repository,
+                    "component-alias/validator-contract",
+                    "aliased component",
+                )
+            direct_alias = repository / "direct-alias"
+            direct_alias.symlink_to(repository / "components/validator-contract")
+            with self.assertRaisesRegex(
+                CHECK_MODULE.EvidenceError,
+                "uses a symlinked path component",
+            ):
+                CHECK_MODULE.resolve_repository_ref(
+                    repository,
+                    "direct-alias",
+                    "direct alias",
+                )
+            outside = Path(temporary) / "outside"
+            outside.write_text("outside\n")
+            outside_alias = repository / "outside-alias"
+            outside_alias.symlink_to(outside)
+            with self.assertRaisesRegex(
+                CHECK_MODULE.EvidenceError,
+                "uses a symlinked path component",
+            ):
+                CHECK_MODULE.resolve_repository_ref(
+                    repository,
+                    "outside-alias",
+                    "outside alias",
+                )
+            for reference in (
+                "/absolute",
+                "../parent",
+                "a/../parent",
+                "a/./dot",
+                "a//empty",
+                "a\\windows",
+                "trailing/",
+            ):
+                with self.subTest(reference=reference):
+                    with self.assertRaises(CHECK_MODULE.EvidenceError):
+                        CHECK_MODULE.resolve_repository_ref(
+                            repository,
+                            reference,
+                            "invalid reference",
+                        )
+
     def test_rejected_verdict_byte_mutation_is_detected(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             evidence = Path(temporary)

@@ -2,7 +2,7 @@
 id: plan-2026-07-24-skill-system-overhaul
 type: plan
 date: 2026-07-24
-status: in_progress/T0-transition-schema-repair-candidate
+status: in_progress/T0-reference-safety-repair-candidate
 goal: Overhaul every canonical AgentOps skill around the campaign-to-experiment architecture
 architecture_ref: docs/contracts/skill-ports-and-adapters.md
 duel_ref: docs/audits/skill-system-overhaul-duel-2026-07-24/README.md
@@ -212,6 +212,13 @@ forbidden fields, escaping through nested refs, or using boolean epochs. That
 fourth FAIL is immutable. A schema-backed repair now owns only complete
 transition and qualification-artifact validation; it does not reopen the
 accepted bootstrap repairs or start T1.
+
+The fresh transition-schema validator confirmed initial identity and the
+focused checks, then reported a likely symlink-alias gap before its context was
+interrupted. No binding semantic verdict or final identity recheck was
+produced, so that invocation is durably `NOT_PROVEN`, not retried. A new
+reference-safety invocation owns only normalized lexical identity and rejection
+of symlinked path components; all schema and qualification work remains frozen.
 
 ### D3. Required gaps and declared exclusions are different types
 
