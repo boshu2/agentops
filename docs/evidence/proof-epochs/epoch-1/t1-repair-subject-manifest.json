@@ -1,0 +1,820 @@
+{
+  "canonical_manifest_digest": "000cf482f87567e36a5d7ea5a24598a1b4b7da7426cd962f8471af03c74de29d",
+  "declared_roots": [
+    "cli/internal/statusapp",
+    "cli/internal/verdictcheck",
+    "docs/SKILL-ROUTER.md",
+    "docs/contracts/context-map.md",
+    "images/gemini/skills/implement",
+    "images/gemini/skills/plan",
+    "images/gemini/skills/rpi",
+    "images/gemini/skills/validate",
+    "packs/agentops-executor/agents/implementer-claude/skills/implement",
+    "packs/agentops-executor/agents/implementer/skills/implement",
+    "packs/agentops-executor/agents/validator/skills/validate",
+    "packs/agentops-executor/assets/generated-skill-manifest.json",
+    "schemas/check-receipt.v1.schema.json",
+    "schemas/effect-receipt.v1.schema.json",
+    "schemas/proof-contract-active.v1.schema.json",
+    "schemas/proof-contract-transition.v1.schema.json",
+    "schemas/proof-contract.v1.schema.json",
+    "schemas/rpi-report.v2.schema.json",
+    "schemas/scope-index.v1.schema.json",
+    "schemas/subject-manifest.v2.schema.json",
+    "schemas/verdict.v3.schema.json",
+    "scripts/bootstrap-proof-transition-v2.py",
+    "scripts/bootstrap-proof-transition.py",
+    "scripts/check-proof-contract.py",
+    "skills-codex-overrides/catalog.json",
+    "skills-codex/.agentops-manifest.json",
+    "skills-codex/implement",
+    "skills-codex/plan",
+    "skills-codex/rpi",
+    "skills-codex/validate",
+    "skills/catalog.json",
+    "skills/implement",
+    "skills/plan",
+    "skills/rpi",
+    "skills/validate",
+    "tests/fixtures/rpi-kernel-v3",
+    "tests/python/test_check_proof_contract.py"
+  ],
+  "entries": [
+    {
+      "digest": "0a5878a58c908528b8c563b6fc4f78f234fbc5e357e20fe0bf467e8ac15aca3a",
+      "executable": false,
+      "kind": "file",
+      "path": "cli/internal/statusapp/statusapp.go"
+    },
+    {
+      "digest": "a18a567c8beb6990a8d7e70a64eb16b9fe917c4458fcfcf6909551328dfe8b20",
+      "executable": false,
+      "kind": "file",
+      "path": "cli/internal/statusapp/statusapp_test.go"
+    },
+    {
+      "digest": "2c0f32b0178f9de58853a603e831e9e93cc968e9460234ea1733b4637b57cc17",
+      "executable": false,
+      "kind": "file",
+      "path": "cli/internal/verdictcheck/canonical_test.go"
+    },
+    {
+      "digest": "f8648c54e6205603be2d0c3933f89fc620d46b59619f0ae3ecd3ca059e14fbda",
+      "executable": false,
+      "kind": "file",
+      "path": "cli/internal/verdictcheck/corpus_test.go"
+    },
+    {
+      "digest": "d3aebb77cab05c31315f5c425bbd4c63f27c2760638efe68e57848700250bad3",
+      "executable": false,
+      "kind": "file",
+      "path": "cli/internal/verdictcheck/kernel_artifacts.go"
+    },
+    {
+      "digest": "58851b24e4ec4982187c350b09f186612e7ba431ca88172fc6898cc8d6b9bb99",
+      "executable": false,
+      "kind": "file",
+      "path": "cli/internal/verdictcheck/kernel_artifacts_test.go"
+    },
+    {
+      "digest": "e5e26bb04e0b2442d83127b314f3b2a762a89f5f6df354e3c50eaa631770d0ed",
+      "executable": false,
+      "kind": "file",
+      "path": "cli/internal/verdictcheck/kernel_corpus_test.go"
+    },
+    {
+      "digest": "072d9f501a887c36c4527d8909a54965e71ad927f1c6ee75453ca3deb8b3b140",
+      "executable": false,
+      "kind": "file",
+      "path": "cli/internal/verdictcheck/report_v2.go"
+    },
+    {
+      "digest": "bd1d8f7619b043682e2a65abcee3017fef388709a836f7c8f35b0c86b752990b",
+      "executable": false,
+      "kind": "file",
+      "path": "cli/internal/verdictcheck/report_v2_test.go"
+    },
+    {
+      "digest": "03d668fdcc749d02bdd4223def7a0fae7820fa68ae4aef20de999c2914452878",
+      "executable": false,
+      "kind": "file",
+      "path": "cli/internal/verdictcheck/strict.go"
+    },
+    {
+      "digest": "f16c39a2d4c5bd6613581f792ccf8aec7afb9128fbb52b43dff6118a59c3ca1b",
+      "executable": false,
+      "kind": "file",
+      "path": "cli/internal/verdictcheck/verdict_v3.go"
+    },
+    {
+      "digest": "eaf9a5ca93701f22de8bb43467f067cf27531bfa16e11e88107b4b32a0a6e159",
+      "executable": false,
+      "kind": "file",
+      "path": "cli/internal/verdictcheck/verdict_v3_test.go"
+    },
+    {
+      "digest": "e288511db4de38704e3fb0abf0c03e487758fc90b37b49391925201567257906",
+      "executable": false,
+      "kind": "file",
+      "path": "cli/internal/verdictcheck/verdictcheck.go"
+    },
+    {
+      "digest": "a0b179d8724f604a1299740469fbf6c8ec512ea6cde92ce9d8c11a571fcb0005",
+      "executable": false,
+      "kind": "file",
+      "path": "docs/SKILL-ROUTER.md"
+    },
+    {
+      "digest": "f86590f421684d565e0da7073ed255decdd15833cc6adb67893773d5c903d42c",
+      "executable": false,
+      "kind": "file",
+      "path": "docs/contracts/context-map.md"
+    },
+    {
+      "digest": "bcbb2156409af426769e77dc90aaeed43371dfd54f4ae886caac2b8f49359e8b",
+      "executable": false,
+      "kind": "file",
+      "path": "images/gemini/skills/implement/SKILL.md"
+    },
+    {
+      "digest": "c1808f7d874e85a0a7923f83c38254dab874a27dc0bbf600095316b3c26f2431",
+      "executable": false,
+      "kind": "file",
+      "path": "images/gemini/skills/plan/SKILL.md"
+    },
+    {
+      "digest": "ec58369b6fcf525ef0fd0c5d25cb2a596642daac61ef9891944ec75195f6909b",
+      "executable": false,
+      "kind": "file",
+      "path": "images/gemini/skills/rpi/SKILL.md"
+    },
+    {
+      "digest": "8ecc121b6d7a63946a903d062f6913a8e32663ecb1418f193002490946e9158d",
+      "executable": false,
+      "kind": "file",
+      "path": "images/gemini/skills/validate/SKILL.md"
+    },
+    {
+      "digest": "bcbb2156409af426769e77dc90aaeed43371dfd54f4ae886caac2b8f49359e8b",
+      "executable": false,
+      "kind": "file",
+      "path": "packs/agentops-executor/agents/implementer-claude/skills/implement/SKILL.md"
+    },
+    {
+      "digest": "90a737a9aaba69ee32397c07a5a023ba7b4dab96bc515879f72a2ad087e6eff1",
+      "executable": false,
+      "kind": "file",
+      "path": "packs/agentops-executor/agents/implementer-claude/skills/implement/references/implement.feature"
+    },
+    {
+      "digest": "51988cc25b183a365e5c5c9fcbe66df9014a08760f4a8187d7e3d41b25c99dc1",
+      "executable": true,
+      "kind": "file",
+      "path": "packs/agentops-executor/agents/implementer-claude/skills/implement/scripts/freeze_candidate.py"
+    },
+    {
+      "digest": "9c42441842179430c24ad8944b4a566a7d801fc092f8c2fdffd66ef1ee59cea1",
+      "executable": true,
+      "kind": "file",
+      "path": "packs/agentops-executor/agents/implementer-claude/skills/implement/scripts/validate.sh"
+    },
+    {
+      "digest": "bcbb2156409af426769e77dc90aaeed43371dfd54f4ae886caac2b8f49359e8b",
+      "executable": false,
+      "kind": "file",
+      "path": "packs/agentops-executor/agents/implementer/skills/implement/SKILL.md"
+    },
+    {
+      "digest": "90a737a9aaba69ee32397c07a5a023ba7b4dab96bc515879f72a2ad087e6eff1",
+      "executable": false,
+      "kind": "file",
+      "path": "packs/agentops-executor/agents/implementer/skills/implement/references/implement.feature"
+    },
+    {
+      "digest": "51988cc25b183a365e5c5c9fcbe66df9014a08760f4a8187d7e3d41b25c99dc1",
+      "executable": true,
+      "kind": "file",
+      "path": "packs/agentops-executor/agents/implementer/skills/implement/scripts/freeze_candidate.py"
+    },
+    {
+      "digest": "9c42441842179430c24ad8944b4a566a7d801fc092f8c2fdffd66ef1ee59cea1",
+      "executable": true,
+      "kind": "file",
+      "path": "packs/agentops-executor/agents/implementer/skills/implement/scripts/validate.sh"
+    },
+    {
+      "digest": "8ecc121b6d7a63946a903d062f6913a8e32663ecb1418f193002490946e9158d",
+      "executable": false,
+      "kind": "file",
+      "path": "packs/agentops-executor/agents/validator/skills/validate/SKILL.md"
+    },
+    {
+      "digest": "bc9ab49fb81c4cd8c94313307da59c35df4eb12691c0da5a5e36cb16d140f127",
+      "executable": false,
+      "kind": "file",
+      "path": "packs/agentops-executor/agents/validator/skills/validate/references/validate.feature"
+    },
+    {
+      "digest": "b173fab958006f38d56950e72ac571d18eda2bbd085d92a665acc9feaa3083ce",
+      "executable": false,
+      "kind": "file",
+      "path": "packs/agentops-executor/agents/validator/skills/validate/scripts/check_contract_corpus.py"
+    },
+    {
+      "digest": "173e862c1a65e5ff2b0a6b3ba36d7eb21a53e3bc2ef9fc0990ae11adb5dc9a73",
+      "executable": true,
+      "kind": "file",
+      "path": "packs/agentops-executor/agents/validator/skills/validate/scripts/check_kernel_v3_corpus.py"
+    },
+    {
+      "digest": "f7787f4505c6f49c77890411a49387a02beec7a267595e158af6e4184ca6ef70",
+      "executable": true,
+      "kind": "file",
+      "path": "packs/agentops-executor/agents/validator/skills/validate/scripts/kernel_v3.py"
+    },
+    {
+      "digest": "49f22c1af70f8a0de09c44bd132e74d22f053d0b9a5f353f98bdc8082c0c5e58",
+      "executable": true,
+      "kind": "file",
+      "path": "packs/agentops-executor/agents/validator/skills/validate/scripts/record_proof_transition.py"
+    },
+    {
+      "digest": "a9642b27a4ae4da474a874a93a5faba403bf7d6299b85c82c96efe3a8104ff4e",
+      "executable": false,
+      "kind": "file",
+      "path": "packs/agentops-executor/agents/validator/skills/validate/scripts/test_kernel_v3.py"
+    },
+    {
+      "digest": "8e1b289cba8664bbd1662bbc41fb8bfe0b1741559b487a745535f4796cc8ac17",
+      "executable": true,
+      "kind": "file",
+      "path": "packs/agentops-executor/agents/validator/skills/validate/scripts/test_validate.py"
+    },
+    {
+      "digest": "adafe4e127f9ddeb534c633a2cb4c2321b47e8a6a6f3656a0872076427f72247",
+      "executable": true,
+      "kind": "file",
+      "path": "packs/agentops-executor/agents/validator/skills/validate/scripts/validate.py"
+    },
+    {
+      "digest": "550f89058d490e3c14e8c0ce25eb70a5cdc2326ccc9c170658238bc9fc8a4db7",
+      "executable": true,
+      "kind": "file",
+      "path": "packs/agentops-executor/agents/validator/skills/validate/scripts/validate.sh"
+    },
+    {
+      "digest": "055c0f4b9afe9934dbd8948115323a5ff2706aae809888e75efeacb5fdff0841",
+      "executable": true,
+      "kind": "file",
+      "path": "packs/agentops-executor/agents/validator/skills/validate/scripts/validate_v3.py"
+    },
+    {
+      "digest": "ea9528278c9ac9701a1890b8a3b2c0ce855eba4aead10625ec9eeeb35f26cd3a",
+      "executable": false,
+      "kind": "file",
+      "path": "packs/agentops-executor/assets/generated-skill-manifest.json"
+    },
+    {
+      "digest": "c4bc8917ba901cd900adbca13384cb7937737cd3587fb637498faeb2c3e66471",
+      "executable": false,
+      "kind": "file",
+      "path": "schemas/check-receipt.v1.schema.json"
+    },
+    {
+      "digest": "24db330f10cb71fb4de136b4448a188e7cceb204dc95f0b27eab300e0d9500d4",
+      "executable": false,
+      "kind": "file",
+      "path": "schemas/effect-receipt.v1.schema.json"
+    },
+    {
+      "digest": "0110acf9131aa09e4ace6a12fe58a79c6b59c2cffa405601186573d2d3204282",
+      "executable": false,
+      "kind": "file",
+      "path": "schemas/proof-contract-active.v1.schema.json"
+    },
+    {
+      "digest": "854d252c7af4feb83cfce211edcd2eacda3b1741eca08f6f38a5eaa638596ce3",
+      "executable": false,
+      "kind": "file",
+      "path": "schemas/proof-contract-transition.v1.schema.json"
+    },
+    {
+      "digest": "22ecac3c127779aeef265b63e0c68405f344f67b8e02dcaf2686c3b9a417e87a",
+      "executable": false,
+      "kind": "file",
+      "path": "schemas/proof-contract.v1.schema.json"
+    },
+    {
+      "digest": "9346ac2670ab2d1d65777045b9e35cbb6efd44c08cc934c1c219399fefabfa33",
+      "executable": false,
+      "kind": "file",
+      "path": "schemas/rpi-report.v2.schema.json"
+    },
+    {
+      "digest": "fb2566e40f1b0a25a49304ce0b8e06f9b08f3e999b339e7abcae72e50993927c",
+      "executable": false,
+      "kind": "file",
+      "path": "schemas/scope-index.v1.schema.json"
+    },
+    {
+      "digest": "e69099b1d8fbaf4baec63b71eb6f56d2c4c002fe3739492e757dacb96effd4dd",
+      "executable": false,
+      "kind": "file",
+      "path": "schemas/subject-manifest.v2.schema.json"
+    },
+    {
+      "digest": "0914f63b11e0a2d81d18f9150ad45eda55370ea0294e9f95e9dd3e69c7886cda",
+      "executable": false,
+      "kind": "file",
+      "path": "schemas/verdict.v3.schema.json"
+    },
+    {
+      "digest": "d513438c04f70a87db606dcc4cd6ba5d56e7b290f493dabdc76b32c7bb22c882",
+      "executable": false,
+      "kind": "file",
+      "path": "scripts/bootstrap-proof-transition-v2.py"
+    },
+    {
+      "digest": "9ad0714a36709cf4a4fe66fd9a23d139c3acec12bfe2487345c99942937b588d",
+      "executable": false,
+      "kind": "file",
+      "path": "scripts/bootstrap-proof-transition.py"
+    },
+    {
+      "digest": "9fc2603cd15aaed71702cbaeafd808164b5ba97aa3e5844e8c8b5596abb1059b",
+      "executable": false,
+      "kind": "file",
+      "path": "scripts/check-proof-contract.py"
+    },
+    {
+      "digest": "5cbfdfa72a5cb1e033a94fc82209a89db292cf8e574892da70a6e8abb64565aa",
+      "executable": false,
+      "kind": "file",
+      "path": "skills-codex-overrides/catalog.json"
+    },
+    {
+      "digest": "b3476afac5853f0eb1ad491076d0178b4c6f6e9c3651e6e02311d7c830908335",
+      "executable": false,
+      "kind": "file",
+      "path": "skills-codex/.agentops-manifest.json"
+    },
+    {
+      "digest": "2bf30952fdc1caa0b8d80e3218f93d10a0ea6546106b1da7883f66843891a971",
+      "executable": false,
+      "kind": "file",
+      "path": "skills-codex/implement/.agentops-generated.json"
+    },
+    {
+      "digest": "c0eaa2259f17446374038e760460d8523c1148238d2603e07b92ebefc3089cf7",
+      "executable": false,
+      "kind": "file",
+      "path": "skills-codex/implement/SKILL.md"
+    },
+    {
+      "digest": "eaad309a11462c8324284410960cea8a1f009ae9b97465899bf3da34bfaf231e",
+      "executable": false,
+      "kind": "file",
+      "path": "skills-codex/implement/prompt.md"
+    },
+    {
+      "digest": "90a737a9aaba69ee32397c07a5a023ba7b4dab96bc515879f72a2ad087e6eff1",
+      "executable": false,
+      "kind": "file",
+      "path": "skills-codex/implement/references/implement.feature"
+    },
+    {
+      "digest": "4ddac725daf79a0f8b9e330bc9fbd41462f9f36a6dfa927cc1c6f6ab3e6e0464",
+      "executable": false,
+      "kind": "file",
+      "path": "skills-codex/implement/scripts/__pycache__/freeze_candidate.cpython-314.pyc"
+    },
+    {
+      "digest": "51988cc25b183a365e5c5c9fcbe66df9014a08760f4a8187d7e3d41b25c99dc1",
+      "executable": true,
+      "kind": "file",
+      "path": "skills-codex/implement/scripts/freeze_candidate.py"
+    },
+    {
+      "digest": "9c42441842179430c24ad8944b4a566a7d801fc092f8c2fdffd66ef1ee59cea1",
+      "executable": true,
+      "kind": "file",
+      "path": "skills-codex/implement/scripts/validate.sh"
+    },
+    {
+      "digest": "f8d821788c185a4a919494f1cb3831de11b54fe4db3c2bbdbb09b2820576e457",
+      "executable": false,
+      "kind": "file",
+      "path": "skills-codex/plan/.agentops-generated.json"
+    },
+    {
+      "digest": "a54b7bb82070637760bb6f907ff7c7a331ffc1673d9004c4cfe29ecbee20b839",
+      "executable": false,
+      "kind": "file",
+      "path": "skills-codex/plan/SKILL.md"
+    },
+    {
+      "digest": "b69c2a5b98797aea379600bc159260aa8db52b99bad5ba13709b6a0d5e275984",
+      "executable": false,
+      "kind": "file",
+      "path": "skills-codex/plan/prompt.md"
+    },
+    {
+      "digest": "f52ca8501a53933077c6e779c49e402422cc87468f7b210cfcc4068bd208d23b",
+      "executable": false,
+      "kind": "file",
+      "path": "skills-codex/plan/references/plan.feature"
+    },
+    {
+      "digest": "5036b87cd858eaa4610f43f165bbcdff6882187e445977dec2b2510b43a37929",
+      "executable": false,
+      "kind": "file",
+      "path": "skills-codex/plan/scripts/__pycache__/mint_intent.cpython-314.pyc"
+    },
+    {
+      "digest": "6bb36c50ad87f4ae0eccee8c6a40256ef37429c4452a13cd7d41a0b0d56b11bc",
+      "executable": true,
+      "kind": "file",
+      "path": "skills-codex/plan/scripts/mint_intent.py"
+    },
+    {
+      "digest": "457be15c622db62e1a0c80eadfff9dee47ed93ccc3320bf7b4e411d8aee42888",
+      "executable": true,
+      "kind": "file",
+      "path": "skills-codex/plan/scripts/validate.sh"
+    },
+    {
+      "digest": "ab70b4e30606a7d31d3eadb052e65e02476ff2fa1a22564e75b6a1dc91109d1f",
+      "executable": false,
+      "kind": "file",
+      "path": "skills-codex/rpi/.agentops-generated.json"
+    },
+    {
+      "digest": "0e4832ee71703eda5f1045f48d187250e0f6e9e3028e2e76fdf0fcdb88fb36be",
+      "executable": false,
+      "kind": "file",
+      "path": "skills-codex/rpi/SKILL.md"
+    },
+    {
+      "digest": "3c9046c7b01dc295f53be6fd9f9e9e546012cb367a1f1b948cc819bb24c88043",
+      "executable": false,
+      "kind": "file",
+      "path": "skills-codex/rpi/prompt.md"
+    },
+    {
+      "digest": "76ef7786081067a2f4833cf725089f18fa85b026170f1a99f10d3d76d1225f6d",
+      "executable": false,
+      "kind": "file",
+      "path": "skills-codex/rpi/references/rpi.feature"
+    },
+    {
+      "digest": "d897818662814129e7ab82f5f02e66e2ded88f12efd425db36b88b493d69b23b",
+      "executable": false,
+      "kind": "file",
+      "path": "skills-codex/rpi/scripts/__pycache__/run_once.cpython-314.pyc"
+    },
+    {
+      "digest": "57fb4e491216adc75e15fabc3b117d498b1ff4601edb5f2773e619ce82f253be",
+      "executable": true,
+      "kind": "file",
+      "path": "skills-codex/rpi/scripts/run_once.py"
+    },
+    {
+      "digest": "ecb6d1cb426fbfb735c784aac1f7cb26f4fbac40200b79f7212842ff7215fee0",
+      "executable": true,
+      "kind": "file",
+      "path": "skills-codex/rpi/scripts/validate.sh"
+    },
+    {
+      "digest": "b7048a55dc08081d3f97bdb1ec788e6f1968d043436748eefd9110d6cb977a00",
+      "executable": false,
+      "kind": "file",
+      "path": "skills-codex/rpi/tests/__pycache__/test_run_once.cpython-314.pyc"
+    },
+    {
+      "digest": "e89ba8082e82d3e1cfd14be4ea3a88c9be761a0e7703d248ea9a78268be88529",
+      "executable": false,
+      "kind": "file",
+      "path": "skills-codex/rpi/tests/test_run_once.py"
+    },
+    {
+      "digest": "9b5baf5ef6ba18f74dd8244583e39a5d12ee424d5484b0ba54fc2891d39869c4",
+      "executable": false,
+      "kind": "file",
+      "path": "skills-codex/validate/.agentops-generated.json"
+    },
+    {
+      "digest": "c1edd23522513c196377a9e73ac36f9561068711abfa35e17fbf6cf714e04345",
+      "executable": false,
+      "kind": "file",
+      "path": "skills-codex/validate/SKILL.md"
+    },
+    {
+      "digest": "ef8aacaf5c4723bce22a90f0ddb6107587cc821ace9c51b91ba9deee3d2c2457",
+      "executable": false,
+      "kind": "file",
+      "path": "skills-codex/validate/prompt.md"
+    },
+    {
+      "digest": "bc9ab49fb81c4cd8c94313307da59c35df4eb12691c0da5a5e36cb16d140f127",
+      "executable": false,
+      "kind": "file",
+      "path": "skills-codex/validate/references/validate.feature"
+    },
+    {
+      "digest": "e7e67cb848a6a61e22de64189c6cdf9d1aa1198f978268d8720187484c989e7c",
+      "executable": false,
+      "kind": "file",
+      "path": "skills-codex/validate/scripts/__pycache__/kernel_v3.cpython-314.pyc"
+    },
+    {
+      "digest": "0fd7fd9e92e3f72c8f27de6a5627d5a6bcf55ef93e8a8bd6de89bfdec0e2b35f",
+      "executable": false,
+      "kind": "file",
+      "path": "skills-codex/validate/scripts/__pycache__/validate.cpython-314.pyc"
+    },
+    {
+      "digest": "e1f9755cd87963ef09e9d68da097dd21804e19d76aee8173b169a24bbfba1539",
+      "executable": false,
+      "kind": "file",
+      "path": "skills-codex/validate/scripts/__pycache__/validate_v3.cpython-314.pyc"
+    },
+    {
+      "digest": "b173fab958006f38d56950e72ac571d18eda2bbd085d92a665acc9feaa3083ce",
+      "executable": false,
+      "kind": "file",
+      "path": "skills-codex/validate/scripts/check_contract_corpus.py"
+    },
+    {
+      "digest": "173e862c1a65e5ff2b0a6b3ba36d7eb21a53e3bc2ef9fc0990ae11adb5dc9a73",
+      "executable": true,
+      "kind": "file",
+      "path": "skills-codex/validate/scripts/check_kernel_v3_corpus.py"
+    },
+    {
+      "digest": "f7787f4505c6f49c77890411a49387a02beec7a267595e158af6e4184ca6ef70",
+      "executable": true,
+      "kind": "file",
+      "path": "skills-codex/validate/scripts/kernel_v3.py"
+    },
+    {
+      "digest": "49f22c1af70f8a0de09c44bd132e74d22f053d0b9a5f353f98bdc8082c0c5e58",
+      "executable": true,
+      "kind": "file",
+      "path": "skills-codex/validate/scripts/record_proof_transition.py"
+    },
+    {
+      "digest": "a9642b27a4ae4da474a874a93a5faba403bf7d6299b85c82c96efe3a8104ff4e",
+      "executable": false,
+      "kind": "file",
+      "path": "skills-codex/validate/scripts/test_kernel_v3.py"
+    },
+    {
+      "digest": "8e1b289cba8664bbd1662bbc41fb8bfe0b1741559b487a745535f4796cc8ac17",
+      "executable": true,
+      "kind": "file",
+      "path": "skills-codex/validate/scripts/test_validate.py"
+    },
+    {
+      "digest": "adafe4e127f9ddeb534c633a2cb4c2321b47e8a6a6f3656a0872076427f72247",
+      "executable": true,
+      "kind": "file",
+      "path": "skills-codex/validate/scripts/validate.py"
+    },
+    {
+      "digest": "550f89058d490e3c14e8c0ce25eb70a5cdc2326ccc9c170658238bc9fc8a4db7",
+      "executable": true,
+      "kind": "file",
+      "path": "skills-codex/validate/scripts/validate.sh"
+    },
+    {
+      "digest": "055c0f4b9afe9934dbd8948115323a5ff2706aae809888e75efeacb5fdff0841",
+      "executable": true,
+      "kind": "file",
+      "path": "skills-codex/validate/scripts/validate_v3.py"
+    },
+    {
+      "digest": "dc8249f983eb5ea64832775f87b02a4fd3e71a5c69528cf2f7846a96a5e10893",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/catalog.json"
+    },
+    {
+      "digest": "bcbb2156409af426769e77dc90aaeed43371dfd54f4ae886caac2b8f49359e8b",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/implement/SKILL.md"
+    },
+    {
+      "digest": "90a737a9aaba69ee32397c07a5a023ba7b4dab96bc515879f72a2ad087e6eff1",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/implement/references/implement.feature"
+    },
+    {
+      "digest": "0b740e0b73747db4e71084484836c53e1b52ccb6a45fdf133804b47d9ebe566c",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/implement/scripts/__pycache__/freeze_candidate.cpython-314.pyc"
+    },
+    {
+      "digest": "51988cc25b183a365e5c5c9fcbe66df9014a08760f4a8187d7e3d41b25c99dc1",
+      "executable": true,
+      "kind": "file",
+      "path": "skills/implement/scripts/freeze_candidate.py"
+    },
+    {
+      "digest": "9c42441842179430c24ad8944b4a566a7d801fc092f8c2fdffd66ef1ee59cea1",
+      "executable": true,
+      "kind": "file",
+      "path": "skills/implement/scripts/validate.sh"
+    },
+    {
+      "digest": "c1808f7d874e85a0a7923f83c38254dab874a27dc0bbf600095316b3c26f2431",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/plan/SKILL.md"
+    },
+    {
+      "digest": "f52ca8501a53933077c6e779c49e402422cc87468f7b210cfcc4068bd208d23b",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/plan/references/plan.feature"
+    },
+    {
+      "digest": "5036b87cd858eaa4610f43f165bbcdff6882187e445977dec2b2510b43a37929",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/plan/scripts/__pycache__/mint_intent.cpython-314.pyc"
+    },
+    {
+      "digest": "6bb36c50ad87f4ae0eccee8c6a40256ef37429c4452a13cd7d41a0b0d56b11bc",
+      "executable": true,
+      "kind": "file",
+      "path": "skills/plan/scripts/mint_intent.py"
+    },
+    {
+      "digest": "457be15c622db62e1a0c80eadfff9dee47ed93ccc3320bf7b4e411d8aee42888",
+      "executable": true,
+      "kind": "file",
+      "path": "skills/plan/scripts/validate.sh"
+    },
+    {
+      "digest": "ec58369b6fcf525ef0fd0c5d25cb2a596642daac61ef9891944ec75195f6909b",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/rpi/SKILL.md"
+    },
+    {
+      "digest": "76ef7786081067a2f4833cf725089f18fa85b026170f1a99f10d3d76d1225f6d",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/rpi/references/rpi.feature"
+    },
+    {
+      "digest": "d897818662814129e7ab82f5f02e66e2ded88f12efd425db36b88b493d69b23b",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/rpi/scripts/__pycache__/run_once.cpython-314.pyc"
+    },
+    {
+      "digest": "57fb4e491216adc75e15fabc3b117d498b1ff4601edb5f2773e619ce82f253be",
+      "executable": true,
+      "kind": "file",
+      "path": "skills/rpi/scripts/run_once.py"
+    },
+    {
+      "digest": "ecb6d1cb426fbfb735c784aac1f7cb26f4fbac40200b79f7212842ff7215fee0",
+      "executable": true,
+      "kind": "file",
+      "path": "skills/rpi/scripts/validate.sh"
+    },
+    {
+      "digest": "b7048a55dc08081d3f97bdb1ec788e6f1968d043436748eefd9110d6cb977a00",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/rpi/tests/__pycache__/test_run_once.cpython-314.pyc"
+    },
+    {
+      "digest": "e89ba8082e82d3e1cfd14be4ea3a88c9be761a0e7703d248ea9a78268be88529",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/rpi/tests/test_run_once.py"
+    },
+    {
+      "digest": "8ecc121b6d7a63946a903d062f6913a8e32663ecb1418f193002490946e9158d",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/validate/SKILL.md"
+    },
+    {
+      "digest": "bc9ab49fb81c4cd8c94313307da59c35df4eb12691c0da5a5e36cb16d140f127",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/validate/references/validate.feature"
+    },
+    {
+      "digest": "9a128b7955834c67c604255b4eecd0623d81a5f8a8ff9bdf516728900b48a973",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/validate/scripts/__pycache__/check_kernel_v3_corpus.cpython-314.pyc"
+    },
+    {
+      "digest": "8e113e1fd0e1ce5880fb39cbe471b45dd1fac54fd3013a7ad1349ce97f2fac82",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/validate/scripts/__pycache__/kernel_v3.cpython-314.pyc"
+    },
+    {
+      "digest": "696e9ca3e7d712d56d570e803f1d69d48b1814ccb5856814625250d46d9e0de5",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/validate/scripts/__pycache__/record_proof_transition.cpython-314.pyc"
+    },
+    {
+      "digest": "a92c583b45b362eb4f89f6d6dc8e31a4e9d2e8e966b3cf3e7d2512aef3220ea6",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/validate/scripts/__pycache__/test_kernel_v3.cpython-314.pyc"
+    },
+    {
+      "digest": "0fd7fd9e92e3f72c8f27de6a5627d5a6bcf55ef93e8a8bd6de89bfdec0e2b35f",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/validate/scripts/__pycache__/validate.cpython-314.pyc"
+    },
+    {
+      "digest": "e1f9755cd87963ef09e9d68da097dd21804e19d76aee8173b169a24bbfba1539",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/validate/scripts/__pycache__/validate_v3.cpython-314.pyc"
+    },
+    {
+      "digest": "b173fab958006f38d56950e72ac571d18eda2bbd085d92a665acc9feaa3083ce",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/validate/scripts/check_contract_corpus.py"
+    },
+    {
+      "digest": "173e862c1a65e5ff2b0a6b3ba36d7eb21a53e3bc2ef9fc0990ae11adb5dc9a73",
+      "executable": true,
+      "kind": "file",
+      "path": "skills/validate/scripts/check_kernel_v3_corpus.py"
+    },
+    {
+      "digest": "f7787f4505c6f49c77890411a49387a02beec7a267595e158af6e4184ca6ef70",
+      "executable": true,
+      "kind": "file",
+      "path": "skills/validate/scripts/kernel_v3.py"
+    },
+    {
+      "digest": "49f22c1af70f8a0de09c44bd132e74d22f053d0b9a5f353f98bdc8082c0c5e58",
+      "executable": true,
+      "kind": "file",
+      "path": "skills/validate/scripts/record_proof_transition.py"
+    },
+    {
+      "digest": "a9642b27a4ae4da474a874a93a5faba403bf7d6299b85c82c96efe3a8104ff4e",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/validate/scripts/test_kernel_v3.py"
+    },
+    {
+      "digest": "8e1b289cba8664bbd1662bbc41fb8bfe0b1741559b487a745535f4796cc8ac17",
+      "executable": true,
+      "kind": "file",
+      "path": "skills/validate/scripts/test_validate.py"
+    },
+    {
+      "digest": "adafe4e127f9ddeb534c633a2cb4c2321b47e8a6a6f3656a0872076427f72247",
+      "executable": true,
+      "kind": "file",
+      "path": "skills/validate/scripts/validate.py"
+    },
+    {
+      "digest": "550f89058d490e3c14e8c0ce25eb70a5cdc2326ccc9c170658238bc9fc8a4db7",
+      "executable": true,
+      "kind": "file",
+      "path": "skills/validate/scripts/validate.sh"
+    },
+    {
+      "digest": "055c0f4b9afe9934dbd8948115323a5ff2706aae809888e75efeacb5fdff0841",
+      "executable": true,
+      "kind": "file",
+      "path": "skills/validate/scripts/validate_v3.py"
+    },
+    {
+      "digest": "6f8a8109ef0d12407e15ca4e91f92667ea7c10821ed019155f1e6dc3888b79ee",
+      "executable": false,
+      "kind": "file",
+      "path": "tests/fixtures/rpi-kernel-v3/corpus.json"
+    },
+    {
+      "digest": "3f635a700136afac2969e3bca1dfa72462e7f3f283263a8ba06bce48fa862d70",
+      "executable": false,
+      "kind": "file",
+      "path": "tests/python/test_check_proof_contract.py"
+    }
+  ],
+  "exclusions": [],
+  "schema_version": "subject-manifest.v1"
+}
