@@ -6,7 +6,7 @@
   "repair_base_commit": "bc711ea6fccc2173acfb8f7c8109c5263a3fd43a",
   "repair_candidate_commit": "5b6bf22dad6a855fa385d946fecc0eb58605228d",
   "qualification_subject_manifest_digest": "000cf482f87567e36a5d7ea5a24598a1b4b7da7426cd962f8471af03c74de29d",
-  "qualification_verdict_digest": null,
+  "qualification_verdict_digest": "b00b1fc309de43843670cf4e8f24a2de968a511b75143a5810f964dcfdd5da9b",
   "activation_transition_digest": null,
   "qualification_state": "NOT_PROVEN",
   "subject_rule": "The qualification manifest binds the complete repaired core and its generated/read-side companions. Descriptor, intent, manifest, verdict, and transition are external evidence and are not members of their own subject.",
