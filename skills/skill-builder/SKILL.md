@@ -27,6 +27,116 @@ metadata:
   tier: meta
   dependencies: []
   stability: experimental
+  contract_v3:
+    schema_version: skill-contract.v3
+    primary_layer: implementation
+    lifecycle_seams: [implement_method]
+    authority: [read_evidence, mutate_subject]
+    effects:
+    - id: source-read
+      kind: filesystem.read
+      scope: explicitly named skills/<slug> source package and compiler inputs
+      authorization: caller
+      cleanup: none
+      receipt: optional
+    - id: source-write
+      kind: filesystem.write
+      scope: explicitly named skills/<slug> source package
+      authorization: caller
+      cleanup: none
+      receipt: required
+    - id: projection-write
+      kind: filesystem.write
+      scope: explicitly invoked owned skill projections
+      authorization: caller
+      cleanup: none
+      receipt: required
+    - id: bounded-process
+      kind: process.start
+      scope: declared build, audit, compiler, and projection commands
+      authorization: caller
+      cleanup: required
+      receipt: required
+    artifacts:
+      consumes:
+      - name: build-request
+        kind: intent
+        semantics: factual
+        schema_ref: null
+        validator: null
+      - name: skill-source-input
+        kind: source
+        semantics: factual
+        schema_ref: schemas/skill-frontmatter.v2.schema.json
+        validator: scripts/validate-skill-frontmatter.sh
+      produces:
+      - name: skill-source-package
+        kind: source
+        semantics: binding
+        schema_ref: schemas/skill-frontmatter.v2.schema.json
+        validator: scripts/validate-skill-frontmatter.sh
+      - name: build-report
+        kind: report
+        semantics: factual
+        schema_ref: skills/skill-builder/schemas/build-report.json
+        validator: skills/skill-builder/scripts/build.sh
+      - name: audit-report
+        kind: report
+        semantics: advisory
+        schema_ref: skills/skill-builder/schemas/audit-report.json
+        validator: skills/skill-builder/scripts/audit.sh
+      - name: compile-receipt
+        kind: receipt
+        semantics: binding
+        schema_ref: skills/skill-builder/schemas/compile-report.json
+        validator: skills/skill-builder/scripts/compile_contracts.py
+      - name: probe-receipt
+        kind: receipt
+        semantics: binding
+        schema_ref: skills/skill-builder/schemas/probe-report.json
+        validator: skills/skill-builder/scripts/run_contract_probe.py
+    triggers:
+      positive:
+      - id: create-skill
+        prompt: Create a metadata-complete skill source package.
+        expected: route
+      negative:
+      - id: validate-candidate
+        prompt: Issue a semantic validation verdict for this software candidate.
+        expected: do_not_route
+      ambiguity:
+      - id: repair-unspecified
+        prompt: Fix this skill.
+        expected: clarify
+      aliases:
+      - id: skill-factory-alias
+        alias: skill factory
+        canonical_skill: skill-builder
+      nearest_neighbors:
+      - id: workflow-builder-boundary
+        skill: workflow-builder
+        distinction: Skill-builder owns one skill source package; workflow-builder composes reusable workflows.
+    failure:
+      unavailable:
+        action: stop
+        detail: Report the unavailable source, schema, or tool without selecting a substitute.
+      timeout:
+        action: stop
+        detail: Stop the bounded command and return its timeout without retrying.
+      partial_evidence:
+        action: report_uncertainty
+        detail: Emit no readiness claim when required compiler or audit evidence is incomplete.
+      partial_mutation:
+        action: rollback_then_stop
+        detail: Preserve or restore the explicitly named source state and report the incomplete write.
+      cleanup:
+        action: stop
+        detail: Report cleanup failure explicitly and make no completion claim.
+    proof:
+      class: mutating_isolation
+      command: bash skills/skill-builder/scripts/test-contract-v3.sh
+      fixture_refs:
+      - skills/skill-builder/fixtures/contract-v3/cases.json
 output_contract: skills/skill-builder/schemas/build-report.json (create/build) or skills/skill-builder/schemas/audit-report.json (audit)
 ---
 
@@ -50,6 +160,8 @@ Extend an existing skill when it already owns the requested behavior.
 | "check skill package" | check | `scripts/heal.sh --check [--strict]` |
 | "heal skill", "repair skill hygiene" | heal | `scripts/heal.sh --fix` |
 | "audit skill structure" | audit | `scripts/audit.sh` |
+| "compile skill contract", "check contract v3" | compile (check) | `scripts/compile_contracts.py check` |
+| "record skill contract receipt" | compile (record) | `scripts/compile_contracts.py record` |
 
 ## Constraints
 
@@ -140,6 +252,34 @@ advisory quality score. It is not the core `Validate` phase, does not write a
 [audit-checks.md](references/audit-checks.md); density scoring is described in
 [context-density-checks.md](references/context-density-checks.md).
 
+## Contract compile mode
+
+The shadow compiler validates one explicitly named `metadata.contract_v3`
+declaration without changing live API1 or catalog-v3 authority:
+
+```bash
+python3 skills/skill-builder/scripts/compile_contracts.py check \
+  --skill <slug>
+python3 skills/skill-builder/scripts/compile_contracts.py record \
+  --skill <slug> --output <receipt-path>
+```
+
+`check` emits deterministic receipt bytes to stdout and never writes.
+`record` writes those same bytes atomically to the explicit contained output.
+The compiler rejects duplicate YAML keys, unknown contract fields, malformed
+semantics, forbidden authority, invalid references, and illegal hard
+dependencies. The grammar and stable failure codes are documented in
+[skill-contract-v3.md](references/skill-contract-v3.md).
+
+Run and record the contract's declared isolated proof separately:
+
+```bash
+python3 skills/skill-builder/scripts/run_contract_probe.py check \
+  --skill <slug>
+python3 skills/skill-builder/scripts/run_contract_probe.py record \
+  --skill <slug> --output <probe-receipt-path>
+```
+
 ## Output
 
 A created source package contains:
@@ -152,9 +292,10 @@ skills/<slug>/
 
 The build report is `.agents/audits/<slug>-build.json` and conforms to
 `schemas/build-report.json`. Deep audit JSON conforms to
-`schemas/audit-report.json`. Generated inventories and runtime projections are
-not additional sources of truth. The caller owns any subsequent edit or
-invocation.
+`schemas/audit-report.json`. Contract compilation emits
+`schemas/compile-report.json`; proof runs emit `schemas/probe-report.json`.
+Generated inventories, the readiness ledger, and shadow contract receipts are
+not live routing authority. The caller owns any subsequent edit or invocation.
 
 ## Checks
 
@@ -168,6 +309,8 @@ invocation.
   useful; its content is not copied.
 - Check mode never mutates files; fix mode changes only an explicit source
   target and its owned projections.
+- Contract-v3 check mode is read-only, and its rendered receipt bytes equal
+  record mode's bytes.
 
 ## Failure behavior
 
@@ -178,6 +321,7 @@ or invoke the builder again.
 ## References
 
 - [skill template](references/skill-template.md)
+- [shadow skill-contract.v3 grammar](references/skill-contract-v3.md)
 - [authoring doctrine](references/authoring-doctrine.md) — prose-quality
   principles behind the advisory `authoring` audit block
 - [heal.feature](references/heal.feature)

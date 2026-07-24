@@ -1,0 +1,139 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://agentops.local/skills/skill-builder/schemas/probe-report.json",
+  "title": "Shadow skill contract probe receipt",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "skill",
+    "source",
+    "contract_digest",
+    "compiler_digest",
+    "runner",
+    "proof",
+    "execution",
+    "result"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "skill-contract-probe-receipt.v1"
+    },
+    "skill": {
+      "type": "string",
+      "minLength": 1
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "ref",
+        "before_sha256",
+        "after_sha256",
+        "unchanged"
+      ],
+      "properties": {
+        "ref": {
+          "type": "string",
+          "minLength": 1
+        },
+        "before_sha256": {
+          "$ref": "#/definitions/sha256"
+        },
+        "after_sha256": {
+          "$ref": "#/definitions/sha256"
+        },
+        "unchanged": {
+          "type": "boolean"
+        }
+      }
+    },
+    "contract_digest": {
+      "$ref": "#/definitions/sha256"
+    },
+    "compiler_digest": {
+      "$ref": "#/definitions/sha256"
+    },
+    "runner": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "ref",
+        "sha256"
+      ],
+      "properties": {
+        "ref": {
+          "const": "skills/skill-builder/scripts/run_contract_probe.py"
+        },
+        "sha256": {
+          "$ref": "#/definitions/sha256"
+        }
+      }
+    },
+    "proof": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "class",
+        "command",
+        "fixture_refs",
+        "fixture_digest"
+      ],
+      "properties": {
+        "class": {
+          "type": "string",
+          "minLength": 1
+        },
+        "command": {
+          "type": "string",
+          "minLength": 1
+        },
+        "fixture_refs": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "fixture_digest": {
+          "$ref": "#/definitions/sha256"
+        }
+      }
+    },
+    "execution": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "exit_code",
+        "stdout_sha256",
+        "stderr_sha256"
+      ],
+      "properties": {
+        "exit_code": {
+          "type": "integer"
+        },
+        "stdout_sha256": {
+          "$ref": "#/definitions/sha256"
+        },
+        "stderr_sha256": {
+          "$ref": "#/definitions/sha256"
+        }
+      }
+    },
+    "result": {
+      "enum": [
+        "PASS",
+        "FAIL",
+        "NOT_PROVEN"
+      ]
+    }
+  },
+  "definitions": {
+    "sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    }
+  }
+}

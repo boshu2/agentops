@@ -1,0 +1,237 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://agentops.local/schemas/skill-migration-readiness.v1.schema.json",
+  "title": "AgentOps skill-contract migration readiness ledger",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "live_authority",
+    "shadow",
+    "skill_count",
+    "rows"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "skill-migration-readiness.v1"
+    },
+    "live_authority": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "skill_api_version",
+        "catalog_version"
+      ],
+      "properties": {
+        "skill_api_version": {
+          "const": 1
+        },
+        "catalog_version": {
+          "const": "3"
+        }
+      }
+    },
+    "shadow": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "contract_schema_ref",
+        "contract_schema_sha256",
+        "compiler_refs",
+        "compiler_digest"
+      ],
+      "properties": {
+        "contract_schema_ref": {
+          "const": "schemas/skill-contract.v3.schema.json"
+        },
+        "contract_schema_sha256": {
+          "$ref": "#/definitions/sha256"
+        },
+        "compiler_refs": {
+          "type": "array",
+          "minItems": 2,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "compiler_digest": {
+          "$ref": "#/definitions/sha256"
+        }
+      }
+    },
+    "skill_count": {
+      "const": 49
+    },
+    "rows": {
+      "type": "array",
+      "minItems": 49,
+      "maxItems": 49,
+      "items": {
+        "$ref": "#/definitions/readiness_row"
+      }
+    }
+  },
+  "definitions": {
+    "sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "identity_ref": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "ref",
+        "sha256"
+      ],
+      "properties": {
+        "ref": {
+          "type": "string",
+          "minLength": 1
+        },
+        "sha256": {
+          "$ref": "#/definitions/sha256"
+        }
+      }
+    },
+    "proof_identity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "proof_contract_digest",
+        "verdict_ref",
+        "verdict_digest"
+      ],
+      "properties": {
+        "proof_contract_digest": {
+          "$ref": "#/definitions/sha256"
+        },
+        "verdict_ref": {
+          "type": "string",
+          "minLength": 1
+        },
+        "verdict_digest": {
+          "$ref": "#/definitions/sha256"
+        }
+      }
+    },
+    "readiness_row": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "source_ref",
+        "source_sha256",
+        "target_tranche",
+        "contract_status",
+        "compiler_status",
+        "contract_digest",
+        "probe_status",
+        "probe_receipt",
+        "proof_identity",
+        "blockers",
+        "cutover_ready"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$"
+        },
+        "source_ref": {
+          "type": "string",
+          "pattern": "^skills/[a-z][a-z0-9]*(?:-[a-z0-9]+)*/SKILL\\.md$"
+        },
+        "source_sha256": {
+          "$ref": "#/definitions/sha256"
+        },
+        "target_tranche": {
+          "enum": [
+            "T1",
+            "T2",
+            "T3",
+            "T4",
+            "T5",
+            "T6",
+            "T7a",
+            "T7b"
+          ]
+        },
+        "contract_status": {
+          "enum": [
+            "ABSENT",
+            "INVALID",
+            "VALID"
+          ]
+        },
+        "compiler_status": {
+          "enum": [
+            "SKIPPED_ABSENT",
+            "FAIL",
+            "PASS"
+          ]
+        },
+        "contract_digest": {
+          "oneOf": [
+            {
+              "$ref": "#/definitions/sha256"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "probe_status": {
+          "enum": [
+            "UNDECLARED",
+            "NOT_RUN",
+            "PASS",
+            "FAIL",
+            "NOT_PROVEN"
+          ]
+        },
+        "probe_receipt": {
+          "oneOf": [
+            {
+              "$ref": "#/definitions/identity_ref"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "proof_identity": {
+          "oneOf": [
+            {
+              "$ref": "#/definitions/proof_identity"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "blockers": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "CONTRACT_V3_ABSENT",
+              "CONTRACT_V3_INVALID",
+              "COMPILER_FAILED",
+              "PROBE_UNDECLARED",
+              "PROBE_NOT_RUN",
+              "PROBE_FAILED",
+              "PROBE_NOT_PROVEN",
+              "PROBE_RECEIPT_INVALID",
+              "SOURCE_IDENTITY_MISMATCH",
+              "PROOF_IDENTITY_INCOMPLETE"
+            ]
+          }
+        },
+        "cutover_ready": {
+          "type": "boolean"
+        }
+      }
+    }
+  }
+}
