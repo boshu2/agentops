@@ -1,0 +1,26 @@
+{
+  "schema_version": "rpi-report.v1",
+  "status": "FAIL",
+  "intent_ref": "docs/evidence/proof-epochs/epoch-0/t0-intent.md",
+  "acceptance_digest": "707f72f0868990eab2d4706a2d9d2584397f2285d76585bec4928887acfba882",
+  "subject_manifest_digest": "2f984605afd28f1d7ca3074603d8207bdfeac474575b0b5ed115a4f12c0ae273",
+  "verdict_ref": "docs/evidence/proof-epochs/epoch-0/verdicts/bf865e3233c1e19e6346d37403db775e9fb0fa6b252d14af88e4c9aaa081d804.json",
+  "verdict_digest": "bf865e3233c1e19e6346d37403db775e9fb0fa6b252d14af88e4c9aaa081d804",
+  "checked": [
+    "T0-1",
+    "T0-2",
+    "T0-3",
+    "T0-4",
+    "T0-5",
+    "T0-6",
+    "T0-7",
+    "T0-8",
+    "T0-9"
+  ],
+  "not_checked": [
+    "remote branch protection and required-job policy",
+    "historical routing observations while CASS is checkpoint_incomplete",
+    "external plugin installations absent from this host",
+    "T1 through T8 and G0 through G2 implementation"
+  ]
+}
