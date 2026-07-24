@@ -1,0 +1,279 @@
+{
+  "schema_version": "generated-projection-owner-map.v1",
+  "publication": {
+    "lock_ref": "docs/contracts/generated-projection-owners.v1.json",
+    "manifest_ref": ".agents/ao/publications/generated-projections/current.json",
+    "receipt_dir_ref": ".agents/ao/publications/generated-projections/receipts",
+    "transaction_dir_ref": ".agents/ao/publications/generated-projections/transactions"
+  },
+  "owners": [
+    {
+      "id": "codex-skill-projections",
+      "generator_refs": [
+        "scripts/codex-sync.sh",
+        "scripts/regen-codex-hashes.sh"
+      ],
+      "source_refs": [
+        "skills",
+        "skills-codex-overrides",
+        ".claude-plugin/plugin.json"
+      ],
+      "commands": [
+        [
+          "bash",
+          "scripts/codex-sync.sh"
+        ],
+        [
+          "bash",
+          "scripts/regen-codex-hashes.sh"
+        ]
+      ],
+      "targets": [
+        {
+          "path": "skills-codex",
+          "kind": "tree",
+          "allow_missing": false
+        }
+      ]
+    },
+    {
+      "id": "gas-city-skill-projections",
+      "generator_refs": [
+        "scripts/sync-gc-pack.py"
+      ],
+      "source_refs": [
+        "skills/implement",
+        "skills/validate",
+        "skills/using-gc",
+        "packs/agentops-executor"
+      ],
+      "commands": [
+        [
+          "python3",
+          "scripts/sync-gc-pack.py"
+        ]
+      ],
+      "targets": [
+        {
+          "path": "packs/agentops-executor/agents/implementer/skills/implement",
+          "kind": "tree",
+          "allow_missing": false
+        },
+        {
+          "path": "packs/agentops-executor/agents/implementer-claude/skills/implement",
+          "kind": "tree",
+          "allow_missing": false
+        },
+        {
+          "path": "packs/agentops-executor/agents/validator/skills/validate",
+          "kind": "tree",
+          "allow_missing": false
+        },
+        {
+          "path": "packs/agentops-executor/agents/validator-claude",
+          "kind": "tree",
+          "allow_missing": true
+        },
+        {
+          "path": "packs/agentops-executor/skills/using-gc",
+          "kind": "tree",
+          "allow_missing": false
+        },
+        {
+          "path": "packs/agentops-executor/assets/generated-skill-manifest.json",
+          "kind": "file",
+          "allow_missing": false
+        }
+      ]
+    },
+    {
+      "id": "skill-mesh",
+      "generator_refs": [
+        "scripts/generate-skill-mesh.py"
+      ],
+      "source_refs": [
+        "skills",
+        "skills-codex",
+        ".claude-plugin/plugin.json"
+      ],
+      "commands": [
+        [
+          "python3",
+          "scripts/generate-skill-mesh.py"
+        ]
+      ],
+      "targets": [
+        {
+          "path": "skills/catalog.json",
+          "kind": "file",
+          "allow_missing": false
+        },
+        {
+          "path": "registry.json",
+          "kind": "file",
+          "allow_missing": false
+        },
+        {
+          "path": "docs/SKILL-ROUTER.md",
+          "kind": "file",
+          "allow_missing": false
+        },
+        {
+          "path": "docs/SKILLS.md",
+          "kind": "file",
+          "allow_missing": false
+        },
+        {
+          "path": "skills/SKILL-TIERS.md",
+          "kind": "file",
+          "allow_missing": false
+        },
+        {
+          "path": "docs/reference/agentops-skill-domain-map.md",
+          "kind": "file",
+          "allow_missing": false
+        },
+        {
+          "path": "docs/reference/agentops-skill-graph.md",
+          "kind": "file",
+          "allow_missing": false
+        },
+        {
+          "path": "docs/contracts/context-map.md",
+          "kind": "file",
+          "allow_missing": false
+        },
+        {
+          "path": "images/claude/manifest.json",
+          "kind": "file",
+          "allow_missing": false
+        },
+        {
+          "path": "images/codex/manifest.json",
+          "kind": "file",
+          "allow_missing": false
+        },
+        {
+          "path": "images/gemini/plugin.json",
+          "kind": "file",
+          "allow_missing": false
+        },
+        {
+          "path": "images/gemini/skills",
+          "kind": "tree",
+          "allow_missing": false
+        }
+      ]
+    },
+    {
+      "id": "cli-reference",
+      "generator_refs": [
+        "scripts/generate-cli-reference.sh"
+      ],
+      "source_refs": [
+        "cli/cmd/ao",
+        "cli/internal",
+        "scripts/generate-cli-reference.sh"
+      ],
+      "commands": [
+        [
+          "bash",
+          "scripts/generate-cli-reference.sh"
+        ]
+      ],
+      "targets": [
+        {
+          "path": "cli/docs/COMMANDS.md",
+          "kind": "file",
+          "allow_missing": false
+        }
+      ]
+    },
+    {
+      "id": "command-heading-projections",
+      "generator_refs": [
+        "scripts/regen-command-surfaces.sh"
+      ],
+      "source_refs": [
+        "cli/docs/COMMANDS.md",
+        "evals/agentops-core"
+      ],
+      "commands": [
+        [
+          "bash",
+          "scripts/regen-command-surfaces.sh"
+        ]
+      ],
+      "targets": [
+        {
+          "path": "evals/agentops-core/fixtures/cli-command-surface-smoke.sh",
+          "kind": "file",
+          "allow_missing": false
+        },
+        {
+          "path": "evals/agentops-core/cli-command-surface-matrix.json",
+          "kind": "file",
+          "allow_missing": false
+        }
+      ]
+    },
+    {
+      "id": "cli-surface-inventory",
+      "generator_refs": [
+        "scripts/check-cmdao-surface-parity.sh"
+      ],
+      "source_refs": [
+        "cli/docs/COMMANDS.md",
+        "cli/cmd/ao",
+        "cli/internal",
+        "scripts/cmdao-surface-allowlist.txt"
+      ],
+      "commands": [
+        [
+          "bash",
+          "scripts/check-cmdao-surface-parity.sh",
+          "--write-surface"
+        ]
+      ],
+      "targets": [
+        {
+          "path": "docs/cli-surface.md",
+          "kind": "file",
+          "allow_missing": false
+        },
+        {
+          "path": "docs/cli-surface.json",
+          "kind": "file",
+          "allow_missing": false
+        }
+      ]
+    },
+    {
+      "id": "documentation-index",
+      "generator_refs": [
+        "scripts/generate-documentation-index.py"
+      ],
+      "source_refs": [
+        "docs",
+        "README.md",
+        "PRODUCT.md",
+        "GOALS.md",
+        "PROGRAM.md"
+      ],
+      "commands": [
+        [
+          "python3",
+          "scripts/generate-documentation-index.py"
+        ]
+      ],
+      "targets": [
+        {
+          "path": "docs/documentation-index.md",
+          "kind": "file",
+          "allow_missing": false
+        }
+      ]
+    }
+  ],
+  "artifact_digest": "dd33fc5c82e4d9deef0ee940a85316692791c00cf41cc9a504d2b81157b5ca7b"
+}

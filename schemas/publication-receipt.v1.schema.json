@@ -1,0 +1,82 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agentops.dev/schemas/publication-receipt.v1.schema.json",
+  "title": "publication-receipt.v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "mode",
+    "result",
+    "owner_map_ref",
+    "owner_map_digest",
+    "input_digest",
+    "before_digest",
+    "rendered_digest",
+    "after_digest",
+    "classifications",
+    "publication_manifest_ref",
+    "publication_manifest_digest",
+    "recovery",
+    "checked",
+    "observed_at",
+    "artifact_digest"
+  ],
+  "properties": {
+    "schema_version": {"const": "publication-receipt.v1"},
+    "mode": {"enum": ["CHECK", "WRITE", "RECOVER"]},
+    "result": {"enum": ["CLEAN", "DRIFT", "PUBLISHED", "IDEMPOTENT", "RECOVERED"]},
+    "owner_map_ref": {"$ref": "#/$defs/ref"},
+    "owner_map_digest": {"$ref": "#/$defs/digest"},
+    "input_digest": {"$ref": "#/$defs/digest"},
+    "before_digest": {"$ref": "#/$defs/digest"},
+    "rendered_digest": {"$ref": "#/$defs/digest"},
+    "after_digest": {"$ref": "#/$defs/digest"},
+    "classifications": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["owner", "path", "classification", "before_state_digest", "rendered_state_digest"],
+        "properties": {
+          "owner": {"type": "string", "minLength": 1},
+          "path": {"$ref": "#/$defs/ref"},
+          "classification": {"enum": ["CLEAN_CURRENT", "DIRTY_PRESERVE", "MISSING", "UNOWNED"]},
+          "before_state_digest": {"$ref": "#/$defs/digest"},
+          "rendered_state_digest": {"$ref": "#/$defs/digest"}
+        }
+      }
+    },
+    "publication_manifest_ref": {
+      "oneOf": [{"type": "null"}, {"$ref": "#/$defs/ref"}]
+    },
+    "publication_manifest_digest": {
+      "oneOf": [{"type": "null"}, {"$ref": "#/$defs/digest"}]
+    },
+    "recovery": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["pending_transactions_found", "restored_transactions"],
+      "properties": {
+        "pending_transactions_found": {"type": "integer", "minimum": 0},
+        "restored_transactions": {"type": "integer", "minimum": 0}
+      }
+    },
+    "checked": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {"type": "string", "minLength": 1}
+    },
+    "observed_at": {"type": "string", "format": "date-time"},
+    "artifact_digest": {"$ref": "#/$defs/digest"}
+  },
+  "$defs": {
+    "digest": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "ref": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$)).+$"
+    }
+  }
+}
