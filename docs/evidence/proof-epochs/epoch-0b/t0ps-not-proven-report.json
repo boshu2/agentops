@@ -1,0 +1,22 @@
+{
+  "schema_version": "rpi-report.v1",
+  "status": "NOT_PROVEN",
+  "intent_ref": "docs/evidence/proof-epochs/epoch-0b/t0-transition-schema-repair-intent.md",
+  "acceptance_digest": "9f73320de825052b73005b72c618459b236c871f9bfae830dac8f169dc7f11a6",
+  "subject_manifest_digest": "edfeb2e3ee56320e8f074686758a10a3e75e669067ae98cd417d81bea5f7137e",
+  "verdict_ref": "docs/evidence/proof-epochs/epoch-0b/verdicts/4255446100319be16e31553e51278d94f029d6b4942a4f90a27ae9293c47978e.json",
+  "verdict_digest": "4255446100319be16e31553e51278d94f029d6b4942a4f90a27ae9293c47978e",
+  "checked": [
+    "initial intent and subject identity",
+    "focused positive checks",
+    "interim repository-reference alias probe"
+  ],
+  "not_checked": [
+    "completed hostile transition-schema matrix",
+    "completed qualification-artifact binding matrix",
+    "final subject identity",
+    "all four prior terminal artifact trios",
+    "T1 exact-kernel behavior",
+    "Go CLI G0 through G2"
+  ]
+}
