@@ -4,9 +4,6 @@ project_name: ao
 builds:
   - id: ao
     dir: cli
-    hooks:
-      pre:
-        - make -C cli sync-hooks
     main: ./cmd/ao
     binary: ao
     goos:
