@@ -1,0 +1,22 @@
+{
+  "schema_version": "rpi-report.v1",
+  "status": "FAIL",
+  "intent_ref": "docs/evidence/proof-epochs/epoch-0b/t0-pause-repair-intent.md",
+  "acceptance_digest": "23e5d613636a356ecd29c6437c170949cddd7831ee7fda21f4801d22869a3153",
+  "subject_manifest_digest": "643d05f5f2a3424d013c23e651c8d515ec8bd8ee38a46f897c4e4ae95729e9bc",
+  "verdict_ref": "docs/evidence/proof-epochs/epoch-0b/verdicts/b27793442f1e1067b9ab6d22dec797b263d4dcb93e080ab8b93ff2c4da6695e2.json",
+  "verdict_digest": "b27793442f1e1067b9ab6d22dec797b263d4dcb93e080ab8b93ff2c4da6695e2",
+  "checked": [
+    "T0P-1",
+    "T0P-2",
+    "T0P-3"
+  ],
+  "not_checked": [
+    "T1 exact-kernel behavior",
+    "real epoch-1 activation",
+    "bootstrap recorder behavior beyond authority-lineage observation",
+    "Go CLI G0 through G2",
+    "installed skill links and external systems",
+    "credentials and release channels"
+  ]
+}
