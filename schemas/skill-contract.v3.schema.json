@@ -1,0 +1,419 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://agentops.local/schemas/skill-contract.v3.schema.json",
+  "title": "AgentOps shadow skill contract v3",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "primary_layer",
+    "lifecycle_seams",
+    "authority",
+    "effects",
+    "artifacts",
+    "triggers",
+    "failure",
+    "proof"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "skill-contract.v3"
+    },
+    "primary_layer": {
+      "enum": [
+        "product",
+        "campaign",
+        "experiment",
+        "judgment",
+        "evidence",
+        "implementation",
+        "evolution",
+        "runtime",
+        "support"
+      ]
+    },
+    "lifecycle_seams": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "enum": [
+          "product_input",
+          "goal_design",
+          "goal_observe",
+          "option_shaping",
+          "plan_input",
+          "plan_review",
+          "implement_method",
+          "validate_evidence",
+          "validate_strategy",
+          "post_verdict",
+          "runtime_transport",
+          "cross_cutting",
+          "standalone"
+        ]
+      }
+    },
+    "authority": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "enum": [
+          "advise",
+          "read_evidence",
+          "refine_intent",
+          "mutate_subject",
+          "dispatch_phase",
+          "write_verdict",
+          "transport"
+        ]
+      }
+    },
+    "effects": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "$ref": "#/definitions/effect"
+      }
+    },
+    "artifacts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "consumes",
+        "produces"
+      ],
+      "properties": {
+        "consumes": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/definitions/artifact"
+          }
+        },
+        "produces": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/definitions/artifact"
+          }
+        }
+      }
+    },
+    "triggers": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "positive",
+        "negative",
+        "ambiguity",
+        "aliases",
+        "nearest_neighbors"
+      ],
+      "properties": {
+        "positive": {
+          "$ref": "#/definitions/route_cases"
+        },
+        "negative": {
+          "$ref": "#/definitions/route_cases"
+        },
+        "ambiguity": {
+          "$ref": "#/definitions/route_cases"
+        },
+        "aliases": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/definitions/alias_case"
+          }
+        },
+        "nearest_neighbors": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/definitions/neighbor_case"
+          }
+        }
+      }
+    },
+    "failure": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "unavailable",
+        "timeout",
+        "partial_evidence",
+        "partial_mutation",
+        "cleanup"
+      ],
+      "properties": {
+        "unavailable": {
+          "$ref": "#/definitions/failure_case"
+        },
+        "timeout": {
+          "$ref": "#/definitions/failure_case"
+        },
+        "partial_evidence": {
+          "$ref": "#/definitions/failure_case"
+        },
+        "partial_mutation": {
+          "$ref": "#/definitions/failure_case"
+        },
+        "cleanup": {
+          "$ref": "#/definitions/failure_case"
+        }
+      }
+    },
+    "proof": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "class",
+        "command",
+        "fixture_refs"
+      ],
+      "properties": {
+        "class": {
+          "enum": [
+            "deterministic",
+            "read_only_fixture",
+            "mutating_isolation",
+            "strategy_scenarios",
+            "runtime_fault_injection",
+            "routing_corpus",
+            "composed_kernel"
+          ]
+        },
+        "command": {
+          "type": "string",
+          "minLength": 1
+        },
+        "fixture_refs": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    }
+  },
+  "definitions": {
+    "identifier": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9]*(?:[._-][a-z0-9]+)*$"
+    },
+    "effect": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "kind",
+        "scope",
+        "authorization",
+        "cleanup",
+        "receipt"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/definitions/identifier"
+        },
+        "kind": {
+          "enum": [
+            "filesystem.read",
+            "filesystem.write",
+            "process.start",
+            "network.read",
+            "network.write",
+            "environment.read",
+            "environment.write",
+            "clock.read",
+            "credential.switch",
+            "external.mutate",
+            "runtime.session",
+            "host.configure"
+          ]
+        },
+        "scope": {
+          "type": "string",
+          "minLength": 1
+        },
+        "authorization": {
+          "enum": [
+            "caller",
+            "intent",
+            "implement",
+            "validate",
+            "goal"
+          ]
+        },
+        "cleanup": {
+          "enum": [
+            "none",
+            "best_effort",
+            "required"
+          ]
+        },
+        "receipt": {
+          "enum": [
+            "none",
+            "optional",
+            "required"
+          ]
+        }
+      }
+    },
+    "artifact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "kind",
+        "semantics",
+        "schema_ref",
+        "validator"
+      ],
+      "properties": {
+        "name": {
+          "$ref": "#/definitions/identifier"
+        },
+        "kind": {
+          "enum": [
+            "intent",
+            "plan",
+            "evidence",
+            "source",
+            "candidate",
+            "verdict",
+            "receipt",
+            "report",
+            "projection",
+            "runtime_state",
+            "configuration"
+          ]
+        },
+        "semantics": {
+          "enum": [
+            "factual",
+            "advisory",
+            "binding"
+          ]
+        },
+        "schema_ref": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "minLength": 1
+        },
+        "validator": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "minLength": 1
+        }
+      }
+    },
+    "route_cases": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "$ref": "#/definitions/route_case"
+      }
+    },
+    "route_case": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "prompt",
+        "expected"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/definitions/identifier"
+        },
+        "prompt": {
+          "type": "string",
+          "minLength": 1
+        },
+        "expected": {
+          "enum": [
+            "route",
+            "do_not_route",
+            "clarify"
+          ]
+        }
+      }
+    },
+    "alias_case": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "alias",
+        "canonical_skill"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/definitions/identifier"
+        },
+        "alias": {
+          "type": "string",
+          "minLength": 1
+        },
+        "canonical_skill": {
+          "$ref": "#/definitions/identifier"
+        }
+      }
+    },
+    "neighbor_case": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "skill",
+        "distinction"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/definitions/identifier"
+        },
+        "skill": {
+          "$ref": "#/definitions/identifier"
+        },
+        "distinction": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "failure_case": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "action",
+        "detail"
+      ],
+      "properties": {
+        "action": {
+          "enum": [
+            "stop",
+            "return_partial",
+            "rollback_then_stop",
+            "report_uncertainty"
+          ]
+        },
+        "detail": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    }
+  }
+}

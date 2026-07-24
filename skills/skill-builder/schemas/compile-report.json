@@ -1,0 +1,175 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://agentops.local/skills/skill-builder/schemas/compile-report.json",
+  "title": "Shadow skill contract compile receipt",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "source",
+    "contract",
+    "compiler",
+    "fixtures",
+    "checks",
+    "result",
+    "errors"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "skill-contract-compile-receipt.v1"
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "ref",
+        "before_sha256",
+        "after_sha256",
+        "unchanged"
+      ],
+      "properties": {
+        "ref": {
+          "type": "string",
+          "minLength": 1
+        },
+        "before_sha256": {
+          "$ref": "#/definitions/sha256"
+        },
+        "after_sha256": {
+          "$ref": "#/definitions/sha256"
+        },
+        "unchanged": {
+          "const": true
+        }
+      }
+    },
+    "contract": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_ref",
+        "schema_sha256",
+        "digest"
+      ],
+      "properties": {
+        "schema_ref": {
+          "const": "schemas/skill-contract.v3.schema.json"
+        },
+        "schema_sha256": {
+          "$ref": "#/definitions/sha256"
+        },
+        "digest": {
+          "$ref": "#/definitions/sha256"
+        }
+      }
+    },
+    "compiler": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "sources",
+        "digest"
+      ],
+      "properties": {
+        "sources": {
+          "type": "array",
+          "minItems": 2,
+          "uniqueItems": true,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "ref",
+              "sha256"
+            ],
+            "properties": {
+              "ref": {
+                "type": "string",
+                "minLength": 1
+              },
+              "sha256": {
+                "$ref": "#/definitions/sha256"
+              }
+            }
+          }
+        },
+        "digest": {
+          "$ref": "#/definitions/sha256"
+        }
+      }
+    },
+    "fixtures": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "refs",
+        "digest"
+      ],
+      "properties": {
+        "refs": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "digest": {
+          "$ref": "#/definitions/sha256"
+        }
+      }
+    },
+    "checks": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "enum": [
+          "schema",
+          "authority",
+          "effects",
+          "artifacts",
+          "triggers",
+          "failure",
+          "proof",
+          "hard_dependencies",
+          "source_unchanged"
+        ]
+      }
+    },
+    "result": {
+      "enum": [
+        "PASS",
+        "FAIL"
+      ]
+    },
+    "errors": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "code",
+          "message"
+        ],
+        "properties": {
+          "code": {
+            "type": "string",
+            "pattern": "^[A-Z][A-Z0-9_]+$"
+          },
+          "message": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    }
+  },
+  "definitions": {
+    "sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    }
+  }
+}
