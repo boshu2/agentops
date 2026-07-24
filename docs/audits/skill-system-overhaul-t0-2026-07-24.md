@@ -2,7 +2,7 @@
 id: audit-skill-system-overhaul-t0-2026-07-24
 type: audit
 date: 2026-07-24
-status: pause-repair-candidate
+status: typed-pause-repair-candidate
 plan_ref: docs/plans/2026-07-24-skill-system-overhaul.md
 proof_contract_ref: docs/contracts/proof-contracts/active.json
 ---
@@ -31,9 +31,19 @@ for the pause criterion: the ledger still called the committed repair unstable,
 and its checker trusted `result: PASS` without verifying any resume semantics.
 
 That repair invocation also stopped. A third, metadata-only exact intent under
-`epoch-0b/` owns the pause ledger and its fail-closed semantic checker. It does
-not reopen either rejected subject or claim that the exact kernel, catalog
-compiler, publisher, or Go CLI repairs are built.
+`epoch-0b/` added explicit lineage and hostile checks. Its fresh validator
+accepted the self-stable lineage and rejected-history criteria but returned
+immutable FAIL
+`b27793442f1e1067b9ab6d22dec797b263d4dcb93e080ab8b93ff2c4da6695e2`:
+contradictory completion prose could be added outside the guarded strings, and
+the simulated epoch-1 branch did not bind the active pointer to transition
+bytes and `transition.candidate`.
+
+That invocation stopped as well. A fourth, metadata-only exact intent owns only
+those two bypasses. It replaces prose inference with closed-world typed tranche
+states and verifies the complete first-transition binding. It does not reopen
+any rejected subject or claim that the exact kernel, catalog compiler,
+publisher, or Go CLI repairs are built.
 
 ## Starting state
 
@@ -158,16 +168,19 @@ Estate ledger:
 
 ## Pause drill
 
-The current metadata-only candidate records both stable rejected subjects,
-both immutable FAILs, corrected epoch-0b authority, and the exact in-flight
-tranche without embedding its own future commit hash. The enclosing subject
-manifest and fresh verdict own that current candidate identity.
+The current metadata-only candidate records all three stable rejected subjects,
+all three immutable FAILs, corrected epoch-0b authority, and the exact
+in-flight tranche without embedding its own future commit hash. The enclosing
+subject manifest and fresh verdict own that current candidate identity.
 
-The checker no longer treats `result: PASS` as sufficient. It verifies the
-historical file bytes and cross-artifact lineage, proof descriptor and active
-ancestry, current invocation, known gaps, and the explicit fact that T1 has not
-started. Seeded copies that erase lineage, select rejected epoch-0 authority,
-claim T1 complete, or mutate a rejected verdict fail.
+The checker uses a closed set of fields and enumerated state for every tranche;
+all historical text and typed state must match exactly, so extra contradictory
+claims fail regardless of phrasing or location. It verifies historical file
+bytes and cross-artifact lineage, proof descriptor and active ancestry,
+current invocation, and known gaps. Its simulated epoch-1 path additionally
+binds the transition's exact bytes and filename to the active pointer, binds
+the active epoch/ref/digest to `transition.candidate`, verifies the candidate
+descriptor bytes, and binds `transition.prior` to epoch 0b.
 
 API1 skill sources and catalog v3 remain live; `skill-contract.v3`, catalog v4,
 and `verdict.v3` are still shadow or planned concepts. T0 remains unproven
