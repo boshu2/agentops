@@ -1,12 +1,11 @@
-// Package verdictcheck structurally verifies stored verdict.v2 artifacts.
+// Package verdictcheck structurally verifies stored AgentOps verdict artifacts.
 //
 // It is a READER for evidence inspection (`ao status`): it checks JSON shape,
-// canonical-form digest binding, and the PASS scope rules declared by
-// schemas/verdict.v2.schema.json. It never writes verdicts — the Validate
-// skill (skills/validate/scripts/validate.py) is the writer and the semantic
-// authority. Structural validity here is not a semantic verdict, and a
-// well-formed evidence_refs string is a declared reference only: this package
-// does not resolve or digest-bind the referenced evidence.
+// canonical-form digest binding, and the versioned contract's coherence rules.
+// It never writes verdicts — Validate is the writer and semantic authority.
+// Structural validity here is not a semantic verdict, and well-formed
+// references are declarations only: this package does not resolve or
+// digest-bind referenced evidence.
 //
 // The cross-language golden corpus at tests/fixtures/verdict-contract/ pins
 // this implementation, the Python validator, and the JSON schema to the same
@@ -16,7 +15,6 @@ package verdictcheck
 import (
 	"bytes"
 	"crypto/sha256"
-	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -75,19 +73,33 @@ func ValidDigest(value string) bool {
 	return true
 }
 
+// VerifiedArtifact preserves the complete typed payload selected by the
+// artifact's schema_version. Exactly one version field is non-nil.
+type VerifiedArtifact struct {
+	SchemaVersion string
+	V2            *Verdict
+	V3            *VerdictV3
+}
+
 // VerifyArtifact checks a stored verdict payload against the digest its
-// filename declares: JSON well-formedness with no trailing data, exact
-// verdict.v2 field set, structural shape rules, and recomputed canonical-form
-// digest binding.
+// filename declares. Dispatch is exclusively by the exact schema_version;
+// unknown, missing, and non-string versions fail closed.
 func VerifyArtifact(payload []byte, expectedDigest string) error {
+	_, err := ReadArtifact(payload, expectedDigest)
+	return err
+}
+
+// ReadArtifact verifies and returns a complete typed verdict. verdict.v2 is an
+// immutable read-only legacy branch; verdict.v3 is the current strict branch.
+func ReadArtifact(payload []byte, expectedDigest string) (*VerifiedArtifact, error) {
 	var raw map[string]any
 	decoder := json.NewDecoder(bytes.NewReader(payload))
 	decoder.UseNumber()
 	if err := decoder.Decode(&raw); err != nil {
-		return fmt.Errorf("invalid verdict JSON: %w", err)
+		return nil, fmt.Errorf("invalid verdict JSON: %w", err)
 	}
 	if err := requireJSONEOF(decoder); err != nil {
-		return err
+		return nil, err
 	}
 	// Reject duplicate JSON keys anywhere in the tree. Go's map/struct decode is
 	// last-wins, so a duplicated key (a second top-level "verdict":"PASS", or a
@@ -98,19 +110,45 @@ func VerifyArtifact(payload []byte, expectedDigest string) error {
 	// and importing the gate-framework package into this leaf reader would
 	// invert the dependency direction and pull a heavy graph into it.)
 	if dupKey, err := duplicateKey(payload); err != nil {
-		return fmt.Errorf("invalid verdict JSON: %w", err)
+		return nil, fmt.Errorf("invalid verdict JSON: %w", err)
 	} else if dupKey != "" {
-		return fmt.Errorf("verdict.v2 contains duplicate key %q", dupKey)
+		return nil, fmt.Errorf("verdict contains duplicate key %q", dupKey)
 	}
+	version, ok := raw["schema_version"].(string)
+	if !ok {
+		return nil, fmt.Errorf("verdict schema_version must be a string")
+	}
+	switch version {
+	case "verdict.v2":
+		verdict, err := readVerdictV2(payload, raw, expectedDigest)
+		if err != nil {
+			return nil, err
+		}
+		return &VerifiedArtifact{SchemaVersion: version, V2: verdict}, nil
+	case "verdict.v3":
+		verdict, err := readVerdictV3(payload, raw, expectedDigest)
+		if err != nil {
+			return nil, err
+		}
+		return &VerifiedArtifact{SchemaVersion: version, V3: verdict}, nil
+	default:
+		return nil, fmt.Errorf("unsupported verdict schema_version %q", version)
+	}
+}
+
+func readVerdictV2(payload []byte, raw map[string]any, expectedDigest string) (*Verdict, error) {
 	required := []string{
 		"schema_version", "acceptance_digest", "subject_manifest_digest",
 		"author_context_id", "validator_context_id", "freshness_attestation",
 		"verdict", "criteria", "findings", "evidence_refs", "checked",
 		"not_checked", "validated_at", "artifact_digest",
 	}
-	for _, key := range required {
-		if _, ok := raw[key]; !ok {
-			return fmt.Errorf("verdict.v2 missing required field %q", key)
+	if err := requireExactFields(raw, required, "verdict.v2"); err != nil {
+		return nil, err
+	}
+	for _, field := range []string{"criteria", "findings", "evidence_refs", "checked", "not_checked"} {
+		if _, ok := raw[field].([]any); !ok {
+			return nil, fmt.Errorf("verdict.v2 %s must be an array", field)
 		}
 	}
 
@@ -118,28 +156,18 @@ func VerifyArtifact(payload []byte, expectedDigest string) error {
 	strict := json.NewDecoder(bytes.NewReader(payload))
 	strict.DisallowUnknownFields()
 	if err := strict.Decode(&verdict); err != nil {
-		return fmt.Errorf("invalid verdict.v2 shape: %w", err)
+		return nil, fmt.Errorf("invalid verdict.v2 shape: %w", err)
 	}
 	if err := requireJSONEOF(strict); err != nil {
-		return err
+		return nil, err
 	}
 	if err := ValidateShape(&verdict); err != nil {
-		return err
+		return nil, err
 	}
-	if verdict.ArtifactDigest != expectedDigest {
-		return fmt.Errorf("artifact_digest does not match filename")
+	if err := verifyCanonicalArtifact(raw, verdict.ArtifactDigest, expectedDigest, "verdict.v2"); err != nil {
+		return nil, err
 	}
-
-	delete(raw, "artifact_digest")
-	canonical, err := CanonicalJSON(raw)
-	if err != nil {
-		return fmt.Errorf("canonicalize verdict: %w", err)
-	}
-	actual := sha256.Sum256(canonical)
-	if hex.EncodeToString(actual[:]) != expectedDigest {
-		return fmt.Errorf("canonical content digest does not match filename")
-	}
-	return nil
+	return &verdict, nil
 }
 
 func requireJSONEOF(decoder *json.Decoder) error {

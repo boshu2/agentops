@@ -1,12 +1,20 @@
-Feature: Plan refines the existing intent source
-  @covered-by:skills/plan/scripts/validate.sh::test_no_model_authored_packet
-  Scenario: Normal and edge acceptance are bounded
-    Given a caller intent
-    When Plan shapes the intent
-    Then acceptance and write scope are updated in that source or proposed to the caller
+Feature: Plan freezes one exact intent
+  @covered-by:skills/validate/scripts/test_kernel_v3.py::test_exact_bytes_survive_and_living_source_is_never_rederived
+  Scenario: Resolved bytes are minted once
+    Given a shaped caller intent
+    When Plan freezes it
+    Then exact bytes are stored under their SHA-256 digest
+    And later phases never re-read the living source
+
+  @covered-by:skills/validate/scripts/test_kernel_v3.py::test_duplicate_criterion_ids_are_rejected
+  Scenario: Acceptance IDs are stable and unique
+    Given acceptance criteria
+    When scope-index.v1 is frozen
+    Then duplicate criterion IDs are rejected
     And no AgentOps plan packet is created
 
-  @covered-by:skills/plan/scripts/validate.sh::test_no_model_authored_packet
-  Scenario: Advisory decomposition does not create control artifacts
-    Given an intent has advisory decomposition
-    Then it contains no owner, ready, claim, priority, attempt, wave, queue, lease, admission, next action, closure, release, or delivery state
+  @covered-by:skills/validate/scripts/test_kernel_v3.py::test_required_criterion_cannot_be_absorbed_by_exclusion
+  Scenario: Required acceptance cannot disappear
+    Given a required criterion
+    When an exclusion references that criterion
+    Then Plan rejects the frozen scope index

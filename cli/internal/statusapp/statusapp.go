@@ -181,8 +181,9 @@ func validateIntentArtifact(path, expectedDigest string) error {
 	return nil
 }
 
-// validateVerdictArtifact delegates verdict.v2 structural verification to
-// internal/verdictcheck (shape, exact field set, canonical digest binding).
+// validateVerdictArtifact delegates version-dispatched verdict.v2/verdict.v3
+// verification to internal/verdictcheck. The reader retains the complete
+// versioned shape while status deliberately reports only durable inventory.
 func validateVerdictArtifact(path, expectedDigest string) error {
 	payload, err := os.ReadFile(path)
 	if err != nil {

@@ -1,0 +1,71 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agentops.dev/schemas/effect-receipt.v1.schema.json",
+  "title": "effect-receipt.v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "before_manifest_digest",
+    "final_manifest_digest",
+    "coverage",
+    "changes",
+    "actual_changed_paths",
+    "undeclared_paths",
+    "check_receipt_refs",
+    "artifact_digest"
+  ],
+  "properties": {
+    "schema_version": {"const": "effect-receipt.v1"},
+    "before_manifest_digest": {"$ref": "#/$defs/digest"},
+    "final_manifest_digest": {"$ref": "#/$defs/digest"},
+    "coverage": {"enum": ["COMPLETE", "INCOMPLETE"]},
+    "changes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["path", "change_kind", "before_digest", "after_digest"],
+        "properties": {
+          "path": {"$ref": "#/$defs/path"},
+          "change_kind": {"enum": ["ADDED", "MODIFIED", "DELETED", "MODE_CHANGED", "TYPE_CHANGED"]},
+          "before_digest": {"oneOf": [{"type": "null"}, {"$ref": "#/$defs/digest"}]},
+          "after_digest": {"oneOf": [{"type": "null"}, {"$ref": "#/$defs/digest"}]}
+        }
+      }
+    },
+    "actual_changed_paths": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {"$ref": "#/$defs/path"}
+    },
+    "undeclared_paths": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {"$ref": "#/$defs/path"}
+    },
+    "check_receipt_refs": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["ref", "digest"],
+        "properties": {
+          "ref": {"$ref": "#/$defs/ref"},
+          "digest": {"$ref": "#/$defs/digest"}
+        }
+      }
+    },
+    "artifact_digest": {"$ref": "#/$defs/digest"}
+  },
+  "$defs": {
+    "digest": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "path": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$)).+$"
+    },
+    "ref": {"type": "string", "minLength": 1}
+  }
+}

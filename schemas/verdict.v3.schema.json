@@ -1,0 +1,137 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agentops.dev/schemas/verdict.v3.schema.json",
+  "title": "verdict.v3",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "invocation_id",
+    "judgment_id",
+    "intent_ref",
+    "intent_digest",
+    "proof_identity",
+    "schema_digests",
+    "before_manifest_ref",
+    "before_manifest_digest",
+    "final_manifest_ref",
+    "final_manifest_digest",
+    "scope_index_ref",
+    "scope_index_digest",
+    "effect_receipt_ref",
+    "effect_receipt_digest",
+    "author_context_id",
+    "validator_context_id",
+    "freshness_attestation",
+    "verdict",
+    "criteria",
+    "findings",
+    "checked",
+    "not_checked",
+    "validated_at",
+    "artifact_digest"
+  ],
+  "properties": {
+    "schema_version": {"const": "verdict.v3"},
+    "invocation_id": {"$ref": "#/$defs/id"},
+    "judgment_id": {"$ref": "#/$defs/id"},
+    "intent_ref": {"$ref": "#/$defs/ref"},
+    "intent_digest": {"$ref": "#/$defs/digest"},
+    "proof_identity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["epoch", "contract_ref", "contract_digest", "activation_transition_digest"],
+      "properties": {
+        "epoch": {"type": "integer", "minimum": 0},
+        "contract_ref": {"$ref": "#/$defs/ref"},
+        "contract_digest": {"$ref": "#/$defs/digest"},
+        "activation_transition_digest": {
+          "oneOf": [{"type": "null"}, {"$ref": "#/$defs/digest"}]
+        }
+      }
+    },
+    "schema_digests": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["verdict", "rpi_report", "subject_manifest", "scope_index", "effect_receipt", "check_receipt"],
+      "properties": {
+        "verdict": {"$ref": "#/$defs/digest"},
+        "rpi_report": {"$ref": "#/$defs/digest"},
+        "subject_manifest": {"$ref": "#/$defs/digest"},
+        "scope_index": {"$ref": "#/$defs/digest"},
+        "effect_receipt": {"$ref": "#/$defs/digest"},
+        "check_receipt": {"$ref": "#/$defs/digest"}
+      }
+    },
+    "before_manifest_ref": {"$ref": "#/$defs/ref"},
+    "before_manifest_digest": {"$ref": "#/$defs/digest"},
+    "final_manifest_ref": {"$ref": "#/$defs/ref"},
+    "final_manifest_digest": {"$ref": "#/$defs/digest"},
+    "scope_index_ref": {"$ref": "#/$defs/ref"},
+    "scope_index_digest": {"$ref": "#/$defs/digest"},
+    "effect_receipt_ref": {"$ref": "#/$defs/ref"},
+    "effect_receipt_digest": {"$ref": "#/$defs/digest"},
+    "author_context_id": {"type": "string", "minLength": 1},
+    "validator_context_id": {"type": "string", "minLength": 1},
+    "freshness_attestation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["source", "attester_identity"],
+      "properties": {
+        "source": {"enum": ["runtime", "caller"]},
+        "attester_identity": {"type": "string", "minLength": 1}
+      }
+    },
+    "verdict": {"enum": ["PASS", "FAIL", "NOT_PROVEN"]},
+    "criteria": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "result", "evidence_receipt_digests", "reason"],
+        "properties": {
+          "id": {"$ref": "#/$defs/id"},
+          "result": {"enum": ["PASS", "FAIL", "NOT_PROVEN", "EXCLUDED"]},
+          "evidence_receipt_digests": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {"$ref": "#/$defs/digest"}
+          },
+          "reason": {"type": "string"}
+        }
+      }
+    },
+    "findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "summary", "evidence_receipt_digests"],
+        "properties": {
+          "id": {"$ref": "#/$defs/id"},
+          "summary": {"type": "string", "minLength": 1},
+          "evidence_receipt_digests": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": {"$ref": "#/$defs/digest"}
+          }
+        }
+      }
+    },
+    "checked": {"type": "array", "items": {"type": "string", "minLength": 1}},
+    "not_checked": {"type": "array", "items": {"type": "string", "minLength": 1}},
+    "validated_at": {"type": "string", "format": "date-time"},
+    "artifact_digest": {"$ref": "#/$defs/digest"}
+  },
+  "$defs": {
+    "digest": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "id": {"type": "string", "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]*$"},
+    "ref": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$)).+$"
+    }
+  }
+}

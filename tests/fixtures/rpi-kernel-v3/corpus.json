@@ -1,0 +1,177 @@
+{
+  "schema_version": "rpi-kernel-corpus.v1",
+  "required_consumers": [
+    "plan-python",
+    "implement-python",
+    "rpi-python",
+    "validate-python",
+    "go"
+  ],
+  "cases": [
+    {
+      "id": "intent.exact-utf8",
+      "class": "intent-digest",
+      "left": "café\n",
+      "right": "café \n",
+      "expected": "DIFFERENT"
+    },
+    {
+      "id": "intent.living-source-mutation",
+      "class": "intent-snapshot",
+      "snapshot": "acceptance: one\n",
+      "living_after": "acceptance: two\n",
+      "expected": "SNAPSHOT_WINS"
+    },
+    {
+      "id": "dispatch.each-phase-at-most-once",
+      "class": "dispatch",
+      "terminal": "PASS",
+      "expected_calls": ["plan", "implement", "validate"],
+      "expected": "PASS"
+    },
+    {
+      "id": "coverage.generated-companion",
+      "class": "coverage",
+      "observation": ["."],
+      "scope": ["src", "generated"],
+      "changed": ["src/input.txt", "generated/output.txt"],
+      "expected": "PASS"
+    },
+    {
+      "id": "coverage.outside-write-scope",
+      "class": "coverage",
+      "observation": ["."],
+      "scope": ["src"],
+      "changed": ["src/input.txt", "unrelated.txt"],
+      "expected": "FAIL"
+    },
+    {
+      "id": "coverage.partial-observation",
+      "class": "coverage",
+      "observation": ["src"],
+      "scope": ["src"],
+      "changed": ["src/input.txt"],
+      "expected": "NOT_PROVEN"
+    },
+    {
+      "id": "criteria.required-exclusion",
+      "class": "criterion-freeze",
+      "criterion_ids": ["required-1"],
+      "required_ids": ["required-1"],
+      "excluded_ids": ["required-1"],
+      "expected": "REJECT"
+    },
+    {
+      "id": "criteria.duplicate-id",
+      "class": "criterion-freeze",
+      "criterion_ids": ["same", "same"],
+      "required_ids": ["same"],
+      "excluded_ids": [],
+      "expected": "REJECT"
+    },
+    {
+      "id": "candidate.post-freeze-mutation",
+      "class": "candidate-freeze",
+      "start_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "end_digest": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "expected": "NOT_PROVEN_STOP"
+    },
+    {
+      "id": "terminal.fail",
+      "class": "dispatch",
+      "terminal": "FAIL",
+      "expected_calls": ["plan", "implement", "validate"],
+      "expected": "PASS"
+    },
+    {
+      "id": "terminal.not-proven",
+      "class": "dispatch",
+      "terminal": "NOT_PROVEN",
+      "expected_calls": ["plan", "implement", "validate"],
+      "expected": "PASS"
+    },
+    {
+      "id": "judgment.duplicate-intent-subject",
+      "class": "judgment-ledger",
+      "same_intent": true,
+      "same_final_subject": true,
+      "different_judgment_id": true,
+      "expected": "REJECT"
+    },
+    {
+      "id": "proof.self-activation",
+      "class": "proof-identity",
+      "changed": ["docs/contracts/proof-contracts/active.json"],
+      "expected": "REJECT"
+    },
+    {
+      "id": "proof.transition-next-epoch",
+      "class": "proof-transition",
+      "prior_epoch": 0,
+      "candidate_epoch": 1,
+      "expected": "PASS"
+    },
+    {
+      "id": "proof.transition-skipped-epoch",
+      "class": "proof-transition",
+      "prior_epoch": 0,
+      "candidate_epoch": 2,
+      "expected": "REJECT"
+    },
+    {
+      "id": "contract.unknown-field",
+      "class": "strict-reader",
+      "contract": "rpi-report.v2",
+      "mutation": "add-next-action",
+      "expected": "REJECT"
+    },
+    {
+      "id": "path.windows-drive",
+      "class": "repository-ref",
+      "ref": "C:/escape",
+      "expected": "REJECT"
+    },
+    {
+      "id": "path.backslash",
+      "class": "repository-ref",
+      "ref": "parent\\child",
+      "expected": "REJECT"
+    },
+    {
+      "id": "effect.forged-empty-complete",
+      "class": "effect-integrity",
+      "before_final_changed": ["src/input.txt", "unrelated.txt"],
+      "claimed_changed": [],
+      "expected": "REJECT"
+    },
+    {
+      "id": "proof.transitive-component-mutation",
+      "class": "proof-transitive",
+      "bound_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "observed_digest": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "expected": "REJECT"
+    },
+    {
+      "id": "correlation.opaque-preserved",
+      "class": "correlation",
+      "value": {"goal_id": "goal:123", "experiment_id": "experiment:456"},
+      "expected": "PASS"
+    },
+    {
+      "id": "correlation.over-property-bound",
+      "class": "correlation",
+      "value": {
+        "key0": "value",
+        "key1": "value",
+        "key2": "value",
+        "key3": "value",
+        "key4": "value",
+        "key5": "value",
+        "key6": "value",
+        "key7": "value",
+        "key8": "value"
+      },
+      "expected": "REJECT"
+    }
+  ]
+}

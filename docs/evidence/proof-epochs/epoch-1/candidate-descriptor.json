@@ -1,0 +1,108 @@
+{
+  "schema_version": "proof-contract.v1",
+  "epoch": 1,
+  "components": [
+    {
+      "role": "validator-contract",
+      "ref": "skills/validate/SKILL.md",
+      "digest": "b96e8935f96c49c1f1f091eec51415c21fcfcdd633e68cf024229224edbb2bb5",
+      "mode": "0644"
+    },
+    {
+      "role": "validator-implementation",
+      "ref": "skills/validate/scripts/kernel_v3.py",
+      "digest": "4e847b907863eb35b9476429afc3101b5bddf96b081899c7c7903d68a3da04b6",
+      "mode": "0755"
+    },
+    {
+      "role": "validator-cli",
+      "ref": "skills/validate/scripts/validate_v3.py",
+      "digest": "04631e16e269e7777f1508f7d45f3f05691800c00735082df59f45e0dd5bf409",
+      "mode": "0755"
+    },
+    {
+      "role": "rpi-dispatcher",
+      "ref": "skills/rpi/scripts/run_once.py",
+      "digest": "11f36373f4665a140c195030adf1f4d7e3328fa46aa25670fb82303afe7fa108",
+      "mode": "0755"
+    },
+    {
+      "role": "verdict-schema",
+      "ref": "schemas/verdict.v3.schema.json",
+      "digest": "0914f63b11e0a2d81d18f9150ad45eda55370ea0294e9f95e9dd3e69c7886cda",
+      "mode": "0644"
+    },
+    {
+      "role": "rpi-report-schema",
+      "ref": "schemas/rpi-report.v2.schema.json",
+      "digest": "9346ac2670ab2d1d65777045b9e35cbb6efd44c08cc934c1c219399fefabfa33",
+      "mode": "0644"
+    },
+    {
+      "role": "go-verdict-reader",
+      "ref": "cli/internal/verdictcheck/verdictcheck.go",
+      "digest": "e288511db4de38704e3fb0abf0c03e487758fc90b37b49391925201567257906",
+      "mode": "0644"
+    },
+    {
+      "role": "go-strict-json-reader",
+      "ref": "cli/internal/verdictcheck/strict.go",
+      "digest": "e63aa4086a7e652a5e5c4962baba4e4337aa2d97af791f960dc777193de81d30",
+      "mode": "0644"
+    },
+    {
+      "role": "go-verdict-v3-reader",
+      "ref": "cli/internal/verdictcheck/verdict_v3.go",
+      "digest": "f16c39a2d4c5bd6613581f792ccf8aec7afb9128fbb52b43dff6118a59c3ca1b",
+      "mode": "0644"
+    },
+    {
+      "role": "go-rpi-report-v2-reader",
+      "ref": "cli/internal/verdictcheck/report_v2.go",
+      "digest": "072d9f501a887c36c4527d8909a54965e71ad927f1c6ee75453ca3deb8b3b140",
+      "mode": "0644"
+    },
+    {
+      "role": "subject-manifest-schema",
+      "ref": "schemas/subject-manifest.v2.schema.json",
+      "digest": "e69099b1d8fbaf4baec63b71eb6f56d2c4c002fe3739492e757dacb96effd4dd",
+      "mode": "0644"
+    },
+    {
+      "role": "scope-index-schema",
+      "ref": "schemas/scope-index.v1.schema.json",
+      "digest": "fb2566e40f1b0a25a49304ce0b8e06f9b08f3e999b339e7abcae72e50993927c",
+      "mode": "0644"
+    },
+    {
+      "role": "effect-receipt-schema",
+      "ref": "schemas/effect-receipt.v1.schema.json",
+      "digest": "24db330f10cb71fb4de136b4448a188e7cceb204dc95f0b27eab300e0d9500d4",
+      "mode": "0644"
+    },
+    {
+      "role": "check-receipt-schema",
+      "ref": "schemas/check-receipt.v1.schema.json",
+      "digest": "c4bc8917ba901cd900adbca13384cb7937737cd3587fb637498faeb2c3e66471",
+      "mode": "0644"
+    },
+    {
+      "role": "transition-recorder-implementation",
+      "ref": "skills/validate/scripts/record_proof_transition.py",
+      "digest": "49f22c1af70f8a0de09c44bd132e74d22f053d0b9a5f353f98bdc8082c0c5e58",
+      "mode": "0755"
+    }
+  ],
+  "qualification_corpus": {
+    "algorithm": "sha256-tree-v1",
+    "ref": "tests/fixtures/rpi-kernel-v3",
+    "digest": "f6817d2a112e1a325af1fe20ce4679c7ee49c8033fe7c227ca32a49c04c24b85"
+  },
+  "qualification_subject_manifest_digest": "c8cdb44f723a63c17d948e5423fdbfa7ff91283f87a61d8d3eef2613e3dbf32c",
+  "transition_recorder": {
+    "ref": "skills/validate/scripts/record_proof_transition.py",
+    "digest": "49f22c1af70f8a0de09c44bd132e74d22f053d0b9a5f353f98bdc8082c0c5e58",
+    "mode": "0755"
+  },
+  "known_gaps": []
+}

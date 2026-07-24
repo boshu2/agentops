@@ -139,6 +139,39 @@ func TestValidateVerdictArtifact_DetectsMutation(t *testing.T) {
 	}
 }
 
+func TestLoadLoopEvidence_AcceptsLegacyV2AndCompleteV3(t *testing.T) {
+	tmp := t.TempDir()
+	legacyPath := writeVerdictArtifact(t, tmp)
+	currentPath := writeVerdictV3Artifact(t, tmp)
+
+	got := LoadLoopEvidence(tmp, time.Now())
+	if got.VerdictArtifacts != 2 || len(got.Corrupt) != 0 {
+		t.Fatalf("mixed version evidence not accepted: %+v", got)
+	}
+
+	payload, err := os.ReadFile(currentPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	expected, ok := artifactDigestFromName(filepath.Base(currentPath), ".json")
+	if !ok {
+		t.Fatal("generated verdict.v3 has invalid name")
+	}
+	verified, err := verdictcheck.ReadArtifact(payload, expected)
+	if err != nil {
+		t.Fatalf("read stored verdict.v3: %v", err)
+	}
+	if verified.V3 == nil ||
+		verified.V3.InvocationID != "invocation:status-test" ||
+		verified.V3.ProofIdentity.Epoch.String() != "1" ||
+		verified.V3.Criteria[0].ID != "criterion:status-test" {
+		t.Fatalf("stored verdict.v3 semantic fields were lost: %+v", verified)
+	}
+	if _, err := os.Stat(legacyPath); err != nil {
+		t.Fatalf("legacy verdict.v2 was not preserved: %v", err)
+	}
+}
+
 func writeIntentArtifact(t *testing.T, root, content string) string {
 	t.Helper()
 	digest := sha256.Sum256([]byte(content))
@@ -151,6 +184,58 @@ func writeIntentArtifact(t *testing.T, root, content string) string {
 		t.Fatal(err)
 	}
 	return path
+}
+
+func writeVerdictV3Artifact(t *testing.T, root string) string {
+	t.Helper()
+	directory := filepath.Join(root, ".agents", "ao", "verdicts", "sha256")
+	if err := os.MkdirAll(directory, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	return writeRawVerdictArtifact(t, directory, map[string]any{
+		"schema_version": "verdict.v3",
+		"invocation_id":  "invocation:status-test",
+		"judgment_id":    "judgment:status-test",
+		"intent_ref":     ".agents/ao/intents/sha256/status.intent",
+		"intent_digest":  strings.Repeat("a", 64),
+		"proof_identity": map[string]any{
+			"epoch":                        1,
+			"contract_ref":                 "docs/contracts/proof-contracts/epoch-1.json",
+			"contract_digest":              strings.Repeat("b", 64),
+			"activation_transition_digest": strings.Repeat("c", 64),
+		},
+		"schema_digests": map[string]any{
+			"verdict":          strings.Repeat("a", 64),
+			"rpi_report":       strings.Repeat("b", 64),
+			"subject_manifest": strings.Repeat("c", 64),
+			"scope_index":      strings.Repeat("d", 64),
+			"effect_receipt":   strings.Repeat("e", 64),
+			"check_receipt":    strings.Repeat("f", 64),
+		},
+		"before_manifest_ref":    "proof/before.json",
+		"before_manifest_digest": strings.Repeat("d", 64),
+		"final_manifest_ref":     "proof/final.json",
+		"final_manifest_digest":  strings.Repeat("e", 64),
+		"scope_index_ref":        "proof/scope.json",
+		"scope_index_digest":     strings.Repeat("f", 64),
+		"effect_receipt_ref":     "proof/effect.json",
+		"effect_receipt_digest":  strings.Repeat("0", 64),
+		"author_context_id":      "author:status-test",
+		"validator_context_id":   "validator:status-test",
+		"freshness_attestation": map[string]any{
+			"source": "runtime", "attester_identity": "runtime:status-test",
+		},
+		"verdict": "PASS",
+		"criteria": []any{map[string]any{
+			"id": "criterion:status-test", "result": "PASS",
+			"evidence_receipt_digests": []string{strings.Repeat("1", 64)},
+			"reason":                   "checked",
+		}},
+		"findings":     []any{},
+		"checked":      []string{"go test ./internal/statusapp"},
+		"not_checked":  []any{},
+		"validated_at": "2026-07-24T12:00:00Z",
+	})
 }
 
 func writeVerdictArtifact(t *testing.T, root string) string {
