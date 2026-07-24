@@ -10,7 +10,6 @@
 package skills
 
 import (
-	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -21,7 +20,7 @@ import (
 // Catalog is the top-level skills/catalog.json document.
 type Catalog struct {
 	SchemaVersion string         `json:"schema_version"`
-	GeneratedAt   string         `json:"generated_at"`
+	GeneratedAt   string         `json:"generated_at,omitempty"`
 	SkillCount    int            `json:"skill_count"`
 	Skills        []CatalogEntry `json:"skills"`
 }
@@ -35,12 +34,18 @@ type CatalogEntry struct {
 	Consumes             []string     `json:"consumes"`
 	Produces             []string     `json:"produces"`
 	Dependencies         []string     `json:"dependencies"`
+	Capabilities         []string     `json:"capabilities,omitempty"`
+	Effects              []string     `json:"effects,omitempty"`
+	CanonicalStatus      string       `json:"canonical_status,omitempty"`
+	Disposition          string       `json:"disposition,omitempty"`
+	Tier                 string       `json:"tier,omitempty"`
 	ContextRel           []ContextRel `json:"context_rel"`
 	Practices            []string     `json:"practices"`
 	UserInvocable        bool         `json:"user_invocable"`
 	GraphRoot            bool         `json:"graph_root"`
 	CodexOverridePresent bool         `json:"codex_override_present"`
 	ReferencesCount      int          `json:"references_count"`
+	ContractV3           *ContractV3  `json:"contract_v3,omitempty"`
 }
 
 // ContextRel is one hex relationship (customer-of, shared-kernel, alias-of).
@@ -58,11 +63,11 @@ func LoadCatalog(skillsDir string) (*Catalog, error) {
 	if err != nil {
 		return nil, fmt.Errorf("read %s: %w", path, err)
 	}
-	var cat Catalog
-	if err := json.Unmarshal(data, &cat); err != nil {
+	cat, err := decodeCatalog(data)
+	if err != nil {
 		return nil, fmt.Errorf("parse %s: %w", path, err)
 	}
-	return &cat, nil
+	return cat, nil
 }
 
 // ListFilter narrows a List query. A zero-value filter matches every entry.

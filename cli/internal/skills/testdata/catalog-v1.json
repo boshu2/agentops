@@ -1,0 +1,19 @@
+{
+  "schema_version": "1",
+  "generated_at": "2026-05-20T22:21:21Z",
+  "skill_count": 1,
+  "skills": [
+    {
+      "name": "legacy-v1",
+      "description": "A version one catalog entry.",
+      "hexagonal_role": "supporting",
+      "consumes": [],
+      "produces": ["legacy-output"],
+      "context_rel": [],
+      "practices": ["tdd"],
+      "user_invocable": true,
+      "codex_override_present": false,
+      "references_count": 1
+    }
+  ]
+}

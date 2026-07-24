@@ -1,0 +1,25 @@
+{
+  "schema_version": "3",
+  "skill_count": 1,
+  "skills": [
+    {
+      "name": "legacy-v3",
+      "description": "A version three catalog entry.",
+      "hexagonal_role": "domain",
+      "consumes": ["intent"],
+      "produces": ["result"],
+      "dependencies": [],
+      "capabilities": ["judge"],
+      "effects": ["read_workspace"],
+      "canonical_status": "canonical",
+      "disposition": "keep",
+      "tier": "execution",
+      "context_rel": [],
+      "practices": ["design-by-contract"],
+      "user_invocable": false,
+      "graph_root": false,
+      "codex_override_present": true,
+      "references_count": 3
+    }
+  ]
+}
