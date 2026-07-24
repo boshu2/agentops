@@ -1,0 +1,26 @@
+{
+  "schema_version": "2",
+  "generated_at": "2026-07-10T13:07:36Z",
+  "skill_count": 1,
+  "skills": [
+    {
+      "name": "legacy-v2",
+      "description": "A version two catalog entry.",
+      "hexagonal_role": "driving-adapter",
+      "consumes": ["intent"],
+      "produces": ["result"],
+      "dependencies": ["legacy-v1"],
+      "context_rel": [
+        {
+          "kind": "customer-of",
+          "with": "legacy-v1"
+        }
+      ],
+      "practices": [],
+      "user_invocable": true,
+      "graph_root": true,
+      "codex_override_present": true,
+      "references_count": 2
+    }
+  ]
+}

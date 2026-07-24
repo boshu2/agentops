@@ -1,0 +1,125 @@
+{
+  "schema_version": "4",
+  "skill_count": 1,
+  "skills": [
+    {
+      "name": "shadow-v4",
+      "description": "A shadow version four catalog entry.",
+      "hexagonal_role": "supporting",
+      "consumes": ["skill-source"],
+      "produces": ["compile-receipt.v1"],
+      "dependencies": [],
+      "capabilities": ["compile_contract"],
+      "effects": ["write_owned_projection"],
+      "canonical_status": "canonical",
+      "disposition": "keep_specialist",
+      "tier": "execution",
+      "context_rel": [],
+      "practices": ["design-by-contract"],
+      "user_invocable": true,
+      "graph_root": false,
+      "codex_override_present": true,
+      "references_count": 4,
+      "contract_v3": {
+        "schema_version": "skill-contract.v3",
+        "primary_layer": "support",
+        "lifecycle_seams": ["cross_cutting", "standalone"],
+        "authority": ["read_evidence", "mutate_subject"],
+        "effects": [
+          {
+            "id": "publish-owned-projection",
+            "kind": "filesystem.write",
+            "scope": "owned-projections",
+            "authorization": "caller",
+            "cleanup": "required",
+            "receipt": "required"
+          }
+        ],
+        "artifacts": {
+          "consumes": [
+            {
+              "name": "skill-source",
+              "kind": "source",
+              "semantics": "factual",
+              "schema_ref": "skill-contract.v3",
+              "validator": null
+            }
+          ],
+          "produces": [
+            {
+              "name": "compile-receipt",
+              "kind": "receipt",
+              "semantics": "factual",
+              "schema_ref": "compile-receipt.v1",
+              "validator": "skills/skill-builder/scripts/compile.py"
+            }
+          ]
+        },
+        "triggers": {
+          "positive": [
+            {
+              "id": "compile-contract",
+              "prompt": "compile this skill contract",
+              "expected": "route"
+            }
+          ],
+          "negative": [
+            {
+              "id": "run-experiment",
+              "prompt": "run an RPI experiment",
+              "expected": "do_not_route"
+            }
+          ],
+          "ambiguity": [
+            {
+              "id": "build-automation",
+              "prompt": "build this automation",
+              "expected": "clarify"
+            }
+          ],
+          "aliases": [
+            {
+              "id": "skill-compiler",
+              "alias": "skill compiler",
+              "canonical_skill": "skill-builder"
+            }
+          ],
+          "nearest_neighbors": [
+            {
+              "id": "workflow-builder",
+              "skill": "workflow-builder",
+              "distinction": "builds multi-step workflows rather than compiling one skill contract"
+            }
+          ]
+        },
+        "failure": {
+          "unavailable": {
+            "action": "stop",
+            "detail": "return unavailable without mutation"
+          },
+          "timeout": {
+            "action": "rollback_then_stop",
+            "detail": "return timeout after cleanup"
+          },
+          "partial_evidence": {
+            "action": "report_uncertainty",
+            "detail": "return incomplete evidence"
+          },
+          "partial_mutation": {
+            "action": "rollback_then_stop",
+            "detail": "restore exact prior state"
+          },
+          "cleanup": {
+            "action": "stop",
+            "detail": "return cleanup failure with receipt"
+          }
+        },
+        "proof": {
+          "class": "deterministic",
+          "command": "go test ./internal/skills -run TestLoadCatalog",
+          "fixture_refs": ["testdata/catalog-v4.json"]
+        }
+      }
+    }
+  ]
+}
