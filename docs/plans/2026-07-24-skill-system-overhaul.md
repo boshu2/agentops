@@ -2,7 +2,7 @@
 id: plan-2026-07-24-skill-system-overhaul
 type: plan
 date: 2026-07-24
-status: in_progress/T0-typed-pause-repair-candidate
+status: in_progress/T0-transition-schema-repair-candidate
 goal: Overhaul every canonical AgentOps skill around the campaign-to-experiment architecture
 architecture_ref: docs/contracts/skill-ports-and-adapters.md
 duel_ref: docs/audits/skill-system-overhaul-duel-2026-07-24/README.md
@@ -205,8 +205,13 @@ added explicit lineage and hostile checks, but its fresh validator proved two
 remaining semantic bypasses: contradictory progress could be added under
 different prose, and a fabricated future active pointer was not bound to the
 transition candidate or transition bytes. That third FAIL is immutable too.
-A new typed, closed-world pause invocation owns only those two checker defects;
-it does not reopen the accepted bootstrap repairs or start T1.
+The typed, closed-world repair eliminated both bypasses, but its fresh validator
+proved that a digest-linked transition could still violate the declared
+transition schema by omitting qualification/identity/time fields, adding
+forbidden fields, escaping through nested refs, or using boolean epochs. That
+fourth FAIL is immutable. A schema-backed repair now owns only complete
+transition and qualification-artifact validation; it does not reopen the
+accepted bootstrap repairs or start T1.
 
 ### D3. Required gaps and declared exclusions are different types
 

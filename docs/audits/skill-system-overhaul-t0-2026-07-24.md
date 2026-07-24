@@ -2,7 +2,7 @@
 id: audit-skill-system-overhaul-t0-2026-07-24
 type: audit
 date: 2026-07-24
-status: typed-pause-repair-candidate
+status: transition-schema-repair-candidate
 plan_ref: docs/plans/2026-07-24-skill-system-overhaul.md
 proof_contract_ref: docs/contracts/proof-contracts/active.json
 ---
@@ -44,6 +44,19 @@ those two bypasses. It replaces prose inference with closed-world typed tranche
 states and verifies the complete first-transition binding. It does not reopen
 any rejected subject or claim that the exact kernel, catalog compiler,
 publisher, or Go CLI repairs are built.
+
+Fresh validation accepted the closed-world progress and immutable-history
+criteria but returned immutable FAIL
+`bc97dc05ced93855a0e2326f5ddd92dc4814db9b114158e8acc5298e63051d5b`.
+The digest-linked transition branch still accepted records that violated
+`proof-contract-transition.v1`: missing qualification, validator, and
+activation fields; forbidden extras; unsafe nested refs; and boolean epochs.
+
+That invocation stopped. A fifth metadata-only exact intent now validates the
+whole frozen transition schema with format checking and duplicate-key
+rejection, then verifies every candidate, subject, corpus, verdict, identity,
+digest, and repository-contained reference. No T1 or Go implementation is in
+this subject.
 
 ## Starting state
 
@@ -168,8 +181,8 @@ Estate ledger:
 
 ## Pause drill
 
-The current metadata-only candidate records all three stable rejected subjects,
-all three immutable FAILs, corrected epoch-0b authority, and the exact
+The current metadata-only candidate records all four stable rejected subjects,
+all four immutable FAILs, corrected epoch-0b authority, and the exact
 in-flight tranche without embedding its own future commit hash. The enclosing
 subject manifest and fresh verdict own that current candidate identity.
 
@@ -181,6 +194,12 @@ current invocation, and known gaps. Its simulated epoch-1 path additionally
 binds the transition's exact bytes and filename to the active pointer, binds
 the active epoch/ref/digest to `transition.candidate`, verifies the candidate
 descriptor bytes, and binds `transition.prior` to epoch 0b.
+
+It also validates the entire transition, active pointer, candidate descriptor,
+subject manifest, and qualification verdict against their frozen schemas. The
+qualification corpus tree digest, manifest identity, PASS verdict identity and
+freshness, validator identity, timestamps, filenames, and every nested
+repository ref must agree before the simulated epoch-1 state is accepted.
 
 API1 skill sources and catalog v3 remain live; `skill-contract.v3`, catalog v4,
 and `verdict.v3` are still shadow or planned concepts. T0 remains unproven
