@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agentops.dev/schemas/check-receipt.v1.schema.json",
+  "title": "check-receipt.v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "receipt_id",
+    "command",
+    "result",
+    "exit_code",
+    "subject_manifest_digest",
+    "stdout_digest",
+    "stderr_digest",
+    "observed_at",
+    "artifact_digest"
+  ],
+  "properties": {
+    "schema_version": {"const": "check-receipt.v1"},
+    "receipt_id": {"$ref": "#/$defs/id"},
+    "command": {"type": "array", "minItems": 1, "items": {"type": "string"}},
+    "result": {"enum": ["PASS", "FAIL", "ERROR"]},
+    "exit_code": {"type": "integer"},
+    "subject_manifest_digest": {"$ref": "#/$defs/digest"},
+    "stdout_digest": {"$ref": "#/$defs/digest"},
+    "stderr_digest": {"$ref": "#/$defs/digest"},
+    "observed_at": {"type": "string", "format": "date-time"},
+    "artifact_digest": {"$ref": "#/$defs/digest"}
+  },
+  "$defs": {
+    "digest": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "id": {"type": "string", "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]*$"}
+  }
+}

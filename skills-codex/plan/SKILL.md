@@ -1,82 +1,62 @@
 ---
 name: plan
-description: Shape or refine the existing bead or caller
+description: Shape the existing bead or caller intent and
 ---
 # Plan
 
 Turn the caller's intent into one bounded, testable behavior in the place that
-already owns the work. Prefer the caller's tracker, if any. When no tracker is
-available, use the caller's conversation or supplied issue text; the runtime
-snapshots the resolved intent bytes automatically so later contexts can read
-and hash the same source. Do not make the model restate those facts in a packet.
+already owns the work, then mint exactly one snapshot of the resolved bytes.
+Prefer the caller's tracker when one exists; otherwise use supplied issue or
+conversation bytes. Later phases receive only the snapshot reference and
+expected SHA-256 digest. They never re-read the living source.
 
 ## Workflow
 
-1. Resolve the intent source and choose one active behavior. When that source
-   is not already durable, have the runtime pass its exact bytes to
-   `python3 skills/validate/scripts/validate.py snapshot-intent --source -` and
-   use the returned `intent_ref` for later phases.
-2. Route the work by type (see **Ground-truth routing**) and name its ground
-   truth first. Then inspect only enough real context to make paths, interfaces,
-   and evidence concrete. Existing research and specialist skills are advisory
-   inputs.
-3. Ensure the source contains acceptance examples, important non-goals, and the
-   allowed write scope. Use lightweight prose or Given/When/Then only where it
-   removes ambiguity; do not require both normal and edge ceremony for every
-   change.
-4. Name the first useful acceptance check.
-5. If authorized and the source is writable, update that bead or issue in
-   place. Otherwise return a concise proposed amendment to the caller.
+1. Resolve the source and choose one active behavior. Apply any authorized
+   refinement in that source before freeze. Otherwise return a typed proposed
+   amendment and stop without pretending it was accepted.
+2. Name the work type and ground truth from **Ground-truth routing**. Inspect
+   only enough real context to make interfaces, paths, effects, and evidence
+   concrete.
+3. Give each acceptance criterion a stable, unique ID. Record important
+   non-goals, scope classes, and caller-declared optional exclusions. A
+   required criterion cannot be excluded.
+4. Name the first useful acceptance check. Enumerate generated companions,
+   parity twins, and tests that assert on the changed surface before freeze.
+5. Mint the exact resolved bytes once with
+   `python3 skills/plan/scripts/mint_intent.py --source <source>
+   --intent-dir <dir>`. Retain both `intent_ref` and `intent_digest`, then
+   freeze the IDs, statement digests, scope classes, and prior exclusions in
+   `scope-index.v1`.
 
-Planning produces no AgentOps packet. The runtime stores and hashes the resolved
-source bytes to detect later acceptance drift. That content-addressed snapshot
-is derived automatically and is not another model-authored planning artifact.
-
-Bound the work around the caller-visible outcome, not individual files, gates,
-or reviewer comments. Decomposition is useful only when it reduces reasoning
-cost; it must not multiply invocations or proof artifacts.
+Planning produces no AgentOps plan packet and no campaign graph. The
+content-addressed snapshot is runtime-derived identity, not a model-authored
+restatement. Whitespace, Unicode normalization, or serialization changes create
+a different digest and therefore a different intent.
 
 ## Scope admission
 
-In a repository with generated projections, write scope names generator-owned
-outputs as a class — the hand-edited sources plus all outputs of the owning
-regen commands — never as a hand-enumerated path list. Hand enumeration is
-falsified the first time a regen command rewrites a companion the author did
-not list: the 2026-07-15 heal-skill fold burned two implement lanes and three
-intent revisions (`.agents/ao/intents/sha256/d1db59d4...2b81` superseded by
-`f5fd7c3c...af75` superseded by `26a4f2be...eb48`) before scope was restated
-as a class.
+Write scope limits authorized mutation; it never limits observation. Implement
+observes the repository root with only the kernel's narrow runtime-artifact
+exclusions. An unrelated mutation therefore remains visible and fails scope.
 
-Before freezing acceptance, run a complexity admission: enumerate the
-generated companions, parity twins (for example a `skills-codex/` mirror), and
-test files that assert on the paths being changed. Anything this pass finds
-that the scope does not admit will surface later as an out-of-scope diff or a
-broken gate.
+For generated surfaces, write scope names a class: hand-edited sources plus all
+outputs of the owning regeneration commands. Hand enumeration is falsified
+when a generator rewrites an unlisted companion. If a live consumer or
+generated twin is discovered after freeze, the current invocation stops; Plan
+does not silently amend or mint another intent.
 
 ## Ground-truth routing
 
-Every plan needs a ground truth outside the planner's own reasoning. Before
-freezing acceptance, classify the work and name its ground truth, its control
-experiment, and its deviation ledger from the row below.
-
 | Work type | Ground truth | Control experiment | Deviation ledger |
 |---|---|---|---|
-| Integrate an external substrate, runtime, tracker, or service | the vendor's own docs plus stock behavior | run their vanilla quickstart on pinned versions with zero local code, before designing | each deviation from the documented flow, each justified; and every component you write that has a native counterpart in the substrate |
-| Extend this project | the repo's existing patterns and behavior spec | the simplest version that satisfies acceptance, and why it is insufficient | each novelty introduced — new abstraction, dependency, or pattern |
-| Greenfield | reference experience and domain prior art | a walking skeleton | each deviation from the boring default, ~one novelty per change |
+| Integrate an external substrate, runtime, tracker, or service | vendor docs plus stock behavior | pinned vanilla quickstart with zero local code, before design | every deviation from documented flow and every local replacement for a native component |
+| Extend this project | existing repository patterns and behavior spec | simplest version satisfying acceptance, and why it is insufficient | each new abstraction, dependency, or pattern |
+| Greenfield | reference experience and domain prior art | walking skeleton | each deviation from the boring default |
 
-The Extend row is already the repo's default discipline: behavior-first
-acceptance, RED -> GREEN, the smallest real change. The Integrate row is the one
-that is cheap to skip and expensive to have skipped — run the stock control
-experiment *before* you design, or you will re-plumb what the substrate already
-documents and inherit bugs you built yourself.
+The integration control applies only to integration-class work. Routine feature
+work uses the Extend row and its normal behavior-first RED-to-GREEN discipline.
 
-Trigger: the Integrate-row mechanics — the stock-quickstart control run and the
-deviation ledger from the documented flow — apply only to integration-class work
-(adopting or wiring in an external substrate, runtime, tracker, or service).
-Routine feature work on this project uses the Extend row and does not incur them.
-
-A plan is done only when it passes the fresh-context test: a cold context,
-given the intent source alone, could execute it without the author's
-conversation. If execution needs facts that live only in the planning
-conversation, move them into the source before freezing.
+Plan is done only when a cold context can act from the exact snapshot without
+the planning conversation or mutable source. Move any missing execution fact
+into the source before the single mint.

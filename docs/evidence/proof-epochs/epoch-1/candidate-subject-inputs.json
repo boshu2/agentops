@@ -1,0 +1,68 @@
+{
+  "schema_version": "proof-candidate-inputs.v1",
+  "candidate_epoch": 1,
+  "observation_policy": {
+    "root": ".",
+    "runtime_exclusions": [
+      ".git",
+      ".agents/ao/intents",
+      ".agents/ao/verdicts",
+      ".agents/ao/reports"
+    ]
+  },
+  "source_classes": [
+    "skills/rpi",
+    "skills/plan",
+    "skills/implement",
+    "skills/validate",
+    "schemas/check-receipt.v1.schema.json",
+    "schemas/effect-receipt.v1.schema.json",
+    "schemas/rpi-report.v2.schema.json",
+    "schemas/scope-index.v1.schema.json",
+    "schemas/subject-manifest.v2.schema.json",
+    "schemas/verdict.v3.schema.json",
+    "tests/fixtures/rpi-kernel-v3",
+    "cli/internal/verdictcheck",
+    "cli/internal/statusapp"
+  ],
+  "required_qualification_members": [
+    "skills/validate/scripts/record_proof_transition.py"
+  ],
+  "separately_transition_bound": [
+    "docs/evidence/proof-epochs/epoch-1/candidate-descriptor.json",
+    "docs/evidence/proof-epochs/epoch-1/t1-qualification-subject-manifest.json",
+    "docs/evidence/proof-epochs/epoch-1/verdicts/<digest>.json"
+  ],
+  "descriptor_binding_rule": "The descriptor is excluded from its qualification subject to avoid a self-referential digest. The external transition binds the exact descriptor digest, subject-manifest digest, and prior-epoch verdict together.",
+  "generated_companion_classes": [
+    "skills-codex/rpi",
+    "skills-codex/plan",
+    "skills-codex/implement",
+    "skills-codex/validate",
+    "skills-codex/.agentops-manifest.json",
+    "images/gemini/skills/implement",
+    "images/gemini/skills/plan",
+    "images/gemini/skills/rpi",
+    "images/gemini/skills/validate",
+    "packs/agentops-executor/agents/implementer-claude/skills/implement",
+    "packs/agentops-executor/agents/implementer/skills/implement",
+    "packs/agentops-executor/agents/validator/skills/validate",
+    "packs/agentops-executor/assets/generated-skill-manifest.json",
+    "skills/catalog.json",
+    "docs/contracts/context-map.md",
+    "docs/SKILL-ROUTER.md",
+    "skills-codex-overrides/catalog.json"
+  ],
+  "separate_go_lane_inputs": [
+    "cli/internal/verdictcheck/verdictcheck.go",
+    "cli/internal/verdictcheck/strict.go",
+    "cli/internal/verdictcheck/verdict_v3.go",
+    "cli/internal/verdictcheck/report_v2.go",
+    "cli/internal/verdictcheck/kernel_corpus_test.go",
+    "cli/internal/statusapp/statusapp.go"
+  ],
+  "qualification_state": "NOT_PROVEN",
+  "qualification_subject_manifest_digest": "c8cdb44f723a63c17d948e5423fdbfa7ff91283f87a61d8d3eef2613e3dbf32c",
+  "qualification_verdict_digest": null,
+  "activation_transition_digest": null
+}

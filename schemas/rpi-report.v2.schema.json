@@ -1,0 +1,84 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agentops.dev/schemas/rpi-report.v2.schema.json",
+  "title": "rpi-report.v2",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "invocation_id",
+    "correlation",
+    "status",
+    "intent_ref",
+    "intent_digest",
+    "proof_identity",
+    "before_manifest_digest",
+    "final_manifest_digest",
+    "effect_receipt_digest",
+    "verdict_ref",
+    "verdict_digest",
+    "checked",
+    "not_checked",
+    "artifact_digest"
+  ],
+  "properties": {
+    "schema_version": {"const": "rpi-report.v2"},
+    "invocation_id": {"$ref": "#/$defs/id"},
+    "correlation": {
+      "oneOf": [
+        {"type": "null"},
+        {
+          "type": "object",
+          "maxProperties": 8,
+          "propertyNames": {
+            "minLength": 1,
+            "maxLength": 64,
+            "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]*$"
+          },
+          "additionalProperties": {
+            "type": "string",
+            "maxLength": 256
+          }
+        }
+      ]
+    },
+    "status": {"enum": ["PASS", "FAIL", "NOT_PROVEN", "NOT_PLANNED", "NOT_BUILT"]},
+    "intent_ref": {"oneOf": [{"type": "null"}, {"$ref": "#/$defs/ref"}]},
+    "intent_digest": {"oneOf": [{"type": "null"}, {"$ref": "#/$defs/digest"}]},
+    "proof_identity": {
+      "oneOf": [
+        {"type": "null"},
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["epoch", "contract_ref", "contract_digest", "activation_transition_digest"],
+          "properties": {
+            "epoch": {"type": "integer", "minimum": 0},
+            "contract_ref": {"$ref": "#/$defs/ref"},
+            "contract_digest": {"$ref": "#/$defs/digest"},
+            "activation_transition_digest": {
+              "oneOf": [{"type": "null"}, {"$ref": "#/$defs/digest"}]
+            }
+          }
+        }
+      ]
+    },
+    "before_manifest_digest": {"oneOf": [{"type": "null"}, {"$ref": "#/$defs/digest"}]},
+    "final_manifest_digest": {"oneOf": [{"type": "null"}, {"$ref": "#/$defs/digest"}]},
+    "effect_receipt_digest": {"oneOf": [{"type": "null"}, {"$ref": "#/$defs/digest"}]},
+    "verdict_ref": {"oneOf": [{"type": "null"}, {"$ref": "#/$defs/ref"}]},
+    "verdict_digest": {"oneOf": [{"type": "null"}, {"$ref": "#/$defs/digest"}]},
+    "checked": {"type": "array", "items": {"type": "string", "minLength": 1}},
+    "not_checked": {"type": "array", "items": {"type": "string", "minLength": 1}},
+    "artifact_digest": {"$ref": "#/$defs/digest"}
+  },
+  "$defs": {
+    "digest": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "id": {"type": "string", "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]*$"},
+    "ref": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$)).+$"
+    }
+  }
+}

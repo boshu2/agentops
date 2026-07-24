@@ -1,14 +1,18 @@
-Feature: Implement runs one bounded experiment
-  @covered-by:skills/implement/scripts/validate.sh::test_runtime_derives_subject
-  Scenario: Behavior change follows RED GREEN refactor
-    Given one resolved bead or caller intent
-    When Implement changes the subject
-    Then the first acceptance check fails for the expected missing behavior
-    And the smallest change makes it green
-    And refactoring preserves the acceptance test
+Feature: Implement freezes one exact candidate
+  @covered-by:skills/validate/scripts/test_kernel_v3.py::test_repository_observation_includes_generated_companions_and_deletions
+  Scenario: Actual effects are runtime-derived
+    Given repository-wide before and final manifests
+    When Implement derives effect-receipt.v1
+    Then changed paths include generated companions and deletions
 
-  @covered-by:skills/implement/scripts/validate.sh::test_runtime_derives_subject
-  Scenario: Incomplete changed path coverage stays honest
-    Given complete changed paths cannot be established
-    Then the runtime receipt records incomplete coverage
-    And Implement does not infer missing paths
+  @covered-by:skills/validate/scripts/test_kernel_v3.py::test_mutation_outside_write_scope_is_observed_and_forces_fail
+  Scenario: Write scope does not hide observation
+    Given a change outside frozen write scope
+    When the final repository manifest is derived
+    Then that path remains in actual changed paths
+
+  @covered-by:skills/validate/scripts/test_kernel_v3.py::test_candidate_mutation_after_freeze_is_terminal
+  Scenario: Candidate freeze is final
+    Given Implement returned the final manifest
+    When the candidate mutates
+    Then the current invocation terminates without a repair revision

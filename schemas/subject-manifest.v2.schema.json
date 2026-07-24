@@ -1,0 +1,71 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agentops.dev/schemas/subject-manifest.v2.schema.json",
+  "title": "subject-manifest.v2",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "observation_roots",
+    "exclusions",
+    "entries",
+    "canonical_manifest_digest"
+  ],
+  "properties": {
+    "schema_version": {"const": "subject-manifest.v2"},
+    "observation_roots": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "includes"],
+        "properties": {
+          "id": {"$ref": "#/$defs/id"},
+          "includes": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": {"$ref": "#/$defs/path"}
+          }
+        }
+      }
+    },
+    "exclusions": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "enum": [
+          ".git",
+          ".agents/ao/intents",
+          ".agents/ao/verdicts",
+          ".agents/ao/reports"
+        ]
+      }
+    },
+    "entries": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["path", "kind", "executable", "digest"],
+        "properties": {
+          "path": {"$ref": "#/$defs/path"},
+          "kind": {"enum": ["file", "symlink"]},
+          "executable": {"type": "boolean"},
+          "digest": {"$ref": "#/$defs/digest"}
+        }
+      }
+    },
+    "canonical_manifest_digest": {"$ref": "#/$defs/digest"}
+  },
+  "$defs": {
+    "digest": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9._-]*$"},
+    "path": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$)).+$"
+    }
+  }
+}

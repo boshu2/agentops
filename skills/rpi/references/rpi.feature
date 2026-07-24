@@ -1,21 +1,28 @@
-Feature: RPI runs one bounded experiment
+Feature: RPI runs one exact bounded experiment
   @covered-by:skills/rpi/tests/test_run_once.py::test_each_phase_runs_once_and_pass_reports
   Scenario: Core phases run once and stop
-    Given one intent
+    Given one caller intent
     When RPI is invoked
     Then Plan, Implement, and fresh Validate are each dispatched at most once
-    And the final report contains no next action
+    And the final artifact is rpi-report.v2
+    And it contains no next action
 
-  @covered-by:skills/rpi/tests/test_run_once.py::test_fail_reports_and_stops_without_another_dispatch
-  Scenario: Validation failure does not loop
+  @covered-by:skills/rpi/tests/test_run_once.py::test_whitespace_and_unicode_bytes_remain_distinct
+  Scenario: Exact intent bytes cross every phase
+    Given intent bytes with Unicode or whitespace
+    When Plan mints the intent
+    Then Implement and Validate receive the exact snapshot reference and digest
+    And a byte-different representation has a different identity
+
+  @covered-by:skills/rpi/tests/test_run_once.py::test_fail_and_not_proven_report_and_stop
+  Scenario: Non-PASS validation is terminal
     Given Validate returns FAIL or NOT_PROVEN
     When RPI reports the verdict
-    Then RPI stops without repair, replan, helper, retry, or delivery
+    Then it stops without repair, replan, helper, retry, campaign, or delivery
 
-  @covered-by:skills/rpi/scripts/validate.sh
-  Scenario: Interactive output summarizes the machine artifact
-    Given RPI has produced an rpi-report.v1 machine artifact
-    When RPI responds to an interactive caller
-    Then the response leads with status and the caller-visible outcome
-    And it includes only the strongest proof, material unchecked scope, and verdict link
-    And the full schema object is emitted only when machine-readable output was requested
+  @covered-by:skills/rpi/tests/test_run_once.py::test_opaque_correlation_is_preserved_without_interpretation
+  Scenario: Opaque correlation crosses without authority
+    Given a size-bounded scalar correlation object
+    When RPI reports any terminal status
+    Then it preserves the correlation unchanged
+    And never interprets it as campaign or continuation state

@@ -97,7 +97,11 @@
 | `idea-genie` | consumes | `idea-portfolio.v1` |
 | `idea-genie` | produces | `idea-portfolio.v1` |
 | `idea-genie` | produces | `idea-challenge.v1` |
-| `implement` | produces | `subject-manifest.v1` |
+| `implement` | consumes | `intent-snapshot.sha256` |
+| `implement` | consumes | `scope-index.v1` |
+| `implement` | produces | `subject-manifest.v2` |
+| `implement` | produces | `check-receipt.v1` |
+| `implement` | produces | `effect-receipt.v1` |
 | `learn` | consumes | `verdict.v2` |
 | `learn` | produces | `learning-observations` |
 | `ntm` | consumes | `task-intent` |
@@ -108,6 +112,8 @@
 | `pattern-mining` | consumes | `repo-context` |
 | `pattern-mining` | consumes | `task-question` |
 | `pattern-mining` | produces | `pattern-mining.v1` |
+| `plan` | produces | `intent-snapshot.sha256` |
+| `plan` | produces | `scope-index.v1` |
 | `postmortem` | consumes | `verdict.v2` |
 | `postmortem` | produces | `postmortem-report.md` |
 | `premortem` | produces | `premortem-plan-review.v1` |
@@ -123,7 +129,7 @@
 | `rpi` | consumes | `plan` |
 | `rpi` | consumes | `implement` |
 | `rpi` | consumes | `validate` |
-| `rpi` | produces | `rpi-report.v1` |
+| `rpi` | produces | `rpi-report.v2` |
 | `scaffold` | produces | `project-scaffold` |
 | `scope` | consumes | `proposed-write-scope` |
 | `scope` | produces | `scope-review` |
@@ -142,7 +148,10 @@
 | `toil-mining` | produces | `result.json` |
 | `using-gc` | consumes | `explicit-packets` |
 | `using-gc` | produces | `gas-city-runtime-evidence` |
-| `validate` | consumes | `subject-manifest.v1` |
-| `validate` | produces | `subject-manifest.v1` |
-| `validate` | produces | `verdict.v2` |
+| `validate` | consumes | `intent-snapshot.sha256` |
+| `validate` | consumes | `scope-index.v1` |
+| `validate` | consumes | `subject-manifest.v2` |
+| `validate` | consumes | `check-receipt.v1` |
+| `validate` | consumes | `effect-receipt.v1` |
+| `validate` | produces | `verdict.v3` |
 | `workflow-builder` | produces | `workflow-script` |

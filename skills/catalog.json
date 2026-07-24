@@ -623,7 +623,10 @@
         "collect_factual_evidence"
       ],
       "codex_override_present": true,
-      "consumes": [],
+      "consumes": [
+        "intent-snapshot.sha256",
+        "scope-index.v1"
+      ],
       "context_rel": [
         {
           "kind": "customer-of",
@@ -631,7 +634,7 @@
         }
       ],
       "dependencies": [],
-      "description": "Execute one bounded RED to GREEN experiment from bead or caller intent; return derived subject identity and check facts. Triggers: \"implement\", \"build this plan\", \"run the experiment\".",
+      "description": "Execute one bounded RED to GREEN experiment from an exact intent snapshot; freeze the candidate and factual receipts. Triggers: \"implement\", \"build this plan\", \"run the experiment\".",
       "disposition": "keep",
       "effects": [
         "modify_declared_subject",
@@ -646,7 +649,9 @@
         "small-batch-flow"
       ],
       "produces": [
-        "subject-manifest.v1"
+        "subject-manifest.v2",
+        "check-receipt.v1",
+        "effect-receipt.v1"
       ],
       "references_count": 1,
       "tier": "execution",
@@ -837,7 +842,7 @@
       "consumes": [],
       "context_rel": [],
       "dependencies": [],
-      "description": "Shape or refine the existing bead or caller intent without creating a second planning artifact. Triggers: \"plan\", \"discover and plan\", \"shape this goal\".",
+      "description": "Shape the existing bead or caller intent and mint one exact snapshot without creating a second planning artifact. Triggers: \"plan\", \"discover and plan\", \"shape this goal\".",
       "disposition": "keep",
       "effects": [
         "update_intent_source"
@@ -850,7 +855,10 @@
         "design-by-contract",
         "ddd-bounded-context"
       ],
-      "produces": [],
+      "produces": [
+        "intent-snapshot.sha256",
+        "scope-index.v1"
+      ],
       "references_count": 1,
       "tier": "execution",
       "user_invocable": true
@@ -1137,7 +1145,7 @@
         "design-by-contract"
       ],
       "produces": [
-        "rpi-report.v1"
+        "rpi-report.v2"
       ],
       "references_count": 1,
       "tier": "meta",
@@ -1507,7 +1515,11 @@
       ],
       "codex_override_present": true,
       "consumes": [
-        "subject-manifest.v1"
+        "intent-snapshot.sha256",
+        "scope-index.v1",
+        "subject-manifest.v2",
+        "check-receipt.v1",
+        "effect-receipt.v1"
       ],
       "context_rel": [
         {
@@ -1520,7 +1532,7 @@
         }
       ],
       "dependencies": [],
-      "description": "Freshly judge exact subject content against bead or caller acceptance, persist verdict.v2, and stop. Triggers: \"validate\", \"independently validate\", \"vibe\".",
+      "description": "Freshly judge one frozen intent and exact subject, persist verdict.v3, and stop. Triggers: \"validate\", \"independently validate\", \"vibe\".",
       "disposition": "keep",
       "effects": [
         "write_verdict_artifact"
@@ -1534,8 +1546,7 @@
         "content-addressed-storage"
       ],
       "produces": [
-        "subject-manifest.v1",
-        "verdict.v2"
+        "verdict.v3"
       ],
       "references_count": 1,
       "tier": "judgment",

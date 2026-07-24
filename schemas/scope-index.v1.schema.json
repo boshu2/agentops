@@ -1,0 +1,81 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agentops.dev/schemas/scope-index.v1.schema.json",
+  "title": "scope-index.v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "intent_digest",
+    "frozen_at",
+    "criteria",
+    "scope_classes",
+    "declared_exclusions",
+    "artifact_digest"
+  ],
+  "properties": {
+    "schema_version": {"const": "scope-index.v1"},
+    "intent_digest": {"$ref": "#/$defs/digest"},
+    "frozen_at": {"type": "string", "format": "date-time"},
+    "criteria": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "required", "statement_digest"],
+        "properties": {
+          "id": {"$ref": "#/$defs/id"},
+          "required": {"type": "boolean"},
+          "statement_digest": {"$ref": "#/$defs/digest"}
+        }
+      }
+    },
+    "scope_classes": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "patterns"],
+        "properties": {
+          "id": {"$ref": "#/$defs/id"},
+          "patterns": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": {"$ref": "#/$defs/path"}
+          }
+        }
+      }
+    },
+    "declared_exclusions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "criterion_ids", "reason"],
+        "properties": {
+          "id": {"$ref": "#/$defs/id"},
+          "criterion_ids": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": {"$ref": "#/$defs/id"}
+          },
+          "reason": {"type": "string", "minLength": 1}
+        }
+      }
+    },
+    "artifact_digest": {"$ref": "#/$defs/digest"}
+  },
+  "$defs": {
+    "digest": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "id": {"type": "string", "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]*$"},
+    "path": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$)).+$"
+    }
+  }
+}

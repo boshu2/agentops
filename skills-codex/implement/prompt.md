@@ -1,6 +1,6 @@
 # implement
 
-Execute one bounded RED to GREEN experiment from bead or caller intent; return derived subject identity and check facts. Triggers: "implement", "build this plan", "run the experiment".
+Execute one bounded RED to GREEN experiment from an exact intent snapshot; freeze the candidate and factual receipts. Triggers: "implement", "build this plan", "run the experiment".
 
 ## Instructions
 
