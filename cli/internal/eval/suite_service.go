@@ -15,7 +15,7 @@ import (
 type SuiteRuntime interface {
 	Root() string
 	ReadFile(string) ([]byte, error)
-	RunStats([]string) ([]byte, error)
+	RunStats(context.Context, []string) ([]byte, error)
 }
 
 type SuiteService struct{ Runtime SuiteRuntime }
@@ -37,7 +37,7 @@ type SuiteNRequiredResult struct {
 	NRequired int
 }
 
-func (service SuiteService) Verdict(_ context.Context, request SuiteVerdictRequest) (SuiteVerdictResult, error) {
+func (service SuiteService) Verdict(ctx context.Context, request SuiteVerdictRequest) (SuiteVerdictResult, error) {
 	if request.InputsPath == "" {
 		return SuiteVerdictResult{}, fmt.Errorf("eval suite verdict: --inputs is required")
 	}
@@ -55,13 +55,13 @@ func (service SuiteService) Verdict(_ context.Context, request SuiteVerdictReque
 	}
 	nRequired := request.NRequired
 	if nRequired <= 0 {
-		nRequired = service.derivedNRequired(suite)
+		nRequired = service.derivedNRequired(ctx, suite)
 	}
 	args := []string{"-m", "_stats.cli", "verdict", "--suite-id", request.SuiteID, "--arms", arms, "--inputs", request.InputsPath, "--decision-rule", rule, "--n-required", fmt.Sprintf("%d", nRequired), "--B", fmt.Sprintf("%d", request.BootstrapSamples)}
 	if request.MDE > 0 {
 		args = append(args, "--mde", fmt.Sprintf("%g", request.MDE))
 	}
-	raw, err := service.Runtime.RunStats(args)
+	raw, err := service.Runtime.RunStats(ctx, args)
 	if err != nil {
 		return SuiteVerdictResult{}, err
 	}
@@ -72,9 +72,9 @@ func (service SuiteService) Verdict(_ context.Context, request SuiteVerdictReque
 	return SuiteVerdictResult{Raw: raw, Values: values}, nil
 }
 
-func (service SuiteService) NRequired(_ context.Context, request SuiteNRequiredRequest) (SuiteNRequiredResult, error) {
+func (service SuiteService) NRequired(ctx context.Context, request SuiteNRequiredRequest) (SuiteNRequiredResult, error) {
 	args := []string{"-m", "_stats.cli", "n-required", "--baseline-rate", fmt.Sprintf("%g", request.BaselineRate), "--mde", fmt.Sprintf("%g", request.MDE), "--alpha", fmt.Sprintf("%g", request.Alpha), "--power", fmt.Sprintf("%g", request.Power), "--paired", fmt.Sprintf("%v", request.Paired)}
-	raw, err := service.Runtime.RunStats(args)
+	raw, err := service.Runtime.RunStats(ctx, args)
 	if err != nil {
 		return SuiteNRequiredResult{}, err
 	}
@@ -110,11 +110,11 @@ func (service SuiteService) loadSuite(id string) (*evalsubstrate.Suite, error) {
 	return &suite, nil
 }
 
-func (service SuiteService) derivedNRequired(suite *evalsubstrate.Suite) int {
+func (service SuiteService) derivedNRequired(ctx context.Context, suite *evalsubstrate.Suite) int {
 	if suite == nil || suite.Stats.Power == nil {
 		return 0
 	}
-	raw, err := service.Runtime.RunStats([]string{"-m", "_stats.cli", "n-required", "--baseline-rate", "0.5", "--mde", fmt.Sprintf("%g", suite.Stats.Power.MinimumDetectableEffect), "--alpha", fmt.Sprintf("%g", suite.Stats.Power.Alpha), "--power", "0.80", "--paired", "true"})
+	raw, err := service.Runtime.RunStats(ctx, []string{"-m", "_stats.cli", "n-required", "--baseline-rate", "0.5", "--mde", fmt.Sprintf("%g", suite.Stats.Power.MinimumDetectableEffect), "--alpha", fmt.Sprintf("%g", suite.Stats.Power.Alpha), "--power", "0.80", "--paired", "true"})
 	if err != nil {
 		return 0
 	}

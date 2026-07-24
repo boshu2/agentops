@@ -11,6 +11,7 @@ import (
 
 	"github.com/boshu2/agentops/cli/internal/gates"
 	"github.com/boshu2/agentops/cli/internal/ports"
+	"github.com/boshu2/agentops/cli/internal/subprocess"
 )
 
 // Native ports of the bash gate's INLINE checks (no backing script). ag-3n71 PB1.
@@ -28,17 +29,19 @@ func changedFilesFor(ctx context.Context, rc gates.RunContext) []string {
 	if len(rc.ChangedFiles) > 0 {
 		return rc.ChangedFiles
 	}
-	cmd := exec.CommandContext(ctx, "git", "diff", "--name-only", "origin/main...HEAD")
-	cmd.Dir = rc.RepoRoot
-	// Scrub git's hook-injected discovery env (GIT_DIR, ...) so a leaked GIT_DIR
-	// cannot route this fallback change set at the wrong repo (SECURITY-MED).
-	cmd.Env = gates.ScrubbedGitEnv()
-	out, err := cmd.Output()
-	if err != nil {
+	result, err := subprocess.Run(ctx, subprocess.Command{
+		Name:        "git",
+		Args:        []string{"diff", "--name-only", "origin/main...HEAD"},
+		Dir:         rc.RepoRoot,
+		Env:         gates.ScrubbedGitEnv(),
+		StdoutLimit: subprocess.CaptureLimit{HeadBytes: 4 * 1024 * 1024},
+		StderrLimit: subprocess.CaptureLimit{TailBytes: 4096},
+	})
+	if err != nil || result.Stdout.Truncated {
 		return nil
 	}
 	var files []string
-	for _, l := range strings.Split(string(out), "\n") {
+	for _, l := range strings.Split(string(result.Stdout.Bytes()), "\n") {
 		if l = strings.TrimSpace(l); l != "" {
 			files = append(files, l)
 		}
@@ -47,12 +50,18 @@ func changedFilesFor(ctx context.Context, rc gates.RunContext) []string {
 }
 
 func runGoVet(ctx context.Context, rc gates.RunContext) (ports.GateVerdict, error) {
-	cmd := exec.CommandContext(ctx, "go", "vet", "./...")
-	cmd.Dir = filepath.Join(rc.RepoRoot, "cli")
-	var out bytes.Buffer
-	cmd.Stdout, cmd.Stderr = &out, &out
-	if err := cmd.Run(); err != nil {
-		return ports.GateVerdict{Status: ports.GateStatusFail, Reason: "go vet ./... failed", LogTail: tail(out.String(), 4096)}, nil
+	result, err := subprocess.Run(ctx, subprocess.Command{
+		Name:           "go",
+		Args:           []string{"vet", "./..."},
+		Dir:            filepath.Join(rc.RepoRoot, "cli"),
+		CombinedOutput: true,
+		OutputLimit:    subprocess.CaptureLimit{TailBytes: 4096},
+	})
+	if ctxErr := ctx.Err(); ctxErr != nil {
+		return ports.GateVerdict{}, ctxErr
+	}
+	if err != nil {
+		return ports.GateVerdict{Status: ports.GateStatusFail, Reason: "go vet ./... failed", LogTail: result.Combined.String()}, nil
 	}
 	return ports.GateVerdict{Status: ports.GateStatusPass, Reason: "go vet ./... ok"}, nil
 }
@@ -83,7 +92,8 @@ func runShellcheckChanged(ctx context.Context, rc gates.RunContext) (ports.GateV
 		return ports.GateVerdict{Status: ports.GateStatusFail, Reason: "shellcheck not installed: cannot verify changed shell files (install shellcheck)"}, nil
 	}
 	var failed []string
-	var logs bytes.Buffer
+	var logs string
+	logsTruncated := false
 	for _, f := range changedFilesFor(ctx, rc) {
 		if !strings.HasSuffix(f, ".sh") {
 			continue
@@ -91,17 +101,30 @@ func runShellcheckChanged(ctx context.Context, rc gates.RunContext) (ports.GateV
 		if _, err := os.Stat(filepath.Join(rc.RepoRoot, f)); err != nil {
 			continue // deleted
 		}
-		cmd := exec.CommandContext(ctx, "shellcheck", "-S", "warning", f)
-		cmd.Dir = rc.RepoRoot
-		var out bytes.Buffer
-		cmd.Stdout, cmd.Stderr = &out, &out
-		if err := cmd.Run(); err != nil {
+		result, err := subprocess.Run(ctx, subprocess.Command{
+			Name:           "shellcheck",
+			Args:           []string{"-S", "warning", f},
+			Dir:            rc.RepoRoot,
+			CombinedOutput: true,
+			OutputLimit:    subprocess.CaptureLimit{TailBytes: 4096},
+		})
+		if ctxErr := ctx.Err(); ctxErr != nil {
+			return ports.GateVerdict{}, ctxErr
+		}
+		if err != nil {
 			failed = append(failed, f)
-			logs.WriteString(out.String())
+			next := result.Combined.String()
+			if result.Combined.Truncated || len(logs)+len(next) > 4096 {
+				logsTruncated = true
+			}
+			logs = tail(logs+next, 4096)
 		}
 	}
 	if len(failed) > 0 {
-		return ports.GateVerdict{Status: ports.GateStatusFail, Reason: "shellcheck failed: " + strings.Join(failed, ", "), LogTail: tail(logs.String(), 4096)}, nil
+		if logsTruncated {
+			logs = "…[shellcheck output truncated]…\n" + logs
+		}
+		return ports.GateVerdict{Status: ports.GateStatusFail, Reason: "shellcheck failed: " + strings.Join(failed, ", "), LogTail: logs}, nil
 	}
 	return ports.GateVerdict{Status: ports.GateStatusPass, Reason: "shellcheck clean (changed .sh)"}, nil
 }

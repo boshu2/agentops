@@ -86,6 +86,20 @@ never a prebuilt `cli/bin/ao`.
 
 A gate PASS is a deterministic fact, not a semantic verdict.
 
+## Subprocess lifecycle
+
+Eval command cases and runtime probes, script-backed gates, and goal
+measurements launch through `cli/internal/subprocess`. The runner retains only
+declared prefix and suffix byte windows while streams are copied, records the
+original byte count and truncation, inherits the caller context, and terminates
+the platform process tree on cancellation or completion. A finite wait delay
+also prevents a descendant that inherited stdout or stderr from keeping the CLI
+blocked after its parent exits.
+
+Callers keep their domain-specific rendering and exit classification. The
+shared seam owns only process construction, bounded capture, cancellation, and
+cleanup.
+
 ## Evidence contracts and the Validate boundary
 
 - `schemas/verdict.v2.schema.json` and `schemas/subject-manifest.v1.schema.json`

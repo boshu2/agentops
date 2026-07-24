@@ -8,17 +8,19 @@ import (
 
 type coreRuntimeSpy struct {
 	runCalls int
+	runCtx   context.Context
 }
 
-func (runtime *coreRuntimeSpy) RunSuite(options RunOptions) (*RunRecord, error) {
+func (runtime *coreRuntimeSpy) RunSuiteContext(ctx context.Context, options RunOptions) (*RunRecord, error) {
 	runtime.runCalls++
+	runtime.runCtx = ctx
 	return &RunRecord{RunID: options.RunID, Status: StatusPass}, nil
 }
-func (*coreRuntimeSpy) RunBaselineAB(RunOptions) (DeltaScorecard, *RunRecord, *RunRecord, error) {
+func (*coreRuntimeSpy) RunBaselineABContext(context.Context, RunOptions) (DeltaScorecard, *RunRecord, *RunRecord, error) {
 	return DeltaScorecard{}, &RunRecord{}, &RunRecord{}, nil
 }
 func (*coreRuntimeSpy) WriteDeltaScorecard(DeltaScorecard, string) error { return nil }
-func (*coreRuntimeSpy) RunContextAB(RunOptions, ContextABOptions) (ContextDeltaScorecard, *RunRecord, *RunRecord, error) {
+func (*coreRuntimeSpy) RunContextABContext(context.Context, RunOptions, ContextABOptions) (ContextDeltaScorecard, *RunRecord, *RunRecord, error) {
 	return ContextDeltaScorecard{}, &RunRecord{}, &RunRecord{}, nil
 }
 func (*coreRuntimeSpy) WriteContextDeltaScorecard(ContextDeltaScorecard, string) error { return nil }
@@ -59,7 +61,9 @@ func TestCoreServiceRunRejectsUnknownRuntimeBeforeEffects(t *testing.T) {
 func TestCoreServiceRunDelegatesSingleRun(t *testing.T) {
 	runtime := &coreRuntimeSpy{}
 	service := CoreService{Runtime: runtime}
-	result, err := service.Run(context.Background(), CoreRunRequest{
+	type contextKey string
+	ctx := context.WithValue(context.Background(), contextKey("caller"), "preserved")
+	result, err := service.Run(ctx, CoreRunRequest{
 		SuitePath: "suite.json", RunID: "run-1", Runtime: "static", BaselineMode: "skill-off", ContextMode: "none",
 	})
 	if err != nil {
@@ -70,5 +74,8 @@ func TestCoreServiceRunDelegatesSingleRun(t *testing.T) {
 	}
 	if runtime.runCalls != 1 {
 		t.Fatalf("RunSuite calls = %d, want 1", runtime.runCalls)
+	}
+	if runtime.runCtx != ctx {
+		t.Fatal("CoreService.Run did not preserve the caller context")
 	}
 }

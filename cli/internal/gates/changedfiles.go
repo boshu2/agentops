@@ -4,8 +4,9 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"os/exec"
 	"strings"
+
+	"github.com/boshu2/agentops/cli/internal/subprocess"
 )
 
 // gitDiscoveryEnvVars is the canonical set of git repository-discovery
@@ -128,14 +129,21 @@ func (g *GitChangedFiles) exec(ctx context.Context, args ...string) (string, err
 	if g.run != nil {
 		return g.run(ctx, g.RepoRoot, args...)
 	}
-	cmd := exec.CommandContext(ctx, "git", args...)
-	cmd.Dir = g.RepoRoot
-	cmd.Env = ScrubbedGitEnv()
-	out, err := cmd.Output()
+	result, err := subprocess.Run(ctx, subprocess.Command{
+		Name:        "git",
+		Args:        args,
+		Dir:         g.RepoRoot,
+		Env:         ScrubbedGitEnv(),
+		StdoutLimit: subprocess.CaptureLimit{HeadBytes: 4 * 1024 * 1024},
+		StderrLimit: subprocess.CaptureLimit{TailBytes: 64 * 1024},
+	})
 	if err != nil {
-		return "", fmt.Errorf("git %s: %w", strings.Join(args, " "), err)
+		return "", fmt.Errorf("git %s: %w (%s)", strings.Join(args, " "), err, result.Stderr.String())
 	}
-	return string(out), nil
+	if result.Stdout.Truncated {
+		return "", fmt.Errorf("git %s: output exceeded 4 MiB capture bound (%d bytes)", strings.Join(args, " "), result.Stdout.TotalBytes)
+	}
+	return string(result.Stdout.Bytes()), nil
 }
 
 // Changed returns the deduped repo-relative paths changed for the scope.

@@ -69,6 +69,27 @@ func TestMeasureOne_OutputTruncated(t *testing.T) {
 	}
 }
 
+func TestMeasureOne_HighOutputIsBoundedDuringCapture(t *testing.T) {
+	goal := Goal{
+		ID:     "test-stream-bound",
+		Check:  `i=0; while [ "$i" -lt 4096 ]; do printf '%512s' ''; i=$((i+1)); done; printf 'TAIL_HINT'`,
+		Weight: 1,
+	}
+	m := MeasureOne(goal, 5*time.Second)
+	if m.Result != resultPass {
+		t.Fatalf("result = %q, want pass; output=%q", m.Result, m.Output)
+	}
+	if !m.OutputTruncated {
+		t.Fatal("high output was not reported as truncated")
+	}
+	if m.OutputBytes < 2*1024*1024 {
+		t.Fatalf("original output bytes = %d, want at least 2 MiB", m.OutputBytes)
+	}
+	if !strings.Contains(m.Output, "TAIL_HINT") {
+		t.Fatalf("bounded output lost trailing diagnostic: %q", m.Output)
+	}
+}
+
 // TestTruncateOutput_PreservesTailHint guards against the regression seen in
 // the 2026-04-26 nightly retro: head-only truncation cut diagnostic hints
 // that operators rely on (e.g. "sessions must use 'ao lookup --cite ...'").

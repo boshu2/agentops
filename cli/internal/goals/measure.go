@@ -1,7 +1,6 @@
 package goals
 
 import (
-	"bytes"
 	"context"
 	"errors"
 	"os"
@@ -15,19 +14,24 @@ import (
 	"unicode/utf8"
 
 	"github.com/boshu2/agentops/cli/internal/shellutil"
+	"github.com/boshu2/agentops/cli/internal/subprocess"
 )
 
 // Measurement captures the result of running a single goal's check command.
 type Measurement struct {
-	GoalID       string   `json:"goal_id"`
-	Result       string   `json:"result"` // "pass", "fail", "skip"
-	Value        *float64 `json:"value,omitempty"`
-	Threshold    *float64 `json:"threshold,omitempty"`
-	Duration     float64  `json:"duration_s"`
-	Output       string   `json:"output,omitempty"`
-	Weight       int      `json:"weight"`
-	Tags         []string `json:"tags,omitempty"`
-	AffectsFiles []string `json:"affects_files,omitempty"`
+	GoalID    string   `json:"goal_id"`
+	Result    string   `json:"result"` // "pass", "fail", "skip"
+	Value     *float64 `json:"value,omitempty"`
+	Threshold *float64 `json:"threshold,omitempty"`
+	Duration  float64  `json:"duration_s"`
+	Output    string   `json:"output,omitempty"`
+	// OutputBytes is populated with the original byte count only when the
+	// subprocess stream exceeded its in-memory capture bound.
+	OutputBytes     int64    `json:"output_bytes,omitempty"`
+	OutputTruncated bool     `json:"output_truncated,omitempty"`
+	Weight          int      `json:"weight"`
+	Tags            []string `json:"tags,omitempty"`
+	AffectsFiles    []string `json:"affects_files,omitempty"`
 }
 
 // SkipExitCode is the conventional exit code a gate script returns to
@@ -148,31 +152,30 @@ func MeasureOneContext(parent context.Context, goal Goal, timeout time.Duration)
 	defer cancel()
 
 	start := time.Now()
-	// SanitizedBashCommand bypasses ~/.bashrc and BASH_ENV so user shell
-	// aliases cannot silently change the meaning of goal check strings.
-	cmd := shellutil.SanitizedBashCommand(ctx, goal.Check)
-	configureProcGroup(cmd)
-	cmd.WaitDelay = 3 * time.Second
-
-	// Capture combined stdout+stderr via buffer so we can track the PID
-	// between Start and Wait for signal-based cleanup.
-	var buf bytes.Buffer
-	cmd.Stdout = &buf
-	cmd.Stderr = &buf
-
-	if err := cmd.Start(); err != nil {
-		m.Duration = time.Since(start).Seconds()
-		m.Output = err.Error()
-		m.Result = classifyResult(ctx.Err(), err)
-		return m
-	}
-
-	trackChild(cmd.Process.Pid)
-	err := cmd.Wait()
-	untrackChild(cmd.Process.Pid)
+	// SanitizedBashCommand supplies the exact no-profile/no-rc argument and
+	// environment contract. The shared runner owns process construction,
+	// bounded streaming, cancellation, and process-tree cleanup.
+	prepared := shellutil.SanitizedBashCommand(context.Background(), goal.Check)
+	result, err := subprocess.Run(ctx, subprocess.Command{
+		Name:           prepared.Path,
+		Args:           prepared.Args[1:],
+		Env:            prepared.Env,
+		CombinedOutput: true,
+		OutputLimit:    subprocess.CaptureLimit{HeadBytes: 4096, TailBytes: 4096},
+		WaitDelay:      3 * time.Second,
+		OnStart:        trackChild,
+		OnExit:         untrackChild,
+	})
 
 	m.Duration = time.Since(start).Seconds()
-	m.Output = truncateOutput(buf.Bytes())
+	m.Output = truncateOutput([]byte(result.Combined.String()))
+	if m.Output == "" && err != nil && result.Combined.TotalBytes == 0 {
+		m.Output = err.Error()
+	}
+	if result.Combined.Truncated {
+		m.OutputBytes = result.Combined.TotalBytes
+		m.OutputTruncated = true
+	}
 	m.Result = classifyResult(ctx.Err(), err)
 	applyContinuousMetric(&m, goal)
 	return m
@@ -427,13 +430,15 @@ func gitSHAWithTimeout(timeout time.Duration) string {
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 
-	cmd := exec.CommandContext(ctx, "git", "rev-parse", "--short", "HEAD")
-	// Bound pipe-drain waits after cancellation so wrapper scripts cannot stall timeout handling.
-	cmd.WaitDelay = timeout
-
-	out, err := cmd.Output()
-	if err != nil {
+	result, err := subprocess.Run(ctx, subprocess.Command{
+		Name:        "git",
+		Args:        []string{"rev-parse", "--short", "HEAD"},
+		StdoutLimit: subprocess.CaptureLimit{HeadBytes: 4096},
+		StderrLimit: subprocess.CaptureLimit{TailBytes: 4096},
+		WaitDelay:   timeout,
+	})
+	if err != nil || result.Stdout.Truncated {
 		return ""
 	}
-	return strings.TrimSpace(string(out))
+	return strings.TrimSpace(string(result.Stdout.Bytes()))
 }

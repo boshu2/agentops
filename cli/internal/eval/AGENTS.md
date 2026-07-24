@@ -24,7 +24,8 @@ on top.
 
 | Symbol | Purpose |
 |---|---|
-| `RunSuite(opts RunOptions) (*RunRecord, error)` | Top-level entry: load suite, run all cases, score, write run record |
+| `RunSuite(opts RunOptions) (*RunRecord, error)` | Backward-compatible background-context wrapper |
+| `RunSuiteContext(ctx, opts) (*RunRecord, error)` | Top-level entry: load suite, run all cases under caller cancellation, score, write run record |
 | `LoadSuite(path string) (*Suite, []byte, error)` | Read + parse a suite manifest; returns raw bytes for SHA recording |
 | `Compare(candidate, baseline *RunRecord, opts CompareOptions) (*BaselineComparison, error)` | Compare a fresh run against a stored baseline; produces verdict (improvement/regression/advisory) |
 | `PromoteBaseline(record *RunRecord, opts BaselineOptions) error` | Stamp a record as the new baseline (mode promote) |
@@ -48,6 +49,10 @@ on top.
   Don't conflate.
 - **`RunOptions.Now` is injectable** for deterministic tests; production
   callers pass `nil` to use `time.Now`.
+- **Subprocesses inherit caller cancellation.** Core service, baseline A/B,
+  context A/B, command cases, auto-detection, and live-runtime probes route
+  through `internal/subprocess`, which bounds capture while streaming and
+  cleans the full process tree.
 - **No JSON schema validation here.** Manifest parsing uses Go struct tags;
   schema-level checks (if any) are the caller's problem.
 

@@ -3,7 +3,6 @@
 package goals
 
 import (
-	"os/exec"
 	"testing"
 	"time"
 
@@ -26,29 +25,5 @@ func TestRunGoals_GoroutineLeak(t *testing.T) {
 	}
 	for i := 0; i < 5; i++ {
 		Measure(gf, 5*time.Second)
-	}
-}
-
-func TestConfigureProcGroup_NilProcess(t *testing.T) {
-	// The bug: configureProcGroup sets cmd.Cancel to a closure that
-	// dereferences cmd.Process.Pid. If the command hasn't started,
-	// cmd.Process is nil and Cancel panics.
-	cmd := exec.Command("true")
-	configureProcGroup(cmd)
-
-	// cmd.Process is nil because we haven't called cmd.Start().
-	if cmd.Process != nil {
-		t.Fatal("expected cmd.Process to be nil before Start()")
-	}
-
-	// The Cancel function should handle nil Process gracefully.
-	// Before the fix, this panics with nil pointer dereference.
-	if cmd.Cancel != nil {
-		err := cmd.Cancel()
-		if err != nil {
-			// A non-nil error is acceptable (e.g. "process not started").
-			// A panic is not.
-			t.Logf("Cancel returned error (OK): %v", err)
-		}
 	}
 }

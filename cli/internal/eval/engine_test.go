@@ -1,6 +1,7 @@
 package eval
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -213,6 +214,65 @@ func TestRunSuiteCommandCasePasses(t *testing.T) {
 	}
 	if run.Runtime.Name != RuntimeShell {
 		t.Fatalf("runtime = %s, want shell", run.Runtime.Name)
+	}
+}
+
+func TestRunSuiteHighOutputReportsTruncationAndPreservesEdges(t *testing.T) {
+	if os.Getenv("GO_WANT_EVAL_HIGH_OUTPUT_HELPER") == "1" {
+		fmt.Print("EVAL_HEAD")
+		fmt.Print(strings.Repeat("x", 2*1024*1024))
+		fmt.Print("EVAL_TAIL")
+		os.Exit(0)
+	}
+
+	dir := t.TempDir()
+	executable, err := os.Executable()
+	if err != nil {
+		t.Fatalf("os.Executable: %v", err)
+	}
+	suitePath := writeEvalSuite(t, dir, fmt.Sprintf(`{
+  "schema_version": 1,
+  "id": "command.high-output",
+  "name": "Command high output",
+  "domain": "cli",
+  "visibility": "public_canary",
+  "tier": "deterministic",
+  "scoring": {
+    "aggregate_threshold": 1,
+    "dimensions": [
+      {"name": "correctness", "weight": 1, "threshold": 1}
+    ]
+  },
+  "baseline_policy": {"mode": "none"},
+  "cases": [
+    {
+      "id": "bounded",
+      "title": "high output is bounded while streamed",
+      "kind": "command",
+      "objective": "Retain useful edges and expose truncation.",
+      "runtime": "shell",
+      "inputs": {
+        "argv": [%q, "-test.run=TestRunSuiteHighOutputReportsTruncationAndPreservesEdges"],
+        "env": {"GO_WANT_EVAL_HIGH_OUTPUT_HELPER": "1"}
+      },
+      "expectations": [
+        {"type": "exit_code", "value": 0},
+        {"type": "stdout_contains", "value": "EVAL_HEAD"},
+        {"type": "stdout_contains", "value": "EVAL_TAIL"}
+      ]
+    }
+  ]
+}`, executable))
+
+	run, err := RunSuiteContext(context.Background(), RunOptions{SuitePath: suitePath, RunID: "run-high-output", Now: fixedEvalTime})
+	if err != nil {
+		t.Fatalf("RunSuiteContext: %v", err)
+	}
+	if run.Status != StatusPass {
+		t.Fatalf("status = %s, want pass; results=%+v", run.Status, run.CaseResults)
+	}
+	if got := strings.Join(run.CaseResults[0].Diagnostics, "\n"); !strings.Contains(got, "stdout truncated after") {
+		t.Fatalf("diagnostics lack truncation telemetry: %q", got)
 	}
 }
 

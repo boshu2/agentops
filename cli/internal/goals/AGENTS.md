@@ -36,6 +36,10 @@ GOALS.yaml / GOALS.md fitness specification subsystem: load, validate, measure, 
 - **Platform-gated measurement.** `measure_unix.go` and `measure_windows.go` are build-tagged. Adding a new measurement signal requires both implementations or a clean fallback.
 - **Snapshots are observations.** Measurement may append snapshots, but never rewrites `GOALS.md` or routes subsequent work.
 - **`measure --json` is part of the public CLI contract.** All `--json` flags must produce valid JSON (CI's `json-flag-consistency` job enforces this).
+- **Goal checks use the shared subprocess lifecycle.** Output is prefix/tail
+  bounded during streaming, truncation byte counts are reported, caller
+  cancellation terminates the process tree, and the existing signal registry
+  remains wired through start/exit hooks.
 
 ## Cross-references
 

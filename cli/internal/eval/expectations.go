@@ -1,7 +1,6 @@
 package eval
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -14,9 +13,12 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/boshu2/agentops/cli/internal/subprocess"
 )
 
 type caseContext struct {
+	parent   context.Context
 	suite    *Suite
 	suiteDir string
 	evalCase Case
@@ -509,36 +511,52 @@ func runAutoDetectCommand(ctx caseContext, command string) (string, error) {
 	} else if ctx.suite != nil && ctx.suite.Environment.TimeoutSeconds > 0 {
 		timeout = ctx.suite.Environment.TimeoutSeconds
 	}
-	cctx, cancel := context.WithTimeout(context.Background(), time.Duration(timeout)*time.Second)
+	parent := ctx.parent
+	if parent == nil {
+		parent = context.Background()
+	}
+	cctx, cancel := context.WithTimeout(parent, time.Duration(timeout)*time.Second)
 	defer cancel()
 	name, args := shellCommand(command)
-	cmd := exec.CommandContext(cctx, name, args...)
+	runCommand := subprocess.Command{
+		Name:           name,
+		Args:           args,
+		CombinedOutput: true,
+		OutputLimit:    subprocess.CaptureLimit{HeadBytes: 512 * 1024, TailBytes: 512 * 1024},
+	}
 	// Match runCase semantics: derive cwd from inputs.cwd if present, else
 	// the suite directory. Auto-detect must observe the same working tree
 	// as the case it ratchets, otherwise the captured value drifts spuriously.
 	if ctx.evalCase.Inputs != nil {
 		if cwd, ok := ctx.evalCase.Inputs["cwd"].(string); ok && cwd != "" {
-			cmd.Dir = resolvePath(ctx.suiteDir, cwd)
+			runCommand.Dir = resolvePath(ctx.suiteDir, cwd)
 		}
 	}
-	if cmd.Dir == "" {
-		cmd.Dir = ctx.suiteDir
+	if runCommand.Dir == "" {
+		runCommand.Dir = ctx.suiteDir
 	}
-	var combined bytes.Buffer
-	cmd.Stdout = &combined
-	cmd.Stderr = &combined
-	runErr := cmd.Run()
+	result, runErr := subprocess.Run(cctx, runCommand)
+	combined := result.Combined.String()
 	if cctx.Err() == context.DeadlineExceeded {
-		return combined.String(), fmt.Errorf("auto-detect command timed out after %ds", timeout)
+		if parent.Err() != nil {
+			return combined, parent.Err()
+		}
+		return combined, fmt.Errorf("auto-detect command timed out after %ds", timeout)
+	}
+	if cctx.Err() == context.Canceled {
+		return combined, cctx.Err()
+	}
+	if result.Combined.Truncated {
+		return combined, fmt.Errorf("auto-detect output exceeded 1 MiB capture bound (%d bytes)", result.Combined.TotalBytes)
 	}
 	// runErr is informational — many of these commands legitimately exit
 	// non-zero (e.g. an unrelated failing test) yet still emit the line we
 	// need to capture. The regex match is the authoritative signal.
 	_ = runErr
-	if runtime.GOOS == "windows" && combined.Len() == 0 {
+	if runtime.GOOS == "windows" && result.Combined.TotalBytes == 0 {
 		return "", fmt.Errorf("auto-detect command produced no output (windows)")
 	}
-	return combined.String(), nil
+	return combined, nil
 }
 
 func autoDetectTolerated(haystack string, re *regexp.Regexp, spec autoDetectSpec, fresh string) (bool, string) {

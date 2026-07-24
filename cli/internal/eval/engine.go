@@ -1,7 +1,6 @@
 package eval
 
 import (
-	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -13,11 +12,24 @@ import (
 	"sort"
 	"strings"
 	"time"
+
+	"github.com/boshu2/agentops/cli/internal/subprocess"
 )
 
 const defaultTimeoutSeconds = 30
 
 func RunSuite(opts RunOptions) (*RunRecord, error) {
+	return RunSuiteContext(context.Background(), opts)
+}
+
+// RunSuiteContext executes a deterministic suite under caller cancellation.
+func RunSuiteContext(parent context.Context, opts RunOptions) (*RunRecord, error) {
+	if parent == nil {
+		parent = context.Background()
+	}
+	if err := parent.Err(); err != nil {
+		return nil, err
+	}
 	if strings.TrimSpace(opts.SuitePath) == "" {
 		return nil, fmt.Errorf("suite path is required")
 	}
@@ -60,7 +72,13 @@ func RunSuite(opts RunOptions) (*RunRecord, error) {
 	runEnv := cloneStringMap(opts.Env)
 	caseResults := make([]CaseResult, 0, len(suite.Cases))
 	for _, evalCase := range suite.Cases {
-		caseResults = append(caseResults, runCase(*suite, suiteDir, evalCase, runEnv))
+		if err := parent.Err(); err != nil {
+			return nil, err
+		}
+		caseResults = append(caseResults, runCase(parent, *suite, suiteDir, evalCase, runEnv))
+		if err := parent.Err(); err != nil {
+			return nil, err
+		}
 	}
 	aggregate, dimensions := scoreRun(*suite, caseResults)
 	status := runStatus(*suite, caseResults, aggregate, dimensions)
@@ -83,13 +101,16 @@ func RunSuite(opts RunOptions) (*RunRecord, error) {
 		CompletedAt:     &completed,
 		Status:          status,
 		Verdict:         verdict,
-		Git:             collectGitRecord(workDir),
+		Git:             collectGitRecordContext(parent, workDir),
 		Runtime:         runtimeRecord(runtimeName, *suite),
 		Environment:     environmentRecord(*suite, suite.Environment.DisableHooks),
 		Baseline:        &BaselineRecord{Mode: BaselineModeNone},
 		CaseResults:     caseResults,
 		AggregateScore:  aggregate,
 		DimensionScores: dimensions,
+	}
+	if err := parent.Err(); err != nil {
+		return nil, err
 	}
 	if opts.BaselinePath != "" {
 		baseline, err := LoadRun(opts.BaselinePath)
@@ -115,19 +136,27 @@ func RunSuite(opts RunOptions) (*RunRecord, error) {
 	return record, nil
 }
 
-func runCase(suite Suite, suiteDir string, evalCase Case, runEnv map[string]string) CaseResult {
+func runCase(parent context.Context, suite Suite, suiteDir string, evalCase Case, runEnv map[string]string) CaseResult {
 	start := time.Now()
 	ctx := caseContext{
+		parent:   parent,
 		suite:    &suite,
 		suiteDir: suiteDir,
 		evalCase: evalCase,
 		exitCode: 0,
 	}
+	var commandDiagnostics []string
 	if evalCase.Kind == "command" {
-		output, err := executeCaseCommand(suite, suiteDir, evalCase, runEnv)
+		output, err := executeCaseCommand(parent, suite, suiteDir, evalCase, runEnv)
 		ctx.stdout = output.stdout
 		ctx.stderr = output.stderr
 		ctx.exitCode = output.exitCode
+		if output.stdoutTruncated {
+			commandDiagnostics = append(commandDiagnostics, fmt.Sprintf("stdout truncated after %d bytes", output.stdoutBytes))
+		}
+		if output.stderrTruncated {
+			commandDiagnostics = append(commandDiagnostics, fmt.Sprintf("stderr truncated after %d bytes", output.stderrBytes))
+		}
 		if err != nil && output.infrastructureError {
 			return CaseResult{
 				ID:              evalCase.ID,
@@ -144,7 +173,7 @@ func runCase(suite Suite, suiteDir string, evalCase Case, runEnv map[string]stri
 
 	requiredTotal := 0
 	requiredPassed := 0
-	var diagnostics []string
+	diagnostics := append([]string{}, commandDiagnostics...)
 	var failures []string
 	for _, expectation := range evalCase.Expectations {
 		result := evaluateExpectation(expectation, ctx)
@@ -184,11 +213,15 @@ func runCase(suite Suite, suiteDir string, evalCase Case, runEnv map[string]stri
 type commandOutput struct {
 	stdout              string
 	stderr              string
+	stdoutBytes         int64
+	stderrBytes         int64
+	stdoutTruncated     bool
+	stderrTruncated     bool
 	exitCode            int
 	infrastructureError bool
 }
 
-func executeCaseCommand(suite Suite, suiteDir string, evalCase Case, runEnv map[string]string) (commandOutput, error) {
+func executeCaseCommand(parent context.Context, suite Suite, suiteDir string, evalCase Case, runEnv map[string]string) (commandOutput, error) {
 	spec, err := commandSpecFromInputs(evalCase.Inputs)
 	if err != nil {
 		return commandOutput{exitCode: -1, infrastructureError: true}, err
@@ -200,7 +233,10 @@ func executeCaseCommand(suite Suite, suiteDir string, evalCase Case, runEnv map[
 	if timeout == 0 {
 		timeout = defaultTimeoutSeconds
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(timeout)*time.Second)
+	if parent == nil {
+		parent = context.Background()
+	}
+	ctx, cancel := context.WithTimeout(parent, time.Duration(timeout)*time.Second)
 	defer cancel()
 
 	name := spec.name
@@ -208,33 +244,40 @@ func executeCaseCommand(suite Suite, suiteDir string, evalCase Case, runEnv map[
 	if spec.shell != "" {
 		name, args = shellCommand(spec.shell)
 	}
-	cmd := exec.CommandContext(ctx, name, args...)
-	if spec.cwd != "" {
-		cmd.Dir = resolvePath(suiteDir, spec.cwd)
-	} else {
-		cmd.Dir = suiteDir
+	command := subprocess.Command{
+		Name:        name,
+		Args:        args,
+		StdoutLimit: subprocess.CaptureLimit{HeadBytes: 512 * 1024, TailBytes: 512 * 1024},
+		StderrLimit: subprocess.CaptureLimit{HeadBytes: 512 * 1024, TailBytes: 512 * 1024},
 	}
-	cmd.Env = applyCommandEnv(scrubbedEnv(os.Environ(), scrubPrefixes(suite)), mergeStringMaps(spec.env, runEnv))
+	if spec.cwd != "" {
+		command.Dir = resolvePath(suiteDir, spec.cwd)
+	} else {
+		command.Dir = suiteDir
+	}
+	command.Env = applyCommandEnv(scrubbedEnv(os.Environ(), scrubPrefixes(suite)), mergeStringMaps(spec.env, runEnv))
 	if suite.Environment.DisableHooks {
-		cmd.Env = append(cmd.Env, "AGENTOPS_HOOKS_DISABLED=1")
+		command.Env = append(command.Env, "AGENTOPS_HOOKS_DISABLED=1")
 	}
 	if spec.stdin != "" {
-		cmd.Stdin = strings.NewReader(spec.stdin)
+		command.Stdin = strings.NewReader(spec.stdin)
 	}
-	var stdout bytes.Buffer
-	var stderr bytes.Buffer
-	cmd.Stdout = &stdout
-	cmd.Stderr = &stderr
-
-	err = cmd.Run()
+	result, err := subprocess.Run(ctx, command)
 	output := commandOutput{
-		stdout:   stdout.String(),
-		stderr:   stderr.String(),
-		exitCode: 0,
+		stdout:          result.Stdout.String(),
+		stderr:          result.Stderr.String(),
+		stdoutBytes:     result.Stdout.TotalBytes,
+		stderrBytes:     result.Stderr.TotalBytes,
+		stdoutTruncated: result.Stdout.Truncated,
+		stderrTruncated: result.Stderr.Truncated,
+		exitCode:        0,
 	}
 	if ctx.Err() == context.DeadlineExceeded {
 		output.exitCode = -1
 		output.infrastructureError = true
+		if parent.Err() != nil {
+			return output, parent.Err()
+		}
 		return output, fmt.Errorf("command timed out after %ds", timeout)
 	}
 	if err == nil {
@@ -385,18 +428,22 @@ func environmentRecord(suite Suite, disableHooks bool) EnvironmentRecord {
 }
 
 func collectGitRecord(workDir string) GitRecord {
+	return collectGitRecordContext(context.Background(), workDir)
+}
+
+func collectGitRecordContext(ctx context.Context, workDir string) GitRecord {
 	record := GitRecord{
 		CandidateRef: "unknown",
 		CandidateSHA: "0000000",
 		Dirty:        false,
 	}
-	if ref := gitOutput(workDir, "rev-parse", "--abbrev-ref", "HEAD"); ref != "" {
+	if ref := gitOutputContext(ctx, workDir, "rev-parse", "--abbrev-ref", "HEAD"); ref != "" {
 		record.CandidateRef = ref
 	}
-	if sha := gitOutput(workDir, "rev-parse", "--short=12", "HEAD"); sha != "" {
+	if sha := gitOutputContext(ctx, workDir, "rev-parse", "--short=12", "HEAD"); sha != "" {
 		record.CandidateSHA = sha
 	}
-	status := gitOutput(workDir, "status", "--porcelain")
+	status := gitOutputContext(ctx, workDir, "status", "--porcelain")
 	if status == "" {
 		return record
 	}
@@ -416,14 +463,18 @@ func collectGitRecord(workDir string) GitRecord {
 	return record
 }
 
-func gitOutput(workDir string, args ...string) string {
-	cmd := exec.Command("git", args...)
-	cmd.Dir = workDir
-	out, err := cmd.Output()
-	if err != nil {
+func gitOutputContext(ctx context.Context, workDir string, args ...string) string {
+	result, err := subprocess.Run(ctx, subprocess.Command{
+		Name:        "git",
+		Args:        args,
+		Dir:         workDir,
+		StdoutLimit: subprocess.CaptureLimit{HeadBytes: 4 * 1024 * 1024},
+		StderrLimit: subprocess.CaptureLimit{TailBytes: 4096},
+	})
+	if err != nil || result.Stdout.Truncated {
 		return ""
 	}
-	return strings.TrimRight(string(out), "\r\n")
+	return strings.TrimRight(string(result.Stdout.Bytes()), "\r\n")
 }
 
 func inferRuntime(suite Suite) Runtime {

@@ -15,6 +15,7 @@ type suiteRuntimeSpy struct {
 	output  []byte
 	files   map[string][]byte
 	readErr error
+	runCtx  context.Context
 }
 
 func (*suiteRuntimeSpy) Root() string { return "/evals" }
@@ -24,8 +25,9 @@ func (runtime *suiteRuntimeSpy) ReadFile(path string) ([]byte, error) {
 	}
 	return runtime.files[path], nil
 }
-func (runtime *suiteRuntimeSpy) RunStats(args []string) ([]byte, error) {
+func (runtime *suiteRuntimeSpy) RunStats(ctx context.Context, args []string) ([]byte, error) {
 	runtime.args = args
+	runtime.runCtx = ctx
 	return runtime.output, nil
 }
 
@@ -41,12 +43,17 @@ func TestSuiteServiceVerdictBuildsDeterministicStatsInvocation(t *testing.T) {
 		t.Fatal(err)
 	}
 	runtime := &suiteRuntimeSpy{output: []byte(`{"verdict":"improved","n_required":3}`), files: map[string][]byte{"/evals/suites/suite-1/suite.yaml": suite}}
-	result, err := (SuiteService{Runtime: runtime}).Verdict(context.Background(), SuiteVerdictRequest{SuiteID: "suite-1", Arms: "a,b", InputsPath: "inputs.json", BootstrapSamples: 10000})
+	type contextKey string
+	ctx := context.WithValue(context.Background(), contextKey("caller"), "suite")
+	result, err := (SuiteService{Runtime: runtime}).Verdict(ctx, SuiteVerdictRequest{SuiteID: "suite-1", Arms: "a,b", InputsPath: "inputs.json", BootstrapSamples: 10000})
 	if err != nil {
 		t.Fatalf("Verdict: %v", err)
 	}
 	if result.Values["verdict"] != "improved" || !strings.Contains(strings.Join(runtime.args, " "), "--suite-id suite-1 --arms a,b") {
 		t.Fatalf("result=%#v args=%v", result, runtime.args)
+	}
+	if runtime.runCtx != ctx {
+		t.Fatal("SuiteService.Verdict did not preserve the caller context")
 	}
 }
 
