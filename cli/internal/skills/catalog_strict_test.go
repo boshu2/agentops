@@ -81,7 +81,7 @@ func TestLoadCatalogV4PreservesCompilerValidTypedContract(t *testing.T) {
 	if contract.Failure.PartialMutation.Action != "rollback_then_stop" {
 		t.Fatalf("failure semantics were not preserved: %#v", contract.Failure)
 	}
-	if contract.Proof.Command == "" || len(contract.Proof.HarnessRefs) != 13 ||
+	if contract.Proof.Command == "" || len(contract.Proof.HarnessRefs) != 14 ||
 		len(contract.Proof.FixtureRefs) != 2 {
 		t.Fatalf("proof declaration was not preserved: %#v", contract.Proof)
 	}

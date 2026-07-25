@@ -196,6 +196,7 @@
           "command": "bash skills/skill-builder/scripts/test-contract-v3.sh",
           "harness_refs": [
             "schemas/skill-contract.v3.schema.json",
+            "skills/skill-builder/fixtures/contract-v3/probe-harnesses/absolute-live-write.py",
             "skills/skill-builder/fixtures/contract-v3/probe-harnesses/large-output.py",
             "skills/skill-builder/fixtures/contract-v3/probe-harnesses/leave-descendant.py",
             "skills/skill-builder/fixtures/contract-v3/probe-harnesses/mutate-copy.py",
