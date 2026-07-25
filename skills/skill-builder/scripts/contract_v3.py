@@ -53,6 +53,88 @@ EXPECTED_ROUTE_RESULTS = {
     "ambiguity": "clarify",
 }
 APPROVED_PROOF_INTERPRETERS = {"bash", "sh", "python", "python3"}
+INVARIANT_BRANCHES = (
+    ("unknown-top-level-field", "UNKNOWN_FIELD"),
+    ("missing-contract-field", "CONTRACT_INCOMPLETE"),
+    ("invalid-schema-version", "SCHEMA_INVALID"),
+    ("invalid-primary-layer", "SCHEMA_INVALID"),
+    ("duplicate-lifecycle-seam", "DUPLICATE_MEMBER"),
+    ("unknown-authority", "AUTHORITY_INVALID"),
+    ("campaign-continuation-is-not-a-seam", "SCHEMA_INVALID"),
+    ("forbidden-verdict-authority", "FORBIDDEN_AUTHORITY"),
+    ("unknown-effect-field", "UNKNOWN_FIELD"),
+    ("malformed-effect-kind", "EFFECT_INVALID"),
+    ("missing-effect-scope", "EFFECT_INVALID"),
+    ("malformed-effect-authorization", "EFFECT_INVALID"),
+    ("malformed-effect-cleanup", "EFFECT_INVALID"),
+    ("malformed-effect-receipt", "EFFECT_INVALID"),
+    ("mutation-receipt-required", "EFFECT_RECEIPT_REQUIRED"),
+    ("process-cleanup-required", "EFFECT_CLEANUP_REQUIRED"),
+    ("duplicate-effect-id", "DUPLICATE_MEMBER"),
+    ("mutation-authority-required", "MUTATION_AUTHORITY_REQUIRED"),
+    ("mutation-effect-required", "MUTATION_EFFECT_REQUIRED"),
+    ("unknown-artifact-field", "UNKNOWN_FIELD"),
+    ("malformed-artifact-kind", "ARTIFACT_INVALID"),
+    ("binding-artifact-needs-schema", "BINDING_ARTIFACT_UNVALIDATED"),
+    ("artifact-reference-must-exist", "ARTIFACT_INVALID"),
+    ("duplicate-artifact-name", "DUPLICATE_MEMBER"),
+    ("missing-trigger-family", "TRIGGER_INCOMPLETE"),
+    ("empty-trigger-family", "TRIGGER_INCOMPLETE"),
+    ("malformed-trigger-case", "TRIGGER_INVALID"),
+    ("wrong-trigger-expectation", "TRIGGER_EXPECTATION_INVALID"),
+    ("trigger-prompt-collision", "TRIGGER_COLLISION"),
+    ("unknown-alias-target", "TRIGGER_REFERENCE_INVALID"),
+    ("wrong-alias-owner", "TRIGGER_REFERENCE_INVALID"),
+    ("invalid-nearest-neighbor", "TRIGGER_REFERENCE_INVALID"),
+    ("missing-failure-family", "FAILURE_INCOMPLETE"),
+    ("incomplete-failure-case", "FAILURE_INCOMPLETE"),
+    ("unknown-failure-field", "UNKNOWN_FIELD"),
+    ("invalid-proof-class", "PROOF_INVALID"),
+    ("multiline-proof-command", "PROOF_INVALID"),
+    ("trimmed-proof-command", "PROOF_INVALID"),
+    ("missing-proof-fixture", "PROOF_INVALID"),
+    ("duplicate-proof-fixture", "DUPLICATE_MEMBER"),
+    ("non-rpi-hard-dependency", "HARD_DEPENDENCY_FORBIDDEN"),
+    ("rpi-hard-dependency-set-is-exact", "HARD_DEPENDENCY_FORBIDDEN"),
+    ("forbidden-refine-authority", "FORBIDDEN_AUTHORITY"),
+    ("forbidden-dispatch-authority", "FORBIDDEN_AUTHORITY"),
+    ("forbidden-transport-authority", "FORBIDDEN_AUTHORITY"),
+    ("rpi-missing-dispatch-authority", "FORBIDDEN_AUTHORITY"),
+    ("binding-artifact-needs-validator", "BINDING_ARTIFACT_UNVALIDATED"),
+    ("cross-family-trigger-id", "DUPLICATE_MEMBER"),
+    ("alias-prompt-collision", "TRIGGER_COLLISION"),
+    ("unknown-nearest-neighbor", "TRIGGER_REFERENCE_INVALID"),
+    ("invalid-failure-action", "FAILURE_INVALID"),
+    ("missing-proof-harness-family", "PROOF_INVALID"),
+    ("empty-proof-harness-family", "PROOF_INVALID"),
+    ("duplicate-proof-harness", "DUPLICATE_MEMBER"),
+    ("missing-proof-harness", "PROOF_INVALID"),
+    ("entrypoint-not-declared-as-harness", "PROOF_HARNESS_INCOMPLETE"),
+    ("proof-entrypoint-traversal", "PROOF_INVALID"),
+    ("proof-entrypoint-backslash", "PROOF_INVALID"),
+    ("proof-harness-backslash", "PROOF_INVALID"),
+    ("proof-fixture-backslash", "PROOF_INVALID"),
+    ("unrestricted-path-command", "PROOF_COMMAND_FORBIDDEN"),
+    ("inline-interpreter-command", "PROOF_INLINE_FORBIDDEN"),
+    ("approved-interpreter-unavailable", "PROOF_INVALID"),
+    ("malformed-proof-command", "PROOF_INVALID"),
+    ("hard-dependency-wrong-type", "HARD_DEPENDENCY_INVALID"),
+    ("duplicate-hard-dependency", "DUPLICATE_MEMBER"),
+    ("rpi-hard-dependency-has-extra", "HARD_DEPENDENCY_FORBIDDEN"),
+    ("nonexecutable-direct-harness", "PROOF_NOT_EXECUTABLE"),
+    ("invalid-yaml-key", "INVALID_YAML_KEY"),
+    ("duplicate-yaml-key", "DUPLICATE_YAML_KEY"),
+    ("invalid-json", "INVALID_JSON"),
+    ("duplicate-json-key", "DUPLICATE_JSON_KEY"),
+    ("invalid-frontmatter", "INVALID_FRONTMATTER"),
+    ("invalid-skill-name", "SKILL_NAME_INVALID"),
+    ("source-unavailable", "SOURCE_UNAVAILABLE"),
+    ("skill-name-mismatch", "SKILL_NAME_MISMATCH"),
+    ("contract-v3-absent", "CONTRACT_V3_ABSENT"),
+    ("invalid-unicode-scalar", "INVALID_UNICODE"),
+    ("compiler-io-error", "IO_ERROR"),
+    ("source-mutated-during-check", "SOURCE_MUTATED_DURING_CHECK"),
+)
 
 
 class ContractError(ValueError):
@@ -122,6 +204,37 @@ def canonical_bytes(value: Any) -> bytes:
 
 def canonical_digest(value: Any) -> str:
     return hashlib.sha256(canonical_bytes(value)).hexdigest()
+
+
+def invariant_inventory() -> dict[str, Any]:
+    """Render the exact hostile invariant inventory owned by compiler source."""
+
+    return {
+        "schema_version": "skill-contract-v3-invariant-inventory.v1",
+        "invariants": [
+            {"id": identifier, "expected_code": expected_code}
+            for identifier, expected_code in INVARIANT_BRANCHES
+        ],
+    }
+
+
+def _validate_unicode_scalars(value: Any, *, path: str = "$") -> None:
+    if isinstance(value, str):
+        for character in value:
+            if "\ud800" <= character <= "\udfff":
+                raise ContractError(
+                    "INVALID_UNICODE",
+                    f"{path}: contains a Unicode surrogate rather than a scalar value",
+                )
+        return
+    if isinstance(value, list):
+        for index, item in enumerate(value):
+            _validate_unicode_scalars(item, path=f"{path}[{index}]")
+        return
+    if isinstance(value, dict):
+        for key, item in value.items():
+            _validate_unicode_scalars(key, path=f"{path}.<key>")
+            _validate_unicode_scalars(item, path=f"{path}.{key}")
 
 
 def file_sha256(path: Path) -> str:
@@ -549,6 +662,7 @@ def validate_contract(
 
     if schema is None:
         schema = load_json(repo_root / CONTRACT_SCHEMA_REF)
+    _validate_unicode_scalars(contract)
     _raise_first_schema_error(contract, schema)
     assert isinstance(contract, dict)
     names = live_skill_names(repo_root) if skill_names is None else skill_names
@@ -720,11 +834,14 @@ def compile_receipt(repo_root: Path, skill_name: str) -> dict[str, Any]:
     before_attempt = _available_source_facts(repo_root, skill_name)
     try:
         return compile_skill(repo_root, skill_name)
-    except (ContractError, OSError) as exc:
+    except (ContractError, OSError, UnicodeError) as exc:
         error = (
             exc
             if isinstance(exc, ContractError)
-            else ContractError("IO_ERROR", str(exc))
+            else ContractError(
+                "INVALID_UNICODE" if isinstance(exc, UnicodeError) else "IO_ERROR",
+                str(exc),
+            )
         )
         after_attempt = _available_source_facts(repo_root, skill_name)
         if error.facts is not None and "source" in error.facts:

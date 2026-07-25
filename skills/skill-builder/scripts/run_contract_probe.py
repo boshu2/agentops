@@ -95,20 +95,44 @@ def _probe_errors(outcome: dict[str, object]) -> list[dict[str, str]]:
 
 
 def run_probe(root: Path, skill_name: str) -> dict[str, object]:
-    compiled = compile_skill(root, skill_name)
-    command = shlex.split(compiled["proof"]["command"])
-    outcome = run_isolated_command(root, command)
+    runner_before = file_set_identity(root, RUNNER_REFS)
+
+    def prepare_snapshot(snapshot: Path) -> tuple[list[str], dict[str, object]]:
+        compiled_snapshot = compile_skill(snapshot, skill_name)
+        snapshot_runner = file_set_identity(snapshot, RUNNER_REFS)
+        if snapshot_runner != runner_before:
+            raise ContractError(
+                "SNAPSHOT_IDENTITY_MISMATCH",
+                "disposable snapshot runner bytes differ from the loaded runner source",
+            )
+        return shlex.split(compiled_snapshot["proof"]["command"]), {
+            "compiled": compiled_snapshot,
+            "runner": snapshot_runner,
+        }
+
+    outcome = run_isolated_command(root, None, prepare=prepare_snapshot)
+    preparation = outcome.pop("preparation")
+    assert isinstance(preparation, dict)
+    compiled = preparation["compiled"]
+    runner = preparation["runner"]
+    assert isinstance(compiled, dict)
+    assert isinstance(runner, dict)
+    runner_after = file_set_identity(root, RUNNER_REFS)
     after = file_sha256(root / compiled["source"]["ref"])
     source_unchanged = after == compiled["source"]["before_sha256"]
-    if not source_unchanged:
+    if not source_unchanged or runner_after != runner_before:
         isolation = outcome["isolation"]
         assert isinstance(isolation, dict)
         isolation["live_root_unchanged"] = False
         changed = isolation["live_root_changed_paths"]
         assert isinstance(changed, list)
-        if compiled["source"]["ref"] not in changed:
+        if not source_unchanged and compiled["source"]["ref"] not in changed:
             changed.append(compiled["source"]["ref"])
-            changed.sort()
+        if runner_after != runner_before:
+            for runner_ref in RUNNER_REFS:
+                if runner_ref not in changed:
+                    changed.append(runner_ref)
+        changed.sort()
     errors = _probe_errors(outcome)
     execution = outcome["execution"]
     assert isinstance(execution, dict)
@@ -134,7 +158,7 @@ def run_probe(root: Path, skill_name: str) -> dict[str, object]:
         },
         "contract": compiled["contract"],
         "compiler": compiled["compiler"],
-        "runner": file_set_identity(root, RUNNER_REFS),
+        "runner": runner,
         "proof": compiled["proof"],
         "isolation": outcome["isolation"],
         "execution": outcome["execution"],

@@ -3,16 +3,19 @@
 
 from __future__ import annotations
 
+import ast
 import copy
 import hashlib
 import json
 import os
 from pathlib import Path
+import shutil
 import subprocess
 import sys
 import tempfile
 import unittest
 from unittest import mock
+from uuid import uuid4
 
 from jsonschema import Draft7Validator
 
@@ -119,6 +122,7 @@ class ContractV3Tests(unittest.TestCase):
         cases = self.fixture_set["cases"]
         self.assertEqual(len(cases), len({case["id"] for case in cases}))
         inventory = self.inventory["invariants"]
+        self.assertEqual(contract_v3.invariant_inventory(), self.inventory)
         self.assertEqual(len(inventory), len({item["id"] for item in inventory}))
         self.assertEqual(
             {item["id"]: item["expected_code"] for item in inventory},
@@ -134,6 +138,47 @@ class ContractV3Tests(unittest.TestCase):
                     caught.exception.message,
                 )
 
+    def test_inventory_covers_every_literal_compiler_rejection_code(self) -> None:
+        tree = ast.parse((SCRIPT_DIR / "contract_v3.py").read_text(encoding="utf-8"))
+        rejection_codes: set[str] = set()
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Call) and isinstance(node.func, ast.Name):
+                if node.func.id == "ContractError" and node.args:
+                    rejection_codes.update(
+                        value.value
+                        for value in ast.walk(node.args[0])
+                        if isinstance(value, ast.Constant)
+                        and isinstance(value.value, str)
+                        and value.value.isupper()
+                    )
+            if (
+                isinstance(node, ast.FunctionDef)
+                and node.name == "_schema_error_code"
+            ):
+                rejection_codes.update(
+                    value.value
+                    for value in ast.walk(node)
+                    if isinstance(value, ast.Constant)
+                    and isinstance(value.value, str)
+                    and value.value.isupper()
+                )
+        inventory_codes = {
+            item["expected_code"] for item in self.inventory["invariants"]
+        }
+        self.assertEqual(rejection_codes, inventory_codes)
+
+    def test_invalid_unicode_scalar_is_a_typed_contract_rejection(self) -> None:
+        contract = copy.deepcopy(self.base_contract)
+        contract["failure"]["timeout"]["detail"] = "\ud800"
+        with self.assertRaises(ContractError) as caught:
+            validate_contract(
+                contract,
+                skill_name="skill-builder",
+                dependencies=self.base_dependencies,
+                repo_root=REPO_ROOT,
+            )
+        self.assertEqual("INVALID_UNICODE", caught.exception.code)
+
     def run_hostile_case(self, case: dict[str, object]) -> None:
         witness = case.get("witness")
         if witness == "duplicate_yaml":
@@ -148,6 +193,49 @@ class ContractV3Tests(unittest.TestCase):
         if witness == "nonexecutable_harness":
             self.run_nonexecutable_harness_witness()
             return
+        if witness == "unavailable_interpreter":
+            self.run_unavailable_interpreter_witness()
+            return
+        if witness == "invalid_yaml_key":
+            self.run_invalid_yaml_key_witness()
+            return
+        if witness == "invalid_json":
+            self.run_invalid_json_witness()
+            return
+        if witness == "invalid_frontmatter":
+            self.run_invalid_frontmatter_witness()
+            return
+        if witness == "invalid_skill_name":
+            compile_skill(REPO_ROOT, "Invalid")
+            return
+        if witness == "source_unavailable":
+            compile_skill(REPO_ROOT, "missing-contract-fixture")
+            return
+        if witness == "skill_name_mismatch":
+            self.run_early_source_witness(name="other-name", metadata="metadata: {}")
+            return
+        if witness == "contract_absent":
+            self.run_early_source_witness(name="fixture-skill", metadata="metadata: {}")
+            return
+        if witness == "invalid_unicode":
+            contract = copy.deepcopy(self.base_contract)
+            contract["failure"]["timeout"]["detail"] = "\ud800"
+            validate_contract(
+                contract,
+                skill_name="skill-builder",
+                dependencies=self.base_dependencies,
+                repo_root=REPO_ROOT,
+            )
+            return
+        if witness == "io_error":
+            with mock.patch.object(
+                contract_v3,
+                "compile_skill",
+                side_effect=OSError("hostile compiler I/O"),
+            ):
+                receipt = contract_v3.compile_receipt(REPO_ROOT, "skill-builder")
+            error = receipt["errors"][0]
+            raise ContractError(error["code"], error["message"])
         contract = copy.deepcopy(self.base_contract)
         for mutation in case["mutations"]:
             apply_mutation(contract, mutation)
@@ -219,6 +307,52 @@ class ContractV3Tests(unittest.TestCase):
                 dependencies=self.base_dependencies,
                 repo_root=REPO_ROOT,
             )
+
+    def run_unavailable_interpreter_witness(self) -> None:
+        contract = copy.deepcopy(self.base_contract)
+        with mock.patch.object(contract_v3.shutil, "which", return_value=None):
+            validate_contract(
+                contract,
+                skill_name="skill-builder",
+                dependencies=self.base_dependencies,
+                repo_root=REPO_ROOT,
+            )
+
+    def run_invalid_yaml_key_witness(self) -> None:
+        with tempfile.TemporaryDirectory(prefix=".contract-v3-yaml-key-") as temporary:
+            source = Path(temporary) / "SKILL.md"
+            source.write_text(
+                "---\n"
+                "? [first, second]\n"
+                ": value\n"
+                "---\n"
+                "# body\n",
+                encoding="utf-8",
+            )
+            load_frontmatter(source)
+
+    def run_invalid_json_witness(self) -> None:
+        with tempfile.TemporaryDirectory(prefix=".contract-v3-invalid-json-") as temporary:
+            source = Path(temporary) / "fixture.json"
+            source.write_text('{"unterminated":\n', encoding="utf-8")
+            load_json(source)
+
+    def run_invalid_frontmatter_witness(self) -> None:
+        with tempfile.TemporaryDirectory(prefix=".contract-v3-frontmatter-") as temporary:
+            source = Path(temporary) / "SKILL.md"
+            source.write_text("# no frontmatter\n", encoding="utf-8")
+            load_frontmatter(source)
+
+    def run_early_source_witness(self, *, name: str, metadata: str) -> None:
+        with tempfile.TemporaryDirectory(prefix=".contract-v3-source-") as temporary:
+            root = Path(temporary)
+            source = root / "skills/fixture-skill/SKILL.md"
+            source.parent.mkdir(parents=True)
+            source.write_text(
+                f"---\nname: {name}\n{metadata}\n---\n# body\n",
+                encoding="utf-8",
+            )
+            compile_skill(root, "fixture-skill")
 
     def test_check_is_read_only_and_record_bytes_match(self) -> None:
         source = REPO_ROOT / SOURCE_REF
@@ -319,6 +453,70 @@ class ContractV3Tests(unittest.TestCase):
             )
             self.assertEqual(1, recorded.returncode)
             self.assertEqual(result.stdout, output.read_bytes())
+
+    def test_check_and_record_invalid_unicode_emit_typed_receipt(self) -> None:
+        skill_name = f"unicode-hostile-{uuid4().hex}"
+        package = REPO_ROOT / "skills" / skill_name
+        package.mkdir()
+        try:
+            source_text = (REPO_ROOT / SOURCE_REF).read_text(encoding="utf-8")
+            source_text = source_text.replace(
+                "name: skill-builder",
+                f"name: {skill_name}",
+                1,
+            ).replace(
+                "canonical_skill: skill-builder",
+                f"canonical_skill: {skill_name}",
+                1,
+            ).replace(
+                "detail: Stop the bounded command and return its timeout without retrying.",
+                'detail: "\\uD800"',
+                1,
+            )
+            (package / "SKILL.md").write_text(source_text, encoding="utf-8")
+            command = [
+                sys.executable,
+                CLI_REF,
+                "check",
+                "--skill",
+                skill_name,
+            ]
+            checked = subprocess.run(
+                command,
+                cwd=REPO_ROOT,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                env={**os.environ, "PYTHONDONTWRITEBYTECODE": "1"},
+            )
+            self.assertEqual(1, checked.returncode)
+            self.assertIn(b"[INVALID_UNICODE]", checked.stderr)
+            receipt = json.loads(checked.stdout)
+            schema = load_json(REPO_ROOT / REPORT_SCHEMA_REF)
+            errors = list(Draft7Validator(schema).iter_errors(receipt))
+            self.assertEqual([], errors, [error.message for error in errors])
+            self.assertEqual("FAIL", receipt["result"])
+            self.assertEqual("INVALID_UNICODE", receipt["errors"][0]["code"])
+            self.assertIsNone(receipt["contract"]["digest"])
+            output = package / "receipt.json"
+            recorded = subprocess.run(
+                [
+                    sys.executable,
+                    CLI_REF,
+                    "record",
+                    "--skill",
+                    skill_name,
+                    "--output",
+                    str(output.relative_to(REPO_ROOT)),
+                ],
+                cwd=REPO_ROOT,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                env={**os.environ, "PYTHONDONTWRITEBYTECODE": "1"},
+            )
+            self.assertEqual(1, recorded.returncode)
+            self.assertEqual(checked.stdout, output.read_bytes())
+        finally:
+            shutil.rmtree(package)
 
 
 if __name__ == "__main__":
