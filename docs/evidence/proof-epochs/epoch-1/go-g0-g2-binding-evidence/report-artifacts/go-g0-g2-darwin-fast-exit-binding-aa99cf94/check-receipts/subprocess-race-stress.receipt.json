@@ -1,0 +1,19 @@
+{
+  "artifact_digest": "9362654fdd3b0b5a5d20d7b04034dc1c015bbbbd0af2951517928f3af32cc71e",
+  "command": [
+    "go",
+    "test",
+    "-race",
+    "-count=10",
+    "-shuffle=on",
+    "./internal/subprocess"
+  ],
+  "exit_code": 0,
+  "observed_at": "2026-07-25T04:17:15Z",
+  "receipt_id": "subprocess-race-stress",
+  "result": "PASS",
+  "schema_version": "check-receipt.v1",
+  "stderr_digest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "stdout_digest": "6bfa6aa83eff9c0023ceb8a489080b252692684f31cb55dee8e13db54c3a2688",
+  "subject_manifest_digest": "fea7fa62b7db4a640e68ac807523a9d61135a2069b33d4ba15146523e661ed44"
+}

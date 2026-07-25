@@ -1,0 +1,15 @@
+{
+  "artifact_digest": "863f5e9e8edf71592e79660bb712fa62576b07119c2cb992f378fe6baa4817b3",
+  "command": [
+    "bash",
+    "scripts/check-contract-compatibility.sh"
+  ],
+  "exit_code": 0,
+  "observed_at": "2026-07-25T04:17:15Z",
+  "receipt_id": "contract-compatibility",
+  "result": "PASS",
+  "schema_version": "check-receipt.v1",
+  "stderr_digest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "stdout_digest": "fc030ed9879c12f29f7ecd8f94afe72e1e29195c3e54dcd9704063d273491ed0",
+  "subject_manifest_digest": "fea7fa62b7db4a640e68ac807523a9d61135a2069b33d4ba15146523e661ed44"
+}

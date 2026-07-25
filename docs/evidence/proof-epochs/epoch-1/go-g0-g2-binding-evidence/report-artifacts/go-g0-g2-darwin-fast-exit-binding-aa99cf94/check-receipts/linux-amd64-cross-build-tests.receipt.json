@@ -1,0 +1,22 @@
+{
+  "artifact_digest": "070fc60b638b637a77f622d54b2f7f5da4b7b33a189d22fcff1a6b7747e178fc",
+  "command": [
+    "env",
+    "GOOS=linux",
+    "GOARCH=amd64",
+    "go",
+    "test",
+    "-exec=true",
+    "-run",
+    "^$",
+    "./..."
+  ],
+  "exit_code": 0,
+  "observed_at": "2026-07-25T04:17:15Z",
+  "receipt_id": "linux-amd64-cross-build-tests",
+  "result": "PASS",
+  "schema_version": "check-receipt.v1",
+  "stderr_digest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "stdout_digest": "48bd9b3807ee61449a904695d3412b89f620b8cb42d81885a98e429fd483c7c5",
+  "subject_manifest_digest": "fea7fa62b7db4a640e68ac807523a9d61135a2069b33d4ba15146523e661ed44"
+}

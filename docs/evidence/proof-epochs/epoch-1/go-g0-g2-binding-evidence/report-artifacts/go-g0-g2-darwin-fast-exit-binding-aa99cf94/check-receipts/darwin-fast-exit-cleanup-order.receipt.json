@@ -1,0 +1,20 @@
+{
+  "artifact_digest": "a9b7d9606c9249f3dea85968bec2d459e10b1127350d9c7bdd6b3f36c09e7f81",
+  "command": [
+    "go",
+    "test",
+    "-count=25",
+    "-shuffle=on",
+    "-run",
+    "^(TestDarwinSiginfoChildLayout|TestRunDarwinFastExitUnderLoad|TestRunWaitsExactlyOnceAfterNaturalCompletion|TestRunWaitsExactlyOnceAfterProvenForcedTermination|TestTerminateUnixProcessGroup.*|TestUnixProcessGroupEPERMStateIsStableAcrossCallOrder|TestRunSuccessfulParentTerminatesBackgroundDescendant|TestRunCancellationTerminatesDescendants|TestRunTimeoutTerminatesDescendants)$",
+    "./internal/subprocess"
+  ],
+  "exit_code": 0,
+  "observed_at": "2026-07-25T04:17:15Z",
+  "receipt_id": "darwin-fast-exit-cleanup-order",
+  "result": "PASS",
+  "schema_version": "check-receipt.v1",
+  "stderr_digest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "stdout_digest": "d04538df738e436d27749010e701193d2a55b1bff8a41763ca55009d6e722d2b",
+  "subject_manifest_digest": "fea7fa62b7db4a640e68ac807523a9d61135a2069b33d4ba15146523e661ed44"
+}
