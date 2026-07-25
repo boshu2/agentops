@@ -11,6 +11,7 @@ for path in \
   scripts/audit.sh \
   scripts/compile_contracts.py \
   scripts/contract_v3.py \
+  scripts/probe_runtime.py \
   scripts/run_contract_probe.py \
   scripts/check_migration_readiness.py \
   scripts/test-contract-v3.sh \
@@ -20,6 +21,11 @@ for path in \
   schemas/compile-report.json \
   schemas/probe-report.json \
   fixtures/contract-v3/cases.json \
+  fixtures/contract-v3/invariants.json \
+  fixtures/contract-v3/probe-harnesses/large-output.py \
+  fixtures/contract-v3/probe-harnesses/leave-descendant.py \
+  fixtures/contract-v3/probe-harnesses/mutate-copy.py \
+  fixtures/contract-v3/probe-harnesses/spawn-and-sleep.py \
   ledgers/migration-readiness.json \
   receipts/skill-builder-contract-v3-probe.json \
   references/audit-checks.md \
@@ -36,6 +42,7 @@ for script in \
   scripts/init.sh \
   scripts/compile_contracts.py \
   scripts/contract_v3.py \
+  scripts/probe_runtime.py \
   scripts/run_contract_probe.py \
   scripts/check_migration_readiness.py \
   scripts/test-contract-v3.sh; do

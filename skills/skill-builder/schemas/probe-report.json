@@ -1,19 +1,21 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "https://agentops.local/skills/skill-builder/schemas/probe-report.json",
-  "title": "Shadow skill contract probe receipt",
+  "title": "Isolated shadow skill contract probe receipt",
   "type": "object",
   "additionalProperties": false,
   "required": [
     "schema_version",
     "skill",
     "source",
-    "contract_digest",
-    "compiler_digest",
+    "contract",
+    "compiler",
     "runner",
     "proof",
+    "isolation",
     "execution",
-    "result"
+    "result",
+    "errors"
   ],
   "properties": {
     "schema_version": {
@@ -48,57 +50,68 @@
         }
       }
     },
-    "contract_digest": {
-      "$ref": "#/definitions/sha256"
-    },
-    "compiler_digest": {
-      "$ref": "#/definitions/sha256"
-    },
-    "runner": {
+    "contract": {
       "type": "object",
       "additionalProperties": false,
       "required": [
-        "ref",
-        "sha256"
+        "schema_ref",
+        "schema_sha256",
+        "digest"
       ],
       "properties": {
-        "ref": {
-          "const": "skills/skill-builder/scripts/run_contract_probe.py"
+        "schema_ref": {
+          "const": "schemas/skill-contract.v3.schema.json"
         },
-        "sha256": {
+        "schema_sha256": {
+          "$ref": "#/definitions/sha256"
+        },
+        "digest": {
           "$ref": "#/definitions/sha256"
         }
       }
     },
+    "compiler": {
+      "$ref": "#/definitions/identity_set"
+    },
+    "runner": {
+      "$ref": "#/definitions/item_identity_set"
+    },
     "proof": {
+      "$ref": "#/definitions/proof_identity"
+    },
+    "isolation": {
       "type": "object",
       "additionalProperties": false,
       "required": [
-        "class",
-        "command",
-        "fixture_refs",
-        "fixture_digest"
+        "kind",
+        "initial_manifest_sha256",
+        "final_manifest_sha256",
+        "changed_paths",
+        "out_of_scope_paths",
+        "live_root_unchanged",
+        "live_root_changed_paths"
       ],
       "properties": {
-        "class": {
-          "type": "string",
-          "minLength": 1
+        "kind": {
+          "const": "disposable_repository_copy"
         },
-        "command": {
-          "type": "string",
-          "minLength": 1
-        },
-        "fixture_refs": {
-          "type": "array",
-          "minItems": 1,
-          "uniqueItems": true,
-          "items": {
-            "type": "string",
-            "minLength": 1
-          }
-        },
-        "fixture_digest": {
+        "initial_manifest_sha256": {
           "$ref": "#/definitions/sha256"
+        },
+        "final_manifest_sha256": {
+          "$ref": "#/definitions/sha256"
+        },
+        "changed_paths": {
+          "$ref": "#/definitions/path_array"
+        },
+        "out_of_scope_paths": {
+          "$ref": "#/definitions/path_array"
+        },
+        "live_root_unchanged": {
+          "type": "boolean"
+        },
+        "live_root_changed_paths": {
+          "$ref": "#/definitions/path_array"
         }
       }
     },
@@ -107,18 +120,69 @@
       "additionalProperties": false,
       "required": [
         "exit_code",
-        "stdout_sha256",
-        "stderr_sha256"
+        "timed_out",
+        "interrupted",
+        "timeout_seconds",
+        "stdout",
+        "stderr",
+        "cleanup"
       ],
       "properties": {
         "exit_code": {
           "type": "integer"
         },
-        "stdout_sha256": {
-          "$ref": "#/definitions/sha256"
+        "timed_out": {
+          "type": "boolean"
         },
-        "stderr_sha256": {
-          "$ref": "#/definitions/sha256"
+        "interrupted": {
+          "type": "boolean"
+        },
+        "timeout_seconds": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "stdout": {
+          "$ref": "#/definitions/stream"
+        },
+        "stderr": {
+          "$ref": "#/definitions/stream"
+        },
+        "cleanup": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "trigger",
+            "term_sent",
+            "kill_sent",
+            "parent_reaped",
+            "process_group_empty",
+            "complete"
+          ],
+          "properties": {
+            "trigger": {
+              "enum": [
+                "none",
+                "timeout",
+                "interrupted",
+                "descendants"
+              ]
+            },
+            "term_sent": {
+              "type": "boolean"
+            },
+            "kill_sent": {
+              "type": "boolean"
+            },
+            "parent_reaped": {
+              "type": "boolean"
+            },
+            "process_group_empty": {
+              "type": "boolean"
+            },
+            "complete": {
+              "type": "boolean"
+            }
+          }
         }
       }
     },
@@ -128,12 +192,236 @@
         "FAIL",
         "NOT_PROVEN"
       ]
+    },
+    "errors": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/error"
+      }
     }
   },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "result": {
+            "const": "PASS"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "source": {
+            "properties": {
+              "unchanged": {
+                "const": true
+              }
+            }
+          },
+          "isolation": {
+            "properties": {
+              "changed_paths": {
+                "maxItems": 0
+              },
+              "out_of_scope_paths": {
+                "maxItems": 0
+              },
+              "live_root_unchanged": {
+                "const": true
+              },
+              "live_root_changed_paths": {
+                "maxItems": 0
+              }
+            }
+          },
+          "execution": {
+            "properties": {
+              "exit_code": {
+                "const": 0
+              },
+              "timed_out": {
+                "const": false
+              },
+              "interrupted": {
+                "const": false
+              },
+              "cleanup": {
+                "properties": {
+                  "trigger": {
+                    "const": "none"
+                  },
+                  "parent_reaped": {
+                    "const": true
+                  },
+                  "process_group_empty": {
+                    "const": true
+                  },
+                  "complete": {
+                    "const": true
+                  }
+                }
+              }
+            }
+          },
+          "errors": {
+            "maxItems": 0
+          }
+        }
+      },
+      "else": {
+        "properties": {
+          "errors": {
+            "minItems": 1
+          }
+        }
+      }
+    }
+  ],
   "definitions": {
     "sha256": {
       "type": "string",
       "pattern": "^[a-f0-9]{64}$"
+    },
+    "identity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "ref",
+        "sha256"
+      ],
+      "properties": {
+        "ref": {
+          "type": "string",
+          "minLength": 1
+        },
+        "sha256": {
+          "$ref": "#/definitions/sha256"
+        }
+      }
+    },
+    "identity_set": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "sources",
+        "digest"
+      ],
+      "properties": {
+        "sources": {
+          "type": "array",
+          "minItems": 2,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/definitions/identity"
+          }
+        },
+        "digest": {
+          "$ref": "#/definitions/sha256"
+        }
+      }
+    },
+    "item_identity_set": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "items",
+        "digest"
+      ],
+      "properties": {
+        "items": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/definitions/identity"
+          }
+        },
+        "digest": {
+          "$ref": "#/definitions/sha256"
+        }
+      }
+    },
+    "proof_identity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "command",
+        "entrypoint",
+        "harnesses",
+        "fixtures"
+      ],
+      "properties": {
+        "command": {
+          "type": "string",
+          "minLength": 1
+        },
+        "entrypoint": {
+          "$ref": "#/definitions/identity"
+        },
+        "harnesses": {
+          "$ref": "#/definitions/item_identity_set"
+        },
+        "fixtures": {
+          "$ref": "#/definitions/item_identity_set"
+        }
+      }
+    },
+    "path_array": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "stream": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "total_bytes",
+        "retained_bytes",
+        "sha256",
+        "retained_sha256",
+        "truncated"
+      ],
+      "properties": {
+        "total_bytes": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "retained_bytes": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 65536
+        },
+        "sha256": {
+          "$ref": "#/definitions/sha256"
+        },
+        "retained_sha256": {
+          "$ref": "#/definitions/sha256"
+        },
+        "truncated": {
+          "type": "boolean"
+        }
+      }
+    },
+    "error": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "code",
+        "message"
+      ],
+      "properties": {
+        "code": {
+          "type": "string",
+          "pattern": "^[A-Z][A-Z0-9_]+$"
+        },
+        "message": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
     }
   }
 }

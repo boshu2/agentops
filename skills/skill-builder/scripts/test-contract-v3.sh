@@ -6,12 +6,14 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
 export PYTHONDONTWRITEBYTECODE=1
 
 cd "$REPO_ROOT"
-if ! python3 -m unittest discover \
-  -s skills/skill-builder/tests \
-  -p 'test_contract_v3.py' >/dev/null 2>&1; then
-  python3 -m unittest discover \
+for test_pattern in test_contract_v3.py test_probe_runner.py; do
+  if ! python3 -m unittest discover \
     -s skills/skill-builder/tests \
-    -p 'test_contract_v3.py'
-  exit 1
-fi
+    -p "$test_pattern" >/dev/null 2>&1; then
+    python3 -m unittest discover \
+      -s skills/skill-builder/tests \
+      -p "$test_pattern"
+    exit 1
+  fi
+done
 echo "skill-contract.v3 probe: PASS"

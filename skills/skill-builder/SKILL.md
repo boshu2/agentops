@@ -135,8 +135,23 @@ metadata:
     proof:
       class: mutating_isolation
       command: bash skills/skill-builder/scripts/test-contract-v3.sh
+      harness_refs:
+      - schemas/skill-contract.v3.schema.json
+      - skills/skill-builder/fixtures/contract-v3/probe-harnesses/large-output.py
+      - skills/skill-builder/fixtures/contract-v3/probe-harnesses/leave-descendant.py
+      - skills/skill-builder/fixtures/contract-v3/probe-harnesses/mutate-copy.py
+      - skills/skill-builder/fixtures/contract-v3/probe-harnesses/spawn-and-sleep.py
+      - skills/skill-builder/schemas/compile-report.json
+      - skills/skill-builder/schemas/probe-report.json
+      - skills/skill-builder/scripts/compile_contracts.py
+      - skills/skill-builder/scripts/contract_v3.py
+      - skills/skill-builder/scripts/probe_runtime.py
+      - skills/skill-builder/scripts/test-contract-v3.sh
+      - skills/skill-builder/tests/test_contract_v3.py
+      - skills/skill-builder/tests/test_probe_runner.py
       fixture_refs:
       - skills/skill-builder/fixtures/contract-v3/cases.json
+      - skills/skill-builder/fixtures/contract-v3/invariants.json
 output_contract: skills/skill-builder/schemas/build-report.json (create/build) or skills/skill-builder/schemas/audit-report.json (audit)
 ---
 
@@ -266,6 +281,8 @@ python3 skills/skill-builder/scripts/compile_contracts.py record \
 
 `check` emits deterministic receipt bytes to stdout and never writes.
 `record` writes those same bytes atomically to the explicit contained output.
+Both modes emit the same schema-valid typed FAIL receipt when the contract is
+rejected; stderr diagnostics accompany but never replace that receipt.
 The compiler rejects duplicate YAML keys, unknown contract fields, malformed
 semantics, forbidden authority, invalid references, and illegal hard
 dependencies. The grammar and stable failure codes are documented in
@@ -279,6 +296,11 @@ python3 skills/skill-builder/scripts/run_contract_probe.py check \
 python3 skills/skill-builder/scripts/run_contract_probe.py record \
   --skill <slug> --output <probe-receipt-path>
 ```
+
+The probe runs only in a disposable repository copy. It content-binds the
+entrypoint, harnesses, fixtures, compiler, and runner; bounds retained output;
+records total output and truncation; reports changed paths; and terminates the
+whole proof process group under a bounded TERM-to-KILL policy.
 
 ## Output
 
@@ -311,6 +333,8 @@ not live routing authority. The caller owns any subsequent edit or invocation.
   target and its owned projections.
 - Contract-v3 check mode is read-only, and its rendered receipt bytes equal
   record mode's bytes.
+- The hostile contract corpus maps exactly to its source-owned invariant
+  inventory; missing, duplicated, or unknown witnesses fail the proof.
 
 ## Failure behavior
 

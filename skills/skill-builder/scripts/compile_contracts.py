@@ -11,7 +11,7 @@ import tempfile
 
 sys.dont_write_bytecode = True
 
-from contract_v3 import ContractError, canonical_bytes, compile_skill  # noqa: E402
+from contract_v3 import ContractError, canonical_bytes, compile_receipt  # noqa: E402
 
 
 def repo_root() -> Path:
@@ -73,7 +73,7 @@ def main(argv: list[str]) -> int:
     args = parse_args(argv)
     root = repo_root()
     try:
-        receipt = compile_skill(root, args.skill)
+        receipt = compile_receipt(root, args.skill)
         payload = canonical_bytes(receipt)
         if args.mode == "check":
             sys.stdout.buffer.write(payload)
@@ -81,6 +81,10 @@ def main(argv: list[str]) -> int:
             output = contained_output(root, args.output)
             atomic_write(output, payload)
             print(output.relative_to(root).as_posix())
+        if receipt["result"] == "FAIL":
+            error = receipt["errors"][0]
+            print(f"[{error['code']}] {error['message']}", file=sys.stderr)
+            return 1
         return 0
     except ContractError as exc:
         print(f"[{exc.code}] {exc.message}", file=sys.stderr)
