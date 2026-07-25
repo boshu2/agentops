@@ -110,7 +110,7 @@ func TestRunSuccessfulParentTerminatesBackgroundDescendant(t *testing.T) {
 	}
 	assertCleanupCompleted(t, result.Cleanup)
 	pid := awaitPID(t, pidFile)
-	awaitProcessGone(t, pid)
+	assertProcessGoneNow(t, pid)
 }
 
 func TestRunPreservesWaitDelayWhenBackgroundCleanupFails(t *testing.T) {
@@ -172,4 +172,72 @@ func awaitProcessGone(t *testing.T, pid int) {
 		time.Sleep(20 * time.Millisecond)
 	}
 	t.Fatalf("descendant pid %d is still alive after process-tree cleanup", pid)
+}
+
+func assertProcessGoneNow(t *testing.T, pid int) {
+	t.Helper()
+	if err := syscall.Kill(pid, 0); !errors.Is(err, syscall.ESRCH) {
+		t.Fatalf("Run reported cleanup completed while descendant pid %d remained observable: %v", pid, err)
+	}
+}
+
+func TestTerminateUnixProcessGroupPollsUntilAbsent(t *testing.T) {
+	now := time.Unix(0, 0)
+	probes := 0
+	ops := unixProcessGroupOps{
+		signal: func(int, syscall.Signal) error { return nil },
+		probe: func(int) error {
+			probes++
+			if probes < 3 {
+				return nil
+			}
+			return syscall.ESRCH
+		},
+		clock: unixClock{
+			now: func() time.Time { return now },
+			sleep: func(delay time.Duration) {
+				now = now.Add(delay)
+			},
+		},
+	}
+
+	if err := terminateUnixProcessGroup(42, 100*time.Millisecond, ops); err != nil {
+		t.Fatalf("terminateUnixProcessGroup: %v", err)
+	}
+	if probes != 3 {
+		t.Fatalf("probes = %d, want observation through ESRCH", probes)
+	}
+}
+
+func TestTerminateUnixProcessGroupFailsWhenAbsenceCannotBeProven(t *testing.T) {
+	now := time.Unix(0, 0)
+	ops := unixProcessGroupOps{
+		signal: func(int, syscall.Signal) error { return nil },
+		probe:  func(int) error { return nil },
+		clock: unixClock{
+			now: func() time.Time { return now },
+			sleep: func(delay time.Duration) {
+				now = now.Add(delay)
+			},
+		},
+	}
+
+	if err := terminateUnixProcessGroup(42, 25*time.Millisecond, ops); err == nil {
+		t.Fatal("terminateUnixProcessGroup reported completion without proving absence")
+	}
+}
+
+func TestTerminateUnixProcessGroupTreatsEPERMAsFailedObservation(t *testing.T) {
+	ops := unixProcessGroupOps{
+		signal: func(int, syscall.Signal) error { return nil },
+		probe:  func(int) error { return syscall.EPERM },
+		clock: unixClock{
+			now:   time.Now,
+			sleep: func(time.Duration) {},
+		},
+	}
+
+	if err := terminateUnixProcessGroup(42, 25*time.Millisecond, ops); !errors.Is(err, syscall.EPERM) {
+		t.Fatalf("error = %v, want EPERM identity", err)
+	}
 }

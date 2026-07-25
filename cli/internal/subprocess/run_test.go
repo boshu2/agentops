@@ -195,6 +195,54 @@ func TestRunJoinsDeadlineAndCleanupFailures(t *testing.T) {
 	}
 }
 
+func TestAttachFailureSkipsWaitAfterIneffectiveKillAndJoinsErrors(t *testing.T) {
+	attachErr := errors.New("attach sentinel")
+	killErr := errors.New("kill sentinel")
+	releaseErr := errors.New("release sentinel")
+	waitCalled := false
+
+	waitErr, cleanupErr, waited := handleAttachFailure(
+		attachErr,
+		func() error { return killErr },
+		func() error {
+			waitCalled = true
+			return errors.New("wait must not run")
+		},
+		func() error { return releaseErr },
+	)
+	if waited || waitCalled {
+		t.Fatal("attach failure entered Wait after Process.Kill was ineffective")
+	}
+	if waitErr != nil {
+		t.Fatalf("wait error = %v, want nil because Wait was skipped", waitErr)
+	}
+	for _, want := range []error{attachErr, killErr, releaseErr} {
+		if !errors.Is(cleanupErr, want) {
+			t.Fatalf("cleanup error = %v, want identity %v", cleanupErr, want)
+		}
+	}
+}
+
+func TestAttachFailureWaitsAfterEffectiveKillAndPreservesWaitError(t *testing.T) {
+	attachErr := errors.New("attach sentinel")
+	waitSentinel := errors.New("wait sentinel")
+	waitErr, cleanupErr, waited := handleAttachFailure(
+		attachErr,
+		func() error { return nil },
+		func() error { return waitSentinel },
+		func() error {
+			t.Fatal("release must not run after effective kill")
+			return nil
+		},
+	)
+	if !waited || !errors.Is(waitErr, waitSentinel) {
+		t.Fatalf("waited/error = %v/%v, want true and wait sentinel", waited, waitErr)
+	}
+	if !errors.Is(cleanupErr, attachErr) {
+		t.Fatalf("cleanup error = %v, want attach identity", cleanupErr)
+	}
+}
+
 func TestCleanupDiagnosticIsBoundedAndValidUTF8(t *testing.T) {
 	message := strings.Repeat("界", maxCleanupDiagnosticLen)
 	outcome := cleanupOutcome(errors.New(message))
