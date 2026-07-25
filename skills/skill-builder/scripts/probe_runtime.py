@@ -29,6 +29,10 @@ COPY_EXCLUDED_PREFIXES = (
 )
 
 
+def _poll_sleep(seconds: float) -> None:
+    time.sleep(seconds)
+
+
 def _copy_excluded(ref: str) -> bool:
     parts = Path(ref).parts
     if any(part in COPY_EXCLUDED_NAMES for part in parts):
@@ -184,6 +188,64 @@ def _isolated_environment(
         }
     )
     return environment
+
+
+def _sandbox_profile(writable_root: Path) -> str:
+    writable = str(writable_root.resolve()).replace("\\", "\\\\").replace('"', '\\"')
+    return (
+        '(version 1) (deny default) (allow process*) (allow file-read*) '
+        "(allow sysctl-read) (allow mach-lookup) (allow ipc-posix-shm) "
+        '(allow file-write* (literal "/dev/null")) '
+        f'(allow file-write* (subpath "{writable}"))'
+    )
+
+
+def _confined_command(
+    command: list[str],
+    *,
+    live_root: Path,
+    writable_root: Path,
+    environment: dict[str, str],
+) -> tuple[list[str] | None, dict[str, object]]:
+    sandbox = shutil.which("sandbox-exec")
+    if sys.platform != "darwin" or sandbox is None:
+        return None, {
+            "backend": "unavailable",
+            "proven": False,
+            "command_executed": False,
+        }
+    profile = _sandbox_profile(writable_root)
+    allowed_marker = writable_root / "confinement-probe"
+    protected_source = live_root / "skills/skill-builder/SKILL.md"
+    probe = (
+        "import os,sys; "
+        "open(sys.argv[1],'wb').write(b'proven'); "
+        "\ntry: fd=os.open(sys.argv[2],os.O_WRONLY)\n"
+        "except PermissionError: raise SystemExit(0)\n"
+        "else: os.close(fd); raise SystemExit(9)"
+    )
+    checked = subprocess.run(
+        [sandbox, "-p", profile, sys.executable, "-c", probe, str(allowed_marker), str(protected_source)],
+        env=environment,
+        stdin=subprocess.DEVNULL,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+        timeout=5,
+        check=False,
+    )
+    proven = checked.returncode == 0 and allowed_marker.read_bytes() == b"proven"
+    if not proven:
+        return None, {
+            "backend": "sandbox-exec",
+            "proven": False,
+            "command_executed": False,
+        }
+    environment["AGENTOPS_WRITE_CONFINED"] = "1"
+    return [sandbox, "-p", profile, *command], {
+        "backend": "sandbox-exec",
+        "proven": True,
+        "command_executed": True,
+    }
 
 
 @dataclass
@@ -377,7 +439,7 @@ def _execute(
                 timed_out = True
                 trigger = "timeout"
                 break
-            time.sleep(0.02)
+            _poll_sleep(0.02)
     except KeyboardInterrupt as exc:
         interrupted = True
         trigger = "interrupted"
@@ -474,15 +536,44 @@ def run_isolated_command(
             home,
             tmpdir,
         )
-        execution, stdout, stderr = _execute(
+        confined, confinement = _confined_command(
             command,
-            cwd=isolated_root,
+            live_root=root,
+            writable_root=temporary_root,
             environment=environment,
-            timeout_seconds=timeout_seconds,
-            retained_bytes=retained_bytes,
-            term_grace_seconds=term_grace_seconds,
-            kill_grace_seconds=kill_grace_seconds,
         )
+        if confined is None:
+            empty = BoundedCapture(retained_bytes).facts()
+            execution = {
+                "exit_code": 125,
+                "timed_out": False,
+                "interrupted": False,
+                "timeout_seconds": timeout_seconds,
+                "stdout": empty,
+                "stderr": empty,
+                "cleanup": {
+                    "trigger": "none",
+                    "term_sent": False,
+                    "kill_sent": False,
+                    "parent_reaped": True,
+                    "process_group_empty": True,
+                    "complete": True,
+                },
+                "confinement": confinement,
+            }
+            stdout = b""
+            stderr = b""
+        else:
+            execution, stdout, stderr = _execute(
+                confined,
+                cwd=isolated_root,
+                environment=environment,
+                timeout_seconds=timeout_seconds,
+                retained_bytes=retained_bytes,
+                term_grace_seconds=term_grace_seconds,
+                kill_grace_seconds=kill_grace_seconds,
+            )
+            execution["confinement"] = confinement
         final = _manifest(isolated_root)
     live_after = _manifest(root)
     changed = changed_paths(initial, final)

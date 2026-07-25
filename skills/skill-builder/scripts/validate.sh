@@ -22,6 +22,7 @@ for path in \
   schemas/probe-report.json \
   fixtures/contract-v3/cases.json \
   fixtures/contract-v3/invariants.json \
+  fixtures/contract-v3/probe-harnesses/absolute-live-write.py \
   fixtures/contract-v3/probe-harnesses/large-output.py \
   fixtures/contract-v3/probe-harnesses/leave-descendant.py \
   fixtures/contract-v3/probe-harnesses/mutate-copy.py \

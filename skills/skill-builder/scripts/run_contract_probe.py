@@ -50,6 +50,15 @@ def _probe_errors(outcome: dict[str, object]) -> list[dict[str, str]]:
     assert isinstance(execution, dict)
     assert isinstance(isolation, dict)
     errors: list[dict[str, str]] = []
+    confinement = execution["confinement"]
+    assert isinstance(confinement, dict)
+    if not confinement["proven"]:
+        errors.append(
+            {
+                "code": "PROOF_CONFINEMENT_UNAVAILABLE",
+                "message": "no proven OS write-confinement backend was available; proof command was not run",
+            }
+        )
     if execution["timed_out"]:
         errors.append({"code": "PROOF_TIMEOUT", "message": "proof exceeded its hard timeout"})
     if execution["interrupted"]:
@@ -140,7 +149,9 @@ def run_probe(root: Path, skill_name: str) -> dict[str, object]:
     assert isinstance(cleanup, dict)
     proof_failed = execution["exit_code"] != 0
     not_proven = (
-        execution["timed_out"]
+        not execution["confinement"]["proven"]  # type: ignore[index]
+        or not execution["confinement"]["command_executed"]  # type: ignore[index]
+        or execution["timed_out"]
         or execution["interrupted"]
         or not cleanup["complete"]
         or cleanup["trigger"] != "none"

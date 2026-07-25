@@ -124,8 +124,9 @@
         "interrupted",
         "timeout_seconds",
         "stdout",
-        "stderr",
-        "cleanup"
+      "stderr",
+      "cleanup",
+      "confinement"
       ],
       "properties": {
         "exit_code": {
@@ -147,7 +148,7 @@
         "stderr": {
           "$ref": "#/definitions/stream"
         },
-        "cleanup": {
+      "cleanup": {
           "type": "object",
           "additionalProperties": false,
           "required": [
@@ -182,6 +183,16 @@
             "complete": {
               "type": "boolean"
             }
+          }
+        },
+        "confinement": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["backend", "proven", "command_executed"],
+          "properties": {
+            "backend": {"enum": ["sandbox-exec", "unavailable"]},
+            "proven": {"type": "boolean"},
+            "command_executed": {"type": "boolean"}
           }
         }
       }
