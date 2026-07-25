@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+import hashlib
 import importlib.util
 from pathlib import Path
+import tempfile
 import unittest
 
 
@@ -11,6 +13,22 @@ assert SPEC and SPEC.loader
 MODULE = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(MODULE)
 
+# The REAL Validate implementation, not a stand-in. The composed-contract test
+# below drives RPI against this module's actual identity functions; that is the
+# only shape that can catch a disagreement between the two skills, which is
+# exactly the defect that hid here (both suites green over a broken contract
+# because the fake Validate borrowed RPI's own digest function).
+VALIDATE_PATH = Path(__file__).parents[2] / "validate" / "scripts" / "validate.py"
+VALIDATE_SPEC = importlib.util.spec_from_file_location("ao_validate", VALIDATE_PATH)
+assert VALIDATE_SPEC and VALIDATE_SPEC.loader
+VALIDATE = importlib.util.module_from_spec(VALIDATE_SPEC)
+VALIDATE_SPEC.loader.exec_module(VALIDATE)
+
+# A literal, independently written digest. Fakes must never derive an expected
+# identity by calling the code under test — that is how the original defect
+# stayed invisible.
+INTENT_DIGEST = "c" * 64
+
 
 class RunOnceTests(unittest.TestCase):
     def phases(self, verdict: str = "PASS"):
@@ -18,7 +36,12 @@ class RunOnceTests(unittest.TestCase):
 
         def plan(intent):
             calls.append("plan")
-            return {"intent_ref": "bead:agentops-test", "intent": intent, "acceptance": ["works"]}
+            return {
+                "intent_ref": "bead:agentops-test",
+                "intent": intent,
+                "acceptance": ["works"],
+                "acceptance_digest": INTENT_DIGEST,
+            }
 
         def implement(_plan):
             calls.append("implement")
@@ -28,7 +51,7 @@ class RunOnceTests(unittest.TestCase):
             calls.append("validate")
             return {
                 "verdict": verdict,
-                "acceptance_digest": MODULE.digest(_plan),
+                "acceptance_digest": INTENT_DIGEST,
                 "subject_manifest_digest": "a" * 64,
                 "verdict_digest": "b" * 64,
                 "verdict_ref": "/tmp/verdict.json",
@@ -44,7 +67,7 @@ class RunOnceTests(unittest.TestCase):
         self.assertEqual(calls, ["plan", "implement", "validate"])
         self.assertEqual(result["status"], "PASS")
         self.assertEqual(result["intent_ref"], "bead:agentops-test")
-        self.assertEqual(len(result["acceptance_digest"]), 64)
+        self.assertEqual(result["acceptance_digest"], INTENT_DIGEST)
         self.assertNotIn("next_action", result)
 
     def test_fail_reports_and_stops_without_another_dispatch(self):
@@ -68,7 +91,11 @@ class RunOnceTests(unittest.TestCase):
         calls: list[str] = []
         result = MODULE.invoke_once(
             "intent",
-            lambda _intent: {"intent_ref": "caller", "acceptance": ["works"]},
+            lambda _intent: {
+                "intent_ref": "caller",
+                "acceptance": ["works"],
+                "acceptance_digest": INTENT_DIGEST,
+            },
             lambda _plan: None,
             lambda _plan, _candidate: calls.append("validate"),
         )
@@ -85,6 +112,118 @@ class RunOnceTests(unittest.TestCase):
 
         with self.assertRaisesRegex(ValueError, "resolved intent digest"):
             MODULE.invoke_once("intent", plan, implement, mismatched)
+
+    def test_plan_without_a_declared_digest_is_a_contract_error(self):
+        _calls, _plan, implement, validate = self.phases()
+
+        def undeclared(_intent):
+            return {"intent_ref": "caller", "acceptance": ["works"]}
+
+        with self.assertRaisesRegex(ValueError, "acceptance_digest"):
+            MODULE.invoke_once("intent", undeclared, implement, validate)
+
+    def test_plan_digest_must_be_a_sha256(self):
+        _calls, _plan, implement, validate = self.phases()
+
+        for bogus in ("", "not-a-digest", "C" * 64, "a" * 63, 12345):
+            with self.subTest(digest=bogus):
+                def undeclared(_intent, value=bogus):
+                    return {
+                        "intent_ref": "caller",
+                        "acceptance": ["works"],
+                        "acceptance_digest": value,
+                    }
+
+                with self.assertRaisesRegex(ValueError, "acceptance_digest"):
+                    MODULE.invoke_once("intent", undeclared, implement, validate)
+
+
+class ComposedIdentityContractTests(unittest.TestCase):
+    """RPI against the REAL Validate identity functions.
+
+    This is the test the defect needed. RPI used to digest a canonical-JSON
+    re-serialization of the parsed intent mapping while Validate digested the raw
+    intent bytes, and RPI hard-compared the two. Nothing caught it because RPI's
+    own suite mocked Validate with RPI's digest function, so the mock agreed with
+    the code under test by construction. Here the digest crosses the skill
+    boundary in both directions with no shared helper.
+    """
+
+    # Deliberately NOT canonical JSON: real intent sources have indentation,
+    # trailing newlines, and key order. A canonical-JSON digest of the parsed
+    # mapping differs from sha256(these bytes), so this payload discriminates
+    # between the two implementations instead of accidentally agreeing.
+    INTENT_BYTES = b'{\n  "acceptance": ["works"],\n  "intent_ref": "bead:agentops-test"\n}\n'
+
+    def test_rpi_carries_the_digest_validate_derives_from_the_snapshot_bytes(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            intent_dir = Path(tmp) / "intents"
+
+            def plan(_intent):
+                # Plan resolves the intent and snapshots the EXACT bytes through
+                # Validate's own store, which is what defines the identity.
+                path, _existed = VALIDATE.snapshot_intent(self.INTENT_BYTES, intent_dir)
+                return {
+                    "intent_ref": str(path),
+                    "acceptance": ["works"],
+                    "acceptance_digest": hashlib.sha256(self.INTENT_BYTES).hexdigest(),
+                }
+
+            def implement(_plan):
+                return {"subject_manifest_digest": "a" * 64}
+
+            def validate(resolved, _candidate):
+                # Validate re-reads the snapshot from disk and re-derives the
+                # digest through its own runtime-fact binder — no value is passed
+                # through from Plan, so agreement is earned, not assumed.
+                replayed = Path(resolved["intent_ref"]).read_bytes()
+                bound = VALIDATE.bind_runtime_facts(
+                    {"verdict": "PASS"},
+                    replayed,
+                    None,
+                    None,
+                    None,
+                    None,
+                    None,
+                    None,
+                )
+                return {
+                    "verdict": "PASS",
+                    "acceptance_digest": bound["acceptance_digest"],
+                    "subject_manifest_digest": "a" * 64,
+                    "verdict_digest": "b" * 64,
+                    "verdict_ref": str(Path(tmp) / "verdict.json"),
+                    "checked": ["acceptance"],
+                    "not_checked": [],
+                }
+
+            result = MODULE.invoke_once(self.INTENT_BYTES, plan, implement, validate)
+
+        self.assertEqual(result["status"], "PASS")
+        self.assertEqual(
+            result["acceptance_digest"],
+            hashlib.sha256(self.INTENT_BYTES).hexdigest(),
+        )
+
+    def test_the_canonical_json_digest_is_not_the_intent_identity(self):
+        """Pins the two digests apart so the defect cannot silently return.
+
+        If someone reintroduces a canonical-JSON digest of the parsed mapping as
+        the acceptance identity, this fails: the byte digest and the value digest
+        are different numbers for the same intent.
+        """
+        import json
+
+        byte_digest = hashlib.sha256(self.INTENT_BYTES).hexdigest()
+        value_digest = VALIDATE.digest_value(json.loads(self.INTENT_BYTES))
+        self.assertNotEqual(byte_digest, value_digest)
+
+        # And the collision the byte digest forbids: two distinct sources that
+        # parse to the same mapping must NOT share an acceptance identity.
+        reordered = b'{"intent_ref": "bead:agentops-test", "acceptance": ["works"]}'
+        self.assertEqual(json.loads(reordered), json.loads(self.INTENT_BYTES))
+        self.assertNotEqual(byte_digest, hashlib.sha256(reordered).hexdigest())
+        self.assertEqual(value_digest, VALIDATE.digest_value(json.loads(reordered)))
 
 
 if __name__ == "__main__":

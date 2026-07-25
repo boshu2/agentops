@@ -9,14 +9,32 @@ chooses a retry or next action.
 from __future__ import annotations
 
 from collections.abc import Callable, Mapping
-import hashlib
-import json
+import re
 from typing import Any
 
 
-def digest(value: Any) -> str:
-    payload = json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
-    return hashlib.sha256(payload).hexdigest()
+# The exact-identity property is BYTE-addressed: Validate snapshots the resolved
+# intent bytes under `sha256(bytes)` and stores them as `<digest>.intent`
+# (validate.py snapshot_intent), then re-derives that same digest from the same
+# bytes when it binds runtime facts into the verdict. RPI is a dispatcher, not a
+# second digest authority — it carries the digest Plan declares over the bytes it
+# snapshotted, and cross-checks Validate's independently re-derived value against
+# it.
+#
+# This module previously computed its own `sha256(canonical-JSON(mapping))` here
+# and hard-compared that against Validate's `sha256(raw bytes)`. The two can
+# never agree unless the source is byte-identical canonical JSON, so the composed
+# contract was broken; both unit suites stayed green only because the RPI test
+# mocked Validate with THIS module's digest function. A canonical-JSON digest is
+# also the wrong identity in principle: two different source files that parse to
+# the same mapping share it, which is precisely the collision exact identity
+# exists to forbid.
+DIGEST_PATTERN = re.compile(r"^[0-9a-f]{64}$")
+
+
+def valid_digest(value: Any) -> bool:
+    """True for a lowercase hex SHA-256, the only shape an identity may take."""
+    return isinstance(value, str) and bool(DIGEST_PATTERN.match(value))
 
 
 def report(
@@ -57,7 +75,12 @@ def invoke_once(
     intent_ref = resolved_intent.get("intent_ref")
     if not isinstance(intent_ref, str) or not intent_ref:
         intent_ref = "caller"
-    acceptance_digest = digest(resolved_intent)
+    acceptance_digest = resolved_intent.get("acceptance_digest")
+    if not valid_digest(acceptance_digest):
+        raise ValueError(
+            "Plan must declare acceptance_digest as the SHA-256 of the exact resolved "
+            "intent bytes it snapshotted (validate.py snapshot-intent emits it)"
+        )
 
     subject = implement_phase(resolved_intent)
     if subject is None:
@@ -74,6 +97,8 @@ def invoke_once(
     status = validation.get("verdict")
     if status not in {"PASS", "FAIL", "NOT_PROVEN"}:
         raise ValueError("Validate must return PASS, FAIL, or NOT_PROVEN")
+    # Validate re-derives this from the snapshot bytes independently; equality
+    # here is the composed exact-identity check, not a self-comparison.
     if validation.get("acceptance_digest") != acceptance_digest:
         raise ValueError("Validate verdict does not match the resolved intent digest")
     subject_digest = validation.get("subject_manifest_digest")
