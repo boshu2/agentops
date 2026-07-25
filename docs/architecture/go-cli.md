@@ -92,10 +92,13 @@ Eval command cases and runtime probes, script-backed gates, and goal
 measurements launch through `cli/internal/subprocess`. The runner retains only
 declared prefix and suffix byte windows while streams are copied, records the
 original byte count and truncation, inherits the caller context, and terminates
-the platform process tree on cancellation or completion. A finite wait delay
-also prevents a descendant that inherited stdout or stderr from keeping the CLI
-blocked after its parent exits. Every started process returns a typed cleanup
-outcome (`completed` or `failed`); a start failure reports `not_started`.
+the platform process tree on cancellation or completion. AgentOps installs
+explicitly owned OS files on the child command, drains stdout and stderr through
+its own bounded-capture goroutines, and closes and joins those drains within the
+finite wait delay. This leaves no `os/exec` I/O copier that requires `Cmd.Wait`
+for cleanup. Arbitrary stdin copying begins only after process-tree attachment
+succeeds. Every started process returns a typed cleanup outcome (`completed` or
+`failed`); a start failure reports `not_started`.
 Cleanup diagnostics are bounded, and a cleanup failure is joined with any
 cancellation, deadline, wait, or exit error so neither identity is lost.
 `completed` requires bounded platform absence proof: POSIX process-group
@@ -104,6 +107,8 @@ zero active processes. A POSIX permission denial remains observable and is
 polled until `ESRCH` or the deadline; a persistent denial, timeout, or opaque
 observation is a cleanup failure. After a Windows attach failure, `Wait` is
 entered only after bounded process-handle termination observation succeeds.
+When termination remains unproven, owned pipe ends and drains are closed and
+joined before the process handle is released; `Wait` is not entered.
 
 Callers keep their domain-specific rendering and exit classification. The
 shared seam owns only process construction, bounded capture, cancellation, and
