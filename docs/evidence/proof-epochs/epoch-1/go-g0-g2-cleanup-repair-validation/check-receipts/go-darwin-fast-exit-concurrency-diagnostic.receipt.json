@@ -1,0 +1,20 @@
+{
+  "artifact_digest": "307ca2ff5495263b88dcfcbfb5ed76fafa342e7de3f9c757f3bcbdfb38d211de",
+  "command": [
+    "go",
+    "test",
+    "-count=1",
+    "-run",
+    "^TestValidatorConcurrentFastGoalsDiagnostic$",
+    "-v",
+    "./internal/goals"
+  ],
+  "exit_code": 1,
+  "observed_at": "2026-07-25T03:18:50Z",
+  "receipt_id": "go-darwin-fast-exit-concurrency-diagnostic",
+  "result": "FAIL",
+  "schema_version": "check-receipt.v1",
+  "stderr_digest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "stdout_digest": "2b764b0276fe8191595b02c1764ddc58a1b36701b7cfadac2ae4ef29e186ce4c",
+  "subject_manifest_digest": "c6c5ba4cc071eddc1c0f0d470a4a6a0e023f9ed5f5a83b3b1fd2538ec904f30b"
+}

@@ -1,0 +1,20 @@
+{
+  "artifact_digest": "90c725a01781dc4b5ad2405a56d3325516bd0ad6a5fd6b9db1bb91de5434c9b1",
+  "command": [
+    "git",
+    "diff",
+    "--exit-code",
+    "7af1f960808dcef3f76090080ccd3168e1403bb6",
+    "--",
+    "docs/evidence/proof-epochs/epoch-1/go-g0-g2-fail-preservation.md",
+    "docs/evidence/proof-epochs/epoch-1/verdicts/83cb2e9095d61bc14a00bee250215367bd9697bd05ff56fe384b662965752680.json"
+  ],
+  "exit_code": 0,
+  "observed_at": "2026-07-25T03:22:47Z",
+  "receipt_id": "go-prior-fail-lineage-immutable",
+  "result": "PASS",
+  "schema_version": "check-receipt.v1",
+  "stderr_digest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "stdout_digest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "subject_manifest_digest": "c6c5ba4cc071eddc1c0f0d470a4a6a0e023f9ed5f5a83b3b1fd2538ec904f30b"
+}

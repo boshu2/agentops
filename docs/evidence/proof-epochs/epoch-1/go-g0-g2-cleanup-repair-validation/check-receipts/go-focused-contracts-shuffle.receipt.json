@@ -1,0 +1,23 @@
+{
+  "artifact_digest": "fa68ec0486fc18044d002fd90a33111361058af045fabc73b48db606adbdce8c",
+  "command": [
+    "go",
+    "test",
+    "-count=1",
+    "-shuffle=on",
+    "./internal/evalsubstrate",
+    "./internal/clicontract",
+    "./internal/eval",
+    "./internal/gates/...",
+    "./internal/goals",
+    "./cmd/ao"
+  ],
+  "exit_code": 0,
+  "observed_at": "2026-07-25T03:10:22Z",
+  "receipt_id": "go-focused-contracts-shuffle",
+  "result": "PASS",
+  "schema_version": "check-receipt.v1",
+  "stderr_digest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "stdout_digest": "82d3ff5eab0b727add384f27df7c1d0f16065f388c4e83f139ca1487b203dadf",
+  "subject_manifest_digest": "c6c5ba4cc071eddc1c0f0d470a4a6a0e023f9ed5f5a83b3b1fd2538ec904f30b"
+}

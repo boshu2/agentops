@@ -1,0 +1,20 @@
+{
+  "artifact_digest": "30c2b7a782386e5c981d264423aaafe582f53aa667ad42d2bb49ec704a73ab75",
+  "command": [
+    "go",
+    "test",
+    "-count=100",
+    "-shuffle=on",
+    "-run",
+    "^TestGoalsMeasure_SkippedGoals$",
+    "./internal/goals"
+  ],
+  "exit_code": 0,
+  "observed_at": "2026-07-25T03:09:31Z",
+  "receipt_id": "go-goals-skipped-targeted-repeat",
+  "result": "PASS",
+  "schema_version": "check-receipt.v1",
+  "stderr_digest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "stdout_digest": "2dee406dc34763889cef2039af9c9c27eb1634ac91200e9fafa8c445c294e79b",
+  "subject_manifest_digest": "c6c5ba4cc071eddc1c0f0d470a4a6a0e023f9ed5f5a83b3b1fd2538ec904f30b"
+}

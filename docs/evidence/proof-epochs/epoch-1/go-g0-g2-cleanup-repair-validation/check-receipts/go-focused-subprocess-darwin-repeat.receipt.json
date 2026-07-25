@@ -1,0 +1,18 @@
+{
+  "artifact_digest": "436be540e221e6397f8fd19cbd5e88ab989151a1939cdd7a1a6fa79f925a15f0",
+  "command": [
+    "go",
+    "test",
+    "-count=50",
+    "-shuffle=on",
+    "./internal/subprocess"
+  ],
+  "exit_code": 0,
+  "observed_at": "2026-07-25T03:03:15Z",
+  "receipt_id": "go-focused-subprocess-darwin-repeat",
+  "result": "PASS",
+  "schema_version": "check-receipt.v1",
+  "stderr_digest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "stdout_digest": "b5b82f29247ce63c9284a82e6ef769cf03b49b6a80e7014e5de1d580bae0caea",
+  "subject_manifest_digest": "c6c5ba4cc071eddc1c0f0d470a4a6a0e023f9ed5f5a83b3b1fd2538ec904f30b"
+}
