@@ -103,6 +103,9 @@ governed() {
 # still_exists ENTRY → 0 if the grandfathered path is still in the tree. Used as
 # the stale predicate: a promoted/removed file must be pruned from the snapshot.
 still_exists() {
+  # Invoked by NAME through ratchet_stale_entries_by, so shellcheck cannot see
+  # the call site and reports the body as unreachable (SC2317, info-level).
+  # shellcheck disable=SC2317
   [[ -f "$1" ]]
 }
 
