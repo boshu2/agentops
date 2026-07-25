@@ -6,7 +6,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io"
 	"os"
 	"os/exec"
 	"time"
@@ -26,7 +25,9 @@ type Command struct {
 	Dir  string
 	Env  []string
 
-	Stdin io.Reader
+	// Stdin is copied from an owned snapshot of at most MaxStdinBytes after
+	// process-tree attachment succeeds. A nil or empty slice gives the child EOF.
+	Stdin []byte
 
 	CombinedOutput bool
 	OutputLimit    CaptureLimit
@@ -85,34 +86,60 @@ type cleanupProcessTree func(*exec.Cmd) error
 
 type managedProcessTree interface {
 	attach(*exec.Cmd) error
+	requestTermination(*exec.Cmd) error
 	terminate(*exec.Cmd) error
-	observeTermination(*exec.Cmd) error
 	close() error
 }
 
 type runDependencies struct {
 	configureProcessTree func(*exec.Cmd, time.Duration) (managedProcessTree, error)
 	newCommandIO         func(*exec.Cmd, Command) (*ownedCommandIO, error)
-}
-
-type cancellationWatcher struct {
-	stop chan struct{}
-	done chan error
+	newProcessCompletion func(*os.Process) processCompletion
+	killProcess          func(*os.Process) error
+	waitCommand          func(*exec.Cmd) error
+	releaseProcess       func(*os.Process) error
 }
 
 var defaultRunDependencies = runDependencies{
 	configureProcessTree: func(cmd *exec.Cmd, waitDelay time.Duration) (managedProcessTree, error) {
 		return configureProcessTree(cmd, waitDelay)
 	},
-	newCommandIO: newOwnedCommandIO,
+	newCommandIO:         newOwnedCommandIO,
+	newProcessCompletion: newProcessCompletion,
+	killProcess:          func(process *os.Process) error { return process.Kill() },
+	waitCommand:          func(cmd *exec.Cmd) error { return cmd.Wait() },
+	releaseProcess:       func(process *os.Process) error { return process.Release() },
 }
 
 type startedCommand struct {
 	cmd            *exec.Cmd
 	tree           managedProcessTree
 	ownedIO        *ownedCommandIO
+	completion     processCompletion
 	waitDelay      time.Duration
 	ioLifecycleErr error
+}
+
+func (dependencies runDependencies) withDefaults() runDependencies {
+	if dependencies.configureProcessTree == nil {
+		dependencies.configureProcessTree = defaultRunDependencies.configureProcessTree
+	}
+	if dependencies.newCommandIO == nil {
+		dependencies.newCommandIO = defaultRunDependencies.newCommandIO
+	}
+	if dependencies.newProcessCompletion == nil {
+		dependencies.newProcessCompletion = defaultRunDependencies.newProcessCompletion
+	}
+	if dependencies.killProcess == nil {
+		dependencies.killProcess = defaultRunDependencies.killProcess
+	}
+	if dependencies.waitCommand == nil {
+		dependencies.waitCommand = defaultRunDependencies.waitCommand
+	}
+	if dependencies.releaseProcess == nil {
+		dependencies.releaseProcess = defaultRunDependencies.releaseProcess
+	}
+	return dependencies
 }
 
 func startOwnedCommand(
@@ -183,36 +210,70 @@ func startOwnedCommand(
 		cmd:            cmd,
 		tree:           tree,
 		ownedIO:        ownedIO,
+		completion:     dependencies.newProcessCompletion(cmd.Process),
 		waitDelay:      waitDelay,
 		ioLifecycleErr: ownedIO.afterStart(),
 	}, nil
 }
 
-func startCancellationWatcher(ctx context.Context, terminate func() error) *cancellationWatcher {
-	if ctx.Done() == nil {
-		return nil
-	}
-	watcher := &cancellationWatcher{
-		stop: make(chan struct{}),
-		done: make(chan error, 1),
-	}
-	go func() {
-		select {
-		case <-ctx.Done():
-			watcher.done <- terminate()
-		case <-watcher.stop:
-			watcher.done <- nil
-		}
-	}()
-	return watcher
+type commandCompletionOutcome struct {
+	waitErr              error
+	cleanupErr           error
+	waited               bool
+	releaseRequired      bool
+	terminationRequested bool
 }
 
-func (watcher *cancellationWatcher) stopAndWait() error {
-	if watcher == nil {
-		return nil
+func awaitAttachedCommand(
+	ctx context.Context,
+	cmd *exec.Cmd,
+	tree managedProcessTree,
+	completion processCompletion,
+	waitDelay time.Duration,
+	dependencies runDependencies,
+) commandCompletionOutcome {
+	if err := completion.wait(ctx); err == nil {
+		return commandCompletionOutcome{
+			waitErr: dependencies.waitCommand(cmd),
+			waited:  true,
+		}
+	} else {
+		var cleanupErr error
+		if ctx.Err() == nil || !errors.Is(err, ctx.Err()) {
+			cleanupErr = fmt.Errorf("observe process completion before wait: %w", err)
+		}
+
+		terminationErr := tree.requestTermination(cmd)
+		if terminationErr != nil {
+			cleanupErr = errors.Join(cleanupErr, fmt.Errorf("terminate process tree: %w", terminationErr))
+			if killErr := dependencies.killProcess(cmd.Process); killErr != nil &&
+				!errors.Is(killErr, os.ErrProcessDone) {
+				cleanupErr = errors.Join(
+					cleanupErr,
+					fmt.Errorf("kill parent after process-tree termination failure: %w", killErr),
+				)
+			}
+		}
+
+		observationErr := completion.observe(waitDelay)
+		if observationErr == nil {
+			return commandCompletionOutcome{
+				waitErr:              dependencies.waitCommand(cmd),
+				cleanupErr:           cleanupErr,
+				waited:               true,
+				terminationRequested: true,
+			}
+		}
+		cleanupErr = errors.Join(
+			cleanupErr,
+			fmt.Errorf("observe parent termination before wait: %w", observationErr),
+		)
+		return commandCompletionOutcome{
+			cleanupErr:           cleanupErr,
+			releaseRequired:      true,
+			terminationRequested: true,
+		}
 	}
-	close(watcher.stop)
-	return <-watcher.done
 }
 
 func runWithCleanup(ctx context.Context, command Command, cleanup cleanupProcessTree) (Result, error) {
@@ -225,6 +286,7 @@ func runWithDependencies(
 	cleanup cleanupProcessTree,
 	dependencies runDependencies,
 ) (Result, error) {
+	dependencies = dependencies.withDefaults()
 	result := Result{
 		ExitCode: -1,
 		Cleanup: CleanupOutcome{
@@ -248,38 +310,75 @@ func runWithDependencies(
 	cmd := started.cmd
 	tree := started.tree
 	ownedIO := started.ownedIO
+	completion := started.completion
 	waitDelay := started.waitDelay
 	pid := cmd.Process.Pid
 	attachErr := tree.attach(cmd)
-	var watcher *cancellationWatcher
 	if attachErr == nil {
-		watcher = startCancellationWatcher(ctx, func() error { return tree.terminate(cmd) })
 		ownedIO.startStdinCopy()
 	}
 	if command.OnStart != nil {
 		command.OnStart(pid)
 	}
-	var waitErr error
-	ioAborted := false
+	outcome := commandCompletionOutcome{}
 	if attachErr != nil {
 		attachErr = fmt.Errorf("attach %q to process tree: %w", command.Name, attachErr)
-		var waited bool
-		waitErr, attachErr, waited = handleAttachFailure(
+		outcome.waitErr, attachErr, outcome.waited = handleAttachFailure(
 			attachErr,
-			cmd.Process.Kill,
-			func() error { return tree.observeTermination(cmd) },
-			cmd.Wait,
-			func() error { return ownedIO.abortAfterUnprovenTermination(waitDelay) },
-			cmd.Process.Release,
+			func() error { return dependencies.killProcess(cmd.Process) },
+			func() error { return completion.observe(waitDelay) },
+			func() error { return dependencies.waitCommand(cmd) },
 		)
-		ioAborted = !waited
+		outcome.cleanupErr = attachErr
+		outcome.releaseRequired = !outcome.waited
 	} else {
-		waitErr = cmd.Wait()
+		outcome = awaitAttachedCommand(ctx, cmd, tree, completion, waitDelay, dependencies)
 	}
-	watcherErr := watcher.stopAndWait()
 
-	cleanupErr := finishProcessTree(tree, cmd, cleanup, errors.Join(attachErr, started.ioLifecycleErr, watcherErr))
-	if !ioAborted {
+	lifecycleErr := errors.Join(outcome.cleanupErr, started.ioLifecycleErr)
+	var cleanupErr error
+	if outcome.releaseRequired {
+		cleanupErr = finishProcessTree(
+			tree,
+			cmd,
+			cleanup,
+			lifecycleErr,
+			outcome.waited,
+			outcome.terminationRequested,
+		)
+		if ioErr := ownedIO.abortAfterUnprovenTermination(waitDelay); ioErr != nil {
+			cleanupErr = errors.Join(
+				cleanupErr,
+				fmt.Errorf("close process I/O after unproven termination: %w", ioErr),
+			)
+		}
+		if completionErr := completion.close(); completionErr != nil {
+			cleanupErr = errors.Join(
+				cleanupErr,
+				fmt.Errorf("close process completion observer: %w", completionErr),
+			)
+		}
+		if releaseErr := dependencies.releaseProcess(cmd.Process); releaseErr != nil {
+			cleanupErr = errors.Join(
+				cleanupErr,
+				fmt.Errorf("release process after unproven termination: %w", releaseErr),
+			)
+		}
+	} else {
+		if completionErr := completion.close(); completionErr != nil {
+			lifecycleErr = errors.Join(
+				lifecycleErr,
+				fmt.Errorf("close process completion observer: %w", completionErr),
+			)
+		}
+		cleanupErr = finishProcessTree(
+			tree,
+			cmd,
+			cleanup,
+			lifecycleErr,
+			outcome.waited,
+			outcome.terminationRequested,
+		)
 		cleanupErr = errors.Join(cleanupErr, ownedIO.finishAfterWait(waitDelay))
 	}
 	result.Cleanup = cleanupOutcome(cleanupErr)
@@ -294,12 +393,15 @@ func runWithDependencies(
 	var primaryErr error
 	if ctxErr := ctx.Err(); ctxErr != nil {
 		primaryErr = fmt.Errorf("run %q: %w", command.Name, ctxErr)
-	} else if waitErr != nil {
+	} else if outcome.waitErr != nil {
 		var exitErr *exec.ExitError
-		if result.ExitCode != 0 && !errors.As(waitErr, &exitErr) && cmd.ProcessState != nil {
-			waitErr = errors.Join(&exec.ExitError{ProcessState: cmd.ProcessState}, waitErr)
+		if result.ExitCode != 0 && !errors.As(outcome.waitErr, &exitErr) && cmd.ProcessState != nil {
+			outcome.waitErr = errors.Join(
+				&exec.ExitError{ProcessState: cmd.ProcessState},
+				outcome.waitErr,
+			)
 		}
-		primaryErr = waitErr
+		primaryErr = outcome.waitErr
 	}
 	if cleanupErr != nil {
 		cleanupErr = fmt.Errorf("clean process tree for %q: %w", command.Name, cleanupErr)
@@ -312,8 +414,6 @@ func handleAttachFailure(
 	kill func() error,
 	observeTermination func() error,
 	wait func() error,
-	abortIO func() error,
-	release func() error,
 ) (waitErr error, cleanupErr error, waited bool) {
 	cleanupErr = attachErr
 	killErr := kill()
@@ -325,23 +425,26 @@ func handleAttachFailure(
 		return wait(), cleanupErr, true
 	}
 	cleanupErr = errors.Join(cleanupErr, fmt.Errorf("observe process termination after attach failure: %w", observationErr))
-	if ioErr := abortIO(); ioErr != nil {
-		cleanupErr = errors.Join(cleanupErr, fmt.Errorf("close process I/O after unproven termination: %w", ioErr))
-	}
-	if releaseErr := release(); releaseErr != nil {
-		cleanupErr = errors.Join(cleanupErr, fmt.Errorf("release process after unproven termination: %w", releaseErr))
-	}
 	return nil, cleanupErr, false
 }
 
-func finishProcessTree(tree managedProcessTree, cmd *exec.Cmd, cleanup cleanupProcessTree, attachErr error) error {
+func finishProcessTree(
+	tree managedProcessTree,
+	cmd *exec.Cmd,
+	cleanup cleanupProcessTree,
+	lifecycleErr error,
+	waited bool,
+	terminationRequested bool,
+) error {
 	var cleanupErr error
-	if cleanup == nil {
-		cleanupErr = tree.terminate(cmd)
-	} else {
+	if cleanup != nil {
 		cleanupErr = cleanup(cmd)
+	} else if waited {
+		cleanupErr = tree.terminate(cmd)
+	} else if !terminationRequested {
+		cleanupErr = tree.requestTermination(cmd)
 	}
-	cleanupErr = errors.Join(attachErr, cleanupErr)
+	cleanupErr = errors.Join(lifecycleErr, cleanupErr)
 	if closeErr := tree.close(); closeErr != nil {
 		cleanupErr = errors.Join(cleanupErr, fmt.Errorf("close process tree: %w", closeErr))
 	}

@@ -264,7 +264,7 @@ func executeCaseCommand(parent context.Context, suite Suite, suiteDir string, ev
 		command.Env = append(command.Env, "AGENTOPS_HOOKS_DISABLED=1")
 	}
 	if spec.stdin != "" {
-		command.Stdin = strings.NewReader(spec.stdin)
+		command.Stdin = []byte(spec.stdin)
 	}
 	result, err := subprocess.Run(ctx, command)
 	cleanup := result.Cleanup

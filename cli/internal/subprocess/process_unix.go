@@ -49,7 +49,7 @@ func configureProcessTree(cmd *exec.Cmd, waitDelay time.Duration) (*unixProcessT
 	}
 	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
 	cmd.Cancel = func() error {
-		return tree.terminate(cmd)
+		return tree.requestTermination(cmd)
 	}
 	return tree, nil
 }
@@ -63,10 +63,18 @@ func (tree *unixProcessTree) terminate(cmd *exec.Cmd) error {
 	return terminateUnixProcessGroup(cmd.Process.Pid, tree.waitDelay, tree.ops)
 }
 
-func (*unixProcessTree) observeTermination(*exec.Cmd) error {
-	// attach is infallible on POSIX, so the attach-failure observer is
-	// unreachable for this implementation.
-	return errors.New("POSIX process-tree attachment cannot require termination observation")
+func (tree *unixProcessTree) requestTermination(cmd *exec.Cmd) error {
+	if cmd.Process == nil {
+		return nil
+	}
+	err := tree.ops.signal(cmd.Process.Pid, syscall.SIGKILL)
+	if errors.Is(err, syscall.ESRCH) {
+		return nil
+	}
+	if err != nil {
+		return fmt.Errorf("signal process group %d: %w", cmd.Process.Pid, err)
+	}
+	return nil
 }
 
 func terminateUnixProcessGroup(processGroupID int, timeout time.Duration, ops unixProcessGroupOps) error {

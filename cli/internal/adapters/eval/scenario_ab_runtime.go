@@ -148,7 +148,6 @@ func runCodexExecArm(ctx context.Context, prompt, outputSchemaPath string, allow
 		Args:           command.Args[1:],
 		Dir:            command.Dir,
 		Env:            command.Env,
-		Stdin:          strings.NewReader(""),
 		CombinedOutput: true,
 		OutputLimit:    subprocess.CaptureLimit{HeadBytes: 512 * 1024, TailBytes: 512 * 1024},
 	})

@@ -170,7 +170,6 @@ func defaultWorkspaceCommandRunner(ctx context.Context, workDir, command string,
 		Args:           cmd.Args[1:],
 		Dir:            cmd.Dir,
 		Env:            cmd.Env,
-		Stdin:          cmd.Stdin,
 		CombinedOutput: true,
 		OutputLimit:    subprocess.CaptureLimit{HeadBytes: 512 * 1024, TailBytes: 512 * 1024},
 	})
