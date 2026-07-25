@@ -10,11 +10,19 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from unittest import mock
 
 from jsonschema import Draft7Validator
 
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
+SCRIPT_DIR = REPO_ROOT / "skills/skill-builder/scripts"
+sys.path.insert(0, str(SCRIPT_DIR))
+
+import check_migration_readiness as readiness  # noqa: E402
+from contract_v3 import ContractError, compile_skill  # noqa: E402
+
+
 LEDGER_REF = "skills/skill-builder/ledgers/migration-readiness.json"
 SCHEMA_REF = "schemas/skill-migration-readiness.v1.schema.json"
 CHECKER_REF = "skills/skill-builder/scripts/check_migration_readiness.py"
@@ -87,6 +95,29 @@ class MigrationReadinessTests(unittest.TestCase):
             result = self.run_checker(path)
         self.assertEqual(1, result.returncode)
         self.assertIn(b"[LEDGER_SCHEMA_INVALID]", result.stderr)
+
+    def test_probe_harness_identity_is_recomputed(self) -> None:
+        compiled = compile_skill(REPO_ROOT, "skill-builder")
+        receipt = json.loads(
+            (REPO_ROOT / readiness.PROBE_REF).read_text(encoding="utf-8")
+        )
+        hostile = copy.deepcopy(receipt)
+        hostile["proof"]["entrypoint"]["sha256"] = "0" * 64
+        real_load_json = readiness.load_json
+
+        def load_with_hostile_probe(path: Path) -> object:
+            if path.resolve() == (REPO_ROOT / readiness.PROBE_REF).resolve():
+                return hostile
+            return real_load_json(path)
+
+        with mock.patch.object(
+            readiness,
+            "load_json",
+            side_effect=load_with_hostile_probe,
+        ):
+            with self.assertRaises(ContractError) as caught:
+                readiness.validated_probe(REPO_ROOT, compiled)
+        self.assertEqual("PROBE_RECEIPT_INVALID", caught.exception.code)
 
 
 if __name__ == "__main__":

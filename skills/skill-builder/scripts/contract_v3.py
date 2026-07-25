@@ -52,15 +52,23 @@ EXPECTED_ROUTE_RESULTS = {
     "negative": "do_not_route",
     "ambiguity": "clarify",
 }
+APPROVED_PROOF_INTERPRETERS = {"bash", "sh", "python", "python3"}
 
 
 class ContractError(ValueError):
     """A stable, fixture-addressable compiler rejection."""
 
-    def __init__(self, code: str, message: str):
+    def __init__(
+        self,
+        code: str,
+        message: str,
+        *,
+        facts: dict[str, Any] | None = None,
+    ):
         super().__init__(message)
         self.code = code
         self.message = message
+        self.facts = facts
 
     def as_dict(self) -> dict[str, str]:
         return {"code": self.code, "message": self.message}
@@ -425,8 +433,11 @@ def _validate_triggers(
     _require_unique_ids(trigger_ids, code="DUPLICATE_MEMBER")
 
 
-def _validate_proof(contract: dict[str, Any], *, repo_root: Path) -> None:
-    proof = contract["proof"]
+def _proof_entrypoint_ref(
+    proof: dict[str, Any],
+    *,
+    repo_root: Path,
+) -> str:
     command = proof["command"]
     if "\n" in command or "\r" in command or command != command.strip():
         raise ContractError(
@@ -440,29 +451,56 @@ def _validate_proof(contract: dict[str, Any], *, repo_root: Path) -> None:
     if not tokens:
         raise ContractError("PROOF_INVALID", "proof.command must not be empty")
     executable = tokens[0]
-    if "/" in executable:
-        executable_path = _validate_repo_ref(
-            executable,
+    if executable in APPROVED_PROOF_INTERPRETERS:
+        if len(tokens) < 2 or tokens[1].startswith("-"):
+            raise ContractError(
+                "PROOF_INLINE_FORBIDDEN",
+                "approved proof interpreters must be followed by a repo-owned script",
+            )
+        if shutil.which(executable) is None:
+            raise ContractError(
+                "PROOF_INVALID",
+                f"approved proof interpreter is unavailable: {executable}",
+            )
+        entrypoint = tokens[1]
+    else:
+        if "/" not in executable:
+            raise ContractError(
+                "PROOF_COMMAND_FORBIDDEN",
+                "proof.command must use a repo-owned executable or an approved interpreter",
+            )
+        entrypoint = executable
+    entrypoint_path = _validate_repo_ref(
+        entrypoint,
+        repo_root=repo_root,
+        code="PROOF_INVALID",
+        label="proof command entrypoint",
+    )
+    if executable not in APPROVED_PROOF_INTERPRETERS and not (
+        entrypoint_path.stat().st_mode & 0o111
+    ):
+        raise ContractError(
+            "PROOF_NOT_EXECUTABLE",
+            "direct proof command entrypoint is not executable",
+        )
+    return entrypoint
+
+
+def _validate_proof(contract: dict[str, Any], *, repo_root: Path) -> None:
+    proof = contract["proof"]
+    entrypoint = _proof_entrypoint_ref(proof, repo_root=repo_root)
+    for harness_ref in proof["harness_refs"]:
+        _validate_repo_ref(
+            harness_ref,
             repo_root=repo_root,
             code="PROOF_INVALID",
-            label="proof executable",
+            label="proof harness",
         )
-        if not executable_path.stat().st_mode & 0o111:
-            raise ContractError("PROOF_INVALID", "proof executable is not executable")
-    elif shutil.which(executable) is None:
+    if entrypoint not in proof["harness_refs"]:
         raise ContractError(
-            "PROOF_INVALID",
-            f"proof executable is unavailable: {executable}",
+            "PROOF_HARNESS_INCOMPLETE",
+            "proof command entrypoint must be declared in proof.harness_refs",
         )
-    if executable in {"bash", "sh", "python", "python3"} and len(tokens) > 1:
-        script = tokens[1]
-        if not script.startswith("-"):
-            _validate_repo_ref(
-                script,
-                repo_root=repo_root,
-                code="PROOF_INVALID",
-                label="proof script",
-            )
     for fixture_ref in proof["fixture_refs"]:
         _validate_repo_ref(
             fixture_ref,
@@ -538,13 +576,26 @@ def compiler_identity(repo_root: Path) -> dict[str, Any]:
     return {"sources": sources, "digest": canonical_digest(sources)}
 
 
-def fixture_identity(repo_root: Path, fixture_refs: list[str]) -> dict[str, Any]:
-    refs = sorted(fixture_refs)
-    identities = [
+def file_set_identity(repo_root: Path, refs: list[str]) -> dict[str, Any]:
+    ordered_refs = sorted(refs)
+    items = [
         {"ref": ref, "sha256": file_sha256(repo_root / ref)}
-        for ref in refs
+        for ref in ordered_refs
     ]
-    return {"refs": refs, "digest": canonical_digest(identities)}
+    return {"items": items, "digest": canonical_digest(items)}
+
+
+def proof_identity(repo_root: Path, proof: dict[str, Any]) -> dict[str, Any]:
+    entrypoint_ref = _proof_entrypoint_ref(proof, repo_root=repo_root)
+    return {
+        "command": proof["command"],
+        "entrypoint": {
+            "ref": entrypoint_ref,
+            "sha256": file_sha256(repo_root / entrypoint_ref),
+        },
+        "harnesses": file_set_identity(repo_root, proof["harness_refs"]),
+        "fixtures": file_set_identity(repo_root, proof["fixture_refs"]),
+    }
 
 
 def compile_skill(repo_root: Path, skill_name: str) -> dict[str, Any]:
@@ -590,9 +641,18 @@ def compile_skill(repo_root: Path, skill_name: str) -> dict[str, Any]:
         raise ContractError(
             "SOURCE_MUTATED_DURING_CHECK",
             f"{source_ref}: source bytes changed while compiling",
+            facts={
+                "source": {
+                    "ref": source_ref,
+                    "before_sha256": before,
+                    "after_sha256": after,
+                    "unchanged": False,
+                }
+            },
         )
     return {
         "schema_version": "skill-contract-compile-receipt.v1",
+        "skill": skill_name,
         "source": {
             "ref": source_ref,
             "before_sha256": before,
@@ -605,8 +665,97 @@ def compile_skill(repo_root: Path, skill_name: str) -> dict[str, Any]:
             "digest": canonical_digest(compiled),
         },
         "compiler": compiler_identity(repo_root),
-        "fixtures": fixture_identity(repo_root, compiled["proof"]["fixture_refs"]),
+        "proof": proof_identity(repo_root, compiled["proof"]),
         "checks": list(CHECKS),
         "result": "PASS",
         "errors": [],
     }
+
+
+def _available_source_facts(repo_root: Path, skill_name: str) -> dict[str, Any]:
+    if not re.fullmatch(r"[a-z][a-z0-9]*(?:-[a-z0-9]+)*", skill_name):
+        return {
+            "ref": None,
+            "before_sha256": None,
+            "after_sha256": None,
+            "unchanged": None,
+        }
+    source_ref = f"skills/{skill_name}/SKILL.md"
+    source_path = repo_root / source_ref
+    if not source_path.is_file() or source_path.is_symlink():
+        return {
+            "ref": source_ref,
+            "before_sha256": None,
+            "after_sha256": None,
+            "unchanged": None,
+        }
+    digest = file_sha256(source_path)
+    return {
+        "ref": source_ref,
+        "before_sha256": digest,
+        "after_sha256": digest,
+        "unchanged": True,
+    }
+
+
+def _available_contract_digest(repo_root: Path, source_ref: str | None) -> str | None:
+    if source_ref is None:
+        return None
+    try:
+        frontmatter = load_frontmatter(repo_root / source_ref)
+    except ContractError:
+        return None
+    metadata = frontmatter.get("metadata")
+    if not isinstance(metadata, dict) or "contract_v3" not in metadata:
+        return None
+    try:
+        return canonical_digest(metadata["contract_v3"])
+    except (TypeError, ValueError):
+        return None
+
+
+def compile_receipt(repo_root: Path, skill_name: str) -> dict[str, Any]:
+    """Return a typed PASS or FAIL receipt without inventing unavailable facts."""
+
+    before_attempt = _available_source_facts(repo_root, skill_name)
+    try:
+        return compile_skill(repo_root, skill_name)
+    except (ContractError, OSError) as exc:
+        error = (
+            exc
+            if isinstance(exc, ContractError)
+            else ContractError("IO_ERROR", str(exc))
+        )
+        after_attempt = _available_source_facts(repo_root, skill_name)
+        if error.facts is not None and "source" in error.facts:
+            source = error.facts["source"]
+        else:
+            before_digest = before_attempt["before_sha256"]
+            after_digest = after_attempt["after_sha256"]
+            source = {
+                "ref": before_attempt["ref"] or after_attempt["ref"],
+                "before_sha256": before_digest,
+                "after_sha256": after_digest,
+                "unchanged": (
+                    before_digest == after_digest
+                    if before_digest is not None and after_digest is not None
+                    else None
+                ),
+            }
+        schema_path = repo_root / CONTRACT_SCHEMA_REF
+        schema_digest = file_sha256(schema_path) if schema_path.is_file() else None
+        return {
+            "schema_version": "skill-contract-compile-receipt.v1",
+            "skill": skill_name,
+            "source": source,
+            "contract": {
+                "schema_ref": CONTRACT_SCHEMA_REF,
+                "schema_sha256": schema_digest,
+                "digest": _available_contract_digest(repo_root, source["ref"]),
+            },
+            "compiler": compiler_identity(repo_root),
+            "proof": None,
+            "checks": [],
+            "result": "FAIL",
+            "errors": [error.as_dict()],
+        }

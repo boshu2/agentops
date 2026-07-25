@@ -21,6 +21,7 @@ from contract_v3 import (  # noqa: E402
     canonical_bytes,
     compile_skill,
     compiler_identity,
+    file_set_identity,
     file_sha256,
     live_skill_names,
     load_frontmatter,
@@ -32,7 +33,10 @@ LEDGER_SCHEMA_REF = "schemas/skill-migration-readiness.v1.schema.json"
 DEFAULT_LEDGER_REF = "skills/skill-builder/ledgers/migration-readiness.json"
 PROBE_REF = "skills/skill-builder/receipts/skill-builder-contract-v3-probe.json"
 PROBE_SCHEMA_REF = "skills/skill-builder/schemas/probe-report.json"
-RUNNER_REF = "skills/skill-builder/scripts/run_contract_probe.py"
+RUNNER_REFS = [
+    "skills/skill-builder/scripts/run_contract_probe.py",
+    "skills/skill-builder/scripts/probe_runtime.py",
+]
 TRANCHES = {
     "T1": {"implement", "plan", "rpi", "validate"},
     "T2": {"skill-builder"},
@@ -122,12 +126,7 @@ def validated_probe(root: Path, compiled: dict[str, Any]) -> dict[str, Any]:
         root=root,
         code="PROBE_RECEIPT_INVALID",
     )
-    required = {
-        "skill": "skill-builder",
-        "contract_digest": compiled["contract"]["digest"],
-        "compiler_digest": compiled["compiler"]["digest"],
-        "result": "PASS",
-    }
+    required = {"skill": "skill-builder", "result": "PASS"}
     for key, expected in required.items():
         if receipt.get(key) != expected:
             raise ContractError(
@@ -145,27 +144,48 @@ def validated_probe(root: Path, compiled: dict[str, Any]) -> dict[str, Any]:
             "PROBE_RECEIPT_INVALID",
             f"{PROBE_REF}: source identity is stale or mutated",
         )
-    proof = receipt["proof"]
-    frontmatter = load_frontmatter(root / compiled["source"]["ref"])
-    declared = frontmatter["metadata"]["contract_v3"]["proof"]
-    if (
-        proof["class"] != declared["class"]
-        or proof["command"] != declared["command"]
-        or proof["fixture_refs"] != compiled["fixtures"]["refs"]
-        or proof["fixture_digest"] != compiled["fixtures"]["digest"]
-    ):
+    if receipt["contract"] != compiled["contract"]:
+        raise ContractError(
+            "PROBE_RECEIPT_INVALID",
+            f"{PROBE_REF}: contract identity is stale",
+        )
+    if receipt["compiler"] != compiled["compiler"]:
+        raise ContractError(
+            "PROBE_RECEIPT_INVALID",
+            f"{PROBE_REF}: compiler identity is stale",
+        )
+    if receipt["proof"] != compiled["proof"]:
         raise ContractError(
             "PROBE_RECEIPT_INVALID",
             f"{PROBE_REF}: proof identity is stale",
         )
+    if receipt["runner"] != file_set_identity(root, RUNNER_REFS):
+        raise ContractError(
+            "PROBE_RECEIPT_INVALID",
+            f"{PROBE_REF}: runner identity is stale",
+        )
+    isolation = receipt["isolation"]
+    execution = receipt["execution"]
+    cleanup = execution["cleanup"]
     if (
-        receipt["runner"]["ref"] != RUNNER_REF
-        or receipt["runner"]["sha256"] != file_sha256(root / RUNNER_REF)
-        or receipt["execution"]["exit_code"] != 0
+        isolation["kind"] != "disposable_repository_copy"
+        or isolation["initial_manifest_sha256"] != isolation["final_manifest_sha256"]
+        or isolation["changed_paths"]
+        or isolation["out_of_scope_paths"]
+        or not isolation["live_root_unchanged"]
+        or isolation["live_root_changed_paths"]
+        or execution["exit_code"] != 0
+        or execution["timed_out"]
+        or execution["interrupted"]
+        or cleanup["trigger"] != "none"
+        or not cleanup["parent_reaped"]
+        or not cleanup["process_group_empty"]
+        or not cleanup["complete"]
+        or receipt["errors"]
     ):
         raise ContractError(
             "PROBE_RECEIPT_INVALID",
-            f"{PROBE_REF}: runner identity or exit status is invalid",
+            f"{PROBE_REF}: isolated execution facts do not prove PASS",
         )
     return receipt
 

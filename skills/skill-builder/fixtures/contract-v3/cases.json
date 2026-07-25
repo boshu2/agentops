@@ -421,6 +421,271 @@
           "value": "rpi"
         }
       ]
+    },
+    {
+      "id": "forbidden-refine-authority",
+      "expected_code": "FORBIDDEN_AUTHORITY",
+      "mutations": [
+        {
+          "op": "append",
+          "path": "/authority",
+          "value": "refine_intent"
+        }
+      ]
+    },
+    {
+      "id": "forbidden-dispatch-authority",
+      "expected_code": "FORBIDDEN_AUTHORITY",
+      "mutations": [
+        {
+          "op": "append",
+          "path": "/authority",
+          "value": "dispatch_phase"
+        }
+      ]
+    },
+    {
+      "id": "forbidden-transport-authority",
+      "expected_code": "FORBIDDEN_AUTHORITY",
+      "mutations": [
+        {
+          "op": "append",
+          "path": "/authority",
+          "value": "transport"
+        }
+      ]
+    },
+    {
+      "id": "rpi-missing-dispatch-authority",
+      "expected_code": "FORBIDDEN_AUTHORITY",
+      "skill_name": "rpi",
+      "dependencies": [
+        "plan",
+        "implement",
+        "validate"
+      ],
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/triggers/aliases/0/canonical_skill",
+          "value": "rpi"
+        }
+      ]
+    },
+    {
+      "id": "binding-artifact-needs-validator",
+      "expected_code": "BINDING_ARTIFACT_UNVALIDATED",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/artifacts/produces/0/validator",
+          "value": null
+        }
+      ]
+    },
+    {
+      "id": "cross-family-trigger-id",
+      "expected_code": "DUPLICATE_MEMBER",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/triggers/negative/0/id",
+          "value": "create-skill"
+        }
+      ]
+    },
+    {
+      "id": "alias-prompt-collision",
+      "expected_code": "TRIGGER_COLLISION",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/triggers/aliases/0/alias",
+          "value": " CREATE a metadata-complete skill source package. "
+        }
+      ]
+    },
+    {
+      "id": "unknown-nearest-neighbor",
+      "expected_code": "TRIGGER_REFERENCE_INVALID",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/triggers/nearest_neighbors/0/skill",
+          "value": "missing-skill"
+        }
+      ]
+    },
+    {
+      "id": "invalid-failure-action",
+      "expected_code": "FAILURE_INVALID",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/failure/timeout/action",
+          "value": "retry"
+        }
+      ]
+    },
+    {
+      "id": "missing-proof-harness-family",
+      "expected_code": "PROOF_INVALID",
+      "mutations": [
+        {
+          "op": "delete",
+          "path": "/proof/harness_refs"
+        }
+      ]
+    },
+    {
+      "id": "empty-proof-harness-family",
+      "expected_code": "PROOF_INVALID",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/proof/harness_refs",
+          "value": []
+        }
+      ]
+    },
+    {
+      "id": "duplicate-proof-harness",
+      "expected_code": "DUPLICATE_MEMBER",
+      "mutations": [
+        {
+          "op": "append",
+          "path": "/proof/harness_refs",
+          "value": "skills/skill-builder/scripts/test-contract-v3.sh"
+        }
+      ]
+    },
+    {
+      "id": "missing-proof-harness",
+      "expected_code": "PROOF_INVALID",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/proof/harness_refs/0",
+          "value": "skills/skill-builder/scripts/does-not-exist.sh"
+        }
+      ]
+    },
+    {
+      "id": "entrypoint-not-declared-as-harness",
+      "expected_code": "PROOF_HARNESS_INCOMPLETE",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/proof/harness_refs/10",
+          "value": "skills/skill-builder/scripts/validate.sh"
+        }
+      ]
+    },
+    {
+      "id": "proof-entrypoint-traversal",
+      "expected_code": "PROOF_INVALID",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/proof/command",
+          "value": "bash ../outside.sh"
+        }
+      ]
+    },
+    {
+      "id": "unrestricted-path-command",
+      "expected_code": "PROOF_COMMAND_FORBIDDEN",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/proof/command",
+          "value": "pytest -q"
+        }
+      ]
+    },
+    {
+      "id": "inline-interpreter-command",
+      "expected_code": "PROOF_INLINE_FORBIDDEN",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/proof/command",
+          "value": "python3 -c 'print(1)'"
+        }
+      ]
+    },
+    {
+      "id": "malformed-proof-command",
+      "expected_code": "PROOF_INVALID",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/proof/command",
+          "value": "bash 'unterminated"
+        }
+      ]
+    },
+    {
+      "id": "hard-dependency-wrong-type",
+      "expected_code": "HARD_DEPENDENCY_INVALID",
+      "dependencies": "plan",
+      "mutations": []
+    },
+    {
+      "id": "duplicate-hard-dependency",
+      "expected_code": "DUPLICATE_MEMBER",
+      "dependencies": [
+        "plan",
+        "plan"
+      ],
+      "mutations": []
+    },
+    {
+      "id": "rpi-hard-dependency-has-extra",
+      "expected_code": "HARD_DEPENDENCY_FORBIDDEN",
+      "skill_name": "rpi",
+      "dependencies": [
+        "plan",
+        "implement",
+        "validate",
+        "research"
+      ],
+      "mutations": [
+        {
+          "op": "append",
+          "path": "/authority",
+          "value": "dispatch_phase"
+        },
+        {
+          "op": "set",
+          "path": "/triggers/aliases/0/canonical_skill",
+          "value": "rpi"
+        }
+      ]
+    },
+    {
+      "id": "nonexecutable-direct-harness",
+      "expected_code": "PROOF_NOT_EXECUTABLE",
+      "witness": "nonexecutable_harness",
+      "mutations": []
+    },
+    {
+      "id": "duplicate-yaml-key",
+      "expected_code": "DUPLICATE_YAML_KEY",
+      "witness": "duplicate_yaml",
+      "mutations": []
+    },
+    {
+      "id": "duplicate-json-key",
+      "expected_code": "DUPLICATE_JSON_KEY",
+      "witness": "duplicate_json",
+      "mutations": []
+    },
+    {
+      "id": "source-mutated-during-check",
+      "expected_code": "SOURCE_MUTATED_DURING_CHECK",
+      "witness": "source_mutation",
+      "mutations": []
     }
   ]
 }

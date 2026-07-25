@@ -1,13 +1,11 @@
 #!/usr/bin/env python3
-"""Run one declared contract-v3 proof and render or record its receipt."""
+"""Run one content-bound contract proof in a disposable repository copy."""
 
 from __future__ import annotations
 
 import argparse
-import hashlib
 from pathlib import Path
 import shlex
-import subprocess
 import sys
 
 sys.dont_write_bytecode = True
@@ -17,12 +15,16 @@ from contract_v3 import (  # noqa: E402
     ContractError,
     canonical_bytes,
     compile_skill,
+    file_set_identity,
     file_sha256,
-    load_frontmatter,
 )
+from probe_runtime import run_isolated_command  # noqa: E402
 
 
-RUNNER_REF = "skills/skill-builder/scripts/run_contract_probe.py"
+RUNNER_REFS = [
+    "skills/skill-builder/scripts/run_contract_probe.py",
+    "skills/skill-builder/scripts/probe_runtime.py",
+]
 
 
 def repo_root() -> Path:
@@ -42,34 +44,85 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
     return parser.parse_args(argv)
 
 
+def _probe_errors(outcome: dict[str, object]) -> list[dict[str, str]]:
+    execution = outcome["execution"]
+    isolation = outcome["isolation"]
+    assert isinstance(execution, dict)
+    assert isinstance(isolation, dict)
+    errors: list[dict[str, str]] = []
+    if execution["timed_out"]:
+        errors.append({"code": "PROOF_TIMEOUT", "message": "proof exceeded its hard timeout"})
+    if execution["interrupted"]:
+        errors.append({"code": "PROOF_INTERRUPTED", "message": "proof was interrupted by the caller"})
+    cleanup = execution["cleanup"]
+    assert isinstance(cleanup, dict)
+    if not cleanup["complete"]:
+        errors.append(
+            {
+                "code": "PROOF_CLEANUP_INCOMPLETE",
+                "message": "proof process group was not fully terminated and reaped",
+            }
+        )
+    elif cleanup["trigger"] == "descendants":
+        errors.append(
+            {
+                "code": "PROOF_DESCENDANTS",
+                "message": "proof left a live descendant after its entrypoint exited",
+            }
+        )
+    if not isolation["live_root_unchanged"]:
+        errors.append(
+            {
+                "code": "LIVE_ROOT_MUTATED",
+                "message": "live repository bytes changed during isolated proof execution",
+            }
+        )
+    if isolation["out_of_scope_paths"]:
+        errors.append(
+            {
+                "code": "PROOF_SCOPE_VIOLATION",
+                "message": "proof changed paths outside its empty allowed-write scope",
+            }
+        )
+    if execution["exit_code"] != 0 and not execution["timed_out"] and not execution["interrupted"]:
+        errors.append(
+            {
+                "code": "PROOF_EXIT_NONZERO",
+                "message": f"proof entrypoint exited {execution['exit_code']}",
+            }
+        )
+    return errors
+
+
 def run_probe(root: Path, skill_name: str) -> dict[str, object]:
     compiled = compile_skill(root, skill_name)
-    frontmatter = load_frontmatter(root / compiled["source"]["ref"])
-    contract = frontmatter["metadata"]["contract_v3"]
-    proof = contract["proof"]
-    command = shlex.split(proof["command"])
-    try:
-        completed = subprocess.run(
-            command,
-            cwd=root,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            timeout=120,
-            check=False,
-        )
-        result = "PASS" if completed.returncode == 0 else "FAIL"
-        exit_code = completed.returncode
-        stdout = completed.stdout
-        stderr = completed.stderr
-    except subprocess.TimeoutExpired as exc:
-        result = "NOT_PROVEN"
-        exit_code = 124
-        stdout = exc.stdout or b""
-        stderr = exc.stderr or b""
+    command = shlex.split(compiled["proof"]["command"])
+    outcome = run_isolated_command(root, command)
     after = file_sha256(root / compiled["source"]["ref"])
-    unchanged = after == compiled["source"]["before_sha256"]
-    if not unchanged:
-        result = "NOT_PROVEN"
+    source_unchanged = after == compiled["source"]["before_sha256"]
+    if not source_unchanged:
+        isolation = outcome["isolation"]
+        assert isinstance(isolation, dict)
+        isolation["live_root_unchanged"] = False
+        changed = isolation["live_root_changed_paths"]
+        assert isinstance(changed, list)
+        if compiled["source"]["ref"] not in changed:
+            changed.append(compiled["source"]["ref"])
+            changed.sort()
+    errors = _probe_errors(outcome)
+    execution = outcome["execution"]
+    assert isinstance(execution, dict)
+    cleanup = execution["cleanup"]
+    assert isinstance(cleanup, dict)
+    proof_failed = execution["exit_code"] != 0
+    not_proven = (
+        execution["timed_out"]
+        or execution["interrupted"]
+        or not cleanup["complete"]
+        or cleanup["trigger"] != "none"
+        or not outcome["isolation"]["live_root_unchanged"]  # type: ignore[index]
+    )
+    result = "NOT_PROVEN" if not_proven else "FAIL" if proof_failed or errors else "PASS"
     return {
         "schema_version": "skill-contract-probe-receipt.v1",
         "skill": skill_name,
@@ -77,26 +130,16 @@ def run_probe(root: Path, skill_name: str) -> dict[str, object]:
             "ref": compiled["source"]["ref"],
             "before_sha256": compiled["source"]["before_sha256"],
             "after_sha256": after,
-            "unchanged": unchanged,
+            "unchanged": source_unchanged,
         },
-        "contract_digest": compiled["contract"]["digest"],
-        "compiler_digest": compiled["compiler"]["digest"],
-        "runner": {
-            "ref": RUNNER_REF,
-            "sha256": file_sha256(root / RUNNER_REF),
-        },
-        "proof": {
-            "class": proof["class"],
-            "command": proof["command"],
-            "fixture_refs": compiled["fixtures"]["refs"],
-            "fixture_digest": compiled["fixtures"]["digest"],
-        },
-        "execution": {
-            "exit_code": exit_code,
-            "stdout_sha256": hashlib.sha256(stdout).hexdigest(),
-            "stderr_sha256": hashlib.sha256(stderr).hexdigest(),
-        },
+        "contract": compiled["contract"],
+        "compiler": compiled["compiler"],
+        "runner": file_set_identity(root, RUNNER_REFS),
+        "proof": compiled["proof"],
+        "isolation": outcome["isolation"],
+        "execution": outcome["execution"],
         "result": result,
+        "errors": errors,
     }
 
 
@@ -112,12 +155,16 @@ def main(argv: list[str]) -> int:
             output = contained_output(root, args.output)
             atomic_write(output, payload)
             print(output.relative_to(root).as_posix())
-        return 0 if receipt["result"] == "PASS" else 1
+        if receipt["result"] != "PASS":
+            for error in receipt["errors"]:
+                print(f"[{error['code']}] {error['message']}", file=sys.stderr)
+            return 1
+        return 0
     except ContractError as exc:
         print(f"[{exc.code}] {exc.message}", file=sys.stderr)
         return 1
-    except OSError as exc:
-        print(f"[IO_ERROR] {exc}", file=sys.stderr)
+    except (OSError, ValueError) as exc:
+        print(f"[PROBE_SETUP_ERROR] {exc}", file=sys.stderr)
         return 1
 
 
