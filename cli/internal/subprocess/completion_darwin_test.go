@@ -33,6 +33,11 @@ func TestRunDarwinFastExitUnderLoad(t *testing.T) {
 		failOnce sync.Once
 		first    string
 	)
+	wantCleanup := CleanupOutcome{
+		Status:    CleanupCompleted,
+		Attempted: true,
+		Completed: true,
+	}
 	start := make(chan struct{})
 	for worker := range workers {
 		wg.Add(1)
@@ -44,7 +49,7 @@ func TestRunDarwinFastExitUnderLoad(t *testing.T) {
 					Name: "/bin/bash",
 					Args: []string{"--noprofile", "--norc", "-c", "exit 0"},
 				})
-				if err == nil && result.ExitCode == 0 && !result.Cleanup.Failed() {
+				if err == nil && result.ExitCode == 0 && result.Cleanup == wantCleanup {
 					continue
 				}
 				failOnce.Do(func() {
