@@ -3,7 +3,6 @@
 package subprocess
 
 import (
-	"errors"
 	"fmt"
 	"os"
 	"strconv"
@@ -11,37 +10,41 @@ import (
 	"syscall"
 )
 
-const linuxZombieProcessState = "Z"
-
 func probeProcessGroup(processGroupID int) error {
+	return probeLinuxProcessGroup(processGroupID, linuxProcessGroupProbeOps{
+		listPIDs:     listLinuxPIDs,
+		processGroup: syscall.Getpgid,
+		readState:    readLinuxProcessState,
+	})
+}
+
+func listLinuxPIDs() ([]int, error) {
 	entries, err := os.ReadDir("/proc")
 	if err != nil {
-		return fmt.Errorf("enumerate /proc for process group %d: %w", processGroupID, err)
+		return nil, err
 	}
+	pids := make([]int, 0, len(entries))
 	for _, entry := range entries {
-		if !entry.IsDir() {
+		pid, err := strconv.Atoi(entry.Name())
+		if err != nil || pid <= 0 {
 			continue
 		}
-		if _, err := strconv.Atoi(entry.Name()); err != nil {
-			continue
-		}
-		statPath := "/proc/" + entry.Name() + "/stat"
-		stat, err := os.ReadFile(statPath)
-		if errors.Is(err, os.ErrNotExist) {
-			continue
-		}
-		if err != nil {
-			return fmt.Errorf("read %s while observing process group %d: %w", statPath, processGroupID, err)
-		}
-		state, group, err := parseLinuxProcessStat(string(stat))
-		if err != nil {
-			return fmt.Errorf("parse %s while observing process group %d: %w", statPath, processGroupID, err)
-		}
-		if group == processGroupID && state != linuxZombieProcessState {
-			return nil
-		}
+		pids = append(pids, pid)
 	}
-	return syscall.ESRCH
+	return pids, nil
+}
+
+func readLinuxProcessState(pid int) (state string, processGroupID int, err error) {
+	statPath := fmt.Sprintf("/proc/%d/stat", pid)
+	stat, err := os.ReadFile(statPath)
+	if err != nil {
+		return "", 0, fmt.Errorf("read %s: %w", statPath, err)
+	}
+	state, processGroupID, err = parseLinuxProcessStat(string(stat))
+	if err != nil {
+		return "", 0, fmt.Errorf("parse %s: %w", statPath, err)
+	}
+	return state, processGroupID, nil
 }
 
 func parseLinuxProcessStat(stat string) (state string, processGroupID int, err error) {
