@@ -4,6 +4,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"regexp"
+	"strings"
+
+	"golang.org/x/text/cases"
 )
 
 var contractIdentifierPattern = regexp.MustCompile(`^[a-z][a-z0-9]*(?:[._-][a-z0-9]+)*$`)
@@ -84,10 +87,16 @@ type contractFailureCaseWire struct {
 type contractProofWire struct {
 	Class       *string   `json:"class"`
 	Command     *string   `json:"command"`
+	HarnessRefs *[]string `json:"harness_refs"`
 	FixtureRefs *[]string `json:"fixture_refs"`
 }
 
-func normalizeContractV3(wire *contractV3Wire, path string) (ContractV3, error) {
+func normalizeContractV3(
+	wire *contractV3Wire,
+	path string,
+	skillName string,
+	dependencies []string,
+) (ContractV3, error) {
 	if err := requireContractV3(wire, path); err != nil {
 		return ContractV3{}, err
 	}
@@ -123,6 +132,26 @@ func normalizeContractV3(wire *contractV3Wire, path string) (ContractV3, error) 
 	if err != nil {
 		return ContractV3{}, err
 	}
+	if err := validateSkillScopedAuthority(
+		skillName,
+		*wire.PrimaryLayer,
+		*wire.Authority,
+		path+".authority",
+	); err != nil {
+		return ContractV3{}, err
+	}
+	if err := validateEffectSemantics(*wire.Authority, effects, path+".effects"); err != nil {
+		return ContractV3{}, err
+	}
+	if err := validateBindingArtifacts(artifacts.Produces, path+".artifacts.produces"); err != nil {
+		return ContractV3{}, err
+	}
+	if err := validateTriggerSemantics(skillName, triggers, path+".triggers"); err != nil {
+		return ContractV3{}, err
+	}
+	if err := validateHardDependencies(skillName, dependencies, path); err != nil {
+		return ContractV3{}, err
+	}
 	return ContractV3{
 		SchemaVersion:  *wire.SchemaVersion,
 		PrimaryLayer:   *wire.PrimaryLayer,
@@ -134,6 +163,224 @@ func normalizeContractV3(wire *contractV3Wire, path string) (ContractV3, error) 
 		Failure:        failures,
 		Proof:          proof,
 	}, nil
+}
+
+func validateSkillScopedAuthority(
+	skillName string,
+	primaryLayer string,
+	authority []string,
+	path string,
+) error {
+	declared := stringSet(authority)
+	forbidden := []struct {
+		verb     string
+		rejected bool
+		message  string
+	}{
+		{"refine_intent", skillName != "plan", "only plan may refine_intent"},
+		{"dispatch_phase", skillName != "rpi", "only rpi may dispatch_phase"},
+		{"write_verdict", skillName != "validate", "only validate may write_verdict"},
+		{"transport", primaryLayer != "runtime", "transport requires runtime primary_layer"},
+	}
+	for _, check := range forbidden {
+		if _, exists := declared[check.verb]; exists && check.rejected {
+			return fmt.Errorf("%s: %s", path, check.message)
+		}
+	}
+	if skillName == "rpi" {
+		if _, exists := declared["dispatch_phase"]; !exists {
+			return fmt.Errorf("%s: rpi must declare dispatch_phase", path)
+		}
+	}
+	return nil
+}
+
+func validateEffectSemantics(
+	authority []string,
+	effects []ContractEffect,
+	path string,
+) error {
+	mutatingKinds := stringSet([]string{
+		"filesystem.write",
+		"network.write",
+		"environment.write",
+		"credential.switch",
+		"external.mutate",
+		"runtime.session",
+		"host.configure",
+	})
+	receiptRequiredKinds := stringSet([]string{
+		"filesystem.write",
+		"network.write",
+		"environment.write",
+		"credential.switch",
+		"external.mutate",
+		"runtime.session",
+		"host.configure",
+		"process.start",
+	})
+	cleanupRequiredKinds := stringSet([]string{
+		"process.start",
+		"credential.switch",
+		"runtime.session",
+	})
+
+	hasMutatingEffect := false
+	hasAuthorizedMutation := false
+	for index, effect := range effects {
+		itemPath := fmt.Sprintf("%s[%d]", path, index)
+		if _, required := receiptRequiredKinds[effect.Kind]; required && effect.Receipt != "required" {
+			return fmt.Errorf(
+				"%s effect %q (%s) requires receipt=required",
+				itemPath,
+				effect.ID,
+				effect.Kind,
+			)
+		}
+		if _, required := cleanupRequiredKinds[effect.Kind]; required && effect.Cleanup != "required" {
+			return fmt.Errorf(
+				"%s effect %q (%s) requires cleanup=required",
+				itemPath,
+				effect.ID,
+				effect.Kind,
+			)
+		}
+		if _, mutating := mutatingKinds[effect.Kind]; mutating {
+			hasMutatingEffect = true
+			if effect.Authorization == "caller" || effect.Authorization == "implement" {
+				hasAuthorizedMutation = true
+			}
+		}
+	}
+
+	_, mayMutate := stringSet(authority)["mutate_subject"]
+	switch {
+	case mayMutate && !hasAuthorizedMutation:
+		return fmt.Errorf(
+			"%s: mutate_subject requires a mutating effect authorized by caller or implement",
+			path,
+		)
+	case !mayMutate && hasMutatingEffect:
+		return fmt.Errorf("%s: a mutating effect requires mutate_subject authority", path)
+	default:
+		return nil
+	}
+}
+
+func validateBindingArtifacts(produces []ContractArtifact, path string) error {
+	for index, artifact := range produces {
+		if artifact.Semantics == "binding" &&
+			(artifact.SchemaRef == nil || artifact.Validator == nil) {
+			return fmt.Errorf(
+				"%s[%d] binding output %q requires schema_ref and validator",
+				path,
+				index,
+				artifact.Name,
+			)
+		}
+	}
+	return nil
+}
+
+func validateTriggerSemantics(
+	skillName string,
+	triggers ContractTriggers,
+	path string,
+) error {
+	seenText := make(map[string]string)
+	addText := func(value, location string) error {
+		normalized := normalizeTriggerText(value)
+		if previous, exists := seenText[normalized]; exists {
+			return fmt.Errorf(
+				"%s contains normalized trigger text collision at %s and %s",
+				path,
+				previous,
+				location,
+			)
+		}
+		seenText[normalized] = location
+		return nil
+	}
+	families := []struct {
+		name   string
+		values []ContractTriggerCase
+	}{
+		{"positive", triggers.Positive},
+		{"negative", triggers.Negative},
+		{"ambiguity", triggers.Ambiguity},
+	}
+	for _, family := range families {
+		for index, trigger := range family.values {
+			if err := addText(
+				trigger.Prompt,
+				fmt.Sprintf("%s.%s[%d].prompt", path, family.name, index),
+			); err != nil {
+				return err
+			}
+		}
+	}
+	for index, alias := range triggers.Aliases {
+		location := fmt.Sprintf("%s.aliases[%d]", path, index)
+		if err := addText(alias.Alias, location+".alias"); err != nil {
+			return err
+		}
+		if alias.CanonicalSkill != skillName {
+			return fmt.Errorf(
+				"%s.canonical_skill must equal owning skill %q",
+				location,
+				skillName,
+			)
+		}
+	}
+	for index, neighbor := range triggers.NearestNeighbors {
+		if neighbor.Skill == skillName {
+			return fmt.Errorf(
+				"%s.nearest_neighbors[%d] nearest neighbor must differ from owning skill %q",
+				path,
+				index,
+				skillName,
+			)
+		}
+	}
+	return nil
+}
+
+func normalizeTriggerText(value string) string {
+	return cases.Fold().String(strings.Join(strings.Fields(value), " "))
+}
+
+func validateHardDependencies(skillName string, dependencies []string, path string) error {
+	if skillName != "rpi" {
+		if len(dependencies) != 0 {
+			return fmt.Errorf("%s: %s may not declare hard skill dependencies", path, skillName)
+		}
+		return nil
+	}
+	required := stringSet([]string{"plan", "implement", "validate"})
+	actual := stringSet(dependencies)
+	if len(actual) != len(required) {
+		return fmt.Errorf(
+			"%s: rpi hard dependencies must be exactly plan, implement, and validate",
+			path,
+		)
+	}
+	for dependency := range required {
+		if _, exists := actual[dependency]; !exists {
+			return fmt.Errorf(
+				"%s: rpi hard dependencies must be exactly plan, implement, and validate",
+				path,
+			)
+		}
+	}
+	return nil
+}
+
+func stringSet(values []string) map[string]struct{} {
+	set := make(map[string]struct{}, len(values))
+	for _, value := range values {
+		set[value] = struct{}{}
+	}
+	return set
 }
 
 func requireContractV3(wire *contractV3Wire, path string) error {
@@ -640,6 +887,8 @@ func normalizeContractProof(wire *contractProofWire, path string) (ContractProof
 		return ContractProof{}, fmt.Errorf("%s.class is required", path)
 	case wire.Command == nil:
 		return ContractProof{}, fmt.Errorf("%s.command is required", path)
+	case wire.HarnessRefs == nil:
+		return ContractProof{}, fmt.Errorf("%s.harness_refs is required", path)
 	case wire.FixtureRefs == nil:
 		return ContractProof{}, fmt.Errorf("%s.fixture_refs is required", path)
 	}
@@ -650,13 +899,24 @@ func normalizeContractProof(wire *contractProofWire, path string) (ContractProof
 	default:
 		return ContractProof{}, fmt.Errorf("%s.class has unsupported value %q", path, *wire.Class)
 	}
-	if *wire.Command == "" || len(*wire.FixtureRefs) == 0 {
-		return ContractProof{}, fmt.Errorf("%s command and fixture_refs must not be empty", path)
+	if *wire.Command == "" || len(*wire.HarnessRefs) == 0 || len(*wire.FixtureRefs) == 0 {
+		return ContractProof{}, fmt.Errorf(
+			"%s command, harness_refs, and fixture_refs must not be empty",
+			path,
+		)
+	}
+	for index, harness := range *wire.HarnessRefs {
+		if harness == "" {
+			return ContractProof{}, fmt.Errorf("%s.harness_refs[%d] must not be empty", path, index)
+		}
 	}
 	for index, fixture := range *wire.FixtureRefs {
 		if fixture == "" {
 			return ContractProof{}, fmt.Errorf("%s.fixture_refs[%d] must not be empty", path, index)
 		}
+	}
+	if err := validateUniqueStrings(*wire.HarnessRefs, path+".harness_refs"); err != nil {
+		return ContractProof{}, err
 	}
 	if err := validateUniqueStrings(*wire.FixtureRefs, path+".fixture_refs"); err != nil {
 		return ContractProof{}, err
@@ -664,6 +924,7 @@ func normalizeContractProof(wire *contractProofWire, path string) (ContractProof
 	return ContractProof{
 		Class:       *wire.Class,
 		Command:     *wire.Command,
+		HarnessRefs: *wire.HarnessRefs,
 		FixtureRefs: *wire.FixtureRefs,
 	}, nil
 }

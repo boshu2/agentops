@@ -280,7 +280,12 @@ func normalizeV4Entry(wire *catalogV4EntryWire, index int) (CatalogEntry, error)
 	if wire.ContractV3 == nil {
 		return CatalogEntry{}, fmt.Errorf("%s is required", path)
 	}
-	contract, err := normalizeContractV3(wire.ContractV3, path)
+	contract, err := normalizeContractV3(
+		wire.ContractV3,
+		path,
+		entry.Name,
+		entry.Dependencies,
+	)
 	if err != nil {
 		return CatalogEntry{}, err
 	}
