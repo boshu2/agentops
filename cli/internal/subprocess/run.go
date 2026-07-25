@@ -77,10 +77,16 @@ type Result struct {
 // cancellation terminates the process tree, and WaitDelay prevents a
 // descendant holding inherited pipes from blocking completion indefinitely.
 func Run(ctx context.Context, command Command) (Result, error) {
-	return runWithCleanup(ctx, command, terminateProcessTree)
+	return runWithCleanup(ctx, command, nil)
 }
 
 type cleanupProcessTree func(*exec.Cmd) error
+
+type managedProcessTree interface {
+	attach(*exec.Cmd) error
+	terminate(*exec.Cmd) error
+	close() error
+}
 
 func runWithCleanup(ctx context.Context, command Command, cleanup cleanupProcessTree) (Result, error) {
 	result := Result{
@@ -107,7 +113,10 @@ func runWithCleanup(ctx context.Context, command Command, cleanup cleanupProcess
 		waitDelay = defaultWaitDelay
 	}
 	cmd.WaitDelay = waitDelay
-	configureProcessTree(cmd)
+	tree, err := configureProcessTree(cmd, waitDelay)
+	if err != nil {
+		return result, fmt.Errorf("configure process tree for %q: %w", command.Name, err)
+	}
 
 	var stdoutCapture, stderrCapture, combinedCapture *capture
 	if command.CombinedOutput {
@@ -122,19 +131,33 @@ func runWithCleanup(ctx context.Context, command Command, cleanup cleanupProcess
 	}
 
 	if err := cmd.Start(); err != nil {
+		closeErr := tree.close()
 		snapshotResult(&result, stdoutCapture, stderrCapture, combinedCapture)
+		var startErr error
 		if ctxErr := ctx.Err(); ctxErr != nil {
-			return result, fmt.Errorf("start %q: %w", command.Name, ctxErr)
+			startErr = fmt.Errorf("start %q: %w", command.Name, ctxErr)
+		} else {
+			startErr = fmt.Errorf("start %q: %w", command.Name, err)
 		}
-		return result, fmt.Errorf("start %q: %w", command.Name, err)
+		if closeErr != nil {
+			closeErr = fmt.Errorf("close process tree for %q after start failure: %w", command.Name, closeErr)
+		}
+		return result, errors.Join(startErr, closeErr)
 	}
 	pid := cmd.Process.Pid
+	attachErr := tree.attach(cmd)
 	if command.OnStart != nil {
 		command.OnStart(pid)
 	}
+	if attachErr != nil {
+		attachErr = fmt.Errorf("attach %q to process tree: %w", command.Name, attachErr)
+		if killErr := cmd.Process.Kill(); killErr != nil {
+			attachErr = errors.Join(attachErr, fmt.Errorf("kill %q after process-tree attach failure: %w", command.Name, killErr))
+		}
+	}
 
 	waitErr := cmd.Wait()
-	cleanupErr := cleanup(cmd)
+	cleanupErr := finishProcessTree(tree, cmd, cleanup, attachErr)
 	result.Cleanup = cleanupOutcome(cleanupErr)
 	if command.OnExit != nil {
 		command.OnExit(pid)
@@ -148,7 +171,7 @@ func runWithCleanup(ctx context.Context, command Command, cleanup cleanupProcess
 	// inherited pipe. WaitDelay closes that pipe; the unconditional tree
 	// cleanup above then kills the descendant. The parent's exit status remains
 	// authoritative once cleanup has completed.
-	if errors.Is(waitErr, exec.ErrWaitDelay) && result.ExitCode == 0 {
+	if errors.Is(waitErr, exec.ErrWaitDelay) && result.ExitCode == 0 && cleanupErr == nil {
 		waitErr = nil
 	}
 	var primaryErr error
@@ -165,6 +188,20 @@ func runWithCleanup(ctx context.Context, command Command, cleanup cleanupProcess
 		cleanupErr = fmt.Errorf("clean process tree for %q: %w", command.Name, cleanupErr)
 	}
 	return result, errors.Join(primaryErr, cleanupErr)
+}
+
+func finishProcessTree(tree managedProcessTree, cmd *exec.Cmd, cleanup cleanupProcessTree, attachErr error) error {
+	var cleanupErr error
+	if cleanup == nil {
+		cleanupErr = tree.terminate(cmd)
+	} else {
+		cleanupErr = cleanup(cmd)
+	}
+	cleanupErr = errors.Join(attachErr, cleanupErr)
+	if closeErr := tree.close(); closeErr != nil {
+		cleanupErr = errors.Join(cleanupErr, fmt.Errorf("close process tree: %w", closeErr))
+	}
+	return cleanupErr
 }
 
 func cleanupOutcome(err error) CleanupOutcome {

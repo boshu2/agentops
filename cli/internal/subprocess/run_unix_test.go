@@ -6,6 +6,7 @@ import (
 	"context"
 	"errors"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -109,6 +110,36 @@ func TestRunSuccessfulParentTerminatesBackgroundDescendant(t *testing.T) {
 	}
 	assertCleanupCompleted(t, result.Cleanup)
 	pid := awaitPID(t, pidFile)
+	awaitProcessGone(t, pid)
+}
+
+func TestRunPreservesWaitDelayWhenBackgroundCleanupFails(t *testing.T) {
+	pidFile := filepath.Join(t.TempDir(), "grandchild.pid")
+	command := Command{
+		Name:           "/bin/sh",
+		Args:           []string{"-c", `sleep 30 & child=$!; printf '%s' "$child" > "$PID_FILE"; echo parent-success; exit 0`},
+		Env:            append(os.Environ(), "PID_FILE="+pidFile),
+		CombinedOutput: true,
+		OutputLimit:    CaptureLimit{HeadBytes: 128, TailBytes: 128},
+		WaitDelay:      100 * time.Millisecond,
+	}
+	cleanupErr := errors.New("injected cleanup failure")
+
+	result, err := runWithCleanup(context.Background(), command, func(*exec.Cmd) error {
+		return cleanupErr
+	})
+	pid := awaitPID(t, pidFile)
+	t.Cleanup(func() {
+		_ = syscall.Kill(pid, syscall.SIGKILL)
+	})
+	if !errors.Is(err, exec.ErrWaitDelay) || !errors.Is(err, cleanupErr) {
+		t.Fatalf("Run error = %v, want wait-delay and cleanup identities", err)
+	}
+	if result.Cleanup.Status != CleanupFailed {
+		t.Fatalf("cleanup = %#v, want failed outcome", result.Cleanup)
+	}
+
+	_ = syscall.Kill(pid, syscall.SIGKILL)
 	awaitProcessGone(t, pid)
 }
 

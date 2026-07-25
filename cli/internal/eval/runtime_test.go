@@ -798,3 +798,37 @@ func TestRuntimeAttemptsPreserveLastCleanupFailure(t *testing.T) {
 		t.Fatalf("runtime record cleanup = %#v, want failed", record.Runtime.Cleanup)
 	}
 }
+
+func TestRuntimeAttemptsStopOnCleanupFailure(t *testing.T) {
+	cleanupErr := errors.New("cleanup sentinel")
+	calls := 0
+	result, attempts, err := runLiveRuntimeWithAttempts(
+		context.Background(),
+		func(context.Context, RuntimeCommand) (RuntimeExecutionResult, error) {
+			calls++
+			if calls == 1 {
+				return RuntimeExecutionResult{Cleanup: &subprocess.CleanupOutcome{
+					Status:    subprocess.CleanupFailed,
+					Attempted: true,
+					Error:     cleanupErr.Error(),
+				}}, cleanupErr
+			}
+			return RuntimeExecutionResult{Cleanup: &subprocess.CleanupOutcome{
+				Status:    subprocess.CleanupCompleted,
+				Attempted: true,
+				Completed: true,
+			}}, nil
+		},
+		RuntimeCommand{},
+		2,
+	)
+	if calls != 1 || attempts != 1 {
+		t.Fatalf("calls/attempts = %d/%d, want cleanup failure to stop after attempt 1", calls, attempts)
+	}
+	if !errors.Is(err, cleanupErr) {
+		t.Fatalf("error = %v, want cleanup sentinel", err)
+	}
+	if result.Cleanup == nil || result.Cleanup.Status != subprocess.CleanupFailed {
+		t.Fatalf("cleanup = %#v, want failed first-attempt outcome", result.Cleanup)
+	}
+}

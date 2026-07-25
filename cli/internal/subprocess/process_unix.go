@@ -6,20 +6,23 @@ import (
 	"errors"
 	"os/exec"
 	"syscall"
+	"time"
 )
 
-func configureProcessTree(cmd *exec.Cmd) {
+type unixProcessTree struct{}
+
+func configureProcessTree(cmd *exec.Cmd, _ time.Duration) (*unixProcessTree, error) {
+	tree := &unixProcessTree{}
 	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
 	cmd.Cancel = func() error {
-		return killProcessGroup(cmd)
+		return tree.terminate(cmd)
 	}
+	return tree, nil
 }
 
-func terminateProcessTree(cmd *exec.Cmd) error {
-	return killProcessGroup(cmd)
-}
+func (*unixProcessTree) attach(*exec.Cmd) error { return nil }
 
-func killProcessGroup(cmd *exec.Cmd) error {
+func (*unixProcessTree) terminate(cmd *exec.Cmd) error {
 	if cmd.Process == nil {
 		return nil
 	}
@@ -29,3 +32,5 @@ func killProcessGroup(cmd *exec.Cmd) error {
 	}
 	return err
 }
+
+func (*unixProcessTree) close() error { return nil }
