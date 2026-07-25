@@ -515,6 +515,13 @@ func runLiveRuntimeWithAttempts(ctx context.Context, runner RuntimeRunner, comma
 			return result, attempt, nil
 		}
 		lastErr = err
+		// Failed tree cleanup is an infrastructure failure, not a retryable
+		// runtime result. A later successful attempt cannot prove that the
+		// earlier process tree was removed, so preserve the failed attempt as
+		// the terminal result.
+		if result.Cleanup != nil && result.Cleanup.Failed() {
+			return result, attempt, err
+		}
 		if ctxErr := attemptCtx.Err(); errors.Is(ctxErr, context.DeadlineExceeded) {
 			lastErr = errors.Join(
 				fmt.Errorf("runtime timed out after %ds: %w", command.TimeoutSeconds, ctxErr),
