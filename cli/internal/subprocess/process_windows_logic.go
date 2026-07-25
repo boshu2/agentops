@@ -124,11 +124,20 @@ func resumeInitialProcessThreadWithAPI(api windowsAPI, processID uint32) (return
 			closeErr := api.closeHandle(thread)
 
 			var operationErr error
-			if resumeResult == resumeThreadFailed {
+			switch resumeResult {
+			case 1:
+				// The process was created with one CREATE_SUSPENDED count. A
+				// prior count of exactly one proves this call made it runnable.
+			case resumeThreadFailed:
 				if resumeErr == nil {
 					resumeErr = errors.New("ResumeThread failed without a diagnostic")
 				}
 				operationErr = fmt.Errorf("ResumeThread: %w", resumeErr)
+			default:
+				operationErr = fmt.Errorf(
+					"ResumeThread returned prior suspend count %d; want exactly 1 for the single-suspend design",
+					resumeResult,
+				)
 			}
 			if closeErr != nil {
 				closeErr = fmt.Errorf("CloseHandle(thread): %w", closeErr)

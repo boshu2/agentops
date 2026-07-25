@@ -63,6 +63,12 @@ func (tree *unixProcessTree) terminate(cmd *exec.Cmd) error {
 	return terminateUnixProcessGroup(cmd.Process.Pid, tree.waitDelay, tree.ops)
 }
 
+func (*unixProcessTree) observeTermination(*exec.Cmd) error {
+	// attach is infallible on POSIX, so the attach-failure observer is
+	// unreachable for this implementation.
+	return errors.New("POSIX process-tree attachment cannot require termination observation")
+}
+
 func terminateUnixProcessGroup(processGroupID int, timeout time.Duration, ops unixProcessGroupOps) error {
 	if timeout <= 0 {
 		timeout = defaultWaitDelay
@@ -77,20 +83,25 @@ func terminateUnixProcessGroup(processGroupID int, timeout time.Duration, ops un
 
 	// Setpgid makes this process group the lifecycle ownership boundary. A
 	// successful SIGKILL request is not completion: only ESRCH proves that no
-	// member remains observable. EPERM and every other observation error are
-	// opaque, so they fail cleanup instead of being treated as absence.
+	// member remains observable. EPERM means the group is still observable but
+	// not signalable, so retain its identity and keep polling. Every other
+	// observation error is opaque and fails cleanup immediately.
 	deadline := ops.clock.now().Add(timeout)
+	var lastPermissionErr error
 	for {
 		err = ops.probe(processGroupID)
 		if errors.Is(err, syscall.ESRCH) {
 			return nil
 		}
-		if err != nil {
+		if errors.Is(err, syscall.EPERM) {
+			lastPermissionErr = err
+		} else if err != nil {
 			return fmt.Errorf("observe process group %d after termination: %w", processGroupID, err)
 		}
 		now := ops.clock.now()
 		if !now.Before(deadline) {
-			return fmt.Errorf("process group %d remained observable for %s after SIGKILL", processGroupID, timeout)
+			timeoutErr := fmt.Errorf("process group %d remained observable for %s after SIGKILL", processGroupID, timeout)
+			return errors.Join(timeoutErr, lastPermissionErr)
 		}
 		delay := min(unixProcessGroupPollInterval, deadline.Sub(now))
 		ops.clock.sleep(delay)

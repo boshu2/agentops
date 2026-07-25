@@ -198,12 +198,14 @@ func TestRunJoinsDeadlineAndCleanupFailures(t *testing.T) {
 func TestAttachFailureSkipsWaitAfterIneffectiveKillAndJoinsErrors(t *testing.T) {
 	attachErr := errors.New("attach sentinel")
 	killErr := errors.New("kill sentinel")
+	observeErr := errors.New("observation sentinel")
 	releaseErr := errors.New("release sentinel")
 	waitCalled := false
 
 	waitErr, cleanupErr, waited := handleAttachFailure(
 		attachErr,
 		func() error { return killErr },
+		func() error { return observeErr },
 		func() error {
 			waitCalled = true
 			return errors.New("wait must not run")
@@ -216,7 +218,7 @@ func TestAttachFailureSkipsWaitAfterIneffectiveKillAndJoinsErrors(t *testing.T) 
 	if waitErr != nil {
 		t.Fatalf("wait error = %v, want nil because Wait was skipped", waitErr)
 	}
-	for _, want := range []error{attachErr, killErr, releaseErr} {
+	for _, want := range []error{attachErr, killErr, observeErr, releaseErr} {
 		if !errors.Is(cleanupErr, want) {
 			t.Fatalf("cleanup error = %v, want identity %v", cleanupErr, want)
 		}
@@ -229,6 +231,7 @@ func TestAttachFailureWaitsAfterEffectiveKillAndPreservesWaitError(t *testing.T)
 	waitErr, cleanupErr, waited := handleAttachFailure(
 		attachErr,
 		func() error { return nil },
+		func() error { return nil },
 		func() error { return waitSentinel },
 		func() error {
 			t.Fatal("release must not run after effective kill")
@@ -240,6 +243,42 @@ func TestAttachFailureWaitsAfterEffectiveKillAndPreservesWaitError(t *testing.T)
 	}
 	if !errors.Is(cleanupErr, attachErr) {
 		t.Fatalf("cleanup error = %v, want attach identity", cleanupErr)
+	}
+}
+
+func TestAttachFailureDoesNotWaitWhenKillInitiatedButTerminationUnobserved(t *testing.T) {
+	attachErr := errors.New("attach sentinel")
+	observeErr := errors.New("termination observation timed out")
+	releaseErr := errors.New("release sentinel")
+	waitCalled := false
+	releaseCalled := false
+
+	waitErr, cleanupErr, waited := handleAttachFailure(
+		attachErr,
+		func() error { return nil },
+		func() error { return observeErr },
+		func() error {
+			waitCalled = true
+			return errors.New("unbounded wait must not run")
+		},
+		func() error {
+			releaseCalled = true
+			return releaseErr
+		},
+	)
+	if waited || waitCalled {
+		t.Fatal("attach failure entered Wait before bounded termination observation succeeded")
+	}
+	if !releaseCalled {
+		t.Fatal("process handle was not released after termination observation failed")
+	}
+	if waitErr != nil {
+		t.Fatalf("wait error = %v, want nil because Wait was skipped", waitErr)
+	}
+	for _, want := range []error{attachErr, observeErr, releaseErr} {
+		if !errors.Is(cleanupErr, want) {
+			t.Fatalf("cleanup error = %v, want identity %v", cleanupErr, want)
+		}
 	}
 }
 

@@ -100,8 +100,10 @@ Cleanup diagnostics are bounded, and a cleanup failure is joined with any
 cancellation, deadline, wait, or exit error so neither identity is lost.
 `completed` requires bounded platform absence proof: POSIX process-group
 observation must reach `ESRCH`, and Windows Job Object accounting must report
-zero active processes. Timeout, permission denial, or opaque observation is a
-cleanup failure.
+zero active processes. A POSIX permission denial remains observable and is
+polled until `ESRCH` or the deadline; a persistent denial, timeout, or opaque
+observation is a cleanup failure. After a Windows attach failure, `Wait` is
+entered only after bounded process-handle termination observation succeeds.
 
 Callers keep their domain-specific rendering and exit classification. The
 shared seam owns only process construction, bounded capture, cancellation, and

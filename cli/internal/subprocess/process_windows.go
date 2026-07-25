@@ -77,7 +77,8 @@ type jobObjectBasicAccountingInformationValue struct {
 
 type windowsNativeAPI struct {
 	windowsAPI
-	assignProcessToJob func(windowsHandle, uintptr) error
+	assignProcessToJob        func(windowsHandle, uintptr) error
+	waitForProcessTermination func(windowsHandle, uint32) error
 }
 
 type windowsProcessTree struct {
@@ -126,7 +127,8 @@ var nativeWindowsAPI = windowsNativeAPI{
 		resumeThread:            nativeResumeThread,
 		closeHandle:             nativeCloseHandle,
 	},
-	assignProcessToJob: nativeAssignProcessToJob,
+	assignProcessToJob:        nativeAssignProcessToJob,
+	waitForProcessTermination: nativeWaitForProcessTermination,
 }
 
 func systemWindowsClock() windowsClock {
@@ -245,6 +247,21 @@ func nativeCloseHandle(handle windowsHandle) error {
 	return syscall.CloseHandle(syscall.Handle(handle))
 }
 
+func nativeWaitForProcessTermination(process windowsHandle, waitMillis uint32) error {
+	result, err := syscall.WaitForSingleObject(syscall.Handle(process), waitMillis)
+	if err != nil {
+		return err
+	}
+	switch result {
+	case syscall.WAIT_OBJECT_0:
+		return nil
+	case syscall.WAIT_TIMEOUT:
+		return fmt.Errorf("process handle did not signal within %dms", waitMillis)
+	default:
+		return fmt.Errorf("wait for process handle returned status %#x", result)
+	}
+}
+
 func (tree *windowsProcessTree) attach(cmd *exec.Cmd) error {
 	tree.mu.Lock()
 	defer tree.mu.Unlock()
@@ -268,6 +285,19 @@ func (tree *windowsProcessTree) attach(cmd *exec.Cmd) error {
 		return tree.terminateLocked()
 	}
 	return resumeInitialProcessThreadWithAPI(tree.api.windowsAPI, uint32(cmd.Process.Pid))
+}
+
+func (tree *windowsProcessTree) observeTermination(cmd *exec.Cmd) error {
+	if cmd.Process == nil {
+		return fmt.Errorf("process handle is unavailable")
+	}
+	var observationErr error
+	if err := cmd.Process.WithHandle(func(processHandle uintptr) {
+		observationErr = tree.api.waitForProcessTermination(windowsHandle(processHandle), tree.waitMillis)
+	}); err != nil {
+		return fmt.Errorf("access process handle for termination observation: %w", err)
+	}
+	return observationErr
 }
 
 func (tree *windowsProcessTree) terminate(_ *exec.Cmd) error {

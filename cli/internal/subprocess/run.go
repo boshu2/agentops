@@ -86,6 +86,7 @@ type cleanupProcessTree func(*exec.Cmd) error
 type managedProcessTree interface {
 	attach(*exec.Cmd) error
 	terminate(*exec.Cmd) error
+	observeTermination(*exec.Cmd) error
 	close() error
 }
 
@@ -156,6 +157,7 @@ func runWithCleanup(ctx context.Context, command Command, cleanup cleanupProcess
 		waitErr, attachErr, _ = handleAttachFailure(
 			attachErr,
 			cmd.Process.Kill,
+			func() error { return tree.observeTermination(cmd) },
 			cmd.Wait,
 			cmd.Process.Release,
 		)
@@ -199,17 +201,22 @@ func runWithCleanup(ctx context.Context, command Command, cleanup cleanupProcess
 func handleAttachFailure(
 	attachErr error,
 	kill func() error,
+	observeTermination func() error,
 	wait func() error,
 	release func() error,
 ) (waitErr error, cleanupErr error, waited bool) {
 	cleanupErr = attachErr
 	killErr := kill()
-	if killErr == nil || errors.Is(killErr, os.ErrProcessDone) {
+	if killErr != nil && !errors.Is(killErr, os.ErrProcessDone) {
+		cleanupErr = errors.Join(cleanupErr, fmt.Errorf("kill after process-tree attach failure: %w", killErr))
+	}
+	observationErr := observeTermination()
+	if observationErr == nil {
 		return wait(), cleanupErr, true
 	}
-	cleanupErr = errors.Join(cleanupErr, fmt.Errorf("kill after process-tree attach failure: %w", killErr))
+	cleanupErr = errors.Join(cleanupErr, fmt.Errorf("observe process termination after attach failure: %w", observationErr))
 	if releaseErr := release(); releaseErr != nil {
-		cleanupErr = errors.Join(cleanupErr, fmt.Errorf("release process after ineffective kill: %w", releaseErr))
+		cleanupErr = errors.Join(cleanupErr, fmt.Errorf("release process after unproven termination: %w", releaseErr))
 	}
 	return nil, cleanupErr, false
 }

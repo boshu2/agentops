@@ -227,17 +227,81 @@ func TestTerminateUnixProcessGroupFailsWhenAbsenceCannotBeProven(t *testing.T) {
 	}
 }
 
-func TestTerminateUnixProcessGroupTreatsEPERMAsFailedObservation(t *testing.T) {
+func TestTerminateUnixProcessGroupPollsFromEPERMToESRCH(t *testing.T) {
+	now := time.Unix(0, 0)
+	probes := 0
+	ops := unixProcessGroupOps{
+		signal: func(int, syscall.Signal) error { return nil },
+		probe: func(int) error {
+			probes++
+			if probes < 3 {
+				return syscall.EPERM
+			}
+			return syscall.ESRCH
+		},
+		clock: unixClock{
+			now: func() time.Time { return now },
+			sleep: func(delay time.Duration) {
+				now = now.Add(delay)
+			},
+		},
+	}
+
+	if err := terminateUnixProcessGroup(42, 50*time.Millisecond, ops); err != nil {
+		t.Fatalf("terminateUnixProcessGroup: %v", err)
+	}
+	if probes != 3 {
+		t.Fatalf("probes = %d, want EPERM polling through ESRCH", probes)
+	}
+}
+
+func TestTerminateUnixProcessGroupRetainsEPERMAtTimeout(t *testing.T) {
+	now := time.Unix(0, 0)
 	ops := unixProcessGroupOps{
 		signal: func(int, syscall.Signal) error { return nil },
 		probe:  func(int) error { return syscall.EPERM },
+		clock: unixClock{
+			now: func() time.Time { return now },
+			sleep: func(delay time.Duration) {
+				now = now.Add(delay)
+			},
+		},
+	}
+
+	err := terminateUnixProcessGroup(42, 25*time.Millisecond, ops)
+	if !errors.Is(err, syscall.EPERM) {
+		t.Fatalf("error = %v, want last EPERM identity at timeout", err)
+	}
+	if !strings.Contains(err.Error(), "remained observable") {
+		t.Fatalf("error = %q, want timeout diagnostic", err)
+	}
+}
+
+func TestUnixProcessGroupEPERMStateIsStableAcrossCallOrder(t *testing.T) {
+	now := time.Unix(0, 0)
+	timeoutOps := unixProcessGroupOps{
+		signal: func(int, syscall.Signal) error { return nil },
+		probe:  func(int) error { return syscall.EPERM },
+		clock: unixClock{
+			now: func() time.Time { return now },
+			sleep: func(delay time.Duration) {
+				now = now.Add(delay)
+			},
+		},
+	}
+	if err := terminateUnixProcessGroup(42, time.Millisecond, timeoutOps); !errors.Is(err, syscall.EPERM) {
+		t.Fatalf("first call error = %v, want EPERM timeout", err)
+	}
+
+	successOps := unixProcessGroupOps{
+		signal: func(int, syscall.Signal) error { return nil },
+		probe:  func(int) error { return syscall.ESRCH },
 		clock: unixClock{
 			now:   time.Now,
 			sleep: func(time.Duration) {},
 		},
 	}
-
-	if err := terminateUnixProcessGroup(42, 25*time.Millisecond, ops); !errors.Is(err, syscall.EPERM) {
-		t.Fatalf("error = %v, want EPERM identity", err)
+	if err := terminateUnixProcessGroup(43, time.Millisecond, successOps); err != nil {
+		t.Fatalf("second call inherited prior EPERM state: %v", err)
 	}
 }
