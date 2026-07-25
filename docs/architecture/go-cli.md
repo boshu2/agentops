@@ -101,7 +101,8 @@ cancellation, deadline, wait, or exit error so neither identity is lost.
 
 Callers keep their domain-specific rendering and exit classification. The
 shared seam owns only process construction, bounded capture, cancellation, and
-cleanup. Goal measurements and eval run records serialize cleanup state.
+cleanup. Goal measurements and eval run records serialize cleanup state; live
+eval records keep version-probe cleanup separate from the main runtime cleanup.
 Gate and adapter boundaries preserve cleanup failure in their returned error;
 metadata-only Git probes explicitly collapse any process failure to unavailable
 metadata.

@@ -108,6 +108,7 @@ func TestRunRecordCleanupOutcomeValidatesAgainstEvalRunSchema(t *testing.T) {
 		Completed: true,
 	}
 	run.Runtime.Cleanup = cleanup
+	run.Runtime.VersionProbeCleanup = cleanup
 	run.CaseResults[0].Cleanup = cleanup
 
 	payload, err := json.Marshal(run)
@@ -120,6 +121,41 @@ func TestRunRecordCleanupOutcomeValidatesAgainstEvalRunSchema(t *testing.T) {
 	}
 	if err := compileEvalSchemaForTest(t, "eval-run.v1.schema.json").Validate(value); err != nil {
 		t.Fatalf("cleanup-bearing run record does not satisfy eval-run.v1.schema.json:\n%v", err)
+	}
+}
+
+func TestCleanupOutcomeSchemaRejectsErrorForNonFailedStatus(t *testing.T) {
+	schema := compileEvalSchemaForTest(t, "eval-run.v1.schema.json")
+	for _, tc := range []struct {
+		name      string
+		status    subprocess.CleanupStatus
+		attempted bool
+		completed bool
+	}{
+		{name: "not_started", status: subprocess.CleanupNotStarted},
+		{name: "completed", status: subprocess.CleanupCompleted, attempted: true, completed: true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			run := minimalRunRecord("cleanup-schema-negative", 1, map[Dimension]float64{DimensionCorrectness: 1})
+			run.Runtime.Cleanup = &subprocess.CleanupOutcome{
+				Status:    tc.status,
+				Attempted: tc.attempted,
+				Completed: tc.completed,
+				Error:     "contradictory cleanup error",
+			}
+
+			payload, err := json.Marshal(run)
+			if err != nil {
+				t.Fatalf("marshal run: %v", err)
+			}
+			var value any
+			if err := json.Unmarshal(payload, &value); err != nil {
+				t.Fatalf("decode run: %v", err)
+			}
+			if err := schema.Validate(value); err == nil {
+				t.Fatalf("schema accepted %s cleanup outcome carrying an error", tc.status)
+			}
+		})
 	}
 }
 

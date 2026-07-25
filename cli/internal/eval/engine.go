@@ -478,9 +478,13 @@ func collectGitRecordContext(ctx context.Context, workDir string) GitRecord {
 }
 
 func gitOutputContext(ctx context.Context, workDir string, args ...string) string {
+	return gitOutputContextWithRunner(ctx, subprocess.Run, workDir, args...)
+}
+
+func gitOutputContextWithRunner(ctx context.Context, run subprocessRunner, workDir string, args ...string) string {
 	// Git identity is best-effort metadata. This boundary intentionally
 	// collapses command and cleanup failures to an empty value.
-	result, err := subprocess.Run(ctx, subprocess.Command{
+	result, err := run(ctx, subprocess.Command{
 		Name:        "git",
 		Args:        args,
 		Dir:         workDir,

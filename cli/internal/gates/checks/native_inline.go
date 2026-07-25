@@ -16,6 +16,8 @@ import (
 
 // Native ports of the bash gate's INLINE checks (no backing script). ag-3n71 PB1.
 
+type subprocessRunner func(context.Context, subprocess.Command) (subprocess.Result, error)
+
 func init() {
 	gates.Register(gates.Check{ID: "go.vet", Tiers: gates.Fast | gates.Full, Match: []string{"cli/**", "go.mod", "go.sum"}, Blocking: true, Run: runGoVet})
 	gates.Register(gates.Check{ID: "changelog.sync", Tiers: gates.Fast | gates.Full, Match: []string{"CHANGELOG.md", "docs/CHANGELOG.md"}, Blocking: true, Run: runChangelogSync})
@@ -28,10 +30,14 @@ func init() {
 // routing hint intentionally collapses any subprocess or cleanup failure to an
 // empty set; authoritative scoped routing supplies rc.ChangedFiles.
 func changedFilesFor(ctx context.Context, rc gates.RunContext) []string {
+	return changedFilesForWithRunner(ctx, rc, subprocess.Run)
+}
+
+func changedFilesForWithRunner(ctx context.Context, rc gates.RunContext, run subprocessRunner) []string {
 	if len(rc.ChangedFiles) > 0 {
 		return rc.ChangedFiles
 	}
-	result, err := subprocess.Run(ctx, subprocess.Command{
+	result, err := run(ctx, subprocess.Command{
 		Name:        "git",
 		Args:        []string{"diff", "--name-only", "origin/main...HEAD"},
 		Dir:         rc.RepoRoot,

@@ -3,6 +3,7 @@ package eval
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -67,6 +68,30 @@ func TestRunSuiteArtifactCheckPasses(t *testing.T) {
 	}
 	if len(run.Suite.SHA256) != 64 {
 		t.Fatalf("suite sha length = %d, want 64", len(run.Suite.SHA256))
+	}
+}
+
+func TestGitOutputContextIntentionallyCollapsesCleanupFailure(t *testing.T) {
+	cleanupErr := errors.New("cleanup sentinel")
+	got := gitOutputContextWithRunner(
+		context.Background(),
+		func(context.Context, subprocess.Command) (subprocess.Result, error) {
+			return subprocess.Result{
+				Stdout: subprocess.Output{Prefix: []byte("must-not-escape\n"), TotalBytes: 16},
+				Cleanup: subprocess.CleanupOutcome{
+					Status:    subprocess.CleanupFailed,
+					Attempted: true,
+					Error:     cleanupErr.Error(),
+				},
+			}, cleanupErr
+		},
+		t.TempDir(),
+		"rev-parse",
+		"--short=12",
+		"HEAD",
+	)
+	if got != "" {
+		t.Fatalf("gitOutputContextWithRunner = %q, want unavailable metadata", got)
 	}
 }
 
