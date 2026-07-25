@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"os"
 	"os/exec"
 	"time"
 	"unicode/utf8"
@@ -149,14 +150,19 @@ func runWithCleanup(ctx context.Context, command Command, cleanup cleanupProcess
 	if command.OnStart != nil {
 		command.OnStart(pid)
 	}
+	var waitErr error
 	if attachErr != nil {
 		attachErr = fmt.Errorf("attach %q to process tree: %w", command.Name, attachErr)
-		if killErr := cmd.Process.Kill(); killErr != nil {
-			attachErr = errors.Join(attachErr, fmt.Errorf("kill %q after process-tree attach failure: %w", command.Name, killErr))
-		}
+		waitErr, attachErr, _ = handleAttachFailure(
+			attachErr,
+			cmd.Process.Kill,
+			cmd.Wait,
+			cmd.Process.Release,
+		)
+	} else {
+		waitErr = cmd.Wait()
 	}
 
-	waitErr := cmd.Wait()
 	cleanupErr := finishProcessTree(tree, cmd, cleanup, attachErr)
 	result.Cleanup = cleanupOutcome(cleanupErr)
 	if command.OnExit != nil {
@@ -188,6 +194,24 @@ func runWithCleanup(ctx context.Context, command Command, cleanup cleanupProcess
 		cleanupErr = fmt.Errorf("clean process tree for %q: %w", command.Name, cleanupErr)
 	}
 	return result, errors.Join(primaryErr, cleanupErr)
+}
+
+func handleAttachFailure(
+	attachErr error,
+	kill func() error,
+	wait func() error,
+	release func() error,
+) (waitErr error, cleanupErr error, waited bool) {
+	cleanupErr = attachErr
+	killErr := kill()
+	if killErr == nil || errors.Is(killErr, os.ErrProcessDone) {
+		return wait(), cleanupErr, true
+	}
+	cleanupErr = errors.Join(cleanupErr, fmt.Errorf("kill after process-tree attach failure: %w", killErr))
+	if releaseErr := release(); releaseErr != nil {
+		cleanupErr = errors.Join(cleanupErr, fmt.Errorf("release process after ineffective kill: %w", releaseErr))
+	}
+	return nil, cleanupErr, false
 }
 
 func finishProcessTree(tree managedProcessTree, cmd *exec.Cmd, cleanup cleanupProcessTree, attachErr error) error {

@@ -3,6 +3,7 @@
 package subprocess
 
 import (
+	"errors"
 	"fmt"
 	"os/exec"
 	"sync"
@@ -12,12 +13,11 @@ import (
 )
 
 const (
-	jobObjectExtendedLimitInformation = 9
-	jobObjectLimitKillOnJobClose      = 0x00002000
-	windowsProcessTreeExitCode        = 1
-	createSuspended                   = 0x00000004
-	threadSuspendResume               = 0x0002
-	resumeThreadFailed                = ^uintptr(0)
+	jobObjectBasicAccountingInformation = 1
+	jobObjectExtendedLimitInformation   = 9
+	jobObjectLimitKillOnJobClose        = 0x00002000
+	createSuspended                     = 0x00000004
+	threadSuspendResume                 = 0x0002
 )
 
 var (
@@ -26,8 +26,9 @@ var (
 	procSetInformationJobObject = kernel32.NewProc("SetInformationJobObject")
 	procAssignProcessToJob      = kernel32.NewProc("AssignProcessToJobObject")
 	procTerminateJobObject      = kernel32.NewProc("TerminateJobObject")
-	procThread32FirstW          = kernel32.NewProc("Thread32First")
-	procThread32NextW           = kernel32.NewProc("Thread32Next")
+	procQueryInformationJob     = kernel32.NewProc("QueryInformationJobObject")
+	procThread32First           = kernel32.NewProc(thread32FirstSymbol)
+	procThread32Next            = kernel32.NewProc(thread32NextSymbol)
 	procOpenThread              = kernel32.NewProc("OpenThread")
 	procResumeThread            = kernel32.NewProc("ResumeThread")
 )
@@ -63,9 +64,27 @@ type jobObjectExtendedLimitInformationValue struct {
 	peakJobMemoryUsed     uintptr
 }
 
+type jobObjectBasicAccountingInformationValue struct {
+	totalUserTime             int64
+	totalKernelTime           int64
+	thisPeriodTotalUserTime   int64
+	thisPeriodTotalKernelTime int64
+	totalPageFaultCount       uint32
+	totalProcesses            uint32
+	activeProcesses           uint32
+	totalTerminatedProcesses  uint32
+}
+
+type windowsNativeAPI struct {
+	windowsAPI
+	assignProcessToJob func(windowsHandle, uintptr) error
+}
+
 type windowsProcessTree struct {
 	mu                 sync.Mutex
-	job                syscall.Handle
+	api                windowsNativeAPI
+	clock              windowsClock
+	job                windowsHandle
 	waitMillis         uint32
 	attached           bool
 	terminateRequested bool
@@ -73,23 +92,15 @@ type windowsProcessTree struct {
 	closed             bool
 }
 
-type threadEntry32 struct {
-	size           uint32
-	usage          uint32
-	threadID       uint32
-	ownerProcessID uint32
-	basePriority   int32
-	deltaPriority  int32
-	flags          uint32
-}
-
 func configureProcessTree(cmd *exec.Cmd, waitDelay time.Duration) (*windowsProcessTree, error) {
-	job, err := createKillOnCloseJob()
+	job, err := createKillOnCloseJobWithAPI(nativeWindowsAPI.windowsAPI)
 	if err != nil {
 		return nil, err
 	}
 	tree := &windowsProcessTree{
 		job:        job,
+		api:        nativeWindowsAPI,
+		clock:      systemWindowsClock(),
 		waitMillis: finiteWindowsWaitMillis(waitDelay),
 	}
 	// Start suspended so the child cannot exit or create descendants before it
@@ -102,12 +113,38 @@ func configureProcessTree(cmd *exec.Cmd, waitDelay time.Duration) (*windowsProce
 	return tree, nil
 }
 
-func createKillOnCloseJob() (syscall.Handle, error) {
+var nativeWindowsAPI = windowsNativeAPI{
+	windowsAPI: windowsAPI{
+		createJobObject:         nativeCreateJobObject,
+		setJobKillOnClose:       nativeSetJobKillOnClose,
+		terminateJob:            nativeTerminateJob,
+		queryJobActiveProcesses: nativeQueryJobActiveProcesses,
+		createThreadSnapshot:    nativeCreateThreadSnapshot,
+		thread32First:           nativeThread32First,
+		thread32Next:            nativeThread32Next,
+		openThread:              nativeOpenThread,
+		resumeThread:            nativeResumeThread,
+		closeHandle:             nativeCloseHandle,
+	},
+	assignProcessToJob: nativeAssignProcessToJob,
+}
+
+func systemWindowsClock() windowsClock {
+	return windowsClock{
+		now:   time.Now,
+		sleep: time.Sleep,
+	}
+}
+
+func nativeCreateJobObject() (windowsHandle, error) {
 	handle, _, callErr := procCreateJobObjectW.Call(0, 0)
 	if handle == 0 {
 		return 0, windowsAPIError("CreateJobObjectW", callErr)
 	}
-	job := syscall.Handle(handle)
+	return windowsHandle(handle), nil
+}
+
+func nativeSetJobKillOnClose(job windowsHandle) error {
 	limits := jobObjectExtendedLimitInformationValue{}
 	limits.basicLimitInformation.limitFlags = jobObjectLimitKillOnJobClose
 	ok, _, callErr := procSetInformationJobObject.Call(
@@ -117,10 +154,95 @@ func createKillOnCloseJob() (syscall.Handle, error) {
 		unsafe.Sizeof(limits),
 	)
 	if ok == 0 {
-		_ = syscall.CloseHandle(job)
-		return 0, windowsAPIError("SetInformationJobObject", callErr)
+		return windowsAPIError("SetInformationJobObject", callErr)
 	}
-	return job, nil
+	return nil
+}
+
+func nativeAssignProcessToJob(job windowsHandle, processHandle uintptr) error {
+	ok, _, callErr := procAssignProcessToJob.Call(uintptr(job), processHandle)
+	if ok == 0 {
+		return windowsAPIError("AssignProcessToJobObject", callErr)
+	}
+	return nil
+}
+
+func nativeTerminateJob(job windowsHandle, exitCode uint32) error {
+	ok, _, callErr := procTerminateJobObject.Call(uintptr(job), uintptr(exitCode))
+	if ok == 0 {
+		return windowsAPIError("TerminateJobObject", callErr)
+	}
+	return nil
+}
+
+func nativeQueryJobActiveProcesses(job windowsHandle) (uint32, error) {
+	info := jobObjectBasicAccountingInformationValue{}
+	ok, _, callErr := procQueryInformationJob.Call(
+		uintptr(job),
+		jobObjectBasicAccountingInformation,
+		uintptr(unsafe.Pointer(&info)),
+		unsafe.Sizeof(info),
+		0,
+	)
+	if ok == 0 {
+		return 0, windowsAPIError("QueryInformationJobObject", callErr)
+	}
+	return info.activeProcesses, nil
+}
+
+func nativeCreateThreadSnapshot() (windowsHandle, error) {
+	snapshot, err := syscall.CreateToolhelp32Snapshot(syscall.TH32CS_SNAPTHREAD, 0)
+	if err != nil {
+		return 0, err
+	}
+	return windowsHandle(snapshot), nil
+}
+
+func nativeThread32First(snapshot windowsHandle, entry *threadEntry32) (bool, error) {
+	ok, _, callErr := procThread32First.Call(
+		uintptr(snapshot),
+		uintptr(unsafe.Pointer(entry)),
+	)
+	return nativeThreadEnumerationResult(ok, callErr)
+}
+
+func nativeThread32Next(snapshot windowsHandle, entry *threadEntry32) (bool, error) {
+	ok, _, callErr := procThread32Next.Call(
+		uintptr(snapshot),
+		uintptr(unsafe.Pointer(entry)),
+	)
+	return nativeThreadEnumerationResult(ok, callErr)
+}
+
+func nativeThreadEnumerationResult(ok uintptr, callErr error) (bool, error) {
+	if ok != 0 {
+		return true, nil
+	}
+	if errors.Is(callErr, syscall.ERROR_NO_MORE_FILES) {
+		return false, errWindowsNoMoreFiles
+	}
+	return false, normalizeWindowsCallError(callErr)
+}
+
+func nativeOpenThread(threadID uint32) (windowsHandle, error) {
+	thread, _, callErr := procOpenThread.Call(threadSuspendResume, 0, uintptr(threadID))
+	if thread == 0 {
+		return 0, normalizeWindowsCallError(callErr)
+	}
+	return windowsHandle(thread), nil
+}
+
+func nativeResumeThread(thread windowsHandle) (windowsDWORD, error) {
+	result, _, callErr := procResumeThread.Call(uintptr(thread))
+	resumed := windowsDWORD(result)
+	if resumed == resumeThreadFailed {
+		return resumed, normalizeWindowsCallError(callErr)
+	}
+	return resumed, nil
+}
+
+func nativeCloseHandle(handle windowsHandle) error {
+	return syscall.CloseHandle(syscall.Handle(handle))
 }
 
 func (tree *windowsProcessTree) attach(cmd *exec.Cmd) error {
@@ -134,10 +256,7 @@ func (tree *windowsProcessTree) attach(cmd *exec.Cmd) error {
 	}
 	var assignErr error
 	if err := cmd.Process.WithHandle(func(processHandle uintptr) {
-		ok, _, callErr := procAssignProcessToJob.Call(uintptr(tree.job), processHandle)
-		if ok == 0 {
-			assignErr = windowsAPIError("AssignProcessToJobObject", callErr)
-		}
+		assignErr = tree.api.assignProcessToJob(tree.job, processHandle)
 	}); err != nil {
 		return fmt.Errorf("access process handle: %w", err)
 	}
@@ -148,7 +267,7 @@ func (tree *windowsProcessTree) attach(cmd *exec.Cmd) error {
 	if tree.terminateRequested {
 		return tree.terminateLocked()
 	}
-	return resumeInitialProcessThread(uint32(cmd.Process.Pid))
+	return resumeInitialProcessThreadWithAPI(tree.api.windowsAPI, uint32(cmd.Process.Pid))
 }
 
 func (tree *windowsProcessTree) terminate(_ *exec.Cmd) error {
@@ -171,23 +290,18 @@ func (tree *windowsProcessTree) terminateLocked() error {
 		tree.terminateRequested = true
 		return nil
 	}
-	ok, _, callErr := procTerminateJobObject.Call(uintptr(tree.job), windowsProcessTreeExitCode)
-	if ok == 0 {
-		return windowsAPIError("TerminateJobObject", callErr)
+	timeout := time.Duration(tree.waitMillis) * time.Millisecond
+	if err := terminateWindowsJobWithAPI(
+		tree.api.windowsAPI,
+		tree.clock,
+		tree.job,
+		windowsProcessTreeExitCode,
+		timeout,
+	); err != nil {
+		return err
 	}
-	waitResult, err := syscall.WaitForSingleObject(tree.job, tree.waitMillis)
-	if err != nil {
-		return fmt.Errorf("wait for terminated job object: %w", err)
-	}
-	switch waitResult {
-	case syscall.WAIT_OBJECT_0:
-		tree.terminated = true
-		return nil
-	case syscall.WAIT_TIMEOUT:
-		return fmt.Errorf("wait for terminated job object timed out after %dms", tree.waitMillis)
-	default:
-		return fmt.Errorf("wait for terminated job object returned status %#x", waitResult)
-	}
+	tree.terminated = true
+	return nil
 }
 
 func (tree *windowsProcessTree) close() error {
@@ -197,52 +311,10 @@ func (tree *windowsProcessTree) close() error {
 		return nil
 	}
 	tree.closed = true
-	if err := syscall.CloseHandle(tree.job); err != nil {
+	if err := tree.api.closeHandle(tree.job); err != nil {
 		return fmt.Errorf("CloseHandle(job): %w", err)
 	}
 	return nil
-}
-
-func resumeInitialProcessThread(processID uint32) error {
-	snapshot, err := syscall.CreateToolhelp32Snapshot(syscall.TH32CS_SNAPTHREAD, 0)
-	if err != nil {
-		return fmt.Errorf("snapshot process threads: %w", err)
-	}
-	defer func() {
-		_ = syscall.CloseHandle(snapshot)
-	}()
-
-	entry := threadEntry32{size: uint32(unsafe.Sizeof(threadEntry32{}))}
-	ok, _, callErr := procThread32FirstW.Call(
-		uintptr(snapshot),
-		uintptr(unsafe.Pointer(&entry)),
-	)
-	for ok != 0 {
-		if entry.ownerProcessID == processID {
-			thread, _, openErr := procOpenThread.Call(threadSuspendResume, 0, uintptr(entry.threadID))
-			if thread == 0 {
-				return windowsAPIError("OpenThread", openErr)
-			}
-			resumeResult, _, resumeErr := procResumeThread.Call(thread)
-			closeErr := syscall.CloseHandle(syscall.Handle(thread))
-			if resumeResult == resumeThreadFailed {
-				return windowsAPIError("ResumeThread", resumeErr)
-			}
-			if closeErr != nil {
-				return fmt.Errorf("CloseHandle(thread): %w", closeErr)
-			}
-			return nil
-		}
-		entry.size = uint32(unsafe.Sizeof(threadEntry32{}))
-		ok, _, callErr = procThread32NextW.Call(
-			uintptr(snapshot),
-			uintptr(unsafe.Pointer(&entry)),
-		)
-	}
-	if errno, isErrno := callErr.(syscall.Errno); isErrno && errno == syscall.ERROR_NO_MORE_FILES {
-		return fmt.Errorf("initial thread for process %d was not found", processID)
-	}
-	return windowsAPIError("Thread32Next", callErr)
 }
 
 func finiteWindowsWaitMillis(delay time.Duration) uint32 {
@@ -264,8 +336,15 @@ func finiteWindowsWaitMillis(delay time.Duration) uint32 {
 }
 
 func windowsAPIError(name string, callErr error) error {
+	return fmt.Errorf("%s: %w", name, normalizeWindowsCallError(callErr))
+}
+
+func normalizeWindowsCallError(callErr error) error {
 	if errno, ok := callErr.(syscall.Errno); ok && errno == 0 {
-		return fmt.Errorf("%s failed", name)
+		return errors.New("Windows API failed without a diagnostic")
 	}
-	return fmt.Errorf("%s: %w", name, callErr)
+	if callErr == nil {
+		return errors.New("Windows API failed without a diagnostic")
+	}
+	return callErr
 }
