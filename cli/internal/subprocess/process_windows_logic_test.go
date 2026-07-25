@@ -2,6 +2,7 @@ package subprocess
 
 import (
 	"errors"
+	"strings"
 	"testing"
 	"time"
 )
@@ -141,6 +142,52 @@ func TestResumeInitialProcessThreadUsesTypedDWORDAndJoinsCloseFailures(t *testin
 	for _, want := range []error{resumeErr, threadCloseErr, snapshotCloseErr} {
 		if !errors.Is(err, want) {
 			t.Fatalf("error = %v, want identity %v", err, want)
+		}
+	}
+}
+
+func TestResumeInitialProcessThreadRejectsIncompleteResumeAndJoinsCloseFailures(t *testing.T) {
+	threadCloseErr := errors.New("thread close sentinel")
+	snapshotCloseErr := errors.New("snapshot close sentinel")
+	const (
+		snapshotHandle windowsHandle = 10
+		threadHandle   windowsHandle = 20
+		processID                    = 42
+	)
+	api := windowsAPI{
+		createThreadSnapshot: func() (windowsHandle, error) {
+			return snapshotHandle, nil
+		},
+		thread32First: func(_ windowsHandle, entry *threadEntry32) (bool, error) {
+			entry.ownerProcessID = processID
+			entry.threadID = 7
+			return true, nil
+		},
+		openThread: func(uint32) (windowsHandle, error) {
+			return threadHandle, nil
+		},
+		resumeThread: func(windowsHandle) (windowsDWORD, error) {
+			return 2, nil
+		},
+		closeHandle: func(handle windowsHandle) error {
+			switch handle {
+			case threadHandle:
+				return threadCloseErr
+			case snapshotHandle:
+				return snapshotCloseErr
+			default:
+				return nil
+			}
+		},
+	}
+
+	err := resumeInitialProcessThreadWithAPI(api, processID)
+	if !strings.Contains(err.Error(), "prior suspend count 2") {
+		t.Fatalf("error = %v, want incomplete-resume diagnostic", err)
+	}
+	for _, want := range []error{threadCloseErr, snapshotCloseErr} {
+		if !errors.Is(err, want) {
+			t.Fatalf("error = %v, want close identity %v", err, want)
 		}
 	}
 }
