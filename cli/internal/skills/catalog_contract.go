@@ -88,10 +88,11 @@ type ContractFailureCase struct {
 	Detail string `json:"detail"`
 }
 
-// ContractProof declares the behavioral proof class, executable command, and
-// fixture references used by the probe.
+// ContractProof declares the behavioral proof class, executable command,
+// content-bound harness closure, and fixture references used by the probe.
 type ContractProof struct {
 	Class       string   `json:"class"`
 	Command     string   `json:"command"`
+	HarnessRefs []string `json:"harness_refs"`
 	FixtureRefs []string `json:"fixture_refs"`
 }

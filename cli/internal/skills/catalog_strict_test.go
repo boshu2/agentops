@@ -1,12 +1,16 @@
 package skills
 
 import (
+	"bytes"
+	"context"
 	"encoding/json"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"reflect"
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestLoadCatalogVersionedFixtures(t *testing.T) {
@@ -19,7 +23,7 @@ func TestLoadCatalogVersionedFixtures(t *testing.T) {
 		{version: "1", name: "legacy-v1"},
 		{version: "2", name: "legacy-v2"},
 		{version: "3", name: "legacy-v3"},
-		{version: "4", name: "shadow-v4"},
+		{version: "4", name: "skill-builder"},
 	}
 	for _, tt := range tests {
 		t.Run("v"+tt.version, func(t *testing.T) {
@@ -50,22 +54,23 @@ func TestLoadCatalogV3PreservesLiveFields(t *testing.T) {
 	}
 }
 
-func TestLoadCatalogV4PreservesTypedContract(t *testing.T) {
+func TestLoadCatalogV4PreservesCompilerValidTypedContract(t *testing.T) {
 	t.Parallel()
 
+	assertV4FixtureAcceptedBySourceCompiler(t)
 	contract := loadCatalogFixture(t, "catalog-v4.json").Skills[0].ContractV3
 	if contract == nil {
 		t.Fatal("contract_v3 was dropped")
 	}
-	if contract.SchemaVersion != "skill-contract.v3" || contract.PrimaryLayer != "support" || len(contract.LifecycleSeams) != 2 {
+	if contract.SchemaVersion != "skill-contract.v3" || contract.PrimaryLayer != "implementation" || len(contract.LifecycleSeams) != 1 {
 		t.Fatalf("layer/seams were not preserved: %#v", contract)
 	}
-	if len(contract.Effects) != 1 || contract.Effects[0].ID != "publish-owned-projection" ||
-		contract.Effects[0].Receipt != "required" {
+	if len(contract.Effects) != 4 || contract.Effects[1].ID != "source-write" ||
+		contract.Effects[1].Receipt != "required" {
 		t.Fatalf("structured effects were not preserved: %#v", contract.Effects)
 	}
-	if len(contract.Artifacts.Consumes) != 1 || contract.Artifacts.Consumes[0].SchemaRef == nil ||
-		*contract.Artifacts.Consumes[0].SchemaRef != "skill-contract.v3" ||
+	if len(contract.Artifacts.Consumes) != 2 || contract.Artifacts.Consumes[1].SchemaRef == nil ||
+		*contract.Artifacts.Consumes[1].SchemaRef != "schemas/skill-frontmatter.v2.schema.json" ||
 		contract.Artifacts.Consumes[0].Validator != nil {
 		t.Fatalf("typed artifacts were not preserved: %#v", contract.Artifacts)
 	}
@@ -76,10 +81,79 @@ func TestLoadCatalogV4PreservesTypedContract(t *testing.T) {
 	if contract.Failure.PartialMutation.Action != "rollback_then_stop" {
 		t.Fatalf("failure semantics were not preserved: %#v", contract.Failure)
 	}
-	if contract.Proof.Command == "" || len(contract.Proof.FixtureRefs) != 1 {
+	if contract.Proof.Command == "" || len(contract.Proof.HarnessRefs) != 13 ||
+		len(contract.Proof.FixtureRefs) != 2 {
 		t.Fatalf("proof declaration was not preserved: %#v", contract.Proof)
 	}
 	assertV4ContractRoundTrip(t, contract)
+}
+
+func assertV4FixtureAcceptedBySourceCompiler(t *testing.T) {
+	t.Helper()
+	repoRoot := repoRootFromSkillsDir(t)
+	fixture := decodeV4FixtureDocument(t)
+	entry := firstV4FixtureEntry(t, fixture)
+	contract, ok := entry["contract_v3"]
+	if !ok {
+		t.Fatal("v4 fixture entry has no contract_v3")
+	}
+	payload, err := json.Marshal(contract)
+	if err != nil {
+		t.Fatal(err)
+	}
+	dependencies, err := json.Marshal(entry["dependencies"])
+	if err != nil {
+		t.Fatal(err)
+	}
+	name, ok := entry["name"].(string)
+	if !ok || name == "" {
+		t.Fatalf("v4 fixture name is invalid: %#v", entry["name"])
+	}
+
+	const program = `
+import json
+from pathlib import Path
+import sys
+
+repo_root = Path(sys.argv[1])
+sys.path.insert(0, str(repo_root / "skills/skill-builder/scripts"))
+from contract_v3 import load_frontmatter, validate_contract
+
+candidate = json.load(sys.stdin)
+source = load_frontmatter(repo_root / "skills/skill-builder/SKILL.md")
+if candidate != source["metadata"]["contract_v3"]:
+    raise ValueError("catalog-v4 contract differs from skill-builder source contract")
+if sys.argv[2] != source["name"]:
+    raise ValueError("catalog-v4 name differs from skill-builder source name")
+if json.loads(sys.argv[3]) != source["metadata"]["dependencies"]:
+    raise ValueError("catalog-v4 dependencies differ from skill-builder source dependencies")
+validate_contract(
+    candidate,
+    skill_name=sys.argv[2],
+    dependencies=json.loads(sys.argv[3]),
+    repo_root=repo_root,
+)
+`
+	ctx, cancel := context.WithTimeout(t.Context(), 15*time.Second)
+	defer cancel()
+	command := exec.CommandContext(
+		ctx,
+		"python3",
+		"-c",
+		program,
+		repoRoot,
+		name,
+		string(dependencies),
+	)
+	command.Dir = repoRoot
+	command.Stdin = bytes.NewReader(payload)
+	output, err := command.CombinedOutput()
+	if err != nil {
+		if ctx.Err() != nil {
+			t.Fatalf("source Python compiler timed out: %v", ctx.Err())
+		}
+		t.Fatalf("source Python compiler rejected catalog-v4 contract: %v\n%s", err, output)
+	}
 }
 
 func TestLoadCatalogAcceptsLiveV3Catalog(t *testing.T) {
@@ -210,21 +284,23 @@ func TestLoadCatalogRejectsMalformedVersionSpecificEntries(t *testing.T) {
 		{name: "v4 missing contract", fixture: "catalog-v4.json", old: contractV3Fragment(t), new: "", want: "contract_v3"},
 		{name: "v4 missing contract schema version", fixture: "catalog-v4.json", old: `"schema_version": "skill-contract.v3",`, new: "", want: "schema_version"},
 		{name: "v4 invalid contract schema version", fixture: "catalog-v4.json", old: `"schema_version": "skill-contract.v3"`, new: `"schema_version": "skill-contract.v2"`, want: "schema_version"},
-		{name: "v4 invalid layer", fixture: "catalog-v4.json", old: `"primary_layer": "support"`, new: `"primary_layer": "core"`, want: "primary_layer"},
-		{name: "v4 null layer", fixture: "catalog-v4.json", old: `"primary_layer": "support"`, new: `"primary_layer": null`, want: "null value"},
-		{name: "v4 invalid effect id", fixture: "catalog-v4.json", old: `"id": "publish-owned-projection"`, new: `"id": "Publish Projection"`, want: "invalid identifier"},
-		{name: "v4 invalid effect kind", fixture: "catalog-v4.json", old: `"kind": "filesystem.write"`, new: `"kind": "filesystem.delete"`, want: "kind"},
+		{name: "v4 invalid layer", fixture: "catalog-v4.json", old: `"primary_layer": "implementation"`, new: `"primary_layer": "core"`, want: "primary_layer"},
+		{name: "v4 null layer", fixture: "catalog-v4.json", old: `"primary_layer": "implementation"`, new: `"primary_layer": null`, want: "null value"},
+		{name: "v4 invalid effect id", fixture: "catalog-v4.json", old: `"id": "source-read"`, new: `"id": "Publish Projection"`, want: "invalid identifier"},
+		{name: "v4 invalid effect kind", fixture: "catalog-v4.json", old: `"kind": "filesystem.read"`, new: `"kind": "filesystem.delete"`, want: "kind"},
 		{name: "v4 incomplete triggers", fixture: "catalog-v4.json", old: `"negative": [`, new: `"omitted_negative": [`, want: "unknown field"},
 		{name: "v4 wrong trigger expectation", fixture: "catalog-v4.json", old: `"expected": "route"`, new: `"expected": "clarify"`, want: "expected"},
-		{name: "v4 duplicate cross-family trigger id", fixture: "catalog-v4.json", old: `"id": "run-experiment"`, new: `"id": "compile-contract"`, want: "duplicate trigger id"},
+		{name: "v4 duplicate cross-family trigger id", fixture: "catalog-v4.json", old: `"id": "validate-candidate"`, new: `"id": "create-skill"`, want: "duplicate trigger id"},
 		{name: "v4 incomplete failure semantics", fixture: "catalog-v4.json", old: `"cleanup": {`, new: `"other": {`, want: "unknown field"},
 		{name: "v4 invalid failure action", fixture: "catalog-v4.json", old: `"action": "stop"`, new: `"action": "retry"`, want: "action"},
 		{name: "v4 malformed effect", fixture: "catalog-v4.json", old: `"receipt": "required"`, new: `"receipt": 7`, want: "receipt"},
-		{name: "v4 unknown nested effect field", fixture: "catalog-v4.json", old: `"scope": "owned-projections",`, new: `"scope": "owned-projections", "surprise": true,`, want: "unknown field"},
+		{name: "v4 unknown nested effect field", fixture: "catalog-v4.json", old: `"scope": "explicitly named skills/<slug> source package and compiler inputs",`, new: `"scope": "explicitly named skills/<slug> source package and compiler inputs", "surprise": true,`, want: "unknown field"},
 		{name: "v4 invalid artifact kind", fixture: "catalog-v4.json", old: `"kind": "source"`, new: `"kind": "blob"`, want: "kind"},
-		{name: "v4 empty artifact schema ref", fixture: "catalog-v4.json", old: `"schema_ref": "skill-contract.v3"`, new: `"schema_ref": ""`, want: "must not be an empty string"},
-		{name: "v4 invalid proof class", fixture: "catalog-v4.json", old: `"class": "deterministic"`, new: `"class": "phrase_grep"`, want: "class"},
-		{name: "v4 empty proof fixture", fixture: "catalog-v4.json", old: `"fixture_refs": ["testdata/catalog-v4.json"]`, new: `"fixture_refs": [""]`, want: "fixture_refs"},
+		{name: "v4 empty artifact schema ref", fixture: "catalog-v4.json", old: `"schema_ref": "schemas/skill-frontmatter.v2.schema.json"`, new: `"schema_ref": ""`, want: "must not be an empty string"},
+		{name: "v4 invalid proof class", fixture: "catalog-v4.json", old: `"class": "mutating_isolation"`, new: `"class": "phrase_grep"`, want: "class"},
+		{name: "v4 missing proof harnesses", fixture: "catalog-v4.json", old: `"harness_refs": [`, new: `"omitted_harness_refs": [`, want: "unknown field"},
+		{name: "v4 empty proof harness", fixture: "catalog-v4.json", old: `"skills/skill-builder/tests/test_contract_v3.py"`, new: `""`, want: "harness_refs"},
+		{name: "v4 empty proof fixture", fixture: "catalog-v4.json", old: `"skills/skill-builder/fixtures/contract-v3/cases.json"`, new: `""`, want: "fixture_refs"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

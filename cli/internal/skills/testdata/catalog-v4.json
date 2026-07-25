@@ -3,33 +3,75 @@
   "skill_count": 1,
   "skills": [
     {
-      "name": "shadow-v4",
-      "description": "A shadow version four catalog entry.",
+      "name": "skill-builder",
+      "description": "Create a metadata-complete AgentOps skill source package, regenerate its derived projections, and check or repair structural hygiene in skill packages.",
       "hexagonal_role": "supporting",
-      "consumes": ["skill-source"],
-      "produces": ["compile-receipt.v1"],
+      "consumes": [],
+      "produces": [
+        "skill-source-package",
+        "skill-hygiene-report"
+      ],
       "dependencies": [],
-      "capabilities": ["compile_contract"],
-      "effects": ["write_owned_projection"],
+      "capabilities": [
+        "skill_builder",
+        "heal_skill"
+      ],
+      "effects": [
+        "writes_skill_source",
+        "regenerates_skill_projections",
+        "optional_skill_projection_repair"
+      ],
       "canonical_status": "canonical",
       "disposition": "keep_specialist",
-      "tier": "execution",
+      "tier": "meta",
       "context_rel": [],
-      "practices": ["design-by-contract"],
-      "user_invocable": true,
+      "practices": [
+        "pragmatic-programmer",
+        "refactoring"
+      ],
+      "user_invocable": false,
       "graph_root": false,
       "codex_override_present": true,
-      "references_count": 4,
+      "references_count": 10,
       "contract_v3": {
         "schema_version": "skill-contract.v3",
-        "primary_layer": "support",
-        "lifecycle_seams": ["cross_cutting", "standalone"],
-        "authority": ["read_evidence", "mutate_subject"],
+        "primary_layer": "implementation",
+        "lifecycle_seams": [
+          "implement_method"
+        ],
+        "authority": [
+          "read_evidence",
+          "mutate_subject"
+        ],
         "effects": [
           {
-            "id": "publish-owned-projection",
+            "id": "source-read",
+            "kind": "filesystem.read",
+            "scope": "explicitly named skills/<slug> source package and compiler inputs",
+            "authorization": "caller",
+            "cleanup": "none",
+            "receipt": "optional"
+          },
+          {
+            "id": "source-write",
             "kind": "filesystem.write",
-            "scope": "owned-projections",
+            "scope": "explicitly named skills/<slug> source package",
+            "authorization": "caller",
+            "cleanup": "none",
+            "receipt": "required"
+          },
+          {
+            "id": "projection-write",
+            "kind": "filesystem.write",
+            "scope": "explicitly invoked owned skill projections",
+            "authorization": "caller",
+            "cleanup": "none",
+            "receipt": "required"
+          },
+          {
+            "id": "bounded-process",
+            "kind": "process.start",
+            "scope": "declared build, audit, compiler, and projection commands",
             "authorization": "caller",
             "cleanup": "required",
             "receipt": "required"
@@ -38,86 +80,139 @@
         "artifacts": {
           "consumes": [
             {
-              "name": "skill-source",
+              "name": "build-request",
+              "kind": "intent",
+              "semantics": "factual",
+              "schema_ref": null,
+              "validator": null
+            },
+            {
+              "name": "skill-source-input",
               "kind": "source",
               "semantics": "factual",
-              "schema_ref": "skill-contract.v3",
-              "validator": null
+              "schema_ref": "schemas/skill-frontmatter.v2.schema.json",
+              "validator": "scripts/validate-skill-frontmatter.sh"
             }
           ],
           "produces": [
             {
+              "name": "skill-source-package",
+              "kind": "source",
+              "semantics": "binding",
+              "schema_ref": "schemas/skill-frontmatter.v2.schema.json",
+              "validator": "scripts/validate-skill-frontmatter.sh"
+            },
+            {
+              "name": "build-report",
+              "kind": "report",
+              "semantics": "factual",
+              "schema_ref": "skills/skill-builder/schemas/build-report.json",
+              "validator": "skills/skill-builder/scripts/build.sh"
+            },
+            {
+              "name": "audit-report",
+              "kind": "report",
+              "semantics": "advisory",
+              "schema_ref": "skills/skill-builder/schemas/audit-report.json",
+              "validator": "skills/skill-builder/scripts/audit.sh"
+            },
+            {
               "name": "compile-receipt",
               "kind": "receipt",
-              "semantics": "factual",
-              "schema_ref": "compile-receipt.v1",
-              "validator": "skills/skill-builder/scripts/compile.py"
+              "semantics": "binding",
+              "schema_ref": "skills/skill-builder/schemas/compile-report.json",
+              "validator": "skills/skill-builder/scripts/compile_contracts.py"
+            },
+            {
+              "name": "probe-receipt",
+              "kind": "receipt",
+              "semantics": "binding",
+              "schema_ref": "skills/skill-builder/schemas/probe-report.json",
+              "validator": "skills/skill-builder/scripts/run_contract_probe.py"
             }
           ]
         },
         "triggers": {
           "positive": [
             {
-              "id": "compile-contract",
-              "prompt": "compile this skill contract",
+              "id": "create-skill",
+              "prompt": "Create a metadata-complete skill source package.",
               "expected": "route"
             }
           ],
           "negative": [
             {
-              "id": "run-experiment",
-              "prompt": "run an RPI experiment",
+              "id": "validate-candidate",
+              "prompt": "Issue a semantic validation verdict for this software candidate.",
               "expected": "do_not_route"
             }
           ],
           "ambiguity": [
             {
-              "id": "build-automation",
-              "prompt": "build this automation",
+              "id": "repair-unspecified",
+              "prompt": "Fix this skill.",
               "expected": "clarify"
             }
           ],
           "aliases": [
             {
-              "id": "skill-compiler",
-              "alias": "skill compiler",
+              "id": "skill-factory-alias",
+              "alias": "skill factory",
               "canonical_skill": "skill-builder"
             }
           ],
           "nearest_neighbors": [
             {
-              "id": "workflow-builder",
+              "id": "workflow-builder-boundary",
               "skill": "workflow-builder",
-              "distinction": "builds multi-step workflows rather than compiling one skill contract"
+              "distinction": "Skill-builder owns one skill source package; workflow-builder composes reusable workflows."
             }
           ]
         },
         "failure": {
           "unavailable": {
             "action": "stop",
-            "detail": "return unavailable without mutation"
+            "detail": "Report the unavailable source, schema, or tool without selecting a substitute."
           },
           "timeout": {
-            "action": "rollback_then_stop",
-            "detail": "return timeout after cleanup"
+            "action": "stop",
+            "detail": "Stop the bounded command and return its timeout without retrying."
           },
           "partial_evidence": {
             "action": "report_uncertainty",
-            "detail": "return incomplete evidence"
+            "detail": "Emit no readiness claim when required compiler or audit evidence is incomplete."
           },
           "partial_mutation": {
             "action": "rollback_then_stop",
-            "detail": "restore exact prior state"
+            "detail": "Preserve or restore the explicitly named source state and report the incomplete write."
           },
           "cleanup": {
             "action": "stop",
-            "detail": "return cleanup failure with receipt"
+            "detail": "Report cleanup failure explicitly and make no completion claim."
           }
         },
         "proof": {
-          "class": "deterministic",
-          "command": "go test ./internal/skills -run TestLoadCatalog",
-          "fixture_refs": ["testdata/catalog-v4.json"]
+          "class": "mutating_isolation",
+          "command": "bash skills/skill-builder/scripts/test-contract-v3.sh",
+          "harness_refs": [
+            "schemas/skill-contract.v3.schema.json",
+            "skills/skill-builder/fixtures/contract-v3/probe-harnesses/large-output.py",
+            "skills/skill-builder/fixtures/contract-v3/probe-harnesses/leave-descendant.py",
+            "skills/skill-builder/fixtures/contract-v3/probe-harnesses/mutate-copy.py",
+            "skills/skill-builder/fixtures/contract-v3/probe-harnesses/spawn-and-sleep.py",
+            "skills/skill-builder/schemas/compile-report.json",
+            "skills/skill-builder/schemas/probe-report.json",
+            "skills/skill-builder/scripts/compile_contracts.py",
+            "skills/skill-builder/scripts/contract_v3.py",
+            "skills/skill-builder/scripts/probe_runtime.py",
+            "skills/skill-builder/scripts/test-contract-v3.sh",
+            "skills/skill-builder/tests/test_contract_v3.py",
+            "skills/skill-builder/tests/test_probe_runner.py"
+          ],
+          "fixture_refs": [
+            "skills/skill-builder/fixtures/contract-v3/cases.json",
+            "skills/skill-builder/fixtures/contract-v3/invariants.json"
+          ]
         }
       }
     }
