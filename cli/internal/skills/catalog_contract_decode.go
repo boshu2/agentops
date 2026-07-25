@@ -1,16 +1,30 @@
 package skills
 
 import (
+	_ "embed"
 	"encoding/json"
 	"fmt"
 	"regexp"
 	"strings"
-	"unicode"
-
-	"golang.org/x/text/cases"
+	"sync"
 )
 
 var contractIdentifierPattern = regexp.MustCompile(`^[a-z][a-z0-9]*(?:[._-][a-z0-9]+)*$`)
+
+//go:embed trigger_normalization.v1.json
+var triggerNormalizationBytes []byte
+
+type triggerNormalizationContract struct {
+	SchemaVersion  string            `json:"schema_version"`
+	UnicodeVersion string            `json:"unicode_version"`
+	Casefold       map[string]string `json:"casefold"`
+	Whitespace     []int             `json:"whitespace"`
+}
+
+var (
+	triggerNormalizationOnce sync.Once
+	triggerNormalizationData triggerNormalizationContract
+)
 
 type contractV3Wire struct {
 	SchemaVersion  *string                       `json:"schema_version"`
@@ -347,13 +361,52 @@ func validateTriggerSemantics(
 }
 
 func normalizeTriggerText(value string) string {
-	return cases.Fold().String(
-		strings.Join(strings.FieldsFunc(value, isPythonWhitespace), " "),
-	)
+	normalization := pinnedTriggerNormalization()
+	whitespace := make(map[rune]struct{}, len(normalization.Whitespace))
+	for _, codepoint := range normalization.Whitespace {
+		whitespace[rune(codepoint)] = struct{}{}
+	}
+	var output strings.Builder
+	separatorPending := false
+	for _, character := range value {
+		folded, exists := normalization.Casefold[fmt.Sprintf("%04X", character)]
+		if !exists {
+			folded = string(character)
+		}
+		for _, foldedCharacter := range folded {
+			if _, isWhitespace := whitespace[foldedCharacter]; isWhitespace {
+				separatorPending = output.Len() > 0
+				continue
+			}
+			if separatorPending {
+				output.WriteByte(' ')
+				separatorPending = false
+			}
+			output.WriteRune(foldedCharacter)
+		}
+	}
+	return output.String()
 }
 
 func isPythonWhitespace(value rune) bool {
-	return unicode.IsSpace(value) || value >= '\u001c' && value <= '\u001f'
+	for _, codepoint := range pinnedTriggerNormalization().Whitespace {
+		if rune(codepoint) == value {
+			return true
+		}
+	}
+	return false
+}
+
+func pinnedTriggerNormalization() triggerNormalizationContract {
+	triggerNormalizationOnce.Do(func() {
+		if err := json.Unmarshal(triggerNormalizationBytes, &triggerNormalizationData); err != nil {
+			panic(fmt.Sprintf("invalid embedded trigger normalization contract: %v", err))
+		}
+		if triggerNormalizationData.SchemaVersion != "skill-trigger-normalization.v1" {
+			panic("invalid embedded trigger normalization contract version")
+		}
+	})
+	return triggerNormalizationData
 }
 
 func validateHardDependencies(skillName string, dependencies []string, path string) error {
@@ -587,6 +640,16 @@ func normalizeContractArtifactList(wires []contractArtifactWire, path string) ([
 		validator, err := decodeNullableString(wire.Validator, itemPath+".validator")
 		if err != nil {
 			return nil, err
+		}
+		for label, reference := range map[string]*string{
+			"schema_ref": schemaRef,
+			"validator":  validator,
+		} {
+			if reference != nil {
+				if err := validateRepositoryRelativePOSIX(*reference, itemPath+"."+label); err != nil {
+					return nil, err
+				}
+			}
 		}
 		out = append(out, ContractArtifact{
 			Name:      *wire.Name,
@@ -1083,8 +1146,8 @@ func splitProofCommand(command string) ([]string, error) {
 	return tokens, nil
 }
 
-func validateProofReference(reference, label string) error {
-	if strings.Contains(reference, "\\") {
+func validateRepositoryRelativePOSIX(reference, label string) error {
+	if strings.ContainsAny(reference, "\\\x00") {
 		return fmt.Errorf("%s must use repository-relative POSIX syntax", label)
 	}
 	if strings.HasPrefix(reference, "/") {
@@ -1105,6 +1168,10 @@ func validateProofReference(reference, label string) error {
 		return fmt.Errorf("%s is not a contained repository-relative path", label)
 	}
 	return nil
+}
+
+func validateProofReference(reference, label string) error {
+	return validateRepositoryRelativePOSIX(reference, label)
 }
 
 func containsString(values []string, expected string) bool {

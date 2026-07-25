@@ -10,6 +10,9 @@ import (
 )
 
 func decodeCatalog(data []byte) (*Catalog, error) {
+	if err := validateJSONUnicodeEscapes(data); err != nil {
+		return nil, err
+	}
 	if err := validateJSONTokens(data); err != nil {
 		return nil, err
 	}
@@ -51,6 +54,64 @@ func decodeCatalog(data []byte) (*Catalog, error) {
 		return nil, err
 	}
 	return cat, nil
+}
+
+func validateJSONUnicodeEscapes(data []byte) error {
+	inString := false
+	for index := 0; index < len(data); index++ {
+		switch data[index] {
+		case '"':
+			inString = !inString
+		case '\\':
+			if !inString || index+1 >= len(data) {
+				continue
+			}
+			index++
+			if data[index] != 'u' {
+				continue
+			}
+			value, ok := decodeHexQuad(data, index+1)
+			if !ok {
+				continue
+			}
+			index += 4
+			switch {
+			case value >= 0xD800 && value <= 0xDBFF:
+				if index+6 >= len(data) || data[index+1] != '\\' || data[index+2] != 'u' {
+					return fmt.Errorf("invalid JSON Unicode escape: unpaired high surrogate")
+				}
+				low, valid := decodeHexQuad(data, index+3)
+				if !valid || low < 0xDC00 || low > 0xDFFF {
+					return fmt.Errorf("invalid JSON Unicode escape: unpaired high surrogate")
+				}
+				index += 6
+			case value >= 0xDC00 && value <= 0xDFFF:
+				return fmt.Errorf("invalid JSON Unicode escape: unpaired low surrogate")
+			}
+		}
+	}
+	return nil
+}
+
+func decodeHexQuad(data []byte, start int) (uint16, bool) {
+	if start+4 > len(data) {
+		return 0, false
+	}
+	var value uint16
+	for _, character := range data[start : start+4] {
+		value <<= 4
+		switch {
+		case character >= '0' && character <= '9':
+			value += uint16(character - '0')
+		case character >= 'a' && character <= 'f':
+			value += uint16(character-'a') + 10
+		case character >= 'A' && character <= 'F':
+			value += uint16(character-'A') + 10
+		default:
+			return 0, false
+		}
+	}
+	return value, true
 }
 
 func decodeStrict(data []byte, dst any) error {
