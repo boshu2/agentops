@@ -96,9 +96,10 @@ the platform process tree on cancellation or completion. AgentOps installs
 explicitly owned OS files on the child command, drains stdout and stderr through
 its own bounded-capture goroutines, and closes and joins those drains within the
 finite wait delay. This leaves no `os/exec` I/O copier that requires `Cmd.Wait`
-for cleanup. Arbitrary stdin copying begins only after process-tree attachment
-succeeds. Every started process returns a typed cleanup outcome (`completed` or
-`failed`); a start failure reports `not_started`.
+for cleanup. Stdin is an owned snapshot capped at 1 MiB; its finite relay begins
+only after process-tree attachment succeeds and is explicitly joined after its
+writer closes. Every started process returns a typed cleanup outcome
+(`completed` or `failed`); a start failure reports `not_started`.
 Cleanup diagnostics are bounded, and a cleanup failure is joined with any
 cancellation, deadline, wait, or exit error so neither identity is lost.
 `completed` requires bounded platform absence proof: POSIX process-group
@@ -109,6 +110,14 @@ observation is a cleanup failure. After a Windows attach failure, `Wait` is
 entered only after bounded process-handle termination observation succeeds.
 When termination remains unproven, owned pipe ends and drains are closed and
 joined before the process handle is released; `Wait` is not entered.
+Normal execution observes parent completion through a non-reaping platform
+primitive (Darwin process kqueue, Linux `waitid(WNOWAIT)`, or Windows process
+handle) before calling `Wait` exactly once. Linux observation therefore does
+not reap the child. Cancellation first requests tree termination and
+falls back to direct parent kill when that request fails, then requires bounded
+parent-completion proof. If proof still fails, the runner reports failed
+cleanup, closes and joins owned I/O, and releases the process without starting
+an unbounded `Wait`.
 
 Callers keep their domain-specific rendering and exit classification. The
 shared seam owns only process construction, bounded capture, cancellation, and

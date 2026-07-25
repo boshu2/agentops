@@ -77,8 +77,7 @@ type jobObjectBasicAccountingInformationValue struct {
 
 type windowsNativeAPI struct {
 	windowsAPI
-	assignProcessToJob        func(windowsHandle, uintptr) error
-	waitForProcessTermination func(windowsHandle, uint32) error
+	assignProcessToJob func(windowsHandle, uintptr) error
 }
 
 type windowsProcessTree struct {
@@ -89,6 +88,7 @@ type windowsProcessTree struct {
 	waitMillis         uint32
 	attached           bool
 	terminateRequested bool
+	terminationIssued  bool
 	terminated         bool
 	closed             bool
 }
@@ -109,7 +109,7 @@ func configureProcessTree(cmd *exec.Cmd, waitDelay time.Duration) (*windowsProce
 	// after the assignment succeeds.
 	cmd.SysProcAttr = &syscall.SysProcAttr{CreationFlags: syscall.CREATE_NEW_PROCESS_GROUP | createSuspended}
 	cmd.Cancel = func() error {
-		return tree.terminate(cmd)
+		return tree.requestTermination(cmd)
 	}
 	return tree, nil
 }
@@ -127,8 +127,7 @@ var nativeWindowsAPI = windowsNativeAPI{
 		resumeThread:            nativeResumeThread,
 		closeHandle:             nativeCloseHandle,
 	},
-	assignProcessToJob:        nativeAssignProcessToJob,
-	waitForProcessTermination: nativeWaitForProcessTermination,
+	assignProcessToJob: nativeAssignProcessToJob,
 }
 
 func systemWindowsClock() windowsClock {
@@ -247,21 +246,6 @@ func nativeCloseHandle(handle windowsHandle) error {
 	return syscall.CloseHandle(syscall.Handle(handle))
 }
 
-func nativeWaitForProcessTermination(process windowsHandle, waitMillis uint32) error {
-	result, err := syscall.WaitForSingleObject(syscall.Handle(process), waitMillis)
-	if err != nil {
-		return err
-	}
-	switch result {
-	case syscall.WAIT_OBJECT_0:
-		return nil
-	case syscall.WAIT_TIMEOUT:
-		return fmt.Errorf("process handle did not signal within %dms", waitMillis)
-	default:
-		return fmt.Errorf("wait for process handle returned status %#x", result)
-	}
-}
-
 func (tree *windowsProcessTree) attach(cmd *exec.Cmd) error {
 	tree.mu.Lock()
 	defer tree.mu.Unlock()
@@ -287,45 +271,53 @@ func (tree *windowsProcessTree) attach(cmd *exec.Cmd) error {
 	return resumeInitialProcessThreadWithAPI(tree.api.windowsAPI, uint32(cmd.Process.Pid))
 }
 
-func (tree *windowsProcessTree) observeTermination(cmd *exec.Cmd) error {
-	if cmd.Process == nil {
-		return fmt.Errorf("process handle is unavailable")
-	}
-	var observationErr error
-	if err := cmd.Process.WithHandle(func(processHandle uintptr) {
-		observationErr = tree.api.waitForProcessTermination(windowsHandle(processHandle), tree.waitMillis)
-	}); err != nil {
-		return fmt.Errorf("access process handle for termination observation: %w", err)
-	}
-	return observationErr
-}
-
 func (tree *windowsProcessTree) terminate(_ *exec.Cmd) error {
 	tree.mu.Lock()
 	defer tree.mu.Unlock()
 	return tree.terminateLocked()
 }
 
-func (tree *windowsProcessTree) terminateLocked() error {
+func (tree *windowsProcessTree) requestTermination(_ *exec.Cmd) error {
+	tree.mu.Lock()
+	defer tree.mu.Unlock()
+	return tree.requestTerminationLocked()
+}
+
+func (tree *windowsProcessTree) requestTerminationLocked() error {
 	if tree.closed {
 		return fmt.Errorf("job object is already closed")
 	}
 	if tree.terminated {
 		return nil
 	}
+	tree.terminateRequested = true
+	if !tree.attached || tree.terminationIssued {
+		return nil
+	}
+	if err := tree.api.terminateJob(tree.job, windowsProcessTreeExitCode); err != nil {
+		return err
+	}
+	tree.terminationIssued = true
+	return nil
+}
+
+func (tree *windowsProcessTree) terminateLocked() error {
+	if tree.terminated {
+		return nil
+	}
+	if err := tree.requestTerminationLocked(); err != nil {
+		return err
+	}
 	if !tree.attached {
-		// CommandContext can observe cancellation in the narrow interval after
-		// Start and before attach. Record the request; attach will assign the
-		// still-suspended process and terminate the populated job before it runs.
-		tree.terminateRequested = true
+		// Attach failure can leave the process outside the job. The caller owns
+		// direct parent termination and records that cleanup is unproven.
 		return nil
 	}
 	timeout := time.Duration(tree.waitMillis) * time.Millisecond
-	if err := terminateWindowsJobWithAPI(
+	if err := waitForWindowsJobEmpty(
 		tree.api.windowsAPI,
 		tree.clock,
 		tree.job,
-		windowsProcessTreeExitCode,
 		timeout,
 	); err != nil {
 		return err

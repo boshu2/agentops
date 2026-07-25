@@ -1,6 +1,7 @@
 package subprocess
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -16,42 +17,66 @@ import (
 	"go.uber.org/goleak"
 )
 
-const helperEnv = "GO_WANT_AGENTOPS_SUBPROCESS_HELPER"
+const (
+	helperEnv      = "GO_WANT_AGENTOPS_SUBPROCESS_HELPER"
+	helperReadyEnv = "GO_WANT_AGENTOPS_SUBPROCESS_READY_FILE"
+)
 
 type testProcessTree struct {
-	attachErr  error
-	observeErr error
+	attachErr      error
+	requestErr     error
+	requestFn      func(*exec.Cmd) error
+	requestCalls   int
+	terminateErr   error
+	terminateCalls int
 }
 
 func (tree *testProcessTree) attach(*exec.Cmd) error {
 	return tree.attachErr
 }
 
-func (*testProcessTree) terminate(*exec.Cmd) error {
-	return nil
+func (tree *testProcessTree) terminate(*exec.Cmd) error {
+	tree.terminateCalls++
+	return tree.terminateErr
 }
 
-func (tree *testProcessTree) observeTermination(*exec.Cmd) error {
-	return tree.observeErr
+func (tree *testProcessTree) requestTermination(cmd *exec.Cmd) error {
+	tree.requestCalls++
+	if tree.requestFn != nil {
+		return tree.requestFn(cmd)
+	}
+	return tree.requestErr
 }
 
 func (*testProcessTree) close() error {
 	return nil
 }
 
-type notifyingBlockingReader struct {
-	started chan struct{}
-	release chan struct{}
+type testProcessCompletion struct {
+	waitFn    func(context.Context) error
+	observeFn func(time.Duration) error
+	closeFn   func() error
 }
 
-func (reader *notifyingBlockingReader) Read([]byte) (int, error) {
-	select {
-	case <-reader.started:
-	default:
-		close(reader.started)
+func (completion *testProcessCompletion) wait(ctx context.Context) error {
+	if completion.waitFn == nil {
+		return nil
 	}
-	<-reader.release
-	return 0, io.EOF
+	return completion.waitFn(ctx)
+}
+
+func (completion *testProcessCompletion) observe(timeout time.Duration) error {
+	if completion.observeFn == nil {
+		return nil
+	}
+	return completion.observeFn(timeout)
+}
+
+func (completion *testProcessCompletion) close() error {
+	if completion.closeFn == nil {
+		return nil
+	}
+	return completion.closeFn()
 }
 
 func TestCaptureRetainsBoundedPrefixAndSuffix(t *testing.T) {
@@ -190,7 +215,7 @@ func TestRunOrdinarySuccessRecordsCleanupCompleted(t *testing.T) {
 
 func TestRunCopiesStdinAfterSuccessfulAttachment(t *testing.T) {
 	command := helperCommand(t, "stdin-echo")
-	command.Stdin = strings.NewReader("owned stdin payload")
+	command.Stdin = []byte("owned stdin payload")
 	command.CombinedOutput = true
 
 	result, err := Run(context.Background(), command)
@@ -201,6 +226,153 @@ func TestRunCopiesStdinAfterSuccessfulAttachment(t *testing.T) {
 		t.Fatalf("combined output = %q, want %q", got, want)
 	}
 	assertCleanupCompleted(t, result.Cleanup)
+}
+
+func TestRunWaitsExactlyOnceAfterNaturalCompletion(t *testing.T) {
+	tree := &testProcessTree{}
+	completion := &testProcessCompletion{}
+	waitCalls := 0
+	dependencies := defaultRunDependencies
+	dependencies.configureProcessTree = func(*exec.Cmd, time.Duration) (managedProcessTree, error) {
+		return tree, nil
+	}
+	dependencies.newProcessCompletion = func(*os.Process) processCompletion {
+		return completion
+	}
+	dependencies.waitCommand = func(cmd *exec.Cmd) error {
+		waitCalls++
+		return cmd.Wait()
+	}
+
+	result, err := runWithDependencies(
+		context.Background(),
+		helperCommand(t, "success"),
+		nil,
+		dependencies,
+	)
+	if err != nil {
+		t.Fatalf("Run: %v", err)
+	}
+	if waitCalls != 1 {
+		t.Fatalf("Wait calls = %d, want 1", waitCalls)
+	}
+	if tree.terminateCalls != 1 {
+		t.Fatalf("tree verification calls = %d, want 1", tree.terminateCalls)
+	}
+	assertCleanupCompleted(t, result.Cleanup)
+}
+
+func TestRunWaitsExactlyOnceAfterProvenForcedTermination(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	tree := &testProcessTree{
+		requestFn: func(cmd *exec.Cmd) error {
+			return cmd.Process.Kill()
+		},
+	}
+	completion := &testProcessCompletion{
+		waitFn: func(ctx context.Context) error {
+			<-ctx.Done()
+			return ctx.Err()
+		},
+	}
+	waitCalls := 0
+	dependencies := defaultRunDependencies
+	dependencies.configureProcessTree = func(*exec.Cmd, time.Duration) (managedProcessTree, error) {
+		return tree, nil
+	}
+	dependencies.newProcessCompletion = func(*os.Process) processCompletion {
+		return completion
+	}
+	dependencies.waitCommand = func(cmd *exec.Cmd) error {
+		waitCalls++
+		return cmd.Wait()
+	}
+	command := helperCommand(t, "block")
+	command.OnStart = func(int) {
+		cancel()
+	}
+
+	result, err := runWithDependencies(ctx, command, nil, dependencies)
+	if !errors.Is(err, context.Canceled) {
+		t.Fatalf("Run error = %v, want context cancellation", err)
+	}
+	if waitCalls != 1 {
+		t.Fatalf("Wait calls = %d, want 1", waitCalls)
+	}
+	if tree.requestCalls != 1 || tree.terminateCalls != 1 {
+		t.Fatalf(
+			"tree request/verification calls = %d/%d, want 1/1",
+			tree.requestCalls,
+			tree.terminateCalls,
+		)
+	}
+	assertCleanupCompleted(t, result.Cleanup)
+}
+
+func TestRunRejectsOversizedStdinBeforeStart(t *testing.T) {
+	command := helperCommand(t, "success")
+	command.Stdin = make([]byte, MaxStdinBytes+1)
+	command.OnStart = func(int) {
+		t.Fatal("oversized-stdin command started")
+	}
+
+	result, err := Run(context.Background(), command)
+	if err == nil || !strings.Contains(err.Error(), "maximum") {
+		t.Fatalf("Run error = %v, want bounded-stdin diagnostic", err)
+	}
+	if result.Cleanup.Status != CleanupNotStarted || result.Cleanup.Attempted {
+		t.Fatalf("cleanup = %#v, want not_started", result.Cleanup)
+	}
+}
+
+func TestRunStopsBlockedFiniteStdinRelayAfterCancellation(t *testing.T) {
+	defer goleak.VerifyNone(t, goleak.IgnoreCurrent())
+
+	ctx, cancel := context.WithTimeout(context.Background(), 25*time.Millisecond)
+	defer cancel()
+	command := helperCommand(t, "block")
+	command.Stdin = bytes.Repeat([]byte("s"), MaxStdinBytes)
+	command.WaitDelay = 100 * time.Millisecond
+
+	result, err := Run(ctx, command)
+	if !errors.Is(err, context.DeadlineExceeded) {
+		t.Fatalf("Run error = %v, want context deadline", err)
+	}
+	assertCleanupCompleted(t, result.Cleanup)
+}
+
+func TestStdinRelayPreservesLateNonIgnorableErrors(t *testing.T) {
+	copyErr := errors.New("stdin copy sentinel")
+	closeErr := errors.New("stdin close sentinel")
+	state := &ownedCommandIO{
+		stdinDone: make(chan stdinRelayResult, 1),
+	}
+	state.stdinDone <- stdinRelayResult{
+		copyErr:  copyErr,
+		closeErr: closeErr,
+	}
+
+	err := state.awaitStdinRelay(time.Now().Add(time.Second), time.Second)
+	if !errors.Is(err, copyErr) || !errors.Is(err, closeErr) {
+		t.Fatalf("stdin relay error = %v, want copy and close identities", err)
+	}
+}
+
+func TestStdinRelayDoesNotSuppressCloseErrorWithIgnorableCopyError(t *testing.T) {
+	closeErr := errors.New("stdin close sentinel")
+	state := &ownedCommandIO{
+		stdinDone: make(chan stdinRelayResult, 1),
+	}
+	state.stdinDone <- stdinRelayResult{
+		copyErr:  os.ErrClosed,
+		closeErr: closeErr,
+	}
+
+	err := state.awaitStdinRelay(time.Now().Add(time.Second), time.Second)
+	if !errors.Is(err, closeErr) {
+		t.Fatalf("stdin relay error = %v, want close identity", err)
+	}
 }
 
 func TestRunPreservesAbnormalExit(t *testing.T) {
@@ -232,6 +404,51 @@ func TestRunReturnsCallerCancellation(t *testing.T) {
 		t.Fatalf("Run error = %v, want context.Canceled", err)
 	}
 	assertCleanupCompleted(t, result.Cleanup)
+}
+
+func TestRunCancellationPreservesOutputAndCleanup(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	readyFile := filepath.Join(t.TempDir(), "ready")
+	command := helperCommand(t, "output-block")
+	command.Env = append(command.Env, helperReadyEnv+"="+readyFile)
+	command.StdoutLimit = CaptureLimit{HeadBytes: 128, TailBytes: 128}
+	command.StderrLimit = CaptureLimit{HeadBytes: 128, TailBytes: 128}
+
+	type runOutcome struct {
+		result Result
+		err    error
+	}
+	done := make(chan runOutcome, 1)
+	go func() {
+		result, err := Run(ctx, command)
+		done <- runOutcome{result: result, err: err}
+	}()
+	deadline := time.Now().Add(3 * time.Second)
+	for {
+		if _, err := os.Stat(readyFile); err == nil {
+			break
+		} else if !errors.Is(err, os.ErrNotExist) {
+			t.Fatalf("stat helper ready file: %v", err)
+		}
+		if !time.Now().Before(deadline) {
+			t.Fatal("helper did not report readiness")
+		}
+		time.Sleep(10 * time.Millisecond)
+	}
+	cancel()
+	outcome := <-done
+
+	if !errors.Is(outcome.err, context.Canceled) {
+		t.Fatalf("Run error = %v, want context cancellation", outcome.err)
+	}
+	if got := outcome.result.Stdout.String(); !strings.Contains(got, "stdout before cancellation") {
+		t.Fatalf("stdout = %q, want pre-cancellation output", got)
+	}
+	if got := outcome.result.Stderr.String(); !strings.Contains(got, "stderr before cancellation") {
+		t.Fatalf("stderr = %q, want pre-cancellation output", got)
+	}
+	assertCleanupCompleted(t, outcome.result.Cleanup)
 }
 
 func TestRunReturnsDeadlineAndCleanupFacts(t *testing.T) {
@@ -315,8 +532,6 @@ func TestAttachFailureSkipsWaitAfterIneffectiveKillAndJoinsErrors(t *testing.T) 
 	attachErr := errors.New("attach sentinel")
 	killErr := errors.New("kill sentinel")
 	observeErr := errors.New("observation sentinel")
-	ioErr := errors.New("I/O cleanup sentinel")
-	releaseErr := errors.New("release sentinel")
 	waitCalled := false
 
 	waitErr, cleanupErr, waited := handleAttachFailure(
@@ -327,8 +542,6 @@ func TestAttachFailureSkipsWaitAfterIneffectiveKillAndJoinsErrors(t *testing.T) 
 			waitCalled = true
 			return errors.New("wait must not run")
 		},
-		func() error { return ioErr },
-		func() error { return releaseErr },
 	)
 	if waited || waitCalled {
 		t.Fatal("attach failure entered Wait after Process.Kill was ineffective")
@@ -336,7 +549,7 @@ func TestAttachFailureSkipsWaitAfterIneffectiveKillAndJoinsErrors(t *testing.T) 
 	if waitErr != nil {
 		t.Fatalf("wait error = %v, want nil because Wait was skipped", waitErr)
 	}
-	for _, want := range []error{attachErr, killErr, observeErr, ioErr, releaseErr} {
+	for _, want := range []error{attachErr, killErr, observeErr} {
 		if !errors.Is(cleanupErr, want) {
 			t.Fatalf("cleanup error = %v, want identity %v", cleanupErr, want)
 		}
@@ -355,14 +568,6 @@ func TestAttachFailureWaitsAfterEffectiveKillAndPreservesWaitError(t *testing.T)
 			waitCalls++
 			return waitSentinel
 		},
-		func() error {
-			t.Fatal("I/O abort must not run after observed termination")
-			return nil
-		},
-		func() error {
-			t.Fatal("release must not run after effective kill")
-			return nil
-		},
 	)
 	if !waited || waitCalls != 1 || !errors.Is(waitErr, waitSentinel) {
 		t.Fatalf("waited/calls/error = %v/%d/%v, want true/1/wait sentinel", waited, waitCalls, waitErr)
@@ -375,11 +580,7 @@ func TestAttachFailureWaitsAfterEffectiveKillAndPreservesWaitError(t *testing.T)
 func TestAttachFailureDoesNotWaitWhenKillInitiatedButTerminationUnobserved(t *testing.T) {
 	attachErr := errors.New("attach sentinel")
 	observeErr := errors.New("termination observation timed out")
-	ioErr := errors.New("I/O cleanup sentinel")
-	releaseErr := errors.New("release sentinel")
 	waitCalled := false
-	ioCleanupCalled := false
-	releaseCalled := false
 
 	waitErr, cleanupErr, waited := handleAttachFailure(
 		attachErr,
@@ -389,31 +590,14 @@ func TestAttachFailureDoesNotWaitWhenKillInitiatedButTerminationUnobserved(t *te
 			waitCalled = true
 			return errors.New("unbounded wait must not run")
 		},
-		func() error {
-			ioCleanupCalled = true
-			return ioErr
-		},
-		func() error {
-			if !ioCleanupCalled {
-				t.Fatal("process was released before owned I/O cleanup")
-			}
-			releaseCalled = true
-			return releaseErr
-		},
 	)
 	if waited || waitCalled {
 		t.Fatal("attach failure entered Wait before bounded termination observation succeeded")
 	}
-	if !releaseCalled {
-		t.Fatal("process handle was not released after termination observation failed")
-	}
-	if !ioCleanupCalled {
-		t.Fatal("owned process I/O was not closed before process release")
-	}
 	if waitErr != nil {
 		t.Fatalf("wait error = %v, want nil because Wait was skipped", waitErr)
 	}
-	for _, want := range []error{attachErr, observeErr, ioErr, releaseErr} {
+	for _, want := range []error{attachErr, observeErr} {
 		if !errors.Is(cleanupErr, want) {
 			t.Fatalf("cleanup error = %v, want identity %v", cleanupErr, want)
 		}
@@ -427,20 +611,20 @@ func TestRunUnprovenAttachFailureOwnsAndClosesIOWithoutStartingStdin(t *testing.
 	defer cancel()
 	attachErr := errors.New("attach sentinel")
 	observeErr := errors.New("uncooperative process observation timed out")
-	tree := &testProcessTree{attachErr: attachErr, observeErr: observeErr}
-	stdin := &notifyingBlockingReader{
-		started: make(chan struct{}),
-		release: make(chan struct{}),
-	}
-	defer close(stdin.release)
-
+	tree := &testProcessTree{attachErr: attachErr}
 	command := helperCommand(t, "block")
-	command.Stdin = stdin
+	command.Stdin = bytes.Repeat([]byte("s"), MaxStdinBytes)
 	command.WaitDelay = 25 * time.Millisecond
 	var ownedIO *ownedCommandIO
+	releaseCalls := 0
 	dependencies := runDependencies{
 		configureProcessTree: func(*exec.Cmd, time.Duration) (managedProcessTree, error) {
 			return tree, nil
+		},
+		newProcessCompletion: func(*os.Process) processCompletion {
+			return &testProcessCompletion{
+				observeFn: func(time.Duration) error { return observeErr },
+			}
 		},
 		newCommandIO: func(cmd *exec.Cmd, command Command) (*ownedCommandIO, error) {
 			var err error
@@ -456,6 +640,15 @@ func TestRunUnprovenAttachFailureOwnsAndClosesIOWithoutStartingStdin(t *testing.
 			}
 			return ownedIO, err
 		},
+		releaseProcess: func(process *os.Process) error {
+			releaseCalls++
+			for _, file := range ownedIO.allFiles {
+				if _, statErr := file.Stat(); !errors.Is(statErr, os.ErrClosed) {
+					t.Fatalf("released process before closing descriptor %q: %v", file.Name(), statErr)
+				}
+			}
+			return process.Release()
+		},
 	}
 
 	result, err := runWithDependencies(ctx, command, nil, dependencies)
@@ -465,10 +658,8 @@ func TestRunUnprovenAttachFailureOwnsAndClosesIOWithoutStartingStdin(t *testing.
 	if result.Cleanup.Status != CleanupFailed || result.Cleanup.Completed {
 		t.Fatalf("cleanup = %#v, want failed without completion claim", result.Cleanup)
 	}
-	select {
-	case <-stdin.started:
+	if ownedIO.stdinDone != nil {
 		t.Fatal("stdin copy goroutine started before process-tree attachment succeeded")
-	default:
 	}
 	if ownedIO == nil {
 		t.Fatal("owned process I/O was not constructed")
@@ -477,6 +668,80 @@ func TestRunUnprovenAttachFailureOwnsAndClosesIOWithoutStartingStdin(t *testing.
 		if _, statErr := file.Stat(); !errors.Is(statErr, os.ErrClosed) {
 			t.Fatalf("descriptor %q remains open after unproven termination: %v", file.Name(), statErr)
 		}
+	}
+	if releaseCalls != 1 {
+		t.Fatalf("Release calls = %d, want 1", releaseCalls)
+	}
+}
+
+func TestRunCancellationFailureReturnsWithoutStartingWait(t *testing.T) {
+	defer goleak.VerifyNone(t, goleak.IgnoreCurrent())
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	terminateErr := errors.New("tree termination sentinel")
+	killErr := errors.New("direct kill sentinel")
+	observeErr := errors.New("parent observation sentinel")
+	tree := &testProcessTree{requestErr: terminateErr}
+	completion := &testProcessCompletion{
+		waitFn: func(ctx context.Context) error {
+			<-ctx.Done()
+			return ctx.Err()
+		},
+		observeFn: func(time.Duration) error {
+			return observeErr
+		},
+	}
+	waitCalls := 0
+	releaseCalls := 0
+	dependencies := defaultRunDependencies
+	dependencies.configureProcessTree = func(*exec.Cmd, time.Duration) (managedProcessTree, error) {
+		return tree, nil
+	}
+	dependencies.newProcessCompletion = func(*os.Process) processCompletion {
+		return completion
+	}
+	dependencies.killProcess = func(*os.Process) error {
+		return killErr
+	}
+	dependencies.waitCommand = func(*exec.Cmd) error {
+		waitCalls++
+		return errors.New("wait must not run")
+	}
+	dependencies.releaseProcess = func(process *os.Process) error {
+		releaseCalls++
+		return process.Release()
+	}
+	command := helperCommand(t, "success")
+	command.WaitDelay = 25 * time.Millisecond
+	command.OnStart = func(int) {
+		cancel()
+	}
+
+	started := time.Now()
+	result, err := runWithDependencies(ctx, command, nil, dependencies)
+	if elapsed := time.Since(started); elapsed > time.Second {
+		t.Fatalf("Run elapsed = %s, want bounded return", elapsed)
+	}
+	for _, want := range []error{context.Canceled, terminateErr, killErr, observeErr} {
+		if !errors.Is(err, want) {
+			t.Fatalf("Run error = %v, want identity %v", err, want)
+		}
+	}
+	if waitCalls != 0 {
+		t.Fatalf("Wait calls = %d, want 0 while termination is unproven", waitCalls)
+	}
+	if releaseCalls != 1 {
+		t.Fatalf("Release calls = %d, want 1", releaseCalls)
+	}
+	if tree.requestCalls != 1 {
+		t.Fatalf("tree termination request calls = %d, want 1", tree.requestCalls)
+	}
+	if tree.terminateCalls != 0 {
+		t.Fatalf("tree verification calls = %d, want 0 without proven parent termination", tree.terminateCalls)
+	}
+	if result.Cleanup.Status != CleanupFailed || !result.Cleanup.Attempted || result.Cleanup.Completed {
+		t.Fatalf("cleanup = %#v, want failed typed outcome", result.Cleanup)
 	}
 }
 
@@ -551,6 +816,15 @@ func TestSubprocessHelperProcess(t *testing.T) {
 	case "stdin-echo":
 		if _, err := io.Copy(os.Stdout, os.Stdin); err != nil {
 			os.Exit(93)
+		}
+	case "output-block":
+		_, _ = fmt.Fprintln(os.Stdout, "stdout before cancellation")
+		_, _ = fmt.Fprintln(os.Stderr, "stderr before cancellation")
+		if err := os.WriteFile(os.Getenv(helperReadyEnv), []byte("ready"), 0o600); err != nil {
+			os.Exit(94)
+		}
+		for {
+			time.Sleep(time.Second)
 		}
 	case "exit-seven":
 		_, _ = fmt.Fprintln(os.Stdout, "abnormal output")
