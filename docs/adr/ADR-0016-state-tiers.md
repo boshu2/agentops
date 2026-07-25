@@ -109,6 +109,40 @@ any top-level directory outside the set is a finding, with no fourth
   prototyped as scratch Python, proved its value, and ships as an `ao doctor`
   detector in Go (bead `age-state-tiers-operationalize-5mzlm.2`).
 
+#### Amendment 2026-07-25 (enforcement and the tests carve-out)
+
+The language rule above was fixed on 2026-07-18 and named its own violation "a
+gate failure" — but no gate existed. It was inert prose for seven days while the
+tree kept accumulating interpreter dependencies, which is the identical defect
+this ADR diagnoses elsewhere: an authority nobody executes. This amendment
+records the enforcing check and the one scope decision it depends on, so neither
+lives as an unstated exception.
+
+- **Enforced by `scripts/check-skill-python-ratchet.sh`** (gate ID
+  `skill.python-ratchet`, blocking). It is a shrink-only ratchet: the 24
+  execution-path files present at the 2026-07-25 cutoff are pinned in
+  `scripts/.skill-python-grandfather` and exempt; every new one is a hard
+  failure; a pinned file that is promoted into `ao` must be pruned from the
+  snapshot; the growth guard rejects allowlist additions, so a change cannot
+  exempt itself in its own diff. The surviving count prints on every run.
+- **"Ships" means the user execution path.** The rule governs
+  `skills/*/scripts/**` — what a skill actually invokes on a user's machine, and
+  therefore what carries the interpreter dependency that breaks determinism
+  there.
+- **`skills/*/tests/**` is exempt as a class.** Test code never executes on a
+  user's machine, so the determinism argument does not reach it; a skill's tests
+  run in this repository, where Python is already a declared development
+  dependency. This is a genuine refinement of the rule's scope, not a loophole —
+  but it is recorded here precisely because an unwritten carve-out would decay
+  into the same inert-prose failure. Anything that migrates from `tests/` into
+  the execution path loses the exemption at that moment.
+- **Generated projections are governed at their source.** `skills-codex/**` is
+  regenerated from `skills/**`; it is never independently governed, per this
+  ADR's own title.
+- **Un-promotable code is an amendment, not an allowlist entry.** If a file
+  genuinely cannot become an `ao` subcommand, that case is made per file, here,
+  with its rationale. Widening the snapshot is rejected mechanically.
+
 ## Consequences
 
 - The 114-directory `.agents/` junk drawer is migrated once to the three-dir
@@ -121,7 +155,10 @@ any top-level directory outside the set is a finding, with no fourth
 - TTL enforcement anywhere in the system quarantine-renames with a receipt;
   a deleting TTL is a defect against this ADR.
 - Shipping Python inside a skill is a gate failure, not a style nit; the
-  prototype path through scratch exists precisely so that rule has no cost.
+  prototype path through scratch exists precisely so that rule has no cost. The
+  gate is `skill.python-ratchet`
+  (`scripts/check-skill-python-ratchet.sh`) — named here because a mechanical
+  claim with no named check is indistinguishable from advisory prose.
 - [docs/agents-dir-hygiene.md](../agents-dir-hygiene.md) remains the operating
   manual for the scratch tier (TTL mechanics, drift aliases, doctor detectors)
   and will be rewritten around this tier table (bead `.5`); where the two
