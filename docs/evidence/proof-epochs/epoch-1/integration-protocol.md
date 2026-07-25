@@ -35,7 +35,16 @@ the next mutation.
 
 1. **T2 publisher:** obtain a zero-finding author-distinct review and fresh
    exact-subject verdict for the final compiler, strict reader, and
-   transactional publisher. Land the T2 source and durable review evidence.
+   transactional publisher. T2 must also close any compiler/schema defect that
+   prevents a skill from truthfully distinguishing evidence-artifact writes
+   from candidate-subject mutation; a compiling declaration that hides a real
+   write or grants excess mutation authority is not acceptable. Land the T2
+   source and durable review evidence.
+1a. **T1 kernel contract-v3 completion:** after the final T2 grammar is present,
+   author truthful `contract_v3` declarations and owned proofs for `plan`,
+   `implement`, `rpi`, and `validate`. All four are required: a partial kernel
+   cannot satisfy the 49-skill cutover matrix. Obtain a zero-finding
+   author-distinct review and a fresh exact-subject verdict before continuing.
 2. **Go G0-G2 repair:** preserve every prior FAIL, validate the final repair,
    land it, and rerun the exact integrated Go lifecycle, race, vet, lint, and
    supported cross-build checks. The known-failed Go landing tip is not an
@@ -113,6 +122,8 @@ Stop integration when any of these is true:
 - actual changed-path coverage is incomplete or outside frozen scope;
 - a review has an unresolved critical or warning finding;
 - a required tranche verdict is not `PASS`;
+- any canonical skill cannot truthfully express its authority and effects in
+  the active contract grammar;
 - a durable gate record is missing;
 - a consumer points to an owner that is not present in the judged subject;
 - regeneration or publication is dirty, non-idempotent, or incompletely
