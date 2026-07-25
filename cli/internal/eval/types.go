@@ -218,15 +218,16 @@ type GitRecord struct {
 }
 
 type RuntimeRecord struct {
-	Name           Runtime                    `json:"name"`
-	Version        string                     `json:"version,omitempty"`
-	Model          string                     `json:"model,omitempty"`
-	Profile        string                     `json:"profile,omitempty"`
-	Live           bool                       `json:"live"`
-	Attempts       int                        `json:"attempts,omitempty"`
-	TimeoutSeconds int                        `json:"timeout_seconds,omitempty"`
-	SkippedReason  string                     `json:"skipped_reason,omitempty"`
-	Cleanup        *subprocess.CleanupOutcome `json:"cleanup,omitempty"`
+	Name                Runtime                    `json:"name"`
+	Version             string                     `json:"version,omitempty"`
+	Model               string                     `json:"model,omitempty"`
+	Profile             string                     `json:"profile,omitempty"`
+	Live                bool                       `json:"live"`
+	Attempts            int                        `json:"attempts,omitempty"`
+	TimeoutSeconds      int                        `json:"timeout_seconds,omitempty"`
+	SkippedReason       string                     `json:"skipped_reason,omitempty"`
+	VersionProbeCleanup *subprocess.CleanupOutcome `json:"version_probe_cleanup,omitempty"`
+	Cleanup             *subprocess.CleanupOutcome `json:"cleanup,omitempty"`
 }
 
 type EnvironmentRecord struct {

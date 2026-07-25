@@ -133,11 +133,11 @@ func TestRunLiveRuntimeIsolatesAndScrubsCodexEnvironment(t *testing.T) {
 			}
 			return "/fake/bin/codex", nil
 		},
-		VersionRunner: func(ctx context.Context, cmd RuntimeCommand) (string, error) {
+		VersionRunner: func(ctx context.Context, cmd RuntimeCommand) (RuntimeVersionResult, error) {
 			if cmd.Executable != "/fake/bin/codex" {
 				t.Fatalf("version executable = %q, want /fake/bin/codex", cmd.Executable)
 			}
-			return "codex 0.115.0", nil
+			return RuntimeVersionResult{Version: "codex 0.115.0"}, nil
 		},
 		Runner: func(ctx context.Context, cmd RuntimeCommand) (RuntimeExecutionResult, error) {
 			got = cmd
@@ -209,8 +209,8 @@ func TestRunLiveRuntimeCapturesTranscriptAndScorecardArtifacts(t *testing.T) {
 			}
 			return "/fake/bin/codex", nil
 		},
-		VersionRunner: func(ctx context.Context, cmd RuntimeCommand) (string, error) {
-			return "codex 2.0.0", nil
+		VersionRunner: func(ctx context.Context, cmd RuntimeCommand) (RuntimeVersionResult, error) {
+			return RuntimeVersionResult{Version: "codex 2.0.0"}, nil
 		},
 		Runner: func(ctx context.Context, cmd RuntimeCommand) (RuntimeExecutionResult, error) {
 			return RuntimeExecutionResult{
@@ -324,8 +324,8 @@ func TestRunLiveRuntimePropagatesRunnerErrors(t *testing.T) {
 		LookPath: func(name string) (string, error) {
 			return "/fake/bin/codex", nil
 		},
-		VersionRunner: func(ctx context.Context, cmd RuntimeCommand) (string, error) {
-			return "", nil
+		VersionRunner: func(ctx context.Context, cmd RuntimeCommand) (RuntimeVersionResult, error) {
+			return RuntimeVersionResult{}, nil
 		},
 		Runner: func(ctx context.Context, cmd RuntimeCommand) (RuntimeExecutionResult, error) {
 			return RuntimeExecutionResult{}, errors.New("runtime failed")
@@ -483,8 +483,8 @@ func liveIsolationTestOptions(suite *Suite, runner RuntimeRunner) LiveRuntimeOpt
 		LookPath: func(string) (string, error) {
 			return "/fake/bin/codex", nil
 		},
-		VersionRunner: func(context.Context, RuntimeCommand) (string, error) {
-			return "codex test", nil
+		VersionRunner: func(context.Context, RuntimeCommand) (RuntimeVersionResult, error) {
+			return RuntimeVersionResult{Version: "codex test"}, nil
 		},
 		Runner: runner,
 		Now:    fixedEvalTime,
@@ -530,9 +530,9 @@ func TestRunLiveRuntimeRefusesClaude(t *testing.T) {
 			t.Fatalf("LookPath must not be called for a refused claude runtime (got %q)", name)
 			return "", nil
 		},
-		VersionRunner: func(ctx context.Context, cmd RuntimeCommand) (string, error) {
+		VersionRunner: func(ctx context.Context, cmd RuntimeCommand) (RuntimeVersionResult, error) {
 			t.Fatalf("VersionRunner must not be called for a refused claude runtime")
-			return "", nil
+			return RuntimeVersionResult{}, nil
 		},
 		Runner: func(ctx context.Context, cmd RuntimeCommand) (RuntimeExecutionResult, error) {
 			t.Fatalf("Runner must not be called for a refused claude runtime")
@@ -571,9 +571,9 @@ func TestRunLiveRuntimeRefusesClaudeCommandBeforeSpawn(t *testing.T) {
 					t.Fatalf("LookPath must not run for a claude-resolving command (got %q)", name)
 					return "", nil
 				},
-				VersionRunner: func(ctx context.Context, cmd RuntimeCommand) (string, error) {
+				VersionRunner: func(ctx context.Context, cmd RuntimeCommand) (RuntimeVersionResult, error) {
 					t.Fatalf("VersionRunner must not run — no `claude --version` may spawn")
-					return "", nil
+					return RuntimeVersionResult{}, nil
 				},
 				Runner: func(ctx context.Context, cmd RuntimeCommand) (RuntimeExecutionResult, error) {
 					t.Fatalf("Runner must not run for a claude-resolving command")
@@ -605,9 +605,9 @@ func TestRunLiveRuntimeDisabledSkipsClaudeWithoutRefusal(t *testing.T) {
 			t.Fatalf("LookPath must not run when live runtime is disabled (got %q)", name)
 			return "", nil
 		},
-		VersionRunner: func(ctx context.Context, cmd RuntimeCommand) (string, error) {
+		VersionRunner: func(ctx context.Context, cmd RuntimeCommand) (RuntimeVersionResult, error) {
 			t.Fatalf("VersionRunner must not run when live runtime is disabled")
-			return "", nil
+			return RuntimeVersionResult{}, nil
 		},
 		Runner: func(ctx context.Context, cmd RuntimeCommand) (RuntimeExecutionResult, error) {
 			t.Fatalf("Runner must not run when live runtime is disabled")
@@ -767,6 +767,53 @@ func TestDefaultRuntimeRunnerPreservesCleanupOutcome(t *testing.T) {
 	}
 	if result.Cleanup == nil || result.Cleanup.Status != subprocess.CleanupCompleted || !result.Cleanup.Completed {
 		t.Fatalf("cleanup = %#v, want completed", result.Cleanup)
+	}
+}
+
+func TestRunLiveRuntimeRecordsVersionProbeCleanupFailureSeparately(t *testing.T) {
+	versionCleanupErr := errors.New("version cleanup sentinel")
+	versionCleanup := &subprocess.CleanupOutcome{
+		Status:    subprocess.CleanupFailed,
+		Attempted: true,
+		Error:     versionCleanupErr.Error(),
+	}
+	mainCleanup := &subprocess.CleanupOutcome{
+		Status:    subprocess.CleanupCompleted,
+		Attempted: true,
+		Completed: true,
+	}
+
+	run, err := RunLiveRuntime(context.Background(), LiveRuntimeOptions{
+		Suite:   liveRuntimeSuite(RuntimeCodex),
+		RunID:   "live-version-cleanup",
+		Runtime: RuntimeCodex,
+		Enabled: true,
+		LookPath: func(string) (string, error) {
+			return "/fake/bin/codex", nil
+		},
+		VersionRunner: func(context.Context, RuntimeCommand) (RuntimeVersionResult, error) {
+			return RuntimeVersionResult{Cleanup: versionCleanup}, versionCleanupErr
+		},
+		Runner: func(context.Context, RuntimeCommand) (RuntimeExecutionResult, error) {
+			return RuntimeExecutionResult{
+				Status:  StatusInconclusive,
+				Verdict: VerdictInconclusive,
+				Cleanup: mainCleanup,
+			}, nil
+		},
+		Now: fixedEvalTime,
+	})
+	if err != nil {
+		t.Fatalf("RunLiveRuntime: %v", err)
+	}
+	if run.Runtime.VersionProbeCleanup == nil || run.Runtime.VersionProbeCleanup.Status != subprocess.CleanupFailed {
+		t.Fatalf("version probe cleanup = %#v, want failed", run.Runtime.VersionProbeCleanup)
+	}
+	if run.Runtime.Cleanup == nil || run.Runtime.Cleanup.Status != subprocess.CleanupCompleted {
+		t.Fatalf("main runtime cleanup = %#v, want completed", run.Runtime.Cleanup)
+	}
+	if got := strings.Join(run.Environment.HostNotes, "\n"); !strings.Contains(got, versionCleanupErr.Error()) {
+		t.Fatalf("host notes = %q, want version cleanup diagnostic", got)
 	}
 }
 

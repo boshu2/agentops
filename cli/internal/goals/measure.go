@@ -438,10 +438,16 @@ func gitSHA() string {
 }
 
 func gitSHAWithTimeout(timeout time.Duration) string {
+	return gitSHAWithTimeoutAndRunner(timeout, subprocess.Run)
+}
+
+type subprocessRunner func(context.Context, subprocess.Command) (subprocess.Result, error)
+
+func gitSHAWithTimeoutAndRunner(timeout time.Duration, run subprocessRunner) string {
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 
-	result, err := subprocess.Run(ctx, subprocess.Command{
+	result, err := run(ctx, subprocess.Command{
 		Name:        "git",
 		Args:        []string{"rev-parse", "--short", "HEAD"},
 		StdoutLimit: subprocess.CaptureLimit{HeadBytes: 4096},

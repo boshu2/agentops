@@ -2,6 +2,7 @@ package checks
 
 import (
 	"context"
+	"errors"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -10,6 +11,7 @@ import (
 
 	"github.com/boshu2/agentops/cli/internal/gates"
 	"github.com/boshu2/agentops/cli/internal/ports"
+	"github.com/boshu2/agentops/cli/internal/subprocess"
 	"github.com/boshu2/agentops/cli/internal/testsupport"
 )
 
@@ -79,6 +81,27 @@ func TestChangedFilesFor_PollutedGitDirFallbackResolvesCorrectRepo(t *testing.T)
 	want := []string{"correct.sh"}
 	if !equalSetChecks(got, want) {
 		t.Fatalf("polluted GIT_DIR routed fallback change set to %v, want %v (from cmd.Dir repo)", got, want)
+	}
+}
+
+func TestChangedFilesForIntentionallyCollapsesCleanupFailure(t *testing.T) {
+	cleanupErr := errors.New("cleanup sentinel")
+	got := changedFilesForWithRunner(
+		context.Background(),
+		gates.RunContext{RepoRoot: t.TempDir()},
+		func(context.Context, subprocess.Command) (subprocess.Result, error) {
+			return subprocess.Result{
+				Stdout: subprocess.Output{Prefix: []byte("must-not-escape.sh\n"), TotalBytes: 19},
+				Cleanup: subprocess.CleanupOutcome{
+					Status:    subprocess.CleanupFailed,
+					Attempted: true,
+					Error:     cleanupErr.Error(),
+				},
+			}, cleanupErr
+		},
+	)
+	if got != nil {
+		t.Fatalf("changedFilesForWithRunner = %v, want unavailable routing hint", got)
 	}
 }
 

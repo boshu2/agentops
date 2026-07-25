@@ -80,8 +80,15 @@ type RuntimeExecutionResult struct {
 // RuntimeRunner executes a live runtime prompt command.
 type RuntimeRunner func(context.Context, RuntimeCommand) (RuntimeExecutionResult, error)
 
+// RuntimeVersionResult captures version metadata and the probe process cleanup
+// outcome separately from the main live runtime invocation.
+type RuntimeVersionResult struct {
+	Version string
+	Cleanup *subprocess.CleanupOutcome
+}
+
 // RuntimeVersionRunner probes a live runtime executable for version metadata.
-type RuntimeVersionRunner func(context.Context, RuntimeCommand) (string, error)
+type RuntimeVersionRunner func(context.Context, RuntimeCommand) (RuntimeVersionResult, error)
 
 type liveRuntimeAdapter interface {
 	DefaultCommand() string
@@ -257,7 +264,7 @@ func probeRuntimeVersion(ctx context.Context, opts LiveRuntimeOptions, adapter l
 	if record.Runtime.TimeoutSeconds > 0 {
 		versionCtx, versionCancel = context.WithTimeout(ctx, time.Duration(record.Runtime.TimeoutSeconds)*time.Second)
 	}
-	version, err := versionRunner(versionCtx, RuntimeCommand{
+	versionResult, err := versionRunner(versionCtx, RuntimeCommand{
 		Executable:     executablePath,
 		Args:           adapter.VersionArgs(),
 		Env:            env,
@@ -265,6 +272,7 @@ func probeRuntimeVersion(ctx context.Context, opts LiveRuntimeOptions, adapter l
 		TimeoutSeconds: record.Runtime.TimeoutSeconds,
 	})
 	versionCancel()
+	record.Runtime.VersionProbeCleanup = versionResult.Cleanup
 	if err != nil {
 		if ctxErr := versionCtx.Err(); errors.Is(ctxErr, context.DeadlineExceeded) {
 			err = errors.Join(
@@ -275,7 +283,7 @@ func probeRuntimeVersion(ctx context.Context, opts LiveRuntimeOptions, adapter l
 		record.Environment.HostNotes = append(record.Environment.HostNotes, "runtime version probe failed: "+err.Error())
 		return
 	}
-	record.Runtime.Version = strings.TrimSpace(version)
+	record.Runtime.Version = strings.TrimSpace(versionResult.Version)
 }
 
 func liveRuntimeAdapterFor(runtimeName Runtime) (liveRuntimeAdapter, error) {
@@ -532,7 +540,7 @@ func runLiveRuntimeWithAttempts(ctx context.Context, runner RuntimeRunner, comma
 	return lastResult, maxAttempts, lastErr
 }
 
-func defaultRuntimeVersionRunner(ctx context.Context, command RuntimeCommand) (string, error) {
+func defaultRuntimeVersionRunner(ctx context.Context, command RuntimeCommand) (RuntimeVersionResult, error) {
 	result, err := subprocess.Run(ctx, subprocess.Command{
 		Name:           command.Executable,
 		Args:           command.Args,
@@ -541,13 +549,16 @@ func defaultRuntimeVersionRunner(ctx context.Context, command RuntimeCommand) (s
 		CombinedOutput: true,
 		OutputLimit:    subprocess.CaptureLimit{HeadBytes: 64 * 1024},
 	})
+	cleanup := result.Cleanup
+	versionResult := RuntimeVersionResult{Cleanup: &cleanup}
 	if err != nil {
-		return "", fmt.Errorf("probe runtime version: %w", err)
+		return versionResult, fmt.Errorf("probe runtime version: %w", err)
 	}
 	if result.Combined.Truncated {
-		return "", fmt.Errorf("probe runtime version: output exceeded 64 KiB capture bound (%d bytes)", result.Combined.TotalBytes)
+		return versionResult, fmt.Errorf("probe runtime version: output exceeded 64 KiB capture bound (%d bytes)", result.Combined.TotalBytes)
 	}
-	return strings.TrimSpace(result.Combined.String()), nil
+	versionResult.Version = strings.TrimSpace(result.Combined.String())
+	return versionResult, nil
 }
 
 func defaultRuntimeRunner(ctx context.Context, command RuntimeCommand) (RuntimeExecutionResult, error) {

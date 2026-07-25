@@ -448,6 +448,26 @@ func TestGitSHA_OutsideGitRepo(t *testing.T) {
 	}
 }
 
+func TestGitSHAIntentionallyCollapsesCleanupFailure(t *testing.T) {
+	cleanupErr := errors.New("cleanup sentinel")
+	got := gitSHAWithTimeoutAndRunner(
+		time.Second,
+		func(context.Context, subprocess.Command) (subprocess.Result, error) {
+			return subprocess.Result{
+				Stdout: subprocess.Output{Prefix: []byte("must-not-escape\n"), TotalBytes: 16},
+				Cleanup: subprocess.CleanupOutcome{
+					Status:    subprocess.CleanupFailed,
+					Attempted: true,
+					Error:     cleanupErr.Error(),
+				},
+			}, cleanupErr
+		},
+	)
+	if got != "" {
+		t.Fatalf("gitSHAWithTimeoutAndRunner = %q, want unavailable metadata", got)
+	}
+}
+
 func TestChildGroupsInitialized(t *testing.T) {
 	// Bug #7: childGroups.pids should be non-nil at package init time.
 	// Before the fix, it starts nil and relies on lazy init in trackChild.

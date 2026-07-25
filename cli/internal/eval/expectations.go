@@ -29,6 +29,8 @@ type caseContext struct {
 	cleanup  *subprocess.CleanupOutcome
 }
 
+type subprocessRunner func(context.Context, subprocess.Command) (subprocess.Result, error)
+
 type expectationResult struct {
 	passed  bool
 	message string
@@ -507,6 +509,10 @@ func autoDetectPrecheck(command string) error {
 }
 
 func runAutoDetectCommand(ctx caseContext, command string) (string, error) {
+	return runAutoDetectCommandWithRunner(ctx, command, subprocess.Run)
+}
+
+func runAutoDetectCommandWithRunner(ctx caseContext, command string, run subprocessRunner) (string, error) {
 	timeout := defaultTimeoutSeconds
 	if ctx.evalCase.TimeoutSeconds > 0 {
 		timeout = ctx.evalCase.TimeoutSeconds
@@ -537,7 +543,7 @@ func runAutoDetectCommand(ctx caseContext, command string) (string, error) {
 	if runCommand.Dir == "" {
 		runCommand.Dir = ctx.suiteDir
 	}
-	result, runErr := subprocess.Run(cctx, runCommand)
+	result, runErr := run(cctx, runCommand)
 	combined := result.Combined.String()
 	if cctx.Err() == context.DeadlineExceeded {
 		if parent.Err() != nil {
@@ -551,11 +557,25 @@ func runAutoDetectCommand(ctx caseContext, command string) (string, error) {
 	if cctx.Err() == context.Canceled {
 		return combined, errors.Join(cctx.Err(), runErr)
 	}
+	if result.Cleanup.Failed() {
+		if runErr == nil {
+			diagnostic := result.Cleanup.Error
+			if diagnostic == "" {
+				diagnostic = "cleanup failed without a diagnostic"
+			}
+			runErr = errors.New(diagnostic)
+		}
+		cleanupErr := fmt.Errorf("auto-detect process cleanup: %w", runErr)
+		if result.Combined.Truncated {
+			return combined, errors.Join(
+				fmt.Errorf("auto-detect output exceeded 1 MiB capture bound (%d bytes)", result.Combined.TotalBytes),
+				cleanupErr,
+			)
+		}
+		return combined, cleanupErr
+	}
 	if result.Combined.Truncated {
 		return combined, fmt.Errorf("auto-detect output exceeded 1 MiB capture bound (%d bytes)", result.Combined.TotalBytes)
-	}
-	if result.Cleanup.Failed() {
-		return combined, fmt.Errorf("auto-detect process cleanup: %w", runErr)
 	}
 	// runErr is informational — many of these commands legitimately exit
 	// non-zero (e.g. an unrelated failing test) yet still emit the line we

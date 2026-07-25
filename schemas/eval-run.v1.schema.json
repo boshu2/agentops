@@ -323,6 +323,9 @@
         "skipped_reason": {
           "type": "string"
         },
+        "version_probe_cleanup": {
+          "$ref": "#/$defs/cleanup_outcome"
+        },
         "cleanup": {
           "$ref": "#/$defs/cleanup_outcome"
         }
@@ -552,6 +555,11 @@
             }
           },
           "then": {
+            "not": {
+              "required": [
+                "error"
+              ]
+            },
             "properties": {
               "attempted": {
                 "const": false
@@ -571,6 +579,11 @@
             }
           },
           "then": {
+            "not": {
+              "required": [
+                "error"
+              ]
+            },
             "properties": {
               "attempted": {
                 "const": true

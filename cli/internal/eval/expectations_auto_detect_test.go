@@ -1,8 +1,12 @@
 package eval
 
 import (
+	"context"
+	"errors"
 	"strings"
 	"testing"
+
+	"github.com/boshu2/agentops/cli/internal/subprocess"
 )
 
 // makeAutoDetectExp builds an Expectation of type stdout_contains_auto_detect.
@@ -113,5 +117,39 @@ func TestAutoDetect_ToleranceAllowsNumericDrift(t *testing.T) {
 func TestAutoDetect_RegistryListsAutoDetectType(t *testing.T) {
 	if !validExpectationType("stdout_contains_auto_detect") {
 		t.Fatal("validExpectationType must accept stdout_contains_auto_detect")
+	}
+}
+
+func TestRunAutoDetectCommandPreservesCleanupFailureWhenOutputIsTruncated(t *testing.T) {
+	cleanupErr := errors.New("cleanup sentinel")
+	result := subprocess.Result{
+		Combined: subprocess.Output{
+			Prefix:     []byte("retained"),
+			TotalBytes: 2 * 1024 * 1024,
+			Truncated:  true,
+		},
+		Cleanup: subprocess.CleanupOutcome{
+			Status:    subprocess.CleanupFailed,
+			Attempted: true,
+			Error:     cleanupErr.Error(),
+		},
+	}
+
+	_, err := runAutoDetectCommandWithRunner(
+		caseContext{
+			parent:   context.Background(),
+			suiteDir: t.TempDir(),
+			evalCase: Case{TimeoutSeconds: 1},
+		},
+		"ignored",
+		func(context.Context, subprocess.Command) (subprocess.Result, error) {
+			return result, cleanupErr
+		},
+	)
+	if !errors.Is(err, cleanupErr) {
+		t.Fatalf("error = %v, want cleanup sentinel identity", err)
+	}
+	if !strings.Contains(err.Error(), "output exceeded") || !strings.Contains(err.Error(), "process cleanup") {
+		t.Fatalf("error = %q, want truncation and cleanup diagnostics", err)
 	}
 }
