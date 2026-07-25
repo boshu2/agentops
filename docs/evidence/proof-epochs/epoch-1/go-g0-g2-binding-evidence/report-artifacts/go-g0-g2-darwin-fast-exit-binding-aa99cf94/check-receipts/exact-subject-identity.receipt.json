@@ -1,0 +1,16 @@
+{
+  "artifact_digest": "441abe9e8af0d54c1659254eec4d67baed28e20859d8ffa07b9701558d04986b",
+  "command": [
+    "sh",
+    "-c",
+    "test \"$(git rev-parse HEAD)\" = aa99cf94f2f7375d081f5a8c76c7c5565702bef6 && test \"$(git rev-parse HEAD^{tree})\" = 59787572c776e512b439fad6d64060f7bf9e935f && test -z \"$(git status --short)\" && git diff --check bbc0437f7ed969976a305b4fdd5e8c6bd93607ef aa99cf94f2f7375d081f5a8c76c7c5565702bef6 && git rev-parse HEAD HEAD^{tree}"
+  ],
+  "exit_code": 0,
+  "observed_at": "2026-07-25T04:17:15Z",
+  "receipt_id": "exact-subject-identity",
+  "result": "PASS",
+  "schema_version": "check-receipt.v1",
+  "stderr_digest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "stdout_digest": "d0b43484396803df06940f6faadef17af60a44103301c90ea86fe3f4a7be9677",
+  "subject_manifest_digest": "fea7fa62b7db4a640e68ac807523a9d61135a2069b33d4ba15146523e661ed44"
+}

@@ -1,0 +1,22 @@
+{
+  "artifact_digest": "0456016873ee184250a3f3df10b1009beff2853a7301fbc2e6e614bc7e42e569",
+  "command": [
+    "env",
+    "GOOS=windows",
+    "GOARCH=amd64",
+    "go",
+    "test",
+    "-exec=true",
+    "-run",
+    "^$",
+    "./..."
+  ],
+  "exit_code": 0,
+  "observed_at": "2026-07-25T04:17:15Z",
+  "receipt_id": "windows-amd64-cross-build-tests",
+  "result": "PASS",
+  "schema_version": "check-receipt.v1",
+  "stderr_digest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "stdout_digest": "70f1b43fa2f8badfe3bf6f4def54bb0e3a0eb15baaae678140c9d4d2fcc8755f",
+  "subject_manifest_digest": "fea7fa62b7db4a640e68ac807523a9d61135a2069b33d4ba15146523e661ed44"
+}

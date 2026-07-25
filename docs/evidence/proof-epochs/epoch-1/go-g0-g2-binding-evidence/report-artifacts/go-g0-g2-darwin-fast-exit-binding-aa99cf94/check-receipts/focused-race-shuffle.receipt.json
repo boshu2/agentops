@@ -1,0 +1,23 @@
+{
+  "artifact_digest": "356e4460a6fbe729aaf2c6c0e510e57945014ed6ac951b43e1f0d94cba1b0651",
+  "command": [
+    "go",
+    "test",
+    "-race",
+    "-count=3",
+    "-shuffle=on",
+    "./internal/subprocess",
+    "./internal/eval",
+    "./internal/goals",
+    "./internal/gates/...",
+    "./cmd/ao"
+  ],
+  "exit_code": 0,
+  "observed_at": "2026-07-25T04:17:15Z",
+  "receipt_id": "focused-race-shuffle",
+  "result": "PASS",
+  "schema_version": "check-receipt.v1",
+  "stderr_digest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "stdout_digest": "1a8dcba83474b3dba15d7d2580b7d9fb6886960bcdded0449b6f3b4f638fa870",
+  "subject_manifest_digest": "fea7fa62b7db4a640e68ac807523a9d61135a2069b33d4ba15146523e661ed44"
+}

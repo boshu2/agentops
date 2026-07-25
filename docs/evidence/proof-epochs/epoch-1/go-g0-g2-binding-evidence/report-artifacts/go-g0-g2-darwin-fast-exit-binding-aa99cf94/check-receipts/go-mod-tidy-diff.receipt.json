@@ -1,0 +1,17 @@
+{
+  "artifact_digest": "10027632a6be86dea340c0f69e5c4d9cb5730730bd5620488c82e13f9bfe9afb",
+  "command": [
+    "go",
+    "mod",
+    "tidy",
+    "-diff"
+  ],
+  "exit_code": 0,
+  "observed_at": "2026-07-25T04:17:15Z",
+  "receipt_id": "go-mod-tidy-diff",
+  "result": "PASS",
+  "schema_version": "check-receipt.v1",
+  "stderr_digest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "stdout_digest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "subject_manifest_digest": "fea7fa62b7db4a640e68ac807523a9d61135a2069b33d4ba15146523e661ed44"
+}

@@ -70,7 +70,7 @@ func TestRunAbnormalParentDoesNotWaitForOrphanedPipe(t *testing.T) {
 		Env:            append(os.Environ(), "PID_FILE="+pidFile),
 		CombinedOutput: true,
 		OutputLimit:    CaptureLimit{HeadBytes: 128, TailBytes: 128},
-		WaitDelay:      100 * time.Millisecond,
+		WaitDelay:      defaultWaitDelay,
 	}
 
 	start := time.Now()
@@ -94,7 +94,7 @@ func TestRunSuccessfulParentTerminatesBackgroundDescendant(t *testing.T) {
 		Env:            append(os.Environ(), "PID_FILE="+pidFile),
 		CombinedOutput: true,
 		OutputLimit:    CaptureLimit{HeadBytes: 128, TailBytes: 128},
-		WaitDelay:      100 * time.Millisecond,
+		WaitDelay:      defaultWaitDelay,
 	}
 
 	start := time.Now()
@@ -121,7 +121,7 @@ func TestRunPreservesWaitDelayWhenBackgroundCleanupFails(t *testing.T) {
 		Env:            append(os.Environ(), "PID_FILE="+pidFile),
 		CombinedOutput: true,
 		OutputLimit:    CaptureLimit{HeadBytes: 128, TailBytes: 128},
-		WaitDelay:      100 * time.Millisecond,
+		WaitDelay:      defaultWaitDelay,
 	}
 	cleanupErr := errors.New("injected cleanup failure")
 

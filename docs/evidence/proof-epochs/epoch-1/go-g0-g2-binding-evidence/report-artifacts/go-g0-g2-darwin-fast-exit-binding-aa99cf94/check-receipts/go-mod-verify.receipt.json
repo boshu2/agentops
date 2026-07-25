@@ -1,0 +1,16 @@
+{
+  "artifact_digest": "6e6e766c0aaf79ce126a4c4188dfd6d9525e375eb37c9e56aa8bdda2650783ff",
+  "command": [
+    "go",
+    "mod",
+    "verify"
+  ],
+  "exit_code": 0,
+  "observed_at": "2026-07-25T04:17:15Z",
+  "receipt_id": "go-mod-verify",
+  "result": "PASS",
+  "schema_version": "check-receipt.v1",
+  "stderr_digest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "stdout_digest": "b4537ed75f533f993f371954de47e42a793b8e5b0587577de7e27fb3e50696bd",
+  "subject_manifest_digest": "fea7fa62b7db4a640e68ac807523a9d61135a2069b33d4ba15146523e661ed44"
+}

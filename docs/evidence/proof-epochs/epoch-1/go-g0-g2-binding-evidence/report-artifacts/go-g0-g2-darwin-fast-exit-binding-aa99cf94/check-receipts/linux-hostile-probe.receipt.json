@@ -1,0 +1,19 @@
+{
+  "artifact_digest": "32a7856f3cfab80881428fef33675fc4ed8e38b34fa1da588826b4722c70c0f7",
+  "command": [
+    "go",
+    "test",
+    "-count=100",
+    "-run",
+    "^(TestProbeLinuxProcessGroupSkipsUnrelatedUnreadableStats|TestProbeLinuxProcessGroupFailsClosedForOpaqueMembership|TestProbeLinuxProcessGroupFailsClosedForOpaqueTargetState|TestProbeLinuxProcessGroupIgnoresDisappearingProcesses|TestProbeLinuxProcessGroupFailsClosedWhenProcUnavailable|TestProbeLinuxProcessGroupFiltersZombies|TestProbeLinuxProcessGroupIgnoresMembershipChangedBeforeStateRead)$",
+    "./internal/subprocess"
+  ],
+  "exit_code": 0,
+  "observed_at": "2026-07-25T04:17:15Z",
+  "receipt_id": "linux-hostile-probe",
+  "result": "PASS",
+  "schema_version": "check-receipt.v1",
+  "stderr_digest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "stdout_digest": "be0ca7ec70a359d0435726c70f3e1871816a9afd0406f28f90fb6a224ef599b8",
+  "subject_manifest_digest": "fea7fa62b7db4a640e68ac807523a9d61135a2069b33d4ba15146523e661ed44"
+}
