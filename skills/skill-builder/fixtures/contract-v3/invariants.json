@@ -79,6 +79,7 @@
     {"id": "skill-name-mismatch", "expected_code": "SKILL_NAME_MISMATCH"},
     {"id": "contract-v3-absent", "expected_code": "CONTRACT_V3_ABSENT"},
     {"id": "invalid-unicode-scalar", "expected_code": "INVALID_UNICODE"},
+    {"id": "normalization-contract-invalid", "expected_code": "NORMALIZATION_INVALID"},
     {"id": "compiler-io-error", "expected_code": "IO_ERROR"},
     {"id": "source-mutated-during-check", "expected_code": "SOURCE_MUTATED_DURING_CHECK"}
   ]

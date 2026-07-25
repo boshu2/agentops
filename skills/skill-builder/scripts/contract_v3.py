@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import copy
+from functools import lru_cache
 import hashlib
 import json
 from pathlib import Path, PurePosixPath
@@ -20,7 +21,9 @@ CONTRACT_SCHEMA_REF = "schemas/skill-contract.v3.schema.json"
 COMPILER_REFS = (
     "skills/skill-builder/scripts/contract_v3.py",
     "skills/skill-builder/scripts/compile_contracts.py",
+    "schemas/skill-trigger-normalization.v1.json",
 )
+TRIGGER_NORMALIZATION_REF = "schemas/skill-trigger-normalization.v1.json"
 CHECKS = (
     "schema",
     "authority",
@@ -132,6 +135,7 @@ INVARIANT_BRANCHES = (
     ("skill-name-mismatch", "SKILL_NAME_MISMATCH"),
     ("contract-v3-absent", "CONTRACT_V3_ABSENT"),
     ("invalid-unicode-scalar", "INVALID_UNICODE"),
+    ("normalization-contract-invalid", "NORMALIZATION_INVALID"),
     ("compiler-io-error", "IO_ERROR"),
     ("source-mutated-during-check", "SOURCE_MUTATED_DURING_CHECK"),
 )
@@ -395,8 +399,32 @@ def _require_unique_ids(
         seen[identifier] = location
 
 
-def _normalize_prompt(value: str) -> str:
-    return re.sub(r"\s+", " ", value.strip().casefold())
+@lru_cache(maxsize=4)
+def _trigger_normalization(repo_root: Path) -> tuple[dict[str, str], set[int]]:
+    contract = load_json(repo_root / TRIGGER_NORMALIZATION_REF)
+    if contract.get("schema_version") != "skill-trigger-normalization.v1":
+        raise ContractError("NORMALIZATION_INVALID", "trigger normalization contract version is invalid")
+    casefold = contract.get("casefold")
+    whitespace = contract.get("whitespace")
+    if not isinstance(casefold, dict) or not isinstance(whitespace, list):
+        raise ContractError("NORMALIZATION_INVALID", "trigger normalization contract is malformed")
+    return casefold, set(whitespace)
+
+
+def _normalize_prompt(value: str, *, repo_root: Path) -> str:
+    casefold, whitespace = _trigger_normalization(repo_root)
+    folded = "".join(casefold.get(f"{ord(character):04X}", character) for character in value)
+    normalized: list[str] = []
+    separator_pending = False
+    for character in folded:
+        if ord(character) in whitespace:
+            separator_pending = bool(normalized)
+            continue
+        if separator_pending:
+            normalized.append(" ")
+            separator_pending = False
+        normalized.append(character)
+    return "".join(normalized)
 
 
 def _validate_authority(
@@ -495,6 +523,7 @@ def _validate_triggers(
     *,
     skill_name: str,
     skill_names: set[str],
+    repo_root: Path,
 ) -> None:
     triggers = contract["triggers"]
     trigger_ids: list[tuple[str, str]] = []
@@ -508,7 +537,7 @@ def _validate_triggers(
                     "TRIGGER_EXPECTATION_INVALID",
                     f"{location} must expect {expected!r}",
                 )
-            normalized = _normalize_prompt(case["prompt"])
+            normalized = _normalize_prompt(case["prompt"], repo_root=repo_root)
             if normalized in prompts:
                 raise ContractError(
                     "TRIGGER_COLLISION",
@@ -528,7 +557,7 @@ def _validate_triggers(
                 "TRIGGER_REFERENCE_INVALID",
                 f"{location} must resolve to its owning skill {skill_name!r}",
             )
-        normalized = _normalize_prompt(case["alias"])
+        normalized = _normalize_prompt(case["alias"], repo_root=repo_root)
         if normalized in prompts:
             raise ContractError(
                 "TRIGGER_COLLISION",
@@ -673,6 +702,7 @@ def validate_contract(
         contract,
         skill_name=skill_name,
         skill_names=names,
+        repo_root=repo_root,
     )
     _validate_proof(contract, repo_root=repo_root)
     _validate_hard_dependencies(

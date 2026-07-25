@@ -179,6 +179,26 @@ class ContractV3Tests(unittest.TestCase):
             )
         self.assertEqual("INVALID_UNICODE", caught.exception.code)
 
+    def test_pinned_trigger_normalization_is_exhaustive(self) -> None:
+        normalization = load_json(REPO_ROOT / contract_v3.TRIGGER_NORMALIZATION_REF)
+        mapping = normalization["casefold"]
+        whitespace = set(normalization["whitespace"])
+        self.assertEqual("16.0.0", normalization["unicode_version"])
+        self.assertEqual(
+            contract_v3._normalize_prompt("\u13f0", repo_root=REPO_ROOT),
+            contract_v3._normalize_prompt("\u13f8", repo_root=REPO_ROOT),
+        )
+        for codepoint in range(0x110000):
+            if 0xD800 <= codepoint <= 0xDFFF:
+                continue
+            character = chr(codepoint)
+            expected = "" if codepoint in whitespace else mapping.get(f"{codepoint:04X}", character)
+            self.assertEqual(
+                expected,
+                contract_v3._normalize_prompt(character, repo_root=REPO_ROOT),
+                f"U+{codepoint:04X}",
+            )
+
     def run_hostile_case(self, case: dict[str, object]) -> None:
         witness = case.get("witness")
         if witness == "duplicate_yaml":
@@ -226,6 +246,27 @@ class ContractV3Tests(unittest.TestCase):
                 dependencies=self.base_dependencies,
                 repo_root=REPO_ROOT,
             )
+            return
+        if witness == "invalid_normalization":
+            contract_v3._trigger_normalization.cache_clear()
+            real_load_json = contract_v3.load_json
+
+            def hostile_normalization(path: Path) -> object:
+                if path.as_posix().endswith(contract_v3.TRIGGER_NORMALIZATION_REF):
+                    return {"schema_version": "wrong", "casefold": {}, "whitespace": []}
+                return real_load_json(path)
+
+            with mock.patch.object(
+                contract_v3,
+                "load_json",
+                side_effect=hostile_normalization,
+            ):
+                validate_contract(
+                    copy.deepcopy(self.base_contract),
+                    skill_name="skill-builder",
+                    dependencies=self.base_dependencies,
+                    repo_root=REPO_ROOT,
+                )
             return
         if witness == "io_error":
             with mock.patch.object(

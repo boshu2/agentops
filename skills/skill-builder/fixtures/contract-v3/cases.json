@@ -630,7 +630,7 @@
       "mutations": [
         {
           "op": "set",
-          "path": "/proof/harness_refs/10",
+          "path": "/proof/harness_refs/11",
           "value": "skills/skill-builder/scripts/validate.sh"
         }
       ]
@@ -820,6 +820,12 @@
       "id": "invalid-unicode-scalar",
       "expected_code": "INVALID_UNICODE",
       "witness": "invalid_unicode",
+      "mutations": []
+    },
+    {
+      "id": "normalization-contract-invalid",
+      "expected_code": "NORMALIZATION_INVALID",
+      "witness": "invalid_normalization",
       "mutations": []
     },
     {

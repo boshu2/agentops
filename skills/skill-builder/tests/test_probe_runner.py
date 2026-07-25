@@ -83,7 +83,7 @@ class ProbeRunnerTests(unittest.TestCase):
         self.assertTrue(cleanup["complete"])
 
     def test_caller_interruption_cleans_the_process_group(self) -> None:
-        real_sleep = probe_runtime.time.sleep
+        real_sleep = probe_runtime._poll_sleep
         interrupted = False
 
         def interrupt_once(seconds: float) -> None:
@@ -93,11 +93,7 @@ class ProbeRunnerTests(unittest.TestCase):
                 raise KeyboardInterrupt
             real_sleep(seconds)
 
-        with mock.patch.object(
-            probe_runtime.time,
-            "sleep",
-            side_effect=interrupt_once,
-        ):
+        with mock.patch.object(probe_runtime, "_poll_sleep", side_effect=interrupt_once):
             outcome = self.run_fixture("spawn-and-sleep.py")
         execution = outcome["execution"]
         cleanup = execution["cleanup"]
@@ -232,6 +228,51 @@ class ProbeRunnerTests(unittest.TestCase):
         self.assertEqual(observed["snapshot"], outcome["preparation"]["root"])
         self.assertNotEqual(str(REPO_ROOT), observed["snapshot"])
 
+    def test_os_confinement_denies_inherited_absolute_live_write(self) -> None:
+        live_target = REPO_ROOT / "skills/skill-builder/SKILL.md"
+        before = live_target.read_bytes()
+
+        def prepare(_snapshot: Path) -> tuple[list[str], dict[str, str]]:
+            return [
+                sys.executable,
+                (FIXTURE_ROOT / "absolute-live-write.py").as_posix(),
+                str(live_target),
+            ], {}
+
+        outcome = run_isolated_command(
+            REPO_ROOT,
+            None,
+            prepare=prepare,
+            timeout_seconds=5.0,
+            retained_bytes=4096,
+        )
+        confinement = outcome["execution"]["confinement"]
+        self.assertTrue(confinement["proven"])
+        self.assertTrue(confinement["command_executed"])
+        self.assertNotEqual(0, outcome["execution"]["exit_code"])
+        self.assertEqual(0, outcome["execution"]["stdout"]["total_bytes"])
+        self.assertEqual(before, live_target.read_bytes())
+
+    def test_missing_confinement_backend_does_not_execute_command(self) -> None:
+        live_marker = REPO_ROOT / "skills/skill-builder/CONFINEMENT-MARKER"
+        self.assertFalse(live_marker.exists())
+        with mock.patch.object(probe_runtime.sys, "platform", "unsupported"):
+            outcome = run_isolated_command(
+                REPO_ROOT,
+                [
+                    sys.executable,
+                    "-c",
+                    f"from pathlib import Path; Path({str(live_marker)!r}).write_text('ran')",
+                ],
+                timeout_seconds=5.0,
+                retained_bytes=4096,
+            )
+        confinement = outcome["execution"]["confinement"]
+        self.assertFalse(confinement["proven"])
+        self.assertFalse(confinement["command_executed"])
+        self.assertEqual(125, outcome["execution"]["exit_code"])
+        self.assertFalse(live_marker.exists())
+
     def test_probe_compiles_executes_and_receipts_the_same_snapshot(self) -> None:
         snapshot = Path("/disposable/repository-snapshot")
         source_digest = "a" * 64
@@ -278,6 +319,11 @@ class ProbeRunnerTests(unittest.TestCase):
                     "timed_out": False,
                     "interrupted": False,
                     "cleanup": {"complete": True, "trigger": "none"},
+                    "confinement": {
+                        "backend": "sandbox-exec",
+                        "proven": True,
+                        "command_executed": True,
+                    },
                 },
                 "isolation": {
                     "live_root_unchanged": True,
