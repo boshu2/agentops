@@ -26,11 +26,13 @@ def contained_output(root: Path, raw: str) -> Path:
         parent.relative_to(root.resolve())
     except (OSError, ValueError) as exc:
         raise ContractError(
+            "cv3.compile_contracts.contained_output.01",
             "OUTPUT_PATH_INVALID",
             f"output parent is not inside the repository: {raw}",
         ) from exc
     if path.exists() and (path.is_symlink() or not path.is_file()):
         raise ContractError(
+            "cv3.compile_contracts.contained_output.02",
             "OUTPUT_PATH_INVALID",
             f"output must be a regular file or a missing path: {raw}",
         )

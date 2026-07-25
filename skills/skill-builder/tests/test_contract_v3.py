@@ -125,8 +125,8 @@ class ContractV3Tests(unittest.TestCase):
         self.assertEqual(contract_v3.invariant_inventory(), self.inventory)
         self.assertEqual(len(inventory), len({item["id"] for item in inventory}))
         self.assertEqual(
-            {item["id"]: item["expected_code"] for item in inventory},
-            {case["id"]: case["expected_code"] for case in cases},
+            {item["id"] for item in inventory},
+            {case["expected_invariant_id"] for case in cases},
         )
         for case in cases:
             with self.subTest(case=case["id"]):
@@ -137,35 +137,61 @@ class ContractV3Tests(unittest.TestCase):
                     caught.exception.code,
                     caught.exception.message,
                 )
-
-    def test_inventory_covers_every_literal_compiler_rejection_code(self) -> None:
-        tree = ast.parse((SCRIPT_DIR / "contract_v3.py").read_text(encoding="utf-8"))
-        rejection_codes: set[str] = set()
-        for node in ast.walk(tree):
-            if isinstance(node, ast.Call) and isinstance(node.func, ast.Name):
-                if node.func.id == "ContractError" and node.args:
-                    rejection_codes.update(
-                        value.value
-                        for value in ast.walk(node.args[0])
-                        if isinstance(value, ast.Constant)
-                        and isinstance(value.value, str)
-                        and value.value.isupper()
-                    )
-            if (
-                isinstance(node, ast.FunctionDef)
-                and node.name == "_schema_error_code"
-            ):
-                rejection_codes.update(
-                    value.value
-                    for value in ast.walk(node)
-                    if isinstance(value, ast.Constant)
-                    and isinstance(value.value, str)
-                    and value.value.isupper()
+                self.assertEqual(
+                    case["expected_invariant_id"],
+                    caught.exception.invariant_id,
+                    caught.exception.message,
                 )
-        inventory_codes = {
-            item["expected_code"] for item in self.inventory["invariants"]
-        }
-        self.assertEqual(rejection_codes, inventory_codes)
+
+    def test_static_inventory_rejects_raw_duplicate_and_unwitnessed_sites(self) -> None:
+        source = (SCRIPT_DIR / "contract_v3.py").read_text(encoding="utf-8")
+        with self.assertRaisesRegex(RuntimeError, "only be constructed"):
+            contract_v3.invariant_inventory_from_source(
+                source + "\ndef detached():\n    raise ContractError('PROOF_INVALID', 'raw')\n"
+            )
+        existing = self.inventory["invariants"][0]["id"]
+        with self.assertRaisesRegex(RuntimeError, "unique invariant ID"):
+            contract_v3.invariant_inventory_from_source(
+                source
+                + f"\ndef detached():\n    raise _reject({existing!r}, 'PROOF_INVALID', 'duplicate')\n"
+            )
+        detached = contract_v3.invariant_inventory_from_source(
+            source
+            + "\ndef detached():\n    raise _reject('cv3.detached.same-code', 'PROOF_INVALID', 'new')\n"
+        )
+        self.assertNotEqual(
+            {item["id"] for item in detached["invariants"]},
+            {case["expected_invariant_id"] for case in self.fixture_set["cases"]},
+        )
+
+    def test_all_compiler_probe_readiness_rejections_carry_unique_ids(self) -> None:
+        identifiers: list[str] = []
+        for name in (
+            "contract_v3.py",
+            "compile_contracts.py",
+            "run_contract_probe.py",
+            "check_migration_readiness.py",
+        ):
+            tree = ast.parse((SCRIPT_DIR / name).read_text(encoding="utf-8"))
+            for node in ast.walk(tree):
+                if not (
+                    isinstance(node, ast.Call)
+                    and isinstance(node.func, ast.Name)
+                    and node.func.id in {"_reject", "ContractError"}
+                ):
+                    continue
+                first = node.args[0]
+                if (
+                    name == "contract_v3.py"
+                    and node.func.id == "ContractError"
+                    and isinstance(first, ast.Name)
+                    and first.id == "invariant_id"
+                ):
+                    continue
+                self.assertIsInstance(first, ast.Constant, f"{name}:{node.lineno}")
+                self.assertIsInstance(first.value, str, f"{name}:{node.lineno}")
+                identifiers.append(first.value)
+        self.assertEqual(len(identifiers), len(set(identifiers)))
 
     def test_invalid_unicode_scalar_is_a_typed_contract_rejection(self) -> None:
         contract = copy.deepcopy(self.base_contract)
@@ -187,6 +213,11 @@ class ContractV3Tests(unittest.TestCase):
         self.assertEqual(
             contract_v3._normalize_prompt("\u13f0", repo_root=REPO_ROOT),
             contract_v3._normalize_prompt("\u13f8", repo_root=REPO_ROOT),
+        )
+        self.assertEqual(
+            "\u1c8a",
+            contract_v3._normalize_prompt("\u1c89", repo_root=REPO_ROOT),
+            "Unicode 16.0 casefold delta U+1C89",
         )
         for codepoint in range(0x110000):
             if 0xD800 <= codepoint <= 0xDFFF:
@@ -268,6 +299,58 @@ class ContractV3Tests(unittest.TestCase):
                     repo_root=REPO_ROOT,
                 )
             return
+        if witness == "malformed_normalization":
+            contract_v3._trigger_normalization.cache_clear()
+            real_load_json = contract_v3.load_json
+
+            def malformed_normalization(path: Path) -> object:
+                if path.as_posix().endswith(contract_v3.TRIGGER_NORMALIZATION_REF):
+                    return {
+                        "schema_version": "skill-trigger-normalization.v1",
+                        "casefold": [],
+                        "whitespace": [],
+                    }
+                return real_load_json(path)
+
+            with mock.patch.object(
+                contract_v3,
+                "load_json",
+                side_effect=malformed_normalization,
+            ):
+                validate_contract(
+                    copy.deepcopy(self.base_contract),
+                    skill_name="skill-builder",
+                    dependencies=self.base_dependencies,
+                    repo_root=REPO_ROOT,
+                )
+            return
+        if witness == "empty_parsed_proof_command":
+            contract_v3._proof_entrypoint_ref({"command": ""}, repo_root=REPO_ROOT)
+            return
+        if witness == "non_regular_repo_ref":
+            with tempfile.TemporaryDirectory(
+                prefix=".contract-v3-directory-ref-",
+                dir=REPO_ROOT / "skills/skill-builder",
+            ) as temporary:
+                contract_v3._validate_repo_ref(
+                    Path(temporary).relative_to(REPO_ROOT).as_posix(),
+                    repo_root=REPO_ROOT,
+                    code="PROOF_INVALID",
+                    label="hostile directory",
+                )
+            return
+        if witness == "metadata_non_object":
+            self.run_early_source_witness(name="fixture-skill", metadata="metadata: []")
+            return
+        if witness == "frontmatter_source_unavailable":
+            load_frontmatter(Path(tempfile.gettempdir()) / "missing-contract-source")
+            return
+        if witness == "frontmatter_yaml_error":
+            self.run_frontmatter_text_witness("---\nmetadata: [\n---\n")
+            return
+        if witness == "frontmatter_non_object":
+            self.run_frontmatter_text_witness("---\n- item\n---\n")
+            return
         if witness == "io_error":
             with mock.patch.object(
                 contract_v3,
@@ -276,7 +359,11 @@ class ContractV3Tests(unittest.TestCase):
             ):
                 receipt = contract_v3.compile_receipt(REPO_ROOT, "skill-builder")
             error = receipt["errors"][0]
-            raise ContractError(error["code"], error["message"])
+            raise ContractError(
+                error["invariant_id"],
+                error["code"],
+                error["message"],
+            )
         contract = copy.deepcopy(self.base_contract)
         for mutation in case["mutations"]:
             apply_mutation(contract, mutation)
@@ -382,6 +469,12 @@ class ContractV3Tests(unittest.TestCase):
         with tempfile.TemporaryDirectory(prefix=".contract-v3-frontmatter-") as temporary:
             source = Path(temporary) / "SKILL.md"
             source.write_text("# no frontmatter\n", encoding="utf-8")
+            load_frontmatter(source)
+
+    def run_frontmatter_text_witness(self, text: str) -> None:
+        with tempfile.TemporaryDirectory(prefix=".contract-v3-frontmatter-site-") as temporary:
+            source = Path(temporary) / "SKILL.md"
+            source.write_text(text, encoding="utf-8")
             load_frontmatter(source)
 
     def run_early_source_witness(self, *, name: str, metadata: str) -> None:

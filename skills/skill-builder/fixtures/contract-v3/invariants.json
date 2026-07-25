@@ -1,86 +1,197 @@
 {
   "schema_version": "skill-contract-v3-invariant-inventory.v1",
   "invariants": [
-    {"id": "unknown-top-level-field", "expected_code": "UNKNOWN_FIELD"},
-    {"id": "missing-contract-field", "expected_code": "CONTRACT_INCOMPLETE"},
-    {"id": "invalid-schema-version", "expected_code": "SCHEMA_INVALID"},
-    {"id": "invalid-primary-layer", "expected_code": "SCHEMA_INVALID"},
-    {"id": "duplicate-lifecycle-seam", "expected_code": "DUPLICATE_MEMBER"},
-    {"id": "unknown-authority", "expected_code": "AUTHORITY_INVALID"},
-    {"id": "campaign-continuation-is-not-a-seam", "expected_code": "SCHEMA_INVALID"},
-    {"id": "forbidden-verdict-authority", "expected_code": "FORBIDDEN_AUTHORITY"},
-    {"id": "unknown-effect-field", "expected_code": "UNKNOWN_FIELD"},
-    {"id": "malformed-effect-kind", "expected_code": "EFFECT_INVALID"},
-    {"id": "missing-effect-scope", "expected_code": "EFFECT_INVALID"},
-    {"id": "malformed-effect-authorization", "expected_code": "EFFECT_INVALID"},
-    {"id": "malformed-effect-cleanup", "expected_code": "EFFECT_INVALID"},
-    {"id": "malformed-effect-receipt", "expected_code": "EFFECT_INVALID"},
-    {"id": "mutation-receipt-required", "expected_code": "EFFECT_RECEIPT_REQUIRED"},
-    {"id": "process-cleanup-required", "expected_code": "EFFECT_CLEANUP_REQUIRED"},
-    {"id": "duplicate-effect-id", "expected_code": "DUPLICATE_MEMBER"},
-    {"id": "mutation-authority-required", "expected_code": "MUTATION_AUTHORITY_REQUIRED"},
-    {"id": "mutation-effect-required", "expected_code": "MUTATION_EFFECT_REQUIRED"},
-    {"id": "unknown-artifact-field", "expected_code": "UNKNOWN_FIELD"},
-    {"id": "malformed-artifact-kind", "expected_code": "ARTIFACT_INVALID"},
-    {"id": "binding-artifact-needs-schema", "expected_code": "BINDING_ARTIFACT_UNVALIDATED"},
-    {"id": "artifact-reference-must-exist", "expected_code": "ARTIFACT_INVALID"},
-    {"id": "duplicate-artifact-name", "expected_code": "DUPLICATE_MEMBER"},
-    {"id": "missing-trigger-family", "expected_code": "TRIGGER_INCOMPLETE"},
-    {"id": "empty-trigger-family", "expected_code": "TRIGGER_INCOMPLETE"},
-    {"id": "malformed-trigger-case", "expected_code": "TRIGGER_INVALID"},
-    {"id": "wrong-trigger-expectation", "expected_code": "TRIGGER_EXPECTATION_INVALID"},
-    {"id": "trigger-prompt-collision", "expected_code": "TRIGGER_COLLISION"},
-    {"id": "unknown-alias-target", "expected_code": "TRIGGER_REFERENCE_INVALID"},
-    {"id": "wrong-alias-owner", "expected_code": "TRIGGER_REFERENCE_INVALID"},
-    {"id": "invalid-nearest-neighbor", "expected_code": "TRIGGER_REFERENCE_INVALID"},
-    {"id": "missing-failure-family", "expected_code": "FAILURE_INCOMPLETE"},
-    {"id": "incomplete-failure-case", "expected_code": "FAILURE_INCOMPLETE"},
-    {"id": "unknown-failure-field", "expected_code": "UNKNOWN_FIELD"},
-    {"id": "invalid-proof-class", "expected_code": "PROOF_INVALID"},
-    {"id": "multiline-proof-command", "expected_code": "PROOF_INVALID"},
-    {"id": "trimmed-proof-command", "expected_code": "PROOF_INVALID"},
-    {"id": "missing-proof-fixture", "expected_code": "PROOF_INVALID"},
-    {"id": "duplicate-proof-fixture", "expected_code": "DUPLICATE_MEMBER"},
-    {"id": "non-rpi-hard-dependency", "expected_code": "HARD_DEPENDENCY_FORBIDDEN"},
-    {"id": "rpi-hard-dependency-set-is-exact", "expected_code": "HARD_DEPENDENCY_FORBIDDEN"},
-    {"id": "forbidden-refine-authority", "expected_code": "FORBIDDEN_AUTHORITY"},
-    {"id": "forbidden-dispatch-authority", "expected_code": "FORBIDDEN_AUTHORITY"},
-    {"id": "forbidden-transport-authority", "expected_code": "FORBIDDEN_AUTHORITY"},
-    {"id": "rpi-missing-dispatch-authority", "expected_code": "FORBIDDEN_AUTHORITY"},
-    {"id": "binding-artifact-needs-validator", "expected_code": "BINDING_ARTIFACT_UNVALIDATED"},
-    {"id": "cross-family-trigger-id", "expected_code": "DUPLICATE_MEMBER"},
-    {"id": "alias-prompt-collision", "expected_code": "TRIGGER_COLLISION"},
-    {"id": "unknown-nearest-neighbor", "expected_code": "TRIGGER_REFERENCE_INVALID"},
-    {"id": "invalid-failure-action", "expected_code": "FAILURE_INVALID"},
-    {"id": "missing-proof-harness-family", "expected_code": "PROOF_INVALID"},
-    {"id": "empty-proof-harness-family", "expected_code": "PROOF_INVALID"},
-    {"id": "duplicate-proof-harness", "expected_code": "DUPLICATE_MEMBER"},
-    {"id": "missing-proof-harness", "expected_code": "PROOF_INVALID"},
-    {"id": "entrypoint-not-declared-as-harness", "expected_code": "PROOF_HARNESS_INCOMPLETE"},
-    {"id": "proof-entrypoint-traversal", "expected_code": "PROOF_INVALID"},
-    {"id": "proof-entrypoint-backslash", "expected_code": "PROOF_INVALID"},
-    {"id": "proof-harness-backslash", "expected_code": "PROOF_INVALID"},
-    {"id": "proof-fixture-backslash", "expected_code": "PROOF_INVALID"},
-    {"id": "unrestricted-path-command", "expected_code": "PROOF_COMMAND_FORBIDDEN"},
-    {"id": "inline-interpreter-command", "expected_code": "PROOF_INLINE_FORBIDDEN"},
-    {"id": "approved-interpreter-unavailable", "expected_code": "PROOF_INVALID"},
-    {"id": "malformed-proof-command", "expected_code": "PROOF_INVALID"},
-    {"id": "hard-dependency-wrong-type", "expected_code": "HARD_DEPENDENCY_INVALID"},
-    {"id": "duplicate-hard-dependency", "expected_code": "DUPLICATE_MEMBER"},
-    {"id": "rpi-hard-dependency-has-extra", "expected_code": "HARD_DEPENDENCY_FORBIDDEN"},
-    {"id": "nonexecutable-direct-harness", "expected_code": "PROOF_NOT_EXECUTABLE"},
-    {"id": "invalid-yaml-key", "expected_code": "INVALID_YAML_KEY"},
-    {"id": "duplicate-yaml-key", "expected_code": "DUPLICATE_YAML_KEY"},
-    {"id": "invalid-json", "expected_code": "INVALID_JSON"},
-    {"id": "duplicate-json-key", "expected_code": "DUPLICATE_JSON_KEY"},
-    {"id": "invalid-frontmatter", "expected_code": "INVALID_FRONTMATTER"},
-    {"id": "invalid-skill-name", "expected_code": "SKILL_NAME_INVALID"},
-    {"id": "source-unavailable", "expected_code": "SOURCE_UNAVAILABLE"},
-    {"id": "skill-name-mismatch", "expected_code": "SKILL_NAME_MISMATCH"},
-    {"id": "contract-v3-absent", "expected_code": "CONTRACT_V3_ABSENT"},
-    {"id": "invalid-unicode-scalar", "expected_code": "INVALID_UNICODE"},
-    {"id": "normalization-contract-invalid", "expected_code": "NORMALIZATION_INVALID"},
-    {"id": "compiler-io-error", "expected_code": "IO_ERROR"},
-    {"id": "source-mutated-during-check", "expected_code": "SOURCE_MUTATED_DURING_CHECK"}
+    {
+      "id": "cv3._construct_mapping.01",
+      "expected_code": "INVALID_YAML_KEY"
+    },
+    {
+      "id": "cv3._construct_mapping.02",
+      "expected_code": "DUPLICATE_YAML_KEY"
+    },
+    {
+      "id": "cv3._proof_entrypoint_ref.01",
+      "expected_code": "PROOF_INVALID"
+    },
+    {
+      "id": "cv3._proof_entrypoint_ref.02",
+      "expected_code": "PROOF_INVALID"
+    },
+    {
+      "id": "cv3._proof_entrypoint_ref.03",
+      "expected_code": "PROOF_INVALID"
+    },
+    {
+      "id": "cv3._proof_entrypoint_ref.04",
+      "expected_code": "PROOF_INLINE_FORBIDDEN"
+    },
+    {
+      "id": "cv3._proof_entrypoint_ref.05",
+      "expected_code": "PROOF_INVALID"
+    },
+    {
+      "id": "cv3._proof_entrypoint_ref.06",
+      "expected_code": "PROOF_COMMAND_FORBIDDEN"
+    },
+    {
+      "id": "cv3._proof_entrypoint_ref.07",
+      "expected_code": "PROOF_NOT_EXECUTABLE"
+    },
+    {
+      "id": "cv3._raise_first_schema_error.01",
+      "expected_code": null
+    },
+    {
+      "id": "cv3._require_unique_ids.01",
+      "expected_code": null
+    },
+    {
+      "id": "cv3._trigger_normalization.01",
+      "expected_code": "NORMALIZATION_INVALID"
+    },
+    {
+      "id": "cv3._trigger_normalization.02",
+      "expected_code": "NORMALIZATION_INVALID"
+    },
+    {
+      "id": "cv3._validate_artifacts.01",
+      "expected_code": "BINDING_ARTIFACT_UNVALIDATED"
+    },
+    {
+      "id": "cv3._validate_authority.01",
+      "expected_code": "FORBIDDEN_AUTHORITY"
+    },
+    {
+      "id": "cv3._validate_authority.02",
+      "expected_code": "FORBIDDEN_AUTHORITY"
+    },
+    {
+      "id": "cv3._validate_effects.01",
+      "expected_code": "EFFECT_RECEIPT_REQUIRED"
+    },
+    {
+      "id": "cv3._validate_effects.02",
+      "expected_code": "EFFECT_CLEANUP_REQUIRED"
+    },
+    {
+      "id": "cv3._validate_effects.03",
+      "expected_code": "MUTATION_EFFECT_REQUIRED"
+    },
+    {
+      "id": "cv3._validate_effects.04",
+      "expected_code": "MUTATION_AUTHORITY_REQUIRED"
+    },
+    {
+      "id": "cv3._validate_hard_dependencies.01",
+      "expected_code": "HARD_DEPENDENCY_INVALID"
+    },
+    {
+      "id": "cv3._validate_hard_dependencies.02",
+      "expected_code": "DUPLICATE_MEMBER"
+    },
+    {
+      "id": "cv3._validate_hard_dependencies.03",
+      "expected_code": "HARD_DEPENDENCY_FORBIDDEN"
+    },
+    {
+      "id": "cv3._validate_proof.01",
+      "expected_code": "PROOF_HARNESS_INCOMPLETE"
+    },
+    {
+      "id": "cv3._validate_repo_ref.01",
+      "expected_code": null
+    },
+    {
+      "id": "cv3._validate_repo_ref.02",
+      "expected_code": null
+    },
+    {
+      "id": "cv3._validate_repo_ref.03",
+      "expected_code": null
+    },
+    {
+      "id": "cv3._validate_repo_ref.04",
+      "expected_code": null
+    },
+    {
+      "id": "cv3._validate_triggers.01",
+      "expected_code": "TRIGGER_EXPECTATION_INVALID"
+    },
+    {
+      "id": "cv3._validate_triggers.02",
+      "expected_code": "TRIGGER_COLLISION"
+    },
+    {
+      "id": "cv3._validate_triggers.03",
+      "expected_code": "TRIGGER_REFERENCE_INVALID"
+    },
+    {
+      "id": "cv3._validate_triggers.04",
+      "expected_code": "TRIGGER_REFERENCE_INVALID"
+    },
+    {
+      "id": "cv3._validate_triggers.05",
+      "expected_code": "TRIGGER_COLLISION"
+    },
+    {
+      "id": "cv3._validate_triggers.06",
+      "expected_code": "TRIGGER_REFERENCE_INVALID"
+    },
+    {
+      "id": "cv3._validate_unicode_scalars.01",
+      "expected_code": "INVALID_UNICODE"
+    },
+    {
+      "id": "cv3.compile_receipt.01",
+      "expected_code": null
+    },
+    {
+      "id": "cv3.compile_skill.01",
+      "expected_code": "SKILL_NAME_INVALID"
+    },
+    {
+      "id": "cv3.compile_skill.02",
+      "expected_code": "SOURCE_UNAVAILABLE"
+    },
+    {
+      "id": "cv3.compile_skill.03",
+      "expected_code": "SKILL_NAME_MISMATCH"
+    },
+    {
+      "id": "cv3.compile_skill.04",
+      "expected_code": "CONTRACT_V3_ABSENT"
+    },
+    {
+      "id": "cv3.compile_skill.05",
+      "expected_code": "CONTRACT_V3_ABSENT"
+    },
+    {
+      "id": "cv3.compile_skill.06",
+      "expected_code": "SOURCE_MUTATED_DURING_CHECK"
+    },
+    {
+      "id": "cv3.load_frontmatter.01",
+      "expected_code": "SOURCE_UNAVAILABLE"
+    },
+    {
+      "id": "cv3.load_frontmatter.02",
+      "expected_code": "INVALID_FRONTMATTER"
+    },
+    {
+      "id": "cv3.load_frontmatter.03",
+      "expected_code": "INVALID_FRONTMATTER"
+    },
+    {
+      "id": "cv3.load_frontmatter.04",
+      "expected_code": "INVALID_FRONTMATTER"
+    },
+    {
+      "id": "cv3.load_json.01",
+      "expected_code": "INVALID_JSON"
+    },
+    {
+      "id": "cv3.reject_duplicate_json_keys.01",
+      "expected_code": "DUPLICATE_JSON_KEY"
+    }
   ]
 }

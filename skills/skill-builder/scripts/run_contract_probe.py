@@ -55,19 +55,33 @@ def _probe_errors(outcome: dict[str, object]) -> list[dict[str, str]]:
     if not confinement["proven"]:
         errors.append(
             {
+                "invariant_id": "probe.confinement-unavailable",
                 "code": "PROOF_CONFINEMENT_UNAVAILABLE",
                 "message": "no proven OS write-confinement backend was available; proof command was not run",
             }
         )
     if execution["timed_out"]:
-        errors.append({"code": "PROOF_TIMEOUT", "message": "proof exceeded its hard timeout"})
+        errors.append(
+            {
+                "invariant_id": "probe.timeout",
+                "code": "PROOF_TIMEOUT",
+                "message": "proof exceeded its hard timeout",
+            }
+        )
     if execution["interrupted"]:
-        errors.append({"code": "PROOF_INTERRUPTED", "message": "proof was interrupted by the caller"})
+        errors.append(
+            {
+                "invariant_id": "probe.interrupted",
+                "code": "PROOF_INTERRUPTED",
+                "message": "proof was interrupted by the caller",
+            }
+        )
     cleanup = execution["cleanup"]
     assert isinstance(cleanup, dict)
     if not cleanup["complete"]:
         errors.append(
             {
+                "invariant_id": "probe.cleanup-incomplete",
                 "code": "PROOF_CLEANUP_INCOMPLETE",
                 "message": "proof process group was not fully terminated and reaped",
             }
@@ -75,6 +89,7 @@ def _probe_errors(outcome: dict[str, object]) -> list[dict[str, str]]:
     elif cleanup["trigger"] == "descendants":
         errors.append(
             {
+                "invariant_id": "probe.descendants",
                 "code": "PROOF_DESCENDANTS",
                 "message": "proof left a live descendant after its entrypoint exited",
             }
@@ -82,6 +97,7 @@ def _probe_errors(outcome: dict[str, object]) -> list[dict[str, str]]:
     if not isolation["live_root_unchanged"]:
         errors.append(
             {
+                "invariant_id": "probe.live-root-mutated",
                 "code": "LIVE_ROOT_MUTATED",
                 "message": "live repository bytes changed during isolated proof execution",
             }
@@ -89,13 +105,19 @@ def _probe_errors(outcome: dict[str, object]) -> list[dict[str, str]]:
     if isolation["out_of_scope_paths"]:
         errors.append(
             {
+                "invariant_id": "probe.scope-violation",
                 "code": "PROOF_SCOPE_VIOLATION",
                 "message": "proof changed paths outside its empty allowed-write scope",
             }
         )
-    if execution["exit_code"] != 0 and not execution["timed_out"] and not execution["interrupted"]:
+    if (
+        execution["exit_code"] != 0
+        and not execution["timed_out"]
+        and not execution["interrupted"]
+    ):
         errors.append(
             {
+                "invariant_id": "probe.exit-nonzero",
                 "code": "PROOF_EXIT_NONZERO",
                 "message": f"proof entrypoint exited {execution['exit_code']}",
             }
@@ -111,6 +133,7 @@ def run_probe(root: Path, skill_name: str) -> dict[str, object]:
         snapshot_runner = file_set_identity(snapshot, RUNNER_REFS)
         if snapshot_runner != runner_before:
             raise ContractError(
+                "cv3.run_contract_probe.prepare_snapshot.01",
                 "SNAPSHOT_IDENTITY_MISMATCH",
                 "disposable snapshot runner bytes differ from the loaded runner source",
             )
@@ -157,7 +180,9 @@ def run_probe(root: Path, skill_name: str) -> dict[str, object]:
         or cleanup["trigger"] != "none"
         or not outcome["isolation"]["live_root_unchanged"]  # type: ignore[index]
     )
-    result = "NOT_PROVEN" if not_proven else "FAIL" if proof_failed or errors else "PASS"
+    result = (
+        "NOT_PROVEN" if not_proven else "FAIL" if proof_failed or errors else "PASS"
+    )
     return {
         "schema_version": "skill-contract-probe-receipt.v1",
         "skill": skill_name,

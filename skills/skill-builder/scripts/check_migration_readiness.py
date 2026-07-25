@@ -90,6 +90,7 @@ def target_tranche(skill_name: str) -> str:
     matches = [name for name, skills in TRANCHES.items() if skill_name in skills]
     if len(matches) != 1:
         raise ContractError(
+            "cv3.check_migration_readiness.target_tranche.01",
             "TRANCHE_MAP_INVALID",
             f"{skill_name}: expected exactly one target tranche, found {matches}",
         )
@@ -115,7 +116,11 @@ def validate_json_schema(
     if errors:
         error = errors[0]
         path = "$" + "".join(f"[{part!r}]" for part in error.absolute_path)
-        raise ContractError(code, f"{path}: {error.message}")
+        raise ContractError(
+            "cv3.check_migration_readiness.validate_json_schema.01",
+            code,
+            f"{path}: {error.message}",
+        )
 
 
 def validated_probe(root: Path, compiled: dict[str, Any]) -> dict[str, Any]:
@@ -130,6 +135,7 @@ def validated_probe(root: Path, compiled: dict[str, Any]) -> dict[str, Any]:
     for key, expected in required.items():
         if receipt.get(key) != expected:
             raise ContractError(
+                "cv3.check_migration_readiness.validated_probe.01",
                 "PROBE_RECEIPT_INVALID",
                 f"{PROBE_REF}: {key} does not bind the current compiled contract",
             )
@@ -141,26 +147,31 @@ def validated_probe(root: Path, compiled: dict[str, Any]) -> dict[str, Any]:
         or not source["unchanged"]
     ):
         raise ContractError(
+            "cv3.check_migration_readiness.validated_probe.02",
             "PROBE_RECEIPT_INVALID",
             f"{PROBE_REF}: source identity is stale or mutated",
         )
     if receipt["contract"] != compiled["contract"]:
         raise ContractError(
+            "cv3.check_migration_readiness.validated_probe.03",
             "PROBE_RECEIPT_INVALID",
             f"{PROBE_REF}: contract identity is stale",
         )
     if receipt["compiler"] != compiled["compiler"]:
         raise ContractError(
+            "cv3.check_migration_readiness.validated_probe.04",
             "PROBE_RECEIPT_INVALID",
             f"{PROBE_REF}: compiler identity is stale",
         )
     if receipt["proof"] != compiled["proof"]:
         raise ContractError(
+            "cv3.check_migration_readiness.validated_probe.05",
             "PROBE_RECEIPT_INVALID",
             f"{PROBE_REF}: proof identity is stale",
         )
     if receipt["runner"] != file_set_identity(root, RUNNER_REFS):
         raise ContractError(
+            "cv3.check_migration_readiness.validated_probe.06",
             "PROBE_RECEIPT_INVALID",
             f"{PROBE_REF}: runner identity is stale",
         )
@@ -184,6 +195,7 @@ def validated_probe(root: Path, compiled: dict[str, Any]) -> dict[str, Any]:
         or receipt["errors"]
     ):
         raise ContractError(
+            "cv3.check_migration_readiness.validated_probe.07",
             "PROBE_RECEIPT_INVALID",
             f"{PROBE_REF}: isolated execution facts do not prove PASS",
         )
@@ -197,6 +209,7 @@ def expected_ledger(root: Path) -> dict[str, Any]:
         missing = sorted(names - mapped)
         stale = sorted(mapped - names)
         raise ContractError(
+            "cv3.check_migration_readiness.expected_ledger.01",
             "TRANCHE_MAP_INVALID",
             f"canonical skill set mismatch (unmapped={missing}, stale={stale}, count={len(names)})",
         )
@@ -210,6 +223,7 @@ def expected_ledger(root: Path) -> dict[str, Any]:
         if name == "skill-builder":
             if contract is None:
                 raise ContractError(
+                    "cv3.check_migration_readiness.expected_ledger.02",
                     "CONTRACT_V3_ABSENT",
                     "skill-builder must be the sole contract-v3-ready T2 skill",
                 )
@@ -233,6 +247,7 @@ def expected_ledger(root: Path) -> dict[str, Any]:
         else:
             if contract is not None:
                 raise ContractError(
+                    "cv3.check_migration_readiness.expected_ledger.03",
                     "EARLY_CONTRACT_V3",
                     f"{source_ref}: T2 may not migrate later-tranche skills",
                 )
@@ -280,11 +295,13 @@ def contained_path(root: Path, raw: str) -> Path:
         parent.relative_to(root.resolve())
     except (OSError, ValueError) as exc:
         raise ContractError(
+            "cv3.check_migration_readiness.contained_path.01",
             "OUTPUT_PATH_INVALID",
             f"output parent is not inside the repository: {raw}",
         ) from exc
     if path.exists() and (path.is_symlink() or not path.is_file()):
         raise ContractError(
+            "cv3.check_migration_readiness.contained_path.02",
             "OUTPUT_PATH_INVALID",
             f"output must be a regular file or missing: {raw}",
         )
@@ -348,12 +365,18 @@ def main(argv: list[str]) -> int:
                 root=root,
                 code="LEDGER_SCHEMA_INVALID",
             )
-            if canonical_bytes(actual) != payload or ledger_path.read_bytes() != payload:
+            if (
+                canonical_bytes(actual) != payload
+                or ledger_path.read_bytes() != payload
+            ):
                 raise ContractError(
+                    "cv3.check_migration_readiness.main.01",
                     "LEDGER_STALE",
                     f"{args.ledger}: rows, identities, ordering, or canonical bytes are stale",
                 )
-            print("skill migration readiness: PASS (49 rows; 1 ready; 48 explicit blockers)")
+            print(
+                "skill migration readiness: PASS (49 rows; 1 ready; 48 explicit blockers)"
+            )
         return 0
     except ContractError as exc:
         print(f"[{exc.code}] {exc.message}", file=sys.stderr)
