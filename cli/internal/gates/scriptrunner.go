@@ -150,7 +150,13 @@ func (s *ScriptRunner) Run(ctx context.Context, req ports.GateRunRequest) (ports
 		OutputLimit:    subprocess.CaptureLimit{TailBytes: 4096},
 	})
 	if ctxErr := ctx.Err(); ctxErr != nil {
+		if runErr != nil {
+			return ports.GateVerdict{}, runErr
+		}
 		return ports.GateVerdict{}, ctxErr
+	}
+	if result.Cleanup.Failed() {
+		return ports.GateVerdict{}, runErr
 	}
 
 	code := 0

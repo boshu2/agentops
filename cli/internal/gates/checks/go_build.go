@@ -31,7 +31,13 @@ func runGoBuild(ctx context.Context, rc gates.RunContext) (ports.GateVerdict, er
 		OutputLimit:    subprocess.CaptureLimit{TailBytes: 4096},
 	})
 	if ctxErr := ctx.Err(); ctxErr != nil {
+		if err != nil {
+			return ports.GateVerdict{}, err
+		}
 		return ports.GateVerdict{}, ctxErr
+	}
+	if result.Cleanup.Failed() {
+		return ports.GateVerdict{}, err
 	}
 	if err != nil {
 		return ports.GateVerdict{

@@ -1,6 +1,10 @@
 package eval
 
-import "time"
+import (
+	"time"
+
+	"github.com/boshu2/agentops/cli/internal/subprocess"
+)
 
 type Tier string
 
@@ -214,14 +218,15 @@ type GitRecord struct {
 }
 
 type RuntimeRecord struct {
-	Name           Runtime `json:"name"`
-	Version        string  `json:"version,omitempty"`
-	Model          string  `json:"model,omitempty"`
-	Profile        string  `json:"profile,omitempty"`
-	Live           bool    `json:"live"`
-	Attempts       int     `json:"attempts,omitempty"`
-	TimeoutSeconds int     `json:"timeout_seconds,omitempty"`
-	SkippedReason  string  `json:"skipped_reason,omitempty"`
+	Name           Runtime                    `json:"name"`
+	Version        string                     `json:"version,omitempty"`
+	Model          string                     `json:"model,omitempty"`
+	Profile        string                     `json:"profile,omitempty"`
+	Live           bool                       `json:"live"`
+	Attempts       int                        `json:"attempts,omitempty"`
+	TimeoutSeconds int                        `json:"timeout_seconds,omitempty"`
+	SkippedReason  string                     `json:"skipped_reason,omitempty"`
+	Cleanup        *subprocess.CleanupOutcome `json:"cleanup,omitempty"`
 }
 
 type EnvironmentRecord struct {
@@ -269,15 +274,16 @@ type Artifact struct {
 }
 
 type CaseResult struct {
-	ID              string                `json:"id"`
-	Status          Status                `json:"status"`
-	Score           float64               `json:"score"`
-	DimensionScores map[Dimension]float64 `json:"dimension_scores"`
-	DurationMS      int64                 `json:"duration_ms,omitempty"`
-	Critical        bool                  `json:"critical,omitempty"`
-	Artifacts       []Artifact            `json:"artifacts,omitempty"`
-	FailureMessage  string                `json:"failure_message,omitempty"`
-	Diagnostics     []string              `json:"diagnostics,omitempty"`
+	ID              string                     `json:"id"`
+	Status          Status                     `json:"status"`
+	Score           float64                    `json:"score"`
+	DimensionScores map[Dimension]float64      `json:"dimension_scores"`
+	DurationMS      int64                      `json:"duration_ms,omitempty"`
+	Critical        bool                       `json:"critical,omitempty"`
+	Artifacts       []Artifact                 `json:"artifacts,omitempty"`
+	FailureMessage  string                     `json:"failure_message,omitempty"`
+	Diagnostics     []string                   `json:"diagnostics,omitempty"`
+	Cleanup         *subprocess.CleanupOutcome `json:"cleanup,omitempty"`
 }
 
 type ContextVariantRun struct {

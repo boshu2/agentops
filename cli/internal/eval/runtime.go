@@ -74,6 +74,7 @@ type RuntimeExecutionResult struct {
 	Model           string
 	Profile         string
 	Diagnostics     []string
+	Cleanup         *subprocess.CleanupOutcome
 }
 
 // RuntimeRunner executes a live runtime prompt command.
@@ -238,6 +239,7 @@ func RunLiveRuntime(ctx context.Context, opts LiveRuntimeOptions) (runRecord *Ru
 	}, record.Runtime.Attempts)
 	record.Runtime.Attempts = attempts
 	if runErr != nil {
+		record.Runtime.Cleanup = result.Cleanup
 		markRuntimeError(record, suite, runErr.Error())
 		return finishLiveRuntimeRun(opts, record, now)
 	}
@@ -264,8 +266,11 @@ func probeRuntimeVersion(ctx context.Context, opts LiveRuntimeOptions, adapter l
 	})
 	versionCancel()
 	if err != nil {
-		if errors.Is(versionCtx.Err(), context.DeadlineExceeded) {
-			err = fmt.Errorf("runtime version probe timed out after %ds", record.Runtime.TimeoutSeconds)
+		if ctxErr := versionCtx.Err(); errors.Is(ctxErr, context.DeadlineExceeded) {
+			err = errors.Join(
+				fmt.Errorf("runtime version probe timed out after %ds: %w", record.Runtime.TimeoutSeconds, ctxErr),
+				err,
+			)
 		}
 		record.Environment.HostNotes = append(record.Environment.HostNotes, "runtime version probe failed: "+err.Error())
 		return
@@ -492,7 +497,10 @@ func runLiveRuntimeWithAttempts(ctx context.Context, runner RuntimeRunner, comma
 	if maxAttempts <= 0 {
 		maxAttempts = 1
 	}
-	var lastErr error
+	var (
+		lastErr    error
+		lastResult RuntimeExecutionResult
+	)
 	for attempt := 1; attempt <= maxAttempts; attempt++ {
 		attemptCtx := ctx
 		cancel := func() {}
@@ -501,16 +509,20 @@ func runLiveRuntimeWithAttempts(ctx context.Context, runner RuntimeRunner, comma
 		}
 		command.Attempt = attempt
 		result, err := runner(attemptCtx, command)
+		lastResult = result
 		cancel()
 		if err == nil {
 			return result, attempt, nil
 		}
 		lastErr = err
-		if errors.Is(attemptCtx.Err(), context.DeadlineExceeded) {
-			lastErr = fmt.Errorf("runtime timed out after %ds", command.TimeoutSeconds)
+		if ctxErr := attemptCtx.Err(); errors.Is(ctxErr, context.DeadlineExceeded) {
+			lastErr = errors.Join(
+				fmt.Errorf("runtime timed out after %ds: %w", command.TimeoutSeconds, ctxErr),
+				err,
+			)
 		}
 	}
-	return RuntimeExecutionResult{}, maxAttempts, lastErr
+	return lastResult, maxAttempts, lastErr
 }
 
 func defaultRuntimeVersionRunner(ctx context.Context, command RuntimeCommand) (string, error) {
@@ -548,10 +560,12 @@ func defaultRuntimeRunner(ctx context.Context, command RuntimeCommand) (RuntimeE
 		diagnostics = append(diagnostics, fmt.Sprintf("stderr truncated after %d bytes", runResult.Stderr.TotalBytes))
 	}
 	diagnostics = append(diagnostics, runResult.Stdout.String(), runResult.Stderr.String())
+	cleanup := runResult.Cleanup
 	result := RuntimeExecutionResult{
 		Status:      StatusInconclusive,
 		Verdict:     VerdictInconclusive,
 		Diagnostics: compactStrings(diagnostics),
+		Cleanup:     &cleanup,
 	}
 	if err == nil {
 		return result, nil
@@ -582,6 +596,10 @@ func applyRuntimeExecutionResult(record *RunRecord, suite Suite, result RuntimeE
 	}
 	if result.Profile != "" {
 		record.Runtime.Profile = result.Profile
+	}
+	if result.Cleanup != nil {
+		cleanup := *result.Cleanup
+		record.Runtime.Cleanup = &cleanup
 	}
 	if len(result.DimensionScores) > 0 {
 		record.DimensionScores = result.DimensionScores

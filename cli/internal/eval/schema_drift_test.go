@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/boshu2/agentops/cli/internal/subprocess"
 	"github.com/santhosh-tekuri/jsonschema/v6"
 )
 
@@ -96,6 +97,29 @@ func TestRunRecord_ValidatesAgainstEvalRunSchema(t *testing.T) {
 	schema := compileEvalSchemaForTest(t, "eval-run.v1.schema.json")
 	if err := schema.Validate(value); err != nil {
 		t.Fatalf("persisted run record does not satisfy eval-run.v1.schema.json:\n%v", err)
+	}
+}
+
+func TestRunRecordCleanupOutcomeValidatesAgainstEvalRunSchema(t *testing.T) {
+	run := minimalRunRecord("cleanup-schema", 1, map[Dimension]float64{DimensionCorrectness: 1})
+	cleanup := &subprocess.CleanupOutcome{
+		Status:    subprocess.CleanupCompleted,
+		Attempted: true,
+		Completed: true,
+	}
+	run.Runtime.Cleanup = cleanup
+	run.CaseResults[0].Cleanup = cleanup
+
+	payload, err := json.Marshal(run)
+	if err != nil {
+		t.Fatalf("marshal run: %v", err)
+	}
+	var value any
+	if err := json.Unmarshal(payload, &value); err != nil {
+		t.Fatalf("decode run: %v", err)
+	}
+	if err := compileEvalSchemaForTest(t, "eval-run.v1.schema.json").Validate(value); err != nil {
+		t.Fatalf("cleanup-bearing run record does not satisfy eval-run.v1.schema.json:\n%v", err)
 	}
 }
 

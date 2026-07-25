@@ -9,9 +9,14 @@ import (
 	"io"
 	"os/exec"
 	"time"
+	"unicode/utf8"
 )
 
-const defaultWaitDelay = 500 * time.Millisecond
+const (
+	defaultWaitDelay        = 500 * time.Millisecond
+	maxCleanupDiagnosticLen = 2048
+	cleanupTruncationMarker = "…[truncated]"
+)
 
 // Command describes one child process and its capture policy.
 type Command struct {
@@ -35,19 +40,55 @@ type Command struct {
 	OnExit  func(pid int)
 }
 
-// Result captures bounded subprocess output and the observed exit status.
+// CleanupStatus identifies the terminal state of process-tree cleanup.
+type CleanupStatus string
+
+const (
+	CleanupNotStarted CleanupStatus = "not_started"
+	CleanupCompleted  CleanupStatus = "completed"
+	CleanupFailed     CleanupStatus = "failed"
+)
+
+// CleanupOutcome records whether process-tree cleanup ran and completed.
+// Error is bounded so callers can safely serialize Result.
+type CleanupOutcome struct {
+	Status    CleanupStatus `json:"status"`
+	Attempted bool          `json:"attempted"`
+	Completed bool          `json:"completed"`
+	Error     string        `json:"error,omitempty"`
+}
+
+// Failed reports whether cleanup was attempted but did not complete.
+func (outcome CleanupOutcome) Failed() bool {
+	return outcome.Status == CleanupFailed
+}
+
+// Result captures bounded subprocess output, the observed exit status, and
+// process-tree cleanup state.
 type Result struct {
 	Stdout   Output
 	Stderr   Output
 	Combined Output
 	ExitCode int
+	Cleanup  CleanupOutcome
 }
 
 // Run executes command under ctx. Output is bounded while it is streamed,
 // cancellation terminates the process tree, and WaitDelay prevents a
 // descendant holding inherited pipes from blocking completion indefinitely.
 func Run(ctx context.Context, command Command) (Result, error) {
-	result := Result{ExitCode: -1}
+	return runWithCleanup(ctx, command, terminateProcessTree)
+}
+
+type cleanupProcessTree func(*exec.Cmd) error
+
+func runWithCleanup(ctx context.Context, command Command, cleanup cleanupProcessTree) (Result, error) {
+	result := Result{
+		ExitCode: -1,
+		Cleanup: CleanupOutcome{
+			Status: CleanupNotStarted,
+		},
+	}
 	if command.Name == "" {
 		return result, fmt.Errorf("subprocess command name is required")
 	}
@@ -93,7 +134,8 @@ func Run(ctx context.Context, command Command) (Result, error) {
 	}
 
 	waitErr := cmd.Wait()
-	cleanupErr := terminateProcessTree(cmd)
+	cleanupErr := cleanup(cmd)
+	result.Cleanup = cleanupOutcome(cleanupErr)
 	if command.OnExit != nil {
 		command.OnExit(pid)
 	}
@@ -102,9 +144,6 @@ func Run(ctx context.Context, command Command) (Result, error) {
 		result.ExitCode = cmd.ProcessState.ExitCode()
 	}
 
-	if ctxErr := ctx.Err(); ctxErr != nil {
-		return result, fmt.Errorf("run %q: %w", command.Name, ctxErr)
-	}
 	// A successful parent can leave a background descendant holding an
 	// inherited pipe. WaitDelay closes that pipe; the unconditional tree
 	// cleanup above then kills the descendant. The parent's exit status remains
@@ -112,17 +151,47 @@ func Run(ctx context.Context, command Command) (Result, error) {
 	if errors.Is(waitErr, exec.ErrWaitDelay) && result.ExitCode == 0 {
 		waitErr = nil
 	}
-	if waitErr != nil {
+	var primaryErr error
+	if ctxErr := ctx.Err(); ctxErr != nil {
+		primaryErr = fmt.Errorf("run %q: %w", command.Name, ctxErr)
+	} else if waitErr != nil {
 		var exitErr *exec.ExitError
 		if result.ExitCode != 0 && !errors.As(waitErr, &exitErr) && cmd.ProcessState != nil {
 			waitErr = errors.Join(&exec.ExitError{ProcessState: cmd.ProcessState}, waitErr)
 		}
-		return result, waitErr
+		primaryErr = waitErr
 	}
 	if cleanupErr != nil {
-		return result, fmt.Errorf("clean process tree for %q: %w", command.Name, cleanupErr)
+		cleanupErr = fmt.Errorf("clean process tree for %q: %w", command.Name, cleanupErr)
 	}
-	return result, nil
+	return result, errors.Join(primaryErr, cleanupErr)
+}
+
+func cleanupOutcome(err error) CleanupOutcome {
+	if err == nil {
+		return CleanupOutcome{
+			Status:    CleanupCompleted,
+			Attempted: true,
+			Completed: true,
+		}
+	}
+	return CleanupOutcome{
+		Status:    CleanupFailed,
+		Attempted: true,
+		Completed: false,
+		Error:     boundedCleanupDiagnostic(err.Error()),
+	}
+}
+
+func boundedCleanupDiagnostic(message string) string {
+	if len(message) <= maxCleanupDiagnosticLen {
+		return message
+	}
+	limit := maxCleanupDiagnosticLen - len(cleanupTruncationMarker)
+	for limit > 0 && !utf8.ValidString(message[:limit]) {
+		limit--
+	}
+	return message[:limit] + cleanupTruncationMarker
 }
 
 func snapshotResult(result *Result, stdoutCapture, stderrCapture, combinedCapture *capture) {

@@ -24,7 +24,9 @@ func init() {
 }
 
 // changedFilesFor returns the routed change set, falling back to the diff vs
-// origin/main when the orchestrator didn't route (Full mode).
+// origin/main when the orchestrator didn't route (Full mode). This best-effort
+// routing hint intentionally collapses any subprocess or cleanup failure to an
+// empty set; authoritative scoped routing supplies rc.ChangedFiles.
 func changedFilesFor(ctx context.Context, rc gates.RunContext) []string {
 	if len(rc.ChangedFiles) > 0 {
 		return rc.ChangedFiles
@@ -58,7 +60,13 @@ func runGoVet(ctx context.Context, rc gates.RunContext) (ports.GateVerdict, erro
 		OutputLimit:    subprocess.CaptureLimit{TailBytes: 4096},
 	})
 	if ctxErr := ctx.Err(); ctxErr != nil {
+		if err != nil {
+			return ports.GateVerdict{}, err
+		}
 		return ports.GateVerdict{}, ctxErr
+	}
+	if result.Cleanup.Failed() {
+		return ports.GateVerdict{}, err
 	}
 	if err != nil {
 		return ports.GateVerdict{Status: ports.GateStatusFail, Reason: "go vet ./... failed", LogTail: result.Combined.String()}, nil
@@ -109,7 +117,13 @@ func runShellcheckChanged(ctx context.Context, rc gates.RunContext) (ports.GateV
 			OutputLimit:    subprocess.CaptureLimit{TailBytes: 4096},
 		})
 		if ctxErr := ctx.Err(); ctxErr != nil {
+			if err != nil {
+				return ports.GateVerdict{}, err
+			}
 			return ports.GateVerdict{}, ctxErr
+		}
+		if result.Cleanup.Failed() {
+			return ports.GateVerdict{}, err
 		}
 		if err != nil {
 			failed = append(failed, f)

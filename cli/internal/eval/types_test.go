@@ -3,6 +3,8 @@ package eval
 import (
 	"encoding/json"
 	"testing"
+
+	"github.com/boshu2/agentops/cli/internal/subprocess"
 )
 
 // Round-trip JSON snapshot tests for structs that gained new fields in
@@ -155,6 +157,11 @@ func TestCaseResultRoundTrip(t *testing.T) {
 		Critical:       true,
 		FailureMessage: "",
 		Diagnostics:    []string{"note1"},
+		Cleanup: &subprocess.CleanupOutcome{
+			Status:    subprocess.CleanupCompleted,
+			Attempted: true,
+			Completed: true,
+		},
 	}
 	data, err := json.Marshal(original)
 	if err != nil {
@@ -181,6 +188,9 @@ func TestCaseResultRoundTrip(t *testing.T) {
 	}
 	if !decoded.Critical {
 		t.Error("Critical should be true")
+	}
+	if decoded.Cleanup == nil || decoded.Cleanup.Status != subprocess.CleanupCompleted {
+		t.Fatalf("Cleanup: got %#v, want completed", decoded.Cleanup)
 	}
 }
 

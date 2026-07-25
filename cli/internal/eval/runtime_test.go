@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/boshu2/agentops/cli/internal/runtimecmd"
+	"github.com/boshu2/agentops/cli/internal/subprocess"
 )
 
 func TestRunLiveRuntimeSkipsWhenExecutableUnavailable(t *testing.T) {
@@ -743,5 +744,57 @@ func TestLiveEnvironmentRecordReflectsEffectiveDisableHooks(t *testing.T) {
 				t.Fatalf("HooksDisabled: got %v, want %v", rec.HooksDisabled, tc.want)
 			}
 		})
+	}
+}
+
+func TestDefaultRuntimeRunnerPreservesCleanupOutcome(t *testing.T) {
+	const helperEnv = "GO_WANT_EVAL_RUNTIME_CLEANUP_HELPER"
+	if os.Getenv(helperEnv) == "1" {
+		os.Exit(0)
+	}
+	executable, err := os.Executable()
+	if err != nil {
+		t.Fatalf("os.Executable: %v", err)
+	}
+
+	result, err := defaultRuntimeRunner(context.Background(), RuntimeCommand{
+		Executable: executable,
+		Args:       []string{"-test.run=^TestDefaultRuntimeRunnerPreservesCleanupOutcome$"},
+		Env:        append(os.Environ(), helperEnv+"=1"),
+	})
+	if err != nil {
+		t.Fatalf("defaultRuntimeRunner: %v", err)
+	}
+	if result.Cleanup == nil || result.Cleanup.Status != subprocess.CleanupCompleted || !result.Cleanup.Completed {
+		t.Fatalf("cleanup = %#v, want completed", result.Cleanup)
+	}
+}
+
+func TestRuntimeAttemptsPreserveLastCleanupFailure(t *testing.T) {
+	cleanup := &subprocess.CleanupOutcome{
+		Status:    subprocess.CleanupFailed,
+		Attempted: true,
+		Error:     "cleanup sentinel",
+	}
+	sentinel := errors.New("runtime sentinel")
+	result, attempts, err := runLiveRuntimeWithAttempts(
+		context.Background(),
+		func(context.Context, RuntimeCommand) (RuntimeExecutionResult, error) {
+			return RuntimeExecutionResult{Cleanup: cleanup}, sentinel
+		},
+		RuntimeCommand{},
+		1,
+	)
+	if attempts != 1 || !errors.Is(err, sentinel) {
+		t.Fatalf("attempts/error = %d/%v, want 1 and sentinel", attempts, err)
+	}
+	if result.Cleanup == nil || result.Cleanup.Status != subprocess.CleanupFailed {
+		t.Fatalf("cleanup = %#v, want failed last-attempt outcome", result.Cleanup)
+	}
+
+	record := &RunRecord{}
+	applyRuntimeExecutionResult(record, Suite{}, result)
+	if record.Runtime.Cleanup == nil || record.Runtime.Cleanup.Status != subprocess.CleanupFailed {
+		t.Fatalf("runtime record cleanup = %#v, want failed", record.Runtime.Cleanup)
 	}
 }

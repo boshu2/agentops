@@ -10,6 +10,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/boshu2/agentops/cli/internal/subprocess"
 )
 
 func TestRunSuiteArtifactCheckPasses(t *testing.T) {
@@ -214,6 +216,9 @@ func TestRunSuiteCommandCasePasses(t *testing.T) {
 	}
 	if run.Runtime.Name != RuntimeShell {
 		t.Fatalf("runtime = %s, want shell", run.Runtime.Name)
+	}
+	if cleanup := run.CaseResults[0].Cleanup; cleanup == nil || cleanup.Status != subprocess.CleanupCompleted || !cleanup.Completed {
+		t.Fatalf("cleanup = %#v, want completed command cleanup", cleanup)
 	}
 }
 

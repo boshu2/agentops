@@ -27,11 +27,12 @@ type Measurement struct {
 	Output    string   `json:"output,omitempty"`
 	// OutputBytes is populated with the original byte count only when the
 	// subprocess stream exceeded its in-memory capture bound.
-	OutputBytes     int64    `json:"output_bytes,omitempty"`
-	OutputTruncated bool     `json:"output_truncated,omitempty"`
-	Weight          int      `json:"weight"`
-	Tags            []string `json:"tags,omitempty"`
-	AffectsFiles    []string `json:"affects_files,omitempty"`
+	OutputBytes     int64                      `json:"output_bytes,omitempty"`
+	OutputTruncated bool                       `json:"output_truncated,omitempty"`
+	Weight          int                        `json:"weight"`
+	Tags            []string                   `json:"tags,omitempty"`
+	AffectsFiles    []string                   `json:"affects_files,omitempty"`
+	Cleanup         *subprocess.CleanupOutcome `json:"cleanup,omitempty"`
 }
 
 // SkipExitCode is the conventional exit code a gate script returns to
@@ -168,6 +169,8 @@ func MeasureOneContext(parent context.Context, goal Goal, timeout time.Duration)
 	})
 
 	m.Duration = time.Since(start).Seconds()
+	cleanup := result.Cleanup
+	m.Cleanup = &cleanup
 	m.Output = truncateOutput([]byte(result.Combined.String()))
 	if m.Output == "" && err != nil && result.Combined.TotalBytes == 0 {
 		m.Output = err.Error()
@@ -177,6 +180,12 @@ func MeasureOneContext(parent context.Context, goal Goal, timeout time.Duration)
 		m.OutputTruncated = true
 	}
 	m.Result = classifyResult(ctx.Err(), err)
+	if result.Cleanup.Failed() {
+		// A goal's exit code may be an expected fail/skip signal, but failed
+		// process-tree cleanup is an infrastructure failure and must not inherit
+		// the command's successful or skip classification.
+		m.Result = resultFail
+	}
 	applyContinuousMetric(&m, goal)
 	return m
 }
@@ -421,7 +430,9 @@ func isRuntimeArtifact(tags []string) bool {
 
 const gitSHATimeout = 2 * time.Second
 
-// gitSHA returns the short git SHA of HEAD, or "" on error.
+// gitSHA returns the short git SHA of HEAD, or "" on error. This metadata-only
+// boundary intentionally collapses every subprocess fact, including cleanup
+// failure, to unavailable metadata.
 func gitSHA() string {
 	return gitSHAWithTimeout(gitSHATimeout)
 }

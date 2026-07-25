@@ -94,11 +94,17 @@ declared prefix and suffix byte windows while streams are copied, records the
 original byte count and truncation, inherits the caller context, and terminates
 the platform process tree on cancellation or completion. A finite wait delay
 also prevents a descendant that inherited stdout or stderr from keeping the CLI
-blocked after its parent exits.
+blocked after its parent exits. Every started process returns a typed cleanup
+outcome (`completed` or `failed`); a start failure reports `not_started`.
+Cleanup diagnostics are bounded, and a cleanup failure is joined with any
+cancellation, deadline, wait, or exit error so neither identity is lost.
 
 Callers keep their domain-specific rendering and exit classification. The
 shared seam owns only process construction, bounded capture, cancellation, and
-cleanup.
+cleanup. Goal measurements and eval run records serialize cleanup state.
+Gate and adapter boundaries preserve cleanup failure in their returned error;
+metadata-only Git probes explicitly collapse any process failure to unavailable
+metadata.
 
 ## Evidence contracts and the Validate boundary
 

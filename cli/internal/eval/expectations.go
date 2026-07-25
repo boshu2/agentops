@@ -3,6 +3,7 @@ package eval
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -25,6 +26,7 @@ type caseContext struct {
 	stdout   string
 	stderr   string
 	exitCode int
+	cleanup  *subprocess.CleanupOutcome
 }
 
 type expectationResult struct {
@@ -539,15 +541,21 @@ func runAutoDetectCommand(ctx caseContext, command string) (string, error) {
 	combined := result.Combined.String()
 	if cctx.Err() == context.DeadlineExceeded {
 		if parent.Err() != nil {
-			return combined, parent.Err()
+			return combined, errors.Join(parent.Err(), runErr)
 		}
-		return combined, fmt.Errorf("auto-detect command timed out after %ds", timeout)
+		return combined, errors.Join(
+			fmt.Errorf("auto-detect command timed out after %ds: %w", timeout, context.DeadlineExceeded),
+			runErr,
+		)
 	}
 	if cctx.Err() == context.Canceled {
-		return combined, cctx.Err()
+		return combined, errors.Join(cctx.Err(), runErr)
 	}
 	if result.Combined.Truncated {
 		return combined, fmt.Errorf("auto-detect output exceeded 1 MiB capture bound (%d bytes)", result.Combined.TotalBytes)
+	}
+	if result.Cleanup.Failed() {
+		return combined, fmt.Errorf("auto-detect process cleanup: %w", runErr)
 	}
 	// runErr is informational — many of these commands legitimately exit
 	// non-zero (e.g. an unrelated failing test) yet still emit the line we
