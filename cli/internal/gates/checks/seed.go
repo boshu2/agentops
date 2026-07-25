@@ -215,6 +215,19 @@ var (
 		"tests/scripts/check-atomic-write-ratchet.bats",
 		"scripts/lib/ratchet.sh",
 	}
+	// skill.python-ratchet: ADR-0016 section 3 forbids shipping Python inside a
+	// skill and calls it "a gate failure, not a style nit" — while no gate
+	// existed. Routes on the governed source tree plus self-references and the
+	// ADR itself (an amendment that widens or narrows the rule must re-run the
+	// check that enforces it).
+	skillPythonRatchetPaths = []string{
+		"skills/**",
+		"scripts/check-skill-python-ratchet.sh",
+		"scripts/.skill-python-grandfather",
+		"tests/scripts/check-skill-python-ratchet.bats",
+		"docs/adr/ADR-0016-state-tiers.md",
+		"scripts/lib/ratchet.sh",
+	}
 )
 
 func init() {
@@ -295,6 +308,14 @@ func init() {
 		{ID: "skill.frontmatter-v2", Tiers: gates.Full, Match: skillPaths, Blocking: true, Backing: "validate-skill-frontmatter.sh"},
 		{ID: "skill.body-refs", Tiers: gates.Full, Match: skillPaths, Blocking: true, Backing: "validate-skill-body-refs.sh"},
 		{ID: "skill.scenario-test-linkage", Tiers: gates.Full, Match: scenarioLinkagePaths, Blocking: true, Backing: "check-scenario-test-linkage.sh"},
+		// skill.python-ratchet: BLOCKING from the first cycle, unlike the
+		// preamble ratchet's advisory-then-flip. The rule is not new and was not
+		// being phased in — ADR-0016 fixed it on 2026-07-18 and already declares
+		// the violation "a gate failure". The tree lands at zero NEW violations
+		// (all 24 pre-existing execution-path files are pinned), so blocking
+		// costs nothing and advisory would let the count grow during the very
+		// window the gate exists to close.
+		{ID: "skill.python-ratchet", Tiers: gates.Fast | gates.Full, Match: skillPythonRatchetPaths, Blocking: true, Backing: "check-skill-python-ratchet.sh", Args: []string{"--scope", "head"}, RepairHint: "route the logic into an `ao` subcommand and invoke it from the skill through `sh` glue (ADR-0016 section 3); prototype in the scratch tier first — allowlisting is rejected by the growth guard"},
 
 		// go class
 		{ID: "go.home-isolation", Tiers: gates.Fast | gates.Full, Match: goPaths, Blocking: true, Backing: "check-home-isolation.sh"},
