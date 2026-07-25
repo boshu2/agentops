@@ -376,6 +376,125 @@ func TestLoadCatalogV4RejectsInvalidHarnessRefs(t *testing.T) {
 	}
 }
 
+func TestLoadCatalogV4RejectsLexicallyInvalidProofs(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name   string
+		want   string
+		mutate func(proof map[string]any)
+	}{
+		{
+			name: "unrestricted PATH command",
+			want: "repo-owned executable or an approved interpreter",
+			mutate: func(proof map[string]any) {
+				proof["command"] = "pytest"
+				proof["harness_refs"] = []any{"pytest"}
+			},
+		},
+		{
+			name: "inline interpreter command",
+			want: "followed by a repo-owned script",
+			mutate: func(proof map[string]any) {
+				proof["command"] = "python3 -c"
+			},
+		},
+		{
+			name: "multiline command",
+			want: "one trimmed command line",
+			mutate: func(proof map[string]any) {
+				proof["command"] = "bash\nskills/skill-builder/scripts/test-contract-v3.sh"
+			},
+		},
+		{
+			name: "unclosed quote",
+			want: "malformed",
+			mutate: func(proof map[string]any) {
+				proof["command"] = "bash 'skills/skill-builder/scripts/test-contract-v3.sh"
+			},
+		},
+		{
+			name: "entrypoint traversal",
+			want: "contained repository-relative path",
+			mutate: func(proof map[string]any) {
+				proof["command"] = "skills/../outside"
+				proof["harness_refs"] = []any{"skills/../outside"}
+			},
+		},
+		{
+			name: "harness traversal",
+			want: "contained repository-relative path",
+			mutate: func(proof map[string]any) {
+				proof["harness_refs"] = append(
+					proof["harness_refs"].([]any),
+					"skills/../outside",
+				)
+			},
+		},
+		{
+			name: "fixture traversal",
+			want: "contained repository-relative path",
+			mutate: func(proof map[string]any) {
+				proof["fixture_refs"] = []any{"skills/../outside"}
+			},
+		},
+		{
+			name: "entrypoint absent from harness refs",
+			want: "entrypoint must be declared in proof.harness_refs",
+			mutate: func(proof map[string]any) {
+				proof["command"] = "bash skills/skill-builder/scripts/validate.sh"
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			body := mutateV4Fixture(t, func(_ map[string]any, contract map[string]any) {
+				test.mutate(contract["proof"].(map[string]any))
+			})
+			err := loadCatalogBody(t, body)
+			if err == nil {
+				t.Fatal("LoadCatalog succeeded; want proof rejection")
+			}
+			if !strings.Contains(err.Error(), test.want) {
+				t.Fatalf("error %q does not contain %q", err, test.want)
+			}
+		})
+	}
+}
+
+func TestLoadCatalogV4NormalizesPythonControlWhitespace(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name       string
+		whitespace string
+	}{
+		{name: "file separator U+001C", whitespace: "\u001c"},
+		{name: "group separator U+001D", whitespace: "\u001d"},
+		{name: "record separator U+001E", whitespace: "\u001e"},
+		{name: "unit separator U+001F", whitespace: "\u001f"},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			body := mutateV4Fixture(t, func(_ map[string]any, contract map[string]any) {
+				contractTriggerCases(contract, "positive")[0]["prompt"] =
+					test.whitespace + "Straße" + test.whitespace + "route" + test.whitespace
+				contractTriggerCases(contract, "aliases")[0]["alias"] = "STRASSE route"
+			})
+			err := loadCatalogBody(t, body)
+			if err == nil {
+				t.Fatal("LoadCatalog succeeded; want Python-normalized trigger collision")
+			}
+			if !strings.Contains(err.Error(), "normalized trigger text") {
+				t.Fatalf("error %q does not identify normalized trigger collision", err)
+			}
+		})
+	}
+}
+
 func semanticEffect(kind, cleanup, receipt string) map[string]any {
 	return map[string]any{
 		"id":            strings.ReplaceAll(kind, ".", "-"),
