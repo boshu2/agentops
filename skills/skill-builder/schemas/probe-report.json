@@ -420,10 +420,15 @@
       "type": "object",
       "additionalProperties": false,
       "required": [
+        "invariant_id",
         "code",
         "message"
       ],
       "properties": {
+        "invariant_id": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9._-]+$"
+        },
         "code": {
           "type": "string",
           "pattern": "^[A-Z][A-Z0-9_]+$"

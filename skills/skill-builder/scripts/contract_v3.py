@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import ast
 import copy
 from functools import lru_cache
 import hashlib
@@ -56,89 +57,6 @@ EXPECTED_ROUTE_RESULTS = {
     "ambiguity": "clarify",
 }
 APPROVED_PROOF_INTERPRETERS = {"bash", "sh", "python", "python3"}
-INVARIANT_BRANCHES = (
-    ("unknown-top-level-field", "UNKNOWN_FIELD"),
-    ("missing-contract-field", "CONTRACT_INCOMPLETE"),
-    ("invalid-schema-version", "SCHEMA_INVALID"),
-    ("invalid-primary-layer", "SCHEMA_INVALID"),
-    ("duplicate-lifecycle-seam", "DUPLICATE_MEMBER"),
-    ("unknown-authority", "AUTHORITY_INVALID"),
-    ("campaign-continuation-is-not-a-seam", "SCHEMA_INVALID"),
-    ("forbidden-verdict-authority", "FORBIDDEN_AUTHORITY"),
-    ("unknown-effect-field", "UNKNOWN_FIELD"),
-    ("malformed-effect-kind", "EFFECT_INVALID"),
-    ("missing-effect-scope", "EFFECT_INVALID"),
-    ("malformed-effect-authorization", "EFFECT_INVALID"),
-    ("malformed-effect-cleanup", "EFFECT_INVALID"),
-    ("malformed-effect-receipt", "EFFECT_INVALID"),
-    ("mutation-receipt-required", "EFFECT_RECEIPT_REQUIRED"),
-    ("process-cleanup-required", "EFFECT_CLEANUP_REQUIRED"),
-    ("duplicate-effect-id", "DUPLICATE_MEMBER"),
-    ("mutation-authority-required", "MUTATION_AUTHORITY_REQUIRED"),
-    ("mutation-effect-required", "MUTATION_EFFECT_REQUIRED"),
-    ("unknown-artifact-field", "UNKNOWN_FIELD"),
-    ("malformed-artifact-kind", "ARTIFACT_INVALID"),
-    ("binding-artifact-needs-schema", "BINDING_ARTIFACT_UNVALIDATED"),
-    ("artifact-reference-must-exist", "ARTIFACT_INVALID"),
-    ("duplicate-artifact-name", "DUPLICATE_MEMBER"),
-    ("missing-trigger-family", "TRIGGER_INCOMPLETE"),
-    ("empty-trigger-family", "TRIGGER_INCOMPLETE"),
-    ("malformed-trigger-case", "TRIGGER_INVALID"),
-    ("wrong-trigger-expectation", "TRIGGER_EXPECTATION_INVALID"),
-    ("trigger-prompt-collision", "TRIGGER_COLLISION"),
-    ("unknown-alias-target", "TRIGGER_REFERENCE_INVALID"),
-    ("wrong-alias-owner", "TRIGGER_REFERENCE_INVALID"),
-    ("invalid-nearest-neighbor", "TRIGGER_REFERENCE_INVALID"),
-    ("missing-failure-family", "FAILURE_INCOMPLETE"),
-    ("incomplete-failure-case", "FAILURE_INCOMPLETE"),
-    ("unknown-failure-field", "UNKNOWN_FIELD"),
-    ("invalid-proof-class", "PROOF_INVALID"),
-    ("multiline-proof-command", "PROOF_INVALID"),
-    ("trimmed-proof-command", "PROOF_INVALID"),
-    ("missing-proof-fixture", "PROOF_INVALID"),
-    ("duplicate-proof-fixture", "DUPLICATE_MEMBER"),
-    ("non-rpi-hard-dependency", "HARD_DEPENDENCY_FORBIDDEN"),
-    ("rpi-hard-dependency-set-is-exact", "HARD_DEPENDENCY_FORBIDDEN"),
-    ("forbidden-refine-authority", "FORBIDDEN_AUTHORITY"),
-    ("forbidden-dispatch-authority", "FORBIDDEN_AUTHORITY"),
-    ("forbidden-transport-authority", "FORBIDDEN_AUTHORITY"),
-    ("rpi-missing-dispatch-authority", "FORBIDDEN_AUTHORITY"),
-    ("binding-artifact-needs-validator", "BINDING_ARTIFACT_UNVALIDATED"),
-    ("cross-family-trigger-id", "DUPLICATE_MEMBER"),
-    ("alias-prompt-collision", "TRIGGER_COLLISION"),
-    ("unknown-nearest-neighbor", "TRIGGER_REFERENCE_INVALID"),
-    ("invalid-failure-action", "FAILURE_INVALID"),
-    ("missing-proof-harness-family", "PROOF_INVALID"),
-    ("empty-proof-harness-family", "PROOF_INVALID"),
-    ("duplicate-proof-harness", "DUPLICATE_MEMBER"),
-    ("missing-proof-harness", "PROOF_INVALID"),
-    ("entrypoint-not-declared-as-harness", "PROOF_HARNESS_INCOMPLETE"),
-    ("proof-entrypoint-traversal", "PROOF_INVALID"),
-    ("proof-entrypoint-backslash", "PROOF_INVALID"),
-    ("proof-harness-backslash", "PROOF_INVALID"),
-    ("proof-fixture-backslash", "PROOF_INVALID"),
-    ("unrestricted-path-command", "PROOF_COMMAND_FORBIDDEN"),
-    ("inline-interpreter-command", "PROOF_INLINE_FORBIDDEN"),
-    ("approved-interpreter-unavailable", "PROOF_INVALID"),
-    ("malformed-proof-command", "PROOF_INVALID"),
-    ("hard-dependency-wrong-type", "HARD_DEPENDENCY_INVALID"),
-    ("duplicate-hard-dependency", "DUPLICATE_MEMBER"),
-    ("rpi-hard-dependency-has-extra", "HARD_DEPENDENCY_FORBIDDEN"),
-    ("nonexecutable-direct-harness", "PROOF_NOT_EXECUTABLE"),
-    ("invalid-yaml-key", "INVALID_YAML_KEY"),
-    ("duplicate-yaml-key", "DUPLICATE_YAML_KEY"),
-    ("invalid-json", "INVALID_JSON"),
-    ("duplicate-json-key", "DUPLICATE_JSON_KEY"),
-    ("invalid-frontmatter", "INVALID_FRONTMATTER"),
-    ("invalid-skill-name", "SKILL_NAME_INVALID"),
-    ("source-unavailable", "SOURCE_UNAVAILABLE"),
-    ("skill-name-mismatch", "SKILL_NAME_MISMATCH"),
-    ("contract-v3-absent", "CONTRACT_V3_ABSENT"),
-    ("invalid-unicode-scalar", "INVALID_UNICODE"),
-    ("normalization-contract-invalid", "NORMALIZATION_INVALID"),
-    ("compiler-io-error", "IO_ERROR"),
-    ("source-mutated-during-check", "SOURCE_MUTATED_DURING_CHECK"),
-)
 
 
 class ContractError(ValueError):
@@ -146,18 +64,34 @@ class ContractError(ValueError):
 
     def __init__(
         self,
+        invariant_id: str,
         code: str,
         message: str,
         *,
         facts: dict[str, Any] | None = None,
     ):
         super().__init__(message)
+        self.invariant_id = invariant_id
         self.code = code
         self.message = message
         self.facts = facts
 
     def as_dict(self) -> dict[str, str]:
-        return {"code": self.code, "message": self.message}
+        return {
+            "invariant_id": self.invariant_id,
+            "code": self.code,
+            "message": self.message,
+        }
+
+
+def _reject(
+    invariant_id: str,
+    code: str,
+    message: str,
+    *,
+    facts: dict[str, Any] | None = None,
+) -> ContractError:
+    return ContractError(invariant_id, code, message, facts=facts)
 
 
 class StrictLoader(yaml.SafeLoader):
@@ -175,12 +109,14 @@ def _construct_mapping(
         try:
             duplicate = key in result
         except TypeError as exc:
-            raise ContractError(
+            raise _reject(
+                "cv3._construct_mapping.01",
                 "INVALID_YAML_KEY",
                 f"mapping key is not hashable at line {key_node.start_mark.line + 1}",
             ) from exc
         if duplicate:
-            raise ContractError(
+            raise _reject(
+                "cv3._construct_mapping.02",
                 "DUPLICATE_YAML_KEY",
                 f"duplicate YAML key {key!r} at line {key_node.start_mark.line + 1}",
             )
@@ -210,23 +146,66 @@ def canonical_digest(value: Any) -> str:
     return hashlib.sha256(canonical_bytes(value)).hexdigest()
 
 
-def invariant_inventory() -> dict[str, Any]:
-    """Render the exact hostile invariant inventory owned by compiler source."""
+def invariant_inventory_from_source(source: str) -> dict[str, Any]:
+    """Reject raw/duplicate sites and derive identified rejection-site facts."""
 
+    tree = ast.parse(source)
+    direct_constructors = [
+        node
+        for node in ast.walk(tree)
+        if isinstance(node, ast.Call)
+        and isinstance(node.func, ast.Name)
+        and node.func.id == "ContractError"
+    ]
+    if len(direct_constructors) != 1:
+        raise RuntimeError("ContractError may only be constructed by _reject")
+    sites: list[dict[str, str | None]] = []
+    for node in ast.walk(tree):
+        if not (
+            isinstance(node, ast.Call)
+            and isinstance(node.func, ast.Name)
+            and node.func.id == "_reject"
+        ):
+            continue
+        invariant_id = node.args[0]
+        code = node.args[1]
+        if not (
+            isinstance(invariant_id, ast.Constant)
+            and isinstance(invariant_id.value, str)
+        ):
+            raise RuntimeError("every _reject call must declare a literal invariant ID")
+        sites.append(
+            {
+                "id": invariant_id.value,
+                "expected_code": (
+                    code.value
+                    if isinstance(code, ast.Constant) and isinstance(code.value, str)
+                    else None
+                ),
+            }
+        )
+    identifiers = [item["id"] for item in sites]
+    if len(identifiers) != len(set(identifiers)):
+        raise RuntimeError("every _reject call must have a unique invariant ID")
+    sites.sort(key=lambda item: item["id"])
     return {
         "schema_version": "skill-contract-v3-invariant-inventory.v1",
-        "invariants": [
-            {"id": identifier, "expected_code": expected_code}
-            for identifier, expected_code in INVARIANT_BRANCHES
-        ],
+        "invariants": sites,
     }
+
+
+def invariant_inventory() -> dict[str, Any]:
+    """Derive the exact inventory from the current compiler source."""
+
+    return invariant_inventory_from_source(Path(__file__).read_text(encoding="utf-8"))
 
 
 def _validate_unicode_scalars(value: Any, *, path: str = "$") -> None:
     if isinstance(value, str):
         for character in value:
             if "\ud800" <= character <= "\udfff":
-                raise ContractError(
+                raise _reject(
+                    "cv3._validate_unicode_scalars.01",
                     "INVALID_UNICODE",
                     f"{path}: contains a Unicode surrogate rather than a scalar value",
                 )
@@ -249,7 +228,11 @@ def reject_duplicate_json_keys(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
     result: dict[str, Any] = {}
     for key, value in pairs:
         if key in result:
-            raise ContractError("DUPLICATE_JSON_KEY", f"duplicate JSON key: {key}")
+            raise _reject(
+                "cv3.reject_duplicate_json_keys.01",
+                "DUPLICATE_JSON_KEY",
+                f"duplicate JSON key: {key}",
+            )
         result[key] = value
     return result
 
@@ -263,17 +246,20 @@ def load_json(path: Path) -> Any:
     except ContractError:
         raise
     except (OSError, json.JSONDecodeError) as exc:
-        raise ContractError("INVALID_JSON", f"{path}: {exc}") from exc
+        raise _reject("cv3.load_json.01", "INVALID_JSON", f"{path}: {exc}") from exc
 
 
 def load_frontmatter(source_path: Path) -> dict[str, Any]:
     try:
         text = source_path.read_text(encoding="utf-8")
     except OSError as exc:
-        raise ContractError("SOURCE_UNAVAILABLE", f"{source_path}: {exc}") from exc
+        raise _reject(
+            "cv3.load_frontmatter.01", "SOURCE_UNAVAILABLE", f"{source_path}: {exc}"
+        ) from exc
     parts = text.split("---", 2)
     if len(parts) != 3 or parts[0].strip():
-        raise ContractError(
+        raise _reject(
+            "cv3.load_frontmatter.02",
             "INVALID_FRONTMATTER",
             f"{source_path}: leading YAML frontmatter is missing",
         )
@@ -283,12 +269,14 @@ def load_frontmatter(source_path: Path) -> dict[str, Any]:
         raise
     except yaml.YAMLError as exc:
         problem = str(exc).splitlines()[0]
-        raise ContractError(
+        raise _reject(
+            "cv3.load_frontmatter.03",
             "INVALID_FRONTMATTER",
             f"{source_path}: {problem}",
         ) from exc
     if not isinstance(value, dict):
-        raise ContractError(
+        raise _reject(
+            "cv3.load_frontmatter.04",
             "INVALID_FRONTMATTER",
             f"{source_path}: frontmatter must be an object",
         )
@@ -355,7 +343,8 @@ def _raise_first_schema_error(contract: Any, schema: dict[str, Any]) -> None:
         return
     error = errors[0]
     path = _format_json_path(error.absolute_path)
-    raise ContractError(
+    raise _reject(
+        "cv3._raise_first_schema_error.01",
         _schema_error_code(error),
         f"{path}: {error.message}",
     )
@@ -369,18 +358,32 @@ def _validate_repo_ref(
     label: str,
 ) -> Path:
     if "\\" in value:
-        raise ContractError(code, f"{label} must use repository-relative POSIX syntax")
+        raise _reject(
+            "cv3._validate_repo_ref.01",
+            code,
+            f"{label} must use repository-relative POSIX syntax",
+        )
     ref = PurePosixPath(value)
     if ref.is_absolute() or not ref.parts or ".." in ref.parts or "." in ref.parts:
-        raise ContractError(code, f"{label} is not a contained repository-relative path")
+        raise _reject(
+            "cv3._validate_repo_ref.02",
+            code,
+            f"{label} is not a contained repository-relative path",
+        )
     path = repo_root.joinpath(*ref.parts)
     try:
         resolved = path.resolve(strict=True)
         resolved.relative_to(repo_root.resolve())
     except (OSError, ValueError) as exc:
-        raise ContractError(code, f"{label} does not resolve inside the repository: {value}") from exc
+        raise _reject(
+            "cv3._validate_repo_ref.03",
+            code,
+            f"{label} does not resolve inside the repository: {value}",
+        ) from exc
     if not resolved.is_file():
-        raise ContractError(code, f"{label} is not a regular file: {value}")
+        raise _reject(
+            "cv3._validate_repo_ref.04", code, f"{label} is not a regular file: {value}"
+        )
     return resolved
 
 
@@ -392,7 +395,8 @@ def _require_unique_ids(
     seen: dict[str, str] = {}
     for identifier, location in values:
         if identifier in seen:
-            raise ContractError(
+            raise _reject(
+                "cv3._require_unique_ids.01",
                 code,
                 f"duplicate id {identifier!r} at {seen[identifier]} and {location}",
             )
@@ -403,17 +407,27 @@ def _require_unique_ids(
 def _trigger_normalization(repo_root: Path) -> tuple[dict[str, str], set[int]]:
     contract = load_json(repo_root / TRIGGER_NORMALIZATION_REF)
     if contract.get("schema_version") != "skill-trigger-normalization.v1":
-        raise ContractError("NORMALIZATION_INVALID", "trigger normalization contract version is invalid")
+        raise _reject(
+            "cv3._trigger_normalization.01",
+            "NORMALIZATION_INVALID",
+            "trigger normalization contract version is invalid",
+        )
     casefold = contract.get("casefold")
     whitespace = contract.get("whitespace")
     if not isinstance(casefold, dict) or not isinstance(whitespace, list):
-        raise ContractError("NORMALIZATION_INVALID", "trigger normalization contract is malformed")
+        raise _reject(
+            "cv3._trigger_normalization.02",
+            "NORMALIZATION_INVALID",
+            "trigger normalization contract is malformed",
+        )
     return casefold, set(whitespace)
 
 
 def _normalize_prompt(value: str, *, repo_root: Path) -> str:
     casefold, whitespace = _trigger_normalization(repo_root)
-    folded = "".join(casefold.get(f"{ord(character):04X}", character) for character in value)
+    folded = "".join(
+        casefold.get(f"{ord(character):04X}", character) for character in value
+    )
     normalized: list[str] = []
     separator_pending = False
     for character in folded:
@@ -445,9 +459,14 @@ def _validate_authority(
     )
     for verb, rejected, message in forbidden:
         if verb in authority and rejected:
-            raise ContractError("FORBIDDEN_AUTHORITY", f"{skill_name}: {message}")
+            raise _reject(
+                "cv3._validate_authority.01",
+                "FORBIDDEN_AUTHORITY",
+                f"{skill_name}: {message}",
+            )
     if skill_name == "rpi" and "dispatch_phase" not in authority:
-        raise ContractError(
+        raise _reject(
+            "cv3._validate_authority.02",
             "FORBIDDEN_AUTHORITY",
             "rpi must declare dispatch_phase to represent its bounded phase dispatch",
         )
@@ -460,13 +479,21 @@ def _validate_effects(contract: dict[str, Any]) -> None:
         code="DUPLICATE_MEMBER",
     )
     for effect in effects:
-        if effect["kind"] in RECEIPT_REQUIRED_EFFECTS and effect["receipt"] != "required":
-            raise ContractError(
+        if (
+            effect["kind"] in RECEIPT_REQUIRED_EFFECTS
+            and effect["receipt"] != "required"
+        ):
+            raise _reject(
+                "cv3._validate_effects.01",
                 "EFFECT_RECEIPT_REQUIRED",
                 f"effect {effect['id']!r} ({effect['kind']}) requires receipt=required",
             )
-        if effect["kind"] in CLEANUP_REQUIRED_EFFECTS and effect["cleanup"] != "required":
-            raise ContractError(
+        if (
+            effect["kind"] in CLEANUP_REQUIRED_EFFECTS
+            and effect["cleanup"] != "required"
+        ):
+            raise _reject(
+                "cv3._validate_effects.02",
                 "EFFECT_CLEANUP_REQUIRED",
                 f"effect {effect['id']!r} ({effect['kind']}) requires cleanup=required",
             )
@@ -477,12 +504,14 @@ def _validate_effects(contract: dict[str, Any]) -> None:
             for effect in effects
         )
         if not authorized_mutation:
-            raise ContractError(
+            raise _reject(
+                "cv3._validate_effects.03",
                 "MUTATION_EFFECT_REQUIRED",
                 "mutate_subject requires a declared mutating effect authorized by caller or implement",
             )
     elif any(effect["kind"] in MUTATING_EFFECTS for effect in effects):
-        raise ContractError(
+        raise _reject(
+            "cv3._validate_effects.04",
             "MUTATION_AUTHORITY_REQUIRED",
             "a mutating effect requires mutate_subject authority",
         )
@@ -511,7 +540,8 @@ def _validate_artifacts(
                 and artifact["semantics"] == "binding"
                 and (artifact["schema_ref"] is None or artifact["validator"] is None)
             ):
-                raise ContractError(
+                raise _reject(
+                    "cv3._validate_artifacts.01",
                     "BINDING_ARTIFACT_UNVALIDATED",
                     f"binding output {artifact['name']!r} requires schema_ref and validator",
                 )
@@ -533,13 +563,15 @@ def _validate_triggers(
             location = f"triggers.{family}[{index}]"
             trigger_ids.append((case["id"], location))
             if case["expected"] != expected:
-                raise ContractError(
+                raise _reject(
+                    "cv3._validate_triggers.01",
                     "TRIGGER_EXPECTATION_INVALID",
                     f"{location} must expect {expected!r}",
                 )
             normalized = _normalize_prompt(case["prompt"], repo_root=repo_root)
             if normalized in prompts:
-                raise ContractError(
+                raise _reject(
+                    "cv3._validate_triggers.02",
                     "TRIGGER_COLLISION",
                     f"prompt collision between {prompts[normalized]} and {location}",
                 )
@@ -548,18 +580,21 @@ def _validate_triggers(
         location = f"triggers.aliases[{index}]"
         trigger_ids.append((case["id"], location))
         if case["canonical_skill"] not in skill_names:
-            raise ContractError(
+            raise _reject(
+                "cv3._validate_triggers.03",
                 "TRIGGER_REFERENCE_INVALID",
                 f"{location} references unknown canonical skill {case['canonical_skill']!r}",
             )
         if case["canonical_skill"] != skill_name:
-            raise ContractError(
+            raise _reject(
+                "cv3._validate_triggers.04",
                 "TRIGGER_REFERENCE_INVALID",
                 f"{location} must resolve to its owning skill {skill_name!r}",
             )
         normalized = _normalize_prompt(case["alias"], repo_root=repo_root)
         if normalized in prompts:
-            raise ContractError(
+            raise _reject(
+                "cv3._validate_triggers.05",
                 "TRIGGER_COLLISION",
                 f"alias collision between {prompts[normalized]} and {location}",
             )
@@ -568,7 +603,8 @@ def _validate_triggers(
         location = f"triggers.nearest_neighbors[{index}]"
         trigger_ids.append((case["id"], location))
         if case["skill"] not in skill_names or case["skill"] == skill_name:
-            raise ContractError(
+            raise _reject(
+                "cv3._validate_triggers.06",
                 "TRIGGER_REFERENCE_INVALID",
                 f"{location} must name a different live skill",
             )
@@ -582,32 +618,44 @@ def _proof_entrypoint_ref(
 ) -> str:
     command = proof["command"]
     if "\n" in command or "\r" in command or command != command.strip():
-        raise ContractError(
+        raise _reject(
+            "cv3._proof_entrypoint_ref.01",
             "PROOF_INVALID",
             "proof.command must be one trimmed command line",
         )
     try:
         tokens = shlex.split(command)
     except ValueError as exc:
-        raise ContractError("PROOF_INVALID", f"proof.command is malformed: {exc}") from exc
+        raise _reject(
+            "cv3._proof_entrypoint_ref.02",
+            "PROOF_INVALID",
+            f"proof.command is malformed: {exc}",
+        ) from exc
     if not tokens:
-        raise ContractError("PROOF_INVALID", "proof.command must not be empty")
+        raise _reject(
+            "cv3._proof_entrypoint_ref.03",
+            "PROOF_INVALID",
+            "proof.command must not be empty",
+        )
     executable = tokens[0]
     if executable in APPROVED_PROOF_INTERPRETERS:
         if len(tokens) < 2 or tokens[1].startswith("-"):
-            raise ContractError(
+            raise _reject(
+                "cv3._proof_entrypoint_ref.04",
                 "PROOF_INLINE_FORBIDDEN",
                 "approved proof interpreters must be followed by a repo-owned script",
             )
         if shutil.which(executable) is None:
-            raise ContractError(
+            raise _reject(
+                "cv3._proof_entrypoint_ref.05",
                 "PROOF_INVALID",
                 f"approved proof interpreter is unavailable: {executable}",
             )
         entrypoint = tokens[1]
     else:
         if "/" not in executable:
-            raise ContractError(
+            raise _reject(
+                "cv3._proof_entrypoint_ref.06",
                 "PROOF_COMMAND_FORBIDDEN",
                 "proof.command must use a repo-owned executable or an approved interpreter",
             )
@@ -621,7 +669,8 @@ def _proof_entrypoint_ref(
     if executable not in APPROVED_PROOF_INTERPRETERS and not (
         entrypoint_path.stat().st_mode & 0o111
     ):
-        raise ContractError(
+        raise _reject(
+            "cv3._proof_entrypoint_ref.07",
             "PROOF_NOT_EXECUTABLE",
             "direct proof command entrypoint is not executable",
         )
@@ -639,7 +688,8 @@ def _validate_proof(contract: dict[str, Any], *, repo_root: Path) -> None:
             label="proof harness",
         )
     if entrypoint not in proof["harness_refs"]:
-        raise ContractError(
+        raise _reject(
+            "cv3._validate_proof.01",
             "PROOF_HARNESS_INCOMPLETE",
             "proof command entrypoint must be declared in proof.harness_refs",
         )
@@ -660,22 +710,28 @@ def _validate_hard_dependencies(
     if not isinstance(dependencies, list) or not all(
         isinstance(value, str) for value in dependencies
     ):
-        raise ContractError(
+        raise _reject(
+            "cv3._validate_hard_dependencies.01",
             "HARD_DEPENDENCY_INVALID",
             f"{skill_name}: metadata.dependencies must be a string array",
         )
     if len(set(dependencies)) != len(dependencies):
-        raise ContractError(
+        raise _reject(
+            "cv3._validate_hard_dependencies.02",
             "DUPLICATE_MEMBER",
             f"{skill_name}: metadata.dependencies contains duplicates",
         )
     expected = {"plan", "implement", "validate"} if skill_name == "rpi" else set()
     if set(dependencies) != expected:
         if skill_name == "rpi":
-            message = "rpi hard dependencies must be exactly plan, implement, and validate"
+            message = (
+                "rpi hard dependencies must be exactly plan, implement, and validate"
+            )
         else:
             message = f"{skill_name} may not declare hard skill dependencies"
-        raise ContractError("HARD_DEPENDENCY_FORBIDDEN", message)
+        raise _reject(
+            "cv3._validate_hard_dependencies.03", "HARD_DEPENDENCY_FORBIDDEN", message
+        )
 
 
 def validate_contract(
@@ -714,8 +770,7 @@ def validate_contract(
 
 def compiler_identity(repo_root: Path) -> dict[str, Any]:
     sources = [
-        {"ref": ref, "sha256": file_sha256(repo_root / ref)}
-        for ref in COMPILER_REFS
+        {"ref": ref, "sha256": file_sha256(repo_root / ref)} for ref in COMPILER_REFS
     ]
     return {"sources": sources, "digest": canonical_digest(sources)}
 
@@ -723,8 +778,7 @@ def compiler_identity(repo_root: Path) -> dict[str, Any]:
 def file_set_identity(repo_root: Path, refs: list[str]) -> dict[str, Any]:
     ordered_refs = sorted(refs)
     items = [
-        {"ref": ref, "sha256": file_sha256(repo_root / ref)}
-        for ref in ordered_refs
+        {"ref": ref, "sha256": file_sha256(repo_root / ref)} for ref in ordered_refs
     ]
     return {"items": items, "digest": canonical_digest(items)}
 
@@ -746,27 +800,38 @@ def compile_skill(repo_root: Path, skill_name: str) -> dict[str, Any]:
     """Compile one source without mutation and return a deterministic receipt."""
 
     if not re.fullmatch(r"[a-z][a-z0-9]*(?:-[a-z0-9]+)*", skill_name):
-        raise ContractError("SKILL_NAME_INVALID", f"invalid skill name: {skill_name!r}")
+        raise _reject(
+            "cv3.compile_skill.01",
+            "SKILL_NAME_INVALID",
+            f"invalid skill name: {skill_name!r}",
+        )
     source_ref = f"skills/{skill_name}/SKILL.md"
     source_path = repo_root / source_ref
     if not source_path.is_file() or source_path.is_symlink():
-        raise ContractError("SOURCE_UNAVAILABLE", f"missing regular source: {source_ref}")
+        raise _reject(
+            "cv3.compile_skill.02",
+            "SOURCE_UNAVAILABLE",
+            f"missing regular source: {source_ref}",
+        )
     before = file_sha256(source_path)
     frontmatter = load_frontmatter(source_path)
     if frontmatter.get("name") != skill_name:
-        raise ContractError(
+        raise _reject(
+            "cv3.compile_skill.03",
             "SKILL_NAME_MISMATCH",
             f"{source_ref}: frontmatter name must be {skill_name!r}",
         )
     metadata = frontmatter.get("metadata")
     if not isinstance(metadata, dict):
-        raise ContractError(
+        raise _reject(
+            "cv3.compile_skill.04",
             "CONTRACT_V3_ABSENT",
             f"{source_ref}: metadata.contract_v3 is absent",
         )
     contract = metadata.get("contract_v3")
     if contract is None:
-        raise ContractError(
+        raise _reject(
+            "cv3.compile_skill.05",
             "CONTRACT_V3_ABSENT",
             f"{source_ref}: metadata.contract_v3 is absent",
         )
@@ -782,7 +847,8 @@ def compile_skill(repo_root: Path, skill_name: str) -> dict[str, Any]:
     )
     after = file_sha256(source_path)
     if before != after:
-        raise ContractError(
+        raise _reject(
+            "cv3.compile_skill.06",
             "SOURCE_MUTATED_DURING_CHECK",
             f"{source_ref}: source bytes changed while compiling",
             facts={
@@ -868,7 +934,8 @@ def compile_receipt(repo_root: Path, skill_name: str) -> dict[str, Any]:
         error = (
             exc
             if isinstance(exc, ContractError)
-            else ContractError(
+            else _reject(
+                "cv3.compile_receipt.01",
                 "INVALID_UNICODE" if isinstance(exc, UnicodeError) else "IO_ERROR",
                 str(exc),
             )

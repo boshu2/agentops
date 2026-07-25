@@ -10,7 +10,8 @@
           "path": "/future_authority",
           "value": true
         }
-      ]
+      ],
+      "expected_invariant_id": "cv3._raise_first_schema_error.01"
     },
     {
       "id": "missing-contract-field",
@@ -20,7 +21,8 @@
           "op": "delete",
           "path": "/primary_layer"
         }
-      ]
+      ],
+      "expected_invariant_id": "cv3._raise_first_schema_error.01"
     },
     {
       "id": "invalid-schema-version",
@@ -31,7 +33,8 @@
           "path": "/schema_version",
           "value": "skill-contract.v2"
         }
-      ]
+      ],
+      "expected_invariant_id": "cv3._raise_first_schema_error.01"
     },
     {
       "id": "invalid-primary-layer",
@@ -42,7 +45,8 @@
           "path": "/primary_layer",
           "value": "core"
         }
-      ]
+      ],
+      "expected_invariant_id": "cv3._raise_first_schema_error.01"
     },
     {
       "id": "duplicate-lifecycle-seam",
@@ -53,7 +57,8 @@
           "path": "/lifecycle_seams",
           "value": "implement_method"
         }
-      ]
+      ],
+      "expected_invariant_id": "cv3._raise_first_schema_error.01"
     },
     {
       "id": "unknown-authority",
@@ -64,7 +69,8 @@
           "path": "/authority",
           "value": "select_experiment"
         }
-      ]
+      ],
+      "expected_invariant_id": "cv3._raise_first_schema_error.01"
     },
     {
       "id": "campaign-continuation-is-not-a-seam",
@@ -75,7 +81,8 @@
           "path": "/lifecycle_seams",
           "value": "campaign_continuation"
         }
-      ]
+      ],
+      "expected_invariant_id": "cv3._raise_first_schema_error.01"
     },
     {
       "id": "forbidden-verdict-authority",
@@ -86,7 +93,8 @@
           "path": "/authority",
           "value": "write_verdict"
         }
-      ]
+      ],
+      "expected_invariant_id": "cv3._validate_authority.01"
     },
     {
       "id": "unknown-effect-field",
@@ -97,7 +105,8 @@
           "path": "/effects/0/retries",
           "value": 3
         }
-      ]
+      ],
+      "expected_invariant_id": "cv3._raise_first_schema_error.01"
     },
     {
       "id": "malformed-effect-kind",
@@ -108,7 +117,8 @@
           "path": "/effects/0/kind",
           "value": "git.push"
         }
-      ]
+      ],
+      "expected_invariant_id": "cv3._raise_first_schema_error.01"
     },
     {
       "id": "missing-effect-scope",
@@ -118,7 +128,8 @@
           "op": "delete",
           "path": "/effects/0/scope"
         }
-      ]
+      ],
+      "expected_invariant_id": "cv3._raise_first_schema_error.01"
     },
     {
       "id": "malformed-effect-authorization",
@@ -129,7 +140,8 @@
           "path": "/effects/0/authorization",
           "value": "self"
         }
-      ]
+      ],
+      "expected_invariant_id": "cv3._raise_first_schema_error.01"
     },
     {
       "id": "malformed-effect-cleanup",
@@ -140,7 +152,8 @@
           "path": "/effects/0/cleanup",
           "value": "eventually"
         }
-      ]
+      ],
+      "expected_invariant_id": "cv3._raise_first_schema_error.01"
     },
     {
       "id": "malformed-effect-receipt",
@@ -151,7 +164,8 @@
           "path": "/effects/0/receipt",
           "value": "implicit"
         }
-      ]
+      ],
+      "expected_invariant_id": "cv3._raise_first_schema_error.01"
     },
     {
       "id": "mutation-receipt-required",
@@ -162,7 +176,8 @@
           "path": "/effects/1/receipt",
           "value": "optional"
         }
-      ]
+      ],
+      "expected_invariant_id": "cv3._validate_effects.01"
     },
     {
       "id": "process-cleanup-required",
@@ -173,7 +188,8 @@
           "path": "/effects/3/cleanup",
           "value": "none"
         }
-      ]
+      ],
+      "expected_invariant_id": "cv3._validate_effects.02"
     },
     {
       "id": "duplicate-effect-id",
@@ -184,7 +200,8 @@
           "path": "/effects",
           "source": "/effects/0"
         }
-      ]
+      ],
+      "expected_invariant_id": "cv3._raise_first_schema_error.01"
     },
     {
       "id": "mutation-authority-required",
@@ -197,7 +214,8 @@
             "read_evidence"
           ]
         }
-      ]
+      ],
+      "expected_invariant_id": "cv3._validate_effects.04"
     },
     {
       "id": "mutation-effect-required",
@@ -217,7 +235,8 @@
             }
           ]
         }
-      ]
+      ],
+      "expected_invariant_id": "cv3._validate_effects.03"
     },
     {
       "id": "unknown-artifact-field",
@@ -228,7 +247,8 @@
           "path": "/artifacts/consumes/0/owner",
           "value": "rpi"
         }
-      ]
+      ],
+      "expected_invariant_id": "cv3._raise_first_schema_error.01"
     },
     {
       "id": "malformed-artifact-kind",
@@ -239,7 +259,8 @@
           "path": "/artifacts/consumes/0/kind",
           "value": "mystery"
         }
-      ]
+      ],
+      "expected_invariant_id": "cv3._raise_first_schema_error.01"
     },
     {
       "id": "binding-artifact-needs-schema",
@@ -250,7 +271,8 @@
           "path": "/artifacts/produces/0/schema_ref",
           "value": null
         }
-      ]
+      ],
+      "expected_invariant_id": "cv3._validate_artifacts.01"
     },
     {
       "id": "artifact-reference-must-exist",
@@ -261,7 +283,8 @@
           "path": "/artifacts/produces/0/schema_ref",
           "value": "schemas/does-not-exist.json"
         }
-      ]
+      ],
+      "expected_invariant_id": "cv3._validate_repo_ref.03"
     },
     {
       "id": "duplicate-artifact-name",
@@ -272,7 +295,8 @@
           "path": "/artifacts/produces/0/name",
           "value": "build-request"
         }
-      ]
+      ],
+      "expected_invariant_id": "cv3._require_unique_ids.01"
     },
     {
       "id": "missing-trigger-family",
@@ -282,7 +306,8 @@
           "op": "delete",
           "path": "/triggers/negative"
         }
-      ]
+      ],
+      "expected_invariant_id": "cv3._raise_first_schema_error.01"
     },
     {
       "id": "empty-trigger-family",
@@ -293,7 +318,8 @@
           "path": "/triggers/ambiguity",
           "value": []
         }
-      ]
+      ],
+      "expected_invariant_id": "cv3._raise_first_schema_error.01"
     },
     {
       "id": "malformed-trigger-case",
@@ -304,7 +330,8 @@
           "path": "/triggers/positive/0/prompt",
           "value": ""
         }
-      ]
+      ],
+      "expected_invariant_id": "cv3._raise_first_schema_error.01"
     },
     {
       "id": "wrong-trigger-expectation",
@@ -315,7 +342,8 @@
           "path": "/triggers/negative/0/expected",
           "value": "route"
         }
-      ]
+      ],
+      "expected_invariant_id": "cv3._validate_triggers.01"
     },
     {
       "id": "trigger-prompt-collision",
@@ -326,7 +354,8 @@
           "path": "/triggers/negative/0/prompt",
           "value": "  CREATE a metadata-complete skill source package. "
         }
-      ]
+      ],
+      "expected_invariant_id": "cv3._validate_triggers.02"
     },
     {
       "id": "unknown-alias-target",
@@ -337,7 +366,8 @@
           "path": "/triggers/aliases/0/canonical_skill",
           "value": "missing-skill"
         }
-      ]
+      ],
+      "expected_invariant_id": "cv3._validate_triggers.03"
     },
     {
       "id": "wrong-alias-owner",
@@ -348,7 +378,8 @@
           "path": "/triggers/aliases/0/canonical_skill",
           "value": "workflow-builder"
         }
-      ]
+      ],
+      "expected_invariant_id": "cv3._validate_triggers.04"
     },
     {
       "id": "invalid-nearest-neighbor",
@@ -359,7 +390,8 @@
           "path": "/triggers/nearest_neighbors/0/skill",
           "value": "skill-builder"
         }
-      ]
+      ],
+      "expected_invariant_id": "cv3._validate_triggers.06"
     },
     {
       "id": "missing-failure-family",
@@ -369,7 +401,8 @@
           "op": "delete",
           "path": "/failure/timeout"
         }
-      ]
+      ],
+      "expected_invariant_id": "cv3._raise_first_schema_error.01"
     },
     {
       "id": "incomplete-failure-case",
@@ -379,7 +412,8 @@
           "op": "delete",
           "path": "/failure/partial_mutation/detail"
         }
-      ]
+      ],
+      "expected_invariant_id": "cv3._raise_first_schema_error.01"
     },
     {
       "id": "unknown-failure-field",
@@ -390,7 +424,8 @@
           "path": "/failure/cleanup/retry",
           "value": true
         }
-      ]
+      ],
+      "expected_invariant_id": "cv3._raise_first_schema_error.01"
     },
     {
       "id": "invalid-proof-class",
@@ -401,7 +436,8 @@
           "path": "/proof/class",
           "value": "trust_me"
         }
-      ]
+      ],
+      "expected_invariant_id": "cv3._raise_first_schema_error.01"
     },
     {
       "id": "multiline-proof-command",
@@ -412,7 +448,8 @@
           "path": "/proof/command",
           "value": "true\nfalse"
         }
-      ]
+      ],
+      "expected_invariant_id": "cv3._proof_entrypoint_ref.01"
     },
     {
       "id": "trimmed-proof-command",
@@ -423,7 +460,8 @@
           "path": "/proof/command",
           "value": " bash skills/skill-builder/scripts/test-contract-v3.sh"
         }
-      ]
+      ],
+      "expected_invariant_id": "cv3._proof_entrypoint_ref.01"
     },
     {
       "id": "missing-proof-fixture",
@@ -434,7 +472,8 @@
           "path": "/proof/fixture_refs/0",
           "value": "skills/skill-builder/fixtures/contract-v3/missing.json"
         }
-      ]
+      ],
+      "expected_invariant_id": "cv3._validate_repo_ref.03"
     },
     {
       "id": "duplicate-proof-fixture",
@@ -445,7 +484,8 @@
           "path": "/proof/fixture_refs",
           "value": "skills/skill-builder/fixtures/contract-v3/cases.json"
         }
-      ]
+      ],
+      "expected_invariant_id": "cv3._raise_first_schema_error.01"
     },
     {
       "id": "non-rpi-hard-dependency",
@@ -453,7 +493,8 @@
       "dependencies": [
         "plan"
       ],
-      "mutations": []
+      "mutations": [],
+      "expected_invariant_id": "cv3._validate_hard_dependencies.03"
     },
     {
       "id": "rpi-hard-dependency-set-is-exact",
@@ -474,7 +515,8 @@
           "path": "/triggers/aliases/0/canonical_skill",
           "value": "rpi"
         }
-      ]
+      ],
+      "expected_invariant_id": "cv3._validate_hard_dependencies.03"
     },
     {
       "id": "forbidden-refine-authority",
@@ -485,7 +527,8 @@
           "path": "/authority",
           "value": "refine_intent"
         }
-      ]
+      ],
+      "expected_invariant_id": "cv3._validate_authority.01"
     },
     {
       "id": "forbidden-dispatch-authority",
@@ -496,7 +539,8 @@
           "path": "/authority",
           "value": "dispatch_phase"
         }
-      ]
+      ],
+      "expected_invariant_id": "cv3._validate_authority.01"
     },
     {
       "id": "forbidden-transport-authority",
@@ -507,7 +551,8 @@
           "path": "/authority",
           "value": "transport"
         }
-      ]
+      ],
+      "expected_invariant_id": "cv3._validate_authority.01"
     },
     {
       "id": "rpi-missing-dispatch-authority",
@@ -524,7 +569,8 @@
           "path": "/triggers/aliases/0/canonical_skill",
           "value": "rpi"
         }
-      ]
+      ],
+      "expected_invariant_id": "cv3._validate_authority.02"
     },
     {
       "id": "binding-artifact-needs-validator",
@@ -535,7 +581,8 @@
           "path": "/artifacts/produces/0/validator",
           "value": null
         }
-      ]
+      ],
+      "expected_invariant_id": "cv3._validate_artifacts.01"
     },
     {
       "id": "cross-family-trigger-id",
@@ -546,7 +593,8 @@
           "path": "/triggers/negative/0/id",
           "value": "create-skill"
         }
-      ]
+      ],
+      "expected_invariant_id": "cv3._require_unique_ids.01"
     },
     {
       "id": "alias-prompt-collision",
@@ -557,7 +605,8 @@
           "path": "/triggers/aliases/0/alias",
           "value": " CREATE a metadata-complete skill source package. "
         }
-      ]
+      ],
+      "expected_invariant_id": "cv3._validate_triggers.05"
     },
     {
       "id": "unknown-nearest-neighbor",
@@ -568,7 +617,8 @@
           "path": "/triggers/nearest_neighbors/0/skill",
           "value": "missing-skill"
         }
-      ]
+      ],
+      "expected_invariant_id": "cv3._validate_triggers.06"
     },
     {
       "id": "invalid-failure-action",
@@ -579,7 +629,8 @@
           "path": "/failure/timeout/action",
           "value": "retry"
         }
-      ]
+      ],
+      "expected_invariant_id": "cv3._raise_first_schema_error.01"
     },
     {
       "id": "missing-proof-harness-family",
@@ -589,7 +640,8 @@
           "op": "delete",
           "path": "/proof/harness_refs"
         }
-      ]
+      ],
+      "expected_invariant_id": "cv3._raise_first_schema_error.01"
     },
     {
       "id": "empty-proof-harness-family",
@@ -600,7 +652,8 @@
           "path": "/proof/harness_refs",
           "value": []
         }
-      ]
+      ],
+      "expected_invariant_id": "cv3._raise_first_schema_error.01"
     },
     {
       "id": "duplicate-proof-harness",
@@ -611,7 +664,8 @@
           "path": "/proof/harness_refs",
           "value": "skills/skill-builder/scripts/test-contract-v3.sh"
         }
-      ]
+      ],
+      "expected_invariant_id": "cv3._raise_first_schema_error.01"
     },
     {
       "id": "missing-proof-harness",
@@ -622,7 +676,8 @@
           "path": "/proof/harness_refs/0",
           "value": "skills/skill-builder/scripts/does-not-exist.sh"
         }
-      ]
+      ],
+      "expected_invariant_id": "cv3._validate_repo_ref.03"
     },
     {
       "id": "entrypoint-not-declared-as-harness",
@@ -633,7 +688,8 @@
           "path": "/proof/harness_refs/11",
           "value": "skills/skill-builder/scripts/validate.sh"
         }
-      ]
+      ],
+      "expected_invariant_id": "cv3._validate_proof.01"
     },
     {
       "id": "proof-entrypoint-traversal",
@@ -644,7 +700,8 @@
           "path": "/proof/command",
           "value": "bash ../outside.sh"
         }
-      ]
+      ],
+      "expected_invariant_id": "cv3._validate_repo_ref.02"
     },
     {
       "id": "proof-entrypoint-backslash",
@@ -655,7 +712,8 @@
           "path": "/proof/command",
           "value": "bash 'skills\\outside.sh'"
         }
-      ]
+      ],
+      "expected_invariant_id": "cv3._validate_repo_ref.01"
     },
     {
       "id": "proof-harness-backslash",
@@ -666,7 +724,8 @@
           "path": "/proof/harness_refs/0",
           "value": "skills\\outside.sh"
         }
-      ]
+      ],
+      "expected_invariant_id": "cv3._validate_repo_ref.01"
     },
     {
       "id": "proof-fixture-backslash",
@@ -677,7 +736,8 @@
           "path": "/proof/fixture_refs/0",
           "value": "skills\\outside.json"
         }
-      ]
+      ],
+      "expected_invariant_id": "cv3._validate_repo_ref.01"
     },
     {
       "id": "unrestricted-path-command",
@@ -688,7 +748,8 @@
           "path": "/proof/command",
           "value": "pytest -q"
         }
-      ]
+      ],
+      "expected_invariant_id": "cv3._proof_entrypoint_ref.06"
     },
     {
       "id": "inline-interpreter-command",
@@ -699,13 +760,15 @@
           "path": "/proof/command",
           "value": "python3 -c 'print(1)'"
         }
-      ]
+      ],
+      "expected_invariant_id": "cv3._proof_entrypoint_ref.04"
     },
     {
       "id": "approved-interpreter-unavailable",
       "expected_code": "PROOF_INVALID",
       "witness": "unavailable_interpreter",
-      "mutations": []
+      "mutations": [],
+      "expected_invariant_id": "cv3._proof_entrypoint_ref.05"
     },
     {
       "id": "malformed-proof-command",
@@ -716,13 +779,15 @@
           "path": "/proof/command",
           "value": "bash 'unterminated"
         }
-      ]
+      ],
+      "expected_invariant_id": "cv3._proof_entrypoint_ref.02"
     },
     {
       "id": "hard-dependency-wrong-type",
       "expected_code": "HARD_DEPENDENCY_INVALID",
       "dependencies": "plan",
-      "mutations": []
+      "mutations": [],
+      "expected_invariant_id": "cv3._validate_hard_dependencies.01"
     },
     {
       "id": "duplicate-hard-dependency",
@@ -731,7 +796,8 @@
         "plan",
         "plan"
       ],
-      "mutations": []
+      "mutations": [],
+      "expected_invariant_id": "cv3._validate_hard_dependencies.02"
     },
     {
       "id": "rpi-hard-dependency-has-extra",
@@ -754,91 +820,155 @@
           "path": "/triggers/aliases/0/canonical_skill",
           "value": "rpi"
         }
-      ]
+      ],
+      "expected_invariant_id": "cv3._validate_hard_dependencies.03"
     },
     {
       "id": "nonexecutable-direct-harness",
       "expected_code": "PROOF_NOT_EXECUTABLE",
       "witness": "nonexecutable_harness",
-      "mutations": []
+      "mutations": [],
+      "expected_invariant_id": "cv3._proof_entrypoint_ref.07"
     },
     {
       "id": "invalid-yaml-key",
       "expected_code": "INVALID_YAML_KEY",
       "witness": "invalid_yaml_key",
-      "mutations": []
+      "mutations": [],
+      "expected_invariant_id": "cv3._construct_mapping.01"
     },
     {
       "id": "duplicate-yaml-key",
       "expected_code": "DUPLICATE_YAML_KEY",
       "witness": "duplicate_yaml",
-      "mutations": []
+      "mutations": [],
+      "expected_invariant_id": "cv3._construct_mapping.02"
     },
     {
       "id": "invalid-json",
       "expected_code": "INVALID_JSON",
       "witness": "invalid_json",
-      "mutations": []
+      "mutations": [],
+      "expected_invariant_id": "cv3.load_json.01"
     },
     {
       "id": "duplicate-json-key",
       "expected_code": "DUPLICATE_JSON_KEY",
       "witness": "duplicate_json",
-      "mutations": []
+      "mutations": [],
+      "expected_invariant_id": "cv3.reject_duplicate_json_keys.01"
     },
     {
       "id": "invalid-frontmatter",
       "expected_code": "INVALID_FRONTMATTER",
       "witness": "invalid_frontmatter",
-      "mutations": []
+      "mutations": [],
+      "expected_invariant_id": "cv3.load_frontmatter.02"
     },
     {
       "id": "invalid-skill-name",
       "expected_code": "SKILL_NAME_INVALID",
       "witness": "invalid_skill_name",
-      "mutations": []
+      "mutations": [],
+      "expected_invariant_id": "cv3.compile_skill.01"
     },
     {
       "id": "source-unavailable",
       "expected_code": "SOURCE_UNAVAILABLE",
       "witness": "source_unavailable",
-      "mutations": []
+      "mutations": [],
+      "expected_invariant_id": "cv3.compile_skill.02"
     },
     {
       "id": "skill-name-mismatch",
       "expected_code": "SKILL_NAME_MISMATCH",
       "witness": "skill_name_mismatch",
-      "mutations": []
+      "mutations": [],
+      "expected_invariant_id": "cv3.compile_skill.03"
     },
     {
       "id": "contract-v3-absent",
       "expected_code": "CONTRACT_V3_ABSENT",
       "witness": "contract_absent",
-      "mutations": []
+      "mutations": [],
+      "expected_invariant_id": "cv3.compile_skill.05"
     },
     {
       "id": "invalid-unicode-scalar",
       "expected_code": "INVALID_UNICODE",
       "witness": "invalid_unicode",
-      "mutations": []
+      "mutations": [],
+      "expected_invariant_id": "cv3._validate_unicode_scalars.01"
     },
     {
       "id": "normalization-contract-invalid",
       "expected_code": "NORMALIZATION_INVALID",
       "witness": "invalid_normalization",
-      "mutations": []
+      "mutations": [],
+      "expected_invariant_id": "cv3._trigger_normalization.01"
     },
     {
       "id": "compiler-io-error",
       "expected_code": "IO_ERROR",
       "witness": "io_error",
-      "mutations": []
+      "mutations": [],
+      "expected_invariant_id": "cv3.compile_receipt.01"
+    },
+    {
+      "id": "empty-parsed-proof-command-site",
+      "expected_code": "PROOF_INVALID",
+      "witness": "empty_parsed_proof_command",
+      "mutations": [],
+      "expected_invariant_id": "cv3._proof_entrypoint_ref.03"
+    },
+    {
+      "id": "malformed-normalization-shape-site",
+      "expected_code": "NORMALIZATION_INVALID",
+      "witness": "malformed_normalization",
+      "mutations": [],
+      "expected_invariant_id": "cv3._trigger_normalization.02"
+    },
+    {
+      "id": "non-regular-repository-reference-site",
+      "expected_code": "PROOF_INVALID",
+      "witness": "non_regular_repo_ref",
+      "mutations": [],
+      "expected_invariant_id": "cv3._validate_repo_ref.04"
+    },
+    {
+      "id": "metadata-non-object-site",
+      "expected_code": "CONTRACT_V3_ABSENT",
+      "witness": "metadata_non_object",
+      "mutations": [],
+      "expected_invariant_id": "cv3.compile_skill.04"
+    },
+    {
+      "id": "frontmatter-source-unavailable-site",
+      "expected_code": "SOURCE_UNAVAILABLE",
+      "witness": "frontmatter_source_unavailable",
+      "mutations": [],
+      "expected_invariant_id": "cv3.load_frontmatter.01"
+    },
+    {
+      "id": "frontmatter-yaml-error-site",
+      "expected_code": "INVALID_FRONTMATTER",
+      "witness": "frontmatter_yaml_error",
+      "mutations": [],
+      "expected_invariant_id": "cv3.load_frontmatter.03"
+    },
+    {
+      "id": "frontmatter-non-object-site",
+      "expected_code": "INVALID_FRONTMATTER",
+      "witness": "frontmatter_non_object",
+      "mutations": [],
+      "expected_invariant_id": "cv3.load_frontmatter.04"
     },
     {
       "id": "source-mutated-during-check",
       "expected_code": "SOURCE_MUTATED_DURING_CHECK",
       "witness": "source_mutation",
-      "mutations": []
+      "mutations": [],
+      "expected_invariant_id": "cv3.compile_skill.06"
     }
   ]
 }
