@@ -1,0 +1,44 @@
+# scripts/.skill-python-grandfather — ADR-0016 shipped-Python ratchet allowlist.
+#
+# Every `skills/*/scripts/**/*.py` present in the tree at the ratchet cutoff.
+# ADR-0016 section 3 fixes the rule — "Python never ships in skills" — but the
+# rule had NO enforcing check, so it was inert prose while the tree accumulated
+# interpreter dependencies on the user execution path. These pre-existing files
+# are EXEMPT so the gate causes ZERO churn; every NEW one is a hard failure.
+#
+# SHRINK-ONLY: this allowlist only shrinks. When a grandfathered script is
+# promoted into `ao` (or otherwise removed), its line MUST be pruned here — the
+# gate FAILS until it is. New Python cannot be allowlisted: the growth guard
+# rejects any entry not present at the base ref.
+#
+# SCOPE: the user EXECUTION path only. `skills/*/tests/**` never runs on a
+# user's machine and is exempt as a class by ADR-0016's recorded amendment
+# (docs/adr/ADR-0016-state-tiers.md, "Amendment 2026-07-25"), not by omission.
+# `skills-codex/**` is a generated projection of this tree and is governed at
+# its source, never twice.
+#
+# Enforced by: scripts/check-skill-python-ratchet.sh
+skills/agent-native/scripts/fake_model_runner.py
+skills/cass/scripts/prompt_miner.py
+skills/ms/scripts/mcp-search.py
+skills/reverse-engineer/scripts/binary/extract_embedded_archives.py
+skills/reverse-engineer/scripts/binary/list_embedded_archives.py
+skills/reverse-engineer/scripts/fetch_url.py
+skills/reverse-engineer/scripts/generate_feature_catalog_md.py
+skills/reverse-engineer/scripts/generate_feature_inventory_md.py
+skills/reverse-engineer/scripts/reverse_engineer.py
+skills/reverse-engineer/scripts/scaffold_feature_registry.py
+skills/reverse-engineer/scripts/validate_feature_registry.py
+skills/rpi/scripts/run_once.py
+skills/security/scripts/prompt_redteam.py
+skills/security/scripts/security_suite.py
+skills/skill-builder/scripts/authoring_scan.py
+skills/skill-builder/scripts/conformance_profile.py
+skills/skill-builder/scripts/craft_score.py
+skills/skill-builder/scripts/scan_descriptions.py
+skills/skill-builder/scripts/score_agentops_skill.py
+skills/swarm/scripts/dispatch_once.py
+skills/toil-mining/scripts/recent_human.py
+skills/validate/scripts/check_contract_corpus.py
+skills/validate/scripts/test_validate.py
+skills/validate/scripts/validate.py
