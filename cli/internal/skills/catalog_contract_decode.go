@@ -641,12 +641,19 @@ func normalizeContractArtifactList(wires []contractArtifactWire, path string) ([
 		if err != nil {
 			return nil, err
 		}
-		for label, reference := range map[string]*string{
-			"schema_ref": schemaRef,
-			"validator":  validator,
-		} {
-			if reference != nil {
-				if err := validateRepositoryRelativePOSIX(*reference, itemPath+"."+label); err != nil {
+		references := []struct {
+			label string
+			value *string
+		}{
+			{label: "schema_ref", value: schemaRef},
+			{label: "validator", value: validator},
+		}
+		for _, reference := range references {
+			if reference.value != nil {
+				if err := validateRepositoryRelativePOSIX(
+					*reference.value,
+					itemPath+"."+reference.label,
+				); err != nil {
 					return nil, err
 				}
 			}

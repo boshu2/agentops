@@ -7,9 +7,13 @@ import (
 	"fmt"
 	"io"
 	"strings"
+	"unicode/utf8"
 )
 
 func decodeCatalog(data []byte) (*Catalog, error) {
+	if !utf8.Valid(data) {
+		return nil, errors.New("catalog is not valid UTF-8")
+	}
 	if err := validateJSONUnicodeEscapes(data); err != nil {
 		return nil, err
 	}

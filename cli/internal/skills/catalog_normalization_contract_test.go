@@ -33,6 +33,30 @@ func TestCatalogRejectsUnpairedSurrogateBeforeJSONReplacement(t *testing.T) {
 	assertCatalogRejectionContains(t, body, "unpaired high surrogate")
 }
 
+func TestCatalogRejectsRawInvalidUTF8BeforeJSONReplacement(t *testing.T) {
+	t.Parallel()
+	valid := []byte(mutateV4Fixture(t, func(_ map[string]any, _ map[string]any) {}))
+	needle := []byte("Create a metadata-complete skill source package.")
+	for _, test := range []struct {
+		name    string
+		invalid []byte
+	}{
+		{name: "invalid FF", invalid: []byte{0xFF}},
+		{name: "raw UTF-8 surrogate ED A0 80", invalid: []byte{0xED, 0xA0, 0x80}},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			body := bytes.Replace(valid, needle, test.invalid, 1)
+			if utf8.Valid(body) {
+				t.Fatal("hostile full catalog unexpectedly has valid UTF-8")
+			}
+			err := loadCatalogBody(t, string(body))
+			if err == nil || !strings.Contains(err.Error(), "catalog is not valid UTF-8") {
+				t.Fatalf("LoadCatalog error = %v, want raw UTF-8 preflight rejection", err)
+			}
+		})
+	}
+}
+
 func TestArtifactReferencesUseSharedLexicalContainment(t *testing.T) {
 	t.Parallel()
 	for _, reference := range []string{"/absolute", "../escape", `wrong\separator`, "nul\x00path"} {
@@ -42,6 +66,26 @@ func TestArtifactReferencesUseSharedLexicalContainment(t *testing.T) {
 			})
 			assertCatalogRejectionContains(t, body, "repository-relative")
 		})
+	}
+}
+
+func TestArtifactReferenceDiagnosticsHaveStableFieldOrder(t *testing.T) {
+	body := mutateV4Fixture(t, func(_ map[string]any, contract map[string]any) {
+		artifact := contractArtifacts(contract, "produces")[0]
+		artifact["schema_ref"] = "/invalid-schema"
+		artifact["validator"] = "/invalid-validator"
+	})
+	for attempt := 0; attempt < 200; attempt++ {
+		err := loadCatalogBody(t, body)
+		if err == nil {
+			t.Fatal("LoadCatalog accepted two invalid artifact references")
+		}
+		if !strings.Contains(err.Error(), "artifacts.produces[0].schema_ref") {
+			t.Fatalf("attempt %d first diagnostic = %q, want schema_ref", attempt, err)
+		}
+		if strings.Contains(err.Error(), ".validator") {
+			t.Fatalf("attempt %d diagnosed validator before schema_ref: %q", attempt, err)
+		}
 	}
 }
 
