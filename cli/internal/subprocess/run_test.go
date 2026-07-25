@@ -28,6 +28,7 @@ type testProcessTree struct {
 	requestFn      func(*exec.Cmd) error
 	requestCalls   int
 	terminateErr   error
+	terminateFn    func(*exec.Cmd) error
 	terminateCalls int
 }
 
@@ -35,8 +36,11 @@ func (tree *testProcessTree) attach(*exec.Cmd) error {
 	return tree.attachErr
 }
 
-func (tree *testProcessTree) terminate(*exec.Cmd) error {
+func (tree *testProcessTree) terminate(cmd *exec.Cmd) error {
 	tree.terminateCalls++
+	if tree.terminateFn != nil {
+		return tree.terminateFn(cmd)
+	}
 	return tree.terminateErr
 }
 
@@ -229,7 +233,16 @@ func TestRunCopiesStdinAfterSuccessfulAttachment(t *testing.T) {
 }
 
 func TestRunWaitsExactlyOnceAfterNaturalCompletion(t *testing.T) {
-	tree := &testProcessTree{}
+	cleanupBeforeWait := false
+	tree := &testProcessTree{
+		terminateFn: func(cmd *exec.Cmd) error {
+			if cmd.ProcessState != nil {
+				t.Fatal("process cleanup ran after Cmd.Wait released the PID")
+			}
+			cleanupBeforeWait = true
+			return nil
+		},
+	}
 	completion := &testProcessCompletion{}
 	waitCalls := 0
 	dependencies := defaultRunDependencies
@@ -240,6 +253,9 @@ func TestRunWaitsExactlyOnceAfterNaturalCompletion(t *testing.T) {
 		return completion
 	}
 	dependencies.waitCommand = func(cmd *exec.Cmd) error {
+		if !cleanupBeforeWait {
+			t.Fatal("Cmd.Wait ran before process-tree cleanup")
+		}
 		waitCalls++
 		return cmd.Wait()
 	}

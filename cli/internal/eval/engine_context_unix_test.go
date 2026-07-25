@@ -71,7 +71,12 @@ func awaitEvalPID(t *testing.T, path string) int {
 	for time.Now().Before(deadline) {
 		data, err := os.ReadFile(path)
 		if err == nil {
-			pid, convErr := strconv.Atoi(strings.TrimSpace(string(data)))
+			value := strings.TrimSpace(string(data))
+			if value == "" {
+				time.Sleep(10 * time.Millisecond)
+				continue
+			}
+			pid, convErr := strconv.Atoi(value)
 			if convErr != nil {
 				t.Fatalf("parse pid %q: %v", data, convErr)
 			}
