@@ -1,0 +1,19 @@
+{
+  "artifact_digest": "01a8513fc2c75735a5248e2e8d814ad35d6d89df3f1cb8ba5c20311a683f1d3a",
+  "command": [
+    "go",
+    "test",
+    "-race",
+    "-count=1",
+    "-shuffle=1784949039773904000",
+    "./internal/goals"
+  ],
+  "exit_code": 0,
+  "observed_at": "2026-07-25T03:12:02Z",
+  "receipt_id": "go-goals-race-failing-seed-replay",
+  "result": "PASS",
+  "schema_version": "check-receipt.v1",
+  "stderr_digest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "stdout_digest": "84105c2bb1c0a8d3e0601e457ef35219b1ef268afb90372af3d7e2934f38c867",
+  "subject_manifest_digest": "c6c5ba4cc071eddc1c0f0d470a4a6a0e023f9ed5f5a83b3b1fd2538ec904f30b"
+}

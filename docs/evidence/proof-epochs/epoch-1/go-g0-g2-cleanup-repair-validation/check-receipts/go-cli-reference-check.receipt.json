@@ -1,0 +1,16 @@
+{
+  "artifact_digest": "38f8f339f9c282421bf744a73867b21ef157b2c74cbe3791d160e122e54b57b0",
+  "command": [
+    "bash",
+    "scripts/generate-cli-reference.sh",
+    "--check"
+  ],
+  "exit_code": 0,
+  "observed_at": "2026-07-25T03:21:46Z",
+  "receipt_id": "go-cli-reference-check",
+  "result": "PASS",
+  "schema_version": "check-receipt.v1",
+  "stderr_digest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "stdout_digest": "be1141724e6abbb1da28bf25e53f99cd43c16e9eff4815f4907f412d052924d8",
+  "subject_manifest_digest": "c6c5ba4cc071eddc1c0f0d470a4a6a0e023f9ed5f5a83b3b1fd2538ec904f30b"
+}

@@ -1,0 +1,16 @@
+{
+  "artifact_digest": "09bad0178c565d3e61bf52cd73f78688eb4754265109ba7b46803497f41d6eda",
+  "command": [
+    "go",
+    "vet",
+    "./..."
+  ],
+  "exit_code": 0,
+  "observed_at": "2026-07-25T03:20:13Z",
+  "receipt_id": "go-vet-full",
+  "result": "PASS",
+  "schema_version": "check-receipt.v1",
+  "stderr_digest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "stdout_digest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "subject_manifest_digest": "c6c5ba4cc071eddc1c0f0d470a4a6a0e023f9ed5f5a83b3b1fd2538ec904f30b"
+}

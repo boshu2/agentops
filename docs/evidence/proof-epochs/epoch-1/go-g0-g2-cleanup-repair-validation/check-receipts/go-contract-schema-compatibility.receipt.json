@@ -1,0 +1,15 @@
+{
+  "artifact_digest": "3cff9b85a0bbde34d39135c386705443e5847fae5a7d7a038ea8db9a5c044403",
+  "command": [
+    "bash",
+    "scripts/check-contract-compatibility.sh"
+  ],
+  "exit_code": 0,
+  "observed_at": "2026-07-25T03:22:27Z",
+  "receipt_id": "go-contract-schema-compatibility",
+  "result": "PASS",
+  "schema_version": "check-receipt.v1",
+  "stderr_digest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "stdout_digest": "fc030ed9879c12f29f7ecd8f94afe72e1e29195c3e54dcd9704063d273491ed0",
+  "subject_manifest_digest": "c6c5ba4cc071eddc1c0f0d470a4a6a0e023f9ed5f5a83b3b1fd2538ec904f30b"
+}

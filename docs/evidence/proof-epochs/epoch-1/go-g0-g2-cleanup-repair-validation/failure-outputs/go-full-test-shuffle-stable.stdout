@@ -1,0 +1,78 @@
+ok  	github.com/boshu2/agentops/cli/cmd/ao	15.283s
+?   	github.com/boshu2/agentops/cli/cmd/skill-frontmatter-json	[no test files]
+?   	github.com/boshu2/agentops/cli/cmd/witness-crosscheck	[no test files]
+?   	github.com/boshu2/agentops/cli/internal/adapters/capabilities	[no test files]
+?   	github.com/boshu2/agentops/cli/internal/adapters/config	[no test files]
+ok  	github.com/boshu2/agentops/cli/internal/adapters/doctor	0.376s
+ok  	github.com/boshu2/agentops/cli/internal/adapters/eval	2.110s
+ok  	github.com/boshu2/agentops/cli/internal/adapters/gate	0.637s
+ok  	github.com/boshu2/agentops/cli/internal/archcheck	2.868s
+?   	github.com/boshu2/agentops/cli/internal/archcheck/cmd	[no test files]
+ok  	github.com/boshu2/agentops/cli/internal/capabilities	0.827s
+ok  	github.com/boshu2/agentops/cli/internal/clicontract	0.949s
+ok  	github.com/boshu2/agentops/cli/internal/commands/capabilities	1.028s
+ok  	github.com/boshu2/agentops/cli/internal/commands/config	1.170s
+ok  	github.com/boshu2/agentops/cli/internal/commands/demo	1.194s
+ok  	github.com/boshu2/agentops/cli/internal/commands/doctor	1.136s
+ok  	github.com/boshu2/agentops/cli/internal/commands/eval	1.260s
+ok  	github.com/boshu2/agentops/cli/internal/commands/flywheel	1.191s
+ok  	github.com/boshu2/agentops/cli/internal/commands/gate	1.217s
+ok  	github.com/boshu2/agentops/cli/internal/commands/goals	1.272s
+ok  	github.com/boshu2/agentops/cli/internal/commands/init	1.238s
+ok  	github.com/boshu2/agentops/cli/internal/commands/provenance	1.281s
+ok  	github.com/boshu2/agentops/cli/internal/commands/quickstart	1.247s
+ok  	github.com/boshu2/agentops/cli/internal/commands/redact	0.997s
+ok  	github.com/boshu2/agentops/cli/internal/commands/robotdocs	0.969s
+ok  	github.com/boshu2/agentops/cli/internal/commands/session	1.043s
+ok  	github.com/boshu2/agentops/cli/internal/commands/skills	1.126s
+ok  	github.com/boshu2/agentops/cli/internal/commands/status	1.052s
+ok  	github.com/boshu2/agentops/cli/internal/commands/version	1.093s
+ok  	github.com/boshu2/agentops/cli/internal/commands/workflows	1.106s
+ok  	github.com/boshu2/agentops/cli/internal/config	1.318s
+ok  	github.com/boshu2/agentops/cli/internal/constraintindex	1.165s
+ok  	github.com/boshu2/agentops/cli/internal/doctor	8.505s
+ok  	github.com/boshu2/agentops/cli/internal/drrebuild	1.307s
+ok  	github.com/boshu2/agentops/cli/internal/drwitness	1.313s
+ok  	github.com/boshu2/agentops/cli/internal/eval	5.969s
+ok  	github.com/boshu2/agentops/cli/internal/evalsubstrate	1.416s
+?   	github.com/boshu2/agentops/cli/internal/evidence	[no test files]
+ok  	github.com/boshu2/agentops/cli/internal/flywheelapp	1.382s
+ok  	github.com/boshu2/agentops/cli/internal/gate	1.181s
+ok  	github.com/boshu2/agentops/cli/internal/gates	1.755s
+ok  	github.com/boshu2/agentops/cli/internal/gates/checks	1.544s
+-test.shuffle 1784949549501339000
+WARNING: /var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T/TestExtra_LoadGoals_Version1Warning2890093313/001/GOALS.yaml uses deprecated version 1; update the file outside AgentOps before relying on newer fields.
+--- FAIL: TestGoalsMeasure_SkippedGoals_Subsystem (2.04s)
+    goals_subsystem_test.go:440: Passing = 0, want 1
+    goals_subsystem_test.go:443: Score = 0.000000, want 100.0 (skipped excluded from denominator)
+FAIL
+FAIL	github.com/boshu2/agentops/cli/internal/goals	6.961s
+ok  	github.com/boshu2/agentops/cli/internal/goalsfitness	1.170s
+ok  	github.com/boshu2/agentops/cli/internal/initapp	0.923s
+ok  	github.com/boshu2/agentops/cli/internal/openclaw	1.053s
+ok  	github.com/boshu2/agentops/cli/internal/parser	1.107s
+ok  	github.com/boshu2/agentops/cli/internal/paths	0.987s
+ok  	github.com/boshu2/agentops/cli/internal/ports	0.807s
+ok  	github.com/boshu2/agentops/cli/internal/provenanceapp	0.785s
+ok  	github.com/boshu2/agentops/cli/internal/provenancegraph	1.415s
+ok  	github.com/boshu2/agentops/cli/internal/quality	1.167s
+ok  	github.com/boshu2/agentops/cli/internal/redact	0.857s
+ok  	github.com/boshu2/agentops/cli/internal/runtimecmd	0.788s
+ok  	github.com/boshu2/agentops/cli/internal/scenario	0.693s
+ok  	github.com/boshu2/agentops/cli/internal/scenarioresults	0.831s
+?   	github.com/boshu2/agentops/cli/internal/sessionapp	[no test files]
+ok  	github.com/boshu2/agentops/cli/internal/shellutil	0.642s
+ok  	github.com/boshu2/agentops/cli/internal/skills	1.775s
+ok  	github.com/boshu2/agentops/cli/internal/skillsapp	0.649s
+ok  	github.com/boshu2/agentops/cli/internal/skillshealth	0.780s
+ok  	github.com/boshu2/agentops/cli/internal/skillsresolve	0.907s
+ok  	github.com/boshu2/agentops/cli/internal/statusapp	1.040s
+ok  	github.com/boshu2/agentops/cli/internal/storage	1.642s
+ok  	github.com/boshu2/agentops/cli/internal/subprocess	1.697s
+ok  	github.com/boshu2/agentops/cli/internal/testsupport	0.882s
+ok  	github.com/boshu2/agentops/cli/internal/types	0.851s
+ok  	github.com/boshu2/agentops/cli/internal/types/quest	1.044s
+ok  	github.com/boshu2/agentops/cli/internal/verdictcheck	0.510s
+ok  	github.com/boshu2/agentops/cli/internal/wiki	0.528s
+ok  	github.com/boshu2/agentops/cli/internal/workflowsapp	0.684s
+FAIL

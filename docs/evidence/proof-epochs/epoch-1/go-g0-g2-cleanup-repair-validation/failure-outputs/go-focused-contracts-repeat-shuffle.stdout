@@ -1,0 +1,23 @@
+ok  	github.com/boshu2/agentops/cli/internal/evalsubstrate	3.511s
+ok  	github.com/boshu2/agentops/cli/internal/clicontract	0.283s
+ok  	github.com/boshu2/agentops/cli/internal/eval	39.176s
+ok  	github.com/boshu2/agentops/cli/internal/gates	7.379s
+ok  	github.com/boshu2/agentops/cli/internal/gates/checks	4.804s
+-test.shuffle 1784948609989600000
+WARNING: /var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T/TestExtra_LoadGoals_Version1Warning72368589/001/GOALS.yaml uses deprecated version 1; update the file outside AgentOps before relying on newer fields.
+--- FAIL: TestGoalsMeasure_SkippedGoals (2.04s)
+    goals_measure_test.go:541: Passing = 0, want 1
+    goals_measure_test.go:544: Score = 0.000000, want 100.0 (skipped excluded from denominator)
+WARNING: /var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T/TestExtra_LoadGoals_Version1Warning3727032049/001/GOALS.yaml uses deprecated version 1; update the file outside AgentOps before relying on newer fields.
+WARNING: /var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T/TestExtra_LoadGoals_Version1Warning3632233818/001/GOALS.yaml uses deprecated version 1; update the file outside AgentOps before relying on newer fields.
+WARNING: /var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T/TestExtra_LoadGoals_Version1Warning3298623331/001/GOALS.yaml uses deprecated version 1; update the file outside AgentOps before relying on newer fields.
+WARNING: /var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T/TestExtra_LoadGoals_Version1Warning1181144560/001/GOALS.yaml uses deprecated version 1; update the file outside AgentOps before relying on newer fields.
+WARNING: /var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T/TestExtra_LoadGoals_Version1Warning3586912762/001/GOALS.yaml uses deprecated version 1; update the file outside AgentOps before relying on newer fields.
+WARNING: /var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T/TestExtra_LoadGoals_Version1Warning723341848/001/GOALS.yaml uses deprecated version 1; update the file outside AgentOps before relying on newer fields.
+WARNING: /var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T/TestExtra_LoadGoals_Version1Warning3707662793/001/GOALS.yaml uses deprecated version 1; update the file outside AgentOps before relying on newer fields.
+WARNING: /var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T/TestExtra_LoadGoals_Version1Warning3456138843/001/GOALS.yaml uses deprecated version 1; update the file outside AgentOps before relying on newer fields.
+WARNING: /var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T/TestExtra_LoadGoals_Version1Warning1381237879/001/GOALS.yaml uses deprecated version 1; update the file outside AgentOps before relying on newer fields.
+FAIL
+FAIL	github.com/boshu2/agentops/cli/internal/goals	56.354s
+ok  	github.com/boshu2/agentops/cli/cmd/ao	127.509s
+FAIL
