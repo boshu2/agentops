@@ -10,6 +10,8 @@ import (
 	"syscall"
 	"testing"
 	"time"
+
+	"github.com/boshu2/agentops/cli/internal/subprocess"
 )
 
 func TestMeasureOne_Pass(t *testing.T) {
@@ -546,6 +548,9 @@ func TestMeasureOne_Skip_ExitCode77(t *testing.T) {
 	}
 	if m.Weight != 3 {
 		t.Errorf("Weight = %d, want 3", m.Weight)
+	}
+	if m.Cleanup == nil || m.Cleanup.Status != subprocess.CleanupCompleted || !m.Cleanup.Completed {
+		t.Fatalf("Cleanup = %#v, want completed", m.Cleanup)
 	}
 }
 

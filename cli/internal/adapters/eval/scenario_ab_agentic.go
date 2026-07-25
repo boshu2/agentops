@@ -174,7 +174,9 @@ func defaultWorkspaceCommandRunner(ctx context.Context, workDir, command string,
 		CombinedOutput: true,
 		OutputLimit:    subprocess.CaptureLimit{HeadBytes: 512 * 1024, TailBytes: 512 * 1024},
 	})
-	if runErr != nil && result.ExitCode < 0 {
+	// This adapter intentionally collapses ordinary command exits to an exit
+	// code, but process-tree cleanup failure remains an infrastructure error.
+	if runErr != nil && (result.ExitCode < 0 || result.Cleanup.Failed()) {
 		return "", 0, runErr
 	}
 	return result.Combined.String(), result.ExitCode, nil

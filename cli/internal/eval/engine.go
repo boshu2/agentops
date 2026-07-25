@@ -151,6 +151,7 @@ func runCase(parent context.Context, suite Suite, suiteDir string, evalCase Case
 		ctx.stdout = output.stdout
 		ctx.stderr = output.stderr
 		ctx.exitCode = output.exitCode
+		ctx.cleanup = output.cleanup
 		if output.stdoutTruncated {
 			commandDiagnostics = append(commandDiagnostics, fmt.Sprintf("stdout truncated after %d bytes", output.stdoutBytes))
 		}
@@ -167,6 +168,7 @@ func runCase(parent context.Context, suite Suite, suiteDir string, evalCase Case
 				Critical:        evalCase.Critical,
 				FailureMessage:  err.Error(),
 				Diagnostics:     []string{err.Error()},
+				Cleanup:         output.cleanup,
 			}
 		}
 	}
@@ -207,6 +209,7 @@ func runCase(parent context.Context, suite Suite, suiteDir string, evalCase Case
 		Critical:        evalCase.Critical,
 		FailureMessage:  strings.Join(failures, "; "),
 		Diagnostics:     compactStrings(diagnostics),
+		Cleanup:         ctx.cleanup,
 	}
 }
 
@@ -219,6 +222,7 @@ type commandOutput struct {
 	stderrTruncated     bool
 	exitCode            int
 	infrastructureError bool
+	cleanup             *subprocess.CleanupOutcome
 }
 
 func executeCaseCommand(parent context.Context, suite Suite, suiteDir string, evalCase Case, runEnv map[string]string) (commandOutput, error) {
@@ -263,6 +267,7 @@ func executeCaseCommand(parent context.Context, suite Suite, suiteDir string, ev
 		command.Stdin = strings.NewReader(spec.stdin)
 	}
 	result, err := subprocess.Run(ctx, command)
+	cleanup := result.Cleanup
 	output := commandOutput{
 		stdout:          result.Stdout.String(),
 		stderr:          result.Stderr.String(),
@@ -271,17 +276,26 @@ func executeCaseCommand(parent context.Context, suite Suite, suiteDir string, ev
 		stdoutTruncated: result.Stdout.Truncated,
 		stderrTruncated: result.Stderr.Truncated,
 		exitCode:        0,
+		cleanup:         &cleanup,
 	}
 	if ctx.Err() == context.DeadlineExceeded {
 		output.exitCode = -1
 		output.infrastructureError = true
 		if parent.Err() != nil {
-			return output, parent.Err()
+			return output, errors.Join(parent.Err(), err)
 		}
-		return output, fmt.Errorf("command timed out after %ds", timeout)
+		return output, errors.Join(
+			fmt.Errorf("command timed out after %ds: %w", timeout, context.DeadlineExceeded),
+			err,
+		)
 	}
 	if err == nil {
 		return output, nil
+	}
+	if result.Cleanup.Failed() {
+		output.exitCode = -1
+		output.infrastructureError = true
+		return output, fmt.Errorf("run command %q: %w", name, err)
 	}
 	var exitErr *exec.ExitError
 	if ok := errors.As(err, &exitErr); ok {
@@ -464,6 +478,8 @@ func collectGitRecordContext(ctx context.Context, workDir string) GitRecord {
 }
 
 func gitOutputContext(ctx context.Context, workDir string, args ...string) string {
+	// Git identity is best-effort metadata. This boundary intentionally
+	// collapses command and cleanup failures to an empty value.
 	result, err := subprocess.Run(ctx, subprocess.Command{
 		Name:        "git",
 		Args:        args,

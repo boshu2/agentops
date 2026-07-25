@@ -23,16 +23,22 @@ func TestRunCancellationTerminatesDescendants(t *testing.T) {
 		Env:  append(os.Environ(), "PID_FILE="+pidFile),
 	}
 
-	done := make(chan error, 1)
+	type runOutcome struct {
+		result Result
+		err    error
+	}
+	done := make(chan runOutcome, 1)
 	go func() {
-		_, err := Run(ctx, command)
-		done <- err
+		result, err := Run(ctx, command)
+		done <- runOutcome{result: result, err: err}
 	}()
 	pid := awaitPID(t, pidFile)
 	cancel()
-	if err := <-done; !errors.Is(err, context.Canceled) {
-		t.Fatalf("Run error = %v, want context.Canceled", err)
+	outcome := <-done
+	if !errors.Is(outcome.err, context.Canceled) {
+		t.Fatalf("Run error = %v, want context.Canceled", outcome.err)
 	}
+	assertCleanupCompleted(t, outcome.result.Cleanup)
 	awaitProcessGone(t, pid)
 }
 
@@ -46,10 +52,11 @@ func TestRunTimeoutTerminatesDescendants(t *testing.T) {
 		Env:  append(os.Environ(), "PID_FILE="+pidFile),
 	}
 
-	_, err := Run(ctx, command)
+	result, err := Run(ctx, command)
 	if !errors.Is(err, context.DeadlineExceeded) {
 		t.Fatalf("Run error = %v, want context deadline", err)
 	}
+	assertCleanupCompleted(t, result.Cleanup)
 	pid := awaitPID(t, pidFile)
 	awaitProcessGone(t, pid)
 }
@@ -73,6 +80,7 @@ func TestRunAbnormalParentDoesNotWaitForOrphanedPipe(t *testing.T) {
 	if result.ExitCode != 7 || err == nil {
 		t.Fatalf("result/error = %#v / %v, want abnormal exit 7", result, err)
 	}
+	assertCleanupCompleted(t, result.Cleanup)
 	pid := awaitPID(t, pidFile)
 	awaitProcessGone(t, pid)
 }
@@ -99,6 +107,7 @@ func TestRunSuccessfulParentTerminatesBackgroundDescendant(t *testing.T) {
 	if result.ExitCode != 0 || !strings.Contains(result.Combined.String(), "parent-success") {
 		t.Fatalf("result = %#v, want successful parent output", result)
 	}
+	assertCleanupCompleted(t, result.Cleanup)
 	pid := awaitPID(t, pidFile)
 	awaitProcessGone(t, pid)
 }

@@ -322,6 +322,9 @@
         },
         "skipped_reason": {
           "type": "string"
+        },
+        "cleanup": {
+          "$ref": "#/$defs/cleanup_outcome"
         }
       }
     },
@@ -412,6 +415,9 @@
           "items": {
             "type": "string"
           }
+        },
+        "cleanup": {
+          "$ref": "#/$defs/cleanup_outcome"
         }
       }
     },
@@ -507,6 +513,100 @@
           "minLength": 1
         }
       }
+    },
+    "cleanup_outcome": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "attempted",
+        "completed"
+      ],
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": [
+            "not_started",
+            "completed",
+            "failed"
+          ]
+        },
+        "attempted": {
+          "type": "boolean"
+        },
+        "completed": {
+          "type": "boolean"
+        },
+        "error": {
+          "type": "string",
+          "maxLength": 2048
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "const": "not_started"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "attempted": {
+                "const": false
+              },
+              "completed": {
+                "const": false
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "const": "completed"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "attempted": {
+                "const": true
+              },
+              "completed": {
+                "const": true
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "const": "failed"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "error"
+            ],
+            "properties": {
+              "attempted": {
+                "const": true
+              },
+              "completed": {
+                "const": false
+              },
+              "error": {
+                "minLength": 1
+              }
+            }
+          }
+        }
+      ]
     },
     "artifact": {
       "type": "object",
