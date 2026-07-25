@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
+	"unicode"
 
 	"golang.org/x/text/cases"
 )
@@ -346,7 +347,13 @@ func validateTriggerSemantics(
 }
 
 func normalizeTriggerText(value string) string {
-	return cases.Fold().String(strings.Join(strings.Fields(value), " "))
+	return cases.Fold().String(
+		strings.Join(strings.FieldsFunc(value, isPythonWhitespace), " "),
+	)
+}
+
+func isPythonWhitespace(value rune) bool {
+	return unicode.IsSpace(value) || value >= '\u001c' && value <= '\u001f'
 }
 
 func validateHardDependencies(skillName string, dependencies []string, path string) error {
@@ -921,10 +928,190 @@ func normalizeContractProof(wire *contractProofWire, path string) (ContractProof
 	if err := validateUniqueStrings(*wire.FixtureRefs, path+".fixture_refs"); err != nil {
 		return ContractProof{}, err
 	}
+	entrypoint, err := proofEntrypointRef(*wire.Command, path+".command")
+	if err != nil {
+		return ContractProof{}, err
+	}
+	for index, harness := range *wire.HarnessRefs {
+		if err := validateProofReference(
+			harness,
+			fmt.Sprintf("%s.harness_refs[%d]", path, index),
+		); err != nil {
+			return ContractProof{}, err
+		}
+	}
+	if !containsString(*wire.HarnessRefs, entrypoint) {
+		return ContractProof{}, fmt.Errorf(
+			"%s command entrypoint must be declared in proof.harness_refs",
+			path,
+		)
+	}
+	for index, fixture := range *wire.FixtureRefs {
+		if err := validateProofReference(
+			fixture,
+			fmt.Sprintf("%s.fixture_refs[%d]", path, index),
+		); err != nil {
+			return ContractProof{}, err
+		}
+	}
 	return ContractProof{
 		Class:       *wire.Class,
 		Command:     *wire.Command,
 		HarnessRefs: *wire.HarnessRefs,
 		FixtureRefs: *wire.FixtureRefs,
 	}, nil
+}
+
+func proofEntrypointRef(command, path string) (string, error) {
+	if strings.ContainsAny(command, "\r\n") ||
+		command != strings.TrimFunc(command, isPythonWhitespace) {
+		return "", fmt.Errorf("%s must be one trimmed command line", path)
+	}
+	tokens, err := splitProofCommand(command)
+	if err != nil {
+		return "", fmt.Errorf("%s is malformed: %w", path, err)
+	}
+	if len(tokens) == 0 {
+		return "", fmt.Errorf("%s must not be empty", path)
+	}
+	executable := tokens[0]
+	entrypoint := executable
+	if isApprovedProofInterpreter(executable) {
+		if len(tokens) < 2 || strings.HasPrefix(tokens[1], "-") {
+			return "", fmt.Errorf(
+				"%s approved proof interpreters must be followed by a repo-owned script",
+				path,
+			)
+		}
+		entrypoint = tokens[1]
+	} else if !strings.Contains(executable, "/") {
+		return "", fmt.Errorf(
+			"%s must use a repo-owned executable or an approved interpreter",
+			path,
+		)
+	}
+	if err := validateProofReference(entrypoint, path+" entrypoint"); err != nil {
+		return "", err
+	}
+	return entrypoint, nil
+}
+
+func isApprovedProofInterpreter(value string) bool {
+	switch value {
+	case "bash", "sh", "python", "python3":
+		return true
+	default:
+		return false
+	}
+}
+
+func splitProofCommand(command string) ([]string, error) {
+	const (
+		unquoted = iota
+		singleQuoted
+		doubleQuoted
+	)
+	state := unquoted
+	started := false
+	var token strings.Builder
+	var tokens []string
+	runes := []rune(command)
+
+	appendToken := func() {
+		tokens = append(tokens, token.String())
+		token.Reset()
+		started = false
+	}
+	for index := 0; index < len(runes); index++ {
+		value := runes[index]
+		switch state {
+		case unquoted:
+			switch value {
+			case ' ', '\t', '\r', '\n':
+				if started {
+					appendToken()
+				}
+			case '\'':
+				state = singleQuoted
+				started = true
+			case '"':
+				state = doubleQuoted
+				started = true
+			case '\\':
+				if index+1 == len(runes) {
+					return nil, fmt.Errorf("no escaped character")
+				}
+				index++
+				token.WriteRune(runes[index])
+				started = true
+			default:
+				token.WriteRune(value)
+				started = true
+			}
+		case singleQuoted:
+			if value == '\'' {
+				state = unquoted
+			} else {
+				token.WriteRune(value)
+			}
+		case doubleQuoted:
+			switch value {
+			case '"':
+				state = unquoted
+			case '\\':
+				if index+1 == len(runes) {
+					return nil, fmt.Errorf("no escaped character")
+				}
+				next := runes[index+1]
+				if next == '"' || next == '\\' {
+					index++
+					token.WriteRune(next)
+				} else {
+					token.WriteRune(value)
+				}
+			default:
+				token.WriteRune(value)
+			}
+		}
+	}
+	if state != unquoted {
+		return nil, fmt.Errorf("no closing quotation")
+	}
+	if started {
+		appendToken()
+	}
+	return tokens, nil
+}
+
+func validateProofReference(reference, label string) error {
+	if strings.Contains(reference, "\\") {
+		return fmt.Errorf("%s must use repository-relative POSIX syntax", label)
+	}
+	if strings.HasPrefix(reference, "/") {
+		return fmt.Errorf("%s is not a contained repository-relative path", label)
+	}
+	hasPart := false
+	for _, part := range strings.Split(reference, "/") {
+		switch part {
+		case "", ".":
+			continue
+		case "..":
+			return fmt.Errorf("%s is not a contained repository-relative path", label)
+		default:
+			hasPart = true
+		}
+	}
+	if !hasPart {
+		return fmt.Errorf("%s is not a contained repository-relative path", label)
+	}
+	return nil
+}
+
+func containsString(values []string, expected string) bool {
+	for _, value := range values {
+		if value == expected {
+			return true
+		}
+	}
+	return false
 }
