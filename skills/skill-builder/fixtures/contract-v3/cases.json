@@ -13,6 +13,38 @@
       ]
     },
     {
+      "id": "missing-contract-field",
+      "expected_code": "CONTRACT_INCOMPLETE",
+      "mutations": [
+        {
+          "op": "delete",
+          "path": "/primary_layer"
+        }
+      ]
+    },
+    {
+      "id": "invalid-schema-version",
+      "expected_code": "SCHEMA_INVALID",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/schema_version",
+          "value": "skill-contract.v2"
+        }
+      ]
+    },
+    {
+      "id": "invalid-primary-layer",
+      "expected_code": "SCHEMA_INVALID",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/primary_layer",
+          "value": "core"
+        }
+      ]
+    },
+    {
       "id": "duplicate-lifecycle-seam",
       "expected_code": "DUPLICATE_MEMBER",
       "mutations": [
@@ -264,6 +296,17 @@
       ]
     },
     {
+      "id": "malformed-trigger-case",
+      "expected_code": "TRIGGER_INVALID",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/triggers/positive/0/prompt",
+          "value": ""
+        }
+      ]
+    },
+    {
       "id": "wrong-trigger-expectation",
       "expected_code": "TRIGGER_EXPECTATION_INVALID",
       "mutations": [
@@ -368,6 +411,17 @@
           "op": "set",
           "path": "/proof/command",
           "value": "true\nfalse"
+        }
+      ]
+    },
+    {
+      "id": "trimmed-proof-command",
+      "expected_code": "PROOF_INVALID",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/proof/command",
+          "value": " bash skills/skill-builder/scripts/test-contract-v3.sh"
         }
       ]
     },
@@ -593,6 +647,39 @@
       ]
     },
     {
+      "id": "proof-entrypoint-backslash",
+      "expected_code": "PROOF_INVALID",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/proof/command",
+          "value": "bash 'skills\\outside.sh'"
+        }
+      ]
+    },
+    {
+      "id": "proof-harness-backslash",
+      "expected_code": "PROOF_INVALID",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/proof/harness_refs/0",
+          "value": "skills\\outside.sh"
+        }
+      ]
+    },
+    {
+      "id": "proof-fixture-backslash",
+      "expected_code": "PROOF_INVALID",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/proof/fixture_refs/0",
+          "value": "skills\\outside.json"
+        }
+      ]
+    },
+    {
       "id": "unrestricted-path-command",
       "expected_code": "PROOF_COMMAND_FORBIDDEN",
       "mutations": [
@@ -613,6 +700,12 @@
           "value": "python3 -c 'print(1)'"
         }
       ]
+    },
+    {
+      "id": "approved-interpreter-unavailable",
+      "expected_code": "PROOF_INVALID",
+      "witness": "unavailable_interpreter",
+      "mutations": []
     },
     {
       "id": "malformed-proof-command",
@@ -670,15 +763,69 @@
       "mutations": []
     },
     {
+      "id": "invalid-yaml-key",
+      "expected_code": "INVALID_YAML_KEY",
+      "witness": "invalid_yaml_key",
+      "mutations": []
+    },
+    {
       "id": "duplicate-yaml-key",
       "expected_code": "DUPLICATE_YAML_KEY",
       "witness": "duplicate_yaml",
       "mutations": []
     },
     {
+      "id": "invalid-json",
+      "expected_code": "INVALID_JSON",
+      "witness": "invalid_json",
+      "mutations": []
+    },
+    {
       "id": "duplicate-json-key",
       "expected_code": "DUPLICATE_JSON_KEY",
       "witness": "duplicate_json",
+      "mutations": []
+    },
+    {
+      "id": "invalid-frontmatter",
+      "expected_code": "INVALID_FRONTMATTER",
+      "witness": "invalid_frontmatter",
+      "mutations": []
+    },
+    {
+      "id": "invalid-skill-name",
+      "expected_code": "SKILL_NAME_INVALID",
+      "witness": "invalid_skill_name",
+      "mutations": []
+    },
+    {
+      "id": "source-unavailable",
+      "expected_code": "SOURCE_UNAVAILABLE",
+      "witness": "source_unavailable",
+      "mutations": []
+    },
+    {
+      "id": "skill-name-mismatch",
+      "expected_code": "SKILL_NAME_MISMATCH",
+      "witness": "skill_name_mismatch",
+      "mutations": []
+    },
+    {
+      "id": "contract-v3-absent",
+      "expected_code": "CONTRACT_V3_ABSENT",
+      "witness": "contract_absent",
+      "mutations": []
+    },
+    {
+      "id": "invalid-unicode-scalar",
+      "expected_code": "INVALID_UNICODE",
+      "witness": "invalid_unicode",
+      "mutations": []
+    },
+    {
+      "id": "compiler-io-error",
+      "expected_code": "IO_ERROR",
+      "witness": "io_error",
       "mutations": []
     },
     {
