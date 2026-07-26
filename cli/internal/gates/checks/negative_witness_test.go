@@ -46,6 +46,31 @@ var negativeAssertion = regexp.MustCompile(
 	`\$status" -eq [1-9]|\$status" -ne 0|assert_failure|refute_success|returncode, 1|returncode != 0|-ne 0 \]`,
 )
 
+// scrubbedGitEnv is the package-local twin of gitDiscoveryEnv
+// (cli/cmd/ao/git_read.go): the process environment minus the four git
+// discovery overrides. A hook-launched process inherits GIT_DIR/GIT_WORK_TREE,
+// and under a leaked GIT_DIR even a `-C <dir>`-scoped git call resolves against
+// the LEAKED repository — which is how a fixture `git init` once rewrote a
+// shared .git/config and bricked every worktree
+// (age-gate-scripts-worktree-gitdir-p62wo, ek8v).
+func scrubbedGitEnv() []string {
+	const prefixes = "GIT_DIR=|GIT_WORK_TREE=|GIT_COMMON_DIR=|GIT_INDEX_FILE="
+	env := make([]string, 0, len(os.Environ()))
+	for _, entry := range os.Environ() {
+		drop := false
+		for _, p := range strings.Split(prefixes, "|") {
+			if strings.HasPrefix(entry, p) {
+				drop = true
+				break
+			}
+		}
+		if !drop {
+			env = append(env, entry)
+		}
+	}
+	return env
+}
+
 func loadPinnedGates(t *testing.T, root string) map[string]bool {
 	t.Helper()
 	pinned := map[string]bool{}
@@ -159,11 +184,16 @@ func TestBlockingGatesHaveProvenNegativeWitness(t *testing.T) {
 // grants no protection.
 func TestNegativeWitnessAllowlistOnlyShrinks(t *testing.T) {
 	root := repoRootFromTest(t)
-	// TestMain scrubs GIT_DIR/GIT_WORK_TREE for this package, and cmd.Dir is set
-	// explicitly, so this read cannot be redirected at another repository
-	// (.claude/rules/go.md, ek8v).
+	// cmd.Dir pins the repository and cmd.Env strips the git discovery overrides.
+	// TestMain's process-level ScrubGitDiscoveryEnv already covers this package,
+	// but the per-command scrub is the repo's stated contract and does not rely
+	// on a TestMain elsewhere in the package staying correct
+	// (age-gate-scripts-worktree-gitdir-p62wo; gitDiscoveryEnv in
+	// cli/cmd/ao/git_read.go). A hook-leaked GIT_DIR would otherwise resolve this
+	// read against a different repository entirely.
 	cmd := exec.Command("git", "show", "HEAD:"+negativeWitnessGrandfather)
 	cmd.Dir = root
+	cmd.Env = scrubbedGitEnv()
 	out, err := cmd.Output()
 	if err != nil {
 		t.Skip("no HEAD version of the allowlist (initial snapshot)")
