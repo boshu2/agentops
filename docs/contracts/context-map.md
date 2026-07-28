@@ -59,7 +59,7 @@
 
 | Skill | Direction | Artifact |
 |---|---|---|
-| `agent-mail` | consumes | `task-intent` |
+| `agent-mail` | consumes | `coordination-request` |
 | `agent-mail` | produces | `agent-identity` |
 | `agent-mail` | produces | `file-reservation` |
 | `agent-mail` | produces | `acknowledged-handoff` |
@@ -78,6 +78,7 @@
 | `codebase-recon` | consumes | `existing-docs` |
 | `codebase-recon` | produces | `codebase-recon.v1` |
 | `codebase-recon` | produces | `evidence-bounded-recon-report` |
+| `codex-exec` | consumes | `codex-command-packet` |
 | `codex-exec` | produces | `codex-run-output` |
 | `converter` | produces | `converted-skill` |
 | `council` | consumes | `explicit-question` |
@@ -100,7 +101,7 @@
 | `implement` | produces | `subject-manifest.v1` |
 | `learn` | consumes | `verdict.v2` |
 | `learn` | produces | `learning-observations` |
-| `ntm` | consumes | `task-intent` |
+| `ntm` | consumes | `pane-command-request` |
 | `ntm` | produces | `ntm-robot-state` |
 | `ntm` | produces | `agent-worker-transcript` |
 | `operationalize` | consumes | `evidence-backed-expertise` |
