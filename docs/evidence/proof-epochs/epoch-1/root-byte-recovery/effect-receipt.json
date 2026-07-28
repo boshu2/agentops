@@ -1,0 +1,37 @@
+{
+  "actual_changed_paths": [
+    "skills/rpi/scripts/run_once.py"
+  ],
+  "artifact_digest": "c01f770e08a4890f89e326bae4fcd56709ade875b8288d4ed2ad4afe1908f19b",
+  "before_manifest_digest": "ddefc54a398b91e404085eea8c0afdef6a75c2a8cdc484347cfdb52534383917",
+  "changes": [
+    {
+      "after_digest": "57fb4e491216adc75e15fabc3b117d498b1ff4601edb5f2773e619ce82f253be",
+      "before_digest": "52e4be4c51cd047d225f2bc83fdbfd18133c22c1e008d5076c32c4b608fd279b",
+      "change_kind": "MODIFIED",
+      "path": "skills/rpi/scripts/run_once.py"
+    }
+  ],
+  "check_receipt_refs": [
+    {
+      "digest": "8731c58dff392896930c43f6a089de2d1e3e14daec00c618e74cdbbeaaf9caff",
+      "ref": "docs/evidence/proof-epochs/epoch-1/root-byte-recovery/check-receipts/A1-binding-walk-26.json"
+    },
+    {
+      "digest": "17cf3b44fc9f2e890a9497ba53088ae467718ebbb3617b87fab240424f26ebe3",
+      "ref": "docs/evidence/proof-epochs/epoch-1/root-byte-recovery/check-receipts/A2-load-active-proof.json"
+    },
+    {
+      "digest": "410f301476e9bd0fcac0d02841a124dd247a68f307f2b0b5b27671a45d1bc270",
+      "ref": "docs/evidence/proof-epochs/epoch-1/root-byte-recovery/check-receipts/A3-blob-digest-mode.json"
+    },
+    {
+      "digest": "136aa5ba86be7e2f961b8792cc07172d32bb905f9d761f76e658094745c6d291",
+      "ref": "docs/evidence/proof-epochs/epoch-1/root-byte-recovery/check-receipts/A6-rpi-focused-tests.json"
+    }
+  ],
+  "coverage": "INCOMPLETE",
+  "final_manifest_digest": "6200fcf6b40242412351d9fc8e14606259468b391737ff90431de06e6a99fba2",
+  "schema_version": "effect-receipt.v1",
+  "undeclared_paths": []
+}

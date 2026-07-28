@@ -1,0 +1,16 @@
+{
+  "artifact_digest": "410f301476e9bd0fcac0d02841a124dd247a68f307f2b0b5b27671a45d1bc270",
+  "command": [
+    "/opt/homebrew/opt/python@3.14/bin/python3.14",
+    "-c",
+    "import hashlib,os,subprocess,json;p=r'/Users/bo/dev/agentops-worktrees/root-byte-recovery/skills/rpi/scripts/run_once.py';d=hashlib.sha256(open(p,'rb').read()).hexdigest();b=subprocess.run(['git','hash-object',p],capture_output=True,text=True).stdout.strip();m=oct(os.stat(p).st_mode & 0o777);print(json.dumps({'sha256':d,'blob':b,'mode':m},sort_keys=True));raise SystemExit(0 if d=='57fb4e491216adc75e15fabc3b117d498b1ff4601edb5f2773e619ce82f253be' and b=='3334b269b8f19419a7d037e382214682f2dfde44' and m=='0o755' else 1)"
+  ],
+  "exit_code": 0,
+  "observed_at": "2026-07-28T04:22:47Z",
+  "receipt_id": "A3-blob-digest-mode",
+  "result": "PASS",
+  "schema_version": "check-receipt.v1",
+  "stderr_digest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "stdout_digest": "72a28f630b1d53d48a2864446f5075ad9f1ae86663605af4af3a64ba9de326bd",
+  "subject_manifest_digest": "6200fcf6b40242412351d9fc8e14606259468b391737ff90431de06e6a99fba2"
+}

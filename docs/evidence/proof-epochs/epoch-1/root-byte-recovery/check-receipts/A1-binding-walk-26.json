@@ -1,0 +1,16 @@
+{
+  "artifact_digest": "8731c58dff392896930c43f6a089de2d1e3e14daec00c618e74cdbbeaaf9caff",
+  "command": [
+    "/opt/homebrew/opt/python@3.14/bin/python3.14",
+    "/private/tmp/claude-501/-Users-bo-dev-agentops/b363e1bb-e95b-4d02-8f08-0ceaf96ebd17/scratchpad/binding_walk.py",
+    "/Users/bo/dev/agentops-worktrees/root-byte-recovery"
+  ],
+  "exit_code": 0,
+  "observed_at": "2026-07-28T04:22:47Z",
+  "receipt_id": "A1-binding-walk-26",
+  "result": "PASS",
+  "schema_version": "check-receipt.v1",
+  "stderr_digest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "stdout_digest": "0184cd51dc470ef1897560a928f39d93ed1a8712e6aaacf35a3453630271b6ff",
+  "subject_manifest_digest": "6200fcf6b40242412351d9fc8e14606259468b391737ff90431de06e6a99fba2"
+}
