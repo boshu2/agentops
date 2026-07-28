@@ -219,6 +219,85 @@ shim_git_diff_tree() {
     [[ "$output" != *"PASS"* ]]
 }
 
+# --- per-file scan-chain fail-closed witnesses (scan-chain successor intent) ---
+
+# The lib's added-hunk matcher is deliberately tri-state (1 = no added match,
+# 2 = scan helper failed, loud) and its own comment warns that `|| continue`
+# callers still skip on rc 2. These witnesses distinguish the two classes:
+# a helper DEATH must refuse (exit 2), a genuine no-match must skip (rc 1
+# semantics unchanged), and a matcher-internal git death must keep flagging
+# via the whole-file degradation (fail-safe, not false-green). Each witness is
+# baseline-first: the sane run must flag the seeded violation before any
+# hostility is applied, so a later green cannot be blamed on the fixture.
+
+seed_violation_and_expect_baseline() {
+    write_tripping_go "cli/cmd/ao/new_reader.go"
+    ( cd "$TMP_DIR" && git add -A && git commit -qm "add new_reader" )
+    run run_gate
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"new_reader.go"* ]]
+}
+
+@test "an added-hunk scan-helper death exits 2, never a skip into green" {
+    seed_violation_and_expect_baseline
+    # awk shim: dies ONLY when the lib's added-hunk ERE rides the environment
+    # (the lib documents that the pattern travels via RATCHET_HUNK_ERE);
+    # every other awk call is untouched.
+    mkdir -p "$TMP_DIR/bin"
+    cat > "$TMP_DIR/bin/awk" <<'SHIM'
+#!/usr/bin/env bash
+if [ -n "${RATCHET_HUNK_ERE:-}" ]; then echo "awk: injected scan death" >&2; exit 3; fi
+exec /usr/bin/awk "$@"
+SHIM
+    chmod +x "$TMP_DIR/bin/awk"
+    run bash -c "cd '$TMP_DIR' && PATH=\"$TMP_DIR/bin:\$PATH\" bash scripts/check-jsonl-scanner-ratchet.sh --scope head"
+    [ "$status" -eq 2 ]
+    [[ "$output" == *"refusing to certify"* ]]
+    # The lib's own loud stderr must be preserved.
+    [[ "$output" == *"added-hunk scan failed"* ]]
+    [[ "$output" != *"PASS"* ]]
+}
+
+@test "a whole-file scan death in file_trips exits 2, never a skip into green" {
+    seed_violation_and_expect_baseline
+    # grep shim: dies ONLY on the gate's \.jsonl whole-file pattern; every
+    # other grep call is untouched.
+    mkdir -p "$TMP_DIR/bin"
+    cat > "$TMP_DIR/bin/grep" <<'SHIM'
+#!/usr/bin/env bash
+for arg in "$@"; do
+    if [ "$arg" = '\.jsonl' ]; then echo "grep: injected scan death" >&2; exit 3; fi
+done
+exec /usr/bin/grep "$@"
+SHIM
+    chmod +x "$TMP_DIR/bin/grep"
+    run bash -c "cd '$TMP_DIR' && PATH=\"$TMP_DIR/bin:\$PATH\" bash scripts/check-jsonl-scanner-ratchet.sh --scope head"
+    [ "$status" -eq 2 ]
+    [[ "$output" == *"refusing to certify"* ]]
+    [[ "$output" != *"PASS"* ]]
+}
+
+@test "a mid-loop dead git diff still FLAGS via whole-file degradation (fail-safe, not false-green)" {
+    seed_violation_and_expect_baseline
+    # git shim: kills plain `git diff` (the matcher's per-file command) while
+    # rev-list and diff-tree — the collection commands — pass through. The lib
+    # swallows the death into an empty diff and degrades to a whole-file scan,
+    # which for a file that already passed file_trips MATCHES: the violation
+    # must still be named at rc 1. This pins the degraded path as over-report,
+    # the safe direction — the fix may not satisfy the suite by reporting less.
+    mkdir -p "$TMP_DIR/bin"
+    cat > "$TMP_DIR/bin/git" <<'SHIM'
+#!/usr/bin/env bash
+if [ "$1" = "diff" ]; then echo "fatal: injected diff failure" >&2; exit 128; fi
+exec /usr/bin/env -u PATH PATH="/usr/bin:/bin:/usr/local/bin:/opt/homebrew/bin" git "$@"
+SHIM
+    chmod +x "$TMP_DIR/bin/git"
+    run bash -c "cd '$TMP_DIR' && PATH=\"$TMP_DIR/bin:\$PATH\" bash scripts/check-jsonl-scanner-ratchet.sh --scope head"
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"new_reader.go"* ]]
+    [[ "$output" != *"PASS"* ]]
+}
+
 @test "--regenerate rewrites the grandfather list from the current tree" {
     # Two tripping files present; --regenerate should list both, sorted, with a header.
     write_tripping_go "cli/cmd/ao/a_reader.go"
