@@ -113,6 +113,18 @@ via `validate_v3.py`" claim describes the abandoned `codex/skill-overhaul-202607
 - Deferred (with reason): 3 — scope feature file, postmortem `fm-ws-noncanonical-topdir`
   detector (CLI concern), idea-genie shared context-isolation reference.
 
+## Review round 1 (cross-family) — all three findings fixed
+- **F1 council validator nested-field gap** — FIXED. `validate-output.sh` now enforces a closed
+  key set + types on each `consensus` and `divergence` entry and on the optional
+  `model_identity`/`omissions`/`diversity_unsatisfied` fields, so a nested `verdict`/`PASS` or a
+  wrong-typed value inside those structures is rejected. Added reject smoke cases (nested verdict
+  in consensus, nested readiness in divergence, number `model_identity`, string `omissions`,
+  string `methodologies`) — the schema and the jq validator now agree on all of them.
+- **F2 reality-check empty evidence** — FIXED. Every finding now requires nonempty `evidence`
+  (jq `length > 0` + schema `minItems: 1`); an empty-evidence finding is rejected (new case).
+- **F3 postmortem naming mismatch** — FIXED. Frontmatter `output_contract` now names the body's
+  documented convention `YYYY-MM-DD-postmortem-<topic>.md` instead of the bare `postmortem-report.md`.
+
 ## Gate results (all green)
 - `bash skills/{council,reality-check,premortem,postmortem,scope}/scripts/validate.sh` — PASS (5/5).
 - Output validators smoke-tested: valid artifacts pass; smuggled `verdict`/`readiness` field,

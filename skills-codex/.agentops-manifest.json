@@ -399,8 +399,8 @@
     {
       "name": "council",
       "source_skill": "skills/council",
-      "source_hash": "b8c6951caf7719f0d738cac225c61dc26678567889f2c68fa1643d8f922f4965",
-      "generated_hash": "725b45ef5ee0f0fb66bcbb81dd06d7adacdc9cb6284921f938e0a0e1f5df2b70"
+      "source_hash": "07034f09ac2683713eb294164dac21df8cc69cbe9f4ae12e2b55a823d4defa18",
+      "generated_hash": "862f0ed645d283918a940fba0eef0c9322e45909b0d617aade067b707b9abda7"
     },
     {
       "name": "craft-goal",
@@ -489,7 +489,7 @@
     {
       "name": "postmortem",
       "source_skill": "skills/postmortem",
-      "source_hash": "935e95b44f578c3aace0ec14ccc5941fa6d67603e0324a4e6c30583244dfd450",
+      "source_hash": "e1b37de32fb537d06ecc56a1801b3eee3ae9b7574718eaf6048fe470d3fc285b",
       "generated_hash": "55cc73eba32d0f60b6d8fa6707f8566de3393716345f7be558e08219cfbfe339"
     },
     {
@@ -513,8 +513,8 @@
     {
       "name": "reality-check",
       "source_skill": "skills/reality-check",
-      "source_hash": "65f4591de8b5ad1910e11533d5fd95d885a4f5d84dc4239f7bce581d4c9ade49",
-      "generated_hash": "1b53b64b56a1445cc9bee58b5cf1e435718ace9aa8e283f3b73ecf9808a6662f"
+      "source_hash": "a2d7e5ab9bf7da978fdef17f19a5e7dd28fed28b5d3a1513ef92b5042e4068cd",
+      "generated_hash": "a65522fa3b24fca1f367a883f2eb904a2606a4f2a21ee688b1b6c106d7efefb2"
     },
     {
       "name": "refactor",

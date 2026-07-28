@@ -18,7 +18,7 @@ jq -e '
       and (.category == "confirmed" or .category == "gap"
         or .category == "incomplete-evidence" or .category == "changed-assumption")
       and (.statement | text)
-      and (.evidence | type == "array" and all(.[]; text))))
+      and (.evidence | type == "array" and length > 0 and all(.[]; text))))
   and (if has("coverage") then
         (.coverage
           | type == "array"
