@@ -60,7 +60,7 @@ is filed under correlations or unknowns, never silently promoted.
 
 ## Output Specification
 
-- **Artifact directory:** `.agents/postmortem/`.
+- **Artifact directory:** `.agents/scratch/postmortem/`.
 - **Filename convention:** `YYYY-MM-DD-postmortem-<topic>.md`.
 - **Serialization/schema format:** Markdown with causal question, pinned inputs,
   timeline, hypotheses, evidence, counterfactuals, unknowns, and experiments.
