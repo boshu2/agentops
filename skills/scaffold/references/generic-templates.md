@@ -186,9 +186,9 @@ Run these checks in order. Stop and fix if any fail.
 
 If a tool is not installed (e.g., `ruff`, `golangci-lint`), note it as a warning but do not fail the scaffold.
 
-Report the generated files and the command results, then stop. The caller owns
-version control, revision, and delivery — this scaffold does not `git init`,
-stage, commit, push, or decide what happens next.
+Report the generated files and the command results, then stop. Version control,
+revision, and delivery stay with the caller; this scaffold writes files only and
+takes no source-control or continuation action.
 
 ## Component Mode
 

@@ -23,7 +23,7 @@ context:
   intel_scope: topic
 metadata:
   capabilities: [test]
-  effects: [write_test_files, write_test_evidence]
+  effects: [write_test_files, write_test_evidence, modify_source_files]
   canonical_status: canonical
   disposition: keep_specialist
   tier: execution

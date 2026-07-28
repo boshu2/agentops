@@ -2,7 +2,7 @@
 # /test loads the language's test standards, generates REAL tests for existing code, runs them to
 # verify they pass (it does not stop at a plan), and fills coverage gaps — writing artifacts to
 # .agents/scratch/tests/. Hexagon: supporting; consumes standards (test conventions) + repo-context (the
-# code under test); produces result.json. (soc-qk4b)
+# code under test); produces test-evidence. (soc-qk4b)
 
 Feature: Test generates real, passing tests and coverage
   As the test-generation step

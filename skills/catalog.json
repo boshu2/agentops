@@ -1448,7 +1448,8 @@
       "disposition": "keep_specialist",
       "effects": [
         "write_test_files",
-        "write_test_evidence"
+        "write_test_evidence",
+        "modify_source_files"
       ],
       "graph_root": false,
       "hexagonal_role": "supporting",

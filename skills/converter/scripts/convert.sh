@@ -655,11 +655,26 @@ resolve_physical() {
   fi
 }
 
-# Refuse a clean-write target that would destroy the source or a parent. The
-# write stage rm -rf's output_dir; if output_dir is the source package, an
-# ancestor of it, or the repo root, that rm -rf deletes files this conversion
-# must read (CV-1: a source-dir output went 4 files -> 2 at exit 0). Fix by
-# refusal, never by silently appending a subdir.
+# within CHILD PARENT -> 0 if CHILD equals PARENT or is nested under PARENT.
+# Both arguments must already be canonical (symlink/.. resolved).
+within() {
+  local child="$1" parent="$2"
+  case "$child/" in
+    "$parent"/*) return 0 ;;
+  esac
+  return 1
+}
+
+# Refuse a clean-write target that would destroy the source or the repository.
+# The write stage rm -rf's output_dir; both paths are canonicalized (symlinks
+# and `..` resolved via resolve_physical / `pwd -P`) before comparison so the
+# guard cannot be bypassed by an alias. The containment test is BIDIRECTIONAL:
+# refuse when the output equals the source, contains it (ancestor), OR lives
+# inside it (descendant) — any of those puts source files under the rm -rf — and
+# refuse when the output is, or is an ancestor of, the repository root (an output
+# above the repo would take the whole tree with it). CV-1: a source-dir output
+# went 4 files -> 2 at exit 0. Fix by refusal, never by silently appending a
+# subdir.
 assert_safe_output_dir() {
   local output_dir="$1" source_dir="$2"
   local out_abs src_abs repo_abs
@@ -667,17 +682,15 @@ assert_safe_output_dir() {
   src_abs="$(cd "$source_dir" && pwd -P)"
   repo_abs="$(cd "$REPO_ROOT" && pwd -P)"
 
-  if [[ "$out_abs" == "$repo_abs" ]]; then
-    die "refusing to clean-write the repository root: $out_abs"
+  if within "$out_abs" "$src_abs"; then
+    die "refusing to clean-write '$out_abs': it is the source package, or lives inside it ('$src_abs')"
   fi
-  if [[ "$out_abs" == "$src_abs" ]]; then
-    die "refusing to clean-write the source package itself: $out_abs (choose a distinct output dir)"
+  if within "$src_abs" "$out_abs"; then
+    die "refusing to clean-write '$out_abs': it contains the source package '$src_abs'"
   fi
-  case "$src_abs/" in
-    "$out_abs"/*)
-      die "refusing to clean-write '$out_abs': it contains the source package '$src_abs'"
-      ;;
-  esac
+  if within "$repo_abs" "$out_abs"; then
+    die "refusing to clean-write '$out_abs': it is, or contains, the repository root '$repo_abs'"
+  fi
 }
 
 write_output() {

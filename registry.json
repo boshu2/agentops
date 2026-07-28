@@ -1266,7 +1266,8 @@
         "disposition": "keep_specialist",
         "effects": [
           "write_test_files",
-          "write_test_evidence"
+          "write_test_evidence",
+          "modify_source_files"
         ],
         "has_references": true,
         "has_skill_md": true,

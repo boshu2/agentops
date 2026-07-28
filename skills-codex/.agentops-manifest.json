@@ -393,8 +393,8 @@
     {
       "name": "converter",
       "source_skill": "skills/converter",
-      "source_hash": "163a055ef4c016e1cd731ee8d79dc9d9d0cd9137f6c997a8181326bb33c29ea7",
-      "generated_hash": "4b7d970cc6179f2aa7e73da2d01960cb079bc403c8867993c416b669ea77fa98"
+      "source_hash": "ee0a1bcc00f422dbf864d04a8972b8578056947b625e7e94d3632a40cee159ab",
+      "generated_hash": "ceb7e7f216b1c23c2fb78be27fda84fb0fc36d798145c5b490768ceeb6e6f9e2"
     },
     {
       "name": "council",
@@ -549,8 +549,8 @@
     {
       "name": "scaffold",
       "source_skill": "skills/scaffold",
-      "source_hash": "9194602a1b458b480de8d29f848264c7986de8a21105d9cb43780f22d4018f43",
-      "generated_hash": "c35c231d6a801e15922fde16b7be7c290574239e8360ce497f2670fbe58cdb44"
+      "source_hash": "3842025470fcf184e2fd96f7306f14de37b67864a42d8021f33f953bb76afce6",
+      "generated_hash": "9452dce2fd5026b986db3ca03cbc503dcf499b09dca909a6cbe8b8d025d9e57a"
     },
     {
       "name": "scope",
@@ -597,8 +597,8 @@
     {
       "name": "test",
       "source_skill": "skills/test",
-      "source_hash": "4336c618821968a95d2a83559344bbfb52becdf59564b1ab4b8a76991d87ebd0",
-      "generated_hash": "8bbdaf96e17d48436bf1a08f9fda55e946e7ef5d0769d94d1c3736fe800a1a49"
+      "source_hash": "c074c59a2e4ccae27f2a4f514b9e5a16a6d87465be8429405878e0641ec5d096",
+      "generated_hash": "be6eb93094d43ee18b0d87412661e0cc08724fa3d64e0724c0dd908dfa9dca22"
     },
     {
       "name": "toil-mining",
