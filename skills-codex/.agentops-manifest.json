@@ -387,8 +387,8 @@
     {
       "name": "codex-exec",
       "source_skill": "skills/codex-exec",
-      "source_hash": "3dc9df272422263ebf9f9ce620a542a3db8c73704fe1862aae5873531c6d8138",
-      "generated_hash": "3e72020f6df165ca2cf4bf6a89350ea61509b1e88aea5fa6599728c3219e80a3"
+      "source_hash": "db1eda768d56f20bd92d333b3e45124a5afbbf3a5653b8b9d39bb285edeefc89",
+      "generated_hash": "75df66a57666eea344dac4254cc5926054bab8677aabfdb9ead003db58370181"
     },
     {
       "name": "converter",
@@ -507,8 +507,8 @@
     {
       "name": "rch",
       "source_skill": "skills/rch",
-      "source_hash": "5a4e3a005eb6f62ebdb1d1dde6e521945dd7d09048462259728cca286fe9db3c",
-      "generated_hash": "bfa4cab644948545f43f51c6eccb9aba660fbd7f7d920789656287960e93b345"
+      "source_hash": "3af677e66c6a1ed663e733461d9153922b7dd6123bc011fbae9bc831a2d3c2c1",
+      "generated_hash": "bb6606aa0c44726a8f67021fbe6bdf767ca31773e57fc274201f7ae32f51b42a"
     },
     {
       "name": "reality-check",

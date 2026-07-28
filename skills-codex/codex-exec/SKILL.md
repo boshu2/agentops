@@ -31,17 +31,18 @@ prompt runs read-only, full stop.
    caller's deadline, or the declared default of **600s (10 min)** when the
    caller supplies none, and record which one applied. Enforce it so the whole
    process **tree** is reaped, not just the direct child: run codex in its own
-   process group and kill the group on expiry (e.g. `setsid` + `kill -KILL
-   -<pgid>`), or `timeout --kill-after=10s <secs>` to escalate TERM→KILL. Plain
-   `timeout <secs> codex …` signals only the direct child, so if your wrapper
-   cannot guarantee process-group reaping, **disclose the surviving-subprocess
-   risk as a limitation** rather than claim cleanup. Deadline expiry is
+   process group and kill the group on expiry: `setsid` (own process group) +
+   `kill -KILL -<pgid>` on the group; `--kill-after` only escalates TERM→KILL
+   and plain `timeout <secs> codex …` signals only the direct child. If the
+   wrapper cannot guarantee process-group reaping, **do not execute** — that
+   host lacks the cleanup capability this skill requires (capability
+   unavailable, fail closed). Deadline expiry is
    **fail-closed**: the run is killed and reported as timed-out / not proven,
    partial output preserved — never a completed review.
 6. Capture the final response with `-o`, JSONL, or an output schema.
 7. Report the typed run result, then stop: the process exit status, the captured
-   artifact path, which deadline applied and whether it fired, whether the
-   process tree was reaped (or the surviving-subprocess limitation), and whether
+   artifact path, which deadline applied and whether it fired, that the
+   process tree was reaped (a run without guaranteed reaping never starts), and whether
    the `codex` binary was present at all. Cancellation is the caller's; this
    skill neither retries nor continues on its own.
 
@@ -55,9 +56,9 @@ invocation.
 
 ```bash
 # Deadline mandatory; default 600s. `setsid` puts codex in its own process
-# group; on expiry `--kill-after` escalates TERM->KILL to reap the tree, not
-# just the direct child. (If you cannot run setsid, disclose that a plain
-# `timeout` reaps only the direct child.)
+# group so expiry kills the whole tree, with `--kill-after` escalating
+# TERM->KILL. No setsid (or equivalent group kill) available -> do not run:
+# fail closed as capability-unavailable.
 printf '%s\n' "$PROMPT" | setsid timeout --kill-after=10s "${CODEX_TIMEOUT:-600}" \
   codex exec -C "$WORKSPACE" -s read-only -o "$OUTPUT" -
 ```
