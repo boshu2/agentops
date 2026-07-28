@@ -121,6 +121,9 @@ def invoke_once(
     status = validation.get("verdict")
     if status not in {"PASS", "FAIL", "NOT_PROVEN"}:
         raise ValueError("Validate must return PASS, FAIL, or NOT_PROVEN")
+    # The identity is byte-addressed. Plan minted the exact snapshot, RPI
+    # independently consumed and rehashed it above, and Validate must bind its
+    # verdict to the same digest. RPI never invents a canonical-value digest.
     if validation.get("intent_digest") != intent_digest:
         raise ValueError("Validate verdict does not match exact intent bytes")
     required = (

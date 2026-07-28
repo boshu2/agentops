@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import importlib.util
 import json
 from pathlib import Path
@@ -105,6 +106,29 @@ class RunOnceTests(unittest.TestCase):
             result = self.invoke(plan, implement, validate, raw)
             self.assertEqual(result["intent_digest"], MODULE.kernel.sha256(first))
             self.assertNotEqual(result["intent_digest"], MODULE.kernel.sha256(second))
+            self.assertEqual(calls, ["plan", "implement", "validate"])
+
+    def test_exact_source_bytes_not_canonical_json_define_intent_identity(self):
+        source = (
+            b'{\n  "acceptance": ["works"],\n'
+            b'  "intent_ref": "bead:agentops-test"\n}\n'
+        )
+        reordered = (
+            b'{"intent_ref":"bead:agentops-test",'
+            b'"acceptance":["works"]}'
+        )
+        self.assertEqual(json.loads(source), json.loads(reordered))
+        self.assertNotEqual(
+            hashlib.sha256(source).hexdigest(),
+            hashlib.sha256(reordered).hexdigest(),
+        )
+        with tempfile.TemporaryDirectory() as raw:
+            calls, plan, implement, validate = self.phases(intent_bytes=source)
+            result = self.invoke(plan, implement, validate, raw)
+            self.assertEqual(
+                result["intent_digest"],
+                hashlib.sha256(source).hexdigest(),
+            )
             self.assertEqual(calls, ["plan", "implement", "validate"])
 
     def test_fail_and_not_proven_report_and_stop(self):
@@ -354,7 +378,6 @@ class RunOnceTests(unittest.TestCase):
                 MODULE.kernel.load_json(path),
                 report,
             )
-
 
 if __name__ == "__main__":
     unittest.main()

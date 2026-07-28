@@ -1,0 +1,48 @@
+# scripts/.gate-negative-witness-grandfather — check-liveness ratchet allowlist.
+#
+# Every BLOCKING script-backed gate in the Go registry that, at the ratchet
+# cutoff, has no test anywhere under tests/ demonstrating it FAILS on the thing
+# it claims to detect. A gate proven only on a green tree is indistinguishable
+# from `exit 0`: it would still pass with its detector removed.
+#
+# This is the generalization of the two inert rules the 2026-07-25 review found
+# (ADR-0016 with no gate; a digest contract whose test mocked the code under
+# test). Those were instances; this is the class.
+#
+# SHRINK-ONLY: the list only shrinks. When a gate gains a negative witness, its
+# line MUST be pruned (the closure test FAILS until it is). A NEW blocking gate
+# cannot be added here — it ships with a negative witness or it does not ship.
+#
+# A "negative witness" is any test under tests/ that names the backing script
+# AND asserts a non-zero outcome from it.
+#
+# Enforced by: cli/internal/gates/checks/negative_witness_test.go
+adapter.gc-executor
+always.file-manifest-overlap
+always.git-config-hygiene
+always.mutation-route
+always.quarantine-empty
+always.retrieval-manifest-paths
+ci.policy-parity
+contract.cathedral-cut
+contract.compatibility
+contract.finding-registry
+contract.skill-mesh
+contract.verdict-corpus
+derived.changed-scope
+go.cli-contract
+go.cli-reference
+go.cli-surface-counts
+go.command-test-pair
+go.complexity
+go.home-isolation
+go.test-home-isolation
+go.test-isolation
+skill.cli-snippets
+skill.codex-override-coverage
+skill.codex-parity-drift
+skill.codex-runtime-sections
+skill.runtime-formats
+skill.runtime-parity
+skill.triggers
+workflow.install-drift
