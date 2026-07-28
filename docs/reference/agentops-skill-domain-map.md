@@ -16,7 +16,7 @@
 
 ## supporting
 
-`account-rotation`, `agent-mail`, `agent-native`, `automation-shape-routing`, `cass`, `cc-hooks`, `codebase-recon`, `dcg`, `doc`, `handoff`, `learn`, `ms`, `ntm`, `operationalize`, `pattern-mining`, `rch`, `refactor`, `reverse-engineer`, `sbh`, `scaffold`, `scope`, `skill-builder`, `standards`, `test`, `toil-mining`, `workflow-builder`
+`account-rotation`, `agent-mail`, `agent-native`, `automation-shape-routing`, `cass`, `cc-hooks`, `codebase-recon`, `craft-goal`, `dcg`, `doc`, `handoff`, `learn`, `ms`, `ntm`, `operationalize`, `pattern-mining`, `rch`, `refactor`, `reverse-engineer`, `sbh`, `scaffold`, `scope`, `skill-builder`, `standards`, `test`, `toil-mining`, `workflow-builder`
 
 ## Inventory
 
@@ -34,6 +34,7 @@
 | `codex-exec` | orchestration | `keep_optional_adapter` | - | `codex_exec` | - |
 | `converter` | cross-vendor | `keep_specialist` | - | `converter` | - |
 | `council` | judgment | `keep_strategy` | - | `collect_independent_judgments`, `synthesize_disagreement` | `write_advisory_council_report` |
+| `craft-goal` | judgment | `keep_specialist` | - | `goal_prompt_design`, `goal_prompt_lint` | - |
 | `dcg` | execution | `keep_specialist` | - | `dcg` | - |
 | `doc` | product | `keep_specialist` | - | `doc` | - |
 | `domain` | knowledge | `keep_specialist` | - | `domain` | - |

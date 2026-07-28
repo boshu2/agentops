@@ -147,6 +147,24 @@
     },
     {
       "driven_by_skills": [
+        "craft-goal"
+      ],
+      "id": "skill:craft-goal:goal_prompt_design",
+      "name": "goal_prompt_design",
+      "path": "skills/craft-goal/SKILL.md",
+      "type": "skill"
+    },
+    {
+      "driven_by_skills": [
+        "craft-goal"
+      ],
+      "id": "skill:craft-goal:goal_prompt_lint",
+      "name": "goal_prompt_lint",
+      "path": "skills/craft-goal/SKILL.md",
+      "type": "skill"
+    },
+    {
+      "driven_by_skills": [
         "dcg"
       ],
       "id": "skill:dcg:dcg",
@@ -564,19 +582,19 @@
     "cli_commands": 0,
     "gates": 0,
     "reference_impls": 0,
-    "skills": 62,
-    "total": 62
+    "skills": 64,
+    "total": 64
   },
   "cli_top_level_commands": [],
   "schema_version": 3,
   "summary": {
-    "capabilities": 62,
+    "capabilities": 64,
     "cli_commands": 0,
     "eval_files": 0,
     "hooks": 0,
     "job_types": 0,
     "knowledge_stores": 0,
-    "skills": 48,
+    "skills": 49,
     "workflows": 0
   },
   "surfaces": {
@@ -751,6 +769,20 @@
         "name": "council",
         "path": "skills/council/",
         "reference_count": 0,
+        "tier": "judgment"
+      },
+      {
+        "capabilities": [
+          "goal_prompt_design",
+          "goal_prompt_lint"
+        ],
+        "disposition": "keep_specialist",
+        "effects": [],
+        "has_references": true,
+        "has_skill_md": true,
+        "name": "craft-goal",
+        "path": "skills/craft-goal/",
+        "reference_count": 1,
         "tier": "judgment"
       },
       {

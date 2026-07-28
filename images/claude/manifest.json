@@ -1,7 +1,7 @@
 {
   "image": "claude",
   "schema_version": "skill-image.v1",
-  "skill_count": 48,
+  "skill_count": 49,
   "skills": [
     {
       "disposition": "keep_specialist",
@@ -62,6 +62,11 @@
       "disposition": "keep_strategy",
       "path": "skills/council/",
       "slug": "council"
+    },
+    {
+      "disposition": "keep_specialist",
+      "path": "skills/craft-goal/",
+      "slug": "craft-goal"
     },
     {
       "disposition": "keep_specialist",

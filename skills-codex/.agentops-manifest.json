@@ -2,7 +2,7 @@
   "generator": "manual-maintained",
   "source_root": "skills",
   "layout": "modular",
-  "codex_override_catalog_hash": "d05da256388554908b917c51baebc47425925df7cbee17d004dcc1e124f04edc",
+  "codex_override_catalog_hash": "fae62f93c46c2111ea890e25afff256a081b6b07c6944f8f5ac2a94115943437",
   "codex_override_catalog": {
     "version": 1,
     "description": "Machine-readable Codex treatment map for the full skill catalog.",
@@ -320,6 +320,12 @@
         "treatment": "parity_only",
         "wave": "catalog-parity",
         "reason": "Live source skill; generate a parity twin and keep runtime-specific behavior in the source contract."
+      },
+      {
+        "name": "craft-goal",
+        "treatment": "parity_only",
+        "wave": "catalog-parity",
+        "reason": "Auto-generated parity twin (codex-sync): skills/craft-goal is the source of truth; no durable Codex-specific divergence yet."
       }
     ]
   },
@@ -395,6 +401,12 @@
       "source_skill": "skills/council",
       "source_hash": "99b8347b53316514350139dcae1ffdd11ca025820395bc72c700e86823ba914e",
       "generated_hash": "7f43f5ac4f8fe296e36370245c4c9db44f56b841c5c5139c1b06abde1619ae2a"
+    },
+    {
+      "name": "craft-goal",
+      "source_skill": "skills/craft-goal",
+      "source_hash": "0ee59d5b74d475161bbe70db7e16bda6f3df55b51c1180da903a615910cf586d",
+      "generated_hash": "3ab098389db52c1a408e95bcb792d341859195aae362c3fddc8be7b60a98d062"
     },
     {
       "name": "dcg",
@@ -613,5 +625,5 @@
       "generated_hash": "30f72769961a244749883e03cb04e329cd0feb03dd5b641d2a73a2e5dc8e9d42"
     }
   ],
-  "package_count": 48
+  "package_count": 49
 }
