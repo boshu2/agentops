@@ -9,13 +9,14 @@ context_rel: []
 metadata:
   dependencies: []
   capabilities: [dcg]
-  effects: []
+  effects: [write_dcg_config]
   canonical_status: canonical
   disposition: keep_specialist
   tier: execution
-description: 'Handle blocked destructive commands and configure agent safety guardrails. Triggers: "dcg", "handle blocked destructive commands. use", "dcg skill".'
+description: 'Handle blocked destructive commands and configure agent safety guardrails. Triggers: "dcg", "handle a DCG block", "configure agent safety guardrails".'
 practices:
 - pragmatic-programmer
+output_contract: the blocked command, matched rule, surviving risk, and validated safe alternative; config writes only when explicitly requested
 ---
 <!-- TOC: Core Insight | THE EXACT WORKFLOW | Quick Reference | Safe Alternatives | What Gets Blocked | Anti-Patterns | Configuration | References -->
 
@@ -122,7 +123,12 @@ dcg scan --staged       # Pre-commit: scan for issues
 | Database | `DROP`, `TRUNCATE`, `DELETE` w/o WHERE | Add WHERE clause |
 | K8s | `delete namespace`, `delete --all` | `-l` label selector |
 
-**Context-aware:** `rm -rf ./build` allowed, `rm -rf /` blocked.
+**Context-aware (measured on dcg 0.5.6):** the temp carve-out allows `rm -rf`
+under `/tmp`, `/private/tmp`, `/var/tmp`, and the literal `$TMPDIR` form.
+Everything else — `rm -rf ./build` and other relative paths
+(`core.filesystem:rm-rf-general`), absolute paths like `/home/...` and `/`
+(`core.filesystem:rm-rf-root-home`), and even `/private/var/tmp` — is blocked.
+Unresolved variables other than `$TMPDIR` are not treated as temp.
 
 **`dcg explain` example (7-step pipeline):**
 ```bash
@@ -174,6 +180,7 @@ allow_patterns = ["rm -rf ./node_modules"]  # Project-specific safe
 - **Sub-millisecond latency** — won't slow your workflow
 - **Fail-open on timeout** — if DCG hangs, command runs (with warning)
 - **Heredoc scanning** — inline scripts (`bash -c`, `python -c`) are analyzed
+- **Inline-fragment false positives** — because scanning matches a destructive token anywhere in the command string, a pattern that appears only as *data* (a commit message body, a here-doc payload, a probe argument) can trip a block even though nothing destructive would run. Safe pattern: keep the payload off the command line — pass it via a file or stdin (e.g. `git commit -F <file>`), or run the intended tool directly instead of inlining the text. Never reconstruct a blocked command by splitting or escaping its tokens to slip past the guard — that defeats the safety layer.
 - **Allow-once codes** — 4 hex chars, 24h expiry, bound to exact command+directory
 
 ## The Incident That Started It All

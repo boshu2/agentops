@@ -57,7 +57,7 @@
           "pattern": "(^|[;&|][[:space:]]*)(cp|rsync|mv)[[:space:]][^;&|]*[[:space:]][^[:space:];&|]*\\.(claude|codex|gemini)/skills(/[^[:space:];&|]*)?[[:space:]]*([;&|]|$)"
         }
       ],
-      "route_message": "~/.claude/skills (and .codex/.gemini) are INSTALLED/symlinked copies — a cp/rsync/mv into them writes through the symlink into whatever branch the factory checkout is on, or is overwritten on install. Link instead: ao skills link (repo) or link-skill --all (dotfiles). Closes the Bash gap of the Edit|Write-only installed-skill-edit-guard.",
+      "route_message": "~/.claude/skills (and .codex/.gemini) are INSTALLED/symlinked copies — a cp/rsync/mv into them writes through the symlink into whatever branch the source checkout is on, or is overwritten on install. Link instead: ao skills link. Closes the Bash gap of the Edit|Write-only installed-skill-edit-guard.",
       "rationale": "Global CLAUDE.md 'Never cp into ~/.claude/skills'. Destination position is enforced: the installed-skills path must be the LAST token of the command segment, so copying FROM an installed dir out to the repo never fires.",
       "value_proof": "declining fire-attempt rate (token_class core.skills:copy-into-installed); retire on false-positive evidence"
     },

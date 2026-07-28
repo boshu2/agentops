@@ -174,6 +174,14 @@ promoted with reviewed fires.
 [scripts/lint-policies.sh](scripts/lint-policies.sh) enforces this mechanically
 (jq-only; runs in bats and CI).
 
+**Accepted false-positive surface:** because a pure predicate matches its token
+anywhere in the raw command string, a protected token quoted as *data* (a commit
+message body, a `dcg test "..."` probe, a here-doc payload) can still fire even
+though nothing harmful would run. This is the deliberate cost of the
+pure-only-may-deny rule — the alternative (repo/context lookups) is exactly the
+stateful predicate the discipline bars from `deny`. Every fire is reversible: a
+one-shot `AOP_WAIVE=<policy-id>` or a `policy-waivers` line clears it.
+
 Semantics: happy path = exit 0, zero output. `deny` = exit 2 + one stderr
 route line (full message once per session, short line after — every attempt
 still blocks). `route` = exit 0 + `permissionDecision:"ask"` JSON. `audit` =
@@ -261,7 +269,7 @@ claude --debug  # Hook execution details
 
 ## Output Specification
 
-- **Path:** user `~/.claude/settings.json` or project `.claude/settings.json`, plus explicitly named hook scripts; no runtime hook is installed by default.
+- **Path:** user `~/.claude/settings.json` or project `.claude/settings.json`, plus explicitly named hook scripts. The PreToolUse policy dispatcher ships by default (every install path wires it — see "Policy Dispatch Engine"); the additional guard recipes (skill-first coordination, standalone installed-skill-edit) stay inert until opted in.
 - **Filename:** preserve `settings.json`; give scripts descriptive executable filenames rather than embedding large shell programs in JSON.
 - **Format:** valid Claude hook JSON using event arrays, matchers, and command objects; hook stdout/stderr and exit codes follow the selected event schema.
 - **Exit code:** validate with `jq -e '.hooks | type=="object"' <settings.json>` and a representative silent/fire test for each matcher; any parse error, noisy happy path, or recursion risk blocks activation.

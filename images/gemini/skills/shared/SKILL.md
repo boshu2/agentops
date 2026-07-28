@@ -16,14 +16,15 @@ metadata:
   canonical_status: canonical
   disposition: keep_specialist
   internal: true
-output_contract: reference documents loaded just in time
+output_contract: no reference documents are bundled at present; the contract governs any reference a consuming skill inlines
 ---
 
 # Shared References
 
-Shared files describe runtime capabilities and evidence formats. They are
-context, not permission to start a runtime, tracker, substrate, network call,
-or external mutation.
+This library bundles no standalone reference files today; consuming skills inline
+the runtime and evidence context they need. The contract below governs any shared
+reference a consuming skill does load: it is context, not permission to start a
+runtime, tracker, substrate, network call, or external mutation.
 
 Just-in-time loading works because a reference read only when a consuming
 skill needs it cannot silently become a dependency; anything loaded by default

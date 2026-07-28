@@ -18,6 +18,11 @@
 #     parsed as JSON). Block via exit 2 + stderr only.
 set -uo pipefail
 
+# Fail OPEN if jq is unavailable (the dispatcher precedent): a guard that can't
+# parse its input must never brick a tool call. Explicit preflight so the
+# fail-open is intentional, not an accident of an empty path falling through.
+command -v jq >/dev/null 2>&1 || exit 0
+
 input="$(cat)"
 path="$(printf '%s' "$input" | jq -r '.tool_input.file_path // ""')"
 sid="$(printf '%s' "$input" | jq -r '.session_id // "nosession"')"

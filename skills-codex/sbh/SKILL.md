@@ -6,7 +6,10 @@ description: Inspect disk pressure with SBH and run one
 
 SBH exposes disk-pressure status, ballast, scanning, and recovery commands. This
 skill gathers evidence and performs at most the explicit action authorized by the
-caller.
+caller. Its authorized actions can delete files and change host storage
+configuration, so no mutation runs without explicit caller authority. The command
+surface below is anchored to `sbh` 0.4.27; re-verify against `sbh --version` on
+another host before relying on an exact flag.
 
 Evidence-first recovery works because disk pressure has cheap reversible
 remedies and expensive irreversible ones; a factual baseline is what tells them

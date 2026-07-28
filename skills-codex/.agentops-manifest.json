@@ -333,8 +333,8 @@
     {
       "name": "account-rotation",
       "source_skill": "skills/account-rotation",
-      "source_hash": "ba3ed3790e62394cbad525cae44a776663104998c721d541586e043d5f4fcac7",
-      "generated_hash": "d864d0cd54ad18e43b90236461342cede0ad7cb464b174a2ab0e7d43c9e0477b"
+      "source_hash": "0929b03a8b42808ee604f53653e7887e8509bebffc2f2e7648a6c7c269fcac8e",
+      "generated_hash": "0571b4e1b80b089be179a82f1c713977e7e68966ae50c0bf91ead69e977714d1"
     },
     {
       "name": "agent-mail",
@@ -363,8 +363,8 @@
     {
       "name": "bootstrap",
       "source_skill": "skills/bootstrap",
-      "source_hash": "c3685be5bd081805490b7a5bf5c2c806ff40ecfb0e77a6dd40752f8bc3e2ca71",
-      "generated_hash": "a36120c164e708633c101c73b8fb2a1fe3e939ba3f3fbadbf37322f25e0a6063"
+      "source_hash": "895dc489d5dbecfc4a562efe24d01a6347caef562f8eef78bff08a12810e4f67",
+      "generated_hash": "c47b8e84781c855a7203040c1b8f1462818882c543774de498fcf24d06ec334b"
     },
     {
       "name": "cass",
@@ -375,8 +375,8 @@
     {
       "name": "cc-hooks",
       "source_skill": "skills/cc-hooks",
-      "source_hash": "07547a37d876995ae378c7a458c15c0edf9fef8d0f553c4b64fe89b7881dacde",
-      "generated_hash": "daf70aaf9e19555859ed14177ac44bcb7f29fe7a8e6377df63e5db3b6e62db2b"
+      "source_hash": "1c1a15fb1170fe1ce8e6a99e2fedcc8e878de92a93bf79698bb604f0861cb2f4",
+      "generated_hash": "dd4a41bd24cc7ab986ee1f24e8609aa8447ed2345094b44bb757d93064afe5ff"
     },
     {
       "name": "codebase-recon",
@@ -411,8 +411,8 @@
     {
       "name": "dcg",
       "source_skill": "skills/dcg",
-      "source_hash": "91e765d6363f7234da33c3bae9c2ed11e9319a2de1e58f57ac931023b2c0a360",
-      "generated_hash": "64825ae1fb8b5506ca7da051a826e36971715567a171b16580cce8c696929ce9"
+      "source_hash": "ad40fd9b845fc38464b4086a67563e0f65ab978032eed4c3a450720c9d6e1b3a",
+      "generated_hash": "f2377e290fec00a80816def3cb38d5dfb722075a0cbe542a9b04d1b4a8294d5d"
     },
     {
       "name": "doc",
@@ -435,7 +435,7 @@
     {
       "name": "handoff",
       "source_skill": "skills/handoff",
-      "source_hash": "beee4bc7b0c68a1185871b3b46f4ca3b3413360e9afc5e67d3a7a32cbfbcebe6",
+      "source_hash": "5b2a17069a72aab45c2311a2a49035825d5d6dda723640ba88298a4931247036",
       "generated_hash": "a6b7439f4eea091fee8cbb8ce4c52c458a21f96abfdad7898c766332a768e4c1"
     },
     {
@@ -459,8 +459,8 @@
     {
       "name": "ms",
       "source_skill": "skills/ms",
-      "source_hash": "9947b95b4156d939e439975417f36df30904d63e1294134f1ae69547f8e35fc9",
-      "generated_hash": "020a4691cbcd3cc81ae5641e8e29e452226cc2420943b4b99a6fb9062d3fa0be"
+      "source_hash": "8634a28c128d80d574da339747315ed4af5e047081c20d7647f69d08f7c88e71",
+      "generated_hash": "95cad0eb98d21cf7c1124b387188ce35d8ea322377d46ef0f19642c6ffeecbf6"
     },
     {
       "name": "ntm",
@@ -543,8 +543,8 @@
     {
       "name": "sbh",
       "source_skill": "skills/sbh",
-      "source_hash": "8a9fa58182b9aa40f2ffee8593e6664c0b0e669f3854a665d7d92f5902274031",
-      "generated_hash": "78b58ea48fae6c2d4b6bd745cd696be05f7ebd2782eca163659c1f8601b8ba0a"
+      "source_hash": "1e938f203fc92290da03306ad803586159748d4d69c0aa4748f0af8864d7f9f4",
+      "generated_hash": "55e22b4db1245feab5a38ab8c571b77ad435047e2511d132e4c4b179f03a4fc9"
     },
     {
       "name": "scaffold",
@@ -567,8 +567,8 @@
     {
       "name": "shared",
       "source_skill": "skills/shared",
-      "source_hash": "5091329074c1c86cf1243ab50b0aae45c0a46901ff5fe8e0002c623738007768",
-      "generated_hash": "ed834c2a97ffdf8d2fa69269963504a9c2740c1599cd7180a13a8c0162cb3503"
+      "source_hash": "22d81954843dff1019e74cb47ff9f6ec6af3a6cb0fe91daa083da7fe19a4c14f",
+      "generated_hash": "748ffbe5ac32af1bea316461195ea73122a5f2510b10ac2679043b4d8a106ec3"
     },
     {
       "name": "skill-builder",
@@ -585,8 +585,8 @@
     {
       "name": "status",
       "source_skill": "skills/status",
-      "source_hash": "c4988fd8d1c497d63521e96e1235e132fdec955145e47ad276d7510c1615e89c",
-      "generated_hash": "60fcedb9dbc8aa913deb523161fd6b508de9101ad224841fbbf0a5d11df6f058"
+      "source_hash": "94d94e3e6158606f6cf54276829e7edeeaad174f00a583b6d9312bb4d53685f3",
+      "generated_hash": "b2787e028706bd060b67065247a693477186df28a6d2fe94522b3d81aaa89c3e"
     },
     {
       "name": "swarm",

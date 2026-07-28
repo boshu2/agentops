@@ -65,6 +65,9 @@ func runHandoff(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("get cwd: %w", err)
 	}
 	now := time.Now().UTC()
+	// The id carries sub-second precision so two handoffs written in the same
+	// second cannot collide on the same .agents/handoff/<id>.json path. The
+	// handoff.v1.schema.json id pattern accepts the optional fractional part.
 	artifact := handoffArtifact{
 		SchemaVersion: 1,
 		ID:            "handoff-" + now.Format("20060102T150405.000000000Z"),
