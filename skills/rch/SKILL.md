@@ -9,7 +9,7 @@ context_rel: []
 metadata:
   dependencies: []
   capabilities: [rch]
-  effects: []
+  effects: [remote_compilation_offload, authorized_remote_daemon_worker_mutation]
   canonical_status: canonical
   disposition: keep_specialist
   tier: execution
@@ -54,13 +54,28 @@ fails deterministically, not moodily.
 when the local build succeeds. Destructive cleanup, worker deployment, daemon
 configuration, and remote mutation require explicit caller authority.
 
+`rch check` exit status adjudicates readiness (0 = ready, nonzero = not
+offload-ready). Do not read `rch doctor --json` `success: true` as readiness — a
+successful diagnostic report can coexist with a down daemon or unreachable
+workers. Adjudicate on `rch check`; use `doctor` for the reasons behind it.
+
 ## Output
 
 Return a factual packet with status (`remote`, `local_fallback`, `failed`, or
 `not_proven`), commands and exit codes, worker, summary line, and checked/not
-checked surfaces. Do not include a next action.
+checked surfaces. Do not include a next action. `not_proven` here is a runtime
+diagnosis status, not an AgentOps verdict; it carries no verdict weight and never
+substitutes for a `verdict.v2`.
 
 ## References
+
+The SKILL.md authority boundary above governs every reference below. Where a
+reference lists a remediation, its read-only diagnostics run autonomously but its
+remote, privileged, or irreversible steps (remote/`sudo` mutation, daemon
+start/restart/reconfigure, worker or fleet deployment, toolchain sync,
+destructive cleanup) still require explicit caller authorization first. A
+reference never widens the autonomy the kernel grants.
+
 
 - [Fail-open reasons](references/FAIL_OPEN.md)
 - [Error catalog](references/ERROR_CODES.md)

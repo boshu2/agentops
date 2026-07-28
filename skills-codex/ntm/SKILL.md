@@ -71,8 +71,17 @@ Return:
 - degraded or unavailable substrate surfaces;
 - effects that were and were not observed.
 
-A timeout, nonzero exit, or degraded source is reported as evidence. The caller
-decides whether to invoke another experiment.
+Terminal outcomes are explicit, never a silent hang:
+
+- **NTM unavailable** — `ntm` absent or the robot surface unreachable: report it
+  and stop; do not fall back to blind key injection or assume the pane is idle.
+- **Observation-window deadline reached** — report the last observed robot state
+  and transcript reference; the window ending is a stop, not a failure verdict.
+- **Timeout / nonzero exit / degraded source** — reported as evidence with what
+  was and was not observed.
+- **Cancellation and cleanup** — the caller decides whether to invoke another
+  experiment; report which panes were created or left running so nothing is
+  orphaned silently. NTM never retries or reaps on its own.
 
 ## Useful live surfaces
 
@@ -82,4 +91,6 @@ caller explicitly requests an interactive action and no robot command provides
 the needed behavior.
 
 External NTM documentation and examples remain the authority for command syntax;
-this skill owns only the AgentOps boundary above.
+this skill owns only the AgentOps boundary above. NTM's CLI drifts across
+versions, so confirm the surface at runtime (`ntm --version`,
+`ntm --robot-capabilities`) rather than trusting a remembered command.

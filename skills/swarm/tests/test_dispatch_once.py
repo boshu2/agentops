@@ -87,6 +87,34 @@ class DispatchOnceTests(unittest.TestCase):
                 lambda _value: None,
             )
 
+    def test_case_only_scope_difference_is_rejected(self) -> None:
+        calls = 0
+
+        def executor(_value: dict) -> None:
+            nonlocal calls
+            calls += 1
+
+        with self.assertRaisesRegex(ValueError, "write scopes overlap"):
+            MODULE.dispatch_once(
+                [packet("a", "src/Auth"), packet("b", "src/auth")], executor
+            )
+        self.assertEqual(calls, 0)
+
+    def test_nonempty_exclude_is_rejected_not_ignored(self) -> None:
+        with self.assertRaisesRegex(ValueError, "exclude is not honored"):
+            MODULE.dispatch_once(
+                [
+                    {
+                        "packet_id": "a",
+                        "write_scope": {
+                            "include": ["src/a"],
+                            "exclude": ["src/a/skip"],
+                        },
+                    }
+                ],
+                lambda _value: None,
+            )
+
 
 if __name__ == "__main__":
     unittest.main()

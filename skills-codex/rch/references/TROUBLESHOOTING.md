@@ -89,7 +89,11 @@ rch workers setup --all
 
 **Cause:** missing toolchain on one or more workers.
 
+`rch workers sync-toolchain --all` mutates the workers — get explicit caller
+authorization first (`rch workers capabilities --refresh` after is read-only):
+
 ```bash
+# after explicit caller authorization only:
 rch workers sync-toolchain --all
 rch workers capabilities --refresh
 ```
@@ -142,9 +146,12 @@ Check:
 ssh ubuntu@<host> "stat -c '%U:%G %a %n' /data/projects/<repo>"
 ```
 
-Fix:
+Fix (authorize first): this is a remote privileged command. Report the failing
+`stat` output and the exact command to the caller and get explicit authorization
+before running it — remote `sudo` is never autonomous.
 
 ```bash
+# after explicit caller authorization only:
 ssh ubuntu@<host> 'sudo chown -R ubuntu:ubuntu /data/projects/<repo> && sudo chmod 775 /data/projects/<repo>'
 ```
 
@@ -219,8 +226,12 @@ RCH_LOG_LEVEL=debug printf '%s\n' \
 
 ## Safe Reset Sequence
 
+The `rch daemon restart -y` that opens this sequence is a daemon-lifecycle
+mutation — get explicit caller authorization before running it; the remaining
+steps are read-only.
+
 ```bash
-rch daemon restart -y
+rch daemon restart -y          # authorize first
 rch config validate
 rch config doctor
 rch workers probe --all
@@ -255,25 +266,28 @@ If a circuit doesn't auto-clear after 60 seconds and the underlying probe is hea
 
 **Symptom:** New rch CLI features behave inconsistently; `rch --version` differs from the daemon's reported version.
 
-**Self-fix (this is safe — never ask first):**
+**Diagnosis is autonomous; the restart is a daemon-lifecycle mutation — authorize first.**
 
-The daemon's running version is reported by `rch --json status` at `.data.daemon.daemon.version` (the `rch --json daemon status` endpoint deliberately returns only running/socket/uptime — not version). Compare:
+The daemon's running version is reported by `rch --json status` at `.data.daemon.daemon.version` (the `rch --json daemon status` endpoint deliberately returns only running/socket/uptime — not version). Compare (read-only):
 
 ```bash
 rch --version | awk '{print $2}'
 rch --json status | jq -r '.data.daemon.daemon.version'
-# If they differ:
+# If they differ, restart AFTER explicit caller authorization:
 rch daemon restart -y                                    # drains in-flight builds gracefully
 rch --json status | jq -r '.data.daemon.daemon.version'  # confirm equal
 ```
 
-`rch daemon restart -y` is the **documented upgrade path**. It drains active builds before stopping. The `-y` skips the interactive prompt — but it does *not* skip the drain.
+`rch daemon restart -y` is the **documented upgrade path**. It drains active builds before stopping. The `-y` skips the interactive prompt — but it does *not* skip the drain, and it does *not* skip the caller-authorization requirement.
 
-If a worker shows mismatched binary version after a host upgrade:
+If a worker shows mismatched binary version after a host upgrade, diagnose with
+`status`/`verify` (read-only), then deploy only after explicit caller
+authorization — fleet deploy mutates every worker binary:
 
 ```bash
-rch fleet status              # human-readable per-worker status
-rch fleet verify              # compare installed vs expected
+rch fleet status              # human-readable per-worker status (read-only)
+rch fleet verify              # compare installed vs expected (read-only)
+# after explicit caller authorization only:
 rch fleet deploy --canary 25 --canary-wait 60 --verify
 rch fleet deploy --verify
 ```
@@ -284,7 +298,7 @@ rch fleet deploy --verify
 
 **Symptom:** Recurring `RCH-E507`, `Telemetry database integrity check failed`, empty `rch speedscore --history`, daemon log lines mentioning `database disk image is malformed`.
 
-**Self-fix:** Stop the daemon, move `~/.local/share/rch/telemetry/telemetry.db*` aside, restart. Telemetry is derived data; you lose history but nothing operational.
+**Fix (authorize first):** stopping the daemon, moving `~/.local/share/rch/telemetry/telemetry.db*` aside, and restarting is a daemon-lifecycle mutation plus local file removal — get explicit caller authorization first. Telemetry is derived data; you lose history but nothing operational.
 
 ---
 

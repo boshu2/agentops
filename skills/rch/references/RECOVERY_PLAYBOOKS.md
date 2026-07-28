@@ -16,7 +16,15 @@
 - [Playbook L: TOML/config edit broke things](#playbook-l-tomlconfig-edit-broke-things)
 - [When the Playbook Doesn't Apply](#when-the-playbook-doesnt-apply)
 
-Each playbook is structured as: **observed signal → one-shot diagnostic → ordered fix attempts → verification**. Run them in order. Don't skip the diagnostic. Don't ask the human if the fix is in the playbook.
+Each playbook is structured as: **observed signal → one-shot diagnostic → ordered fix attempts → verification**. Run them in order; don't skip the diagnostic.
+
+Diagnostics and reversible, local-only fixes run autonomously. Any step that
+mutates a remote worker, runs `sudo`, starts/restarts/reconfigures the daemon,
+deploys binaries or toolchains, or deletes state requires explicit caller
+authorization **first** — the SKILL.md authority boundary governs, and a playbook
+listing a command does not pre-authorize it (see `FAIL_OPEN.md` §"Autonomous
+Remediation Envelope"). Where a step below crosses that ceiling it is marked
+**(authorize first)**.
 
 For unknown symptoms or a stuck loop, fall through to the bottom of this file ("When the Playbook Doesn't Apply") for the escalation packet.
 
@@ -62,8 +70,8 @@ ls -la "${XDG_RUNTIME_DIR:-/tmp}/rch/" 2>&1
 1. If `which rchd` is empty → daemon binary missing. Install rch (see project README).
 2. If autostart cooldown is recent → wait 5–10 seconds and retry the original command.
 3. If autostart lock is held by no process → it's stale. Ask user authorization, then `rm "${XDG_RUNTIME_DIR:-/tmp}/rch/hook_autostart.lock"`.
-4. Foreground spawn to surface the real error: `rch daemon start`. Read its stderr.
-5. If `rch daemon start` succeeds but the hook still doesn't see the daemon, check socket consistency: `rch --json config get general.socket_path` and `rch --json daemon status | jq '.data.socket_path'` must match. If they don't: `rch daemon restart -y`.
+4. Foreground spawn to surface the real error: `rch daemon start` **(authorize first)** — starting the daemon is a lifecycle mutation. Read its stderr.
+5. If `rch daemon start` succeeds but the hook still doesn't see the daemon, check socket consistency: `rch --json config get general.socket_path` and `rch --json daemon status | jq '.data.socket_path'` must match (autonomous inspection). If they don't: `rch daemon restart -y` **(authorize first)**.
 
 **Verify:** `rch check` returns `ready`.
 
@@ -118,9 +126,9 @@ RCH_LOG_LEVEL=debug rch exec -- env CARGO_TARGET_DIR="${TMPDIR:-/tmp}/rch_target
 
 **Fix attempts:**
 
-1. If a path-dep error (RCH-E013..016) → see `PATH_DEPENDENCIES.md` for the exact code.
-2. If `RCH_TOPOLOGY_ERR_CANONICAL_NOT_DIRECTORY` or `_ALIAS_NOT_SYMLINK` in worker stderr → fix the topology on the worker (`/data/projects` should be a directory; `/dp` should be a symlink to it).
-3. If `RCH-E205 Worker missing toolchain` → `rch workers sync-toolchain --all`.
+1. If a path-dep error (RCH-E013..016) → see the RCH-E013–E020 rows in `ERROR_CODES.md` and the path-dep section of `TROUBLESHOOTING.md` for the exact code.
+2. If `RCH_TOPOLOGY_ERR_CANONICAL_NOT_DIRECTORY` or `_ALIAS_NOT_SYMLINK` in worker stderr → fixing the topology on the worker (`/data/projects` should be a directory; `/dp` should be a symlink to it) is remote mutation **(authorize first)**.
+3. If `RCH-E205 Worker missing toolchain` → `rch workers sync-toolchain --all` **(authorize first)** — it mutates the worker.
 4. If `RCH-E305 Remote working dir error` → typically mirror perms broken; see Playbook F.
 
 **Verify:** `rch diagnose --dry-run "<command>"` reports `Ready` for the closure plan.
@@ -136,9 +144,12 @@ RCH_LOG_LEVEL=debug rch exec -- env CARGO_TARGET_DIR="${TMPDIR:-/tmp}/rch_target
 ssh ubuntu@<worker> "stat -c '%U:%G %a %n' /data/projects/<repo>"
 ```
 
-**Fix:**
+**Fix (authorize first):** the repair is a remote privileged command. Report the
+failing `stat` and the exact command to the caller and get explicit
+authorization before running it — remote `sudo` is never autonomous.
 
 ```bash
+# after explicit caller authorization only:
 ssh ubuntu@<worker> 'sudo chown -R ubuntu:ubuntu /data/projects/<repo> && sudo chmod 775 /data/projects/<repo>'
 rch exec -- env CARGO_TARGET_DIR="${TMPDIR:-/tmp}/rch_target_$(basename "$PWD")" cargo check
 ```
@@ -151,7 +162,7 @@ If you see this on multiple repos, audit who's doing `sudo git clone` or running
 
 **Signal:** `[RCH] remote <worker> failed [RCH-E210]` (or `E211/E215/E216/E217`); or `rch status` calls out a worker as critical.
 
-See the dedicated `DISK_AND_PRESSURE.md`. TL;DR:
+See the RCH-E210–E217 rows in `ERROR_CODES.md` and hand disk reclaim to the `sbh` skill. TL;DR:
 
 ```bash
 rch --json status --workers | jq '.data.daemon.workers[] | select(.pressure_state != "healthy") | {id, pressure_state, pressure_reason_code, pressure_disk_free_gb}'
@@ -220,18 +231,21 @@ rch fleet status --json    # exact JSON shape varies by version; inspect first
 rch fleet verify           # human-readable comparison of installed binaries
 ```
 
-**Fix:**
+**Fix (authorize first):** fleet deployment mutates every worker binary. Present
+the `rch fleet status`/`verify` evidence and the proposed rollout to the caller
+and get explicit authorization before any `deploy`/`rollback`.
 
 ```bash
+# after explicit caller authorization only:
 rch fleet deploy --canary 25 --canary-wait 60 --verify
 # observe output, then
 rch fleet deploy --verify           # full rollout
 rch fleet verify                    # confirm uniform
 ```
 
-If rollback is needed: `rch fleet rollback --verify`.
+If rollback is needed (also authorize first): `rch fleet rollback --verify`.
 
-For a single worker, `rch fleet deploy --worker <id> --verify` (deploy, single host).
+For a single worker, `rch fleet deploy --worker <id> --verify` (deploy, single host) — still authorize first.
 
 ---
 
@@ -249,7 +263,7 @@ rch self-test history --limit 5 --json
 
 1. Try a single worker with `--timeout 120 --debug`. If that works, the `--all` mode is hitting a slow worker — narrow down with `rch speedscore --all`.
 2. If self-test hangs against any single worker, that worker has a deeper problem. `rch workers probe <id>`, then drain it (`rch workers drain <id>`) and continue without it.
-3. Capture a full doctor report: `rch doctor --json > /tmp/rch-doctor.json`. The pre-v1.0.16 hang bug `bd-w5r9` is fixed; if you reproduce on current rch, escalate with the doctor output.
+3. Capture a full doctor report: `rch doctor --json > /tmp/rch-doctor.json`. The pre-v1.0.16 self-test hang bug is fixed; if you reproduce on current rch, escalate with the doctor output.
 
 ---
 

@@ -42,7 +42,7 @@ jq '.errors[] | select(.code=="RCH-E210") | {code, message, remediation}' /tmp/r
 | Range | Category | Lives in |
 |---|---|---|
 | 001–099 | Configuration | TOML, env vars, profile resolution, path topology, closure plan validation |
-| 100–199 | Network | SSH, DNS, TCP — see `SSH_TUNING.md` |
+| 100–199 | Network | SSH, DNS, TCP — see the Network rows below and `RECOVERY_PLAYBOOKS.md` Playbook C |
 | 200–299 | Worker | Selection, health, slots, disk pressure |
 | 300–399 | Build | Compilation, toolchain, process triage, cancellation |
 | 400–499 | Transfer | rsync, checksums, disk space, perms |
@@ -66,7 +66,7 @@ These are the codes agents actually see in practice. The rest are in the schema 
 | RCH-E013 | Cargo manifest parse failure during path-dep resolution | `cargo metadata --no-deps --format-version 1 > /dev/null` to see the parser error. |
 | RCH-E014 | Path dependency declared but target dir missing | The `path = "..."` in a `Cargo.toml` points nowhere. Resolve before retry. |
 | RCH-E015 | Cyclic path dependency | Break the cycle in the workspace. |
-| RCH-E016 | Path dep violates canonical-root topology | Sibling repo lives outside `[path_topology] canonical_root`. Either move it under the canonical root, or set `[path_topology] canonical_root` to a parent that contains both repos. See `PATH_DEPENDENCIES.md`. |
+| RCH-E016 | Path dep violates canonical-root topology | Sibling repo lives outside `[path_topology] canonical_root`. Either move it under the canonical root, or set `[path_topology] canonical_root` to a parent that contains both repos. See the path-dep section of `TROUBLESHOOTING.md`. |
 | RCH-E017 | `cargo metadata` invocation failed | Run `cargo metadata --format-version 1` and read the error directly. |
 | RCH-E019 | Closure plan computation failed | Re-run with `RCH_LOG_LEVEL=debug rch diagnose --dry-run "<command>"`. |
 | RCH-E020 | Closure entered fail-open due to unverifiable data | RCH refuses to ship unsafe closure. Either fix the workspace topology or set `[deps] policy = "permissive"` (only if you accept the risk). |
@@ -92,7 +92,7 @@ These are the codes agents actually see in practice. The rest are in the schema 
 | RCH-E204 | Worker at maximum capacity | Queueing is on by default; if seen, the wait timed out. Bump `RCH_DAEMON_WAIT_RESPONSE_TIMEOUT_SECS=120` or raise `total_slots`. |
 | RCH-E205 | Worker missing required toolchain | `rch workers sync-toolchain --all`. |
 | RCH-E207 | Worker circuit breaker open | Triggered by repeated failures. Inspect daemon logs; circuit auto-closes after cooldown, or `rch workers enable <id>` after fixing the underlying cause. |
-| **RCH-E210** | **Worker disk usage critically high** | **Hand off to `sbh`.** See `DISK_AND_PRESSURE.md`. |
+| **RCH-E210** | **Worker disk usage critically high** | **Hand off to the `sbh` skill.** See the disk rows in this table and `RECOVERY_PLAYBOOKS.md` Playbook G. |
 | RCH-E211 | Worker disk usage above warning threshold | `sbh` recommended. |
 | RCH-E212 | Disk pressure telemetry stale | Worker not reporting; restart `rch-wkr` on the worker, or wait one telemetry tick. |
 | RCH-E213 | Worker disk I/O too high | Transient — wait or `rch workers drain <id>` for maintenance. |
@@ -107,7 +107,7 @@ These are the codes agents actually see in practice. The rest are in the schema 
 |---|---|---|
 | RCH-E300 | Remote compilation failed | Read the actual rustc/cargo error in stderr. |
 | RCH-E303 | Build operation timed out | Raise `[compilation] build_timeout_sec` or split the build. |
-| RCH-E305 | Remote working dir error | Often = mirror perms broken. See `OPERATIONS.md` chown recipe. |
+| RCH-E305 | Remote working dir error | Often = mirror perms broken. See `RECOVERY_PLAYBOOKS.md` Playbook F — the chown fix is a remote `sudo` command, authorize first. |
 | RCH-E307 | Build environment setup failed | Missing system package on worker. Detected automatically when stderr names `pkg-config` or `library .pc`. |
 
 ### Transfer
@@ -117,14 +117,14 @@ These are the codes agents actually see in practice. The rest are in the schema 
 | RCH-E400 | Rsync transfer failed | Check `rch daemon logs -n 200` for full rsync stderr. |
 | RCH-E401 | Sync timed out | Big workspace + slow link. Tighten excludes or increase compression. |
 | RCH-E404 | Insufficient disk on worker | `sbh` on worker. |
-| RCH-E405 | Permission denied during transfer | Mirror ownership broken. Run the chown recipe from `OPERATIONS.md` §6. |
-| RCH-E406 | Transfer checksum mismatch | Re-run; if persistent, suspect concurrent agent writes during sync. Use file reservations (see `MULTI_AGENT_CONTENTION.md`). |
+| RCH-E405 | Permission denied during transfer | Mirror ownership broken. See `RECOVERY_PLAYBOOKS.md` Playbook F — the chown fix is a remote `sudo` command, authorize first. |
+| RCH-E406 | Transfer checksum mismatch | Re-run; if persistent, suspect concurrent agent writes during sync. Coordinate writers with file reservations via the `agent-mail` skill. |
 
 ### Internal
 
 | Code | Meaning | First action |
 |---|---|---|
-| RCH-E500 | Failed to connect to daemon socket | `rch daemon start`. If it spins, see `SELF_HEALING.md` cooldown section. |
+| RCH-E500 | Failed to connect to daemon socket | Wait out the auto-start cooldown and retry; manually starting the daemon needs caller authorization. If it spins, see `RECOVERY_PLAYBOOKS.md` Playbook B (cooldown/stale-socket). |
 | RCH-E502 | Daemon not running | Same. |
 | RCH-E506 | Hook execution failed | `rch hook test` reproduces; capture `RCH_LOG_LEVEL=debug rch hook test`. |
 
@@ -132,11 +132,11 @@ These are the codes agents actually see in practice. The rest are in the schema 
 
 ## Cross-References
 
-- Path-dep family (RCH-E013–E024): `PATH_DEPENDENCIES.md`
-- Disk-pressure family (RCH-E210–E217): `DISK_AND_PRESSURE.md` + `sbh` skill
-- SSH family (RCH-E100–E109): `SSH_TUNING.md`
+- Path-dep family (RCH-E013–E024): the path-dep section of `TROUBLESHOOTING.md`
+- Disk-pressure family (RCH-E210–E217): the disk rows above + the `sbh` skill
+- SSH family (RCH-E100–E109): `RECOVERY_PLAYBOOKS.md` Playbook C
 - Selection family (RCH-E200–E209): `FAIL_OPEN.md`
-- Daemon/internal (RCH-E500–E509): `SELF_HEALING.md` + `OPERATIONS.md`
+- Daemon/internal (RCH-E500–E509): `RECOVERY_PLAYBOOKS.md` Playbook B + `TROUBLESHOOTING.md`
 
 ---
 
