@@ -1,6 +1,6 @@
 ---
 name: craft-goal
-description: 'Compile or lint a persistent Mayor-style goal that ratchets a bead graph through bounded RPI experiments toward one larger outcome. Triggers: "craft a goal prompt", "turn this into a goal", "create a bounded goal", "lint this goal", "is this goal safe".'
+description: 'Compile or lint a persistent Mayor-style goal prompt that ratchets a bead graph through bounded RPI experiments toward one larger outcome. Triggers: "craft a goal prompt", "mayor goal", "goal-runner prompt", "lint this goal", "is this goal safe". (Shaping one experiment''s intent routes to plan.)'
 practices:
 - lean-startup
 - design-by-contract

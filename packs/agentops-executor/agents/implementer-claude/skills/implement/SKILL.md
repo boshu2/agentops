@@ -1,6 +1,6 @@
 ---
 name: implement
-description: 'Execute one bounded RED to GREEN experiment from bead or caller intent; return derived subject identity and check facts. Triggers: "implement", "build this plan", "run the experiment".'
+description: 'Execute one bounded RED to GREEN experiment from bead or caller intent; return derived subject identity and check facts. Triggers: "implement", "implement this bead", "run the experiment". ("execute this plan" routes to rpi, which dispatches the whole loop.)'
 practices:
 - tdd
 - refactoring

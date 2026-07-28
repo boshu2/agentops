@@ -22,7 +22,7 @@ context:
 metadata:
   dependencies: []
   capabilities: [reverse_engineer]
-  effects: [clone_upstream_repo, execute_authorized_binary, write_teardown_artifacts]
+  effects: [clone_upstream_repo, authorized_binary_execution, write_teardown_artifacts]
   canonical_status: canonical
   disposition: keep_specialist
   tier: execution

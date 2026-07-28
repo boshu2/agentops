@@ -6,8 +6,8 @@
     {
       "source": "skills/implement/SKILL.md",
       "destination": "packs/agentops-executor/agents/implementer-claude/skills/implement/SKILL.md",
-      "source_sha256": "16a3faa2d3608fe75c03baa355996547b7c65f54334cd0d238e55134d9f929a8",
-      "sha256": "16a3faa2d3608fe75c03baa355996547b7c65f54334cd0d238e55134d9f929a8",
+      "source_sha256": "ada81165711dc36b8e660a380b6b9173ecb646cda8f1a3905d12d26fa6612c8f",
+      "sha256": "ada81165711dc36b8e660a380b6b9173ecb646cda8f1a3905d12d26fa6612c8f",
       "mode": "0644"
     },
     {
@@ -27,8 +27,8 @@
     {
       "source": "skills/implement/SKILL.md",
       "destination": "packs/agentops-executor/agents/implementer/skills/implement/SKILL.md",
-      "source_sha256": "16a3faa2d3608fe75c03baa355996547b7c65f54334cd0d238e55134d9f929a8",
-      "sha256": "16a3faa2d3608fe75c03baa355996547b7c65f54334cd0d238e55134d9f929a8",
+      "source_sha256": "ada81165711dc36b8e660a380b6b9173ecb646cda8f1a3905d12d26fa6612c8f",
+      "sha256": "ada81165711dc36b8e660a380b6b9173ecb646cda8f1a3905d12d26fa6612c8f",
       "mode": "0644"
     },
     {

@@ -2,7 +2,7 @@
 id: plan-2026-07-28-skill-overhaul-reboot
 type: plan
 date: 2026-07-28
-status: in_progress
+status: complete
 goal: Enhance every canonical skill per the 2026-07-24 overhaul findings, in lean waves, without the proof-epoch machinery
 supersedes: plan-2026-07-24-skill-system-overhaul
 inputs:
@@ -113,3 +113,15 @@ A wave is done when:
 - `docs/plans/2026-07-24-skill-system-overhaul.md` and this plan both marked
   superseded/complete, with the skill sources themselves as the only
   authority — no plan document owns any live placement fact.
+
+## Completion record (2026-07-28)
+
+Executed same-day: W0+W1 in PR #998, W2 #999, W3a #1000, W5 #1001, W3b
+#1002, W4 #1003, W6 #1004, W7 #1005, W8 coherence in the final PR. Every
+wave passed deterministic gates plus a two-round-capped cross-family
+review; per-item dispositions live in
+`docs/audits/2026-07-28-skill-overhaul-reboot/wave-reports/`. The three
+structural beads remain open under epic `age-skill-overhaul-reboot-sjv7v`
+(.10 goals→fitness rename, .11 shared retirement, .12 Go-CLI residue) —
+explicitly deferred as tracked work, not part of wave scope. No live
+placement fact is owned by this document.

@@ -1,6 +1,6 @@
 ---
 name: reality-check
-description: 'Compare a claimed state with observable repository evidence and report concrete gaps. Triggers: "reality check", "what is actually done", "compare claim to repo".'
+description: 'Compare a claimed state with observable repository evidence and report concrete gaps. Requires a claim or expected state to test. Triggers: "reality check", "is this claim actually done", "compare claim to repo".'
 practices: [design-by-contract, evidence-based-engineering]
 hexagonal_role: domain
 consumes: [claim, repository-evidence]

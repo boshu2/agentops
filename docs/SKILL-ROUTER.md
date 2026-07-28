@@ -61,14 +61,14 @@
 | `reality-check` | judgment | `keep_strategy` | - | `compare_claim_to_evidence` | `write_advisory_gap_report` |
 | `refactor` | execution | `keep_specialist` | - | `refactor` | `modify_source_files` |
 | `research` | execution | `keep_specialist` | - | `research` | `write_research_report` |
-| `reverse-engineer` | execution | `keep_specialist` | - | `reverse_engineer` | `clone_upstream_repo`, `execute_authorized_binary`, `write_teardown_artifacts` |
+| `reverse-engineer` | execution | `keep_specialist` | - | `reverse_engineer` | `clone_upstream_repo`, `authorized_binary_execution`, `write_teardown_artifacts` |
 | `rpi` | meta | `keep` | `plan`, `implement`, `validate` | `orchestrate_once`, `report` | `dispatch_core_phases` |
 | `sbh` | execution | `keep_specialist` | - | `sbh` | `delete_reclaimable_files`, `release_disk_ballast`, `modify_host_storage_config` |
 | `scaffold` | execution | `keep_specialist` | - | `scaffold` | `write_project_files` |
 | `scope` | meta | `keep_specialist` | - | `scope_review` | - |
 | `security` | product | `keep_specialist` | - | `security` | `write_scan_artifacts` |
 | `shared` | library | `keep_specialist` | - | `provide_reference_context` | - |
-| `skill-builder` | meta | `keep_specialist` | - | `skill_builder`, `heal_skill` | `writes_skill_source`, `write_build_report`, `regenerates_skill_projections`, `optional_skill_projection_repair` |
+| `skill-builder` | meta | `keep_specialist` | - | `skill_builder`, `heal_skill` | `write_skill_source`, `write_build_report`, `regenerate_skill_projections`, `repair_skill_projections` |
 | `standards` | knowledge | `keep_specialist` | - | `standards` | - |
 | `status` | session | `keep_specialist` | - | `status` | `read_filesystem`, `read_clock` |
 | `swarm` | execution | `keep_optional_adapter` | - | `dispatch_once` | `invoke_selected_executor` |

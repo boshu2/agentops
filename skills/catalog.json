@@ -441,7 +441,7 @@
         }
       ],
       "dependencies": [],
-      "description": "Compile or lint a persistent Mayor-style goal that ratchets a bead graph through bounded RPI experiments toward one larger outcome. Triggers: \"craft a goal prompt\", \"turn this into a goal\", \"create a bounded goal\", \"lint this goal\", \"is this goal safe\".",
+      "description": "Compile or lint a persistent Mayor-style goal prompt that ratchets a bead graph through bounded RPI experiments toward one larger outcome. Triggers: \"craft a goal prompt\", \"mayor goal\", \"goal-runner prompt\", \"lint this goal\", \"is this goal safe\". (Shaping one experiment's intent routes to plan.)",
       "disposition": "keep_specialist",
       "effects": [],
       "graph_root": false,
@@ -667,7 +667,7 @@
         }
       ],
       "dependencies": [],
-      "description": "Execute one bounded RED to GREEN experiment from bead or caller intent; return derived subject identity and check facts. Triggers: \"implement\", \"build this plan\", \"run the experiment\".",
+      "description": "Execute one bounded RED to GREEN experiment from bead or caller intent; return derived subject identity and check facts. Triggers: \"implement\", \"implement this bead\", \"run the experiment\". (\"execute this plan\" routes to rpi, which dispatches the whole loop.)",
       "disposition": "keep",
       "effects": [
         "modify_declared_subject",
@@ -1039,7 +1039,7 @@
         }
       ],
       "dependencies": [],
-      "description": "Compare a claimed state with observable repository evidence and report concrete gaps. Triggers: \"reality check\", \"what is actually done\", \"compare claim to repo\".",
+      "description": "Compare a claimed state with observable repository evidence and report concrete gaps. Requires a claim or expected state to test. Triggers: \"reality check\", \"is this claim actually done\", \"compare claim to repo\".",
       "disposition": "keep_strategy",
       "effects": [
         "write_advisory_gap_report"
@@ -1100,7 +1100,7 @@
       ],
       "context_rel": [],
       "dependencies": [],
-      "description": "Answer a bounded question with current cited evidence. Triggers: \"research\", \"investigate\", \"find evidence\".",
+      "description": "Answer a bounded question with current cited evidence. Triggers: \"research\", \"investigate this question\", \"find evidence\". (Investigating a repository routes to codebase-recon.)",
       "disposition": "keep_specialist",
       "effects": [
         "write_research_report"
@@ -1132,7 +1132,7 @@
       "disposition": "keep_specialist",
       "effects": [
         "clone_upstream_repo",
-        "execute_authorized_binary",
+        "authorized_binary_execution",
         "write_teardown_artifacts"
       ],
       "graph_root": false,
@@ -1337,7 +1337,7 @@
       "consumes": [],
       "context_rel": [],
       "dependencies": [],
-      "description": "Shared runtime and evidence references loaded only by a consuming skill. Triggers: internal shared contracts.",
+      "description": "Shared runtime and evidence references loaded only by a consuming skill. Triggers: none \u2014 internal library, not user-routable.",
       "disposition": "keep_specialist",
       "effects": [],
       "graph_root": false,
@@ -1367,10 +1367,10 @@
       "description": "Create a metadata-complete AgentOps skill source package, regenerate its derived projections, and check or repair structural hygiene in skill packages. Triggers: \"create a skill\", \"scaffold skill\", \"absorb external skill\", \"new skill\", \"heal skill\", \"repair skill hygiene\", \"audit skill structure\", \"check skill package\".",
       "disposition": "keep_specialist",
       "effects": [
-        "writes_skill_source",
+        "write_skill_source",
         "write_build_report",
-        "regenerates_skill_projections",
-        "optional_skill_projection_repair"
+        "regenerate_skill_projections",
+        "repair_skill_projections"
       ],
       "graph_root": false,
       "hexagonal_role": "supporting",

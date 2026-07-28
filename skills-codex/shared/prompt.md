@@ -1,6 +1,6 @@
 # shared
 
-Shared runtime and evidence references loaded only by a consuming skill. Triggers: internal shared contracts.
+Shared runtime and evidence references loaded only by a consuming skill. Triggers: none — internal library, not user-routable.
 
 ## Instructions
 

@@ -21,7 +21,7 @@ context:
   intel_scope: topic
 metadata:
   capabilities: [skill_builder, heal_skill]
-  effects: [writes_skill_source, write_build_report, regenerates_skill_projections, optional_skill_projection_repair]
+  effects: [write_skill_source, write_build_report, regenerate_skill_projections, repair_skill_projections]
   canonical_status: canonical
   disposition: keep_specialist
   tier: meta
