@@ -231,7 +231,11 @@
       "dependencies": [],
       "description": "Mine past agent sessions for working prompts, decisions, and patterns (session archaeology). Triggers: \"cass\", \"mine past agent sessions for\", \"cass skill\".",
       "disposition": "keep_specialist",
-      "effects": [],
+      "effects": [
+        "rebuild_local_index",
+        "sync_remote_sources",
+        "download_semantic_model"
+      ],
       "graph_root": false,
       "hexagonal_role": "supporting",
       "name": "cass",
@@ -293,7 +297,9 @@
       "dependencies": [],
       "description": "Reconstruct a repository as cited entry-to-test flows and bounded claims. Triggers: \"codebase recon\", \"trace this codebase\", \"repository audit\", \"refresh the prior recon\".",
       "disposition": "keep_specialist",
-      "effects": [],
+      "effects": [
+        "write_recon_pack"
+      ],
       "graph_root": false,
       "hexagonal_role": "supporting",
       "name": "codebase-recon",
@@ -1057,7 +1063,9 @@
       "dependencies": [],
       "description": "Answer a bounded question with current cited evidence. Triggers: \"research\", \"investigate\", \"find evidence\".",
       "disposition": "keep_specialist",
-      "effects": [],
+      "effects": [
+        "write_research_report"
+      ],
       "graph_root": false,
       "hexagonal_role": "driving-adapter",
       "name": "research",
@@ -1083,7 +1091,11 @@
       "dependencies": [],
       "description": "Reverse-engineer an authorized repo, binary, or product into a verifiable feature inventory and adoption map. Triggers: \"reverse-engineer X\", \"tear down Y\", \"what should we steal from Z\", \"evaluate competitor/upstream\", \"should we fork/adopt/build-native\".",
       "disposition": "keep_specialist",
-      "effects": [],
+      "effects": [
+        "clone_upstream_repo",
+        "execute_authorized_binary",
+        "write_teardown_artifacts"
+      ],
       "graph_root": false,
       "hexagonal_role": "supporting",
       "name": "reverse-engineer",
@@ -1251,7 +1263,9 @@
       "dependencies": [],
       "description": "Run authorized repository security scans for vulnerabilities, dependency risk, secrets, and binary policy. Triggers: \"security\", \"run repository security scans for\", \"security skill\".",
       "disposition": "keep_specialist",
-      "effects": [],
+      "effects": [
+        "write_scan_artifacts"
+      ],
       "graph_root": true,
       "hexagonal_role": "driven-adapter",
       "name": "security",
@@ -1261,7 +1275,9 @@
         "sre"
       ],
       "produces": [
-        "security-report.json"
+        "security-gate-summary.json",
+        "suite-summary.json",
+        "redteam-results.json"
       ],
       "references_count": 6,
       "tier": "product",

@@ -42,7 +42,7 @@ context_rel: []
 skill_api_version: 1
 metadata:
   capabilities: [example]
-  effects: []
+  effects: []  # NOT a default — list every side effect; keep [] only if the skill is genuinely read-only
   canonical_status: canonical
   disposition: keep_specialist
   tier: execution
@@ -50,6 +50,13 @@ metadata:
 output_contract: concise description or schema path
 ---
 ```
+
+`effects` is load-bearing, not boilerplate. Declare every side effect the skill
+performs — a file it writes, a process it starts, host or credential state it
+mutates, a network call it makes — as a short snake_case phrase
+(`write_advisory_report`, `modify_declared_subject`, `operate_gas_city`). Leave
+`effects: []` only when the skill is genuinely read-only and returns to stdout;
+copying `[]` onto a skill that writes is a false contract, not a safe default.
 
 The description states both what the skill does and when it should load. Add
 an inline `Triggers:` or `Use when:` marker with phrases a caller might
@@ -104,6 +111,11 @@ path, schema, filename, validator, and downstream handoff.
 Structured outputs should name their schema and identity rules. Factual inline
 outputs should name the fields or sentence shape. Never imply PASS, readiness,
 or continuation unless the skill is Validate producing `verdict.v2`.
+
+The reference example of a structured-output validator is
+`skills/pattern-mining/scripts/validate-output.sh` — a small `jq` predicate that
+checks a supplied output artifact against its declared contract. Copy that shape
+when a skill emits a machine-readable artifact; do not reinvent it.
 
 ## Validation
 

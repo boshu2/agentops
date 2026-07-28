@@ -1495,12 +1495,12 @@ def main() -> int:
     ap.add_argument(
         "--materialize-archives",
         action="store_true",
-        help="(Deprecated; now default in binary mode) Authorized-only: extract the best embedded ZIP candidate under local_clone_dir/extracted (do not commit).",
+        help="Authorized-only opt-in: extract the best embedded ZIP candidate under local_clone_dir/extracted (do not commit). Off by default (index-only).",
     )
     ap.add_argument(
         "--no-materialize-archives",
         action="store_true",
-        help="Authorized-only: skip extracting embedded ZIP candidates (index-only).",
+        help="Explicit index-only (the default); kept for backward compatibility and conflict detection.",
     )
 
     args = ap.parse_args()
@@ -1658,11 +1658,14 @@ def main() -> int:
             check=True,
         )
 
-        # Default: materialize archives in binary mode (must-have workflow), unless explicitly disabled.
+        # Extraction (materialization) is OFF by default to honor the "index
+        # only" guardrail: extracting an embedded archive from a binary is an
+        # authorized-only step that can spill embedded prompts or secrets to
+        # disk. Opt in explicitly with --materialize-archives.
         if args.no_materialize_archives and args.materialize_archives:
             _die("flags conflict: --materialize-archives and --no-materialize-archives")
 
-        if not args.no_materialize_archives:
+        if args.materialize_archives:
             extract_root = local_clone_dir / "extracted"
             _ensure_dirs([extract_root])
             _run(
@@ -1838,37 +1841,26 @@ def main() -> int:
         if args.sbom:
             _run([str(sec_dir / "generate-sbom.sh"), str(analysis_root), str(sec_dir)], check=False)
 
-        # Run validation gate (includes secret scan over output_dir).
-        _run([str(sec_dir / "validate-security-audit.sh"), str(output_dir), "--sbom" if args.sbom else "--no-sbom"], check=True)
+        # Scaffold-time safety check: scan the generated output for leaked
+        # secrets. The full certifying gate (validate-security-audit.sh) is NOT
+        # run here — the audit is still a scaffold with unfilled _TBD
+        # placeholders, and that gate rightly refuses to certify an unfilled
+        # audit. The caller fills the findings, then runs the gate to certify.
+        _run([str(sec_dir / "scan-secrets.sh"), str(output_dir)], check=True)
 
-    # 9) Reports (vibe-style + postmortem) + learning.
-    council_dir = REPO_ROOT / ".agents" / "council"
-    _ensure_dirs([council_dir])
-    vibe_path = council_dir / f"{_today_ymd()}-vibe-{product_slug}.md"
-    post_path = council_dir / f"{_today_ymd()}-postmortem-{product_slug}.md"
+    # 9) Reports (vibe-style + postmortem), confined under output_dir so every
+    #    write stays inside the caller-declared --output-dir. These used to be
+    #    rooted at Path.cwd()/.agents/council, landing outside output_dir, and a
+    #    sibling write to .agents/learnings/ (a directory never created here)
+    #    crashed with FileNotFoundError on a fresh checkout while also emitting a
+    #    canned, run-independent "learning" into the Learn corpus. Both are gone.
+    reports_dir = output_dir / "reports"
+    _ensure_dirs([reports_dir])
+    vibe_path = reports_dir / f"{_today_ymd()}-vibe-{product_slug}.md"
+    post_path = reports_dir / f"{_today_ymd()}-postmortem-{product_slug}.md"
 
     _render_template(TEMPLATES_DIR / "vibe-report.md.tmpl", vibe_path, {**vars, "OUTPUT_DIR": str(output_dir)})
     _render_template(TEMPLATES_DIR / "postmortem.md.tmpl", post_path, {**vars, "OUTPUT_DIR": str(output_dir)})
-
-    learning_path = REPO_ROOT / ".agents" / "learnings" / f"{_today_ymd()}-{product_slug}-reverse-engineer.md"
-    if not learning_path.exists():
-        learning_path.write_text(
-            f"---\n"
-            f"id: learn-{_today_ymd()}-{product_slug}-reverse-engineer\n"
-            f"date: {_today_ymd()}\n"
-            f"source_epic: reverse-engineer\n"
-            f"tags:\n"
-            f"  - reverse-engineer\n"
-            f"  - evidence\n"
-            f"  - analysis\n"
-            f"---\n\n"
-            f"# Learning: Separate documentary hints from proven product evidence\n\n"
-            f"Reverse-engineering output should keep documentation, marketing pages, and control-plane descriptions in a provisional lane. "
-            f"Features only become confirmed when the repo, binary, runtime trace, or CLI surface proves them directly. "
-            f"Treating hosted or control-plane behavior as unknown until evidence exists prevents inflated feature registries, keeps downstream planning honest, "
-            f"and makes later security or release decisions easier to defend.\n",
-            encoding="utf-8",
-        )
 
     return 0
 

@@ -122,7 +122,46 @@ python3 "$SKILL/scripts/reverse_engineer.py" demo \
   --security-audit \
   --sbom
 
+# The freshly generated audit is a scaffold whose files carry _TBD
+# placeholders; the gate must now REFUSE to certify it (fail-closed).
+if "$OUT2/security/validate-security-audit.sh" "$OUT2" --sbom >/dev/null 2>&1; then
+  echo "FAIL: security gate certified an unfilled _TBD scaffold (should fail-closed)" >&2
+  exit 1
+fi
+echo "OK: security gate rejects the unfilled _TBD scaffold"
+
+# Fill EVERY required narrative file (no placeholders). The other files just
+# need real content; findings.md additionally needs the Evidence/Fix shape.
+for name in threat-model attack-surface dataflow crypto-review authn-authz reproducibility; do
+  printf '# %s\n\nReviewed for the demo binary; no items of concern.\n' "$name" > "$OUT2/security/$name.md"
+done
+cat >"$OUT2/security/findings.md" <<'EOF'
+# Findings: demo
+
+- Date: self-test
+
+## Finding F-001: Embedded demo prompt present in binary
+
+Severity: Low
+Impact: Informational; the embedded demo prompt is not a secret.
+Likelihood: Low
+
+Evidence: payload.zip/agent/SYSTEM_PROMPT.txt embedded via go:embed (see binary-embedded-archives.md).
+Fix: None required for the demo; production binaries should not embed plaintext prompts.
+Validation: Re-ran the secret scan over outputs; no credentials present.
+EOF
+
 "$OUT2/security/validate-security-audit.sh" "$OUT2" --sbom
+echo "OK: security gate certifies a completed audit"
+
+# Prove the _TBD gate scans BEYOND findings.md: seed a placeholder into a
+# different required file and the gate must fail-closed again.
+printf '# threat-model\n\n- _TBD_\n' > "$OUT2/security/threat-model.md"
+if "$OUT2/security/validate-security-audit.sh" "$OUT2" --sbom >/dev/null 2>&1; then
+  echo "FAIL: security gate certified an audit with _TBD in threat-model.md (should fail-closed)" >&2
+  exit 1
+fi
+echo "OK: security gate rejects _TBD in a non-findings required file"
 
 # --- Negative tests ---
 
