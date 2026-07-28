@@ -1,12 +1,13 @@
 package provenancegraph
 
 import (
-	"bufio"
 	"encoding/json"
 	"fmt"
 	"io"
 	"os"
 	"path/filepath"
+
+	"github.com/boshu2/agentops/cli/internal/storage"
 )
 
 // Store reads and appends provenance edges to a JSONL ledger file. The ledger
@@ -47,23 +48,36 @@ func (s *Store) Read() ([]Edge, error) {
 // origin-ledger fallback. Pure with respect to the filesystem.
 func DecodeEdges(r io.Reader) ([]Edge, error) {
 	var edges []Edge
-	scanner := bufio.NewScanner(r)
-	scanner.Buffer(make([]byte, 0, 64*1024), 1024*1024)
 	line := 0
-	for scanner.Scan() {
+	// The first malformed line is the error this function reports, exactly as
+	// before. storage.ScanJSONL cannot be aborted from its callback, so the
+	// error is captured and every later line is skipped rather than decoded;
+	// the returned value is identical to the previous early return, and the
+	// FIRST error in stream order still wins over any later scan failure.
+	var decodeErr error
+	// storage.ScanJSONL is the blessed JSONL reader (age-storage-hardening-roxg.3):
+	// it applies the package buffer policy and reports an oversized line loudly
+	// as storage.ErrLineTooLong rather than silently truncating it.
+	scanErr := storage.ScanJSONL(r, func(raw []byte) {
 		line++
-		raw := scanner.Bytes()
+		if decodeErr != nil {
+			return
+		}
 		if len(trimSpace(raw)) == 0 {
-			continue
+			return
 		}
 		var e Edge
 		if err := json.Unmarshal(raw, &e); err != nil {
-			return nil, fmt.Errorf("ledger line %d: invalid JSON: %w", line, err)
+			decodeErr = fmt.Errorf("ledger line %d: invalid JSON: %w", line, err)
+			return
 		}
 		edges = append(edges, e)
+	})
+	if decodeErr != nil {
+		return nil, decodeErr
 	}
-	if err := scanner.Err(); err != nil {
-		return nil, fmt.Errorf("scan ledger: %w", err)
+	if scanErr != nil {
+		return nil, fmt.Errorf("scan ledger: %w", scanErr)
 	}
 	return edges, nil
 }
