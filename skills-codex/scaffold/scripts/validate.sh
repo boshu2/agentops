@@ -10,6 +10,9 @@ grep -q '^  effects: \[\]$' "$SKILL"
 grep -q '^## Contract$' "$SKILL"
 grep -q '^## Evidence$' "$SKILL"
 grep -Fq 'The caller owns version control, revision, and delivery.' "$SKILL"
-! grep -Eiq 'AUTO-REDO|ONE-HELPER|HELPER-ESCALATE|ao land|next_action' "$SKILL"
+if grep -Eiq 'AUTO-REDO|ONE-HELPER|HELPER-ESCALATE|ao land|next_action' "$SKILL"; then
+  echo 'scaffold contract contains retired lifecycle vocabulary' >&2
+  exit 1
+fi
 
 echo "scaffold contract: PASS"

@@ -20,8 +20,8 @@
     {
       "source": "skills/implement/scripts/validate.sh",
       "destination": "packs/agentops-executor/agents/implementer-claude/skills/implement/scripts/validate.sh",
-      "source_sha256": "960779d9596d70ba95db1eb7c9373d84cab2612775d243fb1a791ae6ba2fd1d5",
-      "sha256": "960779d9596d70ba95db1eb7c9373d84cab2612775d243fb1a791ae6ba2fd1d5",
+      "source_sha256": "4f66659eee9c2b5e2418e5b4222fd2acd361ac1e8e990416ddbb255bfe060fe5",
+      "sha256": "4f66659eee9c2b5e2418e5b4222fd2acd361ac1e8e990416ddbb255bfe060fe5",
       "mode": "0755"
     },
     {
@@ -41,8 +41,8 @@
     {
       "source": "skills/implement/scripts/validate.sh",
       "destination": "packs/agentops-executor/agents/implementer/skills/implement/scripts/validate.sh",
-      "source_sha256": "960779d9596d70ba95db1eb7c9373d84cab2612775d243fb1a791ae6ba2fd1d5",
-      "sha256": "960779d9596d70ba95db1eb7c9373d84cab2612775d243fb1a791ae6ba2fd1d5",
+      "source_sha256": "4f66659eee9c2b5e2418e5b4222fd2acd361ac1e8e990416ddbb255bfe060fe5",
+      "sha256": "4f66659eee9c2b5e2418e5b4222fd2acd361ac1e8e990416ddbb255bfe060fe5",
       "mode": "0755"
     },
     {
