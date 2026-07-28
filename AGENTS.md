@@ -39,6 +39,18 @@ not own what the caller does next.
 
 Edit source owners and regenerate projections through the owning command.
 
+## Constraint floor
+
+- A plan, duel, or design becomes authoritative only if its inputs include the
+  active constraints that apply to its scope: relevant ADRs (`docs/adr/`),
+  blocking gates (`cli/internal/gates/`, `scripts/check-*.sh`), and this
+  contract. A synthesis frozen without an active constraint is invalid, not
+  grandfathered.
+- Skill logic ships in Go via `ao`; skill scripts are thin POSIX shell glue.
+  No new `skills/*/scripts/**/*.py` (ADR-0016, enforced by
+  `scripts/check-skill-python-ratchet.sh`; tests keep their documented
+  exemption). Grandfathered Python is migration debt, not precedent.
+
 ## Core loop
 
 1. **Plan once.** Resolve the existing bead or caller intent and shape one
@@ -46,7 +58,9 @@ Edit source owners and regenerate projections through the owning command.
    check stay in that source; AgentOps does not require a model-authored plan
    packet that duplicates it. If no durable tracker artifact exists, the runtime
    snapshots the resolved intent bytes under their content digest so fresh
-   contexts can consume the exact same source.
+   contexts can consume the exact same source. Once the caller accepts the
+   shaped intent, Plan is closed: further planning, audit, or review lanes over
+   the same intent require new explicit caller authorization.
 2. **Implement once.** Execute one bounded RED -> GREEN -> refactor experiment.
    The runtime derives the content manifest, actual changed paths, coverage
    completeness, and factual check receipts; the model does not transcribe a
@@ -59,7 +73,11 @@ Edit source owners and regenerate projections through the owning command.
    checked scope, top-level evidence, and evidence for every criterion.
 4. **Report and stop.** RPI reports `PASS | FAIL | NOT_PROVEN`, or the report-only
    statuses `NOT_PLANNED | NOT_BUILT`. It emits no next action and performs no
-   automatic revision.
+   automatic revision. Two consecutive control artifacts (plans, audits,
+   reviews, prompts, reports) with no new implementation evidence end the run
+   — `NOT_BUILT` when no subject exists yet, otherwise a hard stop reporting
+   the existing subject's status; reports lead with the subject (paths
+   changed, commits, tests), never with artifact counts.
 
 A caller may revise the bead or caller intent and start a new invocation.
 Changing acceptance changes that source; AgentOps does not create a parallel

@@ -1,6 +1,6 @@
 ---
 name: rpi
-description: 'Run one bounded Plan, Implement, and fresh Validate experiment, then report and stop. Triggers: "run rpi", "feed this through the loop", "research-plan-implement".'
+description: 'Run one bounded Plan, Implement, and fresh Validate experiment, then report and stop. Triggers: "run rpi", "feed this through the loop", "execute this plan", orchestration or worker delegation that implements changes.'
 practices:
 - bdd-gherkin
 - tdd
@@ -48,6 +48,22 @@ closure, or the caller's next decision.
 The pure [`scripts/run_once.py`](scripts/run_once.py) reference behavior makes
 the dispatch and stop semantics executable without Git, `ao`, or a tracker.
 
+## Admission and phase lock
+
+RPI activates for any request shaped as plan-execute-verify work —
+orchestration, worker delegation, "execute this plan", or an explicit
+Plan -> Implement -> Validate ask — whenever the goal includes changing the
+subject. The caller does not have to name RPI. Research-, audit-, and
+review-only delegation is not RPI admission: it produces evidence for a
+caller, has no implementation candidate, and never earns a verdict.
+
+Once the caller has accepted a plan — including a duel or design synthesis —
+Plan is closed for that intent. Every subsequent lane must return
+implementation evidence: diffs, commits, test results, or factual receipts.
+Dispatching another planning, audit, or review lane over the same intent
+requires new explicit caller authorization; a review comment is never that
+authorization by itself.
+
 ## Contract
 
 1. Resolve the existing bead or caller intent. Invoke Plan once only if that
@@ -88,8 +104,14 @@ scope, or verdict authority.
 Before dispatching any lane, the orchestration declares its envelope: a budget
 (maximum lanes per wave, maximum repair revisions per wave) and a checkpoint
 rule — the second non-PASS outcome on one intent stops that lane and returns
-to the caller instead of dispatching another attempt. An orchestration without
-a declared envelope does not converge; it accretes lanes. The 2026-07-15
+to the caller instead of dispatching another attempt. The envelope includes a
+spiral breaker: two consecutive control artifacts (plans, audits, reviews,
+prompts, reports) produced with no new implementation evidence terminate the
+run — report `NOT_BUILT` when no implementation subject exists yet;
+when a subject already exists, stop and report its current status without
+dispatching further lanes. Neither breaker dispatches a repair revision. An
+orchestration without a declared envelope does not converge; it accretes
+lanes. The 2026-07-15
 heal-skill fold ran three intent revisions
 (`.agents/ao/intents/sha256/26a4f2be...eb48` lineage) and a `NOT_PROVEN` then
 PASS verdict pair (`.agents/ao/verdicts/sha256/b6e759dd...cb6a`,
@@ -129,7 +151,10 @@ RPI has two report surfaces. Keep them distinct:
    language. This is the default assistant response.
 
 Lead the interactive response with the status and one sentence stating the
-caller-visible outcome. Follow with only the strongest proof, any material
+caller-visible outcome. Lead with the subject, not the process: production
+paths changed, commits, test results, and acceptance criteria satisfied or
+remaining. A rising artifact count over an unchanged subject is a stop
+signal, not progress. Follow with only the strongest proof, any material
 unchecked scope, and a clickable verdict reference when one exists. Name why
 no subject exists for `NOT_PLANNED` or `NOT_BUILT`. Keep the response to one
 short paragraph or at most four bullets.

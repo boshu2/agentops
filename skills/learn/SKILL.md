@@ -32,7 +32,7 @@ It may summarize recurring evidence and propose a candidate deterministic check
 for later human or caller evaluation.
 
 Learn does not run during RPI, validate a subject, alter a verdict, mutate a
-plan, promote a rule, choose continuation, or emit a lifecycle receipt. Missing
+plan, promote a rule, choose continuation, or mint lifecycle artifacts. Missing
 Learn output never changes whether a candidate is valid.
 
 When invoked, bind every observation to verdict and finding digests, distinguish

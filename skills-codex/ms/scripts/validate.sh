@@ -17,7 +17,10 @@ grep -Fq '**Authority boundary:** `skills/**` is canonical source' "$SKILL"
 grep -Fq '**Outcome timing:** Record `ms outcome` only after the caller has independent evidence' "$SKILL"
 grep -Fq 'A zero-result `ms search` CLI response is not evidence' "$SKILL"
 grep -Fq 'python3 skills/ms/scripts/mcp-search.py "<query>"' "$SKILL"
-! grep -Eiq 'pawl|AUTO-REDO|ONE-HELPER|circuit breaker|canonical factory|promotes a skill' "$SKILL"
+if grep -Eiq 'pawl|AUTO-REDO|ONE-HELPER|circuit breaker|canonical factory|promotes a skill' "$SKILL"; then
+  echo 'ms contract contains retired factory/lifecycle vocabulary' >&2
+  exit 1
+fi
 [[ -s "$MCP_SEARCH" ]]
 python3 "$MCP_SEARCH" --help >/dev/null
 
