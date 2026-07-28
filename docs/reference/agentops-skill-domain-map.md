@@ -46,7 +46,7 @@
 | `ms` | execution | `keep_specialist` | - | `ms` | - |
 | `ntm` | execution | `keep_optional_adapter` | - | `ntm` | - |
 | `operationalize` | meta | `keep_specialist` | - | `distill_expertise`, `propose_artifact_shape` | `write_advisory_proposal` |
-| `pattern-mining` | execution | `keep_specialist` | - | `pattern_mining` | - |
+| `pattern-mining` | execution | `keep_specialist` | - | `pattern_mining` | `write_pattern_evidence` |
 | `plan` | execution | `keep` | - | `shape_intent`, `define_acceptance`, `bound_write_scope` | `update_intent_source` |
 | `postmortem` | judgment | `keep_strategy` | - | `postmortem` | `write_postmortem_report` |
 | `premortem` | judgment | `keep_strategy` | - | `challenge_plan` | `write_advisory_plan_review` |
@@ -67,7 +67,7 @@
 | `status` | session | `keep_specialist` | - | `status` | - |
 | `swarm` | execution | `keep_optional_adapter` | - | `dispatch_once` | `invoke_selected_executor` |
 | `test` | execution | `keep_specialist` | - | `test` | - |
-| `toil-mining` | meta | `keep_specialist` | - | `toil_mining` | - |
+| `toil-mining` | meta | `keep_specialist` | - | `toil_mining` | `write_toil_candidates` |
 | `using-gc` | execution | `keep_optional_adapter` | - | `dispatch_explicit_packet`, `observe_gc_runtime`, `drive_mayor_shepherd` | `operate_gas_city` |
 | `validate` | judgment | `keep` | - | `compute_subject_identity`, `judge_acceptance`, `persist_verdict` | `write_verdict_artifact` |
 | `workflow-builder` | meta | `keep_specialist` | - | `workflow_builder` | - |

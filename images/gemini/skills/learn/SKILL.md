@@ -41,12 +41,16 @@ size, and stop at advisory evidence.
 
 Overweight failures: a `NOT_PROVEN` or `FAIL` verdict carries more teaching
 value than a PASS, because it names a rule the loop lacked. Harvest kernels
-from failed lanes first — the 2026-07-15 `NOT_PROVEN`
-(`.agents/ao/verdicts/sha256/b6e759dd...cb6a`, a subject destroyed by a
-mutating check mid-validation) produced more durable rules than the PASS
-(`e9b6cdb8...37b9`) that followed it.
+from failed lanes first — a subject destroyed by a mutating check
+mid-validation teaches a more durable rule than the PASS that follows it.
 
 Prune for provenance decay: every cited artifact must still resolve — the
-file exists or the verdict digest is present in `.agents/ao/verdicts/`. Dead
-citations get pruned rather than paraphrased, and confidence in a lesson that
-has not been reproduced since its source decayed goes down, not sideways.
+file exists or the verdict digest is present under `.agents/ao/verdicts/`. A
+citation that no longer resolves gets pruned rather than paraphrased, and
+confidence in a lesson that has not been reproduced since its source decayed
+goes down, not sideways.
+
+When the caller asks for a durable artifact, write the observations under
+`.agents/scratch/learn/` and return the path; otherwise return them inline.
+The write is advisory and TTL'd — it is never a source of record, and its
+absence never changes whether a candidate is valid.

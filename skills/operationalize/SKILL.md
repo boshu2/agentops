@@ -4,7 +4,7 @@ description: 'Distill repeated, evidence-backed expertise into a proposed skill,
 practices: [continuous-learning, design-by-contract]
 hexagonal_role: supporting
 consumes: [evidence-backed-expertise]
-produces: [operationalization-proposal.v1]
+produces: [operationalization-proposal]
 context_rel:
 - kind: supplier-to
   with: skill-builder
@@ -19,7 +19,7 @@ metadata:
   effects: [write_advisory_proposal]
   canonical_status: canonical
   disposition: keep_specialist
-output_contract: operationalization-proposal.v1
+output_contract: advisory operationalization proposal
 ---
 
 # Operationalize
@@ -36,7 +36,10 @@ Turn repeated, cited expertise into a proposal for a reusable artifact.
 4. Search existing capabilities and prefer extension over duplication.
 5. Provide an activation example, holdout/negative example, owner, and rollback
    or deletion condition.
-6. Return the proposal to the caller or an authoring specialist.
+6. Return the proposal inline to the caller or an authoring specialist. When
+   the caller asks for a durable artifact, write it under
+   `.agents/scratch/operationalize/` first and return the path; the proposal
+   is advisory either way.
 
 ## Three-instance floor
 
@@ -71,4 +74,8 @@ matches what actually happened, instead of trusting the abstraction.
 ## Boundary
 
 Operationalize does not create tracker work, promote policy, start a factory,
-validate its own output, or control another invocation.
+validate its own output, or control another invocation. The proposal is
+advisory: adopting it into a skill, deterministic check, reference, or
+workflow is a separate, caller-selected step — `skill-builder`,
+`workflow-builder`, or a fresh RPI — never performed here. The proposal
+cannot promote itself.
