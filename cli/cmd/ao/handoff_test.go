@@ -5,30 +5,29 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
-	"regexp"
 	"testing"
+
+	"github.com/santhosh-tekuri/jsonschema/v6"
 )
 
 // TestHandoffDryRunSatisfiesSchema proves the `ao session handoff --dry-run`
-// generator agrees with schemas/handoff.v1.schema.json: the id matches the
-// schema id pattern, every schema-required property is present, and the
-// artifact emits no key the schema (additionalProperties:false) forbids. This
-// locks the reconciliation that removed the stale type/consumed/rpi machinery
-// and dropped the fractional-second id (the three verbatim schema errors).
+// generator agrees with schemas/handoff.v1.schema.json using a real JSON Schema
+// validator (santhosh-tekuri/jsonschema/v6 — the same dependency the eval and
+// provenance drift guards use, with the same compile-then-Validate pattern and
+// its default format-annotation behaviour). This checks types, the
+// schema_version const, the id pattern, enums, and nested additionalProperties,
+// not mere key presence. It locks the reconciliation that dropped the three
+// verbatim schema errors while keeping the deprecated read-compat fields
+// accepted.
 func TestHandoffDryRunSatisfiesSchema(t *testing.T) {
-	// Resolve the schema path from the package directory before t.Chdir moves
-	// the working directory to a temp dir.
-	schemaPath, err := filepath.Abs(filepath.Join("..", "..", "..", "schemas", "handoff.v1.schema.json"))
-	if err != nil {
-		t.Fatalf("resolve schema path: %v", err)
-	}
+	schema := compileHandoffSchema(t)
 
 	dir := t.TempDir()
 	t.Chdir(dir)
 
 	handoffGoal = "prove one behavior"
-	handoffContinuation = ""
-	handoffCollect = false
+	handoffContinuation = "caller will choose whether to revise"
+	handoffCollect = true // exercise the nested state block too
 	handoffDryRun = true
 	t.Cleanup(func() {
 		handoffGoal, handoffContinuation = "", ""
@@ -42,55 +41,72 @@ func TestHandoffDryRunSatisfiesSchema(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	var artifact map[string]any
-	if err := json.Unmarshal(out.Bytes(), &artifact); err != nil {
+	instance, err := jsonschema.UnmarshalJSON(bytes.NewReader(out.Bytes()))
+	if err != nil {
 		t.Fatalf("dry-run output is not valid JSON: %v\n%s", err, out.String())
 	}
-
-	// Load the schema the artifact must satisfy.
-	raw, err := os.ReadFile(schemaPath)
-	if err != nil {
-		t.Fatalf("read schema: %v", err)
-	}
-	var schema struct {
-		Required   []string `json:"required"`
-		Properties map[string]struct {
-			Pattern string `json:"pattern"`
-		} `json:"properties"`
-	}
-	if err := json.Unmarshal(raw, &schema); err != nil {
-		t.Fatalf("parse schema: %v", err)
+	if err := schema.Validate(instance); err != nil {
+		t.Fatalf("dry-run output does not satisfy handoff.v1.schema.json:\n%v\n%s", err, out.String())
 	}
 
-	// Error 1+2 fixed: every required property is present.
-	for _, req := range schema.Required {
-		if _, ok := artifact[req]; !ok {
-			t.Errorf("artifact missing schema-required property %q", req)
-		}
+	// Write-discipline: the schema now ACCEPTS the deprecated lifecycle fields
+	// for read-compat, but the current generator must never EMIT them.
+	var keys map[string]any
+	if err := json.Unmarshal(out.Bytes(), &keys); err != nil {
+		t.Fatalf("re-parse dry-run output: %v", err)
 	}
-
-	// additionalProperties:false — every emitted key is a declared property.
-	for key := range artifact {
-		if _, ok := schema.Properties[key]; !ok {
-			t.Errorf("artifact emits key %q not declared in schema (additionalProperties:false)", key)
-		}
-	}
-
-	// The stale consumption/phase machinery must never reappear.
 	for _, forbidden := range []string{"type", "consumed", "consumed_at", "consumed_by", "rpi"} {
-		if _, ok := artifact[forbidden]; ok {
-			t.Errorf("artifact leaked retired lifecycle field %q", forbidden)
+		if _, ok := keys[forbidden]; ok {
+			t.Errorf("generator emitted deprecated lifecycle field %q (must stay read-compat-only)", forbidden)
 		}
 	}
+}
 
-	// Error 3 fixed: id matches the schema pattern exactly (second-granular,
-	// no fractional seconds).
-	idPattern := schema.Properties["id"].Pattern
-	if idPattern == "" {
-		t.Fatal("schema declares no id pattern")
+// TestHandoffSchemaAcceptsLegacyArtifact proves the read-compatibility promise:
+// an artifact written by an earlier generator (carrying type/consumed and a
+// fractional id) still validates against handoff.v1, so the schema change is
+// not a silent incompatible break.
+func TestHandoffSchemaAcceptsLegacyArtifact(t *testing.T) {
+	schema := compileHandoffSchema(t)
+
+	legacy := []byte(`{
+	  "schema_version": 1,
+	  "id": "handoff-20260101T090000.123456789Z",
+	  "created_at": "2026-01-01T09:00:00.123456789Z",
+	  "type": "manual",
+	  "consumed": false,
+	  "consumed_at": null,
+	  "consumed_by": null,
+	  "goal": "legacy goal"
+	}`)
+	instance, err := jsonschema.UnmarshalJSON(bytes.NewReader(legacy))
+	if err != nil {
+		t.Fatalf("legacy fixture is not JSON: %v", err)
 	}
-	id, _ := artifact["id"].(string)
-	if !regexp.MustCompile(idPattern).MatchString(id) {
-		t.Errorf("id %q does not match schema pattern %q", id, idPattern)
+	if err := schema.Validate(instance); err != nil {
+		t.Fatalf("legacy v1 artifact must still validate (read-compat):\n%v", err)
 	}
+}
+
+func compileHandoffSchema(t *testing.T) *jsonschema.Schema {
+	t.Helper()
+	// cwd during `go test` is the package dir cli/cmd/ao, so three levels up.
+	name := filepath.Join("..", "..", "..", "schemas", "handoff.v1.schema.json")
+	data, err := os.ReadFile(name)
+	if err != nil {
+		t.Fatalf("read handoff schema: %v", err)
+	}
+	doc, err := jsonschema.UnmarshalJSON(bytes.NewReader(data))
+	if err != nil {
+		t.Fatalf("parse handoff schema: %v", err)
+	}
+	c := jsonschema.NewCompiler()
+	if err := c.AddResource("handoff.v1.schema.json", doc); err != nil {
+		t.Fatalf("add handoff schema resource: %v", err)
+	}
+	schema, err := c.Compile("handoff.v1.schema.json")
+	if err != nil {
+		t.Fatalf("compile handoff schema: %v", err)
+	}
+	return schema
 }

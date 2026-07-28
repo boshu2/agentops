@@ -65,11 +65,12 @@ func runHandoff(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("get cwd: %w", err)
 	}
 	now := time.Now().UTC()
-	// The id is second-granular to satisfy handoff.v1.schema.json's id pattern
-	// (^handoff-[0-9]{8}T[0-9]{6}Z$); created_at keeps full sub-second precision.
+	// The id carries sub-second precision so two handoffs written in the same
+	// second cannot collide on the same .agents/handoff/<id>.json path. The
+	// handoff.v1.schema.json id pattern accepts the optional fractional part.
 	artifact := handoffArtifact{
 		SchemaVersion: 1,
-		ID:            "handoff-" + now.Format("20060102T150405Z"),
+		ID:            "handoff-" + now.Format("20060102T150405.000000000Z"),
 		CreatedAt:     now.Format(time.RFC3339Nano),
 		Goal:          handoffGoal,
 		Continuation:  handoffContinuation,

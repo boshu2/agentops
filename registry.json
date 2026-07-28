@@ -883,7 +883,8 @@
         "disposition": "keep_specialist",
         "effects": [
           "write_handoff_artifact",
-          "read_git_state"
+          "read_git_state",
+          "read_clock"
         ],
         "has_references": true,
         "has_skill_md": true,

@@ -411,8 +411,8 @@
     {
       "name": "dcg",
       "source_skill": "skills/dcg",
-      "source_hash": "518050ac3bc00cbb2f0df4aa98d0393183f769ffeff89e8decc5228f9d001923",
-      "generated_hash": "eb571806c9c05534970772e18679ad0aa100dc64410db3deecdf14324eb7d034"
+      "source_hash": "ad40fd9b845fc38464b4086a67563e0f65ab978032eed4c3a450720c9d6e1b3a",
+      "generated_hash": "f2377e290fec00a80816def3cb38d5dfb722075a0cbe542a9b04d1b4a8294d5d"
     },
     {
       "name": "doc",
@@ -435,7 +435,7 @@
     {
       "name": "handoff",
       "source_skill": "skills/handoff",
-      "source_hash": "a35f50599018b787e7afa653873aac3ae34b1a7fb5c8501ab40428eac9ddaff1",
+      "source_hash": "5b2a17069a72aab45c2311a2a49035825d5d6dda723640ba88298a4931247036",
       "generated_hash": "a6b7439f4eea091fee8cbb8ce4c52c458a21f96abfdad7898c766332a768e4c1"
     },
     {
@@ -459,8 +459,8 @@
     {
       "name": "ms",
       "source_skill": "skills/ms",
-      "source_hash": "660266b5695af406862cda0523c9e3b107d905070f809266991a01e04e5be60e",
-      "generated_hash": "8680c7800bdc0d3ac49fbd9d8445d7d4b3ef7194f101e03a16c17812a5deef39"
+      "source_hash": "8634a28c128d80d574da339747315ed4af5e047081c20d7647f69d08f7c88e71",
+      "generated_hash": "95cad0eb98d21cf7c1124b387188ce35d8ea322377d46ef0f19642c6ffeecbf6"
     },
     {
       "name": "ntm",
@@ -567,7 +567,7 @@
     {
       "name": "shared",
       "source_skill": "skills/shared",
-      "source_hash": "2ceb55d36d8cd719e3a05cd2f9e4b68881ad6ecefa03a48f6ef7fba581c614e2",
+      "source_hash": "22d81954843dff1019e74cb47ff9f6ec6af3a6cb0fe91daa083da7fe19a4c14f",
       "generated_hash": "748ffbe5ac32af1bea316461195ea73122a5f2510b10ac2679043b4d8a106ec3"
     },
     {

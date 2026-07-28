@@ -16,7 +16,7 @@ metadata:
   canonical_status: canonical
   disposition: keep_specialist
   internal: true
-output_contract: reference documents loaded just in time
+output_contract: no reference documents are bundled at present; the contract governs any reference a consuming skill inlines
 ---
 
 # Shared References

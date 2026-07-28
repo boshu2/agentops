@@ -588,7 +588,8 @@
       "disposition": "keep_specialist",
       "effects": [
         "write_handoff_artifact",
-        "read_git_state"
+        "read_git_state",
+        "read_clock"
       ],
       "graph_root": true,
       "hexagonal_role": "supporting",
