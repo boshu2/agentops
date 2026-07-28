@@ -30,7 +30,7 @@ context:
   intel_scope: topic
 metadata:
   capabilities: [pattern_mining]
-  effects: []
+  effects: [write_pattern_evidence]
   canonical_status: canonical
   disposition: keep_specialist
   tier: execution
@@ -115,7 +115,7 @@ evidence into architecture the same way skipping the holdout would.
 
 ## Output Specification
 
-- **Artifact directory:** `.agents/patterns/<run-id>/`
+- **Artifact directory:** `.agents/scratch/pattern-mining/<run-id>/`
 - **Filename convention:** `pattern-mining.json`
 - **Format:** `pattern-mining.v1` JSON containing the outcome, distinct
   exemplars, invariants, variations, incidental details, holdout result,

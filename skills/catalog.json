@@ -780,7 +780,7 @@
         "design-by-contract"
       ],
       "produces": [
-        "operationalization-proposal.v1"
+        "operationalization-proposal"
       ],
       "references_count": 0,
       "tier": "meta",
@@ -813,7 +813,9 @@
       "dependencies": [],
       "description": "Test repeated implementation shapes against independent exemplars and a holdout before routing an earned abstraction. Triggers: \"mine a recurring code pattern\", \"is this abstraction earned\", \"extract invariants from implementations\".",
       "disposition": "keep_specialist",
-      "effects": [],
+      "effects": [
+        "write_pattern_evidence"
+      ],
       "graph_root": false,
       "hexagonal_role": "supporting",
       "name": "pattern-mining",
@@ -1451,7 +1453,9 @@
       "dependencies": [],
       "description": "Mine caller-supplied usage history for repeated toil and emit ranked evidence. Triggers: \"mine toil\", \"find repeated operational work\".",
       "disposition": "keep_specialist",
-      "effects": [],
+      "effects": [
+        "write_toil_candidates"
+      ],
       "graph_root": false,
       "hexagonal_role": "supporting",
       "name": "toil-mining",
@@ -1460,11 +1464,11 @@
         "lean-startup"
       ],
       "produces": [
-        "result.json"
+        "toil-candidates-report"
       ],
       "references_count": 0,
       "tier": "meta",
-      "user_invocable": false
+      "user_invocable": true
     },
     {
       "canonical_status": "canonical",

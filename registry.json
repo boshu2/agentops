@@ -957,7 +957,9 @@
           "pattern_mining"
         ],
         "disposition": "keep_specialist",
-        "effects": [],
+        "effects": [
+          "write_pattern_evidence"
+        ],
         "has_references": true,
         "has_skill_md": true,
         "name": "pattern-mining",
@@ -1252,7 +1254,9 @@
           "toil_mining"
         ],
         "disposition": "keep_specialist",
-        "effects": [],
+        "effects": [
+          "write_toil_candidates"
+        ],
         "has_references": false,
         "has_skill_md": true,
         "name": "toil-mining",

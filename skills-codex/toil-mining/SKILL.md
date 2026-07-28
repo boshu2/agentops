@@ -8,6 +8,17 @@ Mine explicitly supplied session, shell, RTK, or CASS history without modifying
 the sources. The result is evidence for a caller; this skill does not file work,
 schedule automation, or mutate a tracker.
 
+## Constraints
+
+- Read-only over the supplied sources, because the skill gathers evidence and
+  must never become a mutation lane.
+- No work creation: it never files a tracker item, schedules automation, or
+  names an owner, because those are caller decisions the evidence informs.
+- Measured, not remembered: every count, cost, and error rate is read from the
+  supplied history, so recency and salience cannot masquerade as frequency.
+- Observations stay separate from recommendations, so a caller can re-weigh the
+  ranking without inheriting an unstated conclusion.
+
 ## Procedure
 
 1. Record the input sources, time window, filters, and query.
@@ -87,10 +98,19 @@ retrieval/report-only.
 
 ## Output
 
-Write `.agents/toil-mining/YYYY-MM-DD-candidates.md` only when the caller asks for
-a local artifact; otherwise return the report inline. Include checked and
+Write `.agents/scratch/toil-mining/YYYY-MM-DD-candidates.md` only when the caller
+asks for a local artifact; otherwise return the report inline. Include checked and
 not-checked sources. Do not include owners, priorities, claims, queues, or a next
 action.
+
+## Quality
+
+- Every ranked candidate shows its measured frequency, cost, and
+  error-proneness inputs beside the composite score.
+- Sources are cited and resolvable; a factor the history cannot support is
+  reported at the floor, never guessed at the midpoint.
+- Observations and recommendations stay separate, and the report names both its
+  checked and not-checked sources.
 
 ## References
 

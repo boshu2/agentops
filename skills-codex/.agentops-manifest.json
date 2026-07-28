@@ -453,8 +453,8 @@
     {
       "name": "learn",
       "source_skill": "skills/learn",
-      "source_hash": "c9311e708794759b667e19ce56701ceaa2ca1817fdcedcba3d5e7fb0b53f3f79",
-      "generated_hash": "d57ad13358d144376d93c7ef5cd4e72f52fea9ad4fa2966380e21ccf56b7e5fa"
+      "source_hash": "53067b9717740db5e7b7c4f116e5c728f48893556789020c602a02a53723683c",
+      "generated_hash": "2cdb8ec214c209920dd724a2efd9dc5b2889835beb90e6490f315a69a5a22813"
     },
     {
       "name": "ms",
@@ -471,14 +471,14 @@
     {
       "name": "operationalize",
       "source_skill": "skills/operationalize",
-      "source_hash": "6d7181d96cf5b1c41db7887c3989328b89f114705d2e4e51843b96c516ba5923",
-      "generated_hash": "b8c4754c0650125d304fc4bedbd138aee2d33f6b2e5625ef182008ddae606ecd"
+      "source_hash": "29c0f55f0cf618277fb5c039e2b2d4dbfc7a9e9912537941535cf2b137f16b21",
+      "generated_hash": "8527b5dc86bf5de07703bc355e6c695f3fef9b949a9d94e5a5c70e59e7c61cba"
     },
     {
       "name": "pattern-mining",
       "source_skill": "skills/pattern-mining",
-      "source_hash": "85f75016516098dcc5b269d6bfc89ac3097edd18feef179aa15f814c95a42b32",
-      "generated_hash": "c86c60cc26b2da475799b89d437283f0bffdab0439b9d193aee00b764224c5e0"
+      "source_hash": "b35118568b471c41e0a9b68e8aedb0491553ba26fc348014f52e4a0939e531b5",
+      "generated_hash": "ebea87d16f82ab1699283479826ab0d427d56b2ebd1f920fbb79660e06cb8769"
     },
     {
       "name": "plan",
@@ -603,8 +603,8 @@
     {
       "name": "toil-mining",
       "source_skill": "skills/toil-mining",
-      "source_hash": "1c9893f35c98c1f498837bae08e66f6b268da0e7ea5d3239844f7ba969158448",
-      "generated_hash": "a0da070a0196ca49caeff2c0d6a0d86b1066c8a017f5bf15b2833b5dacdf53a5"
+      "source_hash": "a95c554be75d0791eb71bad60bee508807d50af96006480d5bbface2611a8691",
+      "generated_hash": "11d4272652686c2da5ff11e15e510f5e56f30e5fc3f9dd2414dced0a00055f12"
     },
     {
       "name": "using-gc",
