@@ -3,7 +3,6 @@
 package evidence
 
 import (
-	"bufio"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -11,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/boshu2/agentops/cli/internal/storage"
 	"github.com/boshu2/agentops/cli/internal/types"
 )
 
@@ -80,14 +80,16 @@ func LoadCitations(baseDir string) ([]types.CitationEvent, error) {
 	}
 	defer func() { _ = file.Close() }()
 	var citations []types.CitationEvent
-	scanner := bufio.NewScanner(file)
-	scanner.Buffer(make([]byte, 0, 64*1024), 1024*1024)
-	for scanner.Scan() {
-		if event, ok := parseCitation(scanner.Bytes(), baseDir); ok {
+	// storage.ScanJSONL is the blessed JSONL reader (age-storage-hardening-roxg.3):
+	// it applies the package buffer policy and reports an oversized line loudly as
+	// storage.ErrLineTooLong instead of silently truncating. The open call stays
+	// here so the "open citation ledger" wrapping is unchanged, and the partial
+	// citations collected before a read error are still returned alongside it.
+	if err := storage.ScanJSONL(file, func(line []byte) {
+		if event, ok := parseCitation(line, baseDir); ok {
 			citations = append(citations, event)
 		}
-	}
-	if err := scanner.Err(); err != nil {
+	}); err != nil {
 		return citations, fmt.Errorf("scan citation ledger: %w", err)
 	}
 	return citations, nil
