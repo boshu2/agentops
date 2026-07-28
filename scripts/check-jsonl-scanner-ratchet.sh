@@ -132,11 +132,23 @@ is_exempt_path() {
 # The scanner match requires the invocation form `bufio.NewScanner(` (open paren)
 # so a bare mention of the symbol in a comment/doc — e.g. this gate's own registry
 # row — does not trip it. Every real site uses the paren form.
+# Tri-state, mirroring the lib's added-hunk matcher: 0 trips · 1 does not
+# trip · 2 scan helper failed (loud). `grep -q pat file` exits 2+ when the
+# read or the process itself dies; conflating that with "does not trip" let a
+# dead scan skip a file straight into a green certification.
 file_trips() {
   local p="$1"
   [[ -f "$p" ]] || return 1
-  grep -q '\.jsonl' "$p" 2>/dev/null || return 1
-  grep -q 'bufio\.NewScanner(' "$p" 2>/dev/null || return 1
+  local pattern scan_rc
+  for pattern in '\.jsonl' 'bufio\.NewScanner('; do
+    scan_rc=0
+    grep -q -- "$pattern" "$p" || scan_rc=$?
+    if [[ "$scan_rc" -gt 1 ]]; then
+      echo "file_trips: whole-file scan failed (rc $scan_rc) for '$p' — refusing to certify" >&2
+      return 2
+    fi
+    [[ "$scan_rc" -eq 1 ]] && return 1
+  done
   return 0
 }
 
@@ -144,13 +156,41 @@ file_trips() {
 # currently trips the whole-file heuristic. This is the SAME heuristic used to
 # flag, so a fresh regenerate is authoritative for "what is grandfathered now".
 compute_grandfather_set() {
-  local f
-  # -l: names of files INVOKING bufio.NewScanner(; then filter by scope + .jsonl.
+  # FAIL-CLOSED ENUMERATION. This is a MUTATING success path: whatever this
+  # function emits becomes the rewritten grandfather. The previous
+  # `< <(grep -rl … || true)` + `grep -q || continue` shape collapsed a dead
+  # grep into an empty/partial set, so --regenerate rewrote a populated
+  # snapshot to header-only at exit 0 — silent mass un-pinning that no prune
+  # guard surfaces (vanished entries are legal shrinkage). grep's contract is
+  # tri-state: 0 matches, 1 no matches (a LEGITIMATE empty set / skip), >1
+  # death. Distinguish them, accumulate entries, and emit only on complete
+  # success so a partial enumeration can never reach ratchet_regenerate's
+  # tmp+mv write.
+  local f candidates selected="" enum_rc=0 jsonl_rc
+  candidates="$(grep -rl 'bufio\.NewScanner(' cli --include='*.go')" || enum_rc=$?
+  if [[ "$enum_rc" -gt 1 ]]; then
+    echo "compute_grandfather_set: candidate enumeration failed (rc $enum_rc) — refusing to regenerate over an unchecked tree" >&2
+    return 2
+  fi
+  if [[ "$enum_rc" -eq 1 ]]; then
+    return 0 # genuinely no candidate files: an empty snapshot is correct
+  fi
   while IFS= read -r f; do
+    [[ -z "$f" ]] && continue
     is_exempt_path "$f" && continue
-    grep -q '\.jsonl' "$f" 2>/dev/null || continue
-    printf '%s\n' "$f"
-  done < <(grep -rl 'bufio\.NewScanner(' cli --include='*.go' 2>/dev/null || true) | LC_ALL=C sort
+    jsonl_rc=0
+    grep -q '\.jsonl' "$f" || jsonl_rc=$?
+    if [[ "$jsonl_rc" -gt 1 ]]; then
+      echo "compute_grandfather_set: whole-file scan failed (rc $jsonl_rc) for '$f' — refusing to regenerate over an unchecked file" >&2
+      return 2
+    fi
+    [[ "$jsonl_rc" -eq 1 ]] && continue
+    selected+="$f"$'\n'
+  done <<< "$candidates"
+  if [[ -n "$selected" ]]; then
+    printf '%s' "$selected" | LC_ALL=C sort
+  fi
+  return 0
 }
 
 grandfather_header() {
@@ -235,14 +275,41 @@ if ! check_grandfather_shrink_only; then
   rc=1
 fi
 
+# Collect the changed set BEFORE iterating: a collector failure inside a
+# `< <(...)` process substitution is silently discarded even under
+# `set -euo pipefail` — a dead git read becomes an EMPTY loop and the gate
+# certifies over a diff nobody read. Captured under pipefail (the
+# check-atomic-write-ratchet.sh documented defense), a collector rc 2 aborts
+# loudly instead, with the library's stderr preserved.
+changed_list="$(collect_changed_files | LC_ALL=C sort -u)" \
+  || { echo "FAIL: changed-scope collection failed for scope '$SCOPE' — refusing to certify an unchecked change set." >&2; exit 2; }
+
+# Per-file scan chain, tri-state fail-closed: rc 1 from either scan means
+# "skip" exactly as before; any other nonzero rc is a scan-helper death and
+# must refuse — the lib's added-hunk matcher is documented tri-state
+# ("2 = scan helper failed ... never conflated with 1") precisely so callers
+# can tell a dead scan from a clean miss, and a `|| continue` here re-conflated
+# them into a skip-to-green.
 while IFS= read -r f; do
   [[ -z "$f" ]] && continue
   is_exempt_path "$f" && continue
   is_grandfathered "$f" && continue
-  file_trips "$f" || continue
-  added_hunk_has_scanner "$f" || continue
+  scan_rc=0
+  file_trips "$f" || scan_rc=$?
+  if [[ "$scan_rc" -eq 1 ]]; then continue; fi
+  if [[ "$scan_rc" -ne 0 ]]; then
+    echo "FAIL: whole-file scan died (rc $scan_rc) for '$f' — refusing to certify an unchecked file." >&2
+    exit 2
+  fi
+  scan_rc=0
+  added_hunk_has_scanner "$f" || scan_rc=$?
+  if [[ "$scan_rc" -eq 1 ]]; then continue; fi
+  if [[ "$scan_rc" -ne 0 ]]; then
+    echo "FAIL: added-hunk scan died (rc $scan_rc) for '$f' — refusing to certify an unchecked file." >&2
+    exit 2
+  fi
   new_hits+=("$f")
-done < <(collect_changed_files | LC_ALL=C sort -u)
+done <<< "$changed_list"
 
 if [[ "${#new_hits[@]}" -gt 0 ]]; then
   rc=1

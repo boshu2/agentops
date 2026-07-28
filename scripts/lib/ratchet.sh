@@ -45,8 +45,8 @@
 #       shim or edge-state test;
 #     * generation failure in regenerate (atomic tmp+mv; never a truncated list).
 #   HANDLED GIT-HISTORY SHAPES: root commits (--root) and merge commits
-#     (-m --first-parent = "what this commit introduced onto the first-parent
-#     line") in head scope.
+#     (an explicit HEAD^1..HEAD diff = "what this commit introduced onto the
+#     first-parent line") in head scope — see ratchet__head_diff.
 #   BEST-EFFORT (documented, deliberately out of scope):
 #     * I/O failure of the fixed-program parse filters (sed/grep over in-memory
 #       streams) — grep rc>=2 is loud, but a sed failure masked by a downstream
@@ -316,6 +316,44 @@ ratchet_is_pinned() {
 
 # --- changed-scope collection + added-hunk guard -------------------------------
 
+# ratchet__head_diff <--name-only|--name-status> -> head-scope changed paths.
+# head scope is DECLARED as "what THIS commit introduced onto the first-parent
+# line", and this is the one implementation of that declaration.
+#
+# WHY NOT `diff-tree -m --first-parent`: `-m` splits a merge into one diff block
+# PER PARENT and emits them ALL; `--first-parent` constrains history traversal,
+# not which parent blocks are printed. The parent-2 block lists every path that
+# was already settled on the first-parent line, so a merge commit re-attributed
+# long-landed files to itself — a consumer gate then flags paths the merge did
+# not introduce. Proven live on the integration lineage: at 88c2692f2 the old
+# form emitted 14 governed rows, 12 of them from the second-parent block, none
+# of them introduced by that merge (fresh-Sol ADR-0016 review, 2026-07-27).
+#
+# The explicit two-tree diff HEAD^1..HEAD has no such ambiguity. Root commits
+# keep the --root empty-tree diff: HEAD^1 does not resolve there, and a root
+# commit's contents are exactly what it introduced.
+ratchet__head_diff() {
+  local fmt="${1:?ratchet__head_diff: format required}"
+  case "$fmt" in
+    --name-only|--name-status) ;;
+    *) echo "ratchet__head_diff: unknown format '$fmt' (want --name-only|--name-status)" >&2; return 2 ;;
+  esac
+  local parents
+  parents="$(git rev-list --parents -n1 HEAD 2>/dev/null)" \
+    || { echo "ratchet__head_diff: git rev-list HEAD failed — refusing to certify an unchecked change set" >&2; return 2; }
+  # "<sha>[ <parent>...]" — no space means a parentless (root) commit. An empty
+  # read (unborn HEAD) also takes this branch and fails loudly below rather than
+  # returning an empty change set.
+  if [[ "$parents" != *" "* ]]; then
+    git diff-tree --root --no-commit-id "$fmt" -r HEAD 2>/dev/null \
+      || { echo "ratchet__head_diff: git diff-tree --root HEAD failed — refusing to certify an unchecked change set" >&2; return 2; }
+    return 0
+  fi
+  git diff-tree --no-commit-id "$fmt" -r HEAD^1 HEAD 2>/dev/null \
+    || { echo "ratchet__head_diff: git diff-tree HEAD^1..HEAD failed — refusing to certify an unchecked change set" >&2; return 2; }
+  return 0
+}
+
 # ratchet_changed_files <scope> -> changed paths (name-only) for the scope.
 # worktree includes untracked files (brand-new additions). auto includes
 # untracked ONLY on the tracked-diff branch — a worktree with ONLY untracked
@@ -341,8 +379,7 @@ ratchet_is_pinned() {
 ratchet_changed_files() {
   local scope="${1:?ratchet_changed_files: scope required}"
   case "$scope" in
-    head)     git diff-tree --root -m --first-parent --no-commit-id --name-only -r HEAD 2>/dev/null \
-                || { echo "ratchet_changed_files: git diff-tree HEAD failed — refusing to certify an unchecked change set" >&2; return 2; } ;;
+    head)     ratchet__head_diff --name-only || return 2 ;;
     staged)   git diff --cached --name-only 2>/dev/null \
                 || { echo "ratchet_changed_files: git diff --cached failed" >&2; return 2; } ;;
     worktree) git diff --name-only 2>/dev/null \
@@ -360,8 +397,7 @@ ratchet_changed_files() {
         git diff --name-only "$base"...HEAD 2>/dev/null \
           || { echo "ratchet_changed_files: git diff vs upstream merge-base failed" >&2; return 2; }
       else
-        git diff-tree --root -m --first-parent --no-commit-id --name-only -r HEAD 2>/dev/null \
-          || { echo "ratchet_changed_files: git diff-tree HEAD failed" >&2; return 2; }
+        ratchet__head_diff --name-only || return 2
       fi
       ;;
     auto)
@@ -374,8 +410,7 @@ ratchet_changed_files() {
         git ls-files --others --exclude-standard 2>/dev/null \
           || { echo "ratchet_changed_files: git ls-files failed" >&2; return 2; }
       else
-        git diff-tree --root -m --first-parent --no-commit-id --name-only -r HEAD 2>/dev/null \
-          || { echo "ratchet_changed_files: git diff-tree HEAD failed" >&2; return 2; }
+        ratchet__head_diff --name-only || return 2
       fi
       ;;
     *)
@@ -393,8 +428,7 @@ ratchet_changed_files() {
 ratchet_changed_files_status() {
   local scope="${1:?ratchet_changed_files_status: scope required}"
   case "$scope" in
-    head)     git diff-tree --root -m --first-parent --no-commit-id --name-status -r HEAD 2>/dev/null \
-                || { echo "ratchet_changed_files_status: git diff-tree HEAD failed — refusing to certify an unchecked change set" >&2; return 2; } ;;
+    head)     ratchet__head_diff --name-status || return 2 ;;
     staged)   git diff --cached --name-status 2>/dev/null \
                 || { echo "ratchet_changed_files_status: git diff --cached failed" >&2; return 2; } ;;
     worktree) git diff --name-status 2>/dev/null \
@@ -416,8 +450,7 @@ ratchet_changed_files_status() {
         git diff --name-status "$base"...HEAD 2>/dev/null \
           || { echo "ratchet_changed_files_status: git diff vs upstream merge-base failed" >&2; return 2; }
       else
-        git diff-tree --root -m --first-parent --no-commit-id --name-status -r HEAD 2>/dev/null \
-          || { echo "ratchet_changed_files_status: git diff-tree HEAD failed" >&2; return 2; }
+        ratchet__head_diff --name-status || return 2
       fi
       ;;
     auto)
@@ -434,8 +467,7 @@ ratchet_changed_files_status() {
           printf '%s\n' "$untracked_auto" | awk '{ printf "A\t%s\n", $0 }'
         fi
       else
-        git diff-tree --root -m --first-parent --no-commit-id --name-status -r HEAD 2>/dev/null \
-          || { echo "ratchet_changed_files_status: git diff-tree HEAD failed" >&2; return 2; }
+        ratchet__head_diff --name-status || return 2
       fi
       ;;
     *)
