@@ -48,8 +48,8 @@
     {
       "source": "skills/validate/SKILL.md",
       "destination": "packs/agentops-executor/agents/validator/skills/validate/SKILL.md",
-      "source_sha256": "d2f7259a0e8160c47bcc7968459e0385d09e75c394c4d7af1626d15d69e95101",
-      "sha256": "d2f7259a0e8160c47bcc7968459e0385d09e75c394c4d7af1626d15d69e95101",
+      "source_sha256": "84f75ef2903c6de56906be12ea6f5066321390b5d90fbcc6bff67ccb6a0743b8",
+      "sha256": "84f75ef2903c6de56906be12ea6f5066321390b5d90fbcc6bff67ccb6a0743b8",
       "mode": "0644"
     },
     {
@@ -69,22 +69,22 @@
     {
       "source": "skills/validate/scripts/test_validate.py",
       "destination": "packs/agentops-executor/agents/validator/skills/validate/scripts/test_validate.py",
-      "source_sha256": "8e1b289cba8664bbd1662bbc41fb8bfe0b1741559b487a745535f4796cc8ac17",
-      "sha256": "8e1b289cba8664bbd1662bbc41fb8bfe0b1741559b487a745535f4796cc8ac17",
+      "source_sha256": "be0d7f7aa0ed0ce191807e900fcc0682146cccc17790db49157a9bf63ba7484c",
+      "sha256": "be0d7f7aa0ed0ce191807e900fcc0682146cccc17790db49157a9bf63ba7484c",
       "mode": "0755"
     },
     {
       "source": "skills/validate/scripts/validate.py",
       "destination": "packs/agentops-executor/agents/validator/skills/validate/scripts/validate.py",
-      "source_sha256": "adafe4e127f9ddeb534c633a2cb4c2321b47e8a6a6f3656a0872076427f72247",
-      "sha256": "adafe4e127f9ddeb534c633a2cb4c2321b47e8a6a6f3656a0872076427f72247",
+      "source_sha256": "c271a51adab92c52d81fc4c58b76f0e8057444f956c4587f396c7c66efaec782",
+      "sha256": "c271a51adab92c52d81fc4c58b76f0e8057444f956c4587f396c7c66efaec782",
       "mode": "0755"
     },
     {
       "source": "skills/validate/scripts/validate.sh",
       "destination": "packs/agentops-executor/agents/validator/skills/validate/scripts/validate.sh",
-      "source_sha256": "77940c43e7acc22a4c77f510f98fb27f62767ce445b12e69e6c048b8f8c9fddc",
-      "sha256": "77940c43e7acc22a4c77f510f98fb27f62767ce445b12e69e6c048b8f8c9fddc",
+      "source_sha256": "507549239d488a77d545dd9cd008230415d739e2b0d0058ccd941ccdb0185e95",
+      "sha256": "507549239d488a77d545dd9cd008230415d739e2b0d0058ccd941ccdb0185e95",
       "mode": "0755"
     },
     {

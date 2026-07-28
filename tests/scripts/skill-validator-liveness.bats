@@ -12,7 +12,7 @@ setup() {
 }
 
 @test "no inert !-negation guards in skill validators" {
-  run grep -rn '^[[:space:]]*! ' "$REPO_ROOT"/skills/*/scripts/*.sh
+  run grep -rEn '^[[:space:]]*![[:space:]]' "$REPO_ROOT"/skills/*/scripts/*.sh
   [ "$status" -ne 0 ]
 }
 
@@ -24,6 +24,10 @@ seeded_validator_must_fail() {
   local copy="$BATS_TEST_TMPDIR/$slug"
   mkdir -p "$copy"
   cp -R "$REPO_ROOT/skills/$slug/." "$copy/"
+  # The relocated copy must pass unseeded, or a failure below would prove
+  # relocation breakage rather than guard liveness.
+  run bash "$copy/scripts/validate.sh"
+  [ "$status" -eq 0 ]
   printf '\n%s\n' "$token" >> "$copy/SKILL.md"
   run bash "$copy/scripts/validate.sh"
   [ "$status" -ne 0 ]

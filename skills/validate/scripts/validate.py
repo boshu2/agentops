@@ -556,11 +556,17 @@ def main() -> int:
                 intent_bytes,
                 Path(args.workspace) / ".agents" / "ao" / "intents" / "sha256",
             )
+            subject_manifest = load_json(Path(args.subject_manifest))
+            if not subject_manifest.get("entries"):
+                raise ContractError(
+                    "subject manifest has no entries; Validate needs a nonempty "
+                    "implementation candidate, not a report or plan document"
+                )
             artifact, path, existed = store_verdict(
                 load_json(Path(args.draft)),
                 destination,
                 intent_bytes,
-                load_json(Path(args.subject_manifest)),
+                subject_manifest,
                 args.author_context_id,
                 args.scope_result,
                 args.validator_context_id,

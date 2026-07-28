@@ -38,6 +38,10 @@ packets.
 
 ## Preconditions
 
+- The subject is a nonempty implementation candidate: the manifest lists at
+  least one entry, and `store-verdict` refuses an empty one. Plans, audits,
+  reviews, and other control artifacts are not completion subjects unless the
+  caller explicitly requested document review.
 - The intent source is available as a caller-owned artifact or runtime-owned
   content-addressed snapshot; its acceptance digest is derived automatically.
 - The subject manifest still matches the subject.

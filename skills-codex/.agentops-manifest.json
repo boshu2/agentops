@@ -537,8 +537,8 @@
     {
       "name": "rpi",
       "source_skill": "skills/rpi",
-      "source_hash": "ab9861de57dbc51d76a3389e42f628f51af9ec0841b80a86534d87c6b5c04b86",
-      "generated_hash": "e1dadca8eed38aa5cbf779e61b962260262fdd7e46c906a2ce33f0dcafbdaad6"
+      "source_hash": "2efc1e2c8ece78b8b66989612736eac51b2dd860720e578a7f021b39c7aeeac8",
+      "generated_hash": "a9a6f6028a61afe8caf9d8e940150d5f569a41e987d24879ac4360ea6b3ba92d"
     },
     {
       "name": "sbh",
@@ -615,8 +615,8 @@
     {
       "name": "validate",
       "source_skill": "skills/validate",
-      "source_hash": "fa092110c79c2bc4bf0f3269b3c2b0d32e8db592a56286dbec52c302491c1f49",
-      "generated_hash": "a4e1913964341da1df03a9f9b7148a70074b387129c86a6ea9621a08c76e51d3"
+      "source_hash": "1603ca540e734f88fef542d1a322593d3194dec8af0a9316a62a386064c63c4b",
+      "generated_hash": "0451d7e06a47acfdd7dff1cd1afd3f3e6a2aba6bac32721b8aaa9ecf0de89920"
     },
     {
       "name": "workflow-builder",

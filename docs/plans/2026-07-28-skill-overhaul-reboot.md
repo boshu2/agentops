@@ -79,7 +79,7 @@ branch, one PR. Waves are independent except W8.
 | W1 kernel | rpi, plan, implement, validate |
 | W2 product/campaign | product, goals, craft-goal, automation-shape-routing |
 | W3 evidence/judgment | cass, codebase-recon, council, domain, idea-genie, postmortem, premortem, reality-check, research, reverse-engineer, scope, security, standards |
-| W4 specialists | converter, doc, refactor, scaffold, test, workflow-builder |
+| W4 specialists | converter, doc, refactor, scaffold, skill-builder, test, workflow-builder |
 | W5 evolution | learn, operationalize, pattern-mining, toil-mining |
 | W6 runtime | agent-mail, agent-native, agy-native, codex-exec, ntm, rch, swarm, using-gc |
 | W7 support | account-rotation, bootstrap, cc-hooks, dcg, handoff, ms, sbh, shared, status |
@@ -101,8 +101,9 @@ A wave is done when:
 - every `[enhance]` item is applied, deferred with reason, or rejected with
   reason — no silent drops;
 - `make regen-check` and the standard push gates are green;
-- one fresh cross-family review of the wave diff found no unaddressed
-  defect;
+- one fresh cross-family review of the wave diff ran; its findings are fixed
+  and the fix delta gets exactly one re-review. Two rounds is the ceiling —
+  residual non-defect nits are recorded in the wave PR, not ground out;
 - the wave PR is merged to `main`.
 
 ## Program completion
