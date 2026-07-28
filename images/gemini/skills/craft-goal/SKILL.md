@@ -16,6 +16,11 @@ context_rel:
 - kind: supplier-to
   with: plan
 user-invocable: true
+context:
+  window: inherit
+  intent:
+    mode: task
+  intel_scope: topic
 metadata:
   tier: judgment
   dependencies: []
@@ -47,6 +52,12 @@ authorization envelope cannot silently renew itself.
 
 **Insight:** bounded waves shorten the feedback loop; one hard, non-renewing
 campaign envelope prevents those waves from becoming infinite continuation.
+
+**Authority boundary.** The emitted goal prompt and safety report are inert
+caller-owned text. Crafting one creates no goal, starts no runtime, and mutates
+no bead; it confers no standing authorization. The prompt drives RPI dispatch
+only when a caller pastes it into their own goal runtime under their own
+authority, and only within the non-renewing envelope the caller then sets.
 
 Named failure mode — **completion treadmill**: discoveries recursively become
 requirements and activity continues without new information. Its opposite is
@@ -128,7 +139,10 @@ Use graph semantics deliberately:
 
 Use live `bd`/`br` state as authority and `bv --robot-*` output for
 prioritization, parallel tracks, bottlenecks, and graph insight. Never treat a
-static plan as fresher than the graph.
+static plan as fresher than the graph. The `bd`/`br`/`bv` tracker is an external,
+caller-owned runtime the emitted goal will drive (declared via
+`intel_scope: topic`); craft-goal reads live tracker state when present but
+starts nothing and requires no tracker to be installed to compile a prompt.
 
 ## What counts as a ratchet
 
@@ -205,6 +219,17 @@ prompt, separate goal-tool token budget, assumptions, and one lint line for:
 outcome, evidence, admission, bead graph, RPI boundary, ratchet, discovery,
 wave budget, hard budget, breaker, operator andon, scope, self-hosting, and
 terminal reports.
+
+Output validator — a captured decision must lead with exactly one terminal
+token:
+
+```bash
+printf '%s\n' "$decision" | head -n1 | grep -Eq '^(SAFE_TO_CREATE|USE_RPI|UNSAFE_GOAL)\b'
+```
+
+This pins the machine-checkable shape of the output contract. `scripts/validate.sh`
+still enforces structural hygiene; the fourteen lint dimensions above stay a human
+rubric because they judge prompt content that has no persisted artifact at gate time.
 
 Done when:
 
