@@ -19,6 +19,14 @@ def _includes(packet: Mapping[str, Any]) -> tuple[str, ...]:
     scope = packet.get("write_scope")
     if not isinstance(scope, Mapping):
         raise ValueError(f"{_packet_id(packet)}: write_scope must be an object")
+    # `exclude` is not honored by the lexical disjointness proof below. Admitting
+    # it silently would let a packet look narrower than it dispatches, so reject
+    # its presence rather than ignore it.
+    if scope.get("exclude"):
+        raise ValueError(
+            f"{_packet_id(packet)}: write_scope.exclude is not honored by the "
+            "disjointness proof — remove it or narrow include instead"
+        )
     raw = scope.get("include")
     if not isinstance(raw, list) or not raw:
         raise ValueError(f"{_packet_id(packet)}: write_scope.include must be nonempty")
@@ -49,8 +57,14 @@ def _overlap(left: str, right: str) -> bool:
             parts.append(part)
         return PurePosixPath(*parts).as_posix() if parts else "."
 
-    left_prefix = literal_prefix(left)
-    right_prefix = literal_prefix(right)
+    # Case-fold the comparison so scopes differing only by case ("src/Auth" vs
+    # "src/auth") are treated as a possible collision. On a case-insensitive
+    # filesystem they ARE the same path; on a case-sensitive one this only
+    # over-rejects, matching this module's reject-when-uncertain stance. Paths
+    # must already be workspace-relative and canonical (symlink-resolved): the
+    # check is lexical and cannot detect a symlink alias to a shared target.
+    left_prefix = literal_prefix(left).casefold()
+    right_prefix = literal_prefix(right).casefold()
     if left_prefix == "." or right_prefix == ".":
         return True
     return (

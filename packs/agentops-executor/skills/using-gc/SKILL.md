@@ -14,7 +14,7 @@ metadata:
   tier: execution
   dependencies: []
   capabilities: [dispatch_explicit_packet, observe_gc_runtime, drive_mayor_shepherd]
-  effects: [operate_gas_city]
+  effects: [operate_gas_city, configure_codex_trust]
   canonical_status: canonical
   disposition: keep_optional_adapter
 output_contract: runtime evidence per supplied packet
@@ -75,12 +75,18 @@ wedged on an interactive prompt doing nothing. Trust ground truth:
 
 - `gc session list --json` / `mayor status` is the roster claim.
 - `tmux -L <socket> capture-pane -pt <session>` is ground truth — read the pane.
+  The `<socket>` and `<session>` here (and at every `tmux -L` site below) are the
+  ones `mayor status` prints in its `tmux -L <socket> attach -t <session>` line.
 - Two known codex wedge classes and their durable fixes:
   - **Update nag:** codex blocks on an "update available" prompt. Fix: update
-    codex so no pending-update prompt exists before the run.
+    codex so no pending-update prompt exists before the run. Updating the codex
+    binary is a host mutation — make it only with explicit caller authorization,
+    the same bar as the trust-config edit below.
   - **Folder trust:** codex blocks asking to trust the working directory. Fix:
     add exact-path `trust_level` entries for the rig and worktree-root in
-    `~/.codex/config.toml` (bootstrap does not write them yet).
+    `~/.codex/config.toml` (bootstrap does not write them yet). This edits the
+    user's global codex config — a host-configuration mutation; make it only
+    with explicit caller authorization, scoped to those exact paths.
 
 When the roster says active but the pane is wedged, the pane wins.
 

@@ -632,7 +632,11 @@
           "agent_mail"
         ],
         "disposition": "keep_optional_adapter",
-        "effects": [],
+        "effects": [
+          "write_agent_mail_records",
+          "install_precommit_guard",
+          "authorized_destructive_reset"
+        ],
         "has_references": true,
         "has_skill_md": true,
         "name": "agent-mail",
@@ -749,7 +753,10 @@
           "codex_exec"
         ],
         "disposition": "keep_optional_adapter",
-        "effects": [],
+        "effects": [
+          "run_codex_process",
+          "sandbox_tiered_workspace_and_network_effects"
+        ],
         "has_references": false,
         "has_skill_md": true,
         "name": "codex-exec",
@@ -938,7 +945,10 @@
           "ntm"
         ],
         "disposition": "keep_optional_adapter",
-        "effects": [],
+        "effects": [
+          "manage_ntm_panes",
+          "dispatch_pane_commands"
+        ],
         "has_references": false,
         "has_skill_md": true,
         "name": "ntm",
@@ -1044,7 +1054,10 @@
           "rch"
         ],
         "disposition": "keep_specialist",
-        "effects": [],
+        "effects": [
+          "remote_compilation_offload",
+          "authorized_remote_daemon_worker_mutation"
+        ],
         "has_references": true,
         "has_skill_md": true,
         "name": "rch",
@@ -1299,7 +1312,8 @@
         ],
         "disposition": "keep_optional_adapter",
         "effects": [
-          "operate_gas_city"
+          "operate_gas_city",
+          "configure_codex_trust"
         ],
         "has_references": false,
         "has_skill_md": true,

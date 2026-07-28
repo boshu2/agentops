@@ -10,12 +10,20 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
 
 def utc_now() -> str:
+    # Honor SOURCE_DATE_EPOCH so fixture output is reproducible; fall back to
+    # wall-clock only when it is unset.
+    epoch = os.environ.get("SOURCE_DATE_EPOCH")
+    if epoch:
+        return datetime.fromtimestamp(int(epoch), tz=timezone.utc).strftime(
+            "%Y-%m-%dT%H:%M:%SZ"
+        )
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
@@ -156,6 +164,14 @@ def duel(args: argparse.Namespace) -> int:
 
 
 def validate_cross(args: argparse.Namespace) -> int:
+    # A shared context id forfeits the fresh-judgment guarantee the attestation
+    # is supposed to certify — reject it before emitting anything.
+    if args.author_context_id == args.validator_context_id:
+        print(
+            "validate-cross requires distinct author/validator context ids",
+            file=sys.stderr,
+        )
+        return 2
     author_model = args.author_model
     validator_model = args.validator_model
     available = {p.strip() for p in (args.available or "").split(",") if p.strip()}

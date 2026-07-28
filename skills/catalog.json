@@ -32,7 +32,7 @@
       ],
       "codex_override_present": true,
       "consumes": [
-        "task-intent"
+        "coordination-request"
       ],
       "context_rel": [
         {
@@ -43,7 +43,11 @@
       "dependencies": [],
       "description": "Use Agent Mail as an optional messaging and file-reservation adapter for explicitly coordinated writers. Triggers: \"coordinate writers\", \"reserve files\".",
       "disposition": "keep_optional_adapter",
-      "effects": [],
+      "effects": [
+        "write_agent_mail_records",
+        "install_precommit_guard",
+        "authorized_destructive_reset"
+      ],
       "graph_root": false,
       "hexagonal_role": "supporting",
       "name": "agent-mail",
@@ -322,7 +326,9 @@
         "codex_exec"
       ],
       "codex_override_present": true,
-      "consumes": [],
+      "consumes": [
+        "codex-command-packet"
+      ],
       "context_rel": [
         {
           "kind": "supplier-to",
@@ -332,7 +338,10 @@
       "dependencies": [],
       "description": "Run one caller-supplied Codex command non-interactively and capture evidence. Triggers: \"run Codex headless\", \"capture Codex evidence\".",
       "disposition": "keep_optional_adapter",
-      "effects": [],
+      "effects": [
+        "run_codex_process",
+        "sandbox_tiered_workspace_and_network_effects"
+      ],
       "graph_root": false,
       "hexagonal_role": "driving-adapter",
       "name": "codex-exec",
@@ -730,7 +739,7 @@
       ],
       "codex_override_present": true,
       "consumes": [
-        "task-intent"
+        "pane-command-request"
       ],
       "context_rel": [
         {
@@ -741,7 +750,10 @@
       "dependencies": [],
       "description": "Use NTM as an optional pane adapter for caller-supplied roles and commands. Triggers: \"ntm\", \"tmux panes\", \"ntm robot state\".",
       "disposition": "keep_optional_adapter",
-      "effects": [],
+      "effects": [
+        "manage_ntm_panes",
+        "dispatch_pane_commands"
+      ],
       "graph_root": false,
       "hexagonal_role": "supporting",
       "name": "ntm",
@@ -977,7 +989,10 @@
       "dependencies": [],
       "description": "Use RCH once to offload a build or collect remote-compilation diagnostics. Triggers: \"use RCH\", \"offload this build\".",
       "disposition": "keep_specialist",
-      "effects": [],
+      "effects": [
+        "remote_compilation_offload",
+        "authorized_remote_daemon_worker_mutation"
+      ],
       "graph_root": false,
       "hexagonal_role": "supporting",
       "name": "rch",
@@ -1520,7 +1535,8 @@
       "description": "Drive a caller-selected Gas City through its Mayor dispatch shepherd; keep GC runtime state out of AgentOps verdicts. Triggers: \"using gc\", \"gas city\", \"drive the mayor\", \"dispatch through gc\".",
       "disposition": "keep_optional_adapter",
       "effects": [
-        "operate_gas_city"
+        "operate_gas_city",
+        "configure_codex_trust"
       ],
       "graph_root": false,
       "hexagonal_role": "driving-adapter",
