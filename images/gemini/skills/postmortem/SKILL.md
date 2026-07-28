@@ -14,7 +14,7 @@ skill_api_version: 1
 user-invocable: true
 metadata:
   capabilities: [postmortem]
-  effects: []
+  effects: [write_postmortem_report]
   canonical_status: canonical
   disposition: keep_strategy
   tier: judgment
@@ -27,7 +27,7 @@ context:
     exclude:
     - HISTORY
   intel_scope: full
-output_contract: skills/postmortem/references/postmortem.feature
+output_contract: 'postmortem-report.md — markdown causal analysis (causal question, pinned inputs, timeline, hypotheses, counterfactuals, unknowns, experiments)'
 ---
 
 # Postmortem
@@ -88,7 +88,7 @@ is filed under correlations or unknowns, never silently promoted.
 
 ## Output Specification
 
-- **Artifact directory:** `.agents/postmortem/`.
+- **Artifact directory:** `.agents/scratch/postmortem/`.
 - **Filename convention:** `YYYY-MM-DD-postmortem-<topic>.md`.
 - **Serialization/schema format:** Markdown with causal question, pinned inputs,
   timeline, hypotheses, evidence, counterfactuals, unknowns, and experiments.

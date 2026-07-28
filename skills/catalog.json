@@ -871,7 +871,9 @@
       "dependencies": [],
       "description": "Optionally test a retrospective causal question against durable verdict evidence. Triggers: \"postmortem\", \"causal retrospective\", \"test a retrospective hypothesis\".",
       "disposition": "keep_strategy",
-      "effects": [],
+      "effects": [
+        "write_postmortem_report"
+      ],
       "graph_root": false,
       "hexagonal_role": "domain",
       "name": "postmortem",

@@ -83,7 +83,7 @@ on routine feature work.
 
 ## Boundary
 
-- Emit advisory findings, not `verdict.v2`, readiness, admission, or permission.
+- Emit advisory findings, no verdict of any version, readiness, admission, or permission.
 - Do not implement, validate the candidate, retry, repair, schedule, claim,
   change acceptance, operate Git, close work, release, or deliver.
 - Any plan edit creates a new subject for a later caller-initiated Premortem.

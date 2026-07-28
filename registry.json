@@ -987,7 +987,9 @@
           "postmortem"
         ],
         "disposition": "keep_strategy",
-        "effects": [],
+        "effects": [
+          "write_postmortem_report"
+        ],
         "has_references": true,
         "has_skill_md": true,
         "name": "postmortem",

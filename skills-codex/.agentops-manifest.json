@@ -399,8 +399,8 @@
     {
       "name": "council",
       "source_skill": "skills/council",
-      "source_hash": "99b8347b53316514350139dcae1ffdd11ca025820395bc72c700e86823ba914e",
-      "generated_hash": "7f43f5ac4f8fe296e36370245c4c9db44f56b841c5c5139c1b06abde1619ae2a"
+      "source_hash": "b8c6951caf7719f0d738cac225c61dc26678567889f2c68fa1643d8f922f4965",
+      "generated_hash": "725b45ef5ee0f0fb66bcbb81dd06d7adacdc9cb6284921f938e0a0e1f5df2b70"
     },
     {
       "name": "craft-goal",
@@ -441,8 +441,8 @@
     {
       "name": "idea-genie",
       "source_skill": "skills/idea-genie",
-      "source_hash": "5b17cb112c1d32875435911d7796b5886f9973fa491bbf22845bb3fe4c23b735",
-      "generated_hash": "457fc1e75959fdff25554592d3a72106919bf8cf1730c725fb8ba92375e1061e"
+      "source_hash": "905538c2b43536f0f3d062b1fc2008cfb699b7911fd78b10b77ac8ff276bf69a",
+      "generated_hash": "f97b8f16999217f7bc68c315a877b1d18edce13d39742d24af3a6f253181b663"
     },
     {
       "name": "implement",
@@ -489,14 +489,14 @@
     {
       "name": "postmortem",
       "source_skill": "skills/postmortem",
-      "source_hash": "20d7ad1188766fb023cb6fa4cae9eea49900492a09b37d61a06354fb66455f87",
-      "generated_hash": "2a90385f0cde31403f350960492a56ef383c66f3730147f641adcc722cb304b0"
+      "source_hash": "935e95b44f578c3aace0ec14ccc5941fa6d67603e0324a4e6c30583244dfd450",
+      "generated_hash": "55cc73eba32d0f60b6d8fa6707f8566de3393716345f7be558e08219cfbfe339"
     },
     {
       "name": "premortem",
       "source_skill": "skills/premortem",
-      "source_hash": "06fa5f32dd993d969371c99aabd78a2d5c5057b409c75323bfe372048a2c191c",
-      "generated_hash": "4aba81740a48d49fa43412609d235e8ea9f23a915945b7f11301bf3671f4b6a6"
+      "source_hash": "266f8d28e76457681e78f4e682a4594dcd14ba3aaddb14090a82b1b73f2afb9a",
+      "generated_hash": "c6c4e95a727089560a025c7a9f2d96f4e22e5bd8a8a3f2affbea656e220b8c41"
     },
     {
       "name": "product",
@@ -513,8 +513,8 @@
     {
       "name": "reality-check",
       "source_skill": "skills/reality-check",
-      "source_hash": "fa47b54614fefc41bfb076dba3a13b5b52f04360600ddf6042c5b5afd48b5d63",
-      "generated_hash": "3c94ff7df132747beb01b9c7d3a6c75adc02c0d80a9931a3bb7782f6dbe61f2d"
+      "source_hash": "65f4591de8b5ad1910e11533d5fd95d885a4f5d84dc4239f7bce581d4c9ade49",
+      "generated_hash": "1b53b64b56a1445cc9bee58b5cf1e435718ace9aa8e283f3b73ecf9808a6662f"
     },
     {
       "name": "refactor",
