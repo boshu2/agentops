@@ -235,6 +235,15 @@ if ! check_grandfather_shrink_only; then
   rc=1
 fi
 
+# Collect the changed set BEFORE iterating: a collector failure inside a
+# `< <(...)` process substitution is silently discarded even under
+# `set -euo pipefail` — a dead git read becomes an EMPTY loop and the gate
+# certifies over a diff nobody read. Captured under pipefail (the
+# check-atomic-write-ratchet.sh documented defense), a collector rc 2 aborts
+# loudly instead, with the library's stderr preserved.
+changed_list="$(collect_changed_files | LC_ALL=C sort -u)" \
+  || { echo "FAIL: changed-scope collection failed for scope '$SCOPE' — refusing to certify an unchecked change set." >&2; exit 2; }
+
 while IFS= read -r f; do
   [[ -z "$f" ]] && continue
   is_exempt_path "$f" && continue
@@ -242,7 +251,7 @@ while IFS= read -r f; do
   file_trips "$f" || continue
   added_hunk_has_scanner "$f" || continue
   new_hits+=("$f")
-done < <(collect_changed_files | LC_ALL=C sort -u)
+done <<< "$changed_list"
 
 if [[ "${#new_hits[@]}" -gt 0 ]]; then
   rc=1

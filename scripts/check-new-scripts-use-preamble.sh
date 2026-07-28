@@ -134,7 +134,22 @@ suggested_source_line='. "$(CDPATH= cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/
 tmp_changed="$(mktemp -d "${TMPDIR:-/tmp}/preamble-ratchet.XXXXXX")"
 trap 'rm -rf "$tmp_changed"' EXIT
 
-collect_changed_files > "$tmp_changed/raw" 2>/dev/null || true
+# FAIL-CLOSED COLLECTION. scripts/lib/ratchet.sh gives every chosen collection
+# command an explicit `|| return 2` ("refusing to certify an unchecked change
+# set"). The previous `2>/dev/null || true` here threw that contract away — a
+# dead Git read became an EMPTY changed set, the loops below ran zero times,
+# and the gate certified green over a diff nobody read (the byte-identical
+# fail-open the python-ratchet caller repaired). Preserve the rc AND the
+# library's stderr, and stop.
+collect_rc=0
+collect_changed_files > "$tmp_changed/raw" || collect_rc=$?
+if [[ "$collect_rc" -ne 0 ]]; then
+  echo "FAIL: changed-scope collection failed (rc $collect_rc) for scope '$SCOPE' —" >&2
+  echo "      refusing to certify an unchecked change set. An empty change set would" >&2
+  echo "      certify \"every new script sources the preamble\" over a diff that was" >&2
+  echo "      never read." >&2
+  exit 2
+fi
 
 missing=0        # governed scripts that neither source nor are exempt
 shrink=0         # grandfathered scripts that now source preamble (must prune)
