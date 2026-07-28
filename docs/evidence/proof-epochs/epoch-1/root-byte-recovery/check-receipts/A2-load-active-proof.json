@@ -1,0 +1,16 @@
+{
+  "artifact_digest": "17cf3b44fc9f2e890a9497ba53088ae467718ebbb3617b87fab240424f26ebe3",
+  "command": [
+    "/opt/homebrew/opt/python@3.14/bin/python3.14",
+    "-c",
+    "import importlib.util,pathlib,json;s=importlib.util.spec_from_file_location('k',r'/Users/bo/dev/agentops-worktrees/root-byte-recovery/skills/validate/scripts/kernel_v3.py');m=importlib.util.module_from_spec(s);s.loader.exec_module(m);print(json.dumps(m.load_active_proof(pathlib.Path(r'/Users/bo/dev/agentops-worktrees/root-byte-recovery')),sort_keys=True))"
+  ],
+  "exit_code": 0,
+  "observed_at": "2026-07-28T04:22:47Z",
+  "receipt_id": "A2-load-active-proof",
+  "result": "PASS",
+  "schema_version": "check-receipt.v1",
+  "stderr_digest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "stdout_digest": "4d707143b3f6066930eb4c5decfc9469e27b7221ec27533a484aeeded4a6f2e6",
+  "subject_manifest_digest": "6200fcf6b40242412351d9fc8e14606259468b391737ff90431de06e6a99fba2"
+}
