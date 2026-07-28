@@ -104,7 +104,7 @@
 | `ntm` | produces | `ntm-robot-state` |
 | `ntm` | produces | `agent-worker-transcript` |
 | `operationalize` | consumes | `evidence-backed-expertise` |
-| `operationalize` | produces | `operationalization-proposal.v1` |
+| `operationalize` | produces | `operationalization-proposal` |
 | `pattern-mining` | consumes | `repo-context` |
 | `pattern-mining` | consumes | `task-question` |
 | `pattern-mining` | produces | `pattern-mining.v1` |
@@ -139,7 +139,7 @@
 | `test` | consumes | `standards` |
 | `test` | consumes | `repo-context` |
 | `test` | produces | `result.json` |
-| `toil-mining` | produces | `result.json` |
+| `toil-mining` | produces | `toil-candidates-report` |
 | `using-gc` | consumes | `explicit-packets` |
 | `using-gc` | produces | `gas-city-runtime-evidence` |
 | `validate` | consumes | `subject-manifest.v1` |
