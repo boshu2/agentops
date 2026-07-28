@@ -75,7 +75,7 @@ challenge. Do not manufacture panel ceremony.
 
 ### Output Specification
 
-- **Artifact directory:** `.agents/ideas/<run-id>/`
+- **Artifact directory:** `.agents/scratch/ideas/<run-id>/`
 - **Filename:** `idea-challenge.json`
 - **Format:** `idea-challenge.v1` JSON with route-specific fields enforced by
   the validator

@@ -54,7 +54,7 @@
 | `operationalize` | meta | `keep_specialist` | - | `distill_expertise`, `propose_artifact_shape` | `write_advisory_proposal` |
 | `pattern-mining` | execution | `keep_specialist` | - | `pattern_mining` | - |
 | `plan` | execution | `keep` | - | `shape_intent`, `define_acceptance`, `bound_write_scope` | `update_intent_source` |
-| `postmortem` | judgment | `keep_strategy` | - | `postmortem` | - |
+| `postmortem` | judgment | `keep_strategy` | - | `postmortem` | `write_postmortem_report` |
 | `premortem` | judgment | `keep_strategy` | - | `challenge_plan` | `write_advisory_plan_review` |
 | `product` | product | `keep_specialist` | - | `shape_product_boundary` | `write_product_document` |
 | `rch` | execution | `keep_specialist` | - | `rch` | - |

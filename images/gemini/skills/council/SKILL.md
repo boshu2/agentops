@@ -16,14 +16,16 @@ metadata:
   effects: [write_advisory_council_report]
   canonical_status: canonical
   disposition: keep_strategy
-output_contract: council-report.v1
+output_contract: council-report.v1 JSON validated by skills/council/scripts/validate-output.sh
 ---
 
 # Council
 
 Council is an optional judgment strategy, not a lifecycle or delivery gate. Use
 it when one fresh validator is insufficient for a named irreversible,
-high-blast-radius, or genuinely contested decision.
+high-blast-radius, or genuinely contested decision. Do not convene a council for
+a routine or reversible decision that a single fresh validator can settle: the
+cost of independent contexts is warranted only by a named one-way door.
 
 1. Freeze one question, acceptance surface, evidence set, and subject digest.
 2. Give each judge an independent context and the same bounded packet.
@@ -73,9 +75,26 @@ unresolved assumptions. Synthesis is complete when every judge finding lands
 in exactly one of those buckets; a finding silently dropped from synthesis is
 majority laundering.
 
+## Output
+
+- **Artifact directory:** `.agents/scratch/council/<run-id>/`.
+- **Filename:** `council-report.json`.
+- **Format:** `council-report.v1` JSON — the frozen question and subject digest,
+  every judge's context ID, evidence methodology, cited evidence, and disclosed
+  omissions, plus the consensus/divergence/minority/unresolved synthesis. It
+  carries no `verdict`, `readiness`, or `PASS` field; the validator rejects one.
+- **Validation command:**
+  `skills/council/scripts/validate-output.sh <council-report.json>`.
+
+A judge that times out, errors, or returns an evidence-free judgment is excluded
+from agreement counting and recorded as non-returning; if fewer than two
+independent judgments remain, report the round as insufficient rather than
+synthesize a thin consensus.
+
 ## Boundary
 
-Council does not write `verdict.v2`, edit the subject, retry work, choose a next
-action, or authorize Git, closure, release, or delivery. When Council is used as
-a Validate strategy, one accountable fresh validator consumes its report and
-Validate remains the sole durable verdict writer.
+Council does not mint a verdict of any version — no `PASS`/`FAIL`/`NOT_PROVEN`,
+no `verdict.v*` — edit the subject, retry work, choose a next action, or
+authorize Git, closure, release, or delivery. When Council is used as a Validate
+strategy, one accountable fresh validator consumes its report and Validate
+remains the sole durable verdict writer.
