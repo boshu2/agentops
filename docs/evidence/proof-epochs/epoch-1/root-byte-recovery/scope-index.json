@@ -1,0 +1,57 @@
+{
+  "artifact_digest": "cab2184c18df53e8e4d2c4f31ea57ff24c12dbf790f37e3cef2cb1e636c5c53d",
+  "criteria": [
+    {
+      "id": "A1",
+      "required": true,
+      "statement_digest": "ff9afed7f7aeba74fc1d1c3a23815cdcb9f78a013a7ae4c97b8dc449c7471709"
+    },
+    {
+      "id": "A2",
+      "required": true,
+      "statement_digest": "5453ce31e7429ce7daa0e57624145120a497c2ac70ccc59409c8338702e1d984"
+    },
+    {
+      "id": "A3",
+      "required": true,
+      "statement_digest": "dc4637329feb8481853f6bd5f567ced5b58a19d1c9ad6cb377abc31e2ad7d490"
+    },
+    {
+      "id": "A4",
+      "required": true,
+      "statement_digest": "cfcb0a4194aed73efc68bd40d0406150f46de49a4a74cf64ea01cc2b617f16c3"
+    },
+    {
+      "id": "A5",
+      "required": true,
+      "statement_digest": "b55df2805152b728e22975bf98551d11b46b6a7251f10ed81abf198c738cef25"
+    },
+    {
+      "id": "A6",
+      "required": true,
+      "statement_digest": "c646f0da21c20142afd9738dcd0212a6ac468e594717e668c66b1d5fac93879b"
+    },
+    {
+      "id": "A7",
+      "required": true,
+      "statement_digest": "7ead935f196ef8cfa7e85135045b290e82fda4c161f04c7c5219766e0b41ab54"
+    },
+    {
+      "id": "A8",
+      "required": true,
+      "statement_digest": "c841d894c2fa67fd66f1e9087f2f04dabd3f85a3a6ebf35eb14233f727b35ebf"
+    }
+  ],
+  "declared_exclusions": [],
+  "frozen_at": "2026-07-28T04:21:43Z",
+  "intent_digest": "06843d5ec6eb393b35355759f8d99c6cc413dadef767c8b7450d215ca47acac8",
+  "schema_version": "scope-index.v1",
+  "scope_classes": [
+    {
+      "id": "source-restoration",
+      "patterns": [
+        "skills/rpi/scripts/run_once.py"
+      ]
+    }
+  ]
+}

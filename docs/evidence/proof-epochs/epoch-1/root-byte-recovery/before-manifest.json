@@ -1,0 +1,1851 @@
+{
+  "canonical_manifest_digest": "ddefc54a398b91e404085eea8c0afdef6a75c2a8cdc484347cfdb52534383917",
+  "entries": [
+    {
+      "digest": "6123c4e8315a4ac632982bfa0fad22f6ffbc22bee2dc51b09505c81782f23858",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/SKILL-TIERS.md"
+    },
+    {
+      "digest": "b2ea6a1060eadecab4a74804d9cfa85b81444a4515f21eb30660bfc0f59af24f",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/_fixtures/bad-skill/SKILL.md"
+    },
+    {
+      "digest": "da48918e68eaf5a7a22f34ea9c2d3be617735dfb150b1957fac10f3db0ccddcd",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/_fixtures/good-skill/SKILL.md"
+    },
+    {
+      "digest": "2f077b8bcf4ef8342f841175fa56bffc1f3090c1b53ee3a695f7392fe3f95cd8",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/account-rotation/SKILL.md"
+    },
+    {
+      "digest": "c1909583ad502c4b52f9017fba1a393efc8108dbe1be757d8f20c039d2400be8",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/agent-mail/SKILL.md"
+    },
+    {
+      "digest": "1225f96048956d0371d0f30534a5d83d50f43e468c4f5a32ec246dc797ce6779",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/agent-mail/references/RECOVERY.md"
+    },
+    {
+      "digest": "28832d59ff6a582fd4ea386bc46b98b0599751f5e81b844051944050551ec4dc",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/agent-mail/references/TOOLS.md"
+    },
+    {
+      "digest": "eda0819788c8160e673be78f90ea1a771acf2e5ebab26089ff7b0e9e17415214",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/agent-mail/references/WORKFLOWS.md"
+    },
+    {
+      "digest": "891a342a62bbf789217406a85923f3daf521f9f4123186e1b055cd13369c8ae5",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/agent-native/SKILL.md"
+    },
+    {
+      "digest": "b27951ddc2dd8257442e7d1834ee3619fd37deda2e99e7cc84a09e94c41a2c1f",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/agent-native/references/model-dispatch.md"
+    },
+    {
+      "digest": "5f4d300abda5f5b3837aa519011ccf00e332ef190ed293e306838d41178cbdf7",
+      "executable": true,
+      "kind": "file",
+      "path": "skills/agent-native/scripts/fake_model_runner.py"
+    },
+    {
+      "digest": "e8d86edd5c9c35437422f663c92caf95726164de25e28da80a396ac99a5ab073",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/agy-native/SKILL.md"
+    },
+    {
+      "digest": "1472c7364c385a410780fed030c242b03c180e36600018cd9399a054c6a7a672",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/automation-shape-routing/SKILL.md"
+    },
+    {
+      "digest": "f76b572093efe4f1b792448cb13fd4f979949b09c940296dfbdc7597a9a9d636",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/automation-shape-routing/skill.spec.json"
+    },
+    {
+      "digest": "6c86f07afb8f6d5d71cda21df94c49a19a5807f6d51ff806dd95539b902504c0",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/bootstrap/SKILL.md"
+    },
+    {
+      "digest": "301298764c8a52d02669a123906a67ad9f03045884fac220a6af4926e588c474",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/bootstrap/references/examples.md"
+    },
+    {
+      "digest": "32d554d06e15be4602f18486899a7fc982ba109250eb5cb06613b7c36faeff6f",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/cass/SELF-TEST.md"
+    },
+    {
+      "digest": "4eeb5d9124093f63d3f0fa4287bb86a951611fc9835fc77ccba9c916af70b8f7",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/cass/SKILL.md"
+    },
+    {
+      "digest": "1dbc59ad4a6543078e881fc64b3fd5b4e54e3970a1abd48209821d97e3f2290c",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/cass/references/ANALYTICS.md"
+    },
+    {
+      "digest": "f98139ef8f74877161fc1d710db63639068bf0a22e7c7b15a88171bcc6071a67",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/cass/references/ANTI_PATTERNS.md"
+    },
+    {
+      "digest": "fa78d023682a9ae79a10e4e643157316bae65db2d5d1c72145489e67b382bce9",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/cass/references/COMMANDS.md"
+    },
+    {
+      "digest": "e9713348dc373bda552696b24919d824935325da8a15f5e1d0123dda8c372e04",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/cass/references/HARNESS_EXCLUSION.md"
+    },
+    {
+      "digest": "980307c96229ee2ffa524c3a17ac05d79fef1ae5dde3b353dd937eea1decd964",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/cass/references/INTROSPECTION.md"
+    },
+    {
+      "digest": "84dee9717c18a2162b02d5e09e0463ab8a2a98b1cc4016c03379ce66542ec425",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/cass/references/OBSERVABILITY.md"
+    },
+    {
+      "digest": "3847abf98e008a71ac0f50d768e201ef7106350124e2e5c0aa698711ac4e78dd",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/cass/references/PAGES_AND_EXPORT.md"
+    },
+    {
+      "digest": "0573ae78515431d46f4b0588d5c15e56ec3a891bd56e55df80f3d23e7a7f7224",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/cass/references/PATTERNS.md"
+    },
+    {
+      "digest": "168bf23979917bd4dbfc225b0901639952c2549ae175bcda91ee024c1c4d3f26",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/cass/references/PITFALLS.md"
+    },
+    {
+      "digest": "51be4686eabcf3b7718d6658798b8492352f9c1f9f165396389c031811fb199c",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/cass/references/PROMPTS.md"
+    },
+    {
+      "digest": "a34b4a30e2a2593f4ae214a86d20ce14730c06de2276c10f7b0f7894a2787c48",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/cass/references/RECIPES.md"
+    },
+    {
+      "digest": "b277dce5460349ca3e58c1c30a89d73bf0391e70649188c60774eb47cc60b3e7",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/cass/references/RECOVERY.md"
+    },
+    {
+      "digest": "e36314151a641baaf2d118888f8ee672d213a080f6ae0323bda2f36656586759",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/cass/references/REMOTE_SOURCES.md"
+    },
+    {
+      "digest": "c64bfb41948be504b4e513e0197cca5d59378f5d4c880aabb630d90507464473",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/cass/references/RESUME.md"
+    },
+    {
+      "digest": "1c9dd2a9fee657b24cd810be9f4abdc055b79d61ff5b6ed587a2c7d772776c92",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/cass/references/SEMANTIC_AND_HYBRID.md"
+    },
+    {
+      "digest": "df0e91612b877bda1ab97dee8f75e697ff8c6948728ccdb98528a6fbd128f9a4",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/cass/references/SESSION_FORMATS.md"
+    },
+    {
+      "digest": "d127d64869b894180777509d214590a4967142a456c8d7255f08f640b51796ee",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/cass/scripts/multi_machine_search.sh"
+    },
+    {
+      "digest": "e2ee7617a363dab77383ec75ae8768956ed5a4354fe8f7fb1c8ad49ee6da15b8",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/cass/scripts/prompt_miner.py"
+    },
+    {
+      "digest": "2ff58c350b0cceeefd7477458b863c332b4a26fbe6c8e0229dab5f871729ddf4",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/cass/scripts/quick_analysis.sh"
+    },
+    {
+      "digest": "627bcbc0531c396fffb6e70991ecd34c8d32a2b9221e4159bb4e0ca06a1756e6",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/cass/scripts/recover.sh"
+    },
+    {
+      "digest": "842014ddc669a816ae325847e56ed219fb0ca4122eb79f2a6c78837a91fea23e",
+      "executable": true,
+      "kind": "file",
+      "path": "skills/cass/scripts/validate.sh"
+    },
+    {
+      "digest": "b16c8bf1796c7cf07f58c6053071de16869fb0508437e674b92a66a087d01a15",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/cass/skill.spec.json"
+    },
+    {
+      "digest": "96d199236a27d01420602025105861e8e798413c2ca917d4d9e7fc92f29146bb",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/catalog.json"
+    },
+    {
+      "digest": "34a12e178d0150065bbbcf079d4ff02f16eb924328941db253de66337adb4e23",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/cc-hooks/SKILL.md"
+    },
+    {
+      "digest": "622a5b2350cafa80336eb9c7b5be9702a9503f37b253e1d9253cb0794db1aa60",
+      "executable": true,
+      "kind": "file",
+      "path": "skills/cc-hooks/hooks/installed-skill-edit-guard.sh"
+    },
+    {
+      "digest": "0e257730e17784f543a153d881fe0b3bcfa0aba389d6fef8b4271b9ae0072f93",
+      "executable": true,
+      "kind": "file",
+      "path": "skills/cc-hooks/hooks/policy-dispatch.sh"
+    },
+    {
+      "digest": "1643814bd95ed0431e153fb59b1966628c3c0ab0679e96a7379468c40fd86bdf",
+      "executable": true,
+      "kind": "file",
+      "path": "skills/cc-hooks/hooks/skill-first-coord-guard.sh"
+    },
+    {
+      "digest": "d93db6bf9d080f18607dd73d477516f61aeb2a01db9b795071cc5f4f04e44f5b",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/cc-hooks/policies/policies.json"
+    },
+    {
+      "digest": "f37002d8be202659185429f06f78573f14d69f6dc9661a99043a51d505bdcd35",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/cc-hooks/references/DCG-RCH.md"
+    },
+    {
+      "digest": "2e27b34dec147fc76cf062bfaee6a8c51de3c35171a1774da36a82b125e82d2e",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/cc-hooks/references/GUARDRAIL-VALUE-PROOF.md"
+    },
+    {
+      "digest": "4d5bd18aa7f9828039fe9e2005871b6fb2687e3340c1971827e67eb8206e5451",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/cc-hooks/references/HOOK-EVENTS.md"
+    },
+    {
+      "digest": "4e288f62de87836120800e0a5892214de0f366e986fe02d3841966f10bfb6244",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/cc-hooks/references/INSTALLED-SKILL-EDIT-GUARD.md"
+    },
+    {
+      "digest": "2b0f429e00f049a7765306772fd0f88d94711f2b1a6136b7abf76da45c1d134d",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/cc-hooks/references/JSON-OUTPUT.md"
+    },
+    {
+      "digest": "8a9193b9573c0004da7e7c85547c6b536558fec51db711ec48178c152c660f10",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/cc-hooks/references/PATTERNS.md"
+    },
+    {
+      "digest": "54e90fd36901526c60bd8809519d2c43b02ca90b225dc4cfe80b605d2dd52c64",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/cc-hooks/references/SKILL-FIRST-COORDINATION-GUARD.md"
+    },
+    {
+      "digest": "2d32bc680d9406961a38b3c2792d102d3027a13b79d58fad58bec9fbbbbfffbf",
+      "executable": true,
+      "kind": "file",
+      "path": "skills/cc-hooks/scripts/install-hooks.sh"
+    },
+    {
+      "digest": "b02d2bcafa81328ea58fbc8e7806884cc7088cb169138fc4a3d6f37f55e5f2b0",
+      "executable": true,
+      "kind": "file",
+      "path": "skills/cc-hooks/scripts/lint-policies.sh"
+    },
+    {
+      "digest": "f7f8163691cf6e6507816ff08496082f68364579edf322c05fb40f24fc518380",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/cc-hooks/skill.spec.json"
+    },
+    {
+      "digest": "167eca6effb81109978420e0ba5dbb7fc06ad0de9f33133daac1ad844ed473d0",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/codebase-recon/SKILL.md"
+    },
+    {
+      "digest": "46cdf95f88be5aba5c4146fac561b845d589109c01bd45fd4b33acacdfd461fe",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/codebase-recon/references/codebase-recon.feature"
+    },
+    {
+      "digest": "1a57fa6f120024314c08a38f957b21e692ad69aad2a1d3fef55acf78197d310a",
+      "executable": true,
+      "kind": "file",
+      "path": "skills/codebase-recon/scripts/validate-output.sh"
+    },
+    {
+      "digest": "5715c4aa90c65c6e30795e89d520983a29ebfca94e4b8f10fb500a251b6b997c",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/codex-exec/SKILL.md"
+    },
+    {
+      "digest": "5b5e829945973c5bb037b2052ebd967508f69a66f1a24159e323868cbc563f6b",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/converter/SKILL.md"
+    },
+    {
+      "digest": "2105a065cc8c7dcfc8380b28dc90498243ff1c7bd1d8c92f3ca8bc401f7a7d33",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/converter/references/skill-bundle-schema.md"
+    },
+    {
+      "digest": "8c1c2c3acf308e7b52206eae1b13389fccd56c90b7bbd924e983b6639d07a653",
+      "executable": true,
+      "kind": "file",
+      "path": "skills/converter/scripts/convert.sh"
+    },
+    {
+      "digest": "88a23f5b7ebdfca4375b15a1c397e249ba555833962bb148307b8d6fabc9ca72",
+      "executable": true,
+      "kind": "file",
+      "path": "skills/converter/scripts/validate.sh"
+    },
+    {
+      "digest": "d6ee5d652ad56a9e7a47dc3544698e22f2c7cc2ff81ce5cd99a3786ab227f0f4",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/council/SKILL.md"
+    },
+    {
+      "digest": "30acded86a6a2ba8d5093070b416c90b4d550dc1f48e2e34f172e39fd21a76a8",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/craft-goal/SKILL.md"
+    },
+    {
+      "digest": "14a2c4d9ecc8e9be7fe83ef7eca38f150f94552eac7d723eaf0e7f422526422b",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/craft-goal/references/goal-prompt.md"
+    },
+    {
+      "digest": "6a42ec444e882b99c86860a1ed86ea643a3636fabf49e0d8e59a131df5c63df2",
+      "executable": true,
+      "kind": "file",
+      "path": "skills/craft-goal/scripts/validate.sh"
+    },
+    {
+      "digest": "4d05f1961ca581da8debee72b59a054cd092192440aaf02583f0713b44dfdfc5",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/dcg/SELF-TEST.md"
+    },
+    {
+      "digest": "b9d62a088201f83063f76d241561a5d799e99f9633963bf0927be5b821b59c0d",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/dcg/SKILL.md"
+    },
+    {
+      "digest": "a7f128c7928c1b36c41d401364b5a835e86ccb32e599c1cd88a1743237902286",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/dcg/references/COMMANDS.md"
+    },
+    {
+      "digest": "b5d5a7432e87b8d8c63e2606dfda680d71a8cbe9583d3bdd813bb98faf997a2a",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/dcg/references/CONFIG.md"
+    },
+    {
+      "digest": "069b3cbf7157beaf6169b84cad3a7c6704f7d4a8ff280c9f40e2839fcfe533a0",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/dcg/references/PACKS.md"
+    },
+    {
+      "digest": "a10788a1e31e8f578231bb62e13285e5fffb0555c00d45b085f03ca088c85629",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/dcg/references/PHILOSOPHY.md"
+    },
+    {
+      "digest": "c9bad1dfd65cca03a96089c6a27a1d160b907bf5d6217ded6897d4a63eb19974",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/dcg/references/SCENARIOS.md"
+    },
+    {
+      "digest": "8a5cc8f1b3de4d997183c72709a7534846a64caff8e1e60235adab147fe77499",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/dcg/references/TROUBLESHOOTING.md"
+    },
+    {
+      "digest": "b7477489caff3fa6b8a12b3d0b8813d034244d98ad5710d1bb04bcd9768f7677",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/dcg/scripts/validate-dcg.sh"
+    },
+    {
+      "digest": "f1ed80718c34938df60527272cb3ae16c85285611b1cb04eb004a20faca31cca",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/doc/SKILL.md"
+    },
+    {
+      "digest": "b3534765cf33d51fbbfcb0284271f9f0f656de2dc22578ad0cd8318be2e9437d",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/doc/references/architecture-report.md"
+    },
+    {
+      "digest": "10523751077d1a63a333e6c43b4d75634ddbe48cc379c79a615748329c7793ff",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/doc/references/de-slopify.md"
+    },
+    {
+      "digest": "0d2f70fd4632b8629f87dd0ec218683b7b0bb5942fea669ee775365cb377e8a9",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/doc/references/default-mode.md"
+    },
+    {
+      "digest": "9b04230e875818221a7707cc45c4057fe4fa17c497df98bb65b1cd7ed087712e",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/doc/references/doc.feature"
+    },
+    {
+      "digest": "027fe1db6dfdeece7019d4ecde69bee657428a9b56eddf88b57621f3f0b49942",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/doc/references/generation-templates.md"
+    },
+    {
+      "digest": "1d653aeb51c282c7d90c8eaf7e150d7b745fbd4660a9bbd293cc7db35c7c8e22",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/doc/references/oss-docs.feature"
+    },
+    {
+      "digest": "d9bec13fc96af2290bf0e1ae11fdf03aca9d4fa2ba62a1e25a251882b55d83b5",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/doc/references/oss-documentation-tiers.md"
+    },
+    {
+      "digest": "8e5bf84f751435563675f55c4678bfb0110aeba8b42bdf089430112dd200dee2",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/doc/references/oss-pack.md"
+    },
+    {
+      "digest": "3c78f072f8c7332aadb60d88f2e81b5bae7a279403a32adf972816f0d81a73ff",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/doc/references/oss-project-types.md"
+    },
+    {
+      "digest": "bebe4baa8e283c9458caabf5bb617d9ed72cf257cfbbfff18f214622c1085ae1",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/doc/references/project-types.md"
+    },
+    {
+      "digest": "c10139f26c8c64cd6e5af8d2a66cc096f8a0fed36b64b4e101c85071a9e85ce4",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/doc/references/prose-and-report-workmanship.md"
+    },
+    {
+      "digest": "9d99d19251bedb3c65c69b4c056fbfdf0d663f3ac8452f7f7407f7ffe7db0a6a",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/doc/references/readme-craft.md"
+    },
+    {
+      "digest": "354ad2ba799fd35d23033d377c9a01d12d301ff9e53f900bad1dac5654a2b011",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/doc/references/readme.feature"
+    },
+    {
+      "digest": "7c1c48dc6b61457ca6991b18cbd255c7c8e0e94fa2c4663518d2d3d4cf10daca",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/doc/references/validation-rules.md"
+    },
+    {
+      "digest": "36d7ddd672611a9761aca3b2013af5a5fc8799091312a70dbe9bdd9ecae58e70",
+      "executable": true,
+      "kind": "file",
+      "path": "skills/doc/scripts/audit-oss-docs.sh"
+    },
+    {
+      "digest": "de151bd81a3e05aec0166f033e579590f35866eea54cf8e55937ec8f5fd6722e",
+      "executable": true,
+      "kind": "file",
+      "path": "skills/doc/scripts/validate.sh"
+    },
+    {
+      "digest": "bc0fabecdcccee78f8d0a252bc9e58f64dc24f5c66e8a1402031d693aeea1c0c",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/domain/SKILL.md"
+    },
+    {
+      "digest": "f569246fce9a074259aba9ba590f92e93e85544b36d8ea11d632ab02a8279cb4",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/goals/SKILL.md"
+    },
+    {
+      "digest": "9f4eb5bfb3190b30f8539fac8d94c8c9c31cdd97fedb267c3a3b77f9aba28912",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/handoff/SKILL.md"
+    },
+    {
+      "digest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/handoff/references/.gitkeep"
+    },
+    {
+      "digest": "a19e458f9563170b32f8ddc3a9a941e4568725b89e87e7670dac800be06ad196",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/idea-genie/SKILL.md"
+    },
+    {
+      "digest": "eff400dca97610d45e198bbc17c506787c17df33fd28343fa6257fc7b23823f7",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/idea-genie/references/idea-challenge.feature"
+    },
+    {
+      "digest": "35735854034bedc1e34fdb1f993d594d9c8932090edee8071fda28d3971c6dac",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/idea-genie/references/idea-genie.feature"
+    },
+    {
+      "digest": "0acb03d48d0cee648ffbbb702d490dcb90807b089372b8626f62a78fe8587716",
+      "executable": true,
+      "kind": "file",
+      "path": "skills/idea-genie/scripts/validate-challenge.sh"
+    },
+    {
+      "digest": "22f868af8d38500539296f048aad50c068fea21a938e7155a09d1fe3ea73afb9",
+      "executable": true,
+      "kind": "file",
+      "path": "skills/idea-genie/scripts/validate-output.sh"
+    },
+    {
+      "digest": "bcbb2156409af426769e77dc90aaeed43371dfd54f4ae886caac2b8f49359e8b",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/implement/SKILL.md"
+    },
+    {
+      "digest": "90a737a9aaba69ee32397c07a5a023ba7b4dab96bc515879f72a2ad087e6eff1",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/implement/references/implement.feature"
+    },
+    {
+      "digest": "51988cc25b183a365e5c5c9fcbe66df9014a08760f4a8187d7e3d41b25c99dc1",
+      "executable": true,
+      "kind": "file",
+      "path": "skills/implement/scripts/freeze_candidate.py"
+    },
+    {
+      "digest": "9c42441842179430c24ad8944b4a566a7d801fc092f8c2fdffd66ef1ee59cea1",
+      "executable": true,
+      "kind": "file",
+      "path": "skills/implement/scripts/validate.sh"
+    },
+    {
+      "digest": "dca69a9c7c0bb3959232be7abb2338deb8f52e0820f17ba6612a4b78e5ac4baa",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/learn/SKILL.md"
+    },
+    {
+      "digest": "9f39c2737512e99736cae0af88a63c54f34ddab41ae91d7ced647e7f133fa7c2",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/learn/references/learn.feature"
+    },
+    {
+      "digest": "7e81f71d079c84f95386d5254eba19ad3f118cf1ff123568d9f9550139234925",
+      "executable": true,
+      "kind": "file",
+      "path": "skills/learn/scripts/validate.sh"
+    },
+    {
+      "digest": "9337244784e8d105aa88e6cca1d6939c0ac80953813134f9f4651c8fdf72e863",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/ms/SKILL.md"
+    },
+    {
+      "digest": "0f6651b3c49a17cb158d34e7c2d25bdd456e5589a9fe3cc5e9a6b0fab9f598f6",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/ms/scripts/mcp-search.py"
+    },
+    {
+      "digest": "e6cd0630fdc740bda7c1573b1003ddb1bc4866c63ff7469534e01638b5c43938",
+      "executable": true,
+      "kind": "file",
+      "path": "skills/ms/scripts/validate.sh"
+    },
+    {
+      "digest": "3aaa5876f3baa90e957375a36c5b69c9f464ba31f83c65140b3077f5942da3ef",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/ms/tests/mcp-search.bats"
+    },
+    {
+      "digest": "778f5bab59825a7814de3c77d2378a8aa1c74432b0c36ed4091cd999ee606bb4",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/ntm/SKILL.md"
+    },
+    {
+      "digest": "696fd9246250f422d2d09d9d8c75a74c1be2a70e837c536416938aed4b112db1",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/operationalize/SKILL.md"
+    },
+    {
+      "digest": "22d1385e5e434b987e92e82ab0be5522e8f6abd551381e7c1c0510337fa0f718",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/pattern-mining/SKILL.md"
+    },
+    {
+      "digest": "a58c16777e6ed6a7185ca7ab41a942bed3da2cc741c3eabaa393ad2630e6894f",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/pattern-mining/references/pattern-mining.feature"
+    },
+    {
+      "digest": "5d287493b420d90594f1e6878f9a482549dda0fda08526292aa46af32de177f7",
+      "executable": true,
+      "kind": "file",
+      "path": "skills/pattern-mining/scripts/validate-output.sh"
+    },
+    {
+      "digest": "c1808f7d874e85a0a7923f83c38254dab874a27dc0bbf600095316b3c26f2431",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/plan/SKILL.md"
+    },
+    {
+      "digest": "f52ca8501a53933077c6e779c49e402422cc87468f7b210cfcc4068bd208d23b",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/plan/references/plan.feature"
+    },
+    {
+      "digest": "6bb36c50ad87f4ae0eccee8c6a40256ef37429c4452a13cd7d41a0b0d56b11bc",
+      "executable": true,
+      "kind": "file",
+      "path": "skills/plan/scripts/mint_intent.py"
+    },
+    {
+      "digest": "457be15c622db62e1a0c80eadfff9dee47ed93ccc3320bf7b4e411d8aee42888",
+      "executable": true,
+      "kind": "file",
+      "path": "skills/plan/scripts/validate.sh"
+    },
+    {
+      "digest": "8012357dab12d6ee45dbde163098c6f58fbbcd082e000e0641fe6e254ba89ec9",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/postmortem/SKILL.md"
+    },
+    {
+      "digest": "3f7f218f6ef8754a206adc10ba329adff6d019328ce56724b9954feda03587b6",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/postmortem/references/postmortem.feature"
+    },
+    {
+      "digest": "668bbe7b72d2c94eaffecec6546b5da0a8b2c6785fd46743be71e8ded4568e61",
+      "executable": true,
+      "kind": "file",
+      "path": "skills/postmortem/scripts/validate.sh"
+    },
+    {
+      "digest": "9450d2775f3d15a211decb0ebfd4f2a1b6180b8b400740239304568ff5bd7fdc",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/premortem/SKILL.md"
+    },
+    {
+      "digest": "ed54ec3f6135bfc2f27f306eb3729b98e0bf64ad727b9a544550023a0010497c",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/premortem/references/premortem.feature"
+    },
+    {
+      "digest": "a8de64b7d7654d2f73ad45943483b27ff582911edd6c8754a5fe76b0e4306651",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/premortem/schemas/premortem-plan-review.v1.schema.json"
+    },
+    {
+      "digest": "7c59b3a35b60490e77d49a14877aba922176b6f746e386d1c1755d3e954f375d",
+      "executable": true,
+      "kind": "file",
+      "path": "skills/premortem/scripts/validate-output.sh"
+    },
+    {
+      "digest": "d61331f97014c0a97269ddbedf48eec44d3befa37dcb8f03f2406007ff84672e",
+      "executable": true,
+      "kind": "file",
+      "path": "skills/premortem/scripts/validate.sh"
+    },
+    {
+      "digest": "0db4ffc5d76efcb5c8a3420de763b1061c25e218091c1b15b6609163b165f2d1",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/product/SKILL.md"
+    },
+    {
+      "digest": "ae9cb9068f456a7c82d4fc9f9c9c9d379045a2620b7e658367c4ebdc21d08548",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/rch/SKILL.md"
+    },
+    {
+      "digest": "73a20495b4ecd81db6a92f13e6398a4e87334f2ea6d2654b99faf1eafb8ab780",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/rch/references/CONFIGURATION.md"
+    },
+    {
+      "digest": "1ed2a9b76e4f739c419bc140a598aa46a5953c895e71d6b9f506659cf98f676f",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/rch/references/ERROR_CODES.md"
+    },
+    {
+      "digest": "cf12a03247b09ea7dc699bce5499c146cdbfcf41efe72e170841aec8a28bccc6",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/rch/references/FAIL_OPEN.md"
+    },
+    {
+      "digest": "448a1898c4de6f328061b147b5bc2b5a1aac94fd34d82b2e834d3689c4d1c134",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/rch/references/MACHINE_INTROSPECTION.md"
+    },
+    {
+      "digest": "a1000b7f917c1dca60a84f87b46a3a9ca2528dcf9d3d3d448fea3366953b8f87",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/rch/references/RECOVERY_PLAYBOOKS.md"
+    },
+    {
+      "digest": "3c79d23dde905b2666d984ef8b84d8762c3c23795d25c95d3a6b38fec98f89e0",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/rch/references/TROUBLESHOOTING.md"
+    },
+    {
+      "digest": "09ed68f9653ed21957080caaeff7ca63b902478df17cd746f24a31cc6ea749bc",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/rch/references/WORKERS.md"
+    },
+    {
+      "digest": "cf49935936a78a1eecf3610386f22a79f74d14a4678a03562802ce096a23f13a",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/reality-check/SKILL.md"
+    },
+    {
+      "digest": "d0fa4aa1b1ee06c7929a4fd3417618ebe9811be72b1eb683c4150fd8234db59d",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/refactor/SKILL.md"
+    },
+    {
+      "digest": "121b476a057579ffad8015ceec305d54fe4097dedb134e526870ee2b37eb2f87",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/refactor/references/behavior-preserving-simplification.md"
+    },
+    {
+      "digest": "d0d271a040e7ce221bc1620427f1d62de94f2e24cfb4730941ddccf02fd6f265",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/refactor/references/refactor.feature"
+    },
+    {
+      "digest": "4c6e53a12dad694130179e673df544eec1de37994a430543ade95f2582e5594b",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/research/SKILL.md"
+    },
+    {
+      "digest": "51844890fbf04fc849dba643065b13b0ecd72be563f8a3b338621ab1047513ae",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/research/references/research.feature"
+    },
+    {
+      "digest": "fdda96ebf5ea0e412d8c58f6937abe1cba629590bc8ac0b39c531936f68b75e7",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/research/schemas/findings.json"
+    },
+    {
+      "digest": "6e58f100379f98672bb233f8c3dfef1aef3c616905d56bff92da0d73c39b386e",
+      "executable": true,
+      "kind": "file",
+      "path": "skills/research/scripts/validate.sh"
+    },
+    {
+      "digest": "862263fa1f46c20f0d1e4dac5ffcc75abd55c08211b2c3864c5f8764b9d87793",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/reverse-engineer/.gitignore"
+    },
+    {
+      "digest": "4e3b2ac492edd955e9696922e38db64fd6c9890b610497f7b529ee6d69f507a8",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/reverse-engineer/SKILL.md"
+    },
+    {
+      "digest": "65bf97c33bc2201f58f21448e132761fc9bf277be262a2a739edf1bf5e4c1dd8",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/reverse-engineer/agents/openai.yaml"
+    },
+    {
+      "digest": "224dbe841446d0ddeb0b0f2bc42cea4bde5e6169ba8bdd7416131ddcd0d33470",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/reverse-engineer/fixtures/cc-sdd-v2.1.0/cli-surface-contracts.txt"
+    },
+    {
+      "digest": "84d5cba690cfb4856c56796954a40994d79089b58889a0dfdfc80157a9b1e0cd",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/reverse-engineer/fixtures/cc-sdd-v2.1.0/clone-metadata.json"
+    },
+    {
+      "digest": "a01628629ed8bfe42b4c2dfedd8c7a89abe0a2ce01a80c0f9c0da97e1fe872de",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/reverse-engineer/fixtures/cc-sdd-v2.1.0/docs-features.txt"
+    },
+    {
+      "digest": "9706ec42f92deb6e046eeb4e98365eb88a4f1263cd1a4ac914cb576f22d7a33c",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/reverse-engineer/fixtures/cc-sdd-v2.1.0/feature-registry.yaml"
+    },
+    {
+      "digest": "8835032b1f96d0b25b494d43fd21dfd43010d9c4123e47b0c26fd18fa28fb769",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/reverse-engineer/references/reverse-engineer.feature"
+    },
+    {
+      "digest": "65cac2f66a5fa5cd190a039df8a58f5a2393653b2d05471e6fbd300074ef624b",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/reverse-engineer/references/templates/postmortem.md.tmpl"
+    },
+    {
+      "digest": "c725b92ae59eccbd0f5d8c9f490598e1c106d76df02c98fe89849510ecf5dc20",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/reverse-engineer/references/templates/security/attack-surface.md.tmpl"
+    },
+    {
+      "digest": "fc3bff08f8f8958a73575a5137e352b2f31f71b8e4690184056c4c2115ab0f2d",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/reverse-engineer/references/templates/security/authn-authz.md.tmpl"
+    },
+    {
+      "digest": "33d4dd4e8d6c9adcba5949f7f21e233eb1fdc2d2e49595a55dc9f7ae8f37e72a",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/reverse-engineer/references/templates/security/crypto-review.md.tmpl"
+    },
+    {
+      "digest": "8381df05bcdbb3163cabbf77ad098001b5b5cada7b23083bacce537c33fb3710",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/reverse-engineer/references/templates/security/dataflow.md.tmpl"
+    },
+    {
+      "digest": "c3e2f1033235acfdf7854f2d93363c53664ae209e7ee5ac197647d21e7e14bbd",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/reverse-engineer/references/templates/security/findings.md.tmpl"
+    },
+    {
+      "digest": "f5fd091fc998191b520f52079c7530dce832a3a902d7a54693da5c5f6c5716ee",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/reverse-engineer/references/templates/security/reproducibility.md.tmpl"
+    },
+    {
+      "digest": "a0d164c5c98cc23a03a9de07723a2dd6ccc502e526a8f9f86ce3aab18bce7034",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/reverse-engineer/references/templates/security/threat-model.md.tmpl"
+    },
+    {
+      "digest": "ba7c9230d20b2c2c79f4319a74115ae3b1b5ce80650bd04d8753f5f8a67791a9",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/reverse-engineer/references/templates/spec-architecture.md.tmpl"
+    },
+    {
+      "digest": "a59893685292b79b14f932de85d7acccbe9da06273c6cca912d4b91ccd171b3c",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/reverse-engineer/references/templates/spec-cli-surface.md.tmpl"
+    },
+    {
+      "digest": "939a4783e33b6b05d73834c8580d75790c792118549f216790b32528d77f9b96",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/reverse-engineer/references/templates/spec-clone-mvp.md.tmpl"
+    },
+    {
+      "digest": "a55ff9601f7bba04e8f9e54d3c0bf8bec7dbc0abe4912a0a684bc8957375d6a5",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/reverse-engineer/references/templates/spec-clone-vs-use.md.tmpl"
+    },
+    {
+      "digest": "3678247c28eeb69dcc114d277f8a5af572119dd93605558ddef82c8d1f0545b2",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/reverse-engineer/references/templates/spec-code-map.md.tmpl"
+    },
+    {
+      "digest": "e40fc6efed8f3c551a9d12624fd972dd0caf659cc9219175d00cad372892ce26",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/reverse-engineer/references/templates/vibe-report.md.tmpl"
+    },
+    {
+      "digest": "21f8f17e56d06664aa92cc2628dd9284a00a42f091284fe5d60cebdc69a3afa5",
+      "executable": true,
+      "kind": "file",
+      "path": "skills/reverse-engineer/scripts/binary/analyze_binary.sh"
+    },
+    {
+      "digest": "edf92c06b7c2aa4f210acf54f674ef5d588a0fdd65542a6ba249a17fce6597b3",
+      "executable": true,
+      "kind": "file",
+      "path": "skills/reverse-engineer/scripts/binary/capture_cli_help.sh"
+    },
+    {
+      "digest": "656ea061b51f288e6fc72fc51da59496d03968eaaa7f9cd19811d4ad53bf956e",
+      "executable": true,
+      "kind": "file",
+      "path": "skills/reverse-engineer/scripts/binary/extract_embedded_archives.py"
+    },
+    {
+      "digest": "e75d8f25755c744cc5808e69f03a94e1ac2da73eb7c75ae80a6de0ac9ce98731",
+      "executable": true,
+      "kind": "file",
+      "path": "skills/reverse-engineer/scripts/binary/list_embedded_archives.py"
+    },
+    {
+      "digest": "619279c00c96aad724cc80700a270df57afbc4e313f9717336ffa8ca0e555ffd",
+      "executable": true,
+      "kind": "file",
+      "path": "skills/reverse-engineer/scripts/extract_docs_features.sh"
+    },
+    {
+      "digest": "125d4238c25a11319ae62b7209f8b05b8d511c080be3c5f7ecaa680affd216bf",
+      "executable": true,
+      "kind": "file",
+      "path": "skills/reverse-engineer/scripts/extract_sitemap_paths.sh"
+    },
+    {
+      "digest": "41746f786e949d1732ea152ccdbb20d2ed7cb9e7c38f74cd53348d114e4c374c",
+      "executable": true,
+      "kind": "file",
+      "path": "skills/reverse-engineer/scripts/fetch_url.py"
+    },
+    {
+      "digest": "aac9664606c7e431bc63ff73065b2760d39fa2bb7dd0e0b12fe3d503acec04f3",
+      "executable": true,
+      "kind": "file",
+      "path": "skills/reverse-engineer/scripts/generate_feature_catalog_md.py"
+    },
+    {
+      "digest": "5e282e63c1206e9c6b43d3098449f34694addd78c3592141706bfa434f360313",
+      "executable": true,
+      "kind": "file",
+      "path": "skills/reverse-engineer/scripts/generate_feature_inventory_md.py"
+    },
+    {
+      "digest": "2aaf2b5b340bcf3f2c0f8ed97694252810839846c86fac2c23978f69b7bd2d53",
+      "executable": true,
+      "kind": "file",
+      "path": "skills/reverse-engineer/scripts/repo_fixture_test.sh"
+    },
+    {
+      "digest": "b15764ff482883582d90affe3d6fadf75014813111186168d47c45b83088ab30",
+      "executable": true,
+      "kind": "file",
+      "path": "skills/reverse-engineer/scripts/reverse_engineer.py"
+    },
+    {
+      "digest": "08c0921b5f7f02e43327260ea91fa943f154ede9bf7cdb9403b61e0cc7f67e26",
+      "executable": true,
+      "kind": "file",
+      "path": "skills/reverse-engineer/scripts/scaffold_feature_registry.py"
+    },
+    {
+      "digest": "2d55e69c53e06e8e47b00b935564ff9ead1624d9d0779144643e806df530c756",
+      "executable": true,
+      "kind": "file",
+      "path": "skills/reverse-engineer/scripts/security/generate_sbom.sh"
+    },
+    {
+      "digest": "117a2c7769c6729e22632f728f66d5b0093cfc0597b569cc6b0df2b7d676f851",
+      "executable": true,
+      "kind": "file",
+      "path": "skills/reverse-engineer/scripts/security/scan_secrets.sh"
+    },
+    {
+      "digest": "9bbe753e87624a2c1b215d3470df72df331799b9e1ba7444059e670d2b13bd4a",
+      "executable": true,
+      "kind": "file",
+      "path": "skills/reverse-engineer/scripts/security/validate_security_audit.sh"
+    },
+    {
+      "digest": "db6bfbbba481d4d471f43d9798822fe40bbceee297b3290274d6a019fd040c78",
+      "executable": true,
+      "kind": "file",
+      "path": "skills/reverse-engineer/scripts/self_test.sh"
+    },
+    {
+      "digest": "6224a53608e96807d00a2ce1cc6490e9dc62379282e5b1f09ba8109a72743bd0",
+      "executable": true,
+      "kind": "file",
+      "path": "skills/reverse-engineer/scripts/validate.sh"
+    },
+    {
+      "digest": "16d31898dd21ae27647fbe98f6ca4216ac9fd5595f55ebe19acb8baa09ff350a",
+      "executable": true,
+      "kind": "file",
+      "path": "skills/reverse-engineer/scripts/validate_feature_registry.py"
+    },
+    {
+      "digest": "ec58369b6fcf525ef0fd0c5d25cb2a596642daac61ef9891944ec75195f6909b",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/rpi/SKILL.md"
+    },
+    {
+      "digest": "76ef7786081067a2f4833cf725089f18fa85b026170f1a99f10d3d76d1225f6d",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/rpi/references/rpi.feature"
+    },
+    {
+      "digest": "52e4be4c51cd047d225f2bc83fdbfd18133c22c1e008d5076c32c4b608fd279b",
+      "executable": true,
+      "kind": "file",
+      "path": "skills/rpi/scripts/run_once.py"
+    },
+    {
+      "digest": "ecb6d1cb426fbfb735c784aac1f7cb26f4fbac40200b79f7212842ff7215fee0",
+      "executable": true,
+      "kind": "file",
+      "path": "skills/rpi/scripts/validate.sh"
+    },
+    {
+      "digest": "aadbb9dc229be51dbb6a9576ebefe1a9af2c0faa34a9d79d8b29cec5e4634b9a",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/rpi/tests/test_run_once.py"
+    },
+    {
+      "digest": "b7cb8a5b4d1a23ccb5fc7c3954c8bcaba322365c7a6e040641ece915ef7ff794",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/sbh/SKILL.md"
+    },
+    {
+      "digest": "69d8a04cc914afeb4fb74c04164f85a2061b8f62d7e7d790b464daf71e68ec0c",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/scaffold/SKILL.md"
+    },
+    {
+      "digest": "8457bbdadeef015b7c84b95e5d13a0ec8e4de6db37d53592eb1267046cc3e23a",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/scaffold/references/agent-facing-tool-scaffolds.md"
+    },
+    {
+      "digest": "4d8f55440474665ab94490d85c9446b9df7d5bb3c0d946537ec5e29e15c43abf",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/scaffold/references/generic-templates.md"
+    },
+    {
+      "digest": "5f2251445ed0d1f8a765c3dc0d80297cd6e9a9ed25d39c3d0cc312fce2977d08",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/scaffold/references/scaffold.feature"
+    },
+    {
+      "digest": "8abcc96f3fcce041387ee15ee319bde90c5cb91967cab5d0596109b56ff0e575",
+      "executable": true,
+      "kind": "file",
+      "path": "skills/scaffold/scripts/validate.sh"
+    },
+    {
+      "digest": "ff943beb2b55b9a0116759c739916fa540bf5eade66fe952a015479a11e527e0",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/scope/SKILL.md"
+    },
+    {
+      "digest": "6b63e81b02972cdc1391a5195b229ab81b5eb5fa62585299a7e57b785d327991",
+      "executable": true,
+      "kind": "file",
+      "path": "skills/scope/scripts/validate.sh"
+    },
+    {
+      "digest": "270fa1427203d820ef4d65a5b43c991dc88eb8792ae66834c93546a5930217df",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/security/SKILL.md"
+    },
+    {
+      "digest": "9cff6d368e97dd02ff8866c94f144067af3dd45653c98bdcc86d15f23cfcfdb4",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/security/references/agentops-redteam-pack.json"
+    },
+    {
+      "digest": "5847b57cda2cb84a09dd1d3fd9974a9a84954e509be4001dc00dfad98a2a44e0",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/security/references/owasp-checklist.md"
+    },
+    {
+      "digest": "b08a6a25351882cb99ea9fce0889ac56823edfd62c0d34a4808de3af88da9870",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/security/references/policy-example.json"
+    },
+    {
+      "digest": "20dede4e1e6835aa3d4edf37bfc8e0a93b513f0424fa292c3be9fa10de1a3272",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/security/references/security-suite-runbook.md"
+    },
+    {
+      "digest": "bf4b6de03a9a4abf1bc4f3211f3352889345e494b33f7fa0c42e8409ea46ee53",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/security/references/security-suite.feature"
+    },
+    {
+      "digest": "452a3d75b15089f1b064dd7532562a7ddc8fad7f1c29494bf17a84af72ede1ff",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/security/references/security.feature"
+    },
+    {
+      "digest": "5b466792dad1a0c4236fc9cedf150c2595cbd1a5aa279268f970abbe914440e3",
+      "executable": true,
+      "kind": "file",
+      "path": "skills/security/scripts/prompt_redteam.py"
+    },
+    {
+      "digest": "deeea2c6848fd07ee29064b0b0ade49cee35edd5ba69f06bc0dd5717636ee3f7",
+      "executable": true,
+      "kind": "file",
+      "path": "skills/security/scripts/security-gate.sh"
+    },
+    {
+      "digest": "bb70ed1ead776c9f34eaf6ed9a6245af585e6ca7ac43b4821ad60e7ff8ef2bbc",
+      "executable": true,
+      "kind": "file",
+      "path": "skills/security/scripts/security_suite.py"
+    },
+    {
+      "digest": "c600b3d11da932079076fcab9bd4b2397e0928d58f78b74a2b863bf4d57beaeb",
+      "executable": true,
+      "kind": "file",
+      "path": "skills/security/scripts/validate.sh"
+    },
+    {
+      "digest": "df1fa6c757a8fc95ed9ea33c496ad760ae65a32e39d511cf04253cefad496c8e",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/shared/SKILL.md"
+    },
+    {
+      "digest": "3860da6af7ffac6141e9ff40ccc322d271e1888db4fd22606a551dd7bb152990",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/skill-builder/SKILL.md"
+    },
+    {
+      "digest": "d72c48ba5e43d08fb25efd9844478686cd6da105fdb9d6105fb36eeaf4e37c93",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/skill-builder/fixtures/contract-v3/cases.json"
+    },
+    {
+      "digest": "3721c2787db26390f83f2605e7b99de3fb6c27c13eca215b3043ded91053c922",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/skill-builder/fixtures/contract-v3/invariants.json"
+    },
+    {
+      "digest": "daa9191daecb4dd21e0c15336d664b8e370e9e59935ddc704e20e0feeb0640e3",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/skill-builder/fixtures/contract-v3/probe-harnesses/absolute-live-write.py"
+    },
+    {
+      "digest": "23321a01014f2e80da8fcde3d0b106165f571f28b70786cc809a8857bc9eefeb",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/skill-builder/fixtures/contract-v3/probe-harnesses/large-output.py"
+    },
+    {
+      "digest": "9918fd621b0645a225c0a77d46a62cc864142af638f445912da3f9a2059fed67",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/skill-builder/fixtures/contract-v3/probe-harnesses/leave-descendant.py"
+    },
+    {
+      "digest": "ac296c990bb7649d0be6ea24b0308e2a038ed012407abe5eae8fcfabc689fbd3",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/skill-builder/fixtures/contract-v3/probe-harnesses/mutate-copy.py"
+    },
+    {
+      "digest": "cdb5e6a5220acd6ad9060f12937767dd54c48f8940700dcdaf57d98f18eec1cb",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/skill-builder/fixtures/contract-v3/probe-harnesses/spawn-and-sleep.py"
+    },
+    {
+      "digest": "3c40c8e5bbbbefe6a04958871439f454365905467f78f63e170e58c5aa28ca6d",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/skill-builder/ledgers/migration-readiness.json"
+    },
+    {
+      "digest": "a68ca2e603ea03ffd47e844782e6f4559153e770afde933502b75e312896d2d6",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/skill-builder/receipts/skill-builder-contract-v3-probe.json"
+    },
+    {
+      "digest": "537463cd03c253eafc434d8810fb8508a277eb78fd24537840e6eab3f4964cfa",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/skill-builder/references/audit-checks.md"
+    },
+    {
+      "digest": "edd869e5bbc5bc3f8225a6f2cd851a16237a993a9fe6693ddcd3a3ffdeb65ac5",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/skill-builder/references/authoring-doctrine.md"
+    },
+    {
+      "digest": "bb8cc99e1bf9db690a5fd50d2220893474d754e46ac5064d99d74248f95fa01e",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/skill-builder/references/codex-parity.md"
+    },
+    {
+      "digest": "d5d715644054734995391d8fa1a875064b700b250b8ee895b8abf4a7eb1cae9a",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/skill-builder/references/context-density-checks.md"
+    },
+    {
+      "digest": "a9a378adc642b90171c34aefc3a534f1557ce672e7b20a22df47bc1874282adb",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/skill-builder/references/heal.feature"
+    },
+    {
+      "digest": "da9725022360800e93054df0e87ddf1d3550e9f4e520d322e3c5dab6c181f8d2",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/skill-builder/references/skill-auditor.feature"
+    },
+    {
+      "digest": "cc37adcb6e5a74cff3c80e80a5468d30ffb266888a8bc25d34ee831b9df66728",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/skill-builder/references/skill-builder.feature"
+    },
+    {
+      "digest": "628ea74041b4d90a8b3fb46b7c0763325a512a1a0753e85a5e5ec7eabaca6328",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/skill-builder/references/skill-conformance-profiles.yaml"
+    },
+    {
+      "digest": "c71f5a466e9a94c3f411ca66bba4b5c4e01e965fed3f968abf2ae7aeabeaf3e4",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/skill-builder/references/skill-contract-v3.md"
+    },
+    {
+      "digest": "704de33f7bca4f9c64b466845b5439b76e9b3aa188d110a01554c584e519b797",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/skill-builder/references/skill-template.md"
+    },
+    {
+      "digest": "086ed43023bdfafa7327eff2794c48c91b6e0c19ed1b82880f4701f4e01ce8ff",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/skill-builder/schemas/audit-report.json"
+    },
+    {
+      "digest": "91675777825af5b75f5402ea5b65cb7e4760c536aa39fe4b0e68ca9aed20267d",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/skill-builder/schemas/build-report.json"
+    },
+    {
+      "digest": "8860ea2641c1f4465a8d68a3139aaea146994fbd1e1fe174f3fc3b89ac5eb561",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/skill-builder/schemas/compile-report.json"
+    },
+    {
+      "digest": "d05a29988800d0f6f184495b382f2a9608237676aa5aaf2ef36331d966fffa24",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/skill-builder/schemas/probe-report.json"
+    },
+    {
+      "digest": "ac9ece6592e986d349d8fdeb4a7fbf4dc5dcab8d1dd0576503bad42017c9e51b",
+      "executable": true,
+      "kind": "file",
+      "path": "skills/skill-builder/scripts/audit.sh"
+    },
+    {
+      "digest": "1843cad51c6bc38a09cb64095c91dc926d525be7c90e2aa322b08af59559b09f",
+      "executable": true,
+      "kind": "file",
+      "path": "skills/skill-builder/scripts/authoring_scan.py"
+    },
+    {
+      "digest": "5dee51f0af5491b001aaa3f3fd0420ef620d2fecda431b74bbcf7a0145bb67ba",
+      "executable": true,
+      "kind": "file",
+      "path": "skills/skill-builder/scripts/build.sh"
+    },
+    {
+      "digest": "00b03619314b0ef171bb2ae8084fce8425715ac6532490389c7d64fd0e4ae5b3",
+      "executable": true,
+      "kind": "file",
+      "path": "skills/skill-builder/scripts/check_migration_readiness.py"
+    },
+    {
+      "digest": "cc258da89ed544313c4f6808f1a449561b6690efa67556766ba8b876c6bbee8e",
+      "executable": true,
+      "kind": "file",
+      "path": "skills/skill-builder/scripts/compile_contracts.py"
+    },
+    {
+      "digest": "e17683ab4d7755634d9f5d47277f0190221e729ae2618731d5f4c721a8ef7bea",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/skill-builder/scripts/conformance_profile.py"
+    },
+    {
+      "digest": "a4521aaff66b4774905a72cd69ea497428fe1ab50f70d21d67c2b701710fda39",
+      "executable": true,
+      "kind": "file",
+      "path": "skills/skill-builder/scripts/contract_v3.py"
+    },
+    {
+      "digest": "87d2a62501cc4857b32e338716f8b47652b6366cb2f5cb22d419ebf0a7231dfc",
+      "executable": true,
+      "kind": "file",
+      "path": "skills/skill-builder/scripts/craft_score.py"
+    },
+    {
+      "digest": "b79bf29e5fb947ae842d227d14176ec1a1baf3432ba83c460dfe25dc14eaa2f5",
+      "executable": true,
+      "kind": "file",
+      "path": "skills/skill-builder/scripts/heal.sh"
+    },
+    {
+      "digest": "e764c5db57b882de88710644869258243cada7398c73bac7694917bd5c198494",
+      "executable": true,
+      "kind": "file",
+      "path": "skills/skill-builder/scripts/init.sh"
+    },
+    {
+      "digest": "ccc625632662ec489f23735ec4a5a4b8351488a0c9725f32f677f321bf095d53",
+      "executable": true,
+      "kind": "file",
+      "path": "skills/skill-builder/scripts/probe_runtime.py"
+    },
+    {
+      "digest": "c09d3228994a596ed1e7f16b06832183dc63d8dbfaf1080c5a03960b5feb1595",
+      "executable": true,
+      "kind": "file",
+      "path": "skills/skill-builder/scripts/run_contract_probe.py"
+    },
+    {
+      "digest": "93ca5016ae3760baa1c2453257ee303539acd82182a7b3b5bd343da8c7dad979",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/skill-builder/scripts/scan_descriptions.py"
+    },
+    {
+      "digest": "efb26dc7d0ca0e5629454580c9acd61252f0c4636d939ec5e04bb88598f22f32",
+      "executable": true,
+      "kind": "file",
+      "path": "skills/skill-builder/scripts/score_agentops_skill.py"
+    },
+    {
+      "digest": "84b532adfffcea9538e6cec63160997b3e1ca7ede4031dffb0f457dd6c078214",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/skill-builder/scripts/test-authoring-mutations.sh"
+    },
+    {
+      "digest": "19bf410629d477e86c66486429465c23d8dc12bbc00b27f61e72fd8a2c327b7f",
+      "executable": true,
+      "kind": "file",
+      "path": "skills/skill-builder/scripts/test-contract-v3.sh"
+    },
+    {
+      "digest": "d84bfa8f82a0f5d89d00c83d802198f53e9ebb0f59965dc2d22dd0730e7e9d47",
+      "executable": true,
+      "kind": "file",
+      "path": "skills/skill-builder/scripts/test-craft-mutations.sh"
+    },
+    {
+      "digest": "063dd7f7b360f62fd2c419b0cd444259bc1100021066d44efccdf926f98d6c2e",
+      "executable": true,
+      "kind": "file",
+      "path": "skills/skill-builder/scripts/test-mutation-boundaries.sh"
+    },
+    {
+      "digest": "e28b8f177c02315328c4ce44c2c32b7202bdc4a02e5e128bc8ce36761ec16e01",
+      "executable": true,
+      "kind": "file",
+      "path": "skills/skill-builder/scripts/validate.sh"
+    },
+    {
+      "digest": "35468a5f5800c956068421d26e9d795ecbf21eb40e47a1918f910f485c63c767",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/skill-builder/tests/test_contract_v3.py"
+    },
+    {
+      "digest": "a8b7b77da95b4ed427f11d6846282506da24ffd16f1291a0d35ec9f51aa57cc7",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/skill-builder/tests/test_migration_readiness.py"
+    },
+    {
+      "digest": "b67e56eff0aa80941cbee16d82c7d04fb749e70981df8c98580d5b657e7bae7b",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/skill-builder/tests/test_probe_runner.py"
+    },
+    {
+      "digest": "b579715ad79dca7a284184419bdddcb62903900a8368c70b0da7b4016968525c",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/standards/SKILL.md"
+    },
+    {
+      "digest": "7dbb7f0d36130bcf39149bcbb7fb9b1445b8baefa56eda94ec4242c435633c24",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/standards/references/common-standards.md"
+    },
+    {
+      "digest": "ab20ef6432fcf386f06dfbe2d402b0e156c48c878a0ae2d55eb754d196ae4cfd",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/standards/references/go.md"
+    },
+    {
+      "digest": "1151dd9b7529106d263639e4670b6003d74b49d5ecf94b939d13ee1d78c850e0",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/standards/references/javascript.md"
+    },
+    {
+      "digest": "494b3e08d23ecc697e52e05d9bb57db836bafca9b98513456eb6ca3661157b1f",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/standards/references/json.md"
+    },
+    {
+      "digest": "adf15bc5288476ae3a71ff015445d9c722410df6470cc74e769a248bf91900cc",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/standards/references/llm-trust-boundary-checklist.md"
+    },
+    {
+      "digest": "9ff2e2a46d581883cd63077c865fc1e63d3554a3d042b76db941ddad14dc292a",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/standards/references/markdown.md"
+    },
+    {
+      "digest": "010a20e6b48c0fdfc6b511a7869b81cf75682b78106dcaf8b0de03a834deb667",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/standards/references/python.md"
+    },
+    {
+      "digest": "3b630df0269598a839843e97075435abd2abc5bda0d669bd18e783694c50a9f2",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/standards/references/race-condition-checklist.md"
+    },
+    {
+      "digest": "837014209e488e2d63c714aa22795b4b31c2046abcfdb48b16882cbaad12cd88",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/standards/references/rust.md"
+    },
+    {
+      "digest": "179c10dfc702bbaa97b9d0c75143e753600db135ae46fc5a03511d4fe5812b3a",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/standards/references/shell.md"
+    },
+    {
+      "digest": "9499c1d8ecd451607cf9c16c1b1f1be5ddf4bf38fed8a8d8f1fbb42e5366d12e",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/standards/references/skill-structure.md"
+    },
+    {
+      "digest": "2318dcc08070166e572fe2e5217b6821bcbfdefdb46c1e1a16fa8ed790ec379d",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/standards/references/sql-safety-checklist.md"
+    },
+    {
+      "digest": "b705b46dd235b720c74730ea7118e87c3aa98c91a2c3cb09a103a44ae9c98e64",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/standards/references/test-pyramid.md"
+    },
+    {
+      "digest": "b700a1d6396a3636568144cbdb069165e4710bcd7a2e756139ee0eaabf8188a1",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/standards/references/typescript.md"
+    },
+    {
+      "digest": "fc1a18346749556c00f69ccfd629eebe78790956e7e5ee148fd89710f92f821a",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/standards/references/yaml.md"
+    },
+    {
+      "digest": "5df2dfcfb2e4af8e19caa540ea10b45edbe83ecca4711e978b8b9469b3fe9ca7",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/status/SKILL.md"
+    },
+    {
+      "digest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/status/references/.gitkeep"
+    },
+    {
+      "digest": "f085ac1cec05b82fc2fdbce59b9862fa3c5c0a55e549c975637099fed918169e",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/swarm/SKILL.md"
+    },
+    {
+      "digest": "af4d18d4ffc427dd6ea05c20a27f3feb52b7048020943b66e58a3a2397be5e0f",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/swarm/scripts/dispatch_once.py"
+    },
+    {
+      "digest": "b7fc6011898b616b42a7f4dc89fcfa71d2d4e896d5937b10680a4e409f81c024",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/swarm/tests/test_dispatch_once.py"
+    },
+    {
+      "digest": "10773a3e8604cb61f2e1a29e0a650353e06472aa250de1a167cc762703806116",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/test/SKILL.md"
+    },
+    {
+      "digest": "ba3b22c178d90d42ba7604d2c33c472a61efebab5f756d16228d360e93a1997b",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/test/references/conformance-harnesses.md"
+    },
+    {
+      "digest": "630829a66a1fdeef9e91784b7fa85eb32bc0db557c6ef7e6dba955bebb87d74d",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/test/references/fuzzing.md"
+    },
+    {
+      "digest": "ef6641a7ceeaad52d92d70b7ce3e9cea0814aac36dcbdce73c97ce5bfe826f79",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/test/references/golden-artifact-strategy.md"
+    },
+    {
+      "digest": "47cf4b2f98021b35f8a21758627ebb765559d718549c62d56f0839ac823776c1",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/test/references/golden-artifacts.md"
+    },
+    {
+      "digest": "d4e6976fa7c0bc4b2dfce7cc4b09c947a2a4770931d913653087c4938d4ed31f",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/test/references/metamorphic-testing.md"
+    },
+    {
+      "digest": "4ebdce1093e28ede0976eb6f86df2565a52d4d4e67739d3ea07af4fb6c74e7c2",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/test/references/real-service-e2e.md"
+    },
+    {
+      "digest": "bc0046753d0c58a56e2752ec52e8150bbb247864b912764b254e3bdffa73faf4",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/test/references/test.feature"
+    },
+    {
+      "digest": "76edf4607af082da129928955fc6fb59aa2bf50c1fe8fcadef6222ae03017999",
+      "executable": true,
+      "kind": "file",
+      "path": "skills/test/scripts/validate.sh"
+    },
+    {
+      "digest": "a4ed1adfb7d2cb6086cc804b4fd973bc65c9e4d367f46095e11b8ddd55263a60",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/toil-mining/SKILL.md"
+    },
+    {
+      "digest": "ae24d537778432a356d032581eb938313906ebcf662f22280d7a07de6b79147e",
+      "executable": true,
+      "kind": "file",
+      "path": "skills/toil-mining/scripts/recent_human.py"
+    },
+    {
+      "digest": "84a8d83ba3d3d04b9ecee3f0fbe22a634265b607f3c47bfe428215b7ea83d4d1",
+      "executable": true,
+      "kind": "file",
+      "path": "skills/toil-mining/scripts/validate.sh"
+    },
+    {
+      "digest": "45cc2a75535b4089e3ac76543b26999c26c8a0dcadfc72788add4c3f706ccdd3",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/toil-mining/tests/test_recent_human.py"
+    },
+    {
+      "digest": "7c621b5284402881c99f576fa12ccb79debbae565364029ed3b66cd0cdf9f607",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/using-gc/SKILL.md"
+    },
+    {
+      "digest": "8ecc121b6d7a63946a903d062f6913a8e32663ecb1418f193002490946e9158d",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/validate/SKILL.md"
+    },
+    {
+      "digest": "bc9ab49fb81c4cd8c94313307da59c35df4eb12691c0da5a5e36cb16d140f127",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/validate/references/validate.feature"
+    },
+    {
+      "digest": "b173fab958006f38d56950e72ac571d18eda2bbd085d92a665acc9feaa3083ce",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/validate/scripts/check_contract_corpus.py"
+    },
+    {
+      "digest": "173e862c1a65e5ff2b0a6b3ba36d7eb21a53e3bc2ef9fc0990ae11adb5dc9a73",
+      "executable": true,
+      "kind": "file",
+      "path": "skills/validate/scripts/check_kernel_v3_corpus.py"
+    },
+    {
+      "digest": "f7787f4505c6f49c77890411a49387a02beec7a267595e158af6e4184ca6ef70",
+      "executable": true,
+      "kind": "file",
+      "path": "skills/validate/scripts/kernel_v3.py"
+    },
+    {
+      "digest": "49f22c1af70f8a0de09c44bd132e74d22f053d0b9a5f353f98bdc8082c0c5e58",
+      "executable": true,
+      "kind": "file",
+      "path": "skills/validate/scripts/record_proof_transition.py"
+    },
+    {
+      "digest": "a9642b27a4ae4da474a874a93a5faba403bf7d6299b85c82c96efe3a8104ff4e",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/validate/scripts/test_kernel_v3.py"
+    },
+    {
+      "digest": "8e1b289cba8664bbd1662bbc41fb8bfe0b1741559b487a745535f4796cc8ac17",
+      "executable": true,
+      "kind": "file",
+      "path": "skills/validate/scripts/test_validate.py"
+    },
+    {
+      "digest": "adafe4e127f9ddeb534c633a2cb4c2321b47e8a6a6f3656a0872076427f72247",
+      "executable": true,
+      "kind": "file",
+      "path": "skills/validate/scripts/validate.py"
+    },
+    {
+      "digest": "550f89058d490e3c14e8c0ce25eb70a5cdc2326ccc9c170658238bc9fc8a4db7",
+      "executable": true,
+      "kind": "file",
+      "path": "skills/validate/scripts/validate.sh"
+    },
+    {
+      "digest": "055c0f4b9afe9934dbd8948115323a5ff2706aae809888e75efeacb5fdff0841",
+      "executable": true,
+      "kind": "file",
+      "path": "skills/validate/scripts/validate_v3.py"
+    },
+    {
+      "digest": "364596e8ebcba2480979e889fbcb5f9652b90dc8b76198a1b5a4373887f7835c",
+      "executable": false,
+      "kind": "file",
+      "path": "skills/workflow-builder/SKILL.md"
+    }
+  ],
+  "exclusions": [],
+  "observation_roots": [
+    {
+      "id": "skills-source",
+      "includes": [
+        "skills"
+      ]
+    }
+  ],
+  "schema_version": "subject-manifest.v2"
+}
