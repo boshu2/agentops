@@ -466,6 +466,36 @@ SHIM
     [[ "$output" == *"side.txt"* ]]
 }
 
+# The test above cannot DISCRIMINATE: its first-parent line gains nothing after
+# the branch point, so the parent-2 block is empty either way. `-m --first-parent`
+# emits one block PER PARENT, and the parent-2 block lists everything that was
+# already on the first-parent line — so a merge re-attributes long-settled files
+# to itself. head scope is DECLARED as "what this commit introduced onto the
+# first-parent line" (lib header); this pins that declaration against a fixture
+# where the two readings actually differ.
+@test "changed_files head scope on a MERGE excludes the parent-2 block (declared first-parent semantics)" {
+    ( cd "$TMP_DIR" && echo a > a.txt )
+    seed_commit "base"
+    SEED="$(cd "$TMP_DIR" && git rev-parse HEAD)"
+    MAIN_BRANCH="$(cd "$TMP_DIR" && git symbolic-ref --short HEAD)"
+    # first-parent line moves on: settled.txt is already there when the merge lands
+    ( cd "$TMP_DIR" && echo p1 > settled.txt && git add -A && git commit -qm "first-parent adds settled.txt" )
+    ( cd "$TMP_DIR" && git checkout -q -b side2 "$SEED" && echo s > introduced.txt && git add -A && git commit -qm side2 )
+    ( cd "$TMP_DIR" && git checkout -q "$MAIN_BRANCH" && git merge -q --no-ff -m "merge side2" side2 )
+
+    run bash -c "cd '$TMP_DIR' && source '$LIB' && ratchet_changed_files head"
+    [ "$status" -eq 0 ]
+    # what the merge actually introduced onto the first-parent line
+    [[ "$output" == *"introduced.txt"* ]]
+    # already on the first-parent line — the merge introduced nothing about it
+    [[ "$output" != *"settled.txt"* ]]
+
+    run bash -c "cd '$TMP_DIR' && source '$LIB' && ratchet_changed_files_status head"
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"introduced.txt"* ]]
+    [[ "$output" != *"settled.txt"* ]]
+}
+
 @test "changed_files_status emits untracked as A<TAB>path — byte-exact (POSIX-portable emitter)" {
     ( cd "$TMP_DIR" && echo seed > seed.txt )
     seed_commit "initial"
