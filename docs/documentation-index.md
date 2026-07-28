@@ -48,6 +48,6 @@ Dated plans, audits, releases, and archive material are historical evidence, not
 - [Retrieval Comparison Contract](contracts/retrieval-comparison.md)
 - [Scenario → Test Linkage Contract](contracts/scenario-test-linkage.md)
 - [Scope Escape Report Template](contracts/scope-escape-report.md)
-- [Skill ports and adapters](contracts/skill-ports-and-adapters.md)
+- [Skill system architecture](contracts/skill-ports-and-adapters.md)
 - [Ubiquitous language](contracts/ubiquitous-language.md)
 - [Update Principles Contract](contracts/update-principles.md)

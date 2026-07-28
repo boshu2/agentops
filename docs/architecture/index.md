@@ -6,4 +6,5 @@
 - [Gas City factory](gas-city-factory.md)
 - [Component map](component-map.md)
 - [Ports and adapters](ports-and-adapters.md)
+- [Skill system architecture](../contracts/skill-ports-and-adapters.md)
 - [Public contracts](../contracts/index.md)
