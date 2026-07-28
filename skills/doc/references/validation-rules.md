@@ -131,22 +131,6 @@ ORPHANED DOCUMENTATION
 
 ---
 
-## --create-issues Flag
-
-Auto-create tracking issues for gaps:
-
-```bash
-# Prefer beads
-bd create --title "docs: create code-map for $FEATURE" \
-          --type task --priority P1
-
-# Fallback to GitHub
-gh issue create --title "docs: create code-map for $FEATURE" \
-                --label documentation
-```
-
----
-
 ## Semantic Validation (CODING repos)
 
 **Structure vs Semantic:** Structural validation checks formatting. Semantic validation checks if claims are TRUE.

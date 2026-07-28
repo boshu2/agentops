@@ -9,6 +9,7 @@ consumes: []
 produces:
 - skill-source-package
 - skill-hygiene-report
+context_rel: []
 skill_api_version: 1
 context:
   window: fork
@@ -20,7 +21,7 @@ context:
   intel_scope: topic
 metadata:
   capabilities: [skill_builder, heal_skill]
-  effects: [writes_skill_source, regenerates_skill_projections, optional_skill_projection_repair]
+  effects: [writes_skill_source, write_build_report, regenerates_skill_projections, optional_skill_projection_repair]
   canonical_status: canonical
   disposition: keep_specialist
   tier: meta
@@ -149,8 +150,8 @@ skills/<slug>/
 └── scripts/validate.sh
 ```
 
-The build report is `.agents/audits/<slug>-build.json` and conforms to
-`schemas/build-report.json`. Deep audit JSON conforms to
+The build report is `.agents/scratch/skill-builder/<slug>-build.json` and
+conforms to `schemas/build-report.json`. Deep audit JSON conforms to
 `schemas/audit-report.json`. Generated inventories and runtime projections are
 not additional sources of truth. The caller owns any subsequent edit or
 invocation.
