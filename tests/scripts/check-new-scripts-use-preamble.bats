@@ -182,6 +182,72 @@ EOF
   [[ "$output" == *"PASS"* ]]
 }
 
+# --- collector fail-closed witnesses (advisory F1) -----------------------------
+
+# The library documents every chosen collection command as fail-closed rc 2.
+# This gate's caller swallowed that rc with `2>/dev/null || true` — the
+# byte-identical idiom the python-ratchet repair removed: a dead Git read
+# became an EMPTY changed set and the gate certified green over a diff nobody
+# read. Both witnesses seed a REAL violation first, so a swallowed failure
+# would have to produce a visibly wrong green. The shim targets `git diff`,
+# the staged-scope collection command, so the witness encodes the contract,
+# not either implementation.
+shim_git_diff() {
+  local emit_row="${1:-}"
+  mkdir -p "$REPO/bin"
+  {
+    echo '#!/usr/bin/env bash'
+    echo 'if [ "$1" = "diff" ]; then'
+    if [[ -n "$emit_row" ]]; then
+      printf '  printf "%s"\n' "$emit_row"
+    fi
+    echo '  echo "fatal: injected diff failure" >&2'
+    echo '  exit 128'
+    echo 'fi'
+    echo 'exec /usr/bin/env -u PATH PATH="/usr/bin:/bin:/usr/local/bin:/opt/homebrew/bin" git "$@"'
+  } > "$REPO/bin/git"
+  chmod +x "$REPO/bin/git"
+}
+
+@test "ratchet: a failing changed-scope collector exits 2, never a silent PASS" {
+  cat > "$REPO/scripts/new-handrolled.sh" <<'EOF'
+#!/usr/bin/env bash
+set -euo pipefail
+REPO_ROOT="$(pwd)"
+echo "$REPO_ROOT"
+EOF
+  ( cd "$REPO" && git add -A )
+  shim_git_diff
+  run bash -c "cd '$REPO' && PATH=\"$REPO/bin:\$PATH\" bash scripts/check-new-scripts-use-preamble.sh --scope staged"
+  [ "$status" -eq 2 ]
+  # The gate's own refusal must be loud...
+  [[ "$output" == *"refusing to certify"* ]]
+  # ...and the library's stderr must be PRESERVED, not routed to /dev/null.
+  [[ "$output" == *"git diff --cached failed"* ]]
+  # A swallowed failure would certify green over an unchecked diff.
+  [[ "$output" != *"PASS"* ]]
+}
+
+@test "ratchet: a PARTIAL collector (row emitted, then death) is never certified against" {
+  cat > "$REPO/scripts/new-handrolled.sh" <<'EOF'
+#!/usr/bin/env bash
+set -euo pipefail
+REPO_ROOT="$(pwd)"
+echo "$REPO_ROOT"
+EOF
+  ( cd "$REPO" && git add -A )
+  # The shim emits one plausible name-status row, THEN dies: truncated bytes
+  # must not be processed as a changed set.
+  shim_git_diff 'A\tscripts/ghost.sh\n'
+  run bash -c "cd '$REPO' && PATH=\"$REPO/bin:\$PATH\" bash scripts/check-new-scripts-use-preamble.sh --scope staged"
+  [ "$status" -eq 2 ]
+  [[ "$output" == *"refusing to certify"* ]]
+  # The partially collected path must never surface as a finding — findings
+  # over truncated bytes are as wrong as certifying green over them.
+  [[ "$output" != *"ghost.sh"* ]]
+  [[ "$output" != *"PASS"* ]]
+}
+
 @test "ratchet: the INITIAL grandfather snapshot may be added (nothing to ratchet against)" {
   # A repo whose base commit has no snapshot at all: adding the first snapshot
   # is the cutoff itself, not growth.
