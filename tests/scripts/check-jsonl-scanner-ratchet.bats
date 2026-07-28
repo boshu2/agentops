@@ -298,6 +298,78 @@ SHIM
     [[ "$output" != *"PASS"* ]]
 }
 
+# --- regenerate fail-closed witnesses (regenerate successor intent) ------------
+
+# `--regenerate` is a MUTATING success: its exit 0 rewrites the grandfather.
+# The enumeration behind it swallowed helper death (`grep -rl … || true` and a
+# per-file `grep -q || continue`), so a dead grep rewrote a POPULATED snapshot
+# to header-only at exit 0 — silent mass un-pinning that no prune guard ever
+# surfaces (vanished entries are legal shrinkage). Each witness is
+# baseline-first: it proves the sane regenerate writes real entries on its own
+# fixture, snapshots those bytes, applies ONE hostility, and requires nonzero
+# exit + byte-identical grandfather afterward.
+
+regenerate_baseline() {
+    write_tripping_go "cli/cmd/ao/a_reader.go"
+    write_tripping_go "cli/cmd/ao/b_reader.go"
+    run bash -c "cd '$TMP_DIR' && bash scripts/check-jsonl-scanner-ratchet.sh --regenerate"
+    [ "$status" -eq 0 ]
+    grep -q 'cli/cmd/ao/a_reader.go' "$TMP_DIR/scripts/.jsonl-scanner-grandfather"
+    grep -q 'cli/cmd/ao/b_reader.go' "$TMP_DIR/scripts/.jsonl-scanner-grandfather"
+    cp "$TMP_DIR/scripts/.jsonl-scanner-grandfather" "$TMP_DIR/grandfather.before"
+}
+
+grep_shim() {
+    # Die when the FIRST argument matches the trigger; pass everything else to
+    # the real grep. "-rl" selects candidate enumeration; a '\.jsonl' first
+    # pattern arg is matched via the trigger appearing anywhere in "$@".
+    local trigger="$1" emit="${2:-}"
+    mkdir -p "$TMP_DIR/bin"
+    {
+        echo '#!/usr/bin/env bash'
+        echo "trigger='$trigger'"
+        echo 'for arg in "$@"; do'
+        echo '  if [ "$arg" = "$trigger" ]; then'
+        if [[ -n "$emit" ]]; then
+            printf '    printf "%s"\n' "$emit"
+        fi
+        echo '    echo "grep: injected enumeration death" >&2'
+        echo '    exit 3'
+        echo '  fi'
+        echo 'done'
+        echo 'exec /usr/bin/grep "$@"'
+    } > "$TMP_DIR/bin/grep"
+    chmod +x "$TMP_DIR/bin/grep"
+}
+
+assert_regenerate_refused() {
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"refusing to regenerate"* ]]
+    [[ "$output" != *"regenerated"* ]]
+    cmp -s "$TMP_DIR/grandfather.before" "$TMP_DIR/scripts/.jsonl-scanner-grandfather"
+}
+
+@test "--regenerate: a dead candidate enumeration exits nonzero and preserves the snapshot bytes" {
+    regenerate_baseline
+    grep_shim "-rl"
+    run bash -c "cd '$TMP_DIR' && PATH=\"$TMP_DIR/bin:\$PATH\" bash scripts/check-jsonl-scanner-ratchet.sh --regenerate"
+    assert_regenerate_refused
+}
+
+@test "--regenerate: a PARTIAL enumeration (path emitted, then death) never reaches the snapshot" {
+    regenerate_baseline
+    grep_shim "-rl" 'cli/cmd/ao/a_reader.go\n'
+    run bash -c "cd '$TMP_DIR' && PATH=\"$TMP_DIR/bin:\$PATH\" bash scripts/check-jsonl-scanner-ratchet.sh --regenerate"
+    assert_regenerate_refused
+}
+
+@test "--regenerate: a dead per-file whole-file scan exits nonzero and preserves the snapshot bytes" {
+    regenerate_baseline
+    grep_shim '\.jsonl'
+    run bash -c "cd '$TMP_DIR' && PATH=\"$TMP_DIR/bin:\$PATH\" bash scripts/check-jsonl-scanner-ratchet.sh --regenerate"
+    assert_regenerate_refused
+}
+
 @test "--regenerate rewrites the grandfather list from the current tree" {
     # Two tripping files present; --regenerate should list both, sorted, with a header.
     write_tripping_go "cli/cmd/ao/a_reader.go"
