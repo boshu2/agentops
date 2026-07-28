@@ -156,13 +156,41 @@ file_trips() {
 # currently trips the whole-file heuristic. This is the SAME heuristic used to
 # flag, so a fresh regenerate is authoritative for "what is grandfathered now".
 compute_grandfather_set() {
-  local f
-  # -l: names of files INVOKING bufio.NewScanner(; then filter by scope + .jsonl.
+  # FAIL-CLOSED ENUMERATION. This is a MUTATING success path: whatever this
+  # function emits becomes the rewritten grandfather. The previous
+  # `< <(grep -rl … || true)` + `grep -q || continue` shape collapsed a dead
+  # grep into an empty/partial set, so --regenerate rewrote a populated
+  # snapshot to header-only at exit 0 — silent mass un-pinning that no prune
+  # guard surfaces (vanished entries are legal shrinkage). grep's contract is
+  # tri-state: 0 matches, 1 no matches (a LEGITIMATE empty set / skip), >1
+  # death. Distinguish them, accumulate entries, and emit only on complete
+  # success so a partial enumeration can never reach ratchet_regenerate's
+  # tmp+mv write.
+  local f candidates selected="" enum_rc=0 jsonl_rc
+  candidates="$(grep -rl 'bufio\.NewScanner(' cli --include='*.go')" || enum_rc=$?
+  if [[ "$enum_rc" -gt 1 ]]; then
+    echo "compute_grandfather_set: candidate enumeration failed (rc $enum_rc) — refusing to regenerate over an unchecked tree" >&2
+    return 2
+  fi
+  if [[ "$enum_rc" -eq 1 ]]; then
+    return 0 # genuinely no candidate files: an empty snapshot is correct
+  fi
   while IFS= read -r f; do
+    [[ -z "$f" ]] && continue
     is_exempt_path "$f" && continue
-    grep -q '\.jsonl' "$f" 2>/dev/null || continue
-    printf '%s\n' "$f"
-  done < <(grep -rl 'bufio\.NewScanner(' cli --include='*.go' 2>/dev/null || true) | LC_ALL=C sort
+    jsonl_rc=0
+    grep -q '\.jsonl' "$f" || jsonl_rc=$?
+    if [[ "$jsonl_rc" -gt 1 ]]; then
+      echo "compute_grandfather_set: whole-file scan failed (rc $jsonl_rc) for '$f' — refusing to regenerate over an unchecked file" >&2
+      return 2
+    fi
+    [[ "$jsonl_rc" -eq 1 ]] && continue
+    selected+="$f"$'\n'
+  done <<< "$candidates"
+  if [[ -n "$selected" ]]; then
+    printf '%s' "$selected" | LC_ALL=C sort
+  fi
+  return 0
 }
 
 grandfather_header() {
