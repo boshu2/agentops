@@ -399,8 +399,8 @@
     {
       "name": "council",
       "source_skill": "skills/council",
-      "source_hash": "07034f09ac2683713eb294164dac21df8cc69cbe9f4ae12e2b55a823d4defa18",
-      "generated_hash": "862f0ed645d283918a940fba0eef0c9322e45909b0d617aade067b707b9abda7"
+      "source_hash": "c7c7353211c3baa0a342a2618c8cc3fc01e4c5629e39b9e9c26dbbfceb0c56c0",
+      "generated_hash": "0ec7ad04f8b7062bb96d9dd336caa42f85261ae4e4be88a25596898f5b11a229"
     },
     {
       "name": "craft-goal",

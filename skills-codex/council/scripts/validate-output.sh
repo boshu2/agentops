@@ -12,7 +12,7 @@ jq -e '
   and .schema_version == "council-report.v1"
   and (.question | text)
   and (.subject_digest | type == "string" and test("^[a-f0-9]{64}$"))
-  and ((.diversity_unsatisfied == null) or (.diversity_unsatisfied | type == "boolean"))
+  and (if has("diversity_unsatisfied") then (.diversity_unsatisfied | type == "boolean") else true end)
   and (.judges
     | type == "array" and length >= 2
     and all(.[];
@@ -20,9 +20,9 @@ jq -e '
       and (.context_id | text)
       and (.methodology | text)
       and (.judgment | text)
-      and ((.model_identity == null) or (.model_identity | text))
+      and (if has("model_identity") then (.model_identity | text) else true end)
       and (.evidence | type == "array" and length > 0 and all(.[]; text))
-      and ((.omissions == null) or (.omissions | type == "array" and all(.[]; text)))))
+      and (if has("omissions") then (.omissions | type == "array" and all(.[]; text)) else true end)))
   and ((.judges | map(.context_id) | unique | length) == (.judges | length))
   and (.synthesis | type == "object")
   and ((.synthesis | keys - ["consensus","divergence","minority","unresolved"]) | length == 0)
