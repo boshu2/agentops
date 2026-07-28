@@ -132,11 +132,23 @@ is_exempt_path() {
 # The scanner match requires the invocation form `bufio.NewScanner(` (open paren)
 # so a bare mention of the symbol in a comment/doc — e.g. this gate's own registry
 # row — does not trip it. Every real site uses the paren form.
+# Tri-state, mirroring the lib's added-hunk matcher: 0 trips · 1 does not
+# trip · 2 scan helper failed (loud). `grep -q pat file` exits 2+ when the
+# read or the process itself dies; conflating that with "does not trip" let a
+# dead scan skip a file straight into a green certification.
 file_trips() {
   local p="$1"
   [[ -f "$p" ]] || return 1
-  grep -q '\.jsonl' "$p" 2>/dev/null || return 1
-  grep -q 'bufio\.NewScanner(' "$p" 2>/dev/null || return 1
+  local pattern scan_rc
+  for pattern in '\.jsonl' 'bufio\.NewScanner('; do
+    scan_rc=0
+    grep -q -- "$pattern" "$p" || scan_rc=$?
+    if [[ "$scan_rc" -gt 1 ]]; then
+      echo "file_trips: whole-file scan failed (rc $scan_rc) for '$p' — refusing to certify" >&2
+      return 2
+    fi
+    [[ "$scan_rc" -eq 1 ]] && return 1
+  done
   return 0
 }
 
@@ -244,12 +256,30 @@ fi
 changed_list="$(collect_changed_files | LC_ALL=C sort -u)" \
   || { echo "FAIL: changed-scope collection failed for scope '$SCOPE' — refusing to certify an unchecked change set." >&2; exit 2; }
 
+# Per-file scan chain, tri-state fail-closed: rc 1 from either scan means
+# "skip" exactly as before; any other nonzero rc is a scan-helper death and
+# must refuse — the lib's added-hunk matcher is documented tri-state
+# ("2 = scan helper failed ... never conflated with 1") precisely so callers
+# can tell a dead scan from a clean miss, and a `|| continue` here re-conflated
+# them into a skip-to-green.
 while IFS= read -r f; do
   [[ -z "$f" ]] && continue
   is_exempt_path "$f" && continue
   is_grandfathered "$f" && continue
-  file_trips "$f" || continue
-  added_hunk_has_scanner "$f" || continue
+  scan_rc=0
+  file_trips "$f" || scan_rc=$?
+  if [[ "$scan_rc" -eq 1 ]]; then continue; fi
+  if [[ "$scan_rc" -ne 0 ]]; then
+    echo "FAIL: whole-file scan died (rc $scan_rc) for '$f' — refusing to certify an unchecked file." >&2
+    exit 2
+  fi
+  scan_rc=0
+  added_hunk_has_scanner "$f" || scan_rc=$?
+  if [[ "$scan_rc" -eq 1 ]]; then continue; fi
+  if [[ "$scan_rc" -ne 0 ]]; then
+    echo "FAIL: added-hunk scan died (rc $scan_rc) for '$f' — refusing to certify an unchecked file." >&2
+    exit 2
+  fi
   new_hits+=("$f")
 done <<< "$changed_list"
 
