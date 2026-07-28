@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import ast
+import hashlib
 import importlib.util
 import json
 import os
@@ -323,12 +324,25 @@ def probe_no_substrate_calls() -> None:
         assert rpi_spec and rpi_spec.loader
         rpi = importlib.util.module_from_spec(rpi_spec)
         rpi_spec.loader.exec_module(rpi)
-        resolved_intent = {
+        # The intent SOURCE is bytes; the acceptance identity is sha256 of those
+        # bytes; the resolved mapping carries that identity as a declared fact.
+        # Deriving the bytes from the mapping that already contains the digest
+        # would be circular, and folding the two together is what let the
+        # RPI/Validate digest disagreement hide: this probe used to set
+        # `intent_bytes = canonical_bytes(resolved_intent)`, which is precisely
+        # the one input where a canonical-JSON digest of the mapping and a byte
+        # digest of the source coincide. Keeping them separate means the probe
+        # exercises the identity rather than a coincidence.
+        intent_source = {
             "intent_ref": "conversation:cathedral-probe",
             "acceptance": ["value.txt contains candidate"],
             "write_scope": {"include": ["value.txt"], "exclude": []},
         }
-        intent_bytes = module.canonical_bytes(resolved_intent)
+        intent_bytes = module.canonical_bytes(intent_source)
+        resolved_intent = {
+            **intent_source,
+            "acceptance_digest": hashlib.sha256(intent_bytes).hexdigest(),
+        }
         subject_facts = {
             "subject_manifest_digest": payload["canonical_manifest_digest"],
             "subject_manifest": payload,
