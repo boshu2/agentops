@@ -11,7 +11,10 @@ grep -q '^  effects: \[\]$' "$SKILL"
 grep -Fq '**Artifact directory:**' "$SKILL"
 grep -Fq '**Validator command:**' "$SKILL"
 grep -Fq 'report stops after evidence' "$SKILL"
-! grep -Eiq 'AUTO-REDO|ONE-HELPER|HELPER-ESCALATE|ao (pawl|land)|next_action' "$SKILL"
+if grep -Eiq 'AUTO-REDO|ONE-HELPER|HELPER-ESCALATE|ao (pawl|land)|next_action' "$SKILL"; then
+  echo 'security contract contains retired lifecycle vocabulary' >&2
+  exit 1
+fi
 
 [[ -s "$SKILL_DIR/references/policy-example.json" ]]
 [[ -s "$SKILL_DIR/references/agentops-redteam-pack.json" ]]

@@ -8,6 +8,7 @@ grep -q '^name: validate$' "$skill_dir/SKILL.md"
 grep -Fq 'PASS`, `FAIL`, or `NOT_PROVEN`' "$skill_dir/SKILL.md"
 grep -Fq 'sole' "$skill_dir/SKILL.md"
 grep -Fq 'verdict writer' "$skill_dir/SKILL.md"
+grep -Fq 'nonempty implementation candidate' "$skill_dir/SKILL.md"
 
 python3 "$skill_dir/scripts/validate.py" --help >/dev/null
 python3 - "$repo_root" <<'PY'

@@ -43,7 +43,17 @@ class ValidateV2Tests(unittest.TestCase):
             "schema_version": "subject-manifest.v1",
             "declared_roots": ["src"],
             "exclusions": [],
-            "entries": [],
+            # One real file entry: build_manifest never emits an entry-less
+            # manifest for an implementation subject, and the store-verdict
+            # CLI refuses one outright.
+            "entries": [
+                {
+                    "path": "src/app.py",
+                    "kind": "file",
+                    "executable": False,
+                    "digest": "0" * 64,
+                }
+            ],
         }
         manifest["canonical_manifest_digest"] = tool.digest_value(tool.manifest_identity(manifest))
         return b"bead:agentops-test\nacceptance: works\n", manifest
