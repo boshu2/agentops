@@ -128,7 +128,7 @@
 | `scope` | consumes | `proposed-write-scope` |
 | `scope` | produces | `scope-review` |
 | `security` | consumes | `repo-context` |
-| `security` | produces | `security-report.json` |
+| `security` | produces | `security-gate-summary.json` |
 | `shared` | produces | `reference-documents` |
 | `skill-builder` | produces | `skill-source-package` |
 | `skill-builder` | produces | `skill-hygiene-report` |

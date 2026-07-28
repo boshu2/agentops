@@ -22,7 +22,7 @@ context:
 metadata:
   dependencies: []
   capabilities: [reverse_engineer]
-  effects: []
+  effects: [clone_upstream_repo, execute_authorized_binary, write_teardown_artifacts]
   canonical_status: canonical
   disposition: keep_specialist
   tier: execution
@@ -90,11 +90,11 @@ neither strategy grants readiness or continuation authority.
 
 ## Invocation Contract
 
-Required: `product_name`. Common flags: `--mode=repo|binary|both`, `--upstream-repo`, `--upstream-ref` (pins the clone, records the resolved SHA in `clone-metadata.json`), `--output-dir` (default `.agents/research/<product>/`), `--security-audit`, `--authorized` (mandatory for binary mode — refuses without it). Full list: `python3 skills/reverse-engineer/scripts/reverse_engineer.py --help`.
+Required: `product_name`. Common flags: `--mode=repo|binary|both`, `--upstream-repo`, `--upstream-ref` (pins the clone to a specific commit/tag/branch; the resolved SHA is recorded in `clone-metadata.json` on any clone), `--output-dir` (default `.agents/research/<product>/`), `--security-audit`, `--materialize-archives` (authorized-only opt-in; embedded-archive extraction is off/index-only by default), `--authorized` (mandatory for binary mode — refuses without it). Full list: `python3 skills/reverse-engineer/scripts/reverse_engineer.py --help`.
 
 ## Output Specification
 
-Phase-1 teardown under `output_dir/`: `feature-inventory.md`, `feature-registry.yaml`, `feature-catalog.md`, `spec-architecture.md`, `spec-code-map.md`, `spec-clone-vs-use.md`, `spec-clone-mvp.md`, plus `spec-cli-surface.md` only when a CLI is detected and `clone-metadata.json` only when `--upstream-ref` is supplied. Security mode adds `output_dir/security/`: `threat-model.md`, `attack-surface.md`, `dataflow.md`, `crypto-review.md`, `authn-authz.md`, `findings.md`, `reproducibility.md`, `validate-security-audit.sh`. Phase-2: `steal-map.md`.
+Phase-1 teardown under `output_dir/`: `feature-inventory.md`, `feature-registry.yaml`, `feature-catalog.md`, `spec-architecture.md`, `spec-code-map.md`, `spec-clone-vs-use.md`, `spec-clone-mvp.md`, plus `spec-cli-surface.md` only when a CLI is detected and `clone-metadata.json` only when the script performs a clone (i.e., `--upstream-repo` is supplied and the target is not already checked out); `--upstream-ref` pins which commit, it is not what triggers the file. Security mode adds `output_dir/security/`: `threat-model.md`, `attack-surface.md`, `dataflow.md`, `crypto-review.md`, `authn-authz.md`, `findings.md`, `reproducibility.md`, `validate-security-audit.sh`. Phase-2: `steal-map.md`.
 
 - **Artifact directory:** the exact `--output-dir`, defaulting to
   `$REPO/.agents/research/<product>/`.

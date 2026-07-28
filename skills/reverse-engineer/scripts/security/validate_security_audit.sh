@@ -51,6 +51,14 @@ if ! rg -n -S '(?i)^(Fix|Remediation):' "$SEC/findings.md" >/dev/null 2>&1; then
   echo "FAIL: findings.md missing Fix:/Remediation: lines" >&2
   exit 1
 fi
+# Reject unfilled placeholders: the shipped template supplies Evidence/Fix/etc.
+# as literal _TBD markers, and the presence-only greps above certify them as
+# real. A findings file that still carries any _TBD marker is an unfilled
+# scaffold and must not certify green.
+if grep -Fq '_TBD' "$SEC/findings.md"; then
+  echo "FAIL: findings.md still contains _TBD placeholders — fill Evidence/Fix before certifying" >&2
+  exit 1
+fi
 
 # Secret scan gate over outputs.
 SCANDIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

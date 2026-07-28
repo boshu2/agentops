@@ -87,10 +87,16 @@ The durable output doc earns its keep only if a future reader can re-verify a
 claim without redoing the recon. Every `fact` cites file:line; every
 `inference` cites the file:line facts it rests on. A claim that cannot be
 cited is downgraded to `unknown` before the report ships — never shipped
-uncited at its original confidence. The manifest validator accepts a bare path,
-but hold the companion report to the stricter floor: a path without a line is
-a pointer to homework, not a citation, and counts as a coverage gap in the
+uncited at its original confidence. The manifest validator accepts a bare file
+path (it requires the path resolve to an existing regular file, so a bare
+directory is rejected as a coverage gap), but does not require the line number;
+hold the companion report to the stricter floor: a path without a line is a
+pointer to homework, not a citation, and counts as a coverage gap in the
 report's own terms.
+
+When reconstructing a repository other than the one that ships this skill, pass
+`--repo-root <target>` to the validator so evidence resolves against the target
+tree rather than the skill's own checkout.
 
 ## Output Specification
 

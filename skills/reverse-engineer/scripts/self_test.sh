@@ -122,7 +122,33 @@ python3 "$SKILL/scripts/reverse_engineer.py" demo \
   --security-audit \
   --sbom
 
+# The freshly generated audit is a scaffold whose findings carry _TBD
+# placeholders; the gate must now REFUSE to certify it (fail-closed).
+if "$OUT2/security/validate-security-audit.sh" "$OUT2" --sbom >/dev/null 2>&1; then
+  echo "FAIL: security gate certified an unfilled _TBD scaffold (should fail-closed)" >&2
+  exit 1
+fi
+echo "OK: security gate rejects the unfilled _TBD scaffold"
+
+# Fill the findings with a completed entry (no placeholders); the gate must pass.
+cat >"$OUT2/security/findings.md" <<'EOF'
+# Findings: demo
+
+- Date: self-test
+
+## Finding F-001: Embedded demo prompt present in binary
+
+Severity: Low
+Impact: Informational; the embedded demo prompt is not a secret.
+Likelihood: Low
+
+Evidence: payload.zip/agent/SYSTEM_PROMPT.txt embedded via go:embed (see binary-embedded-archives.md).
+Fix: None required for the demo; production binaries should not embed plaintext prompts.
+Validation: Re-ran the secret scan over outputs; no credentials present.
+EOF
+
 "$OUT2/security/validate-security-audit.sh" "$OUT2" --sbom
+echo "OK: security gate certifies a completed audit"
 
 # --- Negative tests ---
 

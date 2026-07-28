@@ -206,7 +206,7 @@ When the right reference isn't obvious from titles, `grep -ni "SYMPTOM" referenc
 
 ## Scripts
 
-Scripts live under `scripts/`. They execute, never load — zero context tokens. None mutate state without explicit confirmation.
+Scripts live under `scripts/`. They execute, never load — zero context tokens. Consistent with the Safety Boundaries above, `recover.sh` and `quick_analysis.sh` may rebuild **derived index state** autonomously (pre-authorized: `doctor --fix`, `index --full`) and `multi_machine_search.sh` reads remote sources over ssh; none destroy source sessions, and nothing destructive (coredump/`.beads` deletion, `git reset --hard`, source edits) runs without explicit confirmation.
 
 | Script | Usage |
 |--------|-------|

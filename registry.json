@@ -704,7 +704,11 @@
           "cass"
         ],
         "disposition": "keep_specialist",
-        "effects": [],
+        "effects": [
+          "rebuild_local_index",
+          "sync_remote_sources",
+          "download_semantic_model"
+        ],
         "has_references": true,
         "has_skill_md": true,
         "name": "cass",
@@ -730,7 +734,9 @@
           "codebase_recon"
         ],
         "disposition": "keep_specialist",
-        "effects": [],
+        "effects": [
+          "write_recon_pack"
+        ],
         "has_references": true,
         "has_skill_md": true,
         "name": "codebase-recon",
@@ -1075,7 +1081,9 @@
           "research"
         ],
         "disposition": "keep_specialist",
-        "effects": [],
+        "effects": [
+          "write_research_report"
+        ],
         "has_references": true,
         "has_skill_md": true,
         "name": "research",
@@ -1088,7 +1096,11 @@
           "reverse_engineer"
         ],
         "disposition": "keep_specialist",
-        "effects": [],
+        "effects": [
+          "clone_upstream_repo",
+          "execute_authorized_binary",
+          "write_teardown_artifacts"
+        ],
         "has_references": true,
         "has_skill_md": true,
         "name": "reverse-engineer",
@@ -1156,7 +1168,9 @@
           "security"
         ],
         "disposition": "keep_specialist",
-        "effects": [],
+        "effects": [
+          "write_scan_artifacts"
+        ],
         "has_references": true,
         "has_skill_md": true,
         "name": "security",

@@ -369,8 +369,8 @@
     {
       "name": "cass",
       "source_skill": "skills/cass",
-      "source_hash": "f7e2a7766a2fe184edc8f1ff01e06915c0784fef8a0b910da4485fa9147358f0",
-      "generated_hash": "f7eb90c4a8b6099d84b3f309564249d60ffb26721800662bdbb582b8459dae05"
+      "source_hash": "34dc46f3267d723939feaf894bba5f842023489aff90e5ffeeeeabe33f3fe694",
+      "generated_hash": "be32ba1588370163010082402f41ab22c7c7a6fec2babe62b3e01e6cf7c3a7b4"
     },
     {
       "name": "cc-hooks",
@@ -381,8 +381,8 @@
     {
       "name": "codebase-recon",
       "source_skill": "skills/codebase-recon",
-      "source_hash": "c43226020f38d1256ca37813d92a650108acb4ca871e3cb0e147173130f2b4ed",
-      "generated_hash": "7db4bfc6956292e1aec6f5eab4665197f37d194c533ac3a3aa08ce5ed8869b98"
+      "source_hash": "fa2b6797a86da0d5b4189ac9070d0a88fe050ae712cb957d1c91dad9a17e3c8f",
+      "generated_hash": "4ac52cdbb1275a56a74528da4dec539976dcb9218fe549a69bf7f51e3dc7e797"
     },
     {
       "name": "codex-exec",
@@ -423,8 +423,8 @@
     {
       "name": "domain",
       "source_skill": "skills/domain",
-      "source_hash": "e41e7e3d337c98bf8ea54181a33f501cda4231ef44bab77c7e2cbe9b8d16095d",
-      "generated_hash": "96e7a3780a6f734653772d7f44ccbb417dfc48e1a6264c6ad01f110a623af583"
+      "source_hash": "11cbffaa5ba8d78d438e1215b4ec8b1770d37e305b1d6072bd943dfb81ccc10e",
+      "generated_hash": "1763e0b7e8a4e0e10ac3c9ce9a1094d0e1cf94c9c382d655429a7c792b87b8d2"
     },
     {
       "name": "goals",
@@ -525,14 +525,14 @@
     {
       "name": "research",
       "source_skill": "skills/research",
-      "source_hash": "5d72d6861844fe4943d720e3d4d8ab6ae9c5f3d6e22eecde3430a2ef69996853",
-      "generated_hash": "91acbd25175612d98f6e8a9c2d56f7f70c70e424ff1d891175f0bba23b70eb04"
+      "source_hash": "0d74ded7960b70ace4db089b49b78126c05572d808e1b640a330614545ffce13",
+      "generated_hash": "37be6a0296ae07b6e62ef6fdba2115651d5bdd66881b33442afc10249a77d672"
     },
     {
       "name": "reverse-engineer",
       "source_skill": "skills/reverse-engineer",
-      "source_hash": "5cd3d426231e1aa4d29530fc2bf60f7dcd698c29b1c4ba9e269c02ea9e5c1e35",
-      "generated_hash": "a36f2300fad550114dbfadb6f7d611fea442fa1c8a94ac5e37efdf5e98444c45"
+      "source_hash": "07b1558d1d9101a35eaf043767d1147ee5bba3453b95dcf08671d5bf4772ef5b",
+      "generated_hash": "4c864091d42520fa6f3c5e675e9c03403674610e5fd32440c2fc473ea1a30dc2"
     },
     {
       "name": "rpi",
@@ -561,8 +561,8 @@
     {
       "name": "security",
       "source_skill": "skills/security",
-      "source_hash": "9ab69e5668c05d539b4465cc06a95698f2e1819b05e6adf4659d11f852e1ebc3",
-      "generated_hash": "c2452373332ae5314cb7ff652c2ce6f43636193b48525fbe59c282f36dd1c6f8"
+      "source_hash": "c1c523ac5c8cc8020372ed52ccda5d67f497c50f95bceb6985860d1a2a2a3b1c",
+      "generated_hash": "cf8442d8b50187768a8d60c487d6444dd469e6a1c0f186b2e18f173b9996814f"
     },
     {
       "name": "shared",
@@ -579,8 +579,8 @@
     {
       "name": "standards",
       "source_skill": "skills/standards",
-      "source_hash": "26c713ca6dcbd820f96b32b57a6d0f64d54e22b29b1e5803c13e53845035fd8f",
-      "generated_hash": "6d34fb105d8b4d4a47e995b5bb7862e18715a985eefb88e6dfbe9be5c7849ffa"
+      "source_hash": "abc2edd3e62eab727765fda28e9717f67cc8fbf02ccdac518cd50dedf1db8d20",
+      "generated_hash": "96d73ce5907f3ac07a903954159a536cdcc111d9cfdcdff90d572932f935fc2d"
     },
     {
       "name": "status",

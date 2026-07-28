@@ -1,6 +1,8 @@
 # OWASP Top 10 Security Checklist
 
-> Pre-deployment security audit checklist. Use as gate in `/validate --preset=security-audit` or `/postmortem --scope security`.
+> Code-level OWASP Top 10 review checklist. Load it during a `/security` code-level
+> review pass to walk each class and record a per-class result. It ranks findings by
+> severity; it does not gate merges or releases — those are caller decisions.
 
 ## Checklist
 
@@ -74,29 +76,21 @@ grep -rn 'password\s*=\s*"[^"]\+"\|api_key\s*=\s*"[^"]\+"\|secret\s*=\s*"[^"]\+"
 
 ## Severity Classification
 
-| Finding | Severity | SLA |
-|---------|----------|-----|
-| Hardcoded secret in source | CRITICAL | Block merge |
-| SQL injection possible | CRITICAL | Block merge |
-| Missing input validation on public endpoint | HIGH | Fix before release |
-| Missing rate limiting | MEDIUM | Fix within sprint |
-| Dependency with known CVE (CVSS > 7) | HIGH | Fix before release |
-| Missing CSP headers | MEDIUM | Fix within sprint |
-| Debug logging in production code | LOW | Fix in next cleanup |
+Severity ranks findings so a reviewer can order them; it carries no merge, release,
+or remediation-timing authority. Whether and when to fix, and whether to block any
+delivery, are caller decisions this checklist does not make.
+
+| Finding | Severity |
+|---------|----------|
+| Hardcoded secret in source | CRITICAL |
+| SQL injection possible | CRITICAL |
+| Missing input validation on public endpoint | HIGH |
+| Dependency with known CVE (CVSS > 7) | HIGH |
+| Missing rate limiting | MEDIUM |
+| Missing CSP headers | MEDIUM |
+| Debug logging in production code | LOW |
 
 ## Integration
-
-### With /validate
-```bash
-/validate --preset=security-audit src/
-```
-Loads this checklist as judge context. Each judge evaluates against relevant checklist items.
-
-### With /postmortem
-```bash
-/postmortem --scope security
-```
-Run the full checklist as factual security evidence for the exact candidate.
 
 ### With /security (suite primitives)
 The redteam primitive (`collect-redteam`) covers items 1-4 automatically. This checklist covers the remaining items that require code-level review.
