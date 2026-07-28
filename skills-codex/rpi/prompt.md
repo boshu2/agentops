@@ -1,6 +1,6 @@
 # rpi
 
-Run one bounded Plan, Implement, and fresh Validate experiment, then report and stop. Triggers: "run rpi", "feed this through the loop", "execute this plan", any orchestration or worker-delegation request.
+Run one bounded Plan, Implement, and fresh Validate experiment, then report and stop. Triggers: "run rpi", "feed this through the loop", "execute this plan", orchestration or worker delegation that implements changes.
 
 ## Instructions
 

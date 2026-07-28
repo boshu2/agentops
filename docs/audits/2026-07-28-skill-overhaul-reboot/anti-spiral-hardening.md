@@ -11,7 +11,7 @@ existing one-shot RPI contract; do not build another lifecycle.
 |---|---|---|
 | `skills/rpi/SKILL.md` | frontmatter description | Triggers now include "execute this plan" and any orchestration or worker-delegation request — RPI admission is automatic, the caller never has to name it. |
 | `skills/rpi/SKILL.md` | Admission and phase lock (new) | After the caller accepts a plan (including a duel synthesis), Plan is closed for that intent; every later lane must return implementation evidence; a review comment is never authorization for another planning lane. |
-| `skills/rpi/SKILL.md` | Continuation envelope | Spiral breaker: two consecutive control artifacts with no new implementation evidence terminate the run as `NOT_BUILT`; second non-PASS on one intent stops the lane. Neither dispatches a repair revision. |
+| `skills/rpi/SKILL.md` | Continuation envelope | Spiral breaker: two consecutive control artifacts with no new implementation evidence terminate the run — `NOT_BUILT` when no subject exists yet, otherwise a hard stop reporting the existing subject's status; second non-PASS on one intent stops the lane. Neither dispatches a repair revision. |
 | `skills/rpi/SKILL.md` | Report | Subject-first reporting: paths changed, commits, tests, acceptance remaining. A rising artifact count over an unchanged subject is a stop signal. |
 | `skills/validate/SKILL.md` | Preconditions | The subject must be a nonempty implementation candidate; control artifacts are not completion subjects unless the caller explicitly requested document review. |
 | `skills/validate/scripts/validate.py` | `store_verdict` | Mechanical guard: refuses a subject manifest with no entries (`ContractError`). |
@@ -71,10 +71,23 @@ after any jsm upgrade):**
 
 ## Conflicts with current RPI semantics
 
-- `NOT_BUILT` was defined as "no subject was built". The spiral breaker
-  reuses it for "run terminated with control artifacts outnumbering
-  implementation evidence" — consistent (no subject got built), now stated in
-  the contract.
-- rpi previously activated only on explicit triggers; automatic admission
-  widens its trigger set. The one-writer/one-agent default and caller-owned
-  continuation are unchanged.
+- `NOT_BUILT` keeps its meaning ("no subject was built"): the spiral breaker
+  reports `NOT_BUILT` only when it fires before any implementation subject
+  exists; over an existing subject it is a hard stop reporting that subject's
+  current status. (Cross-family review round 2, finding 1 — fixed.)
+- Automatic admission is scoped to delegation whose goal includes changing
+  the subject; research-, audit-, and review-only delegation is explicitly
+  not RPI admission, which keeps it consistent with Validate's
+  nonempty-candidate rule. (Round 2, finding 3 — fixed.)
+- The one-writer/one-agent default and caller-owned continuation are
+  unchanged.
+
+## Recorded residuals (review ceiling reached)
+
+- Round 2, finding 2: the empty-manifest guard lives in
+  `skills/validate/scripts/validate.py`, which is grandfathered Python.
+  Rejected as a blocker: ADR-0016's enforced rule is no *new* skill Python;
+  the guard sits in the only existing `store-verdict` entrypoint, adds no
+  file, and the ratchet count is unchanged. It is migration debt like the
+  rest of that file — tracked with the Go-residue bead
+  (`age-skill-overhaul-reboot-sjv7v.12`).

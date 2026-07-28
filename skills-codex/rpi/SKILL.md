@@ -22,7 +22,10 @@ the dispatch and stop semantics executable without Git, `ao`, or a tracker.
 
 RPI activates for any request shaped as plan-execute-verify work —
 orchestration, worker delegation, "execute this plan", or an explicit
-Plan -> Implement -> Validate ask. The caller does not have to name RPI.
+Plan -> Implement -> Validate ask — whenever the goal includes changing the
+subject. The caller does not have to name RPI. Research-, audit-, and
+review-only delegation is not RPI admission: it produces evidence for a
+caller, has no implementation candidate, and never earns a verdict.
 
 Once the caller has accepted a plan — including a duel or design synthesis —
 Plan is closed for that intent. Every subsequent lane must return
@@ -74,7 +77,9 @@ rule — the second non-PASS outcome on one intent stops that lane and returns
 to the caller instead of dispatching another attempt. The envelope includes a
 spiral breaker: two consecutive control artifacts (plans, audits, reviews,
 prompts, reports) produced with no new implementation evidence terminate the
-run as `NOT_BUILT`. Neither breaker dispatches a repair revision. An
+run — report `NOT_BUILT` when no implementation subject exists yet;
+when a subject already exists, stop and report its current status without
+dispatching further lanes. Neither breaker dispatches a repair revision. An
 orchestration without a declared envelope does not converge; it accretes
 lanes. The 2026-07-15
 heal-skill fold ran three intent revisions

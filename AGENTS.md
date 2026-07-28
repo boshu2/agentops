@@ -75,8 +75,9 @@ Edit source owners and regenerate projections through the owning command.
    statuses `NOT_PLANNED | NOT_BUILT`. It emits no next action and performs no
    automatic revision. Two consecutive control artifacts (plans, audits,
    reviews, prompts, reports) with no new implementation evidence end the run
-   as `NOT_BUILT`; reports lead with the subject (paths changed, commits,
-   tests), never with artifact counts.
+   — `NOT_BUILT` when no subject exists yet, otherwise a hard stop reporting
+   the existing subject's status; reports lead with the subject (paths
+   changed, commits, tests), never with artifact counts.
 
 A caller may revise the bead or caller intent and start a new invocation.
 Changing acceptance changes that source; AgentOps does not create a parallel
