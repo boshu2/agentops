@@ -659,6 +659,9 @@ resolve_physical() {
 # Both arguments must already be canonical (symlink/.. resolved).
 within() {
   local child="$1" parent="$2"
+  # Root is the ancestor of everything; the general glob below would build
+  # the broken pattern "//*" for it.
+  [[ "$parent" == "/" ]] && return 0
   case "$child/" in
     "$parent"/*) return 0 ;;
   esac
