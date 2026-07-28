@@ -619,7 +619,9 @@
           "account_rotation"
         ],
         "disposition": "keep_specialist",
-        "effects": [],
+        "effects": [
+          "rotate_agent_account"
+        ],
         "has_references": false,
         "has_skill_md": true,
         "name": "account-rotation",
@@ -695,7 +697,9 @@
           "bootstrap"
         ],
         "disposition": "keep_specialist",
-        "effects": [],
+        "effects": [
+          "write_project_docs"
+        ],
         "has_references": true,
         "has_skill_md": true,
         "name": "bootstrap",
@@ -725,7 +729,11 @@
           "cc_hooks"
         ],
         "disposition": "keep_specialist",
-        "effects": [],
+        "effects": [
+          "write_hook_config",
+          "append_guardrail_telemetry",
+          "write_session_sentinel"
+        ],
         "has_references": true,
         "has_skill_md": true,
         "name": "cc-hooks",
@@ -814,7 +822,9 @@
           "dcg"
         ],
         "disposition": "keep_specialist",
-        "effects": [],
+        "effects": [
+          "write_dcg_config"
+        ],
         "has_references": true,
         "has_skill_md": true,
         "name": "dcg",
@@ -871,7 +881,11 @@
           "handoff"
         ],
         "disposition": "keep_specialist",
-        "effects": [],
+        "effects": [
+          "write_handoff_artifact",
+          "read_git_state",
+          "read_clock"
+        ],
         "has_references": true,
         "has_skill_md": true,
         "name": "handoff",
@@ -932,7 +946,11 @@
           "ms"
         ],
         "disposition": "keep_specialist",
-        "effects": [],
+        "effects": [
+          "spawn_search_server",
+          "write_feedback_outcomes",
+          "rebuild_search_index"
+        ],
         "has_references": false,
         "has_skill_md": true,
         "name": "ms",
@@ -1148,7 +1166,11 @@
           "sbh"
         ],
         "disposition": "keep_specialist",
-        "effects": [],
+        "effects": [
+          "delete_reclaimable_files",
+          "release_disk_ballast",
+          "modify_host_storage_config"
+        ],
         "has_references": false,
         "has_skill_md": true,
         "name": "sbh",
@@ -1249,7 +1271,10 @@
           "status"
         ],
         "disposition": "keep_specialist",
-        "effects": [],
+        "effects": [
+          "read_filesystem",
+          "read_clock"
+        ],
         "has_references": true,
         "has_skill_md": true,
         "name": "status",

@@ -12,14 +12,15 @@ context_rel: []
 metadata:
   dependencies: []
   capabilities: [ms]
-  effects: []
+  effects: [spawn_search_server, write_feedback_outcomes, rebuild_search_index]
   canonical_status: canonical
   disposition: keep_specialist
   tier: execution
   external_dependencies:
-  - "ms binary (Jeffrey Emanuel's meta_skill; source build from ~/dev/meta_skill, branch local/frontmatter-id — the 0.1.2 release binary corrupts IDs on Anthropic-frontmatter skills)"
+  - "ms binary (Jeffrey Emanuel's meta_skill). The 0.1.2 release binary corrupts IDs on Anthropic-frontmatter skills, so it must be built from a source checkout carrying the frontmatter-id fix; this operator builds from ~/dev/meta_skill, branch local/frontmatter-id."
   - jq (required for parsing -O json output)
   - python3 (required by the disposable MCP search helper)
+output_contract: search and load results plus source identity on stdout; the local index is disposable state, never a source of truth
 ---
 <!-- TOC: Core Insight | Constraints | Quick Start | Consume (MCP) | Write/Admin (CLI) | Output | Production Skill Handoff | Footguns | Concurrency | Scenarios | Quality | References -->
 

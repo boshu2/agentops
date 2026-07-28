@@ -2,11 +2,11 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://agentops.dev/schemas/handoff.v1.schema.json",
   "title": "AgentOps Handoff Artifact v1",
-  "description": "Structured handoff artifact for session boundary isolation. Written by `ao handoff`, consumed by session-start hook.",
+  "description": "Structured handoff artifact for session boundary isolation. Written by `ao session handoff`; caller-authored session evidence. The current generator emits no continuation choice, consumption, verdict, or phase state; the `type`, `consumed`, `consumed_at`, `consumed_by`, and `rpi` fields are DEPRECATED read-compatibility fields — accepted so artifacts written by an earlier generator still validate, never required, and never emitted by the current writer.",
   "practices": ["event-sourcing-cqrs", "distributed-tracing"],
   "type": "object",
   "additionalProperties": false,
-  "required": ["schema_version", "id", "created_at", "type", "consumed"],
+  "required": ["schema_version", "id", "created_at"],
   "properties": {
     "schema_version": {
       "type": "integer",
@@ -14,7 +14,7 @@
     },
     "id": {
       "type": "string",
-      "pattern": "^handoff-[0-9]{8}T[0-9]{6}Z$"
+      "pattern": "^handoff-[0-9]{8}T[0-9]{6}(\\.[0-9]+)?Z$"
     },
     "created_at": {
       "type": "string",
@@ -22,7 +22,8 @@
     },
     "type": {
       "type": "string",
-      "enum": ["manual", "auto", "rpi"]
+      "enum": ["manual", "auto", "rpi"],
+      "deprecated": true
     },
     "goal": {
       "type": "string"
@@ -52,6 +53,7 @@
       }
     },
     "rpi": {
+      "deprecated": true,
       "oneOf": [
         { "type": "null" },
         { "$ref": "#/$defs/rpi" }
@@ -64,15 +66,18 @@
       ]
     },
     "consumed": {
-      "type": "boolean"
+      "type": "boolean",
+      "deprecated": true
     },
     "consumed_at": {
+      "deprecated": true,
       "oneOf": [
         { "type": "null" },
         { "type": "string", "format": "date-time" }
       ]
     },
     "consumed_by": {
+      "deprecated": true,
       "oneOf": [
         { "type": "null" },
         { "type": "string" }

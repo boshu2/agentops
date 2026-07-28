@@ -21,14 +21,24 @@ process is required for the answer to hold.
 
 ## Boundary
 
-- On macOS with Claude credentials, use the operator's `claude-acct` route.
-- For Codex, Gemini, Linux, or WSL file-backed credentials, use `caam`.
+- Perform only the account switch the caller explicitly authorized; rotation
+  mutates host credential state and is never implied by repository access.
+- The credential tool is caller- or operator-selected per host and agent family;
+  the names below are this operator's routes, not a universal prescription. On
+  macOS with Claude credentials the route is `claude-acct` (Keychain-backed);
+  file-backed Codex, Gemini, Linux, or WSL credentials use `caam`. Never use
+  `caam` for macOS Claude account operations.
 - Verify account identity through the target runtime; token bytes are not account
   identity.
+- If neither the selected credential tool nor a runtime identity probe is
+  available, report that absence as a disclosed fact and stop. Never fall back to
+  diffing credential-file bytes to declare a switch done.
 - Existing processes retain credentials already loaded in memory. Rotation
   affects a new process.
 - This skill does not restart work, resume a task, select a pane, move repository
   state, or decide what happens after the switch.
 
-Return the host, agent family, selected tool, requested account/profile, observed
-identity/status, command exit code, and whether a new process is required.
+Return the host, agent family, selected tool, requested account/profile, the
+identity observed before and after the switch, whether any live runtime still
+holds the previous account (a partial rotation), the command exit code, and
+whether a new process is required for the new identity to hold.
