@@ -369,8 +369,8 @@
     {
       "name": "cass",
       "source_skill": "skills/cass",
-      "source_hash": "34dc46f3267d723939feaf894bba5f842023489aff90e5ffeeeeabe33f3fe694",
-      "generated_hash": "be32ba1588370163010082402f41ab22c7c7a6fec2babe62b3e01e6cf7c3a7b4"
+      "source_hash": "3e1eaf0cb029bd188028cbaf46dceadb40f8fa5cdeb3975f9fa0b7d6c4bae77e",
+      "generated_hash": "be622eb3d7629d35d6a491954ededc8c656e42aa9d8a95f4e79ab42bc5a70f01"
     },
     {
       "name": "cc-hooks",
@@ -423,8 +423,8 @@
     {
       "name": "domain",
       "source_skill": "skills/domain",
-      "source_hash": "11cbffaa5ba8d78d438e1215b4ec8b1770d37e305b1d6072bd943dfb81ccc10e",
-      "generated_hash": "1763e0b7e8a4e0e10ac3c9ce9a1094d0e1cf94c9c382d655429a7c792b87b8d2"
+      "source_hash": "95e986be6a9dce717637de67e56afa00910f8d19e0a29bfc785f76337cff5353",
+      "generated_hash": "6180b39f53cf7cfcc2ef567f84f59416fe40e5a27c26b6b956285137d216e814"
     },
     {
       "name": "goals",
@@ -531,8 +531,8 @@
     {
       "name": "reverse-engineer",
       "source_skill": "skills/reverse-engineer",
-      "source_hash": "07b1558d1d9101a35eaf043767d1147ee5bba3453b95dcf08671d5bf4772ef5b",
-      "generated_hash": "4c864091d42520fa6f3c5e675e9c03403674610e5fd32440c2fc473ea1a30dc2"
+      "source_hash": "8b308ebdba1e4e45a0987adf15b25ae69f03553a971f75d144885f263326f3c5",
+      "generated_hash": "22eb63b54f3a1b67829dbdb057990abeb03dd03bab3ba9d62c00484edcd3c491"
     },
     {
       "name": "rpi",
@@ -561,8 +561,8 @@
     {
       "name": "security",
       "source_skill": "skills/security",
-      "source_hash": "c1c523ac5c8cc8020372ed52ccda5d67f497c50f95bceb6985860d1a2a2a3b1c",
-      "generated_hash": "cf8442d8b50187768a8d60c487d6444dd469e6a1c0f186b2e18f173b9996814f"
+      "source_hash": "183e3eb73292146855adbd10765ac0bee41f35a745900908f47573e317b20ab2",
+      "generated_hash": "0f1b44f2688511728dfcca04eadaf30b701ee17f2896e940d0a0e66ca39d22da"
     },
     {
       "name": "shared",
@@ -579,8 +579,8 @@
     {
       "name": "standards",
       "source_skill": "skills/standards",
-      "source_hash": "abc2edd3e62eab727765fda28e9717f67cc8fbf02ccdac518cd50dedf1db8d20",
-      "generated_hash": "96d73ce5907f3ac07a903954159a536cdcc111d9cfdcdff90d572932f935fc2d"
+      "source_hash": "b2c95d5fbcdd4cd2af680c2ab41d1706e3ea5ca961e18588cf863bd0ae9d15e7",
+      "generated_hash": "e5d42f6ddfed680a4728a0b87ef90399bdeb93361a7ae7945a1cef930ebb7056"
     },
     {
       "name": "status",

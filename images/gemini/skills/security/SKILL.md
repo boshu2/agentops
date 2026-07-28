@@ -10,6 +10,8 @@ consumes:
 - repo-context
 produces:
 - security-gate-summary.json
+- suite-summary.json
+- redteam-results.json
 context_rel:
 - kind: supplier-to
   with: validate

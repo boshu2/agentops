@@ -129,6 +129,8 @@
 | `scope` | produces | `scope-review` |
 | `security` | consumes | `repo-context` |
 | `security` | produces | `security-gate-summary.json` |
+| `security` | produces | `suite-summary.json` |
+| `security` | produces | `redteam-results.json` |
 | `shared` | produces | `reference-documents` |
 | `skill-builder` | produces | `skill-source-package` |
 | `skill-builder` | produces | `skill-hygiene-report` |

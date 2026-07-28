@@ -1,9 +1,13 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-SKILL_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+# pwd -P: this skill is invoked through a symlink (~/.claude/skills/security ->
+# the checkout); a logical pwd would resolve ../.. against the symlink's parent
+# (.claude), so the repo-surface probe below would silently miss AGENTS.md and
+# skip the behavioral redteam instead of running it.
+SKILL_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
 SKILL="$SKILL_DIR/SKILL.md"
-REPO_ROOT="$(cd "$SKILL_DIR/../.." && pwd)"
+REPO_ROOT="$(cd "$SKILL_DIR/../.." && pwd -P)"
 
 [[ -s "$SKILL" ]]
 grep -q '^name: security$' "$SKILL"

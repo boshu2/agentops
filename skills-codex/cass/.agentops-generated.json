@@ -2,6 +2,6 @@
   "generator": "codex-sync",
   "source_skill": "skills/cass",
   "layout": "modular",
-  "source_hash": "34dc46f3267d723939feaf894bba5f842023489aff90e5ffeeeeabe33f3fe694",
-  "generated_hash": "be32ba1588370163010082402f41ab22c7c7a6fec2babe62b3e01e6cf7c3a7b4"
+  "source_hash": "3e1eaf0cb029bd188028cbaf46dceadb40f8fa5cdeb3975f9fa0b7d6c4bae77e",
+  "generated_hash": "be622eb3d7629d35d6a491954ededc8c656e42aa9d8a95f4e79ab42bc5a70f01"
 }

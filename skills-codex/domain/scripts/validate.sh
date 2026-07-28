@@ -9,8 +9,11 @@
 # made checkable. This is the entry point audit.sh looks for.
 set -euo pipefail
 
-skill_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-repo_root="$(cd "$skill_dir/../.." && pwd)"
+# pwd -P: this skill is invoked through a symlink (~/.claude/skills/domain ->
+# the checkout); a logical pwd would resolve ../.. against the symlink's parent
+# (.claude) and false-report the cited contracts as missing.
+skill_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
+repo_root="$(cd "$skill_dir/../.." && pwd -P)"
 
 lang="$repo_root/docs/contracts/ubiquitous-language.md"
 contexts="$repo_root/docs/contracts/bounded-contexts.yaml"

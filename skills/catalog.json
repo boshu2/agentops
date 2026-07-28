@@ -1275,7 +1275,9 @@
         "sre"
       ],
       "produces": [
-        "security-gate-summary.json"
+        "security-gate-summary.json",
+        "suite-summary.json",
+        "redteam-results.json"
       ],
       "references_count": 6,
       "tier": "product",

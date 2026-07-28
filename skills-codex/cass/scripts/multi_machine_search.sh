@@ -38,16 +38,13 @@ case "$QUERY" in
 esac
 
 # Do NOT name this TMPDIR — that shadows the standard temp-dir env var for cass,
-# jq, and ssh spawned below. Use a private name and clean it up on exit (the old
-# cleanup only printed a path and leaked the dir every run). Set CASS_FANOUT_KEEP
-# to retain it for debugging.
+# jq, and ssh spawned below. Use a private name and ALWAYS remove it on exit
+# (the old cleanup only printed a path and leaked the dir every run). No
+# retention path: the skill's output contract states no artifact directory
+# persists, and per-host errors are already surfaced to stderr before this trap.
 FANOUT_DIR=$(mktemp -d -t cass-fanout-XXXXXX)
 cleanup() {
-  if [ -n "${CASS_FANOUT_KEEP:-}" ]; then
-    echo "cass fan-out diagnostics retained: $FANOUT_DIR" >&2
-  else
-    rm -rf "$FANOUT_DIR"
-  fi
+  rm -rf "$FANOUT_DIR"
 }
 trap cleanup EXIT
 

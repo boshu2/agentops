@@ -2,6 +2,6 @@
   "generator": "codex-sync",
   "source_skill": "skills/security",
   "layout": "modular",
-  "source_hash": "c1c523ac5c8cc8020372ed52ccda5d67f497c50f95bceb6985860d1a2a2a3b1c",
-  "generated_hash": "cf8442d8b50187768a8d60c487d6444dd469e6a1c0f186b2e18f173b9996814f"
+  "source_hash": "183e3eb73292146855adbd10765ac0bee41f35a745900908f47573e317b20ab2",
+  "generated_hash": "0f1b44f2688511728dfcca04eadaf30b701ee17f2896e940d0a0e66ca39d22da"
 }

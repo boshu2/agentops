@@ -10,7 +10,8 @@
 # owners table, and guards against the dead-anchor regression the audit found.
 set -euo pipefail
 
-skill_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+# pwd -P so resolution follows the symlinked skills estate to the real checkout.
+skill_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
 skill_md="$skill_dir/SKILL.md"
 common="$skill_dir/references/common-standards.md"
 
@@ -43,6 +44,25 @@ while IFS= read -r name; do
     fail=1
   fi
 done < <(grep -oE '`[a-z]+\.md`' "$common" | sort -u)
+
+# 2b. Reverse direction: every language reference file that declares itself a
+#     "<Lang> Standards (Tier N)" catalog must have a row in the owners table.
+#     The table->file check above only shrinks, so without this a deleted row
+#     (e.g. the JavaScript row) would stay green. This compares the table
+#     against the actual language files, so a missing row fails.
+bt='`'
+while IFS= read -r ref; do
+  [[ -n "$ref" ]] || continue
+  if head -1 "$ref" | grep -Eq 'Standards \(Tier'; then
+    base="$(basename "$ref")"
+    if grep -Fq "${bt}${base}${bt}" "$common"; then
+      :
+    else
+      echo "standards: language file $base has no row in the Canonical Language Owners table" >&2
+      fail=1
+    fi
+  fi
+done < <(find "$skill_dir/references" -maxdepth 1 -name '*.md' | sort)
 
 # 3. Regression guard: the dead #dedup-manifest TOC anchor must stay gone.
 if grep -Fq 'dedup-manifest' "$common"; then
