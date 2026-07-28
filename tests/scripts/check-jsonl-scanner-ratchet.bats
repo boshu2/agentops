@@ -370,6 +370,76 @@ assert_regenerate_refused() {
     assert_regenerate_refused
 }
 
+# --- real-tree no-growth witnesses (repair3 intent) ---------------------------
+#
+# Every witness above runs against a synthetic fixture, so all of them stayed
+# green while a normal regeneration on the REAL repository grew the tracked
+# snapshot from five entries to seven. These three run against the real tree in
+# a disposable copy: the actual integration condition is "regeneration is a
+# no-op on the committed grandfather", and only a real-tree probe can see it.
+#
+# The copy is mutated, never the repository. Regeneration needs the working
+# tree, not Git history, so a plain file copy is sufficient and keeps the real
+# grandfather untouchable by construction.
+
+real_tree_copy() {
+    REAL_ROOT="$(cd "$BATS_TEST_DIRNAME/../.." && pwd)"
+    REAL_COPY="$BATS_TEST_TMPDIR/real-tree"
+    mkdir -p "$REAL_COPY"
+    # cli/ and scripts/ are all the heuristic reads; copying the whole repo
+    # would drag build output and .git for no gain.
+    cp -R "$REAL_ROOT/cli" "$REAL_COPY/cli"
+    mkdir -p "$REAL_COPY/scripts"
+    cp -R "$REAL_ROOT/scripts/." "$REAL_COPY/scripts/"
+}
+
+@test "real tree: --regenerate is a NO-OP on the committed grandfather (no growth)" {
+    real_tree_copy
+    local before after
+    before="$(shasum -a 256 "$REAL_COPY/scripts/.jsonl-scanner-grandfather" | cut -d' ' -f1)"
+    run bash -c "cd '$REAL_COPY' && bash scripts/check-jsonl-scanner-ratchet.sh --regenerate"
+    [ "$status" -eq 0 ]
+    after="$(shasum -a 256 "$REAL_COPY/scripts/.jsonl-scanner-grandfather" | cut -d' ' -f1)"
+    # The committed five-entry digest. Regeneration must reproduce it exactly.
+    [ "$before" = "a15f326f172e0346aadc17c0f4498861eb61e8c07df88c6e554f214bc90beb8e" ]
+    [ "$after" = "$before" ]
+    [[ "$output" == *"(5 files)"* ]]
+}
+
+@test "real tree: cli/internal/evidence/citations.go does not trip the JSONL heuristic" {
+    real_tree_copy
+    run bash -c "cd '$REAL_COPY' && bash scripts/check-jsonl-scanner-ratchet.sh --regenerate"
+    [ "$status" -eq 0 ]
+    # Named explicitly: this file mentions .agents/ao/citations.jsonl, so it must
+    # read that ledger through storage.ScanJSONL/ScanJSONLFile rather than a raw
+    # bufio.NewScanner, and must never be pinned into the grandfather.
+    run grep -c 'cli/internal/evidence/citations.go' "$REAL_COPY/scripts/.jsonl-scanner-grandfather"
+    [ "$output" = "0" ]
+}
+
+@test "real tree: cli/internal/provenancegraph/store.go does not trip the JSONL heuristic" {
+    real_tree_copy
+    run bash -c "cd '$REAL_COPY' && bash scripts/check-jsonl-scanner-ratchet.sh --regenerate"
+    [ "$status" -eq 0 ]
+    # Named explicitly: this file mentions docs/provenance/ledger.jsonl, so it
+    # must read through the blessed helpers and must never be pinned.
+    run grep -c 'cli/internal/provenancegraph/store.go' "$REAL_COPY/scripts/.jsonl-scanner-grandfather"
+    [ "$output" = "0" ]
+}
+
+@test "real tree: --regenerate is idempotent AT the five-entry snapshot" {
+    real_tree_copy
+    run bash -c "cd '$REAL_COPY' && bash scripts/check-jsonl-scanner-ratchet.sh --regenerate"
+    [ "$status" -eq 0 ]
+    cp "$REAL_COPY/scripts/.jsonl-scanner-grandfather" "$REAL_COPY/gf.first"
+    run bash -c "cd '$REAL_COPY' && bash scripts/check-jsonl-scanner-ratchet.sh --regenerate"
+    [ "$status" -eq 0 ]
+    # Idempotence must hold at the COMMITTED digest, not after a first growth.
+    cmp -s "$REAL_COPY/gf.first" "$REAL_COPY/scripts/.jsonl-scanner-grandfather"
+    run shasum -a 256 "$REAL_COPY/scripts/.jsonl-scanner-grandfather"
+    [[ "$output" == a15f326f172e0346aadc17c0f4498861eb61e8c07df88c6e554f214bc90beb8e* ]]
+}
+
 @test "--regenerate rewrites the grandfather list from the current tree" {
     # Two tripping files present; --regenerate should list both, sorted, with a header.
     write_tripping_go "cli/cmd/ao/a_reader.go"
