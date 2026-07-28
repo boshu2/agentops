@@ -48,9 +48,9 @@
 | `agy-native` | cross-vendor | `keep_optional_adapter` | - | `dispatch_explicit_packet`, `provide_fresh_context` | `start_agy_session` |
 | `automation-shape-routing` | meta | `keep_optional_adapter` | - | `automation_shape_routing` | - |
 | `bootstrap` | session | `keep_specialist` | - | `bootstrap` | - |
-| `cass` | execution | `keep_specialist` | - | `cass` | - |
+| `cass` | execution | `keep_specialist` | - | `cass` | `rebuild_local_index`, `sync_remote_sources`, `download_semantic_model` |
 | `cc-hooks` | execution | `keep_specialist` | - | `cc_hooks` | - |
-| `codebase-recon` | execution | `keep_specialist` | - | `codebase_recon` | - |
+| `codebase-recon` | execution | `keep_specialist` | - | `codebase_recon` | `write_recon_pack` |
 | `codex-exec` | orchestration | `keep_optional_adapter` | - | `codex_exec` | - |
 | `converter` | cross-vendor | `keep_specialist` | - | `converter` | - |
 | `council` | judgment | `keep_strategy` | - | `collect_independent_judgments`, `synthesize_disagreement` | `write_advisory_council_report` |
@@ -74,13 +74,13 @@
 | `rch` | execution | `keep_specialist` | - | `rch` | - |
 | `reality-check` | judgment | `keep_strategy` | - | `compare_claim_to_evidence` | `write_advisory_gap_report` |
 | `refactor` | execution | `keep_specialist` | - | `refactor` | - |
-| `research` | execution | `keep_specialist` | - | `research` | - |
-| `reverse-engineer` | execution | `keep_specialist` | - | `reverse_engineer` | - |
+| `research` | execution | `keep_specialist` | - | `research` | `write_research_report` |
+| `reverse-engineer` | execution | `keep_specialist` | - | `reverse_engineer` | `clone_upstream_repo`, `execute_authorized_binary`, `write_teardown_artifacts` |
 | `rpi` | meta | `keep` | `plan`, `implement`, `validate` | `orchestrate_once`, `report` | `dispatch_core_phases` |
 | `sbh` | execution | `keep_specialist` | - | `sbh` | - |
 | `scaffold` | execution | `keep_specialist` | - | `scaffold` | - |
 | `scope` | meta | `keep_specialist` | - | `scope_review` | - |
-| `security` | product | `keep_specialist` | - | `security` | - |
+| `security` | product | `keep_specialist` | - | `security` | `write_scan_artifacts` |
 | `shared` | library | `keep_specialist` | - | `provide_reference_context` | - |
 | `skill-builder` | meta | `keep_specialist` | - | `skill_builder`, `heal_skill` | `writes_skill_source`, `regenerates_skill_projections`, `optional_skill_projection_repair` |
 | `standards` | knowledge | `keep_specialist` | - | `standards` | - |

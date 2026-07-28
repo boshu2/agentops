@@ -14,7 +14,7 @@ skill_api_version: 1
 allowed-tools: Read, Grep, Glob, Bash, Write
 metadata:
   capabilities: [research]
-  effects: []
+  effects: [write_research_report]
   canonical_status: canonical
   disposition: keep_specialist
   tier: execution

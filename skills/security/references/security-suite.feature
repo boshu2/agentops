@@ -2,7 +2,7 @@
 # /security provides repeatable, composable security/internal-testing primitives over
 # AUTHORIZED targets — separated into testable steps (collect-static, collect-dynamic,
 # collect-contract) that compose into a security report. Hexagon: driven-adapter; consumes
-# repo-context; produces security-report.json; supplier-to vibe. (soc-qk4b)
+# repo-context; produces suite-summary.json; supplier-to validate. (soc-qk4b)
 
 Feature: Security-suite runs composable security primitives
   As the composable security-analysis toolkit
@@ -12,7 +12,7 @@ Feature: Security-suite runs composable security primitives
   Scenario: composable primitives produce a security report
     When /security runs the composable suite over a target
     Then it composes primitives (collect-static, collect-dynamic, collect-contract)
-    And it writes a security-report.json
+    And it writes a suite-summary.json
 
   Scenario: analysis is authorization-bounded
     When the target is a binary or surface
@@ -21,4 +21,4 @@ Feature: Security-suite runs composable security primitives
 
   Scenario: the report feeds the validator
     When the suite completes
-    Then its report is available to /vibe as a supplier (supplier-to vibe)
+    Then its report is available to /validate as a supplier (supplier-to validate)

@@ -9,7 +9,9 @@ hexagonal_role: driven-adapter
 consumes:
 - repo-context
 produces:
-- security-report.json
+- security-gate-summary.json
+- suite-summary.json
+- redteam-results.json
 context_rel:
 - kind: supplier-to
   with: validate
@@ -24,7 +26,7 @@ context:
   intel_scope: topic
 metadata:
   capabilities: [security]
-  effects: []
+  effects: [write_scan_artifacts]
   canonical_status: canonical
   disposition: keep_specialist
   graph_root: true
