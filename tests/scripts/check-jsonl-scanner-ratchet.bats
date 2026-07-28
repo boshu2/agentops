@@ -167,6 +167,58 @@ GO
     [[ "$output" == *"PASS"* ]]
 }
 
+# --- collector fail-closed witnesses (advisory F2) -----------------------------
+
+# `done < <(collect_changed_files | sort -u)` discards the collector's
+# fail-closed rc 2 even under `set -euo pipefail`: a dead git read becomes an
+# empty loop and the gate certifies. The repository's own defense for this trap
+# is the capture pattern documented in check-atomic-write-ratchet.sh. Both
+# witnesses seed a REAL violation first, so a swallowed failure would have to
+# produce a visibly wrong green. The shim targets `git diff-tree`, the
+# head-scope collection command, so the witness encodes the contract, not
+# either implementation.
+shim_git_diff_tree() {
+    local emit_row="${1:-}"
+    mkdir -p "$TMP_DIR/bin"
+    {
+        echo '#!/usr/bin/env bash'
+        echo 'if [ "$1" = "diff-tree" ]; then'
+        if [[ -n "$emit_row" ]]; then
+            printf '  printf "%s"\n' "$emit_row"
+        fi
+        echo '  echo "fatal: injected diff-tree failure" >&2'
+        echo '  exit 128'
+        echo 'fi'
+        echo 'exec /usr/bin/env -u PATH PATH="/usr/bin:/bin:/usr/local/bin:/opt/homebrew/bin" git "$@"'
+    } > "$TMP_DIR/bin/git"
+    chmod +x "$TMP_DIR/bin/git"
+}
+
+@test "a failing changed-scope collector exits 2, never a silent PASS" {
+    write_tripping_go "cli/cmd/ao/new_reader.go"
+    ( cd "$TMP_DIR" && git add -A && git commit -qm "add new_reader" )
+    shim_git_diff_tree
+    run bash -c "cd '$TMP_DIR' && PATH=\"$TMP_DIR/bin:\$PATH\" bash scripts/check-jsonl-scanner-ratchet.sh --scope head"
+    [ "$status" -eq 2 ]
+    # The gate's own refusal must be loud, and the library's stderr preserved.
+    [[ "$output" == *"refusing to certify"* ]]
+    [[ "$output" == *"diff-tree"* ]]
+    # A swallowed failure would certify green over an unchecked diff.
+    [[ "$output" != *"PASS"* ]]
+}
+
+@test "a PARTIAL collector (row emitted, then death) is never certified against" {
+    write_tripping_go "cli/cmd/ao/new_reader.go"
+    ( cd "$TMP_DIR" && git add -A && git commit -qm "add new_reader" )
+    # One plausible path row, then death: truncated bytes must not be processed.
+    shim_git_diff_tree 'cli/cmd/ao/ghost.go\n'
+    run bash -c "cd '$TMP_DIR' && PATH=\"$TMP_DIR/bin:\$PATH\" bash scripts/check-jsonl-scanner-ratchet.sh --scope head"
+    [ "$status" -eq 2 ]
+    [[ "$output" == *"refusing to certify"* ]]
+    [[ "$output" != *"ghost.go"* ]]
+    [[ "$output" != *"PASS"* ]]
+}
+
 @test "--regenerate rewrites the grandfather list from the current tree" {
     # Two tripping files present; --regenerate should list both, sorted, with a header.
     write_tripping_go "cli/cmd/ao/a_reader.go"
