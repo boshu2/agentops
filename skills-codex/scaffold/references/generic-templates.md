@@ -186,17 +186,9 @@ Run these checks in order. Stop and fix if any fail.
 
 If a tool is not installed (e.g., `ruff`, `golangci-lint`), note it as a warning but do not fail the scaffold.
 
-## Step 5: Initial Commit
-
-After verification passes, create the initial commit:
-
-```
-bootstrap(<name>): scaffold <language> <type> project
-```
-
-Example: `bootstrap(my-cli): scaffold go cli project`
-
-Do NOT push. The user decides when to push.
+Report the generated files and the command results, then stop. The caller owns
+version control, revision, and delivery — this scaffold does not `git init`,
+stage, commit, push, or decide what happens next.
 
 ## Component Mode
 
@@ -336,7 +328,6 @@ Include caching directives and artifact definitions.
 | Directory already exists | Ask user: overwrite, merge, or abort |
 | Build tool not installed | Note missing tool, generate files anyway, warn user |
 | Test fails on generated code | Fix the generated code (this is a scaffold bug) |
-| Git init fails | Verify not inside existing repo, handle accordingly |
 
 ## Output Summary
 
@@ -348,9 +339,4 @@ Scaffold complete: <name> (<language> <type>)
   Build: PASS
   Tests: PASS (<count> tests)
   Lint:  PASS | WARN (tool not installed)
-  Commit: bootstrap(<name>): scaffold <language> <type> project
-
-Next steps:
-  cd <name>
-  <language-specific "run" command>
 ```

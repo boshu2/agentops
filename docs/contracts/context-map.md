@@ -140,7 +140,7 @@
 | `swarm` | produces | `per-packet-results` |
 | `test` | consumes | `standards` |
 | `test` | consumes | `repo-context` |
-| `test` | produces | `result.json` |
+| `test` | produces | `test-evidence` |
 | `toil-mining` | produces | `toil-candidates-report` |
 | `using-gc` | consumes | `explicit-packets` |
 | `using-gc` | produces | `gas-city-runtime-evidence` |

@@ -21,7 +21,7 @@ context:
   intel_scope: topic
 metadata:
   capabilities: [scaffold]
-  effects: []
+  effects: [write_project_files]
   canonical_status: canonical
   disposition: keep_specialist
   tier: execution

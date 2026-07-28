@@ -762,7 +762,9 @@
           "converter"
         ],
         "disposition": "keep_specialist",
-        "effects": [],
+        "effects": [
+          "write_converted_skill_projection"
+        ],
         "has_references": true,
         "has_skill_md": true,
         "name": "converter",
@@ -818,7 +820,9 @@
           "doc"
         ],
         "disposition": "keep_specialist",
-        "effects": [],
+        "effects": [
+          "write_documentation"
+        ],
         "has_references": true,
         "has_skill_md": true,
         "name": "doc",
@@ -1068,7 +1072,9 @@
           "refactor"
         ],
         "disposition": "keep_specialist",
-        "effects": [],
+        "effects": [
+          "modify_source_files"
+        ],
         "has_references": true,
         "has_skill_md": true,
         "name": "refactor",
@@ -1142,7 +1148,9 @@
           "scaffold"
         ],
         "disposition": "keep_specialist",
-        "effects": [],
+        "effects": [
+          "write_project_files"
+        ],
         "has_references": true,
         "has_skill_md": true,
         "name": "scaffold",
@@ -1199,6 +1207,7 @@
         "disposition": "keep_specialist",
         "effects": [
           "writes_skill_source",
+          "write_build_report",
           "regenerates_skill_projections",
           "optional_skill_projection_repair"
         ],
@@ -1255,7 +1264,10 @@
           "test"
         ],
         "disposition": "keep_specialist",
-        "effects": [],
+        "effects": [
+          "write_test_files",
+          "write_test_evidence"
+        ],
         "has_references": true,
         "has_skill_md": true,
         "name": "test",
@@ -1317,7 +1329,9 @@
           "workflow_builder"
         ],
         "disposition": "keep_specialist",
-        "effects": [],
+        "effects": [
+          "write_workflow_script"
+        ],
         "has_references": false,
         "has_skill_md": true,
         "name": "workflow-builder",

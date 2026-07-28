@@ -357,7 +357,9 @@
       "dependencies": [],
       "description": "Convert AgentOps skill formats. Triggers: \"converter\", \"convert agentops skill formats.\", \"converter skill\".",
       "disposition": "keep_specialist",
-      "effects": [],
+      "effects": [
+        "write_converted_skill_projection"
+      ],
       "graph_root": false,
       "hexagonal_role": "driven-adapter",
       "name": "converter",
@@ -476,7 +478,9 @@
       "dependencies": [],
       "description": "Generate and validate repo docs, READMEs, and OSS doc packs. Triggers: \"doc\", \"generate and validate repo docs\", \"doc skill\".",
       "disposition": "keep_specialist",
-      "effects": [],
+      "effects": [
+        "write_documentation"
+      ],
       "graph_root": false,
       "hexagonal_role": "supporting",
       "name": "doc",
@@ -1034,7 +1038,9 @@
       "dependencies": [],
       "description": "Execute one behavior-preserving structural transformation and report evidence. Triggers: \"refactor this\", \"simplify without changing behavior\".",
       "disposition": "keep_specialist",
-      "effects": [],
+      "effects": [
+        "modify_source_files"
+      ],
       "graph_root": false,
       "hexagonal_role": "supporting",
       "name": "refactor",
@@ -1196,7 +1202,9 @@
       "dependencies": [],
       "description": "Stamp a bounded project, component, or CI scaffold and verify the generated result once. Triggers: \"scaffold\", \"create project component or boilerplate\".",
       "disposition": "keep_specialist",
-      "effects": [],
+      "effects": [
+        "write_project_files"
+      ],
       "graph_root": false,
       "hexagonal_role": "supporting",
       "name": "scaffold",
@@ -1323,6 +1331,7 @@
       "disposition": "keep_specialist",
       "effects": [
         "writes_skill_source",
+        "write_build_report",
         "regenerates_skill_projections",
         "optional_skill_projection_repair"
       ],
@@ -1437,7 +1446,10 @@
       "dependencies": [],
       "description": "Generate tests and coverage plans. Triggers: \"test\", \"generate tests and coverage plans.\", \"test skill\".",
       "disposition": "keep_specialist",
-      "effects": [],
+      "effects": [
+        "write_test_files",
+        "write_test_evidence"
+      ],
       "graph_root": false,
       "hexagonal_role": "supporting",
       "name": "test",
@@ -1447,7 +1459,7 @@
         "bdd-gherkin"
       ],
       "produces": [
-        "result.json"
+        "test-evidence"
       ],
       "references_count": 7,
       "tier": "execution",
@@ -1586,7 +1598,9 @@
       "dependencies": [],
       "description": "Scaffold an explicit one-shot workflow adapter without lifecycle authority. Triggers: \"build a workflow adapter\", \"scaffold a one-shot workflow\".",
       "disposition": "keep_specialist",
-      "effects": [],
+      "effects": [
+        "write_workflow_script"
+      ],
       "graph_root": false,
       "hexagonal_role": "supporting",
       "name": "workflow-builder",

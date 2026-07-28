@@ -4,6 +4,16 @@
 #        bash skills/converter/scripts/convert.sh --all <target> [output-dir]
 set -euo pipefail
 
+# This script uses namerefs (`local -n`), which require Bash >= 4.3. On stock
+# macOS /bin/bash (3.2.57) a nameref is an invalid option that aborts under
+# `set -e` with an opaque message and zero files written. Fail closed with a
+# clear diagnostic instead of an unrunnable surprise.
+if (( BASH_VERSINFO[0] < 4 || (BASH_VERSINFO[0] == 4 && BASH_VERSINFO[1] < 3) )); then
+  echo "ERROR: convert.sh requires Bash >= 4.3 (namerefs); found ${BASH_VERSION}." >&2
+  echo "       On macOS install a newer bash ('brew install bash') and invoke it explicitly." >&2
+  exit 2
+fi
+
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
 SKILL_PATTERN=""
@@ -278,6 +288,10 @@ parse_skill_md() {
 
 # Collect files from a subdirectory into parallel arrays.
 # Args: <dir> <array-name-names> <array-name-contents>
+# Scope: top-level regular files of <dir> only. Nested reference/script files
+# are NOT inlined here; copy_passthrough_resources() preserves them recursively
+# in the written output, so nested resources survive a conversion even though
+# they are not flattened into the target SKILL.md body.
 collect_files() {
   local dir="$1"
   local -n names_arr="$2"
@@ -454,8 +468,10 @@ convert_cursor() {
   local out=""
 
   # ── YAML frontmatter ──
+  # Single-quote and escape the description: an unquoted value containing a
+  # colon, quote, or leading special char yields invalid Cursor YAML (CV-9).
   out+="---"$'\n'
-  out+="description: ${BUNDLE_DESC}"$'\n'
+  out+="description: '$(yaml_escape_single_quote "$BUNDLE_DESC")'"$'\n'
   out+="globs: "$'\n'
   out+="alwaysApply: false"$'\n'
   out+="---"$'\n\n'
@@ -622,9 +638,54 @@ verify_passthrough_resources() {
   fi
 }
 
+# Resolve a possibly-nonexistent absolute path to its physical form, collapsing
+# `..` and symlinks against the deepest existing ancestor. Used before any
+# destructive comparison so the guard cannot be fooled by an unresolved path.
+resolve_physical() {
+  local target="$1" suffix=""
+  while [[ ! -e "$target" ]]; do
+    suffix="/$(basename "$target")$suffix"
+    target="$(dirname "$target")"
+    [[ "$target" == "/" ]] && break
+  done
+  if [[ -d "$target" ]]; then
+    printf '%s%s\n' "$(cd "$target" && pwd -P)" "$suffix"
+  else
+    printf '%s/%s%s\n' "$(cd "$(dirname "$target")" && pwd -P)" "$(basename "$target")" "$suffix"
+  fi
+}
+
+# Refuse a clean-write target that would destroy the source or a parent. The
+# write stage rm -rf's output_dir; if output_dir is the source package, an
+# ancestor of it, or the repo root, that rm -rf deletes files this conversion
+# must read (CV-1: a source-dir output went 4 files -> 2 at exit 0). Fix by
+# refusal, never by silently appending a subdir.
+assert_safe_output_dir() {
+  local output_dir="$1" source_dir="$2"
+  local out_abs src_abs repo_abs
+  out_abs="$(resolve_physical "$output_dir")"
+  src_abs="$(cd "$source_dir" && pwd -P)"
+  repo_abs="$(cd "$REPO_ROOT" && pwd -P)"
+
+  if [[ "$out_abs" == "$repo_abs" ]]; then
+    die "refusing to clean-write the repository root: $out_abs"
+  fi
+  if [[ "$out_abs" == "$src_abs" ]]; then
+    die "refusing to clean-write the source package itself: $out_abs (choose a distinct output dir)"
+  fi
+  case "$src_abs/" in
+    "$out_abs"/*)
+      die "refusing to clean-write '$out_abs': it contains the source package '$src_abs'"
+      ;;
+  esac
+}
+
 write_output() {
   local output_dir="$1"
   local source_dir="$2"
+
+  # Guard BEFORE the destructive clean-write below.
+  assert_safe_output_dir "$output_dir" "$source_dir"
 
   # Clean-write: delete target dir before writing
   if [[ -d "$output_dir" ]]; then
@@ -664,9 +725,9 @@ convert_one_skill() {
 
   [[ -n "$BUNDLE_NAME" ]] || die "Failed to parse name from $skill_dir/SKILL.md"
 
-  # Default output dir
+  # Default output dir (ADR-0016 closed set: generated projection tier)
   if [[ -z "$output_dir" ]]; then
-    output_dir="$REPO_ROOT/.agents/converter/$target/$BUNDLE_NAME"
+    output_dir="$REPO_ROOT/.agents/projections/converter/$target/$BUNDLE_NAME"
   elif [[ "$output_dir" != /* ]]; then
     output_dir="$REPO_ROOT/$output_dir"
   fi

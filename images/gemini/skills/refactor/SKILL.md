@@ -22,7 +22,7 @@ context:
   intel_scope: topic
 metadata:
   capabilities: [refactor]
-  effects: []
+  effects: [modify_source_files]
   canonical_status: canonical
   disposition: keep_specialist
   tier: execution
@@ -72,7 +72,8 @@ transformation on behavior-identical proof:
 - For output-producing surfaces (generators, serializers, formatters, reports),
   hash the outputs: capture golden-output hashes over identical inputs before
   the change and compare byte-for-byte after. A hash mismatch is a behavior
-  diff to explain or revert, never to shrug at.
+  diff to surface and explain, never to shrug at; the caller decides whether to
+  keep, narrow, or reverse the change.
 - Observable error messages, exit codes, and public signatures on the changed
   surface are part of behavior unless the caller excluded them.
 

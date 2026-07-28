@@ -28,15 +28,15 @@
 | `agy-native` | cross-vendor | `keep_optional_adapter` | - | `dispatch_explicit_packet`, `provide_fresh_context` | `start_agy_session` |
 | `automation-shape-routing` | meta | `keep_optional_adapter` | - | `automation_shape_routing` | - |
 | `bootstrap` | session | `keep_specialist` | - | `bootstrap` | - |
-| `cass` | execution | `keep_specialist` | - | `cass` | `rebuild_local_index`, `sync_remote_sources`, `download_semantic_model` |
+| `cass` | execution | `keep_specialist` | - | `cass` | - |
 | `cc-hooks` | execution | `keep_specialist` | - | `cc_hooks` | - |
-| `codebase-recon` | execution | `keep_specialist` | - | `codebase_recon` | `write_recon_pack` |
+| `codebase-recon` | execution | `keep_specialist` | - | `codebase_recon` | - |
 | `codex-exec` | orchestration | `keep_optional_adapter` | - | `codex_exec` | - |
-| `converter` | cross-vendor | `keep_specialist` | - | `converter` | - |
+| `converter` | cross-vendor | `keep_specialist` | - | `converter` | `write_converted_skill_projection` |
 | `council` | judgment | `keep_strategy` | - | `collect_independent_judgments`, `synthesize_disagreement` | `write_advisory_council_report` |
 | `craft-goal` | judgment | `keep_specialist` | - | `goal_prompt_design`, `goal_prompt_lint` | - |
 | `dcg` | execution | `keep_specialist` | - | `dcg` | - |
-| `doc` | product | `keep_specialist` | - | `doc` | - |
+| `doc` | product | `keep_specialist` | - | `doc` | `write_documentation` |
 | `domain` | knowledge | `keep_specialist` | - | `domain` | - |
 | `goals` | product | `keep_specialist` | - | `goals` | `write_goal_snapshot`, `write_rendered_spec` |
 | `handoff` | session | `keep_specialist` | - | `handoff` | - |
@@ -53,21 +53,21 @@
 | `product` | product | `keep_specialist` | - | `shape_product_boundary` | `write_product_document` |
 | `rch` | execution | `keep_specialist` | - | `rch` | - |
 | `reality-check` | judgment | `keep_strategy` | - | `compare_claim_to_evidence` | `write_advisory_gap_report` |
-| `refactor` | execution | `keep_specialist` | - | `refactor` | - |
-| `research` | execution | `keep_specialist` | - | `research` | `write_research_report` |
-| `reverse-engineer` | execution | `keep_specialist` | - | `reverse_engineer` | `clone_upstream_repo`, `execute_authorized_binary`, `write_teardown_artifacts` |
+| `refactor` | execution | `keep_specialist` | - | `refactor` | `modify_source_files` |
+| `research` | execution | `keep_specialist` | - | `research` | - |
+| `reverse-engineer` | execution | `keep_specialist` | - | `reverse_engineer` | - |
 | `rpi` | meta | `keep` | `plan`, `implement`, `validate` | `orchestrate_once`, `report` | `dispatch_core_phases` |
 | `sbh` | execution | `keep_specialist` | - | `sbh` | - |
-| `scaffold` | execution | `keep_specialist` | - | `scaffold` | - |
+| `scaffold` | execution | `keep_specialist` | - | `scaffold` | `write_project_files` |
 | `scope` | meta | `keep_specialist` | - | `scope_review` | - |
-| `security` | product | `keep_specialist` | - | `security` | `write_scan_artifacts` |
+| `security` | product | `keep_specialist` | - | `security` | - |
 | `shared` | library | `keep_specialist` | - | `provide_reference_context` | - |
-| `skill-builder` | meta | `keep_specialist` | - | `skill_builder`, `heal_skill` | `writes_skill_source`, `regenerates_skill_projections`, `optional_skill_projection_repair` |
+| `skill-builder` | meta | `keep_specialist` | - | `skill_builder`, `heal_skill` | `writes_skill_source`, `write_build_report`, `regenerates_skill_projections`, `optional_skill_projection_repair` |
 | `standards` | knowledge | `keep_specialist` | - | `standards` | - |
 | `status` | session | `keep_specialist` | - | `status` | - |
 | `swarm` | execution | `keep_optional_adapter` | - | `dispatch_once` | `invoke_selected_executor` |
-| `test` | execution | `keep_specialist` | - | `test` | - |
+| `test` | execution | `keep_specialist` | - | `test` | `write_test_files`, `write_test_evidence` |
 | `toil-mining` | meta | `keep_specialist` | - | `toil_mining` | `write_toil_candidates` |
 | `using-gc` | execution | `keep_optional_adapter` | - | `dispatch_explicit_packet`, `observe_gc_runtime`, `drive_mayor_shepherd` | `operate_gas_city` |
 | `validate` | judgment | `keep` | - | `compute_subject_identity`, `judge_acceptance`, `persist_verdict` | `write_verdict_artifact` |
-| `workflow-builder` | meta | `keep_specialist` | - | `workflow_builder` | - |
+| `workflow-builder` | meta | `keep_specialist` | - | `workflow_builder` | `write_workflow_script` |
