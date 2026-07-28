@@ -838,7 +838,9 @@
           "goals"
         ],
         "disposition": "keep_specialist",
-        "effects": [],
+        "effects": [
+          "write_goal_snapshot"
+        ],
         "has_references": false,
         "has_skill_md": true,
         "name": "goals",

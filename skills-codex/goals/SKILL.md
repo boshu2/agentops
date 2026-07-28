@@ -26,8 +26,15 @@ scope, and let the caller decide.
 - Do not add, remove, prioritize, recommend, apply, prune, migrate, or otherwise
   mutate goals.
 - Do not translate a fitness gap into work selection or a next action.
+- The goals source is never modified. `measure`, `drift`, and `export` persist a
+  best-effort JSON snapshot under `.agents/ao/goals/baselines/`, and
+  `render --out <file>` writes a Gherkin spec to the named path; both are derived
+  outputs, not edits to the goals document.
 
-## Read-only commands
+## Commands
+
+All eight subcommands read the goals source without mutating it. Snapshot and
+spec writes above are the only side effects, and they touch derived paths only.
 
 ```bash
 ao goals measure --json
@@ -36,6 +43,8 @@ ao goals drift
 ao goals history
 ao goals export
 ao goals meta --json
+ao goals scenarios
+ao goals render          # append --out <file> to write the spec instead of stdout
 ```
 
 Run the requested command once. Return the command, exit code, goal-level
