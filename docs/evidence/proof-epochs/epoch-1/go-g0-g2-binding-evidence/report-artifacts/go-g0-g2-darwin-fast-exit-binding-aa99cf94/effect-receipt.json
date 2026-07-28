@@ -1,0 +1,215 @@
+{
+  "actual_changed_paths": [
+    "cli/go.mod",
+    "cli/go.sum",
+    "cli/internal/eval/engine_context_unix_test.go",
+    "cli/internal/subprocess/completion_darwin.go",
+    "cli/internal/subprocess/completion_darwin_test.go",
+    "cli/internal/subprocess/process_group_probe_darwin.go",
+    "cli/internal/subprocess/process_group_probe_linux.go",
+    "cli/internal/subprocess/process_group_probe_linux_test.go",
+    "cli/internal/subprocess/process_group_probe_logic.go",
+    "cli/internal/subprocess/process_group_probe_logic_test.go",
+    "cli/internal/subprocess/process_group_probe_other.go",
+    "cli/internal/subprocess/process_unix.go",
+    "cli/internal/subprocess/run.go",
+    "cli/internal/subprocess/run_test.go",
+    "cli/internal/subprocess/run_unix_test.go"
+  ],
+  "artifact_digest": "30cbef3b1371f3ffce3e5fe0e411f68f8df62bbf97aeeecdad211e84f103c056",
+  "before_manifest_digest": "4006df701369455f7534d82b534b577920aedd65f50006ba9b59626a52e47942",
+  "changes": [
+    {
+      "after_digest": "9d54921179a71aace17b7ee415c2f85b33549c94926df6334b8ca6acf7cc77d7",
+      "before_digest": "f757a1cf9ce5ecc1145f19cbc9432504c682ae420cbcc671efbdc96f291c9e1f",
+      "change_kind": "MODIFIED",
+      "path": "cli/go.mod"
+    },
+    {
+      "after_digest": "0254526b7285db82b21324613ed9a01b4157da944db8b2097d5f3598035aedc5",
+      "before_digest": "ec02e2d94e6b25e7347b9857a203ca513aa1b79a6c8377335827f34443a1c1a4",
+      "change_kind": "MODIFIED",
+      "path": "cli/go.sum"
+    },
+    {
+      "after_digest": "be0230858dbcfcc42199607c77bc98f54380be1cbe94ff36d23cc15f6b06337f",
+      "before_digest": "d53f11b16836ccc39edae96f12adcfc3261426353e2b298600bc57b6b18e46cd",
+      "change_kind": "MODIFIED",
+      "path": "cli/internal/eval/engine_context_unix_test.go"
+    },
+    {
+      "after_digest": "e765cf1b9a0c39bf8358aacf86c4313cfaf226eb77267b0115e672d24e67325e",
+      "before_digest": "4c46cdd225e2350238193a8a71453592d0ff78b922c9b036373d0336e02075fc",
+      "change_kind": "MODIFIED",
+      "path": "cli/internal/subprocess/completion_darwin.go"
+    },
+    {
+      "after_digest": "6e3e18988cb7690e0ac11376b5c65505532d37b181b83fb5d7af01460a7ac0b1",
+      "before_digest": null,
+      "change_kind": "ADDED",
+      "path": "cli/internal/subprocess/completion_darwin_test.go"
+    },
+    {
+      "after_digest": "8e65ac5ff41bf025c4119869feca26b97e8b28571c203459666a7758cbcb9e17",
+      "before_digest": null,
+      "change_kind": "ADDED",
+      "path": "cli/internal/subprocess/process_group_probe_darwin.go"
+    },
+    {
+      "after_digest": "794023b62530a99b34cfa228c04f5420d46bb392d1c8763884501c510af7f41b",
+      "before_digest": null,
+      "change_kind": "ADDED",
+      "path": "cli/internal/subprocess/process_group_probe_linux.go"
+    },
+    {
+      "after_digest": "2214059f933e1b2f52d1c54186a3c6ba807b65d22fabc60597f7531613cdcd2b",
+      "before_digest": null,
+      "change_kind": "ADDED",
+      "path": "cli/internal/subprocess/process_group_probe_linux_test.go"
+    },
+    {
+      "after_digest": "62969083daa8b9dd4cfa16dca1e38a0c105e10154e9a4a8902b0c7e08ee1dba1",
+      "before_digest": null,
+      "change_kind": "ADDED",
+      "path": "cli/internal/subprocess/process_group_probe_logic.go"
+    },
+    {
+      "after_digest": "a1ba3bbaebeed3335073d2c59ef9b259ae739c674166668a2594b3b58ee4c2ff",
+      "before_digest": null,
+      "change_kind": "ADDED",
+      "path": "cli/internal/subprocess/process_group_probe_logic_test.go"
+    },
+    {
+      "after_digest": "8ef54d5e89ea65a7d242e0e591a86c9ac05d556682ee9f06c9ca81f95c041156",
+      "before_digest": null,
+      "change_kind": "ADDED",
+      "path": "cli/internal/subprocess/process_group_probe_other.go"
+    },
+    {
+      "after_digest": "468fe65c8a9a87658aee1e70862e67a03611ec2d2885279edf05b38fc0e65cbc",
+      "before_digest": "83c571e63f5ff3958174133d26dd019d55012ad6af63a8daea5006dd0dcb7b34",
+      "change_kind": "MODIFIED",
+      "path": "cli/internal/subprocess/process_unix.go"
+    },
+    {
+      "after_digest": "d884d7ef9c40689657f887c8acd13572b9ce05bf646656ea2ab5bf16b7c271eb",
+      "before_digest": "73cf8b336bbe74f01f80e55b5a640f0225de83f0d0cc5264114dc99b702478a4",
+      "change_kind": "MODIFIED",
+      "path": "cli/internal/subprocess/run.go"
+    },
+    {
+      "after_digest": "23d5a06d5f53dc4b1a4272d20de0485e8c0f25f8d84dfb4c7b6194ea9b3827d9",
+      "before_digest": "ec6f1ca696b1bf9ebbca8d1cae10bc99bfbab7537395bf66d7d6a5e50705b5b3",
+      "change_kind": "MODIFIED",
+      "path": "cli/internal/subprocess/run_test.go"
+    },
+    {
+      "after_digest": "d0db3e8dc5c8bf083108b2b15a0c795da63e90ec95c04df5c577aee24497002b",
+      "before_digest": "28d800556c2f7771884fc7c585b61964bdfbd119ddad2a51486297b996a96130",
+      "change_kind": "MODIFIED",
+      "path": "cli/internal/subprocess/run_unix_test.go"
+    }
+  ],
+  "check_receipt_refs": [
+    {
+      "digest": "aedd0a356a4b7e37a9b9d6c034feae44a9d94eeddeffc2217ddbde0407458244",
+      "ref": ".agents/ao/reports/go-g0-g2-darwin-fast-exit-binding-aa99cf94/check-receipts/active-proof-contract.receipt.json"
+    },
+    {
+      "digest": "1794b19d176ec1e2a3e9d0c4623d1264b1a46295458749b955b08dfdc4230960",
+      "ref": ".agents/ao/reports/go-g0-g2-darwin-fast-exit-binding-aa99cf94/check-receipts/cli-reference-check.receipt.json"
+    },
+    {
+      "digest": "863f5e9e8edf71592e79660bb712fa62576b07119c2cb992f378fe6baa4817b3",
+      "ref": ".agents/ao/reports/go-g0-g2-darwin-fast-exit-binding-aa99cf94/check-receipts/contract-compatibility.receipt.json"
+    },
+    {
+      "digest": "d79fdce3f940dadbbd6c8a10e232e1ba02eb2e92ffb16a58d2493dda64e9b99e",
+      "ref": ".agents/ao/reports/go-g0-g2-darwin-fast-exit-binding-aa99cf94/check-receipts/darwin-amd64-cross-build-tests.receipt.json"
+    },
+    {
+      "digest": "98d4d160e29f8b265f6535905488cab5908a0998c6f86cbdf68ee0316b384087",
+      "ref": ".agents/ao/reports/go-g0-g2-darwin-fast-exit-binding-aa99cf94/check-receipts/darwin-amd64-vet.receipt.json"
+    },
+    {
+      "digest": "a9b7d9606c9249f3dea85968bec2d459e10b1127350d9c7bdd6b3f36c09e7f81",
+      "ref": ".agents/ao/reports/go-g0-g2-darwin-fast-exit-binding-aa99cf94/check-receipts/darwin-fast-exit-cleanup-order.receipt.json"
+    },
+    {
+      "digest": "45af1f698e0b2eff0d77a54bd7651f515e5734fd2e7c8f98f2904824043f218c",
+      "ref": ".agents/ao/reports/go-g0-g2-darwin-fast-exit-binding-aa99cf94/check-receipts/darwin-sdk-waitid-abi.receipt.json"
+    },
+    {
+      "digest": "441abe9e8af0d54c1659254eec4d67baed28e20859d8ffa07b9701558d04986b",
+      "ref": ".agents/ao/reports/go-g0-g2-darwin-fast-exit-binding-aa99cf94/check-receipts/exact-subject-identity.receipt.json"
+    },
+    {
+      "digest": "2f369a5268ac516ecac77207c1e111e08dc3ca46232f393581ebf20078fcd53d",
+      "ref": ".agents/ao/reports/go-g0-g2-darwin-fast-exit-binding-aa99cf94/check-receipts/fable-stdin-relay-targeted-race.receipt.json"
+    },
+    {
+      "digest": "a24b4b37059f606b39e84cf00255935b230fe0ddedc4ce44b44fb9cb0b4a7c61",
+      "ref": ".agents/ao/reports/go-g0-g2-darwin-fast-exit-binding-aa99cf94/check-receipts/final-manifest-verification.receipt.json"
+    },
+    {
+      "digest": "356e4460a6fbe729aaf2c6c0e510e57945014ed6ac951b43e1f0d94cba1b0651",
+      "ref": ".agents/ao/reports/go-g0-g2-darwin-fast-exit-binding-aa99cf94/check-receipts/focused-race-shuffle.receipt.json"
+    },
+    {
+      "digest": "68e28c6ef3007b642675125a9cd16c83dea6f3db9b1e1c291a356d48c57e9af8",
+      "ref": ".agents/ao/reports/go-g0-g2-darwin-fast-exit-binding-aa99cf94/check-receipts/full-race-shuffle.receipt.json"
+    },
+    {
+      "digest": "ae37fb2f81ed0192b2088c8ed622b50f4cf7aa631254b52ae8efdd4ce9efa4fd",
+      "ref": ".agents/ao/reports/go-g0-g2-darwin-fast-exit-binding-aa99cf94/check-receipts/full-test-shuffle.receipt.json"
+    },
+    {
+      "digest": "10027632a6be86dea340c0f69e5c4d9cb5730730bd5620488c82e13f9bfe9afb",
+      "ref": ".agents/ao/reports/go-g0-g2-darwin-fast-exit-binding-aa99cf94/check-receipts/go-mod-tidy-diff.receipt.json"
+    },
+    {
+      "digest": "6e6e766c0aaf79ce126a4c4188dfd6d9525e375eb37c9e56aa8bdda2650783ff",
+      "ref": ".agents/ao/reports/go-g0-g2-darwin-fast-exit-binding-aa99cf94/check-receipts/go-mod-verify.receipt.json"
+    },
+    {
+      "digest": "f2d23d94fc6b1358c2e0bb989b390c52ec5e6b39ed435c265ac71c2991c14081",
+      "ref": ".agents/ao/reports/go-g0-g2-darwin-fast-exit-binding-aa99cf94/check-receipts/go-vet.receipt.json"
+    },
+    {
+      "digest": "070fc60b638b637a77f622d54b2f7f5da4b7b33a189d22fcff1a6b7747e178fc",
+      "ref": ".agents/ao/reports/go-g0-g2-darwin-fast-exit-binding-aa99cf94/check-receipts/linux-amd64-cross-build-tests.receipt.json"
+    },
+    {
+      "digest": "819899da7d27abce578ccd20140216e2f47d56ee55f5eec8b6975975f4af6335",
+      "ref": ".agents/ao/reports/go-g0-g2-darwin-fast-exit-binding-aa99cf94/check-receipts/linux-amd64-vet.receipt.json"
+    },
+    {
+      "digest": "32a7856f3cfab80881428fef33675fc4ed8e38b34fa1da588826b4722c70c0f7",
+      "ref": ".agents/ao/reports/go-g0-g2-darwin-fast-exit-binding-aa99cf94/check-receipts/linux-hostile-probe.receipt.json"
+    },
+    {
+      "digest": "15db55bb27e6a0b72bb4c9875aa877c944010d8d2aaee862e751e2757e9e032b",
+      "ref": ".agents/ao/reports/go-g0-g2-darwin-fast-exit-binding-aa99cf94/check-receipts/pinned-lint.receipt.json"
+    },
+    {
+      "digest": "9cd9d2a437ed54fdbe6cbf60463905d44654dc1e592f713b4836a50f6c861b48",
+      "ref": ".agents/ao/reports/go-g0-g2-darwin-fast-exit-binding-aa99cf94/check-receipts/prior-fail-immutability.receipt.json"
+    },
+    {
+      "digest": "9362654fdd3b0b5a5d20d7b04034dc1c015bbbbd0af2951517928f3af32cc71e",
+      "ref": ".agents/ao/reports/go-g0-g2-darwin-fast-exit-binding-aa99cf94/check-receipts/subprocess-race-stress.receipt.json"
+    },
+    {
+      "digest": "0456016873ee184250a3f3df10b1009beff2853a7301fbc2e6e614bc7e42e569",
+      "ref": ".agents/ao/reports/go-g0-g2-darwin-fast-exit-binding-aa99cf94/check-receipts/windows-amd64-cross-build-tests.receipt.json"
+    },
+    {
+      "digest": "7b58ee9e7a6558a878013f1eb0bdcfeb8d76cc41426383add928315270c2d719",
+      "ref": ".agents/ao/reports/go-g0-g2-darwin-fast-exit-binding-aa99cf94/check-receipts/windows-amd64-vet.receipt.json"
+    }
+  ],
+  "coverage": "COMPLETE",
+  "final_manifest_digest": "fea7fa62b7db4a640e68ac807523a9d61135a2069b33d4ba15146523e661ed44",
+  "schema_version": "effect-receipt.v1",
+  "undeclared_paths": []
+}

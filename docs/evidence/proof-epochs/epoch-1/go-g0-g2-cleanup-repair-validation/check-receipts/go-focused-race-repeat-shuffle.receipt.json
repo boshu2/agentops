@@ -1,0 +1,23 @@
+{
+  "artifact_digest": "81bb6aad113e0637cba0163777cd875ba6419d25134c3f6542e70f1f94723098",
+  "command": [
+    "go",
+    "test",
+    "-race",
+    "-count=3",
+    "-shuffle=on",
+    "./internal/subprocess",
+    "./internal/eval",
+    "./internal/gates/...",
+    "./internal/goals",
+    "./cmd/ao"
+  ],
+  "exit_code": 1,
+  "observed_at": "2026-07-25T03:11:24Z",
+  "receipt_id": "go-focused-race-repeat-shuffle",
+  "result": "FAIL",
+  "schema_version": "check-receipt.v1",
+  "stderr_digest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "stdout_digest": "3865c44bd9c5d10352da6f8e8f5378816b6263ec6141ef59c9b304dfbd0cf8a9",
+  "subject_manifest_digest": "c6c5ba4cc071eddc1c0f0d470a4a6a0e023f9ed5f5a83b3b1fd2538ec904f30b"
+}

@@ -1,0 +1,20 @@
+{
+  "artifact_digest": "50345055ffb2e3e9eab502abb7ed6bf2fc20503344e17e3d8b6d3467d31eb628",
+  "command": [
+    "python3",
+    "skills/validate/scripts/validate_v3.py",
+    "verify-manifest",
+    "--root",
+    ".",
+    "--manifest",
+    ".agents/ao/reports/go-g0-g2-repair-final-clean/final-manifest.json"
+  ],
+  "exit_code": 0,
+  "observed_at": "2026-07-25T03:25:51Z",
+  "receipt_id": "final-subject-manifest-verification",
+  "result": "PASS",
+  "schema_version": "check-receipt.v1",
+  "stderr_digest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "stdout_digest": "7a9ef39888f0b5691338828b2940498822a3b6103cf55591a310328a51983e50",
+  "subject_manifest_digest": "c6c5ba4cc071eddc1c0f0d470a4a6a0e023f9ed5f5a83b3b1fd2538ec904f30b"
+}

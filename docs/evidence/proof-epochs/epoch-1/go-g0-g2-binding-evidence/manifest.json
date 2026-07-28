@@ -1,0 +1,261 @@
+{
+  "artifact_digest": "d34290a84752b28f6bd746d6f7b42d6e9fccb9d9c6086b4cb6ab41afe469312f",
+  "binding_verdicts": {
+    "v2": "aef3a8a340ac2315e0278d8f09e1158c37c62cb46617ae037c26f21aac8f563b",
+    "v3": "fadb23c2bcce38aa02f2e59d01d400296dfc18bf7c5ee58a8799dcae9544e6f1"
+  },
+  "entries": [
+    {
+      "bundled_ref": "docs/evidence/proof-epochs/epoch-1/go-g0-g2-binding-evidence/verdicts/sha256/aef3a8a340ac2315e0278d8f09e1158c37c62cb46617ae037c26f21aac8f563b.json",
+      "bytes": 7555,
+      "canonical_artifact_digest": "aef3a8a340ac2315e0278d8f09e1158c37c62cb46617ae037c26f21aac8f563b",
+      "original_ref": ".agents/ao/verdicts/sha256/aef3a8a340ac2315e0278d8f09e1158c37c62cb46617ae037c26f21aac8f563b.json",
+      "sha256": "0dd1725fdb0477e02ffcb62d7a630d64b17f87d4b3511cacf188babe43c2fd09"
+    },
+    {
+      "bundled_ref": "docs/evidence/proof-epochs/epoch-1/go-g0-g2-binding-evidence/verdicts/sha256/fadb23c2bcce38aa02f2e59d01d400296dfc18bf7c5ee58a8799dcae9544e6f1.json",
+      "bytes": 12322,
+      "canonical_artifact_digest": "fadb23c2bcce38aa02f2e59d01d400296dfc18bf7c5ee58a8799dcae9544e6f1",
+      "original_ref": ".agents/ao/verdicts/sha256/fadb23c2bcce38aa02f2e59d01d400296dfc18bf7c5ee58a8799dcae9544e6f1.json",
+      "sha256": "9a39eaa84ec4ce5c04514e67ea7aa32aa1cb7beeaa26322de177848560fc851c"
+    },
+    {
+      "bundled_ref": "docs/evidence/proof-epochs/epoch-1/go-g0-g2-binding-evidence/intents/sha256/13cea86120dfaa390e1bc6109056215730563ded786b6f41a61a7a598e3c74fc.intent",
+      "bytes": 3608,
+      "original_ref": ".agents/ao/intents/sha256/13cea86120dfaa390e1bc6109056215730563ded786b6f41a61a7a598e3c74fc.intent",
+      "sha256": "13cea86120dfaa390e1bc6109056215730563ded786b6f41a61a7a598e3c74fc"
+    },
+    {
+      "bundled_ref": "docs/evidence/proof-epochs/epoch-1/go-g0-g2-binding-evidence/intents/sha256/4f6c81ce64d65a90bd08a0885d109b6d3efcb5cac7ce0d3e6086c251f9e82160.intent",
+      "bytes": 3479,
+      "original_ref": ".agents/ao/intents/sha256/4f6c81ce64d65a90bd08a0885d109b6d3efcb5cac7ce0d3e6086c251f9e82160.intent",
+      "sha256": "4f6c81ce64d65a90bd08a0885d109b6d3efcb5cac7ce0d3e6086c251f9e82160"
+    },
+    {
+      "bundled_ref": "docs/evidence/proof-epochs/epoch-1/go-g0-g2-binding-evidence/report-artifacts/go-g0-g2-darwin-fast-exit-binding-aa99cf94/before-manifest.json",
+      "bytes": 689472,
+      "canonical_artifact_digest": "be070f00ad5b7c2e2d2931b83741d715932631b09ac5a387977002d27821cad6",
+      "original_ref": ".agents/ao/reports/go-g0-g2-darwin-fast-exit-binding-aa99cf94/before-manifest.json",
+      "sha256": "c407cf5c95fce3e7b6b07d3102fd891bf2d674c431d847f2b852ab1cab3a3b76"
+    },
+    {
+      "bundled_ref": "docs/evidence/proof-epochs/epoch-1/go-g0-g2-binding-evidence/report-artifacts/go-g0-g2-darwin-fast-exit-binding-aa99cf94/end-manifest.json",
+      "bytes": 690985,
+      "canonical_artifact_digest": "6ec44b88a12d6926d71f99740206e958bca3f8b35b40fb7449bfba0c90565d82",
+      "original_ref": ".agents/ao/reports/go-g0-g2-darwin-fast-exit-binding-aa99cf94/end-manifest.json",
+      "sha256": "73c7f6d037e8a35f1434046d51423ab14e4a6bcea579dfe633a64075af3a4d0b"
+    },
+    {
+      "bundled_ref": "docs/evidence/proof-epochs/epoch-1/go-g0-g2-binding-evidence/report-artifacts/go-g0-g2-darwin-fast-exit-binding-aa99cf94/scope-index.json",
+      "bytes": 3230,
+      "canonical_artifact_digest": "69746c8861179c7da71d03faa53cd669f3b664c98a1475659d7c3d31ad7fca5e",
+      "original_ref": ".agents/ao/reports/go-g0-g2-darwin-fast-exit-binding-aa99cf94/scope-index.json",
+      "sha256": "5202920832720f2a217bbd832c37879f3ca3ebca8b32df8f4fc81b9e6a59bcad"
+    },
+    {
+      "bundled_ref": "docs/evidence/proof-epochs/epoch-1/go-g0-g2-binding-evidence/report-artifacts/go-g0-g2-darwin-fast-exit-binding-aa99cf94/effect-receipt.json",
+      "bytes": 10399,
+      "canonical_artifact_digest": "30cbef3b1371f3ffce3e5fe0e411f68f8df62bbf97aeeecdad211e84f103c056",
+      "original_ref": ".agents/ao/reports/go-g0-g2-darwin-fast-exit-binding-aa99cf94/effect-receipt.json",
+      "sha256": "913aaa7aac5959e55bc98ba7e291623d5738343286dfc23f75a9f250e2a7bdf9"
+    },
+    {
+      "bundled_ref": "docs/evidence/proof-epochs/epoch-1/go-g0-g2-binding-evidence/report-artifacts/go-g0-g2-darwin-fast-exit-binding-aa99cf94/check-receipts/active-proof-contract.receipt.json",
+      "bytes": 596,
+      "canonical_artifact_digest": "aedd0a356a4b7e37a9b9d6c034feae44a9d94eeddeffc2217ddbde0407458244",
+      "original_ref": ".agents/ao/reports/go-g0-g2-darwin-fast-exit-binding-aa99cf94/check-receipts/active-proof-contract.receipt.json",
+      "sha256": "4159aba50932c664ef83fd408d5a9ed0c70151fa576eebe63ec50d7a1486fa5b"
+    },
+    {
+      "bundled_ref": "docs/evidence/proof-epochs/epoch-1/go-g0-g2-binding-evidence/report-artifacts/go-g0-g2-darwin-fast-exit-binding-aa99cf94/check-receipts/cli-reference-check.receipt.json",
+      "bytes": 608,
+      "canonical_artifact_digest": "1794b19d176ec1e2a3e9d0c4623d1264b1a46295458749b955b08dfdc4230960",
+      "original_ref": ".agents/ao/reports/go-g0-g2-darwin-fast-exit-binding-aa99cf94/check-receipts/cli-reference-check.receipt.json",
+      "sha256": "0b1aacf57a20f49dbbd8edb748b45710a2f2bf9bc1cb2b6a16af4954412047a8"
+    },
+    {
+      "bundled_ref": "docs/evidence/proof-epochs/epoch-1/go-g0-g2-binding-evidence/report-artifacts/go-g0-g2-darwin-fast-exit-binding-aa99cf94/check-receipts/contract-compatibility.receipt.json",
+      "bytes": 602,
+      "canonical_artifact_digest": "863f5e9e8edf71592e79660bb712fa62576b07119c2cb992f378fe6baa4817b3",
+      "original_ref": ".agents/ao/reports/go-g0-g2-darwin-fast-exit-binding-aa99cf94/check-receipts/contract-compatibility.receipt.json",
+      "sha256": "28c25845353e213a238201923eefe8b3dad0c959a977fd8ed525e6841b138a5a"
+    },
+    {
+      "bundled_ref": "docs/evidence/proof-epochs/epoch-1/go-g0-g2-binding-evidence/report-artifacts/go-g0-g2-darwin-fast-exit-binding-aa99cf94/check-receipts/darwin-amd64-cross-build-tests.receipt.json",
+      "bytes": 676,
+      "canonical_artifact_digest": "d79fdce3f940dadbbd6c8a10e232e1ba02eb2e92ffb16a58d2493dda64e9b99e",
+      "original_ref": ".agents/ao/reports/go-g0-g2-darwin-fast-exit-binding-aa99cf94/check-receipts/darwin-amd64-cross-build-tests.receipt.json",
+      "sha256": "e11bf95d709ccecec8556f81a46c439bb367ca971fa93cfaab26106987753db5"
+    },
+    {
+      "bundled_ref": "docs/evidence/proof-epochs/epoch-1/go-g0-g2-binding-evidence/report-artifacts/go-g0-g2-darwin-fast-exit-binding-aa99cf94/check-receipts/darwin-amd64-vet.receipt.json",
+      "bytes": 621,
+      "canonical_artifact_digest": "98d4d160e29f8b265f6535905488cab5908a0998c6f86cbdf68ee0316b384087",
+      "original_ref": ".agents/ao/reports/go-g0-g2-darwin-fast-exit-binding-aa99cf94/check-receipts/darwin-amd64-vet.receipt.json",
+      "sha256": "e9a82d9b987f752ee85c9c9f41f688a1ee3b01271dfc5d8334c53039557182db"
+    },
+    {
+      "bundled_ref": "docs/evidence/proof-epochs/epoch-1/go-g0-g2-binding-evidence/report-artifacts/go-g0-g2-darwin-fast-exit-binding-aa99cf94/check-receipts/darwin-fast-exit-cleanup-order.receipt.json",
+      "bytes": 1036,
+      "canonical_artifact_digest": "a9b7d9606c9249f3dea85968bec2d459e10b1127350d9c7bdd6b3f36c09e7f81",
+      "original_ref": ".agents/ao/reports/go-g0-g2-darwin-fast-exit-binding-aa99cf94/check-receipts/darwin-fast-exit-cleanup-order.receipt.json",
+      "sha256": "3324a98e223b4fc713ff269b4bebb055b528043b02a68ffffaefd3d7efe14224"
+    },
+    {
+      "bundled_ref": "docs/evidence/proof-epochs/epoch-1/go-g0-g2-binding-evidence/report-artifacts/go-g0-g2-darwin-fast-exit-binding-aa99cf94/check-receipts/darwin-sdk-waitid-abi.receipt.json",
+      "bytes": 1178,
+      "canonical_artifact_digest": "45af1f698e0b2eff0d77a54bd7651f515e5734fd2e7c8f98f2904824043f218c",
+      "original_ref": ".agents/ao/reports/go-g0-g2-darwin-fast-exit-binding-aa99cf94/check-receipts/darwin-sdk-waitid-abi.receipt.json",
+      "sha256": "85c6268a6adf504380ab6511154259946c8ab6b225a778cbe4636f6f68ca6e81"
+    },
+    {
+      "bundled_ref": "docs/evidence/proof-epochs/epoch-1/go-g0-g2-binding-evidence/report-artifacts/go-g0-g2-darwin-fast-exit-binding-aa99cf94/check-receipts/exact-subject-identity.receipt.json",
+      "bytes": 901,
+      "canonical_artifact_digest": "441abe9e8af0d54c1659254eec4d67baed28e20859d8ffa07b9701558d04986b",
+      "original_ref": ".agents/ao/reports/go-g0-g2-darwin-fast-exit-binding-aa99cf94/check-receipts/exact-subject-identity.receipt.json",
+      "sha256": "fc9ea8d8f9a9fd71010b916e871312d52a1568d49175bbe2fd78a7dd0546783f"
+    },
+    {
+      "bundled_ref": "docs/evidence/proof-epochs/epoch-1/go-g0-g2-binding-evidence/report-artifacts/go-g0-g2-darwin-fast-exit-binding-aa99cf94/check-receipts/fable-stdin-relay-targeted-race.receipt.json",
+      "bytes": 708,
+      "canonical_artifact_digest": "2f369a5268ac516ecac77207c1e111e08dc3ca46232f393581ebf20078fcd53d",
+      "original_ref": ".agents/ao/reports/go-g0-g2-darwin-fast-exit-binding-aa99cf94/check-receipts/fable-stdin-relay-targeted-race.receipt.json",
+      "sha256": "8f73b10daa5187aaf6cf3492a8946a6ca852e06bae740fd5496174ca2bda900b"
+    },
+    {
+      "bundled_ref": "docs/evidence/proof-epochs/epoch-1/go-g0-g2-binding-evidence/report-artifacts/go-g0-g2-darwin-fast-exit-binding-aa99cf94/check-receipts/final-manifest-verification.receipt.json",
+      "bytes": 981,
+      "canonical_artifact_digest": "a24b4b37059f606b39e84cf00255935b230fe0ddedc4ce44b44fb9cb0b4a7c61",
+      "original_ref": ".agents/ao/reports/go-g0-g2-darwin-fast-exit-binding-aa99cf94/check-receipts/final-manifest-verification.receipt.json",
+      "sha256": "e01641b1c5e3fd8ef8f312dd52a826c2f7919544a4594697e1a4f10e359a2852"
+    },
+    {
+      "bundled_ref": "docs/evidence/proof-epochs/epoch-1/go-g0-g2-binding-evidence/report-artifacts/go-g0-g2-darwin-fast-exit-binding-aa99cf94/check-receipts/focused-race-shuffle.receipt.json",
+      "bytes": 731,
+      "canonical_artifact_digest": "356e4460a6fbe729aaf2c6c0e510e57945014ed6ac951b43e1f0d94cba1b0651",
+      "original_ref": ".agents/ao/reports/go-g0-g2-darwin-fast-exit-binding-aa99cf94/check-receipts/focused-race-shuffle.receipt.json",
+      "sha256": "d24e07fcaddad54d586c0ed671960aac2fb4f6042c9a7b7491f29e14a90c5c56"
+    },
+    {
+      "bundled_ref": "docs/evidence/proof-epochs/epoch-1/go-g0-g2-binding-evidence/report-artifacts/go-g0-g2-darwin-fast-exit-binding-aa99cf94/check-receipts/full-race-shuffle.receipt.json",
+      "bytes": 621,
+      "canonical_artifact_digest": "68e28c6ef3007b642675125a9cd16c83dea6f3db9b1e1c291a356d48c57e9af8",
+      "original_ref": ".agents/ao/reports/go-g0-g2-darwin-fast-exit-binding-aa99cf94/check-receipts/full-race-shuffle.receipt.json",
+      "sha256": "62ded30f3ac7a8f1a30555941999a7c8043048b19df4761a5514dab99f2be0a1"
+    },
+    {
+      "bundled_ref": "docs/evidence/proof-epochs/epoch-1/go-g0-g2-binding-evidence/report-artifacts/go-g0-g2-darwin-fast-exit-binding-aa99cf94/check-receipts/full-test-shuffle.receipt.json",
+      "bytes": 608,
+      "canonical_artifact_digest": "ae37fb2f81ed0192b2088c8ed622b50f4cf7aa631254b52ae8efdd4ce9efa4fd",
+      "original_ref": ".agents/ao/reports/go-g0-g2-darwin-fast-exit-binding-aa99cf94/check-receipts/full-test-shuffle.receipt.json",
+      "sha256": "45e2a0bb571a98523b029d3015a64f6120e353ef592da409f67f0cd834860ad5"
+    },
+    {
+      "bundled_ref": "docs/evidence/proof-epochs/epoch-1/go-g0-g2-binding-evidence/report-artifacts/go-g0-g2-darwin-fast-exit-binding-aa99cf94/check-receipts/go-mod-tidy-diff.receipt.json",
+      "bytes": 583,
+      "canonical_artifact_digest": "10027632a6be86dea340c0f69e5c4d9cb5730730bd5620488c82e13f9bfe9afb",
+      "original_ref": ".agents/ao/reports/go-g0-g2-darwin-fast-exit-binding-aa99cf94/check-receipts/go-mod-tidy-diff.receipt.json",
+      "sha256": "50d147cc2a88eb09ca42ef48021135efb52e2b946d300e35aad2fda39bdeca55"
+    },
+    {
+      "bundled_ref": "docs/evidence/proof-epochs/epoch-1/go-g0-g2-binding-evidence/report-artifacts/go-g0-g2-darwin-fast-exit-binding-aa99cf94/check-receipts/go-mod-verify.receipt.json",
+      "bytes": 569,
+      "canonical_artifact_digest": "6e6e766c0aaf79ce126a4c4188dfd6d9525e375eb37c9e56aa8bdda2650783ff",
+      "original_ref": ".agents/ao/reports/go-g0-g2-darwin-fast-exit-binding-aa99cf94/check-receipts/go-mod-verify.receipt.json",
+      "sha256": "48baf9f31c2f9cf2f0690633aeadd8f6cf7f472b373d373bd8818ea6f3e77f63"
+    },
+    {
+      "bundled_ref": "docs/evidence/proof-epochs/epoch-1/go-g0-g2-binding-evidence/report-artifacts/go-g0-g2-darwin-fast-exit-binding-aa99cf94/check-receipts/go-vet.receipt.json",
+      "bytes": 561,
+      "canonical_artifact_digest": "f2d23d94fc6b1358c2e0bb989b390c52ec5e6b39ed435c265ac71c2991c14081",
+      "original_ref": ".agents/ao/reports/go-g0-g2-darwin-fast-exit-binding-aa99cf94/check-receipts/go-vet.receipt.json",
+      "sha256": "5350f9d0530a5f93b71d0a6d2f9d0a81bb769c8fe16a6fa6ed45765d59b3a885"
+    },
+    {
+      "bundled_ref": "docs/evidence/proof-epochs/epoch-1/go-g0-g2-binding-evidence/report-artifacts/go-g0-g2-darwin-fast-exit-binding-aa99cf94/check-receipts/linux-amd64-cross-build-tests.receipt.json",
+      "bytes": 674,
+      "canonical_artifact_digest": "070fc60b638b637a77f622d54b2f7f5da4b7b33a189d22fcff1a6b7747e178fc",
+      "original_ref": ".agents/ao/reports/go-g0-g2-darwin-fast-exit-binding-aa99cf94/check-receipts/linux-amd64-cross-build-tests.receipt.json",
+      "sha256": "b44cae25c995fd4de0d1aa239d0b88899b203a59c89d1a1d8fd91df4063b003e"
+    },
+    {
+      "bundled_ref": "docs/evidence/proof-epochs/epoch-1/go-g0-g2-binding-evidence/report-artifacts/go-g0-g2-darwin-fast-exit-binding-aa99cf94/check-receipts/linux-amd64-vet.receipt.json",
+      "bytes": 619,
+      "canonical_artifact_digest": "819899da7d27abce578ccd20140216e2f47d56ee55f5eec8b6975975f4af6335",
+      "original_ref": ".agents/ao/reports/go-g0-g2-darwin-fast-exit-binding-aa99cf94/check-receipts/linux-amd64-vet.receipt.json",
+      "sha256": "3a76a9bdd5493f7814e41a242dafa8833a33110228bc9cda91f0cd05255709e1"
+    },
+    {
+      "bundled_ref": "docs/evidence/proof-epochs/epoch-1/go-g0-g2-binding-evidence/report-artifacts/go-g0-g2-darwin-fast-exit-binding-aa99cf94/check-receipts/linux-hostile-probe.receipt.json",
+      "bytes": 1022,
+      "canonical_artifact_digest": "32a7856f3cfab80881428fef33675fc4ed8e38b34fa1da588826b4722c70c0f7",
+      "original_ref": ".agents/ao/reports/go-g0-g2-darwin-fast-exit-binding-aa99cf94/check-receipts/linux-hostile-probe.receipt.json",
+      "sha256": "3a8f5ffbe824f73c245cff0b570be1f37bccca35eee9aa10ea2a08c6b888f225"
+    },
+    {
+      "bundled_ref": "docs/evidence/proof-epochs/epoch-1/go-g0-g2-binding-evidence/report-artifacts/go-g0-g2-darwin-fast-exit-binding-aa99cf94/check-receipts/pinned-lint.receipt.json",
+      "bytes": 594,
+      "canonical_artifact_digest": "15db55bb27e6a0b72bb4c9875aa877c944010d8d2aaee862e751e2757e9e032b",
+      "original_ref": ".agents/ao/reports/go-g0-g2-darwin-fast-exit-binding-aa99cf94/check-receipts/pinned-lint.receipt.json",
+      "sha256": "fbea45ba147e863ec03eae6b902e5d42cef45b6c9e6ddc2d0aa45ddaa682d4e6"
+    },
+    {
+      "bundled_ref": "docs/evidence/proof-epochs/epoch-1/go-g0-g2-binding-evidence/report-artifacts/go-g0-g2-darwin-fast-exit-binding-aa99cf94/check-receipts/prior-fail-immutability.receipt.json",
+      "bytes": 1282,
+      "canonical_artifact_digest": "9cd9d2a437ed54fdbe6cbf60463905d44654dc1e592f713b4836a50f6c861b48",
+      "original_ref": ".agents/ao/reports/go-g0-g2-darwin-fast-exit-binding-aa99cf94/check-receipts/prior-fail-immutability.receipt.json",
+      "sha256": "d1512fb9a6d7f9ebcb32421a8cb1ea87df2dad42891400f17478fa50fcd264ab"
+    },
+    {
+      "bundled_ref": "docs/evidence/proof-epochs/epoch-1/go-g0-g2-binding-evidence/report-artifacts/go-g0-g2-darwin-fast-exit-binding-aa99cf94/check-receipts/subprocess-race-stress.receipt.json",
+      "bytes": 643,
+      "canonical_artifact_digest": "9362654fdd3b0b5a5d20d7b04034dc1c015bbbbd0af2951517928f3af32cc71e",
+      "original_ref": ".agents/ao/reports/go-g0-g2-darwin-fast-exit-binding-aa99cf94/check-receipts/subprocess-race-stress.receipt.json",
+      "sha256": "41d70977b25c3be0ce7eff35bdb28ae1ea581439886d385b963c65244529ab22"
+    },
+    {
+      "bundled_ref": "docs/evidence/proof-epochs/epoch-1/go-g0-g2-binding-evidence/report-artifacts/go-g0-g2-darwin-fast-exit-binding-aa99cf94/check-receipts/windows-amd64-cross-build-tests.receipt.json",
+      "bytes": 678,
+      "canonical_artifact_digest": "0456016873ee184250a3f3df10b1009beff2853a7301fbc2e6e614bc7e42e569",
+      "original_ref": ".agents/ao/reports/go-g0-g2-darwin-fast-exit-binding-aa99cf94/check-receipts/windows-amd64-cross-build-tests.receipt.json",
+      "sha256": "a87ff35a4606eb193efae0857aa481ab83215a8cf035d8e9984aa4631daec74b"
+    },
+    {
+      "bundled_ref": "docs/evidence/proof-epochs/epoch-1/go-g0-g2-binding-evidence/report-artifacts/go-g0-g2-darwin-fast-exit-binding-aa99cf94/check-receipts/windows-amd64-vet.receipt.json",
+      "bytes": 623,
+      "canonical_artifact_digest": "7b58ee9e7a6558a878013f1eb0bdcfeb8d76cc41426383add928315270c2d719",
+      "original_ref": ".agents/ao/reports/go-g0-g2-darwin-fast-exit-binding-aa99cf94/check-receipts/windows-amd64-vet.receipt.json",
+      "sha256": "6bf5ed1155cb13f7da1a915f4a8fca63fcb7cbfb51e35b40bdb4c60fe7dacb15"
+    }
+  ],
+  "entry_count": 32,
+  "not_references": [
+    {
+      "appears_in": [
+        "before-manifest.json",
+        "end-manifest.json"
+      ],
+      "field": "exclusions",
+      "reason": "Subject-manifest exclusion PATTERNS, not evidence references. They name directory prefixes deliberately excluded from the observed subject, so they are neither bundled nor resolvable and must not be treated as refs.",
+      "values": [
+        ".agents/ao/intents",
+        ".agents/ao/reports",
+        ".agents/ao/verdicts",
+        ".git"
+      ]
+    }
+  ],
+  "originals_edited": false,
+  "originals_relocated": false,
+  "purpose": "Durable, content-addressed copy of the Go G0-G2 binding PASS chain. .gitignore excludes /.agents/ao/* so the originals are erasable; these copies are byte-identical and resolve every original reference.",
+  "resolution_rule": "A reference of the form .agents/ao/<rest> inside any bundled artifact resolves to docs/evidence/proof-epochs/epoch-1/go-g0-g2-binding-evidence/<rest>, with a leading 'reports/' segment rewritten to 'report-artifacts/'. That substitution exists because .gitignore:44 carries a bare 'reports/' rule which matches at any depth and would otherwise leave those copies untracked. Bundled bytes are identical to the originals, so their internal refs still read .agents/ao/... by design: rewriting them would break the canonical digests. Refs listed under tracked_in_place are exempt: they resolve at their original tracked path.",
+  "schema_version": "go-g0-g2-binding-evidence-map.v1",
+  "subject_commit": "77b2dfef90694df65ebfda724978e9a433ccce3e",
+  "subject_tree": "73f1e131da03aab200cb51c9ea30236783c3e986",
+  "tracked_in_place": [
+    {
+      "reason": "The single un-ignored file under .agents/ao (.gitignore:58). It appears inside the before/end subject manifests as an ordinary tracked repository entry, not as an evidence reference, so it resolves at its original path and is deliberately not bundled.",
+      "ref": ".agents/ao/config.yaml"
+    }
+  ]
+}

@@ -28,6 +28,7 @@ type testProcessTree struct {
 	requestFn      func(*exec.Cmd) error
 	requestCalls   int
 	terminateErr   error
+	terminateFn    func(*exec.Cmd) error
 	terminateCalls int
 }
 
@@ -35,8 +36,11 @@ func (tree *testProcessTree) attach(*exec.Cmd) error {
 	return tree.attachErr
 }
 
-func (tree *testProcessTree) terminate(*exec.Cmd) error {
+func (tree *testProcessTree) terminate(cmd *exec.Cmd) error {
 	tree.terminateCalls++
+	if tree.terminateFn != nil {
+		return tree.terminateFn(cmd)
+	}
 	return tree.terminateErr
 }
 
@@ -200,8 +204,8 @@ func TestRunAlreadyCanceledDoesNotStart(t *testing.T) {
 	if !errors.Is(err, context.Canceled) {
 		t.Fatalf("Run error = %v, want context.Canceled", err)
 	}
-	if result.Cleanup.Status != CleanupNotStarted || result.Cleanup.Attempted {
-		t.Fatalf("cleanup = %#v, want not_started", result.Cleanup)
+	if want := (CleanupOutcome{Status: CleanupNotStarted}); result.Cleanup != want {
+		t.Fatalf("cleanup = %#v, want %#v", result.Cleanup, want)
 	}
 }
 
@@ -229,7 +233,16 @@ func TestRunCopiesStdinAfterSuccessfulAttachment(t *testing.T) {
 }
 
 func TestRunWaitsExactlyOnceAfterNaturalCompletion(t *testing.T) {
-	tree := &testProcessTree{}
+	cleanupBeforeWait := false
+	tree := &testProcessTree{
+		terminateFn: func(cmd *exec.Cmd) error {
+			if cmd.ProcessState != nil {
+				t.Fatal("process cleanup ran after Cmd.Wait released the PID")
+			}
+			cleanupBeforeWait = true
+			return nil
+		},
+	}
 	completion := &testProcessCompletion{}
 	waitCalls := 0
 	dependencies := defaultRunDependencies
@@ -240,6 +253,9 @@ func TestRunWaitsExactlyOnceAfterNaturalCompletion(t *testing.T) {
 		return completion
 	}
 	dependencies.waitCommand = func(cmd *exec.Cmd) error {
+		if !cleanupBeforeWait {
+			t.Fatal("Cmd.Wait ran before process-tree cleanup")
+		}
 		waitCalls++
 		return cmd.Wait()
 	}
@@ -329,15 +345,26 @@ func TestRunRejectsOversizedStdinBeforeStart(t *testing.T) {
 func TestRunStopsBlockedFiniteStdinRelayAfterCancellation(t *testing.T) {
 	defer goleak.VerifyNone(t, goleak.IgnoreCurrent())
 
-	ctx, cancel := context.WithTimeout(context.Background(), 25*time.Millisecond)
+	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	command := helperCommand(t, "block")
 	command.Stdin = bytes.Repeat([]byte("s"), MaxStdinBytes)
-	command.WaitDelay = 100 * time.Millisecond
+	command.WaitDelay = time.Second
+	startedPID := 0
+	command.OnStart = func(pid int) {
+		if pid <= 0 {
+			t.Errorf("OnStart PID = %d, want a started child", pid)
+		}
+		startedPID = pid
+		cancel()
+	}
 
 	result, err := Run(ctx, command)
-	if !errors.Is(err, context.DeadlineExceeded) {
-		t.Fatalf("Run error = %v, want context deadline", err)
+	if startedPID <= 0 {
+		t.Fatalf("OnStart PID = %d, want a started child", startedPID)
+	}
+	if !errors.Is(err, context.Canceled) {
+		t.Fatalf("Run error = %v, want context cancellation", err)
 	}
 	assertCleanupCompleted(t, result.Cleanup)
 }

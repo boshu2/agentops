@@ -1,0 +1,15 @@
+{
+  "artifact_digest": "b866ac438ec40dc8b8bb89cc890b97b6ff1289737ff27c762869ba0cef93531b",
+  "command": [
+    "python3",
+    "scripts/check-proof-contract.py"
+  ],
+  "exit_code": 0,
+  "observed_at": "2026-07-25T03:25:24Z",
+  "receipt_id": "active-proof-contract-check",
+  "result": "PASS",
+  "schema_version": "check-receipt.v1",
+  "stderr_digest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "stdout_digest": "c09e1012f418d053933553e2966187653b446ecce2d8268f0f71601d7d595287",
+  "subject_manifest_digest": "c6c5ba4cc071eddc1c0f0d470a4a6a0e023f9ed5f5a83b3b1fd2538ec904f30b"
+}

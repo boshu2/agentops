@@ -1,0 +1,22 @@
+{
+  "artifact_digest": "d79fdce3f940dadbbd6c8a10e232e1ba02eb2e92ffb16a58d2493dda64e9b99e",
+  "command": [
+    "env",
+    "GOOS=darwin",
+    "GOARCH=amd64",
+    "go",
+    "test",
+    "-exec=true",
+    "-run",
+    "^$",
+    "./..."
+  ],
+  "exit_code": 0,
+  "observed_at": "2026-07-25T04:17:15Z",
+  "receipt_id": "darwin-amd64-cross-build-tests",
+  "result": "PASS",
+  "schema_version": "check-receipt.v1",
+  "stderr_digest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "stdout_digest": "1eaf393ffcd6375ef5f08360592ba4f9b53aa3a0c38f2107b26b014c797ca591",
+  "subject_manifest_digest": "fea7fa62b7db4a640e68ac807523a9d61135a2069b33d4ba15146523e661ed44"
+}

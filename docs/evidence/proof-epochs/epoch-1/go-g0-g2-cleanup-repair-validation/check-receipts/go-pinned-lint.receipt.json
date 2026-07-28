@@ -1,0 +1,16 @@
+{
+  "artifact_digest": "be06dc7e21bf5ed6c40a8d85da55d873727441c78cafb2721a0118b203a9dd98",
+  "command": [
+    "../scripts/golangci-lint-v2.sh",
+    "run",
+    "./..."
+  ],
+  "exit_code": 0,
+  "observed_at": "2026-07-25T03:20:31Z",
+  "receipt_id": "go-pinned-lint",
+  "result": "PASS",
+  "schema_version": "check-receipt.v1",
+  "stderr_digest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "stdout_digest": "e92606b0bf483111dff0a120c315ea165821348f31365020e2468a0059095c47",
+  "subject_manifest_digest": "c6c5ba4cc071eddc1c0f0d470a4a6a0e023f9ed5f5a83b3b1fd2538ec904f30b"
+}
