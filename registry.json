@@ -839,7 +839,8 @@
         ],
         "disposition": "keep_specialist",
         "effects": [
-          "write_goal_snapshot"
+          "write_goal_snapshot",
+          "write_rendered_spec"
         ],
         "has_references": false,
         "has_skill_md": true,

@@ -529,7 +529,8 @@
       "description": "Measure declared project fitness goals without recommending or applying work. Triggers: \"measure goals\", \"check project fitness\".",
       "disposition": "keep_specialist",
       "effects": [
-        "write_goal_snapshot"
+        "write_goal_snapshot",
+        "write_rendered_spec"
       ],
       "graph_root": false,
       "hexagonal_role": "domain",

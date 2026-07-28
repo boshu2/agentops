@@ -26,15 +26,17 @@ scope, and let the caller decide.
 - Do not add, remove, prioritize, recommend, apply, prune, migrate, or otherwise
   mutate goals.
 - Do not translate a fitness gap into work selection or a next action.
-- The goals source is never modified. `measure`, `drift`, and `export` persist a
-  best-effort JSON snapshot under `.agents/ao/goals/baselines/`, and
-  `render --out <file>` writes a Gherkin spec to the named path; both are derived
-  outputs, not edits to the goals document.
+- No subcommand edits the goals source through its own logic. `measure`,
+  `drift`, and `export` persist a best-effort JSON snapshot under the fixed
+  derived path `.agents/ao/goals/baselines/`. `render --out <file>` writes a
+  Gherkin spec to whatever path the caller names — the CLI does not constrain
+  it, so never point `--out` at the goals source or any non-derived file.
 
 ## Commands
 
-All eight subcommands read the goals source without mutating it. Snapshot and
-spec writes above are the only side effects, and they touch derived paths only.
+All eight subcommands read the goals source without mutating it. The snapshot
+write (fixed derived path) and the `render --out` write (caller-chosen path,
+caller's responsibility) are the only side effects.
 
 ```bash
 ao goals measure --json

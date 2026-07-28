@@ -429,8 +429,8 @@
     {
       "name": "goals",
       "source_skill": "skills/goals",
-      "source_hash": "b53e16de5c31a7e867f20a271268f3a1c2d76d5efc44f573dfd63c423ac163af",
-      "generated_hash": "d39043560e1a674f503a83b8d3ae3bf9a3967ed26ff87d478c5fe605b4416c25"
+      "source_hash": "050c7d539c56668a1a92e7694d6a356329859f1eac01a7b4944718444beb70f7",
+      "generated_hash": "31b0b008feedaa8953613f35acb57687845a6c60cd5931bf4b551c8abc5c8c88"
     },
     {
       "name": "handoff",
