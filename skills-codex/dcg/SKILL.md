@@ -107,7 +107,11 @@ dcg scan --staged       # Pre-commit: scan for issues
 | Database | `DROP`, `TRUNCATE`, `DELETE` w/o WHERE | Add WHERE clause |
 | K8s | `delete namespace`, `delete --all` | `-l` label selector |
 
-**Context-aware:** `rm -rf ./build` allowed, `rm -rf /` blocked.
+**Context-aware (measured on dcg 0.5.6):** the temp carve-out allows `rm -rf`
+under `/tmp`, `/private/tmp`, and the literal `$TMPDIR` form. Everything else —
+`rm -rf ./build` and other relative paths (`core.filesystem:rm-rf-general`),
+absolute paths like `/home/...` and `/` (`core.filesystem:rm-rf-root-home`) — is
+blocked. Unresolved variables other than `$TMPDIR` are not treated as temp.
 
 **`dcg explain` example (7-step pipeline):**
 ```bash
@@ -159,6 +163,7 @@ allow_patterns = ["rm -rf ./node_modules"]  # Project-specific safe
 - **Sub-millisecond latency** — won't slow your workflow
 - **Fail-open on timeout** — if DCG hangs, command runs (with warning)
 - **Heredoc scanning** — inline scripts (`bash -c`, `python -c`) are analyzed
+- **Inline-fragment false positives** — because scanning matches a destructive token anywhere in the command string, a pattern quoted as *data* (a commit message, a `dcg test "rm -rf …"` probe, a here-doc payload) can trip a block even though nothing destructive would run. Safe pattern: keep the literal off the command line — split it (`rm -r""f`), pass it via a file/stdin, or run the intended tool directly instead of embedding the pattern.
 - **Allow-once codes** — 4 hex chars, 24h expiry, bound to exact command+directory
 
 ## The Incident That Started It All

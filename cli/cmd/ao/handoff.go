@@ -65,9 +65,11 @@ func runHandoff(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("get cwd: %w", err)
 	}
 	now := time.Now().UTC()
+	// The id is second-granular to satisfy handoff.v1.schema.json's id pattern
+	// (^handoff-[0-9]{8}T[0-9]{6}Z$); created_at keeps full sub-second precision.
 	artifact := handoffArtifact{
 		SchemaVersion: 1,
-		ID:            "handoff-" + now.Format("20060102T150405.000000000Z"),
+		ID:            "handoff-" + now.Format("20060102T150405Z"),
 		CreatedAt:     now.Format(time.RFC3339Nano),
 		Goal:          handoffGoal,
 		Continuation:  handoffContinuation,

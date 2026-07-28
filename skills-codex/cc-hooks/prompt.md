@@ -1,6 +1,6 @@
 # cc-hooks
 
-Configure default Claude Code enforcement hooks and opt-in injection recipes. Triggers: "cc-hooks", "configure Claude Code hooks", "install hooks".
+Configure default Claude Code enforcement hooks and opt-in guard recipes. Triggers: "cc-hooks", "configure Claude Code hooks", "install hooks".
 
 ## Instructions
 

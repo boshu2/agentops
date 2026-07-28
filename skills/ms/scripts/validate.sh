@@ -8,9 +8,18 @@ MCP_SEARCH="$SKILL_DIR/scripts/mcp-search.py"
 [[ -s "$SKILL" ]]
 grep -q '^name: ms$' "$SKILL"
 # Canonical source carries full metadata; the generated Codex package uses slim
-# frontmatter but mirrors this validator and the runnable body.
+# frontmatter but mirrors this validator and the runnable body. Effects must be
+# declared HONESTLY: ms spawns an MCP search server, writes feedback/outcome rows
+# to a live DB, and rebuilds the index. An empty effects list is a known
+# falsehood, so require the real effect tokens rather than assert emptiness.
 if grep -q '^metadata:' "$SKILL"; then
-  grep -q '^  effects: \[\]$' "$SKILL"
+  if grep -q '^  effects: \[\]$' "$SKILL"; then
+    echo 'ms effects must not be empty: it spawns a search server and writes feedback/outcome/index state' >&2
+    exit 1
+  fi
+  grep -q 'spawn_search_server' "$SKILL"
+  grep -q 'write_feedback_outcomes' "$SKILL"
+  grep -q 'rebuild_search_index' "$SKILL"
 fi
 grep -Fq 'Keep `ms` retrieval-only for production skill work.' "$SKILL"
 grep -Fq '**Authority boundary:** `skills/**` is canonical source' "$SKILL"

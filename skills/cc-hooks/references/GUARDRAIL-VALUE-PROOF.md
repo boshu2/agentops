@@ -45,9 +45,10 @@ The hash is one-way; it lets us count *distinct* edited targets and detect
 repeats without ever logging what the agent was editing. Asserted in
 `tests/scripts/installed-skill-edit-telemetry.bats`.
 
-**Inert by default:** the emission code only runs when the guard fires, and the
-guard ships INERT (AgentOps hookless default; opt-in installer only). On a
-machine where the guard is not installed, zero lines are ever written. On a
+**Inert by default:** the emission code only runs when the guard fires, and this
+standalone guard ships INERT (opt-in installer only) even though the PreToolUse
+policy dispatcher ships by default. On a machine where the guard is not
+installed, zero lines are ever written. On a
 machine where it IS installed, the happy path (any non-installed-skill edit)
 writes nothing.
 

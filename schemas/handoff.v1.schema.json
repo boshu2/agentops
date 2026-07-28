@@ -2,11 +2,11 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://agentops.dev/schemas/handoff.v1.schema.json",
   "title": "AgentOps Handoff Artifact v1",
-  "description": "Structured handoff artifact for session boundary isolation. Written by `ao handoff`, consumed by session-start hook.",
+  "description": "Structured handoff artifact for session boundary isolation. Written by `ao session handoff`; caller-authored session evidence that carries no continuation choice, consumption, verdict, or phase state.",
   "practices": ["event-sourcing-cqrs", "distributed-tracing"],
   "type": "object",
   "additionalProperties": false,
-  "required": ["schema_version", "id", "created_at", "type", "consumed"],
+  "required": ["schema_version", "id", "created_at"],
   "properties": {
     "schema_version": {
       "type": "integer",
@@ -19,10 +19,6 @@
     "created_at": {
       "type": "string",
       "format": "date-time"
-    },
-    "type": {
-      "type": "string",
-      "enum": ["manual", "auto", "rpi"]
     },
     "goal": {
       "type": "string"
@@ -51,63 +47,14 @@
         "type": "string"
       }
     },
-    "rpi": {
-      "oneOf": [
-        { "type": "null" },
-        { "$ref": "#/$defs/rpi" }
-      ]
-    },
     "state": {
       "oneOf": [
         { "type": "null" },
         { "$ref": "#/$defs/state" }
       ]
-    },
-    "consumed": {
-      "type": "boolean"
-    },
-    "consumed_at": {
-      "oneOf": [
-        { "type": "null" },
-        { "type": "string", "format": "date-time" }
-      ]
-    },
-    "consumed_by": {
-      "oneOf": [
-        { "type": "null" },
-        { "type": "string" }
-      ]
     }
   },
   "$defs": {
-    "rpi": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": ["phase", "phase_name"],
-      "properties": {
-        "phase": {
-          "type": "integer",
-          "minimum": 1,
-          "maximum": 3
-        },
-        "phase_name": {
-          "type": "string",
-          "enum": ["discovery", "implementation", "validation"]
-        },
-        "epic_id": {
-          "type": "string"
-        },
-        "run_id": {
-          "type": "string"
-        },
-        "verdicts": {
-          "type": "object",
-          "additionalProperties": {
-            "type": "string"
-          }
-        }
-      }
-    },
     "state": {
       "type": "object",
       "additionalProperties": false,

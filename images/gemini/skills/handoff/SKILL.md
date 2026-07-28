@@ -13,7 +13,7 @@ context:
   intel_scope: none
 metadata:
   capabilities: [handoff]
-  effects: []
+  effects: [write_handoff_artifact, read_git_state]
   canonical_status: canonical
   disposition: keep_specialist
   graph_root: true

@@ -37,8 +37,11 @@ These cannot be disabled—they catch the most common destructive patterns.
 **Safe patterns (allowed):**
 - `rm -rf /tmp/*` — Temp directory
 - `rm -rf /var/tmp/*` — Temp directory
-- `rm -rf $TMPDIR/*` — User temp
-- `rm -rf ./build` — Relative paths in project
+- `rm -rf $TMPDIR/*` — User temp (literal `$TMPDIR` only)
+
+`rm -rf ./build` and other relative or absolute non-temp paths are **blocked**
+(`core.filesystem:rm-rf-general` / `rm-rf-root-home`); allowlist them explicitly
+if a project needs them (see [CONFIG.md](CONFIG.md)).
 
 ---
 

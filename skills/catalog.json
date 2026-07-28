@@ -13,7 +13,9 @@
       "dependencies": [],
       "description": "Switch a caller-selected coding-agent account and report the observed identity. Triggers: \"switch account\", \"rotate coding-agent account\".",
       "disposition": "keep_specialist",
-      "effects": [],
+      "effects": [
+        "rotate_agent_account"
+      ],
       "graph_root": false,
       "hexagonal_role": "supporting",
       "name": "account-rotation",
@@ -211,7 +213,9 @@
       "dependencies": [],
       "description": "Initialize minimal AgentOps documentation and verdict storage without taking over repository workflow. Triggers: \"bootstrap AgentOps\", \"initialize AgentOps docs\".",
       "disposition": "keep_specialist",
-      "effects": [],
+      "effects": [
+        "write_project_docs"
+      ],
       "graph_root": true,
       "hexagonal_role": "driving-adapter",
       "name": "bootstrap",
@@ -260,9 +264,13 @@
       "consumes": [],
       "context_rel": [],
       "dependencies": [],
-      "description": "Configure default Claude Code enforcement hooks and opt-in injection recipes. Triggers: \"cc-hooks\", \"configure Claude Code hooks\", \"install hooks\".",
+      "description": "Configure default Claude Code enforcement hooks and opt-in guard recipes. Triggers: \"cc-hooks\", \"configure Claude Code hooks\", \"install hooks\".",
       "disposition": "keep_specialist",
-      "effects": [],
+      "effects": [
+        "write_hook_config",
+        "append_guardrail_telemetry",
+        "write_session_sentinel"
+      ],
       "graph_root": false,
       "hexagonal_role": "supporting",
       "name": "cc-hooks",
@@ -460,9 +468,11 @@
       "consumes": [],
       "context_rel": [],
       "dependencies": [],
-      "description": "Handle blocked destructive commands and configure agent safety guardrails. Triggers: \"dcg\", \"handle blocked destructive commands. use\", \"dcg skill\".",
+      "description": "Handle blocked destructive commands and configure agent safety guardrails. Triggers: \"dcg\", \"handle a DCG block\", \"configure agent safety guardrails\".",
       "disposition": "keep_specialist",
-      "effects": [],
+      "effects": [
+        "write_dcg_config"
+      ],
       "graph_root": false,
       "hexagonal_role": "supporting",
       "name": "dcg",
@@ -576,7 +586,10 @@
       "dependencies": [],
       "description": "Write compact caller-authored session evidence without choosing continuation. Triggers: \"handoff\", \"write compact session handoff\".",
       "disposition": "keep_specialist",
-      "effects": [],
+      "effects": [
+        "write_handoff_artifact",
+        "read_git_state"
+      ],
       "graph_root": true,
       "hexagonal_role": "supporting",
       "name": "handoff",
@@ -720,7 +733,11 @@
       "dependencies": [],
       "description": "meta_skill (ms) \u2014 the skill-search/load engine over both corpora (agentops + jsm). Find a skill for a task, search skills, or load runnable skill guidance. Triggers: \"ms\", \"meta_skill\", \"skill search\", \"find a skill for\", \"load skill guidance\".",
       "disposition": "keep_specialist",
-      "effects": [],
+      "effects": [
+        "spawn_search_server",
+        "write_feedback_outcomes",
+        "rebuild_search_index"
+      ],
       "graph_root": false,
       "hexagonal_role": "supporting",
       "name": "ms",
@@ -1194,7 +1211,11 @@
       "dependencies": [],
       "description": "Inspect disk pressure with SBH and run one explicitly authorized recovery action. Triggers: \"check disk pressure\", \"run SBH\".",
       "disposition": "keep_specialist",
-      "effects": [],
+      "effects": [
+        "delete_reclaimable_files",
+        "release_disk_ballast",
+        "modify_host_storage_config"
+      ],
       "graph_root": false,
       "hexagonal_role": "supporting",
       "name": "sbh",
@@ -1402,7 +1423,10 @@
       "dependencies": [],
       "description": "Report observable AgentOps evidence without selecting work. Triggers: \"status\", \"show AgentOps status\".",
       "disposition": "keep_specialist",
-      "effects": [],
+      "effects": [
+        "read_filesystem",
+        "read_clock"
+      ],
       "graph_root": true,
       "hexagonal_role": "driving-adapter",
       "name": "status",
