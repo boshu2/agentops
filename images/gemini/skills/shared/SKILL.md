@@ -1,6 +1,6 @@
 ---
 name: shared
-description: 'Shared runtime and evidence references loaded only by a consuming skill. Triggers: internal shared contracts.'
+description: 'Shared runtime and evidence references loaded only by a consuming skill. Triggers: none — internal library, not user-routable.'
 practices: [design-by-contract, pragmatic-programmer]
 hexagonal_role: domain
 consumes: []

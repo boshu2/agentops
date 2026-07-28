@@ -1135,7 +1135,7 @@
         "disposition": "keep_specialist",
         "effects": [
           "clone_upstream_repo",
-          "execute_authorized_binary",
+          "authorized_binary_execution",
           "write_teardown_artifacts"
         ],
         "has_references": true,
@@ -1241,10 +1241,10 @@
         ],
         "disposition": "keep_specialist",
         "effects": [
-          "writes_skill_source",
+          "write_skill_source",
           "write_build_report",
-          "regenerates_skill_projections",
-          "optional_skill_projection_repair"
+          "regenerate_skill_projections",
+          "repair_skill_projections"
         ],
         "has_references": true,
         "has_skill_md": true,
