@@ -70,7 +70,7 @@ func TestRunAbnormalParentDoesNotWaitForOrphanedPipe(t *testing.T) {
 		Env:            append(os.Environ(), "PID_FILE="+pidFile),
 		CombinedOutput: true,
 		OutputLimit:    CaptureLimit{HeadBytes: 128, TailBytes: 128},
-		WaitDelay:      100 * time.Millisecond,
+		WaitDelay:      defaultWaitDelay,
 	}
 
 	start := time.Now()
@@ -94,7 +94,7 @@ func TestRunSuccessfulParentTerminatesBackgroundDescendant(t *testing.T) {
 		Env:            append(os.Environ(), "PID_FILE="+pidFile),
 		CombinedOutput: true,
 		OutputLimit:    CaptureLimit{HeadBytes: 128, TailBytes: 128},
-		WaitDelay:      100 * time.Millisecond,
+		WaitDelay:      defaultWaitDelay,
 	}
 
 	start := time.Now()
@@ -121,7 +121,7 @@ func TestRunPreservesWaitDelayWhenBackgroundCleanupFails(t *testing.T) {
 		Env:            append(os.Environ(), "PID_FILE="+pidFile),
 		CombinedOutput: true,
 		OutputLimit:    CaptureLimit{HeadBytes: 128, TailBytes: 128},
-		WaitDelay:      100 * time.Millisecond,
+		WaitDelay:      defaultWaitDelay,
 	}
 	cleanupErr := errors.New("injected cleanup failure")
 
@@ -149,7 +149,12 @@ func awaitPID(t *testing.T, path string) int {
 	for time.Now().Before(deadline) {
 		data, err := os.ReadFile(path)
 		if err == nil {
-			pid, convErr := strconv.Atoi(strings.TrimSpace(string(data)))
+			value := strings.TrimSpace(string(data))
+			if value == "" {
+				time.Sleep(10 * time.Millisecond)
+				continue
+			}
+			pid, convErr := strconv.Atoi(value)
 			if convErr != nil {
 				t.Fatalf("parse pid %q: %v", data, convErr)
 			}
@@ -252,6 +257,50 @@ func TestTerminateUnixProcessGroupPollsFromEPERMToESRCH(t *testing.T) {
 	}
 	if probes != 3 {
 		t.Fatalf("probes = %d, want EPERM polling through ESRCH", probes)
+	}
+}
+
+func TestTerminateUnixProcessGroupAcceptsSignalEPERMOnlyAfterAbsenceProbe(t *testing.T) {
+	probes := 0
+	ops := unixProcessGroupOps{
+		signal: func(int, syscall.Signal) error { return syscall.EPERM },
+		probe: func(int) error {
+			probes++
+			return syscall.ESRCH
+		},
+		clock: unixClock{
+			now:   time.Now,
+			sleep: func(time.Duration) {},
+		},
+	}
+
+	if err := terminateUnixProcessGroup(42, time.Millisecond, ops); err != nil {
+		t.Fatalf("terminateUnixProcessGroup: %v", err)
+	}
+	if probes != 1 {
+		t.Fatalf("probes = %d, want one absence proof after signal EPERM", probes)
+	}
+}
+
+func TestTerminateUnixProcessGroupSignalEPERMDoesNotHideLiveGroup(t *testing.T) {
+	now := time.Unix(0, 0)
+	ops := unixProcessGroupOps{
+		signal: func(int, syscall.Signal) error { return syscall.EPERM },
+		probe:  func(int) error { return nil },
+		clock: unixClock{
+			now: func() time.Time { return now },
+			sleep: func(delay time.Duration) {
+				now = now.Add(delay)
+			},
+		},
+	}
+
+	err := terminateUnixProcessGroup(42, 25*time.Millisecond, ops)
+	if !errors.Is(err, syscall.EPERM) {
+		t.Fatalf("error = %v, want signal EPERM retained for live group", err)
+	}
+	if !strings.Contains(err.Error(), "remained observable") {
+		t.Fatalf("error = %q, want live-group timeout diagnostic", err)
 	}
 }
 

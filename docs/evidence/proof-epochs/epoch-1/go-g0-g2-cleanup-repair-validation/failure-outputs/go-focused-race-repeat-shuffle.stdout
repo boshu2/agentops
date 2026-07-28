@@ -1,0 +1,29 @@
+ok  	github.com/boshu2/agentops/cli/internal/subprocess	24.722s
+ok  	github.com/boshu2/agentops/cli/internal/eval	27.474s
+ok  	github.com/boshu2/agentops/cli/internal/gates	3.235s
+ok  	github.com/boshu2/agentops/cli/internal/gates/checks	2.708s
+-test.shuffle 1784949039773904000
+WARNING: /var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T/TestExtra_LoadGoals_Version1Warning903819201/001/GOALS.yaml uses deprecated version 1; update the file outside AgentOps before relying on newer fields.
+--- FAIL: TestGoalsMeasure_WeightedScoring_Subsystem (0.00s)
+    --- FAIL: TestGoalsMeasure_WeightedScoring_Subsystem/all_pass_equal_weight (0.04s)
+        goals_subsystem_test.go:411: Score = 50.000000, want 100.000000
+        goals_subsystem_test.go:414: Passing = 1, want 2
+        goals_subsystem_test.go:417: Failing = 1, want 0
+--- FAIL: TestGoalsMeasure_ExcludeTagFilter (0.08s)
+    goals_measure_test.go:469: Failing = 1, want 0 (the failing goal is excluded by tag)
+    goals_measure_test.go:472: Score = 0.000000, want 100.0 (only the passing untagged goal remains)
+--- FAIL: TestMeasure_SummaryCorrect (0.03s)
+    measure_test.go:260: Passing = 1, want 2
+    measure_test.go:263: Failing = 2, want 1
+    measure_test.go:266: Score = 30.000000, want 80.0
+WARNING: /var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T/TestExtra_LoadGoals_Version1Warning2943305888/001/GOALS.yaml uses deprecated version 1; update the file outside AgentOps before relying on newer fields.
+--- FAIL: TestGoalsMeasure_WeightedScoring (0.01s)
+    --- FAIL: TestGoalsMeasure_WeightedScoring/one_pass_one_fail_weighted (0.05s)
+        goals_measure_test.go:415: Score = 0.000000, want 80.000000
+        goals_measure_test.go:418: Passing = 0, want 1
+        goals_measure_test.go:421: Failing = 2, want 1
+WARNING: /var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T/TestExtra_LoadGoals_Version1Warning1719095275/001/GOALS.yaml uses deprecated version 1; update the file outside AgentOps before relying on newer fields.
+FAIL
+FAIL	github.com/boshu2/agentops/cli/internal/goals	17.483s
+ok  	github.com/boshu2/agentops/cli/cmd/ao	45.278s
+FAIL

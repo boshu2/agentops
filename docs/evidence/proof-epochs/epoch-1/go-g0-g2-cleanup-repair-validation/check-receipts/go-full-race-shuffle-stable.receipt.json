@@ -1,0 +1,19 @@
+{
+  "artifact_digest": "854045aa9e398fc524a94c61387a7b3e550538959fe8d9253afe1e7727ef6aa4",
+  "command": [
+    "go",
+    "test",
+    "-race",
+    "-count=1",
+    "-shuffle=on",
+    "./..."
+  ],
+  "exit_code": 0,
+  "observed_at": "2026-07-25T03:20:01Z",
+  "receipt_id": "go-full-race-shuffle-stable",
+  "result": "PASS",
+  "schema_version": "check-receipt.v1",
+  "stderr_digest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "stdout_digest": "11274ced482292d3a5e4d9d2c1acafed5b1d394fcbb62d05ff0e1914a5db2a1d",
+  "subject_manifest_digest": "c6c5ba4cc071eddc1c0f0d470a4a6a0e023f9ed5f5a83b3b1fd2538ec904f30b"
+}

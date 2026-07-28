@@ -1,0 +1,110 @@
+{
+  "artifact_digest": "69746c8861179c7da71d03faa53cd669f3b664c98a1475659d7c3d31ad7fca5e",
+  "criteria": [
+    {
+      "id": "GO-1",
+      "required": true,
+      "statement_digest": "f73767ca3dbbf1cce328cd2a88a2da676f599905d2ca167323b4c3af72d31e7d"
+    },
+    {
+      "id": "GO-2",
+      "required": true,
+      "statement_digest": "89ab3b050744061bd17fdc7f6963581e35de3215396d9005a5683f6fd956b2cd"
+    },
+    {
+      "id": "GO-3",
+      "required": true,
+      "statement_digest": "1a6090cfd7bbee1f3e8f179b8da93ed1eba021a82415fb3bd0d3896c2c19eac8"
+    },
+    {
+      "id": "GO-4",
+      "required": true,
+      "statement_digest": "9e9f49f6843badf98883d17a025477ae2ec2d62b42b88e5b05255a31142a69a7"
+    },
+    {
+      "id": "GO-5",
+      "required": true,
+      "statement_digest": "cd188ab432fd854f85fa0ff440286372048fa3198ab3b4a0b3b7d59791bf1cb9"
+    },
+    {
+      "id": "GO-6",
+      "required": true,
+      "statement_digest": "eec0461e435d3d9fdcf068fde29b1ff82a1e2bea55e5b783351b2c63456d692b"
+    },
+    {
+      "id": "GO-7",
+      "required": true,
+      "statement_digest": "7bdcb4ffea0a7ed2ef640a38069111824c08e5f3ad0368445b2747db05780dfd"
+    },
+    {
+      "id": "GO-8",
+      "required": true,
+      "statement_digest": "fdaee2bb470da825239e17aac2f91c7ec72b39aae9e8147f8328afe47e552e8c"
+    },
+    {
+      "id": "GOR-1",
+      "required": true,
+      "statement_digest": "d789277f70b94231cc4e29598b532f5283568efe0891bc9a3de62d8f7f5c0de0"
+    },
+    {
+      "id": "GOR-2",
+      "required": true,
+      "statement_digest": "746de56fcb81cf9741320ea87b4289ba56d07ecdd0e8ba0ff770495ba186358f"
+    },
+    {
+      "id": "GOR-3",
+      "required": true,
+      "statement_digest": "50e3de5ea3da20e9d4d251f320679e04db065387eafb0593d0a43b96c71cd70b"
+    },
+    {
+      "id": "GOR-4",
+      "required": true,
+      "statement_digest": "3a3fc6b785b4882880124a2a9467f0175ee6a26478d793fa05742ea9341d6412"
+    },
+    {
+      "id": "GOR-5",
+      "required": true,
+      "statement_digest": "f216e06da105f155b663c57c2ca20e075d903f310859f8a40be1984d4e028eb2"
+    },
+    {
+      "id": "GDR-1",
+      "required": true,
+      "statement_digest": "46d9f2f71052b75a584a4bec33dbb9dd543b51fa7fdcd73bab3046fb622e2e5d"
+    },
+    {
+      "id": "GDR-2",
+      "required": true,
+      "statement_digest": "d3b1b64ee03697e04d7095dba71b32cc6d0917294275d6b42a827d9a258c555f"
+    },
+    {
+      "id": "GDR-3",
+      "required": true,
+      "statement_digest": "eed896de779db1b0518b28ec5078148d5e30a8e34711c19da65d85f5af7cfc37"
+    },
+    {
+      "id": "GDR-4",
+      "required": true,
+      "statement_digest": "324cd265f920b87be3771b0dc41cbe3b0e7e0f2f7f169fb8c49c0f95db050046"
+    },
+    {
+      "id": "GDR-5",
+      "required": true,
+      "statement_digest": "756f4c130fe562ee5f03bda0f3032aacfc36bc0bd09d0fe63aa3767c23445e7a"
+    }
+  ],
+  "declared_exclusions": [],
+  "frozen_at": "2026-07-25T04:06:24Z",
+  "intent_digest": "13cea86120dfaa390e1bc6109056215730563ded786b6f41a61a7a598e3c74fc",
+  "schema_version": "scope-index.v1",
+  "scope_classes": [
+    {
+      "id": "go-darwin-fast-exit-repair",
+      "patterns": [
+        "cli/go.mod",
+        "cli/go.sum",
+        "cli/internal/eval",
+        "cli/internal/subprocess"
+      ]
+    }
+  ]
+}

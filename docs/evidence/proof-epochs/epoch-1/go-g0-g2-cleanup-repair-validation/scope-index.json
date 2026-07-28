@@ -1,0 +1,95 @@
+{
+  "artifact_digest": "7fd13dd5ac093065793fa28fa4947899ff7b997305356d49cb893512e2f6edac",
+  "criteria": [
+    {
+      "id": "GO-1",
+      "required": true,
+      "statement_digest": "270844cd6d9046ed18ae01e7247b97a4ce9f696ec4ca564aecfbab3a309b81c9"
+    },
+    {
+      "id": "GO-2",
+      "required": true,
+      "statement_digest": "e69b6f2a5458d7d4c1662b6d3fec2b6f8c2aa01b07d84c65355a71a73c9b8868"
+    },
+    {
+      "id": "GO-3",
+      "required": true,
+      "statement_digest": "de0ee5c3c90ffb3ff1806244204e8ab31041e7ac1e29b2d04611dcf1af8f5fde"
+    },
+    {
+      "id": "GO-4",
+      "required": true,
+      "statement_digest": "fad2de8c8c5c701699fea687c056bd9711913a04a3f7e8284efe3d7582999ab9"
+    },
+    {
+      "id": "GO-5",
+      "required": true,
+      "statement_digest": "661018442c593d5001814884fe156458484c2f3d11efecc03656283ec3355dc9"
+    },
+    {
+      "id": "GO-6",
+      "required": true,
+      "statement_digest": "1aa1bd5ba797f6fc1b2a92610d79c2f6d29c6b6eb258bba9c20669c6f36755ef"
+    },
+    {
+      "id": "GO-7",
+      "required": true,
+      "statement_digest": "9f844c3ce7a316e6cda915a11f3c05359a50920eed65f200cf0809b1de1c4fca"
+    },
+    {
+      "id": "GO-8",
+      "required": true,
+      "statement_digest": "b065e3b91bff94a5636b1e5b4dd6c18441f5e71ef0476244a6e667c42f1c4475"
+    },
+    {
+      "id": "GOR-1",
+      "required": true,
+      "statement_digest": "d9bfe2480904ef59f82c3548d2ad2ffbf12f8bb69bd9c518c8dc94e0e8dc4ed1"
+    },
+    {
+      "id": "GOR-2",
+      "required": true,
+      "statement_digest": "0607f5b7672c8093f142183a42f975dff5c009629e5b0e1ddeae73a5b2215e42"
+    },
+    {
+      "id": "GOR-3",
+      "required": true,
+      "statement_digest": "88d01afc01d92ed41e40e7e37d71ce485a0e57b662202b5b4d57c51b3408880b"
+    },
+    {
+      "id": "GOR-4",
+      "required": true,
+      "statement_digest": "6071d8d0a71e0a617e3a1c2e33b4e7d26ec35d7d115e7dfefef0c1075cc6aeef"
+    },
+    {
+      "id": "GOR-5",
+      "required": true,
+      "statement_digest": "cf7340d03d55bf1f8db29a223fabba37ba6b4e8839041359d7f2eae229ed044c"
+    }
+  ],
+  "declared_exclusions": [],
+  "frozen_at": "2026-07-25T02:58:34Z",
+  "intent_digest": "0885c924f931b4d40724a859df66af0899bfec9d8918fae434bc72cd746dff1c",
+  "schema_version": "scope-index.v1",
+  "scope_classes": [
+    {
+      "id": "go-cli-g0-g2-repair",
+      "patterns": [
+        "cli/cmd/ao",
+        "cli/docs/COMMANDS.md",
+        "cli/internal/adapters/eval",
+        "cli/internal/capabilities",
+        "cli/internal/clicontract",
+        "cli/internal/commands",
+        "cli/internal/eval",
+        "cli/internal/evalsubstrate",
+        "cli/internal/gates",
+        "cli/internal/goals",
+        "cli/internal/subprocess",
+        "docs/architecture/go-cli.md",
+        "schemas/eval-run.v1.schema.json",
+        "scripts/provenance/mine-all-sessions.sh"
+      ]
+    }
+  ]
+}

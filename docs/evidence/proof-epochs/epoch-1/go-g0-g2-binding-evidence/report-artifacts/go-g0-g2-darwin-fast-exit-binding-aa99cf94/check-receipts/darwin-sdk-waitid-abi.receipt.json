@@ -1,0 +1,16 @@
+{
+  "artifact_digest": "45af1f698e0b2eff0d77a54bd7651f515e5734fd2e7c8f98f2904824043f218c",
+  "command": [
+    "sh",
+    "-c",
+    "printf '%s\\n' '#include <sys/wait.h>' '#include <sys/syscall.h>' '#include <stddef.h>' '_Static_assert(P_PID == 1, \"P_PID\");' '_Static_assert(WNOHANG == 1, \"WNOHANG\");' '_Static_assert(WEXITED == 4, \"WEXITED\");' '_Static_assert(WNOWAIT == 32, \"WNOWAIT\");' '_Static_assert(SYS_waitid == 173, \"SYS_waitid\");' '_Static_assert(sizeof(siginfo_t) == 104, \"siginfo size\");' '_Static_assert(offsetof(siginfo_t, si_pid) == 12, \"si_pid offset\");' '_Static_assert(offsetof(siginfo_t, si_status) == 20, \"si_status offset\");' 'int main(void) { return 0; }' | xcrun --sdk macosx clang -x c -fsyntax-only -"
+  ],
+  "exit_code": 0,
+  "observed_at": "2026-07-25T04:18:11Z",
+  "receipt_id": "darwin-sdk-waitid-abi",
+  "result": "PASS",
+  "schema_version": "check-receipt.v1",
+  "stderr_digest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "stdout_digest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "subject_manifest_digest": "fea7fa62b7db4a640e68ac807523a9d61135a2069b33d4ba15146523e661ed44"
+}

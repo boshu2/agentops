@@ -1,0 +1,739 @@
+{
+  "actual_changed_paths": [
+    "cli/cmd/ao/eval_composition.go",
+    "cli/cmd/ao/handoff.go",
+    "cli/cmd/ao/operation_contracts.go",
+    "cli/cmd/ao/operation_contracts_test.go",
+    "cli/cmd/ao/root.go",
+    "cli/cmd/ao/testdata/package-var-allowlist.json",
+    "cli/cmd/ao/workflows_composition.go",
+    "cli/docs/COMMANDS.md",
+    "cli/internal/adapters/eval/runtime.go",
+    "cli/internal/adapters/eval/runtime_test.go",
+    "cli/internal/adapters/eval/scenario_ab_agentic.go",
+    "cli/internal/adapters/eval/scenario_ab_runtime.go",
+    "cli/internal/capabilities/document.go",
+    "cli/internal/clicontract/contract.go",
+    "cli/internal/clicontract/inspect.go",
+    "cli/internal/clicontract/operation.go",
+    "cli/internal/clicontract/operation_test.go",
+    "cli/internal/commands/config/module.go",
+    "cli/internal/commands/eval/module.go",
+    "cli/internal/commands/gate/module.go",
+    "cli/internal/commands/provenance/module.go",
+    "cli/internal/commands/provenance/trace_test.go",
+    "cli/internal/commands/robotdocs/module.go",
+    "cli/internal/commands/skills/module.go",
+    "cli/internal/commands/workflows/module.go",
+    "cli/internal/eval/AGENTS.md",
+    "cli/internal/eval/baseline.go",
+    "cli/internal/eval/baseline_ab.go",
+    "cli/internal/eval/context_ab.go",
+    "cli/internal/eval/core_service.go",
+    "cli/internal/eval/core_service_test.go",
+    "cli/internal/eval/engine.go",
+    "cli/internal/eval/engine_context_unix_test.go",
+    "cli/internal/eval/engine_test.go",
+    "cli/internal/eval/expectations.go",
+    "cli/internal/eval/expectations_auto_detect_test.go",
+    "cli/internal/eval/runtime.go",
+    "cli/internal/eval/runtime_test.go",
+    "cli/internal/eval/schema_drift_test.go",
+    "cli/internal/eval/suite_service.go",
+    "cli/internal/eval/suite_service_test.go",
+    "cli/internal/eval/task_service.go",
+    "cli/internal/eval/task_service_test.go",
+    "cli/internal/eval/types.go",
+    "cli/internal/eval/types_test.go",
+    "cli/internal/evalsubstrate/atomic.go",
+    "cli/internal/evalsubstrate/atomic_test.go",
+    "cli/internal/evalsubstrate/canonicalize.go",
+    "cli/internal/evalsubstrate/harness.go",
+    "cli/internal/evalsubstrate/harness_test.go",
+    "cli/internal/evalsubstrate/identifier.go",
+    "cli/internal/evalsubstrate/identifier_test.go",
+    "cli/internal/evalsubstrate/manifest.go",
+    "cli/internal/evalsubstrate/manifest_test.go",
+    "cli/internal/evalsubstrate/modelspec.go",
+    "cli/internal/evalsubstrate/modelspec_test.go",
+    "cli/internal/evalsubstrate/rootstore.go",
+    "cli/internal/evalsubstrate/rootstore_test.go",
+    "cli/internal/gates/changedfiles.go",
+    "cli/internal/gates/checks/go_build.go",
+    "cli/internal/gates/checks/native_inline.go",
+    "cli/internal/gates/checks/native_inline_test.go",
+    "cli/internal/gates/scriptrunner.go",
+    "cli/internal/gates/scriptrunner_test.go",
+    "cli/internal/goals/AGENTS.md",
+    "cli/internal/goals/measure.go",
+    "cli/internal/goals/measure_platform_test.go",
+    "cli/internal/goals/measure_signal_test.go",
+    "cli/internal/goals/measure_test.go",
+    "cli/internal/goals/measure_unix.go",
+    "cli/internal/goals/measure_windows.go",
+    "cli/internal/subprocess/capture.go",
+    "cli/internal/subprocess/completion.go",
+    "cli/internal/subprocess/completion_darwin.go",
+    "cli/internal/subprocess/completion_linux.go",
+    "cli/internal/subprocess/completion_unsupported.go",
+    "cli/internal/subprocess/completion_windows.go",
+    "cli/internal/subprocess/io.go",
+    "cli/internal/subprocess/process_unix.go",
+    "cli/internal/subprocess/process_windows.go",
+    "cli/internal/subprocess/process_windows_logic.go",
+    "cli/internal/subprocess/process_windows_logic_test.go",
+    "cli/internal/subprocess/process_windows_test.go",
+    "cli/internal/subprocess/run.go",
+    "cli/internal/subprocess/run_test.go",
+    "cli/internal/subprocess/run_unix_test.go",
+    "cli/internal/subprocess/stdin_unix.go",
+    "cli/internal/subprocess/stdin_windows.go",
+    "docs/architecture/go-cli.md",
+    "schemas/eval-run.v1.schema.json",
+    "scripts/provenance/mine-all-sessions.sh"
+  ],
+  "artifact_digest": "40908fd84f150a3ac9a13ceb4c4bb4c9b139a1d402cd5415259ccfb93e402051",
+  "before_manifest_digest": "80ba7766ee520fdbd121dab905dfbfe951ba0372da1e47b3dff209b4afe37c9e",
+  "changes": [
+    {
+      "after_digest": "13574b87a038cb96dedf7d424681ae5361ce83c027d36d69b9029a30e8d8865d",
+      "before_digest": "2d56420a28eccf51f69d37f5d49dc86d648a56a44e582145049632cd8b5f428c",
+      "change_kind": "MODIFIED",
+      "path": "cli/cmd/ao/eval_composition.go"
+    },
+    {
+      "after_digest": "2d8ab3942e60bc1c584e3eaa7f4ea5e4eecfd7a2c2c93d028891fc62e5bb1f52",
+      "before_digest": "2c82b777d99099f1084c18fd8b4e23032f8f20d2374738568bd259c25e6596ab",
+      "change_kind": "MODIFIED",
+      "path": "cli/cmd/ao/handoff.go"
+    },
+    {
+      "after_digest": "335697178affeb99d1f74cffcc0c3a574ee5f037e940427c9e19f690110a8ca2",
+      "before_digest": null,
+      "change_kind": "ADDED",
+      "path": "cli/cmd/ao/operation_contracts.go"
+    },
+    {
+      "after_digest": "bc7556f3d2b7ca385e4ad46fdb7bbcf6bed4f38a0d7c5818066e57f0c4e9beb4",
+      "before_digest": null,
+      "change_kind": "ADDED",
+      "path": "cli/cmd/ao/operation_contracts_test.go"
+    },
+    {
+      "after_digest": "d723714bc13eae12b7759b8b38aa4e31ab0673b37c0619b251a8e41714ddf878",
+      "before_digest": "ef646ed5d20e2585eafba16aab16503d659d100fab0279b4eb8bc6e2dd6745f5",
+      "change_kind": "MODIFIED",
+      "path": "cli/cmd/ao/root.go"
+    },
+    {
+      "after_digest": "114f7f18e4dc7b23ee5632a17653be96c919403825e6ed431824549d2e62f613",
+      "before_digest": "f1bfebffc05f8d1b670ce780e19d79189af9afb0a332d3f99f27ba19b3601fb3",
+      "change_kind": "MODIFIED",
+      "path": "cli/cmd/ao/testdata/package-var-allowlist.json"
+    },
+    {
+      "after_digest": "1a4d9f46a793c4448d38fb4af1641486c5148fe9cc2031ee4c5c6ada7ed1cd35",
+      "before_digest": "847479706f970747baa61c4fd7b0c0c6d8c208873046c60db11d5da18a13aab8",
+      "change_kind": "MODIFIED",
+      "path": "cli/cmd/ao/workflows_composition.go"
+    },
+    {
+      "after_digest": "1404cf41e20603796e5e4315e3de2d897c3c45725ccae5c13123b483eb0fe057",
+      "before_digest": "88c218261e58811dc3f9cc78694bd3dc3e2eba6b6537f47cedd6a73f1fdf5b37",
+      "change_kind": "MODIFIED",
+      "path": "cli/docs/COMMANDS.md"
+    },
+    {
+      "after_digest": "5ed942a096500828165f84995b33eab33d35c0203a51b0df1c37fac8e736b5d2",
+      "before_digest": "cb2a38deef7323fbec4fea09f981bc5e8bb29e6b3cec6b16d1235c36391c30d3",
+      "change_kind": "MODIFIED",
+      "path": "cli/internal/adapters/eval/runtime.go"
+    },
+    {
+      "after_digest": "2ab04b9e0e06837ec6b0766f6b5e68a60e6abcbe709ee2809f8e2beb0ace895c",
+      "before_digest": "5f3866cf52f93290f56a4fa310177c1171a5fb00b976a9e66c083fd5932bd091",
+      "change_kind": "MODIFIED",
+      "path": "cli/internal/adapters/eval/runtime_test.go"
+    },
+    {
+      "after_digest": "dbb2d13d41e3d2879892c13710cba2bde32e22f889f114f0f9f0ffceb25c4f0b",
+      "before_digest": "f5986b31d4be4c1c3536f5b705cd77ee92853820cbe907455e42d2e87119b162",
+      "change_kind": "MODIFIED",
+      "path": "cli/internal/adapters/eval/scenario_ab_agentic.go"
+    },
+    {
+      "after_digest": "d1806592725633e10df9711ca8367614fd3cb27bcb5ed3a39fbafadccb56fd0b",
+      "before_digest": "60d5571edb825045d0037a6789ad2a56116fe2767c07d2cc1164c695cfd8d9d8",
+      "change_kind": "MODIFIED",
+      "path": "cli/internal/adapters/eval/scenario_ab_runtime.go"
+    },
+    {
+      "after_digest": "0ceeaf9e8e7a10293e615e97795bee0ceeef8c259d775c98dccfdad723643bfb",
+      "before_digest": "386b551c041b21549c974271d1410023c44a1502ceb7e47f4a9daa3332e7fc25",
+      "change_kind": "MODIFIED",
+      "path": "cli/internal/capabilities/document.go"
+    },
+    {
+      "after_digest": "f41d2b2293793f796ff5450d87088c347b4429ad918d9c4045ee52e7439ab1ec",
+      "before_digest": "408043780b949a578e68ff1e715b0a9c9a14bddfc6d642f883bb356c2e3062fe",
+      "change_kind": "MODIFIED",
+      "path": "cli/internal/clicontract/contract.go"
+    },
+    {
+      "after_digest": "6cbce51621ed9b57dcc21863ff62037b0bfce4f290a592c1cdda8790ca089491",
+      "before_digest": "98733b5f80a04a406ae95784e6cd937bfa4da0a77de04f0b46b7d548e4b784ae",
+      "change_kind": "MODIFIED",
+      "path": "cli/internal/clicontract/inspect.go"
+    },
+    {
+      "after_digest": "76a9cf81831410bdd464c27a8379e37fba7d99562fc20888574f5b0bdb583ed4",
+      "before_digest": null,
+      "change_kind": "ADDED",
+      "path": "cli/internal/clicontract/operation.go"
+    },
+    {
+      "after_digest": "5036d556073e7f1b4da4f506da3d879fab638835f4687355e67215cda543fdd3",
+      "before_digest": null,
+      "change_kind": "ADDED",
+      "path": "cli/internal/clicontract/operation_test.go"
+    },
+    {
+      "after_digest": "cfd88da89f45ce55295754a32cdf4c9dc410c66df38b7f7fcaba6faf9cef9f16",
+      "before_digest": "32b58918dd40289e993fcdcefff109272d3793fb1b183b17699dc565a576840b",
+      "change_kind": "MODIFIED",
+      "path": "cli/internal/commands/config/module.go"
+    },
+    {
+      "after_digest": "5ab91157038fe53ab1a07864fb514b0cce51da53be0b8de71c81227d0fbcb2f9",
+      "before_digest": "f5719da720a5274b46d6d40d8734af4b7e2246ba187c97e7ea33596adae08686",
+      "change_kind": "MODIFIED",
+      "path": "cli/internal/commands/eval/module.go"
+    },
+    {
+      "after_digest": "3725d00b6ba456b684f972eb413235ac9b1d602feaf6adf358fecedc11620d89",
+      "before_digest": "7e9c83662597192978d86010df409aebbfea47e7ed9640aee45001d5486073fa",
+      "change_kind": "MODIFIED",
+      "path": "cli/internal/commands/gate/module.go"
+    },
+    {
+      "after_digest": "a8863b0fe8c5356a80365f24d4182b38dfa1ebba4347ee9d59a33dbdc7a2a01b",
+      "before_digest": "013508fba2583da8ecb8da0232431995f8401353de90a47aafe8c1f9feff5c2c",
+      "change_kind": "MODIFIED",
+      "path": "cli/internal/commands/provenance/module.go"
+    },
+    {
+      "after_digest": "bcc8789abfaf272172f028cd0c26e5af83b9b7beb57a24a2ba536e66f0878bd8",
+      "before_digest": "cdc8c07088139b6d9c485aa116cc03e7b8314d57188fe5148cddc2bf3c2643bc",
+      "change_kind": "MODIFIED",
+      "path": "cli/internal/commands/provenance/trace_test.go"
+    },
+    {
+      "after_digest": "0bfad22f1e241c5d05bde4de7e93f210e2fdfe42b057190222dfa12f0ca600a8",
+      "before_digest": "3d6f0653f31eeefbe59185da96c2d1ee08270cb413fe74e766f05b2e5bd64d6c",
+      "change_kind": "MODIFIED",
+      "path": "cli/internal/commands/robotdocs/module.go"
+    },
+    {
+      "after_digest": "9925920c8fddc8b7a40fcfec2cad6b2e4ec9b5c08f0915523e2b38f861394f4b",
+      "before_digest": "67ceb19c495224a41c38e7098f237c1a8dd537d861c2234e10851c84e13363d7",
+      "change_kind": "MODIFIED",
+      "path": "cli/internal/commands/skills/module.go"
+    },
+    {
+      "after_digest": "b89c9c4cc0c7d70734050145c1952e9ac9ee879f2baba780656624901e50ad55",
+      "before_digest": "81095220dcd4339b4cfc0b6a968430b2c34321f5e98da7c5f0cee1c515201759",
+      "change_kind": "MODIFIED",
+      "path": "cli/internal/commands/workflows/module.go"
+    },
+    {
+      "after_digest": "3a0da7d39dfde0fe9d332970a65ab14692d2e39dd084a775f8ff6541440abd13",
+      "before_digest": "572cf3264a57e5abf4e620d69185b22259ef97f735333002b55980deb42baddc",
+      "change_kind": "MODIFIED",
+      "path": "cli/internal/eval/AGENTS.md"
+    },
+    {
+      "after_digest": "ca4d8ded3a4f86655cc3659216fcf6c448da7a26068ad1641fda6568d0a27456",
+      "before_digest": "fda0e128819b70c2234503c2fbf6dbcc074e256e881a480fd58f48d6547effef",
+      "change_kind": "MODIFIED",
+      "path": "cli/internal/eval/baseline.go"
+    },
+    {
+      "after_digest": "8a50097c2762a726053fc64ce5c0f992e6fb06e324766b249a6fe80352fdcd55",
+      "before_digest": "b9573fa83ed02b0e6db6683695f5016bf4e145c8fd746677385c4bd51a87ecab",
+      "change_kind": "MODIFIED",
+      "path": "cli/internal/eval/baseline_ab.go"
+    },
+    {
+      "after_digest": "4ce3668022164bd079c77d0de809027545f642ab805a48cc09d1b7839d681f7a",
+      "before_digest": "726a63c20db4f1e451319581294fce330af52dae6c2c0526f983738b21cd8fbd",
+      "change_kind": "MODIFIED",
+      "path": "cli/internal/eval/context_ab.go"
+    },
+    {
+      "after_digest": "79b9a6107880ce6309e2f3077a0f1425f534f43af30be11257037d510dd363d4",
+      "before_digest": "25750b9048fea2cb4c1ccb8e8b8f72287a95f1da73d93525ca2166d42c22edd4",
+      "change_kind": "MODIFIED",
+      "path": "cli/internal/eval/core_service.go"
+    },
+    {
+      "after_digest": "9c1b653d92e820325f604e78d7a5b76f062a704399f2e240a70e15e29efc71ee",
+      "before_digest": "c2b4d760f498755b31c6acde0b616debac0ddefac8adc48063218b99ee2b0456",
+      "change_kind": "MODIFIED",
+      "path": "cli/internal/eval/core_service_test.go"
+    },
+    {
+      "after_digest": "cbe1358d76bc021745d8b25bd4b83fd0569f2934c35fb6660682065e682c23d9",
+      "before_digest": "6fb2b903108a645fc92634e15d541f7cd4e966509ee122ca798b6c20c1581050",
+      "change_kind": "MODIFIED",
+      "path": "cli/internal/eval/engine.go"
+    },
+    {
+      "after_digest": "d53f11b16836ccc39edae96f12adcfc3261426353e2b298600bc57b6b18e46cd",
+      "before_digest": null,
+      "change_kind": "ADDED",
+      "path": "cli/internal/eval/engine_context_unix_test.go"
+    },
+    {
+      "after_digest": "11e711e6b5188a913007f161d1199c688328aa607cc1562d18ea21435a89bb6d",
+      "before_digest": "480ff4fce693837d9f4b4b89fbc32b8074bd68f8d0fbe4269ab5fbada764a519",
+      "change_kind": "MODIFIED",
+      "path": "cli/internal/eval/engine_test.go"
+    },
+    {
+      "after_digest": "a6e38adfa37011c2cda862aedea28e82c9c2c1be6e5fedd803db77060cbbd136",
+      "before_digest": "9133ebe1c235582227d2815996396f8244b20a71bb33633d4dddc2e3b30a60b6",
+      "change_kind": "MODIFIED",
+      "path": "cli/internal/eval/expectations.go"
+    },
+    {
+      "after_digest": "03a1c35eb306bd07fe587740e6bc4c4079a3ecfdc7711719d9fd7e195811f332",
+      "before_digest": "bf69e8eea08a8db3dfb139e51b80f2ee26d815912bfb9165c3ffd2aa479a8411",
+      "change_kind": "MODIFIED",
+      "path": "cli/internal/eval/expectations_auto_detect_test.go"
+    },
+    {
+      "after_digest": "69b40d4fcc4bb323e47e97003614764ae9edbf5c41391387a0cd9364f07ac4f1",
+      "before_digest": "f4a633d273688e8dea916ff595a6cb630b7f7d334949fba9bcf3e3d2f81c70e6",
+      "change_kind": "MODIFIED",
+      "path": "cli/internal/eval/runtime.go"
+    },
+    {
+      "after_digest": "a951662545c99e596bec37c38b42f130bff97605334205c272fb82c2cd679c47",
+      "before_digest": "17de3f88fa3c8d053d784ed0a670388f471086e628e59b73d64fa106e1627f48",
+      "change_kind": "MODIFIED",
+      "path": "cli/internal/eval/runtime_test.go"
+    },
+    {
+      "after_digest": "c14f20e774f3567a11ef7d655e7c11c6ceb8eb4e7816f1d8b9e47288f31bf4d9",
+      "before_digest": "abaf76ebfd6d5ab6c29eccd43edfa2ef585f7563480499cd3b18734eba1875c0",
+      "change_kind": "MODIFIED",
+      "path": "cli/internal/eval/schema_drift_test.go"
+    },
+    {
+      "after_digest": "03e037cf1e90f0cf39fc1347dadfad17e76478050e00f4d433a795879af734b3",
+      "before_digest": "c6575621ad3a1c9087d533593015ca877d5f5f93804186932980809375880640",
+      "change_kind": "MODIFIED",
+      "path": "cli/internal/eval/suite_service.go"
+    },
+    {
+      "after_digest": "8b9dfdf24b7b70b7b51ff807c3017175b78ad133485dbb1a3a141b955e3a942b",
+      "before_digest": "80ed8989459374b46d760a3a12cbab2b3a525563e118374e2541f8563f002e39",
+      "change_kind": "MODIFIED",
+      "path": "cli/internal/eval/suite_service_test.go"
+    },
+    {
+      "after_digest": "9a34ca1e38f788958d1e22d5e052271cdb65c40b649e716cb42a2f1295dd866c",
+      "before_digest": "a3725eeb8baea89c1b94243fae9ecdbd4061fd8999eb717fe4fce6fa10d74912",
+      "change_kind": "MODIFIED",
+      "path": "cli/internal/eval/task_service.go"
+    },
+    {
+      "after_digest": "4d67c77705cfaa398035ff1421d93cebf6c8a8763a0665121df5aea4eeb74bbf",
+      "before_digest": "d67a91195a82c25e3eec0bd36382e92da9ef83e1d63a33c5c035b9b85a827bf0",
+      "change_kind": "MODIFIED",
+      "path": "cli/internal/eval/task_service_test.go"
+    },
+    {
+      "after_digest": "10a82b578e3fd43471c9d8d4848d8305e4918e528e25defd4697c51865f4429b",
+      "before_digest": "297cbfa7ec13c68ce3c100c93cd0a3aa52cf40aaed774993c86f17c4fef4c24b",
+      "change_kind": "MODIFIED",
+      "path": "cli/internal/eval/types.go"
+    },
+    {
+      "after_digest": "1134e7965b54f33a549a469043e9598c9765ee49c4533cc55bb6572042fc63f9",
+      "before_digest": "38c1aff9cf2d6049207dab7f138c5bbe33fbd499feca597a4d81d7fa44999f09",
+      "change_kind": "MODIFIED",
+      "path": "cli/internal/eval/types_test.go"
+    },
+    {
+      "after_digest": "8b503f1eb152599506ce954051b504c0497759e4612fc34b3a6654de09f7d870",
+      "before_digest": "e1482670089cbe9662157f6492146efc4e8761e41e97cae0a6e3470560a5a88b",
+      "change_kind": "MODIFIED",
+      "path": "cli/internal/evalsubstrate/atomic.go"
+    },
+    {
+      "after_digest": "b6c16b2a9974ddc5249207e4b96b5ee87e421c2c90bcb5fc9af56a4e98ed949c",
+      "before_digest": "80a90c37bc814a668f273724f537ea4b53e1c75a7b3b563d95e6cc5792bb665b",
+      "change_kind": "MODIFIED",
+      "path": "cli/internal/evalsubstrate/atomic_test.go"
+    },
+    {
+      "after_digest": "477b40081c7dcbe82e4734a6ba7f746a312c72cb55686c1488b11d756679167d",
+      "before_digest": "e13edee4e7bbee2591583f17c89e13414d849246fd2b40aceb1ff6aa468cbd28",
+      "change_kind": "MODIFIED",
+      "path": "cli/internal/evalsubstrate/canonicalize.go"
+    },
+    {
+      "after_digest": "cc5303863bb21ea4d62631f5e99962da305d15cc5abd771910a067999c4b19ce",
+      "before_digest": "a3ace25bb192a4517b2c3f58d39c6e39aaf3f83f808a1ef4fe938800ac7a432e",
+      "change_kind": "MODIFIED",
+      "path": "cli/internal/evalsubstrate/harness.go"
+    },
+    {
+      "after_digest": "564c239076c97a3f47602732d928bdf2f434e30a040ccf51f4412a873babfb1d",
+      "before_digest": "34264b3ac3d55524534edd05a29acb2287353b0324ffb78bb2f0fd0949456640",
+      "change_kind": "MODIFIED",
+      "path": "cli/internal/evalsubstrate/harness_test.go"
+    },
+    {
+      "after_digest": "f328c29d8d4c6f0249a25418669ab4d6867b7b2d7fb278ede5e1f6cd79ddd810",
+      "before_digest": null,
+      "change_kind": "ADDED",
+      "path": "cli/internal/evalsubstrate/identifier.go"
+    },
+    {
+      "after_digest": "6778e32f9c042e507bcfa33815a9d1d0e0af7bc938bcf99f7565a875d2a0ba29",
+      "before_digest": null,
+      "change_kind": "ADDED",
+      "path": "cli/internal/evalsubstrate/identifier_test.go"
+    },
+    {
+      "after_digest": "65f5d056e385f91179c2c8a89fa4a1adee33bb7e719f4145cfd397b97d2b2918",
+      "before_digest": "fcf8943a9d1e5d074871e11a1dad462545ba4105e252126a0f18bad051620eed",
+      "change_kind": "MODIFIED",
+      "path": "cli/internal/evalsubstrate/manifest.go"
+    },
+    {
+      "after_digest": "86f091a14c297c7bfe2f35e089d1b8ae8076512cf6282effb48ef0297e1c526a",
+      "before_digest": "764d990eb2a6cee6037436083c86b116206db5c5a487593a971c3e68b9604602",
+      "change_kind": "MODIFIED",
+      "path": "cli/internal/evalsubstrate/manifest_test.go"
+    },
+    {
+      "after_digest": "48b8977b3825e3953ecf6abfb37a41cef9303c59c924d36f95b7a2ec5d2ed93d",
+      "before_digest": "6a77faa2bc4d88de0ac60ad80c6c791b9adef5b4136c0942a2a9f813a88d0f7e",
+      "change_kind": "MODIFIED",
+      "path": "cli/internal/evalsubstrate/modelspec.go"
+    },
+    {
+      "after_digest": "0868967d5d501828ab55d42fb7562229944c0bdae7b02c384aecc4babe14370d",
+      "before_digest": "077692fb8c94edb81c66613f83f793493f0a03aa4919440538add54fc5a051a2",
+      "change_kind": "MODIFIED",
+      "path": "cli/internal/evalsubstrate/modelspec_test.go"
+    },
+    {
+      "after_digest": "47b680955fec01db63d6ed0e93975574ea4b508f3e0618e4ab969a2e81c33dcd",
+      "before_digest": null,
+      "change_kind": "ADDED",
+      "path": "cli/internal/evalsubstrate/rootstore.go"
+    },
+    {
+      "after_digest": "863a493530f554b799dc1bcb4fed49c89ff46e55db7e0d37a4de67bff263619c",
+      "before_digest": null,
+      "change_kind": "ADDED",
+      "path": "cli/internal/evalsubstrate/rootstore_test.go"
+    },
+    {
+      "after_digest": "cd507f90de6bc2124d571ccf3aee4bc756b15aba828ff61acaed692a9ac14b2a",
+      "before_digest": "9afa0ef1bb18e0d6bf7212bccfb9dc4abbbbaf0ca4073df3a1fb6f8bc0e8ac81",
+      "change_kind": "MODIFIED",
+      "path": "cli/internal/gates/changedfiles.go"
+    },
+    {
+      "after_digest": "9b4203b6e9ae7a08b83c322ee7b8bf359af066df2e9e2b40cb2c94a45d4357cb",
+      "before_digest": "05344b72700a410124a48e5c5cf903312cf71d9b297b798043df28059b503156",
+      "change_kind": "MODIFIED",
+      "path": "cli/internal/gates/checks/go_build.go"
+    },
+    {
+      "after_digest": "4574a7f69686e60967d74ad591f4466d2ce59002d79552cea0419c81fca91728",
+      "before_digest": "5f065d014e967ca3f1e1ba3de48a0fe0d25e2e69747af8a2ea88334368333cb9",
+      "change_kind": "MODIFIED",
+      "path": "cli/internal/gates/checks/native_inline.go"
+    },
+    {
+      "after_digest": "66372f85e679a61261ec741899250d0c48729c2ed4b684a1d8619242d07f9c6d",
+      "before_digest": "c8fd09efb6b6894658eb2d6c07b82426705a31b503a8d2374378f1a5962fbd61",
+      "change_kind": "MODIFIED",
+      "path": "cli/internal/gates/checks/native_inline_test.go"
+    },
+    {
+      "after_digest": "75ddfa621d27ae3dd57cc8af2ec6213f3f3823fc8155a39f00b912c9bcdfbbb1",
+      "before_digest": "f71b98ebbfeb59d9be1e22ce9b7b282804a21e1c3aebc959b235c12e6b81cb4a",
+      "change_kind": "MODIFIED",
+      "path": "cli/internal/gates/scriptrunner.go"
+    },
+    {
+      "after_digest": "cc450a9375507334e7741524663742a1c72fc63427914c82b80beccc09bedb29",
+      "before_digest": "d6f254d85a634a2580d7d115140ae6430bb96f107846c4c54da216973ef7fe82",
+      "change_kind": "MODIFIED",
+      "path": "cli/internal/gates/scriptrunner_test.go"
+    },
+    {
+      "after_digest": "bad593b5dc0ca844c88a551f8af6f2d42c8a5ac90eb6430dcd74d62ee62feea9",
+      "before_digest": "499a790843da0a9b6a0bf23f6374323d956c75a4823d8e4af4a5496a9d80137b",
+      "change_kind": "MODIFIED",
+      "path": "cli/internal/goals/AGENTS.md"
+    },
+    {
+      "after_digest": "be31e26aa80cba038eeacdfc16f9733575c7ff7f2c17b9bca3d9e47f4b4ee9e2",
+      "before_digest": "1b6bef7913280dd3d71fc37c594c511629d7a44adf3deaa958280b59cf1dbdd1",
+      "change_kind": "MODIFIED",
+      "path": "cli/internal/goals/measure.go"
+    },
+    {
+      "after_digest": "03912f929e17ed83f73a9e8be6ccf814e1209592b3c7cbd682e7a4f6391e2156",
+      "before_digest": "a489a59b4ecd1e940d41981145da11cd2eeea287220635789beae33401ed4f16",
+      "change_kind": "MODIFIED",
+      "path": "cli/internal/goals/measure_platform_test.go"
+    },
+    {
+      "after_digest": "57f1345c4e620b4845f983572bd37f07fc7f5f19a56fac1437142cad15b74c63",
+      "before_digest": "7741f007a3e1e9dd56deffde6fa74ad3baedbd63913108e67efc7384109aedcb",
+      "change_kind": "MODIFIED",
+      "path": "cli/internal/goals/measure_signal_test.go"
+    },
+    {
+      "after_digest": "f8abba14ffe908446737f5226ff3ba587f576b823860a8e42190fe226156498f",
+      "before_digest": "96207a5b2c7a5335c96956a7cb9c426178749ae54f5f9e5dea87ba8da34128e5",
+      "change_kind": "MODIFIED",
+      "path": "cli/internal/goals/measure_test.go"
+    },
+    {
+      "after_digest": "80487bd1359649bc9803fd32bc8345ef7cffc52061c5e0c3480a80e114ad8928",
+      "before_digest": "c33c475f1ce96b92a52db2ecacbf75a23f787fcbc6bed5cb60f0cb7dfb80c148",
+      "change_kind": "MODIFIED",
+      "path": "cli/internal/goals/measure_unix.go"
+    },
+    {
+      "after_digest": "976bd2bda17d15e910cda2d31f6037ab9c97a076f1436d6e3546789b9755a632",
+      "before_digest": "3f4e3b1d6ea5b98be9e503138d44547759115fa989faf463018453ed5d3da8ea",
+      "change_kind": "MODIFIED",
+      "path": "cli/internal/goals/measure_windows.go"
+    },
+    {
+      "after_digest": "4d4110487dc01b28852d72667fa588e3258fe32f2eee5173a05b37baad223966",
+      "before_digest": null,
+      "change_kind": "ADDED",
+      "path": "cli/internal/subprocess/capture.go"
+    },
+    {
+      "after_digest": "f8a85aece4b57a19ccd3c65272bd25cb6d96eb4c36c25b425f06809182073bfc",
+      "before_digest": null,
+      "change_kind": "ADDED",
+      "path": "cli/internal/subprocess/completion.go"
+    },
+    {
+      "after_digest": "4c46cdd225e2350238193a8a71453592d0ff78b922c9b036373d0336e02075fc",
+      "before_digest": null,
+      "change_kind": "ADDED",
+      "path": "cli/internal/subprocess/completion_darwin.go"
+    },
+    {
+      "after_digest": "e897ebbe0035cdc039f2c4e7d8268a9c00bbb97db1e6f5d8bda446b769bb6b53",
+      "before_digest": null,
+      "change_kind": "ADDED",
+      "path": "cli/internal/subprocess/completion_linux.go"
+    },
+    {
+      "after_digest": "5bef6a89eef571369721d338f5f65ba560f696d2425f0b289ee969a64b796aac",
+      "before_digest": null,
+      "change_kind": "ADDED",
+      "path": "cli/internal/subprocess/completion_unsupported.go"
+    },
+    {
+      "after_digest": "04ee9480b758c34c5e402aa39598f6c3029bdf3ac1ebdf227078d495dd087c12",
+      "before_digest": null,
+      "change_kind": "ADDED",
+      "path": "cli/internal/subprocess/completion_windows.go"
+    },
+    {
+      "after_digest": "b3c89d4410cc6bf300db43f95d1cb2be111480c3624600df867f46d374bfd866",
+      "before_digest": null,
+      "change_kind": "ADDED",
+      "path": "cli/internal/subprocess/io.go"
+    },
+    {
+      "after_digest": "83c571e63f5ff3958174133d26dd019d55012ad6af63a8daea5006dd0dcb7b34",
+      "before_digest": null,
+      "change_kind": "ADDED",
+      "path": "cli/internal/subprocess/process_unix.go"
+    },
+    {
+      "after_digest": "cce5ea8b93d375aa312e6e8652c305082a53d723e90bb8d6afbb315b38912807",
+      "before_digest": null,
+      "change_kind": "ADDED",
+      "path": "cli/internal/subprocess/process_windows.go"
+    },
+    {
+      "after_digest": "35924538aeafdb584d2e57755a0ceb080aaacf41178f074fe9c87b0a617bab85",
+      "before_digest": null,
+      "change_kind": "ADDED",
+      "path": "cli/internal/subprocess/process_windows_logic.go"
+    },
+    {
+      "after_digest": "c07ea18210f39e1c4e32189cff5e17567da6c402246737df33de252befe60f10",
+      "before_digest": null,
+      "change_kind": "ADDED",
+      "path": "cli/internal/subprocess/process_windows_logic_test.go"
+    },
+    {
+      "after_digest": "3e3d7927766095f36481fdfa13863e3cec05e1196eb0e6505aae630db79bcaf8",
+      "before_digest": null,
+      "change_kind": "ADDED",
+      "path": "cli/internal/subprocess/process_windows_test.go"
+    },
+    {
+      "after_digest": "73cf8b336bbe74f01f80e55b5a640f0225de83f0d0cc5264114dc99b702478a4",
+      "before_digest": null,
+      "change_kind": "ADDED",
+      "path": "cli/internal/subprocess/run.go"
+    },
+    {
+      "after_digest": "ec6f1ca696b1bf9ebbca8d1cae10bc99bfbab7537395bf66d7d6a5e50705b5b3",
+      "before_digest": null,
+      "change_kind": "ADDED",
+      "path": "cli/internal/subprocess/run_test.go"
+    },
+    {
+      "after_digest": "28d800556c2f7771884fc7c585b61964bdfbd119ddad2a51486297b996a96130",
+      "before_digest": null,
+      "change_kind": "ADDED",
+      "path": "cli/internal/subprocess/run_unix_test.go"
+    },
+    {
+      "after_digest": "56817032765d5779ab363604f8482d344ae26e09238c702ca9db86c73753163b",
+      "before_digest": null,
+      "change_kind": "ADDED",
+      "path": "cli/internal/subprocess/stdin_unix.go"
+    },
+    {
+      "after_digest": "e920de8d4550c82bc98600d1ba18154f636cbb63e50016d82ab279512819798e",
+      "before_digest": null,
+      "change_kind": "ADDED",
+      "path": "cli/internal/subprocess/stdin_windows.go"
+    },
+    {
+      "after_digest": "4073123909d1dc287112d36f7263865be63ce4309ed405ef5655defde9690bbd",
+      "before_digest": "2d907dca14d65281826a97b1007cc434573b7dd52b8b85fa588a4ba6f261514d",
+      "change_kind": "MODIFIED",
+      "path": "docs/architecture/go-cli.md"
+    },
+    {
+      "after_digest": "9779c2808ac0ebe79bbfc58598fba2e43ab370b2eb4c891bade2efba838bc31e",
+      "before_digest": "aac5491b9bfdd208e5a67c811c7209bb4565de5cf723bf7868f44539cf355c55",
+      "change_kind": "MODIFIED",
+      "path": "schemas/eval-run.v1.schema.json"
+    },
+    {
+      "after_digest": "305476d65964cc4d348ca9352a2f1b2616366b8e5957346be697c024bab48c4e",
+      "before_digest": "d8848ab9ee5b2f0b806b79a7e6db52860e132851201832bdda88118663367b51",
+      "change_kind": "MODIFIED",
+      "path": "scripts/provenance/mine-all-sessions.sh"
+    }
+  ],
+  "check_receipt_refs": [
+    {
+      "digest": "b866ac438ec40dc8b8bb89cc890b97b6ff1289737ff27c762869ba0cef93531b",
+      "ref": ".agents/ao/reports/go-g0-g2-repair-final-clean/active-proof-contract-check.receipt.json"
+    },
+    {
+      "digest": "50345055ffb2e3e9eab502abb7ed6bf2fc20503344e17e3d8b6d3467d31eb628",
+      "ref": ".agents/ao/reports/go-g0-g2-repair-final-clean/final-subject-manifest-verification.receipt.json"
+    },
+    {
+      "digest": "38f8f339f9c282421bf744a73867b21ef157b2c74cbe3791d160e122e54b57b0",
+      "ref": ".agents/ao/reports/go-g0-g2-repair-final-clean/go-cli-reference-check.receipt.json"
+    },
+    {
+      "digest": "3cff9b85a0bbde34d39135c386705443e5847fae5a7d7a038ea8db9a5c044403",
+      "ref": ".agents/ao/reports/go-g0-g2-repair-final-clean/go-contract-schema-compatibility.receipt.json"
+    },
+    {
+      "digest": "307ca2ff5495263b88dcfcbfb5ed76fafa342e7de3f9c757f3bcbdfb38d211de",
+      "ref": ".agents/ao/reports/go-g0-g2-repair-final-clean/go-darwin-fast-exit-concurrency-diagnostic.receipt.json"
+    },
+    {
+      "digest": "99640f4e81559bd3ab6d6eba13acae3dc97fabc545ad3f9314f926d2bd1c9047",
+      "ref": ".agents/ao/reports/go-g0-g2-repair-final-clean/go-focused-contracts-repeat-shuffle.receipt.json"
+    },
+    {
+      "digest": "fa68ec0486fc18044d002fd90a33111361058af045fabc73b48db606adbdce8c",
+      "ref": ".agents/ao/reports/go-g0-g2-repair-final-clean/go-focused-contracts-shuffle.receipt.json"
+    },
+    {
+      "digest": "81bb6aad113e0637cba0163777cd875ba6419d25134c3f6542e70f1f94723098",
+      "ref": ".agents/ao/reports/go-g0-g2-repair-final-clean/go-focused-race-repeat-shuffle.receipt.json"
+    },
+    {
+      "digest": "436be540e221e6397f8fd19cbd5e88ab989151a1939cdd7a1a6fa79f925a15f0",
+      "ref": ".agents/ao/reports/go-g0-g2-repair-final-clean/go-focused-subprocess-darwin-repeat.receipt.json"
+    },
+    {
+      "digest": "854045aa9e398fc524a94c61387a7b3e550538959fe8d9253afe1e7727ef6aa4",
+      "ref": ".agents/ao/reports/go-g0-g2-repair-final-clean/go-full-race-shuffle-stable.receipt.json"
+    },
+    {
+      "digest": "e64474d6aefc43ec257de639b6be29ee65e597c58e3f2c643349cb2bd6c2f05e",
+      "ref": ".agents/ao/reports/go-g0-g2-repair-final-clean/go-full-test-shuffle-stable.receipt.json"
+    },
+    {
+      "digest": "89a3d18dee5b71a811714af5ee229b824fe41fe112f0837191c4c229f47fa7eb",
+      "ref": ".agents/ao/reports/go-g0-g2-repair-final-clean/go-full-test-shuffle.receipt.json"
+    },
+    {
+      "digest": "01a8513fc2c75735a5248e2e8d814ad35d6d89df3f1cb8ba5c20311a683f1d3a",
+      "ref": ".agents/ao/reports/go-g0-g2-repair-final-clean/go-goals-race-failing-seed-replay.receipt.json"
+    },
+    {
+      "digest": "30c2b7a782386e5c981d264423aaafe582f53aa667ad42d2bb49ec704a73ab75",
+      "ref": ".agents/ao/reports/go-g0-g2-repair-final-clean/go-goals-skipped-targeted-repeat.receipt.json"
+    },
+    {
+      "digest": "eec887a4181ebc94b4d436309587cf97554ca8d81b189d0b15f0fc6b39f82132",
+      "ref": ".agents/ao/reports/go-g0-g2-repair-final-clean/go-linux-amd64-cross-build-tests.receipt.json"
+    },
+    {
+      "digest": "17461a99d4a8795ab8e93f69308064707d754d2376caf7384c78fcac7edf4d6c",
+      "ref": ".agents/ao/reports/go-g0-g2-repair-final-clean/go-linux-amd64-vet.receipt.json"
+    },
+    {
+      "digest": "be06dc7e21bf5ed6c40a8d85da55d873727441c78cafb2721a0118b203a9dd98",
+      "ref": ".agents/ao/reports/go-g0-g2-repair-final-clean/go-pinned-lint.receipt.json"
+    },
+    {
+      "digest": "90c725a01781dc4b5ad2405a56d3325516bd0ad6a5fd6b9db1bb91de5434c9b1",
+      "ref": ".agents/ao/reports/go-g0-g2-repair-final-clean/go-prior-fail-lineage-immutable.receipt.json"
+    },
+    {
+      "digest": "321a184f7e705032ee5b2215722d58ba6d4cf25e734ada93027be1d6ac6536fd",
+      "ref": ".agents/ao/reports/go-g0-g2-repair-final-clean/go-schema-effect-output-repeat.receipt.json"
+    },
+    {
+      "digest": "09bad0178c565d3e61bf52cd73f78688eb4754265109ba7b46803497f41d6eda",
+      "ref": ".agents/ao/reports/go-g0-g2-repair-final-clean/go-vet-full.receipt.json"
+    },
+    {
+      "digest": "81c92a82f1904db9cc054159e2bba0f8909c542356ad7f3c3ed3273938c9e18a",
+      "ref": ".agents/ao/reports/go-g0-g2-repair-final-clean/go-windows-amd64-cross-build-tests.receipt.json"
+    },
+    {
+      "digest": "7dd987156250fcde3a3fc115197d4a43076951c3ec9fa8b5ab73d6a27509330c",
+      "ref": ".agents/ao/reports/go-g0-g2-repair-final-clean/go-windows-amd64-vet.receipt.json"
+    }
+  ],
+  "coverage": "COMPLETE",
+  "final_manifest_digest": "c6c5ba4cc071eddc1c0f0d470a4a6a0e023f9ed5f5a83b3b1fd2538ec904f30b",
+  "schema_version": "effect-receipt.v1",
+  "undeclared_paths": []
+}

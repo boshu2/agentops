@@ -1,0 +1,19 @@
+{
+  "artifact_digest": "7dd987156250fcde3a3fc115197d4a43076951c3ec9fa8b5ab73d6a27509330c",
+  "command": [
+    "env",
+    "GOOS=windows",
+    "GOARCH=amd64",
+    "go",
+    "vet",
+    "./..."
+  ],
+  "exit_code": 0,
+  "observed_at": "2026-07-25T03:21:30Z",
+  "receipt_id": "go-windows-amd64-vet",
+  "result": "PASS",
+  "schema_version": "check-receipt.v1",
+  "stderr_digest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "stdout_digest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "subject_manifest_digest": "c6c5ba4cc071eddc1c0f0d470a4a6a0e023f9ed5f5a83b3b1fd2538ec904f30b"
+}

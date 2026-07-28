@@ -1,0 +1,20 @@
+{
+  "artifact_digest": "2f369a5268ac516ecac77207c1e111e08dc3ca46232f393581ebf20078fcd53d",
+  "command": [
+    "go",
+    "test",
+    "-race",
+    "-count=200",
+    "-run",
+    "^TestRunStopsBlockedFiniteStdinRelayAfterCancellation$",
+    "./internal/subprocess"
+  ],
+  "exit_code": 0,
+  "observed_at": "2026-07-25T04:17:15Z",
+  "receipt_id": "fable-stdin-relay-targeted-race",
+  "result": "PASS",
+  "schema_version": "check-receipt.v1",
+  "stderr_digest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "stdout_digest": "1772c0225a6e8d53d85dda92a85738d79294c72f1de0ca05b446c7ffa2f0c5d8",
+  "subject_manifest_digest": "fea7fa62b7db4a640e68ac807523a9d61135a2069b33d4ba15146523e661ed44"
+}

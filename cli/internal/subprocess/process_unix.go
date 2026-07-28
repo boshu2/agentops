@@ -38,9 +38,7 @@ func configureProcessTree(cmd *exec.Cmd, waitDelay time.Duration) (*unixProcessT
 			signal: func(processGroupID int, signal syscall.Signal) error {
 				return syscall.Kill(-processGroupID, signal)
 			},
-			probe: func(processGroupID int) error {
-				return syscall.Kill(-processGroupID, 0)
-			},
+			probe: probeProcessGroup,
 			clock: unixClock{
 				now:   time.Now,
 				sleep: time.Sleep,
@@ -85,17 +83,22 @@ func terminateUnixProcessGroup(processGroupID int, timeout time.Duration, ops un
 	if errors.Is(err, syscall.ESRCH) {
 		return nil
 	}
-	if err != nil {
+	if err != nil && !errors.Is(err, syscall.EPERM) {
 		return fmt.Errorf("signal process group %d: %w", processGroupID, err)
 	}
 
 	// Setpgid makes this process group the lifecycle ownership boundary. A
-	// successful SIGKILL request is not completion: only ESRCH proves that no
-	// member remains observable. EPERM means the group is still observable but
+	// successful SIGKILL request is not completion: only ESRCH from the
+	// platform probe proves that no live member remains. Platform probes filter
+	// exited zombies while the root remains unreaped, so PID/PGID identity stays
+	// reserved throughout cleanup. EPERM means the group may still be live but
 	// not signalable, so retain its identity and keep polling. Every other
 	// observation error is opaque and fails cleanup immediately.
 	deadline := ops.clock.now().Add(timeout)
 	var lastPermissionErr error
+	if errors.Is(err, syscall.EPERM) {
+		lastPermissionErr = err
+	}
 	for {
 		err = ops.probe(processGroupID)
 		if errors.Is(err, syscall.ESRCH) {

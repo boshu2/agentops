@@ -1,0 +1,16 @@
+{
+  "artifact_digest": "1794b19d176ec1e2a3e9d0c4623d1264b1a46295458749b955b08dfdc4230960",
+  "command": [
+    "bash",
+    "scripts/generate-cli-reference.sh",
+    "--check"
+  ],
+  "exit_code": 0,
+  "observed_at": "2026-07-25T04:17:15Z",
+  "receipt_id": "cli-reference-check",
+  "result": "PASS",
+  "schema_version": "check-receipt.v1",
+  "stderr_digest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "stdout_digest": "be1141724e6abbb1da28bf25e53f99cd43c16e9eff4815f4907f412d052924d8",
+  "subject_manifest_digest": "fea7fa62b7db4a640e68ac807523a9d61135a2069b33d4ba15146523e661ed44"
+}

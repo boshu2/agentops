@@ -1,0 +1,16 @@
+{
+  "artifact_digest": "9cd9d2a437ed54fdbe6cbf60463905d44654dc1e592f713b4836a50f6c861b48",
+  "command": [
+    "sh",
+    "-c",
+    "git diff --exit-code bbc0437f7ed969976a305b4fdd5e8c6bd93607ef aa99cf94f2f7375d081f5a8c76c7c5565702bef6 -- docs/evidence/proof-epochs/epoch-1/verdicts/83cb2e9095d61bc14a00bee250215367bd9697bd05ff56fe384b662965752680.json docs/evidence/proof-epochs/epoch-1/verdicts/8a1d6d59f33df856825f9b6ce04e567dfa0e43fb1e6412e709daa6a20456eb47.json docs/evidence/proof-epochs/epoch-1/go-g0-g2-fail-preservation.md && git hash-object docs/evidence/proof-epochs/epoch-1/verdicts/83cb2e9095d61bc14a00bee250215367bd9697bd05ff56fe384b662965752680.json docs/evidence/proof-epochs/epoch-1/verdicts/8a1d6d59f33df856825f9b6ce04e567dfa0e43fb1e6412e709daa6a20456eb47.json docs/evidence/proof-epochs/epoch-1/go-g0-g2-fail-preservation.md"
+  ],
+  "exit_code": 0,
+  "observed_at": "2026-07-25T04:17:15Z",
+  "receipt_id": "prior-fail-immutability",
+  "result": "PASS",
+  "schema_version": "check-receipt.v1",
+  "stderr_digest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "stdout_digest": "6f451c5bc00dfac3d4f99c9933042b50648f60360ea61bde88bfd166dac67e57",
+  "subject_manifest_digest": "fea7fa62b7db4a640e68ac807523a9d61135a2069b33d4ba15146523e661ed44"
+}

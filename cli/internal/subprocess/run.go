@@ -222,6 +222,7 @@ type commandCompletionOutcome struct {
 	waited               bool
 	releaseRequired      bool
 	terminationRequested bool
+	cleanupAttempted     bool
 }
 
 func awaitAttachedCommand(
@@ -231,11 +232,19 @@ func awaitAttachedCommand(
 	completion processCompletion,
 	waitDelay time.Duration,
 	dependencies runDependencies,
+	cleanup cleanupProcessTree,
 ) commandCompletionOutcome {
+	cleanupProcess := cleanup
+	if cleanupProcess == nil {
+		cleanupProcess = tree.terminate
+	}
 	if err := completion.wait(ctx); err == nil {
+		cleanupErr := cleanupProcess(cmd)
 		return commandCompletionOutcome{
-			waitErr: dependencies.waitCommand(cmd),
-			waited:  true,
+			waitErr:          dependencies.waitCommand(cmd),
+			cleanupErr:       cleanupErr,
+			waited:           true,
+			cleanupAttempted: true,
 		}
 	} else {
 		var cleanupErr error
@@ -257,11 +266,13 @@ func awaitAttachedCommand(
 
 		observationErr := completion.observe(waitDelay)
 		if observationErr == nil {
+			cleanupErr = errors.Join(cleanupErr, cleanupProcess(cmd))
 			return commandCompletionOutcome{
 				waitErr:              dependencies.waitCommand(cmd),
 				cleanupErr:           cleanupErr,
 				waited:               true,
 				terminationRequested: true,
+				cleanupAttempted:     true,
 			}
 		}
 		cleanupErr = errors.Join(
@@ -332,7 +343,15 @@ func runWithDependencies(
 		outcome.cleanupErr = attachErr
 		outcome.releaseRequired = !outcome.waited
 	} else {
-		outcome = awaitAttachedCommand(ctx, cmd, tree, completion, waitDelay, dependencies)
+		outcome = awaitAttachedCommand(
+			ctx,
+			cmd,
+			tree,
+			completion,
+			waitDelay,
+			dependencies,
+			cleanup,
+		)
 	}
 
 	lifecycleErr := errors.Join(outcome.cleanupErr, started.ioLifecycleErr)
@@ -345,6 +364,7 @@ func runWithDependencies(
 			lifecycleErr,
 			outcome.waited,
 			outcome.terminationRequested,
+			outcome.cleanupAttempted,
 		)
 		if ioErr := ownedIO.abortAfterUnprovenTermination(waitDelay); ioErr != nil {
 			cleanupErr = errors.Join(
@@ -378,6 +398,7 @@ func runWithDependencies(
 			lifecycleErr,
 			outcome.waited,
 			outcome.terminationRequested,
+			outcome.cleanupAttempted,
 		)
 		cleanupErr = errors.Join(cleanupErr, ownedIO.finishAfterWait(waitDelay))
 	}
@@ -435,14 +456,17 @@ func finishProcessTree(
 	lifecycleErr error,
 	waited bool,
 	terminationRequested bool,
+	cleanupAttempted bool,
 ) error {
 	var cleanupErr error
-	if cleanup != nil {
-		cleanupErr = cleanup(cmd)
-	} else if waited {
-		cleanupErr = tree.terminate(cmd)
-	} else if !terminationRequested {
-		cleanupErr = tree.requestTermination(cmd)
+	if !cleanupAttempted {
+		if cleanup != nil {
+			cleanupErr = cleanup(cmd)
+		} else if waited {
+			cleanupErr = tree.terminate(cmd)
+		} else if !terminationRequested {
+			cleanupErr = tree.requestTermination(cmd)
+		}
 	}
 	cleanupErr = errors.Join(lifecycleErr, cleanupErr)
 	if closeErr := tree.close(); closeErr != nil {

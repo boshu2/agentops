@@ -1,0 +1,22 @@
+{
+  "artifact_digest": "321a184f7e705032ee5b2215722d58ba6d4cf25e734ada93027be1d6ac6536fd",
+  "command": [
+    "go",
+    "test",
+    "-count=20",
+    "-shuffle=on",
+    "-run",
+    "Operation|DryRun|Output|Schema|Cleanup",
+    "./cmd/ao",
+    "./internal/clicontract",
+    "./internal/eval"
+  ],
+  "exit_code": 0,
+  "observed_at": "2026-07-25T03:22:17Z",
+  "receipt_id": "go-schema-effect-output-repeat",
+  "result": "PASS",
+  "schema_version": "check-receipt.v1",
+  "stderr_digest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "stdout_digest": "6230dd9bd31e9fd37e6cc4d09794a79d9574bca66085738c1d25c88796e11aca",
+  "subject_manifest_digest": "c6c5ba4cc071eddc1c0f0d470a4a6a0e023f9ed5f5a83b3b1fd2538ec904f30b"
+}
