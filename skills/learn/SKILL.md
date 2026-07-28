@@ -41,8 +41,9 @@ size, and stop at advisory evidence.
 
 Overweight failures: a `NOT_PROVEN` or `FAIL` verdict carries more teaching
 value than a PASS, because it names a rule the loop lacked. Harvest kernels
-from failed lanes first — a subject destroyed by a mutating check
-mid-validation teaches a more durable rule than the PASS that follows it.
+from failed lanes first — the canonical example is the mutating-check
+quarantine in `skills/validate/SKILL.md`, a durable rule minted from a
+`NOT_PROVEN`-then-`PASS` verdict pair.
 
 Prune for provenance decay: every cited artifact must still resolve — the
 file exists or the verdict digest is present under `.agents/ao/verdicts/`. A
