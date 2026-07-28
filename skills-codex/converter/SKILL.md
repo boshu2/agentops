@@ -8,6 +8,8 @@ Parse AgentOps skills into a universal SkillBundle format, then convert to targe
 
 The intermediate SkillBundle is what keeps conversions honest: every target reads the same parsed contract, so a rendering bug is a target-adapter bug, never a silent reinterpretation of the source. If two targets disagree about a skill's content, the bundle — not either output — arbitrates.
 
+This is **not** the owner of the shipped `skills-codex/**` projection: that path is generated and gated by `scripts/codex-sync.sh` via `scripts/regen-all.sh`. This converter is an ad-hoc, out-of-tree exporter (Codex, Cursor) that writes under `.agents/projections/converter/`; it never mutates `skills-codex/**`. When the shipped Codex twin and this exporter disagree, the shipped path wins.
+
 Named failure mode — **projection editing**: fixing a rendering problem by hand-editing the converted output, which the next conversion clean-writes away.
 
 Anti-pattern: merging new output into an existing target directory to preserve local tweaks. Corrective: fix the source skill or the adapter, then re-run the clean-write conversion.
@@ -52,8 +54,9 @@ The Cursor adapter produces a `<name>.mdc` rule file with YAML frontmatter (`des
 
 Write the converted output to disk.
 
-- **Default output directory:** `.agents/converter/<target>/<skill-name>/`
+- **Default output directory:** `.agents/projections/converter/<target>/<skill-name>/`
 - **Write semantics:** Clean-write. The target directory is deleted before writing. No merge with existing content.
+- **Refusal guard:** the write stage refuses — it does not silently redirect — when the resolved output directory equals the source package, contains it (an ancestor), or is the repository root, because the clean-write would otherwise delete the very files the conversion must read.
 
 ## CLI Usage
 
@@ -72,7 +75,7 @@ bash skills/converter/scripts/convert.sh --all <target> [output-dir]
 |----------|----------|-------------|
 | `skill-dir` | Yes (or `--all`) | Path to skill directory (e.g. `skills/council`) |
 | `target` | Yes | Target platform: `codex`, `cursor`, or `test` |
-| `output-dir` | No | Override output location. Default: `.agents/converter/<target>/<skill-name>/` |
+| `output-dir` | No | Override output location. Default: `.agents/projections/converter/<target>/<skill-name>/` |
 | `--all` | No | Convert all skills in `skills/` directory |
 | `--codex-layout` | No | Codex-only layout mode: `modular` (default) or `inline` (legacy inlined refs/scripts) |
 
@@ -99,7 +102,7 @@ To add a new target platform:
 **What happens:**
 1. The converter parses `skills/council/SKILL.md` frontmatter, markdown body, and any `references/` and `scripts/` files into a SkillBundle.
 2. The Codex adapter transforms the bundle into a `SKILL.md` (body + inlined references + scripts as code blocks) and a `prompt.md` (Codex prompt referencing the skill).
-3. Output is written to `.agents/converter/codex/council/`.
+3. Output is written to `.agents/projections/converter/codex/council/`.
 
 **Result:** A Codex-compatible skill package ready to use with OpenAI Codex CLI.
 
@@ -110,7 +113,7 @@ To add a new target platform:
 **What happens:**
 1. The converter scans every directory under `skills/` and parses each into a SkillBundle.
 2. The Cursor adapter transforms each bundle into a `.mdc` rule file with YAML frontmatter and body content, budget-fitted to 100KB max. Skills referencing MCP servers also get a `mcp.json` stub.
-3. Each skill's output is written to `.agents/converter/cursor/<skill-name>/`.
+3. Each skill's output is written to `.agents/projections/converter/cursor/<skill-name>/`.
 
 **Result:** All skills are available as Cursor rules, ready to drop into a `.cursor/rules/` directory.
 
@@ -120,14 +123,14 @@ To add a new target platform:
 |---------|-------|----------|
 | `parse error: no frontmatter found` | SKILL.md is missing the `---` delimited YAML frontmatter block | Add frontmatter with at least `name:` and `description:` fields, or run Heal Skill on the source package first |
 | Cursor `.mdc` output is missing references | Total bundle size exceeded the 100KB budget limit | The converter omits references largest-first to fit the budget. Split large reference files or move non-essential content to external docs |
-| Output directory already has old files | Previous conversion artifacts remain | This is expected -- the converter clean-writes by deleting the target directory before writing. If old files persist, manually delete `.agents/converter/<target>/<skill>/` |
+| Output directory already has old files | Previous conversion artifacts remain | This is expected -- the converter clean-writes by deleting the target directory before writing. If old files persist, manually delete `.agents/projections/converter/<target>/<skill>/` |
 | `--all` skips a skill directory | The directory has no `SKILL.md` file | Ensure each skill directory contains a valid `SKILL.md`. Run Heal Skill to detect empty directories |
 | Codex `prompt.md` description is truncated | The skill description exceeds 1024 characters | This is by design. The converter truncates at a word boundary to fit Codex limits. Shorten the description in SKILL.md frontmatter if the truncation point is awkward |
 | Conversion fails with passthrough parity check | A resource entry from source skill wasn't copied to output | Ensure source entries are readable and copyable (including nested files). Re-run conversion; failure is intentional to prevent drift between `skills/` and converted output |
 
 ## Output Specification
 
-- **Path:** `.agents/converter/<target>/<skill-name>/` by default, or the exact caller-supplied output directory.
+- **Path:** `.agents/projections/converter/<target>/<skill-name>/` by default, or the exact caller-supplied output directory.
 - **Filename:** Codex emits `SKILL.md`, `prompt.md`, and copied resources; Cursor emits `<skill-name>.mdc` and optional `mcp.json`; `test` emits the raw bundle representation.
 - **Format:** target-valid UTF-8 text with required frontmatter, rewritten runtime references, and byte-present passthrough resources; Cursor output remains within 100KB.
 - **Exit code:** run `bash skills/converter/scripts/convert.sh <skill-dir> <target> <output-dir>` and require zero; treat parse, budget, write, or passthrough-parity failure as nonzero and incomplete.

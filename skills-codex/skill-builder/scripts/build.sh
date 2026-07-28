@@ -29,7 +29,7 @@ esac
 
 bash "$SCRIPT_DIR/init.sh" "$init_mode" "$slug" "$@"
 
-report="$REPO_ROOT/.agents/audits/${slug}-build.json"
+report="$REPO_ROOT/.agents/scratch/skill-builder/${slug}-build.json"
 if ! HEAL_REPO_ROOT="$REPO_ROOT" bash "$REPO_ROOT/skills/skill-builder/scripts/heal.sh" \
   --check --strict "$REPO_ROOT/skills/$slug"; then
   echo "skill-builder: structural check failed" >&2

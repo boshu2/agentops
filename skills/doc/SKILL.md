@@ -22,7 +22,7 @@ context:
   intel_scope: topic
 metadata:
   capabilities: [doc]
-  effects: []
+  effects: [write_documentation]
   canonical_status: canonical
   disposition: keep_specialist
   tier: product
@@ -69,7 +69,7 @@ Default mode is deliberately thin. Given a Doc command and target:
 
 1. **Detect project type** — `ls package.json pyproject.toml go.mod Cargo.toml` + existing `docs/`; classify CODING / INFORMATIONAL / OPS.
 2. **Run the command** — `discover` (grep undocumented funcs), `coverage` (documented vs total), `gen [feature]` (read code → stamp function/class markdown), `all`, or `validate`.
-3. **Write the report** to `.agents/doc/YYYY-MM-DD-<target>.md` (coverage %, generated, gaps, validation issues), then report coverage + gaps to the user.
+3. **Write the report** to `.agents/scratch/doc/YYYY-MM-DD-<target>.md` (coverage %, generated, gaps, validation issues), then report coverage + gaps to the user.
 
 Full step-by-step detail — grep recipes, function/class + code-map templates, the report skeleton, key rules, worked examples, and the troubleshooting table — lives in **[references/default-mode.md](references/default-mode.md)** (moved there in the generic-craft trim). Read it when you need the exact shapes; otherwise just do the three steps.
 
@@ -97,7 +97,7 @@ doc** failure mode — accurate, complete, and useless.
 
 ## Output Specification
 
-- **Path:** default-mode reports go to the artifact directory `.agents/doc/`; README mode updates the repository `README.md`; OSS scaffold mode creates missing root documentation only by default. The separate OSS `refresh` path may update an existing doc only after explicit user confirmation.
+- **Path:** default-mode reports go to the artifact directory `.agents/scratch/doc/`; README mode updates the repository `README.md`; OSS scaffold mode creates missing root documentation only by default. The separate OSS `refresh` path may update an existing doc only after explicit user confirmation.
 - **Filename:** default reports use the filename convention `YYYY-MM-DD-<target>.md`; README and OSS filenames follow their mode references.
 - **Format:** outputs are Markdown; the default report schema records coverage percentage, generated artifacts, gaps, and validation issues.
 - **Validation command:** validate the skill contract with `bash skills/doc/scripts/validate.sh`, then run the mode-specific validation required by its reference before reporting completion.

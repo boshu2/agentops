@@ -75,9 +75,9 @@ Target adapters receive the SkillBundle and decide which fields to use:
 
 | Adapter | Fields Used | Notes |
 |---------|-------------|-------|
-| codex | name, description, body, references | Flattens into single agents.md |
-| cursor | name, description, body, references | Splits into .cursor/rules/ files |
-| test | all | Dumps full bundle for inspection |
+| codex | name, description, body, references, scripts | Emits `SKILL.md` + `prompt.md`; modular by default (copies + links resources), `--codex-layout inline` appends them |
+| cursor | name, description, body, references, scripts | Emits a single `<name>.mdc` rule (+ optional `mcp.json`), budget-fitted to 100KB |
+| test | all | Dumps the full bundle as structured markdown for inspection |
 
 ## Serialization
 

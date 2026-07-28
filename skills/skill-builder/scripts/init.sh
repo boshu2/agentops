@@ -146,8 +146,8 @@ exec bash "$REPO_ROOT/skills/skill-builder/scripts/heal.sh" --check --strict "$S
 EOF
 chmod +x "$target/scripts/validate.sh"
 
-mkdir -p "$REPO_ROOT/.agents/audits"
-report="$REPO_ROOT/.agents/audits/${slug}-build.json"
+mkdir -p "$REPO_ROOT/.agents/scratch/skill-builder"
+report="$REPO_ROOT/.agents/scratch/skill-builder/${slug}-build.json"
 python3 - "$report" "$mode" "$slug" "$source_hint" <<'PY'
 import json
 from pathlib import Path

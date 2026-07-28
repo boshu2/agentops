@@ -25,7 +25,7 @@ context:
   intel_scope: topic
 metadata:
   capabilities: [workflow_builder]
-  effects: []
+  effects: [write_workflow_script]
   canonical_status: canonical
   disposition: keep_specialist
   tier: meta

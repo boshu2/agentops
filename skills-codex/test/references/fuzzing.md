@@ -44,7 +44,7 @@ When fuzzing finds a failure:
 
 ## Output
 
-Record fuzz coverage in `.agents/tests/summary.md`:
+Record fuzz coverage in `.agents/scratch/tests/summary.md`:
 
 ```markdown
 ## Fuzz Targets

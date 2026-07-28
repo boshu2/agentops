@@ -145,7 +145,7 @@ Check for:
 
 ## Step 6: Write Report
 
-**Write to:** `.agents/doc/YYYY-MM-DD-<target>.md`
+**Write to:** `.agents/scratch/doc/YYYY-MM-DD-<target>.md`
 
 ```markdown
 # Documentation Report: <Target>
@@ -168,10 +168,6 @@ Check for:
 ## Validation Issues
 - <issue 1>
 - <issue 2>
-
-## Next Steps
-- [ ] Document remaining gaps
-- [ ] Fix validation issues
 ```
 
 ## Step 7: Report to User
@@ -225,7 +221,7 @@ Tell the user:
 2. Agent counts total functions/classes with `grep -r "^def \|^class "`
 3. Agent counts documented items by searching for docstrings (`"""`)
 4. Agent calculates coverage: 45/67 items = 67% coverage
-5. Agent writes report to `.agents/doc/2026-02-13-coverage.md`
+5. Agent writes report to `.agents/scratch/doc/2026-02-13-coverage.md`
 6. Agent lists 22 undocumented functions as gaps
 
 **Result:** Documentation coverage report shows 67% coverage with specific list of 22 functions needing docs.
