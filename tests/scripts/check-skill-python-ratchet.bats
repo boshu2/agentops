@@ -15,6 +15,10 @@
 #   N4  a pinned file removed but its line kept           -> exit 1 (must prune)
 #   N5  nested skills/*/scripts/<sub>/*.py                -> exit 1 (depth is not an escape)
 #   N6  deleting shipped Python                           -> exit 0 (the wanted direction)
+#   N7  the changed-scope collector FAILS                 -> exit 2 (never a silent PASS)
+#   N8  merge: parent-2-block Python already on the       -> exit 0 (not introduced here)
+#       first-parent line
+#   N9  merge: a real first-parent introduction           -> exit 1 (still caught)
 
 setup() {
     REPO_ROOT="$(cd "$BATS_TEST_DIRNAME/../.." && pwd)"
@@ -184,4 +188,91 @@ EOF
     commit_all "sh glue + docs"
     run run_gate head
     [ "$status" -eq 0 ]
+}
+
+# --- N7: the collector must never fail into a silent PASS ----------------------
+
+# The library documents every CHOSEN collection command as fail-closed rc 2
+# ("refusing to certify an unchecked change set"). A caller that swallows that rc
+# turns a broken Git read into an EMPTY changed set, and an empty changed set
+# certifies "no new Python" over a diff nobody looked at — the exact fail-open
+# class the ratchet lib's ERROR POSTURE note was written to prevent. This is the
+# gate-level negative witness for the collector-failure class.
+@test "N7: a failing changed-scope collector exits 2, never a silent PASS" {
+    # Seed a real violation so a swallowed failure would be VISIBLY wrong: with a
+    # working collector this tree exits 1, so an exit 0 here could only come from
+    # certifying an empty change set.
+    printf 'print("new")\n' > "$TMP_DIR/skills/alpha/scripts/fresh.py"
+    commit_all "add fresh.py"
+
+    # git shim: diff-tree hard-fails; everything else passes through. diff-tree is
+    # the head-scope collection command both before and after the first-parent
+    # repair, so this witness does not encode either implementation.
+    mkdir -p "$TMP_DIR/bin"
+    cat > "$TMP_DIR/bin/git" <<SHIM
+#!/usr/bin/env bash
+if [ "\$1" = "diff-tree" ]; then echo "fatal: injected diff-tree failure" >&2; exit 128; fi
+exec /usr/bin/env -u PATH PATH="/usr/bin:/bin:/usr/local/bin:/opt/homebrew/bin" git "\$@"
+SHIM
+    chmod +x "$TMP_DIR/bin/git"
+
+    run bash -c "cd '$TMP_DIR' && PATH=\"$TMP_DIR/bin:\$PATH\" bash scripts/check-skill-python-ratchet.sh --scope head"
+    [ "$status" -eq 2 ]
+    [[ "$output" == *"refusing to certify"* ]]
+    # A swallowed failure would print the green banner over an unchecked diff.
+    [[ "$output" != *"PASS: skill-python ratchet"* ]]
+}
+
+# --- N8/N9: head scope means FIRST-PARENT, and is pinned by a real merge --------
+
+# `git diff-tree -m --first-parent` does NOT mean "diff only against parent 1" —
+# `-m` splits the merge into one block PER PARENT and emits them all. The
+# parent-2 block lists paths that were already on the first-parent line, so a
+# merge commit re-attributes long-settled files to itself. head scope is declared
+# as "what this commit introduced onto the first-parent line"; these two tests
+# pin that declaration to executable behavior from both directions.
+#
+# The two directions need SEPARATE fixtures: a single merge carrying a real
+# first-parent violation could never distinguish "correctly silent about the
+# parent-2 block" from "failed for the other reason".
+#
+# merge_with <first-parent-file> <side-file>  builds:
+#   seed ──► <first-parent-file> added ──►┐
+#     └────► <side-file> added ───────────┴─► merge
+# Anything added on the first-parent line appears ONLY in the parent-2 block;
+# anything added on the side branch is the merge's real first-parent introduction.
+merge_with() {
+    local p1_file="$1" side_file="$2"
+    (
+        cd "$TMP_DIR"
+        local seed main
+        seed="$(git rev-parse HEAD)"
+        main="$(git symbolic-ref --short HEAD)"
+        printf 'print("p1")\n' > "$p1_file"
+        git add -A && git commit -qm "first-parent line adds $p1_file"
+        git checkout -q -b side "$seed"
+        printf 'print("side")\n' > "$side_file"
+        git add -A && git commit -qm "side adds $side_file"
+        git checkout -q "$main"
+        git merge -q --no-ff side -m "merge side" >/dev/null 2>&1
+    )
+}
+
+@test "N8: a merge does not re-attribute parent-2-block Python already on the first-parent line" {
+    # Governed Python on the first-parent line; the side branch carries nothing
+    # governed, so the ONLY way this merge can fail is by re-attributing the
+    # parent-2 block.
+    merge_with skills/alpha/scripts/p1_only.py docs-side.md
+    run run_gate head
+    [ "$status" -eq 0 ]
+    [[ "$output" != *"p1_only.py"* ]]
+}
+
+@test "N9: a merge still catches the Python it actually introduces onto the first-parent line" {
+    # Mirror image: nothing governed on the first-parent line, real new Python
+    # arriving through the merge. Narrowing to first-parent must not lose it.
+    merge_with docs-main.md skills/alpha/scripts/side_new.py
+    run run_gate head
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"side_new.py"* ]]
 }
