@@ -54,7 +54,8 @@
 #   1 - new Python on a skill's execution path, OR a grandfathered entry that no
 #       longer exists (snapshot must shrink), OR the grandfather snapshot GAINED
 #       entries vs. its base-ref version (allowlist additions are rejected)
-#   2 - usage error / unreadable snapshot / unresolvable base ref (fail-closed)
+#   2 - usage error / unreadable snapshot / unresolvable base ref / failed
+#       changed-scope collection (fail-closed: an unread diff is never certified)
 
 # shellcheck disable=SC1007
 . "$(CDPATH= cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib/preamble.sh"
@@ -128,7 +129,20 @@ check_grandfather_shrink_only() {
 tmp_changed="$(mktemp -d "${TMPDIR:-/tmp}/skill-python-ratchet.XXXXXX")"
 trap 'rm -rf "$tmp_changed"' EXIT
 
-ratchet_changed_files_status "$SCOPE" > "$tmp_changed/raw" 2>/dev/null || true
+# FAIL-CLOSED COLLECTION. scripts/lib/ratchet.sh gives every chosen collection
+# command an explicit `|| return 2` ("refusing to certify an unchecked change
+# set") precisely because this gate runs in a shell with no ambient strict mode.
+# A `|| true` here would throw that contract away: a dead Git read becomes an
+# EMPTY changed set, the loop below runs zero times, and the gate prints its
+# green banner over a diff nobody read. Preserve the rc and stop.
+collect_rc=0
+ratchet_changed_files_status "$SCOPE" > "$tmp_changed/raw" || collect_rc=$?
+if [[ "$collect_rc" -ne 0 ]]; then
+  echo "FAIL: changed-scope collection failed (rc $collect_rc) for scope '$SCOPE' —" >&2
+  echo "      refusing to certify an unchecked change set. An empty change set would" >&2
+  echo "      certify \"no new Python\" over a diff that was never read." >&2
+  exit 2
+fi
 
 shipped=0   # new Python on a skill execution path
 stale=0     # grandfathered entries that no longer exist (must prune)
