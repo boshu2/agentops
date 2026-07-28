@@ -55,7 +55,8 @@ while IFS= read -r ref; do
   [[ -n "$ref" ]] || continue
   if head -1 "$ref" | grep -Eq 'Standards \(Tier'; then
     base="$(basename "$ref")"
-    if grep -Fq "${bt}${base}${bt}" "$common"; then
+    # Match only a table row (line starting with |), not a prose mention.
+    if grep -Eq "^\|.*${bt}${base//./\\.}${bt}" "$common"; then
       :
     else
       echo "standards: language file $base has no row in the Canonical Language Owners table" >&2
