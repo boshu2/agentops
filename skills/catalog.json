@@ -528,7 +528,10 @@
       "dependencies": [],
       "description": "Measure declared project fitness goals without recommending or applying work. Triggers: \"measure goals\", \"check project fitness\".",
       "disposition": "keep_specialist",
-      "effects": [],
+      "effects": [
+        "write_goal_snapshot",
+        "write_rendered_spec"
+      ],
       "graph_root": false,
       "hexagonal_role": "domain",
       "name": "goals",
@@ -537,7 +540,7 @@
         "lean-startup"
       ],
       "produces": [
-        "result.json"
+        "goal-measurement-report"
       ],
       "references_count": 0,
       "tier": "product",

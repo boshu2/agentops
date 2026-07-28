@@ -357,8 +357,8 @@
     {
       "name": "automation-shape-routing",
       "source_skill": "skills/automation-shape-routing",
-      "source_hash": "e38858c023f69e9c722405f57e4f5fc8fb36fa7fdb053f13acab64016d3a138f",
-      "generated_hash": "cdeecb34d6c7084a43da7dd41ea5de516d8d4e536e50267877564bd592d59572"
+      "source_hash": "6a1d4df0589901acdd6a66541c1027697e31c0273f931f863b8c7c82e520f933",
+      "generated_hash": "022a51640c617822e180d87f2e1da75b151df74473301a820969fc2181d548e0"
     },
     {
       "name": "bootstrap",
@@ -405,8 +405,8 @@
     {
       "name": "craft-goal",
       "source_skill": "skills/craft-goal",
-      "source_hash": "5f5ce0aa57b749cbd7367e55c2afabcc0c977f9c0b6a8daa89aeab2ec76d964f",
-      "generated_hash": "dcf692b00ca40f83b7ec56ad980692e7cf3de060a599079f0207be7100decd3d"
+      "source_hash": "b142e207fa6386caa7178185af2aed9dc6c4f4e1bb7d8d453917da67ed5ebd7e",
+      "generated_hash": "65bc3e02640cc2d6f720efd1e45047cbd5595dc31c944cfa188b548e95f0dfec"
     },
     {
       "name": "dcg",
@@ -429,8 +429,8 @@
     {
       "name": "goals",
       "source_skill": "skills/goals",
-      "source_hash": "51cb0229b3791c36c36a7a624f8bc9008a08142ffa720e14a5be4cff33f9c835",
-      "generated_hash": "a3628b6b8fb1effd565602e261df0672fb11c2c70421ce5f48d91d12b6226a5f"
+      "source_hash": "050c7d539c56668a1a92e7694d6a356329859f1eac01a7b4944718444beb70f7",
+      "generated_hash": "31b0b008feedaa8953613f35acb57687845a6c60cd5931bf4b551c8abc5c8c88"
     },
     {
       "name": "handoff",
@@ -501,8 +501,8 @@
     {
       "name": "product",
       "source_skill": "skills/product",
-      "source_hash": "c6f68f0655534b1ea7bcde3e28846b4c77275ecccf40511949c0e459fe268f8f",
-      "generated_hash": "3ba638b051ddbd5ff2614abc037196d959de31ca24943f7633ceb4ab7ffd6aac"
+      "source_hash": "02269e6c847eeb678e398f245c53df2059385df0bb5f44f6b34be376e2e2e9ce",
+      "generated_hash": "db9b84d6b0d42d9adf27341a73b6ac951ab33e62e4b2de3ff3d6c1ada28a2f65"
     },
     {
       "name": "rch",

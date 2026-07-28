@@ -90,7 +90,7 @@
 | `doc` | consumes | `repo-context` |
 | `doc` | produces | `documentation` |
 | `domain` | produces | `stdout` |
-| `goals` | produces | `result.json` |
+| `goals` | produces | `goal-measurement-report` |
 | `handoff` | produces | `.agents/handoff/*.md` |
 | `idea-genie` | consumes | `repo-context` |
 | `idea-genie` | consumes | `task-question` |

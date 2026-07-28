@@ -7,7 +7,7 @@ practices:
 hexagonal_role: domain
 consumes: []
 produces:
-- result.json
+- goal-measurement-report
 context_rel:
 - kind: shared-kernel
   with: standards
@@ -19,7 +19,7 @@ context:
   intel_scope: topic
 metadata:
   capabilities: [goals]
-  effects: []
+  effects: [write_goal_snapshot, write_rendered_spec]
   canonical_status: canonical
   disposition: keep_specialist
   tier: product
@@ -50,8 +50,17 @@ scope, and let the caller decide.
 - Do not add, remove, prioritize, recommend, apply, prune, migrate, or otherwise
   mutate goals.
 - Do not translate a fitness gap into work selection or a next action.
+- No subcommand edits the goals source through its own logic. `measure`,
+  `drift`, and `export` persist a best-effort JSON snapshot under the fixed
+  derived path `.agents/ao/goals/baselines/`. `render --out <file>` writes a
+  Gherkin spec to whatever path the caller names — the CLI does not constrain
+  it, so never point `--out` at the goals source or any non-derived file.
 
-## Read-only commands
+## Commands
+
+All eight subcommands read the goals source without mutating it. The snapshot
+write (fixed derived path) and the `render --out` write (caller-chosen path,
+caller's responsibility) are the only side effects.
 
 ```bash
 ao goals measure --json
@@ -60,6 +69,8 @@ ao goals drift
 ao goals history
 ao goals export
 ao goals meta --json
+ao goals scenarios
+ao goals render          # append --out <file> to write the spec instead of stdout
 ```
 
 Run the requested command once. Return the command, exit code, goal-level
