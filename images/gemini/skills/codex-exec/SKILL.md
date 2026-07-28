@@ -56,27 +56,38 @@ prompt runs read-only, full stop.
    explicitly requires network or external effects.
 4. Pipe the prompt to stdin (or close stdin) in non-TTY execution so the process
    cannot wait indefinitely for input.
-5. Bound the run with an explicit wall-clock timeout (wrap with `timeout`
-   /`gtimeout`, or use the profile's own deadline). If no timeout mechanism is
-   available, disclose that the run is unbounded rather than let it hang
-   silently, and treat a killed run as a distinct terminal outcome — not a
-   review result.
+5. A wall-clock **deadline is mandatory** — never run codex unbounded. Use the
+   caller's deadline, or the declared default of **600s (10 min)** when the
+   caller supplies none, and record which one applied. Enforce it so the whole
+   process **tree** is reaped, not just the direct child: run codex in its own
+   process group and kill the group on expiry (e.g. `setsid` + `kill -KILL
+   -<pgid>`), or `timeout --kill-after=10s <secs>` to escalate TERM→KILL. Plain
+   `timeout <secs> codex …` signals only the direct child, so if your wrapper
+   cannot guarantee process-group reaping, **disclose the surviving-subprocess
+   risk as a limitation** rather than claim cleanup. Deadline expiry is
+   **fail-closed**: the run is killed and reported as timed-out / not proven,
+   partial output preserved — never a completed review.
 6. Capture the final response with `-o`, JSONL, or an output schema.
 7. Report the typed run result, then stop: the process exit status, the captured
-   artifact path, whether a timeout fired (and the process tree was reaped), and
-   whether the `codex` binary was even present. Cancellation is the caller's;
-   this skill neither retries nor continues on its own.
+   artifact path, which deadline applied and whether it fired, whether the
+   process tree was reaped (or the surviving-subprocess limitation), and whether
+   the `codex` binary was present at all. Cancellation is the caller's; this
+   skill neither retries nor continues on its own.
 
-Terminal outcomes are explicit: **binary absent** (no `codex` on PATH) →
-report unavailable and stop; **timed out** → report the kill and preserved
-partial output, never as a completed review; **nonzero exit** → runtime
+Terminal outcomes are explicit: **binary absent** (no `codex` on PATH) → report
+unavailable and stop; **deadline expiry** → fail-closed, report the kill and
+preserved partial output, never a completed review; **nonzero exit** → runtime
 evidence, not a semantic verdict. The caller decides whether to launch another
 invocation.
 
 ## Example
 
 ```bash
-printf '%s\n' "$PROMPT" | timeout "${CODEX_TIMEOUT:-600}" \
+# Deadline mandatory; default 600s. `setsid` puts codex in its own process
+# group; on expiry `--kill-after` escalates TERM->KILL to reap the tree, not
+# just the direct child. (If you cannot run setsid, disclose that a plain
+# `timeout` reaps only the direct child.)
+printf '%s\n' "$PROMPT" | setsid timeout --kill-after=10s "${CODEX_TIMEOUT:-600}" \
   codex exec -C "$WORKSPACE" -s read-only -o "$OUTPUT" -
 ```
 

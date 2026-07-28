@@ -42,7 +42,7 @@ RCH_VISIBILITY=verbose cargo check 2>&1 | grep -E '^\[RCH\]'
 **Fix attempts:**
 
 1. If you see `[RCH] local (...)` — open `references/FAIL_OPEN.md` and look up the parenthetical reason. Apply the matching self-fix.
-2. If you see no `[RCH]` line at all — the hook isn't intercepting. Run `rch hook status`. If not installed: `rch hook install`. If installed but not firing: `rch hook test`.
+2. If you see no `[RCH]` line at all — the hook isn't intercepting. Run `rch hook status` and `rch hook test` (autonomous). If not installed, `rch hook install` writes `~/.claude/settings.json` — **(authorize first)**.
 3. If you see `[RCH] remote ...` — RCH is doing what it can; the slowness is real. Inspect `rch speedscore --all` and consider whether the project warrants a faster worker.
 
 **Verify:**
@@ -107,7 +107,7 @@ rch --json workers probe --all | jq '.data[] | {id, status, last_error}'
 1. **Verify queueing is on** — `RCH_QUEUE_WHEN_BUSY` is **already enabled by default** in current rch (only set `=0` to disable). If you still see `all workers at capacity`, queueing didn't help — the wait timed out.
 2. Bump the wait timeout for the next invocation: `RCH_DAEMON_WAIT_RESPONSE_TIMEOUT_SECS=120 <your-command>`.
 3. Check whether one worker is hot and others are cold (uneven distribution): `rch --json status --workers | jq '.data.daemon.workers[] | {id, used: .used_slots, total: .total_slots}'`.
-4. If aggregate capacity is the problem, raise `total_slots` on top workers in `~/.config/rch/workers.toml`, then `rch daemon reload`.
+4. If aggregate capacity is the problem, raising `total_slots` on top workers in `~/.config/rch/workers.toml` and `rch daemon reload` both mutate config/daemon — **(authorize first)**.
 5. Watch the backlog drain: `rch queue --watch` (this is an interactive polling view, not a TUI — Ctrl-C exits cleanly).
 
 **Verify:** Next `rch exec` lands `[RCH] remote <worker> (...)`.
@@ -188,8 +188,8 @@ cat ~/.claude/settings.json 2>/dev/null | jq '.hooks.PreToolUse'
 
 **Fix attempts:**
 
-1. Hook not installed → `rch hook install` (or `rch agents install-hook claude-code`).
-2. Hook command path is wrong → `rch hook install` re-resolves to the current absolute path.
+1. Hook not installed → `rch hook install` (or `rch agents install-hook claude-code`) writes `~/.claude/settings.json` — **(authorize first)**.
+2. Hook command path is wrong → `rch hook install` re-resolves to the current absolute path — same host write, **(authorize first)**.
 3. The Claude Code session predates the hook install → restart Claude Code (the harness only loads hooks on startup).
 4. Hook installed but fires for a different agent → confirm `rch agents list --json` includes the agent you're running under.
 
@@ -262,7 +262,7 @@ rch self-test history --limit 5 --json
 **Fix attempts:**
 
 1. Try a single worker with `--timeout 120 --debug`. If that works, the `--all` mode is hitting a slow worker — narrow down with `rch speedscore --all`.
-2. If self-test hangs against any single worker, that worker has a deeper problem. `rch workers probe <id>`, then drain it (`rch workers drain <id>`) and continue without it.
+2. If self-test hangs against any single worker, that worker has a deeper problem. `rch workers probe <id>` (autonomous); draining it (`rch workers drain <id>`) mutates worker state — **(authorize first)** — then continue without it.
 3. Capture a full doctor report: `rch doctor --json > /tmp/rch-doctor.json`. The pre-v1.0.16 self-test hang bug is fixed; if you reproduce on current rch, escalate with the doctor output.
 
 ---
@@ -278,7 +278,7 @@ rch config show --sources
 rch config diff                      # what differs from defaults
 ```
 
-If `rch config validate` flags an issue, fix the indicated line and `rch daemon reload`. If you can't see what's wrong, `git diff` of the config (if you keep it under version control) is your friend. Otherwise `rch config init` writes a clean baseline you can compare against.
+The four `rch config` inspection commands above are autonomous. If `rch config validate` flags an issue, fixing the indicated line and `rch daemon reload` both mutate config/daemon — **(authorize first)**. `git diff` of the config (if version-controlled) is a read-only aid; `rch config init` overwrites a clean baseline — **(authorize first)**.
 
 ---
 

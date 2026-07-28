@@ -61,7 +61,9 @@ wedged on an interactive prompt doing nothing. Trust ground truth:
   ones `mayor status` prints in its `tmux -L <socket> attach -t <session>` line.
 - Two known codex wedge classes and their durable fixes:
   - **Update nag:** codex blocks on an "update available" prompt. Fix: update
-    codex so no pending-update prompt exists before the run.
+    codex so no pending-update prompt exists before the run. Updating the codex
+    binary is a host mutation — make it only with explicit caller authorization,
+    the same bar as the trust-config edit below.
   - **Folder trust:** codex blocks asking to trust the working directory. Fix:
     add exact-path `trust_level` entries for the rig and worktree-root in
     `~/.codex/config.toml` (bootstrap does not write them yet). This edits the

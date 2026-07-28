@@ -52,14 +52,20 @@ Compilation running locally instead of remotely?
 
 ## Common Errors
 
+> **Authority:** only read-only diagnosis is autonomous. Any recipe below that
+> starts/restarts/reloads the daemon, adds/provisions/drains a worker or its
+> toolchain, edits config, installs the hook, or mutates a remote host requires
+> explicit caller authorization first — see `FAIL_OPEN.md` §"Autonomous
+> Remediation Envelope". Such steps are called out per block.
+
 ### Daemon not running / `check` says not ready
 
 **Cause:** daemon process absent or startup failure.
 
 ```bash
-rch daemon start
-rch --json daemon status
-rch daemon logs -n 200
+rch --json daemon status          # autonomous
+rch daemon logs -n 200            # autonomous
+rch daemon start                  # (authorize first) — daemon lifecycle
 ```
 
 ### Socket mismatch between config and daemon
@@ -67,10 +73,10 @@ rch daemon logs -n 200
 **Cause:** `general.socket_path` differs from active daemon socket.
 
 ```bash
-rch --json config get general.socket_path
-rch --json daemon status
-# then align and restart:
-rch daemon restart -y
+rch --json config get general.socket_path   # autonomous
+rch --json daemon status                     # autonomous
+# then align and restart AFTER explicit caller authorization:
+rch daemon restart -y                        # (authorize first)
 ```
 
 ### "No workers available" / probe failures
@@ -78,11 +84,12 @@ rch daemon restart -y
 **Cause:** no workers configured, SSH/auth failures, or workers are disabled/drained.
 
 ```bash
-rch workers list
-rch workers probe --all
-rch workers discover --probe
-rch workers discover --add --yes
-rch workers setup --all
+rch workers list                  # autonomous
+rch workers probe --all           # autonomous
+rch workers discover --probe      # autonomous (probe only)
+# adding/provisioning workers mutates the fleet — authorize first:
+rch workers discover --add --yes  # (authorize first)
+rch workers setup --all           # (authorize first)
 ```
 
 ### "rustup: not found" / "cargo: not found" on worker
@@ -105,10 +112,10 @@ If still failing, SSH to the specific worker and validate `rustup`, `cargo`, and
 **Cause:** hook missing, wrong binary path, or command classified as local.
 
 ```bash
-rch hook status
-rch hook install
-rch hook test
-rch diagnose "cargo build --release"
+rch hook status                        # autonomous
+rch hook test                          # autonomous
+rch diagnose "cargo build --release"   # autonomous
+rch hook install                       # (authorize first) — writes ~/.claude/settings.json
 ```
 
 ### Sync/transfer fails under active target churn
@@ -116,9 +123,10 @@ rch diagnose "cargo build --release"
 **Cause:** build artifacts changing during rsync.
 
 ```bash
-# Add target-like excludes in ~/.config/rch/config.toml [transfer].exclude_patterns
-rch daemon reload
-rch config show --sources
+# Editing ~/.config/rch/config.toml [transfer].exclude_patterns and reloading
+# both mutate config/daemon — (authorize first):
+rch daemon reload                 # (authorize first)
+rch config show --sources         # autonomous
 ```
 
 Also inspect the worker directly:
@@ -314,7 +322,7 @@ rch fleet deploy --verify
    printf '%s\n' '{"tool_name":"Bash","tool_input":{"command":"<your-command>"}}' | rch
    ```
    If stdout is empty, the classifier is rejecting your command. Common causes: shell pipe (`cargo build | tee log`), backgrounded with `&`, env-prefixed in an unusual form. Restructure or use `rch exec -- <cmd>` directly.
-3. If the hook fires but the command still runs locally, the rewrite isn't being honored — check that `~/.claude/settings.json` has the right hook command path (`rch hook install` re-resolves it).
+3. If the hook fires but the command still runs locally, the rewrite isn't being honored — check that `~/.claude/settings.json` has the right hook command path (reading it is autonomous; `rch hook install` re-resolves it but writes that file — **(authorize first)**).
 
 See `references/FAIL_OPEN.md` for the full taxonomy.
 
