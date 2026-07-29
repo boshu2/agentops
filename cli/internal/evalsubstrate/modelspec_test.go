@@ -1,7 +1,9 @@
 package evalsubstrate
 
 import (
+	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -30,9 +32,13 @@ func TestCaptureModelSpec_StampsHashAndPersists(t *testing.T) {
 	if spec.ContentHash != hash {
 		t.Fatalf("spec.ContentHash not stamped: %s vs %s", spec.ContentHash, hash)
 	}
-	dest := ModelSpecPath(root, spec.ID)
-	if dest != filepath.Join(root, "models", spec.ID, "spec.yaml") {
-		t.Fatalf("unexpected path: %s", dest)
+	dest, err := ModelSpecPath(root, spec.ID)
+	if err != nil {
+		t.Fatalf("ModelSpecPath: %v", err)
+	}
+	wantDest := filepath.Join(root, "models", strings.ReplaceAll(spec.ID, ":", "%3A"), "spec.yaml")
+	if dest != wantDest {
+		t.Fatalf("unexpected path: %s (want %s)", dest, wantDest)
 	}
 	loaded, err := LoadModelSpec(root, spec.ID)
 	if err != nil {
@@ -66,6 +72,65 @@ func TestCaptureModelSpec_StableAcrossRecaptures(t *testing.T) {
 	}
 	if h1 != h2 {
 		t.Fatalf("re-capture hash mismatch: %s vs %s", h1, h2)
+	}
+}
+
+func TestCaptureModelSpec_RejectsTraversalIDWithoutWriting(t *testing.T) {
+	root := t.TempDir()
+	spec := &ModelSpec{ID: "../../escape", Provider: "local-mlx", ModelName: "test"}
+	if _, _, err := CaptureModelSpec(root, spec); err == nil {
+		t.Fatal("CaptureModelSpec accepted a traversal id; want rejection")
+	}
+	// The would-be escape target (root/../escape/spec.yaml) must not exist.
+	escaped := filepath.Join(root, "..", "escape", "spec.yaml")
+	if _, err := os.Stat(escaped); err == nil {
+		t.Fatalf("traversal id escaped the eval root: %s exists", escaped)
+	}
+}
+
+func TestLoadModelSpec_RejectsTraversalID(t *testing.T) {
+	if _, err := LoadModelSpec(t.TempDir(), "../../../etc/passwd"); err == nil {
+		t.Fatal("LoadModelSpec accepted a traversal id; want rejection")
+	}
+}
+
+func TestModelSpecPath_IsCheckedAndEncodesColon(t *testing.T) {
+	// The colon in a legitimate model-spec id is encoded to a path-safe token, so
+	// no raw ':' (a Windows alternate-data-stream separator) reaches the filesystem.
+	got, err := ModelSpecPath("/root", "ms:stable")
+	if err != nil {
+		t.Fatalf("ModelSpecPath(ms:stable) = %v, want success", err)
+	}
+	want := filepath.Join("/root", "models", "ms%3Astable", "spec.yaml")
+	if got != want {
+		t.Fatalf("ModelSpecPath encoding: got %q, want %q", got, want)
+	}
+	if strings.ContainsRune(got, ':') && filepath.VolumeName(got) == "" {
+		t.Fatalf("encoded model-spec path still contains a raw ':': %q", got)
+	}
+	// The sink is the only constructor and it rejects unsafe ids: there is no
+	// unchecked join to bypass. "ms%3Astable" must be rejected, not aliased:
+	// accepting it would let a raw id collide with the encoded form of
+	// "ms:stable" (the encoding must stay injective).
+	for _, bad := range []string{"../../escape", "..", "a/b", "", "ms%3Astable", "50%"} {
+		if _, err := ModelSpecPath("/root", bad); err == nil {
+			t.Errorf("ModelSpecPath(%q) = nil error; the checked sink must reject it", bad)
+		}
+	}
+}
+
+func TestCaptureLoadModelSpec_ColonIDRoundTripsThroughEncoding(t *testing.T) {
+	root := t.TempDir()
+	spec := &ModelSpec{ID: "ms:stable", Provider: "local-mlx", ModelName: "test"}
+	if _, _, err := CaptureModelSpec(root, spec); err != nil {
+		t.Fatalf("CaptureModelSpec(ms:stable): %v", err)
+	}
+	// On-disk directory is the encoded form; the raw-colon path never exists.
+	if _, err := os.Stat(filepath.Join(root, "models", "ms%3Astable", "spec.yaml")); err != nil {
+		t.Fatalf("encoded spec file missing: %v", err)
+	}
+	if _, err := LoadModelSpec(root, "ms:stable"); err != nil {
+		t.Fatalf("LoadModelSpec(ms:stable) did not round-trip through the encoder: %v", err)
 	}
 }
 

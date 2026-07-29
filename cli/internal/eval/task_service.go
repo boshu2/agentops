@@ -73,6 +73,9 @@ func (service TaskService) Add(_ context.Context, request TaskAddRequest) (TaskA
 	if task.ID == "" {
 		return TaskAddResult{}, fmt.Errorf("eval task add: missing required field id")
 	}
+	if err := evalsubstrate.ValidateID(task.ID); err != nil {
+		return TaskAddResult{}, fmt.Errorf("eval task add: %w", err)
+	}
 	if task.Stats.MinNSamples <= 0 {
 		return TaskAddResult{}, fmt.Errorf("eval task add: task %q has no stats.min_n_samples (gate #6 cannot enforce)", task.ID)
 	}
@@ -186,6 +189,9 @@ func (failure *TaskGateError) Error() string {
 }
 
 func (service TaskService) loadTask(id string) (*evalsubstrate.Task, error) {
+	if err := evalsubstrate.ValidateID(id); err != nil {
+		return nil, fmt.Errorf("loadTask: %w", err)
+	}
 	path := filepath.Join(service.Runtime.Root(), "tasks", id, "task.yaml")
 	raw, err := service.Runtime.ReadFile(path)
 	if err != nil {
@@ -201,6 +207,9 @@ func (service TaskService) loadTask(id string) (*evalsubstrate.Task, error) {
 func (service TaskService) loadSuite(ref string) (*evalsubstrate.Suite, error) {
 	path := ref
 	if !strings.HasSuffix(ref, ".yaml") && !strings.HasSuffix(ref, ".yml") {
+		if err := evalsubstrate.ValidateID(ref); err != nil {
+			return nil, fmt.Errorf("loadSuite: %w", err)
+		}
 		path = filepath.Join(service.Runtime.Root(), "suites", ref, "suite.yaml")
 	}
 	raw, err := service.Runtime.ReadFile(path)

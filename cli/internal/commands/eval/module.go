@@ -489,7 +489,7 @@ func (module Module) taskRunCommand() *cobra.Command {
 	flags.StringVar(&options.Seeds, "seeds", "", "Comma-separated seeds (>=3, per §4)")
 	flags.StringVar(&options.HarnessRef, "harness", "", "Harness id (recorded into manifest)")
 	flags.StringVar(&options.HarnessDir, "harness-dir", "", "Path to harness source dir for snapshot + gate #8")
-	flags.StringVar(&options.ModelSpecID, "model-spec", "", "ModelSpec id (already captured via ao eval models capture)")
+	flags.StringVar(&options.ModelSpecID, "model-spec", "", "ModelSpec id, resolved from <evals-root>/models/<id>/spec.yaml")
 	flags.StringVar(&options.GroundTruthRef, "ground-truth", "", "Ground-truth row id (head of supersession chain)")
 	flags.StringVar(&options.SampleSplit, "sample-split", "", "Sample split (dev|holdout); default from suite")
 	flags.IntVar(&options.NSamples, "n-samples", 0, "Override Suite.n_samples")

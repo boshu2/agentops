@@ -196,9 +196,17 @@ func RunLiveRuntime(ctx context.Context, opts LiveRuntimeOptions) (*RunRecord, e
 		return finishLiveRuntimeRun(opts, record, now)
 	}
 
-	env, hostNotes, err := liveRuntimeEnv(opts, suite)
+	env, hostNotes, ownedIsolationRoot, err := liveRuntimeEnv(opts, suite)
 	if err != nil {
 		return nil, err
+	}
+	if ownedIsolationRoot != "" {
+		// The isolation root was created internally (no caller IsolationRoot).
+		// Own its lifecycle: remove it once the run completes so runtime-written
+		// HOME and CODEX_HOME data does not leak in temp storage on success,
+		// error, or timeout (2026-07-24 Go CLI audit, Medium: live-runtime
+		// isolation dirs leak). A caller-supplied IsolationRoot is never removed.
+		defer removeOwnedRoot(ownedIsolationRoot)
 	}
 	record.Environment.HostNotes = append(record.Environment.HostNotes, hostNotes...)
 
@@ -359,26 +367,33 @@ func liveEnvironmentRecord(opts LiveRuntimeOptions, suite Suite) EnvironmentReco
 	}
 }
 
-func liveRuntimeEnv(opts LiveRuntimeOptions, suite Suite) ([]string, []string, error) {
+// liveRuntimeEnv builds the scrubbed, isolation-aware environment for a live
+// runtime run. When the suite requests home/Codex-home isolation and the caller
+// supplied no IsolationRoot, it creates one under the system temp dir and
+// reports its path as ownedRoot so the caller can remove it after the run; a
+// caller-supplied IsolationRoot is never reported and never removed here
+// (2026-07-24 Go CLI audit, Medium: auto-created live-runtime isolation
+// directories leak). ownedRoot is "" whenever nothing was internally created.
+func liveRuntimeEnv(opts LiveRuntimeOptions, suite Suite) (env []string, notes []string, ownedRoot string, err error) {
 	base := opts.Env
 	if base == nil {
 		base = os.Environ()
 	}
-	env := scrubbedEnv(base, liveScrubPrefixes(suite))
-	var notes []string
+	env = scrubbedEnv(base, liveScrubPrefixes(suite))
 	if suite.Environment.IsolateHome || suite.Environment.IsolateCodexHome {
 		root := opts.IsolationRoot
 		if root == "" {
-			var err error
-			root, err = os.MkdirTemp("", "agentops-eval-runtime-*")
-			if err != nil {
-				return nil, nil, fmt.Errorf("create runtime isolation root: %w", err)
+			created, mkErr := os.MkdirTemp("", "agentops-eval-runtime-*")
+			if mkErr != nil {
+				return nil, nil, "", fmt.Errorf("create runtime isolation root: %w", mkErr)
 			}
+			root, ownedRoot = created, created
 		}
 		if suite.Environment.IsolateHome {
 			home := filepath.Join(root, "home")
-			if err := os.MkdirAll(home, 0o700); err != nil {
-				return nil, nil, fmt.Errorf("create isolated home: %w", err)
+			if mkErr := os.MkdirAll(home, 0o700); mkErr != nil {
+				removeOwnedRoot(ownedRoot)
+				return nil, nil, "", fmt.Errorf("create isolated home: %w", mkErr)
 			}
 			env = setEnvValue(env, "HOME", home)
 			if goruntime.GOOS == "windows" {
@@ -388,8 +403,9 @@ func liveRuntimeEnv(opts LiveRuntimeOptions, suite Suite) ([]string, []string, e
 		}
 		if suite.Environment.IsolateCodexHome {
 			codexHome := filepath.Join(root, "codex-home")
-			if err := os.MkdirAll(codexHome, 0o700); err != nil {
-				return nil, nil, fmt.Errorf("create isolated Codex home: %w", err)
+			if mkErr := os.MkdirAll(codexHome, 0o700); mkErr != nil {
+				removeOwnedRoot(ownedRoot)
+				return nil, nil, "", fmt.Errorf("create isolated Codex home: %w", mkErr)
 			}
 			env = setEnvValue(env, "CODEX_HOME", codexHome)
 			notes = append(notes, "CODEX_HOME isolated")
@@ -400,7 +416,16 @@ func liveRuntimeEnv(opts LiveRuntimeOptions, suite Suite) ([]string, []string, e
 		env = append(env, "AGENTOPS_HOOKS_DISABLED=1")
 		notes = append(notes, "hooks disabled (AGENTOPS_HOOKS_DISABLED=1)")
 	}
-	return env, notes, nil
+	return env, notes, ownedRoot, nil
+}
+
+// removeOwnedRoot deletes an internally created isolation root on a partial-setup
+// error path. It is a no-op for the empty string (a caller-supplied root), so it
+// never removes a directory the caller owns.
+func removeOwnedRoot(ownedRoot string) {
+	if ownedRoot != "" {
+		_ = os.RemoveAll(ownedRoot)
+	}
 }
 
 func liveScrubPrefixes(suite Suite) []string {

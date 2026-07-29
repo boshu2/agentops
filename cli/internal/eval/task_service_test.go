@@ -33,6 +33,27 @@ func (*taskRuntimeSpy) OpenRun(string, string, evalsubstrate.Manifest) (TaskRunW
 }
 func (*taskRuntimeSpy) Now() time.Time { return time.Unix(1_000, 0).UTC() }
 
+func TestTaskServiceAddRejectsTraversalIDWithoutWriting(t *testing.T) {
+	runtime := &taskRuntimeSpy{
+		files:  map[string][]byte{"task.yaml": []byte("id: ../../escape\nschema_version: 1\nstats:\n  min_n_samples: 3\n")},
+		writes: map[string][]byte{},
+	}
+	_, err := (TaskService{Runtime: runtime}).Add(context.Background(), TaskAddRequest{SourcePath: "task.yaml"})
+	if err == nil {
+		t.Fatal("Add accepted a traversal id; want rejection")
+	}
+	if len(runtime.writes) != 0 {
+		t.Fatalf("traversal id produced a write: %v", runtime.writes)
+	}
+}
+
+func TestTaskServiceShowRejectsTraversalID(t *testing.T) {
+	runtime := &taskRuntimeSpy{files: map[string][]byte{}, writes: map[string][]byte{}}
+	if _, err := (TaskService{Runtime: runtime}).Show(context.Background(), "../../../etc/passwd"); err == nil {
+		t.Fatal("Show accepted a traversal id; want rejection")
+	}
+}
+
 func TestTaskServiceAddCanonicalizesAndWritesOwnedDestination(t *testing.T) {
 	runtime := &taskRuntimeSpy{files: map[string][]byte{"task.yaml": []byte("id: task-1\nschema_version: 1\nstats:\n  min_n_samples: 3\n")}, writes: map[string][]byte{}}
 	result, err := (TaskService{Runtime: runtime}).Add(context.Background(), TaskAddRequest{SourcePath: "task.yaml"})

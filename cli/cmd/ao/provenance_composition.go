@@ -24,6 +24,7 @@ func newProvenanceCommand() *cobra.Command {
 		LedgerPath: resolveLedgerPath,
 		Now:        time.Now,
 		OutputMode: GetOutput,
+		DryRun:     GetDryRun,
 	})
 	return module.Command()
 }
