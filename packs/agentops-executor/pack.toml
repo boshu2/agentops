@@ -1,6 +1,6 @@
 [pack]
 name = "agentops-executor"
 schema = 2
-version = "0.2.0"
-requires_gc = ">=1.3.5"
-description = "Terra, Opus, and fresh Sol roles for native Beads workflows."
+version = "0.3.0"
+requires_gc = ">=1.4.0"
+description = "Terra, Opus, and fresh Sol roles for Gas City 1.4 Beads workflows."

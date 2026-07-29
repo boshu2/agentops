@@ -10,17 +10,19 @@ Usage:
   invoke.sh --city PATH create TITLE [-d DESCRIPTION] [--json]
   invoke.sh --city PATH status
   invoke.sh --city PATH doctor
+  invoke.sh --city PATH dashboard [--open]
+  invoke.sh --city PATH packs list|refresh|search|show|maintainers [ARG...]
   invoke.sh --city PATH mayor start
   invoke.sh --city PATH mayor status
   invoke.sh --city PATH mayor tell "MESSAGE"
   invoke.sh --city PATH mayor attach-hint
   invoke.sh --city PATH -- GC_COMMAND [ARG...]
 
-The Mayor is the dispatch shepherd: it propels ready step beads to their
-run-targets. Drive it through the same door a human uses. `mayor tell` messages
-must reference BEAD IDS (e.g. "dispatch testrig-12"), never describe work — the
-Mayor dispatches existing beads and never authors intent. Author intent with
-`create`, then start it with `feed`.
+Gas City 1.4's store-scoped control dispatcher propels formula runs. The Mayor
+is an on-demand inspection and manual-dispatch door; `mayor tell` messages must
+reference BEAD IDS (e.g. "dispatch testrig-12"), never describe work. `packs`
+exposes the registry catalog, including the official `gascity` workflow used by
+Maintainer City. Author intent with `create`, then start it with `feed`.
 EOF
 }
 # The running pack (this script's own directory) is the trust anchor: its
@@ -132,7 +134,7 @@ run_bd() {
     "$bd_bin" -C "$rig" "$@"
 }
 
-# The city-scoped Mayor shepherd is the `agentops`-bound "mayor" named session.
+# The on-demand city-scoped Mayor is the `agentops`-bound named session.
 mayor_alias="agentops.mayor"
 
 # Report the Mayor session state and/or the raw tmux human-door line. Tri-state
@@ -141,7 +143,7 @@ mayor_alias="agentops.mayor"
 # the query succeeded but no Mayor session exists -> "not started", exit 0; (c)
 # the session is present -> report it. `gc session list --json` carries the tmux
 # session_name; the socket is derived exactly as the bootstrap templates it
-# (agentops-<sha256(realpath city)[:20]>). v1.3.5 fallback rows may omit
+# (agentops-<sha256(realpath city)[:20]>). Older fallback rows may omit
 # running/last_output; an ABSENT field reports as "unknown", never false.
 # Returns nonzero only in case (a); the caller propagates that exit code.
 mayor_report() {
@@ -224,9 +226,8 @@ case "$command" in
   feed)
     [ "$#" -eq 1 ] || die "feed requires exactly one bead id"
     [[ "$1" =~ ^[A-Za-z0-9][A-Za-z0-9._-]{0,255}$ ]] || die "unsafe bead id"
-    # Guard: on GC v1.3.5 `gc sling` treats an unknown id as inline text and
-    # auto-creates a task, silently dispatching the wrong work. Require the bead
-    # to already exist in the rig store with an exact id match before slinging.
+    # Require an exact existing rig-store id before slinging. This preserves the
+    # caller-owned intent boundary even if GC accepts inline work on this surface.
     verify_bd
     lookup="$(run_bd show "$1" --json 2>/dev/null)" || die "bead not found in the rig store: $1"
     printf '%s' "$lookup" | python3 -c 'import json,sys
@@ -238,9 +239,8 @@ if not isinstance(data,list) or len(data) != 1 or data[0].get("id") != sys.argv[
     worktree_receipt="$("$worktree_script" prepare --repo "$rig" --root "$worktree_root" --bead "$1" --base-ref "$base_ref")" || die "cannot prepare an isolated worktree for $1"
     work_dir="$(printf '%s' "$worktree_receipt" | python3 -c 'import json,sys; print(json.load(sys.stdin)["worktree"])')" || die "worktree helper returned an unreadable receipt"
     # Official single-bead intake: home the source bead in the rig store and
-    # attach the native formula to the rig-scoped planner. No city-scoped agent
-    # ever claims this rig-homed bead, so the v1.3.5 cross-store claim bug is not
-    # exercised. The Mayor is an optional monitor and is not on this path.
+    # attach the native formula to the rig-scoped planner. The v1.4 scoped
+    # control dispatcher advances the graph; the Mayor is not on this path.
     exec "$gc_bin" sling "$rig_name/agentops.plan-reviewer" "$1" \
       --on agentops-experiment --nudge --json \
       --var work_dir="$work_dir" \
@@ -279,15 +279,47 @@ if not isinstance(data,list) or len(data) != 1 or data[0].get("id") != sys.argv[
     [ "$#" -eq 0 ] || die "doctor accepts no arguments"
     exec "$gc_bin" doctor --json
     ;;
+  dashboard)
+    if [ "$#" -eq 0 ]; then
+      exec "$gc_bin" dashboard --no-open
+    fi
+    [ "$#" -eq 1 ] && [ "$1" = "--open" ] || die "dashboard accepts only --open"
+    exec "$gc_bin" dashboard
+    ;;
+  packs)
+    [ "$#" -ge 1 ] || die "packs requires list, refresh, search, show, or maintainers"
+    sub="$1"; shift
+    case "$sub" in
+      list)
+        [ "$#" -eq 0 ] || die "packs list accepts no arguments"
+        exec "$gc_bin" pack registry list
+        ;;
+      refresh)
+        [ "$#" -le 1 ] || die "packs refresh accepts at most one registry name"
+        exec "$gc_bin" pack registry refresh "$@"
+        ;;
+      search)
+        exec "$gc_bin" pack registry search "$@"
+        ;;
+      show)
+        [ "$#" -eq 1 ] || die "packs show requires one pack name"
+        exec "$gc_bin" pack registry show "$1"
+        ;;
+      maintainers)
+        [ "$#" -eq 0 ] || die "packs maintainers accepts no arguments"
+        exec "$gc_bin" pack registry show main:gascity --refresh
+        ;;
+      *) die "unknown packs operation: $sub" ;;
+    esac
+    ;;
   mayor)
     [ "$#" -ge 1 ] || { usage; exit 2; }
     sub="$1"; shift
     case "$sub" in
       start)
         [ "$#" -eq 0 ] || die "mayor start accepts no arguments"
-        # The Mayor is a mode=always named session, so the controller keeps it
-        # live; wake requests an immediate start rather than waiting for a
-        # patrol tick. It dispatches only; it never claims (see the mayor prompt).
+        # The Mayor is on-demand in v1.4; wake opens the human/agent door without
+        # creating a standing polling loop. It dispatches only and never claims.
         exec "$gc_bin" session wake "$mayor_alias"
         ;;
       status)

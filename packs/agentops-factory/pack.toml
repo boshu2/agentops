@@ -1,17 +1,16 @@
 [pack]
 name = "agentops-factory"
 schema = 2
-version = "0.2.0"
-requires_gc = ">=1.3.5"
-description = "Thin AgentOps role pack over native Gas City routing, formulas, and Beads state."
+version = "0.3.0"
+requires_gc = ">=1.4.0"
+description = "Thin AgentOps role pack over Gas City 1.4 routing, runs, registry packs, and Beads state."
 
 [[named_session]]
 template = "mayor"
 scope = "city"
-# always: the controller keeps the standing shepherd session live even with no
-# ready demand, so a human can attach to it and an agent can `mayor tell` it at
-# any time. This is the 3.3 human-and-agent door.
-mode = "always"
+# Formula propulsion belongs to the store-scoped v1.4 control dispatcher. The
+# Mayor remains an explicit human/agent inspection and manual-dispatch door.
+mode = "on_demand"
 
 [[named_session]]
 template = "refiner"
@@ -20,3 +19,10 @@ mode = "on_demand"
 
 [imports.executor]
 source = "../agentops-executor"
+
+# The workflow family used by Gas City's public Maintainer City. The root pack
+# resolves through the built-in "main" registry. The city template separately
+# binds its sibling rig-role pack as `gc`, matching the workflow's stock targets.
+[imports.gascity]
+source = "https://github.com/gastownhall/gascity-packs/tree/main/gascity"
+version = "sha:3b3b89f2011e06d84459aa7bea1552382f13930a"

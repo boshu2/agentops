@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "registries": {
+    "main": {
+      "source": "https://raw.githubusercontent.com/gastownhall/gascity-packs/main/registry.toml"
+    },
+    "community": {
+      "source": "https://registry.gascity.com/registry.toml",
+      "configured_by_default": false
+    }
+  },
+  "maintainer_workflow": {
+    "name": "gascity",
+    "version": "0.1.6",
+    "source": "https://github.com/gastownhall/gascity-packs/tree/main/gascity",
+    "commit": "3b3b89f2011e06d84459aa7bea1552382f13930a",
+    "hash": "sha256:149772065f9f2862965146e74d853d17e432628f57d25a4386bbef0fb6744e33",
+    "roles_source": "https://github.com/gastownhall/gascity-packs/tree/main/gascity/roles",
+    "public_factory": "https://factory.gascity.com"
+  }
+}

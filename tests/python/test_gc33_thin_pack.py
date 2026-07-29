@@ -19,8 +19,10 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 DEPLOY = REPO_ROOT / "deploy" / "gc"
 FACTORY = REPO_ROOT / "packs" / "agentops-factory"
 EXECUTOR = REPO_ROOT / "packs" / "agentops-executor"
-GC_COMMIT = "8ffc009ded781a2ada2077f3a29bd712b2def0bf"
+GC_COMMIT = "a7297c511d637a3609947386f3389d76ddb2f23b"
 BD_COMMIT = "8e4e59d39f3459a43cf21a3236a13eca4dd874f7"
+GASCITY_PACK_COMMIT = "3b3b89f2011e06d84459aa7bea1552382f13930a"
+GASCITY_PACK_VERSION = "0.1.6"
 PINNED_INTEGRATION = bool(os.environ.get("GC_BIN") and os.environ.get("AGENTOPS_GC_INTEGRATION") == "1")
 
 
@@ -65,7 +67,7 @@ class ThinPackTests(unittest.TestCase):
             cwd=repo,
         )
         self.assertEqual(initialized.returncode, 0, initialized.stderr)
-        # GC v1.3.5 adopts the on-disk prefix, while BD v1.1.0 stores the init
+        # GC v1.4.0 adopts the on-disk prefix, while BD v1.1.0 stores the init
         # prefix in Dolt only. Model the GC-compatible source config that an
         # existing rig carries before official bd bootstrap moves its durable
         # database into a fresh city's managed server.
@@ -124,7 +126,7 @@ class ThinPackTests(unittest.TestCase):
         self.assertEqual(city["providers"]["claude"]["print_args"], [])
         self.assertNotIn("path", city["providers"]["claude"])
         self.assertNotIn("args_append", city["providers"]["claude"])
-        self.assertEqual(city["daemon"]["formula_v2"], True)
+        self.assertNotIn("formula_v2", city["daemon"])
 
     def test_formula_is_one_native_dependency_chain(self) -> None:
         formula = tomllib.loads((FACTORY / "formulas/agentops-experiment.toml").read_text(encoding="utf-8"))
@@ -153,7 +155,7 @@ class ThinPackTests(unittest.TestCase):
             self.assertEqual(config["provider"], provider, path)
             self.assertEqual(config["option_defaults"], {"permission_mode": config["option_defaults"]["permission_mode"], "model": model, "effort": effort}, path)
             # Every role is a one_shot worker except the Mayor, which is the
-            # standing dispatch shepherd (asserted separately).
+            # on-demand human/manual-dispatch door (asserted separately).
             if path == mayor_agent:
                 self.assertNotIn("lifecycle", config, path)
             else:
@@ -171,6 +173,8 @@ class ThinPackTests(unittest.TestCase):
         self.assertEqual(pair["gc"]["source_commit"], GC_COMMIT)
         self.assertEqual(pair["bd"]["repository"], "https://github.com/steveyegge/beads.git")
         self.assertEqual(pair["bd"]["source_commit"], BD_COMMIT)
+        self.assertEqual(pair["gc"]["version"], "1.4.0")
+        self.assertEqual(pair["gc"]["runtime_commit"], "a7297c5")
         bootstrap = (DEPLOY / "bootstrap.sh").read_text(encoding="utf-8")
         self.assertIn(GC_COMMIT, bootstrap)
         self.assertIn(BD_COMMIT, bootstrap)
@@ -197,8 +201,8 @@ class ThinPackTests(unittest.TestCase):
         self,
         root: Path,
         *,
-        gc_reported_version: str = "1.3.5",
-        gc_reported_commit: str = "8ffc009ded781a2ada2077f3a29bd712b2def0bf",
+        gc_reported_version: str = "1.4.0",
+        gc_reported_commit: str = "a7297c511d637a3609947386f3389d76ddb2f23b",
         bd_reported_version: str = "1.1.0",
         bd_reported_commit: str = "8e4e59d39",
     ) -> dict[str, object]:
@@ -245,12 +249,12 @@ class ThinPackTests(unittest.TestCase):
         def sha256(path: Path) -> str:
             return hashlib.sha256(path.read_bytes()).hexdigest()
 
-        gc_archive_name = f"gascity_1.3.5_{tag}.tar.gz"
+        gc_archive_name = f"gascity_1.4.0_{tag}.tar.gz"
         bd_archive_name = f"beads_1.1.0_{tag}.tar.gz"
         gc_archive = make_archive(gc_archive_name, "gc", gc_script)
         bd_archive = make_archive(bd_archive_name, "bd", bd_script)
 
-        gc_ck = cache / "gascity_1.3.5_checksums.txt"
+        gc_ck = cache / "gascity_1.4.0_checksums.txt"
         gc_ck.write_text(f"{sha256(gc_archive)}  {gc_archive_name}\n", encoding="utf-8")
         bd_ck = cache / "checksums.txt"
         bd_ck.write_text(f"{sha256(bd_archive)}  {bd_archive_name}\n", encoding="utf-8")
@@ -259,15 +263,15 @@ class ThinPackTests(unittest.TestCase):
             "schema_version": 1,
             "accepted_pairs": [
                 {
-                    "id": "gascity-v1.3.5-beads-v1.1.0",
+                    "id": "gascity-v1.4.0-beads-v1.1.0",
                     "status": "qualified",
                     "gc": {
                         "repository": "https://github.com/gastownhall/gascity.git",
-                        "ref": "v1.3.5",
-                        "version": "1.3.5",
+                        "ref": "v1.4.0",
+                        "version": "1.4.0",
                         "source_commit": GC_COMMIT,
-                        "runtime_commit": "8ffc009d",
-                        "release_checksum_asset": "gascity_1.3.5_checksums.txt",
+                        "runtime_commit": "a7297c5",
+                        "release_checksum_asset": "gascity_1.4.0_checksums.txt",
                         "release_checksum_sha256": sha256(gc_ck),
                     },
                     "bd": {
@@ -322,7 +326,7 @@ class ThinPackTests(unittest.TestCase):
             self.assertEqual(set(receipt["runtime"]), {"gc", "bd"})
             self.assertEqual(receipt["runtime"]["gc"]["path"], "bin/gc")
             self.assertEqual(receipt["runtime"]["bd"]["path"], "bin/bd")
-            self.assertEqual(receipt["runtime"]["gc"]["version"], "1.3.5")
+            self.assertEqual(receipt["runtime"]["gc"]["version"], "1.4.0")
             self.assertEqual(receipt["runtime"]["bd"]["version"], "1.1.0")
             self.assertEqual(receipt["runtime"]["gc"]["commit"], GC_COMMIT)
             self.assertEqual(receipt["runtime"]["bd"]["commit"], "8e4e59d39")
@@ -432,8 +436,8 @@ class ThinPackTests(unittest.TestCase):
     def test_intake_never_routes_through_the_city_scoped_mayor(self) -> None:
         # Static consistency proof: intake (feed) homes rig beads on the rig
         # planner and never slings the source bead to agentops.mayor. The Mayor
-        # is a dispatch shepherd (it slings ready STEP beads to their rig
-        # run-targets), so it must never be a sling *target* on the intake path.
+        # can manually dispatch a ready step to its rig run-target, so it must
+        # never be a sling *target* on the intake path.
         surfaces = list(DEPLOY.glob("*.sh")) + list(FACTORY.rglob("*.md"))
         for path in surfaces:
             text = path.read_text(encoding="utf-8")
@@ -465,7 +469,7 @@ class ThinPackTests(unittest.TestCase):
     # dynamically, so the content may change freely.
     #
     # Fidelity: the gc stub REJECTS (nonzero + stderr) any first verb not on the
-    # allowlist of verified v1.3.5 surfaces the pack actually drives through gc
+    # allowlist of verified v1.4.0 surfaces the pack actually drives through gc
     # (bd goes through the separate bd stub). This makes a test fail loudly if the
     # pack ever calls an unverified gc verb. GC_STUB_FAIL=<verb> forces a nonzero
     # exit for an allowlisted verb, to exercise fail-closed error propagation.
@@ -702,7 +706,7 @@ class ThinPackTests(unittest.TestCase):
                 "--type", "task", "--json",
             ])
 
-    def test_mayor_start_wakes_the_named_shepherd_session(self) -> None:
+    def test_mayor_start_wakes_the_named_on_demand_session(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             base = Path(temporary) / "has space"  # exercises argv quoting
             base.mkdir()
@@ -735,7 +739,7 @@ class ThinPackTests(unittest.TestCase):
                 env=self._invoke_env(gc_log=gc_log),
             )
             self.assertEqual(result.returncode, 0, result.stderr)
-            # The clean v1.3.5 primitive: a notified mail message to the mayor.
+            # The clean v1.4.0 primitive: a notified mail message to the mayor.
             # The whole quoted instruction survives as one argv element.
             self.assertEqual(
                 gc_log.read_text(encoding="utf-8").splitlines(),
@@ -815,7 +819,7 @@ class ThinPackTests(unittest.TestCase):
             self.assertNotIn("not started", result.stdout)
 
     def test_gc_stub_rejects_non_allowlisted_verbs(self) -> None:
-        # Fidelity guard: the pack must only drive gc through verified v1.3.5
+        # Fidelity guard: the pack must only drive gc through verified v1.4.0
         # verbs. A non-allowlisted verb passthrough fails loudly.
         with tempfile.TemporaryDirectory() as temporary:
             base = Path(temporary)
@@ -830,24 +834,39 @@ class ThinPackTests(unittest.TestCase):
             self.assertNotEqual(result.returncode, 0)
             self.assertIn("non-allowlisted command", result.stderr)
 
-    def test_heartbeat_order_is_a_valid_cooldown_nudge(self) -> None:
-        # Finding 1: liveness. The pack ships a scheduled order that re-nudges the
-        # Mayor. Schema-lint it against the v1.3.5 order surface and the 2-5m band.
-        order_path = FACTORY / "orders/shepherd-heartbeat.toml"
-        self.assertTrue(order_path.is_file(), order_path)
-        order = tomllib.loads(order_path.read_text(encoding="utf-8"))["order"]
-        self.assertEqual(order["trigger"], "cooldown")
-        self.assertEqual(order.get("scope"), "city")
-        # Interval must be a Go duration in the 2-5 minute band.
-        self.assertRegex(order["interval"], r"^[1-9][0-9]*m$")
-        minutes = int(order["interval"][:-1])
-        self.assertGreaterEqual(minutes, 2)
-        self.assertLessEqual(minutes, 5)
-        # It nudges the Mayor via the same mail-send primitive, with --notify.
-        exec_cmd = order["exec"]
-        self.assertIn("gc mail send", exec_cmd)
-        self.assertIn("--to agentops.mayor", exec_cmd)
-        self.assertIn("--notify", exec_cmd)
+    def test_v14_pack_composes_the_registry_pinned_maintainer_workflow(self) -> None:
+        factory = tomllib.loads((FACTORY / "pack.toml").read_text(encoding="utf-8"))
+        executor = tomllib.loads((EXECUTOR / "pack.toml").read_text(encoding="utf-8"))
+        city = tomllib.loads(
+            (DEPLOY / "city.toml")
+            .read_text(encoding="utf-8")
+            .replace("__GC_MAX_ACTIVE_SESSIONS__", "2")
+        )
+        registry = json.loads((DEPLOY / "pack-registry.lock.json").read_text(encoding="utf-8"))
+        accepted = registry["maintainer_workflow"]
+        self.assertEqual(accepted["name"], "gascity")
+        self.assertEqual(accepted["version"], GASCITY_PACK_VERSION)
+        self.assertEqual(accepted["commit"], GASCITY_PACK_COMMIT)
+        self.assertEqual(factory["pack"]["requires_gc"], ">=1.4.0")
+        self.assertEqual(executor["pack"]["requires_gc"], ">=1.4.0")
+        self.assertEqual(
+            factory["imports"]["gascity"]["version"],
+            f"sha:{GASCITY_PACK_COMMIT}",
+        )
+        self.assertEqual(
+            factory["imports"]["gascity"]["source"],
+            "https://github.com/gastownhall/gascity-packs/tree/main/gascity",
+        )
+        self.assertEqual(
+            city["defaults"]["rig"]["imports"]["gc"]["version"],
+            f"sha:{GASCITY_PACK_COMMIT}",
+        )
+        self.assertEqual(
+            city["defaults"]["rig"]["imports"]["gc"]["source"],
+            accepted["roles_source"],
+        )
+        self.assertNotIn("gascity-roles", factory["imports"])
+        self.assertFalse((FACTORY / "orders/shepherd-heartbeat.toml").exists())
 
     def test_routed_bead_recovery_is_wake_not_resling(self) -> None:
         # Finding 3 sanity: the docs must state that re-dispatching an already
@@ -870,20 +889,20 @@ class ThinPackTests(unittest.TestCase):
         self.assertIn("UNTRUSTED DATA", prompt)
         self.assertIn("NEVER executed", prompt)
 
-    def test_named_mayor_session_is_a_standing_always_shepherd(self) -> None:
-        # The 3.3 human-and-agent door needs a resident session: mode=always so
-        # the controller keeps it live with no demand, and no one_shot lifecycle
-        # so the pane stays attachable rather than exiting after one run.
+    def test_named_mayor_session_is_on_demand_in_v14(self) -> None:
+        # Formula propulsion belongs to the v1.4 control dispatcher. The Mayor
+        # remains an explicit human/agent door without consuming a standing seat.
         pack = tomllib.loads((FACTORY / "pack.toml").read_text(encoding="utf-8"))
         mayor_sessions = [
             s for s in pack.get("named_session", []) if s.get("template") == "mayor"
         ]
         self.assertEqual(len(mayor_sessions), 1)
         self.assertEqual(mayor_sessions[0].get("scope"), "city")
-        self.assertEqual(mayor_sessions[0].get("mode"), "always")
+        self.assertEqual(mayor_sessions[0].get("mode"), "on_demand")
         agent = tomllib.loads((FACTORY / "agents/mayor/agent.toml").read_text(encoding="utf-8"))
         self.assertNotIn("lifecycle", agent)
-        self.assertLessEqual(agent.get("min_active_sessions", 0), agent["max_active_sessions"])
+        self.assertNotIn("min_active_sessions", agent)
+        self.assertNotIn("max_active_sessions", agent)
 
     def test_teardown_waits_for_scoped_drain_and_fails_with_exact_residue(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
@@ -950,7 +969,7 @@ class ThinPackTests(unittest.TestCase):
                 "--bead", "age-test.1", "--base-ref", "main",
             )
             first = run(*command)
-            self.assertEqual(first.returncode, 0, first.stderr)
+            self.assertEqual(first.returncode, 0, first.stdout + first.stderr)
             second = run(*command)
             self.assertEqual(second.returncode, 0, second.stderr)
             self.assertEqual(json.loads(first.stdout), json.loads(second.stdout))
@@ -1105,7 +1124,7 @@ class ThinPackTests(unittest.TestCase):
                 "--gc-bin", str(gc_bin), "--delivery-mode", "manual", "--telemetry-mode", "off",
             )
             first = run(*command)
-            self.assertEqual(first.returncode, 0, first.stderr)
+            self.assertEqual(first.returncode, 0, first.stdout + first.stderr)
             marker_path = Path(first.stdout.strip())
             before = marker_path.read_bytes()
             second = run(*command)
@@ -1132,6 +1151,30 @@ class ThinPackTests(unittest.TestCase):
             )
             self.assertEqual(compiled.returncode, 0, compiled.stderr)
             self.assertEqual(json.loads(compiled.stdout)["name"], "agentops-experiment")
+            maintainer_formula = run(
+                str(gc_bin), "--city", str(city), "--rig", marker["rig_name"],
+                "formula", "show", "do-work", "--json", env=native_env,
+            )
+            self.assertEqual(maintainer_formula.returncode, 0, maintainer_formula.stderr)
+            maintainer_definition = json.loads(maintainer_formula.stdout)
+            self.assertEqual(maintainer_definition["name"], "do-work")
+            self.assertIn(
+                "gc.implementation-worker",
+                json.dumps(maintainer_definition, sort_keys=True),
+            )
+            agents = run(
+                str(gc_bin), "--city", str(city), "--rig", marker["rig_name"],
+                "agent", "list", "--json", env=native_env,
+            )
+            self.assertEqual(agents.returncode, 0, agents.stderr)
+            agent_rows = json.loads(agents.stdout)
+            serialized_agents = json.dumps(agent_rows, sort_keys=True)
+            self.assertIn("core.control-dispatcher", serialized_agents)
+            # Match the stock Gas City template: official workflow formulas
+            # target roles in the default-rig `gc` import namespace.
+            self.assertIn("gc.run-operator", serialized_agents)
+            self.assertIn("gc.implementation-worker", serialized_agents)
+            self.assertNotIn("agentops.run-operator", serialized_agents)
             # Intake resolves to the rig-scoped planner (official single-bead
             # dispatch), not the city-scoped Mayor.
             planner_target = f"{marker['rig_name']}/agentops.plan-reviewer"

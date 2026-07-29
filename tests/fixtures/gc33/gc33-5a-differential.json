@@ -1,7 +1,7 @@
 {
   "schema_version": "gc33-5a-differential.v1",
   "sources": {
-    "gas_city": {"version": "v1.3.5", "commit": "8ffc009ded781a2ada2077f3a29bd712b2def0bf"},
+    "gas_city": {"version": "v1.4.0", "commit": "a7297c511d637a3609947386f3389d76ddb2f23b"},
     "beads": {"version": "v1.1.0", "commit": "8e4e59d39f3459a43cf21a3236a13eca4dd874f7"},
     "embedded_packs": {"commit": "33d3a430a67d1782ad364556cb566bdb01d0afe3"}
   },

@@ -92,19 +92,23 @@ loop end to end: workers implement in isolated worktrees, a fresh agent
 validates, a refiner merges to your repo's main branch. The installer fetches
 official checksummed Gas City and Beads binaries; you build nothing.
 
-You drive it by talking to one agent, the Mayor: attach to its session in your
-terminal, or let another agent steer it.
+Gas City 1.4 runs the flow through a scope-local control dispatcher and exposes
+each formula as a dashboard/API run. The Mayor remains an optional on-demand
+human/agent door for inspection or one manual dispatch.
 
 ```bash
 deploy/gc/invoke.sh --city <city> create "task title"       # define work
 deploy/gc/invoke.sh --city <city> feed <bead-id>            # hand it to the city
+deploy/gc/invoke.sh --city <city> dashboard                 # print the run UI
 deploy/gc/invoke.sh --city <city> mayor tell "dispatch <bead-id>"
 ```
 
 The [`using-gc`](skills/using-gc/SKILL.md) skill is the operating manual,
 including the four observability layers and what to do when they disagree.
-**Preview:** pinned to official Gas City v1.3.5, which carries three upstream
-defects we found and filed; the label comes off at the next official pin bump.
+**Preview:** pinned to official Gas City v1.4.0 and the registry-pinned
+`gascity` 0.1.6 workflow used by the public Maintainer City. Deterministic native
+qualification is required here; the preview label comes off after one clean
+mixed-provider canary over the final candidate.
 Setup and details: [`deploy/gc/README.md`](deploy/gc/README.md) and the
 [v3.3.0 release notes](https://github.com/boshu2/agentops/releases/tag/v3.3.0).
 

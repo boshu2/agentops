@@ -1,9 +1,8 @@
 # AgentOps Gas City pack
 
-**Status: preview — this is the 3.3 supported-candidate flow.** The mayor-driven
-door below is the flow proposed for support. Promotion to supported is still
-gated on the next official Gas City release being pinned, deterministically
-qualified, and one clean mixed-provider canary passing.
+**Status: preview — this is the Gas City 1.4 supported-candidate flow.** Gas City 1.4 is
+pinned and deterministically qualified below. Promotion to supported remains
+gated on one clean mixed-provider canary over the final candidate.
 
 This is a thin AgentOps role pack over official Gas City. Gas City owns
 sessions, routing, formulas, orders, and OTEL. Beads owns work and dependencies.
@@ -23,37 +22,103 @@ required; the tools it uses are `curl`, `tar`, `python3`, and
 `shasum`/`sha256sum`. It fetches the plain GitHub release download URLs, so no
 `gh` authentication is needed.
 
-The adjacent lock pins Gas City v1.3.5 at
-`8ffc009ded781a2ada2077f3a29bd712b2def0bf` and Beads v1.1.0 at
+The adjacent toolchain lock pins Gas City v1.4.0 at
+`a7297c511d637a3609947386f3389d76ddb2f23b` and Beads v1.1.0 at
 `8e4e59d39f3459a43cf21a3236a13eca4dd874f7`.
+`pack-registry.lock.json` separately accepts the built-in `main` registry and
+the official `gascity` workflow pack v0.1.6 at
+`3b3b89f2011e06d84459aa7bea1552382f13930a`.
 
-## Known upstream issues (Gas City v1.3.5)
+## Gas City 1.4 integration
 
-**Demand-driven spawn is broken for rig work (#4586) — the shepherd Mayor is the
-supported propulsion path.** On v1.3.5 the controller never loads external-rig
-bead stores, so demand-driven worker spawning never fires for rig-routed step
-beads: ready formula steps sit un-run because no session is spawned to claim
-them. Nudge-driven dispatch is unaffected — slinging a ready step bead to its
-run-target with `--nudge` spawns that session, which claims the rig-scoped bead
-and runs it. The standing Mayor shepherd does exactly this: it watches ready rig
-work and sling-nudges each ready step bead to its run-target. This is also the
-stock Gas City mayor's documented job (`gc bd create -> gc sling <agent>
-<bead-id> -> monitor`), so once #4586 is fixed upstream the shepherd becomes
-redundant-but-harmless for propulsion — which is the stock design anyway.
+The v1.3 heartbeat workaround is gone. Every graph-owning city or rig scope uses
+the bundled `core.control-dispatcher`; workers claim routed work at their own
+store boundary. The AgentOps Mayor remains an on-demand status/manual-dispatch
+door and consumes no standing seat.
 
-**Cross-store claim bug — not exercised by the pack's flow.** On v1.3.5, a
-*city-scoped* agent that claims a *rig-homed* bead federated-reads it across rig
-stores and finds it, but the claim mutation runs against the agent's own city
-store and returns `bead not found`. The pack never does this: `feed` homes the
-source bead in the rig store and the formula routes to *rig-scoped* roles, and
-the Mayor dispatches but never claims (rig roles claim). The bug affects only
-city-scoped agents that claim — for example a Mayor rewired to claim source
-beads. It is fixed upstream after v1.3.5.
+The pack composes the registry-pinned upstream `gascity` workflows and rig roles
+used by the public Maintainer City at
+[factory.gascity.com](https://factory.gascity.com). This adds upstream
+`do-work`, build, review, issue, and PR formula families plus
+`gc.run-operator`/`gc.implementation-worker` in every AgentOps rig. The
+workflow pack is composed into `agentops-factory`, while its sibling role pack
+is deliberately bound at `defaults.rig.imports.gc`: that is the stock Gas City
+binding and the namespace the official formulas target by default.
+`agentops-experiment` remains the default AgentOps flow and semantic completion
+still requires `verdict.v2`.
 
-**Teardown hang.** On v1.3.5 the tmux teardown can rarely hang under process
-churn, from a recursive live process-walk with PID reuse. Workaround: kill the
-hung teardown and re-run `teardown.sh`. The fix is in upstream review
-(gastownhall/gascity PR #3985).
+Bootstrap refreshes the built-in registry, verifies `gascity` 0.1.6 against the
+repository registry lock, installs all imports, and records the resulting
+`packs.lock`. The optional community catalog can be added with:
+
+```sh
+gc pack registry add community https://registry.gascity.com/registry.toml
+gc pack registry refresh
+gc pack registry search --registry community --all
+```
+
+### Upgrading an existing city
+
+Run the v1.4 convergence before starting the orchestrator:
+
+```sh
+gc doctor --fix
+gc import install
+gc supervisor stop --wait
+gc start
+```
+
+Confirm `gc version` resolves the intended 1.4 binary, each graph-owning scope
+has an unsuspended `core.control-dispatcher`, and `gc doctor` has no blocking
+failures. Repair or explicitly unregister stale registered cities that block
+startup. The dashboard is now served by the supervisor; remove any old
+standalone-dashboard service or reverse-proxy target.
+
+### Retire old HQ/canary registrations and start the replacement
+
+Stop cities individually; do not stop the machine-wide supervisor that will
+host the replacement. Resolve the exact registered names first:
+
+```sh
+gc cities --json
+
+old_hq=/path/to/old-hq
+old_canary=/path/to/old-canary
+gc stop "$old_hq" --timeout 45s
+gc unregister "$old_hq"
+gc stop "$old_canary" --timeout 45s
+gc unregister "$old_canary"
+
+gc cities --json
+```
+
+`gc unregister` intentionally fails for an unknown target. If `gc cities`
+already omits an old city, it is retired from the supervisor registry; inspect
+and remove any separately installed legacy dashboard service outside GC.
+Preserve the old directories until their Beads state is backed up or confirmed
+disposable.
+
+Bootstrap and start the replacement only after the old registrations are
+settled:
+
+```sh
+new_city=/path/to/gc-agentops
+rig_root=/path/to/agentops
+deploy/gc/bootstrap.sh \
+  --city "$new_city" \
+  --rig "$rig_root" \
+  --gc-bin /path/to/toolchain/bin/gc \
+  --delivery-mode auto \
+  --telemetry-mode required \
+  --start
+
+gc cities --json
+gc --city "$new_city" status
+gc --city "$new_city" doctor --json
+```
+
+`bootstrap.sh --start` registers the new city with the v1.4 machine-wide
+supervisor, starts reconciliation, resumes the adopted rig, and runs doctor.
 
 ## Bootstrap
 
@@ -76,37 +141,34 @@ deploy/gc/bootstrap.sh \
 `manual` delivery leaves a checked PR open. `auto` asks GitHub to merge it after
 hosted checks. The bootstrap uses the user default Git and GitHub identity.
 
-## Default flow: the mayor-driven door (human or agent)
+## Default flow: run-centered, with an optional Mayor door
 
-After bootstrap, the loop is: start the Mayor, drive it (a human attaches, or an
-agent tells it), author intent with `create`/`feed`, and let the Mayor shepherd
-each step through the native formula onto `main`.
+After bootstrap, author intent with `create`, start one run with `feed`, and use
+the v1.4 dashboard/run API while the scoped control dispatcher advances the
+formula.
 
 Think of controlling the Mayor like driving any tmux-resident agent (NTM-style):
-one standing session you steer. The difference is that Gas City ships first-class
-control primitives — mail and sling — so you steer it with messages, not
-keystroke injection. There are two doors into the same session:
+one on-demand session you steer. The difference is that Gas City ships
+first-class control primitives — mail and sling — so you steer it with messages,
+not keystroke injection. There are two doors into the same session:
 
 ```sh
-# 1. Start the standing Mayor shepherd (idempotent; it stays resident).
-deploy/gc/invoke.sh --city /path/to/city mayor start
-
-# 2a. HUMAN door: attach to the Mayor's tmux session and drive interactively.
-deploy/gc/invoke.sh --city /path/to/city mayor status   # prints the attach line:
-#   tmux -L <socket> attach -t <mayor-session>
-
-# 2b. AGENT door: drive the Mayor with messages. Reference BEAD IDS, never prose.
-deploy/gc/invoke.sh --city /path/to/city mayor tell "dispatch test-abc"
-
-# 3. Author intent (either door). create writes a source bead with exact
-#    acceptance; feed homes it in the rig store and attaches the native formula.
+# 1. Author intent and launch the bounded AgentOps formula.
 deploy/gc/invoke.sh --city /path/to/city create "Add a widget" -d "why and how"
 deploy/gc/invoke.sh --city /path/to/city feed BEAD-ID
 
-# 4. Propulsion is automatic: a scheduled heartbeat order re-nudges the Mayor
-#    every few minutes to run a dispatch pass, so each ready step is slung to its
-#    run-target (plan -> implement -> validate -> deliver) as it becomes ready.
-#    `mayor tell "dispatch <id>"` is for on-demand nudges between heartbeats.
+# 2. Print the supervisor-hosted run dashboard.
+deploy/gc/invoke.sh --city /path/to/city dashboard
+
+# 3. Optional HUMAN door: start and attach to the on-demand Mayor.
+deploy/gc/invoke.sh --city /path/to/city mayor start
+deploy/gc/invoke.sh --city /path/to/city mayor status   # prints the attach line:
+#   tmux -L <socket> attach -t <mayor-session>
+
+# 4. Optional AGENT door: reference BEAD IDS, never prose.
+deploy/gc/invoke.sh --city /path/to/city mayor tell "dispatch test-abc"
+
+# 5. Read state from GC and Beads.
 deploy/gc/invoke.sh --city /path/to/city mayor status
 deploy/gc/invoke.sh --city /path/to/city status
 deploy/gc/invoke.sh --city /path/to/city doctor
@@ -127,21 +189,9 @@ agentops-experiment --nudge`, plus the role targets as formula vars). The Mayor
 DISPATCHES existing beads; it never authors work and never claims. So drivers
 (human or agent) hand the Mayor BEAD IDS, never paraphrased work — a paraphrase
 is a telephone game that drifts from the acceptance the bead already carries.
-Only rig-scoped roles claim, so the v1.3.5 cross-store claim bug is never
-exercised. No AgentOps program graph or delivery ledger is created; the Beads
-graph is the program graph.
-
-**Why the Mayor propels — and how it stays awake.** On v1.3.5 demand-driven
-spawning is broken for rig work (#4586), so ready formula steps would otherwise
-sit un-run. The standing Mayor shepherd sling-nudges each ready step bead to its
-run-target — the supported propulsion path, and also the stock Gas City mayor
-pattern, so it survives the upstream fix (see Known upstream issues). But
-`mode=always` only keeps the session RESIDENT; nothing re-prompts it when a step
-completes. So the pack ships a scheduled heartbeat order
-(`packs/agentops-factory/orders/shepherd-heartbeat.toml`, a `cooldown` order on a
-few-minute interval) that re-nudges the Mayor to run a fresh dispatch pass. Each
-pass is cheap when nothing is ready. `mayor tell` remains the on-demand path for
-dispatching a specific bead id between heartbeats.
+Only rig-scoped roles claim. No AgentOps program graph or delivery ledger is
+created; the Beads graph is the program graph. The Mayor is a manual escape
+hatch for a ready bead, not the v1.4 propulsion engine.
 
 ### Provider wedge prerequisite
 
@@ -154,8 +204,9 @@ them yourself before the first run.
 
 Four observability layers; each lies in its own way, so cycle all four:
 
-- **Robot state** — `invoke.sh --city C status` / `gc session list`: lifecycle
-  shape only; reports "active" through a wedged pane or dead network.
+- **Run/supervisor state** — `invoke.sh --city C dashboard`, `status`, and
+  `gc session list`: stage ladder, structured transcript, token rate, burn rate,
+  and lifecycle shape; an active roster can still hide a wedged pane.
 - **Bead graph** — `gc bd --rig <rig> ready|show <id>`: the only completion truth.
 - **Pane truth** — `tmux -L <socket> capture-pane -t <session> -p`: ground truth
   for wedges (update nags, trust prompts, API/DNS failures print here first).

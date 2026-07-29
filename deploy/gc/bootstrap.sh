@@ -20,6 +20,7 @@ EOF
 }
 
 script_dir="$(CDPATH='' cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+registry_lock="$script_dir/pack-registry.lock.json"
 city=""; rig=""; gc_bin=""; pack="$script_dir/../../packs/agentops-factory"
 rig_name=""; delivery_mode="auto"; telemetry_mode="auto"; start=0
 metrics_url="http://localhost:8428/opentelemetry/api/v1/push"
@@ -86,6 +87,7 @@ executor="$(canonical "$pack/../agentops-executor")"
 toolchain_root="$(dirname "$(dirname "$gc_bin")")"
 receipt="$toolchain_root/toolchain.json"
 [ -f "$receipt" ] || die "toolchain receipt is missing beside gc: $receipt"
+[ -f "$registry_lock" ] || die "pack registry lock is missing: $registry_lock"
 bd_bin="$toolchain_root/bin/bd"
 [ -x "$bd_bin" ] || die "paired bd binary is missing: $bd_bin"
 
@@ -110,7 +112,7 @@ print("\t".join((p["id"], p["gc"]["source_commit"], p["bd"]["source_commit"], r[
 PY
 )" || die "invalid toolchain receipt"
 IFS=$'\t' read -r pair_id gc_commit bd_commit gc_sha bd_sha <<<"$toolchain_identity"
-[ "$gc_commit" = "8ffc009ded781a2ada2077f3a29bd712b2def0bf" ] || die "unsupported Gas City commit: $gc_commit"
+[ "$gc_commit" = "a7297c511d637a3609947386f3389d76ddb2f23b" ] || die "unsupported Gas City commit: $gc_commit"
 [ "$bd_commit" = "8e4e59d39f3459a43cf21a3236a13eca4dd874f7" ] || die "unsupported Beads commit: $bd_commit"
 
 [ -n "$rig_name" ] || rig_name="$(basename "$rig")"
@@ -139,9 +141,9 @@ otel_disabled="true"
 [ "$telemetry_status" = "enabled" ] && otel_disabled="false"
 export GC_OTEL_METRICS_URL="$metrics_url" GC_OTEL_LOGS_URL="$logs_url" OTEL_EXPORTER_OTLP_ENDPOINT="" OTEL_SDK_DISABLED="$otel_disabled"
 
-request_digest="$(python3 - "$pack" "$executor" "$script_dir/city.toml" "$script_dir/worktree.sh" "$script_dir/refine.sh" "$pair_id" "$rig_name" "$bead_prefix" "$bead_database" "$base_ref" "$worktree_root" "$delivery_mode" "$telemetry_mode" "$telemetry_status" "$metrics_url" "$logs_url" "$max_active_sessions" <<'PY'
+request_digest="$(python3 - "$pack" "$executor" "$script_dir/city.toml" "$script_dir/worktree.sh" "$script_dir/refine.sh" "$registry_lock" "$pair_id" "$rig_name" "$bead_prefix" "$bead_database" "$base_ref" "$worktree_root" "$delivery_mode" "$telemetry_mode" "$telemetry_status" "$metrics_url" "$logs_url" "$max_active_sessions" <<'PY'
 import hashlib, json, os, sys
-factory, executor, template, worktree, refine, pair, rig_name, prefix, database, base, workers, delivery, tmode, tstatus, metrics, logs, maximum = sys.argv[1:]
+factory, executor, template, worktree, refine, registry, pair, rig_name, prefix, database, base, workers, delivery, tmode, tstatus, metrics, logs, maximum = sys.argv[1:]
 def tree_sha(root):
     h=hashlib.sha256()
     for parent,dirs,files in os.walk(root):
@@ -150,7 +152,7 @@ def tree_sha(root):
             path=os.path.join(parent,name); rel=os.path.relpath(path,root)
             h.update(rel.encode()+b"\0"+open(path,"rb").read()+b"\0")
     return h.hexdigest()
-request={"pair":pair,"factory":tree_sha(factory),"executor":tree_sha(executor),"template":hashlib.sha256(open(template,"rb").read()).hexdigest(),"worktree":hashlib.sha256(open(worktree,"rb").read()).hexdigest(),"refine":hashlib.sha256(open(refine,"rb").read()).hexdigest(),"rig_name":rig_name,"beads":{"prefix":prefix,"database":database},"base":base,"workers":workers,"delivery":delivery,"telemetry":{"mode":tmode,"status":tstatus,"metrics":metrics,"logs":logs},"max_sessions":int(maximum)}
+request={"pair":pair,"factory":tree_sha(factory),"executor":tree_sha(executor),"template":hashlib.sha256(open(template,"rb").read()).hexdigest(),"worktree":hashlib.sha256(open(worktree,"rb").read()).hexdigest(),"refine":hashlib.sha256(open(refine,"rb").read()).hexdigest(),"registry":hashlib.sha256(open(registry,"rb").read()).hexdigest(),"rig_name":rig_name,"beads":{"prefix":prefix,"database":database},"base":base,"workers":workers,"delivery":delivery,"telemetry":{"mode":tmode,"status":tstatus,"metrics":metrics,"logs":logs},"max_sessions":int(maximum)}
 print(hashlib.sha256(json.dumps(request,sort_keys=True,separators=(",",":")).encode()).hexdigest())
 PY
 )" || die "cannot derive requested configuration identity"
@@ -211,18 +213,10 @@ fi
 
 "$gc_bin" lint "$pack" --json >/dev/null
 "$gc_bin" lint "$executor" --json >/dev/null
-mkdir -p "$city/.gc-home"
-port="$(python3 - <<'PY'
-import socket
-s=socket.socket(); s.bind(("127.0.0.1",0)); print(s.getsockname()[1]); s.close()
-PY
-)"
-printf '[supervisor]\nport = %s\nbind = "127.0.0.1"\n' "$port" >"$city/.gc-home/supervisor.toml"
-GC_HOME="$city/.gc-home"; PATH="$gc_bin_dir:$PATH"; export GC_HOME PATH
-rendered="$(mktemp "${TMPDIR:-/tmp}/agentops-city.XXXXXX.toml")"
+rendered=""
 bootstrap_committed=0
 cleanup() {
-  rm -f "$rendered"
+  [ -z "$rendered" ] || rm -f "$rendered"
   if [ "$bootstrap_committed" -eq 0 ] && [ -d "$city" ]; then
     "$gc_bin" --city "$city" stop --force >/dev/null 2>&1 || true
     python3 - "$city" <<'PY'
@@ -234,6 +228,32 @@ PY
   fi
 }
 trap cleanup EXIT
+mkdir -p "$city/.gc-home"
+port="$(python3 - <<'PY'
+import socket
+s=socket.socket(); s.bind(("127.0.0.1",0)); print(s.getsockname()[1]); s.close()
+PY
+)"
+printf '[supervisor]\nport = %s\nbind = "127.0.0.1"\n' "$port" >"$city/.gc-home/supervisor.toml"
+GC_HOME="$city/.gc-home"; PATH="$gc_bin_dir:$PATH"; export GC_HOME PATH
+registry_entry="$("$gc_bin" pack registry show main:gascity --refresh --json)" || die "cannot refresh the built-in Gas City pack registry"
+python3 - "$registry_lock" "$registry_entry" <<'PY'
+import json, sys
+locked = json.load(open(sys.argv[1], encoding="utf-8"))
+entry = json.loads(sys.argv[2])
+workflow = locked.get("maintainer_workflow", {})
+release = next((item for item in entry.get("releases", []) if item.get("version") == workflow.get("version")), None)
+if locked.get("schema_version") != 1 or entry.get("registry") != "main":
+    raise SystemExit("unexpected Gas City registry identity")
+if entry.get("name") != workflow.get("name") or entry.get("source") != workflow.get("source"):
+    raise SystemExit("maintainer workflow source differs from pack registry lock")
+if not isinstance(release, dict):
+    raise SystemExit("maintainer workflow version is absent from the main registry")
+for field in ("commit", "hash"):
+    if release.get(field) != workflow.get(field):
+        raise SystemExit(f"maintainer workflow {field} differs from pack registry lock")
+PY
+rendered="$(mktemp "${TMPDIR:-/tmp}/agentops-city.XXXXXX.toml")"
 python3 - "$script_dir/city.toml" "$rendered" "$gc_bin" "$PATH" "$rig" "$worktree_root" "$city" "$base_ref" "$delivery_mode" "$rig_name" "$metrics_url" "$logs_url" "$max_active_sessions" "$otel_disabled" <<'PY'
 import hashlib, json, os, sys
 source, target, gc_bin, path, rig, workers, city, base, mode, rig_name, metrics, logs, maximum, disabled = sys.argv[1:]
@@ -285,12 +305,13 @@ if header not in text:
     text += f"\n{header}\nsource = {json.dumps(source)}\n"
     open(path, "w", encoding="utf-8").write(text)
 PY
+"$gc_bin" --city "$city" import install >/dev/null
 "$gc_bin" --city "$city" config show >/dev/null
 "$gc_bin" --city "$city" import status --json >/dev/null
 
-python3 - "$marker" "$city" "$rig" "$rig_name" "$pack" "$snapshot/agentops-factory" "$pair_id" "$gc_commit" "$bd_commit" "$gc_bin" "$bd_bin" "$gc_sha" "$bd_sha" "$delivery_mode" "$base_ref" "$worktree_root" "$telemetry_mode" "$telemetry_status" "$metrics_url" "$logs_url" "$otel_disabled" "$port" "$script_dir/city.toml" "$request_digest" "$max_active_sessions" "$bead_prefix" "$bead_database" <<'PY'
+python3 - "$marker" "$city" "$rig" "$rig_name" "$pack" "$snapshot/agentops-factory" "$pair_id" "$gc_commit" "$bd_commit" "$gc_bin" "$bd_bin" "$gc_sha" "$bd_sha" "$delivery_mode" "$base_ref" "$worktree_root" "$telemetry_mode" "$telemetry_status" "$metrics_url" "$logs_url" "$otel_disabled" "$port" "$script_dir/city.toml" "$registry_lock" "$request_digest" "$max_active_sessions" "$bead_prefix" "$bead_database" <<'PY'
 import hashlib, json, os, sys, tempfile
-(path,city,rig,rig_name,pack,pack_snapshot,pair,gc_commit,bd_commit,gc_bin,bd_bin,gc_sha,bd_sha,mode,base,workers,tmode,tstatus,metrics,logs,disabled,port,template,configuration,maximum,prefix,database)=sys.argv[1:]
+(path,city,rig,rig_name,pack,pack_snapshot,pair,gc_commit,bd_commit,gc_bin,bd_bin,gc_sha,bd_sha,mode,base,workers,tmode,tstatus,metrics,logs,disabled,port,template,registry,configuration,maximum,prefix,database)=sys.argv[1:]
 def tree_sha(root):
     h=hashlib.sha256()
     for parent,dirs,files in os.walk(root):
@@ -302,7 +323,7 @@ def tree_sha(root):
 pack_sha=tree_sha(os.path.dirname(pack_snapshot))
 policy_sha=hashlib.sha256(open(template,"rb").read()).hexdigest()
 city_config_sha=hashlib.sha256(open(os.path.join(city,"city.toml"),"rb").read()).hexdigest()
-m={"schema_version":1,"state":"ready","city":city,"rig":rig,"rig_name":rig_name,"bead_prefix":prefix,"bead_database":database,"pack_source":pack,"pack_snapshot":pack_snapshot,"pack_sha256":pack_sha,"policy_sha256":policy_sha,"city_config_sha256":city_config_sha,"configuration_digest":configuration,"toolchain_pair":pair,"toolchain":{"gc":{"path":gc_bin,"sha256":gc_sha,"commit":gc_commit},"bd":{"path":bd_bin,"sha256":bd_sha,"commit":bd_commit}},"delivery_mode":mode,"base_ref":base,"worktree_root":workers,"max_active_sessions":int(maximum),"telemetry":{"mode":tmode,"status":tstatus,"metrics_url":metrics,"logs_url":logs,"sdk_disabled":disabled == "true"},"supervisor_port":int(port)}
+m={"schema_version":1,"state":"ready","city":city,"rig":rig,"rig_name":rig_name,"bead_prefix":prefix,"bead_database":database,"pack_source":pack,"pack_snapshot":pack_snapshot,"pack_sha256":pack_sha,"pack_registry_lock_sha256":hashlib.sha256(open(registry,"rb").read()).hexdigest(),"policy_sha256":policy_sha,"city_config_sha256":city_config_sha,"configuration_digest":configuration,"toolchain_pair":pair,"toolchain":{"gc":{"path":gc_bin,"sha256":gc_sha,"commit":gc_commit},"bd":{"path":bd_bin,"sha256":bd_sha,"commit":bd_commit}},"delivery_mode":mode,"base_ref":base,"worktree_root":workers,"max_active_sessions":int(maximum),"telemetry":{"mode":tmode,"status":tstatus,"metrics_url":metrics,"logs_url":logs,"sdk_disabled":disabled == "true"},"supervisor_port":int(port)}
 os.makedirs(os.path.dirname(path),exist_ok=True)
 fd,tmp=tempfile.mkstemp(prefix=".bootstrap.",dir=os.path.dirname(path)); os.fchmod(fd,0o600)
 with os.fdopen(fd,"w",encoding="utf-8") as f: json.dump(m,f,indent=2,sort_keys=True); f.write("\n"); f.flush(); os.fsync(f.fileno())
