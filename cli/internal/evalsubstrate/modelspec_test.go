@@ -109,8 +109,10 @@ func TestModelSpecPath_IsCheckedAndEncodesColon(t *testing.T) {
 		t.Fatalf("encoded model-spec path still contains a raw ':': %q", got)
 	}
 	// The sink is the only constructor and it rejects unsafe ids: there is no
-	// unchecked join to bypass.
-	for _, bad := range []string{"../../escape", "..", "a/b", ""} {
+	// unchecked join to bypass. "ms%3Astable" must be rejected, not aliased:
+	// accepting it would let a raw id collide with the encoded form of
+	// "ms:stable" (the encoding must stay injective).
+	for _, bad := range []string{"../../escape", "..", "a/b", "", "ms%3Astable", "50%"} {
 		if _, err := ModelSpecPath("/root", bad); err == nil {
 			t.Errorf("ModelSpecPath(%q) = nil error; the checked sink must reject it", bad)
 		}

@@ -20,6 +20,12 @@ import (
 // decoded back — no decoder is needed. Returns an error for any id that is not a
 // safe single path component after encoding.
 func ModelSpecPath(evalsRoot, specID string) (string, error) {
+	// '%' is reserved in raw ids so the ':'→"%3A" encoding stays injective:
+	// otherwise the raw id "ms%3Astable" would alias the encoded form of
+	// "ms:stable" and two distinct ids could address one on-disk entry.
+	if strings.Contains(specID, "%") {
+		return "", fmt.Errorf("model-spec id %q contains a reserved '%%' character", specID)
+	}
 	component := strings.ReplaceAll(specID, ":", "%3A")
 	if err := ValidateID(component); err != nil {
 		return "", fmt.Errorf("model-spec id %q: %w", specID, err)
