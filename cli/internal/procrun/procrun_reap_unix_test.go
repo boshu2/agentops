@@ -172,14 +172,18 @@ func TestRun_CompletedCommandNotReportedCancelledUnderRace(t *testing.T) {
 		ctx, cancel := context.WithCancel(context.Background())
 		cmd := shellCmd(ctx, "echo done > "+marker)
 		go cancel() // race the child's completion against cancellation
-		res, _ := Run(ctx, cmd, Options{Combined: true})
-		// A marker on disk does not prove the shell finished exiting — the
-		// kill can land between the redirect and the shell's own exit, and
-		// that outcome (killed, error) is a legitimate result of this race.
-		// The finding-3 regression is a MIXED state: a wait that observed a
-		// clean exit surfacing a spurious cancel error, or a killed process
-		// reported as clean. Assert the two outcomes stay unmixed.
-		if res.Err == nil {
+		res, outerErr := Run(ctx, cmd, Options{Combined: true})
+		// Three legitimate outcomes; the finding-3 regression is any MIXED
+		// state between them:
+		//   cancel before start  -> outerErr = ctx.Err, zero Result;
+		//   killed mid-run       -> res.Err set, killed ExitCode;
+		//   completed            -> no errors, ExitCode 0, work done.
+		// (A marker on disk alone does not prove the shell finished exiting —
+		// the kill can land between the redirect and the shell's own exit.)
+		switch {
+		case outerErr != nil:
+			// Cancelled before start: nothing ran, nothing to assert.
+		case res.Err == nil:
 			if res.ExitCode != 0 {
 				t.Fatalf("iter %d: no error but ExitCode = %d, want 0", i, res.ExitCode)
 			}
@@ -187,7 +191,7 @@ func TestRun_CompletedCommandNotReportedCancelledUnderRace(t *testing.T) {
 			if readErr != nil || strings.TrimSpace(string(data)) != "done" {
 				t.Fatalf("iter %d: clean run without its work completed (marker read: %v)", i, readErr)
 			}
-		} else if res.ExitCode == 0 {
+		case res.ExitCode == 0:
 			t.Fatalf("iter %d: clean exit 0 surfaced spurious error %v", i, res.Err)
 		}
 		cancel()
