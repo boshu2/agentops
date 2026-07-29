@@ -1,6 +1,7 @@
 package eval
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -41,6 +42,12 @@ func IsValidContextMode(s string) bool {
 // intentionally does not set OverrideDisableHooks: context-off means no
 // context packet input, not skill/hook suppression.
 func RunContextAB(opts RunOptions, contextOpts ContextABOptions) (ContextDeltaScorecard, *RunRecord, *RunRecord, error) {
+	return RunContextABContext(context.Background(), opts, contextOpts)
+}
+
+// RunContextABContext is the context-threading variant of RunContextAB; it
+// propagates ctx into both context legs so cancellation reaps their child trees.
+func RunContextABContext(ctx context.Context, opts RunOptions, contextOpts ContextABOptions) (ContextDeltaScorecard, *RunRecord, *RunRecord, error) {
 	baseOpts, err := withContextABBaseRunID(opts)
 	if err != nil {
 		return ContextDeltaScorecard{}, nil, nil, err
@@ -48,13 +55,13 @@ func RunContextAB(opts RunOptions, contextOpts ContextABOptions) (ContextDeltaSc
 	offLabel := defaultContextRootLabel(contextOpts.ContextOffLabel, ContextVariantOff)
 	onLabel := defaultContextRootLabel(contextOpts.ContextOnLabel, ContextVariantOn)
 	offOpts := contextVariantRunOptions(baseOpts, ContextVariantOff, "context-off", contextOpts.ContextOffAgentsDir)
-	offRecord, err := RunSuite(offOpts)
+	offRecord, err := RunSuiteContext(ctx, offOpts)
 	if err != nil {
 		return ContextDeltaScorecard{}, nil, nil, fmt.Errorf("context-off run: %w", err)
 	}
 
 	onOpts := contextVariantRunOptions(baseOpts, ContextVariantOn, "context-on", contextOpts.ContextOnAgentsDir)
-	onRecord, err := RunSuite(onOpts)
+	onRecord, err := RunSuiteContext(ctx, onOpts)
 	if err != nil {
 		return ContextDeltaScorecard{}, nil, nil, fmt.Errorf("context-on run: %w", err)
 	}
