@@ -536,8 +536,17 @@
       "driven_by_skills": [
         "using-gc"
       ],
-      "id": "skill:using-gc:drive_mayor_shepherd",
-      "name": "drive_mayor_shepherd",
+      "id": "skill:using-gc:inspect_pack_registries",
+      "name": "inspect_pack_registries",
+      "path": "skills/using-gc/SKILL.md",
+      "type": "skill"
+    },
+    {
+      "driven_by_skills": [
+        "using-gc"
+      ],
+      "id": "skill:using-gc:drive_mayor_door",
+      "name": "drive_mayor_door",
       "path": "skills/using-gc/SKILL.md",
       "type": "skill"
     },
@@ -582,13 +591,13 @@
     "cli_commands": 0,
     "gates": 0,
     "reference_impls": 0,
-    "skills": 64,
-    "total": 64
+    "skills": 65,
+    "total": 65
   },
   "cli_top_level_commands": [],
   "schema_version": 3,
   "summary": {
-    "capabilities": 64,
+    "capabilities": 65,
     "cli_commands": 0,
     "eval_files": 0,
     "hooks": 0,
@@ -1333,7 +1342,8 @@
         "capabilities": [
           "dispatch_explicit_packet",
           "observe_gc_runtime",
-          "drive_mayor_shepherd"
+          "inspect_pack_registries",
+          "drive_mayor_door"
         ],
         "disposition": "keep_optional_adapter",
         "effects": [

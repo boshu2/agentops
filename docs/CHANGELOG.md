@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Upgrade the optional Gas City factory from v1.3.5 to the checksummed v1.4.0
+  release, compose the registry-pinned `gascity` 0.1.6 workflows and roles used
+  by Maintainer City, remove the v1.3 Mayor heartbeat workaround, require
+  scope-local `core.control-dispatcher` propulsion, and expose the supervisor
+  dashboard plus pack-registry inspection through the managed invoke surface.
+
 ## [3.3.0] - 2026-07-23
 
 AgentOps 3.3 is the **Cathedral Cut**: the deliberate subtraction of the

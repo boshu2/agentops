@@ -3,13 +3,19 @@ max_active_sessions = __GC_MAX_ACTIVE_SESSIONS__
 env = { GC_BIN = "__GC_BIN__", PATH = "__GC_PATH__", AGENTOPS_GC_PRIMARY_RIG_ROOT = "__GC_RIG_ROOT__", AGENTOPS_GC_WORKTREE_ROOT = "__GC_WORKTREE_ROOT__", AGENTOPS_GC_WORKTREE = "__GC_WORKTREE_SCRIPT__", AGENTOPS_GC_REFINER = "__GC_REFINER_SCRIPT__", AGENTOPS_GC_BASE_REF = "__GC_BASE_REF__", AGENTOPS_GC_DELIVERY_MODE = "__GC_DELIVERY_MODE__", AGENTOPS_GC_PLAN_TARGET = "__GC_PLAN_TARGET__", AGENTOPS_GC_TERRA_TARGET = "__GC_TERRA_TARGET__", AGENTOPS_GC_OPUS_TARGET = "__GC_OPUS_TARGET__", AGENTOPS_GC_VALIDATE_TARGET = "__GC_VALIDATE_TARGET__", AGENTOPS_GC_REFINER_TARGET = "__GC_REFINER_TARGET__", GC_OTEL_METRICS_URL = "__GC_OTEL_METRICS_URL__", GC_OTEL_LOGS_URL = "__GC_OTEL_LOGS_URL__", OTEL_EXPORTER_OTLP_ENDPOINT = "", OTEL_SDK_DISABLED = "__GC_OTEL_DISABLED__" }
 
 [daemon]
-formula_v2 = true
 patrol_interval = "30s"
 shutdown_timeout = "10s"
 
 [session]
 socket = "__GC_TMUX_SOCKET__"
 setup_timeout = "60s"
+
+[defaults]
+[defaults.rig]
+[defaults.rig.imports]
+[defaults.rig.imports.gc]
+source = "https://github.com/gastownhall/gascity-packs/tree/main/gascity/roles"
+version = "sha:3b3b89f2011e06d84459aa7bea1552382f13930a"
 
 [providers.codex]
 base = "builtin:codex"
