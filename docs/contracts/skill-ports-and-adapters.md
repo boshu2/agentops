@@ -130,8 +130,10 @@ start a new RPI.
 
 `shared` is not a durable miscellaneous seam owner. Runtime-neutral contracts
 belong under declared contract owners, while adapter mechanics remain with
-their adapters. The current empty `shared` skill is retired only after its
-hidden prose and generated consumers move safely.
+their adapters. Executed 2026-07-29: the runtime-neutrality contract moved to
+`docs/contracts/runtime-neutrality.md`, its last consumer edge was migrated,
+and the `shared` skill is a non-routable tombstone pending the observed-zero
+deletion window.
 
 ## Execution shape is orthogonal
 

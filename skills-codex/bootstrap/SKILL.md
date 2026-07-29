@@ -56,7 +56,7 @@ failed writes, and validation observations. Do not include a next action.
 
 ## References
 
-- [Goals](../goals/SKILL.md)
+- [Fitness](../fitness/SKILL.md)
 - [Product](../product/SKILL.md)
 - [Documentation](../doc/SKILL.md)
 - [Examples](references/examples.md)

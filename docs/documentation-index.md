@@ -46,6 +46,7 @@ Dated plans, audits, releases, and archive material are historical evidence, not
 - [Generated skill projections](contracts/registry-as-derived.md)
 - [Release Notes Contract](contracts/release-notes.md)
 - [Retrieval Comparison Contract](contracts/retrieval-comparison.md)
+- [Runtime Neutrality Contract](contracts/runtime-neutrality.md)
 - [Scenario → Test Linkage Contract](contracts/scenario-test-linkage.md)
 - [Scope Escape Report Template](contracts/scope-escape-report.md)
 - [Skill system architecture](contracts/skill-ports-and-adapters.md)

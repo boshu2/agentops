@@ -29,7 +29,8 @@
 | `codebase-recon` | `customer-of` | `validate` |
 | `codex-exec` | `supplier-to` | `validate` |
 | `craft-goal` | `supplier-to` | `plan` |
-| `goals` | `shared-kernel` | `standards` |
+| `fitness` | `shared-kernel` | `standards` |
+| `goals` | `alias-of` | `fitness` |
 | `idea-genie` | `customer-of` | `research` |
 | `idea-genie` | `supplier-to` | `plan` |
 | `implement` | `customer-of` | `plan` |
@@ -70,10 +71,9 @@
 | `agy-native` | produces | `agy-run-evidence` |
 | `automation-shape-routing` | consumes | `task-intent` |
 | `automation-shape-routing` | produces | `automation-shape-verdict` |
-| `bootstrap` | consumes | `goals` |
+| `bootstrap` | consumes | `fitness` |
 | `bootstrap` | consumes | `product` |
 | `bootstrap` | consumes | `doc` |
-| `bootstrap` | consumes | `shared` |
 | `codebase-recon` | consumes | `repo-context` |
 | `codebase-recon` | consumes | `existing-docs` |
 | `codebase-recon` | produces | `codebase-recon.v1` |
@@ -91,7 +91,7 @@
 | `doc` | consumes | `repo-context` |
 | `doc` | produces | `documentation` |
 | `domain` | produces | `stdout` |
-| `goals` | produces | `goal-measurement-report` |
+| `fitness` | produces | `goal-measurement-report` |
 | `handoff` | produces | `.agents/handoff/*.md` |
 | `idea-genie` | consumes | `repo-context` |
 | `idea-genie` | consumes | `task-question` |
@@ -132,7 +132,6 @@
 | `security` | produces | `security-gate-summary.json` |
 | `security` | produces | `suite-summary.json` |
 | `security` | produces | `redteam-results.json` |
-| `shared` | produces | `reference-documents` |
 | `skill-builder` | produces | `skill-source-package` |
 | `skill-builder` | produces | `skill-hygiene-report` |
 | `standards` | produces | `stdout` |
