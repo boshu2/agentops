@@ -69,6 +69,6 @@
 | `swarm` | execution | `keep_optional_adapter` | - | `dispatch_once` | `invoke_selected_executor` |
 | `test` | execution | `keep_specialist` | - | `test` | `write_test_files`, `write_test_evidence`, `modify_source_files` |
 | `toil-mining` | meta | `keep_specialist` | - | `toil_mining` | `write_toil_candidates` |
-| `using-gc` | execution | `keep_optional_adapter` | - | `dispatch_explicit_packet`, `observe_gc_runtime`, `drive_mayor_shepherd` | `operate_gas_city`, `configure_codex_trust` |
+| `using-gc` | execution | `keep_optional_adapter` | - | `dispatch_explicit_packet`, `observe_gc_runtime`, `inspect_pack_registries`, `drive_mayor_door` | `operate_gas_city`, `configure_codex_trust` |
 | `validate` | judgment | `keep` | - | `compute_subject_identity`, `judge_acceptance`, `persist_verdict` | `write_verdict_artifact` |
 | `workflow-builder` | meta | `keep_specialist` | - | `workflow_builder` | `write_workflow_script` |

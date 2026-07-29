@@ -1564,7 +1564,8 @@
       "capabilities": [
         "dispatch_explicit_packet",
         "observe_gc_runtime",
-        "drive_mayor_shepherd"
+        "inspect_pack_registries",
+        "drive_mayor_door"
       ],
       "codex_override_present": true,
       "consumes": [
@@ -1577,7 +1578,7 @@
         }
       ],
       "dependencies": [],
-      "description": "Drive a caller-selected Gas City through its Mayor dispatch shepherd; keep GC runtime state out of AgentOps verdicts. Triggers: \"using gc\", \"gas city\", \"drive the mayor\", \"dispatch through gc\".",
+      "description": "Operate a caller-selected Gas City 1.4 through run-centered, registry-aware native surfaces while keeping GC runtime state out of AgentOps verdicts. Triggers: \"using gc\", \"gas city\", \"drive the mayor\", \"dispatch through gc\".",
       "disposition": "keep_optional_adapter",
       "effects": [
         "operate_gas_city",
