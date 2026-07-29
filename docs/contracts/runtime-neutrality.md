@@ -3,9 +3,10 @@
 Status: active · Owner: this document (moved from the retired `shared` skill,
 2026-07-29, bead `age-skill-overhaul-reboot-sjv7v.11`)
 
-The rules below governed any reference context a consuming skill loads. They
-are corpus doctrine, not skill behavior, so they live here — a declared
-contract owner — instead of inside a skill that bundles nothing.
+The rules below govern any shared reference a consuming skill loads — the
+same scope the `shared` skill declared. They are corpus doctrine, not skill
+behavior, so they live here — a declared contract owner — instead of inside
+a skill that bundles nothing.
 
 ## The contract
 
@@ -18,7 +19,7 @@ contract owner — instead of inside a skill that bundles nothing.
   them.
 - Source skill contracts and executable behavior outrank shared prose.
 
-Shared context is context, not permission: reading a reference never
+Shared context is context, not permission: reading a shared reference never
 authorizes starting a runtime, tracker, substrate, network call, or external
 mutation. Authority comes from the caller or the consuming skill's contract.
 
