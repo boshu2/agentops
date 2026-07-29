@@ -5,7 +5,7 @@ This document expands the repository contract in [AGENTS.md](../AGENTS.md).
 The public AgentOps workflow has one pass:
 
 ```text
-RPI -> Plan -> Implement -> fresh Validate -> durable verdict -> report and stop
+RPI -> Plan -> Implement -> fresh Validate -> report and stop
 ```
 
 ## 1. Plan
@@ -33,13 +33,16 @@ or deliver.
 
 ## 3. Validate
 
-An author-distinct context judges the exact subject against acceptance and
-writes one content-addressed `verdict.v2`. Validate is the only verdict writer.
-It returns `PASS`, `FAIL`, or `NOT_PROVEN`, lists checked and unchecked scope,
-and stops. PASS requires nonempty checked scope, top-level evidence, and evidence
+An author-distinct context judges the exact subject against acceptance. It
+returns `PASS`, `FAIL`, or `NOT_PROVEN`, lists checked and unchecked scope, and
+stops. PASS requires nonempty checked scope, top-level evidence, and evidence
 for every criterion. A `NOT_PROVEN` finding states the concrete missing runtime
 precondition or examined uncertainty; it does not manufacture a next action.
 Validate does not repair, re-plan, choose a next action, or authorize Git.
+
+The returned result is sufficient for interactive use. Validate persists the
+same result as content-addressed `verdict.v2` only when the caller requests a
+machine-readable artifact or a declared downstream consumer requires one.
 
 ## 4. Caller continuation
 

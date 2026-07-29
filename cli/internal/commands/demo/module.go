@@ -53,7 +53,7 @@ func (Module) Command() *cobra.Command {
 		Short: "Show the one-pass AgentOps evidence loop",
 		Long: `Show the AgentOps product boundary:
 
-  RPI -> Plan -> Implement -> fresh Validate -> durable verdict -> report
+  RPI -> Plan -> Implement -> fresh Validate -> report and stop
 
 The repository keeps its own Git, CI, tracker, release, and delivery policy.`,
 		GroupID: "start",
@@ -73,8 +73,8 @@ func showConcepts(w io.Writer) error {
 	fmt.Fprintln(w, `AGENTOPS PRODUCT BOUNDARY
 
 AgentOps shapes one behavior, runs one bounded implementation experiment,
-obtains one fresh independent judgment over exact content, persists the verdict,
-reports it, and stops.
+obtains one fresh independent judgment over exact content, reports it, and
+stops. Machine-readable verdict persistence is optional and consumer-driven.
 
 It does not own retries, budgets, queues, work ownership, Git, closure, release,
 or delivery. Learn and multi-agent strategies are optional callers.`)
@@ -88,7 +88,7 @@ func quickDemo(w io.Writer) error {
 2. Implement runs one bounded RED -> GREEN -> refactor experiment.
 3. The runtime derives changed paths, check receipts, and subject-manifest.v1.
 4. A distinct fresh context validates the exact intent and subject once.
-5. Validate atomically stores verdict.v2 under .agents/ao/verdicts/sha256/.
+5. Validate returns one fresh validation result; verdict.v2 persistence is optional.
 6. RPI reports PASS, FAIL, NOT_PROVEN, NOT_PLANNED, or NOT_BUILT and stops.
 
 No Git repository or ao binary is required for this semantic loop.`)

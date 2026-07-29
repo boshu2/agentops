@@ -37,7 +37,7 @@ func TestDemoShowsOnePassBoundary(t *testing.T) {
 	if err := quickDemo(&out); err != nil {
 		t.Fatal(err)
 	}
-	for _, want := range []string{"AGENTOPS ONE-PASS DEMO", "existing intent source", "runtime derives", "subject-manifest.v1", "verdict.v2", "stops"} {
+	for _, want := range []string{"AGENTOPS ONE-PASS DEMO", "existing intent source", "runtime derives", "subject-manifest.v1", "fresh validation result", "persistence is optional", "stops"} {
 		if !strings.Contains(out.String(), want) {
 			t.Fatalf("demo missing %q:\n%s", want, out.String())
 		}

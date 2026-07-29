@@ -9,7 +9,7 @@ software factory or own its queue.
 |---|---|---|
 | Planner | caller intent | refined intent in its existing source |
 | Implementer | exact resolved intent | derived manifest and factual evidence |
-| Validator | exact intent, subject, and evidence in a fresh context | one durable verdict |
+| Validator | exact intent, subject, and evidence in a fresh context | one semantic result; optional durable verdict |
 
 One runtime may fill the roles in separate contexts. PASS still requires
 distinct nonempty author and validator context IDs plus an explicit freshness
@@ -31,9 +31,10 @@ select, persist, retry, validate, integrate, commit, close, release, or deliver.
 ## Integration boundary
 
 A factory may combine returned candidates using its own repository policy. Each
-semantic candidate still needs exact identity and a fresh Validate verdict.
+semantic candidate still needs exact identity and a fresh Validate result.
 AgentOps does not convert factory completion, worker success, or deterministic
-checks into PASS.
+checks into PASS. A factory may require persisted `verdict.v2` as its declared
+machine-readable evidence contract; ordinary interactive validation does not.
 
 Git, trackers, pull requests, merge queues, CI, deployment, and release remain
 owned by the caller's environment.

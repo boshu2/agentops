@@ -9,7 +9,7 @@ intent
   -> one bounded implementation experiment
   -> runtime-derived subject-manifest.v1 + check receipts
   -> one fresh independent validation
-  -> durable verdict.v2
+  -> PASS | FAIL | NOT_PROVEN
   -> report and stop
 ```
 
@@ -20,7 +20,7 @@ intent
 | Caller | intent source, invocation, optional strategies, any later revision or delivery | semantic PASS unless acting in a fresh validator context |
 | Plan | refining acceptance and write boundary in the existing source | a duplicate planning artifact, scheduling, ownership, readiness |
 | Implement | one subject change and factual evidence | validation, repair loop, Git, closure, delivery |
-| Validate | exact identity, independent judgment, durable verdict | subject edits, retries, next actions, release |
+| Validate | exact identity, independent judgment, optional durable evidence | subject edits, retries, next actions, release |
 | RPI | one ordered dispatch and report | a controller around repeated invocations |
 
 One model may fill multiple roles across distinct contexts. PASS requires
@@ -82,18 +82,20 @@ the evidence, and judges every acceptance criterion.
 - Complete evidence satisfying every criterion, with nonempty checked scope and
   evidence references: `PASS`.
 
-The verdict records criterion results, findings, evidence references, checked
-and not-checked surfaces, timestamp, identities, freshness, and artifact digest.
-It carries no WARN, confidence, disposition, learning, owner, next action,
-retry, closure, release, or delivery state.
+The validation result records criterion results, findings, evidence references,
+checked and not-checked surfaces, identities, and freshness. It carries no
+WARN, confidence, disposition, learning, owner, next action, retry, closure,
+release, or delivery state. Returning that result to the caller completes
+Validate; storage is not a precondition for semantic judgment.
 
-Validate alone persists verdicts. Default storage is
-`.agents/ao/verdicts/sha256/<digest>.json`; a caller may provide `verdict_dir`.
-The digest is SHA-256 over canonical JSON without `artifact_digest`. Writes are
-same-directory, flushed, fsynced, and atomically renamed. Exact existing content
-is idempotent. Conflicting content is an integrity failure and cannot produce
-PASS. Provenance may record a verdict afterward, but ledger availability never
-affects validity.
+When the caller requests machine-readable evidence or a declared downstream
+consumer requires it, Validate alone may persist `verdict.v2`. Default storage
+is `.agents/ao/verdicts/sha256/<digest>.json`; a caller may provide
+`verdict_dir`. The digest is SHA-256 over canonical JSON without
+`artifact_digest`. Writes are same-directory, flushed, fsynced, and atomically
+renamed. Exact existing content is idempotent. Conflicting content is an
+integrity failure and cannot produce PASS. Provenance may record a persisted
+verdict afterward, but ledger availability never affects validity.
 
 ## Stop boundary and revision
 
@@ -103,9 +105,9 @@ a second phase. `NOT_PLANNED` and `NOT_BUILT` describe RPI progress only and are
 not verdict values.
 
 If a caller wants another experiment, it updates the existing bead or caller
-intent and starts a new invocation. Prior verdicts and manifests remain durable
-evidence, but AgentOps does not require a model-authored revision packet.
-Changed acceptance is represented once in the intent source.
+intent and starts a new invocation. Any persisted verdicts and manifests remain
+durable evidence, but AgentOps does not require a model-authored revision
+packet. Changed acceptance is represented once in the intent source.
 
 ## Optional ports
 

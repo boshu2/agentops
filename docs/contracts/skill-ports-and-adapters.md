@@ -48,7 +48,8 @@ A terminal caller outcome that may require several evidence-driven experiments
 belongs to a Goal / Mayor. The campaign freezes terminal acceptance and
 authority, stores experiments as caller-owned graph nodes, and selects one
 bounded experiment at a time. Each selected experiment ends in its own RPI
-report and, when a subject exists, immutable `verdict.v2`.
+report and fresh validation result. A declared campaign consumer may additionally
+require immutable `verdict.v2` evidence.
 
 The Goal may continue after an informative red result when all of these remain
 true:
@@ -74,8 +75,8 @@ single-mint resolved intent bytes
   -> before/final subject manifests + complete changed paths
   -> factual receipts + effect-receipt.v1
   -> one author-distinct Validate
-  -> verdict.v2 under an activated proof contract
-  -> rpi-report.v2
+  -> PASS | FAIL | NOT_PROVEN
+  -> optional verdict.v2 / rpi-report.v2 for declared consumers
   -> stop
 ```
 
@@ -192,7 +193,8 @@ skill metadata. They are never edited as architecture sources.
 ## Invariants
 
 - Only RPI depends on all three core phases.
-- Only Validate writes `verdict.v2`.
+- Only Validate may write `verdict.v2`, and only for a caller request or
+  declared downstream consumer.
 - Only the caller or Goal selects another experiment.
 - A runtime adapter never changes a semantic outcome.
 - A strategy report never masquerades as readiness or PASS.

@@ -4,7 +4,7 @@ AgentOps helps coding agents turn one intent into one evidence-bound engineering
 judgment:
 
 ```text
-RPI -> Plan -> Implement -> fresh Validate -> durable verdict -> report and stop
+RPI -> Plan -> Implement -> fresh Validate -> report and stop
 ```
 
 The product supplies behavior-first planning, one bounded implementation

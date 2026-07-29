@@ -1,6 +1,6 @@
 ---
 name: validate
-description: 'Freshly judge exact subject content against bead or caller acceptance, persist verdict.v2, and stop. Triggers: "validate", "independently validate", "vibe".'
+description: 'Freshly judge exact subject content against bead or caller acceptance, optionally persist verdict.v2 for a declared consumer, and stop. Triggers: "validate", "independently validate", "vibe".'
 practices:
 - design-by-contract
 - llm-eval-harness
@@ -10,6 +10,7 @@ consumes:
 - subject-manifest.v1
 produces:
 - subject-manifest.v1
+- validation-result
 - verdict.v2
 context_rel:
 - kind: customer-of
@@ -22,19 +23,19 @@ metadata:
   graph_root: true
   tier: judgment
   dependencies: []
-  capabilities: [compute_subject_identity, judge_acceptance, persist_verdict]
+  capabilities: [compute_subject_identity, judge_acceptance, return_validation_result, persist_verdict]
   effects: [write_verdict_artifact]
   canonical_status: canonical
   disposition: keep
-output_contract: schemas/verdict.v2.schema.json
+output_contract: 'PASS | FAIL | NOT_PROVEN with criteria, evidence, checked/not_checked, identity, and freshness; optional schemas/verdict.v2.schema.json persistence'
 ---
 
 # Validate
 
 Independently judge one exact subject against the acceptance in its existing
-bead or caller source, write one durable verdict, and stop. Validate is the sole
-verdict writer. It never asks the model to reconstruct Plan or Candidate
-packets.
+bead or caller source, return one semantic result, and stop. Validate is the
+sole `verdict.v2` writer when persistence is requested. It never asks the model
+to reconstruct Plan or Candidate packets.
 
 ## Preconditions
 
@@ -95,22 +96,27 @@ committed subject, never the judged working tree.
    (see the freshness rules below for when a digest-bound receipt suffices).
    Judge every acceptance criterion and record criterion-level results,
    findings, evidence references, `checked`, and `not_checked`.
-5. Choose exactly one semantic result: `PASS`, `FAIL`, or `NOT_PROVEN`. PASS
-   requires distinct identities, explicit freshness, nonempty checked scope,
-   top-level evidence, and evidence for every criterion.
-6. Persist canonical `verdict.v2` with `store-verdict --draft <draft.json>
-   --intent-source <resolved-intent> --subject-manifest <manifest.json>
-   --author-context-id <id> --validator-context-id <id>
-   --freshness-source <runtime|caller> --freshness-attester-id <id>
-   --scope-result <PASS|FAIL|NOT_PROVEN>`. The helper
-   snapshots the exact resolved intent under
+5. Choose exactly one semantic result: `PASS`, `FAIL`, or `NOT_PROVEN`. Return
+   it with criterion results, findings, evidence references, `checked`,
+   `not_checked`, the acceptance and subject identities, distinct author and
+   validator context IDs, and the freshness attestation. PASS requires distinct
+   identities, explicit freshness, nonempty checked scope, top-level evidence,
+   and evidence for every criterion.
+6. Only when the caller requests machine-readable evidence or a declared
+   downstream consumer requires it, persist canonical `verdict.v2` with
+   `store-verdict --draft <draft.json> --intent-source <resolved-intent>
+   --subject-manifest <manifest.json> --author-context-id <id>
+   --validator-context-id <id> --freshness-source <runtime|caller>
+   --freshness-attester-id <id> --scope-result <PASS|FAIL|NOT_PROVEN>`. The
+   helper snapshots the exact resolved intent under
    `<workspace>/.agents/ao/intents/sha256/<digest>.intent`, then computes and
    injects intent and subject digests plus author, validator, and freshness
    facts. Identity and changed-path facts come from runtime-derived inputs and
-   receipts, not model transcription. Verdict
-   storage defaults to `<workspace>/.agents/ao/verdicts/sha256/<digest>.json`;
-   callers may provide `verdict_dir`.
-7. Return the artifact path and digest. Stop.
+   receipts, not model transcription. Storage defaults to
+   `<workspace>/.agents/ao/verdicts/sha256/<digest>.json`; callers may provide
+   `verdict_dir`.
+7. Return the semantic result and, when persisted, the artifact path and digest.
+   Stop.
 
 The digest is SHA-256 over canonical JSON with `artifact_digest` omitted. Writes
 use a same-directory temporary file, flush, fsync, and atomic rename. Identical

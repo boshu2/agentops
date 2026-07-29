@@ -9,7 +9,8 @@
 | RPI | The one-pass wrapper around Plan, Implement, and Validate. |
 | Subject manifest | Deterministic content identity over paths, kinds, executable bits, and content or symlink digests. |
 | Validate | Independent semantic judgment over exact acceptance and subject identities. |
-| Verdict | `PASS`, `FAIL`, or `NOT_PROVEN` in `verdict.v2`. |
+| Validation result | `PASS`, `FAIL`, or `NOT_PROVEN` returned by a fresh validator. |
+| `verdict.v2` | Optional content-addressed representation of a validation result for machine consumers. |
 | Strategy | Optional advice such as premortem, postmortem, council, or an idea genie. |
 | Adapter | Optional runtime or transport that cannot change core semantics. |
 

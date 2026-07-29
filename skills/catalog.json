@@ -692,7 +692,7 @@
         }
       ],
       "dependencies": [],
-      "description": "Execute one bounded RED to GREEN experiment from bead or caller intent; return derived subject identity and check facts. Triggers: \"implement\", \"implement this bead\", \"run the experiment\". (\"execute this plan\" routes to rpi, which dispatches the whole loop.)",
+      "description": "Execute one bounded RED to GREEN experiment from bead or caller intent; return derived subject identity and check facts. Triggers: \"implement\", \"implement this bead\", \"run the experiment\". Full plan-to-validation requests route to rpi.",
       "disposition": "keep",
       "effects": [
         "modify_declared_subject",
@@ -1603,6 +1603,7 @@
       "capabilities": [
         "compute_subject_identity",
         "judge_acceptance",
+        "return_validation_result",
         "persist_verdict"
       ],
       "codex_override_present": true,
@@ -1620,7 +1621,7 @@
         }
       ],
       "dependencies": [],
-      "description": "Freshly judge exact subject content against bead or caller acceptance, persist verdict.v2, and stop. Triggers: \"validate\", \"independently validate\", \"vibe\".",
+      "description": "Freshly judge exact subject content against bead or caller acceptance, optionally persist verdict.v2 for a declared consumer, and stop. Triggers: \"validate\", \"independently validate\", \"vibe\".",
       "disposition": "keep",
       "effects": [
         "write_verdict_artifact"
@@ -1635,6 +1636,7 @@
       ],
       "produces": [
         "subject-manifest.v1",
+        "validation-result",
         "verdict.v2"
       ],
       "references_count": 1,

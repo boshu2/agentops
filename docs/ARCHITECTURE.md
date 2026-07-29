@@ -7,7 +7,7 @@ existing bead or caller intent
   -> one bounded implementation experiment
   -> runtime-derived subject-manifest.v1 + check receipts
   -> fresh Validate
-  -> verdict.v2
+  -> PASS | FAIL | NOT_PROVEN
   -> RPI report and stop
 ```
 
@@ -19,8 +19,9 @@ existing bead or caller intent
   returns runtime-derived subject identity, actual changed paths, and factual
   check receipts.
 - **Validate** identifies the exact subject without Git, checks scope and
-  acceptance, obtains one judgment from a distinct declared context, and stores
-  a content-addressed verdict atomically.
+  acceptance, and obtains one judgment from a distinct declared context. It
+  stores a content-addressed verdict atomically only when requested by the
+  caller or a declared downstream consumer.
 - **RPI** invokes each core phase at most once and reports the result.
 
 `FAIL` and `NOT_PROVEN` are terminal results for that invocation. A caller may
@@ -34,8 +35,8 @@ managed agents, Git metadata, trackers, provenance, and councils are optional
 adapters or strategies. Missing or corrupt adapters cannot change a core
 outcome.
 
-Generic provenance may record a verdict after it is written. Provenance
-availability is never required for verdict validity.
+Generic provenance may record a verdict after one is persisted. Provenance and
+artifact storage are never required for a fresh validation result to be valid.
 
 ## Repository boundary
 

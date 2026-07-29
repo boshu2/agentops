@@ -8,7 +8,7 @@ small behavior and use RPI when you want the full loop.
 - Plan makes acceptance and scope explicit.
 - Implement performs one bounded experiment.
 - A fresh validator judges exact content.
-- A durable verdict records checked and unchecked claims.
+- The result records checked and unchecked claims; durable storage is optional.
 - The invocation stops.
 
 The one thing you do need is a coding agent to run the skills in: AgentOps

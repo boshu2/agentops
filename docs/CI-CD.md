@@ -4,15 +4,16 @@ Repository authority and the core work boundary are defined in [AGENTS.md](../AG
 
 AgentOps reads or refines the existing bead/caller intent, runs one bounded
 implementation experiment, derives exact content identity, obtains one
-author-distinct Validate verdict, and stores that verdict. It does not own Git
-delivery, merge policy, retries, queues, work ownership, or release transitions.
+author-distinct Validate result, and optionally stores that result when a caller
+or declared downstream consumer requests it. It does not own Git delivery,
+merge policy, retries, queues, work ownership, or release transitions.
 
 Repositories own delivery policy for local and cloud agents.
 
 ## Separation of responsibilities
 
 ```text
-AgentOps: Plan -> Implement once -> Validate once -> verdict.v2 -> stop
+AgentOps: Plan -> Implement once -> Validate once -> report and stop
 Repository: deterministic checks -> repository-selected Git/CI/release policy
 ```
 

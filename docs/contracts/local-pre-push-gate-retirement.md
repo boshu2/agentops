@@ -11,15 +11,15 @@ trying to publish, which made ordinary delivery slow and fragile.
 ## Current decision
 
 AgentOps stops after one exact candidate has deterministic evidence and one
-durable verdict from fresh context. The consumer repository owns delivery for
-local and cloud agents. It may use direct push, a PR, hosted CI, or a small
-deterministic hook.
+fresh-context validation result. Persisted verdict evidence is optional. The
+consumer repository owns delivery for local and cloud agents. It may use direct
+push, a PR, hosted CI, or a small deterministic hook.
 
 A repository hook or CI job may run deterministic repository checks. It must
 not treat AgentOps as the delivery controller or:
 
 - invoke a model or perform another semantic review;
-- mutate or upgrade the Validate verdict;
+- mutate or upgrade the Validate result;
 - close tracker work as a side effect of Git;
 - create an AgentOps delivery queue or receipt; or
 - replay an unchanged full suite merely because delivery started.

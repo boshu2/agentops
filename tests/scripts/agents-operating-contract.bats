@@ -6,7 +6,8 @@
   [ -f "$contract" ]
 
   for required in \
-    "RPI -> Plan -> Implement -> fresh Validate -> durable verdict -> report and stop" \
+    "RPI -> Plan -> Implement -> fresh Validate -> report and stop" \
+    "Persist \`verdict.v2\` only when" \
     "It owns no retry" \
     "fresh independent judgment" \
     "docs/architecture/operating-loop.md"; do

@@ -15,7 +15,8 @@ The boundary has four facts:
 - the requested behavior and acceptance are explicit;
 - the exact subject is identified by content, not by a mutable branch name;
 - a distinct fresh context judges that subject against the acceptance;
-- the result is written as a standalone content-addressed `verdict.v2`.
+- the result identifies checked and unchecked scope and can be persisted as a
+  standalone content-addressed `verdict.v2` when a consumer requires it.
 
 This is evidence, not permission to ship. AgentOps does not own Git, CI,
 tracking, retries, queues, release, or recovery. The consumer system decides

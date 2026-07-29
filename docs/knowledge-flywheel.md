@@ -1,12 +1,12 @@
 # Optional Learning Loop
 
-AgentOps core ends when Validate writes a durable verdict and RPI reports it.
-Learning is deliberately off the critical path.
+AgentOps core ends when Validate returns a fresh judgment and RPI reports it.
+Learning and durable verdict storage are deliberately off the critical path.
 
 When a caller wants longitudinal analysis, it may explicitly invoke Learn over
-a collection of immutable `verdict.v2` artifacts. Learn can group concrete
-finding observations, identify recurrence across distinct objectives, and
-suggest an advisory producer-rule candidate.
+a collection of immutable `verdict.v2` artifacts that prior callers elected to
+persist. Learn can group concrete finding observations, identify recurrence
+across distinct objectives, and suggest an advisory producer-rule candidate.
 
 Learn does not:
 

@@ -3,7 +3,7 @@
 AgentOps deliberately keeps its core experiment small:
 
 ```text
-RPI -> Plan -> Implement -> fresh Validate -> durable verdict -> report and stop
+RPI -> Plan -> Implement -> fresh Validate -> report and stop
 ```
 
 Plan names one active behavior and its write scope. Implement performs one

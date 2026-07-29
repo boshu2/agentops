@@ -3,7 +3,7 @@
 AgentOps now owns one small product boundary:
 
 ```text
-RPI -> Plan -> Implement -> fresh Validate -> durable verdict -> report and stop
+RPI -> Plan -> Implement -> fresh Validate -> report and stop
 ```
 
 The caller owns whether to revise, run another invocation, schedule work, use a
@@ -74,10 +74,11 @@ mkdir -p ~/.agents/ao && mv ~/.agentops/config.yaml ~/.agents/ao/config.yaml
 
 ## Verdicts and identity
 
-`verdict.v2` binds acceptance and a deterministic `subject-manifest.v1` to
-distinct declared author and validator context identities. Freshness is an
-attested trust fact, not cryptographic proof of process isolation. Verdicts are
-stored atomically by content digest under `.agents/ao/verdicts/sha256/` unless a
+When persistence is requested, `verdict.v2` binds acceptance and a deterministic
+`subject-manifest.v1` to distinct declared author and validator context
+identities. Freshness is an attested trust fact, not cryptographic proof of
+process isolation. Verdicts are stored atomically by content digest under
+`.agents/ao/verdicts/sha256/` unless a
 caller supplies another directory.
 
 Historical Pawl, queue, claim, landing, and lifecycle artifacts remain inert

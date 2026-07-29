@@ -165,6 +165,6 @@ session wedge, bead/run state over prose for workflow completion.
 - GC quests, runs, attempts, stalls, cancellations, and internal close state
   stay in GC. They never become AgentOps Plan, Candidate, RPI, or verdict state.
 - A GC close or completed run is not AgentOps completion. Only a fresh Validate
-  context writes `verdict.v2`.
+  context issues the semantic result or, when requested, persists `verdict.v2`.
 - This skill performs no automatic selection, retry, semantic validation, Git,
   integration, closure, release, or delivery.
