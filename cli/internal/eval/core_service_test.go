@@ -10,15 +10,15 @@ type coreRuntimeSpy struct {
 	runCalls int
 }
 
-func (runtime *coreRuntimeSpy) RunSuite(options RunOptions) (*RunRecord, error) {
+func (runtime *coreRuntimeSpy) RunSuite(_ context.Context, options RunOptions) (*RunRecord, error) {
 	runtime.runCalls++
 	return &RunRecord{RunID: options.RunID, Status: StatusPass}, nil
 }
-func (*coreRuntimeSpy) RunBaselineAB(RunOptions) (DeltaScorecard, *RunRecord, *RunRecord, error) {
+func (*coreRuntimeSpy) RunBaselineAB(context.Context, RunOptions) (DeltaScorecard, *RunRecord, *RunRecord, error) {
 	return DeltaScorecard{}, &RunRecord{}, &RunRecord{}, nil
 }
 func (*coreRuntimeSpy) WriteDeltaScorecard(DeltaScorecard, string) error { return nil }
-func (*coreRuntimeSpy) RunContextAB(RunOptions, ContextABOptions) (ContextDeltaScorecard, *RunRecord, *RunRecord, error) {
+func (*coreRuntimeSpy) RunContextAB(context.Context, RunOptions, ContextABOptions) (ContextDeltaScorecard, *RunRecord, *RunRecord, error) {
 	return ContextDeltaScorecard{}, &RunRecord{}, &RunRecord{}, nil
 }
 func (*coreRuntimeSpy) WriteContextDeltaScorecard(ContextDeltaScorecard, string) error { return nil }

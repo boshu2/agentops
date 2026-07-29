@@ -1,7 +1,6 @@
 package eval
 
 import (
-	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -13,11 +12,31 @@ import (
 	"sort"
 	"strings"
 	"time"
+
+	"github.com/boshu2/agentops/cli/internal/procrun"
 )
 
 const defaultTimeoutSeconds = 30
 
+// RunSuite runs a deterministic suite with a background context. It is retained
+// for callers and tests that do not carry a cancellation context; production
+// entry points thread the caller context through RunSuiteContext so command
+// cases honor cancellation and timeouts.
 func RunSuite(opts RunOptions) (*RunRecord, error) {
+	return RunSuiteContext(context.Background(), opts)
+}
+
+// RunSuiteContext runs a deterministic suite, threading ctx down to every
+// command case so a cancelled or timed-out caller reaps the child process tree.
+func RunSuiteContext(ctx context.Context, opts RunOptions) (*RunRecord, error) {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	// Honor cancellation before any work: a cancelled caller must not start the
+	// suite at all, and this catches the pre-cancelled / zero-case cases.
+	if err := ctx.Err(); err != nil {
+		return nil, fmt.Errorf("suite run cancelled: %w", err)
+	}
 	if strings.TrimSpace(opts.SuitePath) == "" {
 		return nil, fmt.Errorf("suite path is required")
 	}
@@ -60,7 +79,18 @@ func RunSuite(opts RunOptions) (*RunRecord, error) {
 	runEnv := cloneStringMap(opts.Env)
 	caseResults := make([]CaseResult, 0, len(suite.Cases))
 	for _, evalCase := range suite.Cases {
-		caseResults = append(caseResults, runCase(*suite, suiteDir, evalCase, runEnv))
+		// Stop the suite on cancellation instead of running remaining cases and
+		// scoring a partial run: a cancelled run is a terminal error, distinct
+		// from ordinary case failures.
+		if err := ctx.Err(); err != nil {
+			return nil, fmt.Errorf("suite run cancelled: %w", err)
+		}
+		caseResults = append(caseResults, runCase(ctx, *suite, suiteDir, evalCase, runEnv))
+	}
+	// A cancellation that lands during the final (or only) case must also be
+	// terminal — never scored as an ordinary case failure.
+	if err := ctx.Err(); err != nil {
+		return nil, fmt.Errorf("suite run cancelled: %w", err)
 	}
 	aggregate, dimensions := scoreRun(*suite, caseResults)
 	status := runStatus(*suite, caseResults, aggregate, dimensions)
@@ -115,16 +145,17 @@ func RunSuite(opts RunOptions) (*RunRecord, error) {
 	return record, nil
 }
 
-func runCase(suite Suite, suiteDir string, evalCase Case, runEnv map[string]string) CaseResult {
+func runCase(parent context.Context, suite Suite, suiteDir string, evalCase Case, runEnv map[string]string) CaseResult {
 	start := time.Now()
 	ctx := caseContext{
 		suite:    &suite,
 		suiteDir: suiteDir,
 		evalCase: evalCase,
 		exitCode: 0,
+		ctx:      parent,
 	}
 	if evalCase.Kind == "command" {
-		output, err := executeCaseCommand(suite, suiteDir, evalCase, runEnv)
+		output, err := executeCaseCommand(parent, suite, suiteDir, evalCase, runEnv)
 		ctx.stdout = output.stdout
 		ctx.stderr = output.stderr
 		ctx.exitCode = output.exitCode
@@ -188,7 +219,7 @@ type commandOutput struct {
 	infrastructureError bool
 }
 
-func executeCaseCommand(suite Suite, suiteDir string, evalCase Case, runEnv map[string]string) (commandOutput, error) {
+func executeCaseCommand(parent context.Context, suite Suite, suiteDir string, evalCase Case, runEnv map[string]string) (commandOutput, error) {
 	spec, err := commandSpecFromInputs(evalCase.Inputs)
 	if err != nil {
 		return commandOutput{exitCode: -1, infrastructureError: true}, err
@@ -200,7 +231,10 @@ func executeCaseCommand(suite Suite, suiteDir string, evalCase Case, runEnv map[
 	if timeout == 0 {
 		timeout = defaultTimeoutSeconds
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(timeout)*time.Second)
+	if parent == nil {
+		parent = context.Background()
+	}
+	ctx, cancel := context.WithTimeout(parent, time.Duration(timeout)*time.Second)
 	defer cancel()
 
 	name := spec.name
@@ -221,15 +255,15 @@ func executeCaseCommand(suite Suite, suiteDir string, evalCase Case, runEnv map[
 	if spec.stdin != "" {
 		cmd.Stdin = strings.NewReader(spec.stdin)
 	}
-	var stdout bytes.Buffer
-	var stderr bytes.Buffer
-	cmd.Stdout = &stdout
-	cmd.Stderr = &stderr
 
-	err = cmd.Run()
+	// procrun.Run bounds per-stream capture, threads the case context so a
+	// cancelled caller or the per-case deadline reaps the whole child group
+	// (not just the direct child), and applies a WaitDelay so Wait cannot hang
+	// on pipes a surviving grandchild holds open.
+	res, startErr := procrun.Run(ctx, cmd, procrun.Options{})
 	output := commandOutput{
-		stdout:   stdout.String(),
-		stderr:   stderr.String(),
+		stdout:   string(res.Stdout),
+		stderr:   string(res.Stderr),
 		exitCode: 0,
 	}
 	if ctx.Err() == context.DeadlineExceeded {
@@ -237,17 +271,21 @@ func executeCaseCommand(suite Suite, suiteDir string, evalCase Case, runEnv map[
 		output.infrastructureError = true
 		return output, fmt.Errorf("command timed out after %ds", timeout)
 	}
-	if err == nil {
+	runErr := startErr
+	if startErr == nil {
+		runErr = res.Err
+	}
+	if runErr == nil {
 		return output, nil
 	}
 	var exitErr *exec.ExitError
-	if ok := errors.As(err, &exitErr); ok {
+	if ok := errors.As(runErr, &exitErr); ok {
 		output.exitCode = exitErr.ExitCode()
 		return output, nil
 	}
 	output.exitCode = -1
 	output.infrastructureError = true
-	return output, fmt.Errorf("run command %q: %w", name, err)
+	return output, fmt.Errorf("run command %q: %w", name, runErr)
 }
 
 type commandSpec struct {

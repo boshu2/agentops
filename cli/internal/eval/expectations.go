@@ -1,7 +1,6 @@
 package eval
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -14,6 +13,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/boshu2/agentops/cli/internal/procrun"
 )
 
 type caseContext struct {
@@ -23,6 +24,9 @@ type caseContext struct {
 	stdout   string
 	stderr   string
 	exitCode int
+	// ctx carries the caller/run context so auto-detect subprocesses honor
+	// cancellation and timeouts instead of running under a background context.
+	ctx context.Context
 }
 
 type expectationResult struct {
@@ -509,7 +513,11 @@ func runAutoDetectCommand(ctx caseContext, command string) (string, error) {
 	} else if ctx.suite != nil && ctx.suite.Environment.TimeoutSeconds > 0 {
 		timeout = ctx.suite.Environment.TimeoutSeconds
 	}
-	cctx, cancel := context.WithTimeout(context.Background(), time.Duration(timeout)*time.Second)
+	parent := ctx.ctx
+	if parent == nil {
+		parent = context.Background()
+	}
+	cctx, cancel := context.WithTimeout(parent, time.Duration(timeout)*time.Second)
 	defer cancel()
 	name, args := shellCommand(command)
 	cmd := exec.CommandContext(cctx, name, args...)
@@ -524,21 +532,24 @@ func runAutoDetectCommand(ctx caseContext, command string) (string, error) {
 	if cmd.Dir == "" {
 		cmd.Dir = ctx.suiteDir
 	}
-	var combined bytes.Buffer
-	cmd.Stdout = &combined
-	cmd.Stderr = &combined
-	runErr := cmd.Run()
+	// procrun.Run bounds the combined capture and reaps the child's process
+	// group on cctx cancel/timeout. The run error is informational — many of
+	// these commands legitimately exit non-zero yet still emit the line we need
+	// to capture — so it (and any start error) is discarded; the regex match is
+	// the authoritative signal.
+	res, _ := procrun.Run(cctx, cmd, procrun.Options{Combined: true})
 	if cctx.Err() == context.DeadlineExceeded {
-		return combined.String(), fmt.Errorf("auto-detect command timed out after %ds", timeout)
+		return string(res.Combined), fmt.Errorf("auto-detect command timed out after %ds", timeout)
 	}
-	// runErr is informational — many of these commands legitimately exit
-	// non-zero (e.g. an unrelated failing test) yet still emit the line we
-	// need to capture. The regex match is the authoritative signal.
-	_ = runErr
-	if runtime.GOOS == "windows" && combined.Len() == 0 {
+	if cctx.Err() != nil {
+		// Caller cancellation: surface it rather than a partial captured value
+		// that would silently pin the wrong auto-detected number.
+		return string(res.Combined), fmt.Errorf("auto-detect command cancelled: %w", cctx.Err())
+	}
+	if runtime.GOOS == "windows" && len(res.Combined) == 0 {
 		return "", fmt.Errorf("auto-detect command produced no output (windows)")
 	}
-	return combined.String(), nil
+	return string(res.Combined), nil
 }
 
 func autoDetectTolerated(haystack string, re *regexp.Regexp, spec autoDetectSpec, fresh string) (bool, string) {
