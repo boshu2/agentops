@@ -317,6 +317,57 @@ func TestRunSuiteContext_CancelStopsRemainingCases(t *testing.T) {
 	}
 }
 
+func TestRunSuiteContext_CancelDuringOnlyCaseIsTerminal(t *testing.T) {
+	// A cancellation landing during the final (here: only) case must surface as
+	// the terminal cancelled error, never be scored as an ordinary case failure.
+	dir := t.TempDir()
+	mark := filepath.Join(dir, "only.ran")
+	suitePath := writeEvalSuite(t, dir, fmt.Sprintf(`{
+  "schema_version": 1,
+  "id": "cancel.single",
+  "name": "Cancel single",
+  "domain": "cli",
+  "visibility": "public_canary",
+  "tier": "deterministic",
+  "scoring": {"aggregate_threshold": 1, "dimensions": [{"name":"correctness","weight":1,"threshold":1}]},
+  "baseline_policy": {"mode": "none"},
+  "cases": [
+    {"id":"only","title":"only","kind":"command","runtime":"shell","objective":"o","inputs":{"shell":%q},"expectations":[{"type":"exit_code","value":0}]}
+  ]
+}`,
+		"echo 1 > "+mark+"; sleep 5",
+	))
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	done := make(chan struct {
+		record *RunRecord
+		err    error
+	}, 1)
+	go func() {
+		record, err := RunSuiteContext(ctx, RunOptions{SuitePath: suitePath, RunID: "cancel-single", Now: fixedEvalTime})
+		done <- struct {
+			record *RunRecord
+			err    error
+		}{record, err}
+	}()
+
+	waitForEvalFile(t, mark) // the only case is now running
+	cancel()
+
+	select {
+	case res := <-done:
+		if res.err == nil || !errors.Is(res.err, context.Canceled) {
+			t.Fatalf("RunSuiteContext error = %v, want context.Canceled", res.err)
+		}
+		if res.record != nil {
+			t.Fatalf("cancelled single-case run returned a scored record: %+v", res.record)
+		}
+	case <-time.After(10 * time.Second):
+		t.Fatal("RunSuiteContext did not return within 10s of cancel")
+	}
+}
+
 func waitForEvalFile(t *testing.T, path string) {
 	t.Helper()
 	deadline := time.Now().Add(5 * time.Second)

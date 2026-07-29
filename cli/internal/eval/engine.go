@@ -87,6 +87,11 @@ func RunSuiteContext(ctx context.Context, opts RunOptions) (*RunRecord, error) {
 		}
 		caseResults = append(caseResults, runCase(ctx, *suite, suiteDir, evalCase, runEnv))
 	}
+	// A cancellation that lands during the final (or only) case must also be
+	// terminal — never scored as an ordinary case failure.
+	if err := ctx.Err(); err != nil {
+		return nil, fmt.Errorf("suite run cancelled: %w", err)
+	}
 	aggregate, dimensions := scoreRun(*suite, caseResults)
 	status := runStatus(*suite, caseResults, aggregate, dimensions)
 	verdict := VerdictPass
