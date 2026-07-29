@@ -45,7 +45,9 @@ func newPlanCheck(c Check, reason string) PlanCheck {
 
 // Plan is the dry-run projection of a gate check invocation: the checks that
 // would run and the checks that would be skipped (each with its routing
-// reason), computed WITHOUT executing any check. It is the honest form of "show
+// reason), computed WITHOUT executing any check. Selection itself still reads
+// repository state (git changed-file resolution, repo detection) — read-only
+// probes, never a check body. It is the honest form of "show
 // what would happen" — the same tier filter and changed-file routing the real
 // run uses, minus every process/filesystem effect the checks themselves carry.
 type Plan struct {
