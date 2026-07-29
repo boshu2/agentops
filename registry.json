@@ -192,11 +192,11 @@
     },
     {
       "driven_by_skills": [
-        "goals"
+        "fitness"
       ],
-      "id": "skill:goals:goals",
-      "name": "goals",
-      "path": "skills/goals/SKILL.md",
+      "id": "skill:fitness:fitness",
+      "name": "fitness",
+      "path": "skills/fitness/SKILL.md",
       "type": "skill"
     },
     {
@@ -603,7 +603,7 @@
     "hooks": 0,
     "job_types": 0,
     "knowledge_stores": 0,
-    "skills": 49,
+    "skills": 50,
     "workflows": 0
   },
   "surfaces": {
@@ -862,13 +862,24 @@
       },
       {
         "capabilities": [
-          "goals"
+          "fitness"
         ],
         "disposition": "keep_specialist",
         "effects": [
           "write_goal_snapshot",
           "write_rendered_spec"
         ],
+        "has_references": false,
+        "has_skill_md": true,
+        "name": "fitness",
+        "path": "skills/fitness/",
+        "reference_count": 0,
+        "tier": "product"
+      },
+      {
+        "capabilities": [],
+        "disposition": "keep_off_path",
+        "effects": [],
         "has_references": false,
         "has_skill_md": true,
         "name": "goals",

@@ -1,7 +1,7 @@
 {
   "image": "claude",
   "schema_version": "skill-image.v1",
-  "skill_count": 49,
+  "skill_count": 50,
   "skills": [
     {
       "disposition": "keep_specialist",
@@ -85,6 +85,11 @@
     },
     {
       "disposition": "keep_specialist",
+      "path": "skills/fitness/",
+      "slug": "fitness"
+    },
+    {
+      "disposition": "keep_off_path",
       "path": "skills/goals/",
       "slug": "goals"
     },

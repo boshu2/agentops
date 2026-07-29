@@ -97,7 +97,7 @@ gated on changes to `skills/**`, `**/*.sh`, or `.github/**`.
 | Feature | Covering test |
 |---|---|
 | `skills/rpi/references/rpi.feature` | `tests/e2e/rpi-phased-domain.sh` |
-| `skills/goals/references/goals.feature` | `tests/e2e/goals-measure-scenarios.sh`, `goals-steer-auto.sh`, `goals-trace-chain.sh` |
+| ~~`skills/goals/references/goals.feature`~~ (removed with the feature file; the skill is now `fitness`, 2026-07-29) | `tests/e2e/goals-measure-scenarios.sh`, `goals-trace-chain.sh` still execute against the `ao goals` CLI |
 | ~~`skills/scenario/references/scenario.feature`~~ (removed: `scenario` folded into `eval-outcomes`, 2026-06-12) | `tests/e2e/goals-scenarios-link.sh` |
 
 The remaining 68 files are allowlisted in `scripts/.scenario-linkage-allow` with

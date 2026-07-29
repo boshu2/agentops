@@ -32,7 +32,7 @@
 
 ## product
 
-`doc`, `goals`, `product`, `security`
+`doc`, `fitness`, `goals`, `product`, `security`
 
 ## session
 
@@ -58,7 +58,8 @@
 | `dcg` | execution | `keep_specialist` | - | `dcg` | `write_dcg_config` |
 | `doc` | product | `keep_specialist` | - | `doc` | `write_documentation` |
 | `domain` | knowledge | `keep_specialist` | - | `domain` | - |
-| `goals` | product | `keep_specialist` | - | `goals` | `write_goal_snapshot`, `write_rendered_spec` |
+| `fitness` | product | `keep_specialist` | - | `fitness` | `write_goal_snapshot`, `write_rendered_spec` |
+| `goals` | product | `keep_off_path` | - | - | - |
 | `handoff` | session | `keep_specialist` | - | `handoff` | `write_handoff_artifact`, `read_git_state`, `read_clock` |
 | `idea-genie` | execution | `keep_strategy` | - | `generate_evidenced_options`, `dueling_idea_genies` | `write_idea_portfolio` |
 | `implement` | execution | `keep` | - | `execute_one_experiment`, `collect_factual_evidence` | `modify_declared_subject`, `derive_subject_manifest` |

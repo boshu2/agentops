@@ -1,6 +1,6 @@
-# goals
+# fitness
 
-Compatibility alias — renamed to fitness. Use fitness to measure declared project fitness goals. Triggers: "goals" (deprecated).
+Measure declared project fitness goals without recommending or applying work. Triggers: "fitness", "check project fitness", "measure goals".
 
 ## Instructions
 

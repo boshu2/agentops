@@ -29,7 +29,8 @@
 | `codebase-recon` | `customer-of` | `validate` |
 | `codex-exec` | `supplier-to` | `validate` |
 | `craft-goal` | `supplier-to` | `plan` |
-| `goals` | `shared-kernel` | `standards` |
+| `fitness` | `shared-kernel` | `standards` |
+| `goals` | `alias-of` | `fitness` |
 | `idea-genie` | `customer-of` | `research` |
 | `idea-genie` | `supplier-to` | `plan` |
 | `implement` | `customer-of` | `plan` |
@@ -91,7 +92,7 @@
 | `doc` | consumes | `repo-context` |
 | `doc` | produces | `documentation` |
 | `domain` | produces | `stdout` |
-| `goals` | produces | `goal-measurement-report` |
+| `fitness` | produces | `goal-measurement-report` |
 | `handoff` | produces | `.agents/handoff/*.md` |
 | `idea-genie` | consumes | `repo-context` |
 | `idea-genie` | consumes | `task-question` |

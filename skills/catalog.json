@@ -1,6 +1,6 @@
 {
   "schema_version": "3",
-  "skill_count": 49,
+  "skill_count": 50,
   "skills": [
     {
       "canonical_status": "canonical",
@@ -544,7 +544,7 @@
     {
       "canonical_status": "canonical",
       "capabilities": [
-        "goals"
+        "fitness"
       ],
       "codex_override_present": true,
       "consumes": [],
@@ -555,7 +555,7 @@
         }
       ],
       "dependencies": [],
-      "description": "Measure declared project fitness goals without recommending or applying work. Triggers: \"measure goals\", \"check project fitness\".",
+      "description": "Measure declared project fitness goals without recommending or applying work. Triggers: \"fitness\", \"check project fitness\", \"measure goals\".",
       "disposition": "keep_specialist",
       "effects": [
         "write_goal_snapshot",
@@ -563,7 +563,7 @@
       ],
       "graph_root": false,
       "hexagonal_role": "domain",
-      "name": "goals",
+      "name": "fitness",
       "practices": [
         "dora-metrics",
         "lean-startup"
@@ -574,6 +574,32 @@
       "references_count": 0,
       "tier": "product",
       "user_invocable": false
+    },
+    {
+      "canonical_status": "canonical",
+      "capabilities": [],
+      "codex_override_present": true,
+      "consumes": [],
+      "context_rel": [
+        {
+          "kind": "alias-of",
+          "with": "fitness"
+        }
+      ],
+      "dependencies": [],
+      "description": "Compatibility alias \u2014 renamed to fitness. Use fitness to measure declared project fitness goals. Triggers: \"goals\" (deprecated).",
+      "disposition": "keep_off_path",
+      "effects": [],
+      "graph_root": false,
+      "hexagonal_role": "domain",
+      "name": "goals",
+      "practices": [
+        "dora-metrics"
+      ],
+      "produces": [],
+      "references_count": 0,
+      "tier": "product",
+      "user_invocable": true
     },
     {
       "canonical_status": "canonical",

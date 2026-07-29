@@ -2,7 +2,7 @@
   "generator": "manual-maintained",
   "source_root": "skills",
   "layout": "modular",
-  "codex_override_catalog_hash": "fae62f93c46c2111ea890e25afff256a081b6b07c6944f8f5ac2a94115943437",
+  "codex_override_catalog_hash": "d093b00a7e7880043ae4e0a0375d4f1e774f80347d5986f0eef6052cd7e37331",
   "codex_override_catalog": {
     "version": 1,
     "description": "Machine-readable Codex treatment map for the full skill catalog.",
@@ -326,6 +326,12 @@
         "treatment": "parity_only",
         "wave": "catalog-parity",
         "reason": "Auto-generated parity twin (codex-sync): skills/craft-goal is the source of truth; no durable Codex-specific divergence yet."
+      },
+      {
+        "name": "fitness",
+        "treatment": "parity_only",
+        "wave": "catalog-parity",
+        "reason": "Auto-generated parity twin (codex-sync): skills/fitness is the source of truth; no durable Codex-specific divergence yet."
       }
     ]
   },
@@ -427,10 +433,16 @@
       "generated_hash": "6180b39f53cf7cfcc2ef567f84f59416fe40e5a27c26b6b956285137d216e814"
     },
     {
+      "name": "fitness",
+      "source_skill": "skills/fitness",
+      "source_hash": "c23854f00cdaf45fdefe04265036bca0539559a247dd88bcd13eff5004dbc361",
+      "generated_hash": "d3f01847b297aaef08bf5d7fc7df1717ea0ca2e59e0407e61f702fdccc2cabae"
+    },
+    {
       "name": "goals",
       "source_skill": "skills/goals",
-      "source_hash": "050c7d539c56668a1a92e7694d6a356329859f1eac01a7b4944718444beb70f7",
-      "generated_hash": "31b0b008feedaa8953613f35acb57687845a6c60cd5931bf4b551c8abc5c8c88"
+      "source_hash": "53c201871da29d8962c26fcd3ff563296726fc71626fec8b819be1a7857ce28c",
+      "generated_hash": "6a26e0fd34317e30a312d9009b3e8abd4ce6310f463ce2d3489a38d82fc61f14"
     },
     {
       "name": "handoff",
@@ -625,5 +637,5 @@
       "generated_hash": "30f72769961a244749883e03cb04e329cd0feb03dd5b641d2a73a2e5dc8e9d42"
     }
   ],
-  "package_count": 49
+  "package_count": 50
 }

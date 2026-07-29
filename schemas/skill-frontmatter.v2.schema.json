@@ -44,7 +44,7 @@
         "properties": {
           "kind": {
             "type": "string",
-            "enum": ["shared-kernel", "customer-of", "supplier-to", "conformist-to", "acl-wraps", "separate-ways", "partnership"]
+            "enum": ["shared-kernel", "customer-of", "supplier-to", "conformist-to", "acl-wraps", "separate-ways", "partnership", "alias-of"]
           },
           "with": {"type": "string", "description": "skill slug"}
         }
