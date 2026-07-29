@@ -3,6 +3,7 @@ package eval
 import (
 	"context"
 	"errors"
+	"os"
 	"os/exec"
 	"path/filepath"
 	"slices"
@@ -487,7 +488,7 @@ func TestEffectiveDisableHooksOrsSuiteAndOverride(t *testing.T) {
 func TestLiveRuntimeEnvEmitsAgentopsHooksDisabled(t *testing.T) {
 	suite := Suite{Environment: SuiteEnvironment{DisableHooks: true}}
 	opts := LiveRuntimeOptions{Env: []string{}}
-	env, notes, err := liveRuntimeEnv(opts, suite)
+	env, notes, _, err := liveRuntimeEnv(opts, suite)
 	if err != nil {
 		t.Fatalf("liveRuntimeEnv: %v", err)
 	}
@@ -500,7 +501,7 @@ func TestLiveRuntimeEnvEmitsAgentopsHooksDisabled(t *testing.T) {
 func TestLiveRuntimeEnvOmitsHooksDisabledWhenInactive(t *testing.T) {
 	suite := Suite{Environment: SuiteEnvironment{}}
 	opts := LiveRuntimeOptions{Env: []string{}}
-	env, _, err := liveRuntimeEnv(opts, suite)
+	env, _, _, err := liveRuntimeEnv(opts, suite)
 	if err != nil {
 		t.Fatalf("liveRuntimeEnv: %v", err)
 	}
@@ -514,11 +515,43 @@ func TestLiveRuntimeEnvOmitsHooksDisabledWhenInactive(t *testing.T) {
 func TestLiveRuntimeEnvHonorsOverrideDisableHooks(t *testing.T) {
 	suite := Suite{Environment: SuiteEnvironment{}}
 	opts := LiveRuntimeOptions{Env: []string{}, OverrideDisableHooks: true}
-	env, _, err := liveRuntimeEnv(opts, suite)
+	env, _, _, err := liveRuntimeEnv(opts, suite)
 	if err != nil {
 		t.Fatalf("liveRuntimeEnv: %v", err)
 	}
 	assertEnvContains(t, env, "AGENTOPS_HOOKS_DISABLED=1")
+}
+
+func TestLiveRuntimeEnvOwnsInternallyCreatedIsolationRoot(t *testing.T) {
+	suite := Suite{Environment: SuiteEnvironment{IsolateHome: true, IsolateCodexHome: true}}
+	// No IsolationRoot supplied: liveRuntimeEnv must create one and report it.
+	_, _, ownedRoot, err := liveRuntimeEnv(LiveRuntimeOptions{Env: []string{}}, suite)
+	if err != nil {
+		t.Fatalf("liveRuntimeEnv: %v", err)
+	}
+	if ownedRoot == "" {
+		t.Fatal("liveRuntimeEnv did not report an owned isolation root; the auto-created temp dir would leak")
+	}
+	if _, statErr := os.Stat(filepath.Join(ownedRoot, "home")); statErr != nil {
+		t.Fatalf("owned root missing isolated home: %v", statErr)
+	}
+	// The caller removes it after the run; prove that leaves nothing behind.
+	removeOwnedRoot(ownedRoot)
+	if _, statErr := os.Stat(ownedRoot); !os.IsNotExist(statErr) {
+		t.Fatalf("owned root not cleaned: stat err=%v", statErr)
+	}
+}
+
+func TestLiveRuntimeEnvDoesNotOwnCallerIsolationRoot(t *testing.T) {
+	callerRoot := t.TempDir()
+	suite := Suite{Environment: SuiteEnvironment{IsolateHome: true}}
+	_, _, ownedRoot, err := liveRuntimeEnv(LiveRuntimeOptions{Env: []string{}, IsolationRoot: callerRoot}, suite)
+	if err != nil {
+		t.Fatalf("liveRuntimeEnv: %v", err)
+	}
+	if ownedRoot != "" {
+		t.Fatalf("liveRuntimeEnv claimed ownership of caller-supplied root %q (ownedRoot=%q); it must never remove it", callerRoot, ownedRoot)
+	}
 }
 
 func TestLiveRuntimePromptAppendsNegationWhenDisabled(t *testing.T) {

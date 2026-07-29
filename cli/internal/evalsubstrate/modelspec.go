@@ -16,8 +16,8 @@ func ModelSpecPath(evalsRoot, specID string) string {
 // CaptureModelSpec writes the ModelSpec to disk after stamping content_hash.
 // Returns (specID, contentHash) for Manifest.ModelSpecRef + Manifest.ModelSpecHash.
 func CaptureModelSpec(evalsRoot string, spec *ModelSpec) (string, string, error) {
-	if spec.ID == "" {
-		return "", "", fmt.Errorf("CaptureModelSpec: empty id")
+	if err := ValidateID(spec.ID); err != nil {
+		return "", "", fmt.Errorf("CaptureModelSpec: %w", err)
 	}
 	if spec.SchemaVersion == 0 {
 		spec.SchemaVersion = SchemaVersion
@@ -57,6 +57,9 @@ func CaptureModelSpec(evalsRoot string, spec *ModelSpec) (string, string, error)
 }
 
 func LoadModelSpec(evalsRoot, specID string) (*ModelSpec, error) {
+	if err := ValidateID(specID); err != nil {
+		return nil, fmt.Errorf("LoadModelSpec: %w", err)
+	}
 	raw, err := os.ReadFile(ModelSpecPath(evalsRoot, specID))
 	if err != nil {
 		return nil, fmt.Errorf("LoadModelSpec: %w", err)

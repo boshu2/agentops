@@ -1,6 +1,7 @@
 package evalsubstrate
 
 import (
+	"os"
 	"path/filepath"
 	"testing"
 )
@@ -66,6 +67,25 @@ func TestCaptureModelSpec_StableAcrossRecaptures(t *testing.T) {
 	}
 	if h1 != h2 {
 		t.Fatalf("re-capture hash mismatch: %s vs %s", h1, h2)
+	}
+}
+
+func TestCaptureModelSpec_RejectsTraversalIDWithoutWriting(t *testing.T) {
+	root := t.TempDir()
+	spec := &ModelSpec{ID: "../../escape", Provider: "local-mlx", ModelName: "test"}
+	if _, _, err := CaptureModelSpec(root, spec); err == nil {
+		t.Fatal("CaptureModelSpec accepted a traversal id; want rejection")
+	}
+	// The would-be escape target (root/../escape/spec.yaml) must not exist.
+	escaped := filepath.Join(root, "..", "escape", "spec.yaml")
+	if _, err := os.Stat(escaped); err == nil {
+		t.Fatalf("traversal id escaped the eval root: %s exists", escaped)
+	}
+}
+
+func TestLoadModelSpec_RejectsTraversalID(t *testing.T) {
+	if _, err := LoadModelSpec(t.TempDir(), "../../../etc/passwd"); err == nil {
+		t.Fatal("LoadModelSpec accepted a traversal id; want rejection")
 	}
 }
 

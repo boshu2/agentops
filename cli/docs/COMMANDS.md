@@ -638,7 +638,7 @@ ao eval task run <task-id> [flags]
   -h, --help                     help for run
       --inspect-command string   Inspect command recorded into the Run manifest (not executed yet)
       --inspect-version string   Inspect AI version stamped into manifest (default "0.3.216")
-      --model-spec string        ModelSpec id (already captured via ao eval models capture)
+      --model-spec string        ModelSpec id, resolved from <evals-root>/models/<id>/spec.yaml
       --n-samples int            Override Suite.n_samples
       --quick                    Mark Run as quick_session=true (excluded from --vs auto-baseline pool)
       --rig-id string            Rig identifier stamped into the Run manifest
