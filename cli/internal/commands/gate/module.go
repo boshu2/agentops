@@ -47,7 +47,10 @@ func (Module) Contract() clicontract.CommandContract {
 // selected checks pass, 1 when a check fails, or 2 on an invalid gate
 // configuration (for example a bad --scope value). Command-line misuse such as
 // an unknown flag or an extra positional arg exits 1 via cobra, not 2, so exit
-// 2 is not a generic "usage" class.
+// 2 is not a generic "usage" class. Under the global --dry-run flag the command
+// instead projects the selection plan (which checks would run, with reasons)
+// WITHOUT executing any check, and exits 0 on a successful plan — the declared
+// effects below describe the default, non-dry-run path.
 func (Module) CheckContract() clicontract.CommandContract {
 	return clicontract.CommandContract{
 		ID:       "ao.gate.check",
@@ -107,12 +110,32 @@ func (module Module) newCheckCommand() *cobra.Command {
 			if module.useCases.Check == nil {
 				return &clicontract.ExitError{Code: 2, Message: "gate check: use case not configured", Label: "ao gate"}
 			}
+			dryRun := module.host.DryRun != nil && module.host.DryRun()
 			result, err := module.useCases.Check.Execute(command.Context(), gateapp.CheckRequest{
 				Full: full, Scope: scope, FailFast: failFast,
 				WorkflowCoverage: workflowCoverage, RequireWorkflowParity: requireWorkflowParity, WorkflowPath: workflowPath,
+				Plan: dryRun,
 			})
 			if err != nil {
 				return &clicontract.ExitError{Code: 2, Message: err.Error(), Label: "ao gate"}
+			}
+			if dryRun {
+				// Dry-run: render the selection plan and exit 0. No check ran, so
+				// there is no verdict to map — a successful plan is success
+				// regardless of what the planned checks would return.
+				if result.Plan == nil {
+					return &clicontract.ExitError{Code: 2, Message: "gate check: dry-run produced no plan", Label: "ao gate"}
+				}
+				if jsonOutput {
+					raw, jsonErr := result.Plan.JSON()
+					if jsonErr != nil {
+						return &clicontract.ExitError{Code: 2, Message: jsonErr.Error(), Label: "ao gate"}
+					}
+					fmt.Fprintln(command.OutOrStdout(), string(raw))
+				} else {
+					result.Plan.Human(command.OutOrStdout())
+				}
+				return nil
 			}
 			if jsonOutput {
 				raw, jsonErr := result.Report.JSON()
