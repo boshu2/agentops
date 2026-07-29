@@ -31,11 +31,14 @@ independent Validate review. The current machine contracts are
 - Validator context ID: `<distinct nonempty identity>`
 - Freshness source: `runtime | caller`
 - Freshness attester: `<identity>`
+- Validation result: `<PASS | FAIL | NOT_PROVEN>`
 - Criterion results: `<PASS | FAIL | NOT_PROVEN with evidence>`
 - Checked: `<claims and surfaces>`
 - Not checked: `<claims and surfaces>`
-- Verdict artifact: `<content-addressed path>`
+- Verdict artifact (optional): `<content-addressed path when requested>`
 
 Any subject edit invalidates the review. A proven out-of-scope path is FAIL;
-incomplete changed-path coverage is NOT_PROVEN. Validate persists one verdict
-and stops without repair, retry, Git, closure, release, or delivery.
+incomplete changed-path coverage is NOT_PROVEN. Validate returns one fresh result and stops
+without repair, retry, Git, closure, release, or delivery.
+Persist `verdict.v2` only when the caller requests machine-readable evidence or
+a declared downstream consumer requires it.

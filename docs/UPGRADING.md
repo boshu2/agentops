@@ -28,7 +28,7 @@ Three actions prevent broken workflows after upgrading:
 The semantic loop is now:
 
 ```text
-RPI -> Plan -> Implement -> fresh Validate -> durable verdict -> report and stop
+RPI -> Plan -> Implement -> fresh Validate -> report and stop
 ```
 
 AgentOps no longer owns retry, queue, work-claim, Git, closure, release, or
@@ -79,11 +79,11 @@ Use:
 
 ### Migrate verdict consumers
 
-Replace `verdict.v1`, Pawl receipts, admission records, and delivery receipts
-with `verdict.v2`. A PASS requires distinct declared author and validator context
-IDs, explicit freshness attestation, acceptance and subject digests, checked and
-unchecked scope, and criterion-level results. Missing identity or incomplete
-subject proof produces `NOT_PROVEN`.
+Replace persisted `verdict.v1`, Pawl receipts, admission records, and delivery
+receipts with optional `verdict.v2`. A PASS still requires distinct declared
+author and validator context IDs, explicit freshness attestation, acceptance
+and subject digests, checked and unchecked scope, and criterion-level results.
+Missing identity or incomplete subject proof produces `NOT_PROVEN`.
 
 Historical lifecycle artifacts may remain as inert evidence. They must not
 influence current phase sequencing or verdict validity.

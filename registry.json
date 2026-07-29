@@ -572,6 +572,15 @@
       "driven_by_skills": [
         "validate"
       ],
+      "id": "skill:validate:return_validation_result",
+      "name": "return_validation_result",
+      "path": "skills/validate/SKILL.md",
+      "type": "skill"
+    },
+    {
+      "driven_by_skills": [
+        "validate"
+      ],
       "id": "skill:validate:persist_verdict",
       "name": "persist_verdict",
       "path": "skills/validate/SKILL.md",
@@ -591,13 +600,13 @@
     "cli_commands": 0,
     "gates": 0,
     "reference_impls": 0,
-    "skills": 65,
-    "total": 65
+    "skills": 66,
+    "total": 66
   },
   "cli_top_level_commands": [],
   "schema_version": 3,
   "summary": {
-    "capabilities": 65,
+    "capabilities": 66,
     "cli_commands": 0,
     "eval_files": 0,
     "hooks": 0,
@@ -1361,6 +1370,7 @@
         "capabilities": [
           "compute_subject_identity",
           "judge_acceptance",
+          "return_validation_result",
           "persist_verdict"
         ],
         "disposition": "keep",

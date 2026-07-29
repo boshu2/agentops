@@ -12,7 +12,7 @@
 ## AgentOps loop
 
 ```text
-RPI -> Plan -> Implement -> fresh Validate -> durable verdict -> report and stop
+RPI -> Plan -> Implement -> fresh Validate -> report and stop
 ```
 
 The caller owns revisions, retries, work organization, Git, CI, release, and

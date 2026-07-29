@@ -146,5 +146,6 @@
 | `using-gc` | produces | `gas-city-runtime-evidence` |
 | `validate` | consumes | `subject-manifest.v1` |
 | `validate` | produces | `subject-manifest.v1` |
+| `validate` | produces | `validation-result` |
 | `validate` | produces | `verdict.v2` |
 | `workflow-builder` | produces | `workflow-script` |

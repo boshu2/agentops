@@ -48,8 +48,10 @@ authorization by itself.
 3. Invoke Validate once in a context distinct from the author's context. Pass
    the intent reference and digest, exact subject manifest, factual receipts,
    validator identity, and freshness attestation.
-4. Return the durable `verdict.v2` reference and a short report. Stop regardless
-   of `PASS`, `FAIL`, or `NOT_PROVEN`.
+4. Return the fresh validation result and a short report. Persist and link
+   `verdict.v2` only when the caller requests machine-readable evidence or a
+   declared downstream consumer requires it. Stop regardless of `PASS`, `FAIL`,
+   or `NOT_PROVEN`.
 
 `NOT_PLANNED` and `NOT_BUILT` are report statuses, never semantic verdicts.
 A caller may revise the bead or caller intent and start a new invocation. RPI
@@ -65,9 +67,9 @@ one outcome and one acceptance boundary.
 If control artifacts or fresh-validation cycles are multiplying faster than
 implementation evidence, stop dispatching more lanes. Return to one
 outcome-level intent and continue with targeted deterministic checks, reserving
-the full integration check and fresh verdict for the frozen subject. This
+the full integration check and fresh validation for the frozen subject. This
 changes orchestration cost, never acceptance, exact identity, fail-closed
-scope, or verdict authority.
+scope, or validation authority.
 
 ## Continuation envelope
 
@@ -112,13 +114,14 @@ disjoint regen surfaces may run in parallel.
 
 ## Report
 
-RPI has two report surfaces. Keep them distinct:
+RPI has one required report surface and one optional representation:
 
-1. **Machine artifact:** return or persist the exact
-   [`rpi-report.v1`](../../schemas/rpi-report.v1.schema.json) object for
-   adapters, automation, and audit.
-2. **Interactive response:** summarize that object for the caller in natural
+1. **Interactive response:** return the result to the caller in natural
    language. This is the default assistant response.
+2. **Machine artifact:** return or persist the exact
+   [`rpi-report.v1`](../../schemas/rpi-report.v1.schema.json) object only when
+   the caller requests machine-readable evidence or a declared adapter consumes
+   it.
 
 Lead the interactive response with the status and one sentence stating the
 caller-visible outcome. Lead with the subject, not the process: production
@@ -129,10 +132,8 @@ unchecked scope, and a clickable verdict reference when one exists. Name why
 no subject exists for `NOT_PLANNED` or `NOT_BUILT`. Keep the response to one
 short paragraph or at most four bullets.
 
-The machine artifact remains behind the verdict/report link. Emit its full
-JSON or YAML object only when the caller explicitly requests machine-readable
-output or an adapter consumes the response. Raw digests, schema fields, and
-exhaustive check lists stay in the artifact unless an integrity failure makes
-one necessary to explain the result.
+When no machine artifact was requested, do not create a hidden one. Raw digests,
+schema fields, and exhaustive check lists stay out of the interactive response
+unless an integrity failure makes one necessary to explain the result.
 
 Do not append a next action. The caller owns continuation.

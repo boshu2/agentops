@@ -38,7 +38,9 @@ require_text() {
   done
 
   require_text AGENTS.md \
-    "RPI -> Plan -> Implement -> fresh Validate -> durable verdict -> report and stop"
+    "RPI -> Plan -> Implement -> fresh Validate -> report and stop"
+  require_text AGENTS.md \
+    "Persist \`verdict.v2\` only when"
   require_text PRODUCT.md \
     "AgentOps is not a new GitLab, CI service, tracker, merge queue, delivery system"
   require_text docs/architecture/operating-loop.md \
@@ -63,6 +65,21 @@ if actual != expected:
     raise SystemExit(actual)
 PY
   [ "$status" -eq 0 ]
+}
+
+@test "validation worksheet requires fresh judgment and makes persistence optional" {
+  require_text docs/templates/slice-validation.md \
+    '- Validation result: `<PASS | FAIL | NOT_PROVEN>`'
+  require_text docs/templates/slice-validation.md \
+    '- Verdict artifact (optional): `<content-addressed path when requested>`'
+  require_text docs/templates/slice-validation.md \
+    "Validate returns one fresh result and stops"
+  require_text docs/templates/slice-validation.md \
+    "Persist \`verdict.v2\` only when"
+
+  run grep -F "Validate persists one verdict" \
+    "$REPO_ROOT/docs/templates/slice-validation.md"
+  [ "$status" -eq 1 ]
 }
 
 @test "negative fixtures reject semantic Git authority and automatic continuation" {
