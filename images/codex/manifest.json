@@ -244,7 +244,7 @@
       "twin_path": "skills-codex/security/"
     },
     {
-      "disposition": "keep_specialist",
+      "disposition": "keep_off_path",
       "slug": "shared",
       "source_path": "skills/shared/",
       "twin_path": "skills-codex/shared/"

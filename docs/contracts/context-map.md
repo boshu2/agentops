@@ -71,10 +71,9 @@
 | `agy-native` | produces | `agy-run-evidence` |
 | `automation-shape-routing` | consumes | `task-intent` |
 | `automation-shape-routing` | produces | `automation-shape-verdict` |
-| `bootstrap` | consumes | `goals` |
+| `bootstrap` | consumes | `fitness` |
 | `bootstrap` | consumes | `product` |
 | `bootstrap` | consumes | `doc` |
-| `bootstrap` | consumes | `shared` |
 | `codebase-recon` | consumes | `repo-context` |
 | `codebase-recon` | consumes | `existing-docs` |
 | `codebase-recon` | produces | `codebase-recon.v1` |
@@ -133,7 +132,6 @@
 | `security` | produces | `security-gate-summary.json` |
 | `security` | produces | `suite-summary.json` |
 | `security` | produces | `redteam-results.json` |
-| `shared` | produces | `reference-documents` |
 | `skill-builder` | produces | `skill-source-package` |
 | `skill-builder` | produces | `skill-hygiene-report` |
 | `standards` | produces | `stdout` |

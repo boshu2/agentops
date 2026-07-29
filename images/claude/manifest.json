@@ -204,7 +204,7 @@
       "slug": "security"
     },
     {
-      "disposition": "keep_specialist",
+      "disposition": "keep_off_path",
       "path": "skills/shared/",
       "slug": "shared"
     },

@@ -204,10 +204,9 @@
       ],
       "codex_override_present": true,
       "consumes": [
-        "goals",
+        "fitness",
         "product",
-        "doc",
-        "shared"
+        "doc"
       ],
       "context_rel": [],
       "dependencies": [],
@@ -1356,26 +1355,21 @@
     },
     {
       "canonical_status": "canonical",
-      "capabilities": [
-        "provide_reference_context"
-      ],
+      "capabilities": [],
       "codex_override_present": true,
       "consumes": [],
       "context_rel": [],
       "dependencies": [],
-      "description": "Shared runtime and evidence references loaded only by a consuming skill. Triggers: none \u2014 internal library, not user-routable.",
-      "disposition": "keep_specialist",
+      "description": "Retired \u2014 its runtime-neutrality contract moved to docs/contracts/runtime-neutrality.md. Triggers: none \u2014 not routable.",
+      "disposition": "keep_off_path",
       "effects": [],
       "graph_root": false,
       "hexagonal_role": "domain",
       "name": "shared",
       "practices": [
-        "design-by-contract",
-        "pragmatic-programmer"
+        "design-by-contract"
       ],
-      "produces": [
-        "reference-documents"
-      ],
+      "produces": [],
       "references_count": 0,
       "tier": "library",
       "user_invocable": false

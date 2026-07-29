@@ -62,7 +62,7 @@
 | `scaffold` | execution | `keep_specialist` | - | `scaffold` | `write_project_files` |
 | `scope` | meta | `keep_specialist` | - | `scope_review` | - |
 | `security` | product | `keep_specialist` | - | `security` | `write_scan_artifacts` |
-| `shared` | library | `keep_specialist` | - | `provide_reference_context` | - |
+| `shared` | library | `keep_off_path` | - | - | - |
 | `skill-builder` | meta | `keep_specialist` | - | `skill_builder`, `heal_skill` | `write_skill_source`, `write_build_report`, `regenerate_skill_projections`, `repair_skill_projections` |
 | `standards` | knowledge | `keep_specialist` | - | `standards` | - |
 | `status` | session | `keep_specialist` | - | `status` | `read_filesystem`, `read_clock` |
