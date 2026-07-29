@@ -4,19 +4,34 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"gopkg.in/yaml.v3"
 )
 
-func ModelSpecPath(evalsRoot, specID string) string {
-	return filepath.Join(evalsRoot, "models", specID, "spec.yaml")
+// ModelSpecPath is the single checked sink for model-spec paths: it validates
+// and encodes the id, so there is no way to build a model-spec path from an
+// unvalidated id. Model-spec ids may contain ':' (for example "ms:stable"),
+// which is a Windows alternate-data-stream separator, so ':' is percent-encoded
+// to "%3A" before it becomes a directory name. The encoding is one-way and
+// internal: both CaptureModelSpec (write) and LoadModelSpec (read) resolve
+// through here, so the raw ':' form never reaches the filesystem and is never
+// decoded back — no decoder is needed. Returns an error for any id that is not a
+// safe single path component after encoding.
+func ModelSpecPath(evalsRoot, specID string) (string, error) {
+	component := strings.ReplaceAll(specID, ":", "%3A")
+	if err := ValidateID(component); err != nil {
+		return "", fmt.Errorf("model-spec id %q: %w", specID, err)
+	}
+	return filepath.Join(evalsRoot, "models", component, "spec.yaml"), nil
 }
 
 // CaptureModelSpec writes the ModelSpec to disk after stamping content_hash.
 // Returns (specID, contentHash) for Manifest.ModelSpecRef + Manifest.ModelSpecHash.
 func CaptureModelSpec(evalsRoot string, spec *ModelSpec) (string, string, error) {
-	if err := ValidateID(spec.ID); err != nil {
+	dest, err := ModelSpecPath(evalsRoot, spec.ID)
+	if err != nil {
 		return "", "", fmt.Errorf("CaptureModelSpec: %w", err)
 	}
 	if spec.SchemaVersion == 0 {
@@ -49,7 +64,6 @@ func CaptureModelSpec(evalsRoot string, spec *ModelSpec) (string, string, error)
 	if err != nil {
 		return "", "", fmt.Errorf("CaptureModelSpec: re-canonicalize: %w", err)
 	}
-	dest := ModelSpecPath(evalsRoot, spec.ID)
 	if err := WriteAtomic(dest, finalCanon); err != nil {
 		return "", "", fmt.Errorf("CaptureModelSpec: write: %w", err)
 	}
@@ -57,10 +71,11 @@ func CaptureModelSpec(evalsRoot string, spec *ModelSpec) (string, string, error)
 }
 
 func LoadModelSpec(evalsRoot, specID string) (*ModelSpec, error) {
-	if err := ValidateID(specID); err != nil {
+	path, err := ModelSpecPath(evalsRoot, specID)
+	if err != nil {
 		return nil, fmt.Errorf("LoadModelSpec: %w", err)
 	}
-	raw, err := os.ReadFile(ModelSpecPath(evalsRoot, specID))
+	raw, err := os.ReadFile(path)
 	if err != nil {
 		return nil, fmt.Errorf("LoadModelSpec: %w", err)
 	}

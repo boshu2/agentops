@@ -78,3 +78,27 @@ reaped on timeout.
 - `cd cli && go test ./...` — 2870 passed across 70 packages.
 - `scripts/golangci-lint-v2.sh run` (touched packages) — 0 issues.
 - `scripts/generate-cli-reference.sh --check` — `cli/docs/COMMANDS.md` up to date.
+
+## Cross-family review round 1 — disposition
+
+Cross-family review returned REQUEST_CHANGES with three findings on the finding-1
+`ValidateID`. All three addressed in commit 2 (`fix(eval): harden id validation —
+portable grammar, checked path sinks`).
+
+| Review finding | Verdict | Change |
+|---|---|---|
+| [High] Windows traversal: `ValidateID(".. ")` passed but Win32 strips trailing spaces/dots → `".."`; and raw `:` (allowed for `ms:*`) is a Windows alternate-data-stream separator reaching the path join. | **FIXED** | `ValidateID` now rejects any leading/trailing space or dot (subsumes `.`/`..`) and rejects raw `:`. `:` is handled by encoding, not by banning `ms:*` ids: `ModelSpecPath` percent-encodes `:` → `%3A` (documented one-way, never decoded — reads and writes both route through it) so the raw `:` never becomes a path component. Design chosen as the smallest sound option and documented in both function comments. |
+| [Medium] Canonicality & bounds: whitespace-only, overlong, C1 controls (U+0080–U+009F, missed by a C0-only check), and non-NFC input. | **FIXED** | `ValidateID` now rejects empty/whitespace-only (via leading/trailing-space rule), ids > 128 bytes (`maxIDBytes`), invalid UTF-8, C0 + DEL + **C1** controls (`r < 0x20 || (r >= 0x7f && r <= 0x9f)`), and non-NFC input via `golang.org/x/text/unicode/norm` (`norm.NFC.IsNormalString`). NFC input is **rejected, not normalized** (documented), so two visually identical ids can never address two distinct on-disk entries. `golang.org/x/text v0.40.0` was already in `go.mod` — no new dependency. |
+| [Medium] Enforce at the sink: exported `ModelSpecPath(evalsRoot, specID)` still did an unchecked join. | **FIXED** | `ModelSpecPath` now returns `(string, error)`, validates + encodes inside, and is the only model-spec path constructor (no bypass). Its two callers (`CaptureModelSpec`, `LoadModelSpec`) were migrated to the error-returning form. **Sweep of other exported evalsubstrate id→path joiners:** `ManifestPath`/`RunDir` take run ids produced by `GenerateRunID` (which already sanitizes `/`, ` `, `:` → `-` and truncates rig-id to 8, so its output is always a safe single component) or read back from trusted on-disk `runs/` listings — never a raw external identifier — so they are not an id-injection sink and were left unchanged. `CanonicalizePath` canonicalizes an already-formed path, not an id, and is out of scope. |
+
+New rejection/acceptance classes are witnessed in `id_test.go`
+(`TestValidateID_RejectsUnsafeComponents` / `TestValidateID_AcceptsCanonicalIDs`:
+trailing/leading dot & space, whitespace-only, overlong, C1 control, DEL, raw
+colon, non-NFC-rejected vs NFC-accepted, encoded-colon accepted) and in
+`modelspec_test.go` (`TestModelSpecPath_IsCheckedAndEncodesColon` — encoding +
+no-bypass; `TestCaptureLoadModelSpec_ColonIDRoundTripsThroughEncoding` — the
+`ms:stable` alias round-trips to the encoded on-disk name).
+
+Round-1 gates: `go build ./...` Success; `go vet ./...` no issues; `go test ./...`
+2872 passed across 70 packages; `golangci-lint-v2.sh run` (evalsubstrate, eval) 0
+issues.
