@@ -2,7 +2,7 @@
 
 # Skill Router
 
-49 live skills. Metadata is the sole inventory and graph source.
+50 live skills. Metadata is the sole inventory and graph source.
 
 ## keep
 
@@ -10,7 +10,7 @@
 
 ## keep_off_path
 
-`learn`
+`goals`, `learn`, `shared`
 
 ## keep_strategy
 
@@ -22,7 +22,7 @@
 
 ## keep_specialist
 
-`account-rotation`, `bootstrap`, `cass`, `cc-hooks`, `codebase-recon`, `converter`, `craft-goal`, `dcg`, `doc`, `domain`, `goals`, `handoff`, `ms`, `operationalize`, `pattern-mining`, `product`, `rch`, `refactor`, `research`, `reverse-engineer`, `sbh`, `scaffold`, `scope`, `security`, `shared`, `skill-builder`, `standards`, `status`, `test`, `toil-mining`, `workflow-builder`
+`account-rotation`, `bootstrap`, `cass`, `cc-hooks`, `codebase-recon`, `converter`, `craft-goal`, `dcg`, `doc`, `domain`, `fitness`, `handoff`, `ms`, `operationalize`, `pattern-mining`, `product`, `rch`, `refactor`, `research`, `reverse-engineer`, `sbh`, `scaffold`, `scope`, `security`, `skill-builder`, `standards`, `status`, `test`, `toil-mining`, `workflow-builder`
 
 ## Complete inventory
 
@@ -44,7 +44,8 @@
 | `dcg` | execution | `keep_specialist` | - | `dcg` | `write_dcg_config` |
 | `doc` | product | `keep_specialist` | - | `doc` | `write_documentation` |
 | `domain` | knowledge | `keep_specialist` | - | `domain` | - |
-| `goals` | product | `keep_specialist` | - | `goals` | `write_goal_snapshot`, `write_rendered_spec` |
+| `fitness` | product | `keep_specialist` | - | `fitness` | `write_goal_snapshot`, `write_rendered_spec` |
+| `goals` | product | `keep_off_path` | - | - | - |
 | `handoff` | session | `keep_specialist` | - | `handoff` | `write_handoff_artifact`, `read_git_state`, `read_clock` |
 | `idea-genie` | execution | `keep_strategy` | - | `generate_evidenced_options`, `dueling_idea_genies` | `write_idea_portfolio` |
 | `implement` | execution | `keep` | - | `execute_one_experiment`, `collect_factual_evidence` | `modify_declared_subject`, `derive_subject_manifest` |
@@ -67,7 +68,7 @@
 | `scaffold` | execution | `keep_specialist` | - | `scaffold` | `write_project_files` |
 | `scope` | meta | `keep_specialist` | - | `scope_review` | - |
 | `security` | product | `keep_specialist` | - | `security` | `write_scan_artifacts` |
-| `shared` | library | `keep_specialist` | - | `provide_reference_context` | - |
+| `shared` | library | `keep_off_path` | - | - | - |
 | `skill-builder` | meta | `keep_specialist` | - | `skill_builder`, `heal_skill` | `write_skill_source`, `write_build_report`, `regenerate_skill_projections`, `repair_skill_projections` |
 | `standards` | knowledge | `keep_specialist` | - | `standards` | - |
 | `status` | session | `keep_specialist` | - | `status` | `read_filesystem`, `read_clock` |

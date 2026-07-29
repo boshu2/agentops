@@ -20,6 +20,7 @@ graph LR
   dcg["dcg"]
   doc["doc"]
   domain["domain"]
+  fitness["fitness"]
   goals["goals"]
   handoff["handoff"]
   idea_genie["idea-genie"]

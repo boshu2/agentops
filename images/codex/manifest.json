@@ -1,7 +1,7 @@
 {
   "image": "codex",
   "schema_version": "skill-image.v1",
-  "skill_count": 49,
+  "skill_count": 50,
   "skills": [
     {
       "disposition": "keep_specialist",
@@ -101,6 +101,12 @@
     },
     {
       "disposition": "keep_specialist",
+      "slug": "fitness",
+      "source_path": "skills/fitness/",
+      "twin_path": "skills-codex/fitness/"
+    },
+    {
+      "disposition": "keep_off_path",
       "slug": "goals",
       "source_path": "skills/goals/",
       "twin_path": "skills-codex/goals/"
@@ -238,7 +244,7 @@
       "twin_path": "skills-codex/security/"
     },
     {
-      "disposition": "keep_specialist",
+      "disposition": "keep_off_path",
       "slug": "shared",
       "source_path": "skills/shared/",
       "twin_path": "skills-codex/shared/"
