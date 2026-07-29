@@ -1,6 +1,7 @@
 package eval
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -73,6 +74,12 @@ type DeltaScorecard struct {
 // OutputPath: the function does not mutate opts; instead each leg gets a
 // derived OutputPath when opts.OutputPath != "".
 func RunBaselineAB(opts RunOptions) (DeltaScorecard, *RunRecord, *RunRecord, error) {
+	return RunBaselineABContext(context.Background(), opts)
+}
+
+// RunBaselineABContext is the context-threading variant of RunBaselineAB; it
+// propagates ctx into both suite legs so cancellation reaps their child trees.
+func RunBaselineABContext(ctx context.Context, opts RunOptions) (DeltaScorecard, *RunRecord, *RunRecord, error) {
 	baseRunID, err := baselineABRunIDBase(opts)
 	if err != nil {
 		return DeltaScorecard{}, nil, nil, fmt.Errorf("baseline A/B run id: %w", err)
@@ -84,9 +91,13 @@ func RunBaselineAB(opts RunOptions) (DeltaScorecard, *RunRecord, *RunRecord, err
 	if opts.OutputPath != "" {
 		onOpts.OutputPath = appendBaselineSuffix(opts.OutputPath, "skill-on")
 	}
-	onRecord, err := RunSuite(onOpts)
+	onRecord, err := RunSuiteContext(ctx, onOpts)
 	if err != nil {
 		return DeltaScorecard{}, nil, nil, fmt.Errorf("skill-on run: %w", err)
+	}
+	// Do not start the second leg if the caller cancelled after the first.
+	if err := ctx.Err(); err != nil {
+		return DeltaScorecard{}, nil, nil, fmt.Errorf("baseline A/B cancelled: %w", err)
 	}
 
 	offOpts := opts
@@ -95,7 +106,7 @@ func RunBaselineAB(opts RunOptions) (DeltaScorecard, *RunRecord, *RunRecord, err
 	if opts.OutputPath != "" {
 		offOpts.OutputPath = appendBaselineSuffix(opts.OutputPath, "skill-off")
 	}
-	offRecord, err := RunSuite(offOpts)
+	offRecord, err := RunSuiteContext(ctx, offOpts)
 	if err != nil {
 		return DeltaScorecard{}, nil, nil, fmt.Errorf("skill-off run: %w", err)
 	}

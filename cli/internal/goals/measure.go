@@ -1,7 +1,6 @@
 package goals
 
 import (
-	"bytes"
 	"context"
 	"errors"
 	"os"
@@ -14,6 +13,7 @@ import (
 	"time"
 	"unicode/utf8"
 
+	"github.com/boshu2/agentops/cli/internal/procrun"
 	"github.com/boshu2/agentops/cli/internal/shellutil"
 )
 
@@ -151,29 +151,27 @@ func MeasureOneContext(parent context.Context, goal Goal, timeout time.Duration)
 	// SanitizedBashCommand bypasses ~/.bashrc and BASH_ENV so user shell
 	// aliases cannot silently change the meaning of goal check strings.
 	cmd := shellutil.SanitizedBashCommand(ctx, goal.Check)
-	configureProcGroup(cmd)
-	cmd.WaitDelay = 3 * time.Second
 
-	// Capture combined stdout+stderr via buffer so we can track the PID
-	// between Start and Wait for signal-based cleanup.
-	var buf bytes.Buffer
-	cmd.Stdout = &buf
-	cmd.Stderr = &buf
-
-	if err := cmd.Start(); err != nil {
-		m.Duration = time.Since(start).Seconds()
-		m.Output = err.Error()
-		m.Result = classifyResult(ctx.Err(), err)
+	// procrun.Run captures combined stdout+stderr under a hard byte ceiling
+	// (bounding peak memory for noisy checks), starts the child in its own
+	// process group, and kills the whole group on timeout/cancel with a
+	// WaitDelay backstop. OnStart/OnExit feed the package signal handler's
+	// child tracker so SIGINT still reaps in-flight gate groups.
+	res, startErr := procrun.Run(ctx, cmd, procrun.Options{
+		Combined:  true,
+		WaitDelay: 3 * time.Second,
+		OnStart:   trackChild,
+		OnExit:    untrackChild,
+	})
+	m.Duration = time.Since(start).Seconds()
+	if startErr != nil {
+		m.Output = startErr.Error()
+		m.Result = classifyResult(ctx.Err(), startErr)
 		return m
 	}
 
-	trackChild(cmd.Process.Pid)
-	err := cmd.Wait()
-	untrackChild(cmd.Process.Pid)
-
-	m.Duration = time.Since(start).Seconds()
-	m.Output = truncateOutput(buf.Bytes())
-	m.Result = classifyResult(ctx.Err(), err)
+	m.Output = truncateOutput(res.Combined)
+	m.Result = classifyResult(ctx.Err(), res.Err)
 	applyContinuousMetric(&m, goal)
 	return m
 }

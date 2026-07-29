@@ -1,7 +1,6 @@
 package gates
 
 import (
-	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -11,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/boshu2/agentops/cli/internal/ports"
+	"github.com/boshu2/agentops/cli/internal/procrun"
 )
 
 // ScriptRunner runs a script-backed check and maps its exit code to a
@@ -144,10 +144,15 @@ func (s *ScriptRunner) Run(ctx context.Context, req ports.GateRunRequest) (ports
 	cmd := exec.CommandContext(ctx, interpreter, interpreterArgs...)
 	cmd.Dir = s.repoRoot
 	cmd.Env = buildCheckEnv(cmd.Environ(), req.Env)
-	var out bytes.Buffer
-	cmd.Stdout = &out
-	cmd.Stderr = &out
-	runErr := cmd.Run()
+	// procrun.Run bounds captured output (the 4 KiB LogTail tail is preserved),
+	// runs the check in its own process group, and reaps the group (with a
+	// WaitDelay) on ctx cancel/timeout so a hung sub-check cannot orphan
+	// descendants or leave Wait blocked on an inherited pipe.
+	res, startErr := procrun.Run(ctx, cmd, procrun.Options{Combined: true})
+	runErr := startErr
+	if startErr == nil {
+		runErr = res.Err
+	}
 
 	code := 0
 	var exitErr *exec.ExitError
@@ -155,7 +160,7 @@ func (s *ScriptRunner) Run(ctx context.Context, req ports.GateRunRequest) (ports
 		code = exitErr.ExitCode()
 	} else if runErr != nil {
 		reason := fmt.Sprintf("subprocess error: %v", runErr)
-		logTail := tailBytes(out.Bytes(), 4096)
+		logTail := tailBytes(res.Combined, 4096)
 		if strings.TrimSpace(logTail) == "" {
 			logTail = reason
 		}
@@ -166,7 +171,7 @@ func (s *ScriptRunner) Run(ctx context.Context, req ports.GateRunRequest) (ports
 		}, nil
 	}
 	v := exitCodeToVerdict(code)
-	v.LogTail = tailBytes(out.Bytes(), 4096)
+	v.LogTail = tailBytes(res.Combined, 4096)
 	return v, nil
 }
 

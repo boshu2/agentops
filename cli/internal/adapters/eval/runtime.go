@@ -1,6 +1,7 @@
 package eval
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -21,17 +22,17 @@ import (
 
 type Runtime struct{}
 
-func (Runtime) RunSuite(options aoeval.RunOptions) (*aoeval.RunRecord, error) {
-	return aoeval.RunSuite(options)
+func (Runtime) RunSuite(ctx context.Context, options aoeval.RunOptions) (*aoeval.RunRecord, error) {
+	return aoeval.RunSuiteContext(ctx, options)
 }
-func (Runtime) RunBaselineAB(options aoeval.RunOptions) (aoeval.DeltaScorecard, *aoeval.RunRecord, *aoeval.RunRecord, error) {
-	return aoeval.RunBaselineAB(options)
+func (Runtime) RunBaselineAB(ctx context.Context, options aoeval.RunOptions) (aoeval.DeltaScorecard, *aoeval.RunRecord, *aoeval.RunRecord, error) {
+	return aoeval.RunBaselineABContext(ctx, options)
 }
 func (Runtime) WriteDeltaScorecard(card aoeval.DeltaScorecard, path string) error {
 	return aoeval.WriteDeltaScorecard(card, path)
 }
-func (Runtime) RunContextAB(options aoeval.RunOptions, contextOptions aoeval.ContextABOptions) (aoeval.ContextDeltaScorecard, *aoeval.RunRecord, *aoeval.RunRecord, error) {
-	return aoeval.RunContextAB(options, contextOptions)
+func (Runtime) RunContextAB(ctx context.Context, options aoeval.RunOptions, contextOptions aoeval.ContextABOptions) (aoeval.ContextDeltaScorecard, *aoeval.RunRecord, *aoeval.RunRecord, error) {
+	return aoeval.RunContextABContext(ctx, options, contextOptions)
 }
 func (Runtime) WriteContextDeltaScorecard(card aoeval.ContextDeltaScorecard, path string) error {
 	return aoeval.WriteContextDeltaScorecard(card, path)

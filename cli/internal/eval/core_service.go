@@ -8,10 +8,10 @@ import (
 )
 
 type CoreRuntime interface {
-	RunSuite(RunOptions) (*RunRecord, error)
-	RunBaselineAB(RunOptions) (DeltaScorecard, *RunRecord, *RunRecord, error)
+	RunSuite(context.Context, RunOptions) (*RunRecord, error)
+	RunBaselineAB(context.Context, RunOptions) (DeltaScorecard, *RunRecord, *RunRecord, error)
 	WriteDeltaScorecard(DeltaScorecard, string) error
-	RunContextAB(RunOptions, ContextABOptions) (ContextDeltaScorecard, *RunRecord, *RunRecord, error)
+	RunContextAB(context.Context, RunOptions, ContextABOptions) (ContextDeltaScorecard, *RunRecord, *RunRecord, error)
 	WriteContextDeltaScorecard(ContextDeltaScorecard, string) error
 	LoadRun(string) (*RunRecord, error)
 	CompareRuns(*RunRecord, *RunRecord, CompareOptions) (*RunRecord, error)
@@ -75,7 +75,7 @@ type CoreCoverageRequest struct {
 	RequiredDomains, RequiredEvidenceKinds, RequiredDimensions, RequiredRuntimes []string
 }
 
-func (service CoreService) Run(_ context.Context, request CoreRunRequest) (CoreRunResult, error) {
+func (service CoreService) Run(ctx context.Context, request CoreRunRequest) (CoreRunResult, error) {
 	runtimeName, err := parseCoreRuntime(request.Runtime)
 	if err != nil {
 		return CoreRunResult{}, err
@@ -94,7 +94,7 @@ func (service CoreService) Run(_ context.Context, request CoreRunRequest) (CoreR
 			return CoreRunResult{}, fmt.Errorf("--context-mode=ab cannot be combined with --baseline-mode=%s", mode)
 		}
 		contextOptions := service.contextOptions(request.SuitePath, request.ContextOffDir, request.ContextOnDir)
-		scorecard, offRun, onRun, err := service.Runtime.RunContextAB(options, contextOptions)
+		scorecard, offRun, onRun, err := service.Runtime.RunContextAB(ctx, options, contextOptions)
 		if err != nil {
 			return CoreRunResult{}, err
 		}
@@ -104,7 +104,7 @@ func (service CoreService) Run(_ context.Context, request CoreRunRequest) (CoreR
 		return CoreRunResult{Mode: CoreRunContextAB, FirstRun: offRun, SecondRun: onRun, ContextDelta: &scorecard, OutputPath: request.DeltaOut}, nil
 	}
 	if mode == BaselineModeBoth {
-		scorecard, onRun, offRun, err := service.Runtime.RunBaselineAB(options)
+		scorecard, onRun, offRun, err := service.Runtime.RunBaselineAB(ctx, options)
 		if err != nil {
 			return CoreRunResult{}, err
 		}
@@ -114,7 +114,7 @@ func (service CoreService) Run(_ context.Context, request CoreRunRequest) (CoreR
 		return CoreRunResult{Mode: CoreRunBaselineAB, FirstRun: onRun, SecondRun: offRun, Delta: &scorecard, OutputPath: request.DeltaOut}, nil
 	}
 	options.OverrideDisableHooks = mode == BaselineModeSkillOff
-	run, err := service.Runtime.RunSuite(options)
+	run, err := service.Runtime.RunSuite(ctx, options)
 	if err != nil {
 		return CoreRunResult{}, err
 	}
