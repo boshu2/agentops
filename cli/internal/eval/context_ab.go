@@ -59,6 +59,10 @@ func RunContextABContext(ctx context.Context, opts RunOptions, contextOpts Conte
 	if err != nil {
 		return ContextDeltaScorecard{}, nil, nil, fmt.Errorf("context-off run: %w", err)
 	}
+	// Do not start the second leg if the caller cancelled after the first.
+	if err := ctx.Err(); err != nil {
+		return ContextDeltaScorecard{}, nil, nil, fmt.Errorf("context A/B cancelled: %w", err)
+	}
 
 	onOpts := contextVariantRunOptions(baseOpts, ContextVariantOn, "context-on", contextOpts.ContextOnAgentsDir)
 	onRecord, err := RunSuiteContext(ctx, onOpts)

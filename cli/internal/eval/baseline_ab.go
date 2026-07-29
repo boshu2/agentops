@@ -95,6 +95,10 @@ func RunBaselineABContext(ctx context.Context, opts RunOptions) (DeltaScorecard,
 	if err != nil {
 		return DeltaScorecard{}, nil, nil, fmt.Errorf("skill-on run: %w", err)
 	}
+	// Do not start the second leg if the caller cancelled after the first.
+	if err := ctx.Err(); err != nil {
+		return DeltaScorecard{}, nil, nil, fmt.Errorf("baseline A/B cancelled: %w", err)
+	}
 
 	offOpts := opts
 	offOpts.OverrideDisableHooks = true

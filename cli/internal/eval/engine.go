@@ -29,6 +29,14 @@ func RunSuite(opts RunOptions) (*RunRecord, error) {
 // RunSuiteContext runs a deterministic suite, threading ctx down to every
 // command case so a cancelled or timed-out caller reaps the child process tree.
 func RunSuiteContext(ctx context.Context, opts RunOptions) (*RunRecord, error) {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	// Honor cancellation before any work: a cancelled caller must not start the
+	// suite at all, and this catches the pre-cancelled / zero-case cases.
+	if err := ctx.Err(); err != nil {
+		return nil, fmt.Errorf("suite run cancelled: %w", err)
+	}
 	if strings.TrimSpace(opts.SuitePath) == "" {
 		return nil, fmt.Errorf("suite path is required")
 	}
@@ -71,6 +79,12 @@ func RunSuiteContext(ctx context.Context, opts RunOptions) (*RunRecord, error) {
 	runEnv := cloneStringMap(opts.Env)
 	caseResults := make([]CaseResult, 0, len(suite.Cases))
 	for _, evalCase := range suite.Cases {
+		// Stop the suite on cancellation instead of running remaining cases and
+		// scoring a partial run: a cancelled run is a terminal error, distinct
+		// from ordinary case failures.
+		if err := ctx.Err(); err != nil {
+			return nil, fmt.Errorf("suite run cancelled: %w", err)
+		}
 		caseResults = append(caseResults, runCase(ctx, *suite, suiteDir, evalCase, runEnv))
 	}
 	aggregate, dimensions := scoreRun(*suite, caseResults)

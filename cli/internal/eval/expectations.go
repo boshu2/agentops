@@ -541,6 +541,11 @@ func runAutoDetectCommand(ctx caseContext, command string) (string, error) {
 	if cctx.Err() == context.DeadlineExceeded {
 		return string(res.Combined), fmt.Errorf("auto-detect command timed out after %ds", timeout)
 	}
+	if cctx.Err() != nil {
+		// Caller cancellation: surface it rather than a partial captured value
+		// that would silently pin the wrong auto-detected number.
+		return string(res.Combined), fmt.Errorf("auto-detect command cancelled: %w", cctx.Err())
+	}
 	if runtime.GOOS == "windows" && len(res.Combined) == 0 {
 		return "", fmt.Errorf("auto-detect command produced no output (windows)")
 	}

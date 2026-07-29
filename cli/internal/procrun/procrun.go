@@ -19,21 +19,40 @@
 // byte-for-byte, and even oversize output preserves the true head and true tail
 // — so a caller that keeps the last N bytes still sees the real last N bytes.
 //
-// # Cancellation
+// # Cancellation and reaping
 //
 // Run relies on the standard library's context-driven cancellation: callers
 // MUST build cmd with exec.CommandContext(ctx, ...) using the SAME ctx they pass
-// to Run. Run installs a process-group Cancel (unix: kill(-pgid); windows:
-// taskkill /T) and a WaitDelay so that when ctx is cancelled or its deadline
-// expires the entire group is killed and Wait cannot hang forever on pipes still
-// held open by a surviving grandchild. Run itself starts no background
-// goroutine, so it adds no goroutine-leak surface.
+// to Run. Run installs a process-group Cancel and a WaitDelay so that when ctx
+// is cancelled or its deadline expires the whole group is killed and Wait cannot
+// hang forever on pipes a surviving grandchild holds open.
+//
+// Cancellation is not the only way a descendant can outlive the direct child: a
+// child can spawn a grandchild that holds the output pipe open and then exit
+// normally, in which case Cancel never fires and only WaitDelay unblocks Wait.
+// So Run ALSO reaps the process group unconditionally after Wait returns, on
+// every path (success, failure, timeout, cancel). On unix that is a
+// kill(-pgid, SIGKILL) whose ESRCH ("group already gone") result is the success
+// case. Run itself starts no background goroutine, so it adds no goroutine-leak
+// surface.
+//
+// # Platform support
+//
+// On unix the process-group guarantee is strong: Setpgid isolates the child and
+// its descendants into one group that kill(-pgid) reaps atomically, and an ESRCH
+// from a group that already exited is mapped to success so a completed command
+// racing a cancellation never surfaces a spurious cancel error. On Windows the
+// guarantee is weaker and best-effort: the child starts in a new process group
+// (CREATE_NEW_PROCESS_GROUP is a Ctrl-Break domain, not a containment boundary)
+// and cancellation/reaping shell out to `taskkill /T /F` under a short internal
+// timeout. taskkill after the root has exited can miss re-parented descendants,
+// and no Job Object is used, so a Windows descendant is not guaranteed reaped.
+// This limitation is documented rather than faked.
 package procrun
 
 import (
 	"context"
 	"errors"
-	"fmt"
 	"os/exec"
 	"sync"
 	"time"
@@ -138,7 +157,9 @@ func Run(ctx context.Context, cmd *exec.Cmd, opts Options) (Result, error) {
 
 	start := time.Now()
 	if err := cmd.Start(); err != nil {
-		return Result{Duration: time.Since(start)}, fmt.Errorf("start command: %w", err)
+		// Return the raw start error unwrapped so migrated call sites keep their
+		// pre-existing, byte-identical start-failure diagnostics.
+		return Result{Duration: time.Since(start)}, err
 	}
 	pid := cmd.Process.Pid
 	if opts.OnStart != nil {
@@ -146,6 +167,11 @@ func Run(ctx context.Context, cmd *exec.Cmd, opts Options) (Result, error) {
 	}
 
 	waitErr := cmd.Wait()
+	// Always reap the group, even on a clean exit: a grandchild that outlived
+	// the direct child (so Cancel never fired) is otherwise orphaned once
+	// WaitDelay unblocks Wait. Best-effort; ESRCH means the group is already
+	// gone.
+	reapProcessGroup(pid)
 	if opts.OnExit != nil {
 		opts.OnExit(pid)
 	}

@@ -4,7 +4,9 @@ package procrun
 
 import (
 	"context"
+	"errors"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -118,4 +120,69 @@ func TestRun_TimeoutReapsGrandchild(t *testing.T) {
 		t.Fatalf("ctx.Err() = %v, want DeadlineExceeded", ctx.Err())
 	}
 	assertReaped(t, grandchild)
+}
+
+// TestRun_ReapsSleeperAfterNormalChildExit is the review-round-1 finding-1
+// witness: the direct child backgrounds a sleeper and exits NORMALLY (ctx is
+// never cancelled, so Cancel never fires). Only the unconditional post-Wait reap
+// can kill the orphan; without it the sleeper survives past WaitDelay.
+func TestRun_ReapsSleeperAfterNormalChildExit(t *testing.T) {
+	pidFile := filepath.Join(t.TempDir(), "sleeper.pid")
+	ctx := context.Background()
+	// Note: no `wait` — the shell exits immediately, leaving the sleeper holding
+	// the stdout pipe until WaitDelay unblocks Wait.
+	cmd := shellCmd(ctx, "sleep 60 & echo $! > "+pidFile)
+	res, err := Run(ctx, cmd, Options{Combined: true, WaitDelay: 500 * time.Millisecond})
+	if err != nil {
+		t.Fatalf("Run start error: %v", err)
+	}
+	_ = res
+	sleeper := waitForPIDFile(t, pidFile)
+	assertReaped(t, sleeper)
+}
+
+// TestCancelHook_ESRCHMapsToProcessDone is the deterministic finding-3 witness:
+// after the child and its group have fully exited, kill(-pgid) returns ESRCH,
+// which the Cancel hook must report as ErrProcessDone (success), never as a
+// failure that Wait would surface as "exec: canceling Cmd".
+func TestCancelHook_ESRCHMapsToProcessDone(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	cmd := exec.CommandContext(ctx, "true")
+	configureProcessGroup(cmd)
+	if err := cmd.Start(); err != nil {
+		t.Fatalf("Start: %v", err)
+	}
+	if err := cmd.Wait(); err != nil {
+		t.Fatalf("Wait: %v", err)
+	}
+	// The group is now empty; kill(-pgid) yields ESRCH.
+	if err := cmd.Cancel(); err != nil && !errors.Is(err, os.ErrProcessDone) {
+		t.Fatalf("Cancel after exit = %v, want nil or ErrProcessDone", err)
+	}
+}
+
+// TestRun_CompletedCommandNotReportedCancelledUnderRace is the finding-3 race
+// witness: a fast command whose completion races an immediate cancel must never
+// surface a spurious error when it actually completed. Run under -race.
+func TestRun_CompletedCommandNotReportedCancelledUnderRace(t *testing.T) {
+	dir := t.TempDir()
+	for i := 0; i < 50; i++ {
+		marker := filepath.Join(dir, "done-"+strconv.Itoa(i))
+		ctx, cancel := context.WithCancel(context.Background())
+		cmd := shellCmd(ctx, "echo done > "+marker)
+		go cancel() // race the child's completion against cancellation
+		res, _ := Run(ctx, cmd, Options{Combined: true})
+		data, readErr := os.ReadFile(marker)
+		if readErr == nil && strings.TrimSpace(string(data)) == "done" {
+			// The command provably completed; it must not report as failed.
+			if res.Err != nil {
+				t.Fatalf("iter %d: completed command reported error %v (ExitCode %d)", i, res.Err, res.ExitCode)
+			}
+			if res.ExitCode != 0 {
+				t.Fatalf("iter %d: completed command ExitCode = %d, want 0", i, res.ExitCode)
+			}
+		}
+		cancel()
+	}
 }
