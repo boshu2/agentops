@@ -10,7 +10,7 @@ can independently judge.
 The product boundary is deliberately small:
 
 ```text
-RPI -> Plan -> Implement -> fresh Validate -> durable verdict -> report and stop
+RPI -> Plan -> Implement -> fresh Validate -> report and stop
 ```
 
 ## Proven floor
@@ -21,11 +21,11 @@ AgentOps provides:
 - one bounded RED -> GREEN -> refactor experiment;
 - deterministic content identity independent of Git;
 - one fresh, author-distinct semantic judgment;
-- a standalone, content-addressed `PASS | FAIL | NOT_PROVEN` verdict.
+- a `PASS | FAIL | NOT_PROVEN` result with optional content-addressed storage.
 
-No fresh evidence-backed verdict means the experiment is not proven. The
-verdict's context separation is explicitly attested; it is not claimed as
-cryptographic proof of model isolation.
+No fresh evidence-backed judgment means the experiment is not proven. Context
+separation is explicitly attested; it is not claimed as cryptographic proof of
+model isolation.
 
 ## What AgentOps does not own
 
@@ -34,7 +34,7 @@ release manager, scheduler, or autonomous retry controller. It does not own:
 
 - retries, budgets, queues, claims, leases, work ownership, or next actions;
 - Git commits, branches, pushes, PRs, merges, rollback, closure, or release;
-- the caller's decision after a verdict;
+- the caller's decision after a validation result;
 - mandatory provenance or learning on the validation critical path.
 
 Repositories and callers keep those policies. They may use direct pushes, PRs,
@@ -50,7 +50,7 @@ Four load-bearing skills define the core:
 | `rpi` | dispatch Plan, Implement, and Validate once; report and stop |
 | `plan` | shape acceptance, evidence, and write scope |
 | `implement` | run one bounded experiment and produce a candidate |
-| `validate` | independently judge exact content and persist the verdict |
+| `validate` | independently judge exact content; persist only for a declared consumer |
 
 `learn` remains an optional off-path consumer of verdict collections. Strategy
 skills such as Premortem, Postmortem, Council, and idea genies add judgment when
@@ -64,11 +64,12 @@ not a CLI state machine.
 
 ## Sovereign evidence
 
-The durable verdict is plain JSON under caller-controlled storage. It binds
-acceptance, exact subject content, author and validator identities, criterion
-results, evidence, checked scope, and omissions. A generic provenance ledger
-may copy or reference it later, but ledger availability is never required for
-validity.
+Fresh validation binds acceptance, exact subject content, author and validator
+identities, criterion results, evidence, checked scope, and omissions. When a
+caller or declared downstream consumer needs durable machine-readable evidence,
+the same result is plain `verdict.v2` JSON under caller-controlled storage. A
+generic provenance ledger may copy or reference it later, but verdict storage
+and ledger availability are never required for validity.
 
 ## Learning thesis
 

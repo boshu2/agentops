@@ -4,7 +4,7 @@
 AgentOps semantic loop lives in the skills:
 
 ```text
-RPI → Plan → Implement → fresh Validate → durable verdict → report and stop
+RPI → Plan → Implement → fresh Validate → report and stop
 ```
 
 The CLI does not own retries, queues, work claims, Git delivery, release,
@@ -38,8 +38,9 @@ make test
 ```
 
 Add deterministic utilities only when they do not become lifecycle or delivery
-authorities. Keep semantic judgment in the Validate skill and external delivery
-in the consumer repository.
+authorities. Keep semantic judgment in the Validate skill, optional verdict
+persistence with declared consumers, and external delivery in the consumer
+repository.
 
 ## References
 

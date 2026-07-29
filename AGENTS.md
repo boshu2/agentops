@@ -5,11 +5,13 @@ Detailed workflow mechanics: [docs/agent-workflow-reference.md](docs/agent-workf
 AgentOps turns one explicit intent into one independently judged experiment:
 
 ```text
-RPI -> Plan -> Implement -> fresh Validate -> durable verdict -> report and stop
+RPI -> Plan -> Implement -> fresh Validate -> report and stop
 ```
 
-No evidence-backed verdict means the experiment is not proven. AgentOps does
-not own what the caller does next.
+No fresh independent judgment over the exact subject means the experiment is
+not proven. Persist `verdict.v2` only when the caller requests machine-readable
+evidence or a declared downstream consumer requires it. AgentOps does not own
+what the caller does next.
 
 ## Authority and trust
 
@@ -66,11 +68,13 @@ Edit source owners and regenerate projections through the owning command.
    completeness, and factual check receipts; the model does not transcribe a
    candidate packet.
 3. **Validate once, fresh.** A distinct context verifies the intent-source
-   digest, subject identity, scope, evidence, and acceptance, then writes one `verdict.v2` with
-   `PASS | FAIL | NOT_PROVEN`. Missing or colliding context identities,
+   digest, subject identity, scope, evidence, and acceptance, then returns one
+   `PASS | FAIL | NOT_PROVEN` result. Missing or colliding context identities,
    unattested freshness, subject mutation, or incomplete changed-path coverage
    is `NOT_PROVEN`; proven out-of-scope change is `FAIL`. PASS requires nonempty
    checked scope, top-level evidence, and evidence for every criterion.
+   Persistence is conditional: Validate writes `verdict.v2` only for a caller
+   request or a declared downstream consumer.
 4. **Report and stop.** RPI reports `PASS | FAIL | NOT_PROVEN`, or the report-only
    statuses `NOT_PLANNED | NOT_BUILT`. It emits no next action and performs no
    automatic revision. Two consecutive control artifacts (plans, audits,
@@ -86,8 +90,9 @@ cannot change core outcomes.
 
 ## Product boundary
 
-AgentOps reads or refines caller-owned intent, runs one bounded experiment, exact content identity,
-fresh independent judgment, and a standalone durable verdict. It owns no retry,
+AgentOps reads or refines caller-owned intent, runs one bounded experiment,
+establishes exact content identity, and obtains fresh independent judgment. It
+can persist that judgment as standalone evidence when requested. It owns no retry,
 budget, queue, work ownership, Git, closure, release, landing, or delivery
 transition. Consumer repositories keep their own direct-push, PR, CI, merge,
 rollback, and release policy.
@@ -117,6 +122,7 @@ AgentOps work ownership.
 ## Closeout
 
 Inspect the final subject, map acceptance to evidence, disclose `checked` and
-`not_checked`, and obtain one fresh verdict over the exact content. Report
-residual risk plainly. Git status, pushing, merging, release, and rollback are
-handled by the caller's repository policy, outside semantic completion.
+`not_checked`, and obtain one fresh validation result over the exact content.
+Include a verdict reference only when persistence was requested. Report residual
+risk plainly. Git status, pushing, merging, release, and rollback are handled
+by the caller's repository policy, outside semantic completion.

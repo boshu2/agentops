@@ -6,8 +6,8 @@
     {
       "source": "skills/implement/SKILL.md",
       "destination": "packs/agentops-executor/agents/implementer-claude/skills/implement/SKILL.md",
-      "source_sha256": "ada81165711dc36b8e660a380b6b9173ecb646cda8f1a3905d12d26fa6612c8f",
-      "sha256": "ada81165711dc36b8e660a380b6b9173ecb646cda8f1a3905d12d26fa6612c8f",
+      "source_sha256": "1e1402a2bd2e781e943050aa650b401443a615b4e48ead119bd8ee9bce42a02b",
+      "sha256": "1e1402a2bd2e781e943050aa650b401443a615b4e48ead119bd8ee9bce42a02b",
       "mode": "0644"
     },
     {
@@ -27,8 +27,8 @@
     {
       "source": "skills/implement/SKILL.md",
       "destination": "packs/agentops-executor/agents/implementer/skills/implement/SKILL.md",
-      "source_sha256": "ada81165711dc36b8e660a380b6b9173ecb646cda8f1a3905d12d26fa6612c8f",
-      "sha256": "ada81165711dc36b8e660a380b6b9173ecb646cda8f1a3905d12d26fa6612c8f",
+      "source_sha256": "1e1402a2bd2e781e943050aa650b401443a615b4e48ead119bd8ee9bce42a02b",
+      "sha256": "1e1402a2bd2e781e943050aa650b401443a615b4e48ead119bd8ee9bce42a02b",
       "mode": "0644"
     },
     {
@@ -48,15 +48,15 @@
     {
       "source": "skills/validate/SKILL.md",
       "destination": "packs/agentops-executor/agents/validator/skills/validate/SKILL.md",
-      "source_sha256": "84f75ef2903c6de56906be12ea6f5066321390b5d90fbcc6bff67ccb6a0743b8",
-      "sha256": "84f75ef2903c6de56906be12ea6f5066321390b5d90fbcc6bff67ccb6a0743b8",
+      "source_sha256": "27e0db21270e26b0ccdb8e133c09d4bde5d78111351fb56b3dd50f9e8b41cfcc",
+      "sha256": "27e0db21270e26b0ccdb8e133c09d4bde5d78111351fb56b3dd50f9e8b41cfcc",
       "mode": "0644"
     },
     {
       "source": "skills/validate/references/validate.feature",
       "destination": "packs/agentops-executor/agents/validator/skills/validate/references/validate.feature",
-      "source_sha256": "c1cdc81c1c1ec7cd0dedcb70c6e3e28e64ec60b37b90e2c38bf803b7325d484a",
-      "sha256": "c1cdc81c1c1ec7cd0dedcb70c6e3e28e64ec60b37b90e2c38bf803b7325d484a",
+      "source_sha256": "e1c908ff720d877a47f7be1b3359ed61079172647ea2dcc8c06c21a8f2732134",
+      "sha256": "e1c908ff720d877a47f7be1b3359ed61079172647ea2dcc8c06c21a8f2732134",
       "mode": "0644"
     },
     {
@@ -83,15 +83,15 @@
     {
       "source": "skills/validate/scripts/validate.sh",
       "destination": "packs/agentops-executor/agents/validator/skills/validate/scripts/validate.sh",
-      "source_sha256": "507549239d488a77d545dd9cd008230415d739e2b0d0058ccd941ccdb0185e95",
-      "sha256": "507549239d488a77d545dd9cd008230415d739e2b0d0058ccd941ccdb0185e95",
+      "source_sha256": "57715c411e7102c736278f51de08e660cbe71953690f59820a6acdf5cc7cc6fc",
+      "sha256": "57715c411e7102c736278f51de08e660cbe71953690f59820a6acdf5cc7cc6fc",
       "mode": "0755"
     },
     {
       "source": "skills/using-gc/SKILL.md",
       "destination": "packs/agentops-executor/skills/using-gc/SKILL.md",
-      "source_sha256": "b5ff5ef9c3518d95e96e4e7e460759681e14b66659ca2fbd7e4ab109dbf86d8a",
-      "sha256": "b5ff5ef9c3518d95e96e4e7e460759681e14b66659ca2fbd7e4ab109dbf86d8a",
+      "source_sha256": "a85dd0fea3415ca2bf3608293a5b1fe7eaf6b9b4cf4bc427785a47e894558add",
+      "sha256": "a85dd0fea3415ca2bf3608293a5b1fe7eaf6b9b4cf4bc427785a47e894558add",
       "mode": "0644"
     }
   ]

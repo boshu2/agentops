@@ -46,9 +46,10 @@ func TestCommand_RunPrintsWorkflow(t *testing.T) {
 	command.SetOut(&out)
 	command.Run(command, nil)
 	for _, want := range []string{
-		"RPI -> Plan -> Implement -> fresh Validate -> durable verdict -> report and stop",
+		"RPI -> Plan -> Implement -> fresh Validate -> report and stop",
 		"Deterministic checks: ao gate check",
 		"Semantic judgment: invoke the Validate skill from a fresh context",
+		"Artifact persistence: optional",
 	} {
 		if !strings.Contains(out.String(), want) {
 			t.Errorf("quick-start output missing %q, got:\n%s", want, out.String())

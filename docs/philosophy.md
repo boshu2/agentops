@@ -10,14 +10,16 @@ own work. AgentOps therefore provides a small evidence protocol:
 
 ```text
 intent -> one bounded experiment -> exact subject identity
-       -> fresh independent judgment -> durable verdict
+       -> fresh independent judgment -> report and stop
 ```
 
 The protocol is behavior-first. Plan expresses one behavior as normal and edge
 Given/When/Then scenarios, non-goals, write scope, and required evidence.
 Implement performs one bounded RED-to-GREEN-to-refactor experiment. Validate
-binds criterion-level judgment to a deterministic content manifest and stores
-the result as `verdict.v2`. RPI invokes those responsibilities once and stops.
+binds criterion-level judgment to a deterministic content manifest. It stores
+the result as `verdict.v2` only when the caller requests a machine-readable
+artifact or a declared downstream consumer needs one. RPI invokes those
+responsibilities once and stops.
 
 This is a trust floor, not a workflow engine. AgentOps does not own retries,
 budgets, queues, claims, leases, Git, CI, closure, release, or delivery. A FAIL

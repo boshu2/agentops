@@ -396,6 +396,9 @@ def probe_no_substrate_calls() -> None:
                 "subject_manifest_digest": artifact["subject_manifest_digest"],
                 "verdict_digest": artifact["artifact_digest"],
                 "verdict_ref": str(verdict_path),
+                "author_context_id": artifact["author_context_id"],
+                "validator_context_id": artifact["validator_context_id"],
+                "freshness_attestation": artifact["freshness_attestation"],
                 "checked": artifact["checked"],
                 "not_checked": artifact["not_checked"],
             }
