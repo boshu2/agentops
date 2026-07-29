@@ -87,6 +87,9 @@ func (service SuiteService) NRequired(_ context.Context, request SuiteNRequiredR
 func (service SuiteService) loadSuite(id string) (*evalsubstrate.Suite, error) {
 	path := id
 	if !strings.HasSuffix(id, ".yaml") && !strings.HasSuffix(id, ".yml") {
+		if err := evalsubstrate.ValidateID(id); err != nil {
+			return nil, fmt.Errorf("loadSuite: %w", err)
+		}
 		path = filepath.Join(service.Runtime.Root(), "suites", id, "suite.yaml")
 	}
 	raw, err := service.Runtime.ReadFile(path)

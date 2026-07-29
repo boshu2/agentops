@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -119,6 +120,29 @@ func TestProvenanceAdd_ProducesSchemaValidEdgeAndReadsBack(t *testing.T) {
 	}
 	if listed[0].Hash != emitted.Hash {
 		t.Fatalf("round-trip hash mismatch: %q vs %q", listed[0].Hash, emitted.Hash)
+	}
+}
+
+func TestProvenanceAdd_DryRunSuppressesLedgerWrite(t *testing.T) {
+	ledger := testLedger(t)
+	module := NewModule(clicontract.HostOptions{
+		LedgerPath: func() string { return ledger },
+		Now:        func() time.Time { return fixedNow },
+		DryRun:     func() bool { return true },
+	})
+	root := module.Command()
+	var out, errBuf bytes.Buffer
+	root.SetOut(&out)
+	root.SetErr(&errBuf)
+	root.SetArgs([]string{"add", "decision-42", "artifact-1", "--relation", "wasGeneratedBy"})
+	if err := root.Execute(); err != nil {
+		t.Fatalf("dry-run add returned error: %v (stderr %q)", err, errBuf.String())
+	}
+	if _, err := os.Stat(ledger); !os.IsNotExist(err) {
+		t.Fatalf("dry-run add wrote the ledger at %s (stat err=%v); want no write", ledger, err)
+	}
+	if !strings.Contains(out.String(), "[dry-run]") {
+		t.Fatalf("dry-run add output missing [dry-run] notice: %q", out.String())
 	}
 }
 

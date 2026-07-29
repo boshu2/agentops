@@ -188,6 +188,21 @@ func (m *Module) runAdd(cmd *cobra.Command, args []string) error {
 		TS:          ts,
 	}
 
+	// --dry-run is an advertised global safety control; provenance add is an
+	// effectful (ledger-writing) leaf, so it must honor it and perform no write
+	// (2026-07-24 Go CLI audit, High: global --dry-run does not reliably suppress
+	// effects). Emit the edge that WOULD be appended under the same output
+	// contract, then stop before Append.
+	if m.host.DryRun != nil && m.host.DryRun() {
+		out := cmd.OutOrStdout()
+		if handled, err := m.emitStructured(out, m.addJSON, edge); handled || err != nil {
+			return err
+		}
+		fmt.Fprintf(out, "[dry-run] would append edge %s --%s--> %s (not written)\n",
+			edge.FromID, edge.Relation, edge.ToID)
+		return nil
+	}
+
 	res, err := m.ledgerStore().Append(edge)
 	if err != nil {
 		return fmt.Errorf("append provenance edge: %w", err)
