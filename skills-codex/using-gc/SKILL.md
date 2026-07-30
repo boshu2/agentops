@@ -175,6 +175,18 @@ First classify the bead.
 Then capture the exact tmux pane named by session state and run `gc doctor`.
 Never repair a city from inside that city.
 
+Never create pack-owned sessions by hand. `gc session new` for a singleton or
+scaled agent (`core.control-dispatcher`, role workers) makes a mis-scoped
+session that squats the canonical name in `start-pending` and blocks the
+reconciler from spawning the real one — extending the exact stall being
+repaired. Session lifecycle belongs to the reconciler and demand scaling.
+When the city itself needs tending (a stalled reconciler, sessions that never
+leave draining, model or provider rewiring), send the request to the Mayor:
+
+```sh
+gc mail send mayor -s "<subject>" -m "<request with bead ids>" --notify
+```
+
 The upstream pack may leave a future affinity-bound step assigned to a session
 that has already drain-acked. Diagnose this only from outside the city:
 
@@ -225,3 +237,8 @@ anchor worktree. Neither state is semantic completion by itself.
   context issues the semantic result or, when requested, persists `verdict.v2`.
 - This skill performs no automatic selection, retry, semantic validation, Git,
   integration, closure, release, or delivery.
+- The operator lane into a city is a closed set: author beads, `gc sling`,
+  `gc mail` (city tending goes to the Mayor), `gc doctor [--fix]`, supervisor
+  start/stop from outside, `ao gc prepare|check|recover-affinity`, and reading
+  state. Creating, scaling, or repairing pack-owned sessions by hand is outside
+  the lane; the reconciler owns session lifecycle.
