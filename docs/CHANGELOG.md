@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `using-flywheel` skill: operating manual for the Agentic Coding Flywheel as
+  a caller-selected external software factory — provisioning via the upstream
+  wizard, AgentOps skill visibility across its worker runtimes, and the
+  evidence boundary (factory convergence is never an AgentOps verdict). Gives
+  the second supported factory an operating surface parallel to `using-gc`.
+
 ## [3.4.0] - 2026-07-30
 
 AgentOps 3.4 is the **honest-contract release**. All 50 shipped skills went

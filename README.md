@@ -103,7 +103,8 @@ Two factory stacks are supported:
   [Agentic Coding Flywheel](https://agent-flywheel.com) — a supported
   alternative built from Beads, Agent Mail, NTM, and the wider Flywheel tool
   stack. Use its native workflow and let its agents consume the same AgentOps
-  skills.
+  skills. The [`using-flywheel`](skills/using-flywheel/SKILL.md) skill covers
+  provisioning, skill visibility, and the evidence boundary.
 
 AgentOps does not wrap either factory or translate factory completion into
 semantic PASS. When proof is required, a fresh `validate` context judges the

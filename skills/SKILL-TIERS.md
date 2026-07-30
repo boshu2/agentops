@@ -8,7 +8,7 @@
 
 ## execution
 
-`account-rotation`, `agent-mail`, `cass`, `cc-hooks`, `codebase-recon`, `dcg`, `idea-genie`, `implement`, `learn`, `ms`, `ntm`, `pattern-mining`, `plan`, `rch`, `refactor`, `research`, `reverse-engineer`, `sbh`, `scaffold`, `swarm`, `test`, `using-gc`
+`account-rotation`, `agent-mail`, `cass`, `cc-hooks`, `codebase-recon`, `dcg`, `idea-genie`, `implement`, `learn`, `ms`, `ntm`, `pattern-mining`, `plan`, `rch`, `refactor`, `research`, `reverse-engineer`, `sbh`, `scaffold`, `swarm`, `test`, `using-flywheel`, `using-gc`
 
 ## judgment
 
@@ -89,6 +89,7 @@
 | `swarm` | execution | `keep_optional_adapter` | - | `dispatch_once` | `invoke_selected_executor` |
 | `test` | execution | `keep_specialist` | - | `test` | `write_test_files`, `write_test_evidence`, `modify_source_files` |
 | `toil-mining` | meta | `keep_specialist` | - | `toil_mining` | `write_toil_candidates` |
+| `using-flywheel` | execution | `keep_optional_adapter` | - | `route_to_native_flywheel_workflow`, `expose_agentops_skills`, `observe_flywheel_runtime` | - |
 | `using-gc` | execution | `keep_optional_adapter` | - | `dispatch_explicit_packet`, `observe_gc_runtime`, `inspect_pack_registries`, `drive_mayor_door` | `operate_gas_city`, `configure_codex_trust` |
 | `validate` | judgment | `keep` | - | `compute_subject_identity`, `judge_acceptance`, `return_validation_result`, `persist_verdict` | `write_verdict_artifact` |
 | `workflow-builder` | meta | `keep_specialist` | - | `workflow_builder` | `write_workflow_script` |
