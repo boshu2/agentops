@@ -501,8 +501,8 @@
     {
       "name": "plan",
       "source_skill": "skills/plan",
-      "source_hash": "a6adecafcd6855f518889904c6a61a4ea1ccf69bc3cbbc79a0f7c6f13e2d02ea",
-      "generated_hash": "42f3a346eae257e2e7b9a1a3962607cd3d8e6794a79000803a1ab615fe331748"
+      "source_hash": "1daf1e1217f13de0dcec04c630823cbd8f99be89109071d204b0c8622b359b4c",
+      "generated_hash": "df6fbe2aa4c8d76178aeda56d99ef2f1eec857ee50c8c4a9c3c2ec3499bebce6"
     },
     {
       "name": "postmortem",
@@ -633,8 +633,8 @@
     {
       "name": "using-gc",
       "source_skill": "skills/using-gc",
-      "source_hash": "dabb5f1416c33b9053cdaac679bd5395012abb1c563515e75a7b1dbea65b9648",
-      "generated_hash": "03ce9b8f59592fe894eb0ba99f7c9cfc8d3d9632552358023d5fa0a0f840a86a"
+      "source_hash": "fa961808745dbb3304622af95164ff621d65f79c59acfbd4c411fdf21f5bba07",
+      "generated_hash": "122cfc099b6851ada7020e2d85730cf7c1137402a0a42dd54bbab63ec39b287d"
     },
     {
       "name": "validate",
