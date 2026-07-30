@@ -11,13 +11,14 @@ import (
 // command was registered (or dropped) without changing this contract.
 var approvedDefaultSpine = map[string]bool{
 	"capabilities": true, "config": true, "doctor": true,
-	"demo": true, "eval": true, "flywheel": true, "gate": true, "goals": true,
-	"init": true, "provenance": true, "quick-start": true,
+	"demo": true, "eval": true, "flywheel": true, "gate": true, "gc": true,
+	"goals": true, "init": true, "provenance": true, "quick-start": true,
 	"redact": true, "robot-docs": true, "session": true, "skills": true,
 	"status": true, "version": true, "workflows": true,
 }
 
 var approvedDefaultChildren = map[string]map[string]bool{
+	"gc": {"check": true, "prepare": true, "recover-affinity": true},
 	"goals": {
 		"drift": true, "export": true, "history": true, "measure": true,
 		"meta": true, "render": true, "scenarios": true, "validate": true,

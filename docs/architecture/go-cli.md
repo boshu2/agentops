@@ -62,7 +62,7 @@ The published spine is pinned by `cmd/ao/default_spine_test.go` (plus
 `completion` and `help`, which cobra synthesizes):
 
 <!-- spine:begin — keep in lockstep with approvedDefaultSpine in cmd/ao/default_spine_test.go; verified by TestGoCLIDocSpineMatchesApprovedSpine -->
-`capabilities` `config` `demo` `doctor` `eval` `flywheel` `gate` `goals`
+`capabilities` `config` `demo` `doctor` `eval` `flywheel` `gate` `gc` `goals`
 `init` `provenance` `quick-start` `redact` `robot-docs` `session` `skills`
 `status` `version` `workflows`
 <!-- spine:end -->

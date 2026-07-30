@@ -633,8 +633,8 @@
     {
       "name": "using-gc",
       "source_skill": "skills/using-gc",
-      "source_hash": "39bb5bca49bd6761dfae466f12da62d5e657ce7bdda8f921a2df58f4f5616314",
-      "generated_hash": "199f9c716bcf9cc0b31eae0782c58b9455b5aeb284cb0c70596bccf840d5db62"
+      "source_hash": "2a10c20c4d20bae81d0bb10b17510c7f0af420d4f97e35a5730d8d5a12fdb707",
+      "generated_hash": "a057193c5a52a5f581d1e836c06939bee1f2e2fd45a96fee25842d94a0eaac72"
     },
     {
       "name": "validate",

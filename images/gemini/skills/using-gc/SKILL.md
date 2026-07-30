@@ -58,21 +58,24 @@ The normal AgentOps path is:
 4. Read run, session, bead, artifact, and verdict state. Completion is never
    inferred from chat or pane prose.
 
-From an AgentOps checkout, prepare and qualify a rig before its first build:
+Prepare and qualify a rig before its first build with the shipped AgentOps
+CLI (no repo checkout required):
 
 ```sh
-scripts/gc-maintainer-ops.sh prepare --city /path/to/city --rig /path/to/rig
-scripts/gc-maintainer-ops.sh check --city /path/to/city --rig /path/to/rig
+ao gc prepare --city /path/to/city --rig /path/to/rig
+ao gc check --city /path/to/city --rig /path/to/rig
 ```
 
-The helper verifies the exact official workflow and role pins, snapshots the
+The command verifies the exact official workflow and role pins, snapshots the
 upstream validation scripts and schemas unchanged inside the rig's `.gc`
 runtime, installs only small AgentOps-owned wrappers at the formula check
 paths, selects an existing Python that can import PyYAML, and links the
-AgentOps skills into the city and rig Codex sinks. It never modifies the GC
-binary, cache, formulas, roles, or upstream pack. `check` issues only native
-inspection commands, writes no adapter files, and fails before model spend
-when that runtime contract is missing or drifted.
+AgentOps skills into the city and rig Codex sinks. Skills come from the
+enclosing AgentOps checkout when one is present, otherwise from the installed
+skills root; pass `--skills-source` to pin a different directory. It never
+modifies the GC binary, cache, formulas, roles, or upstream pack. `check`
+issues only native inspection commands, writes no adapter files, and fails
+before model spend when that runtime contract is missing or drifted.
 
 ## Preferred pack and registries
 
@@ -150,7 +153,7 @@ Then confirm:
 - `gc doctor` has no blocking failures;
 - each graph-owning rig has an unsuspended `core.control-dispatcher`;
 - imports and `packs.lock` resolve;
-- `gc-maintainer-ops.sh check` accepts the contained maintainer runtime and
+- `ao gc check` accepts the contained maintainer runtime and
   AgentOps skill links;
 - on macOS, the supervisor LaunchAgent resolves to the same executable as the
   selected `gc` binary;
@@ -194,8 +197,7 @@ The upstream pack may leave a future affinity-bound step assigned to a session
 that has already drain-acked. Diagnose this only from outside the city:
 
 ```sh
-scripts/gc-maintainer-ops.sh recover-affinity \
-  --city /path/to/city --rig /path/to/rig
+ao gc recover-affinity --city /path/to/city --rig /path/to/rig
 ```
 
 The default is a dry run. If every listed assignment is correct, repeat with
