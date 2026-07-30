@@ -50,6 +50,7 @@
 | `scope` | `supplier-to` | `plan` |
 | `security` | `supplier-to` | `validate` |
 | `toil-mining` | `supplier-to` | `automation-shape-routing` |
+| `using-flywheel` | `partnership` | `using-gc` |
 | `using-gc` | `partnership` | `agent-native` |
 | `validate` | `customer-of` | `implement` |
 | `validate` | `customer-of` | `plan` |
@@ -142,6 +143,8 @@
 | `test` | consumes | `repo-context` |
 | `test` | produces | `test-evidence` |
 | `toil-mining` | produces | `toil-candidates-report` |
+| `using-flywheel` | consumes | `explicit-packets` |
+| `using-flywheel` | produces | `flywheel-runtime-evidence` |
 | `using-gc` | consumes | `explicit-packets` |
 | `using-gc` | produces | `gas-city-runtime-evidence` |
 | `validate` | consumes | `subject-manifest.v1` |

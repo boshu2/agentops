@@ -1,7 +1,7 @@
 {
   "image": "codex",
   "schema_version": "skill-image.v1",
-  "skill_count": 50,
+  "skill_count": 51,
   "skills": [
     {
       "disposition": "keep_specialist",
@@ -284,6 +284,12 @@
       "slug": "toil-mining",
       "source_path": "skills/toil-mining/",
       "twin_path": "skills-codex/toil-mining/"
+    },
+    {
+      "disposition": "keep_optional_adapter",
+      "slug": "using-flywheel",
+      "source_path": "skills/using-flywheel/",
+      "twin_path": "skills-codex/using-flywheel/"
     },
     {
       "disposition": "keep_optional_adapter",

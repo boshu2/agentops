@@ -2,7 +2,7 @@
   "generator": "manual-maintained",
   "source_root": "skills",
   "layout": "modular",
-  "codex_override_catalog_hash": "d093b00a7e7880043ae4e0a0375d4f1e774f80347d5986f0eef6052cd7e37331",
+  "codex_override_catalog_hash": "a9840cf9e06c17b0a00615f50f6796bb45ecd84b6943fa82fa98aab455efc9db",
   "codex_override_catalog": {
     "version": 1,
     "description": "Machine-readable Codex treatment map for the full skill catalog.",
@@ -332,6 +332,12 @@
         "treatment": "parity_only",
         "wave": "catalog-parity",
         "reason": "Auto-generated parity twin (codex-sync): skills/fitness is the source of truth; no durable Codex-specific divergence yet."
+      },
+      {
+        "name": "using-flywheel",
+        "treatment": "parity_only",
+        "wave": "catalog-parity",
+        "reason": "Auto-generated parity twin (codex-sync): skills/using-flywheel is the source of truth; no durable Codex-specific divergence yet."
       }
     ]
   },
@@ -619,6 +625,12 @@
       "generated_hash": "11d4272652686c2da5ff11e15e510f5e56f30e5fc3f9dd2414dced0a00055f12"
     },
     {
+      "name": "using-flywheel",
+      "source_skill": "skills/using-flywheel",
+      "source_hash": "e6c229401acbee8d38528d908bfbce7b2dbbb954a6ef7003b643c4cdc3ef05ad",
+      "generated_hash": "80838a0d62f8ff93eb554d28cde88adb32ff52ff0daeb0db924d857f892f7d83"
+    },
+    {
       "name": "using-gc",
       "source_skill": "skills/using-gc",
       "source_hash": "65211615c9c269a0e3e9814deee5a932d2c8dac646e82d4056e555a10e79be65",
@@ -637,5 +649,5 @@
       "generated_hash": "30f72769961a244749883e03cb04e329cd0feb03dd5b641d2a73a2e5dc8e9d42"
     }
   ],
-  "package_count": 50
+  "package_count": 51
 }

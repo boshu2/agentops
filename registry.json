@@ -516,6 +516,33 @@
     },
     {
       "driven_by_skills": [
+        "using-flywheel"
+      ],
+      "id": "skill:using-flywheel:route_to_native_flywheel_workflow",
+      "name": "route_to_native_flywheel_workflow",
+      "path": "skills/using-flywheel/SKILL.md",
+      "type": "skill"
+    },
+    {
+      "driven_by_skills": [
+        "using-flywheel"
+      ],
+      "id": "skill:using-flywheel:expose_agentops_skills",
+      "name": "expose_agentops_skills",
+      "path": "skills/using-flywheel/SKILL.md",
+      "type": "skill"
+    },
+    {
+      "driven_by_skills": [
+        "using-flywheel"
+      ],
+      "id": "skill:using-flywheel:observe_flywheel_runtime",
+      "name": "observe_flywheel_runtime",
+      "path": "skills/using-flywheel/SKILL.md",
+      "type": "skill"
+    },
+    {
+      "driven_by_skills": [
         "using-gc"
       ],
       "id": "skill:using-gc:dispatch_explicit_packet",
@@ -600,19 +627,19 @@
     "cli_commands": 0,
     "gates": 0,
     "reference_impls": 0,
-    "skills": 66,
-    "total": 66
+    "skills": 69,
+    "total": 69
   },
   "cli_top_level_commands": [],
   "schema_version": 3,
   "summary": {
-    "capabilities": 66,
+    "capabilities": 69,
     "cli_commands": 0,
     "eval_files": 0,
     "hooks": 0,
     "job_types": 0,
     "knowledge_stores": 0,
-    "skills": 50,
+    "skills": 51,
     "workflows": 0
   },
   "surfaces": {
@@ -1346,6 +1373,21 @@
         "path": "skills/toil-mining/",
         "reference_count": 0,
         "tier": "meta"
+      },
+      {
+        "capabilities": [
+          "route_to_native_flywheel_workflow",
+          "expose_agentops_skills",
+          "observe_flywheel_runtime"
+        ],
+        "disposition": "keep_optional_adapter",
+        "effects": [],
+        "has_references": false,
+        "has_skill_md": true,
+        "name": "using-flywheel",
+        "path": "skills/using-flywheel/",
+        "reference_count": 0,
+        "tier": "execution"
       },
       {
         "capabilities": [
