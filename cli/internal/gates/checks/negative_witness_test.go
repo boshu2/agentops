@@ -93,27 +93,32 @@ func loadPinnedGates(t *testing.T, root string) map[string]bool {
 	return pinned
 }
 
-// collectTestBodies reads every file under tests/ once.
+// collectTestBodies reads every git-tracked file under tests/ once.
+// Tracked-only is load-bearing: untracked/gitignored files under tests/ (e.g.
+// session transcripts in tests/claude-code/logs/*.jsonl) contain gate-script
+// names next to assertion-shaped text, which reads as a phantom negative
+// witness — making this suite's verdict depend on checkout dirt instead of
+// committed tests (2026-07-29: dirty checkout failed while a clean worktree
+// passed).
 func collectTestBodies(t *testing.T, root string) map[string]string {
 	t.Helper()
-	bodies := map[string]string{}
-	testsDir := filepath.Join(root, "tests")
-	err := filepath.WalkDir(testsDir, func(path string, d os.DirEntry, err error) error {
-		if err != nil {
-			return err
-		}
-		if d.IsDir() {
-			return nil
-		}
-		body, readErr := os.ReadFile(path)
-		if readErr != nil {
-			return nil // unreadable fixture is not this test's business
-		}
-		bodies[path] = string(body)
-		return nil
-	})
+	cmd := exec.Command("git", "ls-files", "-z", "--", "tests")
+	cmd.Dir = root
+	cmd.Env = scrubbedGitEnv()
+	out, err := cmd.Output()
 	if err != nil {
-		t.Fatalf("walk tests/: %v", err)
+		t.Fatalf("git ls-files tests/: %v", err)
+	}
+	bodies := map[string]string{}
+	for _, rel := range strings.Split(string(out), "\x00") {
+		if rel == "" {
+			continue
+		}
+		body, readErr := os.ReadFile(filepath.Join(root, rel))
+		if readErr != nil {
+			continue // tracked but absent from the worktree is not this test's business
+		}
+		bodies[rel] = string(body)
 	}
 	return bodies
 }
@@ -175,6 +180,56 @@ func TestBlockingGatesHaveProvenNegativeWitness(t *testing.T) {
 	}
 
 	t.Logf("check-liveness: %d blocking gate(s) still lack a proven negative witness (shrink-only)", len(pinned))
+}
+
+// TestCollectTestBodiesIgnoresUntrackedFiles is the regression guard for the
+// phantom-witness class: an untracked file under tests/ (a gitignored session
+// log, a scratch fixture) that happens to contain a gate-script name plus an
+// assertion-shaped string must NOT count as a negative witness. Only committed
+// tests are evidence.
+func TestCollectTestBodiesIgnoresUntrackedFiles(t *testing.T) {
+	repo := t.TempDir()
+	git := func(args ...string) {
+		t.Helper()
+		cmd := exec.Command("git", args...)
+		cmd.Dir = repo
+		cmd.Env = scrubbedGitEnv()
+		if out, err := cmd.CombinedOutput(); err != nil {
+			t.Fatalf("git %v: %v\n%s", args, err, out)
+		}
+	}
+	git("init", "-q")
+
+	logsDir := filepath.Join(repo, "tests", "logs")
+	if err := os.MkdirAll(logsDir, 0o755); err != nil {
+		t.Fatalf("mkdir %s: %v", logsDir, err)
+	}
+	tracked := filepath.Join(repo, "tests", "real_witness.bats")
+	if err := os.WriteFile(tracked, []byte("run check-tracked.sh\n[ \"$status\" -eq 1 ]\n"), 0o644); err != nil {
+		t.Fatalf("write tracked fixture: %v", err)
+	}
+	git("add", "tests/real_witness.bats")
+
+	// The decoy mimics a session transcript: names a gate script and carries an
+	// assertion-shaped string, but is never added to the index.
+	decoy := filepath.Join(logsDir, "session.jsonl")
+	if err := os.WriteFile(decoy, []byte(`{"text":"ran check-decoy.sh and saw [ \"$status\" -eq 1 ] in the output"}`+"\n"), 0o644); err != nil {
+		t.Fatalf("write decoy: %v", err)
+	}
+
+	bodies := collectTestBodies(t, repo)
+	if _, ok := bodies["tests/real_witness.bats"]; !ok {
+		t.Errorf("tracked test under tests/ missing from collected bodies: %v", bodies)
+	}
+	if _, ok := bodies["tests/logs/session.jsonl"]; ok {
+		t.Errorf("untracked decoy under tests/ was collected — phantom-witness regression")
+	}
+	if !hasNegativeWitness(bodies, "scripts/check-tracked.sh") {
+		t.Errorf("tracked witness for check-tracked.sh not recognized")
+	}
+	if hasNegativeWitness(bodies, "scripts/check-decoy.sh") {
+		t.Errorf("untracked decoy counted as a negative witness for check-decoy.sh")
+	}
 }
 
 // TestNegativeWitnessAllowlistOnlyShrinks is the growth guard. Without it the
