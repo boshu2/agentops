@@ -1,6 +1,6 @@
 ---
 name: using-flywheel
-description: 'Operate the Agentic Coding Flywheel as a caller-selected external software factory: provision its stack, expose AgentOps skills to its agents, and keep Flywheel runtime state out of AgentOps verdicts. Triggers: "using flywheel", "agentic coding flywheel", "agent flywheel", "run this through the flywheel".'
+description: 'Operate the Agentic Coding Flywheel as a caller-selected software factory; keep its runtime state out of AgentOps verdicts. Triggers: "using flywheel", "agent flywheel".'
 practices: [team-topologies, design-by-contract]
 skill_api_version: 1
 hexagonal_role: driving-adapter
