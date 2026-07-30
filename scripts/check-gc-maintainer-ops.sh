@@ -9,4 +9,7 @@
 maintainer="${GC_MAINTAINER_SCRIPT:-$REPO_ROOT/scripts/gc-maintainer-ops.sh}"
 bash -n "$maintainer"
 cd "$REPO_ROOT" || exit 2
-python3 -m unittest tests.python.test_gc_maintainer_ops
+# The maintainer logic lives in Go (cli/internal/gcmaintainer) since the
+# ao gc port; the shell script above is a thin wrapper. Exercise the Go
+# surface directly — the Python unittest suite moved with the port.
+(cd "$REPO_ROOT/cli" && go test ./internal/gcmaintainer/ -count=1)
