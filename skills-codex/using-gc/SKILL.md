@@ -12,8 +12,8 @@ replaceable execution adapter, not a correctness or completion boundary.
 AgentOps supports both Gas City and the
 [Agentic Coding Flywheel](https://agent-flywheel.com) as external
 software-factory runtimes. Use this skill only for Gas City. If the caller
-selects the Flywheel, use its native workflow instead of wrapping it in Gas
-City.
+selects the Flywheel, switch to [using-flywheel](../using-flywheel/SKILL.md)
+and its native workflow instead of wrapping it in Gas City.
 
 AgentOps supplies skills and evidence contracts to either factory. It does not
 need its own Gas City formula or role pack. Install or link AgentOps skills into
