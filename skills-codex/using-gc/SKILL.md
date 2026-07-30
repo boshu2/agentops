@@ -1,43 +1,46 @@
 ---
 name: using-gc
-description: Operate a caller-selected Gas City 1.4
+description: Operate a caller-selected Gas City 1.4 with
 ---
 # Using GC
 
 Use Gas City only when the caller explicitly selects it. Treat it as a
 replaceable execution adapter, not a correctness or completion boundary.
 
+## Choose the factory first
+
+AgentOps supports both Gas City and the
+[Agentic Coding Flywheel](https://agent-flywheel.com) as external
+software-factory runtimes. Use this skill only for Gas City. If the caller
+selects the Flywheel, use its native workflow instead of wrapping it in Gas
+City.
+
+AgentOps supplies skills and evidence contracts to either factory. It does not
+need its own Gas City formula or role pack. Install or link AgentOps skills into
+the provider runtime before starting workers; the upstream Mayor, coordinator,
+and workers can then discover and select `plan`, `implement`, `test`,
+`validate`, and other AgentOps skills normally.
+
 ## Gas City 1.4 operating model
 
 Gas City 1.4 is run-centered. The supervisor serves the dashboard and typed,
 paginated session/run APIs. Every graph-owning city or rig scope needs its own
 `core.control-dispatcher`; that deterministic worker advances formula control
-beads. Agent workers claim routed work. The optional AgentOps Mayor is an
-on-demand human/agent door for status and one manual dispatch, not a polling
-control plane.
+beads. Agent workers claim routed work. The upstream `gc.mayor` skill is the
+guided coordinator; `gc.run-operator` launches and supervises formulas.
 
 The normal AgentOps path is:
 
-1. `invoke.sh --city C create "<title>" -d "<acceptance>"` writes one
-   caller-owned source bead.
-2. `invoke.sh --city C feed <bead-id>` homes it in the rig and starts the native
-   `agentops-experiment` formula. `gc sling` returns a run id and dashboard deep
-   link.
-3. `invoke.sh --city C dashboard` prints the embedded supervisor dashboard URL.
-4. Read run, session, bead, and verdict state. Completion is never inferred from
-   chat or pane prose.
+1. Install and pin the upstream `gascity` workflow and rig-role imports.
+2. Add the project as a rig and make AgentOps skills visible to its provider
+   sessions.
+3. Create a caller-owned bead and launch the upstream `build-basic`,
+   continuation, review, or implementation formula that matches the available
+   artifacts.
+4. Read run, session, bead, artifact, and verdict state. Completion is never
+   inferred from chat or pane prose.
 
-The Mayor remains available when explicitly useful:
-
-```sh
-invoke.sh --city C mayor start
-invoke.sh --city C mayor status
-invoke.sh --city C mayor tell "dispatch <bead-id>"
-```
-
-Hand it bead ids only. It never authors or claims work.
-
-## Packs and registries
+## Preferred pack and registries
 
 The built-in `main` registry catalogs official packs. The community registry is
 optional configuration:
@@ -56,22 +59,41 @@ exact import commands. `gc import add` declares a source/version, and `gc import
 install` resolves it into `packs.lock`. Prefer an exact accepted release for
 reproducible cities.
 
-AgentOps composes the official `gascity` 0.1.6 workflow at commit
-`3b3b89f2011e06d84459aa7bea1552382f13930a`, plus its rig roles. This is the
-workflow family visible in the public Maintainer City factory:
+AgentOps prefers the official `gascity` build pack, the workflow family visible
+in the public Maintainer City factory. The current accepted reference is
+`gascity` 0.1.6 at commit
+`3b3b89f2011e06d84459aa7bea1552382f13930a`:
 
 - dashboard: `https://factory.gascity.com`;
-- official roles, bound at the stock default-rig namespace:
-  `gc.run-operator` and `gc.implementation-worker`;
+- workflows: `build-basic`, `build-from-*`, `implement`, review, issue, and PR
+  flows;
+- stock rig roles: `gc.run-operator`, `gc.implementation-worker`, planners,
+  reviewers, and publisher;
 - scope-local formula control: `core.control-dispatcher`;
-- production formulas including `do-work`, build, review, issue, and PR flows.
+- guided coordination: the upstream `gc.mayor` skill.
 
-The workflow pack is composed into `agentops-factory`; its sibling role pack is
-instead imported as `defaults.rig.imports.gc`. Keep that split: nesting the roles
-inside `agentops-factory` renames them to `agentops.*`, while the stock formulas
-still target `gc.*`. AgentOps keeps `agentops-experiment` as its bounded
-default. The imported pack is compositional access to upstream workflows, not
-permission to replace the AgentOps verdict boundary.
+Install the workflow pack at city scope and its sibling roles pack on every rig
+that runs work, following the exact commands returned by
+`gc pack registry show main:gascity`. Keep the stock `gc.*` namespace; do not
+nest or rename the roles behind an AgentOps pack.
+
+For a starter build:
+
+```sh
+gc bd create "Add a --json flag to the export command"
+gc sling gc.run-operator <bead-id> --on build-basic \
+  --var artifact_root=plans/json-flag/build
+```
+
+For guided requirements, planning, and launch, tell the active agent:
+
+```text
+Use skill gc.mayor
+```
+
+AgentOps skills are tools available to those factory agents, not a replacement
+workflow. Explicitly name a skill in the bead or prompt when its behavior is
+required.
 
 ## Upgrade an existing city to 1.4
 
@@ -107,9 +129,9 @@ gc cities --json
 
 `unregister` fails rather than silently accepting an unknown target. Preserve
 the city directory until its Beads state is backed up or confirmed disposable.
-Then use `deploy/gc/bootstrap.sh ... --start` for the new city and verify it with
-`gc cities --json`, `gc --city <new-city> status`, and
-`gc --city <new-city> doctor --json`.
+Create the replacement from the upstream Gas City template, install its pinned
+imports, and verify it with `gc cities --json`, `gc --city <new-city> status`,
+and `gc --city <new-city> doctor --json`.
 
 ## Stall protocol
 
