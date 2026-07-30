@@ -657,6 +657,75 @@ ao eval task show <task-id> [flags]
 
 ---
 
+### `ao gc`
+
+Prepare and qualify the stock Gas City maintainer pack without owning a pack.
+
+```
+ao gc [command]
+```
+
+**Subcommands:**
+
+#### `ao gc check`
+
+Verify a prepared maintainer runtime read-only
+
+```
+ao gc check [flags]
+```
+
+**Flags:**
+
+```
+      --city string            Gas City root directory (required)
+      --gc-bin string          Gas City 1.4 binary (default: gc on PATH)
+  -h, --help                   help for check
+      --pack-dir string        resolved official gascity pack root (normally auto-detected)
+      --rig string             rig directory inside the city (required)
+      --skills-source string   AgentOps skills directory to link from (default: enclosing checkout, then installed skills root)
+```
+
+#### `ao gc prepare`
+
+Stage the contained maintainer runtime and skill links for a rig
+
+```
+ao gc prepare [flags]
+```
+
+**Flags:**
+
+```
+      --city string            Gas City root directory (required)
+      --gc-bin string          Gas City 1.4 binary (default: gc on PATH)
+  -h, --help                   help for prepare
+      --pack-dir string        resolved official gascity pack root (normally auto-detected)
+      --rig string             rig directory inside the city (required)
+      --skills-source string   AgentOps skills directory to link from (default: enclosing checkout, then installed skills root)
+```
+
+#### `ao gc recover-affinity`
+
+Clear stale required session-affinity assignments (dry-run by default)
+
+```
+ao gc recover-affinity [flags]
+```
+
+**Flags:**
+
+```
+      --apply             apply the recovery; the default is a read-only dry run
+      --city string       Gas City root directory (required)
+      --gc-bin string     Gas City 1.4 binary (default: gc on PATH)
+  -h, --help              help for recover-affinity
+      --pack-dir string   resolved official gascity pack root (normally auto-detected)
+      --rig string        rig directory inside the city (required)
+```
+
+---
+
 ### `ao goals`
 
 Track, measure, and validate project fitness goals.

@@ -222,6 +222,7 @@ func TestOutputYAMLProbeStalenessGuard(t *testing.T) {
 		"config":      "structured show/models covered by config package tests; top-level config prints help",
 		"demo":        "human-only demonstrative output",
 		"gate":        "human/exit-code gate; no structured document contract",
+		"gc":          "human operational output ported from gc-maintainer-ops.sh; no structured document contract",
 		"init":        "side-effect scaffolder, human output",
 		"quick-start": "human onboarding text",
 		"redact":      "stream transform, not a structured document",

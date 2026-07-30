@@ -43,6 +43,9 @@
 | `ao flywheel compare` | `public-tested` | `allowlisted` | Covered by internal/flywheelapp Compare tests after the flywheel carve-out. |
 | `ao flywheel status` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao gate check` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
+| `ao gc check` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
+| `ao gc prepare` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
+| `ao gc recover-affinity` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao goals drift` | `public-stateful-fixture-needed` | `allowlisted` | Requires two goal snapshots. |
 | `ao goals export` | `public-tested` | `allowlisted` | Covered through goals snapshot behavior. |
 | `ao goals history` | `public-tested` | `allowlisted` | Historical view shares goals validation behavior. |

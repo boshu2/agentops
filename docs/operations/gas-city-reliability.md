@@ -31,8 +31,9 @@ Every graph-owning scope retains an unsuspended
 
 ## AgentOps-owned operational adapter
 
-The supported repository-side adapter is
-`scripts/gc-maintainer-ops.sh`. It has three deliberately narrow operations:
+The supported adapter is the shipped CLI command family `ao gc`
+(`scripts/gc-maintainer-ops.sh` remains as a thin compatibility wrapper over
+it). It has three deliberately narrow operations:
 
 - `prepare` verifies the accepted official workflow and rig-role commit,
   snapshots upstream validation assets unchanged under the selected rig's
