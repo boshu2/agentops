@@ -351,7 +351,7 @@ func copyTree(src, dst string) error {
 			if err := os.MkdirAll(filepath.Dir(target), 0o755); err != nil {
 				return err
 			}
-			return os.Symlink(link, target)
+			return os.Symlink(link, target) // #nosec G122 -- snapshot copy of the commit-pin-verified upstream pack into the rig-owned runtime; both trees are operator-local with no untrusted writer in this CLI's threat model.
 		default:
 			return copyFile(path, target, info.Mode().Perm())
 		}
@@ -418,7 +418,7 @@ func treeSignature(root string) (map[string]string, error) {
 			}
 			signature[rel] = "link:" + link
 		default:
-			data, err := os.ReadFile(path)
+			data, err := os.ReadFile(path) // #nosec G122 -- content-signature hash over the rig-owned contained runtime; operator-local tree, pin-verified before the walk.
 			if err != nil {
 				return err
 			}
