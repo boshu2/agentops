@@ -7,14 +7,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Added
-
-- `using-flywheel` skill: operating manual for the Agentic Coding Flywheel as
-  a caller-selected external software factory — provisioning via the upstream
-  wizard, AgentOps skill visibility across its worker runtimes, and the
-  evidence boundary (factory convergence is never an AgentOps verdict). Gives
-  the second supported factory an operating surface parallel to `using-gc`.
-
 ## [3.4.0] - 2026-07-30
 
 AgentOps 3.4 is the **honest-contract release**. All 50 shipped skills went
@@ -30,6 +22,16 @@ supplies the skills and evidence discipline either factory executes.
 - Negative-witness ratchet: every blocking gate must carry a test proving it
   fails on what it detects, with a shrink-only grandfather list.
 - `ao gate check --dry-run`: a real plan-only mode that mutates nothing.
+- `using-flywheel` skill: operating manual for the Agentic Coding Flywheel as
+  a caller-selected external software factory, covering provisioning via the
+  upstream wizard, AgentOps skill visibility across its worker runtimes, and
+  the evidence boundary (factory convergence is never an AgentOps verdict).
+  Gives the second supported factory an operating surface parallel to
+  `using-gc`.
+- `scripts/gc-maintainer-ops.sh`: a narrow operational adapter for stock Gas
+  City rigs, with `prepare` (pin verification, contained runtime snapshot,
+  skill linking), read-only `check`, and dry-run-by-default
+  `recover-affinity`. It is not a pack, formula, role, daemon, or GC fork.
 
 ### Changed
 
@@ -57,6 +59,11 @@ supplies the skills and evidence discipline either factory executes.
 - `handoff` schema matches what the command writes; `dcg` guidance corrected.
 - The orchestration-skill-boundaries gate no longer references adapter files
   deleted by the 3.3 single-pass refactor.
+- The negative-witness scan reads only git-tracked files under `tests/`, so
+  ignored local logs can no longer flip its verdict between checkouts.
+- Retired Gas City prototype wiring decayed to frozen bytes: the skill
+  projection into the retired pack copy stopped, and the
+  `adapter.gc-maintainer` gate replaces `adapter.gc-executor`.
 
 ### Deprecated
 
