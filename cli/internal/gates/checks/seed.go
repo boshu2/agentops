@@ -90,24 +90,16 @@ var (
 		"skills/**", "skills-codex/**", "schemas/**", "cli/cmd/ao/**", "cli/internal/**",
 		"scripts/check-cathedral-cut-conformance.py",
 	}
-	gcExecutorPaths = []string{
-		"packs/agentops-executor/**",
-		"packs/agentops-factory/**",
-		"deploy/gc/**",
-		"docs/contracts/gc33-migration-provenance.md",
-		"docs/operations/gas-city-reliability.md",
-		"docs/adr/ADR-0015-gas-city-fenced-steward.md",
-		"docs/audits/gas-city-factory-live-bead-canary.md",
-		"docs/plans/2026-07-17-gas-city-factory-operationalization.md",
-		"skills-codex/implement/**",
-		"skills-codex/validate/**",
-		"skills-codex/using-gc/**",
-		"scripts/sync-gc-pack.py",
-		"scripts/check-gc-executor.sh",
-		"scripts/regen-all.sh",
-		"tests/python/test_gc33_thin_pack.py",
-		"tests/python/test_sync_gc_pack.py",
-		"tests/scripts/check-gc-executor.bats",
+	// The retired Gas City prototype (packs/agentops-executor/**,
+	// packs/agentops-factory/**, deploy/gc/**) is frozen historical bytes after
+	// the 2026-07-29 upstream-factories pivot and is deliberately unmatched —
+	// no gate rewrites or validates those trees. Only the live maintainer
+	// surface stays gated.
+	gcMaintainerPaths = []string{
+		"scripts/gc-maintainer-ops.sh",
+		"tests/python/test_gc_maintainer_ops.py",
+		"scripts/check-gc-maintainer-ops.sh",
+		"tests/scripts/check-gc-maintainer-ops.bats",
 	}
 	// docs.cli-snippets resolves every `ao …` command cited in a live doc against
 	// the cobra tree; a rename/removal of a command silently strands a golden-path
@@ -277,7 +269,7 @@ func init() {
 		{ID: "skill.schema", Tiers: gates.Fast | gates.Full, Match: skillPaths, Blocking: true, Backing: "validate-skill-schema.sh"},
 		{ID: "skill.triggers", Tiers: gates.Fast | gates.Full, Match: skillPaths, Blocking: true, Backing: "validate-skill-triggers.sh"},
 		{ID: "contract.cathedral-cut", Tiers: gates.Fast | gates.Full, Match: cathedralCutPaths, Blocking: true, Backing: "check-cathedral-cut-conformance.py"},
-		{ID: "adapter.gc-executor", Tiers: gates.Fast | gates.Full, Match: gcExecutorPaths, Blocking: true, Backing: "check-gc-executor.sh", RepairHint: "run scripts/sync-gc-pack.py, then scripts/check-gc-executor.sh"},
+		{ID: "adapter.gc-maintainer", Tiers: gates.Fast | gates.Full, Match: gcMaintainerPaths, Blocking: true, Backing: "check-gc-maintainer-ops.sh", RepairHint: "bash -n scripts/gc-maintainer-ops.sh; python3 -m unittest tests.python.test_gc_maintainer_ops"},
 		{ID: "contract.skill-mesh", Tiers: gates.Fast | gates.Full, Match: skillPaths, Blocking: true, Backing: "check-skill-mesh.py"},
 		{ID: "contract.finding-registry", Tiers: gates.Fast | gates.Full, Match: contractPaths, Blocking: true, Backing: "check-finding-registry.sh"},
 		{ID: "ci.policy-parity", Tiers: gates.Fast | gates.Full, Match: ciPolicyPaths, Blocking: true, Backing: "validate-ci-policy-parity.sh"},

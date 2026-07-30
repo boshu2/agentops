@@ -47,16 +47,9 @@ codex_hashes() {
   bash scripts/regen-codex-hashes.sh "${args[@]}"
 }
 
-gc_skill_projection() {
-  local args=()
-  [[ "$mode" == check ]] && args+=(--check)
-  python3 scripts/sync-gc-pack.py "${args[@]}"
-}
-
 if [[ "$mode" == regen ]]; then
   echo "== regenerate metadata-owned projections =="
   step "Codex twins" codex_sync
-  step "GC skill projection" gc_skill_projection
   step "Codex hashes" codex_hashes
   step "skill mesh" python3 scripts/generate-skill-mesh.py
     step "CLI reference" bash scripts/generate-cli-reference.sh
@@ -68,7 +61,6 @@ if [[ "$mode" == regen ]]; then
 else
   echo "== check metadata-owned projections =="
   step "Codex twins" codex_sync
-  step "GC skill projection" gc_skill_projection
   step "Codex hashes" codex_hashes
   step "skill mesh" python3 scripts/generate-skill-mesh.py --check
   step "Codex parity" bash scripts/audit-codex-parity.sh
