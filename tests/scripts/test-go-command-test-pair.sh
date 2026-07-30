@@ -4,6 +4,13 @@ set -euo pipefail
 # test-go-command-test-pair.sh
 # Integration tests for scripts/check-go-command-test-pair.sh.
 
+# The gate under test honors AGENTOPS_GATE_RANGE as an authoritative push
+# scope. A caller-exported range (e.g. an official release run scoping the
+# real gate to v<prev>..HEAD) refers to refs that do not exist in these
+# fixture repos, silently turning expected-FAIL scenarios into SKIPs. The
+# fixtures own their scope; scrub the inherited one.
+unset AGENTOPS_GATE_RANGE
+
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 CHECK_SCRIPT="$REPO_ROOT/scripts/check-go-command-test-pair.sh"
