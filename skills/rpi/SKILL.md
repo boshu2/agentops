@@ -139,6 +139,10 @@ disjoint regen surfaces may run in parallel.
   explicit freshness attestation.
 - Optional Premortem, Postmortem, Council, genie, factory, tracker, and runtime
   adapters are caller-selected. They do not alter phase order or core outcomes.
+  When a factory adapter is selected, work enters it through that factory's
+  coordinator (for Gas City, the Mayor — see
+  [using-gc](../using-gc/SKILL.md)); RPI hands over intent and never dispatches
+  factory runs itself.
 - Learn is an optional later consumer of verdict collections and is not part of
   this invocation.
 
