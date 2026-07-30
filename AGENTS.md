@@ -106,9 +106,11 @@ A selected factory's internal control plane is operated only through that
 factory's own doors: its coordinator (for Gas City, the Mayor via mail), its
 doctor, and its supervisor start/stop from outside. An agent never creates,
 scales, or repairs factory-internal sessions by hand — a hand-made session can
-squat a canonical name and block the factory's own reconciler. The agent lane
-into a factory is: author beads, mail the coordinator, read state, judge
-results.
+squat a canonical name and block the factory's own reconciler. Dispatch
+belongs to the coordinator too: the agent authors one source intent bead and
+hands its id over; the coordinator authors the workflow beads and launches the
+runs. The agent lane into a factory is: author source intent, mail the
+coordinator, read state, judge results.
 
 ## Concurrency
 

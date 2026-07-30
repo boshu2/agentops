@@ -52,7 +52,8 @@ The normal AgentOps path is:
 1. Install and pin the upstream `gascity` workflow and rig-role imports.
 2. Add the project as a rig, prepare its stock maintainer runtime, and make
    AgentOps skills visible to its provider sessions.
-3. Create a caller-owned bead and launch the upstream `build-basic`,
+3. Create a caller-owned source intent bead and hand its id to the Mayor,
+   which authors the workflow beads and dispatches the upstream `build-basic`,
    continuation, review, or implementation formula that matches the available
    artifacts.
 4. Read run, session, bead, artifact, and verdict state. Completion is never
@@ -114,19 +115,26 @@ that runs work, following the exact commands returned by
 `gc pack registry show main:gascity`. Keep the stock `gc.*` namespace; do not
 nest or rename the roles behind an AgentOps pack.
 
-For a starter build:
+Work enters the city through the Mayor. The caller authors ONE source intent
+bead with acceptance, then hands the Mayor its id — the Mayor decomposes,
+authors the workflow beads, and dispatches. The caller never runs `gc sling`
+itself; an operator-slung run bypasses the coordinator that owns retries,
+re-dispatch, and tending for that workflow.
 
 ```sh
 gc bd create "Add a --json flag to the export command"
-gc sling gc.run-operator <bead-id> --on build-basic \
-  --var artifact_root=plans/json-flag/build
+gc mail send mayor -s "Build ago-XXXX" \
+  -m "Decompose and launch build-basic for bead ago-XXXX with push=true open_pr=true." --notify
 ```
 
-For guided requirements, planning, and launch, tell the active agent:
+Or, in an interactive Mayor session:
 
 ```text
 Use skill gc.mayor
 ```
+
+Direct `gc sling` remains a debugging tool for a city with no live Mayor; a
+run started that way has no coordinator and the operator inherits its tending.
 
 AgentOps skills are tools available to those factory agents, not a replacement
 workflow. Explicitly name a skill in the bead or prompt when its behavior is
@@ -255,8 +263,10 @@ anchor worktree. Neither state is semantic completion by itself.
   context issues the semantic result or, when requested, persists `verdict.v2`.
 - This skill performs no automatic selection, retry, semantic validation, Git,
   integration, closure, release, or delivery.
-- The operator lane into a city is a closed set: author beads, `gc sling`,
-  `gc mail` (city tending goes to the Mayor), `gc doctor [--fix]`, supervisor
-  start/stop from outside, `ao gc prepare|check|recover-affinity`, and reading
-  state. Creating, scaling, or repairing pack-owned sessions by hand is outside
-  the lane; the reconciler owns session lifecycle.
+- The operator lane into a city is a closed set: author source intent beads,
+  `gc mail` (work dispatch and city tending both go to the Mayor),
+  `gc doctor [--fix]`, supervisor start/stop from outside,
+  `ao gc prepare|check|recover-affinity`, and reading state. The Mayor authors
+  workflow beads and dispatches; creating, scaling, or repairing pack-owned
+  sessions by hand is outside the lane, and the reconciler owns session
+  lifecycle.
