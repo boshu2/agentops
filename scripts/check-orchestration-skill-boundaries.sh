@@ -13,9 +13,4 @@ if rg -n -i '\bATM\b|using-atm|vibing-with-ntm' "${active[@]}"; then
   exit 1
 fi
 
-rg -q '"ntm", "--robot-help"' cli/internal/adapters/agentworker_ntm/ntm.go
-rg -q '"am", "capabilities", "--json"' cli/internal/adapters/agentmail_cli/agentmail.go
-rg -q 'single worker pays no coordination tax' skills/agent-native/SKILL.md
-rg -q 'external NTM binary' skills/ntm/SKILL.md
-rg -q 'CLI self-describes' skills/agent-mail/SKILL.md
 echo "orchestration skill boundaries: PASS"

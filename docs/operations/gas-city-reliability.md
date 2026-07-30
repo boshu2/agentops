@@ -1,7 +1,7 @@
 # Gas City reliability boundary
 
-AgentOps ships configuration and small operational helpers, not an
-orchestration backend.
+AgentOps ships skills, evidence contracts, and small operational guidance, not
+an orchestration backend or a competing Gas City pack.
 
 | Fact | Authority |
 |---|---|
@@ -12,30 +12,30 @@ orchestration backend.
 | Semantic acceptance | AgentOps `subject-manifest.v1` and `verdict.v2` |
 | Pull request, hosted checks, merge | GitHub |
 
-The source bead flows through one native formula: fresh Sol planning, one
-isolated Terra-high or Opus-medium implementation, fresh Sol validation, then
-a separate Fable Refiner delivery step. Validation may close the semantic bead
-before delivery completes. Moving main never blocks semantic work; the Refiner
-rebases once and returns stale or conflicting work to the Mayor.
+Caller-owned work flows through the upstream pack selected by the operator.
+AgentOps prefers the official `gascity` build pack used by Maintainer City, but
+also supports the Agentic Coding Flywheel as an independent factory choice.
+Agents inside either factory consume AgentOps skills through their provider
+runtime's normal skill discovery.
 
-Operational scripts must remain bounded. They may materialize the pinned
-official pair, render a city, set up one worktree, invoke native GC commands,
-perform one delivery attempt, and stop the city. They must not mirror Beads,
-GC, Git, or GitHub state in a schema family, daemon, reducer, or receipt graph.
+Operational guidance must remain bounded. It may install a pinned upstream
+pack, configure providers, invoke native commands, observe runs, and stop a
+city. It must not mirror Beads, Gas City, Git, or GitHub state in an AgentOps
+schema family, daemon, reducer, receipt graph, formula, or role pack.
 
-The AgentOps pack composes the registry-pinned `gascity` workflow used by
-Maintainer City and binds its sibling role pack at the stock default-rig
-namespace, `gc.*`, while keeping `agentops-experiment` as its bounded default.
-Every graph-owning scope retains an unsuspended `core.control-dispatcher`; the
-optional Mayor is on-demand and no longer runs a v1.3 heartbeat workaround.
+For Gas City, install the registry-pinned `gascity` workflow at city scope and
+its sibling role pack at rig scope, preserving the stock `gc.*` namespace.
+Every graph-owning scope retains an unsuspended
+`core.control-dispatcher`. The upstream `gc.mayor` skill and
+`gc.run-operator` own guided coordination and formula launch.
 
-Release qualification uses deterministic toolchain, registry, pack, config,
-formula, scoped-dispatcher, and worktree checks before any model session. A live
-canary is disposable, uses required OTEL, and is repaired only from outside GC.
-Two failed canaries reject the release shape.
+Compatibility qualification uses deterministic toolchain, registry, import
+lock, config, formula, scoped-dispatcher, and worktree checks before any model
+session. A live canary is disposable, uses required OTEL, and is repaired only
+from outside Gas City. It qualifies the selected upstream pack plus AgentOps
+skill availability; it does not qualify an AgentOps-owned factory.
 
 Development is two-speed by design. The offline unit and lint contract is the
-inner loop. The pinned native bootstrap, formula preview and route, doctor, and
-quiescent teardown suite runs once at a candidate boundary. It does not launch
-model sessions. Only a green, freshly validated and merged candidate reaches a
-mixed-provider canary.
+inner loop. Native import, formula preview and route, doctor, and quiescent
+teardown checks run at a candidate boundary. Live model sessions remain an
+explicit compatibility test.

@@ -7,13 +7,53 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.4.0] - 2026-07-30
+
+AgentOps 3.4 is the **honest-contract release**. All 50 shipped skills went
+through an eight-wave contract overhaul — declared real effects, honest output
+contracts, closed artifact directories, authority claims stripped — and the
+factory boundary is now explicit: AgentOps no longer carries its own
+orchestration pack as the product path. The supported software factories are
+the upstream Gas City build pack and the Agentic Coding Flywheel; AgentOps
+supplies the skills and evidence discipline either factory executes.
+
+### Added
+
+- Negative-witness ratchet: every blocking gate must carry a test proving it
+  fails on what it detects, with a shrink-only grandfather list.
+- `ao gate check --dry-run`: a real plan-only mode that mutates nothing.
+
 ### Changed
 
-- Upgrade the optional Gas City factory from v1.3.5 to the checksummed v1.4.0
-  release, compose the registry-pinned `gascity` 0.1.6 workflows and roles used
-  by Maintainer City, remove the v1.3 Mayor heartbeat workaround, require
-  scope-local `core.control-dispatcher` propulsion, and expose the supervisor
-  dashboard plus pack-registry inspection through the managed invoke surface.
+- All 50 skill contracts overhauled across waves W2–W8: real effects, honest
+  output contracts, scratch-tier artifact directories, authority grants
+  stripped, fail-closed deadlines, corpus-level trigger separation.
+- `goals` renamed to `fitness` with a compatibility alias; `shared` retired to
+  a declared contract owner.
+- Fresh validation persistence is optional: `verdict.v2` is written only for a
+  caller request or a declared downstream consumer.
+- The README and `using-gc` skill present the upstream Gas City build pack and
+  the Agentic Coding Flywheel as the supported factory choices; `using-gc`
+  teaches stock `gascity` workflows and roles.
+- Gas City factory qualification pins and fail-closes on the checksummed
+  v1.4.0 release and the registry-pinned `gascity` 0.1.6 workflows and roles
+  used by Maintainer City, removes the v1.3 Mayor heartbeat workaround, and
+  requires scope-local `core.control-dispatcher` propulsion.
+- The eval subprocess runner is bounded and cancellable with process-group
+  reaping; eval id containment hardened and temp directories owned by the run.
+- ADR-0016 shipped-Python rule is enforced by a blocking gate.
+
+### Fixed
+
+- RPI and Validate no longer disagree on the intent-source digest.
+- `handoff` schema matches what the command writes; `dcg` guidance corrected.
+- The orchestration-skill-boundaries gate no longer references adapter files
+  deleted by the 3.3 single-pass refactor.
+
+### Deprecated
+
+- The in-repo Gas City factory prototype (`deploy/gc/`) is retired in place;
+  upstream factories are the supported path.
 
 ## [3.3.0] - 2026-07-23
 

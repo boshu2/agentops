@@ -1,13 +1,21 @@
-# AgentOps Gas City pack
+# Retired AgentOps Gas City pack prototype
 
-**Status: preview — this is the Gas City 1.4 supported-candidate flow.** Gas City 1.4 is
-pinned and deterministically qualified below. Promotion to supported remains
-gated on one clean mixed-provider canary over the final candidate.
+**Status: retired on 2026-07-29. Do not use this as the supported setup path.**
+AgentOps now recommends the upstream
+[`gascity` build pack](https://github.com/gastownhall/gascity-packs/tree/main/gascity)
+and contributes skills through the provider runtime instead of owning formulas
+or roles. See [`using-gc`](../../skills/using-gc/SKILL.md).
 
-This is a thin AgentOps role pack over official Gas City. Gas City owns
-sessions, routing, formulas, orders, and OTEL. Beads owns work and dependencies.
-Git owns candidate commits, AgentOps owns the final semantic verdict, and
-GitHub owns PR, CI, and merge state.
+The scripts and notes below are retained temporarily as migration and test
+evidence for the former prototype. They do not define current product behavior.
+
+## Historical prototype
+
+Gas City 1.4 is pinned and deterministically qualified below. This prototype
+was a thin AgentOps role pack over official Gas City. Gas City owns sessions,
+routing, formulas, orders, and OTEL. Beads owns work and dependencies. Git owns
+candidate commits, AgentOps owns the final semantic verdict, and GitHub owns PR,
+CI, and merge state.
 
 ## Materialize the official pair
 
