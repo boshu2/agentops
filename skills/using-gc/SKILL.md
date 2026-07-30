@@ -50,13 +50,29 @@ guided coordinator; `gc.run-operator` launches and supervises formulas.
 The normal AgentOps path is:
 
 1. Install and pin the upstream `gascity` workflow and rig-role imports.
-2. Add the project as a rig and make AgentOps skills visible to its provider
-   sessions.
+2. Add the project as a rig, prepare its stock maintainer runtime, and make
+   AgentOps skills visible to its provider sessions.
 3. Create a caller-owned bead and launch the upstream `build-basic`,
    continuation, review, or implementation formula that matches the available
    artifacts.
 4. Read run, session, bead, artifact, and verdict state. Completion is never
    inferred from chat or pane prose.
+
+From an AgentOps checkout, prepare and qualify a rig before its first build:
+
+```sh
+scripts/gc-maintainer-ops.sh prepare --city /path/to/city --rig /path/to/rig
+scripts/gc-maintainer-ops.sh check --city /path/to/city --rig /path/to/rig
+```
+
+The helper verifies the exact official workflow and role pins, snapshots the
+upstream validation scripts and schemas unchanged inside the rig's `.gc`
+runtime, installs only small AgentOps-owned wrappers at the formula check
+paths, selects an existing Python that can import PyYAML, and links the
+AgentOps skills into the city and rig Codex sinks. It never modifies the GC
+binary, cache, formulas, roles, or upstream pack. `check` issues only native
+inspection commands, writes no adapter files, and fails before model spend
+when that runtime contract is missing or drifted.
 
 ## Preferred pack and registries
 
@@ -111,7 +127,11 @@ Use skill gc.mayor
 
 AgentOps skills are tools available to those factory agents, not a replacement
 workflow. Explicitly name a skill in the bead or prompt when its behavior is
-required.
+required. The current upstream decomposition does not automatically propagate a
+free-form `Required Skills` section from the caller-owned source bead into every
+generated work item. Inspect the decomposition before implementation; put a
+required skill name on the actual work item or worker prompt when its use is an
+acceptance condition. Skill presence and skill invocation are different facts.
 
 ## Upgrade an existing city to 1.4
 
@@ -130,6 +150,10 @@ Then confirm:
 - `gc doctor` has no blocking failures;
 - each graph-owning rig has an unsuspended `core.control-dispatcher`;
 - imports and `packs.lock` resolve;
+- `gc-maintainer-ops.sh check` accepts the contained maintainer runtime and
+  AgentOps skill links;
+- on macOS, the supervisor LaunchAgent resolves to the same executable as the
+  selected `gc` binary;
 - old standalone-dashboard bookmarks or reverse proxies are removed.
 
 A stale registered city may block every start. Repair that city with `gc doctor
@@ -166,6 +190,19 @@ First classify the bead.
 Then capture the exact tmux pane named by session state and run `gc doctor`.
 Never repair a city from inside that city.
 
+The upstream pack may leave a future affinity-bound step assigned to a session
+that has already drain-acked. Diagnose this only from outside the city:
+
+```sh
+scripts/gc-maintainer-ops.sh recover-affinity \
+  --city /path/to/city --rig /path/to/rig
+```
+
+The default is a dry run. If every listed assignment is correct, repeat with
+`--apply`. The bounded repair only clears the assignee on a currently ready
+formula bead whose `gc.session_affinity=require` session is no longer live. It
+does not sling, retry, close, restart, or select work.
+
 ## Visibility: four layers
 
 1. **Supervisor/run state** — `gc dashboard`, run detail, `gc status`, and
@@ -181,6 +218,20 @@ Never repair a city from inside that city.
 
 When layers disagree, trust the more direct observation: pane over roster for a
 session wedge, bead/run state over prose for workflow completion.
+
+`gc status` may return a partial `no_agents_running` snapshot while
+`gc session list --json` shows a live Mayor or worker. Treat that as an
+observability disagreement, not permission to restart. Use session and pane
+truth for liveness, bead/run state for workflow progress, and Doctor for
+metabolism. A supervisor with abnormal CPU, a timed-out native stop, or a
+recurring hook rewrite remains an upstream operational defect; this helper
+reports it but never kills or patches GC processes.
+
+The caller-owned input bead and the generated workflow root have separate
+lifecycles. A successful `build-basic` run may close its workflow root while
+leaving the input bead open. Likewise, `push=false` and `open_pr=false` produce
+a successful no-op publish while the approved commit remains in its source
+anchor worktree. Neither state is semantic completion by itself.
 
 ## Boundaries
 
