@@ -168,6 +168,24 @@ Create the replacement from the upstream Gas City template, install its pinned
 imports, and verify it with `gc cities --json`, `gc --city <new-city> status`,
 and `gc --city <new-city> doctor --json`.
 
+## Orchestrating through the Mayor: the tending loop
+
+After handing intent to the Mayor, the orchestrator runs five verbs. Each verb
+has one owner; crossing owners is the recurring failure class this section
+exists to stop.
+
+| Verb | Owner | Surface |
+|---|---|---|
+| Monitor | orchestrator | `$API/runs/census` and `$API/runs/<run-id>` on a fixed cadence, plus `gc mail inbox` for Mayor replies. `failed > 0` in the census, a run in `failed`/`canceled`, or unread Mayor mail is the act signal; everything else is a tick. |
+| Observe | orchestrator | On an act signal, walk the visibility layers in order — census, run detail, bead graph, session roster, pane truth — and stop at the first layer that explains. Do not start at pane truth. |
+| Nudge | orchestrator, once | A `ready` bead: dispatch once to its `gc.run_target`. A routed bead with a live session: `gc session wake <run_target>` once. A second nudge on the same subject means the diagnosis is wrong — mail the Mayor instead. |
+| Redirect | Mayor | Priority, scope, cancellation, or model/provider changes travel by mail with bead/run ids. The orchestrator never re-slings, edits workflow beads, or patches a live run. |
+| Rework | GC first, then Mayor | Failed review findings re-enter the run through its native fix loop (`review_fix_formula`, default `fix-loop-base`); bounded gated retries are `gc converge` loops. Only a TERMINAL `failed`/`canceled` run — or a completed run whose result misses caller acceptance — goes back: mail the Mayor the run id and the failure evidence for re-decompose and relaunch. |
+
+Rework the orchestrator performs by hand (editing a failed run's worktree,
+re-slinging its formula, closing its beads) creates a second uncoordinated
+author for the same intent; the Mayor's relaunch then races it.
+
 ## Stall protocol
 
 First classify the bead.
