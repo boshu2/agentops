@@ -3,6 +3,8 @@
 # ship in the Go CLI (ADR-0016: skill logic ships in Go via ao; shell stays thin
 # glue). New callers should invoke `ao gc prepare|check|recover-affinity`
 # directly; this wrapper keeps older runbooks working from a repo checkout.
+# shellcheck disable=SC1007,SC1091
+. "$(CDPATH= cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib/preamble.sh"
 set -euo pipefail
 
 die() {
