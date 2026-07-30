@@ -7,6 +7,8 @@ factory="$root/packs/agentops-factory"
 executor="$root/packs/agentops-executor"
 cd "$root" || exit 2
 python3 -m unittest tests.python.test_gc33_thin_pack
+python3 -m unittest tests.python.test_gc_maintainer_ops
+bash -n "$root/scripts/gc-maintainer-ops.sh"
 for script in "$root"/deploy/gc/*.sh; do bash -n "$script"; done
 gc_bin="${GC_BIN:-}"
 if [ -n "$gc_bin" ]; then
