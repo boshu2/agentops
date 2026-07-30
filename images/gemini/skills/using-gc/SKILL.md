@@ -231,6 +231,20 @@ does not sling, retry, close, restart, or select work.
    `gc session list --json`. Run detail unifies the stage ladder, structured
    transcripts, token rate, and estimated burn rate. A roster may still report
    active while a provider is wedged.
+
+   Programmatic run status comes from the supervisor's typed run API — the
+   same data the dashboard renders. `gc status` prints the API base; neither
+   `gc status --json` nor any other CLI subcommand carries run objects.
+
+   ```sh
+   API="http://127.0.0.1:<port>/v0/city/<city-name>"
+   curl -s "$API/runs/<run-id>"   # {run_id, title, status, target, scope, started_at, updated_at}
+   curl -s "$API/runs/census"     # {status_counts: {pending, active, waiting, canceling, completed, failed, canceled, skipped}}
+   ```
+
+   Poll run status and census for progress; a nonzero `failed` count is the
+   first machine-readable failure signal. The dashboard's run page
+   (`/city/<city-name>/runs/<run-id>`) is the human view of the same objects.
 2. **Bead graph** — `gc bd --rig <rig> ready --json` and `show <id> --json`.
    This is workflow-state truth, but a claimed bead cannot reveal a wedged pane.
 3. **Pane truth** — `tmux -L <socket> capture-pane -pt <session>`. This exposes
