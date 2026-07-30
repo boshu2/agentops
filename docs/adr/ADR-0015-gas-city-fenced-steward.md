@@ -1,6 +1,7 @@
 # ADR-0015: Gas City Fenced Steward Factory
 
-- **Status:** Superseded on 2026-07-22 by the thin native pack boundary
+- **Status:** Historical; the 2026-07-22 thin-pack replacement was itself
+  superseded on 2026-07-29 by the upstream-pack, skills-only boundary
 - **Scope:** Historical record of the rejected GC33 control-plane expansion
 - **Current authority:** [Gas City reliability boundary](../operations/gas-city-reliability.md)
 - **Migration evidence:** [GC33 migration provenance](../contracts/gc33-migration-provenance.md)
@@ -44,3 +45,11 @@ The former implementation remains available in Git history, not in the active
 runtime. Development uses a fast offline contract and one opt-in native
 qualification at a candidate boundary. A live mixed-provider canary is allowed
 only after fresh validation and protected delivery.
+
+## Current direction
+
+AgentOps no longer offers an AgentOps-owned Gas City workflow or role pack as
+its supported path. Operators use the official `gascity` pack—or another
+independently selected software factory such as the Agentic Coding Flywheel—and
+make AgentOps skills available to that factory's agents. AgentOps owns the
+skills and semantic evidence boundary; the selected factory owns orchestration.

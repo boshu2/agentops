@@ -83,42 +83,31 @@ The default loop is one agent, one writer. When you need a fleet,
 [`ntm`](skills/ntm/SKILL.md), and [`using-gc`](skills/using-gc/SKILL.md)
 orchestrate multi-agent work. They dispatch; they do not own the verdict.
 
-### The Gas City pack (preview)
+### Choose a software factory
 
-[Gas City](https://github.com/gastownhall/gascity) runs teams of coding agents
-as long-lived, supervised sessions. The pack in
-[`deploy/gc/`](deploy/gc/README.md) stands up a "city" that runs the AgentOps
-loop end to end: workers implement in isolated worktrees, a fresh agent
-validates, a refiner merges to your repo's main branch. The installer fetches
-official checksummed Gas City and Beads binaries; you build nothing.
+AgentOps supplies skills and evidence contracts, not another software-factory
+runtime or a competing Gas City pack. Install the skills in the agent runtime
+used by the factory you choose; its Mayor, coordinator, and workers can then use
+`plan`, `implement`, `test`, `validate`, and the rest of the catalog.
 
-Gas City 1.4 runs the flow through a scope-local control dispatcher and exposes
-each formula as a dashboard/API run. The Mayor remains an optional on-demand
-human/agent door for inspection or one manual dispatch.
+Two factory stacks are supported:
 
-```bash
-deploy/gc/invoke.sh --city <city> create "task title"       # define work
-deploy/gc/invoke.sh --city <city> feed <bead-id>            # hand it to the city
-deploy/gc/invoke.sh --city <city> dashboard                 # print the run UI
-deploy/gc/invoke.sh --city <city> mayor tell "dispatch <bead-id>"
-```
+- [Gas City](https://github.com/gastownhall/gascity) — the preferred choice for
+  durable, supervised workflows. Use the upstream
+  [`gascity` build pack](https://github.com/gastownhall/gascity-packs/tree/main/gascity),
+  the workflow family used by Maintainer City. It owns formulas, roles,
+  worktrees, dispatch, draining, and run state. The
+  [`using-gc`](skills/using-gc/SKILL.md) skill covers installation, launch,
+  observation, and recovery.
+- Jeffrey Emanuel's
+  [Agentic Coding Flywheel](https://agent-flywheel.com) — a supported
+  alternative built from Beads, Agent Mail, NTM, and the wider Flywheel tool
+  stack. Use its native workflow and let its agents consume the same AgentOps
+  skills.
 
-The [`using-gc`](skills/using-gc/SKILL.md) skill is the operating manual,
-including the four observability layers and what to do when they disagree.
-**Preview:** pinned to official Gas City v1.4.0 and the registry-pinned
-`gascity` 0.1.6 workflow used by the public Maintainer City. Deterministic native
-qualification is required here; the preview label comes off after one clean
-mixed-provider canary over the final candidate.
-Setup and details: [`deploy/gc/README.md`](deploy/gc/README.md) and the
-[v3.3.0 release notes](https://github.com/boshu2/agentops/releases/tag/v3.3.0).
-
-AgentOps already borrows heavily from that ecosystem. Two stacks people run
-around the same loop:
-
-- [Gas City](https://github.com/gastownhall/gascity) — orchestration-builder for
-  multi-agent coding workflows
-- Jeffrey Emanuel's [Agentic Coding Flywheel](https://agent-flywheel.com) —
-  coordinated multi-agent tooling (mail, beads, NTM, and friends)
+AgentOps does not wrap either factory or translate factory completion into
+semantic PASS. When proof is required, a fresh `validate` context judges the
+exact candidate and evidence.
 
 ## Optional: `ao` CLI
 
