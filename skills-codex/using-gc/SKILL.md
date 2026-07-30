@@ -115,6 +115,13 @@ Or, in an interactive Mayor session:
 Use skill gc.mayor
 ```
 
+A multi-behavior intent arrives as a plan manifest (see plan's manifest mode):
+one caller-owned document with stable slugs, dependency edges, and per-child
+acceptance and write scopes, tracker IDs left `TBD`. Mail the Mayor the
+document path once it is on the rig's mainline; the Mayor materializes the
+epic and children from the manifest and owns their dispatch order. Reference
+example: `docs/plans/2026-07-30-ponytail-whole-repo-contraction.md`.
+
 Direct `gc sling` remains a debugging tool for a city with no live Mayor; a
 run started that way has no coordinator and the operator inherits its tending.
 
