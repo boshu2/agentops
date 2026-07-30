@@ -1,7 +1,7 @@
 {
   "image": "claude",
   "schema_version": "skill-image.v1",
-  "skill_count": 50,
+  "skill_count": 51,
   "skills": [
     {
       "disposition": "keep_specialist",
@@ -237,6 +237,11 @@
       "disposition": "keep_specialist",
       "path": "skills/toil-mining/",
       "slug": "toil-mining"
+    },
+    {
+      "disposition": "keep_optional_adapter",
+      "path": "skills/using-flywheel/",
+      "slug": "using-flywheel"
     },
     {
       "disposition": "keep_optional_adapter",

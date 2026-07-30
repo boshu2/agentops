@@ -51,6 +51,7 @@ graph LR
   swarm["swarm"]
   test["test"]
   toil_mining["toil-mining"]
+  using_flywheel["using-flywheel"]
   using_gc["using-gc"]
   validate["validate"]
   workflow_builder["workflow-builder"]
