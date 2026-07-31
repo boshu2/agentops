@@ -37,7 +37,7 @@ ao demo [flags]
 
 ### `ao init`
 
-Create local evidence and verdict directories. This command does not
+Create local evidence and verdict directories, then add one commented,
 
 ```
 ao init [flags]

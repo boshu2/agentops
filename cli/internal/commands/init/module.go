@@ -46,8 +46,22 @@ func (m Module) Command() *cobra.Command {
 	return &cobra.Command{
 		Use:   "init",
 		Short: "Create local AgentOps evidence directories",
-		Long: `Create local evidence and verdict directories. This command does not
-initialize Git, edit ignore files, install hooks, select work, or start a runtime.`,
+		Long: `Create local evidence and verdict directories, then add one commented,
+marker-delimited block to this directory's .gitignore (creating the file if it
+does not exist). The block ignores only machine-local scratch the loop writes:
+
+  .agents/ao/index/       derived search index
+  .agents/ao/sessions/    local session transcripts
+  .agents/ao/provenance/  machine-local provenance ledger
+  __pycache__/            Python bytecode caches
+
+It deliberately does NOT ignore .agents/ao/intents/ or .agents/ao/verdicts/:
+whether loop evidence belongs in version control is your repository's policy,
+not this CLI's. Delete the block to track everything.
+
+Running init again is safe — the block is appended once and never duplicated,
+and an edited block is left alone. This command does not initialize Git,
+install hooks, select work, or start a runtime.`,
 		Args:    cobra.NoArgs,
 		GroupID: "start",
 		RunE: func(cmd *cobra.Command, _ []string) error {

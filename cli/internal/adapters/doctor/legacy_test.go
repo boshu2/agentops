@@ -232,6 +232,158 @@ func TestCheckSkillLinksExactMissingAndStale(t *testing.T) {
 	}
 }
 
+// checkoutOnlyCommands are commands an installed user cannot run: `ao skills
+// link` resolves the repository's own skills/ directory and fails closed
+// outside a checkout, so naming it to a reader who has no checkout is advice
+// they cannot take. Observed live: doctor told an installed user to "run from
+// the AgentOps checkout and inspect `ao skills link --dry-run`".
+var checkoutOnlyCommands = []string{"ao skills link", "ao skills unlink", "from the AgentOps checkout", "from the repo checkout"}
+
+// TestCheckSkillLinks_InstalledUserAdviceIsActionable is the acceptance for the
+// audience defect: outside any agentops checkout, the Skill Links check may not
+// tell the reader to do something only a checkout owner can do. It must name
+// the affected root and a remedy performable from where the reader stands.
+func TestCheckSkillLinks_InstalledUserAdviceIsActionable(t *testing.T) {
+	home := t.TempDir()
+	portable := filepath.Join(home, ".agents", "skills")
+	if err := os.MkdirAll(portable, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	// A dangling link: the target was deleted (a skill retired upstream).
+	if err := os.Symlink(filepath.Join(t.TempDir(), "gone"), filepath.Join(portable, "retired")); err != nil {
+		t.Fatal(err)
+	}
+
+	check := CheckSkillLinks("", home)
+	if check.Status != quality.StatusWarn {
+		t.Fatalf("dangling portable link status = %q, want warn (%+v)", check.Status, check)
+	}
+	for _, banned := range checkoutOnlyCommands {
+		if strings.Contains(check.Detail, banned) {
+			t.Errorf("installed-user detail names checkout-only advice %q: %s", banned, check.Detail)
+		}
+		if strings.Contains(check.Fix, banned) {
+			t.Errorf("installed-user fix names checkout-only advice %q: %s", banned, check.Fix)
+		}
+	}
+	if !strings.Contains(check.Detail, "1 dangling") {
+		t.Errorf("detail does not report the dangling count: %s", check.Detail)
+	}
+	if !strings.Contains(check.Detail, portable) {
+		t.Errorf("detail does not name the affected root %s: %s", portable, check.Detail)
+	}
+	if !strings.Contains(check.Detail, "reinstall") {
+		t.Errorf("detail offers no remedy the reader can perform: %s", check.Detail)
+	}
+}
+
+// TestCountLiveSkillLinks_BrokenMeansDanglingOnly pins the semantics of
+// "broken" after the overcount fix: broken == the symlink does not resolve,
+// exactly what `find -L <root> -maxdepth 1 -type l` prints. The previous
+// implementation derived brokenness from a single stat of <link>/SKILL.md,
+// which also failed for links that resolve perfectly well but do not name a
+// skill package — so doctor could report "N broken" while a dangling-symlink
+// sweep of the same tree found fewer, or none.
+func TestCountLiveSkillLinks_BrokenMeansDanglingOnly(t *testing.T) {
+	source := t.TempDir()
+	root := t.TempDir()
+
+	mkSkill := func(name string) string {
+		dir := filepath.Join(source, name)
+		if err := os.MkdirAll(dir, 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(filepath.Join(dir, "SKILL.md"), []byte("# "+name+"\n"), 0o644); err != nil {
+			t.Fatal(err)
+		}
+		return dir
+	}
+	link := func(target, name string) {
+		if err := os.Symlink(target, filepath.Join(root, name)); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	// Live: resolves to a directory holding SKILL.md.
+	link(mkSkill("plan"), "plan")
+	link(mkSkill("validate"), "validate")
+	// Dangling: target does not exist. The ONLY broken condition.
+	link(filepath.Join(source, "deleted-upstream"), "retired")
+	// Foreign: resolves fine, but is not a skill package. Nothing to repair —
+	// counting this as broken is the overcount under test.
+	sharedDir := filepath.Join(source, "shared")
+	if err := os.MkdirAll(sharedDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	link(sharedDir, "shared")
+	// Foreign: a link to a regular FILE. <link>/SKILL.md cannot stat, but the
+	// link resolves — also not broken.
+	regular := filepath.Join(source, "notes.md")
+	if err := os.WriteFile(regular, []byte("x\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	link(regular, "notes.md")
+	// Not a link at all: a real directory (a plugin copy). Counted nowhere.
+	if err := os.MkdirAll(filepath.Join(root, "copied"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+
+	got := countLiveSkillLinks(root)
+	want := skillLinkCounts{Live: 2, Broken: 1, Foreign: 2}
+	if got != want {
+		t.Fatalf("countLiveSkillLinks = %+v, want %+v", got, want)
+	}
+}
+
+// TestCountLiveSkillLinks_AgreesWithDanglingSweep is the cross-check that
+// closes the reported contradiction ("doctor says 2 broken, find says 0
+// dangling"): the Broken count must equal an independent dangling-symlink
+// sweep of the same directory, computed here without touching production code.
+func TestCountLiveSkillLinks_AgreesWithDanglingSweep(t *testing.T) {
+	source := t.TempDir()
+	root := t.TempDir()
+	skill := filepath.Join(source, "plan")
+	if err := os.MkdirAll(skill, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(skill, "SKILL.md"), []byte("# plan\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	shared := filepath.Join(source, "shared")
+	if err := os.MkdirAll(shared, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	for target, name := range map[string]string{
+		skill:                            "plan",
+		shared:                           "shared",
+		filepath.Join(source, "vanished"): "vanished",
+	} {
+		if err := os.Symlink(target, filepath.Join(root, name)); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	entries, err := os.ReadDir(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	dangling := 0
+	for _, entry := range entries {
+		path := filepath.Join(root, entry.Name())
+		info, lerr := os.Lstat(path)
+		if lerr != nil || info.Mode()&os.ModeSymlink == 0 {
+			continue
+		}
+		if _, serr := os.Stat(path); serr != nil {
+			dangling++
+		}
+	}
+
+	if got := countLiveSkillLinks(root).Broken; got != dangling {
+		t.Fatalf("doctor Broken = %d but the dangling sweep found %d", got, dangling)
+	}
+}
+
 func TestBinaryFreshnessCheck(t *testing.T) {
 	root := makeFakeAgentopsRepo(t, "9.9.9")
 	if check := BinaryFreshnessCheck(filepath.Join(root, "cli", "cmd"), "9.9.9"); check.Status != "pass" {
