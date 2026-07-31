@@ -193,6 +193,133 @@ func equalSetChecks(a, b []string) bool {
 	return true
 }
 
+// shellcheckTriggeringScript is a shell body shellcheck flags at the gate's
+// own -S warning threshold (SC2164: an unguarded `cd`). SC2086-style quoting
+// findings are only "info" and would not trip the gate.
+const shellcheckTriggeringScript = "#!/usr/bin/env bash\ncd /tmp\n"
+
+// initRepoWithHeadCommit builds a temp git repo whose single HEAD commit adds
+// every path in files (rel -> body), returning the repo root. `--scope head`
+// in it yields exactly those paths — the shape of a user's first commit after
+// installing AgentOps into their own project.
+func initRepoWithHeadCommit(t *testing.T, files map[string]string) string {
+	t.Helper()
+	root := t.TempDir()
+	run := func(args ...string) {
+		c := exec.Command("git", args...)
+		c.Dir = root
+		c.Env = append(os.Environ(),
+			"GIT_CONFIG_GLOBAL=/dev/null", "GIT_CONFIG_SYSTEM=/dev/null",
+			"GIT_AUTHOR_NAME=t", "GIT_AUTHOR_EMAIL=t@example.com",
+			"GIT_COMMITTER_NAME=t", "GIT_COMMITTER_EMAIL=t@example.com")
+		if out, err := c.CombinedOutput(); err != nil {
+			t.Fatalf("git %v: %v\n%s", args, err, out)
+		}
+	}
+	run("init", "-q")
+	for rel, body := range files {
+		full := filepath.Join(root, rel)
+		if err := os.MkdirAll(filepath.Dir(full), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(full, []byte(body), 0o755); err != nil { // #nosec G306 -- fixture shell scripts.
+			t.Fatal(err)
+		}
+	}
+	run("add", "-A")
+	run("commit", "-q", "-m", "first commit")
+	return root
+}
+
+// runRealShellGate runs the REAL registered shell.shellcheck-changed check
+// through the real orchestrator against a fixture repo, exactly as `ao gate
+// check` does, and returns the report's exit code.
+func runRealShellGate(t *testing.T, root string) int {
+	t.Helper()
+	registered, ok := gates.Default.Get("shell.shellcheck-changed")
+	if !ok {
+		t.Fatal("shell.shellcheck-changed is not registered")
+	}
+	reg := gates.NewRegistry()
+	if err := reg.Add(registered); err != nil {
+		t.Fatal(err)
+	}
+	report, err := gates.NewOrchestrator(reg, nil, gates.NewGitChangedFiles(root), root).
+		Run(context.Background(), gates.RunOptions{Mode: gates.Fast, Scope: gates.ScopeHead})
+	if err != nil {
+		t.Fatalf("orchestrator Run: %v", err)
+	}
+	return report.ExitCode()
+}
+
+// TestRunShellcheckChanged_SkipsInstalledSkillCopies is the L2 acceptance for
+// the observed fresh-install failure: after `ao init` + a first commit, `ao
+// gate check` FAILED shellcheck on AgentOps' OWN installed skill scripts
+// (.agents/skills/cass/scripts/multi_machine_search.sh matched `**/*.sh`) — a
+// gate the user had no way to repair, on files they did not write. Installed
+// skill copies must not be gated; the user's own shell files still must be.
+func TestRunShellcheckChanged_SkipsInstalledSkillCopies(t *testing.T) {
+	if _, err := exec.LookPath("shellcheck"); err != nil {
+		t.Skip("shellcheck not installed")
+	}
+
+	installedOnly := initRepoWithHeadCommit(t, map[string]string{
+		"README.md": "hello\n",
+		".agents/skills/cass/scripts/multi_machine_search.sh": shellcheckTriggeringScript,
+		".claude/skills/plan/scripts/run.sh":                  shellcheckTriggeringScript,
+	})
+	if got := runRealShellGate(t, installedOnly); got != 0 {
+		t.Fatalf("exit code = %d, want 0 (installed skill copies must not fail a user's gate)", got)
+	}
+
+	// Negative witness: the same bad script under a first-party path still FAILs,
+	// so the exclusion narrows scope rather than defanging the gate.
+	firstParty := initRepoWithHeadCommit(t, map[string]string{
+		"README.md":           "hello\n",
+		"scripts/deploy.sh":   shellcheckTriggeringScript,
+		".agents/skills/x.sh": shellcheckTriggeringScript,
+	})
+	if got := runRealShellGate(t, firstParty); got != 1 {
+		t.Fatalf("exit code = %d, want 1 (a first-party shell file must still fail)", got)
+	}
+}
+
+// TestRegisteredNativeChecks_RepairHintsAreAudienceSafe is the registry-wide
+// invariant behind the second half of the same defect: the failing gate's
+// repair text said "inspect native gate shell.shellcheck-changed in
+// cli/internal/gates" — a path that does not exist on a machine that installed
+// the CLI.
+//
+// Scope is the NATIVE checks, and deliberately so. A script-backed check runs
+// only inside the agentops repository (ScriptRunner returns a first-class
+// not-applicable SKIP elsewhere, gates.NotApplicableReason), so its
+// `bash scripts/...` rerun hint addresses a reader who has the checkout by
+// construction. The native checks carry no such guard: they execute in a user's
+// own repository, so their repair text must be actionable from there.
+func TestRegisteredNativeChecks_RepairHintsAreAudienceSafe(t *testing.T) {
+	sourceOnly := []string{"cli/internal/", "cli/cmd/"}
+	checked := 0
+	for _, check := range gates.Default.All() {
+		if check.Run == nil {
+			continue
+		}
+		checked++
+		hint := check.EffectiveRepairHint()
+		if hint == "" {
+			t.Errorf("native check %q has an empty repair hint", check.ID)
+			continue
+		}
+		for _, needle := range sourceOnly {
+			if strings.Contains(hint, needle) {
+				t.Errorf("native check %q repair hint names source-checkout path %q: %s", check.ID, needle, hint)
+			}
+		}
+	}
+	if checked == 0 {
+		t.Fatal("no native checks registered; the invariant proved nothing")
+	}
+}
+
 func TestRunChangelogSync_ReadFailureFailsClosed(t *testing.T) {
 	root := t.TempDir()
 	if err := os.WriteFile(filepath.Join(root, "CHANGELOG.md"), []byte("current\n"), 0o644); err != nil {

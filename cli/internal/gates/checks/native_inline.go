@@ -16,14 +16,26 @@ import (
 // Native ports of the bash gate's INLINE checks (no backing script). ag-3n71 PB1.
 
 func init() {
-	gates.Register(gates.Check{ID: "go.vet", Tiers: gates.Fast | gates.Full, Match: []string{"cli/**", "go.mod", "go.sum"}, Blocking: true, Run: runGoVet})
-	gates.Register(gates.Check{ID: "changelog.sync", Tiers: gates.Fast | gates.Full, Match: []string{"CHANGELOG.md", "docs/CHANGELOG.md"}, Blocking: true, Run: runChangelogSync})
-	gates.Register(gates.Check{ID: "shell.shellcheck-changed", Tiers: gates.Fast | gates.Full, Match: []string{"**/*.sh"}, Blocking: true, Run: runShellcheckChanged})
-	gates.Register(gates.Check{ID: "learning.coherence", Tiers: gates.Fast | gates.Full, Match: learningRootGlobs, Blocking: true, Run: runLearningCoherence})
+	// Every native check carries an explicit RepairHint phrased as something the
+	// reader can do from wherever they are. The derived fallback names the gate
+	// ID and the published docs; neither form may name a path that exists only
+	// inside an agentops source checkout.
+	gates.Register(gates.Check{ID: "go.vet", Tiers: gates.Fast | gates.Full, Match: []string{"cli/**", "go.mod", "go.sum"}, Blocking: true, Run: runGoVet,
+		RepairHint: "run 'go vet ./...' in the cli module and fix what it reports"})
+	gates.Register(gates.Check{ID: "changelog.sync", Tiers: gates.Fast | gates.Full, Match: []string{"CHANGELOG.md", "docs/CHANGELOG.md"}, Blocking: true, Run: runChangelogSync,
+		RepairHint: "make the two changelog copies identical: cp CHANGELOG.md docs/CHANGELOG.md"})
+	gates.Register(gates.Check{ID: "shell.shellcheck-changed", Tiers: gates.Fast | gates.Full, Match: []string{"**/*.sh"}, Blocking: true, Run: runShellcheckChanged,
+		RepairHint: "run 'shellcheck -S warning <file>' on each reported shell file and fix the warnings (install shellcheck if it is missing)"})
+	gates.Register(gates.Check{ID: "learning.coherence", Tiers: gates.Fast | gates.Full, Match: learningRootGlobs, Blocking: true, Run: runLearningCoherence,
+		RepairHint: "give each reported learning file YAML frontmatter: a leading '---' line at the top"})
 }
 
 // changedFilesFor returns the routed change set, falling back to the diff vs
 // origin/main when the orchestrator didn't route (Full mode).
+// The orchestrator already filtered installed skill copies out of
+// rc.ChangedFiles; the origin/main fallback below computes its own set, so it
+// applies the same filter — otherwise a Full-mode run would shellcheck the
+// installed copies the routed path deliberately excluded.
 func changedFilesFor(ctx context.Context, rc gates.RunContext) []string {
 	if len(rc.ChangedFiles) > 0 {
 		return rc.ChangedFiles
@@ -43,7 +55,7 @@ func changedFilesFor(ctx context.Context, rc gates.RunContext) []string {
 			files = append(files, l)
 		}
 	}
-	return files
+	return gates.FilterInstalledSkillCopies(files)
 }
 
 func runGoVet(ctx context.Context, rc gates.RunContext) (ports.GateVerdict, error) {
