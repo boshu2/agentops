@@ -679,6 +679,7 @@ ao gc check [flags]
 
 ```
       --city string            Gas City root directory (required)
+      --codex-bin string       Codex CLI used to resolve hook trust identities (default: codex on PATH)
       --gc-bin string          Gas City 1.4 binary (default: gc on PATH)
   -h, --help                   help for check
       --pack-dir string        resolved official gascity pack root (normally auto-detected)
@@ -688,7 +689,7 @@ ao gc check [flags]
 
 #### `ao gc prepare`
 
-Stage the contained maintainer runtime and skill links for a rig
+Stage the contained maintainer runtime, skill links, and codex trust for a rig
 
 ```
 ao gc prepare [flags]
@@ -698,6 +699,7 @@ ao gc prepare [flags]
 
 ```
       --city string            Gas City root directory (required)
+      --codex-bin string       Codex CLI used to resolve hook trust identities (default: codex on PATH)
       --gc-bin string          Gas City 1.4 binary (default: gc on PATH)
   -h, --help                   help for prepare
       --pack-dir string        resolved official gascity pack root (normally auto-detected)

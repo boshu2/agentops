@@ -21,6 +21,7 @@ type Module struct {
 	city         string
 	rig          string
 	gcBin        string
+	codexBin     string
 	packDir      string
 	skillsSource string
 	apply        bool
@@ -41,9 +42,13 @@ func (m *Module) Command() *cobra.Command {
 
 prepare verifies the official workflow and rig-role pins, snapshots upstream
 validation assets unchanged under the rig's ignored .gc directory, installs
-AgentOps-owned check wrappers, and links AgentOps skills into city/rig Codex
-sinks. check is read-only. recover-affinity only considers ready formula beads
-with gc.session_affinity=require and never re-slings work.`,
+AgentOps-owned check wrappers, links AgentOps skills into city/rig Codex
+sinks, and pre-seeds Codex workspace and hook trust for every session directory
+that exists, so an agent pane there does not block on the interactive trust
+dialog. A session home created after prepare is covered by the next run, which
+prepare warns about. check is read-only and runs no codex subprocess.
+recover-affinity only considers ready formula beads with
+gc.session_affinity=require and never re-slings work.`,
 	}
 	cmd.AddCommand(m.prepareCommand(), m.checkCommand(), m.recoverAffinityCommand())
 	return cmd
@@ -54,6 +59,7 @@ func (m *Module) options() gcmaintainer.Options {
 		City:         m.city,
 		Rig:          m.rig,
 		GCBin:        m.gcBin,
+		CodexBin:     m.codexBin,
 		PackDir:      m.packDir,
 		SkillsSource: m.skillsSource,
 		Apply:        m.apply,
@@ -72,13 +78,16 @@ func (m *Module) effectiveApply() bool {
 }
 
 // addCommonFlags wires the flags shared by every maintainer operation.
-func (m *Module) addCommonFlags(cmd *cobra.Command, withSkillsSource bool) {
+// withRuntimeFlags adds the flags that only the runtime-owning operations
+// (prepare and check) need: the skills source and the Codex trust binary.
+func (m *Module) addCommonFlags(cmd *cobra.Command, withRuntimeFlags bool) {
 	cmd.Flags().StringVar(&m.city, "city", "", "Gas City root directory (required)")
 	cmd.Flags().StringVar(&m.rig, "rig", "", "rig directory inside the city (required)")
 	cmd.Flags().StringVar(&m.gcBin, "gc-bin", "", "Gas City 1.4 binary (default: gc on PATH)")
 	cmd.Flags().StringVar(&m.packDir, "pack-dir", "", "resolved official gascity pack root (normally auto-detected)")
-	if withSkillsSource {
+	if withRuntimeFlags {
 		cmd.Flags().StringVar(&m.skillsSource, "skills-source", "", "AgentOps skills directory to link from (default: enclosing checkout, then installed skills root)")
+		cmd.Flags().StringVar(&m.codexBin, "codex-bin", "", "Codex CLI used to resolve hook trust identities (default: codex on PATH)")
 	}
 	_ = cmd.MarkFlagRequired("city")
 	_ = cmd.MarkFlagRequired("rig")
@@ -87,7 +96,7 @@ func (m *Module) addCommonFlags(cmd *cobra.Command, withSkillsSource bool) {
 func (m *Module) prepareCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "prepare",
-		Short: "Stage the contained maintainer runtime and skill links for a rig",
+		Short: "Stage the contained maintainer runtime, skill links, and codex trust for a rig",
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if m.dryRun() {

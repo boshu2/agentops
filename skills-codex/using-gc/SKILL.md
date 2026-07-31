@@ -60,6 +60,51 @@ modifies the GC binary, cache, formulas, roles, or upstream pack. `check`
 issues only native inspection commands, writes no adapter files, and fails
 before model spend when that runtime contract is missing or drifted.
 
+`prepare` also pre-seeds Codex trust for every session directory that exists
+when it runs — the city and rig roots, each `.gc/agents/**` session home, and
+each rig worktree root — so a Codex session in one of those directories does
+not block on the interactive trust dialog. Both persisted layers are seeded in
+`$CODEX_HOME/config.toml`: workspace trust (`[projects."<dir>"] trust_level =
+"trusted"`), without which Codex silently reports that directory as having no
+hooks at all, and per-hook trust
+(`[hooks.state."<hooks.json>:<event>:<m>:<h>"] trusted_hash = "sha256:..."`),
+which is what the pack's per-provider `.codex/hooks.json` would otherwise
+prompt for. Hook digests are read back from Codex's own `hooks/list`, never
+recomputed.
+
+Trust is judged by value, not by the presence of a table. `prepare` appends
+only entries that are missing and refuses, naming the entry, when one exists
+but does not confer trust — an explicit `trust_level = "untrusted"`, a hook
+Codex reports as changed since it was trusted, a recorded hook Codex still
+rejects, or a hook recorded `enabled = false` (a disabled hook is not a trusted
+working hook). It never overwrites an operator decision, and re-running is a
+no-op. It also fails rather than continue if Codex returns an empty or
+unrecognized hook list. The trust store itself is never edited in place: the
+merged content is staged and parsed in a temp file first, then renamed in
+atomically, so no failure path can leave a corrupted Codex config.
+
+`ao gc check` verifies the same pre-seed from local state only — it runs no
+Codex subprocess and writes nothing, deriving each expected hook key from the
+directory's own `hooks.json` — and names the specific deficient directory or
+hook using the same rule `prepare` seeds to.
+
+**Two named limitations.**
+
+1. **`check` cannot detect a stale hash.** Because it never asks Codex, a
+   recorded `trusted_hash` that no longer matches the hook's current content
+   reads as satisfied and still raises the trust dialog in a real session. Only
+   `prepare` sees that — Codex reports the hook as changed and `prepare`
+   refuses. A green `check` therefore means "trust is recorded", not "trust is
+   fresh".
+2. **Homes created after `prepare` are not covered.** Discovery is by
+   filesystem marker, so the guarantee covers session directories that exist at
+   `prepare` time. A session home Gas City materializes *later* still carries
+   untrusted hooks on its first spawn; `prepare` names the configured agents
+   that have no home yet.
+
+The operational rule that follows from both: run `prepare`, start the city,
+then run `prepare` again (it is idempotent) before dispatching.
+
 ## Preferred pack and registries
 
 The built-in `main` registry catalogs official packs. The community registry is
@@ -255,7 +300,16 @@ does not sling, retry, close, restart, or select work.
 2. **Bead graph** — `gc bd --rig <rig> ready --json` and `show <id> --json`.
    This is workflow-state truth, but a claimed bead cannot reveal a wedged pane.
 3. **Pane truth** — `tmux -L <socket> capture-pane -pt <session>`. This exposes
-   trust prompts, update nags, API/DNS failures, and interactive wedges.
+   trust prompts, update nags, API/DNS failures, and interactive wedges. A pane
+   parked on Codex's `Do you trust the contents of this directory?` (or the
+   later `Press t to trust all` hooks dialog) means that session directory was
+   not pre-seeded — the workflow queues dispatches as pending with no active
+   worker and reports no error. Almost always the home was created after the
+   last `ao gc prepare`; re-run `prepare`, then restart that session.
+   `ao gc check` names the untrusted directory or hook before you spend a
+   dispatch on it. Gas City also appears to auto-answer this dialog by sending
+   keys into the pane, so a wedge may clear on its own — treat that as a race
+   you do not want to depend on, not as a reason to skip the pre-seed.
 4. **Health machinery** — `gc doctor`, `gc order history`, storage health, and
    events. This proves metabolism, not semantic acceptance.
 
