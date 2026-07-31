@@ -70,6 +70,17 @@ jobs:
       - name: Run retrieval quality smoke
         run: bash evals/agentops-core/fixtures/retrieval-quality-smoke.sh
 
+  # The release path is otherwise exercised only by a real `v*` tag push, which
+  # is how a retired .goreleaser.yml before-hook stayed broken for 20 days
+  # (docs/audits/release-readiness-v3.3.0.md, "Process lesson"). The nightly run
+  # is the STANDING lane: it catches breakage from toolchain/action drift that
+  # no diff-triggered gate can see.
+  release-path-smoke:
+    name: Release Path Smoke
+    uses: ./.github/workflows/release-path-smoke.yml
+    permissions:
+      contents: read
+
   security-toolchain:
     name: Security Toolchain
     runs-on: ubuntu-latest
@@ -134,7 +145,7 @@ jobs:
 
   summary:
     name: Summary
-    needs: [cli-tests, static-validation, retrieval-bench, security-toolchain]
+    needs: [cli-tests, static-validation, retrieval-bench, release-path-smoke, security-toolchain]
     if: always()
     runs-on: ubuntu-latest
     steps:
@@ -150,13 +161,14 @@ jobs:
             echo "| CLI tests | ${{ needs.cli-tests.result }} |"
             echo "| Static validation | ${{ needs.static-validation.result }} |"
             echo "| Retrieval bench | ${{ needs.retrieval-bench.result }} |"
+            echo "| Release path smoke | ${{ needs.release-path-smoke.result }} |"
             echo "| Security toolchain | ${{ needs.security-toolchain.result }} |"
             echo ""
             echo "Run completed at $(date -u)"
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Create issue on failure
-        if: needs.cli-tests.result == 'failure' || needs.static-validation.result == 'failure' || needs.retrieval-bench.result == 'failure' || needs.security-toolchain.result == 'failure'
+        if: needs.cli-tests.result == 'failure' || needs.static-validation.result == 'failure' || needs.retrieval-bench.result == 'failure' || needs.release-path-smoke.result == 'failure' || needs.security-toolchain.result == 'failure'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -168,6 +180,7 @@ jobs:
           | CLI tests | ${{ needs.cli-tests.result }} |
           | Static validation | ${{ needs.static-validation.result }} |
           | Retrieval bench | ${{ needs.retrieval-bench.result }} |
+          | Release path smoke | ${{ needs.release-path-smoke.result }} |
           | Security toolchain | ${{ needs.security-toolchain.result }} |
 
           **Run:** ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
@@ -188,5 +201,5 @@ jobs:
           fi
 
       - name: Check for failures
-        if: needs.cli-tests.result == 'failure' || needs.static-validation.result == 'failure' || needs.retrieval-bench.result == 'failure' || needs.security-toolchain.result == 'failure'
+        if: needs.cli-tests.result == 'failure' || needs.static-validation.result == 'failure' || needs.retrieval-bench.result == 'failure' || needs.release-path-smoke.result == 'failure' || needs.security-toolchain.result == 'failure'
         run: exit 1

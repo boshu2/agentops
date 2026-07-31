@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Between-releases release-path smoke: `.github/workflows/release-path-smoke.yml`
+  runs a full GoReleaser snapshot (`goreleaser release --snapshot --clean
+  --skip=publish`) nightly and on every change to a release-plumbing input
+  (`.goreleaser.yml`, `.github/workflows/release.yml`, `cli/go.mod`,
+  `cli/Formula/**`). This closes the process commitment recorded in
+  `docs/audits/release-readiness-v3.3.0.md`: the release path was previously
+  executed only by a real `v*` tag push, which is how a retired
+  `.goreleaser.yml` before-hook stayed broken for 20 days. The smoke and its
+  negative witness share one script (`tests/scripts/lib/release-snapshot-smoke.sh`,
+  proven able to fail by `tests/scripts/release-path-smoke.bats`).
+
 ## [3.5.0] - 2026-07-31
 
 AgentOps 3.5 hardens the factory boundary 3.4 drew. The Gas City maintainer
