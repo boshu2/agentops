@@ -1,0 +1,104 @@
+name: release-path-smoke
+
+# The release path (.goreleaser.yml -> Release Publisher) is otherwise executed
+# ONLY by a real `v*` tag push, so a break in it is invisible until the next
+# release. That is not hypothetical: a retired `before.hooks` entry sat broken
+# for 20 days and surfaced only at tag time
+# (docs/audits/release-readiness-v3.3.0.md, "Process lesson").
+#
+# This workflow runs the same GoReleaser pipeline the publisher runs — config
+# load, before-hooks, cross-platform builds, archives, checksums, Homebrew
+# formula render — with publishing skipped, BETWEEN releases:
+#   * nightly (via workflow_call from nightly.yml), and
+#   * on every PR / main push that touches a release-plumbing input.
+#
+# It shares one script with its negative witness (tests/scripts/lib/
+# release-snapshot-smoke.sh + tests/scripts/release-path-smoke.bats), so the
+# proof that the gate can FAIL is a proof about the path CI actually runs.
+#
+# Isolated from validate.yml on purpose (no shared job registry to drift), same
+# as workflow-scripts-syntax.yml.
+
+on:
+  pull_request:
+    paths:
+      - '.goreleaser.yml'
+      - '.github/workflows/release.yml'
+      - '.github/workflows/release-path-smoke.yml'
+      - 'cli/go.mod'
+      - 'cli/Formula/**'
+      - 'tests/scripts/lib/release-snapshot-smoke.sh'
+      - 'tests/scripts/release-path-smoke.bats'
+  push:
+    branches:
+      - main
+    paths:
+      - '.goreleaser.yml'
+      - '.github/workflows/release.yml'
+      - '.github/workflows/release-path-smoke.yml'
+      - 'cli/go.mod'
+      - 'cli/Formula/**'
+      - 'tests/scripts/lib/release-snapshot-smoke.sh'
+      - 'tests/scripts/release-path-smoke.bats'
+  workflow_call:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-path-smoke-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  snapshot:
+    name: GoReleaser snapshot (publish skipped)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          # GoReleaser reads git history to derive the snapshot version.
+          fetch-depth: 0
+
+      - name: Set up Go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: '1.26.5'
+          cache-dependency-path: cli/go.sum
+
+      # Same action + same version constraint the Release Publisher uses, so the
+      # smoke exercises the binary the publisher would actually get.
+      - name: Install GoReleaser
+        uses: goreleaser/goreleaser-action@f06c13b6b1a9625abc9e6e439d9c05a8f2190e94 # v7
+        with:
+          version: '~> v2'
+          install-only: true
+
+      - name: Install bats
+        run: sudo npm install -g bats@1.12.0
+
+      # Full six-target matrix (darwin/linux/windows x amd64/arm64) — the same
+      # set the publisher builds. Measured ~12s locally end-to-end for this
+      # config, so there is no reason to partial-build: a single-platform
+      # snapshot would leave five publisher targets unexercised.
+      - name: Release-path smoke (green leg)
+        run: bash tests/scripts/lib/release-snapshot-smoke.sh
+
+      # Negative witness: prove the smoke can FAIL. Runs the same script against
+      # a deliberately broken temp copy of .goreleaser.yml (retired before-hook,
+      # invalid build stanza) and asserts non-zero.
+      - name: Release-path smoke negative witness
+        env:
+          AGENTOPS_RELEASE_SMOKE_FULL: '1'
+        run: bats --print-output-on-failure tests/scripts/release-path-smoke.bats
+
+      - name: Summarize
+        if: always()
+        run: |
+          {
+            echo "## Release-path smoke"
+            echo ""
+            echo "GoReleaser snapshot of \`.goreleaser.yml\` with publishing skipped."
+            echo "Runs between releases so a broken release path cannot sit undetected until the next tag."
+          } >> "$GITHUB_STEP_SUMMARY"
