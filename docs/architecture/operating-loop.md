@@ -82,6 +82,16 @@ the evidence, and judges every acceptance criterion.
 - Complete evidence satisfying every criterion, with nonempty checked scope and
   evidence references: `PASS`.
 
+`not_checked` names in-scope acceptance surface that this validation did not
+verify. PASS asserts that the whole declared acceptance surface was verified,
+so a PASS carries no `not_checked` entries and any entry makes the result
+`NOT_PROVEN`. That strictness never rewards deleting an honest caveat, because
+each kind of scope limit has a home that survives inside a PASS: a bounded
+proof of a criterion goes in `criteria[].reason`, a declared non-goal stays in
+the intent source (optionally restated as an evidence-backed boundary
+criterion), and residual risk goes in the caller-facing report. The full table
+lives in `skills/validate/SKILL.md` under Scope disclosure.
+
 The validation result records criterion results, findings, evidence references,
 checked and not-checked surfaces, identities, and freshness. It carries no
 WARN, confidence, disposition, learning, owner, next action, retry, closure,
