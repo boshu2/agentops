@@ -32,9 +32,12 @@ and hash the same source. Do not make the model restate those facts in a packet.
 ## Workflow
 
 1. Resolve the intent source and choose one active behavior. When that source
-   is not already durable, have the runtime pass its exact bytes to
-   `python3 skills/validate/scripts/validate.py snapshot-intent --source -` and
-   use the returned `intent_ref` for later phases.
+   is not already durable, have the runtime pass its exact bytes to the
+   validate skill's `scripts/validate.py snapshot-intent --source -`, resolved
+   relative to wherever that skill package is installed (a repo checkout:
+   `skills/validate/scripts/validate.py`; an installed skill package:
+   `.agents/skills/validate/scripts/validate.py`), and use the returned
+   `intent_ref` for later phases.
 2. Route the work by type (see **Ground-truth routing**) and name its ground
    truth first. Then inspect only enough real context to make paths, interfaces,
    and evidence concrete. Existing research and specialist skills are advisory
