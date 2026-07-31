@@ -2,6 +2,7 @@ package gates
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -103,6 +104,29 @@ func ValidateRangeSpec(spec string) error {
 	return nil
 }
 
+// ErrUnbornHead is the sentinel returned when a scope needs a commit to
+// compare against but the repository has none yet (an "unborn HEAD": `git
+// init` with no commit, or a fresh orphan branch). Without it the caller sees
+// git's raw plumbing failure — "git show --name-only --pretty=format: HEAD:
+// exit status 128" — which reads as a broken tool rather than the ordinary,
+// self-inflicted state it is. Callers match with errors.Is.
+var ErrUnbornHead = errors.New("no commits yet (unborn HEAD)")
+
+// scopeNeedsHead reports whether a scope's git invocation resolves HEAD and so
+// cannot work before the first commit. `staged` is deliberately excluded: `git
+// diff --cached` compares the index against the empty tree when HEAD is
+// unborn, which is exactly the pre-first-commit escape hatch the friendly
+// message points at.
+func scopeNeedsHead(scope Scope) bool {
+	switch scope {
+	case ScopeHead, ScopeWorktree, ScopeUpstream:
+		return true
+	default:
+		_, isRange := ScopeRange(scope)
+		return isRange
+	}
+}
+
 // ChangedFilesPort reports the set of changed files (repo-relative, deduped)
 // for a scope.
 type ChangedFilesPort interface {
@@ -146,9 +170,35 @@ func (g *GitChangedFiles) Changed(ctx context.Context, scope Scope) ([]string, e
 	}
 	out, err := g.exec(ctx, args...)
 	if err != nil {
+		if unborn := g.unbornHeadError(ctx, scope); unborn != nil {
+			return nil, unborn
+		}
 		return nil, err
 	}
 	return dedupeLines(out), nil
+}
+
+// unbornHeadError translates a failed change-set computation into the friendly
+// ErrUnbornHead message when — and only when — the cause really is "this repo
+// has no commits yet". It runs only on the failure path, so the happy path
+// keeps its single git invocation.
+//
+// Both probes matter. `rev-parse --git-dir` separates "not a git repository at
+// all" (keep git's own error; the remedy is different) from "a repository
+// without commits". `rev-parse --verify HEAD` then confirms HEAD is
+// unresolvable rather than the scope's revision being bad (e.g. a range whose
+// base does not exist), which must keep its own error too.
+func (g *GitChangedFiles) unbornHeadError(ctx context.Context, scope Scope) error {
+	if !scopeNeedsHead(scope) {
+		return nil
+	}
+	if _, err := g.exec(ctx, "rev-parse", "--git-dir"); err != nil {
+		return nil
+	}
+	if _, err := g.exec(ctx, "rev-parse", "--verify", "HEAD"); err == nil {
+		return nil
+	}
+	return fmt.Errorf("%w: scope %q needs a commit to compare against — make an initial commit, or run with an explicit scope such as --scope staged after 'git add'", ErrUnbornHead, scope)
 }
 
 // scopeArgs maps a Scope to its git diff arguments.

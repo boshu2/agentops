@@ -123,14 +123,26 @@ func (c Check) WorkflowBacking() string {
 	return strings.Join(append([]string{backingInterpreter(artifactPath), artifactPath}, c.Args...), " ")
 }
 
+// GateDocsURL is the published page describing the deterministic check
+// registry. Repair hints point here instead of at a source path: a repair hint
+// is read by whoever runs `ao gate check`, and most of them installed the CLI
+// and have no agentops checkout to inspect.
+const GateDocsURL = "https://boshu2.github.io/agentops/CI-CD/"
+
 // EffectiveRepairHint returns an explicit repair hint or derives a rerun hint
 // from the check backing.
+//
+// The derived native-check hint names the gate ID and the published docs, never
+// a path inside the agentops source checkout: `cli/internal/gates` does not
+// exist on an installed user's machine, so "inspect native gate X in
+// cli/internal/gates" was an instruction they could not follow. A check with a
+// remedy the reader can actually perform should set RepairHint explicitly.
 func (c Check) EffectiveRepairHint() string {
 	if c.RepairHint != "" {
 		return c.RepairHint
 	}
 	if c.Run != nil {
-		return "inspect native gate " + c.ID + " in cli/internal/gates"
+		return "gate " + c.ID + " failed; see " + GateDocsURL
 	}
 	return c.WorkflowBacking()
 }

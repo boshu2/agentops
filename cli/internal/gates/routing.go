@@ -2,6 +2,56 @@ package gates
 
 import "strings"
 
+// installedSkillCopyPrefixes are the repo-relative roots where an agent
+// runtime materializes INSTALLED copies of skill packages (`ao skills link`,
+// a plugin install, or a vendored copy). Files under them are distribution
+// artifacts owned by their upstream source, never first-party source of the
+// repository being gated: a user who installs AgentOps into their own project
+// gets AgentOps' own shell scripts on disk, and the shellcheck gate then fails
+// the user's clean commit on OUR files with no repair the user can perform.
+//
+// The agentops repository itself tracks nothing under these prefixes (skills
+// live in skills/), so excluding them cannot hide a first-party change from a
+// gate — the #634 silent-drop hazard does not apply here.
+var installedSkillCopyPrefixes = []string{
+	".agents/skills/",
+	".claude/skills/",
+	".codex/skills/",
+	".gemini/skills/",
+	".cursor/skills/",
+	".pi/skills/",
+	"agent/skills/",
+}
+
+// IsInstalledSkillCopy reports whether a repo-relative path is an installed
+// copy of a skill package rather than repository source.
+func IsInstalledSkillCopy(path string) bool {
+	for _, prefix := range installedSkillCopyPrefixes {
+		if strings.HasPrefix(path, prefix) {
+			return true
+		}
+	}
+	return false
+}
+
+// FilterInstalledSkillCopies drops installed skill copies from a change set.
+// Every change set the gates consume passes through it — the orchestrator's
+// routed set and the native checks' own fallback set — so a check can never
+// see a path that routing already declared out of scope.
+func FilterInstalledSkillCopies(paths []string) []string {
+	kept := make([]string, 0, len(paths))
+	for _, p := range paths {
+		if IsInstalledSkillCopy(p) {
+			continue
+		}
+		kept = append(kept, p)
+	}
+	if len(kept) == 0 {
+		return nil
+	}
+	return kept
+}
+
 // matchGlob reports whether a repo-relative path matches a single glob pattern.
 // It supports the small set of forms the seed registry actually uses (ported
 // faithfully from the bash gate's anchored regexes):

@@ -159,6 +159,10 @@ func (o *Orchestrator) selectCheckPlans(ctx context.Context, opts RunOptions) ([
 	if err != nil {
 		return nil, nil, nil, fmt.Errorf("gates: detect changed files: %w", err)
 	}
+	// Installed skill copies are not repository source (see
+	// installedSkillCopyPrefixes). Drop them once, here, so both routing and the
+	// RunContext every check reads describe the same in-scope change set.
+	changed = FilterInstalledSkillCopies(changed)
 	if invalidatingFile := firstInvalidatingFile(changed); invalidatingFile != "" {
 		selected := make([]checkSelection, 0, len(tierMatched))
 		for _, c := range tierMatched {

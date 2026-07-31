@@ -96,6 +96,94 @@ func TestGitChangedFiles_ScopeMappingAndDedupe(t *testing.T) {
 	}
 }
 
+// TestIsInstalledSkillCopy pins which paths count as an installed copy of a
+// skill package. The false rows matter most: a path that merely CONTAINS one of
+// the runtime names, or the agentops repo's own skills/ source, must stay in
+// the change set — over-filtering silently drops a gate.
+func TestIsInstalledSkillCopy(t *testing.T) {
+	tests := []struct {
+		path string
+		want bool
+	}{
+		{".agents/skills/cass/scripts/multi_machine_search.sh", true},
+		{".claude/skills/plan/SKILL.md", true},
+		{".codex/skills/validate/scripts/run.sh", true},
+		{".gemini/skills/x/y.sh", true},
+		{".cursor/skills/x/y.sh", true},
+		{".pi/skills/x/y.sh", true},
+		{"agent/skills/x/y.sh", true},
+		{"skills/cass/scripts/multi_machine_search.sh", false},
+		{"scripts/check-x.sh", false},
+		{".agents/ao/learnings/x.md", false},
+		{".agents/handoff/x.md", false},
+		{"vendor/.claude/skills/x/y.sh", false},
+		{"cli/internal/skillsapp/link.go", false},
+	}
+	for _, tc := range tests {
+		if got := IsInstalledSkillCopy(tc.path); got != tc.want {
+			t.Errorf("IsInstalledSkillCopy(%q) = %v, want %v", tc.path, got, tc.want)
+		}
+	}
+}
+
+func TestFilterInstalledSkillCopies(t *testing.T) {
+	got := FilterInstalledSkillCopies([]string{
+		".agents/skills/cass/scripts/multi_machine_search.sh",
+		"scripts/deploy.sh",
+		".claude/skills/plan/SKILL.md",
+		"README.md",
+	})
+	want := []string{"scripts/deploy.sh", "README.md"}
+	if len(got) != len(want) {
+		t.Fatalf("FilterInstalledSkillCopies = %v, want %v", got, want)
+	}
+	for i := range want {
+		if got[i] != want[i] {
+			t.Fatalf("FilterInstalledSkillCopies[%d] = %q, want %q", i, got[i], want[i])
+		}
+	}
+	if got := FilterInstalledSkillCopies([]string{".claude/skills/plan/x.sh"}); got != nil {
+		t.Fatalf("all-filtered set = %v, want nil", got)
+	}
+}
+
+// TestOrchestrator_InstalledSkillCopiesDoNotRouteChecks is the routing-layer
+// acceptance: a commit whose ONLY shell file is an installed skill copy must
+// not select the shell gate. Observed live — a user's first commit after
+// installing AgentOps failed shellcheck on AgentOps' own
+// .agents/skills/cass/scripts/multi_machine_search.sh via the `**/*.sh` glob.
+func TestOrchestrator_InstalledSkillCopiesDoNotRouteChecks(t *testing.T) {
+	reg := NewRegistry()
+	shell := Check{ID: "shell.shellcheck-changed", Tiers: Fast, Match: []string{"**/*.sh"}, Backing: "noop.sh"}
+	if err := reg.Add(shell); err != nil {
+		t.Fatal(err)
+	}
+	files := fakeFiles{files: []string{".agents/skills/cass/scripts/multi_machine_search.sh", "README.md"}}
+	o := NewOrchestrator(reg, nil, files, t.TempDir())
+
+	selected, changed, err := o.Select(context.Background(), RunOptions{Mode: Fast, Scope: ScopeHead})
+	if err != nil {
+		t.Fatalf("Select: %v", err)
+	}
+	if len(selected) != 0 {
+		t.Fatalf("selected %v, want none (only in-scope change is README.md)", selected)
+	}
+	if !equalSet(changed, []string{"README.md"}) {
+		t.Fatalf("routed change set = %v, want [README.md]", changed)
+	}
+
+	// Negative witness: a first-party shell file still routes the same check, so
+	// the filter narrows the change set rather than disabling the gate.
+	o = NewOrchestrator(reg, nil, fakeFiles{files: []string{"scripts/deploy.sh"}}, t.TempDir())
+	selected, _, err = o.Select(context.Background(), RunOptions{Mode: Fast, Scope: ScopeHead})
+	if err != nil {
+		t.Fatalf("Select first-party: %v", err)
+	}
+	if len(selected) != 1 || selected[0].ID != shell.ID {
+		t.Fatalf("first-party shell change selected %v, want [%s]", selected, shell.ID)
+	}
+}
+
 func TestGitChangedFiles_UnknownScope(t *testing.T) {
 	g := NewGitChangedFiles("/repo")
 	if _, err := g.Changed(context.Background(), Scope("bogus")); err == nil {

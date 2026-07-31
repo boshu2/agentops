@@ -2,6 +2,7 @@ package gates
 
 import (
 	"context"
+	"errors"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -217,6 +218,110 @@ func TestGitChangedFiles_PollutedGitDirResolvesCorrectRepo(t *testing.T) {
 	want := []string{"correct_file.go"}
 	if !equalSet(got, want) {
 		t.Fatalf("polluted GIT_DIR routed changed-set to %v, want %v (from cmd.Dir repo)", got, want)
+	}
+}
+
+// initRepoNoCommits builds a temp git repository with an unborn HEAD: `git
+// init` ran, a file exists and may even be staged, but no commit was ever
+// made. This is the state of every repository between `git init` and the first
+// commit — the state a brand-new user of the CLI is in.
+func initRepoNoCommits(t *testing.T, stage bool) string {
+	t.Helper()
+	root := t.TempDir()
+	run := func(args ...string) {
+		c := exec.Command("git", args...)
+		c.Dir = root
+		c.Env = append(os.Environ(),
+			"GIT_CONFIG_GLOBAL=/dev/null", "GIT_CONFIG_SYSTEM=/dev/null",
+			"GIT_AUTHOR_NAME=t", "GIT_AUTHOR_EMAIL=t@example.com",
+			"GIT_COMMITTER_NAME=t", "GIT_COMMITTER_EMAIL=t@example.com")
+		if out, err := c.CombinedOutput(); err != nil {
+			t.Fatalf("git %v: %v\n%s", args, err, out)
+		}
+	}
+	run("init", "-q")
+	if err := os.WriteFile(filepath.Join(root, "README.md"), []byte("hello\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if stage {
+		run("add", "-A")
+	}
+	return root
+}
+
+// TestGitChangedFiles_UnbornHeadReportsFriendlyError is the acceptance for the
+// zero-commit crash: `ao gate check` in a freshly `git init`ed repo died with
+// the raw plumbing failure "git show --name-only --pretty=format: HEAD: exit
+// status 128", which reads as a broken tool rather than the ordinary state it
+// is. Every HEAD-resolving scope must instead return ErrUnbornHead with a
+// remedy, leaking no git exit status.
+func TestGitChangedFiles_UnbornHeadReportsFriendlyError(t *testing.T) {
+	root := initRepoNoCommits(t, false)
+	g := NewGitChangedFiles(root)
+
+	for _, scope := range []Scope{ScopeHead, ScopeWorktree, ScopeUpstream, Scope(ScopeRangePrefix + "HEAD~1..HEAD")} {
+		t.Run(string(scope), func(t *testing.T) {
+			_, err := g.Changed(context.Background(), scope)
+			if err == nil {
+				t.Fatalf("Changed(%q) on an unborn HEAD returned no error", scope)
+			}
+			if !errors.Is(err, ErrUnbornHead) {
+				t.Fatalf("Changed(%q) err = %v, want errors.Is ErrUnbornHead", scope, err)
+			}
+			for _, banned := range []string{"exit status", "--pretty=format"} {
+				if strings.Contains(err.Error(), banned) {
+					t.Errorf("Changed(%q) message leaks raw git plumbing %q: %v", scope, banned, err)
+				}
+			}
+			for _, want := range []string{"no commits yet", "initial commit", "--scope staged"} {
+				if !strings.Contains(err.Error(), want) {
+					t.Errorf("Changed(%q) message missing %q: %v", scope, want, err)
+				}
+			}
+		})
+	}
+}
+
+// TestGitChangedFiles_UnbornHeadStagedScopeWorks pins the escape hatch the
+// friendly message advertises: `--scope staged` compares the index against the
+// empty tree and works before the first commit. A message pointing at a scope
+// that also failed would be worse than the raw error.
+func TestGitChangedFiles_UnbornHeadStagedScopeWorks(t *testing.T) {
+	root := initRepoNoCommits(t, true)
+	got, err := NewGitChangedFiles(root).Changed(context.Background(), ScopeStaged)
+	if err != nil {
+		t.Fatalf("Changed(staged) on an unborn HEAD: %v", err)
+	}
+	if !equalSet(got, []string{"README.md"}) {
+		t.Fatalf("Changed(staged) = %v, want [README.md]", got)
+	}
+}
+
+// TestGitChangedFiles_NonRepoKeepsGitError is the negative witness for the
+// unborn-HEAD translation: outside a git repository the cause is different and
+// so is the remedy, so git's own error must survive rather than be relabelled
+// "no commits yet".
+func TestGitChangedFiles_NonRepoKeepsGitError(t *testing.T) {
+	_, err := NewGitChangedFiles(t.TempDir()).Changed(context.Background(), ScopeHead)
+	if err == nil {
+		t.Fatal("Changed outside a git repo returned no error")
+	}
+	if errors.Is(err, ErrUnbornHead) {
+		t.Fatalf("non-repo error was mislabelled as an unborn HEAD: %v", err)
+	}
+}
+
+// TestGitChangedFiles_BadRangeBaseKeepsGitError is the second negative witness:
+// in a repo WITH commits, a range naming a revision that does not exist is a
+// bad-scope error, not an unborn HEAD.
+func TestGitChangedFiles_BadRangeBaseKeepsGitError(t *testing.T) {
+	root, _, _, c2 := gitCommits(t)
+	_, err := NewGitChangedFiles(root).Changed(context.Background(), Scope(ScopeRangePrefix+"deadbeefdeadbeefdeadbeefdeadbeefdeadbeef.."+c2))
+	if err == nil {
+		t.Fatal("Changed with a nonexistent range base returned no error")
+	}
+	if errors.Is(err, ErrUnbornHead) {
+		t.Fatalf("bad-range error was mislabelled as an unborn HEAD: %v", err)
 	}
 }
 
