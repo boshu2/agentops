@@ -85,14 +85,20 @@ func CheckSkillLinks(repoRoot, home string) quality.Check {
 	}
 	if repoRoot == "" {
 		portable := filepath.Join(home, ".agents", "skills")
-		live, broken := countLiveSkillLinks(portable)
-		if broken > 0 {
+		counts := countLiveSkillLinks(portable)
+		if counts.Broken > 0 {
 			check.Status = quality.StatusWarn
-			check.Detail = fmt.Sprintf("%d live portable skill link(s), %d broken; run from the AgentOps checkout and inspect `ao skills link --dry-run`", live, broken)
+			// Installed-user audience: no agentops checkout exists here, so the
+			// remedy must be performable from where the reader stands. `ao skills
+			// link` is checkout-only (it resolves the repo's skills/ dir and fails
+			// closed outside it), so naming it here was advice the reader could not
+			// take. Removing the dead links is the whole fix; reinstalling restores
+			// them from whichever install method placed them.
+			check.Detail = fmt.Sprintf("%d live portable skill link(s), %d dangling (target no longer exists) under %s; remove the dangling link(s), then reinstall skills the way you installed them (plugin, brew, or npx)", counts.Live, counts.Broken, portable)
 			return check
 		}
 		check.Status = quality.StatusInfo
-		check.Detail = fmt.Sprintf("%d live portable skill link(s); exact source identity is checked from an AgentOps checkout", live)
+		check.Detail = fmt.Sprintf("%d live portable skill link(s); exact source identity is checked from an AgentOps checkout", counts.Live)
 		return check
 	}
 
@@ -198,10 +204,38 @@ func staleLinksToSource(dest, source string, canonical []string) int {
 	return stale
 }
 
-func countLiveSkillLinks(dir string) (live, broken int) {
+// skillLinkCounts is the tri-state census of a portable skill root. The three
+// buckets are deliberately distinct because they have three different remedies.
+type skillLinkCounts struct {
+	// Live is a symlink that resolves to a directory containing SKILL.md — a
+	// working skill.
+	Live int
+	// Broken is a DANGLING symlink: the target path does not exist. This is the
+	// only condition doctor reports as broken, and it is exactly what
+	// `find -L <root> -maxdepth 1 -type l` prints.
+	Broken int
+	// Foreign is a symlink that RESOLVES fine but does not name a skill package
+	// (no SKILL.md — e.g. a link to a shared reference dir, or to a file). It is
+	// not broken: nothing is dangling and nothing needs repair. Counting it as
+	// broken is the overcount this type exists to prevent — doctor reported
+	// "2 broken" while a dangling-symlink sweep of the same tree found none.
+	Foreign int
+}
+
+// countLiveSkillLinks censuses the symlinks directly under dir.
+//
+// "Broken" means dangling, and only dangling. The previous implementation
+// derived brokenness from a single os.Stat(<link>/SKILL.md) probe, which fails
+// for three unrelated reasons — the link dangles, the link resolves to
+// something that is not a skill package, or the target directory is
+// unreadable — and reported all three as broken. Non-symlink entries (a real
+// directory installed by a plugin or copied in by hand) are not links and are
+// counted in no bucket.
+func countLiveSkillLinks(dir string) skillLinkCounts {
+	var counts skillLinkCounts
 	entries, err := os.ReadDir(dir)
 	if err != nil {
-		return 0, 0
+		return counts
 	}
 	for _, entry := range entries {
 		path := filepath.Join(dir, entry.Name())
@@ -209,13 +243,18 @@ func countLiveSkillLinks(dir string) (live, broken int) {
 		if err != nil || info.Mode()&os.ModeSymlink == 0 {
 			continue
 		}
-		if _, err := os.Stat(filepath.Join(path, "SKILL.md")); err != nil {
-			broken++
-		} else {
-			live++
+		// os.Stat follows the link: an error here is the link failing to resolve.
+		if _, err := os.Stat(path); err != nil {
+			counts.Broken++
+			continue
 		}
+		if _, err := os.Stat(filepath.Join(path, "SKILL.md")); err != nil {
+			counts.Foreign++
+			continue
+		}
+		counts.Live++
 	}
-	return live, broken
+	return counts
 }
 
 const agentopsModuleLine = "module github.com/boshu2/agentops/cli"
