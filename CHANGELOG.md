@@ -7,6 +7,60 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.5.0] - 2026-07-31
+
+AgentOps 3.5 hardens the factory boundary 3.4 drew. The Gas City maintainer
+operations ship in the Go CLI as the `ao gc` command family, the operating
+doctrine for driving a factory through its coordinator is encoded in the
+runtime surfaces (the Mayor authors workflow beads and dispatches; the
+operator authors intent, mails, reads state, and judges), `plan` gains a
+substrate-neutral manifest mode for multi-behavior handoffs, and the verdict
+contract stops punishing honest scope disclosure.
+
+### Added
+
+- `ao gc` command family: `prepare`, read-only `check`, and
+  dry-run-by-default `recover-affinity` port the Gas City maintainer
+  operations into the CLI (ADR-0016); `scripts/gc-maintainer-ops.sh` remains
+  as a thin wrapper.
+- `plan` manifest mode: shape N bounded behaviors as one caller-owned
+  specification manifest (stable slugs, dependency edges, per-child
+  acceptance and write scopes, tracker IDs `TBD`) authoring zero beads; the
+  executing substrate materializes tracker state.
+- `using-gc` documents the supervisor's typed run-status API (run detail and
+  census endpoints) and the five-verb tending loop (monitor, observe, nudge,
+  redirect, rework) with one owner per verb.
+- `ao init` scaffolds a marker-delimited `.gitignore` block covering
+  machine-local loop scratch while leaving intents and verdicts trackable;
+  idempotent across re-runs.
+
+### Changed
+
+- Factory operating doctrine in `using-gc` and `AGENTS.md`: work enters a city
+  through the Mayor, which authors workflow beads and owns dispatch; direct
+  `gc sling` is demoted to a no-live-Mayor debugging tool; the operator lane
+  is a closed set and pack-owned session lifecycle belongs to the reconciler.
+- `rpi` states that factory work enters through the factory's coordinator;
+  RPI hands over intent and never dispatches factory runs itself.
+
+### Fixed
+
+- The verdict tool no longer pays validators to delete caveats: declared
+  non-goals, bounded criterion proofs, and residual risks have documented
+  disclosure homes; the PASS integrity finding names where each caveat
+  belongs instead of failing silently; `store-verdict` errors name the
+  allowed criteria fields.
+- Loop skill docs work verbatim in installed trees: install-agnostic
+  `validate.py` paths in `plan` and `validate`, real `manifest` flags
+  documented, the `rpi` report shape inlined instead of linking an unshipped
+  schema, and self-contained examples replace internal digests.
+- `ao gate check` explains an unborn HEAD instead of surfacing a raw git
+  exit-128; installed skill copies are excluded from user-repo gate scope;
+  native-check repair hints no longer reference source-checkout paths.
+- `ao doctor` gives installed users actionable advice without checkout-only
+  commands, and the skill-link census is tri-state so only genuinely dangling
+  links count as broken.
+
 ## [3.4.0] - 2026-07-30
 
 AgentOps 3.4 is the **honest-contract release**. All 50 shipped skills went
