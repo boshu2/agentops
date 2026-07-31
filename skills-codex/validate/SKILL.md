@@ -49,10 +49,53 @@ fresh context produced the PASS (`e9b6cdb8...37b9`). If a mutating check is
 genuinely required by acceptance, run it against a disposable copy or a
 committed subject, never the judged working tree.
 
+## Scope disclosure
+
+`not_checked` has exactly one meaning: **in-scope acceptance surface this
+validation did not verify**. PASS asserts that the whole declared acceptance
+surface was verified, so a PASS carries no `not_checked` entries; the helper
+refuses one and records a `validate.integrity` finding.
+
+That rule never pays for deleting an honest caveat, because every kind of scope
+limit has a home that survives inside a PASS:
+
+| Scope limit | Home | Example |
+|---|---|---|
+| A criterion proven by a bounded check | `criteria[].reason` on that criterion | "proven by the unit suite; the full integration matrix was not replayed" |
+| A declared non-goal or out-of-scope area | the intent source's non-goals, optionally restated as an evidence-backed boundary criterion in `criteria` | "`cli/**` is a declared non-goal; the diff proves it untouched" |
+| Residual risk or judgment caveat | the caller-facing report | "the migration path is untested against pre-3.0 stores" |
+| Acceptance that genuinely went unverified | `not_checked`, and the result is `NOT_PROVEN` rather than PASS | "criterion 3 needs hardware this context cannot reach" |
+
+Emptying `not_checked` to obtain PASS is a contract violation, not a
+workaround. If acceptance really went unverified, the honest result is
+`NOT_PROVEN`. If the entry was never acceptance in the first place, it belongs
+in one of the other homes, where it stays visible in the stored artifact
+instead of being deleted.
+
+## Helper commands
+
+The helper ships beside this file. Invoke it through this skill's own
+directory rather than a checkout-relative path: `$SKILL_DIR` is the directory
+containing this `SKILL.md` — `skills/validate/` in a repository checkout,
+`.agents/skills/validate/` in an installed runtime.
+
+| Command | Required | Optional |
+|---|---|---|
+| `manifest` | `--root <dir>`, `--include <path>` (repeatable, at least one) | `--exclude <path-or-glob>` (repeatable), `--base-manifest <file>`, `--git-metadata-json <json>`, `--output <file>` |
+| `verify-manifest` | `--root <dir>`, `--manifest <file>` | `--base-manifest <file>` |
+| `snapshot-intent` | `--source <file>` (`-` reads stdin) | `--workspace <dir>`, `--intent-dir <dir>` |
+| `digest` | `<json-file>` positional | none |
+| `store-verdict` | `--draft`, `--intent-source`, `--subject-manifest`, `--author-context-id`, `--validator-context-id`, `--freshness-source <runtime\|caller>`, `--freshness-attester-id`, `--scope-result <PASS\|FAIL\|NOT_PROVEN>` | `--workspace <dir>`, `--verdict-dir <dir>` |
+
+```sh
+python3 "$SKILL_DIR/scripts/validate.py" manifest \
+  --root . --include skills/validate --exclude '**/*.log' --output manifest.json
+```
+
 ## Workflow
 
-1. Recompute and compare `subject-manifest.v1` using
-   `python3 skills/validate/scripts/validate.py manifest`. The helper uses only
+1. Recompute and compare `subject-manifest.v1` with the `manifest` command
+   above (`--root` plus at least one `--include`). The helper uses only
    filesystem content; Git commit/tree IDs are optional metadata. Derive the
    manifest at the start of validation and re-derive it at the end; any
    mismatch between the two is subject mutation and returns `NOT_PROVEN`.
@@ -67,15 +110,19 @@ committed subject, never the judged working tree.
    claims, not evidence: re-execute the claimed proofs that bear on acceptance
    (see the freshness rules below for when a digest-bound receipt suffices).
    Judge every acceptance criterion and record criterion-level results,
-   findings, evidence references, `checked`, and `not_checked`.
+   findings, evidence references, `checked`, and any acceptance surface that
+   went unverified in `not_checked` (see Scope disclosure).
 5. Choose exactly one semantic result: `PASS`, `FAIL`, or `NOT_PROVEN`. Return
    it with criterion results, findings, evidence references, `checked`,
    `not_checked`, the acceptance and subject identities, distinct author and
    validator context IDs, and the freshness attestation. PASS requires distinct
    identities, explicit freshness, nonempty checked scope, top-level evidence,
-   and evidence for every criterion.
+   evidence for every criterion, and an empty `not_checked`; route bounded
+   proofs, declared non-goals, and residual risk to the homes named in Scope
+   disclosure rather than deleting them or downgrading a proven result.
 6. Only when the caller requests machine-readable evidence or a declared
-   downstream consumer requires it, persist canonical `verdict.v2` with
+   downstream consumer requires it, persist canonical `verdict.v2` with the
+   helper's
    `store-verdict --draft <draft.json> --intent-source <resolved-intent>
    --subject-manifest <manifest.json> --author-context-id <id>
    --validator-context-id <id> --freshness-source <runtime|caller>

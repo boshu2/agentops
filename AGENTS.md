@@ -133,6 +133,12 @@ AgentOps work ownership.
 
 Inspect the final subject, map acceptance to evidence, disclose `checked` and
 `not_checked`, and obtain one fresh validation result over the exact content.
-Include a verdict reference only when persistence was requested. Report residual
-risk plainly. Git status, pushing, merging, release, and rollback are handled
-by the caller's repository policy, outside semantic completion.
+`not_checked` names in-scope acceptance surface that went unverified, so a PASS
+has none by construction and any entry makes the result `NOT_PROVEN`. Scope
+limits are disclosed, never deleted: a bounded proof of a criterion belongs in
+that criterion's `reason`, a declared non-goal belongs to the intent source
+(optionally restated as an evidence-backed boundary criterion), and residual
+risk belongs in this report. Include a verdict reference only when persistence
+was requested. Report residual risk plainly. Git status, pushing, merging,
+release, and rollback are handled by the caller's repository policy, outside
+semantic completion.
