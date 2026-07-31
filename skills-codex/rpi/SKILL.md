@@ -83,11 +83,13 @@ run — report `NOT_BUILT` when no implementation subject exists yet;
 when a subject already exists, stop and report its current status without
 dispatching further lanes. Neither breaker dispatches a repair revision. An
 orchestration without a declared envelope does not converge; it accretes
-lanes. The 2026-07-15
-heal-skill fold ran three intent revisions
-(`.agents/ao/intents/sha256/26a4f2be...eb48` lineage) and a `NOT_PROVEN` then
-PASS verdict pair (`.agents/ao/verdicts/sha256/b6e759dd...cb6a`,
-`e9b6cdb8...37b9`) before an enforced two-stop checkpoint ended the wave.
+lanes. For example, a plan that keeps failing acceptance on the same criterion
+might tempt three intent revisions in a row
+(`.agents/ao/intents/sha256/<rev1>...` superseded by `<rev2>...` superseded by
+`<rev3>...`) chasing a `NOT_PROVEN` then a second `NOT_PROVEN`
+(`.agents/ao/verdicts/sha256/<verdict1>...`, `<verdict2>...`) — the declared
+envelope's two-stop checkpoint ends the wave there instead of dispatching a
+third attempt.
 
 Delegate with minimal context: a lane receives the frozen intent reference and
 the established facts it needs, never the orchestrator's full conversation
@@ -122,10 +124,30 @@ RPI has one required report surface and one optional representation:
 
 1. **Interactive response:** return the result to the caller in natural
    language. This is the default assistant response.
-2. **Machine artifact:** return or persist the exact
-   [`rpi-report.v1`](../../schemas/rpi-report.v1.schema.json) object only when
-   the caller requests machine-readable evidence or a declared adapter consumes
-   it.
+2. **Machine artifact:** return or persist the exact `rpi-report.v1` object
+   only when the caller requests machine-readable evidence or a declared
+   adapter consumes it. The schema ships in a repo checkout at
+   `schemas/rpi-report.v1.schema.json`; the minimal required shape is:
+
+   ```json
+   {
+     "schema_version": "rpi-report.v1",
+     "status": "PASS",
+     "intent_ref": ".agents/ao/intents/sha256/<64-hex-digest>.intent",
+     "acceptance_digest": "<64-hex-char-sha256-or-null>",
+     "subject_manifest_digest": "<64-hex-char-sha256-or-null>",
+     "verdict_ref": "<verdict-location-or-null>",
+     "verdict_digest": "<64-hex-char-sha256-or-null>",
+     "checked": ["<criterion satisfied by evidence>"],
+     "not_checked": ["<criterion not covered>"]
+   }
+   ```
+
+   `status` is one of `PASS | FAIL | NOT_PROVEN | NOT_PLANNED | NOT_BUILT`; the
+   three digest fields, when present, are 64-character lowercase hex SHA-256
+   strings; `checked` and `not_checked` are arrays of strings. All nine keys
+   are required (use `null` for an inapplicable ref or digest), and no
+   additional properties are allowed.
 
 Lead the interactive response with the status and one sentence stating the
 caller-visible outcome. Lead with the subject, not the process: production

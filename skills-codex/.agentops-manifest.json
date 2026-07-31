@@ -501,8 +501,8 @@
     {
       "name": "plan",
       "source_skill": "skills/plan",
-      "source_hash": "1daf1e1217f13de0dcec04c630823cbd8f99be89109071d204b0c8622b359b4c",
-      "generated_hash": "df6fbe2aa4c8d76178aeda56d99ef2f1eec857ee50c8c4a9c3c2ec3499bebce6"
+      "source_hash": "cac2270ad512a4a98545188d4d0226cb20b7ee171869a26087aa54b4214b6e94",
+      "generated_hash": "13442700ba62845ded07bc8dbb4753ad76f03d839a24ac60bb1d269f9de3edf8"
     },
     {
       "name": "postmortem",
@@ -555,8 +555,8 @@
     {
       "name": "rpi",
       "source_skill": "skills/rpi",
-      "source_hash": "db1f499ecbeef631e579117df746e319ef15840ac41c28cd65248bdfde4069d0",
-      "generated_hash": "09fe5c875800bd1ebbe86b8b8a586492e62062f743037f24d5b65782e1463a8d"
+      "source_hash": "d15e26926e5f9e91a222ed53f8fba5cd01d13b47fdf7664fb2ea1a33dd2cebe3",
+      "generated_hash": "fbe0cfd52384650ebb4fc2de73bb09afb1feef3570ba53fae1043714b09280ac"
     },
     {
       "name": "sbh",

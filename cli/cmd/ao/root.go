@@ -38,8 +38,10 @@ For AI agents:
   ao robot-docs       Paste-ready agent handbook.
   Append --json to any read-side command for structured output.
 
-If a command you relied on is gone, see docs/MIGRATION.md — every removed
+If a command you relied on is gone, see
+https://github.com/boshu2/agentops/blob/main/docs/MIGRATION.md — every removed
 surface has a row naming its replacement (and the restore path when one exists).
+A repository checkout also has this at docs/MIGRATION.md.
 
 Use "ao <command> --help" for more information about a command.`,
 	SilenceUsage: true,
