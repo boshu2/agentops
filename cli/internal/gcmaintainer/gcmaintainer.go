@@ -66,8 +66,9 @@ type ops struct {
 	packDir   string
 	pythonBin string
 	// codexBin, codexHome, and codexConfig locate the Codex trust store that
-	// prepare pre-seeds so no agent session ever meets the trust dialog.
-	// codexBin is empty when no Codex CLI is installed.
+	// prepare pre-seeds for session directories that exist when it runs. Homes
+	// materialized later require another prepare before dispatch. codexBin is
+	// empty when no Codex CLI is installed.
 	codexBin    string
 	codexHome   string
 	codexConfig string

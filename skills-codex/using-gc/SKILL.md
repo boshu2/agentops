@@ -80,8 +80,8 @@ rejects, or a hook recorded `enabled = false` (a disabled hook is not a trusted
 working hook). It never overwrites an operator decision, and re-running is a
 no-op. It also fails rather than continue if Codex returns an empty or
 unrecognized hook list. The trust store itself is never edited in place: the
-merged content is staged and parsed in a temp file first, then renamed in
-atomically, so no failure path can leave a corrupted Codex config.
+merged content is parsed in memory first, then installed with the CLI's durable
+atomic writer, so no failure path can leave a partially written Codex config.
 
 `ao gc check` verifies the same pre-seed from local state only — it runs no
 Codex subprocess and writes nothing, deriving each expected hook key from the

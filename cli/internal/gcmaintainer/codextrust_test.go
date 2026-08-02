@@ -236,7 +236,7 @@ func TestAppendCodexConfig_LeavesTheOriginalIntactWhenTheMergeWouldNotParse(t *t
 	if _, err := readCodexTrustStore(path); err != nil {
 		t.Fatalf("original config no longer parses: %v", err)
 	}
-	// No debris: neither the staged temp file nor a stale backup survives.
+	// No debris from a rejected atomic write survives.
 	entries, err := os.ReadDir(filepath.Dir(path))
 	if err != nil {
 		t.Fatalf("read dir: %v", err)
@@ -248,7 +248,7 @@ func TestAppendCodexConfig_LeavesTheOriginalIntactWhenTheMergeWouldNotParse(t *t
 	}
 }
 
-func TestAppendCodexConfig_PreservesModeAndLeavesNoBackupOnSuccess(t *testing.T) {
+func TestAppendCodexConfig_PreservesModeAndLeavesNoDebrisOnSuccess(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "config.toml")
 	mustWrite(t, path, "[projects.\"/a\"]\ntrust_level = \"trusted\"\n")
 	if err := os.Chmod(path, 0o640); err != nil {
@@ -265,8 +265,14 @@ func TestAppendCodexConfig_PreservesModeAndLeavesNoBackupOnSuccess(t *testing.T)
 	if info.Mode().Perm() != 0o640 {
 		t.Errorf("mode = %v, want 0640 preserved", info.Mode().Perm())
 	}
-	if _, err := os.Stat(path + codexTrustBackupSuffix); !os.IsNotExist(err) {
-		t.Errorf("backup survived a successful append: %v", err)
+	entries, err := os.ReadDir(filepath.Dir(path))
+	if err != nil {
+		t.Fatalf("read dir: %v", err)
+	}
+	for _, entry := range entries {
+		if entry.Name() != "config.toml" {
+			t.Errorf("successful append left %s behind", entry.Name())
+		}
 	}
 	store, err := readCodexTrustStore(path)
 	if err != nil {
@@ -560,6 +566,24 @@ func TestPrepare_MatchesNestedSessionHomesByQualifiedName(t *testing.T) {
 	}
 	if strings.Contains(stderr.String(), "no session home yet") {
 		t.Fatalf("stderr %q warns even though the nested home exists", stderr.String())
+	}
+}
+
+func TestPrepare_MatchesFlatSessionHomeWhenQualifiedNameIsDotted(t *testing.T) {
+	f := newFixture(t)
+	f.setAgents(t, map[string]any{"name": "mayor", "qualified_name": "gastown.mayor", "suspended": false})
+	home := f.addSessionHome(t, "mayor")
+	f.setCodexHooks(t, f.hooksFor(t, home)...)
+
+	opts := f.options()
+	var stdout, stderr strings.Builder
+	opts.Stdout = &stdout
+	opts.Stderr = &stderr
+	if err := Prepare(opts); err != nil {
+		t.Fatalf("prepare: %v", err)
+	}
+	if strings.Contains(stderr.String(), "no session home yet") {
+		t.Fatalf("stderr %q warns even though the unqualified home exists", stderr.String())
 	}
 }
 

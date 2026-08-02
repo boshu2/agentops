@@ -9,7 +9,6 @@ import (
 	"io/fs"
 	"os"
 	"os/exec"
-	"path"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -17,6 +16,7 @@ import (
 	"unicode"
 
 	"github.com/BurntSushi/toml"
+	"github.com/boshu2/agentops/cli/internal/storage"
 )
 
 // Codex gates project-local configuration behind two independent, persisted
@@ -29,9 +29,9 @@ import (
 //     trusted_hash = "sha256:..."`, one entry per individual hook.
 //
 // A Gas City agent session home carries a `.codex/hooks.json`, so a first Codex
-// session in a fresh session home hits the interactive hooks-trust dialog
-// ("Press t to trust all") and blocks forever: dispatches queue as pending with
-// no active worker, and the wedge is invisible except through pane capture.
+// session in a fresh session home can hit the interactive hooks-trust dialog
+// ("Press t to trust all") and wait indefinitely: dispatches queue as pending
+// with no active worker, and the stall is invisible except through pane capture.
 //
 // Presence of a table is NOT trust. A `trust_level` that is not "trusted", a
 // missing or empty `trusted_hash`, or a hook Codex reports as "modified" all
@@ -538,12 +538,7 @@ func codexHooksList(bin, codexHome string, dirs []string) ([]codexHook, error) {
 
 	reader := bufio.NewReader(stdout)
 	send := func(message any) error {
-		data, err := json.Marshal(message)
-		if err != nil {
-			return err
-		}
-		_, err = stdin.Write(append(data, '\n'))
-		return err
+		return json.NewEncoder(stdin).Encode(message)
 	}
 
 	if err := send(map[string]any{
@@ -658,6 +653,23 @@ func lastLine(text string) string {
 //
 // Identities are compared, not counts: a stale home left behind by a removed
 // agent would make the counts agree while a real agent is still missing.
+type configuredAgent struct {
+	name          string
+	qualifiedName string
+}
+
+func (a configuredAgent) materialized(homes map[string]bool) bool {
+	return (a.name != "" && homes[a.name]) ||
+		(a.qualifiedName != "" && homes[a.qualifiedName])
+}
+
+func (a configuredAgent) displayName() string {
+	if a.qualifiedName != "" {
+		return a.qualifiedName
+	}
+	return a.name
+}
+
 func (o *ops) reportUnmaterializedHomes() {
 	configured, err := o.configuredAgents()
 	if err != nil || len(configured) == 0 {
@@ -673,10 +685,10 @@ func (o *ops) reportUnmaterializedHomes() {
 	}
 	var missing []string
 	for _, agent := range configured {
-		if materialized[agent] || materialized[path.Base(agent)] {
+		if agent.materialized(materialized) {
 			continue
 		}
-		missing = append(missing, agent)
+		missing = append(missing, agent.displayName())
 	}
 	if len(missing) == 0 {
 		return
@@ -688,10 +700,11 @@ func (o *ops) reportUnmaterializedHomes() {
 		len(missing), strings.Join(missing, ", "))
 }
 
-// configuredAgents lists the identities of the unsuspended agents the city
-// declares, preferring the qualified name because session homes nest the same
-// way (`<dir>/<name>`).
-func (o *ops) configuredAgents() ([]string, error) {
+// configuredAgents lists both identity forms for each unsuspended agent. Gas
+// City may return a dotted qualified name (for example `gastown.mayor`) while
+// storing the session at `.gc/agents/mayor`; nested providers may instead use
+// a slash-qualified home such as `.gc/agents/agentops/witness`.
+func (o *ops) configuredAgents() ([]configuredAgent, error) {
 	var payload struct {
 		Agents []struct {
 			Name          string `json:"name"`
@@ -702,17 +715,16 @@ func (o *ops) configuredAgents() ([]string, error) {
 	if err := o.gcJSON(&payload, "cannot list configured agents", "--city", o.city, "agent", "list", "--json"); err != nil {
 		return nil, err
 	}
-	var agents []string
+	var agents []configuredAgent
 	for _, agent := range payload.Agents {
 		if agent.Suspended {
 			continue
 		}
-		identity := agent.QualifiedName
-		if identity == "" {
-			identity = agent.Name
-		}
-		if identity != "" {
-			agents = append(agents, identity)
+		if agent.Name != "" || agent.QualifiedName != "" {
+			agents = append(agents, configuredAgent{
+				name:          agent.Name,
+				qualifiedName: agent.QualifiedName,
+			})
 		}
 	}
 	return agents, nil
@@ -742,24 +754,15 @@ func tomlQuote(value string) string {
 	return out.String()
 }
 
-// codexTrustBackupSuffix names the copy of the operator's original trust store
-// kept only for the instant between writing the replacement and renaming it in.
-const codexTrustBackupSuffix = ".agentops-bak"
-
 // appendCodexConfig appends whole table blocks to the trust store, creating it
 // when absent.
 //
 // The operator's config is never edited in place. The merged content is built
-// in memory, written to a temp file in the same directory, and PARSED THERE; a
-// merge that would not round-trip is rejected before the real file is touched
-// at all. Only a validated temp file is renamed over the original, atomically,
-// with a backup of the original kept until the rename succeeds. No failure path
-// can leave the operator with a corrupted codex config.
+// and parsed in memory; a merge that would not round-trip is rejected before
+// the real file is touched. The repository's canonical atomic writer then
+// installs the validated bytes durably while preserving the existing mode. No
+// failure path can leave the operator with a partially written Codex config.
 func appendCodexConfig(path, block string) error {
-	dir := filepath.Dir(path)
-	if err := os.MkdirAll(dir, 0o755); err != nil {
-		return fmt.Errorf("create codex home %s: %w", dir, err)
-	}
 	existing, err := os.ReadFile(path) // #nosec G304 -- operator-owned codex trust store resolved from CODEX_HOME.
 	if err != nil && !os.IsNotExist(err) {
 		return fmt.Errorf("read codex trust store %s: %w", path, err)
@@ -775,48 +778,13 @@ func appendCodexConfig(path, block string) error {
 	}
 	merged += block
 
-	tmp, err := os.CreateTemp(dir, ".config.toml.agentops.")
-	if err != nil {
-		return fmt.Errorf("stage codex trust store update: %w", err)
-	}
-	tmpName := tmp.Name()
-	cleanup := true
-	defer func() {
-		if cleanup {
-			_ = os.Remove(tmpName)
-		}
-	}()
-	if _, err := tmp.WriteString(merged); err != nil {
-		_ = tmp.Close()
-		return fmt.Errorf("stage codex trust store update: %w", err)
-	}
-	if err := tmp.Chmod(mode); err != nil {
-		_ = tmp.Close()
-		return fmt.Errorf("stage codex trust store update: %w", err)
-	}
-	if err := tmp.Close(); err != nil {
-		return fmt.Errorf("stage codex trust store update: %w", err)
-	}
-
-	// Validate the staged replacement before the operator's file is at risk.
-	if _, err := readCodexTrustStore(tmpName); err != nil {
+	// Validate the replacement bytes before the operator's file is at risk.
+	var candidate trustStore
+	if err := toml.Unmarshal([]byte(merged), &candidate); err != nil {
 		return fmt.Errorf("refusing to update %s: the merged trust store would not be parsable: %w", path, err)
 	}
-
-	backup := path + codexTrustBackupSuffix
-	haveBackup := false
-	if len(existing) > 0 {
-		if err := os.WriteFile(backup, existing, mode); err != nil {
-			return fmt.Errorf("back up codex trust store %s: %w", path, err)
-		}
-		haveBackup = true
-	}
-	if err := os.Rename(tmpName, path); err != nil {
-		return fmt.Errorf("install codex trust store %s (original preserved at %s): %w", path, backup, err)
-	}
-	cleanup = false
-	if haveBackup {
-		_ = os.Remove(backup)
+	if err := storage.AtomicWriteFile(path, []byte(merged), mode); err != nil {
+		return fmt.Errorf("install codex trust store %s: %w", path, err)
 	}
 	return nil
 }
