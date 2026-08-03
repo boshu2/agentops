@@ -423,6 +423,9 @@ func derivedHookKeys(dir string) ([]string, error) {
 			}
 		}
 	}
+	if len(keys) == 0 {
+		return nil, fmt.Errorf("%s contains no hook identities; refusing to accept an empty hook set", path)
+	}
 	return keys, nil
 }
 

@@ -513,6 +513,29 @@ func TestCheck_FailsWhenCodexHookTrustIsMissing(t *testing.T) {
 	wantErrContaining(t, err, hooks[0].Key)
 }
 
+func TestCheck_RejectsRegularHookFilesWithNoHookIdentities(t *testing.T) {
+	tests := map[string]string{
+		"empty object":    `{}`,
+		"null hooks":      `{"hooks":null}`,
+		"empty hooks map": `{"hooks":{}}`,
+	}
+	for name, document := range tests {
+		t.Run(name, func(t *testing.T) {
+			f := newFixture(t)
+			home := f.addSessionHome(t, "implementer")
+			f.setCodexHooks(t, f.hooksFor(t, home)...)
+			if _, err := f.run(t, Prepare, nil); err != nil {
+				t.Fatalf("prepare: %v", err)
+			}
+
+			mustWrite(t, hookFile(home), document)
+			_, err := f.run(t, Check, nil)
+			wantErrContaining(t, err, "contains no hook identities")
+			wantErrContaining(t, err, hookFile(home))
+		})
+	}
+}
+
 // R3-F4 / F6: the residual timing gap must be reported by identity. A stale
 // home left behind by a removed agent makes the COUNTS agree while a real
 // agent is still missing, so counting would report a false all-clear.
