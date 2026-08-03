@@ -30,18 +30,29 @@ type fixture struct {
 	gcBin  string
 	log    string
 	skills string
+	// codexBin is a scripted Codex CLI that answers the app-server JSON-RPC
+	// handshake from FAKE_CODEX_HOOKS_JSON, so the real trust-seeding code
+	// path runs against a temp CODEX_HOME instead of the host's.
+	codexBin   string
+	codexHome  string
+	codexTrust string
 }
 
 func newFixture(t *testing.T) *fixture {
 	t.Helper()
 	root := t.TempDir()
 	f := &fixture{
-		city:   filepath.Join(root, "city"),
-		rig:    filepath.Join(root, "city", "rigs", "smoke"),
-		pack:   filepath.Join(root, "pack", "gascity"),
-		gcBin:  filepath.Join(root, "bin", "gc"),
-		log:    filepath.Join(root, "gc.log"),
-		skills: filepath.Join(root, "skills"),
+		city:       filepath.Join(root, "city"),
+		rig:        filepath.Join(root, "city", "rigs", "smoke"),
+		pack:       filepath.Join(root, "pack", "gascity"),
+		gcBin:      filepath.Join(root, "bin", "gc"),
+		log:        filepath.Join(root, "gc.log"),
+		skills:     filepath.Join(root, "skills"),
+		// The fake codex lives outside the fixture bin dir so a test can build
+		// a PATH that finds gc but not codex.
+		codexBin:   filepath.Join(root, "codexbin", "codex"),
+		codexHome:  filepath.Join(root, "codexhome"),
+		codexTrust: filepath.Join(root, "codexhome", "config.toml"),
 	}
 	mustMkdir(t, f.rig)
 	mustMkdir(t, filepath.Join(root, "bin"))
@@ -59,10 +70,12 @@ func newFixture(t *testing.T) *fixture {
 		mustWrite(t, filepath.Join(f.skills, skill, "SKILL.md"), "# "+skill+"\n")
 	}
 	f.writeFakeGC(t)
+	f.writeFakeCodex(t)
 	python := filepath.Join(root, "bin", "python3")
 	mustWriteExecutable(t, python, "#!/bin/sh\nexit 0\n")
 
 	t.Setenv("AGENTOPS_GC_SKIP_SERVICE_CHECK", "1")
+	t.Setenv("CODEX_HOME", f.codexHome)
 	t.Setenv("GC_PYTHON_BIN", python)
 	t.Setenv("FAKE_GC_LOG", f.log)
 	t.Setenv("FAKE_PACK_COMMIT", maintainerCommit)
@@ -71,7 +84,100 @@ func newFixture(t *testing.T) *fixture {
 	f.setStatus(t, map[string]any{"ok": true, "partial": false, "health": map[string]any{"signals": []any{}}})
 	f.setReady(t, []any{})
 	f.setSessions(t, []any{})
+	f.setCodexHooks(t)
+	f.setAgents(t)
 	return f
+}
+
+// writeFakeCodex scripts a Codex CLI that speaks just enough of the app-server
+// stdio JSON-RPC protocol: it acknowledges initialize, then answers hooks/list.
+//
+// Its trustStatus is DERIVED from the trust store the way Codex derives it —
+// a key whose recorded trusted_hash matches its current hash is "trusted", a
+// recorded key with a different hash is "modified", an unrecorded key is
+// "untrusted". A static answer could never model idempotency honestly, because
+// the second prepare must see what the first one wrote.
+//
+// FAKE_CODEX_HOOK_SPEC carries one `key<TAB>hash` per line;
+// FAKE_CODEX_FORCE_STATUS pins the status for the cases that need one;
+// FAKE_CODEX_RAW_JSON replaces the whole answer. Every invocation is logged.
+func (f *fixture) writeFakeCodex(t *testing.T) {
+	t.Helper()
+	script := `#!/bin/sh
+printf '%s cwd=%s\n' "$*" "$PWD" >>"$FAKE_CODEX_LOG"
+emit_hooks() {
+  if [ -n "${FAKE_CODEX_RAW_JSON:-}" ]; then
+    printf '%s\n' "$FAKE_CODEX_RAW_JSON"
+    return
+  fi
+  config="$CODEX_HOME/config.toml"
+  body=""
+  sep=""
+  while IFS='	' read -r key hash; do
+    [ -z "$key" ] && continue
+    if [ -n "${FAKE_CODEX_FORCE_STATUS:-}" ]; then
+      status="$FAKE_CODEX_FORCE_STATUS"
+    elif grep -Fq "[hooks.state.\"$key\"]" "$config" 2>/dev/null; then
+      if grep -Fq "trusted_hash = \"$hash\"" "$config" 2>/dev/null; then
+        status="trusted"
+      else
+        status="modified"
+      fi
+    else
+      status="untrusted"
+    fi
+    body="$body$sep{\"key\":\"$key\",\"currentHash\":\"$hash\",\"trustStatus\":\"$status\"}"
+    sep=","
+  done <<SPEC
+$FAKE_CODEX_HOOK_SPEC
+SPEC
+  printf '{"jsonrpc":"2.0","id":2,"result":{"data":[{"cwd":"%s","hooks":[%s],"warnings":[],"errors":[]}]}}\n' "$PWD" "$body"
+}
+while IFS= read -r line; do
+  case "$line" in
+    *'"initialize"'*)
+      printf '{"jsonrpc":"2.0","id":1,"result":{"codexHome":"%s"}}\n' "$CODEX_HOME"
+      printf '{"jsonrpc":"2.0","method":"remoteControl/status/changed","params":{}}\n'
+      ;;
+    *'"hooks/list"'*)
+      emit_hooks
+      ;;
+  esac
+done
+`
+	mustWriteExecutable(t, f.codexBin, script)
+	t.Setenv("FAKE_CODEX_LOG", filepath.Join(filepath.Dir(f.codexHome), "codex.log"))
+}
+
+// setCodexHooks scripts which hook identities the fake Codex reports. Their
+// trust status is derived from the live trust store, not pinned here.
+func (f *fixture) setCodexHooks(t *testing.T, hooks ...codexHook) {
+	t.Helper()
+	var spec strings.Builder
+	for _, hook := range hooks {
+		fmt.Fprintf(&spec, "%s\t%s\n", hook.Key, hook.CurrentHash)
+	}
+	t.Setenv("FAKE_CODEX_HOOK_SPEC", spec.String())
+	t.Setenv("FAKE_CODEX_FORCE_STATUS", "")
+	t.Setenv("FAKE_CODEX_RAW_JSON", "")
+}
+
+// forceCodexHookStatus pins the status the fake Codex reports for every hook,
+// for the cases that must exercise a specific status regardless of the store.
+func (f *fixture) forceCodexHookStatus(t *testing.T, status string) {
+	t.Helper()
+	t.Setenv("FAKE_CODEX_FORCE_STATUS", status)
+}
+
+// mustCanonical resolves path the same way the maintainer does, so tests
+// compare against the exact strings written into the trust store.
+func mustCanonical(t *testing.T, path string) string {
+	t.Helper()
+	resolved, err := canonical(path)
+	if err != nil {
+		t.Fatalf("canonical %s: %v", path, err)
+	}
+	return resolved
 }
 
 func (f *fixture) writePackMarker(t *testing.T, commit string) {
@@ -102,6 +208,9 @@ EOF
   *" rig list "*)
     printf '{"ok":true,"rigs":[{"name":"smoke","path":"%s","hq":false}]}\n' "$FAKE_RIG"
     ;;
+  *" agent list "*)
+    printf '%s\n' "$FAKE_AGENTS_JSON"
+    ;;
   *" doctor "*)
     printf '%s\n' "$FAKE_DOCTOR_JSON"
     ;;
@@ -126,6 +235,15 @@ esac
 	mustWriteExecutable(t, f.gcBin, script)
 }
 
+// setAgents scripts the city's configured agent roster.
+func (f *fixture) setAgents(t *testing.T, agents ...map[string]any) {
+	t.Helper()
+	if agents == nil {
+		agents = []map[string]any{}
+	}
+	setJSONEnv(t, "FAKE_AGENTS_JSON", map[string]any{"agents": agents})
+}
+
 func (f *fixture) setDoctor(t *testing.T, value any)   { setJSONEnv(t, "FAKE_DOCTOR_JSON", value) }
 func (f *fixture) setStatus(t *testing.T, value any)   { setJSONEnv(t, "FAKE_STATUS_JSON", value) }
 func (f *fixture) setReady(t *testing.T, value any)    { setJSONEnv(t, "FAKE_READY_JSON", value) }
@@ -147,6 +265,7 @@ func (f *fixture) options() Options {
 		City:         f.city,
 		Rig:          f.rig,
 		GCBin:        f.gcBin,
+		CodexBin:     f.codexBin,
 		PackDir:      f.pack,
 		SkillsSource: f.skills,
 	}
