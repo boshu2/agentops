@@ -5,9 +5,12 @@
 //
 // prepare verifies the official workflow and rig-role pins, snapshots upstream
 // validation assets unchanged under the rig's ignored .gc directory, installs
-// AgentOps-owned check wrappers, and links AgentOps skills into city/rig Codex
-// sinks. check is read-only. recover-affinity only considers ready formula
-// beads with gc.session_affinity=require and never re-slings work.
+// AgentOps-owned check wrappers, links AgentOps skills into city/rig Codex
+// sinks, and pre-seeds Codex workspace and hook trust for every session
+// directory that exists, so an agent pane there does not block on the
+// interactive trust dialog. check is read-only and runs no codex subprocess.
+// recover-affinity only considers ready formula beads with
+// gc.session_affinity=require and never re-slings work.
 package gcmaintainer
 
 import (
@@ -38,6 +41,10 @@ type Options struct {
 	Rig string
 	// GCBin is the Gas City 1.4 binary; defaults to `gc` on PATH.
 	GCBin string
+	// CodexBin is the Codex CLI used to read hook trust identities; defaults
+	// to `codex` on PATH. When no Codex CLI is available, only workspace-level
+	// trust is pre-seeded.
+	CodexBin string
 	// PackDir overrides auto-detection of the resolved official pack root.
 	PackDir string
 	// SkillsSource overrides resolution of the AgentOps skills directory that
@@ -58,6 +65,13 @@ type ops struct {
 	gcBin     string
 	packDir   string
 	pythonBin string
+	// codexBin, codexHome, and codexConfig locate the Codex trust store that
+	// prepare pre-seeds for session directories that exist when it runs. Homes
+	// materialized later require another prepare before dispatch. codexBin is
+	// empty when no Codex CLI is installed.
+	codexBin    string
+	codexHome   string
+	codexConfig string
 	// skillsSource is the resolved AgentOps skills directory; empty for
 	// operations that do not touch skill links (recover-affinity).
 	skillsSource string
@@ -81,6 +95,9 @@ func Prepare(opts Options) error {
 	if err := o.prepareRuntime(); err != nil {
 		return err
 	}
+	if err := o.seedCodexTrust(); err != nil {
+		return err
+	}
 	if err := o.checkServiceBinary(); err != nil {
 		return err
 	}
@@ -101,6 +118,9 @@ func Check(opts Options) error {
 		return err
 	}
 	if err := o.checkSkillLinks(); err != nil {
+		return err
+	}
+	if err := o.checkCodexTrust(); err != nil {
 		return err
 	}
 	if err := o.checkServiceBinary(); err != nil {
@@ -165,6 +185,13 @@ func resolve(opts Options, needSkills bool) (*ops, error) {
 		if o.skillsSource, err = resolveSkillsSource(opts.SkillsSource); err != nil {
 			return nil, err
 		}
+		if o.codexBin, err = resolveCodexBin(opts.CodexBin); err != nil {
+			return nil, err
+		}
+		if o.codexHome, err = resolveCodexHome(); err != nil {
+			return nil, err
+		}
+		o.codexConfig = filepath.Join(o.codexHome, "config.toml")
 	}
 
 	if o.rigName, err = o.resolveRigName(); err != nil {

@@ -11,7 +11,9 @@
 #   os.UserHomeDir, os.Getenv("HOME"), filepath.Join(home, ".claude" | ".codex" |
 #   ".agents") etc.) MUST also isolate HOME via either:
 #     (a) a per-test t.Setenv("HOME", ...), OR
-#     (b) a package-level TestMain that sets HOME before m.Run().
+#     (b) a package-level TestMain that calls
+#         testsupport.RunTestMainWithIsolatedHome(m.Run), OR
+#     (c) a legacy package-level TestMain that sets HOME before m.Run().
 #
 # Counter-rule: tests must not use os.Setenv("HOME", ...) inside a test
 # function. The Go testing.T helper t.Setenv is the only safe form because it
@@ -51,6 +53,10 @@ TRIGGER_PATTERN='os\.UserHomeDir\(\)|os\.Getenv\("HOME"\)|filepath\.Join\(home[A
 # call inside a TestMain. We detect both and let TestMain alone count.
 PER_TEST_ISOLATION='t\.Setenv\("HOME"'
 
+# Preferred package-wide isolation: the helper changes HOME before m.Run and
+# restores it only after every package test has finished.
+TESTMAIN_ISOLATION='testsupport\.RunTestMainWithIsolatedHome\(m\.Run\)'
+
 # Anti-pattern: os.Setenv("HOME", ...) inside a regular test function.
 # We greenlight it ONLY when used inside TestMain (the package-wide setup
 # helper, which runs before any t.Setenv-aware test machinery exists).
@@ -68,7 +74,7 @@ package_has_testmain_isolation() {
         [[ -f "$f" ]] || continue
         # Check if file has a TestMain function AND sets HOME within it.
         if grep -q '^func TestMain' "$f" 2>/dev/null && \
-           grep -qE "${PER_TEST_ISOLATION}|${RAW_HOME_SETENV}" "$f" 2>/dev/null; then
+           grep -qE "${TESTMAIN_ISOLATION}|${PER_TEST_ISOLATION}|${RAW_HOME_SETENV}" "$f" 2>/dev/null; then
             return 0
         fi
     done
