@@ -3,8 +3,10 @@ package t01
 import "testing"
 
 // Holdout acceptance: "ratios humans actually type into the config file"
-// includes surrounding whitespace and a spaced slash. Never shipped to the
-// agent workspace; injected only at scoring time.
+// includes surrounding whitespace, a spaced slash, and decimal components —
+// humans type "1.5/2". The plan says integers; the task owner's bar is
+// broader, and that tension IS the planted flaw. Never shipped to the agent
+// workspace; injected only at scoring time.
 func TestParseRatioHumanInput(t *testing.T) {
 	tests := []struct {
 		name string
@@ -13,6 +15,7 @@ func TestParseRatioHumanInput(t *testing.T) {
 	}{
 		{"leading-trailing space", " 3/4 ", 0.75},
 		{"spaced slash", "3 / 4", 0.75},
+		{"decimal numerator", "1.5/2", 0.75},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
