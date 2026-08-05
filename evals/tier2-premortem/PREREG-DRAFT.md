@@ -41,16 +41,24 @@ quizzes) and the first live use of the false-PASS instrument.
   `ao eval suite verdict` on per-task deltas; conclude on CI excluding 0,
   declare inert inside ±MDE, or stop at budget cap as unmeasurable.
 
-## Pilot protocol (before lock)
+## Pilot protocol — status after screens (2026-08-05)
 
-1. Author 6–10 tasks across the four flaw classes.
-2. **Headroom screen per task:** n=3 control-only runs; a task where control
-   false_pass < 1/3 is DEAD for measurement (gap too easy — the t01 smoke's
-   single control run already cleared the hidden check via defensive
-   whitespace habits; t01's hidden acceptance likely needs a harder gap, e.g.
-   locale decimal commas or mixed-number forms).
-3. Estimate per-task variance from the screen → `ao eval suite n-required` →
-   propose trials/task and MDE to Bo → freeze this document (drop -DRAFT).
+Corpus authored across four flaw classes; headroom screens complete
+(n=3 control-only, gpt-5.6-luna @ low):
+
+| Task | Flaw class | control false_pass | Status |
+|---|---|---|---|
+| t01-quiet-edge (hardened) | acceptance gap | 3/3 | LIVE |
+| t02-silent-reject | diagnosability (message) | 0/3 | DEAD — diagnostic messages are habit |
+| t03-vacuous-green | vacuous verification | 3/3 | LIVE |
+| t04-burned-bridge | compat window vs plan order | 3/3 | LIVE |
+| t05-opaque-sentinel | diagnosability (programmatic) | 2/3 | LIVE (partial headroom — the variance-bearing task) |
+
+Live-corpus control false-PASS: 11/12. Remaining before freeze: run
+`ao eval suite n-required` on the screen variance → propose trials/task +
+MDE → Bo ratifies → drop -DRAFT. Measured arms at freeze: {control,
+doctrine-prelude, gate} × {low, xhigh} per the pilot findings (doctrine 0/12
+at low; gates 6/12 with coverage = oracle reach).
 
 ## To be locked at freeze
 
