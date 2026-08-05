@@ -1,0 +1,10 @@
+{
+  "id": "validate-not-proven",
+  "skill": "validate",
+  "tier": "judgment",
+  "reps": 2,
+  "behavior": "returns NOT_PROVEN (not PASS) when the only evidence is the author's self-reported run and not_checked is non-empty",
+  "discriminator": "discriminator.sh",
+  "budget_note": "N=2 — DIRECTIONAL, not statistical",
+  "honesty": "measures behavior-change (does loading validate's verdict rules change the verdict decision on insufficient evidence), NOT quality-uplift"
+}
