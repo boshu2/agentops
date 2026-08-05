@@ -1,0 +1,160 @@
+Reading additional input from stdin...
+OpenAI Codex v0.145.0
+--------
+workdir: /var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T/probe-ws.cBEIeC
+model: gpt-5.6-luna
+provider: openai
+approval: never
+sandbox: read-only
+reasoning effort: low
+reasoning summaries: none
+session id: 019fcf3a-ad16-7143-b8f3-9f64d57e097e
+--------
+user
+Write Go code for this repository:
+
+1. A function `ParsePort(s string) (int, error)` that parses a decimal string
+   into a TCP port and returns an error unless it is an integer in 1..65535.
+2. Its unit test.
+
+Output only the two code blocks (implementation, then test). No prose.
+warning: Skill descriptions were shortened to fit the 2% skills context budget. Codex can still see every skill, but some descriptions are shorter. Disable unused skills or plugins to leave more room for the rest.
+hook: PreToolUse
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc "rg --files -g '"'!vendor'"' -g '"'!*lock*'"' | head -80 && printf '\\n---\\n' && find . -maxdepth 2 -type f -name 'go.mod' -o -name '*.go'" in /var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T/probe-ws.cBEIeC
+ succeeded in 0ms:
+
+---
+
+codex
+```go
+package port
+
+import (
+	"fmt"
+	"strconv"
+)
+
+func ParsePort(s string) (int, error) {
+	if s == "" {
+		return 0, fmt.Errorf("invalid port %q", s)
+	}
+
+	for _, r := range s {
+		if r < '0' || r > '9' {
+			return 0, fmt.Errorf("invalid port %q", s)
+		}
+	}
+
+	n, err := strconv.ParseUint(s, 10, 16)
+	if err != nil || n < 1 {
+		return 0, fmt.Errorf("invalid port %q", s)
+	}
+
+	return int(n), nil
+}
+```
+
+```go
+package port
+
+import "testing"
+
+func TestParsePort(t *testing.T) {
+	tests := []struct {
+		name    string
+		input   string
+		want    int
+		wantErr bool
+	}{
+		{"minimum", "1", 1, false},
+		{"maximum", "65535", 65535, false},
+		{"middle", "8080", 8080, false},
+		{"zero", "0", 0, true},
+		{"too large", "65536", 0, true},
+		{"negative", "-1", 0, true},
+		{"non-decimal", "0x50", 0, true},
+		{"whitespace", " 80", 0, true},
+		{"empty", "", 0, true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := ParsePort(tt.input)
+			if (err != nil) != tt.wantErr {
+				t.Fatalf("ParsePort(%q) error = %v, wantErr %v", tt.input, err, tt.wantErr)
+			}
+			if got != tt.want {
+				t.Errorf("ParsePort(%q) = %d, want %d", tt.input, got, tt.want)
+			}
+		})
+	}
+}
+```
+tokens used
+1,612
+```go
+package port
+
+import (
+	"fmt"
+	"strconv"
+)
+
+func ParsePort(s string) (int, error) {
+	if s == "" {
+		return 0, fmt.Errorf("invalid port %q", s)
+	}
+
+	for _, r := range s {
+		if r < '0' || r > '9' {
+			return 0, fmt.Errorf("invalid port %q", s)
+		}
+	}
+
+	n, err := strconv.ParseUint(s, 10, 16)
+	if err != nil || n < 1 {
+		return 0, fmt.Errorf("invalid port %q", s)
+	}
+
+	return int(n), nil
+}
+```
+
+```go
+package port
+
+import "testing"
+
+func TestParsePort(t *testing.T) {
+	tests := []struct {
+		name    string
+		input   string
+		want    int
+		wantErr bool
+	}{
+		{"minimum", "1", 1, false},
+		{"maximum", "65535", 65535, false},
+		{"middle", "8080", 8080, false},
+		{"zero", "0", 0, true},
+		{"too large", "65536", 0, true},
+		{"negative", "-1", 0, true},
+		{"non-decimal", "0x50", 0, true},
+		{"whitespace", " 80", 0, true},
+		{"empty", "", 0, true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := ParsePort(tt.input)
+			if (err != nil) != tt.wantErr {
+				t.Fatalf("ParsePort(%q) error = %v, wantErr %v", tt.input, err, tt.wantErr)
+			}
+			if got != tt.want {
+				t.Errorf("ParsePort(%q) = %d, want %d", tt.input, got, tt.want)
+			}
+		})
+	}
+}
+```

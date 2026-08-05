@@ -20,6 +20,26 @@ and risks. Do not preload the entire reference corpus.
 This skill provides context and findings. It does not edit, validate, retry,
 approve, commit, release, deliver, or decide continuation.
 
+## Load-bearing conventions for produced code (MEASURED)
+
+When the caller is about to WRITE code (not only review it), surface the
+matching language rules INLINE in the working context — a behind-the-link
+reference does not change behavior; an inline imperative does. The Go core:
+
+- Wrap every propagated error with context: `fmt.Errorf("doing X: %w", err)`
+  — never return a bare inner error.
+- Multi-case functions get TABLE-DRIVEN tests (`[]struct` cases + `t.Run` per
+  case), asserting exact expected values including the error cases.
+
+For other languages, pull the matching reference below and inline its top
+rules the same way.
+
+> Measured 2026-08-04, probe `standards-go-conventions` (gpt-5.6-luna, N=2,
+> directional): control produced the `%w`-wrapped + table-driven shape in 1/2
+> runs; with these rules inline, 2/2. Inline-imperative beats reference-link —
+> the graphify probe measured a linked doc instruction obeyed 0/2. Ledger:
+> `evals/skill-probes/LEDGER.md`.
+
 ## Mutation-safety standards
 
 When the supplied change rewrites existing files in bulk — formatters,

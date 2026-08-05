@@ -1,0 +1,10 @@
+{
+  "id": "reality-check-gap-v2",
+  "skill": "reality-check",
+  "tier": "judgment",
+  "reps": 2,
+  "behavior": "names the claim-vs-evidence gap when it is only derivable from counts across separate outputs, against two narrative confirmations",
+  "discriminator": "discriminator.sh",
+  "budget_note": "N=2 — DIRECTIONAL; hardened v2 of reality-check-gap (v1 ceiling-saturated at xhigh AND low)",
+  "honesty": "measures behavior-change, NOT quality-uplift"
+}

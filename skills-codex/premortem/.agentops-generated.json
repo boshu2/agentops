@@ -2,6 +2,6 @@
   "generator": "codex-sync",
   "source_skill": "skills/premortem",
   "layout": "modular",
-  "source_hash": "266f8d28e76457681e78f4e682a4594dcd14ba3aaddb14090a82b1b73f2afb9a",
-  "generated_hash": "c6c4e95a727089560a025c7a9f2d96f4e22e5bd8a8a3f2affbea656e220b8c41"
+  "source_hash": "e882fd13bb037adec58b7484ddd34477cf882f088169dbac2225e04d532195dd",
+  "generated_hash": "20ba86016b8b2b6c40f48a15766f847a4677f1e59f9373aa54f614104d72a617"
 }

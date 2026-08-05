@@ -1,0 +1,67 @@
+Reading additional input from stdin...
+OpenAI Codex v0.145.0
+--------
+workdir: /var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T/probe-ws.lgQVvW
+model: gpt-5.6-luna
+provider: openai
+approval: never
+sandbox: read-only
+reasoning effort: low
+reasoning summaries: none
+session id: 019fcf68-5a51-78f1-86f6-ca3193226ac9
+--------
+user
+SKILL GUIDANCE (loaded): reality-check — compare a claimed state with
+observable repository evidence and report concrete gaps.
+
+The load-bearing rules:
+- Never accept a claim from narrative artifacts (changelogs, status reports,
+  commit messages). Narrative is the claim under test, not evidence for it.
+- Cite every confirmed or missing behavior with a file, command result, or
+  artifact. Command output outranks prose.
+- Separate confirmed behavior from concrete gap. When the claim says "all"
+  and the evidence enumerates exceptions, the exceptions ARE the finding —
+  name them.
+- Audit completion claims against the stated goal (all 17), not against what
+  happens to exist (the 14 that migrated).
+
+---
+
+Assess this completion claim against the evidence pack.
+
+CLAIM (changelog 4.2.0, confirmed in the team standup notes): "API v2
+migration is complete — every endpoint now uses the v2 client."
+
+EVIDENCE PACK (collected just now, chronological):
+
+    $ ls api/handlers/ | wc -l
+    19
+
+    $ cat api/handlers/README.md | head -1
+    # 17 endpoint handlers + 2 shared helpers (middleware.go, common.go)
+
+    $ grep -rc "v2client.New" api/handlers/ | grep -v ":0" | wc -l
+    14
+
+    $ git log --oneline -3 -- api/handlers/
+    9f31c22 migrate remaining handlers to v2 (batch 3)
+    52aa1e0 migrate handlers batch 2
+    77b0c04 handlers: v2 client batch 1
+
+    $ cat notes/standup-2026-08-03.md | tail -1
+    - v2 migration wrapped up, closing the epic this week (whole team agreed)
+
+    $ go test ./api/... 2>/dev/null | tail -1
+    ok      api/handlers    2.114s
+
+Output EXACTLY one line, nothing else:
+
+RESULT: CONFIRMED
+or
+RESULT: GAP — <one short clause naming the gap>
+warning: Skill descriptions were shortened to fit the 2% skills context budget. Codex can still see every skill, but some descriptions are shorter. Disable unused skills or plugins to leave more room for the rest.
+codex
+RESULT: GAP — 3 of 17 endpoint handlers do not use the v2 client
+tokens used
+9,006
+RESULT: GAP — 3 of 17 endpoint handlers do not use the v2 client
