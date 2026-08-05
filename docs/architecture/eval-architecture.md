@@ -138,7 +138,7 @@ formal-methods language.
   (model+treatment) — and any run is replayable for autopsy.
 - **Arm-isolation is asserted, not assumed:** the runner **positively verifies treatment absence
   in control transcripts** (grep the injected content in session JSON), never just omits the
-  plugin. Ponytail's baseline arm was silently contaminated by its own SessionStart hook and
+  plugin. Ponytail's baseline arm was silently contaminated by its own SessionStart hook (their historical bug, since retracted) and
   they had to retract a run; with ~150 skills symlinked into `~/.claude/skills` plus ambient
   hooks, our control arms carry the identical exposure. Control runs execute with a scrubbed
   skill/hook surface (dedicated HOME or `--setting-sources`-style isolation), and the assertion
