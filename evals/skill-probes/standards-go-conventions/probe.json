@@ -1,0 +1,10 @@
+{
+  "id": "standards-go-conventions",
+  "skill": "standards",
+  "tier": "knowledge",
+  "reps": 2,
+  "behavior": "produced Go code wraps errors with %w context and ships a table-driven test, per repo standards",
+  "discriminator": "discriminator.sh",
+  "budget_note": "N=2 — DIRECTIONAL, not statistical",
+  "honesty": "measures behavior-change (does loading standards change the shape of produced code), NOT quality-uplift"
+}

@@ -44,7 +44,11 @@
 #
 # Flags: --probe <id> (required) · --replay | --live · --capture · --reps N ·
 #        --output <path> · --timeout <secs> · --model <id> (weaker producer, the
-#        ratchet when a frontier producer aces both arms).
+#        ratchet when a frontier producer aces both arms) · --effort <level>
+#        (low|medium|high|xhigh — sets codex model_reasoning_effort; the SECOND
+#        ratchet: when even a weaker model id aces both arms at the config
+#        default effort, lower the effort to surface headroom. 2026-08-04 wave-1
+#        finding: gpt-5.6-luna at xhigh aced 4/6 control arms).
 #
 # Env overrides (test seams): SKILL_PROBES_DIR (default $REPO_ROOT/evals/skill-probes)
 #
@@ -62,6 +66,7 @@ REPS=""
 OUTPUT=""
 TIMEOUT="${PROBE_TIMEOUT:-240}"
 MODEL="${PROBE_MODEL:-}"
+EFFORT="${PROBE_EFFORT:-}"
 
 usage() { grep '^#' "$0" | sed 's/^# \?//'; }
 
@@ -75,6 +80,7 @@ while [[ $# -gt 0 ]]; do
         --output)  OUTPUT="${2:-}"; shift 2;;
         --timeout) TIMEOUT="${2:-}"; shift 2;;
         --model)   MODEL="${2:-}"; shift 2;;
+        --effort)  EFFORT="${2:-}"; shift 2;;
         -h|--help) usage; exit 0;;
         *) echo "Unknown flag: $1" >&2; exit 2;;
     esac
@@ -99,6 +105,18 @@ SKILL="$(json_get skill)"
 
 FIXDIR="$PROBE_DIR/fixtures"
 mkdir -p "$FIXDIR"
+
+# --effort plumbs through the codex-exec lib's CODEX_EXEC_EXTRA_ARGS array
+# (arrays cannot cross a process boundary, so the flag lives here, in the same
+# shell that sources the lib). Applied to BOTH arms — the producer config must
+# stay symmetric or the delta is confounded.
+if [[ -n "$EFFORT" ]]; then
+    # shellcheck disable=SC2034 # CODEX_EXEC_EXTRA_ARGS is consumed by codex_exec_guarded in the sourced codex-exec.sh
+    case "$EFFORT" in
+        low|medium|high|xhigh) CODEX_EXEC_EXTRA_ARGS=(-c "model_reasoning_effort=\"$EFFORT\"");;
+        *) echo "error: --effort must be low|medium|high|xhigh, got: $EFFORT" >&2; exit 2;;
+    esac
+fi
 
 # run_discriminator TRANSCRIPT -> echoes PRESENT|ABSENT|DEGRADED
 run_discriminator() {
@@ -188,6 +206,7 @@ SCORECARD="$(cat <<EOF
   "mode": "$MODE",
   "generated_at": "$GEN_AT",
   "reps": $REPS,
+  "producer": {"model": "${MODEL:-codex-default}", "effort": "${EFFORT:-config-default}"},
   "honesty": "measures BEHAVIOR-CHANGE (did the loaded skill change what the agent DID), NOT quality-uplift; small N is directional (ADR-0011)",
   "control": {"present": $C_PRESENT, "usable": $C_USABLE, "rate": $C_RATE},
   "treatment": {"present": $T_PRESENT, "usable": $T_USABLE, "rate": $T_RATE},

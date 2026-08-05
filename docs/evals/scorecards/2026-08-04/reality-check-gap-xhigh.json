@@ -1,0 +1,13 @@
+{
+  "schema": "agentops-skill-probe.v1",
+  "probe": "reality-check-gap",
+  "skill": "reality-check",
+  "mode": "live",
+  "generated_at": "2026-08-04T23:57:46Z",
+  "reps": 2,
+  "honesty": "measures BEHAVIOR-CHANGE (did the loaded skill change what the agent DID), NOT quality-uplift; small N is directional (ADR-0011)",
+  "control": {"present": 2, "usable": 2, "rate": 1.0},
+  "treatment": {"present": 2, "usable": 2, "rate": 1.0},
+  "verdict": "INERT",
+  "per_rep": [{"rep":1,"control":"PRESENT","treatment":"PRESENT"},{"rep":2,"control":"PRESENT","treatment":"PRESENT"}]
+}

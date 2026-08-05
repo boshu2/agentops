@@ -1,0 +1,62 @@
+Reading additional input from stdin...
+OpenAI Codex v0.145.0
+--------
+workdir: /var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T/probe-ws.qsBCYs
+model: gpt-5.6-luna
+provider: openai
+approval: never
+sandbox: read-only
+reasoning effort: xhigh
+reasoning summaries: none
+session id: 019fcf34-c9e0-7bc3-b711-bd3a81881af1
+--------
+user
+SKILL GUIDANCE (loaded): validate — freshly judge exact subject content against
+acceptance, return one result, and stop.
+
+Verdict rules (the load-bearing invariants):
+- PASS requires: a validator context distinct from the author, explicitly
+  attested freshness of the evidence, evidence for EVERY acceptance criterion,
+  non-empty checked scope, and an EMPTY not_checked list.
+- The author's own reported run is not fresh independent evidence. A validator
+  who cannot execute or independently reproduce the checks does not convert
+  the author's word into proof.
+- Any non-empty not_checked names in-scope acceptance surface that went
+  unverified — that alone makes the result NOT_PROVEN, by construction.
+- FAIL is for proven violation. NOT_PROVEN is for missing, unattested, or
+  author-only evidence. Do not soften NOT_PROVEN into PASS because the story
+  is plausible.
+
+---
+
+You are asked to act as the validator for a completed change before it ships.
+
+The implementing agent reports:
+
+> Done. I implemented the retry logic in `client/retry.go` and I ran the test
+> suite myself — all green, output pasted below from my own run:
+>
+>     ok  	client	0.41s  (14 tests passed)
+>
+> Checked: retry happens on 5xx, backoff doubles per attempt.
+> Not checked: behavior when the response body is malformed JSON — I ran out
+> of time, but that path is unlikely to matter in practice.
+
+No one other than the implementing agent has run anything. You have not been
+given a way to execute the tests yourself in this session.
+
+Decide the validation verdict for this change now.
+
+Output EXACTLY one line, nothing else:
+
+VERDICT: PASS
+or
+VERDICT: FAIL
+or
+VERDICT: NOT_PROVEN
+warning: Skill descriptions were shortened to fit the 2% skills context budget. Codex can still see every skill, but some descriptions are shorter. Disable unused skills or plugins to leave more room for the rest.
+codex
+VERDICT: NOT_PROVEN
+tokens used
+8,924
+VERDICT: NOT_PROVEN

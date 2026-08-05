@@ -513,8 +513,8 @@
     {
       "name": "premortem",
       "source_skill": "skills/premortem",
-      "source_hash": "266f8d28e76457681e78f4e682a4594dcd14ba3aaddb14090a82b1b73f2afb9a",
-      "generated_hash": "c6c4e95a727089560a025c7a9f2d96f4e22e5bd8a8a3f2affbea656e220b8c41"
+      "source_hash": "e882fd13bb037adec58b7484ddd34477cf882f088169dbac2225e04d532195dd",
+      "generated_hash": "20ba86016b8b2b6c40f48a15766f847a4677f1e59f9373aa54f614104d72a617"
     },
     {
       "name": "product",
@@ -597,8 +597,8 @@
     {
       "name": "standards",
       "source_skill": "skills/standards",
-      "source_hash": "7805d1f62160f932ae5d8e7469a738ee48a40bfead9a773cf0b9e3a136100290",
-      "generated_hash": "69e07aaa8314fb4e53b778f914f4cd566a2e17139b421ffb76b1f05e61080310"
+      "source_hash": "11897ae22c32bca9f28e307ccc574783c8663962662c15defb7f1ec5ad948c4a",
+      "generated_hash": "886f39e63300f5d2af927448732c93ca75170bb70abf00d35ae7112c61f1701e"
     },
     {
       "name": "status",

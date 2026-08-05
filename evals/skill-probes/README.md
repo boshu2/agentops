@@ -72,4 +72,6 @@ flip is made deliberately.
 ## Evidence lands dated
 
 Every run writes a dated evidence file under `docs/evals/` and a row in the
-**Behavioral Probe Ledger (MEASURED)** of `skills/SKILL-TIERS.md`.
+**Behavioral Probe Ledger (MEASURED)** at `evals/skill-probes/LEDGER.md` (its
+own hand-maintained file — never inside generated `skills/SKILL-TIERS.md`,
+where a regeneration once wiped it).

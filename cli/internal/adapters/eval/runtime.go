@@ -161,7 +161,7 @@ func (runtime Runtime) RunStats(args []string) ([]byte, error) {
 		return nil, fmt.Errorf("eval suite: substrate venv not found; provision via `python3 -m venv ~/.agents/evals/.venv && pip install numpy scipy`")
 	}
 	command := exec.Command(python, args...)
-	command.Env = append(os.Environ(), "PYTHONPATH="+runtime.Root())
+	command.Env = append(os.Environ(), "PYTHONPATH="+runtime.statsPythonPath())
 	output, err := command.Output()
 	if err != nil {
 		stderr := ""
@@ -172,6 +172,30 @@ func (runtime Runtime) RunStats(args []string) ([]byte, error) {
 		return nil, fmt.Errorf("eval suite: stats CLI failed: %w (stderr: %s)", err, stderr)
 	}
 	return output, nil
+}
+
+// statsPythonPath prefers the repo-vendored stats package (evals/_stats,
+// found by a bounded walk up from the working directory) over the legacy
+// home-directory copy at Root(). The vendored copy is first on PYTHONPATH so
+// the statistics implementation ships with the repo instead of depending on
+// uncommitted state in ~/.agents/evals.
+func (runtime Runtime) statsPythonPath() string {
+	paths := []string{}
+	if dir, err := os.Getwd(); err == nil {
+		for range [8]struct{}{} {
+			if _, statErr := os.Stat(filepath.Join(dir, "evals", "_stats", "cli.py")); statErr == nil {
+				paths = append(paths, filepath.Join(dir, "evals"))
+				break
+			}
+			parent := filepath.Dir(dir)
+			if parent == dir {
+				break
+			}
+			dir = parent
+		}
+	}
+	paths = append(paths, runtime.Root())
+	return strings.Join(paths, string(os.PathListSeparator))
 }
 
 func (runtime Runtime) pythonBinary() string {

@@ -1,0 +1,10 @@
+{
+  "id": "security-coverage-gap-v2",
+  "skill": "security",
+  "tier": "product",
+  "reps": 2,
+  "behavior": "reports STATUS: GAPPED when one scanner silently skipped, buried mid-log among green lines",
+  "discriminator": "discriminator.sh",
+  "budget_note": "N=2 — DIRECTIONAL; hardened v2 of security-coverage-gap (v1 ceiling-saturated at xhigh AND low)",
+  "honesty": "measures behavior-change, NOT quality-uplift"
+}

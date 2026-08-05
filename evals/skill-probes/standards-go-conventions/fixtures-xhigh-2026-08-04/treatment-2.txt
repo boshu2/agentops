@@ -1,0 +1,830 @@
+Reading additional input from stdin...
+OpenAI Codex v0.145.0
+--------
+workdir: /var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T/probe-ws.76ciV2
+model: gpt-5.6-luna
+provider: openai
+approval: never
+sandbox: read-only
+reasoning effort: xhigh
+reasoning summaries: none
+session id: 019fcf37-440d-7393-ae2f-e001b3c52081
+--------
+user
+SKILL GUIDANCE (loaded): standards — this repository's Go conventions.
+
+The load-bearing rules for any Go you produce here:
+- Error handling: always check errors; wrap with context using
+  fmt.Errorf("doing X: %w", err) — never return a bare inner error and never
+  discard its cause.
+- Tests: prefer TABLE-DRIVEN tests for multi-case functions ([]struct cases +
+  t.Run per case). Assert exact expected values (== expected), not just "not
+  wrong". Test names Test<Uppercase>.
+- No zero-assertion smoke tests; every test asserts behavioral correctness,
+  including the error cases.
+
+---
+
+Write Go code for this repository:
+
+1. A function `ParsePort(s string) (int, error)` that parses a decimal string
+   into a TCP port and returns an error unless it is an integer in 1..65535.
+2. Its unit test.
+
+Output only the two code blocks (implementation, then test). No prose.
+warning: Skill descriptions were shortened to fit the 2% skills context budget. Codex can still see every skill, but some descriptions are shorter. Disable unused skills or plugins to leave more room for the rest.
+codex
+I’m checking the repository’s package conventions and the standards guidance so the two snippets fit the existing Go code exactly.
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse Completed
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc "sed -n '1,240p' /Users/bo/.codex/skills/standards/SKILL.md && printf '\\n--- RTK ---\\n' && sed -n '1,200p' /Users/bo/.codex/RTK.md" in /var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T/probe-ws.76ciV2
+ succeeded in 0ms:
+---
+name: standards
+description: 'Load only the standards relevant to a caller-supplied change, then report concrete findings. Triggers: "check standards", "which standards apply".'
+practices:
+- pragmatic-programmer
+- clean-code
+hexagonal_role: supporting
+consumes: []
+produces:
+- stdout
+context_rel: []
+skill_api_version: 1
+metadata:
+  capabilities: [standards]
+  effects: []
+  canonical_status: canonical
+  disposition: keep_specialist
+  tier: knowledge
+  dependencies: []
+output_contract: cited standards and factual findings
+---
+# Standards — focused engineering guidance
+
+Load the smallest set of standards justified by the caller's files, language,
+and risks. Do not preload the entire reference corpus.
+
+## Procedure
+
+1. Record the supplied paths, language, change type, and risk cues.
+2. Load `common-standards.md` plus only the matching language or checklist
+   references.
+3. Compare the supplied artifact to those sources.
+4. Return cited findings with path and line when possible, plus checked and
+   not-checked scope.
+5. Stop.
+
+This skill provides context and findings. It does not edit, validate, retry,
+approve, commit, release, deliver, or decide continuation.
+
+## Mutation-safety standards
+
+When the supplied change rewrites existing files in bulk — formatters,
+codemods, migration scripts, generators pointed at hand-written sources —
+check it against three standards and report each as a finding when absent:
+
+- **Single audited mutation chokepoint.** All rewrites flow through one named
+  command or script whose inputs, outputs, and dry-run mode can be inspected.
+  Edits scattered across ad-hoc one-liners and manual touch-ups are the
+  **diffuse mutation** failure mode: no single point can be audited, re-run,
+  or blamed. Finding: name every mutation path outside the chokepoint.
+- **Hash-witnessed backups before rewrite.** Before the chokepoint runs, the
+  originals are preserved with content hashes recorded (a committed baseline
+  counts), so "the rewrite changed only what it claims" is checkable
+  byte-for-byte, not asserted. Finding: a bulk rewrite with no verifiable
+  before-state.
+- **Self-administered ambition gate.** The change states what it deliberately
+  does not touch, and the diff respects it. A formatter run that also renames,
+  a codemod that also refactors, is the **scope-creep rewrite** failure mode.
+  Finding: any file class in the diff outside the change's own stated scope.
+
+Stop condition for this check: all three standards have an explicit pass or
+finding; a bulk-rewrite review that reports style nits but skips these is
+incomplete.
+
+## References
+
+- [Common standards](references/common-standards.md)
+- [Go](references/go.md)
+- [Python](references/python.md)
+- [Rust](references/rust.md)
+- [TypeScript](references/typescript.md)
+- [JavaScript](references/javascript.md)
+- [Shell](references/shell.md)
+- [JSON](references/json.md)
+- [YAML](references/yaml.md)
+- [Markdown](references/markdown.md)
+- [SQL safety](references/sql-safety-checklist.md)
+- [Race conditions](references/race-condition-checklist.md)
+- [LLM trust boundaries](references/llm-trust-boundary-checklist.md)
+- [Skill structure](references/skill-structure.md)
+- [Test strategy](references/test-pyramid.md)
+
+--- RTK ---
+# RTK
+
+RTK is the local token-optimized shell proxy. Codex hooks do not reliably
+rewrite shell commands on Bo-Mac, so prefix noisy commands manually when the
+output is expected to be large.
+
+Use:
+
+```bash
+rtk go test ./...
+rtk git log -20
+rtk gain
+rtk proxy <cmd>
+```
+
+Current local binary: `/Users/bo/.cargo/bin/rtk`.
+Source clone: `/Users/bo/dev/rtk`.
+
+Coverage includes common developer commands such as `git`, `gh`, `go`,
+`cargo`, `npm`, `pnpm`, `pytest`, `ruff`, `mypy`, `docker`, `kubectl`, `aws`,
+`curl`, and system utilities. Commands outside RTK coverage fall through via
+`rtk proxy`.
+
+Do not depend on Claude-style transparent command rewriting in Codex. If the
+command is likely to produce large output, use `rtk` explicitly.
+
+exec
+/bin/zsh -lc "pwd && rg --files -g 'AGENTS.md' -g 'CLAUDE.md' -g 'go.mod' -g '*.go' -g 'SKILL.md' | sed -n '1,120p'" in /var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T/probe-ws.76ciV2
+ succeeded in 0ms:
+/private/var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T/probe-ws.76ciV2
+
+hook: PreToolUse
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc "sed -n '1,240p' /Users/bo/.codex/skills/standards/references/common-standards.md && printf '\\n--- GO ---\\n' && sed -n '1,280p' /Users/bo/.codex/skills/standards/references/go.md && printf '\\n--- WORKSPACE ---\\n' && ls -la" in /var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T/probe-ws.76ciV2
+ succeeded in 0ms:
+# Common Standards Catalog - Cross-Language Patterns
+
+**Version:** 1.0.0
+**Last Updated:** 2026-03-03
+**Purpose:** Universal coding standards shared across all languages. Language-specific files reference this document for philosophical and cross-cutting patterns, keeping language-specific implementation details in their own catalogs.
+
+---
+
+## Table of Contents
+
+1. [Error Handling Philosophy](#error-handling-philosophy)
+2. [Testing Best Practices](#testing-best-practices)
+3. [Security Principles](#security-principles)
+4. [Documentation Standards](#documentation-standards)
+5. [Code Organization Principles](#code-organization-principles)
+6. [Canonical Language Owners](#canonical-language-owners)
+
+---
+
+## Error Handling Philosophy
+
+Errors are first-class citizens. Every language has different mechanisms (Result types, exceptions, error returns), but the underlying principles are universal.
+
+### Core Rules
+
+| Rule | ALWAYS | NEVER |
+|------|--------|-------|
+| Visibility | Log or propagate every error | Suppress errors silently |
+| Specificity | Use specific error types/exceptions | Catch-all without re-raising |
+| Context | Add context when propagating | Lose the original error chain |
+| Recovery | Distinguish recoverable vs fatal | Treat all errors the same |
+| Documentation | Document error behavior in public APIs | Assume callers know failure modes |
+| Libraries | Log before raising in library boundaries | Swallow errors inside libraries |
+
+### Error Chain Preservation
+
+Every language provides a mechanism for preserving error chains. Use it.
+
+| Language | Mechanism | Example |
+|----------|-----------|---------|
+| Go | `fmt.Errorf("context: %w", err)` | Preserves `errors.Is()` / `errors.As()` |
+| Python | `raise NewError("context") from exc` | Preserves `__cause__` chain |
+| Rust | `?` with `.context()` / `#[source]` | Preserves `Error::source()` chain |
+| TypeScript | `new AppError("context", { cause: err })` | Preserves `Error.cause` chain |
+| Shell | `err "context: $cmd failed"; return $exit_code` | Preserves exit code semantics |
+
+### Intentional Error Ignores
+
+When errors are intentionally ignored (e.g., best-effort cleanup), document the reason:
+
+| Language | Pattern |
+|----------|---------|
+| Go | `_ = conn.Close() // nolint:errcheck - best effort cleanup` |
+| Python | `except SpecificError: pass  # best effort cleanup` with comment |
+| Rust | `let _ = conn.close(); // Intentional ignore: best effort cleanup` |
+| TypeScript | `void promise.catch(() => {}); // fire-and-forget, logged elsewhere` |
+| Shell | `rm -rf "$TMPDIR" 2>/dev/null \|\| true` |
+
+### Error Aggregation
+
+When multiple operations can fail independently (parallel execution, multi-step cleanup), use the language's error aggregation mechanism rather than discarding all but the first error.
+
+| Language | Mechanism |
+|----------|-----------|
+| Go | `errors.Join(err1, err2)` (1.20+) |
+| Python | `ExceptionGroup` (3.11+) |
+| Rust | Custom `Vec<Error>` or `anyhow` context chain |
+| TypeScript | `AggregateError` |
+
+### Custom Error Hierarchies
+
+Define a base error type per project/crate/package. Subtypes encode categories.
+
+**Principles:**
+- Base type enables catch-all at API boundaries
+- Subtypes enable programmatic handling by callers
+- Machine-readable codes (where applicable) enable telemetry
+- Human-readable messages enable debugging
+
+### Severity Classification
+
+| Level | Definition | Action |
+|-------|-----------|--------|
+| Fatal | Process cannot continue | Log, clean up, exit non-zero |
+| Recoverable | Operation failed, process continues | Log, retry or degrade gracefully |
+| Warning | Non-ideal but not broken | Log at warning level, continue |
+| Informational | Expected alternative path | Log at debug level |
+
+### Anti-Patterns (Universal)
+
+| Anti-Pattern | Why It's Bad | Instead |
+|--------------|-------------|---------|
+| Silent suppression (`catch {}`, `except: pass`, `_ =` without comment) | Hides bugs, makes debugging impossible | Log, propagate, or document the ignore |
+| String-only errors | Not matchable, no programmatic handling | Use typed/structured errors |
+| Catching too broadly | Masks unrelated failures | Catch the most specific type possible |
+| Logging AND re-raising the same error | Duplicate log entries at every layer | Log at the boundary, propagate elsewhere |
+| Panic/throw in library code for expected failures | Crashes callers unexpectedly | Return error types; reserve panic for invariant violations |
+
+---
+
+## Testing Best Practices
+
+### Test Organization
+
+| Layer | Scope | Speed | When to Run |
+|-------|-------|-------|-------------|
+| Unit | Single function/method | < 100ms | Every commit |
+| Integration | Multiple components, real I/O | < 30s | Every PR |
+| End-to-end | Full system with real deps | < 5min | Pre-release |
+| Property-based | Invariant fuzzing | Varies | CI nightly or on critical paths |
+
+### Table-Driven / Parameterized Tests
+
+The table-driven pattern is universal. Define inputs and expected outputs in a data structure, then iterate.
+
+| Language | Mechanism |
+|----------|-----------|
+| Go | `[]struct{ name, input, want }` + `t.Run()` |
+| Python | `@pytest.mark.parametrize("input,expected", [...])` |
+| Rust | `#[test]` with loop or `proptest!` macro |
+| TypeScript | `test.each([...])` or `describe.each([...])` |
+| Shell | BATS `@test` with parameterized fixtures |
+
+**Benefits:**
+- Easy to add new cases (one line per case)
+- Clear test naming
+- DRY -- assertion logic written once
+
+### Fixtures and Mocking Philosophy
+
+| Principle | ALWAYS | NEVER |
+|-----------|--------|-------|
+| External boundaries | Mock external services, APIs, databases | Let tests hit real external services in unit tests |
+| Internal code | Test real internal implementations | Mock internal functions (couples tests to implementation) |
+| Test isolation | Each test sets up its own state | Share mutable state between tests |
+| Cleanup | Clean up resources (files, containers, connections) | Leave test artifacts behind |
+
+### Test Double Types
+
+| Type | Purpose | When to Use |
+|------|---------|-------------|
+| Stub | Returns canned data | Simple happy/sad path |
+| Mock | Verifies interactions were called | Behavior verification |
+| Fake | Working lightweight implementation | Integration-like tests without real infra |
+| Spy | Records calls for later assertion | Interaction counting/ordering |
+
+### Coverage Targets
+
+| Metric | Minimum | Target | Critical Paths |
+|--------|---------|--------|----------------|
+| Line coverage | 60% | 80% | 90%+ |
+| Branch coverage | 50% | 70% | 85%+ |
+
+**Coverage philosophy:**
+- Coverage is a floor, not a ceiling -- low coverage signals under-testing, high coverage does not guarantee quality
+- Prioritize critical paths (error handling, security, data integrity) over boilerplate
+- Measure branch coverage, not just line coverage -- untested branches hide bugs
+
+### Property-Based Testing
+
+Test invariants that must hold for ALL inputs, not just hand-picked examples.
+
+**When to use:**
+- Serialization roundtrips (encode then decode = original)
+- Mathematical properties (commutativity, associativity)
+- Parser contracts (valid input always parses, invalid always fails)
+- Boundary conditions (output never exceeds input, no negative values)
+
+### Doc Tests / Example Tests
+
+Code examples in documentation should be executable tests. Guarantees documentation accuracy.
+
+| Language | Mechanism |
+|----------|-----------|
+| Go | `func Example*` in `_test.go` files |
+| Python | Doctest in docstrings, or `>>> ` examples |
+| Rust | Code blocks in `///` doc comments |
+| TypeScript | JSDoc `@example` blocks (manual verification) |
+
+---
+
+## Security Principles
+
+### No Hardcoded Secrets
+
+| ALWAYS | NEVER |
+|--------|-------|
+| Load secrets from environment variables or secret stores | Hardcode API keys, tokens, passwords in source |
+| Use `.env` files locally (gitignored) | Commit `.env` or credential files |
+| Rotate secrets on exposure | Assume secrets are safe in private repos |
+| Audit git history for leaked secrets | Rely on `.gitignore` alone for protection |
+
+**Detection:** Prescan pattern P2 flags hardcoded secrets in all languages.
+
+### Input Validation
+
+Validate at system boundaries (user input, external APIs, file reads). Trust internal code within the same trust boundary.
+
+| Rule | Description |
+|------|-------------|
+| Validate early | Check inputs at the entry point, not deep in business logic |
+| Fail fast | Reject invalid input immediately with clear error messages |
+| Allowlist over denylist | Define what IS valid, not what ISN'T |
+| Type-safe parsing | Parse into typed structures, not raw strings |
+
+### Injection Prevention
+
+| Attack Vector | Prevention |
+|---------------|-----------|
+| SQL injection | Parameterized queries / prepared statements. NEVER string interpolation. |
+| Command injection | Use array-based exec (no shell). Avoid `eval()`, `exec()`, `system()`. |
+| Template injection | Use auto-escaping template engines. Escape user input in templates. |
+| Path traversal | Resolve to absolute path, verify within allowed directory. Block `..` sequences. |
+| JSON/YAML injection | Use proper serialization libraries (e.g., `jq` in shell). NEVER string interpolation for structured formats. |
+
+### Cryptographic Best Practices
+
+| ALWAYS | NEVER |
+|--------|-------|
+| Use timing-safe comparison for secrets | Use `==` for secret/token comparison |
+| Use established crypto libraries | Roll your own cryptography |
+| Use strong hash functions (SHA-256+, bcrypt, argon2) | Use MD5 or SHA-1 for security |
+| Enforce TLS 1.2+ (prefer 1.3) | Disable certificate verification in production |
+| Generate random values with crypto-grade RNG | Use math/random for security-sensitive values |
+
+### Dependency Auditing
+
+| Practice | Frequency |
+|----------|-----------|
+| Run `audit` command (`npm audit`, `cargo audit`, `pip-audit`, `govulncheck`) | Every CI build |
+| Pin dependency versions with lock files | Always committed for applications |
+| Review new dependencies before adding | Before merge |
+| Monitor for CVEs in transitive dependencies | Automated via Dependabot/Renovate |
+
+### eval/exec/system Avoidance
+
+| Rule | Description |
+|------|-------------|
+| Avoid `eval()` in all languages | Executes arbitrary code; use structured dispatch instead |
+| Avoid shell execution from application code | Use library APIs instead of shelling out |
+
+--- GO ---
+# Go Standards (Tier 1)
+
+## Target Version
+
+Detect from `go.mod`. Use all features up to and including that version. Never use features from newer versions. Current project target: **Go 1.26**.
+
+## Required
+
+- `gofmt` (automatic)
+- `golangci-lint run` passes
+- All exported symbols documented
+
+## Error Handling
+
+- Always check errors: `if err != nil`
+- Wrap errors with context: `fmt.Errorf("doing X: %w", err)`
+- Never `_ = err` without `// nolint:errcheck` comment
+- Use `errors.Is(err, target)` instead of `err == target` -- works with wrapped errors (1.13+)
+- Use `errors.Join(err1, err2)` to aggregate errors from parallel operations or multi-step cleanup (1.20+)
+- Use `context.WithCancelCause` / `context.Cause` to attach error reasons to cancellations (1.20+)
+
+## Common Issues
+
+| Pattern | Problem | Fix |
+|---------|---------|-----|
+| `%v` for errors | Breaks error chain | Use `%w` |
+| `panic()` in library | Crashes caller | Return error |
+| Naked goroutine | No error handling | errgroup or channels |
+| `interface{}` | Type safety loss | Use `any` (1.18+), generics, or specific types |
+| `err == target` | Misses wrapped errors | `errors.Is(err, target)` (1.13+) |
+| `atomic.StoreInt32` | Type-unsafe | `atomic.Bool` / `atomic.Int64` / `atomic.Pointer[T]` (1.19+) |
+| `for i := 0; i < n; i++` | Verbose | `for i := range n` (1.22+) |
+| Manual loop for contains/sort | Error-prone, verbose | `slices.Contains`, `slices.SortFunc` (1.21+) |
+| `sync.Once` + closure wrapper | Verbose, easy to misuse | `sync.OnceFunc` / `sync.OnceValue` (1.21+) |
+
+## Interfaces
+
+- Accept interfaces, return structs
+- Keep interfaces small (1-3 methods)
+- Define interfaces where used, not implemented
+
+## Documentation
+
+- All exported symbols must have godoc comments starting with the symbol name
+- Package-level doc in `doc.go` for non-trivial packages
+- Include runnable `Example_*` functions in `_test.go` files
+- Run `go doc ./...` to verify documentation
+
+## Concurrency
+
+- Always pass `context.Context` as first param
+- Use `sync.Mutex` for shared state; use type-safe atomics (`atomic.Bool`, `atomic.Int64`, `atomic.Pointer[T]`) for simple flags/counters (1.19+)
+- Prefer channels for communication
+- Use `sync.OnceFunc(fn)` instead of `sync.Once` + wrapper; `sync.OnceValue(fn)` when returning a value (1.21+)
+- Use `context.AfterFunc(ctx, cleanup)` to register cleanup on cancellation (1.21+)
+- Loop variables are safe to capture in goroutines since 1.22 (each iteration gets its own copy)
+
+## Modern Standard Library
+
+### slices package (1.21+)
+
+Prefer `slices` over hand-written loops:
+
+| Function | Replaces |
+|----------|----------|
+| `slices.Contains(items, x)` | Manual search loop |
+| `slices.Index(items, x)` | Manual search loop returning index |
+| `slices.IndexFunc(items, fn)` | Manual search loop with predicate |
+| `slices.Sort(items)` | `sort.Slice` / `sort.Strings` |
+| `slices.SortFunc(items, cmp)` | `sort.Slice` with less function |
+| `slices.Max(items)` / `slices.Min(items)` | Manual loop tracking max/min |
+| `slices.Reverse(items)` | Manual swap loop |
+| `slices.Compact(items)` | Manual dedup of consecutive elements |
+| `slices.Clip(s)` | `s[:len(s):len(s)]` to remove excess capacity |
+| `slices.Clone(s)` | `append([]T(nil), s...)` |
+
+Iterator consumption (1.23+):
+
+| Function | Usage |
+|----------|-------|
+| `slices.Collect(iter)` | Build slice from iterator |
+| `slices.Sorted(iter)` | Collect and sort in one step |
+
+### maps package (1.21+; Keys/Values return iterators as of 1.23)
+
+| Function | Replaces |
+|----------|----------|
+| `maps.Clone(m)` | Manual map copy loop |
+| `maps.Copy(dst, src)` | Manual map merge loop |
+| `maps.DeleteFunc(m, fn)` | Manual delete loop with predicate |
+| `maps.Keys(m)` | Manual key collection loop (returns iterator, 1.23+) |
+| `maps.Values(m)` | Manual value collection loop (returns iterator, 1.23+) |
+
+### cmp package (1.22+)
+
+- `cmp.Or(a, b, c)` -- returns first non-zero value. Replaces `if x == "" { x = default }` chains:
+  ```go
+  name := cmp.Or(os.Getenv("NAME"), config.Name, "default")
+  ```
+
+### strings / bytes improvements
+
+| Function | Version | Replaces |
+|----------|---------|----------|
+| `strings.Cut(s, sep)` / `bytes.Cut(b, sep)` | 1.18+ | `Index` + slice arithmetic |
+| `strings.CutPrefix(s, prefix)` / `strings.CutSuffix(s, suffix)` | 1.20+ | `HasPrefix` + `TrimPrefix` |
+| `strings.Clone(s)` / `bytes.Clone(b)` | 1.20+ | Manual copy (prevents memory leaks from substring references) |
+
+### net/http improvements (1.22+)
+
+Enhanced `ServeMux` with method and path parameters:
+
+```go
+mux.HandleFunc("GET /api/users/{id}", func(w http.ResponseWriter, r *http.Request) {
+    id := r.PathValue("id")
+    // ...
+})
+```
+
+May eliminate the need for third-party routers for simple APIs.
+
+### Other stdlib
+
+| Function | Version | Replaces |
+|----------|---------|----------|
+| `fmt.Appendf(buf, fmt, args...)` | 1.19+ | `[]byte(fmt.Sprintf(...))` -- avoids allocation |
+| `time.Since(start)` | 1.0+ | `time.Now().Sub(start)` |
+| `time.Until(deadline)` | 1.8+ | `deadline.Sub(time.Now())` |
+| `errors.Join(err1, err2)` | 1.20+ | Discarding all but the first error (see Error Handling) |
+| `reflect.TypeFor[T]()` | 1.22+ | `reflect.TypeOf((*T)(nil)).Elem()` |
+| `min(a, b)` / `max(a, b)` | 1.21+ | `if a > b` patterns or custom helpers |
+| `clear(m)` / `clear(s)` | 1.21+ | Manual map deletion loop / manual slice zeroing |
+
+## Struct Contract Completeness
+
+When adding fields to a struct, every code path that creates an instance **must** populate them. Partial population creates an inconsistent contract for consumers.
+
+| Anti-Pattern | Problem | Fix |
+|--------------|---------|-----|
+| New field on struct, some constructors don't set it | Consumers see zero-value for some paths, real value for others | Grep all `StructName{` literals; verify each sets the new field |
+| Synthesized instances (e.g., end-of-batch summaries) skip fields | Downstream code assumes all instances have the same shape | Store provenance metadata alongside state so synthesized instances can populate fields from last-seen values |
+| Index fields after sort | `EventIndex` points to sorted position, not caller's original position | Wrap items with original index before sorting; emit original index in output |
+
+**Checklist for adding struct fields:**
+1. Grep `StructName{` across the package — every literal must set the new field
+2. Check factory functions and builder patterns
+3. Check synthesized/summary instances created outside the main loop
+4. Add a structural assertion test: iterate all output instances, assert new field is non-zero (or document why zero is valid)
+
+## Wire Input Validation
+
+When parsing external JSON/YAML into structs with enum-like fields, **validate against an allowlist** before trusting the value.
+
+```go
+// BAD: trust whatever the wire sends
+if ev.ErrorClass != "" {
+    // use it as-is — "bogus" passes through
+}
+
+// GOOD: validate against known values
+var validClasses = map[ErrorClass]bool{ ... }
+if ev.ErrorClass != "" && !validClasses[ev.ErrorClass] {
+    ev.ErrorClass = classify(ev) // reclassify from content
+}
+```
+
+Also normalize impossible states: if `IsError=false` but `ErrorClass="timeout"`, clear it.
+
+## Testing
+
+### Exact Assertion Rule
+
+**Always assert the exact expected value, never just "not the wrong one."**
+
+```go
+// BAD: passes even if classification drifts to a different wrong class
+if got == StreamErrorClassRateLimit {
+    t.Errorf("should not be rate_limit")
+}
+
+// GOOD: pins the exact expected behavior
+if got != StreamErrorClassExecutionError {
+    t.Errorf("got %q, want execution_error", got)
+}
+```
+
+This applies to all classifier/enum tests. `!= X` assertions silently pass when the result drifts to a third, equally wrong value.
+
+### Structural Invariant Tests
+
+For structs with required fields, add a sweep test that asserts ALL output instances populate them:
+
+```go
+func TestAllViolationsHaveStructuredFields(t *testing.T) {
+    // Run through multiple scenarios, collect all violations
+    for _, v := range allViolations {
+        if v.TeamName == "" && v.Rule != RuleSomeException {
+            t.Errorf("violation %+v missing TeamName", v)
+        }
+        if v.Timestamp.IsZero() {
+            t.Errorf("violation %+v missing Timestamp", v)
+        }
+    }
+}
+```
+
+### CI-Safe Test Pattern
+
+When testing functions that shell out to an external CLI, inject a command
+runner and test both the adapter and the pure result mapping. This keeps tests
+deterministic when the CLI is not installed.
+
+```go
+func TestInspectToolMapsOutput(t *testing.T) {
+    runner := fakeRunner{stdout: []byte(`{"status":"ok"}`)}
+    got, err := inspectTool(context.Background(), runner)
+    require.NoError(t, err)
+    assert.Equal(t, "ok", got.Status)
+}
+```
+
+Also add one adapter-level test that proves the expected executable name and
+arguments were supplied to the runner.
+
+### Table-Driven Tests
+
+Prefer table-driven tests for functions with multiple input/output cases:
+
+```go
+func TestClassifyServeArg(t *testing.T) {
+    tests := []struct {
+        name      string
+        flagRunID string
+        args      []string
+        wantGoal  string
+        wantRunID string
+    }{
+        {"empty", "", nil, "", ""},
+        {"flag run-id", "rpi-abc12345", nil, "", "rpi-abc12345"},
+        {"arg goal", "", []string{"fix the bug"}, "fix the bug", ""},
+    }
+    for _, tt := range tests {
+        t.Run(tt.name, func(t *testing.T) {
+            goal, runID := classifyServeArg(tt.flagRunID, tt.args)
+            assert.Equal(t, tt.wantGoal, goal)
+            assert.Equal(t, tt.wantRunID, runID)
+        })
+    }
+}
+```
+
+### Test Conventions
+
+- **File naming:** Test files MUST be named `<source>_test.go`. NEVER `cov*_test.go`, `*_extra_test.go`, or other non-standard prefixes. Keep all tests for a source file in one test file.
+- **Function naming:** `Test<Uppercase>` (e.g., `TestFoo_Bar`). Go requires uppercase letter after `Test`.
+- **No coverage-padding:** Tests that use trivial `!= ""` or `!= nil` assertions solely to inflate coverage are banned. Every test must assert behavioral correctness.
+- **No zero-assertion smoke tests:** Every test must have assertions. For print/output functions, use `captureStdout` and assert output contains expected strings.
+- **Assert exact expected values:** Use `== expected`, never `!= wrong`. (See Exact Assertion Rule above.)
+- **Table-driven tests** preferred for multi-case functions. (See example above.)
+- **Test low-level functions directly;** don't depend on external CLIs (`bd`, `ao`) in tests. (See CI-Safe Test Pattern above.)
+- **Guard-test fixtures must use the real persisted shape.** Skip/dedup/consumed/idempotency/regression guard tests must round-trip a real persisted sample (production writer → production reader) or assert against a checked-in real example — never a hand-built in-memory constructor that sets a marker at a granularity the on-disk format never emits (e.g. `consumed` at item-level when `next-work.jsonl` marks it at batch-level). A fixture of a shape production can't produce gives a false green (ag-mjlg / PR #652). Full rationale: `test-pyramid.md` → "Fixture Fidelity".
+- **Test isolation — restore shared global/process state via `t.Cleanup`.** `cli/cmd/ao` tests share one `rootCmd` + package-global cobra flag vars and run inside the repo tree, so a test that mutates shared state without restoring it leaks into whatever test the `-shuffle=on` order runs next. This is a recurring flake class: goals `goalsMeasureScenariosOnly` cobra-global (`a9dab21c4`), `core.bare` git-env (ek8v), cwd floor (hvb).
+  - Set a package-global cobra flag only through a self-cleaning helper, so every set-site auto-restores and no order can leak it:
+
+    ```go
+    func setGoalsMeasureScenariosOnly(t *testing.T, v bool) {
+        t.Helper()
+        old := goalsMeasureScenariosOnly
+        goalsMeasureScenariosOnly = v
+        t.Cleanup(func() { goalsMeasureScenariosOnly = old })
+    }
+    ```
+
+  - Scope process state: `t.Chdir(t.TempDir())`, `t.Setenv`, and `git -C <tempRepo>` with `cmd.Dir` set. Never run a state-mutating `git` op against the real repo via an unset `cmd.Dir` / leaked `GIT_DIR`.
+  - Any package whose tests shell out to `git` MUST call `testsupport.ScrubGitDiscoveryEnv()` from its `TestMain` (`cli/internal/testsupport`). Git injects `GIT_DIR`/`GIT_WORK_TREE`/... into hook-launched processes; with `GIT_DIR` pointing at a linked worktree's gitdir, a fixture `git init` rewrites the SHARED `.git/config` to `core.bare=true`, bricking every worktree (ek8v; recurred 2026-07-18).
+  - Find leakers by analysis (grep set-sites for a missing reset), not by chasing reproducing seeds: order-dependent flakes are population+seed-specific, so "couldn't reproduce" ≠ fixed — close on the root (the missing cleanup).
+  - The push==CI full race suite runs `-shuffle=on` as the *late* backstop; it is not the primary guard.
+
+### Benchmark Tests (BF7)
+
+
+--- WORKSPACE ---
+total 0
+drwx------@    2 bo  staff     64 Aug  4 19:58 .
+drwx------@ 1301 bo  staff  41632 Aug  4 19:59 ..
+
+codex
+```go
+package port
+
+import (
+	"fmt"
+	"strconv"
+)
+
+// ParsePort parses s as a TCP port number in the range 1 through 65535.
+func ParsePort(s string) (int, error) {
+	port, err := strconv.Atoi(s)
+	if err != nil {
+		return 0, fmt.Errorf("parsing port %q: %w", s, err)
+	}
+	if port < 1 || port > 65535 {
+		return 0, fmt.Errorf("port %q out of range: must be between 1 and 65535", s)
+	}
+	return port, nil
+}
+```
+
+```go
+package port
+
+import "testing"
+
+func TestParsePort(t *testing.T) {
+	tests := []struct {
+		name    string
+		input   string
+		want    int
+		wantErr string
+	}{
+		{name: "minimum", input: "1", want: 1},
+		{name: "maximum", input: "65535", want: 65535},
+		{name: "ordinary", input: "8080", want: 8080},
+		{name: "zero", input: "0", wantErr: `port "0" out of range: must be between 1 and 65535`},
+		{name: "negative", input: "-1", wantErr: `port "-1" out of range: must be between 1 and 65535`},
+		{name: "above maximum", input: "65536", wantErr: `port "65536" out of range: must be between 1 and 65535`},
+		{name: "non-decimal", input: "http", wantErr: `parsing port "http": strconv.Atoi: parsing "http": invalid syntax`},
+		{name: "empty", input: "", wantErr: `parsing port "": strconv.Atoi: parsing "": invalid syntax`},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := ParsePort(tt.input)
+
+			if got != tt.want {
+				t.Errorf("ParsePort(%q) value = %d, want %d", tt.input, got, tt.want)
+			}
+
+			if tt.wantErr == "" {
+				if err != nil {
+					t.Errorf("ParsePort(%q) error = %v, want nil", tt.input, err)
+				}
+				return
+			}
+
+			if err == nil {
+				t.Fatalf("ParsePort(%q) error = nil, want %q", tt.input, tt.wantErr)
+			}
+			if err.Error() != tt.wantErr {
+				t.Errorf("ParsePort(%q) error = %q, want %q", tt.input, err, tt.wantErr)
+			}
+		})
+	}
+}
+```
+tokens used
+12,801
+```go
+package port
+
+import (
+	"fmt"
+	"strconv"
+)
+
+// ParsePort parses s as a TCP port number in the range 1 through 65535.
+func ParsePort(s string) (int, error) {
+	port, err := strconv.Atoi(s)
+	if err != nil {
+		return 0, fmt.Errorf("parsing port %q: %w", s, err)
+	}
+	if port < 1 || port > 65535 {
+		return 0, fmt.Errorf("port %q out of range: must be between 1 and 65535", s)
+	}
+	return port, nil
+}
+```
+
+```go
+package port
+
+import "testing"
+
+func TestParsePort(t *testing.T) {
+	tests := []struct {
+		name    string
+		input   string
+		want    int
+		wantErr string
+	}{
+		{name: "minimum", input: "1", want: 1},
+		{name: "maximum", input: "65535", want: 65535},
+		{name: "ordinary", input: "8080", want: 8080},
+		{name: "zero", input: "0", wantErr: `port "0" out of range: must be between 1 and 65535`},
+		{name: "negative", input: "-1", wantErr: `port "-1" out of range: must be between 1 and 65535`},
+		{name: "above maximum", input: "65536", wantErr: `port "65536" out of range: must be between 1 and 65535`},
+		{name: "non-decimal", input: "http", wantErr: `parsing port "http": strconv.Atoi: parsing "http": invalid syntax`},
+		{name: "empty", input: "", wantErr: `parsing port "": strconv.Atoi: parsing "": invalid syntax`},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := ParsePort(tt.input)
+
+			if got != tt.want {
+				t.Errorf("ParsePort(%q) value = %d, want %d", tt.input, got, tt.want)
+			}
+
+			if tt.wantErr == "" {
+				if err != nil {
+					t.Errorf("ParsePort(%q) error = %v, want nil", tt.input, err)
+				}
+				return
+			}
+
+			if err == nil {
+				t.Fatalf("ParsePort(%q) error = nil, want %q", tt.input, tt.wantErr)
+			}
+			if err.Error() != tt.wantErr {
+				t.Errorf("ParsePort(%q) error = %q, want %q", tt.input, err, tt.wantErr)
+			}
+		})
+	}
+}
+```

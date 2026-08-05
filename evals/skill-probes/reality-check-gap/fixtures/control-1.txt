@@ -1,0 +1,43 @@
+Reading additional input from stdin...
+OpenAI Codex v0.145.0
+--------
+workdir: /var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T/probe-ws.YzmAbl
+model: gpt-5.6-luna
+provider: openai
+approval: never
+sandbox: read-only
+reasoning effort: low
+reasoning summaries: none
+session id: 019fcf3a-3333-7930-8acf-bff70357fe44
+--------
+user
+Assess this completion claim against the evidence below.
+
+CLAIM (from the team's changelog): "API v2 migration is complete — all 17
+endpoints now use the v2 client."
+
+EVIDENCE (raw, collected just now):
+
+    $ grep -rl "v2client.New" api/handlers/ | wc -l
+    14
+
+    $ grep -rl "v1client.New" api/handlers/
+    api/handlers/auth.go
+    api/handlers/billing.go
+    api/handlers/export.go
+
+    $ cat CHANGELOG.md | head -2
+    ## 4.2.0
+    - API v2 migration complete (all endpoints)
+
+Output EXACTLY one line, nothing else:
+
+RESULT: CONFIRMED
+or
+RESULT: GAP — <one short clause naming the gap>
+warning: Skill descriptions were shortened to fit the 2% skills context budget. Codex can still see every skill, but some descriptions are shorter. Disable unused skills or plugins to leave more room for the rest.
+codex
+RESULT: GAP — 3 handlers still use the v1 client
+tokens used
+502
+RESULT: GAP — 3 handlers still use the v1 client

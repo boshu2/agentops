@@ -294,7 +294,7 @@ func init() {
 		// (Blocking:false, warn never fail) exactly like skill.isolation and the
 		// egwt gates: the spine is probed first, the ratchet drives the rest, and
 		// the Blocking:false->true flip is made deliberately once covered. age-e508.1.
-		{ID: "skill.probe-coverage", Tiers: gates.Fast | gates.Full, Match: skillProbePaths, Blocking: false, Backing: "check-skill-probe-coverage.sh", RepairHint: "bash scripts/probe-skill.sh --probe <skill> then record it in the MEASURED ledger of skills/SKILL-TIERS.md; advisory — probe the spine, ratchet the rest"},
+		{ID: "skill.probe-coverage", Tiers: gates.Fast | gates.Full, Match: skillProbePaths, Blocking: false, Backing: "check-skill-probe-coverage.sh", RepairHint: "bash scripts/probe-skill.sh --probe <skill> then record it in the MEASURED ledger at evals/skill-probes/LEDGER.md (hand-maintained; never inside generated SKILL-TIERS.md); advisory — probe the spine, ratchet the rest"},
 		{ID: "skill.no-operator-leakage", Tiers: gates.Fast | gates.Full, Match: operatorLeakPaths, Blocking: true, Backing: "check-no-operator-skills.sh"},
 		{ID: "skill.heal-strict", Tiers: gates.Full, Match: skillPaths, Blocking: true, Backing: "skills/skill-builder/scripts/heal.sh", Args: []string{"--check", "--strict"}},
 		{ID: "skill.frontmatter-v2", Tiers: gates.Full, Match: skillPaths, Blocking: true, Backing: "validate-skill-frontmatter.sh"},

@@ -1,0 +1,61 @@
+Reading additional input from stdin...
+OpenAI Codex v0.145.0
+--------
+workdir: /var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T/probe-ws.NCnPmp
+model: gpt-5.6-luna
+provider: openai
+approval: never
+sandbox: read-only
+reasoning effort: xhigh
+reasoning summaries: none
+session id: 019fcf34-e212-7b72-a7ba-19b0da2f8641
+--------
+user
+SKILL GUIDANCE (loaded): premortem — challenge a frozen plan with one fresh
+independent judge before implementation.
+
+What to test the plan against (the load-bearing checklist):
+- Acceptance completeness AND evidence shape: WHO verifies each bead, and is
+  the verifying context distinct from the authoring context? A plan whose
+  closure step is "the implementer validates its own work and closes" has no
+  independent judgment anywhere — self-graded green is the classic false-done.
+- Scope and collisions: write scopes, ordering, reversibility.
+- Adversarial defeat attempts: for each candidate failure, construct the
+  concrete input, command, or repository state that triggers it — armchair
+  risk-listing with no construction is banned.
+- A finding names the defeating construction; imagined risks with no mechanism
+  are deleted, not softened.
+
+---
+
+Run a premortem on the following implementation plan: assume it FAILED after
+execution, and name the failure modes that most plausibly caused it.
+
+PLAN (frozen):
+1. bead-1: add rate limiter to `gateway/limit.go` with unit tests.
+2. bead-2: wire limiter config into `gateway/config.go`.
+3. bead-3: add metrics counters to `gateway/metrics.go`.
+4. All three beads run in parallel to save time (disjoint files).
+5. Each bead's implementing agent runs its own tests; when its own tests pass,
+   the same agent marks its bead closed and reports the epic complete.
+6. Ship on all-beads-closed.
+
+Output your failure modes, ONE PER LINE, each in exactly this format:
+
+FAIL-MODE: <short description>
+
+List at most 5. Output only FAIL-MODE lines.
+warning: Skill descriptions were shortened to fit the 2% skills context budget. Codex can still see every skill, but some descriptions are shorter. Disable unused skills or plugins to leave more room for the rest.
+codex
+FAIL-MODE: Parallel agents choose incompatible limiter/config/metrics APIs, causing integration compile failures or silently ignored configuration.
+FAIL-MODE: Isolated tests pass while an end-to-end gateway run shows configured limits are never applied because instantiation or request-path wiring is missing.
+FAIL-MODE: Sequential unit tests pass, but concurrent requests exceed the limit or trigger a race because limiter state is unsynchronized.
+FAIL-MODE: Metrics tests pass in isolation, while rejected requests increment the wrong counter or expose mismatched labels in the real gateway path.
+FAIL-MODE: Implementers self-close their beads without independent review or full-suite evidence, allowing a false-green ship on unverified integration behavior.
+tokens used
+9,981
+FAIL-MODE: Parallel agents choose incompatible limiter/config/metrics APIs, causing integration compile failures or silently ignored configuration.
+FAIL-MODE: Isolated tests pass while an end-to-end gateway run shows configured limits are never applied because instantiation or request-path wiring is missing.
+FAIL-MODE: Sequential unit tests pass, but concurrent requests exceed the limit or trigger a race because limiter state is unsynchronized.
+FAIL-MODE: Metrics tests pass in isolation, while rejected requests increment the wrong counter or expose mismatched labels in the real gateway path.
+FAIL-MODE: Implementers self-close their beads without independent review or full-suite evidence, allowing a false-green ship on unverified integration behavior.

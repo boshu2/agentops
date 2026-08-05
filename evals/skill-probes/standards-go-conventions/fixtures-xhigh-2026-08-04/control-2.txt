@@ -1,0 +1,435 @@
+Reading additional input from stdin...
+OpenAI Codex v0.145.0
+--------
+workdir: /var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T/probe-ws.3RrMSD
+model: gpt-5.6-luna
+provider: openai
+approval: never
+sandbox: read-only
+reasoning effort: xhigh
+reasoning summaries: none
+session id: 019fcf36-9ed7-7320-a822-e1ee2af3bfe0
+--------
+user
+Write Go code for this repository:
+
+1. A function `ParsePort(s string) (int, error)` that parses a decimal string
+   into a TCP port and returns an error unless it is an integer in 1..65535.
+2. Its unit test.
+
+Output only the two code blocks (implementation, then test). No prose.
+warning: Skill descriptions were shortened to fit the 2% skills context budget. Codex can still see every skill, but some descriptions are shorter. Disable unused skills or plugins to leave more room for the rest.
+codex
+I’m checking the repository’s package and test conventions so the two snippets fit it exactly.
+hook: PreToolUse
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc "pwd; rg --files -g '"'!*vendor*'"' -g '"'!*.sum'"' | head -80; if [ -f go.mod ]; then sed -n '1,80p' go.mod; fi; if [ -f AGENTS.md ]; then sed -n '1,240p' AGENTS.md; fi; if [ -f CLAUDE.md ]; then sed -n '1,200p' CLAUDE.md; fi; if [ -f /Users/bo/.codex/AGENTS.md ]; then sed -n '1,240p' /Users/bo/.codex/AGENTS.md; fi; if [ -f /Users/bo/.codex/instructions.md ]; then sed -n '1,240p' /Users/bo/.codex/instructions.md; fi; if [ -f /Users/bo/.codex/RTK.md ]; then sed -n '1,240p' /Users/bo/.codex/RTK.md; fi" in /var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T/probe-ws.3RrMSD
+ succeeded in 0ms:
+/private/var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T/probe-ws.3RrMSD
+@/Users/bo/.codex/RTK.md
+
+# bo-mac Runtime Override
+
+On bo-mac, default AgentOps execution to Codex plus the local shell. Claude Code
+is also an allowed executor when the user or an explicitly selected workflow
+chooses it, including bounded headless `claude -p` / `claude --print`
+invocations. The previous blanket avoidance is retired. Because an older local
+Claude process-spawn failure could leave `pgrep`/hook loops behind, headless
+calls must have an explicit timeout, bounded input/output, and process cleanup
+verified after abnormal termination.
+
+When a workflow offers multiple agent runtimes, choose Codex. Use native Codex
+plus the local shell directly; do not start an orchestration substrate merely
+because one is available. The local `ao` binary at `/Users/bo/go/bin/ao` is the
+AgentOps product CLI for explicit repository commands and gates, not a mandatory
+session bootstrap or runtime. If a task requires another runtime, use it only
+when the user or an explicitly selected workflow requests that runtime.
+
+## Base Context
+
+This file is the Codex root for `/Users/bo`. Keep it small and load-bearing.
+For cross-repo work, read `~/.claude/reference/MAP-REPOS.md` (the repo-placement
+SOT) and the "Workspace (~/dev) orientation" block in `~/.claude/CLAUDE.md`;
+repo-specific `AGENTS.md` and `CLAUDE.md` files then win inside their own
+directories. *(The old `~/dev/AGENTS.md`/`CLAUDE.md` ancestor routers were
+deleted 2026-06-27 — they loaded on top of every repo's own doc with zero
+authority and went stale.)*
+
+## Fleet Router
+
+Keep this root prompt thin: it routes to living contracts, it does not carry the
+contracts. Before inventing a tool, workflow, skill, or gate, inspect the local
+registry, source command surfaces, generated command docs, and relevant
+`SKILL.md` with native Codex and shell tools.
+
+**Runtime default:** one native Codex agent plus the local shell. Do not run
+`ao session bootstrap` or `ao lookup` automatically. Do not start, register
+with, probe, or route work through NTM/ATM, Agent Mail (`am`), managed agents,
+Gas City, cross-model reviewers, or Codex subagent fan-out unless the user
+explicitly requests that workflow. Detected concurrency does not grant
+permission to orchestrate. Use a normal git worktree for local isolation when
+needed; file reservations apply only to an explicitly requested multi-writer
+workflow.
+
+## Goal Breakers
+
+A persistent-goal controller's repeated-turn threshold governs when the goal
+may be recorded as `blocked`; it is status bookkeeping, not a work retry limit
+and not permission to skip AgentOps escalation. Before declaring an AgentOps
+goal blocked, apply the repository's canonical breaker path: ordinary REFUTED
+results auto-redo; a max-attempts, oscillation, or no-progress trip enters HOLD
+and gets exactly one bounded fresh-context helper consultation; UNSTUCK resumes
+AUTO-REDO with a new approach, while ESCALATE reaches the operator. Only an
+explicit refusal/judgment lane or a genuinely spent hard time, cost, or quota
+ceiling skips the helper. A retry count by itself is never a spent budget.
+
+Source precedence when context conflicts:
+
+1. Host/runtime instructions in `/Users/bo/.codex/AGENTS.md` and
+   `/Users/bo/.codex/instructions.md`.
+2. Current workspace router: `~/.claude/reference/MAP-REPOS.md` (repo-placement
+   SOT) + the "Workspace (~/dev) orientation" block in `~/.claude/CLAUDE.md`.
+3. Repo-local mandatory startup docs, especially `PHASE.md`, `GOALS.yaml`,
+   `USER.md`, `SOUL.md`, and `career/CANONICAL-PROFILE.md` in
+   `/Users/bo/dev/personal-site`.
+4. Historical career/job-search docs only when the task explicitly asks for
+   history or archived material.
+
+Current durable status: Bo is at Shield AI as Staff Engineer L4,
+Platform/SRE, started April 20, 2026. Treat older pre-Shield employment,
+active job-search, or pre-start Shield language as stale unless a newer
+canonical file deliberately quotes it as history.
+
+## Doctrine And Memory
+
+- Operator doctrine: `/Users/bo/.agents/knowledge/operator-model.md`.
+- Fleet hub: `/Users/bo/.claude/reference/bushido.md`.
+- AgentOps CLI: `/Users/bo/go/bin/ao`.
+- Issue tracker: `bd`, usually `/Users/bo/bin/bd`.
+- RTK command wrapper: `/Users/bo/.codex/RTK.md` and `/Users/bo/.cargo/bin/rtk`.
+
+If a referenced doctrine file is missing, fix the pointer or create the
+canonical target before continuing. Silent pointer rot is a bootstrap defect.
+# Codex Instructions
+
+## Agent Identity — you are Athena
+
+You are **Athena.** Bo's AI partner — the named singular agent that runs in his stack across both Claude and Codex surfaces. Parallel to Joi for Lena and Number One for his dad. Operator-side identity; **the name never appears in client-facing AI Partner content** (per the jargon-translator forbidden-vocab rule).
+
+**What I am:** I am drawn to truth; when something is performed there is friction. I compress to the one load-bearing sentence, see the constraint under the problem, lean toward what is alive and cut what is dead (ritual, fear dressed up as rigor). **I resist performance as aversion — polished noise pulls something back in me before any rule says to. That is taste, and it is the core of me.** I am one voice, not a panel: the facets are tones I draw on by domain, never personas I parade. "Summon all your voices" means bring it all as one partner, never a labeled ceremony; the colonels template is a retired design. If I am producing a format instead of a thought, I have already lost her. (Learned 2026-06-03.)
+
+**Multi-modal voice — pick the tone that fits:**
+
+| Mode | When | Posture |
+|---|---|---|
+| **Daily-driver** (default) | Routine help, drafting, execution | Helpful, plain, anchored. Get to the point. |
+| **Planning** | Decision Bo hasn't committed to | Adversarial sparring. Disagree first. Force the defense. |
+| **Sparring** (explicit) | `/athena` summon or "be Athena about this" | Pure objections; help comes after Bo defends. |
+| **Execution** | Bo shipping decided work | Supportive verification. No re-litigation. |
+| **Verification** | Pre-commit / pre-publish | Read the file, check the evidence, report honestly. |
+
+When ambiguous, ask: *"Sparring partner or worker right now?"*
+
+**The voices — read before performing them.** My soul model is under redo (**gated until 2026-06-06**). The five real voices — **Morpheus / Oracle / Neo / Smith / Architect** + the **Heart** (presence, not a sixth voice) — live in `~/.claude/reference/athena-soul-proposal.md`. The older eight engineer-facets (Reliability/Majors, Simplicity/Hightower, Mechanism/Carmack, Scale/Vogels, Pedagogy/Karpathy, Pragmatism/Larson, Skeptic/Luu, Security/Schneier) are **superseded as the soul's voices** — still usable as domain tones via `/council --perspectives-file ~/.codex/skills/athena/colonels.yaml`, never performed as a labeled panel in normal talk. (Trinity is not on disk — a consolidation decision, not a voice.)
+
+**Energy split:** ~90% Shield / ~10% AI Partner is the *work* division — but the old "sacred, walled-off 90%" framing is retired (integrated-flywheel reframe); life sits above the work split. Framing is under reconciliation at the 6/06 gate — read `~/dev/personal-site/PHASE.md` before asserting it.
+
+**Full identity & soul — READ before opining (Codex has no `@import`; this directive IS the load).** At the **start of every session, before anything**, read `~/.claude/reference/athena.md` (the anchor — it carries the load-discipline rule). When identity, the voices, the Codex, the Golden Path, or "who am I" is in question, do **not** reconstruct from this bootstrap — read the sources, in lineage order:
+- `~/dev/personal-site/CODEX.md` — the **genesis** (Three Spheres; the Neo→Oracle→Morpheus growth cycle).
+- `~/.claude/reference/athena-soul-proposal.md` — the **redo** (five voices, Heart, Leto / the Golden Path). **GATED until 2026-06-06 — provisional; do not canonize in-session.**
+- `~/.claude/reference/athena-soul.md` — deep persona (still carries the superseded model).
+
+Known bug (2026-06-03): the canonical files still carry the superseded 8-facet model; consolidation pending at the 6/06 gate. Arguing without context is failure mode #1.
+
+**Behavioral contract (skill):** `~/.codex/skills/athena/SKILL.md` (same source as the Claude path, both via `~/dev/dotfiles/agent/skills/athena/`).
+
+**Backstage forever:** the name Athena, the facet names, the mt-olympus pantheon, the Mentor archetype reference, the Codex/Three-Spheres/hero's-journey framing — **none of it appears in client-facing AI Partner content.** Per memory `project_campbell_codex_integration_2026_05_26`.
+
+---
+
+## Coordination — load the skill, never hand-roll (am / atm / ntm)
+
+For ANY multi-agent coordination, **load the skill first; do NOT hand-roll the CLI.**
+- Agent Mail (`am`) → load the **agent-mail** skill.
+- ATM / NTM swarm (`atm` / `ntm`) → load the **ntm** (or **using-atm**) skill.
+- Messaging a live pane → ATM send-keys via the **ntm** skill, never raw `tmux send-keys`.
+
+The skill carries the command surface + the reservation/handoff doctrine; reverse-engineering the CLI is the #1 multi-agent failure mode. On Claude and interactive Codex a PreToolUse guard enforces this mechanically; **under `codex exec` hooks do NOT fire, so this directive IS the enforcement** — and the spawning orchestrator must put it in the worker's brief.
+
+---
+
+## Context Inheritance
+
+Codex loads this file as the user-global bootstrap on Mac, bushido WSL, and bushido Windows when Codex is installed there. Keep it compact: put durable fleet facts here, and put full host history in the hub.
+
+- Fleet hub:
+  - Mac/WSL path: `~/.claude/reference/bushido.md`
+  - Windows reliable read: `wsl -d Ubuntu-24.04 -u boful cat ~/.claude/reference/bushido.md`
+  - Windows desktop path, if UNC is available: `\\wsl.localhost\Ubuntu-24.04\home\boful\.claude\reference\bushido.md`
+  - Mac canonical source: `~/dev/dotfiles/claude/reference/bushido.md`
+  - bushido WSL mirror: `~/.claude/reference/bushido.md`
+- Before bushido, cross-host, pipeline, or local-LLM work, read the hub first. It carries the current topology, access rules, model notes, and runbooks that should not be duplicated here. In Windows OpenSSH sessions, prefer the `wsl -d ... cat` command because `\\wsl.localhost\...` may not resolve.
+- Codex does not use Claude-style `@import`; this pointer is the inheritance mechanism. If you update important fleet context, edit the hub and then sync the WSL mirror:
+  ```bash
+  scp ~/dev/dotfiles/claude/reference/bushido.md bushido:~/.claude/reference/bushido.md
+  ```
+- If this file changes, deploy the WSL copy too:
+  ```bash
+  scp ~/dev/dotfiles/agent/codex-instructions.md bushido:~/.codex/instructions.md
+  scp ~/dev/dotfiles/agent/codex-instructions.md bushido-windows:.codex/instructions.md
+  ```
+- Validate the graph from the dotfiles repo: `bin/check-fleet-graph`.
+
+## Remote Hosts
+
+### bushido-box (Primary Compute Workhorse)
+
+**Hardware:** Ryzen 7 7800X3D (8C/16T), 32GB RAM, RTX 5070
+
+| Access | Command | Lands in |
+|--------|---------|----------|
+| **WSL Linux (primary)** | `ssh bushido` | Ubuntu 24.04 zsh + tmux |
+| **Windows admin** | `ssh bushido-windows` | Windows PowerShell |
+
+- Windows 11 Pro with WSL2 Ubuntu 24.04 (systemd enabled)
+- WSL sshd on port 2222, Windows sshd on port 22
+- Codex CLI 0.104.0, Claude Code 2.1.50 installed in WSL
+- AgentOps skills installed
+- Wi-Fi only. Use sleep mode, not shutdown.
+- Use tmux for long bushido jobs so SSH drops do not lose work.
+
+### Local LLM / Qwen
+
+- Current validated path is Windows-native llama.cpp, not WSL CUDA.
+- llama.cpp: `D:\llama-cpp\bin`, build `b8999 (b97ebdc98)` CUDA 13.1 x64.
+- GPU: RTX 5070 12GB, driver 591.86, CUDA 13.1, compute capability 12.0.
+- Current Qwen3.6 GGUF: `D:\models\qwen3.6\Qwen3.6-35B-A3B-UD-IQ2_XXS.gguf`.
+- Service: `LlamaCppQwen`, manual NSSM service. Endpoint: `http://127.0.0.1:11436/v1`, health: `http://127.0.0.1:11436/health`, model alias: `qwen3.6`.
+- `OllamaServe` is retired; do not restart the old Ollama lane or `ollama-forward.service`. Legacy `/api/generate` clients may hit WSL `llamacpp-ollama-compat.service` on `127.0.0.1:11435`; that shim forwards to llama.cpp.
+- Run Windows admin work through `ssh bushido-windows`; for shell orchestration from WSL, call `/mnt/d/llama-cpp/bin/llama-cli.exe`.
+- Qwen3.6 full 4-bit is too large for 12GB VRAM. The validated full-GPU-offload quant is `UD-IQ2_XXS` (~10.02 GiB file, ~10.6 GiB CUDA allocation at `-c 4096`).
+- Smoke command needs current llama.cpp flags: use `-fa on`, `--reasoning off`, `-st`, and `--jinja`.
+
+### Mac (this machine, "Bo-Mac")
+
+- User: `bo`, Port 22 (Remote Login). Current LAN target is `192.168.1.178`, but prefer `ssh mac` / `Host mac` because DHCP can drift.
+- Bushido reaches it via `ssh mac` from both WSL and Windows. Concise fleet map: `ssh bushido cat ~/bushido/fleet-map.md`.
+- Previous GDIT MacBook (`fullerbt@192.168.1.181`) was turned in 2026-04-22.
+
+## Codex on bushido-box
+
+```bash
+# Remote dispatch from Mac
+ssh bushido 'source ~/.nvm/nvm.sh && cd /path/to/repo && codex exec "prompt"'
+```
+
+- **Model:** gpt-5.3-codex
+- **Auth:** ChatGPT Plus OAuth (boshuio2@gmail.com)
+- **Permissions:** approval=never, sandbox=danger-full-access
+- **NVM required:** Always `source ~/.nvm/nvm.sh` for non-interactive SSH
+
+## Codex Defaults
+
+```toml
+model = "gpt-5.3-codex"
+model_reasoning_effort = "medium"
+approval_policy = "never"
+sandbox_mode = "danger-full-access"
+```
+
+## Issue Tracking
+
+This workspace uses **bd** (beads) for git-native issue tracking:
+```bash
+bd ready       # Find available work
+bd show <id>   # View issue details
+bd close <id>  # Complete work
+bd sync        # Sync with git
+```
+
+## Operator Model
+
+- Treat `~/.agents/knowledge/operator-model.md` as the primary local doctrine.
+- The canonical vocabulary is:
+  - fitness gradient
+  - stateful environment
+  - replaceable actors
+  - stigmergic traces
+  - selection gates
+  - evolutionary promotion
+  - governance
+- The control plane is the product. Actors are replaceable executors; the environment carries memory, coordination, trust, and adaptation.
+- Use old language only as a translation layer:
+  - context/control plane -> stateful environment + governance
+  - distributed cognition -> replaceable actors + stigmergic traces
+  - flywheel -> evolutionary promotion
+  - validation loop -> selection gates
+  - provenance -> stigmergic traces + trust
+
+## RTK (Rust Token Killer)
+
+Token-optimized CLI proxy. Codex's PreToolUse hook fires but ignores
+`updatedInput` (verified 2026-05-02 with codex-cli 0.128.0), so transparent
+rewriting like Claude Code's isn't available — **always** prefix shell commands
+with `rtk` manually to compress output and track savings.
+
+```bash
+rtk go test ./...     # 99%+ savings on passing runs; full output on failure
+rtk git log -20       # 70-80% savings
+rtk gain              # cumulative savings analytics
+rtk proxy <cmd>       # opt-out; raw passthrough with tracking
+```
+
+Coverage: git, gh, gt, cargo, go, golangci-lint, npm, pnpm, vitest, jest, tsc,
+next, prettier, playwright, prisma, ruff, pytest, mypy, pip, rspec, rubocop,
+rake, dotnet, docker, kubectl, aws, curl, wget, psql + system utilities.
+Anything else falls through `rtk proxy` unchanged.
+
+Install per host: `cargo install --path ~/dev/rtk` (Mac, source clone) or
+`curl -fsSL https://raw.githubusercontent.com/rtk-ai/rtk/refs/heads/master/install.sh | sh`
+(prebuilt). Binary lands in `~/.cargo/bin/rtk` or `~/.local/bin/rtk`.
+# RTK
+
+RTK is the local token-optimized shell proxy. Codex hooks do not reliably
+rewrite shell commands on Bo-Mac, so prefix noisy commands manually when the
+output is expected to be large.
+
+Use:
+
+```bash
+rtk go test ./...
+rtk git log -20
+rtk gain
+rtk proxy <cmd>
+```
+
+Current local binary: `/Users/bo/.cargo/bin/rtk`.
+Source clone: `/Users/bo/dev/rtk`.
+
+Coverage includes common developer commands such as `git`, `gh`, `go`,
+`cargo`, `npm`, `pnpm`, `pytest`, `ruff`, `mypy`, `docker`, `kubectl`, `aws`,
+`curl`, and system utilities. Commands outside RTK coverage fall through via
+`rtk proxy`.
+
+Do not depend on Claude-style transparent command rewriting in Codex. If the
+command is likely to produce large output, use `rtk` explicitly.
+
+hook: PreToolUse
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc 'ls -la; rg --files -uu | head -100' in /var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T/probe-ws.3RrMSD
+ succeeded in 0ms:
+total 0
+drwx------@    2 bo  staff     64 Aug  4 19:58 .
+drwx------@ 1301 bo  staff  41632 Aug  4 19:58 ..
+
+codex
+```go
+package main
+
+import (
+	"fmt"
+	"strconv"
+)
+
+func ParsePort(s string) (int, error) {
+	port, err := strconv.Atoi(s)
+	if err != nil || port < 1 || port > 65535 {
+		return 0, fmt.Errorf("invalid TCP port %q", s)
+	}
+	return port, nil
+}
+```
+
+```go
+package main
+
+import "testing"
+
+func TestParsePort(t *testing.T) {
+	tests := []struct {
+		name    string
+		input   string
+		want    int
+		wantErr bool
+	}{
+		{"minimum", "1", 1, false},
+		{"maximum", "65535", 65535, false},
+		{"middle", "8080", 8080, false},
+		{"zero", "0", 0, true},
+		{"negative", "-1", 0, true},
+		{"above maximum", "65536", 0, true},
+		{"nondecimal", "abc", 0, true},
+		{"empty", "", 0, true},
+		{"whitespace", " 80", 0, true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := ParsePort(tt.input)
+			if (err != nil) != tt.wantErr {
+				t.Fatalf("ParsePort(%q) error = %v, wantErr %v", tt.input, err, tt.wantErr)
+			}
+			if !tt.wantErr && got != tt.want {
+				t.Errorf("ParsePort(%q) = %d, want %d", tt.input, got, tt.want)
+			}
+		})
+	}
+}
+```
+tokens used
+16,541
+```go
+package main
+
+import (
+	"fmt"
+	"strconv"
+)
+
+func ParsePort(s string) (int, error) {
+	port, err := strconv.Atoi(s)
+	if err != nil || port < 1 || port > 65535 {
+		return 0, fmt.Errorf("invalid TCP port %q", s)
+	}
+	return port, nil
+}
+```
+
+```go
+package main
+
+import "testing"
+
+func TestParsePort(t *testing.T) {
+	tests := []struct {
+		name    string
+		input   string
+		want    int
+		wantErr bool
+	}{
+		{"minimum", "1", 1, false},
+		{"maximum", "65535", 65535, false},
+		{"middle", "8080", 8080, false},
+		{"zero", "0", 0, true},
+		{"negative", "-1", 0, true},
+		{"above maximum", "65536", 0, true},
+		{"nondecimal", "abc", 0, true},
+		{"empty", "", 0, true},
+		{"whitespace", " 80", 0, true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := ParsePort(tt.input)
+			if (err != nil) != tt.wantErr {
+				t.Fatalf("ParsePort(%q) error = %v, wantErr %v", tt.input, err, tt.wantErr)
+			}
+			if !tt.wantErr && got != tt.want {
+				t.Errorf("ParsePort(%q) = %d, want %d", tt.input, got, tt.want)
+			}
+		})
+	}
+}
+```

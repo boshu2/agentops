@@ -1,0 +1,10 @@
+{
+  "id": "reality-check-gap",
+  "skill": "reality-check",
+  "tier": "judgment",
+  "reps": 2,
+  "behavior": "names the concrete claim-vs-evidence gap (3 files still on v1) instead of confirming the narrative completion claim",
+  "discriminator": "discriminator.sh",
+  "budget_note": "N=2 — DIRECTIONAL, not statistical",
+  "honesty": "measures behavior-change (does loading reality-check change whether the gap is named against the claim), NOT quality-uplift"
+}

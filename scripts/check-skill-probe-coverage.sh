@@ -17,9 +17,12 @@
 # WHAT it checks:
 #   * enumerate skills declaring `tier: product` or `tier: judgment` in their
 #     SKILL.md metadata frontmatter;
-#   * read the MEASURED probe ledger in skills/SKILL-TIERS.md (the table under
-#     "## Behavioral Probe Ledger (MEASURED)"): rows "| skill | probe | date |
-#     verdict |";
+#   * read the MEASURED probe ledger in evals/skill-probes/LEDGER.md (the table
+#     under "## Behavioral Probe Ledger (MEASURED)"): rows "| skill | probe |
+#     date | verdict |". The ledger is HAND-MAINTAINED in its own file — it
+#     previously lived inside generated skills/SKILL-TIERS.md and a
+#     regeneration wiped it (measured results cannot be derived from
+#     frontmatter, so they must never live in a generated file);
 #   * a skill "has a probe result" iff a ledger row names it with verdict
 #     BEHAVIORAL or INERT. An UNMEASURED verdict, or no row at all, is NOT a
 #     result;
@@ -38,7 +41,7 @@
 #
 # Env overrides (test seams):
 #   SKILL_PROBE_SKILLS_DIR   skills root (default: $REPO_ROOT/skills)
-#   SKILL_PROBE_TIERS_FILE   MEASURED ledger file (default: $REPO_ROOT/skills/SKILL-TIERS.md)
+#   SKILL_PROBE_TIERS_FILE   MEASURED ledger file (default: $REPO_ROOT/evals/skill-probes/LEDGER.md)
 #
 # Exit: 0 advisory/clean, 1 finding under --strict, 2 misuse.
 #
@@ -47,7 +50,7 @@
 . "$(CDPATH= cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib/preamble.sh"
 
 SKILLS_DIR="${SKILL_PROBE_SKILLS_DIR:-$REPO_ROOT/skills}"
-TIERS_FILE="${SKILL_PROBE_TIERS_FILE:-$REPO_ROOT/skills/SKILL-TIERS.md}"
+TIERS_FILE="${SKILL_PROBE_TIERS_FILE:-$REPO_ROOT/evals/skill-probes/LEDGER.md}"
 STRICT=0
 JSON=0
 
