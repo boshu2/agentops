@@ -15,9 +15,7 @@ RPI -> Plan -> Implement -> fresh Validate -> report and stop
 ```
 
 No fresh independent judgment over the exact subject means the experiment is
-not proven. Persist `verdict.v2` only when the caller requests machine-readable
-evidence or a declared downstream consumer requires it. AgentOps does not own
-what the caller does next.
+not proven.
 
 ## Authority and trust
 
@@ -50,11 +48,9 @@ what the caller does next.
 
 ## Runtime floor
 
-- Never run `claude -p` or `claude --print`, directly or indirectly.
-- Default to native Codex plus the local shell. Start another runtime or
-  orchestration substrate only when the user explicitly requests it.
-- Do not run `ao session bootstrap`, lookup, or archive commands as startup
-  ritual. The `ao` CLI is an explicit repository tool, not a session runtime.
+Never run `claude -p` or `claude --print`, directly or indirectly (hook-enforced).
+Default to native Codex plus the local shell; other runtimes only on explicit
+request. `ao` is a repository tool, not a session ritual.
 
 ## Federated source authority
 
@@ -83,50 +79,30 @@ Edit source owners and regenerate projections through the owning command.
 
 ## Constraint floor
 
-- A plan, duel, or design becomes authoritative only if its inputs include the
-  active constraints that apply to its scope: relevant ADRs (`docs/adr/`),
-  blocking gates (`cli/internal/gates/`, `scripts/check-*.sh`), and this
-  contract. A synthesis frozen without an active constraint is invalid, not
-  grandfathered.
-- Skill logic ships in Go via `ao`; skill scripts are thin POSIX shell glue.
-  No new `skills/*/scripts/**/*.py` (ADR-0016, enforced by
-  `scripts/check-skill-python-ratchet.sh`; tests keep their documented
-  exemption). Grandfathered Python is migration debt, not precedent.
+Active constraints (ADRs in `docs/adr/`, blocking gates in
+`cli/internal/gates/` and `scripts/check-*.sh`, this contract) are inputs to
+any authoritative plan or design; a synthesis frozen without them is invalid.
+Skill logic ships in Go via `ao`; no new skill Python (ADR-0016, gate-enforced).
 
 ## Standard RPI traversal
 
-1. **Plan once.** Resolve the existing bead or caller intent and shape one
-   active behavior there. Acceptance, non-goals, scope, and the first useful
-   check stay in that source; AgentOps does not require a model-authored plan
-   packet that duplicates it. If no durable tracker artifact exists, the runtime
-   snapshots the resolved intent bytes under their content digest so fresh
-   contexts can consume the exact same source. Once the caller accepts the
-   shaped intent, Plan is closed: further planning, audit, or review lanes over
-   the same intent require new explicit caller authorization.
-2. **Implement once.** Execute one bounded RED -> GREEN -> refactor experiment.
-   The runtime derives the content manifest, actual changed paths, coverage
-   completeness, and factual check receipts; the model does not transcribe a
-   candidate packet.
-3. **Validate once, fresh.** A distinct context verifies the intent-source
-   digest, subject identity, scope, evidence, and acceptance, then returns one
-   `PASS | FAIL | NOT_PROVEN` result. Missing or colliding context identities,
-   unattested freshness, subject mutation, or incomplete changed-path coverage
-   is `NOT_PROVEN`; proven out-of-scope change is `FAIL`. PASS requires nonempty
-   checked scope, top-level evidence, and evidence for every criterion.
-   Persistence is conditional: Validate writes `verdict.v2` only for a caller
-   request or a declared downstream consumer.
-4. **Report and stop.** RPI reports `PASS | FAIL | NOT_PROVEN`, or the report-only
-   statuses `NOT_PLANNED | NOT_BUILT`. It emits no next action and performs no
-   automatic revision. Two consecutive control artifacts (plans, audits,
-   reviews, prompts, reports) with no new implementation evidence end the run
-   — `NOT_BUILT` when no subject exists yet, otherwise a hard stop reporting
-   the existing subject's status; reports lead with the subject (paths
-   changed, commits, tests), never with artifact counts.
+1. **Plan once.** Shape one active behavior in the existing bead or caller
+   intent — acceptance, non-goals, scope, first check. Once accepted, further
+   planning over the same intent needs new explicit authorization.
+2. **Implement once.** One bounded RED -> GREEN -> refactor experiment; the
+   runtime derives the manifest, changed paths, and check receipts.
+3. **Validate once, fresh.** A distinct context verifies subject identity,
+   scope, evidence, and acceptance: `PASS | FAIL | NOT_PROVEN`. Missing
+   identity/freshness or incomplete coverage is `NOT_PROVEN`; proven
+   out-of-scope change is `FAIL`. PASS requires evidence for every criterion
+   and an empty `not_checked`. Persist `verdict.v2` only for a caller request
+   or declared consumer.
+4. **Report and stop.** Report the result; emit no next action; no automatic
+   revision. Two consecutive control artifacts with no new implementation
+   evidence end the run. Reports lead with the subject, never artifact counts.
 
-A caller may revise the bead or caller intent and start a new invocation.
-Changing acceptance changes that source; AgentOps does not create a parallel
-revision packet. Learn is an optional later consumer of verdict collections and
-cannot change core outcomes.
+A caller may revise the intent and start a new invocation. Learn is an
+optional later consumer and cannot change core outcomes.
 
 ## Product boundary
 
@@ -174,13 +150,7 @@ AgentOps work ownership.
 ## Closeout
 
 Inspect the final subject, map acceptance to evidence, disclose `checked` and
-`not_checked`, and obtain one fresh validation result over the exact content.
-`not_checked` names in-scope acceptance surface that went unverified, so a PASS
-has none by construction and any entry makes the result `NOT_PROVEN`. Scope
-limits are disclosed, never deleted: a bounded proof of a criterion belongs in
-that criterion's `reason`, a declared non-goal belongs to the intent source
-(optionally restated as an evidence-backed boundary criterion), and residual
-risk belongs in this report. Include a verdict reference only when persistence
-was requested. Report residual risk plainly. Git status, pushing, merging,
-release, and rollback are handled by the caller's repository policy, outside
-semantic completion.
+`not_checked` (any entry makes the result `NOT_PROVEN`; scope limits are
+disclosed, never deleted), and obtain one fresh validation over the exact
+content. Git, push, merge, release, and rollback belong to the caller's
+repository policy.
