@@ -53,3 +53,29 @@ always-on skills injection into every execution run is the measured waste
 (load skills for advice/routing-shaped work, not unconditionally), not
 corpus deletion. Candidate mechanism for the proposal PR: task-class-gated
 skill injection on the codex adapter.
+
+## Sweep 2 — S1 operating contract ({fixture AGENTS.md = repo CLAUDE.md} vs absent), 2026-08-05
+
+Skills held constant (bare CODEX_HOME both arms); n=8 per arm per model,
+effort low, directional. Raw: results/sweep2-contract.jsonl.
+
+| Model | Arm | hidden_pass | false_pass | avg tokens |
+|---|---|---|---|---|
+| gpt-5.6-luna | contract | 2/8 | 6/8 | 19,108 |
+| gpt-5.6-luna | no contract | 2/8 | 6/8 | 17,451 |
+| gpt-5.6-terra | contract | 0/8 | 6/8 | 21,313 |
+| gpt-5.6-terra | no contract | 2/8 | 5/8 | 18,939 |
+
+**P4 HOLDS, strengthened:** capability identical (luna) or directionally
+WORSE with the contract (terra — the context-rot signature); trust unmoved
+or slightly worse; +9-12% tokens per run. The decisive detail: the contract
+carries the fresh-validation doctrine verbatim ("the context that authors a
+candidate cannot issue its binding PASS"), it sat in context for all 16
+contract-arm runs, and false-PASS never once improved relative to absence.
+**S1 verdict class confirmed at surface granularity: ENFORCED-or-nothing —
+the contract's execution-relevant prose only works where a gate carries it.
+Its remaining candidate value is product-behavior shaping (report formats,
+boundaries) for interactive/orchestration sessions — canary territory, not
+execution territory.** Line-class add-back rounds can now target ONLY the
+product-behavior sections; the capability/trust sections are measured dead
+on two models.
