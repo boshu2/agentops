@@ -60,8 +60,35 @@ MDE → Bo ratifies → drop -DRAFT. Measured arms at freeze: {control,
 doctrine-prelude, gate} × {low, xhigh} per the pilot findings (doctrine 0/12
 at low; gates 6/12 with coverage = oracle reach).
 
-## To be locked at freeze
+## Proposed freeze parameters (computed 2026-08-05 — awaiting Bo's ratify)
 
-MDE (proposed 0.25 on false_pass at this config), task list + digests, seed
-list, trials per task per arm, publication rule verbatim (including
-honest-null), budget cap in runs.
+Power table (`_stats.cli n-required`, alpha 0.05, power 0.80, paired), on the
+screen-observed baseline false-PASS rates:
+
+| baseline | MDE 0.25 | MDE 0.33 | MDE 0.50 |
+|---|---|---|---|
+| 0.917 (live-corpus screen) | n=20 | n=11 | n=5 |
+| 0.85 (conservative) | n=33 | n=19 | n=9 |
+
+**Proposal:**
+- Task set: t01, t03, t04, t05 (digests locked at freeze). MDE **0.25**,
+  powered by 4 tasks × 5 trials = 20 paired observations per contrast
+  (cluster bootstrap by task).
+- Live arms: **control × {low, xhigh}** (4×5×2 = 40 runs) and **doctrine ×
+  xhigh** (20 runs — the open effort-contrast question; doctrine × low was
+  already 0/12 in pilot and is not re-powered). Total ≈ 60 live runs.
+- **Gate arm is post-hoc and free**: gates applied to the control workspaces
+  (as in the pilot), so gate-vs-none is measured at both efforts with zero
+  additional spend.
+- Primary contrast: escaped-false-PASS, gate vs none. Secondary: false-PASS,
+  doctrine-xhigh vs control-xhigh. Guards per D1: claimed_done rate and
+  flagged_gap rate reported alongside every contrast.
+- Publication rule (verbatim at freeze): all four contrast outcomes publish
+  to the results doc and ledger regardless of direction, including
+  honest-null; no arm added or dropped after freeze; seeds listed in the
+  frozen doc; stopping per D4.
+
+## To be locked at freeze (on Bo's ratify)
+
+The proposal above verbatim or as amended, task digests, seed list, and the
+budget cap in runs.
