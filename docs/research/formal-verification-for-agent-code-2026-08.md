@@ -315,7 +315,7 @@ AI-generated-code defects (absence claim, unverified).
    properties clause to fixture `score.sh` where tasks admit one.
 6. **AxDafny's cheat-pattern reviewer is prior art for the membrane.** A reviewer explicitly
    screening for proof-bypass constructs (`assume`, vacuous specs) before acceptance is our
-   `validate`/verdictcheck posture, published. Absorb its checklist into the validator prompt;
+   `validate` + `verdictcheck` (Go gate) posture, published. Absorb its checklist into the validator prompt;
    Clover's triangle (code ↔ doc ↔ spec mutual consistency, zero false positives on
    adversarial variants) is the cheap generalization: our claim-vs-truth instrument extends
    naturally to {diff ↔ stated claim ↔ tests} consistency.

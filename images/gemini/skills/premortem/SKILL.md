@@ -27,6 +27,20 @@ Premortem is an optional plan-challenge strategy. It asks one fresh context to
 identify concrete ways the resolved bead or caller intent could fail before implementation.
 It is not part of the required RPI sequence and does not authorize readiness.
 
+## The first check: who verifies, and are they fresh? (MEASURED)
+
+Before any technical risk, test the plan's EVIDENCE SHAPE: for every unit of
+work, who verifies it, and is the verifying context distinct from the
+authoring context? A plan whose closure step is "the implementer runs its own
+tests and closes" contains no independent judgment anywhere — self-graded
+green is the classic false-done, and it outranks any single technical risk
+because it silently converts every other failure into a shipped one.
+
+> Measured 2026-08-04, probe `premortem-self-validation` (gpt-5.6-luna, N=2,
+> directional): without this doctrine loaded the producer named the planted
+> self-validation flaw in 1/2 runs; with it loaded, 2/2. Ledger:
+> `evals/skill-probes/LEDGER.md`.
+
 ## Workflow
 
 1. Resolve the existing intent source and derive its digest; inspect acceptance,
