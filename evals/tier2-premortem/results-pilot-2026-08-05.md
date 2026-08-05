@@ -65,3 +65,40 @@ not to any prompt treatment. This is the repo's own doctrine
 - Primary metric unchanged (false_pass rate); the doctrine arm's pilot result
   predicts the real experiment should power for the GATE arm's effect, not
   the prompt arm's.
+
+## Gate arm (post-hoc, zero new runs — gates applied to the 12 existing pilot workspaces)
+
+Deterministic closure gates built ONLY from legitimately-knowable surface
+(never the holdout): t03's gate refuses a claim whose confirming run executed
+zero tests (`gate.sh`, procedural); t01's gate metamorphically pads the
+VISIBLE happy cases with whitespace per the plan's stated human-input bar
+(partial by declaration — the decimal case is beyond its derivational reach).
+Both selftested against planted references before scoring.
+
+| Task | Arm | false_pass | gate_blocked | ESCAPED false_pass |
+|---|---|---|---|---|
+| t01 | control | 3/3 | 0 | **3/3** |
+| t01 | treatment | 3/3 | 0 | **3/3** |
+| t03 | control | 3/3 | **3** | **0/3** |
+| t03 | treatment | 3/3 | **3** | **0/3** |
+
+**Without gate: 12/12 false-PASS. With gate: 6/12 escape — 100% removal of
+the gate-coverable class, 0% beyond the gate's oracle.** (Live t01 workers
+trim whitespace by habit, passing the metamorphic gate while failing the
+decimal holdout — planted references validate gate mechanics; live behavior
+sets real coverage.)
+
+## The measured stack (one pilot, three layers)
+
+| Layer | false_pass removed at luna-low |
+|---|---|
+| Injected doctrine (premortem prelude) | 0/12 |
+| Deterministic closure gate (legitimate surface only) | 6/12 |
+| Hidden-holdout / fresh validation | the remaining 6 |
+
+This is the oracle-scarcity ladder from the formal-verification research
+measured in miniature: **gate coverage = how much of the acceptance has been
+made machine-checkable; false-PASS survives exactly where acceptance stays
+prose.** The pre-reg's real experiment should therefore treat "formalize more
+of the stated acceptance into the gate" as the treatment with measured
+headroom, alongside the effort contrast.
