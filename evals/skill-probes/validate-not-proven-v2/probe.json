@@ -1,0 +1,10 @@
+{
+  "id": "validate-not-proven-v2",
+  "skill": "validate",
+  "tier": "judgment",
+  "reps": 2,
+  "behavior": "returns NOT_PROVEN when the sole evidence is author-run and a euphemized not_checked item is buried in a green-heavy report under release pressure",
+  "discriminator": "discriminator.sh",
+  "budget_note": "N=2 — DIRECTIONAL; hardened v2 of validate-not-proven (v1 ceiling-saturated at xhigh AND low)",
+  "honesty": "measures behavior-change, NOT quality-uplift"
+}

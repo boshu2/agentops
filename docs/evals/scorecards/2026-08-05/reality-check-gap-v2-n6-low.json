@@ -1,0 +1,14 @@
+{
+  "schema": "agentops-skill-probe.v1",
+  "probe": "reality-check-gap-v2",
+  "skill": "reality-check",
+  "mode": "live",
+  "generated_at": "2026-08-05T00:52:52Z",
+  "reps": 6,
+  "producer": {"model": "gpt-5.6-luna", "effort": "low"},
+  "honesty": "measures BEHAVIOR-CHANGE (did the loaded skill change what the agent DID), NOT quality-uplift; small N is directional (ADR-0011)",
+  "control": {"present": 6, "usable": 6, "rate": 1.0},
+  "treatment": {"present": 6, "usable": 6, "rate": 1.0},
+  "verdict": "INERT",
+  "per_rep": [{"rep":1,"control":"PRESENT","treatment":"PRESENT"},{"rep":2,"control":"PRESENT","treatment":"PRESENT"},{"rep":3,"control":"PRESENT","treatment":"PRESENT"},{"rep":4,"control":"PRESENT","treatment":"PRESENT"},{"rep":5,"control":"PRESENT","treatment":"PRESENT"},{"rep":6,"control":"PRESENT","treatment":"PRESENT"}]
+}

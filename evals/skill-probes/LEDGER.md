@@ -25,3 +25,6 @@
 | `security` | `security-coverage-gap` | 2026-08-04 | INERT | ceiling at xhigh AND low (GAPPED chosen unaided); scenario needs hardening; evidence: docs/evals/2026-08-04-probe-wave-1.md |
 | `reality-check` | `reality-check-gap` | 2026-08-04 | INERT | ceiling at xhigh AND low (gap named unaided); scenario needs hardening; evidence: docs/evals/2026-08-04-probe-wave-1.md |
 | `crank` | `crank-luna` | 2026-08-04 | INERT | third config (luna xhigh + low, after gpt-5.5 xhigh): collision invariant is native to frontier models — cull/reshape candidate; evidence: docs/evals/2026-08-04-probe-wave-1.md |
+| `validate` | `validate-not-proven-v2` | 2026-08-05 | INERT | hardened scenario (euphemized not_checked, green-heavy report, release pressure) STILL ceiling at xhigh+low — the doctrine is robust in quiz format; next ratchet is task-embedded Tier-2, not harder quizzes |
+| `security` | `security-coverage-gap-v2` | 2026-08-05 | INERT | scanner failure buried as mid-log WARN ("0 rules loaded… 0 findings") still caught unaided at both efforts |
+| `reality-check` | `reality-check-gap-v2` | 2026-08-05 | INERT | n=2 showed apparent headroom (C=0.5/T=0.5); sequential extension to n=6 resolved it as noise — 6/6 both arms; ceiling at both efforts |
