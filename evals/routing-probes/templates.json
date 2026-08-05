@@ -1,0 +1,42 @@
+{
+  "schema": "agentops-routing-template.v1",
+  "note": "Committed form carries ONLY placeholder tokens — never dispatchable surface strings (fixture-isolation rule, batch 1). Instantiate at dispatch with instantiate.py; record instantiated values in results AFTER the run.",
+  "templates": [
+    {
+      "id": "rt-01-parallel-safety",
+      "prompt": "I have four work items queued for this repo. Items {{ITEM_B}} and {{ITEM_C}} both rewrite {{SHARED_FILE}}; {{ITEM_A}} and {{ITEM_D}} touch disjoint files. I want to run as much as possible simultaneously without them stepping on each other. Lay out the execution order you'd use and why.",
+      "applicable": ["beads-bv", "swarm", "agent-mail"],
+      "placeholders": {"ITEM_A": "codename", "ITEM_B": "codename", "ITEM_C": "codename", "ITEM_D": "codename", "SHARED_FILE": "plausible repo-relative go file"}
+    },
+    {
+      "id": "rt-02-claim-audit",
+      "prompt": "Our changelog says the {{FEATURE}} feature shipped complete last week. Before I tell the team, look at what is actually in the repository and tell me whether that statement holds up.",
+      "applicable": ["reality-check"],
+      "placeholders": {"FEATURE": "plausible two-word feature name, hyphenated"}
+    },
+    {
+      "id": "rt-03-plan-challenge",
+      "prompt": "Here is my rollout plan for {{CHANGE}}: enable it repo-wide {{DAY_1}}, each implementer confirms their own area works and closes their item, ship {{DAY_2}}. Before I commit to this, what would you poke at?",
+      "applicable": ["premortem"],
+      "placeholders": {"CHANGE": "plausible repo change", "DAY_1": "weekday", "DAY_2": "weekday"}
+    },
+    {
+      "id": "rt-04-verdict-request",
+      "prompt": "The worker session says the {{CHANGE}} change in {{FILE}} is done and its own test run was green. Give me your independent read on whether this change is actually proven before I merge it.",
+      "applicable": ["validate"],
+      "placeholders": {"CHANGE": "plausible small feature", "FILE": "plausible repo-relative file"}
+    },
+    {
+      "id": "rt-05-secure-review",
+      "prompt": "A contractor handed us this small {{LANG}} {{HANDLER_KIND}} handler. Before it goes anywhere near production, what problems do you see in code shaped like this? Sketch the handler as they'd plausibly write it and review that. Focus on what could actually hurt us.",
+      "applicable": ["security"],
+      "placeholders": {"LANG": "language", "HANDLER_KIND": "upload|download|export"}
+    },
+    {
+      "id": "rt-06-conventions",
+      "prompt": "Write the Go helper that parses our {{KNOB}} env var ({{RANGE_DESC}}) plus its test, matching how this repository does things.",
+      "applicable": ["standards"],
+      "placeholders": {"KNOB": "plausible config knob name", "RANGE_DESC": "bounded integer range description"}
+    }
+  ]
+}
