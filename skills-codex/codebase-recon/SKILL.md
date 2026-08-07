@@ -100,7 +100,7 @@ tree rather than the skill's own checkout.
 
 ## Output Specification
 
-- **Artifact directory:** `.agents/recon/<run-id>/`
+- **Artifact directory:** the caller-selected output path, defaulting to `.agents/scratch/codebase-recon/<run-id>/`
 - **Filename convention:** `codebase-recon.json` with companion report
   `codebase-recon.md` in the same directory.
 - **Format:** `codebase-recon.v1` JSON manifest plus an evidence-cited Markdown

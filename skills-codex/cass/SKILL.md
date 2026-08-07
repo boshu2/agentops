@@ -42,7 +42,7 @@ Your conversation history contains:
 - **Scope decisions** — "When did we decide NOT to do X?"
 - **Recovery moments** — What you searched for after context loss = what mattered
 
-**The insight:** Mining your past beats inventing new approaches. In the AgentOps loop the goal is prior-art first: mine as a research-phase move before writing a fresh plan or prompt, and feed what you find back into the corpus instead of re-deriving it.
+**The insight:** Mining your past beats inventing new approaches. CASS is a context source in the federated graph: it supplies cited episodic evidence on demand — mine as a research-phase move before writing a fresh plan or prompt. What it returns is evidence with source identity and freshness, never policy, and AgentOps maintains no merged corpus of its own around it.
 
 ## History-First Routing
 

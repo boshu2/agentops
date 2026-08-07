@@ -24,7 +24,7 @@ question.
 
 Generate a small portfolio of evidenced options.
 
-1. State the question, constraints, non-goals, and sources.
+1. State the question, constraints, non-goals, and sources. Hydrate only the sources this question needs and cite them; no merged context store.
 2. Separate cited observations from assumptions.
 3. Give each candidate its supporting evidence, overlap with existing
    capabilities, and one normal or edge scenario.

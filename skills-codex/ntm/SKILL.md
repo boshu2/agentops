@@ -39,7 +39,7 @@ any level.
 - Concurrent writers require caller-supplied disjoint scopes and whatever
   isolation the repository requires. NTM does not infer safe concurrency.
 - Safety, lock, mail, and pipeline features remain substrate facts. Their state
-  cannot change an RPI phase result or semantic verdict.
+  cannot change an RPI phase result or semantic verdict. The adapter cannot select AgentOps semantics, issue a binding verdict, or turn factory completion into delivery or validation proof.
 
 ## One-shot dispatch
 

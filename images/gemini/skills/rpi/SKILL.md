@@ -1,6 +1,6 @@
 ---
 name: rpi
-description: 'Run one bounded Plan, Implement, and fresh Validate experiment, then report and stop. Triggers: "run rpi", "feed this through the loop", "execute this plan", orchestration or worker delegation that implements changes.'
+description: 'Coordinate one RPI traversal: one bounded Plan, Implement, and fresh Validate experiment, then report and stop. Triggers: "run rpi", "run one traversal", "execute this plan", orchestration or worker delegation that implements changes.'
 practices:
 - bdd-gherkin
 - tdd
