@@ -8,9 +8,11 @@
 #                                      checkout: gate run from a worktree) resolve to a target
 #                                      byte-equal to this repo's canonical; else exit 1
 #   - regular file                  -> cmp -s against the repo canonical, else exit 1
-# Report-only set: every other repo-tracked workflows/*.js
-#   (today: bead-crank.js, operating-loop.js) — the same comparison, but divergence
-#   emits 'DRIFT-REPORT: <name> ...' to stdout and NEVER affects the exit code.
+# Report-only set: every other repo-tracked workflows/*.js — the same
+#   comparison, but divergence emits 'DRIFT-REPORT: <name> ...' to stdout and
+#   NEVER affects the exit code. operating-loop.js is a retired tombstone: an
+#   installed copy of the old conveyor diverges from the tombstone bytes, so
+#   the drift report is exactly how a stale install gets surfaced.
 #
 # Repo root from cwd git; installed dir from $HOME. No hardcoded user paths.
 set -euo pipefail
