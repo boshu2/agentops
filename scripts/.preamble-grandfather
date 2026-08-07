@@ -113,7 +113,6 @@ scripts/check-test-count-regression.sh
 scripts/check-test-fixture-parity.sh
 scripts/check-test-home-isolation.sh
 scripts/check-test-isolation.sh
-scripts/check-thesis-stability.sh
 scripts/check-tip-verdict-ci.sh
 scripts/check-verdict-close-rate.sh
 scripts/check-wave-ownership-disjoint.sh

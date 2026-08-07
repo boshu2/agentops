@@ -37,7 +37,7 @@ ao demo [flags]
 
 ### `ao init`
 
-Create local evidence and verdict directories, then add one commented,
+Create the local intent and verdict evidence directories, then add one
 
 ```
 ao init [flags]
