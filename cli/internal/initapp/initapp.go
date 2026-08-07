@@ -16,27 +16,24 @@ import (
 	"github.com/boshu2/agentops/cli/internal/storage"
 )
 
-// evidenceDirs is the fixed, ordered set of local directories `ao init` creates.
-// It must cover both loop-evidence stores `ao status` reads (intents, verdicts)
-// and the knowledge-store substructure `ao doctor` enforces (the storage
-// package's sessions/index/provenance contract), so a fresh init is never
-// flagged incomplete by the CLI's own diagnostics.
+// evidenceDirs is the fixed, ordered set of local directories `ao init`
+// creates: exactly the requested-proof stores with declared consumers —
+// intent snapshots and verdicts, both read by `ao status` and written by the
+// Validate tooling. Init deliberately scaffolds nothing else: the former
+// session-transcript, search-index, provenance, and handoff stores had no
+// declared consumer, and a directory minted "just in case" becomes an
+// undeclared knowledge store (ADR-0016).
 var evidenceDirs = []string{
 	filepath.Join(storage.DefaultBaseDir, "intents", "sha256"),
 	filepath.Join(storage.DefaultBaseDir, "verdicts", "sha256"),
-	filepath.Join(storage.DefaultBaseDir, storage.SessionsDir),
-	filepath.Join(storage.DefaultBaseDir, storage.IndexDir),
-	filepath.Join(storage.DefaultBaseDir, storage.ProvenanceDir),
-	filepath.Join(".agents", "handoff"),
 }
 
 // The ignore policy.
 //
 // Before this, `ao init` scaffolded .agents/ao/** and said nothing about git.
-// One loop later the working tree was littered with untracked scratch — a
-// derived search index, local session transcripts, a machine-local provenance
-// ledger, Python bytecode caches — and every user had to invent the same
-// .gitignore lines. So init now writes them once, as a marker-delimited block.
+// One loop later the working tree was littered with untracked scratch and
+// every user had to invent the same .gitignore lines. So init writes them
+// once, as a marker-delimited block.
 //
 // What is ignored is only machine-local scratch: derived, private, or
 // per-machine files that would conflict on merge and mean nothing in another
@@ -58,15 +55,16 @@ const (
 )
 
 // gitignoreBlock is the exact text appended to .gitignore, marker to marker.
+// .agents/scratch/ and .agents/projections/ are the disposable and rebuildable
+// tiers (ADR-0016); nothing under them belongs in version control.
 var gitignoreBlock = strings.Join([]string{
 	GitignoreBeginMarker,
-	"# Derived, private, or per-machine files the AgentOps loop writes.",
+	"# Derived, private, or per-machine files AgentOps tooling writes.",
 	"# NOT ignored, on purpose: .agents/ao/intents/ and .agents/ao/verdicts/ —",
 	"# whether to commit loop evidence is your repository's policy, not the CLI's.",
 	"# Delete this block to track everything.",
-	".agents/ao/index/",
-	".agents/ao/sessions/",
-	".agents/ao/provenance/",
+	".agents/scratch/",
+	".agents/projections/",
 	"__pycache__/",
 	GitignoreEndMarker,
 	"",

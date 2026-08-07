@@ -62,13 +62,13 @@ teardown() {
 @test "scans the nested doc paths under --docs-root" {
     mkdir -p "$DOCS/docs/architecture" "$DOCS/skills"
     printf '### /zzz-router-phantom\n' > "$DOCS/docs/SKILLS.md"
-    printf 'Skills: `/zzz-loop-phantom` runs the loop.\n' > "$DOCS/docs/architecture/operating-loop.md"
+    printf 'Skills: `/zzz-loop-phantom` runs the loop.\n' > "$DOCS/docs/architecture/rpi-traversal.md"
     printf 'Tier 1: `/zzz-tier-phantom`.\n' > "$DOCS/skills/SKILL-TIERS.md"
     run bash "$SCRIPT" --strict --docs-root "$DOCS" --skills-root "$SKILLS"
     [ "$status" -ne 0 ]
     [[ "$output" == *"docs/SKILLS.md"* ]]
     [[ "$output" == *"zzz-router-phantom"* ]]
-    [[ "$output" == *"operating-loop.md"* ]]
+    [[ "$output" == *"rpi-traversal.md"* ]]
     [[ "$output" == *"zzz-loop-phantom"* ]]
     [[ "$output" == *"SKILL-TIERS.md"* ]]
     [[ "$output" == *"zzz-tier-phantom"* ]]

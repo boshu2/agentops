@@ -63,7 +63,6 @@ map_path_to_area() {
     cli/internal/daemon/*|cli/internal/schedule/*|cli/internal/agentworker/*|cli/internal/gascity/*) echo "Daemon, Scheduling, and Factory" ;;
     skills/*|skills-codex*) echo "Skills and Workflows" ;;
     hooks/*|cli/embedded/hooks/*) echo "Hooks and Lifecycle" ;;
-    cli/internal/knowledge/*|cli/internal/harvest/*|cli/internal/pool/*|cli/internal/lifecycle/*|cli/internal/search/*) echo "Knowledge Flywheel, Search, and Memory" ;;
     cli/internal/eval/*|evals/*|tests/*|.github/workflows/validate.yml) echo "Eval, Validation, and Release Gates" ;;
     scripts/security*|scripts/toolchain-validate*|*sbom*) echo "Security, Privacy, and Supply Chain" ;;
     README.md|docs/*|PRODUCT.md) echo "Docs and Onboarding" ;;

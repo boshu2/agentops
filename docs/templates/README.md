@@ -1,9 +1,9 @@
 # Templates
 
-## Operating-loop artifacts
+## RPI traversal artifacts
 
 These templates carry one bounded turn of the
-[operating loop](../architecture/operating-loop.md): behavior-first intent,
+[RPI traversal](../architecture/rpi-traversal.md): behavior-first intent,
 one experiment, exact subject identity, and fresh validation.
 
 - [Intent worksheet](./intent-issue.md) — optional source material for the

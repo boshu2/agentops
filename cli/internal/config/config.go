@@ -41,9 +41,6 @@ type Config struct {
 	// RPI settings
 	RPI RPIConfig `yaml:"rpi" json:"rpi"`
 
-	// Flywheel settings
-	Flywheel FlywheelConfig `yaml:"flywheel" json:"flywheel"`
-
 	// Models settings
 	Models ModelsConfig `yaml:"models" json:"models"`
 
@@ -93,12 +90,6 @@ type RPIConfig struct {
 	TmuxCommand string `yaml:"tmux_command" json:"tmux_command"`
 }
 
-// FlywheelConfig holds flywheel-specific settings.
-type FlywheelConfig struct {
-	// AutoPromoteThreshold controls default age gate for auto-promotion.
-	// Default: 24h
-	AutoPromoteThreshold string `yaml:"auto_promote_threshold" json:"auto_promote_threshold"`
-}
 
 // PathsConfig holds configurable paths for artifact locations.
 // Fixes G5: paths are now configurable, not hardcoded.
@@ -110,18 +101,6 @@ type PathsConfig struct {
 	// PatternsDir is where pattern artifacts are stored.
 	// Default: .agents/patterns
 	PatternsDir string `yaml:"patterns_dir" json:"patterns_dir"`
-
-	// RetrosDir is where retrospective artifacts are stored.
-	// Default: .agents/retro
-	RetrosDir string `yaml:"retros_dir" json:"retros_dir"`
-
-	// ResearchDir is where research artifacts are stored.
-	// Default: .agents/research
-	ResearchDir string `yaml:"research_dir" json:"research_dir"`
-
-	// PlansDir is where plan manifest is stored.
-	// Default: .agents/plans
-	PlansDir string `yaml:"plans_dir" json:"plans_dir"`
 
 	// ClaudePlansDir is where Claude's native plans go.
 	// Default: ~/.claude/plans
@@ -330,9 +309,6 @@ func Default() *Config {
 			BDCommand:      "bd",
 			TmuxCommand:    "tmux",
 		},
-		Flywheel: FlywheelConfig{
-			AutoPromoteThreshold: "24h",
-		},
 		Models: ModelsConfig{
 			DefaultTier: "balanced",
 			Tiers: map[string]TierConfig{
@@ -352,9 +328,6 @@ func Default() *Config {
 		Paths: PathsConfig{
 			LearningsDir:       ".agents/learnings",
 			PatternsDir:        ".agents/patterns",
-			RetrosDir:          ".agents/retro",
-			ResearchDir:        ".agents/research",
-			PlansDir:           ".agents/plans",
 			ClaudePlansDir:     filepath.Join(homeDir, ".claude", "plans"),
 			CitationsFile:      ".agents/ao/citations.jsonl",
 			TranscriptsDir:     filepath.Join(homeDir, ".claude", "projects"),
@@ -607,7 +580,6 @@ func applyEnv(cfg *Config) *Config {
 	applyEnvStr(&cfg.RPI.AOCommand, "AGENTOPS_RPI_AO_COMMAND")
 	applyEnvStr(&cfg.RPI.BDCommand, "AGENTOPS_RPI_BD_COMMAND")
 	applyEnvStr(&cfg.RPI.TmuxCommand, "AGENTOPS_RPI_TMUX_COMMAND")
-	applyEnvStr(&cfg.Flywheel.AutoPromoteThreshold, "AGENTOPS_FLYWHEEL_AUTO_PROMOTE_THRESHOLD")
 	applyEnvStr(&cfg.Models.DefaultTier, "AGENTOPS_MODEL_TIER")
 	applyEnvStr(&cfg.Dream.ReportDir, "AGENTOPS_DREAM_REPORT_DIR")
 	applyEnvStr(&cfg.Dream.RunTimeout, "AGENTOPS_DREAM_RUN_TIMEOUT")
@@ -657,7 +629,6 @@ func merge(dst, src *Config) *Config {
 	mergeForge(&dst.Forge, &src.Forge)
 	mergeSearch(&dst.Search, &src.Search)
 	mergeRPI(&dst.RPI, &src.RPI)
-	mergeFlywheel(&dst.Flywheel, &src.Flywheel)
 	mergeModels(&dst.Models, &src.Models)
 	mergeDream(&dst.Dream, &src.Dream)
 	mergePaths(&dst.Paths, &src.Paths)
@@ -689,11 +660,6 @@ func mergeRPI(dst, src *RPIConfig) {
 	mergeStr(&dst.AOCommand, src.AOCommand)
 	mergeStr(&dst.BDCommand, src.BDCommand)
 	mergeStr(&dst.TmuxCommand, src.TmuxCommand)
-}
-
-// mergeFlywheel merges flywheel-specific config fields.
-func mergeFlywheel(dst, src *FlywheelConfig) {
-	mergeStr(&dst.AutoPromoteThreshold, src.AutoPromoteThreshold)
 }
 
 // mergeModels merges models config fields.
@@ -756,9 +722,6 @@ func mergeDreamLocalCurator(dst, src *DreamLocalCuratorConfig) {
 func mergePaths(dst, src *PathsConfig) {
 	mergeStr(&dst.LearningsDir, src.LearningsDir)
 	mergeStr(&dst.PatternsDir, src.PatternsDir)
-	mergeStr(&dst.RetrosDir, src.RetrosDir)
-	mergeStr(&dst.ResearchDir, src.ResearchDir)
-	mergeStr(&dst.PlansDir, src.PlansDir)
 	mergeStr(&dst.ClaudePlansDir, src.ClaudePlansDir)
 	mergeStr(&dst.CitationsFile, src.CitationsFile)
 	mergeStr(&dst.TranscriptsDir, src.TranscriptsDir)

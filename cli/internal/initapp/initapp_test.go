@@ -10,11 +10,11 @@ import (
 	"github.com/boshu2/agentops/cli/internal/storage"
 )
 
-// A fresh `ao init` must satisfy the CLI's own diagnostics: the knowledge-store
-// substructure doctor enforces (storage sessions/index/provenance contract) and
-// both loop-evidence stores status reads (intents, verdicts). Regression guard
-// for the 3.3 audit finding where doctor flagged a just-initialized store.
-func TestRun_CreatesLayoutSatisfyingDoctorAndStatusContracts(t *testing.T) {
+// A fresh `ao init` creates exactly the requested-proof stores with declared
+// consumers (intents, verdicts) and nothing else: no session, index,
+// provenance, or handoff store may be scaffolded (ADR-0016 closed set;
+// operations-layer alignment).
+func TestRun_CreatesOnlyDeclaredEvidenceStores(t *testing.T) {
 	t.Chdir(t.TempDir())
 	var out bytes.Buffer
 
@@ -30,16 +30,22 @@ func TestRun_CreatesLayoutSatisfyingDoctorAndStatusContracts(t *testing.T) {
 		}
 	}
 
-	// Doctor's knowledge-store contract: sessions/index/provenance under the
-	// storage base (fm-knowledge-missing-substructure fires on any missing one).
-	for _, sub := range []string{storage.SessionsDir, storage.IndexDir, storage.ProvenanceDir} {
-		mustBeDir(filepath.Join(storage.DefaultBaseDir, sub))
-	}
 	// Status's loop-evidence stores: intents and verdicts content stores.
 	mustBeDir(filepath.Join(storage.DefaultBaseDir, "intents", "sha256"))
 	mustBeDir(filepath.Join(storage.DefaultBaseDir, "verdicts", "sha256"))
-	// Session handoff evidence directory.
-	mustBeDir(filepath.Join(".agents", "handoff"))
+
+	// The retired undeclared stores must NOT come back: a directory minted
+	// "just in case" becomes an undeclared knowledge store.
+	for _, retired := range []string{
+		filepath.Join(storage.DefaultBaseDir, "sessions"),
+		filepath.Join(storage.DefaultBaseDir, "index"),
+		filepath.Join(storage.DefaultBaseDir, "provenance"),
+		filepath.Join(".agents", "handoff"),
+	} {
+		if _, err := os.Stat(retired); !os.IsNotExist(err) {
+			t.Errorf("init scaffolded retired store %s (stat err=%v)", retired, err)
+		}
+	}
 
 	if got := strings.Count(out.String(), "created "); got != len(evidenceDirs) {
 		t.Errorf("expected %d 'created' lines, got %d:\n%s", len(evidenceDirs), got, out.String())
@@ -70,7 +76,7 @@ func TestRun_GitignoreBlockIsWrittenOnceAndIsIdempotent(t *testing.T) {
 	if got := strings.Count(body, GitignoreEndMarker); got != 1 {
 		t.Fatalf("end marker appears %d times after one init, want 1:\n%s", got, body)
 	}
-	for _, want := range []string{".agents/ao/index/", ".agents/ao/sessions/", ".agents/ao/provenance/", "__pycache__/"} {
+	for _, want := range []string{".agents/scratch/", ".agents/projections/", "__pycache__/"} {
 		if !strings.Contains(body, want) {
 			t.Errorf(".gitignore missing scratch pattern %q:\n%s", want, body)
 		}
@@ -142,7 +148,7 @@ func TestRun_GitignoreBlockPreservesExistingContent(t *testing.T) {
 func TestRun_GitignoreBlockRespectsUserEdits(t *testing.T) {
 	dir := t.TempDir()
 	t.Chdir(dir)
-	edited := GitignoreBeginMarker + "\n.agents/ao/index/\n" + GitignoreEndMarker + "\n"
+	edited := GitignoreBeginMarker + "\n.agents/scratch/\n" + GitignoreEndMarker + "\n"
 	if err := os.WriteFile(filepath.Join(dir, ".gitignore"), []byte(edited), 0o644); err != nil {
 		t.Fatal(err)
 	}

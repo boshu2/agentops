@@ -1,5 +1,12 @@
 # Effective Feedback Compute (EFC) — the harness's scaling coordinate
 
+> **Historical doctrine note (2026-06-16 import).** This page predates the
+> operations-layer alignment: several mechanisms it names (`ao inject`, the
+> seven-move loop, corpus retrieval) are retired, and the pre-registered
+> transfer experiment has not run. It is preserved as dated doctrine
+> evidence, not current architecture; the current semantic contract lives in
+> [rpi-traversal.md](../architecture/rpi-traversal.md).
+
 > **Doctrine.** AgentOps is an agent harness. This doc operationalizes the EFC scaling law (Zhang et al. 2026, *arXiv:2605.29682*) into the rules the harness runs by. Source mining: [`.agents/research/2026-06-16-efc-agent-harness-scaling-laws.md`](https://github.com/boshu2/agentops/blob/main/.agents/research/2026-06-16-efc-agent-harness-scaling-laws.md) (local corpus). Evidence tier: [`the-science.md`](../the-science.md) Part 10.
 >
 > **The claim in one line:** harness success scales with *useful feedback*, not *spend*. Same tokens, better feedback steering → ~3× success (0.27 → 0.90 at matched budget). Optimize the feedback, not the budget.
@@ -85,5 +92,5 @@ Same claim, two altitudes: **compounding requires useful feedback, not volume �
 ## See also
 
 - [`the-science.md`](../the-science.md) Part 10 — EFC as Tier-A external evidence.
-- [`architecture/operating-loop.md`](../architecture/operating-loop.md) — the seven moves; EFC explains *why* move 6 (prove acceptance) and move 7 (ratchet) are load-bearing.
+- [`architecture/rpi-traversal.md`](../architecture/rpi-traversal.md) — the current one-traversal contract (the seven-move loop this page cites is retired).
 - [`knowledge-flywheel.md`](../knowledge-flywheel.md) — the M factor at corpus scale.

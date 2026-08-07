@@ -16,9 +16,9 @@
 # Resolution is SOUND: unlike the skills gate's byte-identical `help`-mode
 # predicate, this uses `ao <chain> --help` and rejects cobra's "unknown command"
 # / "Unknown help topic" — because `ao help <anything>` ALWAYS exits 0, so the
-# help-mode predicate cannot detect a removed command at all. The archive-tagged
-# build (`-tags "flywheel legacy"`) keeps archived-but-revivable commands
-# resolvable, so this only flags TRULY removed commands.
+# help-mode predicate cannot detect a removed command at all. The build tags
+# that once kept archived commands resolvable are retired; the default build
+# is the whole surface, so this flags TRULY removed commands.
 #
 # Baseline ratchet (scripts/.docs-cli-snippets-baseline): FILENAME-pinned, seeds
 # every current offender. Two-way enforcement:

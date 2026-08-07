@@ -24,7 +24,7 @@ func (Module) Contract() clicontract.CommandContract {
 	return clicontract.CommandContract{
 		ID: "ao.capabilities",
 		Profiles: clicontract.ProfileDefault |
-			clicontract.ProfileFlywheel |
+			
 			clicontract.ProfileLegacy |
 			clicontract.ProfileCombined,
 		Args:        clicontract.ArgsPolicy{Name: "none", Validate: cobra.NoArgs},

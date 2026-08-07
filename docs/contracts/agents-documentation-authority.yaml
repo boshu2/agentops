@@ -83,6 +83,9 @@ documents:
     owner: PROGRAM.md
     proof: Cathedral Cut conformance
 
+  # MEMORY.md is a temporary machine-consumed projection, not an AgentOps
+  # authority: its claims belong to their cited sources (docs, ADRs, session
+  # records). Retire it only after its current consumers are audited.
   - path: MEMORY.md
     tracked: true
     class: machine-consumed-memory-projection

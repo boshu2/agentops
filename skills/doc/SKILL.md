@@ -38,6 +38,7 @@ Generate and validate documentation for any project. `--mode` selects the artifa
 ## Constraints
 
 - Ground every documentation claim in the current repository, because plausible but stale prose is a documentation defect.
+- When the subject is AgentOps itself, generated product and docs copy starts from the canonical category (`docs/contracts/ubiquitous-language.md`: the operations layer for agentic engineering) and preserves the ownership boundary; never describe AgentOps as an execution orchestrator, factory, corpus, or loop.
 - Research in bounded chunks against a coverage ledger, and hold finished docs to the conceptual-surprise floor (see [Research and depth kernels](#research-and-depth-kernels)).
 - In OSS scaffold mode, create missing docs only by default; never update or overwrite an existing doc unless the user explicitly confirms, because these files may contain operator-owned policy and project history. Treat `refresh` as a separate opt-in path and confirm its target writes with the user before proceeding.
 - Keep mode boundaries explicit and run the selected mode's validation, because default, README, and OSS outputs have different completion criteria.

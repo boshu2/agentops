@@ -88,7 +88,6 @@ run_ok "all generated leaf help paths" bash "$REPO_ROOT/tests/cli/test-all-leaf-
 run_json "status JSON" "$AO" status --json
 run_json "skills list JSON" "$AO" skills list --json
 run_json "skills graph JSON" "$AO" skills graph --format json
-run_json "flywheel status JSON" "$AO" flywheel status --json
 run_json "goals validate JSON" "$AO" goals validate --json
 run_json "provenance list JSON" bash -c "cd '$TMP_ROOT' && '$AO' provenance list --json"
 run_json "source-link dry-run JSON" env HOME="$TMP_ROOT/home" "$AO" skills link --dest "$TMP_ROOT/skills" --dry-run --json

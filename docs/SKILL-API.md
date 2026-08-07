@@ -142,7 +142,7 @@ Preferred model for skill execution.
 model: haiku    # Use cheaper/faster model for lightweight skills
 ```
 
-Currently used by `flywheel` and `status`. Declaration-only — no CLI enforcement.
+Currently used by `status`. Declaration-only — no CLI enforcement.
 
 ### `user-invocable`
 
@@ -233,7 +233,6 @@ Core skills and their context policies:
 | trace | fork | exclude: HISTORY | task | full |
 | compile | fork | exclude: TASK | task | full |
 | forge | fork | exclude: TASK | task | full |
-| flywheel | fork | exclude: TASK | task | full |
 | retro | fork | — | — | — |
 | **Session** | | | | |
 | handoff | inherit | — | none | none |

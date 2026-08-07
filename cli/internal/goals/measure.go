@@ -33,9 +33,7 @@ type Measurement struct {
 // SkipExitCode is the conventional exit code a gate script returns to
 // signal "skip" (precondition not met, not a failure). 77 follows the
 // autotools/automake convention so existing skip-aware shell scripts
-// drop in unchanged. The flywheel-compounding gate uses this to skip
-// when the corpus is dormant (zero citation signal in the window) —
-// see GOALS.md Directive #4 / finding f-2026-04-30-002.
+// drop in unchanged — see GOALS.md Directive #4 / finding f-2026-04-30-002.
 const SkipExitCode = 77
 
 // classifyResult maps command exit status to a result string.
@@ -65,9 +63,9 @@ func isSkipExit(cmdErr error) bool {
 
 // truncateOutput caps output at 500 runes by keeping the first 200 and last
 // 200 runes joined by a truncation marker, then trims whitespace.
-// Diagnostic gate output (e.g. check-flywheel-compounding.sh) often puts the
-// operator hint at the END of stdout; head-only truncation cuts that hint.
-// The head+tail shape preserves both the failure label and the trailing fix.
+// Diagnostic gate output often puts the operator hint at the END of stdout;
+// head-only truncation cuts that hint. The head+tail shape preserves both
+// the failure label and the trailing fix.
 const (
 	truncateLimit  = 500
 	truncateHead   = 200

@@ -30,8 +30,7 @@ import (
 // Determinism guard: a few commands embed now-derived leaf values (e.g. an
 // average-age metric). For those the probe compares tree SHAPE (keys + value
 // types, recursively) instead of exact leaf values, which still catches a table
-// fallback and a missing-key divergence (the flywheel-status yaml that used to
-// omit "metrics") while staying immune to sub-second float drift. For every
+// fallback and a missing-key divergence while staying immune to sub-second
 // deterministic command it compares full values.
 func TestOutputYAMLTruthfulness(t *testing.T) {
 	// Structured read-side commands. Each is invocable with no required file
@@ -52,8 +51,6 @@ func TestOutputYAMLTruthfulness(t *testing.T) {
 		{"provenance export", []string{"provenance", "export"}},
 		{"session bootstrap", []string{"session", "bootstrap"}},
 		{"session rehydrate", []string{"session", "rehydrate"}},
-		{"flywheel status", []string{"flywheel", "status"}},
-		{"flywheel compare", []string{"flywheel", "compare"}},
 		{"skills check", []string{"skills", "check"}},
 		{"skills list", []string{"skills", "list"}},
 		{"skills resolve", []string{"skills", "resolve"}},
@@ -211,7 +208,6 @@ func TestOutputYAMLProbeStalenessGuard(t *testing.T) {
 		"goals":        true,
 		"provenance":   true,
 		"session":      true,
-		"flywheel":     true,
 		"skills":       true,
 		"eval":         true, // yaml wired at every eval json site; probed by eval package tests (needs suite fixtures)
 	}

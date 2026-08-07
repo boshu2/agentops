@@ -150,14 +150,6 @@ else
     skip "Token budget validation (script not found)"
 fi
 
-# Validate artifact-consistency behavior (static, no CLI needed)
-if [[ -f "$SCRIPT_DIR/skills/test-artifact-consistency.sh" ]]; then
-    run_lane "Artifact consistency behavior tests" "$RUN_ALL_STATIC_LANE_TIMEOUT_SECONDS" "$(lane_log_file artifact-consistency)" \
-        bash "$SCRIPT_DIR/skills/test-artifact-consistency.sh"
-else
-    skip "Artifact consistency behavior tests (script not found)"
-fi
-
 # Validate OL integration fixture-only scripts (static, no real ol binary needed)
 if [[ -d "$SCRIPT_DIR/ol-integration" ]]; then
     for ol_test in "$SCRIPT_DIR"/ol-integration/*-ol-test.sh; do

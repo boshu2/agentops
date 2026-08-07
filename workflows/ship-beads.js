@@ -1,6 +1,6 @@
 export const meta = {
   name: 'ship-beads',
-  description: 'Drive/ship a list of beads to confirmed-merged with worktree-isolated implementer subagents + orchestrator-only reconcile (sequential for coupled surfaces, parallel for disjoint)',
+  description: 'Repository delivery orchestration outside the AgentOps semantic core: drive/ship a list of beads to confirmed-merged with worktree-isolated implementer subagents + orchestrator-only reconcile (sequential for coupled surfaces, parallel for disjoint)',
   whenToUse: 'When you have a list of bead ids to drive/ship to merged PRs in one autonomous session. Pass args = {beads:[...ids], mode:"parallel"|"sequential"}. mode is a hint; the PLAN-GRAPH phase demotes a "parallel" request to a sequential sub-chain whenever two beads share a write/derived surface. Codifies the 2026-05-31 ship-beads post-mortem (§6): worktree-isolated subagents, orchestrator-only merge, mechanical reconciliation of the registry/codex/security/flake taxes, and a confirmed-MERGED-before-br-close gate. (Additive rename of the legacy bead-crank workflow — "crank" was jargon; this drives beads to merged.)',
   phases: [
     { title: 'Prelude', detail: 'git reset --hard origin/main (NEVER pull --rebase); validate every bead exists + unclaimed; run the acceptance ADMISSION gate per bead (fail-closed); classify requested mode' },

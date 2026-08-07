@@ -1,1 +1,0 @@
-Run /flywheel to see the knowledge flywheel status

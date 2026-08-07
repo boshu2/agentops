@@ -49,12 +49,22 @@ func TestInitCreatesEvidenceStorageWithoutGitMutation(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, relative := range []string{
+		filepath.Join(".agents", "ao", "intents", "sha256"),
 		filepath.Join(".agents", "ao", "verdicts", "sha256"),
-		filepath.Join(".agents", "ao", "provenance"),
-		filepath.Join(".agents", "handoff"),
 	} {
 		if info, err := os.Stat(filepath.Join(dir, relative)); err != nil || !info.IsDir() {
 			t.Fatalf("missing %s: %v", relative, err)
+		}
+	}
+	// Retired undeclared stores must not be scaffolded (ADR-0016 closed set).
+	for _, retired := range []string{
+		filepath.Join(".agents", "ao", "sessions"),
+		filepath.Join(".agents", "ao", "index"),
+		filepath.Join(".agents", "ao", "provenance"),
+		filepath.Join(".agents", "handoff"),
+	} {
+		if _, err := os.Stat(filepath.Join(dir, retired)); !os.IsNotExist(err) {
+			t.Fatalf("init scaffolded retired store %s (stat err=%v)", retired, err)
 		}
 	}
 	// The ignore block is the ONLY Git-adjacent effect: no repository is
@@ -96,7 +106,7 @@ func TestInitAppendsGitignoreBlockExactlyOnce(t *testing.T) {
 	if got := strings.Count(body, initapp.GitignoreBeginMarker); got != 1 {
 		t.Fatalf("AgentOps block appears %d times after two inits, want 1:\n%s", got, body)
 	}
-	if !strings.Contains(body, ".agents/ao/sessions/") {
+	if !strings.Contains(body, ".agents/scratch/") {
 		t.Fatalf(".gitignore is missing the scratch patterns:\n%s", body)
 	}
 }
@@ -105,7 +115,7 @@ func TestInitAppendsGitignoreBlockExactlyOnce(t *testing.T) {
 // command says what it ignores and what it deliberately leaves trackable.
 func TestInitHelpDocumentsTheIgnorePolicy(t *testing.T) {
 	long := newTestModule(false).Command().Long
-	for _, want := range []string{".gitignore", ".agents/ao/sessions/", ".agents/ao/intents/", ".agents/ao/verdicts/"} {
+	for _, want := range []string{".gitignore", ".agents/scratch/", ".agents/ao/intents/", ".agents/ao/verdicts/"} {
 		if !strings.Contains(long, want) {
 			t.Errorf("init help does not document %q:\n%s", want, long)
 		}

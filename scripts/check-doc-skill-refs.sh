@@ -11,7 +11,7 @@
 #   CLAUDE.md
 #   docs/ARCHITECTURE.md
 #   docs/SKILLS.md
-#   docs/architecture/operating-loop.md
+#   docs/architecture/rpi-traversal.md
 #   skills/SKILL-TIERS.md
 #
 # (docs/SKILL-ROUTER.md, the curated router, is covered by --all-docs — see below.)
@@ -78,7 +78,7 @@ DOCS=(
     "CLAUDE.md"
     "docs/ARCHITECTURE.md"
     "docs/SKILLS.md"
-    "docs/architecture/operating-loop.md"
+    "docs/architecture/rpi-traversal.md"
     "skills/SKILL-TIERS.md"
 )
 
@@ -101,7 +101,7 @@ usage() {
 check-doc-skill-refs.sh — audit backtick-slash skill references in doctrine docs.
 
 Scans AGENTS.md, CLAUDE.md, docs/ARCHITECTURE.md, docs/SKILLS.md,
-docs/architecture/operating-loop.md, and skills/SKILL-TIERS.md for skill
+docs/architecture/rpi-traversal.md, and skills/SKILL-TIERS.md for skill
 citations (`/skillname`) and slash-command headings, then verifies each resolves
 to an existing skills/<dir>. Lines containing retired|folded|legacy|historical
 are exempt (retirement notes legitimately cite gone skills).

@@ -21,8 +21,9 @@ and hash the same source. Do not make the model restate those facts in a packet.
    `intent_ref` for later phases.
 2. Route the work by type (see **Ground-truth routing**) and name its ground
    truth first. Then inspect only enough real context to make paths, interfaces,
-   and evidence concrete. Existing research and specialist skills are advisory
-   inputs.
+   and evidence concrete: hydrate only the context sources this decision needs
+   and carry their citations forward. Existing research and specialist skills
+   are advisory inputs, never a merged context store.
 3. Ensure the source contains acceptance examples, important non-goals, and the
    allowed write scope. Use lightweight prose or Given/When/Then only where it
    removes ambiguity; do not require both normal and edge ceremony for every

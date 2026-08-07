@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"strings"
 	"time"
 )
 
@@ -680,7 +679,6 @@ const (
 )
 
 // CitationEvent records when an artifact is referenced in a session.
-// These events drive the knowledge flywheel: σρ > δ/100 = operational escape velocity.
 type CitationEvent struct {
 	// ArtifactPath is the absolute path to the cited artifact.
 	ArtifactPath string `json:"artifact_path"`
@@ -754,170 +752,6 @@ type CitationEvent struct {
 	FeedbackAt time.Time `json:"feedback_at,omitempty"`
 }
 
-// --- Knowledge Flywheel Metrics (ol-a46 Phase 0) ---
-
-// FlywheelMetrics captures the state of the knowledge flywheel equation:
-// dK/dt = I(t) - δ·K + σ·ρ·K - B(K, K_crit)
-type FlywheelMetrics struct {
-	// Timestamp is when these metrics were captured.
-	Timestamp time.Time `json:"timestamp"`
-
-	// PeriodStart is the beginning of the measurement period.
-	PeriodStart time.Time `json:"period_start"`
-
-	// PeriodEnd is the end of the measurement period.
-	PeriodEnd time.Time `json:"period_end"`
-
-	// --- Core Parameters ---
-
-	// Delta is the average age in days of active knowledge.
-	// The literature decay constant (0.17/week) still informs the model, but
-	// operational flywheel checks compare sigma*rho against delta/100.
-	Delta float64 `json:"delta"`
-
-	// Sigma is retrieval coverage (0-1).
-	// Measures what fraction of retrievable artifacts were surfaced in the
-	// measurement window.
-	Sigma float64 `json:"sigma"`
-
-	// Rho is decision influence rate (0-1).
-	// Measures what fraction of surfaced artifacts later received evidence-backed
-	// use via "reference" or "applied" citations.
-	Rho float64 `json:"rho"`
-
-	// --- Derived Values ---
-
-	// SigmaRho is σ × ρ, the effective retrieval-application rate.
-	SigmaRho float64 `json:"sigma_rho"`
-
-	// Velocity is σρ - δ/100, the net operational growth rate.
-	// Positive = compounding, Negative = decaying.
-	Velocity float64 `json:"velocity"`
-
-	// AboveEscapeVelocity indicates if σρ > δ/100 (knowledge compounds).
-	AboveEscapeVelocity bool `json:"above_escape_velocity"`
-
-	// --- Counts ---
-
-	// TotalArtifacts is the count of knowledge items (K).
-	TotalArtifacts int `json:"total_artifacts"`
-
-	// CitationsThisPeriod is the number of citation events in the period.
-	CitationsThisPeriod int `json:"citations_this_period"`
-
-	// UniqueCitedArtifacts is how many distinct artifacts were cited.
-	UniqueCitedArtifacts int `json:"unique_cited_artifacts"`
-
-	// NewArtifacts is I(t), new knowledge created this period.
-	NewArtifacts int `json:"new_artifacts"`
-
-	// StaleArtifacts is artifacts not cited in 90+ days.
-	StaleArtifacts int `json:"stale_artifacts"`
-
-	// --- Tier Distribution ---
-
-	// TierCounts maps tier name to artifact count.
-	TierCounts map[string]int `json:"tier_counts,omitempty"`
-
-	// Promotions is count of tier promotions this period.
-	Promotions int `json:"promotions,omitempty"`
-
-	// Demotions is count of tier demotions this period.
-	Demotions int `json:"demotions,omitempty"`
-
-	// --- Loop Closure Metrics (R1 feedback) ---
-
-	// LearningsCreated is artifacts written to .agents/learnings/ this period.
-	LearningsCreated int `json:"learnings_created,omitempty"`
-
-	// LearningsFound is unique learnings surfaced via search/inject this period.
-	LearningsFound int `json:"learnings_found,omitempty"`
-
-	// LoopClosureRatio is LearningsFound / LearningsCreated.
-	// Values >1.0 = healthy (learnings reused more than once).
-	// Values <1.0 = learnings not being discovered.
-	LoopClosureRatio float64 `json:"loop_closure_ratio,omitempty"`
-
-	// PriorArtBypasses is how many times users bypassed the prior art gate.
-	PriorArtBypasses int `json:"prior_art_bypasses,omitempty"`
-
-	// RetrosWithLearnings is postmortems that created extractable learnings.
-	RetrosWithLearnings int `json:"retros_with_learnings,omitempty"`
-
-	// TotalRetros is total postmortem count this period.
-	TotalRetros int `json:"total_retros,omitempty"`
-
-	// --- MemRL Utility Metrics (ol-memrl) ---
-
-	// MeanUtility is the average utility across all artifacts.
-	MeanUtility float64 `json:"mean_utility,omitempty"`
-
-	// UtilityStdDev is the standard deviation of utilities.
-	UtilityStdDev float64 `json:"utility_std_dev,omitempty"`
-
-	// HighUtilityCount is artifacts with utility > 0.7.
-	HighUtilityCount int `json:"high_utility_count,omitempty"`
-
-	// LowUtilityCount is artifacts with utility < 0.3.
-	LowUtilityCount int `json:"low_utility_count,omitempty"`
-
-	// StigmergicScorecard captures repo-local prevention and backlog pressure.
-	StigmergicScorecard *StigmergicScorecard `json:"stigmergic_scorecard,omitempty"`
-
-	// GoldenSignals captures the four derived health indicators
-	// that distinguish knowledge compounding from noise accumulation.
-	GoldenSignals *GoldenSignals `json:"golden_signals,omitempty"`
-}
-
-// GoldenSignals captures the four derived health indicators
-// that distinguish knowledge compounding from noise accumulation.
-type GoldenSignals struct {
-	// Signal 1: Compounding Velocity Trend
-	// Is σρ-δ increasing over time?
-	VelocityTrend7d  float64 `json:"velocity_trend_7d"`  // slope of 7d rolling velocity
-	VelocityTrend30d float64 `json:"velocity_trend_30d"` // slope of 30d rolling velocity
-	TrendVerdict     string  `json:"trend_verdict,omitempty"`
-
-	// Signal 2: Citation Utility Pipeline
-	// Are citations delivering value?
-	HighUtilityCitationPct  float64 `json:"high_utility_citation_pct"`
-	MedianUtilityDelta      float64 `json:"median_utility_delta"`
-	AppliedToRetrievedRatio float64 `json:"applied_to_retrieved_ratio"`
-	PipelineVerdict         string  `json:"pipeline_verdict,omitempty"`
-
-	// Signal 3: Research-to-Learning Closure
-	// Is research being mined?
-	OrphanedResearchCount int     `json:"orphaned_research_count"`
-	OrphanedResearchPct   float64 `json:"orphaned_research_pct"`
-	AvgOrphanAgeDays      float64 `json:"avg_orphan_age_days"`
-	ClosureVerdict        string  `json:"closure_verdict,omitempty"`
-
-	// Signal 4: Knowledge Reuse Concentration
-	// Is the whole pool active or just a few items?
-	CitationGini         float64 `json:"citation_gini"`
-	ActivePoolPct        float64 `json:"active_pool_pct"`
-	Top10BottomRatio     float64 `json:"top10_bottom_ratio"`
-	ConcentrationVerdict string  `json:"concentration_verdict,omitempty"`
-
-	// Overall verdict: "compounding", "accumulating", or "decaying"
-	OverallVerdict string `json:"overall_verdict,omitempty"`
-}
-
-// StigmergicScorecard captures the backlog and prevention surfaces that
-// influence whether repo memory is being applied early enough to change work.
-type StigmergicScorecard struct {
-	PromotedFindings       int `json:"promoted_findings"`
-	PlanningRules          int `json:"planning_rules"`
-	PreMortemChecks        int `json:"premortem_checks"`
-	QueueEntries           int `json:"queue_entries"`
-	UnconsumedBatches      int `json:"unconsumed_batches"`
-	UnconsumedItems        int `json:"unconsumed_items"`
-	HighSeverityUnconsumed int `json:"high_severity_unconsumed"`
-}
-
-// DefaultDelta is the literature-based decay rate (17%/week from Darr et al.).
-const DefaultDelta = 0.17
-
 // MemRL parameters (from MemRL paper, validated settings)
 const (
 	// DefaultAlpha is the EMA learning rate for utility updates.
@@ -931,48 +765,6 @@ const (
 	// InitialUtility is the starting Q-value for new artifacts.
 	InitialUtility = 0.5
 )
-
-// EscapeVelocityStatus returns a human-readable status of the flywheel.
-func (m *FlywheelMetrics) EscapeVelocityStatus() string {
-	if m == nil {
-		return "UNKNOWN"
-	}
-	if m.AboveEscapeVelocity {
-		return "COMPOUNDING"
-	}
-	if m.Velocity > -0.05 {
-		return "NEAR ESCAPE"
-	}
-	return "DECAYING"
-}
-
-// HealthStatus returns the user-facing flywheel health verdict.
-// Golden-signal health takes priority over raw escape-velocity telemetry.
-func (m *FlywheelMetrics) HealthStatus() string {
-	if m == nil {
-		return "UNKNOWN"
-	}
-	if m.GoldenSignals != nil {
-		if verdict := strings.TrimSpace(m.GoldenSignals.OverallVerdict); verdict != "" {
-			return strings.ToUpper(verdict)
-		}
-	}
-	if m.EscapeVelocityStatus() == "NEAR ESCAPE" {
-		return "ACCUMULATING"
-	}
-	return m.EscapeVelocityStatus()
-}
-
-// HealthCompounding reports whether the flywheel health verdict is compounding.
-func (m *FlywheelMetrics) HealthCompounding() bool {
-	if m == nil {
-		return false
-	}
-	if m.GoldenSignals != nil && strings.TrimSpace(m.GoldenSignals.OverallVerdict) != "" {
-		return strings.EqualFold(m.GoldenSignals.OverallVerdict, "compounding")
-	}
-	return m.AboveEscapeVelocity
-}
 
 // --- Plan Discovery (ol-a46.3) ---
 

@@ -52,6 +52,7 @@ var removedCommands = map[string]removedCommand{
 	"constraint": {use: "AgentOps no longer promotes findings into blocking policy; encode accepted rules in repository-owned checks"},
 	"inject":     {use: "AgentOps no longer retrieves prior knowledge; use the caller's own memory or context tooling"},
 	"verify":     {use: "the 3.2 verification front door was removed; semantic judgment is the Validate skill. If `ao verify init` installed a pre-push hook, delete the AGENTOPS-VERIFY-RATCHET block from .git/hooks/pre-push (see docs/UPGRADING.md)"},
+	"flywheel":   {use: "the knowledge-flywheel product surface was retired; AgentOps no longer computes knowledge-compounding state. Learning remains an optional off-path consumer of durable verdicts (the learn skill)"},
 
 	// The pruned 3.2 bookkeeping/knowledge family — one shared clause, per the
 	// MIGRATION.md paragraph that lists them together (`eval` is deliberately

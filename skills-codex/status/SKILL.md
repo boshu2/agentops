@@ -26,9 +26,16 @@ provides a separate authoritative source for them.
 
 `ao status` is the evidence-store view. It validates content-addressed artifact
 names and content before counting them, reports corrupt and unavailable entries,
-and shows only intent/verdict counts plus evidence recency. Legacy session
-indexes, provenance summaries, flywheel health, and quality signals belong to
-their own read surfaces and are not aggregated into this command.
+and shows only intent/verdict counts plus evidence recency. Retired legacy
+surfaces (session indexes, provenance summaries, knowledge-health signals) are
+not aggregated into this command.
+
+Distinct state classes stay distinct in every status report: tracker state
+belongs to the tracker, Git state to Git, factory or runtime state to the
+selected factory's own doors, deterministic-check results to the executable
+that produced them, and semantic validation to a fresh verdict. Report each
+from its own authority, never merged into one blended "health" claim —
+factory-complete, checks-green, and AgentOps-PASS are three different facts.
 
 Status does not inspect work queues, assign priority, claim work, infer a next
 action, repair records, govern retries, or change any state. Optional Git or

@@ -21,4 +21,4 @@ correctness state. Missing optional tools can reduce what was checked, but they
 cannot reorder RPI or manufacture a PASS.
 
 For CLI installation details, see the [README](../README.md). For the exact
-core boundary, see the [operating loop](architecture/operating-loop.md).
+core boundary, see the [RPI traversal](architecture/rpi-traversal.md).

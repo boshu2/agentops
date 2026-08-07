@@ -3,8 +3,8 @@
 bounded_contexts:
   - id: BC1
     name: Evidence
-    product_layer: "Optional corpus and provenance"
-    responsibility: "Record, retrieve, cite, and inspect factual evidence without changing core outcomes."
+    product_layer: "Optional requested proof and provenance"
+    responsibility: "Record, retrieve, and cite factual evidence from its owning context sources without changing core outcomes or becoming a second authority."
     center_of_gravity: [provenance, search, research, learn]
     ports: [EvidenceReaderPort, EvidenceWriterPort, CitationPort]
 

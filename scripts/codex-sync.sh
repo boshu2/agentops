@@ -116,7 +116,7 @@ bespoke = {
 }
 
 # excluded = the drop-the-twin set (age-focus-membrane-bookkeeper-m1wg.19). A
-# spine-excluded source skill (e.g. a corpus-flywheel skill demoted to the
+# spine-excluded source skill (e.g. a legacy corpus skill demoted to the
 # experimental tier) ships NO Codex twin: the skills-codex/<name>/ dir is deleted
 # and MUST NOT be regenerated. Like bespoke it is skipped entirely — never
 # generated, never checked, never restained — but unlike bespoke there is no twin

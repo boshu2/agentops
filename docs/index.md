@@ -1,7 +1,10 @@
 # AgentOps
 
-AgentOps helps coding agents turn one intent into one evidence-bound engineering
-judgment:
+AgentOps is the operations layer for agentic engineering: portable skills and
+evidence contracts connecting intent, coding agents, software factories,
+context sources, and independent judgment — without replacing the systems
+that own work, execution, or delivery. It turns one intent into one
+evidence-bound engineering judgment:
 
 ```text
 RPI -> Plan -> Implement -> fresh Validate -> report and stop

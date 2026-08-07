@@ -26,11 +26,10 @@ type ProfileSet uint8
 
 const (
 	ProfileDefault ProfileSet = 1 << iota
-	ProfileFlywheel
 	ProfileLegacy
 	ProfileCombined
 
-	allProfiles = ProfileDefault | ProfileFlywheel | ProfileLegacy | ProfileCombined
+	allProfiles = ProfileDefault | ProfileLegacy | ProfileCombined
 )
 
 // ArgsPolicy gives a positional-argument validator a stable machine name.

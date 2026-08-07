@@ -364,7 +364,10 @@ func checkModuleShape(root, moduleDir, modulePath string, ownership ownershipRec
 	if validProfileMasks != 1 {
 		violations = append(violations, Violation{Rule: RuleProfileReachability, Path: relative(root, modulePath), Message: "Profiles must be one OR-only mask of exact clicontract profile constants"})
 	}
-	for _, profile := range []string{"default", "flywheel", "legacy", "combined"} {
+	// The frozen ownership records still carry the historical "flywheel"
+	// profile key; only the live profile universe is compared against module
+	// source after that build profile's retirement.
+	for _, profile := range []string{"default", "legacy", "combined"} {
 		want := ownership.Profiles[profile] == "present"
 		if actualProfiles[profile] != want {
 			violations = append(violations, Violation{Rule: RuleProfileReachability, Path: relative(root, modulePath), Message: fmt.Sprintf("profile %s reachability=%t, ownership wants %t", profile, actualProfiles[profile], want)})
@@ -524,8 +527,6 @@ func parseProfileMask(expression ast.Expr, aliases map[string]string) (map[strin
 		switch value.Sel.Name {
 		case "ProfileDefault":
 			profiles["default"] = true
-		case "ProfileFlywheel":
-			profiles["flywheel"] = true
 		case "ProfileLegacy":
 			profiles["legacy"] = true
 		case "ProfileCombined":

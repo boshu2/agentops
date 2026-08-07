@@ -41,6 +41,6 @@ owned by the caller's environment.
 
 ## Related contracts
 
-- [Operating loop](architecture/operating-loop.md)
+- [RPI traversal](architecture/rpi-traversal.md)
 - [Optional dispatch](contracts/orchestration-ports.md)
 - [Agent workflow](agent-workflow-reference.md)

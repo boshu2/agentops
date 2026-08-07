@@ -32,9 +32,6 @@ func TestDefault(t *testing.T) {
 	if !cfg.Search.UseSmartConnections {
 		t.Error("Default Search.UseSmartConnections = false, want true")
 	}
-	if cfg.Flywheel.AutoPromoteThreshold != "24h" {
-		t.Errorf("Default Flywheel.AutoPromoteThreshold = %q, want %q", cfg.Flywheel.AutoPromoteThreshold, "24h")
-	}
 }
 
 func TestMerge(t *testing.T) {
@@ -470,9 +467,6 @@ func TestMerge_Paths(t *testing.T) {
 		Paths: PathsConfig{
 			LearningsDir:   "/custom/learnings",
 			PatternsDir:    "/custom/patterns",
-			RetrosDir:      "/custom/retros",
-			ResearchDir:    "/custom/research",
-			PlansDir:       "/custom/plans",
 			ClaudePlansDir: "/custom/claude-plans",
 			CitationsFile:  "/custom/citations.jsonl",
 			TranscriptsDir: "/custom/transcripts",
@@ -488,9 +482,6 @@ func TestMerge_Paths(t *testing.T) {
 	}{
 		{"LearningsDir", result.Paths.LearningsDir, "/custom/learnings"},
 		{"PatternsDir", result.Paths.PatternsDir, "/custom/patterns"},
-		{"RetrosDir", result.Paths.RetrosDir, "/custom/retros"},
-		{"ResearchDir", result.Paths.ResearchDir, "/custom/research"},
-		{"PlansDir", result.Paths.PlansDir, "/custom/plans"},
 		{"ClaudePlansDir", result.Paths.ClaudePlansDir, "/custom/claude-plans"},
 		{"CitationsFile", result.Paths.CitationsFile, "/custom/citations.jsonl"},
 		{"TranscriptsDir", result.Paths.TranscriptsDir, "/custom/transcripts"},
@@ -854,9 +845,6 @@ func TestDefault_Paths(t *testing.T) {
 	}{
 		{"LearningsDir", cfg.Paths.LearningsDir, ".agents/learnings"},
 		{"PatternsDir", cfg.Paths.PatternsDir, ".agents/patterns"},
-		{"RetrosDir", cfg.Paths.RetrosDir, ".agents/retro"},
-		{"ResearchDir", cfg.Paths.ResearchDir, ".agents/research"},
-		{"PlansDir", cfg.Paths.PlansDir, ".agents/plans"},
 		{"CitationsFile", cfg.Paths.CitationsFile, ".agents/ao/citations.jsonl"},
 	}
 
@@ -945,20 +933,6 @@ func TestMerge_RPI(t *testing.T) {
 	}
 }
 
-func TestMerge_Flywheel(t *testing.T) {
-	dst := Default()
-	src := &Config{
-		Flywheel: FlywheelConfig{
-			AutoPromoteThreshold: "36h",
-		},
-	}
-
-	result := merge(dst, src)
-	if result.Flywheel.AutoPromoteThreshold != "36h" {
-		t.Errorf("merge Flywheel.AutoPromoteThreshold = %q, want %q", result.Flywheel.AutoPromoteThreshold, "36h")
-	}
-}
-
 func TestMerge_RPIPreservedWhenEmpty(t *testing.T) {
 	dst := Default()
 	src := &Config{
@@ -1005,28 +979,6 @@ func TestApplyEnv_RPIWorktreeMode(t *testing.T) {
 
 	if cfg.RPI.WorktreeMode != "never" {
 		t.Errorf("applyEnv RPI.WorktreeMode = %q, want %q", cfg.RPI.WorktreeMode, "never")
-	}
-}
-
-func TestApplyEnv_FlywheelAutoPromoteThreshold(t *testing.T) {
-	t.Setenv("AGENTOPS_OUTPUT", "")
-	t.Setenv("AGENTOPS_BASE_DIR", "")
-	t.Setenv("AGENTOPS_VERBOSE", "")
-	t.Setenv("AGENTOPS_NO_SC", "")
-	t.Setenv("AGENTOPS_RPI_WORKTREE_MODE", "")
-	t.Setenv("AGENTOPS_RPI_RUNTIME", "")
-	t.Setenv("AGENTOPS_RPI_RUNTIME_MODE", "")
-	t.Setenv("AGENTOPS_RPI_RUNTIME_COMMAND", "")
-	t.Setenv("AGENTOPS_RPI_AO_COMMAND", "")
-	t.Setenv("AGENTOPS_RPI_BD_COMMAND", "")
-	t.Setenv("AGENTOPS_RPI_TMUX_COMMAND", "")
-	t.Setenv("AGENTOPS_FLYWHEEL_AUTO_PROMOTE_THRESHOLD", "48h")
-
-	cfg := Default()
-	cfg = applyEnv(cfg)
-
-	if cfg.Flywheel.AutoPromoteThreshold != "48h" {
-		t.Errorf("applyEnv Flywheel.AutoPromoteThreshold = %q, want %q", cfg.Flywheel.AutoPromoteThreshold, "48h")
 	}
 }
 
@@ -1397,11 +1349,14 @@ func TestResolve_RPIRuntimeModeOverridesRuntime(t *testing.T) {
 	}
 }
 
-func TestLoadFromPath_WithFlywheel(t *testing.T) {
+func TestLoadFromPath_ToleratesRetiredFlywheelKey(t *testing.T) {
 	tmpDir := t.TempDir()
 	configPath := filepath.Join(tmpDir, "config.yaml")
 
+	// The flywheel config block was retired with the ao flywheel command
+	// family. Existing user configs that still carry the key must load.
 	content := `
+verbose: true
 flywheel:
   auto_promote_threshold: 72h
 `
@@ -1411,10 +1366,10 @@ flywheel:
 
 	cfg, err := loadFromPath(configPath)
 	if err != nil {
-		t.Fatalf("loadFromPath() error = %v", err)
+		t.Fatalf("loadFromPath() with retired flywheel key errored: %v", err)
 	}
-	if cfg.Flywheel.AutoPromoteThreshold != "72h" {
-		t.Errorf("loadFromPath Flywheel.AutoPromoteThreshold = %q, want %q", cfg.Flywheel.AutoPromoteThreshold, "72h")
+	if !cfg.Verbose {
+		t.Fatal("loadFromPath Verbose = false, want true (sibling keys must still parse)")
 	}
 }
 

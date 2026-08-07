@@ -86,7 +86,7 @@ var (
 		"tests/scripts/check-doc-skill-refs-all-docs.bats",
 	}
 	cathedralCutPaths = []string{
-		"AGENTS.md", "PRODUCT.md", "README.md", "docs/architecture/operating-loop.md",
+		"AGENTS.md", "PRODUCT.md", "README.md", "docs/architecture/rpi-traversal.md",
 		"skills/**", "skills-codex/**", "schemas/**", "cli/cmd/ao/**", "cli/internal/**",
 		"scripts/check-cathedral-cut-conformance.py",
 	}

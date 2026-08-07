@@ -48,7 +48,7 @@ not an unfinished carve-out:
   behind small consumer-owned ports implemented in
   `cli/internal/adapters/<family>`. These are the families with real domain
   logic or external effects worth isolating.
-- **The other twelve families run `module → app-seam`.** `demo`, `flywheel`,
+- **The other eleven families run `module → app-seam`.** `demo`,
   `goals`, `init`, `provenance`, `quick-start`, `redact`, `robot-docs`,
   `session`, `skills`, `status`, and `version` call a focused app package
   directly through the host seams and carry no dedicated adapters layer, because
@@ -62,7 +62,7 @@ The published spine is pinned by `cmd/ao/default_spine_test.go` (plus
 `completion` and `help`, which cobra synthesizes):
 
 <!-- spine:begin — keep in lockstep with approvedDefaultSpine in cmd/ao/default_spine_test.go; verified by TestGoCLIDocSpineMatchesApprovedSpine -->
-`capabilities` `config` `demo` `doctor` `eval` `flywheel` `gate` `gc` `goals`
+`capabilities` `config` `demo` `doctor` `eval` `gate` `gc` `goals`
 `init` `provenance` `quick-start` `redact` `robot-docs` `session` `skills`
 `status` `version` `workflows`
 <!-- spine:end -->
@@ -117,7 +117,7 @@ score is not a semantic verdict.
 
 ## Related pages
 
-- [Operating loop](operating-loop.md)
+- [RPI traversal](rpi-traversal.md)
 - [Component map](component-map.md)
 - [Ports and adapters](ports-and-adapters.md)
 - [Migration map](../MIGRATION.md)

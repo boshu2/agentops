@@ -27,4 +27,4 @@ judgment selected by the caller. Optional Learn analysis can study collections
 of past verdicts later. Neither changes the core lifecycle.
 
 See [PRODUCT.md](../PRODUCT.md) and the
-[operating loop](architecture/operating-loop.md).
+[RPI traversal](architecture/rpi-traversal.md).

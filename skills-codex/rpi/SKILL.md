@@ -1,6 +1,6 @@
 ---
 name: rpi
-description: Run one bounded Plan, Implement, and fresh
+description: 'Coordinate one RPI traversal: one bounded'
 ---
 # RPI
 

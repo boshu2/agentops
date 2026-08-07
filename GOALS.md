@@ -2,8 +2,9 @@
 
 ## Product outcome
 
-AgentOps makes one coding-agent experiment independently inspectable without
-taking over the consumer's engineering system.
+AgentOps is the operations layer for agentic engineering: it makes one
+coding-agent experiment independently inspectable without taking over the
+consumer's engineering system.
 
 The canonical outcome is:
 

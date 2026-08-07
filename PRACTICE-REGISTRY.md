@@ -13,9 +13,8 @@ defines the canonical slug registry validated by
 `scripts/validate-practice-citations.sh`.
 
 Use this file to answer "which proven practice does this primitive embody?"
-Do not use it as a second product page. If the claim is core CDLC doctrine,
-put it in `docs/cdlc.md`, `docs/architecture/operating-loop.md`, `PRODUCT.md`,
-or `GOALS.md`.
+Do not use it as a second product page. If the claim is core doctrine, put it
+in `docs/architecture/rpi-traversal.md`, `PRODUCT.md`, or `GOALS.md`.
 
 ## Lineage: reverse-traced from now to the 90s
 

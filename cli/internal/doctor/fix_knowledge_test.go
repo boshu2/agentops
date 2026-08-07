@@ -16,7 +16,7 @@ func knowledgeTestEnv(t *testing.T) (*DetectEnv, string) {
 	repo := t.TempDir()
 	home := t.TempDir()
 	base := filepath.Join(repo, ".agents", "ao")
-	for _, sub := range requiredSubdirs {
+	for _, sub := range []string{"sessions", "index", "provenance"} {
 		if err := os.MkdirAll(filepath.Join(base, sub), 0o755); err != nil {
 			t.Fatalf("mkdir store sub %q: %v", sub, err)
 		}
@@ -51,97 +51,6 @@ func validIndexLine(path string) string {
 // ---------------------------------------------------------------------------
 // fm-knowledge-missing-substructure
 // ---------------------------------------------------------------------------
-
-func TestKnowledgeMissingSubstructure_DetectAndFix(t *testing.T) {
-	env, repo := knowledgeTestEnv(t)
-	base := knowledgeBaseDir(env)
-	// Remove two of the three required subdirs.
-	if err := os.RemoveAll(filepath.Join(base, "index")); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.RemoveAll(filepath.Join(base, "provenance")); err != nil {
-		t.Fatal(err)
-	}
-	// Keep a witness file in the surviving sessions/ dir; the fixer must not touch it.
-	witness := filepath.Join(base, "sessions", "keep.txt")
-	if err := os.WriteFile(witness, []byte("untouched"), 0o644); err != nil {
-		t.Fatal(err)
-	}
-
-	det := missingSubstructureDetector{}
-	findings, err := det.Detect(env)
-	if err != nil {
-		t.Fatalf("Detect: %v", err)
-	}
-	if len(findings) != 1 {
-		t.Fatalf("findings = %d, want 1", len(findings))
-	}
-	if findings[0].ID != "fm-knowledge-missing-substructure" {
-		t.Fatalf("finding ID = %q", findings[0].ID)
-	}
-	if findings[0].Remediation.EstimatedActions != 2 {
-		t.Fatalf("estimated actions = %d, want 2", findings[0].Remediation.EstimatedActions)
-	}
-
-	ctx, _ := newKnowledgeMutateCtx(t, repo, det.ID())
-	res, err := missingSubstructureFixer{}.Fix(ctx, env, findings)
-	if err != nil {
-		t.Fatalf("Fix: %v", err)
-	}
-	if !res.Fixed {
-		t.Fatal("Fix did not report Fixed")
-	}
-	if res.ActionsTaken != 2 {
-		t.Fatalf("ActionsTaken = %d, want 2", res.ActionsTaken)
-	}
-	for _, sub := range requiredSubdirs {
-		st, err := os.Stat(filepath.Join(base, sub))
-		if err != nil || !st.IsDir() {
-			t.Fatalf("subdir %q not re-created", sub)
-		}
-	}
-	// Witness file untouched.
-	got, err := os.ReadFile(witness)
-	if err != nil || string(got) != "untouched" {
-		t.Fatalf("witness file changed: %q err=%v", got, err)
-	}
-	// Re-detect: clean.
-	again, _ := det.Detect(env)
-	if len(again) != 0 {
-		t.Fatalf("post-fix detect found %d findings, want 0", len(again))
-	}
-}
-
-func TestKnowledgeMissingSubstructure_RefusesNonDirSlot(t *testing.T) {
-	env, repo := knowledgeTestEnv(t)
-	base := knowledgeBaseDir(env)
-	if err := os.RemoveAll(filepath.Join(base, "index")); err != nil {
-		t.Fatal(err)
-	}
-	// A regular file occupies the index/ slot.
-	if err := os.WriteFile(filepath.Join(base, "index"), []byte("x"), 0o644); err != nil {
-		t.Fatal(err)
-	}
-	ctx, _ := newKnowledgeMutateCtx(t, repo, "fm-knowledge-missing-substructure")
-	res, err := missingSubstructureFixer{}.Fix(ctx, env, nil)
-	if err == nil {
-		t.Fatal("expected refusal on non-directory slot")
-	}
-	if res.Fixed {
-		t.Fatal("Fix reported Fixed despite refusal")
-	}
-}
-
-func TestKnowledgeMissingSubstructure_NoFindingWhenHealthy(t *testing.T) {
-	env, _ := knowledgeTestEnv(t)
-	findings, err := missingSubstructureDetector{}.Detect(env)
-	if err != nil {
-		t.Fatalf("Detect: %v", err)
-	}
-	if len(findings) != 0 {
-		t.Fatalf("healthy store produced %d findings", len(findings))
-	}
-}
 
 // ---------------------------------------------------------------------------
 // fm-knowledge-corrupt-index-lines
@@ -633,7 +542,6 @@ func TestKnowledgeDetectorsAndFixersRegistered(t *testing.T) {
 	wantDetectors := []string{
 		"fm-knowledge-corrupt-index-lines",
 		"fm-knowledge-false-freshness",
-		"fm-knowledge-missing-substructure",
 		"fm-knowledge-orphaned-flywheel-learnings",
 		"fm-knowledge-stale-index-drift",
 		"fm-knowledge-torn-append-line",
@@ -654,7 +562,6 @@ func TestKnowledgeDetectorsAndFixersRegistered(t *testing.T) {
 	}
 	autoFixable := map[string]bool{
 		"fm-knowledge-corrupt-index-lines":         true,
-		"fm-knowledge-missing-substructure":        true,
 		"fm-knowledge-orphaned-flywheel-learnings": true,
 		"fm-knowledge-torn-append-line":            true,
 		"fm-knowledge-stale-index-drift":           false,
@@ -708,23 +615,21 @@ func buildKnowledgeBaitTree(t *testing.T, dir string) map[string]string {
 // knowledgeDetectorsUnderTest returns every knowledge detector keyed by name.
 func knowledgeDetectorsUnderTest() map[string]Detector {
 	return map[string]Detector{
-		"missing-substructure": missingSubstructureDetector{},
-		"corrupt-index-lines":  corruptIndexLinesDetector{},
-		"torn-append-line":     tornAppendLineDetector{},
-		"orphaned-learnings":   orphanedFlywheelLearningsDetector{},
-		"stale-index-drift":    staleIndexDriftDetector{},
-		"false-freshness":      falseFreshnessDetector{},
+		"corrupt-index-lines": corruptIndexLinesDetector{},
+		"torn-append-line":    tornAppendLineDetector{},
+		"orphaned-learnings":  orphanedFlywheelLearningsDetector{},
+		"stale-index-drift":   staleIndexDriftDetector{},
+		"false-freshness":     falseFreshnessDetector{},
 	}
 }
 
-// knowledgeMutatingFixersUnderTest returns the four knowledge fixers that can
-// write to disk, keyed by name. (The two detect-only fixers always refuse.)
+// knowledgeMutatingFixersUnderTest returns the knowledge fixers that can
+// write to disk, keyed by name. (The detect-only fixers always refuse.)
 func knowledgeMutatingFixersUnderTest() map[string]Fixer {
 	return map[string]Fixer{
-		"missing-substructure": missingSubstructureFixer{},
-		"corrupt-index-lines":  corruptIndexLinesFixer{},
-		"torn-append-line":     tornAppendLineFixer{},
-		"orphaned-learnings":   orphanedFlywheelLearningsFixer{},
+		"corrupt-index-lines": corruptIndexLinesFixer{},
+		"torn-append-line":    tornAppendLineFixer{},
+		"orphaned-learnings":  orphanedFlywheelLearningsFixer{},
 	}
 }
 

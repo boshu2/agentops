@@ -62,7 +62,7 @@ REMOVED_MORTEM_ALIASES = {
 REMOVED_COMMANDS = {
     "pawl", "plan-pawl", "land", "done", "close", "governor", "yield",
     "claim", "next-work", "state", "worktree", "validate", "converge",
-    "reconcile", "membrane", "crank",
+    "reconcile", "membrane", "crank", "flywheel",
 }
 RETIRED_SCHEMAS = {
     "verdict.v1.schema.json", "pawl-verdict.v1.schema.json",
@@ -411,6 +411,38 @@ def probe_no_substrate_calls() -> None:
         assert not called.exists(), "Validate helper invoked a Git, tracker, push, or delivery executable"
 
 
+
+def check_operations_layer_identity() -> None:
+    """The product category, its owners, and the retired surfaces stay aligned."""
+    language = (ROOT / "docs" / "contracts" / "ubiquitous-language.md").read_text(encoding="utf-8")
+    for term in (
+        "Operations layer",
+        "Federated integration graph",
+        "Semantic work-and-proof protocol",
+        "RPI traversal",
+        "Forbidden conflations",
+    ):
+        assert term in language, f"ubiquitous language missing term: {term}"
+
+    traversal = ROOT / "docs" / "architecture" / "rpi-traversal.md"
+    assert traversal.is_file(), "rpi-traversal.md owner page missing"
+    compat = (ROOT / "docs" / "architecture" / "operating-loop.md").read_text(encoding="utf-8")
+    assert "rpi-traversal.md" in compat, "compatibility page must link the owner"
+    assert len(compat.splitlines()) < 25, "compatibility page must stay a short redirect"
+    assert "subject-manifest.v1" not in compat, "compatibility page must not duplicate the contract"
+
+    for retired in (
+        ROOT / "cli" / "internal" / "commands" / "flywheel",
+        ROOT / "cli" / "internal" / "flywheelapp",
+    ):
+        assert not retired.exists(), f"retired knowledge-flywheel surface is live: {retired}"
+
+    readme = (ROOT / "README.md").read_text(encoding="utf-8")
+    assert "operations layer for agentic engineering" in readme
+    product = (ROOT / "PRODUCT.md").read_text(encoding="utf-8")
+    assert "operations layer for agentic engineering" in product
+
+
 def main() -> int:
     checks = (
         check_skill_graph,
@@ -420,6 +452,7 @@ def main() -> int:
         check_single_pass_contract,
         check_validate_helper,
         check_tombstones,
+        check_operations_layer_identity,
         check_dispatch_once,
         probe_no_substrate_calls,
     )

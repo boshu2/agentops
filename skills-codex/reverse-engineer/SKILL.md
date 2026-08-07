@@ -23,14 +23,14 @@ Produce evidence, not vibes. The script clones (pinned), scans CLI/config/artifa
 ```bash
 python3 skills/reverse-engineer/scripts/reverse_engineer.py <product> --mode=repo \
   --upstream-repo="https://github.com/org/repo.git" --upstream-ref=v1.0.0 \
-  --output-dir=".agents/research/<product>/"
+  --output-dir=".agents/scratch/reverse-engineer/<product>/"
 ```
 
 Binary mode requires `--authorized` (see Invocation Contract + Self-Test). Use the bundled demo fixture if you lack authorization for a real binary.
 
 ## Phase 2 — The steal-map (the decision)
 
-Map each capability the teardown found onto **our** surfaces. This is the part that turns research into a decision. Emit `.agents/research/<product>/steal-map.md` with a table; every row cites the teardown evidence **and** the matching surface in our repo.
+Map each capability the teardown found onto **our** surfaces. This is the part that turns research into a decision. Emit `.agents/scratch/reverse-engineer/<product>/steal-map.md` with a table; every row cites the teardown evidence **and** the matching surface in our repo.
 
 | Their capability | Our surface today | Verdict |
 |---|---|---|
@@ -63,14 +63,14 @@ neither strategy grants readiness or continuation authority.
 
 ## Invocation Contract
 
-Required: `product_name`. Common flags: `--mode=repo|binary|both`, `--upstream-repo`, `--upstream-ref` (pins the clone to a specific commit/tag/branch; the resolved SHA is recorded in `clone-metadata.json` on any clone), `--output-dir` (default `.agents/research/<product>/`), `--security-audit`, `--materialize-archives` (authorized-only opt-in; embedded-archive extraction is off/index-only by default), `--authorized` (mandatory for binary mode — refuses without it). Full list: `python3 skills/reverse-engineer/scripts/reverse_engineer.py --help`.
+Required: `product_name`. Common flags: `--mode=repo|binary|both`, `--upstream-repo`, `--upstream-ref` (pins the clone to a specific commit/tag/branch; the resolved SHA is recorded in `clone-metadata.json` on any clone), `--output-dir` (default `.agents/scratch/reverse-engineer/<product>/`), `--security-audit`, `--materialize-archives` (authorized-only opt-in; embedded-archive extraction is off/index-only by default), `--authorized` (mandatory for binary mode — refuses without it). Full list: `python3 skills/reverse-engineer/scripts/reverse_engineer.py --help`.
 
 ## Output Specification
 
 Phase-1 teardown under `output_dir/`: `feature-inventory.md`, `feature-registry.yaml`, `feature-catalog.md`, `spec-architecture.md`, `spec-code-map.md`, `spec-clone-vs-use.md`, `spec-clone-mvp.md`, plus `spec-cli-surface.md` only when a CLI is detected and `clone-metadata.json` only when the script performs a clone (i.e., `--upstream-repo` is supplied and the target is not already checked out); `--upstream-ref` pins which commit, it is not what triggers the file. Security mode adds `output_dir/security/`: `threat-model.md`, `attack-surface.md`, `dataflow.md`, `crypto-review.md`, `authn-authz.md`, `findings.md`, `reproducibility.md`, `validate-security-audit.sh`. Phase-2: `steal-map.md`.
 
 - **Artifact directory:** the exact `--output-dir`, defaulting to
-  `$REPO/.agents/research/<product>/`.
+  `$REPO/.agents/scratch/reverse-engineer/<product>/`.
 - **Filename convention:** the fixed phase-1 and phase-2 names above; security
   files live only in the `security/` child directory.
 - **Serialization/schema format:** registry is YAML, clone metadata is one JSON

@@ -132,7 +132,6 @@ func init() {
 		&cobra.Group{ID: "config", Title: "Configuration:"},
 		&cobra.Group{ID: "comms", Title: "Evidence:"},
 		&cobra.Group{ID: "knowledge", Title: "Knowledge:"},
-		&cobra.Group{ID: "experimental", Title: "Optional knowledge tools:"},
 	)
 
 	// Global flags available to all commands

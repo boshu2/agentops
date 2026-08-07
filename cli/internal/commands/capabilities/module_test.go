@@ -70,7 +70,7 @@ func TestModuleOwnsFreshCommandsAndExplicitContract(t *testing.T) {
 	if err := clicontract.ValidateContract(contract); err != nil {
 		t.Fatal(err)
 	}
-	wantProfiles := clicontract.ProfileDefault | clicontract.ProfileFlywheel | clicontract.ProfileLegacy | clicontract.ProfileCombined
+	wantProfiles := clicontract.ProfileDefault | clicontract.ProfileLegacy | clicontract.ProfileCombined
 	if contract.Profiles != wantProfiles || contract.Effects != clicontract.EffectPure || contract.Output != clicontract.OutputStructured {
 		t.Fatalf("contract = %+v", contract)
 	}

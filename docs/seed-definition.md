@@ -19,5 +19,5 @@ The seed works in a non-Git directory without the `ao` binary. The resolved
 intent and derived content identity can be passed directly between contexts;
 content-addressed verdict storage is an optional evidence surface.
 
-See [the operating loop](architecture/operating-loop.md) and
+See [the RPI traversal](architecture/rpi-traversal.md) and
 [product boundary](../PRODUCT.md).

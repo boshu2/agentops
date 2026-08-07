@@ -6,6 +6,7 @@ description: Operate the Agentic Coding Flywheel as a
 
 Use the Flywheel only when the caller explicitly selects it. Treat it as a
 replaceable execution adapter, not a correctness or completion boundary.
+The adapter cannot select AgentOps semantics, issue a binding verdict, or turn factory completion into delivery or validation proof.
 
 Insight: a factory's own completion signals — closed beads, converged agents, a
 quiet swarm — measure that its machinery finished, not that the result is

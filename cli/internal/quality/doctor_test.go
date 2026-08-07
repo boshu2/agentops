@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"os"
 	"path/filepath"
-	"strings"
 	"testing"
 	"time"
 )
@@ -139,34 +138,6 @@ func TestFormatDuration(t *testing.T) {
 	}
 }
 
-func TestFormatNumber(t *testing.T) {
-	t.Parallel()
-	tests := []struct {
-		n    int
-		want string
-	}{
-		{0, "0"}, {999, "999"}, {1000, "1,000"}, {1247, "1,247"}, {1000000, "1,000,000"},
-	}
-	for _, tt := range tests {
-		if got := FormatNumber(tt.n); got != tt.want {
-			t.Errorf("FormatNumber(%d) = %q, want %q", tt.n, got, tt.want)
-		}
-	}
-}
-
-func TestCountFiles(t *testing.T) {
-	t.Parallel()
-	dir := t.TempDir()
-	if CountFiles(dir) != 0 {
-		t.Error("empty dir should be 0")
-	}
-	os.WriteFile(filepath.Join(dir, "a.txt"), []byte("a"), 0o644)
-	os.MkdirAll(filepath.Join(dir, "sub"), 0o755)
-	if CountFiles(dir) != 1 {
-		t.Error("should count 1 file, not directory")
-	}
-}
-
 func TestRunDoctor_JSON(t *testing.T) {
 	t.Parallel()
 	var buf bytes.Buffer
@@ -185,53 +156,5 @@ func TestRunDoctor_FailsOnRequired(t *testing.T) {
 	err := RunDoctor(DoctorOptions{Checks: []Check{{Name: "broken", Status: "fail", Required: true}}, Stdout: &buf})
 	if err == nil {
 		t.Error("expected error")
-	}
-}
-
-func TestCheckKnowledgeBase(t *testing.T) {
-	t.Parallel()
-	dir := t.TempDir()
-	if c := CheckKnowledgeBase(dir); c.Status != "pass" {
-		t.Errorf("existing dir: %q", c.Status)
-	}
-	if c := CheckKnowledgeBase(filepath.Join(dir, "nope")); c.Status != "fail" {
-		t.Errorf("missing dir: %q", c.Status)
-	}
-}
-
-func TestCheckFlywheelHealth(t *testing.T) {
-	t.Parallel()
-	dir := t.TempDir()
-	// A fresh install with no learnings yet is informational, not a warning.
-	if c := CheckFlywheelHealth(dir); c.Status != "info" {
-		t.Errorf("empty: %q", c.Status)
-	}
-	os.MkdirAll(filepath.Join(dir, "learnings"), 0o755)
-	os.WriteFile(filepath.Join(dir, "learnings", "test.md"), []byte("x"), 0o644)
-	c := CheckFlywheelHealth(dir)
-	if c.Status != "pass" {
-		t.Errorf("with learnings: %q", c.Status)
-	}
-	// One learning is singular, never "1 learnings".
-	if !strings.Contains(c.Detail, "1 learning in flywheel") {
-		t.Errorf("singular grammar: %q", c.Detail)
-	}
-}
-
-func TestCheckSearchIndex(t *testing.T) {
-	t.Parallel()
-	// No index / empty index on a fresh install is informational, not a warning.
-	if c := CheckSearchIndex("/nonexistent"); c.Status != "info" {
-		t.Errorf("missing: %q", c.Status)
-	}
-	dir := t.TempDir()
-	p := filepath.Join(dir, "idx.jsonl")
-	os.WriteFile(p, []byte(""), 0o644)
-	if c := CheckSearchIndex(p); c.Status != "info" {
-		t.Errorf("empty: %q", c.Status)
-	}
-	os.WriteFile(p, []byte("term1\nterm2\n"), 0o644)
-	if c := CheckSearchIndex(p); c.Status != "pass" {
-		t.Errorf("with content: %q", c.Status)
 	}
 }

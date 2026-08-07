@@ -255,20 +255,6 @@
     },
     {
       "category": "public-tested",
-      "command": "flywheel compare",
-      "coverage_status": "allowlisted",
-      "kind": "leaf",
-      "reason": "Covered by internal/flywheelapp Compare tests after the flywheel carve-out."
-    },
-    {
-      "category": "public-tested",
-      "command": "flywheel status",
-      "coverage_status": "covered",
-      "kind": "leaf",
-      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
-    },
-    {
-      "category": "public-tested",
       "command": "gate check",
       "coverage_status": "covered",
       "kind": "leaf",

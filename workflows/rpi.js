@@ -1,7 +1,7 @@
 export const meta = {
   name: 'rpi',
   description:
-    'One pass of the AgentOps core loop: Plan shapes one behavior and snapshots intent identity, Implement runs one bounded RED->GREEN experiment, then a structurally fresh Validate context judges the exact content and persists verdict.v2. No retry, no revision, no lifecycle.',
+    'One RPI traversal: Plan shapes one behavior and snapshots intent identity, Implement runs one bounded RED->GREEN experiment, then a structurally fresh Validate context judges the exact content and persists verdict.v2 for this workflow\'s return contract. No retry, no revision, no lifecycle.',
   whenToUse: 'When a caller intent (behavior request or bead text) should be driven through Plan -> Implement -> fresh Validate exactly once, ending in a durable PASS | FAIL | NOT_PROVEN verdict. Not for multi-lane waves (implement-wave) or verdict-only re-checks (verify-fixes).',
   phases: [
     { title: 'Plan', detail: 'shape one active behavior; snapshot exact intent bytes under SHA-256 identity' },
@@ -151,7 +151,7 @@ const toolingBlock =
 phase('Plan');
 
 const plan = await agent(
-  'You are the Plan stage of a one-pass Plan -> Implement -> fresh Validate loop.\n\n' +
+  'You are the Plan stage of one RPI traversal (Plan -> Implement -> fresh Validate -> report and stop).\n\n' +
     'Caller intent (behavior request or bead text):\n' + input.intent + '\n\n' +
     (input.acceptance
       ? 'The caller fixed the acceptance criteria — adopt them verbatim as your acceptance output:\n' + input.acceptance + '\n\n'
@@ -196,7 +196,7 @@ const writeScope = input.writeScope !== undefined ? input.writeScope : plan.writ
 phase('Implement');
 
 const impl = await agent(
-  'You are the Implement stage of a one-pass Plan -> Implement -> fresh Validate loop. ' +
+  'You are the Implement stage of one RPI traversal (Plan -> Implement -> fresh Validate -> report and stop). ' +
     'A separate fresh context will judge your work against the acceptance below using only derived facts — ' +
     'it will never see your narrative, so evidence lives in receipts, not prose.\n\n' +
     'Caller intent:\n' + input.intent + '\n\n' +

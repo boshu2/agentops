@@ -1507,7 +1507,7 @@ def main() -> int:
 
     product_slug = _slugify(args.product_name)
     local_clone_dir = Path(args.local_clone_dir or f".tmp/{product_slug}").resolve()
-    output_dir = Path(args.output_dir or f".agents/research/{product_slug}/").resolve()
+    output_dir = Path(args.output_dir or f".agents/scratch/reverse-engineer/{product_slug}/").resolve()
     analysis_root = local_clone_dir
 
     tmp_dir = (REPO_ROOT / ".tmp" / f"reverse-engineer-{product_slug}").resolve()

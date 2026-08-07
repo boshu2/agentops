@@ -37,7 +37,7 @@ ao demo [flags]
 
 ### `ao init`
 
-Create local evidence and verdict directories, then add one commented,
+Create the local intent and verdict evidence directories, then add one
 
 ```
 ao init [flags]
@@ -392,7 +392,7 @@ ao eval outcomes ingest <score.json> [flags]
       --burn-ledger string         path to a JSON HoldoutBurnLedger; when set, a holdout-split score registers a burn and is REFUSED if the (suite,gt) quota is exhausted (gate #3 runtime enforcement), persisted across invocations
       --expect-judge-hash string   refuse the ingest if the score's judge_content_hash does not match this value (gate #2 rubric-drift parity)
   -h, --help                       help for ingest
-      --manifest-out string        also write an eval-run.v1 manifest to <dir>/<run-id>/manifest.json so the verdict pipeline feeds the Knowledge Flywheel (closes the Outcomes→Flywheel loop)
+      --manifest-out string        also write an eval-run.v1 manifest to <dir>/<run-id>/manifest.json for a declared downstream evidence consumer
       --run-id string              run id for the --manifest-out manifest; defaults to the score's run_id, then source_task_id (sanitized to the eval-run.v1 pattern)
 ```
 
@@ -1309,49 +1309,6 @@ ao workflows unlink [flags]
   -h, --help          help for unlink
       --into string   Sweep this single dir instead of <cwd-git-root>/.claude/workflows
       --json          Emit machine-readable JSON
-```
-
----
-
-### `ao flywheel`
-
-Knowledge flywheel operations and status.
-
-```
-ao flywheel [command]
-```
-
-**Subcommands:**
-
-#### `ao flywheel compare`
-
-Compare retrieval quality between primary and shadow namespaces.
-
-```
-ao flywheel compare [flags]
-```
-
-**Flags:**
-
-```
-  -h, --help            help for compare
-      --shadow string   Shadow namespace to compare against primary (default "shadow")
-```
-
-#### `ao flywheel status`
-
-Display comprehensive flywheel health status.
-
-```
-ao flywheel status [flags]
-```
-
-**Flags:**
-
-```
-      --days int           Period in days for metrics calculation (default 7)
-  -h, --help               help for status
-      --namespace string   Citation namespace to evaluate (primary by default) (default "primary")
 ```
 
 ---

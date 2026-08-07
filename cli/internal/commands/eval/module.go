@@ -80,7 +80,7 @@ func NewModule(useCases UseCases, host clicontract.HostOptions) Module {
 func (Module) Contract() clicontract.CommandContract {
 	return clicontract.CommandContract{
 		ID: "ao.eval",
-		Profiles: clicontract.ProfileDefault | clicontract.ProfileFlywheel |
+		Profiles: clicontract.ProfileDefault |
 			clicontract.ProfileLegacy | clicontract.ProfileCombined,
 		Args:        clicontract.ArgsPolicy{Name: "no-args", Validate: cobra.NoArgs},
 		Output:      clicontract.OutputNone,
@@ -97,7 +97,7 @@ func (Module) Contract() clicontract.CommandContract {
 func (Module) RunContract() clicontract.CommandContract {
 	return clicontract.CommandContract{
 		ID: "ao.eval.run",
-		Profiles: clicontract.ProfileDefault | clicontract.ProfileFlywheel |
+		Profiles: clicontract.ProfileDefault |
 			clicontract.ProfileLegacy | clicontract.ProfileCombined,
 		Args:        clicontract.ArgsPolicy{Name: "exact", Validate: cobra.ExactArgs(1)},
 		Output:      clicontract.OutputText,
@@ -609,7 +609,7 @@ func (module Module) outcomesIngestCommand() *cobra.Command {
 	command := &cobra.Command{Use: "ingest <score.json>", Short: "Ingest an Outcomes score payload into the one council verdict record", Args: cobra.ExactArgs(1)}
 	command.Flags().StringVar(&options.ExpectedJudgeHash, "expect-judge-hash", "", "refuse the ingest if the score's judge_content_hash does not match this value (gate #2 rubric-drift parity)")
 	command.Flags().StringVar(&options.BurnLedgerPath, "burn-ledger", "", "path to a JSON HoldoutBurnLedger; when set, a holdout-split score registers a burn and is REFUSED if the (suite,gt) quota is exhausted (gate #3 runtime enforcement), persisted across invocations")
-	command.Flags().StringVar(&options.ManifestDir, "manifest-out", "", "also write an eval-run.v1 manifest to <dir>/<run-id>/manifest.json so the verdict pipeline feeds the Knowledge Flywheel (closes the Outcomes→Flywheel loop)")
+	command.Flags().StringVar(&options.ManifestDir, "manifest-out", "", "also write an eval-run.v1 manifest to <dir>/<run-id>/manifest.json for a declared downstream evidence consumer")
 	command.Flags().StringVar(&options.RunID, "run-id", "", "run id for the --manifest-out manifest; defaults to the score's run_id, then source_task_id (sanitized to the eval-run.v1 pattern)")
 	command.RunE = func(command *cobra.Command, args []string) error {
 		options.ScorePath = args[0]

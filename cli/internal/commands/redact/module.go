@@ -33,7 +33,7 @@ func NewModule() Module {
 func (Module) Contract() clicontract.CommandContract {
 	return clicontract.CommandContract{
 		ID:       "ao.redact",
-		Profiles: clicontract.ProfileDefault | clicontract.ProfileFlywheel | clicontract.ProfileLegacy | clicontract.ProfileCombined,
+		Profiles: clicontract.ProfileDefault | clicontract.ProfileLegacy | clicontract.ProfileCombined,
 		Args:     clicontract.ArgsPolicy{Name: "no-args", Validate: cobra.NoArgs},
 		Output:   clicontract.OutputText,
 		Effects:  clicontract.EffectPure,

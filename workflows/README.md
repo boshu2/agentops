@@ -12,13 +12,16 @@ Three generic conveyor shapes:
 | `audit-dimensions` | pipeline: finder → skeptic, per dimension | auditing a subject across independent lenses |
 | `verify-fixes` | parallel adversarial verifiers, one per group | refuting "it's fixed" claims after a change |
 | `implement-wave` | parallel disjoint-scope lanes → one fresh verifier | executing a wave of bead-shaped work items |
-| `rpi` | pipeline: plan → implement → fresh validate | one intent through the core loop to a durable verdict |
+| `rpi` | pipeline: plan → implement → fresh validate | one RPI traversal to a durable verdict |
 
-Four repo-doctrine conveyors also live here: `bdd-foundry` (behavior-first
-planning → acceptance-gated beads), `operating-loop` (one capability through
-the seven-move loop end to end), `ship-beads` (drive a list of beads to
-confirmed-merged), and `bead-crank` (deprecated alias delegating to
-`ship-beads`). Each documents itself in its `meta` header.
+Two repository-delivery conveyors also live here, outside the AgentOps
+semantic core: `bdd-foundry` (behavior-first planning → acceptance-gated
+beads) and `ship-beads` (repository delivery orchestration: drive a list of
+beads to confirmed-merged; `bead-crank` is its deprecated alias). The former
+seven-move `operating-loop` workflow is a retired tombstone that fails with
+replacement pointers — one experiment belongs to `rpi`, multi-bead delivery
+to `ship-beads` or a caller-selected factory. Each workflow documents itself
+in its `meta` header.
 
 ## Install
 

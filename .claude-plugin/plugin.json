@@ -1,7 +1,7 @@
 {
   "name": "agentops",
   "version": "3.5.0",
-  "description": "Fresh-context validation for coding-agent work: shape one behavior, run one bounded experiment, and persist an independent verdict.",
+  "description": "The operations layer for agentic engineering: portable skills and evidence contracts connecting intent, coding agents, software factories, and independent judgment.",
   "author": {
     "name": "Boden Fuller",
     "email": "fullerbt@users.noreply.github.com"
@@ -10,12 +10,12 @@
   "repository": "https://github.com/boshu2/agentops",
   "license": "Apache-2.0",
   "keywords": [
+    "operations-layer",
     "devops",
     "vibe-coding",
     "shift-left",
     "validation",
     "coding-agents",
-    "knowledge-flywheel",
     "pre-mortem",
     "vibe-check",
     "workflow",

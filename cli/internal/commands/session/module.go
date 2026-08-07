@@ -46,7 +46,7 @@ func (m Module) outputMode() string {
 func (Module) Contract() clicontract.CommandContract {
 	return clicontract.CommandContract{
 		ID:       "ao.session",
-		Profiles: clicontract.ProfileDefault | clicontract.ProfileFlywheel | clicontract.ProfileLegacy | clicontract.ProfileCombined,
+		Profiles: clicontract.ProfileDefault | clicontract.ProfileLegacy | clicontract.ProfileCombined,
 		Args:     clicontract.ArgsPolicy{Name: "arbitrary", Validate: cobra.ArbitraryArgs},
 		Output:   clicontract.OutputText,
 		Effects:  clicontract.EffectFilesystem,
