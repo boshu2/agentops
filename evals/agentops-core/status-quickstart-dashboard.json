@@ -52,12 +52,12 @@
       "id": "status-quickstart-focused-go-tests",
       "title": "Status and quickstart focused Go tests pass",
       "kind": "command",
-      "objective": "Protect status output helpers, bounded status flywheel latency, quickstart helper behavior, init/quick-start flows, and status JSON validity.",
+      "objective": "Protect status output helpers, quickstart helper behavior, init/quick-start flows, and status JSON validity.",
       "runtime": "shell",
       "timeout_seconds": 120,
       "inputs": {
         "cwd": "../../cli",
-        "shell": "env -u AGENTOPS_RPI_RUNTIME go test -timeout=120s ./cmd/ao -run '^(TestLoadFlywheelBrief_TimesOut|TestCobraStatusHelpers|TestCobraQuickstartHelpers|TestJSONValidity_Status|TestQuickstart_|TestRunQuickStart|TestRunInit)'"
+        "shell": "env -u AGENTOPS_RPI_RUNTIME go test -timeout=120s ./cmd/ao -run '^(TestCobraStatusHelpers|TestCobraQuickstartHelpers|TestJSONValidity_Status|TestQuickstart_|TestRunQuickStart|TestRunInit)'"
       },
       "expectations": [
         {"type": "exit_code", "value": 0},
@@ -98,7 +98,6 @@
         {"type": "artifact_contains", "target": "../../skills-codex/status/prompt.md", "value": "Current Work"},
         {"type": "artifact_contains", "target": "../../skills-codex/status/prompt.md", "value": "Latest Gates"},
         {"type": "artifact_contains", "target": "../../skills-codex/status/prompt.md", "value": "Next Action"},
-        {"type": "artifact_contains", "target": "../../cli/cmd/ao/status.go", "value": "statusFlywheelTimeout"},
         {"type": "artifact_contains", "target": "../../cli/cmd/ao/status.go", "value": "status should remain an operator dashboard"}
       ],
       "dimensions": ["process_adherence", "artifact_quality", "runtime_compatibility"],

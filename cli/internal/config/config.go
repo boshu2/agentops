@@ -41,9 +41,6 @@ type Config struct {
 	// RPI settings
 	RPI RPIConfig `yaml:"rpi" json:"rpi"`
 
-	// Flywheel settings
-	Flywheel FlywheelConfig `yaml:"flywheel" json:"flywheel"`
-
 	// Models settings
 	Models ModelsConfig `yaml:"models" json:"models"`
 
@@ -93,12 +90,6 @@ type RPIConfig struct {
 	TmuxCommand string `yaml:"tmux_command" json:"tmux_command"`
 }
 
-// FlywheelConfig holds flywheel-specific settings.
-type FlywheelConfig struct {
-	// AutoPromoteThreshold controls default age gate for auto-promotion.
-	// Default: 24h
-	AutoPromoteThreshold string `yaml:"auto_promote_threshold" json:"auto_promote_threshold"`
-}
 
 // PathsConfig holds configurable paths for artifact locations.
 // Fixes G5: paths are now configurable, not hardcoded.
@@ -329,9 +320,6 @@ func Default() *Config {
 			AOCommand:      "ao",
 			BDCommand:      "bd",
 			TmuxCommand:    "tmux",
-		},
-		Flywheel: FlywheelConfig{
-			AutoPromoteThreshold: "24h",
 		},
 		Models: ModelsConfig{
 			DefaultTier: "balanced",
@@ -607,7 +595,6 @@ func applyEnv(cfg *Config) *Config {
 	applyEnvStr(&cfg.RPI.AOCommand, "AGENTOPS_RPI_AO_COMMAND")
 	applyEnvStr(&cfg.RPI.BDCommand, "AGENTOPS_RPI_BD_COMMAND")
 	applyEnvStr(&cfg.RPI.TmuxCommand, "AGENTOPS_RPI_TMUX_COMMAND")
-	applyEnvStr(&cfg.Flywheel.AutoPromoteThreshold, "AGENTOPS_FLYWHEEL_AUTO_PROMOTE_THRESHOLD")
 	applyEnvStr(&cfg.Models.DefaultTier, "AGENTOPS_MODEL_TIER")
 	applyEnvStr(&cfg.Dream.ReportDir, "AGENTOPS_DREAM_REPORT_DIR")
 	applyEnvStr(&cfg.Dream.RunTimeout, "AGENTOPS_DREAM_RUN_TIMEOUT")
@@ -657,7 +644,6 @@ func merge(dst, src *Config) *Config {
 	mergeForge(&dst.Forge, &src.Forge)
 	mergeSearch(&dst.Search, &src.Search)
 	mergeRPI(&dst.RPI, &src.RPI)
-	mergeFlywheel(&dst.Flywheel, &src.Flywheel)
 	mergeModels(&dst.Models, &src.Models)
 	mergeDream(&dst.Dream, &src.Dream)
 	mergePaths(&dst.Paths, &src.Paths)
@@ -689,11 +675,6 @@ func mergeRPI(dst, src *RPIConfig) {
 	mergeStr(&dst.AOCommand, src.AOCommand)
 	mergeStr(&dst.BDCommand, src.BDCommand)
 	mergeStr(&dst.TmuxCommand, src.TmuxCommand)
-}
-
-// mergeFlywheel merges flywheel-specific config fields.
-func mergeFlywheel(dst, src *FlywheelConfig) {
-	mergeStr(&dst.AutoPromoteThreshold, src.AutoPromoteThreshold)
 }
 
 // mergeModels merges models config fields.

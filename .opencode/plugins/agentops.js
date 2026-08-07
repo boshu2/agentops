@@ -163,7 +163,7 @@ ${toolMapping}
     'complexity', 'knowledge', 'bug-hunt', 'doc', 'handoff', 'learn',
     'release', 'product', 'quickstart', 'trace', 'inbox', 'recover',
     'evolve', 'codex-team', 'beads', 'standards', 'inject', 'extract',
-    'forge', 'provenance', 'ratchet', 'flywheel', 'update', 'using-agentops'
+    'forge', 'provenance', 'ratchet', 'update', 'using-agentops'
   ];
 
   return {

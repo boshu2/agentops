@@ -95,7 +95,7 @@ func (m *Module) emitStructured(out io.Writer, localJSON bool, value any) (handl
 func (*Module) Contract() clicontract.CommandContract {
 	return clicontract.CommandContract{
 		ID:       "ao.skills",
-		Profiles: clicontract.ProfileDefault | clicontract.ProfileFlywheel | clicontract.ProfileLegacy | clicontract.ProfileCombined,
+		Profiles: clicontract.ProfileDefault | clicontract.ProfileLegacy | clicontract.ProfileCombined,
 		Args:     clicontract.ArgsPolicy{Name: "arbitrary", Validate: cobra.ArbitraryArgs},
 		Output:   clicontract.OutputText,
 		Effects:  clicontract.EffectFilesystem,

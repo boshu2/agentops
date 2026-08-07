@@ -16,7 +16,7 @@ setup_file() {
     export REPO_ROOT
     # Build the archive-tagged ao once for the whole file; inject via env.
     AO_BIN_FILE="$BATS_FILE_TMPDIR/ao"
-    ( cd "$REPO_ROOT/cli" && go build -tags "flywheel legacy" -o "$AO_BIN_FILE" ./cmd/ao )
+    ( cd "$REPO_ROOT/cli" && go build -o "$AO_BIN_FILE" ./cmd/ao )
     export AGENTOPS_AO_BIN="$AO_BIN_FILE"
 }
 

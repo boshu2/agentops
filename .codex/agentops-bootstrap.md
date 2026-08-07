@@ -25,7 +25,6 @@ When skills reference tools you don't have, substitute your equivalent tools:
 - Announce: "I've read the [Skill Name] skill and I'm using it to [purpose]"
 - Skills with checklists require `update_plan` todos for each item
 - NEVER skip mandatory workflows (brainstorming before coding, TDD, systematic debugging)
-- At the end of a Codex work session, run `~/.codex/agentops/.codex/agentops-codex session-end` to execute flywheel close-loop.
 
 **Skills location:**
 - AgentOps skills: ~/.codex/agentops/skills/

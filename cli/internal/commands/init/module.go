@@ -29,7 +29,7 @@ func NewModule(host clicontract.HostOptions) Module {
 func (Module) Contract() clicontract.CommandContract {
 	return clicontract.CommandContract{
 		ID:       "ao.init",
-		Profiles: clicontract.ProfileDefault | clicontract.ProfileFlywheel | clicontract.ProfileLegacy | clicontract.ProfileCombined,
+		Profiles: clicontract.ProfileDefault | clicontract.ProfileLegacy | clicontract.ProfileCombined,
 		Args:     clicontract.ArgsPolicy{Name: "none", Validate: cobra.NoArgs},
 		Output:   clicontract.OutputText,
 		Effects:  clicontract.EffectFilesystem,

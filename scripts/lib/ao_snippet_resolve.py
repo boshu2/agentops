@@ -25,9 +25,9 @@ What is INJECTED by the caller (the one axis the two gates differ on):
                               cannot detect the dead-command class the docs gate
                               exists to kill.
 
-The AO binary path comes from the AO_BIN env var (set by the bash driver, which
-builds `ao` with `-tags "flywheel legacy"` so archived-but-revivable commands
-still resolve — two prior escapes: the default spine build omits them).
+The AO binary path comes from the AO_BIN env var (set by the bash driver,
+which builds the default `ao` spine — the retired archive build tags no longer
+gate any file, so the default build is the whole surface).
 """
 
 import os

@@ -35,7 +35,7 @@ func NewModule(host clicontract.HostOptions) Module {
 func (Module) Contract() clicontract.CommandContract {
 	return clicontract.CommandContract{
 		ID:       "ao.goals",
-		Profiles: clicontract.ProfileDefault | clicontract.ProfileFlywheel | clicontract.ProfileLegacy | clicontract.ProfileCombined,
+		Profiles: clicontract.ProfileDefault | clicontract.ProfileLegacy | clicontract.ProfileCombined,
 		Args:     clicontract.ArgsPolicy{Name: "no-args", Validate: cobra.NoArgs},
 		Output:   clicontract.OutputNone,
 		Effects:  clicontract.EffectFilesystem | clicontract.EffectProcess | clicontract.EffectClock,

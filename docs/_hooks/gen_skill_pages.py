@@ -199,7 +199,7 @@ def emit_skills_index(skills: list[dict[str, str]]) -> None:
     families = [
         ("Validation", ["council", "vibe", "premortem", "postmortem", "red-team"]),
         ("Flows", ["research", "plan", "implement", "crank", "swarm", "rpi", "evolve", "discovery", "validation"]),
-        ("Bookkeeping", ["retro", "forge", "flywheel", "compile", "harvest", "inject", "provenance"]),
+        ("Bookkeeping", ["retro", "forge", "compile", "harvest", "inject", "provenance"]),
         ("Session", ["handoff", "recover", "status", "trace", "dream", "using-agentops"]),
         ("Product", ["product", "goals", "release", "readme", "doc", "oss-docs"]),
         ("Utility", ["brainstorm", "bug-hunt", "complexity", "scaffold", "push", "refactor", "test", "deps", "perf", "review", "security"]),

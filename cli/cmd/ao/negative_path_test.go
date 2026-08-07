@@ -43,11 +43,6 @@ func TestNegativePath_InvalidFlagValues(t *testing.T) {
 		errSub string
 	}{
 		{
-			name:   "flywheel status --days not-a-number",
-			args:   []string{"flywheel", "status", "--days", "abc"},
-			errSub: "invalid argument",
-		},
-		{
 			name:   "goals measure --timeout not-a-number",
 			args:   []string{"goals", "measure", "--timeout", "xyz"},
 			errSub: "invalid argument",
@@ -95,11 +90,6 @@ func TestNegativePath_UnknownNestedSubcommand(t *testing.T) {
 		{
 			name:   "unknown goals subcommand errors",
 			args:   []string{"goals", "nonexistent"},
-			errSub: "unknown command",
-		},
-		{
-			name:   "unknown flywheel subcommand errors",
-			args:   []string{"flywheel", "nonexistent"},
 			errSub: "unknown command",
 		},
 	}
@@ -152,8 +142,8 @@ func TestNegativePath_UnknownFlags(t *testing.T) {
 		errSub string
 	}{
 		{
-			name:   "flywheel status with unknown flag",
-			args:   []string{"flywheel", "status", "--nonexistent"},
+			name:   "status with unknown flag",
+			args:   []string{"status", "--nonexistent"},
 			errSub: "unknown flag",
 		},
 	}

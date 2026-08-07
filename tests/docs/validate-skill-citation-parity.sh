@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Validate that every skill with "ao lookup" also has "ao metrics cite".
-# This prevents flywheel regression: skills that retrieve knowledge must
-# also record citations so the feedback loop stays closed.
+# Skills that retrieve knowledge must also record citations so retrieved
+# evidence stays attributable.
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
@@ -27,7 +27,7 @@ check_dir() {
         local skill_name
         skill_name="$(basename "$(dirname "$skill_file")")"
         case "$skill_name" in
-          using-agentops|inject|flywheel|SKILL-TIERS|swarm)
+          using-agentops|inject|SKILL-TIERS|swarm)
             # These reference ao lookup in documentation/worker prompts, not as executable steps
             continue
             ;;

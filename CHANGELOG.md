@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Removed
+
+- The `ao flywheel` command family (`status`, `compare`) and the whole live
+  knowledge-flywheel product surface: `cli/internal/flywheelapp`, the
+  flywheel-only metric helpers and types, the `flywheel` build-profile bit,
+  the `flywheel-compounding` gate scripts, and the `flywheel:` config block
+  (existing config files still parse; the key is ignored). AgentOps no longer
+  computes or reports knowledge-compounding state (`COMPOUNDING`, `DECAYING`,
+  escape velocity). Invoking `ao flywheel` now fails with a migration pointer
+  (see `docs/MIGRATION.md`). Learning remains an optional off-path consumer of
+  durable verdicts via the `learn` skill. The compatibility baseline records
+  the family as intentionally `retired` rather than freezing the old product
+  claim.
+
 ### Added
 
 - Between-releases release-path smoke: `.github/workflows/release-path-smoke.yml`

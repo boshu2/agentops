@@ -22,7 +22,6 @@ Product-area headings under `## Product Areas` use this taxonomy:
 - Skills and Workflows
 - Codex and Runtime Integrations
 - Hooks and Lifecycle
-- Knowledge Flywheel, Search, and Memory
 - Eval, Validation, and Release Gates
 - Docs and Onboarding
 - Security, Privacy, and Supply Chain

@@ -702,7 +702,9 @@ func (f tornAppendLineFixer) Fix(ctx *MutateContext, env *DetectEnv, _ []Finding
 
 // orphanedFlywheelLearningsDetector flags learnings split across the canonical
 // .agents/ao/learnings and the fallback .agents/learnings — a dual-location
-// ambiguity that makes CheckFlywheelHealth's headline internally inconsistent.
+// ambiguity that makes learnings counts internally inconsistent. The id keeps
+// its historical "flywheel" spelling as a stable operator selector for
+// flywheel-era debris.
 type orphanedFlywheelLearningsDetector struct{}
 
 func (orphanedFlywheelLearningsDetector) ID() string {

@@ -56,7 +56,7 @@ func NewModule(useCases UseCases, host clicontract.HostOptions) Module {
 func (Module) Contract() clicontract.CommandContract {
 	return clicontract.CommandContract{
 		ID: "ao.doctor",
-		Profiles: clicontract.ProfileDefault | clicontract.ProfileFlywheel |
+		Profiles: clicontract.ProfileDefault |
 			clicontract.ProfileLegacy | clicontract.ProfileCombined,
 		Args:    clicontract.ArgsPolicy{Name: "no-args", Validate: cobra.NoArgs},
 		Output:  clicontract.OutputNone,

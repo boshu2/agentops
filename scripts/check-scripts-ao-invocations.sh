@@ -27,9 +27,9 @@
 #
 # Resolution is SOUND (AO_RESOLVE_MODE=strict → `ao <sub> --help`, reject cobra's
 # "unknown command" / "Unknown help topic"; the `help`-mode predicate is unsound
-# because `ao help <anything>` always exits 0). The archive-tagged build
-# (`-tags "flywheel legacy"`) keeps archived-but-revivable commands (e.g.
-# `ao harvest`, `ao forge`) resolvable, so this only flags TRULY dead commands.
+# because `ao help <anything>` always exits 0). The archive build tags are
+# retired; the default build is the whole surface, so this only flags TRULY
+# dead commands.
 #
 # Retired-command waivers are forbidden. The historical baseline file remains
 # as an empty, comment-only tombstone; any active entry fails the gate and no

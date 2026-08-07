@@ -20,7 +20,7 @@ The smoke runs focused Go tests covering:
 - representative live-corpus coverage and stable top results
 - multi-backend comparison report shape
 - offline `agentic-rg`, `wiki-link-expand`, and `rerank-llamacpp` fallback behavior
-- flywheel retrieval thresholds
+- retrieval quality thresholds
 
 The smoke must run offline. The `rerank-llamacpp` case leaves
 `AGENTOPS_RETRIEVAL_RERANK_ENDPOINT` unset, proving the file-backed fallback
