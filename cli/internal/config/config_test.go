@@ -467,9 +467,6 @@ func TestMerge_Paths(t *testing.T) {
 		Paths: PathsConfig{
 			LearningsDir:   "/custom/learnings",
 			PatternsDir:    "/custom/patterns",
-			RetrosDir:      "/custom/retros",
-			ResearchDir:    "/custom/research",
-			PlansDir:       "/custom/plans",
 			ClaudePlansDir: "/custom/claude-plans",
 			CitationsFile:  "/custom/citations.jsonl",
 			TranscriptsDir: "/custom/transcripts",
@@ -485,9 +482,6 @@ func TestMerge_Paths(t *testing.T) {
 	}{
 		{"LearningsDir", result.Paths.LearningsDir, "/custom/learnings"},
 		{"PatternsDir", result.Paths.PatternsDir, "/custom/patterns"},
-		{"RetrosDir", result.Paths.RetrosDir, "/custom/retros"},
-		{"ResearchDir", result.Paths.ResearchDir, "/custom/research"},
-		{"PlansDir", result.Paths.PlansDir, "/custom/plans"},
 		{"ClaudePlansDir", result.Paths.ClaudePlansDir, "/custom/claude-plans"},
 		{"CitationsFile", result.Paths.CitationsFile, "/custom/citations.jsonl"},
 		{"TranscriptsDir", result.Paths.TranscriptsDir, "/custom/transcripts"},
@@ -851,9 +845,6 @@ func TestDefault_Paths(t *testing.T) {
 	}{
 		{"LearningsDir", cfg.Paths.LearningsDir, ".agents/learnings"},
 		{"PatternsDir", cfg.Paths.PatternsDir, ".agents/patterns"},
-		{"RetrosDir", cfg.Paths.RetrosDir, ".agents/retro"},
-		{"ResearchDir", cfg.Paths.ResearchDir, ".agents/research"},
-		{"PlansDir", cfg.Paths.PlansDir, ".agents/plans"},
 		{"CitationsFile", cfg.Paths.CitationsFile, ".agents/ao/citations.jsonl"},
 	}
 

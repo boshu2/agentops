@@ -568,43 +568,43 @@ func TestCliConfigDevVersion_CoherentWithBinaryFreshness(t *testing.T) {
 		wantQuerySub []string
 	}{
 		{
-			name: "dev build matching checkout declared version is healthy",
+			name:     "dev build matching checkout declared version is healthy",
 			declared: "9.9.9-dev", reported: "9.9.9-dev",
 			wantFinding: false,
 		},
 		{
-			name: "rc source fallback matching checkout is healthy",
+			name:     "rc source fallback matching checkout is healthy",
 			declared: "3.3.0-rc", reported: "3.3.0-rc",
 			wantFinding: false,
 		},
 		{
-			name: "release build of the declared rc series is healthy",
+			name:     "release build of the declared rc series is healthy",
 			declared: "3.3.0-rc", reported: "3.3.0",
 			wantFinding: false,
 		},
 		{
-			name: "git-describe binary inside checkout is genuine drift",
+			name:     "git-describe binary inside checkout is genuine drift",
 			declared: "3.3.0-rc", reported: "v3.2.0-64-gabc123",
 			wantFinding:  true,
 			wantTitleSub: "drift",
 			wantQuerySub: []string{`repo_declared_version="3.3.0-rc"`, "drift_from_repo=true"},
 		},
 		{
-			name: "stale release binary inside checkout is genuine drift",
+			name:     "stale release binary inside checkout is genuine drift",
 			declared: "3.3.0-rc", reported: "3.1.0",
 			wantFinding:  true,
 			wantTitleSub: "drift",
 			wantQuerySub: []string{`reported_version="3.1.0"`, "drift_from_repo=true"},
 		},
 		{
-			name: "shadowed duplicates stay a finding even when versions match",
+			name:     "shadowed duplicates stay a finding even when versions match",
 			declared: "9.9.9-dev", reported: "9.9.9-dev", secondAO: "2.41.1",
 			wantFinding:  true,
 			wantTitleSub: "shadow",
 			wantQuerySub: []string{"shadowed=true", "drift_from_repo=false"},
 		},
 		{
-			name: "outside checkout dev build is an informational from-source finding",
+			name:     "outside checkout dev build is an informational from-source finding",
 			declared: "", reported: "dev",
 			wantFinding:  true,
 			wantTitleSub: "from-source build",

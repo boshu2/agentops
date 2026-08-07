@@ -5,7 +5,6 @@ package doctor
 // This file implements the six knowledge failure modes from the Phase 2
 // analysis. Four are auto-fixable, two are detect-only:
 //
-//	fm-knowledge-missing-substructure       (auto) — re-create missing store subdirs
 //	fm-knowledge-corrupt-index-lines        (auto) — drop malformed search-index lines
 //	fm-knowledge-torn-append-line           (auto) — drop a torn trailing index line
 //	fm-knowledge-orphaned-flywheel-learnings(auto) — consolidate split learnings dirs
@@ -206,10 +205,6 @@ func realRepoFile(root, file string) bool {
 	return realRegularFile(file)
 }
 
-// requiredSubdirs is the three-subdir structural contract enforced by
-// storage.FileStorage.Init for the knowledge store.
-var requiredSubdirs = []string{"sessions", "index", "provenance"}
-
 // indexableExts is the artifact file extension set the search index mirrors.
 var indexableExts = map[string]bool{".md": true, ".jsonl": true}
 
@@ -219,14 +214,12 @@ var artifactSubdirs = []string{"learnings", "patterns", "research", "retros", "c
 
 // init registers all six knowledge detectors and four knowledge fixers.
 func init() {
-	RegisterDetector(missingSubstructureDetector{})
 	RegisterDetector(corruptIndexLinesDetector{})
 	RegisterDetector(tornAppendLineDetector{})
 	RegisterDetector(orphanedFlywheelLearningsDetector{})
 	RegisterDetector(staleIndexDriftDetector{})
 	RegisterDetector(falseFreshnessDetector{})
 
-	RegisterFixer(missingSubstructureFixer{})
 	RegisterFixer(corruptIndexLinesFixer{})
 	RegisterFixer(tornAppendLineFixer{})
 	RegisterFixer(orphanedFlywheelLearningsFixer{})
@@ -271,161 +264,6 @@ func splitNonEmptyLines(raw []byte) []string {
 		}
 	}
 	return out
-}
-
-// ---------------------------------------------------------------------------
-// FM: fm-knowledge-missing-substructure (auto-fixable)
-// ---------------------------------------------------------------------------
-
-// missingSubstructureDetector flags a knowledge store whose base exists but is
-// missing one or more of the sessions/, index/, provenance/ subdirectories.
-type missingSubstructureDetector struct{}
-
-func (missingSubstructureDetector) ID() string           { return "fm-knowledge-missing-substructure" }
-func (missingSubstructureDetector) Subsystem() string    { return "knowledge" }
-func (missingSubstructureDetector) Severity() string     { return "P2" }
-func (missingSubstructureDetector) EstimatedCostMS() int { return 2 }
-func (missingSubstructureDetector) OnlineRequired() bool { return false }
-func (missingSubstructureDetector) QuickPath() bool      { return true }
-func (missingSubstructureDetector) Describe() string {
-	return "knowledge store base exists but is missing required subdirectories"
-}
-
-// missingSubdirs returns the required subdir names that are absent (or occupied
-// by a non-directory) under base. If base itself is absent or not a directory
-// it returns nil — that is a different (uninitialized-store) failure mode.
-func missingSubdirs(base string) []string {
-	info, err := os.Stat(base)
-	if err != nil || !info.IsDir() {
-		return nil
-	}
-	var missing []string
-	for _, sub := range requiredSubdirs {
-		st, err := os.Stat(filepath.Join(base, sub))
-		if err != nil || !st.IsDir() {
-			missing = append(missing, sub)
-		}
-	}
-	return missing
-}
-
-func (d missingSubstructureDetector) Detect(env *DetectEnv) ([]Finding, error) {
-	if !realChainUnder(env.CWD, ".agents", "ao") {
-		return nil, nil // symlinked root: unsafe to consume
-	}
-	base := knowledgeBaseDir(env)
-	if _, err := os.Stat(base); err != nil {
-		return nil, nil
-	}
-	missing := missingSubdirs(base)
-	if len(missing) == 0 {
-		return nil, nil
-	}
-	return []Finding{{
-		ID:         d.ID(),
-		Severity:   d.Severity(),
-		Subsystem:  d.Subsystem(),
-		Title:      fmt.Sprintf("knowledge store missing subdirs: %s", strings.Join(missing, ", ")),
-		Confidence: 1.0,
-		Evidence: Evidence{
-			File:  ".agents/ao",
-			Query: "for d in sessions index provenance; do test -d .agents/ao/$d || echo missing $d; done",
-		},
-		Remediation: Remediation{
-			Command:          "ao doctor --fix --only " + d.ID(),
-			ExplainCommand:   "ao doctor explain " + d.ID(),
-			AutoFixable:      true,
-			EstimatedActions: len(missing),
-		},
-	}}, nil
-}
-
-// missingSubstructureFixer re-creates absent knowledge-store subdirectories by
-// routing a .gitkeep placeholder through Mutate Rename (which MkdirAll's the
-// destination parent), since the canonical op enum has no Mkdir variant.
-type missingSubstructureFixer struct{}
-
-func (missingSubstructureFixer) ID() string { return "fm-knowledge-missing-substructure" }
-func (missingSubstructureFixer) Preconditions() []string {
-	return []string{
-		".agents/ao exists and is a directory",
-		"no required subdir name is occupied by a regular file",
-	}
-}
-func (missingSubstructureFixer) WritesTo() []string { return []string{".agents/ao"} }
-func (missingSubstructureFixer) Ops() []string      { return []string{"Rename"} }
-func (missingSubstructureFixer) Reversible() bool   { return true }
-func (missingSubstructureFixer) Idempotent() bool   { return true }
-func (missingSubstructureFixer) AutoFixable() bool  { return true }
-
-func (f missingSubstructureFixer) Fix(ctx *MutateContext, env *DetectEnv, _ []Finding) (FixResult, error) {
-	res := FixResult{FixerID: f.ID(), FindingIDs: []string{f.ID()}}
-	if _, gerr := requireRealChainUnder(env.CWD, ".agents", "ao"); gerr != nil {
-		res.Err = fmt.Errorf("doctor: %s: %w", f.ID(), gerr)
-		return res, res.Err
-	}
-	base := knowledgeBaseDir(env)
-	if info, err := os.Stat(base); err != nil || !info.IsDir() {
-		res.Err = fmt.Errorf("doctor: %s: .agents/ao absent or not a directory (refused_unsafe)", f.ID())
-		return res, res.Err
-	}
-	// Re-read state; refuse if a required slot is occupied by a regular file.
-	var missing []string
-	for _, sub := range requiredSubdirs {
-		p := filepath.Join(base, sub)
-		st, err := os.Stat(p)
-		if err == nil && !st.IsDir() {
-			res.Err = fmt.Errorf("doctor: %s: %s exists as a non-directory; quarantine manually (refused_unsafe)", f.ID(), p)
-			return res, res.Err
-		}
-		if err != nil {
-			missing = append(missing, sub)
-		}
-	}
-	if len(missing) == 0 {
-		res.Fixed = true
-		return res, nil
-	}
-	for _, sub := range missing {
-		dest := filepath.Join(base, sub, ".gitkeep")
-		if err := f.createDirViaRename(ctx, dest); err != nil {
-			res.Err = err
-			return res, err
-		}
-		res.ActionsTaken++
-	}
-	if len(missingSubdirs(base)) != 0 {
-		res.Err = fmt.Errorf("doctor: %s: fix did not eliminate the finding", f.ID())
-		return res, res.Err
-	}
-	res.Fixed = true
-	return res, nil
-}
-
-// createDirViaRename creates the parent directory of dest by staging an empty
-// .gitkeep placeholder inside the run quarantine and renaming it to dest. The
-// Rename op's executeAtomic does MkdirAll(filepath.Dir(dest)), so the subdir is
-// created through the chokepoint and recorded in actions.jsonl.
-func (missingSubstructureFixer) createDirViaRename(ctx *MutateContext, dest string) error {
-	rel, err := filepath.Rel(ctx.RepoRoot, dest)
-	if err != nil {
-		rel = filepath.Base(dest)
-	}
-	stage := filepath.Join(ctx.RunDir, "quarantine", "staged-mkdir", rel)
-	if ctx.DryRun {
-		fmt.Fprintf(os.Stderr, "[dry-run] would create %s via staged .gitkeep rename\n", filepath.Dir(dest))
-		return nil
-	}
-	if err := os.MkdirAll(filepath.Dir(stage), 0o755); err != nil {
-		return fmt.Errorf("doctor: stage placeholder dir: %w", err)
-	}
-	if err := os.WriteFile(stage, nil, 0o644); err != nil {
-		return fmt.Errorf("doctor: stage placeholder file: %w", err)
-	}
-	if _, err := Mutate(ctx, stage, Rename{To: dest}); err != nil {
-		return fmt.Errorf("doctor: create dir %s: %w", filepath.Dir(dest), err)
-	}
-	return nil
 }
 
 // ---------------------------------------------------------------------------
@@ -544,7 +382,7 @@ func (f corruptIndexLinesFixer) Fix(ctx *MutateContext, env *DetectEnv, _ []Find
 		return res, nil
 	}
 	if len(kept) == 0 {
-		res.Err = fmt.Errorf("doctor: %s: every line corrupt; run `ao store rebuild` (refused_unsafe)", f.ID())
+		res.Err = fmt.Errorf("doctor: %s: every line corrupt; quarantine or delete the legacy index file manually (refused_unsafe)", f.ID())
 		return res, res.Err
 	}
 	desired := []byte(strings.Join(kept, "\n") + "\n")

@@ -102,18 +102,6 @@ type PathsConfig struct {
 	// Default: .agents/patterns
 	PatternsDir string `yaml:"patterns_dir" json:"patterns_dir"`
 
-	// RetrosDir is where retrospective artifacts are stored.
-	// Default: .agents/retro
-	RetrosDir string `yaml:"retros_dir" json:"retros_dir"`
-
-	// ResearchDir is where research artifacts are stored.
-	// Default: .agents/research
-	ResearchDir string `yaml:"research_dir" json:"research_dir"`
-
-	// PlansDir is where plan manifest is stored.
-	// Default: .agents/plans
-	PlansDir string `yaml:"plans_dir" json:"plans_dir"`
-
 	// ClaudePlansDir is where Claude's native plans go.
 	// Default: ~/.claude/plans
 	ClaudePlansDir string `yaml:"claude_plans_dir" json:"claude_plans_dir"`
@@ -340,9 +328,6 @@ func Default() *Config {
 		Paths: PathsConfig{
 			LearningsDir:       ".agents/learnings",
 			PatternsDir:        ".agents/patterns",
-			RetrosDir:          ".agents/retro",
-			ResearchDir:        ".agents/research",
-			PlansDir:           ".agents/plans",
 			ClaudePlansDir:     filepath.Join(homeDir, ".claude", "plans"),
 			CitationsFile:      ".agents/ao/citations.jsonl",
 			TranscriptsDir:     filepath.Join(homeDir, ".claude", "projects"),
@@ -737,9 +722,6 @@ func mergeDreamLocalCurator(dst, src *DreamLocalCuratorConfig) {
 func mergePaths(dst, src *PathsConfig) {
 	mergeStr(&dst.LearningsDir, src.LearningsDir)
 	mergeStr(&dst.PatternsDir, src.PatternsDir)
-	mergeStr(&dst.RetrosDir, src.RetrosDir)
-	mergeStr(&dst.ResearchDir, src.ResearchDir)
-	mergeStr(&dst.PlansDir, src.PlansDir)
 	mergeStr(&dst.ClaudePlansDir, src.ClaudePlansDir)
 	mergeStr(&dst.CitationsFile, src.CitationsFile)
 	mergeStr(&dst.TranscriptsDir, src.TranscriptsDir)

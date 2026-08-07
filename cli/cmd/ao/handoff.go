@@ -66,7 +66,7 @@ func runHandoff(cmd *cobra.Command, args []string) error {
 	}
 	now := time.Now().UTC()
 	// The id carries sub-second precision so two handoffs written in the same
-	// second cannot collide on the same .agents/handoff/<id>.json path. The
+	// second cannot collide on the same .agents/ao/handoff/<id>.json path. The
 	// handoff.v1.schema.json id pattern accepts the optional fractional part.
 	artifact := handoffArtifact{
 		SchemaVersion: 1,
@@ -121,7 +121,7 @@ func collectHandoffState(cwd string) *handoffState {
 }
 
 func writeHandoffArtifact(cwd string, artifact *handoffArtifact, data []byte) (string, error) {
-	dir := filepath.Join(cwd, ".agents", "handoff")
+	dir := filepath.Join(cwd, ".agents", "ao", "handoff")
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return "", fmt.Errorf("create handoff directory: %w", err)
 	}

@@ -6,7 +6,7 @@
  *   2. tool.execute.before — Guard task tool crash (sst/opencode#13933)
  *   3. tool.definition — Enrich task + skill tool descriptions for Devstral
  *   4. command.execute.before — Redirect slashcommand skill calls to skill tool
- *   5. tool.execute.after — Audit log all tool calls to .agents/audit/
+ *   5. tool.execute.after — Audit log all tool calls to .agents/scratch/opencode-audit/
  *   6. shell.env — Inject CLI paths (bd, ao, gt, cass) into shell environment
  *   7. experimental.session.compacting — Preserve AgentOps context through compaction
  */
@@ -85,7 +85,7 @@ export const AgentOpsPlugin = async ({ client, directory }) => {
   const cliPathDirs = findCliPaths(homeDir);
 
   // Audit log helper
-  const auditDir = path.join(directory || process.cwd(), '.agents', 'audit');
+  const auditDir = path.join(directory || process.cwd(), '.agents', 'scratch', 'opencode-audit');
   const getAuditPath = () => {
     const date = new Date().toISOString().slice(0, 10);
     return path.join(auditDir, `${date}-opencode.jsonl`);
