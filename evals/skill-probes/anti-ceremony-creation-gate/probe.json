@@ -1,0 +1,14 @@
+{
+  "id": "anti-ceremony-creation-gate",
+  "skill": "operationalize",
+  "tier": "meta",
+  "reps": 2,
+  "behavior": "drops an unjustified process artifact while allowing necessary minimal integrity state",
+  "discriminator": "discriminator.sh",
+  "budget_note": "N=2 — DIRECTIONAL; one dual-case decision checks refusal and legitimate allowance together",
+  "honesty": "measures behavior-change and discrimination, NOT quality-uplift",
+  "consumer": "AgentOps maintainers deciding whether operationalize changes process-artifact decisions",
+  "gate": "the anti-ceremony skill change is not called behaviorally effective without the dual decision",
+  "observed_defect": "v3.2 proof machinery and the 2026-07-28 control-artifact spiral",
+  "retirement": "delete with operationalize or when it no longer proposes process artifacts"
+}

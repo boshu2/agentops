@@ -101,25 +101,15 @@ the full integration check and fresh validation for the frozen subject. This
 changes orchestration cost, never acceptance, exact identity, fail-closed
 scope, or validation authority.
 
-## Continuation envelope
+## Spiral breaker
 
-Before dispatching any lane, the orchestration declares its envelope: a budget
-(maximum lanes per wave, maximum repair revisions per wave) and a checkpoint
-rule — the second non-PASS outcome on one intent stops that lane and returns
-to the caller instead of dispatching another attempt. The envelope includes a
-spiral breaker: two consecutive control artifacts (plans, audits, reviews,
-prompts, reports) produced with no new implementation evidence terminate the
-run — report `NOT_BUILT` when no implementation subject exists yet;
-when a subject already exists, stop and report its current status without
-dispatching further lanes. Neither breaker dispatches a repair revision. An
-orchestration without a declared envelope does not converge; it accretes
-lanes. For example, a plan that keeps failing acceptance on the same criterion
-might tempt three intent revisions in a row
-(`.agents/ao/intents/sha256/<rev1>...` superseded by `<rev2>...` superseded by
-`<rev3>...`) chasing a `NOT_PROVEN` then a second `NOT_PROVEN`
-(`.agents/ao/verdicts/sha256/<verdict1>...`, `<verdict2>...`) — the declared
-envelope's two-stop checkpoint ends the wave there instead of dispatching a
-third attempt.
+The spiral breaker fires when two consecutive control artifacts (plans, audits,
+reviews, prompts, reports) contain no new implementation evidence. Terminate the
+run and report `NOT_BUILT` when no implementation subject exists; when a subject
+exists, stop and report its current status without dispatching another lane or
+repair revision. RPI owns no lane budget, repair budget, or retry policy.
+
+## Delegation boundaries
 
 Delegate with minimal context: a lane receives the frozen intent reference and
 the established facts it needs, never the orchestrator's full conversation
