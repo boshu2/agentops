@@ -10,7 +10,7 @@
     "Persist \`verdict.v2\` only when" \
     "It owns no retry" \
     "fresh independent judgment" \
-    "docs/architecture/operating-loop.md"; do
+    "docs/architecture/rpi-traversal.md"; do
     grep -Fq -- "$required" "$contract"
   done
 

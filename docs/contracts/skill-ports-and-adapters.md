@@ -1,29 +1,33 @@
 # Skill system architecture
 
-AgentOps has two nested control levels and one capability-evolution path:
+The skill system serves the operations layer: portable skills that implement
+the semantic work-and-proof protocol, plus optional seams for strategies,
+evidence, and runtime adapters. A Goal / Mayor is a caller-side execution
+orchestrator that may drive several traversals; it calls AgentOps and is never
+an AgentOps-owned control level.
 
 ```text
-product boundary + fitness evidence
-  -> Goal / Mayor campaign
+caller product boundary + fitness evidence
+  -> caller-selected Goal / Mayor campaign (execution orchestrator)
        -> select one experiment intent
-       -> RPI: Plan -> Implement -> fresh Validate -> report and stop
+       -> RPI traversal: Plan -> Implement -> fresh Validate -> report and stop
        -> consume the immutable report and verdict
        -> ratchet the graph, select another experiment, or stop
   -> optional post-verdict learning
        -> evidence-backed capability proposal
-       -> ordinary RPI to change the skill system
+       -> ordinary RPI traversal to change the skill system
 ```
 
 The split is semantic, not runtime-specific. A Goal may run in one agent,
 several explicit workers, or an external controller. RPI remains one
-independently judged experiment in every execution shape.
+independently judged traversal in every execution shape.
 
 ## Authority by level
 
 | Level | Owns | Does not own |
 |---|---|---|
 | Caller and product | Desired outcome, product boundary, authority, terminal acceptance | An AgentOps semantic verdict without fresh validation |
-| Goal / Mayor | Campaign graph, experiment selection, cumulative budgets, ratchet, breakers, terminal campaign report | Rewriting verdicts or issuing its own PASS for a candidate |
+| Goal / Mayor (caller-side orchestrator) | Campaign graph, experiment selection, cumulative budgets, ratchet, breakers, terminal campaign report | Rewriting verdicts or issuing its own PASS for a candidate |
 | RPI | One ordered experiment dispatch and one report | Campaign continuation, retries, queues, delivery, or work selection |
 | Plan | One experiment's acceptance, non-goals, write scope, and first useful check | The campaign graph or a duplicate planning artifact |
 | Implement | One exact candidate and factual check evidence | Semantic judgment, repair loops, or later work selection |

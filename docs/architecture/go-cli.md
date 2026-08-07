@@ -117,7 +117,7 @@ score is not a semantic verdict.
 
 ## Related pages
 
-- [Operating loop](operating-loop.md)
+- [RPI traversal](rpi-traversal.md)
 - [Component map](component-map.md)
 - [Ports and adapters](ports-and-adapters.md)
 - [Migration map](../MIGRATION.md)

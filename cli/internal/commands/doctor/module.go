@@ -88,7 +88,7 @@ func (module Module) Command() *cobra.Command {
 
 The default check is intentionally small: CLI identity, source-skill links,
 binary freshness, optional provenance integrity, and host safety. It does not
-probe trackers, reviewers, plugin caches, search indexes, or operating-loop
+probe trackers, reviewers, plugin caches, search indexes, or RPI traversal
 state. Advanced failure-mode diagnostics run only when explicitly selected.
 
 Examples:

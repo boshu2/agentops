@@ -182,7 +182,8 @@ nav:
       - Command Reference: cli/commands.md
   - Architecture:
       - architecture/index.md
-      - Operating Loop: architecture/operating-loop.md
+      - RPI Traversal: architecture/rpi-traversal.md
+      - Operating Loop (former name): architecture/operating-loop.md
       - Go CLI Architecture: architecture/go-cli.md
       - Gas City Factory: architecture/gas-city-factory.md
       - How It Works: how-it-works.md

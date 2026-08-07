@@ -7,7 +7,7 @@ setup() {
     PRODUCT.md
     README.md
     docs/CI-CD.md
-    docs/architecture/operating-loop.md
+    docs/architecture/rpi-traversal.md
     cli/cmd/ao/root.go
     cli/internal/commands/demo/module.go
   )
@@ -43,7 +43,7 @@ require_text() {
     "Persist \`verdict.v2\` only when"
   require_text PRODUCT.md \
     "AgentOps is not a new GitLab, CI service, tracker, merge queue, delivery system"
-  require_text docs/architecture/operating-loop.md \
+  require_text docs/architecture/rpi-traversal.md \
     "RPI invokes Plan, Implement, and Validate at most once and then stops."
   require_text docs/CI-CD.md \
     "Repositories own delivery policy for local and cloud agents."
