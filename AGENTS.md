@@ -5,10 +5,10 @@ Detailed workflow mechanics: [docs/agent-workflow-reference.md](docs/agent-workf
 AgentOps is the operations layer for agentic engineering: a portable semantic
 integration and judgment layer that connects intent, coding agents, software
 factories, context sources, and independent validation without taking
-ownership of their state or delivery lifecycle. The topology is a federated
-integration graph; the interoperability contract is the semantic
-work-and-proof protocol; the standard path through the graph is one RPI
-traversal:
+ownership of their state or delivery lifecycle. The topology is a
+federated integration graph; the interoperability contract is the
+semantic work-and-proof protocol; the standard path through the graph is one
+RPI traversal:
 
 ```text
 RPI -> Plan -> Implement -> fresh Validate -> report and stop

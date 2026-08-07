@@ -6,6 +6,9 @@
   [ -f "$contract" ]
 
   for required in \
+    "operations layer for agentic engineering" \
+    "federated integration graph" \
+    "Standard RPI traversal" \
     "RPI -> Plan -> Implement -> fresh Validate -> report and stop" \
     "Persist \`verdict.v2\` only when" \
     "It owns no retry" \
