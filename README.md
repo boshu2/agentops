@@ -1,15 +1,27 @@
 # AgentOps
 
-AgentOps is the operating loop a coding agent follows: one intent, one bounded
-build, one fresh judge, then report and stop. It also ships skills to orchestrate
-multi-agent systems. For contested calls, opt into
-[`council`](skills/council/SKILL.md) (independent judges) or
-[`idea-genie`](skills/idea-genie/SKILL.md) duel mode (sealed perspectives
-before Plan).
+AgentOps is the operations layer for agentic engineering.
+
+AgentOps connects intent, coding agents, software factories, context
+sources, and independent judgment through portable skills and evidence
+contracts without replacing the systems that own work, execution, or
+delivery.
+
+The architecture is a federated integration graph: your tracker keeps the
+work, Git keeps the history, your coding agents and factories run the
+execution, deterministic checks prove facts, and a fresh validator judges
+meaning. AgentOps supplies the semantic work-and-proof protocol that joins
+those nodes — exact intent, exact subject, evidence, fresh judgment, honest
+outcomes. The standard traversal through the graph is RPI, one experiment
+at a time:
 
 ```text
 RPI -> Plan -> Implement -> fresh Validate -> report and stop
 ```
+
+For contested calls, opt into [`council`](skills/council/SKILL.md)
+(independent judges) or [`idea-genie`](skills/idea-genie/SKILL.md) duel mode
+(sealed perspectives before Plan).
 
 ## Quickstart
 
@@ -17,8 +29,8 @@ RPI -> Plan -> Implement -> fresh Validate -> report and stop
 npx skills@latest add boshu2/agentops --all -g
 ```
 
-One command installs the corpus into every coding agent you use. The loop runs
-as skills **inside your coding agent** (Claude Code, Codex, Cursor, …): type
+One command installs the skill bundle into every coding agent you use. The
+skills run **inside your coding agent** (Claude Code, Codex, Cursor, …): type
 `/rpi` in that agent's chat, or ask for `plan`, `implement`, `validate`, and
 `learn` by name. No other runtime is required.
 
@@ -77,7 +89,7 @@ the same model as the author or a different one.
 
 ## Multi-agent systems
 
-The default loop is one agent, one writer. When you need a fleet,
+The default is one agent, one writer. When you need a fleet,
 [`swarm`](skills/swarm/SKILL.md), [`agent-native`](skills/agent-native/SKILL.md),
 [`ntm`](skills/ntm/SKILL.md), and [`using-gc`](skills/using-gc/SKILL.md)
 orchestrate multi-agent work. They dispatch; they do not own the verdict.
@@ -177,7 +189,7 @@ skills. Modes and flags change behavior inside one contract.
 | [`doc`](skills/doc/SKILL.md) | `--mode` | `readme`, `oss`, default API/docs; README mode runs a docs-prose (de-slop) pass |
 | [`codebase-recon`](skills/codebase-recon/SKILL.md) | mode · view · lens · depth | `baseline`/`delta`; emphasize audit or mental model; one domain lens per pass |
 | [`idea-genie`](skills/idea-genie/SKILL.md) | elicit \| duel | portfolio vs sealed multi-perspective challenge |
-| [`rpi`](skills/rpi/SKILL.md) | bead / intent ref | one full loop against a frozen bead |
+| [`rpi`](skills/rpi/SKILL.md) | bead / intent ref | one full traversal against a frozen bead |
 
 Read the skill's mode table before inventing a sibling skill. Full inventory:
 [Skill Router](docs/SKILL-ROUTER.md).
@@ -191,6 +203,6 @@ IDs, a freshness attestation, and criterion-level evidence.
 Missing identity, mutation, or incomplete coverage → `NOT_PROVEN`. Proven
 out-of-scope change or failed criterion → `FAIL`.
 
-[Operating loop](docs/architecture/operating-loop.md) · [CLI](cli/docs/COMMANDS.md) · [Docs](docs/documentation-index.md)
+[RPI traversal](docs/architecture/rpi-traversal.md) · [CLI](cli/docs/COMMANDS.md) · [Docs](docs/documentation-index.md)
 
 Contributing: [docs/CONTRIBUTING.md](docs/CONTRIBUTING.md). License: Apache-2.0.

@@ -1,7 +1,8 @@
 # ao — AgentOps CLI
 
-`ao` supplies deterministic repository utilities and evidence inspection. The
-AgentOps semantic loop lives in the skills:
+`ao` supplies deterministic repository utilities and evidence inspection. It
+is the optional checks/linking CLI of the AgentOps operations layer; the
+semantic protocol lives in the skills:
 
 ```text
 RPI → Plan → Implement → fresh Validate → report and stop

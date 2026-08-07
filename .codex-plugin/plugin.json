@@ -1,12 +1,12 @@
 {
   "name": "agentops",
   "version": "3.5.0",
-  "description": "Fresh-context validation for coding-agent work: shape one behavior, run one bounded experiment, and persist an independent verdict.",
+  "description": "The operations layer for agentic engineering: portable skills and evidence contracts connecting intent, coding agents, software factories, and independent judgment.",
   "skills": "./skills-codex",
   "interface": {
     "displayName": "AgentOps",
-    "shortDescription": "Fresh-context validation for coding-agent work.",
-    "longDescription": "AgentOps helps Codex shape one behavior, run one bounded implementation experiment, validate the exact result from fresh context, and persist a durable verdict. Git, CI, retries, queues, and delivery remain caller-owned.",
+    "shortDescription": "The operations layer for agentic engineering.",
+    "longDescription": "AgentOps connects intent, coding agents, software factories, context sources, and independent judgment through portable skills and evidence contracts. Codex shapes one behavior, runs one bounded implementation experiment, validates the exact result from fresh context, and can persist a durable verdict. Git, CI, retries, queues, and delivery remain caller-owned.",
     "developerName": "AgentOps",
     "category": "Productivity",
     "capabilities": [
