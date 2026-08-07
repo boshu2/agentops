@@ -115,7 +115,7 @@ func gitRootOrSelf(dir string) string {
 		return dir
 	}
 	for d := abs; ; {
-		if _, statErr := os.Stat(filepath.Join(d, ".git")); statErr == nil {
+		if hasGitMetadata(d) {
 			return d
 		}
 		parent := filepath.Dir(d)
@@ -124,6 +124,41 @@ func gitRootOrSelf(dir string) string {
 		}
 		d = parent
 	}
+}
+
+// hasGitMetadata reports whether dir contains usable repository metadata. An
+// empty or corrupt .git entry is not a repository boundary: treating one as a
+// root can redirect doctor artifacts and .gitignore writes into an unrelated
+// ancestor such as a shared temporary directory.
+func hasGitMetadata(dir string) bool {
+	entry := filepath.Join(dir, ".git")
+	info, err := os.Stat(entry)
+	if err != nil {
+		return false
+	}
+	if info.IsDir() {
+		_, err = os.Stat(filepath.Join(entry, "HEAD"))
+		return err == nil
+	}
+
+	data, err := os.ReadFile(entry)
+	if err != nil {
+		return false
+	}
+	line := strings.TrimSpace(string(data))
+	const prefix = "gitdir:"
+	if !strings.HasPrefix(line, prefix) {
+		return false
+	}
+	gitDir := strings.TrimSpace(strings.TrimPrefix(line, prefix))
+	if gitDir == "" {
+		return false
+	}
+	if !filepath.IsAbs(gitDir) {
+		gitDir = filepath.Join(dir, gitDir)
+	}
+	_, err = os.Stat(filepath.Join(gitDir, "HEAD"))
+	return err == nil
 }
 
 // ensureGitignore appends ".doctor/" to the git repo's root .gitignore if

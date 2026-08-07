@@ -24,6 +24,24 @@ what the caller does next.
 - Deterministic checks prove facts. A fresh context judges meaning. The context
   that authors a candidate cannot issue its binding PASS.
 
+## Honest work and anti-ceremony
+
+- The caller-requested subject behavior is the unit of value. Plans, audits,
+  verdicts, dashboards, and other control artifacts earn no capability credit.
+- Before creating a process artifact, name its concrete consumer, the subject
+  or release decision it gates, the observed defect justifying it, and its
+  retirement condition. If any is missing, do not create it. Code introduced
+  solely to consume the artifact does not satisfy this rule.
+- Minimal integrity or recovery state is allowed only when necessary to prevent
+  a named evidence-loss or corruption mode.
+- Never obtain green by weakening acceptance. Changes to tests, gates, fixtures,
+  goldens, tolerances, suppressions, or the specification must be justified
+  against the original intent.
+- Honest null, blocked, refused, and incomplete outcomes remain truthful
+  outcomes, but they do not count as completed capability. Metrics state their
+  denominator and a countermetric; correlated agent agreement is not
+  independent evidence.
+
 ## Runtime floor
 
 - Never run `claude -p` or `claude --print`, directly or indirectly.
