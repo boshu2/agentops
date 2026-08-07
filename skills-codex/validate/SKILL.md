@@ -109,6 +109,11 @@ python3 "$SKILL_DIR/scripts/validate.py" manifest \
 4. Inspect the exact subject and factual evidence. Reported exit codes are
    claims, not evidence: re-execute the claimed proofs that bear on acceptance
    (see the freshness rules below for when a digest-bound receipt suffices).
+   If the subject changes a test, gate, fixture, golden, tolerance, suppression,
+   or acceptance source, determine whether the original intent requires that
+   change and whether green came from implemented behavior rather than a
+   weakened oracle. Green obtained by weakening acceptance is `FAIL`, not
+   evidence of completion.
    Judge every acceptance criterion and record criterion-level results,
    findings, evidence references, `checked`, and any acceptance surface that
    went unverified in `not_checked` (see Scope disclosure).

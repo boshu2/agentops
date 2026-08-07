@@ -263,7 +263,11 @@ func TestNewRunArtifact_LayoutAndGitignore(t *testing.T) {
 // run from a nested dir never scatters stray .gitignore files.
 func TestEnsureGitignore_TargetsGitRoot(t *testing.T) {
 	root := t.TempDir()
-	if err := os.Mkdir(filepath.Join(root, ".git"), 0o755); err != nil {
+	gitDir := filepath.Join(root, ".git")
+	if err := os.Mkdir(gitDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(gitDir, "HEAD"), []byte("ref: refs/heads/main\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	sub := filepath.Join(root, "cli", "cmd", "ao")
@@ -295,6 +299,21 @@ func TestGitRootOrSelf_NoGitReturnsSelf(t *testing.T) {
 	dir := t.TempDir()
 	if got := gitRootOrSelf(dir); got != dir {
 		t.Errorf("gitRootOrSelf(no-git) = %q, want %q", got, dir)
+	}
+}
+
+func TestGitRootOrSelf_IgnoresInvalidGitAncestor(t *testing.T) {
+	root := t.TempDir()
+	invalidRoot := filepath.Join(root, "invalid-root")
+	nested := filepath.Join(invalidRoot, "nested")
+	if err := os.MkdirAll(filepath.Join(invalidRoot, ".git"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Mkdir(nested, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if got := gitRootOrSelf(nested); got != nested {
+		t.Errorf("gitRootOrSelf(invalid ancestor) = %q, want %q", got, nested)
 	}
 }
 
