@@ -2,14 +2,11 @@
 package quality
 
 import (
-	"bufio"
 	"crypto/sha256"
 	"encoding/json"
 	"fmt"
 	"io"
 	"os"
-	"path/filepath"
-	"runtime"
 	"strings"
 	"time"
 )
@@ -206,108 +203,6 @@ func FormatDuration(d time.Duration) string {
 	return fmt.Sprintf("%dd", int(d.Hours()/24))
 }
 
-// pluralize renders "<n> <word>" with a trailing "s" unless n == 1, so the
-// doctor never prints "1 learnings".
-func pluralize(n int, word string) string {
-	if n == 1 {
-		return fmt.Sprintf("1 %s", word)
-	}
-	return fmt.Sprintf("%d %ss", n, word)
-}
-
-// FormatNumber adds comma separators to an integer.
-func FormatNumber(n int) string {
-	s := fmt.Sprintf("%d", n)
-	if len(s) <= 3 {
-		return s
-	}
-	var result []byte
-	for i, c := range s {
-		if i > 0 && (len(s)-i)%3 == 0 {
-			result = append(result, ',')
-		}
-		result = append(result, byte(c))
-	}
-	return string(result)
-}
-
-// CountFileLines counts non-empty lines in a file.
-func CountFileLines(path string) int {
-	f, err := os.Open(path)
-	if err != nil {
-		return 0
-	}
-	defer func() { _ = f.Close() }()
-	count := 0
-	scanner := bufio.NewScanner(f)
-	scanner.Buffer(make([]byte, 256*1024), 1024*1024)
-	for scanner.Scan() {
-		if len(strings.TrimSpace(scanner.Text())) > 0 {
-			count++
-		}
-	}
-	return count
-}
-
-// CountFiles counts regular (non-directory) files in a directory.
-func CountFiles(dir string) int {
-	entries, err := os.ReadDir(dir)
-	if err != nil {
-		return 0
-	}
-	count := 0
-	for _, e := range entries {
-		if !e.IsDir() {
-			count++
-		}
-	}
-	return count
-}
-
-// NewestFileModTime returns the most recent modification time among regular files.
-func NewestFileModTime(entries []os.DirEntry) time.Time {
-	var newest time.Time
-	for _, e := range entries {
-		if e.IsDir() {
-			continue
-		}
-		info, err := e.Info()
-		if err != nil {
-			continue
-		}
-		if info.ModTime().After(newest) {
-			newest = info.ModTime()
-		}
-	}
-	return newest
-}
-
-// CountLearningFiles counts .md and .jsonl files in a directory.
-func CountLearningFiles(dir string) int {
-	mdFiles, _ := filepath.Glob(filepath.Join(dir, "*.md"))
-	jsonlFiles, _ := filepath.Glob(filepath.Join(dir, "*.jsonl"))
-	return len(mdFiles) + len(jsonlFiles)
-}
-
-// CountEstablished counts files whose name contains "established" or "promoted".
-func CountEstablished(dir string) int {
-	entries, err := os.ReadDir(dir)
-	if err != nil {
-		return 0
-	}
-	count := 0
-	for _, e := range entries {
-		if e.IsDir() {
-			continue
-		}
-		lower := strings.ToLower(e.Name())
-		if strings.Contains(lower, "established") || strings.Contains(lower, "promoted") {
-			count++
-		}
-	}
-	return count
-}
-
 // SHA256File computes the SHA-256 hash of a file.
 func SHA256File(path string) (string, error) {
 	f, err := os.Open(path)
@@ -320,105 +215,4 @@ func SHA256File(path string) (string, error) {
 		return "", err
 	}
 	return fmt.Sprintf("%x", h.Sum(nil)), nil
-}
-
-// CheckKnowledgeBase checks that the knowledge base directory exists.
-func CheckKnowledgeBase(baseDir string) Check {
-	if _, err := os.Stat(baseDir); os.IsNotExist(err) {
-		return Check{Name: "Knowledge Base", Status: "fail", Detail: ".agents/ao not initialized", Required: true, Audience: AudienceInstalledUser, Fix: "ao init"}
-	}
-	return Check{Name: "Knowledge Base", Status: "pass", Detail: ".agents/ao initialized", Required: true, Audience: AudienceInstalledUser}
-}
-
-// CheckKnowledgeFreshness checks the most recent file in the sessions directory.
-func CheckKnowledgeFreshness(sessionsDir string) Check {
-	noSessions := Check{Name: "Knowledge Freshness", Status: "info", Detail: "No sessions yet \u2014 run 'ao forge transcript' after your next session", Required: false, Audience: AudienceInstalledUser, Fix: "ao forge transcript"}
-	entries, err := os.ReadDir(sessionsDir)
-	if err != nil || len(entries) == 0 {
-		return noSessions
-	}
-	newest := NewestFileModTime(entries)
-	if newest.IsZero() {
-		return noSessions
-	}
-	age := time.Since(newest)
-	if age > 14*24*time.Hour {
-		return Check{Name: "Knowledge Freshness", Status: "warn", Detail: fmt.Sprintf("Last session: %s ago \u2014 knowledge may be stale", FormatDuration(age)), Required: false, Audience: AudienceInstalledUser, Fix: "ao forge transcript"}
-	}
-	return Check{Name: "Knowledge Freshness", Status: "pass", Detail: fmt.Sprintf("Last session: %s ago", FormatDuration(age)), Required: false, Audience: AudienceInstalledUser}
-}
-
-// CheckSearchIndex checks if the search index exists and counts terms.
-func CheckSearchIndex(indexPath string) Check {
-	info, err := os.Stat(indexPath)
-	if err != nil {
-		return Check{Name: "Search Index", Status: "info", Detail: "No search index yet \u2014 run 'ao store rebuild' for faster searches", Required: false, Audience: AudienceInstalledUser, Fix: "ao store rebuild"}
-	}
-	if info.Size() == 0 {
-		return Check{Name: "Search Index", Status: "info", Detail: "Search index is empty \u2014 run 'ao store rebuild'", Required: false, Audience: AudienceInstalledUser, Fix: "ao store rebuild"}
-	}
-	return Check{Name: "Search Index", Status: "pass", Detail: fmt.Sprintf("Index exists (%s terms)", FormatNumber(CountFileLines(indexPath))), Required: false, Audience: AudienceInstalledUser}
-}
-
-// CheckFlywheelHealth checks if the flywheel has learnings.
-func CheckFlywheelHealth(baseDir string) Check {
-	learningsDir := filepath.Join(baseDir, "learnings")
-	total := CountLearningFiles(learningsDir)
-	if total == 0 {
-		altDir := filepath.Join(filepath.Dir(baseDir), "learnings")
-		total = CountLearningFiles(altDir)
-	}
-	if total == 0 {
-		return Check{Name: "Flywheel Health", Status: "info", Detail: "No learnings yet \u2014 the flywheel starts after your first sessions", Required: false, Audience: AudienceInstalledUser}
-	}
-	established := CountEstablished(filepath.Join(baseDir, "learnings"))
-	if established == 0 {
-		established = CountEstablished(filepath.Join(filepath.Dir(baseDir), "learnings"))
-	}
-	detail := fmt.Sprintf("%s in flywheel", pluralize(total, "learning"))
-	if established > 0 {
-		detail = fmt.Sprintf("%s (%d established)", pluralize(total, "learning"), established)
-	}
-	return Check{Name: "Flywheel Health", Status: "pass", Detail: detail, Required: false, Audience: AudienceInstalledUser}
-}
-
-// CheckCLIDependencies verifies gt and bd are available in PATH.
-func CheckCLIDependencies(lookPath func(string) (string, error)) Check {
-	gtOk := lookPath != nil
-	bdOk := lookPath != nil
-	if gtOk {
-		if _, err := lookPath("gt"); err != nil {
-			gtOk = false
-		}
-	}
-	if bdOk {
-		if _, err := lookPath("bd"); err != nil {
-			bdOk = false
-		}
-	}
-	if gtOk && bdOk {
-		return Check{Name: "CLI Dependencies", Status: "pass", Detail: "gt and bd available", Required: false, Audience: AudienceInstalledUser}
-	}
-	// gt and bd are OPTIONAL: gt enables Gas City substrate ops, bd enables the
-	// beads/dolt substrate store. Their absence is informational, never a
-	// warning, and never "required".
-	var missing, enables, brewPkgs []string
-	if !gtOk {
-		missing = append(missing, "gt")
-		enables = append(enables, "gt enables Gas City substrate ops")
-		brewPkgs = append(brewPkgs, "gastown")
-	}
-	if !bdOk {
-		missing = append(missing, "bd")
-		enables = append(enables, "bd enables the beads substrate store")
-		brewPkgs = append(brewPkgs, "beads")
-	}
-	detail := fmt.Sprintf("%s not found (optional \u2014 %s)", strings.Join(missing, ", "), strings.Join(enables, "; "))
-	fix := ""
-	if runtime.GOOS != "windows" {
-		fix = "brew install " + strings.Join(brewPkgs, " ")
-	} else {
-		detail += " \u2014 install from their Windows releases or use WSL/Homebrew"
-	}
-	return Check{Name: "CLI Dependencies", Status: "info", Detail: detail, Required: false, Audience: AudienceInstalledUser, Fix: fix}
 }

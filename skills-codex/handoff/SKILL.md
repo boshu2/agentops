@@ -27,8 +27,14 @@ Anti-pattern: narrating the session chronologically ("first I tried…, then…"
 Corrective: record end-state facts — artifacts, paths, unresolved risks — and
 drop the journey.
 
+Write the artifact to the caller-owned handoff location when the caller names
+one; otherwise it is explicit requested proof under `.agents/ao/handoff/`.
+There is no permanent generic handoff store — an artifact nobody consumes is
+scratch, not evidence.
+
 The ao session handoff and ao session rehydrate commands implement the same
-boundary for JSON artifacts. The skill may write Markdown when that better
-serves a human, but the content semantics remain identical.
+boundary for JSON artifacts under `.agents/ao/handoff/`. The skill may write
+Markdown when that better serves a human, but the content semantics remain
+identical.
 
 Return the artifact path and stop.

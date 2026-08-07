@@ -1,3 +1,0 @@
-{"type":"summary","sessionId":"proof-seed-session","timestamp":"2026-03-22T15:00:00Z"}
-{"type":"user","role":"user","content":"Prove the knowledge flywheel from raw transcript input instead of a pre-seeded learning file.","sessionId":"proof-seed-session","timestamp":"2026-03-22T15:00:10Z"}
-{"type":"assistant","role":"assistant","content":"**Learning:** learned that task-scoped lookup queries beat commit-subject fallback for flywheel proof runs because raw transcript fixtures keep the lifecycle auditable end to end.","sessionId":"proof-seed-session","timestamp":"2026-03-22T15:00:20Z"}

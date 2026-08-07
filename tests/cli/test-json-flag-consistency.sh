@@ -41,7 +41,6 @@ test_json_cmd "ao status" status
 test_json_cmd "ao skills list" skills list
 test_json_cmd "ao skills graph" skills graph --format json
 test_json_cmd "ao goals validate" goals validate
-test_json_cmd "ao flywheel status" flywheel status
 test_json_cmd "ao provenance list" provenance list
 
 json_flag=$("$AO" config --show --json 2>/dev/null)

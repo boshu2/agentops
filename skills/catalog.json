@@ -625,7 +625,7 @@
         "code-complete"
       ],
       "produces": [
-        ".agents/handoff/*.md"
+        "caller-selected handoff path or .agents/ao/handoff/*.md"
       ],
       "references_count": 1,
       "tier": "session",
@@ -1169,7 +1169,7 @@
         "adr"
       ],
       "produces": [
-        ".agents/research/*.md"
+        ".agents/scratch/reverse-engineer/*.md"
       ],
       "references_count": 2,
       "tier": "execution",
@@ -1206,7 +1206,7 @@
         "implement",
         "validate"
       ],
-      "description": "Run one bounded Plan, Implement, and fresh Validate experiment, then report and stop. Triggers: \"run rpi\", \"feed this through the loop\", \"execute this plan\", orchestration or worker delegation that implements changes.",
+      "description": "Coordinate one RPI traversal: one bounded Plan, Implement, and fresh Validate experiment, then report and stop. Triggers: \"run rpi\", \"run one traversal\", \"execute this plan\", orchestration or worker delegation that implements changes.",
       "disposition": "keep",
       "effects": [
         "dispatch_core_phases"

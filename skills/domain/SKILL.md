@@ -54,5 +54,11 @@ Candidate, manifest, verdict, revision, strategy, and adapter are semantic
 terms; queue, claim, lease, close, land, release, and delivery belong to caller
 systems rather than AgentOps core state.
 
+The product-architecture terms — operations layer, federated integration
+graph, semantic work-and-proof protocol, RPI traversal — and their forbidden
+conflations live in the same contract. The traversal is RPI; the graph is the
+topology; the protocol defines interoperability; the operations layer is the
+product. None of the four is "a loop".
+
 Vocabulary changes are normal source edits to the two contracts above. This
 skill does not promote terms, mutate a knowledge index, or create continuation.

@@ -2,44 +2,88 @@
   "schema_version": 1,
   "id": "agentops-core.retrieval-quality-gates",
   "name": "AgentOps Retrieval Quality Gates Canary",
-  "description": "Offline public canary for real-corpus retrieval quality, search-backend comparison, flywheel gate thresholds, and deterministic fixture coverage.",
-  "practices": ["llm-eval-harness", "wiki-knowledge-surface"],
+  "description": "Offline public canary for real-corpus retrieval quality, search-backend comparison, and deterministic fixture coverage.",
+  "practices": [
+    "llm-eval-harness",
+    "wiki-knowledge-surface"
+  ],
   "domain": "retrieval",
   "visibility": "public_canary",
   "tier": "deterministic",
-  "owners": ["agentops"],
-  "tags": ["canary", "offline", "retrieval", "knowledge", "flywheel", "dream"],
-  "allowed_runtimes": ["shell", "static"],
+  "owners": [
+    "agentops"
+  ],
+  "tags": [
+    "canary",
+    "offline",
+    "retrieval",
+    "knowledge",
+    "dream"
+  ],
+  "allowed_runtimes": [
+    "shell",
+    "static"
+  ],
   "environment": {
     "offline_required": true,
     "network": "forbidden",
-    "scrub_env_prefixes": ["AGENTOPS_RPI_RUNTIME", "ANTHROPIC_", "OPENAI_"],
+    "scrub_env_prefixes": [
+      "AGENTOPS_RPI_RUNTIME",
+      "ANTHROPIC_",
+      "OPENAI_"
+    ],
     "timeout_seconds": 120
   },
   "fixtures": [
     {
       "path": "fixtures/retrieval-quality-smoke.sh",
-      "purpose": "Behavioral retrieval smoke covering quality thresholds, live-corpus ranking, offline backend comparison, and flywheel gate behavior.",
+      "purpose": "Behavioral retrieval smoke covering quality thresholds, live-corpus ranking, and offline backend comparison.",
       "required": true
     }
   ],
   "scoring": {
     "aggregate_threshold": 1,
     "dimensions": [
-      {"name": "correctness", "weight": 2, "threshold": 1, "critical": true},
-      {"name": "learning_closure", "weight": 2, "threshold": 1, "critical": true},
-      {"name": "process_adherence", "weight": 1, "threshold": 1},
-      {"name": "artifact_quality", "weight": 1, "threshold": 1},
-      {"name": "runtime_compatibility", "weight": 1, "threshold": 1}
+      {
+        "name": "correctness",
+        "weight": 2,
+        "threshold": 1,
+        "critical": true
+      },
+      {
+        "name": "learning_closure",
+        "weight": 2,
+        "threshold": 1,
+        "critical": true
+      },
+      {
+        "name": "process_adherence",
+        "weight": 1,
+        "threshold": 1
+      },
+      {
+        "name": "artifact_quality",
+        "weight": 1,
+        "threshold": 1
+      },
+      {
+        "name": "runtime_compatibility",
+        "weight": 1,
+        "threshold": 1
+      }
     ]
   },
-  "baseline_policy": {"mode": "compare", "baseline_path": ".agents/evals/baselines/agentops-core.retrieval-quality-gates.baseline.json", "blocking_gate": "none"},
+  "baseline_policy": {
+    "mode": "compare",
+    "baseline_path": ".agents/evals/baselines/agentops-core.retrieval-quality-gates.baseline.json",
+    "blocking_gate": "none"
+  },
   "cases": [
     {
       "id": "retrieval-quality-smoke",
-      "title": "real-corpus retrieval and flywheel gate smoke passes",
+      "title": "real-corpus retrieval smoke passes",
       "kind": "command",
-      "objective": "Keep train/holdout retrieval quality, live-corpus ranking, offline backend comparison, and flywheel gate threshold behavior passing.",
+      "objective": "Keep train/holdout retrieval quality, live-corpus ranking, and offline backend comparison passing.",
       "runtime": "shell",
       "timeout_seconds": 120,
       "inputs": {
@@ -47,10 +91,20 @@
         "shell": "bash evals/agentops-core/fixtures/retrieval-quality-smoke.sh"
       },
       "expectations": [
-        {"type": "exit_code", "value": 0},
-        {"type": "stdout_contains", "value": "retrieval quality smoke passed"}
+        {
+          "type": "exit_code",
+          "value": 0
+        },
+        {
+          "type": "stdout_contains",
+          "value": "retrieval quality smoke passed"
+        }
       ],
-      "dimensions": ["correctness", "learning_closure", "runtime_compatibility"],
+      "dimensions": [
+        "correctness",
+        "learning_closure",
+        "runtime_compatibility"
+      ],
       "critical": true
     },
     {
@@ -59,12 +113,31 @@
       "kind": "artifact_check",
       "objective": "Keep the live retrieval fixture corpus large enough and explicitly labeled for holdout quality checks.",
       "expectations": [
-        {"type": "artifact_contains", "target": "../../cli/cmd/ao/testdata/retrieval-bench-live/benchmark.json", "value": "\"split\": \"holdout\""},
-        {"type": "artifact_contains", "target": "../../cli/cmd/ao/testdata/retrieval-bench-live/benchmark.json", "value": "\"best_id\""},
-        {"type": "artifact_contains", "target": "../../cli/cmd/ao/testdata/retrieval-bench-live/security-toolchain-gate.md", "value": "Security Toolchain Gate"},
-        {"type": "artifact_contains", "target": "../../cli/cmd/ao/testdata/retrieval-bench-live/architecture-surface-contract.md", "value": "Architecture Surface Contract"}
+        {
+          "type": "artifact_contains",
+          "target": "../../cli/cmd/ao/testdata/retrieval-bench-live/benchmark.json",
+          "value": "\"split\": \"holdout\""
+        },
+        {
+          "type": "artifact_contains",
+          "target": "../../cli/cmd/ao/testdata/retrieval-bench-live/benchmark.json",
+          "value": "\"best_id\""
+        },
+        {
+          "type": "artifact_contains",
+          "target": "../../cli/cmd/ao/testdata/retrieval-bench-live/security-toolchain-gate.md",
+          "value": "Security Toolchain Gate"
+        },
+        {
+          "type": "artifact_contains",
+          "target": "../../cli/cmd/ao/testdata/retrieval-bench-live/architecture-surface-contract.md",
+          "value": "Architecture Surface Contract"
+        }
       ],
-      "dimensions": ["artifact_quality", "learning_closure"]
+      "dimensions": [
+        "artifact_quality",
+        "learning_closure"
+      ]
     }
   ]
 }

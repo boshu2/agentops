@@ -43,7 +43,6 @@ if [[ "$report_only" == false ]]; then
     "$COVER_BIN" version 2>/dev/null || true
     "$COVER_BIN" ratchet status 2>/dev/null || true
     "$COVER_BIN" doctor 2>/dev/null || true
-    "$COVER_BIN" metrics flywheel status 2>/dev/null || true
 
     echo "Integration commands complete."
 fi

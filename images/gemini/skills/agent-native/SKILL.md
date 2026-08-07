@@ -73,7 +73,7 @@ stalled, and rescue is usually cheaper than rerun.
 5. Return runtime evidence to the caller. Do not convert provider retries,
    reconnects, idle states, or failures into Plan, Candidate, or verdict state.
 6. A validator session may supply judgment to Validate, but only Validate writes
-   `verdict.v2`.
+   `verdict.v2`. The adapter cannot select AgentOps semantics, issue a binding verdict, or turn factory completion into delivery or validation proof.
 
 NTM, Codex exec, native processes, Agent Mail, and Gas City are replaceable
 adapters. Use them only when the caller selected that execution shape. A

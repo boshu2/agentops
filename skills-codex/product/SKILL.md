@@ -11,7 +11,11 @@ aspiration; if a reader cannot tell which is which, the document has failed.
 
 1. Inspect existing product, README, goals, release, and evidence sources.
 2. Ask only for decisions that cannot be grounded safely from those sources.
-3. State mission, users, pains, value, differentiation, and non-goals.
+3. State mission, users, pains, value, differentiation, and non-goals. For
+   this repository's own product surfaces, start from the canonical category
+   in `docs/contracts/ubiquitous-language.md` (AgentOps is the operations
+   layer for agentic engineering) and preserve the small ownership boundary —
+   never re-frame AgentOps as an execution orchestrator, factory, or loop.
 4. Separate evidence from hope under two required headings. Put every grounded
    claim under `## Proven`, each carrying a resolvable citation (a README,
    release, test, or evidence source). Put unproven hopes, evidence gaps, and

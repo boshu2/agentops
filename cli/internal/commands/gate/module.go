@@ -28,7 +28,7 @@ func NewModule(useCases UseCases, host clicontract.HostOptions) Module {
 func (Module) Contract() clicontract.CommandContract {
 	return clicontract.CommandContract{
 		ID:       "ao.gate",
-		Profiles: clicontract.ProfileDefault | clicontract.ProfileFlywheel | clicontract.ProfileLegacy | clicontract.ProfileCombined,
+		Profiles: clicontract.ProfileDefault | clicontract.ProfileLegacy | clicontract.ProfileCombined,
 		Args:     clicontract.ArgsPolicy{Name: "no-args", Validate: cobra.NoArgs},
 		Output:   clicontract.OutputNone,
 		Effects:  clicontract.EffectFilesystem | clicontract.EffectProcess | clicontract.EffectEnvironment | clicontract.EffectClock,
@@ -54,7 +54,7 @@ func (Module) Contract() clicontract.CommandContract {
 func (Module) CheckContract() clicontract.CommandContract {
 	return clicontract.CommandContract{
 		ID:       "ao.gate.check",
-		Profiles: clicontract.ProfileDefault | clicontract.ProfileFlywheel | clicontract.ProfileLegacy | clicontract.ProfileCombined,
+		Profiles: clicontract.ProfileDefault | clicontract.ProfileLegacy | clicontract.ProfileCombined,
 		Args:     clicontract.ArgsPolicy{Name: "no-args", Validate: cobra.NoArgs},
 		Output:   clicontract.OutputText,
 		Effects:  clicontract.EffectFilesystem | clicontract.EffectProcess | clicontract.EffectEnvironment | clicontract.EffectClock,

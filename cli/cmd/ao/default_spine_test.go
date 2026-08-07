@@ -11,7 +11,7 @@ import (
 // command was registered (or dropped) without changing this contract.
 var approvedDefaultSpine = map[string]bool{
 	"capabilities": true, "config": true, "doctor": true,
-	"demo": true, "eval": true, "flywheel": true, "gate": true, "gc": true,
+	"demo": true, "eval": true, "gate": true, "gc": true,
 	"goals": true, "init": true, "provenance": true, "quick-start": true,
 	"redact": true, "robot-docs": true, "session": true, "skills": true,
 	"status": true, "version": true, "workflows": true,

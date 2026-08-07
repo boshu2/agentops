@@ -27,9 +27,9 @@
 #
 # Resolution is SOUND (AO_RESOLVE_MODE=strict → `ao <sub> --help`, reject cobra's
 # "unknown command" / "Unknown help topic"; the `help`-mode predicate is unsound
-# because `ao help <anything>` always exits 0). The archive-tagged build
-# (`-tags "flywheel legacy"`) keeps archived-but-revivable commands (e.g.
-# `ao harvest`, `ao forge`) resolvable, so this only flags TRULY dead commands.
+# because `ao help <anything>` always exits 0). The archive build tags are
+# retired; the default build is the whole surface, so this only flags TRULY
+# dead commands.
 #
 # Retired-command waivers are forbidden. The historical baseline file remains
 # as an empty, comment-only tombstone; any active entry fails the gate and no
@@ -40,7 +40,8 @@
 # Env seams (for the bats twin): SCRIPTS_AO_INVOCATIONS_BASELINE overrides the
 # baseline path; AGENTOPS_AO_BIN short-circuits the ao build (documented fast path).
 
-set -euo pipefail
+# shellcheck disable=SC1007
+. "$(CDPATH= cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib/preamble.sh"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 

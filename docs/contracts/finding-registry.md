@@ -2,7 +2,7 @@
 
 The canonical reusable-finding registry lives at `.agents/findings/registry.jsonl`.
 
-This file is the canonical intake ledger for reusable findings in the AgentOps flywheel. Planning and judgment load it before rediscovering a known failure, and judgment writes back only the reusable findings that deserve to affect future work.
+This file is the canonical intake ledger for reusable findings. Planning and judgment load it before rediscovering a known failure, and judgment writes back only the reusable findings that deserve to affect future work.
 
 The registry line shape remains the canonical `version: 1` JSONL contract. V2 does not replace that ledger. Instead, V2 adds promoted Markdown finding artifacts and compiled prevention outputs defined in [finding-compiler.md](finding-compiler.md).
 

@@ -4,7 +4,7 @@ set -euo pipefail
 # check-ratchet-r3-constraint.sh — enforce Ratchet rule R3:
 # "no learning without a constraint."
 #
-# Doctrine (docs/3.0.md, docs/architecture/operating-loop.md): a learning is
+# Doctrine (docs/architecture/rpi-traversal.md): a learning is
 # durable only when it COMPILES into a gate/test/rule. The ratchet mechanism
 # (cli/internal/ratchet/) already models maturity promotion, but R3 itself was
 # never enforced — promotion to a durable tier was a manual operator decision

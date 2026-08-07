@@ -102,7 +102,6 @@ func TestFlagMatrix_JSONOutput(t *testing.T) {
 	}{
 		{"search", []string{"search", "--json", "test"}, false},
 		{"ratchet-status", []string{"ratchet", "status", "--json"}, false},
-		{"flywheel-status", []string{"flywheel", "status", "--json"}, false},
 		{"pool-list", []string{"pool", "list", "--json"}, false},
 		{"status", []string{"status", "--json"}, false},
 		// `ao doctor --json` exits 1 when findings are present (exit-code
@@ -222,7 +221,6 @@ func TestFlagMatrix_InvalidFlags(t *testing.T) {
 		{"badge", []string{"badge", "--nonexistent-flag"}},
 		{"ratchet-status", []string{"ratchet", "status", "--nonexistent-flag"}},
 		{"pool-list", []string{"pool", "list", "--nonexistent-flag"}},
-		{"flywheel-status", []string{"flywheel", "status", "--nonexistent-flag"}},
 		{"metrics-report", []string{"metrics", "report", "--nonexistent-flag"}},
 		{"compile", []string{"compile", "--nonexistent-flag"}},
 	}

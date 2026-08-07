@@ -2,7 +2,9 @@
 
 This document expands the repository contract in [AGENTS.md](../AGENTS.md).
 
-The public AgentOps workflow has one pass:
+AgentOps is the operations layer for agentic engineering; the standard
+traversal through its federated integration graph is one pass
+(exact semantics: [rpi-traversal.md](architecture/rpi-traversal.md)):
 
 ```text
 RPI -> Plan -> Implement -> fresh Validate -> report and stop

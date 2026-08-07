@@ -2,31 +2,16 @@ package main
 
 import "testing"
 
-// TestExperimentalHelpGroup asserts that optional knowledge commands do not
-// become lifecycle authorities merely because they are available.
-func TestExperimentalHelpGroup(t *testing.T) {
-	var title string
+// TestNoExperimentalKnowledgeGroup pins the retirement of the knowledge-
+// flywheel command family: the "Optional knowledge tools:" help group and the
+// flywheel command tree must stay gone from the root command.
+func TestNoExperimentalKnowledgeGroup(t *testing.T) {
 	for _, g := range rootCmd.Groups() {
 		if g.ID == "experimental" {
-			title = g.Title
+			t.Fatalf("experimental cobra group %q is registered; the knowledge-flywheel surface was retired", g.Title)
 		}
 	}
-	if title == "" {
-		t.Fatal("experimental cobra group not registered on rootCmd")
-	}
-	if title != "Optional knowledge tools:" {
-		t.Fatalf("experimental group title = %q, want %q", title, "Optional knowledge tools:")
-	}
-
-	demoted := []string{"flywheel"}
-	for _, name := range demoted {
-		cmd, _, err := rootCmd.Find([]string{name})
-		if err != nil || cmd == nil || cmd.Name() != name {
-			t.Errorf("demoted command %q not registered in this build variant", name)
-			continue
-		}
-		if cmd.GroupID != "experimental" {
-			t.Errorf("command %q GroupID = %q, want %q", name, cmd.GroupID, "experimental")
-		}
+	if cmd, _, err := rootCmd.Find([]string{"flywheel"}); err == nil && cmd != nil && cmd.Name() == "flywheel" {
+		t.Fatal("flywheel command is registered; the knowledge-flywheel family was retired")
 	}
 }

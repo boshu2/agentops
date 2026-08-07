@@ -424,7 +424,7 @@ log "Validating handoff artifacts"
 HANDOFF_SCHEMA="$REPO_ROOT/schemas/handoff.v1.schema.json"
 if [[ -f "$HANDOFF_SCHEMA" ]]; then
     found_handoff=0
-    for handoff in "$REPO_ROOT"/.agents/handoff/*.json; do
+    for handoff in "$REPO_ROOT"/.agents/ao/handoff/*.json; do
         [[ -f "$handoff" ]] || continue
         found_handoff=1
         validate_manifest "$handoff" "$HANDOFF_SCHEMA" "handoff/$(basename "$handoff")"

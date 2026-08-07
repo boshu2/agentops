@@ -1,5 +1,5 @@
 site_name: AgentOps
-site_description: One-pass intent, implementation, fresh validation, and durable evidence for coding agents.
+site_description: The operations layer for agentic engineering — portable skills and evidence contracts connecting intent, agents, software factories, and independent judgment.
 site_url: https://boshu2.github.io/agentops/
 site_author: AgentOps
 
@@ -182,7 +182,8 @@ nav:
       - Command Reference: cli/commands.md
   - Architecture:
       - architecture/index.md
-      - Operating Loop: architecture/operating-loop.md
+      - RPI Traversal: architecture/rpi-traversal.md
+      - Operating Loop (former name): architecture/operating-loop.md
       - Go CLI Architecture: architecture/go-cli.md
       - Gas City Factory: architecture/gas-city-factory.md
       - How It Works: how-it-works.md

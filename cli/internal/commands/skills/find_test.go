@@ -13,7 +13,7 @@ import (
 // TestSkillsFind_JSONIsSortedArrayOnStdout resolves skills/ from the live tree
 // (test cwd walks up to the repo root).
 func TestSkillsFind_JSONIsSortedArrayOnStdout(t *testing.T) {
-	stdout, stderr, err := execSkills(t, "find", "--json", "close", "the", "loop")
+	stdout, stderr, err := execSkills(t, "find", "--json", "run", "one", "traversal")
 	if err != nil {
 		t.Fatalf("find: %v", err)
 	}
@@ -25,7 +25,7 @@ func TestSkillsFind_JSONIsSortedArrayOnStdout(t *testing.T) {
 		t.Fatalf("stdout is not a JSON array: %v\noutput: %s", jerr, stdout)
 	}
 	if len(got) == 0 {
-		t.Fatal("expected at least one match for 'close the loop' against the live tree")
+		t.Fatal("expected at least one match for 'run one traversal' against the live tree")
 	}
 	if len(got) > 5 {
 		t.Errorf("expected at most 5 results (default limit), got %d", len(got))
@@ -38,7 +38,7 @@ func TestSkillsFind_JSONIsSortedArrayOnStdout(t *testing.T) {
 }
 
 func TestSkillsFind_TextRanksOnStdout(t *testing.T) {
-	stdout, _, err := execSkills(t, "find", "close the loop")
+	stdout, _, err := execSkills(t, "find", "run one traversal")
 	if err != nil {
 		t.Fatalf("find: %v", err)
 	}

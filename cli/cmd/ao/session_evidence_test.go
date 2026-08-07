@@ -32,11 +32,11 @@ func TestHandoffPreservesCallerTextWithoutLifecycleState(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	entries, err := os.ReadDir(filepath.Join(dir, ".agents", "handoff"))
+	entries, err := os.ReadDir(filepath.Join(dir, ".agents", "ao", "handoff"))
 	if err != nil || len(entries) != 1 {
 		t.Fatalf("expected one handoff: entries=%d err=%v", len(entries), err)
 	}
-	data, err := os.ReadFile(filepath.Join(dir, ".agents", "handoff", entries[0].Name()))
+	data, err := os.ReadFile(filepath.Join(dir, ".agents", "ao", "handoff", entries[0].Name()))
 	if err != nil {
 		t.Fatal(err)
 	}

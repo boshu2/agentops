@@ -11,7 +11,7 @@ import (
 func validCommandContract() CommandContract {
 	return CommandContract{
 		ID:       "ao.lookup",
-		Profiles: ProfileDefault | ProfileFlywheel | ProfileCombined,
+		Profiles: ProfileDefault | ProfileCombined,
 		Args: ArgsPolicy{
 			Name:     "maximum-1",
 			Validate: cobra.MaximumNArgs(1),

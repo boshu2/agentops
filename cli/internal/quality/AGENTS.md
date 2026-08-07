@@ -23,10 +23,6 @@ parity. Powers `ao doctor`, `ao metrics`, and several CI gates.
 |---|---|
 | `RunDoctor(opts DoctorOptions) error` | Run all checks, render table or JSON, fail if any required check fails |
 | `ComputeResult([]Check) DoctorOutput` | Aggregate checks into HEALTHY/DEGRADED/UNHEALTHY |
-| `RunMetrics(...)` (`metrics_run.go`) | Compute knowledge-flywheel metrics from `.agents/` corpus |
-| `WriteGolden / CompareGolden / DiffGolden` (`metrics_golden.go`) | Golden-snapshot test harness for metrics regressions |
-| `ComputeHealthDelta(baseDir) float64` | Average age (days) of active learnings — flywheel staleness signal |
-| `CountFilesInDir(dir) int` | Count `.md`, `.jsonl`, `.json` files (non-recursive) — used in metrics |
 | `ScanStaleRefs(...)`, `DeprecatedCommands` map | Find docs referencing renamed/retired commands |
 | `CodexInstallMeta`, `CodexNativePluginSkillsPath`, parity helpers | Inspect installed Codex plugin state |
 | `ParseUtilityFromMarkdown / ParseUtilityFromJSONL` | Extract `utility:` front-matter for ranking |
@@ -61,4 +57,3 @@ parity. Powers `ao doctor`, `ao metrics`, and several CI gates.
 - `cli/internal/types/` — shared learning/memory types this package reads.
 - `scripts/generate-skill-mesh.py`, `scripts/audit-codex-parity.sh` — sibling
   shell tools that overlap with this package's responsibilities.
-- `skills/flywheel/SKILL.md` — surfaces health metrics computed here.

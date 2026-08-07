@@ -37,7 +37,7 @@ def render() -> str:
         f"- [Product boundary]({GITHUB_BLOB}/PRODUCT.md)",
         f"- [Fitness goals]({GITHUB_BLOB}/GOALS.md)",
         f"- [Program boundary]({GITHUB_BLOB}/PROGRAM.md)",
-        "- [Operating loop](architecture/operating-loop.md)",
+        "- [RPI traversal](architecture/rpi-traversal.md)",
         "- [Gas City reliability boundary](operations/gas-city-reliability.md)",
         "- [Agent workflow](agent-workflow-reference.md)",
         "- [Repository CI and delivery](CI-CD.md)",

@@ -17,11 +17,13 @@ scoring used to triage candidates, and the shared harness those scripts share.
 
 ## Running
 
-The flagship suite is the flywheel proof, which exercises forge → pool-ingest →
-cite → promote → lookup → feedback → nightly across one isolated sandbox:
+The current suites exercise goals measurement and the phased RPI domain
+against one isolated sandbox each:
 
 ```bash
-bash tests/e2e/proof-run.sh
+bash tests/e2e/goals-measure-scenarios.sh
+bash tests/e2e/goals-trace-chain.sh
+bash tests/e2e/rpi-phased-domain.sh
 ```
 
 Other scripts (`goals-*.sh`, `rpi-phased-domain.sh`,
@@ -113,7 +115,7 @@ The logger writes one JSON object per line. Schema (fields are stable;
 consumers can rely on them):
 
 ```json
-{"ts":"2026-05-19T00:37:24Z","suite":"flywheel-proof","phase":"cite-promote",
+{"ts":"2026-05-19T00:37:24Z","suite":"goals-trace-chain","phase":"cite-promote",
  "event":"pass","message":"close-loop promoted a cited candidate","data":null}
 ```
 

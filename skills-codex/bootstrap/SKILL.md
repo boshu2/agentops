@@ -32,8 +32,10 @@ PRODUCT.md written confidently is worse than a question.
 6. Stop.
 
 Typical documents are `PRODUCT.md`, `GOALS.md`, `AGENTS.md`, and a README section
-that explains the one-pass loop. Repositories remain free to use their own Git,
-CI, tracker, release, and deployment policies.
+that explains the RPI traversal. Generated product copy starts from the
+operations-layer category and preserves the ownership boundary. Repositories
+remain free to use their own Git, CI, tracker, release, and deployment
+policies.
 
 **Naming.** Three surfaces share the word "bootstrap"; they are distinct. This
 skill authors missing entry documents. `ao init` is the CLI command that creates

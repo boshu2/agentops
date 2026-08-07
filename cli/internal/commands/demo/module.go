@@ -30,7 +30,7 @@ func NewModule() Module {
 func (Module) Contract() clicontract.CommandContract {
 	return clicontract.CommandContract{
 		ID:       "ao.demo",
-		Profiles: clicontract.ProfileDefault | clicontract.ProfileFlywheel | clicontract.ProfileLegacy | clicontract.ProfileCombined,
+		Profiles: clicontract.ProfileDefault | clicontract.ProfileLegacy | clicontract.ProfileCombined,
 		Args:     clicontract.ArgsPolicy{Name: "arbitrary", Validate: cobra.ArbitraryArgs},
 		Output:   clicontract.OutputText,
 		Effects:  clicontract.EffectPure,
@@ -50,7 +50,7 @@ func (Module) Command() *cobra.Command {
 	)
 	command := &cobra.Command{
 		Use:   "demo",
-		Short: "Show the one-pass AgentOps evidence loop",
+		Short: "Show one RPI traversal",
 		Long: `Show the AgentOps product boundary:
 
   RPI -> Plan -> Implement -> fresh Validate -> report and stop
@@ -91,6 +91,6 @@ func quickDemo(w io.Writer) error {
 5. Validate returns one fresh validation result; verdict.v2 persistence is optional.
 6. RPI reports PASS, FAIL, NOT_PROVEN, NOT_PLANNED, or NOT_BUILT and stops.
 
-No Git repository or ao binary is required for this semantic loop.`)
+No Git repository or ao binary is required for this semantic traversal.`)
 	return nil
 }

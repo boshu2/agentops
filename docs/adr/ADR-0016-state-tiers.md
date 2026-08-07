@@ -143,6 +143,34 @@ lives as an unstated exception.
   genuinely cannot become an `ao` subcommand, that case is made per file, here,
   with its rationale. Widening the snapshot is rejected mechanically.
 
+### Amendment 2026-08-07 (federated source authority)
+
+The tier table names authorities inside this repository's own state; the
+operations-layer alignment makes the external half explicit. AgentOps links
+source identities in a federated integration graph; it does not absorb their
+authority into `.agents/`:
+
+- **The tracker (Beads) owns work** — what exists, status, dependencies, close
+  reasons. Queried directly; never re-indexed into a second work store.
+- **Git owns source content and delivery history.** AgentOps binds exact
+  content identity when useful; a commit or merge never implies semantic PASS.
+- **CASS and CM remain source systems** for past sessions and curated memory.
+  Retrieval is on demand, cited with provenance and freshness; their output is
+  evidence, never policy, and is not merged into a local knowledge lake.
+- **`.agents/ao/` is requested proof, not a general knowledge lake.** It holds
+  verdicts, receipts, intent snapshots, and pinned config that a caller or
+  declared consumer asked for — nothing accumulates there by default.
+- **`.agents/scratch/` is disposable work**, convention
+  `scratch/WRITER/DATE-SLUG/`, expiring by quarantine-rename.
+- **`.agents/projections/` holds named-consumer, manifest-stamped derived
+  views.** A projection exists only while it has a named consumer and is
+  cheaper than re-querying its sources; deleting it must not change semantic
+  behavior.
+- **No stored index duplicates a queryable source without measured need.**
+  Invariant 2 generalizes beyond beads: Git, CASS, CM, and any other queryable
+  source system get the same treatment — caches for demonstrably slow queries
+  only, never authorities.
+
 ## Consequences
 
 - The 114-directory `.agents/` junk drawer is migrated once to the three-dir

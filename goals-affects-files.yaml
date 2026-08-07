@@ -22,11 +22,6 @@
 #   to GOALS.md without breaking parsing.
 
 affects_files:
-  flywheel-lifecycle:
-    - scripts/check-flywheel-lifecycle.sh
-    - tests/scripts/check-flywheel-lifecycle.bats
-    - .agents/learnings/**
-
   go-complexity-ceiling:
     - cli/**
     - scripts/check-go-absolute-complexity.sh
@@ -35,10 +30,6 @@ affects_files:
     - scripts/check-compile-health.sh
 
   compile-no-oscillation:
-
-  flywheel-compounding:
-    - scripts/check-flywheel-compounding.sh
-    - .agents/findings/f-2026-04-30-002.md
 
   go-cli-tests:
     - cli/**

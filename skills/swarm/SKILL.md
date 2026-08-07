@@ -64,4 +64,4 @@ packet, not Swarm's to bound.
 Swarm does not select work, create packets, schedule from a backlog, persist a
 queue, claim ownership, retry, validate, integrate, close, use Git, or deliver.
 Executor failures remain executor evidence and cannot become core phase or
-verdict state.
+verdict state. The adapter cannot select AgentOps semantics, issue a binding verdict, or turn factory completion into delivery or validation proof.

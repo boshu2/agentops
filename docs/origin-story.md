@@ -2,6 +2,14 @@
 
 > Five months of building. 1,083 commits. 80+ extracted learnings. 33 CI gates built from real failures. One thesis: agents are not the product — the system around them is.
 
+> **Current state (2026-08).** This page is the historical narrative and keeps
+> its original vocabulary. The knowledge-flywheel product surface it describes
+> was retired: today AgentOps is the operations layer for agentic engineering
+> — portable skills and evidence contracts connecting intent, agents, software
+> factories, and independent judgment — and learning is an optional off-path
+> consumer of durable verdicts. See [PRODUCT.md](https://github.com/boshu2/agentops/blob/main/PRODUCT.md)
+> and [rpi-traversal.md](architecture/rpi-traversal.md).
+
 ---
 
 ## The Kernel: Knowledge OS (October 2025)

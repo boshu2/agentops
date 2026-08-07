@@ -169,7 +169,7 @@ func (m *Module) runUnlink(cmd *cobra.Command, _ []string) error {
 func (*Module) Contract() clicontract.CommandContract {
 	return clicontract.CommandContract{
 		ID:       "ao.workflows",
-		Profiles: clicontract.ProfileDefault | clicontract.ProfileFlywheel | clicontract.ProfileLegacy | clicontract.ProfileCombined,
+		Profiles: clicontract.ProfileDefault | clicontract.ProfileLegacy | clicontract.ProfileCombined,
 		Args:     clicontract.ArgsPolicy{Name: "arbitrary", Validate: cobra.ArbitraryArgs},
 		Output:   clicontract.OutputText,
 		Effects:  clicontract.EffectFilesystem,

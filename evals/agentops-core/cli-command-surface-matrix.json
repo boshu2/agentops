@@ -41,7 +41,7 @@
       },
       "expectations": [
         {"type": "exit_code", "value": 0},
-        {"type": "stdout_contains", "value": "cli-command-headings: top=21 sub=58 all=92"},
+        {"type": "stdout_contains", "value": "cli-command-headings: top=20 sub=56 all=89"},
         {"type": "stdout_contains", "value": "cli-help-matrix-ok"}
       ],
       "dimensions": ["correctness", "runtime_compatibility", "artifact_quality"],
@@ -88,12 +88,10 @@
       "id": "cli-operator-subcommand-docs",
       "title": "operator subcommand docs cover the breadth of ao",
       "kind": "artifact_check",
-      "objective": "Lock representative generated docs across the retained checks, evidence, skill-linking, goal, session, and optional knowledge surfaces.",
+      "objective": "Lock representative generated docs across the retained checks, evidence, skill-linking, goal, and session surfaces.",
       "expectations": [
         {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "#### `ao gate check`"},
         {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "Run deterministic repository checks"},
-        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "#### `ao flywheel status`"},
-        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "Display comprehensive flywheel health status."},
         {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "#### `ao goals measure`"},
         {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "Run goal checks and produce a snapshot"},
         {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "#### `ao session handoff`"},
@@ -112,12 +110,11 @@
       "kind": "artifact_check",
       "objective": "Ensure the Go command tree wires the retained command families that the generated docs and matrix smoke depend on.",
       "expectations": [
-        {"type": "artifact_contains", "target": "../../cli/cmd/ao/init.go", "value": "rootCmd.AddCommand(initCmd)"},
-        {"type": "artifact_contains", "target": "../../cli/cmd/ao/skills.go", "value": "var skillsCmd = &cobra.Command"},
-        {"type": "artifact_contains", "target": "../../cli/cmd/ao/provenance_add.go", "value": "var provenanceCmd = &cobra.Command"},
-        {"type": "artifact_contains", "target": "../../cli/cmd/ao/goals.go", "value": "var goalsCmd = &cobra.Command"},
-        {"type": "artifact_contains", "target": "../../cli/cmd/ao/session.go", "value": "var sessionCmd = &cobra.Command"},
-        {"type": "artifact_contains", "target": "../../cli/cmd/ao/metrics_flywheel.go", "value": "var flywheelCmd = &cobra.Command"}
+        {"type": "artifact_contains", "target": "../../cli/cmd/ao/init_composition.go", "value": "rootCmd.AddCommand(newInitCommand())"},
+        {"type": "artifact_contains", "target": "../../cli/cmd/ao/skills_composition.go", "value": "rootCmd.AddCommand(newSkillsCommand())"},
+        {"type": "artifact_contains", "target": "../../cli/cmd/ao/provenance_composition.go", "value": "rootCmd.AddCommand(newProvenanceCommand())"},
+        {"type": "artifact_contains", "target": "../../cli/cmd/ao/goals_composition.go", "value": "rootCmd.AddCommand(newGoalsCommand())"},
+        {"type": "artifact_contains", "target": "../../cli/cmd/ao/session_composition.go", "value": "rootCmd.AddCommand(newSessionCommand())"}
       ],
       "dimensions": ["correctness", "artifact_quality"],
       "critical": true

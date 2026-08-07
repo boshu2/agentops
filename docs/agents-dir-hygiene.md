@@ -10,19 +10,26 @@ last_reviewed: 2026-07-18
 `.agents/` is the per-repository runtime workspace: gitignored local state
 written by the `ao` CLI and by skills while they work. It is not committed
 (except a small pinned config under `.agents/ao/`), it is not a deliverable,
-and everything in it is safe to regenerate. Two shapes of content live there:
+and it is never a source of authority — work belongs to the tracker, source
+and delivery history to Git, sessions to CASS, curated memory to CM, and
+rules to docs/ADRs.
+
+The target layout is the closed set from
+[ADR-0016](adr/ADR-0016-state-tiers.md): `ao/` (requested proof), `scratch/`
+(disposable work, `scratch/WRITER/DATE-SLUG/`), and `projections/`
+(named-consumer, manifest-stamped derived views). Everything else under
+`.agents/` is legacy debris from older writers. Two shapes of that debris
+exist:
 
 - **Knowledge-shaped directories** — postmortems, pre-mortem checks, handoffs,
-  retros, proofs: human-readable records a later session may re-read.
+  retros, proofs: human-readable records a later session may re-read while
+  they await promotion or expiry.
 - **Machine-artifact directories** — queue dirs, run scratch, staged outputs:
   consumed once by tooling and then debris.
 
 Left alone, the second class accumulates. The `workspace` subsystem of
-`ao doctor` exists to detect and garbage-collect that debris safely.
-
-Which state belongs in `.agents/` at all — versus beads, `.agents/ao/` proof,
-or docs — is governed by the state-tier contract in
-[ADR-0016](adr/ADR-0016-state-tiers.md).
+`ao doctor` exists to detect and garbage-collect that debris safely. Where
+this page and ADR-0016 disagree, the ADR wins.
 
 ## The ephemeral-dir contract
 

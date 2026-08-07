@@ -295,69 +295,10 @@ function runUseSkill(skillName) {
 }
 
 function runSessionEnd() {
-    // Codex doesn't consume Claude plugin hooks.json, so this provides an equivalent
-    // end-of-session close-loop entrypoint.
-    const repoRootResult = spawnSync('git', ['rev-parse', '--show-toplevel'], {
-        encoding: 'utf8'
-    });
-
-    const repoRoot = repoRootResult.status === 0
-        ? repoRootResult.stdout.trim()
-        : process.cwd();
-
-    function commandExists(cmd) {
-        const check = spawnSync('sh', ['-lc', `command -v ${cmd} >/dev/null 2>&1`], { cwd: repoRoot });
-        return check.status === 0;
-    }
-
-    function runAo(args) {
-        const localBin = path.join(repoRoot, 'bin', 'ao');
-        if (fs.existsSync(localBin)) {
-            return spawnSync(localBin, args, { cwd: repoRoot, encoding: 'utf8' });
-        }
-
-        const localCliDir = path.join(repoRoot, 'cli');
-        const localGoMod = path.join(localCliDir, 'go.mod');
-        if (fs.existsSync(localGoMod) && commandExists('go')) {
-            return spawnSync('go', ['run', './cmd/ao', ...args], {
-                cwd: localCliDir,
-                encoding: 'utf8'
-            });
-        }
-
-        if (commandExists('ao')) {
-            return spawnSync('ao', args, { cwd: repoRoot, encoding: 'utf8' });
-        }
-
-        return { status: 127, stderr: 'ao CLI not found' };
-    }
-
-    let closeLoop = runAo(['flywheel', 'close-loop', '--quiet']);
-    if (closeLoop.status !== 0 && closeLoop.stderr && closeLoop.stderr.includes('unknown flag: --quiet')) {
-        closeLoop = runAo(['flywheel', 'close-loop']);
-    }
-
-    if (closeLoop.status === 0) {
-        console.log('Codex session-end close-loop complete.');
-        return;
-    }
-
-    // Mirror hook failure logging behavior.
-    try {
-        const aoDir = path.join(repoRoot, '.agents', 'ao');
-        fs.mkdirSync(aoDir, { recursive: true });
-        const logPath = path.join(aoDir, 'hook-errors.log');
-        const ts = new Date().toISOString().replace(/\.\d{3}Z$/, 'Z');
-        fs.appendFileSync(logPath, `${ts} CODEX_SESSION_END_FAIL: ao flywheel close-loop\n`, 'utf8');
-    } catch (error) {
-        // Best-effort logging; still print command failure details below.
-    }
-
-    console.log('ao flywheel close-loop failed during Codex session-end.');
-    if (closeLoop.stderr) {
-        console.log(closeLoop.stderr.trim());
-    }
-    process.exit(1);
+    // The knowledge-flywheel close-loop was retired with the ao flywheel
+    // command family; session-end is now an explicit no-op kept for
+    // compatibility with existing Codex session hooks.
+    console.log('Codex session-end: nothing to do (the flywheel close-loop was retired).');
 }
 
 // Main CLI
@@ -383,7 +324,7 @@ switch (command) {
         console.log('  agentops-codex bootstrap              # Run complete bootstrap with all skills');
         console.log('  agentops-codex use-skill <skill-name> # Load a specific skill');
         console.log('  agentops-codex find-skills            # List all available skills');
-        console.log('  agentops-codex session-end            # Codex equivalent of Stop hook close-loop');
+        console.log('  agentops-codex session-end            # Compatibility no-op (close-loop retired)');
         console.log('');
         console.log('Examples:');
         console.log('  agentops-codex bootstrap');

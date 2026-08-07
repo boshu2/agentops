@@ -24,6 +24,7 @@ output_contract: runtime evidence per supplied packet
 
 Use Gas City only when the caller explicitly selects it. Treat it as a
 replaceable execution adapter, not a correctness or completion boundary.
+The adapter cannot select AgentOps semantics, issue a binding verdict, or turn factory completion into delivery or validation proof.
 
 ## Choose the factory first
 

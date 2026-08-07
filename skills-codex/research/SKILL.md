@@ -21,8 +21,10 @@ happens next.
 
 Use the current agent inline by default. Parallel readers or alternate runtimes
 are optional execution choices only when the caller authorizes them. Prior
-research, CASS, MS, codebase recon, and pattern mining are advisory sources,
-not required phases.
+research, CASS, MS, codebase recon, and pattern mining are advisory context
+sources, not required phases. Hydrate only the sources the current decision
+needs and return cited evidence with source identity and freshness; never
+build or maintain a merged context store.
 
 ## Commit-level citation for code claims
 

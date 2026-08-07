@@ -56,7 +56,7 @@ func NewModule(useCases UseCases, host clicontract.HostOptions) Module {
 func (Module) Contract() clicontract.CommandContract {
 	return clicontract.CommandContract{
 		ID: "ao.doctor",
-		Profiles: clicontract.ProfileDefault | clicontract.ProfileFlywheel |
+		Profiles: clicontract.ProfileDefault |
 			clicontract.ProfileLegacy | clicontract.ProfileCombined,
 		Args:    clicontract.ArgsPolicy{Name: "no-args", Validate: cobra.NoArgs},
 		Output:  clicontract.OutputNone,
@@ -88,7 +88,7 @@ func (module Module) Command() *cobra.Command {
 
 The default check is intentionally small: CLI identity, source-skill links,
 binary freshness, optional provenance integrity, and host safety. It does not
-probe trackers, reviewers, plugin caches, search indexes, or operating-loop
+probe trackers, reviewers, plugin caches, search indexes, or RPI traversal
 state. Advanced failure-mode diagnostics run only when explicitly selected.
 
 Examples:

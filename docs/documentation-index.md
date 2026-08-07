@@ -9,7 +9,7 @@ Dated plans, audits, releases, and archive material are historical evidence, not
 - [Product boundary](https://github.com/boshu2/agentops/blob/main/PRODUCT.md)
 - [Fitness goals](https://github.com/boshu2/agentops/blob/main/GOALS.md)
 - [Program boundary](https://github.com/boshu2/agentops/blob/main/PROGRAM.md)
-- [Operating loop](architecture/operating-loop.md)
+- [RPI traversal](architecture/rpi-traversal.md)
 - [Gas City reliability boundary](operations/gas-city-reliability.md)
 - [Agent workflow](agent-workflow-reference.md)
 - [Repository CI and delivery](CI-CD.md)

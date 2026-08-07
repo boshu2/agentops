@@ -17,9 +17,10 @@
 # corpus compounds is unproven".
 #
 # CURATION RULE: these patterns ban CLAIMS OF PROVEN / AUTOMATIC compounding.
-# They do NOT ban the word "flywheel" (it names a subsystem) nor the CONDITIONAL
-# escape-velocity model ("σ×ρ > δ/100 → knowledge compounds"), which is honest
-# framing. Patterns are kept tight (each requires an "automatic" / "every
+# They do NOT ban the word "flywheel" (historical records and the third-party
+# Agentic Coding Flywheel adapter use it legitimately; the in-product
+# knowledge-flywheel surface itself was retired) nor the CONDITIONAL
+# escape-velocity model, which survives only as honest historical framing. Patterns are kept tight (each requires an "automatic" / "every
 # session" qualifier) so legitimate sentences — "whether the corpus compounds is
 # unproven", "knowledge compounds when retrieval beats decay" — never match.
 # No negative lookarounds are used (RE2 / POSIX ERE lack them); tightness is the

@@ -4,10 +4,16 @@ last_reviewed: 2026-07-14
 
 # AgentOps
 
-AgentOps helps fallible coding agents produce work that another fresh context
-can independently judge.
+AgentOps is the operations layer for agentic engineering: a portable semantic
+integration and judgment layer that connects intent, coding agents, software
+factories, context sources, and independent validation without taking
+ownership of their state or delivery lifecycle. It helps fallible coding
+agents produce work that another fresh context can independently judge.
 
-The product boundary is deliberately small:
+The topology is a federated integration graph — tracker, Git, agents,
+factories, checks, and validators stay separate nodes joined by typed
+handoffs — and the product boundary is deliberately small. The standard
+traversal through the graph is:
 
 ```text
 RPI -> Plan -> Implement -> fresh Validate -> report and stop

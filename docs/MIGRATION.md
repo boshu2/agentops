@@ -33,6 +33,7 @@ under `ao gate check`; semantic judgment is the Validate skill.
 | `ao session memory` | Use caller-authored `ao session handoff` evidence or maintain repository memory through the caller's own policy. |
 | `ao config models` | Model-tier configuration was removed; nothing consumed it. Model choice belongs to the caller's runtime. Existing `models:` config sections still parse and are ignored. |
 | `ao verify` | Use the Validate skill for semantic judgment and `ao gate check` for deterministic checks. Delete any `ao verify init` pre-push ratchet from `.git/hooks/pre-push` (restore `pre-push.agentops-orig` if one was set aside); `ao verify init --remove` no longer exists, and `git push --no-verify` bypasses a stale hook once. |
+| `ao flywheel` | The knowledge-flywheel product surface was retired; AgentOps no longer computes or reports knowledge-compounding state. Learning remains an optional off-path consumer of durable verdicts (the `learn` skill), and existing `flywheel:` config sections still parse and are ignored. |
 
 These names are no longer registered commands. Invoking one fails as an
 unknown command (exit 1) and prints the matching replacement pointer from the

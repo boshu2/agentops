@@ -27,7 +27,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 SKILLS_CODEX="$REPO_ROOT/skills-codex"
-RESULTS_DIR="$REPO_ROOT/.agents/smoke-test"
+RESULTS_DIR="$REPO_ROOT/.agents/scratch/smoke-test-codex-skills"
 
 # Shared fail-closed codex runner (STALL/ECHO/MISSING defenses + distinct exit
 # codes). age-gate-the-ungated-egwt.8.
