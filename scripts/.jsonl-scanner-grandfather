@@ -13,6 +13,3 @@
 #  have cleaned sites.)
 cli/internal/doctor/engine.go
 cli/internal/drrebuild/drrebuild.go
-cli/internal/quality/doctor.go
-cli/internal/quality/metrics_golden.go
-cli/internal/quality/metrics_run.go

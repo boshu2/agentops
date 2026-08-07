@@ -40,7 +40,8 @@
 # Env seams (for the bats twin): SCRIPTS_AO_INVOCATIONS_BASELINE overrides the
 # baseline path; AGENTOPS_AO_BIN short-circuits the ao build (documented fast path).
 
-set -euo pipefail
+# shellcheck disable=SC1007
+. "$(CDPATH= cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib/preamble.sh"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
