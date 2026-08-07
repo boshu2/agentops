@@ -51,7 +51,7 @@ changes are the caller's call.
   create work ownership or affect Plan, Candidate, or verdict semantics.
 - Mail silence proves nothing about work status.
 - A message or acknowledgement is evidence that communication occurred, not
-  evidence that a change is correct or complete.
+  evidence that a change is correct or complete. The adapter cannot select AgentOps semantics, issue a binding verdict, or turn factory completion into delivery or validation proof.
 - Release a reservation, including any `force_release`, only on the caller's
   explicit request for that exact reservation. Force-release has no autonomous
   trigger; a conflict is reported, not force-cleared.

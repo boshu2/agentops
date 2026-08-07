@@ -2,7 +2,13 @@
 
 Detailed workflow mechanics: [docs/agent-workflow-reference.md](docs/agent-workflow-reference.md).
 
-AgentOps turns one explicit intent into one independently judged experiment:
+AgentOps is the operations layer for agentic engineering: a portable semantic
+integration and judgment layer that connects intent, coding agents, software
+factories, context sources, and independent validation without taking
+ownership of their state or delivery lifecycle. The topology is a federated
+integration graph; the interoperability contract is the semantic
+work-and-proof protocol; the standard path through the graph is one RPI
+traversal:
 
 ```text
 RPI -> Plan -> Implement -> fresh Validate -> report and stop
@@ -50,6 +56,22 @@ what the caller does next.
 - Do not run `ao session bootstrap`, lookup, or archive commands as startup
   ritual. The `ao` CLI is an explicit repository tool, not a session runtime.
 
+## Federated source authority
+
+The integration graph is federated: AgentOps cites source identities and never
+absorbs their authority.
+
+| Information | Authority | AgentOps treatment |
+|---|---|---|
+| Work, status, dependencies, close reasons | Beads or the caller's tracker | Query directly; never build a second work index. |
+| Source content and delivery history | Git and repository policy | Bind exact content when useful; a commit or merge never implies semantic PASS. |
+| Past agent sessions | CASS | Retrieve cited episodes on demand; search output is evidence, not policy. |
+| Curated cross-session memory | CM or a caller-selected memory system | Retrieve by explicit need with provenance and freshness. |
+| Runtime execution | NTM, Gas City, Agent Mail, cloud agents, or another selected factory | Read and report native state; runtime completion is never validation. |
+| Checks and test output | The executable that produced them | Store factual receipts; a fresh context judges meaning. |
+| Requested proof | `.agents/ao/` | Persist only for a caller request or declared consumer. |
+| Disposable and derived local state | `.agents/scratch/`, `.agents/projections/` | Rebuild or expire; never treat as authority (ADR-0016). |
+
 ## Source precedence
 
 1. live executable behavior and generated projections from their declared source;
@@ -71,7 +93,7 @@ Edit source owners and regenerate projections through the owning command.
   `scripts/check-skill-python-ratchet.sh`; tests keep their documented
   exemption). Grandfathered Python is migration debt, not precedent.
 
-## Core loop
+## Standard RPI traversal
 
 1. **Plan once.** Resolve the existing bead or caller intent and shape one
    active behavior there. Acceptance, non-goals, scope, and the first useful
@@ -117,8 +139,10 @@ rollback, and release policy.
 
 Premortem, Postmortem, Council, and genie skills are caller-selected judgment
 strategies. NTM, Agent Mail, Gas City, swarms, and other factory tools are
-optional adapters. Optional strategies and adapters never become core
-dependencies or lifecycle authorities.
+optional adapters. Context miners (CASS, CM, recon tooling) are context
+sources. Strategies, adapters, factories, and context sources are peer nodes
+in the federated graph whose native state AgentOps reads but never owns; none
+becomes a core dependency or lifecycle authority.
 
 A selected factory's internal control plane is operated only through that
 factory's own doors: its coordinator (for Gas City, the Mayor via mail), its
@@ -141,7 +165,7 @@ AgentOps work ownership.
 
 | Trigger | Canonical owner |
 |---|---|
-| Core loop or evidence-contract change | `docs/architecture/operating-loop.md`, `schemas/*.schema.json` |
+| RPI traversal or evidence-contract change | `docs/architecture/rpi-traversal.md`, `schemas/*.schema.json` |
 | CLI command or flag | `cli/cmd/ao/`, then generated `cli/docs/COMMANDS.md` |
 | Skill behavior or inventory | `skills/<slug>/SKILL.md`, generated `docs/SKILL-ROUTER.md` |
 | Codex projection | `docs/contracts/codex-skill-api.md`, `skills-codex-overrides/catalog.json` |
