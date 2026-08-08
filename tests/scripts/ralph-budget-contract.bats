@@ -68,3 +68,42 @@ CKPT
   [[ "$output" != *"Budget:"* ]]
   [ ! -e "$TMP/does-not-exist" ]
 }
+
+@test "checkpoints under the canonical scratch dir resume" {
+  mkdir -p "$TMP/.agents/scratch/ralph"
+  cat > "$TMP/.agents/scratch/ralph/resume.checkpoint" <<CKPT
+# Ralph checkpoint — source this to resume
+GOAL=Scratch\ tier\ resume
+BRANCH=feat/scratch-resume
+BASE_BRANCH=main
+WORKDIR=$TMP
+SLUG=resume
+SKIP_PRE_MORTEM=false
+SPEC_FILE=''
+RALPH_LOG=.agents/scratch/ralph/resume.log
+LAST_PHASE=pr
+CKPT
+
+  cd "$TMP"
+  run env CODEX_BIN="$TMP/does-not-exist" "$RALPH" \
+    --resume .agents/scratch/ralph/resume.checkpoint --dry-run
+
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"Resuming after phase: pr"* ]]
+  [ ! -e "$TMP/does-not-exist" ]
+}
+
+@test "a checkpoint outside both ralph dirs is still refused" {
+  mkdir -p "$TMP/elsewhere"
+  cat > "$TMP/elsewhere/evil.checkpoint" <<'CKPT'
+# Ralph checkpoint — source this to resume
+GOAL=pwned
+CKPT
+
+  cd "$TMP"
+  run env CODEX_BIN="$TMP/does-not-exist" "$RALPH" \
+    --resume elsewhere/evil.checkpoint --dry-run
+
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"Refusing to source checkpoint outside"* ]]
+}

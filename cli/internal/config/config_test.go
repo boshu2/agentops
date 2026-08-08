@@ -2032,167 +2032,29 @@ func TestResolve_ModelsDefaultTier_EnvOverride(t *testing.T) {
 	}
 }
 
-func TestResolve_DreamDefaults(t *testing.T) {
-	t.Setenv("AGENTOPS_CONFIG", "")
-	for _, key := range []string{
-		"AGENTOPS_OUTPUT", "AGENTOPS_BASE_DIR", "AGENTOPS_VERBOSE",
-		"AGENTOPS_NO_SC",
-		"AGENTOPS_RPI_WORKTREE_MODE", "AGENTOPS_RPI_RUNTIME",
-		"AGENTOPS_RPI_RUNTIME_MODE", "AGENTOPS_RPI_RUNTIME_COMMAND",
-		"AGENTOPS_RPI_AO_COMMAND", "AGENTOPS_RPI_BD_COMMAND",
-		"AGENTOPS_RPI_TMUX_COMMAND",
-		"AGENTOPS_FLYWHEEL_AUTO_PROMOTE_THRESHOLD",
-		"AGENTOPS_MODEL_TIER", "AGENTOPS_COUNCIL_MODEL_TIER",
-		"AGENTOPS_DREAM_REPORT_DIR", "AGENTOPS_DREAM_RUN_TIMEOUT", "AGENTOPS_DREAM_KEEP_AWAKE",
-	} {
-		t.Setenv(key, "")
+func TestLoadFromPath_ToleratesRetiredDreamKey(t *testing.T) {
+	tmpDir := t.TempDir()
+	configPath := filepath.Join(tmpDir, "config.yaml")
+
+	// The dream config block was retired with the overnight subsystem.
+	// Existing user configs that still carry the key must load.
+	content := `
+verbose: true
+dream:
+  report_dir: .agents/overnight/latest
+  local_curator:
+    enabled: true
+`
+	if err := os.WriteFile(configPath, []byte(content), 0644); err != nil {
+		t.Fatal(err)
 	}
 
-	rc := Resolve("", "", false)
-	if rc.DreamReportDir.Value != ".agents/overnight/latest" || rc.DreamReportDir.Source != SourceDefault {
-		t.Fatalf("DreamReportDir = (%v, %v), want (.agents/overnight/latest, %v)", rc.DreamReportDir.Value, rc.DreamReportDir.Source, SourceDefault)
+	cfg, err := loadFromPath(configPath)
+	if err != nil {
+		t.Fatalf("loadFromPath() with retired dream key errored: %v", err)
 	}
-	if rc.DreamRunTimeout.Value != "8h" || rc.DreamRunTimeout.Source != SourceDefault {
-		t.Fatalf("DreamRunTimeout = (%v, %v), want (8h, %v)", rc.DreamRunTimeout.Value, rc.DreamRunTimeout.Source, SourceDefault)
-	}
-	if rc.DreamKeepAwake.Value != true || rc.DreamKeepAwake.Source != SourceDefault {
-		t.Fatalf("DreamKeepAwake = (%v, %v), want (true, %v)", rc.DreamKeepAwake.Value, rc.DreamKeepAwake.Source, SourceDefault)
-	}
-	if rc.DreamScheduler.Value != "manual" || rc.DreamScheduler.Source != SourceDefault {
-		t.Fatalf("DreamScheduler = (%v, %v), want (manual, %v)", rc.DreamScheduler.Value, rc.DreamScheduler.Source, SourceDefault)
-	}
-	if rc.DreamConsensus.Value != "majority" || rc.DreamConsensus.Source != SourceDefault {
-		t.Fatalf("DreamConsensus = (%v, %v), want (majority, %v)", rc.DreamConsensus.Value, rc.DreamConsensus.Source, SourceDefault)
-	}
-	if rc.DreamCreativeLane.Value != false || rc.DreamCreativeLane.Source != SourceDefault {
-		t.Fatalf("DreamCreativeLane = (%v, %v), want (false, %v)", rc.DreamCreativeLane.Value, rc.DreamCreativeLane.Source, SourceDefault)
-	}
-	if got, ok := rc.DreamRunners.Value.([]string); !ok || len(got) != 0 || rc.DreamRunners.Source != SourceDefault {
-		t.Fatalf("DreamRunners = (%#v, %v), want (empty, %v)", rc.DreamRunners.Value, rc.DreamRunners.Source, SourceDefault)
-	}
-}
-
-func TestApplyEnv_DreamOverrides(t *testing.T) {
-	cfg := Default()
-	t.Setenv("AGENTOPS_DREAM_REPORT_DIR", "/tmp/dream")
-	t.Setenv("AGENTOPS_DREAM_RUN_TIMEOUT", "10h")
-	t.Setenv("AGENTOPS_DREAM_KEEP_AWAKE", "false")
-	t.Setenv("AGENTOPS_DREAM_CURATOR_ENABLED", "true")
-	t.Setenv("AGENTOPS_DREAM_CURATOR_ENGINE", "ollama")
-	t.Setenv("AGENTOPS_DREAM_CURATOR_OLLAMA_URL", "http://127.0.0.1:11435")
-	t.Setenv("AGENTOPS_DREAM_CURATOR_MODEL", "gemma4:e4b")
-	t.Setenv("AGENTOPS_DREAM_CURATOR_WORKER_DIR", "D:\\dream")
-	t.Setenv("AGENTOPS_DREAM_CURATOR_VAULT_DIR", "D:\\vault")
-
-	got := applyEnv(cfg)
-	if got.Dream.ReportDir != "/tmp/dream" {
-		t.Fatalf("Dream.ReportDir = %q, want /tmp/dream", got.Dream.ReportDir)
-	}
-	if got.Dream.RunTimeout != "10h" {
-		t.Fatalf("Dream.RunTimeout = %q, want 10h", got.Dream.RunTimeout)
-	}
-	if got.Dream.KeepAwake == nil || *got.Dream.KeepAwake != false {
-		t.Fatalf("Dream.KeepAwake = %#v, want false", got.Dream.KeepAwake)
-	}
-	if got.Dream.LocalCurator.Enabled == nil || *got.Dream.LocalCurator.Enabled != true {
-		t.Fatalf("Dream.LocalCurator.Enabled = %#v, want true", got.Dream.LocalCurator.Enabled)
-	}
-	if got.Dream.LocalCurator.Engine != "ollama" {
-		t.Fatalf("Dream.LocalCurator.Engine = %q, want ollama", got.Dream.LocalCurator.Engine)
-	}
-	if got.Dream.LocalCurator.OllamaURL != "http://127.0.0.1:11435" {
-		t.Fatalf("Dream.LocalCurator.OllamaURL = %q, want http://127.0.0.1:11435", got.Dream.LocalCurator.OllamaURL)
-	}
-	if got.Dream.LocalCurator.Model != "gemma4:e4b" {
-		t.Fatalf("Dream.LocalCurator.Model = %q, want gemma4:e4b", got.Dream.LocalCurator.Model)
-	}
-	if got.Dream.LocalCurator.WorkerDir != "D:\\dream" {
-		t.Fatalf("Dream.LocalCurator.WorkerDir = %q, want D:\\dream", got.Dream.LocalCurator.WorkerDir)
-	}
-	if got.Dream.LocalCurator.VaultDir != "D:\\vault" {
-		t.Fatalf("Dream.LocalCurator.VaultDir = %q, want D:\\vault", got.Dream.LocalCurator.VaultDir)
-	}
-}
-
-func TestResolve_DreamLocalCuratorEnv(t *testing.T) {
-	t.Setenv("AGENTOPS_CONFIG", "")
-	t.Setenv("AGENTOPS_DREAM_CURATOR_ENABLED", "true")
-	t.Setenv("AGENTOPS_DREAM_CURATOR_ENGINE", "ollama")
-	t.Setenv("AGENTOPS_DREAM_CURATOR_OLLAMA_URL", "http://127.0.0.1:11435")
-	t.Setenv("AGENTOPS_DREAM_CURATOR_MODEL", "gemma4:e4b")
-	t.Setenv("AGENTOPS_DREAM_CURATOR_WORKER_DIR", "D:\\dream")
-	t.Setenv("AGENTOPS_DREAM_CURATOR_VAULT_DIR", "D:\\vault")
-
-	rc := Resolve("", "", false)
-	if rc.DreamCuratorEnabled.Value != true || rc.DreamCuratorEnabled.Source != SourceEnv {
-		t.Fatalf("DreamCuratorEnabled = (%v, %v), want (true, %v)", rc.DreamCuratorEnabled.Value, rc.DreamCuratorEnabled.Source, SourceEnv)
-	}
-	if rc.DreamCuratorEngine.Value != "ollama" || rc.DreamCuratorEngine.Source != SourceEnv {
-		t.Fatalf("DreamCuratorEngine = (%v, %v), want (ollama, %v)", rc.DreamCuratorEngine.Value, rc.DreamCuratorEngine.Source, SourceEnv)
-	}
-	if rc.DreamCuratorOllamaURL.Value != "http://127.0.0.1:11435" || rc.DreamCuratorOllamaURL.Source != SourceEnv {
-		t.Fatalf("DreamCuratorOllamaURL = (%v, %v), want env URL", rc.DreamCuratorOllamaURL.Value, rc.DreamCuratorOllamaURL.Source)
-	}
-	if rc.DreamCuratorModel.Value != "gemma4:e4b" || rc.DreamCuratorModel.Source != SourceEnv {
-		t.Fatalf("DreamCuratorModel = (%v, %v), want env model", rc.DreamCuratorModel.Value, rc.DreamCuratorModel.Source)
-	}
-	if rc.DreamCuratorWorkerDir.Value != "D:\\dream" || rc.DreamCuratorWorkerDir.Source != SourceEnv {
-		t.Fatalf("DreamCuratorWorkerDir = (%v, %v), want env worker", rc.DreamCuratorWorkerDir.Value, rc.DreamCuratorWorkerDir.Source)
-	}
-	if rc.DreamCuratorVaultDir.Value != "D:\\vault" || rc.DreamCuratorVaultDir.Source != SourceEnv {
-		t.Fatalf("DreamCuratorVaultDir = (%v, %v), want env vault", rc.DreamCuratorVaultDir.Value, rc.DreamCuratorVaultDir.Source)
-	}
-}
-
-func TestMergeDream_ExtendedFields(t *testing.T) {
-	dst := Default()
-	src := &Config{
-		Dream: DreamConfig{
-			Runners:         []string{"codex", "claude"},
-			SchedulerMode:   "launchd",
-			ScheduleAt:      "01:30",
-			ConsensusPolicy: "majority",
-			CreativeLane:    boolPtr(true),
-			LocalCurator: DreamLocalCuratorConfig{
-				Enabled:         boolPtr(true),
-				Engine:          "ollama",
-				OllamaURL:       "http://127.0.0.1:11435",
-				Model:           "gemma4:e4b",
-				WorkerDir:       "D:\\dream",
-				VaultDir:        "D:\\vault",
-				HourlyCap:       20,
-				AllowedJobKinds: []string{"ingest-claude-session", "lint-wiki", "dream-seed"},
-			},
-		},
-	}
-
-	got := merge(dst, src)
-	if want := []string{"codex", "claude"}; len(got.Dream.Runners) != len(want) {
-		t.Fatalf("Dream.Runners = %#v, want %#v", got.Dream.Runners, want)
-	}
-	if got.Dream.SchedulerMode != "launchd" {
-		t.Fatalf("Dream.SchedulerMode = %q, want launchd", got.Dream.SchedulerMode)
-	}
-	if got.Dream.ScheduleAt != "01:30" {
-		t.Fatalf("Dream.ScheduleAt = %q, want 01:30", got.Dream.ScheduleAt)
-	}
-	if got.Dream.ConsensusPolicy != "majority" {
-		t.Fatalf("Dream.ConsensusPolicy = %q, want majority", got.Dream.ConsensusPolicy)
-	}
-	if got.Dream.CreativeLane == nil || !*got.Dream.CreativeLane {
-		t.Fatalf("Dream.CreativeLane = %#v, want true", got.Dream.CreativeLane)
-	}
-	if got.Dream.LocalCurator.Enabled == nil || !*got.Dream.LocalCurator.Enabled {
-		t.Fatalf("Dream.LocalCurator.Enabled = %#v, want true", got.Dream.LocalCurator.Enabled)
-	}
-	if got.Dream.LocalCurator.Model != "gemma4:e4b" {
-		t.Fatalf("Dream.LocalCurator.Model = %q, want gemma4:e4b", got.Dream.LocalCurator.Model)
-	}
-	if got.Dream.LocalCurator.HourlyCap != 20 {
-		t.Fatalf("Dream.LocalCurator.HourlyCap = %d, want 20", got.Dream.LocalCurator.HourlyCap)
-	}
-	if got := strings.Join(got.Dream.LocalCurator.AllowedJobKinds, ","); got != "ingest-claude-session,lint-wiki,dream-seed" {
-		t.Fatalf("Dream.LocalCurator.AllowedJobKinds = %q", got)
+	if !cfg.Verbose {
+		t.Fatal("loadFromPath Verbose = false, want true (sibling keys must still parse)")
 	}
 }
 

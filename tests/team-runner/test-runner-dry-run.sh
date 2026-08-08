@@ -11,9 +11,9 @@ TMPDIR=$(mktemp -d)
 
 cleanup() {
     rm -rf "$TMPDIR" \
-        "$REPO_ROOT/.agents/teams/test-run-001" \
-        "$REPO_ROOT/.agents/teams/test-run-claude-001" \
-        "$REPO_ROOT/.agents/teams/test-run-claude-crash"
+        "$REPO_ROOT/.agents/scratch/teams/test-run-001" \
+        "$REPO_ROOT/.agents/scratch/teams/test-run-claude-001" \
+        "$REPO_ROOT/.agents/scratch/teams/test-run-claude-crash"
 }
 trap cleanup EXIT
 
@@ -54,8 +54,8 @@ assert_not_contains() {
 }
 
 echo "=== Test: team-runner.sh dry-run ==="
-rm -rf "$REPO_ROOT/.agents/teams/test-run-001" \
-    "$REPO_ROOT/.agents/teams/test-run-claude-001"
+rm -rf "$REPO_ROOT/.agents/scratch/teams/test-run-001" \
+    "$REPO_ROOT/.agents/scratch/teams/test-run-claude-001"
 
 # Test 1: Syntax check
 echo "Test 1: Syntax check"
@@ -75,7 +75,7 @@ assert_contains "shows codex runtime" "Runtime: codex" "$OUTPUT"
 
 # Test 3: Dry run produces report
 echo "Test 3: Report generation"
-assert_eq "report exists" "true" "$(test -f "$REPO_ROOT/.agents/teams/test-run-001/team-report.md" && echo true || echo false)"
+assert_eq "report exists" "true" "$(test -f "$REPO_ROOT/.agents/scratch/teams/test-run-001/team-report.md" && echo true || echo false)"
 
 # Test 4: Sandbox level mapping
 echo "Test 4: Sandbox level mapping"

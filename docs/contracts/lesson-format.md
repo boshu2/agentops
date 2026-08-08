@@ -1,6 +1,6 @@
 # Optional Lesson Format
 
-Learn may analyze collections of durable verdicts after the operating loop has
+Learn may analyze collections of durable verdicts after an RPI traversal has
 finished. When a caller chooses to preserve a recurring pattern as a lesson, use
 one Markdown file under a caller-selected directory such as
 `.agents/learnings/`. Lessons are advisory evidence; they never change RPI

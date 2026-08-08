@@ -9,6 +9,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 
+- The consumer-free `dream:` config block (the retired overnight subsystem's
+  settings; existing config files still parse and the key is ignored), the
+  vacuous retrieval-quality canary and its smoke (every Go test it named was
+  already deleted; the retrieval-comparison contract is now explicitly
+  dormant and the blocking manifest-paths gate remains the live retrieval
+  guard), and the dormant `check-pillar-coverage.sh` GOALS.yaml script.
+  Remaining scratch-tier writers (`mine-all-sessions.sh`, `team-runner.sh`,
+  `bin/ralph`) now write under `.agents/scratch/`.
+
 - The `ao flywheel` command family (`status`, `compare`) and the whole live
   knowledge-flywheel product surface: `cli/internal/flywheelapp`, the
   flywheel-only metric helpers and types, the `flywheel` build-profile bit,

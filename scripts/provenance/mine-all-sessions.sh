@@ -27,7 +27,7 @@ set -uo pipefail
 
 AO="${AGENTOPS_AO_BIN:-ao}"
 SESSIONS_DIR="${1:-$HOME/.claude/projects/-Users-bo-dev-agentops}"
-STORE_DIR=".agents/provenance"
+STORE_DIR=".agents/scratch/provenance-mine"
 STORE="$STORE_DIR/mine-events.jsonl"
 STATE_DIR="$STORE_DIR/state"
 SUMMARY="$STORE_DIR/mine-summary.json"

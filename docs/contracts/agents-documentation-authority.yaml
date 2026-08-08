@@ -85,7 +85,13 @@ documents:
 
   # MEMORY.md is a temporary machine-consumed projection, not an AgentOps
   # authority: its claims belong to their cited sources (docs, ADRs, session
-  # records). Retire it only after its current consumers are audited.
+  # records). Consumer audit (2026-08-07): two live consumers exist — the
+  # corpus-delta eval harness (scripts/corpus-delta-harness.sh reads it as a
+  # context surface in both A/B arms) and the coding-agent convention of
+  # loading a root memory file. The former ao session memory writer is
+  # removed, so the file is read-only surface. Retained; retire when the
+  # harness stops reading it and the convention is served by a caller-owned
+  # memory system.
   - path: MEMORY.md
     tracked: true
     class: machine-consumed-memory-projection

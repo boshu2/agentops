@@ -512,8 +512,8 @@ func TestTrackChild_ConcurrentAccess(t *testing.T) {
 func TestMeasureOne_Skip_ExitCode77(t *testing.T) {
 	// When a gate exits 77 (autotools skip convention), the goals runner
 	// must classify the measurement as `skip`, not `fail`. This is the
-	// quarantine-by-precondition path used by check-flywheel-compounding.sh
-	// when the corpus is dormant — failing under "no signal" is a
+	// quarantine-by-precondition path skip-aware gate scripts use when a
+	// precondition is absent — failing under "no signal" is a
 	// misclassification that artificially drags fitness scores.
 	g := Goal{ID: "skip77", Check: "exit 77", Weight: 3}
 	m := MeasureOne(g, time.Second)

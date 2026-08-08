@@ -45,7 +45,7 @@ Dated plans, audits, releases, and archive material are historical evidence, not
 - [Producer-Defect Recurrence Contract](contracts/producer-defect-register.md)
 - [Generated skill projections](contracts/registry-as-derived.md)
 - [Release Notes Contract](contracts/release-notes.md)
-- [Retrieval Comparison Contract](contracts/retrieval-comparison.md)
+- [Retrieval Comparison Contract (dormant)](contracts/retrieval-comparison.md)
 - [Runtime Neutrality Contract](contracts/runtime-neutrality.md)
 - [Scenario → Test Linkage Contract](contracts/scenario-test-linkage.md)
 - [Scope Escape Report Template](contracts/scope-escape-report.md)

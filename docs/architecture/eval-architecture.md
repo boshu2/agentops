@@ -1,6 +1,12 @@
 # AgentOps Eval Architecture — v1
 
 > **Status:** PROPOSED (Bo to ratify) · **Date:** 2026-08-04
+> **Terminology note (2026-08-07):** this dated proposal predates the
+> operations-layer alignment and keeps its original wording ("the operating
+> loop", "~150 skills"). The current product category and vocabulary live in
+> [`../contracts/ubiquitous-language.md`](../contracts/ubiquitous-language.md);
+> the catalog is 51 canonical skills. Read the decisions here against that
+> current frame.
 > **Inputs:** [skill-eval SOTA research](../research/skill-eval-sota-standards-2026-08.md) ·
 > [effectiveness evidence audit](../evals/agentops-effectiveness-evidence.md) · the in-tree eval
 > substrate (`cli/internal/eval/`, `cli/internal/evalsubstrate/`, `evals/`)

@@ -1,30 +1,15 @@
-# Retrieval Comparison Contract
+# Retrieval Comparison Contract (dormant)
 
-The former retrieval-bench CLI was retired from the production command spine.
-The deterministic decision gate for changing retrieval behavior is the
-repository-owned smoke below. It exercises the retained Go implementation
-directly, including named backend comparison over the same manifest, search
-root, and `k`.
-
-## Command Surface
-
-The canonical comparison smoke is:
-
-```bash
-bash evals/agentops-core/fixtures/retrieval-quality-smoke.sh
-```
-
-The smoke runs focused Go tests covering:
-
-- train/holdout Precision@K and MRR
-- representative live-corpus coverage and stable top results
-- multi-backend comparison report shape
-- offline `agentic-rg`, `wiki-link-expand`, and `rerank-llamacpp` fallback behavior
-- retrieval quality thresholds
-
-The smoke must run offline. The `rerank-llamacpp` case leaves
-`AGENTOPS_RETRIEVAL_RERANK_ENDPOINT` unset, proving the file-backed fallback
-rather than contacting a live model.
+> **Status (2026-08-07): dormant.** The retrieval-bench surface is fully
+> retired: the `ao eval bench` seat is deliberately unwired, the Go tests the
+> former comparison smoke named were deleted with their implementation, and
+> the smoke itself was removed once it could no longer execute anything
+> (a canary that runs zero tests is theater, not proof). The one live
+> retrieval guard is the blocking `always.retrieval-manifest-paths` gate,
+> which keeps the checked-in eval manifest's ground-truth paths resolvable.
+> The sections below are retained as the binding policy for any future
+> retrieval-backend revival; they govern nothing until such an
+> implementation exists and brings its own executable comparison smoke.
 
 ## Report Shape
 
