@@ -122,7 +122,7 @@ parse_spec() {
         AGENT_COUNT=$MAX_AGENTS
     fi
 
-    TEAM_DIR=".agents/teams/${TEAM_ID}"
+    TEAM_DIR=".agents/scratch/teams/${TEAM_ID}"
     mkdir -p "$TEAM_DIR"
 }
 

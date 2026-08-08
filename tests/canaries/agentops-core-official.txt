@@ -12,5 +12,4 @@ evals/agentops-core/distribution-install-update.json
 evals/agentops-core/eval-runner-engine-control-plane.json
 evals/agentops-core/rpi-behavior.json
 evals/agentops-core/release-security-gates.json
-evals/agentops-core/retrieval-quality-gates.json
 evals/agentops-core/runtime-smoke-matrix.json

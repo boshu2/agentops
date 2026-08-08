@@ -48,9 +48,9 @@ JSONL
   run env AGENTOPS_AO_BIN="$AO_BIN" bash "$SCRIPT" "$SESS"
   [ "$status" -eq 0 ]
   [[ "$output" == *"mine-all"* ]]
-  # The store exists, is gitignored-by-convention (.agents/provenance/), and holds
+  # The store exists, is gitignored-by-convention (.agents/scratch/provenance-mine/), and holds
   # the mined per-inference events.
-  store="$WORK/.agents/provenance/mine-events.jsonl"
+  store="$WORK/.agents/scratch/provenance-mine/mine-events.jsonl"
   [ -f "$store" ]
   # Two tool_use blocks -> two tool_call events; the tool_result is filtered out.
   n="$(grep -c '"kind":"tool_call"' "$store")"
@@ -62,7 +62,7 @@ JSONL
 @test "mine-all: re-run is incremental (idempotent) — already-mined events are not re-appended" {
   cd "$WORK"
   env AGENTOPS_AO_BIN="$AO_BIN" bash "$SCRIPT" "$SESS" >/dev/null
-  store="$WORK/.agents/provenance/mine-events.jsonl"
+  store="$WORK/.agents/scratch/provenance-mine/mine-events.jsonl"
   before="$(grep -c '"schema_version"' "$store")"
   # Second run over the SAME unchanged session: --state has advanced, so 0 new.
   run env AGENTOPS_AO_BIN="$AO_BIN" bash "$SCRIPT" "$SESS"
@@ -75,7 +75,7 @@ JSONL
 @test "mine-all: writes a valid summary artifact with reconciled counts" {
   cd "$WORK"
   env AGENTOPS_AO_BIN="$AO_BIN" bash "$SCRIPT" "$SESS" >/dev/null
-  summary="$WORK/.agents/provenance/mine-summary.json"
+  summary="$WORK/.agents/scratch/provenance-mine/mine-summary.json"
   [ -f "$summary" ]
   run jq -e '.sessions_mined==1 and .new_events==2 and .store_total==2 and .failed==0' "$summary"
   [ "$status" -eq 0 ]
@@ -83,8 +83,8 @@ JSONL
 
 @test "mine-all: a held lock makes a concurrent miner exit 2 (single writer)" {
   cd "$WORK"
-  mkdir -p .agents/provenance
-  mkdir .agents/provenance/.mine.lock # simulate another miner holding the lock
+  mkdir -p .agents/scratch/provenance-mine
+  mkdir .agents/scratch/provenance-mine/.mine.lock # simulate another miner holding the lock
   run env AGENTOPS_AO_BIN="$AO_BIN" bash "$SCRIPT" "$SESS"
   [ "$status" -eq 2 ]
   [[ "$output" == *"another miner holds the lock"* ]]
@@ -116,7 +116,7 @@ STUB
   [ "$status" -eq 1 ]                                   # exit reflects the failure (defect 1)
   [[ "$output" == *"(1 failed)"* ]]
   # The advanced state was rolled back (removed) — not left to skip never-stored events.
-  [ ! -f "$WORK/.agents/provenance/state/sess-a.json" ]
+  [ ! -f "$WORK/.agents/scratch/provenance-mine/state/sess-a.json" ]
   # Nothing was appended to the store.
-  [ ! -s "$WORK/.agents/provenance/mine-events.jsonl" ] || ! grep -q . "$WORK/.agents/provenance/mine-events.jsonl"
+  [ ! -s "$WORK/.agents/scratch/provenance-mine/mine-events.jsonl" ] || ! grep -q . "$WORK/.agents/scratch/provenance-mine/mine-events.jsonl"
 }

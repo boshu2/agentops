@@ -8,7 +8,7 @@
 #   ralph --branch feat/dark-mode "Add dark mode"
 #   ralph --spec spec.md "Add dark mode"
 #   ralph --dry-run "Add dark mode"
-#   ralph --resume .agents/ralph/<slug>.checkpoint
+#   ralph --resume .agents/scratch/ralph/<slug>.checkpoint
 #   ralph --phase-timeout 900 "Big feature"
 
 set -euo pipefail
@@ -62,10 +62,14 @@ if [[ -n "$RESUME_FILE" ]]; then
     echo "Checkpoint file not found: $RESUME_FILE" >&2
     exit 1
   fi
-  # Validate checkpoint is under .agents/ralph/ and has expected header
+  # Validate the checkpoint lives in a ralph checkpoint dir and has the
+  # expected header. New checkpoints are written under .agents/scratch/ralph/;
+  # the legacy .agents/ralph/ path stays resumable so checkpoints written
+  # before the scratch-tier move still work (no migration required).
   case "$RESUME_FILE" in
+    .agents/scratch/ralph/*.checkpoint|*/.agents/scratch/ralph/*.checkpoint) ;;
     .agents/ralph/*.checkpoint|*/.agents/ralph/*.checkpoint) ;;
-    *) echo "Refusing to source checkpoint outside .agents/ralph/: $RESUME_FILE" >&2; exit 1 ;;
+    *) echo "Refusing to source checkpoint outside .agents/scratch/ralph/ (or the legacy .agents/ralph/): $RESUME_FILE" >&2; exit 1 ;;
   esac
   if ! head -1 "$RESUME_FILE" | grep -q '^# Ralph checkpoint'; then
     echo "Invalid checkpoint file (missing header): $RESUME_FILE" >&2
@@ -97,7 +101,7 @@ BRANCH="${BRANCH:-feat/ralph-$(date +%s)}"
 BASE_BRANCH="${BASE_BRANCH:-$(git branch --show-current)}"
 WORKDIR="${WORKDIR:-$(pwd)}"
 SLUG="${SLUG:-$(echo "$GOAL" | tr ' ' '-' | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9-]//g' | head -c 40)}"
-RALPH_DIR=".agents/ralph"
+RALPH_DIR=".agents/scratch/ralph"
 RALPH_LOG="${RALPH_LOG:-$RALPH_DIR/$(date +%Y-%m-%d)-$SLUG.log}"
 CHECKPOINT_FILE="$RALPH_DIR/$SLUG.checkpoint"
 

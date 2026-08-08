@@ -83,7 +83,6 @@ scripts/check-orchestration-contracts.sh
 scripts/check-outcomes-holdout-leak.sh
 scripts/check-paths-resolver-coverage.sh
 scripts/check-pawl-pre-push.sh
-scripts/check-pillar-coverage.sh
 scripts/check-product-freshness.sh
 scripts/check-proof-coherence.sh
 scripts/check-provenance-chain.sh
