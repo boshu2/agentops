@@ -369,14 +369,14 @@
     {
       "name": "automation-shape-routing",
       "source_skill": "skills/automation-shape-routing",
-      "source_hash": "6a1d4df0589901acdd6a66541c1027697e31c0273f931f863b8c7c82e520f933",
-      "generated_hash": "022a51640c617822e180d87f2e1da75b151df74473301a820969fc2181d548e0"
+      "source_hash": "0c070794c5a9a91024d14a6bc5a18e6305b488401dfcb79bb83c41e789ba7bc3",
+      "generated_hash": "3557b4efca4fd0e7587d873a435085a0ceda8a425b72cd5bf1d1a0310077739f"
     },
     {
       "name": "bootstrap",
       "source_skill": "skills/bootstrap",
-      "source_hash": "1d0ea0b4fece12f39ce899f8ae25baf15f33978d3bcf890fa928976813e622fc",
-      "generated_hash": "212064b80e8107f3177c9ddd6cc381d96b1d35887330a96ee7b887ac70d4be6d"
+      "source_hash": "41ccae0b12098a33057fa9d7082763787ecb7f317e814dc1e34708740c8d7b05",
+      "generated_hash": "581c79d73b2f552230f58270e4c27284d56b1aea7836e929a451afa6a87aedb4"
     },
     {
       "name": "cass",
@@ -465,8 +465,8 @@
     {
       "name": "implement",
       "source_skill": "skills/implement",
-      "source_hash": "7cdcc4d0fde86bc5ece8b0ec5fe6968dd916100e09b2bbc6bd08ff8afe995298",
-      "generated_hash": "0e86f1f4e5fd10a771727264e5842261361ec20ee99e00b62ea91695023b9a02"
+      "source_hash": "5aa7e7b5b988a8f192d64ef7347ea7ca715f4979f325ed0507556ac0ff5ee82d",
+      "generated_hash": "e9f04c9e201be44a7e6d787145725bfff02595684a2e36baab8029f5b778c9cc"
     },
     {
       "name": "learn",
@@ -501,8 +501,8 @@
     {
       "name": "plan",
       "source_skill": "skills/plan",
-      "source_hash": "7d6e5e80eb29e59b680912229c2d9e72efbb51f06a9824995959bfb441da6eae",
-      "generated_hash": "f5bca26d0cdeef7d12fd138d23813c470f1e1f7743b6e1103b3464b5f55b76d0"
+      "source_hash": "750583fc4ef821c11144ec15fb85988d47b84b691a072911fe7366adb9c26584",
+      "generated_hash": "bba18e1c382b2937bf185185a4f0fc1c6b68469da836cacfe87647f3cfae3de5"
     },
     {
       "name": "postmortem",
@@ -555,8 +555,8 @@
     {
       "name": "rpi",
       "source_skill": "skills/rpi",
-      "source_hash": "ccc1c4a5034bc549cd63f424ea3497fb6d0ea3a3d52327e31dd54aee7dbfbe01",
-      "generated_hash": "85a987391c2eb901990d54a2164c5e89d899eaa6ae689eea7cbb01423ff304bb"
+      "source_hash": "15dab600e62da4d414e9deac42a9131380da3d6241a6cc879d56efe78e0ef22c",
+      "generated_hash": "f93f020b5251a1972f932d353cb4acd855fb7149916aa65915bfd22eb72897a5"
     },
     {
       "name": "sbh",
@@ -609,8 +609,8 @@
     {
       "name": "swarm",
       "source_skill": "skills/swarm",
-      "source_hash": "0ab257679d52e3ec38985d7d81a5b05749363d4f3170a169ac7b74b911fa3f7f",
-      "generated_hash": "31dadb68c36be6a43c61374aa37f32f29f67adc7a85170076c6f1e797a9362c1"
+      "source_hash": "258d63e5499e210003605b6947841913131094a0015d21ab27c8281973364be2",
+      "generated_hash": "edca9587669802663b04b091be159fcc10b763072715333a71f44f797e6a65b2"
     },
     {
       "name": "test",
@@ -633,8 +633,8 @@
     {
       "name": "using-gc",
       "source_skill": "skills/using-gc",
-      "source_hash": "ae9a7e669ad218f471bf3435dbc9614924ea27edd742d3cb9c528a5fd4f137a1",
-      "generated_hash": "822fc4619b9e7a0e9acce03176189cf99fec36437cf6ae1f423a5381b9d2172c"
+      "source_hash": "bf15cd25cc11a2778b434ecefe9fa4c1d46f08d6162a367a2ec348e231e9fd8f",
+      "generated_hash": "dbb1fd1ac8e278a6603478d4dfd0b7b1e7b7271089be6ddcbea70e3da93f8fbb"
     },
     {
       "name": "validate",
