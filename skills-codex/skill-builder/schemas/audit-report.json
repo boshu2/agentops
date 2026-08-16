@@ -181,7 +181,7 @@
               "type": "integer",
               "minimum": 0,
               "maximum": 30,
-              "description": "Sum of the 10 category scores (0-30)."
+              "description": "Sum of the 10 static package-readiness category scores (0-30)."
             },
             "max_score": {
               "type": "integer",
@@ -201,7 +201,7 @@
               "type": "array",
               "minItems": 10,
               "maxItems": 10,
-              "description": "The 10 rubric categories, each scored 0-3 with an explainable reason. Category ids come verbatim from the rubric doc.",
+              "description": "The 10 static package-readiness categories, each scored 0-3 with an explainable reason. Absent optional components receive uncertainty score 1, never automatic full credit.",
               "items": {
                 "type": "object",
                 "required": ["category", "score", "reason"],
@@ -225,7 +225,7 @@
                     "type": "integer",
                     "minimum": 0,
                     "maximum": 3,
-                    "description": "0 missing/unsafe, 1 present-but-weak, 2 solid, 3 product-grade and mechanically validated."
+                    "description": "0 missing and required; 1 weak or no visible evidence with necessity not inferred; 2 solid visible evidence; 3 mechanically strong or unusually complete."
                   },
                   "reason": {
                     "type": "string",

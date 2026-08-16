@@ -119,10 +119,8 @@ def score_progressive_disclosure(metrics: dict) -> tuple[int, str]:
 def score_helper_scripts(path: Path, metrics: dict) -> tuple[int, str]:
     script_files = metrics["script_files"]
     if not script_files:
-        return 2, "No repeated deterministic mechanic requires a helper script."
+        return 1, "No helper scripts are visible; necessity is not inferred."
     score = 1
-    if script_files:
-        score = 1
     if has_named_script(path, ("validate", "check", "audit", "score", "doctor")):
         score = 2
     if script_files >= 2 and score == 2:
@@ -132,8 +130,6 @@ def score_helper_scripts(path: Path, metrics: dict) -> tuple[int, str]:
 
 def score_validation(path: Path, body: str, metrics: dict) -> tuple[int, str]:
     validation_terms = ("validate", "test", "check", "lint", "verify", "heal.sh")
-    if metrics["script_files"] == 0 and metrics["skill_md_lines"] <= 100:
-        return 2, "Concise non-executable skill states its evidence inline."
     score = int(any(term in body.lower() for term in validation_terms))
     score += int(has_named_script(path, ("validate", "check", "test", "audit")))
     score += int(metrics["self_test_exists"])
@@ -142,13 +138,9 @@ def score_validation(path: Path, body: str, metrics: dict) -> tuple[int, str]:
 
 def score_self_test(path: Path, metrics: dict) -> tuple[int, str]:
     if not metrics["self_test_exists"]:
-        if metrics["script_files"] == 0 and metrics["skill_md_lines"] <= 100:
-            return 2, "Concise non-executable skill; a separate self-test is optional."
-        if any(path.rglob("*.feature")) or has_named_script(
-            path, ("validate", "check", "test", "audit")
-        ):
-            return 2, "Executable behavior has a feature or validation helper."
-        return 1, "Executable or broad skill has no focused self-test artifact."
+        if any(path.rglob("*.feature")):
+            return 2, "A focused feature artifact is present."
+        return 1, "No focused self-test or feature artifact is visible."
     self_test = (path / "SELF-TEST.md").read_text(encoding="utf-8").lower()
     score = min(
         3,
@@ -161,19 +153,19 @@ def score_self_test(path: Path, metrics: dict) -> tuple[int, str]:
 
 def score_assets(path: Path, metrics: dict) -> tuple[int, str]:
     asset_files = metrics["asset_files"]
+    if not asset_files:
+        return 1, "No asset files are visible; necessity is not inferred."
     score = 2
-    if asset_files:
-        score = 2
-        if any("template" in p.name.lower() for p in (path / "assets").rglob("*") if p.is_file()):
-            score = 3
+    if any("template" in p.name.lower() for p in (path / "assets").rglob("*") if p.is_file()):
+        score = 3
     return score, f"{asset_files} asset files."
 
 
 def score_subagents(metrics: dict) -> tuple[int, str]:
     subagent_files = metrics["subagent_files"]
-    score = 2
-    if subagent_files:
-        score = 2 if subagent_files < 3 else 3
+    if not subagent_files:
+        return 1, "No subagent files are visible; necessity is not inferred."
+    score = 2 if subagent_files < 3 else 3
     return score, f"{subagent_files} subagent files."
 
 
@@ -205,6 +197,17 @@ def add_score(
     scores[category], notes[category] = result
 
 
+def readiness_rating(total: int) -> str:
+    """Map a 0-30 static package-readiness score to its advisory band."""
+    if total >= 27:
+        return "S"
+    if total >= 21:
+        return "A"
+    if total >= 11:
+        return "B"
+    return "C"
+
+
 def score_skill(path: Path) -> dict:
     skill_md = path / "SKILL.md"
     if not skill_md.exists():
@@ -230,14 +233,7 @@ def score_skill(path: Path) -> dict:
     add_score(scores, notes, "packaging", score_packaging(metrics))
 
     total = sum(scores.values())
-    if total >= 27:
-        rating = "S"
-    elif total >= 21:
-        rating = "A"
-    elif total >= 11:
-        rating = "B"
-    else:
-        rating = "C"
+    rating = readiness_rating(total)
 
     gaps = [
         {"category": category, "score": scores[category], "note": notes[category]}
