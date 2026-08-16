@@ -106,6 +106,26 @@ FAKE
   [[ "$output" == *"the answer is 42"* ]]
 }
 
+@test "(a2) caller can capture structured stdout without merging stderr" {
+  cat > "$TMP/bin/codex" <<'FAKE'
+#!/usr/bin/env bash
+printf '{"type":"turn.completed"}\n'
+printf 'runtime warning\n' >&2
+FAKE
+  chmod +x "$TMP/bin/codex"
+  run bash -c '
+    . "'"$LIB"'"
+    CODEX_EXEC_OUT_FILE="'"$TMP"'/stdout.jsonl" \
+    CODEX_EXEC_STDERR_FILE="'"$TMP"'/stderr.log" \
+    REVIEWER_MARKER="turn.completed" CODEX_EXEC_PROMPT_ARG="probe" \
+    CODEX_EXEC_TIMEOUT=10 codex_exec_guarded
+  '
+  [ "$status" -eq 0 ]
+  [ "$output" = "" ]
+  [ "$(cat "$TMP/stdout.jsonl")" = '{"type":"turn.completed"}' ]
+  [ "$(cat "$TMP/stderr.log")" = "runtime warning" ]
+}
+
 # --- (b) HANG -> STALL-TIMEOUT (exit 124) within budget -----------------------
 @test "(b) a hung codex is killed and returns STALL-TIMEOUT (124) within budget" {
   [ "$HAVE_TIMEOUT" -eq 1 ] || skip "no timeout/gtimeout on PATH"

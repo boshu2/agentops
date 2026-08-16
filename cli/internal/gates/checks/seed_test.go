@@ -151,10 +151,24 @@ func TestSkillProbeCoverageGateIsWarnFirstAdvisory(t *testing.T) {
 	if !check.Tiers.Has(gates.Fast) || !check.Tiers.Has(gates.Full) {
 		t.Fatalf("skill.probe-coverage tiers = %v, want Fast|Full", check.Tiers)
 	}
-	// Routed on skill changes + the MEASURED ledger + the probe scenarios so a new
+	if !strings.Contains(check.RepairHint, "v3 scorecard") || strings.Contains(check.RepairHint, "v2 scorecard") {
+		t.Fatalf("skill.probe-coverage repair hint = %q, want current v3 scorecard guidance", check.RepairHint)
+	}
+	// Routed on skill changes + the measurement-status ledger + the probe scenarios so a new
 	// product skill or a ledger edit re-runs it (not always-run — the probe corpus
 	// is the scope).
-	for _, want := range []string{"skills/**", "skills/SKILL-TIERS.md", "evals/skill-probes/**", "scripts/check-skill-probe-coverage.sh"} {
+	for _, want := range []string{
+		"skills/**",
+		"skills/SKILL-TIERS.md",
+		"evals/skill-probes/**",
+		"scripts/probe-skill.sh",
+		"scripts/lib/probe-fixture-metadata.py",
+		"scripts/lib/codex-exec.sh",
+		"scripts/lib/preamble.sh",
+		"scripts/check-skill-probe-coverage.sh",
+		"tests/scripts/probe-skill.bats",
+		"tests/scripts/check-skill-probe-coverage.bats",
+	} {
 		if !gates.PathMatchesAny(check.Match, want) {
 			t.Fatalf("skill.probe-coverage must route on %q; match globs = %v", want, check.Match)
 		}

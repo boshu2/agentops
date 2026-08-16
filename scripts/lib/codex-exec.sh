@@ -235,9 +235,11 @@ reviewer_adapter_marker() {
 #   CODEX_EXEC_EXTRA_ARGS    (codex) a bash array of extra passthrough flags appended
 #                            verbatim (e.g. --json). Ignored by non-codex adapters (they
 #                            are codex-specific flags).
-#   CODEX_EXEC_OUT_FILE      write captured stdout+stderr here. If empty, output is
-#                            captured to a temp file used only for echo-detection
-#                            and then streamed to the caller's stdout on success.
+#   CODEX_EXEC_OUT_FILE      write captured stdout here. If empty, output is captured
+#                            to a temp file used only for echo-detection and then
+#                            streamed to the caller's stdout on success.
+#   CODEX_EXEC_STDERR_FILE   optional separate stderr sink. If empty, stderr is merged
+#                            into CODEX_EXEC_OUT_FILE for backward compatibility.
 #   CODEX_EXEC_EXPECT_OUTPUT 1 (default) => the caller CONSUMES reviewer output, so a
 #                            flat 0-byte run is a STALL and an output≈prompt run is
 #                            an ECHO (both fail-closed). 0 => the caller only cares
@@ -397,7 +399,7 @@ codex_exec_guarded() {
 
   # Resolve the output sink. A caller-provided file is written in place; otherwise
   # a temp file backs echo-detection and is streamed to stdout on success.
-  local out_file="${CODEX_EXEC_OUT_FILE:-}" cleanup_out=""
+  local out_file="${CODEX_EXEC_OUT_FILE:-}" stderr_file="${CODEX_EXEC_STDERR_FILE:-}" cleanup_out=""
   if [ -z "$out_file" ]; then
     out_file="$(mktemp "${TMPDIR:-/tmp}/codex-exec-out.XXXXXX")"
     cleanup_out="$out_file"
@@ -413,12 +415,22 @@ codex_exec_guarded() {
   _codex_exec_run() {
     if [ "$delivery" = "stdin_file" ]; then
       # File-prompt mode: feed the file on stdin.
-      if [ "${#to_cmd[@]}" -gt 0 ]; then "${to_cmd[@]}" "$bin" "${argv[@]}" <"$prompt_file" >"$out_file" 2>&1
-      else "$bin" "${argv[@]}" <"$prompt_file" >"$out_file" 2>&1; fi
+      if [ -n "$stderr_file" ]; then
+        if [ "${#to_cmd[@]}" -gt 0 ]; then "${to_cmd[@]}" "$bin" "${argv[@]}" <"$prompt_file" >"$out_file" 2>"$stderr_file"
+        else "$bin" "${argv[@]}" <"$prompt_file" >"$out_file" 2>"$stderr_file"; fi
+      else
+        if [ "${#to_cmd[@]}" -gt 0 ]; then "${to_cmd[@]}" "$bin" "${argv[@]}" <"$prompt_file" >"$out_file" 2>&1
+        else "$bin" "${argv[@]}" <"$prompt_file" >"$out_file" 2>&1; fi
+      fi
     else
       # Arg/stdin-pipe/pointer mode: the prompt is already in argv (or on the caller's stdin).
-      if [ "${#to_cmd[@]}" -gt 0 ]; then "${to_cmd[@]}" "$bin" "${argv[@]}" >"$out_file" 2>&1
-      else "$bin" "${argv[@]}" >"$out_file" 2>&1; fi
+      if [ -n "$stderr_file" ]; then
+        if [ "${#to_cmd[@]}" -gt 0 ]; then "${to_cmd[@]}" "$bin" "${argv[@]}" >"$out_file" 2>"$stderr_file"
+        else "$bin" "${argv[@]}" >"$out_file" 2>"$stderr_file"; fi
+      else
+        if [ "${#to_cmd[@]}" -gt 0 ]; then "${to_cmd[@]}" "$bin" "${argv[@]}" >"$out_file" 2>&1
+        else "$bin" "${argv[@]}" >"$out_file" 2>&1; fi
+      fi
     fi
   }
 

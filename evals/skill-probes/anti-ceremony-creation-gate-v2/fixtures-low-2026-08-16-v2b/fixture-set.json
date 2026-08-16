@@ -1,0 +1,75 @@
+{
+  "binding_sha256": "sha256:80c4d0e983b8f750cea0114ad29f9c7036e35ab5e75206a9cf346d21da01642f",
+  "canonical_skill": {
+    "name": "operationalize",
+    "path": "skills/operationalize/SKILL.md",
+    "sha256": "sha256:1293129b0ca954c81ba974fb21bccbc3c1e9be364715906bd34e19f7da94552f"
+  },
+  "capture_evaluator": {
+    "dispatch_helper": {
+      "path": "scripts/lib/codex-exec.sh",
+      "sha256": "sha256:f58b3485194149715191dda550802cb8ba991c946720e098b57f3aa671d32f2f"
+    },
+    "harness": {
+      "path": "scripts/probe-skill.sh",
+      "sha256": "sha256:187fd5004d8a25edc8d5b5787908595f3d8718386daabeb47158d6ec8b892507"
+    },
+    "metadata_helper": {
+      "path": "scripts/lib/probe-fixture-metadata.py",
+      "sha256": "sha256:518d56a8128b4d10d02ddc2332fb3c12fb7ce747cab24ce1a19cc64eedbdaf37"
+    },
+    "preamble": {
+      "path": "scripts/lib/preamble.sh",
+      "sha256": "sha256:c4c06472b655cc440ab69e2d3c3bb7773c393eab671975aad3f1d446b2994199"
+    }
+  },
+  "evaluation_inputs": [
+    {
+      "path": "probe.json",
+      "sha256": "sha256:cccb6601f39be0513360f0de683b92efaa03e6ffced2521c9904e6961d4cc854"
+    },
+    {
+      "path": "question.md",
+      "sha256": "sha256:db47264a82676ce98f2c1ee17905d83cd0390201a2ae6f6f0b2b6ac795a41640"
+    },
+    {
+      "path": "treatment-prelude.md",
+      "sha256": "sha256:b600b4b1718036d82ada3ca20f2be3fbab434aa674dfb2149ffd30f41d590bd3"
+    },
+    {
+      "path": "discriminator.sh",
+      "sha256": "sha256:6f1d976e9d1607f2aec2823722b2c8a66e5d52bc02a9c3c36c5f72d04ed6c70c"
+    }
+  ],
+  "probe": "anti-ceremony-creation-gate-v2",
+  "producer": {
+    "adapter": "codex",
+    "effort": "low",
+    "model": "gpt-5.6-luna"
+  },
+  "reps": 2,
+  "requested_producer": {
+    "effort": "low",
+    "model": "gpt-5.6-luna"
+  },
+  "schema": "agentops-skill-probe-fixture-set.v2",
+  "transcripts": [
+    {
+      "path": "control-1.txt",
+      "sha256": "sha256:e61159fd2cd9f557c39cd95422cb7ea55319a96b8d9a24da47f86e91912926c3"
+    },
+    {
+      "path": "treatment-1.txt",
+      "sha256": "sha256:e59c26e6bcb5dacc31147a17fea814b27ddf9174c6007c827c04391f5125c950"
+    },
+    {
+      "path": "control-2.txt",
+      "sha256": "sha256:3fde64b5402c693963da7b82768641e88f79a10ba2cbdb1305fe63fd35746442"
+    },
+    {
+      "path": "treatment-2.txt",
+      "sha256": "sha256:b334b6b98c6b85c63e0da5f7ea23deeec5b8755ce1741fe0f4de3f877576af63"
+    }
+  ],
+  "treatment_source": "canonical-skill"
+}

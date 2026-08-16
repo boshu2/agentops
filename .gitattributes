@@ -10,6 +10,20 @@
 # repository's whitespace errors.
 docs/audits/gc-mvp-2026-07-05/patches/*.patch -whitespace
 
+# Probe transcripts are immutable structured capture envelopes. Preserve their
+# exact JSONL bytes, including encoded prompt and runtime event content.
+evals/skill-probes/*/fixtures*/control-*.txt -text -whitespace
+evals/skill-probes/*/fixtures*/treatment-*.txt -text -whitespace
+
+# Probe manifests bind these working-tree inputs byte-for-byte. Force one
+# checkout representation so the same Git blobs replay on every platform.
+evals/skill-probes/*/probe.json text eol=lf
+evals/skill-probes/*/question.md text eol=lf
+evals/skill-probes/*/treatment-prelude.md text eol=lf
+evals/skill-probes/*/fixtures*/capture-contract.json text eol=lf
+skills/*/SKILL.md text eol=lf
+scripts/lib/probe-fixture-metadata.py text eol=lf
+
 # Generated/derived artifacts — union-merge to kill textual re-conflicts during
 # multi-PR drains (their canonical content is restored by scripts/regen-all.sh).
 # Council 2026-06-06 (ag-bdg1). NOTE: cli/embedded/** is //go:embed'd and
