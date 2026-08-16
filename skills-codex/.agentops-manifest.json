@@ -357,8 +357,8 @@
     {
       "name": "agent-mail",
       "source_skill": "skills/agent-mail",
-      "source_hash": "ffa68ba868e41b84bafb514842d2e870b551dccb86dcf6579549ba9e9897ecbf",
-      "generated_hash": "b83599604595f8914ee7845458711c61ce4f04b4d6d185fe61aedbf0aae8f568"
+      "source_hash": "f21a53e9da7bfc6047763d1a17552de25eb8d48f1a4aab6c4adb66f5f81118a5",
+      "generated_hash": "86fedf4d643ca4b375305c846cbbb6d8883116bf74b6990b3e63975592e598f2"
     },
     {
       "name": "agent-native",
