@@ -13,7 +13,6 @@
 #
 # Regenerate with:  bash scripts/check-atomic-write-ratchet.sh --regenerate
 # (regenerate at LAND time, after the final rebase; hand-audit the list.)
-cli/cmd/ao/handoff.go
 cli/internal/doctor/runartifact.go
 cli/internal/evalsubstrate/atomic.go
 cli/internal/scenarioresults/writer.go

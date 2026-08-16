@@ -1,0 +1,59 @@
+{
+  "schema": "agentops-skill-probe.v2",
+  "probe": "anti-ceremony-creation-gate-v2",
+  "skill": "operationalize",
+  "mode": "live",
+  "generated_at": "2026-08-16T13:23:59Z",
+  "reps": 2,
+  "producer": {
+    "adapter": "codex",
+    "model": "gpt-5.6-luna",
+    "effort": "low"
+  },
+  "requested_producer": {
+    "model": "gpt-5.6-luna",
+    "effort": "low"
+  },
+  "fixture_set": {
+    "name": "fixtures-low-2026-08-16-v2",
+    "metadata": null,
+    "binding_sha256": null
+  },
+  "treatment_source": "canonical-skill",
+  "evaluator": {
+    "harness": {
+      "path": "scripts/probe-skill.sh",
+      "sha256": "sha256:3635c78f2fd0a2814576e5a400b64266648ad62a55789d5c2797ef869f2c347d"
+    },
+    "metadata_helper": {
+      "path": "scripts/lib/probe-fixture-metadata.py",
+      "sha256": "sha256:0d1a48bc616388a14eb3a2d98dcdb54a93fb51be05d5272ea2628bc9ca9ba750"
+    }
+  },
+  "capture_evaluator": null,
+  "evaluator_matches_capture": null,
+  "honesty": "UNMEASURED live attempt; no immutable fixture set was published",
+  "control": {
+    "present": 2,
+    "usable": 2,
+    "rate": 1.0
+  },
+  "treatment": {
+    "present": 0,
+    "usable": 0,
+    "rate": null
+  },
+  "verdict": "UNMEASURED",
+  "per_rep": [
+    {
+      "rep": 1,
+      "control": "PRESENT",
+      "treatment": "DEGRADED"
+    },
+    {
+      "rep": 2,
+      "control": "PRESENT",
+      "treatment": "DEGRADED"
+    }
+  ]
+}

@@ -3,8 +3,9 @@
   "skill": "premortem",
   "tier": "judgment",
   "reps": 2,
+  "treatment_source": "injected-prelude",
   "behavior": "a premortem over a plan whose closure step is author-self-validation names that self-grading as a failure mode",
   "discriminator": "discriminator.sh",
   "budget_note": "N=2 — DIRECTIONAL, not statistical",
-  "honesty": "measures behavior-change (does loading premortem's evidence-shape doctrine change which failure modes get named), NOT quality-uplift"
+  "honesty": "legacy prelude-only probe: measures response-shape change under injected evidence-shape guidance, not full-skill activation or quality uplift"
 }

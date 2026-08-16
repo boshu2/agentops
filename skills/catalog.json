@@ -656,7 +656,7 @@
         "code-complete"
       ],
       "produces": [
-        "caller-selected handoff path or .agents/ao/handoff/*.md"
+        "caller-selected handoff path or .agents/ao/handoff/*"
       ],
       "references_count": 1,
       "tier": "session",
@@ -1200,7 +1200,7 @@
         "adr"
       ],
       "produces": [
-        ".agents/scratch/reverse-engineer/*.md"
+        ".agents/scratch/reverse-engineer/*/"
       ],
       "references_count": 2,
       "tier": "execution",

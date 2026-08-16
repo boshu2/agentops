@@ -4,9 +4,12 @@
 
 All 52 canonical source skills were inventoried and graded. The baseline at
 `8694b07ebf8db602c3dcf5ef79091090976d1deb` had 34 deep-audit `PASS`, 15
-`WARN`, and 3 `FAIL`. This change repairs the three blocking output-contract
-defects, leaving 35 `PASS`, 17 `WARN`, and 0 `FAIL` without changing any static
-readiness score when the revised scorer is applied to both snapshots.
+`WARN`, and 3 `FAIL`. Current main `f3c6d0ecf2c1bca9d86a3a3b3946a161c2cba5c4`
+independently landed the three blocking output-contract repairs during this
+audit. The reconciled candidate has 35 `PASS`, 17 `WARN`, and 0 `FAIL`.
+Its aggregate static-readiness distribution matches the baseline; package
+changes on current main move `codebase-recon` from 22 to 21 and `handoff` from
+14 to 15, an offsetting two-row delta.
 
 The more important result is epistemic: **0/52 skills currently qualify for an
 overall quality `PASS` under the updated rubric.** None has the current,
@@ -32,10 +35,13 @@ are test data or generated projections rather than additional source skills.
 
 - Denominator: 52 source skills; inventory-name SHA-256
   `50823f4004c0074d87c647fccbfcaa9484dcb5ac17ef319f71b18f8fe89e1456`.
-- Package-file denominator: 284 Git-tracked files under those 52 direct source
-  packages. The two nested fixture `SKILL.md` files are excluded.
-- Baseline: clean `origin/main` commit
+- Package-file denominator: 285 current Git-tracked files under those 52 direct
+  source packages, versus 284 at the starting baseline. The two nested fixture
+  `SKILL.md` files are excluded.
+- Starting baseline: clean commit
   `8694b07ebf8db602c3dcf5ef79091090976d1deb`.
+- Reconciliation base: current main commit
+  `f3c6d0ecf2c1bca9d86a3a3b3946a161c2cba5c4`.
 - AgentOps repository profile: 52/52 passed the local v2 frontmatter validator
   and `heal.sh --check --strict`, with zero Pass-1 findings; source/projection
   count was 52/52.
@@ -49,7 +55,8 @@ are test data or generated projections rather than additional source skills.
 - Baseline deep audit: 34 PASS, 15 WARN, 3 FAIL.
 - Remediated deep audit: 35 PASS, 17 WARN, 0 FAIL.
 - Static readiness: 16 A, 36 B, 0 C, 0 S; mean 18.65, median 19, range 12–24
-  on the 10-category 0–30 static package-readiness score.
+  on the 10-category 0–30 static package-readiness score. The aggregate is
+  unchanged from baseline; `codebase-recon` is -1 and `handoff` is +1.
 - Bundle safety screen: 13 PASS, 6 WARN, 22 FAIL, 11 NOT_PROVEN. PASS here means
   only that complete static inspection found no defect; no audited skill's
   mutating or networked workflow was executed.
@@ -124,9 +131,10 @@ done
   was found.
 - **E1:** a behavior-shaped scenario, self-test, targeted test, or historical
   directional probe exists, but no current exact-version baseline comparison
-  establishes outcome delta. The hand-maintained probe ledger is counted only as E1 because its
-  rows do not bind the current package digest or cover the full activation and
-  output matrix.
+  establishes outcome delta. The hand-maintained probe ledger is counted only
+  as E1 because it does not supply a current, exact-version baseline/treatment
+  matrix with full activation and output coverage. Its one exact-bound
+  `operationalize` receipt is explicitly legacy and inert.
 - **E2/E3:** defined in
   [the current rubric](../reference/skill-quality-rubric.md); none was awarded.
 
@@ -145,7 +153,7 @@ universal cause in every row; the two `+AT` variants are called out directly.
 | `bootstrap` | PASS | FAIL-HX | 18/30 B | WARN | E1 | — |
 | `cass` | WARN | FAIL-HX | 24/30 A | FAIL | E1 | references-modularization |
 | `cc-hooks` | WARN | FAIL-HX | 17/30 B | FAIL | E1 | references-modularization |
-| `codebase-recon` | PASS | FAIL-HX | 22/30 A | PASS | E1 | — |
+| `codebase-recon` | PASS | FAIL-HX | 21/30 A | PASS | E1 | — |
 | `codex-exec` | WARN | FAIL-HX | 16/30 B | NOT_PROVEN | E1 | constraints-frontloaded, quality-rubric |
 | `converter` | PASS | FAIL-HX | 20/30 B | FAIL | E1 | — |
 | `council` | WARN | FAIL-HX | 19/30 B | FAIL | E1 | constraints-frontloaded, quality-rubric |
@@ -155,7 +163,7 @@ universal cause in every row; the two `+AT` variants are called out directly.
 | `domain` | PASS | FAIL-HX | 18/30 B | PASS | E0 | — |
 | `fitness` | PASS | FAIL-HX | 18/30 B | WARN | E0 | — |
 | `goals` | PASS | FAIL-HX | 13/30 B | FAIL | E1 | — |
-| `handoff` | PASS | FAIL-HX | 14/30 B | PASS | E1 | — |
+| `handoff` | PASS | FAIL-HX | 15/30 B | PASS | E1 | — |
 | `idea-genie` | WARN | FAIL-HX | 23/30 A | FAIL | E1 | constraints-frontloaded, quality-rubric |
 | `implement` | FAIL→PASS | FAIL-HX | 20/30 B | FAIL | E1 | — |
 | `learn` | PASS | FAIL-HX | 16/30 B | WARN | E1 | — |
@@ -211,7 +219,7 @@ here so the classification can be replayed without inferring it from a label.
 | `premortem` | FAIL | The workflow constructs defeating inputs, command sequences, or repository state and runs checks without disposable isolation, restoration, declared execution effects, or process bounds. |
 | `refactor` | FAIL | Normal regression commands remain arbitrary and unbounded; the separate at-most-two disposable-probe rule does not contain or time-limit those checks. |
 | `research` | FAIL | The workflow requires current external primary sources while declaring only report writes and no network, credential, data, or execution bounds. |
-| `reverse-engineer` | FAIL | `scripts/{reverse_engineer.py,fetch_url.py,binary/*,security/scan_secrets.sh}` expose unbounded process, fetch, archive, weak-isolation, and matched-secret-output paths. |
+| `reverse-engineer` | FAIL | `reverse_engineer.py` launches general subprocess and Git calls without deadlines; `binary/capture_cli_help.sh` falls back to unbounded target execution when no timeout utility exists; `fetch_url.py` accepts unrestricted file/URL inputs and unbounded bodies; and `security/scan_secrets.sh` prints matched secret-bearing lines. |
 | `rpi` | FAIL | `scripts/run_once.py` accepts and directly invokes four arbitrary callables without timeout, cancellation, containment, or cleanup. |
 | `scaffold` | FAIL | The workflow runs target-selected build, test, and lint commands; once-only dispatch does not bound wall time, descendants, filesystem/network reach, or cleanup. |
 | `security` | FAIL | `scripts/security_suite.py` executes targets without effective filesystem/network containment and can retain secret-bearing process/stdout/stderr evidence; descendants/effects are incomplete. |
@@ -246,8 +254,10 @@ implementation. Behavior-shaped examples and recovery playbooks count as
 scenarios regardless of filename; illustrative prose without an explicit input
 and observable outcome, and static prose-presence assertions, do not. `S` is a
 scenario or self-test definition, `T` an executable targeted test, and `R` a
-stored directional receipt. These artifacts establish only E1; none binds the current
-package digest to the complete baseline/control matrix required for E2.
+stored directional receipt. These artifacts establish only E1. The
+`operationalize` receipt is hash-bound but explicitly legacy and inert; no row
+binds a current package digest to the complete baseline/control matrix required
+for E2.
 
 | E1 skill | Kind | Qualifying evidence |
 |---|---:|---|
@@ -269,7 +279,7 @@ package digest to the complete baseline/control matrix required for E2.
 | `implement` | S | `skills/implement/references/implement.feature`. |
 | `learn` | S | `skills/learn/references/learn.feature`. |
 | `ms` | T | `skills/ms/tests/mcp-search.bats`; `tests/python/test_ms_adoption_probe.py`. |
-| `operationalize` | S | `evals/skill-probes/anti-ceremony-creation-gate/probe.json` explicitly declares this skill; no run receipt is committed. |
+| `operationalize` | S/R | `evals/skill-probes/anti-ceremony-creation-gate{,-v2}/`, `docs/evals/2026-08-16-anti-ceremony-creation-gate.md`, and the linked scorecards. The retained runs are explicitly PRELUDE-ONLY/INERT, UNMEASURED, or hash-bound LEGACY-UNVERIFIED/INERT v2, so they are directional E1 evidence only. |
 | `pattern-mining` | S/T | `skills/pattern-mining/references/pattern-mining.feature`; `tests/scripts/agentops-native-skills.bats`. |
 | `plan` | S | `skills/plan/references/plan.feature`. |
 | `postmortem` | S | `skills/postmortem/references/postmortem.feature`. |
@@ -278,7 +288,7 @@ package digest to the complete baseline/control matrix required for E2.
 | `rch` | S | `skills/rch/references/RECOVERY_PLAYBOOKS.md` defines twelve signal-to-diagnostic-to-fix-to-verification scenarios linked by the skill. |
 | `refactor` | S | `skills/refactor/references/refactor.feature`. |
 | `research` | S | `skills/research/references/research.feature`. |
-| `reverse-engineer` | S/T | `skills/reverse-engineer/references/reverse-engineer.feature`; `scripts/{self_test.sh,repo_fixture_test.sh,validate.sh}`. |
+| `reverse-engineer` | S/T | `skills/reverse-engineer/references/reverse-engineer.feature`; `skills/reverse-engineer/scripts/{self_test.sh,repo_fixture_test.sh,validate.sh,validate-output.sh}`. |
 | `rpi` | S/T | `skills/rpi/references/rpi.feature`; `skills/rpi/tests/test_run_once.py`; `evals/agentops-core/rpi-behavior.json`. |
 | `scaffold` | S | `skills/scaffold/references/scaffold.feature`. |
 | `security` | S/T/R | `skills/security/references/{security,security-suite}.feature`; `skills/security/scripts/validate.sh`; `tests/scripts/test-security-suite-redteam.sh`; `evals/agentops-core/security-suite-behavioral-gates.json`. |
@@ -340,9 +350,10 @@ so they do not establish skill-bound E1 evidence.
 6. **Behavioral proof is the corpus-wide gap.** Thirty-eight skills have only E1
    evidence and 14 have E0. The original automated count missed 13 skill-bound
    scenarios, tests, or receipts. The existing probe ledger includes useful
-   directional experiments, but its current rows neither identify the exact
-   package version nor cover direct, indirect, incomplete-input,
-   should-not-trigger, edge, coexistence, and output behavior together.
+   directional experiments, but it does not establish a current exact-version
+   treatment/control matrix covering direct, indirect, incomplete-input,
+   should-not-trigger, edge, coexistence, and output behavior together. The one
+   exact-bound `operationalize` receipt is explicitly legacy and inert.
 7. **The remaining content warnings are not automatically defects.** Four
    kernels are over the local 250-line advisory threshold (`cass`, `cc-hooks`,
    `craft-goal`, `using-gc`), and the other warnings mainly ask for front-loaded
@@ -361,7 +372,7 @@ so they do not establish skill-bound E1 evidence.
 | Priority | Action | Concrete consumer and done condition |
 |---|---|---|
 | Landed here | Separate portable conformance, AgentOps profile checks, static readiness, safety, and effectiveness; remove automatic solid credit for absent optional components. | Reviewers cannot mistake a local/profile or A/B result for portable, behavioral, or safety proof. |
-| Landed here | Add honest output contracts to `plan`, `implement`, and `using-flywheel`; regenerate owned projections. | The 52-skill non-strict deep audit has zero FAIL and the focused regression stays green. |
+| Landed on main in [#1065](https://github.com/boshu2/agentops/pull/1065) | Add honest output contracts to `plan`, `implement`, and `using-flywheel`; regenerate owned projections. | The 52-skill non-strict deep audit has zero FAIL and the focused regression stays green. |
 | P0 | Repair the 22 safety FAIL packages as bounded, separately reviewable behavior changes. Start with arbitrary process/model dispatch, credentialed network access, destructive paths, secret emission, and false effect declarations; add planted-negative tests around each repaired boundary. | Each package passes fresh static review plus isolated runtime tests for its exact dangerous paths; no score increase substitutes for that evidence. |
 | P1 | Choose and implement one portable boundary: migrate canonical frontmatter into the six-field contract with string metadata, or generate and validate a spec-conformant portable projection while naming canonical sources as AgentOps-only. | A pinned portable validator passes every artifact advertised as portable; host extensions remain explicit and losslessly owned elsewhere. |
 | P1 | Repair the audit engine's binding/target/evidence defects before treating it as a conformance oracle outside canonical `skills/*`. | Known-good external fixtures cannot PASS when Pass 1 fails; documented target modes work or are removed; evidence names the actual missing condition. |
@@ -372,7 +383,8 @@ so they do not establish skill-bound E1 evidence.
 
 ## Checked and not checked
 
-Checked: canonical inventory completeness and 284-file denominator;
+Checked: canonical inventory completeness and 285-file current denominator
+(284 at the starting baseline);
 source/projection count; strict AgentOps v2 frontmatter and repository
 structural checks; current portable specification and commit-pinned `skills-ref`
 compatibility classification; all 52 non-strict deep audits before and after remediation;

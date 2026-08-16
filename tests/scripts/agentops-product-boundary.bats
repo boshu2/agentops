@@ -27,6 +27,29 @@ require_text() {
   }
 }
 
+run_linked_reference_identity_check() {
+  python3 - \
+    "$REPO_ROOT/scripts/check-cathedral-cut-conformance.py" \
+    "$1" <<'PY'
+import importlib.util
+from pathlib import Path
+import sys
+
+script = Path(sys.argv[1])
+root = Path(sys.argv[2])
+spec = importlib.util.spec_from_file_location("cathedral_cut", script)
+module = importlib.util.module_from_spec(spec)
+assert spec.loader is not None
+spec.loader.exec_module(module)
+
+try:
+    module.check_linked_skill_reference_identity(root)
+except AssertionError as exc:
+    print(exc)
+    raise SystemExit(1)
+PY
+}
+
 @test "active authority teaches one bounded experiment and stop" {
   local file
   for file in "${ACTIVE_AUTHORITY[@]}"; do
@@ -199,6 +222,842 @@ scan_obsolete_identity() {
 
   run scan_obsolete_identity "$fixture"
   [ "$status" -eq 1 ]
+}
+
+@test "linked skill references reject retired operations-layer terminology" {
+  fixture="$BATS_TEST_TMPDIR/repo"
+  mkdir -p \
+    "$fixture/skills/example/references" \
+    "$fixture/skills/unlinked/references"
+  printf '%s\n' \
+    '# Example' \
+    '' \
+    '- [Template](references/template.md)' \
+    '- [Testing](references/testing.md)' \
+    '- [Identity](references/identity.md)' \
+    >"$fixture/skills/example/SKILL.md"
+  printf '%s\n' \
+    '# Template' \
+    '' \
+    'Searchability was formerly described as a knowledge flywheel.' \
+    >"$fixture/skills/example/references/template.md"
+  printf '%s\n' \
+    '# Testing' \
+    '' \
+    '## Operating-loop use' \
+    >"$fixture/skills/example/references/testing.md"
+  printf '%s\n' \
+    '# Identity' \
+    '' \
+    'AgentOps is the operating loop every coding agent follows.' \
+    >"$fixture/skills/example/references/identity.md"
+  printf '%s\n' \
+    '# Historical note' \
+    '' \
+    'The knowledge flywheel label appeared in this unlinked archive.' \
+    >"$fixture/skills/unlinked/references/history.md"
+
+  run run_linked_reference_identity_check "$fixture"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"template.md:3"* ]]
+  [[ "$output" == *"knowledge flywheel"* ]]
+  [[ "$output" == *"testing.md:3"* ]]
+  [[ "$output" == *"Operating-loop use"* ]]
+  [[ "$output" == *"identity.md:3"* ]]
+  [[ "$output" == *"AgentOps is the operating loop"* ]]
+  [[ "$output" != *"unlinked/references/history.md"* ]]
+}
+
+@test "linked skill reference scan permits external factory terminology" {
+  fixture="$BATS_TEST_TMPDIR/repo"
+  mkdir -p "$fixture/skills/example/references"
+  printf '%s\n' \
+    '# Example' \
+    '' \
+    '- [Factory](references/factory.md)' \
+    >"$fixture/skills/example/SKILL.md"
+  printf '%s\n' \
+    '# External factory' \
+    '' \
+    'The Agentic Coding Flywheel is a supported external factory.' \
+    >"$fixture/skills/example/references/factory.md"
+
+  run run_linked_reference_identity_check "$fixture"
+  [ "$status" -eq 0 ]
+}
+
+@test "reference-style skill links scan full collapsed and shortcut forms" {
+  fixture="$BATS_TEST_TMPDIR/repo"
+  mkdir -p "$fixture/skills/example/references"
+  printf '%s\n' \
+    '# Example' \
+    '' \
+    '- [Policy][p]' \
+    '- [Testing][]' \
+    '- [Shortcut]' \
+    '- [Identity][identity]' \
+    '' \
+    '[P]: references/policy.md "policy"' \
+    '[testing]: <references/testing.md>' \
+    '[shortcut]: references/shortcut.md' \
+    '[identity]: references/identity.md' \
+    '[Archive]: references/archive.md' \
+    >"$fixture/skills/example/SKILL.md"
+  printf '%s\n' \
+    '# Policy' \
+    '' \
+    'Searchability was formerly described as a knowledge flywheel.' \
+    >"$fixture/skills/example/references/policy.md"
+  printf '%s\n' \
+    '# Testing' \
+    '' \
+    '## Operating-loop use' \
+    >"$fixture/skills/example/references/testing.md"
+  printf '%s\n' \
+    '# Shortcut' \
+    '' \
+    'The knowledge-flywheel label is retired.' \
+    >"$fixture/skills/example/references/shortcut.md"
+  printf '%s\n' \
+    '# Identity' \
+    '' \
+    'AgentOps is the operating loop every coding agent follows.' \
+    >"$fixture/skills/example/references/identity.md"
+  printf '%s\n' \
+    '# Unlinked archive' \
+    '' \
+    '## Operating-loop use' \
+    >"$fixture/skills/example/references/archive.md"
+
+  run run_linked_reference_identity_check "$fixture"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"policy.md:3"* ]]
+  [[ "$output" == *"testing.md:3"* ]]
+  [[ "$output" == *"shortcut.md:3"* ]]
+  [[ "$output" == *"identity.md:3"* ]]
+  [[ "$output" == *"AgentOps is the operating loop"* ]]
+  [[ "$output" != *"archive.md"* ]]
+}
+
+@test "reference-style scan permits safe target and ignores unused archive definition" {
+  fixture="$BATS_TEST_TMPDIR/repo"
+  mkdir -p "$fixture/skills/example/references"
+  printf '%s\n' \
+    '# Example' \
+    '' \
+    '- [Factory][factory]' \
+    '' \
+    '[factory]: references/factory.md' \
+    '[archive]: references/archive.md "[archive]"' \
+    >"$fixture/skills/example/SKILL.md"
+  printf '%s\n' \
+    '# External factory' \
+    '' \
+    'The Agentic Coding Flywheel is a supported external factory.' \
+    >"$fixture/skills/example/references/factory.md"
+  printf '%s\n' \
+    '# Historical archive' \
+    '' \
+    'The knowledge flywheel label appeared here.' \
+    >"$fixture/skills/example/references/archive.md"
+
+  run run_linked_reference_identity_check "$fixture"
+  [ "$status" -eq 0 ]
+}
+
+@test "duplicate reference definitions use the first destination" {
+  bad_first="$BATS_TEST_TMPDIR/bad-first"
+  safe_first="$BATS_TEST_TMPDIR/safe-first"
+  mkdir -p \
+    "$bad_first/skills/example/references" \
+    "$safe_first/skills/example/references"
+
+  printf '%s\n' \
+    '# Bad first' \
+    '' \
+    '[Policy][p]' \
+    '' \
+    '[p]: references/bad.md' \
+    '[p]: references/safe.md' \
+    >"$bad_first/skills/example/SKILL.md"
+  printf '%s\n' \
+    '# Safe first' \
+    '' \
+    '[Policy][p]' \
+    '' \
+    '[p]: references/safe.md' \
+    '[p]: references/bad.md' \
+    >"$safe_first/skills/example/SKILL.md"
+
+  for fixture in "$bad_first" "$safe_first"; do
+    printf '%s\n' \
+      '# Bad identity' \
+      '' \
+      'AgentOps is the operating loop every coding agent follows.' \
+      >"$fixture/skills/example/references/bad.md"
+    printf '%s\n' \
+      '# External factory' \
+      '' \
+      'The Agentic Coding Flywheel is a supported external factory.' \
+      >"$fixture/skills/example/references/safe.md"
+  done
+
+  run run_linked_reference_identity_check "$bad_first"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"bad.md:3"* ]]
+  [[ "$output" != *"safe.md"* ]]
+
+  run run_linked_reference_identity_check "$safe_first"
+  [ "$status" -eq 0 ]
+}
+
+@test "reference-like syntax in code or escaped prose does not create links" {
+  fixture="$BATS_TEST_TMPDIR/repo"
+  mkdir -p "$fixture/skills/example/references"
+  printf '%s\n' \
+    '# Example' \
+    '' \
+    '[Factory][safe]' \
+    '' \
+    '`[Inline][bad]`' \
+    '\[Escaped][bad]' \
+    '' \
+    '```markdown' \
+    '[Fenced][bad]' \
+    '[inside]: references/bad.md' \
+    '```' \
+    '' \
+    '[safe]: references/safe.md' \
+    '[bad]: references/bad.md' \
+    >"$fixture/skills/example/SKILL.md"
+  printf '%s\n' \
+    '# External factory' \
+    '' \
+    'The Agentic Coding Flywheel is a supported external factory.' \
+    >"$fixture/skills/example/references/safe.md"
+  printf '%s\n' \
+    '# Bad identity' \
+    '' \
+    'AgentOps is the operating loop every coding agent follows.' \
+    >"$fixture/skills/example/references/bad.md"
+
+  run run_linked_reference_identity_check "$fixture"
+  [ "$status" -eq 0 ]
+}
+
+@test "unordered-list fenced code is excluded from links and prose" {
+  fixture="$BATS_TEST_TMPDIR/repo"
+  mkdir -p "$fixture/skills/example/references"
+  printf '%s\n' \
+    '# Example' \
+    '' \
+    '[Safe](references/safe.md)' \
+    '' \
+    '- ```markdown' \
+    '  [Inactive](references/bad.md)' \
+    '  ```' \
+    >"$fixture/skills/example/SKILL.md"
+  printf '%s\n' \
+    '# Safe reference' \
+    '' \
+    '- ```text' \
+    '  AgentOps is the operating loop every coding agent follows.' \
+    '  ```' \
+    >"$fixture/skills/example/references/safe.md"
+  printf '%s\n' \
+    '# Bad identity' \
+    '' \
+    'The knowledge flywheel label is retired.' \
+    >"$fixture/skills/example/references/bad.md"
+
+  run run_linked_reference_identity_check "$fixture"
+  [ "$status" -eq 0 ]
+}
+
+@test "ordered-list fenced code is excluded from links and prose" {
+  fixture="$BATS_TEST_TMPDIR/repo"
+  mkdir -p "$fixture/skills/example/references"
+  printf '%s\n' \
+    '# Example' \
+    '' \
+    '[Safe](references/safe.md)' \
+    '' \
+    '1. ~~~markdown' \
+    '   [Inactive](references/bad.md)' \
+    '   ~~~' \
+    >"$fixture/skills/example/SKILL.md"
+  printf '%s\n' \
+    '# Safe reference' \
+    '' \
+    '1. ~~~text' \
+    '   The knowledge flywheel label is retired.' \
+    '   ~~~' \
+    >"$fixture/skills/example/references/safe.md"
+  printf '%s\n' \
+    '# Bad identity' \
+    '' \
+    'AgentOps is the operating loop every coding agent follows.' \
+    >"$fixture/skills/example/references/bad.md"
+
+  run run_linked_reference_identity_check "$fixture"
+  [ "$status" -eq 0 ]
+}
+
+@test "nested-list fenced code is excluded from links and prose" {
+  fixture="$BATS_TEST_TMPDIR/repo"
+  mkdir -p "$fixture/skills/example/references"
+  printf '%s\n' \
+    '# Example' \
+    '' \
+    '[Safe](references/safe.md)' \
+    '' \
+    '- Parent item' \
+    '  1. ~~~markdown' \
+    '     [Inactive](references/bad.md)' \
+    '     ~~~' \
+    >"$fixture/skills/example/SKILL.md"
+  printf '%s\n' \
+    '# Safe reference' \
+    '' \
+    '- Parent item' \
+    '  1. ~~~text' \
+    '     AgentOps is the operating loop every coding agent follows.' \
+    '     ~~~' \
+    >"$fixture/skills/example/references/safe.md"
+  printf '%s\n' \
+    '# Bad identity' \
+    '' \
+    'The knowledge flywheel label is retired.' \
+    >"$fixture/skills/example/references/bad.md"
+
+  run run_linked_reference_identity_check "$fixture"
+  [ "$status" -eq 0 ]
+}
+
+@test "ordinary list prose remains active" {
+  fixture="$BATS_TEST_TMPDIR/repo"
+  mkdir -p "$fixture/skills/example/references"
+  printf '%s\n' \
+    '# Example' \
+    '' \
+    '[List prose](references/list-prose.md)' \
+    >"$fixture/skills/example/SKILL.md"
+  printf '%s\n' \
+    '# List prose' \
+    '' \
+    '- AgentOps is the operating loop every coding agent follows.' \
+    >"$fixture/skills/example/references/list-prose.md"
+
+  run run_linked_reference_identity_check "$fixture"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"list-prose.md:3"* ]]
+  [[ "$output" == *"AgentOps is the operating loop"* ]]
+}
+
+@test "multiline HTML comments are excluded from links and prose" {
+  fixture="$BATS_TEST_TMPDIR/repo"
+  mkdir -p "$fixture/skills/example/references"
+  printf '%s\n' \
+    '# Example' \
+    '' \
+    '[Safe](references/safe.md)' \
+    '' \
+    '<!--' \
+    '[Inactive](references/bad.md)' \
+    '-->' \
+    >"$fixture/skills/example/SKILL.md"
+  printf '%s\n' \
+    '# Safe reference' \
+    '' \
+    '<!--' \
+    'AgentOps is the operating loop every coding agent follows.' \
+    'The knowledge flywheel label is retired.' \
+    '-->' \
+    >"$fixture/skills/example/references/safe.md"
+  printf '%s\n' \
+    '# Bad identity' \
+    '' \
+    'AgentOps is the operating loop every coding agent follows.' \
+    >"$fixture/skills/example/references/bad.md"
+
+  run run_linked_reference_identity_check "$fixture"
+  [ "$status" -eq 0 ]
+}
+
+@test "raw HTML code containers are excluded from links and prose" {
+  fixture="$BATS_TEST_TMPDIR/repo"
+  mkdir -p "$fixture/skills/example/references"
+  printf '%s\n' \
+    '# Example' \
+    '' \
+    '[Safe](references/safe.md)' \
+    '' \
+    '<pre>' \
+    '[Inactive](references/bad.md)' \
+    '</pre>' \
+    '<script>' \
+    '[Inactive](references/bad.md)' \
+    '</script>' \
+    '<style>' \
+    '[Inactive](references/bad.md)' \
+    '</style>' \
+    '<textarea>' \
+    '[Inactive](references/bad.md)' \
+    '</textarea>' \
+    >"$fixture/skills/example/SKILL.md"
+  printf '%s\n' \
+    '# Safe reference' \
+    '' \
+    '<pre>' \
+    'AgentOps is the operating loop every coding agent follows.' \
+    '</pre>' \
+    '<script>' \
+    'The knowledge flywheel label is retired.' \
+    '</script>' \
+    '<style>' \
+    'AgentOps is the operating loop every coding agent follows.' \
+    '</style>' \
+    '<textarea>' \
+    'The knowledge flywheel label is retired.' \
+    '</textarea>' \
+    >"$fixture/skills/example/references/safe.md"
+  printf '%s\n' \
+    '# Bad identity' \
+    '' \
+    'AgentOps is the operating loop every coding agent follows.' \
+    >"$fixture/skills/example/references/bad.md"
+
+  run run_linked_reference_identity_check "$fixture"
+  [ "$status" -eq 0 ]
+}
+
+@test "backtick fence info rejects backticks while tilde info permits them" {
+  fixture="$BATS_TEST_TMPDIR/repo"
+  mkdir -p "$fixture/skills/example/references"
+  printf '%s\n' \
+    '# Example' \
+    '' \
+    '[Invalid backtick fence](references/invalid.md)' \
+    '[Valid tilde fence](references/tilde.md)' \
+    >"$fixture/skills/example/SKILL.md"
+  printf '%s\n' \
+    '# Invalid backtick fence' \
+    '' \
+    '```bad`info' \
+    'AgentOps is the operating loop every coding agent follows.' \
+    '```' \
+    >"$fixture/skills/example/references/invalid.md"
+  printf '%s\n' \
+    '# Valid tilde fence' \
+    '' \
+    '~~~bad`info' \
+    'The knowledge flywheel label is retired.' \
+    '~~~' \
+    >"$fixture/skills/example/references/tilde.md"
+
+  run run_linked_reference_identity_check "$fixture"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"invalid.md:3"* ]]
+  [[ "$output" == *"AgentOps is the operating loop"* ]]
+  [[ "$output" != *"tilde.md"* ]]
+}
+
+@test "escaped brackets in reference labels still resolve direct links" {
+  fixture="$BATS_TEST_TMPDIR/repo"
+  mkdir -p "$fixture/skills/example/references"
+  printf '%s\n' \
+    '# Example' \
+    '' \
+    '[Policy][foo\]]' \
+    '' \
+    '[foo\]]: references/bad.md' \
+    >"$fixture/skills/example/SKILL.md"
+  printf '%s\n' \
+    '# Bad identity' \
+    '' \
+    'AgentOps is the operating loop every coding agent follows.' \
+    >"$fixture/skills/example/references/bad.md"
+
+  run run_linked_reference_identity_check "$fixture"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"bad.md:3"* ]]
+}
+
+@test "reference definitions accept a destination on the next indented line" {
+  fixture="$BATS_TEST_TMPDIR/repo"
+  mkdir -p "$fixture/skills/example/references"
+  printf '%s\n' \
+    '# Example' \
+    '' \
+    '[Policy][foo]' \
+    '' \
+    '[foo]:' \
+    '  references/bad.md' \
+    >"$fixture/skills/example/SKILL.md"
+  printf '%s\n' \
+    '# Bad identity' \
+    '' \
+    'The knowledge flywheel label is retired.' \
+    >"$fixture/skills/example/references/bad.md"
+
+  run run_linked_reference_identity_check "$fixture"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"bad.md:3"* ]]
+}
+
+@test "multiline reference labels normalize whitespace and resolve" {
+  fixture="$BATS_TEST_TMPDIR/repo"
+  mkdir -p "$fixture/skills/example/references"
+  printf '%s\n' \
+    '# Example' \
+    '' \
+    '[Policy][foo' \
+    'bar]' \
+    '' \
+    '[foo' \
+    'bar]: references/bad.md' \
+    >"$fixture/skills/example/SKILL.md"
+  printf '%s\n' \
+    '# Bad identity' \
+    '' \
+    'AgentOps is the operating loop every coding agent follows.' \
+    >"$fixture/skills/example/references/bad.md"
+
+  run run_linked_reference_identity_check "$fixture"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"bad.md:3"* ]]
+}
+
+@test "nested brackets in reference link text do not hide the target" {
+  fixture="$BATS_TEST_TMPDIR/repo"
+  mkdir -p "$fixture/skills/example/references"
+  printf '%s\n' \
+    '# Example' \
+    '' \
+    '[[Policy]][foo]' \
+    '[Policy [nested]][foo]' \
+    '' \
+    '[foo]: references/bad.md' \
+    >"$fixture/skills/example/SKILL.md"
+  printf '%s\n' \
+    '# Bad identity' \
+    '' \
+    'The knowledge flywheel label is retired.' \
+    >"$fixture/skills/example/references/bad.md"
+
+  run run_linked_reference_identity_check "$fixture"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"bad.md:3"* ]]
+}
+
+@test "angle destinations reject an unescaped opening angle" {
+  fixture="$BATS_TEST_TMPDIR/repo"
+  mkdir -p "$fixture/skills/example/references"
+  printf '%s\n' \
+    '# Example' \
+    '' \
+    '[Safe](<references/safe.md>)' \
+    '[Invalid](<references/bad<identity.md>)' \
+    >"$fixture/skills/example/SKILL.md"
+  printf '%s\n' \
+    '# Safe reference' \
+    '' \
+    'The Agentic Coding Flywheel is an external factory.' \
+    >"$fixture/skills/example/references/safe.md"
+  printf '%s\n' \
+    '# Bad identity' \
+    '' \
+    'AgentOps is the operating loop every coding agent follows.' \
+    >"$fixture/skills/example/references/bad<identity.md"
+
+  run run_linked_reference_identity_check "$fixture"
+  [ "$status" -eq 0 ]
+}
+
+@test "backslash hard breaks do not split retired rendered prose" {
+  fixture="$BATS_TEST_TMPDIR/repo"
+  mkdir -p "$fixture/skills/example/references"
+  printf '%s\n' \
+    '# Example' \
+    '' \
+    '[Hard breaks](references/hard-breaks.md)' \
+    >"$fixture/skills/example/SKILL.md"
+  printf '%s\n' \
+    '# Hard breaks' \
+    '' \
+    'AgentOps is the\' \
+    'operating loop every coding agent follows.' \
+    '' \
+    'The knowledge\' \
+    'flywheel label is retired.' \
+    >"$fixture/skills/example/references/hard-breaks.md"
+
+  run run_linked_reference_identity_check "$fixture"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"AgentOps is the operating loop"* ]]
+  [[ "$output" == *"knowledge flywheel"* ]]
+}
+
+@test "emphasis delimiters do not split retired rendered prose" {
+  fixture="$BATS_TEST_TMPDIR/repo"
+  mkdir -p "$fixture/skills/example/references"
+  printf '%s\n' \
+    '# Example' \
+    '' \
+    '[Emphasis](references/emphasis.md)' \
+    >"$fixture/skills/example/SKILL.md"
+  printf '%s\n' \
+    '# Emphasis' \
+    '' \
+    'AgentOps is the **operating loop** every coding agent follows.' \
+    '' \
+    'AgentOps is the operating _loop_ every coding agent follows.' \
+    '' \
+    'The knowledge *flywheel* label is retired.' \
+    >"$fixture/skills/example/references/emphasis.md"
+
+  run run_linked_reference_identity_check "$fixture"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"AgentOps is the operating loop"* ]]
+  [[ "$output" == *"knowledge flywheel"* ]]
+}
+
+@test "rendered prose normalization decodes inline Markdown and HTML" {
+  fixture="$BATS_TEST_TMPDIR/repo"
+  mkdir -p "$fixture/skills/example/references"
+  printf '%s\n' \
+    '# Example' \
+    '' \
+    '[Rendered prose](references/rendered.md)' \
+    >"$fixture/skills/example/SKILL.md"
+  printf '%s\n' \
+    '# Rendered prose' \
+    '' \
+    'AgentOps is the operating\-loop every coding agent follows.' \
+    '' \
+    'The knowledge&#32;flywheel label is retired.' \
+    '' \
+    'AgentOps is the [operating loop](https://example.com) every coding agent follows.' \
+    '' \
+    'AgentOps is the <em>operating loop</em> every coding agent follows.' \
+    >"$fixture/skills/example/references/rendered.md"
+
+  run run_linked_reference_identity_check "$fixture"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"operating-loop"* ]]
+  [[ "$output" == *"knowledge flywheel"* ]]
+  [[ "$output" == *"AgentOps is the operating loop"* ]]
+}
+
+@test "inline skill links accept balanced and escaped destination parentheses" {
+  fixture="$BATS_TEST_TMPDIR/repo"
+  mkdir -p "$fixture/skills/example/references"
+  printf '%s\n' \
+    '# Example' \
+    '' \
+    '- [Balanced](references/bad_(balanced).md)' \
+    '- [Escaped](references/bad_\(escaped\).md)' \
+    >"$fixture/skills/example/SKILL.md"
+  printf '%s\n' \
+    '# Balanced destination' \
+    '' \
+    'AgentOps is the operating loop every coding agent follows.' \
+    >"$fixture/skills/example/references/bad_(balanced).md"
+  printf '%s\n' \
+    '# Escaped destination' \
+    '' \
+    'The knowledge flywheel label is retired.' \
+    >"$fixture/skills/example/references/bad_(escaped).md"
+
+  run run_linked_reference_identity_check "$fixture"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"bad_(balanced).md:3"* ]]
+  [[ "$output" == *"bad_(escaped).md:3"* ]]
+}
+
+@test "local skill links decode percent-encoded filename characters once" {
+  fixture="$BATS_TEST_TMPDIR/repo"
+  mkdir -p "$fixture/skills/example/references"
+  printf '%s\n' \
+    '# Example' \
+    '' \
+    '- [Dot](references/bad%2emd)' \
+    '- [Space](references/bad%20identity.md)' \
+    >"$fixture/skills/example/SKILL.md"
+  printf '%s\n' \
+    '# Encoded dot' \
+    '' \
+    'AgentOps is the operating loop every coding agent follows.' \
+    >"$fixture/skills/example/references/bad.md"
+  printf '%s\n' \
+    '# Encoded space' \
+    '' \
+    'The knowledge flywheel label is retired.' \
+    >"$fixture/skills/example/references/bad identity.md"
+
+  run run_linked_reference_identity_check "$fixture"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"bad.md:3"* ]]
+  [[ "$output" == *"bad identity.md:3"* ]]
+}
+
+@test "percent decoding cannot introduce separators NUL or traversal" {
+  fixture="$BATS_TEST_TMPDIR/repo"
+  mkdir -p "$fixture/skills/example/references"
+  printf '%s\n' \
+    '# Example' \
+    '' \
+    '- [Encoded slash](references%2fbad.md)' \
+    '- [Encoded backslash](references%5cbad.md)' \
+    '- [Encoded NUL](references/bad.md%00)' \
+    '- [Encoded traversal](references/%2e%2e/outside.md)' \
+    >"$fixture/skills/example/SKILL.md"
+  printf '%s\n' \
+    '# Bad identity' \
+    '' \
+    'AgentOps is the operating loop every coding agent follows.' \
+    >"$fixture/skills/example/references/bad.md"
+  printf '%s\n' \
+    '# Outside references' \
+    '' \
+    'The knowledge flywheel label is retired.' \
+    >"$fixture/skills/example/outside.md"
+
+  run run_linked_reference_identity_check "$fixture"
+  [ "$status" -eq 0 ]
+}
+
+@test "indented CommonMark code does not link or trigger prose identity" {
+  fixture="$BATS_TEST_TMPDIR/repo"
+  mkdir -p "$fixture/skills/example/references"
+  {
+    printf '%s\n' '# Example' '' '[Safe](references/safe.md)' ''
+    printf '    [Indented](references/bad.md)\n'
+    printf '\t[Tabbed](references/bad.md)\n'
+  } >"$fixture/skills/example/SKILL.md"
+  {
+    printf '%s\n' '# Safe reference' ''
+    printf '    AgentOps is the operating loop every coding agent follows.\n'
+    printf '\tThe knowledge flywheel label is retired.\n'
+  } >"$fixture/skills/example/references/safe.md"
+  printf '%s\n' \
+    '# Bad identity' \
+    '' \
+    'AgentOps is the operating loop every coding agent follows.' \
+    >"$fixture/skills/example/references/bad.md"
+
+  run run_linked_reference_identity_check "$fixture"
+  [ "$status" -eq 0 ]
+}
+
+@test "linked prose scan catches forbidden Setext headings" {
+  fixture="$BATS_TEST_TMPDIR/repo"
+  mkdir -p "$fixture/skills/example/references"
+  printf '%s\n' \
+    '# Example' \
+    '' \
+    '- [Setext](references/setext.md)' \
+    >"$fixture/skills/example/SKILL.md"
+  printf '%s\n' \
+    '# Reference' \
+    'Operating-loop use' \
+    '==================' \
+    >"$fixture/skills/example/references/setext.md"
+
+  run run_linked_reference_identity_check "$fixture"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"setext.md:2"* ]]
+  [[ "$output" == *"Operating-loop use"* ]]
+}
+
+@test "indented continuation remains prose when it cannot interrupt a paragraph" {
+  fixture="$BATS_TEST_TMPDIR/repo"
+  mkdir -p "$fixture/skills/example/references"
+  printf '%s\n' \
+    '# Example' \
+    '' \
+    '- [Continuation](references/continuation.md)' \
+    >"$fixture/skills/example/SKILL.md"
+  {
+    printf '%s\n' '# Continuation' '' 'AgentOps is the'
+    printf '    operating loop every coding agent follows.\n'
+  } >"$fixture/skills/example/references/continuation.md"
+
+  run run_linked_reference_identity_check "$fixture"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"continuation.md:3"* ]]
+  [[ "$output" == *"AgentOps is the operating loop"* ]]
+}
+
+@test "blockquoted indented CommonMark code is excluded from prose" {
+  fixture="$BATS_TEST_TMPDIR/repo"
+  mkdir -p "$fixture/skills/example/references"
+  printf '%s\n' \
+    '# Example' \
+    '' \
+    '- [Quoted code](references/quoted-code.md)' \
+    >"$fixture/skills/example/SKILL.md"
+  printf '%s\n' \
+    '# Quoted code' \
+    '' \
+    '>     AgentOps is the operating loop every coding agent follows.' \
+    '>     The knowledge flywheel label is retired.' \
+    >"$fixture/skills/example/references/quoted-code.md"
+
+  run run_linked_reference_identity_check "$fixture"
+  [ "$status" -eq 0 ]
+}
+
+@test "linked prose scan catches forbidden blockquoted Setext headings" {
+  fixture="$BATS_TEST_TMPDIR/repo"
+  mkdir -p "$fixture/skills/example/references"
+  printf '%s\n' \
+    '# Example' \
+    '' \
+    '- [Quoted Setext](references/quoted-setext.md)' \
+    >"$fixture/skills/example/SKILL.md"
+  printf '%s\n' \
+    '# Reference' \
+    '> Operating-loop use' \
+    '> ==================' \
+    >"$fixture/skills/example/references/quoted-setext.md"
+
+  run run_linked_reference_identity_check "$fixture"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"quoted-setext.md:2"* ]]
+  [[ "$output" == *"Operating-loop use"* ]]
+}
+
+@test "linked prose scan catches obsolete identities across wrapped lines" {
+  fixture="$BATS_TEST_TMPDIR/repo"
+  mkdir -p "$fixture/skills/example/references"
+  printf '%s\n' \
+    '# Example' \
+    '' \
+    '- [Identity](references/identity.md)' \
+    '- [Flywheel][flywheel]' \
+    '' \
+    '[flywheel]: references/flywheel.md' \
+    >"$fixture/skills/example/SKILL.md"
+  printf '%s\n' \
+    '# Identity' \
+    '' \
+    'AgentOps is the' \
+    'operating loop every coding agent follows.' \
+    >"$fixture/skills/example/references/identity.md"
+  printf '%s\n' \
+    '# Flywheel' \
+    '' \
+    'The retired knowledge' \
+    'flywheel framing should not return.' \
+    >"$fixture/skills/example/references/flywheel.md"
+
+  run run_linked_reference_identity_check "$fixture"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"identity.md:3"* ]]
+  [[ "$output" == *"AgentOps is the operating loop"* ]]
+  [[ "$output" == *"flywheel.md:3"* ]]
+  [[ "$output" == *"knowledge flywheel"* ]]
 }
 
 @test "ao init scaffolds only declared evidence destinations" {

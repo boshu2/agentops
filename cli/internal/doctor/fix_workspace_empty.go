@@ -10,13 +10,17 @@ package doctor
 // half-finished lanes: they clutter inventory output and mislead tooling that
 // treats directory presence as a signal.
 //
-// Three name classes are deliberately NOT claimed here:
+// Four name classes are deliberately NOT claimed here:
 //
 //   - "ao" — the structured knowledge-store root. Its (empty) substructure is
 //     the knowledge subsystem's contract (fm-knowledge-missing-substructure).
-//   - canonical directory names (the VALUES of workspaceCanonicalAliases:
-//     postmortem, pre-mortem-checks, handoff, retro, proofs, tests) — these may
-//     legitimately sit empty awaiting their first write.
+//   - canonical top-level directory names (the VALUES of
+//     workspaceCanonicalAliases: postmortem, pre-mortem-checks, retro, proofs,
+//     tests) — these may legitimately sit empty awaiting their first write.
+//   - "handoff" — the earlier handoff root is a read-only compatibility source;
+//     Doctor never moves it, even when it is currently empty.
+//   - "mto-handoff" — a distinct, live recurrence protocol consumed by the MTO
+//     assay. It is neither a handoff spelling drift nor empty-dir debris.
 //   - stale/retry-named directories (isWorkspaceStaleDirName) — owned by the
 //     workspace GC failure mode (fm-ws-stale-queue-dirs); no double-claim.
 //
@@ -42,9 +46,10 @@ func init() {
 
 // workspaceEmptyDirClaimed reports whether name is excluded from the
 // empty-dirs failure mode because another owner claims it: the knowledge
-// store root, a canonical directory name, or a stale/retry-named directory.
+// store root, a read-only/consumer-owned compatibility root, a canonical
+// directory name, or a stale/retry-named directory.
 func workspaceEmptyDirClaimed(name string) bool {
-	if name == "ao" {
+	if name == "ao" || name == "handoff" || name == "mto-handoff" {
 		return true
 	}
 	for _, canonical := range workspaceCanonicalAliases {
