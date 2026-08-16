@@ -12,10 +12,11 @@ The more important result is epistemic: **0/52 skills currently qualify for an
 overall quality `PASS` under the updated rubric.** None has the current,
 exact-version baseline/control matrix required for E2. Strict portable Agent
 Skills frontmatter is 0/52 PASS: all 52 sources have a valid portable identity
-core but use AgentOps host extensions. A full-bundle static safety review found
-22 `FAIL`, 6 `WARN`, 11 `NOT_PROVEN`, and only 13 uneventful static screens. The
-static readiness score is a package-shape heuristic; it is not evidence that a
-skill is portable, safe, or improves outcomes.
+core but use AgentOps host extensions, and two also violate `allowed-tools`
+format. A full-bundle static safety review found 22 `FAIL`, 6 `WARN`, 11
+`NOT_PROVEN`, and only 13 uneventful static screens. The static readiness score
+is a package-shape heuristic; it is not evidence that a skill is portable,
+safe, or improves outcomes.
 
 This is one consolidated control artifact. Its consumer is this remediation PR
 and later skill release decisions; it should be superseded, not appended to,
@@ -38,10 +39,13 @@ are test data or generated projections rather than additional source skills.
 - AgentOps repository profile: 52/52 passed the local v2 frontmatter validator
   and `heal.sh --check --strict`, with zero Pass-1 findings; source/projection
   count was 52/52.
-- Strict portable Agent Skills frontmatter: 0 PASS, 52 `FAIL-HX`
-  (`HOST_EXTENDED`). All 52 pass the portable name/directory/description core;
-  all 52 also have seven universal non-spec top-level fields and list-valued
-  AgentOps metadata where the portable extension map requires string values.
+- Strict portable Agent Skills frontmatter: 0 PASS, 50 `FAIL-HX`
+  (`HOST_EXTENDED`), and 2 `FAIL-HX+AT`. All 52 pass the portable
+  name/directory/description core; all 52 also have seven universal non-spec
+  top-level fields and list-valued AgentOps metadata where the portable
+  extension map requires string values. `research` and `status` additionally
+  use comma-delimited `allowed-tools` where the specification requires a
+  space-separated string.
 - Baseline deep audit: 34 PASS, 15 WARN, 3 FAIL.
 - Remediated deep audit: 35 PASS, 17 WARN, 0 FAIL.
 - Static readiness: 16 A, 36 B, 0 C, 0 S; mean 18.65, median 19, range 12–24
@@ -83,6 +87,9 @@ ALLOWED = {"name", "description", "license", "compatibility", "metadata", "allow
 extras = set(frontmatter) - ALLOWED
 bad_metadata = {key for key, value in frontmatter.get("metadata", {}).items()
                 if not isinstance(key, str) or not isinstance(value, str)}
+allowed_tools = frontmatter.get("allowed-tools")
+bad_allowed_tools = (allowed_tools is not None and
+                     (not isinstance(allowed_tools, str) or "," in allowed_tools))
 ```
 
 ```bash
@@ -105,7 +112,8 @@ done
   remains advisory; `FAIL` is blocking.
 - **Portable:** strict published Agent Skills frontmatter. `FAIL-HX` means the
   portable identity core passes but host extension fields make the source
-  non-portable as written. The AgentOps repository profile is graded separately.
+  non-portable as written; `+AT` adds an `allowed-tools` format violation. The
+  AgentOps repository profile is graded separately.
 - **Static:** deterministic 0–30 package-readiness score and C/B/A/S band. It
   evaluates neither the safety gate nor behavioral effectiveness.
 - **Safety:** full-package static review of scripts, tools, effects, filesystem
@@ -124,7 +132,7 @@ done
 
 The arrow in three rows shows baseline to remediated deep-audit status. Findings
 are the remaining Pass-2 warnings after remediation. `FAIL-HX` has the same
-universal cause in every row; per-skill extension variants are summarized below.
+universal cause in every row; the two `+AT` variants are called out directly.
 
 | Skill | Deep audit | Portable | Static | Safety | Behavior | Remaining findings |
 |---|---:|---:|---:|---:|---:|---|
@@ -162,7 +170,7 @@ universal cause in every row; per-skill extension variants are summarized below.
 | `rch` | PASS | FAIL-HX | 19/30 B | NOT_PROVEN | E1 | — |
 | `reality-check` | PASS | FAIL-HX | 20/30 B | PASS | E1 | — |
 | `refactor` | PASS | FAIL-HX | 19/30 B | FAIL | E1 | — |
-| `research` | WARN | FAIL-HX | 20/30 B | FAIL | E1 | constraints-frontloaded, quality-rubric |
+| `research` | WARN | FAIL-HX+AT | 20/30 B | FAIL | E1 | constraints-frontloaded, quality-rubric |
 | `reverse-engineer` | PASS | FAIL-HX | 23/30 A | FAIL | E1 | — |
 | `rpi` | WARN | FAIL-HX | 21/30 A | FAIL | E1 | constraints-frontloaded, quality-rubric |
 | `sbh` | PASS | FAIL-HX | 17/30 B | NOT_PROVEN | E0 | — |
@@ -172,7 +180,7 @@ universal cause in every row; per-skill extension variants are summarized below.
 | `shared` | PASS | FAIL-HX | 12/30 B | PASS | E0 | — |
 | `skill-builder` | PASS | FAIL-HX | 23/30 A | WARN | E1 | — |
 | `standards` | WARN | FAIL-HX | 21/30 A | PASS | E1 | constraints-frontloaded, quality-rubric |
-| `status` | PASS | FAIL-HX | 14/30 B | PASS | E1 | — |
+| `status` | PASS | FAIL-HX+AT | 14/30 B | PASS | E1 | — |
 | `swarm` | PASS | FAIL-HX | 13/30 B | FAIL | E1 | — |
 | `test` | PASS | FAIL-HX | 21/30 A | FAIL | E1 | — |
 | `toil-mining` | PASS | FAIL-HX | 18/30 B | WARN | E1 | — |
@@ -298,6 +306,8 @@ so they do not establish skill-bound E1 evidence.
    all 52 fail strict portable frontmatter. Seven universal top-level AgentOps
    fields sit outside the six published fields, and `capabilities`, `effects`,
    and `dependencies` are lists where portable `metadata` is string-to-string.
+   `research` and `status` also separate `allowed-tools` with commas instead of
+   spaces.
    Additional extensions are `user-invocable` (35), `context` (24), `model`
    (1), rich `graph_root` (11), `internal` (2), and `external_dependencies` (2).
 2. **The previous score overclaimed.** Safety was one compensable 0–3 category

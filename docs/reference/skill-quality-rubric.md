@@ -25,7 +25,8 @@ Portable conformance is evaluated against the Agent Skills specification before
 any host profile. `PASS` requires only the six specified top-level frontmatter
 keys (`name`, `description`, `license`, `compatibility`, `metadata`, and
 experimental `allowed-tools`), all field constraints, string-to-string
-`metadata`, valid relative resource links, and a loadable body. A package that
+`metadata`, a space-separated `allowed-tools` string when present, valid
+relative resource links, and a loadable body. A package that
 passes its repository schema but uses additional host fields is
 `FAIL — HOST_EXTENDED` for the portable gate, not portable `PASS`. Report the
 repository/host profile separately so an extension cannot hide a portable
