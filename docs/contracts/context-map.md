@@ -6,6 +6,7 @@
 
 | Source | Target |
 |---|---|
+| `rpi` | `anti-ceremony` |
 | `rpi` | `implement` |
 | `rpi` | `plan` |
 | `rpi` | `validate` |
@@ -44,6 +45,7 @@
 | `premortem` | `supplier-to` | `plan` |
 | `product` | `supplier-to` | `plan` |
 | `reality-check` | `supplier-to` | `plan` |
+| `rpi` | `customer-of` | `anti-ceremony` |
 | `rpi` | `customer-of` | `implement` |
 | `rpi` | `customer-of` | `plan` |
 | `rpi` | `customer-of` | `validate` |
@@ -70,6 +72,10 @@
 | `agent-native` | produces | `worker-handoff` |
 | `agy-native` | consumes | `explicit-packet` |
 | `agy-native` | produces | `agy-run-evidence` |
+| `anti-ceremony` | consumes | `caller-outcome` |
+| `anti-ceremony` | consumes | `proposed-process-work` |
+| `anti-ceremony` | consumes | `proof-state` |
+| `anti-ceremony` | produces | `anti-ceremony-decision` |
 | `automation-shape-routing` | consumes | `task-intent` |
 | `automation-shape-routing` | produces | `automation-shape-verdict` |
 | `bootstrap` | consumes | `fitness` |
@@ -122,6 +128,7 @@
 | `research` | consumes | `research-question` |
 | `research` | produces | `research-report` |
 | `reverse-engineer` | produces | `.agents/scratch/reverse-engineer/*.md` |
+| `rpi` | consumes | `anti-ceremony` |
 | `rpi` | consumes | `plan` |
 | `rpi` | consumes | `implement` |
 | `rpi` | consumes | `validate` |

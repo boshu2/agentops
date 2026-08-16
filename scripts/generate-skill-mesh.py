@@ -74,7 +74,7 @@ def validate_graph(entries: list[dict[str, Any]]) -> None:
             if dep not in names:
                 raise ValueError(f"dangling dependency: {entry['name']} -> {dep}")
     core = {entry["name"]: set(entry["dependencies"]) for entry in entries if entry["name"] in {"rpi", "plan", "implement", "validate"}}
-    expected = {"rpi": {"plan", "implement", "validate"}, "plan": set(), "implement": set(), "validate": set()}
+    expected = {"rpi": {"anti-ceremony", "plan", "implement", "validate"}, "plan": set(), "implement": set(), "validate": set()}
     if core != expected:
         raise ValueError(f"core dependency graph mismatch: {core!r}")
     extra = {entry["name"]: entry["dependencies"] for entry in entries if entry["name"] != "rpi" and entry["dependencies"]}

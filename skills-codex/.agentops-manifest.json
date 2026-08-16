@@ -2,7 +2,7 @@
   "generator": "manual-maintained",
   "source_root": "skills",
   "layout": "modular",
-  "codex_override_catalog_hash": "a9840cf9e06c17b0a00615f50f6796bb45ecd84b6943fa82fa98aab455efc9db",
+  "codex_override_catalog_hash": "e693c4e403aa0b1d63b90a64a2d97cbfde4e3e03ae0a0d8b0d2556737bf21534",
   "codex_override_catalog": {
     "version": 1,
     "description": "Machine-readable Codex treatment map for the full skill catalog.",
@@ -338,6 +338,12 @@
         "treatment": "parity_only",
         "wave": "catalog-parity",
         "reason": "Auto-generated parity twin (codex-sync): skills/using-flywheel is the source of truth; no durable Codex-specific divergence yet."
+      },
+      {
+        "name": "anti-ceremony",
+        "treatment": "parity_only",
+        "wave": "catalog-parity",
+        "reason": "Auto-generated parity twin (codex-sync): skills/anti-ceremony is the source of truth; no durable Codex-specific divergence yet."
       }
     ]
   },
@@ -365,6 +371,12 @@
       "source_skill": "skills/agy-native",
       "source_hash": "e1506ab3711bd362b032624f0a11f5cbbd9372da101f86195f42a6d375bb6430",
       "generated_hash": "cd08d16a52d7f9d5bc7d19c3a70e449982ee32c560487761b6af8ddfe4ded2fe"
+    },
+    {
+      "name": "anti-ceremony",
+      "source_skill": "skills/anti-ceremony",
+      "source_hash": "7e2212dfc04997fe8883d18afe8fd07de801370a94a9597f445a6920390ba359",
+      "generated_hash": "8c2c0c6469a6294ab5bd9a9073951d524d6f39c6e62f58eee048cf4ec6dc17e1"
     },
     {
       "name": "automation-shape-routing",
@@ -555,8 +567,8 @@
     {
       "name": "rpi",
       "source_skill": "skills/rpi",
-      "source_hash": "88d6447a288d335faa25a7d8628e9ebd877d5c761c2af6bb765c96afab984730",
-      "generated_hash": "f8686fc7915991a903f7bfbe1d24e7d2c3c0e6c5f30a8bed4bd4d2c4ac31c0f9"
+      "source_hash": "4870c343799f313706c7928b59d3b55cb2b4f8bd34b972dddf57e4859b999695",
+      "generated_hash": "20c93a0cbd9f0a5a3cae66f7afdc4a8c06c4b628886508bd127aabdd4c4bb266"
     },
     {
       "name": "sbh",
@@ -597,8 +609,8 @@
     {
       "name": "standards",
       "source_skill": "skills/standards",
-      "source_hash": "11897ae22c32bca9f28e307ccc574783c8663962662c15defb7f1ec5ad948c4a",
-      "generated_hash": "886f39e63300f5d2af927448732c93ca75170bb70abf00d35ae7112c61f1701e"
+      "source_hash": "02caa3fe0a55bfbe46c068323cf91d8651e508fe07c000d011ae0f3fb5078d44",
+      "generated_hash": "72d77ad41f4fbf98f0cd43dc26abf3b4a5cae88c995c860f74ae209150cfbeb1"
     },
     {
       "name": "status",
@@ -649,5 +661,5 @@
       "generated_hash": "30f72769961a244749883e03cb04e329cd0feb03dd5b641d2a73a2e5dc8e9d42"
     }
   ],
-  "package_count": 51
+  "package_count": 52
 }

@@ -14,9 +14,11 @@ ceremony could grow faster than validated capability, and then separated the
 system into a **federated graph with one small proof traversal**:
 
 ```text
-caller intent -> Plan -> Implement -> fresh Validate -> report and stop
-                    \        |              /
-                     exact subject identity
+caller intent -> anti-ceremony guard
+                    | STOP -> NOT_PLANNED -> report and stop
+                    | CONTINUE -> Plan -> Implement -> fresh Validate -> report and stop
+                                      \        |              /
+                                       exact subject identity
 
 optional, later, caller-selected:
 verdict collections -> Learn -> proposed skill/knowledge change
@@ -305,13 +307,17 @@ release commits.
 ## The present graph
 
 The generated hard-dependency graph is intentionally sparse: RPI depends on
-Plan, Implement, and Validate; the many specialist skills have no declared
-hard dependency edges. That sparsity is a feature. Optional context and
-caller-selected strategies do not become mandatory lifecycle stages.
+Anti-Ceremony, Plan, Implement, and Validate; the many specialist skills have
+no declared hard dependency edges. RPI invokes the artifact-free quick guard
+once before Plan: `STOP` dispatches no core phase, while `CONTINUE` preserves
+Plan -> Implement -> fresh Validate. Other optional context and caller-selected
+strategies do not become mandatory lifecycle stages.
 
 ```mermaid
 flowchart LR
-  I[(caller tracker / intent)] --> P[Plan]
+  I[(caller tracker / intent)] --> A[Anti-ceremony quick guard]
+  A -->|STOP| N[NOT_PLANNED / report and stop]
+  A -->|CONTINUE| P[Plan]
   P --> M[Implement]
   M --> C[(Git subject + check receipts)]
   I --> V[Fresh Validate]
@@ -329,6 +335,7 @@ flowchart LR
   L[Learn] -. consumes requested verdict collections .-> K
 
   subgraph "AgentOps-owned semantic membrane"
+    A
     P
     M
     V

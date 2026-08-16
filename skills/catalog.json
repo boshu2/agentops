@@ -1,6 +1,6 @@
 {
   "schema_version": "3",
-  "skill_count": 51,
+  "skill_count": 52,
   "skills": [
     {
       "canonical_status": "canonical",
@@ -146,6 +146,37 @@
       "references_count": 0,
       "tier": "cross-vendor",
       "user_invocable": false
+    },
+    {
+      "canonical_status": "canonical",
+      "capabilities": [
+        "guard_anti_ceremony",
+        "audit_anti_ceremony"
+      ],
+      "codex_override_present": true,
+      "consumes": [
+        "caller-outcome",
+        "proposed-process-work",
+        "proof-state"
+      ],
+      "context_rel": [],
+      "dependencies": [],
+      "description": "Guard outcome work against process overhead. Triggers: RPI pre-Plan guard; explicit \"full anti-ceremony audit\" requests.",
+      "disposition": "keep_specialist",
+      "effects": [],
+      "graph_root": false,
+      "hexagonal_role": "supporting",
+      "name": "anti-ceremony",
+      "practices": [
+        "lean",
+        "evidence-based-development"
+      ],
+      "produces": [
+        "anti-ceremony-decision"
+      ],
+      "references_count": 0,
+      "tier": "judgment",
+      "user_invocable": true
     },
     {
       "canonical_status": "canonical",
@@ -1183,11 +1214,16 @@
       ],
       "codex_override_present": true,
       "consumes": [
+        "anti-ceremony",
         "plan",
         "implement",
         "validate"
       ],
       "context_rel": [
+        {
+          "kind": "customer-of",
+          "with": "anti-ceremony"
+        },
         {
           "kind": "customer-of",
           "with": "plan"
@@ -1202,6 +1238,7 @@
         }
       ],
       "dependencies": [
+        "anti-ceremony",
         "plan",
         "implement",
         "validate"
@@ -1209,6 +1246,7 @@
       "description": "Coordinate one RPI traversal: one bounded Plan, Implement, and fresh Validate experiment, then report and stop. Triggers: \"run rpi\", \"run one traversal\", \"execute this plan\", orchestration or worker delegation that implements changes.",
       "disposition": "keep",
       "effects": [
+        "invoke_anti_ceremony_guard",
         "dispatch_core_phases"
       ],
       "graph_root": true,
