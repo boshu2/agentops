@@ -353,7 +353,13 @@ so they do not establish skill-bound E1 evidence.
    directional experiments, but it does not establish a current exact-version
    treatment/control matrix covering direct, indirect, incomplete-input,
    should-not-trigger, edge, coexistence, and output behavior together. The one
-   exact-bound `operationalize` receipt is explicitly legacy and inert.
+   exact-bound `operationalize` receipt is explicitly legacy and inert. The
+   stricter current probe-coverage gate is therefore 0/12 product/judgment
+   skills; that does not conflict with E1, which also accepts scenarios,
+   self-tests, and stale directional receipts. `premortem` and `standards`
+   still label downgraded 2026-08-04 probe rows **MEASURED** and make causal
+   claims even though the ledger now marks those rows LEGACY-UNVERIFIED; treat
+   those kernel claims as stale until rebound or relabeled.
 7. **The remaining content warnings are not automatically defects.** Four
    kernels are over the local 250-line advisory threshold (`cass`, `cc-hooks`,
    `craft-goal`, `using-gc`), and the other warnings mainly ask for front-loaded
@@ -374,6 +380,7 @@ so they do not establish skill-bound E1 evidence.
 | Landed here | Separate portable conformance, AgentOps profile checks, static readiness, safety, and effectiveness; remove automatic solid credit for absent optional components. | Reviewers cannot mistake a local/profile or A/B result for portable, behavioral, or safety proof. |
 | Landed on main in [#1065](https://github.com/boshu2/agentops/pull/1065) | Add honest output contracts to `plan`, `implement`, and `using-flywheel`; regenerate owned projections. | The 52-skill non-strict deep audit has zero FAIL and the focused regression stays green. |
 | P0 | Repair the 22 safety FAIL packages as bounded, separately reviewable behavior changes. Start with arbitrary process/model dispatch, credentialed network access, destructive paths, secret emission, and false effect declarations; add planted-negative tests around each repaired boundary. | Each package passes fresh static review plus isolated runtime tests for its exact dangerous paths; no score increase substitutes for that evidence. |
+| P0 | Remove or rebind the stale **MEASURED** causal claims in `premortem` and `standards`. | Each claim either cites a current v3 receipt bound to the exact skill digest or is explicitly labeled historical/directional; the kernel and ledger no longer disagree. |
 | P1 | Choose and implement one portable boundary: migrate canonical frontmatter into the six-field contract with string metadata, or generate and validate a spec-conformant portable projection while naming canonical sources as AgentOps-only. | A pinned portable validator passes every artifact advertised as portable; host extensions remain explicit and losslessly owned elsewhere. |
 | P1 | Repair the audit engine's binding/target/evidence defects before treating it as a conformance oracle outside canonical `skills/*`. | Known-good external fixtures cannot PASS when Pass 1 fails; documented target modes work or are removed; evidence names the actual missing condition. |
 | P1 | Build E2 evaluations only for the release-critical spine first: `plan`, `implement`, `validate`, `rpi`, `security`, and `skill-builder`. Use no-skill controls and the five activation/output cases in the rubric. | A release decision consumes exact-version receipts; a failing or inert skill is simplified, reshaped, or retired rather than granted points for files. |
