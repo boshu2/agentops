@@ -1,35 +1,50 @@
-# Deletion proposal — repo operating contract (DRAFT, Bo ratifies)
+# Deletion proposal — repo operating contract (DRAFT; merge authorized after repair)
 
-> Evidence base: 80 scored runs across 5 executors (luna, terra, sol-config,
-> Opus 5, Fable) — sweeps 1/2/4 + tier-2 pilot + probe waves. Every verdict
-> cites its measurement. This PR edits `AGENTS.md` per those verdicts and
-> merges only on Bo's explicit ratification. The study supported a ~55% cut
-> against its 2026-08-05 subject, but current `main` has since added mandatory
-> anti-ceremony, federated-authority, and canonical-source contracts outside
-> that experiment. This rebased proposal keeps those additions, yielding a
-> narrower ~21% current-main reduction. The separate historical Codex sweep
-> reported +8-12% tokens and no execution delta within its bounded design; it
-> is not a claim of current skill-probe coverage.
+> Historical record: the estate-ablation artifacts report 80 scored runs across
+> five executor configurations (luna, terra, sol-config, Opus 5, and Fable)
+> spanning sweeps 1/2/4, the tier-2 pilot, and probe waves. Those legacy runs
+> predate the current evidence contract. Their aggregate count, labels, and
+> section classifications are legacy-unverified and non-promotable: they may
+> motivate hypotheses, but they do not establish causal effects, current
+> behavior, or generalize across models or runtimes. Contemporaneous citations
+> do not promote those reports under the current contract.
+>
+> This PR edits `AGENTS.md` while retaining every current mandatory contract.
+> Bo has explicitly authorized merge after these bounded honesty corrections
+> and required checks pass. This repair leaves the PR in draft; readiness and
+> merge remain separate caller actions.
+>
+> The historical proposal reported a ~55% cut against its 2026-08-05 subject.
+> Current `main` has since added mandatory anti-ceremony, federated-authority,
+> and canonical-source contracts, so this rebased diff is a narrower ~21%
+> reduction. Those percentages compare document size, not behavior. A separate
+> historical Codex sweep reported +8–12% tokens and no execution delta within
+> its bounded design; that report is also legacy-unverified and non-promotable.
+> It proves neither a generalized token cost nor an execution effect and is not
+> current skill-probe coverage.
 
-| Section | Verdict | Evidence | Action |
-|---|---|---|---|
-| Intro + loop diagram | KEEP | orientation; 3 lines | trim |
-| Authority and trust | **SURVIVOR** | Opus/Fable t03/t04 applied its rules mid-execution (sweep 4); the one contract surface observed changing behavior | keep, light trim |
-| Honest work and anti-ceremony | POST-STUDY CONTRACT | added on current main after the measured subject | keep current-main text |
-| Runtime floor | ENFORCED | no-claude-p hook carries it; prose never observed load-bearing | shrink to pointer |
-| Federated source authority | POST-STUDY CONTRACT | current federated ownership boundary | keep current-main text |
-| Source precedence | KEEP (cheap) | orchestrator-facing, 4 lines | keep |
-| Constraint floor | ENFORCED | python-ratchet gate + ADR carry it | shrink to pointer |
-| Core loop | PRODUCT | dead for executors (sweeps 1-2: zero effect on GPT-line); alive as orchestrator spec (this session ran it all day) | compress ~50% |
-| Product boundary | PRODUCT | boundary behavior; sweep-4 scope discipline consistent with it | keep current-main federated/factory rules |
-| Concurrency | MOSTLY-NATIVE | rt-01: correct collision handling unaided; current rule also constrains delegation authority | keep current-main rule |
-| Triggered-sources table | REQUIRED INDEX | `validate-agents-split` requires live links to CI and Codex contracts | keep current-main table |
-| Closeout | PRODUCT | validate flow carries mechanics | compress |
+| Section | Current basis | Action |
+|---|---|---|
+| Intro + loop diagram | current canonical one-pass RPI orientation | trim |
+| Authority and trust | current mandatory trust boundary; the legacy `SURVIVOR` classification remains a non-promotable hypothesis | keep, light trim |
+| Honest work and anti-ceremony | current mandatory contract added after the historical subject | keep current-main text |
+| Runtime floor | current no-`claude -p` guard plus an explicit runtime boundary | shrink without weakening the prohibition |
+| Federated source authority | current federated ownership boundary | keep current-main text |
+| Source precedence | current source-authority contract | keep |
+| Constraint floor | current Python ratchet, ADR, and active-constraint contract | shrink to enforceable summary |
+| Core loop | current standard RPI traversal; legacy sweeps do not establish executor effect | compress without changing semantics |
+| Product boundary | current ownership and factory boundary; legacy associations do not establish causation | keep current-main rules |
+| Concurrency | current delegation and writer-isolation boundary; the legacy rt-01 report is non-promotable | keep current-main rule |
+| Triggered-sources table | current `validate-agents-split` index contract | keep current-main table |
+| Closeout | current exact-subject, evidence, and fresh-validation contract | compress without changing semantics |
 
-Rebased net: ~10.5KB → ~8.3KB (-21%). Compressions reword older measured
-sections; post-study doctrine and live contract links remain intact.
-Follow-ups (separate PRs, not this one): (1) codex adapter scopes skill
-injection by task class (sweep-1 receipt); (2) closure-artifact formats that
-carry caveats (sweep-4 disclosure-lives-in-chat finding); (3) S3 rules-file
-lever unmeasured — rules stay untouched (wave-1 measured their INLINE form
-BEHAVIORAL; do not delete unmeasured surface).
+Rebased net: ~10.5KB → ~8.3KB (-21%). The compression is a current design
+proposal; legacy reports supply hypotheses, not proof. Post-study doctrine and
+live contract links remain intact.
+
+Follow-ups are separate hypotheses, not findings or work authorized by this PR:
+(1) evaluate task-class-gated Codex skill injection suggested by the legacy
+sweep-1 report; (2) evaluate closure formats that carry caveats suggested by
+the legacy sweep-4 report; (3) leave S3 rules unchanged because they remain
+unmeasured under the current contract—the historical wave-1 `BEHAVIORAL` label
+is legacy-unverified and non-promotable.
