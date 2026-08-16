@@ -127,7 +127,7 @@
 | `refactor` | produces | `code-changes` |
 | `research` | consumes | `research-question` |
 | `research` | produces | `research-report` |
-| `reverse-engineer` | produces | `.agents/scratch/reverse-engineer/*.md` |
+| `reverse-engineer` | produces | `.agents/scratch/reverse-engineer/*/` |
 | `rpi` | consumes | `anti-ceremony` |
 | `rpi` | consumes | `plan` |
 | `rpi` | consumes | `implement` |

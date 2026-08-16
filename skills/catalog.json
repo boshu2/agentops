@@ -1200,7 +1200,7 @@
         "adr"
       ],
       "produces": [
-        ".agents/scratch/reverse-engineer/*.md"
+        ".agents/scratch/reverse-engineer/*/"
       ],
       "references_count": 2,
       "tier": "execution",
