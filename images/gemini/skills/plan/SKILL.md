@@ -8,6 +8,7 @@ practices:
 hexagonal_role: domain
 consumes: []
 produces: []
+output_contract: 'in-place caller intent update or concise proposed amendment; never an AgentOps planning artifact'
 context_rel: []
 skill_api_version: 1
 user-invocable: true
