@@ -603,8 +603,8 @@
     {
       "name": "skill-builder",
       "source_skill": "skills/skill-builder",
-      "source_hash": "e7383dd770bef7595bf2e6db5dff94ef0ba74eff77e5c4db9ad750084eedbb4c",
-      "generated_hash": "b401b04fc6bbf86ccbdc67e882a7d6831925bb4768a2eaf61de359a83b976ae1"
+      "source_hash": "b500ca18d663bf8b11a4bfa4c27ba82f8335f73560212a81d003e7eff4b68d3a",
+      "generated_hash": "d42c6cee0783ec810a8a9723bd606770d2f52587438894a4143035d7d31b03a8"
     },
     {
       "name": "standards",

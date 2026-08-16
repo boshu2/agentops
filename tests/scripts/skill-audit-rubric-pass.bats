@@ -12,8 +12,9 @@ setup() {
     REPO_ROOT="$(cd "$BATS_TEST_DIRNAME/../.." && pwd)"
     AUDIT="$REPO_ROOT/skills/skill-builder/scripts/audit.sh"
     SCORE="$REPO_ROOT/skills/skill-builder/scripts/score_agentops_skill.py"
+    SCHEMA="$REPO_ROOT/skills/skill-builder/schemas/audit-report.json"
 
-    # The 10 rubric categories, verbatim from docs/reference/skill-quality-rubric.md.
+    # The 10 scored categories, verbatim from the rubric.
     EXPECTED_CATEGORIES=(
         trigger_quality kernel_clarity progressive_disclosure helper_scripts
         validation self_test assets_templates subagents_roles safety_boundaries
@@ -65,9 +66,10 @@ teardown() {
     [[ "$output" == *'"effectiveness_evaluated": false'* ]]
 }
 
-@test "audit.sh folds a rubric block with all 10 categories into the report" {
+@test "audit.sh folds a rubric block with all 10 scored categories into the report" {
     run bash "$AUDIT" "$FIXTURE" --json "$TMP_DIR/report.json"
     [ "$status" -eq 0 ]
+    [[ "$output" == *"/30"* ]]
 
     python3 - "$TMP_DIR/report.json" <<PY
 import json, sys
@@ -82,11 +84,17 @@ assert rubric["advisory"] is True
 expected = "${EXPECTED_CATEGORIES[*]}".split()
 got = [c["category"] for c in rubric["categories"]]
 assert got == expected, f"category drift: {got} != {expected}"
+assert len(set(got)) == len(expected), f"duplicate categories: {got}"
 for c in rubric["categories"]:
     assert 0 <= c["score"] <= 3, c
     assert c["reason"], f"missing reason for {c['category']}"
-assert 0 <= rubric["total_score"] <= 30
-assert rubric["rating"] in ("C", "B", "A", "S")
+assert rubric["total_score"] == sum(c["score"] for c in rubric["categories"])
+expected_rating = (
+    "S" if rubric["total_score"] >= 27 else
+    "A" if rubric["total_score"] >= 21 else
+    "B" if rubric["total_score"] >= 11 else "C"
+)
+assert rubric["rating"] == expected_rating
 print("rubric block OK")
 PY
 }
@@ -109,10 +117,60 @@ PY
     verdict="$(python3 -c "import json,sys; print(json.load(open(sys.argv[1]))['verdict'])" "$TMP_DIR/report.json")"
     [ "$verdict" = "WARN" ]
 
-    # Optional package parts are not rewarded when this concise fixture does
-    # not need them; the verdict is still driven only by Pass 1+2.
+    # Optional package absence is uncertainty (1), never automatic solid (2).
+    run python3 "$SCORE" "$FIXTURE"
+    [ "$status" -eq 0 ]
+    SCORE_OUTPUT="$output" python3 - <<'PY'
+import json
+import os
+
+report = json.loads(os.environ["SCORE_OUTPUT"])
+assert report["total_score"] == 15
+assert report["rating"] == "B"
+assert report["scores"]["validation"] == 0
+assert report["scores"]["self_test"] == 1
+assert report["scores"]["helper_scripts"] == 1
+assert report["scores"]["assets_templates"] == 1
+assert report["scores"]["subagents_roles"] == 1
+assert report["notes"]["trigger_quality"] == "Description contains a literal trigger marker."
+metrics = report["metrics"]
+assert metrics["script_files"] == 0
+assert metrics["asset_files"] == 0
+assert metrics["subagent_files"] == 0
+PY
+
+    # The verdict is still driven only by Pass 1+2.
     rating="$(python3 -c "import json,sys; print(json.load(open(sys.argv[1]))['rubric']['rating'])" "$TMP_DIR/report.json")"
-    [[ "$rating" = "A" || "$rating" = "S" ]]
+    [[ "$rating" = "B" ]]
+}
+
+@test "static readiness band boundaries match the 0-30 rubric" {
+    PYTHONDONTWRITEBYTECODE=1 SCORE_PATH="$SCORE" python3 - <<'PY'
+import importlib.util
+import os
+
+spec = importlib.util.spec_from_file_location("score_agentops_skill", os.environ["SCORE_PATH"])
+module = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(module)
+
+expected = {
+    0: "C", 10: "C", 11: "B", 20: "B",
+    21: "A", 26: "A", 27: "S", 30: "S",
+}
+for score, band in expected.items():
+    assert module.readiness_rating(score) == band, (score, band)
+
+assert module.score_trigger("") == (0, "Description missing.")
+assert module.score_trigger("Do a thing.") == (
+    1, "Description is present without a literal trigger or boundary marker."
+)
+assert module.score_trigger("Do a thing. Use when sampling.") == (
+    2, "Description contains a literal trigger marker."
+)
+assert module.score_trigger("Do a thing only when requested.") == (
+    3, "Description contains a literal false-positive boundary phrase."
+)
+PY
 }
 
 @test "canonical plan and execution skills keep explicit output contracts" {
@@ -129,9 +187,26 @@ PY
     done
 }
 
-@test "report stays valid JSON when the rubric block is emitted" {
+@test "report stays valid against the audit schema when rubric is emitted" {
     run bash "$AUDIT" "$FIXTURE" --json "$TMP_DIR/report.json"
     [ "$status" -eq 0 ]
-    run python3 -c "import json,sys; json.load(open(sys.argv[1]))" "$TMP_DIR/report.json"
+    run python3 - "$TMP_DIR/report.json" "$SCHEMA" <<'PY'
+import json
+import copy
+import sys
+
+import jsonschema
+
+with open(sys.argv[1], encoding="utf-8") as report_file:
+    report = json.load(report_file)
+with open(sys.argv[2], encoding="utf-8") as schema_file:
+    schema = json.load(schema_file)
+validator = jsonschema.Draft7Validator(schema)
+validator.validate(report)
+
+duplicate = copy.deepcopy(report)
+duplicate["rubric"]["categories"][0]["category"] = duplicate["rubric"]["categories"][1]["category"]
+assert list(validator.iter_errors(duplicate)), "schema accepted a duplicate/missing category"
+PY
     [ "$status" -eq 0 ]
 }

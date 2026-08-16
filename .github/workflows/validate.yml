@@ -281,8 +281,18 @@ jobs:
       # front — exactly the pristine-checkout + npm-bats setup the standalone
       # bats-tests job used pre-rebuild — keeps it pollution-free (ag-877).
       #
-      # bats needs only the runner's Python, jq, and ripgrep. It does not need
-      # a semantic-review runtime or a pre-seeded lifecycle verdict.
+      # bats needs Python with jsonschema/PyYAML, jq, and ripgrep. It does not
+      # need a semantic-review runtime or a pre-seeded lifecycle verdict.
+      - name: Set up Python (bats and smoke-test)
+        if: runner.os == 'Linux' && (needs.changes.outputs.hooks == 'true' || needs.changes.outputs.shell == 'true' || needs.changes.outputs.bats == 'true' || needs.changes.outputs.ci == 'true' || needs.changes.outputs.skills == 'true' || needs.changes.outputs.docs == 'true')
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.14'
+
+      - name: Install bats Python dependencies
+        if: runner.os == 'Linux' && (needs.changes.outputs.hooks == 'true' || needs.changes.outputs.shell == 'true' || needs.changes.outputs.bats == 'true' || needs.changes.outputs.ci == 'true' || needs.changes.outputs.skills == 'true' || needs.changes.outputs.docs == 'true')
+        run: python3 -m pip install jsonschema pyyaml
+
       - name: Install bats
         if: runner.os == 'Linux' && (needs.changes.outputs.hooks == 'true' || needs.changes.outputs.shell == 'true' || needs.changes.outputs.bats == 'true' || needs.changes.outputs.ci == 'true' || needs.changes.outputs.skills == 'true' || needs.changes.outputs.docs == 'true')
         run: sudo npm install -g bats@1.12.0
@@ -306,20 +316,6 @@ jobs:
         with:
           go-version: '1.26.6'
           cache-dependency-path: cli/go.sum
-
-      - name: Set up Python (smoke-test)
-        if: runner.os == 'Linux' && (needs.changes.outputs.skills == 'true' || needs.changes.outputs.hooks == 'true' || needs.changes.outputs.shell == 'true' || needs.changes.outputs.ci == 'true')
-        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
-        with:
-          python-version: '3.14'
-
-      - name: Install PyYAML for bats python helpers
-        # setup-python@v6 provisions a clean interpreter WITHOUT the runner's
-        # preinstalled PyYAML. Several bats suites run inside this job invoke
-        # `python3 ... import yaml` (audit-skill-metadata, generate-ci-jobs-table),
-        # so reinstall it whenever we've shadowed the system python.
-        if: runner.os == 'Linux' && (needs.changes.outputs.skills == 'true' || needs.changes.outputs.hooks == 'true' || needs.changes.outputs.shell == 'true' || needs.changes.outputs.ci == 'true')
-        run: python3 -m pip install pyyaml
 
       # ── go-build (Linux) ──────────────────────────────────────────────────
       - name: Build ao CLI
