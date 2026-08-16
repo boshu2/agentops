@@ -178,6 +178,7 @@ nav:
       - Skills Reference: SKILLS.md
       - Skill Router: SKILL-ROUTER.md
       - Skill Graph: reference/agentops-skill-graph.md
+      - Skill-System Evolution: reference/skill-system-evolution.md
   - CLI:
       - Command Reference: cli/commands.md
   - Architecture:
