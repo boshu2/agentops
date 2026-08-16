@@ -1,6 +1,6 @@
 ---
 name: bootstrap
-description: 'Initialize minimal AgentOps documentation and verdict storage without taking over repository workflow. Triggers: "bootstrap AgentOps", "initialize AgentOps docs".'
+description: 'Initialize explicitly requested, missing AgentOps documentation and optional verdict storage without taking over repository workflow. Triggers: "bootstrap AgentOps", "initialize AgentOps docs".'
 practices:
 - hermetic-builds
 - code-complete
@@ -26,13 +26,14 @@ metadata:
   graph_root: true
   tier: session
   dependencies: []
-output_contract: minimal project docs and .agents/ao/verdicts directory
+output_contract: explicitly requested missing project docs and optional .agents/ao/verdicts directory
 ---
 # Bootstrap — minimal project setup
 
-Bootstrap fills only missing AgentOps entry documents and the default durable
-verdict directory. It does not initialize Git, install hooks, create tracker
-state, start runtimes, or impose a delivery workflow.
+Bootstrap fills only explicitly requested, missing AgentOps entry documents and,
+when requested, the durable verdict directory. It does not initialize Git,
+install hooks, create tracker state, start runtimes, or impose a delivery
+workflow.
 
 Never-overwrite is what makes bootstrap safe to run on any repository: a setup
 step that can only add is idempotent by construction, while one that can

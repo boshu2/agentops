@@ -68,10 +68,11 @@ authorization by itself.
 
 1. Resolve the existing bead or caller intent. Invoke Plan once only if that
    source needs shaping; Plan updates the same source or proposes an amendment.
-   It creates no AgentOps packet. The runtime snapshots the exact resolved
-   source bytes under their digest, including when the conversation is the only
-   source, before dispatching Implement or a fresh Validate context. If usable
-   intent cannot be established, report `NOT_PLANNED` and stop.
+   It creates no AgentOps packet. Preserve a durable caller-owned source by
+   reference and digest; only when no durable source exists does the runtime
+   snapshot the exact resolved source bytes under their digest before
+   dispatching Implement or a fresh Validate context. If usable intent cannot
+   be established, report `NOT_PLANNED` and stop.
 2. Invoke Implement once with the resolved intent. It performs one bounded
    experiment; the runtime derives subject identity and check receipts. If no
    subject is built, report `NOT_BUILT` and stop.
@@ -113,9 +114,9 @@ repair revision. RPI owns no lane budget, repair budget, or retry policy.
 
 Delegate with minimal context: a lane receives the frozen intent reference and
 the established facts it needs, never the orchestrator's full conversation
-history. If a lane cannot proceed from the intent alone, the plan failed the
-fresh-context test and should be repaired at the source, not padded with chat
-transcript.
+history. If a lane cannot proceed from the intent alone, report that the plan
+failed the fresh-context test and stop; do not pad it with chat transcript or
+start another planning lane without explicit caller authorization.
 
 Lanes whose write scopes share a regen surface (the same generated outputs,
 mirrors, or manifests) serialize; only lanes with disjoint source scopes and
@@ -153,7 +154,7 @@ RPI has one required report surface and one optional representation:
    {
      "schema_version": "rpi-report.v1",
      "status": "PASS",
-     "intent_ref": ".agents/ao/intents/sha256/<64-hex-digest>.intent",
+     "intent_ref": "<durable-source-ref-or-fallback-snapshot-ref>",
      "acceptance_digest": "<64-hex-char-sha256-or-null>",
      "subject_manifest_digest": "<64-hex-char-sha256-or-null>",
      "verdict_ref": "<verdict-location-or-null>",
@@ -163,10 +164,12 @@ RPI has one required report surface and one optional representation:
    }
    ```
 
-   `status` is one of `PASS | FAIL | NOT_PROVEN | NOT_PLANNED | NOT_BUILT`; the
-   three digest fields, when present, are 64-character lowercase hex SHA-256
-   strings; `checked` and `not_checked` are arrays of strings. All nine keys
-   are required (use `null` for an inapplicable ref or digest), and no
+   `intent_ref` remains required: it names the durable caller-owned source when
+   one exists, otherwise the content-addressed fallback snapshot. `status` is
+   one of `PASS | FAIL | NOT_PROVEN | NOT_PLANNED | NOT_BUILT`; the three digest
+   fields, when present, are 64-character lowercase hex SHA-256 strings;
+   `checked` and `not_checked` are arrays of strings. All nine keys are required
+   (use `null` for an inapplicable ref or digest), and no
    additional properties are allowed.
 
 Lead the interactive response with the status and one sentence stating the

@@ -210,7 +210,7 @@
       ],
       "context_rel": [],
       "dependencies": [],
-      "description": "Initialize minimal AgentOps documentation and verdict storage without taking over repository workflow. Triggers: \"bootstrap AgentOps\", \"initialize AgentOps docs\".",
+      "description": "Initialize explicitly requested, missing AgentOps documentation and optional verdict storage without taking over repository workflow. Triggers: \"bootstrap AgentOps\", \"initialize AgentOps docs\".",
       "disposition": "keep_specialist",
       "effects": [
         "write_project_docs"
@@ -907,7 +907,7 @@
       "consumes": [],
       "context_rel": [],
       "dependencies": [],
-      "description": "Shape or refine the existing bead or caller intent without a second planning artifact. Triggers: \"plan\", \"discover and plan\", \"shape this goal\", \"plan manifest\".",
+      "description": "Shape or refine the existing bead or caller intent without a second planning artifact. Triggers: \"plan\", \"discover and plan\", \"shape this goal\".",
       "disposition": "keep",
       "effects": [
         "update_intent_source"

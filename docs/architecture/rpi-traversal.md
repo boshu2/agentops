@@ -46,10 +46,12 @@ That source records:
 - a first acceptance command or artifact path;
 - optional decomposition with no scheduling semantics.
 
-The runtime stores the exact resolved source bytes under
-`.agents/ao/intents/sha256/<digest>.intent` and derives the acceptance digest
-from those bytes. This also makes conversation-only intent available to a fresh
-validator. The model does not author a second PlanPacket.
+The runtime leaves a durable caller-owned source in place and carries its
+reference plus the acceptance digest derived from its exact resolved bytes.
+Only when no durable source exists does it store those bytes under
+`.agents/ao/intents/sha256/<digest>.intent`. This fallback makes
+conversation-only intent available to a fresh validator. The model does not
+author a second PlanPacket.
 
 Owner, ready, claim, priority, attempt, wave, queue, lease, admission, next
 action, close, release, and delivery fields are outside the contract.
