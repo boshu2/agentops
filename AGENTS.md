@@ -81,15 +81,19 @@ Edit source owners and regenerate projections through the owning command.
 
 Active constraints (ADRs in `docs/adr/`, blocking gates in
 `cli/internal/gates/` and `scripts/check-*.sh`, this contract) are inputs to
-any authoritative plan or design; a synthesis frozen without them is invalid.
-Skill logic ships in Go via `ao`; no new `skills/*/scripts/**/*.py`.
-Skill tests retain their documented exemption (ADR-0016, gate-enforced).
+any authoritative plan or design.
+A synthesis frozen without an active constraint is invalid.
+Skill logic ships in Go via `ao`;
+`scripts/check-skill-python-ratchet.sh` enforces no new
+`skills/*/scripts/**/*.py`. Skill tests retain their documented exemption
+(ADR-0016, gate-enforced).
 
 ## Standard RPI traversal
 
 1. **Plan once.** Shape one active behavior in the existing bead or caller
-   intent — acceptance, non-goals, scope, first check. Once accepted, further
-   planning over the same intent needs new explicit authorization.
+   intent — acceptance, non-goals, scope, first check. Once the caller accepts
+   the acceptance and scope, Plan is closed for that intent; further planning
+   over the same intent needs new explicit authorization.
 2. **Implement once.** One bounded RED -> GREEN -> refactor experiment; the
    runtime derives the manifest, changed paths, and check receipts.
 3. **Validate once, fresh.** A distinct context verifies subject identity,
@@ -98,11 +102,11 @@ Skill tests retain their documented exemption (ADR-0016, gate-enforced).
    digest mismatch, and incomplete changed-path coverage are `NOT_PROVEN`;
    proven out-of-scope change is `FAIL`. PASS requires nonempty checked scope,
    top-level evidence, evidence for every criterion, and an empty
-   `not_checked`. Persist `verdict.v2` only for a caller request or declared
-   consumer.
+   `not_checked`. Persist `verdict.v2` only when requested by a caller or
+   required by a declared consumer.
 4. **Report and stop.** Report the result; emit no next action; no automatic
-   revision. Two consecutive control artifacts with no new implementation
-   evidence end the run. Reports lead with the subject, never artifact counts.
+   revision. Two consecutive control artifacts with no new implementation evidence end the run.
+   Reports lead with the subject, never artifact counts.
 
 A caller may revise the intent and start a new invocation. Learn is an
 optional later consumer and cannot change core outcomes.

@@ -105,8 +105,8 @@ Return exactly one of:
 - `using-gc` with explicit operator choice
 - `operationalize:gate`
 
-Name the deciding axis and invoke the owner. Do not copy the delegated workflow
-into this router.
+Name the deciding axis and owner, then stop. The caller may invoke that owner
+separately; do not copy or start the delegated workflow from this router.
 
 ## Output Specification
 
@@ -134,8 +134,9 @@ into this router.
     END { exit !(NR == 1 && !extra && valid) }
   '
   ```
-- **Downstream handoff:** invoke the named owner only after returning the verdict;
-  `inline` remains in the current agent and `bounded-fanout` remains in-session.
+- **Downstream handoff:** return the named owner to the caller without invoking
+  it; `inline` and `bounded-fanout` describe the recommended execution shape but
+  do not authorize this routing skill to begin execution.
 
 ## Quality Rubric
 
