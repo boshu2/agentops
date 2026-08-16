@@ -313,6 +313,22 @@ func workspaceDirRename(ctx *MutateContext, path, dest string, verify func(path 
 		fmt.Fprintf(os.Stderr, "[dry-run] would mutate %s: %s\n", path, DescribeOp(op))
 		return nil
 	}
+	if err := workspaceExecuteDirRename(root, pathRel, destRel, path, dest, info); err != nil {
+		return err
+	}
+
+	// Step 7/8 — fsync'd action record.
+	//
+	// Execute-before-journal parity: this order matches the file-shaped Mutate
+	// chokepoint (execute, then journal). A CRASH between the execute above
+	// and the append below is therefore undo-blind for BOTH shapes — the
+	// journal never sees the mutation — and the rename destination tree
+	// (quarantine) is the manual recovery path: the run dir's receipts list
+	// what moved, and nothing is ever deleted.
+	return workspaceJournalDirRename(ctx, root, pathRel, destRel, path, dest, info, op, startedNS)
+}
+
+func workspaceExecuteDirRename(root *os.Root, pathRel, destRel, path, dest string, info os.FileInfo) error {
 	if err := workspaceRootParentsReal(root, pathRel, destRel); err != nil {
 		return err
 	}
@@ -329,26 +345,21 @@ func workspaceDirRename(ctx *MutateContext, path, dest string, verify func(path 
 	}
 	if bindErr := workspaceRootParentsReal(root, pathRel, destRel); bindErr != nil {
 		if backErr := root.Rename(destRel, pathRel); backErr != nil {
-			return fmt.Errorf("doctor: %v; compensating rename-back failed: %v", bindErr, backErr)
+			return fmt.Errorf("doctor: %w; compensating rename-back failed: %w", bindErr, backErr)
 		}
-		return fmt.Errorf("doctor: %v (compensated)", bindErr)
+		return fmt.Errorf("doctor: %w (compensated)", bindErr)
 	}
 	moved, err := root.Lstat(destRel)
 	if err != nil || moved.Mode()&os.ModeSymlink != 0 || !moved.IsDir() || !os.SameFile(info, moved) {
 		if backErr := root.Rename(destRel, pathRel); backErr != nil {
-			return fmt.Errorf("doctor: renamed directory %s changed identity; compensating rename-back failed: %v", path, backErr)
+			return fmt.Errorf("doctor: renamed directory %s changed identity; compensating rename-back failed: %w", path, backErr)
 		}
 		return fmt.Errorf("doctor: renamed directory %s changed identity (compensated; refused_unsafe)", path)
 	}
+	return nil
+}
 
-	// Step 7/8 — fsync'd action record.
-	//
-	// Execute-before-journal parity: this order matches the file-shaped Mutate
-	// chokepoint (execute, then journal). A CRASH between the execute above
-	// and the append below is therefore undo-blind for BOTH shapes — the
-	// journal never sees the mutation — and the rename destination tree
-	// (quarantine) is the manual recovery path: the run dir's receipts list
-	// what moved, and nothing is ever deleted.
+func workspaceJournalDirRename(ctx *MutateContext, root *os.Root, pathRel, destRel, path, dest string, info os.FileInfo, op Rename, startedNS int64) error {
 	rel, relErr := filepath.Rel(ctx.RepoRoot, path)
 	if relErr != nil {
 		rel = path
@@ -484,17 +495,8 @@ func workspaceFileMoveNoClobber(ctx *MutateContext, path, dest string) (collided
 
 	// Step 4 — verbatim backup (same as Mutate for an existing file).
 	if !ctx.DryRun {
-		rel, relErr := filepath.Rel(ctx.RepoRoot, path)
-		if relErr != nil {
-			rel = filepath.Base(path)
-		}
-		backup := filepath.Join(ctx.RunDir, "backups", rel)
-		if err := writeWorkspaceBackup(backup, beforeBytes, info); err != nil {
-			return false, fmt.Errorf("doctor: backup %s: %w", path, err)
-		}
-		backupBytes, err := os.ReadFile(backup)
-		if err != nil || !bytes.Equal(beforeBytes, backupBytes) {
-			return false, fmt.Errorf("backup verify failed (cmp-strict mismatch for %s)", path)
+		if err := workspaceWriteVerifiedBackup(ctx, path, beforeBytes, info); err != nil {
+			return false, err
 		}
 	}
 
@@ -504,6 +506,37 @@ func workspaceFileMoveNoClobber(ctx *MutateContext, path, dest string) (collided
 		fmt.Fprintf(os.Stderr, "[dry-run] would mutate %s: %s\n", path, DescribeOp(op))
 		return false, nil
 	}
+	collided, err = workspaceExecuteFileMoveNoClobber(root, pathRel, destRel, path, dest, info)
+	if err != nil {
+		return false, err
+	}
+	if collided {
+		return true, nil
+	}
+
+	// Step 7/8 — fsync'd action record; same execute-before-journal parity and
+	// crash exposure as workspaceDirRename (see the comment there), and the
+	// same staged write/sync recovery split.
+	return false, workspaceJournalFileMove(ctx, root, pathRel, destRel, path, dest, info, op, beforeHash, startedNS)
+}
+
+func workspaceWriteVerifiedBackup(ctx *MutateContext, path string, beforeBytes []byte, info os.FileInfo) error {
+	rel, relErr := filepath.Rel(ctx.RepoRoot, path)
+	if relErr != nil {
+		rel = filepath.Base(path)
+	}
+	backup := filepath.Join(ctx.RunDir, "backups", rel)
+	if err := writeWorkspaceBackup(backup, beforeBytes, info); err != nil {
+		return fmt.Errorf("doctor: backup %s: %w", path, err)
+	}
+	backupBytes, err := os.ReadFile(backup)
+	if err != nil || !bytes.Equal(beforeBytes, backupBytes) {
+		return fmt.Errorf("backup verify failed (cmp-strict mismatch for %s)", path)
+	}
+	return nil
+}
+
+func workspaceExecuteFileMoveNoClobber(root *os.Root, pathRel, destRel, path, dest string, info os.FileInfo) (bool, error) {
 	if err := workspaceRootParentsReal(root, pathRel, destRel); err != nil {
 		return false, err
 	}
@@ -521,15 +554,13 @@ func workspaceFileMoveNoClobber(ctx *MutateContext, path, dest string) (collided
 	}
 	if bindErr := workspaceRootParentsReal(root, pathRel, destRel); bindErr != nil {
 		if unlinkErr := root.Remove(destRel); unlinkErr != nil {
-			return false, fmt.Errorf("doctor: %v; compensating removal failed: %v", bindErr, unlinkErr)
+			return false, fmt.Errorf("doctor: %w; compensating removal failed: %w", bindErr, unlinkErr)
 		}
-		return false, fmt.Errorf("doctor: %v (compensated)", bindErr)
+		return false, fmt.Errorf("doctor: %w (compensated)", bindErr)
 	}
-	destInfo, destErr := root.Lstat(destRel)
-	sourceInfo, sourceErr := root.Lstat(pathRel)
-	if destErr != nil || sourceErr != nil || destInfo.Mode()&os.ModeSymlink != 0 || sourceInfo.Mode()&os.ModeSymlink != 0 || !destInfo.Mode().IsRegular() || !sourceInfo.Mode().IsRegular() || !os.SameFile(info, destInfo) || !os.SameFile(info, sourceInfo) {
+	if workspaceFileMoveIdentityChanged(root, pathRel, destRel, info) {
 		if unlinkErr := root.Remove(destRel); unlinkErr != nil {
-			return false, fmt.Errorf("doctor: source or destination changed identity during move of %s; compensating removal failed: %v", path, unlinkErr)
+			return false, fmt.Errorf("doctor: source or destination changed identity during move of %s; compensating removal failed: %w", path, unlinkErr)
 		}
 		return false, fmt.Errorf("doctor: source or destination changed identity during move of %s (compensated; refused_unsafe)", path)
 	}
@@ -542,10 +573,19 @@ func workspaceFileMoveNoClobber(ctx *MutateContext, path, dest string) (collided
 		}
 		return false, fmt.Errorf("doctor: remove source %s after link: %w (compensated: link at %s removed; nothing moved)", path, err, dest)
 	}
+	return false, nil
+}
 
-	// Step 7/8 — fsync'd action record; same execute-before-journal parity and
-	// crash exposure as workspaceDirRename (see the comment there), and the
-	// same staged write/sync recovery split.
+func workspaceFileMoveIdentityChanged(root *os.Root, pathRel, destRel string, expected os.FileInfo) bool {
+	destInfo, destErr := root.Lstat(destRel)
+	sourceInfo, sourceErr := root.Lstat(pathRel)
+	return destErr != nil || sourceErr != nil ||
+		destInfo.Mode()&os.ModeSymlink != 0 || sourceInfo.Mode()&os.ModeSymlink != 0 ||
+		!destInfo.Mode().IsRegular() || !sourceInfo.Mode().IsRegular() ||
+		!os.SameFile(expected, destInfo) || !os.SameFile(expected, sourceInfo)
+}
+
+func workspaceJournalFileMove(ctx *MutateContext, root *os.Root, pathRel, destRel, path, dest string, info os.FileInfo, op Rename, beforeHash string, startedNS int64) error {
 	rel, relErr := filepath.Rel(ctx.RepoRoot, path)
 	if relErr != nil {
 		rel = path
@@ -568,15 +608,15 @@ func workspaceFileMoveNoClobber(ctx *MutateContext, path, dest string) (collided
 			// WRITE-stage failure: record definitely not persisted; move the
 			// file back so disk matches the (empty) journal.
 			if backErr := root.Rename(destRel, pathRel); backErr != nil {
-				return false, fmt.Errorf("doctor: journal Rename of %s: %w; compensating move-back FAILED (%w) — file left at %s and is NOT recorded in actions.jsonl", path, aerr, backErr, dest)
+				return fmt.Errorf("doctor: journal Rename of %s: %w; compensating move-back FAILED (%w) — file left at %s and is NOT recorded in actions.jsonl", path, aerr, backErr, dest)
 			}
-			return false, fmt.Errorf("doctor: journal Rename of %s: %w (compensated: file moved back to its original path; no mutation recorded)", path, aerr)
+			return fmt.Errorf("doctor: journal Rename of %s: %w (compensated: file moved back to its original path; no mutation recorded)", path, aerr)
 		}
 		// SYNC-stage failure: record probably persisted; leave the move in
 		// place so state and journal stay consistent (see workspaceDirRename).
-		return false, fmt.Errorf("doctor: journal Rename of %s: record written but not durably synced (%w) — move left in place at %s; actions.jsonl durability is uncertain until the next successful sync", path, aerr, dest)
+		return fmt.Errorf("doctor: journal Rename of %s: record written but not durably synced (%w) — move left in place at %s; actions.jsonl durability is uncertain until the next successful sync", path, aerr, dest)
 	}
-	return false, nil
+	return nil
 }
 
 // openWorkspaceMutationRoot anchors a two-path workspace mutation at the
