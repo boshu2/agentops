@@ -8,6 +8,7 @@ graph LR
   agent_mail["agent-mail"]
   agent_native["agent-native"]
   agy_native["agy-native"]
+  anti_ceremony["anti-ceremony"]
   automation_shape_routing["automation-shape-routing"]
   bootstrap["bootstrap"]
   cass["cass"]
@@ -55,6 +56,7 @@ graph LR
   using_gc["using-gc"]
   validate["validate"]
   workflow_builder["workflow-builder"]
+  rpi --> anti_ceremony
   rpi --> implement
   rpi --> plan
   rpi --> validate
