@@ -85,12 +85,11 @@ def score_trigger(description: str) -> tuple[int, str]:
     if not description:
         return 0, "Description missing."
     lowered = description.lower()
-    score = 1
-    if "triggers:" in lowered or "use when" in lowered:
-        score = 2
     if any(term in lowered for term in ("not for", "do not use", "not when", "only when")):
-        score = 3
-    return score, "Description and explicit trigger or false-positive boundary."
+        return 3, "Description contains a literal false-positive boundary phrase."
+    if "triggers:" in lowered or "use when" in lowered:
+        return 2, "Description contains a literal trigger marker."
+    return 1, "Description is present without a literal trigger or boundary marker."
 
 
 def score_kernel(metrics: dict) -> tuple[int, str]:
@@ -111,7 +110,7 @@ def score_progressive_disclosure(metrics: dict) -> tuple[int, str]:
     reference_files = metrics["reference_files"]
     reference_links = metrics["reference_links"]
     if not reference_files and metrics["skill_md_lines"] <= 100:
-        return 2, "Concise self-contained kernel; no reference split needed."
+        return 2, "SKILL.md is at most 100 lines with no reference files; loading semantics are not evaluated."
     score = min(3, (1 if reference_files else 0) + min(2, reference_links))
     return score, f"{reference_files} reference files, {reference_links} direct reference links."
 
@@ -120,26 +119,30 @@ def score_helper_scripts(path: Path, metrics: dict) -> tuple[int, str]:
     script_files = metrics["script_files"]
     if not script_files:
         return 1, "No helper scripts are visible; necessity is not inferred."
-    score = 1
-    if has_named_script(path, ("validate", "check", "audit", "score", "doctor")):
-        score = 2
+    recognized_helper = has_named_script(path, ("validate", "check", "audit", "score", "doctor"))
+    score = 2 if recognized_helper else 1
     if script_files >= 2 and score == 2:
         score = 3
-    return score, f"{script_files} script files."
+    return score, f"{script_files} script files; recognized helper name={int(recognized_helper)}."
 
 
 def score_validation(path: Path, body: str, metrics: dict) -> tuple[int, str]:
     validation_terms = ("validate", "test", "check", "lint", "verify", "heal.sh")
-    score = int(any(term in body.lower() for term in validation_terms))
-    score += int(has_named_script(path, ("validate", "check", "test", "audit")))
-    score += int(metrics["self_test_exists"])
-    return min(3, score), "Validation commands, scripts, and self-test presence."
+    keyword_signal = int(any(term in body.lower() for term in validation_terms))
+    named_helper = int(has_named_script(path, ("validate", "check", "test", "audit")))
+    self_test = int(metrics["self_test_exists"])
+    score = keyword_signal + named_helper + self_test
+    note = (
+        f"keyword signal={keyword_signal}, recognized helper={named_helper}, "
+        f"SELF-TEST.md={self_test}."
+    )
+    return min(3, score), note
 
 
 def score_self_test(path: Path, metrics: dict) -> tuple[int, str]:
     if not metrics["self_test_exists"]:
         if any(path.rglob("*.feature")):
-            return 2, "A focused feature artifact is present."
+            return 2, "At least one .feature file is present."
         return 1, "No focused self-test or feature artifact is visible."
     self_test = (path / "SELF-TEST.md").read_text(encoding="utf-8").lower()
     score = min(
@@ -155,10 +158,11 @@ def score_assets(path: Path, metrics: dict) -> tuple[int, str]:
     asset_files = metrics["asset_files"]
     if not asset_files:
         return 1, "No asset files are visible; necessity is not inferred."
-    score = 2
-    if any("template" in p.name.lower() for p in (path / "assets").rglob("*") if p.is_file()):
-        score = 3
-    return score, f"{asset_files} asset files."
+    template_named = any(
+        "template" in p.name.lower() for p in (path / "assets").rglob("*") if p.is_file()
+    )
+    score = 3 if template_named else 2
+    return score, f"{asset_files} asset files; template-named file={int(template_named)}."
 
 
 def score_subagents(metrics: dict) -> tuple[int, str]:

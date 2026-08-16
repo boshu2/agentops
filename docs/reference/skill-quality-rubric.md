@@ -60,16 +60,16 @@ effectiveness. Each mechanically inspectable category receives 0–3:
 
 | Category | What the static scorer looks for |
 |---|---|
-| Trigger quality | Description says what and when and includes an obvious false-positive boundary. |
-| Kernel clarity | The bounded procedure and stop condition are easy to find. |
-| Progressive disclosure | A concise kernel is self-contained; complex detail is directly linked and loaded only when needed. |
+| Trigger quality | Description presence plus literal `Triggers:`/`Use when` and false-positive-boundary phrases. |
+| Kernel clarity | `SKILL.md` line count and Markdown heading count only. |
+| Progressive disclosure | Literal `references/` file/link counts, or a concise kernel with no references. |
 | Helper scripts | Literal `scripts/` contents and recognizable validation/helper names; absence is uncertainty, not proof that none are needed. |
-| Validation | Commands or artifacts exist that can check executable behavior. |
-| Self-test | Trigger or behavior examples exist when complexity warrants them. |
+| Validation | Validation/check/test keywords, recognizable helper names, and `SELF-TEST.md` presence. |
+| Self-test | `SELF-TEST.md` or `.feature` presence, plus trigger/non-trigger/failure words in `SELF-TEST.md`. |
 | Assets/templates | Literal `assets/` contents only; this legacy category does not discover templates stored elsewhere. |
 | Subagents/roles | Literal `subagents/` contents only; absence does not establish that delegation is unnecessary. |
 | Safety boundaries | Boundary words are visible. This is a signal only, not the safety gate. |
-| Packaging | The package is small, linked, host-profile-correct, and projection-safe. |
+| Packaging | File count, symlink absence, and executable bits on literal `scripts/` files. |
 
 The three optional-component categories score an absent directory as 1
 (`not evidenced/unknown`), never 2 (`solid`) and never 0 (`known required and
@@ -78,6 +78,10 @@ simplification; reviewers must not add files merely to raise this score. The
 maximum remains 30 for wire compatibility. Static readiness bands are C
 (0–10), B (11–20), A (21–26), and S (27–30). A lower band is a review signal,
 not a ship blocker; a high band is not an effectiveness or safety claim.
+
+These category names are legacy labels for the exact mechanical proxies above.
+They do not establish semantic trigger quality, a bounded procedure, conditional
+loading, executable validation, or host/projection conformance.
 
 ## Effectiveness evidence levels
 
@@ -93,13 +97,16 @@ skill version or content digest, dataset, grader, baseline, treatment, failures,
 and date. Structural validation can establish package conformance; it cannot
 establish E2.
 
-For a corpus audit, E1 discovery includes package-local `SELF-TEST.md`, feature
-files, and tests, plus repository-global tests or evals that explicitly bind the
-skill slug and exercise its workflow or bundled/runtime implementation. Static
-`grep`/`artifact_contains` assertions over skill prose do not count. A probe
-whose `skill` field or measured ledger row names the slug counts as E1 even when
-it is stale or directional; that limitation must be disclosed. E0 is assigned
-only after this exact search scope finds none.
+For a corpus audit, E1 discovery includes package-local behavior-shaped
+scenarios, `SELF-TEST.md`, feature files, and tests, plus repository-global tests
+or evals that explicitly bind the skill slug and exercise its workflow or
+bundled/runtime implementation. A labeled example or recovery playbook counts
+as a scenario when it gives an explicit input or signal and an observable
+outcome, regardless of filename. Illustrative or procedural prose without that
+shape, and static `grep`/`artifact_contains` assertions over skill prose, do not
+count. A probe whose `skill` field or measured ledger row names the slug counts
+as E1 even when it is stale or directional; that limitation must be disclosed.
+E0 is assigned only after this exact search scope finds none.
 
 ## Portable baseline and host profiles
 

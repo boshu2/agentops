@@ -84,11 +84,17 @@ assert rubric["advisory"] is True
 expected = "${EXPECTED_CATEGORIES[*]}".split()
 got = [c["category"] for c in rubric["categories"]]
 assert got == expected, f"category drift: {got} != {expected}"
+assert len(set(got)) == len(expected), f"duplicate categories: {got}"
 for c in rubric["categories"]:
     assert 0 <= c["score"] <= 3, c
     assert c["reason"], f"missing reason for {c['category']}"
-assert 0 <= rubric["total_score"] <= 30
-assert rubric["rating"] in ("C", "B", "A", "S")
+assert rubric["total_score"] == sum(c["score"] for c in rubric["categories"])
+expected_rating = (
+    "S" if rubric["total_score"] >= 27 else
+    "A" if rubric["total_score"] >= 21 else
+    "B" if rubric["total_score"] >= 11 else "C"
+)
+assert rubric["rating"] == expected_rating
 print("rubric block OK")
 PY
 }
@@ -126,6 +132,7 @@ assert report["scores"]["self_test"] == 1
 assert report["scores"]["helper_scripts"] == 1
 assert report["scores"]["assets_templates"] == 1
 assert report["scores"]["subagents_roles"] == 1
+assert report["notes"]["trigger_quality"] == "Description contains a literal trigger marker."
 metrics = report["metrics"]
 assert metrics["script_files"] == 0
 assert metrics["asset_files"] == 0
@@ -152,6 +159,17 @@ expected = {
 }
 for score, band in expected.items():
     assert module.readiness_rating(score) == band, (score, band)
+
+assert module.score_trigger("") == (0, "Description missing.")
+assert module.score_trigger("Do a thing.") == (
+    1, "Description is present without a literal trigger or boundary marker."
+)
+assert module.score_trigger("Do a thing. Use when sampling.") == (
+    2, "Description contains a literal trigger marker."
+)
+assert module.score_trigger("Do a thing only when requested.") == (
+    3, "Description contains a literal false-positive boundary phrase."
+)
 PY
 }
 
@@ -174,6 +192,7 @@ PY
     [ "$status" -eq 0 ]
     run python3 - "$TMP_DIR/report.json" "$SCHEMA" <<'PY'
 import json
+import copy
 import sys
 
 import jsonschema
@@ -182,7 +201,12 @@ with open(sys.argv[1], encoding="utf-8") as report_file:
     report = json.load(report_file)
 with open(sys.argv[2], encoding="utf-8") as schema_file:
     schema = json.load(schema_file)
-jsonschema.Draft7Validator(schema).validate(report)
+validator = jsonschema.Draft7Validator(schema)
+validator.validate(report)
+
+duplicate = copy.deepcopy(report)
+duplicate["rubric"]["categories"][0]["category"] = duplicate["rubric"]["categories"][1]["category"]
+assert list(validator.iter_errors(duplicate)), "schema accepted a duplicate/missing category"
 PY
     [ "$status" -eq 0 ]
 }
