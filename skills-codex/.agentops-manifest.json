@@ -603,14 +603,14 @@
     {
       "name": "skill-builder",
       "source_skill": "skills/skill-builder",
-      "source_hash": "775e73f3ebe87960a245790645cb2ba9083f18e0c8d0ee60569e6b747529b830",
-      "generated_hash": "9ab3978eca5991203690b4c5ae36c75b12e2d860002d8ccff5e4ceb5cdfdc6c5"
+      "source_hash": "0bd1ded4203ddc99aaf36411267ee87904ae4b9ba2bf1d46b8fe88bbec8af9df",
+      "generated_hash": "c9494dfff594477db67cdd752a286e69b0d6f33a994d24ccb4efe3e197f84732"
     },
     {
       "name": "standards",
       "source_skill": "skills/standards",
-      "source_hash": "02caa3fe0a55bfbe46c068323cf91d8651e508fe07c000d011ae0f3fb5078d44",
-      "generated_hash": "72d77ad41f4fbf98f0cd43dc26abf3b4a5cae88c995c860f74ae209150cfbeb1"
+      "source_hash": "d493ba253d8eaafcd19c3e62b98328a535f3a8d9720bd17a144fa77b1c369268",
+      "generated_hash": "bec8e7c8b82b76ea771c6264783e4561e7d9eec61f52a7415e196f018cc8de2c"
     },
     {
       "name": "status",
