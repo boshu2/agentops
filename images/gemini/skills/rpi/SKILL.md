@@ -154,7 +154,7 @@ RPI has one required report surface and one optional representation:
    {
      "schema_version": "rpi-report.v1",
      "status": "PASS",
-     "intent_ref": ".agents/ao/intents/sha256/<64-hex-digest>.intent",
+     "intent_ref": "<durable-source-ref-or-fallback-snapshot-ref>",
      "acceptance_digest": "<64-hex-char-sha256-or-null>",
      "subject_manifest_digest": "<64-hex-char-sha256-or-null>",
      "verdict_ref": "<verdict-location-or-null>",
@@ -164,10 +164,12 @@ RPI has one required report surface and one optional representation:
    }
    ```
 
-   `status` is one of `PASS | FAIL | NOT_PROVEN | NOT_PLANNED | NOT_BUILT`; the
-   three digest fields, when present, are 64-character lowercase hex SHA-256
-   strings; `checked` and `not_checked` are arrays of strings. All nine keys
-   are required (use `null` for an inapplicable ref or digest), and no
+   `intent_ref` remains required: it names the durable caller-owned source when
+   one exists, otherwise the content-addressed fallback snapshot. `status` is
+   one of `PASS | FAIL | NOT_PROVEN | NOT_PLANNED | NOT_BUILT`; the three digest
+   fields, when present, are 64-character lowercase hex SHA-256 strings;
+   `checked` and `not_checked` are arrays of strings. All nine keys are required
+   (use `null` for an inapplicable ref or digest), and no
    additional properties are allowed.
 
 Lead the interactive response with the status and one sentence stating the
