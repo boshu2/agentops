@@ -19,35 +19,70 @@ A failed gate is `FAIL`. A gate or required evidence layer that was not actually
 checked is `NOT_PROVEN`, never an inferred pass. An overall quality `PASS`
 requires both gates to pass and effectiveness level E2 or E3 below.
 
+### Gate decision rules
+
+Portable conformance is evaluated against the Agent Skills specification before
+any host profile. `PASS` requires only the six specified top-level frontmatter
+keys (`name`, `description`, `license`, `compatibility`, `metadata`, and
+experimental `allowed-tools`), all field constraints, string-to-string
+`metadata`, a space-separated `allowed-tools` string when present, valid
+relative resource links, and a loadable body. A package that
+passes its repository schema but uses additional host fields is
+`FAIL — HOST_EXTENDED` for the portable gate, not portable `PASS`. Report the
+repository/host profile separately so an extension cannot hide a portable
+failure.
+
+The static safety screen uses these severity rules:
+
+- `FAIL`: a concrete high-impact path permits destructive storage, external
+  transmission, arbitrary process/code execution, or credential/secret
+  persistence without the required approval, containment, bounds, and cleanup;
+  or declared effects materially contradict implemented behavior.
+- `WARN`: a concrete lower-impact or local-only confidentiality, retention,
+  bound, cleanup, or contract gap exists, but the inspected package does not
+  expose a direct uncontrolled high-impact path.
+- `NOT_PROVEN`: consequential enforcement lives outside the package and its
+  runtime controls were not attested.
+- `PASS (static)`: every tracked package file was inspected and no concrete gap
+  was found. It is a negative static screen, never runtime-safety proof.
+
 ## Static package-readiness score
 
-The existing deterministic scorer remains a cheap triage signal. It measures
-visible package properties only; it evaluates neither the safety gate nor skill
-effectiveness. Each category receives 0–3:
+The deterministic scorer remains a cheap triage signal. It measures visible
+package properties only; it evaluates neither the safety gate nor skill
+effectiveness. Each mechanically inspectable category receives 0–3:
 
 | Score | Meaning |
 |---:|---|
 | 0 | Missing and required for this skill's declared behavior |
-| 1 | Present but weak, or warranted but absent |
-| 2 | Solid for the declared scope, including justified “not needed” |
+| 1 | Weak or no visible evidence; necessity is not inferred |
+| 2 | Solid visible evidence for the declared scope |
 | 3 | Mechanically strong or unusually complete |
 
 | Category | What the static scorer looks for |
 |---|---|
-| Trigger quality | Description says what and when and includes an obvious false-positive boundary. |
-| Kernel clarity | The bounded procedure and stop condition are easy to find. |
-| Progressive disclosure | A concise kernel is self-contained; complex detail is directly linked and loaded only when needed. |
-| Helper scripts | Repeated deterministic mechanics are scripted; judgment is not. |
-| Validation | Commands or artifacts exist that can check executable behavior. |
-| Self-test | Trigger or behavior examples exist when complexity warrants them. |
-| Assets/templates | Reusable payloads exist only when the workflow actually needs them. |
-| Subagents/roles | AgentOps-specific delegation packets exist only for intentionally delegated work. This is not a portable Agent Skills quality criterion. |
+| Trigger quality | Description presence plus literal `Triggers:`/`Use when` and false-positive-boundary phrases. |
+| Kernel clarity | `SKILL.md` line count and Markdown heading count only. |
+| Progressive disclosure | Literal `references/` file/link counts, or a concise kernel with no references. |
+| Helper scripts | Literal `scripts/` contents and recognizable validation/helper names; absence is uncertainty, not proof that none are needed. |
+| Validation | Validation/check/test keywords, recognizable helper names, and `SELF-TEST.md` presence. |
+| Self-test | `SELF-TEST.md` or `.feature` presence, plus trigger/non-trigger/failure words in `SELF-TEST.md`. |
+| Assets/templates | Literal `assets/` contents only; this legacy category does not discover templates stored elsewhere. |
+| Subagents/roles | Literal `subagents/` contents only; absence does not establish that delegation is unnecessary. |
 | Safety boundaries | Boundary words are visible. This is a signal only, not the safety gate. |
-| Packaging | The package is small, linked, host-profile-correct, and projection-safe. |
+| Packaging | File count, symlink absence, and executable bits on literal `scripts/` files. |
 
-The maximum is 30. Static readiness bands are C (0–10), B (11–20), A (21–26),
-and S (27–30). A lower band is a review signal, not a ship blocker; a high band
-is not an effectiveness or safety claim.
+The three optional-component categories score an absent directory as 1
+(`not evidenced/unknown`), never 2 (`solid`) and never 0 (`known required and
+missing`). Static inspection cannot decide whether absence is a sound
+simplification; reviewers must not add files merely to raise this score. The
+maximum remains 30 for wire compatibility. Static readiness bands are C
+(0–10), B (11–20), A (21–26), and S (27–30). A lower band is a review signal,
+not a ship blocker; a high band is not an effectiveness or safety claim.
+
+These category names are legacy labels for the exact mechanical proxies above.
+They do not establish semantic trigger quality, a bounded procedure, conditional
+loading, executable validation, or host/projection conformance.
 
 ## Effectiveness evidence levels
 
@@ -62,6 +97,17 @@ Test observable behavior, not prose presence. Record the target model and host,
 skill version or content digest, dataset, grader, baseline, treatment, failures,
 and date. Structural validation can establish package conformance; it cannot
 establish E2.
+
+For a corpus audit, E1 discovery includes package-local behavior-shaped
+scenarios, `SELF-TEST.md`, feature files, and tests, plus repository-global tests
+or evals that explicitly bind the skill slug and exercise its workflow or
+bundled/runtime implementation. A labeled example or recovery playbook counts
+as a scenario when it gives an explicit input or signal and an observable
+outcome, regardless of filename. Illustrative or procedural prose without that
+shape, and static `grep`/`artifact_contains` assertions over skill prose, do not
+count. A probe whose `skill` field or measured ledger row names the slug counts
+as E1 even when it is stale or directional; that limitation must be disclosed.
+E0 is assigned only after this exact search scope finds none.
 
 ## Portable baseline and host profiles
 
@@ -125,8 +171,11 @@ assets or a dedicated delegation tree.
 
 1. Read the complete `SKILL.md` and every linked resource.
 2. Apply the conformance and safety gates without compensation.
-3. Run the repository checks and record the static readiness score as triage.
-4. Compare declared activation and output behavior with a baseline and grade
+3. Run the portable validator and the repository/host checks separately, then
+   record the static readiness score as triage.
+4. Search package-local and explicitly skill-bound repository-global behavioral
+   evidence, then compare declared activation and output behavior with a
+   baseline and grade
    the effectiveness evidence E0–E3.
 5. Test coexistence in the intended installed catalog and every target model or
    host before claiming E3.

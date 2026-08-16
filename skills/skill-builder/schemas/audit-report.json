@@ -16,7 +16,7 @@
     "verdict": {
       "type": "string",
       "enum": ["PASS", "WARN", "FAIL"],
-      "description": "Aggregate verdict. fails>0 = FAIL; warns>0 = WARN; otherwise PASS."
+      "description": "Aggregate Pass-2 verdict. A nonzero Pass-1 exit additionally forces FAIL only for a repository-owned skills/* or skills-codex/* target; external targets retain Pass-1 diagnostics without binding the aggregate."
     },
     "pass1": {
       "type": "object",
@@ -30,7 +30,7 @@
         },
         "exit_code": {
           "type": "integer",
-          "description": "Actual exit code from heal.sh --check --strict. Non-zero forces aggregate FAIL."
+          "description": "Actual exit code from heal.sh --check --strict. Nonzero forces aggregate FAIL only when the target is under this repository's skills/* or skills-codex/* tree."
         },
         "strict": {
           "type": "boolean",
@@ -181,7 +181,7 @@
               "type": "integer",
               "minimum": 0,
               "maximum": 30,
-              "description": "Sum of the 10 category scores (0-30)."
+              "description": "Emitter-reported sum of the 10 static category scores (0-30). Draft-07 bounds this value; focused emitter tests verify the arithmetic."
             },
             "max_score": {
               "type": "integer",
@@ -190,7 +190,7 @@
             "rating": {
               "type": "string",
               "enum": ["C", "B", "A", "S"],
-              "description": "Static readiness band: C (0-10), B (11-20), A (21-26), S (27-30)."
+              "description": "Emitter-reported static band: C (0-10), B (11-20), A (21-26), S (27-30). Focused emitter tests verify consistency with total_score."
             },
             "advisory": {
               "type": "boolean",
@@ -201,7 +201,19 @@
               "type": "array",
               "minItems": 10,
               "maxItems": 10,
-              "description": "The 10 rubric categories, each scored 0-3 with an explainable reason. Category ids come verbatim from the rubric doc.",
+              "description": "Exactly one entry for each of the 10 static package-readiness categories, each scored 0-3 with a deterministic reason. Absent optional components receive uncertainty score 1, never automatic full credit.",
+              "allOf": [
+                {"contains": {"required": ["category"], "properties": {"category": {"const": "trigger_quality"}}}},
+                {"contains": {"required": ["category"], "properties": {"category": {"const": "kernel_clarity"}}}},
+                {"contains": {"required": ["category"], "properties": {"category": {"const": "progressive_disclosure"}}}},
+                {"contains": {"required": ["category"], "properties": {"category": {"const": "helper_scripts"}}}},
+                {"contains": {"required": ["category"], "properties": {"category": {"const": "validation"}}}},
+                {"contains": {"required": ["category"], "properties": {"category": {"const": "self_test"}}}},
+                {"contains": {"required": ["category"], "properties": {"category": {"const": "assets_templates"}}}},
+                {"contains": {"required": ["category"], "properties": {"category": {"const": "subagents_roles"}}}},
+                {"contains": {"required": ["category"], "properties": {"category": {"const": "safety_boundaries"}}}},
+                {"contains": {"required": ["category"], "properties": {"category": {"const": "packaging"}}}}
+              ],
               "items": {
                 "type": "object",
                 "required": ["category", "score", "reason"],
@@ -225,7 +237,7 @@
                     "type": "integer",
                     "minimum": 0,
                     "maximum": 3,
-                    "description": "0 missing/unsafe, 1 present-but-weak, 2 solid, 3 product-grade and mechanically validated."
+                    "description": "0 missing and required; 1 weak or no visible evidence with necessity not inferred; 2 solid visible evidence; 3 mechanically strong or unusually complete."
                   },
                   "reason": {
                     "type": "string",
