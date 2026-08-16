@@ -42,9 +42,9 @@ automatic:
 
 This conclusion is a synthesis of release claims and current contracts, not a
 claim that every historical mechanism remains live. In particular, the
-current unreleased tree retires the live `ao flywheel` product surface and its
-“COMPOUNDING/DECAYING” state. `learn` remains an optional consumer of durable
-verdicts, not a mandatory stage and not an authority over the next run.
+current unreleased tree retires the formerly shipped flywheel subcommand and
+its “COMPOUNDING/DECAYING” state. `learn` remains an optional consumer of
+durable verdicts, not a mandatory stage and not an authority over the next run.
 
 ## Evidence and method
 
@@ -234,11 +234,12 @@ Versions 3.4 and 3.5 completed the boundary:
 * multi-behavior planning described a manifest without creating tracker work;
 * caveats gained explicit homes rather than being deleted to obtain PASS.
 
-The unreleased tree goes further by removing `ao flywheel` and its knowledge-
-compounding status. That is not abandonment of learning. It is a correction
-of authority: an optional Learn consumer may propose improvements from verdict
-collections, but AgentOps does not claim a live knowledge lake, automatic
-escape velocity, or control of what the caller does next.
+The unreleased tree goes further by removing that historical flywheel
+subcommand and its knowledge-compounding status. That is not abandonment of
+learning. It is a correction of authority: an optional Learn consumer may
+propose improvements from verdict collections, but AgentOps does not claim a
+live knowledge lake, automatic escape velocity, or control of what the caller
+does next.
 
 ## Release-by-release trace
 
