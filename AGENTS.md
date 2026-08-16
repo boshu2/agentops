@@ -48,7 +48,7 @@ not proven.
 
 ## Runtime floor
 
-Never run `claude -p` or `claude --print`, directly or indirectly (hook-enforced).
+Never run `claude -p` or `claude --print`, directly or indirectly.
 Default to native Codex plus the local shell; other runtimes only on explicit
 request. `ao` is a repository tool, not a session ritual.
 
@@ -82,7 +82,8 @@ Edit source owners and regenerate projections through the owning command.
 Active constraints (ADRs in `docs/adr/`, blocking gates in
 `cli/internal/gates/` and `scripts/check-*.sh`, this contract) are inputs to
 any authoritative plan or design; a synthesis frozen without them is invalid.
-Skill logic ships in Go via `ao`; no new skill Python (ADR-0016, gate-enforced).
+Skill logic ships in Go via `ao`; no new `skills/*/scripts/**/*.py`.
+Skill tests retain their documented exemption (ADR-0016, gate-enforced).
 
 ## Standard RPI traversal
 
@@ -92,11 +93,13 @@ Skill logic ships in Go via `ao`; no new skill Python (ADR-0016, gate-enforced).
 2. **Implement once.** One bounded RED -> GREEN -> refactor experiment; the
    runtime derives the manifest, changed paths, and check receipts.
 3. **Validate once, fresh.** A distinct context verifies subject identity,
-   scope, evidence, and acceptance: `PASS | FAIL | NOT_PROVEN`. Missing
-   identity/freshness or incomplete coverage is `NOT_PROVEN`; proven
-   out-of-scope change is `FAIL`. PASS requires evidence for every criterion
-   and an empty `not_checked`. Persist `verdict.v2` only for a caller request
-   or declared consumer.
+   scope, evidence, and acceptance: `PASS | FAIL | NOT_PROVEN`. Missing or
+   colliding context identities, unattested freshness, subject mutation or
+   digest mismatch, and incomplete changed-path coverage are `NOT_PROVEN`;
+   proven out-of-scope change is `FAIL`. PASS requires nonempty checked scope,
+   top-level evidence, evidence for every criterion, and an empty
+   `not_checked`. Persist `verdict.v2` only for a caller request or declared
+   consumer.
 4. **Report and stop.** Report the result; emit no next action; no automatic
    revision. Two consecutive control artifacts with no new implementation
    evidence end the run. Reports lead with the subject, never artifact counts.
