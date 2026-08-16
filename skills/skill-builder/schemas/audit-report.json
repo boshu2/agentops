@@ -16,7 +16,7 @@
     "verdict": {
       "type": "string",
       "enum": ["PASS", "WARN", "FAIL"],
-      "description": "Aggregate Pass-2 verdict. A nonzero Pass-1 exit additionally forces FAIL only for a canonical skills/<slug> target; external targets retain Pass-1 diagnostics without binding the aggregate."
+      "description": "Aggregate Pass-2 verdict. A nonzero Pass-1 exit additionally forces FAIL only for a repository-owned skills/* or skills-codex/* target; external targets retain Pass-1 diagnostics without binding the aggregate."
     },
     "pass1": {
       "type": "object",
@@ -30,7 +30,7 @@
         },
         "exit_code": {
           "type": "integer",
-          "description": "Actual exit code from heal.sh --check --strict. Nonzero forces aggregate FAIL only when target is a canonical skills/<slug> package."
+          "description": "Actual exit code from heal.sh --check --strict. Nonzero forces aggregate FAIL only when the target is under this repository's skills/* or skills-codex/* tree."
         },
         "strict": {
           "type": "boolean",
