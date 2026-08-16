@@ -193,7 +193,7 @@ func pickLatestHandoff(cwd string) (*handoffCandidate, error) {
 		{".agents", "handoff"},
 	}
 	for priority, components := range roots {
-		root, dir, err := openRealHandoffRoot(cwd, components...)
+		candidate, err := pickLatestHandoffInRoot(cwd, components, priority)
 		if err != nil {
 			if errors.Is(err, os.ErrNotExist) {
 				continue
@@ -203,69 +203,76 @@ func pickLatestHandoff(cwd string) (*handoffCandidate, error) {
 			}
 			return nil, err
 		}
-		dirFile, err := root.Open(".")
-		if err != nil {
-			_ = root.Close()
-			if latest != nil {
-				_ = latest.root.Close()
-			}
-			return nil, fmt.Errorf("open handoff root %s: %w", dir, err)
-		}
-		entries, err := dirFile.ReadDir(-1)
-		closeErr := dirFile.Close()
-		if err != nil || closeErr != nil {
-			_ = root.Close()
-			if latest != nil {
-				_ = latest.root.Close()
-			}
-			if err != nil {
-				return nil, fmt.Errorf("read handoff root %s: %w", dir, err)
-			}
-			return nil, fmt.Errorf("close handoff root %s: %w", dir, closeErr)
-		}
-		localName := ""
-		for _, entry := range entries {
-			name := entry.Name()
-			if !strings.HasPrefix(name, "handoff-") || !strings.HasSuffix(name, ".json") {
-				continue
-			}
-			path := filepath.Join(dir, name)
-			info, err := root.Lstat(name)
-			if err != nil {
-				_ = root.Close()
-				if latest != nil {
-					_ = latest.root.Close()
-				}
-				return nil, fmt.Errorf("inspect handoff artifact %s: %w", path, err)
-			}
-			if info.Mode()&os.ModeSymlink != 0 || !info.Mode().IsRegular() {
-				_ = root.Close()
-				if latest != nil {
-					_ = latest.root.Close()
-				}
-				return nil, fmt.Errorf("handoff artifact %s is not a real regular file", path)
-			}
-			if name > localName {
-				localName = name
-			}
-		}
-		if localName == "" {
-			_ = root.Close()
+		if candidate == nil {
 			continue
 		}
-		if latest == nil || localName > latest.name || (localName == latest.name && priority < latest.priority) {
+		if latest == nil || candidate.name > latest.name || (candidate.name == latest.name && candidate.priority < latest.priority) {
 			if latest != nil {
 				_ = latest.root.Close()
 			}
-			latest = &handoffCandidate{name: localName, displayDir: dir, components: append([]string(nil), components...), priority: priority, root: root}
+			latest = candidate
 		} else {
-			_ = root.Close()
+			_ = candidate.root.Close()
 		}
 	}
 	if latest == nil {
 		return nil, errNoHandoffArtifacts
 	}
 	return latest, nil
+}
+
+func pickLatestHandoffInRoot(cwd string, components []string, priority int) (*handoffCandidate, error) {
+	root, dir, err := openRealHandoffRoot(cwd, components...)
+	if err != nil {
+		return nil, err
+	}
+	dirFile, err := root.Open(".")
+	if err != nil {
+		_ = root.Close()
+		return nil, fmt.Errorf("open handoff root %s: %w", dir, err)
+	}
+	entries, err := dirFile.ReadDir(-1)
+	closeErr := dirFile.Close()
+	if err != nil {
+		_ = root.Close()
+		return nil, fmt.Errorf("read handoff root %s: %w", dir, err)
+	}
+	if closeErr != nil {
+		_ = root.Close()
+		return nil, fmt.Errorf("close handoff root %s: %w", dir, closeErr)
+	}
+
+	localName := ""
+	for _, entry := range entries {
+		name := entry.Name()
+		if !strings.HasPrefix(name, "handoff-") || !strings.HasSuffix(name, ".json") {
+			continue
+		}
+		path := filepath.Join(dir, name)
+		info, err := root.Lstat(name)
+		if err != nil {
+			_ = root.Close()
+			return nil, fmt.Errorf("inspect handoff artifact %s: %w", path, err)
+		}
+		if info.Mode()&os.ModeSymlink != 0 || !info.Mode().IsRegular() {
+			_ = root.Close()
+			return nil, fmt.Errorf("handoff artifact %s is not a real regular file", path)
+		}
+		if name > localName {
+			localName = name
+		}
+	}
+	if localName == "" {
+		_ = root.Close()
+		return nil, nil
+	}
+	return &handoffCandidate{
+		name:       localName,
+		displayDir: dir,
+		components: append([]string(nil), components...),
+		priority:   priority,
+		root:       root,
+	}, nil
 }
 
 // requireRealHandoffRoot resolves one configured handoff root without allowing
@@ -315,33 +322,55 @@ func openRealHandoffRoot(cwd string, components ...string) (*os.Root, string, er
 // regular file.
 func readRegularHandoff(cwd string, candidate *handoffCandidate) ([]byte, error) {
 	path := filepath.Join(candidate.displayDir, candidate.name)
+	file, opened, err := openRegularHandoff(candidate, path)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = file.Close() }()
+	first, err := readStableHandoff(file, candidate, path, opened)
+	if err != nil {
+		return nil, err
+	}
+	if err := verifyHandoffRootIdentity(cwd, candidate); err != nil {
+		return nil, err
+	}
+	return first, nil
+}
+
+func openRegularHandoff(candidate *handoffCandidate, path string) (*os.File, os.FileInfo, error) {
 	if handoffReadTestHook != nil {
 		handoffReadTestHook("before-artifact-open")
 	}
 	before, err := candidate.root.Lstat(candidate.name)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	if before.Mode()&os.ModeSymlink != 0 || !before.Mode().IsRegular() {
-		return nil, fmt.Errorf("handoff artifact %s is not a real regular file", path)
+		return nil, nil, fmt.Errorf("handoff artifact %s is not a real regular file", path)
 	}
 
 	file, err := candidate.root.Open(candidate.name)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
-	defer func() { _ = file.Close() }()
 	opened, err := file.Stat()
 	if err != nil {
-		return nil, err
+		_ = file.Close()
+		return nil, nil, err
 	}
 	after, err := candidate.root.Lstat(candidate.name)
 	if err != nil {
-		return nil, err
+		_ = file.Close()
+		return nil, nil, err
 	}
 	if after.Mode()&os.ModeSymlink != 0 || !after.Mode().IsRegular() || !os.SameFile(before, opened) || !os.SameFile(after, opened) {
-		return nil, fmt.Errorf("handoff artifact %s changed identity during read", path)
+		_ = file.Close()
+		return nil, nil, fmt.Errorf("handoff artifact %s changed identity during read", path)
 	}
+	return file, opened, nil
+}
+
+func readStableHandoff(file *os.File, candidate *handoffCandidate, path string, opened os.FileInfo) ([]byte, error) {
 	if handoffReadTestHook != nil {
 		handoffReadTestHook("before-first-read")
 	}
@@ -370,29 +399,49 @@ func readRegularHandoff(cwd string, candidate *handoffCandidate) ([]byte, error)
 	if pathAfter.Mode()&os.ModeSymlink != 0 || !pathAfter.Mode().IsRegular() || !os.SameFile(opened, openedAfter) || !os.SameFile(pathAfter, openedAfter) || opened.Size() != openedAfter.Size() || !opened.ModTime().Equal(openedAfter.ModTime()) || !bytes.Equal(first, second) {
 		return nil, fmt.Errorf("handoff artifact %s changed while reading", path)
 	}
+	return first, nil
+}
+
+func verifyHandoffRootIdentity(cwd string, candidate *handoffCandidate) error {
 	current, _, err := openRealHandoffRoot(cwd, candidate.components...)
 	if err != nil {
-		return nil, fmt.Errorf("verify handoff root %s: %w", candidate.displayDir, err)
+		return fmt.Errorf("verify handoff root %s: %w", candidate.displayDir, err)
 	}
 	defer func() { _ = current.Close() }()
 	wantRoot, err := candidate.root.Stat(".")
 	if err != nil {
-		return nil, err
+		return err
 	}
 	gotRoot, err := current.Stat(".")
 	if err != nil {
-		return nil, err
+		return err
 	}
 	if !os.SameFile(wantRoot, gotRoot) {
-		return nil, fmt.Errorf("handoff root %s changed identity while reading", candidate.displayDir)
+		return fmt.Errorf("handoff root %s changed identity while reading", candidate.displayDir)
 	}
-	return first, nil
+	return nil
 }
 
 func decodeStoredHandoff(data []byte, filename string, artifact *storedHandoff) error {
 	if err := rejectHandoffSchemaNulls(data); err != nil {
 		return err
 	}
+	if err := decodeOneStoredHandoff(data, artifact); err != nil {
+		return err
+	}
+	if err := validateHandoffIdentity(filename, artifact); err != nil {
+		return err
+	}
+	if err := validateHandoffMetadata(artifact); err != nil {
+		return err
+	}
+	if err := validateHandoffRPI(artifact.RPI); err != nil {
+		return err
+	}
+	return validateHandoffState(artifact.State)
+}
+
+func decodeOneStoredHandoff(data []byte, artifact *storedHandoff) error {
 	decoder := json.NewDecoder(bytes.NewReader(data))
 	decoder.DisallowUnknownFields()
 	if err := decoder.Decode(artifact); err != nil {
@@ -405,6 +454,10 @@ func decodeStoredHandoff(data []byte, filename string, artifact *storedHandoff) 
 		}
 		return err
 	}
+	return nil
+}
+
+func validateHandoffIdentity(filename string, artifact *storedHandoff) error {
 	if artifact.SchemaVersion == nil || *artifact.SchemaVersion != 1 {
 		return fmt.Errorf("schema_version must be 1")
 	}
@@ -414,6 +467,10 @@ func decodeStoredHandoff(data []byte, filename string, artifact *storedHandoff) 
 	if filename != *artifact.ID+".json" {
 		return fmt.Errorf("filename %s does not match artifact id %s", filename, *artifact.ID)
 	}
+	return nil
+}
+
+func validateHandoffMetadata(artifact *storedHandoff) error {
 	if artifact.CreatedAt == nil {
 		return fmt.Errorf("created_at is required")
 	}
@@ -428,19 +485,27 @@ func decodeStoredHandoff(data []byte, filename string, artifact *storedHandoff) 
 			return fmt.Errorf("consumed_at is not a date-time: %w", err)
 		}
 	}
-	if artifact.RPI != nil {
-		if artifact.RPI.Phase == nil || *artifact.RPI.Phase < 1 || *artifact.RPI.Phase > 3 {
+	return nil
+}
+
+func validateHandoffRPI(rpi *storedHandoffRPI) error {
+	if rpi != nil {
+		if rpi.Phase == nil || *rpi.Phase < 1 || *rpi.Phase > 3 {
 			return fmt.Errorf("rpi.phase must be an integer from 1 through 3")
 		}
-		if artifact.RPI.PhaseName == nil || (*artifact.RPI.PhaseName != "discovery" && *artifact.RPI.PhaseName != "implementation" && *artifact.RPI.PhaseName != "validation") {
+		if rpi.PhaseName == nil || (*rpi.PhaseName != "discovery" && *rpi.PhaseName != "implementation" && *rpi.PhaseName != "validation") {
 			return fmt.Errorf("rpi.phase_name is outside the handoff.v1 enum")
 		}
 	}
-	if artifact.State != nil {
-		if artifact.State.GitDirty == nil {
+	return nil
+}
+
+func validateHandoffState(state *storedHandoffState) error {
+	if state != nil {
+		if state.GitDirty == nil {
 			return fmt.Errorf("state.git_dirty is required")
 		}
-		if artifact.State.OpenBeadsCount != nil && *artifact.State.OpenBeadsCount < 0 {
+		if state.OpenBeadsCount != nil && *state.OpenBeadsCount < 0 {
 			return fmt.Errorf("state.open_beads_count must be non-negative")
 		}
 	}
