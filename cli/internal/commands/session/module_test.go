@@ -3,10 +3,12 @@ package session
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/spf13/cobra"
 
@@ -53,10 +55,50 @@ func TestModule_CommandAttributes(t *testing.T) {
 	for _, child := range root.Commands() {
 		seen[child.Name()] = true
 	}
-	for _, want := range []string{"bootstrap", "rehydrate"} {
+	for _, want := range []string{"bootstrap", "prune-agents", "rehydrate"} {
 		if !seen[want] {
 			t.Errorf("session missing subcommand %q", want)
 		}
+	}
+}
+
+func TestPruneAgentsCommandDryRunSeamOverridesExecute(t *testing.T) {
+	dir := t.TempDir()
+	handoffDir := filepath.Join(dir, ".agents", "ao", "handoff")
+	if err := os.MkdirAll(handoffDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	for i := 0; i < 12; i++ {
+		path := filepath.Join(handoffDir, fmt.Sprintf("handoff-%02d.json", i))
+		if err := os.WriteFile(path, []byte("candidate\n"), 0o600); err != nil {
+			t.Fatal(err)
+		}
+		stamp := time.Date(2026, 8, 16, 1, i, 0, 0, time.UTC)
+		if err := os.Chtimes(path, stamp, stamp); err != nil {
+			t.Fatal(err)
+		}
+	}
+	module := NewModule(clicontract.HostOptions{
+		DryRun:      func() bool { return true },
+		ProjectRoot: func() string { return dir },
+		Now:         func() time.Time { return time.Date(2026, 8, 16, 18, 0, 0, 0, time.UTC) },
+	})
+	root := module.Command()
+	var output bytes.Buffer
+	root.SetOut(&output)
+	root.SetArgs([]string{"prune-agents", "--execute"})
+	if err := root.Execute(); err != nil {
+		t.Fatal(err)
+	}
+	entries, err := os.ReadDir(handoffDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(entries) != 12 {
+		t.Fatalf("global dry-run left %d handoffs, want 12", len(entries))
+	}
+	if !strings.Contains(output.String(), "DRY RUN COMPLETE") {
+		t.Fatalf("global dry-run did not select read-only output:\n%s", output.String())
 	}
 }
 

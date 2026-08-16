@@ -880,7 +880,7 @@ ao goals scenarios [flags]
 
 ### `ao session`
 
-Inspect or export session evidence
+Inspect session evidence and maintain .agents artifacts
 
 ```
 ao session [command]
@@ -919,6 +919,22 @@ ao session handoff [summary] [flags]
       --dry-run               Print the artifact without writing it
       --goal string           Caller-supplied goal
   -h, --help                  help for handoff
+```
+
+#### `ao session prune-agents`
+
+Apply .agents retention policies (dry-run by default)
+
+```
+ao session prune-agents [flags]
+```
+
+**Flags:**
+
+```
+      --execute   Delete the selected artifacts; the default is a read-only dry run
+  -h, --help      help for prune-agents
+      --quiet     Suppress per-path output and print only the summary
 ```
 
 #### `ao session rehydrate`

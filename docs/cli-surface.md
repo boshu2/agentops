@@ -68,6 +68,7 @@
 | `ao robot-docs` | `public-tested` | `allowlisted` | Covered by generated documentation tests. |
 | `ao session bootstrap` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao session handoff` | `public-tested` | `allowlisted` | Covered by handoff artifact tests. |
+| `ao session prune-agents` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao session rehydrate` | `public-tested` | `allowlisted` | Covered by rehydrate artifact tests. |
 | `ao skills check` | `public-tested` | `allowlisted` | Covered by internal/commands/skills module tests after the skills carve-out. |
 | `ao skills consumers` | `public-tested` | `allowlisted` | Covered by internal/commands/skills module tests after the skills carve-out. |

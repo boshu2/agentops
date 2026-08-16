@@ -2,6 +2,8 @@
 package main
 
 import (
+	"time"
+
 	"github.com/spf13/cobra"
 
 	"github.com/boshu2/agentops/cli/internal/clicontract"
@@ -15,11 +17,23 @@ func init() {
 // newSessionCommand wires the session command module and attaches the optional
 // `ao session handoff` writer, which is a separate command (defined in
 // handoff.go) that shares this parent. The module owns the session parent plus
-// its bootstrap and rehydrate subcommands and delegates all filesystem effects
-// to internal/sessionapp. The session family attaches no CommandContract to the
-// command tree, preserving its pre-migration capabilities surface.
+// its bootstrap, rehydrate, and prune-agents subcommands and delegates all
+// filesystem effects to internal/sessionapp. The session family attaches no
+// CommandContract to the command tree, preserving its pre-migration
+// capabilities surface.
 func newSessionCommand() *cobra.Command {
-	command := sessioncommands.NewModule(clicontract.HostOptions{OutputMode: GetOutput}).Command()
+	command := sessioncommands.NewModule(clicontract.HostOptions{
+		OutputMode: GetOutput,
+		DryRun:     GetDryRun,
+		ProjectRoot: func() string {
+			root, err := repoRootOrCwd()
+			if err != nil {
+				return ""
+			}
+			return root
+		},
+		Now: time.Now,
+	}).Command()
 	command.AddCommand(handoffCmd)
 	return command
 }

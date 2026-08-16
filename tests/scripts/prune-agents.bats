@@ -3,6 +3,15 @@
 setup() {
   REPO_ROOT="$(git rev-parse --show-toplevel)"
   SCRIPT="$REPO_ROOT/scripts/prune-agents.sh"
+
+  # Exercise the shipped Go owner through the real compatibility wrapper. The
+  # file-scoped path avoids accidentally reusing a stale cli/bin/ao.
+  AGENTOPS_AO_BIN="$BATS_FILE_TMPDIR/ao"
+  if [[ ! -x "$AGENTOPS_AO_BIN" ]]; then
+    (cd "$REPO_ROOT/cli" && go build -o "$AGENTOPS_AO_BIN" ./cmd/ao)
+  fi
+  export AGENTOPS_AO_BIN
+
   FIXTURE_ROOT="$BATS_TEST_TMPDIR/repo"
   EXPECTED_LEGACY="$BATS_TEST_TMPDIR/expected-legacy"
   export AGENTOPS_REPO_ROOT="$FIXTURE_ROOT"
@@ -57,6 +66,19 @@ populate_canonical_handoffs() {
 
   [ "$(find "$FIXTURE_ROOT/.agents/ao/handoff" -maxdepth 1 -type f | wc -l | tr -d ' ')" -eq 12 ]
   [[ "$output" == *"Files that would be deleted: 2"* ]]
+}
+
+@test "quiet dry run keeps the summary and suppresses per-path output" {
+  populate_canonical_handoffs
+
+  run "$SCRIPT" --quiet
+  [ "$status" -eq 0 ]
+
+  [ "$(find "$FIXTURE_ROOT/.agents/ao/handoff" -maxdepth 1 -type f | wc -l | tr -d ' ')" -eq 12 ]
+  [[ "$output" == *"DRY RUN COMPLETE"* ]]
+  [[ "$output" == *"Files that would be deleted: 2"* ]]
+  [[ "$output" != *"would delete:"* ]]
+  [[ "$output" != *"Protected directories"* ]]
 }
 
 @test "execute refuses an intermediate canonical symlink and leaves outside bytes unchanged" {
