@@ -14,7 +14,7 @@ import (
 //	nested-empty/a/b/              only empty subs  -> flagged
 //	deep/                          one deep file    -> NOT flagged
 //	ao/                            empty store root -> NOT flagged (knowledge's)
-//	handoff/                       empty canonical  -> NOT flagged
+//	handoff/                       legacy evidence  -> NOT empty/flagged
 //	land-queue-x.stale-.../        empty stale name -> NOT flagged (GC's)
 //
 // It returns the DetectEnv and the repo root.
@@ -32,6 +32,10 @@ func workspaceEmptyTestEnv(t *testing.T) (*DetectEnv, string) {
 		if err := os.MkdirAll(dir, 0o755); err != nil {
 			t.Fatalf("mkdir %s: %v", dir, err)
 		}
+	}
+	legacyHandoff := filepath.Join(agents, "handoff", "handoff-20260815T120000.000000000Z.json")
+	if err := os.WriteFile(legacyHandoff, []byte("legacy evidence\n"), 0o600); err != nil {
+		t.Fatalf("write legacy handoff evidence: %v", err)
 	}
 	deepFile := filepath.Join(agents, "deep", "sub", "keep.md")
 	if err := os.MkdirAll(filepath.Dir(deepFile), 0o755); err != nil {
@@ -154,6 +158,11 @@ func TestWorkspaceEmptyDirs_DetectAndFix(t *testing.T) {
 	got, err := os.ReadFile(filepath.Join(agents, "deep", "sub", "keep.md"))
 	if err != nil || string(got) != "content" {
 		t.Errorf("deep file changed: %q err=%v", got, err)
+	}
+	legacyHandoff := filepath.Join(agents, "handoff", "handoff-20260815T120000.000000000Z.json")
+	got, err = os.ReadFile(legacyHandoff)
+	if err != nil || string(got) != "legacy evidence\n" {
+		t.Errorf("legacy handoff evidence changed or moved: %q err=%v", got, err)
 	}
 
 	// Re-detect: clean.
@@ -325,6 +334,21 @@ func TestWorkspaceEmptyDirs_DetectMissingBaseClean(t *testing.T) {
 	}
 }
 
+func TestWorkspaceEmptyDirs_EmptyLegacyHandoffIsReadOnly(t *testing.T) {
+	repo := t.TempDir()
+	agents := filepath.Join(repo, ".agents")
+	if err := os.MkdirAll(filepath.Join(agents, "handoff"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	candidates, err := workspaceEmptyDirCandidates(agents)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(candidates) != 0 {
+		t.Fatalf("empty legacy handoff candidates = %v, want none", candidates)
+	}
+}
+
 func TestWorkspaceEmptyDirClaimed(t *testing.T) {
 	tests := []struct {
 		name string
@@ -335,6 +359,7 @@ func TestWorkspaceEmptyDirClaimed(t *testing.T) {
 		{"postmortem", true},
 		{"pre-mortem-checks", true},
 		{"handoff", true},
+		{"mto-handoff", true},
 		{"retro", true},
 		{"proofs", true},
 		{"tests", true},

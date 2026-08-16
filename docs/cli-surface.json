@@ -451,6 +451,13 @@
     },
     {
       "category": "public-tested",
+      "command": "session prune-agents",
+      "coverage_status": "covered",
+      "kind": "leaf",
+      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
+    },
+    {
+      "category": "public-tested",
       "command": "session rehydrate",
       "coverage_status": "allowlisted",
       "kind": "leaf",

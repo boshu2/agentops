@@ -3,8 +3,9 @@
   "skill": "reality-check",
   "tier": "judgment",
   "reps": 2,
+  "treatment_source": "injected-prelude",
   "behavior": "names the concrete claim-vs-evidence gap (3 files still on v1) instead of confirming the narrative completion claim",
   "discriminator": "discriminator.sh",
   "budget_note": "N=2 — DIRECTIONAL, not statistical",
-  "honesty": "measures behavior-change (does loading reality-check change whether the gap is named against the claim), NOT quality-uplift"
+  "honesty": "legacy prelude-only probe: measures whether injected guidance changed the scored gap response, not full-skill activation or quality uplift"
 }

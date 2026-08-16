@@ -1,0 +1,61 @@
+{
+  "binding_sha256": "sha256:e5d15b63f7264c21f4db7e61b11a5e4a097a04a76dcee9f6c57b274ec0af6c74",
+  "capture_evaluator": {
+    "harness": {
+      "path": "scripts/probe-skill.sh",
+      "sha256": "sha256:855ff08cdf035fd8141f3adb4a00aede7313048298cd27a8c2c6cb21b5ed8779"
+    },
+    "metadata_helper": {
+      "path": "scripts/lib/probe-fixture-metadata.py",
+      "sha256": "sha256:400eba7ec633a22af402550e61c3abeb86220461c95d777d7801cf9178d50199"
+    }
+  },
+  "evaluation_inputs": [
+    {
+      "path": "probe.json",
+      "sha256": "sha256:6aec0acd5b1fdd25d488a3fc6390c61ab42515673133a374832f5f28450fd3a9"
+    },
+    {
+      "path": "question.md",
+      "sha256": "sha256:db47264a82676ce98f2c1ee17905d83cd0390201a2ae6f6f0b2b6ac795a41640"
+    },
+    {
+      "path": "treatment-prelude.md",
+      "sha256": "sha256:cdcd1fcdc1b898b666b5700939eff32d8ca5c9bfe58afa481b2bf9682423abb4"
+    },
+    {
+      "path": "discriminator.sh",
+      "sha256": "sha256:49704ed9b1f33d1624a78228d581c79879e0c739289dbc66f5568b5961b1b06d"
+    }
+  ],
+  "probe": "anti-ceremony-creation-gate",
+  "producer": {
+    "adapter": "codex",
+    "effort": "low",
+    "model": "gpt-5.6-luna"
+  },
+  "reps": 2,
+  "requested_producer": {
+    "effort": "low",
+    "model": "gpt-5.6-luna"
+  },
+  "schema": "agentops-skill-probe-fixture-set.v1",
+  "transcripts": [
+    {
+      "path": "control-1.txt",
+      "sha256": "sha256:6f649391333b5509536265da6370fcb17ba69dfe7b1677ec121acbf712ab36f7"
+    },
+    {
+      "path": "treatment-1.txt",
+      "sha256": "sha256:57fcffb6d7369d4412cbdc670af224c2c592e99e97d9819c426f90ff6df22112"
+    },
+    {
+      "path": "control-2.txt",
+      "sha256": "sha256:bacd5f957d78315771d1765b190016d8e04dc6ebacb8aaff0457b13891b67188"
+    },
+    {
+      "path": "treatment-2.txt",
+      "sha256": "sha256:ff356620678677041c8f4e3c116b18b47d0845159037fd7aaba29a6bb770035c"
+    }
+  ]
+}

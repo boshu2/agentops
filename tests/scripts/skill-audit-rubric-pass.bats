@@ -1,11 +1,12 @@
 #!/usr/bin/env bats
 
 # Regression test for the skill-builder deep audit Pass 3 (rubric scoring) — soc-ads5v.
-# Pass 3 folds the 10-category Skill Quality Rubric
+# Pass 3 folds the 10-category static package-readiness rubric
 # (docs/reference/skill-quality-rubric.md) into audit-report.json via
 # score_agentops_skill.py --audit-block. The score is advisory: it must NOT
-# change the PASS/WARN/FAIL verdict. Scoring must be deterministic + explainable
-# (each category gets a 0-3 score and a reason).
+# change the PASS/WARN/FAIL verdict or imply safety/effectiveness evaluation.
+# Scoring must be deterministic + explainable (each category gets a 0-3 score
+# and a reason).
 
 setup() {
     REPO_ROOT="$(cd "$BATS_TEST_DIRNAME/../.." && pwd)"
@@ -51,6 +52,17 @@ teardown() {
     [[ "$output" == *'"total_score"'* ]]
     [[ "$output" == *'"max_score": 30'* ]]
     [[ "$output" == *'"advisory": true'* ]]
+    [[ "$output" == *'"scope": "static-package-readiness"'* ]]
+    [[ "$output" == *'"safety_gate_evaluated": false'* ]]
+    [[ "$output" == *'"effectiveness_evaluated": false'* ]]
+}
+
+@test "default scorer JSON labels its limited evidence scope" {
+    run python3 "$SCORE" "$FIXTURE"
+    [ "$status" -eq 0 ]
+    [[ "$output" == *'"scope": "static-package-readiness"'* ]]
+    [[ "$output" == *'"safety_gate_evaluated": false'* ]]
+    [[ "$output" == *'"effectiveness_evaluated": false'* ]]
 }
 
 @test "audit.sh folds a rubric block with all 10 categories into the report" {
@@ -62,6 +74,9 @@ import json, sys
 report = json.load(open(sys.argv[1]))
 rubric = report["rubric"]
 assert rubric is not None, "rubric must be present"
+assert rubric["scope"] == "static-package-readiness"
+assert rubric["safety_gate_evaluated"] is False
+assert rubric["effectiveness_evaluated"] is False
 assert rubric["max_score"] == 30, rubric["max_score"]
 assert rubric["advisory"] is True
 expected = "${EXPECTED_CATEGORIES[*]}".split()
@@ -76,7 +91,7 @@ print("rubric block OK")
 PY
 }
 
-@test "rubric scoring is deterministic across runs" {
+@test "static readiness scoring is deterministic across runs" {
     run python3 "$SCORE" "$FIXTURE" --audit-block
     [ "$status" -eq 0 ]
     first="$output"
@@ -98,6 +113,20 @@ PY
     # not need them; the verdict is still driven only by Pass 1+2.
     rating="$(python3 -c "import json,sys; print(json.load(open(sys.argv[1]))['rubric']['rating'])" "$TMP_DIR/report.json")"
     [[ "$rating" = "A" || "$rating" = "S" ]]
+}
+
+@test "canonical plan and execution skills keep explicit output contracts" {
+    for skill in plan implement using-flywheel; do
+        local report="$TMP_DIR/$skill.json"
+        run bash "$AUDIT" "$REPO_ROOT/skills/$skill" --json "$report"
+        [ "$status" -eq 0 ]
+        run jq -e '
+            [.pass2.checks[]
+             | select(.id == "output-spec-explicit")
+             | .status] == ["pass"]
+        ' "$report"
+        [ "$status" -eq 0 ]
+    done
 }
 
 @test "report stays valid JSON when the rubric block is emitted" {

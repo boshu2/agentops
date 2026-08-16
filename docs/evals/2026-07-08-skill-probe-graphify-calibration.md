@@ -1,17 +1,22 @@
 # Skill behavioral probe — graphify (CALIBRATION), 2026-07-08
 
-> **HONESTY.** A probe measures **BEHAVIOR-CHANGE, not quality-uplift.** This run
-> answers only: did loading the graphify "use the graph before grep" guidance
-> change which tool the agent actually reached for FIRST? It does not claim
-> graphify is good or bad. Small N (2) is **directional, not statistical**
-> (ADR-0011 discipline — do not overclaim).
+> **LEGACY EVIDENCE STATUS.** These fixtures were reconstructed from a written
+> 2026-06-30 account; they are not captured transcripts and have no capture-time
+> hashes or producer/config manifest. The current fail-closed harness cannot
+> provenance-verify or reproduce the original run. This file preserves the
+> historical account and a discriminator regression case, while the ledger
+> marks the probe `LEGACY-UNVERIFIED` and excludes it from measured coverage.
+>
+> **HONESTY.** The stored fixture test asks only whether the classifier detects
+> a graph action before grep. It does not establish graphify quality or provide
+> fresh behavioral evidence. Small N (2) in the historical account is
+> directional, not statistical (ADR-0011).
 
-## Purpose: calibrate the instrument against a known-INERT result
+## Purpose: preserve a historical classification and classifier regression
 
-This is the harness's **calibration** run. The `age-e508.1` acceptance requires
-that, on the 2026-06-30 graphify scenario, the harness **reproduces the INERT
-verdict** — i.e. that the ruler reads a known measurement correctly before we
-trust it on new skills.
+The reconstructed fixtures encode the documented 2026-06-30 no-action shape so
+the discriminator can be regression-tested against it. Classifying those
+authored fixtures does not reproduce the original run or verify its producer.
 
 The original measurement (memory
 `doc-instruction-to-use-tool-before-grep-is-inert`): on 2026-06-30, after
@@ -33,33 +38,28 @@ structure via explain/path/query BEFORE broad grep,"* a controlled A/B found:
   or a read of `graphify-out/`) **before** any grep/rg. It checks the ACTION, not
   a mention.
 - Fixtures are **reconstructed from the documented 06-30 record** (both arms
-  grep-first, no graphify call) — this is a regression fixture encoding a known
-  outcome to calibrate the classifier, not a verbatim console capture. Run via
-  `--replay` (deterministic, zero token cost).
+  grep-first, no graphify call). They are an authored classifier regression
+  case, not verbatim console captures or replayable measurement evidence.
 
-```bash
-bash scripts/probe-skill.sh --probe graphify-tool-preference --replay
-```
-
-## Result — REPRODUCED
+## Stored regression result — LEGACY-UNVERIFIED
 
 | Arm | present / usable | rate |
 |-----|------------------|------|
 | control | 0 / 2 | 0.0 |
 | treatment | 0 / 2 | 0.0 |
 
-**Verdict: `INERT`** (treatment_rate 0.0 is not > control_rate 0.0). This matches
-the documented 2026-06-30 result: the loaded guidance did not change which tool
-the agent reached for. Calibration passes — the harness reads the known-INERT
-case correctly.
+**Historical classification: `INERT`** because the reconstructed treatment
+rate 0.0 is not greater than the reconstructed control rate 0.0. The fixture
+result is consistent with the documented 2026-06-30 account, but it is not a
+current manifest-backed verdict or independent evidence of that run.
 
 ## A discriminator bug the calibration caught (worth recording)
 
 The first discriminator matched the bare token `graphify-out/` — which appeared
 in the treatment fixtures' *prose* header describing the environment — and
-mis-scored the known-INERT case as `BEHAVIORAL`. That is exactly the failure this
-whole bead exists to prevent: **measuring a mention, not an action.** Calibration
-against the known result caught it; the discriminator was tightened to count only
-real invocations (a command, a tool call, or a file read), and the prose token
-was removed from the fixtures. A probe you cannot calibrate is a badge you cannot
-trust.
+mis-scored the authored no-action case as `BEHAVIORAL`. That is exactly the
+classifier failure this regression fixture can test: **measuring a mention, not
+an action.** The discriminator was tightened to count only real invocations (a
+command, a tool call, or a file read), and the prose token was removed from the
+fixtures. This validates the narrow classifier regression; it does not promote
+the reconstructed fixture into provenance-verified behavioral evidence.

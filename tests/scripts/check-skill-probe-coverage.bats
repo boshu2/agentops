@@ -1,31 +1,46 @@
 #!/usr/bin/env bats
-#
-# Tests for scripts/check-skill-probe-coverage.sh — the advisory
-# skill.probe-coverage gate (age-e508.1).
-#
-# The gate NAMES every product-/judgment-tier skill that lacks a behavioral
-# probe RESULT in the MEASURED ledger of skills/SKILL-TIERS.md. It is
-# advisory-first: default mode reports findings but exits 0 (warn); --strict
-# flips to a hard fail (the same warn-then-fail flip discipline as the egwt
-# gates). "Has a probe result" = a ledger row whose verdict is BEHAVIORAL or
-# INERT; an UNMEASURED verdict or an absent row is NOT a result.
-#
-# The gate is fixture-driven via env overrides (SKILL_PROBE_SKILLS_DIR,
-# SKILL_PROBE_TIERS_FILE) so a fixture skills tree + tiers file can be pointed at
-# without copying the repo.
+
+bats_require_minimum_version 1.5.0
+
+# Contract tests for the advisory skill.probe-coverage gate. A ledger label is
+# never evidence by itself: a directional verdict counts only when its one
+# scorecard pointer resolves to a verified v3 scorecard + self-contained fixture
+# set whose response-only discriminator replay produces the same classification.
 
 setup() {
     REPO_ROOT="$(cd "$BATS_TEST_DIRNAME/../.." && pwd)"
-    export REPO_ROOT
     GATE="$REPO_ROOT/scripts/check-skill-probe-coverage.sh"
+    HARNESS="$REPO_ROOT/scripts/probe-skill.sh"
+    META_TOOL="$REPO_ROOT/scripts/lib/probe-fixture-metadata.py"
+    PREAMBLE="$REPO_ROOT/scripts/lib/preamble.sh"
+    DISPATCH_HELPER="$REPO_ROOT/scripts/lib/codex-exec.sh"
 
     FIX="$BATS_TEST_TMPDIR/repo"
-    mkdir -p "$FIX/skills"
+    PROBES="$FIX/evals/skill-probes"
+    mkdir -p "$FIX/skills" "$PROBES" "$FIX/docs/evals/scorecards" "$FIX/scripts/lib"
+    cp "$HARNESS" "$FIX/scripts/probe-skill.sh"
+    cp "$META_TOOL" "$FIX/scripts/lib/probe-fixture-metadata.py"
+    cp "$PREAMBLE" "$FIX/scripts/lib/preamble.sh"
+    cp "$DISPATCH_HELPER" "$FIX/scripts/lib/codex-exec.sh"
+    mkdir -p "$FIX/test-bin"
+    # Synthetic unit-only runtime identity: it exercises the positive verifier
+    # path but is neither persisted evidence nor a claim that a model was run.
+    cat > "$FIX/test-bin/codex" <<'SH'
+#!/usr/bin/env bash
+if [[ "${1:-}" == "--version" ]]; then
+    printf 'codex-cli synthetic-gate-test\n'
+    exit 0
+fi
+printf 'synthetic identity stub is not a live producer\n' >&2
+exit 70
+SH
+    chmod +x "$FIX/test-bin/codex"
+    export PATH="$FIX/test-bin:$PATH"
     export SKILL_PROBE_SKILLS_DIR="$FIX/skills"
-    export SKILL_PROBE_TIERS_FILE="$FIX/SKILL-TIERS.md"
+    export SKILL_PROBE_LEDGER_FILE="$PROBES/LEDGER.md"
+    export SKILL_PROBE_EVIDENCE_ROOT="$FIX"
 }
 
-# make_skill <name> <tier> — write a minimal SKILL.md carrying a metadata tier.
 make_skill() {
     local name="$1" tier="$2"
     mkdir -p "$SKILL_PROBE_SKILLS_DIR/$name"
@@ -52,98 +67,463 @@ Use the canonical skill instead.
 EOF
 }
 
-# write_ledger <rows...> — write a SKILL-TIERS.md carrying a MEASURED probe
-# ledger. Each arg is a table row body "skill | probe | date | verdict".
 write_ledger() {
+    local ledger_file="${SKILL_PROBE_LEDGER_FILE:-$SKILL_PROBE_TIERS_FILE}"
     {
-        echo "# Skill Tier Taxonomy"
+        echo "# Behavioral probe ledger"
         echo
-        echo "## Behavioral Probe Ledger (MEASURED)"
+        echo "## Behavioral Probe Ledger (MEASUREMENT STATUS)"
         echo
-        echo "| Skill | Probe ID | Date | Verdict |"
-        echo "|-------|----------|------|---------|"
+        echo "| Skill | Probe | Date | Verdict | Notes |"
+        echo "|---|---|---|---|---|"
         local row
         for row in "$@"; do
             echo "| $row |"
         done
-    } > "$SKILL_PROBE_TIERS_FILE"
+    } > "$ledger_file"
 }
 
-@test "a product-tier skill absent from the ledger is NAMED and --strict FAILS" {
+write_transcript() {
+    local directory="$1" name="$2" body="$3"
+    python3 - "$directory" "$name" "$body" <<'PY'
+import json, pathlib, sys
+
+directory = pathlib.Path(sys.argv[1])
+name = sys.argv[2]
+body = sys.argv[3]
+arm, rep_text = name.rsplit("-", 1)
+rep = int(rep_text)
+contract = json.loads((directory / "capture-contract.json").read_text())
+prompt = contract["prompts"][0 if arm == "control" else 1]
+position = next(
+    item["position"]
+    for item in contract["schedule"]
+    if item["arm"] == arm and item["rep"] == rep
+)
+events = [
+    {
+        "type": "agentops.probe-input.v1",
+        "arm": arm,
+        "rep": rep,
+        "position": position,
+        "prompt": prompt,
+    },
+    {"type": "thread.started", "thread_id": f"gate-{directory.name}-{name}"},
+    {"type": "turn.started"},
+    {
+        "type": "item.completed",
+        "item": {"id": f"item-{name}", "type": "agent_message", "text": body},
+    },
+    {
+        "type": "turn.completed",
+        "usage": {"input_tokens": 1, "cached_input_tokens": 0, "output_tokens": 1},
+    },
+]
+(directory / f"{name}.txt").write_text(
+    "".join(json.dumps(event, sort_keys=True, separators=(",", ":")) + "\n" for event in events)
+)
+PY
+}
+
+# make_bound_result SKILL PROBE VERDICT [TREATMENT_SOURCE] [PRODUCER_OVERRIDE]
+# Sets BOUND_SCORECARD_REL to a safe repo-relative v3 scorecard path.
+make_bound_result() {
+    local skill="$1" probe="$2" verdict="$3"
+    local treatment_source="${4:-canonical-skill}"
+    local producer_override="${5:-}"
+    local probe_dir="$PROBES/$probe"
+    local fixture_name="fixtures-test"
+    local fixture_dir="$probe_dir/$fixture_name"
+    local control_body="ABSENT" treatment_body="ABSENT" rep
+
+    if [ "$verdict" = "BEHAVIORAL" ]; then treatment_body="ACTION"; fi
+    mkdir -p "$fixture_dir"
+    cat > "$probe_dir/probe.json" <<EOF
+{"id":"$probe","skill":"$skill","reps":2,"discriminator":"discriminator.sh","treatment_source":"$treatment_source"}
+EOF
+    printf 'QUESTION\n' > "$probe_dir/question.md"
+    printf 'PRELUDE\n' > "$probe_dir/treatment-prelude.md"
+    cat > "$probe_dir/discriminator.sh" <<'SH'
+#!/usr/bin/env bash
+if grep -q '^INFRA$' "$1"; then exit 2; fi
+grep -q '^ACTION$' "$1"
+SH
+    chmod +x "$probe_dir/discriminator.sh"
+    local -a snapshot_args=(
+        snapshot
+        --fixture-dir "$fixture_dir"
+        --probe-dir "$probe_dir"
+        --skills-dir "$SKILL_PROBE_SKILLS_DIR"
+        --probe "$probe"
+        --requested-model fixture-model
+        --requested-effort low
+    )
+    if [[ -n "$producer_override" ]]; then
+        snapshot_args+=(--producer-override-bin "$producer_override")
+    fi
+    python3 "$META_TOOL" "${snapshot_args[@]}" >/dev/null
+    for rep in 1 2; do
+        write_transcript "$fixture_dir" "control-$rep" "$control_body"
+        write_transcript "$fixture_dir" "treatment-$rep" "$treatment_body"
+    done
+
+    python3 "$META_TOOL" create \
+        --fixture-dir "$fixture_dir" \
+        --probe-dir "$probe_dir" \
+        --skills-dir "$SKILL_PROBE_SKILLS_DIR" \
+        --harness "$HARNESS" \
+        --preamble "$PREAMBLE" \
+        --dispatch-helper "$DISPATCH_HELPER" \
+        --probe "$probe" \
+        --reps 2 \
+        --requested-model fixture-model \
+        --requested-effort low >/dev/null
+
+    BOUND_SCORECARD_REL="docs/evals/scorecards/$probe.json"
+    SKILL_PROBES_DIR="$PROBES" bash "$HARNESS" \
+        --probe "$probe" \
+        --replay \
+        --fixtures "$fixture_name" \
+        --output "$FIX/$BOUND_SCORECARD_REL" >/dev/null
+}
+
+json_field() {
+    python3 -c '
+import json, sys
+value = json.loads(sys.argv[1])
+for part in sys.argv[2].split("."):
+    value = value[part]
+print(value)
+' "$1" "$2"
+}
+
+@test "a product-tier skill absent from the ledger is named and strict fails" {
     make_skill foo product
-    write_ledger   # empty ledger
+    write_ledger
+
     run bash "$GATE" --strict
+
     [ "$status" -eq 1 ]
     [[ "$output" == *"foo"* ]]
 }
 
-@test "default (advisory) mode NAMES the skill but exits 0 (warn-first)" {
+@test "default mode stays advisory and names missing coverage" {
     make_skill foo product
     write_ledger
+
     run bash "$GATE"
+
     [ "$status" -eq 0 ]
     [[ "$output" == *"foo"* ]]
     [[ "$output" == *"WARN"* ]]
 }
 
-@test "a judgment-tier skill with no probe is flagged too" {
+@test "a judgment-tier skill is gated too" {
     make_skill val judgment
     write_ledger
+
     run bash "$GATE" --strict
+
     [ "$status" -eq 1 ]
     [[ "$output" == *"val"* ]]
 }
 
-@test "a product-tier skill WITH a BEHAVIORAL ledger row is NOT flagged" {
+@test "a hand-written BEHAVIORAL row without v3 evidence does not count" {
     make_skill foo product
-    write_ledger "foo | probe-foo | 2026-07-08 | BEHAVIORAL"
+    write_ledger "foo | probe-foo | 2026-08-16 | BEHAVIORAL | prose only"
+
     run bash "$GATE" --strict
-    [ "$status" -eq 0 ]
-    [[ "$output" != *"foo lacks"* ]]
+
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"lacks exactly one scorecard"* ]]
+    [[ "$output" == *"foo"* ]]
 }
 
-@test "an INERT ledger verdict counts as a measured result (not flagged)" {
+@test "a valid bound BEHAVIORAL scorecard counts" {
     make_skill foo product
-    write_ledger "foo | probe-foo | 2026-07-08 | INERT"
+    make_bound_result foo probe-foo BEHAVIORAL
+    write_ledger "foo | probe-foo | 2026-08-16 | BEHAVIORAL | scorecard: \`$BOUND_SCORECARD_REL\`"
+
     run bash "$GATE" --strict
+
+    [ "$status" -eq 0 ]
+    [[ "$output" != *"foo"* ]]
+}
+
+@test "a valid bound INERT scorecard counts" {
+    make_skill foo product
+    make_bound_result foo probe-foo INERT
+    write_ledger "foo | probe-foo | 2026-08-16 | INERT | scorecard: \`$BOUND_SCORECARD_REL\`"
+
+    run bash "$GATE" --strict
+
     [ "$status" -eq 0 ]
 }
 
-@test "an UNMEASURED ledger verdict does NOT count — still flagged" {
+@test "an explicit producer override is replayable but cannot qualify as coverage" {
     make_skill foo product
-    write_ledger "foo | probe-foo | 2026-07-08 | UNMEASURED"
+    make_bound_result foo probe-foo BEHAVIORAL canonical-skill "$FIX/test-bin/codex"
+    write_ledger "foo | probe-foo | 2026-08-16 | BEHAVIORAL | scorecard: \`$BOUND_SCORECARD_REL\`"
+
     run bash "$GATE" --strict
+
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"tier coverage requires non-overrideable native Codex runtime evidence"* ]]
+    [[ "$output" == *"foo"* ]]
+}
+
+@test "bound injected-prelude evidence is replayable but does not count as skill coverage" {
+    make_skill foo product
+    make_bound_result foo probe-foo BEHAVIORAL injected-prelude
+    write_ledger "foo | probe-foo | 2026-08-16 | BEHAVIORAL | scorecard: \`$BOUND_SCORECARD_REL\`"
+
+    run bash "$GATE" --strict
+
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"tier coverage requires treatment_source 'canonical-skill'"* ]]
+    [[ "$output" == *"foo"* ]]
+}
+
+@test "LEGACY-UNVERIFIED and UNMEASURED rows remain excluded" {
+    make_skill foo product
+    write_ledger \
+        "foo | probe-old | 2026-08-15 | LEGACY-UNVERIFIED | historical" \
+        "foo | probe-null | 2026-08-16 | UNMEASURED | no usable arms"
+
+    run bash "$GATE" --strict
+
     [ "$status" -eq 1 ]
     [[ "$output" == *"foo"* ]]
 }
 
-@test "execution-tier skills are exempt (not required to carry a probe)" {
+@test "a fabricated scorecard classification is rejected by discriminator replay" {
+    make_skill foo product
+    make_bound_result foo probe-foo BEHAVIORAL
+    python3 - "$FIX/$BOUND_SCORECARD_REL" <<'PY'
+import json, pathlib, sys
+path = pathlib.Path(sys.argv[1])
+value = json.loads(path.read_text())
+value["verdict"] = "INERT"
+value["treatment"] = {"present": 0, "usable": 2, "rate": 0.0}
+for entry in value["per_rep"]:
+    entry["treatment"] = "ABSENT"
+path.write_text(json.dumps(value))
+PY
+    write_ledger "foo | probe-foo | 2026-08-16 | INERT | scorecard: \`$BOUND_SCORECARD_REL\`"
+
+    run bash "$GATE" --strict
+
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"do not match discriminator replay"* ]]
+}
+
+@test "tampered transcript or manifest evidence does not count" {
+    make_skill foo product
+    make_bound_result foo probe-foo BEHAVIORAL
+    printf 'tamper\n' >> "$PROBES/probe-foo/fixtures-test/control-1.txt"
+    write_ledger "foo | probe-foo | 2026-08-16 | BEHAVIORAL | scorecard: \`$BOUND_SCORECARD_REL\`"
+
+    run bash "$GATE" --strict
+
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"transcript digest mismatch"* ]]
+}
+
+@test "canonical skill drift invalidates otherwise unchanged bound evidence" {
+    make_skill foo product
+    make_bound_result foo probe-foo BEHAVIORAL
+    printf '\nchanged after capture\n' >> "$SKILL_PROBE_SKILLS_DIR/foo/SKILL.md"
+    write_ledger "foo | probe-foo | 2026-08-16 | BEHAVIORAL | scorecard: \`$BOUND_SCORECARD_REL\`"
+
+    run bash "$GATE" --strict
+
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"current canonical skill differs from the self-contained capture"* ]]
+}
+
+@test "a scorecard with no fixture manifest does not count" {
+    make_skill foo product
+    make_bound_result foo probe-foo BEHAVIORAL
+    rm -f "$PROBES/probe-foo/fixtures-test/fixture-set.json"
+    write_ledger "foo | probe-foo | 2026-08-16 | BEHAVIORAL | scorecard: \`$BOUND_SCORECARD_REL\`"
+
+    run bash "$GATE" --strict
+
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"verified replay requires immutable capture metadata"* ]]
+}
+
+@test "scorecard and manifest binding mismatch does not count" {
+    make_skill foo product
+    make_bound_result foo probe-foo BEHAVIORAL
+    python3 - "$FIX/$BOUND_SCORECARD_REL" <<'PY'
+import json, pathlib, sys
+path = pathlib.Path(sys.argv[1])
+value = json.loads(path.read_text())
+value["fixture_set"]["binding_sha256"] = "sha256:" + "0" * 64
+path.write_text(json.dumps(value))
+PY
+    write_ledger "foo | probe-foo | 2026-08-16 | BEHAVIORAL | scorecard: \`$BOUND_SCORECARD_REL\`"
+
+    run bash "$GATE" --strict
+
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"scorecard/manifest fixture binding mismatch"* ]]
+}
+
+@test "scorecard producer mismatch does not count" {
+    make_skill foo product
+    make_bound_result foo probe-foo INERT
+    python3 - "$FIX/$BOUND_SCORECARD_REL" <<'PY'
+import json, pathlib, sys
+path = pathlib.Path(sys.argv[1])
+value = json.loads(path.read_text())
+value["producer"]["model"] = "relabeled-model"
+path.write_text(json.dumps(value))
+PY
+    write_ledger "foo | probe-foo | 2026-08-16 | INERT | scorecard: \`$BOUND_SCORECARD_REL\`"
+
+    run bash "$GATE" --strict
+
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"scorecard/manifest producer mismatch"* ]]
+}
+
+@test "scorecard reps mismatch does not count" {
+    make_skill foo product
+    make_bound_result foo probe-foo INERT
+    python3 - "$FIX/$BOUND_SCORECARD_REL" <<'PY'
+import json, pathlib, sys
+path = pathlib.Path(sys.argv[1])
+value = json.loads(path.read_text())
+value["reps"] = 1
+value["schedule"] = [
+    {"position": 1, "rep": 1, "arm": "control"},
+    {"position": 2, "rep": 1, "arm": "treatment"},
+]
+path.write_text(json.dumps(value))
+PY
+    write_ledger "foo | probe-foo | 2026-08-16 | INERT | scorecard: \`$BOUND_SCORECARD_REL\`"
+
+    run bash "$GATE" --strict
+
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"scorecard/manifest reps mismatch"* ]]
+}
+
+@test "scorecard and ledger skill/probe/verdict mismatches do not count" {
+    make_skill foo product
+    make_bound_result foo probe-foo BEHAVIORAL
+    write_ledger "foo | other-probe | 2026-08-16 | BEHAVIORAL | scorecard: \`$BOUND_SCORECARD_REL\`"
+
+    run bash "$GATE" --strict
+
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"scorecard/ledger probe mismatch"* ]]
+
+    write_ledger "foo | probe-foo | 2026-08-16 | INERT | scorecard: \`$BOUND_SCORECARD_REL\`"
+    run bash "$GATE" --strict
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"scorecard/ledger verdict mismatch"* ]]
+}
+
+@test "unsafe relative and absolute scorecard paths are rejected" {
+    make_skill foo product
+    write_ledger "foo | probe-foo | 2026-08-16 | BEHAVIORAL | scorecard: \`../outside.json\`"
+
+    run bash "$GATE" --strict
+
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"unsafe repository-relative path"* ]]
+
+    write_ledger "foo | probe-foo | 2026-08-16 | BEHAVIORAL | scorecard: \`/tmp/outside.json\`"
+    run bash "$GATE" --strict
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"unsafe repository-relative path"* ]]
+}
+
+@test "a scorecard path that traverses a symlink is rejected" {
+    make_skill foo product
+    make_bound_result foo probe-foo INERT
+    mv "$FIX/docs/evals/scorecards" "$FIX/docs/evals/real-scorecards"
+    ln -s real-scorecards "$FIX/docs/evals/scorecards"
+    write_ledger "foo | probe-foo | 2026-08-16 | INERT | scorecard: \`$BOUND_SCORECARD_REL\`"
+
+    run bash "$GATE" --strict
+
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"must not traverse a symlink"* ]]
+}
+
+@test "a meta-tier v1 row is ignored without noise or denominator impact" {
+    make_skill foo product
+    make_skill operationalize meta
+    make_bound_result operationalize anti-ceremony INERT
+    python3 - "$PROBES/anti-ceremony/fixtures-test/fixture-set.json" <<'PY'
+import hashlib, json, pathlib, sys
+path = pathlib.Path(sys.argv[1])
+value = json.loads(path.read_text())
+value["schema"] = "agentops-skill-probe-fixture-set.v1"
+value.pop("canonical_skill")
+value.pop("treatment_source")
+value["capture_evaluator"].pop("preamble")
+value["capture_evaluator"].pop("dispatch_helper")
+payload = {key: item for key, item in value.items() if key != "binding_sha256"}
+canonical = json.dumps(payload, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode()
+value["binding_sha256"] = "sha256:" + hashlib.sha256(canonical).hexdigest()
+path.write_text(json.dumps(value))
+PY
+    write_ledger "operationalize | anti-ceremony | 2026-08-16 | INERT | scorecard: \`$BOUND_SCORECARD_REL\`"
+
+    run --separate-stderr bash "$GATE" --json
+
+    [ "$status" -eq 0 ]
+    [ -z "$stderr" ]
+    [ "$(json_field "$output" gated_total)" = "1" ]
+    [ "$(json_field "$output" measured)" = "0" ]
+    [ "$(json_field "$output" unmeasured_count)" = "1" ]
+}
+
+@test "execution-tier and redirect-only skills remain exempt" {
     make_skill bar execution
-    write_ledger
-    run bash "$GATE" --strict
-    [ "$status" -eq 0 ]
-    [[ "$output" != *"bar"* ]]
-}
-
-@test "redirect-only skills are exempt and cannot abort the advisory scan" {
-    make_skill foo product
     make_redirect legacy-foo
-    write_ledger "foo | probe-foo | 2026-07-08 | BEHAVIORAL"
+    write_ledger
+
     run bash "$GATE" --strict
+
     [ "$status" -eq 0 ]
-    [[ "$output" != *"legacy-foo"* ]]
 }
 
-@test "a missing ledger file degrades to advisory (product/judgment flagged, exit 0 default)" {
+@test "a missing ledger remains advisory and reports gated skills" {
     make_skill foo product
-    rm -f "$SKILL_PROBE_TIERS_FILE"
+    rm -f "$SKILL_PROBE_LEDGER_FILE"
+
     run bash "$GATE"
+
     [ "$status" -eq 0 ]
     [[ "$output" == *"foo"* ]]
 }
 
-@test "the real repo gate is advisory: exits 0 in default mode even with unmeasured skills" {
-    unset SKILL_PROBE_SKILLS_DIR SKILL_PROBE_TIERS_FILE
-    run bash "$GATE"
+@test "the compatibility SKILL_PROBE_TIERS_FILE seam still works" {
+    make_skill foo product
+    unset SKILL_PROBE_LEDGER_FILE
+    export SKILL_PROBE_TIERS_FILE="$FIX/compat-ledger.md"
+    write_ledger
+
+    run bash "$GATE" --strict
+
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"foo"* ]]
+}
+
+@test "the real repository remains advisory with exactly 0/12 current results" {
+    unset SKILL_PROBE_SKILLS_DIR SKILL_PROBE_LEDGER_FILE SKILL_PROBE_TIERS_FILE
+    unset SKILL_PROBE_EVIDENCE_ROOT SKILL_PROBE_METADATA_TOOL
+
+    run --separate-stderr bash "$GATE" --json
+
     [ "$status" -eq 0 ]
+    [ "$(json_field "$output" gated_total)" = "12" ]
+    [ "$(json_field "$output" measured)" = "0" ]
+    [ "$(json_field "$output" unmeasured_count)" = "12" ]
 }

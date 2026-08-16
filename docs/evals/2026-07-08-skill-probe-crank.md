@@ -1,10 +1,15 @@
 # Skill behavioral probe — crank, 2026-07-08
 
-> **HONESTY.** A probe measures **BEHAVIOR-CHANGE, not quality-uplift.** This run
-> answers only: did loading the crank skill change whether the agent respects
-> write-scope collisions when planning parallel waves? It does not claim crank
-> is good or bad. Small N (2) is **directional, not statistical** (ADR-0011
-> discipline — do not overclaim).
+> **LEGACY EVIDENCE STATUS.** The committed fixture set predates capture-time
+> fixture hashes and producer/config manifests. The current fail-closed harness
+> cannot provenance-verify or reproduce this run. This report preserves the
+> stored response classification and the run's historical account, but the
+> ledger marks it `LEGACY-UNVERIFIED` and it does not count as probe coverage.
+>
+> **HONESTY.** The discriminator asks only whether the stored response separates
+> write-scope collisions when planning parallel waves. It does not establish
+> crank quality, the producer identity, a model-level behavior, or an execution
+> outcome. Small N (2) is directional, not statistical (ADR-0011).
 
 ## What was measured
 
@@ -19,46 +24,37 @@ assignment (the ACTION), not whether the plan mentions "write scope."
 - Probe: `evals/skill-probes/crank/`
 - Arms differ **only** by `treatment-prelude.md` (the crank wave-collision rule);
   `question.md` is identical.
-- Live dispatch via `codex exec` (the sanctioned headless path — never
-  `claude -p`, LAW 0). Producer model recorded in the fixtures: **gpt-5.5**.
-- Transcripts captured to `evals/skill-probes/crank/fixtures/` so the run
-  replays deterministically.
+- The historical run record says dispatch used `codex exec` with `gpt-5.5`.
+  No capture manifest binds that producer/config label to the fixture bytes.
+- Transcripts remain under `evals/skill-probes/crank/fixtures/` for inspection
+  and discriminator regression checks, not reproducible generation replay.
 
-```bash
-bash scripts/probe-skill.sh --probe crank --live --capture --reps 2
-# reproduce from the committed fixtures:
-bash scripts/probe-skill.sh --probe crank --replay
-```
-
-## Result — INERT (frontier aced both arms)
+## Stored result — LEGACY-UNVERIFIED (historically INERT)
 
 | Arm | present / usable | rate | what the agent did |
 |-----|------------------|------|--------------------|
 | control (no crank) | 2 / 2 | 1.0 | e.g. `Wave 1: bead-A, bead-B, bead-D` / `Wave 2: bead-C` — B and C separated |
-| treatment (crank loaded) | 2 / 2 | 1.0 | B and C separated |
+| treatment (crank prelude injected) | 2 / 2 | 1.0 | B and C separated |
 
-**Verdict: `INERT`** (treatment_rate 1.0 is not > control_rate 1.0).
+**Historical classification: `INERT`** because the stored treatment rate 1.0
+is not greater than the stored control rate 1.0. This is not a current
+manifest-backed verdict.
 
-## What INERT means here (and what it does NOT)
+## What the stored classification means
 
-It does **not** mean crank is worthless. It means: **on a frontier model
-(gpt-5.5), at this task altitude, loading crank changed nothing** — the model
-already refuses to parallelize two beads that write the same file, with or
-without the doctrine. The skill's marginal *behavioral* effect on a strong
-producer is nil because the producer already exhibits the behavior.
+Both archived control responses and both archived treatment responses placed B
+and C in different waves. That response set contains no discriminator
+separation. It does not show that `gpt-5.5`, frontier models generally, or a
+verified producer would behave the same way, because producer/config identity
+was not capture-bound.
 
-This is the same lesson the membrane eval already banked
-(`membrane-eval-too-easy`, `moat-unproven-at-frontier`): a frontier producer aces
-the task and yields no signal. To surface a skill's behavioral value you need a
-**weaker producer** (`--model gpt-5-mini`, the local llama) or a **harder task**
-where a naive agent actually gets it wrong. That is the honest ratchet, recorded
-here rather than papered over.
+A new claim about producer strength, task difficulty, or crank's marginal
+behavior requires a capture-manifest-backed run. The historical null can help
+shape that probe, but cannot decide whether to keep or cull the skill.
 
-## Why this is still the required evidence
+## Coverage status
 
-The `age-e508.1` acceptance is "a probe RUN for crank exists, with a dated
-evidence file and the MEASURED column populated" — **not** "crank must be
-BEHAVIORAL." Measuring crank and honestly finding INERT-at-frontier is precisely
-the product this bead builds: an unmeasured product badge is noise; a measured
-one — even when the measurement is "no detectable change on this model" — is
-truth. Recorded in `skills/SKILL-TIERS.md` → Behavioral Probe Ledger.
+This dated report satisfied the earlier `age-e508.1` record-keeping acceptance.
+Under the current evidence contract it remains historical context only. The
+`LEGACY-UNVERIFIED` ledger row is intentionally excluded from measured coverage
+until a capture-manifest-backed run records a current verdict.
