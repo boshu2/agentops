@@ -1,6 +1,6 @@
 ---
-name: "rpi"
-description: "Coordinate one RPI traversal: one bounded"
+name: rpi
+description: 'Coordinate one RPI traversal: one bounded'
 ---
 # RPI
 

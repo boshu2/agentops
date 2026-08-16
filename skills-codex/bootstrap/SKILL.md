@@ -1,6 +1,6 @@
 ---
-name: "bootstrap"
-description: "Initialize explicitly requested, missing"
+name: bootstrap
+description: Initialize explicitly requested, missing
 ---
 # Bootstrap — minimal project setup
 

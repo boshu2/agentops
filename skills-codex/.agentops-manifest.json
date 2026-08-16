@@ -370,13 +370,13 @@
       "name": "automation-shape-routing",
       "source_skill": "skills/automation-shape-routing",
       "source_hash": "0c070794c5a9a91024d14a6bc5a18e6305b488401dfcb79bb83c41e789ba7bc3",
-      "generated_hash": "3557b4efca4fd0e7587d873a435085a0ceda8a425b72cd5bf1d1a0310077739f"
+      "generated_hash": "913bd809a83b2710547512f2a887459372fb18f6d2d96d420acadecdebff5b7f"
     },
     {
       "name": "bootstrap",
       "source_skill": "skills/bootstrap",
       "source_hash": "41ccae0b12098a33057fa9d7082763787ecb7f317e814dc1e34708740c8d7b05",
-      "generated_hash": "581c79d73b2f552230f58270e4c27284d56b1aea7836e929a451afa6a87aedb4"
+      "generated_hash": "dd8f84f19a0522c6d9cdf030de9c371d18a994c8b7cb64d953c2292fcc363e96"
     },
     {
       "name": "cass",
@@ -466,7 +466,7 @@
       "name": "implement",
       "source_skill": "skills/implement",
       "source_hash": "5aa7e7b5b988a8f192d64ef7347ea7ca715f4979f325ed0507556ac0ff5ee82d",
-      "generated_hash": "e9f04c9e201be44a7e6d787145725bfff02595684a2e36baab8029f5b778c9cc"
+      "generated_hash": "8b7f0c9f95ce32043dc9bf287313987027f557f2dbfcec6fbc67e852442d239e"
     },
     {
       "name": "learn",
@@ -502,7 +502,7 @@
       "name": "plan",
       "source_skill": "skills/plan",
       "source_hash": "750583fc4ef821c11144ec15fb85988d47b84b691a072911fe7366adb9c26584",
-      "generated_hash": "bba18e1c382b2937bf185185a4f0fc1c6b68469da836cacfe87647f3cfae3de5"
+      "generated_hash": "6293bb0b1aae0f25cd03c4577a208dbbf390d5128ef6d3caf6dc3cb49ef37b28"
     },
     {
       "name": "postmortem",
@@ -556,7 +556,7 @@
       "name": "rpi",
       "source_skill": "skills/rpi",
       "source_hash": "15dab600e62da4d414e9deac42a9131380da3d6241a6cc879d56efe78e0ef22c",
-      "generated_hash": "f93f020b5251a1972f932d353cb4acd855fb7149916aa65915bfd22eb72897a5"
+      "generated_hash": "bf17b412c5ac6d29f4a25f7a9d747037f2284809afd8da881482a8903f214945"
     },
     {
       "name": "sbh",
@@ -610,7 +610,7 @@
       "name": "swarm",
       "source_skill": "skills/swarm",
       "source_hash": "258d63e5499e210003605b6947841913131094a0015d21ab27c8281973364be2",
-      "generated_hash": "edca9587669802663b04b091be159fcc10b763072715333a71f44f797e6a65b2"
+      "generated_hash": "cf023c0baac3989aaf2ea69fd19dfdc4fdd0b4f2392dcb6209d5e51f2b1e8afc"
     },
     {
       "name": "test",
@@ -634,7 +634,7 @@
       "name": "using-gc",
       "source_skill": "skills/using-gc",
       "source_hash": "bf15cd25cc11a2778b434ecefe9fa4c1d46f08d6162a367a2ec348e231e9fd8f",
-      "generated_hash": "dbb1fd1ac8e278a6603478d4dfd0b7b1e7b7271089be6ddcbea70e3da93f8fbb"
+      "generated_hash": "e4e3061d249cba8be354ad8d15427b2d7f3faf7885307d6dd8c8a0ae8e35d149"
     },
     {
       "name": "validate",

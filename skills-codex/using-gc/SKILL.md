@@ -1,6 +1,6 @@
 ---
-name: "using-gc"
-description: "Operate a caller-selected Gas City 1.4 with"
+name: using-gc
+description: Operate a caller-selected Gas City 1.4 with
 ---
 # Using GC
 

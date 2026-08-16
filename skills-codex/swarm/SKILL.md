@@ -1,6 +1,6 @@
 ---
-name: "swarm"
-description: "Dispatch explicit disjoint packets exactly"
+name: swarm
+description: Dispatch explicit disjoint packets exactly
 ---
 # Swarm
 

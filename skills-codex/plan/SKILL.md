@@ -1,6 +1,6 @@
 ---
-name: "plan"
-description: "Shape or refine the existing bead or caller"
+name: plan
+description: Shape or refine the existing bead or caller
 ---
 # Plan
 

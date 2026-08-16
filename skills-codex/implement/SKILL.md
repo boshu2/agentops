@@ -1,6 +1,6 @@
 ---
-name: "implement"
-description: "Execute one bounded RED to GREEN experiment"
+name: implement
+description: Execute one bounded RED to GREEN experiment
 ---
 # Implement
 

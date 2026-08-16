@@ -1,6 +1,6 @@
 ---
-name: "automation-shape-routing"
-description: "Front door for agent automation: choose"
+name: automation-shape-routing
+description: 'Front door for agent automation: choose'
 ---
 # Automation Shape Routing
 
