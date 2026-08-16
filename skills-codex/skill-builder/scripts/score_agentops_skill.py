@@ -248,6 +248,9 @@ def score_skill(path: Path) -> dict:
     return {
         "skill": str(path),
         "name": path.name,
+        "scope": "static-package-readiness",
+        "safety_gate_evaluated": False,
+        "effectiveness_evaluated": False,
         "total_score": total,
         "max_score": 30,
         "rating": rating,
@@ -280,9 +283,9 @@ def audit_block(report: dict) -> dict:
     only from directory contents and cannot evaluate safety or effectiveness.
     """
     return {
-        "scope": "static-package-readiness",
-        "safety_gate_evaluated": False,
-        "effectiveness_evaluated": False,
+        "scope": report["scope"],
+        "safety_gate_evaluated": report["safety_gate_evaluated"],
+        "effectiveness_evaluated": report["effectiveness_evaluated"],
         "total_score": report["total_score"],
         "max_score": report["max_score"],
         "rating": report["rating"],

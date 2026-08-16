@@ -57,6 +57,14 @@ teardown() {
     [[ "$output" == *'"effectiveness_evaluated": false'* ]]
 }
 
+@test "default scorer JSON labels its limited evidence scope" {
+    run python3 "$SCORE" "$FIXTURE"
+    [ "$status" -eq 0 ]
+    [[ "$output" == *'"scope": "static-package-readiness"'* ]]
+    [[ "$output" == *'"safety_gate_evaluated": false'* ]]
+    [[ "$output" == *'"effectiveness_evaluated": false'* ]]
+}
+
 @test "audit.sh folds a rubric block with all 10 categories into the report" {
     run bash "$AUDIT" "$FIXTURE" --json "$TMP_DIR/report.json"
     [ "$status" -eq 0 ]
