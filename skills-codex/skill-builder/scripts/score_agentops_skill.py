@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Score an AgentOps skill against the local product-grade skill rubric."""
+"""Score static package readiness for an AgentOps skill."""
 
 from __future__ import annotations
 
@@ -273,13 +273,16 @@ def score_skill(path: Path) -> dict:
 
 
 def audit_block(report: dict) -> dict:
-    """Compact rubric object for embedding in the skill-builder deep audit's audit-report.json (Pass 3).
+    """Compact static-readiness object for the deep audit report (Pass 3).
 
     Mirrors the rubric schema block: per-category 0-3 score plus an explainable
-    reason, the 0-30 total, max, and the C/B/A/S rating band. Deterministic —
-    derived only from the skill directory contents.
+    reason, the 0-30 total, max, and the C/B/A/S readiness band. It is derived
+    only from directory contents and cannot evaluate safety or effectiveness.
     """
     return {
+        "scope": "static-package-readiness",
+        "safety_gate_evaluated": False,
+        "effectiveness_evaluated": False,
         "total_score": report["total_score"],
         "max_score": report["max_score"],
         "rating": report["rating"],
@@ -290,9 +293,11 @@ def audit_block(report: dict) -> dict:
 
 def markdown_report(report: dict) -> str:
     lines = [
-        f"# Skill Quality Score: {report['name']}",
+        f"# Static Skill Package Readiness: {report['name']}",
         "",
-        f"Score: {report['total_score']}/{report['max_score']} ({report['rating']})",
+        f"Static score: {report['total_score']}/{report['max_score']} ({report['rating']})",
+        "",
+        "This score does not evaluate the safety gate or behavioral effectiveness.",
         "",
         "## Category Scores",
         "",

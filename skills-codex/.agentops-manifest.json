@@ -477,7 +477,7 @@
     {
       "name": "implement",
       "source_skill": "skills/implement",
-      "source_hash": "5aa7e7b5b988a8f192d64ef7347ea7ca715f4979f325ed0507556ac0ff5ee82d",
+      "source_hash": "2a01b04555e02e0ccae7d670da6b6db67f26e6123d65103b68eb513f10d5026f",
       "generated_hash": "8b7f0c9f95ce32043dc9bf287313987027f557f2dbfcec6fbc67e852442d239e"
     },
     {
@@ -513,7 +513,7 @@
     {
       "name": "plan",
       "source_skill": "skills/plan",
-      "source_hash": "16026fda4df366feaa3c99980f6a49d78d331e8563f8b0a7a4c0f45d0a60338b",
+      "source_hash": "6133824e806dd44f5c3fcfec39ed46251d951802d573e16fb02ffac9074e23aa",
       "generated_hash": "4144d7daa581c0352c5cb4231363bd19e99dd4a53dfe1a8daa9baee1a72d8d41"
     },
     {
@@ -603,8 +603,8 @@
     {
       "name": "skill-builder",
       "source_skill": "skills/skill-builder",
-      "source_hash": "775e73f3ebe87960a245790645cb2ba9083f18e0c8d0ee60569e6b747529b830",
-      "generated_hash": "9ab3978eca5991203690b4c5ae36c75b12e2d860002d8ccff5e4ceb5cdfdc6c5"
+      "source_hash": "4afbf55564a93ddff677f2990ca418cf16408d1b182507df10960f5a775de014",
+      "generated_hash": "e9d21d7dc512a3483a9a977dbb1fed66d76a4944ef7c6880c466bf6e15218433"
     },
     {
       "name": "standards",
@@ -639,7 +639,7 @@
     {
       "name": "using-flywheel",
       "source_skill": "skills/using-flywheel",
-      "source_hash": "73efa5c718907ace8722a180162e24d08fb7721a42cd601a234ac83e9c523424",
+      "source_hash": "876ddaec0998ca32f917b49101ffaed1248ac1c676deb985914efaea342cbae5",
       "generated_hash": "ccc09a1240f753a136cf1e337d60ebd03c7dc705224720a1421dbedc7452d797"
     },
     {
