@@ -9,6 +9,7 @@ hexagonal_role: driving-adapter
 consumes: []
 produces:
 - subject-manifest.v1
+output_contract: 'subject-manifest.v1 digest, author context ID, and exact acceptance-check receipts returned through the response or runtime channel'
 context_rel:
 - kind: customer-of
   with: plan

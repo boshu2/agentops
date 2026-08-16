@@ -30,9 +30,10 @@
 #                                           (sentinel-wrapped)
 #   local?             no                   no                    yes
 #
-#   Adapter 1 = codex — BYTE-COMPATIBLE with the historical behavior: REVIEWER unset
-#     (or =codex) produces exactly the pre-adapter argv/exec/classify. The codex-exec.sh
-#     bats contract (tests/scripts/codex-exec-lib.bats) is the behavior lock.
+#   Adapter 1 = codex — preserves the historical execution/classification behavior.
+#     Arg-mode prompt delivery inserts the standard `--` option terminator so a
+#     prompt beginning with `-` remains prompt data rather than CLI options. The
+#     codex-exec.sh Bats contract (tests/scripts/codex-exec-lib.bats) is the lock.
 #   Adapter 2 = agy (cold, ROUTINE tier + degraded-fallback ONLY, per the A7 bench
 #     ruling) — invokes the agy CLI headlessly (`agy -p`, the sanctioned path). The
 #     review packet is delivered as a file PATH the model is TOLD to read (a short `-p`
@@ -234,9 +235,11 @@ reviewer_adapter_marker() {
 #   CODEX_EXEC_EXTRA_ARGS    (codex) a bash array of extra passthrough flags appended
 #                            verbatim (e.g. --json). Ignored by non-codex adapters (they
 #                            are codex-specific flags).
-#   CODEX_EXEC_OUT_FILE      write captured stdout+stderr here. If empty, output is
-#                            captured to a temp file used only for echo-detection
-#                            and then streamed to the caller's stdout on success.
+#   CODEX_EXEC_OUT_FILE      write captured stdout here. If empty, output is captured
+#                            to a temp file used only for echo-detection and then
+#                            streamed to the caller's stdout on success.
+#   CODEX_EXEC_STDERR_FILE   optional separate stderr sink. If empty, stderr is merged
+#                            into CODEX_EXEC_OUT_FILE for backward compatibility.
 #   CODEX_EXEC_EXPECT_OUTPUT 1 (default) => the caller CONSUMES reviewer output, so a
 #                            flat 0-byte run is a STALL and an output≈prompt run is
 #                            an ECHO (both fail-closed). 0 => the caller only cares
@@ -295,9 +298,9 @@ codex_exec_guarded() {
 
   case "$reviewer" in
     codex)
-      # BYTE-COMPATIBLE with the historical codex path. Order is stable so stub-`codex`
-      # tests that inspect positional args (eval-agent-harness.bats records the -C dir)
-      # keep working.
+      # Order is stable so stub-`codex` tests that inspect positional args
+      # (eval-agent-harness.bats records the -C dir) keep working. Arg-mode
+      # prompts use `--` below so leading hyphens cannot be parsed as options.
       argv=(exec)
       [ "${CODEX_EXEC_SKIP_GIT_CHECK:-0}" = "1" ] && argv+=(--skip-git-repo-check)
       local sandbox="${CODEX_EXEC_SANDBOX:-read-only}"
@@ -315,7 +318,7 @@ codex_exec_guarded() {
       if [ -n "${CODEX_EXEC_PROMPT_FILE:-}" ]; then
         prompt_file="$CODEX_EXEC_PROMPT_FILE"; delivery="stdin_file"; echo_cmp_file="$prompt_file"
       elif [ -n "${CODEX_EXEC_PROMPT_ARG:-}" ]; then
-        argv+=("$CODEX_EXEC_PROMPT_ARG")
+        argv+=(-- "$CODEX_EXEC_PROMPT_ARG")
         prompt_file="$(mktemp "${TMPDIR:-/tmp}/codex-exec-prompt.XXXXXX")"; _cleanup+=("$prompt_file")
         printf '%s' "$CODEX_EXEC_PROMPT_ARG" > "$prompt_file"; echo_cmp_file="$prompt_file"
       else
@@ -396,7 +399,7 @@ codex_exec_guarded() {
 
   # Resolve the output sink. A caller-provided file is written in place; otherwise
   # a temp file backs echo-detection and is streamed to stdout on success.
-  local out_file="${CODEX_EXEC_OUT_FILE:-}" cleanup_out=""
+  local out_file="${CODEX_EXEC_OUT_FILE:-}" stderr_file="${CODEX_EXEC_STDERR_FILE:-}" cleanup_out=""
   if [ -z "$out_file" ]; then
     out_file="$(mktemp "${TMPDIR:-/tmp}/codex-exec-out.XXXXXX")"
     cleanup_out="$out_file"
@@ -412,12 +415,22 @@ codex_exec_guarded() {
   _codex_exec_run() {
     if [ "$delivery" = "stdin_file" ]; then
       # File-prompt mode: feed the file on stdin.
-      if [ "${#to_cmd[@]}" -gt 0 ]; then "${to_cmd[@]}" "$bin" "${argv[@]}" <"$prompt_file" >"$out_file" 2>&1
-      else "$bin" "${argv[@]}" <"$prompt_file" >"$out_file" 2>&1; fi
+      if [ -n "$stderr_file" ]; then
+        if [ "${#to_cmd[@]}" -gt 0 ]; then "${to_cmd[@]}" "$bin" "${argv[@]}" <"$prompt_file" >"$out_file" 2>"$stderr_file"
+        else "$bin" "${argv[@]}" <"$prompt_file" >"$out_file" 2>"$stderr_file"; fi
+      else
+        if [ "${#to_cmd[@]}" -gt 0 ]; then "${to_cmd[@]}" "$bin" "${argv[@]}" <"$prompt_file" >"$out_file" 2>&1
+        else "$bin" "${argv[@]}" <"$prompt_file" >"$out_file" 2>&1; fi
+      fi
     else
       # Arg/stdin-pipe/pointer mode: the prompt is already in argv (or on the caller's stdin).
-      if [ "${#to_cmd[@]}" -gt 0 ]; then "${to_cmd[@]}" "$bin" "${argv[@]}" >"$out_file" 2>&1
-      else "$bin" "${argv[@]}" >"$out_file" 2>&1; fi
+      if [ -n "$stderr_file" ]; then
+        if [ "${#to_cmd[@]}" -gt 0 ]; then "${to_cmd[@]}" "$bin" "${argv[@]}" >"$out_file" 2>"$stderr_file"
+        else "$bin" "${argv[@]}" >"$out_file" 2>"$stderr_file"; fi
+      else
+        if [ "${#to_cmd[@]}" -gt 0 ]; then "${to_cmd[@]}" "$bin" "${argv[@]}" >"$out_file" 2>&1
+        else "$bin" "${argv[@]}" >"$out_file" 2>&1; fi
+      fi
     fi
   }
 
@@ -512,8 +525,10 @@ codex_exec_guarded() {
 codex_exec_producer_template() {
   case "${1:-producer}" in
     producer)
+      # shellcheck disable=SC2016 # Positional parameters expand later inside bash -c.
       printf 'timeout "$3" codex exec --skip-git-repo-check -C "$1" -s workspace-write "$2" >/dev/null 2>&1' ;;
     membrane)
+      # shellcheck disable=SC2016 # Positional parameters expand later inside bash -c.
       printf 'codex exec --skip-git-repo-check "$1" 2>/dev/null' ;;
     *) return 2 ;;
   esac

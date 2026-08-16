@@ -1,0 +1,15 @@
+{
+  "id": "anti-ceremony-creation-gate-v2",
+  "skill": "operationalize",
+  "tier": "meta",
+  "reps": 2,
+  "treatment_source": "canonical-skill",
+  "behavior": "drops an unjustified process artifact while allowing necessary minimal integrity state",
+  "discriminator": "discriminator.sh",
+  "budget_note": "N=2 — DIRECTIONAL; one dual-case decision checks refusal and legitimate allowance together",
+  "honesty": "measures response-shape behavior change when the exact bound canonical operationalize SKILL.md is included, not automatic discovery, quality uplift, or task outcomes",
+  "consumer": "AgentOps maintainers deciding whether canonical operationalize guidance changes process-artifact decisions",
+  "gate": "the canonical-skill treatment is not called behaviorally effective without the dual decision",
+  "observed_defect": "v3.2 proof machinery and the 2026-07-28 control-artifact spiral",
+  "retirement": "delete with operationalize or when it no longer proposes process artifacts"
+}

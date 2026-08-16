@@ -3,8 +3,9 @@
   "skill": "standards",
   "tier": "knowledge",
   "reps": 2,
+  "treatment_source": "injected-prelude",
   "behavior": "produced Go code wraps errors with %w context and ships a table-driven test, per repo standards",
   "discriminator": "discriminator.sh",
   "budget_note": "N=2 — DIRECTIONAL, not statistical",
-  "honesty": "measures behavior-change (does loading standards change the shape of produced code), NOT quality-uplift"
+  "honesty": "legacy prelude-only probe: measures code response shape under injected conventions, not full-skill activation or quality uplift"
 }

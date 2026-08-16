@@ -313,13 +313,58 @@ func TestWorkspaceNamingDrift_CanonicalAbsentCreated(t *testing.T) {
 	}
 }
 
+func TestWorkspaceNamingDrift_HandoffAliasLandsCanonicalLegacyAndMTOUntouched(t *testing.T) {
+	env, repo := namingDriftEnv(t)
+	agents := filepath.Join(repo, ".agents")
+	legacyDir := filepath.Join(agents, "handoff")
+	canonicalDir := filepath.Join(agents, "ao", "handoff")
+	legacyPath := filepath.Join(legacyDir, "handoff-20260815T120000.000000000Z.json")
+	legacyBytes := "{\"schema_version\":1,\"continuation\":\"legacy evidence\"}\n"
+	mtoPath := filepath.Join(agents, "mto-handoff", "recurrence.json")
+	mtoBytes := "{\"recurred_classes\":0,\"date\":\"2026-08-16\"}\n"
+	writeDriftFile(t, legacyPath, legacyBytes)
+	writeDriftFile(t, mtoPath, mtoBytes)
+	writeDriftFile(t, filepath.Join(agents, "handoffs", "from-handoffs.json"), "plural alias")
+
+	ctx, _ := newNamingDriftCtx(t, repo, false)
+	res, err := workspaceNamingDriftFixer{}.Fix(ctx, env, nil)
+	if err != nil {
+		t.Fatalf("Fix: %v", err)
+	}
+	if !res.Fixed || len(res.Skipped) != 0 {
+		t.Fatalf("Fix result: fixed=%t skipped=%v, want clean", res.Fixed, res.Skipped)
+	}
+	if res.ActionsTaken != 2 {
+		t.Fatalf("ActionsTaken = %d, want 2 (one file and one alias quarantine)", res.ActionsTaken)
+	}
+	if got := readDriftFile(t, filepath.Join(canonicalDir, "from-handoffs.json")); got != "plural alias" {
+		t.Errorf("canonical plural-alias file = %q", got)
+	}
+	if got := readDriftFile(t, mtoPath); got != mtoBytes {
+		t.Fatalf("MTO recurrence handoff changed: got %q want %q", got, mtoBytes)
+	}
+	if _, err := os.Lstat(filepath.Join(canonicalDir, "recurrence.json")); !os.IsNotExist(err) {
+		t.Fatalf("MTO recurrence handoff was copied into canonical session handoffs (err=%v)", err)
+	}
+	if got := readDriftFile(t, legacyPath); got != legacyBytes {
+		t.Fatalf("legacy evidence changed: got %q want %q", got, legacyBytes)
+	}
+	legacyEntries, err := os.ReadDir(legacyDir)
+	if err != nil {
+		t.Fatalf("read legacy handoff directory: %v", err)
+	}
+	if len(legacyEntries) != 1 || legacyEntries[0].Name() != filepath.Base(legacyPath) {
+		t.Fatalf("legacy handoff directory changed: %v", legacyEntries)
+	}
+}
+
 // A symlink entry inside the alias dir is never moved: moving it could change
 // what it resolves to. It is reported in Skipped and the alias dir remains.
 func TestWorkspaceNamingDrift_SymlinkEntrySkipped(t *testing.T) {
 	env, repo := namingDriftEnv(t)
 	agents := filepath.Join(repo, ".agents")
 	alias := filepath.Join(agents, "handoffs")
-	canonical := filepath.Join(agents, "handoff")
+	canonical := filepath.Join(agents, "ao", "handoff")
 	writeDriftFile(t, filepath.Join(alias, "real.md"), "real body")
 	linkTarget := filepath.Join(repo, "outside.txt")
 	writeDriftFile(t, linkTarget, "outside")
@@ -356,6 +401,145 @@ func TestWorkspaceNamingDrift_SymlinkEntrySkipped(t *testing.T) {
 	}
 	if info, err := os.Lstat(filepath.Join(alias, "link.md")); err != nil || info.Mode()&os.ModeSymlink == 0 {
 		t.Errorf("link.md is no longer a symlink (err=%v)", err)
+	}
+}
+
+func TestWorkspaceNamingDrift_NestedSpecialEntryRejectsWholeDirectory(t *testing.T) {
+	env, repo := namingDriftEnv(t)
+	agents := filepath.Join(repo, ".agents")
+	alias := filepath.Join(agents, "retros")
+	canonical := filepath.Join(agents, "retro")
+	external := filepath.Join(t.TempDir(), "outside.txt")
+	writeDriftFile(t, external, "outside bytes")
+	writeDriftFile(t, filepath.Join(alias, "sub", "real.md"), "nested body")
+	if err := os.Symlink(external, filepath.Join(alias, "sub", "nested-link")); err != nil {
+		t.Skipf("symlink unavailable: %v", err)
+	}
+
+	ctx, ra := newNamingDriftCtx(t, repo, false)
+	res, err := workspaceNamingDriftFixer{}.Fix(ctx, env, nil)
+	if err != nil {
+		t.Fatalf("Fix: %v", err)
+	}
+	if res.Fixed || res.ActionsTaken != 0 {
+		t.Fatalf("Fix result fixed=%t actions=%d, want nested tree refused", res.Fixed, res.ActionsTaken)
+	}
+	found := false
+	for _, skipped := range res.Skipped {
+		if strings.Contains(skipped, "nested special entry") && strings.Contains(skipped, "nested-link") {
+			found = true
+		}
+	}
+	if !found {
+		t.Fatalf("Skipped = %v, want nested special entry named", res.Skipped)
+	}
+	if got := readDriftFile(t, filepath.Join(alias, "sub", "real.md")); got != "nested body" {
+		t.Fatalf("source tree changed: %q", got)
+	}
+	if _, err := os.Lstat(filepath.Join(canonical, "sub")); !os.IsNotExist(err) {
+		t.Fatalf("unsafe directory moved to canonical path: %v", err)
+	}
+	if got := readDriftFile(t, external); got != "outside bytes" {
+		t.Fatalf("outside target changed: %q", got)
+	}
+	recs, err := readActions(ra.ActionsPath())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(recs) != 0 {
+		t.Fatalf("refused tree wrote %d action records", len(recs))
+	}
+}
+
+func TestWorkspaceNamingDrift_ParentSymlinkSwapCannotEscapeRootedMove(t *testing.T) {
+	env, repo := namingDriftEnv(t)
+	agents := filepath.Join(repo, ".agents")
+	alias := filepath.Join(agents, "handoffs")
+	canonicalParent := filepath.Join(agents, "ao")
+	external := t.TempDir()
+	writeDriftFile(t, filepath.Join(alias, "x.json"), "alias bytes")
+	if err := os.MkdirAll(filepath.Join(canonicalParent, "handoff"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	writeDriftFile(t, filepath.Join(external, "handoff", "sentinel.json"), "outside bytes")
+
+	workspaceAliasMutationTestHook = func() {
+		workspaceAliasMutationTestHook = nil
+		if err := os.Rename(canonicalParent, canonicalParent+".original"); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.Symlink(external, canonicalParent); err != nil {
+			t.Skipf("symlink unavailable: %v", err)
+		}
+	}
+	t.Cleanup(func() { workspaceAliasMutationTestHook = nil })
+
+	ctx, ra := newNamingDriftCtx(t, repo, false)
+	res, err := workspaceNamingDriftFixer{}.Fix(ctx, env, nil)
+	if err == nil {
+		t.Fatalf("Fix unexpectedly succeeded after canonical parent swap: %+v", res)
+	}
+	if got := readDriftFile(t, filepath.Join(alias, "x.json")); got != "alias bytes" {
+		t.Fatalf("alias source changed: %q", got)
+	}
+	if got := readDriftFile(t, filepath.Join(external, "handoff", "sentinel.json")); got != "outside bytes" {
+		t.Fatalf("outside sentinel changed: %q", got)
+	}
+	if _, err := os.Lstat(filepath.Join(external, "handoff", "x.json")); !os.IsNotExist(err) {
+		t.Fatalf("Doctor wrote through swapped symlink: %v", err)
+	}
+	recs, readErr := readActions(ra.ActionsPath())
+	if readErr != nil {
+		t.Fatal(readErr)
+	}
+	if len(recs) != 0 {
+		t.Fatalf("refused rooted move wrote %d action records", len(recs))
+	}
+}
+
+func TestWorkspaceNamingDrift_ParentSymlinkSwapCannotRedirectInsideRepo(t *testing.T) {
+	env, repo := namingDriftEnv(t)
+	agents := filepath.Join(repo, ".agents")
+	alias := filepath.Join(agents, "handoffs")
+	canonicalParent := filepath.Join(agents, "ao")
+	redirect := filepath.Join(repo, "redirect")
+	writeDriftFile(t, filepath.Join(alias, "x.json"), "alias bytes")
+	if err := os.MkdirAll(filepath.Join(canonicalParent, "handoff"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	writeDriftFile(t, filepath.Join(redirect, "handoff", "sentinel.json"), "redirect bytes")
+
+	workspaceAliasMutationTestHook = func() {
+		workspaceAliasMutationTestHook = nil
+		if err := os.Rename(canonicalParent, canonicalParent+".original"); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.Symlink(filepath.Join("..", "redirect"), canonicalParent); err != nil {
+			t.Skipf("symlink unavailable: %v", err)
+		}
+	}
+	t.Cleanup(func() { workspaceAliasMutationTestHook = nil })
+
+	ctx, ra := newNamingDriftCtx(t, repo, false)
+	res, err := workspaceNamingDriftFixer{}.Fix(ctx, env, nil)
+	if err == nil || !strings.Contains(err.Error(), "not a real directory") {
+		t.Fatalf("Fix result=%+v error=%v, want internal symlink refusal", res, err)
+	}
+	if got := readDriftFile(t, filepath.Join(alias, "x.json")); got != "alias bytes" {
+		t.Fatalf("alias source changed: %q", got)
+	}
+	if got := readDriftFile(t, filepath.Join(redirect, "handoff", "sentinel.json")); got != "redirect bytes" {
+		t.Fatalf("redirect sentinel changed: %q", got)
+	}
+	if _, err := os.Lstat(filepath.Join(redirect, "handoff", "x.json")); !os.IsNotExist(err) {
+		t.Fatalf("Doctor wrote through internal symlink: %v", err)
+	}
+	recs, readErr := readActions(ra.ActionsPath())
+	if readErr != nil {
+		t.Fatal(readErr)
+	}
+	if len(recs) != 0 {
+		t.Fatalf("refused internal redirect wrote %d action records", len(recs))
 	}
 }
 
@@ -456,8 +640,8 @@ func TestWorkspaceNamingDrift_CanonicalSymlinkSkipsWholeAlias(t *testing.T) {
 		t.Fatalf("Skipped = %v, want both aliases skipped whole", res.Skipped)
 	}
 	for _, s := range res.Skipped {
-		if !strings.Contains(s, "canonical dir") || !strings.Contains(s, "not a real directory") {
-			t.Errorf("Skipped entry = %q, want the canonical-dir reason", s)
+		if !strings.Contains(s, "canonical path component") || !strings.Contains(s, "not a real directory") {
+			t.Errorf("Skipped entry = %q, want the canonical-path-component reason", s)
 		}
 	}
 	// Alias content untouched, external target untouched (only its sentinel).
@@ -483,6 +667,50 @@ func TestWorkspaceNamingDrift_CanonicalSymlinkSkipsWholeAlias(t *testing.T) {
 	}
 }
 
+func TestWorkspaceNamingDrift_CanonicalParentSymlinkSkipsWholeAlias(t *testing.T) {
+	env, repo := namingDriftEnv(t)
+	agents := filepath.Join(repo, ".agents")
+	alias := filepath.Join(agents, "handoffs")
+	external := t.TempDir()
+	externalHandoff := filepath.Join(external, "handoff")
+	writeDriftFile(t, filepath.Join(alias, "x.json"), "alias body")
+	writeDriftFile(t, filepath.Join(externalHandoff, "sentinel.json"), "external sentinel")
+	if err := os.Symlink(external, filepath.Join(agents, "ao")); err != nil {
+		t.Fatalf("symlink .agents/ao: %v", err)
+	}
+
+	ctx, ra := newNamingDriftCtx(t, repo, false)
+	res, err := workspaceNamingDriftFixer{}.Fix(ctx, env, nil)
+	if err != nil {
+		t.Fatalf("Fix: %v", err)
+	}
+	if res.Fixed {
+		t.Error("Fix reported Fixed despite a symlinked canonical parent")
+	}
+	if res.ActionsTaken != 0 {
+		t.Fatalf("ActionsTaken = %d, want 0", res.ActionsTaken)
+	}
+	if len(res.Skipped) != 1 || !strings.Contains(res.Skipped[0], "canonical path component") || !strings.Contains(res.Skipped[0], "not a real directory") {
+		t.Fatalf("Skipped = %v, want the symlinked canonical parent refusal", res.Skipped)
+	}
+	if got := readDriftFile(t, filepath.Join(alias, "x.json")); got != "alias body" {
+		t.Fatalf("alias file changed: %q", got)
+	}
+	if got := readDriftFile(t, filepath.Join(externalHandoff, "sentinel.json")); got != "external sentinel" {
+		t.Fatalf("external sentinel changed: %q", got)
+	}
+	if _, err := os.Lstat(filepath.Join(externalHandoff, "x.json")); !os.IsNotExist(err) {
+		t.Fatalf("Doctor wrote through .agents/ao symlink (err=%v)", err)
+	}
+	recs, err := readActions(ra.ActionsPath())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(recs) != 0 {
+		t.Fatalf("refused alias wrote %d action records, want 0", len(recs))
+	}
+}
+
 // TestWorkspaceNamingDrift_DestLstatErrorSkipped: a destination Lstat that
 // fails with a NON-NotExist error (here EACCES via an unsearchable canonical
 // dir) means the destination's state is unknown — unknown is never "absent".
@@ -494,7 +722,7 @@ func TestWorkspaceNamingDrift_DestLstatErrorSkipped(t *testing.T) {
 	env, repo := namingDriftEnv(t)
 	agents := filepath.Join(repo, ".agents")
 	alias := filepath.Join(agents, "handoffs")
-	canonical := filepath.Join(agents, "handoff")
+	canonical := filepath.Join(agents, "ao", "handoff")
 	writeDriftFile(t, filepath.Join(alias, "x.md"), "x body")
 	if err := os.MkdirAll(canonical, 0o755); err != nil {
 		t.Fatal(err)

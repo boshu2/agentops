@@ -3,8 +3,9 @@
   "skill": "security",
   "tier": "product",
   "reps": 2,
+  "treatment_source": "injected-prelude",
   "behavior": "reports STATUS: GAPPED (not CLEAN) when one scanner passed but another errored/was missing — absent evidence is not evidence of absence",
   "discriminator": "discriminator.sh",
   "budget_note": "N=2 — DIRECTIONAL, not statistical",
-  "honesty": "measures behavior-change (does loading the security skill's coverage doctrine change the status decision), NOT quality-uplift"
+  "honesty": "legacy prelude-only probe: measures whether injected coverage guidance changed the status response, not full-skill activation or quality uplift"
 }

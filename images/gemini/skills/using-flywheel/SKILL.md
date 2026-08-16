@@ -6,6 +6,7 @@ skill_api_version: 1
 hexagonal_role: driving-adapter
 consumes: [explicit-packets]
 produces: [flywheel-runtime-evidence]
+output_contract: 'runtime evidence pointers for processed beads, candidate commits or worktrees, and invoked AgentOps skills; never an AgentOps verdict'
 context_rel:
 - kind: partnership
   with: using-gc

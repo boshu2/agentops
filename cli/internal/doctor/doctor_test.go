@@ -4,6 +4,7 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 )
@@ -151,6 +152,54 @@ func TestEnsureInScope_RejectsOutOfScope(t *testing.T) {
 	if err := EnsureInScope(caps, repo, home, traversal); err == nil {
 		t.Fatal("path traversal escaped write scopes")
 	}
+	for _, legacy := range []string{
+		filepath.Join(repo, ".agents", "handoff"),
+		filepath.Join(repo, ".agents", "handoff", "handoff-20260816T000000Z.json"),
+	} {
+		if err := EnsureInScope(caps, repo, home, legacy); err == nil || !strings.Contains(err.Error(), "legacy read-only") {
+			t.Fatalf("legacy handoff path %s accepted: %v", legacy, err)
+		}
+	}
+	canonical := filepath.Join(repo, ".agents", "ao", "handoff", "handoff-20260816T000000Z.json")
+	if err := EnsureInScope(caps, repo, home, canonical); err != nil {
+		t.Fatalf("canonical handoff path rejected: %v", err)
+	}
+}
+
+func TestMutateRefusesLegacyHandoffButAllowsCanonical(t *testing.T) {
+	repo := t.TempDir()
+	home := t.TempDir()
+	legacy := filepath.Join(repo, ".agents", "handoff", "handoff-20260816T000000Z.json")
+	canonical := filepath.Join(repo, ".agents", "ao", "handoff", "handoff-20260816T000001Z.json")
+	if err := os.MkdirAll(filepath.Dir(legacy), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(legacy, []byte("legacy evidence\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	ra, err := NewRunArtifact(repo, "scope", time.Now())
+	if err != nil {
+		t.Fatal(err)
+	}
+	actions, err := ra.OpenActionsFile()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = actions.Close() }()
+	ctx := NewMutateContext(ra, NewCapabilities("2.0.0"), home, NewLockManager(filepath.Join(repo, ".doctor", "locks")), actions, false)
+
+	if _, err := Mutate(ctx, legacy, WriteFile{Content: []byte("replacement\n"), Mode: 0o600}); err == nil || !strings.Contains(err.Error(), "legacy read-only") {
+		t.Fatalf("legacy Mutate error = %v, want read-only refusal", err)
+	}
+	if got, err := os.ReadFile(legacy); err != nil || string(got) != "legacy evidence\n" {
+		t.Fatalf("legacy evidence changed: %q err=%v", got, err)
+	}
+	if _, err := Mutate(ctx, canonical, WriteFile{Content: []byte("canonical evidence\n"), Mode: 0o600}); err != nil {
+		t.Fatalf("canonical Mutate rejected: %v", err)
+	}
+	if got, err := os.ReadFile(canonical); err != nil || string(got) != "canonical evidence\n" {
+		t.Fatalf("canonical evidence not written: %q err=%v", got, err)
+	}
 }
 
 // TestMutate_DryRunTouchesNothing verifies dry-run does not write.
@@ -222,6 +271,17 @@ func TestCapabilities_JSONValidates(t *testing.T) {
 	}
 	if len(caps.WriteScopes) == 0 {
 		t.Fatal("write scopes must be populated from safety envelope")
+	}
+	var hasCanonicalHandoff, hasLegacyHandoff bool
+	for _, scope := range caps.WriteScopes {
+		hasCanonicalHandoff = hasCanonicalHandoff || scope == ".agents/ao"
+		hasLegacyHandoff = hasLegacyHandoff || scope == ".agents/handoff/sha256"
+	}
+	if !hasCanonicalHandoff {
+		t.Fatal("write scopes must retain canonical .agents/ao")
+	}
+	if hasLegacyHandoff {
+		t.Fatal("write scopes must not advertise legacy .agents/handoff/sha256")
 	}
 	if caps.ExitCodes["5"] != "concurrency_lost" {
 		t.Fatalf("exit code 5 = %q, want concurrency_lost", caps.ExitCodes["5"])

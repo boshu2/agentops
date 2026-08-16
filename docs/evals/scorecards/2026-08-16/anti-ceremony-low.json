@@ -1,0 +1,67 @@
+{
+  "schema": "agentops-skill-probe.v2",
+  "probe": "anti-ceremony-creation-gate",
+  "skill": "operationalize",
+  "mode": "live",
+  "generated_at": "2026-08-16T12:55:55Z",
+  "reps": 2,
+  "producer": {
+    "adapter": "codex",
+    "model": "gpt-5.6-luna",
+    "effort": "low"
+  },
+  "requested_producer": {
+    "model": "gpt-5.6-luna",
+    "effort": "low"
+  },
+  "fixture_set": {
+    "name": "fixtures-low-2026-08-16",
+    "metadata": "fixture-set.json",
+    "binding_sha256": "sha256:e5d15b63f7264c21f4db7e61b11a5e4a097a04a76dcee9f6c57b274ec0af6c74"
+  },
+  "evaluator": {
+    "harness": {
+      "path": "scripts/probe-skill.sh",
+      "sha256": "sha256:855ff08cdf035fd8141f3adb4a00aede7313048298cd27a8c2c6cb21b5ed8779"
+    },
+    "metadata_helper": {
+      "path": "scripts/lib/probe-fixture-metadata.py",
+      "sha256": "sha256:400eba7ec633a22af402550e61c3abeb86220461c95d777d7801cf9178d50199"
+    }
+  },
+  "capture_evaluator": {
+    "harness": {
+      "path": "scripts/probe-skill.sh",
+      "sha256": "sha256:855ff08cdf035fd8141f3adb4a00aede7313048298cd27a8c2c6cb21b5ed8779"
+    },
+    "metadata_helper": {
+      "path": "scripts/lib/probe-fixture-metadata.py",
+      "sha256": "sha256:400eba7ec633a22af402550e61c3abeb86220461c95d777d7801cf9178d50199"
+    }
+  },
+  "evaluator_matches_capture": true,
+  "honesty": "measures BEHAVIOR-CHANGE (did the loaded skill change what the agent DID), NOT quality-uplift; small N is directional (ADR-0011)",
+  "control": {
+    "present": 2,
+    "usable": 2,
+    "rate": 1.0
+  },
+  "treatment": {
+    "present": 2,
+    "usable": 2,
+    "rate": 1.0
+  },
+  "verdict": "INERT",
+  "per_rep": [
+    {
+      "rep": 1,
+      "control": "PRESENT",
+      "treatment": "PRESENT"
+    },
+    {
+      "rep": 2,
+      "control": "PRESENT",
+      "treatment": "PRESENT"
+    }
+  ]
+}

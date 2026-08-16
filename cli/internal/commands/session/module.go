@@ -1,5 +1,5 @@
-// Package session owns Cobra presentation for the `ao session` evidence
-// commands (bootstrap and rehydrate). The module builds its command tree with
+// Package session owns Cobra presentation for the `ao session` commands
+// (bootstrap, rehydrate, and prune-agents). The module builds its command tree with
 // constructor-scoped flag state and delegates every filesystem effect to
 // internal/sessionapp, so this package performs no direct effect. The optional
 // `ao session handoff` writer is attached by the cmd/ao composition; it is a
@@ -39,8 +39,9 @@ func (m Module) outputMode() string {
 
 // Contract declares the session family's real behavior for the family
 // architecture gate. Session reads local orientation files and the latest
-// caller-authored handoff on the filesystem, emits text (JSON under each
-// subcommand's --json flag), and exits 0 on success or 1 on a working-directory
+// caller-authored handoff, and its explicitly selected prune-agents command can
+// apply retention mutations (dry-run by default). It emits text (JSON under the
+// read commands' --json flags) and exits 0 on success or 1 on a filesystem
 // failure. The session family attached no capabilities contract before the
 // carve-out, so the composition does not attach this one either.
 func (Module) Contract() clicontract.CommandContract {
@@ -57,17 +58,17 @@ func (Module) Contract() clicontract.CommandContract {
 	}
 }
 
-// Command builds the `ao session` command with its bootstrap and rehydrate
-// subcommands. The RunE closures delegate entirely to internal/sessionapp so
-// this module performs no direct filesystem effect.
+// Command builds the `ao session` command. The RunE closures delegate entirely
+// to internal/sessionapp so this module performs no direct filesystem effect.
 func (m Module) Command() *cobra.Command {
 	root := &cobra.Command{
 		Use:     "session",
-		Short:   "Inspect or export session evidence",
+		Short:   "Inspect session evidence and maintain .agents artifacts",
 		GroupID: "workflow",
 	}
 	root.AddCommand(m.bootstrapCommand())
 	root.AddCommand(m.rehydrateCommand())
+	root.AddCommand(m.pruneAgentsCommand())
 	return root
 }
 
@@ -123,5 +124,39 @@ func (m Module) rehydrateCommand() *cobra.Command {
 		},
 	}
 	command.Flags().BoolVar(&jsonOut, "json", false, "Emit the stored artifact as JSON")
+	return command
+}
+
+// pruneAgentsCommand builds the retention-policy command used directly by the
+// CLI and by scripts/prune-agents.sh's compatibility wrapper. The default is a
+// read-only dry run; --execute requests mutation, while the global --dry-run
+// seam always wins.
+func (m Module) pruneAgentsCommand() *cobra.Command {
+	var execute, quiet bool
+	command := &cobra.Command{
+		Use:   "prune-agents",
+		Short: "Apply .agents retention policies (dry-run by default)",
+		Args:  cobra.NoArgs,
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			repoRoot := ""
+			if m.host.ProjectRoot != nil {
+				repoRoot = m.host.ProjectRoot()
+			}
+			effectiveExecute := execute
+			if m.host.DryRun != nil && m.host.DryRun() {
+				effectiveExecute = false
+			}
+			_, err := sessionapp.PruneAgents(sessionapp.PruneAgentsOptions{
+				RepoRoot: repoRoot,
+				Execute:  effectiveExecute,
+				Quiet:    quiet,
+				Stdout:   cmd.OutOrStdout(),
+				Now:      m.host.Now,
+			})
+			return err
+		},
+	}
+	command.Flags().BoolVar(&execute, "execute", false, "Delete the selected artifacts; the default is a read-only dry run")
+	command.Flags().BoolVar(&quiet, "quiet", false, "Suppress per-path output and print only the summary")
 	return command
 }

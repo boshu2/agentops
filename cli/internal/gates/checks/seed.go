@@ -38,7 +38,7 @@ var (
 		"scripts/lib/ratchet.sh",
 	}
 	// skill.probe-coverage (advisory): routes when any skill changes (a new
-	// product/judgment skill needs a probe), when the MEASURED probe ledger
+	// product/judgment skill needs a probe), when the probe-status ledger
 	// changes, when a probe scenario changes, plus self-reference so editing the
 	// gate/its test re-runs it.
 	skillProbePaths = []string{
@@ -46,7 +46,11 @@ var (
 		"skills/SKILL-TIERS.md",
 		"evals/skill-probes/**",
 		"scripts/probe-skill.sh",
+		"scripts/lib/probe-fixture-metadata.py",
+		"scripts/lib/codex-exec.sh",
+		"scripts/lib/preamble.sh",
 		"scripts/check-skill-probe-coverage.sh",
+		"tests/scripts/probe-skill.bats",
 		"tests/scripts/check-skill-probe-coverage.bats",
 	}
 	operatorLeakPaths = []string{"skills/**", "skills-codex/**", "docs/SKILLS.md", "registry.json", "tests/scripts/check-no-operator-skills.bats", "scripts/check-no-operator-skills.sh"}
@@ -294,7 +298,7 @@ func init() {
 		// (Blocking:false, warn never fail) exactly like skill.isolation and the
 		// egwt gates: the spine is probed first, the ratchet drives the rest, and
 		// the Blocking:false->true flip is made deliberately once covered. age-e508.1.
-		{ID: "skill.probe-coverage", Tiers: gates.Fast | gates.Full, Match: skillProbePaths, Blocking: false, Backing: "check-skill-probe-coverage.sh", RepairHint: "bash scripts/probe-skill.sh --probe <skill> then record it in the MEASURED ledger at evals/skill-probes/LEDGER.md (hand-maintained; never inside generated SKILL-TIERS.md); advisory — probe the spine, ratchet the rest"},
+		{ID: "skill.probe-coverage", Tiers: gates.Fast | gates.Full, Match: skillProbePaths, Blocking: false, Backing: "check-skill-probe-coverage.sh", RepairHint: "capture a new immutable fixture set with scripts/probe-skill.sh, write its v3 scorecard, then record the manifest-backed result in evals/skill-probes/LEDGER.md (hand-maintained; never inside generated SKILL-TIERS.md); advisory — probe the spine, ratchet the rest"},
 		{ID: "skill.no-operator-leakage", Tiers: gates.Fast | gates.Full, Match: operatorLeakPaths, Blocking: true, Backing: "check-no-operator-skills.sh"},
 		{ID: "skill.heal-strict", Tiers: gates.Full, Match: skillPaths, Blocking: true, Backing: "skills/skill-builder/scripts/heal.sh", Args: []string{"--check", "--strict"}},
 		{ID: "skill.frontmatter-v2", Tiers: gates.Full, Match: skillPaths, Blocking: true, Backing: "validate-skill-frontmatter.sh"},

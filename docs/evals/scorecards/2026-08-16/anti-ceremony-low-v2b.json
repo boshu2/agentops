@@ -1,0 +1,84 @@
+{
+  "schema": "agentops-skill-probe.v2",
+  "probe": "anti-ceremony-creation-gate-v2",
+  "skill": "operationalize",
+  "mode": "live",
+  "generated_at": "2026-08-16T13:41:11Z",
+  "reps": 2,
+  "producer": {
+    "adapter": "codex",
+    "model": "gpt-5.6-luna",
+    "effort": "low"
+  },
+  "requested_producer": {
+    "model": "gpt-5.6-luna",
+    "effort": "low"
+  },
+  "fixture_set": {
+    "name": "fixtures-low-2026-08-16-v2b",
+    "metadata": "fixture-set.json",
+    "binding_sha256": "sha256:80c4d0e983b8f750cea0114ad29f9c7036e35ab5e75206a9cf346d21da01642f"
+  },
+  "treatment_source": "canonical-skill",
+  "evaluator": {
+    "dispatch_helper": {
+      "path": "scripts/lib/codex-exec.sh",
+      "sha256": "sha256:f58b3485194149715191dda550802cb8ba991c946720e098b57f3aa671d32f2f"
+    },
+    "harness": {
+      "path": "scripts/probe-skill.sh",
+      "sha256": "sha256:187fd5004d8a25edc8d5b5787908595f3d8718386daabeb47158d6ec8b892507"
+    },
+    "metadata_helper": {
+      "path": "scripts/lib/probe-fixture-metadata.py",
+      "sha256": "sha256:518d56a8128b4d10d02ddc2332fb3c12fb7ce747cab24ce1a19cc64eedbdaf37"
+    },
+    "preamble": {
+      "path": "scripts/lib/preamble.sh",
+      "sha256": "sha256:c4c06472b655cc440ab69e2d3c3bb7773c393eab671975aad3f1d446b2994199"
+    }
+  },
+  "capture_evaluator": {
+    "dispatch_helper": {
+      "path": "scripts/lib/codex-exec.sh",
+      "sha256": "sha256:f58b3485194149715191dda550802cb8ba991c946720e098b57f3aa671d32f2f"
+    },
+    "harness": {
+      "path": "scripts/probe-skill.sh",
+      "sha256": "sha256:187fd5004d8a25edc8d5b5787908595f3d8718386daabeb47158d6ec8b892507"
+    },
+    "metadata_helper": {
+      "path": "scripts/lib/probe-fixture-metadata.py",
+      "sha256": "sha256:518d56a8128b4d10d02ddc2332fb3c12fb7ce747cab24ce1a19cc64eedbdaf37"
+    },
+    "preamble": {
+      "path": "scripts/lib/preamble.sh",
+      "sha256": "sha256:c4c06472b655cc440ab69e2d3c3bb7773c393eab671975aad3f1d446b2994199"
+    }
+  },
+  "evaluator_matches_capture": true,
+  "honesty": "measures response-shape BEHAVIOR-CHANGE under the exact bound canonical SKILL.md treatment, NOT quality-uplift; small N is directional (ADR-0011)",
+  "control": {
+    "present": 2,
+    "usable": 2,
+    "rate": 1.0
+  },
+  "treatment": {
+    "present": 2,
+    "usable": 2,
+    "rate": 1.0
+  },
+  "verdict": "INERT",
+  "per_rep": [
+    {
+      "rep": 1,
+      "control": "PRESENT",
+      "treatment": "PRESENT"
+    },
+    {
+      "rep": 2,
+      "control": "PRESENT",
+      "treatment": "PRESENT"
+    }
+  ]
+}

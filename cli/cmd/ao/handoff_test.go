@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/santhosh-tekuri/jsonschema/v6"
@@ -59,6 +60,73 @@ func TestHandoffDryRunSatisfiesSchema(t *testing.T) {
 		if _, ok := keys[forbidden]; ok {
 			t.Errorf("generator emitted deprecated lifecycle field %q (must stay read-compat-only)", forbidden)
 		}
+	}
+}
+
+func TestWriteHandoffArtifactNoClobber(t *testing.T) {
+	dir := t.TempDir()
+	artifact := &handoffArtifact{ID: "handoff-20260816T120000.000000000Z"}
+	target := filepath.Join(dir, ".agents", "ao", "handoff", artifact.ID+".json")
+	if err := os.MkdirAll(filepath.Dir(target), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	original := []byte("existing evidence\n")
+	if err := os.WriteFile(target, original, 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	if _, err := writeHandoffArtifact(dir, artifact, []byte("replacement\n")); err == nil {
+		t.Fatal("writeHandoffArtifact overwrote an existing artifact id")
+	}
+	got, err := os.ReadFile(target)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Equal(got, original) {
+		t.Fatalf("existing artifact changed: got %q want %q", got, original)
+	}
+}
+
+func TestWriteHandoffArtifactRejectsSymlinkedDirectoryComponents(t *testing.T) {
+	for _, component := range []string{"ao", "handoff"} {
+		t.Run(component, func(t *testing.T) {
+			dir := t.TempDir()
+			external := t.TempDir()
+			agents := filepath.Join(dir, ".agents")
+			if err := os.MkdirAll(agents, 0o755); err != nil {
+				t.Fatal(err)
+			}
+			if component == "ao" {
+				if err := os.MkdirAll(filepath.Join(external, "handoff"), 0o755); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.Symlink(external, filepath.Join(agents, "ao")); err != nil {
+					t.Skipf("symlink unavailable: %v", err)
+				}
+			} else {
+				if err := os.MkdirAll(filepath.Join(agents, "ao"), 0o755); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.Symlink(external, filepath.Join(agents, "ao", "handoff")); err != nil {
+					t.Skipf("symlink unavailable: %v", err)
+				}
+			}
+			sentinel := filepath.Join(external, "sentinel")
+			if err := os.WriteFile(sentinel, []byte("outside\n"), 0o600); err != nil {
+				t.Fatal(err)
+			}
+			artifact := &handoffArtifact{ID: "handoff-20260816T120000.000000000Z"}
+			if _, err := writeHandoffArtifact(dir, artifact, []byte("secret\n")); err == nil || !strings.Contains(err.Error(), "not a real directory") {
+				t.Fatalf("writeHandoffArtifact error = %v, want symlink refusal", err)
+			}
+			got, err := os.ReadFile(sentinel)
+			if err != nil || string(got) != "outside\n" {
+				t.Fatalf("outside sentinel changed: %q err=%v", got, err)
+			}
+			if _, err := os.Lstat(filepath.Join(external, artifact.ID+".json")); !os.IsNotExist(err) {
+				t.Fatalf("writer created artifact outside workspace: %v", err)
+			}
+		})
 	}
 }
 

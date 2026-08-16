@@ -24,7 +24,6 @@ always.quarantine-empty
 always.regen-all
 always.retrieval-manifest-paths
 ci.policy-parity
-contract.cathedral-cut
 contract.compatibility
 contract.finding-registry
 contract.skill-mesh

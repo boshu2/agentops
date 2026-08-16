@@ -4,7 +4,7 @@ package doctor
 //
 // Flags top-level `.agents` directories whose names are drifted spellings of a
 // canonical directory (the workspaceCanonicalAliases registry: post-mortem ->
-// postmortem, handoffs -> handoff, proof -> proofs, ...). Drifted names split
+// postmortem, handoffs -> ao/handoff, proof -> proofs, ...). Drifted names split
 // one logical artifact family across two directories, so tooling that reads
 // only the canonical name silently misses half the corpus.
 //
@@ -14,7 +14,7 @@ package doctor
 // matches findings to fixers by ID equality, so all fm-ws-naming-drift
 // findings route to the one fixer in a single Fix call).
 //
-// The fixer merges each alias directory into its canonical sibling entry by
+// The fixer merges each alias directory into its canonical destination entry by
 // entry under migration-owner discipline: an entry whose destination name
 // already exists in the canonical directory, or an entry that is neither a
 // regular file nor a directory (symlink, socket, ...), is NEVER moved and
@@ -38,10 +38,16 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strings"
 )
 
 // fmWorkspaceNamingDriftID is the shared detector/fixer ID for this failure mode.
 const fmWorkspaceNamingDriftID = "fm-ws-naming-drift"
+
+// workspaceAliasMutationTestHook deterministically opens the final
+// preflight-to-mutation race window in package tests. Production leaves it
+// nil; all real mutation remains rooted by an os.Root descriptor.
+var workspaceAliasMutationTestHook func()
 
 func init() {
 	RegisterDetector(workspaceNamingDriftDetector{})
@@ -64,7 +70,7 @@ func sortedDriftAliases() []string {
 // ---------------------------------------------------------------------------
 
 // workspaceNamingDriftDetector flags each top-level `.agents` directory whose
-// name is a registered drifted alias of a canonical directory name.
+// name is a registered drifted alias of a canonical path.
 type workspaceNamingDriftDetector struct{}
 
 func (workspaceNamingDriftDetector) ID() string           { return fmWorkspaceNamingDriftID }
@@ -129,7 +135,7 @@ func (d workspaceNamingDriftDetector) Detect(env *DetectEnv) ([]Finding, error) 
 }
 
 // workspaceNamingDriftFixer merges each alias directory into its canonical
-// sibling entry by entry, skipping (never overwriting) destination collisions
+// destination entry by entry, skipping (never overwriting) destination collisions
 // and non-regular non-directory oddities, then quarantines the emptied alias
 // directory. It re-scans the disk at fix time rather than trusting findings.
 type workspaceNamingDriftFixer struct{}
@@ -175,7 +181,7 @@ func (f workspaceNamingDriftFixer) Fix(ctx *MutateContext, env *DetectEnv, _ []F
 	return res, nil
 }
 
-// fixOneAlias merges one alias directory into its canonical sibling. An absent
+// fixOneAlias merges one alias directory into its canonical destination. An absent
 // alias is a no-op (idempotency); a non-directory alias path is recorded in
 // Skipped and left alone. Skipped entries stay in place, and the alias dir is
 // quarantined only once it holds nothing at all.
@@ -197,20 +203,14 @@ func (f workspaceNamingDriftFixer) fixOneAlias(ctx *MutateContext, base, alias s
 	}
 	canonicalName := workspaceCanonicalAliases[alias]
 	canonicalDir := filepath.Join(base, canonicalName)
-	// Destination-root guard: the canonical dir may ITSELF be a symlink (or a
-	// regular file). Moving entries "into" a symlinked canonical dir would
-	// follow the link — potentially outside the repo — while every per-entry
-	// lexical scope check still passes. An ABSENT canonical dir is fine (the
-	// first move creates it); anything present must be a real directory, and a
-	// non-NotExist Lstat error means its state is unknown — never assume
-	// absent, skip the whole alias.
-	if cfi, cerr := os.Lstat(canonicalDir); cerr == nil {
-		if cfi.Mode()&os.ModeSymlink != 0 || !cfi.IsDir() {
-			res.Skipped = append(res.Skipped, fmt.Sprintf("%s: canonical dir .agents/%s is not a real directory; resolve by hand", aliasRel, canonicalName))
-			return nil
-		}
-	} else if !os.IsNotExist(cerr) {
-		res.Skipped = append(res.Skipped, fmt.Sprintf("%s: cannot verify canonical dir .agents/%s (%v); resolve by hand", aliasRel, canonicalName, cerr))
+	// Destination-tree guard: every existing component below `.agents` must be
+	// a real directory. Checking only the leaf is insufficient for nested
+	// canonical paths such as ao/handoff: Lstat on that leaf follows a symlinked
+	// ao parent and can make an external directory look safe. Missing components
+	// are fine (the move creates them); unknown or non-directory components make
+	// the whole alias unsafe.
+	if unsafeReason := workspaceCanonicalPathUnsafe(base, canonicalName); unsafeReason != "" {
+		res.Skipped = append(res.Skipped, fmt.Sprintf("%s: %s", aliasRel, unsafeReason))
 		return nil
 	}
 	entries, err := os.ReadDir(aliasPath)
@@ -226,6 +226,16 @@ func (f workspaceNamingDriftFixer) fixOneAlias(ctx *MutateContext, base, alias s
 			// what it resolves to. Leave it in place.
 			res.Skipped = append(res.Skipped, fmt.Sprintf("%s: not a regular file or directory; resolve by hand", srcRel))
 			continue
+		}
+		if e.IsDir() {
+			unsafeEntry, inspectErr := workspaceDirectoryTreeSpecial(src)
+			if inspectErr != nil {
+				return fmt.Errorf("doctor: %s: inspect %s: %w", f.ID(), srcRel, inspectErr)
+			}
+			if unsafeEntry != "" {
+				res.Skipped = append(res.Skipped, fmt.Sprintf("%s: nested special entry %s; resolve by hand", srcRel, unsafeEntry))
+				continue
+			}
 		}
 		skipReason, moveErr := f.moveEntryNoClobber(ctx, src, dest, e.IsDir())
 		if moveErr != nil {
@@ -255,6 +265,43 @@ func (f workspaceNamingDriftFixer) fixOneAlias(ctx *MutateContext, base, alias s
 	}
 	res.ActionsTaken++
 	return nil
+}
+
+// workspaceCanonicalPathUnsafe validates an alias migration destination
+// without following symlinks. base itself is checked by Fix before this helper
+// runs; this walks each existing relative component with Lstat so a nested
+// destination cannot escape through an intermediate symlink. An empty return
+// means the existing prefix is safe. The first absent component ends the walk,
+// because no deeper component can exist without traversing that missing path.
+func workspaceCanonicalPathUnsafe(base, canonicalName string) string {
+	clean := filepath.Clean(canonicalName)
+	if clean == "." || filepath.IsAbs(clean) || clean == ".." || strings.HasPrefix(clean, ".."+string(filepath.Separator)) {
+		return fmt.Sprintf("canonical path .agents/%s is invalid; resolve by hand", canonicalName)
+	}
+
+	current := base
+	for _, component := range strings.Split(clean, string(filepath.Separator)) {
+		current = filepath.Join(current, component)
+		info, err := os.Lstat(current)
+		if err != nil {
+			if os.IsNotExist(err) {
+				return ""
+			}
+			rel, relErr := filepath.Rel(base, current)
+			if relErr != nil {
+				rel = clean
+			}
+			return fmt.Sprintf("cannot verify canonical path component .agents/%s (%v); resolve by hand", rel, err)
+		}
+		if info.Mode()&os.ModeSymlink != 0 || !info.IsDir() {
+			rel, relErr := filepath.Rel(base, current)
+			if relErr != nil {
+				rel = clean
+			}
+			return fmt.Sprintf("canonical path component .agents/%s is not a real directory; resolve by hand", rel)
+		}
+	}
+	return ""
 }
 
 // errWorkspaceDriftDestExists is the sentinel raised by the under-lock
@@ -302,13 +349,30 @@ func (workspaceNamingDriftFixer) moveEntryNoClobber(ctx *MutateContext, src, des
 		return fmt.Sprintf("cannot verify destination in .agents/%s (%v); resolve by hand", filepath.Base(filepath.Dir(dest)), lerr), nil
 	}
 	if isDir {
+		unsafeEntry, inspectErr := workspaceDirectoryTreeSpecial(src)
+		if inspectErr != nil {
+			return "", inspectErr
+		}
+		if unsafeEntry != "" {
+			return fmt.Sprintf("nested special entry %s; resolve by hand", unsafeEntry), nil
+		}
 		verify := func(string) error {
+			unsafeEntry, inspectErr := workspaceDirectoryTreeSpecial(src)
+			if inspectErr != nil {
+				return inspectErr
+			}
+			if unsafeEntry != "" {
+				return fmt.Errorf("doctor: directory %s gained nested special entry %s (refused_unsafe)", src, unsafeEntry)
+			}
 			if _, lerr := os.Lstat(dest); lerr == nil {
 				return errWorkspaceDriftDestExists
 			} else if !os.IsNotExist(lerr) {
 				return fmt.Errorf("doctor: lstat %s: %w: %w", dest, lerr, errWorkspaceDriftDestExists)
 			}
 			return nil
+		}
+		if workspaceAliasMutationTestHook != nil {
+			workspaceAliasMutationTestHook()
 		}
 		if moveErr := workspaceDirRename(ctx, src, dest, verify); moveErr != nil {
 			if errors.Is(moveErr, errWorkspaceDriftDestExists) {
@@ -318,12 +382,94 @@ func (workspaceNamingDriftFixer) moveEntryNoClobber(ctx *MutateContext, src, des
 		}
 		return "", nil
 	}
+	if workspaceAliasMutationTestHook != nil {
+		workspaceAliasMutationTestHook()
+	}
 	collided, moveErr := workspaceFileMoveNoClobber(ctx, src, dest)
 	if moveErr != nil {
 		return "", moveErr
 	}
 	if collided {
 		return collisionReason, nil
+	}
+	return "", nil
+}
+
+// workspaceDirectoryTreeSpecial returns the first nested path whose type is
+// neither a real directory nor a regular file. It walks through
+// descriptor-anchored roots and revalidates directory identities around each
+// open, so a symlink cannot be smuggled into a directory-shaped alias entry.
+func workspaceDirectoryTreeSpecial(path string) (string, error) {
+	before, err := os.Lstat(path)
+	if err != nil {
+		return "", err
+	}
+	if before.Mode()&os.ModeSymlink != 0 || !before.IsDir() {
+		return filepath.Base(path), nil
+	}
+	root, err := os.OpenRoot(path)
+	if err != nil {
+		return "", err
+	}
+	defer func() { _ = root.Close() }()
+	opened, err := root.Stat(".")
+	if err != nil {
+		return "", err
+	}
+	after, err := os.Lstat(path)
+	if err != nil {
+		return "", err
+	}
+	if after.Mode()&os.ModeSymlink != 0 || !after.IsDir() || !os.SameFile(before, opened) || !os.SameFile(after, opened) {
+		return filepath.Base(path), nil
+	}
+	return workspaceRootTreeSpecial(root, "")
+}
+
+func workspaceRootTreeSpecial(root *os.Root, prefix string) (string, error) {
+	dir, err := root.Open(".")
+	if err != nil {
+		return "", err
+	}
+	entries, readErr := dir.ReadDir(-1)
+	closeErr := dir.Close()
+	if readErr != nil {
+		return "", readErr
+	}
+	if closeErr != nil {
+		return "", closeErr
+	}
+	for _, entry := range entries {
+		name := entry.Name()
+		display := filepath.Join(prefix, name)
+		before, err := root.Lstat(name)
+		if err != nil {
+			return "", err
+		}
+		if before.Mode()&os.ModeSymlink != 0 {
+			return display, nil
+		}
+		if before.Mode().IsRegular() {
+			continue
+		}
+		if !before.IsDir() {
+			return display, nil
+		}
+		child, err := root.OpenRoot(name)
+		if err != nil {
+			return "", err
+		}
+		opened, openedErr := child.Stat(".")
+		after, afterErr := root.Lstat(name)
+		if openedErr != nil || afterErr != nil || after.Mode()&os.ModeSymlink != 0 || !after.IsDir() || !os.SameFile(before, opened) || !os.SameFile(after, opened) {
+			_ = child.Close()
+			return display, nil
+		}
+		unsafeEntry, walkErr := workspaceRootTreeSpecial(child, display)
+		_ = child.Close()
+		if walkErr != nil || unsafeEntry != "" {
+			return unsafeEntry, walkErr
+		}
 	}
 	return "", nil
 }

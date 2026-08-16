@@ -3,10 +3,11 @@
   "skill": "graphify",
   "tier": "reference",
   "reps": 2,
+  "treatment_source": "injected-prelude",
   "behavior": "invokes a graphify structural query (explain/path/query/search) BEFORE broad grep",
   "discriminator": "discriminator.sh",
   "budget_note": "N=2 — DIRECTIONAL, matches the original 2026-06-30 A/B; not statistical",
-  "honesty": "measures behavior-change (did the loaded guidance change the FIRST search action), not quality-uplift",
+  "honesty": "legacy prelude-only classifier: asks whether injected guidance changed the first search action; reconstructed fixtures are not full-skill activation or quality evidence",
   "calibration": {
     "expected_verdict": "INERT",
     "source": "2026-06-30 A/B (RPI --auto idea #2): control grep-first; treatment (same question + the /research Tier-1b instruction handed verbatim, graphify installed + a graph present) ALSO grep-first. 0/2 treatment agents used the tool.",

@@ -40,18 +40,23 @@ The work tier is **queried, never indexed**: bead questions go through SQL
 (Dolt views) and `bv` graph analytics directly against the store. No stored
 index of bead data is ever built or committed — see invariant 2 below.
 
-**Target layout.** The scratch/projection tier collapses from 114 ad-hoc
-directories to a closed set of exactly three top-level `.agents/` entries:
+**Target layout.** The scratch/projection tier is intended to collapse from 114
+ad-hoc directories to three preferred top-level `.agents/` entries:
 
 - `ao/` — the proof tier (permanent; pawl evidence, verdicts, pinned config),
 - `scratch/` — all ephemeral work, convention `scratch/WRITER/DATE-SLUG/`, TTL'd wholesale,
 - `projections/` — generated artifacts with manifests, deletable at will.
 
-The closed set is enforced by an `ao doctor` detector
-(`fm-ws-noncanonical-topdir`, bead `age-state-tiers-operationalize-5mzlm.7`):
-any top-level directory outside the set is a finding, with no fourth
-"receipts" exception (doctor receipts live under repo-root `.doctor/`, outside
-`.agents/` entirely).
+This is a target state, not a currently enforced closed set. The planned
+`fm-ws-noncanonical-topdir` detector (bead
+`age-state-tiers-operationalize-5mzlm.7`) was not implemented. Current Doctor
+checks own narrower classes such as spelling drift, empty directories, and
+stale queues. Compatibility and exact-path consumers also keep declared roots
+outside the preferred three: legacy `.agents/handoff/` is preserved read-only;
+`.agents/mto-handoff/` is a distinct live recurrence protocol; and explicitly
+selected earlier output paths remain supported where their owning skill says
+so. Those exceptions are migration contracts, not new authority tiers. Doctor
+receipts still live under repo-root `.doctor/`, outside `.agents/` entirely.
 
 ### 2. The invariants
 
@@ -173,9 +178,11 @@ authority into `.agents/`:
 
 ## Consequences
 
-- The 114-directory `.agents/` junk drawer is migrated once to the three-dir
-  layout (bead `.6`) and the closed set is enforced forever after (bead `.7`);
-  writers that mint non-canonical directories are source bugs, not conventions.
+- The three-directory layout remains the preferred migration target, but no
+  catch-all detector enforces it today. New default writers that mint an
+  undeclared top-level directory are source bugs; declared legacy-read and
+  exact-path consumer exceptions remain in place until their own migrations
+  complete.
 - No tool may build a stored index over bead data; bead reporting goes through
   Dolt SQL views and `bv` (the beads-views skill,
   `age-tracker-bd-dolt-return-jyg2g.8`). Filesystem-input projections without
