@@ -44,12 +44,12 @@ require_text() {
   require_text PRODUCT.md \
     "AgentOps is not a new GitLab, CI service, tracker, merge queue, delivery system"
   require_text docs/architecture/rpi-traversal.md \
-    "RPI invokes Plan, Implement, and Validate at most once and then stops."
+    "RPI invokes the anti-ceremony guard exactly once."
   require_text docs/CI-CD.md \
     "Repositories own delivery policy for local and cloud agents."
 }
 
-@test "optional strategies and adapters are not core dependencies" {
+@test "RPI dependencies are exactly the anti-ceremony guard and core phases" {
   run python3 - "$REPO_ROOT" <<'PY'
 from pathlib import Path
 import sys
@@ -60,11 +60,22 @@ actual = {}
 for name in ("rpi", "plan", "implement", "validate"):
     data = yaml.safe_load((root / "skills" / name / "SKILL.md").read_text().split("---", 2)[1])
     actual[name] = set(data["metadata"]["dependencies"])
-expected = {"rpi": {"plan", "implement", "validate"}, "plan": set(), "implement": set(), "validate": set()}
+expected = {"rpi": {"anti-ceremony", "plan", "implement", "validate"}, "plan": set(), "implement": set(), "validate": set()}
 if actual != expected:
     raise SystemExit(actual)
 PY
   [ "$status" -eq 0 ]
+
+  require_text skills/standards/references/skill-structure.md \
+    "rpi -> anti-ceremony"
+  require_text docs/contracts/skill-ports-and-adapters.md \
+    "Only RPI depends on the anti-ceremony guard and all three core phases."
+  require_text docs/reference/skill-system-evolution.md \
+    "Anti-Ceremony, Plan, Implement, and Validate"
+  require_text docs/architecture/rpi-traversal.md \
+    "\`STOP\` dispatches none of Plan, Implement, or Validate"
+  require_text docs/agent-workflow-reference.md \
+    "\`CONTINUE\` creates no process artifact"
 }
 
 @test "validation worksheet requires fresh judgment and makes persistence optional" {

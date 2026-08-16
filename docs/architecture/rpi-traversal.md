@@ -9,12 +9,14 @@ autonomous controller. Vocabulary lives in
 
 ```text
 intent
-  -> existing bead or caller source
-  -> one bounded implementation experiment
-  -> runtime-derived subject-manifest.v1 + check receipts
-  -> one fresh independent validation
-  -> PASS | FAIL | NOT_PROVEN
-  -> report and stop
+  -> anti-ceremony quick guard once before Plan
+      -> STOP: NOT_PLANNED -> report and stop; dispatch no core phase
+      -> CONTINUE: existing bead or caller source
+          -> Plan -> one bounded implementation experiment
+          -> runtime-derived subject-manifest.v1 + check receipts
+          -> one fresh independent validation
+          -> PASS | FAIL | NOT_PROVEN
+          -> report and stop
 ```
 
 One traversal is one experiment. The caller, a Goal, or a factory decides
@@ -25,6 +27,7 @@ whether to start another; the traversal itself never continues.
 | Role | Owns | Does not own |
 |---|---|---|
 | Caller | intent source, invocation, optional strategies, any later revision or delivery | semantic PASS unless acting in a fresh validator context |
+| Anti-ceremony | one artifact-free pre-Plan dispatch guard | a planning artifact, acceptance change, or core-phase dispatch |
 | Plan | refining acceptance and write boundary in the existing source | a duplicate planning artifact, scheduling, ownership, readiness |
 | Implement | one subject change and factual evidence | validation, repair loop, Git, closure, delivery |
 | Validate | exact identity, independent judgment, optional durable evidence | subject edits, retries, next actions, release |
@@ -34,6 +37,14 @@ One model may fill multiple roles across distinct contexts. PASS requires
 nonempty distinct author and validator context IDs and an explicit freshness
 attestation. The attestation is a declared trust fact, not cryptographic process
 isolation.
+
+## Pre-dispatch guard
+
+RPI invokes Anti-Ceremony's artifact-free quick guard exactly once before Plan.
+`STOP` dispatches none of Plan, Implement, or Validate, reports `NOT_PLANNED`
+with the guard's one-sentence reason, and stops. `CONTINUE` creates no process
+artifact and preserves the ordered Plan -> Implement -> fresh Validate
+traversal.
 
 ## Intent source
 
@@ -118,10 +129,11 @@ verdict afterward, but ledger availability never affects validity.
 
 ## Stop boundary and revision
 
-RPI invokes Plan, Implement, and Validate at most once and then stops. A FAIL or
-NOT_PROVEN report does not repair, replan, consult a helper, escalate, or invoke
-a second phase. `NOT_PLANNED` and `NOT_BUILT` describe RPI progress only and are
-not verdict values.
+RPI invokes the anti-ceremony guard exactly once. On `CONTINUE`, RPI invokes
+Plan, Implement, and Validate at most once and then stops; on `STOP`, it invokes
+none of them. A FAIL or NOT_PROVEN report does not repair, replan, consult a
+helper, escalate, or invoke a second phase. `NOT_PLANNED` and `NOT_BUILT`
+describe RPI progress only and are not verdict values.
 
 If a caller wants another experiment, it updates the existing bead or caller
 intent and starts a new invocation. Any persisted verdicts and manifests remain

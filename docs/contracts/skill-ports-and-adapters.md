@@ -10,7 +10,7 @@ an AgentOps-owned control level.
 caller product boundary + fitness evidence
   -> caller-selected Goal / Mayor campaign (execution orchestrator)
        -> select one experiment intent
-       -> RPI traversal: Plan -> Implement -> fresh Validate -> report and stop
+       -> RPI traversal: anti-ceremony guard -> Plan -> Implement -> fresh Validate -> report and stop
        -> consume the immutable report and verdict
        -> ratchet the graph, select another experiment, or stop
   -> optional post-verdict learning
@@ -29,6 +29,7 @@ independently judged traversal in every execution shape.
 | Caller and product | Desired outcome, product boundary, authority, terminal acceptance | An AgentOps semantic verdict without fresh validation |
 | Goal / Mayor (caller-side orchestrator) | Campaign graph, experiment selection, cumulative budgets, ratchet, breakers, terminal campaign report | Rewriting verdicts or issuing its own PASS for a candidate |
 | RPI | One ordered experiment dispatch and one report | Campaign continuation, retries, queues, delivery, or work selection |
+| Anti-ceremony | One artifact-free pre-Plan dispatch guard | A planning artifact, acceptance change, or core-phase dispatch |
 | Plan | One experiment's acceptance, non-goals, write scope, and first useful check | The campaign graph or a duplicate planning artifact |
 | Implement | One exact candidate and factual check evidence | Semantic judgment, repair loops, or later work selection |
 | Validate | Independent judgment over unchanged intent and exact subject identity | Candidate edits, continuation, closure, or delivery |
@@ -37,14 +38,17 @@ independently judged traversal in every execution shape.
 The core hard-dependency graph is deliberately small:
 
 ```text
+rpi -> anti-ceremony
 rpi -> plan
 rpi -> implement
 rpi -> validate
 ```
 
 Hard dependencies mean the source skill cannot perform its declared behavior
-without the target. Optional advice, evidence, strategies, and runtime
-transport never become hard core dependencies.
+without the target. RPI invokes the anti-ceremony quick guard once before Plan:
+`STOP` dispatches no core phase, while `CONTINUE` preserves Plan -> Implement ->
+fresh Validate. Other advice, evidence, strategies, and runtime transport never
+become hard core dependencies.
 
 ## Campaign boundary
 
@@ -73,7 +77,9 @@ resets, or renews them.
 One RPI invocation is an evidence transaction:
 
 ```text
-single-mint resolved intent bytes
+anti-ceremony quick guard once
+  -> STOP: NOT_PLANNED report; dispatch no core phase; stop
+  -> CONTINUE: single-mint resolved intent bytes
   -> exact intent digest reference
   -> one bounded subject change
   -> before/final subject manifests + complete changed paths
@@ -196,7 +202,7 @@ skill metadata. They are never edited as architecture sources.
 
 ## Invariants
 
-- Only RPI depends on all three core phases.
+- Only RPI depends on the anti-ceremony guard and all three core phases.
 - Only Validate may write `verdict.v2`, and only for a caller request or
   declared downstream consumer.
 - Only the caller or Goal selects another experiment.

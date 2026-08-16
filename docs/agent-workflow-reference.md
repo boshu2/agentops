@@ -7,10 +7,17 @@ traversal through its federated integration graph is one pass
 (exact semantics: [rpi-traversal.md](architecture/rpi-traversal.md)):
 
 ```text
-RPI -> Plan -> Implement -> fresh Validate -> report and stop
+RPI -> anti-ceremony guard -> Plan -> Implement -> fresh Validate -> report and stop
 ```
 
-## 1. Plan
+## 1. Pre-dispatch guard
+
+RPI invokes Anti-Ceremony's artifact-free quick guard once before Plan. `STOP`
+dispatches none of Plan, Implement, or Validate, reports `NOT_PLANNED` with the
+guard's one-sentence reason, and stops. `CONTINUE` creates no process artifact
+and preserves Plan -> Implement -> fresh Validate.
+
+## 2. Plan
 
 Resolve one active behavior in the caller-owned tracker, issue, or conversation.
 Keep acceptance, important non-goals, required evidence, write scope, and the
@@ -27,7 +34,7 @@ fresh validator. The pure fallback helper accepts a file or stdin:
 python3 skills/validate/scripts/validate.py snapshot-intent --source PATH  # use - for stdin
 ```
 
-## 2. Implement
+## 3. Implement
 
 Run one bounded RED-GREEN-refactor experiment when the behavior supports it.
 The runtime derives factual check receipts, actual changed paths, author context
@@ -35,7 +42,7 @@ ID, and `subject-manifest.v1`; the model does not transcribe them into a
 candidate packet. Implement does not commit, claim, repair, retry, close, push,
 or deliver.
 
-## 3. Validate
+## 4. Validate
 
 An author-distinct context judges the exact subject against acceptance. It
 returns `PASS`, `FAIL`, or `NOT_PROVEN`, lists checked and unchecked scope, and
@@ -48,7 +55,7 @@ The returned result is sufficient for interactive use. Validate persists the
 same result as content-addressed `verdict.v2` only when the caller requests a
 machine-readable artifact or a declared downstream consumer requires one.
 
-## 4. Caller continuation
+## 5. Caller continuation
 
 The caller receives the RPI report and decides what happens next. A revision
 updates the caller-owned intent source and starts a new invocation. RPI creates
@@ -56,11 +63,12 @@ no parallel revision artifact. Changing acceptance changes the intent digest.
 
 ## Optional surfaces
 
-Premortem, postmortem, councils, idea genies, runtime adapters, research tools,
-and factory dispatch are caller-selected. They never become hard dependencies
-or lifecycle authorities. `dispatch_once` executes only explicitly supplied,
-disjoint work once and performs no selection, retry, validation, integration,
-Git, closure, or delivery.
+Apart from RPI's required artifact-free Anti-Ceremony quick guard, premortem,
+postmortem, councils, idea genies, runtime adapters, research tools, and factory
+dispatch are caller-selected. Those optional surfaces never become hard
+dependencies or lifecycle authorities. `dispatch_once` executes only explicitly
+supplied, disjoint work once and performs no selection, retry, validation,
+integration, Git, closure, or delivery.
 
 ## Repository mechanics
 

@@ -2,7 +2,7 @@
 
 # Skill Router
 
-51 live skills. Metadata is the sole inventory and graph source.
+52 live skills. Metadata is the sole inventory and graph source.
 
 ## keep
 
@@ -22,7 +22,7 @@
 
 ## keep_specialist
 
-`account-rotation`, `bootstrap`, `cass`, `cc-hooks`, `codebase-recon`, `converter`, `craft-goal`, `dcg`, `doc`, `domain`, `fitness`, `handoff`, `ms`, `operationalize`, `pattern-mining`, `product`, `rch`, `refactor`, `research`, `reverse-engineer`, `sbh`, `scaffold`, `scope`, `security`, `skill-builder`, `standards`, `status`, `test`, `toil-mining`, `workflow-builder`
+`account-rotation`, `anti-ceremony`, `bootstrap`, `cass`, `cc-hooks`, `codebase-recon`, `converter`, `craft-goal`, `dcg`, `doc`, `domain`, `fitness`, `handoff`, `ms`, `operationalize`, `pattern-mining`, `product`, `rch`, `refactor`, `research`, `reverse-engineer`, `sbh`, `scaffold`, `scope`, `security`, `skill-builder`, `standards`, `status`, `test`, `toil-mining`, `workflow-builder`
 
 ## Complete inventory
 
@@ -32,6 +32,7 @@
 | `agent-mail` | execution | `keep_optional_adapter` | - | `agent_mail` | `write_agent_mail_records`, `install_precommit_guard`, `authorized_destructive_reset` |
 | `agent-native` | meta | `keep_optional_adapter` | - | `role_dispatch`, `observe_workers`, `handoff` | `manage_runtime_sessions` |
 | `agy-native` | cross-vendor | `keep_optional_adapter` | - | `dispatch_explicit_packet`, `provide_fresh_context` | `start_agy_session` |
+| `anti-ceremony` | judgment | `keep_specialist` | - | `guard_anti_ceremony`, `audit_anti_ceremony` | - |
 | `automation-shape-routing` | meta | `keep_optional_adapter` | - | `automation_shape_routing` | - |
 | `bootstrap` | session | `keep_specialist` | - | `bootstrap` | `write_project_docs` |
 | `cass` | execution | `keep_specialist` | - | `cass` | `rebuild_local_index`, `sync_remote_sources`, `download_semantic_model` |
@@ -63,7 +64,7 @@
 | `refactor` | execution | `keep_specialist` | - | `refactor` | `modify_source_files` |
 | `research` | execution | `keep_specialist` | - | `research` | `write_research_report` |
 | `reverse-engineer` | execution | `keep_specialist` | - | `reverse_engineer` | `clone_upstream_repo`, `authorized_binary_execution`, `write_teardown_artifacts` |
-| `rpi` | meta | `keep` | `plan`, `implement`, `validate` | `orchestrate_once`, `report` | `dispatch_core_phases` |
+| `rpi` | meta | `keep` | `anti-ceremony`, `plan`, `implement`, `validate` | `orchestrate_once`, `report` | `invoke_anti_ceremony_guard`, `dispatch_core_phases` |
 | `sbh` | execution | `keep_specialist` | - | `sbh` | `delete_reclaimable_files`, `release_disk_ballast`, `modify_host_storage_config` |
 | `scaffold` | execution | `keep_specialist` | - | `scaffold` | `write_project_files` |
 | `scope` | meta | `keep_specialist` | - | `scope_review` | - |

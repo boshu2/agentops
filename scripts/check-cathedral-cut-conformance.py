@@ -100,7 +100,7 @@ def property_names(value: object) -> set[str]:
 
 def check_skill_graph() -> None:
     entries = {path.parent.name: frontmatter(path.parent.name) for path in (ROOT / "skills").glob("*/SKILL.md")}
-    expected = {"rpi": {"plan", "implement", "validate"}, "plan": set(), "implement": set(), "validate": set()}
+    expected = {"rpi": {"anti-ceremony", "plan", "implement", "validate"}, "plan": set(), "implement": set(), "validate": set()}
     actual = {
         name: set((entries[name].get("metadata") or {}).get("dependencies") or [])
         for name in CORE
@@ -365,6 +365,17 @@ def probe_no_substrate_calls() -> None:
         verdict_dir = temp / ".agents" / "ao" / "verdicts" / "sha256"
         calls: list[str] = []
 
+        def anti_ceremony_guard(_intent: object) -> dict:
+            calls.append("anti-ceremony")
+            return {
+                "decision": "CONTINUE",
+                "reason": "The frozen outcome still requires implementation proof.",
+                "frozen_outcome": "Write and prove the non-Git candidate",
+                "parked_process_work": [],
+                "remaining_proof": ["manifest", "fresh validation"],
+                "stop_condition": "Stop after one fresh validation result.",
+            }
+
         def plan_phase(_intent: object) -> dict:
             calls.append("plan")
             return resolved_intent
@@ -403,9 +414,15 @@ def probe_no_substrate_calls() -> None:
                 "not_checked": artifact["not_checked"],
             }
 
-        rpi_report = rpi.invoke_once("temporary non-Git experiment", plan_phase, implement_phase, validate_phase)
+        rpi_report = rpi.invoke_once(
+            "temporary non-Git experiment",
+            anti_ceremony_guard,
+            plan_phase,
+            implement_phase,
+            validate_phase,
+        )
         verdict_path = Path(rpi_report["verdict_ref"])
-        assert calls == ["plan", "implement", "validate"], f"RPI dispatch trace is {calls}"
+        assert calls == ["anti-ceremony", "plan", "implement", "validate"], f"RPI dispatch trace is {calls}"
         assert rpi_report["status"] == "PASS" and verdict_path.is_file()
         assert verdict_path.parent == verdict_dir
         assert not called.exists(), "Validate helper invoked a Git, tracker, push, or delivery executable"

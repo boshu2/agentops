@@ -66,6 +66,24 @@
     },
     {
       "driven_by_skills": [
+        "anti-ceremony"
+      ],
+      "id": "skill:anti-ceremony:guard_anti_ceremony",
+      "name": "guard_anti_ceremony",
+      "path": "skills/anti-ceremony/SKILL.md",
+      "type": "skill"
+    },
+    {
+      "driven_by_skills": [
+        "anti-ceremony"
+      ],
+      "id": "skill:anti-ceremony:audit_anti_ceremony",
+      "name": "audit_anti_ceremony",
+      "path": "skills/anti-ceremony/SKILL.md",
+      "type": "skill"
+    },
+    {
+      "driven_by_skills": [
         "automation-shape-routing"
       ],
       "id": "skill:automation-shape-routing:automation_shape_routing",
@@ -627,19 +645,19 @@
     "cli_commands": 0,
     "gates": 0,
     "reference_impls": 0,
-    "skills": 69,
-    "total": 69
+    "skills": 71,
+    "total": 71
   },
   "cli_top_level_commands": [],
   "schema_version": 3,
   "summary": {
-    "capabilities": 69,
+    "capabilities": 71,
     "cli_commands": 0,
     "eval_files": 0,
     "hooks": 0,
     "job_types": 0,
     "knowledge_stores": 0,
-    "skills": 51,
+    "skills": 52,
     "workflows": 0
   },
   "surfaces": {
@@ -714,6 +732,20 @@
         "path": "skills/agy-native/",
         "reference_count": 0,
         "tier": "cross-vendor"
+      },
+      {
+        "capabilities": [
+          "guard_anti_ceremony",
+          "audit_anti_ceremony"
+        ],
+        "disposition": "keep_specialist",
+        "effects": [],
+        "has_references": false,
+        "has_skill_md": true,
+        "name": "anti-ceremony",
+        "path": "skills/anti-ceremony/",
+        "reference_count": 0,
+        "tier": "judgment"
       },
       {
         "capabilities": [
@@ -1199,6 +1231,7 @@
         ],
         "disposition": "keep",
         "effects": [
+          "invoke_anti_ceremony_guard",
           "dispatch_core_phases"
         ],
         "has_references": true,

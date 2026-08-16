@@ -1,7 +1,7 @@
 {
   "image": "codex",
   "schema_version": "skill-image.v1",
-  "skill_count": 51,
+  "skill_count": 52,
   "skills": [
     {
       "disposition": "keep_specialist",
@@ -26,6 +26,12 @@
       "slug": "agy-native",
       "source_path": "skills/agy-native/",
       "twin_path": "skills-codex/agy-native/"
+    },
+    {
+      "disposition": "keep_specialist",
+      "slug": "anti-ceremony",
+      "source_path": "skills/anti-ceremony/",
+      "twin_path": "skills-codex/anti-ceremony/"
     },
     {
       "disposition": "keep_optional_adapter",

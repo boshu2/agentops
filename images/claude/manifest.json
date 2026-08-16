@@ -1,7 +1,7 @@
 {
   "image": "claude",
   "schema_version": "skill-image.v1",
-  "skill_count": 51,
+  "skill_count": 52,
   "skills": [
     {
       "disposition": "keep_specialist",
@@ -22,6 +22,11 @@
       "disposition": "keep_optional_adapter",
       "path": "skills/agy-native/",
       "slug": "agy-native"
+    },
+    {
+      "disposition": "keep_specialist",
+      "path": "skills/anti-ceremony/",
+      "slug": "anti-ceremony"
     },
     {
       "disposition": "keep_optional_adapter",
