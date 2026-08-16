@@ -30,9 +30,10 @@
 #                                           (sentinel-wrapped)
 #   local?             no                   no                    yes
 #
-#   Adapter 1 = codex — BYTE-COMPATIBLE with the historical behavior: REVIEWER unset
-#     (or =codex) produces exactly the pre-adapter argv/exec/classify. The codex-exec.sh
-#     bats contract (tests/scripts/codex-exec-lib.bats) is the behavior lock.
+#   Adapter 1 = codex — preserves the historical execution/classification behavior.
+#     Arg-mode prompt delivery inserts the standard `--` option terminator so a
+#     prompt beginning with `-` remains prompt data rather than CLI options. The
+#     codex-exec.sh Bats contract (tests/scripts/codex-exec-lib.bats) is the lock.
 #   Adapter 2 = agy (cold, ROUTINE tier + degraded-fallback ONLY, per the A7 bench
 #     ruling) — invokes the agy CLI headlessly (`agy -p`, the sanctioned path). The
 #     review packet is delivered as a file PATH the model is TOLD to read (a short `-p`
@@ -295,9 +296,9 @@ codex_exec_guarded() {
 
   case "$reviewer" in
     codex)
-      # BYTE-COMPATIBLE with the historical codex path. Order is stable so stub-`codex`
-      # tests that inspect positional args (eval-agent-harness.bats records the -C dir)
-      # keep working.
+      # Order is stable so stub-`codex` tests that inspect positional args
+      # (eval-agent-harness.bats records the -C dir) keep working. Arg-mode
+      # prompts use `--` below so leading hyphens cannot be parsed as options.
       argv=(exec)
       [ "${CODEX_EXEC_SKIP_GIT_CHECK:-0}" = "1" ] && argv+=(--skip-git-repo-check)
       local sandbox="${CODEX_EXEC_SANDBOX:-read-only}"
@@ -315,7 +316,7 @@ codex_exec_guarded() {
       if [ -n "${CODEX_EXEC_PROMPT_FILE:-}" ]; then
         prompt_file="$CODEX_EXEC_PROMPT_FILE"; delivery="stdin_file"; echo_cmp_file="$prompt_file"
       elif [ -n "${CODEX_EXEC_PROMPT_ARG:-}" ]; then
-        argv+=("$CODEX_EXEC_PROMPT_ARG")
+        argv+=(-- "$CODEX_EXEC_PROMPT_ARG")
         prompt_file="$(mktemp "${TMPDIR:-/tmp}/codex-exec-prompt.XXXXXX")"; _cleanup+=("$prompt_file")
         printf '%s' "$CODEX_EXEC_PROMPT_ARG" > "$prompt_file"; echo_cmp_file="$prompt_file"
       else
@@ -512,8 +513,10 @@ codex_exec_guarded() {
 codex_exec_producer_template() {
   case "${1:-producer}" in
     producer)
+      # shellcheck disable=SC2016 # Positional parameters expand later inside bash -c.
       printf 'timeout "$3" codex exec --skip-git-repo-check -C "$1" -s workspace-write "$2" >/dev/null 2>&1' ;;
     membrane)
+      # shellcheck disable=SC2016 # Positional parameters expand later inside bash -c.
       printf 'codex exec --skip-git-repo-check "$1" 2>/dev/null' ;;
     *) return 2 ;;
   esac

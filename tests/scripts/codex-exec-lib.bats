@@ -63,6 +63,26 @@ FAKE
   chmod +x "$TMP/bin/codex"
 }
 
+# A CLI-shaped stub that rejects a leading-hyphen prompt unless the caller
+# inserted the standard end-of-options marker first.
+stub_option_parser() {
+  cat > "$TMP/bin/codex" <<'FAKE'
+#!/usr/bin/env bash
+seen_terminator=0
+for arg in "$@"; do
+  if [ "$arg" = "--" ]; then seen_terminator=1; continue; fi
+  if [ "$seen_terminator" -eq 0 ] && [ "${arg#-}" != "$arg" ]; then
+    case "$arg" in exec|--skip-git-repo-check|--sandbox|-m|-C|-c) continue;; esac
+  fi
+done
+[ "$seen_terminator" -eq 1 ] || { echo 'missing option terminator' >&2; exit 2; }
+[ "${!#}" = '--- canonical skill bytes' ] || { echo 'prompt mismatch' >&2; exit 3; }
+printf 'accepted prompt\n'
+printf 'tokens used: 1\n'
+FAKE
+  chmod +x "$TMP/bin/codex"
+}
+
 # A stub codex that records how many times it was invoked and prints nothing.
 stub_flat_then_success() {
   cat > "$TMP/bin/codex" <<FAKE
@@ -111,6 +131,16 @@ FAKE
       CODEX_EXEC_TIMEOUT=10 codex_exec_guarded
   '
   [ "$status" -eq 125 ]
+}
+
+@test "(c2) an arg prompt beginning with hyphens is protected by an option terminator" {
+  stub_option_parser
+  run bash -c '
+    . "'"$LIB"'"
+    CODEX_EXEC_PROMPT_ARG="--- canonical skill bytes" CODEX_EXEC_TIMEOUT=10 codex_exec_guarded
+  '
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"accepted prompt"* ]]
 }
 
 # --- (d) MISSING codex -> MISSING (exit 2) ------------------------------------
@@ -182,8 +212,10 @@ FAKE
 @test "(i) codex_exec_producer_template emits the historical byte-identical defaults" {
   run bash -c '. "'"$LIB"'"; codex_exec_producer_template producer'
   [ "$status" -eq 0 ]
+  # shellcheck disable=SC2016 # Assert literal parameters in the emitted template.
   [ "$output" = 'timeout "$3" codex exec --skip-git-repo-check -C "$1" -s workspace-write "$2" >/dev/null 2>&1' ]
   run bash -c '. "'"$LIB"'"; codex_exec_producer_template membrane'
   [ "$status" -eq 0 ]
+  # shellcheck disable=SC2016 # Assert literal parameters in the emitted template.
   [ "$output" = 'codex exec --skip-git-repo-check "$1" 2>/dev/null' ]
 }
