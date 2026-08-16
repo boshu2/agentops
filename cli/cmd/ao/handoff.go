@@ -1,6 +1,8 @@
 package main
 
 import (
+	"crypto/rand"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -122,16 +124,22 @@ func collectHandoffState(cwd string) *handoffState {
 
 func writeHandoffArtifact(cwd string, artifact *handoffArtifact, data []byte) (string, error) {
 	dir := filepath.Join(cwd, ".agents", "ao", "handoff")
-	if err := os.MkdirAll(dir, 0o755); err != nil {
-		return "", fmt.Errorf("create handoff directory: %w", err)
+	if artifact == nil || artifact.ID == "" || artifact.ID == "." || artifact.ID == ".." || strings.ContainsAny(artifact.ID, `/\\`) {
+		return "", fmt.Errorf("publish handoff: invalid artifact id")
 	}
-	target := filepath.Join(dir, artifact.ID+".json")
-	tmp, err := os.CreateTemp(dir, ".handoff-*.tmp")
+	root, err := openHandoffWriteRoot(cwd, true)
+	if err != nil {
+		return "", err
+	}
+	defer func() { _ = root.Close() }()
+
+	targetName := artifact.ID + ".json"
+	target := filepath.Join(dir, targetName)
+	tmpName, tmp, err := createHandoffTemp(root)
 	if err != nil {
 		return "", fmt.Errorf("create handoff temporary file: %w", err)
 	}
-	tmpName := tmp.Name()
-	defer func() { _ = os.Remove(tmpName) }()
+	defer func() { _ = root.Remove(tmpName) }()
 	if _, err := tmp.Write(data); err != nil {
 		_ = tmp.Close()
 		return "", fmt.Errorf("write handoff: %w", err)
@@ -143,8 +151,113 @@ func writeHandoffArtifact(cwd string, artifact *handoffArtifact, data []byte) (s
 	if err := tmp.Close(); err != nil {
 		return "", fmt.Errorf("close handoff: %w", err)
 	}
-	if err := os.Rename(tmpName, target); err != nil {
+	if err := verifyHandoffWriteRoot(cwd, root); err != nil {
+		return "", err
+	}
+	// A hard-link publish is an atomic no-clobber operation: unlike Rename it
+	// never replaces evidence already stored under the same id. Both names are
+	// resolved by the descriptor-anchored Root, so a parent-directory swap
+	// cannot redirect the write through a symlink.
+	if err := root.Link(tmpName, targetName); err != nil {
 		return "", fmt.Errorf("publish handoff: %w", err)
 	}
+	if err := verifyHandoffWriteRoot(cwd, root); err != nil {
+		if removeErr := root.Remove(targetName); removeErr != nil {
+			return "", fmt.Errorf("%w; cleanup published handoff: %v", err, removeErr)
+		}
+		return "", err
+	}
+	if err := root.Remove(tmpName); err != nil {
+		return "", fmt.Errorf("remove handoff temporary file after publish: %w", err)
+	}
 	return target, nil
+}
+
+// openHandoffWriteRoot resolves .agents/ao/handoff one component at a time.
+// Existing components must be real directories, and every opened descriptor
+// must still identify the component that was inspected. Missing components
+// are created only when create is true.
+func openHandoffWriteRoot(cwd string, create bool) (*os.Root, error) {
+	root, err := os.OpenRoot(cwd)
+	if err != nil {
+		return nil, fmt.Errorf("open workspace root: %w", err)
+	}
+	current := root
+	for _, component := range []string{".agents", "ao", "handoff"} {
+		next, openErr := openRealHandoffDir(current, component, create)
+		if openErr != nil {
+			_ = current.Close()
+			return nil, fmt.Errorf("open handoff directory component %s: %w", component, openErr)
+		}
+		_ = current.Close()
+		current = next
+	}
+	return current, nil
+}
+
+func openRealHandoffDir(parent *os.Root, component string, create bool) (*os.Root, error) {
+	for {
+		before, err := parent.Lstat(component)
+		if err != nil {
+			if create && os.IsNotExist(err) {
+				if mkdirErr := parent.Mkdir(component, 0o755); mkdirErr != nil && !os.IsExist(mkdirErr) {
+					return nil, mkdirErr
+				}
+				continue
+			}
+			return nil, err
+		}
+		if before.Mode()&os.ModeSymlink != 0 || !before.IsDir() {
+			return nil, fmt.Errorf("not a real directory (refused_unsafe)")
+		}
+		next, err := parent.OpenRoot(component)
+		if err != nil {
+			return nil, err
+		}
+		opened, statErr := next.Stat(".")
+		after, afterErr := parent.Lstat(component)
+		if statErr != nil || afterErr != nil || after.Mode()&os.ModeSymlink != 0 || !after.IsDir() || !os.SameFile(before, opened) || !os.SameFile(after, opened) {
+			_ = next.Close()
+			return nil, fmt.Errorf("changed identity while opening (refused_unsafe)")
+		}
+		return next, nil
+	}
+}
+
+func verifyHandoffWriteRoot(cwd string, opened *os.Root) error {
+	current, err := openHandoffWriteRoot(cwd, false)
+	if err != nil {
+		return fmt.Errorf("verify handoff directory: %w", err)
+	}
+	defer func() { _ = current.Close() }()
+	want, err := opened.Stat(".")
+	if err != nil {
+		return fmt.Errorf("stat opened handoff directory: %w", err)
+	}
+	got, err := current.Stat(".")
+	if err != nil {
+		return fmt.Errorf("stat current handoff directory: %w", err)
+	}
+	if !os.SameFile(want, got) {
+		return fmt.Errorf("verify handoff directory: path changed identity (refused_unsafe)")
+	}
+	return nil
+}
+
+func createHandoffTemp(root *os.Root) (string, *os.File, error) {
+	for range 100 {
+		var random [16]byte
+		if _, err := rand.Read(random[:]); err != nil {
+			return "", nil, err
+		}
+		name := ".handoff-" + hex.EncodeToString(random[:]) + ".tmp"
+		file, err := root.OpenFile(name, os.O_RDWR|os.O_CREATE|os.O_EXCL, 0o600)
+		if err == nil {
+			return name, file, nil
+		}
+		if !os.IsExist(err) {
+			return "", nil, err
+		}
+	}
+	return "", nil, fmt.Errorf("exhausted unique temporary names")
 }

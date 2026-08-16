@@ -656,7 +656,7 @@
         "code-complete"
       ],
       "produces": [
-        "caller-selected handoff path or .agents/ao/handoff/*.md"
+        "caller-selected handoff path or .agents/ao/handoff/*"
       ],
       "references_count": 1,
       "tier": "session",

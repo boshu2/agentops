@@ -7,8 +7,9 @@
 #   ./scripts/prune-agents.sh --quiet      # Suppress per-file output (summary only)
 #   ./scripts/prune-agents.sh --execute --quiet  # Auto-prune with minimal output
 #
-# Policies defined in .agents/README.md ## Pruning section.
-# Never touches: learnings/, patterns/, plans/, research/, retros/ (knowledge assets)
+# Migration policy: ADR-0016 plus the exact-path consumers named below.
+# Never touches: learnings/, patterns/, plans/, research/, retros/ (knowledge
+# assets), or legacy handoff/ (read-only compatibility evidence).
 
 set -euo pipefail
 
@@ -28,6 +29,29 @@ for arg in "$@"; do
         --quiet) QUIET=true ;;
     esac
 done
+
+# Fail closed before any pruning when the canonical handoff path could escape
+# the repository. In particular, checking only the final directory is not
+# enough: an .agents/ao symlink would also redirect the earlier sessions pass.
+# Missing components are safe and mean there is nothing to prune.
+validate_canonical_handoff_chain() {
+    local component
+    for component in "$AGENTS_DIR" "$AGENTS_DIR/ao" "$AGENTS_DIR/ao/handoff"; do
+        if [[ -L "$component" ]]; then
+            echo "ERROR: refusing to prune: canonical handoff path component is a symlink: $component" >&2
+            return 1
+        fi
+        if [[ -e "$component" && ! -d "$component" ]]; then
+            echo "ERROR: refusing to prune: canonical handoff path component is not a directory: $component" >&2
+            return 1
+        fi
+        if [[ ! -e "$component" ]]; then
+            return 0
+        fi
+    done
+}
+
+validate_canonical_handoff_chain
 
 if [[ "$QUIET" == false ]]; then
     if [[ "$DRY_RUN" == true ]]; then
@@ -60,21 +84,22 @@ prune_keep_newest() {
     [[ "$QUIET" == false ]] && echo "[$label] $count files — keeping newest $keep, pruning $to_delete"
 
     # List oldest files first (by modification time)
-    find "$dir" -maxdepth 1 -type f -print0 2>/dev/null \
+    while read -r f; do
+        local size
+        size=$(stat -f%z "$f" 2>/dev/null || stat --format=%s "$f" 2>/dev/null || echo 0)
+        TOTAL_BYTES=$((TOTAL_BYTES + size))
+        TOTAL_FILES=$((TOTAL_FILES + 1))
+        if [[ "$DRY_RUN" == true ]]; then
+            [[ "$QUIET" == false ]] && echo "  would delete: $f ($(numfmt_size "$size"))"
+        else
+            rm -f "$f"
+            [[ "$QUIET" == false ]] && echo "  deleted: $f ($(numfmt_size "$size"))"
+        fi
+    done < <(
+        find "$dir" -maxdepth 1 -type f -print0 2>/dev/null \
         | xargs -0 ls -t 2>/dev/null \
-        | tail -n "$to_delete" \
-        | while read -r f; do
-            local size
-            size=$(stat -f%z "$f" 2>/dev/null || stat --format=%s "$f" 2>/dev/null || echo 0)
-            TOTAL_BYTES=$((TOTAL_BYTES + size))
-            TOTAL_FILES=$((TOTAL_FILES + 1))
-            if [[ "$DRY_RUN" == true ]]; then
-                [[ "$QUIET" == false ]] && echo "  would delete: $f ($(numfmt_size "$size"))"
-            else
-                rm -f "$f"
-                [[ "$QUIET" == false ]] && echo "  deleted: $f ($(numfmt_size "$size"))"
-            fi
-        done
+        | tail -n "$to_delete"
+    )
 }
 
 prune_older_than() {
@@ -97,19 +122,18 @@ prune_older_than() {
 
     [[ "$QUIET" == false ]] && echo "[$label] $found files older than ${days}d"
 
-    find "$dir" -maxdepth 1 -name "$pattern" -type f -mtime +"$days" -print0 2>/dev/null \
-        | while IFS= read -r -d '' f; do
-            local size
-            size=$(stat -f%z "$f" 2>/dev/null || stat --format=%s "$f" 2>/dev/null || echo 0)
-            TOTAL_BYTES=$((TOTAL_BYTES + size))
-            TOTAL_FILES=$((TOTAL_FILES + 1))
-            if [[ "$DRY_RUN" == true ]]; then
-                [[ "$QUIET" == false ]] && echo "  would delete: $f ($(numfmt_size "$size"))"
-            else
-                rm -f "$f"
-                [[ "$QUIET" == false ]] && echo "  deleted: $f ($(numfmt_size "$size"))"
-            fi
-        done
+    while IFS= read -r -d '' f; do
+        local size
+        size=$(stat -f%z "$f" 2>/dev/null || stat --format=%s "$f" 2>/dev/null || echo 0)
+        TOTAL_BYTES=$((TOTAL_BYTES + size))
+        TOTAL_FILES=$((TOTAL_FILES + 1))
+        if [[ "$DRY_RUN" == true ]]; then
+            [[ "$QUIET" == false ]] && echo "  would delete: $f ($(numfmt_size "$size"))"
+        else
+            rm -f "$f"
+            [[ "$QUIET" == false ]] && echo "  deleted: $f ($(numfmt_size "$size"))"
+        fi
+    done < <(find "$dir" -maxdepth 1 -name "$pattern" -type f -mtime +"$days" -print0 2>/dev/null)
 }
 
 numfmt_size() {
@@ -160,8 +184,12 @@ prune_older_than "$AGENTS_DIR/rpi" 30 "phase-*-summary-*" "rpi/phase-summaries"
 prune_keep_newest "$AGENTS_DIR/ao/sessions" 50 "ao/sessions"
 [[ "$QUIET" == false ]] && echo ""
 
-# --- Policy: handoff/ — keep last 10 ---
-prune_keep_newest "$AGENTS_DIR/handoff" 10 "handoff"
+# --- Policy: ao/handoff/ — keep last 10 ---
+# `.agents/handoff/` is a read-only compatibility source. Never prune, move, or
+# otherwise mutate it; current handoff retention applies only to the canonical
+# writer destination.
+validate_canonical_handoff_chain
+prune_keep_newest "$AGENTS_DIR/ao/handoff" 10 "ao/handoff"
 [[ "$QUIET" == false ]] && echo ""
 
 # --- Policy: opencode-tests/ — logs older than 7 days ---
@@ -181,19 +209,20 @@ if [[ -d "$AGENTS_DIR/releases/local-ci" ]]; then
     if [[ "$ci_runs" -gt "$keep_ci" ]]; then
         to_delete_ci=$((ci_runs - keep_ci))
         [[ "$QUIET" == false ]] && echo "[releases/local-ci] $ci_runs runs — keeping newest $keep_ci, pruning $to_delete_ci"
-        find "$AGENTS_DIR/releases/local-ci" -maxdepth 1 -mindepth 1 -type d -print0 2>/dev/null \
+        while read -r d; do
+            local_size=$(du -sk "$d" 2>/dev/null | cut -f1 || echo 0)
+            TOTAL_FILES=$((TOTAL_FILES + 1))
+            if [[ "$DRY_RUN" == true ]]; then
+                [[ "$QUIET" == false ]] && echo "  would delete: $d (~${local_size}KB)"
+            else
+                rm -rf "$d"
+                [[ "$QUIET" == false ]] && echo "  deleted: $d (~${local_size}KB)"
+            fi
+        done < <(
+            find "$AGENTS_DIR/releases/local-ci" -maxdepth 1 -mindepth 1 -type d -print0 2>/dev/null \
             | xargs -0 ls -dt 2>/dev/null \
-            | tail -n "$to_delete_ci" \
-            | while read -r d; do
-                local_size=$(du -sk "$d" 2>/dev/null | cut -f1 || echo 0)
-                TOTAL_FILES=$((TOTAL_FILES + 1))
-                if [[ "$DRY_RUN" == true ]]; then
-                    [[ "$QUIET" == false ]] && echo "  would delete: $d (~${local_size}KB)"
-                else
-                    rm -rf "$d"
-                    [[ "$QUIET" == false ]] && echo "  deleted: $d (~${local_size}KB)"
-                fi
-            done
+            | tail -n "$to_delete_ci"
+        )
     else
         [[ "$QUIET" == false ]] && echo "[releases/local-ci] $ci_runs runs — within limit ($keep_ci). Nothing to prune."
     fi
@@ -223,18 +252,19 @@ if [[ -d "$AGENTS_DIR" ]]; then
     if [[ "$dashboard_count" -gt 5 ]]; then
         to_delete_dash=$((dashboard_count - 5))
         [[ "$QUIET" == false ]] && echo "[status-dashboards] $dashboard_count files — keeping newest 5, pruning $to_delete_dash"
-        find "$AGENTS_DIR" -maxdepth 1 -name "status-dashboard*" -type f -print0 2>/dev/null \
+        while read -r f; do
+            if [[ "$DRY_RUN" == true ]]; then
+                [[ "$QUIET" == false ]] && echo "  would delete: $f"
+            else
+                rm -f "$f"
+                [[ "$QUIET" == false ]] && echo "  deleted: $f"
+            fi
+            TOTAL_FILES=$((TOTAL_FILES + 1))
+        done < <(
+            find "$AGENTS_DIR" -maxdepth 1 -name "status-dashboard*" -type f -print0 2>/dev/null \
             | xargs -0 ls -t 2>/dev/null \
-            | tail -n "$to_delete_dash" \
-            | while read -r f; do
-                if [[ "$DRY_RUN" == true ]]; then
-                    [[ "$QUIET" == false ]] && echo "  would delete: $f"
-                else
-                    rm -f "$f"
-                    [[ "$QUIET" == false ]] && echo "  deleted: $f"
-                fi
-                TOTAL_FILES=$((TOTAL_FILES + 1))
-            done
+            | tail -n "$to_delete_dash"
+        )
     fi
 fi
 [[ "$QUIET" == false ]] && echo ""
@@ -244,16 +274,15 @@ if [[ -d "$AGENTS_DIR/archived-worktrees" ]]; then
     old_wt=$(find "$AGENTS_DIR/archived-worktrees" -maxdepth 1 -mindepth 1 -type d -mtime +7 2>/dev/null | wc -l | tr -d ' ')
     if [[ "$old_wt" -gt 0 ]]; then
         [[ "$QUIET" == false ]] && echo "[archived-worktrees] $old_wt directories older than 7d"
-        find "$AGENTS_DIR/archived-worktrees" -maxdepth 1 -mindepth 1 -type d -mtime +7 -print0 2>/dev/null \
-            | while IFS= read -r -d '' d; do
-                if [[ "$DRY_RUN" == true ]]; then
-                    [[ "$QUIET" == false ]] && echo "  would delete: $d"
-                else
-                    rm -rf "$d"
-                    [[ "$QUIET" == false ]] && echo "  deleted: $d"
-                fi
-                TOTAL_FILES=$((TOTAL_FILES + 1))
-            done
+        while IFS= read -r -d '' d; do
+            if [[ "$DRY_RUN" == true ]]; then
+                [[ "$QUIET" == false ]] && echo "  would delete: $d"
+            else
+                rm -rf "$d"
+                [[ "$QUIET" == false ]] && echo "  deleted: $d"
+            fi
+            TOTAL_FILES=$((TOTAL_FILES + 1))
+        done < <(find "$AGENTS_DIR/archived-worktrees" -maxdepth 1 -mindepth 1 -type d -mtime +7 -print0 2>/dev/null)
     else
         [[ "$QUIET" == false ]] && echo "[archived-worktrees] No directories older than 7d. Nothing to prune."
     fi
@@ -272,5 +301,5 @@ fi
 if [[ "$QUIET" == false ]]; then
     echo ""
     echo "Protected directories (never pruned):"
-    echo "  learnings/ patterns/ plans/ research/ retros/"
+    echo "  handoff/ mto-handoff/ learnings/ patterns/ plans/ research/ retros/"
 fi

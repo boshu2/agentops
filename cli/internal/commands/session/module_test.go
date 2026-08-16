@@ -113,6 +113,278 @@ func TestRehydrateReadsCallerAuthoredBrief(t *testing.T) {
 	}
 }
 
+func TestRehydrateReadsCanonicalHandoffDirectory(t *testing.T) {
+	dir := t.TempDir()
+	t.Chdir(dir)
+	handoffDir := filepath.Join(dir, ".agents", "ao", "handoff")
+	if err := os.MkdirAll(handoffDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	original := []byte(`{"schema_version":1,"id":"handoff-20260816T000000.000000000Z","created_at":"2026-08-16T00:00:00Z","goal":"read the canonical handoff","continuation":"canonical path is visible"}` + "\n")
+	artifactPath := filepath.Join(handoffDir, "handoff-20260816T000000.000000000Z.json")
+	if err := os.WriteFile(artifactPath, original, 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	root, _ := subcommand(t, "rehydrate")
+	var restored bytes.Buffer
+	root.SetOut(&restored)
+	root.SetArgs([]string{"rehydrate"})
+	if err := root.Execute(); err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(restored.String(), "canonical path is visible") {
+		t.Fatalf("canonical handoff missing: %s", restored.String())
+	}
+	if after, err := os.ReadFile(artifactPath); err != nil || !bytes.Equal(original, after) {
+		t.Fatal("rehydrate mutated the canonical handoff artifact")
+	}
+}
+
+func TestRehydrateChoosesLatestAcrossCanonicalAndLegacyDirectories(t *testing.T) {
+	dir := t.TempDir()
+	t.Chdir(dir)
+	legacyDir := filepath.Join(dir, ".agents", "handoff")
+	canonicalDir := filepath.Join(dir, ".agents", "ao", "handoff")
+	for _, handoffDir := range []string{legacyDir, canonicalDir} {
+		if err := os.MkdirAll(handoffDir, 0o755); err != nil {
+			t.Fatal(err)
+		}
+	}
+	legacy := []byte(`{"schema_version":1,"id":"handoff-20260816T000000.000000000Z","created_at":"2026-08-16T00:00:00Z","continuation":"older legacy artifact"}` + "\n")
+	canonical := []byte(`{"schema_version":1,"id":"handoff-20260816T000001.000000000Z","created_at":"2026-08-16T00:00:01Z","continuation":"newer canonical artifact"}` + "\n")
+	if err := os.WriteFile(filepath.Join(legacyDir, "handoff-20260816T000000.000000000Z.json"), legacy, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(canonicalDir, "handoff-20260816T000001.000000000Z.json"), canonical, 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	root, _ := subcommand(t, "rehydrate")
+	var restored bytes.Buffer
+	root.SetOut(&restored)
+	root.SetArgs([]string{"rehydrate"})
+	if err := root.Execute(); err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(restored.String(), "newer canonical artifact") {
+		t.Fatalf("latest handoff not selected across directories: %s", restored.String())
+	}
+}
+
+func TestRehydrateChoosesNewerLegacyAcrossDirectories(t *testing.T) {
+	dir := t.TempDir()
+	t.Chdir(dir)
+	legacyDir := filepath.Join(dir, ".agents", "handoff")
+	canonicalDir := filepath.Join(dir, ".agents", "ao", "handoff")
+	for _, handoffDir := range []string{legacyDir, canonicalDir} {
+		if err := os.MkdirAll(handoffDir, 0o755); err != nil {
+			t.Fatal(err)
+		}
+	}
+	canonical := []byte(`{"schema_version":1,"id":"handoff-20260816T000000.000000000Z","created_at":"2026-08-16T00:00:00Z","continuation":"older canonical artifact"}` + "\n")
+	legacy := []byte(`{"schema_version":1,"id":"handoff-20260816T000001.000000000Z","created_at":"2026-08-16T00:00:01Z","continuation":"newer legacy artifact"}` + "\n")
+	if err := os.WriteFile(filepath.Join(canonicalDir, "handoff-20260816T000000.000000000Z.json"), canonical, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(legacyDir, "handoff-20260816T000001.000000000Z.json"), legacy, 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	root, _ := subcommand(t, "rehydrate")
+	var restored bytes.Buffer
+	root.SetOut(&restored)
+	root.SetArgs([]string{"rehydrate"})
+	if err := root.Execute(); err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(restored.String(), "newer legacy artifact") {
+		t.Fatalf("newer legacy handoff not selected across directories: %s", restored.String())
+	}
+}
+
+func TestRehydratePrefersCanonicalDirectoryForDuplicateName(t *testing.T) {
+	dir := t.TempDir()
+	t.Chdir(dir)
+	legacyDir := filepath.Join(dir, ".agents", "handoff")
+	canonicalDir := filepath.Join(dir, ".agents", "ao", "handoff")
+	for _, handoffDir := range []string{legacyDir, canonicalDir} {
+		if err := os.MkdirAll(handoffDir, 0o755); err != nil {
+			t.Fatal(err)
+		}
+	}
+	name := "handoff-20260816T000000.000000000Z.json"
+	legacy := []byte(`{"schema_version":1,"id":"handoff-20260816T000000.000000000Z","created_at":"2026-08-16T00:00:00Z","continuation":"legacy duplicate"}` + "\n")
+	canonical := []byte(`{"schema_version":1,"id":"handoff-20260816T000000.000000000Z","created_at":"2026-08-16T00:00:00Z","continuation":"canonical duplicate"}` + "\n")
+	if err := os.WriteFile(filepath.Join(legacyDir, name), legacy, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(canonicalDir, name), canonical, 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	root, _ := subcommand(t, "rehydrate")
+	var restored bytes.Buffer
+	root.SetOut(&restored)
+	root.SetArgs([]string{"rehydrate"})
+	if err := root.Execute(); err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(restored.String(), "canonical duplicate") {
+		t.Fatalf("canonical directory did not win duplicate name: %s", restored.String())
+	}
+}
+
+func TestRehydrateFailsClosedWhenCanonicalRootIsNotDirectory(t *testing.T) {
+	for _, tc := range []struct {
+		name string
+		args []string
+	}{
+		{name: "human", args: []string{"rehydrate"}},
+		{name: "json", args: []string{"rehydrate", "--json"}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			dir := t.TempDir()
+			t.Chdir(dir)
+			agents := filepath.Join(dir, ".agents")
+			legacyDir := filepath.Join(agents, "handoff")
+			if err := os.MkdirAll(legacyDir, 0o755); err != nil {
+				t.Fatal(err)
+			}
+			if err := os.WriteFile(filepath.Join(agents, "ao"), []byte("not a directory\n"), 0o600); err != nil {
+				t.Fatal(err)
+			}
+			legacy := []byte(`{"schema_version":1,"id":"handoff-20260816T000000.000000000Z","created_at":"2026-08-16T00:00:00Z","continuation":"valid legacy evidence"}` + "\n")
+			if err := os.WriteFile(filepath.Join(legacyDir, "handoff-20260816T000000.000000000Z.json"), legacy, 0o600); err != nil {
+				t.Fatal(err)
+			}
+
+			root, _ := subcommand(t, "rehydrate")
+			var stdout, stderr bytes.Buffer
+			root.SetOut(&stdout)
+			root.SetErr(&stderr)
+			root.SetArgs(tc.args)
+			err := root.Execute()
+			if err == nil {
+				t.Fatal("rehydrate succeeded despite a non-directory canonical root")
+			}
+			if !strings.Contains(err.Error(), "not a real directory") {
+				t.Fatalf("error = %q, want unsafe canonical-root reason", err)
+			}
+			if strings.Contains(stdout.String(), "valid legacy evidence") || strings.TrimSpace(stdout.String()) == "{}" {
+				t.Fatalf("stdout = %q, want no fallback artifact or empty-state document", stdout.String())
+			}
+		})
+	}
+}
+
+func TestRehydrateFailsClosedOnSymlinkedHandoffSources(t *testing.T) {
+	for _, tc := range []struct {
+		name  string
+		setup func(t *testing.T, dir string)
+	}{
+		{
+			name: "intermediate canonical root",
+			setup: func(t *testing.T, dir string) {
+				t.Helper()
+				agents := filepath.Join(dir, ".agents")
+				external := t.TempDir()
+				if err := os.MkdirAll(agents, 0o755); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.Symlink(external, filepath.Join(agents, "ao")); err != nil {
+					t.Skipf("symlink unavailable: %v", err)
+				}
+			},
+		},
+		{
+			name: "matching artifact",
+			setup: func(t *testing.T, dir string) {
+				t.Helper()
+				canonical := filepath.Join(dir, ".agents", "ao", "handoff")
+				if err := os.MkdirAll(canonical, 0o755); err != nil {
+					t.Fatal(err)
+				}
+				external := filepath.Join(t.TempDir(), "outside.json")
+				if err := os.WriteFile(external, []byte(`{"schema_version":1,"id":"handoff-20260816T000001.000000000Z","created_at":"2026-08-16T00:00:01Z","continuation":"outside secret"}`+"\n"), 0o600); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.Symlink(external, filepath.Join(canonical, "handoff-20260816T000001.000000000Z.json")); err != nil {
+					t.Skipf("symlink unavailable: %v", err)
+				}
+			},
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			dir := t.TempDir()
+			t.Chdir(dir)
+			tc.setup(t, dir)
+			legacyDir := filepath.Join(dir, ".agents", "handoff")
+			if err := os.MkdirAll(legacyDir, 0o755); err != nil {
+				t.Fatal(err)
+			}
+			legacy := []byte(`{"schema_version":1,"id":"handoff-20260816T000000.000000000Z","created_at":"2026-08-16T00:00:00Z","continuation":"valid legacy evidence"}` + "\n")
+			if err := os.WriteFile(filepath.Join(legacyDir, "handoff-20260816T000000.000000000Z.json"), legacy, 0o600); err != nil {
+				t.Fatal(err)
+			}
+
+			root, _ := subcommand(t, "rehydrate")
+			var stdout, stderr bytes.Buffer
+			root.SetOut(&stdout)
+			root.SetErr(&stderr)
+			root.SetArgs([]string{"rehydrate", "--json"})
+			err := root.Execute()
+			if err == nil {
+				t.Fatal("rehydrate succeeded through an unsafe handoff source")
+			}
+			if !strings.Contains(err.Error(), "not a real") {
+				t.Fatalf("error = %q, want unsafe source reason", err)
+			}
+			if strings.Contains(stdout.String(), "outside secret") || strings.Contains(stdout.String(), "valid legacy evidence") || strings.TrimSpace(stdout.String()) == "{}" {
+				t.Fatalf("stdout = %q, want no followed, fallback, or empty-state artifact", stdout.String())
+			}
+		})
+	}
+}
+
+func TestRehydrateRejectsArtifactsOutsideHandoffV1Contract(t *testing.T) {
+	tests := []struct {
+		name string
+		body string
+	}{
+		{name: "missing required identity", body: `{"schema_version":1,"continuation":"not bound"}`},
+		{name: "filename id mismatch", body: `{"schema_version":1,"id":"handoff-20260816T000001.000000000Z","created_at":"2026-08-16T00:00:00Z"}`},
+		{name: "unknown property", body: `{"schema_version":1,"id":"handoff-20260816T000000.000000000Z","created_at":"2026-08-16T00:00:00Z","lifecycle":"invented"}`},
+		{name: "invalid nested state", body: `{"schema_version":1,"id":"handoff-20260816T000000.000000000Z","created_at":"2026-08-16T00:00:00Z","state":{"git_branch":"main"}}`},
+		{name: "null string", body: `{"schema_version":1,"id":"handoff-20260816T000000.000000000Z","created_at":"2026-08-16T00:00:00Z","goal":null}`},
+		{name: "null array", body: `{"schema_version":1,"id":"handoff-20260816T000000.000000000Z","created_at":"2026-08-16T00:00:00Z","artifacts_produced":null}`},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			dir := t.TempDir()
+			t.Chdir(dir)
+			handoffDir := filepath.Join(dir, ".agents", "ao", "handoff")
+			if err := os.MkdirAll(handoffDir, 0o755); err != nil {
+				t.Fatal(err)
+			}
+			if err := os.WriteFile(filepath.Join(handoffDir, "handoff-20260816T000000.000000000Z.json"), []byte(tc.body+"\n"), 0o600); err != nil {
+				t.Fatal(err)
+			}
+
+			root, _ := subcommand(t, "rehydrate")
+			var stdout bytes.Buffer
+			root.SetOut(&stdout)
+			root.SetArgs([]string{"rehydrate", "--json"})
+			if err := root.Execute(); err == nil {
+				t.Fatal("rehydrate accepted an artifact outside handoff.v1")
+			}
+			if strings.TrimSpace(stdout.String()) == "{}" {
+				t.Fatal("invalid artifact was reported as an honest empty state")
+			}
+		})
+	}
+}
+
 // TestRehydrateJSONEmptyStateEmitsEmptyObject asserts that --json with no
 // handoff present emits exactly one JSON document `{}` on stdout (jq-safe), with
 // the human hint on stderr and exit 0.

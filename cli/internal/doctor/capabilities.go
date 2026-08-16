@@ -30,7 +30,6 @@ var canonicalWriteScopes = []string{
 	".doctor",
 	".agents",
 	".agents/daemon",
-	".agents/handoff/sha256",
 	".agents/ao",
 	".agents/learnings",
 	"~/.claude/settings.json",
@@ -187,6 +186,21 @@ func EnsureInScope(caps *Capabilities, repoRoot, homeDir, path string) error {
 		return fmt.Errorf("doctor: resolve path %s: %w", path, err)
 	}
 	abs = filepath.Clean(abs)
+	// `.agents/handoff` is retained solely as read-only compatibility evidence.
+	// The broader `.agents` scope must not accidentally authorize a fixer to
+	// mutate the legacy root or anything beneath it. New handoff writes belong
+	// under `.agents/ao/handoff`.
+	legacyHandoff, legacyErr := filepath.Abs(filepath.Join(repoRoot, ".agents", "handoff"))
+	if legacyErr != nil {
+		return fmt.Errorf("doctor: resolve legacy handoff root: %w", legacyErr)
+	}
+	legacyHandoff = filepath.Clean(legacyHandoff)
+	if abs == legacyHandoff {
+		return fmt.Errorf("doctor: path %s is legacy read-only handoff evidence (refused_unsafe)", path)
+	}
+	if rel, relErr := filepath.Rel(legacyHandoff, abs); relErr == nil && rel != ".." && !strings.HasPrefix(rel, ".."+string(filepath.Separator)) {
+		return fmt.Errorf("doctor: path %s is legacy read-only handoff evidence (refused_unsafe)", path)
+	}
 	for _, scope := range caps.WriteScopes {
 		base := resolveScope(scope, repoRoot, homeDir)
 		if abs == base {

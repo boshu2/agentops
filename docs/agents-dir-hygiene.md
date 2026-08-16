@@ -2,7 +2,7 @@
 title: ".agents/ workspace hygiene"
 description: "Retention conventions for the .agents/ runtime workspace and how ao doctor keeps it clean."
 permalink: /agents-dir-hygiene
-last_reviewed: 2026-07-18
+last_reviewed: 2026-08-16
 ---
 
 # `.agents/` workspace hygiene
@@ -14,12 +14,16 @@ and it is never a source of authority — work belongs to the tracker, source
 and delivery history to Git, sessions to CASS, curated memory to CM, and
 rules to docs/ADRs.
 
-The target layout is the closed set from
+The preferred target layout from
 [ADR-0016](adr/ADR-0016-state-tiers.md): `ao/` (requested proof), `scratch/`
 (disposable work, `scratch/WRITER/DATE-SLUG/`), and `projections/`
-(named-consumer, manifest-stamped derived views). Everything else under
-`.agents/` is legacy debris from older writers. Two shapes of that debris
-exist:
+(named-consumer, manifest-stamped derived views). This target is not enforced
+as an exact closed set. A root outside it must have a declared compatibility or
+exact-path consumer contract; otherwise it is migration debt. Current declared
+exceptions include read-only `.agents/handoff/`, live
+`.agents/mto-handoff/`, and earlier skill-output roots retained by an explicit
+consumer contract in their owning skill.
+Two broad shapes of migration debt exist:
 
 - **Knowledge-shaped directories** — postmortems, pre-mortem checks, handoffs,
   retros, proofs: human-readable records a later session may re-read while
@@ -28,8 +32,9 @@ exist:
   consumed once by tooling and then debris.
 
 Left alone, the second class accumulates. The `workspace` subsystem of
-`ao doctor` exists to detect and garbage-collect that debris safely. Where
-this page and ADR-0016 disagree, the ADR wins.
+`ao doctor` detects specific registered failure modes and garbage-collects
+their debris safely; it does not currently flag every top-level root outside
+the preferred layout. Where this page and ADR-0016 disagree, the ADR wins.
 
 ## The ephemeral-dir contract
 
@@ -61,7 +66,7 @@ several ways. Doctor normalizes toward one canonical name per concept:
 |---|---|
 | `postmortem` | `post-mortem`, `post-mortems` |
 | `pre-mortem-checks` | `pre-mortem`, `pre-mortems`, `premortem-checks` |
-| `handoff` | `handoffs`, `mto-handoff` |
+| `ao/handoff` | `handoffs` |
 | `retro` | `retros` |
 | `proofs` | `proof` |
 | `tests` | `test` |
@@ -69,6 +74,10 @@ several ways. Doctor normalizes toward one canonical name per concept:
 This table is a projection of `workspaceCanonicalAliases` in
 `cli/internal/doctor/fix_workspace.go` — the Go table is the source of truth.
 If the two disagree, the Go table wins and this page is stale.
+
+`.agents/mto-handoff/` is not a handoff spelling alias. It is a distinct live
+recurrence protocol consumed at that exact path by
+`scripts/assay/consume-mto-recurrence.sh`; Doctor preserves it in place.
 
 ## How to clean up
 

@@ -99,7 +99,7 @@
 | `doc` | produces | `documentation` |
 | `domain` | produces | `stdout` |
 | `fitness` | produces | `goal-measurement-report` |
-| `handoff` | produces | `caller-selected handoff path or .agents/ao/handoff/*.md` |
+| `handoff` | produces | `caller-selected handoff path or .agents/ao/handoff/*` |
 | `idea-genie` | consumes | `repo-context` |
 | `idea-genie` | consumes | `task-question` |
 | `idea-genie` | consumes | `idea-portfolio.v1` |

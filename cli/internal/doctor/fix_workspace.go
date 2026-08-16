@@ -14,14 +14,17 @@ package doctor
 // remove.
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/fs"
 	"os"
 	"path/filepath"
 	"regexp"
 	"sort"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -148,17 +151,19 @@ func workspaceDirInventory(base string) ([]workspaceDirInfo, error) {
 }
 
 // workspaceCanonicalAliases maps drifted spellings of top-level `.agents`
-// directory names to their canonical names. The drift detector consumes this
-// table verbatim: a key present as a top-level directory is a drift finding
-// whose remediation is a merge/rename into the value directory.
+// directory names to their canonical paths relative to `.agents`. Most targets
+// remain top-level siblings. Handoff aliases land in `.agents/ao/handoff`;
+// `.agents/handoff` is retained only as a read-compatibility source and is
+// never a destination for Doctor repairs. `.agents/mto-handoff` is deliberately
+// absent: it is the live, distinct recurrence protocol consumed by
+// scripts/assay/consume-mto-recurrence.sh, not a spelling drift.
 var workspaceCanonicalAliases = map[string]string{
 	"post-mortem":      "postmortem",
 	"post-mortems":     "postmortem",
 	"pre-mortem":       "pre-mortem-checks",
 	"pre-mortems":      "pre-mortem-checks",
 	"premortem-checks": "pre-mortem-checks",
-	"handoffs":         "handoff",
-	"mto-handoff":      "handoff",
+	"handoffs":         filepath.Join("ao", "handoff"),
 	"retros":           "retro",
 	"proof":            "proofs",
 	"test":             "tests",
@@ -271,11 +276,16 @@ func workspaceDirRename(ctx *MutateContext, path, dest string, verify func(path 
 
 	// Step 2 — before-state: the source must exist and be a directory (never
 	// follow a symlink into pretending it is one).
-	info, err := os.Lstat(path)
+	root, pathRel, destRel, err := openWorkspaceMutationRoot(ctx.RepoRoot, path, dest)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = root.Close() }()
+	info, err := root.Lstat(pathRel)
 	if err != nil {
 		return fmt.Errorf("doctor: lstat %s: %w", path, err)
 	}
-	if !info.IsDir() {
+	if info.Mode()&os.ModeSymlink != 0 || !info.IsDir() {
 		return fmt.Errorf("doctor: rename-dir %s: not a directory (refused_unsafe)", path)
 	}
 	if verify != nil {
@@ -303,8 +313,32 @@ func workspaceDirRename(ctx *MutateContext, path, dest string, verify func(path 
 		fmt.Fprintf(os.Stderr, "[dry-run] would mutate %s: %s\n", path, DescribeOp(op))
 		return nil
 	}
-	if err := executeAtomic(path, op); err != nil {
+	if err := workspaceRootParentsReal(root, pathRel, destRel); err != nil {
+		return err
+	}
+	if parent := filepath.Dir(destRel); parent != "." {
+		if err := root.MkdirAll(parent, 0o755); err != nil {
+			return fmt.Errorf("doctor: mkdir %s: %w", filepath.Dir(dest), err)
+		}
+	}
+	if err := workspaceRootParentsReal(root, pathRel, destRel); err != nil {
+		return err
+	}
+	if err := root.Rename(pathRel, destRel); err != nil {
 		return fmt.Errorf("doctor: execute Rename on %s: %w", path, err)
+	}
+	if bindErr := workspaceRootParentsReal(root, pathRel, destRel); bindErr != nil {
+		if backErr := root.Rename(destRel, pathRel); backErr != nil {
+			return fmt.Errorf("doctor: %v; compensating rename-back failed: %v", bindErr, backErr)
+		}
+		return fmt.Errorf("doctor: %v (compensated)", bindErr)
+	}
+	moved, err := root.Lstat(destRel)
+	if err != nil || moved.Mode()&os.ModeSymlink != 0 || !moved.IsDir() || !os.SameFile(info, moved) {
+		if backErr := root.Rename(destRel, pathRel); backErr != nil {
+			return fmt.Errorf("doctor: renamed directory %s changed identity; compensating rename-back failed: %v", path, backErr)
+		}
+		return fmt.Errorf("doctor: renamed directory %s changed identity (compensated; refused_unsafe)", path)
 	}
 
 	// Step 7/8 — fsync'd action record.
@@ -340,7 +374,7 @@ func workspaceDirRename(ctx *MutateContext, path, dest string, verify func(path 
 			// rename. Compensate with a rename-back so disk state matches the
 			// (empty) journal, and report both the journal error and the
 			// compensation outcome.
-			if backErr := os.Rename(dest, path); backErr != nil {
+			if backErr := root.Rename(destRel, pathRel); backErr != nil {
 				return fmt.Errorf("doctor: journal Rename of %s: %w; compensating rename-back FAILED (%w) — directory left at %s and is NOT recorded in actions.jsonl", path, aerr, backErr, dest)
 			}
 			return fmt.Errorf("doctor: journal Rename of %s: %w (compensated: directory renamed back to its original path; no mutation recorded)", path, aerr)
@@ -426,16 +460,14 @@ func workspaceFileMoveNoClobber(ctx *MutateContext, path, dest string) (collided
 
 	// Step 2 — before-state: the source must be a regular file (never follow
 	// a symlink into pretending it is one).
-	info, lerr := os.Lstat(path)
+	root, pathRel, destRel, openErr := openWorkspaceMutationRoot(ctx.RepoRoot, path, dest)
+	if openErr != nil {
+		return false, openErr
+	}
+	defer func() { _ = root.Close() }()
+	info, beforeBytes, lerr := readWorkspaceRootRegular(root, pathRel)
 	if lerr != nil {
-		return false, fmt.Errorf("doctor: lstat %s: %w", path, lerr)
-	}
-	if !info.Mode().IsRegular() {
-		return false, fmt.Errorf("doctor: move %s: not a regular file (refused_unsafe)", path)
-	}
-	beforeBytes, rerr := os.ReadFile(path)
-	if rerr != nil {
-		return false, fmt.Errorf("doctor: read %s: %w", path, rerr)
+		return false, fmt.Errorf("doctor: read stable regular file %s: %w", path, lerr)
 	}
 	beforeHash := sha256Hex(beforeBytes)
 
@@ -457,11 +489,12 @@ func workspaceFileMoveNoClobber(ctx *MutateContext, path, dest string) (collided
 			rel = filepath.Base(path)
 		}
 		backup := filepath.Join(ctx.RunDir, "backups", rel)
-		if err := copyVerbatim(path, backup); err != nil {
+		if err := writeWorkspaceBackup(backup, beforeBytes, info); err != nil {
 			return false, fmt.Errorf("doctor: backup %s: %w", path, err)
 		}
-		if err := cmpStrict(path, backup); err != nil {
-			return false, err
+		backupBytes, err := os.ReadFile(backup)
+		if err != nil || !bytes.Equal(beforeBytes, backupBytes) {
+			return false, fmt.Errorf("backup verify failed (cmp-strict mismatch for %s)", path)
 		}
 	}
 
@@ -471,20 +504,40 @@ func workspaceFileMoveNoClobber(ctx *MutateContext, path, dest string) (collided
 		fmt.Fprintf(os.Stderr, "[dry-run] would mutate %s: %s\n", path, DescribeOp(op))
 		return false, nil
 	}
-	if err := os.MkdirAll(filepath.Dir(dest), 0o755); err != nil {
+	if err := workspaceRootParentsReal(root, pathRel, destRel); err != nil {
+		return false, err
+	}
+	if err := root.MkdirAll(filepath.Dir(destRel), 0o755); err != nil {
 		return false, fmt.Errorf("doctor: mkdir %s: %w", filepath.Dir(dest), err)
 	}
-	if err := os.Link(path, dest); err != nil {
+	if err := workspaceRootParentsReal(root, pathRel, destRel); err != nil {
+		return false, err
+	}
+	if err := root.Link(pathRel, destRel); err != nil {
 		if os.IsExist(err) {
 			return true, nil // destination appeared — collision, nothing moved
 		}
 		return false, fmt.Errorf("doctor: link %s -> %s: %w", path, dest, err)
 	}
-	if err := os.Remove(path); err != nil {
+	if bindErr := workspaceRootParentsReal(root, pathRel, destRel); bindErr != nil {
+		if unlinkErr := root.Remove(destRel); unlinkErr != nil {
+			return false, fmt.Errorf("doctor: %v; compensating removal failed: %v", bindErr, unlinkErr)
+		}
+		return false, fmt.Errorf("doctor: %v (compensated)", bindErr)
+	}
+	destInfo, destErr := root.Lstat(destRel)
+	sourceInfo, sourceErr := root.Lstat(pathRel)
+	if destErr != nil || sourceErr != nil || destInfo.Mode()&os.ModeSymlink != 0 || sourceInfo.Mode()&os.ModeSymlink != 0 || !destInfo.Mode().IsRegular() || !sourceInfo.Mode().IsRegular() || !os.SameFile(info, destInfo) || !os.SameFile(info, sourceInfo) {
+		if unlinkErr := root.Remove(destRel); unlinkErr != nil {
+			return false, fmt.Errorf("doctor: source or destination changed identity during move of %s; compensating removal failed: %v", path, unlinkErr)
+		}
+		return false, fmt.Errorf("doctor: source or destination changed identity during move of %s (compensated; refused_unsafe)", path)
+	}
+	if err := root.Remove(pathRel); err != nil {
 		// The link landed but the source could not be unlinked, leaving two
 		// paths to one inode. Compensate by removing the new link so the move
 		// stays all-or-nothing.
-		if unlinkErr := os.Remove(dest); unlinkErr != nil {
+		if unlinkErr := root.Remove(destRel); unlinkErr != nil {
 			return false, fmt.Errorf("doctor: remove source %s after link: %w; compensating removal of %s ALSO failed (%w) — file is hard-linked at both paths and NOT recorded in actions.jsonl", path, err, dest, unlinkErr)
 		}
 		return false, fmt.Errorf("doctor: remove source %s after link: %w (compensated: link at %s removed; nothing moved)", path, err, dest)
@@ -514,7 +567,7 @@ func workspaceFileMoveNoClobber(ctx *MutateContext, path, dest string) (collided
 		if !wrote {
 			// WRITE-stage failure: record definitely not persisted; move the
 			// file back so disk matches the (empty) journal.
-			if backErr := os.Rename(dest, path); backErr != nil {
+			if backErr := root.Rename(destRel, pathRel); backErr != nil {
 				return false, fmt.Errorf("doctor: journal Rename of %s: %w; compensating move-back FAILED (%w) — file left at %s and is NOT recorded in actions.jsonl", path, aerr, backErr, dest)
 			}
 			return false, fmt.Errorf("doctor: journal Rename of %s: %w (compensated: file moved back to its original path; no mutation recorded)", path, aerr)
@@ -524,6 +577,142 @@ func workspaceFileMoveNoClobber(ctx *MutateContext, path, dest string) (collided
 		return false, fmt.Errorf("doctor: journal Rename of %s: record written but not durably synced (%w) — move left in place at %s; actions.jsonl durability is uncertain until the next successful sync", path, aerr, dest)
 	}
 	return false, nil
+}
+
+// openWorkspaceMutationRoot anchors a two-path workspace mutation at the
+// repository directory descriptor. os.Root refuses any symlink traversal that
+// would escape that descriptor, including a parent swapped after preflight.
+func openWorkspaceMutationRoot(repoRoot, path, dest string) (*os.Root, string, string, error) {
+	root, err := os.OpenRoot(repoRoot)
+	if err != nil {
+		return nil, "", "", fmt.Errorf("doctor: open repository root: %w", err)
+	}
+	pathRel, err := workspaceMutationRelative(repoRoot, path)
+	if err != nil {
+		_ = root.Close()
+		return nil, "", "", err
+	}
+	destRel, err := workspaceMutationRelative(repoRoot, dest)
+	if err != nil {
+		_ = root.Close()
+		return nil, "", "", err
+	}
+	return root, pathRel, destRel, nil
+}
+
+func workspaceMutationRelative(repoRoot, path string) (string, error) {
+	absRoot, err := filepath.Abs(repoRoot)
+	if err != nil {
+		return "", err
+	}
+	absPath, err := filepath.Abs(path)
+	if err != nil {
+		return "", err
+	}
+	rel, err := filepath.Rel(absRoot, absPath)
+	if err != nil || rel == "." || rel == ".." || strings.HasPrefix(rel, ".."+string(filepath.Separator)) {
+		return "", fmt.Errorf("doctor: path %s is not a repository child (refused_unsafe)", path)
+	}
+	return rel, nil
+}
+
+// workspaceRootParentsReal rejects every existing parent component that is a
+// symlink or non-directory. It is called immediately around rooted mutations:
+// os.Root prevents escape from the repository, while this check also rejects
+// a race that redirects a path through a symlink to another in-repo tree.
+func workspaceRootParentsReal(root *os.Root, names ...string) error {
+	for _, name := range names {
+		parent := filepath.Dir(name)
+		if parent == "." {
+			continue
+		}
+		current := ""
+		for _, component := range strings.Split(parent, string(filepath.Separator)) {
+			if component == "" || component == "." {
+				continue
+			}
+			current = filepath.Join(current, component)
+			info, err := root.Lstat(current)
+			if err != nil {
+				if os.IsNotExist(err) {
+					break
+				}
+				return fmt.Errorf("doctor: inspect mutation parent %s: %w", current, err)
+			}
+			if info.Mode()&os.ModeSymlink != 0 || !info.IsDir() {
+				return fmt.Errorf("doctor: mutation parent %s is not a real directory (refused_unsafe)", current)
+			}
+		}
+	}
+	return nil
+}
+
+func readWorkspaceRootRegular(root *os.Root, name string) (os.FileInfo, []byte, error) {
+	before, err := root.Lstat(name)
+	if err != nil {
+		return nil, nil, err
+	}
+	if before.Mode()&os.ModeSymlink != 0 || !before.Mode().IsRegular() {
+		return nil, nil, fmt.Errorf("not a real regular file (refused_unsafe)")
+	}
+	file, err := root.Open(name)
+	if err != nil {
+		return nil, nil, err
+	}
+	defer func() { _ = file.Close() }()
+	opened, err := file.Stat()
+	if err != nil {
+		return nil, nil, err
+	}
+	afterOpen, err := root.Lstat(name)
+	if err != nil || afterOpen.Mode()&os.ModeSymlink != 0 || !afterOpen.Mode().IsRegular() || !os.SameFile(before, opened) || !os.SameFile(afterOpen, opened) {
+		return nil, nil, fmt.Errorf("changed identity while opening (refused_unsafe)")
+	}
+	first, err := io.ReadAll(file)
+	if err != nil {
+		return nil, nil, err
+	}
+	if _, err := file.Seek(0, io.SeekStart); err != nil {
+		return nil, nil, err
+	}
+	second, err := io.ReadAll(file)
+	if err != nil {
+		return nil, nil, err
+	}
+	openedAfter, err := file.Stat()
+	if err != nil {
+		return nil, nil, err
+	}
+	pathAfter, err := root.Lstat(name)
+	if err != nil || pathAfter.Mode()&os.ModeSymlink != 0 || !pathAfter.Mode().IsRegular() || !os.SameFile(opened, openedAfter) || !os.SameFile(pathAfter, openedAfter) || opened.Size() != openedAfter.Size() || !opened.ModTime().Equal(openedAfter.ModTime()) || !bytes.Equal(first, second) {
+		return nil, nil, fmt.Errorf("changed while reading (refused_unsafe)")
+	}
+	return openedAfter, first, nil
+}
+
+func writeWorkspaceBackup(path string, data []byte, info os.FileInfo) error {
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		return err
+	}
+	file, err := os.OpenFile(path, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0o600)
+	if err != nil {
+		return err
+	}
+	if _, err := file.Write(data); err != nil {
+		_ = file.Close()
+		return err
+	}
+	if err := file.Sync(); err != nil {
+		_ = file.Close()
+		return err
+	}
+	if err := file.Close(); err != nil {
+		return err
+	}
+	if err := os.Chmod(path, info.Mode()); err != nil {
+		return err
+	}
+	return os.Chtimes(path, info.ModTime(), info.ModTime())
 }
 
 // workspaceQuarantineDirByName validates name as a bare path element (a
