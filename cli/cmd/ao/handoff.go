@@ -163,7 +163,7 @@ func writeHandoffArtifact(cwd string, artifact *handoffArtifact, data []byte) (s
 	}
 	if err := verifyHandoffWriteRoot(cwd, root); err != nil {
 		if removeErr := root.Remove(targetName); removeErr != nil {
-			return "", fmt.Errorf("%w; cleanup published handoff: %v", err, removeErr)
+			return "", fmt.Errorf("%w; cleanup published handoff: %w", err, removeErr)
 		}
 		return "", err
 	}
