@@ -1,6 +1,6 @@
 ---
 name: handoff
-description: Write compact caller-authored session
+description: 'Write compact caller-authored session Triggers: "handoff", "write compact session handoff".'
 ---
 # Handoff
 

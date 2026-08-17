@@ -12,7 +12,8 @@
 
 ## SKILL.md Frontmatter
 
-Codex recognizes **only** these frontmatter fields:
+Every generated AgentOps Codex projection emits only the two fields Codex uses
+for discovery:
 
 ```yaml
 ---
@@ -21,8 +22,12 @@ description: 'Explain when this skill triggers and when it does not.'
 ---
 ```
 
-**Required:** `name`, `description`
-**Everything else is ignored.** Fields like `skill_api_version`, `context`, `metadata`, `allowed-tools`, `model`, `user-invocable`, and `output_contract` are AgentOps-internal and must be stripped from Codex output.
+The portable Agent Skills specification requires `name` and `description`
+and also permits `license`, `compatibility`, string-to-string `metadata`,
+and the experimental space-separated `allowed-tools` field. The AgentOps
+generator does not currently emit those optional fields. AgentOps-only fields
+such as `skill_api_version`, `context`, `model`, `user-invocable`, and
+`output_contract` must be stripped from Codex output.
 
 ---
 
@@ -78,7 +83,12 @@ are symlinks to this repository's canonical `skills/` tree.
 | System | Bundled with Codex | Built-in skills |
 
 Development symlinks may point directly at `skills/<name>/`; checked-in
-`skills-codex/` packages are the release projection. Plugin caches are neither
+`skills-codex/` packages are the portable Agent Skills release projection.
+Canonical `skills/` frontmatter is intentionally host-extended and is evaluated
+against the AgentOps profile, not mislabeled as portable. The release gate
+`scripts/validate-codex-api-conformance.sh` validates every projected package
+against the portable field, type, identity, body, and relative-resource-link
+contract before applying Codex-specific checks. Plugin caches are neither
 source nor an installation target and may be deleted without affecting the
 canonical repository skills.
 
@@ -91,7 +101,12 @@ canonical repository skills.
 | Explicit | `$skill-name` or `/skills` menu | User directly requests the skill |
 | Implicit | Automatic | Codex matches task to skill description |
 
-Skills are loaded via **progressive disclosure**: metadata first (name, description), full SKILL.md only when activated.
+Skills are loaded via **progressive disclosure**: metadata first (name,
+description), full SKILL.md only when activated. Because the description is
+the implicit-routing surface, a projection must preserve the source's complete
+`Triggers:` clause while keeping its introductory prose within the catalog
+budget; a generic summary or dropped trigger is a behavioral defect, even when
+the body remains byte-complete.
 
 ---
 
@@ -198,7 +213,9 @@ Skills referencing these primitives produce **broken instructions** in Codex.
 
 When generating Codex skills from source skills:
 
-1. **Strip all non-Codex frontmatter** — emit only `name` + `description`
+1. **Strip all non-Codex frontmatter** — emit only `name` + `description`,
+   compacting introductory prose while preserving the complete source
+   `Triggers:` clause as the activation catalog signal
 2. **Map Claude tools to Codex tools** — Read→read_file, Edit→apply_patch, Grep→rg, Glob→glob_file_search
 3. **Rewrite `Skill(skill="X")` to `$X`** — Codex uses dollar-prefix invocation
 4. **Strip ALL task/team primitives** — TaskCreate, TaskList, TeamCreate, SendMessage (none have working Codex equivalents as direct tool calls — `todo_write`/`update_plan` empirically unavailable, and `send_input` is follow-up-only)

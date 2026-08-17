@@ -1,6 +1,6 @@
 ---
 name: bootstrap
-description: Initialize explicitly requested, missing
+description: 'Initialize explicitly requested, missing Triggers: "bootstrap AgentOps", "initialize AgentOps docs".'
 ---
 # Bootstrap — minimal project setup
 

@@ -1,6 +1,6 @@
 ---
 name: skill-builder
-description: Create a metadata-complete AgentOps skill
+description: 'Create a metadata-complete AgentOps skill Triggers: "create a skill", "scaffold skill", "absorb external skill", "new skill", "heal skill", "repair skill hygiene", "audit skill structure", "check skill package".'
 ---
 # Skill Builder — Create, heal, and audit skill packages
 

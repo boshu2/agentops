@@ -119,6 +119,15 @@ fm_fields="$(awk 'NR==1&&/^---$/{f=1;next} f&&/^---$/{exit} f{print}' "$TWIN_DIR
 [[ -z "$fm_fields" ]] && pass "twin frontmatter is name+description only" \
   || fail "twin frontmatter has stray fields: $fm_fields"
 
+grep -q 'Triggers: "zzz codex sync accept probe"' "$TWIN_DIR/SKILL.md" 2>/dev/null \
+  && pass "twin catalog preserves the source activation trigger" \
+  || fail "twin catalog discarded or truncated the source activation trigger"
+
+generated_description="$(awk '/^description:/{print; exit}' "$TWIN_DIR/SKILL.md")"
+[[ "$generated_description" != *"acceptance test."* ]] \
+  && pass "twin catalog compacts prose before the trigger" \
+  || fail "twin catalog left pre-trigger prose above its target: $generated_description"
+
 # Registered in the gate-enforced 1:1 surface.
 if jq -e --arg n "$PROBE" '.skills[]|select(.name==$n)' "$OVERRIDES" >/dev/null; then
   pass "registered in skills-codex-overrides/catalog.json"

@@ -302,27 +302,36 @@ The CLI records startup once per thread and skips duplicates automatically."""
 
 
 def codex_catalog_description(name: str, source_description: str) -> str:
-    """Terse but skill-specific always-loaded Codex catalog text.
+    """Skill-specific Codex activation catalog text.
 
-    The full source description remains available in prompt.md; SKILL.md
-    frontmatter is loaded as an activation catalog, so keep enough routing
-    signal to choose the skill while staying under the average token budget.
+    The catalog description is the model's routing signal. Preserve the full
+    source ``Triggers:`` clause while compacting the prose before it to the
+    repository's 44-character per-entry target. Trigger aliases have their own
+    collision budget; the prose remains inside the always-loaded catalog
+    budget enforced by tests/skills/test-token-budgets.sh.
     """
     import re
 
-    desc = re.sub(r"\s+[Tt]riggers?:.*", "", source_description).strip()
-    desc = re.sub(r"\s+", " ", desc).strip(" '\"")
+    desc = re.sub(r"\s+", " ", source_description).strip(" '\"")
     if not desc:
         return f"Run {name}."
 
-    max_chars = 44
-    if len(desc) <= max_chars:
-        return desc
+    trigger_match = re.search(r"\s+[Tt]riggers?:", desc)
+    if trigger_match:
+        prose = desc[: trigger_match.start()].strip()
+        triggers = desc[trigger_match.start() :].strip()
+    else:
+        prose = desc
+        triggers = ""
 
-    shortened = desc[: max_chars + 1].rsplit(" ", 1)[0].strip(" ,;:-")
-    if len(shortened) < 18:
-        shortened = desc[:max_chars].rstrip(" ,;:-")
-    return shortened
+    max_chars = 44
+    if len(prose) > max_chars:
+        shortened = prose[: max_chars + 1].rsplit(" ", 1)[0].strip(" ,;:-")
+        if len(shortened) < 18:
+            shortened = prose[:max_chars].rstrip(" ,;:-")
+        prose = shortened
+
+    return " ".join(part for part in (prose, triggers) if part)
 
 
 def twin_skill_md(

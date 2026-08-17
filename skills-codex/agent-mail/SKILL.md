@@ -1,6 +1,6 @@
 ---
 name: agent-mail
-description: Use Agent Mail as an optional messaging and
+description: 'Use Agent Mail as an optional messaging and Triggers: "coordinate writers", "reserve files".'
 ---
 # Agent Mail — optional coordination adapter
 
