@@ -21,3 +21,19 @@ Feature: Test generates real, passing tests and coverage
   Scenario: coverage analyzes and fills gaps
     When /test coverage runs
     Then it analyzes coverage gaps and fills them, writing a coverage report to .agents/scratch/tests/
+
+  Scenario: an unapproved test process never starts
+    Given a command is missing caller or repository-test authorization
+    When Test considers running the command
+    Then Test stops before spawning it
+
+  Scenario: a hung test process fails closed
+    Given an authorized test command
+    When an authorized command exceeds its deadline or output cap
+    Then Test reaps the complete process group and records explicit failure
+
+  Scenario: mutation-kill evidence is disposable
+    Given a test needs a deliberate product mutation to prove its oracle
+    When the mutation-kill experiment runs
+    Then it runs only in a digest-matching disposable copy
+    And cleanup or restoration failure leaves the primary tree unchanged and blocks handoff

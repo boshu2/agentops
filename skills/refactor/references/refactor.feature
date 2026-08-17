@@ -30,3 +30,13 @@ Feature: Refactor executes one behavior-preserving transformation and reports ev
     When more than one candidate seam exists for the transformation
     Then refactor probes at most two seams in disposable isolation and keeps only the knowledge
     And it reports both findings to the caller rather than trying a third
+
+  Scenario: an arbitrary check cannot inherit authority
+    Given a check is missing caller or intent authorization
+    When refactor considers running the check
+    Then refactor stops before spawning it
+
+  Scenario: a failed disposable check cannot leak mutation
+    Given an authorized check runs in disposable isolation
+    When an authorized disposable check hangs, overflows output, or mutates despite read-only classification
+    Then its whole process group is reaped and the primary-tree digest stays unchanged

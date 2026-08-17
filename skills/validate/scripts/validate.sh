@@ -9,6 +9,10 @@ grep -Fq 'PASS`, `FAIL`, or `NOT_PROVEN`' "$skill_dir/SKILL.md"
 grep -Fq 'sole `verdict.v2` writer when persistence is requested' "$skill_dir/SKILL.md"
 grep -Fq 'Only when the caller requests machine-readable evidence' "$skill_dir/SKILL.md"
 grep -Fq 'nonempty implementation candidate' "$skill_dir/SKILL.md"
+grep -Fq 'Authorization is an input' "$skill_dir/SKILL.md"
+grep -Fq 'Every process is finite' "$skill_dir/SKILL.md"
+grep -Fq 'Checks run in disposable containment' "$skill_dir/SKILL.md"
+grep -Fq 'run-check' "$skill_dir/SKILL.md"
 
 python3 "$skill_dir/scripts/validate.py" --help >/dev/null
 python3 - "$repo_root" <<'PY'

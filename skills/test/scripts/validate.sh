@@ -17,6 +17,10 @@ grep -q '^## Mutation-kill proof$' "$SKILL"
 grep -q '^## Harness health floors$' "$SKILL"
 grep -q '^## Workflow$' "$SKILL"
 grep -q '^## Output Specification$' "$SKILL"
+grep -Fq 'commands are effects' "$SKILL"
+grep -Fq 'terminates and reaps the complete process group' "$SKILL"
+grep -Fq 'digest-matching disposable copy' "$SKILL"
+grep -Fq 'verified teardown' "$SKILL"
 
 # The mode table must enumerate the four real modes.
 for mode in generate coverage tdd strategy; do

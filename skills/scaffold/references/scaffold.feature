@@ -24,3 +24,9 @@ Feature: Scaffold generates project, component, and CI structure
     Given the requested target contains an existing file
     When scaffolding runs without explicit overwrite authorization
     Then the existing file is not replaced
+
+  Scenario: Verification failure cannot partially publish a scaffold
+    Given generation and commands run in a disposable staging root
+    When a check hangs, a forbidden target appears, or restoration verification fails
+    Then the process group is reaped and the operation reports failure
+    And the primary target retains its pre-run digest
