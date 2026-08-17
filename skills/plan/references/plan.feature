@@ -10,3 +10,10 @@ Feature: Plan refines the existing intent source
   Scenario: Advisory decomposition does not create control artifacts
     Given an intent has advisory decomposition
     Then it contains no owner, ready, claim, priority, attempt, wave, queue, lease, admission, next action, closure, release, or delivery state
+
+  @covered-by:skills/plan/scripts/validate.sh::test_control_bounds
+  Scenario: A stock control cannot mutate the planning workspace
+    Given an integration plan needs a vendor quickstart
+    When the exact caller-authorized command runs
+    Then it has finite process and output bounds in disposable isolation
+    And a timeout, forbidden endpoint, or cleanup failure stops without changing the planning workspace

@@ -6,21 +6,26 @@
   "properties": {
     "topic": {
       "type": "string",
+      "minLength": 1,
+      "maxLength": 4096,
       "description": "Research topic or question"
     },
     "summary": {
       "type": "string",
+      "minLength": 1,
+      "maxLength": 16384,
       "description": "Executive summary of findings"
     },
     "findings": {
       "type": "array",
+      "maxItems": 100,
       "items": {
         "type": "object",
         "properties": {
-          "area": {"type": "string", "description": "Code area or component examined"},
-          "observation": {"type": "string", "description": "What was found"},
-          "evidence": {"type": "string", "description": "File paths, code snippets, or references"},
-          "implications": {"type": ["string", "null"], "description": "Impact or significance of finding"}
+          "area": {"type": "string", "minLength": 1, "maxLength": 1024, "description": "Code area or component examined"},
+          "observation": {"type": "string", "minLength": 1, "maxLength": 8192, "description": "What was found"},
+          "evidence": {"type": "string", "minLength": 1, "maxLength": 4096, "description": "File paths, code snippets, or references"},
+          "implications": {"type": ["string", "null"], "maxLength": 4096, "description": "Impact or significance of finding"}
         },
         "required": ["area", "observation", "evidence"],
         "additionalProperties": false
@@ -28,15 +33,16 @@
     },
     "source_ledger": {
       "type": "array",
+      "maxItems": 20,
       "description": "Preserved identities for caller-supplied reports used in a multi-report synthesis",
       "items": {
         "type": "object",
         "properties": {
-          "label": {"type": "string", "description": "Short local label used by comparison entries"},
-          "identity": {"type": "string", "description": "Original path or caller-supplied report identifier"},
-          "title": {"type": ["string", "null"]},
-          "author_runtime": {"type": ["string", "null"]},
-          "revision_or_date": {"type": ["string", "null"]}
+          "label": {"type": "string", "minLength": 1, "maxLength": 128, "description": "Short local label used by comparison entries"},
+          "identity": {"type": "string", "minLength": 1, "maxLength": 1024, "description": "Original path or caller-supplied report identifier"},
+          "title": {"type": ["string", "null"], "maxLength": 1024},
+          "author_runtime": {"type": ["string", "null"], "maxLength": 256},
+          "revision_or_date": {"type": ["string", "null"], "maxLength": 256}
         },
         "required": ["label", "identity"],
         "additionalProperties": false
@@ -55,13 +61,57 @@
     },
     "checked": {
       "type": "array",
-      "items": {"type": "string"},
+      "maxItems": 200,
+      "items": {"type": "string", "minLength": 1, "maxLength": 1024},
       "description": "Surfaces and claims examined"
     },
     "not_checked": {
       "type": "array",
-      "items": {"type": "string"},
+      "maxItems": 200,
+      "items": {"type": "string", "minLength": 1, "maxLength": 1024},
       "description": "Relevant surfaces and claims left unexamined"
+    },
+    "effects": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["local_paths_read", "network", "writes", "sensitive_data", "sensitive_output_approval_id"],
+      "properties": {
+        "local_paths_read": {
+          "type": "array",
+          "maxItems": 200,
+          "items": {"type": "string", "minLength": 1, "maxLength": 1024}
+        },
+        "network": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["authorization_id", "domains", "methods", "request_count", "bytes_fetched", "credentials_used"],
+          "properties": {
+            "authorization_id": {"type": ["string", "null"], "minLength": 1, "maxLength": 256},
+            "domains": {"type": "array", "maxItems": 10, "uniqueItems": true, "items": {"type": "string", "minLength": 1, "maxLength": 253}},
+            "methods": {"type": "array", "maxItems": 2, "uniqueItems": true, "items": {"enum": ["GET", "HEAD"]}},
+            "request_count": {"type": "integer", "minimum": 0, "maximum": 20},
+            "bytes_fetched": {"type": "integer", "minimum": 0, "maximum": 2097152},
+            "credentials_used": {"type": "array", "maxItems": 5, "uniqueItems": true, "items": {"type": "string", "minLength": 1, "maxLength": 128}}
+          },
+          "allOf": [
+            {
+              "if": {"properties": {"request_count": {"minimum": 1}}},
+              "then": {"properties": {"authorization_id": {"type": "string"}, "domains": {"minItems": 1}, "methods": {"minItems": 1}}},
+              "else": {"properties": {"authorization_id": {"type": "null"}, "domains": {"maxItems": 0}, "methods": {"maxItems": 0}, "bytes_fetched": {"maximum": 0}, "credentials_used": {"maxItems": 0}}}
+            }
+          ]
+        },
+        "writes": {"type": "array", "maxItems": 1, "items": {"type": "string", "minLength": 1, "maxLength": 1024}},
+        "sensitive_data": {"enum": ["none", "redacted", "approved"]},
+        "sensitive_output_approval_id": {"type": ["string", "null"], "minLength": 1, "maxLength": 256}
+      },
+      "allOf": [
+        {
+          "if": {"properties": {"sensitive_data": {"const": "approved"}}},
+          "then": {"properties": {"sensitive_output_approval_id": {"type": "string"}}},
+          "else": {"properties": {"sensitive_output_approval_id": {"type": "null"}}}
+        }
+      ]
     },
     "schema_version": {
       "type": "integer",
@@ -72,18 +122,21 @@
   "definitions": {
     "comparisonEntries": {
       "type": "array",
+      "maxItems": 100,
       "items": {
         "type": "object",
         "properties": {
-          "claim": {"type": "string"},
+          "claim": {"type": "string", "minLength": 1, "maxLength": 4096},
           "source_labels": {
             "type": "array",
-            "items": {"type": "string"},
+            "maxItems": 20,
+            "items": {"type": "string", "minLength": 1, "maxLength": 128},
             "description": "Labels from source_ledger; may be empty for a genuine unknown"
           },
           "evidence": {
             "type": "array",
-            "items": {"type": "string"}
+            "maxItems": 20,
+            "items": {"type": "string", "minLength": 1, "maxLength": 1024}
           }
         },
         "required": ["claim", "source_labels", "evidence"],
@@ -91,6 +144,6 @@
       }
     }
   },
-  "required": ["topic", "summary", "findings", "checked", "not_checked", "schema_version"],
+  "required": ["topic", "summary", "findings", "checked", "not_checked", "effects", "schema_version"],
   "additionalProperties": false
 }

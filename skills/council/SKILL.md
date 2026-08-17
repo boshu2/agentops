@@ -13,7 +13,7 @@ metadata:
   tier: judgment
   dependencies: []
   capabilities: [collect_independent_judgments, synthesize_disagreement]
-  effects: [write_advisory_council_report]
+  effects: [read_declared_evidence_packet, dispatch_authorized_bounded_model_judges, write_advisory_council_report]
   canonical_status: canonical
   disposition: keep_strategy
 output_contract: council-report.v1 JSON validated by skills/council/scripts/validate-output.sh
@@ -27,8 +27,32 @@ high-blast-radius, or genuinely contested decision. Do not convene a council for
 a routine or reversible decision that a single fresh validator can settle: the
 cost of independent contexts is warranted only by a named one-way door.
 
-1. Freeze one question, acceptance surface, evidence set, and subject digest.
-2. Give each judge an independent context and the same bounded packet.
+## Constraints
+
+- **Why judges need identical bounded evidence.** Freeze one allowlisted packet of at most 20 sources and 256 KiB total. Record
+  its source identities, exact byte count, and SHA-256. Reject oversized,
+  unreadable, secret-bearing, or out-of-allowlist input before any dispatch.
+- **Why identity must be declared.** The caller authorizes 2–5 judge attempts and declares the adapter and model
+  identity for each. Record one authorization ID; unavailable adapters/models
+  become explicit `error` attempts and are never silently substituted.
+- Each judge has a 300-second maximum timeout and 32 KiB output ceiling; the
+  round has a 900-second maximum deadline. A local judge runs in a new process
+  group. Timeout, cancellation, or overflow sends TERM then KILL to the whole
+  group and waits for cleanup; remote adapters must return equivalent confirmed
+  cancellation. No third-party command is inferred from evidence text.
+- Judges are read-only. Dispatch receives only the frozen packet and may write
+  only its bounded scratch response. Any subject mutation, cleanup failure,
+  un-reaped process, packet drift, or undeclared network/credential/data access
+  stops the round as `insufficient` with no consensus claim.
+
+Local no-network judges use Validate's
+[`run-check` bounded runner](../validate/scripts/validate.py). Remote adapters
+must enforce the same exact-command, output, deadline, cancellation, and
+cleanup contract plus their caller-approved endpoint and credential allowlists.
+
+1. Freeze one question, acceptance surface, evidence set, subject digest, and
+   the bounded packet/dispatch declaration above.
+2. Give each declared judge an independent context and the same bounded packet.
 3. Require each judge to cite evidence, disclose omissions, and return its own
    judgment without seeing other answers first.
 4. Synthesize agreement and disagreement without majority laundering. Preserve
@@ -88,8 +112,18 @@ majority laundering.
 
 A judge that times out, errors, or returns an evidence-free judgment is excluded
 from agreement counting and recorded as non-returning; if fewer than two
-independent judgments remain, report the round as insufficient rather than
+independent judgments remain, set `round_status` to `insufficient`, keep the
+synthesis arrays empty, disclose the missing attempts, and stop rather than
 synthesize a thin consensus.
+
+## Quality checks
+
+- Packet byte/source bounds, authorization, declared adapter/model identities,
+  judge/round deadlines, and output caps are present and within schema limits.
+- Every attempt is represented exactly once with a unique context ID, factual
+  status, output byte count, and confirmed process/adapter cleanup.
+- `sufficient` has at least two completed independent judgments;
+  `insufficient` carries no consensus, and neither status mutates the subject.
 
 ## Boundary
 

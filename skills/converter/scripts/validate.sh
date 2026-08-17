@@ -1,81 +1,105 @@
 #!/usr/bin/env bash
-# Behavioral self-test for the converter. Replaces the prior vacuous check
-# ("SKILL.md exists" only, which passed while the pipeline could delete its own
-# source) with real proofs (CV-2):
-#   1. a happy-path conversion writes the expected target + passthrough files;
-#   2. the destructive clean-write path is CLOSED in BOTH directions — an output
-#      dir equal to, an ancestor of, a descendant of, or a symlink into the
-#      source package is refused; and an output that is or contains the repo
-#      root is refused (CV-1). Each refusal is proven to happen BEFORE any
-#      deletion: the source content digest is unchanged AND the exit is nonzero.
+# Behavioral contract: authorized conversion succeeds atomically; caller-owned,
+# escaped, symlinked, and oversized surfaces fail before mutation.
 set -euo pipefail
 
 SKILL_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 CONVERT="$SKILL_DIR/scripts/convert.sh"
-REPO_ROOT="$(cd "$SKILL_DIR/../.." && pwd -P)"
 FAIL=0
 pass() { printf 'PASS: %s\n' "$1"; }
-fail() { printf 'FAIL: %s\n' "$1"; FAIL=$((FAIL + 1)); }
+fail() { printf 'FAIL: %s\n' "$1" >&2; FAIL=$((FAIL + 1)); }
 
-# Content + structure digest of a directory tree (path-relative, order-stable).
-dir_digest() {
-  ( cd "$1" && find . -type f -exec shasum -a 256 {} + | LC_ALL=C sort ) \
-    | shasum -a 256 | awk '{print $1}'
-}
-
-# assert_refused DESC OUTPUT — the conversion must exit nonzero AND leave the
-# source content digest unchanged (refusal before any deletion).
-assert_refused() {
-  local desc="$1" out="$2"
-  if bash "$CONVERT" "$FIX" codex "$out" >/dev/null 2>&1; then
-    fail "$desc: expected refusal, got success"
-    return
-  fi
-  if [[ "$(dir_digest "$FIX")" == "$SRC_DIGEST" ]]; then
-    pass "$desc: refused before any deletion; source content intact"
-  else
-    fail "$desc: source content changed — refusal came too late"
-  fi
-}
-
-if [[ -f "$SKILL_DIR/SKILL.md" ]]; then pass "SKILL.md exists"; else fail "SKILL.md exists"; fi
-if [[ -f "$CONVERT" ]]; then pass "convert.sh exists"; else fail "convert.sh exists"; fi
-
-# Disposable fixture, left in place on exit (no rm -rf): the guard under test
-# must never be handed a destructive cleanup to imitate.
 WORK="$(mktemp -d "${TMPDIR:-/tmp}/converter-selftest.XXXXXX")"
+trap 'rm -rf -- "$WORK"' EXIT
 FIX="$WORK/fixture-skill"
 mkdir -p "$FIX/references" "$FIX/scripts"
 printf -- '---\nname: fixture-skill\ndescription: converter self-test fixture\n---\n# Body\n' > "$FIX/SKILL.md"
 printf 'reference payload\n' > "$FIX/references/note.md"
 printf 'echo fixture\n' > "$FIX/scripts/tool.sh"
+
+dir_digest() {
+  ( cd "$1" && find . -type f -exec shasum -a 256 {} + | LC_ALL=C sort ) \
+    | shasum -a 256 | awk '{print $1}'
+}
 SRC_DIGEST="$(dir_digest "$FIX")"
 
-# 1. Happy path: a distinct output dir converts, writes the target files, and
-# does not touch the source.
-out="$WORK/out"
-if bash "$CONVERT" "$FIX" codex "$out" >/dev/null 2>&1 \
-  && [[ -f "$out/SKILL.md" && -f "$out/prompt.md" && -f "$out/references/note.md" && -f "$out/scripts/tool.sh" ]] \
-  && [[ "$(dir_digest "$FIX")" == "$SRC_DIGEST" ]]; then
-  pass "happy-path conversion writes target + passthrough files; source intact"
+assert_refused_unchanged() {
+  local desc="$1" output="$2" before after rc
+  before="$(dir_digest "$FIX")"
+  set +e
+  bash "$CONVERT" --output-root "$WORK" "$FIX" codex "$output" >"$WORK/command.log" 2>&1
+  rc=$?
+  set -e
+  after="$(dir_digest "$FIX")"
+  if [[ "$rc" -ne 0 && "$before" == "$after" ]]; then
+    pass "$desc"
+  else
+    sed -n '1,120p' "$WORK/command.log" >&2
+    fail "$desc"
+  fi
+}
+
+if bash "$CONVERT" --output-root "$WORK" "$FIX" codex out \
+  && [[ -f "$WORK/out/SKILL.md" && -f "$WORK/out/prompt.md" \
+     && -f "$WORK/out/references/note.md" && -f "$WORK/out/scripts/tool.sh" \
+     && -f "$WORK/out/.agentops-converter-owned-v1" \
+     && "$(dir_digest "$FIX")" == "$SRC_DIGEST" ]]; then
+  pass "authorized output writes converted and passthrough files without source mutation"
 else
-  fail "happy-path conversion writes target + passthrough files; source intact"
+  fail "authorized output writes converted and passthrough files without source mutation"
 fi
 
-# 2. Bidirectional + repo containment refusals.
-assert_refused "output == source"                 "$FIX"
-assert_refused "output is an ancestor of source"  "$WORK"
-assert_refused "output is a descendant of source" "$FIX/references"
-assert_refused "output is an ancestor of the repo root" "$(dirname "$REPO_ROOT")"
+# A marked converter output may be atomically refreshed.
+printf 'stale\n' > "$WORK/out/stale.txt"
+if bash "$CONVERT" --output-root "$WORK" "$FIX" codex out \
+  && [[ ! -e "$WORK/out/stale.txt" && -f "$WORK/out/SKILL.md" ]]; then
+  pass "converter-owned output refreshes atomically"
+else
+  fail "converter-owned output refreshes atomically"
+fi
 
-# Symlink resolving into the source must be canonicalized and refused.
-ln -s "$FIX/references" "$WORK/link-into-src"
-assert_refused "output is a symlink into the source" "$WORK/link-into-src"
+# Baseline defect: clean-write deleted arbitrary caller output. Candidate keeps
+# a near-identical unmarked directory byte-for-byte unchanged.
+mkdir "$WORK/caller-output"
+printf 'do not delete\n' > "$WORK/caller-output/sentinel"
+victim_before="$(dir_digest "$WORK/caller-output")"
+assert_refused_unchanged "caller-owned output is refused" caller-output
+[[ "$(dir_digest "$WORK/caller-output")" == "$victim_before" ]] \
+  && pass "caller-owned sentinel survives refusal" \
+  || fail "caller-owned sentinel survives refusal"
 
-echo ""
+assert_refused_unchanged "output equal to source is refused" fixture-skill
+assert_refused_unchanged "out-of-root traversal is refused" ../escape
+assert_refused_unchanged "absolute output is refused" "$WORK/absolute"
+
+# Source links were previously dereferenced by rsync --copy-links.
+printf 'external secret\n' > "$WORK/external-secret"
+ln -s "$WORK/external-secret" "$FIX/references/linked-secret"
+assert_refused_unchanged "source symlink is refused before copying" linked-out
+[[ ! -e "$WORK/linked-out" ]] \
+  && pass "symlink target was not copied" \
+  || fail "symlink target was not copied"
+rm "$FIX/references/linked-secret"
+
+# A symlink output itself must never be followed or replaced.
+mkdir "$WORK/external-dir"
+printf 'outside\n' > "$WORK/external-dir/sentinel"
+ln -s "$WORK/external-dir" "$WORK/output-link"
+assert_refused_unchanged "symlink output is refused" output-link
+[[ "$(<"$WORK/external-dir/sentinel")" == "outside" ]] \
+  && pass "symlink destination remains unchanged" \
+  || fail "symlink destination remains unchanged"
+
+# Finite source bounds fail closed without creating the output.
+truncate -s $((16 * 1024 * 1024 + 1)) "$FIX/oversized.bin"
+assert_refused_unchanged "oversized source file is refused" oversized-out
+[[ ! -e "$WORK/oversized-out" ]] \
+  && pass "oversized source produced no output" \
+  || fail "oversized source produced no output"
+
 if [[ "$FAIL" -eq 0 ]]; then
-  echo "converter self-test: PASS"
+  echo "converter behavioral matrix: PASS"
   exit 0
 fi
-echo "converter self-test: FAIL ($FAIL failed)" >&2
+echo "converter behavioral matrix: FAIL ($FAIL failed)" >&2
 exit 1

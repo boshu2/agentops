@@ -1,140 +1,111 @@
 #!/usr/bin/env bash
-# recover.sh — autonomous cass recovery, no user prompt required
-#
-# Decision tree:
-#   1) If healthy: exit 0
-#   2) If stale-but-usable: refresh in background, exit 0
-#   3) If broken: doctor --fix, then verify
-#   4) If still broken after fix: print actionable diagnostic and exit 1
-#
-# Used by: PreToolUse hooks before cass search; cron pre-flight; agent loops.
-#
-# Safe by default. Never touches source session files.
-
+# Bounded CASS recovery. No detached work and no retained raw command logs.
 set -uo pipefail
-# NOT -e: a non-zero exit from cass/jq is informational, not fatal — we want
-# to fall through to the next recovery step rather than abort silently.
 
-# Unique log files so concurrent agents don't clobber each other.
-REFRESH_LOG=$(mktemp /tmp/cass-refresh.XXXXXX) || { echo "BROKEN: could not create refresh log" >&2; exit 2; }
-REBUILD_LOG=$(mktemp /tmp/cass-rebuild.XXXXXX) || { echo "BROKEN: could not create rebuild log" >&2; exit 2; }
+STATUS_TIMEOUT="${CASS_STATUS_TIMEOUT:-15}"
+REFRESH_TIMEOUT="${CASS_REFRESH_TIMEOUT:-60}"
+REBUILD_TIMEOUT="${CASS_REBUILD_TIMEOUT:-600}"
+for spec in "STATUS_TIMEOUT:1:60" "REFRESH_TIMEOUT:1:120" "REBUILD_TIMEOUT:1:900"; do
+  name="${spec%%:*}"; remainder="${spec#*:}"; low="${remainder%%:*}"; high="${remainder##*:}"
+  value="${!name}"
+  [[ "$value" =~ ^[0-9]+$ && "$value" -ge "$low" && "$value" -le "$high" ]] || {
+    echo "BROKEN: $name must be an integer in [$low,$high]" >&2
+    exit 2
+  }
+done
 
-# Wall-clock caps. cass index has been observed to hang (see issue #196 and
-# the limit-0 freeze); without these the script itself becomes the symptom.
-STATUS_TIMEOUT="${CASS_STATUS_TIMEOUT:-15}"          # status / doctor / diag
-REBUILD_TIMEOUT="${CASS_REBUILD_TIMEOUT:-900}"       # 15 min — covers ~1M-msg corpora
+TIMEOUT_BIN=""
+for candidate in timeout gtimeout; do
+  if command -v "$candidate" >/dev/null 2>&1; then TIMEOUT_BIN="$(command -v "$candidate")"; break; fi
+done
+[[ -n "$TIMEOUT_BIN" ]] || { echo "BROKEN: timeout or gtimeout is required" >&2; exit 2; }
+command -v cass >/dev/null 2>&1 || { echo "BROKEN: cass binary not on PATH" >&2; exit 2; }
+command -v jq >/dev/null 2>&1 || { echo "BROKEN: jq binary not on PATH" >&2; exit 2; }
 
-# Run cass binary check up front; if missing, fail loudly with a useful message.
-if ! command -v cass >/dev/null 2>&1; then
-  echo "BROKEN: cass binary not on PATH" >&2
-  exit 2
-fi
-if ! command -v timeout >/dev/null 2>&1; then
-  echo "BROKEN: GNU 'timeout' not on PATH (install coreutils; on macOS: brew install coreutils + use gtimeout)" >&2
-  exit 2
-fi
-if ! command -v jq >/dev/null 2>&1; then
-  echo "BROKEN: 'jq' not on PATH" >&2
-  exit 2
-fi
+run_timed() {
+  local seconds="$1"; shift
+  "$TIMEOUT_BIN" --signal=TERM --kill-after=2s "$seconds" "$@"
+}
 
 cass_state() {
-  # Always emits 5 tab-separated values, even when cass times out or returns garbage.
   local out
-  out=$(timeout "$STATUS_TIMEOUT" cass status --json 2>/dev/null) || out=""
-  if [ -z "$out" ]; then
+  out=$(run_timed "$STATUS_TIMEOUT" cass status --json 2>/dev/null | head -c 1048577) || out=""
+  if [[ -z "$out" || ${#out} -gt 1048576 ]]; then
     printf 'false\tfalse\t0\t0\t\n'
     return
   fi
-  printf '%s' "$out" \
-    | jq -r '[
-        (.index.fresh // false),
-        (.database.exists // false),
-        (.index.documents // 0),
-        (.database.messages // 0),
-        (.recommended_action // "")
-      ] | @tsv' 2>/dev/null \
-    || printf 'false\tfalse\t0\t0\t\n'
+  printf '%s' "$out" | jq -r '[
+      (.index.fresh // false), (.database.exists // false),
+      (.index.documents // 0), (.database.messages // 0),
+      (.recommended_action // "")
+    ] | @tsv' 2>/dev/null || printf 'false\tfalse\t0\t0\t\n'
 }
 
-# Read state once. Use || true so an empty stream doesn't trip downstream.
-state_line=$(cass_state)
-IFS=$'\t' read -r FRESH DB_EXISTS DOCS MSGS REC <<< "$state_line" || true
-FRESH=${FRESH:-false}
-DB_EXISTS=${DB_EXISTS:-false}
-DOCS=${DOCS:-0}
-MSGS=${MSGS:-0}
+read_state() {
+  local state_line
+  state_line="$(cass_state)"
+  IFS=$'\t' read -r FRESH DB_EXISTS DOCS MSGS REC <<< "$state_line" || true
+  FRESH="${FRESH:-false}"; DB_EXISTS="${DB_EXISTS:-false}"
+  DOCS="${DOCS:-0}"; MSGS="${MSGS:-0}"; REC="${REC:-}"
+}
 
-case "$FRESH:$DB_EXISTS" in
-  true:*)
-    echo "READY: index fresh" >&2
-    exit 0
-    ;;
-  false:true)
-    if [ "$DOCS" != "0" ] && [ "$MSGS" != "0" ]; then
-      echo "STALE_BUT_USABLE: refreshing in background (log: $REFRESH_LOG, hint: ${REC:-none})" >&2
-      # Detached refresh that can't hang forever. Use setsid when available
-      # (Linux/util-linux); on macOS without coreutils-setsid the inner
-      # subshell + nohup-equivalent (`</dev/null` + `&` + parent exit) still
-      # orphans the child to init and survives our exit.
-      if command -v setsid >/dev/null 2>&1; then
-        ( setsid timeout "$REBUILD_TIMEOUT" cass index --json >"$REFRESH_LOG" 2>&1 </dev/null & ) 2>/dev/null
-      else
-        ( trap '' HUP; timeout "$REBUILD_TIMEOUT" cass index --json >"$REFRESH_LOG" 2>&1 </dev/null & ) 2>/dev/null
-      fi
-      exit 0
-    fi
-    ;;
-esac
-
-# Got here = broken or empty index with non-empty DB
-echo "RECOVERING: doctor --fix --json" >&2
-# Doctor exits 0 even when checks fail — never abort on its exit code.
-# Cap wall time to avoid hanging on a degraded DB.
-doctor_json=$(timeout "$REBUILD_TIMEOUT" cass doctor --fix --json 2>/dev/null || true)
-if [ -n "$doctor_json" ]; then
-  printf '%s' "$doctor_json" \
-    | jq -c '{healthy, status, fixed: .auto_fix_actions, issues_found, issues_fixed,
-              failures: [.checks[]? | select(.status=="fail") | .name]}' >&2 \
-    || echo '{"warning":"doctor output not parseable as JSON"}' >&2
-else
-  echo '{"warning":"doctor produced no output"}' >&2
-fi
-
-# Verify
-state_line=$(cass_state)
-IFS=$'\t' read -r FRESH DB_EXISTS DOCS MSGS REC <<< "$state_line" || true
-
-if [ "${DB_EXISTS:-false}" = "true" ] && [ "${DOCS:-0}" != "0" ]; then
-  echo "RECOVERED: doctor succeeded" >&2
+read_state
+if [[ "$FRESH" == true ]]; then
+  echo "READY: index fresh" >&2
   exit 0
 fi
 
-# Last resort: full force rebuild (workaround for OPEN issue #196).
-# `timeout` here is critical — `cass index --full` has been observed to hang
-# indefinitely under contention. Treat exit 124 (timeout) as a definite failure.
-echo "ESCALATING: cass index --full --force-rebuild --json (log: $REBUILD_LOG, cap: ${REBUILD_TIMEOUT}s)" >&2
-timeout "$REBUILD_TIMEOUT" cass index --full --force-rebuild --json >"$REBUILD_LOG" 2>&1
+if [[ "$DB_EXISTS" == true && "$DOCS" != 0 && "$MSGS" != 0 ]]; then
+  echo "STALE_BUT_USABLE: running one bounded incremental refresh (${REFRESH_TIMEOUT}s cap)" >&2
+  if run_timed "$REFRESH_TIMEOUT" cass index --json >/dev/null 2>&1; then
+    echo "REFRESHED: bounded incremental index completed" >&2
+  else
+    echo "STALE_BUT_USABLE: refresh failed or timed out; existing index remains queryable" >&2
+  fi
+  exit 0
+fi
+
+echo "RECOVERING: bounded doctor --fix" >&2
+doctor_json=$(run_timed "$REBUILD_TIMEOUT" cass doctor --fix --json 2>/dev/null | head -c 1048577) || doctor_json=""
+if [[ -n "$doctor_json" && ${#doctor_json} -le 1048576 ]]; then
+  printf '%s' "$doctor_json" | jq -c '{
+    healthy: (.healthy // false), status: (.status // "unknown"),
+    issues_found: (.issues_found // 0), issues_fixed: (.issues_fixed // 0),
+    failed_check_count: ([.checks[]? | select(.status=="fail")] | length)
+  }' >&2 || echo '{"warning":"doctor output was not valid bounded JSON"}' >&2
+else
+  echo '{"warning":"doctor failed, timed out, or exceeded the output bound"}' >&2
+fi
+
+read_state
+if [[ "$DB_EXISTS" == true && "$DOCS" != 0 ]]; then
+  echo "RECOVERED: doctor produced a queryable index" >&2
+  exit 0
+fi
+
+echo "ESCALATING: one bounded full rebuild (${REBUILD_TIMEOUT}s cap)" >&2
+run_timed "$REBUILD_TIMEOUT" cass index --full --force-rebuild --json >/dev/null 2>&1
 rebuild_rc=$?
 case "$rebuild_rc" in
-  124) echo "  ! rebuild hit ${REBUILD_TIMEOUT}s timeout (likely issue #196)" >&2 ;;
-  0)   : ;;
-  *)   echo "  ! rebuild exited $rebuild_rc (data may still be partially committed)" >&2 ;;
+  0) : ;;
+  124|137) echo "  ! rebuild timed out and was terminated" >&2 ;;
+  *) echo "  ! rebuild exited $rebuild_rc" >&2 ;;
 esac
 
-# Even on exit 0 the JSON may report success:false (the last_indexed_at race
-# documented in coding_agent_session_search-zz8ni). Always verify by re-reading state.
-state_line=$(cass_state)
-IFS=$'\t' read -r FRESH DB_EXISTS DOCS MSGS REC <<< "$state_line" || true
-if [ "${DB_EXISTS:-false}" = "true" ] && [ "${DOCS:-0}" != "0" ]; then
-  echo "RECOVERED: index is queryable (fresh marker may still be stale; that's harmless)" >&2
+read_state
+if [[ "$DB_EXISTS" == true && "$DOCS" != 0 ]]; then
+  echo "RECOVERED: index is queryable" >&2
   exit 0
 fi
 
-# Genuinely stuck — surface for human (compact JSON only, not the verbose log spam)
-echo "BROKEN: cass cannot self-recover" >&2
-echo "Diagnostic (cass diag --json):" >&2
-timeout "$STATUS_TIMEOUT" cass diag --json 2>/dev/null | jq -c '{paths, database, index, version}' >&2 || true
-echo "Last index attempt log: $REBUILD_LOG (tail):" >&2
-tail -n 5 "$REBUILD_LOG" 2>/dev/null >&2 || true
+# Do not retain or print raw diagnostics: they commonly contain absolute source
+# paths and command output. The operator gets a bounded factual state only.
+diag=$(run_timed "$STATUS_TIMEOUT" cass diag --json 2>/dev/null | head -c 1048577) || diag=""
+if [[ -n "$diag" && ${#diag} -le 1048576 ]]; then
+  printf '%s' "$diag" | jq -c '{
+    database_present: (.database != null), index_present: (.index != null),
+    version_present: (.version != null)
+  }' >&2 || true
+fi
+echo "BROKEN: cass cannot self-recover within the declared bounds" >&2
 exit 1

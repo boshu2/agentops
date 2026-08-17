@@ -26,6 +26,20 @@ output_contract: factual messaging and reservation adapter results
 ---
 # Agent Mail — optional coordination adapter
 
+## Constraints
+
+- Route direct-CLI mutations through `scripts/safe-am.sh`. It binds each send,
+  reservation, release, guard install, or repair to an exact project and
+  approval token, attests `am.capabilities.v1`, and applies a deadline.
+- The package does not expose `clear-and-reset-everything`; that irreversible
+  operation is explicitly blocked because the package cannot bound or roll it
+  back. An operator who still chooses it acts outside this skill.
+- Message bodies are regular files capped at 64 KiB; recipients, thread IDs,
+  TTLs, paths, reservation IDs, and repository roots are validated before `am`
+  is called.
+- The wrapper is the direct-CLI surface only. When a daemon owns the storage
+  root, use its MCP tools and keep direct CLI access stopped.
+
 Agent Mail carries messages, acknowledgements, identities, and temporary file
 reservations. It is not a task tracker, queue, proof ledger, or lifecycle
 controller.
@@ -57,8 +71,9 @@ changes are the caller's call.
 - Release a reservation, including any `force_release`, only on the caller's
   explicit request for that exact reservation. Force-release has no autonomous
   trigger; a conflict is reported, not force-cleared.
-- Agent Mail never selects work, changes tracker state, commits code, validates,
-  integrates, closes, releases, or delivers work.
+- Its positive role ends at returning coordination facts; work selection,
+  tracker changes, Git, validation, integration, release, and delivery remain
+  with their source owners.
 
 ## Modes and authority
 
@@ -114,7 +129,7 @@ Return the project, identity, thread/message ids, reservation ids and paths
 (with their TTLs), conflicts, and timestamps. The caller owns all subsequent
 decisions.
 
-Terminal outcomes are explicit, never silent:
+Every terminal outcome returns an explicit typed result:
 
 - **Adapter unavailable** — neither the MCP tools nor the `am` CLI is present:
   report that Agent Mail is unavailable and stop. Do not fall back to
@@ -137,3 +152,19 @@ Terminal outcomes are explicit, never silent:
 - [CLI and MCP surface notes](references/TOOLS.md)
 - [Coordination patterns](references/WORKFLOWS.md)
 - [Troubleshooting](references/RECOVERY.md)
+
+## Quality and done
+
+Done means the bounded operation returned once with its exact project, actor,
+message or reservation identifiers, deadline result, and cleanup state. A
+missing capability, mismatched approval, unsafe path, timeout, or requested
+full reset exits before that consequential call. Package tests compare raw
+unguarded mutation with the wrapper's refusal; they do not attest Agent Mail's
+database, daemon, or network implementation.
+
+- A successful mutation has one exact project-bound approval and one structured
+  runtime result.
+- A refusal leaves the fake action log empty in package tests, proving the
+  wrapper stopped before its external call.
+- Cleanup output names every released or still-live reservation, so silence is
+  never mistaken for cleanup success.

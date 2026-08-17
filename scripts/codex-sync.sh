@@ -302,27 +302,25 @@ The CLI records startup once per thread and skips duplicates automatically."""
 
 
 def codex_catalog_description(name: str, source_description: str) -> str:
-    """Terse but skill-specific always-loaded Codex catalog text.
+    """Skill-specific Codex activation catalog text.
 
-    The full source description remains available in prompt.md; SKILL.md
-    frontmatter is loaded as an activation catalog, so keep enough routing
-    signal to choose the skill while staying under the average token budget.
+    The catalog description is the model's routing signal. Removing the
+    source ``Triggers:`` clause or clipping it to a generic opening phrase
+    makes indirect activation untestable and caused observed missed loads.
+    Preserve the normalized source description; the portable contract already
+    caps it at 1024 characters and the current 52-skill corpus stays within the
+    intended catalog budget.
     """
     import re
 
-    desc = re.sub(r"\s+[Tt]riggers?:.*", "", source_description).strip()
-    desc = re.sub(r"\s+", " ", desc).strip(" '\"")
+    desc = re.sub(r"\s+", " ", source_description).strip(" '\"")
     if not desc:
-        return f"Run {name}."
-
-    max_chars = 44
-    if len(desc) <= max_chars:
-        return desc
-
-    shortened = desc[: max_chars + 1].rsplit(" ", 1)[0].strip(" ,;:-")
-    if len(shortened) < 18:
-        shortened = desc[:max_chars].rstrip(" ,;:-")
-    return shortened
+        desc = f"Run {name}."
+    activation_contract = (
+        "Activation requirement: when this skill applies, read and follow its "
+        "full SKILL.md before answering."
+    )
+    return f"{desc} {activation_contract}"
 
 
 def twin_skill_md(

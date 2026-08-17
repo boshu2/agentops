@@ -37,13 +37,19 @@ fallback.
 |---|---|---|
 | `codex-exec` | `command -v codex` | Headless Codex workers (`codex exec` one-shot) |
 | `ntm` | `command -v ntm` | Interactive / TUI-only runtimes hosted in panes |
-| fake runner | always available in tests | Deterministic conformance without real models |
+| test fixture | `scripts/fake_model_runner.py` | Deterministic schema/conformance tests only; every artifact is marked `runtime_attestation_valid=false` and cannot satisfy live model evidence |
 
 Order: use the adapter the caller named; if unset, prefer `codex` when the
 profile is a Codex model, else `ntm` when interactive hosting is required.
 If neither live adapter can satisfy the request, emit an explicit
 `diversity_unsatisfied` disclosure on the consumer artifact and continue
 single-model. Never invoke `claude -p` or `claude --print`.
+
+For a real one-shot Codex worker, use `scripts/dispatch.sh`; it delegates to the
+package-owned `codex-exec` process-group surface and binds approval to role,
+context, workspace, requested model, and packet digest. NTM remains blocked for
+model-sensitive dispatch until its robot state can attest the actual pane model
+identity; the `ntm` skill may still use it as declared transport.
 
 ## Guardrails (carry-overs)
 

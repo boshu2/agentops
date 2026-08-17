@@ -26,6 +26,17 @@ Use AGY only when the caller explicitly selects that runtime. Discover its live
 command surface with `agy --help` (and `agy models` for the current model set)
 before acting, and scope every session to the supplied workspace and packet.
 
+## Enforced surface
+
+Use `scripts/run.sh` for headless sessions. It requires an explicit role,
+model, context ID, absolute workspace, regular packet file, output path, and a
+1-1800 second deadline. It requires exact AGY 1.1.13, attests print timeout,
+sandbox, mode, disabled slash expansion, and model inventory, then launches a
+private process group whose removal is checked at exit. Judgment roles run in
+sandboxed plan mode. An implementer additionally needs an exact approval bound to the
+workspace, model, and packet digest; the dangerous permission-skip flag is not
+exposed.
+
 Discovering the live command surface before acting works because AGY's CLI
 changes faster than any skill text: a remembered flag is a guess, while a
 freshly listed one is evidence.
@@ -70,3 +81,9 @@ the validator's evidence usable.
 
 Return evidence to the caller and stop. Installation, plugin mutation, and
 recurring scheduling require separate explicit authorization.
+
+Done means the one-shot wrapper returned a nonempty artifact plus role, model,
+context, permission mode, sandbox, deadline, and reaped-process-group facts, or a typed unavailable,
+capability, model, approval, timeout, or nonzero result. Local fixture tests
+prove wrapper gating and local process cleanup only; server-side AGY conversation
+retention and provider implementation remain external and are not runtime-attested.

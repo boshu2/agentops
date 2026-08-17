@@ -15,7 +15,9 @@ digest_tree() {
 write_fixture_skill() {
   local path="$1" name="$2"
   mkdir -p "$path"
-  printf '%s\n' '---' "name: $name" "description: Fixture $name." '---' "# $name" >"$path/SKILL.md"
+  printf '%s\n' '---' "name: $name" "description: Fixture $name." \
+    'skill_api_version: 1' 'metadata:' '  disposition: keep_specialist' \
+    '---' "# $name" >"$path/SKILL.md"
 }
 
 expect_check_accepts() {
@@ -39,18 +41,35 @@ expect_rejected_unchanged() {
 }
 
 mkdir -p "$FIX/skills"
+mkdir -p "$FIX/scripts"
+cat >"$FIX/scripts/generate-skill-mesh.py" <<'PY'
+from pathlib import Path
+root = Path(__file__).resolve().parents[1]
+target = root / "skills/catalog.json"
+target.write_text("generated\n", encoding="utf-8")
+PY
+cat >"$FIX/scripts/codex-sync.sh" <<'SH'
+#!/usr/bin/env bash
+set -euo pipefail
+root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
+name="${!#}"
+mkdir -p "$root/skills-codex/$name"
+printf '%s\n' generated >"$root/skills-codex/$name/SKILL.md"
+SH
 write_fixture_skill "$FIX/skills/target" target
 write_fixture_skill "$FIX/skills/sibling" sibling
 
 sibling_before="$(shasum -a 256 "$FIX/skills/sibling/SKILL.md" | awk '{print $1}')"
+target_before="$(shasum -a 256 "$FIX/skills/target/SKILL.md" | awk '{print $1}')"
 set +e
 HEAL_REPO_ROOT="$FIX" bash "$HEAL" --fix skills/target >/dev/null 2>&1
 fix_rc=$?
 set -e
-[[ "$fix_rc" -eq 1 ]]
-grep -q '^skill_api_version: 1$' "$FIX/skills/target/SKILL.md"
-if grep -q '^skill_api_version:' "$FIX/skills/sibling/SKILL.md"; then exit 1; fi
+[[ "$fix_rc" -eq 0 ]]
+[[ "$(shasum -a 256 "$FIX/skills/target/SKILL.md" | awk '{print $1}')" == "$target_before" ]]
 [[ "$(shasum -a 256 "$FIX/skills/sibling/SKILL.md" | awk '{print $1}')" == "$sibling_before" ]]
+[[ -f "$FIX/skills-codex/target/SKILL.md" ]]
+[[ ! -e "$FIX/skills-codex/sibling" ]]
 
 expect_check_accepts skills/target
 expect_check_accepts ./skills/target

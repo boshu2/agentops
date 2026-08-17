@@ -4,6 +4,8 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
+import stat
 import zipfile
 from dataclasses import dataclass
 from io import BytesIO
@@ -14,7 +16,7 @@ from pathlib import Path
 class ZipCandidate:
     offset: int
     file_count: int
-    names: list[str]
+    name_hashes: list[str]
     sha256: str
 
 
@@ -46,7 +48,12 @@ def _try_open_zip(data: bytes, offset: int) -> ZipCandidate | None:
             names = zf.namelist()
             # Hash just the first ~4MB for stable fingerprint without storing full content.
             sha = _sha256_bytes(tail[: 4 * 1024 * 1024])
-            return ZipCandidate(offset=offset, file_count=len(names), names=names[:200], sha256=sha)
+            return ZipCandidate(
+                offset=offset,
+                file_count=len(names),
+                name_hashes=[hashlib.sha256(name.encode("utf-8", errors="replace")).hexdigest() for name in names[:200]],
+                sha256=sha,
+            )
     except Exception:
         return None
 
@@ -56,9 +63,22 @@ def main() -> int:
     ap.add_argument("--binary", required=True)
     ap.add_argument("--out-json", required=True)
     ap.add_argument("--out-index-md", required=True)
+    ap.add_argument("--json-root", required=True)
+    ap.add_argument("--index-root", required=True)
+    ap.add_argument("--max-binary-bytes", required=True, type=int)
     args = ap.parse_args()
 
+    if not 0 < args.max_binary_bytes <= 256 * 1024 * 1024:
+        ap.error("--max-binary-bytes must be in [1, 268435456]")
     binary = Path(args.binary)
+    if binary.is_symlink():
+        ap.error("binary must not be a symlink")
+    try:
+        info = binary.stat()
+    except OSError:
+        ap.error("binary is not readable")
+    if not stat.S_ISREG(info.st_mode) or info.st_size > args.max_binary_bytes:
+        ap.error("binary is not a bounded regular file")
     data = binary.read_bytes()
 
     hits = _find_zip_offsets(data)
@@ -70,14 +90,28 @@ def main() -> int:
             cands.append(cand)
 
     out_json = Path(args.out_json)
-    out_json.parent.mkdir(parents=True, exist_ok=True)
+    out_md = Path(args.out_index_md)
+    for output, root_raw, label in (
+        (out_json, args.json_root, "JSON"),
+        (out_md, args.index_root, "index"),
+    ):
+        root_arg = Path(root_raw)
+        if not root_arg.is_absolute() or root_arg.is_symlink():
+            ap.error(f"{label} root must be an absolute non-symlink directory")
+        root = root_arg.resolve(strict=True)
+        if output.is_symlink():
+            ap.error(f"{label} output must not be a symlink")
+        try:
+            output.parent.resolve(strict=True).relative_to(root)
+        except (OSError, ValueError):
+            ap.error(f"{label} output must stay beneath its root")
     out_json.write_text(
         json.dumps(
             {
-                "binary": str(binary),
+                "binary": binary.name,
                 "zip_header_hits": len(hits),
                 "candidates": [
-                    {"offset": c.offset, "file_count": c.file_count, "sha256_head_4mb": c.sha256, "names": c.names}
+                    {"offset": c.offset, "file_count": c.file_count, "sha256_head_4mb": c.sha256, "name_sha256": c.name_hashes}
                     for c in sorted(cands, key=lambda x: (-x.file_count, x.offset))
                 ],
             },
@@ -88,14 +122,12 @@ def main() -> int:
         encoding="utf-8",
     )
 
-    out_md = Path(args.out_index_md)
-    out_md.parent.mkdir(parents=True, exist_ok=True)
     lines: list[str] = []
     lines.append("# Embedded Archive Index (Best-Effort)")
     lines.append("")
     lines.append("Guardrail: this index does not dump reconstructed source or prompts; it only inventories candidate archives.")
     lines.append("")
-    lines.append(f"- Binary: `{binary}`")
+    lines.append(f"- Binary: `{binary.name}`")
     lines.append(f"- ZIP header hits: {len(hits)}")
     lines.append(f"- ZIP candidates opened: {len(cands)}")
     lines.append("")
@@ -110,9 +142,9 @@ def main() -> int:
             lines.append(f"- File count: `{c.file_count}`")
             lines.append(f"- SHA256(head_4mb): `{c.sha256}`")
             lines.append("")
-            lines.append("Top filenames (truncated):")
+            lines.append("Top filename hashes (raw names intentionally not retained):")
             lines.append("")
-            for n in c.names[:30]:
+            for n in c.name_hashes[:30]:
                 lines.append(f"- `{n}`")
             lines.append("")
 
@@ -122,4 +154,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-

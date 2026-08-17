@@ -78,7 +78,12 @@ are symlinks to this repository's canonical `skills/` tree.
 | System | Bundled with Codex | Built-in skills |
 
 Development symlinks may point directly at `skills/<name>/`; checked-in
-`skills-codex/` packages are the release projection. Plugin caches are neither
+`skills-codex/` packages are the portable Agent Skills release projection.
+Canonical `skills/` frontmatter is intentionally host-extended and is evaluated
+against the AgentOps profile, not mislabeled as portable. The release gate
+`scripts/validate-codex-api-conformance.sh` validates every projected package
+against the portable field, type, identity, body, and relative-resource-link
+contract before applying Codex-specific checks. Plugin caches are neither
 source nor an installation target and may be deleted without affecting the
 canonical repository skills.
 
@@ -91,7 +96,13 @@ canonical repository skills.
 | Explicit | `$skill-name` or `/skills` menu | User directly requests the skill |
 | Implicit | Automatic | Codex matches task to skill description |
 
-Skills are loaded via **progressive disclosure**: metadata first (name, description), full SKILL.md only when activated.
+Skills are loaded via **progressive disclosure**: metadata first (name,
+description), full SKILL.md only when activated. Because that description is
+the implicit-routing surface, a projection must preserve the source's positive
+trigger and false-positive boundary wording; a generic or clipped summary is a
+behavioral defect, even when the body remains byte-complete. Generated
+descriptions also carry an explicit activation requirement to read and follow
+the full `SKILL.md`; a name-only or summary-only answer is not activation.
 
 ---
 
@@ -198,7 +209,9 @@ Skills referencing these primitives produce **broken instructions** in Codex.
 
 When generating Codex skills from source skills:
 
-1. **Strip all non-Codex frontmatter** — emit only `name` + `description`
+1. **Strip all non-Codex frontmatter** — emit only `name` + `description`, while
+   preserving the complete normalized source description as the activation
+   catalog signal and appending the full-instruction activation requirement
 2. **Map Claude tools to Codex tools** — Read→read_file, Edit→apply_patch, Grep→rg, Glob→glob_file_search
 3. **Rewrite `Skill(skill="X")` to `$X`** — Codex uses dollar-prefix invocation
 4. **Strip ALL task/team primitives** — TaskCreate, TaskList, TeamCreate, SendMessage (none have working Codex equivalents as direct tool calls — `todo_write`/`update_plan` empirically unavailable, and `send_input` is follow-up-only)

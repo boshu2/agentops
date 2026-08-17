@@ -16,7 +16,7 @@ metadata:
   tier: meta
   dependencies: []
   capabilities: [distill_expertise, propose_artifact_shape]
-  effects: [write_advisory_proposal]
+  effects: [read_cited_expertise, redact_sensitive_evidence, optionally_write_approved_sensitive_excerpt, write_advisory_proposal]
   canonical_status: canonical
   disposition: keep_specialist
 output_contract: advisory operationalization proposal
@@ -25,6 +25,26 @@ output_contract: advisory operationalization proposal
 # Operationalize
 
 Turn repeated, cited expertise into a proposal for a reusable artifact.
+
+## Constraints
+
+- **Why access is not disclosure authority.** Classify every source and quote as `public`, `internal`, or `restricted`
+  before it enters a prompt or artifact. Source access does not authorize
+  disclosure. Credentials, tokens, keys, personal data, customer data, private
+  URLs, and proprietary excerpts default to restricted.
+- **Why reusable evidence must not leak its source.** Redact restricted values to `[REDACTED:<kind>]` while retaining a resolving
+  path/digest and non-sensitive paraphrase. Run both a manual line-by-line review
+  and `scripts/validate-output.sh`; pattern scanning is a backstop, not proof
+  that arbitrary sensitive data is absent.
+- When redaction would destroy the reapply proof, stop and obtain separate
+  caller approval for (1) sending the exact excerpt to any model/runtime and
+  (2) writing it to one exact output path. Record the approval ID, audience,
+  path, and retention deadline. Approval for source access, the overall task,
+  or a different path does not transfer.
+- Without both approvals, return a redacted/hashed anchor or no artifact. A
+  sensitive match, missing declaration, unapproved path, oversized output, or
+  failed redaction review is explicit failure before write; errors name only the
+  sensitive category and never echo the value.
 
 1. Require cited evidence for the expertise: real occurrences or an explicit
    authoritative source, subject to the three-instance floor below when the
@@ -48,7 +68,14 @@ Turn repeated, cited expertise into a proposal for a reusable artifact.
 7. Return the proposal inline to the caller or an authoring specialist. When
    the caller asks for a durable artifact, write it under
    `.agents/scratch/operationalize/` first and return the path; the proposal
-   is advisory either way.
+   is advisory either way. Durable output includes a `Sensitive-output review`
+   section with classification, redactions, separate model and write approvals
+   (`none` when fully redacted), audience, exact path, and retention deadline,
+   then passes
+   `scripts/validate-output.sh` before handoff. For a durable write, stage the
+   candidate outside the durable root and use `scripts/publish-output.sh`; it
+   validates approvals before an exclusive create and reports observed reads,
+   writes, byte count, and digest.
 
 ## Three-instance floor
 
@@ -82,6 +109,11 @@ occurrence that cannot be quoted and cited does not count toward the
 three-instance floor. Anchors let a later reader test whether the rule still
 matches what actually happened, instead of trusting the abstraction.
 
+Restricted occurrences use a redacted excerpt plus the digest of the original
+source bytes; raw quoting is allowed only through the two approvals above. A
+hash and resolving citation can establish source identity without publishing
+the secret-bearing bytes.
+
 ## Boundary
 
 Operationalize does not create tracker work, promote policy, start a factory,
@@ -90,3 +122,12 @@ advisory: adopting it into a skill, deterministic check, reference, or
 workflow is a separate, caller-selected step — `skill-builder`,
 `workflow-builder`, or a fresh RPI — never performed here. The proposal
 cannot promote itself, and process-only output earns no capability credit.
+
+## Quality checks
+
+- Every counted occurrence has a resolving citation, classification, and a
+  quote/redacted anchor that exposes no unapproved sensitive value.
+- Durable output records redaction review, exact output path, audience,
+  retention, and any caller-supplied sensitive-output approval ID.
+- The output validator passes its size/secret-pattern/path checks; a sensitive
+  negative fixture without approval fails before the destination is written.

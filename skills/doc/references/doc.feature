@@ -20,3 +20,14 @@ Feature: Doc generates and validates project documentation
   Scenario: validation checks docs against the repo
     When /doc validates existing documentation
     Then it reports gaps or staleness measured against the current source
+
+  Scenario: an unapproved or over-limit scan stops explicitly
+    Given the scanner lacks a caller authorization ID, targets a forbidden root, or reaches its entry/deadline cap
+    When /doc prepares repository discovery
+    Then it stops without claiming complete coverage or writing generated documentation
+
+  Scenario: live claims use an approved read-only allowlist
+    Given a caller approved one context, namespace, credential identity, and resource set
+    When /doc verifies a deployment claim
+    Then every request has finite byte/time bounds and uses only get or list
+    And missing approval, a forbidden resource, or sensitive output stops before a documentation write

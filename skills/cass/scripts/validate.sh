@@ -27,6 +27,10 @@ grep -q '124 is NOT zero hits' "$SKILL_MD" || err "bounded concurrent-search gui
 grep -q 'not evidence that source sessions were lost' "$SKILL_MD" || err "source-preservation boundary missing"
 grep -q '^## Authoritative Fallback and Concurrent Read Latency$' \
   "$SKILL_DIR/references/OBSERVABILITY.md" || err "observability fallback detail missing"
+bash -n "$SCRIPT_DIR/multi_machine_search.sh" "$SCRIPT_DIR/quick_analysis.sh" "$SCRIPT_DIR/recover.sh" \
+  || err "bounded shell helpers must parse"
+PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover \
+  -s "$SKILL_DIR/tests" -p 'test_*.py' || err "bounded behavior tests failed"
 
 if [ -f "$SPEC_JSON" ]; then
   python3 -m json.tool "$SPEC_JSON" >/dev/null || err "skill.spec.json is not valid JSON"

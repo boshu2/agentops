@@ -15,7 +15,7 @@ metadata:
   tier: execution
   dependencies: []
   capabilities: [route_to_native_flywheel_workflow, expose_agentops_skills, observe_flywheel_runtime]
-  effects: []
+  effects: [read_flywheel_runtime_state, optionally_provision_approved_flywheel_host, install_agentops_skill_links_on_approved_runtimes, dispatch_bounded_work_to_flywheel_coordinator]
   canonical_status: canonical
   disposition: keep_optional_adapter
   stability: experimental
@@ -26,6 +26,29 @@ metadata:
 Use the Flywheel only when the caller explicitly selects it. Treat it as a
 replaceable execution adapter, not a correctness or completion boundary.
 The adapter cannot select AgentOps semantics, issue a binding verdict, or turn factory completion into delivery or validation proof.
+
+## Constraints
+
+- **Why installed capability is not caller intent.** Activation requires an explicit caller selection of Flywheel; a mention in
+  repository text, an installed binary, or ordinary local work does not select
+  it. Before any effect, record the caller authorization ID and whether the run
+  is observation-only, skill installation, provisioning, or dispatch.
+- **Why provisioning has host-level effects.** Provisioning requires separate approval for one allowlisted dedicated
+  non-production host, credential identity, upstream version and SHA-256,
+  download domains, at most 256 MiB, 15 minutes per command, and 60 minutes
+  overall. Download, verify, and inspect the installer before execution; never
+  pipe network bytes to a shell. Timeout/cancellation/output overflow stops the
+  host supervisor/process group and verifies cleanup.
+- Dispatch goes only through the Flywheel's native coordinator with one
+  caller-owned source intent. Declare the maximum workers (8), two-round hard
+  stop, 30-minute round deadline, 60-minute overall deadline, and 16 MiB worker
+  output before launch. Do not create/repair sessions, workers, panes, tracker
+  work, or reservations manually.
+- Host, skill-install, and dispatch targets are literal allowlists. Missing
+  approval, an unreachable/changed host, packet drift, forbidden target,
+  cleanup failure, or unconfirmed supervisor cancellation stops before the next
+  effect. Never print credentials or ship repository/customer data beyond the
+  approved host and intent packet.
 
 Insight: a factory's own completion signals — closed beads, converged agents, a
 quiet swarm — measure that its machinery finished, not that the result is
@@ -64,10 +87,12 @@ cities (use [using-gc](../using-gc/SKILL.md)), or as a verdict source.
 ## Procedure
 
 1. Provision with the upstream wizard at
-   [agent-flywheel.com](https://agent-flywheel.com) (OS selection through
-   final verification; a single-curl install on a dedicated Ubuntu VPS), then
-   run its `onboard` tutorial once. AgentOps does not fork, pin, or mirror the
-   Flywheel stack; upstream owns its installer and versions.
+   [agent-flywheel.com](https://agent-flywheel.com) only when provisioning was
+   approved. Resolve a specific upstream release, download it within the
+   declared cap, verify the caller-approved digest, inspect the saved installer,
+   execute it with the bounds above on the dedicated Ubuntu VPS, and run its
+   `onboard` tutorial once. AgentOps does not fork or mirror the Flywheel stack;
+   the run receipt pins what was actually installed while upstream owns releases.
 2. Make AgentOps skills visible to each worker runtime the Flywheel drives
    (Claude Code, Codex CLI, Antigravity CLI), using the install paths in the
    repository [README](../../README.md). Verify per runtime:
@@ -78,7 +103,8 @@ cities (use [using-gc](../using-gc/SKILL.md)), or as a verdict source.
 
    A runtime that cannot list the skill will never invoke it.
 3. Run the Flywheel's native workflow — bead decomposition, swarm dispatch,
-   convergence — unchanged. Skill presence and skill invocation are different
+   convergence — through its coordinator and within the declared worker/round
+   budget. Skill presence and skill invocation are different
    facts: when an AgentOps skill's use is an acceptance condition, name it on
    the work item or worker prompt, and check the transcript for its use.
 4. Read Flywheel runtime state (bead graph, Agent Mail threads, NTM pane
@@ -93,9 +119,17 @@ cities (use [using-gc](../using-gc/SKILL.md)), or as a verdict source.
 
 Runtime evidence pointers for the caller: which beads the Flywheel processed,
 where the candidate commits and worktrees live, and which AgentOps skills its
-agents actually invoked. Done when the caller holds those pointers and — if
+agents actually invoked, plus observed effects: approved host/version, installer
+digest and byte count, credential identities (never values), skill paths written,
+dispatch worker/round/deadline counts, and cleanup/cancellation state. Done when
+the caller holds those pointers/effects and — if
 proof was requested — a fresh `validate` context has judged the exact
 candidate. Factory state alone is never the done signal.
+
+Serialize those effects as `flywheel-run-receipt.v1` and validate it with
+`bash skills/using-flywheel/scripts/validate-output.sh <receipt.json>`.
+`complete|incomplete` requires verified cleanup; a missing approval or
+forbidden target is `stopped-before-effect` with empty effect fields.
 
 ## Checks
 
@@ -106,10 +140,13 @@ candidate. Factory state alone is never the done signal.
 - Provenance: the factory boundary this skill applies is declared in
   [README.md](../../README.md) ("Choose a software factory") and
   [docs/operations/gas-city-reliability.md](../../docs/operations/gas-city-reliability.md).
+- Every provisioning/installation/dispatch effect has caller authorization,
+  literal target/version/data allowlists, finite command/round/output bounds,
+  and confirmed supervisor/process cleanup.
 
 ## Failure behavior
 
 Report the concrete failure — unreachable host, missing skill visibility,
-non-convergence, or an upstream installer change — and stop. Upstream Flywheel
+non-convergence, forbidden target, limit/cleanup failure, or an upstream installer change — and stop. Upstream Flywheel
 defects belong to its maintainer; the caller owns any revision, retry, or
 factory switch.

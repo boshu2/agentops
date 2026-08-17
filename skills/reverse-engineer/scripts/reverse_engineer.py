@@ -8,15 +8,23 @@ import json
 import os
 import re
 import shutil
+import signal
 import stat
 import subprocess
 import sys
+import threading
+import time
 from pathlib import Path
+import urllib.parse
 
 
 REPO_ROOT = Path.cwd()
 SKILL_DIR = Path(__file__).resolve().parents[1]
 TEMPLATES_DIR = SKILL_DIR / "references" / "templates"
+SUBPROCESS_TIMEOUT_SECONDS = 60.0
+MAX_SUBPROCESS_OUTPUT_BYTES = 4 * 1024 * 1024
+MAX_READ_BYTES = 4 * 1024 * 1024
+_READ_ROOTS: set[Path] = {SKILL_DIR.resolve()}
 
 IGNORED_REPO_SCAN_PARTS = {
     ".agents",
@@ -46,15 +54,215 @@ def _die(msg: str, code: int = 2) -> None:
 
 
 def _run(
-    cmd: list[str], *, cwd: Path | None = None, check: bool = True
+    cmd: list[str], *, cwd: Path | None = None, check: bool = True,
+    timeout: float = SUBPROCESS_TIMEOUT_SECONDS,
 ) -> subprocess.CompletedProcess:
-    return subprocess.run(cmd, cwd=str(cwd) if cwd else None, check=check)
+    if not 0 < timeout <= SUBPROCESS_TIMEOUT_SECONDS:
+        raise ValueError("subprocess timeout is outside the supported finite range")
+    try:
+        process = subprocess.Popen(
+            cmd,
+            cwd=str(cwd) if cwd else None,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            start_new_session=True,
+        )
+    except OSError as exc:
+        raise RuntimeError(f"subprocess could not start: {Path(cmd[0]).name}") from exc
+    assert process.stdout and process.stderr
+    total = 0
+    lock = threading.Lock()
+    overflow = threading.Event()
+
+    def drain(stream: object) -> None:
+        nonlocal total
+        while chunk := stream.read(8192):  # type: ignore[attr-defined]
+            with lock:
+                total += len(chunk)
+                if total > MAX_SUBPROCESS_OUTPUT_BYTES:
+                    overflow.set()
+
+    readers = [
+        threading.Thread(target=drain, args=(process.stdout,), daemon=True),
+        threading.Thread(target=drain, args=(process.stderr,), daemon=True),
+    ]
+    for reader in readers:
+        reader.start()
+    deadline = time.monotonic() + timeout
+    timed_out = False
+    while process.poll() is None:
+        if overflow.is_set():
+            break
+        if time.monotonic() >= deadline:
+            timed_out = True
+            break
+        time.sleep(0.005)
+    if process.poll() is None or overflow.is_set():
+        try:
+            os.killpg(process.pid, signal.SIGKILL)
+        except ProcessLookupError:
+            pass
+    return_code = process.wait(timeout=2)
+    try:
+        os.killpg(process.pid, signal.SIGKILL)
+    except ProcessLookupError:
+        pass
+    for reader in readers:
+        reader.join(timeout=1)
+    process.stdout.close()
+    process.stderr.close()
+    if timed_out:
+        raise TimeoutError(f"subprocess exceeded {timeout:g}s: {Path(cmd[0]).name}")
+    if overflow.is_set():
+        raise ValueError(f"subprocess output exceeded {MAX_SUBPROCESS_OUTPUT_BYTES} bytes")
+    result = subprocess.CompletedProcess(cmd, return_code)
+    if check and return_code != 0:
+        raise subprocess.CalledProcessError(return_code, [Path(cmd[0]).name])
+    return result
+
+
+def _check_output(
+    cmd: list[str], *, cwd: Path | None = None, text: bool = True,
+    timeout: float = SUBPROCESS_TIMEOUT_SECONDS,
+    max_output_bytes: int = MAX_SUBPROCESS_OUTPUT_BYTES,
+) -> str | bytes:
+    """Capture bounded stdout, discard child stderr, and kill the process group."""
+    if not 0 < timeout <= SUBPROCESS_TIMEOUT_SECONDS:
+        raise ValueError("subprocess timeout is outside the supported finite range")
+    if not 0 < max_output_bytes <= MAX_SUBPROCESS_OUTPUT_BYTES:
+        raise ValueError("subprocess output bound is outside the supported range")
+    try:
+        process = subprocess.Popen(
+            cmd,
+            cwd=str(cwd) if cwd else None,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            start_new_session=True,
+        )
+    except OSError as exc:
+        raise RuntimeError(f"subprocess could not start: {Path(cmd[0]).name}") from exc
+    assert process.stdout and process.stderr
+    output = bytearray()
+    total = 0
+    lock = threading.Lock()
+    overflow = threading.Event()
+
+    def drain(stream: object, retain: bool) -> None:
+        nonlocal total
+        while chunk := stream.read(8192):  # type: ignore[attr-defined]
+            with lock:
+                total += len(chunk)
+                if total > max_output_bytes:
+                    overflow.set()
+                if retain and len(output) <= max_output_bytes:
+                    output.extend(chunk[: max(0, max_output_bytes + 1 - len(output))])
+
+    threads = [
+        threading.Thread(target=drain, args=(process.stdout, True), daemon=True),
+        threading.Thread(target=drain, args=(process.stderr, False), daemon=True),
+    ]
+    for thread in threads:
+        thread.start()
+    deadline = time.monotonic() + timeout
+    timed_out = False
+    while process.poll() is None:
+        if overflow.is_set():
+            break
+        if time.monotonic() >= deadline:
+            timed_out = True
+            break
+        time.sleep(0.005)
+    if process.poll() is None or overflow.is_set():
+        try:
+            os.killpg(process.pid, signal.SIGKILL)
+        except ProcessLookupError:
+            pass
+    return_code = process.wait(timeout=2)
+    try:
+        os.killpg(process.pid, signal.SIGKILL)
+    except ProcessLookupError:
+        pass
+    for thread in threads:
+        thread.join(timeout=1)
+    process.stdout.close(); process.stderr.close()
+    if timed_out:
+        raise TimeoutError(f"subprocess exceeded {timeout:g}s: {Path(cmd[0]).name}")
+    if overflow.is_set():
+        raise ValueError(f"subprocess output exceeded {max_output_bytes} bytes")
+    if return_code != 0:
+        raise subprocess.CalledProcessError(return_code, [Path(cmd[0]).name])
+    raw = bytes(output)
+    return raw.decode("utf-8", errors="replace") if text else raw
 
 
 def _lexical_absolute(path: Path) -> Path:
     """Return an absolute normalized path without following filesystem links."""
 
     return Path(os.path.abspath(os.fspath(path.expanduser())))
+
+
+def _reject_path_symlinks(path: Path) -> None:
+    current = _lexical_absolute(path)
+    while True:
+        if current.is_symlink():
+            raise ValueError("refusing a path containing a symlink")
+        if current.parent == current:
+            return
+        current = current.parent
+
+
+def _authorize_read_root(path: Path) -> None:
+    _reject_path_symlinks(path)
+    resolved = path.resolve(strict=True)
+    if not resolved.is_dir():
+        _die("read root must be a real directory")
+    _READ_ROOTS.add(resolved)
+
+
+def _canonical_existing_root(raw: str, label: str) -> Path:
+    root_arg = Path(raw)
+    if not root_arg.is_absolute() or root_arg.is_symlink():
+        _die(f"{label} must be an absolute non-symlink directory")
+    try:
+        root = root_arg.resolve(strict=True)
+    except OSError:
+        _die(f"{label} is unavailable")
+    if root_arg != root or not root.is_dir():
+        _die(f"{label} must use its canonical directory spelling")
+    _authorize_read_root(root)
+    return root
+
+
+def _rooted_existing_path(
+    root: Path,
+    relative_raw: str,
+    *,
+    label: str,
+    require_directory: bool = False,
+) -> Path:
+    relative = Path(relative_raw)
+    if (
+        not relative_raw
+        or relative.is_absolute()
+        or ".." in relative.parts
+        or relative.as_posix() != relative_raw
+        or (relative_raw == "." and not require_directory)
+    ):
+        _die(f"{label} must be a canonical root-relative path")
+    candidate = root / relative
+    try:
+        _reject_path_symlinks(candidate)
+        resolved = candidate.resolve(strict=True)
+        resolved.relative_to(root)
+        info = resolved.stat()
+    except (OSError, ValueError):
+        _die(f"{label} is unavailable, linked, or outside its authorization root")
+    if require_directory:
+        if not stat.S_ISDIR(info.st_mode):
+            _die(f"{label} must be a directory")
+    elif not stat.S_ISREG(info.st_mode):
+        _die(f"{label} must be a regular file")
+    return resolved
 
 
 def _ensure_real_directory(path: Path) -> tuple[int, int]:
@@ -204,14 +412,23 @@ def _detect_docs_prefix_from_paths(paths: list[str]) -> str:
 
 
 def _render_template(src: Path, dst: Path, vars: dict[str, str]) -> None:
-    text = src.read_text(encoding="utf-8")
+    text = _read_text(src)
     for k, v in vars.items():
         text = text.replace("{{" + k + "}}", v)
     dst.write_text(text, encoding="utf-8")
 
 
 def _read_text(p: Path) -> str:
-    return p.read_text(encoding="utf-8", errors="replace")
+    _reject_path_symlinks(p)
+    resolved = p.resolve(strict=True)
+    if not any(resolved == root or root in resolved.parents for root in _READ_ROOTS):
+        raise ValueError("refusing to read outside an authorized root")
+    info = resolved.stat()
+    if not stat.S_ISREG(info.st_mode):
+        raise ValueError("refusing to read a non-regular file")
+    if info.st_size > MAX_READ_BYTES:
+        raise ValueError(f"refusing to read file larger than {MAX_READ_BYTES} bytes")
+    return resolved.read_text(encoding="utf-8", errors="replace")
 
 
 def _should_skip_repo_scan_path(path: Path, repo_root: Path) -> bool:
@@ -546,26 +763,18 @@ def _enrich_registry_with_binary_evidence(
     product_name: str,
     date: str,
 ) -> bool:
-    """Enrich feature-registry.yaml with binary string evidence.
+    """Enrich feature-registry.yaml with bounded CLI-help evidence.
 
-    Reads cli-commands.txt and binary strings to create evidence-backed groups.
-    Also generates binary-symbols.txt in the output dir.
+    Reads the redacted cli-commands inventory to create evidence-backed groups.
     Returns True if enrichment was applied.
     """
     commands_file = tmp_dir / "binary" / "cli-commands.txt"
-    _strings_file = tmp_dir / "binary" / "strings.head.txt"
     _ba_file = tmp_dir / "binary" / "binary-analysis.md"
-
-    # Generate binary-symbols.txt from strings
-    full_strings = tmp_dir / "binary" / "strings.head.txt"
-    symbols_out = output_dir / "binary-symbols.txt"
-    if full_strings.exists() and not symbols_out.exists():
-        shutil.copyfile(full_strings, symbols_out)
 
     # Gather command groups from cli-commands.txt
     cmd_groups: dict[str, list[str]] = {}
     if commands_file.exists():
-        for line in commands_file.read_text(encoding="utf-8").splitlines():
+        for line in _read_text(commands_file).splitlines():
             line = line.strip()
             if not line:
                 continue
@@ -579,7 +788,7 @@ def _enrich_registry_with_binary_evidence(
     # Try to load the existing registry (manual parse, no yaml dep)
     reg: dict = {"groups": {}}
     try:
-        text = registry_yaml.read_text(encoding="utf-8")
+        text = _read_text(registry_yaml)
         for raw_line in text.splitlines():
             stripped = raw_line.strip()
             if stripped.startswith("docs_features_prefix:"):
@@ -652,7 +861,7 @@ def _enrich_registry_with_binary_evidence(
         sub_str = ", ".join(subcmds) if subcmds else "no subcommands"
         new_groups[slug] = {
             "impl": "client",
-            "anchors": ["binary-symbols.txt"],
+            "anchors": ["binary-analysis.md"],
             "notes": f"{grp_name} ({len(cmds)} commands: {sub_str})",
         }
 
@@ -661,7 +870,7 @@ def _enrich_registry_with_binary_evidence(
     lines.append("schema_version: 1")
     lines.append(f"product_name: {product_name!r}")
     lines.append(f"generated_at: {date!r}")
-    lines.append("evidence_source: 'binary --help + string extraction'")
+    lines.append("evidence_source: 'bounded redacted binary --help capture'")
     # Preserve docs_features_prefix if present
     dfp = reg.get("docs_features_prefix", "docs/features/")
     lines.append(f"docs_features_prefix: {dfp!r}")
@@ -691,13 +900,12 @@ def _write_binary_cli_surface_spec(
     product_name: str,
     date: str,
 ) -> bool:
-    """Write spec-cli-surface.md from binary --help output or binary strings.
+    """Write spec-cli-surface.md from bounded redacted binary --help output.
 
     Returns True if a spec was written.
     """
     help_tree = tmp_dir / "binary" / "cli-help-tree.txt"
     commands_file = tmp_dir / "binary" / "cli-commands.txt"
-    strings_file = tmp_dir / "binary" / "strings.head.txt"
 
     lines: list[str] = []
     lines.append(f"# CLI Surface Spec: {product_name}")
@@ -706,7 +914,7 @@ def _write_binary_cli_surface_spec(
     lines.append(
         "- Source: binary --help output"
         if help_tree.exists()
-        else "- Source: binary string extraction"
+        else "- Source: no retained raw binary strings"
     )
     lines.append("")
 
@@ -714,13 +922,13 @@ def _write_binary_cli_surface_spec(
     if commands_file.exists():
         cmds = [
             c.strip()
-            for c in commands_file.read_text(encoding="utf-8").splitlines()
+            for c in _read_text(commands_file).splitlines()
             if c.strip()
         ]
         cmd_count = len(cmds)
 
     if help_tree.exists():
-        tree_text = help_tree.read_text(encoding="utf-8")
+        tree_text = _read_text(help_tree)
         lines.append("## Command Count")
         lines.append("")
         lines.append(
@@ -755,22 +963,6 @@ def _write_binary_cli_surface_spec(
         else:
             lines.extend(tree_lines)
         lines.append("```")
-        lines.append("")
-    elif strings_file.exists():
-        # Fallback: extract command-like patterns from strings
-        raw = strings_file.read_text(encoding="utf-8", errors="replace")
-        usage_lines = [
-            line.strip()
-            for line in raw.splitlines()
-            if "usage" in line.lower() or "Usage" in line
-        ]
-        lines.append("## CLI Surface (from binary strings, best-effort)")
-        lines.append("")
-        if usage_lines:
-            for u in usage_lines[:20]:
-                lines.append(f"- `{u[:200]}`")
-        else:
-            lines.append("_No usage patterns found in binary strings._")
         lines.append("")
     else:
         return False
@@ -1169,10 +1361,8 @@ def _get_upstream_commit(analysis_root: Path) -> str | None:
     if not git_dir.exists():
         return None
     try:
-        sha = subprocess.check_output(
-            ["git", "-C", str(analysis_root), "rev-parse", "HEAD"],
-            text=True,
-            stderr=subprocess.DEVNULL,
+        sha = _check_output(
+            ["git", "-C", str(analysis_root), "rev-parse", "HEAD"]
         ).strip()
         return sha if sha else None
     except Exception:
@@ -1513,7 +1703,7 @@ def _write_comparison_report(
     if commands_file.exists():
         binary_cmds = [
             c.strip()
-            for c in commands_file.read_text(encoding="utf-8").splitlines()
+            for c in _read_text(commands_file).splitlines()
             if c.strip()
         ]
 
@@ -1521,7 +1711,7 @@ def _write_comparison_report(
     repo_cli_spec = output_dir / "spec-cli-surface.md"
     if repo_cli_spec.exists():
         # Extract command names from the table rows (| `cmd` | ... |)
-        text = repo_cli_spec.read_text(encoding="utf-8")
+        text = _read_text(repo_cli_spec)
         for m in re.finditer(r"^\|\s*`([^`]+)`\s*\|", text, re.MULTILINE):
             cmd = m.group(1).strip()
             if cmd and cmd not in ("Command",):
@@ -1538,7 +1728,7 @@ def _write_comparison_report(
     _repo_groups = 0
     registry_yaml = output_dir / "feature-registry.yaml"
     if registry_yaml.exists():
-        text = registry_yaml.read_text(encoding="utf-8")
+        text = _read_text(registry_yaml)
         in_groups = False
         for raw_line in text.splitlines():
             line = raw_line.rstrip()
@@ -1556,12 +1746,12 @@ def _write_comparison_report(
                 # Determine source from notes field
                 binary_groups += 1
 
-        # For the comparison we count total groups; binary-enriched have "binary-symbols.txt" anchor
+        # Binary-enriched groups cite aggregate binary analysis, never raw strings.
         binary_enriched = 0
         repo_scaffold = 0
         for raw_line in text.splitlines():
             stripped = raw_line.strip()
-            if stripped == "- binary-symbols.txt":
+            if stripped == "- binary-analysis.md":
                 binary_enriched += 1
 
         # Groups without binary anchor are repo-scaffolded
@@ -1640,6 +1830,7 @@ def _write_wrapper_validate_feature_registry(output_dir: Path) -> None:
 from __future__ import annotations
 
 import os
+import signal
 import subprocess
 import sys
 from pathlib import Path
@@ -1649,7 +1840,6 @@ SKILL_VALIDATE_CANDIDATES = [
     Path({str(skill_validate_path)!r}),
     Path(__file__).resolve().parents[3] / "skills" / "reverse-engineer" / "scripts" / "validate_feature_registry.py",
     Path(__file__).resolve().parents[2] / "skills" / "reverse-engineer" / "scripts" / "validate_feature_registry.py",
-    Path.cwd() / "skills" / "reverse-engineer" / "scripts" / "validate_feature_registry.py",
 ]
 
 def _resolve_validator() -> Path:
@@ -1670,11 +1860,26 @@ def main() -> int:
             "--local-clone-dir", local_root,
         ]
     validator = _resolve_validator()
-    p = subprocess.run([sys.executable, str(validator), *args])
-    return p.returncode
+    p = subprocess.Popen([sys.executable, str(validator), *args], start_new_session=True)
+    try:
+        return p.wait(timeout=60)
+    except subprocess.TimeoutExpired:
+        try:
+            os.killpg(p.pid, signal.SIGKILL)
+        except ProcessLookupError:
+            pass
+        p.wait(timeout=2)
+        return 124
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    try:
+        raise SystemExit(main())
+    except (subprocess.CalledProcessError, TimeoutError, ValueError, RuntimeError) as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        raise SystemExit(2)
+    except OSError as exc:
+        print(f"error: filesystem operation failed ({type(exc).__name__})", file=sys.stderr)
+        raise SystemExit(2)
 """,
         encoding="utf-8",
     )
@@ -1693,14 +1898,12 @@ def _copy_security_validators(output_dir: Path) -> None:
     ]:
         src = SKILL_DIR / rel
         dst = sec_dir / Path(rel).name.replace("_", "-")
-        dst.write_text(src.read_text(encoding="utf-8"), encoding="utf-8")
+        dst.write_text(_read_text(src), encoding="utf-8")
         dst.chmod(0o755)
 
 
 def _git_text(repo: Path, *args: str) -> str:
-    return subprocess.check_output(
-        ["git", "-C", str(repo), *args], text=True, stderr=subprocess.STDOUT
-    ).strip()
+    return _check_output(["git", "-C", str(repo), *args]).strip()
 
 
 def _is_git_checkout(path: Path) -> bool:
@@ -1719,7 +1922,11 @@ def _write_source_metadata(
     source_kind: str,
 ) -> None:
     payload = {
-        "upstream_repo": upstream_repo,
+        "upstream_repo_sha256": (
+            hashlib.sha256(upstream_repo.encode("utf-8")).hexdigest()
+            if upstream_repo
+            else None
+        ),
         "upstream_ref": upstream_ref,
         "resolved_commit": resolved_commit,
         "source_kind": source_kind,
@@ -1778,11 +1985,7 @@ def _prepare_repo_analysis(
         analysis_root = local_clone_dir
     else:
         try:
-            top = subprocess.check_output(
-                ["git", "rev-parse", "--show-toplevel"],
-                text=True,
-                stderr=subprocess.DEVNULL,
-            ).strip()
+            top = _check_output(["git", "rev-parse", "--show-toplevel"]).strip()
         except (OSError, subprocess.CalledProcessError):
             top = ""
         analysis_root = _lexical_absolute(Path(top)) if top else local_clone_dir
@@ -1797,10 +2000,7 @@ def _prepare_repo_analysis(
                 "existing checkout has no origin URL to verify against --upstream-repo"
             )
         if origin != upstream_repo:
-            _die(
-                "existing checkout origin does not match --upstream-repo "
-                f"(origin={origin!r}, requested={upstream_repo!r})"
-            )
+            _die("existing checkout origin does not match --upstream-repo")
 
     if upstream_ref:
         if not _is_git_checkout(analysis_root):
@@ -1862,11 +2062,21 @@ def main() -> int:
 
     ap.add_argument("--docs-sitemap-url", default=None)
     ap.add_argument(
+        "--docs-sitemap-root",
+        default=None,
+        help="Required absolute authorization root when --docs-sitemap-url uses file://.",
+    )
+    ap.add_argument(
         "--docs-features-prefix",
         default="auto",
         help="Docs slug prefix, e.g. docs/features/. Use 'auto' to detect from repo/sitemap (default).",
     )
     ap.add_argument("--upstream-repo", default=None)
+    ap.add_argument(
+        "--upstream-root",
+        default=None,
+        help="Required absolute authorization root when --upstream-repo uses file://.",
+    )
     ap.add_argument(
         "--upstream-ref",
         default=None,
@@ -1885,6 +2095,11 @@ def main() -> int:
     )
     ap.add_argument("--mode", default="repo", choices=["repo", "binary", "both"])
     ap.add_argument("--binary-path", default=None)
+    ap.add_argument(
+        "--binary-root",
+        default=None,
+        help="Absolute authorization root for the root-relative --binary-path.",
+    )
 
     ap.add_argument("--security-audit", action="store_true")
     ap.add_argument("--sbom", action="store_true")
@@ -1902,6 +2117,110 @@ def main() -> int:
 
     args = ap.parse_args()
 
+    bounded_values = {
+        "product_name": (args.product_name, 256),
+        "docs_features_prefix": (args.docs_features_prefix, 4096),
+        "docs_sitemap_root": (args.docs_sitemap_root, 4096),
+        "upstream_repo": (args.upstream_repo, 4096),
+        "upstream_root": (args.upstream_root, 4096),
+        "upstream_ref": (args.upstream_ref, 256),
+        "local_clone_dir": (args.local_clone_dir, 4096),
+        "output_dir": (args.output_dir, 4096),
+        "binary_path": (args.binary_path, 4096),
+        "binary_root": (args.binary_root, 4096),
+    }
+    for label, (value, maximum) in bounded_values.items():
+        if value is not None and (not value or len(value.encode("utf-8")) > maximum):
+            _die(f"{label} must contain between 1 and {maximum} bytes")
+    if args.upstream_ref and (
+        args.upstream_ref.startswith("-")
+        or ".." in args.upstream_ref
+        or "@{" in args.upstream_ref
+        or not re.fullmatch(r"[A-Za-z0-9._/-]+", args.upstream_ref)
+    ):
+        _die("--upstream-ref contains unsupported characters")
+
+    sitemap_input_root: Path | None = None
+    if args.docs_sitemap_url:
+        if len(args.docs_sitemap_url.encode("utf-8")) > 2048:
+            _die("--docs-sitemap-url exceeds 2048 bytes")
+        parsed_sitemap = urllib.parse.urlparse(args.docs_sitemap_url)
+        if parsed_sitemap.scheme == "file":
+            if parsed_sitemap.netloc or parsed_sitemap.query or parsed_sitemap.fragment:
+                _die("local sitemap URL must not contain authority, query, or fragment")
+            if not args.docs_sitemap_root:
+                _die("file:// sitemap input requires --docs-sitemap-root")
+            sitemap_input_root = _canonical_existing_root(
+                args.docs_sitemap_root, "--docs-sitemap-root"
+            )
+            sitemap_source = Path(urllib.parse.unquote(parsed_sitemap.path))
+            try:
+                sitemap_relative = sitemap_source.relative_to(sitemap_input_root).as_posix()
+            except ValueError:
+                _die("local sitemap is outside --docs-sitemap-root")
+            sitemap_source = _rooted_existing_path(
+                sitemap_input_root,
+                sitemap_relative,
+                label="local sitemap",
+            )
+            if sitemap_source.stat().st_size > 16 * 1024 * 1024:
+                _die("local sitemap exceeds the 16777216-byte input bound")
+        elif (
+            parsed_sitemap.scheme != "https"
+            or not parsed_sitemap.hostname
+            or parsed_sitemap.username
+            or parsed_sitemap.password
+        ):
+            _die("sitemap URL must be credential-free HTTPS or explicitly rooted file://")
+        elif args.docs_sitemap_root:
+            _die("--docs-sitemap-root is only valid with file:// sitemap input")
+    elif args.docs_sitemap_root:
+        _die("--docs-sitemap-root requires --docs-sitemap-url")
+
+    if args.upstream_repo:
+        parsed_upstream = urllib.parse.urlparse(args.upstream_repo)
+        if parsed_upstream.scheme == "file":
+            if parsed_upstream.netloc or parsed_upstream.query or parsed_upstream.fragment:
+                _die("local upstream URL must not contain authority, query, or fragment")
+            if not args.upstream_root:
+                _die("file:// upstream input requires --upstream-root")
+            upstream_root = _canonical_existing_root(args.upstream_root, "--upstream-root")
+            upstream_source = Path(urllib.parse.unquote(parsed_upstream.path))
+            try:
+                upstream_relative = upstream_source.relative_to(upstream_root).as_posix()
+            except ValueError:
+                _die("local upstream is outside --upstream-root")
+            _rooted_existing_path(
+                upstream_root,
+                upstream_relative,
+                label="local upstream",
+                require_directory=True,
+            )
+        elif args.upstream_root:
+            _die("--upstream-root is only valid with file:// upstream input")
+    elif args.upstream_root:
+        _die("--upstream-root requires --upstream-repo")
+
+    binary_path: Path | None = None
+    if args.mode in ("binary", "both"):
+        if not args.authorized:
+            _die("--authorized is required for binary analysis (hard guardrail)")
+        if not args.binary_root or not args.binary_path:
+            _die("--binary-root and root-relative --binary-path are required for binary analysis")
+        binary_root = _canonical_existing_root(args.binary_root, "--binary-root")
+        binary_path = _rooted_existing_path(
+            binary_root,
+            args.binary_path,
+            label="binary",
+        )
+        binary_info = binary_path.stat()
+        if not os.access(binary_path, os.X_OK):
+            _die("binary must be executable")
+        if binary_info.st_size > 256 * 1024 * 1024:
+            _die("binary exceeds the 268435456-byte analysis bound")
+    elif args.binary_path or args.binary_root:
+        _die("--binary-root/--binary-path require a mode that includes binary")
+
     product_slug = _slugify(args.product_name)
     explicit_local_dir = args.local_clone_dir is not None
     local_clone_dir = _lexical_absolute(
@@ -1917,6 +2236,9 @@ def main() -> int:
     output_identity = _ensure_real_directory(output_dir)
     _ensure_real_directory(tmp_dir)
     _assert_no_symlinks(output_dir)
+    _authorize_read_root(local_clone_dir)
+    _authorize_read_root(output_dir)
+    _authorize_read_root(tmp_dir)
 
     docs_features_txt = output_dir / "docs-features.txt"
     effective_docs_prefix = args.docs_features_prefix
@@ -1932,6 +2254,7 @@ def main() -> int:
             upstream_repo=args.upstream_repo,
             upstream_ref=args.upstream_ref,
         )
+        _authorize_read_root(analysis_root)
 
     # 1) Mechanical docs inventory (NO heavy crawling).
     if args.docs_sitemap_url:
@@ -1942,13 +2265,21 @@ def main() -> int:
                 str(SKILL_DIR / "scripts" / "fetch_url.py"),
                 args.docs_sitemap_url,
                 str(sitemap_xml),
+                "--output-root",
+                str(tmp_dir),
+                "--max-bytes",
+                str(16 * 1024 * 1024),
+                *(
+                    ["--input-root", str(sitemap_input_root)]
+                    if sitemap_input_root is not None
+                    else []
+                ),
             ]
         )
 
         paths_txt = tmp_dir / f"{product_slug}-sitemap-paths.txt"
-        sitemap_paths = subprocess.check_output(
-            [str(SKILL_DIR / "scripts" / "extract_sitemap_paths.sh"), str(sitemap_xml)],
-            text=True,
+        sitemap_paths = _check_output(
+            [str(SKILL_DIR / "scripts" / "extract_sitemap_paths.sh"), str(sitemap_xml)]
         )
         paths_txt.write_text(sitemap_paths, encoding="utf-8")
 
@@ -1957,13 +2288,12 @@ def main() -> int:
                 sitemap_paths.splitlines()
             )
 
-        docs_features = subprocess.check_output(
+        docs_features = _check_output(
             [
                 str(SKILL_DIR / "scripts" / "extract_docs_features.sh"),
                 str(paths_txt),
                 effective_docs_prefix,
-            ],
-            text=True,
+            ]
         )
         docs_features_txt.write_text(docs_features, encoding="utf-8")
     else:
@@ -1999,13 +2329,7 @@ def main() -> int:
 
     # 2) Binary analysis mode.
     if args.mode in ("binary", "both"):
-        if not args.authorized:
-            _die("--authorized is required for binary analysis (hard guardrail)")
-        if not args.binary_path:
-            _die("--binary-path is required when --mode includes binary")
-        binary_path = Path(args.binary_path).expanduser().resolve()
-        if not binary_path.exists():
-            _die(f"binary not found: {binary_path}")
+        assert binary_path is not None
 
         _ensure_dirs([tmp_dir / "binary"])
 
@@ -2050,6 +2374,12 @@ def main() -> int:
                 str(tmp_dir / "binary" / "embedded-archives.json"),
                 "--out-index-md",
                 str(output_dir / "binary-embedded-archives.md"),
+                "--json-root",
+                str(tmp_dir),
+                "--index-root",
+                str(output_dir),
+                "--max-binary-bytes",
+                str(256 * 1024 * 1024),
             ],
             check=True,
         )
@@ -2077,12 +2407,21 @@ def main() -> int:
                     str(binary_path),
                     "--out-dir",
                     str(extract_root),
+                    "--output-root",
+                    str(local_clone_dir),
+                    "--max-binary-bytes",
+                    str(256 * 1024 * 1024),
                 ],
                 check=True,
             )
             primary = extract_root / "PRIMARY.txt"
             if primary.exists():
-                analysis_root = Path(primary.read_text(encoding="utf-8").strip())
+                selected_name = _read_text(primary).strip()
+                selected = extract_root / selected_name
+                _reject_path_symlinks(selected)
+                selected.resolve(strict=True).relative_to(extract_root.resolve(strict=True))
+                analysis_root = selected
+                _authorize_read_root(analysis_root)
 
     # 4) Generate feature inventory (docs-first when available).
     inventory_md = output_dir / "feature-inventory.md"
@@ -2173,7 +2512,7 @@ def main() -> int:
     if not wrote_cli:
         # Required behavior: omit the file, but leave an explicit note somewhere deterministic.
         (output_dir / "spec-code-map.md").write_text(
-            (output_dir / "spec-code-map.md").read_text(encoding="utf-8")
+            _read_text(output_dir / "spec-code-map.md")
             + "\n\n## CLI Surface\n\n_Omitted: no CLI surface detected (or mode did not include repo)._ \n",
             encoding="utf-8",
         )

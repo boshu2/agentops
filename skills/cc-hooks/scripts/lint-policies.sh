@@ -26,6 +26,9 @@ fail() { printf 'lint-policies: FAIL: %s\n' "$1" >&2; exit 1; }
 
 command -v jq >/dev/null 2>&1 || fail "jq is required"
 [ -f "$registry" ] || fail "registry not found: ${registry}"
+[[ ! -L "$registry" ]] || fail "registry must not be a symlink"
+registry_size="$(wc -c < "$registry" | tr -d ' ')"
+[[ "$registry_size" -le 65536 ]] || fail "registry exceeds 65536 bytes"
 
 jq empty "$registry" 2>/dev/null || fail "not valid JSON: ${registry}"
 
@@ -34,6 +37,9 @@ schema="$(jq -r '.schema // ""' "$registry")"
 
 count="$(jq '.policies | length' "$registry")"
 [ "$count" -ge 1 ] || fail "policies array is empty"
+[ "$count" -le 32 ] || fail "policies array exceeds 32 entries"
+matcher_count="$(jq '[.policies[].matchers[]] | length' "$registry")"
+[ "$matcher_count" -le 64 ] || fail "matcher count exceeds 64"
 
 # Required fields present and non-empty on every policy.
 missing="$(jq -r '
@@ -66,6 +72,10 @@ bad_tool="$(jq -r '.policies[] | .id as $id | .matchers[].tools[] | select(IN("B
 [ -z "$bad_tool" ] || fail "invalid matcher tool: ${bad_tool}"
 bad_field="$(jq -r '.policies[] | .id as $id | .matchers[] | select(.field | IN("command","file_path") | not) | $id' "$registry")"
 [ -z "$bad_field" ] || fail "invalid matcher field on: ${bad_field}"
+oversized="$(jq -r '.policies[] | .id as $id | select((.route_message | length) > 512 or (.rationale | length) > 2048 or (.value_proof | length) > 1024) | $id' "$registry")"
+[ -z "$oversized" ] || fail "policy text exceeds bound on: ${oversized}"
+oversized_pattern="$(jq -r '.policies[] | .id as $id | .matchers[] | select((.pattern | length) > 1024) | $id' "$registry")"
+[ -z "$oversized_pattern" ] || fail "matcher pattern exceeds 1024 bytes on: ${oversized_pattern}"
 
 # Every pattern must compile under grep -E on this host.
 # join(), not @tsv: TSV escaping mangles backslashes inside patterns.

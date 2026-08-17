@@ -4,30 +4,74 @@
   "title": "Council Report",
   "type": "object",
   "additionalProperties": false,
-  "required": ["schema_version", "question", "subject_digest", "judges", "synthesis"],
+  "required": ["schema_version", "question", "subject_digest", "authorization_id", "input_packet", "limits", "round_status", "judge_attempts", "judges", "synthesis", "cleanup_verified"],
   "properties": {
     "schema_version": {"const": "council-report.v1"},
-    "question": {"type": "string", "minLength": 1},
+    "question": {"type": "string", "minLength": 1, "maxLength": 4096},
     "subject_digest": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "authorization_id": {"type": "string", "minLength": 1, "maxLength": 256},
     "diversity_unsatisfied": {"type": "boolean"},
-    "judges": {
+    "input_packet": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["source_refs", "byte_length", "sha256"],
+      "properties": {
+        "source_refs": {"type": "array", "minItems": 1, "maxItems": 20, "uniqueItems": true, "items": {"type": "string", "minLength": 1, "maxLength": 1024}},
+        "byte_length": {"type": "integer", "minimum": 1, "maximum": 262144},
+        "sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"}
+      }
+    },
+    "limits": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["judge_count", "per_judge_timeout_seconds", "round_timeout_seconds", "max_judge_output_bytes"],
+      "properties": {
+        "judge_count": {"type": "integer", "minimum": 2, "maximum": 5},
+        "per_judge_timeout_seconds": {"type": "integer", "minimum": 1, "maximum": 300},
+        "round_timeout_seconds": {"type": "integer", "minimum": 1, "maximum": 900},
+        "max_judge_output_bytes": {"type": "integer", "minimum": 1, "maximum": 32768}
+      }
+    },
+    "round_status": {"enum": ["sufficient", "insufficient"]},
+    "cleanup_verified": {"const": true},
+    "judge_attempts": {
       "type": "array",
       "minItems": 2,
+      "maxItems": 5,
       "items": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["context_id", "methodology", "judgment", "evidence"],
+        "required": ["context_id", "adapter", "model_identity", "status", "output_bytes", "cleanup_confirmed"],
         "properties": {
-          "context_id": {"type": "string", "minLength": 1},
-          "methodology": {"type": "string", "minLength": 1},
-          "model_identity": {"type": "string", "minLength": 1},
-          "judgment": {"type": "string", "minLength": 1},
+          "context_id": {"type": "string", "minLength": 1, "maxLength": 256},
+          "adapter": {"type": "string", "minLength": 1, "maxLength": 128},
+          "model_identity": {"type": "string", "minLength": 1, "maxLength": 128},
+          "status": {"enum": ["completed", "timed_out", "error"]},
+          "output_bytes": {"type": "integer", "minimum": 0, "maximum": 32768},
+          "cleanup_confirmed": {"const": true},
+          "error": {"type": "string", "minLength": 1, "maxLength": 1024}
+        }
+      }
+    },
+    "judges": {
+      "type": "array",
+      "maxItems": 5,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["context_id", "methodology", "model_identity", "judgment", "evidence"],
+        "properties": {
+          "context_id": {"type": "string", "minLength": 1, "maxLength": 256},
+          "methodology": {"type": "string", "minLength": 1, "maxLength": 256},
+          "model_identity": {"type": "string", "minLength": 1, "maxLength": 128},
+          "judgment": {"type": "string", "minLength": 1, "maxLength": 8192},
           "evidence": {
             "type": "array",
             "minItems": 1,
-            "items": {"type": "string", "minLength": 1}
+            "maxItems": 20,
+            "items": {"type": "string", "minLength": 1, "maxLength": 1024}
           },
-          "omissions": {"type": "array", "items": {"type": "string", "minLength": 1}}
+          "omissions": {"type": "array", "maxItems": 20, "items": {"type": "string", "minLength": 1, "maxLength": 1024}}
         }
       }
     },
@@ -43,11 +87,13 @@
             "additionalProperties": false,
             "required": ["claim", "methodologies"],
             "properties": {
-              "claim": {"type": "string", "minLength": 1},
-              "methodologies": {
-                "type": "array",
-                "minItems": 1,
-                "items": {"type": "string", "minLength": 1}
+              "claim": {"type": "string", "minLength": 1, "maxLength": 4096},
+                            "methodologies": {
+                                "type": "array",
+                                "minItems": 2,
+                                "maxItems": 5,
+                                "uniqueItems": true,
+                "items": {"type": "string", "minLength": 1, "maxLength": 256}
               }
             }
           }
@@ -59,18 +105,37 @@
             "additionalProperties": false,
             "required": ["point", "positions"],
             "properties": {
-              "point": {"type": "string", "minLength": 1},
+              "point": {"type": "string", "minLength": 1, "maxLength": 4096},
               "positions": {
                 "type": "array",
                 "minItems": 1,
-                "items": {"type": "string", "minLength": 1}
+                "maxItems": 10,
+                "items": {"type": "string", "minLength": 1, "maxLength": 4096}
               }
             }
           }
         },
-        "minority": {"type": "array", "items": {"type": "string", "minLength": 1}},
-        "unresolved": {"type": "array", "items": {"type": "string", "minLength": 1}}
+        "minority": {"type": "array", "maxItems": 20, "items": {"type": "string", "minLength": 1, "maxLength": 4096}},
+        "unresolved": {"type": "array", "maxItems": 20, "items": {"type": "string", "minLength": 1, "maxLength": 4096}}
       }
     }
-  }
+  },
+  "allOf": [
+    {
+      "if": {"properties": {"round_status": {"const": "sufficient"}}},
+      "then": {"properties": {"judges": {"minItems": 2}}},
+      "else": {
+        "properties": {
+          "judges": {"maxItems": 1},
+          "synthesis": {
+            "properties": {
+              "consensus": {"maxItems": 0},
+              "divergence": {"maxItems": 0},
+              "minority": {"maxItems": 0}
+            }
+          }
+        }
+      }
+    }
+  ]
 }

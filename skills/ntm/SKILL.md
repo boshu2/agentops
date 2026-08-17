@@ -25,6 +25,19 @@ output_contract: factual session, pane, command, and observation results
 ---
 # NTM — optional pane adapter
 
+## Constraints
+
+- Dispatch only through `scripts/dispatch.sh`. It targets one existing session
+  and one exact pane; pane creation, restart, scaling, broad broadcast, and raw
+  key injection are not exposed because they would widen lifecycle authority.
+- Require a canonical workspace, regular prompt file capped at 64 KiB, receipt
+  path, 1-300 second observation window, and an approval bound to the session,
+  pane, workspace, and prompt digest because a pane name alone does not bind
+  the target worktree or message.
+- Before sending, attest the live robot `send`, `snapshot`, and `tail` surfaces,
+  require snapshot evidence that the pane belongs to the expected workspace,
+  and require a successful dry run.
+
 NTM hosts explicit agent roles in persistent panes. It is transport, not an
 AgentOps lifecycle controller. The caller chooses the panes, roles, commands,
 write scopes, and stopping point.
@@ -48,7 +61,7 @@ any level.
 
 ## Boundary
 
-- Never start or probe NTM merely because it is installed.
+- Start these probes only for a caller-selected NTM dispatch packet.
 - Discover the live command contract with `ntm --help`,
   `ntm --robot-capabilities`, and `ntm --robot-snapshot` before unfamiliar
   actions.
@@ -92,7 +105,7 @@ Return:
 - degraded or unavailable substrate surfaces;
 - effects that were and were not observed.
 
-Terminal outcomes are explicit, never a silent hang:
+Every terminal outcome is explicit and bounded:
 
 - **NTM unavailable** — `ntm` absent or the robot surface unreachable: report it
   and stop; do not fall back to blind key injection or assume the pane is idle.
@@ -104,7 +117,7 @@ Terminal outcomes are explicit, never a silent hang:
   experiment; report which panes were created or left running so nothing is
   orphaned silently. NTM never retries or reaps on its own.
 
-## Useful live surfaces
+## Quality and useful live surfaces
 
 Prefer machine-readable robot surfaces for capability, snapshot, attention,
 tail, and pipeline observations. Use interactive key injection only when the
@@ -115,3 +128,15 @@ External NTM documentation and examples remain the authority for command syntax;
 this skill owns only the AgentOps boundary above. NTM's CLI drifts across
 versions, so confirm the surface at runtime (`ntm --version`,
 `ntm --robot-capabilities`) rather than trusting a remembered command.
+
+Done means one existing pane received at most one prompt and the wrapper returned
+a structured receipt plus the bounded tail observation, or it returned an
+unavailable, capability, snapshot, approval, dry-run, timeout, or nonzero result.
+Fixture tests prove package gating, not NTM/tmux/provider safety or engagement.
+
+- Positive output identifies the exact existing session, pane, workspace,
+  prompt digest, observation window, and receipt.
+- Refusal paths leave the dispatch action log empty, so validation precedes the
+  consequential send.
+- The receipt and tail are transport evidence; provider engagement and semantic
+  acceptance remain explicitly unproved.

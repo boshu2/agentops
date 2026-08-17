@@ -160,6 +160,14 @@ Suggestion: Use `git stash` to preserve changes
 
 ## Configuration
 
+Configuration writes use `scripts/write-config.sh`, not an ad-hoc redirect or
+direct editor. The wrapper accepts only a repository's `.dcg.toml` or
+`.dcg/allowlist.toml`, refuses symlink and root targets, binds approval to the
+old and new SHA-256 digests, exercises the candidate against one safe and one
+core-destructive command, then installs the exact bytes atomically. A failed
+capability probe or a candidate that allows the destructive probe stops before
+the active config changes.
+
 ```toml
 # .dcg.toml — enable rule packs per-project
 [packs]
@@ -214,6 +222,8 @@ dcg test "git reset --hard HEAD"
 - The response identifies the exact block and rule without exposing or suggesting an unauthorized bypass path.
 - The chosen alternative is narrower, reversible where possible, and demonstrably preserves the user's requested outcome.
 - Validation distinguishes an expected destructive-command block from a broken DCG installation or configuration.
+- Configuration work is done only when the installed target digest equals the
+  approved candidate digest and the destructive probe remains blocked.
 
 ---
 

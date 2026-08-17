@@ -23,7 +23,11 @@ set -uo pipefail
 # fail-open is intentional, not an accident of an empty path falling through.
 command -v jq >/dev/null 2>&1 || exit 0
 
-input="$(cat)"
+input="$(head -c 65537)"
+if [[ ${#input} -gt 65536 ]]; then
+  echo "installed-skill edit guard: hook input exceeds 65536 bytes" >&2
+  exit 2
+fi
 path="$(printf '%s' "$input" | jq -r '.tool_input.file_path // ""')"
 sid="$(printf '%s' "$input" | jq -r '.session_id // "nosession"')"
 
@@ -41,12 +45,21 @@ case "$path" in
     ;;
 esac
 
-dir="${TMPDIR:-/tmp}/claude-installed-skill-edit-guard"
-sentinel="$dir/${sid//\//_}"
+dir="${TMPDIR:-/tmp}/claude-installed-skill-edit-guard-v2"
+if command -v shasum >/dev/null 2>&1; then
+  sid_hash="$(printf '%s' "$sid" | shasum -a 256 | cut -d' ' -f1)"
+elif command -v sha256sum >/dev/null 2>&1; then
+  sid_hash="$(printf '%s' "$sid" | sha256sum | cut -d' ' -f1)"
+else
+  echo "installed-skill edit guard: bounded session state unavailable" >&2
+  exit 2
+fi
+sentinel="$dir/$sid_hash"
 [ -f "$sentinel" ] && exit 0   # already redirected this session
 
-mkdir -p "$dir" 2>/dev/null || true
-: > "$sentinel" 2>/dev/null || true
+mkdir -m 700 -p "$dir" 2>/dev/null || { echo "installed-skill edit guard: bounded session state unavailable" >&2; exit 2; }
+find "$dir" -type f -mmin +60 -delete 2>/dev/null || true
+: > "$sentinel" 2>/dev/null || { echo "installed-skill edit guard: bounded session state unavailable" >&2; exit 2; }
 
 # Derive the repo-relative target so the redirect is actionable.
 name="$(printf '%s' "$path" | sed -n 's#.*/\.\(claude\|codex\|gemini\)/skills/\([^/]*\)/.*#\2#p')"
@@ -75,9 +88,11 @@ emit_telemetry() {
     return 0  # no hasher -> emit nothing rather than risk leaking the raw path
   fi
   [ -n "$h" ] || return 0
-  local tdir="${AGENTOPS_HOME:-${HOME}/.agents/ao}"
-  local tfile="${AGENTOPS_GUARDRAIL_TELEMETRY:-${tdir}/guardrail-telemetry.jsonl}"
-  mkdir -p "$(dirname "$tfile")" 2>/dev/null || return 0
+  local tdir="${AOP_TELEMETRY_ROOT:-}"
+  [[ "$tdir" == /* && -d "$tdir" && ! -L "$tdir" ]] || return 0
+  local tfile="${tdir}/guardrail-telemetry.jsonl"
+  [[ ! -L "$tfile" ]] || return 0
+  [[ ! -e "$tfile" || "$(wc -c < "$tfile" | tr -d ' ')" -lt 1048576 ]] || return 0
   local line
   line="$(jq -nc \
     --arg ts "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
@@ -92,8 +107,7 @@ emit_telemetry
 
 cat >&2 <<MSG
 ⛔ INSTALLED-SKILL EDIT: do not edit installed skill copies.
-  ${path}
-  is an INSTALLED / symlinked copy — overwritten on install, or symlinked through
+  The requested target is an INSTALLED / symlinked copy — overwritten on install, or symlinked through
   to the factory checkout. Editing it is lost work.
   → Edit ${hint} in the agentops repo (the source of truth) instead.
 Fires once per session. Re-run your edit against the repo skills/ path.

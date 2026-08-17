@@ -23,6 +23,27 @@ output_contract: remote compilation status and diagnostic evidence
 RCH can offload one explicit compilation command or inspect the remote compiler
 path. This skill reports what happened; it does not govern retries or repair.
 
+## Constraints and enforced boundary
+
+- Consequential compilation goes through `scripts/offload.sh run`; direct
+  `rch exec`, hook installation, daemon/configuration changes, cleanup, and
+  worker mutation are outside this package-owned lane because they have a
+  broader remote effect surface.
+- The workspace must be the canonical root of one Git worktree. The command is
+  an argument array, never a shell string, and is limited to `cargo
+  build|check|test|clippy` or `bun test` without path/configuration overrides
+  because an arbitrary shell string would escape command and path bounds.
+- Generate the exact token with `scripts/offload.sh approval ...`, obtain that
+  token from the caller, then pass it to `run`. It binds the canonical
+  workspace and every command argument because authorization must survive
+  argument reordering or replacement.
+- Before dispatch, the wrapper requires RCH 1.x machine capabilities for
+  `check`, `exec`, and the requested runtime, machine-readable exec help, and a
+  successful bounded `rch check`. A missing claim fails closed.
+- Each call has a nonrenewing 1–3600 second deadline, runs once, and records
+  stdout, stderr, native exit code, and the final `[RCH]` summary in a receipt.
+  A timeout, absent summary, or `[RCH] local (...)` is not remote success.
+
 Staged diagnosis works because the offload pipeline fails in order —
 availability, configuration, hook, classification, sync, remote compile,
 worker pressure — so the first failing stage localizes the fault and every
@@ -45,7 +66,8 @@ fails deterministically, not moodily.
    `[RCH]` summary before mutation.
 2. For diagnosis, identify the first failing stage: availability, configuration,
    hook, classification, sync, remote compile, or worker pressure.
-3. Run only the caller-authorized command or documented safe diagnostic once.
+3. Generate the exact approval token, obtain caller authorization for it, and
+   run the bounded package wrapper once.
 4. Capture the exact command, worker when known, exit code, local-fallback reason,
    and post-action status.
 5. Stop and return the evidence.
@@ -58,6 +80,21 @@ configuration, and remote mutation require explicit caller authority.
 offload-ready). Do not read `rch doctor --json` `success: true` as readiness — a
 successful diagnostic report can coexist with a down daemon or unreachable
 workers. Adjudicate on `rch check`; use `doctor` for the reasons behind it.
+
+## Quality and done
+
+Stop after one receipt. Success requires `status: remote`, exit code zero, an
+exact `[RCH] remote ...` runtime summary, and no wrapper timeout. The receipt's
+`not_checked` names `remote-worker-implementation`: local bounds and runtime
+claims do not prove the external daemon, transport, or worker implementation
+safe.
+
+- Remote success requires a zero build exit and an exact `[RCH] remote ...`
+  summary captured from stderr.
+- `[RCH] local (...)`, a missing summary, or a deadline produces a non-success
+  status even when a local compiler exits zero.
+- The receipt preserves command, version, readiness, output files, and the
+  external worker implementation that remains unchecked.
 
 ## Output
 

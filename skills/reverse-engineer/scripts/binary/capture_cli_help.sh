@@ -22,6 +22,15 @@ BINARY_NAME="$(basename "$BINARY_PATH")"
 PER_CMD_TIMEOUT=5
 TOTAL_TIMEOUT=120
 MAX_DEPTH=3
+MAX_INVOCATIONS=128
+MAX_HELP_BYTES=65536
+MAX_TREE_BYTES=$((1024 * 1024))
+
+[[ -f "$BINARY_PATH" && -x "$BINARY_PATH" && ! -L "$BINARY_PATH" ]] \
+  || { echo "error: binary must be an executable regular non-symlink file" >&2; exit 2; }
+[[ "$BINARY_NAME" =~ ^[A-Za-z0-9._-]+$ ]] \
+  || { echo "error: binary basename contains unsupported characters" >&2; exit 2; }
+[[ ! -L "$OUT_DIR" ]] || { echo "error: output directory must not be a symlink" >&2; exit 2; }
 
 # Help-like keywords that indicate valid help output.
 HELP_KEYWORDS="Usage|Commands|Available|Flags|Options|usage|commands|available|flags|options|USAGE|COMMANDS|AVAILABLE|FLAGS|OPTIONS|help|HELP|Synopsis|SYNOPSIS|Arguments|ARGUMENTS"
@@ -33,6 +42,10 @@ if command -v timeout &>/dev/null; then
 elif command -v gtimeout &>/dev/null; then
     TIMEOUT_CMD="gtimeout"
 fi
+[[ -n "$TIMEOUT_CMD" ]] || {
+    echo "error: timeout or gtimeout is required; refusing uncapped CLI execution" >&2
+    exit 2
+}
 
 mkdir -p "$OUT_DIR"
 
@@ -40,12 +53,15 @@ TREE_FILE="$OUT_DIR/cli-help-tree.txt"
 CMDS_FILE="$OUT_DIR/cli-commands.txt"
 SEEN_PATHS_FILE="$OUT_DIR/.seen-command-paths.tmp"
 VISITED_PREFIX_FILE="$OUT_DIR/.visited-prefixes.tmp"
+INVOCATIONS_FILE="$OUT_DIR/.invocations.tmp"
 
 # Start fresh.
 : > "$TREE_FILE"
 : > "$CMDS_FILE"
 : > "$SEEN_PATHS_FILE"
 : > "$VISITED_PREFIX_FILE"
+printf '0\n' > "$INVOCATIONS_FILE"
+trap 'rm -f -- "$SEEN_PATHS_FILE" "$VISITED_PREFIX_FILE" "$INVOCATIONS_FILE"' EXIT
 
 # Track total elapsed time.
 START_TIME="$(date +%s)"
@@ -62,13 +78,35 @@ budget_exceeded() {
 
 # Run a command with per-invocation timeout. Captures stdout+stderr.
 # Returns the output; exit code 0 on success, non-zero on timeout/failure.
+redact_help() {
+    perl -0pe '
+      s/\b(api[_-]?key|token|password|secret|authorization)\s*[:=]\s*\S+/$1=[REDACTED]/ig;
+      s/\bBearer\s+\S+/Bearer [REDACTED]/ig;
+      s{(?<![\w@])(?:/[^\s/:]+){2,}}{[REDACTED-PATH]}g;
+      s/\b[0-9A-Fa-f]{32,}\b/[REDACTED-TOKEN]/g;
+    '
+}
+
 run_with_timeout() {
-    if [ -n "$TIMEOUT_CMD" ]; then
-        "$TIMEOUT_CMD" "$PER_CMD_TIMEOUT" "$@" 2>&1 || true
-    else
-        # Fallback: no timeout command available, just run it.
-        "$@" 2>&1 || true
-    fi
+    local raw rc invocations
+    invocations="$(<"$INVOCATIONS_FILE")"
+    invocations=$((invocations + 1))
+    printf '%s\n' "$invocations" > "$INVOCATIONS_FILE"
+    [[ "$invocations" -le "$MAX_INVOCATIONS" ]] || return 1
+    set +e
+    raw="$("$TIMEOUT_CMD" --signal=TERM --kill-after=1s "$PER_CMD_TIMEOUT" "$@" 2>&1 | head -c $((MAX_HELP_BYTES + 1)))"
+    rc=$?
+    set -e
+    [[ "$rc" -eq 0 && ${#raw} -le "$MAX_HELP_BYTES" ]] || return 1
+    printf '%s' "$raw" | redact_help
+}
+
+append_tree() {
+    local value="$1" current incoming
+    current="$(wc -c < "$TREE_FILE" | tr -d ' ')"
+    incoming="${#value}"
+    [[ $((current + incoming + 1)) -le $MAX_TREE_BYTES ]] || return 1
+    printf '%s\n' "$value" >> "$TREE_FILE"
 }
 
 # Check if text looks like help output.
@@ -210,23 +248,23 @@ capture_help() {
     fi
 
     local help_output
-    help_output="$(run_with_timeout "$@" --help)"
+    help_output="$(run_with_timeout "$@" --help)" || help_output=""
 
     if ! looks_like_help "$help_output"; then
         if [ "$depth" -eq 0 ]; then
             # Top-level binary doesn't produce help. Write note and bail.
-            echo "# CLI Help Tree" >> "$TREE_FILE"
-            echo "" >> "$TREE_FILE"
-            echo "NOTE: $BINARY_NAME --help did not produce recognizable help output." >> "$TREE_FILE"
+            append_tree "# CLI Help Tree" || true
+            append_tree "" || true
+            append_tree "NOTE: $BINARY_NAME --help did not produce recognizable help output." || true
         fi
         return 0
     fi
 
     # Write to tree file.
-    echo "## $cmd_prefix" >> "$TREE_FILE"
-    echo "" >> "$TREE_FILE"
-    echo "$help_output" >> "$TREE_FILE"
-    echo "" >> "$TREE_FILE"
+    append_tree "## $cmd_prefix" || return 0
+    append_tree "" || return 0
+    append_tree "$help_output" || return 0
+    append_tree "" || return 0
 
     # Resolve canonical path from Usage: for alias handling and de-noising.
     local usage_path=""

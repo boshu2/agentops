@@ -10,7 +10,11 @@ set -uo pipefail
 [[ "${AGENTOPS_HOOKS_DISABLED:-0}" == "1" ]] && exit 0
 command -v jq >/dev/null 2>&1 || exit 0
 
-input="$(cat)" || exit 0
+input="$(head -c 65537)" || exit 0
+if [[ ${#input} -gt 65536 ]]; then
+  echo "AgentOps coordination guard: hook input exceeds 65536 bytes." >&2
+  exit 2
+fi
 cmd="$(
   printf '%s' "$input" |
     jq -er '
@@ -66,12 +70,29 @@ printf '%s' "$stripped" | awk '
 [[ "$is_coord" -eq 1 ]] || exit 0
 
 if [[ -n "$sid" ]]; then
-  sentinel_dir="${TMPDIR:-/tmp}/agentops-coordguard"
-  safe_sid="$(printf '%s' "$sid" | tr -c 'A-Za-z0-9_.-' '_')"
+  sentinel_dir="${TMPDIR:-/tmp}/agentops-coordguard-v2"
+  if command -v shasum >/dev/null 2>&1; then
+    safe_sid="$(printf '%s' "$sid" | shasum -a 256 | cut -d' ' -f1)"
+  elif command -v sha256sum >/dev/null 2>&1; then
+    safe_sid="$(printf '%s' "$sid" | sha256sum | cut -d' ' -f1)"
+  else
+    safe_sid=""
+  fi
+  [[ -n "$safe_sid" ]] || {
+    echo "AgentOps coordination guard: bounded session state unavailable." >&2
+    exit 2
+  }
   sentinel="$sentinel_dir/$safe_sid"
   [[ -f "$sentinel" ]] && exit 0
-  mkdir -p "$sentinel_dir" 2>/dev/null || true
-  : >"$sentinel" 2>/dev/null || true
+  mkdir -m 700 -p "$sentinel_dir" 2>/dev/null || {
+    echo "AgentOps coordination guard: bounded session state unavailable." >&2
+    exit 2
+  }
+  find "$sentinel_dir" -type f -mmin +60 -delete 2>/dev/null || true
+  : >"$sentinel" 2>/dev/null || {
+    echo "AgentOps coordination guard: bounded session state unavailable." >&2
+    exit 2
+  }
 fi
 
 cat >&2 <<'MSG'
