@@ -1,6 +1,6 @@
 ---
 name: plan
-description: Shape or refine the existing bead or caller
+description: 'Shape or refine the existing bead or caller Triggers: "plan", "discover and plan", "shape this goal".'
 ---
 # Plan
 

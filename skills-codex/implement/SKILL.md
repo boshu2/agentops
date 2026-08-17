@@ -1,6 +1,6 @@
 ---
 name: implement
-description: Execute one bounded RED to GREEN experiment
+description: 'Execute one bounded RED to GREEN experiment Triggers: "implement", "implement this bead", "run the experiment". Full plan-to-validation requests route to rpi.'
 ---
 # Implement
 

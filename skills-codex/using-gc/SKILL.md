@@ -1,6 +1,6 @@
 ---
 name: using-gc
-description: Operate a caller-selected Gas City 1.4 with
+description: 'Operate a caller-selected Gas City 1.4 with Triggers: "using gc", "gas city", "drive the mayor", "dispatch through gc".'
 ---
 # Using GC
 

@@ -65,7 +65,8 @@ else
   step "skill mesh" python3 scripts/generate-skill-mesh.py --check
   step "Codex parity" bash scripts/audit-codex-parity.sh
   step "Codex runtime sections" bash scripts/validate-codex-runtime-sections.sh
-    step "CLI reference" bash scripts/generate-cli-reference.sh --check
+  step "portable Agent Skills conformance" bash scripts/validate-codex-api-conformance.sh
+  step "CLI reference" bash scripts/generate-cli-reference.sh --check
   step "command heading projections" bash scripts/regen-command-surfaces.sh --check
   step "CLI surface inventory" bash scripts/check-cmdao-surface-parity.sh
   step "documentation index" python3 scripts/generate-documentation-index.py --check

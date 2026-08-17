@@ -1,6 +1,6 @@
 ---
 name: codebase-recon
-description: Reconstruct a repository as cited
+description: 'Reconstruct a repository as cited Triggers: "codebase recon", "trace this codebase", "repository audit", "refresh the prior recon".'
 ---
 # Codebase Recon
 
