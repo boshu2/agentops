@@ -1,6 +1,6 @@
 ---
 name: anti-ceremony
-description: Guard outcome work against process overhead.
+description: 'Guard outcome work against process overhead. Triggers: RPI pre-Plan guard; explicit "full anti-ceremony audit" requests.'
 ---
 # Anti-Ceremony
 

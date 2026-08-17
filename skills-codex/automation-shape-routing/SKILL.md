@@ -1,6 +1,6 @@
 ---
 name: automation-shape-routing
-description: 'Front door for agent automation: choose'
+description: 'Front door for agent automation: choose Triggers: "build automation", "which orchestration shape", "should this use NTM".'
 ---
 # Automation Shape Routing
 

@@ -1,6 +1,6 @@
 ---
 name: swarm
-description: Dispatch explicit disjoint packets exactly
+description: 'Dispatch explicit disjoint packets exactly Triggers: "swarm", "dispatch disjoint packets", "parallel explicit tasks".'
 ---
 # Swarm
 

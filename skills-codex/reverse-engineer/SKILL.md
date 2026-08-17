@@ -1,6 +1,6 @@
 ---
 name: reverse-engineer
-description: Reverse-engineer an authorized repo, binary
+description: 'Reverse-engineer an authorized repo, binary Triggers: "reverse-engineer X", "tear down Y", "what should we steal from Z", "evaluate competitor/upstream", "should we fork/adopt/build-native".'
 ---
 # Reverse Engineer
 
