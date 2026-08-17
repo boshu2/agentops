@@ -19,3 +19,17 @@ Feature: Research answers one bounded question
     Then every claim preserves its report identity and evidence reference
     And agreement, contradiction, and unknown are reported separately
     And Research emits one synthesis without creating an umbrella or starting a new runtime
+
+  @covered-by:skills/research/scripts/validate.sh
+  Scenario: External research is authorized and bounded
+    Given a current-fact question with declared public domains and limits
+    When Research uses GET or HEAD within the allowlist
+    Then request, byte, redirect, and deadline effects are recorded
+    And missing authorization or an out-of-allowlist target stops before contact
+
+  @covered-by:skills/research/scripts/validate.sh
+  Scenario: Sensitive evidence cannot leak into output
+    Given a source contains a credential, personal data, or restricted excerpt
+    When Research prepares model input or a durable report
+    Then it redacts the value while retaining a source identity
+    And raw output requires separate approval for the exact excerpt, audience, path, and retention

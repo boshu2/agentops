@@ -55,6 +55,8 @@ def council(args: argparse.Namespace) -> int:
 
     report = {
         "schema_version": "council-report.v1",
+        "evidence_class": "fixture-only",
+        "runtime_attestation_valid": False,
         "question": args.question or "conformance fixture question",
         "judges": judges,
         "context_ids": [j["context_id"] for j in judges],
@@ -107,6 +109,8 @@ def duel(args: argparse.Namespace) -> int:
 
     packet = {
         "schema_version": "idea-challenge.v1",
+        "evidence_class": "fixture-only",
+        "runtime_attestation_valid": False,
         "door_class": "one-way",
         "sealed_generation": True,
         "perspectives": perspectives,
@@ -182,12 +186,14 @@ def validate_cross(args: argparse.Namespace) -> int:
 
     evidence = {
         "schema_version": "cross-model-validate-evidence.v1",
+        "evidence_class": "fixture-only",
+        "runtime_attestation_valid": False,
         "author_model_identity": author_model,
         "validator_model_identity": validator_model,
         "author_context_id": args.author_context_id,
         "validator_context_id": args.validator_context_id,
         "freshness_attestation": {
-            "source": "runtime",
+            "source": "fixture-only-not-runtime",
             "attester": "fake-runner",
             "notes": (
                 f"author_model={author_model}; validator_model={validator_model}"

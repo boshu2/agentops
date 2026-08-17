@@ -39,6 +39,16 @@ Role separation works because each role's authority is checkable from its
 packet: a worker that cannot exceed its declared subject cannot corrupt a
 sibling's evidence, so factory failures stay local instead of systemic.
 
+## Enforced model dispatch
+
+Use `scripts/dispatch.sh` for real one-shot model work. It requires an exact
+role, requested model, context identity, canonical workspace, packet digest,
+artifact path, deadline, and matching approval, then delegates to the bounded
+`codex-exec` surface. NTM model-sensitive dispatch is fail-closed until its
+robot state attests the actual pane model; use NTM only as declared transport.
+The bundled fake runner is a test fixture and marks every artifact
+`runtime_attestation_valid=false`.
+
 When a worker looks stuck, score interventions by evidence and reversibility
 before acting: observe more (free, fully reversible), then nudge, then replace
 the worker, then restart the runtime — escalate only when observable state,
@@ -80,3 +90,8 @@ adapters. Use them only when the caller selected that execution shape. A
 single local agent pays no factory coordination cost. Model identity, when
 recorded, is a declared runtime fact like context identity — see
 [references/model-dispatch.md](references/model-dispatch.md).
+
+Done means one approved packet produced one nonempty artifact through an
+attested bounded adapter and the receipt names role, requested model, context,
+sandbox, digest, deadline, and residual identity limits. Local fixtures prove
+gating only and can never be presented as provider or freshness attestation.

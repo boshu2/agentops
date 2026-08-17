@@ -11,6 +11,7 @@ import shutil
 import signal
 import subprocess
 import sys
+import threading
 import time
 from dataclasses import dataclass
 from pathlib import Path
@@ -18,6 +19,20 @@ from typing import Any
 
 
 DEFAULT_PATH = "/usr/bin:/bin:/usr/sbin:/sbin"
+MAX_COMMAND_OUTPUT_BYTES = 1024 * 1024
+MAX_BINARY_BYTES = 256 * 1024 * 1024
+MAX_TIMEOUT_SECONDS = 120
+MAX_DYNAMIC_PIDS = 256
+MAX_DYNAMIC_ENDPOINTS = 256
+MAX_DYNAMIC_SAMPLES = 512
+SECRET_PATTERNS = (
+    (re.compile(r"(?i)\b(api[_-]?key|token|password|passwd|secret|authorization)\s*[:=]\s*\S+"), r"\1=[REDACTED]"),
+    (re.compile(r"(?i)\bBearer\s+\S+"), "Bearer [REDACTED]"),
+    (re.compile(r"-----BEGIN [^-\n]+-----[\s\S]*?-----END [^-\n]+-----"), "[REDACTED-PEM]"),
+    (re.compile(r"(?<![\w@])(?:/[^\s/:]+){2,}"), "[REDACTED-PATH]"),
+    (re.compile(r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b"), "[REDACTED-EMAIL]"),
+    (re.compile(r"\b(?:[A-Fa-f0-9]{32,}|[A-Za-z0-9+/]{40,}={0,2})\b"), "[REDACTED-TOKEN]"),
+)
 
 
 @dataclass
@@ -33,6 +48,31 @@ def _now_iso() -> str:
 
 def _ensure_dir(path: Path) -> None:
     path.mkdir(parents=True, exist_ok=True)
+
+
+def _confined_path(root_raw: str, relative_raw: str, *, must_exist: bool = False) -> Path:
+    root_arg = Path(root_raw)
+    if not root_arg.is_absolute() or root_arg.is_symlink():
+        raise ValueError("authorization root must be an absolute non-symlink directory")
+    root = root_arg.resolve(strict=True)
+    relative = Path(relative_raw)
+    if relative.is_absolute() or ".." in relative.parts or relative.as_posix() != relative_raw:
+        raise ValueError("authorized path must be canonical and root-relative")
+    candidate = root / relative
+    current = candidate
+    while current != root:
+        if current.is_symlink():
+            raise ValueError("authorized path must not contain symlinks")
+        current = current.parent
+    if must_exist:
+        resolved = candidate.resolve(strict=True)
+        resolved.relative_to(root)
+        return resolved
+    ancestor = candidate
+    while not ancestor.exists() and ancestor != root:
+        ancestor = ancestor.parent
+    ancestor.resolve(strict=True).relative_to(root)
+    return candidate
 
 
 def _write_json(path: Path, data: dict[str, Any]) -> None:
@@ -51,25 +91,71 @@ def _truncate(text: str, limit: int = 20000) -> str:
     return text[:limit] + f"\n... [truncated {len(text) - limit} bytes]"
 
 
-def _run(cmd: list[str], *, timeout: int = 10, cwd: Path | None = None, env: dict[str, str] | None = None) -> CmdResult:
+def _redact(text: str) -> str:
+    result = text
+    for pattern, replacement in SECRET_PATTERNS:
+        result = pattern.sub(replacement, result)
+    return result
+
+
+def _kill_group(process: subprocess.Popen[bytes]) -> None:
     try:
-        p = subprocess.run(
+        os.killpg(process.pid, signal.SIGKILL)
+    except ProcessLookupError:
+        pass
+
+
+def _run(cmd: list[str], *, timeout: int = 10, cwd: Path | None = None, env: dict[str, str] | None = None) -> CmdResult:
+    if not 0 < timeout <= MAX_TIMEOUT_SECONDS:
+        raise ValueError("command timeout is outside the supported finite range")
+    try:
+        process = subprocess.Popen(
             cmd,
             cwd=str(cwd) if cwd else None,
             env=env,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
-            text=True,
-            timeout=timeout,
-            check=False,
+            start_new_session=True,
         )
-        return CmdResult(p.returncode, p.stdout, p.stderr)
-    except subprocess.TimeoutExpired as e:
-        out = e.stdout if isinstance(e.stdout, str) else (e.stdout.decode("utf-8", "replace") if e.stdout else "")
-        err = e.stderr if isinstance(e.stderr, str) else (e.stderr.decode("utf-8", "replace") if e.stderr else "")
-        return CmdResult(124, out, err + "\n[timeout]")
-    except FileNotFoundError as e:
-        return CmdResult(127, "", f"{e}\n[missing tool]")
+    except FileNotFoundError:
+        return CmdResult(127, "", "[missing tool]")
+    assert process.stdout and process.stderr
+    stdout = bytearray(); stderr = bytearray(); total = 0
+    lock = threading.Lock(); overflow = threading.Event()
+
+    def drain(stream: Any, target: bytearray) -> None:
+        nonlocal total
+        while chunk := stream.read(8192):
+            with lock:
+                total += len(chunk)
+                if total > MAX_COMMAND_OUTPUT_BYTES:
+                    overflow.set()
+                if len(target) <= MAX_COMMAND_OUTPUT_BYTES:
+                    target.extend(chunk[: max(0, MAX_COMMAND_OUTPUT_BYTES + 1 - len(target))])
+
+    threads = [
+        threading.Thread(target=drain, args=(process.stdout, stdout), daemon=True),
+        threading.Thread(target=drain, args=(process.stderr, stderr), daemon=True),
+    ]
+    for thread in threads: thread.start()
+    deadline = time.monotonic() + timeout; timed_out = False
+    while process.poll() is None:
+        if overflow.is_set(): break
+        if time.monotonic() >= deadline:
+            timed_out = True; break
+        time.sleep(0.005)
+    if process.poll() is None or overflow.is_set(): _kill_group(process)
+    return_code = process.wait(timeout=2)
+    _kill_group(process)
+    for thread in threads: thread.join(timeout=1)
+    process.stdout.close(); process.stderr.close()
+    out_text = _redact(bytes(stdout[:MAX_COMMAND_OUTPUT_BYTES]).decode("utf-8", "replace"))
+    err_text = _redact(bytes(stderr[:MAX_COMMAND_OUTPUT_BYTES]).decode("utf-8", "replace"))
+    if timed_out:
+        return CmdResult(124, out_text, err_text + "\n[timeout]")
+    if overflow.is_set():
+        return CmdResult(125, "", "[output bound exceeded]")
+    return CmdResult(return_code, out_text, err_text)
 
 
 def _sha256_file(path: Path) -> str:
@@ -154,7 +240,7 @@ def _collect_static(binary: Path, out_dir: Path) -> dict[str, Any]:
     for ln in strings_lines:
         low = ln.lower()
         if any(t in low for t in ai_terms):
-            ai_hits.append(ln)
+            ai_hits.append(hashlib.sha256(ln.encode("utf-8", errors="replace")).hexdigest())
         if len(ai_hits) >= 300:
             break
 
@@ -163,14 +249,14 @@ def _collect_static(binary: Path, out_dir: Path) -> dict[str, Any]:
     data = {
         "schema_version": 1,
         "generated_at": _now_iso(),
-        "binary": str(binary),
+        "binary": binary.name,
         "size_bytes": binary.stat().st_size,
         "sha256": _sha256_file(binary),
         "file_info": file_info,
         "linked_libraries": [ln for ln in linked.splitlines() if ln.strip()],
         "runtime_guess": runtimes if runtimes else ["unknown"],
         "zip_local_header_count": _count_zip_signatures(binary),
-        "ai_related_string_hits": ai_hits,
+        "ai_related_string_hit_sha256": ai_hits,
         "strings_sample_count": len(strings_lines),
         "strings_total_count": len(strings_all),
     }
@@ -181,7 +267,7 @@ def _collect_static(binary: Path, out_dir: Path) -> dict[str, Any]:
         "# Static Analysis",
         "",
         f"- Generated: {data['generated_at']}",
-        f"- Binary: `{binary}`",
+        f"- Binary: `{binary.name}`",
         f"- SHA256: `{data['sha256']}`",
         f"- Size: `{data['size_bytes']}` bytes",
         f"- Runtime guess: `{', '.join(data['runtime_guess'])}`",
@@ -199,11 +285,11 @@ def _collect_static(binary: Path, out_dir: Path) -> dict[str, Any]:
         linked.strip() or "(none detected)",
         "```",
         "",
-        "## AI-Related String Hits (sample)",
+        "## AI-Related String Hit Hashes (sample)",
         "",
     ]
     if ai_hits:
-        md.extend([f"- `{h[:180]}`" for h in ai_hits[:50]])
+        md.extend([f"- `{h}`" for h in ai_hits[:50]])
     else:
         md.append("- _None detected in sampled strings._")
 
@@ -215,10 +301,14 @@ def _snapshot_tree(root: Path) -> dict[str, dict[str, int]]:
     out: dict[str, dict[str, int]] = {}
     if not root.exists():
         return out
-    for p in sorted(root.rglob("*")):
-        if not p.is_file():
+    for index, p in enumerate(sorted(root.rglob("*"))):
+        if index >= 10000:
+            raise ValueError("observation workspace exceeds 10000 entries")
+        if p.is_symlink() or not p.is_file():
             continue
-        rel = p.relative_to(root).as_posix()
+        # Filenames are controlled by the analyzed program and can themselves
+        # contain credentials. Retain only stable identities, never raw names.
+        rel = hashlib.sha256(p.relative_to(root).as_posix().encode("utf-8", "replace")).hexdigest()
         st = p.stat()
         out[rel] = {"size": int(st.st_size), "mtime_ns": int(st.st_mtime_ns)}
     return out
@@ -267,137 +357,193 @@ def _collect_network_endpoints(pids: set[int]) -> list[str]:
     if not pids or not shutil_which("lsof"):
         return []
     eps: set[str] = set()
-    for pid in sorted(pids):
-        r = _run(["lsof", "-nP", "-i", "-p", str(pid)], timeout=3)
-        if r.returncode != 0:
-            continue
-        for ln in r.stdout.splitlines():
-            if "->" in ln or "TCP" in ln or "UDP" in ln:
-                eps.add(re.sub(r"\s+", " ", ln.strip()))
+    selected = sorted(pids)[:MAX_DYNAMIC_PIDS]
+    # `-a` is essential: without it lsof ORs -i and -p and accidentally
+    # inventories every network connection on the host.
+    r = _run(["lsof", "-nP", "-a", "-i", "-p", ",".join(map(str, selected))], timeout=1)
+    if r.returncode != 0:
+        return []
+    for ln in r.stdout.splitlines():
+        if "->" in ln or "TCP" in ln or "UDP" in ln:
+            eps.add(re.sub(r"\s+", " ", ln.strip()))
+            if len(eps) >= MAX_DYNAMIC_ENDPOINTS:
+                break
     return sorted(eps)
 
 
-def _collect_dynamic(binary: Path, out_dir: Path, run_args: list[str], timeout_s: int) -> dict[str, Any]:
-    dynamic_dir = out_dir / "dynamic"
-    sandbox = dynamic_dir / "sandbox"
-    home = sandbox / "home"
-    work = sandbox / "work"
-    tmp = sandbox / "tmp"
-    for d in [dynamic_dir, home, work, tmp]:
-        _ensure_dir(d)
+def _sandbox_command(binary: Path, run_args: list[str], workspace: Path) -> tuple[list[str], str]:
+    """Return a real OS containment command or fail closed before execution."""
+    sandbox_exec = shutil.which("sandbox-exec")
+    if sandbox_exec:
+        def quoted(path: Path | str) -> str:
+            return json.dumps(str(path))
 
+        # Unknown native programs need system- and runtime-specific read paths
+        # that cannot be enumerated portably on macOS. Reads are therefore
+        # allowed, while all writes and network operations remain deny-default.
+        # Child output and created filenames are retained only as hashes below,
+        # so readable secrets cannot be copied into evidence artifacts.
+        profile_lines = [
+            "(version 1)",
+            "(deny default)",
+            "(allow process*)",
+            "(allow file-read*)",
+        ]
+        profile_lines.extend(
+            [
+                f"(allow file-write* (subpath {quoted(workspace)}))",
+                '(allow file-write-data (literal "/dev/null"))',
+                "(allow sysctl-read)",
+                "(allow mach-lookup)",
+            ]
+        )
+        profile = "\n".join(profile_lines)
+        return [sandbox_exec, "-p", profile, str(binary), *run_args], "macos-sandbox-exec"
+    raise RuntimeError("no supported OS containment backend; dynamic execution refused")
+
+
+def _collect_dynamic(binary: Path, out_dir: Path, run_args: list[str], timeout_s: int) -> dict[str, Any]:
+    if not 1 <= timeout_s <= MAX_TIMEOUT_SECONDS:
+        raise ValueError("dynamic timeout must be in [1,120]")
+    dynamic_dir = out_dir / "dynamic"
+    workspace = dynamic_dir / "observation-workspace"
+    home = workspace / "home"
+    work = workspace / "work"
+    tmp = workspace / "tmp"
+    for directory in [dynamic_dir, workspace, home, work, tmp]:
+        _ensure_dir(directory)
+    argv, backend = _sandbox_command(binary, run_args, workspace)
     before_home = _snapshot_tree(home)
     before_work = _snapshot_tree(work)
+    env = {"PATH": DEFAULT_PATH, "HOME": str(home), "TMPDIR": str(tmp), "LANG": "C"}
 
-    argv = [str(binary), *run_args]
-    env = {
-        "PATH": os.environ.get("PATH", DEFAULT_PATH),
-        "HOME": str(home),
-        "TMPDIR": str(tmp),
-        "LANG": "C.UTF-8",
-    }
-
-    started = time.time()
+    started = time.monotonic()
     timed_out = False
+    overflow = threading.Event()
     proc = subprocess.Popen(
         argv,
         cwd=str(work),
         env=env,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
-        text=True,
         start_new_session=True,
     )
+    assert proc.stdout and proc.stderr
+    stdout = bytearray()
+    stderr = bytearray()
+    output_total = 0
+    output_lock = threading.Lock()
 
-    seen_cmds: set[str] = set()
+    def drain(stream: Any, target: bytearray) -> None:
+        nonlocal output_total
+        while chunk := stream.read(8192):
+            with output_lock:
+                output_total += len(chunk)
+                if output_total > MAX_COMMAND_OUTPUT_BYTES:
+                    overflow.set()
+                if len(target) <= MAX_COMMAND_OUTPUT_BYTES:
+                    target.extend(chunk[: max(0, MAX_COMMAND_OUTPUT_BYTES + 1 - len(target))])
+
+    readers = [
+        threading.Thread(target=drain, args=(proc.stdout, stdout), daemon=True),
+        threading.Thread(target=drain, args=(proc.stderr, stderr), daemon=True),
+    ]
+    for reader in readers:
+        reader.start()
+
+    seen_cmd_hashes: set[str] = set()
     seen_pids: set[int] = set()
-    seen_eps: set[str] = set()
-
+    seen_ep_hashes: set[str] = set()
+    sample_count = 0
     try:
         while proc.poll() is None:
-            elapsed = time.time() - started
-            table = _collect_process_table()
-            pids = _descendants(proc.pid, table) if proc.pid in table else {proc.pid}
-            seen_pids.update(pids)
-            for pid in pids:
-                meta = table.get(pid)
-                if meta and meta.get("command"):
-                    seen_cmds.add(str(meta["command"]))
-            for ep in _collect_network_endpoints(pids):
-                seen_eps.add(ep)
-            if elapsed >= timeout_s:
-                timed_out = True
-                os.killpg(proc.pid, signal.SIGKILL)
+            if overflow.is_set() or time.monotonic() - started >= timeout_s:
+                timed_out = time.monotonic() - started >= timeout_s
+                _kill_group(proc)
                 break
-            time.sleep(0.2)
-    except ProcessLookupError:
-        pass
+            if sample_count < MAX_DYNAMIC_SAMPLES:
+                table = _collect_process_table()
+                pids = _descendants(proc.pid, table) if proc.pid in table else {proc.pid}
+                bounded_pids = set(sorted(pids)[:MAX_DYNAMIC_PIDS])
+                seen_pids.update(bounded_pids)
+                for pid in bounded_pids:
+                    command = str(table.get(pid, {}).get("command", ""))
+                    if command and len(seen_cmd_hashes) < MAX_DYNAMIC_PIDS:
+                        seen_cmd_hashes.add(hashlib.sha256(command.encode()).hexdigest())
+                if len(seen_ep_hashes) < MAX_DYNAMIC_ENDPOINTS:
+                    for endpoint in _collect_network_endpoints(bounded_pids):
+                        seen_ep_hashes.add(hashlib.sha256(endpoint.encode()).hexdigest())
+                        if len(seen_ep_hashes) >= MAX_DYNAMIC_ENDPOINTS:
+                            break
+                sample_count += 1
+            time.sleep(0.05)
+    finally:
+        _kill_group(proc)
+        for pid in sorted(seen_pids - {proc.pid}):
+            try:
+                os.kill(pid, signal.SIGKILL)
+            except (ProcessLookupError, PermissionError):
+                pass
 
     try:
-        stdout, stderr = proc.communicate(timeout=2)
+        rc = proc.wait(timeout=2)
     except subprocess.TimeoutExpired:
-        stdout, stderr = "", ""
+        _kill_group(proc)
+        rc = proc.wait(timeout=2)
+    for reader in readers:
+        reader.join(timeout=1)
+    proc.stdout.close()
+    proc.stderr.close()
 
-    duration_ms = int((time.time() - started) * 1000)
-    rc = -9 if timed_out else proc.returncode
-
+    stdout_bytes = bytes(stdout[:MAX_COMMAND_OUTPUT_BYTES])
+    stderr_bytes = bytes(stderr[:MAX_COMMAND_OUTPUT_BYTES])
     after_home = _snapshot_tree(home)
     after_work = _snapshot_tree(work)
-
     data = {
-        "schema_version": 1,
+        "schema_version": 2,
         "generated_at": _now_iso(),
-        "argv": argv,
+        "binary": binary.name,
+        "argument_count": len(run_args),
+        "argv_sha256": hashlib.sha256(json.dumps([binary.name, *run_args]).encode()).hexdigest(),
         "timeout_seconds": timeout_s,
-        "duration_ms": duration_ms,
-        "exit_code": rc,
+        "duration_ms": int((time.monotonic() - started) * 1000),
+        "exit_code": -9 if timed_out else rc,
         "timed_out": timed_out,
-        "stdout": _truncate(stdout),
-        "stderr": _truncate(stderr),
-        "sandbox": {"root": str(sandbox), "home": str(home), "work": str(work)},
-        "processes_observed": sorted(seen_cmds),
-        "pids_observed": sorted(seen_pids),
-        "network_endpoints_observed": sorted(seen_eps),
+        "output_exceeded": overflow.is_set(),
+        "stdout_bytes_observed": len(stdout_bytes),
+        "stderr_bytes_observed": len(stderr_bytes),
+        "stdout_sha256": hashlib.sha256(stdout_bytes).hexdigest(),
+        "stderr_sha256": hashlib.sha256(stderr_bytes).hexdigest(),
+        "containment": {
+            "backend": backend,
+            "network": "deny-default",
+            "writes": "observation-workspace-only",
+            "reads": "allowed; output retained as hashes only",
+        },
+        "process_command_sha256": sorted(seen_cmd_hashes),
+        "pids_observed_count": len(seen_pids),
+        "network_endpoint_sha256": sorted(seen_ep_hashes),
         "file_changes": {
             "home": _diff_snapshots(before_home, after_home),
             "work": _diff_snapshots(before_work, after_work),
         },
     }
-
     _write_json(dynamic_dir / "dynamic-analysis.json", data)
-
     files_created = len(data["file_changes"]["home"]["created"]) + len(data["file_changes"]["work"]["created"])
     md = [
         "# Dynamic Analysis",
         "",
         f"- Generated: {data['generated_at']}",
+        f"- Containment backend: `{backend}`",
         f"- Exit code: `{data['exit_code']}`",
         f"- Timed out: `{data['timed_out']}`",
-        f"- Duration: `{data['duration_ms']}` ms",
-        f"- Files created in sandbox: `{files_created}`",
-        f"- Network endpoints observed: `{len(data['network_endpoints_observed'])}`",
-        "",
-        "## Command",
-        "",
-        "```",
-        shlex.join(argv),
-        "```",
-        "",
-        "## Observed Processes (sample)",
+        f"- Output exceeded bound: `{data['output_exceeded']}`",
+        f"- Files created in observation workspace: `{files_created}`",
+        f"- Process command hashes observed: `{len(seen_cmd_hashes)}`",
+        f"- Network endpoint hashes observed: `{len(seen_ep_hashes)}`",
         "",
     ]
-    if data["processes_observed"]:
-        md.extend([f"- `{p[:180]}`" for p in data["processes_observed"][:40]])
-    else:
-        md.append("- _No process samples captured._")
-
-    md.extend(["", "## Network Endpoints (sample)", ""])
-    if data["network_endpoints_observed"]:
-        md.extend([f"- `{e[:180]}`" for e in data["network_endpoints_observed"][:40]])
-    else:
-        md.append("- _None observed._")
-
-    _write_text(dynamic_dir / "dynamic-analysis.md", "\n".join(md).rstrip() + "\n")
+    _write_text(dynamic_dir / "dynamic-analysis.md", "\n".join(md))
     return data
 
 
@@ -479,6 +625,8 @@ def _capture_command_surface(binary: Path, max_depth: int, per_cmd_timeout: int,
     probes: set[str] = set()
 
     while queue:
+        if len(visited) >= 256:
+            break
         if time.time() - started > total_timeout:
             break
         path = queue.pop(0)
@@ -543,7 +691,7 @@ def _collect_contract(binary: Path, out_dir: Path, *, max_depth: int, per_cmd_ti
         "dynamic_summary": {
             "exit_code": dynamic_data.get("exit_code"),
             "timed_out": dynamic_data.get("timed_out"),
-            "network_endpoint_count": len(dynamic_data.get("network_endpoints_observed", [])),
+            "network_endpoint_count": len(dynamic_data.get("network_endpoint_sha256", [])),
             "sandbox_file_creates": len(dynamic_data.get("file_changes", {}).get("home", {}).get("created", []))
             + len(dynamic_data.get("file_changes", {}).get("work", {}).get("created", [])),
         },
@@ -686,7 +834,7 @@ def _enforce_policy(run_dir: Path, policy_file: Path, out_dir: Path) -> tuple[st
         if _match_any(forbid_path_patterns, p):
             findings.append({"severity": "fail", "code": "forbidden_file_path", "message": f"forbidden created path: {p}"})
 
-    endpoints = dynamic.get("network_endpoints_observed", [])
+    endpoints = dynamic.get("network_endpoint_sha256", [])
     allow_net = policy.get("allow_network_endpoint_patterns", [])
     deny_net = policy.get("deny_network_endpoint_patterns", [])
 
@@ -793,7 +941,12 @@ def _suite_summary(out_dir: Path) -> dict[str, Any]:
 def _parse_run_args(raw: str | None) -> list[str]:
     if not raw:
         return ["--help"]
-    return shlex.split(raw)
+    if len(raw.encode("utf-8")) > 4096:
+        raise ValueError("run arguments exceed 4096 bytes")
+    parsed = shlex.split(raw)
+    if len(parsed) > 64 or any(len(item.encode("utf-8")) > 1024 for item in parsed):
+        raise ValueError("run arguments exceed count or token bounds")
+    return parsed
 
 
 def main() -> int:
@@ -801,11 +954,14 @@ def main() -> int:
     sub = ap.add_subparsers(dest="cmd", required=True)
 
     common = argparse.ArgumentParser(add_help=False)
+    common.add_argument("--binary-root", required=True)
     common.add_argument("--binary", required=True)
+    common.add_argument("--output-root", required=True)
     common.add_argument("--out-dir", required=True)
 
     _p_static = sub.add_parser("collect-static", parents=[common])
     p_dynamic = sub.add_parser("collect-dynamic", parents=[common])
+    p_dynamic.add_argument("--authorized-dynamic", action="store_true")
     p_dynamic.add_argument("--run-args", default="--help", help="Arguments passed to the binary during dynamic run")
     p_dynamic.add_argument("--timeout", type=int, default=8)
 
@@ -818,13 +974,16 @@ def main() -> int:
     p_compare.add_argument("--current-dir", required=True)
     p_compare.add_argument("--baseline-dir", required=True)
     p_compare.add_argument("--out-dir", required=True)
+    p_compare.add_argument("--output-root", required=True)
 
     p_policy = sub.add_parser("enforce-policy")
     p_policy.add_argument("--run-dir", required=True)
     p_policy.add_argument("--policy-file", required=True)
     p_policy.add_argument("--out-dir", required=True)
+    p_policy.add_argument("--output-root", required=True)
 
     p_run = sub.add_parser("run", parents=[common])
+    p_run.add_argument("--authorized-dynamic", action="store_true")
     p_run.add_argument("--run-args", default="--help")
     p_run.add_argument("--timeout", type=int, default=8)
     p_run.add_argument("--max-depth", type=int, default=4)
@@ -837,22 +996,44 @@ def main() -> int:
 
     args = ap.parse_args()
 
+    for name in ("timeout", "per_cmd_timeout", "total_timeout"):
+        if hasattr(args, name) and not 1 <= getattr(args, name) <= MAX_TIMEOUT_SECONDS:
+            ap.error(f"--{name.replace('_', '-')} must be in [1,{MAX_TIMEOUT_SECONDS}]")
+    if hasattr(args, "max_depth") and not 0 <= args.max_depth <= 5:
+        ap.error("--max-depth must be in [0,5]")
+
     if args.cmd in {"collect-static", "collect-dynamic", "collect-contract", "run"}:
-        binary = Path(args.binary).expanduser().resolve()
-        out_dir = Path(args.out_dir).expanduser().resolve()
-        if not binary.exists() or not binary.is_file():
-            print(f"error: binary not found: {binary}", file=sys.stderr)
+        try:
+            binary = _confined_path(args.binary_root, args.binary, must_exist=True)
+            out_dir = _confined_path(args.output_root, args.out_dir)
+        except (OSError, ValueError) as exc:
+            print(f"error: {exc}", file=sys.stderr)
+            return 2
+        if binary.is_symlink() or not binary.is_file() or binary.stat().st_size > MAX_BINARY_BYTES:
+            print("error: binary must be a bounded regular non-symlink file", file=sys.stderr)
             return 2
     else:
         binary = Path("/")
-        out_dir = Path(args.out_dir).expanduser().resolve() if hasattr(args, "out_dir") else Path.cwd()
+        try:
+            out_dir = _confined_path(args.output_root, args.out_dir)
+        except (OSError, ValueError) as exc:
+            print(f"error: {exc}", file=sys.stderr)
+            return 2
 
     if args.cmd == "collect-static":
         _collect_static(binary, out_dir)
         return 0
 
     if args.cmd == "collect-dynamic":
-        _collect_dynamic(binary, out_dir, _parse_run_args(args.run_args), timeout_s=args.timeout)
+        if not args.authorized_dynamic:
+            print("error: --authorized-dynamic is required", file=sys.stderr)
+            return 2
+        try:
+            run_args = _parse_run_args(args.run_args)
+            _collect_dynamic(binary, out_dir, run_args, timeout_s=args.timeout)
+        except (RuntimeError, ValueError) as exc:
+            print(f"error: {exc}", file=sys.stderr)
+            return 2
         return 0
 
     if args.cmd == "collect-contract":
@@ -860,16 +1041,24 @@ def main() -> int:
         return 0
 
     if args.cmd == "compare-baseline":
-        _compare_baseline(Path(args.current_dir).resolve(), Path(args.baseline_dir).resolve(), Path(args.out_dir).resolve())
+        _compare_baseline(Path(args.current_dir).resolve(), Path(args.baseline_dir).resolve(), out_dir)
         return 0
 
     if args.cmd == "enforce-policy":
-        verdict, _ = _enforce_policy(Path(args.run_dir).resolve(), Path(args.policy_file).resolve(), Path(args.out_dir).resolve())
+        verdict, _ = _enforce_policy(Path(args.run_dir).resolve(), Path(args.policy_file).resolve(), out_dir)
         return 3 if verdict == "FAIL" else 0
 
     # run
+    if not args.authorized_dynamic:
+        print("error: --authorized-dynamic is required", file=sys.stderr)
+        return 2
     _collect_static(binary, out_dir)
-    _collect_dynamic(binary, out_dir, _parse_run_args(args.run_args), timeout_s=args.timeout)
+    try:
+        run_args = _parse_run_args(args.run_args)
+        _collect_dynamic(binary, out_dir, run_args, timeout_s=args.timeout)
+    except (RuntimeError, ValueError) as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        return 2
     _collect_contract(binary, out_dir, max_depth=args.max_depth, per_cmd_timeout=args.per_cmd_timeout, total_timeout=args.total_timeout)
 
     baseline_failed = False

@@ -11,6 +11,8 @@ PRODUCT document, GOALS document, AGENTS router, and local verdict storage.
 Bootstrap inspects those paths, asks only for product or goal content that is
 not supplied, then creates the missing files plus
 `.agents/ao/verdicts/sha256/`. It reports the exact created and existing paths.
+The output separately records `verdict_storage_requested: true` and classifies
+the verdict directory as created, existing-and-untouched, or failed.
 
 ## Partial repository
 
@@ -28,3 +30,12 @@ do not write anything.
 Bootstrap reports which requested paths exist and which are missing. It does
 not create directories, invoke another skill, initialize Git, install hooks,
 or infer permission to write.
+
+## Docs-only request
+
+**Caller asks:** Create the missing `AGENTS.md`; do not initialize verdict
+storage.
+
+Bootstrap creates only `AGENTS.md`. Its effect report says
+`verdict_storage_requested: false`, includes no `.agents/ao/**` path, and lists
+the single document under created or failed.

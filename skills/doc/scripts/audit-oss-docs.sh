@@ -1,14 +1,71 @@
 #!/bin/bash
 # OSS Documentation Audit Script
-# Usage: audit-oss-docs.sh [--json]
+# Usage: audit-oss-docs.sh --authorization-id <id> [--root <repo>] [--json]
 #
 # Checks for presence of standard OSS documentation files
 # and reports coverage across tiers.
 
-set -e
+set -euo pipefail
+
+usage() {
+    echo "usage: $0 --authorization-id <id> [--root <repo>] [--scan-path <allowlisted-root>] [--max-files <1..50000>] [--deadline-seconds <1..120>] [--json]" >&2
+    exit 2
+}
 
 JSON_OUTPUT=false
-[[ "$1" == "--json" ]] && JSON_OUTPUT=true
+AUTHORIZATION_ID=""
+TARGET_ROOT="$(pwd -P)"
+MAX_FILES=10000
+DEADLINE_SECONDS=30
+SCAN_PATHS=()
+ALLOWED_SCAN_PATHS=(api app cmd config docs examples internal lib pkg src)
+
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --json) JSON_OUTPUT=true; shift ;;
+        --authorization-id) [[ $# -ge 2 ]] || usage; AUTHORIZATION_ID="$2"; shift 2 ;;
+        --root) [[ $# -ge 2 ]] || usage; TARGET_ROOT="$2"; shift 2 ;;
+        --scan-path) [[ $# -ge 2 ]] || usage; SCAN_PATHS+=("$2"); shift 2 ;;
+        --max-files) [[ $# -ge 2 ]] || usage; MAX_FILES="$2"; shift 2 ;;
+        --deadline-seconds) [[ $# -ge 2 ]] || usage; DEADLINE_SECONDS="$2"; shift 2 ;;
+        --help|-h) usage ;;
+        *) echo "audit-oss-docs: unknown argument: $1" >&2; usage ;;
+    esac
+done
+
+[[ -n "$AUTHORIZATION_ID" && ${#AUTHORIZATION_ID} -le 256 ]] || {
+    echo "audit-oss-docs: a nonempty --authorization-id (max 256 bytes) is required" >&2
+    exit 2
+}
+[[ "$MAX_FILES" =~ ^[0-9]+$ ]] && (( MAX_FILES >= 1 && MAX_FILES <= 50000 )) || {
+    echo "audit-oss-docs: --max-files must be between 1 and 50000" >&2
+    exit 2
+}
+[[ "$DEADLINE_SECONDS" =~ ^[0-9]+$ ]] && (( DEADLINE_SECONDS >= 1 && DEADLINE_SECONDS <= 120 )) || {
+    echo "audit-oss-docs: --deadline-seconds must be between 1 and 120" >&2
+    exit 2
+}
+[[ -d "$TARGET_ROOT" ]] || { echo "audit-oss-docs: target root is not a directory: $TARGET_ROOT" >&2; exit 2; }
+PROJECT_ROOT="$(cd "$TARGET_ROOT" && pwd -P)"
+if [[ "$PROJECT_ROOT" == "/" || "$PROJECT_ROOT" == "$(cd "${HOME:?}" && pwd -P)" ]]; then
+    echo "audit-oss-docs: refusing broad target root: $PROJECT_ROOT" >&2
+    exit 2
+fi
+if [[ ${#SCAN_PATHS[@]} -eq 0 ]]; then
+    SCAN_PATHS=("${ALLOWED_SCAN_PATHS[@]}")
+fi
+for scan_path in "${SCAN_PATHS[@]}"; do
+    allowed=false
+    for candidate in "${ALLOWED_SCAN_PATHS[@]}"; do
+        [[ "$scan_path" == "$candidate" ]] && allowed=true
+    done
+    [[ "$allowed" == true ]] || {
+        echo "audit-oss-docs: scan path is not allowlisted: $scan_path" >&2
+        exit 2
+    }
+done
+
+cd "$PROJECT_ROOT"
 
 # Colors (disabled for JSON output)
 if [[ "$JSON_OUTPUT" == "false" ]]; then
@@ -22,8 +79,54 @@ else
 fi
 
 # Project detection
-PROJECT_NAME=$(basename "$(pwd)")
-GIT_ORIGIN=$(git remote get-url origin 2>/dev/null || echo "")
+PROJECT_NAME=$(basename "$PROJECT_ROOT")
+if GIT_ORIGIN=$(git config --get remote.origin.url); then
+    :
+else
+    GIT_ORIGIN=""
+fi
+
+# One bounded, non-following source scan supplies the only recursive fact used
+# by this audit (whether the codebase has more than 20 Go/Python files).
+SOURCE_FILE_COUNT=$(python3 - "$PROJECT_ROOT" "$MAX_FILES" "$DEADLINE_SECONDS" "${SCAN_PATHS[@]}" <<'PY'
+import os
+import pathlib
+import sys
+import time
+
+root = pathlib.Path(sys.argv[1]).resolve(strict=True)
+max_entries = int(sys.argv[2])
+deadline = time.monotonic() + int(sys.argv[3])
+scan_paths = sys.argv[4:]
+entries = 0
+sources = 0
+for relative in scan_paths:
+    start = root / relative
+    if not start.exists():
+        continue
+    if start.is_symlink():
+        raise SystemExit(f"audit-oss-docs: allowlisted scan root is a symlink: {relative}")
+    for dirpath, dirnames, filenames in os.walk(start, followlinks=False):
+        current = pathlib.Path(dirpath)
+        dirnames.sort()
+        filenames.sort()
+        for name in [*dirnames, *filenames]:
+            entries += 1
+            if entries > max_entries:
+                raise SystemExit(f"audit-oss-docs: scan entry ceiling exceeded ({max_entries})")
+            if time.monotonic() > deadline:
+                raise SystemExit("audit-oss-docs: scan deadline exceeded")
+            candidate = current / name
+            if candidate.is_symlink():
+                target = candidate.resolve(strict=False)
+                try:
+                    target.relative_to(root)
+                except ValueError:
+                    raise SystemExit(f"audit-oss-docs: symlink escapes target root: {candidate}")
+        sources += sum(name.endswith((".go", ".py")) for name in filenames)
+print(sources)
+PY
+)
 
 # Detect project type
 # Order matters: more specific types checked first
@@ -39,7 +142,7 @@ detect_type() {
     elif [[ -f go.mod ]] && [[ -d cmd ]]; then
         echo "cli-go"
     # Python CLI Tool (has entry points)
-    elif [[ -f pyproject.toml ]] && grep -q "\[project.scripts\]" pyproject.toml 2>/dev/null; then
+    elif [[ -f pyproject.toml ]] && grep -q "\[project.scripts\]" pyproject.toml; then
         echo "cli-python"
     # Go Library (go.mod but no cmd/)
     elif [[ -f go.mod ]]; then
@@ -49,14 +152,14 @@ detect_type() {
         echo "library-python"
     # Node.js
     elif [[ -f package.json ]]; then
-        if grep -q '"bin"' package.json 2>/dev/null; then
+        if grep -q '"bin"' package.json; then
             echo "cli-node"
         else
             echo "library-node"
         fi
     # Rust
     elif [[ -f Cargo.toml ]]; then
-        if [[ -d src/bin ]] || grep -q '^\[\[bin\]\]' Cargo.toml 2>/dev/null; then
+        if [[ -d src/bin ]] || grep -q '^\[\[bin\]\]' Cargo.toml; then
             echo "cli-rust"
         else
             echo "library-rust"
@@ -184,7 +287,7 @@ check_tier3() {
     else
         local rec="optional"
         # Recommend if large codebase
-        [[ $(find . -name "*.go" -o -name "*.py" 2>/dev/null | wc -l) -gt 20 ]] && rec="recommended"
+        [[ "$SOURCE_FILE_COUNT" -gt 20 ]] && rec="recommended"
         results+=("docs/ARCHITECTURE.md:fail:$rec")
     fi
 
@@ -266,8 +369,12 @@ if [[ "$JSON_OUTPUT" == "true" ]]; then
     cat <<EOF
 {
   "project": "$PROJECT_NAME",
+  "authorization_id": "$AUTHORIZATION_ID",
+  "target_root": "$PROJECT_ROOT",
   "type": "$PROJECT_TYPE",
   "languages": "$(echo $LANGUAGES | tr ' ' ',')",
+  "scan": {"allowlisted_roots":"$(IFS=,; echo "${SCAN_PATHS[*]}")","source_files":$SOURCE_FILE_COUNT,"entry_ceiling":$MAX_FILES,"deadline_seconds":$DEADLINE_SECONDS},
+  "effects": {"read_roots":["$PROJECT_ROOT"],"network":[],"credentials":[],"writes":[]},
   "tier1": {
     "score": $T1_SCORE,
     "total": $T1_TOTAL,
@@ -295,6 +402,8 @@ else
     echo ""
     echo -e "Project Type: ${YELLOW}$PROJECT_TYPE${NC}"
     echo -e "Languages: ${YELLOW}$LANGUAGES${NC}"
+    echo -e "Scan: ${YELLOW}$SOURCE_FILE_COUNT source files; max $MAX_FILES entries / ${DEADLINE_SECONDS}s${NC}"
+    echo -e "Effects: read-only root $PROJECT_ROOT; no network, credentials, or writes"
     echo ""
 
     # Tier 1

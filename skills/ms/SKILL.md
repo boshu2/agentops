@@ -33,10 +33,17 @@ output_contract: search and load results plus source identity on stdout; the loc
 - Load with `full: true` or `--full` when the intent is to execute a skill, because metadata cards and packed overviews omit runnable guidance.
 - Keep the consume/write boundary explicit: use MCP for search and load, but use the CLI for feedback and outcomes because only CLI writes are verified to land in the live database.
 - When attached `mcp__ms__*` tools are unavailable, use the skill-local one-shot MCP helper for search. A zero-result `ms search` CLI response is not evidence that MCP BM25 found no match and must not silently substitute for it.
-- Reindex only through `scripts/ms-reindex.sh`, because it sweeps stale servers and proves source equivalence after rebuilding the index.
-- Treat the local index as disposable state, not a source of truth; the non-goal is editing indexed content instead of `skills/**`.
+- Reindex only through the package-owned `skills/ms/scripts/reindex.sh`. It
+  requires an approval bound to the canonical data and skills roots, terminates only exact
+  same-user `ms mcp serve` processes, refuses live writer locks, accounts for
+  every discovered skill, sweeps again for races, and probes a fresh server
+  because a survivor can keep serving the pre-rebuild database.
+- Treat the local index as disposable state, not a source of truth, because
+  canonical skill content remains under `skills/**`; editing indexed copies is
+  outside this adapter.
 - Keep `ms` retrieval-only for production skill work. It returns search and load
-  results; the caller owns authoring, validation, and every subsequent decision.
+  results; the caller owns authoring, validation, and every subsequent decision
+  because retrieval evidence cannot prove downstream behavior.
 
 ## Quick Start
 
@@ -99,8 +106,9 @@ ms outcome <skill> --success   # record only AFTER downstream factory use + vali
 ms outcome <skill> --failure
 
 ms doctor                      # admin: health
-scripts/ms-reindex.sh          # (re)index THE way: rebuild + sweep + probe + source-equivalence check
-scripts/ms-reindex.sh --check-source  # read-only freshness proof against current skills/** source
+skills/ms/scripts/reindex.sh --data-dir "$MS_DATA" --skills-root "$SKILLS" \
+  --approve "ms:reindex:$MS_DATA:$SKILLS"
+scripts/ms-reindex.sh --check-source  # repo-level read-only source-equivalence proof
 # Optional operator policy only; rebuild completeness is derived from live
 # discovered/indexed/errors accounting, not a historical absolute count:
 MS_REINDEX_MIN_INDEXED=100 scripts/ms-reindex.sh
@@ -170,7 +178,7 @@ Scenario: Reindex invalidates every running server
 Scenario: A stale local projection fails closed
   Given AgentOps skills are authoritative and ms is a disposable local index
   When a full ms load has a different normalized name or description from source
-  Then scripts/ms-reindex.sh exits nonzero and names the stale skill
+Then the repo-level source-equivalence check exits nonzero and names the stale skill
 ```
 
 ## Quality Checklist
@@ -181,6 +189,8 @@ Scenario: A stale local projection fails closed
 - Production skill intent leaves `ms` after retrieval; generated twins and loaded/indexed copies are never hand-edited as source.
 - Search and load results remain advisory inputs, never proof that downstream work is correct.
 - `ms outcome` records observed usefulness only after independent downstream evidence.
+- Reindex is done only after exact servers are gone, rebuild accounting is
+  complete, a fresh MCP result is nonempty, and no probe server remains.
 
 ## References
 

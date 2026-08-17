@@ -10,6 +10,13 @@
 
 Given a Doc command and target:
 
+Before Step 1, freeze the target and scan declaration from `SKILL.md`: caller
+authorization ID, physical non-broad root, allowlisted relative roots and file
+extensions, at most 10,000 entries/30 seconds by default, and finite process
+output. A missing authorization, forbidden path, deadline, or ceiling stops
+before scanning. The examples below are search shapes, not authority to scan an
+undeclared current directory.
+
 ## Step 1: Detect Project Type
 
 ```bash
@@ -177,6 +184,8 @@ Tell the user:
 2. Docs generated/updated
 3. Gaps remaining
 4. Location of report
+5. Observed effects (roots/files read, commands, remote access, credentials by
+   non-secret identity, and paths written) plus any limit reached
 
 ## Key Rules
 

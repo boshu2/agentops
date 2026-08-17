@@ -27,6 +27,26 @@ configuration, so no mutation runs without explicit caller authority. The comman
 surface below is anchored to `sbh` 0.4.27; re-verify against `sbh --version` on
 another host before relying on an exact flag.
 
+## Enforced boundary
+
+This package exposes one mutating operation: bounded cleanup inside a dedicated
+directory through `scripts/safe-clean.sh`. The directory must be canonical,
+same-user-owned, contain the exact `.sbh-clean-root` marker, contain at most
+10,000 entries, and contain neither symlinks nor `.git`. An entire filesystem
+mount, `/`, and the operator home are rejected.
+
+Run `plan` first. It attests exact SBH 0.4.27 flags, binds the root to the
+filesystem identity from structured status, and records a nonempty dry run of
+at most 1,000 items. The returned `sbh:clean:SHA256` token covers the complete
+canonical plan. Only the caller can supply that exact token to `apply`; apply
+rechecks the tree, mount/container identity, runtime, and byte-for-byte dry-run
+facts before one `clean --yes` invocation. Changed candidates require a new
+plan and approval.
+
+Ballast release, emergency cleanup, tuning, unprotect, service/configuration
+changes, arbitrary roots, and all other host mutation are intentionally blocked
+because this package cannot bound or roll them back.
+
 Evidence-first recovery works because disk pressure has cheap reversible
 remedies and expensive irreversible ones; a factual baseline is what tells them
 apart before anything is deleted. Order remediation by irreversibility:
@@ -62,5 +82,14 @@ never lowers the authorization bar or the ordering above.
 Return mount, free bytes, pressure state, dry-run candidates, authorization used,
 exact command and exit code, bytes reclaimed, protection vetoes, and checked/not
 checked surfaces.
+
+## Done
+
+Stop after the plan or the single apply receipt. Applied success requires a
+bounded structured SBH result plus same-container post-status whose free bytes
+did not decrease. A timeout, changed dry run, failed cleanup, or failed
+postcondition is returned without retry. The receipt names SBH implementation
+and open-file detection as unproved external behavior; wrapper tests do not
+prove either safe.
 
 Full command documentation: <https://github.com/Dicklesworthstone/storage_ballast_helper>

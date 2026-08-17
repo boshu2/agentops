@@ -16,7 +16,7 @@ metadata:
   tier: execution
   dependencies: []
   capabilities: [generate_evidenced_options, dueling_idea_genies]
-  effects: [write_idea_portfolio]
+  effects: [read_declared_evidence_packet, optionally_query_approved_sources, dispatch_authorized_bounded_model_challenges, write_idea_portfolio, write_idea_challenge]
   canonical_status: canonical
   disposition: keep_strategy
 output_contract: idea-portfolio.v1 JSON validated by skills/idea-genie/scripts/validate-output.sh (elicit mode), or idea-challenge.v1 JSON validated by skills/idea-genie/scripts/validate-challenge.sh (duel mode)
@@ -28,6 +28,30 @@ One canonical root for idea work: elicit an evidence-grounded opportunity
 portfolio, or challenge a consequential idea with sealed independent
 perspectives. Both modes explore and advise; neither selects, schedules,
 tracks, implements, or validates work.
+
+## Constraints
+
+- **Why comparable outputs need a frozen packet.** Freeze an allowlisted evidence packet before either mode: at most 20 sources
+  and 256 KiB, with exact byte count and SHA-256. Reject unreadable,
+  secret-bearing, oversized, or out-of-allowlist content before generation.
+- **Why model substitution is misleading.** Record the caller authorization ID and declared limits. Elicit runs at most
+  three novelty passes, retains at most ten candidates, and emits at most
+  64 KiB. A two-way challenge uses one fresh context; a one-way challenge uses
+  2–4 declared judge attempts. Every adapter and model identity is named before
+  dispatch; unavailable entries become explicit errors, never substitutions.
+- Each challenge attempt has a 300-second maximum deadline and 32 KiB output
+  cap; the whole challenge has a 900-second maximum. Local attempts run in new
+  process groups. Timeout, cancellation, or overflow terminates/reaps the group;
+  remote adapters must confirm equivalent cancellation.
+- Generation is read-only over the subject and may write only the declared
+  bounded scratch artifact. Packet drift, subject mutation, cleanup failure,
+  un-reaped judges, or undeclared network/credential/data access produces an
+  explicit `insufficient` result with no synthesis or Plan-ready route.
+
+Local no-network challenges use Validate's
+[`run-check` bounded runner](../validate/scripts/validate.py). Remote adapters
+must enforce equivalent output, deadline, cancellation, and cleanup bounds plus
+their caller-approved endpoint and credential allowlists.
 
 ## Modes
 
@@ -111,6 +135,15 @@ challenge. Do not manufacture panel ceremony.
 - Dissent and refutation attempts remain explicit.
 - The packet contains no semantic readiness field or decision.
 - The validator passes before handoff to Plan.
+
+## Quality checks
+
+- Packet, pass/candidate, output, judge-count, model/adapter, and deadline bounds
+  are present and within the validators' hard maxima.
+- Every dispatched context has a unique ID, factual completion/error/timeout
+  status, bounded output bytes, and confirmed cleanup.
+- An insufficient or unclean challenge contains no cross-review synthesis and
+  cannot claim the normal Plan handoff route; neither mode mutates the subject.
 
 ### Do not
 

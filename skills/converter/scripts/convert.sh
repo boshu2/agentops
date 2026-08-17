@@ -21,6 +21,24 @@ CODEX_LAYOUT="modular"
 ARGS_SKILL_DIR_OR_FLAG=""
 ARGS_TARGET=""
 ARGS_OUTPUT_DIR=""
+ARGS_OUTPUT_ROOT=""
+MAX_SOURCE_FILES=2048
+MAX_SOURCE_FILE_BYTES=$((16 * 1024 * 1024))
+MAX_SOURCE_TOTAL_BYTES=$((64 * 1024 * 1024))
+OWNERSHIP_MARKER=".agentops-converter-owned-v1"
+TEMP_PATHS=()
+
+cleanup_temp_paths() {
+  local path base
+  for path in "${TEMP_PATHS[@]}"; do
+    [[ -n "$path" ]] || continue
+    base="$(basename "$path")"
+    case "$base" in
+      .converter-stage.*|.converter-backup.*) rm -rf -- "$path" ;;
+    esac
+  done
+}
+trap cleanup_temp_paths EXIT
 
 # ─── Helpers ───────────────────────────────────────────────────────────
 
@@ -29,8 +47,9 @@ die() { echo "ERROR: $*" >&2; exit 1; }
 usage() {
   cat <<'EOF'
 Usage:
-  bash skills/converter/scripts/convert.sh [--codex-layout modular|inline] <skill-dir> <target> [output-dir]
-  bash skills/converter/scripts/convert.sh [--codex-layout modular|inline] --all <target> [output-dir]
+  bash skills/converter/scripts/convert.sh [--codex-layout modular|inline] <skill-dir> <target>
+  bash skills/converter/scripts/convert.sh [--codex-layout modular|inline] --output-root /approved/root <skill-dir> <target> <relative-output-dir>
+  bash skills/converter/scripts/convert.sh [--codex-layout modular|inline] --all <target>
 
 Targets: codex, cursor, test
 
@@ -38,7 +57,7 @@ Examples:
   bash skills/converter/scripts/convert.sh skills/council codex
   bash skills/converter/scripts/convert.sh --codex-layout inline skills/council codex
   bash skills/converter/scripts/convert.sh --all codex
-  bash skills/converter/scripts/convert.sh skills/vibe test /tmp/out
+  bash skills/converter/scripts/convert.sh --output-root /tmp/converter skills/vibe test out
 EOF
   exit 1
 }
@@ -55,6 +74,15 @@ parse_args() {
         ;;
       --codex-layout=*)
         CODEX_LAYOUT="${1#*=}"
+        shift
+        ;;
+      --output-root)
+        [[ $# -ge 2 ]] || die "--output-root requires an absolute directory"
+        ARGS_OUTPUT_ROOT="$2"
+        shift 2
+        ;;
+      --output-root=*)
+        ARGS_OUTPUT_ROOT="${1#*=}"
         shift
         ;;
       --all)
@@ -89,6 +117,31 @@ parse_args() {
   ARGS_SKILL_DIR_OR_FLAG="${positional[0]}"
   ARGS_TARGET="${positional[1]}"
   ARGS_OUTPUT_DIR="${positional[2]:-}"
+}
+
+file_size() {
+  if stat -f '%z' "$1" >/dev/null 2>&1; then
+    stat -f '%z' "$1"
+  else
+    stat -c '%s' "$1"
+  fi
+}
+
+assert_bounded_regular_source() {
+  local source_dir="$1" file size count=0 total=0 first_bad
+  [[ ! -L "$source_dir" ]] || die "source package must not be a symlink"
+  first_bad="$(find "$source_dir" -mindepth 1 -type l -print -quit)"
+  [[ -z "$first_bad" ]] || die "source package contains a symlink: ${first_bad#"$source_dir"/}"
+  first_bad="$(find "$source_dir" -mindepth 1 ! -type d ! -type f -print -quit)"
+  [[ -z "$first_bad" ]] || die "source package contains a non-regular entry: ${first_bad#"$source_dir"/}"
+  while IFS= read -r -d '' file; do
+    count=$((count + 1))
+    (( count <= MAX_SOURCE_FILES )) || die "source package exceeds $MAX_SOURCE_FILES files"
+    size="$(file_size "$file")"
+    (( size <= MAX_SOURCE_FILE_BYTES )) || die "source file exceeds $MAX_SOURCE_FILE_BYTES bytes: ${file#"$source_dir"/}"
+    total=$((total + size))
+    (( total <= MAX_SOURCE_TOTAL_BYTES )) || die "source package exceeds $MAX_SOURCE_TOTAL_BYTES bytes"
+  done < <(find "$source_dir" -type f -print0)
 }
 
 yaml_escape_single_quote() {
@@ -579,10 +632,11 @@ copy_passthrough_resources() {
         ;;
     esac
 
-    # Copy and dereference symlinks to keep output plugin-compatible.
+    # Source validation rejects every symlink before conversion. Preserve file
+    # identity here; never dereference a link into caller-external content.
     if [[ -d "$entry" ]]; then
       # For directories (references/, scripts/, etc.), copy then rewrite .md files
-      rsync -a --copy-links "$entry" "$output_dir"/
+      rsync -a "$entry" "$output_dir"/
       local subdir="$output_dir/$base"
       if [[ -d "$subdir" ]]; then
         while IFS= read -r md_file; do
@@ -596,7 +650,7 @@ copy_passthrough_resources() {
         done < <(find "$subdir" -name '*.md' -type f 2>/dev/null)
       fi
     else
-      rsync -a --copy-links "$entry" "$output_dir"/
+      rsync -a "$entry" "$output_dir"/
       # Rewrite top-level .md files too (e.g., validation-contract.md)
       if [[ "$entry" == *.md ]]; then
         local out_file="$output_dir/$base"
@@ -699,27 +753,54 @@ assert_safe_output_dir() {
 write_output() {
   local output_dir="$1"
   local source_dir="$2"
+  local parent stage backup=""
 
   # Guard BEFORE the destructive clean-write below.
   assert_safe_output_dir "$output_dir" "$source_dir"
 
-  # Clean-write: delete target dir before writing
-  if [[ -d "$output_dir" ]]; then
-    rm -rf "$output_dir"
+  if [[ -e "$output_dir" || -L "$output_dir" ]]; then
+    [[ -d "$output_dir" && ! -L "$output_dir" ]] \
+      || die "refusing to replace a non-directory or symlink output"
+    [[ -f "$output_dir/$OWNERSHIP_MARKER" && ! -L "$output_dir/$OWNERSHIP_MARKER" ]] \
+      || die "refusing to replace caller-owned output without $OWNERSHIP_MARKER"
+    [[ "$(sed -n '1p' "$output_dir/$OWNERSHIP_MARKER")" == "agentops-converter-output-v1" ]] \
+      || die "refusing to replace output with an invalid ownership marker"
   fi
-  mkdir -p "$output_dir"
 
-  printf '%s\n' "$CONVERTED_OUTPUT" > "$output_dir/$CONVERTED_FILENAME"
-  echo "OK: $output_dir/$CONVERTED_FILENAME"
+  parent="$(dirname "$output_dir")"
+  mkdir -p "$parent"
+  [[ ! -L "$parent" ]] || die "output parent must not be a symlink"
+  stage="$(mktemp -d "$parent/.converter-stage.XXXXXX")"
+  TEMP_PATHS+=("$stage")
+
+  printf '%s\n' "$CONVERTED_OUTPUT" > "$stage/$CONVERTED_FILENAME"
 
   # Write secondary output if present (e.g., codex prompt.md)
   if [[ -n "${CONVERTED_OUTPUT_2:-}" && -n "${CONVERTED_FILENAME_2:-}" ]]; then
-    printf '%s\n' "$CONVERTED_OUTPUT_2" > "$output_dir/$CONVERTED_FILENAME_2"
-    echo "OK: $output_dir/$CONVERTED_FILENAME_2"
+    printf '%s\n' "$CONVERTED_OUTPUT_2" > "$stage/$CONVERTED_FILENAME_2"
   fi
 
-  copy_passthrough_resources "$source_dir" "$output_dir"
-  verify_passthrough_resources "$source_dir" "$output_dir"
+  copy_passthrough_resources "$source_dir" "$stage"
+  verify_passthrough_resources "$source_dir" "$stage"
+  printf '%s\n%s\n' "agentops-converter-output-v1" "$BUNDLE_NAME" > "$stage/$OWNERSHIP_MARKER"
+
+  if [[ -e "$output_dir" ]]; then
+    backup="$(mktemp -d "$parent/.converter-backup.XXXXXX")"
+    rmdir "$backup"
+    TEMP_PATHS+=("$backup")
+    mv "$output_dir" "$backup"
+  fi
+  if ! mv "$stage" "$output_dir"; then
+    [[ -n "$backup" && -d "$backup" ]] && mv "$backup" "$output_dir"
+    die "atomic output install failed"
+  fi
+  if [[ -n "$backup" ]]; then
+    rm -rf -- "$backup"
+  fi
+  echo "OK: $output_dir/$CONVERTED_FILENAME"
+  if [[ -n "${CONVERTED_OUTPUT_2:-}" && -n "${CONVERTED_FILENAME_2:-}" ]]; then
+    echo "OK: $output_dir/$CONVERTED_FILENAME_2"
+  fi
 }
 
 # ─── Main ─────────────────────────────────────────────────────────────
@@ -736,6 +817,7 @@ convert_one_skill() {
 
   [[ -d "$skill_dir" ]] || die "Skill directory not found: $skill_dir"
   [[ -f "$skill_dir/SKILL.md" ]] || die "No SKILL.md in: $skill_dir"
+  assert_bounded_regular_source "$skill_dir"
 
   parse_bundle "$skill_dir"
 
@@ -744,8 +826,19 @@ convert_one_skill() {
   # Default output dir (ADR-0016 closed set: generated projection tier)
   if [[ -z "$output_dir" ]]; then
     output_dir="$REPO_ROOT/.agents/projections/converter/$target/$BUNDLE_NAME"
-  elif [[ "$output_dir" != /* ]]; then
-    output_dir="$REPO_ROOT/$output_dir"
+  else
+    [[ -n "$ARGS_OUTPUT_ROOT" ]] \
+      || die "an explicit output dir requires --output-root"
+    [[ "$ARGS_OUTPUT_ROOT" == /* && -d "$ARGS_OUTPUT_ROOT" && ! -L "$ARGS_OUTPUT_ROOT" ]] \
+      || die "--output-root must be an existing absolute non-symlink directory"
+    [[ "$output_dir" != /* && "$output_dir" != *".."* ]] \
+      || die "output dir must be relative to --output-root"
+    local output_root_abs output_candidate
+    output_root_abs="$(cd "$ARGS_OUTPUT_ROOT" && pwd -P)"
+    output_candidate="$(resolve_physical "$output_root_abs/$output_dir")"
+    within "$output_candidate" "$output_root_abs" \
+      || die "output dir escapes --output-root"
+    output_dir="$output_candidate"
   fi
 
   # Reset output variables
@@ -777,11 +870,7 @@ main() {
       local out="$output_dir"
       if [[ -n "$out" ]]; then
         # Per-skill subdir under the provided output dir
-        if [[ "$out" != /* ]]; then
-          out="$REPO_ROOT/$out/$sname"
-        else
-          out="$out/$sname"
-        fi
+        out="${out%/}/$sname"
       fi
       convert_one_skill "$d" "$target" "$out"
       count=$((count + 1))

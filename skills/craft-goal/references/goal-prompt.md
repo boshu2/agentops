@@ -26,15 +26,25 @@ Experiment policy:
 - Classify discoveries as necessary-now, linked-follow-up, or HOLD/rescope.
 
 Wave envelope:
-- <numeric RPI/concurrency/time/token/live-attempt limits>
+- RPIs: <positive integer>
+- concurrency: <positive integer>
+- wall minutes: <positive integer>
+- tokens: <positive integer>
+- live attempts: <positive integer>
 
 Hard goal envelope:
-- <numeric total RPI/time/token/live-attempt/compaction/surface limits>
+- total RPIs: <positive integer>
+- total wall minutes: <positive integer>
+- total tokens: <positive integer>
+- total live attempts: <positive integer>
+- compactions: <positive integer>
+- changed paths: <positive integer>
 - No artifact, repair, helper, subject, or wave resets a total.
 
 Breaker and andon:
 - Ordinary informative red may produce a materially different next experiment.
-- <threshold> non-ratcheting results, oscillation, scope pressure, or exhaustion:
+- no-ratchet threshold RPIs: <positive integer>
+- At that threshold, oscillation, scope pressure, or exhaustion:
   HOLD and consult exactly one bounded fresh helper.
 - UNSTUCK resumes with a different experiment; ESCALATE reports NEEDS_OPERATOR.
 

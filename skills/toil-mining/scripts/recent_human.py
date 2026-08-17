@@ -4,7 +4,9 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
+import os
 import re
 import sys
 from dataclasses import dataclass
@@ -14,6 +16,27 @@ from typing import Any, Iterable
 
 
 REQUEST_MARKER = "# My request for Codex:"
+MAX_FILES_LIMIT = 256
+MAX_FILE_BYTES_LIMIT = 16 * 1024 * 1024
+MAX_LINE_BYTES_LIMIT = 1024 * 1024
+MAX_MESSAGES_LIMIT = 10_000
+MAX_TEXT_CHARS_LIMIT = 4096
+
+SENSITIVE_PATTERNS: tuple[tuple[re.Pattern[str], str], ...] = (
+    (
+        re.compile(
+            r"(?i)\b(api[_-]?key|access[_-]?token|auth(?:orization)?|password|passwd|secret)"
+            r"\s*[:=]\s*([^\s,;]+)"
+        ),
+        r"\1=[REDACTED]",
+    ),
+    (re.compile(r"(?i)\bBearer\s+[A-Za-z0-9._~+\-/]+=*"), "Bearer [REDACTED]"),
+    (re.compile(r"-----BEGIN [^-\n]+-----[\s\S]*?-----END [^-\n]+-----"), "[REDACTED-PEM]"),
+    (re.compile(r"(?<![\w@])(?:/[^\s/:]+){2,}"), "[REDACTED-PATH]"),
+    (re.compile(r"(?<!\w)~/(?:[^\s]+)"), "[REDACTED-PATH]"),
+    (re.compile(r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b"), "[REDACTED-EMAIL]"),
+    (re.compile(r"\b(?:[A-Fa-f0-9]{32,}|[A-Za-z0-9+/]{40,}={0,2})\b"), "[REDACTED-TOKEN]"),
+)
 
 # These are deliberately narrow. The client_id check below is the primary
 # machine-injection boundary; these patterns catch known generated envelopes
@@ -46,11 +69,12 @@ MACHINE_ECHO_PATTERNS: tuple[tuple[str, re.Pattern[str]], ...] = (
 
 @dataclass(frozen=True)
 class Candidate:
-    source_path: str
+    source_id: str
     line: int
     timestamp: datetime
     timestamp_text: str
-    text: str
+    redacted_text: str
+    text_digest: str
     client_id: str
 
 
@@ -84,6 +108,16 @@ def normalize_request(message: str) -> str:
     return "\n".join(lines).strip()
 
 
+def redact_request(message: str, max_chars: int) -> str:
+    """Return a bounded, redacted excerpt; raw human text is never emitted."""
+    redacted = message
+    for pattern, replacement in SENSITIVE_PATTERNS:
+        redacted = pattern.sub(replacement, redacted)
+    if len(redacted) > max_chars:
+        redacted = redacted[:max_chars].rstrip() + "…[TRUNCATED]"
+    return redacted
+
+
 def machine_echo_reason(text: str) -> str | None:
     for name, pattern in MACHINE_ECHO_PATTERNS:
         if pattern.search(text):
@@ -100,13 +134,23 @@ def is_user_message(record: Any) -> bool:
     )
 
 
-def iter_records(path: Path) -> Iterable[tuple[int, bytes]]:
+def iter_records(path: Path, max_line_bytes: int) -> Iterable[tuple[int, bytes]]:
     with path.open("rb") as handle:
         for line_number, raw_line in enumerate(handle, start=1):
+            if len(raw_line) > max_line_bytes:
+                raise ValueError(f"input line exceeds max_line_bytes at source line {line_number}")
             yield line_number, raw_line
 
 
-def extract(paths: list[Path], since: datetime, until: datetime) -> dict[str, Any]:
+def extract(
+    sources: list[tuple[str, str, Path]],
+    since: datetime,
+    until: datetime,
+    *,
+    max_line_bytes: int,
+    max_messages: int,
+    max_text_chars: int,
+) -> dict[str, Any]:
     exclusions: dict[str, Any] = {
         "invalid_json": 0,
         "non_user_message": 0,
@@ -124,8 +168,8 @@ def extract(paths: list[Path], since: datetime, until: datetime) -> dict[str, An
     candidate_user_messages = 0
     candidates: list[Candidate] = []
 
-    for path in paths:
-        for line_number, raw_line in iter_records(path):
+    for source_id, _relative_path, path in sources:
+        for line_number, raw_line in iter_records(path, max_line_bytes):
             input_lines += 1
             try:
                 record = json.loads(raw_line.decode("utf-8"))
@@ -173,20 +217,23 @@ def extract(paths: list[Path], since: datetime, until: datetime) -> dict[str, An
 
             candidates.append(
                 Candidate(
-                    source_path=str(path),
+                    source_id=source_id,
                     line=line_number,
                     timestamp=timestamp,
                     timestamp_text=canonical_instant(timestamp),
-                    text=text,
+                    redacted_text=redact_request(text, max_text_chars),
+                    text_digest=hashlib.sha256(text.encode("utf-8")).hexdigest(),
                     client_id=client_id.strip(),
                 )
             )
+            if len(candidates) > max_messages:
+                raise ValueError("candidate messages exceed max_messages")
 
     # Sorting before selection makes output independent of caller path order and
     # chooses the earliest source occurrence when restored/forked sessions repeat
     # the same UI client event.
     candidates.sort(
-        key=lambda item: (item.timestamp, item.source_path, item.line, item.client_id)
+        key=lambda item: (item.timestamp, item.source_id, item.line, item.client_id)
     )
     retained: list[Candidate] = []
     by_client_id: dict[str, Candidate] = {}
@@ -194,7 +241,7 @@ def extract(paths: list[Path], since: datetime, until: datetime) -> dict[str, An
         previous = by_client_id.get(candidate.client_id)
         if previous is not None:
             exclusions["duplicate_client_id"] += 1
-            if previous.text != candidate.text:
+            if previous.text_digest != candidate.text_digest:
                 exclusions["duplicate_client_id_text_conflict"] += 1
             continue
         by_client_id[candidate.client_id] = candidate
@@ -206,9 +253,12 @@ def extract(paths: list[Path], since: datetime, until: datetime) -> dict[str, An
             "since_inclusive": canonical_instant(since),
             "until_exclusive": canonical_instant(until),
         },
-        "inputs": [str(path) for path in paths],
+        "inputs": [
+            {"source_id": source_id, "relative_path": relative_path}
+            for source_id, relative_path, _path in sources
+        ],
         "counts": {
-            "input_files": len(paths),
+            "input_files": len(sources),
             "input_lines": input_lines,
             "parsed_records": parsed_records,
             "candidate_user_messages": candidate_user_messages,
@@ -217,19 +267,21 @@ def extract(paths: list[Path], since: datetime, until: datetime) -> dict[str, An
         },
         "messages": [
             {
-                "source_path": item.source_path,
+                "source_id": item.source_id,
                 "line": item.line,
                 "timestamp": item.timestamp_text,
-                "text": item.text,
+                "redacted_text": item.redacted_text,
+                "text_sha256": item.text_digest,
             }
             for item in retained
         ],
         "checked": [
-            "Only the explicitly supplied JSONL paths were read.",
+            "Only regular, non-symlink JSONL files beneath the explicit input root were read.",
             "The time window was applied since-inclusive and until-exclusive in UTC.",
             "Only event_msg/user_message records with a nonempty client_id were retained.",
             "Codex attachment wrappers were reduced to the text after '# My request for Codex:'.",
             "Known generated envelopes were excluded and restored/forked copies were deduplicated by client_id.",
+            "Emitted text was bounded and redacted; raw human text and absolute paths were not emitted.",
         ],
         "not_checked": [
             "Attachment file contents and any session paths not explicitly supplied were not read.",
@@ -249,8 +301,14 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument("--since", required=True, help="inclusive ISO-8601 timestamp")
     parser.add_argument("--until", required=True, help="exclusive ISO-8601 timestamp")
+    parser.add_argument("--input-root", required=True, help="absolute root containing every session")
+    parser.add_argument("--max-files", required=True, type=int)
+    parser.add_argument("--max-file-bytes", required=True, type=int)
+    parser.add_argument("--max-line-bytes", required=True, type=int)
+    parser.add_argument("--max-messages", required=True, type=int)
+    parser.add_argument("--max-text-chars", required=True, type=int)
     parser.add_argument(
-        "sessions", nargs="+", help="explicit Codex JSONL session paths"
+        "sessions", nargs="+", help="explicit input-root-relative Codex JSONL paths"
     )
     return parser
 
@@ -266,15 +324,65 @@ def main(argv: list[str] | None = None) -> int:
     if since >= until:
         parser.error("--since must be earlier than --until")
 
-    unique_paths: dict[str, Path] = {}
-    for supplied in args.sessions:
-        path = Path(supplied).expanduser().resolve()
-        if not path.is_file():
-            parser.error(f"session path is not a file: {supplied}")
-        unique_paths[str(path)] = path
-    paths = [unique_paths[key] for key in sorted(unique_paths)]
+    bounds = (
+        ("--max-files", args.max_files, MAX_FILES_LIMIT),
+        ("--max-file-bytes", args.max_file_bytes, MAX_FILE_BYTES_LIMIT),
+        ("--max-line-bytes", args.max_line_bytes, MAX_LINE_BYTES_LIMIT),
+        ("--max-messages", args.max_messages, MAX_MESSAGES_LIMIT),
+        ("--max-text-chars", args.max_text_chars, MAX_TEXT_CHARS_LIMIT),
+    )
+    for label, value, ceiling in bounds:
+        if not 0 < value <= ceiling:
+            parser.error(f"{label} must be in [1, {ceiling}]")
 
-    json.dump(extract(paths, since, until), sys.stdout, indent=2, ensure_ascii=False)
+    root_arg = Path(args.input_root)
+    if not root_arg.is_absolute() or root_arg.is_symlink():
+        parser.error("--input-root must be an absolute non-symlink directory")
+    try:
+        input_root = root_arg.resolve(strict=True)
+    except OSError as exc:
+        parser.error(f"--input-root cannot be resolved: {exc}")
+    if not input_root.is_dir():
+        parser.error("--input-root must be a directory")
+
+    unique_paths: dict[str, tuple[str, str, Path]] = {}
+    for supplied in args.sessions:
+        relative = Path(supplied)
+        if relative.is_absolute() or ".." in relative.parts or relative.as_posix() != supplied:
+            parser.error(f"session path must be canonical and input-root-relative: {supplied}")
+        path = input_root / relative
+        current = path
+        while current != input_root:
+            if current.is_symlink():
+                parser.error(f"session path must not contain symlinks: {supplied}")
+            current = current.parent
+        try:
+            resolved = path.resolve(strict=True)
+            resolved.relative_to(input_root)
+        except (OSError, ValueError):
+            parser.error(f"session path escapes or does not exist: {supplied}")
+        if not resolved.is_file() or not os.path.isfile(resolved):
+            parser.error(f"session path is not a regular file: {supplied}")
+        if resolved.stat().st_size > args.max_file_bytes:
+            parser.error(f"session exceeds --max-file-bytes: {supplied}")
+        source_id = "source-" + hashlib.sha256(supplied.encode("utf-8")).hexdigest()[:16]
+        unique_paths[supplied] = (source_id, supplied, resolved)
+    if len(unique_paths) > args.max_files:
+        parser.error("session count exceeds --max-files")
+    sources = [unique_paths[key] for key in sorted(unique_paths)]
+
+    try:
+        report = extract(
+            sources,
+            since,
+            until,
+            max_line_bytes=args.max_line_bytes,
+            max_messages=args.max_messages,
+            max_text_chars=args.max_text_chars,
+        )
+    except ValueError as exc:
+        parser.error(str(exc))
+    json.dump(report, sys.stdout, indent=2, ensure_ascii=False)
     sys.stdout.write("\n")
     return 0
 

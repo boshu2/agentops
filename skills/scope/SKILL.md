@@ -36,6 +36,22 @@ Review the write scope in the existing bead or caller intent. This skill is
 advisory: it does not create a second planning artifact, write a lock, install
 a hook, block an edit, or claim paths.
 
+## Constraints
+
+- Perform one read-only review and stop; the caller remains the scope owner.
+- Emit only normalized repository-relative patterns. Absolute paths, traversal,
+  root-wide wildcards, control characters, and exact include/exclude conflicts
+  fail the output contract because they cannot identify a bounded repository
+  surface.
+- Map every include, exclude, and generated-companion pattern to exactly one
+  stated axiom; every axiom maps at least one pattern because the two-way map
+  exposes both unjustified breadth and missing coverage.
+- `COMPLETE` requires zero gaps and ambiguities. Otherwise emit `NEEDS_INPUT`
+  with at least one named missing or ambiguous fact because an unresolved
+  boundary is part of the result rather than an implicit assumption.
+- Run `scripts/check-output.sh` over the captured YAML before reporting the
+  review as structurally complete.
+
 ## Inputs
 
 - One active behavior and its acceptance scenarios.
@@ -56,7 +72,7 @@ and Validate independently compares runtime-derived changed paths with that scop
 
 ## Axiom-kernel framing
 
-Derive the scope from axioms, not enumeration instinct. State the small set of
+Derive the scope from a compact axiom set. State the small set of
 facts the acceptance makes true — "behavior X lives in root A", "projection B
 is generated from A", "history under C is frozen" — and derive every include
 and exclude pattern from exactly one axiom. A pattern with no supporting axiom
@@ -84,22 +100,38 @@ and the caller decides.
 ## Output
 
 ```yaml
+decision: COMPLETE
 write_scope:
   include: ["bounded/source/**"]
   exclude: ["bounded/source/generated-by-other-owner/**"]
 generated_companions: ["bounded/generated/**"]
+axioms:
+  - fact: "Behavior X is owned by bounded/source."
+    patterns: ["include:bounded/source/**"]
+  - fact: "Projection ownership is separate."
+    patterns:
+      - "exclude:bounded/source/generated-by-other-owner/**"
+      - "generated:bounded/generated/**"
 gaps: []
 ambiguities: []
+checked: ["acceptance criterion", "source owner", "projection owner"]
+not_checked: ["runtime-derived final diff"]
 ```
 
 ## Checks
 
 - Patterns are normalized repository-relative paths.
 - Includes cover the behavior without granting unrelated directories.
-- Excludes do not contradict required changes.
+- Excludes remain compatible with required changes; exact include/exclude
+  contradictions fail the checker.
 - Generated companions are explicit.
 - No ownership, scheduling, Git, hook, retry, release, or delivery state is
   introduced.
+
+Done means the captured output passes `scripts/check-output.sh`: its decision
+matches its gaps, its paths are bounded and normalized, and the axiom-to-pattern
+mapping is total in both directions. This proves the review's shape, not that a
+future runtime-derived diff will obey it; keep that surface in `not_checked`.
 
 ## Failure behavior
 

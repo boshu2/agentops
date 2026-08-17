@@ -171,21 +171,37 @@ Not yet deployed - template only
 
 ### Semantic Validation Commands
 
-```bash
-# Check status claims against cluster (manual)
-oc get pods -n ai-platform | grep <service>
-oc get agents.kagent.dev -n ai-platform
+Live verification is opt-in. Before contact, obtain a caller authorization ID
+for one exact cluster context and namespace, the credential identity (never the
+credential value), and the fixed resource allowlist `pods` and
+`agents.kagent.dev`. Allow only `get`/`list`; secrets, ConfigMaps, logs,
+exec/attach, writes, wildcard resources, current-context inference, and
+cross-namespace queries are forbidden. Default bounds are two requests,
+10 seconds per request, 30 seconds overall, and 1 MiB combined output. Run each
+argv under process-group cleanup and redact secret-like or personal fields
+before writing excerpts.
 
-# Cross-reference with ground truth
-diff <(grep "Status:" docs/code-map/services/*.md) <(cat docs/agents/catalog.md)
+```bash
+# Exact examples after <context>, <namespace>, and <caller-id> are approved.
+oc --context <context> -n <namespace> --request-timeout=10s get pods -o json
+oc --context <context> -n <namespace> --request-timeout=10s get agents.kagent.dev -o json
+
+# Local cross-reference uses only declared docs paths and the same process bounds.
+rg '^Status:' docs/code-map/services docs/agents/catalog.md
 ```
+
+If approval, the context/namespace/resource allowlist, credential identity,
+deadline, output cap, or redaction cannot be established, stop before the
+request and mark the claim unchecked. The effects report records exact argv,
+context/namespace/resources, request/output counts, credential identity, and
+zero writes to the cluster.
 
 ### --verify-claims Flag
 
 When running `/doc coverage --verify-claims`:
 
 1. Extract all "Status: X" claims from docs
-2. Query deployment state (oc get pods, oc get agents)
+2. After the approval/allowlist gate above, query only the allowlisted deployment state
 3. Report mismatches as CRITICAL
 4. Flag stale validation dates (>30 days) as WARNING
 

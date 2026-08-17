@@ -39,6 +39,11 @@ Mayor over a bead-shaped experiment graph. Each RPI is one scientific trial;
 the goal selects the next useful trial, preserves what was learned, and
 ratchets toward a larger outcome.
 
+Why this works: numeric envelopes make adaptive search observable without
+turning a useful next experiment into renewable authority. Compiler budget:
+at most 1 compilation pass and 0 dispatches per invocation. Stop when the
+captured decision passes `scripts/check-output.sh` or when that check fails.
+
 ```text
 Goal / Mayor: observe graph → choose bounded wave → consume verdicts → ratchet
   └─ Bead: durable experiment intent, context, scratch, evidence, and links
@@ -58,6 +63,19 @@ caller-owned text. Crafting one creates no goal, starts no runtime, and mutates
 no bead; it confers no standing authorization. The prompt drives RPI dispatch
 only when a caller pastes it into their own goal runtime under their own
 authority, and only within the non-renewing envelope the caller then sets.
+
+## Constraints
+
+- One invocation performs one compilation or lint pass, zero dispatches, zero
+  tracker mutations, and zero goal executions because crafting text grants no
+  runtime authority.
+- Every emitted wave and hard campaign envelope contains positive numeric RPI,
+  concurrency, time, token, live-attempt, compaction, and surface ceilings
+  because an unmeasured adaptive route cannot fail closed.
+- Wave creation never renews hard totals. HOLD has exactly one fresh-helper
+  consultation; terminal output stops the prompt.
+- Captured output must pass `scripts/check-output.sh` before
+  `SAFE_TO_CREATE` is returned.
 
 Named failure mode — **completion treadmill**: discoveries recursively become
 requirements and activity continues without new information. Its opposite is
@@ -122,42 +140,8 @@ outcome; do not invent one universal budget.
 
 Stop when the goal reports `ACHIEVED`, `NOT_ACHIEVED`, or `NEEDS_OPERATOR`.
 
-## Bead graph contract
-
-Record each experiment in a bead with:
-
-- question or hypothesis and the acceptance gap it addresses;
-- method, expected observation, falsifier, scope, and non-goals;
-- notes/scratch sufficient to resume after compaction;
-- exact RPI verdict/evidence references and observed learning.
-
-Use graph semantics deliberately:
-
-- `parent-child` for goal → experiment membership;
-- `blocks` only for real execution ordering;
-- `related` for alternatives or correlated observations;
-- `discovered-from` for provenance of newly exposed work.
-
-Use live `bd`/`br` state as authority and `bv --robot-*` output for
-prioritization, parallel tracks, bottlenecks, and graph insight. Never treat a
-static plan as fresher than the graph. The `bd`/`br`/`bv` tracker is an external,
-caller-owned runtime the emitted goal will drive (declared via
-`intel_scope: topic`); craft-goal reads live tracker state when present but
-starts nothing and requires no tracker to be installed to compile a prompt.
-
-## What counts as a ratchet
-
-An RPI makes progress when its durable result does at least one:
-
-1. proves part of terminal acceptance;
-2. falsifies a live hypothesis with discriminating evidence and prunes it;
-3. resolves an uncertainty or owner so the next experiment is materially
-   different.
-
-More code, another commit, a repeated error, or a rewritten plan is not itself
-progress. A NOT_PROVEN result counts only when its evidence narrows the next
-question; repetition without new information increments the no-progress
-counter. Stop when no ratchet remains inside the envelope.
+The bead graph fields, dependency meanings, ratchet test, and wave transition
+are defined in [the goal kernel](references/KERNEL.md).
 
 ## Mayor loop
 
@@ -221,16 +205,17 @@ outcome, evidence, admission, bead graph, RPI boundary, ratchet, discovery,
 wave budget, hard budget, breaker, operator andon, scope, self-hosting, and
 terminal reports.
 
-Output validator — a captured decision must lead with exactly one terminal
+Output validator — validate the complete captured decision, not only its first
 token:
 
 ```bash
-printf '%s\n' "$decision" | head -n1 | grep -Eq '^(SAFE_TO_CREATE|USE_RPI|UNSAFE_GOAL)\b'
+skills/craft-goal/scripts/check-output.sh /absolute/captured-decision.txt
 ```
 
-This pins the machine-checkable shape of the output contract. `scripts/validate.sh`
-still enforces structural hygiene; the fourteen lint dimensions above stay a human
-rubric because they judge prompt content that has no persisted artifact at gate time.
+The checker enforces decision-specific headings, all fourteen lint dimensions,
+numeric nonrenewing envelopes, breaker/helper bounds, filled prompt fields, and
+all three terminal reports. `scripts/validate.sh` separately enforces package
+structure.
 
 Done when:
 

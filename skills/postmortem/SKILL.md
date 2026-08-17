@@ -14,7 +14,7 @@ skill_api_version: 1
 user-invocable: true
 metadata:
   capabilities: [postmortem]
-  effects: [write_postmortem_report]
+  effects: [read_declared_verdict_evidence_packet, optionally_dispatch_authorized_bounded_causal_judges, write_postmortem_report, write_postmortem_run_receipt]
   canonical_status: canonical
   disposition: keep_strategy
   tier: judgment
@@ -37,6 +37,18 @@ output_contract: 'YYYY-MM-DD-postmortem-<topic>.md — markdown causal analysis 
 
 ## Critical Constraints
 
+- **Why causal claims need fixed inputs.** Freeze at most 20 allowlisted evidence sources and 256 KiB total; record the
+  packet SHA-256 and byte/source counts before analysis. Reject unreadable,
+  secret-bearing, oversized, or out-of-allowlist input before model dispatch.
+- The caller authorizes the analysis and any optional judges. Declare 0–3 judge
+  adapters/model identities up front, with a 300-second maximum per judge,
+  1200-second overall deadline, and 32 KiB output cap. An unavailable model is
+  an explicit error, never silently substituted.
+- Local judges run read-only in new process groups. Timeout, cancellation, or
+  overflow terminates and reaps the whole group; remote adapters must confirm
+  equivalent cancellation. Any subject mutation, cleanup failure, packet drift,
+  or undeclared network/credential/data access makes the analysis incomplete
+  and stops further dispatch.
 - Because proof and causal inference are different judgments, Postmortem is retrospective causal analysis, not the general learning umbrella and not a completion gate.
 - It consumes immutable Validate verdict evidence and does not re-run acceptance validation because Validate already owns that proof.
 - Treat causal statements as hypotheses because causal confidence must survive
@@ -50,6 +62,11 @@ output_contract: 'YYYY-MM-DD-postmortem-<topic>.md — markdown causal analysis 
 - Empty or inconclusive analysis is valid; manufacture neither certainty nor a
   lesson to make the retrospective feel useful.
 
+Local no-network judges use Validate's
+[`run-check` bounded runner](../validate/scripts/validate.py). Remote adapters
+must enforce equivalent output, deadline, cancellation, and cleanup bounds plus
+their caller-approved endpoint and credential allowlists.
+
 ## Workflow
 
 1. Pin the verdict, subject evidence, and explicit causal
@@ -61,8 +78,11 @@ output_contract: 'YYYY-MM-DD-postmortem-<topic>.md — markdown causal analysis 
 4. Test each claim against cited evidence and a counterfactual: what should
    differ if the claim were false?
 5. Optionally use independent judges to challenge contested causal claims.
+   Use only the declared bounded attempts above; non-returning judges remain
+   explicit and contribute no causal claim.
 6. Emit a report containing supported claims, rejected claims, unknowns,
-   evidence references, and suggested experiments. Stop.
+   evidence references, and suggested experiments plus a
+   `postmortem-run.v1` receipt. Stop.
 
 ## Correlation-to-cause discrimination
 
@@ -92,7 +112,12 @@ is filed under correlations or unknowns, never silently promoted.
 - **Filename convention:** `YYYY-MM-DD-postmortem-<topic>.md`.
 - **Serialization/schema format:** Markdown with causal question, pinned inputs,
   timeline, hypotheses, evidence, counterfactuals, unknowns, and experiments.
-- **Validator command:** `bash skills/postmortem/scripts/validate.sh`.
+- **Run receipt:** adjacent `postmortem-run.json` with authorization, packet,
+  declared limits, every optional judge attempt, cleanup, subject-unchanged, and
+  `complete|incomplete` status.
+- **Validator commands:** `bash skills/postmortem/scripts/validate.sh` for the
+  package; `bash skills/postmortem/scripts/validate-output.sh <report.md>
+  <postmortem-run.json>` for an emitted analysis.
 - **Downstream handoff:** Learn or the caller may consume the analysis; they own
   any bookkeeping, promotion, planning, or delivery decision.
 
@@ -102,5 +127,8 @@ is filed under correlations or unknowns, never silently promoted.
 - [ ] Supported and rejected claims cite discriminating evidence.
 - [ ] Alternatives, counterfactuals, and unknowns remain visible.
 - [ ] The report stops short of proof, planning, tracker, and delivery authority.
+- [ ] Packet/judge/output bounds and all effects are present in the run receipt.
+- [ ] Every judge attempt has a factual status and confirmed cleanup; incomplete
+      cleanup or subject restoration yields `status: incomplete`.
 
 Executable behavior is in [postmortem.feature](references/postmortem.feature).

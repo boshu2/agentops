@@ -13,20 +13,38 @@ metadata:
   canonical_status: canonical
   disposition: keep_specialist
   tier: execution
-description: 'Switch a caller-selected coding-agent account and report the observed identity. Triggers: "switch account", "rotate coding-agent account".'
+description: 'Switch a caller-selected coding-agent credential profile and report the credential tool post-state without claiming target-runtime identity. Triggers: "switch account", "rotate coding-agent account".'
 practices:
 - pragmatic-programmer
-output_contract: observed account identity and command status
+output_contract: credential profile post-state, command status, and explicit runtime-identity gap
 ---
 # Account rotation — credential adapter
 
 Choose the credential tool from both host and agent family, perform only the
-explicit account switch, and report the identity observed by the matching
-runtime.
+explicit account switch, and report the credential tool's selected-profile
+post-state. This package has no target-runtime identity probe.
 
-Verifying identity through the target runtime works because the runtime is the
+## Enforced surface
+
+Run credential mutation only through `scripts/rotate.sh`. It validates the
+family/profile grammar, requires an exact `rotate:<family>:<profile>` approval,
+attests the selected tool's live command surface, switches once, and requires
+the tool's post-switch state to name the requested profile. Missing approval,
+capability, platform match, post-state, or the nonrenewing 1–120 second deadline
+stops without a successful-rotation claim.
+
+The tool post-state proves only which stored profile was selected. It does not
+prove the external credential manager or provider safe, and it is not target
+runtime identity. Start a new matching runtime and perform its identity probe
+before claiming the account observed by that runtime; until then the receipt
+states `runtime_identity_not_checked=true`.
+
+Target-runtime identity remains a separate check because the runtime is the
 only party whose opinion matters: credential files can be swapped perfectly
-and still authenticate as the old account in an already-running process.
+and still authenticate as the old account in an already-running process. Until
+a separately authorized runtime-specific adapter performs that check, this
+skill returns `runtime_identity_not_checked=true` and makes no account-identity
+claim.
 
 Named failure mode — **stale-process identity**: declaring the rotation done
 while every live session still holds the previous account's tokens in memory.
@@ -44,8 +62,8 @@ process is required for the answer to hold.
   macOS with Claude credentials the route is `claude-acct` (Keychain-backed);
   file-backed Codex, Gemini, Linux, or WSL credentials use `caam`. Never use
   `caam` for macOS Claude account operations.
-- Verify account identity through the target runtime; token bytes are not account
-  identity.
+- Treat target-runtime identity as unchecked; token bytes and credential-tool
+  profile names are profile state rather than account identity.
 - If neither the selected credential tool nor a runtime identity probe is
   available, report that absence as a disclosed fact and stop. Never fall back to
   diffing credential-file bytes to declare a switch done.
@@ -54,7 +72,13 @@ process is required for the answer to hold.
 - This skill does not restart work, resume a task, select a pane, move repository
   state, or decide what happens after the switch.
 
-Return the host, agent family, selected tool, requested account/profile, the
-identity observed before and after the switch, whether any live runtime still
-holds the previous account (a partial rotation), the command exit code, and
-whether a new process is required for the new identity to hold.
+Return the host, agent family, selected tool, requested profile, tool-reported
+profile state before and after the switch, command exit code,
+`runtime_identity_not_checked=true`, and whether a new process is required.
+Account identity and the credentials held by existing processes remain
+`not_checked`.
+
+Done means one authorized switch was attempted, the selected tool reported the
+requested post-state, and the receipt explicitly separates tool profile state
+from runtime identity. The package test compares an unguarded raw mutation with
+the wrapper's pre-action refusal; it does not attest either external tool.

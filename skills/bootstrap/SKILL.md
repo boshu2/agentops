@@ -20,13 +20,13 @@ context:
   intel_scope: none
 metadata:
   capabilities: [bootstrap]
-  effects: [write_project_docs]
+  effects: [read_requested_project_paths, write_missing_project_docs, optionally_create_verdict_storage_directory]
   canonical_status: canonical
   disposition: keep_specialist
   graph_root: true
   tier: session
   dependencies: []
-output_contract: explicitly requested missing project docs and optional .agents/ao/verdicts directory
+output_contract: explicitly requested missing project docs plus optional declared .agents/ao/verdicts/sha256 directory, with created/existing/failed paths
 ---
 # Bootstrap — minimal project setup
 
@@ -70,6 +70,31 @@ the local evidence and verdict directories (`.agents/ao/**`). `ao session
 bootstrap` is a read-only session command that reports which local orientation
 files are present. This skill invokes neither.
 
+## Constraints
+
+- **Why target bounds matter.** Resolve one caller-declared physical target root and a literal allowlist of
+  requested document paths before any write. Reject traversal, symlink escapes,
+  `/`, the user's home as the target itself, and every unrequested path.
+- **Why optional storage stays separate.** Durable verdict storage is a separate optional effect. Create exactly
+  `<target>/.agents/ao/verdicts/sha256/` only when the caller explicitly requests
+  it; record that directory in requested, created/existing, and failed outputs.
+  A docs-only bootstrap never creates `.agents/ao/**`.
+- Recheck nonexistence immediately before each create and use exclusive create
+  semantics. A collision or partial directory failure stops that path without
+  overwriting, deleting, chmodding, or repairing existing content.
+- Completion means every requested path is classified exactly once as created,
+  existing-and-untouched, or failed, and all created paths resolve under the
+  target root. No unclassified or extra filesystem effect is permitted.
+
+## Quality checks
+
+- Every requested path has exactly one created, existing-and-untouched, or
+  failed classification, and the reported write set equals observed writes.
+- A docs-only fixture leaves `.agents/ao/**` absent; a storage fixture creates
+  only the declared verdict directory under the physical target root.
+- A collision, traversal, symlink escape, or existing destination fails before
+  overwrite and preserves the pre-run bytes and mode.
+
 ## Non-goals
 
 - installing or invoking `ao`, `br`, `bd`, NTM, Agent Mail, or another runtime;
@@ -80,8 +105,13 @@ files are present. This skill invokes neither.
 
 ## Output
 
-Return target path, requested files, created files, existing files left intact,
-failed writes, and validation observations. Do not include a next action.
+Return target path, requested document paths, whether verdict storage was
+requested, requested/created/existing/failed directories, created/existing
+documents, failed writes, and validation observations. Report `writes: []` for
+inspection-only or all-existing runs. Serialize those facts as
+`bootstrap-result.v1` and validate them with
+`bash skills/bootstrap/scripts/validate-output.sh <result.json>`. Do not include
+a next action.
 
 ## References
 

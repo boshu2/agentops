@@ -68,12 +68,14 @@ if [[ -f "$REPO_ROOT/AGENTS.md" && -f "$REPO_ROOT/docs/CI-CD.md" ]]; then
   trap 'rm -rf "$redteam_out"' EXIT
   if python3 "$SKILL_DIR/scripts/prompt_redteam.py" scan \
       --repo-root "$REPO_ROOT" \
-      --pack-file "$SKILL_DIR/references/agentops-redteam-pack.json" \
-      --out-dir "$redteam_out" >/dev/null 2>&1; then
+      --pack-root "$SKILL_DIR/references" \
+      --pack-file "agentops-redteam-pack.json" \
+      --output-root "$redteam_out" \
+      --out-dir "run"; then
     echo "security redteam: PASS (attack pack holds against the live tree)"
   else
     echo 'security redteam FAILED against the live tree — a target glob or pattern is stale, or a control regressed' >&2
-    jq -r '.failed_cases[]?' "$redteam_out/redteam/redteam-results.json" 2>/dev/null \
+    jq -r '.failed_cases[]?' "$redteam_out/run/redteam/redteam-results.json" \
       | sed 's/^/  failed case: /' >&2 || true
     exit 1
   fi

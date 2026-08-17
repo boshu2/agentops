@@ -1,12 +1,30 @@
 #!/usr/bin/env bash
-# Create one metadata-complete canonical skill source package.
+# Atomically create one metadata-complete canonical skill source package.
 set -euo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO_ROOT="${SKILL_BUILDER_REPO_ROOT:-$(cd "$SCRIPT_DIR/../../.." && pwd)}"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
+raw_repo="${SKILL_BUILDER_REPO_ROOT:-$(cd "$SCRIPT_DIR/../../.." && pwd -P)}"
+[[ "$raw_repo" == /* && -d "$raw_repo" && ! -L "$raw_repo" ]] || {
+  echo "init.sh: repository root must be an absolute non-symlink directory" >&2
+  exit 2
+}
+REPO_ROOT="$(cd "$raw_repo" && pwd -P)"
+[[ "$raw_repo" == "$REPO_ROOT" ]] || {
+  echo "init.sh: repository root must use its canonical spelling" >&2
+  exit 2
+}
+[[ -d "$REPO_ROOT/skills" && ! -L "$REPO_ROOT/skills" ]] || {
+  echo "init.sh: canonical skills directory is unavailable" >&2
+  exit 2
+}
 
 usage() {
-  echo "usage: init.sh --scratch|--template|--external <slug> [--like <slug>|--from <path>]" >&2
+  cat >&2 <<'EOF'
+usage:
+  init.sh --scratch <slug>
+  init.sh --template <slug> --like <slug>
+  init.sh --external <slug> --external-root <absolute-root> --from <relative-file>
+EOF
   exit 2
 }
 
@@ -15,8 +33,8 @@ mode="$1"
 slug="$2"
 shift 2
 
-[[ "$slug" =~ ^[a-z][a-z0-9-]*$ ]] || {
-  echo "init.sh: slug must be lowercase-hyphen: $slug" >&2
+[[ "$slug" =~ ^[a-z][a-z0-9-]{0,63}$ ]] || {
+  echo "init.sh: slug must be lowercase-hyphen and at most 64 characters" >&2
   exit 2
 }
 
@@ -27,50 +45,149 @@ case "$mode" in
     ;;
   --template)
     [[ $# -eq 2 && "$1" == "--like" ]] || usage
-    source_hint="$2"
-    [[ -f "$REPO_ROOT/skills/$source_hint/SKILL.md" ]] || {
-      echo "init.sh: unknown template skill: $source_hint" >&2
+    template_slug="$2"
+    [[ "$template_slug" =~ ^[a-z][a-z0-9-]{0,63}$ ]] || {
+      echo "init.sh: invalid template slug" >&2
       exit 2
     }
+    template_dir="$REPO_ROOT/skills/$template_slug"
+    template_file="$template_dir/SKILL.md"
+    [[ -d "$template_dir" && ! -L "$template_dir" && -f "$template_file" && ! -L "$template_file" ]] || {
+      echo "init.sh: template skill is unavailable or unsafe" >&2
+      exit 2
+    }
+    template_size="$(stat -f '%z' "$template_file" 2>/dev/null || stat -c '%s' "$template_file")"
+    (( template_size <= 1048576 )) || {
+      echo "init.sh: template skill exceeds 1048576 bytes" >&2
+      exit 2
+    }
+    source_hint="template:$template_slug"
     ;;
   --external)
-    [[ $# -eq 2 && "$1" == "--from" ]] || usage
-    source_hint="$2"
-    [[ -f "$source_hint" ]] || {
-      echo "init.sh: external source does not exist: $source_hint" >&2
+    [[ $# -eq 4 && "$1" == "--external-root" && "$3" == "--from" ]] || usage
+    external_root="$2"
+    external_from="$4"
+    if ! source_digest="$(python3 - "$external_root" "$external_from" <<'PY'
+import hashlib
+import os
+import stat
+import sys
+
+root, relative = sys.argv[1:]
+if not os.path.isabs(root) or not os.path.isdir(root) or os.path.islink(root):
+    raise SystemExit("init.sh: external root must be an absolute non-symlink directory")
+if os.path.abspath(root) != os.path.realpath(root):
+    raise SystemExit("init.sh: external root must use its canonical spelling")
+parts = relative.split("/")
+if not relative or os.path.isabs(relative) or any(part in {"", ".", ".."} for part in parts):
+    raise SystemExit("init.sh: external source must be a canonical relative file")
+candidate = os.path.join(root, *parts)
+cursor = root
+for part in parts:
+    cursor = os.path.join(cursor, part)
+    if os.path.islink(cursor):
+        raise SystemExit("init.sh: external source may not traverse symlinks")
+try:
+    info = os.stat(candidate, follow_symlinks=False)
+except OSError:
+    raise SystemExit("init.sh: external source is unavailable")
+if not stat.S_ISREG(info.st_mode):
+    raise SystemExit("init.sh: external source must be a regular file")
+if info.st_size > 1048576:
+    raise SystemExit("init.sh: external source exceeds 1048576 bytes")
+digest = hashlib.sha256()
+with open(candidate, "rb") as handle:
+    while chunk := handle.read(65536):
+        digest.update(chunk)
+print(digest.hexdigest())
+PY
+)"; then
       exit 2
-    }
+    fi
+    source_hint="external-sha256:$source_digest"
     ;;
   *) usage ;;
 esac
 
 target="$REPO_ROOT/skills/$slug"
-[[ ! -e "$target" ]] || {
-  echo "init.sh: target already exists: $target" >&2
+[[ ! -e "$target" && ! -L "$target" ]] || {
+  echo "init.sh: target already exists" >&2
   exit 1
 }
 
 tier="${SKILL_TIER:-execution}"
-dependencies="${SKILL_DEPENDENCIES:-[]}"
-capabilities="${SKILL_CAPABILITIES:-[\"${slug//-/_}\"]}"
-effects="${SKILL_EFFECTS:-[]}"
+[[ "$tier" =~ ^[a-z][a-z0-9_-]{0,31}$ ]] || {
+  echo "init.sh: SKILL_TIER must be a bounded identifier" >&2
+  exit 2
+}
 
-python3 - "$dependencies" "$capabilities" "$effects" <<'PY'
+normalize_list() {
+  local value="$1"
+  (( ${#value} <= 8192 )) || {
+    echo "init.sh: metadata JSON exceeds 8192 characters" >&2
+    return 2
+  }
+  python3 - "$value" <<'PY'
 import json
 import sys
-for value in sys.argv[1:]:
-    parsed = json.loads(value)
-    if not isinstance(parsed, list) or not all(isinstance(item, str) for item in parsed):
-        raise SystemExit("skill metadata lists must be JSON arrays of strings")
+
+try:
+    parsed = json.loads(sys.argv[1])
+except (TypeError, ValueError):
+    raise SystemExit("init.sh: metadata values must be valid JSON")
+if not isinstance(parsed, list) or len(parsed) > 64:
+    raise SystemExit("init.sh: metadata values must be arrays of at most 64 strings")
+if not all(isinstance(item, str) and len(item.encode("utf-8")) <= 256 for item in parsed):
+    raise SystemExit("init.sh: metadata items must be strings of at most 256 bytes")
+print(json.dumps(parsed, ensure_ascii=True, separators=(",", ":")))
 PY
+}
 
-mkdir -p "$target/scripts"
+if ! dependencies="$(normalize_list "${SKILL_DEPENDENCIES:-[]}")"; then exit 2; fi
+if ! capabilities="$(normalize_list "${SKILL_CAPABILITIES:-[\"${slug//-/_}\"]}")"; then exit 2; fi
+if ! effects="$(normalize_list "${SKILL_EFFECTS:-[]}")"; then exit 2; fi
 
-# The <!-- craft:... --> stubs mirror the 12 craft elements enumerated in
-# references/skill-template.md section 7. The craft scorer strips HTML
-# comments, so a fresh scaffold scores low until the author replaces stubs
-# with real prose.
-cat >"$target/SKILL.md" <<EOF
+# Reject a redirected report path before creating anything. Missing directories
+# are created only during the commit and are removed if that commit fails.
+report_dir="$REPO_ROOT/.agents/scratch/skill-builder"
+for parent in "$REPO_ROOT/.agents" "$REPO_ROOT/.agents/scratch" "$report_dir"; do
+  if [[ -e "$parent" || -L "$parent" ]]; then
+    [[ -d "$parent" && ! -L "$parent" ]] || {
+      echo "init.sh: build report directory is unavailable or unsafe" >&2
+      exit 2
+    }
+  fi
+done
+report="$report_dir/${slug}-build.json"
+[[ ! -L "$report" && ( ! -e "$report" || -f "$report" ) ]] || {
+  echo "init.sh: build report target is unavailable or unsafe" >&2
+  exit 2
+}
+
+staging_root="$(mktemp -d "$REPO_ROOT/skills/.skill-init.${slug}.XXXXXX")"
+package_stage="$staging_root/package"
+report_stage="$staging_root/build-report.json"
+created_dirs=()
+target_installed=0
+report_installed=0
+cleanup() {
+  local rc=$? index
+  trap - EXIT INT TERM
+  if [[ "$target_installed" -eq 1 && "$report_installed" -eq 0 ]]; then
+    rm -rf -- "$target"
+  fi
+  rm -rf -- "$staging_root"
+  if [[ "$report_installed" -eq 0 ]]; then
+    for ((index=${#created_dirs[@]}-1; index>=0; index--)); do
+      rmdir -- "${created_dirs[$index]}" 2>/dev/null || true
+    done
+  fi
+  exit "$rc"
+}
+trap cleanup EXIT INT TERM
+
+mkdir -p "$package_stage/scripts"
+cat >"$package_stage/SKILL.md" <<EOF
 ---
 name: $slug
 description: 'TODO: state the behavior and concrete trigger phrases for $slug.'
@@ -136,7 +253,7 @@ TODO: Define the artifact or response shape and how a caller checks it.
 Report the concrete failure and stop. The caller owns any revision.
 EOF
 
-cat >"$target/scripts/validate.sh" <<'EOF'
+cat >"$package_stage/scripts/validate.sh" <<'EOF'
 #!/usr/bin/env bash
 set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -144,11 +261,9 @@ SKILL_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 REPO_ROOT="$(cd "$SKILL_DIR/../.." && pwd)"
 exec bash "$REPO_ROOT/skills/skill-builder/scripts/heal.sh" --check --strict "$SKILL_DIR"
 EOF
-chmod +x "$target/scripts/validate.sh"
+chmod +x "$package_stage/scripts/validate.sh"
 
-mkdir -p "$REPO_ROOT/.agents/scratch/skill-builder"
-report="$REPO_ROOT/.agents/scratch/skill-builder/${slug}-build.json"
-python3 - "$report" "$mode" "$slug" "$source_hint" <<'PY'
+python3 - "$report_stage" "$mode" "$slug" "$source_hint" <<'PY'
 import json
 from pathlib import Path
 import sys
@@ -166,4 +281,15 @@ if sys.argv[4]:
 path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 PY
 
-echo "init.sh: created $target"
+for parent in "$REPO_ROOT/.agents" "$REPO_ROOT/.agents/scratch" "$report_dir"; do
+  if [[ ! -d "$parent" ]]; then
+    mkdir -- "$parent"
+    created_dirs+=("$parent")
+  fi
+done
+mv -- "$package_stage" "$target"
+target_installed=1
+mv -f -- "$report_stage" "$report"
+report_installed=1
+
+echo "init.sh: created skills/$slug"

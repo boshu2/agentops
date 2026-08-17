@@ -13,3 +13,9 @@ Feature: Evidence-grounded opportunity exploration
     When the opportunity portfolio is completed
     Then the result records no new work with overlap evidence
     And no candidate is invented to fill a quota
+
+  Scenario: Elicitation stops at declared packet and novelty bounds
+    Given an authorized packet of at most 20 sources and 256 KiB
+    When Idea Genie reaches three passes, ten candidates, or the output ceiling
+    Then it returns the bounded supported portfolio accumulated so far
+    And records the limit that stopped exploration without mutating the subject

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import os
 from pathlib import Path
 import subprocess
 import sys
@@ -15,6 +16,10 @@ SPEC = importlib.util.spec_from_file_location("validate_tool", Path(__file__).wi
 tool = importlib.util.module_from_spec(SPEC)
 assert SPEC.loader
 SPEC.loader.exec_module(tool)
+HAS_CONTAINMENT = (
+    (sys.platform == "darwin" and Path("/usr/bin/sandbox-exec").is_file())
+    or (sys.platform.startswith("linux") and tool.shutil.which("bwrap"))
+)
 
 
 class ValidateV2Tests(unittest.TestCase):
@@ -346,6 +351,158 @@ class ValidateV2Tests(unittest.TestCase):
             self.assertEqual(artifact["verdict"], "FAIL")
             self.assertEqual(artifact["findings"][-1]["id"], "validate.scope")
             self.assert_schema_valid(artifact)
+
+    def test_bounded_command_requires_explicit_authorization_before_spawn(self):
+        with tempfile.TemporaryDirectory() as raw:
+            root = Path(raw)
+            marker = root / "spawned"
+            with self.assertRaisesRegex(tool.ContractError, "authorization"):
+                tool.run_bounded_command(
+                    [sys.executable, "-c", f"open({str(marker)!r}, 'w').close()"],
+                    cwd=root,
+                    disposable_root=root,
+                    authorization_id="",
+                    timeout_seconds=1,
+                    max_output_bytes=1024,
+                    effect="disposable-mutation",
+                )
+            self.assertFalse(marker.exists())
+
+    @unittest.skipUnless(HAS_CONTAINMENT, "host has no supported command-containment backend")
+    def test_bounded_command_timeout_reaps_descendant_process_group(self):
+        with tempfile.TemporaryDirectory() as raw:
+            root = Path(raw)
+            script = (
+                "import subprocess,sys,time; "
+                "child=subprocess.Popen([sys.executable,'-c','import time; time.sleep(60)']); "
+                "print(child.pid, flush=True); time.sleep(60)"
+            )
+            receipt, succeeded = tool.run_bounded_command(
+                [sys.executable, "-c", script],
+                cwd=root,
+                disposable_root=root,
+                authorization_id="test:timeout",
+                timeout_seconds=0.2,
+                max_output_bytes=4096,
+                effect="read-only",
+            )
+            self.assertFalse(succeeded)
+            self.assertTrue(receipt["timed_out"])
+            self.assertTrue(receipt["process_group_reaped"])
+            child_pid = int(receipt["stdout_excerpt"].strip())
+            with self.assertRaises(ProcessLookupError):
+                os.kill(child_pid, 0)
+
+    @unittest.skipUnless(HAS_CONTAINMENT, "host has no supported command-containment backend")
+    def test_bounded_command_contains_mutation_in_disposable_tree(self):
+        with tempfile.TemporaryDirectory() as raw:
+            base = Path(raw)
+            original = base / "original"
+            disposable = base / "disposable"
+            original.mkdir()
+            disposable.mkdir()
+            command = [
+                sys.executable,
+                "-c",
+                "from pathlib import Path; Path('generated.txt').write_text('changed')",
+            ]
+            receipt, succeeded = tool.run_bounded_command(
+                command,
+                cwd=disposable,
+                disposable_root=disposable,
+                authorization_id="test:mutation",
+                timeout_seconds=2,
+                max_output_bytes=4096,
+                effect="read-only",
+            )
+            self.assertFalse(succeeded)
+            self.assertTrue(receipt["mutation_detected"])
+            self.assertEqual(receipt["result"], "FAIL")
+            self.assertFalse((original / "generated.txt").exists())
+            self.assertEqual((disposable / "generated.txt").read_text(), "changed")
+
+    def test_bounded_command_rejects_external_symlink_before_spawn(self):
+        with tempfile.TemporaryDirectory() as raw:
+            base = Path(raw)
+            disposable = base / "disposable"
+            outside = base / "outside"
+            disposable.mkdir()
+            outside.mkdir()
+            (disposable / "escape").symlink_to(outside, target_is_directory=True)
+            marker = outside / "leaked"
+            with self.assertRaisesRegex(tool.ContractError, "symlink outside"):
+                tool.run_bounded_command(
+                    [sys.executable, "-c", f"open({str(marker)!r}, 'w').close()"],
+                    cwd=disposable,
+                    disposable_root=disposable,
+                    authorization_id="test:symlink",
+                    timeout_seconds=1,
+                    max_output_bytes=1024,
+                    effect="disposable-mutation",
+                )
+            self.assertFalse(marker.exists())
+
+    @unittest.skipUnless(HAS_CONTAINMENT, "host has no supported command-containment backend")
+    def test_bounded_command_blocks_absolute_write_outside_disposable_root(self):
+        with tempfile.TemporaryDirectory() as raw:
+            base = Path(raw)
+            disposable = base / "disposable"
+            disposable.mkdir()
+            outside = base / "outside.txt"
+            receipt, succeeded = tool.run_bounded_command(
+                [
+                    sys.executable,
+                    "-c",
+                    f"from pathlib import Path; Path({str(outside)!r}).write_text('leak')",
+                ],
+                cwd=disposable,
+                disposable_root=disposable,
+                authorization_id="test:forbidden-target",
+                timeout_seconds=2,
+                max_output_bytes=4096,
+                effect="disposable-mutation",
+            )
+            self.assertFalse(succeeded)
+            self.assertEqual(receipt["result"], "FAIL")
+            self.assertEqual(receipt["write_allowlist"], [str(disposable.resolve())])
+            self.assertEqual(receipt["network_access"], "denied")
+            self.assertFalse(outside.exists())
+
+    @unittest.skipUnless(HAS_CONTAINMENT, "host has no supported command-containment backend")
+    def test_bounded_command_caps_output_and_reaps_process(self):
+        with tempfile.TemporaryDirectory() as raw:
+            root = Path(raw)
+            receipt, succeeded = tool.run_bounded_command(
+                [sys.executable, "-c", "import sys,time; sys.stdout.write('x'*1000000); sys.stdout.flush(); time.sleep(60)"],
+                cwd=root,
+                disposable_root=root,
+                authorization_id="test:output-cap",
+                timeout_seconds=5,
+                max_output_bytes=4096,
+                effect="read-only",
+            )
+            self.assertFalse(succeeded)
+            self.assertTrue(receipt["output_limit_exceeded"])
+            self.assertTrue(receipt["process_group_reaped"])
+            self.assertLessEqual(len(receipt["stdout_excerpt"].encode()), 4096)
+
+    def test_execution_skills_route_arbitrary_commands_through_bounded_contract(self):
+        repo = Path(__file__).parents[3]
+        contracts = {
+            "implement": ("authorization", "process group", "disposable", "primary subject"),
+            "plan": ("authorization", "process group", "temporary", "workspace digest"),
+            "premortem": ("authorization", "process group", "disposable", "restoration"),
+            "refactor": ("authorization", "process group", "disposable", "primary tree"),
+            "scaffold": ("authorization", "process group", "disposable", "primary target"),
+            "test": ("authorization", "process group", "disposable", "primary tree"),
+            "validate": ("authorization", "process group", "disposable", "original subject"),
+        }
+        for skill, markers in contracts.items():
+            with self.subTest(skill=skill):
+                contract = (repo / "skills" / skill / "SKILL.md").read_text(encoding="utf-8").lower()
+                for marker in markers:
+                    self.assertIn(marker, contract)
+                self.assertIn("run-check", contract)
 
 
 if __name__ == "__main__":

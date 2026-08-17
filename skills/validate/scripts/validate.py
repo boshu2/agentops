@@ -13,10 +13,16 @@ import fnmatch
 import hashlib
 import json
 import os
+import platform
 from pathlib import Path, PurePosixPath
+import shutil
+import signal
 import stat
+import subprocess
 import sys
 import tempfile
+import threading
+import time
 from typing import Any, Iterable
 
 
@@ -52,6 +58,305 @@ CRITERION_REQUIRED = ("id", "result", "evidence_refs")
 
 class ContractError(ValueError):
     pass
+
+
+def is_within(path: Path, root: Path) -> bool:
+    """Return whether the resolved path is root or one of root's descendants."""
+    try:
+        path.relative_to(root)
+    except ValueError:
+        return False
+    return True
+
+
+def reject_external_symlinks(root: Path) -> None:
+    """Fail closed when a disposable tree can write through an outside symlink."""
+    for dirpath, dirnames, filenames in os.walk(root, followlinks=False):
+        current = Path(dirpath)
+        for name in [*dirnames, *filenames]:
+            candidate = current / name
+            if not candidate.is_symlink():
+                continue
+            try:
+                target = candidate.resolve(strict=False)
+            except OSError as exc:
+                raise ContractError(f"cannot resolve disposable-tree symlink {candidate}: {exc}") from exc
+            if not is_within(target, root):
+                raise ContractError(
+                    f"disposable tree contains a symlink outside its root: {candidate} -> {target}"
+                )
+
+
+def tree_digest(root: Path) -> str:
+    """Hash the complete regular-file/symlink state below a disposable root."""
+    entries: list[dict[str, Any]] = []
+    for dirpath, dirnames, filenames in os.walk(root, followlinks=False):
+        current = Path(dirpath)
+        dirnames.sort()
+        filenames.sort()
+        for name in [*dirnames, *filenames]:
+            full = current / name
+            rel = full.relative_to(root).as_posix()
+            info = full.lstat()
+            if full.is_symlink():
+                entries.append({
+                    "path": rel,
+                    "kind": "symlink",
+                    "target": os.readlink(full),
+                    "mode": stat.S_IMODE(info.st_mode),
+                })
+            elif full.is_file():
+                entries.append({
+                    "path": rel,
+                    "kind": "file",
+                    "digest": hashlib.sha256(full.read_bytes()).hexdigest(),
+                    "mode": stat.S_IMODE(info.st_mode),
+                })
+            elif full.is_dir():
+                entries.append({"path": rel, "kind": "directory", "mode": stat.S_IMODE(info.st_mode)})
+            else:
+                raise ContractError(f"unsupported entry in disposable tree: {full}")
+    return digest_value(sorted(entries, key=lambda item: item["path"]))
+
+
+def process_group_alive(process_group_id: int) -> bool:
+    """Return whether the group has a non-zombie member.
+
+    ``killpg(..., 0)`` reports macOS zombies as present and can then return
+    EPERM for a follow-up signal. Zombies cannot execute or mutate the subject,
+    so prefer a bounded ``ps`` observation and use killpg only as a fallback.
+    """
+    try:
+        observed = subprocess.run(
+            ["ps", "-axo", "pgid=,state="],
+            check=False,
+            capture_output=True,
+            text=True,
+            timeout=1,
+        )
+        if observed.returncode == 0:
+            for line in observed.stdout.splitlines():
+                fields = line.split()
+                if len(fields) >= 2 and fields[0].isdigit():
+                    if int(fields[0]) == process_group_id and not fields[1].startswith("Z"):
+                        return True
+            return False
+    except (OSError, subprocess.SubprocessError):
+        pass
+    try:
+        os.killpg(process_group_id, 0)
+    except ProcessLookupError:
+        return False
+    except PermissionError:
+        return True
+    return True
+
+
+def terminate_process_group(process: subprocess.Popen[bytes], grace_seconds: float = 1.0) -> bool:
+    """Terminate, then kill, every descendant left in the child's process group."""
+    process_group_id = process.pid
+    if process_group_alive(process_group_id):
+        try:
+            os.killpg(process_group_id, signal.SIGTERM)
+        except ProcessLookupError:
+            pass
+        deadline = time.monotonic() + grace_seconds
+        while process_group_alive(process_group_id) and time.monotonic() < deadline:
+            time.sleep(0.02)
+        if process_group_alive(process_group_id):
+            try:
+                os.killpg(process_group_id, signal.SIGKILL)
+            except (ProcessLookupError, PermissionError):
+                pass
+    try:
+        process.wait(timeout=grace_seconds)
+    except subprocess.TimeoutExpired:
+        try:
+            os.killpg(process_group_id, signal.SIGKILL)
+        except (ProcessLookupError, PermissionError):
+            pass
+        process.wait(timeout=grace_seconds)
+    deadline = time.monotonic() + grace_seconds
+    while process_group_alive(process_group_id) and time.monotonic() < deadline:
+        time.sleep(0.02)
+    return not process_group_alive(process_group_id)
+
+
+def contained_command(command: list[str], disposable_root: Path, cwd: Path) -> tuple[list[str], str]:
+    """Wrap argv in a host filesystem/network sandbox, or fail before spawn.
+
+    Commands may read host libraries and tools, but may write only below the
+    disposable root and cannot use the network. Workflows needing approved
+    network access must use a runtime that can enforce their endpoint allowlist
+    instead of this helper.
+    """
+    system = platform.system()
+    if system == "Darwin" and Path("/usr/bin/sandbox-exec").is_file():
+        # Resolve first so /var -> /private/var aliases do not accidentally
+        # miss the allowed subtree. SBPL accepts JSON string escaping.
+        quoted_root = json.dumps(str(disposable_root))
+        profile = " ".join((
+            "(version 1)",
+            "(allow default)",
+            "(deny network*)",
+            "(deny file-write*)",
+            f"(allow file-write* (subpath {quoted_root}))",
+        ))
+        return ["/usr/bin/sandbox-exec", "-p", profile, *command], "macos-sandbox-exec"
+
+    bubblewrap = shutil.which("bwrap")
+    if system == "Linux" and bubblewrap:
+        return [
+            bubblewrap,
+            "--die-with-parent",
+            "--unshare-all",
+            "--ro-bind", "/", "/",
+            "--bind", str(disposable_root), str(disposable_root),
+            "--proc", "/proc",
+            "--dev", "/dev",
+            "--chdir", str(cwd),
+            "--",
+            *command,
+        ], "linux-bubblewrap"
+
+    raise ContractError(
+        "run-check has no supported containment backend; use macOS sandbox-exec "
+        "or Linux bubblewrap, or select an equivalent allowlisted runtime"
+    )
+
+
+def run_bounded_command(
+    command: list[str],
+    *,
+    cwd: Path,
+    disposable_root: Path,
+    authorization_id: str,
+    timeout_seconds: float,
+    max_output_bytes: int,
+    effect: str,
+) -> tuple[dict[str, Any], bool]:
+    """Run exact argv under explicit bounds inside a caller-prepared disposable tree."""
+    if not authorization_id.strip():
+        raise ContractError("run-check requires a nonempty caller authorization ID")
+    if not command or not command[0]:
+        raise ContractError("run-check requires a command after --")
+    if timeout_seconds <= 0 or timeout_seconds > 3600:
+        raise ContractError("run-check timeout must be greater than zero and at most 3600 seconds")
+    if max_output_bytes <= 0 or max_output_bytes > 16 * 1024 * 1024:
+        raise ContractError("run-check output limit must be between 1 and 16777216 bytes")
+    if effect not in {"read-only", "disposable-mutation"}:
+        raise ContractError("run-check effect must be read-only or disposable-mutation")
+
+    disposable_root = disposable_root.resolve(strict=True)
+    cwd = cwd.resolve(strict=True)
+    if not disposable_root.is_dir() or disposable_root == Path(disposable_root.anchor):
+        raise ContractError("run-check disposable root must be a non-root directory")
+    if disposable_root == Path.home().resolve():
+        raise ContractError("run-check refuses the user's home directory as a disposable root")
+    if not cwd.is_dir() or not is_within(cwd, disposable_root):
+        raise ContractError("run-check cwd must resolve inside the disposable root")
+    reject_external_symlinks(disposable_root)
+    wrapped_command, containment_backend = contained_command(command, disposable_root, cwd)
+
+    before_digest = tree_digest(disposable_root)
+    output_lock = threading.Lock()
+    output_total = 0
+    output_exceeded = threading.Event()
+    excerpts: dict[str, bytearray] = {"stdout": bytearray(), "stderr": bytearray()}
+    excerpt_limit = min(max_output_bytes, 64 * 1024)
+
+    process = subprocess.Popen(
+        wrapped_command,
+        cwd=cwd,
+        stdin=subprocess.DEVNULL,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        start_new_session=True,
+    )
+
+    def drain(name: str, stream: Any) -> None:
+        nonlocal output_total
+        while True:
+            chunk = stream.read(65536)
+            if not chunk:
+                return
+            with output_lock:
+                output_total += len(chunk)
+                remaining = excerpt_limit - len(excerpts[name])
+                if remaining > 0:
+                    excerpts[name].extend(chunk[:remaining])
+                if output_total > max_output_bytes:
+                    output_exceeded.set()
+
+    threads = [
+        threading.Thread(target=drain, args=("stdout", process.stdout), daemon=True),
+        threading.Thread(target=drain, args=("stderr", process.stderr), daemon=True),
+    ]
+    for thread in threads:
+        thread.start()
+
+    started = time.monotonic()
+    timed_out = False
+    while process.poll() is None:
+        if output_exceeded.is_set():
+            break
+        if time.monotonic() - started >= timeout_seconds:
+            timed_out = True
+            break
+        time.sleep(0.02)
+
+    forced_cleanup = timed_out or output_exceeded.is_set()
+    if forced_cleanup:
+        group_reaped = terminate_process_group(process)
+    else:
+        process.wait()
+        # A command can exit after orphaning a child in its process group. Reap
+        # that remainder before returning a receipt.
+        group_reaped = terminate_process_group(process) if process_group_alive(process.pid) else True
+    for thread in threads:
+        thread.join(timeout=2)
+    if process.stdout is not None:
+        process.stdout.close()
+    if process.stderr is not None:
+        process.stderr.close()
+
+    after_digest = tree_digest(disposable_root)
+    mutation_detected = before_digest != after_digest
+    read_only_violation = effect == "read-only" and mutation_detected
+    exit_code = process.returncode
+    succeeded = (
+        exit_code == 0
+        and not timed_out
+        and not output_exceeded.is_set()
+        and group_reaped
+        and not read_only_violation
+    )
+    receipt = {
+        "schema_version": "bounded-command-receipt.v1",
+        "authorization_id": authorization_id,
+        "argv": command,
+        "cwd": str(cwd),
+        "disposable_root": str(disposable_root),
+        "effect": effect,
+        "containment_backend": containment_backend,
+        "write_allowlist": [str(disposable_root)],
+        "network_access": "denied",
+        "timeout_seconds": timeout_seconds,
+        "max_output_bytes": max_output_bytes,
+        "elapsed_seconds": round(time.monotonic() - started, 3),
+        "exit_code": exit_code,
+        "timed_out": timed_out,
+        "output_limit_exceeded": output_exceeded.is_set(),
+        "output_bytes": output_total,
+        "process_group_reaped": group_reaped,
+        "mutation_detected": mutation_detected,
+        "before_digest": before_digest,
+        "after_digest": after_digest,
+        "stdout_excerpt": bytes(excerpts["stdout"]).decode("utf-8", errors="replace"),
+        "stderr_excerpt": bytes(excerpts["stderr"]).decode("utf-8", errors="replace"),
+        "result": "PASS" if succeeded else "FAIL",
+    }
+    return receipt, succeeded
 
 
 def canonical_bytes(value: Any) -> bytes:
@@ -570,6 +875,21 @@ def parse_args() -> argparse.Namespace:
     store.add_argument("--scope-result", required=True, choices=("PASS", "FAIL", "NOT_PROVEN"))
     store.add_argument("--workspace", default=".")
     store.add_argument("--verdict-dir")
+    run_check = sub.add_parser(
+        "run-check",
+        help="run exact argv with authorization, finite bounds, and process-group cleanup",
+    )
+    run_check.add_argument("--cwd", required=True)
+    run_check.add_argument("--disposable-root", required=True)
+    run_check.add_argument("--authorization-id", required=True)
+    run_check.add_argument("--timeout-seconds", required=True, type=float)
+    run_check.add_argument("--max-output-bytes", required=True, type=int)
+    run_check.add_argument(
+        "--effect",
+        required=True,
+        choices=("read-only", "disposable-mutation"),
+    )
+    run_check.add_argument("argv", nargs=argparse.REMAINDER)
     return parser.parse_args()
 
 
@@ -630,6 +950,21 @@ def main() -> int:
                 "path": str(path),
                 "verdict": artifact["verdict"],
             }, None)
+        elif args.command == "run-check":
+            command = list(args.argv)
+            if command and command[0] == "--":
+                command = command[1:]
+            receipt, succeeded = run_bounded_command(
+                command,
+                cwd=Path(args.cwd),
+                disposable_root=Path(args.disposable_root),
+                authorization_id=args.authorization_id,
+                timeout_seconds=args.timeout_seconds,
+                max_output_bytes=args.max_output_bytes,
+                effect=args.effect,
+            )
+            write_json(receipt, None)
+            return 0 if succeeded else 1
         return 0
     except (ContractError, OSError, json.JSONDecodeError) as exc:
         print(f"validate: {exc}", file=sys.stderr)

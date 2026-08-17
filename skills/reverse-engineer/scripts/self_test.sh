@@ -74,8 +74,10 @@ EOF
 python3 "$SKILL/scripts/reverse_engineer.py" demo \
   --authorized \
   --mode=binary \
-  --binary-path="$BIN" \
+  --binary-root="$TMP" \
+  --binary-path="demo_bin" \
   --docs-sitemap-url="file://$SITEMAP" \
+  --docs-sitemap-root="$TMP" \
   --materialize-archives \
   --local-clone-dir="$TMP/local-demo" \
   --output-dir="$OUT1"
@@ -127,12 +129,16 @@ if [ ! -f "$OUT1/spec-cli-surface.md" ]; then
 fi
 echo "OK: spec-cli-surface.md exists"
 
-# 3. binary-symbols.txt exists
-if [ ! -f "$OUT1/binary-symbols.txt" ]; then
-  echo "FAIL: binary-symbols.txt not created by binary mode" >&2
+# 3. Raw string/symbol dumps are never retained.
+if [ -e "$OUT1/binary-symbols.txt" ]; then
+  echo "FAIL: binary-symbols.txt retained raw binary strings" >&2
   exit 1
 fi
-echo "OK: binary-symbols.txt exists"
+if [ ! -f "$OUT1/binary-analysis.md" ]; then
+  echo "FAIL: bounded aggregate binary analysis is missing" >&2
+  exit 1
+fi
+echo "OK: binary analysis retains aggregate facts without a raw symbol dump"
 
 # 4. Registry enrichment: if cli-commands.txt has content, groups should have impl: client
 if [ -s "$OUT1/cli-commands.txt" ]; then
@@ -148,8 +154,10 @@ fi
 python3 "$SKILL/scripts/reverse_engineer.py" demo \
   --authorized \
   --mode=binary \
-  --binary-path="$BIN" \
+  --binary-root="$TMP" \
+  --binary-path="demo_bin" \
   --docs-sitemap-url="file://$SITEMAP" \
+  --docs-sitemap-root="$TMP" \
   --output-dir="$OUT2" \
   --materialize-archives \
   --local-clone-dir="$TMP/local-demo" \
@@ -217,6 +225,7 @@ REPO_URL="file://$ROOT"
 python3 "$SKILL/scripts/reverse_engineer.py" self-ref-test \
   --mode=repo \
   --upstream-repo="$REPO_URL" \
+  --upstream-root="$ROOT" \
   --upstream-ref=HEAD \
   --local-clone-dir="$TMP/local-ref" \
   --output-dir="$OUT_REF"
@@ -316,7 +325,8 @@ python3 "$SKILL/scripts/reverse_engineer.py" no-cli-demo \
   --mode=repo \
   --local-clone-dir="$TMP/local-noncli" \
   --output-dir="$OUT_NONCLI" \
-  --docs-sitemap-url="file://$SITEMAP"
+  --docs-sitemap-url="file://$SITEMAP" \
+  --docs-sitemap-root="$TMP"
 
 # spec-cli-surface.md should NOT exist (no CLI detected), and the note should be in spec-code-map.md
 if [ -f "$OUT_NONCLI/spec-cli-surface.md" ]; then
@@ -336,7 +346,8 @@ DEFAULT_OUT="$TMP/.agents/scratch/reverse-engineer/default-demo"
   python3 "$SKILL/scripts/reverse_engineer.py" default-demo \
     --mode=repo \
     --local-clone-dir="$TMP/local-noncli" \
-    --docs-sitemap-url="file://$SITEMAP"
+    --docs-sitemap-url="file://$SITEMAP" \
+    --docs-sitemap-root="$TMP"
 )
 if [ ! -s "$DEFAULT_OUT/feature-registry.yaml" ] \
   || [ ! -s "$DEFAULT_OUT/contracts/repo-contract.json" ] \
@@ -361,7 +372,8 @@ cp "$LEGACY_OUT/caller-sentinel.txt" "$LEGACY_EXPECTED"
     --mode=repo \
     --local-clone-dir="$TMP/local-noncli" \
     --output-dir="$LEGACY_OUT" \
-    --docs-sitemap-url="file://$SITEMAP"
+    --docs-sitemap-url="file://$SITEMAP" \
+    --docs-sitemap-root="$TMP"
 )
 if [ ! -s "$LEGACY_OUT/feature-registry.yaml" ]; then
   echo "FAIL: explicit earlier-default output directory was not honored" >&2

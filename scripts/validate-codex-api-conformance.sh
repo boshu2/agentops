@@ -6,7 +6,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
-SKILLS_ROOT="$REPO_ROOT/skills-codex"
+SKILLS_ROOT="${CODEX_SKILLS_ROOT:-$REPO_ROOT/skills-codex}"
 
 # Cross-runtime skills legitimately reference non-Codex runtimes/paths (cc-hooks
 # documents ~/.claude/settings.json). Shared exemption list with codex-sync and
@@ -30,22 +30,146 @@ if [[ ! -d "$SKILLS_ROOT" ]]; then
   exit 1
 fi
 
-# --- Check 1: Frontmatter must only contain name + description ---
-echo "=== Check 1: Frontmatter fields ==="
-while IFS= read -r skill_md; do
-  skill_name="$(basename "$(dirname "$skill_md")")"
-  is_bespoke "$skill_name" || continue  # parity twins are generator/drift-verified
+# --- Check 1: Portable Agent Skills package contract ---
+# The checked-in Codex tree is the portable release projection. Validate every
+# generated and bespoke package here; generator parity alone cannot establish
+# portable conformance. This intentionally enforces the normative specification
+# rather than the narrower behavior of any one reference implementation.
+echo "=== Check 1: Portable Agent Skills contract ==="
+portable_output=""
+if ! portable_output="$(python3 - "$SKILLS_ROOT" "$REPO_ROOT" 2>&1 <<'PY'
+import re
+import sys
+from pathlib import Path
 
-  # Extract frontmatter between first and second ---
-  fm=$(awk 'NR==1 && /^---$/{in_fm=1; next} in_fm && /^---$/{exit} in_fm{print}' "$skill_md")
+import yaml
 
-  # Check for non-Codex fields
-  bad_fields=$(echo "$fm" | grep -oE '^[a-z_-]+:' | sed 's/:$//' | grep -vE '^(name|description)$' || true)
-  if [[ -n "$bad_fields" ]]; then
-    echo "  FAIL [$skill_name] Non-Codex frontmatter fields: $(echo "$bad_fields" | tr '\n' ', ')"
-    failures=$((failures + 1))
+skills_root = Path(sys.argv[1]).resolve()
+repo_root = Path(sys.argv[2]).resolve()
+try:
+    skills_root.relative_to(repo_root)
+    link_root = repo_root
+except ValueError:
+    # Test/install callers may validate a detached bundle. In that case the
+    # bundle root, not this source checkout, is the containment boundary.
+    link_root = skills_root
+allowed = {"name", "description", "license", "compatibility", "metadata", "allowed-tools"}
+name_re = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
+link_re = re.compile(r"!?\[[^\]]*\]\(([^)]+)\)")
+errors: list[tuple[str, str]] = []
+checked = 0
+
+
+def fail(skill: str, message: str) -> None:
+    errors.append((skill, message))
+
+
+for skill_dir in sorted(path for path in skills_root.iterdir() if path.is_dir()):
+    skill = skill_dir.name
+    skill_md = skill_dir / "SKILL.md"
+    if not skill_md.is_file() or skill_md.is_symlink():
+        fail(skill, "missing regular SKILL.md")
+        continue
+    checked += 1
+    try:
+        text = skill_md.read_text(encoding="utf-8")
+    except (OSError, UnicodeError) as exc:
+        fail(skill, f"SKILL.md is not loadable UTF-8: {exc}")
+        continue
+    if not text.startswith("---\n"):
+        fail(skill, "SKILL.md must start with YAML frontmatter")
+        continue
+    marker = text.find("\n---\n", 4)
+    if marker < 0:
+        fail(skill, "SKILL.md frontmatter is not closed")
+        continue
+    raw_frontmatter = text[4:marker]
+    body = text[marker + 5 :]
+    try:
+        metadata = yaml.safe_load(raw_frontmatter)
+    except yaml.YAMLError as exc:
+        fail(skill, f"invalid YAML frontmatter: {exc}")
+        continue
+    if not isinstance(metadata, dict):
+        fail(skill, "frontmatter must be a mapping")
+        continue
+    unexpected = sorted(set(metadata) - allowed)
+    if unexpected:
+        fail(skill, f"host-only frontmatter fields: {', '.join(unexpected)}")
+    name = metadata.get("name")
+    if not isinstance(name, str) or not name_re.fullmatch(name) or len(name) > 64:
+        fail(skill, "name must be 1-64 lowercase ASCII letters/digits/hyphens without edge or repeated hyphens")
+    elif name != skill:
+        fail(skill, f"name {name!r} does not match directory {skill!r}")
+    description = metadata.get("description")
+    if not isinstance(description, str) or not description.strip() or len(description) > 1024:
+        fail(skill, "description must be a nonempty string of at most 1024 characters")
+    if "license" in metadata and not isinstance(metadata["license"], str):
+        fail(skill, "license must be a string")
+    if "compatibility" in metadata:
+        compatibility = metadata["compatibility"]
+        if not isinstance(compatibility, str) or not compatibility.strip() or len(compatibility) > 500:
+            fail(skill, "compatibility must be a nonempty string of at most 500 characters")
+    if "metadata" in metadata:
+        extension = metadata["metadata"]
+        if not isinstance(extension, dict) or any(
+            not isinstance(key, str) or not isinstance(value, str)
+            for key, value in (extension.items() if isinstance(extension, dict) else ())
+        ):
+            fail(skill, "metadata must map strings to strings")
+    if "allowed-tools" in metadata:
+        tools = metadata["allowed-tools"]
+        if not isinstance(tools, str) or not tools.strip() or "," in tools or "\t" in tools or "\n" in tools:
+            fail(skill, "allowed-tools must be a nonempty space-separated string without comma delimiters")
+    if not body.strip():
+        fail(skill, "SKILL.md body must be nonempty")
+
+    # Validate actual Markdown resource links after removing code, where text
+    # such as errors.AsType[T](err) is not a link. External URLs and anchors are
+    # valid but do not identify bundled resources.
+    for markdown in sorted(skill_dir.rglob("*.md")):
+        try:
+            markdown_text = markdown.read_text(encoding="utf-8")
+        except (OSError, UnicodeError) as exc:
+            fail(skill, f"resource is not loadable UTF-8: {markdown.relative_to(skill_dir)}: {exc}")
+            continue
+        markdown_text = re.sub(r"```.*?```", "", markdown_text, flags=re.S)
+        markdown_text = re.sub(r"`[^`\n]*`", "", markdown_text)
+        for match in link_re.finditer(markdown_text):
+            raw_target = match.group(1).strip()
+            target = raw_target.split(maxsplit=1)[0].strip("<>")
+            if not target or target.startswith("#") or re.match(r"^[A-Za-z][A-Za-z0-9+.-]*:", target):
+                continue
+            if target.startswith(("/", "~")):
+                fail(skill, f"resource link must be relative: {target}")
+                continue
+            path_part = target.split("#", 1)[0].split("?", 1)[0]
+            resolved = (markdown.parent / path_part).resolve()
+            try:
+                resolved.relative_to(link_root)
+            except ValueError:
+                fail(skill, f"resource link escapes repository: {target}")
+                continue
+            if not resolved.exists():
+                fail(skill, f"resource link does not resolve: {markdown.relative_to(skill_dir)} -> {target}")
+
+for skill, message in errors:
+    print(f"  FAIL [{skill}] {message}")
+if errors:
+    raise SystemExit(1)
+print(f"  PASS [portable] {checked} package(s)")
+PY
+)"; then
+  printf '%s\n' "$portable_output"
+  portable_failures="$(printf '%s\n' "$portable_output" | grep -c '^  FAIL \[' || true)"
+  if [[ "$portable_failures" -eq 0 ]]; then
+    echo "  FAIL [portable-validator] validator did not complete"
+    portable_failures=1
   fi
-done < <(find "$SKILLS_ROOT" -mindepth 2 -maxdepth 2 -name 'SKILL.md' -type f | sort)
+  failures=$((failures + portable_failures))
+else
+  printf '%s\n' "$portable_output"
+fi
 
 # --- Check 2: No Claude-only primitive names ---
 echo "=== Check 2: Claude primitive references ==="

@@ -8,23 +8,39 @@ fi
 
 BIN="$1"
 OUT="$2"
-mkdir -p "$OUT"
-
-if [[ ! -f "$BIN" ]]; then
-  echo "error: binary not found: $BIN" >&2
+if [[ ! -f "$BIN" || ! -x "$BIN" || -L "$BIN" ]]; then
+  echo "error: binary must be an executable regular non-symlink file" >&2
   exit 2
 fi
+[[ ! -L "$OUT" ]] || { echo "error: output directory must not be a symlink" >&2; exit 2; }
+binary_size="$(wc -c < "$BIN" | tr -d ' ')"
+[[ "$binary_size" -le $((256 * 1024 * 1024)) ]] \
+  || { echo "error: binary exceeds 268435456-byte analysis bound" >&2; exit 2; }
+TIMEOUT_BIN=""
+for candidate in timeout gtimeout; do
+  if command -v "$candidate" >/dev/null 2>&1; then TIMEOUT_BIN="$(command -v "$candidate")"; break; fi
+done
+[[ -n "$TIMEOUT_BIN" ]] || { echo "error: timeout or gtimeout is required" >&2; exit 2; }
+mkdir -p "$OUT"
+
+run_bounded() {
+  "$TIMEOUT_BIN" --signal=TERM --kill-after=1s 10 "$@"
+}
+
+redact_paths() {
+  sed -E 's#(^|[[:space:]])/[^[:space:]]+#\1[REDACTED-PATH]#g'
+}
 
 {
   echo "# Binary Analysis (Best-Effort)"
   echo
-  echo "- Target: \`$BIN\`"
+  echo "- Target: \`$(basename "$BIN")\`"
   echo "- Generated: $(date +%F)"
   echo
   echo "## file(1)"
   echo
   if command -v file >/dev/null 2>&1; then
-    file "$BIN" || true
+    run_bounded file -b "$BIN" | head -c 65536 | redact_paths || true
   else
     echo "_file not available_"
   fi
@@ -32,9 +48,9 @@ fi
   echo "## Linked Libraries (best-effort)"
   echo
   if command -v otool >/dev/null 2>&1; then
-    otool -L "$BIN" 2>/dev/null || true
+    run_bounded otool -L "$BIN" 2>/dev/null | head -c 65536 | redact_paths || true
   elif command -v ldd >/dev/null 2>&1; then
-    ldd "$BIN" 2>/dev/null || true
+    run_bounded ldd "$BIN" 2>/dev/null | head -c 65536 | redact_paths || true
   else
     echo "_otool/ldd not available_"
   fi
@@ -45,7 +61,7 @@ fi
     # Cache strings output to a temp file for multiple scans
     _STRINGS_FILE=$(mktemp)
     trap 'rm -f "$_STRINGS_FILE"' EXIT
-    strings -a "$BIN" 2>/dev/null >"$_STRINGS_FILE"
+    run_bounded strings -a "$BIN" 2>/dev/null | head -c $((4 * 1024 * 1024)) >"$_STRINGS_FILE" || true
 
     # Helper: search strings file with rg falling back to grep -E
     _str_match() {
@@ -117,7 +133,7 @@ fi
         fi
       } || true)
       if [[ -n "$_go_mod" ]]; then
-        echo "- Module path: \`$_go_mod\`"
+        echo "- Module path marker: present (raw value intentionally not retained)"
       else
         echo "- Module path: _not found_"
       fi
@@ -143,17 +159,22 @@ import sys
 from pathlib import Path
 
 p = Path(sys.argv[1])
-data = p.read_bytes()
-
 sig = b"PK\x03\x04"
 hits = []
-start = 0
-while True:
-    i = data.find(sig, start)
-    if i < 0:
-        break
-    hits.append(i)
-    start = i + 1
+offset = 0
+carry = b""
+with p.open("rb") as handle:
+    while chunk := handle.read(1024 * 1024):
+        data = carry + chunk
+        start = 0
+        while len(hits) < 5000:
+            i = data.find(sig, start)
+            if i < 0:
+                break
+            hits.append(offset - len(carry) + i)
+            start = i + 1
+        carry = data[-3:]
+        offset += len(chunk)
 
 print(f"- ZIP local header occurrences: {len(hits)}")
 for i in hits[:10]:
@@ -166,19 +187,6 @@ PY
   fi
 } >"$OUT/binary-analysis.md"
 
-# Raw strings (kept under tmp out dir; do not copy into output_dir by default).
-if command -v strings >/dev/null 2>&1; then
-  strings -a "$BIN" 2>/dev/null | head -2000 >"$OUT/strings.head.txt" || true
-  if command -v rg >/dev/null 2>&1; then
-    strings -a "$BIN" 2>/dev/null | rg -n -S 'mcp|prompt|system|tool|openai|anthropic|claude' >"$OUT/strings.ai-hits.txt" 2>/dev/null || true
-  else
-    strings -a "$BIN" 2>/dev/null | grep -E -in 'mcp|prompt|system|tool|openai|anthropic|claude' >"$OUT/strings.ai-hits.txt" 2>/dev/null || true
-  fi
-fi
-
-# Optional disassembly snippet (bounded). Keep under tmp out dir; do not paste into reports by default.
-if command -v otool >/dev/null 2>&1; then
-  otool -tvV "$BIN" 2>/dev/null | head -500 >"$OUT/disassembly.head.txt" || true
-elif command -v objdump >/dev/null 2>&1; then
-  objdump -d "$BIN" 2>/dev/null | head -500 >"$OUT/disassembly.head.txt" || true
-fi
+# Raw strings and disassembly are deliberately not retained. The report keeps
+# bounded aggregate heuristics only, so a secret-bearing binary cannot turn
+# arbitrary string lines into evidence artifacts.

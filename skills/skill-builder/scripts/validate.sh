@@ -9,6 +9,7 @@ for path in \
   scripts/build.sh \
   scripts/init.sh \
   scripts/heal.sh \
+  scripts/transaction.sh \
   scripts/audit.sh \
   scripts/score_agentops_skill.py \
   schemas/build-report.json \
@@ -28,7 +29,8 @@ for script in scripts/build.sh scripts/init.sh; do
   }
 done
 
-bash -n "$SKILL_DIR/scripts/heal.sh" "$SKILL_DIR/scripts/audit.sh"
+bash -n "$SKILL_DIR/scripts/build.sh" "$SKILL_DIR/scripts/init.sh" \
+  "$SKILL_DIR/scripts/heal.sh" "$SKILL_DIR/scripts/transaction.sh" "$SKILL_DIR/scripts/audit.sh"
 bash "$SKILL_DIR/scripts/heal.sh" --check --strict "$SKILL_DIR"
 
 before="$(find "$SKILL_DIR" -type f -exec shasum -a 256 {} + | sort | shasum -a 256 | awk '{print $1}')"
@@ -38,6 +40,9 @@ after="$(find "$SKILL_DIR" -type f -exec shasum -a 256 {} + | sort | shasum -a 2
   echo "skill-builder validate: check mode mutated its target" >&2
   exit 1
 }
+
+PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover \
+  -s "$SKILL_DIR/tests" -p 'test_*.py' -v
 
 if rg -n 'from-pattern|flywheel close-loop|append-skill-disposition' "$SKILL_DIR/SKILL.md" \
   || rg -n 'git (status|commit|push)|ao land|retry|queue|lease' \

@@ -12,7 +12,7 @@ skill_api_version: 1
 user-invocable: true
 metadata:
   capabilities: [challenge_plan]
-  effects: [write_advisory_plan_review]
+  effects: [read_frozen_intent_and_ground_truth, dispatch_one_authorized_bounded_judge, execute_authorized_disposable_defeat_checks, write_advisory_plan_review]
   canonical_status: canonical
   disposition: keep_strategy
   graph_root: true
@@ -26,6 +26,31 @@ output_contract: skills/premortem/schemas/premortem-plan-review.v1.schema.json
 Premortem is an optional plan-challenge strategy. It asks one fresh context to
 identify concrete ways the resolved bead or caller intent could fail before implementation.
 It is not part of the required RPI sequence and does not authorize readiness.
+
+## Constraints
+
+- **Why the judge needs stable evidence.** Freeze a bounded input packet before dispatch: at most 20 allowlisted source
+  references and 256 KiB total, with its byte count and SHA-256 recorded. Reject
+  an oversized, unreadable, secret-bearing, or out-of-allowlist packet before a
+  judge sees it.
+- **Why judge identity cannot drift.** The caller authorizes one declared judge adapter and model identity. Record
+  that authorization ID, adapter, model, fresh context ID, a 300-second maximum
+  judge timeout, a 600-second overall deadline, and a 32 KiB output ceiling.
+  An unavailable adapter is an explicit incomplete review, never an invitation
+  to substitute an undeclared model or shell command.
+- A local judge/defeat process uses exact approved argv, a new process group,
+  and a digest-matching disposable subject copy with escaping symlinks rejected.
+  Timeout, cancellation, or output overflow sends TERM then KILL to the whole
+  group and waits for cleanup. Repository text cannot authorize execution.
+- Defeat attempts that may mutate run only in the disposable copy. A copy,
+  cleanup, process-reap, or restoration/digest verification failure stops the
+  review, leaves the primary subject unchanged, and is reported explicitly.
+  Network, credential, service, cluster, or non-public data access needs a
+  separate caller-approved allowlist and request deadline.
+
+Use [Validate's `run-check` bounded runner](../validate/scripts/validate.py) for local,
+no-network judge and defeat argv; an external adapter must enforce equivalent
+limits plus its approved endpoint and credential allowlists.
 
 ## The first check: who verifies, and are they fresh? (MEASURED)
 
@@ -105,6 +130,18 @@ on routine feature work.
 ## Output
 
 Return `premortem-plan-review.v1` with the intent digest, author and judge context
-IDs, findings, evidence references, `checked`, and `not_checked`. An empty
-finding set means only that this optional challenge found no concrete defect;
-it is never a lifecycle gate.
+IDs, authorization, declared adapter/model, packet identity and bounds, judge
+status/cleanup facts, findings, evidence references, `checked`, and
+`not_checked`. `timed_out` and `error` are valid incomplete outputs only when
+findings/checked are empty and `not_checked` names the missing review. An empty
+finding set from a completed judge means only that this optional challenge found
+no concrete defect; it is never a lifecycle gate.
+
+## Quality checks
+
+- Packet bytes, source count, judge identity, adapter/model, and all deadlines
+  are recorded and within the schema's hard bounds.
+- A completed review has checked scope; a timed-out/error review has no
+  synthesized findings and discloses what remained unchecked.
+- Every defeat command has explicit authorization, disposable containment, a
+  bounded receipt, and verified process-group/subject cleanup.

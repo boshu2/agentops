@@ -8,6 +8,10 @@ SKILL="$SKILL_DIR/SKILL.md"
 grep -q '^name: scaffold$' "$SKILL"
 grep -q '^## Contract$' "$SKILL"
 grep -q '^## Evidence$' "$SKILL"
+grep -q '^## Execution constraints$' "$SKILL"
+grep -Fq 'terminates and reaps the complete process group' "$SKILL"
+grep -Fq 'published only by an atomic rename' "$SKILL"
+grep -Fq 'primary target retains its pre-run digest' "$SKILL"
 grep -Fq 'The caller owns version control, revision, and delivery.' "$SKILL"
 if grep -Eiq 'AUTO-REDO|ONE-HELPER|HELPER-ESCALATE|ao land|next_action' "$SKILL"; then
   echo 'scaffold contract contains retired lifecycle vocabulary' >&2
