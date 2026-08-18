@@ -1,8 +1,8 @@
 # Skill-system evolution: from autonomous flywheel to federated proof graph
 
-**As of:** 2026-08-16
-**Scope:** every release represented in `CHANGELOG.md` (`2.16.0` through
-`3.5.0`) plus the current unreleased tree
+**As of:** 2026-08-17
+**Scope:** every release represented in `CHANGELOG.md`, `2.16.0` through
+`3.6.0`
 **Question:** what meta-loops and graphs did the skill system actually build,
 and where can skills still create compounding improvement in agent harnesses?
 
@@ -298,7 +298,7 @@ modes that shaped the later architecture.
 | 3.3.0 | Performed the Cathedral Cut; defined the four-skill one-pass core, exact manifests, fresh validation, optional adapters, and report-and-stop. | Judgment boundary—not orchestration—is the product invariant. |
 | 3.4.0 | Overhauled all 50 skill contracts, externalized factories, made verdict storage optional, and enforced honest effects. | Skills become semantic adapters in a federated graph. |
 | 3.5.0 | Added factory-coordinator doctrine, plan manifests, bounded caveat homes, and CLI-backed GC maintenance. | AgentOps describes handoffs without acquiring foreign lifecycle authority. |
-| Unreleased | Retires the live flywheel product/status and consumer-free artifacts; Learn remains optional. | Compounding is no longer a product state AgentOps can self-declare. |
+| 3.6.0 | Retired the live flywheel product/status and consumer-free artifacts, aligned the estate on the operations-layer identity, and added the behavioral eval program with a fail-closed evidence contract. | Compounding is no longer a product state AgentOps can self-declare, and skill efficacy becomes a measured claim rather than an asserted one. |
 
 The release entries are changelog-level summaries and should not be read as
 file-exact diffs; the reachable Git history does not contain the pre-3.3

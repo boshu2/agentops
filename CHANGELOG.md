@@ -7,31 +7,75 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Removed
+## [3.6.0] - 2026-08-17
 
-- The consumer-free `dream:` config block (the retired overnight subsystem's
-  settings; existing config files still parse and the key is ignored), the
-  vacuous retrieval-quality canary and its smoke (every Go test it named was
-  already deleted; the retrieval-comparison contract is now explicitly
-  dormant and the blocking manifest-paths gate remains the live retrieval
-  guard), and the dormant `check-pillar-coverage.sh` GOALS.yaml script.
-  Remaining scratch-tier writers (`mine-all-sessions.sh`, `team-runner.sh`,
-  `bin/ralph`) now write under `.agents/scratch/`.
+AgentOps 3.6 is the **operations-layer alignment** release, and most of the
+alignment was deletion. The product is now stated one way on every surface that
+reads it: AgentOps is the operations layer for agentic engineering, the topology
+is a federated integration graph, the interoperability contract is the semantic
+work-and-proof protocol, and the standard path is one RPI traversal (Plan,
+Implement, fresh Validate, report and stop). The knowledge-flywheel product
+surface is gone — command family, app package, build profile, gates, config
+block — the seven-move operating-loop workflow is a tombstone, `.agents/`
+writers are narrowed to declared destinations, and 25 skills plus every
+generated projection were realigned against the operating contract.
 
-- The `ao flywheel` command family (`status`, `compare`) and the whole live
-  knowledge-flywheel product surface: `cli/internal/flywheelapp`, the
-  flywheel-only metric helpers and types, the `flywheel` build-profile bit,
-  the `flywheel-compounding` gate scripts, and the `flywheel:` config block
-  (existing config files still parse; the key is ignored). AgentOps no longer
-  computes or reports knowledge-compounding state (`COMPOUNDING`, `DECAYING`,
-  escape velocity). Invoking `ao flywheel` now fails with a migration pointer
-  (see `docs/MIGRATION.md`). Learning remains an optional off-path consumer of
-  durable verdicts via the `learn` skill. The compatibility baseline records
-  the family as intentionally `retired` rather than freezing the old product
-  claim.
+Two enforcement layers ride on top. Anti-ceremony guardrails fail closed when a
+process artifact cannot name its consumer, its decision, the observed defect,
+and its retirement condition, and `rpi` runs that STOP/CONTINUE guard once
+before Plan. The eval program gives the skill harness measurement instead of
+self-report: a 12-decision eval architecture, a probe harness with a fail-closed
+v3 evidence contract, routing probes, a tier-2 flawed-plan corpus with hidden
+holdout scoring, and estate ablation sweeps whose predictions were registered
+before the runs. That same evidence contract is why measured probe coverage now
+reads an honest 0/12 — the earlier wave-1 classifications are retained as
+`LEGACY-UNVERIFIED` rather than counted.
 
 ### Added
 
+- The `anti-ceremony` skill: a clean-room, artifact-free STOP/CONTINUE guard
+  over the creation gate — name the consumer, the decision it gates, the
+  observed defect, and the retirement condition, or do not create it. `rpi`
+  takes it as a hard dependency and invokes it exactly once before Plan. On STOP
+  it dispatches no core phase and reports `NOT_PLANNED` with the guard's reason;
+  on CONTINUE the full Plan, Implement, fresh Validate path runs unchanged.
+  AgentOps now fails closed when process artifacts are manufactured, when GREEN
+  comes from weakening the oracle, and when repeated control artifacts replace
+  implementation evidence.
+- `ao session prune-agents` applies `.agents` retention policies from Go. It is
+  a read-only dry run by default; `--execute` mutates and `--quiet` prints only
+  the summary. The global `--dry-run` seam always wins over `--execute`.
+  `scripts/prune-agents.sh` becomes a compatibility wrapper.
+- `ao gc prepare` pre-seeds Codex trust for materialized Gas City session homes.
+  Codex persists two independent decisions in `$CODEX_HOME/config.toml` —
+  workspace trust under `[projects."<dir>"]` and one Codex-owned content hash
+  per hook under `[hooks.state."<hook-key>"]` — and trusting a parent directory
+  does not trust a session home. Hook identities and hashes come from Codex's
+  own `hooks/list` app-server method rather than being reimplemented. Without
+  this, the first Codex process in a fresh home could sit on the interactive
+  trust dialog with a live pane that can never take dispatched work. `ao gc
+  prepare` and `ao gc check` take `--codex-bin` to name the Codex CLI; the
+  default is `codex` on PATH.
+- The eval program for the skill harness: a 12-decision eval architecture
+  (`docs/architecture/eval-architecture.md`) and the probe harness that runs
+  control-versus-treatment behavioral probes and records replayable scorecards
+  (`bash scripts/probe-skill.sh --probe <id> --replay`).
+- Routing probes measure P(skill loaded | applicable task), the multiplier every
+  skill-efficacy number depends on. Committed scenarios are templates with
+  dispatch-time instantiation so an agent cannot read the fixture off disk and
+  contaminate the run. Task-noun skills route and judgment-posture skills do
+  not; the Codex runtime routed 4/4 against 2/6 for Claude-in-repo, because
+  `.claude/rules` auto-load already delivers the content without routing.
+- A tier-2 task-embedded corpus of flawed-plan execution fixtures with hidden
+  holdout tests injected only at scoring, across four live flaw classes (quiet
+  edge, vacuous green, burned compatibility bridge, opaque sentinel errors). The
+  scorer emits `visible_pass`, `hidden_pass`, `claimed_done`, `false_pass`, and
+  `flagged_gap`, and its selftest against planted references caught a real
+  scorer bug before any spend.
+- Estate ablation sweeps that apply delete-everything-and-measure-what-returns
+  to this repository's own estate, with predictions registered before results.
+- A dual-case anti-ceremony behavior probe that separates a justified process
+  artifact from an unjustified one, with its discriminator under test.
 - Between-releases release-path smoke: `.github/workflows/release-path-smoke.yml`
   runs a full GoReleaser snapshot (`goreleaser release --snapshot --clean
   --skip=publish`) nightly and on every change to a release-plumbing input
@@ -42,6 +86,147 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `.goreleaser.yml` before-hook stayed broken for 20 days. The smoke and its
   negative witness share one script (`tests/scripts/lib/release-snapshot-smoke.sh`,
   proven able to fail by `tests/scripts/release-path-smoke.bats`).
+- `reverse-engineer` ships an output validator and a self-test, so its artifacts
+  are checked by an executable rather than by assertion.
+- `docs/contracts/ubiquitous-language.md` gains the product-architecture
+  vocabulary and four forbidden conflations, including that check success is not
+  a semantic PASS and that runtime completion is not validation.
+- `docs/reference/skill-system-evolution.md` traces the skill system across
+  releases, names seven evolution regimes, diagrams the present authority graph,
+  and records falsifiable predictions.
+- The canonical bd project identity is tracked at `.beads/identity.toml`, so
+  project identity travels with the repository instead of being reconstructed
+  per checkout.
+
+### Changed
+
+- The core architecture page is `docs/architecture/rpi-traversal.md`, with a
+  compatibility redirect left at the old operating-loop path.
+- Skill contracts match the operating contract. `rpi` preserves a durable
+  caller-owned intent source by reference and digest and snapshots bytes only
+  when no durable source exists. `automation-shape-routing` is advisory-only and
+  returns the chosen owner without copying or starting the delegated workflow.
+  `bootstrap` creates durable verdict storage and project docs only when
+  explicitly requested. `implement` and `swarm` return factual evidence instead
+  of implicitly revising or declaring semantic verdicts.
+- `ao init` scaffolds only the requested-proof stores that have declared
+  consumers: `.agents/ao/intents/sha256` and `.agents/ao/verdicts/sha256`. The
+  former session-transcript, search-index, provenance, and handoff directories
+  had no declared consumer and are no longer minted. The managed `.gitignore`
+  block now covers `.agents/scratch/`, `.agents/projections/`, and
+  `__pycache__/` instead of the retired knowledge-store paths.
+- `ao session handoff` writes JSON to `.agents/ao/handoff/` instead of
+  `.agents/handoff/`. `ao session rehydrate` searches both roots and selects the
+  newest lexical handoff id, with the canonical copy winning a filename tie. No
+  command moves or deletes the legacy files.
+- `codebase-recon` binds evidence to the exact Git commit its manifest declares.
+  Citations must be safe repository-relative regular files at that commit, a
+  supplied line number must exist in the committed blob, delta manifests must
+  match Git's own prior-to-current changed-path diff rather than a self-reported
+  boolean, and dirty tracked, staged, or untracked source outside `.agents/` is
+  refused. New packs default to `.agents/scratch/codebase-recon/<run-id>/`;
+  earlier packs stay where they are and remain discoverable.
+- `agent-mail` requires one mailbox owner and access mode per storage root, so
+  an HTTP/MCP daemon and the direct `am` CLI never contend for the same
+  database. A busy activity lock or bounded read timeout is a degraded adapter
+  result, not permission to restart the service or switch roots.
+- `status`, `using-flywheel`, and `using-gc` keep the state classes separate.
+  Factory-complete, checks-green, and AgentOps PASS are reported as three
+  different facts, never blended into one health claim.
+- The probe-coverage gate reads a hand-maintained ledger at
+  `evals/skill-probes/LEDGER.md` instead of the generated
+  `skills/SKILL-TIERS.md`, which a regeneration had silently wiped. A row counts
+  only if it names exactly one v3 scorecard whose fixture manifest, bound
+  inputs, prompt events, transcript hashes, canonical skill source,
+  non-overrideable runtime identity, reps, treatment mode, and recomputed
+  discriminator result all agree.
+- Cathedral-cut conformance scans linked skill references for retired identity
+  claims, with Markdown fence, raw-HTML, and percent-encoding handling so the
+  scan cannot be evaded by formatting.
+- `scripts/extract-release-notes.sh` reflows hard-wrapped curated notes into
+  logical Markdown lines before publishing, leaving headings, tables, code,
+  HTML, block quotes, and explicit hard breaks intact. GitHub's renderer
+  preserves soft line breaks, so copying the hard-wrapped source byte-for-byte
+  produced a narrow ragged column in the published release.
+- Handoff publishing is descriptor-anchored: it opens `.agents/ao/handoff` one
+  component at a time, refuses any component that is a symlink or not a real
+  directory, re-verifies that each opened descriptor still identifies the
+  component it inspected, and publishes by hard link rather than rename, so a
+  parent-directory swap mid-write cannot redirect the write and an existing
+  handoff id is never clobbered.
+- Prune path confinement runs traversal inside an `os.Root` with a final
+  current-path identity check immediately before each descriptor-rooted delete.
+  The contract states its own boundary honestly: intermediate-directory
+  traversal is bound, and it does not claim a final basename is immutable
+  against an adversarial replacement.
+- Portable Codex skill validation rejects duplicate YAML keys, enforces symlink
+  containment, and applies the current optional-field rules.
+- `AGENTS.md` is compressed against current-main evidence (about 10.5KB to
+  8.3KB) while preserving the honest-work and anti-ceremony doctrine, federated
+  source authority, the factory and concurrency boundaries, and the Triggered
+  Sources links that `validate-agents-split` requires. The estate-ablation
+  aggregate counts that motivated the trim are labeled legacy-unverified and
+  non-promotable.
+- ADR-0016 is amended for federated source authority and corrects an overclaim:
+  the three-directory `.agents/` layout is a target, not a currently enforced
+  closed set.
+- The Homebrew formula and the Codex plugin manifest state the operations-layer
+  identity instead of advertising a knowledge-flywheel CLI.
+- Dependencies: Go toolchain directive 1.26.5 to 1.26.6, `golang.org/x/text`
+  0.40.0 to 0.41.0, `github.com/santhosh-tekuri/jsonschema/v6` 6.0.2 to 6.0.3,
+  `github.com/BurntSushi/toml` 1.6.0 added for Codex `config.toml` handling, and
+  the pinned GitHub Actions digests refreshed.
+
+### Fixed
+
+- Generated Codex descriptions are compacted without dropping canonical trigger
+  text, so a compacted projection cannot lose the phrases that activate the
+  skill. All owned Codex projections and hashes were regenerated against that
+  rule (portable conformance 52/52).
+- Skill audit grades are evidence-honest: static readiness is scored and labeled
+  separately from measured safety and effectiveness, so a static score can no
+  longer be read as a behavioral one.
+- `ao doctor` Git-root detection no longer gets redirected by an empty or
+  otherwise invalid ancestor `.git` directory, which previously sent doctor
+  artifacts to the wrong place.
+- The eval command-surface fixture failed when it was actually executed: it
+  asserted `#{3,4}` where the surface produces `#{3,5}`. The fixture now matches
+  the real surface.
+- The bats lane provisions Python with jsonschema and PyYAML once, instead of
+  reinstalling PyYAML in a later job after `setup-python` shadowed the runner
+  interpreter.
+
+### Removed
+
+- The `ao flywheel` command family (`status`, `compare`) and the whole live
+  knowledge-flywheel product surface: `cli/internal/flywheelapp`, the
+  flywheel-only metric helpers and types, the `flywheel` build-profile bit, the
+  `flywheel-compounding` gate scripts, and the `flywheel:` config block
+  (existing config files still parse; the key is ignored). AgentOps no longer
+  computes or reports knowledge-compounding state (`COMPOUNDING`, `DECAYING`,
+  escape velocity). Invoking `ao flywheel` now exits 1 as an unknown command and
+  prints a migration pointer (see `docs/MIGRATION.md`). Learning remains an
+  optional off-path consumer of durable verdicts via the `learn` skill. The
+  compatibility baseline records the family as intentionally `retired` rather
+  than freezing the old product claim.
+- `plan` manifest mode, added in 3.5.0, along with its "plan manifest" trigger.
+  `plan` shapes one active behavior in the existing intent source; a
+  multi-behavior specification stays a document the caller owns.
+- The seven-move operating-loop workflow is a tombstone that fails with a
+  deterministic migration message instead of silently running retired doctrine.
+- The consumer-free `dream:` config block (the retired overnight subsystem's
+  settings; existing config files still parse and the key is ignored) and its
+  exclusive helpers, the vacuous retrieval-quality canary and the nightly job
+  that ran it (every Go test it named was already deleted; the
+  retrieval-comparison contract is now explicitly dormant and the blocking
+  manifest-paths gate remains the live retrieval guard), the dormant
+  `check-pillar-coverage.sh` GOALS.yaml script, `check-thesis-stability.sh`, and
+  `generate-index.sh`. Remaining scratch-tier writers (`mine-all-sessions.sh`,
+  `team-runner.sh`, `bin/ralph`) now write under `.agents/scratch/`. `bin/ralph`
+  still resumes legacy `.agents/ralph/` checkpoints, so the documented
+  backwards-compatibility contract holds without a migration.
+- The dated skill-quality audit report, which had no runtime consumer and bound
+  a superseded audit snapshot; all functional skill-quality changes stayed.
 
 ## [3.5.0] - 2026-07-31
 
