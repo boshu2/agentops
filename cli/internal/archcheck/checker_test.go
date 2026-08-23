@@ -543,9 +543,23 @@ func scrubbedGitEnv() []string {
 	return env
 }
 
+// fixtureGitArgs scopes a fixture git command to root and disables background
+// maintenance: `git commit` may detach a `gc --auto`/`maintenance run --auto`
+// child that outlives the test body and races t.TempDir cleanup — RemoveAll
+// then fails with ".git: directory not empty" (nightly 2026-08-10 #1055,
+// 2026-08-21 #1077).
+func fixtureGitArgs(root string, args ...string) []string {
+	return append([]string{
+		"-C", root,
+		"-c", "gc.auto=0",
+		"-c", "gc.autodetach=false",
+		"-c", "maintenance.auto=false",
+	}, args...)
+}
+
 func runFixtureGit(t *testing.T, root string, args ...string) {
 	t.Helper()
-	command := exec.Command("git", append([]string{"-C", root}, args...)...)
+	command := exec.Command("git", fixtureGitArgs(root, args...)...)
 	command.Env = scrubbedGitEnv()
 	if output, err := command.CombinedOutput(); err != nil {
 		t.Fatalf("git %v: %v\n%s", args, err, output)
@@ -554,7 +568,7 @@ func runFixtureGit(t *testing.T, root string, args ...string) {
 
 func fixtureGitOutput(t *testing.T, root string, args ...string) string {
 	t.Helper()
-	command := exec.Command("git", append([]string{"-C", root}, args...)...)
+	command := exec.Command("git", fixtureGitArgs(root, args...)...)
 	command.Env = scrubbedGitEnv()
 	output, err := command.Output()
 	if err != nil {

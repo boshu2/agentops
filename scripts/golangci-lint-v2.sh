@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-VERSION="${GOLANGCI_LINT_VERSION:-v2.11.4}"
+VERSION="${GOLANGCI_LINT_VERSION:-v2.13.1}"
 DISPLAY_VERSION="${VERSION#v}"
 MODULE="github.com/golangci/golangci-lint/v2/cmd/golangci-lint"
 

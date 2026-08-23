@@ -608,7 +608,7 @@ jobs:
           retry python -m pip install semgrep==1.169.0 ruff==0.15.21 radon==6.0.1
           retry env GOBIN=/usr/local/bin go install github.com/securego/gosec/v2/cmd/gosec@v2.27.1
           retry env GOBIN=/usr/local/bin go install github.com/zricethezav/gitleaks/v8@v8.30.1
-          retry env GOBIN=/usr/local/bin go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.11.4
+          retry env GOBIN=/usr/local/bin go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.13.1
           retry env GOBIN=/usr/local/bin go install golang.org/x/vuln/cmd/govulncheck@v1.6.0
           # trivy — pinned tag, download-then-execute (mirrors nightly.yml; piping a
           # mutable-branch script into sh is the gha-curl-pipe-shell supply-chain class).
