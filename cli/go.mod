@@ -2,7 +2,7 @@ module github.com/boshu2/agentops/cli
 
 go 1.26
 
-toolchain go1.26.6
+toolchain go1.27.0
 
 require (
 	github.com/BurntSushi/toml v1.6.0
