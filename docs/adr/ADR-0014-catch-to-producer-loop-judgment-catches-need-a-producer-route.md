@@ -41,7 +41,7 @@ Make **Loop C (catch → producer)** a first-class, measured route — the prima
 1. **Reframe Step BP.7.** For a recurring class (`HitCount ≥ 2`), pick the binding by the *class's nature*, not a fixed gate-first preference:
    - **Compilable** (rare) → a mechanical gate (Loop B). Keep this path.
    - **Judgment-class** (the common case) → a **producer-side fix**: a rule in the owning skill's standards, a `CLAUDE.md`/`AGENTS-*.md` footgun, a `/plan` planning-rule, or a `/discovery` pre-mortem check. This is Loop C, and it is *not* a downgrade — it is the right tool.
-2. **Record every routing in a committed [producer-defect register](../architecture/producer-defect-register.md).** One row per acted-on recurring class: the defect, the producer fix + where it was bound, and — the honest part — the **recurrence count before vs. after** the fix. This is the measurement Step BP.7 always lacked.
+2. **Record every routing in a committed [producer-defect register](../contracts/producer-defect-register.md).** One row per acted-on recurring class: the defect, the producer fix + where it was bound, and — the honest part — the **recurrence count before vs. after** the fix. This is the measurement Step BP.7 always lacked.
 3. **The proof-of-working is a recurrence DROP per class, not corpus size.** We do not claim a compounding moat (ADR-0004/0011 remain unproven and we do not market ahead of them). We claim exactly one falsifiable thing: after a producer fix binds for class X, class X's catch-rate should fall. The register makes that checkable; a class that keeps recurring after a fix means the binding was too weak (escalate it).
 
 ## Consequences
