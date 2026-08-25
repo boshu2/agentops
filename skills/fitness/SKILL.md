@@ -16,7 +16,6 @@ context:
   window: fork
   intent:
     mode: task
-  intel_scope: topic
 metadata:
   capabilities: [fitness]
   effects: [write_goal_snapshot, write_rendered_spec]

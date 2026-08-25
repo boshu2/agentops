@@ -17,7 +17,6 @@ context:
   window: fork
   intent:
     mode: task
-  intel_scope: none
 metadata:
   capabilities: [bootstrap]
   effects: [write_project_docs]

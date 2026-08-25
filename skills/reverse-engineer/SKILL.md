@@ -18,7 +18,6 @@ context:
   sections:
     exclude:
     - HISTORY
-  intel_scope: topic
 metadata:
   dependencies: []
   capabilities: [reverse_engineer]

@@ -49,6 +49,34 @@ explicit behavior
 - Deterministic `ao gate check` reports repository check success or failure only.
 - Semantic validation is a skill responsibility, not a CLI state machine.
 
+## Gates
+
+Each row is one executable check that runs in this repository today, measured
+by `ao goals measure`. The `Check` cell runs under
+`bash --noprofile --norc -c` from the repository root; exit 0 is a pass, exit
+77 is a skip, anything else is a fail. `Description` names the fitness
+property above that the check actually evidences — where a check is a floor
+under several properties rather than a direct assertion of one, it says so.
+
+This table must never be empty. A goals file with zero rows measures 0/0 and
+reports green over an empty set; `ao goals validate` now rejects that state
+(`goals-denominator` below is its executable guard).
+
+Disclosed scope: properties 1 (behavior before activity) and 7 (stop
+boundary) carry no executable gate here. Both are judged per traversal rather
+than by a repository check, and no honest deterministic check for them exists
+in this repository today. A green score below is silent about them, not
+evidence for them.
+
+| ID | Check | Weight | Description |
+|----|-------|--------|-------------|
+| go-cli-tests | `cd cli && go test ./...` | 8 | Floor under properties 2-6. The Go runtime that records check receipts, reads verdict.v2 evidence (`cli/internal/verdictcheck`), resolves state paths, and runs the deterministic check registry (`cli/internal/gates`) is asserted only by this suite. |
+| go-vet-clean | `cd cli && go vet ./...` | 4 | Floor under the same runtime: vet-clean is the precondition for treating any measurement it emits as a fact rather than an artifact of a latent bug. |
+| verdict-contract-corpus | `bash scripts/check-verdict-contract-corpus.sh` | 7 | Properties 3 and 5. Runs the shared golden corpus through all three implementations of verdict.v2 (JSON schema, the Python Validate writer, the Go evidence reader) so PASS, FAIL, and NOT_PROVEN mean one thing across runtimes. Fail-closed: a pass proves all three legs ran, never that a leg was skipped. |
+| contract-compatibility | `bash scripts/check-contract-compatibility.sh` | 5 | Property 6. Every schema a durable verdict is written against parses as JSON, every contract reference in the documentation index resolves on disk, and every example conforms to its schema. |
+| contracts-structural-floor | `bash scripts/check-contracts-structural-floor.sh` | 4 | Property 8. A consumer keeping their own tracker, CI, and release system integrates through `docs/contracts/**`; each contract must be titled, cataloged in the documentation index, non-trivial, and paired with valid JSON. |
+| goals-denominator | `d=$(mktemp -d "${TMPDIR:-/tmp}/ao-goals-den.XXXXXX"); (cd cli && go build -o "$d/ao" ./cmd/ao) && "$d/ao" goals validate --json > "$d/report.json" && jq -e '.goal_count >= 1' "$d/report.json" > /dev/null; rc=$?; rm -rf "$d"; exit $rc` | 6 | Property 5 turned on this file. Builds `ao` from source, requires `goals validate --json` to exit 0 (valid), and requires a nonzero denominator. Guards the exact regression that emptied this table: between 2026-07-14 and 2026-08-24 the Gates section was absent, the parser returned zero goals with no error, and the whole fitness surface reported green on 0/0. |
+
 ## Measured learning hypothesis
 
 Collections of durable verdicts may reveal repeated defect classes that deserve

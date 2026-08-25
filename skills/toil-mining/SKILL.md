@@ -20,7 +20,6 @@ context:
   sections:
     exclude:
     - HISTORY
-  intel_scope: topic
 metadata:
   capabilities: [toil_mining]
   effects: [write_toil_candidates]

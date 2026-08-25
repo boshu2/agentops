@@ -17,7 +17,6 @@ context:
     mode: task
   sections:
     exclude: [HISTORY]
-  intel_scope: topic
 metadata:
   tier: meta
   dependencies: []

@@ -27,7 +27,6 @@ context:
   sections:
     exclude:
     - HISTORY
-  intel_scope: topic
 metadata:
   capabilities: [pattern_mining]
   effects: [write_pattern_evidence]

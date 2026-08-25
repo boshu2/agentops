@@ -268,12 +268,41 @@ func RunValidate(opts ValidateOptions) error {
 	result.Directives = len(gf.Directives)
 
 	appendGoalDirectiveWarnings(&result, gf)
+	appendEmptyDenominatorError(&result, gf)
 	appendGoalValidationErrors(&result, gf)
 	appendUnwiredScriptWarnings(&result, gf)
 	appendMissingGoalScriptErrors(&result, gf)
 
 	result.Valid = len(result.Errors) == 0
 	return OutputValidateResult(opts.Stdout, opts.JSON, result)
+}
+
+// Zero-denominator error text. A goals file that parses cleanly but yields no
+// measurable gate makes every fitness consumer report green over an empty set
+// (score 0/0, "VALID: 0 goals"), which is indistinguishable from a healthy
+// repository. Parsing zero goals stays a legitimate parser outcome; declaring
+// that state VALID is the defect this error closes.
+const (
+	emptyDenominatorMarkdown = `no measurable gates: the "## Gates" section is missing or holds no table rows, ` +
+		`so fitness measures 0/0 and every consumer reports green over an empty set. ` +
+		`Add a "## Gates" heading followed by a table with the columns ` +
+		`"| ID | Check | Weight | Description |" and at least one row naming an executable check.`
+
+	emptyDenominatorYAML = `no measurable gates: the goals: list is empty, ` +
+		`so fitness measures 0/0 and every consumer reports green over an empty set. ` +
+		`Add at least one entry under goals: with id, check, weight, and description.`
+)
+
+// appendEmptyDenominatorError rejects a goals file with zero parsed goals.
+func appendEmptyDenominatorError(result *ValidateResult, gf *GoalFile) {
+	if len(gf.Goals) > 0 {
+		return
+	}
+	if gf.Format == "md" {
+		result.Errors = append(result.Errors, emptyDenominatorMarkdown)
+		return
+	}
+	result.Errors = append(result.Errors, emptyDenominatorYAML)
 }
 
 func appendGoalDirectiveWarnings(result *ValidateResult, gf *GoalFile) {
@@ -338,12 +367,21 @@ func goalScriptPath(check string) (string, bool) {
 	return parts[0], true
 }
 
-// OutputValidateResult formats and writes a ValidateResult.
+// OutputValidateResult formats and writes a ValidateResult. An invalid result
+// is reported as an error in BOTH modes: a JSON report that exits 0 while
+// carrying "valid": false lets any exit-code-only consumer (the release smoke
+// test, a CI step, a gate) read a broken goals file as green.
 func OutputValidateResult(w io.Writer, asJSON bool, result ValidateResult) error {
 	if asJSON {
 		enc := json.NewEncoder(w)
 		enc.SetIndent("", "  ")
-		return enc.Encode(result)
+		if err := enc.Encode(result); err != nil {
+			return err
+		}
+		if !result.Valid {
+			return fmt.Errorf("validation failed: %d error(s)", len(result.Errors))
+		}
+		return nil
 	}
 
 	if result.Valid {

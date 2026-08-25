@@ -203,7 +203,7 @@ Tools available inside a Codex agent session:
 | `EnterWorktree` | No equivalent | Strip |
 | `context.window` | No equivalent | Strip from frontmatter |
 | `context.sections.exclude` | No equivalent | Strip from frontmatter |
-| `context.intel_scope` | Intelligence scoping | Does not exist |
+| `context.intel_scope` | Deprecated — ignored, no reader | Does not exist |
 
 Skills referencing these primitives produce **broken instructions** in Codex.
 

@@ -12,7 +12,6 @@ model: haiku
 context:
   window: inherit
   intent: {mode: none}
-  intel_scope: none
 metadata:
   capabilities: [status]
   effects: [read_filesystem, read_clock]

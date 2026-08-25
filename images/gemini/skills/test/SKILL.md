@@ -20,7 +20,6 @@ context:
   sections:
     exclude:
     - HISTORY
-  intel_scope: topic
 metadata:
   capabilities: [test]
   effects: [write_test_files, write_test_evidence, modify_source_files]

@@ -12,6 +12,21 @@ AgentOps 3.3 supports three install paths:
 With npx or a plugin, install and updates are handled by that tool. The rest of
 this page covers the checkout path and its day-2 operations.
 
+## Maintainer / contributor: the `ao` binary
+
+The `ao` CLI is optional. It runs the deterministic checks, inspection, and
+skill linking; the skills themselves need none of it. Install it on its own:
+
+```bash
+brew tap boshu2/agentops https://github.com/boshu2/homebrew-agentops
+brew install agentops
+```
+
+Without Homebrew: `go install github.com/boshu2/agentops/cli/cmd/ao@latest`
+
+To track skills from a local checkout instead of a release bundle, run
+`ao skills link` from that checkout — the full flow is below.
+
 ## Install (source checkout)
 
 Install the optional `ao` CLI, clone AgentOps, and link its skills:

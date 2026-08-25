@@ -23,7 +23,6 @@ context:
   sections:
     exclude:
     - HISTORY
-  intel_scope: topic
 metadata:
   capabilities: [security]
   effects: [write_scan_artifacts]

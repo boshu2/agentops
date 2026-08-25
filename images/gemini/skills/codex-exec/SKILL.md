@@ -20,7 +20,6 @@ context:
   sections:
     exclude:
     - HISTORY
-  intel_scope: none
 metadata:
   capabilities: [codex_exec]
   effects: [run_codex_process, sandbox_tiered_workspace_and_network_effects]
