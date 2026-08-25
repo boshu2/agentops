@@ -58,6 +58,28 @@ run_json() {
   fi
 }
 
+# run_goals_validate asserts the fitness surface has a nonzero denominator.
+#
+# `run_json` alone is not enough here: `ao goals validate --json` over a
+# GOALS.md whose "## Gates" table is empty parses fine and used to exit 0
+# while reporting "valid": true over zero gates, so the whole fitness surface
+# scored 0/0 and read green on every release. Assert the report is valid AND
+# counts at least one gate. Runs from REPO_ROOT because the goals file is
+# resolved relative to the working directory.
+run_goals_validate() {
+  local label="goals validate JSON (valid, nonzero denominator)"
+  local output rc=0 count
+  output=$(cd "$REPO_ROOT" && "$AO" goals validate --json 2>"$TMP_ROOT/stderr") || rc=$?
+  if [[ "$rc" -eq 0 ]] && jq -e '.valid == true and .goal_count >= 1' >/dev/null 2>&1 <<<"$output"; then
+    count=$(jq -r '.goal_count' <<<"$output")
+    pass "$label ($count gates)"
+  else
+    count=$(jq -r '.goal_count // "n/a"' 2>/dev/null <<<"$output" || echo "unparseable")
+    fail "$label (exit $rc, goal_count=$count; expected valid=true and goal_count>=1)"
+    sed -n '1,8p' "$TMP_ROOT/stderr" >&2
+  fi
+}
+
 run_tombstone() {
   local label="$1"
   shift
@@ -88,7 +110,7 @@ run_ok "all generated leaf help paths" bash "$REPO_ROOT/tests/cli/test-all-leaf-
 run_json "status JSON" "$AO" status --json
 run_json "skills list JSON" "$AO" skills list --json
 run_json "skills graph JSON" "$AO" skills graph --format json
-run_json "goals validate JSON" "$AO" goals validate --json
+run_goals_validate
 run_json "provenance list JSON" bash -c "cd '$TMP_ROOT' && '$AO' provenance list --json"
 run_json "source-link dry-run JSON" env HOME="$TMP_ROOT/home" "$AO" skills link --dest "$TMP_ROOT/skills" --dry-run --json
 
