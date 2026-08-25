@@ -69,7 +69,6 @@ scripts/check-hookless-cold-start.sh
 scripts/check-json-marshal-checked.sh
 scripts/check-membrane-parity.sh
 scripts/check-membrane-receipts-freshness.sh
-scripts/check-memrl-health.sh
 scripts/check-mutation-route-coverage.sh
 scripts/check-next-work-schema-rows.sh
 scripts/check-no-apparatus-regrowth.sh
