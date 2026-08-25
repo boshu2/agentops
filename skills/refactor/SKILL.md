@@ -19,7 +19,6 @@ context:
   sections:
     exclude:
     - HISTORY
-  intel_scope: topic
 metadata:
   capabilities: [refactor]
   effects: [modify_source_files]
