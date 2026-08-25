@@ -14,7 +14,6 @@ context:
   window: inherit
   intent:
     mode: task
-  intel_scope: topic
 metadata:
   tier: product
   dependencies: []
