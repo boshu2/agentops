@@ -18,7 +18,6 @@ context:
   sections:
     exclude:
     - HISTORY
-  intel_scope: topic
 metadata:
   capabilities: [skill_builder, heal_skill]
   effects: [write_skill_source, write_build_report, regenerate_skill_projections, repair_skill_projections]

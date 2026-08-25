@@ -19,7 +19,6 @@ context:
     mode: none
   sections:
     exclude: [HISTORY, INTEL, TASK]
-  intel_scope: none
 metadata:
   capabilities: [scope_review]
   effects: []

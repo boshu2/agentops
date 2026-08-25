@@ -28,7 +28,6 @@ context:
   sections:
     exclude:
     - HISTORY
-  intel_scope: topic
 metadata:
   capabilities: [codebase_recon]
   effects: [write_recon_pack]

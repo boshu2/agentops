@@ -14,7 +14,6 @@ context:
   window: isolated
   intent:
     mode: none
-  intel_scope: none
 metadata:
   capabilities: [domain]
   effects: []

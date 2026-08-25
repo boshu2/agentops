@@ -17,69 +17,39 @@
 #   matcher; the data file itself just lists patterns).
 # - Include both the gate's check script AND the production code/data
 #   the script reads — both are valid blocker surfaces.
-# - Unknown goal IDs in this file are silently ignored by the loader, so
-#   you can stage a new goal's affects_files entry before adding the goal
-#   to GOALS.md without breaking parsing.
+# - Every key MUST name a gate that exists in the GOALS.md Gates table.
+#   The loader silently ignores unknown IDs, so a stale key is invisible
+#   rot, not an error: between 2026-07-14 and 2026-08-24 every key here
+#   was dead because the Gates table itself was empty. Deleting a gate
+#   means deleting its key in the same change.
 
 affects_files:
-  go-complexity-ceiling:
-    - cli/**
-    - scripts/check-go-absolute-complexity.sh
-
-  compile-freshness:
-    - scripts/check-compile-health.sh
-
-  compile-no-oscillation:
-
   go-cli-tests:
-    - cli/**
-
-  go-cli-builds:
     - cli/**
 
   go-vet-clean:
     - cli/**
 
-  security-gate:
-    - scripts/security-gate.sh
-    - tests/scripts/test-security-gate.sh
-
-  skill-frontmatter:
-    - skills/*/SKILL.md
-
-  hook-preflight:
-    - scripts/validate-hook-preflight.sh
-    - hooks/**
-
-  manifest-versions-match:
-    - .claude-plugin/marketplace.json
-    - .claude-plugin/plugin.json
+  verdict-contract-corpus:
+    - schemas/verdict.v2.schema.json
+    - scripts/check-verdict-contract-corpus.sh
+    - skills/validate/scripts/validate.py
+    - cli/internal/verdictcheck/**
+    - tests/fixtures/verdict-contract/**
 
   contract-compatibility:
     - scripts/check-contract-compatibility.sh
     - schemas/**
     - docs/contracts/**
+    - docs/documentation-index.md
 
-  goals-validate:
+  contracts-structural-floor:
+    - scripts/check-contracts-structural-floor.sh
+    - docs/contracts/**
+    - docs/documentation-index.md
+
+  goals-denominator:
     - GOALS.md
     - goals-affects-files.yaml
     - cli/internal/goals/**
-
-  codex-parity-drift:
-    - skills-codex/**
-    - skills-codex-overrides/**
-    - scripts/check-codex-parity-drift.sh
-
-  install-smoke:
-    - scripts/install*.sh
-    - tests/install/test-install-smoke.sh
-
-
-  eval-workbench-verify:
-    - evals/**
-    - scripts/check-eval-workbench.sh
-
-  state-path-resolver-coverage:
-    - cli/internal/paths/**
-    - lib/ao-paths.sh
-    - scripts/check-paths-resolver-coverage.sh
+    - cli/internal/commands/goals/**

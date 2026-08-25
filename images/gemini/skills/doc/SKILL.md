@@ -19,7 +19,6 @@ context:
   sections:
     exclude:
     - HISTORY
-  intel_scope: topic
 metadata:
   capabilities: [doc]
   effects: [write_documentation]

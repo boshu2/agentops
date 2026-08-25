@@ -22,7 +22,6 @@ context:
   sections:
     exclude:
     - HISTORY
-  intel_scope: topic
 metadata:
   capabilities: [workflow_builder]
   effects: [write_workflow_script]

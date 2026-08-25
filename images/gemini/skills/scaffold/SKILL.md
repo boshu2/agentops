@@ -18,7 +18,6 @@ context:
   sections:
     exclude:
     - HISTORY
-  intel_scope: topic
 metadata:
   capabilities: [scaffold]
   effects: [write_project_files]

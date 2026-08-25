@@ -182,5 +182,5 @@ The formula hasn't changed since October 2025: write things down, organize them,
 
 - [Philosophy](philosophy.md) — The five production-learned principles in detail
 - [How It Works](how-it-works.md) — Brownian Ratchet, Ralph Wiggum Pattern
-- [Knowledge Flywheel](knowledge-flywheel.md) — The extraction and compounding pipeline
+- [Knowledge Flywheel](knowledge-flywheel.md) — Design note for the optional Learn loop (schemas exist; the reducer was never implemented)
 - [README](https://github.com/boshu2/agentops/blob/main/README.md) — Quick start and product overview

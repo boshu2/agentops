@@ -27,7 +27,6 @@ context:
     exclude:
     - HISTORY
     - TASK
-  intel_scope: topic
 output_contract: skills/research/schemas/findings.json
 ---
 # Research
