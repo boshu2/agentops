@@ -297,7 +297,12 @@ if (DRY_RUN) {
 // observed, never fed back into a gate inside this run.
 const r4Run = `bdd-foundry-${RUN_TAG}`
 const beadifyGreen = passed.length > 0 && cycleFree && uncovered.length === 0
-const escapeDetected = beadifyGreen && !clears
+// The DOWNSTREAM gate is exactly the two checks the beadify gate cannot run: the
+// cross-family validate score and the mechanical drift-guard. (`clears` above ANDs those
+// with the beadify conditions to authorize the tracker write; naming them separately here
+// keeps the reported escape precise about which gate refused.)
+const downstreamGreen = score >= SCORE_THRESHOLD && driftOk
+const escapeDetected = beadifyGreen && !downstreamGreen
 const escapeReason = !escapeDetected
   ? null
   : !driftOk
@@ -306,7 +311,7 @@ const escapeReason = !escapeDetected
 const escape = {
   run: r4Run,
   upstream_beadify_gate: beadifyGreen ? 'CONFIRMED' : 'REFUTED',
-  downstream_validate_gate: clears ? 'CONFIRMED' : 'REFUTED',
+  downstream_validate_gate: downstreamGreen ? 'CONFIRMED' : 'REFUTED',
   is_escape: escapeDetected,
   reason: escapeReason,
 }
