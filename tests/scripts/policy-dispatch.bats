@@ -196,6 +196,12 @@ telemetry_lines() {
   [[ "$output" == *"core.verdicts:hand-edit"* ]]
 }
 
+@test "FIRE deny: perl -pibak bundled in-place cluster with attached backup extension blocks" {
+  run run_dispatch Bash command "perl -pibak -e 's/FAIL/PASS/' .agents/ao/verdicts/sha256/abc123.json"
+  [ "$status" -eq 2 ]
+  [[ "$output" == *"core.verdicts:hand-edit"* ]]
+}
+
 @test "FIRE deny: rm of a verdict blocks" {
   run run_dispatch Bash command "rm -f .agents/ao/verdicts/sha256/abc123.json"
   [ "$status" -eq 2 ]

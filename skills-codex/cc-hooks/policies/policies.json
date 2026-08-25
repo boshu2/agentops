@@ -96,7 +96,7 @@
             "Bash"
           ],
           "field": "command",
-          "pattern": "((^|[;&|][[:space:]]*)sed[[:space:]]+([^;&|]*[[:space:]])?-i[^[:space:]]*[[:space:]][^;&|]*\\.agents/ao/verdicts/)|((^|[;&|][[:space:]]*)perl[[:space:]]+([^;&|]*[[:space:]])?-(p|n)?i(\\.[^[:space:]]*)?[[:space:]][^;&|]*\\.agents/ao/verdicts/)|((^|[;&|][[:space:]]*)(rm|unlink|shred)[[:space:]][^;&|]*\\.agents/ao/verdicts/)"
+          "pattern": "((^|[;&|][[:space:]]*)sed[[:space:]]+([^;&|]*[[:space:]])?-i[^[:space:]]*[[:space:]][^;&|]*\\.agents/ao/verdicts/)|((^|[;&|][[:space:]]*)perl[[:space:]]+([^;&|]*[[:space:]])?-(p|n)?i[^[:space:]]*[[:space:]][^;&|]*\\.agents/ao/verdicts/)|((^|[;&|][[:space:]]*)(rm|unlink|shred)[[:space:]][^;&|]*\\.agents/ao/verdicts/)"
         },
         {
           "tools": [
