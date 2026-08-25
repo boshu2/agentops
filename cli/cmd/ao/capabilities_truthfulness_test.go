@@ -34,11 +34,11 @@ func TestTruthfulnessSixCommandSliceReportsRealContracts(t *testing.T) {
 		exit    map[string]string
 	}{
 		{"ao version", "arbitrary", "text", "pure", map[string]string{"0": "success", "1": "failure"}},
-		{"ao redact", "no-args", "text", "pure", map[string]string{"0": "success", "1": "failure"}},
+		{"ao capabilities", "none", "structured", "pure", map[string]string{"0": "success", "1": "failure"}},
 		{"ao status", "arbitrary", "text", "filesystem,clock", map[string]string{"0": "success", "1": "failure"}},
 		{"ao doctor", "no-args", "none", "filesystem,process,network,environment,clock", map[string]string{"0": "success", "1": "failure"}},
 		{"ao gate check", "no-args", "text", "filesystem,process,environment,clock", map[string]string{"0": "success", "1": "failure", "2": "invalid-configuration"}},
-		{"ao eval run", "exact", "text", "filesystem,process,environment,clock", map[string]string{"0": "success", "1": "failure"}},
+		{"ao config", "none", "text", "filesystem,environment", map[string]string{"0": "success", "1": "failure"}},
 	}
 	for _, tc := range cases {
 		t.Run(tc.path, func(t *testing.T) {
@@ -78,16 +78,16 @@ func TestTruthfulnessVersionExitCodesObserved(t *testing.T) {
 // a runnable command with no attached contract must report unknown args,
 // unknown effects, and absent (null) exit codes.
 func TestTruthfulnessUncontractedCommandsAreHonestlyUnknown(t *testing.T) {
-	// eval compare is runnable (RunE) and carries no CommandContract.
-	entry := capabilityEntry(t, "ao eval compare")
+	// doctor ls is runnable (RunE) and carries no CommandContract.
+	entry := capabilityEntry(t, "ao doctor ls")
 	if entry.Args != "unknown" {
-		t.Errorf("uncontracted eval compare args = %q, want %q", entry.Args, "unknown")
+		t.Errorf("uncontracted doctor ls args = %q, want %q", entry.Args, "unknown")
 	}
 	if entry.Effects != "unknown" {
-		t.Errorf("uncontracted eval compare effects = %q, want %q", entry.Effects, "unknown")
+		t.Errorf("uncontracted doctor ls effects = %q, want %q", entry.Effects, "unknown")
 	}
 	if entry.ExitCodes != nil {
-		t.Errorf("uncontracted eval compare exit_codes = %v, want nil (no fabricated {0,1})", entry.ExitCodes)
+		t.Errorf("uncontracted doctor ls exit_codes = %v, want nil (no fabricated {0,1})", entry.ExitCodes)
 	}
 
 	// Guard against regression to the specific fabricated placeholders across
