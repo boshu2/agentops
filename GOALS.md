@@ -62,6 +62,12 @@ This table must never be empty. A goals file with zero rows measures 0/0 and
 reports green over an empty set; `ao goals validate` now rejects that state
 (`goals-denominator` below is its executable guard).
 
+Disclosed scope: properties 1 (behavior before activity) and 7 (stop
+boundary) carry no executable gate here. Both are judged per traversal rather
+than by a repository check, and no honest deterministic check for them exists
+in this repository today. A green score below is silent about them, not
+evidence for them.
+
 | ID | Check | Weight | Description |
 |----|-------|--------|-------------|
 | go-cli-tests | `cd cli && go test ./...` | 8 | Floor under properties 2-6. The Go runtime that records check receipts, reads verdict.v2 evidence (`cli/internal/verdictcheck`), resolves state paths, and runs the deterministic check registry (`cli/internal/gates`) is asserted only by this suite. |
