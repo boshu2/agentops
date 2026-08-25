@@ -28,14 +28,15 @@
 //      single bounded repair pass and stops (the manifest is left for operator
 //      re-validation). No unbounded loop.
 //   R3 no-self-modification-in-run ✓  — no gate is added/removed/retuned mid-run.
-//   R4 escapes→slow-loop ✓  — the Validate phase emits gate-verdicts to the yield
-//      ledger: a CONFIRMED at the UPSTREAM beadify gate (the JS-computed bead set passed
-//      runnable+valid-ref, cycle-free, fully-covering), and a REFUTED at attempt 2 when the
-//      DOWNSTREAM gate (cross-family validate score / mechanical drift-guard) catches a
-//      defect the beadify gate passed. That CONFIRMED-then-REFUTED pair for the same bead+run
-//      is the escape the slow loop (ao membrane derive-checks, age-zqc) compiles into the
-//      catch. EMIT only — derive/govern stays age-cwo. See workflow-conformance-pattern.md
-//      'The R4 escape-emit step'.
+//   R4 escapes→reported ✓  — the Validate phase COMPUTES the escape signal in JS and
+//      reports it. An escape is a bead set the UPSTREAM beadify gate accepted (the
+//      JS-computed set passed runnable+valid-ref, cycle-free, fully-covering) that the
+//      DOWNSTREAM gate (cross-family validate score / mechanical drift-guard) then
+//      refuted. It lands in the run log and the returned `escape` object — nothing is
+//      written outside the run. The external sink is GONE: the retired `yield` emitter
+//      and the retired `membrane derive-checks` consumer were both removed from the `ao`
+//      CLI — see cli/cmd/ao/removed_command_hint.go. Observe only; an escape never adds,
+//      removes, or retunes a gate inside this run (that is R3's floor).
 //   R5 orchestrator-routes-never-reasons ✓  — every generative move is a dispatched
 //      agent executing the behavior-first-planning skill; the script body only parses
 //      inputs, computes the deterministic gates, and routes on the verdicts.
@@ -43,7 +44,7 @@
 export const meta = {
   name: 'bdd-foundry',
   description: 'Behavior-first planning: intent → Gherkin behaviors → failing acceptance tests (EXECUTED red) → spec → acceptance-gated bead DAG → independent cross-family validation BEFORE tracker write. No runnable acceptance test, no bead. Thin orchestrator over the behavior-first-planning skill.',
-  whenToUse: 'When a feature/spec deserves rigorous planning and the beads must be genuinely crank-ready — each carrying a runnable acceptance test that defines "done". The behavior-first successor to plan-foundry: fixes the spec-first failure where beads ship with no done-criteria (the 3/10 problem). Triggers — "bdd-foundry", "plan behavior-first", "acceptance-first planning". Holdout grading per the external measurement register (judges pull holdout scenarios at validate time; implementing lanes never see them — ids deliberately not listed here).',
+  whenToUse: 'When a feature/spec deserves rigorous planning and the beads must be genuinely crank-ready — each carrying a runnable acceptance test that defines "done". The behavior-first successor to plan-foundry: fixes the spec-first failure where beads ship with no done-criteria (the 3/10 problem). Triggers — "bdd-foundry", "plan behavior-first", "acceptance-first planning". Validation grades the proposed bead set against the run's own frozen scenarios — there is no external holdout register to pull from.',
   phases: [
     { title: 'Behaviors', detail: 'skill phase 1 → frozen Gherkin (happy+edge+error), cross-family adversarial gap-check, dispositioned' },
     { title: 'AcceptanceTests', detail: 'skill phase 2 → runnable FAILING tests; conductor RUNS the suite and verifies red (deterministic gate)' },
@@ -246,7 +247,7 @@ await codexPass(
   `Independently grade the PROPOSED bead set in ${DIR}/beads-manifest.md against ${DIR}/behaviors.md. For each bead: is the acceptance a CONCRETE INVOCABLE test (not prose, not "see spec")? Output 'X/N crank-ready', list the thin ones, and the single biggest systemic gap. Write to ${DIR}/validate-codex.md.`,
   `${DIR}/validate-codex.md`, 'Validate:codex')
 const verdict = await agent(
-  `${REGISTER}\nPHASE 5 — INDEPENDENT VALIDATION (you did NOT write these beads; they are NOT in the tracker yet). Read ${DIR}/beads-manifest.md, ${DIR}/behaviors.md, and the cross-family pass ${DIR}/validate-codex.md (if absent, say so). Conductor ground truth (do not re-derive, do audit): coverage holes=[${uncovered.join(',') || 'none'}], cycle_free=${cycleFree}, red-run=${redrun.failing}r/${redrun.passing}g. Pull holdout grading scenarios via \`ao scenario\` if available and grade against them; report which you used. Verify each bead's acceptance is invocable (spot-run at least 2). Score crank-readiness 0-1 and name the biggest gap.`,
+  `${REGISTER}\nPHASE 5 — INDEPENDENT VALIDATION (you did NOT write these beads; they are NOT in the tracker yet). Read ${DIR}/beads-manifest.md, ${DIR}/behaviors.md, and the cross-family pass ${DIR}/validate-codex.md (if absent, say so). Conductor ground truth (do not re-derive, do audit): coverage holes=[${uncovered.join(',') || 'none'}], cycle_free=${cycleFree}, red-run=${redrun.failing}r/${redrun.passing}g. Grade against the in-run ground truth you were handed: the FROZEN scenarios in ${DIR}/behaviors.md ARE the definition of done for this run — there is no external holdout set to pull. Verify each bead's acceptance is invocable (spot-run at least 2). Score crank-readiness 0-1 and name the biggest gap.`,
   { label: 'validate:judge', phase: 'Validate', schema: VALIDATE_SCHEMA })
 const score = (verdict && verdict.score) || 0
 // THE MECHANICAL DRIFT-GUARD (R1) — each ACCEPTANCE command must RESOLVE TO EXACTLY ONE
@@ -271,51 +272,59 @@ if (DRY_RUN) {
   log(`verdict ${score} below threshold ${SCORE_THRESHOLD} (or gate fail) — beads NOT written; manifest repaired for operator review`)
 }
 
-// ---- R4 escapes→slow-loop — EMIT only (the derive/govern half is age-cwo).
-// The yield ledger pairs an UPSTREAM CONFIRMED (the JS-computed beadify gate accepted the
-// bead set) with a DOWNSTREAM REFUTED at a higher attempt when the cross-family validate
-// score or the mechanical drift-guard catches a defect the beadify gate passed. That
-// CONFIRMED→REFUTED pair for the same bead+run is what `ao membrane derive-checks` (age-zqc)
-// surfaces and compiles into the check that would have caught it. The gate-verdict body is
-// COMMIT-BOUND (ao validates pawl_verdict_ref + head_sha ≥7 + mode + author_family), so the
-// emit agent captures the run's current HEAD as the sha. Skipped under DRY_RUN (pure
-// verification — no persistent-state mutation). EMIT only; never derive or tune a gate (R3).
-const r4Bead = `bdd-foundry-${RUN_TAG}`
+// ---- R4 escapes → the run's own result (computed here, emitted nowhere) ------
+// An ESCAPE is a bead set the UPSTREAM beadify gate accepted (JS-computed: runnable +
+// valid scenario_ref, cycle-free, fully-covering) that the DOWNSTREAM gate then refuted
+// (cross-family validate score below threshold, or the mechanical drift-guard). That
+// pairing is the signal worth reporting: a defect class the cheap upstream gate cannot see.
+//
+// It is COMPUTED here and reported; it is NOT written anywhere outside this run. Earlier
+// versions told the agent to invoke the retired `yield emit gate-verdict ...` verb so
+// the retired `membrane derive-checks` verb could compile the escape into a new check.
+// Both were removed (cli/cmd/ao/removed_command_hint.go — yield: "AgentOps no longer
+// controls throughput budgets"; membrane: "admission was removed"), so that instruction
+// failed on every run AND the only consumer of what it wrote no longer exists.
+// The live `provenance add` verb is not a substitute: its flag surface carries no
+// disposition and no attempt (both would have to be smuggled into node-id strings), and it
+// silently appends a hash-chained row to the CALLER's docs/provenance/ledger.jsonl — a
+// planning conveyor must not mutate the caller's audit ledger to record an observation
+// nothing reads. Per the anti-ceremony rule (name the consumer or do not create the
+// artifact), the observation stays where a caller actually reads it: the log line below
+// and the returned `escape` object.
+//
+// Because nothing is persisted, DRY_RUN no longer has to skip this step — a verification
+// run now reports the same escape signal as a live one. R3 still holds: an escape is
+// observed, never fed back into a gate inside this run.
+const r4Run = `bdd-foundry-${RUN_TAG}`
 const beadifyGreen = passed.length > 0 && cycleFree && uncovered.length === 0
-// pairGuard (optional) is the orphan-escape guard for the downstream REFUTED@2: emit is
-// fail-open observability, so the orchestrator cannot branch on a prior emit's exit code
-// (the agent returns text, not a status). The robust place to prevent an orphaned escape
-// (a REFUTED@2 with no paired CONFIRMED@1, which DetectEscapes would silently drop) is the
-// emit layer itself — the agent re-asserts the attempt-1 CONFIRMED before the REFUTED, and
-// `ao yield emit` is append-idempotent-safe to re-run. (Strict improvement over the
-// operating-loop.js reference idiom; backport candidate.)
-const emitVerdict = (disposition, attempt, ctx, note, label, pairGuard) => agent(
-  `${REGISTER}\nR4 gate-verdict (workflow-side EMIT only). ${note}\nDo exactly this, nothing else:${pairGuard ? ` (0) ${pairGuard}` : ''} (1) capture the current commit with \`SHA=$(git rev-parse HEAD)\`; (2) run\n  ao yield emit gate-verdict --bead ${JSON.stringify(r4Bead)} --run ${JSON.stringify(r4Bead)} --json '{"difficulty":2,"pawl_verdict_ref":{"bead_id":${JSON.stringify(r4Bead)},"head_sha":"'"$SHA"'"},"disposition":"${disposition}","head_sha":"'"$SHA"'","attempt":${attempt},"mode":"deterministic","author_context_id":"${ctx}","refuter_families":[],"author_family":"bdd-foundry-gate","cross_family":false,"author_ne_reviewer":true,"evidence_present":true}'\nReturn the command's exit code (0 = appended). Do NOT run \`ao membrane derive-checks\` or otherwise build/tune the sink — that is the slow loop's job (age-cwo).`,
-  { label, phase: 'Validate' })
-let escapeEmitted = false
-if (DRY_RUN) {
-  log(`R4: DRY-RUN — gate-verdict emit skipped (no persistent-state mutation in verification mode)`)
+// The DOWNSTREAM gate is exactly the two checks the beadify gate cannot run: the
+// cross-family validate score and the mechanical drift-guard. (`clears` above ANDs those
+// with the beadify conditions to authorize the tracker write; naming them separately here
+// keeps the reported escape precise about which gate refused.)
+const downstreamGreen = score >= SCORE_THRESHOLD && driftOk
+const escapeDetected = beadifyGreen && !downstreamGreen
+const escapeReason = !escapeDetected
+  ? null
+  : !driftOk
+    ? `drift-guard REFUTED (${(drift && drift.failures || []).length} acceptance command(s) did not resolve 1:1)`
+    : `cross-family validate score ${score} < ${SCORE_THRESHOLD}`
+const escape = {
+  run: r4Run,
+  upstream_beadify_gate: beadifyGreen ? 'CONFIRMED' : 'REFUTED',
+  downstream_validate_gate: downstreamGreen ? 'CONFIRMED' : 'REFUTED',
+  is_escape: escapeDetected,
+  reason: escapeReason,
+}
+if (escapeDetected) {
+  log(`R4 ESCAPE (${r4Run}): the beadify gate ACCEPTED this bead set and the downstream validate phase REFUTED it — ${escapeReason}. The upstream gate cannot see this defect class; hardening it is operator work, deliberately NOT done inside this run (R3).`)
 } else if (beadifyGreen) {
-  // Upstream confirm: the JS-computed beadify gate accepted the whole bead set.
-  await emitVerdict('CONFIRMED', 1, 'bdd-foundry-beadify-gate', `The beadify gate accepted the bead set for ${r4Bead} (runnable+valid-ref, cycle-free, fully covering) — record the upstream CONFIRM.`, 'r4:confirm')
-  if (!clears) {
-    // Downstream catch of an upstream-confirmed unit = an ESCAPE. Emit REFUTED at attempt 2.
-    const why = !driftOk ? `drift-guard REFUTED (${(drift && drift.failures || []).length} acceptance command(s) did not resolve 1:1)` : `cross-family validate score ${score} < ${SCORE_THRESHOLD}`
-    await emitVerdict('REFUTED', 2, 'bdd-foundry-validate', `The beadify gate accepted the bead set but the DOWNSTREAM validate phase caught a defect: ${why}. This is an escape — a unit the upstream beadify gate CONFIRMED that a stricter downstream gate REFUTED at a higher attempt; the CONFIRMED→REFUTED pair is what the slow loop consumes.`, 'r4:escape-emit', `ORPHAN-ESCAPE GUARD: first confirm the attempt-1 CONFIRMED gate-verdict for bead ${JSON.stringify(r4Bead)} run ${JSON.stringify(r4Bead)} is already in the yield ledger (it was just emitted upstream). If it is ABSENT (the upstream emit failed), re-emit that exact attempt-1 CONFIRMED body FIRST so this REFUTED@2 is never an orphan with no pair; re-emitting is append-safe.`)
-    escapeEmitted = true
-    log(`R4: escape emitted — the downstream validate phase caught a defect the beadify gate passed (${why}); REFUTED gate-verdict (attempt 2) paired with the attempt-1 CONFIRMED for ${r4Bead}. Slow loop (ao membrane derive-checks --run ${r4Bead}) derives the catch.`)
-  } else {
-    log(`R4: no escape — beadify gate accepted and the validate phase cleared for ${r4Bead}; single upstream CONFIRM recorded.`)
-  }
+  log(`R4: no escape (${r4Run}) — the beadify gate accepted the bead set and the validate phase cleared it.`)
 } else {
-  // Beadify gate did NOT fully accept (coverage holes / cycles) — a direct fail, not an
-  // escape (no upstream CONFIRM to pair against). Record the downstream REFUTED at attempt 1
-  // so the deterministic catch still counts.
-  await emitVerdict('REFUTED', 1, 'bdd-foundry-validate', `The beadify gate did NOT accept the bead set for ${r4Bead} (coverage holes / cycles) — a direct fail, not an escape.`, 'r4:refute')
+  log(`R4: no escape (${r4Run}) — the beadify gate itself REFUTED the bead set (coverage holes / cycles / nothing gate-passed); a direct fail is not an escape.`)
 }
 
 return {
-  escapeEmitted,
+  escapeDetected, escape,
   verdict, score_threshold: SCORE_THRESHOLD, dry_run: DRY_RUN, tracker_written: !DRY_RUN && score >= SCORE_THRESHOLD && cycleFree && uncovered.length === 0 && driftOk, drift_guard: driftOk, drift_failures: (drift && drift.failures) || [],
   gate: { passed: passed.length, rejected: rejected.map((b) => b.title), coverage_holes: uncovered, cycle_free: cycleFree },
   red_run: redrun, scenarios: scenarioCount, gaps_dispositioned: dispositions.length, codex_gap_pass_ok: gapsOk,
