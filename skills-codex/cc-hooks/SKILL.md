@@ -208,9 +208,10 @@ rather than the repo: a verdict that no longer hashes to its own filename is
 forged evidence, and nothing above the tool-call altitude catches it. Reading
 the store is untouched — `cat`/`ls`/`jq`/`rg`/`diff` over a verdict, and
 copying one OUT for inspection, never fire; only writes landing IN the store
-do. Deliberately **not** covered, and disclosed rather than implied: in-place
-editors (`sed -i`, `perl -pi`) and `rm`. Anchoring those without firing on
-reads needs its own regex work and its own tests.
+do — including in-place editors (`sed -i`, `perl -pi`/`-ni`) and deleters
+(`rm`, `unlink`, `shred`), matched as flag-tokens so a read whose script text
+merely contains `-i` stays silent (bats-proven both directions). Remaining
+disclosed gap: the noclobber override redirect (`>|`).
 
 **How it reaches users — every install path delivers hooks:**
 

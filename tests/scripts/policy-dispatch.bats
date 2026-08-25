@@ -184,6 +184,36 @@ telemetry_lines() {
   [ "$status" -eq 2 ]
 }
 
+@test "FIRE deny: sed -i in-place edit of a verdict blocks" {
+  run run_dispatch Bash command "sed -i '' 's/FAIL/PASS/' .agents/ao/verdicts/sha256/abc123.json"
+  [ "$status" -eq 2 ]
+  [[ "$output" == *"core.verdicts:hand-edit"* ]]
+}
+
+@test "FIRE deny: perl -pi in-place edit of a verdict blocks" {
+  run run_dispatch Bash command "perl -pi -e 's/FAIL/PASS/' /repo/.agents/ao/verdicts/sha256/abc123.json"
+  [ "$status" -eq 2 ]
+  [[ "$output" == *"core.verdicts:hand-edit"* ]]
+}
+
+@test "FIRE deny: rm of a verdict blocks" {
+  run run_dispatch Bash command "rm -f .agents/ao/verdicts/sha256/abc123.json"
+  [ "$status" -eq 2 ]
+  [[ "$output" == *"core.verdicts:hand-edit"* ]]
+}
+
+@test "PASS allow: sed READ of a verdict (script text contains -input, no -i flag) stays silent" {
+  run run_dispatch Bash command "sed 's/-input//' .agents/ao/verdicts/sha256/abc123.json"
+  [ "$status" -eq 0 ]
+  [ -z "$output" ]
+}
+
+@test "PASS allow: rm elsewhere while a verdict path is only mentioned after && stays silent" {
+  run run_dispatch Bash command "rm -f /tmp/scratch.json && ls .agents/ao/verdicts/"
+  [ "$status" -eq 0 ]
+  [ -z "$output" ]
+}
+
 @test "FIRE deny: tee into the verdicts store blocks" {
   run run_dispatch Bash command "cat draft.json | tee .agents/ao/verdicts/sha256/abc123.json"
   [ "$status" -eq 2 ]
