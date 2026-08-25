@@ -7,8 +7,8 @@
 //     orchestrator owns: the deterministic gates (red-run, the JS-computed beadify gate,
 //     the drift-guard), the cross-family validation, the tracker-write-on-clearing-verdict,
 //     and the operational guards (dir-misaim, base-snapshot, args de-stringify). It gates
-//     and routes; it never reasons about the work. See docs/architecture/
-//     workflow-conformance-pattern.md and control-loop-model.md §6.
+//     and routes; it never reasons about the work. (The conformance-pattern and
+//     control-loop-model docs were retired; R1-R5 below are self-describing.)
 //
 // History (incident patches preserved as orchestrator-level guards): v8 adversarial
 // gap dimensions (now in the skill); v7 sentinel-slot guard; v6 args de-stringify;
@@ -16,7 +16,7 @@
 // CANONICAL: workflows/bdd-foundry.js (git-tracked); project-local .claude/workflows/ is a runtime link minted by `ao workflows link`
 //
 // ─────────────────────────────────────────────────────────────────────────────
-// §6 CONFORMANCE (docs/architecture/control-loop-model.md §6 — loop-model-compliant)
+// §6 CONFORMANCE (per the retired control-loop-model doc §6 — loop-model-compliant)
 //   R1 deterministic-gates ✓  — every promotion reads ground truth the orchestrator
 //      did not author: the EXECUTED red-run (REDRUN_SCHEMA), the JS-computed beadify
 //      gate (runnable shape + valid scenario_ref + coverage + cycle-free), and the
@@ -44,7 +44,7 @@
 export const meta = {
   name: 'bdd-foundry',
   description: 'Behavior-first planning: intent → Gherkin behaviors → failing acceptance tests (EXECUTED red) → spec → acceptance-gated bead DAG → independent cross-family validation BEFORE tracker write. No runnable acceptance test, no bead. Thin orchestrator over the behavior-first-planning skill.',
-  whenToUse: 'When a feature/spec deserves rigorous planning and the beads must be genuinely crank-ready — each carrying a runnable acceptance test that defines "done". The behavior-first successor to plan-foundry: fixes the spec-first failure where beads ship with no done-criteria (the 3/10 problem). Triggers — "bdd-foundry", "plan behavior-first", "acceptance-first planning". Validation grades the proposed bead set against the run's own frozen scenarios — there is no external holdout register to pull from.',
+  whenToUse: 'When a feature/spec deserves rigorous planning and the beads must be genuinely crank-ready — each carrying a runnable acceptance test that defines "done". The behavior-first successor to plan-foundry: fixes the spec-first failure where beads ship with no done-criteria (the 3/10 problem). Triggers — "bdd-foundry", "plan behavior-first", "acceptance-first planning". Validation grades the proposed bead set against the run's own frozen scenarios, plus any holdout scenarios the caller supplies from the external measurement register.',
   phases: [
     { title: 'Behaviors', detail: 'skill phase 1 → frozen Gherkin (happy+edge+error), cross-family adversarial gap-check, dispositioned' },
     { title: 'AcceptanceTests', detail: 'skill phase 2 → runnable FAILING tests; conductor RUNS the suite and verifies red (deterministic gate)' },
@@ -247,7 +247,7 @@ await codexPass(
   `Independently grade the PROPOSED bead set in ${DIR}/beads-manifest.md against ${DIR}/behaviors.md. For each bead: is the acceptance a CONCRETE INVOCABLE test (not prose, not "see spec")? Output 'X/N crank-ready', list the thin ones, and the single biggest systemic gap. Write to ${DIR}/validate-codex.md.`,
   `${DIR}/validate-codex.md`, 'Validate:codex')
 const verdict = await agent(
-  `${REGISTER}\nPHASE 5 — INDEPENDENT VALIDATION (you did NOT write these beads; they are NOT in the tracker yet). Read ${DIR}/beads-manifest.md, ${DIR}/behaviors.md, and the cross-family pass ${DIR}/validate-codex.md (if absent, say so). Conductor ground truth (do not re-derive, do audit): coverage holes=[${uncovered.join(',') || 'none'}], cycle_free=${cycleFree}, red-run=${redrun.failing}r/${redrun.passing}g. Grade against the in-run ground truth you were handed: the FROZEN scenarios in ${DIR}/behaviors.md ARE the definition of done for this run — there is no external holdout set to pull. Verify each bead's acceptance is invocable (spot-run at least 2). Score crank-readiness 0-1 and name the biggest gap.`,
+  `${REGISTER}\nPHASE 5 — INDEPENDENT VALIDATION (you did NOT write these beads; they are NOT in the tracker yet). Read ${DIR}/beads-manifest.md, ${DIR}/behaviors.md, and the cross-family pass ${DIR}/validate-codex.md (if absent, say so). Conductor ground truth (do not re-derive, do audit): coverage holes=[${uncovered.join(',') || 'none'}], cycle_free=${cycleFree}, red-run=${redrun.failing}r/${redrun.passing}g. Grade against the in-run ground truth you were handed: the FROZEN scenarios in ${DIR}/behaviors.md ARE the definition of done for this run; if the caller supplied holdout scenarios from the external measurement register, grade against those too and report which you used. Verify each bead's acceptance is invocable (spot-run at least 2). Score crank-readiness 0-1 and name the biggest gap.`,
   { label: 'validate:judge', phase: 'Validate', schema: VALIDATE_SCHEMA })
 const score = (verdict && verdict.score) || 0
 // THE MECHANICAL DRIFT-GUARD (R1) — each ACCEPTANCE command must RESOLVE TO EXACTLY ONE

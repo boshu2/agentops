@@ -26,7 +26,6 @@ context:
   window: inherit
   intent:
     mode: task
-  intel_scope: none
 metadata:
   capabilities: [automation_shape_routing]
   effects: []

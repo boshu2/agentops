@@ -19,7 +19,6 @@ context:
     - HISTORY
     - INTEL
     - TASK
-  intel_scope: none
 metadata:
   capabilities: [converter]
   effects: [write_converted_skill_projection]

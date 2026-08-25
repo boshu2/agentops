@@ -50,7 +50,7 @@
               },
               "additionalProperties": false
             },
-            "intel_scope": { "type": "string", "enum": ["topic", "full", "none"] }
+            "intel_scope": { "type": "string", "enum": ["topic", "full", "none"], "description": "Deprecated and ignored — no reader exists; retained only so old-shape third-party skills keep validating." }
           },
           "additionalProperties": false
         }

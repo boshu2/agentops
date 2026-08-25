@@ -26,7 +26,6 @@ context:
   sections:
     exclude:
     - HISTORY
-  intel_scope: full
 output_contract: 'YYYY-MM-DD-postmortem-<topic>.md — markdown causal analysis (causal question, pinned inputs, timeline, hypotheses, counterfactuals, unknowns, experiments)'
 ---
 
