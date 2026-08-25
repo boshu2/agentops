@@ -66,19 +66,17 @@ type workflowStep struct {
 var workflowScriptPattern = regexp.MustCompile("(?:^|[\\s\"'`])(?:\\./)?((?:scripts|skills/[A-Za-z0-9._/-]+/scripts)/[A-Za-z0-9._/-]+\\.(?:sh|py))")
 
 var deferredWorkflowScripts = map[string]string{
-	"scripts/check-agents-hash-snapshot.sh":      "stateful capture/diff bracket around the Go test phase",
-	"scripts/check-applied-ood-headroom.sh":      "model-backed campaign/CI admission preflight; intentionally outside fast/full Go gate execution",
-	"scripts/check-cmd-ao-coverage.sh":           "requires the coverage profile produced by the preceding Go test step",
-	"scripts/check-eval-workbench.sh":            "requires validate.yml's prior workbench Python venv setup",
-	"scripts/check-json-marshal-checked.sh":      "requires the workflow's just-installed errcheck toolchain; runs as its own blocking correctness step outside the Go gate",
-	"scripts/check-outcomes-holdout-leak.sh":     "validate.yml derives a dynamic payload list; needs native input modeling before delegation",
-	"scripts/emit-deterministic-catch.sh":        "CI-only telemetry emitter run with `|| true` on gate FAIL; never blocking, intentionally outside the Go gate",
-	"scripts/eval-agent-harness.sh":              "validate.yml asserts dry-run JSON shape after invoking the script",
-	"scripts/release-smoke-test.sh":              "workflow uses --skip-build after a prior build; standalone form should become a composed/native check",
-	"scripts/security-gate.sh":                   "requires validate.yml's security toolchain setup and scanner policy context",
-	"scripts/skill-eval.sh":                      "changed-skill scoped gate with pinned ms toolchain/cache setup",
-	"scripts/test-agentops-contract-canaries.sh": "requires validate.yml's canary toolchain setup and artifact context",
-	"scripts/validate-provenance-ledger.sh":      "provenance ledger --gate verifier needs AO_BIN + the workflow's prior-step ledger state; runs in its own job",
+	"scripts/check-agents-hash-snapshot.sh":  "stateful capture/diff bracket around the Go test phase",
+	"scripts/check-cmd-ao-coverage.sh":       "requires the coverage profile produced by the preceding Go test step",
+	"scripts/check-eval-workbench.sh":        "requires validate.yml's prior workbench Python venv setup",
+	"scripts/check-json-marshal-checked.sh":  "requires the workflow's just-installed errcheck toolchain; runs as its own blocking correctness step outside the Go gate",
+	"scripts/check-outcomes-holdout-leak.sh": "validate.yml derives a dynamic payload list; needs native input modeling before delegation",
+	"scripts/emit-deterministic-catch.sh":    "CI-only telemetry emitter run with `|| true` on gate FAIL; never blocking, intentionally outside the Go gate",
+	"scripts/eval-agent-harness.sh":          "validate.yml asserts dry-run JSON shape after invoking the script",
+	"scripts/release-smoke-test.sh":          "workflow uses --skip-build after a prior build; standalone form should become a composed/native check",
+	"scripts/security-gate.sh":               "requires validate.yml's security toolchain setup and scanner policy context",
+	"scripts/skill-eval.sh":                  "changed-skill scoped gate with pinned ms toolchain/cache setup",
+	"scripts/validate-provenance-ledger.sh":  "provenance ledger --gate verifier needs AO_BIN + the workflow's prior-step ledger state; runs in its own job",
 }
 
 // RegistryWorkflowCoverage returns workflow-vs-registry script coverage.

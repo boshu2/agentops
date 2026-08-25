@@ -79,6 +79,22 @@ func TestRemovedCommandHint_TombstonedVerbs(t *testing.T) {
 				"`ao provenance` records",
 			},
 		},
+		{
+			verb: "eval",
+			wantFrag: []string{
+				`"eval" was removed`,
+				"docs/MIGRATION.md",
+				"repository-selected evaluator",
+			},
+		},
+		{
+			verb: "redact",
+			wantFrag: []string{
+				`"redact" was removed`,
+				"docs/MIGRATION.md",
+				"never existed",
+			},
+		},
 	}
 	for _, tc := range cases {
 		t.Run(tc.verb, func(t *testing.T) {
@@ -138,11 +154,15 @@ func TestRemovedVerbsHaveMigrationRows(t *testing.T) {
 // TestHintedVerbsAreNotLiveCommands proves no hinted verb resolves to a live
 // registered command (name or alias) on the real root — a hint for a live verb
 // would either be suppressed at runtime (stale map) or, worse, mislabel a
-// usage error as removal. `eval` is the canonical trap: pruned in 3.2, it
-// returned in 3.3 as a live command, so it must never carry a removal hint.
+// usage error as removal. `eval` is the canonical trap in both directions:
+// pruned in 3.2, briefly live in 3.3, and retired again once the whole offline
+// eval surface was found unconsumed — so it must be hinted AND absent from the
+// tree, never one without the other.
 func TestHintedVerbsAreNotLiveCommands(t *testing.T) {
-	if _, hinted := removedCommands["eval"]; hinted {
-		t.Errorf(`"eval" is a live 3.3 command and must not carry a removal hint`)
+	for _, verb := range []string{"eval", "redact"} {
+		if _, hinted := removedCommands[verb]; !hinted {
+			t.Errorf("retired verb %q must carry a removal hint", verb)
+		}
 	}
 	live := map[string]string{}
 	for _, c := range rootCmd.Commands() {

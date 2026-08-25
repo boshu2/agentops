@@ -3,7 +3,11 @@
 // §6 manifest-checkable gates (1/6/7/8/9), §7 content-addressing,
 // and (rc3 addition) verdict-driven corpus mutation.
 //
-// Distinct from cli/internal/eval (legacy deterministic-suite RunRecord).
+// It has no in-repository Go consumer since the `ao eval` command surface was
+// retired unconsumed; what still binds it is schemas/outcomes-rubric.v1.schema.json,
+// whose shape rubric_schema_test.go pins to rubric.go, and the shell validator
+// scripts/validate-outcomes-rubric.sh. Retire the package only together with
+// that schema and validator.
 package evalsubstrate
 
 import (

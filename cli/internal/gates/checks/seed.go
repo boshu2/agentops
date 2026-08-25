@@ -64,9 +64,24 @@ var (
 		"scripts/check-honest-voice.sh",
 		"tests/scripts/check-honest-voice.bats",
 	}
-	ciPolicyPaths    = []string{".github/workflows/validate.yml", "docs/CI-CD.md", "AGENTS.md"}
-	agentsDocPaths   = []string{"AGENTS.md", "docs/agent-workflow-reference.md", "docs/CI-CD.md", "docs/contracts/codex-skill-api.md", ".github/workflows/validate.yml"}
-	corpusPaths      = []string{".agents/**", "docs/canon/**", "canon/**"}
+	ciPolicyPaths  = []string{".github/workflows/validate.yml", "docs/CI-CD.md", "AGENTS.md"}
+	agentsDocPaths = []string{"AGENTS.md", "docs/agent-workflow-reference.md", "docs/CI-CD.md", "docs/contracts/codex-skill-api.md", ".github/workflows/validate.yml"}
+	// corpus.witness-dolt-jsonl-crosscheck is a HERMETIC self-test: it drives
+	// committed fixtures through cli/cmd/witness-crosscheck and asserts the
+	// detector discriminates (faithful passes, tampered fails). It never reads
+	// .agents/**, so its former corpusPaths routing ({".agents/**",
+	// "docs/canon/**", "canon/**"}) could not fire — only .agents/ao/config.yaml
+	// is tracked and docs/canon//canon/ do not exist. Routed on its real
+	// subject: the fixtures, the helper, the hash-discipline packages it reuses,
+	// and self-reference so editing the gate or its bats re-runs it.
+	witnessCrosscheckPaths = []string{
+		"tests/fixtures/witness/**",
+		"cli/cmd/witness-crosscheck/**",
+		"cli/internal/drwitness/**",
+		"cli/internal/drrebuild/**",
+		"scripts/witness-dolt-jsonl-crosscheck.sh",
+		"tests/scripts/witness-dolt-jsonl-crosscheck.bats",
+	}
 	cliContractPaths = []string{"cli/**", "docs/cli-surface.*", "scripts/check-cli-contract.sh", "scripts/check-docs-cli-snippets.sh", "scripts/generate-cli-reference.sh", "tests/cli_contract_gate.bats", "tests/cli_quality_zero_debt.bats"}
 	// Widened to docs/** (--all-docs mode): the checker no longer scans a fixed
 	// 6-file set — it scans every LIVE docs/** file (plus the pinned doctrine
@@ -363,8 +378,13 @@ func init() {
 		// (grep heuristic, no AST — same rationale as the jsonl row; graduation
 		// to blocking requires a precision detector earned in its own arc).
 		{ID: "go.atomic-write-ratchet", Tiers: gates.Full, Match: atomicWriteRatchetPaths, Blocking: false, Backing: "check-atomic-write-ratchet.sh", Args: []string{"--scope", "head"}, RepairHint: "use storage.AtomicWriteFile (temp+fsync+rename+fsync-dir) or storage.FsyncDir instead of a hand-rolled tmp+rename; advisory — see age-ratchet-lib-extraction-bv7d.9"},
-		{ID: "corpus.secret-scan", Tiers: gates.Full, Match: corpusPaths, Blocking: true, Backing: "check-corpus-secret-scan.sh"},
-		{ID: "corpus.witness-dolt-jsonl-crosscheck", Tiers: gates.Full, Match: corpusPaths, Blocking: true, Backing: "witness-dolt-jsonl-crosscheck.sh"},
+		// corpus.secret-scan was retired: it routed on corpusPaths (unroutable —
+		// the only tracked match was .agents/ao/config.yaml, which its own
+		// git-ls-files filter for *.md/*.jsonl excluded), so it scanned zero
+		// files on every run, and repository-wide credential scanning is covered
+		// by the pinned gitleaks step in validate.yml, nightly.yml, and
+		// release.yml. corpus.path-guard still guards private artifact PATHS.
+		{ID: "corpus.witness-dolt-jsonl-crosscheck", Tiers: gates.Full, Match: witnessCrosscheckPaths, Blocking: true, Backing: "witness-dolt-jsonl-crosscheck.sh"},
 
 		// final backing-script batch (PB1)
 		{ID: "always.quarantine-empty", Tiers: gates.Fast | gates.Full, Blocking: true, Backing: "check-quarantine-empty.sh"},
