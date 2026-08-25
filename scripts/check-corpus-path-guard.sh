@@ -11,7 +11,6 @@
 # we never silently pass.
 #
 # This is a PATH guard. It is DISTINCT from:
-#   - scripts/check-corpus-secret-scan.sh — the CONTENT scanner (credential patterns).
 #   - the S4 `ao corpus scan` marker registry — the marker allowlist.
 # Do NOT add a second marker/content allowlist here. PATHS ONLY.
 #

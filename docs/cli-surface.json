@@ -237,13 +237,6 @@
       "command": "provenance show",
       "coverage_status": "allowlisted",
       "kind": "leaf",
-      "reason": "Covered by generic provenance read tests."
-    },
-    {
-      "category": "public-tested",
-      "command": "provenance show",
-      "coverage_status": "allowlisted",
-      "kind": "leaf",
       "reason": "Covered by internal/commands/provenance module tests after the provenance carve-out."
     },
     {

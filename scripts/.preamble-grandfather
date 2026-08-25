@@ -29,7 +29,6 @@ scripts/build-rg.sh
 scripts/capture-repo-metrics.sh
 scripts/check-agents-hash-snapshot.sh
 scripts/check-agents-write-surfaces.sh
-scripts/check-applied-ood-headroom.sh
 scripts/check-bdd-foundry-markers.sh
 scripts/check-bead-scenario-coverage.sh
 scripts/check-bounded-contexts-drift.sh
@@ -44,7 +43,6 @@ scripts/check-contract-compatibility.sh
 scripts/check-contracts-structural-floor.sh
 scripts/check-corpus-freshness.sh
 scripts/check-corpus-path-guard.sh
-scripts/check-corpus-secret-scan.sh
 scripts/check-doc-hooks-drift.sh
 scripts/check-doc-skill-refs.sh
 scripts/check-docs-cli-snippets.sh
@@ -140,7 +138,6 @@ scripts/emit-landed-provenance.sh
 scripts/ensure-skill-tiers-rows.sh
 scripts/epic-d16-donetest.sh
 scripts/eval-agent-harness.sh
-scripts/eval-agentops.sh
 scripts/eval-membrane.sh
 scripts/export-claude-skills-to-codex.sh
 scripts/export-evidence.sh
@@ -233,7 +230,6 @@ scripts/spec-cross-reference.sh
 scripts/sweep-namespace-references.sh
 scripts/sync-skill-counts.sh
 scripts/tasks-sync.sh
-scripts/test-agentops-contract-canaries.sh
 scripts/test-ci-deterministic-gates.sh
 scripts/test-codex-native-install.sh
 scripts/test-evolve-cycle-smoke.sh

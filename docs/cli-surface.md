@@ -37,7 +37,6 @@
 | `ao provenance list` | `public-tested` | `allowlisted` | Covered by internal/commands/provenance module tests after the provenance carve-out. |
 | `ao provenance mine-session` | `public-tested` | `allowlisted` | Covered by internal/provenanceapp mine-session tests after the provenance carve-out. |
 | `ao provenance position` | `public-tested` | `allowlisted` | Covered by internal/commands/provenance module tests after the provenance carve-out. |
-| `ao provenance show` | `public-tested` | `allowlisted` | Covered by generic provenance read tests. |
 | `ao provenance show` | `public-tested` | `allowlisted` | Covered by internal/commands/provenance module tests after the provenance carve-out. |
 | `ao provenance trace` | `public-tested` | `allowlisted` | Covered by internal/commands/provenance module tests after the provenance carve-out. |
 | `ao provenance verify` | `public-tested` | `allowlisted` | Covered by internal/commands/provenance module tests after the provenance carve-out. |
