@@ -206,7 +206,10 @@ allow + record. Every fire appends one hashed guardrail-telemetry line
 `AOP_WAIVE=<policy-id>`, or a `policy-waivers` file line
 `<policy-id> <expiry-epoch>`. Missing registry or jq fails OPEN.
 
-Day-1 enforce cohort (age-wnyt, all pure-regex, high-pain):
+Enforce cohort (all pure-regex, high-pain). The first four are the day-1
+maintainer cohort (age-wnyt) — they guard *this repository's* artifacts. The
+fifth guards the **product's own invariant** and therefore fires on every
+consumer repo, not just this one:
 
 | Policy | Blocks | Routes to |
 |---|---|---|
@@ -214,6 +217,16 @@ Day-1 enforce cohort (age-wnyt, all pure-regex, high-pain):
 | `core.provenance:ledger-hand-append` | redirect/`tee`/Edit/Write onto `docs/provenance/ledger.jsonl` (hash-chained, sealed) | `ao provenance add` |
 | `core.skills:copy-into-installed` | `cp`/`rsync`/`mv` INTO `~/.claude|.codex|.gemini/skills` (dest-position enforced) | `ao skills link` |
 | `core.skills:edit-installed-copy` | Edit/Write of an installed skill copy (`file_path` only — prose can never fire it) | edit repo `skills/<name>/` |
+| `core.verdicts:hand-edit` | Edit/Write, or Bash `>`/`>>`/`tee`/`cp`/`rsync`/`mv` INTO `.agents/ao/verdicts/` (dest-position enforced) — the filename IS the SHA-256 of the content, so a hand edit breaks digest identity | re-run validation and let it persist a fresh artifact (`validate.py store-verdict`) |
+
+`core.verdicts:hand-edit` is the one policy whose subject is the *promise*
+rather than the repo: a verdict that no longer hashes to its own filename is
+forged evidence, and nothing above the tool-call altitude catches it. Reading
+the store is untouched — `cat`/`ls`/`jq`/`rg`/`diff` over a verdict, and
+copying one OUT for inspection, never fire; only writes landing IN the store
+do. Deliberately **not** covered, and disclosed rather than implied: in-place
+editors (`sed -i`, `perl -pi`) and `rm`. Anchoring those without firing on
+reads needs its own regex work and its own tests.
 
 **How it reaches users — every install path delivers hooks:**
 

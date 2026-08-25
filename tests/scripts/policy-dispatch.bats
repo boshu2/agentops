@@ -149,6 +149,102 @@ telemetry_lines() {
   [ -z "$output" ]
 }
 
+# ---------- policy (e): core.verdicts:hand-edit -----------------------------
+#
+# The USER-facing invariant, not a maintainer artifact: a verdict under
+# .agents/ao/verdicts/ is content-addressed evidence whose filename IS the
+# SHA-256 of its own canonical content. A hand edit silently breaks that
+# identity — the file keeps the old digest name while holding new bytes, so
+# every downstream consumer reads a verdict that no longer verifies.
+
+@test "FIRE deny: Write into .agents/ao/verdicts/ blocks with the digest-identity message" {
+  run run_dispatch Write file_path ".agents/ao/verdicts/sha256/abc123.json"
+  [ "$status" -eq 2 ]
+  [[ "$output" == *"core.verdicts:hand-edit"* ]]
+  [[ "$output" == *"content-addressed evidence"* ]]
+  [ "$(telemetry_lines)" -eq 1 ]
+  run jq -r '.token_class + " " + .decision' "$AGENTOPS_GUARDRAIL_TELEMETRY"
+  [ "$output" = "core.verdicts:hand-edit deny" ]
+}
+
+@test "FIRE deny: Edit of an absolute verdict path blocks" {
+  run run_dispatch Edit file_path "/Users/dev/agentops/.agents/ao/verdicts/sha256/abc123.json"
+  [ "$status" -eq 2 ]
+  [[ "$output" == *"core.verdicts:hand-edit"* ]]
+}
+
+@test "FIRE deny: >> append into a verdict file blocks" {
+  run run_dispatch Bash command "echo '{}' >> .agents/ao/verdicts/sha256/abc123.json"
+  [ "$status" -eq 2 ]
+  [[ "$output" == *"re-run validation"* ]]
+}
+
+@test "FIRE deny: > truncating redirect onto a verdict file blocks" {
+  run run_dispatch Bash command "jq '.result = \"PASS\"' in.json > .agents/ao/verdicts/sha256/abc123.json"
+  [ "$status" -eq 2 ]
+}
+
+@test "FIRE deny: tee into the verdicts store blocks" {
+  run run_dispatch Bash command "cat draft.json | tee .agents/ao/verdicts/sha256/abc123.json"
+  [ "$status" -eq 2 ]
+}
+
+@test "FIRE deny: cp of a hand-made file INTO the verdicts store blocks" {
+  run run_dispatch Bash command "cp /tmp/handmade.json .agents/ao/verdicts/sha256/abc123.json"
+  [ "$status" -eq 2 ]
+}
+
+@test "FIRE deny: mv INTO the verdicts store blocks" {
+  run run_dispatch Bash command "mv /tmp/handmade.json .agents/ao/verdicts/sha256/"
+  [ "$status" -eq 2 ]
+}
+
+@test "SILENT: reading a verdict (cat) does not fire" {
+  run run_dispatch Bash command "cat .agents/ao/verdicts/sha256/abc123.json"
+  [ "$status" -eq 0 ]
+  [ -z "$output" ]
+  [ "$(telemetry_lines)" -eq 0 ]
+}
+
+@test "SILENT: listing and jq-reading the verdicts store does not fire" {
+  run run_dispatch Bash command "ls .agents/ao/verdicts/sha256 && jq -r '.result' .agents/ao/verdicts/sha256/abc123.json"
+  [ "$status" -eq 0 ]
+  [ -z "$output" ]
+}
+
+@test "SILENT: reading a verdict and redirecting the READ elsewhere does not fire" {
+  run run_dispatch Bash command "jq . .agents/ao/verdicts/sha256/abc123.json > /tmp/pretty.json"
+  [ "$status" -eq 0 ]
+  [ -z "$output" ]
+}
+
+@test "SILENT: the sanctioned writer (validate.py store-verdict) does not fire" {
+  run run_dispatch Bash command "python3 skills/validate/scripts/validate.py store-verdict --draft draft.json --intent-source intent.md --subject-manifest manifest.json --author-context-id a --validator-context-id b --freshness-source runtime --freshness-attester-id r --scope-result PASS"
+  [ "$status" -eq 0 ]
+  [ -z "$output" ]
+}
+
+@test "SILENT: the sanctioned writer naming --verdict-dir explicitly does not fire" {
+  run run_dispatch Bash command "python3 skills/validate/scripts/validate.py store-verdict --draft draft.json --verdict-dir .agents/ao/verdicts/sha256 --scope-result PASS"
+  [ "$status" -eq 0 ]
+  [ -z "$output" ]
+}
+
+@test "SILENT: writing the intents store is allowed (only verdicts are sealed)" {
+  run run_dispatch Write file_path ".agents/ao/intents/sha256/abc123.intent"
+  [ "$status" -eq 0 ]
+  [ -z "$output" ]
+  run run_dispatch Bash command "echo '{}' > .agents/ao/intents/sha256/abc123.intent"
+  [ "$status" -eq 0 ]
+  [ -z "$output" ]
+}
+
+@test "SILENT: copying a verdict OUT of the store does not fire" {
+  run run_dispatch Bash command "cp .agents/ao/verdicts/sha256/abc123.json /tmp/inspect.json"
+  [ "$status" -eq 0 ]
+  [ -z "$output" ]
+}
+
 # ---------- plugin layout -----------------------------------------------------
 
 @test "plugin layout: dispatcher resolves ../policies/policies.json without AOP_POLICIES" {
