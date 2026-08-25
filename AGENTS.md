@@ -2,13 +2,11 @@
 
 Detailed workflow mechanics: [docs/agent-workflow-reference.md](docs/agent-workflow-reference.md).
 
-AgentOps is the operations layer for agentic engineering: a portable semantic
-integration and judgment layer that connects intent, coding agents, software
-factories, context sources, and independent validation without taking
-ownership of their state or delivery lifecycle. The topology is a
-federated integration graph; the interoperability contract is the
-semantic work-and-proof protocol; the standard path through the graph is one
-RPI traversal:
+AgentOps is the operations layer for agentic engineering: skills and evidence
+contracts that make one coding-agent change independently judgeable. Your
+tracker, Git, and coding agents keep owning work, history, and execution;
+AgentOps joins them as a federated integration graph and adds the judgment
+step, one RPI traversal at a time:
 
 ```text
 RPI -> Plan -> Implement -> fresh Validate -> report and stop
@@ -16,6 +14,31 @@ RPI -> Plan -> Implement -> fresh Validate -> report and stop
 
 No fresh independent judgment over the exact subject means the experiment is
 not proven.
+
+## Repository map and mechanics
+
+| Path | What it is |
+|---|---|
+| `cli/` | the Go `ao` tool |
+| `skills/` | the shipped product; one `SKILL.md` contract per skill |
+| `skills-codex/` | a generated projection of `skills/` — never hand-edit |
+| `workflows/` | Claude Code workflow scripts |
+| `scripts/check-*.sh` | the deterministic gates |
+| `tests/` | bats suites |
+| `schemas/` | evidence contracts (`*.schema.json`) |
+| `docs/adr/` | active constraints |
+| `.agents/` | disposable local state (ADR-0016); never authority |
+
+Build bar for any Go change:
+
+```bash
+cd cli && go build ./... && go vet ./... && go test ./...
+```
+
+Run the gates with `ao gate check` (`--full` for the whole registry). Run the
+bats suites with `tests/run-all.sh`. Regenerate every metadata-owned
+projection — `skills-codex/` included — with `scripts/regen-all.sh`
+(`--check` to verify without writing). Edit `skills/`, then regenerate.
 
 ## Authority and trust
 
