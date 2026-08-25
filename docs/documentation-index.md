@@ -28,6 +28,7 @@ Dated plans, audits, releases, and archive material are historical evidence, not
 - [Context Usefulness Eval Contract](contracts/context-usefulness-eval.md)
 - [Corpus learning seam — the field-level public/private boundary](contracts/corpus-learning-seam.md)
 - [Critical Skills](contracts/critical-skills.txt)
+- [Eval Baseline-A/B Contract](contracts/eval-baseline-ab.md)
 - [Eval Environment Contract](contracts/eval-environment.md)
 - [Finding Artifact.Schema](contracts/finding-artifact.schema.json)
 - [Finding Compiler Contract](contracts/finding-compiler.md)
