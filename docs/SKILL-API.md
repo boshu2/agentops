@@ -283,7 +283,8 @@ What `ao` itself reads is a different set of fields. `ao skills list`,
 `consumers`, `producers`, and `graph` read the generated
 `skills/catalog.json` — `hexagonal_role`, `consumes`, `produces`,
 `context_rel`, `practices`, `dependencies`, `user_invocable`, `graph_root`.
-`ao skills find` scores `name` and `description` straight off each `SKILL.md`.
+`ao skills find` bypasses the catalog and scores `name`, `description`, and
+best-effort triggers parsed straight off each `SKILL.md`.
 `ao skills check` and `ao skills resolve` validate the frontmatter itself.
 Nothing in that set is `context`.
 
