@@ -42,13 +42,13 @@ host funcs positionally, and no module reaches for a direct host effect (`os`,
 The tree is **intentionally two-tiered**, and both tiers are production shapes —
 not an unfinished carve-out:
 
-- **Five families run the full hexagonal stack, `module → service → adapters`.**
+- **Four families run the full hexagonal stack, `module → service → adapters`.**
   `capabilities`, `config`, `doctor`, and `gate` each own a focused
   application-service package (for example `cli/internal/gate`) and push effects
   behind small consumer-owned ports implemented in
   `cli/internal/adapters/<family>`. These are the families with real domain
   logic or external effects worth isolating.
-- **The other eleven families run `module → app-seam`.** `demo`,
+- **The other ten families run `module → app-seam`.** `demo`,
   `goals`, `init`, `provenance`, `quick-start`, `robot-docs`,
   `session`, `skills`, `status`, and `version` call a focused app package
   directly through the host seams and carry no dedicated adapters layer, because

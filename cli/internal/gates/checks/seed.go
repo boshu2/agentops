@@ -382,8 +382,8 @@ func init() {
 		// the only tracked match was .agents/ao/config.yaml, which its own
 		// git-ls-files filter for *.md/*.jsonl excluded), so it scanned zero
 		// files on every run, and repository-wide credential scanning is covered
-		// by the pinned gitleaks step in validate.yml, nightly.yml, and
-		// release.yml. corpus.path-guard still guards private artifact PATHS.
+		// by the pinned gitleaks steps in nightly.yml and release.yml
+		// (validate.yml's quick toolchain mode skips gitleaks). corpus.path-guard still guards private artifact PATHS.
 		{ID: "corpus.witness-dolt-jsonl-crosscheck", Tiers: gates.Full, Match: witnessCrosscheckPaths, Blocking: true, Backing: "witness-dolt-jsonl-crosscheck.sh"},
 
 		// final backing-script batch (PB1)
