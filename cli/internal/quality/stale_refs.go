@@ -21,14 +21,10 @@ var DeprecatedCommands = map[string]string{
 	"ao know feedback":        "ao feedback",
 	"ao know migrate":         "ao migrate",
 	"ao know batch-feedback":  "ao batch-feedback",
-	"ao know session-outcome": "ao eval session-outcome",
-	// Eval-family commands folded under `ao eval` (age-focus-membrane-bookkeeper-m1wg.16).
-	// The old top-level spellings still resolve (hidden) except `ao scenario`,
-	// which is reparented; canonical is the `ao eval …` form.
-	"ao scenario":        "ao eval scenario",
-	"ao retrieval-bench": "ao eval bench",
-	"ao chaos-test":      "ao eval chaos",
-	"ao session-outcome": "ao eval session-outcome",
+	// The eval-family fold-ins were removed with the eval surface itself —
+	// a rewrite target must be a live command, and `ao eval …` no longer is.
+	// (Many remaining targets predate earlier removals; map-wide reconciliation
+	// against the live registry is tracked as a follow-up.)
 	// Session-continuity commands folded under `ao session`
 	// (age-focus-membrane-bookkeeper-m1wg.17). The old top-level spellings still
 	// resolve (hidden aliases) except `ao state`, which is fully reparented;

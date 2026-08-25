@@ -104,7 +104,7 @@ jobs:
             --hil-waiver "GitHub release publisher cannot access private HIL targets; local release audit remains authoritative for HIL" \
             --artifacts pass \
             --security pass \
-            --eval pass
+            --eval not_applicable
           jq -e '.release_status == "pass"' release-artifacts/release-readiness.json
 
       - name: Upload pre-publish release evidence

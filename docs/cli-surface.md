@@ -18,28 +18,6 @@
 | `ao doctor ls` | `public-stateful-fixture-needed` | `allowlisted` | Lists local doctor artifacts. |
 | `ao doctor robot-docs` | `public-stateful-fixture-needed` | `allowlisted` | Generates docs from local installation state. |
 | `ao doctor undo` | `public-stateful-fixture-needed` | `allowlisted` | Reverts a doctor repair fixture. |
-| `ao eval baseline` | `public-tested` | `allowlisted` | Promotion logic covered by internal/eval baseline tests; composition covered by cmd/ao eval tests. |
-| `ao eval baseline-audit` | `public-tested` | `allowlisted` | Audit policy covered by internal/eval baseline_audit tests. |
-| `ao eval cleanup` | `public-tested` | `allowlisted` | Covered by internal/eval cleanup_service tests. |
-| `ao eval compare` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
-| `ao eval coverage` | `public-tested` | `allowlisted` | Covered by internal/eval coverage tests. |
-| `ao eval outcomes compile` | `public-tested` | `allowlisted` | Covered by evalsubstrate rubric tests and module tests. |
-| `ao eval outcomes ingest` | `public-tested` | `allowlisted` | Covered by internal/eval outcomes_service tests. |
-| `ao eval run` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
-| `ao eval scenario add` | `public-tested` | `allowlisted` | Covered by internal/scenario and module tests. |
-| `ao eval scenario evaluate` | `public-tested` | `allowlisted` | Covered by internal/eval scenario_service tests. |
-| `ao eval scenario init` | `public-tested` | `allowlisted` | Covered by internal/scenario and module tests. |
-| `ao eval scenario list` | `public-tested` | `allowlisted` | Covered by internal/scenario and module tests. |
-| `ao eval scenario validate` | `public-tested` | `allowlisted` | Covered by internal/scenario and module tests. |
-| `ao eval scenario-ab` | `unsafe-live` | `allowlisted` | Spawns a live model runtime (codex exec) per arm; exercised by adapter tests with fakes, never in smoke. |
-| `ao eval scenario-moat` | `unsafe-live` | `allowlisted` | Aggregates live scenario-ab cards; adapter-tested with fixtures. |
-| `ao eval scorecard` | `public-tested` | `allowlisted` | Covered by internal/eval scorecard tests. |
-| `ao eval suite n-required` | `public-tested` | `allowlisted` | Covered by internal/eval suite_service and module tests. |
-| `ao eval suite verdict` | `public-tested` | `allowlisted` | Covered by internal/eval suite_service and module tests. |
-| `ao eval task add` | `public-tested` | `allowlisted` | Covered by internal/eval task_service and module tests. |
-| `ao eval task list` | `public-tested` | `allowlisted` | Covered by internal/eval task_service and module tests. |
-| `ao eval task run` | `public-tested` | `allowlisted` | Covered by internal/eval task_service and module tests. |
-| `ao eval task show` | `public-tested` | `allowlisted` | Covered by internal/eval task_service and module tests. |
 | `ao gate check` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao gc check` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao gc prepare` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
@@ -59,12 +37,10 @@
 | `ao provenance list` | `public-tested` | `allowlisted` | Covered by internal/commands/provenance module tests after the provenance carve-out. |
 | `ao provenance mine-session` | `public-tested` | `allowlisted` | Covered by internal/provenanceapp mine-session tests after the provenance carve-out. |
 | `ao provenance position` | `public-tested` | `allowlisted` | Covered by internal/commands/provenance module tests after the provenance carve-out. |
-| `ao provenance show` | `public-tested` | `allowlisted` | Covered by generic provenance read tests. |
 | `ao provenance show` | `public-tested` | `allowlisted` | Covered by internal/commands/provenance module tests after the provenance carve-out. |
 | `ao provenance trace` | `public-tested` | `allowlisted` | Covered by internal/commands/provenance module tests after the provenance carve-out. |
 | `ao provenance verify` | `public-tested` | `allowlisted` | Covered by internal/commands/provenance module tests after the provenance carve-out. |
 | `ao quick-start` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
-| `ao redact` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao robot-docs` | `public-tested` | `allowlisted` | Covered by generated documentation tests. |
 | `ao session bootstrap` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao session handoff` | `public-tested` | `allowlisted` | Covered by handoff artifact tests. |

@@ -116,7 +116,7 @@ func requestedSplitIsHoldout(in GateInputs) bool {
 // Day-3 (this commit): when caller provides a power-derived n_required via
 // GateInputs.NRequiredOverride > 0, that wins. Otherwise fall back to
 // Task.stats.min_n_samples (Day-2 behavior). Day-3 makes the CLI compute
-// the override via `ao eval suite n-required`.
+// the override via the retired suite n-required flow.
 func gate6Underpowered(in GateInputs) *Refusal {
 	if in.Suite == nil || in.Task == nil {
 		return nil
@@ -200,7 +200,7 @@ func gate8HarnessDrift(in GateInputs) *Refusal {
 			GateName:   "harness_drift_unverifiable",
 			Why:        "Harness directory could not be re-walked to verify lock; cannot prove content_hash integrity.",
 			Evidence:   fmt.Sprintf("harness_dir=%s err=%v", filepath.Clean(in.HarnessDir), err),
-			Fix:        "Re-snapshot the harness with `ao eval harness snapshot <dir>` and retry.",
+			Fix:        "Re-snapshot the harness directory and retry (the in-repo eval runner was retired; see docs/MIGRATION.md).",
 		}
 	}
 	if !ok {
@@ -209,7 +209,7 @@ func gate8HarnessDrift(in GateInputs) *Refusal {
 			GateName:   "harness_drift",
 			Why:        "Harness content_hash differs from harness.lock.json; the recorded harness no longer matches what's on disk.",
 			Evidence:   fmt.Sprintf("lock=%s computed=%s", short(in.HarnessLock.ContentHash), short(computed)),
-			Fix:        "Re-snapshot the harness (`ao eval harness snapshot <dir>`) and bump the harness id, OR revert the source files to match the lock.",
+			Fix:        "Re-snapshot the harness directory and bump the harness id, OR revert the source files to match the lock (the in-repo eval runner was retired).",
 		}
 	}
 	return nil

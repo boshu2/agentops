@@ -27,7 +27,7 @@ setup() {
 }
 
 @test "all changes outputs are forced true on release tags" {
-    outputs=(go skills hooks docs eval codex shell bats ci contracts learning markdown)
+    outputs=(go skills hooks docs codex shell bats ci contracts goals learning markdown corpus)
     for output in "${outputs[@]}"; do
         run grep -F "      ${output}: \${{ steps.release.outputs.release == 'true' || steps.filter.outputs.${output} }}" "$WORKFLOW_PATH"
         [ "$status" -eq 0 ]

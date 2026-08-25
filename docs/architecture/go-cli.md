@@ -42,15 +42,15 @@ host funcs positionally, and no module reaches for a direct host effect (`os`,
 The tree is **intentionally two-tiered**, and both tiers are production shapes —
 not an unfinished carve-out:
 
-- **Five families run the full hexagonal stack, `module → service → adapters`.**
-  `capabilities`, `config`, `doctor`, `eval`, and `gate` each own a focused
+- **Four families run the full hexagonal stack, `module → service → adapters`.**
+  `capabilities`, `config`, `doctor`, and `gate` each own a focused
   application-service package (for example `cli/internal/gate`) and push effects
   behind small consumer-owned ports implemented in
   `cli/internal/adapters/<family>`. These are the families with real domain
   logic or external effects worth isolating.
-- **The other eleven families run `module → app-seam`.** `demo`,
-  `goals`, `init`, `provenance`, `quick-start`, `redact`, `robot-docs`,
-  `session`, `skills`, `status`, and `version` call a focused app package
+- **The other twelve families run `module → app-seam`.** `demo`, `gc`,
+  `goals`, `init`, `provenance`, `quick-start`, `robot-docs`,
+  `session`, `skills`, `status`, `version`, and `workflows` call a focused app package
   directly through the host seams and carry no dedicated adapters layer, because
   they have no effect boundary that a port would earn. Adding an adapters tier to
   an app-seam family is a deliberate non-goal until that family grows an effect
@@ -62,8 +62,8 @@ The published spine is pinned by `cmd/ao/default_spine_test.go` (plus
 `completion` and `help`, which cobra synthesizes):
 
 <!-- spine:begin — keep in lockstep with approvedDefaultSpine in cmd/ao/default_spine_test.go; verified by TestGoCLIDocSpineMatchesApprovedSpine -->
-`capabilities` `config` `demo` `doctor` `eval` `gate` `gc` `goals`
-`init` `provenance` `quick-start` `redact` `robot-docs` `session` `skills`
+`capabilities` `config` `demo` `doctor` `gate` `gc` `goals`
+`init` `provenance` `quick-start` `robot-docs` `session` `skills`
 `status` `version` `workflows`
 <!-- spine:end -->
 
@@ -98,22 +98,18 @@ A gate PASS is a deterministic fact, not a semantic verdict.
   PASS. Evidence references are reported as declared strings; `ao status` does
   not resolve or digest-bind their targets.
 
-## Eval — the Learn seat
+## The Learn seat (off-path)
 
-`ao eval` is the measurement surface: the operating contract's "Learn"
-consumer, wired as `cmd/ao/eval_composition.go` → `internal/commands/eval` →
-`internal/eval` services → `internal/adapters/eval`. It runs deterministic
-suites (`schemas/eval-suite.v1.schema.json`) into durable run records
-(`schemas/eval-run.v1.schema.json`, drift-guarded by tests in
-`internal/eval`), compares runs, manages locked Tasks and holdout scenarios
-(`internal/evalsubstrate`; rubric projections are leak-guarded by
-`schemas/outcomes-rubric.v1.schema.json`, and true holdout rubrics live in
-the external measurement register, not this repo), and aggregates A/B arms.
-The scenario-ab treatment is environment-shaped: the with-gold arm may read
-the corpus, the control arm runs sandbox-confined away from every corpus
-root, and judges are always corpus-denied. Eval reports numbers only — it
-owns no retry, scheduling, promotion, or lifecycle authority, and an eval
-score is not a semantic verdict.
+The in-repo measurement surface (the former eval command family) was retired
+unconsumed — no gate, workflow, or script ran it (see
+[docs/MIGRATION.md](../MIGRATION.md)). Learn remains an optional, off-path
+consumer of durable verdicts: the `learn` skill reads verdict evidence and
+writes TTL'd scratch notes, never a source of record. Rubric projections are
+still leak-guarded by `schemas/outcomes-rubric.v1.schema.json`
+(`internal/evalsubstrate`), and true holdout rubrics live in the external
+measurement register, not this repo. Measurement, when a repository wants it,
+belongs to a repository-selected evaluator whose results are recorded as
+generic provenance evidence.
 
 ## Related pages
 
