@@ -53,7 +53,7 @@ func WriteAtomic(path string, data []byte) error {
 }
 
 // SweepTempFiles removes orphan `*.tmp` files older than maxAgeSeconds.
-// Used by `ao eval cleanup --tmp-files` to recover from rename-step crashes.
+// Used by the retired eval cleanup path to recover from rename-step crashes.
 func SweepTempFiles(root string, maxAgeSeconds int64) ([]string, error) {
 	var removed []string
 	rootHandle, err := os.OpenRoot(root)
