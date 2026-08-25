@@ -57,7 +57,7 @@ func NewRunWriter(root, runID string, m Manifest) (*RunWriter, error) {
 		m.Kind = "task"
 	}
 	if m.CapturedBy == "" {
-		m.CapturedBy = "ao eval task run"
+		m.CapturedBy = "eval-task-run (retired surface)"
 	}
 	if m.Seeds == nil {
 		m.Seeds = []int{}

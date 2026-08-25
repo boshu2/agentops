@@ -71,7 +71,7 @@ jobs:
 }
 
 func TestDeferredWorkflowScriptCount(t *testing.T) {
-	if got := len(deferredWorkflowScripts); got != 13 {
-		t.Fatalf("deferredWorkflowScripts count = %d, want 13", got)
+	if got := len(deferredWorkflowScripts); got != 11 {
+		t.Fatalf("deferredWorkflowScripts count = %d, want 11", got)
 	}
 }

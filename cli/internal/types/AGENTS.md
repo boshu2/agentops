@@ -25,7 +25,6 @@ and evidence features. It is not an AgentOps lifecycle state machine.
 | File | Domain |
 |---|---|
 | `types.go` | Claude Code transcript pipeline types (TranscriptMessage, etc.) |
-| `errors.go` | Shared sentinel errors |
 | `*_test.go` | L1/L2 coverage for the above |
 
 ## Non-goals

@@ -3,7 +3,6 @@
   "exempt": [
     { "module": "demo", "reason": "pure static text: renders fixed explanatory strings to stdout; no output-mode, dry-run, verbose, project-root, or clock dependency" },
     { "module": "quickstart", "reason": "pure static text: prints a fixed single-pass workflow summary to stdout; no host seam of any kind" },
-    { "module": "redact", "reason": "pure deterministic transform: reads stdin, applies the canonical secret redactor, writes raw scrubbed bytes to stdout; a byte passthrough with no structured output mode or other host seam" },
     { "module": "robotdocs", "reason": "pure read of the live cobra command tree: renders a Markdown-only handbook; no JSON/YAML variant and no other host seam" }
   ]
 }

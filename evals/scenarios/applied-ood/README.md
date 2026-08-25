@@ -30,14 +30,10 @@ engage) set `runner_mode: "agentic"` on the scenario file — the agentic runner
 
 ## Running one
 
-```sh
-ao eval scenario-ab --control-only \
-  --scenario evals/scenarios/applied-ood/s-2026-06-17-001-reinforcement-gate.json \
-  --output /tmp/headroom-scorecard.json
-
-ao eval scenario-ab --scenario evals/scenarios/applied-ood/s-2026-06-17-001-reinforcement-gate.json \
-  --output /tmp/scorecard.json
-```
+The in-repo runner (`ao eval scenario-ab`) was retired unconsumed (see
+docs/MIGRATION.md). The scenario files remain as data: run them through a
+repository-selected evaluator (control arm first, filesystem-isolated, then
+the treatment arm) and record the scorecards as generic provenance evidence.
 
 The control arm runs first under filesystem isolation (age-9a9). If it already
 clears the threshold the run aborts as a `ceiling_violation` (no headroom — a

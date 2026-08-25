@@ -23,9 +23,8 @@ type removedCommand struct {
 // and knowledge family pruned from the default build without individual
 // tombstones (docs/MIGRATION.md "Other 3.2 bookkeeping and knowledge verbs").
 // There is no in-ao replacement, so every member points at the same escape
-// hatches. NOTE: `ao eval` returned in 3.3 as a live command and must never
-// appear here — cross-check any addition against the registered command tree
-// (TestHintedVerbsAreNotLiveCommands enforces this).
+// hatches. Cross-check any addition against the registered command tree
+// (TestHintedVerbsAreNotLiveCommands enforces that no hinted verb is live).
 const prunedFamilyHint = "it was pruned from the default build with no in-ao replacement; " +
 	"use your own tools, `ao gate check` for deterministic checks, or generic `ao provenance` records"
 
@@ -53,10 +52,11 @@ var removedCommands = map[string]removedCommand{
 	"inject":     {use: "AgentOps no longer retrieves prior knowledge; use the caller's own memory or context tooling"},
 	"verify":     {use: "the 3.2 verification front door was removed; semantic judgment is the Validate skill. If `ao verify init` installed a pre-push hook, delete the AGENTOPS-VERIFY-RATCHET block from .git/hooks/pre-push (see docs/UPGRADING.md)"},
 	"flywheel":   {use: "the knowledge-flywheel product surface was retired; AgentOps no longer computes knowledge-compounding state. Learning remains an optional off-path consumer of durable verdicts (the learn skill)"},
+	"eval":       {use: "the offline eval surface was retired unconsumed (no gate, workflow, or script ran it); use a repository-selected evaluator and record its result as generic `ao provenance` evidence"},
+	"redact":     {use: "its only declared caller (the compile skill's render-write) never existed; pipe through your own scrubber before writing, and keep credentials out of committed content"},
 
 	// The pruned 3.2 bookkeeping/knowledge family — one shared clause, per the
-	// MIGRATION.md paragraph that lists them together (`eval` is deliberately
-	// absent: it returned in 3.3 as a live command).
+	// MIGRATION.md paragraph that lists them together.
 	"agents":    {use: prunedFamilyHint},
 	"beads":     {use: prunedFamilyHint},
 	"canon":     {use: prunedFamilyHint},

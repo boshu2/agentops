@@ -1,5 +1,7 @@
 # SOTA standards for evaluating agent skills — and what it takes to prove ours work
 
+> **HISTORICAL** — dated research snapshot (2026-08-04). The in-repo `ao eval` surface it cites was later removed unconsumed; see docs/MIGRATION.md.
+
 > **Date:** 2026-08-04 · **Status:** research synthesis (no code changes)
 > **Method:** bounded deep-research workflow (3 search angles → 14 sources fetched → 70 claims
 > extracted → top 8 adversarially verified: 3 confirmed, 5 killed), a targeted follow-up pass on

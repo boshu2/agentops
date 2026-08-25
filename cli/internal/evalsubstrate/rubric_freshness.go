@@ -16,7 +16,7 @@ func (r Rubric) FreshAgainst(currentJudgeHash string) error {
 		return fmt.Errorf("outcomes rubric freshness: rubric %q carries no judge_content_hash; refusing to grade against an unverifiable bar", r.SourceTaskID)
 	}
 	if r.JudgeContentHash != currentJudgeHash {
-		return fmt.Errorf("outcomes rubric freshness: rubric %q is stale (judge_content_hash %s != current %s); regenerate via `ao eval outcomes compile`",
+		return fmt.Errorf("outcomes rubric freshness: rubric %q is stale (judge_content_hash %s != current %s); regenerate via the retired outcomes-compile flow (see docs/MIGRATION.md)",
 			r.SourceTaskID, r.JudgeContentHash, currentJudgeHash)
 	}
 	return nil
