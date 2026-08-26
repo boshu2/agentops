@@ -16,6 +16,7 @@ context_rel:
 - kind: supplier-to
   with: plan
 user-invocable: true
+disable-model-invocation: true
 context:
   window: inherit
   intent:

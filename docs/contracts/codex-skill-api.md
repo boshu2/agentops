@@ -204,8 +204,16 @@ Tools available inside a Codex agent session:
 | `context.window` | No equivalent | Strip from frontmatter |
 | `context.sections.exclude` | No equivalent | Strip from frontmatter |
 | `context.intel_scope` | Deprecated — ignored, no reader | Does not exist |
+| `disable-model-invocation` | No equivalent — Codex has no model-invocation switch and always advertises a `$name` skill | Strip from frontmatter |
 
 Skills referencing these primitives produce **broken instructions** in Codex.
+
+`disable-model-invocation` is a Claude Code context-budget control, not a
+behavioral instruction, so stripping it loses nothing a Codex reader could act
+on. The consequence is intended and asymmetric: a human-only skill is invisible
+to Claude's implicit routing but stays `$name`-invocable under Codex. Requirement
+1 below already strips it — the row exists so the divergence is declared rather
+than discovered.
 
 ---
 
