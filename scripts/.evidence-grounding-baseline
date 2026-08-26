@@ -1,0 +1,87 @@
+# Filename-pinned baseline for scripts/check-evidence-grounding.sh (gate evidence.grounding).
+#
+# Every entry below is a point-in-time evidence document whose citations were
+# TRUE WHEN WRITTEN and whose subject has since moved. An entry is an exact doc
+# path or a directory prefix ending in `/`, and carries its class tag as a
+# trailing comment. Enforcement is two-way and shrink-only: a NEW uncovered
+# offender fails, and an entry that stops covering any finding fails until it is
+# pruned. Pinning the archive silences history, never a citation written today —
+# a finding on a line ADDED since BASE_REF is not excused by this file.
+#
+# Seeded 2026-08-26 from the tree at 8cdcb5a90: 618 findings across 45 keys.
+# The classes, and why each is pinned rather than fixed:
+#
+#   dated-recon-snapshot  A recon/audit run captured the tree on a named date.
+#                         Its file inventory IS the record; rewriting the paths
+#                         would falsify the snapshot.
+#   dated-audit           A dated audit or readiness review of a surface that
+#                         has since been refactored or retired.
+#   dated-duel            A dated multi-model duel/review corpus, including raw
+#                         model transcripts that must stay byte-faithful.
+#   foreign-repo          Cites paths and commit ids belonging to ANOTHER
+#                         repository (Gas City); they never resolve here and are
+#                         not supposed to.
+#   pre-push-receipt      A per-bead pre-push receipt naming the files that bead
+#                         touched. A later refactor moves or deletes them; the
+#                         receipt still records what was true at push time.
+#   orphaned-generator    KNOWN LIVE DEFECT, surfaced not fixed: the doc claims
+#                         a generator that no longer exists in the tree. Fixing
+#                         it means deciding the doc's fate, which belongs to a
+#                         change that owns docs/evidence/**, not to this gate.
+
+# --- dated-recon-snapshot ---
+docs/audits/codebase-recon-2026-06-14/  # dated-recon-snapshot
+docs/audits/codebase-recon-2026-07-01/  # dated-recon-snapshot
+docs/audits/codebase-recon-2026-07-02/  # dated-recon-snapshot
+docs/audits/codebase-recon-2026-07-09/  # dated-recon-snapshot
+docs/audits/codebase-recon-2026-07-09-claude/  # dated-recon-snapshot
+docs/audits/codebase-skills-2026-06-11/  # dated-recon-snapshot
+
+# --- dated-audit ---
+docs/audits/2026-06-16-skill-disposition-triage.md  # dated-audit
+docs/audits/2026-06-16-worktree-disposition-audit.md  # dated-audit
+docs/audits/2026-07-12-go-cli-production-readiness.md  # dated-audit
+docs/audits/2026-07-15-skills-go-cli-audit.md  # dated-audit
+docs/audits/2026-07-24-go-cli-deep-audit.md  # dated-audit
+docs/audits/gocli-dead-weight-manifest-2026-07-19.md  # dated-audit
+docs/audits/inner-loop-reset-20260610.md  # dated-audit
+docs/audits/release-readiness-3.3-2026-07-20.md  # dated-audit
+docs/audits/session-audit-2026-07-09-control-plane.md  # dated-audit
+docs/audits/skill-catalog-operator-leakage-2026-06-30.md  # dated-audit
+
+# --- dated-duel ---
+docs/audits/2026-07-28-skill-overhaul-reboot/  # dated-duel
+docs/audits/merge-door-duel-2026-07-09/  # dated-duel
+docs/audits/skill-system-overhaul-duel-2026-07-24/  # dated-duel
+
+# --- foreign-repo ---
+docs/audits/gas-city-factory-live-bead-canary.md  # foreign-repo
+docs/audits/gas-city-role-topology-2026-07-17/  # foreign-repo
+docs/audits/gascity-eval-2026-07-04/  # foreign-repo
+docs/audits/gc-mvp-2026-07-05/  # foreign-repo
+
+# --- pre-push-receipt ---
+docs/evidence/age-0tn-trunk-bound-provenance.md  # pre-push-receipt
+docs/evidence/age-3va.1-pawl-pre-push.md  # pre-push-receipt
+docs/evidence/age-3va.2-pawl-pre-push.md  # pre-push-receipt
+docs/evidence/age-3va.3-pawl-pre-push.md  # pre-push-receipt
+docs/evidence/age-3va.4-pawl-pre-push.md  # pre-push-receipt
+docs/evidence/age-58o-pawl-pre-push.md  # pre-push-receipt
+docs/evidence/age-6sg.1-pawl-pre-push.md  # pre-push-receipt
+docs/evidence/age-anc-jq-schema-fallback.md  # pre-push-receipt
+docs/evidence/age-d16-1-verdict-sensor-roundtrip.md  # pre-push-receipt
+docs/evidence/age-d16-3-recovery-statemachine.md  # pre-push-receipt
+docs/evidence/age-d16-4-binding-verdict.md  # pre-push-receipt
+docs/evidence/age-d16-5-assay-tick.md  # pre-push-receipt
+docs/evidence/age-d16-6-frontdoor-guard.md  # pre-push-receipt
+docs/evidence/age-d16-epic-donetest.md  # pre-push-receipt
+docs/evidence/age-f8ei-full-race-no-bypass.md  # pre-push-receipt
+docs/evidence/age-les-pawl-pre-push.md  # pre-push-receipt
+docs/evidence/age-mvy-skill-count-sync.md  # pre-push-receipt
+docs/evidence/age-n48-beads-residue.md  # pre-push-receipt
+docs/evidence/age-push-equals-ci-0ua.2-cmdao-race-shard.md  # pre-push-receipt
+docs/evidence/age-push-equals-ci-0ua.7-prepush-critical-section.md  # pre-push-receipt
+docs/evidence/age-vx0-pawl-pre-push.md  # pre-push-receipt
+
+# --- orphaned-generator ---
+docs/evidence/membrane-receipts.md  # orphaned-generator

@@ -71,6 +71,31 @@ var (
 		"scripts/lib/preamble.sh",
 		"tests/scripts/check-skill-probe-headroom.bats",
 	}
+	// gate.tightening-ratchet (advisory): routes on exactly the two classes it
+	// governs — the Go gate registry and the top-level gate-backing scripts —
+	// plus self-reference so editing the detector or its bats re-runs it. A
+	// scripts/check-*.sh edit is already covered by the second glob.
+	gateTighteningPaths = []string{
+		"cli/internal/gates/**",
+		"scripts/check-*.sh",
+		"tests/scripts/check-gate-tightening-ratchet.bats",
+	}
+	// evidence.grounding (advisory): routes on the three evidence roots it
+	// scans, on the baseline that declares the pinned archive, and on the
+	// detector's own surfaces (script, shared libs it reads, bats). It
+	// deliberately does NOT route on the paths it CITES — a deleted
+	// cli/** file is what the gate is for, not a reason to re-run it early.
+	evidenceGroundingPaths = []string{
+		"docs/audits/**",
+		"docs/evidence/**",
+		"docs/handoffs/**",
+		"scripts/check-evidence-grounding.sh",
+		"scripts/.evidence-grounding-baseline",
+		"scripts/lib/docs-scope.sh",
+		"scripts/lib/ratchet.sh",
+		"scripts/lib/preamble.sh",
+		"tests/scripts/check-evidence-grounding.bats",
+	}
 	operatorLeakPaths = []string{"skills/**", "skills-codex/**", "docs/SKILLS.md", "registry.json", "tests/scripts/check-no-operator-skills.bats", "scripts/check-no-operator-skills.sh"}
 	contractPaths     = []string{"docs/contracts/**", "schemas/**"}
 	// honest-voice gate (age-5qjyn / FU3): routes on the user-facing surfaces it
@@ -407,6 +432,28 @@ func init() {
 		// (grep heuristic, no AST — same rationale as the jsonl row; graduation
 		// to blocking requires a precision detector earned in its own arc).
 		{ID: "go.atomic-write-ratchet", Tiers: gates.Full, Match: atomicWriteRatchetPaths, Blocking: false, Backing: "check-atomic-write-ratchet.sh", Args: []string{"--scope", "head"}, RepairHint: "use storage.AtomicWriteFile (temp+fsync+rename+fsync-dir) or storage.FsyncDir instead of a hand-rolled tmp+rename; advisory — see age-ratchet-lib-extraction-bv7d.9"},
+		// gate.tightening-ratchet (ADVISORY): "never obtain green by weakening
+		// acceptance" (AGENTS.md) had no enforcement. Over BASE_REF...HEAD this
+		// flags six loosening shapes on the gate surface itself — a ceiling
+		// raised, a floor lowered, a check demoted from blocking to advisory,
+		// shell strictness dropped, a `|| true` added, a suppression added, a
+		// governed gate file deleted — unless a `Gate-Loosen-Reason:` trailer is
+		// in range (the proven Test-Removal-Reason mechanism, generalized).
+		// TIGHTENING always passes. ADVISORY PERMANENTLY at this fidelity: it is
+		// a text-diff heuristic, so a false positive must never block a push,
+		// and a clean run means "none of the six shapes was present" — never
+		// "acceptance was not weakened".
+		{ID: "gate.tightening-ratchet", Tiers: gates.Full, Match: gateTighteningPaths, Blocking: false, Backing: "check-gate-tightening-ratchet.sh", RepairHint: "tighten it back, or — if the loosening is deliberate — add a `Gate-Loosen-Reason: <one-line argument>` trailer to a commit in this range; tightening is always free"},
+		// evidence.grounding (ADVISORY): a persisted audit/receipt/handoff is
+		// only worth the ground under it, and three failure shapes are purely
+		// MECHANICAL — a cited path that does not exist, a full-length commit id
+		// git cannot resolve, an unrendered {{placeholder}}. Whether the evidence
+		// SUPPORTS its claim is semantic and stays in the validate skill; this
+		// gate never touches that half. The dated archive is pinned in
+		// scripts/.evidence-grounding-baseline (two-way, shrink-only) rather
+		// than rewritten, but a finding on a line ADDED since BASE_REF is never
+		// excused by that baseline — history is silenced, live work is not.
+		{ID: "evidence.grounding", Tiers: gates.Full, Match: evidenceGroundingPaths, Blocking: false, Backing: "check-evidence-grounding.sh", RepairHint: "fix the citation (correct the path/commit id, or fill the placeholder); only a point-in-time record whose citation was true when written belongs in scripts/.evidence-grounding-baseline, and every entry there carries its argument"},
 		// corpus.secret-scan was retired: it routed on corpusPaths (unroutable —
 		// the only tracked match was .agents/ao/config.yaml, which its own
 		// git-ls-files filter for *.md/*.jsonl excluded), so it scanned zero
