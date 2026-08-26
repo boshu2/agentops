@@ -141,7 +141,7 @@ is a guess wearing a routing decision's shape.
 ## Provenance
 
 - Catalog and declared surfaces: [`skills/catalog.json`](../catalog.json), [`docs/SKILL-ROUTER.md`](../../docs/SKILL-ROUTER.md).
-- Object-before-activity rationale and the observed failure it prevents: [`docs/research/gstack-teardown-2026-08-08.md`](../../docs/research/gstack-teardown-2026-08-08.md) §2.7.
+- Object-before-activity rationale and the observed failure it prevents (§2.7): not on main; read it at `git show 9872483bd:docs/research/gstack-teardown-2026-08-08.md` (branch `recover/gstack-clean-room`).
 
 ## Failure behavior
 

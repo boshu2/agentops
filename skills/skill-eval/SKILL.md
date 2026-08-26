@@ -207,7 +207,7 @@ and exactly one row was appended to the ledger.
 - The saturation evidence that motivated tier 2: [`evals/skill-probes/LEDGER.md`](../../evals/skill-probes/LEDGER.md) — five INERT rows dated 2026-08-04/05 annotated "scenario needs hardening, not the skill."
 - Coverage gate (does a result exist): [`scripts/check-skill-probe-coverage.sh`](../../scripts/check-skill-probe-coverage.sh), whose denominator is declared in `scripts/.skill-probe-denominator-exclusions`.
 - Headroom gate (could a result have existed): [`scripts/check-skill-probe-headroom.sh`](../../scripts/check-skill-probe-headroom.sh) — gate id `skill.probe-headroom`, rule in `cli/internal/probeheadroom`.
-- Seeded-forcing-defect and floor/band mechanism analysis: [`docs/research/gstack-teardown-2026-08-08.md`](../../docs/research/gstack-teardown-2026-08-08.md) §2.1, §2.5.
+- Seeded-forcing-defect and floor/band mechanism analysis (§2.1, §2.5): not on main; read it at `git show 9872483bd:docs/research/gstack-teardown-2026-08-08.md` (branch `recover/gstack-clean-room`).
 - Overclaim discipline: ADR-0011.
 
 ## Failure behavior

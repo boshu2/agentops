@@ -163,7 +163,7 @@ gated when every `one-way` line went back to the caller unanswered.
 
 ## Provenance
 
-- Mechanism analysis and the layering rationale: [`docs/research/gstack-teardown-2026-08-08.md`](../../docs/research/gstack-teardown-2026-08-08.md) §2.2, §2.3.
+- Mechanism analysis and the layering rationale (§2.2, §2.3): not on main; read it at `git show 9872483bd:docs/research/gstack-teardown-2026-08-08.md` (branch `recover/gstack-clean-room`).
 - Shell-boundary sibling: [`skills/dcg/SKILL.md`](../dcg/SKILL.md).
 - Caller-sovereignty floor: `CLAUDE.md` → Authority and trust; the operating
   contract's rule that repository access does not authorize destructive
