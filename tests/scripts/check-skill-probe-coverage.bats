@@ -531,20 +531,23 @@ PY
     [[ "$output" == *"foo"* ]]
 }
 
-@test "the real repository remains advisory with exactly 0/11 current results" {
+@test "the real repository remains advisory with exactly 0/12 current results" {
     unset SKILL_PROBE_SKILLS_DIR SKILL_PROBE_LEDGER_FILE SKILL_PROBE_TIERS_FILE
     unset SKILL_PROBE_EVIDENCE_ROOT SKILL_PROBE_METADATA_TOOL SKILL_PROBE_EXCLUSIONS_FILE
 
     run --separate-stderr bash "$GATE" --json
 
     [ "$status" -eq 0 ]
-    # 12 product/judgment-tier skills, 1 declared-denominator exclusion
-    # (`goals`, a pure alias of `fitness`), so the denominator is 11.
-    [ "$(json_field "$output" tier_total)" = "12" ]
+    # 13 product/judgment-tier badges, 1 declared-denominator exclusion
+    # (`goals`, a pure alias of `fitness`), so the denominator is 12. The
+    # headline is 0/12 both before and after this change, but for different
+    # reasons: the alias left the denominator and the newly landed judgment
+    # skill `one-way-door` entered it, honestly unmeasured.
+    [ "$(json_field "$output" tier_total)" = "13" ]
     [ "$(json_field "$output" excluded_count)" = "1" ]
-    [ "$(json_field "$output" gated_total)" = "11" ]
+    [ "$(json_field "$output" gated_total)" = "12" ]
     [ "$(json_field "$output" measured)" = "0" ]
-    [ "$(json_field "$output" unmeasured_count)" = "11" ]
+    [ "$(json_field "$output" unmeasured_count)" = "12" ]
 }
 
 @test "the real exclusion list resolves and argues every entry on stdout" {
