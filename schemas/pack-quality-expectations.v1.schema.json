@@ -1,0 +1,108 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agentops.dev/schemas/pack-quality-expectations.v1.schema.json",
+  "title": "AgentOps Pack Quality Expectations v1",
+  "description": "Retrieval-eval contract: the declared expectations one query places on the pack a retrieval surface returns for it. A 'pack' is the ordered set of items a retrieval surface selects for a query (for ao-skills-find, the top-K skills and their descriptions). One file is one golden fixture; a grader resolves the query against the named surface and grades the observed pack against these fields. Shape adopted from the eidetic-engine (ee) pack-quality eval and generalized: expected/forbidden ids, provenance density, and a token ceiling.",
+  "practices": ["llm-eval-harness", "measurement-over-assertion", "data-contracts"],
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "id",
+    "retrieval_surface",
+    "task",
+    "query",
+    "top_k",
+    "expected_selected_ids",
+    "critical_omitted_ids",
+    "forbidden_leaks",
+    "min_provenance_density",
+    "max_tokens"
+  ],
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Optional relative pointer back to this contract, so editors and scripts/validate-manifests.sh can resolve it without a lookup table."
+    },
+    "schema_version": {
+      "type": "integer",
+      "const": 1
+    },
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9._-]*$",
+      "minLength": 1,
+      "description": "Stable fixture id, unique within its golden directory."
+    },
+    "retrieval_surface": {
+      "type": "string",
+      "enum": ["ao-skills-find"],
+      "description": "The deterministic surface whose pack this fixture grades. A new surface extends this enum deliberately — a grader must never guess which surface a fixture meant."
+    },
+    "task": {
+      "type": "string",
+      "minLength": 1,
+      "description": "The realistic user situation this fixture stands for, in the caller's own words. Human-facing context; the grader never dispatches it."
+    },
+    "query": {
+      "type": "string",
+      "minLength": 1,
+      "description": "The literal string handed to the retrieval surface. This is what the grader resolves."
+    },
+    "top_k": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Pack size requested from the surface. Every id/leak/density/token expectation below is evaluated against exactly this many results."
+    },
+    "expected_selected_ids": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "description": "Ids that MUST appear somewhere in the top_k pack. An absent id is a MISS.",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "critical_omitted_ids": {
+      "type": "array",
+      "uniqueItems": true,
+      "description": "Ids whose omission from the pack is critical — they must NOT be selected at any rank. A present id is a LEAK. Use for decoys a confused router would plausibly reach for.",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "forbidden_leaks": {
+      "type": "array",
+      "uniqueItems": true,
+      "description": "Anchored-or-unanchored regular expressions (Python re syntax) matched against pack item ids. No match may hold rank 1. Broader than critical_omitted_ids: one pattern can cover a whole family of decoys.",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "min_provenance_density": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1,
+      "description": "Minimum fraction of pack items that must carry resolvable provenance (a source path that exists on disk). 1.0 means every item in the pack must be traceable to a real file."
+    },
+    "max_tokens": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Ceiling on the pack's size in whitespace-delimited tokens across the selected items' descriptions. A deterministic proxy for the context cost of loading this pack."
+    },
+    "rationale": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Why this fixture's expectations are what they are: the routing judgment being pinned, or the drift it would catch."
+    },
+    "notes": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Free-form observation about this fixture — a known miss it documents, a tuning decision, a date."
+    }
+  }
+}

@@ -47,3 +47,49 @@ runner instantiates placeholder strings freshly per run.
 
 `scenarios.json`: id, prompt, applicable (skill slugs), decoys-tempting
 (skills a confused router might pick), rationale.
+
+## Method (v2 — offline deterministic goldens)
+
+The v1 method needs a live model, so it cannot run unattended and has produced
+exactly three rows (2026-08-05, one of them contaminated). `goldens/` adds the
+half that CAN run offline every night: hand-authored fixtures in
+[`schemas/pack-quality-expectations.v1.schema.json`](../../schemas/pack-quality-expectations.v1.schema.json)
+shape, graded against `ao skills find` — the repo's own deterministic
+token-overlap discovery surface — by
+[`scripts/check-routing-probe-goldens.sh`](../../scripts/check-routing-probe-goldens.sh).
+
+```bash
+bash scripts/check-routing-probe-goldens.sh          # human table
+bash scripts/check-routing-probe-goldens.sh --json   # machine-readable
+bash scripts/validate-manifests.sh --repo-root .     # goldens vs. the contract
+```
+
+Each golden declares one query, the pack size it is graded at, the ids that
+must appear, the ids that must not, regexes that must not hold rank 1, a
+provenance-density floor, and a token ceiling for the pack. Findings are named
+per fixture: `MISS`, `LEAK`, `MISROUTE`, `PROVENANCE`, `TOKENS`, `SCHEMA`. Zero
+goldens is a hard failure in both the grader and `validate-manifests.sh` — a
+retrieval eval with an empty denominator reports green forever.
+
+### What v2 does NOT measure
+
+It grades **the catalog's discoverability on a deterministic ranker**, not what
+a model loads. A green run says the declared skill still wins for the declared
+phrasing; it says nothing about efficacy, and it does not replace the v1 live
+batches. Treat the two as separate factors, exactly as the v1 honesty section
+does.
+
+The fixture-isolation rule above does **not** bind `goldens/`: the grader is
+not an agent and `ao skills find` never reads this directory, so committed
+literal queries cannot contaminate it. That protection is why goldens are
+graded offline and why a golden query must never be reused as a live-dispatch
+prompt.
+
+### Standing finding (2026-08-26)
+
+`rq-04-independent-verdict` is **red on purpose**. Six natural ways to ask for
+an independent verdict on finished work fail to surface `validate` in the top
+3; only a phrasing containing the literal word "acceptance" does. The fixture
+is kept unmodified and the nightly job that runs it is advisory, so the gap
+stays visible without blocking. Closing it means editing `validate`'s
+description or the ranker — neither is the fixture's job.

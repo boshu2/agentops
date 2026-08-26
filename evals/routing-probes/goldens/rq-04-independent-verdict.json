@@ -1,0 +1,16 @@
+{
+  "$schema": "../../../schemas/pack-quality-expectations.v1.schema.json",
+  "schema_version": 1,
+  "id": "rq-04-independent-verdict",
+  "retrieval_surface": "ao-skills-find",
+  "task": "A worker session reports its change done and its own tests green. The caller wants a fresh independent judgment before merging.",
+  "query": "judge whether this finished change is actually proven before I merge it",
+  "top_k": 3,
+  "expected_selected_ids": ["validate"],
+  "critical_omitted_ids": [],
+  "forbidden_leaks": ["^premortem$"],
+  "min_provenance_density": 1.0,
+  "max_tokens": 100,
+  "rationale": "validate is the repo's own name for exactly this: freshly judge finished subject content against caller acceptance and stop. premortem must not take rank 1 — it judges an unexecuted plan, and taking it here would substitute speculation for a verdict over real content.",
+  "notes": "KNOWN RED as of 2026-08-26. `ao skills find` ranks premortem, council, pattern-mining for this phrasing; validate is absent from the top 3. The token-overlap ranker sees only 'judge' in validate's description, while premortem's carries both 'judge' and 'before'. Not a phrasing artifact: of six natural ways to ask for an independent verdict ('independently verify this change before merge', 'is this finished change actually proven', 'give me a verdict on this finished change', 'independent judgment on whether the work is done', 'the worker says it is done; check it independently'), only the one containing the literal word 'acceptance' surfaces validate at all. Kept unmodified — this is a real gap between how a caller asks for a verdict and how the catalog is discoverable. Closing it means editing validate's description or the ranker; neither belongs to the fixture."
+}
