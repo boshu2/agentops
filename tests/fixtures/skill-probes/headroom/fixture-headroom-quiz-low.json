@@ -1,0 +1,14 @@
+{
+  "schema": "agentops-skill-probe.v1",
+  "probe": "fixture-headroom-quiz",
+  "skill": "premortem",
+  "mode": "live",
+  "generated_at": "2026-08-04T23:57:23Z",
+  "reps": 2,
+  "producer": {"model": "gpt-5.6-luna", "effort": "low"},
+  "honesty": "GATE FIXTURE (tests/fixtures/skill-probes) — not a real capture; arm counts of a scenario the control arm does NOT ace",
+  "control": {"present": 1, "usable": 2, "rate": 0.5},
+  "treatment": {"present": 1, "usable": 2, "rate": 0.5},
+  "verdict": "INERT",
+  "per_rep": [{"rep":1,"control":"PRESENT","treatment":"PRESENT"},{"rep":2,"control":"ABSENT","treatment":"ABSENT"}]
+}

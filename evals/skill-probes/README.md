@@ -112,13 +112,79 @@ requires manifest-backed captures at each compared config. The historical crank
 fixtures illustrate a stored null classification only; they are
 `LEGACY-UNVERIFIED` and do not establish frontier behavior.
 
+## Two probe tiers
+
+The caveat above proposed two escapes from ceiling saturation: a weaker producer,
+or a harder task. Neither worked as run. Five probes dated 2026-08-04/05
+saturated at **both** effort levels, and `validate-not-proven-v2` re-saturated
+after the scenario was deliberately hardened. The ledger notes conclude: *"the
+doctrine is robust in quiz format; next ratchet is task-embedded Tier-2, not
+harder quizzes."*
+
+That ratchet is a declared probe tier:
+
+| | Tier 1 — quiz | Tier 2 — seeded task |
+|---|---|---|
+| Scenario | asks about a situation | hands over work containing a planted defect |
+| Grades | which answer was given | whether the agent **acted** on the defect |
+| Saturates | fast at frontier | slowly — skimming fails at every altitude |
+| `probe.json` | (as before) | adds `probe_tier: 2`, `seeded_defects: N`, `band: [lo, hi]` |
+
+A tier-2 probe plants exactly one forcing defect (floor probe) or N independent
+defects (band probe) inside a realistic artifact, and asserts findings land in
+`[N-1, N+2]`. The lower bound catches rubber-stamping; the upper bound catches
+spray, where an agent lists every conceivable concern and gets credited for the
+one that happened to be planted.
+
+Authoring rules, the calibration window, and the seed shapes:
+[`skills/skill-eval/SKILL.md`](../../skills/skill-eval/SKILL.md) and
+[`skills/skill-eval/references/seeding.md`](../../skills/skill-eval/references/seeding.md).
+
+## The headroom pre-screen (run this before you believe a verdict)
+
+`INERT` is two different results wearing one label. It means the arms matched —
+which happens both when the skill changed nothing (a real null, worth a row) and
+when the control arm already aced the scenario so nothing could have differed (a
+void row: the measurement failed, not the skill). Only the control arm's
+absolute rate separates them.
+
+The rule is deterministic, so it is a gate rather than doctrine.
+**`skill.probe-headroom`** — [`scripts/check-skill-probe-headroom.sh`](../../scripts/check-skill-probe-headroom.sh),
+rule in `cli/internal/probeheadroom`, helper `cli/cmd/probe-headroom`:
+
+```bash
+# Classify one probe group (all scorecards for one probe, one per effort level).
+cd cli && go build -o bin/probe-headroom ./cmd/probe-headroom && cd ..
+cli/bin/probe-headroom docs/evals/scorecards/<date>/<probe>-*.json
+
+# Gate: prove the detector still discriminates, then sweep every group.
+bash scripts/check-skill-probe-headroom.sh
+```
+
+A scenario is **SATURATED** when the control arm scores ≥ 0.75 at two or more
+effort levels with ≥ 2 usable control reps each. Exit `0` SEPARATED · `3`
+SATURATED · `4` FLOOR · `5` UNMEASURED. A saturated scenario is **retired, not
+re-run** — re-running it produces ledger rows, not knowledge; promote it to a
+tier-2 seeded-defect probe or record the honest ceiling finding.
+
+**First reading on the historical corpus: 7 of 11 probe groups are SATURATED.**
+That is why those INERT rows could never become coverage, and it is the reason a
+new ledger row must cite a passing pre-screen before it counts as evidence.
+
+The gate is advisory (`Blocking:false`): a saturated historical group is a true
+finding about the ledger, not a regression introduced by the change under test.
+
 ## Spine first, ratchet does the rest
 
 The advisory gate `skill.probe-coverage`
 (`scripts/check-skill-probe-coverage.sh`) names every product-/judgment-tier
 skill lacking a current, canonical-skill-mode, manifest-backed result. After
 the 2026-08-16 provenance migration, the historical rows are excluded and
-current coverage is 0/12. The gate stays
+current coverage is 0/12 against a **declared denominator**: 13 skills carry a
+product/judgment badge and `goals` (a pure `alias-of fitness` that delegates
+verbatim) is excluded with its written argument in
+`scripts/.skill-probe-denominator-exclusions`, because probing it would measure
+`fitness` and file the verdict under the wrong name. The gate stays
 advisory-first until a deliberately selected spine is recaptured under the
 current contract.
 
@@ -126,7 +192,8 @@ current contract.
 
 Every counted run has an immutable fixture set, an
 `agentops-skill-probe.v3` scorecard under a dated `docs/evals/scorecards/`
-directory, a short dated evidence note when interpretation is needed, and a row
+directory, a passing `skill.probe-headroom` pre-screen over that scorecard
+group, a short dated evidence note when interpretation is needed, and a row
 in the **Behavioral Probe Ledger (MEASUREMENT STATUS)** at
 `evals/skill-probes/LEDGER.md`. The ledger is hand-maintained and never belongs
 inside generated `skills/SKILL-TIERS.md`, where regeneration once wiped it.

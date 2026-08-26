@@ -44,9 +44,23 @@
 | `operationalize` | `anti-ceremony-creation-gate-v2` | 2026-08-16 | UNMEASURED | First canonical-skill attempt: control 2/2 usable, treatment 0/2 usable after a leading-hyphen CLI dispatch defect; no fixture set was published. Attempt scorecard: `docs/evals/scorecards/2026-08-16/anti-ceremony-low-v2.json`; interpretation: `docs/evals/2026-08-16-anti-ceremony-creation-gate.md` |
 | `operationalize` | `anti-ceremony-creation-gate-v2` | 2026-08-16 | LEGACY-UNVERIFIED | Compatibility-only v2 canonical-SKILL run, historically classified INERT at control 2/2 versus treatment 2/2. Its retained scorecard and fixture predate the v3 response-only, counterbalanced, self-contained capture contract, so they do not count as current evidence: `docs/evals/scorecards/2026-08-16/anti-ceremony-low-v2b.json`; `evals/skill-probes/anti-ceremony-creation-gate-v2/fixtures-low-2026-08-16-v2b/fixture-set.json`; interpretation: `docs/evals/2026-08-16-anti-ceremony-creation-gate.md` |
 
-On current main, the coverage gate counts **0/12** product/judgment skills as
-measured. The legacy rows remain historical evidence and do not count until a
-v3 capture-manifest-backed run records a current directional verdict. The
-newly added `anti-ceremony` skill has no current result, and the
+The coverage gate counts **0/12** product/judgment skills as measured. The
+denominator is now DECLARED rather than inferred: 13 skills carry a
+product/judgment tier badge and one — `goals`, a pure `alias-of fitness` whose
+body delegates verbatim — is excluded in
+`scripts/.skill-probe-denominator-exclusions`, because a probe of it would
+measure `fitness` and report the verdict under the wrong name. The headline
+reads 0/12 before and after that change for different reasons: the alias left
+the denominator and the newly landed judgment skill `one-way-door` entered it,
+honestly unmeasured. The legacy rows remain historical evidence and do not
+count until a v3 capture-manifest-backed run records a current directional
+verdict. The `anti-ceremony` skill has no current result, and the
 `operationalize` runs are meta-tier, so their historical v1/v2 results do not
-change that 0/12 denominator.
+change that denominator.
+
+Seven of the eleven historical probe GROUPS behind those rows are SATURATED
+under `skill.probe-headroom` (`bash scripts/check-skill-probe-headroom.sh`):
+the control arm already aced the scenario at two effort levels, so their INERT
+classifications were void rows rather than honest nulls. A new row citing a
+SATURATED group is not evidence — pre-screen the scorecards with
+`cli/cmd/probe-headroom` before appending.
