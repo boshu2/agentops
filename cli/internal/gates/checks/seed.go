@@ -50,6 +50,9 @@ var (
 		"scripts/lib/codex-exec.sh",
 		"scripts/lib/preamble.sh",
 		"scripts/check-skill-probe-coverage.sh",
+		// The declared denominator: editing the exclusion list changes the
+		// gate's headline number, so it must re-run the gate.
+		"scripts/.skill-probe-denominator-exclusions",
 		"tests/scripts/probe-skill.bats",
 		"tests/scripts/check-skill-probe-coverage.bats",
 	}

@@ -166,6 +166,7 @@ func TestSkillProbeCoverageGateIsWarnFirstAdvisory(t *testing.T) {
 		"scripts/lib/codex-exec.sh",
 		"scripts/lib/preamble.sh",
 		"scripts/check-skill-probe-coverage.sh",
+		"scripts/.skill-probe-denominator-exclusions",
 		"tests/scripts/probe-skill.bats",
 		"tests/scripts/check-skill-probe-coverage.bats",
 	} {
