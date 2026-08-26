@@ -1,7 +1,7 @@
 {
   "image": "codex",
   "schema_version": "skill-image.v1",
-  "skill_count": 52,
+  "skill_count": 56,
   "skills": [
     {
       "disposition": "keep_specialist",
@@ -124,6 +124,12 @@
       "twin_path": "skills-codex/handoff/"
     },
     {
+      "disposition": "keep_specialist",
+      "slug": "human-only-skills",
+      "source_path": "skills/human-only-skills/",
+      "twin_path": "skills-codex/human-only-skills/"
+    },
+    {
       "disposition": "keep_strategy",
       "slug": "idea-genie",
       "source_path": "skills/idea-genie/",
@@ -152,6 +158,12 @@
       "slug": "ntm",
       "source_path": "skills/ntm/",
       "twin_path": "skills-codex/ntm/"
+    },
+    {
+      "disposition": "keep_strategy",
+      "slug": "one-way-door",
+      "source_path": "skills/one-way-door/",
+      "twin_path": "skills-codex/one-way-door/"
     },
     {
       "disposition": "keep_specialist",
@@ -220,6 +232,12 @@
       "twin_path": "skills-codex/reverse-engineer/"
     },
     {
+      "disposition": "keep_specialist",
+      "slug": "route",
+      "source_path": "skills/route/",
+      "twin_path": "skills-codex/route/"
+    },
+    {
       "disposition": "keep",
       "slug": "rpi",
       "source_path": "skills/rpi/",
@@ -260,6 +278,12 @@
       "slug": "skill-builder",
       "source_path": "skills/skill-builder/",
       "twin_path": "skills-codex/skill-builder/"
+    },
+    {
+      "disposition": "keep_specialist",
+      "slug": "skill-eval",
+      "source_path": "skills/skill-eval/",
+      "twin_path": "skills-codex/skill-eval/"
     },
     {
       "disposition": "keep_specialist",

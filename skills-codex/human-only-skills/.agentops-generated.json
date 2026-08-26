@@ -1,0 +1,7 @@
+{
+  "generator": "codex-sync",
+  "source_skill": "skills/human-only-skills",
+  "layout": "modular",
+  "source_hash": "f1d55ca4d12ad30e0060f3109f58bb59ed4ffea1d516ab4899e8ac1d7d6df127",
+  "generated_hash": "278db1998df1d5601446c989dc5f0e7fbbc68e869f127dc95c14069a10f4c517"
+}

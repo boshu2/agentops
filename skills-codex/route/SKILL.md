@@ -1,26 +1,8 @@
 ---
 name: route
-description: 'Pick the one AgentOps skill that owns a request, or answer that none does. Triggers: "which skill covers this", "route this", "is there a skill for X", "what should I use here", or any request whose owning skill is not obvious.'
-practices:
-- least-astonishment
-skill_api_version: 1
-hexagonal_role: supporting
-consumes: []
-produces:
-- routing-decision.v1
-context_rel: []
-user-invocable: true
-metadata:
-  tier: meta
-  dependencies: []
-  capabilities: ["route_request_to_skill"]
-  effects: []
-  canonical_status: canonical
-  disposition: keep_specialist
-  stability: experimental
+description: 'Pick the one AgentOps skill that owns a Triggers: "which skill covers this", "route this", "is there a skill for X", "what should I use here", or any request whose owning skill is not obvious.'
 ---
-
-# /route
+# $route
 
 Return the one skill that owns a request, the reason, and a confidence. Or return
 `none` — that is a real answer, not a failure. This skill routes and stops. It

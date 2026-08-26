@@ -37,6 +37,8 @@
 | `implement` | `customer-of` | `plan` |
 | `learn` | `customer-of` | `validate` |
 | `ntm` | `supplier-to` | `agent-native` |
+| `one-way-door` | `supplier-to` | `council` |
+| `one-way-door` | `supplier-to` | `premortem` |
 | `operationalize` | `supplier-to` | `skill-builder` |
 | `operationalize` | `supplier-to` | `workflow-builder` |
 | `pattern-mining` | `customer-of` | `research` |
@@ -51,6 +53,7 @@
 | `rpi` | `customer-of` | `validate` |
 | `scope` | `supplier-to` | `plan` |
 | `security` | `supplier-to` | `validate` |
+| `skill-eval` | `supplier-to` | `skill-builder` |
 | `toil-mining` | `supplier-to` | `automation-shape-routing` |
 | `using-flywheel` | `partnership` | `using-gc` |
 | `using-gc` | `partnership` | `agent-native` |
@@ -100,6 +103,7 @@
 | `domain` | produces | `stdout` |
 | `fitness` | produces | `goal-measurement-report` |
 | `handoff` | produces | `caller-selected handoff path or .agents/ao/handoff/*` |
+| `human-only-skills` | produces | `stdout` |
 | `idea-genie` | consumes | `repo-context` |
 | `idea-genie` | consumes | `task-question` |
 | `idea-genie` | consumes | `idea-portfolio.v1` |
@@ -111,6 +115,7 @@
 | `ntm` | consumes | `pane-command-request` |
 | `ntm` | produces | `ntm-robot-state` |
 | `ntm` | produces | `agent-worker-transcript` |
+| `one-way-door` | produces | `decision-classification.v1` |
 | `operationalize` | consumes | `evidence-backed-expertise` |
 | `operationalize` | produces | `operationalization-proposal` |
 | `pattern-mining` | consumes | `repo-context` |
@@ -128,6 +133,7 @@
 | `research` | consumes | `research-question` |
 | `research` | produces | `research-report` |
 | `reverse-engineer` | produces | `.agents/scratch/reverse-engineer/*/` |
+| `route` | produces | `routing-decision.v1` |
 | `rpi` | consumes | `anti-ceremony` |
 | `rpi` | consumes | `plan` |
 | `rpi` | consumes | `implement` |
@@ -142,6 +148,9 @@
 | `security` | produces | `redteam-results.json` |
 | `skill-builder` | produces | `skill-source-package` |
 | `skill-builder` | produces | `skill-hygiene-report` |
+| `skill-eval` | consumes | `skill-source-package` |
+| `skill-eval` | produces | `probe-package` |
+| `skill-eval` | produces | `probe-result.v1` |
 | `standards` | produces | `stdout` |
 | `status` | produces | `stdout` |
 | `swarm` | consumes | `explicit-disjoint-packets` |

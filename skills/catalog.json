@@ -1,6 +1,6 @@
 {
   "schema_version": "3",
-  "skill_count": 52,
+  "skill_count": 56,
   "skills": [
     {
       "canonical_status": "canonical",
@@ -665,6 +665,31 @@
     {
       "canonical_status": "canonical",
       "capabilities": [
+        "human_only_skill_routing"
+      ],
+      "codex_override_present": true,
+      "consumes": [],
+      "context_rel": [],
+      "dependencies": [],
+      "description": "Name the skills only a person can invoke and when to reach for each. Triggers: \"human-only skills\", \"which skills must I run myself\".",
+      "disposition": "keep_specialist",
+      "effects": [],
+      "graph_root": false,
+      "hexagonal_role": "supporting",
+      "name": "human-only-skills",
+      "practices": [
+        "design-by-contract"
+      ],
+      "produces": [
+        "stdout"
+      ],
+      "references_count": 0,
+      "tier": "meta",
+      "user_invocable": true
+    },
+    {
+      "canonical_status": "canonical",
+      "capabilities": [
         "generate_evidenced_options",
         "dueling_idea_genies"
       ],
@@ -841,6 +866,44 @@
       "references_count": 0,
       "tier": "execution",
       "user_invocable": false
+    },
+    {
+      "canonical_status": "canonical",
+      "capabilities": [
+        "classify_decision_reversibility",
+        "escalate_user_challenge"
+      ],
+      "codex_override_present": true,
+      "consumes": [],
+      "context_rel": [
+        {
+          "kind": "supplier-to",
+          "with": "premortem"
+        },
+        {
+          "kind": "supplier-to",
+          "with": "council"
+        }
+      ],
+      "dependencies": [],
+      "description": "Classify a pending decision as reversible or irreversible before it is acted on, and route irreversible ones to the caller instead of auto-deciding. Triggers: \"is this a one-way door\", \"can we undo this\", \"should I just decide this\", \"the models disagree with me\", before any auto-decided approval gate.",
+      "disposition": "keep_strategy",
+      "effects": [
+        "write_advisory_decision_classification"
+      ],
+      "graph_root": false,
+      "hexagonal_role": "domain",
+      "name": "one-way-door",
+      "practices": [
+        "design-by-contract",
+        "fail-safe-defaults"
+      ],
+      "produces": [
+        "decision-classification.v1"
+      ],
+      "references_count": 2,
+      "tier": "judgment",
+      "user_invocable": true
     },
     {
       "canonical_status": "canonical",
@@ -1209,6 +1272,31 @@
     {
       "canonical_status": "canonical",
       "capabilities": [
+        "route_request_to_skill"
+      ],
+      "codex_override_present": true,
+      "consumes": [],
+      "context_rel": [],
+      "dependencies": [],
+      "description": "Pick the one AgentOps skill that owns a request, or answer that none does. Triggers: \"which skill covers this\", \"route this\", \"is there a skill for X\", \"what should I use here\", or any request whose owning skill is not obvious.",
+      "disposition": "keep_specialist",
+      "effects": [],
+      "graph_root": false,
+      "hexagonal_role": "supporting",
+      "name": "route",
+      "practices": [
+        "least-astonishment"
+      ],
+      "produces": [
+        "routing-decision.v1"
+      ],
+      "references_count": 0,
+      "tier": "meta",
+      "user_invocable": true
+    },
+    {
+      "canonical_status": "canonical",
+      "capabilities": [
         "orchestrate_once",
         "report"
       ],
@@ -1444,6 +1532,44 @@
       "references_count": 9,
       "tier": "meta",
       "user_invocable": false
+    },
+    {
+      "canonical_status": "canonical",
+      "capabilities": [
+        "author_seeded_probe",
+        "run_probe_tier"
+      ],
+      "codex_override_present": true,
+      "consumes": [
+        "skill-source-package"
+      ],
+      "context_rel": [
+        {
+          "kind": "supplier-to",
+          "with": "skill-builder"
+        }
+      ],
+      "dependencies": [],
+      "description": "Author and tier behavioral probes for a skill, including seeded-defect probes that escape ceiling saturation. Triggers: \"measure this skill\", \"the probe came back INERT\", \"the control arm aces it\", \"harden this scenario\", \"is this skill actually doing anything\".",
+      "disposition": "keep_specialist",
+      "effects": [
+        "write_probe_package",
+        "dispatch_probe_producer"
+      ],
+      "graph_root": false,
+      "hexagonal_role": "supporting",
+      "name": "skill-eval",
+      "practices": [
+        "measurement-over-assertion",
+        "ab-testing"
+      ],
+      "produces": [
+        "probe-package",
+        "probe-result.v1"
+      ],
+      "references_count": 1,
+      "tier": "meta",
+      "user_invocable": true
     },
     {
       "canonical_status": "canonical",
