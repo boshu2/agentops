@@ -434,6 +434,29 @@ if [[ -f "$HANDOFF_SCHEMA" ]]; then
     fi
 fi
 
+# --- Retrieval-Eval Golden Validation ---
+# Committed goldens are the fixture half of the retrieval-eval contract; the
+# grader (scripts/check-routing-probe-goldens.sh) validates them again at grade
+# time so a malformed fixture is never scored. This block is the tree-wide
+# check: a golden that stops satisfying the contract is a manifest failure even
+# if nobody runs the grader. Unlike the optional artifact blocks above, an
+# EMPTY goldens directory is a FAILURE — a retrieval eval with no fixtures
+# reports green forever and measures nothing.
+log "Validating retrieval-eval goldens"
+PACK_QUALITY_SCHEMA="$REPO_ROOT/schemas/pack-quality-expectations.v1.schema.json"
+ROUTING_GOLDENS_DIR="$REPO_ROOT/evals/routing-probes/goldens"
+if [[ -f "$PACK_QUALITY_SCHEMA" ]]; then
+    found_golden=0
+    for golden in "$ROUTING_GOLDENS_DIR"/*.json; do
+        [[ -f "$golden" ]] || continue
+        found_golden=1
+        validate_manifest "$golden" "$PACK_QUALITY_SCHEMA" "routing-golden/$(basename "$golden")"
+    done
+    if [[ "$found_golden" -eq 0 ]]; then
+        fail "no retrieval-eval goldens under evals/routing-probes/goldens/ — zero fixtures is zero measurement"
+    fi
+fi
+
 if [[ "$errors" -gt 0 ]]; then
     exit 1
 fi

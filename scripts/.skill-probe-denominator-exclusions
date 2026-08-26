@@ -1,0 +1,26 @@
+# Declared denominator for the skill.probe-coverage gate.
+#
+# The gate's denominator is "every skill declaring tier: product or
+# tier: judgment". That set is derived from frontmatter, which means it can
+# contain skills for which a behavior-change probe is a CATEGORY ERROR rather
+# than missing work — and an unmeasurable skill counted as unmeasured turns the
+# headline number into noise. This file declares those, one per line, so the
+# denominator is a stated set instead of an accident.
+#
+# FORMAT (enforced, fail-closed):
+#
+#     <skill-slug>  # <one-line argument for why a probe cannot apply>
+#
+# * The argument is REQUIRED and must be non-empty. A bare slug is rejected.
+#   An exclusion whose case cannot be written in one line is not an exclusion.
+# * A slug that is not currently in the product/judgment tier set is rejected,
+#   so a stale entry fails loudly instead of silently shrinking the denominator.
+# * Duplicates are rejected.
+#
+# THIS IS NOT A PLACE TO PARK UNMEASURED SKILLS. "We have not probed it yet"
+# is exactly what the gate exists to report. The only admissible argument is
+# that no honest probe of THIS skill could produce a verdict about THIS skill.
+# Lines here are read by scripts/check-skill-probe-coverage.sh and echoed in
+# its output, so every exclusion argues itself on every run.
+
+goals  # Pure compatibility alias: `context_rel: alias-of fitness`, and the body delegates verbatim to skills/fitness/SKILL.md. Any probe of it measures fitness, so its verdict would describe a different skill.

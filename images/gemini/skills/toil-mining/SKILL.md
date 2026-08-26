@@ -13,6 +13,7 @@ context_rel:
   with: automation-shape-routing
 skill_api_version: 1
 user-invocable: true
+disable-model-invocation: true
 context:
   window: fork
   intent:
