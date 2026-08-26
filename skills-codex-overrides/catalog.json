@@ -319,6 +319,24 @@
       "treatment": "parity_only",
       "wave": "catalog-parity",
       "reason": "Auto-generated parity twin (codex-sync): skills/anti-ceremony is the source of truth; no durable Codex-specific divergence yet."
+    },
+    {
+      "name": "one-way-door",
+      "treatment": "parity_only",
+      "wave": "catalog-parity",
+      "reason": "Auto-generated parity twin (codex-sync): skills/one-way-door is the source of truth; no durable Codex-specific divergence yet."
+    },
+    {
+      "name": "route",
+      "treatment": "parity_only",
+      "wave": "catalog-parity",
+      "reason": "Auto-generated parity twin (codex-sync): skills/route is the source of truth; no durable Codex-specific divergence yet."
+    },
+    {
+      "name": "skill-eval",
+      "treatment": "parity_only",
+      "wave": "catalog-parity",
+      "reason": "Auto-generated parity twin (codex-sync): skills/skill-eval is the source of truth; no durable Codex-specific divergence yet."
     }
   ]
 }
