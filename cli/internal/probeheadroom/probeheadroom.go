@@ -21,6 +21,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"sort"
@@ -169,6 +170,13 @@ func LoadFiles(paths []string) ([]Scorecard, error) {
 // LoadDir reads every *.json scorecard under dir (recursively) and groups them
 // by probe id. Group keys come back sorted so output is stable.
 func LoadDir(dir string) (map[string][]Scorecard, []string, error) {
+	// Root-scoped reads: every open resolves inside dir, so a symlink swapped
+	// in mid-walk cannot escape the scorecard tree (gosec G122 / CWE-367).
+	root, rootErr := os.OpenRoot(dir)
+	if rootErr != nil {
+		return nil, nil, fmt.Errorf("open scorecard root %s: %w", dir, rootErr)
+	}
+	defer root.Close()
 	groups := map[string][]Scorecard{}
 	err := filepath.WalkDir(dir, func(path string, entry os.DirEntry, err error) error {
 		if err != nil {
@@ -177,7 +185,18 @@ func LoadDir(dir string) (map[string][]Scorecard, []string, error) {
 		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".json") {
 			return nil
 		}
-		data, readErr := os.ReadFile(path) // #nosec G304 -- gate-supplied scorecard path, not user input.
+		rel, relErr := filepath.Rel(dir, path)
+		if relErr != nil {
+			return fmt.Errorf("scorecard path %s outside %s: %w", path, dir, relErr)
+		}
+		f, openErr := root.Open(rel)
+		if openErr != nil {
+			return fmt.Errorf("read scorecard %s: %w", path, openErr)
+		}
+		data, readErr := io.ReadAll(f)
+		if closeErr := f.Close(); readErr == nil && closeErr != nil {
+			readErr = closeErr
+		}
 		if readErr != nil {
 			return fmt.Errorf("read scorecard %s: %w", path, readErr)
 		}
