@@ -495,8 +495,8 @@
     {
       "name": "human-only-skills",
       "source_skill": "skills/human-only-skills",
-      "source_hash": "0d6e1da07cfd5c971766cd7efc20c16d7815eef100f018cfd77fc2fcdfdd25dc",
-      "generated_hash": "67b3b01800ac2669c0e5971f4dadc5c8dbe52e521fa8273ea514e21dd32c7685"
+      "source_hash": "02f1f7e8a538ed0e1263b70e91012d9bdec60e263e5aad627341559e8eef3572",
+      "generated_hash": "b5214e5fb156e23fb474c01445f8efd1c1e6d88ca1ef979d75d5ede4f06ac760"
     },
     {
       "name": "idea-genie",
@@ -561,8 +561,8 @@
     {
       "name": "premortem",
       "source_skill": "skills/premortem",
-      "source_hash": "0b998e126a0d7e5ebe2d070fdc90a50c2d6f3c1a3e397f561a1d218e4939a3eb",
-      "generated_hash": "e2d02a8b963822a052dd808ce864ff4fb48792c9a6cfcef538f7a96fd3f309d8"
+      "source_hash": "5f45947f709ba60926485c50691b4356b87b3468fa4f9d8b667951c7067ef02b",
+      "generated_hash": "f722015d2f252e07ad4c9703e84e8c3ee9a984fb7e0a6e23ccc5010a8ee11fe3"
     },
     {
       "name": "product",
@@ -651,8 +651,8 @@
     {
       "name": "skill-eval",
       "source_skill": "skills/skill-eval",
-      "source_hash": "85a6978219f840a4825cd246d771e5d3dd49e7ef606c1fb606b7f879d54db441",
-      "generated_hash": "572fd136d83021b3dfb8a452a93719413ccfe2b3b96fcf62b52d2503de82db73"
+      "source_hash": "12b4b207d8c2151f75e04768d0986ea3fcde4a4f5c47efb1f7515c76c309f6a1",
+      "generated_hash": "593f88e67bb34b491969aa7e6f20296a2d3ac19058e5d812f2dd6a5f8053af25"
     },
     {
       "name": "standards",

@@ -1,6 +1,6 @@
 # human-only-skills
 
-Name the skills only a person can invoke and when to reach for each. Triggers: "human-only skills", "which skills must I run myself".
+Name the skills reserved for people to invoke — where the runtime honors disable-model-invocation — and when to reach for each. Triggers: "human-only skills", "which skills must I run myself".
 
 ## Instructions
 

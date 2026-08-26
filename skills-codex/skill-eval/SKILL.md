@@ -80,7 +80,9 @@ changes what is being measured from *knowing the rule* to *applying it while bus
    `injected-prelude` (prelude-only evidence, never skill coverage).
 7. **Pre-screen headroom before believing the verdict** — gate
    `skill.probe-headroom`. A verdict over a saturated scenario is void.
-8. **Record one ledger row** in `evals/skill-probes/LEDGER.md` and stop.
+8. **Record the outcome and stop.** Pre-screen passed (`SEPARATED`/`FLOOR`):
+   append exactly one ledger row in `evals/skill-probes/LEDGER.md`. `SATURATED`:
+   append nothing to the ledger — note the scenario's retirement in the RUNBOOK.
 
 ```bash
 # Calibrate deterministically against committed fixtures.
@@ -132,7 +134,7 @@ measurement problem into a false positive.
 | Anti-pattern | Corrective |
 |---|---|
 | Discriminator greps for a term that appears in the treatment prelude | Grade the act (file written, tool called, question raised), never the vocabulary |
-| Re-running a saturated scenario at a lower effort to find separation | Retire it; promote to tier 2 or record the ceiling finding |
+| Re-running a saturated scenario at a lower effort to find separation | Retire it; promote to tier 2, noting the ceiling in the RUNBOOK (never as a ledger row) |
 | Seeding a defect so obvious both arms catch it | Calibrate: the control arm must plausibly miss it. See `references/seeding.md` |
 | Seeding a defect so obscure neither arm catches it | The defect must be *derivable from the discipline*, not from trivia |
 | Floor-only band on a multi-defect scenario | Add the ceiling; an agent that flags everything is not detecting anything |
@@ -143,7 +145,9 @@ measurement problem into a false positive.
 
 A probe package under `evals/skill-probes/<id>/` (`probe.json`, `question.md`,
 `discriminator.sh`, `fixtures/`, and `treatment-prelude.md` only in
-`injected-prelude` mode), plus one appended ledger row.
+`injected-prelude` mode), plus one appended ledger row when the headroom
+pre-screen passed — a `SATURATED` run appends no ledger row; it retires the
+scenario in the RUNBOOK.
 
 `probe.json` for a tier-2 probe declares its seeding:
 
@@ -165,16 +169,19 @@ A probe package under `evals/skill-probes/<id>/` (`probe.json`, `question.md`,
 ```
 
 **Done when:** `probe-skill.sh --replay` reproduces the recorded verdict from
-committed fixtures, `skill.probe-headroom` classifies the scorecard group
-`SEPARATED` (or the run is recorded as `SATURATED` with the scenario retired),
-and exactly one row was appended to the ledger.
+committed fixtures, and either `skill.probe-headroom` classifies the scorecard
+group `SEPARATED` and exactly one ledger row was appended, or it classifies
+the group `SATURATED` and the scenario was retired with a RUNBOOK note and
+zero ledger rows.
 
 ## Checks
 
 - The discriminator passes on a hand-written transcript that performs the act
   without using the prelude's wording, and fails on one that uses the wording
   without performing the act. Both directions, or it is not a discriminator.
-- Control and treatment prompts differ **only** by the prelude.
+- Control and treatment prompts differ **only** by the declared
+  `treatment_source` — the canonical SKILL.md bytes, or the prelude in
+  `injected-prelude` mode.
 - The seeded defect count in `probe.json` equals the count actually present in
   `question.md`.
 - The ledger row names the producer model and effort levels.
@@ -185,7 +192,7 @@ and exactly one row was appended to the ledger.
 ## Provenance
 
 - Harness this extends: [`scripts/probe-skill.sh`](../../scripts/probe-skill.sh), [`evals/skill-probes/README.md`](../../evals/skill-probes/README.md).
-- The saturation evidence that motivated tier 2: [`evals/skill-probes/LEDGER.md`](../../evals/skill-probes/LEDGER.md) — five INERT rows dated 2026-08-04/05 annotated "scenario needs hardening, not the skill."
+- The saturation evidence that motivated tier 2: [`evals/skill-probes/LEDGER.md`](../../evals/skill-probes/LEDGER.md) — the INERT rows dated 2026-08-04/05 annotated "scenario needs hardening, not the skill"; run the `skill.probe-headroom` gate for the live classification.
 - Coverage gate (does a result exist): [`scripts/check-skill-probe-coverage.sh`](../../scripts/check-skill-probe-coverage.sh), whose denominator is declared in `scripts/.skill-probe-denominator-exclusions`.
 - Headroom gate (could a result have existed): [`scripts/check-skill-probe-headroom.sh`](../../scripts/check-skill-probe-headroom.sh) — gate id `skill.probe-headroom`, rule in `cli/internal/probeheadroom`.
 - Seeded-forcing-defect and floor/band mechanism analysis (§2.1, §2.5): not on main; read it at `git show 9872483bd:docs/research/gstack-teardown-2026-08-08.md` (branch `recover/gstack-clean-room`).

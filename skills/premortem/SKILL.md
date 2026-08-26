@@ -27,7 +27,7 @@ Premortem is an optional plan-challenge strategy. It asks one fresh context to
 identify concrete ways the resolved bead or caller intent could fail before implementation.
 It is not part of the required RPI sequence and does not authorize readiness.
 
-## The first check: who verifies, and are they fresh? (MEASURED)
+## The first check: who verifies, and are they fresh?
 
 Before any technical risk, test the plan's EVIDENCE SHAPE: for every unit of
 work, who verifies it, and is the verifying context distinct from the

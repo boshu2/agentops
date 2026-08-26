@@ -273,6 +273,7 @@ frontmatter is the source of truth, this table is a convenience copy.
 | Skill | Tier | Window | Sections | Intent |
 |-------|------|--------|----------|--------|
 | craft-goal | judgment | inherit | — | task |
+| human-only-skills | meta | inherit | — | none |
 | postmortem | judgment | fork | exclude: HISTORY | task |
 | codebase-recon | execution | fork | exclude: HISTORY | task |
 | pattern-mining | execution | fork | exclude: HISTORY | task |
@@ -310,6 +311,7 @@ under `context` is inert metadata kept so existing skills keep validating.
 |-------|--------------------|-------------|
 | `allowed-tools` | **Active** — narrows tool auto-approval | host agent runtime |
 | `name`, `description` | **Active** — skill discovery and trigger matching | host agent runtime |
+| `disable-model-invocation` | **Active** where honored — strips the description from context and reserves invocation to the person; stripped at projection for runtimes without the switch | host agent runtime |
 | `context.window` | None — declaration-only | — |
 | `context.intent.mode` | None — declaration-only | — |
 | `context.sections` | None — the injection surface was removed | — |

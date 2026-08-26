@@ -671,7 +671,7 @@
       "consumes": [],
       "context_rel": [],
       "dependencies": [],
-      "description": "Name the skills only a person can invoke and when to reach for each. Triggers: \"human-only skills\", \"which skills must I run myself\".",
+      "description": "Name the skills reserved for people to invoke \u2014 where the runtime honors disable-model-invocation \u2014 and when to reach for each. Triggers: \"human-only skills\", \"which skills must I run myself\".",
       "disposition": "keep_specialist",
       "effects": [],
       "graph_root": false,

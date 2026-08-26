@@ -1,6 +1,6 @@
 ---
 name: human-only-skills
-description: 'Name the skills only a person can invoke and Triggers: "human-only skills", "which skills must I run myself".'
+description: 'Name the skills reserved for people to Triggers: "human-only skills", "which skills must I run myself".'
 ---
 # Human-only skills
 
