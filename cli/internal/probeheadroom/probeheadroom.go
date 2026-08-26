@@ -176,7 +176,7 @@ func LoadDir(dir string) (map[string][]Scorecard, []string, error) {
 	if rootErr != nil {
 		return nil, nil, fmt.Errorf("open scorecard root %s: %w", dir, rootErr)
 	}
-	defer root.Close()
+	defer func() { _ = root.Close() }() // read-only root; close error carries no data loss
 	groups := map[string][]Scorecard{}
 	err := filepath.WalkDir(dir, func(path string, entry os.DirEntry, err error) error {
 		if err != nil {
