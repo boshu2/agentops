@@ -12,6 +12,7 @@ produces:
 context_rel: []
 skill_api_version: 1
 user-invocable: true
+disable-model-invocation: true
 metadata:
   capabilities: [postmortem]
   effects: [write_postmortem_report]

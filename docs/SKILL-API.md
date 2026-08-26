@@ -158,6 +158,42 @@ user-invocable: true   # Shows as /skill-name
 user-invocable: false  # Hidden from user, used by other skills
 ```
 
+### `disable-model-invocation`
+
+The mirror of `user-invocable`: whether the *model* may invoke the skill. Its
+side effect is the reason to set it — Claude Code keeps a human-only skill's
+`description` out of the always-loaded context entirely, so the skill costs
+nothing until a person invokes it by slash command.
+
+```yaml
+disable-model-invocation: true   # Slash-command only; Claude cannot invoke it
+```
+
+Per the Claude Code contract ([Control who invokes a
+skill](https://code.claude.com/docs/en/skills)):
+
+| Frontmatter | Human invokes | Model invokes | Description in context |
+|---|---|---|---|
+| (neither key) | yes | yes | always |
+| `disable-model-invocation: true` | yes | no | never |
+| `user-invocable: false` | no | yes | always |
+
+Setting both would make the skill unreachable, so never do that.
+
+**The set-it rule.** Model invocation is load-bearing whenever *anything else*
+reaches for the skill. Before setting the key, check all four surfaces and keep
+the evidence: `ao skills consumers <slug>` and `ao skills graph` (declared
+`dependencies` / `consumes`), `workflows/*.js`, other skills' `SKILL.md` bodies
+(a `See Also` entry or a "routes to `<slug>`" sentence counts as a reach), and
+`evals/routing-probes/templates.json` (an `applicable` entry means a probe is
+measuring whether the *model* routes there — disabling model invocation makes
+that probe structurally unmeasurable). A skill reached by any of those stays
+model-invoked.
+
+Codex has no equivalent switch and strips the key; see
+`docs/contracts/codex-skill-api.md`. The current human-only roster and the
+argument for each entry live in `skills/human-only-skills/SKILL.md`.
+
 ### `metadata`
 
 Skill classification and dependency information.
