@@ -38,7 +38,7 @@ metadata:
 
 Legacy metadata that once controlled the now-retired lookup command. Nothing
 reads it today; it stays in the schema so skills written against the old shape
-keep validating. New skills can omit it — 28 of the 52 shipped skills do. Two
+keep validating. New skills can omit it — 31 of the 56 shipped skills do. Two
 forms remain accepted:
 
 **String form:**
@@ -265,8 +265,8 @@ the key; nothing resolves the path or checks a skill's output against it.
 
 ## Context Declaration Quick Reference
 
-`context` is optional and most skills omit it. These 24 are every skill in
-`skills/` that declares one; the remaining 28 declare no `context` block at
+`context` is optional and most skills omit it. These 25 are every skill in
+`skills/` that declares one; the remaining 31 declare no `context` block at
 all. Regenerate this view with `rg -A5 '^context:' skills/*/SKILL.md` — the
 frontmatter is the source of truth, this table is a convenience copy.
 
@@ -299,9 +299,11 @@ frontmatter is the source of truth, this table is a convenience copy.
 
 ## Enforcement Summary (v1)
 
-Only two frontmatter fields change behavior at runtime, and neither is
+Only three frontmatter fields change behavior at runtime, and none is
 enforced by `ao`: `name`/`description` drive skill discovery in the host agent
-runtime, and `allowed-tools` narrows that runtime's auto-approval. Everything
+runtime, `allowed-tools` narrows that runtime's auto-approval, and
+`disable-model-invocation` (where the runtime honors it) strips the
+description from context and reserves invocation to the person. Everything
 under `context` is inert metadata kept so existing skills keep validating.
 
 | Field | Runtime enforcement | Enforced by |

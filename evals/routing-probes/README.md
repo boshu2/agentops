@@ -85,11 +85,13 @@ literal queries cannot contaminate it. That protection is why goldens are
 graded offline and why a golden query must never be reused as a live-dispatch
 prompt.
 
-### Standing finding (2026-08-26)
+### Standing finding (2026-08-26) — CLOSED same day
 
-`rq-04-independent-verdict` is **red on purpose**. Six natural ways to ask for
-an independent verdict on finished work fail to surface `validate` in the top
-3; only a phrasing containing the literal word "acceptance" does. The fixture
-is kept unmodified and the nightly job that runs it is advisory, so the gap
-stays visible without blocking. Closing it means editing `validate`'s
-description or the ranker — neither is the fixture's job.
+`rq-04-independent-verdict` was red at authoring: six natural ways to ask for
+an independent verdict on finished work failed to surface `validate` in the
+top 3; only a phrasing containing the literal word "acceptance" did. Closed by
+the pointer-wording-first repair the roadmap prescribes — `validate`'s
+description gained the caller's own words (finished, proven, verdict, merge)
+and now ranks 1 at 0.333 for the golden's query. The golden pins the repair:
+a description regression reopens it, and the advisory nightly job plus the
+bats honest-pin go red with it.

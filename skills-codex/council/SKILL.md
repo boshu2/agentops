@@ -60,7 +60,7 @@ deletes that context without telling anyone it was overruled.
 When two or more independent judgments recommend a change to something the caller
 specified — merging what they separated, cutting what they asked for, reversing a
 declared direction — record it as a `caller_challenge` entry, not a consensus
-point. Each entry carries exactly five fields:
+point. Each entry carries these fields (five required; `judge_count` and `disagreement_kind` optional):
 
 - `caller_stated` — their direction, in their words, not paraphrased.
 - `judges_recommend` — the change, and how many judges independently reached it.

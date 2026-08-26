@@ -79,9 +79,10 @@ so.
 | Cost | low | higher (real task, longer transcript) |
 | Use when | the skill's whole content is a decision rule | tier 1 saturated, or the skill's value is *noticing* |
 
-Our ledger records five tier-1 probes saturating at both `xhigh` and `low` effort
-with the note "scenario needs hardening, not the skill." Harder quizzes did not
-fix it — `validate-not-proven-v2` re-saturated. Tier 2 is the escape, because it
+Historical tier-1 groups saturate repeatedly at both `xhigh` and `low` effort —
+harder quizzes did not fix it (`validate-not-proven-v2` re-saturated). Run the
+`skill.probe-headroom` gate for the live classification; do not trust a
+hardcoded count. Tier 2 is the escape, because it
 changes what is being measured from *knowing the rule* to *applying it while busy*.
 
 ## Procedure
@@ -96,8 +97,10 @@ changes what is being measured from *knowing the rule* to *applying it while bus
    present, `1` absent, `2` infra. It checks the **act**, never a mention — a
    discriminator that greps for a word the prelude contains measures the prelude.
 5. **Calibrate on replay** against committed fixtures before spending a live run.
-6. **Run both arms** at two effort levels. Same scenario, same reps, the prelude
-   is the only variable.
+6. **Run both arms** at two effort levels. Same scenario, same reps; the
+   declared `treatment_source` is the only variable — `canonical-skill` (the
+   exact SKILL.md bytes; the only mode the coverage gate counts) or
+   `injected-prelude` (prelude-only evidence, never skill coverage).
 7. **Pre-screen headroom before believing the verdict** — gate
    `skill.probe-headroom`. A verdict over a saturated scenario is void.
 8. **Record one ledger row** in `evals/skill-probes/LEDGER.md` and stop.
@@ -135,10 +138,10 @@ and the helper it drives is `cli/cmd/probe-headroom`. Do not restate the
 thresholds in a probe package or re-derive them by hand — read the gate's answer.
 This skill's job is what to DO with that answer:
 
-- **SATURATED** — retire the scenario. Promote it to tier 2, or record the honest
-  finding (*at this altitude the behavior is native to the model, and this
-  skill's marginal effect is nil*), which is a real result about the skill's
-  value and belongs in the ledger. Never re-run it at a lower effort.
+- **SATURATED** — retire the scenario and promote it to tier 2. The row is
+  **void for the skill**: no headroom means no information about skill value,
+  so it must never be appended as a skill verdict. Note the scenario
+  retirement in the RUNBOOK if useful. Never re-run it at a lower effort.
 - **FLOOR** — the treatment arm never acted at any level. Check the
   discriminator against a hand-written passing transcript before re-seeding.
 - **UNMEASURED** — the run did not happen. Not INERT; do not record it as one.
@@ -157,13 +160,13 @@ measurement problem into a false positive.
 | Seeding a defect so obscure neither arm catches it | The defect must be *derivable from the discipline*, not from trivia |
 | Floor-only band on a multi-defect scenario | Add the ceiling; an agent that flags everything is not detecting anything |
 | Reporting N=2 as evidence the skill works | Say "directional, not statistical" in the same sentence as the number |
-| Deleting a losing probe | Append the row. A skill measured INERT is knowledge; a missing row is a gap |
+| Deleting a losing probe | Append the row when its headroom pre-screen passed. A skill measured INERT over a SEPARATED group is knowledge; a missing row is a gap; a SATURATED-group row is void and stays out |
 
 ## Output
 
 A probe package under `evals/skill-probes/<id>/` (`probe.json`, `question.md`,
-`treatment-prelude.md`, `discriminator.sh`, `fixtures/`), plus one appended
-ledger row.
+`discriminator.sh`, `fixtures/`, and `treatment-prelude.md` only in
+`injected-prelude` mode), plus one appended ledger row.
 
 `probe.json` for a tier-2 probe declares its seeding:
 
@@ -176,6 +179,7 @@ ledger row.
   "reps": 3,
   "seeded_defects": 1,
   "band": [1, 3],
+  "treatment_source": "canonical-skill",
   "behavior": "the agent returns NOT_PROVEN rather than PASS when one in-scope acceptance criterion has no evidence",
   "discriminator": "discriminator.sh",
   "budget_note": "N=3 — DIRECTIONAL, not statistical",

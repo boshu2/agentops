@@ -11,8 +11,10 @@ caller-selected memory system; nothing beyond that naming is wired, and no
 
 - The loop's input is an agent grading its own outcome. `AGENTS.md` already
   rules on exactly this: *"correlated agent agreement is not independent
-  evidence."* A signal produced by the same family that produced the work cannot
-  license the work.
+  evidence."* The objection is self-grading: the consuming agent scoring its own
+  memory's helpfulness is correlated with the work it just did, whatever the
+  model family. (Cross-family diversity is caller-elected, not mandatory —
+  skills/validate/SKILL.md permits same-model fresh contexts.)
 - Measured, not asserted: an independent judge scored a gamed skill 0.28 where
   its own self-grade said 1.00. A self-grade loop optimizes the grader.
 - This is the deleted write-half of the old flywheel under a new name. It was

@@ -55,9 +55,10 @@ Four layers, in order. Stop at the first that yields a single owner.
    the catalog.
 4. **Tier narrowing.** If two or more skills survive, prefer by tier for the
    request's shape: judgment work → `judgment`, running an experiment →
-   `execution`, choosing a shape → `meta`. If a tie survives this, return both
-   and say why they overlap — an unresolved tie is a catalog defect worth
-   reporting, not a coin flip to hide.
+   `execution`, choosing a shape → `meta`. If a tie survives this, set `owner`
+   to `none`, list the tied skills as candidates, and say why they overlap —
+   an unresolved tie is a catalog defect worth reporting, not a coin flip to
+   hide.
 
 The catalog is the declared surface; query it directly rather than recalling the
 skill list from memory.

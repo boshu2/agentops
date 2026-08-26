@@ -263,19 +263,19 @@ print(value)
 }
 
 @test "the repository's committed goldens grade with exactly the known finding" {
-    # HONEST PIN, not a target. rq-04-independent-verdict is red on purpose:
-    # `ao skills find` does not surface `validate` for the phrasings a caller
-    # actually uses to ask for a verdict (evals/routing-probes/README.md,
-    # "Standing finding"). This case asserts the CURRENT truth so the state
-    # cannot drift silently. When the gap is closed — or a new one opens — this
-    # test goes red and the pin below is updated to the new honest state.
+    # HONEST PIN, not a target. All six goldens pass since 2026-08-26: the
+    # rq-04 gap (validate absent for verdict phrasings) was closed the same
+    # day by the pointer-wording-first repair — validate's description now
+    # carries the caller's own words and ranks 1 for the query. This case
+    # asserts the CURRENT truth so the state cannot drift silently; a
+    # description regression reopens rq-04 and this pin goes red with it.
     command -v go >/dev/null 2>&1 || skip "go toolchain unavailable; the nightly advisory job carries the real-corpus grade"
     unset ROUTING_GOLDENS_DIR ROUTING_GOLDENS_SCHEMA ROUTING_GOLDENS_AO_BIN
 
     run --separate-stderr bash "$REPO_ROOT/scripts/check-routing-probe-goldens.sh" --json
 
-    [ "$status" -eq 1 ]
+    [ "$status" -eq 0 ]
     [ "$(json_field "$output" total)" = "6" ]
-    [ "$(json_field "$output" failed)" = "1" ]
-    [[ "$output" == *"rq-04-independent-verdict"* ]]
+    [ "$(json_field "$output" failed)" = "0" ]
+    [ "$(json_field "$output" passed)" = "6" ]
 }

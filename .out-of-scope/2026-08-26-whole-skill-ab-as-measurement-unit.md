@@ -4,8 +4,12 @@
 run a task with the whole skill injected against the same task without it, and
 read the difference as the skill's effect.
 
-**Decision:** not built further. Existing whole-skill A/B rows stay as history;
-no new skill gets measured this way.
+**Decision:** not built further **as the default, unseeded form** — organic
+tasks a frontier control arm already passes. Existing rows stay as history.
+Seeded-defect A/Bs with a passing `skill.probe-headroom` pre-screen (Train 2 of
+docs/plans/2026-08-26-instrument-panel-roadmap.md) are the sanctioned
+successor and still use canonical-skill treatment; what is refused is the
+saturation-blind version, not the mechanism.
 
 **Why:**
 

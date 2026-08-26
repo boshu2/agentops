@@ -50,7 +50,7 @@ jq -e '
       and (.reasoning | text)
       and (.context_possibly_missing | text)
       and (.cost_if_wrong | text)
-      and (if has("judge_count") then (.judge_count | type == "number" and . >= 2) else true end)
+      and (if has("judge_count") then (.judge_count | type == "number" and . >= 2 and . == (. | floor)) else true end)
       and (if has("disagreement_kind") then (.disagreement_kind as $k | ["preference","security","feasibility"] | index($k) != null) else true end)))
     else true end)
 ' "$1" >/dev/null || {

@@ -447,8 +447,8 @@
     {
       "name": "council",
       "source_skill": "skills/council",
-      "source_hash": "5dfbd6efb2b277d2e11f13ed2953842369facb2b9ddadcc65dfccd9ed635e203",
-      "generated_hash": "3ba71b473fcc9f6fdd4773a846af0fcdcfb8622f66aaf376b0965e2d56fd6aa9"
+      "source_hash": "1dc9520299f2372de70c8b846cf9374db76edfc0a3f99150361a7291f44b7ad2",
+      "generated_hash": "83505799fadac77f272b22b3d3524792644209fea6d40cc9662268fd4ca7e73e"
     },
     {
       "name": "craft-goal",
@@ -495,8 +495,8 @@
     {
       "name": "human-only-skills",
       "source_skill": "skills/human-only-skills",
-      "source_hash": "f1d55ca4d12ad30e0060f3109f58bb59ed4ffea1d516ab4899e8ac1d7d6df127",
-      "generated_hash": "278db1998df1d5601446c989dc5f0e7fbbc68e869f127dc95c14069a10f4c517"
+      "source_hash": "0d6e1da07cfd5c971766cd7efc20c16d7815eef100f018cfd77fc2fcdfdd25dc",
+      "generated_hash": "67b3b01800ac2669c0e5971f4dadc5c8dbe52e521fa8273ea514e21dd32c7685"
     },
     {
       "name": "idea-genie",
@@ -561,8 +561,8 @@
     {
       "name": "premortem",
       "source_skill": "skills/premortem",
-      "source_hash": "2c15beeb1de8765e53244b00a1aa31c61609500e40eab2ebec122efc16da00a3",
-      "generated_hash": "8454319275f58f2d7716448a1a1dee35c7b985858a3a57b5fde8eedd8289f2db"
+      "source_hash": "0b998e126a0d7e5ebe2d070fdc90a50c2d6f3c1a3e397f561a1d218e4939a3eb",
+      "generated_hash": "e2d02a8b963822a052dd808ce864ff4fb48792c9a6cfcef538f7a96fd3f309d8"
     },
     {
       "name": "product",
@@ -603,8 +603,8 @@
     {
       "name": "route",
       "source_skill": "skills/route",
-      "source_hash": "15203efda73e37c84d487d909fe79d4f208c63ae3ec1951f7bfaee4334d6e3d5",
-      "generated_hash": "1afe1b908c4f6bc7e5377b95d320be9ef68af8be1d2ceda987c2cddfd49c2fd1"
+      "source_hash": "d39a1602fea8a01d7a0fe27b1bc829ec4d54cf444aee39e8870ae4b84a7a4dce",
+      "generated_hash": "11298957d10af7657cc3a45512e840e17b9851574897875abddb16566facdc7d"
     },
     {
       "name": "rpi",
@@ -651,8 +651,8 @@
     {
       "name": "skill-eval",
       "source_skill": "skills/skill-eval",
-      "source_hash": "10877cb9ebe21049ed3f1a0b2551b5848444f7ad286586222786220fa8d5809c",
-      "generated_hash": "4d1cf45ee5838ae1e8e992b51743ac76b7c45137dcfce0d50dc21abfb9e3f45a"
+      "source_hash": "85a6978219f840a4825cd246d771e5d3dd49e7ef606c1fb606b7f879d54db441",
+      "generated_hash": "572fd136d83021b3dfb8a452a93719413ccfe2b3b96fcf62b52d2503de82db73"
     },
     {
       "name": "standards",
@@ -699,8 +699,8 @@
     {
       "name": "validate",
       "source_skill": "skills/validate",
-      "source_hash": "dc2ed6796e1fa59e9d1436eca4fcb4741a54b426e10b6eec0de5395f28cf42a4",
-      "generated_hash": "fd41631f52f8c9c2311b1dfb86035c6782d53ccefde4453f7978ebb8c11d3b12"
+      "source_hash": "fc36d58a68e3d676205cfac0928f2fe62a9172e07b48287751b726ed81769682",
+      "generated_hash": "cae8d561d899e884b566d00abb831ed346d40b858e72b4ed2e41937cd389a480"
     },
     {
       "name": "workflow-builder",

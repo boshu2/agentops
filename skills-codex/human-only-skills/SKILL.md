@@ -4,11 +4,13 @@ description: 'Name the skills only a person can invoke and Triggers: "human-only
 ---
 # Human-only skills
 
-Four skills carry `disable-model-invocation: true`. Codex keeps their
-descriptions out of every context window and blocks the model from invoking
-them, so a model that needs one can only say so — a person types the command.
-This skill is the pointer that survives that strip. It **names** skills. It
-never invokes one.
+Four skills carry `disable-model-invocation: true`. In runtimes that honor
+that key, their descriptions stay out of the context window and the model
+cannot invoke them — a person types the command. In runtimes without the
+switch, the key is stripped at projection time and these remain ordinary
+advertised skills (see docs/contracts/codex-skill-api.md); the pointer below
+still tells a person which ones to run themselves. This skill **names**
+skills. It never invokes one.
 
 ## The roster
 

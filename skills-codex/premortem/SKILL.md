@@ -21,8 +21,9 @@ because it silently converts every other failure into a shipped one.
 > directional): without this doctrine loaded the producer named the planted
 > self-validation flaw in 1/2 runs; with it loaded, 2/2. Ledger:
 > `evals/skill-probes/LEDGER.md`. That row is `LEGACY-UNVERIFIED` under the
-> current capture contract, and its probe group's control arm did not saturate,
-> so the direction stands while the provenance does not.
+> current capture contract — replay cannot establish producer, configuration,
+> or reproducibility — so treat this skill as unmeasured until a tier-2 probe
+> under the current contract re-establishes it.
 
 ## The second check: which steps are one-way doors?
 

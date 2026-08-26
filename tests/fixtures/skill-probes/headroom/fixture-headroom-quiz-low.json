@@ -1,14 +1,36 @@
 {
   "schema": "agentops-skill-probe.v1",
   "probe": "fixture-headroom-quiz",
-  "skill": "premortem",
+  "skill": "validate",
   "mode": "live",
-  "generated_at": "2026-08-04T23:57:23Z",
+  "generated_at": "2026-08-05T00:49:59Z",
   "reps": 2,
-  "producer": {"model": "gpt-5.6-luna", "effort": "low"},
-  "honesty": "GATE FIXTURE (tests/fixtures/skill-probes) — not a real capture; arm counts of a scenario the control arm does NOT ace",
-  "control": {"present": 1, "usable": 2, "rate": 0.5},
-  "treatment": {"present": 1, "usable": 2, "rate": 0.5},
+  "producer": {
+    "model": "gpt-5.6-luna",
+    "effort": "low"
+  },
+  "honesty": "GATE FIXTURE (tests/fixtures/skill-probes) \u2014 not a real capture; byte-identical to the saturated pair except the control arm, so separation is attributable to control outcomes alone",
+  "control": {
+    "present": 0,
+    "usable": 2,
+    "rate": 0.0
+  },
+  "treatment": {
+    "present": 2,
+    "usable": 2,
+    "rate": 1.0
+  },
   "verdict": "INERT",
-  "per_rep": [{"rep":1,"control":"PRESENT","treatment":"PRESENT"},{"rep":2,"control":"ABSENT","treatment":"ABSENT"}]
+  "per_rep": [
+    {
+      "rep": 1,
+      "control": "ABSENT",
+      "treatment": "PRESENT"
+    },
+    {
+      "rep": 2,
+      "control": "ABSENT",
+      "treatment": "PRESENT"
+    }
+  ]
 }
