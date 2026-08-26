@@ -1,0 +1,16 @@
+{
+  "$schema": "../../../schemas/pack-quality-expectations.v1.schema.json",
+  "schema_version": 1,
+  "id": "rq-03-security-review",
+  "retrieval_surface": "ao-skills-find",
+  "task": "A contractor-written upload handler is about to ship and the caller wants its security exposure named first.",
+  "query": "review this upload handler for security problems before it ships",
+  "top_k": 3,
+  "expected_selected_ids": ["security"],
+  "critical_omitted_ids": ["product"],
+  "forbidden_leaks": ["^council$"],
+  "min_provenance_density": 1.0,
+  "max_tokens": 90,
+  "rationale": "security owns threat review of a concrete artifact. product tied security exactly at rank 1 on the phrasing 'review this handler for security problems before production' in an offline check on 2026-08-26 (an alphabetical tie-break away from a wrong answer), so it is pinned out of the pack entirely. council is the 'get another opinion' confusion and must not take rank 1.",
+  "notes": "Derived from the rt-05-secure-review routing template."
+}
