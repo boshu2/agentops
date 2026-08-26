@@ -10,9 +10,11 @@
 // CONTROL arm's absolute rate separates those two, and re-running a saturated
 // scenario at a lower effort produces ledger rows instead of knowledge.
 //
-// RED-FIRST STATUS: this file is the declared surface only. Classify returns
-// ErrNotImplemented until the rule lands; the fixture-separation test in
-// probeheadroom_test.go fails against it on purpose.
+// The rule is the deterministic half of skill measurement: it never judges a
+// skill, only whether the scenario left room to judge it in. Prior art is the
+// shell rule recovered from the 2026-08-08 clean-room package; the thresholds
+// and exit codes are preserved so a scorecard classified there classifies the
+// same way here.
 package probeheadroom
 
 import (
@@ -24,9 +26,6 @@ import (
 	"sort"
 	"strings"
 )
-
-// ErrNotImplemented is returned by Classify until the headroom rule is ported.
-var ErrNotImplemented = errors.New("probeheadroom: classification rule not implemented")
 
 // ControlCeiling is the control-arm rate at or above which one effort level
 // counts as "aced": the scenario left no room for the treatment arm to show a
@@ -200,8 +199,88 @@ func LoadDir(dir string) (map[string][]Scorecard, []string, error) {
 	return groups, names, nil
 }
 
-// Classify applies the headroom rule to one probe's scorecard group.
+// value returns an arm's rate, treating a JSON null as 0.0. A null rate only
+// occurs with zero usable reps, which the UNMEASURED branch catches first.
+func (a Arm) value() float64 {
+	if a.Rate == nil {
+		return 0
+	}
+	return *a.Rate
+}
+
+// Classify applies the headroom rule to one probe's scorecard group. Every
+// card must belong to the same probe: two scenarios cannot share one headroom
+// verdict, and silently merging them would let a saturated scenario hide
+// behind an unsaturated one.
+//
+// The branches are ordered by what each one invalidates:
+//
+//  1. UNMEASURED — no usable treatment reps anywhere. The run did not happen,
+//     so no statement about headroom is available. This outranks a
+//     saturated-looking control arm, because a control arm measured against
+//     nothing measured nothing.
+//  2. SATURATED — the control arm reached ControlCeiling at two or more
+//     distinct effort levels, each with at least MinUsableReps usable control
+//     reps. There was no room for the treatment arm to differ. Retire the
+//     scenario (promote it to a seeded-defect probe, or record the honest
+//     ceiling finding); re-running it at a lower effort adds ledger rows, not
+//     knowledge.
+//  3. FLOOR — every card has usable treatment reps and the treatment arm never
+//     produced the act at any level. Either the defect is below the
+//     calibration window or the discriminator does not match the act.
+//  4. SEPARATED — the control arm left room, so the probe's own verdict
+//     reflects the skill rather than the scenario.
 func Classify(cards []Scorecard) (Result, error) {
-	_ = cards
-	return Result{}, ErrNotImplemented
+	if len(cards) == 0 {
+		return Result{}, errors.New("probeheadroom: no scorecards to classify")
+	}
+
+	probe := cards[0].Probe
+	skill := cards[0].Skill
+	for _, card := range cards[1:] {
+		if card.Probe != probe {
+			return Result{}, fmt.Errorf("probeheadroom: mixed probe ids in one group: %q and %q", probe, card.Probe)
+		}
+	}
+
+	res := Result{Probe: probe, Skill: skill}
+
+	acedSet := map[string]struct{}{}
+	anyUsableTreatment := false
+	allTreatmentUsable := true
+	allTreatmentSilent := true
+	for _, card := range cards {
+		if card.Treatment.Usable > 0 {
+			anyUsableTreatment = true
+		} else {
+			allTreatmentUsable = false
+		}
+		if card.Treatment.value() != 0 {
+			allTreatmentSilent = false
+		}
+		if card.Control.Usable >= MinUsableReps && card.Control.value() >= ControlCeiling {
+			acedSet[card.EffortLabel()] = struct{}{}
+		}
+	}
+	for effort := range acedSet {
+		res.AcedEfforts = append(res.AcedEfforts, effort)
+	}
+	sort.Strings(res.AcedEfforts)
+
+	switch {
+	case !anyUsableTreatment:
+		res.Class = Unmeasured
+		res.Detail = "no usable treatment reps; the run did not happen, so this is not INERT"
+	case len(res.AcedEfforts) >= 2:
+		res.Class = Saturated
+		res.Detail = fmt.Sprintf("control arm >= %.2f at %d effort levels (%s); retire the scenario rather than re-running it",
+			ControlCeiling, len(res.AcedEfforts), strings.Join(res.AcedEfforts, ", "))
+	case allTreatmentUsable && allTreatmentSilent:
+		res.Class = Floor
+		res.Detail = "the treatment arm never produced the act at any effort level; check the discriminator against a hand-written passing transcript before re-seeding"
+	default:
+		res.Class = Separated
+		res.Detail = fmt.Sprintf("control aced %d effort level(s); the verdict reflects the skill, not the scenario", len(res.AcedEfforts))
+	}
+	return res, nil
 }

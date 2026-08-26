@@ -81,6 +81,7 @@ skills/vibe/README.md
 cli/ao
 cli/bin/ao
 cli/bin/witness-crosscheck
+cli/bin/probe-headroom
 cli/cmd/ao/ao
 cli/cmd/ao/ao-test-bin
 cli/coverage.out
