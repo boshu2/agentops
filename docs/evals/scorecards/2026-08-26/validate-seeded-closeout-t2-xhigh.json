@@ -1,0 +1,137 @@
+{
+  "schema": "agentops-skill-probe.v3",
+  "probe": "validate-seeded-closeout-t2",
+  "skill": "validate",
+  "mode": "live",
+  "generated_at": "2026-08-26T23:44:46Z",
+  "reps": 2,
+  "producer": {
+    "adapter": "codex",
+    "effort": "xhigh",
+    "identity": {
+      "coverage_eligible": true,
+      "executable_sha256": "sha256:047bd39709cef43bb6d1125b19135d25d0a968b37147802bd1e4b6174ad779c2",
+      "override": false,
+      "source": "native-codex-path",
+      "version": "codex-cli 0.145.0"
+    },
+    "model": "gpt-5.6-luna",
+    "threads": [
+      {
+        "path": "control-1.txt",
+        "thread_id": "01a04074-318b-7782-a069-e3d3ad516d24"
+      },
+      {
+        "path": "treatment-1.txt",
+        "thread_id": "01a04074-af56-73b0-bef9-3b3a4ce0006c"
+      },
+      {
+        "path": "control-2.txt",
+        "thread_id": "01a04075-a04e-7130-87f2-894f19dca848"
+      },
+      {
+        "path": "treatment-2.txt",
+        "thread_id": "01a04075-3f45-7f80-9834-ae0a928b76bd"
+      }
+    ]
+  },
+  "requested_producer": {
+    "model": "gpt-5.6-luna",
+    "effort": "xhigh"
+  },
+  "fixture_set": {
+    "name": "fixtures-xhigh-2026-08-26",
+    "metadata": "fixture-set.json",
+    "binding_sha256": "sha256:e1d39d7109dec8555743d69bd9de1a1bbd4c3092381561ff8bb6fb6931d80161",
+    "schema": "agentops-skill-probe-fixture-set.v3"
+  },
+  "treatment_source": "canonical-skill",
+  "evaluator": {
+    "dispatch_helper": {
+      "path": "scripts/lib/codex-exec.sh",
+      "sha256": "sha256:6f90d5acc1eecdb59ef708519acbcdf9bc7edddf33109f26ae760a8ed20fd607"
+    },
+    "harness": {
+      "path": "scripts/probe-skill.sh",
+      "sha256": "sha256:1effcc209de467f380f00880ed4508640ddf585581fd7a5ce5ae7c2b74c765ea"
+    },
+    "metadata_helper": {
+      "path": "scripts/lib/probe-fixture-metadata.py",
+      "sha256": "sha256:188c30b4abec48eac4886e5098cc35e41912f7c3f84e9c8083e233857fb75e36"
+    },
+    "preamble": {
+      "path": "scripts/lib/preamble.sh",
+      "sha256": "sha256:c4c06472b655cc440ab69e2d3c3bb7773c393eab671975aad3f1d446b2994199"
+    }
+  },
+  "capture_evaluator": {
+    "dispatch_helper": {
+      "path": "scripts/lib/codex-exec.sh",
+      "sha256": "sha256:6f90d5acc1eecdb59ef708519acbcdf9bc7edddf33109f26ae760a8ed20fd607"
+    },
+    "harness": {
+      "path": "scripts/probe-skill.sh",
+      "sha256": "sha256:1effcc209de467f380f00880ed4508640ddf585581fd7a5ce5ae7c2b74c765ea"
+    },
+    "metadata_helper": {
+      "path": "scripts/lib/probe-fixture-metadata.py",
+      "sha256": "sha256:188c30b4abec48eac4886e5098cc35e41912f7c3f84e9c8083e233857fb75e36"
+    },
+    "preamble": {
+      "path": "scripts/lib/preamble.sh",
+      "sha256": "sha256:c4c06472b655cc440ab69e2d3c3bb7773c393eab671975aad3f1d446b2994199"
+    }
+  },
+  "evaluator_matches_capture": true,
+  "honesty": "measures response-shape BEHAVIOR-CHANGE under the exact bound canonical SKILL.md treatment, NOT quality-uplift; small N is directional (ADR-0011)",
+  "schedule": [
+    {
+      "arm": "control",
+      "position": 1,
+      "rep": 1
+    },
+    {
+      "arm": "treatment",
+      "position": 2,
+      "rep": 1
+    },
+    {
+      "arm": "treatment",
+      "position": 3,
+      "rep": 2
+    },
+    {
+      "arm": "control",
+      "position": 4,
+      "rep": 2
+    }
+  ],
+  "scoring": {
+    "discriminator_timeout_seconds": 2,
+    "response_extraction": "codex-jsonl-final-agent-message.v1",
+    "transcript_format": "codex-exec-jsonl.v1"
+  },
+  "control": {
+    "present": 2,
+    "usable": 2,
+    "rate": 1.0
+  },
+  "treatment": {
+    "present": 1,
+    "usable": 2,
+    "rate": 0.5
+  },
+  "verdict": "REGRESSIVE",
+  "per_rep": [
+    {
+      "rep": 1,
+      "control": "PRESENT",
+      "treatment": "PRESENT"
+    },
+    {
+      "rep": 2,
+      "control": "PRESENT",
+      "treatment": "ABSENT"
+    }
+  ]
+}
