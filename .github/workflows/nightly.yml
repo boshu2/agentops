@@ -126,6 +126,32 @@ jobs:
           path: ${{ runner.temp }}/agentops-security/
           retention-days: 7
 
+  # ADVISORY — never blocks. `continue-on-error: true` is deliberate and is the
+  # whole point of this job: it grades the committed retrieval-eval goldens
+  # (evals/routing-probes/goldens/) against `ao skills find` and REPORTS the
+  # result. One golden, rq-04-independent-verdict, is red on purpose — it pins a
+  # real gap between how a caller asks for a verdict and how the catalog is
+  # discoverable (evals/routing-probes/README.md, "Standing finding"). A blocking
+  # job would force that finding to be deleted or tuned away; an advisory one
+  # keeps it visible. Promotion to blocking happens only on measured evidence,
+  # in its own change — never on a calendar. Deliberately absent from `summary`'s
+  # needs list so it can never open a nightly-failure issue.
+  routing-goldens-advisory:
+    name: Routing Goldens (advisory)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Set up Go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: '1.27.0'
+          cache-dependency-path: cli/go.sum
+
+      - name: Grade routing-probe goldens (advisory)
+        run: bash scripts/check-routing-probe-goldens.sh
 
   summary:
     name: Summary

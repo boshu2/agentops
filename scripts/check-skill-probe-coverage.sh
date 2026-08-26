@@ -18,7 +18,15 @@
 #
 # WHAT it checks:
 #   * enumerate skills declaring `tier: product` or `tier: judgment` in the
-#     first SKILL.md YAML frontmatter document (body text cannot spoof it);
+#     first SKILL.md YAML frontmatter document (body text cannot spoof it),
+#     then subtract the DECLARED DENOMINATOR exclusions in
+#     scripts/.skill-probe-denominator-exclusions. The tier set is derived from
+#     frontmatter, so it can contain a skill for which a behavior-change probe
+#     is a category error rather than missing work (an alias that delegates
+#     verbatim); counting those makes "0/N" report a category error as a
+#     failure. Every exclusion carries a one-line argument, parsing is
+#     fail-closed (no argument, stale slug, or duplicate is exit 2), and the
+#     exclusions are echoed on every run so they argue themselves;
 #   * read the probe-status ledger in evals/skill-probes/LEDGER.md (the table
 #     under "## Behavioral Probe Ledger (MEASUREMENT STATUS)"): rows "| skill | probe |
 #     date | verdict | notes |". A current-result row must contain exactly one
@@ -53,6 +61,8 @@
 #   SKILL_PROBE_TIERS_FILE     compatibility alias for SKILL_PROBE_LEDGER_FILE
 #   SKILL_PROBE_EVIDENCE_ROOT  repository root for scorecards/probes (default: $REPO_ROOT)
 #   SKILL_PROBE_METADATA_TOOL  verifier helper (default: scripts/lib/probe-fixture-metadata.py)
+#   SKILL_PROBE_EXCLUSIONS_FILE declared-denominator exclusions
+#                              (default: $REPO_ROOT/scripts/.skill-probe-denominator-exclusions)
 #
 # Exit: 0 advisory/clean, 1 finding under --strict, 2 misuse.
 #
@@ -64,6 +74,7 @@ SKILLS_DIR="${SKILL_PROBE_SKILLS_DIR:-$REPO_ROOT/skills}"
 LEDGER_FILE="${SKILL_PROBE_LEDGER_FILE:-${SKILL_PROBE_TIERS_FILE:-$REPO_ROOT/evals/skill-probes/LEDGER.md}}"
 EVIDENCE_ROOT="${SKILL_PROBE_EVIDENCE_ROOT:-$REPO_ROOT}"
 METADATA_TOOL="${SKILL_PROBE_METADATA_TOOL:-$REPO_ROOT/scripts/lib/probe-fixture-metadata.py}"
+EXCLUSIONS_FILE="${SKILL_PROBE_EXCLUSIONS_FILE:-$REPO_ROOT/scripts/.skill-probe-denominator-exclusions}"
 STRICT=0
 JSON=0
 
@@ -116,12 +127,68 @@ if ! TIER_SUMMARY="$(python3 "$METADATA_TOOL" tier-skills --skills-dir "$SKILLS_
     echo "could not parse canonical skill frontmatter for probe coverage" >&2
     exit 2
 fi
+declare -a TIER_NAMES=()
 while IFS= read -r name; do
     [[ -n "$name" ]] || continue
+    TIER_NAMES+=("$name")
+done < <(python3 -c 'import json,sys; print("\n".join(json.loads(sys.argv[1])["skills"]))' "$TIER_SUMMARY")
+
+# --- declared denominator ------------------------------------------------------
+# The tier set is derived from frontmatter, so it can contain skills for which a
+# behavior-change probe is a CATEGORY ERROR (an alias that delegates verbatim,
+# for instance) rather than missing work. Counting those as unmeasured makes the
+# headline "0/N" report a category error as a failure. The exclusion file states
+# them explicitly and each entry must argue itself in one line; parsing is
+# FAIL-CLOSED so the list cannot rot into a quiet denominator shrink:
+#   * an entry with no argument is a misuse error;
+#   * an entry naming a skill outside the current tier set is a misuse error;
+#   * a duplicate entry is a misuse error.
+declare -A EXCLUDED=()
+declare -a EXCLUDED_NAMES=()
+declare -A EXCLUDED_WHY=()
+if [[ -f "$EXCLUSIONS_FILE" ]]; then
+    declare -A TIERSET=()
+    for name in "${TIER_NAMES[@]}"; do TIERSET["$name"]=1; done
+    lineno=0
+    while IFS= read -r raw || [[ -n "$raw" ]]; do
+        lineno=$((lineno + 1))
+        line="$(trim_cell "$raw")"
+        [[ -n "$line" ]] || continue
+        [[ "$line" == \#* ]] && continue
+        if [[ "$line" != *"#"* ]]; then
+            echo "$EXCLUSIONS_FILE:$lineno: exclusion '${line}' carries no '# <argument>'. Every exclusion must argue itself in one line." >&2
+            exit 2
+        fi
+        slug="$(trim_cell "${line%%#*}")"
+        why="$(trim_cell "${line#*#}")"
+        if [[ -z "$slug" ]]; then
+            echo "$EXCLUSIONS_FILE:$lineno: exclusion line has an argument but no skill slug." >&2
+            exit 2
+        fi
+        if [[ -z "$why" ]]; then
+            echo "$EXCLUSIONS_FILE:$lineno: exclusion '${slug}' has an EMPTY argument. A bare slug is rejected (anti cargo-cult)." >&2
+            exit 2
+        fi
+        if [[ -n "${EXCLUDED[$slug]:-}" ]]; then
+            echo "$EXCLUSIONS_FILE:$lineno: duplicate exclusion '${slug}'." >&2
+            exit 2
+        fi
+        if [[ -z "${TIERSET[$slug]:-}" ]]; then
+            echo "$EXCLUSIONS_FILE:$lineno: stale exclusion '${slug}' — it is not a product/judgment-tier skill, so it excludes nothing. Remove it." >&2
+            exit 2
+        fi
+        EXCLUDED["$slug"]=1
+        EXCLUDED_NAMES+=("$slug")
+        EXCLUDED_WHY["$slug"]="$why"
+    done < "$EXCLUSIONS_FILE"
+fi
+
+for name in "${TIER_NAMES[@]}"; do
+    [[ -n "${EXCLUDED[$name]:-}" ]] && continue
     GATED["$name"]=1
     GATED_NAMES+=("$name")
     gated_total=$((gated_total + 1))
-done < <(python3 -c 'import json,sys; print("\n".join(json.loads(sys.argv[1])["skills"]))' "$TIER_SUMMARY")
+done
 
 # --- collect the set of skills that HAVE a current probe result ----------------
 # A result = a ledger row with a directional current verdict whose referenced v3
@@ -192,8 +259,16 @@ done
 
 finding_count=${#UNMEASURED[@]}
 
+excluded_count=${#EXCLUDED_NAMES[@]}
+
 if [[ $JSON -eq 1 ]]; then
-    printf '{"gated_total":%d,"measured":%d,"unmeasured_count":%d,"unmeasured":[' \
+    printf '{"tier_total":%d,"excluded_count":%d,"excluded":[' \
+        "$((gated_total + excluded_count))" "$excluded_count"
+    for i in "${!EXCLUDED_NAMES[@]}"; do
+        [[ $i -gt 0 ]] && printf ','
+        printf '"%s"' "${EXCLUDED_NAMES[$i]}"
+    done
+    printf '],"gated_total":%d,"measured":%d,"unmeasured_count":%d,"unmeasured":[' \
         "$gated_total" "$((gated_total - finding_count))" "$finding_count"
     for i in "${!UNMEASURED[@]}"; do
         [[ $i -gt 0 ]] && printf ','
@@ -202,8 +277,16 @@ if [[ $JSON -eq 1 ]]; then
     printf ']}\n'
 fi
 
+# The denominator argues itself on every run: a reader who disagrees with an
+# exclusion can see it and the case for it without opening another file.
+if [[ $JSON -eq 0 && $excluded_count -gt 0 ]]; then
+    for name in "${EXCLUDED_NAMES[@]}"; do
+        echo "check-skill-probe-coverage: denominator excludes '${name}' — ${EXCLUDED_WHY[$name]}"
+    done
+fi
+
 if [[ $finding_count -eq 0 ]]; then
-    [[ $JSON -eq 0 ]] && echo "check-skill-probe-coverage: PASS (${gated_total}/${gated_total} product/judgment skills carry a probe result)"
+    [[ $JSON -eq 0 ]] && echo "check-skill-probe-coverage: PASS (${gated_total}/${gated_total} declared-denominator product/judgment skills carry a probe result; ${excluded_count} excluded)"
     exit 0
 fi
 

@@ -1,0 +1,16 @@
+{
+  "$schema": "../../../schemas/pack-quality-expectations.v1.schema.json",
+  "schema_version": 1,
+  "id": "rq-02-plan-challenge",
+  "retrieval_surface": "ao-skills-find",
+  "task": "The caller has a rollout plan they have not committed to yet and wants its weakest assumptions attacked before they do.",
+  "query": "what could make this rollout plan fail before I commit to it",
+  "top_k": 3,
+  "expected_selected_ids": ["premortem"],
+  "critical_omitted_ids": ["implement"],
+  "forbidden_leaks": ["^plan$"],
+  "min_provenance_density": 1.0,
+  "max_tokens": 90,
+  "rationale": "premortem is the judgment strategy for an unexecuted plan. plan is the near neighbour that must never take rank 1 here: the caller already has a plan and is asking for it to be challenged, not shaped. implement is pinned out of the pack because the longer rt-03 phrasing put it at rank 1 in an offline check on 2026-08-26 — a plan narrative pulls the execution verb.",
+  "notes": "Derived from the rt-03-plan-challenge routing template. rt-03 is also the one live-batch MISS on record (2026-08-05 batch 1)."
+}

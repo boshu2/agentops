@@ -4,7 +4,7 @@
 
 ## domain
 
-`council`, `domain`, `fitness`, `goals`, `idea-genie`, `plan`, `postmortem`, `premortem`, `product`, `reality-check`, `rpi`, `shared`
+`council`, `domain`, `fitness`, `goals`, `idea-genie`, `one-way-door`, `plan`, `postmortem`, `premortem`, `product`, `reality-check`, `rpi`, `shared`
 
 ## driven-adapter
 
@@ -16,7 +16,7 @@
 
 ## supporting
 
-`account-rotation`, `agent-mail`, `agent-native`, `anti-ceremony`, `automation-shape-routing`, `cass`, `cc-hooks`, `codebase-recon`, `craft-goal`, `dcg`, `doc`, `handoff`, `learn`, `ms`, `ntm`, `operationalize`, `pattern-mining`, `rch`, `refactor`, `reverse-engineer`, `sbh`, `scaffold`, `scope`, `skill-builder`, `standards`, `test`, `toil-mining`, `workflow-builder`
+`account-rotation`, `agent-mail`, `agent-native`, `anti-ceremony`, `automation-shape-routing`, `cass`, `cc-hooks`, `codebase-recon`, `craft-goal`, `dcg`, `doc`, `handoff`, `human-only-skills`, `learn`, `ms`, `ntm`, `operationalize`, `pattern-mining`, `rch`, `refactor`, `reverse-engineer`, `route`, `sbh`, `scaffold`, `scope`, `skill-builder`, `skill-eval`, `standards`, `test`, `toil-mining`, `workflow-builder`
 
 ## Inventory
 
@@ -42,11 +42,13 @@
 | `fitness` | product | `keep_specialist` | - | `fitness` | `write_goal_snapshot`, `write_rendered_spec` |
 | `goals` | product | `keep_off_path` | - | - | - |
 | `handoff` | session | `keep_specialist` | - | `handoff` | `write_handoff_artifact`, `read_git_state`, `read_clock` |
+| `human-only-skills` | meta | `keep_specialist` | - | `human_only_skill_routing` | - |
 | `idea-genie` | execution | `keep_strategy` | - | `generate_evidenced_options`, `dueling_idea_genies` | `write_idea_portfolio` |
 | `implement` | execution | `keep` | - | `execute_one_experiment`, `collect_factual_evidence` | `modify_declared_subject`, `derive_subject_manifest` |
 | `learn` | execution | `keep_off_path` | - | `analyze_verdict_collections` | `write_advisory_observations` |
 | `ms` | execution | `keep_specialist` | - | `ms` | `spawn_search_server`, `write_feedback_outcomes`, `rebuild_search_index` |
 | `ntm` | execution | `keep_optional_adapter` | - | `ntm` | `manage_ntm_panes`, `dispatch_pane_commands` |
+| `one-way-door` | judgment | `keep_strategy` | - | `classify_decision_reversibility`, `escalate_user_challenge` | `write_advisory_decision_classification` |
 | `operationalize` | meta | `keep_specialist` | - | `distill_expertise`, `propose_artifact_shape` | `write_advisory_proposal` |
 | `pattern-mining` | execution | `keep_specialist` | - | `pattern_mining` | `write_pattern_evidence` |
 | `plan` | execution | `keep` | - | `shape_intent`, `define_acceptance`, `bound_write_scope` | `update_intent_source` |
@@ -58,6 +60,7 @@
 | `refactor` | execution | `keep_specialist` | - | `refactor` | `modify_source_files` |
 | `research` | execution | `keep_specialist` | - | `research` | `write_research_report` |
 | `reverse-engineer` | execution | `keep_specialist` | - | `reverse_engineer` | `clone_upstream_repo`, `authorized_binary_execution`, `write_teardown_artifacts` |
+| `route` | meta | `keep_specialist` | - | `route_request_to_skill` | - |
 | `rpi` | meta | `keep` | `anti-ceremony`, `plan`, `implement`, `validate` | `orchestrate_once`, `report` | `invoke_anti_ceremony_guard`, `dispatch_core_phases` |
 | `sbh` | execution | `keep_specialist` | - | `sbh` | `delete_reclaimable_files`, `release_disk_ballast`, `modify_host_storage_config` |
 | `scaffold` | execution | `keep_specialist` | - | `scaffold` | `write_project_files` |
@@ -65,6 +68,7 @@
 | `security` | product | `keep_specialist` | - | `security` | `write_scan_artifacts` |
 | `shared` | library | `keep_off_path` | - | - | - |
 | `skill-builder` | meta | `keep_specialist` | - | `skill_builder`, `heal_skill` | `write_skill_source`, `write_build_report`, `regenerate_skill_projections`, `repair_skill_projections` |
+| `skill-eval` | meta | `keep_specialist` | - | `author_seeded_probe`, `run_probe_tier` | `write_probe_package`, `dispatch_probe_producer` |
 | `standards` | knowledge | `keep_specialist` | - | `standards` | - |
 | `status` | session | `keep_specialist` | - | `status` | `read_filesystem`, `read_clock` |
 | `swarm` | execution | `keep_optional_adapter` | - | `dispatch_once` | `invoke_selected_executor` |

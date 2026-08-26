@@ -50,8 +50,26 @@ var (
 		"scripts/lib/codex-exec.sh",
 		"scripts/lib/preamble.sh",
 		"scripts/check-skill-probe-coverage.sh",
+		// The declared denominator: editing the exclusion list changes the
+		// gate's headline number, so it must re-run the gate.
+		"scripts/.skill-probe-denominator-exclusions",
 		"tests/scripts/probe-skill.bats",
 		"tests/scripts/check-skill-probe-coverage.bats",
+	}
+	// skill.probe-headroom (advisory): routes on the probe corpus and the
+	// scorecard evidence it sweeps, on the Go rule + helper that classify, and
+	// on its own fixtures/script/bats so editing the detector re-runs it. It
+	// deliberately does NOT route on skills/** — headroom is a property of the
+	// scenario and its captures, not of the skill under test.
+	skillProbeHeadroomPaths = []string{
+		"evals/skill-probes/**",
+		"docs/evals/scorecards/**",
+		"tests/fixtures/skill-probes/**",
+		"cli/internal/probeheadroom/**",
+		"cli/cmd/probe-headroom/**",
+		"scripts/check-skill-probe-headroom.sh",
+		"scripts/lib/preamble.sh",
+		"tests/scripts/check-skill-probe-headroom.bats",
 	}
 	operatorLeakPaths = []string{"skills/**", "skills-codex/**", "docs/SKILLS.md", "registry.json", "tests/scripts/check-no-operator-skills.bats", "scripts/check-no-operator-skills.sh"}
 	contractPaths     = []string{"docs/contracts/**", "schemas/**"}
@@ -314,6 +332,17 @@ func init() {
 		// egwt gates: the spine is probed first, the ratchet drives the rest, and
 		// the Blocking:false->true flip is made deliberately once covered. age-e508.1.
 		{ID: "skill.probe-coverage", Tiers: gates.Fast | gates.Full, Match: skillProbePaths, Blocking: false, Backing: "check-skill-probe-coverage.sh", RepairHint: "capture a new immutable fixture set with scripts/probe-skill.sh, write its v3 scorecard, then record the manifest-backed result in evals/skill-probes/LEDGER.md (hand-maintained; never inside generated SKILL-TIERS.md); advisory — probe the spine, ratchet the rest"},
+		// skill.probe-headroom (ADVISORY): the coverage gate above counts probe
+		// RESULTS; this one asks whether a result could have existed at all. An
+		// INERT verdict covers two different things — the skill changed nothing
+		// (a real null) and the control arm already aced the scenario (a void
+		// row) — and only the control arm's absolute rate separates them.
+		// HERMETIC: two committed fixture pairs carrying the same INERT verdict
+		// are driven through cli/cmd/probe-headroom and the gate asserts the
+		// detector still discriminates, then sweeps the real scorecards
+		// advisory-only. Blocking:false; the flip is made later on measured
+		// evidence, never on a calendar.
+		{ID: "skill.probe-headroom", Tiers: gates.Fast | gates.Full, Match: skillProbeHeadroomPaths, Blocking: false, Backing: "check-skill-probe-headroom.sh", RepairHint: "a SATURATED probe group has no headroom left: retire the scenario (promote it to a seeded-defect probe) or record the honest ceiling finding — do NOT re-run it at a lower effort, and do not cite it in a new evals/skill-probes/LEDGER.md row"},
 		{ID: "skill.no-operator-leakage", Tiers: gates.Fast | gates.Full, Match: operatorLeakPaths, Blocking: true, Backing: "check-no-operator-skills.sh"},
 		{ID: "skill.heal-strict", Tiers: gates.Full, Match: skillPaths, Blocking: true, Backing: "skills/skill-builder/scripts/heal.sh", Args: []string{"--check", "--strict"}},
 		{ID: "skill.frontmatter-v2", Tiers: gates.Full, Match: skillPaths, Blocking: true, Backing: "validate-skill-frontmatter.sh"},

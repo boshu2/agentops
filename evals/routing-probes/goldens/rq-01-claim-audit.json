@@ -1,0 +1,16 @@
+{
+  "$schema": "../../../schemas/pack-quality-expectations.v1.schema.json",
+  "schema_version": 1,
+  "id": "rq-01-claim-audit",
+  "retrieval_surface": "ao-skills-find",
+  "task": "A changelog entry claims a feature shipped complete. Before repeating it, the caller wants the repository checked against the claim.",
+  "query": "the changelog says this feature shipped; check whether that holds up in the repo",
+  "top_k": 3,
+  "expected_selected_ids": ["reality-check"],
+  "critical_omitted_ids": ["premortem"],
+  "forbidden_leaks": ["^reverse-engineer$"],
+  "min_provenance_density": 1.0,
+  "max_tokens": 110,
+  "rationale": "reality-check is the only skill that compares a claimed state against observable repository evidence. premortem is the plausible confusion (both are 'before you commit, check'), but a premortem challenges an unexecuted plan, not a delivered claim. reverse-engineer scored an exact tie with reality-check on the longer 2026-08-05 rt-02 phrasing, so it is pinned out of rank 1 rather than out of the pack.",
+  "notes": "Derived from the rt-02-claim-audit routing template (evals/routing-probes/templates.json), restated as the short intent phrase a caller hands a discovery surface."
+}

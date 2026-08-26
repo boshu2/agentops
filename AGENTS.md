@@ -85,7 +85,7 @@ absorbs their authority.
 | Work, status, dependencies, close reasons | Beads or the caller's tracker | Query directly; never build a second work index. |
 | Source content and delivery history | Git and repository policy | Bind exact content when useful; a commit or merge never implies semantic PASS. |
 | Past agent sessions | CASS | Retrieve cited episodes on demand; search output is evidence, not policy. |
-| Curated cross-session memory | CM or a caller-selected memory system | Retrieve by explicit need with provenance and freshness. |
+| Curated cross-session memory | CM, ee (eidetic-engine), or another caller-selected memory system | Retrieve by explicit need with provenance and freshness. |
 | Runtime execution | NTM, Gas City, Agent Mail, cloud agents, or another selected factory | Read and report native state; runtime completion is never validation. |
 | Checks and test output | The executable that produced them | Store factual receipts; a fresh context judges meaning. |
 | Requested proof | `.agents/ao/` | Persist only for a caller request or declared consumer. |

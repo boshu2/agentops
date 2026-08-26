@@ -166,12 +166,56 @@ func TestSkillProbeCoverageGateIsWarnFirstAdvisory(t *testing.T) {
 		"scripts/lib/codex-exec.sh",
 		"scripts/lib/preamble.sh",
 		"scripts/check-skill-probe-coverage.sh",
+		"scripts/.skill-probe-denominator-exclusions",
 		"tests/scripts/probe-skill.bats",
 		"tests/scripts/check-skill-probe-coverage.bats",
 	} {
 		if !gates.PathMatchesAny(check.Match, want) {
 			t.Fatalf("skill.probe-coverage must route on %q; match globs = %v", want, check.Match)
 		}
+	}
+}
+
+func TestSkillProbeHeadroomGateIsWarnFirstAdvisory(t *testing.T) {
+	check, ok := gates.Default.Get("skill.probe-headroom")
+	if !ok {
+		t.Fatal("skill.probe-headroom gate is not registered")
+	}
+	if check.Backing != "check-skill-probe-headroom.sh" {
+		t.Fatalf("skill.probe-headroom backing = %q, want check-skill-probe-headroom.sh", check.Backing)
+	}
+	// Advisory-first, exactly like skill.probe-coverage: a saturated historical
+	// probe group is a true finding about the ledger, not a regression the
+	// change under test introduced. The flip to blocking is made deliberately,
+	// on measured evidence.
+	if check.Blocking {
+		t.Fatal("skill.probe-headroom must be warn-first / non-blocking (advisory)")
+	}
+	if !check.Tiers.Has(gates.Fast) || !check.Tiers.Has(gates.Full) {
+		t.Fatalf("skill.probe-headroom tiers = %v, want Fast|Full", check.Tiers)
+	}
+	if !strings.Contains(check.RepairHint, "SATURATED") {
+		t.Fatalf("skill.probe-headroom repair hint = %q, want the retire-don't-rerun guidance", check.RepairHint)
+	}
+	// Routed on the probe corpus, the scorecard evidence it sweeps, and the
+	// detector's own surfaces (rule, helper, fixtures, script, bats).
+	for _, want := range []string{
+		"evals/skill-probes/LEDGER.md",
+		"docs/evals/scorecards/2026-08-05/validate-not-proven-v2-low.json",
+		"tests/fixtures/skill-probes/saturated/fixture-saturated-quiz-low.json",
+		"cli/internal/probeheadroom/probeheadroom.go",
+		"cli/cmd/probe-headroom/main.go",
+		"scripts/check-skill-probe-headroom.sh",
+		"tests/scripts/check-skill-probe-headroom.bats",
+	} {
+		if !gates.PathMatchesAny(check.Match, want) {
+			t.Fatalf("skill.probe-headroom must route on %q; match globs = %v", want, check.Match)
+		}
+	}
+	// Headroom is a property of the SCENARIO and its captures, not of the skill
+	// under test: a SKILL.md edit must not re-run this sweep.
+	if gates.PathMatchesAny(check.Match, "skills/validate/SKILL.md") {
+		t.Fatalf("skill.probe-headroom must not route on skills/**; match globs = %v", check.Match)
 	}
 }
 

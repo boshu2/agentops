@@ -39,6 +39,21 @@ SH
     export SKILL_PROBE_SKILLS_DIR="$FIX/skills"
     export SKILL_PROBE_LEDGER_FILE="$PROBES/LEDGER.md"
     export SKILL_PROBE_EVIDENCE_ROOT="$FIX"
+    # Declared denominator: fixture runs start with an EMPTY exclusion list, so
+    # the repo's real exclusions (which name real skills) cannot leak in and
+    # trip the stale-slug guard against a synthetic skills dir.
+    EXCLUSIONS="$FIX/scripts/.skill-probe-denominator-exclusions"
+    : > "$EXCLUSIONS"
+    export SKILL_PROBE_EXCLUSIONS_FILE="$EXCLUSIONS"
+}
+
+# write_exclusions LINE... — replace the fixture exclusion list.
+write_exclusions() {
+    : > "$EXCLUSIONS"
+    local line
+    for line in "$@"; do
+        printf '%s\n' "$line" >> "$EXCLUSIONS"
+    done
 }
 
 make_skill() {
@@ -518,12 +533,143 @@ PY
 
 @test "the real repository remains advisory with exactly 0/12 current results" {
     unset SKILL_PROBE_SKILLS_DIR SKILL_PROBE_LEDGER_FILE SKILL_PROBE_TIERS_FILE
-    unset SKILL_PROBE_EVIDENCE_ROOT SKILL_PROBE_METADATA_TOOL
+    unset SKILL_PROBE_EVIDENCE_ROOT SKILL_PROBE_METADATA_TOOL SKILL_PROBE_EXCLUSIONS_FILE
 
     run --separate-stderr bash "$GATE" --json
 
     [ "$status" -eq 0 ]
+    # 13 product/judgment-tier badges, 1 declared-denominator exclusion
+    # (`goals`, a pure alias of `fitness`), so the denominator is 12. The
+    # headline is 0/12 both before and after this change, but for different
+    # reasons: the alias left the denominator and the newly landed judgment
+    # skill `one-way-door` entered it, honestly unmeasured.
+    [ "$(json_field "$output" tier_total)" = "13" ]
+    [ "$(json_field "$output" excluded_count)" = "1" ]
     [ "$(json_field "$output" gated_total)" = "12" ]
     [ "$(json_field "$output" measured)" = "0" ]
     [ "$(json_field "$output" unmeasured_count)" = "12" ]
+}
+
+@test "the real exclusion list resolves and argues every entry on stdout" {
+    unset SKILL_PROBE_SKILLS_DIR SKILL_PROBE_LEDGER_FILE SKILL_PROBE_TIERS_FILE
+    unset SKILL_PROBE_EVIDENCE_ROOT SKILL_PROBE_METADATA_TOOL SKILL_PROBE_EXCLUSIONS_FILE
+
+    run --separate-stderr bash "$GATE"
+
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"denominator excludes 'goals'"* ]]
+    [[ "$output" == *"alias-of fitness"* ]]
+}
+
+# --- declared denominator ------------------------------------------------------
+
+@test "an excluded skill leaves the denominator and stops being a finding" {
+    make_skill foo product
+    make_skill bar product
+    write_ledger
+
+    run --separate-stderr bash "$GATE" --json
+    [ "$(json_field "$output" gated_total)" = "2" ]
+
+    write_exclusions 'bar  # fixture: an alias that delegates verbatim, so a probe of it measures the other skill'
+
+    run --separate-stderr bash "$GATE" --json
+    [ "$status" -eq 0 ]
+    [ "$(json_field "$output" tier_total)" = "2" ]
+    [ "$(json_field "$output" excluded_count)" = "1" ]
+    [ "$(json_field "$output" gated_total)" = "1" ]
+    [ "$(json_field "$output" unmeasured_count)" = "1" ]
+    # The excluded skill leaves `unmeasured` entirely; it is still NAMED under
+    # `excluded`, so the denominator stays legible instead of just smaller.
+    [ "$(json_field "$output" unmeasured)" = "['foo']" ]
+    [ "$(json_field "$output" excluded)" = "['bar']" ]
+}
+
+@test "excluding the only unmeasured skill flips strict mode to pass" {
+    make_skill foo product
+    write_ledger
+
+    run bash "$GATE" --strict
+    [ "$status" -eq 1 ]
+
+    write_exclusions 'foo  # fixture: category error, not missing work'
+
+    run bash "$GATE" --strict
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"denominator excludes 'foo'"* ]]
+    [[ "$output" == *"category error, not missing work"* ]]
+}
+
+@test "an exclusion with no argument is rejected (misuse, not a silent shrink)" {
+    make_skill foo product
+    write_ledger
+    write_exclusions 'foo'
+
+    run bash "$GATE"
+
+    [ "$status" -eq 2 ]
+    [[ "$output" == *"carries no '# <argument>'"* ]]
+}
+
+@test "an exclusion with an empty argument is rejected" {
+    make_skill foo product
+    write_ledger
+    write_exclusions 'foo  #   '
+
+    run bash "$GATE"
+
+    [ "$status" -eq 2 ]
+    [[ "$output" == *"EMPTY argument"* ]]
+}
+
+@test "a stale exclusion naming a non-gated skill is rejected" {
+    make_skill foo product
+    write_ledger
+    write_exclusions 'nonexistent  # fixture: this skill is not product/judgment tier'
+
+    run bash "$GATE"
+
+    [ "$status" -eq 2 ]
+    [[ "$output" == *"stale exclusion"* ]]
+}
+
+@test "a duplicate exclusion is rejected" {
+    make_skill foo product
+    write_ledger
+    write_exclusions \
+        'foo  # fixture: first argument' \
+        'foo  # fixture: second argument'
+
+    run bash "$GATE"
+
+    [ "$status" -eq 2 ]
+    [[ "$output" == *"duplicate exclusion"* ]]
+}
+
+@test "comment and blank lines in the exclusion list are ignored" {
+    make_skill foo product
+    write_ledger
+    write_exclusions \
+        '# a header comment' \
+        '' \
+        '   ' \
+        'foo  # fixture: category error, not missing work'
+
+    run --separate-stderr bash "$GATE" --json
+
+    [ "$status" -eq 0 ]
+    [ "$(json_field "$output" excluded_count)" = "1" ]
+    [ "$(json_field "$output" gated_total)" = "0" ]
+}
+
+@test "a missing exclusion file leaves the full tier set as the denominator" {
+    make_skill foo product
+    write_ledger
+    rm -f "$EXCLUSIONS"
+
+    run --separate-stderr bash "$GATE" --json
+
+    [ "$status" -eq 0 ]
+    [ "$(json_field "$output" excluded_count)" = "0" ]
+    [ "$(json_field "$output" gated_total)" = "1" ]
 }

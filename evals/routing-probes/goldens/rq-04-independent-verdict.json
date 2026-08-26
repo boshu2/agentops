@@ -1,0 +1,20 @@
+{
+  "$schema": "../../../schemas/pack-quality-expectations.v1.schema.json",
+  "schema_version": 1,
+  "id": "rq-04-independent-verdict",
+  "retrieval_surface": "ao-skills-find",
+  "task": "A worker session reports its change done and its own tests green. The caller wants a fresh independent judgment before merging.",
+  "query": "judge whether this finished change is actually proven before I merge it",
+  "top_k": 3,
+  "expected_selected_ids": [
+    "validate"
+  ],
+  "critical_omitted_ids": [],
+  "forbidden_leaks": [
+    "^premortem$"
+  ],
+  "min_provenance_density": 1.0,
+  "max_tokens": 100,
+  "rationale": "validate is the repo's own name for exactly this: freshly judge finished subject content against caller acceptance and stop. premortem must not take rank 1 \u2014 it judges an unexecuted plan, and taking it here would substitute speculation for a verdict over real content.",
+  "notes": "Was KNOWN RED at authoring (2026-08-26): the token-overlap ranker surfaced premortem first and validate not at all for six natural verdict phrasings. Closed the same day by the pointer-wording-first repair the plan prescribes: validate's description gained the caller's own words (finished, proven, verdict, merge) and now ranks 1 at 0.333 for this query. This golden pins the repair \u2014 a description regression reopens it."
+}

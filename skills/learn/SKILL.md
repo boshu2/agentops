@@ -14,6 +14,7 @@ context_rel:
   with: validate
 skill_api_version: 1
 user-invocable: true
+disable-model-invocation: true
 metadata:
   graph_root: false
   tier: execution

@@ -1,6 +1,6 @@
 ---
 name: validate
-description: 'Freshly judge exact subject content against Triggers: "validate", "independently validate", "vibe".'
+description: 'Freshly judge whether a finished change is Triggers: "validate", "independently validate", "is this proven", "vibe".'
 ---
 # Validate
 

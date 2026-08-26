@@ -2,7 +2,7 @@
   "generator": "manual-maintained",
   "source_root": "skills",
   "layout": "modular",
-  "codex_override_catalog_hash": "e693c4e403aa0b1d63b90a64a2d97cbfde4e3e03ae0a0d8b0d2556737bf21534",
+  "codex_override_catalog_hash": "7d023129d7469c29c17c2b1e1efac0d38708f103dac38a3ec146e0e9a5ff7283",
   "codex_override_catalog": {
     "version": 1,
     "description": "Machine-readable Codex treatment map for the full skill catalog.",
@@ -344,6 +344,30 @@
         "treatment": "parity_only",
         "wave": "catalog-parity",
         "reason": "Auto-generated parity twin (codex-sync): skills/anti-ceremony is the source of truth; no durable Codex-specific divergence yet."
+      },
+      {
+        "name": "one-way-door",
+        "treatment": "parity_only",
+        "wave": "catalog-parity",
+        "reason": "Auto-generated parity twin (codex-sync): skills/one-way-door is the source of truth; no durable Codex-specific divergence yet."
+      },
+      {
+        "name": "route",
+        "treatment": "parity_only",
+        "wave": "catalog-parity",
+        "reason": "Auto-generated parity twin (codex-sync): skills/route is the source of truth; no durable Codex-specific divergence yet."
+      },
+      {
+        "name": "skill-eval",
+        "treatment": "parity_only",
+        "wave": "catalog-parity",
+        "reason": "Auto-generated parity twin (codex-sync): skills/skill-eval is the source of truth; no durable Codex-specific divergence yet."
+      },
+      {
+        "name": "human-only-skills",
+        "treatment": "parity_only",
+        "wave": "catalog-parity",
+        "reason": "Auto-generated parity twin (codex-sync): skills/human-only-skills is the source of truth; no durable Codex-specific divergence yet."
       }
     ]
   },
@@ -423,13 +447,13 @@
     {
       "name": "council",
       "source_skill": "skills/council",
-      "source_hash": "2c8dd5df1754f9897ba40122751e4e64cf5cb098238857ef6209e970e19c3f3e",
-      "generated_hash": "9be18d6c5521e016375c2d50bc3eff5b8370562c07a934fb294749753882d4c4"
+      "source_hash": "1dc9520299f2372de70c8b846cf9374db76edfc0a3f99150361a7291f44b7ad2",
+      "generated_hash": "83505799fadac77f272b22b3d3524792644209fea6d40cc9662268fd4ca7e73e"
     },
     {
       "name": "craft-goal",
       "source_skill": "skills/craft-goal",
-      "source_hash": "209663b8fb928b1a1faae38d1a594f86f7f2dc1e0dd899940bf3ed7dd578da45",
+      "source_hash": "7cb5678a3cf55ead80a0e43afdc62ead5d8cd36ff2a41d2d803b6bd74e1215bb",
       "generated_hash": "0dde131e5ac2a54aca8523c16bd99dcdca729dbde78c1248896532212e5291ab"
     },
     {
@@ -469,6 +493,12 @@
       "generated_hash": "2ae25a11e7beed2bad87065c39969061408d5d6dd1037efc4f0a9e10bbeeea04"
     },
     {
+      "name": "human-only-skills",
+      "source_skill": "skills/human-only-skills",
+      "source_hash": "02f1f7e8a538ed0e1263b70e91012d9bdec60e263e5aad627341559e8eef3572",
+      "generated_hash": "b5214e5fb156e23fb474c01445f8efd1c1e6d88ca1ef979d75d5ede4f06ac760"
+    },
+    {
       "name": "idea-genie",
       "source_skill": "skills/idea-genie",
       "source_hash": "a3beedc9da108209b19a2ee290b583e474e26de32e5c8e3c7de70858c058c280",
@@ -483,7 +513,7 @@
     {
       "name": "learn",
       "source_skill": "skills/learn",
-      "source_hash": "53067b9717740db5e7b7c4f116e5c728f48893556789020c602a02a53723683c",
+      "source_hash": "d1af5aaee7b3bdf2806c1fe33e159cbb46a99f33cb3066c77260418bd3f30e53",
       "generated_hash": "9590a94eca1c89ac68b56d504c7e6730bd3daab95c10f05aa95ba894493fb788"
     },
     {
@@ -497,6 +527,12 @@
       "source_skill": "skills/ntm",
       "source_hash": "848facd36e19091df95e562f631fb3c25cf73fc39ba1af999766412756b43151",
       "generated_hash": "d4bc77f68b1a9f80848762206d9f389b113a7f9f6a7bc160ecc3e7df3e052b05"
+    },
+    {
+      "name": "one-way-door",
+      "source_skill": "skills/one-way-door",
+      "source_hash": "bbece23b9fba54051347006d4b5281b0898c47f1cd561f1bcc10017a1c3757aa",
+      "generated_hash": "fcef0387c2788490eb776af4c61a55bbb6d33714371b37ef7b805f23f8f3a014"
     },
     {
       "name": "operationalize",
@@ -519,14 +555,14 @@
     {
       "name": "postmortem",
       "source_skill": "skills/postmortem",
-      "source_hash": "2ab2b95b03529878264c888b746865fc9f2546e7b3a94cd8a6b12a6b7e1d2340",
+      "source_hash": "1b3116a43e2110b295519768e0378e06ea44a35d30b6d2bc82deeab661c8c853",
       "generated_hash": "51cc9e5ac630d8c070ce0152ed3776f2db25bd09859411aa891bd360bed05fe0"
     },
     {
       "name": "premortem",
       "source_skill": "skills/premortem",
-      "source_hash": "e882fd13bb037adec58b7484ddd34477cf882f088169dbac2225e04d532195dd",
-      "generated_hash": "bb365fd13d085c76b90eb3cc75fcce5e7c30dc65735956739ea67b40000d8170"
+      "source_hash": "5f45947f709ba60926485c50691b4356b87b3468fa4f9d8b667951c7067ef02b",
+      "generated_hash": "f722015d2f252e07ad4c9703e84e8c3ee9a984fb7e0a6e23ccc5010a8ee11fe3"
     },
     {
       "name": "product",
@@ -563,6 +599,12 @@
       "source_skill": "skills/reverse-engineer",
       "source_hash": "183c44e7e3f8dd6429532b0938be9d8f8fd7da36d73d0f0197772a4e5cbb0d9c",
       "generated_hash": "996489a23ad67969ef19b303aa74d051069aa2946c68125d4b9d9b387c7e6ff6"
+    },
+    {
+      "name": "route",
+      "source_skill": "skills/route",
+      "source_hash": "d39a1602fea8a01d7a0fe27b1bc829ec4d54cf444aee39e8870ae4b84a7a4dce",
+      "generated_hash": "11298957d10af7657cc3a45512e840e17b9851574897875abddb16566facdc7d"
     },
     {
       "name": "rpi",
@@ -607,6 +649,12 @@
       "generated_hash": "3f42790c5d168187865d02e9b8ae0499eceec60123c1a1ea617222dea851234b"
     },
     {
+      "name": "skill-eval",
+      "source_skill": "skills/skill-eval",
+      "source_hash": "12b4b207d8c2151f75e04768d0986ea3fcde4a4f5c47efb1f7515c76c309f6a1",
+      "generated_hash": "593f88e67bb34b491969aa7e6f20296a2d3ac19058e5d812f2dd6a5f8053af25"
+    },
+    {
       "name": "standards",
       "source_skill": "skills/standards",
       "source_hash": "d493ba253d8eaafcd19c3e62b98328a535f3a8d9720bd17a144fa77b1c369268",
@@ -633,7 +681,7 @@
     {
       "name": "toil-mining",
       "source_skill": "skills/toil-mining",
-      "source_hash": "638d4ce83191b10fedd0192be1ae5bc408bcec2b3d1e088f2e40fff5b8e1a70a",
+      "source_hash": "b856c96812466acf254a28ecb1d26f8e9b5646fb7e5ea202dcf1b0b7d88a6e63",
       "generated_hash": "3b27e8e26657132ab1f8da85dddf71a966c82b136bea49dfbe353ff2c9a6a6f9"
     },
     {
@@ -651,8 +699,8 @@
     {
       "name": "validate",
       "source_skill": "skills/validate",
-      "source_hash": "dc2ed6796e1fa59e9d1436eca4fcb4741a54b426e10b6eec0de5395f28cf42a4",
-      "generated_hash": "fd41631f52f8c9c2311b1dfb86035c6782d53ccefde4453f7978ebb8c11d3b12"
+      "source_hash": "fc36d58a68e3d676205cfac0928f2fe62a9172e07b48287751b726ed81769682",
+      "generated_hash": "cae8d561d899e884b566d00abb831ed346d40b858e72b4ed2e41937cd389a480"
     },
     {
       "name": "workflow-builder",
@@ -661,5 +709,5 @@
       "generated_hash": "386479200813515ba0a1d5fe7b9a7406037a62daaa5419aa7471310b221712f9"
     }
   ],
-  "package_count": 52
+  "package_count": 56
 }

@@ -38,7 +38,7 @@ metadata:
 
 Legacy metadata that once controlled the now-retired lookup command. Nothing
 reads it today; it stays in the schema so skills written against the old shape
-keep validating. New skills can omit it — 28 of the 52 shipped skills do. Two
+keep validating. New skills can omit it — 31 of the 56 shipped skills do. Two
 forms remain accepted:
 
 **String form:**
@@ -158,6 +158,42 @@ user-invocable: true   # Shows as /skill-name
 user-invocable: false  # Hidden from user, used by other skills
 ```
 
+### `disable-model-invocation`
+
+The mirror of `user-invocable`: whether the *model* may invoke the skill. Its
+side effect is the reason to set it — Claude Code keeps a human-only skill's
+`description` out of the always-loaded context entirely, so the skill costs
+nothing until a person invokes it by slash command.
+
+```yaml
+disable-model-invocation: true   # Slash-command only; Claude cannot invoke it
+```
+
+Per the Claude Code contract ([Control who invokes a
+skill](https://code.claude.com/docs/en/skills)):
+
+| Frontmatter | Human invokes | Model invokes | Description in context |
+|---|---|---|---|
+| (neither key) | yes | yes | always |
+| `disable-model-invocation: true` | yes | no | never |
+| `user-invocable: false` | no | yes | always |
+
+Setting both would make the skill unreachable, so never do that.
+
+**The set-it rule.** Model invocation is load-bearing whenever *anything else*
+reaches for the skill. Before setting the key, check all four surfaces and keep
+the evidence: `ao skills consumers <slug>` and `ao skills graph` (declared
+`dependencies` / `consumes`), `workflows/*.js`, other skills' `SKILL.md` bodies
+(a `See Also` entry or a "routes to `<slug>`" sentence counts as a reach), and
+`evals/routing-probes/templates.json` (an `applicable` entry means a probe is
+measuring whether the *model* routes there — disabling model invocation makes
+that probe structurally unmeasurable). A skill reached by any of those stays
+model-invoked.
+
+Codex has no equivalent switch and strips the key; see
+`docs/contracts/codex-skill-api.md`. The current human-only roster and the
+argument for each entry live in `skills/human-only-skills/SKILL.md`.
+
 ### `metadata`
 
 Skill classification and dependency information.
@@ -229,14 +265,15 @@ the key; nothing resolves the path or checks a skill's output against it.
 
 ## Context Declaration Quick Reference
 
-`context` is optional and most skills omit it. These 24 are every skill in
-`skills/` that declares one; the remaining 28 declare no `context` block at
+`context` is optional and most skills omit it. These 25 are every skill in
+`skills/` that declares one; the remaining 31 declare no `context` block at
 all. Regenerate this view with `rg -A5 '^context:' skills/*/SKILL.md` — the
 frontmatter is the source of truth, this table is a convenience copy.
 
 | Skill | Tier | Window | Sections | Intent |
 |-------|------|--------|----------|--------|
 | craft-goal | judgment | inherit | — | task |
+| human-only-skills | meta | inherit | — | none |
 | postmortem | judgment | fork | exclude: HISTORY | task |
 | codebase-recon | execution | fork | exclude: HISTORY | task |
 | pattern-mining | execution | fork | exclude: HISTORY | task |
@@ -263,15 +300,18 @@ frontmatter is the source of truth, this table is a convenience copy.
 
 ## Enforcement Summary (v1)
 
-Only two frontmatter fields change behavior at runtime, and neither is
+Only three frontmatter fields change behavior at runtime, and none is
 enforced by `ao`: `name`/`description` drive skill discovery in the host agent
-runtime, and `allowed-tools` narrows that runtime's auto-approval. Everything
+runtime, `allowed-tools` narrows that runtime's auto-approval, and
+`disable-model-invocation` (where the runtime honors it) strips the
+description from context and reserves invocation to the person. Everything
 under `context` is inert metadata kept so existing skills keep validating.
 
 | Field | Runtime enforcement | Enforced by |
 |-------|--------------------|-------------|
 | `allowed-tools` | **Active** — narrows tool auto-approval | host agent runtime |
 | `name`, `description` | **Active** — skill discovery and trigger matching | host agent runtime |
+| `disable-model-invocation` | **Active** where honored — strips the description from context and reserves invocation to the person; stripped at projection for runtimes without the switch | host agent runtime |
 | `context.window` | None — declaration-only | — |
 | `context.intent.mode` | None — declaration-only | — |
 | `context.sections` | None — the injection surface was removed | — |

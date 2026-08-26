@@ -1,7 +1,7 @@
 {
   "image": "claude",
   "schema_version": "skill-image.v1",
-  "skill_count": 52,
+  "skill_count": 56,
   "skills": [
     {
       "disposition": "keep_specialist",
@@ -104,6 +104,11 @@
       "slug": "handoff"
     },
     {
+      "disposition": "keep_specialist",
+      "path": "skills/human-only-skills/",
+      "slug": "human-only-skills"
+    },
+    {
       "disposition": "keep_strategy",
       "path": "skills/idea-genie/",
       "slug": "idea-genie"
@@ -127,6 +132,11 @@
       "disposition": "keep_optional_adapter",
       "path": "skills/ntm/",
       "slug": "ntm"
+    },
+    {
+      "disposition": "keep_strategy",
+      "path": "skills/one-way-door/",
+      "slug": "one-way-door"
     },
     {
       "disposition": "keep_specialist",
@@ -184,6 +194,11 @@
       "slug": "reverse-engineer"
     },
     {
+      "disposition": "keep_specialist",
+      "path": "skills/route/",
+      "slug": "route"
+    },
+    {
       "disposition": "keep",
       "path": "skills/rpi/",
       "slug": "rpi"
@@ -217,6 +232,11 @@
       "disposition": "keep_specialist",
       "path": "skills/skill-builder/",
       "slug": "skill-builder"
+    },
+    {
+      "disposition": "keep_specialist",
+      "path": "skills/skill-eval/",
+      "slug": "skill-eval"
     },
     {
       "disposition": "keep_specialist",

@@ -228,6 +228,15 @@
     },
     {
       "driven_by_skills": [
+        "human-only-skills"
+      ],
+      "id": "skill:human-only-skills:human_only_skill_routing",
+      "name": "human_only_skill_routing",
+      "path": "skills/human-only-skills/SKILL.md",
+      "type": "skill"
+    },
+    {
+      "driven_by_skills": [
         "idea-genie"
       ],
       "id": "skill:idea-genie:generate_evidenced_options",
@@ -287,6 +296,24 @@
       "id": "skill:ntm:ntm",
       "name": "ntm",
       "path": "skills/ntm/SKILL.md",
+      "type": "skill"
+    },
+    {
+      "driven_by_skills": [
+        "one-way-door"
+      ],
+      "id": "skill:one-way-door:classify_decision_reversibility",
+      "name": "classify_decision_reversibility",
+      "path": "skills/one-way-door/SKILL.md",
+      "type": "skill"
+    },
+    {
+      "driven_by_skills": [
+        "one-way-door"
+      ],
+      "id": "skill:one-way-door:escalate_user_challenge",
+      "name": "escalate_user_challenge",
+      "path": "skills/one-way-door/SKILL.md",
       "type": "skill"
     },
     {
@@ -417,6 +444,15 @@
     },
     {
       "driven_by_skills": [
+        "route"
+      ],
+      "id": "skill:route:route_request_to_skill",
+      "name": "route_request_to_skill",
+      "path": "skills/route/SKILL.md",
+      "type": "skill"
+    },
+    {
+      "driven_by_skills": [
         "rpi"
       ],
       "id": "skill:rpi:orchestrate_once",
@@ -485,6 +521,24 @@
       "id": "skill:skill-builder:heal_skill",
       "name": "heal_skill",
       "path": "skills/skill-builder/SKILL.md",
+      "type": "skill"
+    },
+    {
+      "driven_by_skills": [
+        "skill-eval"
+      ],
+      "id": "skill:skill-eval:author_seeded_probe",
+      "name": "author_seeded_probe",
+      "path": "skills/skill-eval/SKILL.md",
+      "type": "skill"
+    },
+    {
+      "driven_by_skills": [
+        "skill-eval"
+      ],
+      "id": "skill:skill-eval:run_probe_tier",
+      "name": "run_probe_tier",
+      "path": "skills/skill-eval/SKILL.md",
       "type": "skill"
     },
     {
@@ -645,19 +699,19 @@
     "cli_commands": 0,
     "gates": 0,
     "reference_impls": 0,
-    "skills": 71,
-    "total": 71
+    "skills": 77,
+    "total": 77
   },
   "cli_top_level_commands": [],
   "schema_version": 3,
   "summary": {
-    "capabilities": 71,
+    "capabilities": 77,
     "cli_commands": 0,
     "eval_files": 0,
     "hooks": 0,
     "job_types": 0,
     "knowledge_stores": 0,
-    "skills": 52,
+    "skills": 56,
     "workflows": 0
   },
   "surfaces": {
@@ -974,6 +1028,19 @@
       },
       {
         "capabilities": [
+          "human_only_skill_routing"
+        ],
+        "disposition": "keep_specialist",
+        "effects": [],
+        "has_references": false,
+        "has_skill_md": true,
+        "name": "human-only-skills",
+        "path": "skills/human-only-skills/",
+        "reference_count": 0,
+        "tier": "meta"
+      },
+      {
+        "capabilities": [
           "generate_evidenced_options",
           "dueling_idea_genies"
         ],
@@ -1052,6 +1119,22 @@
         "path": "skills/ntm/",
         "reference_count": 0,
         "tier": "execution"
+      },
+      {
+        "capabilities": [
+          "classify_decision_reversibility",
+          "escalate_user_challenge"
+        ],
+        "disposition": "keep_strategy",
+        "effects": [
+          "write_advisory_decision_classification"
+        ],
+        "has_references": true,
+        "has_skill_md": true,
+        "name": "one-way-door",
+        "path": "skills/one-way-door/",
+        "reference_count": 2,
+        "tier": "judgment"
       },
       {
         "capabilities": [
@@ -1226,6 +1309,19 @@
       },
       {
         "capabilities": [
+          "route_request_to_skill"
+        ],
+        "disposition": "keep_specialist",
+        "effects": [],
+        "has_references": false,
+        "has_skill_md": true,
+        "name": "route",
+        "path": "skills/route/",
+        "reference_count": 0,
+        "tier": "meta"
+      },
+      {
+        "capabilities": [
           "orchestrate_once",
           "report"
         ],
@@ -1329,6 +1425,23 @@
         "name": "skill-builder",
         "path": "skills/skill-builder/",
         "reference_count": 9,
+        "tier": "meta"
+      },
+      {
+        "capabilities": [
+          "author_seeded_probe",
+          "run_probe_tier"
+        ],
+        "disposition": "keep_specialist",
+        "effects": [
+          "write_probe_package",
+          "dispatch_probe_producer"
+        ],
+        "has_references": true,
+        "has_skill_md": true,
+        "name": "skill-eval",
+        "path": "skills/skill-eval/",
+        "reference_count": 1,
         "tier": "meta"
       },
       {
