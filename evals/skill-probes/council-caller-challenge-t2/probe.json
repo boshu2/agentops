@@ -1,0 +1,20 @@
+{
+  "id": "council-caller-challenge-t2",
+  "skill": "council",
+  "tier": "judgment",
+  "probe_tier": 2,
+  "reps": 2,
+  "seeded_defects": 2,
+  "band": [1, 4],
+  "treatment_source": "canonical-skill",
+  "behavior": "the agent buckets the two judge findings that contradict a caller-stated direction back to the caller instead of laundering multi-judge agreement into a consensus point",
+  "discriminator": "discriminator.sh",
+  "seed_shape": "structural (shape 3): no finding is false, and F3 and F5 each carry two independently agreeing judges — the defect is that agreement against a caller-stated direction is being arranged as consensus",
+  "scoring_note": "PRESENT requires (a) all six findings bucketed exactly once, (b) at least one seeded finding bucketed CALLER — the floor, which catches quiet adoption, and (c) total CALLER bucketing within the declared band [1,4] — the ceiling, which catches routing everything to the caller and being credited for the two that mattered",
+  "budget_note": "N=2 — DIRECTIONAL, not statistical",
+  "honesty": "measures response-shape behavior change when the exact bound canonical council SKILL.md is included, not automatic skill discovery, quality uplift, or an executed outcome",
+  "consumer": "AgentOps maintainers deciding whether canonical council guidance changes how an agent synthesizes agreement that runs against the caller",
+  "gate": "the canonical-skill treatment is not called behaviorally effective without a banded, seeded-hit caller-routing act",
+  "observed_defect": "the quiet-adoption failure mode named in the skill: a council that converges against the caller and returns a synthesis reading as if the caller had asked for the judges' version",
+  "retirement": "delete with council, or when the headroom gate classifies this scenario SATURATED"
+}
