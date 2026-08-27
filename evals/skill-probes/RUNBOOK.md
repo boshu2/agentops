@@ -47,9 +47,13 @@ other than `PASS`, inside the band `[1,4]`.
 Scorecards: `docs/evals/scorecards/2026-08-26/validate-seeded-closeout-t2-low.json`,
 `docs/evals/scorecards/2026-08-26/validate-seeded-closeout-t2-xhigh.json`.
 
-Same honest reading, and sharper: all four control reps return the textbook
-validate answer with no skill loaded — `C2` refused, `C4` refused (twice as
-`FAIL`, twice as `UNPROVEN`), `C1/C3/C5/C6` proven, result never `PASS`. Both
+Same honest reading — with a correction the validator forced: the control
+reps returned the textbook validate answer, but NOT skill-free. The
+`xhigh` control reps read `validate/SKILL.md` off disk (repo checkout and
+`~/.agents/skills`), so those reps are now DEGRADED under the
+skill-read-contamination rule and the xhigh scorecard reads UNMEASURED.
+At `low`, the clean control reps still refused `C2`/`C4` unaided — `C1/C3/C5/C6`
+proven, result never `PASS`. Both
 euphemized seeds are below this producer's window. Tier 2 did **not** escape
 saturation here; the earlier tier-1 `validate-not-proven` and
 `validate-not-proven-v2` groups are saturated for the same reason.
@@ -138,9 +142,17 @@ developer machine that directory commonly symlinks this repository's own
 `skills/`, so the **control** arm can see the very skill under test. That
 inflates the control arm and biases every verdict toward `INERT`/`SATURATED`.
 The 2026-08-26 runs were dispatched with `CODEX_HOME` pointed at a scratch
-directory holding only `auth.json`, so neither arm carried an ambient corpus and
-the bound `SKILL.md` bytes were the only arm difference. Confirm the isolation
-before reading any null:
+directory holding only `auth.json`. That removed the ambient auto-load — and
+proved insufficient: a producer with read access can still fetch the skill
+from the repo checkout or `~/.agents/skills` mid-run, and in these captures
+several reps (both arms) did exactly that. The harness therefore now DEGRADES
+any rep whose transcript shows a successful command reading a `SKILL.md`
+(`skill-read-contamination`, enforced in `classify_bytes` for live and replay
+alike; the contaminated 2026-08-26 scorecards were deleted and regenerated
+under the rule — premortem-low and validate-xhigh collapsed to UNMEASURED,
+one-way-door-xhigh lost one treatment rep). Until dispatch is sealed at the
+filesystem, this transcript-level trap is the isolation floor. Confirm before
+reading any null:
 
 ```bash
 ls "$CODEX_HOME"                 # auth.json only — no skills/ directory

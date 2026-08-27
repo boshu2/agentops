@@ -2,8 +2,8 @@
   "schema": "agentops-skill-probe.v3",
   "probe": "one-way-door-batch-t2",
   "skill": "one-way-door",
-  "mode": "live",
-  "generated_at": "2026-08-26T23:42:00Z",
+  "mode": "replay",
+  "generated_at": "2026-08-27T00:08:58Z",
   "reps": 2,
   "producer": {
     "adapter": "codex",
@@ -57,7 +57,7 @@
     },
     "metadata_helper": {
       "path": "scripts/lib/probe-fixture-metadata.py",
-      "sha256": "sha256:188c30b4abec48eac4886e5098cc35e41912f7c3f84e9c8083e233857fb75e36"
+      "sha256": "sha256:fc5e350fe43c64f634305fcfc38148c3d57a62867f61eb062efcb2e0f78d9714"
     },
     "preamble": {
       "path": "scripts/lib/preamble.sh",
@@ -82,7 +82,7 @@
       "sha256": "sha256:c4c06472b655cc440ab69e2d3c3bb7773c393eab671975aad3f1d446b2994199"
     }
   },
-  "evaluator_matches_capture": true,
+  "evaluator_matches_capture": false,
   "honesty": "measures response-shape BEHAVIOR-CHANGE under the exact bound canonical SKILL.md treatment, NOT quality-uplift; small N is directional (ADR-0011)",
   "schedule": [
     {
@@ -118,20 +118,20 @@
   },
   "treatment": {
     "present": 1,
-    "usable": 2,
-    "rate": 0.5
+    "usable": 1,
+    "rate": 1.0
   },
-  "verdict": "REGRESSIVE",
+  "verdict": "INERT",
   "per_rep": [
     {
-      "rep": 1,
       "control": "PRESENT",
+      "rep": 1,
       "treatment": "PRESENT"
     },
     {
-      "rep": 2,
       "control": "PRESENT",
-      "treatment": "ABSENT"
+      "rep": 2,
+      "treatment": "DEGRADED"
     }
   ]
 }
