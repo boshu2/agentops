@@ -72,12 +72,12 @@ successes.
 Measured at `low` only: control 2/2, treatment 2/2 (`INERT`). Scorecard:
 `docs/evals/scorecards/2026-08-26/council-caller-challenge-t2-low.json`.
 
-`skill.probe-headroom` reports **SEPARATED** for this group, and that reading is
-an artifact of the group holding a single effort level: the rule needs
-`ControlCeiling` reached at **two or more** levels, and only one was captured.
-The control arm's absolute rate is `1.00`. **No ledger row is appended**, because
-a row over a control arm that aced the scenario is exactly the void row the
-pre-screen exists to keep out, whatever label a one-level group carries.
+`skill.probe-headroom` now classifies this group **UNMEASURED** — the
+single-level rule (added the same day, from this very finding) folds a
+one-level group with an aced control arm out of SEPARATED, because that label
+was an artifact of the missing second level. The control arm's absolute rate
+is `1.00`. **No ledger row is appended**; capture a second effort level under
+sealed dispatch before this group can carry any verdict.
 
 Design finding worth carrying forward: this scenario's **output contract leaked
 the discipline.** Naming a `CALLER` bucket and glossing it as "the report returns

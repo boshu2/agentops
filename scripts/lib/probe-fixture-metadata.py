@@ -1606,10 +1606,17 @@ def skill_read_contamination(transcript_bytes: bytes) -> list[str]:
     corpus, any path) is no longer differentiated from the other arm by the
     bound treatment bytes — the exact leak the 2026-08-26 premortem capture
     proved (control reps ran `sed`/`cat` over skills/premortem/SKILL.md and
-    then performed the skill). Detection is fail-closed on what it can parse:
-    command_execution items whose final exit code is 0 and whose command
-    mentions SKILL.md. A failed attempt (nonzero exit) loaded no bytes and
-    does not void the rep.
+    then performed the skill).
+
+    Honest boundary — this is a FLOOR, not a seal: the heuristic flags
+    command_execution items whose FINAL exit code is 0 and whose command
+    string contains the literal SKILL.md. Known evasions it does not catch:
+    a compound command whose read succeeds but whose last segment fails
+    (`cat .../SKILL.md; false` exits 1), glob or variable indirection that
+    keeps the literal out of the command string, and copy-then-read
+    laundering. Real isolation is filesystem-sealed dispatch (RUNBOOK,
+    "isolation floor"); this trap exists so the KNOWN leak shape can never
+    silently recur.
     """
     final: dict[str, dict[str, Any]] = {}
     for raw in transcript_bytes.splitlines():

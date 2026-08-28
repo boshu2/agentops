@@ -71,10 +71,12 @@ SATURATED group is not evidence — pre-screen the scorecards with
 **Update 2026-08-26 — the seeded-defect (tier-2) wave.** Four tier-2
 seeded-defect probes were authored for `validate`, `premortem`, `council`, and
 `one-way-door`, and 28 live canonical-skill dispatches were captured against
-gpt-5.6-luna with an isolated producer home. **Exactly one row was earned**, and
-the coverage gate now counts **1/12** measured, with `premortem` off the
-unmeasured list. Three scenarios earned no row and are recorded in
-[`RUNBOOK.md`](RUNBOOK.md) instead:
+gpt-5.6-luna with an isolated producer home. **Zero rows survived** and the
+coverage gate counts **12/12 unmeasured**: the one row filed (`premortem`,
+BEHAVIORAL) was WITHDRAWN the same day when the fresh validator proved every
+rep — both arms — had read the skill off disk mid-run (see the WITHDRAWN row
+above and the skill-read-contamination rule the harness now enforces). The
+scenarios' outcomes live in [`RUNBOOK.md`](RUNBOOK.md):
 
 - `one-way-door-batch-t2` and `validate-seeded-closeout-t2` are **SATURATED**
   (control ≥ 0.75 at `low` and `xhigh`) — retired, no row. The control arm
@@ -82,10 +84,11 @@ unmeasured list. Three scenarios earned no row and are recorded in
   escape the ceiling for those two disciplines. That is a result about the
   producer's native behavior, not about the skills.
 - `council-caller-challenge-t2` was measured at one effort level with a control
-  rate of `1.00`. `skill.probe-headroom` labels a single-level group SEPARATED
-  because saturation needs two levels, but that label is an artifact here and
+  rate of `1.00`. Since the single-level rule, `skill.probe-headroom` classifies
+  the group **UNMEASURED** ("capture a second level before any verdict row") —
   **no row is appended over an aced control arm.**
 
-The honest headline: the tier-2 ratchet worked for one of four judgment
-disciplines at this producer altitude. The three ceilings are recorded rather
-than re-run.
+The honest headline: zero of four judgment disciplines measured at this
+producer altitude — two ceilings, one insufficient capture, one contaminated
+withdrawal. The instrument caught all four states correctly; the next wave
+runs only after dispatch is filesystem-sealed.
