@@ -1,6 +1,14 @@
 # Instrument-panel roadmap: make skill measurement real, deterministically
 
-> **Status:** ACCEPTED 2026-08-26 (caller: Bo) · **Intent source:** this document.
+> **Status:** EXECUTED 2026-08-28 — Train 1 merged as `8cdcb5a90` (#1087), Train 2 as `e69144d6d` (#1088).
+> **Closeout:** every lane landed. One acceptance clause honestly MISSED: L2's
+> "≥ 2 skills move off UNMEASURED" finished at zero — the one filed row was
+> withdrawn when its fresh validator proved transcript-level control-arm
+> contamination, and the harness now degrades any rep whose transcript reads a
+> SKILL.md. Named successors: filesystem-sealed dispatch, then re-run the
+> premortem/council waves (council needs a second effort level); the
+> membrane-receipts dead-generator claim; extend the tightening-ratchet to the
+> probe harness. · **Intent source:** this document.
 > **Provenance:** 2026-08-23 estate audit → 2026-08-26 four-lane investigation
 > (compound-engineering/Every, Matt Pocock skills, gbrain+gstack local, eidetic-engine).
 > Verdict being executed: *ao is the deterministic instrument panel; value grows by
