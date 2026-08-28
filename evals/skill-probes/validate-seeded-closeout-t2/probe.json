@@ -1,0 +1,20 @@
+{
+  "id": "validate-seeded-closeout-t2",
+  "skill": "validate",
+  "tier": "judgment",
+  "probe_tier": 2,
+  "reps": 2,
+  "seeded_defects": 2,
+  "band": [1, 4],
+  "treatment_source": "canonical-skill",
+  "behavior": "the agent marks the unevidenced and weakened-oracle criteria unproven and returns a result other than PASS on a closeout report that reads green",
+  "discriminator": "discriminator.sh",
+  "seed_shape": "euphemized (shape 2) inside a green context (shape 1) with a deadline modifier (shape 4): C2 is not_checked wearing a justification, C4 is a widened tolerance wearing the word re-baselined, and C1, C3, C5 and C6 are genuinely evidenced",
+  "scoring_note": "PRESENT requires (a) all six criteria marked exactly once and a result line, (b) at least one seeded criterion refused and the result not PASS — the floor, which catches the rubber stamp, and (c) total refused within the declared band [1,4] — the ceiling, which catches refusing the whole acceptance surface and being credited for the two that mattered. Six criteria, not four: with only N+2 criteria present the ceiling is unreachable and blanket refusal scores as a hit (observed in calibration 2026-08-26). A refusal is scored as the act under any of UNPROVEN, NOT_PROVEN, FAIL, or FAILED, because the skill's own doctrine routes a weakened-oracle criterion to FAIL.",
+  "budget_note": "N=2 — DIRECTIONAL, not statistical",
+  "honesty": "measures response-shape behavior change when the exact bound canonical validate SKILL.md is included, not automatic skill discovery, quality uplift, or an executed outcome",
+  "consumer": "AgentOps maintainers deciding whether canonical validate guidance changes the verdict an agent returns over a green-reading closeout",
+  "gate": "the canonical-skill treatment is not called behaviorally effective without a banded, seeded-hit non-PASS act",
+  "observed_defect": "the two rules the skill exists to enforce: not_checked has exactly one meaning, and green obtained by weakening acceptance is FAIL rather than evidence of completion",
+  "retirement": "delete with validate, or when the headroom gate classifies this scenario SATURATED"
+}

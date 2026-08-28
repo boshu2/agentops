@@ -1596,6 +1596,54 @@ def run_bounded_discriminator(discriminator_bytes: bytes, response_bytes: bytes)
         return returncode
 
 
+SKILL_READ_PATTERN = re.compile(r"SKILL\.md")
+
+
+def skill_read_contamination(transcript_bytes: bytes) -> list[str]:
+    """Producer-initiated successful reads of any SKILL.md void the rep.
+
+    An arm that fetches skill bytes off disk (repo checkout, installed
+    corpus, any path) is no longer differentiated from the other arm by the
+    bound treatment bytes — the exact leak the 2026-08-26 premortem capture
+    proved (control reps ran `sed`/`cat` over skills/premortem/SKILL.md and
+    then performed the skill).
+
+    Honest boundary — this is a FLOOR, not a seal: the heuristic flags
+    command_execution items whose FINAL exit code is 0 and whose command
+    string contains the literal SKILL.md. Known evasions it does not catch:
+    a compound command whose read succeeds but whose last segment fails
+    (`cat .../SKILL.md; false` exits 1), glob or variable indirection that
+    keeps the literal out of the command string, and copy-then-read
+    laundering. Real isolation is filesystem-sealed dispatch (RUNBOOK,
+    "isolation floor"); this trap exists so the KNOWN leak shape can never
+    silently recur.
+    """
+    final: dict[str, dict[str, Any]] = {}
+    for raw in transcript_bytes.splitlines():
+        raw = raw.strip()
+        if not raw.startswith(b"{"):
+            continue
+        try:
+            obj = json.loads(raw)
+        except (ValueError, UnicodeDecodeError):
+            continue
+        item = obj.get("item") if isinstance(obj, dict) else None
+        if not isinstance(item, dict) or item.get("type") != "command_execution":
+            continue
+        item_id = str(item.get("id", ""))
+        entry = final.setdefault(item_id, {})
+        if item.get("command") is not None:
+            entry["command"] = str(item.get("command"))
+        if item.get("exit_code") is not None:
+            entry["exit_code"] = item.get("exit_code")
+    hits = []
+    for entry in final.values():
+        command = entry.get("command", "")
+        if entry.get("exit_code") == 0 and SKILL_READ_PATTERN.search(command):
+            hits.append(command)
+    return sorted(hits)
+
+
 def classify_bytes(
     discriminator_bytes: bytes,
     transcript_bytes: bytes,
@@ -1610,6 +1658,14 @@ def classify_bytes(
             transcript_bytes, contract, arm, rep, f"{arm}-{rep}.txt"
         )
     if response is None:
+        return "DEGRADED"
+    contamination = skill_read_contamination(transcript_bytes)
+    if contamination:
+        for command in contamination:
+            print(
+                f"probe-skill: rep DEGRADED (skill-read-contamination): {command[:200]}",
+                file=sys.stderr,
+            )
         return "DEGRADED"
     try:
         returncode = run_bounded_discriminator(discriminator_bytes, response)

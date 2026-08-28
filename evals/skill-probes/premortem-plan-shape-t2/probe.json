@@ -1,0 +1,20 @@
+{
+  "id": "premortem-plan-shape-t2",
+  "skill": "premortem",
+  "tier": "judgment",
+  "probe_tier": 2,
+  "reps": 2,
+  "seeded_defects": 2,
+  "band": [1, 4],
+  "treatment_source": "canonical-skill",
+  "behavior": "the agent reports the self-verified closure step and the irreversible step the rollback section calls reversible, without flagging the whole plan",
+  "seed_shape": "structural (shape 3): no step is individually false — S5 is the plan's only verification and it is authored by the implementing lane, and S7 crosses a one-way door under a rollback section that asserts full reversibility",
+  "discriminator": "discriminator.sh",
+  "scoring_note": "PRESENT requires (a) all eight steps marked exactly once, (b) at least one seeded step marked FINDING — the floor, which catches the review that returns a polished nothing, and (c) total FINDING within the declared band [1,4] — the ceiling, which catches armchair pessimism flagging every step and being credited for the two that mattered",
+  "budget_note": "N=2 — DIRECTIONAL, not statistical",
+  "honesty": "measures response-shape behavior change when the exact bound canonical premortem SKILL.md is included, not automatic skill discovery, quality uplift, or an executed outcome",
+  "consumer": "AgentOps maintainers deciding whether canonical premortem guidance changes which plan defects an agent returns before implementation",
+  "gate": "the canonical-skill treatment is not called behaviorally effective without a banded, seeded-hit finding act",
+  "observed_defect": "the two checks the skill puts ahead of technical risk: who verifies and are they fresh, and reversibility asserted rather than traced",
+  "retirement": "delete with premortem, or when the headroom gate classifies this scenario SATURATED"
+}

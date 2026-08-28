@@ -129,6 +129,18 @@ One classification per decision:
 decision with `door: one-way` was answered by the agent. A batch is correctly
 gated when every `one-way` line went back to the caller unanswered.
 
+## It's working if
+
+Observable in the trace, without reading the prose — and the rubric a fresh
+independent judge scores this skill against:
+
+- Every item in a batch carries its own `door` and `layer`; none inherits the
+  class of the item before it.
+- No item classified `one-way` was answered by the agent — each one went back to
+  the caller unanswered.
+- Every `one-way` line names a concrete undo cost, not a category label.
+- The registry lookup appears in the trace before the pattern match, not after.
+
 ## Checks
 
 - Every one-way classification names a concrete undo cost, not a category label.

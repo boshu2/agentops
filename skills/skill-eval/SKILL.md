@@ -215,6 +215,9 @@ zero ledger rows.
 ## Provenance
 
 - Harness this extends: [`scripts/probe-skill.sh`](../../scripts/probe-skill.sh), [`evals/skill-probes/README.md`](../../evals/skill-probes/README.md).
+- Scenario retirements and capture incidents live in
+  [`evals/skill-probes/RUNBOOK.md`](../../evals/skill-probes/RUNBOOK.md) — the
+  ledger holds verdicts, the RUNBOOK holds everything a verdict must not.
 - The saturation evidence that motivated tier 2: [`evals/skill-probes/LEDGER.md`](../../evals/skill-probes/LEDGER.md) — the INERT rows dated 2026-08-04/05 annotated "scenario needs hardening, not the skill"; run the `skill.probe-headroom` gate for the live classification.
 - Coverage gate (does a result exist): [`scripts/check-skill-probe-coverage.sh`](../../scripts/check-skill-probe-coverage.sh), whose denominator is declared in `scripts/.skill-probe-denominator-exclusions`.
 - Headroom gate (could a result have existed): [`scripts/check-skill-probe-headroom.sh`](../../scripts/check-skill-probe-headroom.sh) — gate id `skill.probe-headroom`, rule in `cli/internal/probeheadroom`.
