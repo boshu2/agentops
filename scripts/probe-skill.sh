@@ -311,9 +311,22 @@ dispatch_live() {
     CODEX_EXEC_STDERR_FILE="$stderr_file" \
     CODEX_EXEC_EXPECT_OUTPUT=1 \
         codex_exec_guarded >/dev/null || rc=$?
+    # Producer stderr fails the rep closed. ONE literal is excluded: codex-cli
+    # >= 0.14 announces stdin prompt delivery with "Reading prompt from
+    # stdin...", and THIS harness chose stdin delivery ten lines above
+    # (CODEX_EXEC_PROMPT_FILE), so that line is the harness hearing its own
+    # echo, not a producer diagnostic — on codex-cli 0.145.0 it accompanies a
+    # zero exit and a complete JSONL stream, which degraded 100% of live reps
+    # and made every live capture UNMEASURED. Every other byte the producer
+    # writes still degrades the rep, and the full stderr is still echoed. This
+    # admits a dispatch; it can never turn ABSENT into PRESENT, and the bound
+    # prompt event, transcript inventory, and discriminator still decide the
+    # rep.
     if [[ -s "$stderr_file" ]]; then
         cat "$stderr_file" >&2
-        [[ "$rc" -ne 0 ]] || rc=2
+        if grep -qvxF 'Reading prompt from stdin...' "$stderr_file"; then
+            [[ "$rc" -ne 0 ]] || rc=2
+        fi
     fi
     if [[ "$rc" -eq 0 ]]; then
         python3 "$FIXTURE_META_TOOL" assemble-transcript \

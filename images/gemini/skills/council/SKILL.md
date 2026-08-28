@@ -129,6 +129,18 @@ from agreement counting and recorded as non-returning; if fewer than two
 independent judgments remain, report the round as insufficient rather than
 synthesize a thin consensus.
 
+## It's working if
+
+Observable in the trace, without reading the prose — and the rubric a fresh
+independent judge scores this skill against:
+
+- Every judge finding lands in exactly one synthesis bucket; none is dropped.
+- A judgment that contradicts a caller-stated direction appears as a
+  `caller_challenge` entry with all five fields, never as a consensus point.
+- Every consensus claim names at least two distinct evidence methodologies, or
+  is labelled single-method agreement and weighted as one confirmation.
+- No `verdict`, `readiness`, or `PASS` field appears anywhere in the report.
+
 ## Boundary
 
 Council does not mint a verdict of any version — no `PASS`/`FAIL`/`NOT_PROVEN`,

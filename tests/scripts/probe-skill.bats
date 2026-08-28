@@ -956,3 +956,17 @@ SH
     [ "$(json_field "$output" producer.identity.source)" = "test-override" ]
     [ "$(json_field "$output" producer.identity.coverage_eligible)" = "false" ]
 }
+
+@test "replay DEGRADES a rep whose transcript reads a SKILL.md (skill-read-contamination)" {
+    # The committed premortem tier-2 fixture is the real contaminated capture:
+    # every rep fetched skills/premortem/SKILL.md off disk with exit 0. Under
+    # the contamination rule the whole set collapses to UNMEASURED 0/0 usable.
+    # setup() points the harness at a per-test sandbox; this case reads the
+    # real committed fixture, so resolve the real repo trees.
+    unset SKILL_PROBES_DIR SKILL_PROBE_SKILLS_DIR
+    run --separate-stderr bash "$REPO_ROOT/scripts/probe-skill.sh" \
+        --probe premortem-plan-shape-t2 --replay --fixtures fixtures-low-2026-08-26
+    [ "$status" -eq 0 ]
+    [[ "$stderr" == *"skill-read-contamination"* ]]
+    [[ "$output" == *'"verdict": "UNMEASURED"'* ]]
+}

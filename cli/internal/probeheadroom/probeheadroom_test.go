@@ -132,7 +132,10 @@ func TestClassify_RuleEdges(t *testing.T) {
 				card("p", "", Arm{Present: 2, Usable: 2, Rate: rate(1.0)}, Arm{Present: 2, Usable: 2, Rate: rate(1.0)}),
 				card("p", "", Arm{Present: 2, Usable: 2, Rate: rate(1.0)}, Arm{Present: 2, Usable: 2, Rate: rate(1.0)}),
 			},
-			want: Separated,
+			// One deduped unknown level with an aced control: since the 2026-08-26
+			// single-level rule this is UNMEASURED (was SEPARATED) — the dedup point
+			// this case pins is unchanged: one level, never two.
+			want: Unmeasured,
 		},
 		{
 			name: "treatment never acts at any level is FLOOR",
@@ -211,5 +214,30 @@ func TestEffortLabel_DefaultsToUnknown(t *testing.T) {
 	}
 	if got := (Scorecard{Producer: Producer{Effort: "xhigh"}}).EffortLabel(); got != "xhigh" {
 		t.Errorf("EffortLabel() = %q, want %q", got, "xhigh")
+	}
+}
+
+// TestClassify_SingleLevelAcedControlIsNotSeparated pins the 2026-08-26 L2
+// finding: a group measured at ONE effort level whose control arm aced it
+// must not be labeled SEPARATED — the label was an artifact of the missing
+// second level, and a verdict row filed over it would be the void row the
+// pre-screen exists to keep out. Such a group is UNMEASURED-for-headroom
+// until a second level exists.
+func TestClassify_SingleLevelAcedControlIsNotSeparated(t *testing.T) {
+	cards := []Scorecard{{
+		Probe: "council-caller-challenge-t2", Skill: "council",
+		Producer:  Producer{Effort: "low"},
+		Control:   Arm{Present: 2, Usable: 2, Rate: rate(1.0)},
+		Treatment: Arm{Present: 2, Usable: 2, Rate: rate(1.0)},
+	}}
+	res, err := Classify(cards)
+	if err != nil {
+		t.Fatalf("Classify: %v", err)
+	}
+	if res.Class == Separated {
+		t.Fatalf("single-level aced-control group classified SEPARATED; want a non-passing class (got %v, detail %q)", res.Class, res.Detail)
+	}
+	if res.Class != Unmeasured {
+		t.Fatalf("single-level aced-control group: got %v, want Unmeasured", res.Class)
 	}
 }

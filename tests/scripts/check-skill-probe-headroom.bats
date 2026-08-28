@@ -58,10 +58,14 @@ setup() {
 	[[ "$output" == *"PROBE_HEADROOM: SEPARATED"* ]]
 }
 
-@test "one saturated effort level alone is not enough to flag" {
+@test "one saturated effort level alone is not enough to flag as SATURATED" {
+	# Since the 2026-08-26 single-level rule (L2 finding), one aced level is
+	# not SEPARATED either — it is UNMEASURED-for-headroom until a second
+	# level exists. The case's original point stands: never SATURATED alone.
 	run "$PROBE_HEADROOM_BIN" "$FIXTURES/saturated/fixture-saturated-quiz-low.json"
-	[ "$status" -eq 0 ]
-	[[ "$output" == *"PROBE_HEADROOM: SEPARATED"* ]]
+	[[ "$output" != *"PROBE_HEADROOM: SATURATED"* ]]
+	[[ "$output" == *"PROBE_HEADROOM: UNMEASURED"* ]]
+	[[ "$output" == *"second level"* ]]
 }
 
 @test "gate fails loudly when a fixture pair is missing" {

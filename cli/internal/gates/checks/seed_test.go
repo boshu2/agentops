@@ -255,3 +255,80 @@ func TestDocSkillRefsGateIsBlockingAndStrict(t *testing.T) {
 		}
 	}
 }
+
+func TestGateTighteningRatchetIsAdvisoryAndRoutedOnTheGateSurface(t *testing.T) {
+	check, ok := gates.Default.Get("gate.tightening-ratchet")
+	if !ok {
+		t.Fatal("gate.tightening-ratchet is not registered")
+	}
+	if check.Backing != "check-gate-tightening-ratchet.sh" {
+		t.Fatalf("gate.tightening-ratchet backing = %q, want check-gate-tightening-ratchet.sh", check.Backing)
+	}
+	// Advisory PERMANENTLY at this fidelity: the detector is a text-diff
+	// heuristic over the gate surface, so a false positive must never block a
+	// push. A flip to blocking needs a precision detector earned on evidence.
+	if check.Blocking {
+		t.Fatal("gate.tightening-ratchet must be warn-first / non-blocking (advisory)")
+	}
+	if check.Tiers.Has(gates.Fast) || !check.Tiers.Has(gates.Full) {
+		t.Fatalf("gate.tightening-ratchet tiers = %v, want Full only (it diffs a whole range)", check.Tiers)
+	}
+	if !strings.Contains(check.RepairHint, "Gate-Loosen-Reason") {
+		t.Fatalf("gate.tightening-ratchet repair hint = %q, want the trailer escape hatch named", check.RepairHint)
+	}
+	// The two governed classes plus self-reference.
+	for _, want := range []string{
+		"cli/internal/gates/checks/seed.go",
+		"scripts/check-go-lint.sh",
+		"tests/scripts/check-gate-tightening-ratchet.bats",
+	} {
+		if !gates.PathMatchesAny(check.Match, want) {
+			t.Fatalf("gate.tightening-ratchet must route on %q; match globs = %v", want, check.Match)
+		}
+	}
+	// A skill or doc edit cannot loosen a gate threshold; it must not re-run.
+	for _, unwanted := range []string{"skills/validate/SKILL.md", "docs/CI-CD.md"} {
+		if gates.PathMatchesAny(check.Match, unwanted) {
+			t.Fatalf("gate.tightening-ratchet must not route on %q; match globs = %v", unwanted, check.Match)
+		}
+	}
+}
+
+func TestEvidenceGroundingIsAdvisoryAndRoutedOnEvidenceRoots(t *testing.T) {
+	check, ok := gates.Default.Get("evidence.grounding")
+	if !ok {
+		t.Fatal("evidence.grounding is not registered")
+	}
+	if check.Backing != "check-evidence-grounding.sh" {
+		t.Fatalf("evidence.grounding backing = %q, want check-evidence-grounding.sh", check.Backing)
+	}
+	if check.Blocking {
+		t.Fatal("evidence.grounding must be warn-first / non-blocking (advisory)")
+	}
+	if check.Tiers.Has(gates.Fast) || !check.Tiers.Has(gates.Full) {
+		t.Fatalf("evidence.grounding tiers = %v, want Full only (it scans the whole evidence corpus)", check.Tiers)
+	}
+	if !strings.Contains(check.RepairHint, ".evidence-grounding-baseline") {
+		t.Fatalf("evidence.grounding repair hint = %q, want the baseline named", check.RepairHint)
+	}
+	// The three evidence roots, the declared baseline, and the detector's own
+	// surfaces (script, shared libs, bats).
+	for _, want := range []string{
+		"docs/audits/2026-07-15-skills-go-cli-audit.md",
+		"docs/evidence/membrane-receipts.md",
+		"docs/handoffs/2026-06-07-ag-qidx-postmortem.md",
+		"scripts/.evidence-grounding-baseline",
+		"scripts/check-evidence-grounding.sh",
+		"scripts/lib/docs-scope.sh",
+		"tests/scripts/check-evidence-grounding.bats",
+	} {
+		if !gates.PathMatchesAny(check.Match, want) {
+			t.Fatalf("evidence.grounding must route on %q; match globs = %v", want, check.Match)
+		}
+	}
+	// Deleting the file an audit CITES is the defect this gate reports, not a
+	// reason to re-run it on the deleting change.
+	if gates.PathMatchesAny(check.Match, "cli/internal/gates/checks/seed.go") {
+		t.Fatalf("evidence.grounding must not route on cited source paths; match globs = %v", check.Match)
+	}
+}

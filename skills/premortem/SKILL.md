@@ -122,6 +122,20 @@ These are integration- and extension-class checks. The Grain question's
 native-counterpart list applies only to integration-class work; do not impose it
 on routine feature work.
 
+## It's working if
+
+Observable in the trace, without reading the prose — and the rubric a fresh
+independent judge scores this skill against:
+
+- Every unit of work carries a named verifier, and any unit verified by the
+  context that authored it comes back as a finding.
+- Every step carries a two-way or one-way mark, and each one-way mark names its
+  undo cost and its point of no return.
+- Every reported finding cites a defeat attempt — the input, command, or
+  repository state constructed — or the fact that blocked the construction.
+- The finding set is bounded: a review that flags every step has reported
+  nothing.
+
 ## Boundary
 
 - Emit advisory findings, no verdict of any version, readiness, admission, or permission.

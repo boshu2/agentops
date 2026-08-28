@@ -297,9 +297,23 @@ func Classify(cards []Scorecard) (Result, error) {
 	case allTreatmentUsable && allTreatmentSilent:
 		res.Class = Floor
 		res.Detail = "the treatment arm never produced the act at any effort level; check the discriminator against a hand-written passing transcript before re-seeding"
+	case len(res.AcedEfforts) == 1 && distinctEffortLevels(cards) < 2:
+		// L2 finding (2026-08-26): one measured level whose control aced it is
+		// not headroom — the SEPARATED label would be an artifact of the
+		// missing second level. Tightening only: fewer groups pass pre-screen.
+		res.Class = Unmeasured
+		res.Detail = "single effort level with an aced control arm; capture a second level before any verdict row"
 	default:
 		res.Class = Separated
 		res.Detail = fmt.Sprintf("control aced %d effort level(s); the verdict reflects the skill, not the scenario", len(res.AcedEfforts))
 	}
 	return res, nil
+}
+
+func distinctEffortLevels(cards []Scorecard) int {
+	levels := map[string]struct{}{}
+	for _, card := range cards {
+		levels[card.EffortLabel()] = struct{}{}
+	}
+	return len(levels)
 }
