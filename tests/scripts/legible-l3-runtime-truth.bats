@@ -110,8 +110,8 @@ is_hard() {
   done < <(parse_rows "$README")
 }
 
-@test "'No other runtime is required' appears nowhere under README.md or docs/" {
-  run grep -rn -- "No other runtime is required" "$README" "$REPO_ROOT/docs"
+@test "'No other runtime is required' appears nowhere under README.md or docs/ (dated plans excluded: they record the finding)" {
+  run grep -rn --exclude-dir=plans -- "No other runtime is required" "$README" "$REPO_ROOT/docs"
   [ "$status" -ne 0 ]
   [ -z "$output" ]
 }
