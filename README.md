@@ -156,14 +156,18 @@ one unless requested.
 
 | Skill | Job |
 |---|---|
-| [`rpi`](skills/rpi/SKILL.md) | run Plan, Implement, and fresh Validate at most once |
+| [`rpi`](skills/rpi/SKILL.md) | run the anti-ceremony guard, then Plan, Implement, and fresh Validate at most once |
+| [`anti-ceremony`](skills/anti-ceremony/SKILL.md) | STOP/CONTINUE guard before Plan: name the consumer, the decision, the defect, and the retirement condition, or do not create the artifact |
 | [`plan`](skills/plan/SKILL.md) | create the bead (BDD + DDD ubiquitous language) |
 | [`implement`](skills/implement/SKILL.md) | TDD against the bead: RED → GREEN → refactor |
 | [`validate`](skills/validate/SKILL.md) | fresh context (optionally different model); optionally persist `verdict.v2` |
 
 Optional later: [`learn`](skills/learn/SKILL.md). Strategies:
 [`council`](skills/council/SKILL.md), [`idea-genie`](skills/idea-genie/SKILL.md),
-[`premortem`](skills/premortem/SKILL.md), [`postmortem`](skills/postmortem/SKILL.md).
+[`premortem`](skills/premortem/SKILL.md), [`postmortem`](skills/postmortem/SKILL.md),
+[`one-way-door`](skills/one-way-door/SKILL.md) (is this decision reversible?),
+[`reality-check`](skills/reality-check/SKILL.md) (does the repo match the claim?).
+Not sure which skill owns a request? Ask [`route`](skills/route/SKILL.md).
 
 ## One skill, many shapes
 
