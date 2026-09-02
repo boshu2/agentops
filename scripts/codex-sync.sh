@@ -87,14 +87,19 @@ import sys
 import yaml
 
 # Runtime-name rewrites for the Codex projection, applied LONGEST-MATCH-FIRST in
-# a single pass. A blind "Claude Code" -> "Codex" replacement turned the source's
-# runtime trio ("Claude Code, Codex CLI, and Antigravity CLI") into "Codex, Codex
-# CLI" — a duplicate that reads as a typo and erases the distinction the sentence
-# was drawing. Phrases that already name Codex therefore get their own entry and
-# win over the bare name they contain. Add new phrases here, not as another
-# str.replace call site.
+# a single pass (one entry per rewrite; add new ones here, not as another
+# str.replace call site).
+#
+# These are correct ONLY for a skill that documents a single runtime. A skill
+# whose text is genuinely cross-runtime — it names Claude Code AND Codex CLI, or
+# tells the operator to check both ~/.claude/skills and ~/.codex/skills — must
+# go in scripts/lint/codex-cross-runtime-skills.txt instead, which skips these
+# rewrites entirely for that skill. Do NOT try to repair such a skill by adding
+# a longer phrase here: patching one sentence leaves every other sentence in the
+# same body corrupted. using-flywheel is exactly that case (its trio collapsed
+# to two names and its two verification paths collapsed to one, listed twice),
+# and the exemption list is its fix.
 RUNTIME_REWRITES: tuple[tuple[str, str], ...] = (
-    ("Claude Code, Codex CLI", "Codex CLI"),
     ("Claude Code", "Codex"),
     ("~/.claude/", "~/.codex/"),
     ("~/.claude", "~/.codex"),
@@ -311,17 +316,40 @@ def render_operator_contract_block(name: str, operator_contract: dict | None) ->
     return "\n".join(out)
 
 
+# Abbreviations whose trailing period is NOT a sentence end. Matched
+# case-insensitively and only at a word start (preceded by the beginning of the
+# prose or by whitespace), so "e.g." is skipped but a sentence genuinely ending
+# in "...etc." style prose still needs one of these to be the whole token.
+_ABBREVIATIONS = ("e.g.", "i.e.", "vs.", "etc.", "cf.")
+_ABBREVIATION_RE = re.compile(
+    r"(?:^|\s)(?:" + "|".join(re.escape(a) for a in _ABBREVIATIONS) + r")$",
+    re.IGNORECASE,
+)
+# A closing quote may sit between the terminator and the space: the sentence
+# ends AFTER the quote, so `Say "done." Then stop.` yields `Say "done."`.
+_CLOSING_QUOTES = "\"'\u201d"
+
+
 def first_sentence(prose: str) -> str:
     """The first whole sentence of ``prose``.
 
     A terminator is ``.``, ``!`` or ``?`` followed by whitespace or the end of
-    the prose. ``;`` and dashes are NOT terminators — they join clauses, so
-    cutting there still yields a fragment. Requiring whitespace after the mark
-    is what keeps "verdict.v2" and "reality-check." intact. Prose with no
-    terminator at all is itself the sentence.
+    the prose, optionally with one closing quote in between. ``;`` and dashes
+    are NOT terminators — they join clauses, so cutting there still yields a
+    fragment. Requiring whitespace after the mark is what keeps "verdict.v2"
+    and "reality-check." intact; the abbreviation list above keeps "e.g." and
+    friends from ending a sentence mid-thought. Prose with no terminator at all
+    is itself the sentence.
     """
-    match = re.search(r"[.!?](?=\s|$)", prose)
-    return prose[: match.end()] if match else prose
+    for match in re.finditer(r"[.!?]", prose):
+        stop = match.end()
+        if _ABBREVIATION_RE.search(prose[:stop]):
+            continue
+        if stop < len(prose) and prose[stop] in _CLOSING_QUOTES:
+            stop += 1
+        if stop >= len(prose) or prose[stop].isspace():
+            return prose[:stop]
+    return prose
 
 
 def codex_catalog_description(name: str, source_description: str) -> str:
@@ -339,7 +367,12 @@ def codex_catalog_description(name: str, source_description: str) -> str:
     sentence, and the acceptance in tests/skills/test-token-budgets.sh (the
     per-skill limit and the per-skill catalog average) measures the result.
     """
-    desc = re.sub(r"\s+", " ", source_description).strip(" '\"")
+    # Whitespace only. parse_frontmatter runs the frontmatter through
+    # yaml.safe_load, so the value handed in here is ALREADY the unquoted
+    # scalar with any doubled '' unescaped; stripping quote characters again
+    # ate legitimate leading/trailing quotes, e.g. a description ending in
+    # `Triggers: "validate"` lost its final quote.
+    desc = re.sub(r"\s+", " ", source_description).strip()
     if not desc:
         return f"Run {name}."
 

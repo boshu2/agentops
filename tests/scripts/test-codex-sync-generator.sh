@@ -146,6 +146,77 @@ expected_description="description: 'Throwaway probe for the codex-sync acceptanc
       expected: $expected_description
       actual:   $generated_description"
 
+echo "== 3b. projection edge cases, end-to-end against the real generator =="
+# LITERAL input -> LITERAL output, driven through codex-sync.sh itself. These
+# pin the parts of the contract a boundary rule alone cannot state:
+#   - an abbreviation's period ("e.g.", "i.e.", "vs.", "etc.", "cf.") is not a
+#     sentence end;
+#   - a terminator followed by a closing quote ends the sentence AFTER the
+#     quote;
+#   - the description value is a YAML scalar, so a value that legitimately ENDS
+#     in a quote keeps it. The generator used to .strip(" '\"") the value and
+#     ate that final character.
+# Comparison is on the twin's parsed VALUE, not on YAML quoting style.
+canonical_description="$(awk '/^description:/{sub(/^description:[[:space:]]*/,""); print; exit}' "$SRC_DIR/SKILL.md")"
+
+set_source_description() {
+  DESC_LINE="$1" python3 - "$SRC_DIR/SKILL.md" <<'PY'
+import os, pathlib, sys
+path = pathlib.Path(sys.argv[1])
+out = []
+for line in path.read_text(encoding="utf-8").splitlines(keepends=True):
+    if line.startswith("description:"):
+        line = "description: " + os.environ["DESC_LINE"] + "\n"
+    out.append(line)
+path.write_text("".join(out), encoding="utf-8")
+PY
+}
+
+twin_description_value() {
+  python3 - "$TWIN_DIR/SKILL.md" <<'PY'
+import pathlib, sys, yaml
+text = pathlib.Path(sys.argv[1]).read_text(encoding="utf-8")
+print(yaml.safe_load(text.split("---", 2)[1])["description"])
+PY
+}
+
+project_case() { # project_case <label> <source description scalar> <expected VALUE>
+  local label="$1" scalar="$2" want="$3" got
+  set_source_description "$scalar"
+  bash "$ROOT/scripts/codex-sync.sh" --only "$PROBE" >/dev/null 2>&1
+  got="$(twin_description_value)"
+  if [[ "$got" == "$want" ]]; then
+    pass "projection: $label"
+  else
+    fail "projection: $label
+      expected: $want
+      actual:   $got"
+  fi
+}
+
+project_case "abbreviation 'e.g.' does not end the sentence" \
+  "'Use tools, e.g. shell. Then stop. Triggers: \"x\".'" \
+  'Use tools, e.g. shell. Triggers: "x".'
+
+project_case "abbreviations i.e./vs./etc./cf. do not end the sentence" \
+  "'Weigh i.e. this vs. that, etc. and cf. the notes. Then stop. Triggers: \"x\".'" \
+  'Weigh i.e. this vs. that, etc. and cf. the notes. Triggers: "x".'
+
+project_case "closing quote after the terminator ends the sentence after the quote" \
+  "'Say \"done.\" Then stop. Triggers: \"x\".'" \
+  'Say "done." Triggers: "x".'
+
+project_case "a description value ending in a quote keeps its final character" \
+  "'Emit the sentinel \"ready.\" Triggers: \"x\"'" \
+  'Emit the sentinel "ready." Triggers: "x"'
+
+# Restore the canonical probe description so sections 4-6 judge the real shape.
+set_source_description "$canonical_description"
+bash "$ROOT/scripts/codex-sync.sh" --only "$PROBE" >/dev/null 2>&1
+[[ "$(twin_description_value)" == 'Throwaway probe for the codex-sync acceptance test. Triggers: "zzz codex sync accept probe".' ]] \
+  && pass "canonical probe description restored for the gate section" \
+  || fail "failed to restore the canonical probe description"
+
 # Registered in the gate-enforced 1:1 surface.
 if jq -e --arg n "$PROBE" '.skills[]|select(.name==$n)' "$OVERRIDES" >/dev/null; then
   pass "registered in skills-codex-overrides/catalog.json"
