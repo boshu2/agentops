@@ -68,15 +68,22 @@ if [[ "$GOALS_FORMAT" == "md" ]]; then
     # must point at something that is really in the tree.
     #
     # Every row check reads from GATES_BLOCK, the lines between `## Gates` and
-    # the next `## ` heading (or EOF) — never from the whole file. A file-wide
-    # row selector let an EMPTY Gates table pass on the strength of an
-    # unrelated lowercase-ID table elsewhere in the document, which is the
-    # exact 0/0-reports-green regression this validator exists to catch.
+    # the next heading (or EOF) — never from the whole file. A file-wide row
+    # selector let an EMPTY Gates table pass on the strength of an unrelated
+    # lowercase-ID table elsewhere in the document, which is the exact
+    # 0/0-reports-green regression this validator exists to catch.
+    #
+    # The block ends at ANY heading, matching the production parser
+    # (cli/internal/goals/markdown.go:343 breaks on any trimmed line starting
+    # with '#'). Stopping only at `## ` let a `### Notes` subsection and its
+    # decoy table back into the block, so the validator saw rows that
+    # `ao goals measure` never would — the validator must not be more
+    # permissive than the thing it validates.
     GATES_BLOCK=$(awk '
-        /^## Gates[[:space:]]*$/ { inblock = 1; next }
-        inblock && /^## / { exit }
+        /^[[:space:]]*## Gates[[:space:]]*$/ { inblock = 1; next }
+        inblock && /^[[:space:]]*#/ { exit }
         inblock { print }
-    ' "$GOALS_FILE" || true)
+    ' "$GOALS_FILE")
 
     # gate_rows → the data rows of the Gates table, one per line. Skips the
     # separator row and the header row case-insensitively (`| ID |` and
@@ -143,11 +150,23 @@ if [[ "$GOALS_FORMAT" == "md" ]]; then
     #    permanent failure. Rows whose Check is a self-contained command (for
     #    example `cd cli && go test ./...`) cite no path and are left alone —
     #    the check never demands that a bare gate id be registered anywhere.
+    #    Tokenization runs through a CHECKED path. It used to sit behind
+    #    `... | tr ... || true` in a process substitution: if the tokenizer
+    #    failed, the loop saw zero references and the check reported "every
+    #    cited path exists". A producer whose EMPTY output means PASS must
+    #    never be allowed to fail silently.
     missing_paths=""
+    tokenize_failed=0
     while IFS= read -r line; do
         safe_line="${line//\\|/__AGENTOPS_ESCAPED_PIPE__}"
         gate_id=$(echo "$safe_line" | awk -F'|' '{gsub(/^ *| *$/, "", $2); print $2}')
         check_cell=$(echo "$safe_line" | awk -F'|' '{print $3}')
+        tokens=""
+        if ! tokens=$(printf '%s' "$check_cell" | tr -c 'A-Za-z0-9_./-' '\n'); then
+            fail "Could not tokenize the Check cell of gate row '${gate_id}'"
+            tokenize_failed=1
+            continue
+        fi
         while IFS= read -r ref; do
             [[ -n "$ref" ]] || continue
             # A cited path is a token under scripts/ or one ending in .sh.
@@ -158,10 +177,12 @@ if [[ "$GOALS_FORMAT" == "md" ]]; then
             if [[ ! -e "$REPO_ROOT/$ref" ]]; then
                 missing_paths+=" ${gate_id}->${ref}"
             fi
-        done < <(echo "$check_cell" | tr -c 'A-Za-z0-9_./-' '\n' || true)
+        done <<< "$tokens"
     done < <(gate_rows)
 
-    if [[ -z "$missing_paths" ]]; then
+    if [[ $tokenize_failed -ne 0 ]]; then
+        : # already reported above; do not also claim the paths were checked
+    elif [[ -z "$missing_paths" ]]; then
         pass "Every repository path cited by a gate row exists"
     else
         fail "Gate rows cite missing paths:$missing_paths"
@@ -171,7 +192,17 @@ else
     # Legacy GOALS.yaml validation
     pass "GOALS.yaml exists"
 
-    if python3 -c "import yaml; yaml.safe_load(open('$GOALS_FILE'))" 2>/dev/null; then
+    # The path is passed as argv, never interpolated into the Python source:
+    # an apostrophe in the path broke the literal, and a crafted filename
+    # injected code into the interpreter.
+    if python3 - "$GOALS_FILE" <<'PYEOF' 2>/dev/null; then
+import sys
+
+import yaml
+
+with open(sys.argv[1]) as handle:
+    yaml.safe_load(handle)
+PYEOF
         pass "Valid YAML syntax"
     else
         fail "Invalid YAML syntax"

@@ -212,6 +212,36 @@ SH
     [[ "$output" != *"Found 1 gates"* ]]
 }
 
+@test "goals validator rejects an empty Gates table with a decoy under ### Notes" {
+    run bash "$REPO_ROOT/tests/goals/validate-goals.sh" \
+        "$REPO_ROOT/tests/goals/fixtures/goals-empty-gates-h3-decoy.md"
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"No gate entries found in table"* ]]
+    # The decoy row cites a script that DOES exist, so only the block parse can
+    # reject this file: ending the block at `## ` instead of any heading would
+    # count the decoy and report "Found 1 gates".
+    [[ "$output" != *"Found 1 gates"* ]]
+}
+
+@test "goals validator handles a path containing an apostrophe" {
+    QUOTED_DIR="$BATS_TEST_TMPDIR/bo's goals"
+    mkdir -p "$QUOTED_DIR"
+    cp "$REPO_ROOT/GOALS.md" "$QUOTED_DIR/GOALS.md"
+
+    run bash "$REPO_ROOT/tests/goals/validate-goals.sh" "$QUOTED_DIR/GOALS.md"
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"Goals validation passed"* ]]
+
+    # Same for the YAML branch, where the path used to be interpolated into
+    # Python source: an apostrophe broke the literal and a crafted name could
+    # inject code.
+    printf 'version: 1\nmission: fixture\ngoals:\n  - id: a\n    description: d\n    check: "true"\n    weight: 3\n' \
+        > "$QUOTED_DIR/GOALS.yaml"
+    run bash "$REPO_ROOT/tests/goals/validate-goals.sh" "$QUOTED_DIR/GOALS.yaml"
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"Valid YAML syntax"* ]]
+}
+
 @test "goals validator reports a missing goals file path" {
     run bash "$REPO_ROOT/tests/goals/validate-goals.sh" "$BATS_TEST_TMPDIR/nope.md"
     [ "$status" -eq 1 ]
