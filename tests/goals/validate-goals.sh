@@ -66,6 +66,32 @@ if [[ "$GOALS_FORMAT" == "md" ]]; then
     # the only machine-consumed part of this file (`ao goals measure` runs it),
     # so it is what gets guarded — it must exist, be non-empty, and every row
     # must point at something that is really in the tree.
+    #
+    # Every row check reads from GATES_BLOCK, the lines between `## Gates` and
+    # the next `## ` heading (or EOF) — never from the whole file. A file-wide
+    # row selector let an EMPTY Gates table pass on the strength of an
+    # unrelated lowercase-ID table elsewhere in the document, which is the
+    # exact 0/0-reports-green regression this validator exists to catch.
+    GATES_BLOCK=$(awk '
+        /^## Gates[[:space:]]*$/ { inblock = 1; next }
+        inblock && /^## / { exit }
+        inblock { print }
+    ' "$GOALS_FILE" || true)
+
+    # gate_rows → the data rows of the Gates table, one per line. Skips the
+    # separator row and the header row case-insensitively (`| ID |` and
+    # `| id |` are both headers, neither is a gate).
+    gate_rows() {
+        printf '%s\n' "$GATES_BLOCK" | awk -F'|' '
+            /^\|/ {
+                if ($0 ~ /^\|[[:space:]:|-]*$/) next
+                id = $2
+                gsub(/^[[:space:]]+|[[:space:]]+$/, "", id)
+                if (id == "" || tolower(id) == "id") next
+                print $0
+            }
+        '
+    }
 
     # 2. Has Gates section with table
     if grep -q '^## Gates' "$GOALS_FILE"; then
@@ -74,8 +100,8 @@ if [[ "$GOALS_FORMAT" == "md" ]]; then
         fail "Missing Gates section"
     fi
 
-    # 3. Gate table has entries (lines starting with |, excluding header/separator)
-    gate_count=$(grep -cE '^\| [a-z]' "$GOALS_FILE" || true)
+    # 3. Gate table has entries (data rows only, inside the Gates block)
+    gate_count=$(gate_rows | wc -l | tr -d ' ')
     if [[ $gate_count -gt 0 ]]; then
         pass "Found $gate_count gates"
     else
@@ -92,7 +118,7 @@ if [[ "$GOALS_FORMAT" == "md" ]]; then
         if [[ -n "$w" ]] && { ! [[ "$w" =~ ^[0-9]+$ ]] || [[ "$w" -lt 1 ]] || [[ "$w" -gt 10 ]]; }; then
             bad_weights=$((bad_weights + 1))
         fi
-    done < <(grep -E '^\| [a-z]' "$GOALS_FILE")
+    done < <(gate_rows)
 
     if [[ $bad_weights -eq 0 ]]; then
         pass "All gate weights in range 1-10"
@@ -101,10 +127,10 @@ if [[ "$GOALS_FORMAT" == "md" ]]; then
     fi
 
     # 5. No duplicate gate IDs
-    # `|| true` on the producer only: with pipefail a zero-row table would kill
-    # the script mid-run and swallow the remaining assertions. The zero-row
-    # case is already reported as a failure by check 3 above.
-    dup_count=$({ grep -E '^\| [a-z]' "$GOALS_FILE" || true; } | awk -F'|' '{print $2}' | sed 's/^ *//;s/ *$//' | sort | uniq -d | wc -l | tr -d ' ')
+    # gate_rows is empty-safe, so a zero-row table cannot kill the pipeline
+    # under pipefail and swallow the remaining assertions. The zero-row case is
+    # already reported as a failure by check 3 above.
+    dup_count=$(gate_rows | awk -F'|' '{print $2}' | sed 's/^ *//;s/ *$//' | sort | uniq -d | wc -l | tr -d ' ')
     if [[ $dup_count -eq 0 ]]; then
         pass "No duplicate gate IDs"
     else
@@ -133,7 +159,7 @@ if [[ "$GOALS_FORMAT" == "md" ]]; then
                 missing_paths+=" ${gate_id}->${ref}"
             fi
         done < <(echo "$check_cell" | tr -c 'A-Za-z0-9_./-' '\n' || true)
-    done < <(grep -E '^\| [a-z]' "$GOALS_FILE" || true)
+    done < <(gate_rows)
 
     if [[ -z "$missing_paths" ]]; then
         pass "Every repository path cited by a gate row exists"

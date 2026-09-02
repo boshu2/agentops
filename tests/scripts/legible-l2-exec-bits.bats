@@ -60,7 +60,7 @@ SH
 
     run bash "$GATE" "$FIX"
     [ "$status" -eq 0 ]
-    [[ "$output" == *"OK: shell entry points"* ]]
+    [[ "$output" == *"OK: 2 tracked *.sh"* ]]
 }
 
 @test "shebang-bearing script tracked at 100644 fails and is named" {
@@ -108,6 +108,59 @@ SH
     [[ "$output" != *"scripts/lib/sourced.sh"* ]]
 }
 
+@test "an invalid repository path fails closed, it does not report OK" {
+    run bash "$GATE" "$BATS_TEST_TMPDIR/definitely-not-a-repository"
+    [ "$status" -eq 2 ]
+    [[ "$output" == *"could not enumerate tracked files"* ]]
+    [[ "$output" != *"OK:"* ]]
+}
+
+@test "a repo with nothing to enumerate fails closed" {
+    EMPTY="$BATS_TEST_TMPDIR/empty-repo"
+    mkdir -p "$EMPTY"
+    git -C "$EMPTY" init -q
+    run bash "$GATE" "$EMPTY"
+    [ "$status" -eq 2 ]
+    [[ "$output" == *"nothing enumerated"* ]]
+    [[ "$output" != *"OK:"* ]]
+}
+
+@test "the indexed blob decides, not an unstaged working-tree edit" {
+    track scripts/entry.sh 755 <<'SH'
+#!/usr/bin/env bash
+echo entry
+SH
+    # Indexed at 644 WITH a shebang — a violation.
+    track tests/hidden.sh 644 <<'SH'
+#!/usr/bin/env bash
+echo hidden
+SH
+    # Now strip the shebang in the WORKING TREE only. Reading the working tree
+    # would classify this as a sourced library and let the broken index pass.
+    printf 'echo hidden\n' > "$FIX/tests/hidden.sh"
+
+    run bash "$GATE" "$FIX"
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"not tracked executable"* ]]
+    [[ "$output" == *"100644 tests/hidden.sh"* ]]
+}
+
+@test "symlinked .sh entries are skipped with a printed note" {
+    track scripts/entry.sh 755 <<'SH'
+#!/usr/bin/env bash
+echo entry
+SH
+    ln -s entry.sh "$FIX/scripts/linked.sh"
+    git -C "$FIX" add scripts/linked.sh
+    [ "$(git -C "$FIX" ls-files -s scripts/linked.sh | cut -d' ' -f1)" = "120000" ]
+
+    run bash "$GATE" "$FIX"
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"symlinked"* ]]
+    [[ "$output" == *"scripts/linked.sh"* ]]
+    [[ "$output" == *"OK:"* ]]
+}
+
 @test "shell files outside scripts/ and tests/ are out of scope" {
     track scripts/entry.sh 755 <<'SH'
 #!/usr/bin/env bash
@@ -146,6 +199,17 @@ SH
     [ "$status" -eq 1 ]
     [[ "$output" == *"Gate rows cite missing paths"* ]]
     [[ "$output" == *"scripts/check-this-script-does-not-exist.sh"* ]]
+}
+
+@test "goals validator rejects an empty Gates table beside a decoy table" {
+    run bash "$REPO_ROOT/tests/goals/validate-goals.sh" \
+        "$REPO_ROOT/tests/goals/fixtures/goals-empty-gates-other-table.md"
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"No gate entries found in table"* ]]
+    # The decoy table below the Gates section must not be counted as gates,
+    # and the lowercase `| id |` header must not be counted as a data row.
+    [[ "$output" != *"Found 2 gates"* ]]
+    [[ "$output" != *"Found 1 gates"* ]]
 }
 
 @test "goals validator reports a missing goals file path" {

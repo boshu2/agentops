@@ -25,9 +25,17 @@
 #   bash scripts/check-shell-exec-bits.sh              # check this repo
 #   bash scripts/check-shell-exec-bits.sh <repo-dir>   # check another checkout
 #
-# Exit codes: 0 clean; 1 violations found; 127 missing git.
+# Both the mode and the first line are read from the INDEX, never from the
+# working tree: an unstaged edit must not be able to hide a broken indexed
+# entry (and the index is what a fresh clone gets). Index entries with mode
+# 120000 are symlinks; a symlinked *.sh is not an entry point, so they are
+# skipped with a printed note rather than judged.
+#
+# Exit codes: 0 clean; 1 violations found; 2 enumeration failed (not a git
+# repository, git error, or nothing to check); 127 missing git.
 
 # shellcheck disable=SC1007
+# shellcheck source=scripts/lib/preamble.sh
 . "$(CDPATH= cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib/preamble.sh"
 
 require_cmd git
@@ -35,10 +43,6 @@ require_cmd git
 PROG="check-shell-exec-bits"
 
 note() { printf '[%s] %s\n' "$PROG" "$*"; }
-
-usage() {
-  sed -n '2,28p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
-}
 
 # in_lib_dir PATH → true when any directory component of PATH is exactly "lib".
 in_lib_dir() {
@@ -49,23 +53,58 @@ in_lib_dir() {
 }
 
 # check_repo REPO → 0 when every tracked shell file under scripts/ and tests/
-# obeys both rules, 1 otherwise (offenders printed).
+# obeys both rules, 1 when a rule is broken, 2 when enumeration itself failed.
 check_repo() {
-  local repo="$1" rc=0 mode path first
-  local -a missing_exec=() stray_sourced=()
+  local repo="$1" rc=0 mode path first blob scanned=0
+  local -a missing_exec=() stray_sourced=() symlinked=()
+  local work index_z err_log
 
-  while IFS= read -r line; do
+  # Enumeration runs through a CHECKED path. It used to sit behind a process
+  # substitution, which discards git's exit status entirely: pointing the gate
+  # at a non-repository printed git's fatal error, enumerated nothing, and
+  # still reported OK with exit 0 — a gate that fails open is worse than no
+  # gate. NUL-delimited so a path containing whitespace or a newline cannot
+  # split a record.
+  with_tmpdir work shell-exec-bits
+  index_z="$work/index.z"
+  err_log="$work/git.err"
+  if ! git -C "$repo" ls-files -s -z > "$index_z" 2> "$err_log"; then
+    note "FAIL: could not enumerate tracked files in $repo (git ls-files failed)"
+    sed 's/^/  /' "$err_log" >&2 || true
+    return 2
+  fi
+
+  while IFS= read -r -d '' line; do
     [ -n "$line" ] || continue
-    # `git ls-files -s` → "<mode> <sha> <stage>\t<path>"
+    # `git ls-files -s -z` → "<mode> <sha> <stage>\t<path>\0"
     mode="${line%% *}"
     path="${line#*$'\t'}"
-    first=""
-    if [ -r "$repo/$path" ]; then
-      IFS= read -r first < "$repo/$path" || true
-    else
-      # Deleted from the working tree but still tracked: read the blob.
-      first="$(git -C "$repo" show ":$path" 2>/dev/null | head -n1 || true)"
+    case "$path" in
+      scripts/* | tests/*) ;;
+      *) continue ;;
+    esac
+    case "$path" in
+      *.sh) ;;
+      *) continue ;;
+    esac
+    scanned=$((scanned + 1))
+
+    # 120000 is a symlink entry. A symlinked *.sh is not an entry point of
+    # this repository; judging its "shebang" would read the link target text.
+    if [ "$mode" = "120000" ]; then
+      symlinked+=("$path")
+      continue
     fi
+
+    # First line from the INDEX blob, not the working tree. No pipe into
+    # `head`: under `set -o pipefail` the early reader would SIGPIPE git and
+    # turn a readable blob into a spurious failure.
+    if ! blob="$(git -C "$repo" cat-file -p ":$path" 2>/dev/null)"; then
+      note "FAIL: could not read the indexed blob for $path"
+      rc=1
+      continue
+    fi
+    first="${blob%%$'\n'*}"
 
     case "$first" in
       '#!'*)
@@ -79,10 +118,19 @@ check_repo() {
         fi
         ;;
     esac
-  done < <(
-    git -C "$repo" ls-files -s |
-      awk -F'\t' '$2 ~ /^(scripts|tests)\// && $2 ~ /\.sh$/ {print}'
-  )
+  done < "$index_z"
+
+  # Fail closed on an empty population: "checked nothing" must never read as
+  # "checked everything and it was fine".
+  if [ "$scanned" -eq 0 ]; then
+    note "FAIL: nothing enumerated — no tracked *.sh under scripts/ or tests/ in $repo"
+    return 2
+  fi
+
+  if [ "${#symlinked[@]}" -gt 0 ]; then
+    note "note: ${#symlinked[@]} symlinked *.sh entr(y|ies) skipped (a symlink is not an entry point):"
+    printf '  %s\n' "${symlinked[@]}"
+  fi
 
   if [ "${#missing_exec[@]}" -gt 0 ]; then
     note "FAIL: ${#missing_exec[@]} shebang-bearing shell file(s) are not tracked executable:"
@@ -98,7 +146,15 @@ check_repo() {
     rc=1
   fi
 
+  if [ "$rc" -eq 0 ]; then
+    note "OK: $scanned tracked *.sh under scripts/ and tests/ are executable as documented ($repo)"
+  fi
+
   return "$rc"
+}
+
+usage() {
+  sed -n '2,35p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
 }
 
 case "${1:-}" in
@@ -108,10 +164,9 @@ case "${1:-}" in
     ;;
   *)
     target="${1:-$REPO_ROOT}"
-    if check_repo "$target"; then
-      note "OK: shell entry points under scripts/ and tests/ are executable as documented ($target)"
-      exit 0
-    fi
-    exit 1
+    # The exit status is passed through verbatim: 1 is "a rule was broken",
+    # 2 is "the check could not run" — collapsing them would hide the second.
+    check_repo "$target" || exit "$?"
+    exit 0
     ;;
 esac
