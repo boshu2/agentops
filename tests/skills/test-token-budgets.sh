@@ -37,7 +37,7 @@ DESC_FAIL_CHARS=180
 # with the catalog — each terse description keeps the avg low; the gate fails only
 # if descriptions are bloated on average.
 #
-# Raised 45 -> 177 on 2026-09-02. The 45 was met by scripts/codex-sync.sh cutting
+# Raised 45 -> 96 on 2026-09-02. The 45 was met by scripts/codex-sync.sh cutting
 # source prose at 44 chars on a word boundary, which shipped 51 of 56 catalog
 # entries as fragments ("Freshly judge whether a finished change is Triggers:
 # ..."). The budget's purpose is a small always-loaded catalog that can still
@@ -45,15 +45,20 @@ DESC_FAIL_CHARS=180
 # the thing it was protecting. The generator now projects the source's first
 # whole sentence plus the full Triggers clause.
 #
-# The new limit is NOT derived from that output: 177 is the Claude catalog's
-# current per-skill average (9,923 chars over 56 skills in skills/*/SKILL.md).
-# The Codex catalog is a projection of the Claude one, so the runtime that
-# already carries these descriptions is the honest ceiling — an independent
-# number the projection cannot move by getting more verbose. Measured after
-# regeneration: avg 92 chars/skill, 5,185 chars over 56 (was avg 40 / 2,241).
-# The per-skill DESC_FAIL_CHARS limit above is untouched and still bounds any
-# single entry.
-CODEX_DESC_AVG_FAIL_CHARS=177
+# THE RULE: the Codex catalog prose average may not exceed the Claude catalog
+# prose average, currently 96. The limit is not derived from the Codex output it
+# bounds — it is the Claude catalog measured by THIS FILE's own extraction (the
+# awk below, which strips the Triggers clause, so the metric is prose only):
+# 5,357 chars over 56 skills in skills/*/SKILL.md = 95.66, rounded up to 96. The
+# Codex catalog is a projection of the Claude one, so the runtime already
+# carrying these descriptions is the honest ceiling, and a more verbose
+# projection cannot move it. Re-measure and update this number only when the
+# Claude catalog itself changes.
+#
+# Measured after regeneration: Codex avg 92 chars/skill, 5,185 chars over 56
+# (was avg 40 / 2,241). The per-skill DESC_FAIL_CHARS limit above is untouched
+# and still bounds any single entry.
+CODEX_DESC_AVG_FAIL_CHARS=96
 
 # Token estimation: bytes / 4
 estimate_tokens() {
