@@ -1,8 +1,8 @@
 ---
 name: one-way-door
-description: 'Classify a pending decision as reversible or Triggers: "is this a one-way door", "can we undo this", "should I just decide this", "the models disagree with me", before any auto-decided approval gate.'
+description: 'Classify a pending decision as reversible or irreversible before it is acted on, and route irreversible ones to the caller instead of auto-deciding. Triggers: "is this a one-way door", "can we undo this", "should I just decide this", "the models disagree with me", before any auto-decided approval gate.'
 ---
-# $one-way-door
+# /one-way-door
 
 Classify one pending decision as **two-way** (cheap to undo, may be auto-decided)
 or **one-way** (expensive or impossible to undo, always surfaced to the caller).

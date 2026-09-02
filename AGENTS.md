@@ -35,10 +35,10 @@ Build bar for any Go change:
 cd cli && go build ./... && go vet ./... && go test ./...
 ```
 
-Run the gates with `ao gate check` (`--full` for the whole registry). Run the
-bats suites with `tests/run-all.sh`. Regenerate every metadata-owned
-projection — `skills-codex/` included — with `scripts/regen-all.sh`
-(`--check` to verify without writing). Edit `skills/`, then regenerate.
+Run the gates with `ao gate check` (`--full` for the whole registry). Regenerate every metadata-owned projection — `skills-codex/` included — with
+`scripts/regen-all.sh` (`--check` to verify without writing); edit `skills/`, then regenerate. `tests/run-all.sh` is the local aggregate runner and must be green.
+CI is authoritative (`.github/workflows/validate.yml`) and runs the bats suites as
+`bats --jobs 4 --no-parallelize-within-files --print-output-on-failure tests/scripts/*.bats`, plus the Go bar above with `go test -race -shuffle=on ./...`.
 
 ## Authority and trust
 

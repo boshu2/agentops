@@ -1,6 +1,6 @@
 ---
 name: pattern-mining
-description: 'Test repeated implementation shapes against Triggers: "mine a recurring code pattern", "is this abstraction earned", "extract invariants from implementations".'
+description: 'Test repeated implementation shapes against independent exemplars and a holdout before routing an earned abstraction. Triggers: "mine a recurring code pattern", "is this abstraction earned", "extract invariants from implementations".'
 ---
 # Pattern Mining
 

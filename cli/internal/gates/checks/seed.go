@@ -199,6 +199,15 @@ var (
 		// closure test (age-ratchet-lib-extraction-bv7d.5, FM3)
 		"scripts/lib/ratchet.sh",
 	}
+	// shell.exec-bits routes on every shell surface under scripts/ and tests/
+	// (a new .sh, or a mode change on an existing one, is the trigger) plus a
+	// self-reference so editing the gate or its bats twin re-runs it.
+	shellExecBitsPaths = []string{
+		"scripts/**",
+		"tests/**",
+		"scripts/check-shell-exec-bits.sh",
+		"tests/scripts/legible-l2-exec-bits.bats",
+	}
 	// Claude workflows must use `br` (bd/Dolt is retired). operating-loop.js —
 	// the most-viewed content artifact on the public repo — shipped a prompt
 	// telling agents to run `bd ready` with no gate to catch it.
@@ -422,6 +431,12 @@ func init() {
 		{ID: "always.regen-all", Tiers: gates.Full, Blocking: true, Backing: "regen-all.sh", Args: []string{"--check"}, RepairHint: "bash scripts/regen-all.sh"},
 		{ID: "docs.cli-snippets", Tiers: gates.Full, Match: docsCliSnippetsPaths, Blocking: false, Backing: "check-docs-cli-snippets.sh", RepairHint: "fix the dead ao reference or prune the stale baseline entry; flips Blocking after one clean advisory cycle (age-gate-the-ungated-egwt.4)"},
 		{ID: "scripts.ao-invocations", Tiers: gates.Fast | gates.Full, Match: scriptsAoInvocationsPaths, Blocking: false, Backing: "check-scripts-ao-invocations.sh", RepairHint: "fix the dead ao invocation (use the live subcommand or add `# ao-resolve: ignore`), or prune the stale baseline entry; advisory-first, flips Blocking after one clean cycle (age-owcs)"},
+		// shell.exec-bits: ADVISORY — a documented entry point that is tracked
+		// 100644 answers "permission denied" to the exact command AGENTS.md
+		// prints (23 files on 2026-09-02, `scripts/regen-all.sh` among them).
+		// Every other gate invokes scripts through an explicit `bash`, so
+		// nothing else can see this. Advisory-first per the repo convention.
+		{ID: "shell.exec-bits", Tiers: gates.Fast | gates.Full, Match: shellExecBitsPaths, Blocking: false, Backing: "check-shell-exec-bits.sh", RepairHint: "chmod +x <path> && git update-index --chmod=+x <path> for a shebang-bearing script; a sourced library without a shebang belongs under a lib/ directory"},
 		// go.jsonl-scanner-ratchet: ADVISORY grep-ratchet — a NEW raw
 		// bufio.NewScanner over JSONL outside cli/internal/storage silently
 		// truncates at the 64KB default buffer. Stays advisory PERMANENTLY (unless

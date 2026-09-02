@@ -1,6 +1,6 @@
 ---
 name: human-only-skills
-description: 'Name the skills reserved for people to Triggers: "human-only skills", "which skills must I run myself".'
+description: 'Name the skills reserved for people to invoke — where the runtime honors disable-model-invocation — and when to reach for each. Triggers: "human-only skills", "which skills must I run myself".'
 ---
 # Human-only skills
 

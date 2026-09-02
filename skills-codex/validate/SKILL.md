@@ -1,6 +1,6 @@
 ---
 name: validate
-description: 'Freshly judge whether a finished change is Triggers: "validate", "independently validate", "is this proven", "vibe".'
+description: 'Freshly judge a finished change against its acceptance: PASS, FAIL, or NOT_PROVEN. Triggers: "validate", "is this proven".'
 ---
 # Validate
 

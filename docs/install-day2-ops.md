@@ -12,10 +12,33 @@ AgentOps 3.3 supports three install paths:
 With npx or a plugin, install and updates are handled by that tool. The rest of
 this page covers the checkout path and its day-2 operations.
 
+Whichever path you install through, the skills themselves have runtime
+requirements. Most need nothing beyond the coding agent; these need more:
+
+| Skill | Needs | Why |
+|---|---|---|
+| `rpi` | `python3`, conditional | invokes plan and validate, which may run `python3` (see below); rpi's own procedure only cites `scripts/run_once.py` as reference behavior |
+| `plan` | `python3`, conditional | runs `scripts/validate.py snapshot-intent` only when the intent source is not durable |
+| `validate` | `python3` | its helper commands run `python3` against `scripts/validate.py` |
+| `fitness` | `ao` | its whole procedure is running one `ao goals` subcommand |
+| `goals` | `ao` | delegates entirely to fitness's `ao goals` procedure |
+| `using-gc` | `ao` | rig prep runs `ao gc prepare` and `ao gc check` |
+| `handoff` | `ao`, optional | `ao session handoff`/`rehydrate` cover the same artifact; the skill can write it directly |
+| `status` | `ao`, optional | describes `ao status`'s output shape; the report can be read directly from `.agents/ao/` |
+| `reverse-engineer` | `python3` | Phase 1's mechanical teardown runs `scripts/reverse_engineer.py` |
+| `skill-builder` | `python3`, conditional | Create mode's `build.sh` runs `scripts/generate-skill-mesh.py`; heal/check/audit modes are bash-only |
+| `ms` | `python3`, conditional, plus `ms` binary | the MCP-search fallback runs `python3 skills/ms/scripts/mcp-search.py`; the `ms` binary is required for CLI load, write, and admin operations |
+| `toil-mining` | `python3`, conditional | the recent-human extractor runs `scripts/recent_human.py` for Codex JSONL session sources |
+| `security` | `python3`, conditional | the composable suite and offline redteam surfaces run `security_suite.py` when that scan type is selected |
+| `cass` | `python3`, optional | `scripts/prompt_miner.py` mines repeated prompts; one of several selectable Scripts-table entries |
+
+The plugin and `npx skills@latest add boshu2/agentops --all -g` install all 56 skills today, regardless of whether you have `python3` or `ao`.
+
 ## Maintainer / contributor: the `ao` binary
 
-The `ao` CLI is optional. It runs the deterministic checks, inspection, and
-skill linking; the skills themselves need none of it. Install it on its own:
+The `ao` CLI is optional: `fitness`, `goals`, and `using-gc` call it directly
+(see the table above); the rest of the skills work without it. Install it on
+its own:
 
 ```bash
 brew tap boshu2/agentops https://github.com/boshu2/homebrew-agentops

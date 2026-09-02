@@ -1,6 +1,6 @@
 ---
 name: product
-description: 'Create or refine PRODUCT.md while separating Triggers: "product", "create PRODUCT.md", "product boundary".'
+description: 'Create or refine PRODUCT.md while separating evidence, aspiration, users, value, and non-goals. Triggers: "product", "create PRODUCT.md", "product boundary".'
 ---
 # Product
 

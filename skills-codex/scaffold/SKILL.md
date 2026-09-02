@@ -1,6 +1,6 @@
 ---
 name: scaffold
-description: 'Stamp a bounded project, component, or CI Triggers: "scaffold", "create project component or boilerplate".'
+description: 'Stamp a bounded project, component, or CI scaffold and verify the generated result once. Triggers: "scaffold", "create project component or boilerplate".'
 ---
 # Scaffold
 

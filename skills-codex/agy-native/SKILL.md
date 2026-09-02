@@ -1,6 +1,6 @@
 ---
 name: agy-native
-description: 'Use an explicitly selected AGY runtime for Triggers: "agy", "antigravity", "AGY evidence".'
+description: 'Use an explicitly selected AGY runtime for one provided packet or fresh validator context. Triggers: "agy", "antigravity", "AGY evidence".'
 ---
 # AGY Native
 

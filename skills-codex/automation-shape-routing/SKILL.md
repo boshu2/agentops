@@ -1,6 +1,6 @@
 ---
 name: automation-shape-routing
-description: 'Front door for agent automation: choose Triggers: "build automation", "which orchestration shape", "should this use NTM".'
+description: 'Front door for agent automation: choose inline, bounded fanout, reusable skill/workflow/gate, persistent agent-native workers, or explicit Gas City. Triggers: "build automation", "which orchestration shape", "should this use NTM".'
 ---
 # Automation Shape Routing
 

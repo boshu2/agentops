@@ -1,6 +1,6 @@
 ---
 name: codex-exec
-description: 'Run one caller-supplied Codex command Triggers: "run Codex headless", "capture Codex evidence".'
+description: 'Run one caller-supplied Codex command non-interactively and capture evidence. Triggers: "run Codex headless", "capture Codex evidence".'
 ---
 # Codex Exec — one-shot runtime adapter
 

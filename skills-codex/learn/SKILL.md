@@ -1,6 +1,6 @@
 ---
 name: learn
-description: 'Optionally analyze collections of durable Triggers: "learn from verdicts", "mine validation history".'
+description: 'Optionally analyze collections of durable verdicts for recurring evidence after the critical path. Triggers: "learn from verdicts", "mine validation history".'
 ---
 # Learn
 

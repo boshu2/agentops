@@ -1,6 +1,6 @@
 ---
 name: bootstrap
-description: 'Initialize explicitly requested, missing Triggers: "bootstrap AgentOps", "initialize AgentOps docs".'
+description: 'Initialize explicitly requested, missing AgentOps documentation and optional verdict storage without taking over repository workflow. Triggers: "bootstrap AgentOps", "initialize AgentOps docs".'
 ---
 # Bootstrap — minimal project setup
 
