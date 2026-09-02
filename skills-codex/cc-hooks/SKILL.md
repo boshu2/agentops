@@ -1,6 +1,6 @@
 ---
 name: cc-hooks
-description: 'Configure default Claude Code enforcement Triggers: "cc-hooks", "configure Claude Code hooks", "install hooks".'
+description: 'Configure default Claude Code enforcement hooks and opt-in guard recipes. Triggers: "cc-hooks", "configure Claude Code hooks", "install hooks".'
 ---
 # Claude Code Hooks
 

@@ -1,6 +1,6 @@
 ---
 name: scope
-description: 'Review the bead or caller intent write scope Triggers: "review write scope", "check scope boundaries", "scope this change".'
+description: 'Review the bead or caller intent write scope for completeness and ambiguity. Triggers: "review write scope", "check scope boundaries", "scope this change".'
 ---
 # Scope — Review a proposed write scope
 

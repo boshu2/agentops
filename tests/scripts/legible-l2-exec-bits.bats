@@ -1,0 +1,249 @@
+#!/usr/bin/env bats
+#
+# Tests for the L2 lane of the legible-membrane train: the two surfaces that
+# made a documented command fail to run.
+#
+# Part 1 — scripts/check-shell-exec-bits.sh, the shell.exec-bits advisory
+# gate. Both branches are exercised against a throwaway git repo built in
+# BATS_TEST_TMPDIR, so the assertions are about the gate's rule, not about the
+# current state of this repository.
+#
+# Part 2 — tests/goals/validate-goals.sh, the GOALS lane of tests/run-all.sh.
+# The real GOALS.md must pass and each negative fixture under
+# tests/goals/fixtures/ must be rejected, so the fixtures cannot rot.
+#
+# The git discovery env is scrubbed before every `git init`: git exports
+# GIT_DIR into hook-launched processes, and a fixture `git init` that inherits
+# it rewrites the SHARED .git/config (core.bare=true), bricking every linked
+# worktree (.claude/rules/go.md, ek8v).
+
+setup() {
+    REPO_ROOT="$(cd "$BATS_TEST_DIRNAME/../.." && pwd)"
+    export REPO_ROOT
+    GATE="$REPO_ROOT/scripts/check-shell-exec-bits.sh"
+    export GATE
+
+    unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_PREFIX \
+        GIT_OBJECT_DIRECTORY GIT_COMMON_DIR GIT_NAMESPACE
+
+    FIX="$BATS_TEST_TMPDIR/fixture-repo"
+    mkdir -p "$FIX/scripts/lib" "$FIX/tests"
+    git -C "$FIX" init -q
+    git -C "$FIX" config user.name "exec-bits fixture"
+    git -C "$FIX" config user.email "exec-bits@fixture.invalid"
+    export FIX
+}
+
+# track FILE MODE — write CONTENT (stdin) to $FIX/FILE and stage it at MODE.
+track() {
+    local rel="$1" mode="$2"
+    mkdir -p "$FIX/$(dirname "$rel")"
+    cat > "$FIX/$rel"
+    chmod "$mode" "$FIX/$rel"
+    git -C "$FIX" add "$rel"
+    if [ "$mode" = 644 ]; then
+        git -C "$FIX" update-index --chmod=-x "$rel"
+    else
+        git -C "$FIX" update-index --chmod=+x "$rel"
+    fi
+}
+
+@test "clean fixture: executable entry point plus sourced lib passes" {
+    track scripts/entry.sh 755 <<'SH'
+#!/usr/bin/env bash
+echo entry
+SH
+    track scripts/lib/helper.sh 644 <<'SH'
+# shellcheck shell=bash
+helper() { echo helper; }
+SH
+
+    run bash "$GATE" "$FIX"
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"OK: 2 tracked *.sh"* ]]
+}
+
+@test "shebang-bearing script tracked at 100644 fails and is named" {
+    track scripts/entry.sh 755 <<'SH'
+#!/usr/bin/env bash
+echo entry
+SH
+    track tests/run-thing.sh 644 <<'SH'
+#!/usr/bin/env bash
+echo thing
+SH
+
+    run bash "$GATE" "$FIX"
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"not tracked executable"* ]]
+    [[ "$output" == *"100644 tests/run-thing.sh"* ]]
+    # The clean sibling must not be reported.
+    [[ "$output" != *"scripts/entry.sh"* ]]
+    [[ "$output" == *"git update-index --chmod=+x"* ]]
+}
+
+@test "shebang-less lib file at 100644 is accepted, outside lib/ it is not" {
+    track scripts/lib/sourced.sh 644 <<'SH'
+# shellcheck shell=bash
+sourced() { echo sourced; }
+SH
+    track tests/lib/also-sourced.sh 644 <<'SH'
+# shellcheck shell=bash
+also() { echo also; }
+SH
+
+    run bash "$GATE" "$FIX"
+    [ "$status" -eq 0 ]
+
+    # Same content, wrong home: no shebang and not under lib/.
+    track scripts/stray.sh 644 <<'SH'
+# shellcheck shell=bash
+stray() { echo stray; }
+SH
+
+    run bash "$GATE" "$FIX"
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"without a shebang live outside a lib/ directory"* ]]
+    [[ "$output" == *"100644 scripts/stray.sh"* ]]
+    [[ "$output" != *"scripts/lib/sourced.sh"* ]]
+}
+
+@test "an invalid repository path fails closed, it does not report OK" {
+    run bash "$GATE" "$BATS_TEST_TMPDIR/definitely-not-a-repository"
+    [ "$status" -eq 2 ]
+    [[ "$output" == *"could not enumerate tracked files"* ]]
+    [[ "$output" != *"OK:"* ]]
+}
+
+@test "a repo with nothing to enumerate fails closed" {
+    EMPTY="$BATS_TEST_TMPDIR/empty-repo"
+    mkdir -p "$EMPTY"
+    git -C "$EMPTY" init -q
+    run bash "$GATE" "$EMPTY"
+    [ "$status" -eq 2 ]
+    [[ "$output" == *"nothing enumerated"* ]]
+    [[ "$output" != *"OK:"* ]]
+}
+
+@test "the indexed blob decides, not an unstaged working-tree edit" {
+    track scripts/entry.sh 755 <<'SH'
+#!/usr/bin/env bash
+echo entry
+SH
+    # Indexed at 644 WITH a shebang — a violation.
+    track tests/hidden.sh 644 <<'SH'
+#!/usr/bin/env bash
+echo hidden
+SH
+    # Now strip the shebang in the WORKING TREE only. Reading the working tree
+    # would classify this as a sourced library and let the broken index pass.
+    printf 'echo hidden\n' > "$FIX/tests/hidden.sh"
+
+    run bash "$GATE" "$FIX"
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"not tracked executable"* ]]
+    [[ "$output" == *"100644 tests/hidden.sh"* ]]
+}
+
+@test "symlinked .sh entries are skipped with a printed note" {
+    track scripts/entry.sh 755 <<'SH'
+#!/usr/bin/env bash
+echo entry
+SH
+    ln -s entry.sh "$FIX/scripts/linked.sh"
+    git -C "$FIX" add scripts/linked.sh
+    [ "$(git -C "$FIX" ls-files -s scripts/linked.sh | cut -d' ' -f1)" = "120000" ]
+
+    run bash "$GATE" "$FIX"
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"symlinked"* ]]
+    [[ "$output" == *"scripts/linked.sh"* ]]
+    [[ "$output" == *"OK:"* ]]
+}
+
+@test "shell files outside scripts/ and tests/ are out of scope" {
+    track scripts/entry.sh 755 <<'SH'
+#!/usr/bin/env bash
+echo entry
+SH
+    track skills/whatever.sh 644 <<'SH'
+#!/usr/bin/env bash
+echo out of scope
+SH
+
+    run bash "$GATE" "$FIX"
+    [ "$status" -eq 0 ]
+    [[ "$output" != *"skills/whatever.sh"* ]]
+}
+
+# ── tests/goals/validate-goals.sh ─────────────────────────────────────────
+
+@test "goals validator accepts the repository's own GOALS.md" {
+    run bash "$REPO_ROOT/tests/goals/validate-goals.sh"
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"Goals validation passed"* ]]
+    [[ "$output" == *"Every repository path cited by a gate row exists"* ]]
+}
+
+@test "goals validator rejects a goals file with no Gates table" {
+    run bash "$REPO_ROOT/tests/goals/validate-goals.sh" \
+        "$REPO_ROOT/tests/goals/fixtures/goals-no-gates-table.md"
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"Missing Gates section"* ]]
+    [[ "$output" == *"No gate entries found in table"* ]]
+}
+
+@test "goals validator rejects a gate row naming a script that does not exist" {
+    run bash "$REPO_ROOT/tests/goals/validate-goals.sh" \
+        "$REPO_ROOT/tests/goals/fixtures/goals-missing-script.md"
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"Gate rows cite missing paths"* ]]
+    [[ "$output" == *"scripts/check-this-script-does-not-exist.sh"* ]]
+}
+
+@test "goals validator rejects an empty Gates table beside a decoy table" {
+    run bash "$REPO_ROOT/tests/goals/validate-goals.sh" \
+        "$REPO_ROOT/tests/goals/fixtures/goals-empty-gates-other-table.md"
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"No gate entries found in table"* ]]
+    # The decoy table below the Gates section must not be counted as gates,
+    # and the lowercase `| id |` header must not be counted as a data row.
+    [[ "$output" != *"Found 2 gates"* ]]
+    [[ "$output" != *"Found 1 gates"* ]]
+}
+
+@test "goals validator rejects an empty Gates table with a decoy under ### Notes" {
+    run bash "$REPO_ROOT/tests/goals/validate-goals.sh" \
+        "$REPO_ROOT/tests/goals/fixtures/goals-empty-gates-h3-decoy.md"
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"No gate entries found in table"* ]]
+    # The decoy row cites a script that DOES exist, so only the block parse can
+    # reject this file: ending the block at `## ` instead of any heading would
+    # count the decoy and report "Found 1 gates".
+    [[ "$output" != *"Found 1 gates"* ]]
+}
+
+@test "goals validator handles a path containing an apostrophe" {
+    QUOTED_DIR="$BATS_TEST_TMPDIR/bo's goals"
+    mkdir -p "$QUOTED_DIR"
+    cp "$REPO_ROOT/GOALS.md" "$QUOTED_DIR/GOALS.md"
+
+    run bash "$REPO_ROOT/tests/goals/validate-goals.sh" "$QUOTED_DIR/GOALS.md"
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"Goals validation passed"* ]]
+
+    # Same for the YAML branch, where the path used to be interpolated into
+    # Python source: an apostrophe broke the literal and a crafted name could
+    # inject code.
+    printf 'version: 1\nmission: fixture\ngoals:\n  - id: a\n    description: d\n    check: "true"\n    weight: 3\n' \
+        > "$QUOTED_DIR/GOALS.yaml"
+    run bash "$REPO_ROOT/tests/goals/validate-goals.sh" "$QUOTED_DIR/GOALS.yaml"
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"Valid YAML syntax"* ]]
+}
+
+@test "goals validator reports a missing goals file path" {
+    run bash "$REPO_ROOT/tests/goals/validate-goals.sh" "$BATS_TEST_TMPDIR/nope.md"
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"No goals file at"* ]]
+}

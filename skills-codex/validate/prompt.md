@@ -1,6 +1,6 @@
 # validate
 
-Freshly judge whether a finished change is actually proven against bead or caller acceptance — the independent verdict before merge; optionally persist verdict.v2 for a declared consumer, and stop. Triggers: "validate", "independently validate", "is this proven", "vibe".
+Freshly judge a finished change against its acceptance: PASS, FAIL, or NOT_PROVEN. Not for claim-vs-tree checks; that is reality-check. Triggers: "validate", "is this proven".
 
 ## Instructions
 

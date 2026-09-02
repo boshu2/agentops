@@ -332,3 +332,40 @@ func TestEvidenceGroundingIsAdvisoryAndRoutedOnEvidenceRoots(t *testing.T) {
 		t.Fatalf("evidence.grounding must not route on cited source paths; match globs = %v", check.Match)
 	}
 }
+
+func TestShellExecBitsGateIsAdvisoryAndRoutesShellSurfaces(t *testing.T) {
+	check, ok := gates.Default.Get("shell.exec-bits")
+	if !ok {
+		t.Fatal("shell.exec-bits gate is not registered")
+	}
+	if check.Backing != "check-shell-exec-bits.sh" {
+		t.Fatalf("shell.exec-bits backing = %q, want check-shell-exec-bits.sh", check.Backing)
+	}
+	// Advisory by design: a mode bit is repository hygiene, not a correctness
+	// floor, and the repo convention is advisory-first for a new gate.
+	if check.Blocking {
+		t.Fatal("shell.exec-bits must be non-blocking (advisory)")
+	}
+	if !check.Tiers.Has(gates.Fast) || !check.Tiers.Has(gates.Full) {
+		t.Fatalf("shell.exec-bits tiers = %v, want Fast|Full", check.Tiers)
+	}
+	if !strings.Contains(check.RepairHint, "git update-index --chmod=+x") {
+		t.Fatalf("shell.exec-bits repair hint = %q, want the update-index repair command", check.RepairHint)
+	}
+	for _, want := range []string{
+		"scripts/regen-all.sh",
+		"scripts/lib/preamble.sh",
+		"tests/run-all.sh",
+		"scripts/check-shell-exec-bits.sh",
+		"tests/scripts/legible-l2-exec-bits.bats",
+	} {
+		if !gates.PathMatchesAny(check.Match, want) {
+			t.Fatalf("shell.exec-bits must route on %q; match globs = %v", want, check.Match)
+		}
+	}
+	for _, unwanted := range []string{"cli/cmd/ao/root.go", "skills/validate/SKILL.md", "README.md"} {
+		if gates.PathMatchesAny(check.Match, unwanted) {
+			t.Errorf("shell.exec-bits incorrectly routes irrelevant path %q", unwanted)
+		}
+	}
+}
