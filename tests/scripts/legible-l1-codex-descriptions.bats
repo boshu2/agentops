@@ -164,7 +164,7 @@ PYCHECK
         fi
     }
 
-    expect validate 'Freshly judge whether a finished change is actually proven against bead or caller acceptance — the independent verdict before merge; optionally persist verdict.v2 for a declared consumer, and stop. Triggers: "validate", "independently validate", "is this proven", "vibe".'
+    expect validate 'Freshly judge a finished change against its acceptance: PASS, FAIL, or NOT_PROVEN. Triggers: "validate", "is this proven".'
     expect rpi 'Coordinate one RPI traversal: one bounded Plan, Implement, and fresh Validate experiment, then report and stop. Triggers: "run rpi", "run one traversal", "execute this plan", orchestration or worker delegation that implements changes.'
     expect plan 'Shape or refine the existing bead or caller intent without a second planning artifact. Triggers: "plan", "discover and plan", "shape this goal".'
     expect council 'Collect independent perspectives for an explicitly high-stakes or contested judgment. Triggers: "council", "multi-judge review", "independent perspectives".'
