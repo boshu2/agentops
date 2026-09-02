@@ -1,12 +1,16 @@
 #!/usr/bin/env bats
 #
-# Tests for scripts/check-shell-exec-bits.sh — the shell.exec-bits advisory
+# Tests for the L2 lane of the legible-membrane train: the two surfaces that
+# made a documented command fail to run.
+#
+# Part 1 — scripts/check-shell-exec-bits.sh, the shell.exec-bits advisory
 # gate. Both branches are exercised against a throwaway git repo built in
 # BATS_TEST_TMPDIR, so the assertions are about the gate's rule, not about the
 # current state of this repository.
 #
-# Branch 1: a shebang-bearing *.sh tracked at 100644 must FAIL.
-# Branch 2: a shebang-less *.sh under a lib/ directory at 100644 must PASS.
+# Part 2 — tests/goals/validate-goals.sh, the GOALS lane of tests/run-all.sh.
+# The real GOALS.md must pass and each negative fixture under
+# tests/goals/fixtures/ must be rejected, so the fixtures cannot rot.
 #
 # The git discovery env is scrubbed before every `git init`: git exports
 # GIT_DIR into hook-launched processes, and a fixture `git init` that inherits
@@ -117,4 +121,35 @@ SH
     run bash "$GATE" "$FIX"
     [ "$status" -eq 0 ]
     [[ "$output" != *"skills/whatever.sh"* ]]
+}
+
+# ── tests/goals/validate-goals.sh ─────────────────────────────────────────
+
+@test "goals validator accepts the repository's own GOALS.md" {
+    run bash "$REPO_ROOT/tests/goals/validate-goals.sh"
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"Goals validation passed"* ]]
+    [[ "$output" == *"Every repository path cited by a gate row exists"* ]]
+}
+
+@test "goals validator rejects a goals file with no Gates table" {
+    run bash "$REPO_ROOT/tests/goals/validate-goals.sh" \
+        "$REPO_ROOT/tests/goals/fixtures/goals-no-gates-table.md"
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"Missing Gates section"* ]]
+    [[ "$output" == *"No gate entries found in table"* ]]
+}
+
+@test "goals validator rejects a gate row naming a script that does not exist" {
+    run bash "$REPO_ROOT/tests/goals/validate-goals.sh" \
+        "$REPO_ROOT/tests/goals/fixtures/goals-missing-script.md"
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"Gate rows cite missing paths"* ]]
+    [[ "$output" == *"scripts/check-this-script-does-not-exist.sh"* ]]
+}
+
+@test "goals validator reports a missing goals file path" {
+    run bash "$REPO_ROOT/tests/goals/validate-goals.sh" "$BATS_TEST_TMPDIR/nope.md"
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"No goals file at"* ]]
 }

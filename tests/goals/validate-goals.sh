@@ -1,5 +1,14 @@
 #!/usr/bin/env bash
 # Validate GOALS.md (or legacy GOALS.yaml) schema and fitness function integrity
+#
+# Usage:
+#   bash tests/goals/validate-goals.sh              # validate the repo's GOALS.md
+#   bash tests/goals/validate-goals.sh <goals-file> # validate an explicit file
+#
+# The path argument exists so the negative fixtures under tests/goals/fixtures/
+# can be run through the real validator. Executable references inside a goals
+# file always resolve against the repository root, never against the fixture's
+# own directory: a fixture row naming a missing script must fail.
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -14,8 +23,21 @@ errors=0
 pass() { echo -e "${GREEN}  ✓${NC} $1"; }
 fail() { echo -e "${RED}  ✗${NC} $1"; errors=$((errors + 1)); }
 
+GOALS_ARG="${1:-}"
+
 # Detect goals file format
-if [[ -f "$REPO_ROOT/GOALS.md" ]]; then
+if [[ -n "$GOALS_ARG" ]]; then
+    if [[ ! -f "$GOALS_ARG" ]]; then
+        fail "No goals file at $GOALS_ARG"
+        exit 1
+    fi
+    GOALS_FILE="$GOALS_ARG"
+    case "$GOALS_FILE" in
+        *.yaml | *.yml) GOALS_FORMAT="yaml" ;;
+        *) GOALS_FORMAT="md" ;;
+    esac
+    echo "Validating $GOALS_FILE..."
+elif [[ -f "$REPO_ROOT/GOALS.md" ]]; then
     GOALS_FILE="$REPO_ROOT/GOALS.md"
     GOALS_FORMAT="md"
     echo "Validating GOALS.md..."
@@ -29,7 +51,7 @@ else
 fi
 
 if [[ "$GOALS_FORMAT" == "md" ]]; then
-    pass "GOALS.md exists"
+    pass "Goals file exists ($GOALS_FILE)"
 
     # 1. Has mission (first non-heading, non-empty line after # Goals)
     if head -5 "$GOALS_FILE" | grep -qv '^#\|^$'; then
@@ -38,37 +60,21 @@ if [[ "$GOALS_FORMAT" == "md" ]]; then
         fail "Missing mission statement"
     fi
 
-    # 2. Has North Stars section
-    if grep -q '^## North Stars' "$GOALS_FILE"; then
-        pass "Has North Stars section"
-    else
-        fail "Missing North Stars section"
-    fi
+    # The 2026-08-25 rewrite replaced the North Stars / numbered-directives /
+    # Steer shape with prose fitness properties plus one executable Gates
+    # table. The assertions below are invariants of THAT shape: the table is
+    # the only machine-consumed part of this file (`ao goals measure` runs it),
+    # so it is what gets guarded — it must exist, be non-empty, and every row
+    # must point at something that is really in the tree.
 
-    # 3. Has Directives section with numbered headings
-    directive_count=$(grep -c '^### [0-9]' "$GOALS_FILE" || true)
-    if [[ $directive_count -gt 0 ]]; then
-        pass "Found $directive_count directives"
-    else
-        fail "No directives found (expected ### N. headings)"
-    fi
-
-    # 4. Each directive has a Steer line
-    steer_count=$(grep -c '^\*\*Steer:\*\*' "$GOALS_FILE" || true)
-    if [[ $steer_count -ge $directive_count ]]; then
-        pass "All directives have Steer field"
-    else
-        fail "Some directives missing Steer ($steer_count of $directive_count)"
-    fi
-
-    # 5. Has Gates section with table
+    # 2. Has Gates section with table
     if grep -q '^## Gates' "$GOALS_FILE"; then
         pass "Has Gates section"
     else
         fail "Missing Gates section"
     fi
 
-    # 6. Gate table has entries (lines starting with |, excluding header/separator)
+    # 3. Gate table has entries (lines starting with |, excluding header/separator)
     gate_count=$(grep -cE '^\| [a-z]' "$GOALS_FILE" || true)
     if [[ $gate_count -gt 0 ]]; then
         pass "Found $gate_count gates"
@@ -76,7 +82,7 @@ if [[ "$GOALS_FORMAT" == "md" ]]; then
         fail "No gate entries found in table"
     fi
 
-    # 7. Gate weights are in range 1-10
+    # 4. Gate weights are in range 1-10
     # Parse weight from second-to-last column (pipes in Check column break naive awk)
     bad_weights=0
     while IFS= read -r line; do
@@ -94,12 +100,45 @@ if [[ "$GOALS_FORMAT" == "md" ]]; then
         fail "$bad_weights gate weights out of range"
     fi
 
-    # 8. No duplicate gate IDs
-    dup_count=$(grep -E '^\| [a-z]' "$GOALS_FILE" | awk -F'|' '{print $2}' | sed 's/^ *//;s/ *$//' | sort | uniq -d | wc -l | tr -d ' ')
+    # 5. No duplicate gate IDs
+    # `|| true` on the producer only: with pipefail a zero-row table would kill
+    # the script mid-run and swallow the remaining assertions. The zero-row
+    # case is already reported as a failure by check 3 above.
+    dup_count=$({ grep -E '^\| [a-z]' "$GOALS_FILE" || true; } | awk -F'|' '{print $2}' | sed 's/^ *//;s/ *$//' | sort | uniq -d | wc -l | tr -d ' ')
     if [[ $dup_count -eq 0 ]]; then
         pass "No duplicate gate IDs"
     else
         fail "Found $dup_count duplicate gate IDs"
+    fi
+
+    # 6. Every repository path a gate row cites really exists. This is the
+    #    rot guard and the only new invariant: a Check cell that runs a
+    #    deleted scripts/check-*.sh reads as executable and measures as a
+    #    permanent failure. Rows whose Check is a self-contained command (for
+    #    example `cd cli && go test ./...`) cite no path and are left alone —
+    #    the check never demands that a bare gate id be registered anywhere.
+    missing_paths=""
+    while IFS= read -r line; do
+        safe_line="${line//\\|/__AGENTOPS_ESCAPED_PIPE__}"
+        gate_id=$(echo "$safe_line" | awk -F'|' '{gsub(/^ *| *$/, "", $2); print $2}')
+        check_cell=$(echo "$safe_line" | awk -F'|' '{print $3}')
+        while IFS= read -r ref; do
+            [[ -n "$ref" ]] || continue
+            # A cited path is a token under scripts/ or one ending in .sh.
+            case "$ref" in
+                scripts/* | *.sh) ;;
+                *) continue ;;
+            esac
+            if [[ ! -e "$REPO_ROOT/$ref" ]]; then
+                missing_paths+=" ${gate_id}->${ref}"
+            fi
+        done < <(echo "$check_cell" | tr -c 'A-Za-z0-9_./-' '\n' || true)
+    done < <(grep -E '^\| [a-z]' "$GOALS_FILE" || true)
+
+    if [[ -z "$missing_paths" ]]; then
+        pass "Every repository path cited by a gate row exists"
+    else
+        fail "Gate rows cite missing paths:$missing_paths"
     fi
 
 else
