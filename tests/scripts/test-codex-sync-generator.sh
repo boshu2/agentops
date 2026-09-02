@@ -210,6 +210,17 @@ project_case "a description value ending in a quote keeps its final character" \
   "'Emit the sentinel \"ready.\" Triggers: \"x\"'" \
   'Emit the sentinel "ready." Triggers: "x"'
 
+project_case "an abbreviation directly after an opening bracket is still an abbreviation" \
+  "'Use tools (e.g. shell). Then stop. Triggers: \"x\".'" \
+  'Use tools (e.g. shell). Triggers: "x".'
+
+# The curly quotes below are the DATA under test — U+2018/U+2019 must survive
+# verbatim into the twin, so they cannot be "retyped" as ASCII.
+# shellcheck disable=SC1112
+project_case "a right single quotation mark closes the sentence like any other quote" \
+  "'Say ‘done.’ Then stop. Triggers: \"x\".'" \
+  'Say ‘done.’ Triggers: "x".'
+
 # Restore the canonical probe description so sections 4-6 judge the real shape.
 set_source_description "$canonical_description"
 bash "$ROOT/scripts/codex-sync.sh" --only "$PROBE" >/dev/null 2>&1

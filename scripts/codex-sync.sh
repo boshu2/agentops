@@ -317,17 +317,25 @@ def render_operator_contract_block(name: str, operator_contract: dict | None) ->
 
 
 # Abbreviations whose trailing period is NOT a sentence end. Matched
-# case-insensitively and only at a word start (preceded by the beginning of the
-# prose or by whitespace), so "e.g." is skipped but a sentence genuinely ending
-# in "...etc." style prose still needs one of these to be the whole token.
+# case-insensitively and only at a word start, where "word start" means the
+# beginning of the prose, whitespace, or an OPENING bracket or quote — prose
+# says "Use tools (e.g. shell)" as readily as "Use tools, e.g. shell", and
+# accepting only whitespace cut the first at "Use tools (e.g." The class is
+# explicit rather than a bare \W so a period or comma before the token cannot
+# silently make it an abbreviation.
 _ABBREVIATIONS = ("e.g.", "i.e.", "vs.", "etc.", "cf.")
+_ABBREVIATION_OPENERS = "\\s(\\[{\"'\u2018\u201c"
 _ABBREVIATION_RE = re.compile(
-    r"(?:^|\s)(?:" + "|".join(re.escape(a) for a in _ABBREVIATIONS) + r")$",
+    r"(?:^|[" + _ABBREVIATION_OPENERS + r"])(?:"
+    + "|".join(re.escape(a) for a in _ABBREVIATIONS)
+    + r")$",
     re.IGNORECASE,
 )
 # A closing quote may sit between the terminator and the space: the sentence
-# ends AFTER the quote, so `Say "done." Then stop.` yields `Say "done."`.
-_CLOSING_QUOTES = "\"'\u201d"
+# ends AFTER the quote, so `Say "done." Then stop.` yields `Say "done."`. Both
+# curly closers are here — a source that opens with U+2018 closes with U+2019,
+# and omitting it kept the whole two-sentence prose.
+_CLOSING_QUOTES = "\"'\u201d\u2019"
 
 
 def first_sentence(prose: str) -> str:
