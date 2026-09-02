@@ -1,6 +1,6 @@
 ---
 name: rpi
-description: 'Coordinate one RPI traversal: one bounded Triggers: "run rpi", "run one traversal", "execute this plan", orchestration or worker delegation that implements changes.'
+description: 'Coordinate one RPI traversal: one bounded Plan, Implement, and fresh Validate experiment, then report and stop. Triggers: "run rpi", "run one traversal", "execute this plan", orchestration or worker delegation that implements changes.'
 ---
 # RPI
 

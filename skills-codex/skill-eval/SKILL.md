@@ -1,8 +1,8 @@
 ---
 name: skill-eval
-description: 'Author and tier behavioral probes for a Triggers: "measure this skill", "the probe came back INERT", "the control arm aces it", "harden this scenario", "is this skill actually doing anything".'
+description: 'Author and tier behavioral probes for a skill, including seeded-defect probes that escape ceiling saturation. Triggers: "measure this skill", "the probe came back INERT", "the control arm aces it", "harden this scenario", "is this skill actually doing anything".'
 ---
-# $skill-eval
+# /skill-eval
 
 Author one behavioral probe for one skill, at the cheapest tier that can still
 separate the arms, and report the verdict honestly. A probe measures

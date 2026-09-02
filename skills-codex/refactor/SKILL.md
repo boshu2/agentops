@@ -1,6 +1,6 @@
 ---
 name: refactor
-description: 'Execute one behavior-preserving structural Triggers: "refactor this", "simplify without changing behavior".'
+description: 'Execute one behavior-preserving structural transformation and report evidence. Triggers: "refactor this", "simplify without changing behavior".'
 ---
 # Refactor — one structural experiment
 

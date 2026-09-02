@@ -1,6 +1,6 @@
 ---
 name: research
-description: 'Answer a bounded question with current cited Triggers: "research", "investigate this question", "find evidence". (Investigating a repository routes to codebase-recon.)'
+description: 'Answer a bounded question with current cited evidence. Triggers: "research", "investigate this question", "find evidence". (Investigating a repository routes to codebase-recon.)'
 ---
 # Research
 

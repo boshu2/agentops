@@ -35,9 +35,25 @@ DESC_FAIL_CHARS=180
 # aggregate (ag-vzbt): a hard total (raised 2600→2700→2800 as skills landed) walls
 # off the Nth+ skill and forced /burndown into a 17-char stub. An average scales
 # with the catalog — each terse description keeps the avg low; the gate fails only
-# if descriptions are bloated on average. Current avg ~35; cap 45 = comfortable
-# headroom while preserving the terse-description discipline.
-CODEX_DESC_AVG_FAIL_CHARS=45
+# if descriptions are bloated on average.
+#
+# Raised 45 -> 177 on 2026-09-02. The 45 was met by scripts/codex-sync.sh cutting
+# source prose at 44 chars on a word boundary, which shipped 51 of 56 catalog
+# entries as fragments ("Freshly judge whether a finished change is Triggers:
+# ..."). The budget's purpose is a small always-loaded catalog that can still
+# ROUTE; a fragment cannot route, so the cheap number was bought by destroying
+# the thing it was protecting. The generator now projects the source's first
+# whole sentence plus the full Triggers clause.
+#
+# The new limit is NOT derived from that output: 177 is the Claude catalog's
+# current per-skill average (9,923 chars over 56 skills in skills/*/SKILL.md).
+# The Codex catalog is a projection of the Claude one, so the runtime that
+# already carries these descriptions is the honest ceiling — an independent
+# number the projection cannot move by getting more verbose. Measured after
+# regeneration: avg 92 chars/skill, 5,185 chars over 56 (was avg 40 / 2,241).
+# The per-skill DESC_FAIL_CHARS limit above is untouched and still bounds any
+# single entry.
+CODEX_DESC_AVG_FAIL_CHARS=177
 
 # Token estimation: bytes / 4
 estimate_tokens() {

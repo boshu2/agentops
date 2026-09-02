@@ -8,9 +8,12 @@
 # roots — not a plugin-cache installer.
 # twin must carry its own body + references; a bare pointer to skills/<name>
 # would dangle at runtime (docs/contracts/codex-skill-api.md). The generated twin is therefore:
-#   - SKILL.md: slim (name + description) frontmatter + the source body
-#     transformed runtime-native (slash-command invocations of known skills ->
-#     `$` prefix, ~/.claude -> ~/.codex, "Claude Code" -> "Codex");
+#   - SKILL.md: frontmatter carrying the FIRST SENTENCE of the source prose
+#     plus the full source Triggers clause + the source body transformed
+#     runtime-native
+#     (slash-command invocations of known skills -> `$` prefix, but never the H1
+#     title; the RUNTIME_REWRITES table below for ~/.claude -> ~/.codex and
+#     "Claude Code" -> "Codex", longest phrase first);
 #   - references/ + scripts/: copied byte-identical (lint scans only SKILL.md);
 #   - prompt.md: the standard codex pointer-to-sibling-SKILL.md template,
 #     optionally plus catalog-declared operator-contract markers.
@@ -77,10 +80,38 @@ import hashlib
 import json
 import os
 import pathlib
+import re
 import shutil
 import sys
 
 import yaml
+
+# Runtime-name rewrites for the Codex projection, applied LONGEST-MATCH-FIRST in
+# a single pass. A blind "Claude Code" -> "Codex" replacement turned the source's
+# runtime trio ("Claude Code, Codex CLI, and Antigravity CLI") into "Codex, Codex
+# CLI" — a duplicate that reads as a typo and erases the distinction the sentence
+# was drawing. Phrases that already name Codex therefore get their own entry and
+# win over the bare name they contain. Add new phrases here, not as another
+# str.replace call site.
+RUNTIME_REWRITES: tuple[tuple[str, str], ...] = (
+    ("Claude Code, Codex CLI", "Codex CLI"),
+    ("Claude Code", "Codex"),
+    ("~/.claude/", "~/.codex/"),
+    ("~/.claude", "~/.codex"),
+    (".claude/", ".codex/"),
+)
+_RUNTIME_REWRITE_MAP = dict(RUNTIME_REWRITES)
+_RUNTIME_REWRITE_RE = re.compile(
+    "|".join(
+        re.escape(pattern)
+        for pattern, _ in sorted(RUNTIME_REWRITES, key=lambda kv: len(kv[0]), reverse=True)
+    )
+)
+
+
+def apply_runtime_rewrites(text: str) -> str:
+    """Rewrite runtime names/paths for Codex, longest phrase winning."""
+    return _RUNTIME_REWRITE_RE.sub(lambda m: _RUNTIME_REWRITE_MAP[m.group(0)], text)
 
 root = pathlib.Path(os.environ["ROOT"]).resolve()
 check_only = os.environ.get("CHECK_ONLY") == "true"
@@ -195,7 +226,17 @@ def transform_body(body: str, known_skills: set[str], exempt: bool = False) -> s
     PRESERVE runtime names/paths verbatim — the twin legitimately documents
     Claude/AGY/etc., so rewriting "Claude Code"->"Codex" or ~/.claude->~/.codex
     would make it inaccurate."""
-    import re
+    # The H1 title is the document's NAME, not an invocation: a source titled
+    # `# /route` must stay `# /route` in the twin, because `# $route` is not a
+    # heading anyone reads. Hold the title line out of the slash rewrites and
+    # put it back afterwards; the rest of the body still gets them.
+    title = ""
+    if body.startswith("# "):
+        newline = body.find("\n")
+        if newline == -1:
+            title, body = body, ""
+        else:
+            title, body = body[: newline + 1], body[newline + 1 :]
 
     # Skill(skill="known", args="...") -> $known ... for declarative skill
     # invocations in source skills. Preserve args when present so inline examples
@@ -222,13 +263,11 @@ def transform_body(body: str, known_skills: set[str], exempt: bool = False) -> s
         body = re.sub(rf"(?<![\w./_-])/{re.escape(skill)}\b(?!/)", f"${skill}", body)
     body = re.sub(r"(?<![\w./_-])/skill\b(?!/)", "$skill", body)
 
+    body = title + body
     if exempt:
         return body
 
-    body = body.replace("~/.claude/", "~/.codex/").replace("~/.claude", "~/.codex")
-    body = body.replace(".claude/", ".codex/")
-    body = body.replace("Claude Code", "Codex")
-    return body
+    return apply_runtime_rewrites(body)
 
 
 def render_operator_contract_block(name: str, operator_contract: dict | None) -> str:
@@ -272,46 +311,34 @@ def render_operator_contract_block(name: str, operator_contract: dict | None) ->
     return "\n".join(out)
 
 
-def needs_codex_start_guard(operator_contract: dict | None) -> bool:
-    markers = (operator_contract or {}).get("required_markers") or []
-    return any("ao codex ensure-start" in str(marker) for marker in markers)
+def first_sentence(prose: str) -> str:
+    """The first whole sentence of ``prose``.
 
-
-def insert_after_h1(body: str, block: str) -> str:
-    if not block:
-        return body
-    first_newline = body.find("\n")
-    if body.startswith("# ") and first_newline != -1:
-        title = body[: first_newline + 1]
-        rest = body[first_newline + 1 :].lstrip("\n")
-        return f"{title}\n{block.rstrip()}\n\n{rest}"
-    return f"{block.rstrip()}\n\n{body}"
-
-
-def codex_start_guard_block() -> str:
-    return """## Codex Lifecycle Guard
-
-When this skill runs in Codex hookless mode (`CODEX_THREAD_ID` is set or
-`CODEX_INTERNAL_ORIGINATOR_OVERRIDE` is `Codex Desktop`), run:
-
-```bash
-ao codex ensure-start 2>/dev/null || true
-```
-
-The CLI records startup once per thread and skips duplicates automatically."""
+    A terminator is ``.``, ``!`` or ``?`` followed by whitespace or the end of
+    the prose. ``;`` and dashes are NOT terminators — they join clauses, so
+    cutting there still yields a fragment. Requiring whitespace after the mark
+    is what keeps "verdict.v2" and "reality-check." intact. Prose with no
+    terminator at all is itself the sentence.
+    """
+    match = re.search(r"[.!?](?=\s|$)", prose)
+    return prose[: match.end()] if match else prose
 
 
 def codex_catalog_description(name: str, source_description: str) -> str:
     """Skill-specific Codex activation catalog text.
 
-    The catalog description is the model's routing signal. Preserve the full
-    source ``Triggers:`` clause while compacting the prose before it to the
-    repository's 44-character per-entry target. Trigger aliases have their own
-    collision budget; the prose remains inside the always-loaded catalog
-    budget enforced by tests/skills/test-token-budgets.sh.
-    """
-    import re
+    The catalog description is the model's routing signal, so it ships as whole
+    sentences: the FIRST SENTENCE of the source prose, one space, then the full
+    source ``Triggers:`` clause verbatim. Nothing else. Prose is never cut
+    inside a sentence.
 
+    The rule this replaced was a 44-character word-boundary cut. It truncated
+    51 of 56 entries into fragments ("Freshly judge whether a finished change
+    is Triggers: ..."), which defeated the one thing the always-loaded catalog
+    exists to do. The cap constant is gone: length is bounded by choosing a
+    sentence, and the acceptance in tests/skills/test-token-budgets.sh (the
+    per-skill limit and the per-skill catalog average) measures the result.
+    """
     desc = re.sub(r"\s+", " ", source_description).strip(" '\"")
     if not desc:
         return f"Run {name}."
@@ -324,13 +351,7 @@ def codex_catalog_description(name: str, source_description: str) -> str:
         prose = desc
         triggers = ""
 
-    max_chars = 44
-    if len(prose) > max_chars:
-        shortened = prose[: max_chars + 1].rsplit(" ", 1)[0].strip(" ,;:-")
-        if len(shortened) < 18:
-            shortened = prose[:max_chars].rstrip(" ,;:-")
-        prose = shortened
-
+    prose = first_sentence(prose)
     return " ".join(part for part in (prose, triggers) if part)
 
 
@@ -340,7 +361,6 @@ def twin_skill_md(
     source_body: str,
     known_skills: set[str],
     exempt: bool = False,
-    operator_contract: dict | None = None,
 ) -> bytes:
     """A self-contained Codex twin: slim (name + terse catalog description)
     frontmatter + the source body transformed runtime-native. Self-contained
@@ -349,8 +369,6 @@ def twin_skill_md(
     fm = {"name": name, "description": description}
     front = yaml.safe_dump(fm, sort_keys=False, allow_unicode=True, width=10_000).strip()
     body = transform_body(source_body, known_skills, exempt)
-    if needs_codex_start_guard(operator_contract) and "ao codex ensure-start" not in body:
-        body = insert_after_h1(body, codex_start_guard_block())
     return f"---\n{front}\n---\n{body.rstrip()}\n".encode("utf-8")
 
 
@@ -511,7 +529,6 @@ for name in source_skills:
         source_body,
         known_skills,
         name in cross_runtime,
-        operator_contract,
     )
     desired_prompt = twin_prompt_md(name, source_description, operator_contract)
 

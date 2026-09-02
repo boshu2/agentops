@@ -1,6 +1,6 @@
 ---
 name: status
-description: 'Report observable AgentOps evidence without Triggers: "status", "show AgentOps status".'
+description: 'Report observable AgentOps evidence without selecting work. Triggers: "status", "show AgentOps status".'
 ---
 # Status
 

@@ -1,6 +1,6 @@
 ---
 name: domain
-description: 'Load the AgentOps language and Triggers: "define this domain term", "check the bounded context".'
+description: 'Load the AgentOps language and bounded-context contracts when a term needs precise meaning. Triggers: "define this domain term", "check the bounded context".'
 ---
 # Domain — ubiquitous language
 

@@ -1,6 +1,6 @@
 ---
 name: premortem
-description: 'Optionally challenge a frozen plan with one Triggers: "premortem", "challenge this plan", "what could make this plan fail".'
+description: 'Optionally challenge a frozen plan with one fresh independent judge before implementation. Triggers: "premortem", "challenge this plan", "what could make this plan fail".'
 ---
 # Premortem
 
