@@ -1076,7 +1076,7 @@
         }
       ],
       "dependencies": [],
-      "description": "Fresh-judge a frozen plan. Not for a live decision's reversibility; that is one-way-door. Triggers: \"premortem\", \"challenge this plan\", \"what could make this plan fail\".",
+      "description": "Fresh-judge a frozen plan. Not for a live decision's reversibility; that is one-way-door. Triggers: \"premortem\", \"challenge this plan\", \"one judge\", \"what could make this plan fail\".",
       "disposition": "keep_strategy",
       "effects": [
         "write_advisory_plan_review"
@@ -1779,7 +1779,7 @@
         }
       ],
       "dependencies": [],
-      "description": "Freshly judge a finished change against its acceptance: PASS, FAIL, or NOT_PROVEN. Not for claim-vs-tree checks; that is reality-check. Triggers: \"validate\", \"is this proven\".",
+      "description": "Freshly judge a finished change against its acceptance: PASS, FAIL, or NOT_PROVEN. Not for claim-vs-tree checks; that is reality-check. Triggers: \"validate\", \"is this proven\", \"check this change\".",
       "disposition": "keep",
       "effects": [
         "write_verdict_artifact"

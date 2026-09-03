@@ -549,8 +549,8 @@
     {
       "name": "premortem",
       "source_skill": "skills/premortem",
-      "source_hash": "cf320b74794dc34b465c04e9c862699b5bcb8163aa042c7fc97b684ddb581c9e",
-      "generated_hash": "7509f71156c40baea0ef62f69addf6f6a6b36e39ab585fb9acb0a4f4161261cf"
+      "source_hash": "3e46adb27f7ffbb8a99e0a7287498fbb3aaaa2cca35e18ea5facddb4615b9e78",
+      "generated_hash": "59b4895afd458c88dd3f8444f659011af980a27f8647bd4ebc05267b67e1b595"
     },
     {
       "name": "product",
@@ -675,8 +675,8 @@
     {
       "name": "validate",
       "source_skill": "skills/validate",
-      "source_hash": "d62c01f2153b033e9040db161286ab0cb32182b829b2ef931eef299dbd19358f",
-      "generated_hash": "6c6e81601a1b38dd6c2f6122c2b618819c1594fc8df715c443096be4eadde6d2"
+      "source_hash": "7c2b3b48e3783473d47951794968063be05a57f57036b504e4face127eccbbf9",
+      "generated_hash": "79dff19af91f4c89ef3244a2de1a2db30fc4c60d7f55fbdbc2394d12b0b37997"
     },
     {
       "name": "workflow-builder",
