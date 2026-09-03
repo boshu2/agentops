@@ -1,6 +1,6 @@
 ---
 name: rpi
-description: 'Coordinate one RPI traversal: one bounded Plan, Implement, and fresh Validate experiment, then report and stop. Triggers: "run rpi", "run one traversal", "execute this plan", orchestration or worker delegation that implements changes.'
+description: 'Coordinate one RPI traversal: one bounded Plan and Implement experiment, then fresh Validate and a bounded repair phase to convergence. Triggers: "run rpi", "run one traversal", "execute this plan", orchestration or worker delegation that implements changes.'
 practices:
 - bdd-gherkin
 - tdd
@@ -41,17 +41,21 @@ Run one experiment from the caller's existing intent source through three
 responsibilities and stop:
 
 ```text
-anti-ceremony guard -> Plan -> Implement -> fresh Validate -> report
+anti-ceremony guard -> Plan -> Implement -> fresh Validate -> bounded repair -> report
 ```
 
 On `CONTINUE`, the core path remains Plan -> Implement -> fresh Validate ->
-report. RPI invokes the guard exactly once before Plan. It preserves the
-original intent and dispatches each core phase at most once.
-It does not own retries, budgets, queues, claims, leases, Git, delivery, release,
-closure, or the caller's next decision.
+bounded repair -> report. RPI invokes the guard exactly once before Plan. It
+preserves the original intent and dispatches Plan and Implement at most once.
+Validate repeats only inside the repair phase below, under the convergence law
+and the caller's `repair_rounds` bound. RPI does not own retries, budgets,
+queues, claims, leases, Git, delivery, release, closure, or the caller's next
+decision; `repair_rounds` is the caller's declaration, not RPI's budget.
 
 The pure [`scripts/run_once.py`](scripts/run_once.py) reference behavior makes
-the dispatch and stop semantics executable without Git, `ao`, or a tracker.
+the dispatch, repair, and stop semantics executable without Git, `ao`, or a
+tracker: `invoke_once` for the one bounded experiment, `run_repair_phase` for
+the law.
 
 ## Admission and phase lock
 
@@ -89,14 +93,60 @@ authorization by itself.
 4. Invoke Validate once in a context distinct from the author's context. Pass
    the intent reference and digest, exact subject manifest, factual receipts,
    validator identity, and freshness attestation.
-5. Return the fresh validation result and a short report. Persist and link
-   `verdict.v2` only when the caller requests machine-readable evidence or a
-   declared downstream consumer requires it. Stop regardless of `PASS`, `FAIL`,
-   or `NOT_PROVEN`.
+5. Enter the bounded repair phase. On a converged result, report and stop. On
+   `FAIL` or `NOT_PROVEN` with findings, repair the named findings and
+   re-validate freshly while the convergence law admits another round; stop
+   when converged, stopped by the law, or out of `repair_rounds`. Return the
+   current validation result, the open findings, and a short report. Persist
+   and link `verdict.v2` only when the caller requests machine-readable
+   evidence or a declared downstream consumer requires it.
 
 `NOT_PLANNED` and `NOT_BUILT` are report statuses, never semantic verdicts.
 A caller may revise the bead or caller intent and start a new invocation. RPI
 never creates a parallel revision artifact or selects the next work itself.
+
+## The convergence law
+
+A repair round is admitted only while all hold:
+
+1. `rounds_used < repair_rounds` (caller-declared, default 2).
+2. The open finding set, keyed by the validators' stable `findings[].id`
+   (union across the fresh and, when used, cross-family validators), is not
+   larger than the previous round's.
+3. No finding id closed in an earlier round reopens.
+4. Between rounds either the subject-manifest digest changed (generated-only
+   changes count when they change the digest) or, for `NOT_PROVEN`, new
+   digest-bound evidence was supplied that resolves a named gap.
+
+Converged ⇔ the fresh validator returns PASS and, when the diff touches a
+risky surface, the cross-family validator also returns PASS. On any violation
+of 1-4 RPI stops and reports the current status; `checked` carries one line
+per round (`repair round N: k open findings`), the open findings ride in the
+validation result and the interactive report, and `not_checked` keeps its
+meaning. No third judge, no escalation, no auto-replan.
+
+A reworded finding with the same id is the same finding. The fix step belongs
+to the orchestrating context; every judge leg stays non-mutating, so a verdict
+never rewrites the artifact it is judging.
+
+## Cross-family validation
+
+Risky surfaces default to a cross-family fresh validator: `cli/internal/gates/**`,
+`scripts/check-*.sh`, `tests/**`, `skills/*/scripts/**`,
+`skills/cc-hooks/policies/**`, `lib/**`, and anything `security-gate.sh` scans.
+The dispatch table — which direction may run headless and which must route to
+an interactive pane — is owned by [`validate`](../validate/SKILL.md); RPI
+selects when it applies, never how the leg is launched. With no authorized
+live adapter the result is `diversity_unsatisfied`, and on a risky surface that
+stops as `NOT_PROVEN` rather than converging same-family.
+
+## Waves
+
+RPI executes one traversal. A multi-wave intent is executed one wave per
+`crank` invocation: the caller selects the wave and the
+`repair_rounds` bound, crank forwards both and invokes RPI per lane, then
+returns wave evidence and stops. RPI itself never selects a wave, queues the
+next one, or widens the bound it was given.
 
 ## Anti-ceremony boundary
 
@@ -116,11 +166,16 @@ scope, or validation authority.
 
 ## Spiral breaker
 
-The spiral breaker fires when two consecutive control artifacts (plans, audits,
-reviews, prompts, reports) contain no new implementation evidence. Terminate the
-run and report `NOT_BUILT` when no implementation subject exists; when a subject
-exists, stop and report its current status without dispatching another lane or
-repair revision. RPI owns no lane budget, repair budget, or retry policy.
+The spiral breaker fires on a convergence-law violation, or when two
+consecutive rounds produce no change to the subject digest and no new
+digest-bound evidence. It never fires on a verdict count: a `FAIL` or a
+`NOT_PROVEN` that is being repaired under the law is progress, not a spiral,
+and repeated control artifacts (plans, audits, reviews, prompts, reports) with
+no new implementation evidence are the spiral. Terminate the run and report
+`NOT_BUILT` when no implementation subject exists; when a subject exists, stop
+and report its current status without dispatching another lane. RPI owns no
+lane budget and no retry policy, and never extends the caller's
+`repair_rounds`.
 
 ## Delegation boundaries
 
@@ -136,7 +191,8 @@ disjoint regen surfaces may run in parallel.
 
 ## Invariants
 
-- Acceptance and its runtime-derived digest do not change between phases.
+- Acceptance and its runtime-derived digest do not change between phases or
+  between repair rounds; a repair moves the subject, never the acceptance.
 - The anti-ceremony guard runs once before Plan; `STOP` dispatches none of Plan,
   Implement, or Validate, while `CONTINUE` preserves their order.
 - The runtime derives complete changed-path coverage or Validate returns

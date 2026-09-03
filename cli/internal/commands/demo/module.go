@@ -53,7 +53,7 @@ func (Module) Command() *cobra.Command {
 		Short: "Show one RPI traversal",
 		Long: `Show the AgentOps product boundary:
 
-  RPI -> Plan -> Implement -> fresh Validate -> report and stop
+  RPI -> Plan -> Implement -> fresh Validate -> repair to convergence -> report
 
 The repository keeps its own Git, CI, tracker, release, and delivery policy.`,
 		GroupID: "start",
