@@ -48,7 +48,8 @@ Usage: scripts/corpus-delta-harness.sh --task <id> [options]
                      value for a live agent so a real run isn't cut short.
   --out <file>       Write the ContextDeltaScorecard JSON here (default: stdout only)
 
-Override CORPUS_DELTA_RUNNER to inject a custom runner (used by tests).
+CORPUS_DELTA_RUNNER names the runner: a PATH command, or a relative or absolute
+path (resolved against the caller's cwd before any sandbox cd).
 USAGE
 }
 
@@ -72,15 +73,50 @@ done
 # evals/workbench/tasks) was removed 2026-09-03 with the workbench tree. The
 # caller supplies a runner honoring the contract below; fail fast BEFORE any
 # seed so a missing runner never silently invalidates a metered run.
-RUNNER="${CORPUS_DELTA_RUNNER:-}"
-if [[ -z "$RUNNER" ]]; then
+RUNNER_RAW="${CORPUS_DELTA_RUNNER:-}"
+if [[ -z "$RUNNER_RAW" ]]; then
   echo "error: CORPUS_DELTA_RUNNER is required (the default eval-agent-harness.sh runner was removed with evals/workbench; supply a runner: <task> <agent> <seed>, reading HOME, AO_AGENTS_DIR, CORPUS_DELTA_WORKSPACE)." >&2
   exit 2
 fi
-if [[ ! -x "$RUNNER" ]]; then
-  echo "error: CORPUS_DELTA_RUNNER '$RUNNER' is not an executable file" >&2
+# Resolve the runner to an absolute path BEFORE any cd: each seed runs from the
+# sandbox workspace, so a relative path would break there and a bare PATH command
+# must resolve against the caller's PATH, not the sandbox's. A PATH name (no slash)
+# goes through `command -v`; a path is canonicalized against the caller's cwd.
+if [[ "$RUNNER_RAW" != */* ]]; then
+  RUNNER="$(command -v "$RUNNER_RAW" 2>/dev/null || true)"
+  if [[ -z "$RUNNER" ]]; then
+    echo "error: CORPUS_DELTA_RUNNER '$RUNNER_RAW' is not an executable file (not found on PATH)" >&2
+    exit 2
+  fi
+else
+  RUNNER="$RUNNER_RAW"
+  [[ "$RUNNER" == /* ]] || RUNNER="$PWD/$RUNNER"
+fi
+if [[ ! -f "$RUNNER" || ! -x "$RUNNER" ]]; then
+  echo "error: CORPUS_DELTA_RUNNER '$RUNNER_RAW' is not an executable file" >&2
   exit 2
 fi
+RUNNER="$(cd "$(dirname "$RUNNER")" && pwd)/$(basename "$RUNNER")"
+
+# ag-t8n: the scorecard names its evidence kind. With no built-in live runner the
+# harness cannot tell a live agent from a stub, so the caller declares it:
+# CORPUS_DELTA_EVIDENCE_KIND=live_agent for a real agent run; default is plumbing.
+# Validated HERE, before any sandbox exists or any seed runs, so bad input costs
+# zero runner calls (a live agent is metered).
+EVIDENCE_KIND="${CORPUS_DELTA_EVIDENCE_KIND:-harness_plumbing}"
+case "$EVIDENCE_KIND" in
+  harness_plumbing) ;;
+  live_agent)
+    # A live-agent label is a claim about the runner, not a free choice: it is
+    # refused when the resolved runner lives under a test tree or is named as a
+    # stub or fake. The check runs on the canonical absolute path, so a relative
+    # spelling cannot dodge it.
+    case "$RUNNER" in
+      */tests/*|*stub*|*fake*)
+        echo "error: CORPUS_DELTA_EVIDENCE_KIND=live_agent requires a real runner outside the test tree, not named stub or fake; got '$RUNNER_RAW' (resolved: $RUNNER)" >&2; exit 2 ;;
+    esac ;;
+  *) echo "error: CORPUS_DELTA_EVIDENCE_KIND must be harness_plumbing or live_agent; got '$EVIDENCE_KIND'" >&2; exit 2 ;;
+esac
 
 # --- ag-5apc: always-loaded-root contamination fix --------------------------------
 # Isolating AO_AGENTS_DIR alone is INSUFFICIENT: the agent also auto-loads knowledge
@@ -177,15 +213,6 @@ run_arm() {
 
 read -r off_pass off_degr off_total off_elapsed < <(run_arm context_off "")
 read -r on_pass on_degr on_total on_elapsed < <(run_arm context_on "$CORPUS_DIR")
-
-# ag-t8n: the scorecard names its evidence kind. With no built-in live runner the
-# harness cannot tell a live agent from a stub, so the caller declares it:
-# CORPUS_DELTA_EVIDENCE_KIND=live_agent for a real agent run; default is plumbing.
-EVIDENCE_KIND="${CORPUS_DELTA_EVIDENCE_KIND:-harness_plumbing}"
-case "$EVIDENCE_KIND" in
-  harness_plumbing|live_agent) ;;
-  *) echo "error: CORPUS_DELTA_EVIDENCE_KIND must be harness_plumbing or live_agent; got '$EVIDENCE_KIND'" >&2; exit 2 ;;
-esac
 
 # pass-rate per arm; delta = on - off. A degraded arm (>=1 degraded seed) is INVALID per the
 # prereg — its score/delta must NOT be read as a real result (delta_valid=false).

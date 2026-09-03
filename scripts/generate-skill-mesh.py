@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import json
 from pathlib import Path
+import re
 import shutil
 import sys
 from typing import Any
@@ -270,6 +271,32 @@ def outputs(entries: list[dict[str, Any]]) -> dict[Path, bytes]:
     }
 
 
+# A same-skill reference citation inside SKILL.md: `references/<file>`, not preceded
+# by a path character (so `skills/other/references/x.md` is not read as this skill's).
+REFERENCE_CITATION = re.compile(r"(?<![A-Za-z0-9_/.-])references/([A-Za-z0-9_./-]+)")
+
+
+def cited_references(skill_md: Path) -> set[str]:
+    cited: set[str] = set()
+    for match in REFERENCE_CITATION.finditer(skill_md.read_text(encoding="utf-8")):
+        cited.add(match.group(1).rstrip(".,;:)"))
+    return cited
+
+
+def gemini_projection_files(name: str) -> dict[str, Path]:
+    """Relative path -> source file for one skill's Gemini projection: SKILL.md plus
+    the whole references/ directory (every skill's references/ is well under 1 MB),
+    so a SKILL.md that cites references/<file> resolves inside the projection."""
+    skill_dir = ROOT / "skills" / name
+    files = {"SKILL.md": skill_dir / "SKILL.md"}
+    references = skill_dir / "references"
+    if references.is_dir():
+        for path in sorted(references.rglob("*")):
+            if path.is_file():
+                files[path.relative_to(skill_dir).as_posix()] = path
+    return files
+
+
 def sync_gemini_skills(entries: list[dict[str, Any]], check: bool) -> list[str]:
     destination = ROOT / "images" / "gemini" / "skills"
     expected = {entry["name"] for entry in entries}
@@ -282,18 +309,24 @@ def sync_gemini_skills(entries: list[dict[str, Any]], check: bool) -> list[str]:
         else:
             shutil.rmtree(path)
     for name in sorted(expected):
-        source = ROOT / "skills" / name / "SKILL.md"
+        files = gemini_projection_files(name)
         target_dir = destination / name
-        target = target_dir / "SKILL.md"
-        extra = [path for path in target_dir.rglob("*") if path.is_file() and path != target] if target_dir.is_dir() else []
         if check:
-            if not target.is_file() or target.read_bytes() != source.read_bytes() or extra:
+            present = {path.relative_to(target_dir).as_posix(): path for path in target_dir.rglob("*") if path.is_file()} if target_dir.is_dir() else {}
+            if set(present) != set(files) or any(present[rel].read_bytes() != src.read_bytes() for rel, src in files.items()):
                 drift.append(target_dir.relative_to(ROOT).as_posix())
+                continue
+            # Every references/<file> the projected SKILL.md cites must exist in the projection.
+            for cited in sorted(cited_references(target_dir / "SKILL.md")):
+                if not (target_dir / "references" / cited).is_file():
+                    drift.append(f"{target_dir.relative_to(ROOT).as_posix()}: SKILL.md cites references/{cited}, absent from the projection")
         else:
             if target_dir.exists():
                 shutil.rmtree(target_dir)
-            target_dir.mkdir(parents=True, exist_ok=True)
-            target.write_bytes(source.read_bytes())
+            for rel, src in files.items():
+                target = target_dir / rel
+                target.parent.mkdir(parents=True, exist_ok=True)
+                target.write_bytes(src.read_bytes())
     return drift
 
 

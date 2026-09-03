@@ -203,6 +203,22 @@ FAKE
   [[ "$output" == *"MISSING DEPENDENCY"* ]]
 }
 
+@test "local-mlx (REVIEWER_BIN unset): no default wrapper, clear error, MISSING (2), no fallback" {
+  # The old default resolved to evals/membrane/membranes/local-mlx-membrane.sh, which
+  # Train 2 deleted. The adapter now REQUIRES REVIEWER_BIN and says so; it never
+  # falls back to a stub on PATH under the old wrapper name.
+  stub_success local-mlx-membrane.sh
+  run bash -c '
+    . "'"$LIB"'"
+    unset REVIEWER_BIN
+    REVIEWER=local-mlx CODEX_EXEC_PROMPT_ARG="x" codex_exec_guarded
+  '
+  [ "$status" -eq 2 ]
+  [[ "$output" == *"REVIEWER_BIN"* ]]
+  [[ "$output" == *"MISSING DEPENDENCY"* ]]
+  [[ "$output" != *"VERDICT: CONFIRMED"* ]]
+}
+
 # ===========================================================================
 # Contract helpers + codex-with-explicit-REVIEWER parity.
 # ===========================================================================

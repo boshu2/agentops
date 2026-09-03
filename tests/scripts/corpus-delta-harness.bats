@@ -205,11 +205,55 @@ CSTUB_EOF
   [[ "$output" != *"CORPUS_DELTA_RUNNER is required"* ]]
 }
 
-@test "CORPUS_DELTA_EVIDENCE_KIND labels the scorecard and rejects unknown kinds (ag-t8n)" {
+@test "CORPUS_DELTA_EVIDENCE_KIND=live_agent refuses a stub-named runner and rejects unknown kinds (ag-t8n)" {
+  # live_agent is a claim about the runner: the setup stub is named stub-runner.sh,
+  # so labeling it live_agent is refused before any arm is built.
   run env CORPUS_DELTA_RUNNER="$STUB" CORPUS_DELTA_EVIDENCE_KIND=live_agent "$HARNESS" --task demo --seeds 1 --corpus "$CORPUS" --out "$TMP/ek.json"
-  [ "$status" -eq 0 ]
-  jq -e '.evidence_kind == "live_agent"' "$TMP/ek.json" >/dev/null
+  [ "$status" -eq 2 ]
+  [[ "$output" == *"requires a real runner outside the test tree"* ]]
+  [[ "$output" != *"[corpus-delta] arm="* ]]
+  [ ! -f "$TMP/ek.json" ]
   run env CORPUS_DELTA_RUNNER="$STUB" CORPUS_DELTA_EVIDENCE_KIND=bogus "$HARNESS" --task demo --seeds 1 --corpus "$CORPUS"
   [ "$status" -eq 2 ]
   [[ "$output" == *"CORPUS_DELTA_EVIDENCE_KIND must be"* ]]
+}
+
+@test "CORPUS_DELTA_EVIDENCE_KIND=live_agent labels the scorecard for a runner outside the test tree not named stub or fake" {
+  mkdir -p "$TMP/runner"
+  cp "$STUB" "$TMP/runner/real-runner"
+  chmod +x "$TMP/runner/real-runner"
+  run env CORPUS_DELTA_RUNNER="$TMP/runner/real-runner" CORPUS_DELTA_EVIDENCE_KIND=live_agent "$HARNESS" --task demo --seeds 1 --corpus "$CORPUS" --out "$TMP/ek.json"
+  [ "$status" -eq 0 ]
+  jq -e '.evidence_kind == "live_agent"' "$TMP/ek.json" >/dev/null
+  jq -e '.aggregate_delta == 1' "$TMP/ek.json" >/dev/null
+}
+
+@test "CORPUS_DELTA_RUNNER as a bare PATH command resolves through command -v before any cd" {
+  mkdir -p "$TMP/bin"
+  cp "$STUB" "$TMP/bin/corpus-delta-demo-runner"
+  chmod +x "$TMP/bin/corpus-delta-demo-runner"
+  run env PATH="$TMP/bin:$PATH" CORPUS_DELTA_RUNNER=corpus-delta-demo-runner "$HARNESS" --task demo --seeds 2 --corpus "$CORPUS" --out "$TMP/path.json"
+  [ "$status" -eq 0 ]
+  jq -e '.aggregate_delta == 1 and .context_on.passes == 2' "$TMP/path.json" >/dev/null
+}
+
+@test "CORPUS_DELTA_RUNNER as a relative path resolves against the caller's cwd, not the sandbox" {
+  run bash -c 'cd "$1" && CORPUS_DELTA_RUNNER=./stub-runner.sh "$2" --task demo --seeds 2 --corpus "$3" --out "$1/rel.json"' _ "$TMP" "$HARNESS" "$CORPUS"
+  [ "$status" -eq 0 ]
+  jq -e '.aggregate_delta == 1 and .context_on.passes == 2' "$TMP/rel.json" >/dev/null
+}
+
+@test "a bogus CORPUS_DELTA_EVIDENCE_KIND fails before the runner is ever invoked" {
+  TSTUB="$TMP/touch-runner.sh"
+  cat > "$TSTUB" <<'T_EOF'
+#!/usr/bin/env bash
+touch "$CORPUS_DELTA_INVOKED_MARKER"
+echo '{"pass": true, "score": 1, "total": 1}'
+T_EOF
+  chmod +x "$TSTUB"
+  run env CORPUS_DELTA_RUNNER="$TSTUB" CORPUS_DELTA_INVOKED_MARKER="$TMP/invoked" CORPUS_DELTA_EVIDENCE_KIND=bogus "$HARNESS" --task demo --seeds 2 --corpus "$CORPUS"
+  [ "$status" -eq 2 ]
+  [[ "$output" == *"CORPUS_DELTA_EVIDENCE_KIND must be"* ]]
+  [[ "$output" != *"[corpus-delta] arm="* ]]
+  [ ! -e "$TMP/invoked" ]
 }
