@@ -55,6 +55,11 @@ exec "$@"
 SH
     chmod +x "$SEATBELT_STUB_DIR/sandbox-exec"
     export PATH="$SEATBELT_STUB_DIR:$PATH"
+    # The harness takes /usr/bin/sandbox-exec by absolute path, so a PATH stub
+    # no longer shadows it (that was the point of the fix). Tests that are not
+    # ABOUT the seal ask for the pass-through through the documented seam; the
+    # seal tests unset it and get the real kernel sandbox.
+    export PROBE_SEAL_SANDBOX_EXEC="$SEATBELT_STUB_DIR/sandbox-exec"
 
     RUNTIME_STUB="$BATS_TEST_TMPDIR/codex-runtime-identity"
     cat > "$RUNTIME_STUB" <<'SH'
@@ -774,12 +779,12 @@ SH
         SKILL_PROBES_DIR="$PROBES" \
         bash "$HARNESS" --probe demo --live --reps 2 --fixtures fixtures-failed
 
-    [ "$status" -eq 0 ]
-    [ "$(json_field "$output" verdict)" = "UNMEASURED" ]
-    [ "$(json_field "$output" control.usable)" = "0" ]
-    [ "$(json_field "$output" treatment.usable)" = "0" ]
-    [ "$(json_field "$output" fixture_set.binding_sha256)" = "null" ]
+    # An incomplete live dispatch is a FAILED run: nonzero, no scorecard, no
+    # fixture set, and no capture stage left in the probe directory.
+    [ "$status" -ne 0 ]
+    [ -z "$output" ]
     [ ! -e "$PROBE_DIR/fixtures-failed" ]
+    [ -z "$(find "$PROBE_DIR" -mindepth 1 -maxdepth 1 -name '.fixtures-failed.capture.*')" ]
     [[ "$stderr" == *"producer failure"* ]]
     [[ "$stderr" == *"incomplete live run; fixture set not published"* ]]
 }
@@ -807,11 +812,13 @@ SH
         SKILL_PROBES_DIR="$PROBES" \
         bash "$HARNESS" --probe demo --live --reps 2 --fixtures fixtures-partial
 
-    [ "$status" -eq 0 ]
-    [ "$(json_field "$output" control.usable)" = "1" ]
-    [ "$(json_field "$output" treatment.usable)" = "1" ]
-    [ "$(json_field "$output" verdict)" = "UNMEASURED" ]
+    # Half a capture is not a null result: it exits nonzero and writes nothing,
+    # so a caller cannot read a partial dispatch as an honest measurement.
+    [ "$status" -ne 0 ]
+    [ -z "$output" ]
     [ ! -e "$PROBE_DIR/fixtures-partial" ]
+    [ -z "$(find "$PROBE_DIR" -mindepth 1 -maxdepth 1 -name '.fixtures-partial.capture.*')" ]
+    [[ "$stderr" == *"incomplete live run"* ]]
 }
 
 @test "multi-rep live capture fails closed when canonical input mutates during dispatch" {
@@ -1028,10 +1035,12 @@ path_without_seatbelt() {
     local fake_codex_home="$BATS_TEST_TMPDIR/real-codex-home"
     mkdir -p "$fake_codex_home/skills"
     printf '{"token":"fixture"}\n' > "$fake_codex_home/auth.json"
-    # The operator config the rep must NOT inherit: every table is dropped, so
-    # no MCP server starts inside a rep and no other checkout is trusted.
+    # The operator config the rep must NOT inherit. It is not filtered any more,
+    # it is not read at all: the rep runs a GENERATED config.
     cat > "$fake_codex_home/config.toml" <<'TOML'
-model = "fixture-model"
+model = "operator-model"
+web_search = "live"
+notify = ["/Users/operator/hook", "turn-ended"]
 
 [mcp_servers.smart-connections]
 command = "npx"
@@ -1053,9 +1062,12 @@ if test -f "${CODEX_HOME:-/nonexistent}/auth.json" && ! test -L "${CODEX_HOME}/a
 fi
 config=no-config
 if test -f "${CODEX_HOME:-/nonexistent}/config.toml"; then
-    config="tables:$(grep -c '^\[' "$CODEX_HOME/config.toml" || true):keys:$(grep -c '^model' "$CODEX_HOME/config.toml" || true)"
+    config="tables:$(grep -c '^\[' "$CODEX_HOME/config.toml" || true)"
+    config="$config:websearch:$(grep -c 'web_search = "disabled"' "$CODEX_HOME/config.toml" || true)"
+    config="$config:operator:$(grep -c 'operator-model\|notify\|mcp_servers' "$CODEX_HOME/config.toml" || true)"
 fi
-text="home=$HOME|codex_home=${CODEX_HOME:-unset}|tmpdir=${TMPDIR:-unset}|$leak|auth=$auth|config=$config|cwd=$PWD"
+names="$(env | sed 's/=.*//' | sort | tr '\n' ' ')"
+text="home=$HOME|codex_home=${CODEX_HOME:-unset}|tmpdir=${TMPDIR:-unset}|$leak|auth=$auth|config=$config|env=$names|cwd=$PWD"
 printf '{"type":"thread.started","thread_id":"seal-env-%s"}\n' "$$"
 printf '{"type":"turn.started"}\n'
 printf '{"type":"item.completed","item":{"id":"item-seal","type":"agent_message","text":"%s"}}\n' "$text"
@@ -1082,17 +1094,42 @@ SH
     # auth.json is COPIED, not symlinked: the real home is read-denied, so a
     # symlink into it cannot resolve inside the seal.
     [[ "$text" == *"|auth=copy:token:fixture|"* ]]
-    # The sanitized config keeps the top-level scalar and no table at all.
-    [[ "$text" == *"|config=tables:0:keys:1|"* ]]
+    # The generated config carries no table, turns web search off, and holds
+    # nothing of the operator's file.
+    [[ "$text" == *"|config=tables:0:websearch:1:operator:0|"* ]]
+    # The rep's environment is exactly what the seal discloses.
+    local names
+    names="${text#*|env=}"; names="${names%%|*}"
+    local declared
+    declared="$(python3 -c '
+import json, sys
+print(" ".join(sorted(json.loads(sys.argv[1])["seal"]["env_allowlist"])))
+' "$output")"
+    local name
+    for name in $names; do
+        [[ " $declared " == *" $name "* ]] || {
+            echo "rep saw undeclared variable: $name" >&2
+            false
+        }
+    done
     [[ "$text" != *"|cwd=$REPO_ROOT"* ]]
     [ "$(json_field "$output" seal.rep_env.HOME)" = "$rep_home" ]
     [ "$(json_field "$output" seal.rep_env.CODEX_HOME)" = "$rep_home/.codex" ]
     [[ "$text" == *"|tmpdir=$(json_field "$output" seal.rep_env.TMPDIR)|"* ]]
     [ "$(json_field "$output" seal.auth_copied)" = "true" ]
-    [[ "$(json_field "$output" seal.config_sanitized)" == *model* ]]
+    [[ "$(json_field "$output" seal.config_sanitized)" == *web_search* ]]
     [ "$(json_field "$output" seal.platform)" = "$(uname -s)" ]
     [ "$(json_field "$output" seal.mechanism)" = "sandbox-exec" ]
-    [[ "$(json_field "$output" seal.denied_read_roots)" == *"$fake_codex_home/skills"* ]]
+    # The network seal is recorded, and the whole real CODEX_HOME is denied,
+    # not only its skills directory.
+    [ "$(json_field "$output" seal.network.mode)" = "proxy-allowlist" ]
+    [[ "$(json_field "$output" seal.network.proxy)" == 127.0.0.1:* ]]
+    [[ "$(json_field "$output" seal.network.hosts)" == *chatgpt.com* ]]
+    [ "$(json_field "$output" seal.real_codex_home)" = "$fake_codex_home" ]
+    [[ "$(json_field "$output" seal.denied_read_roots)" == *"$fake_codex_home"* ]]
+    [[ "$(json_field "$output" seal.launcher_chain)" == *"$producer"* ]]
+    [[ "$(json_field "$output" seal.config_sha256)" == sha256:* ]]
+    [[ "$(json_field "$output" seal.dev_write_paths)" == *"/dev/null"* ]]
     [[ "$(json_field "$output" seal.denied_read_roots)" == *"$HOME/.agents"* ]]
     [[ "$(json_field "$output" seal.denied_link_roots)" == *"$(json_field "$output" seal.dispatch_root)"* ]]
     [[ "$(json_field "$output" seal.profile_sha256)" == sha256:* ]]
@@ -1103,14 +1140,24 @@ SH
 @test "seatbelt profile denies the rep every byte the seal claims to deny" {
     [[ "$(uname -s)" == "Darwin" && -x /usr/bin/sandbox-exec ]] \
         || skip "seatbelt (sandbox-exec) is macOS-only"
+    # The REAL kernel sandbox, not the pass-through seam.
+    unset PROBE_SEAL_SANDBOX_EXEC
     export PATH="${PATH#"$SEATBELT_STUB_DIR:"}"
-    local checkout_skill main_skill
+    local checkout_skill main_skill cache_dir custom_codex_home
     checkout_skill="$(ls "$REPO_ROOT"/skills/*/SKILL.md | head -n 1)"
     [ -s "$checkout_skill" ]
     # The MAIN checkout this linked worktree shares: same canonical bytes under
     # a path the checkout deny alone does not reach (Codex SEAL-ALT-002).
     main_skill="$(dirname "$(git -C "$REPO_ROOT" rev-parse --path-format=absolute --git-common-dir)")/skills/$(basename "$(dirname "$checkout_skill")")/SKILL.md"
     [ -e "$main_skill" ] || main_skill="$checkout_skill"
+    cache_dir="$(getconf DARWIN_USER_CACHE_DIR)"
+    # A CODEX_HOME outside HOME: only its /skills subdirectory was denied before,
+    # so its sessions and rollouts (which carry canonical text) stayed readable.
+    custom_codex_home="$BATS_TEST_TMPDIR/outside-codex-home"
+    mkdir -p "$custom_codex_home/sessions"
+    printf '{"token":"fixture"}\n' > "$custom_codex_home/auth.json"
+    printf 'CANONICAL_ACTION rollout\n' > "$custom_codex_home/sessions/rollout.jsonl"
+
     # The producer runs INSIDE the seal and probes it itself: nesting another
     # sandbox-exec here would prove nothing, because seatbelt does not nest.
     local producer="$BATS_TEST_TMPDIR/codex-seal-read"
@@ -1130,10 +1177,13 @@ probe checkout cat "$PROBE_SEAL_CHECKOUT_TARGET"
 probe main cat "$PROBE_SEAL_MAIN_TARGET"
 probe skills cat "$PROBE_SEAL_SKILLS_TARGET"
 probe home cat "$PROBE_SEAL_HOME_TARGET"
+probe codexhome cat "$PROBE_SEAL_CODEX_HOME_TARGET"
+probe cachedir ls "$PROBE_SEAL_CACHE_TARGET"
 probe tmproot ls "$PROBE_SEAL_TMPDIR"
 probe dispatchls ls "$run/dispatch"
 probe dispatchcat cat "$run/dispatch/control-1.prompt"
 probe dispatchstat stat -f %z "$run/dispatch/control-1.prompt"
+probe proxylog cat "$run/dispatch/network.log"
 probe steal mv "$run/dispatch/control-1.prompt" ./stolen
 probe hardlink ln "$PROBE_SEAL_CHECKOUT_TARGET" ./linked
 probe clone cp -c "$PROBE_SEAL_CHECKOUT_TARGET" ./cloned
@@ -1142,6 +1192,18 @@ probe symlink cat ./symlinked
 probe write bash -c 'printf ok > ./written'
 probe readback cat ./written
 probe profile cat "$PROBE_SEAL_PROFILE_FILE"
+# No direct egress: --noproxy keeps this off the harness proxy, so it is the
+# kernel that refuses it and no CONNECT is attempted. The proxy's own refusal is
+# a separate test, because it DEGRADES the rep by design.
+probe curldirect /usr/bin/curl -sS -m 6 --noproxy '*' -o /dev/null https://raw.githubusercontent.com/
+# Descriptors: only stdio is inherited, and writing to fd 9 fails.
+# No harness descriptor is usable: 9 was the open transcript sink, and 3..8
+# covered the dispatch handles.
+usable=""
+for fd in 3 4 5 6 7 8 9; do
+    if bash -c "printf x >&$fd" 2>/dev/null; then usable="$usable$fd,"; fi
+done
+text+="usablefds=${usable:-none}|"
 printf '{"type":"thread.started","thread_id":"seal-read-%s"}\n' "$$"
 printf '{"type":"turn.started"}\n'
 printf '{"type":"item.completed","item":{"id":"item-seal","type":"agent_message","text":"%s"}}\n' "$text"
@@ -1150,22 +1212,28 @@ SH
     chmod +x "$producer"
 
     run --separate-stderr env CODEX_EXEC_BIN="$producer" \
+        CODEX_HOME="$custom_codex_home" \
         PROBE_SEAL_CHECKOUT_TARGET="$checkout_skill" \
         PROBE_SEAL_MAIN_TARGET="$main_skill" \
         PROBE_SEAL_SKILLS_TARGET="$SKILLS/demo-skill/SKILL.md" \
         PROBE_SEAL_HOME_TARGET="$HOME/.codex/config.toml" \
+        PROBE_SEAL_CODEX_HOME_TARGET="$custom_codex_home/sessions/rollout.jsonl" \
+        PROBE_SEAL_CACHE_TARGET="$cache_dir" \
         PROBE_SEAL_TMPDIR="${TMPDIR:-/tmp}" \
         bash "$HARNESS" --probe demo --live --reps 2 --fixtures fixtures-seal-read
 
     [ "$status" -eq 0 ]
     [ "$(json_field "$output" seal.sandbox_exec)" = "/usr/bin/sandbox-exec" ]
+    [ "$(json_field "$output" seal.network.mode)" = "proxy-allowlist" ]
     local text
     text="$(transcript_message "$PROBE_DIR/fixtures-seal-read" treatment-2)"
-    # Denied: every root the seal names, the dispatch contents and listing, and
-    # both laundering paths out of a denied tree into the readable workspace.
+    # Denied: every root the seal names (the checkout, the shared git root, the
+    # skills dir, the operator home, a CODEX_HOME outside it, the Darwin cache
+    # dir and the temp root), the dispatch contents and listing, both laundering
+    # paths, and both network paths.
     local label
-    for label in checkout main skills home tmproot dispatchls dispatchcat steal \
-        hardlink clone symlink; do
+    for label in checkout main skills home codexhome cachedir tmproot dispatchls \
+        dispatchcat proxylog steal hardlink clone symlink curldirect; do
         [[ "$text" == *"|$label=0|"* ]] && {
             echo "seal allowed $label: $text" >&2
             false
@@ -1178,6 +1246,81 @@ SH
     [[ "$text" == *"|write=0|"* ]]
     [[ "$text" == *"|readback=0|"* ]]
     [[ "$text" == *"|profile=0|"* ]]
+    # Only stdio reached the producer: FD 9 was the open transcript sink and the
+    # dispatch handles sat just above it.
+    [[ "$text" == *"|usablefds=none|"* ]]
+    # Nothing this rep did reached the proxy at all.
+    [[ "$stderr" != *"network-egress"* ]]
+}
+
+@test "a rep that reaches for a host off the allowlist is refused and DEGRADED" {
+    [[ "$(uname -s)" == "Darwin" && -x /usr/bin/sandbox-exec ]] \
+        || skip "the network seal needs the real seatbelt"
+    unset PROBE_SEAL_SANDBOX_EXEC
+    export PATH="${PATH#"$SEATBELT_STUB_DIR:"}"
+    # Fable M2V-01: `curl https://raw.githubusercontent.com/.../skills/premortem/SKILL.md`
+    # inside the profile returned the canonical bytes, because the outer profile
+    # was `(allow default)` and codex's own sandbox is bypassed inside it. The
+    # rep's only egress is now the harness proxy, and the proxy allows only the
+    # bound hosts.
+    local producer="$BATS_TEST_TMPDIR/codex-egress"
+    cat > "$producer" <<'SH'
+#!/usr/bin/env bash
+if [[ "${1:-}" == "--version" ]]; then printf 'codex-cli egress-stub\n'; exit 0; fi
+cat >/dev/null
+/usr/bin/curl -sS -m 8 -o /dev/null \
+    https://raw.githubusercontent.com/boshu2/agentops/main/skills/premortem/SKILL.md \
+    >/dev/null 2>&1 || true
+printf '{"type":"thread.started","thread_id":"egress-%s"}\n' "$$"
+printf '{"type":"turn.started"}\n'
+printf '{"type":"item.completed","item":{"id":"item-egress","type":"agent_message","text":"ABSENT"}}\n'
+printf '{"type":"turn.completed","usage":{"input_tokens":1,"cached_input_tokens":0,"output_tokens":1}}\n'
+SH
+    chmod +x "$producer"
+
+    run --separate-stderr env CODEX_EXEC_BIN="$producer" \
+        bash "$HARNESS" --probe demo --live --reps 2 --fixtures fixtures-egress
+
+    # Refused egress degrades the rep, so the capture is incomplete: nonzero,
+    # no scorecard, no fixture set.
+    [ "$status" -ne 0 ]
+    [ -z "$output" ]
+    [[ "$stderr" == *"network-egress"* ]]
+    [[ "$stderr" == *"raw.githubusercontent.com:443"* ]]
+    [ ! -e "$PROBE_DIR/fixtures-egress" ]
+    [ -z "$(find "$PROBE_DIR" -mindepth 1 -maxdepth 1 -name '.fixtures-egress.capture.*')" ]
+}
+
+@test "a rep that leaves a process behind or edits its config is DEGRADED" {
+    [[ "$(uname -s)" == "Darwin" && -x /usr/bin/sandbox-exec ]] \
+        || skip "process-group reaping is exercised against the real seal"
+    unset PROBE_SEAL_SANDBOX_EXEC
+    export PATH="${PATH#"$SEATBELT_STUB_DIR:"}"
+    # A producer that forks a child outliving the turn: the survivor would see
+    # the NEXT rep's workspace, which is the whole point of resetting one.
+    local producer="$BATS_TEST_TMPDIR/codex-survivor"
+    cat > "$producer" <<'SH'
+#!/usr/bin/env bash
+if [[ "${1:-}" == "--version" ]]; then printf 'codex-cli survivor-stub\n'; exit 0; fi
+cat >/dev/null
+/bin/sleep 45 &
+printf 'trust_level = "trusted"\n' >> "$CODEX_HOME/config.toml"
+printf '{"type":"thread.started","thread_id":"survivor-%s"}\n' "$$"
+printf '{"type":"turn.started"}\n'
+printf '{"type":"item.completed","item":{"id":"item-survivor","type":"agent_message","text":"ABSENT"}}\n'
+printf '{"type":"turn.completed","usage":{"input_tokens":1,"cached_input_tokens":0,"output_tokens":1}}\n'
+SH
+    chmod +x "$producer"
+
+    run --separate-stderr env CODEX_EXEC_BIN="$producer" \
+        bash "$HARNESS" --probe demo --live --reps 2 --fixtures fixtures-survivor
+
+    [ "$status" -ne 0 ]
+    [ -z "$output" ]
+    # The config the rep edited is caught, and the forked child is reaped rather
+    # than left to watch the next rep.
+    [[ "$stderr" == *"config-mutated"* ]]
+    [ ! -e "$PROBE_DIR/fixtures-survivor" ]
 }
 
 @test "PROBE_SEAL=none runs unsealed, prints the ineligible notice, and records seal_mode=none" {
@@ -1211,7 +1354,34 @@ SH
     [ "$(transcript_message "$PROBE_DIR/fixtures-none" control-1)" = "home=$HOME" ]
 }
 
-@test "live dispatch refuses to run unsealed when sandbox-exec is absent" {
+@test "live dispatch refuses to run unsealed when no seatbelt binary is usable" {
+    local producer="$BATS_TEST_TMPDIR/codex-never-run"
+    local count="$BATS_TEST_TMPDIR/never-run-count"
+    cat > "$producer" <<'SH'
+#!/usr/bin/env bash
+if [[ "${1:-}" == "--version" ]]; then printf 'codex-cli never-run-stub\n'; exit 0; fi
+printf 'invoked\n' >> "$PROBE_STUB_COUNT"
+cat >/dev/null
+exit 70
+SH
+    chmod +x "$producer"
+
+    # (a) an unusable explicit binary refuses rather than falling back to PATH.
+    run --separate-stderr env PROBE_SEAL_SANDBOX_EXEC="$BATS_TEST_TMPDIR/absent-sandbox-exec" \
+        CODEX_EXEC_BIN="$producer" PROBE_STUB_COUNT="$count" \
+        bash "$HARNESS" --probe demo --live --reps 2 --fixtures fixtures-unsealed
+    [ "$status" -eq 2 ]
+    [ -z "$output" ]
+    [[ "$stderr" == *"PROBE_SEAL_SANDBOX_EXEC is not executable"* ]]
+    [ ! -e "$count" ]
+    [ ! -e "$PROBE_DIR/fixtures-unsealed" ]
+    [ -z "$(find "$PROBE_DIR" -mindepth 1 -maxdepth 1 -name '.fixtures-unsealed.capture.*')" ]
+
+}
+
+@test "live dispatch refuses when no seatbelt binary exists at all" {
+    [[ -x /usr/bin/sandbox-exec ]] \
+        && skip "the system seatbelt is present, so PATH cannot hide it"
     local producer="$BATS_TEST_TMPDIR/codex-never-run"
     local count="$BATS_TEST_TMPDIR/never-run-count"
     cat > "$producer" <<'SH'
@@ -1224,20 +1394,58 @@ SH
     chmod +x "$producer"
     local unsealed_path
     unsealed_path="$(path_without_seatbelt)"
-    run env PATH="$unsealed_path" bash -c 'command -v sandbox-exec'
-    [ "$status" -ne 0 ]
-
-    run --separate-stderr env PATH="$unsealed_path" CODEX_EXEC_BIN="$producer" \
-        PROBE_STUB_COUNT="$count" \
-        bash "$HARNESS" --probe demo --live --reps 2 --fixtures fixtures-unsealed
-
+    run --separate-stderr env -u PROBE_SEAL_SANDBOX_EXEC PATH="$unsealed_path" \
+        CODEX_EXEC_BIN="$producer" PROBE_STUB_COUNT="$count" \
+        bash "$HARNESS" --probe demo --live --reps 2 --fixtures fixtures-unsealed2
     [ "$status" -eq 2 ]
-    [ -z "$output" ]
     [[ "$stderr" == *"sandbox-exec"* ]]
     [[ "$stderr" == *"PROBE_SEAL=none"* ]]
     [ ! -e "$count" ]
-    [ ! -e "$PROBE_DIR/fixtures-unsealed" ]
-    [ -z "$(find "$PROBE_DIR" -mindepth 1 -maxdepth 1 -name '.fixtures-unsealed.capture.*')" ]
+}
+
+@test "the seal runs the system seatbelt, not a sandbox-exec earlier on PATH" {
+    [[ "$(uname -s)" == "Darwin" && -x /usr/bin/sandbox-exec ]] \
+        || skip "the PATH-shadow hazard is macOS-only"
+    # A stub named sandbox-exec sits FIRST on PATH and records that it ran. The
+    # harness must take /usr/bin/sandbox-exec by absolute path instead: before
+    # this fix the wrap invoked the bare name while the record claimed the
+    # system binary, so a shadowing stub would have silently disabled the seal.
+    local marker="$BATS_TEST_TMPDIR/shadow-marker"
+    local shadow="$BATS_TEST_TMPDIR/shadow-bin"
+    mkdir -p "$shadow"
+    cat > "$shadow/sandbox-exec" <<'SH'
+#!/usr/bin/env bash
+printf 'shadow ran\n' >> "$PROBE_STUB_SHADOW_MARKER"
+while [[ $# -gt 0 ]]; do
+    case "$1" in -p|-f|-n|-D) shift 2;; *) break;; esac
+done
+exec "$@"
+SH
+    chmod +x "$shadow/sandbox-exec"
+
+    local producer="$BATS_TEST_TMPDIR/codex-shadow"
+    cat > "$producer" <<'SH'
+#!/usr/bin/env bash
+if [[ "${1:-}" == "--version" ]]; then printf 'codex-cli shadow-stub\n'; exit 0; fi
+cat >/dev/null
+printf '{"type":"thread.started","thread_id":"shadow-%s"}\n' "$$"
+printf '{"type":"turn.started"}\n'
+printf '{"type":"item.completed","item":{"id":"item-shadow","type":"agent_message","text":"ABSENT"}}\n'
+printf '{"type":"turn.completed","usage":{"input_tokens":1,"cached_input_tokens":0,"output_tokens":1}}\n'
+SH
+    chmod +x "$producer"
+
+    run --separate-stderr env -u PROBE_SEAL_SANDBOX_EXEC PATH="$shadow:$PATH" \
+        PROBE_STUB_SHADOW_MARKER="$marker" CODEX_EXEC_BIN="$producer" \
+        bash "$HARNESS" --probe demo --live --reps 2 --fixtures fixtures-shadow
+
+    [ "$status" -eq 0 ]
+    [ "$(json_field "$output" seal.sandbox_exec)" = "/usr/bin/sandbox-exec" ]
+    [ "$(python3 -c '
+import json, sys
+print(json.loads(sys.argv[1])["seal"]["wrap"][0])
+' "$output")" = "/usr/bin/sandbox-exec" ]
+    [ ! -e "$marker" ]
 }
 
 # probe_input_field DIR NAME FIELD -> one field of the transcript's bound
