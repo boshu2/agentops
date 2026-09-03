@@ -78,15 +78,24 @@
 # Every live dispatch therefore runs the rep:
 #   * under a scratch HOME/CODEX_HOME ($SEAL_HOME, auth.json and config.toml
 #     symlinked from the real CODEX_HOME so codex can authenticate; no
-#     $SEAL_HOME/.agents/skills exists), from the live workspace as cwd;
+#     $SEAL_HOME/.agents/skills exists), from a FRESH, EMPTY per-rep workspace
+#     as cwd (mktemp -d under $LIVE_WORKSPACE_ROOT; the arm name never appears
+#     in the path). The prompt reaches the rep on stdin only. The harness's
+#     own per-rep files (the materialized prompt, the raw codex JSONL, stderr)
+#     live in $LIVE_DISPATCH, a hidden dir beside the capture stage INSIDE the
+#     read-denied checkout — never in any workspace. 2026-09-03 defect: one
+#     shared workspace held every rep's prompt file, a control rep ran
+#     `rg --files`, saw treatment-1.prompt, and read the canonical SKILL.md
+#     bytes out of it (sibling-prompt-read);
 #   * inside a seatbelt (macOS sandbox-exec) profile that denies file-read* on
 #     the checkout root, the resolved skills dir, $REAL_HOME/.agents,
 #     $REAL_HOME/.claude/skills, $REAL_HOME/.gemini/skills and the real
-#     ~/.codex/skills, and denies file-write* everywhere except the live
-#     workspace, $SEAL_HOME, /private/tmp, /private/var/folders and $TMPDIR,
-#     so a rep whose own codex sandbox is bypassed stays read-only against the
-#     real filesystem. The profile is handed to scripts/lib/codex-exec.sh as
-#     the CODEX_EXEC_WRAP command prefix `(sandbox-exec -p "<profile>")`.
+#     ~/.codex/skills, and denies file-write* everywhere except the workspace
+#     root (so every per-rep workspace), $SEAL_HOME, /private/tmp,
+#     /private/var/folders and $TMPDIR, so a rep whose own codex sandbox is
+#     bypassed stays read-only against the real filesystem. The profile is
+#     handed to scripts/lib/codex-exec.sh as the CODEX_EXEC_WRAP command
+#     prefix `(sandbox-exec -p "<profile>")`.
 # Fail closed: when sandbox-exec is absent the live dispatch refuses. Only an
 # explicit PROBE_SEAL=none runs unsealed; that run prints
 # `seal: none (coverage-ineligible)` and records seal_mode=none. The seal record
@@ -338,7 +347,8 @@ seal_add_root() {
 }
 
 # build_seal — materialize the scratch HOME, the seatbelt profile, and the
-# CODEX_EXEC_WRAP prefix. Needs LIVE_WORKSPACE.
+# CODEX_EXEC_WRAP prefix. Needs LIVE_WORKSPACE_ROOT (the parent of every
+# per-rep workspace) and LIVE_DISPATCH (harness-private, inside the checkout).
 build_seal() {
     local checkout root name
     SEAL_HOME="$(mktemp -d "${TMPDIR:-/tmp}/probe-seal.XXXXXX")"
@@ -357,7 +367,7 @@ build_seal() {
     REP_CODEX_HOME="$SEAL_HOME/.codex"
 
     checkout="$(seal_realpath "$REPO_ROOT")"
-    for root in "$(seal_realpath "$LIVE_WORKSPACE")" "$(seal_realpath "$SEAL_HOME")"; do
+    for root in "$(seal_realpath "$LIVE_WORKSPACE_ROOT")" "$(seal_realpath "$SEAL_HOME")"; do
         if [[ "$root" == "$checkout" || "$root" == "$checkout"/* ]]; then
             echo "error: seal cannot place a writable root inside the checkout: $root" >&2
             exit 2
@@ -370,7 +380,11 @@ build_seal() {
     seal_add_root SEAL_DENIED_ROOTS "$REAL_HOME/.gemini/skills"
     seal_add_root SEAL_DENIED_ROOTS "$REAL_HOME/.codex/skills"
     seal_add_root SEAL_DENIED_ROOTS "$REAL_CODEX_HOME/skills"
-    seal_add_root SEAL_WRITABLE_ROOTS "$LIVE_WORKSPACE"
+    # The harness dispatch dir (prompt files, raw JSONL, stderr of every rep)
+    # is denied on its own, not only by checkout ancestry: a test seam may
+    # place the probes tree outside the checkout.
+    seal_add_root SEAL_DENIED_ROOTS "$LIVE_DISPATCH"
+    seal_add_root SEAL_WRITABLE_ROOTS "$LIVE_WORKSPACE_ROOT"
     seal_add_root SEAL_WRITABLE_ROOTS "$SEAL_HOME"
     seal_add_root SEAL_WRITABLE_ROOTS /private/tmp
     seal_add_root SEAL_WRITABLE_ROOTS /private/var/folders
@@ -465,10 +479,23 @@ fi
 # native Codex JSONL, and populate TRANSCRIPT_OUT with one structured envelope.
 dispatch_live() {
     local arm="$1" rep="$2" transcript="$3" receipt_name="$4" result_name="$5"
-    local rc=0 receipt="" outcome="DEGRADED" had_noclobber=0
-    local prompt_file="$LIVE_WORKSPACE/$arm-$rep.prompt"
-    local runtime_file="$LIVE_WORKSPACE/$arm-$rep.codex.jsonl"
-    local stderr_file="$LIVE_WORKSPACE/$arm-$rep.codex.stderr"
+    local rc=0 receipt="" outcome="DEGRADED" had_noclobber=0 workspace=""
+    # Harness-private per-rep files stay in the read-denied dispatch dir; the
+    # rep's cwd is a fresh empty directory whose name carries no arm identity.
+    local prompt_file="$LIVE_DISPATCH/$arm-$rep.prompt"
+    local runtime_file="$LIVE_DISPATCH/$arm-$rep.codex.jsonl"
+    local stderr_file="$LIVE_DISPATCH/$arm-$rep.codex.stderr"
+    # `cd && pwd` normalizes the path the rep will see as $PWD (a trailing
+    # slash on $TMPDIR otherwise leaves a `//` the shell collapses).
+    if ! workspace="$(mktemp -d "$LIVE_WORKSPACE_ROOT/rep.XXXXXX")" \
+        || ! workspace="$(cd "$workspace" && pwd)" \
+        || ! chmod 0700 "$workspace" \
+        || [[ -n "$(ls -A "$workspace")" ]]; then
+        echo "probe-skill: could not create a fresh empty $arm-$rep workspace" >&2
+        printf -v "$receipt_name" '%s' ""
+        printf -v "$result_name" '%s' "$outcome"
+        return 1
+    fi
     if ! python3 "$FIXTURE_META_TOOL" capture-file \
         --fixture-dir "$LIVE_STAGE" --probe "$PROBE" \
         --name "prompt-$arm" >"$prompt_file"; then
@@ -494,17 +521,18 @@ dispatch_live() {
     # --model routes a WEAKER producer (e.g. gpt-5-mini) — the ratchet for
     # surfacing a skill's behavioral value when a frontier producer aces both arms
     # (the membrane-eval-too-easy lesson). Empty => the codex default (frontier).
-    # The rep runs with the sealed HOME/CODEX_HOME and the live workspace as cwd:
-    # a cwd inside the denied checkout makes every shell child print a getcwd
-    # error on stderr, which degrades the rep. CODEX_EXEC_WRAP (the seatbelt
-    # prefix) reaches the library through the shared shell, arrays never cross
-    # a process boundary.
+    # The rep runs with the sealed HOME/CODEX_HOME and its own fresh workspace
+    # as cwd: a cwd inside the denied checkout makes every shell child print a
+    # getcwd error on stderr, which degrades the rep. The prompt file is fed on
+    # stdin by the (unsealed) harness shell; the rep never sees it on disk.
+    # CODEX_EXEC_WRAP (the seatbelt prefix) reaches the library through the
+    # shared shell, arrays never cross a process boundary.
     (
-        cd "$LIVE_WORKSPACE" || exit 70
+        cd "$workspace" || exit 70
         REVIEWER=codex \
         REVIEWER_MARKER=turn.completed \
         CODEX_EXEC_PROMPT_FILE="$prompt_file" \
-        CODEX_EXEC_DIR="$LIVE_WORKSPACE" \
+        CODEX_EXEC_DIR="$workspace" \
         CODEX_EXEC_SANDBOX=read-only \
         CODEX_EXEC_SKIP_GIT_CHECK=1 \
         CODEX_EXEC_TIMEOUT="$TIMEOUT" \
@@ -538,7 +566,7 @@ dispatch_live() {
         python3 "$FIXTURE_META_TOOL" assemble-transcript \
             --runtime-file "$runtime_file" --prompt-file "$prompt_file" \
             --fixture-dir "$LIVE_STAGE" --probe "$PROBE" \
-            --arm "$arm" --rep "$rep" >&9 || rc=$?
+            --arm "$arm" --rep "$rep" --workspace "$workspace" >&9 || rc=$?
     fi
     if [[ "$rc" -eq 0 ]]; then
         receipt="$(python3 "$FIXTURE_META_TOOL" classify-open \
@@ -576,8 +604,16 @@ publish_fixture_set() {
 if [[ $REPLAY -eq 0 ]]; then
     LIVE_STAGE="$(mktemp -d "$PROBE_DIR/.${FIXTURE_SET}.capture.XXXXXX")"
     chmod 0700 "$LIVE_STAGE"
-    LIVE_WORKSPACE="$(mktemp -d "${TMPDIR:-/tmp}/probe-ws.XXXXXX")"
-    chmod 0700 "$LIVE_WORKSPACE"
+    # Harness-private per-rep files (prompt, raw JSONL, stderr) sit beside the
+    # stage inside the checkout, which the seal denies to every rep.
+    LIVE_DISPATCH="$(mktemp -d "$PROBE_DIR/.${FIXTURE_SET}.dispatch.XXXXXX")"
+    chmod 0700 "$LIVE_DISPATCH"
+    # It holds prompt copies and raw producer streams only; the published set
+    # carries the bound transcripts, so it never outlives the run.
+    trap 'rm -rf -- "$LIVE_DISPATCH"' EXIT
+    # Parent of every per-rep workspace (dispatch_live mktemps one per rep).
+    LIVE_WORKSPACE_ROOT="$(mktemp -d "${TMPDIR:-/tmp}/probe-ws.XXXXXX")"
+    chmod 0700 "$LIVE_WORKSPACE_ROOT"
     if [[ "$SEAL_MODE" == "seatbelt" ]]; then
         build_seal
     fi

@@ -119,6 +119,24 @@ replay), and requires the denied roots to cover `repository_root` and
 path), naming any root the seal omitted. Pre-seal v2 contracts (the 2026-08-26
 sets) load as `legacy-unsealed`: replayable, never coverage.
 
+**One workspace per rep; the sibling-read trap.** Every live rep gets its own
+fresh, empty `mktemp -d` directory as its working directory (under the seal's
+writable workspace root; the directory name never says which arm it is), and
+the prompt reaches the rep on stdin only. The harness keeps its own per-rep
+files — the materialized prompt, the raw Codex JSONL, stderr — in a hidden
+dispatch directory beside the capture stage inside the read-denied checkout,
+never in any workspace. The transcript's probe-input event records the
+`workspace` the rep ran in. This closes the 2026-09-03 leak: with one shared
+workspace, an xhigh control rep ran `rg --files`, saw `treatment-1.prompt`,
+read it, and held the canonical SKILL.md bytes without ever naming SKILL.md.
+Scoring also carries a second floor beside the SKILL.md trap: a successful
+command whose command string names a `*.prompt` file, `capture-contract`,
+`seal.json`, `fixture-set.json`, a rep's raw `.codex.jsonl`/`.codex.stderr`,
+or the hidden `.capture.`/`.dispatch.` stage, or whose captured output lists a
+sibling rep's file by name, degrades that rep as `sibling-prompt-read`. Replay
+and `verify-scorecard` recompute this, so the 2026-09-03 sets reclassify under
+it without any fixture edit.
+
 Replay makes the bound classification replayable; it does not make model
 generation deterministic or reproducible.
 

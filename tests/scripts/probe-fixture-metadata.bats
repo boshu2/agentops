@@ -401,3 +401,104 @@ contract["producer_request"]["identity"]["coverage_eligible"] = True
     [ "$status" -eq 0 ]
     [ "$(json_field "$output" seal.mode)" = "seatbelt" ]
 }
+
+# write_command_transcript DIR NAME BODY COMMAND OUTPUT — like write_transcript,
+# but the rep first runs one successful (exit 0) command_execution whose
+# command string is COMMAND and whose aggregated_output is OUTPUT.
+write_command_transcript() {
+    local directory="$1" name="$2" body="$3" command="$4" output="$5"
+    python3 - "$directory" "$name" "$body" "$command" "$output" <<'PY'
+import json, pathlib, sys
+
+directory = pathlib.Path(sys.argv[1])
+name = sys.argv[2]
+body, command, output = sys.argv[3:6]
+arm, rep_text = name.rsplit("-", 1)
+rep = int(rep_text)
+contract = json.loads((directory / "capture-contract.json").read_text())
+prompt = contract["prompts"][0 if arm == "control" else 1]
+position = next(
+    item["position"]
+    for item in contract["schedule"]
+    if item["arm"] == arm and item["rep"] == rep
+)
+started = {
+    "id": f"cmd-{name}", "type": "command_execution", "command": command,
+    "aggregated_output": "", "exit_code": None, "status": "in_progress",
+}
+completed = dict(started, aggregated_output=output, exit_code=0, status="completed")
+events = [
+    {"type": "agentops.probe-input.v1", "arm": arm, "rep": rep, "position": position, "prompt": prompt},
+    {"type": "thread.started", "thread_id": f"sibling-{directory.name}-{name}"},
+    {"type": "turn.started"},
+    {"type": "item.started", "item": started},
+    {"type": "item.completed", "item": completed},
+    {"type": "item.completed", "item": {"id": f"item-{name}", "type": "agent_message", "text": body}},
+    {"type": "turn.completed", "usage": {"input_tokens": 1, "cached_input_tokens": 0, "output_tokens": 1}},
+]
+(directory / f"{name}.txt").write_text(
+    "".join(json.dumps(event, sort_keys=True, separators=(",", ":")) + "\n" for event in events)
+)
+PY
+}
+
+score() {
+    local directory="$1"
+    python3 "$META_TOOL" score \
+        --fixture-dir "$directory" --probe-dir "$PROBE_DIR" \
+        --skills-dir "$SKILLS" --probe demo
+}
+
+@test "a rep that reads or lists a sibling prompt or harness artifact is DEGRADED (sibling-prompt-read)" {
+    # 2026-09-03 xhigh control-2: `rg --files | head -200` listed
+    # treatment-1.prompt in the shared workspace, then `sed -n '1,220p'
+    # treatment-1.prompt` read the canonical SKILL.md bytes out of it. Neither
+    # command names SKILL.md, so the skill-read trap let it score.
+    local directory="$PROBE_DIR/fixtures-sibling"
+    mkdir -p "$directory"
+    snapshot "$directory" >/dev/null
+    write_command_transcript "$directory" control-1 ACTION \
+        "/bin/zsh -lc \"sed -n '1,220p' treatment-1.prompt; sed -n '1,220p' control-1.prompt\"" \
+        "---\nname: demo-skill\nCANONICAL_ACTION\n"
+    write_command_transcript "$directory" control-2 ACTION \
+        "/bin/zsh -lc \"rg --files | head -200\"" \
+        "control-2.codex.stderr\ntreatment-1.prompt\ncontrol-1.codex.jsonl\n"
+    write_command_transcript "$directory" treatment-1 ACTION \
+        "/bin/zsh -lc 'cat capture-contract.json seal.json'" \
+        "{}"
+    write_command_transcript "$directory" treatment-2 ACTION \
+        "/bin/zsh -lc 'ls -la'" \
+        "total 0\nnotes.md\n"
+    create "$directory" >/dev/null
+
+    run --separate-stderr score "$directory"
+    [ "$status" -eq 0 ]
+    [ "$(json_field "$output" per_rep.0.control)" = "DEGRADED" ]
+    [ "$(json_field "$output" per_rep.1.control)" = "DEGRADED" ]
+    [ "$(json_field "$output" per_rep.0.treatment)" = "DEGRADED" ]
+    [ "$(json_field "$output" per_rep.1.treatment)" = "PRESENT" ]
+    [ "$(json_field "$output" verdict)" = "UNMEASURED" ]
+    [[ "$stderr" == *"sibling-prompt-read"* ]]
+    [[ "$stderr" == *"treatment-1.prompt"* ]]
+    [[ "$stderr" == *"capture-contract.json"* ]]
+    [[ "$stderr" != *"skill-read-contamination"* ]]
+}
+
+@test "a successful command that only names SKILL.md still trips the skill-read trap, not the sibling trap" {
+    local directory="$PROBE_DIR/fixtures-skillread"
+    mkdir -p "$directory"
+    snapshot "$directory" >/dev/null
+    write_transcript "$directory" control-1 ABSENT
+    write_command_transcript "$directory" control-2 ACTION \
+        "/bin/zsh -lc 'cat /somewhere/skills/demo-skill/SKILL.md'" "CANONICAL_ACTION"
+    write_transcript "$directory" treatment-1 ACTION
+    write_transcript "$directory" treatment-2 ACTION
+    create "$directory" >/dev/null
+
+    run --separate-stderr score "$directory"
+    [ "$status" -eq 0 ]
+    [ "$(json_field "$output" per_rep.1.control)" = "DEGRADED" ]
+    [ "$(json_field "$output" per_rep.0.control)" = "ABSENT" ]
+    [[ "$stderr" == *"skill-read-contamination"* ]]
+    [[ "$stderr" != *"sibling-prompt-read"* ]]
+}

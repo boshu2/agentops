@@ -1170,3 +1170,88 @@ SH
     [ ! -e "$PROBE_DIR/fixtures-unsealed" ]
     [ -z "$(find "$PROBE_DIR" -mindepth 1 -maxdepth 1 -name '.fixtures-unsealed.capture.*')" ]
 }
+
+# probe_input_field DIR NAME FIELD -> one field of the transcript's bound
+# probe-input event (the first JSONL line).
+probe_input_field() {
+    python3 - "$1/$2.txt" "$3" <<'PY'
+import json, sys
+event = json.loads(open(sys.argv[1], encoding="utf-8").readline())
+print(event.get(sys.argv[2], "MISSING"))
+PY
+}
+
+# workspace_covered SCORECARD PATH -> succeeds when PATH (literal or realpath)
+# sits under one of the scorecard's seal.writable_roots.
+workspace_covered() {
+    python3 - "$1" "$2" <<'PY'
+import json, os, sys
+roots = json.loads(sys.argv[1])["seal"]["writable_roots"]
+candidates = {sys.argv[2], os.path.realpath(sys.argv[2])}
+covered = any(
+    path == root or path.startswith(root.rstrip("/") + "/")
+    for path in candidates
+    for root in roots
+)
+raise SystemExit(0 if covered else 1)
+PY
+}
+
+@test "each live rep runs in its own fresh empty workspace and receives the prompt on stdin only" {
+    # 2026-09-03 defect: every rep's prompt file was written into the ONE shared
+    # live workspace, so a control rep ran `rg --files`, saw treatment-1.prompt,
+    # read it, and held the canonical SKILL.md bytes. The prompt is delivered on
+    # stdin; nothing a rep can list from its cwd may carry it or any sibling.
+    local producer="$BATS_TEST_TMPDIR/codex-workspace"
+    cat > "$producer" <<'SH'
+#!/usr/bin/env bash
+if [[ "${1:-}" == "--version" ]]; then printf 'codex-cli workspace-stub\n'; exit 0; fi
+prompt="$(cat)"
+if [[ "$prompt" == *QUESTION* ]]; then stdin=stdin-prompt; else stdin=no-stdin-prompt; fi
+listing="$(ls -A1 . | tr '\n' ',')"
+sibling=none
+for candidate in ./*.prompt ./*.jsonl ./*.stderr ./*.txt ./*.json; do
+    [[ -e "$candidate" ]] || continue
+    sibling="read:${candidate#./}:$(wc -c < "$candidate" | tr -d ' ')"
+    break
+done
+text="cwd=$PWD|entries=${listing:-empty}|$stdin|sibling=$sibling"
+printf '{"type":"thread.started","thread_id":"workspace-%s"}\n' "$$"
+printf '{"type":"turn.started"}\n'
+printf '{"type":"item.completed","item":{"id":"item-workspace","type":"agent_message","text":"%s"}}\n' "$text"
+printf '{"type":"turn.completed","usage":{"input_tokens":1,"cached_input_tokens":0,"output_tokens":1}}\n'
+SH
+    chmod +x "$producer"
+
+    run --separate-stderr env CODEX_EXEC_BIN="$producer" \
+        bash "$HARNESS" --probe demo --live --reps 2 --fixtures fixtures-workspace
+
+    [ "$status" -eq 0 ]
+    [ "$(json_field "$output" seal.seal_mode)" = "seatbelt" ]
+    local name text cwd seen=""
+    for name in control-1 treatment-1 control-2 treatment-2; do
+        text="$(transcript_message "$PROBE_DIR/fixtures-workspace" "$name")"
+        cwd="${text#cwd=}"; cwd="${cwd%%|*}"
+        [ -n "$cwd" ]
+        [ -d "$cwd" ]
+        [[ "$cwd" != "$REPO_ROOT"/* ]]
+        [[ "$cwd" != "$PROBE_DIR"/* ]]
+        # (a) the prompt arrives on stdin; the cwd holds no prompt file and no
+        #     other rep's artifacts.
+        [[ "$text" == *"|entries=empty|"* ]]
+        [[ "$text" == *"|stdin-prompt|"* ]]
+        [[ "$text" == *"|sibling=none" ]]
+        # (b) a fresh directory per rep: all four differ.
+        [[ ",$seen," != *",$cwd,"* ]]
+        seen="${seen:+$seen,}$cwd"
+        # (c) the seal's writable roots cover the per-rep workspace.
+        workspace_covered "$output" "$cwd"
+        # the bound probe-input event records where the rep ran.
+        [ "$(probe_input_field "$PROBE_DIR/fixtures-workspace" "$name" workspace)" = "$cwd" ]
+    done
+    [ "$(json_field "$output" verdict)" = "INERT" ]
+    run python3 "$META_TOOL" verify \
+        --fixture-dir "$PROBE_DIR/fixtures-workspace" \
+        --probe-dir "$PROBE_DIR" --skills-dir "$SKILLS" --probe demo
+    [ "$status" -eq 0 ]
+}

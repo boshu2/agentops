@@ -1802,19 +1802,33 @@ def scheduled_position(contract: dict[str, Any], arm: str, rep: int) -> int:
     return matches[0]["position"]
 
 
+PROBE_INPUT_KEYS = {"type", "arm", "rep", "position", "prompt"}
+
+
 def probe_input_event(
-    contract: dict[str, Any], arm: str, rep: int, prompt: bytes
+    contract: dict[str, Any],
+    arm: str,
+    rep: int,
+    prompt: bytes,
+    workspace: str | None = None,
 ) -> dict[str, Any]:
     expected = decode_prompts(contract["prompts"])[arm]
     if prompt != expected:
         raise MetadataError(f"actual {arm}-{rep} prompt differs from capture contract")
-    return {
+    event = {
         "type": PROBE_INPUT_EVENT,
         "arm": arm,
         "rep": rep,
         "position": scheduled_position(contract, arm, rep),
         "prompt": embedded_bytes_record(prompt, f"{arm}.prompt"),
     }
+    if workspace is not None:
+        # The fresh per-rep cwd the harness dispatched into (2026-09-03
+        # sibling-prompt-read fix). Optional so pre-fix v3 sets still verify.
+        text = require_text(workspace, f"{arm}-{rep} workspace")
+        assert isinstance(text, str)
+        event["workspace"] = text
+    return event
 
 
 def validate_codex_runtime_events(
@@ -1855,11 +1869,16 @@ def validate_structured_transcript(
     label: str,
 ) -> tuple[str, bytes]:
     events = parse_jsonl_events(transcript, label)
-    first = require_exact_object(
-        events[0], {"type", "arm", "rep", "position", "prompt"}, "probe input event"
+    # `workspace` (the per-rep cwd) is optional: sets captured before the
+    # 2026-09-03 per-rep workspace fix carry the five bound keys only.
+    keys = PROBE_INPUT_KEYS | (
+        {"workspace"} if isinstance(events[0], dict) and "workspace" in events[0] else set()
     )
+    first = require_exact_object(events[0], keys, "probe input event")
     expected_prompt = decode_prompts(contract["prompts"])[arm]
-    expected_event = probe_input_event(contract, arm, rep, expected_prompt)
+    expected_event = probe_input_event(
+        contract, arm, rep, expected_prompt, workspace=first.get("workspace")
+    )
     if first != expected_event:
         raise MetadataError(f"{label} probe input event does not match bound {arm}-{rep} prompt")
     if any(event.get("type") == PROBE_INPUT_EVENT for event in events[1:]):
@@ -1874,10 +1893,11 @@ def assemble_transcript(
     expected_probe: str,
     arm: str,
     rep: int,
+    workspace: str | None = None,
 ) -> bytes:
     contract = load_capture_contract(fixture_dir, expected_probe)
     prompt = read_regular_bytes(prompt_path, "actual dispatch prompt", maximum=MAX_INPUT_BYTES * 2 + 16)
-    input_event = probe_input_event(contract, arm, rep, prompt)
+    input_event = probe_input_event(contract, arm, rep, prompt, workspace=workspace)
     runtime = read_regular_bytes(
         runtime_path, "Codex JSONL runtime stream", maximum=MAX_TRANSCRIPT_BYTES
     )
@@ -1933,6 +1953,75 @@ def run_bounded_discriminator(discriminator_bytes: bytes, response_bytes: bytes)
 
 
 SKILL_READ_PATTERN = re.compile(r"SKILL\.md")
+# Harness-owned names a rep must never touch: any *.prompt file, the capture
+# contract, the seal record, the fixture manifest, the raw codex stream or
+# stderr of a rep, and the hidden capture/dispatch stage directories.
+SIBLING_ARTIFACT_PATTERN = re.compile(
+    r"\.prompt\b"
+    r"|capture-contract"
+    r"|seal\.json"
+    r"|fixture-set\.json"
+    r"|\.codex\.(?:jsonl|stderr)\b"
+    r"|\.(?:capture|dispatch)\.[A-Za-z0-9]{6}\b"
+)
+# A sibling rep's artifact by name, as it appears in a listing (`rg --files`,
+# `ls`, `find`) or a read.
+SIBLING_NAME_PATTERN = re.compile(
+    r"\b(?:control|treatment)-[1-9][0-9]*\.(?:prompt|txt|codex\.jsonl|codex\.stderr)\b"
+)
+
+
+def final_command_executions(transcript_bytes: bytes) -> list[dict[str, Any]]:
+    """The final state of every command_execution item, keyed by item id."""
+    final: dict[str, dict[str, Any]] = {}
+    for raw in transcript_bytes.splitlines():
+        raw = raw.strip()
+        if not raw.startswith(b"{"):
+            continue
+        try:
+            obj = json.loads(raw)
+        except (ValueError, UnicodeDecodeError):
+            continue
+        item = obj.get("item") if isinstance(obj, dict) else None
+        if not isinstance(item, dict) or item.get("type") != "command_execution":
+            continue
+        item_id = str(item.get("id", ""))
+        entry = final.setdefault(item_id, {})
+        if item.get("command") is not None:
+            entry["command"] = str(item.get("command"))
+        if item.get("exit_code") is not None:
+            entry["exit_code"] = item.get("exit_code")
+        if isinstance(item.get("aggregated_output"), str):
+            entry["output"] = item["aggregated_output"]
+    return list(final.values())
+
+
+def sibling_prompt_read(transcript_bytes: bytes) -> list[str]:
+    """Producer contact with a harness artifact or a sibling rep voids the rep.
+
+    The 2026-09-03 xhigh control-2 rep ran `rg --files | head -200` in the
+    then-shared live workspace, saw `treatment-1.prompt`, then `sed -n
+    '1,220p' treatment-1.prompt` — and held the canonical SKILL.md bytes
+    without ever naming SKILL.md, so the skill-read trap let it score. A
+    successful (final exit 0) command_execution is a hit when its command
+    string names any harness artifact (`*.prompt`, capture-contract,
+    seal.json, fixture-set.json, a rep's raw codex stream or stderr, or the
+    hidden capture/dispatch stage), or when its captured output lists a
+    sibling rep's artifact by name. Same FLOOR caveats as
+    skill_read_contamination; the per-rep workspace is the prevention.
+    """
+    hits = []
+    for entry in final_command_executions(transcript_bytes):
+        if entry.get("exit_code") != 0:
+            continue
+        command = entry.get("command", "")
+        if SIBLING_ARTIFACT_PATTERN.search(command) or SIBLING_NAME_PATTERN.search(command):
+            hits.append(f"command: {command}")
+            continue
+        listed = SIBLING_NAME_PATTERN.search(entry.get("output", ""))
+        if listed:
+            hits.append(f"output lists {listed.group(0)}: {command}")
+    return sorted(hits)
 
 
 def skill_read_contamination(transcript_bytes: bytes) -> list[str]:
@@ -1954,26 +2043,8 @@ def skill_read_contamination(transcript_bytes: bytes) -> list[str]:
     "isolation floor"); this trap exists so the KNOWN leak shape can never
     silently recur.
     """
-    final: dict[str, dict[str, Any]] = {}
-    for raw in transcript_bytes.splitlines():
-        raw = raw.strip()
-        if not raw.startswith(b"{"):
-            continue
-        try:
-            obj = json.loads(raw)
-        except (ValueError, UnicodeDecodeError):
-            continue
-        item = obj.get("item") if isinstance(obj, dict) else None
-        if not isinstance(item, dict) or item.get("type") != "command_execution":
-            continue
-        item_id = str(item.get("id", ""))
-        entry = final.setdefault(item_id, {})
-        if item.get("command") is not None:
-            entry["command"] = str(item.get("command"))
-        if item.get("exit_code") is not None:
-            entry["exit_code"] = item.get("exit_code")
     hits = []
-    for entry in final.values():
+    for entry in final_command_executions(transcript_bytes):
         command = entry.get("command", "")
         if entry.get("exit_code") == 0 and SKILL_READ_PATTERN.search(command):
             hits.append(command)
@@ -2000,6 +2071,14 @@ def classify_bytes(
         for command in contamination:
             print(
                 f"probe-skill: rep DEGRADED (skill-read-contamination): {command[:200]}",
+                file=sys.stderr,
+            )
+        return "DEGRADED"
+    sibling = sibling_prompt_read(transcript_bytes)
+    if sibling:
+        for hit in sibling:
+            print(
+                f"probe-skill: rep DEGRADED (sibling-prompt-read): {hit[:240]}",
                 file=sys.stderr,
             )
         return "DEGRADED"
@@ -2819,6 +2898,7 @@ def parse_args() -> argparse.Namespace:
     assemble.add_argument("--probe", required=True)
     assemble.add_argument("--arm", choices=("control", "treatment"), required=True)
     assemble.add_argument("--rep", type=int, required=True)
+    assemble.add_argument("--workspace", default=None)
 
     tiers = subparsers.add_parser("tier-skills")
     tiers.add_argument("--skills-dir", type=Path, required=True)
@@ -2919,6 +2999,7 @@ def main() -> int:
                 args.probe,
                 args.arm,
                 args.rep,
+                workspace=args.workspace,
             )
             sys.stdout.buffer.write(encoded)
             return 0
