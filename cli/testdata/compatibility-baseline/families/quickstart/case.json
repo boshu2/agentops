@@ -4,7 +4,7 @@
   "checks": [
     {
       "id": "quickstart-black-box",
-      "command": "tmp=$(mktemp -d /tmp/ao-quickstart.XXXXXX); (cd cli && go build -o \"$tmp/ao\" ./cmd/ao); \"$tmp/ao\" quick-start --help >\"$tmp/help\"; grep -Fq 'Show the single-pass AgentOps workflow' \"$tmp/help\"; grep -Fq 'AgentOps is a small semantic evidence layer around agent work' \"$tmp/help\"; \"$tmp/ao\" quick-start >\"$tmp/text\"; grep -Fq 'RPI -> Plan -> Implement -> fresh Validate -> report and stop' \"$tmp/text\"; grep -Fq 'Deterministic checks: ao gate check' \"$tmp/text\"; grep -Fq 'Semantic judgment: invoke the Validate skill from a fresh context' \"$tmp/text\"; grep -Fq 'Artifact persistence: optional' \"$tmp/text\"; if \"$tmp/ao\" quick-start extra-arg >/dev/null 2>&1; then echo 'quick-start accepted a positional arg' >&2; exit 1; fi"
+      "command": "tmp=$(mktemp -d /tmp/ao-quickstart.XXXXXX); (cd cli && go build -o \"$tmp/ao\" ./cmd/ao); \"$tmp/ao\" quick-start --help >\"$tmp/help\"; grep -Fq 'Show the AgentOps RPI workflow' \"$tmp/help\"; grep -Fq 'AgentOps is a small semantic evidence layer around agent work' \"$tmp/help\"; \"$tmp/ao\" quick-start >\"$tmp/text\"; grep -Fq 'RPI -> Plan -> Implement -> fresh Validate -> repair to convergence -> report' \"$tmp/text\"; grep -Fq 'Deterministic checks: ao gate check' \"$tmp/text\"; grep -Fq 'Semantic judgment: invoke the Validate skill from a fresh context' \"$tmp/text\"; grep -Fq 'Artifact persistence: optional' \"$tmp/text\"; if \"$tmp/ao\" quick-start extra-arg >/dev/null 2>&1; then echo 'quick-start accepted a positional arg' >&2; exit 1; fi"
     },
     {
       "id": "quickstart-go-behavior",
