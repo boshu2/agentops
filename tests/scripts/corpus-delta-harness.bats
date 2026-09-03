@@ -231,6 +231,8 @@ CSTUB_EOF
   want_sha="$( (sha256sum "$TMP/runner/real-runner" 2>/dev/null || shasum -a 256 "$TMP/runner/real-runner") | awk '{print $1}')"
   [ "$(jq -r '.runner.path' "$TMP/ek.json")" = "$TMP/runner/real-runner" ]
   [ "$(jq -r '.runner.sha256' "$TMP/ek.json")" = "$want_sha" ]
+  [ "$(jq -r '.evidence_attestation.basis' "$TMP/ek.json")" = "caller_declaration" ]
+  [ "$(jq -r '.evidence_attestation.verified' "$TMP/ek.json")" = "false" ]
 }
 
 @test "CORPUS_DELTA_RUNNER as a bare PATH command resolves through command -v before any cd" {

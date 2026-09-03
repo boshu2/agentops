@@ -130,6 +130,23 @@ func TestScore_ExclusionSentenceRoutesAway(t *testing.T) {
 		t.Errorf("premortem's exclusion vocabulary must earn nothing: got %+v", got[1])
 	}
 
+	// Holding the sentence out must never cost the skill its own query: an
+	// explicit name, or the skill's own words beside one exclusion word.
+	got = Score("premortem the plan for this live rollout", metas)
+	if got[0].Name != "premortem" {
+		t.Fatalf("named query: want premortem first, got %q (%+v)", got[0].Name, got)
+	}
+	pair := []SkillMeta{
+		{Name: "validate", Description: "Freshly judge a finished change against its acceptance: PASS, FAIL, or NOT_PROVEN. Not for claim-vs-tree checks; that is reality-check. Triggers: \"validate\", \"is this proven\"."},
+		{Name: "reality-check", Description: "Check a claim against the tree. Not for judging a finished change; that is validate. Triggers: \"reality check\"."},
+	}
+	for _, q := range []string{"validate the claim that tests pass", "validate this change and check the tests"} {
+		got = Score(q, pair)
+		if got[0].Name != "validate" {
+			t.Errorf("%q: want validate first, got %q (%+v)", q, got[0].Name, got)
+		}
+	}
+
 	got = Score("challenge this frozen plan", metas)
 	if got[0].Name != "premortem" {
 		t.Fatalf("plan-challenge query: want premortem first, got %q (%+v)", got[0].Name, got)

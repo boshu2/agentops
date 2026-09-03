@@ -112,12 +112,12 @@ fi
 case "$EVIDENCE_KIND" in
   harness_plumbing) ;;
   live_agent)
-    # A live-agent label is a caller declaration the harness cannot prove: it
-    # binds the resolved runner's path and SHA-256 into the receipt (below) so a
-    # reader can check the claim against a known agent binary, and it refuses
-    # the obvious stubs cheaply: a runner under a test tree or named stub or
-    # fake. The check runs on the canonical absolute path, so a relative
-    # spelling cannot dodge it.
+    # A live-agent label is a caller declaration the harness cannot prove. The
+    # receipt says so (evidence_attestation.verified=false) and binds the
+    # resolved runner's path and SHA-256 so a reader can check the claim against
+    # a known agent binary; the obvious stubs are refused cheaply: a runner
+    # under a test tree or named stub or fake. The check runs on the canonical
+    # absolute path, so a relative spelling cannot dodge it.
     case "$RUNNER" in
       */tests/*|*stub*|*fake*)
         echo "error: CORPUS_DELTA_EVIDENCE_KIND=live_agent requires a real runner outside the test tree, not named stub or fake; got '$RUNNER_RAW' (resolved: $RUNNER)" >&2; exit 2 ;;
@@ -228,6 +228,7 @@ scorecard="$(jq -n \
   --argjson on_pass "$on_pass" --argjson on_degr "$on_degr" --argjson on_total "$on_total" --argjson on_elapsed "$on_elapsed" \
   --arg task "$TASK_ID" --argjson seeds "$SEEDS" --arg evidence_kind "$EVIDENCE_KIND" \
   --arg runner_path "$RUNNER" --arg runner_sha256 "$RUNNER_SHA256" \
+  --arg attestation_basis "$([[ "$EVIDENCE_KIND" = live_agent ]] && echo caller_declaration || echo harness_default)" \
   '
   ($off_pass / $off_total) as $off_score |
   ($on_pass / $on_total) as $on_score |
@@ -238,6 +239,7 @@ scorecard="$(jq -n \
     suite_path: "scripts/corpus-delta-harness.sh",
     evidence_kind: $evidence_kind,
     runner: { path: $runner_path, sha256: $runner_sha256 },
+    evidence_attestation: { basis: $attestation_basis, verified: false },
     seeds_per_arm: $seeds,
     elapsed_seconds: ($off_elapsed + $on_elapsed),
     degraded: $degraded,
