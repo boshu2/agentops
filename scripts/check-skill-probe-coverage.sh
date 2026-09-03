@@ -123,7 +123,6 @@ print(refs[0])
 # qualifies a directional row as coverage evidence; this looser read exists so
 # every row that names a scorecard still gets an eligibility line.
 scorecard_ref_loose() {
-    # shellcheck disable=SC2016 # Python source is intentionally single-quoted shell data.
     python3 -c '
 import re, sys
 refs = re.findall(r"`(docs/evals/scorecards/[^`]+\.json)`", sys.argv[1])
@@ -280,6 +279,15 @@ if [[ -f "$LEDGER_FILE" ]]; then
         # README cites for a scorecard whose own `coverage_eligible` says true
         # while the gate treats the set as ineligible, and before this it never
         # got a line at all.
+        #
+        # A non-current verdict is classified BEFORE the evidence is verified:
+        # the ledger already says the row is not a measurement, so running
+        # verify-scorecard first only relabels that as whatever the evidence
+        # happened to fail on, which reads as a seal problem it does not have.
+        if [[ $directional -eq 0 ]]; then
+            SET_ROWS+=("${skill}|${probe}|${scorecard_path}|false|verdict-${verdict,,}")
+            continue
+        fi
         verification=""
         if verification="$(python3 "$METADATA_TOOL" verify-scorecard \
             --repo-root "$EVIDENCE_ROOT" \
@@ -288,17 +296,17 @@ if [[ -f "$LEDGER_FILE" ]]; then
             --ledger-skill "$skill" \
             --ledger-probe "$probe" \
             --ledger-verdict "$verdict" 2>&1)"; then
-            if [[ $directional -eq 1 && -n "${GATED[$skill]:-}" ]]; then
+            if [[ -n "${GATED[$skill]:-}" ]]; then
                 MEASURED["$skill"]=1
                 SET_ROWS+=("${skill}|${probe}|${scorecard_path}|true|verified")
             else
-                # Verified evidence behind a non-current verdict is still not a
-                # coverage result: the ledger says the row is not a measurement.
-                SET_ROWS+=("${skill}|${probe}|${scorecard_path}|false|verdict-${verdict,,}")
+                # Verified evidence for a skill outside the gate denominator is
+                # real evidence and still not tier coverage.
+                SET_ROWS+=("${skill}|${probe}|${scorecard_path}|false|outside-denominator")
             fi
         else
             verification="$(printf '%s' "$verification" | tail -n 1)"
-            if [[ $directional -eq 1 && -n "${GATED[$skill]:-}" ]]; then
+            if [[ -n "${GATED[$skill]:-}" ]]; then
                 echo "::warning::probe ledger row '${skill}/${probe}' is not measured: ${verification:-evidence verification failed}" >&2
             fi
             SET_ROWS+=("${skill}|${probe}|${scorecard_path}|false|$(seal_reason_label "$verification")")

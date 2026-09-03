@@ -14,6 +14,7 @@ setup() {
     META_TOOL="$REPO_ROOT/scripts/lib/probe-fixture-metadata.py"
     PREAMBLE="$REPO_ROOT/scripts/lib/preamble.sh"
     DISPATCH_HELPER="$REPO_ROOT/scripts/lib/codex-exec.sh"
+    NETWORK_PROXY="$REPO_ROOT/scripts/lib/probe-connect-proxy.py"
 
     FIX="$BATS_TEST_TMPDIR/repo"
     PROBES="$FIX/evals/skill-probes"
@@ -22,10 +23,18 @@ setup() {
     cp "$META_TOOL" "$FIX/scripts/lib/probe-fixture-metadata.py"
     cp "$PREAMBLE" "$FIX/scripts/lib/preamble.sh"
     cp "$DISPATCH_HELPER" "$FIX/scripts/lib/codex-exec.sh"
-    mkdir -p "$FIX/test-bin"
+    # The CONNECT proxy is part of the evaluator identity a scorecard binds.
+    cp "$NETWORK_PROXY" "$FIX/scripts/lib/probe-connect-proxy.py"
+    # The fixture home lives OUTSIDE the fixture checkout so a checkout deny
+    # cannot cover a skill root by ancestry.
+    REAL_HOME="$(python3 -c 'import os,sys; print(os.path.realpath(sys.argv[1]))' "$BATS_TEST_TMPDIR")/home"
+    mkdir -p "$REAL_HOME/bin"
     # Synthetic unit-only runtime identity: it exercises the positive verifier
     # path but is neither persisted evidence nor a claim that a model was run.
-    cat > "$FIX/test-bin/codex" <<'SH'
+    # It lives under the fixture HOME because the verifier now ties the seal's
+    # launcher chain to the digest of the producer the manifest identifies, and
+    # the launcher exception only exists for a launcher under a denied root.
+    cat > "$REAL_HOME/bin/codex" <<'SH'
 #!/usr/bin/env bash
 if [[ "${1:-}" == "--version" ]]; then
     printf 'codex-cli synthetic-gate-test\n'
@@ -34,8 +43,8 @@ fi
 printf 'synthetic identity stub is not a live producer\n' >&2
 exit 70
 SH
-    chmod +x "$FIX/test-bin/codex"
-    export PATH="$FIX/test-bin:$PATH"
+    chmod +x "$REAL_HOME/bin/codex"
+    export PATH="$REAL_HOME/bin:$PATH"
     export SKILL_PROBE_SKILLS_DIR="$FIX/skills"
     export SKILL_PROBE_LEDGER_FILE="$PROBES/LEDGER.md"
     export SKILL_PROBE_EVIDENCE_ROOT="$FIX"
@@ -164,7 +173,6 @@ write_seal() {
     repo_real="$(python3 -c 'import os,sys; print(os.path.realpath(sys.argv[1]))' "$FIX")"
     # The fixture home lives OUTSIDE the fixture checkout so a checkout deny
     # cannot cover a skill root by ancestry.
-    REAL_HOME="$(python3 -c 'import os,sys; print(os.path.realpath(sys.argv[1]))' "$BATS_TEST_TMPDIR")/home"
     mkdir -p "$BATS_TEST_TMPDIR/home"
     # A hardened seal denies the checkout, the four skill roots, the operator
     # home itself and the real temp root that holds every other run's debris.
@@ -195,19 +203,30 @@ write_seal() {
     # and the fixture block relate exactly the way a real capture relates them.
     local payload
     payload="$(mktemp "$BATS_TEST_TMPDIR/seal-payload.XXXXXX")"
-    python3 - "$payload" "$spec" "$REAL_HOME" "$repo_real" "${roots[@]}" <<'SEALPY'
+    # The launcher exception is filesystem-checked: the PATH-resolved producer
+    # from setup(), under the denied fixture home, digest-matched to the seal.
+    local launcher_sha
+    launcher_sha="sha256:$(shasum -a 256 "$REAL_HOME/bin/codex" | cut -d" " -f1)"
+    # The config text is pinned to the generator's output for the bound effort,
+    # so the fixture takes it from the generator rather than restating it.
+    local config_file
+    config_file="$(mktemp "$BATS_TEST_TMPDIR/probe-config.XXXXXX")"
+    python3 "$META_TOOL" probe-config --effort low --target "$config_file" >/dev/null
+    python3 - "$payload" "$spec" "$REAL_HOME" "$repo_real" "$launcher_sha" "$config_file" "${roots[@]}" <<'SEALPY'
 import hashlib, json, pathlib, sys
 
 payload_path = pathlib.Path(sys.argv[1])
 spec = sys.argv[2]
 real_home = sys.argv[3]
 git_common_root = sys.argv[4]
-denied = sys.argv[5:]
+launcher_sha = sys.argv[5]
+config_text = pathlib.Path(sys.argv[6]).read_text()
+denied = sys.argv[7:]
 sealed = spec != "none"
 run_root = "/private/tmp/probe-run.aaaaaa"
 dispatch = run_root + "/dispatch"
-launcher = "/private/tmp/probe-run.aaaaaa-launcher/codex"
-config_text = 'web_search = "disabled"\n'
+launcher = real_home + "/bin/codex"
+
 payload = {
     "seal_mode": "seatbelt" if sealed else "none",
     "sandbox_exec": "/usr/bin/sandbox-exec" if sealed else "",
@@ -219,12 +238,15 @@ payload = {
     "writable_roots": (
         [run_root + "/home", run_root + "/ws", run_root + "/tmp"] if sealed else []
     ),
-    "dev_write_paths": ["/dev/null", "/dev/tty"] if sealed else [],
+    "dev_write_paths": (
+        ["/dev/null", "/dev/zero", "/dev/dtracehelper", "/dev/tty"] if sealed else []
+    ),
     "allowed_read_paths": (
         [launcher] if sealed and any(launcher.startswith(root) for root in denied) else []
     ),
     "launcher_chain": [launcher] if sealed else [],
-    "launcher_sha256": ("sha256:" + "a" * 64) if sealed else "",
+    "launcher_sha256": launcher_sha if sealed else "",
+    "timeout_bin": "/opt/homebrew/bin/timeout" if sealed else "",
     "env_allowlist": ["PATH", "HOME", "CODEX_HOME", "TMPDIR"],
     "rep_env": {
         "HOME": run_root + "/home",
@@ -234,7 +256,7 @@ payload = {
     "real_home": real_home,
     "real_codex_home": real_home + "/.codex",
     "real_tmpdir": "/private/tmp" if sealed else "",
-    "cache_root": "/private/var/folders/fixture/C" if sealed else "",
+    "cache_root": "/private/tmp/fixture-cache" if sealed else "",
     "git_common_root": git_common_root if sealed else "",
     "run_root": run_root if sealed else "",
     "workspace_root": run_root + "/ws" if sealed else "",
@@ -242,6 +264,7 @@ payload = {
     "network": {
         "mode": "proxy-allowlist" if sealed else "open",
         "hosts": ["chatgpt.com"] if sealed else [],
+        "ports": [443] if sealed else [],
         "proxy": "127.0.0.1:54321" if sealed else None,
         "unix_sockets": [],
     },
@@ -442,7 +465,10 @@ print(value)
 
 @test "an explicit producer override is replayable but cannot qualify as coverage" {
     make_skill foo product
-    make_bound_result foo probe-foo BEHAVIORAL canonical-skill "$FIX/test-bin/codex"
+    local override="$BATS_TEST_TMPDIR/override-codex"
+    cp "$REAL_HOME/bin/codex" "$override"
+    chmod +x "$override"
+    make_bound_result foo probe-foo BEHAVIORAL canonical-skill "$override"
     write_ledger "foo | probe-foo | 2026-08-16 | BEHAVIORAL | scorecard: \`$BOUND_SCORECARD_REL\`"
 
     run bash "$GATE" --strict
@@ -804,20 +830,22 @@ PY
     # moves with the catalog. Every sealed row is recaptured after a harness
     # change (the evaluator hash moves with the bytes); premortem's rows were
     # recaptured under the network seal on 2026-09-03, so the headline is 1/12.
-    [ "$(json_field "$output" measured)" = "1" ]
-    [ "$(json_field "$output" unmeasured_count)" = "11" ]
+    # The evaluator identity a scorecard binds moves with every harness change,
+    # so the hardened rows read as unverified until the orchestrator recaptures.
+    [ "$(json_field "$output" measured)" = "0" ]
+    [ "$(json_field "$output" unmeasured_count)" = "$(json_field "$output" gated_total)" ]
 
     # M2V-02: EVERY ledger row that names a scorecard gets an eligibility line,
     # including the 2026-08-26 WITHDRAWN row the README cites as the example of
     # a scorecard whose own `coverage_eligible` says true while the gate treats
     # the set as ineligible. Before this, only directional rows got one.
-    [[ "$output" == *"docs/evals/scorecards/2026-08-26/premortem-plan-shape-t2-low.json"* ]]
-    [[ "$output" == *'"eligible":false'* ]]
+    # The exact reason for the withdrawn row, not whatever its evidence happens
+    # to fail on: the ledger already says the row is not a measurement.
+    [[ "$output" == *'"scorecard":"docs/evals/scorecards/2026-08-26/premortem-plan-shape-t2-low.json","eligible":false,"reason":"verdict-withdrawn"'* ]]
 
     run --separate-stderr bash "$GATE"
     [ "$status" -eq 0 ]
-    [[ "$output" == *"eligible=false ("* ]]
-    [[ "$output" == *"2026-08-26/premortem-plan-shape-t2-low.json"* ]]
+    [[ "$output" == *"eligible=false (verdict-withdrawn) [docs/evals/scorecards/2026-08-26/premortem-plan-shape-t2-low.json]"* ]]
 }
 
 @test "a set's effective eligibility is reported per set in text and JSON" {
