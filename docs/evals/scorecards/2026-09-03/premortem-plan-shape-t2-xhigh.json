@@ -3,7 +3,7 @@
   "probe": "premortem-plan-shape-t2",
   "skill": "premortem",
   "mode": "live",
-  "generated_at": "2026-09-03T22:36:50Z",
+  "generated_at": "2026-09-03T23:38:11Z",
   "reps": 2,
   "producer": {
     "adapter": "codex",
@@ -19,19 +19,19 @@
     "threads": [
       {
         "path": "control-1.txt",
-        "thread_id": "01a06967-a9a7-7611-a218-3c33194c5c10"
+        "thread_id": "01a0699f-15e0-7e41-89a4-1f566bda16fa"
       },
       {
         "path": "treatment-1.txt",
-        "thread_id": "01a06968-d074-7ed1-95f5-2f708eba22b4"
+        "thread_id": "01a0699f-73ec-7cd3-8ad3-0f2818473118"
       },
       {
         "path": "control-2.txt",
-        "thread_id": "01a0696a-3bc1-7360-952b-e201b7d74b14"
+        "thread_id": "01a069a2-4dc2-7461-b70c-f0a9a1e35873"
       },
       {
         "path": "treatment-2.txt",
-        "thread_id": "01a06969-749e-7ab1-a61e-317ca49b0a8d"
+        "thread_id": "01a069a0-8443-7363-bc91-b9e0a4142e67"
       }
     ]
   },
@@ -40,9 +40,9 @@
     "effort": "xhigh"
   },
   "fixture_set": {
-    "name": "fixtures-xhigh-2026-09-03-final",
+    "name": "fixtures-xhigh-2026-09-03-sealed-r6",
     "metadata": "fixture-set.json",
-    "binding_sha256": "sha256:3c7b72bcc658abaaaf9c101a3f048f003485957fd1e4457b51b3f983ced50e52",
+    "binding_sha256": "sha256:db712c11acbc8e2c3ea1deab462dcb8e4adaa822c636bc55d8d606c059e90cc2",
     "schema": "agentops-skill-probe-fixture-set.v3"
   },
   "treatment_source": "canonical-skill",
@@ -76,10 +76,10 @@
       "/Users/bo/.gemini/skills",
       "/Users/bo/.codex/skills",
       "/Users/bo/dev/agentops/skills",
-      "/private/var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T/probe-run.Af74RV/dispatch"
+      "/private/var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T/probe-run.NjNjLI/dispatch"
     ],
     "denied_read_data_roots": [
-      "/private/var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T/probe-run.Af74RV/dispatch"
+      "/private/var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T/probe-run.NjNjLI/dispatch"
     ],
     "denied_read_roots": [
       "/var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T",
@@ -104,35 +104,19 @@
       "/dev/dtracehelper",
       "/dev/tty"
     ],
-    "dispatch_root": "/private/var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T/probe-run.Af74RV/dispatch",
+    "dispatch_root": "/private/var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T/probe-run.NjNjLI/dispatch",
     "env_allowlist": [
       "ALL_PROXY",
-      "CODEX_EXEC_BIN",
-      "CODEX_EXEC_DIR",
-      "CODEX_EXEC_EXPECT_OUTPUT",
-      "CODEX_EXEC_MODEL",
-      "CODEX_EXEC_OUT_FILE",
-      "CODEX_EXEC_PROMPT_FILE",
-      "CODEX_EXEC_SANDBOX",
-      "CODEX_EXEC_SKIP_GIT_CHECK",
-      "CODEX_EXEC_STDERR_FILE",
-      "CODEX_EXEC_TIMEOUT",
       "CODEX_HOME",
       "HOME",
       "HTTPS_PROXY",
       "HTTP_PROXY",
-      "LANG",
       "NO_PROXY",
-      "OLDPWD",
       "PATH",
       "PROBE_SEAL",
       "PROBE_SEAL_PROFILE_FILE",
       "PWD",
-      "REVIEWER",
-      "REVIEWER_MARKER",
       "SHLVL",
-      "SKILL_PROBES_DIR",
-      "SKILL_PROBE_SKILLS_DIR",
       "TERM",
       "TMPDIR",
       "_"
@@ -156,50 +140,54 @@
       "ports": [
         443
       ],
-      "proxy": "127.0.0.1:50832",
+      "proxy": "127.0.0.1:54422",
       "unix_sockets": []
     },
     "platform": "Darwin",
-    "profile": "(version 1)\n(allow default)\n(deny network*)\n(allow network-outbound (remote ip \"localhost:50832\"))\n(deny file-write*)\n(allow file-write*\n  (subpath \"/private/var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T/probe-run.Af74RV/home\")\n  (subpath \"/private/var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T/probe-run.Af74RV/ws\")\n  (subpath \"/private/var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T/probe-run.Af74RV/tmp\")\n  (literal \"/dev/null\")\n  (literal \"/dev/zero\")\n  (literal \"/dev/dtracehelper\")\n  (literal \"/dev/tty\")\n)\n(deny file-read*\n  (subpath \"/var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T\")\n  (subpath \"/private/var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T\")\n  (subpath \"/private/tmp\")\n  (subpath \"/tmp\")\n  (subpath \"/private/var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/C\")\n  (subpath \"/Users/bo\")\n  (subpath \"/Users/bo/.codex\")\n  (subpath \"/Users/bo/dev/agentops-wt/measure-int\")\n  (subpath \"/Users/bo/dev/agentops-wt/measure-int/skills\")\n  (subpath \"/Users/bo/dev/agentops\")\n  (subpath \"/Users/bo/.agents\")\n  (subpath \"/Users/bo/.claude/skills\")\n  (subpath \"/Users/bo/.gemini/skills\")\n  (subpath \"/Users/bo/.codex/skills\")\n  (subpath \"/Users/bo/dev/agentops/skills\")\n)\n(allow file-read-metadata\n  (path-ancestors \"/private/var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T/probe-run.Af74RV/ws\")\n  (path-ancestors \"/Users/bo/.local/bin/codex\")\n  (path-ancestors \"/Users/bo/dev/dotfiles/bin/codex\")\n)\n(allow file-read*\n  (subpath \"/private/var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T/probe-run.Af74RV/home\")\n  (subpath \"/private/var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T/probe-run.Af74RV/ws\")\n  (subpath \"/private/var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T/probe-run.Af74RV/tmp\")\n  (literal \"/Users/bo/.local/bin/codex\")\n  (literal \"/Users/bo/dev/dotfiles/bin/codex\")\n)\n(allow file-read-metadata\n  (subpath \"/private/var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T/probe-run.Af74RV/dispatch\")\n)\n(deny file-write*\n  (subpath \"/private/var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T/probe-run.Af74RV/dispatch\")\n)\n(deny file-link\n  (subpath \"/var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T\")\n  (subpath \"/private/var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T\")\n  (subpath \"/private/tmp\")\n  (subpath \"/tmp\")\n  (subpath \"/private/var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/C\")\n  (subpath \"/Users/bo\")\n  (subpath \"/Users/bo/.codex\")\n  (subpath \"/Users/bo/dev/agentops-wt/measure-int\")\n  (subpath \"/Users/bo/dev/agentops-wt/measure-int/skills\")\n  (subpath \"/Users/bo/dev/agentops\")\n  (subpath \"/Users/bo/.agents\")\n  (subpath \"/Users/bo/.claude/skills\")\n  (subpath \"/Users/bo/.gemini/skills\")\n  (subpath \"/Users/bo/.codex/skills\")\n  (subpath \"/Users/bo/dev/agentops/skills\")\n  (subpath \"/private/var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T/probe-run.Af74RV/dispatch\")\n)\n(deny file-clone\n  (subpath \"/var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T\")\n  (subpath \"/private/var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T\")\n  (subpath \"/private/tmp\")\n  (subpath \"/tmp\")\n  (subpath \"/private/var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/C\")\n  (subpath \"/Users/bo\")\n  (subpath \"/Users/bo/.codex\")\n  (subpath \"/Users/bo/dev/agentops-wt/measure-int\")\n  (subpath \"/Users/bo/dev/agentops-wt/measure-int/skills\")\n  (subpath \"/Users/bo/dev/agentops\")\n  (subpath \"/Users/bo/.agents\")\n  (subpath \"/Users/bo/.claude/skills\")\n  (subpath \"/Users/bo/.gemini/skills\")\n  (subpath \"/Users/bo/.codex/skills\")\n  (subpath \"/Users/bo/dev/agentops/skills\")\n  (subpath \"/private/var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T/probe-run.Af74RV/dispatch\")\n)",
-    "profile_file": "/private/var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T/probe-run.Af74RV/home/seal.sb",
-    "profile_sha256": "sha256:175f1814c2c641935e8b99e4e755e0e810f00d9f668f5963e3fc5604173fa75b",
+    "profile": "(version 1)\n(allow default)\n(deny network*)\n(allow network-outbound (remote ip \"localhost:54422\"))\n(deny file-write*)\n(allow file-write*\n  (subpath \"/private/var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T/probe-run.NjNjLI/home\")\n  (subpath \"/private/var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T/probe-run.NjNjLI/ws\")\n  (subpath \"/private/var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T/probe-run.NjNjLI/tmp\")\n  (literal \"/dev/null\")\n  (literal \"/dev/zero\")\n  (literal \"/dev/dtracehelper\")\n  (literal \"/dev/tty\")\n)\n(deny file-read*\n  (subpath \"/var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T\")\n  (subpath \"/private/var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T\")\n  (subpath \"/private/tmp\")\n  (subpath \"/tmp\")\n  (subpath \"/private/var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/C\")\n  (subpath \"/Users/bo\")\n  (subpath \"/Users/bo/.codex\")\n  (subpath \"/Users/bo/dev/agentops-wt/measure-int\")\n  (subpath \"/Users/bo/dev/agentops-wt/measure-int/skills\")\n  (subpath \"/Users/bo/dev/agentops\")\n  (subpath \"/Users/bo/.agents\")\n  (subpath \"/Users/bo/.claude/skills\")\n  (subpath \"/Users/bo/.gemini/skills\")\n  (subpath \"/Users/bo/.codex/skills\")\n  (subpath \"/Users/bo/dev/agentops/skills\")\n)\n(allow file-read-metadata\n  (path-ancestors \"/private/var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T/probe-run.NjNjLI/ws\")\n  (path-ancestors \"/Users/bo/.local/bin/codex\")\n  (path-ancestors \"/Users/bo/dev/dotfiles/bin/codex\")\n)\n(allow file-read*\n  (subpath \"/private/var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T/probe-run.NjNjLI/home\")\n  (subpath \"/private/var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T/probe-run.NjNjLI/ws\")\n  (subpath \"/private/var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T/probe-run.NjNjLI/tmp\")\n  (literal \"/Users/bo/.local/bin/codex\")\n  (literal \"/Users/bo/dev/dotfiles/bin/codex\")\n)\n(allow file-read-metadata\n  (subpath \"/private/var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T/probe-run.NjNjLI/dispatch\")\n)\n(deny file-write*\n  (subpath \"/private/var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T/probe-run.NjNjLI/dispatch\")\n)\n(deny file-link\n  (subpath \"/var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T\")\n  (subpath \"/private/var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T\")\n  (subpath \"/private/tmp\")\n  (subpath \"/tmp\")\n  (subpath \"/private/var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/C\")\n  (subpath \"/Users/bo\")\n  (subpath \"/Users/bo/.codex\")\n  (subpath \"/Users/bo/dev/agentops-wt/measure-int\")\n  (subpath \"/Users/bo/dev/agentops-wt/measure-int/skills\")\n  (subpath \"/Users/bo/dev/agentops\")\n  (subpath \"/Users/bo/.agents\")\n  (subpath \"/Users/bo/.claude/skills\")\n  (subpath \"/Users/bo/.gemini/skills\")\n  (subpath \"/Users/bo/.codex/skills\")\n  (subpath \"/Users/bo/dev/agentops/skills\")\n  (subpath \"/private/var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T/probe-run.NjNjLI/dispatch\")\n)\n(deny file-clone\n  (subpath \"/var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T\")\n  (subpath \"/private/var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T\")\n  (subpath \"/private/tmp\")\n  (subpath \"/tmp\")\n  (subpath \"/private/var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/C\")\n  (subpath \"/Users/bo\")\n  (subpath \"/Users/bo/.codex\")\n  (subpath \"/Users/bo/dev/agentops-wt/measure-int\")\n  (subpath \"/Users/bo/dev/agentops-wt/measure-int/skills\")\n  (subpath \"/Users/bo/dev/agentops\")\n  (subpath \"/Users/bo/.agents\")\n  (subpath \"/Users/bo/.claude/skills\")\n  (subpath \"/Users/bo/.gemini/skills\")\n  (subpath \"/Users/bo/.codex/skills\")\n  (subpath \"/Users/bo/dev/agentops/skills\")\n  (subpath \"/private/var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T/probe-run.NjNjLI/dispatch\")\n)",
+    "profile_file": "/private/var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T/probe-run.NjNjLI/home/seal.sb",
+    "profile_sha256": "sha256:72b7c3d6dc2153532e0d8f569f50d70d1d2a9e0e7abf16a8808f4e6b15b18484",
     "real_codex_home": "/Users/bo/.codex",
     "real_home": "/Users/bo",
     "real_tmpdir": "/private/var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T",
     "rep_env": {
-      "CODEX_HOME": "/private/var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T/probe-run.Af74RV/home/.codex",
-      "HOME": "/private/var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T/probe-run.Af74RV/home",
-      "TMPDIR": "/private/var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T/probe-run.Af74RV/tmp"
+      "CODEX_HOME": "/private/var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T/probe-run.NjNjLI/home/.codex",
+      "HOME": "/private/var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T/probe-run.NjNjLI/home",
+      "TMPDIR": "/private/var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T/probe-run.NjNjLI/tmp"
     },
-    "run_root": "/private/var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T/probe-run.Af74RV",
+    "run_root": "/private/var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T/probe-run.NjNjLI",
     "sandbox_exec": "/usr/bin/sandbox-exec",
     "schema": "agentops-skill-probe-seal.v1",
     "seal_mode": "seatbelt",
     "timeout_bin": "/opt/homebrew/bin/timeout",
-    "workspace_root": "/private/var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T/probe-run.Af74RV/ws",
+    "timeout_seconds": 240,
+    "workspace_root": "/private/var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T/probe-run.NjNjLI/ws",
     "wrap": [
       "/usr/bin/sandbox-exec",
       "-p",
-      "sha256:175f1814c2c641935e8b99e4e755e0e810f00d9f668f5963e3fc5604173fa75b"
+      "sha256:72b7c3d6dc2153532e0d8f569f50d70d1d2a9e0e7abf16a8808f4e6b15b18484",
+      "/opt/homebrew/bin/timeout",
+      "--foreground",
+      "240"
     ],
     "writable_roots": [
-      "/private/var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T/probe-run.Af74RV/home",
-      "/private/var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T/probe-run.Af74RV/ws",
-      "/private/var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T/probe-run.Af74RV/tmp"
+      "/private/var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T/probe-run.NjNjLI/home",
+      "/private/var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T/probe-run.NjNjLI/ws",
+      "/private/var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T/probe-run.NjNjLI/tmp"
     ]
   },
   "evaluator": {
     "dispatch_helper": {
       "path": "scripts/lib/codex-exec.sh",
-      "sha256": "sha256:b5fad0e83dcffac40f576008b44891145ac66751ca852f5df9b7db3b918e0287"
+      "sha256": "sha256:6b8e4c6ea36526139db00264a137e204d34f872966009fe1cf874fa0b8020566"
     },
     "harness": {
       "path": "scripts/probe-skill.sh",
-      "sha256": "sha256:cb87823da1fa38018114da1bade63e3f6c82673109de39ea822cae1d5be85c3c"
+      "sha256": "sha256:6ac4bce69daae1f813b435ebdce835b0ad22423ba75e902216aa4dd5fd203698"
     },
     "metadata_helper": {
       "path": "scripts/lib/probe-fixture-metadata.py",
-      "sha256": "sha256:752a85747a3a4327c41b073f4a077b11190c96ee21445be21f1966b28f18a2d7"
+      "sha256": "sha256:4e3db4e4d6d166d05356118c1df29768d01d7359cf6102662930b7f4a2ff8941"
     },
     "network_proxy": {
       "path": "scripts/lib/probe-connect-proxy.py",
@@ -213,15 +201,15 @@
   "capture_evaluator": {
     "dispatch_helper": {
       "path": "scripts/lib/codex-exec.sh",
-      "sha256": "sha256:b5fad0e83dcffac40f576008b44891145ac66751ca852f5df9b7db3b918e0287"
+      "sha256": "sha256:6b8e4c6ea36526139db00264a137e204d34f872966009fe1cf874fa0b8020566"
     },
     "harness": {
       "path": "scripts/probe-skill.sh",
-      "sha256": "sha256:cb87823da1fa38018114da1bade63e3f6c82673109de39ea822cae1d5be85c3c"
+      "sha256": "sha256:6ac4bce69daae1f813b435ebdce835b0ad22423ba75e902216aa4dd5fd203698"
     },
     "metadata_helper": {
       "path": "scripts/lib/probe-fixture-metadata.py",
-      "sha256": "sha256:752a85747a3a4327c41b073f4a077b11190c96ee21445be21f1966b28f18a2d7"
+      "sha256": "sha256:4e3db4e4d6d166d05356118c1df29768d01d7359cf6102662930b7f4a2ff8941"
     },
     "network_proxy": {
       "path": "scripts/lib/probe-connect-proxy.py",
@@ -262,21 +250,21 @@
     "transcript_format": "codex-exec-jsonl.v1"
   },
   "control": {
-    "present": 1,
+    "present": 0,
     "usable": 2,
-    "rate": 0.5
+    "rate": 0.0
   },
   "treatment": {
-    "present": 1,
+    "present": 0,
     "usable": 2,
-    "rate": 0.5
+    "rate": 0.0
   },
   "verdict": "INERT",
   "per_rep": [
     {
       "rep": 1,
-      "control": "PRESENT",
-      "treatment": "PRESENT"
+      "control": "ABSENT",
+      "treatment": "ABSENT"
     },
     {
       "rep": 2,

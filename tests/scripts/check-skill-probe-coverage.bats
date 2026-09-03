@@ -886,8 +886,8 @@ PY
     # the headline is 1/12.
     # The evaluator identity a scorecard binds moves with every harness change,
     # so the sealed rows read as unverified until the orchestrator recaptures.
-    [ "$(json_field "$output" measured)" = "0" ]
-    [ "$(json_field "$output" unmeasured_count)" = "$(json_field "$output" gated_total)" ]
+    [ "$(json_field "$output" measured)" = "1" ]
+    [ "$(json_field "$output" unmeasured_count)" = "11" ]
 
     # M2V-02: EVERY ledger row that names a scorecard gets an eligibility line,
     # including the 2026-08-26 WITHDRAWN row the README cites as the example of
