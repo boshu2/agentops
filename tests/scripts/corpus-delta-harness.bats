@@ -185,14 +185,31 @@ CSTUB_EOF
   jq -e '.context_on.aggregate_score == 1' "$TMP/cx.json" >/dev/null
 }
 
-@test "default runner with non-codex --agent fails fast before any seed (ag-jqpy1)" {
-  run "$HARNESS" --task demo --agent claude --seeds 1
+@test "missing CORPUS_DELTA_RUNNER fails fast before any seed (no built-in runner)" {
+  # the former default runner (eval-agent-harness.sh over evals/workbench) was
+  # removed; a run with no runner must refuse before any arm is built
+  run env -u CORPUS_DELTA_RUNNER "$HARNESS" --task demo --seeds 1 --corpus "$CORPUS"
   [ "$status" -eq 2 ]
-  [[ "$output" == *"default runner supports codex only"* ]]
+  [[ "$output" == *"CORPUS_DELTA_RUNNER is required"* ]]
+  [[ "$output" != *"[corpus-delta] arm="* ]]
 }
 
-@test "custom CORPUS_DELTA_RUNNER is exempt from the codex-only fail-fast (ag-jqpy1)" {
-  # a custom runner owns its agent contract; --agent claude must NOT trip the guard
+@test "non-executable CORPUS_DELTA_RUNNER fails fast before any seed" {
+  run env CORPUS_DELTA_RUNNER="$TMP/does-not-exist.sh" "$HARNESS" --task demo --seeds 1 --corpus "$CORPUS"
+  [ "$status" -eq 2 ]
+  [[ "$output" == *"is not an executable file"* ]]
+}
+
+@test "custom CORPUS_DELTA_RUNNER owns its agent contract: any --agent is accepted" {
   run env CORPUS_DELTA_RUNNER=/bin/true "$HARNESS" --task demo --agent claude --seeds 1 --corpus "$CORPUS"
-  [[ "$output" != *"default runner supports codex only"* ]]
+  [[ "$output" != *"CORPUS_DELTA_RUNNER is required"* ]]
+}
+
+@test "CORPUS_DELTA_EVIDENCE_KIND labels the scorecard and rejects unknown kinds (ag-t8n)" {
+  run env CORPUS_DELTA_RUNNER="$STUB" CORPUS_DELTA_EVIDENCE_KIND=live_agent "$HARNESS" --task demo --seeds 1 --corpus "$CORPUS" --out "$TMP/ek.json"
+  [ "$status" -eq 0 ]
+  jq -e '.evidence_kind == "live_agent"' "$TMP/ek.json" >/dev/null
+  run env CORPUS_DELTA_RUNNER="$STUB" CORPUS_DELTA_EVIDENCE_KIND=bogus "$HARNESS" --task demo --seeds 1 --corpus "$CORPUS"
+  [ "$status" -eq 2 ]
+  [[ "$output" == *"CORPUS_DELTA_EVIDENCE_KIND must be"* ]]
 }

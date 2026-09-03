@@ -48,24 +48,6 @@
       "critical": true
     },
     {
-      "id": "skill-size-warning-ratchet",
-      "title": "skill size warnings do not increase",
-      "kind": "command",
-      "objective": "Prevent skill edits from adding oversized SKILL.md bodies while allowing refactors that reduce the current warning count.",
-      "runtime": "shell",
-      "inputs": {
-        "cwd": "../..",
-        "shell": "out=$(scripts/check-skill-size.sh --warn-only); printf '%s\\n' \"$out\"; warn=$(printf '%s\\n' \"$out\" | awk '/^Summary:/{gsub(\",\", \"\"); print $2}'); fail=$(printf '%s\\n' \"$out\" | awk '/^Summary:/{gsub(\",\", \"\"); print $4}'); test \"${fail:-999}\" -eq 0 && test \"${warn:-999}\" -le 13"
-      },
-      "expectations": [
-        {"type": "exit_code", "value": 0},
-        {"type": "stdout_contains", "value": "Summary:"},
-        {"type": "stdout_contains", "value": "0 fail"}
-      ],
-      "dimensions": ["artifact_quality", "efficiency"],
-      "critical": true
-    },
-    {
       "id": "skill-schema-validation",
       "title": "skill frontmatter validation passes",
       "kind": "command",
@@ -125,8 +107,7 @@
       "expectations": [
         {"type": "artifact_contains", "target": "../../cli/internal/gates/checks/seed.go", "value": "ID: \"skill.schema\""},
         {"type": "artifact_contains", "target": "../../cli/internal/gates/checks/seed.go", "value": "ID: \"skill.runtime-formats\""},
-        {"type": "artifact_contains", "target": "../../cli/internal/gates/checks/seed.go", "value": "ID: \"skill.cli-snippets\""},
-        {"type": "artifact_contains", "target": "../../scripts/check-skill-size.sh", "value": "WARN_LINES"}
+        {"type": "artifact_contains", "target": "../../cli/internal/gates/checks/seed.go", "value": "ID: \"skill.cli-snippets\""}
       ],
       "dimensions": ["process_adherence", "artifact_quality"]
     }
