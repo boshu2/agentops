@@ -172,6 +172,9 @@ the profile because seatbelt does not nest. The record (`seal.json`) is bound
 into `agentops-skill-probe-capture.v3` and `verify-scorecard` re-checks the
 denied roots.
 
+*(That is the first pass, kept here because it is what the two 2026-09-03 v3
+sets ran under. The second pass below replaced most of it the same day.)*
+
 ### Two leaks the seal exposed, both trapped now
 - **Shared workspace.** The first sealed xhigh run had every rep's prompt file
   in one workspace; the control-2 rep ran `rg --files`, found
@@ -187,6 +190,36 @@ denied roots.
   home). The `skill-read-contamination` rule degrades it; that is
   over-conservative for codex's own file and kept deliberately.
 
+### Second pass: what two fresh judges found in the first seal
+Two fresh contexts read the first-pass seal the same day. Same-family returned
+PASS with four findings; cross-family returned FAIL with seven. Every one was
+confirmed against the tree, and this is what changed.
+
+| Finding | What was wrong | What the seal does now |
+|---|---|---|
+| temp hierarchy | the whole temp root was readable AND writable, and ~425 stale `probe-seal.*` / `probe-ws.*` directories from earlier runs were still there, some holding prompt files whose bytes equal the current treatment prompt | one `probe-run.XXXXXX` per capture with `home/ ws/ tmp/ dispatch/`, removed whole by an EXIT trap; the real temp root, `/tmp` and `/private/tmp` are read-denied and no longer writable |
+| symlink targets | the deny list named the four skill roots but not what they resolve to: the main checkout, the git common dir, sibling worktrees, the real `~/.codex` (its sessions carry canonical text, its config names other checkouts) | the real HOME and the git common directory's parent are denied, and each skill root's entry for the skill under test is denied at its resolved path |
+| laundering | the dispatch dir was writable and only `file-read-data` denied, so a rep could rename, hard-link or clone a denied file into its readable workspace | `file-link` and `file-clone` denied on the dispatch dir and every denied read root; the dispatch dir is write-denied and metadata-only |
+| contract | the bound seal block carried mode, roots, digest and home only, so a hand-written record claiming `seatbelt` on Linux with no mechanism counted as coverage | the block binds platform, mechanism, `sandbox_exec`, wrap, the data and link denies, `rep_env`, the run/workspace/dispatch roots, `git_common_root`, `real_tmpdir`, `config_sanitized` and `auth_copied`, and coverage checks every one |
+| Darwin test | the only real-seatbelt test called `sandbox-exec` again inside the already-sealed process, which seatbelt does not nest, so it proved nothing about the outer seal | the fake producer performs the reads itself inside the seal and reports rc per probe: cat, ls, mv, hard link, clone, symlink-then-cat, write, metadata stat |
+| eligibility label | a scorecard's immutable `coverage_eligible: true` was the first thing a reader met, while the gate treated the set as ineligible | `check-skill-probe-coverage` prints `set <skill>/<probe>: eligible=true|false (<reason>)` per set, in text and under `sets` in `--json` |
+| stale docs | the README and a harness comment still put the dispatch files inside the read-denied checkout | both say the run directory, and the sibling trap knows the current directory names |
+| MCP servers | the scratch CODEX_HOME symlinked the operator's real `config.toml`, so every rep started the operator's MCP servers (vault search, node repl, computer use) and could query them, and inherited `[projects]` trust entries naming other checkouts | the config is rebuilt per rep from top-level scalar keys only, every table dropped, and the kept keys are recorded in the seal |
+| auth | `auth.json` was symlinked into a home the seal denies | it is copied into the scratch CODEX_HOME |
+
+Prove a profile change by hand before trusting a test:
+
+```bash
+run=$(ls -d "$TMPDIR"/probe-run.* | head -1)
+sandbox-exec -f "$run/home/seal.sb" /bin/sh -c "cd $run/ws && cat /path/to/skills/x/SKILL.md"
+```
+
+Denied reads must fail; `cd` into `ws` and a write there must succeed. A denied
+ancestor breaks `getcwd`, which is why the profile allows
+`file-read-metadata` on `(path-ancestors "<run>/ws")`.
+
 ### premortem-plan-shape-t2, sealed, gpt-5.6-luna
 low: control 0/2, treatment 1/1 usable, BEHAVIORAL. xhigh: 0/2 vs 0/2, INERT.
 Headroom SEPARATED at both. Scorecards under `docs/evals/scorecards/2026-09-03/`.
+Both sets ran under the FIRST-pass seal, so they are replayable but not tier
+coverage until they are recaptured under the hardened one.

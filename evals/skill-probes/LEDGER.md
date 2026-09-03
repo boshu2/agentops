@@ -106,3 +106,17 @@ measured**. Two contamination paths were caught on the way and are trapped:
 reading a sibling rep's prompt from a shared workspace, and reading any
 `SKILL.md` (including codex's bundled system skill). N=2 per arm is directional
 evidence of response-shape change, never quality uplift.
+
+**2026-09-03 second pass.** Two fresh judges read that seal and found nine
+defects in it, from a readable temp hierarchy holding 425 stale probe
+directories to a scratch CODEX_HOME that symlinked the operator's real config
+and so started the operator's MCP servers inside every rep. The seal was
+rebuilt (one removed-on-exit run directory, the real HOME and temp root
+read-denied, link and clone denied, a sanitized per-rep config) and the bound
+seal block gained the keys that make those claims checkable. The two rows above
+ran under the FIRST-pass seal, so the coverage gate no longer counts them:
+until they are recaptured under the hardened seal, they are replayable evidence
+labeled `seal-block-superseded`, and the honest headline is back to **0/12
+measured**. The gate prints each set's effective eligibility on every run, so a
+reader never has to take a scorecard's own `coverage_eligible` field for the
+answer. Details: `RUNBOOK.md`, "Second pass".

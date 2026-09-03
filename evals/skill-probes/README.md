@@ -101,41 +101,89 @@ contamination was control-arm reps reading `skills/<skill>/SKILL.md` off the
 checkout, so both arms held the same bytes. The prevention is a filesystem
 seal around dispatch, and a counted row has to prove it ran under one. Before
 `snapshot`, the harness writes its `agentops-skill-probe-seal.v1` record
-(`seal.json`: `seal_mode` `seatbelt` or `none`, the `sandbox-exec` profile text
-and `profile_sha256`, `denied_read_roots`, `writable_roots`, the scratch
-`rep_env`, and the operator's `real_home`) into the capture stage, or hands it
-to `snapshot --seal-file`; the snapshot reduces it to the contract block `seal:
-{mode, denied_read_roots, writable_roots, profile_sha256, original_home,
-repository_root}` (`original_home` = the record's `real_home`,
-`repository_root` = the resolved parent of the skills dir). The sidecar may stay
+(`seal.json`) into the capture stage, or hands it to `snapshot --seal-file`;
+the snapshot reduces it to the contract `seal` block. The sidecar may stay
 beside the contract, where create/verify re-derive it against the bound block
 and refuse a swapped record; a stage with no record is bound as mode `none`.
 `coverage_eligible` is true only for a native, fully specified producer under a
-`seatbelt` seal. `verify-scorecard` treats the contract block as authoritative,
-cross-checks a scorecard's verbatim `seal` copy against it when present (null in
-replay), and requires the denied roots to cover `repository_root` and
-`.agents`, `.claude/skills`, `.gemini/skills`, and `.codex/skills` under
-`original_home` (literal or realpath, since the kernel seals the resolved
-path), naming any root the seal omitted. Pre-seal v2 contracts (the 2026-08-26
-sets) load as `legacy-unsealed`: replayable, never coverage.
+`seatbelt` seal. Pre-seal v2 contracts (the 2026-08-26 sets) load as
+`legacy-unsealed`: replayable, never coverage.
 
-**One workspace per rep; the sibling-read trap.** Every live rep gets its own
-fresh, empty `mktemp -d` directory as its working directory (under the seal's
-writable workspace root; the directory name never says which arm it is), and
-the prompt reaches the rep on stdin only. The harness keeps its own per-rep
-files — the materialized prompt, the raw Codex JSONL, stderr — in a hidden
-dispatch directory beside the capture stage inside the read-denied checkout,
-never in any workspace. The transcript's probe-input event records the
-`workspace` the rep ran in. This closes the 2026-09-03 leak: with one shared
-workspace, an xhigh control rep ran `rg --files`, saw `treatment-1.prompt`,
-read it, and held the canonical SKILL.md bytes without ever naming SKILL.md.
-Scoring also carries a second floor beside the SKILL.md trap: a successful
-command whose command string names a `*.prompt` file, `capture-contract`,
-`seal.json`, `fixture-set.json`, a rep's raw `.codex.jsonl`/`.codex.stderr`,
-or the hidden `.capture.`/`.dispatch.` stage, or whose captured output lists a
-sibling rep's file by name, degrades that rep as `sibling-prompt-read`. Replay
-and `verify-scorecard` recompute this, so the 2026-09-03 sets reclassify under
-it without any fixture edit.
+The bound block is `{mode, platform, mechanism, sandbox_exec, wrap,
+denied_read_roots, denied_read_data_roots, denied_link_roots, writable_roots,
+allowed_read_paths, rep_env, run_root, workspace_root, dispatch_root,
+git_common_root, real_tmpdir, config_sanitized, auth_copied, profile_sha256,
+original_home, repository_root}` (`original_home` = the record's `real_home`,
+`repository_root` = the resolved parent of the skills dir). `verify-scorecard`
+treats it as authoritative, cross-checks a scorecard's verbatim `seal` copy
+against it when present (null in replay), and requires all of: `platform`
+Darwin, `mechanism` `sandbox-exec` with a resolved path, `wrap` equal to
+`["sandbox-exec", "-p", profile_sha256]`, a sanitized config and a copied
+auth.json, denied reads covering `repository_root`, `git_common_root`,
+`original_home` and `real_tmpdir` (literal or realpath, since the kernel seals
+the resolved path), the dispatch directory denied for read-data, link and
+write, a workspace under the writable roots, a rep `HOME`/`CODEX_HOME`/`TMPDIR`
+inside them and outside the operator home, and no re-allowed read inside the
+checkout. Any root or step the seal omits is named on output.
+
+**v3's seal block gained required keys on 2026-09-03 (second pass).** The
+first shape bound only `{mode, denied_read_roots, writable_roots,
+profile_sha256, original_home, repository_root}`, which a hand-written record
+claiming `seatbelt` on Linux with no mechanism satisfied. Contracts in that
+shape still load and still replay; they are never tier coverage, and they say
+so with `seal-block-superseded`. The contract name stays
+`agentops-skill-probe-capture.v3` because the only v3 sets are the two
+committed on 2026-09-03 on this unmerged branch, and both are recaptured under
+the hardened seal before merge.
+
+**The rep's producer config is sanitized.** The operator's `config.toml`
+carries `[mcp_servers.*]` tables (a rep would otherwise start those servers and
+be able to query them, reaching the operator's own vaults and tools) and
+`[projects.*]` trust entries naming other checkouts. Each rep gets a config
+built from the top-level scalar keys only, every table dropped, and the seal
+records which keys were kept in `config_sanitized`. `auth.json` is COPIED, not
+symlinked: the real home is read-denied, so a symlink into it cannot resolve.
+
+**One run directory; the workspace is reset, not relocated.** A live capture
+creates one `$TMPDIR/probe-run.XXXXXX` (mode 0700) holding `home/` (the scratch
+HOME, with `home/.codex` as CODEX_HOME), `ws/` (the rep's cwd), `tmp/` (the
+rep's TMPDIR) and `dispatch/` (the harness's own per-rep files: the
+materialized prompt, the raw Codex JSONL, stderr). One EXIT trap removes the
+whole directory, so a run leaves no probe material behind for a later run to
+read. `dispatch/` sits OUTSIDE the checkout because node aborts at startup when
+its stdio files sit under a `file-read*` denied tree (it stats them); it is
+denied read-data, listing, writes, link and clone, and allowed metadata only.
+Before each rep the harness empties `ws/` and `tmp/` and rebuilds `home/.codex`
+(codex writes its session rollout there, and a rollout holds the prompt bytes
+of the rep that wrote it), then refuses the rep if `ws/` is not empty. The
+paths are the same every rep so the profile is constant and the contract binds
+one profile digest; the transcript's probe-input event records the `workspace`
+and `workspace_reset`, and a sealed capture refuses a transcript that omits
+either or that ran outside the seal's writable roots.
+
+**The sibling-read trap.** The prompt reaches the rep on stdin only; nothing a
+rep can list from its cwd carries it. This closes the 2026-09-03 leak: with one
+shared workspace, an xhigh control rep ran `rg --files`, saw
+`treatment-1.prompt`, read it, and held the canonical SKILL.md bytes without
+ever naming SKILL.md. Scoring carries a second floor beside the SKILL.md trap:
+a successful command whose command string names a `*.prompt` file,
+`capture-contract`, `seal.json`, `fixture-set.json`, a rep's raw
+`.codex.jsonl`/`.codex.stderr`, the hidden `.capture.`/`.dispatch.` stage, a
+`probe-dispatch.`/`probe-ws.`/`probe-seal.` directory, or a run directory's
+`dispatch/` or `home/`, or whose captured output lists a sibling rep's file by
+name, degrades that rep as `sibling-prompt-read`. A rep naming its OWN `ws/` or
+`tmp/` is ordinary work and is not a hit. Replay and `verify-scorecard`
+recompute this, so the 2026-09-03 sets reclassify under it without any fixture
+edit.
+
+**Effective eligibility is reported per set.** A scorecard carries its
+capture's own `coverage_eligible` claim, and that field is immutable history:
+`docs/evals/scorecards/2026-08-26/premortem-plan-shape-t2-low.json` says `true`
+while the gate treats the set as `legacy-unsealed`. `check-skill-probe-coverage`
+therefore prints `set <skill>/<probe>: eligible=true|false (<reason>)` for
+every set the ledger points at, and carries the same rows under `sets` in
+`--json`. The gate's value is the effective one; the scorecard field is what
+the capture believed.
 
 Replay makes the bound classification replayable; it does not make model
 generation deterministic or reproducible.
