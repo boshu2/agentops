@@ -4,7 +4,7 @@
   "checks": [
     {
       "id": "demo-black-box",
-      "command": "tmp=$(mktemp -d /tmp/ao-demo.XXXXXX); (cd cli && go build -o \"$tmp/ao\" ./cmd/ao); \"$tmp/ao\" demo --help >\"$tmp/help\"; grep -Fq 'Show the one-pass AgentOps evidence loop' \"$tmp/help\"; grep -Fq 'RPI -> Plan -> Implement -> fresh Validate' \"$tmp/help\"; grep -Fq 'quick' \"$tmp/help\"; grep -Fq 'concepts' \"$tmp/help\"; \"$tmp/ao\" demo >\"$tmp/default\"; grep -Fq 'AGENTOPS ONE-PASS DEMO' \"$tmp/default\"; \"$tmp/ao\" demo --quick >\"$tmp/quick\"; grep -Fq 'AGENTOPS ONE-PASS DEMO' \"$tmp/quick\"; grep -Fq 'subject-manifest.v1' \"$tmp/quick\"; \"$tmp/ao\" demo --concepts >\"$tmp/concepts\"; grep -Fq 'AGENTOPS PRODUCT BOUNDARY' \"$tmp/concepts\"; grep -Fq 'does not own retries' \"$tmp/concepts\""
+      "command": "tmp=$(mktemp -d /tmp/ao-demo.XXXXXX); (cd cli && go build -o \"$tmp/ao\" ./cmd/ao); \"$tmp/ao\" demo --help >\"$tmp/help\"; grep -Fq 'Show the one-pass AgentOps evidence loop' \"$tmp/help\"; grep -Fq 'RPI -> Plan -> Implement -> fresh Validate' \"$tmp/help\"; grep -Fq 'quick' \"$tmp/help\"; grep -Fq 'concepts' \"$tmp/help\"; \"$tmp/ao\" demo >\"$tmp/default\"; grep -Fq 'AGENTOPS RPI DEMO' \"$tmp/default\"; \"$tmp/ao\" demo --quick >\"$tmp/quick\"; grep -Fq 'AGENTOPS RPI DEMO' \"$tmp/quick\"; grep -Fq 'subject-manifest.v1' \"$tmp/quick\"; \"$tmp/ao\" demo --concepts >\"$tmp/concepts\"; grep -Fq 'AGENTOPS PRODUCT BOUNDARY' \"$tmp/concepts\"; grep -Fq 'does not own retries' \"$tmp/concepts\""
     },
     {
       "id": "demo-go-behavior",

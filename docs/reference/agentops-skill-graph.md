@@ -18,6 +18,7 @@ graph LR
   converter["converter"]
   council["council"]
   craft_goal["craft-goal"]
+  crank["crank"]
   dcg["dcg"]
   doc["doc"]
   domain["domain"]
@@ -60,6 +61,7 @@ graph LR
   using_gc["using-gc"]
   validate["validate"]
   workflow_builder["workflow-builder"]
+  crank --> rpi
   rpi --> anti_ceremony
   rpi --> implement
   rpi --> plan

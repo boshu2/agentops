@@ -16,7 +16,7 @@ handoffs — and the product boundary is deliberately small. The standard
 traversal through the graph is:
 
 ```text
-RPI -> Plan -> Implement -> fresh Validate -> report and stop
+RPI -> Plan -> Implement -> fresh Validate -> repair to convergence -> report
 ```
 
 ## Proven floor
@@ -53,7 +53,7 @@ Four load-bearing skills define the core:
 
 | Skill | Responsibility |
 |---|---|
-| `rpi` | dispatch Plan, Implement, and Validate once; report and stop |
+| `rpi` | dispatch Plan and Implement once, Validate freshly, repair to convergence under the caller's bound; report |
 | `plan` | shape acceptance, evidence, and write scope |
 | `implement` | run one bounded experiment and produce a candidate |
 | `validate` | independently judge exact content; persist only for a declared consumer |

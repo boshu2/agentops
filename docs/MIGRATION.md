@@ -3,8 +3,11 @@
 AgentOps now owns one small product boundary:
 
 ```text
-RPI -> Plan -> Implement -> fresh Validate -> report and stop
+RPI -> Plan -> Implement -> fresh Validate -> repair to convergence -> report
 ```
+
+(The 3.0 through 3.6 releases stopped after one validation; ADR-0017 added the
+bounded repair phase.)
 
 The caller owns whether to revise, run another invocation, schedule work, use a
 tracker, manage Git, or deliver the result. Deterministic repository checks stay

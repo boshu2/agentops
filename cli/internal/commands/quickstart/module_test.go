@@ -35,7 +35,7 @@ func TestModule_CommandAttributes(t *testing.T) {
 	if command.GroupID != "start" {
 		t.Errorf("GroupID = %q, want start", command.GroupID)
 	}
-	if command.Short != "Show the single-pass AgentOps workflow" {
+	if command.Short != "Show the AgentOps RPI workflow" {
 		t.Errorf("Short = %q", command.Short)
 	}
 }
@@ -46,7 +46,7 @@ func TestCommand_RunPrintsWorkflow(t *testing.T) {
 	command.SetOut(&out)
 	command.Run(command, nil)
 	for _, want := range []string{
-		"RPI -> Plan -> Implement -> fresh Validate -> report and stop",
+		"RPI -> Plan -> Implement -> fresh Validate -> repair to convergence -> report",
 		"Deterministic checks: ao gate check",
 		"Semantic judgment: invoke the Validate skill from a fresh context",
 		"Artifact persistence: optional",

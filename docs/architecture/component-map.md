@@ -19,7 +19,7 @@ work-and-proof protocol between the nodes; it absorbs none of their state.
 
 The standard traversal across these nodes is the
 [RPI traversal](rpi-traversal.md): Plan -> Implement -> fresh Validate ->
-report and stop. Vocabulary is fixed in
+bounded repair to convergence -> report. Vocabulary is fixed in
 [the ubiquitous language](../contracts/ubiquitous-language.md).
 
 ## Responsibilities

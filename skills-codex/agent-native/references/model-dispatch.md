@@ -4,8 +4,12 @@ Caller-elected multi-model judgment from the session you are already in.
 No mailbox, no queue, no Agent Mail path for judgment. The working session
 is the orchestrator: it starts workers, observes them, and collects artifacts.
 
-This recipe is optional. Absent adapters, consumers stay single-model and
-disclose that fact. Multi-model dispatch never starts unless the caller asks.
+This recipe is optional off risky surfaces. Absent adapters, consumers stay
+single-model and disclose that fact. Multi-model dispatch never starts unless
+the caller asks, with one carve-out (ADR-0017): `validate` runs a cross-family
+leg by default when the diff touches a risky surface (gates, tests, validators,
+hook policies, workflows); absent an authorized adapter that is
+`diversity_unsatisfied`, and a single-family PASS there is `NOT_PROVEN`.
 
 ## Request shape
 
@@ -63,4 +67,4 @@ notes.
 
 - `council` — per-judge model identity beside methodology; cross-model agreement is an extra diversity axis.
 - `idea-genie` (duel) — per-perspective model identity; optional distinct-model pins.
-- `validate` — optional cross-model fresh validator; author and validator model identities in evidence/attestation.
+- `validate` — cross-model fresh validator, default on risky surfaces (ADR-0017), caller-elected otherwise; author and validator model identities in evidence/attestation.

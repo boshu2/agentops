@@ -53,7 +53,7 @@ func (Module) Command() *cobra.Command {
 		Short: "Show one RPI traversal",
 		Long: `Show the AgentOps product boundary:
 
-  RPI -> Plan -> Implement -> fresh Validate -> report and stop
+  RPI -> Plan -> Implement -> fresh Validate -> repair to convergence -> report
 
 The repository keeps its own Git, CI, tracker, release, and delivery policy.`,
 		GroupID: "start",
@@ -64,7 +64,7 @@ The repository keeps its own Git, CI, tracker, release, and delivery policy.`,
 			return quickDemo(cmd.OutOrStdout())
 		},
 	}
-	command.Flags().BoolVar(&quick, "quick", false, "show the compact one-pass example")
+	command.Flags().BoolVar(&quick, "quick", false, "show the compact RPI example")
 	command.Flags().BoolVar(&concepts, "concepts", false, "explain the product boundary")
 	return command
 }
@@ -82,14 +82,15 @@ or delivery. Learn and multi-agent strategies are optional callers.`)
 }
 
 func quickDemo(w io.Writer) error {
-	fmt.Fprintln(w, `AGENTOPS ONE-PASS DEMO
+	fmt.Fprintln(w, `AGENTOPS RPI DEMO
 
 1. Plan refines one active behavior and write scope in the existing intent source.
 2. Implement runs one bounded RED -> GREEN -> refactor experiment.
 3. The runtime derives changed paths, check receipts, and subject-manifest.v1.
-4. A distinct fresh context validates the exact intent and subject once.
+4. A distinct fresh context validates the exact intent and subject.
 5. Validate returns one fresh validation result; verdict.v2 persistence is optional.
-6. RPI reports PASS, FAIL, NOT_PROVEN, NOT_PLANNED, or NOT_BUILT and stops.
+6. FAIL or NOT_PROVEN with findings repairs and re-validates under the convergence law
+   within the caller's repair_rounds; RPI reports PASS, FAIL, NOT_PROVEN, NOT_PLANNED, or NOT_BUILT.
 
 No Git repository or ao binary is required for this semantic traversal.`)
 	return nil

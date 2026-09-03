@@ -10,7 +10,7 @@ the exact change and returns `PASS`, `FAIL`, or `NOT_PROVEN`. The standard
 path is one RPI traversal:
 
 ```text
-RPI -> Plan -> Implement -> fresh Validate -> report and stop
+RPI -> Plan -> Implement -> fresh Validate -> repair to convergence -> report
 ```
 
 ## Quickstart

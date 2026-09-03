@@ -54,8 +54,13 @@ FORBIDDEN_SCHEMA_STATE = {
     "retry", "retries", "budget", "queue", "claim", "lease", "admission",
     "next_action", "next-action", "closure", "release", "delivery",
 }
+# ADR-0017 (loop as control flow, not knowledge): `crank` is restored as a thin
+# wave skill — one caller-selected wave per invocation, forwarding the caller's
+# repair bound to RPI. The `ao crank` ROOT COMMAND stays removed and is still
+# tombstoned in REMOVED_COMMANDS below; `converge` stays removed as a skill
+# because its criterion now lives inside RPI's convergence law.
 REMOVED_SKILLS = {
-    "discovery", "behavior-first-planning", "goal-design", "crank", "converge",
+    "discovery", "behavior-first-planning", "goal-design", "converge",
     "evolve", "gc-membrane", "pawl-review", "push", "release", "pr-prep",
     "beads-br", "beads-bv",
 }
@@ -984,10 +989,15 @@ def check_skill_graph() -> None:
         for name in CORE
     }
     assert actual == expected, f"core dependency graph mismatch: {actual}"
+    # ADR-0017: crank is the one non-core skill with a hard dependency, on rpi
+    # alone; the skill mesh generator carries the same allowance.
+    allowed_extra = {"crank": {"rpi"}}
     for name, entry in entries.items():
         deps = set((entry.get("metadata") or {}).get("dependencies") or [])
         if name != "rpi":
-            assert not deps, f"{name}: only rpi may declare hard dependencies: {sorted(deps)}"
+            assert deps == allowed_extra.get(name, set()), (
+                f"{name}: only rpi (and crank on rpi, ADR-0017) may declare hard dependencies: {sorted(deps)}"
+            )
     for name in REMOVED_SKILLS:
         assert not (ROOT / "skills" / name / "SKILL.md").exists(), f"removed skill is live: {name}"
         assert not (ROOT / "skills-codex" / name / "SKILL.md").exists(), f"removed Codex skill is live: {name}"
@@ -1063,17 +1073,139 @@ def check_packet_free_narrative() -> None:
     )
 
 
-def check_single_pass_contract() -> None:
-    text = (ROOT / "skills" / "rpi" / "SKILL.md").read_text(encoding="utf-8")
-    assert "Stop regardless" in text
-    runner = ROOT / "skills" / "rpi" / "scripts" / "run_once.py"
-    assert runner.is_file(), "RPI has no executable single-pass reference behavior"
-    tree = ast.parse(runner.read_text(encoding="utf-8"), filename=str(runner))
-    assert not any(isinstance(node, (ast.For, ast.While)) for node in ast.walk(tree)), (
-        "RPI reference behavior must not contain a dispatch loop"
+def check_bounded_repair_contract() -> None:
+    """RPI stops under the convergence law, not after exactly one validation.
+
+    ADR-0017 narrows the 2026-07-14 cut: it removed the iterate loop along with
+    the unproven compounding claim, although ADR-0011 demoted only the latter.
+    The blanket "Stop regardless" assertion and the ban on any loop in
+    `run_once.py` are replaced here by positive canaries — the law's four
+    conditions must be present BY NAME, so a bounded repair phase is allowed
+    while an unbounded grind still fails this gate.
+    """
+    raw = (ROOT / "skills" / "rpi" / "SKILL.md").read_text(encoding="utf-8")
+    # Whitespace-normalized so a canary phrase may wrap across source lines.
+    text = " ".join(raw.split())
+    assert "Stop regardless" not in text, (
+        "RPI still asserts the retired single-pass stop; ADR-0017 replaced it with the law"
     )
+    for phrase in (
+        "stop when converged, stopped by the law, or out of `repair_rounds`",
+        "## The convergence law",
+        "rounds_used < repair_rounds",
+        "larger than the previous round",
+        "No finding id closed in an earlier round reopens.",
+        "the subject-manifest digest changed",
+        "repair round N: k open findings",
+    ):
+        assert phrase in text, f"RPI contract is missing a convergence-law canary: {phrase}"
+    # Plan and Implement keep their single-dispatch lock; only Validate repeats.
+    assert "dispatches Plan and Implement at most once" in text
+    assert "never extends the caller's" in text, "RPI does not disclaim the caller's repair bound"
+
+    runner = ROOT / "skills" / "rpi" / "scripts" / "run_once.py"
+    assert runner.is_file(), "RPI has no executable reference behavior"
+    source = runner.read_text(encoding="utf-8")
+    tree = ast.parse(source, filename=str(runner))
+    functions = {
+        node.name for node in ast.walk(tree) if isinstance(node, ast.FunctionDef)
+    }
+    # The bounded loop is now allowed, and required: it must live in the repair
+    # phase, be fed already-produced validate rounds, and consult the law.
+    assert {"run_repair_phase", "law_violation", "normalize_round"} <= functions, (
+        "RPI reference behavior has no bounded repair phase implementing the law"
+    )
+    repair = next(
+        node
+        for node in ast.walk(tree)
+        if isinstance(node, ast.FunctionDef) and node.name == "run_repair_phase"
+    )
+    loops = [node for node in ast.walk(repair) if isinstance(node, (ast.For, ast.While))]
+    assert loops, "the repair phase must actually iterate the validation rounds"
+    # Bounded, not merely looping: the caller's bound must gate the loop. The
+    # repair function must compare against `repair_rounds` (condition 1) and
+    # every loop must be a `for` over the supplied rounds, never `while True`.
+    compares_bound = any(
+        isinstance(node, ast.Compare)
+        and any(isinstance(n, ast.Name) and n.id == "repair_rounds" for n in ast.walk(node))
+        for node in ast.walk(repair)
+    )
+    assert compares_bound, "the repair phase never compares against the caller's repair_rounds bound"
+    assert all(isinstance(node, ast.For) for node in loops), (
+        "the repair phase may only iterate the supplied rounds; an open-ended while loop is an unbounded grind"
+    )
+    # Finite by construction: every loop iterates the `validations` parameter
+    # (directly or via enumerate), never a synthetic range or a constant.
+    def iterates_validations(node: ast.For) -> bool:
+        target = node.iter
+        if isinstance(target, ast.Call) and target.args:
+            target = target.args[0]
+        return isinstance(target, ast.Name) and target.id == "validations"
+    assert all(iterates_validations(node) for node in loops), (
+        "every repair-phase loop must iterate the supplied validation rounds; nothing else is finite by construction"
+    )
+    # Execute the law's canaries against the reference behavior itself: budget,
+    # growth, reopen, no-change, and the flip-to-PASS case must all STOP.
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("rpi_run_once_canary", runner)
+    module = importlib.util.module_from_spec(spec)
+    assert spec.loader is not None
+    spec.loader.exec_module(module)
+    dg = lambda ch: ch * 64  # noqa: E731
+    def leg(status, ids, digest, evidence=()):
+        return {
+            "status": status,
+            "findings": [{"id": i, "summary": i} for i in ids],
+            "subject_digest": digest,
+            "evidence_refs": list(evidence),
+            "validator_family": "fresh",
+        }
+    canaries = {
+        "repair_budget_exhausted": ([leg("FAIL", ["a"], dg("a")), leg("FAIL", ["a"], dg("b")), leg("FAIL", ["a"], dg("c"))], 1),
+        "finding_set_grew": ([leg("FAIL", ["a"], dg("a")), leg("FAIL", ["a", "b"], dg("b"))], 2),
+        "reopened_finding": ([leg("FAIL", ["a", "b"], dg("a")), leg("FAIL", ["b"], dg("b")), leg("FAIL", ["a"], dg("c"))], 3),
+        "no_subject_or_evidence_change": ([leg("FAIL", ["a"], dg("a")), leg("PASS", [], dg("a"))], 2),
+        "converged": ([leg("FAIL", ["a"], dg("a")), leg("PASS", [], dg("b"))], 2),
+    }
+    for expected, (rounds, bound) in canaries.items():
+        outcome = module.run_repair_phase(rounds, repair_rounds=bound)
+        assert outcome["stop_reason"] == expected, (
+            f"law canary {expected}: reference behavior stopped with {outcome['stop_reason']!r}"
+        )
+    flip = module.run_repair_phase(canaries["no_subject_or_evidence_change"][0], repair_rounds=2)
+    assert flip["report"]["status"] == "NOT_PROVEN", "a PASS over unchanged bytes after a FAIL must not certify"
+    # The bound must CONTROL admission, not merely be mentioned: a poison round
+    # past repair_rounds is never normalized (it would raise), and rounds_used
+    # never exceeds the bound.
+    poison = module.run_repair_phase(
+        [leg("FAIL", ["a"], dg("a")), leg("FAIL", ["a"], dg("b")), {"status": "poison-not-a-round"}],
+        repair_rounds=1,
+    )
+    assert poison["stop_reason"] == "repair_budget_exhausted" and poison["rounds_used"] == 1, (
+        "the repair phase consumed a round past the caller's bound"
+    )
+    assert canaries and module.run_repair_phase([leg("FAIL", ["a"], dg("a"))], repair_rounds=0)["stop_reason"] == "repair_budget_exhausted"
+    assert not any(
+        isinstance(node, (ast.For, ast.While))
+        for name in ("invoke_once",)
+        for func in [n for n in ast.walk(tree) if isinstance(n, ast.FunctionDef) and n.name == name]
+        for node in ast.walk(func)
+    ), "the one bounded experiment must not loop; only the repair phase may"
+    for reason in (
+        "repair_budget_exhausted",
+        "reopened_finding",
+        "finding_set_grew",
+        "no_subject_or_evidence_change",
+        "diversity_unsatisfied",
+        "converged",
+    ):
+        assert f'"{reason}"' in source, f"repair phase never reports the stop reason {reason}"
+
     report = json.loads((ROOT / "schemas" / "rpi-report.v1.schema.json").read_text())
     assert "next_action" not in property_names(report)
+    # The law rides in the report's `checked` lines; it must not smuggle a
+    # tenth key into rpi-report.v1.
+    assert len(property_names(report)) == 9, "rpi-report.v1 is no longer the nine-key shape"
 
 
 def check_validate_helper() -> None:
@@ -1344,7 +1476,7 @@ def main() -> int:
         check_generated_skill_inventory,
         check_core_schemas,
         check_packet_free_narrative,
-        check_single_pass_contract,
+        check_bounded_repair_contract,
         check_validate_helper,
         check_tombstones,
         check_operations_layer_identity,

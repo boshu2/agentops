@@ -30,7 +30,7 @@ ao demo [flags]
 ```
       --concepts   explain the product boundary
   -h, --help       help for demo
-      --quick      show the compact one-pass example
+      --quick      show the compact RPI example
 ```
 
 ---

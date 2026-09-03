@@ -17,8 +17,8 @@ bounded_contexts:
 
   - id: BC3
     name: Experiment
-    product_layer: "One-pass RPI"
-    responsibility: "Shape one behavior, run one bounded experiment, report one verdict, and stop."
+    product_layer: "Bounded-repair RPI"
+    responsibility: "Shape one behavior, run one bounded experiment, repair to convergence under the caller's bound, report one verdict."
     center_of_gravity: [rpi, plan, implement]
     ports: [PlanPort, ImplementPort, ValidatePort]
 

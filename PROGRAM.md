@@ -1,6 +1,6 @@
 # Program
 
-This repository self-hosts the same single-pass boundary it ships. PROGRAM is
+This repository self-hosts the same bounded-repair RPI boundary it ships (ADR-0017). PROGRAM is
 repository execution guidance, not a product retry or delivery controller.
 
 ## Experiment unit
@@ -11,10 +11,12 @@ One invocation consumes and produces:
 2. one bounded RED -> GREEN -> refactor implementation experiment;
 3. one runtime-derived subject manifest and factual check receipts with
    complete or honestly incomplete changed-path proof;
-4. one fresh author-distinct Validate judgment over exact content;
+4. one fresh author-distinct Validate judgment over exact content, repeated
+   only inside the bounded repair phase under the convergence law;
 5. one durable verdict and report.
 
-The invocation stops after the report. A later revision is a caller-created new
+The invocation stops when converged, stopped by the law, or out of the caller's
+repair rounds. A later revision is a caller-created new
 invocation. Repository Git and release procedures remain separate.
 
 ## Mutable scope

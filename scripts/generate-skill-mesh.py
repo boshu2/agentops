@@ -77,9 +77,16 @@ def validate_graph(entries: list[dict[str, Any]]) -> None:
     expected = {"rpi": {"anti-ceremony", "plan", "implement", "validate"}, "plan": set(), "implement": set(), "validate": set()}
     if core != expected:
         raise ValueError(f"core dependency graph mismatch: {core!r}")
-    extra = {entry["name"]: entry["dependencies"] for entry in entries if entry["name"] != "rpi" and entry["dependencies"]}
+    # ADR-0017: crank is the one non-core skill with a hard dependency, on rpi
+    # alone (it executes a wave by invoking RPI per lane). Nothing else may.
+    allowed_extra = {"crank": ["rpi"]}
+    extra = {
+        entry["name"]: entry["dependencies"]
+        for entry in entries
+        if entry["name"] != "rpi" and entry["dependencies"] and allowed_extra.get(entry["name"]) != list(entry["dependencies"])
+    }
     if extra:
-        raise ValueError(f"only rpi may declare hard dependencies: {extra!r}")
+        raise ValueError(f"only rpi (and crank on rpi, ADR-0017) may declare hard dependencies: {extra!r}")
 
 
 def catalog(entries: list[dict[str, Any]]) -> dict[str, Any]:

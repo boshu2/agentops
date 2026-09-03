@@ -1,6 +1,6 @@
 {
   "agents": "./agents",
-  "description": "AgentOps 56-skill metadata-derived bundle for Google Antigravity and Gemini.",
+  "description": "AgentOps 57-skill metadata-derived bundle for Google Antigravity and Gemini.",
   "hooks": "./hooks/hooks.json",
   "mcpServers": {
     "agent-mail": {

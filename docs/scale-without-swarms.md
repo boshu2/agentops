@@ -3,13 +3,14 @@
 AgentOps deliberately keeps its core experiment small:
 
 ```text
-RPI -> Plan -> Implement -> fresh Validate -> report and stop
+RPI -> Plan -> Implement -> fresh Validate -> repair to convergence -> report
 ```
 
 Plan names one active behavior and its write scope. Implement performs one
 bounded experiment. Validate independently judges the exact content described
-by the candidate manifest. RPI dispatches each phase once and reports the
-result without deciding what happens next.
+by the candidate manifest. RPI dispatches Plan and Implement once, repairs and
+re-validates under the convergence law within the caller's bound, and reports
+the result without deciding what happens next.
 
 Fresh context is valuable because the author cannot turn its own claim into the
 binding semantic verdict. More agents are not automatically better. One fresh

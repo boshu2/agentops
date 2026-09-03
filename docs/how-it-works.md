@@ -1,9 +1,9 @@
 # How it works
 
-RPI is a thin one-pass coordinator.
+RPI is a thin coordinator with one bounded repair loop (ADR-0017).
 
 ```text
-Plan once -> Implement once -> Validate once -> Report -> Stop
+Plan once -> Implement once -> fresh Validate -> repair under the convergence law -> Report
 ```
 
 Plan turns intent into testable acceptance and a bounded write scope. Implement

@@ -125,8 +125,12 @@ identity, acceptance, write scope, changed paths, check receipts, and author
 context id — never the implementer's narrative. Any dead stage degrades the
 result to `NOT_PROVEN` with an `error` naming the stage.
 
-Doctrine: one pass, no retry loop, no revision path, no lifecycle ownership —
-the authoring context structurally cannot issue its own binding PASS.
+Doctrine (ADR-0017): Plan and Implement once; Validate freshly; on FAIL or
+NOT_PROVEN with findings a bounded repair phase repairs and re-validates under
+the convergence law within the caller's `repairRounds` (default 2), and stops
+when converged, stopped by the law, or out of rounds. No revision path beyond
+that, no lifecycle ownership, and the authoring context structurally cannot
+issue its own binding PASS.
 
 Cross-vendor validation: with `validator: { kind: 'command', command: '<judge>' }`
 the spawned fresh Validate context becomes a broker for an external judge — it

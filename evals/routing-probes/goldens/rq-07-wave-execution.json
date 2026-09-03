@@ -1,0 +1,16 @@
+{
+  "$schema": "../../../schemas/pack-quality-expectations.v1.schema.json",
+  "schema_version": 1,
+  "id": "rq-07-wave-execution",
+  "retrieval_surface": "ao-skills-find",
+  "task": "A caller holds an accepted multi-wave plan and wants the next wave run now, with each lane's result reported back rather than a judgment on the whole plan.",
+  "query": "execute the next wave of this plan and report per-lane evidence",
+  "top_k": 3,
+  "expected_selected_ids": ["crank"],
+  "critical_omitted_ids": ["validate"],
+  "forbidden_leaks": ["^(rpi|implement|swarm)$"],
+  "min_provenance_density": 1.0,
+  "max_tokens": 90,
+  "rationale": "crank is the only skill that executes one caller-selected wave lane by lane and returns wave evidence; the request names the wave and the evidence, which is crank's contract verbatim. validate must stay out of the pack: the caller asked for execution, and a wave's semantic results belong to each lane's own fresh validator, never to a wave-level judge. rpi, implement, and swarm are the plausible misroutes — rpi is one lane's traversal, implement is one experiment inside a lane, and swarm dispatches packets with no wave acceptance or evidence contract — so they are pinned out of rank 1 rather than out of the pack.",
+  "notes": "Authored 2026-09-03 with the restored thin crank (docs/plans/2026-09-03-loop-restore.md, lane L-B). Observed pack at authoring: crank, codex-exec, plan at 64 tokens; the 90-token ceiling leaves headroom for one longer neighbour entering ranks 2-3."
+}

@@ -5,7 +5,7 @@ is the optional checks/linking CLI of the AgentOps operations layer; the
 semantic protocol lives in the skills:
 
 ```text
-RPI → Plan → Implement → fresh Validate → report and stop
+RPI → Plan → Implement → fresh Validate → repair to convergence → report
 ```
 
 The CLI does not own retries, queues, work claims, Git delivery, release,
