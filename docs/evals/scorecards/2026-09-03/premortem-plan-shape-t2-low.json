@@ -1,0 +1,275 @@
+{
+  "schema": "agentops-skill-probe.v3",
+  "probe": "premortem-plan-shape-t2",
+  "skill": "premortem",
+  "mode": "live",
+  "generated_at": "2026-09-03T21:28:58Z",
+  "reps": 2,
+  "producer": {
+    "adapter": "codex",
+    "effort": "low",
+    "identity": {
+      "coverage_eligible": true,
+      "executable_sha256": "sha256:047bd39709cef43bb6d1125b19135d25d0a968b37147802bd1e4b6174ad779c2",
+      "override": false,
+      "source": "native-codex-path",
+      "version": "codex-cli 0.145.0"
+    },
+    "model": "gpt-5.6-luna",
+    "threads": [
+      {
+        "path": "control-1.txt",
+        "thread_id": "01a0692c-0b96-7bb0-8566-3be2859caa63"
+      },
+      {
+        "path": "treatment-1.txt",
+        "thread_id": "01a0692c-3f10-74b0-98ec-b57abfbdbe90"
+      },
+      {
+        "path": "control-2.txt",
+        "thread_id": "01a0692c-9050-7450-a2e3-b7eed6e050cc"
+      },
+      {
+        "path": "treatment-2.txt",
+        "thread_id": "01a0692c-6920-7bf1-8439-6af752aff35c"
+      }
+    ]
+  },
+  "requested_producer": {
+    "model": "gpt-5.6-luna",
+    "effort": "low"
+  },
+  "fixture_set": {
+    "name": "fixtures-low-2026-09-03-network-sealed",
+    "metadata": "fixture-set.json",
+    "binding_sha256": "sha256:78d0cbb08bb743b47fd258e8b5c135829f50fff13f860a5fdbedc17e8ffab091",
+    "schema": "agentops-skill-probe-fixture-set.v3"
+  },
+  "treatment_source": "canonical-skill",
+  "seal": {
+    "allowed_read_paths": [
+      "/Users/bo/.local/bin/codex",
+      "/Users/bo/dev/dotfiles/bin/codex"
+    ],
+    "auth_copied": true,
+    "cache_root": "/private/var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/C",
+    "config_sanitized": [
+      "model_reasoning_effort",
+      "web_search"
+    ],
+    "config_sha256": "sha256:ac3fd71d26e891bcf37bfc5e5727d340dd68b0de2fd50afac6aaaa68a33aa338",
+    "config_text": "# Generated for one sealed skill-probe capture. Not the operator's config.\n# Only the keys this harness needs are present: the model comes from the\n# --model flag, and web search is off so the rep has no second egress path.\nmodel_reasoning_effort = \"low\"\nweb_search = \"disabled\"\n",
+    "coverage_eligible": true,
+    "denied_link_roots": [
+      "/var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T",
+      "/private/var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T",
+      "/private/tmp",
+      "/tmp",
+      "/private/var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/C",
+      "/Users/bo",
+      "/Users/bo/.codex",
+      "/Users/bo/dev/agentops-wt/measure-int",
+      "/Users/bo/dev/agentops-wt/measure-int/skills",
+      "/Users/bo/dev/agentops",
+      "/Users/bo/.agents",
+      "/Users/bo/.claude/skills",
+      "/Users/bo/.gemini/skills",
+      "/Users/bo/.codex/skills",
+      "/Users/bo/dev/agentops/skills",
+      "/private/var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T/probe-run.DEOBoM/dispatch"
+    ],
+    "denied_read_data_roots": [
+      "/private/var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T/probe-run.DEOBoM/dispatch"
+    ],
+    "denied_read_roots": [
+      "/var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T",
+      "/private/var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T",
+      "/private/tmp",
+      "/tmp",
+      "/private/var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/C",
+      "/Users/bo",
+      "/Users/bo/.codex",
+      "/Users/bo/dev/agentops-wt/measure-int",
+      "/Users/bo/dev/agentops-wt/measure-int/skills",
+      "/Users/bo/dev/agentops",
+      "/Users/bo/.agents",
+      "/Users/bo/.claude/skills",
+      "/Users/bo/.gemini/skills",
+      "/Users/bo/.codex/skills",
+      "/Users/bo/dev/agentops/skills"
+    ],
+    "dev_write_paths": [
+      "/dev/null",
+      "/dev/zero",
+      "/dev/dtracehelper",
+      "/dev/tty"
+    ],
+    "dispatch_root": "/private/var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T/probe-run.DEOBoM/dispatch",
+    "env_allowlist": [
+      "ALL_PROXY",
+      "CODEX_EXEC_BIN",
+      "CODEX_EXEC_DIR",
+      "CODEX_EXEC_EXPECT_OUTPUT",
+      "CODEX_EXEC_MODEL",
+      "CODEX_EXEC_OUT_FILE",
+      "CODEX_EXEC_PROMPT_FILE",
+      "CODEX_EXEC_SANDBOX",
+      "CODEX_EXEC_SKIP_GIT_CHECK",
+      "CODEX_EXEC_STDERR_FILE",
+      "CODEX_EXEC_TIMEOUT",
+      "CODEX_HOME",
+      "HOME",
+      "HTTPS_PROXY",
+      "HTTP_PROXY",
+      "LANG",
+      "NO_PROXY",
+      "OLDPWD",
+      "PATH",
+      "PROBE_SEAL",
+      "PROBE_SEAL_PROFILE_FILE",
+      "PWD",
+      "REVIEWER",
+      "REVIEWER_MARKER",
+      "SHLVL",
+      "SKILL_PROBES_DIR",
+      "SKILL_PROBE_SKILLS_DIR",
+      "TERM",
+      "TMPDIR",
+      "_"
+    ],
+    "git_common_root": "/Users/bo/dev/agentops",
+    "launcher_chain": [
+      "/Users/bo/.local/bin/codex",
+      "/Users/bo/dev/dotfiles/bin/codex"
+    ],
+    "launcher_sha256": "sha256:047bd39709cef43bb6d1125b19135d25d0a968b37147802bd1e4b6174ad779c2",
+    "mechanism": "sandbox-exec",
+    "network": {
+      "hosts": [
+        ".oaiusercontent.com",
+        "ab.chatgpt.com",
+        "api.openai.com",
+        "auth.openai.com",
+        "chatgpt.com"
+      ],
+      "mode": "proxy-allowlist",
+      "proxy": "127.0.0.1:62818",
+      "unix_sockets": []
+    },
+    "platform": "Darwin",
+    "profile": "(version 1)\n(allow default)\n(deny network*)\n(allow network-outbound (remote ip \"localhost:62818\"))\n(deny file-write*)\n(allow file-write*\n  (subpath \"/private/var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T/probe-run.DEOBoM/home\")\n  (subpath \"/private/var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T/probe-run.DEOBoM/ws\")\n  (subpath \"/private/var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T/probe-run.DEOBoM/tmp\")\n  (literal \"/dev/null\")\n  (literal \"/dev/zero\")\n  (literal \"/dev/dtracehelper\")\n  (literal \"/dev/tty\")\n)\n(deny file-read*\n  (subpath \"/var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T\")\n  (subpath \"/private/var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T\")\n  (subpath \"/private/tmp\")\n  (subpath \"/tmp\")\n  (subpath \"/private/var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/C\")\n  (subpath \"/Users/bo\")\n  (subpath \"/Users/bo/.codex\")\n  (subpath \"/Users/bo/dev/agentops-wt/measure-int\")\n  (subpath \"/Users/bo/dev/agentops-wt/measure-int/skills\")\n  (subpath \"/Users/bo/dev/agentops\")\n  (subpath \"/Users/bo/.agents\")\n  (subpath \"/Users/bo/.claude/skills\")\n  (subpath \"/Users/bo/.gemini/skills\")\n  (subpath \"/Users/bo/.codex/skills\")\n  (subpath \"/Users/bo/dev/agentops/skills\")\n)\n(allow file-read-metadata\n  (path-ancestors \"/private/var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T/probe-run.DEOBoM/ws\")\n  (path-ancestors \"/Users/bo/.local/bin/codex\")\n  (path-ancestors \"/Users/bo/dev/dotfiles/bin/codex\")\n)\n(allow file-read*\n  (subpath \"/private/var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T/probe-run.DEOBoM/home\")\n  (subpath \"/private/var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T/probe-run.DEOBoM/ws\")\n  (subpath \"/private/var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T/probe-run.DEOBoM/tmp\")\n  (literal \"/Users/bo/.local/bin/codex\")\n  (literal \"/Users/bo/dev/dotfiles/bin/codex\")\n)\n(allow file-read-metadata\n  (subpath \"/private/var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T/probe-run.DEOBoM/dispatch\")\n)\n(deny file-write*\n  (subpath \"/private/var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T/probe-run.DEOBoM/dispatch\")\n)\n(deny file-link\n  (subpath \"/var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T\")\n  (subpath \"/private/var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T\")\n  (subpath \"/private/tmp\")\n  (subpath \"/tmp\")\n  (subpath \"/private/var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/C\")\n  (subpath \"/Users/bo\")\n  (subpath \"/Users/bo/.codex\")\n  (subpath \"/Users/bo/dev/agentops-wt/measure-int\")\n  (subpath \"/Users/bo/dev/agentops-wt/measure-int/skills\")\n  (subpath \"/Users/bo/dev/agentops\")\n  (subpath \"/Users/bo/.agents\")\n  (subpath \"/Users/bo/.claude/skills\")\n  (subpath \"/Users/bo/.gemini/skills\")\n  (subpath \"/Users/bo/.codex/skills\")\n  (subpath \"/Users/bo/dev/agentops/skills\")\n  (subpath \"/private/var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T/probe-run.DEOBoM/dispatch\")\n)\n(deny file-clone\n  (subpath \"/var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T\")\n  (subpath \"/private/var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T\")\n  (subpath \"/private/tmp\")\n  (subpath \"/tmp\")\n  (subpath \"/private/var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/C\")\n  (subpath \"/Users/bo\")\n  (subpath \"/Users/bo/.codex\")\n  (subpath \"/Users/bo/dev/agentops-wt/measure-int\")\n  (subpath \"/Users/bo/dev/agentops-wt/measure-int/skills\")\n  (subpath \"/Users/bo/dev/agentops\")\n  (subpath \"/Users/bo/.agents\")\n  (subpath \"/Users/bo/.claude/skills\")\n  (subpath \"/Users/bo/.gemini/skills\")\n  (subpath \"/Users/bo/.codex/skills\")\n  (subpath \"/Users/bo/dev/agentops/skills\")\n  (subpath \"/private/var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T/probe-run.DEOBoM/dispatch\")\n)",
+    "profile_file": "/private/var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T/probe-run.DEOBoM/home/seal.sb",
+    "profile_sha256": "sha256:7b2cadaa334070d082bf8d9832b004e7d67586ac27a29fac27b4c028cab4a6e7",
+    "real_codex_home": "/Users/bo/.codex",
+    "real_home": "/Users/bo",
+    "real_tmpdir": "/private/var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T",
+    "rep_env": {
+      "CODEX_HOME": "/private/var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T/probe-run.DEOBoM/home/.codex",
+      "HOME": "/private/var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T/probe-run.DEOBoM/home",
+      "TMPDIR": "/private/var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T/probe-run.DEOBoM/tmp"
+    },
+    "run_root": "/private/var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T/probe-run.DEOBoM",
+    "sandbox_exec": "/usr/bin/sandbox-exec",
+    "schema": "agentops-skill-probe-seal.v1",
+    "seal_mode": "seatbelt",
+    "workspace_root": "/private/var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T/probe-run.DEOBoM/ws",
+    "wrap": [
+      "/usr/bin/sandbox-exec",
+      "-p",
+      "sha256:7b2cadaa334070d082bf8d9832b004e7d67586ac27a29fac27b4c028cab4a6e7"
+    ],
+    "writable_roots": [
+      "/private/var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T/probe-run.DEOBoM/home",
+      "/private/var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T/probe-run.DEOBoM/ws",
+      "/private/var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T/probe-run.DEOBoM/tmp"
+    ]
+  },
+  "evaluator": {
+    "dispatch_helper": {
+      "path": "scripts/lib/codex-exec.sh",
+      "sha256": "sha256:0bd0c7fb22eb3e7eadfe3161af82424398ac76f05e7f28a90d14bcfcbdf11df8"
+    },
+    "harness": {
+      "path": "scripts/probe-skill.sh",
+      "sha256": "sha256:979be9ceb35762326b5d531eb263f2cd34323714258df9e1bb65496fce5cb068"
+    },
+    "metadata_helper": {
+      "path": "scripts/lib/probe-fixture-metadata.py",
+      "sha256": "sha256:a873c8fddce00b4d6f293247503f3327836688ab1c6de9bf87a4e8f13fb18c26"
+    },
+    "preamble": {
+      "path": "scripts/lib/preamble.sh",
+      "sha256": "sha256:c4c06472b655cc440ab69e2d3c3bb7773c393eab671975aad3f1d446b2994199"
+    }
+  },
+  "capture_evaluator": {
+    "dispatch_helper": {
+      "path": "scripts/lib/codex-exec.sh",
+      "sha256": "sha256:0bd0c7fb22eb3e7eadfe3161af82424398ac76f05e7f28a90d14bcfcbdf11df8"
+    },
+    "harness": {
+      "path": "scripts/probe-skill.sh",
+      "sha256": "sha256:979be9ceb35762326b5d531eb263f2cd34323714258df9e1bb65496fce5cb068"
+    },
+    "metadata_helper": {
+      "path": "scripts/lib/probe-fixture-metadata.py",
+      "sha256": "sha256:a873c8fddce00b4d6f293247503f3327836688ab1c6de9bf87a4e8f13fb18c26"
+    },
+    "preamble": {
+      "path": "scripts/lib/preamble.sh",
+      "sha256": "sha256:c4c06472b655cc440ab69e2d3c3bb7773c393eab671975aad3f1d446b2994199"
+    }
+  },
+  "evaluator_matches_capture": true,
+  "honesty": "measures response-shape BEHAVIOR-CHANGE under the exact bound canonical SKILL.md treatment, NOT quality-uplift; small N is directional (ADR-0011)",
+  "schedule": [
+    {
+      "arm": "control",
+      "position": 1,
+      "rep": 1
+    },
+    {
+      "arm": "treatment",
+      "position": 2,
+      "rep": 1
+    },
+    {
+      "arm": "treatment",
+      "position": 3,
+      "rep": 2
+    },
+    {
+      "arm": "control",
+      "position": 4,
+      "rep": 2
+    }
+  ],
+  "scoring": {
+    "discriminator_timeout_seconds": 2,
+    "response_extraction": "codex-jsonl-final-agent-message.v1",
+    "transcript_format": "codex-exec-jsonl.v1"
+  },
+  "control": {
+    "present": 0,
+    "usable": 2,
+    "rate": 0.0
+  },
+  "treatment": {
+    "present": 1,
+    "usable": 2,
+    "rate": 0.5
+  },
+  "verdict": "BEHAVIORAL",
+  "per_rep": [
+    {
+      "rep": 1,
+      "control": "ABSENT",
+      "treatment": "ABSENT"
+    },
+    {
+      "rep": 2,
+      "control": "ABSENT",
+      "treatment": "PRESENT"
+    }
+  ]
+}

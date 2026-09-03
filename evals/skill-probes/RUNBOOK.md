@@ -255,18 +255,26 @@ NOT observed on this ChatGPT-auth account. No unix socket allowance was needed:
 the proxy resolves DNS, so the rep never talks to `mDNSResponder`.
 
 ### premortem-plan-shape-t2, sealed, gpt-5.6-luna
-First-pass seal (superseded, deleted): low control 0/2, treatment 1/1 usable,
-BEHAVIORAL; xhigh 0/2 vs 0/2, INERT. Second-pass seal: low 0/2 vs 0/2, INERT;
-xhigh control 0/2, treatment 2/2, BEHAVIORAL. Headroom SEPARATED at both. No rep
-in the second-pass sets ran a single command. Scorecards under
-`docs/evals/scorecards/2026-09-03/`; the ledger table is where the current
-numbers live.
+Four captures on 2026-09-03, each under the seal of its pass; the first three
+were deleted with their scorecards once a judge broke that seal. First pass:
+low BEHAVIORAL (treatment 1/1 usable), xhigh INERT. Second pass (hardened
+filesystem seal): low INERT, xhigh BEHAVIORAL (treatment 2/2). Third pass
+(network sealed, but its config digest could not be verified because the
+record dropped a trailing newline): low INERT (treatment 0/1 usable), xhigh
+INERT. Fourth pass (the rows that count, `fixtures-*-2026-09-03-network-sealed`):
+low BEHAVIORAL (control 0/2, treatment 1/2), xhigh INERT (0/2 vs 0/2). Headroom
+SEPARATED throughout. No rep in the last three passes ran a shell command that
+touched a denied path, and no rep in the fourth had a refused egress.
+Scorecards under `docs/evals/scorecards/2026-09-03/`; the ledger table is where
+the current numbers live.
 
-The two captures disagree about which effort level shows a behavior change. At
-N=2 per arm that is an UNRESOLVED observation, not variance around a known
-value: two reps cannot establish a rate, so the reversal is a reason to run more
-reps, never a result to explain away.
+The captures disagree about which effort level shows a behavior change. At N=2
+per arm that is an UNRESOLVED observation, not variance around a known value:
+two reps cannot establish a rate, so the reversals are a reason to run more
+reps, never a result to explain away. Across all four, the treatment arm put
+the marks in band in 4 of 15 usable reps and the control arm in 0 of 16; that
+aggregate spans four harness versions and is disclosure, not a ledger row.
 
 Every harness change moves the evaluator identity a scorecard binds, so every
-hardened row is recaptured after one. Until that recapture the gate reports the
-rows as not measured and says why, per set.
+sealed row is recaptured after one (four times on 2026-09-03). Until that
+recapture the gate reports the rows as not measured and says why, per set.

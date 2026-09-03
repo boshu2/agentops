@@ -801,11 +801,11 @@ PY
     [ "$status" -eq 0 ]
     # The denominator is whatever the frontmatter declares minus the declared
     # exclusions; what this test pins is the HONEST headline, not a number that
-    # moves with the catalog. Every hardened row is recaptured after a harness
-    # change (the evaluator hash moves with the bytes), so until that recapture
-    # the measured count is zero rather than a badge resting on stale evidence.
-    [ "$(json_field "$output" measured)" = "0" ]
-    [ "$(json_field "$output" gated_total)" = "$(json_field "$output" unmeasured_count)" ]
+    # moves with the catalog. Every sealed row is recaptured after a harness
+    # change (the evaluator hash moves with the bytes); premortem's rows were
+    # recaptured under the network seal on 2026-09-03, so the headline is 1/12.
+    [ "$(json_field "$output" measured)" = "1" ]
+    [ "$(json_field "$output" unmeasured_count)" = "11" ]
 
     # M2V-02: EVERY ledger row that names a scorecard gets an eligibility line,
     # including the 2026-08-26 WITHDRAWN row the README cites as the example of
