@@ -63,9 +63,9 @@ REMOVED_SKILLS = {
     "discovery", "behavior-first-planning", "goal-design", "converge",
     "evolve", "gc-membrane", "pawl-review", "push", "release", "pr-prep",
     "beads-br", "beads-bv",
-    # Train 2 (ADR-0017): goals was a dead alias for fitness, shared a tombstone
-    # with no consumer, and scope's checks folded into plan. Reintroducing any
-    # of the three fails this gate.
+    # ADR-0018 (Train 2 retirements): goals was a dead alias for fitness, shared
+    # a tombstone with no consumer, and scope's checks folded into plan.
+    # Reintroducing any of the three fails this gate.
     "goals", "shared", "scope",
 }
 REMOVED_MORTEM_ALIASES = {
