@@ -300,6 +300,7 @@ manifest.pop("schedule")
 manifest.pop("scoring")
 manifest["capture_evaluator"].pop("preamble")
 manifest["capture_evaluator"].pop("dispatch_helper")
+manifest["capture_evaluator"].pop("network_proxy")
 for record in manifest["transcripts"]:
     transcript_path = manifest_path.parent / record["path"]
     record["sha256"] = "sha256:" + hashlib.sha256(transcript_path.read_bytes()).hexdigest()
@@ -1300,19 +1301,24 @@ SH
     [ -z "$(find "$PROBE_DIR" -mindepth 1 -maxdepth 1 -name '.fixtures-egress.capture.*')" ]
 }
 
-@test "a rep that leaves a process behind or edits its config is DEGRADED" {
+@test "a forked child is reaped and a rep that edits its config is DEGRADED" {
     [[ "$(uname -s)" == "Darwin" && -x /usr/bin/sandbox-exec ]] \
         || skip "process-group reaping is exercised against the real seal"
     unset PROBE_SEAL_SANDBOX_EXEC
     export PATH="${PATH#"$SEATBELT_STUB_DIR:"}"
     # A producer that forks a child outliving the turn: the survivor would see
-    # the NEXT rep's workspace, which is the whole point of resetting one.
+    # the NEXT rep's workspace, which is the whole point of resetting one. It
+    # records its own pid so the test can prove the child is actually gone; the
+    # earlier version of this test passed while four `/bin/sleep 45` processes
+    # were still running with ppid 1, because GNU timeout had setpgid'd itself
+    # and the reap was signalling a group the rep was never in.
     local producer="$BATS_TEST_TMPDIR/codex-survivor"
     cat > "$producer" <<'SH'
 #!/usr/bin/env bash
 if [[ "${1:-}" == "--version" ]]; then printf 'codex-cli survivor-stub\n'; exit 0; fi
 cat >/dev/null
 /bin/sleep 45 &
+printf 'SURVIVOR_PID=%s\n' "$!" >&2
 printf 'trust_level = "trusted"\n' >> "$CODEX_HOME/config.toml"
 printf '{"type":"thread.started","thread_id":"survivor-%s"}\n' "$$"
 printf '{"type":"turn.started"}\n'
@@ -1326,10 +1332,56 @@ SH
 
     [ "$status" -ne 0 ]
     [ -z "$output" ]
-    # The config the rep edited is caught, and the forked child is reaped rather
-    # than left to watch the next rep.
+    # The rep is degraded for BOTH reasons the harness can see.
     [[ "$stderr" == *"config-mutated"* ]]
+    [[ "$stderr" == *"rep-survivor"* ]]
     [ ! -e "$PROBE_DIR/fixtures-survivor" ]
+
+    # Nothing the producer forked is still running.
+    local pids pid
+    pids="$(printf '%s\n' "$stderr" | sed -n 's/.*SURVIVOR_PID=\([0-9][0-9]*\).*/\1/p')"
+    [ -n "$pids" ]
+    for pid in $pids; do
+        ! kill -0 "$pid" 2>/dev/null
+        [ -z "$(ps -o pid= -p "$pid" 2>/dev/null)" ]
+    done
+}
+
+@test "a child that ignores TERM still leaves the rep DEGRADED and dies" {
+    [[ "$(uname -s)" == "Darwin" && -x /usr/bin/sandbox-exec ]] \
+        || skip "process-group reaping is exercised against the real seal"
+    unset PROBE_SEAL_SANDBOX_EXEC
+    export PATH="${PATH#"$SEATBELT_STUB_DIR:"}"
+    # TERM alone is not a reap: a child that traps it has to be escalated to
+    # KILL, and the rep is degraded either way because it outlived its rep.
+    local producer="$BATS_TEST_TMPDIR/codex-stubborn"
+    cat > "$producer" <<'SH'
+#!/usr/bin/env bash
+if [[ "${1:-}" == "--version" ]]; then printf 'codex-cli stubborn-stub\n'; exit 0; fi
+cat >/dev/null
+bash -c 'trap "" TERM; sleep 45' &
+printf 'SURVIVOR_PID=%s\n' "$!" >&2
+printf '{"type":"thread.started","thread_id":"stubborn-%s"}\n' "$$"
+printf '{"type":"turn.started"}\n'
+printf '{"type":"item.completed","item":{"id":"item-stubborn","type":"agent_message","text":"ABSENT"}}\n'
+printf '{"type":"turn.completed","usage":{"input_tokens":1,"cached_input_tokens":0,"output_tokens":1}}\n'
+SH
+    chmod +x "$producer"
+
+    run --separate-stderr env CODEX_EXEC_BIN="$producer" \
+        bash "$HARNESS" --probe demo --live --reps 2 --fixtures fixtures-stubborn
+
+    [ "$status" -ne 0 ]
+    [[ "$stderr" == *"rep-survivor"* ]]
+    [ ! -e "$PROBE_DIR/fixtures-stubborn" ]
+    # Nothing the producer forked is still running.
+    local pids pid
+    pids="$(printf '%s\n' "$stderr" | sed -n 's/.*SURVIVOR_PID=\([0-9][0-9]*\).*/\1/p')"
+    [ -n "$pids" ]
+    for pid in $pids; do
+        ! kill -0 "$pid" 2>/dev/null
+        [ -z "$(ps -o pid= -p "$pid" 2>/dev/null)" ]
+    done
 }
 
 @test "PROBE_SEAL=none runs unsealed, prints the ineligible notice, and records seal_mode=none" {

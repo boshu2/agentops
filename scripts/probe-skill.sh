@@ -101,7 +101,9 @@
 # ephemeral port; the profile denies `network*` except outbound to that port;
 # the rep gets HTTPS_PROXY/HTTP_PROXY/ALL_PROXY pointing at it. The proxy
 # allows CONNECT only to the bound host allowlist and refuses everything else
-# with 403, logging every attempt to the harness-private dispatch dir. A refused
+# with 403 (and refuses a name that resolves into loopback, link-local or private
+# space, so a rebinding answer cannot become a local tunnel), logging every
+# CONNECT it accepts to the harness-private dispatch dir. A refused
 # CONNECT degrades that rep (`network-egress`), and the per-rep counts plus the
 # log digest are bound into the transcript's probe-input event.
 #
@@ -109,7 +111,9 @@
 # env_allowlist names, in its own process group, with every non-stdio descriptor
 # closed, under a GENERATED config (not the operator's) whose text and digest
 # the seal binds. After the rep the harness reaps the process group (a survivor
-# degrades the rep as `rep-survivor`) and re-reads the config: the only
+# degrades the rep as `rep-survivor`; the count is taken BEFORE the group is
+# signalled, because by then the rep's own codex tree has already exited) and
+# re-reads the config: the only
 # permitted growth is codex's own `[projects."<ws>"]` trust table, anything else
 # degrades the rep as `config-mutated`.
 #
@@ -390,9 +394,20 @@ SEAL_ENV_SEAM_PREFIX="PROBE_"
 # serve this repository's SKILL.md.
 PROBE_NETWORK_HOSTS_DEFAULT="chatgpt.com,ab.chatgpt.com,.oaiusercontent.com,api.openai.com,auth.openai.com"
 PROBE_NETWORK_HOSTS="${PROBE_NETWORK_HOSTS:-$PROBE_NETWORK_HOSTS_DEFAULT}"
+# An operator may still run a custom probe, but a capture that widened its own
+# egress policy is recorded as `proxy-custom` and can never be coverage.
+PROBE_NETWORK_CUSTOM=0
+if [[ -n "${PROBE_NETWORK_HOSTS_OVERRIDE:-}" || "$PROBE_NETWORK_HOSTS" != "$PROBE_NETWORK_HOSTS_DEFAULT" ]]; then
+    PROBE_NETWORK_CUSTOM=1
+fi
 # No unix socket was needed: the proxy resolves DNS, so the rep never talks to
 # mDNSResponder. Kept configurable because that is a platform detail.
 PROBE_NETWORK_UNIX_SOCKETS="${PROBE_NETWORK_UNIX_SOCKETS:-}"
+if [[ -n "$PROBE_NETWORK_UNIX_SOCKETS" ]]; then PROBE_NETWORK_CUSTOM=1; fi
+# The one port a probe rep may reach. CONNECT to anything else is refused by the
+# proxy and pinned by the verifier.
+PROBE_NETWORK_PORT=443
+SEAL_TIMEOUT_BIN=""
 PROXY_SCRIPT="$REPO_ROOT/scripts/lib/probe-connect-proxy.py"
 PROXY_PID=""
 PROXY_PORT=""
@@ -574,7 +589,7 @@ start_network_proxy() {
         NETWORK_SOCKET_LIST+=("$host")
     done < <(printf '%s' "$PROBE_NETWORK_UNIX_SOCKETS" | tr ',' '\n')
     local port_file="$RUN_DISPATCH/network.port"
-    python3 "$PROXY_SCRIPT" "${args[@]}" \
+    python3 "$PROXY_SCRIPT" "${args[@]}" --allow-port "$PROBE_NETWORK_PORT" \
         --log "$PROXY_LOG" --port-file "$port_file" --rep-file "$PROXY_REP_FILE" \
         >"$RUN_DISPATCH/network.out" 2>"$RUN_DISPATCH/network.err" &
     PROXY_PID=$!
@@ -693,6 +708,15 @@ build_seal() {
     done
     SEAL_REAL_TMPDIR="$(seal_realpath "${TMPDIR:-/tmp}")"
     SEAL_GIT_COMMON_ROOT="$(seal_git_common_root)"
+    # The timeout wrapper runs INSIDE the seal now, so which binary it is belongs
+    # in the record: a `timeout` resolved fresh from PATH at dispatch time could
+    # be a different one than this.
+    local timeout_rc=0
+    SEAL_TIMEOUT_BIN="$(codex_exec_timeout_bin)" || timeout_rc=$?
+    if [[ "$timeout_rc" -ne 0 ]]; then
+        echo "error: the resolved timeout does not accept --foreground; a rep would run in its process group" >&2
+        exit 2
+    fi
     # The Darwin per-user cache directory, sibling of the per-user T dir. It is
     # not skill material, but it is an operator-writable tree the rep had full
     # read of; node and codex start with it denied (verified 2026-09-03).
@@ -784,7 +808,8 @@ seal_payload_file() {
         "$(printf '%s\n' ${NETWORK_HOST_LIST[@]+"${NETWORK_HOST_LIST[@]}"})" \
         "$(printf '%s\n' ${NETWORK_SOCKET_LIST[@]+"${NETWORK_SOCKET_LIST[@]}"})" \
         "$PROXY_PORT" "$SEAL_CONFIG_KEPT" "$SEAL_CONFIG_SHA" "$SEAL_CONFIG_TEXT" \
-        "$SEAL_AUTH_COPIED" <<'PY'
+        "$SEAL_AUTH_COPIED" "$SEAL_TIMEOUT_BIN" "$PROBE_NETWORK_PORT" \
+        "$PROBE_NETWORK_CUSTOM" <<'PY'
 import json
 import sys
 
@@ -796,7 +821,7 @@ import sys
     real_home, real_codex_home, real_tmpdir, cache_root, git_common_root,
     run_root, workspace_root, dispatch_root,
     hosts, sockets, proxy_port, config_keys, config_sha, config_text,
-    auth_copied,
+    auth_copied, timeout_bin, network_port, network_custom,
 ) = sys.argv[1:]
 # config_text arrives as the generated file's path (empty when unsealed);
 # read the exact bytes so the digest matches what the rep was given.
@@ -838,11 +863,17 @@ payload = {
     "workspace_root": workspace_root,
     "dispatch_root": dispatch_root,
     "network": {
-        "mode": "proxy-allowlist" if sealed else "open",
+        "mode": (
+            ("proxy-custom" if network_custom == "1" else "proxy-allowlist")
+            if sealed
+            else "open"
+        ),
         "hosts": sorted(lines(hosts)) if sealed else [],
+        "ports": [int(network_port)] if sealed and network_port else [],
         "proxy": f"127.0.0.1:{proxy_port}" if sealed and proxy_port else None,
         "unix_sockets": sorted(lines(sockets)) if sealed else [],
     },
+    "timeout_bin": timeout_bin,
     "config_sanitized": json.loads(config_keys) if config_keys else None,
     "config_sha256": config_sha,
     "config_text": config_text,
@@ -982,19 +1013,25 @@ rep_group_members() {
         | awk -v want="$1" '$1 == want { count += 1 } END { print count + 0 }'
 }
 
-# reap_rep_group PGID — signal the rep's process group, wait, and prove it is
-# empty. A survivor would see the next rep's workspace.
+# reap_rep_group PGID — count survivors BEFORE signalling, then kill the group
+# and prove it is empty. The count has to come first: `wait` has already
+# returned, so the rep's own codex tree is gone by definition and anything still
+# in the group outlived the rep. It would see the next rep's workspace.
+# Returns 0 clean, 1 when something outlived the rep, 2 when the group would not
+# die even after KILL.
 reap_rep_group() {
-    local pgid="$1" waited=0
+    local pgid="$1" waited=0 survivors=0
+    survivors="$(rep_group_members "$pgid")"
     kill -TERM -"$pgid" 2>/dev/null || true
     while [[ "$(rep_group_members "$pgid")" != "0" ]]; do
         waited=$((waited + 1))
         if [[ $waited -eq 20 ]]; then
             kill -KILL -"$pgid" 2>/dev/null || true
         fi
-        [[ $waited -lt 40 ]] || return 1
+        [[ $waited -lt 40 ]] || return 2
         sleep 0.1
     done
+    [[ "$survivors" == "0" ]] || return 1
     return 0
 }
 
@@ -1309,6 +1346,16 @@ if [[ $REPLAY -eq 0 && "$LIVE_ALL_DISPATCH_OK" -eq 1 ]]; then
         --probe "$PROBE")" || [[ "$CURRENT_CONTRACT" != "$PROBE_CONTRACT" ]]; then
         echo "error: live capture inputs changed during dispatch; fixture set not published" >&2
         exit 2
+    fi
+    # The proxy's decision log is published WITH the set: every rep binds its
+    # digest, and without the file there is nothing for those digests to be
+    # checked against once the run directory is gone.
+    # Stop the proxy first: a connection still being torn down would append to
+    # the log after the copy and leave the published file a moving target.
+    stop_network_proxy
+    if [[ -n "$PROXY_LOG" && -f "$PROXY_LOG" ]]; then
+        cp "$PROXY_LOG" "$LIVE_STAGE/network.log" \
+            || { echo "error: could not publish the proxy log with the capture" >&2; exit 2; }
     fi
     CREATE_ARGS=(
         create
