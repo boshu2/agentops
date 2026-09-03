@@ -109,14 +109,16 @@ and refuse a swapped record; a stage with no record is bound as mode `none`.
 `seatbelt` seal. Pre-seal v2 contracts (the 2026-08-26 sets) load as
 `legacy-unsealed`: replayable, never coverage.
 
-The bound block is `{mode, platform, mechanism, sandbox_exec, wrap, network,
-denied_read_roots, denied_read_data_roots, denied_link_roots, writable_roots,
-dev_write_paths, allowed_read_paths, launcher_chain, launcher_sha256, rep_env,
-env_allowlist, run_root, workspace_root, dispatch_root, git_common_root,
-real_tmpdir, real_codex_home, cache_root, config_sanitized, config_sha256,
-config_text, auth_copied, profile_sha256, original_home, repository_root}`
-(`original_home` = the record's `real_home`, `repository_root` = the resolved
-parent of the skills dir).
+The bound block is `{mode, platform, mechanism, sandbox_exec, wrap, timeout_bin,
+network, denied_read_roots, denied_read_data_roots, denied_link_roots,
+writable_roots, dev_write_paths, allowed_read_paths, launcher_chain,
+launcher_sha256, rep_env, env_allowlist, run_root, workspace_root,
+dispatch_root, git_common_root, real_tmpdir, real_codex_home, cache_root,
+config_sanitized, config_sha256, config_text, auth_copied, profile_sha256,
+original_home, repository_root}` (`original_home` = the record's `real_home`,
+`repository_root` = the resolved parent of the skills dir). A record carrying
+any field outside that set is refused rather than reduced, because an unknown
+field is either a shape the verifier cannot check or a place to hide one.
 
 **The block rebuilds its own profile.** `render_seal_profile(block)` in
 `scripts/lib/probe-fixture-metadata.py` emits the profile text from the block,
@@ -127,27 +129,47 @@ profile, so a record claiming `writable_roots ["/"]`, an `allowed_read_paths`
 entry pointing at the main checkout's SKILL.md, or a null `real_tmpdir` was
 coverage-eligible while the profile said something else entirely.
 
-What `verify-scorecard` proves, stated as narrowly as it is true: the seal block
-reconstructs the profile text to its recorded digest; `platform` is Darwin and
-`mechanism` is `sandbox-exec` at `/usr/bin/sandbox-exec`; `wrap` equals
-`[sandbox_exec, "-p", profile_sha256]`; `network.mode` is `proxy-allowlist` with
-a non-empty host list and a `127.0.0.1:<port>` proxy; the config was generated
-and its text matches its digest; `auth.json` was copied; the denied reads cover
-`repository_root`, `git_common_root`, `original_home` and `real_tmpdir` (literal
-or realpath, since the kernel seals the resolved path); the dispatch directory
-is denied for read-data, link and write; the writable roots reach none of the
-checkout, the shared git root or the operator home; the workspace and the rep's
-`HOME`/`CODEX_HOME`/`TMPDIR` sit under the writable roots and outside the
-operator home; and `allowed_read_paths` is exactly the bound `launcher_chain`
-links a denied root would otherwise cover. It also cross-checks a scorecard's
+**Which fields the verifier PINS.** These are compared against a constant or
+recomputed from the filesystem, so the recorded value cannot be whatever the
+harness chose to write:
+
+- the profile: the block reconstructs the profile text to `profile_sha256`;
+- `platform` is Darwin, `mechanism` is `sandbox-exec`, `sandbox_exec` is
+  `/usr/bin/sandbox-exec`, and `wrap` equals `[sandbox_exec, "-p",
+  profile_sha256]`;
+- `network.mode` is `proxy-allowlist`, `network.hosts` is a subset of the five
+  pinned entries, `network.ports` is exactly `[443]`, `network.unix_sockets` is
+  empty, and the proxy authority is on `127.0.0.1`;
+- `config_text` equals what the config generator emits for the bound effort, and
+  `config_sha256` is its digest;
+- `dev_write_paths` equals the four-device constant, and every `writable_roots`
+  entry sits under `run_root`;
+- `env_allowlist` is a subset of the harness constant plus `PROBE_*` seams;
+- every `launcher_chain` entry is an existing file, the last one's digest is
+  `launcher_sha256`, that digest is the producer executable the manifest binds,
+  and `allowed_read_paths` is exactly the chain links a denied root covers;
+- `timeout_bin` is present;
+- the denied reads cover `repository_root`, `git_common_root`, `original_home`,
+  `real_tmpdir`, `real_codex_home` and `cache_root` (literal or realpath, since
+  the kernel seals the resolved path); the dispatch directory is denied for
+  read-data, link and write; the rep's `HOME`/`CODEX_HOME`/`TMPDIR` sit under
+  the writable roots and outside the operator home.
+
+**Which fields it only RECORDS.** These are validated for shape and carried into
+the profile, but nothing outside the seal corroborates them: `run_root`,
+`workspace_root` and `dispatch_root` (real paths at capture time, gone
+afterwards), `original_home`, `real_tmpdir`, `real_codex_home` and `cache_root`
+as VALUES (they are required to be denied, but that they were the operator's
+actual paths is the harness's word), `config_sanitized`, `auth_copied`, and
+which specific binary `timeout_bin` names. It also cross-checks a scorecard's
 verbatim `seal` copy against the contract when present (null in replay). Any
 root or step the seal omits is named on output.
 
 What it does NOT prove: the profile is `(allow default)` outside the operations
-it denies, so process capabilities other than the network (signals, IPC, exec of
-anything already readable) remain open, and reads outside the denied roots are
-permitted. The seal is a bound, checkable statement about the filesystem and the
-network, not a claim of full isolation.
+it denies, so process capabilities other than the network (signals, IPC, Mach
+and XPC messaging, Apple Events, exec of anything already readable) remain open,
+and reads outside the denied roots are permitted. The seal is a bound, checkable
+statement about the filesystem and the network, not a claim of full isolation.
 
 **The network seal.** The outer profile is `(allow default)` and codex's own
 sandbox is bypassed inside it (seatbelt does not nest), so before 2026-09-03
@@ -157,27 +179,46 @@ capture now starts a harness-owned CONNECT proxy
 (`scripts/lib/probe-connect-proxy.py`, standard library only) on 127.0.0.1 and
 an ephemeral port; the profile denies `network*` except outbound to that port;
 the rep gets `HTTPS_PROXY`/`HTTP_PROXY`/`ALL_PROXY` pointing at it. The proxy
-allows CONNECT only to the bound host allowlist and refuses everything else with
-403, logging every attempt to the harness-private dispatch directory. A refused
-CONNECT degrades that rep as `network-egress`, and each rep's allowed/refused
-counts plus the log digest are bound into its transcript's probe-input event, so
-a capture cannot be accepted with a refusal in it.
+allows CONNECT only to the bound host allowlist, on port 443 only, and refuses
+everything else with 403. It also refuses a destination whose name resolves into
+loopback, link-local or private space even when the name is allowed, so a
+rebinding answer cannot turn an allowed name into a local service. Every CONNECT
+the proxy ACCEPTS is logged to the harness-private dispatch directory: an
+`attempt` record before anything is resolved or dialed, and the decision after.
+The rep is captured when the connection is accepted, so a connection accepted
+between reps carries no rep and is attributed to the run rather than to whichever
+rep happened to be current when the decision landed. A refused CONNECT degrades
+that rep as `network-egress`; each rep's allowed and refused counts plus the log
+digest are bound into its transcript's probe-input event, the log itself is
+published with the fixture set as `network.log`, and `verify` checks that file
+against the digest the final rep bound. A capture cannot be accepted with a
+refusal in it.
 
-The allowlist was pinned from observation: one rep run through the proxy in
-discovery mode showed codex-cli 0.145 reaching `chatgpt.com` and
-`ab.chatgpt.com` and nothing else. `api.openai.com` and `auth.openai.com` are
-kept for an API-key producer and were not observed on a ChatGPT-auth account.
-No unix-socket allowance was needed: the proxy resolves DNS, so the rep never
-talks to `mDNSResponder`.
+The allowlist was pinned from observation: reps run through the proxy in
+discovery mode showed codex-cli 0.145 reaching `chatgpt.com`, `ab.chatgpt.com`
+and the OpenAI content hosts under `oaiusercontent.com`. `api.openai.com` and
+`auth.openai.com` are kept for an API-key producer and were not observed on a
+ChatGPT-auth account. `.oaiusercontent.com` is a SUFFIX rule, not a host: an
+entry beginning with a dot matches any host under that domain, which those
+content hosts need because they carry a rotating region prefix
+(`sdmntprsouthcentralus`, `sdmntprcentralus`, `sdmntprwestcentralus` all appeared
+in one capture) that no fixed list survives. A lookalike that merely ends with
+the same characters, such as `evil-oaiusercontent.com`, does not match. No
+unix-socket allowance was needed: the proxy resolves DNS, so the rep never talks
+to `mDNSResponder`. The permitted host set, the single port and the empty
+unix-socket list are pinned in the verifier, not merely recorded: a capture that
+widens any of them records `network.mode: proxy-custom` and can never count.
 
-**v3's seal block gained required keys twice on 2026-09-03.** The first shape
-bound only `{mode, denied_read_roots, writable_roots, profile_sha256,
+**v3's seal block gained required keys three times on 2026-09-03.** The first
+shape bound only `{mode, denied_read_roots, writable_roots, profile_sha256,
 original_home, repository_root}`, which a hand-written record claiming
 `seatbelt` on Linux with no mechanism satisfied. The second added the mechanism,
 the wrap, the link denies and the rep environment, but still could not
-reconstruct its own profile and said nothing about the network. Contracts in
-either shape still load and still replay; neither is ever tier coverage, and
-they say so with `seal-block-superseded`. The contract name stays
+reconstruct its own profile and said nothing about the network. The third could
+rebuild its profile and bound the network, but recorded the timeout wrapper
+nowhere. Contracts in any of those shapes still load and still replay; none is
+ever tier coverage, and they say so with `seal-block-superseded`. The contract
+name stays
 `agentops-skill-probe-capture.v3` because every v3 set ever committed has been
 recaptured under the current seal.
 
@@ -198,9 +239,15 @@ read-denied, so a symlink into it cannot resolve.
 launched with exactly the variables the seal's `env_allowlist` names and nothing
 else, with every non-stdio descriptor closed (the transcript sink was FD 9 and
 the dispatch handles sat just above it), and in its own process group. After the
-rep returns the group is signalled and proven empty before the workspace is
-reset; a survivor degrades the rep as `rep-survivor`, because a forked child
-outliving its rep would see the next rep's workspace.
+rep returns the harness COUNTS the group's live members first, then signals the
+group with TERM, escalates to KILL, and refuses to continue until `ps` reports
+the group empty. The count comes first because the rep's own codex tree is
+already gone when `wait` returns, so anything still in the group outlived the
+rep: that count, not the emptiness afterwards, is what degrades the rep as
+`rep-survivor`. This only works because the timeout wrapper runs with
+`--foreground`; GNU timeout otherwise calls `setpgid(0,0)` and the reviewer and
+its children land in timeout's group rather than the one being reaped, which is
+how four forked `sleep` processes once survived a passing test.
 
 **One run directory; the workspace is reset, not relocated.** A live capture
 creates one `$TMPDIR/probe-run.XXXXXX` (mode 0700) holding `home/` (the scratch

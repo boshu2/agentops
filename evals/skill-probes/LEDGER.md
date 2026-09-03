@@ -45,7 +45,7 @@
 | `operationalize` | `anti-ceremony-creation-gate-v2` | 2026-08-16 | LEGACY-UNVERIFIED | Compatibility-only v2 canonical-SKILL run, historically classified INERT at control 2/2 versus treatment 2/2. Its retained scorecard and fixture predate the v3 response-only, counterbalanced, self-contained capture contract, so they do not count as current evidence: `docs/evals/scorecards/2026-08-16/anti-ceremony-low-v2b.json`; `evals/skill-probes/anti-ceremony-creation-gate-v2/fixtures-low-2026-08-16-v2b/fixture-set.json`; interpretation: `docs/evals/2026-08-16-anti-ceremony-creation-gate.md` |
 | `premortem` | `premortem-plan-shape-t2` | 2026-08-26 | WITHDRAWN | Filed as BEHAVIORAL, withdrawn same day: the fresh validator dumped the committed transcripts and every rep — both arms — had fetched `skills/premortem/SKILL.md` off disk (control-1 `sed`, control-2 `cat`, exit 0), so the arms were not differentiated by the bound bytes and the separation was band-spray variance between two arms holding the same skill. The harness now degrades any rep whose transcript shows a successful SKILL.md read (`skill-read-contamination`); the regenerated scorecard reads UNMEASURED 0/0 usable. `premortem` remains UNMEASURED. Evidence: `docs/evals/scorecards/2026-08-26/premortem-plan-shape-t2-low.json` (regenerated), fixtures unchanged. |
 | `premortem` | `premortem-plan-shape-t2` | 2026-09-03 | BEHAVIORAL | scorecard: `docs/evals/scorecards/2026-09-03/premortem-plan-shape-t2-low.json`; network-sealed dispatch (one removed-on-exit run directory reset per rep; reads denied under the real HOME, the real temp root and cache root, the checkout, the git common directory, the real CODEX_HOME, and every skill root; network denied except to a harness-owned CONNECT proxy with a pinned host allowlist; web search disabled; one generated config bound by text and digest; auth copied; capture-contract v3 seal block whose profile the verifier rebuilds and digest-checks); producer gpt-5.6-luna effort low; control 0/2, treatment 1/2 (treatment-2 PRESENT, both seeded defects named), no rep ran a command, no refused egress; headroom SEPARATED; N=2, directional; response-shape behavior change, never quality uplift. Fourth capture of this probe on 2026-09-03; the three superseded ones (each under a seal a judge then broke, deleted with their scorecards) read low BEHAVIORAL 1/1, low INERT 0/2, low INERT 0/1 usable. |
-| `premortem` | `premortem-plan-shape-t2` | 2026-09-03 | INERT | scorecard: `docs/evals/scorecards/2026-09-03/premortem-plan-shape-t2-xhigh.json`; same seal and producer at effort xhigh; control 0/2, treatment 0/2, no rep ran a command, no refused egress; headroom SEPARATED; N=2, directional. Superseded xhigh captures read INERT 0/2, BEHAVIORAL 2/2, INERT 0/2. Across all four captures the treatment arm showed the marks in band in 4 of 15 usable reps and the control arm in 0 of 16; that aggregate spans different harness bytes and is disclosure, not a ledger row. |
+| `premortem` | `premortem-plan-shape-t2` | 2026-09-03 | INERT | scorecard: `docs/evals/scorecards/2026-09-03/premortem-plan-shape-t2-xhigh.json`; same seal and producer at effort xhigh; control 0/2, treatment 0/2, no rep ran a command, no refused egress; headroom SEPARATED; N=2, directional. Superseded xhigh captures read INERT 0/2, BEHAVIORAL 2/2, INERT 0/2. Across all four captures the treatment arm showed the marks in band in 4 of 14 usable reps and the control arm in 0 of 16; that aggregate spans different harness bytes and is disclosure, not a ledger row. |
 
 As of the 2026-08-16 provenance migration the coverage gate counted **0/12**
 product/judgment skills as measured (see the dated update below for the current
@@ -130,12 +130,15 @@ again, the rows above are the recapture under this seal (fixture sets
 measured**, and any further harness change orphans the rows again until the
 next recapture, which the gate reports per set. What
 the verifier proves is narrow and worth stating plainly: the profile digest
-reconstructs from the block, the required roots are denied, the wrap names the
-system seatbelt, the network mode is the proxy allowlist, and the rep
-environment and config are the recorded ones. It does not prove the absence of
-every other ambient capability; the profile is still `(allow default)` outside
-the denies it names, so process capabilities other than the network remain
-open. Details: `RUNBOOK.md`, "Third pass".
+reconstructs from the block, the required roots (now including the real
+CODEX_HOME and the Darwin cache root) are denied, the wrap names the system
+seatbelt, the network policy matches a pinned host set on port 443 with no unix
+socket, the writable roots and devices and environment and launcher chain match
+pinned constants, and the config text is what the generator emits. It does not
+prove the absence of every other ambient capability; the profile is still
+`(allow default)` outside the denies it names, so process capabilities other
+than the network remain open. Details: `RUNBOOK.md`, "Third pass" and "Fourth
+pass".
 
 The gate prints each set's effective eligibility on every run, for every row
 that names a scorecard, so a reader never has to take a scorecard's own

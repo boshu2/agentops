@@ -173,14 +173,23 @@ is exactly why the outer profile has to carry the network deny. The record
 (`seal.json`) is bound into `agentops-skill-probe-capture.v3`.
 
 What `verify-scorecard` proves about it, precisely: the block rebuilds the
-profile text to the recorded digest, the required roots are denied, the wrap
-names `/usr/bin/sandbox-exec` with that digest, the network mode is the proxy
-allowlist with a non-empty host list, the allowed read paths are exactly the
-bound launcher chain, and the rep environment and generated config are the
-recorded ones. It does NOT prove the absence of every ambient capability: the
-profile is `(allow default)` outside the operations it denies, so process
-capabilities other than the network are open, and that is a known gap rather
-than a solved one.
+profile text to the recorded digest; the required roots (the checkout, the
+shared git root, the operator home, the real temp root, the real CODEX_HOME and
+the Darwin cache root) are denied for reads and links; the wrap names
+`/usr/bin/sandbox-exec` with that digest; the network mode is the proxy
+allowlist, its hosts are a subset of the pinned five, its ports are exactly
+`[443]` and it permits no unix socket; the writable roots all sit under the run
+root and the devices are the pinned four; the env allowlist is a subset of the
+harness constant plus `PROBE_*`; the launcher chain is real files whose last
+digest is the producer the manifest binds, and the allowed read paths are
+exactly the chain links a denied root covers; and the config text is what the
+generator emits for the bound effort. It does NOT prove the absence of every
+ambient capability: the profile is `(allow default)` outside the operations it
+denies, so process capabilities other than the network (signals, IPC, Mach and
+XPC messaging, Apple Events) are open, and that is a known gap rather than a
+solved one. It also does not prove that the recorded paths WERE the operator's
+real ones: that they had to be denied is checked, that they were named honestly
+is the harness's word.
 
 ### Two leaks the seal exposed, both trapped now
 - **Shared workspace.** The first sealed xhigh run had every rep's prompt file
@@ -207,7 +216,7 @@ confirmed against the tree, and this is what changed.
 | temp hierarchy | the whole temp root was readable AND writable, and ~425 stale `probe-seal.*` / `probe-ws.*` directories from earlier runs were still there, some holding prompt files whose bytes equal the current treatment prompt | one `probe-run.XXXXXX` per capture with `home/ ws/ tmp/ dispatch/`, removed whole by an EXIT trap; the real temp root, `/tmp` and `/private/tmp` are read-denied and no longer writable |
 | symlink targets | the deny list named the four skill roots but not what they resolve to: the main checkout, the git common dir, sibling worktrees, the real `~/.codex` (its sessions carry canonical text, its config names other checkouts) | the real HOME and the git common directory's parent are denied, and each skill root's entry for the skill under test is denied at its resolved path |
 | laundering | the dispatch dir was writable and only `file-read-data` denied, so a rep could rename, hard-link or clone a denied file into its readable workspace | `file-link` and `file-clone` denied on the dispatch dir and every denied read root; the dispatch dir is write-denied and metadata-only |
-| contract | the bound seal block carried mode, roots, digest and home only, so a hand-written record claiming `seatbelt` on Linux with no mechanism counted as coverage | the block binds platform, mechanism, `sandbox_exec`, wrap, the data and link denies, `rep_env`, the run/workspace/dispatch roots, `git_common_root`, `real_tmpdir`, `config_sanitized` and `auth_copied`, and coverage checks every one |
+| contract | the bound seal block carried mode, roots, digest and home only, so a hand-written record claiming `seatbelt` on Linux with no mechanism counted as coverage | the block binds platform, mechanism, `sandbox_exec`, wrap, the data and link denies, `rep_env`, the run/workspace/dispatch roots, `git_common_root`, `real_tmpdir`, `config_sanitized` and `auth_copied`; coverage checks each of those, and the fourth pass below is where the recorded values became pinned ones |
 | Darwin test | the only real-seatbelt test called `sandbox-exec` again inside the already-sealed process, which seatbelt does not nest, so it proved nothing about the outer seal | the fake producer performs the reads itself inside the seal and reports rc per probe: cat, ls, mv, hard link, clone, symlink-then-cat, write, metadata stat |
 | eligibility label | a scorecard's immutable `coverage_eligible: true` was the first thing a reader met, while the gate treated the set as ineligible | `check-skill-probe-coverage` prints `set <skill>/<probe>: eligible=true|false (<reason>)` per set, in text and under `sets` in `--json` |
 | stale docs | the README and a harness comment still put the dispatch files inside the read-denied checkout | both say the run directory, and the sibling trap knows the current directory names |
@@ -234,7 +243,7 @@ Both failed it. The findings and what changed:
 
 | Finding | What was wrong | What the seal does now |
 |---|---|---|
-| network open | the outer profile was `(allow default)` and codex's own sandbox is bypassed inside it, so a rep could `curl` the canonical SKILL.md off the forge; a judge demonstrated it returning the canonical bytes | `(deny network*)` with one exception: outbound to a harness-owned CONNECT proxy on 127.0.0.1. The proxy allows only a pinned host allowlist, refuses everything else with 403, logs every attempt, and a refused CONNECT degrades that rep as `network-egress` |
+| network open | the outer profile was `(allow default)` and codex's own sandbox is bypassed inside it, so a rep could `curl` the canonical SKILL.md off the forge; a judge demonstrated it returning the canonical bytes | `(deny network*)` with one exception: outbound to a harness-owned CONNECT proxy on 127.0.0.1. The proxy allows only a pinned host allowlist, refuses everything else with 403, logs every CONNECT it accepts, and a refused CONNECT degrades that rep as `network-egress` |
 | web search | the sanitized config kept the operator's `web_search = "live"`, a second egress path the seal did not cover | the config is GENERATED, not filtered, and writes `web_search = "disabled"` |
 | profile unbound | the block's roots were assertions ALONGSIDE an opaque profile: records claiming `writable_roots ["/"]`, an allowed read path pointing at the main checkout's SKILL.md, or null `real_tmpdir` were all coverage-eligible | `render_seal_profile(block)` rebuilds the profile text from the block, and coverage requires its digest to equal `profile_sha256`. One renderer writes the profile and rebuilds it |
 | launcher allowlist | the read-deny exception for the producer binary was a free-form list, so a HOME path holding a SKILL.md could masquerade as a launcher | the whole resolved symlink chain is bound as `launcher_chain` with the binary's digest, and `allowed_read_paths` must equal exactly the links a denied root would cover |
@@ -242,10 +251,24 @@ Both failed it. The findings and what changed:
 | data roots | only `<CODEX_HOME>/skills` was denied, so a CODEX_HOME outside the operator home kept its sessions and rollouts readable; the Darwin per-user cache dir beside the temp dir was readable too | the whole resolved real CODEX_HOME is denied and bound as `real_codex_home`; the cache dir is denied and bound as `cache_root` (verified: node and codex still start) |
 | descriptors and /dev | the open transcript sink (FD 9) was inherited by the rep, and `/dev` was writable whole | every non-stdio descriptor is closed before exec, and the write allow names `/dev/null`, `/dev/zero`, `/dev/dtracehelper`, `/dev/tty` |
 | ambient environment | the operator's whole environment reached the producer | the rep gets exactly the variables `env_allowlist` names, and the record lists them |
-| rep races | the same HOME/WS/TMP paths were reused per rep with no reaping, so a forked survivor could watch the next rep | each rep runs in its own process group, which is signalled and proven empty before the next reset; a survivor degrades the rep as `rep-survivor` |
+| rep races | the same HOME/WS/TMP paths were reused per rep with no reaping, so a forked survivor could watch the next rep | each rep runs in its own process group, which is signalled and reaped before the next reset; a survivor degrades the rep as `rep-survivor`. The reap was VACUOUS until the fourth pass fixed the process-group ordering below |
 | config drift | the sanitization bound key NAMES only, and codex adds a `[projects]` table at runtime that nothing checked | the generated config's exact text and digest are bound, and after each rep the file is re-parsed: the only permitted growth is a trust table for the rep's own workspace, anything else degrades the rep as `config-mutated` |
 | cleanup | the capture stage was not removed on failure, an incomplete dispatch exited zero with an UNMEASURED scorecard, and the trap was installed after the chmod that could fail | one guarded trap covers the run root and the unpublished stage from the moment the run root exists, the stage is released only by a successful publish, and an incomplete dispatch exits nonzero with no scorecard |
 | eligibility rows | only directional rows got an eligibility line, so the WITHDRAWN row the README cites as the motivating example never got one | every ledger row that names a scorecard gets one, in text and in `--json` |
+
+### Fourth pass: what two judges found in the third seal
+Both failed it. The measurement itself checked out with both; the failures were
+claims the harness or the verifier did not enforce.
+
+| Finding | What was wrong | What the seal does now |
+|---|---|---|
+| vacuous reap | GNU `timeout` calls `setpgid(0,0)`, so the sandbox, codex and every child ran in TIMEOUT's process group, not the one `reap_rep_group` signalled. Four `/bin/sleep 45` survived a PASSING survivor test with ppid 1. The timeout binary was also resolved from PATH and ran OUTSIDE the seal | the wrap is outermost (`sandbox-exec` then `timeout` then codex), so the sandbox is the outermost process and the timeout binary runs inside it; `--foreground` keeps timeout in the caller's group, and a timeout that refuses the flag fails closed as MISSING; the resolved binary is recorded as `timeout_bin`. The reap now COUNTS the group before signalling, degrades the rep on any survivor, and asserts empty after KILL |
+| network recorded, not pinned | the host list, the ports and the unix sockets were whatever the harness wrote: a capture could allowlist the forge, record that it did, and still count | `PERMITTED_EGRESS_HOSTS` pins the five entries, ports must be exactly `[443]`, unix sockets must be empty, and an operator override records `network.mode: proxy-custom`, which can never count. The proxy admits port 443 only, logs an `attempt` before it resolves anything, captures the rep at accept time, and refuses a name that resolves into loopback, link-local or private space |
+| data roots recorded, not required | `real_codex_home` and `cache_root` were in the record and in no required-root list, so a seal could name them and deny neither | both are required to be non-null and to appear in the denied read and link roots |
+| config self-consistent only | coverage checked that `config_text` hashed to `config_sha256`, which any re-signed text satisfies | `config_text` must equal what the generator emits for the bound effort, and the per-rep drift check always parses and permits only a `[projects."<ws>"]` table whose one key is `trust_level` |
+| fields recorded, not pinned | writable roots, devices, the env allowlist and the launcher chain were shape-checked and otherwise trusted | every writable root must be under `run_root`, `dev_write_paths` must equal the four-device constant, `env_allowlist` must be a subset of the harness constant plus `PROBE_*`, every launcher chain entry must be an existing file whose last digest is both `launcher_sha256` and the producer the manifest binds, and an unknown record field is refused outright |
+| withdrawn rows mislabeled | a non-current row was run through verify-scorecard first, so the WITHDRAWN row read `evidence-unverified` instead of saying it was withdrawn | non-current verdicts are classified before the evidence is verified and read `verdict-withdrawn` |
+| proxy outside the identity | the CONNECT proxy decides what a rep can reach and was not in the evaluator hash set a scorecard binds | `scripts/lib/probe-connect-proxy.py` joins the set, and the raw proxy log is published with the fixture set as `network.log` and checked against the digest the final rep bound |
 
 The host allowlist was PINNED from observation, not guessed: one rep was run
 through the proxy in discovery mode on 2026-09-03 and codex-cli 0.145 reached
@@ -272,8 +295,10 @@ The captures disagree about which effort level shows a behavior change. At N=2
 per arm that is an UNRESOLVED observation, not variance around a known value:
 two reps cannot establish a rate, so the reversals are a reason to run more
 reps, never a result to explain away. Across all four, the treatment arm put
-the marks in band in 4 of 15 usable reps and the control arm in 0 of 16; that
-aggregate spans four harness versions and is disclosure, not a ledger row.
+the marks in band in 4 of 14 usable reps and the control arm in 0 of 16; that
+aggregate spans four harness versions and is disclosure, not a ledger row. The
+count, capture by capture: at low, treatment 1/1, 0/2, 0/1 and 1/2 usable; at
+xhigh, 0/2, 2/2, 0/2 and 0/2.
 
 Every harness change moves the evaluator identity a scorecard binds, so every
 sealed row is recaptured after one (four times on 2026-09-03). Until that
