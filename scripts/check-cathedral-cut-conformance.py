@@ -989,10 +989,15 @@ def check_skill_graph() -> None:
         for name in CORE
     }
     assert actual == expected, f"core dependency graph mismatch: {actual}"
+    # ADR-0017: crank is the one non-core skill with a hard dependency, on rpi
+    # alone; the skill mesh generator carries the same allowance.
+    allowed_extra = {"crank": {"rpi"}}
     for name, entry in entries.items():
         deps = set((entry.get("metadata") or {}).get("dependencies") or [])
         if name != "rpi":
-            assert not deps, f"{name}: only rpi may declare hard dependencies: {sorted(deps)}"
+            assert deps == allowed_extra.get(name, set()), (
+                f"{name}: only rpi (and crank on rpi, ADR-0017) may declare hard dependencies: {sorted(deps)}"
+            )
     for name in REMOVED_SKILLS:
         assert not (ROOT / "skills" / name / "SKILL.md").exists(), f"removed skill is live: {name}"
         assert not (ROOT / "skills-codex" / name / "SKILL.md").exists(), f"removed Codex skill is live: {name}"
