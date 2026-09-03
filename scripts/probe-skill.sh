@@ -67,7 +67,31 @@
 #
 # Env overrides (test seams): SKILL_PROBES_DIR (default $REPO_ROOT/evals/skill-probes),
 # SKILL_PROBE_SKILLS_DIR (default $REPO_ROOT/skills), PROBE_FIXTURE_SET
-# (default fixtures)
+# (default fixtures), PROBE_SEAL (seatbelt|none, default seatbelt)
+#
+# FILESYSTEM SEAL (move 2): a live rep must not be able to read the skill it
+# is being measured on. Without a seal a rep inherits the operator's skill
+# roots — codex walks $HOME/.agents/skills regardless of CODEX_HOME, and
+# ~/.agents/skills, ~/.codex/skills, ~/.claude/skills and ~/.gemini/skills all
+# symlink into this checkout — and 2026-08-28 control-arm reps read
+# skills/<skill>/SKILL.md off disk by absolute path (skill-read-contamination).
+# Every live dispatch therefore runs the rep:
+#   * under a scratch HOME/CODEX_HOME ($SEAL_HOME, auth.json and config.toml
+#     symlinked from the real CODEX_HOME so codex can authenticate; no
+#     $SEAL_HOME/.agents/skills exists), from the live workspace as cwd;
+#   * inside a seatbelt (macOS sandbox-exec) profile that denies file-read* on
+#     the checkout root, the resolved skills dir, $REAL_HOME/.agents,
+#     $REAL_HOME/.claude/skills, $REAL_HOME/.gemini/skills and the real
+#     ~/.codex/skills, and denies file-write* everywhere except the live
+#     workspace, $SEAL_HOME, /private/tmp, /private/var/folders and $TMPDIR,
+#     so a rep whose own codex sandbox is bypassed stays read-only against the
+#     real filesystem. The profile is handed to scripts/lib/codex-exec.sh as
+#     the CODEX_EXEC_WRAP command prefix `(sandbox-exec -p "<profile>")`.
+# Fail closed: when sandbox-exec is absent the live dispatch refuses. Only an
+# explicit PROBE_SEAL=none runs unsealed; that run prints
+# `seal: none (coverage-ineligible)` and records seal_mode=none. The seal record
+# (seal.json: seal_mode, the profile text, the denied roots) is written into the
+# capture stage before the first rep and echoed into the scorecard under `seal`.
 #
 # practices: [measurement-over-assertion, ab-testing]
 # shellcheck source=scripts/lib/preamble.sh disable=SC1007,SC1091
@@ -245,6 +269,177 @@ else
     }
 fi
 
+# --- filesystem seal ---------------------------------------------------------
+PROBE_SEAL="${PROBE_SEAL:-seatbelt}"
+SEAL_MODE=""
+SEAL_HOME=""
+SEAL_PROFILE=""
+SEAL_PROFILE_FILE=""
+SEAL_PROFILE_SHA=""
+SEAL_SANDBOX_EXEC=""
+SEAL_JSON=""
+SEAL_DENIED_ROOTS=()
+SEAL_WRITABLE_ROOTS=()
+SEAL_AUTH_LINKS=()
+REAL_HOME="${HOME:-}"
+REAL_CODEX_HOME="${CODEX_HOME:-$REAL_HOME/.codex}"
+REP_HOME="$REAL_HOME"
+REP_CODEX_HOME="$REAL_CODEX_HOME"
+# shellcheck disable=SC2034 # consumed by codex_exec_guarded in the sourced library
+CODEX_EXEC_WRAP=()
+
+# resolve_seal_mode — decide seatbelt|none BEFORE any stage or workspace exists,
+# so a refused seal leaves nothing behind. Absent sandbox-exec fails closed.
+resolve_seal_mode() {
+    case "$PROBE_SEAL" in
+        none)
+            SEAL_MODE=none
+            echo "seal: none (coverage-ineligible)" >&2
+            ;;
+        seatbelt)
+            if ! SEAL_SANDBOX_EXEC="$(command -v sandbox-exec 2>/dev/null)"; then
+                echo "error: filesystem seal unavailable: sandbox-exec is not on PATH" >&2
+                echo "  an unsealed rep inherits the operator's skill roots (skill-read-contamination);" >&2
+                echo "  set PROBE_SEAL=none explicitly to run unsealed (the capture is coverage-ineligible)" >&2
+                exit 2
+            fi
+            SEAL_MODE=seatbelt
+            ;;
+        *)
+            echo "error: PROBE_SEAL must be seatbelt|none, got: $PROBE_SEAL" >&2
+            exit 2
+            ;;
+    esac
+}
+
+seal_realpath() {
+    python3 -c 'import os, sys; print(os.path.realpath(sys.argv[1]))' "$1"
+}
+
+# seal_path_ok PATH — a seatbelt profile quotes paths with double quotes; refuse
+# any path that could break out of the literal.
+seal_path_ok() {
+    [[ -n "$1" && "$1" != *[\"\\]* && "$1" != *$'\n'* ]]
+}
+
+# seal_add_root ARRAY_NAME PATH — append PATH and its resolved form (deduped).
+seal_add_root() {
+    local -n roots="$1"
+    local candidate resolved existing present
+    resolved="$(seal_realpath "$2")"
+    for candidate in "$2" "$resolved"; do
+        seal_path_ok "$candidate" || { echo "error: seal cannot quote path: $candidate" >&2; exit 2; }
+        present=0
+        for existing in "${roots[@]}"; do
+            [[ "$existing" != "$candidate" ]] || { present=1; break; }
+        done
+        [[ $present -eq 1 ]] || roots+=("$candidate")
+    done
+}
+
+# build_seal — materialize the scratch HOME, the seatbelt profile, and the
+# CODEX_EXEC_WRAP prefix. Needs LIVE_WORKSPACE.
+build_seal() {
+    local checkout root name
+    SEAL_HOME="$(mktemp -d "${TMPDIR:-/tmp}/probe-seal.XXXXXX")"
+    chmod 0700 "$SEAL_HOME"
+    mkdir -p "$SEAL_HOME/.codex"
+    for name in auth.json config.toml; do
+        if [[ -f "$REAL_CODEX_HOME/$name" ]]; then
+            ln -s "$REAL_CODEX_HOME/$name" "$SEAL_HOME/.codex/$name"
+            SEAL_AUTH_LINKS+=("$name")
+        fi
+    done
+    if [[ ! -f "$REAL_CODEX_HOME/auth.json" ]]; then
+        echo "seal: no auth.json under $REAL_CODEX_HOME; a real producer cannot authenticate" >&2
+    fi
+    REP_HOME="$SEAL_HOME"
+    REP_CODEX_HOME="$SEAL_HOME/.codex"
+
+    checkout="$(seal_realpath "$REPO_ROOT")"
+    for root in "$(seal_realpath "$LIVE_WORKSPACE")" "$(seal_realpath "$SEAL_HOME")"; do
+        if [[ "$root" == "$checkout" || "$root" == "$checkout"/* ]]; then
+            echo "error: seal cannot place a writable root inside the checkout: $root" >&2
+            exit 2
+        fi
+    done
+    seal_add_root SEAL_DENIED_ROOTS "$REPO_ROOT"
+    seal_add_root SEAL_DENIED_ROOTS "$SKILLS_DIR"
+    seal_add_root SEAL_DENIED_ROOTS "$REAL_HOME/.agents"
+    seal_add_root SEAL_DENIED_ROOTS "$REAL_HOME/.claude/skills"
+    seal_add_root SEAL_DENIED_ROOTS "$REAL_HOME/.gemini/skills"
+    seal_add_root SEAL_DENIED_ROOTS "$REAL_HOME/.codex/skills"
+    seal_add_root SEAL_DENIED_ROOTS "$REAL_CODEX_HOME/skills"
+    seal_add_root SEAL_WRITABLE_ROOTS "$LIVE_WORKSPACE"
+    seal_add_root SEAL_WRITABLE_ROOTS "$SEAL_HOME"
+    seal_add_root SEAL_WRITABLE_ROOTS /private/tmp
+    seal_add_root SEAL_WRITABLE_ROOTS /private/var/folders
+    seal_add_root SEAL_WRITABLE_ROOTS "${TMPDIR:-/tmp}"
+    seal_add_root SEAL_WRITABLE_ROOTS /dev
+
+    # Seatbelt: the last matching rule wins, so the write allow-list follows the
+    # blanket write deny, and the read denies come last.
+    SEAL_PROFILE='(version 1)'$'\n''(allow default)'$'\n''(deny file-write*)'$'\n''(allow file-write*'
+    for root in "${SEAL_WRITABLE_ROOTS[@]}"; do SEAL_PROFILE+=$'\n'"  (subpath \"$root\")"; done
+    SEAL_PROFILE+=')'$'\n''(deny file-read*'
+    for root in "${SEAL_DENIED_ROOTS[@]}"; do SEAL_PROFILE+=$'\n'"  (subpath \"$root\")"; done
+    SEAL_PROFILE+=')'
+    SEAL_PROFILE_FILE="$SEAL_HOME/seal.sb"
+    printf '%s\n' "$SEAL_PROFILE" > "$SEAL_PROFILE_FILE"
+    SEAL_PROFILE_SHA="sha256:$(python3 -c 'import hashlib, sys; print(hashlib.sha256(sys.argv[1].encode()).hexdigest())' "$SEAL_PROFILE")"
+    # shellcheck disable=SC2034 # consumed by codex_exec_guarded in the sourced library
+    CODEX_EXEC_WRAP=(sandbox-exec -p "$SEAL_PROFILE")
+}
+
+# write_seal_record PATH — the seal.json record (also echoed into the scorecard).
+write_seal_record() {
+    local wrap_json
+    wrap_json="$(python3 -c 'import json, sys; print(json.dumps(sys.argv[1:]))' "${CODEX_EXEC_WRAP[@]}")"
+    SEAL_JSON="$(python3 - "$1" "$SEAL_MODE" "$SEAL_SANDBOX_EXEC" "$SEAL_PROFILE" \
+        "$SEAL_PROFILE_FILE" "$SEAL_PROFILE_SHA" "$wrap_json" \
+        "$(printf '%s\n' "${SEAL_DENIED_ROOTS[@]}")" \
+        "$(printf '%s\n' "${SEAL_WRITABLE_ROOTS[@]}")" \
+        "$REP_HOME" "$REP_CODEX_HOME" "$REAL_HOME" "$REAL_CODEX_HOME" \
+        "$(printf '%s\n' "${SEAL_AUTH_LINKS[@]}")" "$(uname -s)" <<'PY'
+import json
+import sys
+
+(
+    path, mode, sandbox_exec, profile, profile_file, profile_sha, wrap_json,
+    denied, writable, rep_home, rep_codex_home, real_home, real_codex_home,
+    auth_links, platform,
+) = sys.argv[1:]
+sealed = mode == "seatbelt"
+record = {
+    "schema": "agentops-skill-probe-seal.v1",
+    "seal_mode": mode,
+    "coverage_eligible": sealed,
+    "mechanism": "sandbox-exec" if sealed else None,
+    "sandbox_exec": sandbox_exec or None,
+    "platform": platform,
+    "wrap": json.loads(wrap_json),
+    "profile": profile or None,
+    "profile_file": profile_file or None,
+    "profile_sha256": profile_sha or None,
+    "denied_read_roots": [line for line in denied.split("\n") if line],
+    "writable_roots": [line for line in writable.split("\n") if line],
+    "rep_env": {"HOME": rep_home, "CODEX_HOME": rep_codex_home},
+    "real_home": real_home,
+    "real_codex_home": real_codex_home,
+    "auth_links": [line for line in auth_links.split("\n") if line],
+}
+encoded = json.dumps(record, ensure_ascii=False, indent=2, sort_keys=True) + "\n"
+with open(path, "x", encoding="utf-8") as handle:
+    handle.write(encoded)
+print(json.dumps(record, ensure_ascii=False, sort_keys=True, separators=(",", ":")))
+PY
+)" || { echo "error: could not write seal record: $1" >&2; exit 2; }
+}
+
+if [[ $REPLAY -eq 0 ]]; then
+    resolve_seal_mode
+fi
+
 [[ "$REPS" =~ ^[1-9][0-9]*$ ]] || { echo "error: --reps must be a positive integer, got: $REPS" >&2; exit 2; }
 [[ "$REPS" -le 20 ]] || { echo "error: --reps must not exceed 20, got: $REPS" >&2; exit 2; }
 [[ "$TIMEOUT" =~ ^[0-9]+$ ]] || { echo "error: --timeout must be a non-negative integer, got: $TIMEOUT" >&2; exit 2; }
@@ -299,18 +494,29 @@ dispatch_live() {
     # --model routes a WEAKER producer (e.g. gpt-5-mini) — the ratchet for
     # surfacing a skill's behavioral value when a frontier producer aces both arms
     # (the membrane-eval-too-easy lesson). Empty => the codex default (frontier).
-    REVIEWER=codex \
-    REVIEWER_MARKER=turn.completed \
-    CODEX_EXEC_PROMPT_FILE="$prompt_file" \
-    CODEX_EXEC_DIR="$LIVE_WORKSPACE" \
-    CODEX_EXEC_SANDBOX=read-only \
-    CODEX_EXEC_SKIP_GIT_CHECK=1 \
-    CODEX_EXEC_TIMEOUT="$TIMEOUT" \
-    CODEX_EXEC_MODEL="$MODEL" \
-    CODEX_EXEC_OUT_FILE="$runtime_file" \
-    CODEX_EXEC_STDERR_FILE="$stderr_file" \
-    CODEX_EXEC_EXPECT_OUTPUT=1 \
-        codex_exec_guarded >/dev/null || rc=$?
+    # The rep runs with the sealed HOME/CODEX_HOME and the live workspace as cwd:
+    # a cwd inside the denied checkout makes every shell child print a getcwd
+    # error on stderr, which degrades the rep. CODEX_EXEC_WRAP (the seatbelt
+    # prefix) reaches the library through the shared shell, arrays never cross
+    # a process boundary.
+    (
+        cd "$LIVE_WORKSPACE" || exit 70
+        REVIEWER=codex \
+        REVIEWER_MARKER=turn.completed \
+        CODEX_EXEC_PROMPT_FILE="$prompt_file" \
+        CODEX_EXEC_DIR="$LIVE_WORKSPACE" \
+        CODEX_EXEC_SANDBOX=read-only \
+        CODEX_EXEC_SKIP_GIT_CHECK=1 \
+        CODEX_EXEC_TIMEOUT="$TIMEOUT" \
+        CODEX_EXEC_MODEL="$MODEL" \
+        CODEX_EXEC_OUT_FILE="$runtime_file" \
+        CODEX_EXEC_STDERR_FILE="$stderr_file" \
+        CODEX_EXEC_EXPECT_OUTPUT=1 \
+        HOME="$REP_HOME" \
+        CODEX_HOME="$REP_CODEX_HOME" \
+        PROBE_SEAL_PROFILE_FILE="$SEAL_PROFILE_FILE" \
+            codex_exec_guarded >/dev/null
+    ) || rc=$?
     # Producer stderr fails the rep closed. ONE literal is excluded: codex-cli
     # >= 0.14 announces stdin prompt delivery with "Reading prompt from
     # stdin...", and THIS harness chose stdin delivery ten lines above
@@ -394,6 +600,14 @@ if [[ $REPLAY -eq 0 ]]; then
     fi
     LIVE_WORKSPACE="$(mktemp -d "${TMPDIR:-/tmp}/probe-ws.XXXXXX")"
     chmod 0700 "$LIVE_WORKSPACE"
+    if [[ "$SEAL_MODE" == "seatbelt" ]]; then
+        build_seal
+    fi
+    # The seal record lands in the capture stage before the first rep runs.
+    write_seal_record "$LIVE_STAGE/seal.json"
+    if [[ "$SEAL_MODE" == "seatbelt" ]]; then
+        echo "seal: seatbelt ($SEAL_SANDBOX_EXEC; ${#SEAL_DENIED_ROOTS[@]} denied read roots)" >&2
+    fi
 fi
 
 C_PRESENT=0; C_USABLE=0; T_PRESENT=0; T_USABLE=0
@@ -457,6 +671,14 @@ if [[ $REPLAY -eq 0 && "$LIVE_ALL_DISPATCH_OK" -eq 1 ]]; then
         --probe "$PROBE")" || [[ "$CURRENT_CONTRACT" != "$PROBE_CONTRACT" ]]; then
         echo "error: live capture inputs changed during dispatch; fixture set not published" >&2
         exit 2
+    fi
+    # The stage inventory is exact today (probe-fixture-metadata.py create and
+    # verify reject any file beyond the transcripts and capture-contract.json),
+    # so the seal record leaves the stage before binding and survives in the
+    # live workspace and the scorecard. Lane M-C: once the metadata tool binds
+    # seal.json into the capture contract, delete this relocation.
+    if [[ -f "$LIVE_STAGE/seal.json" ]]; then
+        mv "$LIVE_STAGE/seal.json" "$LIVE_WORKSPACE/seal.json"
     fi
     CREATE_ARGS=(
         create
@@ -586,7 +808,7 @@ SCORECARD="$(python3 - \
     "$C_PRESENT" "$C_USABLE" "$C_RATE" \
     "$T_PRESENT" "$T_USABLE" "$T_RATE" \
     "$VERDICT" "$PER_REP_JSON" \
-    "$CURRENT_EVALUATOR" "$CAPTURE_EVALUATOR" <<'PY'
+    "$CURRENT_EVALUATOR" "$CAPTURE_EVALUATOR" "$SEAL_JSON" <<'PY'
 import json
 import sys
 
@@ -599,7 +821,7 @@ import sys
     control_present, control_usable, control_rate,
     treatment_present, treatment_usable, treatment_rate,
     verdict, per_rep_json,
-    current_evaluator_json, capture_evaluator_json,
+    current_evaluator_json, capture_evaluator_json, seal_json,
 ) = sys.argv[1:]
 
 current_evaluator = json.loads(current_evaluator_json)
@@ -636,6 +858,7 @@ scorecard = {
         "schema": fixture_schema or None,
     },
     "treatment_source": treatment_source,
+    "seal": json.loads(seal_json) if seal_json else None,
     "evaluator": current_evaluator,
     "capture_evaluator": capture_evaluator,
     "evaluator_matches_capture": (

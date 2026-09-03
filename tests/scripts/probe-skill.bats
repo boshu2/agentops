@@ -36,6 +36,26 @@ grep -q '^ACTION$' "$1"
 SH
     chmod +x "$PROBE_DIR/discriminator.sh"
 
+    # Filesystem seal (move 2): live dispatch fails closed without a seatbelt.
+    # Linux CI has no sandbox-exec, so every live test runs with a pass-through
+    # stand-in that honors the exact `sandbox-exec -p <profile> cmd...` shape
+    # the harness builds and simply runs cmd. The darwin-only seal test drops
+    # it from PATH and uses the real /usr/bin/sandbox-exec.
+    SEATBELT_STUB_DIR="$BATS_TEST_TMPDIR/seatbelt-stub"
+    mkdir -p "$SEATBELT_STUB_DIR"
+    cat > "$SEATBELT_STUB_DIR/sandbox-exec" <<'SH'
+#!/usr/bin/env bash
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        -p|-f|-n|-D) shift 2;;
+        *) break;;
+    esac
+done
+exec "$@"
+SH
+    chmod +x "$SEATBELT_STUB_DIR/sandbox-exec"
+    export PATH="$SEATBELT_STUB_DIR:$PATH"
+
     RUNTIME_STUB="$BATS_TEST_TMPDIR/codex-runtime-identity"
     cat > "$RUNTIME_STUB" <<'SH'
 #!/usr/bin/env bash
@@ -969,4 +989,184 @@ SH
     [ "$status" -eq 0 ]
     [[ "$stderr" == *"skill-read-contamination"* ]]
     [[ "$output" == *'"verdict": "UNMEASURED"'* ]]
+}
+
+# transcript_message DIR NAME -> the agent_message text of one captured transcript.
+transcript_message() {
+    python3 - "$1/$2.txt" <<'PY'
+import json, sys
+for line in open(sys.argv[1], encoding="utf-8"):
+    event = json.loads(line)
+    item = event.get("item") or {}
+    if event.get("type") == "item.completed" and item.get("type") == "agent_message":
+        print(item["text"])
+PY
+}
+
+# path_without_seatbelt -> a PATH with no executable sandbox-exec anywhere on it:
+# drops the pass-through stub dir and replaces any real dir that carries one
+# with a symlink farm of that dir minus sandbox-exec.
+path_without_seatbelt() {
+    local dir out="" farm entry
+    while IFS= read -r dir; do
+        [[ -n "$dir" && "$dir" != "$SEATBELT_STUB_DIR" ]] || continue
+        if [[ -x "$dir/sandbox-exec" ]]; then
+            farm="$BATS_TEST_TMPDIR/no-seatbelt$(printf '%s' "$dir" | tr '/' '_')"
+            mkdir -p "$farm"
+            for entry in "$dir"/*; do
+                [[ "$(basename "$entry")" != "sandbox-exec" ]] || continue
+                ln -s "$entry" "$farm/$(basename "$entry")"
+            done
+            dir="$farm"
+        fi
+        out="${out:+$out:}$dir"
+    done < <(printf '%s\n' "${PATH//:/$'\n'}")
+    printf '%s' "$out"
+}
+
+@test "sealed dispatch gives the rep a scratch HOME and CODEX_HOME with no operator skill roots" {
+    local fake_codex_home="$BATS_TEST_TMPDIR/real-codex-home"
+    mkdir -p "$fake_codex_home/skills"
+    printf '{"token":"fixture"}\n' > "$fake_codex_home/auth.json"
+    local producer="$BATS_TEST_TMPDIR/codex-seal-env"
+    cat > "$producer" <<'SH'
+#!/usr/bin/env bash
+if [[ "${1:-}" == "--version" ]]; then printf 'codex-cli seal-env-stub\n'; exit 0; fi
+cat >/dev/null
+leak=no-leak
+if test -e "$HOME/.agents/skills"; then leak=LEAK; fi
+auth="$(readlink "${CODEX_HOME:-/nonexistent}/auth.json" 2>/dev/null || printf 'no-auth-link')"
+text="home=$HOME|codex_home=${CODEX_HOME:-unset}|$leak|auth=$auth|cwd=$PWD"
+printf '{"type":"thread.started","thread_id":"seal-env-%s"}\n' "$$"
+printf '{"type":"turn.started"}\n'
+printf '{"type":"item.completed","item":{"id":"item-seal","type":"agent_message","text":"%s"}}\n' "$text"
+printf '{"type":"turn.completed","usage":{"input_tokens":1,"cached_input_tokens":0,"output_tokens":1}}\n'
+SH
+    chmod +x "$producer"
+
+    run --separate-stderr env CODEX_EXEC_BIN="$producer" CODEX_HOME="$fake_codex_home" \
+        bash "$HARNESS" --probe demo --live --reps 2 --fixtures fixtures-seal
+
+    [ "$status" -eq 0 ]
+    [ "$(json_field "$output" seal.seal_mode)" = "seatbelt" ]
+    [ "$(json_field "$output" seal.coverage_eligible)" = "true" ]
+    [ "$(json_field "$output" verdict)" = "INERT" ]
+    local text rep_home
+    text="$(transcript_message "$PROBE_DIR/fixtures-seal" control-1)"
+    rep_home="${text#home=}"; rep_home="${rep_home%%|*}"
+    [ -n "$rep_home" ]
+    [ "$rep_home" != "$HOME" ]
+    [[ "$rep_home" != "$REPO_ROOT"/* ]]
+    [[ "$text" == *"|codex_home=$rep_home/.codex|"* ]]
+    [[ "$text" == *"|no-leak|"* ]]
+    [[ "$text" != *LEAK* ]]
+    [[ "$text" == *"|auth=$fake_codex_home/auth.json|"* ]]
+    [[ "$text" != *"|cwd=$REPO_ROOT"* ]]
+    [ ! -e "$rep_home/.agents" ]
+    [ "$(json_field "$output" seal.rep_env.HOME)" = "$rep_home" ]
+    [[ "$(json_field "$output" seal.denied_read_roots)" == *"$fake_codex_home/skills"* ]]
+    [[ "$(json_field "$output" seal.denied_read_roots)" == *"$HOME/.agents"* ]]
+    [[ "$(json_field "$output" seal.profile_sha256)" == sha256:* ]]
+}
+
+@test "seatbelt profile denies the rep every byte of the checkout and the skills root" {
+    [[ "$(uname -s)" == "Darwin" && -x /usr/bin/sandbox-exec ]] \
+        || skip "seatbelt (sandbox-exec) is macOS-only"
+    export PATH="${PATH#"$SEATBELT_STUB_DIR:"}"
+    local checkout_skill
+    checkout_skill="$(ls "$REPO_ROOT"/skills/*/SKILL.md | head -n 1)"
+    [ -s "$checkout_skill" ]
+    # The lib-side CODEX_EXEC_WRAP is lane M-A's contract; this rep applies the
+    # profile the harness built exactly the way the wrap does (sandbox-exec +
+    # profile), so the assertion is over the harness-written profile bytes.
+    local producer="$BATS_TEST_TMPDIR/codex-seal-read"
+    cat > "$producer" <<'SH'
+#!/usr/bin/env bash
+if [[ "${1:-}" == "--version" ]]; then printf 'codex-cli seal-read-stub\n'; exit 0; fi
+cat >/dev/null
+probe_read() {
+    local out rc=0
+    out="$(sandbox-exec -f "$PROBE_SEAL_PROFILE_FILE" /bin/sh -c 'cat "$1"' _ "$1" 2>/dev/null)" || rc=$?
+    printf '%s rc=%s bytes=%s' "$2" "$rc" "${#out}"
+}
+text="$(probe_read "$PROBE_SEAL_CHECKOUT_TARGET" checkout)|$(probe_read "$PROBE_SEAL_SKILLS_TARGET" skills)|$(probe_read "$PROBE_SEAL_PROFILE_FILE" profile)"
+printf '{"type":"thread.started","thread_id":"seal-read-%s"}\n' "$$"
+printf '{"type":"turn.started"}\n'
+printf '{"type":"item.completed","item":{"id":"item-seal","type":"agent_message","text":"%s"}}\n' "$text"
+printf '{"type":"turn.completed","usage":{"input_tokens":1,"cached_input_tokens":0,"output_tokens":1}}\n'
+SH
+    chmod +x "$producer"
+
+    run --separate-stderr env CODEX_EXEC_BIN="$producer" \
+        PROBE_SEAL_CHECKOUT_TARGET="$checkout_skill" \
+        PROBE_SEAL_SKILLS_TARGET="$SKILLS/demo-skill/SKILL.md" \
+        bash "$HARNESS" --probe demo --live --reps 2 --fixtures fixtures-seal-read
+
+    [ "$status" -eq 0 ]
+    [ "$(json_field "$output" seal.sandbox_exec)" = "/usr/bin/sandbox-exec" ]
+    local text
+    text="$(transcript_message "$PROBE_DIR/fixtures-seal-read" treatment-1)"
+    [[ "$text" == *"checkout rc="[1-9]*" bytes=0|"* ]]
+    [[ "$text" == *"|skills rc="[1-9]*" bytes=0|"* ]]
+    [[ "$text" == *"|profile rc=0 bytes="[1-9]* ]]
+}
+
+@test "PROBE_SEAL=none runs unsealed, prints the ineligible notice, and records seal_mode=none" {
+    local producer="$BATS_TEST_TMPDIR/codex-seal-none"
+    local seal_copy="$BATS_TEST_TMPDIR/seal-none.json"
+    cat > "$producer" <<'SH'
+#!/usr/bin/env bash
+if [[ "${1:-}" == "--version" ]]; then printf 'codex-cli seal-none-stub\n'; exit 0; fi
+cat >/dev/null
+if [[ ! -e "$PROBE_STUB_SEAL_COPY" ]]; then
+    cp "$SKILL_PROBES_DIR"/demo/.fixtures-none.capture.*/seal.json "$PROBE_STUB_SEAL_COPY"
+fi
+printf '{"type":"thread.started","thread_id":"seal-none-%s"}\n' "$$"
+printf '{"type":"turn.started"}\n'
+printf '{"type":"item.completed","item":{"id":"item-seal","type":"agent_message","text":"home=%s"}}\n' "$HOME"
+printf '{"type":"turn.completed","usage":{"input_tokens":1,"cached_input_tokens":0,"output_tokens":1}}\n'
+SH
+    chmod +x "$producer"
+
+    run --separate-stderr env PROBE_SEAL=none CODEX_EXEC_BIN="$producer" \
+        PROBE_STUB_SEAL_COPY="$seal_copy" \
+        bash "$HARNESS" --probe demo --live --reps 2 --fixtures fixtures-none
+
+    [ "$status" -eq 0 ]
+    [[ "$stderr" == *"seal: none (coverage-ineligible)"* ]]
+    [ -f "$seal_copy" ]
+    [ "$(json_field "$(cat "$seal_copy")" seal_mode)" = "none" ]
+    [ "$(json_field "$(cat "$seal_copy")" coverage_eligible)" = "false" ]
+    [ "$(json_field "$output" seal.seal_mode)" = "none" ]
+    [ "$(json_field "$output" seal.coverage_eligible)" = "false" ]
+    [ "$(transcript_message "$PROBE_DIR/fixtures-none" control-1)" = "home=$HOME" ]
+}
+
+@test "live dispatch refuses to run unsealed when sandbox-exec is absent" {
+    local producer="$BATS_TEST_TMPDIR/codex-never-run"
+    local count="$BATS_TEST_TMPDIR/never-run-count"
+    cat > "$producer" <<'SH'
+#!/usr/bin/env bash
+if [[ "${1:-}" == "--version" ]]; then printf 'codex-cli never-run-stub\n'; exit 0; fi
+printf 'invoked\n' >> "$PROBE_STUB_COUNT"
+cat >/dev/null
+exit 70
+SH
+    chmod +x "$producer"
+    local unsealed_path
+    unsealed_path="$(path_without_seatbelt)"
+    run env PATH="$unsealed_path" bash -c 'command -v sandbox-exec'
+    [ "$status" -ne 0 ]
+
+    run --separate-stderr env PATH="$unsealed_path" CODEX_EXEC_BIN="$producer" \
+        PROBE_STUB_COUNT="$count" \
+        bash "$HARNESS" --probe demo --live --reps 2 --fixtures fixtures-unsealed
+
+    [ "$status" -eq 2 ]
+    [ -z "$output" ]
+    [[ "$stderr" == *"sandbox-exec"* ]]
+    [[ "$stderr" == *"PROBE_SEAL=none"* ]]
+    [ ! -e "$count" ]
+    [ ! -e "$PROBE_DIR/fixtures-unsealed" ]
+    [ -z "$(find "$PROBE_DIR" -mindepth 1 -maxdepth 1 -name '.fixtures-unsealed.capture.*')" ]
 }
