@@ -38,7 +38,7 @@ happens next.
 ## Prompt
 
 ```text
-Research: does `ao gate check --scope head` in cli/cmd/ao/gate.go
+Research: does `ao gate check --scope head` in cli/cmd/ao/gate_composition.go
 actually run scripts/check-skill-python-ratchet.sh, or only the schema
 and format gates? I'm deciding whether to add a new Python file under
 skills/foo/scripts/ and need a cited answer before I do.

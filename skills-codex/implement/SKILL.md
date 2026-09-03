@@ -53,8 +53,8 @@ first check.
 ## Scope conflict rule
 
 On discovering a live consumer of the change outside the declared write scope
-— a test asserting the old path, a generated twin, a gate reading the moved
-file — stop and report the exact file and line to the caller, who may revise
+(a test asserting the old path, a generated twin, a gate reading the moved
+file), stop and report the exact file and line to the caller, who may revise
 the intent and start a separate invocation; a different acceptance contract
 is a new intent.
 
@@ -64,7 +64,7 @@ widened tolerances, suppression directives, or specification edits standing
 in for real behavior. A changed test, gate, fixture, golden, or acceptance
 source must be required by the original intent, with green coming from the
 implemented behavior; a check that passes against a substitute or weakened
-oracle is not evidence — finish the behavior or report it as not built.
+oracle is not evidence: finish the behavior or report it as not built.
 
 ## Boundary
 

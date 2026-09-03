@@ -1014,7 +1014,7 @@
       "consumes": [],
       "context_rel": [],
       "dependencies": [],
-      "description": "Shape or refine the existing bead or caller intent without a second planning artifact. Triggers: \"plan\", \"discover and plan\", \"shape this goal\".",
+      "description": "Shape or refine the existing bead or caller intent without a second planning artifact. Triggers: \"plan\", \"discover and plan\", \"shape this goal\", \"review write scope\", \"check scope boundaries\", \"scope this change\".",
       "disposition": "keep",
       "effects": [
         "update_intent_source"

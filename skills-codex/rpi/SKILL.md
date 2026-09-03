@@ -13,8 +13,8 @@ anti-ceremony guard -> Plan -> Implement -> fresh Validate -> bounded repair -> 
 RPI invokes the guard exactly once before Plan, preserves the original intent,
 and dispatches Plan and Implement at most once; Validate repeats only inside
 the repair phase, under the convergence law and the caller's `repair_rounds`.
-Read [references/boundaries.md](references/boundaries.md) — the ownership and
-delegation boundary shared by the core skills — before dispatch.
+Read [references/boundaries.md](references/boundaries.md), the ownership and
+delegation boundary shared by the core skills, before dispatch.
 [`scripts/run_once.py`](scripts/run_once.py) makes dispatch, repair, and stop
 executable without Git, `ao`, or a tracker.
 
@@ -23,7 +23,8 @@ executable without Git, `ao`, or a tracker.
 ```text
 Run rpi on bead ag-1234 ("ao gate check lists the probe-coverage row").
 Intent: the bead. Scope: cli/internal/gates/** plus docs/CI-CD.md. First check:
-cd cli && go test ./internal/gates/... Fresh Codex validator. repair_rounds=2.
+cd cli && go test ./internal/gates/... Fresh validator in a distinct context,
+plus a cross-family leg (the scope is a risky surface). repair_rounds=2.
 ```
 
 ## It's working if
@@ -34,18 +35,18 @@ cd cli && go test ./internal/gates/... Fresh Codex validator. repair_rounds=2.
   with `status:` and changed paths, not a digest.
 - Each round appends one `repair round N: k open findings` line to `checked`,
   `k` never grows, and the run ends on `converged`, a law violation, or
-  `repair_rounds` — with no next action after the evidence.
+  `repair_rounds`, with no next action after the evidence.
 
 ## Admission and phase lock
 
-RPI activates for any plan-execute-verify request that changes the subject —
-orchestration, worker delegation, "execute this plan" — named or not.
+RPI activates for any plan-execute-verify request that changes the subject
+(orchestration, worker delegation, "execute this plan"), named or not.
 Research-, audit-, and review-only delegation produces evidence for a caller
 and earns no verdict.
 
 Once the caller accepts a plan (a duel or design synthesis included),
 Plan is closed for that intent: every later lane returns implementation
-evidence — diffs, commits, test results, receipts. Another planning, audit, or review
+evidence (diffs, commits, test results, receipts). Another planning, audit, or review
 lane over the same intent needs new explicit caller authorization; a review
 comment alone is not that.
 
@@ -58,6 +59,10 @@ comment alone is not that.
 2. Resolve the existing bead or caller intent. Invoke Plan once only if the
    source needs shaping; Plan updates that source or proposes an amendment and
    creates no AgentOps packet. Without usable intent, report `NOT_PLANNED`.
+   Before Implement or a fresh Validate, always bind the intent: a durable
+   caller-owned source by reference and digest, or, only when no durable
+   source exists, the exact resolved bytes snapshotted by the runtime under
+   their digest.
 3. Invoke Implement once: one bounded experiment; the runtime derives subject
    identity and check receipts. With no subject built, report `NOT_BUILT`.
 4. Invoke Validate once in a context distinct from the author's, passing the
@@ -115,7 +120,7 @@ goal may span several source owners as one bounded experiment.
 
 The spiral breaker fires on a convergence-law violation, or when two
 consecutive rounds change neither the subject digest nor the digest-bound
-evidence — never on a verdict count: a `FAIL` or `NOT_PROVEN` under repair is
+evidence, never on a verdict count: a `FAIL` or `NOT_PROVEN` under repair is
 progress; repeated control artifacts with no new implementation evidence are
 the spiral. Report `NOT_BUILT` when no subject exists; otherwise report the
 subject's current status without dispatching another lane, keeping the full
