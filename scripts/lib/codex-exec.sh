@@ -26,6 +26,10 @@
 #                                           band (marker CANNOT
 #                                           veto packet echo)
 #   sandbox mapping    --sandbox <value>    --sandbox (toggle)    n/a (local endpoint)
+#   sandbox mapping    --dangerously-bypass- n/a (ignores the     n/a (ignores the
+#   (codex, wrapped)   approvals-and-sandbox wrap prefix)          wrap prefix)
+#                      (the outer CODEX_EXEC_WRAP wrapper IS the sandbox; codex's
+#                      own is bypassed because seatbelt does not nest — see below)
 #   prompt delivery    file(stdin)/arg      FILE-PATH pointer     single positional arg
 #                                           (sentinel-wrapped)
 #   local?             no                   no                    yes
@@ -235,6 +239,22 @@ reviewer_adapter_marker() {
 #   CODEX_EXEC_EXTRA_ARGS    (codex) a bash array of extra passthrough flags appended
 #                            verbatim (e.g. --json). Ignored by non-codex adapters (they
 #                            are codex-specific flags).
+#   CODEX_EXEC_WRAP          (codex) a bash array prefixed BEFORE the codex binary (after
+#                            the timeout wrapper), e.g. CODEX_EXEC_WRAP=(sandbox-exec -p
+#                            "<profile>") — an EXTERNAL filesystem seal around the whole
+#                            rep. When non-empty the assembled command is
+#                              "${to_cmd[@]}" "${CODEX_EXEC_WRAP[@]}" <codex-bin> exec …
+#                            and the sandbox mapping emits
+#                            --dangerously-bypass-approvals-and-sandbox IN PLACE OF
+#                            --sandbox <value>: the outer wrapper IS the sandbox, and
+#                            codex's own seatbelt is bypassed because macOS seatbelt
+#                            does not nest inside an outer sandbox-exec profile (codex
+#                            dies with `sandbox_apply: Operation not permitted`); codex
+#                            documents that flag for exactly "externally sandboxed" use.
+#                            Empty/unset => byte-identical to the unwrapped behavior.
+#                            Codex-only: agy/local-mlx/reference adapters ignore it. Do
+#                            NOT wrap via CODEX_EXEC_BIN instead — the metadata tool
+#                            flips coverage_eligible to false on a non-default bin.
 #   CODEX_EXEC_OUT_FILE      write captured stdout here. If empty, output is captured
 #                            to a temp file used only for echo-detection and then
 #                            streamed to the caller's stdout on success.
@@ -295,6 +315,12 @@ codex_exec_guarded() {
   # packets legitimately CONTAIN the marker so marker-presence cannot veto echo checks;
   # see reviewer_packet_echoed). Empty for codex => the check is skipped (byte-compat).
   local packet_echo_file="" packet_nonce=""
+  # External wrap prefix (codex adapter ONLY; see CODEX_EXEC_WRAP above). Same `+set`
+  # guard idiom as CODEX_EXEC_EXTRA_ARGS so an unset array is safe under `set -u`.
+  local -a wrap=()
+  if [ "$reviewer" = "codex" ] && [ -n "${CODEX_EXEC_WRAP+set}" ] && [ "${#CODEX_EXEC_WRAP[@]}" -gt 0 ]; then
+    wrap=("${CODEX_EXEC_WRAP[@]}")
+  fi
 
   case "$reviewer" in
     codex)
@@ -304,7 +330,15 @@ codex_exec_guarded() {
       argv=(exec)
       [ "${CODEX_EXEC_SKIP_GIT_CHECK:-0}" = "1" ] && argv+=(--skip-git-repo-check)
       local sandbox="${CODEX_EXEC_SANDBOX:-read-only}"
-      argv+=(--sandbox "$sandbox")
+      if [ "${#wrap[@]}" -gt 0 ]; then
+        # sandbox mapping (codex, wrapped): the outer CODEX_EXEC_WRAP wrapper IS the
+        # sandbox; codex's own is bypassed because seatbelt does not nest (codex's
+        # documented flag for an externally sandboxed run). CODEX_EXEC_SANDBOX is
+        # deliberately not emitted — it would re-arm the nested seatbelt.
+        argv+=(--dangerously-bypass-approvals-and-sandbox)
+      else
+        argv+=(--sandbox "$sandbox")
+      fi
       [ -n "${CODEX_EXEC_MODEL:-}" ] && argv+=(-m "$CODEX_EXEC_MODEL")
       [ -n "${CODEX_EXEC_DIR:-}" ] && argv+=(-C "$CODEX_EXEC_DIR")
       # Append caller extra args ONLY if the array is set + non-empty. The `+set`
@@ -412,25 +446,24 @@ codex_exec_guarded() {
   # shellcheck disable=SC2046,SC2206  # intentional word-split of the wrapper argv.
   read -r -a to_cmd <<<"$(codex_exec_timeout_cmd "${CODEX_EXEC_TIMEOUT:-0}")" || true
 
+  # The launch prefix, in this fixed order: timeout wrapper (if any), then the
+  # external CODEX_EXEC_WRAP prefix (if any), then the reviewer binary. The timeout
+  # stays OUTERMOST so a wrapped run is still killed on budget. `launch` always
+  # holds at least the binary, so its expansion is safe under `set -u` on bash 3.2.
+  local -a launch=()
+  [ "${#to_cmd[@]}" -gt 0 ] && launch+=("${to_cmd[@]}")
+  [ "${#wrap[@]}" -gt 0 ] && launch+=("${wrap[@]}")
+  launch+=("$bin")
+
   _codex_exec_run() {
     if [ "$delivery" = "stdin_file" ]; then
       # File-prompt mode: feed the file on stdin.
-      if [ -n "$stderr_file" ]; then
-        if [ "${#to_cmd[@]}" -gt 0 ]; then "${to_cmd[@]}" "$bin" "${argv[@]}" <"$prompt_file" >"$out_file" 2>"$stderr_file"
-        else "$bin" "${argv[@]}" <"$prompt_file" >"$out_file" 2>"$stderr_file"; fi
-      else
-        if [ "${#to_cmd[@]}" -gt 0 ]; then "${to_cmd[@]}" "$bin" "${argv[@]}" <"$prompt_file" >"$out_file" 2>&1
-        else "$bin" "${argv[@]}" <"$prompt_file" >"$out_file" 2>&1; fi
-      fi
+      if [ -n "$stderr_file" ]; then "${launch[@]}" "${argv[@]}" <"$prompt_file" >"$out_file" 2>"$stderr_file"
+      else "${launch[@]}" "${argv[@]}" <"$prompt_file" >"$out_file" 2>&1; fi
     else
       # Arg/stdin-pipe/pointer mode: the prompt is already in argv (or on the caller's stdin).
-      if [ -n "$stderr_file" ]; then
-        if [ "${#to_cmd[@]}" -gt 0 ]; then "${to_cmd[@]}" "$bin" "${argv[@]}" >"$out_file" 2>"$stderr_file"
-        else "$bin" "${argv[@]}" >"$out_file" 2>"$stderr_file"; fi
-      else
-        if [ "${#to_cmd[@]}" -gt 0 ]; then "${to_cmd[@]}" "$bin" "${argv[@]}" >"$out_file" 2>&1
-        else "$bin" "${argv[@]}" >"$out_file" 2>&1; fi
-      fi
+      if [ -n "$stderr_file" ]; then "${launch[@]}" "${argv[@]}" >"$out_file" 2>"$stderr_file"
+      else "${launch[@]}" "${argv[@]}" >"$out_file" 2>&1; fi
     fi
   }
 
