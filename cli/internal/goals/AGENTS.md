@@ -13,7 +13,7 @@ GOALS.yaml / GOALS.md fitness specification subsystem: load, validate, measure, 
 
 - **Owner:** agentopsd extraction track (epic `agentops-tqc`).
 - **Operator-facing artifact:** `GOALS.md` at repo root (with `GOALS.yaml` as the legacy format). Either is valid input; `goals.go` parses both into a unified `GoalFile`.
-- **Skill surface:** consumed by `skills/goals/SKILL.md` as optional measurement context.
+- **Skill surface:** consumed by `skills/fitness/SKILL.md` as optional measurement context.
 
 ## Interfaces
 
@@ -40,7 +40,7 @@ GOALS.yaml / GOALS.md fitness specification subsystem: load, validate, measure, 
 ## Cross-references
 
 - Parent epic: `agentops-tqc` (Olympus → agentopsd extraction).
-- Skill: `skills/goals/SKILL.md`.
+- Skill: `skills/fitness/SKILL.md`.
 - Operator docs: `GOALS.md` at repo root.
 - Pattern source: olympus per-folder `AGENTS.md` ownership convention.
 - Sibling packages: `cli/internal/overnight` (Dream consumes goal fitness), `cli/internal/quality` (metrics health overlap).

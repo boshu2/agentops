@@ -99,12 +99,6 @@
       "reason": "Live source skill; generate a parity twin and keep runtime-specific behavior in the source contract."
     },
     {
-      "name": "goals",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "Live source skill; generate a parity twin and keep runtime-specific behavior in the source contract."
-    },
-    {
       "name": "handoff",
       "treatment": "parity_only",
       "wave": "catalog-parity",
@@ -225,19 +219,7 @@
       "reason": "Live source skill; generate a parity twin and keep runtime-specific behavior in the source contract."
     },
     {
-      "name": "scope",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "Live source skill; generate a parity twin and keep runtime-specific behavior in the source contract."
-    },
-    {
       "name": "security",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "Live source skill; generate a parity twin and keep runtime-specific behavior in the source contract."
-    },
-    {
-      "name": "shared",
       "treatment": "parity_only",
       "wave": "catalog-parity",
       "reason": "Live source skill; generate a parity twin and keep runtime-specific behavior in the source contract."

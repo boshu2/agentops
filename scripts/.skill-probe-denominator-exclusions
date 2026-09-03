@@ -23,4 +23,3 @@
 # Lines here are read by scripts/check-skill-probe-coverage.sh and echoed in
 # its output, so every exclusion argues itself on every run.
 
-goals  # Pure compatibility alias: `context_rel: alias-of fitness`, and the body delegates verbatim to skills/fitness/SKILL.md. Any probe of it measures fitness, so its verdict would describe a different skill.

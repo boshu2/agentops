@@ -94,8 +94,8 @@ Valid section names:
 
 **v1 status:** Metadata compatibility only. The lookup command was removed and
 no shipped code injects any of these sections, so a `sections` declaration
-neither adds nor removes context at runtime. Two skills (`converter`, `scope`)
-still carry `exclude: [HISTORY, INTEL, TASK]` as inert legacy declarations.
+neither adds nor removes context at runtime. One skill (`converter`) still
+carries `exclude: [HISTORY, INTEL, TASK]` as an inert legacy declaration.
 
 #### `context.intent.mode`
 
@@ -105,7 +105,7 @@ Declares what the skill is doing.
 |-------|---------|
 | `task` | Executing work (`implement`, `plan`, `validate`) |
 | `questions` | Exploring or researching (`research`, `skill-builder`, `workflow-builder`) |
-| `none` | Operational utility (`status`, `handoff`, `scope`) |
+| `none` | Operational utility (`status`, `handoff`) |
 
 **v1 status:** Declaration-only. Nothing reads it at runtime.
 

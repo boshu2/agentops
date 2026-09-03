@@ -61,7 +61,8 @@ pre-registered decision rule.
 
 ### Fix
 
-Added to `skills/shared/references/strict-delegation-contract.md`:
+Added (at the time) to `skills/shared/references/strict-delegation-contract.md`,
+since retired with the `shared` skill:
 **Pre-Mortem Anti-Rationalization Clause** — explicit list of what does NOT
 count as a pre-mortem (inline risk section, prior-premise adversarial pass,
 "related council already ran"). Pre-mortem = DELEGATED + INDEPENDENT + fresh-
@@ -78,4 +79,5 @@ redirects) before judges deliberate. Without it, pre-mortem is unfalsifiable.
 - `skills/rpi/SKILL.md`
 - `skills/discovery/SKILL.md`
 - `skills/validate/SKILL.md`
-- `skills/shared/references/strict-delegation-contract.md`
+- `skills/shared/references/strict-delegation-contract.md` (retired; the
+  `shared` skill was deleted 2026-09-03)

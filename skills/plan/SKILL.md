@@ -48,7 +48,12 @@ facts in a packet.
 3. Ensure the source contains acceptance examples, important non-goals, and the
    allowed write scope. Use lightweight prose or Given/When/Then only where it
    removes ambiguity; do not require both normal and edge ceremony for every
-   change.
+   change. Write-scope checks (folded from the retired `scope` skill):
+   - patterns are normalized repository-relative paths;
+   - includes cover the behavior without granting unrelated directories;
+   - excludes do not contradict required changes;
+   - generated companions that must move with the sources are explicit;
+   - no ownership, scheduling, Git, hook, retry, release, or delivery state.
 4. Name the first useful acceptance check.
 5. If authorized and the source is writable, update that bead or issue in
    place. Otherwise return a concise proposed amendment to the caller.

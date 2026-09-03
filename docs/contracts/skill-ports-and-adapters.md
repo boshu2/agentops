@@ -139,12 +139,12 @@ input. For example, a Premortem finding after Plan causes the current RPI to
 stop before Implement; the caller or Goal may revise the experiment source and
 start a new RPI.
 
-`shared` is not a durable miscellaneous seam owner. Runtime-neutral contracts
-belong under declared contract owners, while adapter mechanics remain with
-their adapters. Executed 2026-07-29: the runtime-neutrality contract moved to
-`docs/contracts/runtime-neutrality.md`, its last consumer edge was migrated,
-and the `shared` skill is a non-routable tombstone pending the observed-zero
-deletion window.
+There is no miscellaneous seam owner. Runtime-neutral contracts belong under
+declared contract owners, while adapter mechanics remain with their adapters.
+Executed 2026-07-29: the runtime-neutrality contract moved to
+`docs/contracts/runtime-neutrality.md` and its last consumer edge was
+migrated; the former `shared` skill stood as a non-routable tombstone until
+its observed-zero deletion on 2026-09-03.
 
 ## Execution shape is orthogonal
 
