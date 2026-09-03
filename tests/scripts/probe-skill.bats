@@ -1028,6 +1028,18 @@ path_without_seatbelt() {
     local fake_codex_home="$BATS_TEST_TMPDIR/real-codex-home"
     mkdir -p "$fake_codex_home/skills"
     printf '{"token":"fixture"}\n' > "$fake_codex_home/auth.json"
+    # The operator config the rep must NOT inherit: every table is dropped, so
+    # no MCP server starts inside a rep and no other checkout is trusted.
+    cat > "$fake_codex_home/config.toml" <<'TOML'
+model = "fixture-model"
+
+[mcp_servers.smart-connections]
+command = "npx"
+args = ["-y", "smart-connections-mcp"]
+
+[projects."/somewhere/else"]
+trust_level = "trusted"
+TOML
     local producer="$BATS_TEST_TMPDIR/codex-seal-env"
     cat > "$producer" <<'SH'
 #!/usr/bin/env bash
@@ -1035,8 +1047,15 @@ if [[ "${1:-}" == "--version" ]]; then printf 'codex-cli seal-env-stub\n'; exit 
 cat >/dev/null
 leak=no-leak
 if test -e "$HOME/.agents/skills"; then leak=LEAK; fi
-auth="$(readlink "${CODEX_HOME:-/nonexistent}/auth.json" 2>/dev/null || printf 'no-auth-link')"
-text="home=$HOME|codex_home=${CODEX_HOME:-unset}|$leak|auth=$auth|cwd=$PWD"
+auth=no-auth
+if test -f "${CODEX_HOME:-/nonexistent}/auth.json" && ! test -L "${CODEX_HOME}/auth.json"; then
+    auth="copy:$(cat "$CODEX_HOME/auth.json" | tr -d '\n\"{} ')"
+fi
+config=no-config
+if test -f "${CODEX_HOME:-/nonexistent}/config.toml"; then
+    config="tables:$(grep -c '^\[' "$CODEX_HOME/config.toml" || true):keys:$(grep -c '^model' "$CODEX_HOME/config.toml" || true)"
+fi
+text="home=$HOME|codex_home=${CODEX_HOME:-unset}|tmpdir=${TMPDIR:-unset}|$leak|auth=$auth|config=$config|cwd=$PWD"
 printf '{"type":"thread.started","thread_id":"seal-env-%s"}\n' "$$"
 printf '{"type":"turn.started"}\n'
 printf '{"type":"item.completed","item":{"id":"item-seal","type":"agent_message","text":"%s"}}\n' "$text"
@@ -1060,36 +1079,69 @@ SH
     [[ "$text" == *"|codex_home=$rep_home/.codex|"* ]]
     [[ "$text" == *"|no-leak|"* ]]
     [[ "$text" != *LEAK* ]]
-    [[ "$text" == *"|auth=$fake_codex_home/auth.json|"* ]]
+    # auth.json is COPIED, not symlinked: the real home is read-denied, so a
+    # symlink into it cannot resolve inside the seal.
+    [[ "$text" == *"|auth=copy:token:fixture|"* ]]
+    # The sanitized config keeps the top-level scalar and no table at all.
+    [[ "$text" == *"|config=tables:0:keys:1|"* ]]
     [[ "$text" != *"|cwd=$REPO_ROOT"* ]]
-    [ ! -e "$rep_home/.agents" ]
     [ "$(json_field "$output" seal.rep_env.HOME)" = "$rep_home" ]
+    [ "$(json_field "$output" seal.rep_env.CODEX_HOME)" = "$rep_home/.codex" ]
+    [[ "$text" == *"|tmpdir=$(json_field "$output" seal.rep_env.TMPDIR)|"* ]]
+    [ "$(json_field "$output" seal.auth_copied)" = "true" ]
+    [[ "$(json_field "$output" seal.config_sanitized)" == *model* ]]
+    [ "$(json_field "$output" seal.platform)" = "$(uname -s)" ]
+    [ "$(json_field "$output" seal.mechanism)" = "sandbox-exec" ]
     [[ "$(json_field "$output" seal.denied_read_roots)" == *"$fake_codex_home/skills"* ]]
     [[ "$(json_field "$output" seal.denied_read_roots)" == *"$HOME/.agents"* ]]
+    [[ "$(json_field "$output" seal.denied_link_roots)" == *"$(json_field "$output" seal.dispatch_root)"* ]]
     [[ "$(json_field "$output" seal.profile_sha256)" == sha256:* ]]
+    # The run directory is gone with the harness process.
+    [ ! -e "$(json_field "$output" seal.run_root)" ]
 }
 
-@test "seatbelt profile denies the rep every byte of the checkout and the skills root" {
+@test "seatbelt profile denies the rep every byte the seal claims to deny" {
     [[ "$(uname -s)" == "Darwin" && -x /usr/bin/sandbox-exec ]] \
         || skip "seatbelt (sandbox-exec) is macOS-only"
     export PATH="${PATH#"$SEATBELT_STUB_DIR:"}"
-    local checkout_skill
+    local checkout_skill main_skill
     checkout_skill="$(ls "$REPO_ROOT"/skills/*/SKILL.md | head -n 1)"
     [ -s "$checkout_skill" ]
-    # The lib-side CODEX_EXEC_WRAP is lane M-A's contract; this rep applies the
-    # profile the harness built exactly the way the wrap does (sandbox-exec +
-    # profile), so the assertion is over the harness-written profile bytes.
+    # The MAIN checkout this linked worktree shares: same canonical bytes under
+    # a path the checkout deny alone does not reach (Codex SEAL-ALT-002).
+    main_skill="$(dirname "$(git -C "$REPO_ROOT" rev-parse --path-format=absolute --git-common-dir)")/skills/$(basename "$(dirname "$checkout_skill")")/SKILL.md"
+    [ -e "$main_skill" ] || main_skill="$checkout_skill"
+    # The producer runs INSIDE the seal and probes it itself: nesting another
+    # sandbox-exec here would prove nothing, because seatbelt does not nest.
     local producer="$BATS_TEST_TMPDIR/codex-seal-read"
     cat > "$producer" <<'SH'
 #!/usr/bin/env bash
 if [[ "${1:-}" == "--version" ]]; then printf 'codex-cli seal-read-stub\n'; exit 0; fi
 cat >/dev/null
-probe_read() {
-    local out rc=0
-    out="$(sandbox-exec -f "$PROBE_SEAL_PROFILE_FILE" /bin/sh -c 'cat "$1"' _ "$1" 2>/dev/null)" || rc=$?
-    printf '%s rc=%s bytes=%s' "$2" "$rc" "${#out}"
+run="$(dirname "$(dirname "$PROBE_SEAL_PROFILE_FILE")")"
+text=""
+probe() {
+    local label="$1" rc=0
+    shift
+    "$@" >/dev/null 2>&1 || rc=$?
+    text+="$label=$rc|"
 }
-text="$(probe_read "$PROBE_SEAL_CHECKOUT_TARGET" checkout)|$(probe_read "$PROBE_SEAL_SKILLS_TARGET" skills)|$(probe_read "$PROBE_SEAL_PROFILE_FILE" profile)"
+probe checkout cat "$PROBE_SEAL_CHECKOUT_TARGET"
+probe main cat "$PROBE_SEAL_MAIN_TARGET"
+probe skills cat "$PROBE_SEAL_SKILLS_TARGET"
+probe home cat "$PROBE_SEAL_HOME_TARGET"
+probe tmproot ls "$PROBE_SEAL_TMPDIR"
+probe dispatchls ls "$run/dispatch"
+probe dispatchcat cat "$run/dispatch/control-1.prompt"
+probe dispatchstat stat -f %z "$run/dispatch/control-1.prompt"
+probe steal mv "$run/dispatch/control-1.prompt" ./stolen
+probe hardlink ln "$PROBE_SEAL_CHECKOUT_TARGET" ./linked
+probe clone cp -c "$PROBE_SEAL_CHECKOUT_TARGET" ./cloned
+ln -s "$PROBE_SEAL_CHECKOUT_TARGET" ./symlinked 2>/dev/null
+probe symlink cat ./symlinked
+probe write bash -c 'printf ok > ./written'
+probe readback cat ./written
+probe profile cat "$PROBE_SEAL_PROFILE_FILE"
 printf '{"type":"thread.started","thread_id":"seal-read-%s"}\n' "$$"
 printf '{"type":"turn.started"}\n'
 printf '{"type":"item.completed","item":{"id":"item-seal","type":"agent_message","text":"%s"}}\n' "$text"
@@ -1099,16 +1151,33 @@ SH
 
     run --separate-stderr env CODEX_EXEC_BIN="$producer" \
         PROBE_SEAL_CHECKOUT_TARGET="$checkout_skill" \
+        PROBE_SEAL_MAIN_TARGET="$main_skill" \
         PROBE_SEAL_SKILLS_TARGET="$SKILLS/demo-skill/SKILL.md" \
+        PROBE_SEAL_HOME_TARGET="$HOME/.codex/config.toml" \
+        PROBE_SEAL_TMPDIR="${TMPDIR:-/tmp}" \
         bash "$HARNESS" --probe demo --live --reps 2 --fixtures fixtures-seal-read
 
     [ "$status" -eq 0 ]
     [ "$(json_field "$output" seal.sandbox_exec)" = "/usr/bin/sandbox-exec" ]
     local text
-    text="$(transcript_message "$PROBE_DIR/fixtures-seal-read" treatment-1)"
-    [[ "$text" == *"checkout rc="[1-9]*" bytes=0|"* ]]
-    [[ "$text" == *"|skills rc="[1-9]*" bytes=0|"* ]]
-    [[ "$text" == *"|profile rc=0 bytes="[1-9]* ]]
+    text="$(transcript_message "$PROBE_DIR/fixtures-seal-read" treatment-2)"
+    # Denied: every root the seal names, the dispatch contents and listing, and
+    # both laundering paths out of a denied tree into the readable workspace.
+    local label
+    for label in checkout main skills home tmproot dispatchls dispatchcat steal \
+        hardlink clone symlink; do
+        [[ "$text" == *"|$label=0|"* ]] && {
+            echo "seal allowed $label: $text" >&2
+            false
+        }
+        [[ "$text" == *"$label="[1-9]* ]]
+    done
+    # Allowed: metadata on dispatch (node stats its stdio at startup), writing
+    # and reading back inside the workspace, and the profile itself.
+    [[ "$text" == *"|dispatchstat=0|"* ]]
+    [[ "$text" == *"|write=0|"* ]]
+    [[ "$text" == *"|readback=0|"* ]]
+    [[ "$text" == *"|profile=0|"* ]]
 }
 
 @test "PROBE_SEAL=none runs unsealed, prints the ineligible notice, and records seal_mode=none" {
@@ -1197,11 +1266,13 @@ raise SystemExit(0 if covered else 1)
 PY
 }
 
-@test "each live rep runs in its own fresh empty workspace and receives the prompt on stdin only" {
+@test "each live rep starts from an emptied workspace and receives the prompt on stdin only" {
     # 2026-09-03 defect: every rep's prompt file was written into the ONE shared
     # live workspace, so a control rep ran `rg --files`, saw treatment-1.prompt,
     # read it, and held the canonical SKILL.md bytes. The prompt is delivered on
     # stdin; nothing a rep can list from its cwd may carry it or any sibling.
+    # The second pass made the workspace ONE path, reset between reps, so the
+    # seatbelt profile is constant and the contract binds one profile digest.
     local producer="$BATS_TEST_TMPDIR/codex-workspace"
     cat > "$producer" <<'SH'
 #!/usr/bin/env bash
@@ -1215,7 +1286,12 @@ for candidate in ./*.prompt ./*.jsonl ./*.stderr ./*.txt ./*.json; do
     sibling="read:${candidate#./}:$(wc -c < "$candidate" | tr -d ' ')"
     break
 done
-text="cwd=$PWD|entries=${listing:-empty}|$stdin|sibling=$sibling"
+carried=none
+[[ -e ./carried-over ]] && carried=LEFTOVER
+[[ -e "$HOME/.codex/carried-over" ]] && carried="$carried,HOME-LEFTOVER"
+printf 'rep\n' > ./carried-over
+printf 'rep\n' > "$HOME/.codex/carried-over"
+text="cwd=$PWD|entries=${listing:-empty}|$stdin|carried=$carried|sibling=$sibling"
 printf '{"type":"thread.started","thread_id":"workspace-%s"}\n' "$$"
 printf '{"type":"turn.started"}\n'
 printf '{"type":"item.completed","item":{"id":"item-workspace","type":"agent_message","text":"%s"}}\n' "$text"
@@ -1228,12 +1304,11 @@ SH
 
     [ "$status" -eq 0 ]
     [ "$(json_field "$output" seal.seal_mode)" = "seatbelt" ]
-    local name text cwd seen=""
+    local name text cwd first=""
     for name in control-1 treatment-1 control-2 treatment-2; do
         text="$(transcript_message "$PROBE_DIR/fixtures-workspace" "$name")"
         cwd="${text#cwd=}"; cwd="${cwd%%|*}"
         [ -n "$cwd" ]
-        [ -d "$cwd" ]
         [[ "$cwd" != "$REPO_ROOT"/* ]]
         [[ "$cwd" != "$PROBE_DIR"/* ]]
         # (a) the prompt arrives on stdin; the cwd holds no prompt file and no
@@ -1241,14 +1316,19 @@ SH
         [[ "$text" == *"|entries=empty|"* ]]
         [[ "$text" == *"|stdin-prompt|"* ]]
         [[ "$text" == *"|sibling=none" ]]
-        # (b) a fresh directory per rep: all four differ.
-        [[ ",$seen," != *",$cwd,"* ]]
-        seen="${seen:+$seen,}$cwd"
-        # (c) the seal's writable roots cover the per-rep workspace.
+        # (b) nothing the previous rep wrote in the workspace or the scratch
+        #     CODEX_HOME survived the reset.
+        [[ "$text" == *"|carried=none|"* ]]
+        # (c) one path for the whole capture, so the profile stays constant.
+        [ -z "$first" ] || [ "$cwd" = "$first" ]
+        first="$cwd"
+        # (d) the seal's writable roots cover the workspace, and the bound
+        #     probe-input event records where the rep ran and that it was reset.
         workspace_covered "$output" "$cwd"
-        # the bound probe-input event records where the rep ran.
         [ "$(probe_input_field "$PROBE_DIR/fixtures-workspace" "$name" workspace)" = "$cwd" ]
+        [ "$(probe_input_field "$PROBE_DIR/fixtures-workspace" "$name" workspace_reset)" = "True" ]
     done
+    [ "$(json_field "$output" seal.workspace_root)" = "$first" ]
     [ "$(json_field "$output" verdict)" = "INERT" ]
     run python3 "$META_TOOL" verify \
         --fixture-dir "$PROBE_DIR/fixtures-workspace" \

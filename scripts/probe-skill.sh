@@ -75,32 +75,53 @@
 # ~/.agents/skills, ~/.codex/skills, ~/.claude/skills and ~/.gemini/skills all
 # symlink into this checkout — and 2026-08-28 control-arm reps read
 # skills/<skill>/SKILL.md off disk by absolute path (skill-read-contamination).
-# Every live dispatch therefore runs the rep:
-#   * under a scratch HOME/CODEX_HOME ($SEAL_HOME, auth.json and config.toml
-#     symlinked from the real CODEX_HOME so codex can authenticate; no
-#     $SEAL_HOME/.agents/skills exists), from a FRESH, EMPTY per-rep workspace
-#     as cwd (mktemp -d under $LIVE_WORKSPACE_ROOT; the arm name never appears
-#     in the path). The prompt reaches the rep on stdin only. The harness's
-#     own per-rep files (the materialized prompt, the raw codex JSONL, stderr)
-#     live in $LIVE_DISPATCH, a harness-private temp dir OUTSIDE the checkout,
-#     read-denied checkout — never in any workspace. 2026-09-03 defect: one
-#     shared workspace held every rep's prompt file, a control rep ran
-#     `rg --files`, saw treatment-1.prompt, and read the canonical SKILL.md
-#     bytes out of it (sibling-prompt-read);
-#   * inside a seatbelt (macOS sandbox-exec) profile that denies file-read* on
-#     the checkout root, the resolved skills dir, $REAL_HOME/.agents,
-#     $REAL_HOME/.claude/skills, $REAL_HOME/.gemini/skills and the real
-#     ~/.codex/skills, and denies file-write* everywhere except the workspace
-#     root (so every per-rep workspace), $SEAL_HOME, /private/tmp,
-#     /private/var/folders and $TMPDIR, so a rep whose own codex sandbox is
-#     bypassed stays read-only against the real filesystem. The profile is
-#     handed to scripts/lib/codex-exec.sh as the CODEX_EXEC_WRAP command
-#     prefix `(sandbox-exec -p "<profile>")`.
+#
+# ONE RUN DIRECTORY. Every live capture creates $PROBE_RUN
+# ($TMPDIR/probe-run.XXXXXX, mode 0700, resolved to its realpath) holding four
+# fixed children: home/ (the scratch HOME; home/.codex is CODEX_HOME), ws/ (the
+# rep workspace and cwd), tmp/ (the rep's TMPDIR) and dispatch/
+# (harness-private: the materialized prompt, the raw codex JSONL, stderr). One
+# EXIT trap removes the whole run directory, so a run leaves no probe material
+# in the temp hierarchy for a later rep or run to read.
+#
+# RESET, NOT RELOCATE. The paths are the same for every rep so the seatbelt
+# profile is constant and the capture contract binds ONE profile digest. Before
+# each rep the harness recreates ws/ and tmp/ empty and rebuilds home/.codex
+# from a SANITIZED config plus a COPY of auth.json, and refuses the rep if ws/
+# is not empty afterwards. The sanitized config keeps only the operator's
+# top-level scalar keys: every table is dropped, so a rep starts none of the
+# operator's MCP servers and inherits no [projects] trust entry. auth.json is
+# copied rather than symlinked because the real home is read-denied.
+#
+# THE PROFILE (seatbelt, macOS sandbox-exec; last matching rule wins):
+#   * file-write* denied everywhere except run home/, ws/, tmp/ and /dev, and
+#     denied again on run dispatch/;
+#   * file-read* denied on the real TMPDIR, /tmp, /private/tmp, the real HOME
+#     (which subsumes ~/.agents, ~/.claude/skills, ~/.gemini/skills,
+#     ~/.codex/skills and every checkout under it), this checkout, the resolved
+#     skills dir, the git common directory's parent (the main checkout a linked
+#     worktree shares), and each skill root's resolved entry for the skill under
+#     test. Seatbelt matches the traversed path, so both the literal and the
+#     resolved form of every root is denied;
+#   * file-read* re-allowed on run home/, ws/ and tmp/, with file-read-metadata
+#     on their ancestors so the rep can cd into its workspace (a denied ancestor
+#     breaks getcwd), and file-read-metadata only on run dispatch/ (node stats
+#     its stdio files at startup; contents and listing stay denied);
+#   * file-link and file-clone denied on run dispatch/ and every denied read
+#     root, so a rep cannot launder a denied file into its readable workspace;
+#   * file-read* allowed on the producer executable itself when it resolves
+#     under a denied root (the codex launcher can live under the real HOME);
+#     every such path is recorded in the seal as allowed_read_paths.
+# The profile is handed to scripts/lib/codex-exec.sh as the CODEX_EXEC_WRAP
+# command prefix `(sandbox-exec -p "<profile>")`.
+#
 # Fail closed: when sandbox-exec is absent the live dispatch refuses. Only an
 # explicit PROBE_SEAL=none runs unsealed; that run prints
 # `seal: none (coverage-ineligible)` and records seal_mode=none. The seal record
-# (seal.json: seal_mode, the profile text, the denied roots) is written into the
-# capture stage before the first rep and echoed into the scorecard under `seal`.
+# (seal.json) is written into the capture stage before the first rep and echoed
+# into the scorecard under `seal`; the capture contract binds its mechanism,
+# wrap, roots, rep env, config sanitization and profile digest, and tier
+# coverage requires every one of them.
 #
 # practices: [measurement-over-assertion, ab-testing]
 # shellcheck source=scripts/lib/preamble.sh disable=SC1007,SC1091
@@ -281,7 +302,6 @@ fi
 # --- filesystem seal ---------------------------------------------------------
 PROBE_SEAL="${PROBE_SEAL:-seatbelt}"
 SEAL_MODE=""
-SEAL_HOME=""
 SEAL_PROFILE=""
 SEAL_PROFILE_FILE=""
 SEAL_PROFILE_SHA=""
@@ -289,12 +309,23 @@ SEAL_SANDBOX_EXEC=""
 SEAL_JSON=""
 SEAL_DENIED_ROOTS=()
 SEAL_DENIED_DATA_ROOTS=()
+SEAL_DENIED_LINK_ROOTS=()
 SEAL_WRITABLE_ROOTS=()
-SEAL_AUTH_LINKS=()
+SEAL_ALLOWED_READ_PATHS=()
+SEAL_CONFIG_KEPT=""
+SEAL_AUTH_COPIED=0
+SEAL_GIT_COMMON_ROOT=""
+SEAL_REAL_TMPDIR=""
+PROBE_RUN=""
+RUN_HOME=""
+RUN_WS=""
+RUN_TMP=""
+RUN_DISPATCH=""
 REAL_HOME="${HOME:-}"
 REAL_CODEX_HOME="${CODEX_HOME:-$REAL_HOME/.codex}"
 REP_HOME="$REAL_HOME"
 REP_CODEX_HOME="$REAL_CODEX_HOME"
+REP_TMPDIR="${TMPDIR:-/tmp}"
 # shellcheck disable=SC2034 # consumed by codex_exec_guarded in the sourced library
 CODEX_EXEC_WRAP=()
 
@@ -347,87 +378,246 @@ seal_add_root() {
     done
 }
 
-# build_seal — materialize the scratch HOME, the seatbelt profile, and the
-# CODEX_EXEC_WRAP prefix. Needs LIVE_WORKSPACE_ROOT (the parent of every
-# per-rep workspace) and LIVE_DISPATCH (harness-private temp dir, denied file-read-data).
-build_seal() {
-    local checkout root name
-    SEAL_HOME="$(mktemp -d "${TMPDIR:-/tmp}/probe-seal.XXXXXX")"
-    chmod 0700 "$SEAL_HOME"
-    mkdir -p "$SEAL_HOME/.codex"
-    for name in auth.json config.toml; do
-        if [[ -f "$REAL_CODEX_HOME/$name" ]]; then
-            ln -s "$REAL_CODEX_HOME/$name" "$SEAL_HOME/.codex/$name"
-            SEAL_AUTH_LINKS+=("$name")
-        fi
-    done
-    if [[ ! -f "$REAL_CODEX_HOME/auth.json" ]]; then
+# make_run_dir — the one run directory of this capture. Created before the seal
+# so every rep-facing path is fixed and the profile can bind them, and removed
+# whole by the EXIT trap so no probe material survives the run.
+make_run_dir() {
+    local created
+    created="$(mktemp -d "${TMPDIR:-/tmp}/probe-run.XXXXXX")" \
+        || { echo "error: could not create the probe run directory" >&2; exit 2; }
+    chmod 0700 "$created"
+    PROBE_RUN="$(seal_realpath "$created")"
+    trap 'rm -rf -- "$PROBE_RUN"' EXIT
+    RUN_HOME="$PROBE_RUN/home"
+    RUN_WS="$PROBE_RUN/ws"
+    RUN_TMP="$PROBE_RUN/tmp"
+    RUN_DISPATCH="$PROBE_RUN/dispatch"
+    mkdir -p "$RUN_HOME" "$RUN_WS" "$RUN_TMP" "$RUN_DISPATCH" \
+        || { echo "error: could not populate the probe run directory" >&2; exit 2; }
+    chmod 0700 "$RUN_HOME" "$RUN_WS" "$RUN_TMP" "$RUN_DISPATCH"
+    REP_TMPDIR="$RUN_TMP"
+}
+
+# seal_install_rep_home — rebuild the scratch HOME/CODEX_HOME from scratch: a
+# COPY of auth.json (the real home is read-denied, so a symlink cannot resolve)
+# and a SANITIZED config that keeps only top-level scalars. Dropping every table
+# drops the operator's [mcp_servers] (which the rep would otherwise start and be
+# able to query) and the [projects] trust entries (which name other checkouts).
+seal_install_rep_home() {
+    rm -rf -- "$RUN_HOME"
+    mkdir -p "$RUN_HOME/.codex" \
+        || { echo "error: could not create the scratch CODEX_HOME" >&2; exit 2; }
+    chmod 0700 "$RUN_HOME" "$RUN_HOME/.codex"
+    if [[ -f "$REAL_CODEX_HOME/auth.json" ]]; then
+        cp "$REAL_CODEX_HOME/auth.json" "$RUN_HOME/.codex/auth.json" \
+            || { echo "error: could not copy auth.json into the scratch CODEX_HOME" >&2; exit 2; }
+        chmod 0600 "$RUN_HOME/.codex/auth.json"
+        SEAL_AUTH_COPIED=1
+    else
         echo "seal: no auth.json under $REAL_CODEX_HOME; a real producer cannot authenticate" >&2
     fi
-    REP_HOME="$SEAL_HOME"
-    REP_CODEX_HOME="$SEAL_HOME/.codex"
+    if [[ -f "$REAL_CODEX_HOME/config.toml" ]]; then
+        if ! SEAL_CONFIG_KEPT="$(python3 "$FIXTURE_META_TOOL" sanitize-codex-config \
+            --source "$REAL_CODEX_HOME/config.toml" \
+            --target "$RUN_HOME/.codex/config.toml")"; then
+            echo "error: could not sanitize the producer config for the sealed rep" >&2
+            exit 2
+        fi
+    else
+        SEAL_CONFIG_KEPT='[]'
+    fi
+    REP_HOME="$RUN_HOME"
+    REP_CODEX_HOME="$RUN_HOME/.codex"
+    # The profile file lives in the scratch home, so it is rewritten with it.
+    if [[ -n "$SEAL_PROFILE" ]]; then
+        printf '%s\n' "$SEAL_PROFILE" > "$SEAL_PROFILE_FILE" \
+            || { echo "error: could not write the seal profile file" >&2; exit 2; }
+    fi
+}
+
+# seal_add_producer_path — the producer executable is resolved by the unsealed
+# harness but exec'd inside the profile, so the sealed rep must be able to read
+# it. It can sit under a denied root (a codex launcher under the real HOME), so
+# allow the file itself, never a subpath, and record it.
+seal_add_producer_path() {
+    local bin candidate resolved existing present
+    bin="${CODEX_EXEC_BIN:-codex}"
+    if [[ "$bin" != */* ]]; then
+        bin="$(command -v "$bin" 2>/dev/null || true)"
+    fi
+    [[ -n "$bin" && -e "$bin" ]] || return 0
+    resolved="$(seal_realpath "$bin")"
+    for candidate in "$bin" "$resolved"; do
+        seal_path_ok "$candidate" || { echo "error: seal cannot quote path: $candidate" >&2; exit 2; }
+        present=0
+        for existing in ${SEAL_ALLOWED_READ_PATHS[@]+"${SEAL_ALLOWED_READ_PATHS[@]}"}; do
+            [[ "$existing" != "$candidate" ]] || { present=1; break; }
+        done
+        [[ $present -eq 1 ]] || SEAL_ALLOWED_READ_PATHS+=("$candidate")
+    done
+}
+
+# seal_git_common_root — the parent of the git common directory. In a linked
+# worktree that is the MAIN checkout, which holds the same canonical SKILL.md
+# bytes under a different path; the checkout deny alone does not cover it.
+# Falls back to the checkout so the recorded root is never empty.
+seal_git_common_root() {
+    local common
+    if common="$(git -C "$REPO_ROOT" rev-parse --path-format=absolute --git-common-dir 2>/dev/null)" \
+        && [[ -n "$common" ]]; then
+        seal_realpath "$(dirname "$common")"
+        return 0
+    fi
+    seal_realpath "$REPO_ROOT"
+}
+
+# build_seal — the seatbelt profile and the CODEX_EXEC_WRAP prefix over the run
+# directory made by make_run_dir.
+build_seal() {
+    local checkout root name entry
+    seal_install_rep_home
 
     checkout="$(seal_realpath "$REPO_ROOT")"
-    for root in "$(seal_realpath "$LIVE_WORKSPACE_ROOT")" "$(seal_realpath "$SEAL_HOME")"; do
+    for root in "$RUN_HOME" "$RUN_WS" "$RUN_TMP"; do
         if [[ "$root" == "$checkout" || "$root" == "$checkout"/* ]]; then
             echo "error: seal cannot place a writable root inside the checkout: $root" >&2
             exit 2
         fi
     done
+    SEAL_REAL_TMPDIR="$(seal_realpath "${TMPDIR:-/tmp}")"
+    SEAL_GIT_COMMON_ROOT="$(seal_git_common_root)"
+    # The whole per-user temp hierarchy: this run's own directory is allowed
+    # back below, so what stays denied is every other run's debris.
+    seal_add_root SEAL_DENIED_ROOTS "${TMPDIR:-/tmp}"
+    seal_add_root SEAL_DENIED_ROOTS /private/tmp
+    seal_add_root SEAL_DENIED_ROOTS /tmp
+    # The real HOME subsumes the four skill roots, ~/.codex sessions (which
+    # carry canonical text) and every checkout under it; the explicit roots stay
+    # so the record names what it protects even when HOME moves.
+    seal_add_root SEAL_DENIED_ROOTS "$REAL_HOME"
     seal_add_root SEAL_DENIED_ROOTS "$REPO_ROOT"
     seal_add_root SEAL_DENIED_ROOTS "$SKILLS_DIR"
+    seal_add_root SEAL_DENIED_ROOTS "$SEAL_GIT_COMMON_ROOT"
     seal_add_root SEAL_DENIED_ROOTS "$REAL_HOME/.agents"
     seal_add_root SEAL_DENIED_ROOTS "$REAL_HOME/.claude/skills"
     seal_add_root SEAL_DENIED_ROOTS "$REAL_HOME/.gemini/skills"
     seal_add_root SEAL_DENIED_ROOTS "$REAL_HOME/.codex/skills"
     seal_add_root SEAL_DENIED_ROOTS "$REAL_CODEX_HOME/skills"
-    # The harness dispatch dir (prompt files, raw JSONL, stderr of every rep)
-    # is denied on its own, not only by checkout ancestry: a test seam may
-    # place the probes tree outside the checkout.
-    seal_add_root SEAL_DENIED_DATA_ROOTS "$LIVE_DISPATCH"
-    seal_add_root SEAL_WRITABLE_ROOTS "$LIVE_WORKSPACE_ROOT"
-    seal_add_root SEAL_WRITABLE_ROOTS "$SEAL_HOME"
-    seal_add_root SEAL_WRITABLE_ROOTS /private/tmp
-    seal_add_root SEAL_WRITABLE_ROOTS /private/var/folders
-    seal_add_root SEAL_WRITABLE_ROOTS "${TMPDIR:-/tmp}"
+    # A skill root entry is a symlink INTO some checkout, and seatbelt matches
+    # the traversed path, so deny the target the entry resolves to as well.
+    if [[ -n "$SKILL" ]]; then
+        for name in "$REAL_HOME/.agents/skills" "$REAL_HOME/.claude/skills" \
+            "$REAL_HOME/.gemini/skills" "$REAL_HOME/.codex/skills" \
+            "$REAL_CODEX_HOME/skills"; do
+            entry="$name/$SKILL"
+            [[ -e "$entry" || -L "$entry" ]] || continue
+            seal_add_root SEAL_DENIED_ROOTS "$(dirname "$(seal_realpath "$entry")")"
+        done
+    fi
+    # The harness dispatch dir (prompt files, raw JSONL, stderr of every rep):
+    # metadata only, so node can stat its stdio, with contents, listing and
+    # writes denied. It is denied on its own, not only by temp-root ancestry.
+    seal_add_root SEAL_DENIED_DATA_ROOTS "$RUN_DISPATCH"
+    seal_add_root SEAL_WRITABLE_ROOTS "$RUN_HOME"
+    seal_add_root SEAL_WRITABLE_ROOTS "$RUN_WS"
+    seal_add_root SEAL_WRITABLE_ROOTS "$RUN_TMP"
     seal_add_root SEAL_WRITABLE_ROOTS /dev
+    # Laundering roots: a hard link or a clone turns a denied file into a
+    # readable one inside the workspace, so link and clone are denied wherever
+    # reads are.
+    for root in "${SEAL_DENIED_ROOTS[@]}" "${SEAL_DENIED_DATA_ROOTS[@]}"; do
+        seal_add_root SEAL_DENIED_LINK_ROOTS "$root"
+    done
+    seal_add_producer_path
 
-    # Seatbelt: the last matching rule wins, so the write allow-list follows the
-    # blanket write deny, and the read denies come last.
+    # Seatbelt: the last matching rule wins, so every allow follows the deny it
+    # narrows. file-read-metadata on the workspace ancestors is what lets the
+    # rep cd into its own directory at all: a denied ancestor breaks getcwd.
     SEAL_PROFILE='(version 1)'$'\n''(allow default)'$'\n''(deny file-write*)'$'\n''(allow file-write*'
     for root in "${SEAL_WRITABLE_ROOTS[@]}"; do SEAL_PROFILE+=$'\n'"  (subpath \"$root\")"; done
     SEAL_PROFILE+=')'$'\n''(deny file-read*'
     for root in "${SEAL_DENIED_ROOTS[@]}"; do SEAL_PROFILE+=$'\n'"  (subpath \"$root\")"; done
-    SEAL_PROFILE+=')'$'\n''(deny file-read-data'
+    SEAL_PROFILE+=')'$'\n''(allow file-read-metadata'$'\n'"  (path-ancestors \"$RUN_WS\")"
+    for root in ${SEAL_ALLOWED_READ_PATHS[@]+"${SEAL_ALLOWED_READ_PATHS[@]}"}; do
+        SEAL_PROFILE+=$'\n'"  (path-ancestors \"$root\")"
+    done
+    SEAL_PROFILE+=')'$'\n''(allow file-read*'
+    SEAL_PROFILE+=$'\n'"  (subpath \"$RUN_HOME\")"
+    SEAL_PROFILE+=$'\n'"  (subpath \"$RUN_WS\")"
+    SEAL_PROFILE+=$'\n'"  (subpath \"$RUN_TMP\")"
+    for root in ${SEAL_ALLOWED_READ_PATHS[@]+"${SEAL_ALLOWED_READ_PATHS[@]}"}; do
+        SEAL_PROFILE+=$'\n'"  (literal \"$root\")"
+    done
+    SEAL_PROFILE+=')'$'\n''(allow file-read-metadata'
     for root in "${SEAL_DENIED_DATA_ROOTS[@]}"; do SEAL_PROFILE+=$'\n'"  (subpath \"$root\")"; done
+    SEAL_PROFILE+=')'$'\n''(deny file-write*'
+    for root in "${SEAL_DENIED_DATA_ROOTS[@]}"; do SEAL_PROFILE+=$'\n'"  (subpath \"$root\")"; done
+    SEAL_PROFILE+=')'$'\n''(deny file-link'
+    for root in "${SEAL_DENIED_LINK_ROOTS[@]}"; do SEAL_PROFILE+=$'\n'"  (subpath \"$root\")"; done
+    SEAL_PROFILE+=')'$'\n''(deny file-clone'
+    for root in "${SEAL_DENIED_LINK_ROOTS[@]}"; do SEAL_PROFILE+=$'\n'"  (subpath \"$root\")"; done
     SEAL_PROFILE+=')'
-    SEAL_PROFILE_FILE="$SEAL_HOME/seal.sb"
+    SEAL_PROFILE_FILE="$RUN_HOME/seal.sb"
     printf '%s\n' "$SEAL_PROFILE" > "$SEAL_PROFILE_FILE"
     SEAL_PROFILE_SHA="sha256:$(python3 -c 'import hashlib, sys; print(hashlib.sha256(sys.argv[1].encode()).hexdigest())' "$SEAL_PROFILE")"
     # shellcheck disable=SC2034 # consumed by codex_exec_guarded in the sourced library
     CODEX_EXEC_WRAP=(sandbox-exec -p "$SEAL_PROFILE")
 }
 
-# write_seal_record PATH — the seal.json record (also echoed into the scorecard).
+# reset_rep_environment — same paths every rep, emptied between reps. The
+# scratch CODEX_HOME is rebuilt too: codex writes its session rollout there, and
+# a rollout holds the prompt bytes of the rep that wrote it.
+reset_rep_environment() {
+    rm -rf -- "$RUN_WS" "$RUN_TMP" || return 1
+    mkdir -p "$RUN_WS" "$RUN_TMP" || return 1
+    chmod 0700 "$RUN_WS" "$RUN_TMP" || return 1
+    if [[ "$SEAL_MODE" == "seatbelt" ]]; then
+        seal_install_rep_home
+    fi
+    [[ -z "$(ls -A "$RUN_WS")" ]] || return 1
+    return 0
+}
+
+# write_seal_record PATH — the seal.json record (also echoed into the scorecard
+# and reduced into the capture contract's bound seal block). `wrap` records the
+# argv the dispatch actually ran with the profile TEXT replaced by its digest,
+# so the contract binds the mechanism and the profile without storing it twice.
 write_seal_record() {
     local wrap_json
-    wrap_json="$(python3 -c 'import json, sys; print(json.dumps(sys.argv[1:]))' "${CODEX_EXEC_WRAP[@]}")"
+    wrap_json="$(python3 -c '
+import json, sys
+sha = sys.argv[1]
+profile = sys.argv[2]
+print(json.dumps([sha if arg == profile else arg for arg in sys.argv[3:]]))
+' "$SEAL_PROFILE_SHA" "$SEAL_PROFILE" ${CODEX_EXEC_WRAP[@]+"${CODEX_EXEC_WRAP[@]}"})"
     SEAL_JSON="$(python3 - "$1" "$SEAL_MODE" "$SEAL_SANDBOX_EXEC" "$SEAL_PROFILE" \
         "$SEAL_PROFILE_FILE" "$SEAL_PROFILE_SHA" "$wrap_json" \
-        "$(printf '%s\n' "${SEAL_DENIED_ROOTS[@]}")" \
-        "$(printf '%s\n' "${SEAL_WRITABLE_ROOTS[@]}")" \
+        "$(printf '%s\n' ${SEAL_DENIED_ROOTS[@]+"${SEAL_DENIED_ROOTS[@]}"})" \
+        "$(printf '%s\n' ${SEAL_WRITABLE_ROOTS[@]+"${SEAL_WRITABLE_ROOTS[@]}"})" \
         "$REP_HOME" "$REP_CODEX_HOME" "$REAL_HOME" "$REAL_CODEX_HOME" \
-        "$(printf '%s\n' "${SEAL_AUTH_LINKS[@]}")" "$(uname -s)" \
-        "$(printf '%s\n' "${SEAL_DENIED_DATA_ROOTS[@]}")" <<'PY'
+        "$SEAL_AUTH_COPIED" "$(uname -s)" \
+        "$(printf '%s\n' ${SEAL_DENIED_DATA_ROOTS[@]+"${SEAL_DENIED_DATA_ROOTS[@]}"})" \
+        "$(printf '%s\n' ${SEAL_DENIED_LINK_ROOTS[@]+"${SEAL_DENIED_LINK_ROOTS[@]}"})" \
+        "$(printf '%s\n' ${SEAL_ALLOWED_READ_PATHS[@]+"${SEAL_ALLOWED_READ_PATHS[@]}"})" \
+        "$REP_TMPDIR" "$SEAL_CONFIG_KEPT" "$PROBE_RUN" "$RUN_WS" "$RUN_DISPATCH" \
+        "$SEAL_GIT_COMMON_ROOT" "$SEAL_REAL_TMPDIR" <<'PY'
 import json
 import sys
 
 (
     path, mode, sandbox_exec, profile, profile_file, profile_sha, wrap_json,
     denied, writable, rep_home, rep_codex_home, real_home, real_codex_home,
-    auth_links, platform, denied_data,
+    auth_copied, platform, denied_data, denied_link, allowed_read,
+    rep_tmpdir, config_kept, run_root, workspace_root, dispatch_root,
+    git_common_root, real_tmpdir,
 ) = sys.argv[1:]
 sealed = mode == "seatbelt"
+
+
+def lines(value):
+    return [line for line in value.split("\n") if line]
+
+
 record = {
     "schema": "agentops-skill-probe-seal.v1",
     "seal_mode": mode,
@@ -439,13 +629,25 @@ record = {
     "profile": profile or None,
     "profile_file": profile_file or None,
     "profile_sha256": profile_sha or None,
-    "denied_read_roots": [line for line in denied.split("\n") if line],
-    "denied_read_data_roots": [line for line in denied_data.split("\n") if line],
-    "writable_roots": [line for line in writable.split("\n") if line],
-    "rep_env": {"HOME": rep_home, "CODEX_HOME": rep_codex_home},
+    "denied_read_roots": lines(denied),
+    "denied_read_data_roots": lines(denied_data),
+    "denied_link_roots": lines(denied_link),
+    "writable_roots": lines(writable),
+    "allowed_read_paths": lines(allowed_read),
+    "rep_env": {
+        "HOME": rep_home,
+        "CODEX_HOME": rep_codex_home,
+        "TMPDIR": rep_tmpdir,
+    },
     "real_home": real_home,
     "real_codex_home": real_codex_home,
-    "auth_links": [line for line in auth_links.split("\n") if line],
+    "real_tmpdir": real_tmpdir or None,
+    "git_common_root": git_common_root or None,
+    "run_root": run_root or None,
+    "workspace_root": workspace_root or None,
+    "dispatch_root": dispatch_root or None,
+    "config_sanitized": json.loads(config_kept) if config_kept else None,
+    "auth_copied": auth_copied == "1",
 }
 encoded = json.dumps(record, ensure_ascii=False, indent=2, sort_keys=True) + "\n"
 with open(path, "x", encoding="utf-8") as handle:
@@ -486,21 +688,19 @@ dispatch_live() {
     local arm="$1" rep="$2" transcript="$3" receipt_name="$4" result_name="$5"
     local rc=0 receipt="" outcome="DEGRADED" had_noclobber=0 workspace=""
     # Harness-private per-rep files stay in the read-denied dispatch dir; the
-    # rep's cwd is a fresh empty directory whose name carries no arm identity.
-    local prompt_file="$LIVE_DISPATCH/$arm-$rep.prompt"
-    local runtime_file="$LIVE_DISPATCH/$arm-$rep.codex.jsonl"
-    local stderr_file="$LIVE_DISPATCH/$arm-$rep.codex.stderr"
-    # `cd && pwd` normalizes the path the rep will see as $PWD (a trailing
-    # slash on $TMPDIR otherwise leaves a `//` the shell collapses).
-    if ! workspace="$(mktemp -d "$LIVE_WORKSPACE_ROOT/rep.XXXXXX")" \
-        || ! workspace="$(cd "$workspace" && pwd)" \
-        || ! chmod 0700 "$workspace" \
-        || [[ -n "$(ls -A "$workspace")" ]]; then
-        echo "probe-skill: could not create a fresh empty $arm-$rep workspace" >&2
+    # rep's cwd is the run directory's one workspace, emptied before this rep.
+    local prompt_file="$RUN_DISPATCH/$arm-$rep.prompt"
+    local runtime_file="$RUN_DISPATCH/$arm-$rep.codex.jsonl"
+    local stderr_file="$RUN_DISPATCH/$arm-$rep.codex.stderr"
+    # Same path every rep so the profile stays constant; emptied, and the
+    # scratch CODEX_HOME rebuilt, so this rep starts from nothing.
+    if ! reset_rep_environment; then
+        echo "probe-skill: could not reset a fresh empty $arm-$rep workspace" >&2
         printf -v "$receipt_name" '%s' ""
         printf -v "$result_name" '%s' "$outcome"
         return 1
     fi
+    workspace="$RUN_WS"
     if ! python3 "$FIXTURE_META_TOOL" capture-file \
         --fixture-dir "$LIVE_STAGE" --probe "$PROBE" \
         --name "prompt-$arm" >"$prompt_file"; then
@@ -547,6 +747,7 @@ dispatch_live() {
         CODEX_EXEC_EXPECT_OUTPUT=1 \
         HOME="$REP_HOME" \
         CODEX_HOME="$REP_CODEX_HOME" \
+        TMPDIR="$REP_TMPDIR" \
         PROBE_SEAL_PROFILE_FILE="$SEAL_PROFILE_FILE" \
             codex_exec_guarded >/dev/null
     ) || rc=$?
@@ -571,7 +772,8 @@ dispatch_live() {
         python3 "$FIXTURE_META_TOOL" assemble-transcript \
             --runtime-file "$runtime_file" --prompt-file "$prompt_file" \
             --fixture-dir "$LIVE_STAGE" --probe "$PROBE" \
-            --arm "$arm" --rep "$rep" --workspace "$workspace" >&9 || rc=$?
+            --arm "$arm" --rep "$rep" --workspace "$workspace" \
+            --workspace-reset >&9 || rc=$?
     fi
     if [[ "$rc" -eq 0 ]]; then
         receipt="$(python3 "$FIXTURE_META_TOOL" classify-open \
@@ -609,19 +811,13 @@ publish_fixture_set() {
 if [[ $REPLAY -eq 0 ]]; then
     LIVE_STAGE="$(mktemp -d "$PROBE_DIR/.${FIXTURE_SET}.capture.XXXXXX")"
     chmod 0700 "$LIVE_STAGE"
-    # Harness-private per-rep files (prompt, raw JSONL, stderr) sit beside the
-    # stage inside the checkout, which the seal denies to every rep.
-    # Harness-private, OUTSIDE the checkout: node aborts at startup when its
-    # stdio files sit under a file-read* denied tree (it stats them), so this
-    # dir is denied file-read-DATA only (contents and listing, not metadata).
-    LIVE_DISPATCH="$(mktemp -d "${TMPDIR:-/tmp}/probe-dispatch.XXXXXX")"
-    chmod 0700 "$LIVE_DISPATCH"
-    # It holds prompt copies and raw producer streams only; the published set
-    # carries the bound transcripts, so it never outlives the run.
-    trap 'rm -rf -- "$LIVE_DISPATCH"' EXIT
-    # Parent of every per-rep workspace (dispatch_live mktemps one per rep).
-    LIVE_WORKSPACE_ROOT="$(mktemp -d "${TMPDIR:-/tmp}/probe-ws.XXXXXX")"
-    chmod 0700 "$LIVE_WORKSPACE_ROOT"
+    # One run directory for the whole capture: home/, ws/, tmp/ and the
+    # harness-private dispatch/ (prompt copies and raw producer streams). It
+    # lives OUTSIDE the checkout because node aborts at startup when its stdio
+    # files sit under a file-read* denied tree (it stats them), so dispatch/ is
+    # denied file-read-DATA and writes, never metadata. The EXIT trap takes the
+    # whole directory, so nothing from this run outlives it.
+    make_run_dir
     if [[ "$SEAL_MODE" == "seatbelt" ]]; then
         build_seal
     fi
