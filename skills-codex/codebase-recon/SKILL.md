@@ -1,6 +1,6 @@
 ---
 name: codebase-recon
-description: 'Trace a repo into cited flows. Triggers: "codebase recon", "trace this codebase", "repository audit", "refresh the prior recon".'
+description: 'Trace a repo into cited flows. Not for a bounded question; that is research. Triggers: "codebase recon", "trace this codebase", "repository audit", "refresh the prior recon".'
 ---
 # Codebase Recon
 
@@ -22,7 +22,7 @@ mental model, not a file inventory.
 Observable in the trace, without reading the prose:
 
 - The manifest at
-  `.agents/scratch/codebase-recon/<run-id>$codebase-recon.json` names the
+  `.agents/scratch/codebase-recon/<run-id>/codebase-recon.json` names the
   exact commit and passes
   `skills/codebase-recon/scripts/validate-output.sh <codebase-recon.json>`.
 - Every `fact` cites `file:line`, and every `inference` cites the facts it

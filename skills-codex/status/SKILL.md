@@ -21,6 +21,8 @@ Show AgentOps status for fleet-router (ao is installed). Report only observable 
 - Runtime phase and tool-call activity get labeled `not_checked` unless the caller supplied that source separately.
 - Tracker, Git, and factory state stay in their own reported lines rather than one blended `health` claim.
 
+## Contract
+
 Report only observable local facts: available intent and verdict artifacts and
 their counts; deterministic check results; evidence recency; and unavailable or
 corrupt sources. The canonical durable stores are `.agents/ao/intents/sha256`

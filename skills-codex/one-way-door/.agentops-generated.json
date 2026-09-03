@@ -2,6 +2,6 @@
   "generator": "codex-sync",
   "source_skill": "skills/one-way-door",
   "layout": "modular",
-  "source_hash": "c2b68cd4ac072715d86595ab08dc360cb93b9241a203164a3fe075069c17f089",
-  "generated_hash": "84a9908609cbfcc513caf43d4feb0fe3f25f6bc7e77f32e50e8bb7220846fc6a"
+  "source_hash": "3e5df5e06f558f0e9c53ca0c4a9f78b96df839b934483c0f30881989a34bdcb2",
+  "generated_hash": "869926f8f35389740bbee8f142f64514477e63aa2b98ae6c2a3ff62702a0aaf6"
 }

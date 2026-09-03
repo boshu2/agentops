@@ -1,6 +1,6 @@
 ---
 name: validate
-description: 'Freshly judge a finished change against its acceptance: PASS, FAIL, or NOT_PROVEN. Triggers: "validate", "is this proven".'
+description: 'Freshly judge a finished change against its acceptance: PASS, FAIL, or NOT_PROVEN. Not for claim-vs-tree checks; that is reality-check. Triggers: "validate", "is this proven".'
 ---
 # Validate
 
@@ -14,8 +14,8 @@ Validate leaves to the caller.
 
 ```text
 Validate bead ag-1234 in this fresh context. Intent: the bead text and digest.
-Subject: manifest.json from `python3 scripts/validate.py manifest --root .
---include cli/internal/gates`. Author context ctx-a1. Re-run `cd cli && go test
+Subject: manifest.json from `python3 skills/validate/scripts/validate.py
+manifest --root . --include cli/internal/gates`. Author context ctx-a1. Re-run `cd cli && go test
 ./internal/gates/...`. Return PASS, FAIL, or NOT_PROVEN with evidence; stop.
 ```
 

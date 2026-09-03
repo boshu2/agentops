@@ -1,6 +1,6 @@
 ---
 name: research
-description: 'Answer one bounded question, cited. Triggers: "research", "investigate this question", "find evidence".'
+description: 'Answer one bounded question, cited. Not for dissecting a codebase; that is codebase-recon or reverse-engineer. Triggers: "research", "investigate this question", "find evidence".'
 ---
 # Research
 

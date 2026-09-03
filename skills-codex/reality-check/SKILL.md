@@ -27,7 +27,7 @@ still a gap.
 Observable in the trace, without reading the prose:
 
 - Every finding cites a file, command result, or artifact inside
-  `.agents/scratch/reality-check/<run-id>$reality-check-report.json`.
+  `.agents/scratch/reality-check/<run-id>/reality-check-report.json`.
 - A completion claim carries a disposition per stated goal, each one of
   `confirmed`, `concrete gap`, or `unverifiable`.
 - `skills/reality-check/scripts/validate-output.sh` accepts the report

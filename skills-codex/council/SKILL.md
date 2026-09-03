@@ -1,6 +1,6 @@
 ---
 name: council
-description: 'Gather independent views on a high-stakes judgment. Triggers: "council", "multi-judge review", "independent perspectives".'
+description: 'Gather independent views on a high-stakes judgment. Not for one-judge plan challenge; that is premortem. Triggers: "council", "multi-judge review", "independent perspectives".'
 ---
 # Council
 

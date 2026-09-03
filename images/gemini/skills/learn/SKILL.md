@@ -54,6 +54,8 @@ Observable in the trace, without reading the prose:
 - Output written to `.agents/scratch/learn/` is labeled advisory and
   TTL'd, not a source of record.
 
+## Contract
+
 Learn does not run during RPI, validate a subject, alter a verdict, mutate a
 plan, promote a rule, choose continuation, or mint lifecycle artifacts. Missing
 Learn output never changes whether a candidate is valid.

@@ -63,6 +63,10 @@ read and judge; the orchestrating context fixes. Validate emits no WARN,
 confidence, disposition, briefing learning, owner, next action, repair, retry,
 replan, helper, escalation, tracker, Git, release, closure, or delivery state.
 RPI and Validate reports end with the evidence; the caller owns continuation.
+A wrong subject needs no second judge: a subject or digest mismatch is
+`NOT_PROVEN` before any cross-family leg runs. Validate never asks the model
+to reconstruct Plan or Candidate packets; identity, scope, and freshness come
+from runtime receipts.
 
 ## Invariants the traversal keeps
 
@@ -76,6 +80,10 @@ RPI and Validate reports end with the evidence; the caller owns continuation.
   lists out of the response unless an integrity failure makes one necessary.
 - Report statuses are exactly `PASS | FAIL | NOT_PROVEN | NOT_PLANNED |
   NOT_BUILT`; the last two describe progress, never a semantic verdict.
+- Bounded repair changes orchestration cost, never acceptance, exact identity,
+  fail-closed scope, or validation authority.
+- `not_checked` keeps its meaning across rounds: an unverified in-scope surface
+  stays `NOT_PROVEN`, and no round may empty it to reach PASS.
 
 ## Incident appendix
 
