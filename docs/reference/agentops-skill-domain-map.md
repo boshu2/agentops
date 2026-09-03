@@ -4,7 +4,7 @@
 
 ## domain
 
-`council`, `domain`, `fitness`, `goals`, `idea-genie`, `one-way-door`, `plan`, `postmortem`, `premortem`, `product`, `reality-check`, `rpi`, `shared`
+`council`, `crank`, `domain`, `fitness`, `goals`, `idea-genie`, `one-way-door`, `plan`, `postmortem`, `premortem`, `product`, `reality-check`, `rpi`, `shared`
 
 ## driven-adapter
 
@@ -36,6 +36,7 @@
 | `converter` | cross-vendor | `keep_specialist` | - | `converter` | `write_converted_skill_projection` |
 | `council` | judgment | `keep_strategy` | - | `collect_independent_judgments`, `synthesize_disagreement` | `write_advisory_council_report` |
 | `craft-goal` | judgment | `keep_specialist` | - | `goal_prompt_design`, `goal_prompt_lint` | - |
+| `crank` | meta | `keep` | - | `execute_wave` | `dispatch_rpi_per_lane` |
 | `dcg` | execution | `keep_specialist` | - | `dcg` | `write_dcg_config` |
 | `doc` | product | `keep_specialist` | - | `doc` | `write_documentation` |
 | `domain` | knowledge | `keep_specialist` | - | `domain` | - |

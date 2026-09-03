@@ -18,6 +18,7 @@ graph LR
   converter["converter"]
   council["council"]
   craft_goal["craft-goal"]
+  crank["crank"]
   dcg["dcg"]
   doc["doc"]
   domain["domain"]

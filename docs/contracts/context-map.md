@@ -30,6 +30,7 @@
 | `codebase-recon` | `customer-of` | `validate` |
 | `codex-exec` | `supplier-to` | `validate` |
 | `craft-goal` | `supplier-to` | `plan` |
+| `crank` | `customer-of` | `rpi` |
 | `fitness` | `shared-kernel` | `standards` |
 | `goals` | `alias-of` | `fitness` |
 | `idea-genie` | `customer-of` | `research` |
@@ -98,6 +99,9 @@
 | `craft-goal` | consumes | `goal-acceptance` |
 | `craft-goal` | produces | `outer-goal-prompt` |
 | `craft-goal` | produces | `goal-safety-report` |
+| `crank` | consumes | `rpi` |
+| `crank` | consumes | `caller-selected-wave` |
+| `crank` | produces | `wave-evidence` |
 | `doc` | consumes | `repo-context` |
 | `doc` | produces | `documentation` |
 | `domain` | produces | `stdout` |

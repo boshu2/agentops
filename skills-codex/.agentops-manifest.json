@@ -2,7 +2,7 @@
   "generator": "manual-maintained",
   "source_root": "skills",
   "layout": "modular",
-  "codex_override_catalog_hash": "7d023129d7469c29c17c2b1e1efac0d38708f103dac38a3ec146e0e9a5ff7283",
+  "codex_override_catalog_hash": "f3aa9c82ab71916ac7dfbf218238d18c157337a13ea2c393ea62bbb2f23bb685",
   "codex_override_catalog": {
     "version": 1,
     "description": "Machine-readable Codex treatment map for the full skill catalog.",
@@ -368,6 +368,12 @@
         "treatment": "parity_only",
         "wave": "catalog-parity",
         "reason": "Auto-generated parity twin (codex-sync): skills/human-only-skills is the source of truth; no durable Codex-specific divergence yet."
+      },
+      {
+        "name": "crank",
+        "treatment": "parity_only",
+        "wave": "catalog-parity",
+        "reason": "Auto-generated parity twin (codex-sync): skills/crank is the source of truth; no durable Codex-specific divergence yet."
       }
     ]
   },
@@ -455,6 +461,12 @@
       "source_skill": "skills/craft-goal",
       "source_hash": "7cb5678a3cf55ead80a0e43afdc62ead5d8cd36ff2a41d2d803b6bd74e1215bb",
       "generated_hash": "10fbf5148de2ab8d9d4d9b57a72f3964b977f0705abe2ade4ace316074439539"
+    },
+    {
+      "name": "crank",
+      "source_skill": "skills/crank",
+      "source_hash": "5ee822745134ef2c965798579b264d4f91b10969aec1966cc8c93473803e8046",
+      "generated_hash": "5184ca0499afe98dcf69bf5e13dc7e94604657518012e09e4b0bd5f3d2501966"
     },
     {
       "name": "dcg",
@@ -709,5 +721,5 @@
       "generated_hash": "dbb4d3af123f40bb4d20f0dbfea708d0be83763c1cef5d0f240798789bf84a28"
     }
   ],
-  "package_count": 56
+  "package_count": 57
 }

@@ -2,11 +2,11 @@
 
 # Skill Router
 
-56 live skills. Metadata is the sole inventory and graph source.
+57 live skills. Metadata is the sole inventory and graph source.
 
 ## keep
 
-`implement`, `plan`, `rpi`, `validate`
+`crank`, `implement`, `plan`, `rpi`, `validate`
 
 ## keep_off_path
 
@@ -42,6 +42,7 @@
 | `converter` | cross-vendor | `keep_specialist` | - | `converter` | `write_converted_skill_projection` |
 | `council` | judgment | `keep_strategy` | - | `collect_independent_judgments`, `synthesize_disagreement` | `write_advisory_council_report` |
 | `craft-goal` | judgment | `keep_specialist` | - | `goal_prompt_design`, `goal_prompt_lint` | - |
+| `crank` | meta | `keep` | - | `execute_wave` | `dispatch_rpi_per_lane` |
 | `dcg` | execution | `keep_specialist` | - | `dcg` | `write_dcg_config` |
 | `doc` | product | `keep_specialist` | - | `doc` | `write_documentation` |
 | `domain` | knowledge | `keep_specialist` | - | `domain` | - |
