@@ -226,6 +226,11 @@ CSTUB_EOF
   [ "$status" -eq 0 ]
   jq -e '.evidence_kind == "live_agent"' "$TMP/ek.json" >/dev/null
   jq -e '.aggregate_delta == 1' "$TMP/ek.json" >/dev/null
+  # The label is a caller claim; the receipt binds the runner it was made about.
+  local want_sha
+  want_sha="$( (sha256sum "$TMP/runner/real-runner" 2>/dev/null || shasum -a 256 "$TMP/runner/real-runner") | awk '{print $1}')"
+  [ "$(jq -r '.runner.path' "$TMP/ek.json")" = "$TMP/runner/real-runner" ]
+  [ "$(jq -r '.runner.sha256' "$TMP/ek.json")" = "$want_sha" ]
 }
 
 @test "CORPUS_DELTA_RUNNER as a bare PATH command resolves through command -v before any cd" {

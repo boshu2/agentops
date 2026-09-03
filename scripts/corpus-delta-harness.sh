@@ -104,12 +104,19 @@ RUNNER="$(cd "$(dirname "$RUNNER")" && pwd)/$(basename "$RUNNER")"
 # Validated HERE, before any sandbox exists or any seed runs, so bad input costs
 # zero runner calls (a live agent is metered).
 EVIDENCE_KIND="${CORPUS_DELTA_EVIDENCE_KIND:-harness_plumbing}"
+if command -v sha256sum >/dev/null 2>&1; then
+  RUNNER_SHA256="$(sha256sum "$RUNNER" | awk '{print $1}')"
+else
+  RUNNER_SHA256="$(shasum -a 256 "$RUNNER" | awk '{print $1}')"
+fi
 case "$EVIDENCE_KIND" in
   harness_plumbing) ;;
   live_agent)
-    # A live-agent label is a claim about the runner, not a free choice: it is
-    # refused when the resolved runner lives under a test tree or is named as a
-    # stub or fake. The check runs on the canonical absolute path, so a relative
+    # A live-agent label is a caller declaration the harness cannot prove: it
+    # binds the resolved runner's path and SHA-256 into the receipt (below) so a
+    # reader can check the claim against a known agent binary, and it refuses
+    # the obvious stubs cheaply: a runner under a test tree or named stub or
+    # fake. The check runs on the canonical absolute path, so a relative
     # spelling cannot dodge it.
     case "$RUNNER" in
       */tests/*|*stub*|*fake*)
@@ -220,6 +227,7 @@ scorecard="$(jq -n \
   --argjson off_pass "$off_pass" --argjson off_degr "$off_degr" --argjson off_total "$off_total" --argjson off_elapsed "$off_elapsed" \
   --argjson on_pass "$on_pass" --argjson on_degr "$on_degr" --argjson on_total "$on_total" --argjson on_elapsed "$on_elapsed" \
   --arg task "$TASK_ID" --argjson seeds "$SEEDS" --arg evidence_kind "$EVIDENCE_KIND" \
+  --arg runner_path "$RUNNER" --arg runner_sha256 "$RUNNER_SHA256" \
   '
   ($off_pass / $off_total) as $off_score |
   ($on_pass / $on_total) as $on_score |
@@ -229,6 +237,7 @@ scorecard="$(jq -n \
     suite_id: ("corpus-delta-" + $task),
     suite_path: "scripts/corpus-delta-harness.sh",
     evidence_kind: $evidence_kind,
+    runner: { path: $runner_path, sha256: $runner_sha256 },
     seeds_per_arm: $seeds,
     elapsed_seconds: ($off_elapsed + $on_elapsed),
     degraded: $degraded,
