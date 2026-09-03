@@ -32,12 +32,12 @@ func TestModule_CommandAttributes(t *testing.T) {
 	}
 }
 
-func TestDemoShowsOnePassBoundary(t *testing.T) {
+func TestDemoShowsBoundedRepairBoundary(t *testing.T) {
 	var out bytes.Buffer
 	if err := quickDemo(&out); err != nil {
 		t.Fatal(err)
 	}
-	for _, want := range []string{"AGENTOPS ONE-PASS DEMO", "existing intent source", "runtime derives", "subject-manifest.v1", "fresh validation result", "persistence is optional", "stops"} {
+	for _, want := range []string{"AGENTOPS RPI DEMO", "existing intent source", "runtime derives", "subject-manifest.v1", "fresh validation result", "persistence is optional", "stops"} {
 		if !strings.Contains(out.String(), want) {
 			t.Fatalf("demo missing %q:\n%s", want, out.String())
 		}
@@ -69,8 +69,8 @@ func TestPublishedDemoQuick(t *testing.T) {
 	if err := command.Execute(); err != nil {
 		t.Fatalf("ao demo --quick failed: %v\n%s", err, out.String())
 	}
-	if !strings.Contains(out.String(), "AGENTOPS ONE-PASS DEMO") {
-		t.Fatalf("demo output missing one-pass example:\n%s", out.String())
+	if !strings.Contains(out.String(), "AGENTOPS RPI DEMO") {
+		t.Fatalf("demo output missing the RPI example:\n%s", out.String())
 	}
 }
 
