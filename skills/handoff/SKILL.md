@@ -48,6 +48,8 @@ Observable in the trace, without reading the prose:
 - Only caller-supplied `continuation` text appears as next action; no
   owner, tracker state, or verdict is invented.
 
+## Contract
+
 Write a factual session artifact that another context can read. Include:
 
 - caller-supplied goal and summary;

@@ -1,6 +1,6 @@
 ---
 name: one-way-door
-description: 'Route irreversible pending decisions to the caller. Not for challenging a frozen plan; that is premortem. Triggers: "is this a one-way door", "can we undo this", "should I just decide this", "the models disagree with me", before any auto-decided approval gate.'
+description: 'Classify a pending decision as reversible or irreversible; route irreversible ones to the caller. Not for challenging a frozen plan; that is premortem. Triggers: "is this a one-way door", "can we undo this", "should I just decide this", "the models disagree with me", before any auto-decided approval gate.'
 practices:
 - design-by-contract
 - fail-safe-defaults
