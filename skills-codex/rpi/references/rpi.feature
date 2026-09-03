@@ -1,6 +1,6 @@
 Feature: RPI runs one bounded experiment
   @covered-by:skills/rpi/tests/test_run_once.py::test_anti_ceremony_guard_runs_once_before_plan
-  Scenario: Guard CONTINUE preserves the single-pass core order
+  Scenario: Guard CONTINUE preserves the core phase order
     Given one intent
     When RPI is invoked
     Then the anti-ceremony guard is invoked exactly once before Plan
