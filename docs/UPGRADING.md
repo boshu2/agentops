@@ -25,11 +25,16 @@ Three actions prevent broken workflows after upgrading:
    scripts are refusing tombstones. To track skills from source instead, see
    the next section.
 
-The semantic loop is now:
+The semantic loop became (3.0 through 3.6):
 
 ```text
 RPI -> Plan -> Implement -> fresh Validate -> report and stop
 ```
+
+As of ADR-0017 (2026-09-03) a bounded repair phase follows Validate:
+`FAIL` or `NOT_PROVEN` with findings repairs and re-validates under the
+convergence law within the caller's `repair_rounds`; the single-pass line above
+is historical.
 
 AgentOps no longer owns retry, queue, work-claim, Git, closure, release, or
 delivery state. Plan shapes one behavior, Implement runs one bounded experiment,

@@ -6,12 +6,6 @@
 > r5; execution proceeded on Bo's instruction. Fresh per-lane validators PASS;
 > two cross-family train reviews, all findings closed on the landed tip.
 > Train 2 (corpus reorganization) is a named successor,
-> **Train state (09-02 evening):** branch `legible/l2` @ `7e9edc770`, 8 commits
-> on `b0c81349d` (L1 ×4, L2 ×3, I-1 seam fix ×1); L3 excluded (second fresh
-> validation FAIL, awaiting Bo). L1 PASS (fresh), L2 PASS (fresh), I-1 FAIL →
-> one seam fix (stale literal) → re-validation pending; cross-family train
-> review r1 FAIL (7) → all 7 closed on tip → r2 pending. Full gate 71/71 (HEAD
-> binary), run-all green, Go bar green, security quick PASS, lint clean.
 > not part of this intent. · **Intent source:** this document, once Bo
 > accepts. **Provenance:** 2026-09-02 five-lane field audit, artifact
 > <https://claude.ai/code/artifact/b7dfc5c2-e1a9-4ac0-a613-dcbdee5833b8>;
@@ -27,6 +21,13 @@
 > `skills/*/scripts/**/*.py`; no advisory gate promoted to blocking; the one
 > acceptance change (the Codex catalog average) is named, measured, and
 > justified in the commit body against its original intent.
+>
+> **Train state (09-02 evening):** branch `legible/l2` @ `7e9edc770`, 8 commits
+> on `b0c81349d` (L1 ×4, L2 ×3, I-1 seam fix ×1); L3 excluded (second fresh
+> validation FAIL, awaiting Bo). L1 PASS (fresh), L2 PASS (fresh), I-1 FAIL →
+> one seam fix (stale literal) → re-validation pending; cross-family train
+> review r1 FAIL (7) → all 7 closed on tip → r2 pending. Full gate 71/71 (HEAD
+> binary), run-all green, Go bar green, security quick PASS, lint clean.
 
 ## Caller-visible outcome (the one behavior)
 

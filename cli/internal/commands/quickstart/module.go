@@ -1,5 +1,5 @@
 // Package quickstart owns Cobra presentation for the `ao quick-start` command.
-// The command prints a static single-pass workflow summary, so it performs no
+// The command prints a static RPI workflow summary, so it performs no
 // filesystem, process, or clock effect.
 package quickstart
 
@@ -41,11 +41,11 @@ func (Module) Contract() clicontract.CommandContract {
 func (Module) Command() *cobra.Command {
 	return &cobra.Command{
 		Use:   "quick-start",
-		Short: "Show the single-pass AgentOps workflow",
+		Short: "Show the AgentOps RPI workflow",
 		Long: `AgentOps is a small semantic evidence layer around agent work.
 
-Run the RPI skill for one pass:
-  Plan -> Implement -> fresh Validate -> report and stop
+Run the RPI skill for one traversal:
+  Plan -> Implement -> fresh Validate -> repair to convergence -> report
 
 The CLI does not claim work, retry, manage Git, or deliver changes. Use
 ao gate check for deterministic repository checks and ao provenance for
@@ -53,7 +53,7 @@ generic evidence inspection.`,
 		Args:    cobra.NoArgs,
 		GroupID: "start",
 		Run: func(cmd *cobra.Command, _ []string) {
-			fmt.Fprintln(cmd.OutOrStdout(), "RPI -> Plan -> Implement -> fresh Validate -> report and stop")
+			fmt.Fprintln(cmd.OutOrStdout(), "RPI -> Plan -> Implement -> fresh Validate -> repair to convergence -> report")
 			fmt.Fprintln(cmd.OutOrStdout(), "Deterministic checks: ao gate check")
 			fmt.Fprintln(cmd.OutOrStdout(), "Semantic judgment: invoke the Validate skill from a fresh context")
 			fmt.Fprintln(cmd.OutOrStdout(), "Artifact persistence: optional; request verdict.v2 only for machine-readable evidence")

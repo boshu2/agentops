@@ -16,11 +16,13 @@ intent
           -> runtime-derived subject-manifest.v1 + check receipts
           -> one fresh independent validation
           -> PASS | FAIL | NOT_PROVEN
-          -> report and stop
+          -> FAIL / NOT_PROVEN with findings: bounded repair under the
+             convergence law (caller's repair_rounds), re-validate freshly
+          -> report when converged, stopped by the law, or out of rounds
 ```
 
-One traversal is one experiment. The caller, a Goal, or a factory decides
-whether to start another; the traversal itself never continues.
+One traversal is one experiment plus its bounded repair. The caller, a Goal, or
+a factory decides whether to start another; the traversal never selects it.
 
 ## Roles
 
@@ -130,9 +132,12 @@ verdict afterward, but ledger availability never affects validity.
 ## Stop boundary and revision
 
 RPI invokes the anti-ceremony guard exactly once. On `CONTINUE`, RPI invokes
-Plan, Implement, and Validate at most once and then stops; on `STOP`, it invokes
-none of them. A FAIL or NOT_PROVEN report does not repair, replan, consult a
-helper, escalate, or invoke a second phase. `NOT_PLANNED` and `NOT_BUILT`
+Plan and Implement at most once; on `STOP`, it invokes none of them. Validate
+repeats only inside the bounded repair phase (ADR-0017): a `FAIL` or
+`NOT_PROVEN` with findings is repaired and re-validated freshly while the
+convergence law admits another round, and RPI stops when converged, stopped by
+the law, or out of the caller's `repair_rounds`. The law is stated once, in
+`skills/rpi/SKILL.md`. RPI does not replan, consult a helper, or escalate. `NOT_PLANNED` and `NOT_BUILT`
 describe RPI progress only and are not verdict values.
 
 If a caller wants another experiment, it updates the existing bead or caller

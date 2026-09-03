@@ -61,7 +61,7 @@ PY
   done
 
   require_text AGENTS.md \
-    "RPI -> Plan -> Implement -> fresh Validate -> report and stop"
+    "RPI -> Plan -> Implement -> fresh Validate -> repair to convergence -> report"
   require_text AGENTS.md \
     "Persist \`verdict.v2\` only when"
   require_text PRODUCT.md \

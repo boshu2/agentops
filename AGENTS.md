@@ -9,7 +9,7 @@ AgentOps joins them as a federated integration graph and adds the judgment
 step, one RPI traversal at a time:
 
 ```text
-RPI -> Plan -> Implement -> fresh Validate -> report and stop
+RPI -> Plan -> Implement -> fresh Validate -> repair to convergence -> report
 ```
 
 No fresh independent judgment over the exact subject means the experiment is
@@ -127,9 +127,14 @@ Skill logic ships in Go via `ao`;
    top-level evidence, evidence for every criterion, and an empty
    `not_checked`. Persist `verdict.v2` only when requested by a caller or
    required by a declared consumer.
-4. **Report and stop.** Report the result; emit no next action; no automatic
-   revision. Two consecutive control artifacts with no new implementation evidence end the run.
-   Reports lead with the subject, never artifact counts.
+4. **Repair to convergence, then report.** On `FAIL` or `NOT_PROVEN` with
+   findings, repair and re-validate freshly while the convergence law admits
+   another round (caller-declared `repair_rounds`, default 2; open finding
+   ids non-growing; no closed id reopens; the subject digest or the evidence
+   changed). Stop when converged, stopped by the law, or out of rounds
+   (ADR-0017). Report the result; emit no next action. Two consecutive
+   rounds with no new implementation evidence end the run. Reports lead with
+   the subject, never artifact counts.
 
 A caller may revise the intent and start a new invocation. Learn is an
 optional later consumer and cannot change core outcomes.

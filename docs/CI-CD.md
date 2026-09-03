@@ -13,7 +13,7 @@ Repositories own delivery policy for local and cloud agents.
 ## Separation of responsibilities
 
 ```text
-AgentOps: Plan -> Implement once -> Validate once -> report and stop
+AgentOps: Plan -> Implement once -> fresh Validate -> bounded repair -> report
 Repository: deterministic checks -> repository-selected Git/CI/release policy
 ```
 

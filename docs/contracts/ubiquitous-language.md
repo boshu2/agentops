@@ -7,7 +7,7 @@
 | Operations layer | The product category: the portable layer that makes heterogeneous agentic engineering systems interoperate semantically. |
 | Federated integration graph | The topology: caller-owned intent, source systems, agents, factories, checks, and judgments remain separate nodes joined by typed handoffs. |
 | Semantic work-and-proof protocol | The interoperability contract: exact intent, exact subject, evidence, fresh judgment, and honest outcomes. |
-| RPI traversal | One standard path through the graph: Plan -> Implement -> fresh Validate -> report and stop. |
+| RPI traversal | One standard path through the graph: Plan -> Implement -> fresh Validate -> bounded repair to convergence -> report. |
 
 The traversal is RPI. The graph is the topology. The protocol defines
 interoperability. The operations layer is the product.

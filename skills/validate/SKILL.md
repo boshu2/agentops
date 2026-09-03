@@ -53,16 +53,41 @@ to reconstruct Plan or Candidate packets.
 Missing, colliding, or unattested identities produce `NOT_PROVEN`. This is a
 declared trust fact, not cryptographic proof that contexts were isolated.
 
-## Cross-model fresh validator (caller-elected)
+## Cross-family fresh validator (default on risky surfaces)
 
-A caller may request that the fresh validator run on a different model than
-the author. Dispatch via the controller-session recipe in
-the `agent-native` model-dispatch recipe (`codex-exec` and/or `ntm`,
-probed at runtime). Record author and validator `model_identity` in evidence
-refs and freshness attestation notes — do not change `verdict.v2` schema. If
-the requested validator model has no live adapter, disclose the unsatisfied
-diversity request and proceed same-model; never invoke `claude -p` /
-`claude --print`. Single fresh validator remains the default shape.
+A second fresh validator from a different model family runs by default whenever
+the diff touches a risky surface:
+
+- `cli/internal/gates/**`
+- `scripts/check-*.sh`
+- `tests/**`
+- `skills/*/scripts/**`
+- `skills/cc-hooks/policies/**`
+- `lib/**`
+- `.github/workflows/**` and `scripts/security-gate.sh` (the gate scans the whole tree, so "anything it scans" is not a predicate)
+
+Outside that list the second validator is caller-elected and a single fresh
+validator remains the default shape.
+
+Dispatch is fixed by the runtime floor: never `claude -p` or `claude --print`,
+directly or indirectly.
+
+| Orchestrating runtime | Cross-family judge leg |
+|---|---|
+| Claude | a read-only `codex exec` judge leg |
+| Codex | a caller-selected interactive Claude session in an NTM pane |
+
+Probe the adapters at runtime through the `agent-native` model-dispatch recipe
+(`codex-exec` and/or `ntm`). The judge leg reads and judges; it never mutates
+the subject. Record author and validator `model_identity` in evidence refs and
+freshness attestation notes; do not change the `verdict.v2` schema.
+
+When no authorized live adapter is available, disclose the unsatisfied
+diversity request as `diversity_unsatisfied`. Off a risky surface that
+disclosure rides along with a same-model result. On a risky surface a
+single-family PASS is an unverified acceptance surface: the result is
+`NOT_PROVEN`, and same-family agreement never counts as convergence. A
+single-family FAIL stands as FAIL; a wrong subject needs no second judge.
 
 ## Mutating-check quarantine
 
@@ -169,6 +194,10 @@ python3 "$SKILL_DIR/scripts/validate.py" manifest \
    `verdict_dir`.
 7. Return the semantic result and, when persisted, the artifact path and digest.
    Stop.
+
+Routine rounds keep the bounded, receipt-driven freshness contract below, and
+the repository's full literal CI command set, as quoted in `AGENTS.md`, is
+required once, on the final integrated subject.
 
 The digest is SHA-256 over canonical JSON with `artifact_digest` omitted. Writes
 use a same-directory temporary file, flush, fsync, and atomic rename. Identical

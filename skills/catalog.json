@@ -1,6 +1,6 @@
 {
   "schema_version": "3",
-  "skill_count": 56,
+  "skill_count": 57,
   "skills": [
     {
       "canonical_status": "canonical",
@@ -487,6 +487,45 @@
       ],
       "references_count": 1,
       "tier": "judgment",
+      "user_invocable": true
+    },
+    {
+      "canonical_status": "canonical",
+      "capabilities": [
+        "execute_wave"
+      ],
+      "codex_override_present": true,
+      "consumes": [
+        "rpi",
+        "caller-selected-wave"
+      ],
+      "context_rel": [
+        {
+          "kind": "customer-of",
+          "with": "rpi"
+        }
+      ],
+      "dependencies": [
+        "rpi"
+      ],
+      "description": "Execute one caller-selected wave by invoking RPI once per lane and return the wave evidence, then stop. Triggers: \"crank\", \"execute the next wave\", \"run this wave\".",
+      "disposition": "keep",
+      "effects": [
+        "dispatch_rpi_per_lane"
+      ],
+      "graph_root": true,
+      "hexagonal_role": "domain",
+      "name": "crank",
+      "practices": [
+        "small-batch-flow",
+        "design-by-contract",
+        "team-topologies"
+      ],
+      "produces": [
+        "wave-evidence"
+      ],
+      "references_count": 0,
+      "tier": "meta",
       "user_invocable": true
     },
     {
@@ -1331,7 +1370,7 @@
         "implement",
         "validate"
       ],
-      "description": "Coordinate one RPI traversal: one bounded Plan, Implement, and fresh Validate experiment, then report and stop. Triggers: \"run rpi\", \"run one traversal\", \"execute this plan\", orchestration or worker delegation that implements changes.",
+      "description": "Coordinate one RPI traversal: one bounded Plan and Implement experiment, then fresh Validate and a bounded repair phase to convergence. Triggers: \"run rpi\", \"run one traversal\", \"execute this plan\", orchestration or worker delegation that implements changes.",
       "disposition": "keep",
       "effects": [
         "invoke_anti_ceremony_guard",

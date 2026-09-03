@@ -1,12 +1,24 @@
 #!/usr/bin/env bash
 set -euo pipefail
 skill_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+# ADR-0017: RPI is no longer single-pass. Validate repeats inside the bounded
+# repair phase, so this contract asserts the phase lock that survives (Plan and
+# Implement once) plus positive canaries that each condition of the convergence
+# law is present by name.
 grep -q '^name: rpi$' "$skill_dir/SKILL.md"
-grep -Fq 'Plan -> Implement -> fresh Validate -> report' "$skill_dir/SKILL.md"
+grep -Fq 'Plan -> Implement -> fresh Validate -> bounded repair -> report' "$skill_dir/SKILL.md"
 grep -Fq 'dependencies: [anti-ceremony, plan, implement, validate]' "$skill_dir/SKILL.md"
 grep -Fq 'invokes the guard exactly once before Plan' "$skill_dir/SKILL.md"
 grep -Fq '`STOP`, dispatch no core phase' "$skill_dir/SKILL.md"
-grep -Fq 'dispatches each core phase at most once' "$skill_dir/SKILL.md"
+grep -Fq 'dispatches Plan and Implement at most once' "$skill_dir/SKILL.md"
+grep -Fq '## The convergence law' "$skill_dir/SKILL.md"
+grep -Fq 'rounds_used < repair_rounds' "$skill_dir/SKILL.md"
+grep -Fq "larger than the previous round" "$skill_dir/SKILL.md"
+grep -Fq 'No finding id closed in an earlier round reopens.' "$skill_dir/SKILL.md"
+grep -Fq 'the subject-manifest digest changed' "$skill_dir/SKILL.md"
+grep -Fq 'repair round N: k open findings' "$skill_dir/SKILL.md"
+grep -Fq '## Waves' "$skill_dir/SKILL.md"
+grep -Fq '## Cross-family validation' "$skill_dir/SKILL.md"
 grep -Fq 'creates no AgentOps packet' "$skill_dir/SKILL.md"
 grep -Fq 'Plan is closed for that intent' "$skill_dir/SKILL.md"
 grep -Fq 'spiral breaker' "$skill_dir/SKILL.md"

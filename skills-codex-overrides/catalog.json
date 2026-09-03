@@ -343,6 +343,12 @@
       "treatment": "parity_only",
       "wave": "catalog-parity",
       "reason": "Auto-generated parity twin (codex-sync): skills/human-only-skills is the source of truth; no durable Codex-specific divergence yet."
+    },
+    {
+      "name": "crank",
+      "treatment": "parity_only",
+      "wave": "catalog-parity",
+      "reason": "Auto-generated parity twin (codex-sync): skills/crank is the source of truth; no durable Codex-specific divergence yet."
     }
   ]
 }

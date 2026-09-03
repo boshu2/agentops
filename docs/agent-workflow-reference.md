@@ -7,7 +7,7 @@ traversal through its federated integration graph is one pass
 (exact semantics: [rpi-traversal.md](architecture/rpi-traversal.md)):
 
 ```text
-RPI -> anti-ceremony guard -> Plan -> Implement -> fresh Validate -> report and stop
+RPI -> anti-ceremony guard -> Plan -> Implement -> fresh Validate -> bounded repair -> report
 ```
 
 ## 1. Pre-dispatch guard

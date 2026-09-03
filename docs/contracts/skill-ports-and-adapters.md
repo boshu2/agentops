@@ -10,7 +10,7 @@ an AgentOps-owned control level.
 caller product boundary + fitness evidence
   -> caller-selected Goal / Mayor campaign (execution orchestrator)
        -> select one experiment intent
-       -> RPI traversal: anti-ceremony guard -> Plan -> Implement -> fresh Validate -> report and stop
+       -> RPI traversal: anti-ceremony guard -> Plan -> Implement -> fresh Validate -> bounded repair -> report
        -> consume the immutable report and verdict
        -> ratchet the graph, select another experiment, or stop
   -> optional post-verdict learning

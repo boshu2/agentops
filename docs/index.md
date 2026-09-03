@@ -7,7 +7,7 @@ that own work, execution, or delivery. It turns one intent into one
 evidence-bound engineering judgment:
 
 ```text
-RPI -> Plan -> Implement -> fresh Validate -> report and stop
+RPI -> Plan -> Implement -> fresh Validate -> repair to convergence -> report
 ```
 
 The product supplies behavior-first planning, one bounded implementation

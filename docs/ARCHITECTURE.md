@@ -8,7 +8,8 @@ existing bead or caller intent
   -> runtime-derived subject-manifest.v1 + check receipts
   -> fresh Validate
   -> PASS | FAIL | NOT_PROVEN
-  -> RPI report and stop
+  -> bounded repair under the convergence law (ADR-0017)
+  -> RPI report
 ```
 
 ## Core
@@ -22,11 +23,14 @@ existing bead or caller intent
   acceptance, and obtains one judgment from a distinct declared context. It
   stores a content-addressed verdict atomically only when requested by the
   caller or a declared downstream consumer.
-- **RPI** invokes each core phase at most once and reports the result.
+- **RPI** invokes Plan and Implement at most once, validates freshly, and on
+  `FAIL` or `NOT_PROVEN` with findings repairs and re-validates under the
+  convergence law within the caller's `repair_rounds` (ADR-0017).
 
-`FAIL` and `NOT_PROVEN` are terminal results for that invocation. A caller may
-update the existing intent source and start a new invocation. RPI never creates
-a parallel revision record or revises the subject automatically.
+`FAIL` and `NOT_PROVEN` are terminal when the law stops the repair phase or the
+rounds are spent. A caller may update the existing intent source and start a new
+invocation. RPI never creates a parallel revision record and never widens the
+caller's bound.
 
 ## Hexagonal boundary
 

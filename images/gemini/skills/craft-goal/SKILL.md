@@ -42,7 +42,7 @@ ratchets toward a larger outcome.
 ```text
 Goal / Mayor: observe graph → choose bounded wave → consume verdicts → ratchet
   └─ Bead: durable experiment intent, context, scratch, evidence, and links
-       └─ RPI: plan → implement → fresh validate → verdict → report and stop
+       └─ RPI: plan → implement → fresh validate → bounded repair → verdict → report
             └─ Implementation: one RED → GREEN → refactor experiment
 ```
 

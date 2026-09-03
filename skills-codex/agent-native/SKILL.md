@@ -7,8 +7,9 @@ description: 'Operate explicit orchestrator, implementer, validator, and scribe 
 Operate caller-selected agent sessions as explicit roles without turning the
 runtime into AgentOps lifecycle authority.
 
-For caller-elected multi-model judgment (mixed council, dueling perspectives,
-cross-model validate), follow
+For multi-model judgment (mixed council, dueling perspectives, cross-model
+validate, which is default on risky surfaces per ADR-0017 and caller-elected
+otherwise), follow
 [references/model-dispatch.md](references/model-dispatch.md): the working
 session is the controller; probe `codex-exec` and `ntm` at runtime; never
 require either; never use Agent Mail for judgment; never invoke `claude -p`.

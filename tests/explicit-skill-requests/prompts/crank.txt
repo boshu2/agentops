@@ -1,1 +1,1 @@
-Use /crank to execute this epic autonomously
+Use /crank to execute the one wave I selected and report per-lane evidence
