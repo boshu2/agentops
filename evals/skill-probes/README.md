@@ -110,7 +110,7 @@ and refuse a swapped record; a stage with no record is bound as mode `none`.
 `legacy-unsealed`: replayable, never coverage.
 
 The bound block is `{mode, platform, mechanism, sandbox_exec, wrap, timeout_bin,
-network, denied_read_roots, denied_read_data_roots, denied_link_roots,
+timeout_seconds, network, denied_read_roots, denied_read_data_roots, denied_link_roots,
 writable_roots, dev_write_paths, allowed_read_paths, launcher_chain,
 launcher_sha256, rep_env, env_allowlist, run_root, workspace_root,
 dispatch_root, git_common_root, real_tmpdir, real_codex_home, cache_root,
@@ -136,7 +136,7 @@ harness chose to write:
 - the profile: the block reconstructs the profile text to `profile_sha256`;
 - `platform` is Darwin, `mechanism` is `sandbox-exec`, `sandbox_exec` is
   `/usr/bin/sandbox-exec`, and `wrap` equals `[sandbox_exec, "-p",
-  profile_sha256]`;
+  profile_sha256, timeout_bin, "--foreground", timeout_seconds]`;
 - `network.mode` is `proxy-allowlist`, `network.hosts` is a subset of the five
   pinned entries, `network.ports` is exactly `[443]`, `network.unix_sockets` is
   empty, and the proxy authority is on `127.0.0.1`;

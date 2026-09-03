@@ -285,7 +285,7 @@ claimed and not enforced.
 | data roots optional | `cache_root` was optional and a falsy value made the root VANISH from the required list; link denies were checked only for the checkout and the home | under seatbelt `real_codex_home` and `cache_root` must be non-null, and every required root must appear in both the read denies and the link denies |
 | stale evaluator counted | `verify-scorecard` accepted a consistent `evaluator_matches_capture: false`, so a set captured by different harness or proxy bytes counted as coverage | tier eligibility requires the capture evaluator to equal the current one; replay may still report the mismatch, the gate labels the set `evaluator-stale` |
 | timeout budget unbound | `--timeout 0` omitted the wrapper while `timeout_bin` still named a binary | the budget is recorded as `timeout_seconds`, must be positive, and `wrap` carries the timeout argv |
-| launcher chain not a chain | prepending any existing file to `launcher_chain` stayed eligible | the chain starts at the invoked path and must be adjacent: each entry a symlink to the next, the last a regular file with the bound digest |
+| launcher chain not a chain | prepending any existing file to `launcher_chain` stayed eligible | the harness builds the chain from the invoked path; the verifier enforces adjacency (each entry a symlink to the next, the last a regular file with the bound digest) and does not yet bind the invoked path itself |
 | environment boundary leaked | the in-shell scrub could not clear bash's readonly exports (`SHELLOPTS`, `BASHOPTS`, `UID`, `EUID`, `PPID`) | the launch goes through a real `env -i` with the declared assignments, and a Darwin test compares the rep's own `env` to the recorded allowlist |
 | config growth unchecked in value | the permitted `[projects."<ws>"]` table was checked for its key set only | it must be exactly `{trust_level}` with a value from the observed set |
 | ledger overclaim | the xhigh row said "no rep ran a command" while `control-1` recorded an `rg` over its empty workspace | the rows say what the transcripts show: every command any rep ran is listed, none touched a denied path, no trap fired, no egress refused |
@@ -326,5 +326,5 @@ usable; at xhigh, 0/2, 2/2, 0/2, 0/2, 1/2 and 0/2; the one control PRESENT is
 xhigh rep 1 of the fifth capture.
 
 Every harness change moves the evaluator identity a scorecard binds, so every
-sealed row is recaptured after one (four times on 2026-09-03). Until that
+sealed row is recaptured after one (five times on 2026-09-03). Until that
 recapture the gate reports the rows as not measured and says why, per set.
