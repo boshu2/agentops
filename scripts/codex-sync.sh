@@ -263,10 +263,12 @@ def transform_body(body: str, known_skills: set[str], exempt: bool = False) -> s
     # a path segment. Longest names first (so /premortem wins over /pre). Exclude
     # when preceded by a path char (word/./-/_/slash, e.g. ../research/, foo/plan)
     # or followed by '/' (a path like /research/SKILL.md), so markdown links and
-    # file paths are left intact (the bug that turned ../foo/ into ..$foo/).
+    # file paths are left intact (the bug that turned ../foo/ into ..$foo/). A
+    # closing '>' counts as a path char too: `<run-id>/codebase-recon.json` is a
+    # path whose placeholder segment happens to precede a known skill name.
     for skill in sorted(known_skills, key=len, reverse=True):
-        body = re.sub(rf"(?<![\w./_-])/{re.escape(skill)}\b(?!/)", f"${skill}", body)
-    body = re.sub(r"(?<![\w./_-])/skill\b(?!/)", "$skill", body)
+        body = re.sub(rf"(?<![\w./_>-])/{re.escape(skill)}\b(?!/)", f"${skill}", body)
+    body = re.sub(r"(?<![\w./_>-])/skill\b(?!/)", "$skill", body)
 
     body = title + body
     if exempt:
@@ -364,9 +366,10 @@ def codex_catalog_description(name: str, source_description: str) -> str:
     """Skill-specific Codex activation catalog text.
 
     The catalog description is the model's routing signal, so it ships as whole
-    sentences: the FIRST SENTENCE of the source prose, one space, then the full
-    source ``Triggers:`` clause verbatim. Nothing else. Prose is never cut
-    inside a sentence.
+    sentences: the FIRST SENTENCE of the source prose, the ``Not for`` exclusion
+    sentence when the prose carries one, one space, then the full source
+    ``Triggers:`` clause verbatim. Nothing else. Prose is never cut inside a
+    sentence.
 
     The rule this replaced was a 44-character word-boundary cut. It truncated
     51 of 56 entries into fragments ("Freshly judge whether a finished change
@@ -392,8 +395,14 @@ def codex_catalog_description(name: str, source_description: str) -> str:
         prose = desc
         triggers = ""
 
-    prose = first_sentence(prose)
-    return " ".join(part for part in (prose, triggers) if part)
+    lead = first_sentence(prose)
+    # The negative-routing sentence ("Not for X; that is <sibling>.") is the
+    # second routing signal a description carries; the always-loaded catalog
+    # keeps it whole so Codex routes away from the sibling's job too.
+    tail = prose[len(lead):].strip()
+    if tail.startswith("Not for "):
+        lead = lead + " " + first_sentence(tail)
+    return " ".join(part for part in (lead, triggers) if part)
 
 
 def twin_skill_md(

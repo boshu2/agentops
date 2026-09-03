@@ -52,7 +52,9 @@ accrues. The catch-fuel alternative is precision-safe ([TIERED_MIDDLE council](.
    **suggestive, not conclusive** for all production regimes. We record the dissonance;
    we do not claim the compounding thesis is dead.
 4. **Stop manufacturing lab escapes.** The escape-harvest harness is built and reusable
-   (`evals/membrane/harvest.sh` + workflows), but further weak/strong-producer lab runs
+   (`evals/membrane/harvest.sh` + workflows; that tree was removed from the checkout in
+   the 2026-09-03 archival sweep and lives in git history:
+   `git log --diff-filter=D -- evals/membrane`), but further weak/strong-producer lab runs
    to force an escape are diminishing returns — the result (a competent membrane catches
    even subtle bugs) is consistent across producers. Reserve a run only for a specific
    new question.

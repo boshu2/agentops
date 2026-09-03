@@ -18,13 +18,9 @@
 
 `domain`, `standards`
 
-## library
-
-`shared`
-
 ## meta
 
-`agent-native`, `automation-shape-routing`, `crank`, `human-only-skills`, `operationalize`, `route`, `rpi`, `scope`, `skill-builder`, `skill-eval`, `toil-mining`, `workflow-builder`
+`agent-native`, `automation-shape-routing`, `crank`, `human-only-skills`, `operationalize`, `route`, `rpi`, `skill-builder`, `skill-eval`, `toil-mining`, `workflow-builder`
 
 ## orchestration
 
@@ -32,7 +28,7 @@
 
 ## product
 
-`doc`, `fitness`, `goals`, `product`, `security`
+`doc`, `fitness`, `product`, `security`
 
 ## session
 
@@ -61,7 +57,6 @@
 | `doc` | product | `keep_specialist` | - | `doc` | `write_documentation` |
 | `domain` | knowledge | `keep_specialist` | - | `domain` | - |
 | `fitness` | product | `keep_specialist` | - | `fitness` | `write_goal_snapshot`, `write_rendered_spec` |
-| `goals` | product | `keep_off_path` | - | - | - |
 | `handoff` | session | `keep_specialist` | - | `handoff` | `write_handoff_artifact`, `read_git_state`, `read_clock` |
 | `human-only-skills` | meta | `keep_specialist` | - | `human_only_skill_routing` | - |
 | `idea-genie` | execution | `keep_strategy` | - | `generate_evidenced_options`, `dueling_idea_genies` | `write_idea_portfolio` |
@@ -85,9 +80,7 @@
 | `rpi` | meta | `keep` | `anti-ceremony`, `plan`, `implement`, `validate` | `orchestrate_once`, `report` | `invoke_anti_ceremony_guard`, `dispatch_core_phases` |
 | `sbh` | execution | `keep_specialist` | - | `sbh` | `delete_reclaimable_files`, `release_disk_ballast`, `modify_host_storage_config` |
 | `scaffold` | execution | `keep_specialist` | - | `scaffold` | `write_project_files` |
-| `scope` | meta | `keep_specialist` | - | `scope_review` | - |
 | `security` | product | `keep_specialist` | - | `security` | `write_scan_artifacts` |
-| `shared` | library | `keep_off_path` | - | - | - |
 | `skill-builder` | meta | `keep_specialist` | - | `skill_builder`, `heal_skill` | `write_skill_source`, `write_build_report`, `regenerate_skill_projections`, `repair_skill_projections` |
 | `skill-eval` | meta | `keep_specialist` | - | `author_seeded_probe`, `run_probe_tier` | `write_probe_package`, `dispatch_probe_producer` |
 | `standards` | knowledge | `keep_specialist` | - | `standards` | - |

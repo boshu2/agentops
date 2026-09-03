@@ -7,6 +7,29 @@ description: 'Optionally test a retrospective causal question against durable ve
 > **Purpose:** Answer an explicit retrospective causal question using the
 > already-validated outcome and evidence.
 
+## Prompt
+
+```text
+Postmortem: verdict .agents/ao/verdicts/2026-08-30-cli-regen.json shows
+NOT_PROVEN then PASS after we added a mutating-check guard to
+skills/validate/scripts/validate.sh. Did that guard actually cause the
+fix, or did the flaky CI runner just stop flaking that day?
+```
+
+## It's working if
+
+Observable in the trace, without reading the prose:
+
+- The report pins the exact `verdict.v2` id and the causal question before
+  the timeline section.
+- A claim promoted to cause cites its mechanism, evidence, and
+  counterfactual together under the report's `hypotheses` list.
+- A claim resting only on symptom cessation is listed under `unknowns`,
+  not promoted to cause.
+- The report lands at
+  `.agents/scratch/postmortem/YYYY-MM-DD-postmortem-<topic>.md` and
+  `bash skills/postmortem/scripts/validate.sh` exits 0.
+
 ## Critical Constraints
 
 - Because proof and causal inference are different judgments, Postmortem is retrospective causal analysis, not the general learning umbrella and not a completion gate.

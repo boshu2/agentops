@@ -2,7 +2,7 @@
 
 # Skill Router
 
-57 live skills. Metadata is the sole inventory and graph source.
+54 live skills. Metadata is the sole inventory and graph source.
 
 ## keep
 
@@ -10,7 +10,7 @@
 
 ## keep_off_path
 
-`goals`, `learn`, `shared`
+`learn`
 
 ## keep_strategy
 
@@ -22,7 +22,7 @@
 
 ## keep_specialist
 
-`account-rotation`, `anti-ceremony`, `bootstrap`, `cass`, `cc-hooks`, `codebase-recon`, `converter`, `craft-goal`, `dcg`, `doc`, `domain`, `fitness`, `handoff`, `human-only-skills`, `ms`, `operationalize`, `pattern-mining`, `product`, `rch`, `refactor`, `research`, `reverse-engineer`, `route`, `sbh`, `scaffold`, `scope`, `security`, `skill-builder`, `skill-eval`, `standards`, `status`, `test`, `toil-mining`, `workflow-builder`
+`account-rotation`, `anti-ceremony`, `bootstrap`, `cass`, `cc-hooks`, `codebase-recon`, `converter`, `craft-goal`, `dcg`, `doc`, `domain`, `fitness`, `handoff`, `human-only-skills`, `ms`, `operationalize`, `pattern-mining`, `product`, `rch`, `refactor`, `research`, `reverse-engineer`, `route`, `sbh`, `scaffold`, `security`, `skill-builder`, `skill-eval`, `standards`, `status`, `test`, `toil-mining`, `workflow-builder`
 
 ## Complete inventory
 
@@ -47,7 +47,6 @@
 | `doc` | product | `keep_specialist` | - | `doc` | `write_documentation` |
 | `domain` | knowledge | `keep_specialist` | - | `domain` | - |
 | `fitness` | product | `keep_specialist` | - | `fitness` | `write_goal_snapshot`, `write_rendered_spec` |
-| `goals` | product | `keep_off_path` | - | - | - |
 | `handoff` | session | `keep_specialist` | - | `handoff` | `write_handoff_artifact`, `read_git_state`, `read_clock` |
 | `human-only-skills` | meta | `keep_specialist` | - | `human_only_skill_routing` | - |
 | `idea-genie` | execution | `keep_strategy` | - | `generate_evidenced_options`, `dueling_idea_genies` | `write_idea_portfolio` |
@@ -71,9 +70,7 @@
 | `rpi` | meta | `keep` | `anti-ceremony`, `plan`, `implement`, `validate` | `orchestrate_once`, `report` | `invoke_anti_ceremony_guard`, `dispatch_core_phases` |
 | `sbh` | execution | `keep_specialist` | - | `sbh` | `delete_reclaimable_files`, `release_disk_ballast`, `modify_host_storage_config` |
 | `scaffold` | execution | `keep_specialist` | - | `scaffold` | `write_project_files` |
-| `scope` | meta | `keep_specialist` | - | `scope_review` | - |
 | `security` | product | `keep_specialist` | - | `security` | `write_scan_artifacts` |
-| `shared` | library | `keep_off_path` | - | - | - |
 | `skill-builder` | meta | `keep_specialist` | - | `skill_builder`, `heal_skill` | `write_skill_source`, `write_build_report`, `regenerate_skill_projections`, `repair_skill_projections` |
 | `skill-eval` | meta | `keep_specialist` | - | `author_seeded_probe`, `run_probe_tier` | `write_probe_package`, `dispatch_probe_producer` |
 | `standards` | knowledge | `keep_specialist` | - | `standards` | - |

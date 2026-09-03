@@ -106,12 +106,17 @@ func indentOf(s string) int {
 }
 
 // unquoteScalar trims surrounding whitespace and a single layer of matching
-// quotes from a YAML scalar value.
+// quotes from a YAML scalar value, undoing the quote escapes each style uses:
+// a doubled ” inside a single-quoted scalar is one apostrophe, and \" inside a
+// double-quoted scalar is one quote mark.
 func unquoteScalar(s string) string {
 	s = strings.TrimSpace(s)
 	if len(s) >= 2 {
-		if (s[0] == '"' && s[len(s)-1] == '"') || (s[0] == '\'' && s[len(s)-1] == '\'') {
-			return s[1 : len(s)-1]
+		switch {
+		case s[0] == '"' && s[len(s)-1] == '"':
+			return strings.ReplaceAll(s[1:len(s)-1], `\"`, `"`)
+		case s[0] == '\'' && s[len(s)-1] == '\'':
+			return strings.ReplaceAll(s[1:len(s)-1], "''", "'")
 		}
 	}
 	return s

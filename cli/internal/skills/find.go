@@ -8,6 +8,7 @@ package skills
 
 import (
 	"math"
+	"regexp"
 	"sort"
 	"strings"
 	"unicode"
@@ -24,8 +25,11 @@ type SkillMeta struct {
 	Path        string
 }
 
-// Match is one scored result. Score is normalized to [0,1], where 1.0 means
-// every query token matched a skill-name token.
+// Match is one scored result. Score is normalized to [0,1]: token hits are
+// summed against the query length at name weight, a declared trigger phrase
+// quoted whole adds one name weight, and the sum is clamped, so 1.0 means the
+// query saturated the skill (every token on its name, or its own phrase plus
+// most of its words), not necessarily a name-only match.
 type Match struct {
 	Name        string  `json:"name"`
 	Description string  `json:"description"`
@@ -58,11 +62,18 @@ var stopwords = map[string]bool{
 // are comparable across queries of different lengths.
 func Score(query string, metas []SkillMeta) []Match {
 	qTokens := tokenize(query)
+	// Phrase matching reads the query in order without deduplication: with
+	// duplicates folded, "one council judge" would collapse into "one judge".
+	qStream := tokenStream(query)
 	matches := make([]Match, 0, len(metas))
 	for _, m := range metas {
 		nameToks := tokenize(m.Name)
 		trigToks := tokenize(strings.Join(m.Triggers, " "))
-		descToks := tokenize(m.Description)
+		// The exclusion sentence names a sibling's job; it is not part of
+		// this skill's haystack. It earns nothing and it costs nothing: a
+		// penalty was tried and suppressed skills the caller named outright.
+		positive, _ := splitExclusion(m.Description)
+		descToks := tokenize(positive)
 
 		var raw float64
 		for _, qt := range qTokens {
@@ -75,10 +86,22 @@ func Score(query string, metas []SkillMeta) []Match {
 				raw += weightDesc
 			}
 		}
+		// A declared trigger phrase quoted whole in the query is the caller
+		// using the skill's own words; it outranks a sibling that merely owns
+		// one of those words as a name token ("check this change" belongs to
+		// validate, not to reality-check).
+		for _, phrase := range triggerPhrases(m) {
+			if len(phrase) >= 2 && containsPhrase(qStream, phrase) {
+				raw += weightName
+			}
+		}
 
 		score := 0.0
 		if len(qTokens) > 0 {
 			score = raw / (float64(len(qTokens)) * weightName)
+			if score > 1 {
+				score = 1
+			}
 		}
 		matches = append(matches, Match{
 			Name:        m.Name,
@@ -95,6 +118,111 @@ func Score(query string, metas []SkillMeta) []Match {
 		return matches[i].Name < matches[j].Name
 	})
 	return matches
+}
+
+// exclusionMarker opens a description's negative-routing sentence: "Not for
+// <sibling's job>; that is <sibling>." The sentence names the neighbouring
+// skill's vocabulary on purpose, so it is held out of the haystack: without
+// that, premortem ranked first for "is this live decision reversible" because
+// its own description said it was not for reversibility.
+const exclusionMarker = "Not for "
+
+// splitExclusion separates a description into the text that describes the
+// skill's own job and its exclusion sentence, if one is present. The sentence
+// runs from the marker to the first period followed by whitespace or the end
+// of the text; everything after it (typically the Triggers clause) stays
+// positive.
+func splitExclusion(desc string) (positive, exclusion string) {
+	start := strings.Index(desc, exclusionMarker)
+	if start < 0 {
+		return desc, ""
+	}
+	rest := desc[start:]
+	end := len(rest)
+	for i := 0; i < len(rest); i++ {
+		if rest[i] == '.' && (i+1 == len(rest) || rest[i+1] == ' ' || rest[i+1] == '\n') {
+			end = i + 1
+			break
+		}
+	}
+	positive = strings.TrimSpace(desc[:start])
+	if tail := strings.TrimSpace(rest[end:]); tail != "" {
+		positive += " " + tail
+	}
+	return positive, rest[:end]
+}
+
+// triggerClause opens the description's declared trigger list.
+var triggerClause = regexp.MustCompile(`(?i)\btriggers?:`)
+
+// quotedPhrase matches one quoted trigger in that list.
+var quotedPhrase = regexp.MustCompile(`"([^"]+)"`)
+
+// triggerPhrases returns every declared trigger as a token sequence: the
+// frontmatter triggers list plus each quoted phrase in the description's
+// Triggers clause, which ends at the first sentence break after it. Phrases
+// that tokenize to nothing are dropped; a phrase declared twice counts once.
+func triggerPhrases(m SkillMeta) [][]string {
+	raw := append([]string(nil), m.Triggers...)
+	if loc := triggerClause.FindStringIndex(m.Description); loc != nil {
+		clause := m.Description[loc[1]:]
+		if end := strings.Index(clause, ". "); end >= 0 {
+			clause = clause[:end]
+		}
+		for _, q := range quotedPhrase.FindAllStringSubmatch(clause, -1) {
+			raw = append(raw, q[1])
+		}
+	}
+	out := make([][]string, 0, len(raw))
+	seen := make(map[string]bool, len(raw))
+	for _, r := range raw {
+		toks := tokenStream(r)
+		key := strings.Join(toks, " ")
+		if len(toks) == 0 || seen[key] {
+			continue
+		}
+		seen[key] = true
+		out = append(out, toks)
+	}
+	return out
+}
+
+// containsPhrase reports whether phrase occurs as a contiguous run inside
+// qTokens, token by token under tokenMatches, so "check this change" still
+// matches "checking this change".
+func containsPhrase(qTokens, phrase []string) bool {
+	if len(phrase) == 0 || len(phrase) > len(qTokens) {
+		return false
+	}
+	for start := 0; start+len(phrase) <= len(qTokens); start++ {
+		hit := true
+		for i, pt := range phrase {
+			if !tokenMatches(qTokens[start+i], []string{pt}) {
+				hit = false
+				break
+			}
+		}
+		if hit {
+			return true
+		}
+	}
+	return false
+}
+
+// tokenStream is tokenize without deduplication: the same normalization,
+// every occurrence kept in order, for phrase matching.
+func tokenStream(s string) []string {
+	fields := strings.FieldsFunc(strings.ToLower(s), func(r rune) bool {
+		return !unicode.IsLetter(r) && !unicode.IsDigit(r)
+	})
+	out := make([]string, 0, len(fields))
+	for _, f := range fields {
+		if len(f) < 2 || stopwords[f] {
+			continue
+		}
+		out = append(out, f)
+	}
+	return out
 }
 
 // tokenize lowercases, splits on non-alphanumeric runes, and drops stopwords

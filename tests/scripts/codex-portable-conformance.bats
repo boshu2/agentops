@@ -14,7 +14,7 @@ write_skill() {
 @test "checked-in Codex release projection is portable" {
   run bash "$GATE"
   [ "$status" -eq 0 ]
-  [[ "$output" == *"PASS [portable] 57 package(s)"* ]]
+  [[ "$output" == *"PASS [portable] 54 package(s)"* ]]
 }
 
 @test "portable gate accepts the minimal Agent Skills package" {
@@ -77,4 +77,11 @@ write_skill() {
   run env CODEX_SKILLS_ROOT="$FIXTURE_ROOT" bash "$GATE"
   [ "$status" -ne 0 ]
   [[ "$output" == *"found duplicate key"* ]]
+}
+
+@test "twins never turn a path segment after a placeholder into a skill invocation" {
+  # Regression for `<run-id>/codebase-recon.json` becoming `<run-id>$codebase-recon.json`:
+  # a closing '>' precedes a path segment, never an invocation.
+  run grep -rln '>\$' "$REPO_ROOT"/skills-codex/*/SKILL.md
+  [ "$status" -eq 1 ]
 }

@@ -137,3 +137,17 @@ func isDirTest(p string) bool {
 	info, err := os.Stat(p)
 	return err == nil && info.IsDir()
 }
+
+func TestUnquoteScalar_UndoesQuoteEscapes(t *testing.T) {
+	cases := map[string]string{
+		`'Fresh-judge a plan. Not for a live decision''s reversibility.'`: "Fresh-judge a plan. Not for a live decision's reversibility.",
+		`"Say \"validate\" plainly"`:                                      `Say "validate" plainly`,
+		`plain scalar`:                                                    "plain scalar",
+		`'unterminated`:                                                   "'unterminated",
+	}
+	for in, want := range cases {
+		if got := unquoteScalar(in); got != want {
+			t.Errorf("unquoteScalar(%s) = %q, want %q", in, got, want)
+		}
+	}
+}

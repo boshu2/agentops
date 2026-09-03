@@ -24,6 +24,19 @@ output_contract: cited standards and factual findings
 Load the smallest set of standards justified by the caller's files, language,
 and risks. Do not preload the entire reference corpus.
 
+## Prompt
+
+```text
+Check standards for the changed files in fleet-router PR #214: cli/internal/auth/token.go and cli/internal/auth/token_test.go, Go, a security-sensitive change. Load only the matching references and report cited findings with path and line plus checked and not-checked scope.
+```
+
+## It's working if
+
+- The report loads `common-standards.md` plus only the matching Go reference, never the full reference corpus.
+- Every finding cites a path and line, e.g. `cli/internal/auth/token.go:18`.
+- The response discloses `checked` and `not_checked` scope explicitly, even when `not_checked` is empty.
+- `git diff --stat` shows no test, gate, or fixture file changed; standards reports findings only.
+
 ## Procedure
 
 1. Record the supplied paths, language, change type, and risk cues.

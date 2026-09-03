@@ -263,7 +263,9 @@ print(value)
 }
 
 @test "the repository's committed goldens grade with exactly the known finding" {
-    # HONEST PIN, not a target. All six goldens pass since 2026-08-26: the
+    # HONEST PIN, not a target. All goldens pass since 2026-08-26 (rq-08 added
+    # 2026-09-03 with the negative routing sentences, rq-09 the same day when
+    # scope's triggers folded into plan): the
     # rq-04 gap (validate absent for verdict phrasings) was closed the same
     # day by the pointer-wording-first repair — validate's description now
     # carries the caller's own words and ranks 1 for the query. This case
@@ -275,7 +277,7 @@ print(value)
     run --separate-stderr bash "$REPO_ROOT/scripts/check-routing-probe-goldens.sh" --json
 
     [ "$status" -eq 0 ]
-    [ "$(json_field "$output" total)" = "7" ]
+    [ "$(json_field "$output" total)" = "10" ]
     [ "$(json_field "$output" failed)" = "0" ]
-    [ "$(json_field "$output" passed)" = "7" ]
+    [ "$(json_field "$output" passed)" = "10" ]
 }

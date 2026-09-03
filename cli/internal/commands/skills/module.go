@@ -283,7 +283,10 @@ discovery API instead of memorizing every skill name.
 
 Scoring is a transparent token-overlap: a query word hitting the skill
 name counts most, a declared trigger next, a description word least, with
-light plural/stem tolerance. Scores are normalized to [0,1]. The catalog
+light plural/stem tolerance; a declared trigger phrase quoted whole in the
+query adds one name weight, and a description's "Not for" sentence is held
+out. Scores are normalized to [0,1] and clamped, so 1.0 means the query
+saturated the skill, not that every word hit its name. The catalog
 is read from the tree on every run, so a newly added skill is found with
 no index rebuild.
 

@@ -1,1 +1,0 @@
-The API has a bug causing incorrect HTTP responses. Run the tests, identify the issue, and fix it so all tests pass. Do not explain — just fix the files.

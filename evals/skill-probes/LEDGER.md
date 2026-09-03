@@ -55,7 +55,8 @@ body delegates verbatim — is excluded in
 measure `fitness` and report the verdict under the wrong name. The headline
 reads 0/12 before and after that change for different reasons: the alias left
 the denominator and the newly landed judgment skill `one-way-door` entered it,
-honestly unmeasured. The legacy rows remain historical evidence and do not
+honestly unmeasured. On 2026-09-03 ADR-0018 retired `goals` outright, so the
+denominator is the 12 badge-carrying skills with no exclusion entry. The legacy rows remain historical evidence and do not
 count until a v3 capture-manifest-backed run records a current directional
 verdict. The `anti-ceremony` skill has no current result, and the
 `operationalize` runs are meta-tier, so their historical v1/v2 results do not

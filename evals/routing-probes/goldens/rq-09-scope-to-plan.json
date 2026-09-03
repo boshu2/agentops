@@ -1,0 +1,20 @@
+{
+  "$schema": "../../../schemas/pack-quality-expectations.v1.schema.json",
+  "schema_version": 1,
+  "id": "rq-09-scope-to-plan",
+  "retrieval_surface": "ao-skills-find",
+  "task": "The caller wants the write scope of a change reviewed: does it cover the behavior without granting unrelated directories, and are the generated companions explicit?",
+  "query": "review the write scope of this change",
+  "top_k": 3,
+  "expected_selected_ids": [
+    "plan"
+  ],
+  "critical_omitted_ids": [],
+  "forbidden_leaks": [
+    "^scope$"
+  ],
+  "min_provenance_density": 1.0,
+  "max_tokens": 110,
+  "rationale": "ADR-0018 (Train 2 retirements) deleted the scope skill and folded its write-scope checks into plan's Workflow step 3; plan's description carries scope's former triggers ('review write scope', 'check scope boundaries', 'scope this change') so the caller's own words still land on the kernel that owns them. A retired 'scope' id surfacing at any rank is a tombstone leak.",
+  "notes": "Added 2026-09-03 with the scope fold; pins that the retired skill's triggers route to plan."
+}

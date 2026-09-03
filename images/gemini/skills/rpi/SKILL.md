@@ -37,73 +37,78 @@ output_contract: 'concise human-readable result; optional rpi-report.v1 when a c
 
 # RPI
 
-Run one experiment from the caller's existing intent source through three
-responsibilities and stop:
+Run one experiment from the caller's existing intent source and stop:
 
 ```text
 anti-ceremony guard -> Plan -> Implement -> fresh Validate -> bounded repair -> report
 ```
 
-On `CONTINUE`, the core path remains Plan -> Implement -> fresh Validate ->
-bounded repair -> report. RPI invokes the guard exactly once before Plan. It
-preserves the original intent and dispatches Plan and Implement at most once.
-Validate repeats only inside the repair phase below, under the convergence law
-and the caller's `repair_rounds` bound. RPI does not own retries, budgets,
-queues, claims, leases, Git, delivery, release, closure, or the caller's next
-decision; `repair_rounds` is the caller's declaration, not RPI's budget.
+RPI invokes the guard exactly once before Plan, preserves the original intent,
+and dispatches Plan and Implement at most once; Validate repeats only inside
+the repair phase, under the convergence law and the caller's `repair_rounds`.
+Read [references/boundaries.md](references/boundaries.md), the ownership and
+delegation boundary shared by the core skills, before dispatch.
+[`scripts/run_once.py`](scripts/run_once.py) makes dispatch, repair, and stop
+executable without Git, `ao`, or a tracker.
 
-The pure [`scripts/run_once.py`](scripts/run_once.py) reference behavior makes
-the dispatch, repair, and stop semantics executable without Git, `ao`, or a
-tracker: `invoke_once` for the one bounded experiment, `run_repair_phase` for
-the law.
+## Prompt
+
+```text
+Run rpi on bead ag-1234 ("ao gate check lists the probe-coverage row").
+Intent: the bead. Scope: cli/internal/gates/** plus docs/CI-CD.md. First check:
+cd cli && go test ./internal/gates/... Fresh validator in a distinct context,
+plus a cross-family leg (the scope is a risky surface). repair_rounds=2.
+```
+
+## It's working if
+
+- The transcript shows one `anti-ceremony` call, then at most one `plan` and
+  one `implement` dispatch.
+- The validator's context ID differs from the author's, and the report opens
+  with `status:` and changed paths, not a digest.
+- Each round appends one `repair round N: k open findings` line to `checked`,
+  `k` never grows, and the run ends on `converged`, a law violation, or
+  `repair_rounds`, with no next action after the evidence.
 
 ## Admission and phase lock
 
-RPI activates for any request shaped as plan-execute-verify work —
-orchestration, worker delegation, "execute this plan", or an explicit
-Plan -> Implement -> Validate ask — whenever the goal includes changing the
-subject. The caller does not have to name RPI. Research-, audit-, and
-review-only delegation is not RPI admission: it produces evidence for a
-caller, has no implementation candidate, and never earns a verdict.
+RPI activates for any plan-execute-verify request that changes the subject
+(orchestration, worker delegation, "execute this plan"), named or not.
+Research-, audit-, and review-only delegation produces evidence for a caller
+and earns no verdict.
 
-Once the caller has accepted a plan — including a duel or design synthesis —
-Plan is closed for that intent. Every subsequent lane must return
-implementation evidence: diffs, commits, test results, or factual receipts.
-Dispatching another planning, audit, or review lane over the same intent
-requires new explicit caller authorization; a review comment is never that
-authorization by itself.
+Once the caller accepts a plan (a duel or design synthesis included),
+Plan is closed for that intent: every later lane returns implementation
+evidence (diffs, commits, test results, receipts). Another planning, audit, or review
+lane over the same intent needs new explicit caller authorization; a review
+comment alone is not that.
 
 ## Contract
 
 1. Invoke anti-ceremony's artifact-free quick guard once with the caller
    outcome, proposed process work, remaining proof, and stop condition. On
    `STOP`, dispatch no core phase, report `NOT_PLANNED` with the guard's
-   one-sentence reason, and stop. On `CONTINUE`, proceed without adding an
-   artifact, retry, repair, delivery, tracker, or Git action.
-2. Resolve the existing bead or caller intent. Invoke Plan once only if that
-   source needs shaping; Plan updates the same source or proposes an amendment.
-   It creates no AgentOps packet. Preserve a durable caller-owned source by
-   reference and digest; only when no durable source exists does the runtime
-   snapshot the exact resolved source bytes under their digest before
-   dispatching Implement or a fresh Validate context. If usable intent cannot
-   be established, report `NOT_PLANNED` and stop.
-3. Invoke Implement once with the resolved intent. It performs one bounded
-   experiment; the runtime derives subject identity and check receipts. If no
-   subject is built, report `NOT_BUILT` and stop.
-4. Invoke Validate once in a context distinct from the author's context. Pass
-   the intent reference and digest, exact subject manifest, factual receipts,
-   validator identity, and freshness attestation.
-5. Enter the bounded repair phase. On a converged result, report and stop. On
-   `FAIL` or `NOT_PROVEN` with findings, repair the named findings and
-   re-validate freshly while the convergence law admits another round; stop
-   when converged, stopped by the law, or out of `repair_rounds`. Return the
-   current validation result, the open findings, and a short report. Persist
-   and link `verdict.v2` only when the caller requests machine-readable
-   evidence or a declared downstream consumer requires it.
+   one-sentence reason, and stop. On `CONTINUE`, proceed and add nothing else.
+2. Resolve the existing bead or caller intent. Invoke Plan once only if the
+   source needs shaping; Plan updates that source or proposes an amendment and
+   creates no AgentOps packet. Without usable intent, report `NOT_PLANNED`.
+   Before Implement or a fresh Validate, always bind the intent: a durable
+   caller-owned source by reference and digest, or, only when no durable
+   source exists, the exact resolved bytes snapshotted by the runtime under
+   their digest.
+3. Invoke Implement once: one bounded experiment; the runtime derives subject
+   identity and check receipts. With no subject built, report `NOT_BUILT`.
+4. Invoke Validate once in a context distinct from the author's, passing the
+   intent reference and digest, exact subject manifest, receipts, validator
+   identity, and freshness attestation.
+5. Enter the bounded repair phase: on `FAIL` or `NOT_PROVEN` with findings,
+   repair the named findings and re-validate freshly while the law admits
+   another round; stop when converged, stopped by the law, or out of
+   `repair_rounds`. Persist `verdict.v2` only when the caller requests
+   machine-readable evidence or a declared consumer requires it.
 
 `NOT_PLANNED` and `NOT_BUILT` are report statuses, never semantic verdicts.
-A caller may revise the bead or caller intent and start a new invocation. RPI
-never creates a parallel revision artifact or selects the next work itself.
+A caller may revise the intent and start a new invocation.
 
 ## The convergence law
 
@@ -116,13 +121,13 @@ A repair round is admitted only while all hold:
 4. Between rounds the subject-manifest digest changed (generated-only changes
    count) or, for `NOT_PROVEN`, new digest-bound evidence resolved a named gap.
 
-Converged: the fresh validator returns PASS and, on a risky surface, the
-cross-family validator also returns PASS. On any violation of 1-4 RPI stops and
-reports the current status. `checked` carries one line per round
-(`repair round N: k open findings`); open findings ride in the validation
-result and the report; `not_checked` keeps its meaning. A reworded finding with
-the same id is the same finding. The orchestrating context fixes; judge legs
-never mutate the subject. No third judge, no escalation, no auto-replan.
+Converged: the fresh validator returns PASS and, on a risky surface, so does
+the cross-family validator. On any violation of 1-4 RPI stops and reports the
+current status. `checked` carries one line per round
+(`repair round N: k open findings`); open findings ride in the result and the
+report. A reworded finding with the same id is the same finding. Acceptance
+and its digest stay fixed: a repair moves the subject. The orchestrating
+context fixes; judge legs only read. No third judge, no escalation, no auto-replan.
 
 ## Cross-family validation
 
@@ -136,115 +141,38 @@ adapter means `diversity_unsatisfied`, which on a risky surface is `NOT_PROVEN`.
 
 RPI executes one traversal. A multi-wave intent runs one wave per `crank`
 invocation: the caller selects the wave and the `repair_rounds` bound, crank
-forwards both, invokes RPI per lane, returns wave evidence, and stops. RPI never
-selects a wave or queues the next one, and never extends the caller's bound.
-
-## Anti-ceremony boundary
-
-The hard [`anti-ceremony`](../anti-ceremony/SKILL.md) dependency owns the quick
-guard and its explicit-only full honesty audit. RPI does not duplicate that
-judgment or turn each component, gate failure, or specialist comment into a new
-planning artifact. A terminal caller goal may remain one bounded experiment
-across several source owners when they serve one outcome and one acceptance
-boundary.
-
-If control artifacts or fresh-validation cycles are multiplying faster than
-implementation evidence, stop dispatching more lanes. Return to one
-outcome-level intent and continue with targeted deterministic checks, reserving
-the full integration check and fresh validation for the frozen subject. This
-changes orchestration cost, never acceptance, exact identity, fail-closed
-scope, or validation authority.
+forwards both, invokes RPI per lane, returns wave evidence, and stops.
+The caller selects each wave; RPI never extends the caller's bound.
 
 ## Spiral breaker
 
+The hard [`anti-ceremony`](../anti-ceremony/SKILL.md) dependency owns the quick
+guard; RPI reuses that judgment instead of turning each component, gate
+failure, or specialist comment into a new planning artifact, and one terminal
+goal may span several source owners as one bounded experiment.
+
 The spiral breaker fires on a convergence-law violation, or when two
-consecutive rounds produce no change to the subject digest and no new
-digest-bound evidence. It never fires on a verdict count: a `FAIL` or a
-`NOT_PROVEN` that is being repaired under the law is progress, not a spiral,
-and repeated control artifacts (plans, audits, reviews, prompts, reports) with
-no new implementation evidence are the spiral. Terminate the run and report
-`NOT_BUILT` when no implementation subject exists; when a subject exists, stop
-and report its current status without dispatching another lane. RPI owns no
-lane budget and no retry policy, and never extends the caller's
-`repair_rounds`.
-
-## Delegation boundaries
-
-Delegate with minimal context: a lane receives the frozen intent reference and
-the established facts it needs, never the orchestrator's full conversation
-history. If a lane cannot proceed from the intent alone, report that the plan
-failed the fresh-context test and stop; do not pad it with chat transcript or
-start another planning lane without explicit caller authorization.
-
-Lanes whose write scopes share a regen surface (the same generated outputs,
-mirrors, or manifests) serialize; only lanes with disjoint source scopes and
-disjoint regen surfaces may run in parallel.
-
-## Invariants
-
-- Acceptance and its runtime-derived digest do not change between phases or
-  between repair rounds; a repair moves the subject, never the acceptance.
-- The anti-ceremony guard runs once before Plan; `STOP` dispatches none of Plan,
-  Implement, or Validate, while `CONTINUE` preserves their order.
-- The runtime derives complete changed-path coverage or Validate returns
-  `NOT_PROVEN`.
-- A proven change outside `write_scope` makes the verdict `FAIL`.
-- PASS requires nonempty distinct author and validator context IDs plus an
-  explicit freshness attestation.
-- Optional Premortem, Postmortem, Council, genie, factory, tracker, and runtime
-  adapters are caller-selected. They do not alter phase order or core outcomes.
-  When a factory adapter is selected, work enters it through that factory's
-  coordinator (for Gas City, the Mayor — see
-  [using-gc](../using-gc/SKILL.md)); RPI hands over intent and never dispatches
-  factory runs itself.
-- Learn is an optional later consumer of verdict collections and is not part of
-  this invocation.
+consecutive rounds change neither the subject digest nor the digest-bound
+evidence, never on a verdict count: a `FAIL` or `NOT_PROVEN` under repair is
+progress; repeated control artifacts with no new implementation evidence are
+the spiral. Report `NOT_BUILT` when no subject exists; otherwise report the
+subject's current status without dispatching another lane, keeping the full
+integration check and fresh validation for the frozen subject.
 
 ## Report
-
-RPI has one required report surface and one optional representation:
 
 1. **Interactive response:** return the result to the caller in natural
    language. This is the default assistant response.
 2. **Machine artifact:** return or persist the exact `rpi-report.v1` object
    only when the caller requests machine-readable evidence or a declared
-   adapter consumes it. The schema ships in a repo checkout at
-   `schemas/rpi-report.v1.schema.json`; the minimal required shape is:
+   adapter consumes it; `schemas/rpi-report.v1.schema.json` (repo checkout)
+   owns its nine-key shape and `status` set.
 
-   ```json
-   {
-     "schema_version": "rpi-report.v1",
-     "status": "PASS",
-     "intent_ref": "<durable-source-ref-or-fallback-snapshot-ref>",
-     "acceptance_digest": "<64-hex-char-sha256-or-null>",
-     "subject_manifest_digest": "<64-hex-char-sha256-or-null>",
-     "verdict_ref": "<verdict-location-or-null>",
-     "verdict_digest": "<64-hex-char-sha256-or-null>",
-     "checked": ["<criterion satisfied by evidence>"],
-     "not_checked": ["<criterion not covered>"]
-   }
-   ```
-
-   `intent_ref` remains required: it names the durable caller-owned source when
-   one exists, otherwise the content-addressed fallback snapshot. `status` is
-   one of `PASS | FAIL | NOT_PROVEN | NOT_PLANNED | NOT_BUILT`; the three digest
-   fields, when present, are 64-character lowercase hex SHA-256 strings;
-   `checked` and `not_checked` are arrays of strings. All nine keys are required
-   (use `null` for an inapplicable ref or digest), and no
-   additional properties are allowed.
-
-Lead the interactive response with the status and one sentence stating the
-caller-visible outcome. Lead with the subject, not the process: production
-paths changed, commits, test results, and acceptance criteria satisfied or
+Lead with the status and one sentence naming the caller-visible outcome, then
+the subject: paths changed, commits, test results, acceptance satisfied or
 remaining. A rising artifact count over an unchanged subject is a stop
-signal, not progress. Follow with only the strongest proof, any material
-unchecked scope, and a clickable verdict reference when one exists. Name why
-no subject exists for `NOT_PLANNED` or `NOT_BUILT`; for a guard `STOP`, use its
-one-sentence reason. Keep the response to one short paragraph or at most four
-bullets.
-
-When no machine artifact was requested, do not create a hidden one. Raw digests,
-schema fields, and exhaustive check lists stay out of the interactive response
-unless an integrity failure makes one necessary to explain the result.
-
-Do not append a next action. The caller owns continuation.
+signal, not progress. Add only the strongest proof, material unchecked scope,
+and a clickable verdict reference when one exists; for `NOT_PLANNED`,
+`NOT_BUILT`, or a guard `STOP`, say why no subject exists in one sentence.
+One short paragraph or at most four bullets, ending with the evidence.
+When no machine artifact was requested, do not create a hidden one.

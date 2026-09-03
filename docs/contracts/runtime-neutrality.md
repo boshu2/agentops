@@ -1,10 +1,11 @@
 # Runtime Neutrality Contract
 
-Status: active · Owner: this document (moved from the retired `shared` skill,
-2026-07-29, bead `age-skill-overhaul-reboot-sjv7v.11`)
+Status: active · Owner: this document (moved from the former `shared` skill
+2026-07-29, bead `age-skill-overhaul-reboot-sjv7v.11`; that skill was deleted
+2026-09-03)
 
 The rules below govern any shared reference a consuming skill loads — the
-same scope the `shared` skill declared. They are corpus doctrine, not skill
+same scope the former `shared` skill declared. They are corpus doctrine, not skill
 behavior, so they live here — a declared contract owner — instead of inside
 a skill that bundles nothing.
 

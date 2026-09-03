@@ -498,15 +498,6 @@
     },
     {
       "driven_by_skills": [
-        "scope"
-      ],
-      "id": "skill:scope:scope_review",
-      "name": "scope_review",
-      "path": "skills/scope/SKILL.md",
-      "type": "skill"
-    },
-    {
-      "driven_by_skills": [
         "security"
       ],
       "id": "skill:security:security",
@@ -708,19 +699,19 @@
     "cli_commands": 0,
     "gates": 0,
     "reference_impls": 0,
-    "skills": 78,
-    "total": 78
+    "skills": 77,
+    "total": 77
   },
   "cli_top_level_commands": [],
   "schema_version": 3,
   "summary": {
-    "capabilities": 78,
+    "capabilities": 77,
     "cli_commands": 0,
     "eval_files": 0,
     "hooks": 0,
     "job_types": 0,
     "knowledge_stores": 0,
-    "skills": 57,
+    "skills": 54,
     "workflows": 0
   },
   "surfaces": {
@@ -1023,17 +1014,6 @@
         "tier": "product"
       },
       {
-        "capabilities": [],
-        "disposition": "keep_off_path",
-        "effects": [],
-        "has_references": false,
-        "has_skill_md": true,
-        "name": "goals",
-        "path": "skills/goals/",
-        "reference_count": 0,
-        "tier": "product"
-      },
-      {
         "capabilities": [
           "handoff"
         ],
@@ -1205,7 +1185,7 @@
         "has_skill_md": true,
         "name": "plan",
         "path": "skills/plan/",
-        "reference_count": 1,
+        "reference_count": 2,
         "tier": "execution"
       },
       {
@@ -1358,7 +1338,7 @@
         "has_skill_md": true,
         "name": "rpi",
         "path": "skills/rpi/",
-        "reference_count": 1,
+        "reference_count": 2,
         "tier": "meta"
       },
       {
@@ -1395,19 +1375,6 @@
       },
       {
         "capabilities": [
-          "scope_review"
-        ],
-        "disposition": "keep_specialist",
-        "effects": [],
-        "has_references": false,
-        "has_skill_md": true,
-        "name": "scope",
-        "path": "skills/scope/",
-        "reference_count": 0,
-        "tier": "meta"
-      },
-      {
-        "capabilities": [
           "security"
         ],
         "disposition": "keep_specialist",
@@ -1420,17 +1387,6 @@
         "path": "skills/security/",
         "reference_count": 6,
         "tier": "product"
-      },
-      {
-        "capabilities": [],
-        "disposition": "keep_off_path",
-        "effects": [],
-        "has_references": false,
-        "has_skill_md": true,
-        "name": "shared",
-        "path": "skills/shared/",
-        "reference_count": 0,
-        "tier": "library"
       },
       {
         "capabilities": [
@@ -1593,7 +1549,7 @@
         "has_skill_md": true,
         "name": "validate",
         "path": "skills/validate/",
-        "reference_count": 1,
+        "reference_count": 2,
         "tier": "judgment"
       },
       {

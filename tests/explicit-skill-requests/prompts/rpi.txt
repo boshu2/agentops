@@ -1,0 +1,1 @@
+Run /rpi on bead ag-1234 and stop after the fresh validation

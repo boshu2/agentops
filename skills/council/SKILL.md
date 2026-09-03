@@ -1,6 +1,6 @@
 ---
 name: council
-description: 'Collect independent perspectives for an explicitly high-stakes or contested judgment. Triggers: "council", "multi-judge review", "independent perspectives".'
+description: 'Gather independent views on a high-stakes judgment. Not for one-judge plan challenge; that is premortem. Triggers: "council", "multi-judge review", "independent perspectives".'
 practices: [llm-eval-harness, design-by-contract]
 hexagonal_role: domain
 consumes: [explicit-question, evidence]
@@ -128,6 +128,15 @@ A judge that times out, errors, or returns an evidence-free judgment is excluded
 from agreement counting and recorded as non-returning; if fewer than two
 independent judgments remain, report the round as insufficient rather than
 synthesize a thin consensus.
+
+## Prompt
+
+```text
+Convene a council on whether to force-push origin/main to drop the last 3
+commits in agentops-wt/train2-c after a bad rebase corrupted skills-codex/.
+Give each judge the git reflog and diff. I need independent judgments
+before I act, not one opinion.
+```
 
 ## It's working if
 

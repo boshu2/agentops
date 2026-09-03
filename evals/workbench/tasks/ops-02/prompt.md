@@ -1,1 +1,0 @@
-The log rotation script crashes when the log directory is empty. Fix the approach so it handles empty directories gracefully without errors. Run tests to verify.

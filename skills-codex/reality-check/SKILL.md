@@ -12,6 +12,29 @@ missing behavior with a file, command result, or artifact. Separate:
 - incomplete evidence;
 - changed assumptions.
 
+## Prompt
+
+```text
+Reality-check this claim: PR #1042 finishes the CLI regen migration,
+skills-codex/ generation now runs entirely through `ao gate check`, and
+`scripts/regen-all.sh` is deleted. Compare against agentops-wt/train2-c
+at HEAD. Cite file-by-file evidence for what's confirmed and what's
+still a gap.
+```
+
+## It's working if
+
+Observable in the trace, without reading the prose:
+
+- Every finding cites a file, command result, or artifact inside
+  `.agents/scratch/reality-check/<run-id>/reality-check-report.json`.
+- A completion claim carries a disposition per stated goal, each one of
+  `confirmed`, `concrete gap`, or `unverifiable`.
+- `skills/reality-check/scripts/validate-output.sh` accepts the report
+  with no `verdict`, `readiness`, or `PASS` field present.
+- An untestable line is filed as `incomplete-evidence` with the missing
+  artifact named.
+
 ## Vision-coverage audit
 
 When the claim is a completion or status claim, audit it against the stated

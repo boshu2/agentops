@@ -7,6 +7,19 @@ description: 'Stamp a bounded project, component, or CI scaffold and verify the 
 Create one bounded project, component, or CI scaffold. This specialist does not
 schedule RPI, create work ownership, mutate Git, or decide what happens next.
 
+## Prompt
+
+```text
+Scaffold a new CI workflow at fleet-router/.github/workflows/lint.yml plus a matching test fixture. Declare the exact paths to create, refuse to overwrite any existing file, generate a behavioral test for the new lint step, then run the target's build, test, and lint commands once and report results.
+```
+
+## It's working if
+
+- The report declares the exact paths created, e.g. `.github/workflows/lint.yml`, before any write happens.
+- A path collision with an existing file, e.g. `.github/workflows/lint.yml` already present, gets refused and reported, staying untouched.
+- At least one behavioral test ships with the generated code, such as `lint_test.go`.
+- The build, test, and lint commands, e.g. `go build ./...`, run exactly once, with their literal output quoted in the report.
+
 ## Contract
 
 1. Resolve the requested target root and declare the exact paths that may be

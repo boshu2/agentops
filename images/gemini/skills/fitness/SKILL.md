@@ -32,7 +32,7 @@ validation, drift, history, export, or meta-goal command.
 
 Renamed from `goals` (2026-07-29): the semantic skill is `fitness`; the
 `ao goals` CLI command family is a separate product surface and keeps its
-name. A thin `goals` compatibility alias resolves to this skill.
+name. The `goals` compatibility alias skill was deleted 2026-09-03.
 
 Measurement stays trustworthy only because it cannot mutate what it measures;
 the moment a fitness report edits a goal, the next report measures the editor,

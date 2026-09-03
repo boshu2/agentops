@@ -160,6 +160,6 @@ composition model and invites a false global conclusion.
 
 - [Operating Loop](../architecture/operating-loop.md)
 - [The Flywheel: three-tier andon policy](../architecture/the-flywheel.md)
-- [Go CLI Production-Readiness Audit](../audits/2026-07-12-go-cli-production-readiness.md)
+- Go CLI Production-Readiness Audit: `docs/audits/2026-07-12-go-cli-production-readiness.md`, removed from the tree in the 2026-09-03 archival sweep; recover it with `git log --diff-filter=D -- docs/audits/2026-07-12-go-cli-production-readiness.md`
 - [Repository tracker instructions](../../AGENTS.md)
 - [Gas City composition](../3.0.md)

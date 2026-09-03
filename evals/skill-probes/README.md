@@ -180,11 +180,12 @@ The advisory gate `skill.probe-coverage`
 (`scripts/check-skill-probe-coverage.sh`) names every product-/judgment-tier
 skill lacking a current, canonical-skill-mode, manifest-backed result. After
 the 2026-08-16 provenance migration, the historical rows are excluded and
-current coverage is 0/12 against a **declared denominator**: 13 skills carry a
-product/judgment badge and `goals` (a pure `alias-of fitness` that delegates
-verbatim) is excluded with its written argument in
-`scripts/.skill-probe-denominator-exclusions`, because probing it would measure
-`fitness` and file the verdict under the wrong name. The gate stays
+current coverage is 0/12 against a **declared denominator**: the 12 skills
+that carry a product/judgment badge. `scripts/.skill-probe-denominator-exclusions`
+stays as the mechanism for a category error, with its argument written beside
+each entry; it held `goals` (a pure `alias-of fitness`, whose probe would have
+measured `fitness` under the wrong name) until ADR-0018 retired that skill,
+and it carries no entry today. The gate stays
 advisory-first until a deliberately selected spine is recaptured under the
 current contract.
 

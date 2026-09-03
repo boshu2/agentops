@@ -33,6 +33,19 @@ output_contract: code changes with regression evidence
 Refactor changes structure while preserving observable behavior. It performs one
 caller-selected transformation and reports the result.
 
+## Prompt
+
+```text
+Refactor billing-service/internal/retry/backoff.go: extract the exponential backoff calculation out of RetryRequest into its own function, no other behavior change. Record a baseline, run go test ./internal/retry/... before and after, and report the diff summary, commands, results, and anything not checked.
+```
+
+## It's working if
+
+- The report names the preserved behavior and cites `go test ./internal/retry/...` run both before and after.
+- `git diff --stat` touches only `internal/retry/backoff.go`, never an unrelated file.
+- Golden-output hashes get captured and compared byte-for-byte whenever the changed surface produces output, e.g. `sha256sum` before and after.
+- The report's `behavior not checked` list is present in the output even when empty, naming any surface the gates skipped.
+
 ## Procedure
 
 1. Name the preserved behavior and the focused acceptance surface.

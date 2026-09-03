@@ -31,7 +31,6 @@ more:
 | `plan` | `python3`, conditional | runs `scripts/validate.py snapshot-intent` only when the intent source is not durable |
 | `validate` | `python3` | its helper commands run `python3` against `scripts/validate.py` |
 | `fitness` | `ao` | its whole procedure is running one `ao goals` subcommand |
-| `goals` | `ao` | delegates entirely to fitness's `ao goals` procedure |
 | `using-gc` | `ao` | rig prep runs `ao gc prepare` and `ao gc check` |
 | `handoff` | `ao`, optional | `ao session handoff`/`rehydrate` cover the same artifact; the skill can write it directly |
 | `status` | `ao`, optional | describes `ao status`'s output shape; the report can be read directly from `.agents/ao/` |
@@ -42,7 +41,7 @@ more:
 | `security` | `python3`, conditional | the composable suite and offline redteam surfaces run `security_suite.py` when that scan type is selected |
 | `cass` | `python3`, optional | `scripts/prompt_miner.py` mines repeated prompts; one of several selectable Scripts-table entries |
 
-The plugin and `npx skills@latest add boshu2/agentops --all -g` install all 56 skills today, regardless of whether you have `python3` or `ao`.
+The plugin and `npx skills@latest add boshu2/agentops --all -g` install all 54 skills today, regardless of whether you have `python3` or `ao`.
 
 Ran it? Tell us what it judged. Open an issue, and paste the `verdict.v2` if
 you asked `validate` to persist one:
@@ -137,7 +136,7 @@ exact candidate and evidence.
 
 ## Optional: `ao` CLI
 
-Deterministic checks, inspection, and skill linking. `fitness`, `goals`, and
+Deterministic checks, inspection, and skill linking. `fitness` and
 `using-gc` call it directly; the rest of the skills work without it. Install
 steps (Homebrew or `go install`), and `ao skills link` for
 tracking skills from a local checkout:

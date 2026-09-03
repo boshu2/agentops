@@ -47,12 +47,12 @@ PY
 }
 
 # A row's skill is delegation-only when its behavior is entirely "apply
-# <other skill> exactly as written" (goals -> fitness today). Grounding
-# checks then run against the delegate's SKILL.md, not the alias's own
-# (near-empty) file.
+# <other skill> exactly as written". Grounding checks then run against the
+# delegate's SKILL.md, not the alias's own (near-empty) file. No alias row
+# exists today (the last one, goals -> fitness, was deleted 2026-09-03);
+# add a case arm here if one returns.
 ground_skill_for() {
   case "$1" in
-    goals) echo "fitness" ;;
     *) echo "$1" ;;
   esac
 }

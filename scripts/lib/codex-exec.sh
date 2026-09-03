@@ -18,7 +18,7 @@
 #
 #   FIELD              codex                agy (cold)              local-mlx (eval-only)
 #   -----              -----                ----------             --------------------
-#   bin                CODEX_EXEC_BIN|codex REVIEWER_BIN|agy       REVIEWER_BIN|reference wrapper
+#   bin                CODEX_EXEC_BIN|codex REVIEWER_BIN|agy       REVIEWER_BIN (required)
 #   argv template      `exec --sandbox …`   `--sandbox -p <ptr>`  `<prompt>` (single positional)
 #   genuine marker     "tokens used"        "VERDICT:"            "VERDICT:"  (override: REVIEWER_MARKER)
 #   echo-detector      out ≈ packet, no mk  sentinel + packet-     packet-containment +
@@ -54,9 +54,9 @@
 #     untrusted-repo posture is accepted; it runs `--sandbox` (terminal restrictions) +
 #     `--dangerously-skip-permissions` so a headless file-read review does not block on
 #     a permission prompt.
-#   Adapter 3 = local-mlx — a caller-selected local adapter. Reference invocation shape:
-#     evals/membrane/membranes/local-mlx-membrane.sh (a wrapper that takes the reviewer
-#     prompt as $1 and echoes the model review).
+#   Adapter 3 = local-mlx, a caller-selected local adapter. REVIEWER_BIN is required
+#     (no default wrapper ships): a program that takes the reviewer prompt as $1 and
+#     echoes the model review.
 #
 # This library does not set shell options or mutate caller state. Its outcome is
 # runtime evidence, never a semantic verdict.
@@ -197,7 +197,7 @@ reviewer_adapter_bin() {
   case "$1" in
     codex)     printf '%s' "${CODEX_EXEC_BIN:-codex}" ;;
     agy)       printf '%s' "${REVIEWER_BIN:-agy}" ;;
-    local-mlx) printf '%s' "${REVIEWER_BIN:-local-mlx-membrane.sh}" ;;
+    local-mlx) printf '%s' "${REVIEWER_BIN:-}" ;;
     *)         printf '%s' "${REVIEWER_BIN:-$1}" ;;
   esac
 }
@@ -261,16 +261,16 @@ codex_exec_guarded() {
   local bin marker
   bin="$(reviewer_adapter_bin "$reviewer")"
   marker="$(reviewer_adapter_marker "$reviewer")"
-  # local-mlx opted-in: if no REVIEWER_BIN override, default the bin to the reference
-  # membrane wrapper next to this lib (evals/membrane/membranes/local-mlx-membrane.sh).
+  # local-mlx has NO default binary. The reference wrapper it used to fall back to
+  # (evals/membrane/membranes/local-mlx-membrane.sh) was deleted with the membrane
+  # eval tree; a caller who selects this adapter must name the runtime in REVIEWER_BIN.
+  # An unset REVIEWER_BIN is a PRECONDITION failure, never a fallback to whatever
+  # happens to sit on PATH under the old wrapper name.
   if [ "$reviewer" = "local-mlx" ] && [ -z "${REVIEWER_BIN:-}" ]; then
-    local _lib_dir _mlx_ref
-    # `CDPATH=` is an intentional env-prefix (clears CDPATH for that one cd), not an
-    # assignment — hence the SC1007 disable (matches scripts/lib/preamble.sh convention).
-    # shellcheck disable=SC1007
-    _lib_dir="$(CDPATH= cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-    _mlx_ref="$_lib_dir/../../evals/membrane/membranes/local-mlx-membrane.sh"
-    [ -x "$_mlx_ref" ] && bin="$_mlx_ref"
+    echo "codex-exec: MISSING DEPENDENCY: REVIEWER=local-mlx requires REVIEWER_BIN (no default wrapper ships)." >&2
+    echo "  This is NOT a result. Set REVIEWER_BIN to the local reviewer executable, then re-run." >&2
+    echo "  (exit $CODEX_EXEC_MISSING = precondition, not a REFUTE / not a genuine failure)" >&2
+    return "$CODEX_EXEC_MISSING"
   fi
 
   # A missing reviewer binary is a
