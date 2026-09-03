@@ -737,7 +737,7 @@ PY
     [[ "$output" == *"foo"* ]]
 }
 
-@test "the real repository remains advisory with exactly 0/12 current results" {
+@test "the real repository remains advisory with exactly 1/12 current results" {
     unset SKILL_PROBE_SKILLS_DIR SKILL_PROBE_LEDGER_FILE SKILL_PROBE_TIERS_FILE
     unset SKILL_PROBE_EVIDENCE_ROOT SKILL_PROBE_METADATA_TOOL SKILL_PROBE_EXCLUSIONS_FILE
 
@@ -751,8 +751,8 @@ PY
     [ "$(json_field "$output" tier_total)" = "12" ]
     [ "$(json_field "$output" excluded_count)" = "0" ]
     [ "$(json_field "$output" gated_total)" = "12" ]
-    [ "$(json_field "$output" measured)" = "0" ]
-    [ "$(json_field "$output" unmeasured_count)" = "12" ]
+    [ "$(json_field "$output" measured)" = "1" ]
+    [ "$(json_field "$output" unmeasured_count)" = "11" ]
 }
 
 @test "the real exclusion list resolves and argues every entry on stdout" {

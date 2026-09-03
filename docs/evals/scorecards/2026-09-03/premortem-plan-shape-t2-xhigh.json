@@ -1,0 +1,186 @@
+{
+  "schema": "agentops-skill-probe.v3",
+  "probe": "premortem-plan-shape-t2",
+  "skill": "premortem",
+  "mode": "live",
+  "generated_at": "2026-09-03T18:30:27Z",
+  "reps": 2,
+  "producer": {
+    "adapter": "codex",
+    "effort": "xhigh",
+    "identity": {
+      "coverage_eligible": true,
+      "executable_sha256": "sha256:047bd39709cef43bb6d1125b19135d25d0a968b37147802bd1e4b6174ad779c2",
+      "override": false,
+      "source": "native-codex-path",
+      "version": "codex-cli 0.145.0"
+    },
+    "model": "gpt-5.6-luna",
+    "threads": [
+      {
+        "path": "control-1.txt",
+        "thread_id": "01a06886-ef1f-7852-b370-021415fd0a27"
+      },
+      {
+        "path": "treatment-1.txt",
+        "thread_id": "01a06887-584b-7292-ad2d-902da1b9df17"
+      },
+      {
+        "path": "control-2.txt",
+        "thread_id": "01a06888-c155-7350-bb5a-327dfde35faa"
+      },
+      {
+        "path": "treatment-2.txt",
+        "thread_id": "01a06887-da37-7491-ad77-b731fbd40287"
+      }
+    ]
+  },
+  "requested_producer": {
+    "model": "gpt-5.6-luna",
+    "effort": "xhigh"
+  },
+  "fixture_set": {
+    "name": "fixtures-xhigh-2026-09-03-sealed-v3",
+    "metadata": "fixture-set.json",
+    "binding_sha256": "sha256:4b4a662a6cbd775e132945a079a2d62ec2a50e687ab602f649e0eedc49443a47",
+    "schema": "agentops-skill-probe-fixture-set.v3"
+  },
+  "treatment_source": "canonical-skill",
+  "seal": {
+    "auth_links": [
+      "auth.json",
+      "config.toml"
+    ],
+    "coverage_eligible": true,
+    "denied_read_data_roots": [
+      "/var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T//probe-dispatch.CKf1Zx",
+      "/private/var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T/probe-dispatch.CKf1Zx"
+    ],
+    "denied_read_roots": [
+      "/Users/bo/dev/agentops-wt/measure-int",
+      "/Users/bo/dev/agentops-wt/measure-int/skills",
+      "/Users/bo/.agents",
+      "/Users/bo/.claude/skills",
+      "/Users/bo/.gemini/skills",
+      "/Users/bo/.codex/skills"
+    ],
+    "mechanism": "sandbox-exec",
+    "platform": "Darwin",
+    "profile": "(version 1)\n(allow default)\n(deny file-write*)\n(allow file-write*\n  (subpath \"/var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T//probe-ws.hsJYyZ\")\n  (subpath \"/private/var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T/probe-ws.hsJYyZ\")\n  (subpath \"/var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T//probe-seal.Yljipb\")\n  (subpath \"/private/var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T/probe-seal.Yljipb\")\n  (subpath \"/private/tmp\")\n  (subpath \"/private/var/folders\")\n  (subpath \"/var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T/\")\n  (subpath \"/private/var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T\")\n  (subpath \"/dev\"))\n(deny file-read*\n  (subpath \"/Users/bo/dev/agentops-wt/measure-int\")\n  (subpath \"/Users/bo/dev/agentops-wt/measure-int/skills\")\n  (subpath \"/Users/bo/.agents\")\n  (subpath \"/Users/bo/.claude/skills\")\n  (subpath \"/Users/bo/.gemini/skills\")\n  (subpath \"/Users/bo/.codex/skills\"))\n(deny file-read-data\n  (subpath \"/var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T//probe-dispatch.CKf1Zx\")\n  (subpath \"/private/var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T/probe-dispatch.CKf1Zx\"))",
+    "profile_file": "/var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T//probe-seal.Yljipb/seal.sb",
+    "profile_sha256": "sha256:27a150d02da877bb47ced06e67c175e48aab33f888ff79422930b267b482134b",
+    "real_codex_home": "/Users/bo/.codex",
+    "real_home": "/Users/bo",
+    "rep_env": {
+      "CODEX_HOME": "/var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T//probe-seal.Yljipb/.codex",
+      "HOME": "/var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T//probe-seal.Yljipb"
+    },
+    "sandbox_exec": "/usr/bin/sandbox-exec",
+    "schema": "agentops-skill-probe-seal.v1",
+    "seal_mode": "seatbelt",
+    "wrap": [
+      "sandbox-exec",
+      "-p",
+      "(version 1)\n(allow default)\n(deny file-write*)\n(allow file-write*\n  (subpath \"/var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T//probe-ws.hsJYyZ\")\n  (subpath \"/private/var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T/probe-ws.hsJYyZ\")\n  (subpath \"/var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T//probe-seal.Yljipb\")\n  (subpath \"/private/var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T/probe-seal.Yljipb\")\n  (subpath \"/private/tmp\")\n  (subpath \"/private/var/folders\")\n  (subpath \"/var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T/\")\n  (subpath \"/private/var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T\")\n  (subpath \"/dev\"))\n(deny file-read*\n  (subpath \"/Users/bo/dev/agentops-wt/measure-int\")\n  (subpath \"/Users/bo/dev/agentops-wt/measure-int/skills\")\n  (subpath \"/Users/bo/.agents\")\n  (subpath \"/Users/bo/.claude/skills\")\n  (subpath \"/Users/bo/.gemini/skills\")\n  (subpath \"/Users/bo/.codex/skills\"))\n(deny file-read-data\n  (subpath \"/var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T//probe-dispatch.CKf1Zx\")\n  (subpath \"/private/var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T/probe-dispatch.CKf1Zx\"))"
+    ],
+    "writable_roots": [
+      "/var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T//probe-ws.hsJYyZ",
+      "/private/var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T/probe-ws.hsJYyZ",
+      "/var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T//probe-seal.Yljipb",
+      "/private/var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T/probe-seal.Yljipb",
+      "/private/tmp",
+      "/private/var/folders",
+      "/var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T/",
+      "/private/var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T",
+      "/dev"
+    ]
+  },
+  "evaluator": {
+    "dispatch_helper": {
+      "path": "scripts/lib/codex-exec.sh",
+      "sha256": "sha256:92f5b21cdfa56268188999661be1205bb30129941d24e7c88c3582fcff01e99d"
+    },
+    "harness": {
+      "path": "scripts/probe-skill.sh",
+      "sha256": "sha256:5be7d602e08133d1331d39950229ba3971ada9d71132e144891950d1162ff01f"
+    },
+    "metadata_helper": {
+      "path": "scripts/lib/probe-fixture-metadata.py",
+      "sha256": "sha256:343ed5ba95a464bb9fcfb5151b45f359738c1afc921ace03d0527df48256fcc5"
+    },
+    "preamble": {
+      "path": "scripts/lib/preamble.sh",
+      "sha256": "sha256:c4c06472b655cc440ab69e2d3c3bb7773c393eab671975aad3f1d446b2994199"
+    }
+  },
+  "capture_evaluator": {
+    "dispatch_helper": {
+      "path": "scripts/lib/codex-exec.sh",
+      "sha256": "sha256:92f5b21cdfa56268188999661be1205bb30129941d24e7c88c3582fcff01e99d"
+    },
+    "harness": {
+      "path": "scripts/probe-skill.sh",
+      "sha256": "sha256:5be7d602e08133d1331d39950229ba3971ada9d71132e144891950d1162ff01f"
+    },
+    "metadata_helper": {
+      "path": "scripts/lib/probe-fixture-metadata.py",
+      "sha256": "sha256:343ed5ba95a464bb9fcfb5151b45f359738c1afc921ace03d0527df48256fcc5"
+    },
+    "preamble": {
+      "path": "scripts/lib/preamble.sh",
+      "sha256": "sha256:c4c06472b655cc440ab69e2d3c3bb7773c393eab671975aad3f1d446b2994199"
+    }
+  },
+  "evaluator_matches_capture": true,
+  "honesty": "measures response-shape BEHAVIOR-CHANGE under the exact bound canonical SKILL.md treatment, NOT quality-uplift; small N is directional (ADR-0011)",
+  "schedule": [
+    {
+      "arm": "control",
+      "position": 1,
+      "rep": 1
+    },
+    {
+      "arm": "treatment",
+      "position": 2,
+      "rep": 1
+    },
+    {
+      "arm": "treatment",
+      "position": 3,
+      "rep": 2
+    },
+    {
+      "arm": "control",
+      "position": 4,
+      "rep": 2
+    }
+  ],
+  "scoring": {
+    "discriminator_timeout_seconds": 2,
+    "response_extraction": "codex-jsonl-final-agent-message.v1",
+    "transcript_format": "codex-exec-jsonl.v1"
+  },
+  "control": {
+    "present": 0,
+    "usable": 2,
+    "rate": 0.0
+  },
+  "treatment": {
+    "present": 0,
+    "usable": 2,
+    "rate": 0.0
+  },
+  "verdict": "INERT",
+  "per_rep": [
+    {
+      "rep": 1,
+      "control": "ABSENT",
+      "treatment": "ABSENT"
+    },
+    {
+      "rep": 2,
+      "control": "ABSENT",
+      "treatment": "ABSENT"
+    }
+  ]
+}

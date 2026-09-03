@@ -221,7 +221,7 @@ The advisory gate `skill.probe-coverage`
 (`scripts/check-skill-probe-coverage.sh`) names every product-/judgment-tier
 skill lacking a current, canonical-skill-mode, manifest-backed result. After
 the 2026-08-16 provenance migration, the historical rows are excluded and
-current coverage is 0/12 against a **declared denominator**: the 12 skills
+current coverage is 1/12 (premortem, sealed, 2026-09-03) against a **declared denominator**: the 12 skills
 that carry a product/judgment badge. `scripts/.skill-probe-denominator-exclusions`
 stays as the mechanism for a category error, with its argument written beside
 each entry; it held `goals` (a pure `alias-of fitness`, whose probe would have

@@ -157,3 +157,36 @@ reading any null:
 ```bash
 ls "$CODEX_HOME"                 # auth.json only — no skills/ directory
 ```
+
+## Sealed dispatch (2026-09-03)
+
+### What the seal is
+`scripts/probe-skill.sh` refuses live dispatch without `sandbox-exec` unless
+`PROBE_SEAL=none` (coverage-ineligible). A rep runs under an outer seatbelt
+profile: `file-read*` denied on the checkout and on `~/.agents`,
+`~/.claude/skills`, `~/.gemini/skills`, `~/.codex/skills`; `file-write*` denied
+outside the rep workspace, the scratch HOME, and the temp roots;
+`file-read-data` denied on the harness-private dispatch dir. HOME and
+CODEX_HOME are scratch (auth symlinked). Codex's own sandbox is bypassed inside
+the profile because seatbelt does not nest. The record (`seal.json`) is bound
+into `agentops-skill-probe-capture.v3` and `verify-scorecard` re-checks the
+denied roots.
+
+### Two leaks the seal exposed, both trapped now
+- **Shared workspace.** The first sealed xhigh run had every rep's prompt file
+  in one workspace; the control-2 rep ran `rg --files`, found
+  `treatment-1.prompt`, and read it (the treatment prompt embeds SKILL.md). The
+  REGRESSIVE verdict that produced collapsed to INERT under replay once the
+  `sibling-prompt-read` rule landed. Now: one empty workspace per rep, prompts
+  on stdin only, dispatch files in a temp dir denied `file-read-data`.
+- **stdio under a denied tree.** Node aborts at startup when its stdout and
+  stderr files sit under a `file-read*` denied directory (it stats them). The
+  dispatch dir therefore lives in temp with `file-read-data` denied only.
+- **Codex's bundled skill.** A treatment rep read
+  `$CODEX_HOME/.system/skill-creator/SKILL.md` (codex ships it into the scratch
+  home). The `skill-read-contamination` rule degrades it; that is
+  over-conservative for codex's own file and kept deliberately.
+
+### premortem-plan-shape-t2, sealed, gpt-5.6-luna
+low: control 0/2, treatment 1/1 usable, BEHAVIORAL. xhigh: 0/2 vs 0/2, INERT.
+Headroom SEPARATED at both. Scorecards under `docs/evals/scorecards/2026-09-03/`.

@@ -44,6 +44,8 @@
 | `operationalize` | `anti-ceremony-creation-gate-v2` | 2026-08-16 | UNMEASURED | First canonical-skill attempt: control 2/2 usable, treatment 0/2 usable after a leading-hyphen CLI dispatch defect; no fixture set was published. Attempt scorecard: `docs/evals/scorecards/2026-08-16/anti-ceremony-low-v2.json`; interpretation: `docs/evals/2026-08-16-anti-ceremony-creation-gate.md` |
 | `operationalize` | `anti-ceremony-creation-gate-v2` | 2026-08-16 | LEGACY-UNVERIFIED | Compatibility-only v2 canonical-SKILL run, historically classified INERT at control 2/2 versus treatment 2/2. Its retained scorecard and fixture predate the v3 response-only, counterbalanced, self-contained capture contract, so they do not count as current evidence: `docs/evals/scorecards/2026-08-16/anti-ceremony-low-v2b.json`; `evals/skill-probes/anti-ceremony-creation-gate-v2/fixtures-low-2026-08-16-v2b/fixture-set.json`; interpretation: `docs/evals/2026-08-16-anti-ceremony-creation-gate.md` |
 | `premortem` | `premortem-plan-shape-t2` | 2026-08-26 | WITHDRAWN | Filed as BEHAVIORAL, withdrawn same day: the fresh validator dumped the committed transcripts and every rep — both arms — had fetched `skills/premortem/SKILL.md` off disk (control-1 `sed`, control-2 `cat`, exit 0), so the arms were not differentiated by the bound bytes and the separation was band-spray variance between two arms holding the same skill. The harness now degrades any rep whose transcript shows a successful SKILL.md read (`skill-read-contamination`); the regenerated scorecard reads UNMEASURED 0/0 usable. `premortem` remains UNMEASURED. Evidence: `docs/evals/scorecards/2026-08-26/premortem-plan-shape-t2-low.json` (regenerated), fixtures unchanged. |
+| `premortem` | `premortem-plan-shape-t2` | 2026-09-03 | BEHAVIORAL | scorecard: `docs/evals/scorecards/2026-09-03/premortem-plan-shape-t2-low.json`; sealed dispatch (seatbelt, scratch HOME/CODEX_HOME, per-rep empty workspace, capture-contract v3 seal block); producer gpt-5.6-luna effort low; control 0/2, treatment 1/1 usable (treatment-1 DEGRADED by the skill-read rule after reading codex's own bundled `.system/skill-creator/SKILL.md` in the scratch CODEX_HOME, an over-conservative but safe catch); headroom SEPARATED; N=2, directional. |
+| `premortem` | `premortem-plan-shape-t2` | 2026-09-03 | INERT | scorecard: `docs/evals/scorecards/2026-09-03/premortem-plan-shape-t2-xhigh.json`; same seal and producer at effort xhigh; control 0/2, treatment 0/2; headroom SEPARATED; N=2, directional. Two earlier 2026-09-03 sets were superseded before filing: one REGRESSIVE verdict collapsed to INERT under replay once the sibling-prompt-read trap degraded the control rep that had read `treatment-1.prompt` from the shared workspace, and one run never dispatched (node aborts when its stdio sits under a file-read* denied tree). |
 
 As of the 2026-08-16 provenance migration the coverage gate counted **0/12**
 product/judgment skills as measured (see the dated update below for the current
@@ -73,7 +75,7 @@ SATURATED group is not evidence — pre-screen the scorecards with
 seeded-defect probes were authored for `validate`, `premortem`, `council`, and
 `one-way-door`, and 28 live canonical-skill dispatches were captured against
 gpt-5.6-luna with an isolated producer home. **Zero rows survived** and the
-coverage gate counts **12/12 unmeasured**: the one row filed (`premortem`,
+coverage gate counted **12/12 unmeasured** at that date: the one row filed (`premortem`,
 BEHAVIORAL) was WITHDRAWN the same day when the fresh validator proved every
 rep — both arms — had read the skill off disk mid-run (see the WITHDRAWN row
 above and the skill-read-contamination rule the harness now enforces). The
@@ -93,3 +95,14 @@ The honest headline: zero of four judgment disciplines measured at this
 producer altitude — two ceilings, one insufficient capture, one contaminated
 withdrawal. The instrument caught all four states correctly; the next wave
 runs only after dispatch is filesystem-sealed.
+
+**2026-09-03 update.** Filesystem-sealed dispatch landed (outer `sandbox-exec`
+profile denying the checkout and every skill root, scratch HOME/CODEX_HOME, one
+empty workspace per rep, prompt on stdin only, seal bound into capture-contract
+v3 and required for coverage eligibility). Under it, `premortem-plan-shape-t2`
+carries the first current manifest-backed rows: BEHAVIORAL at effort low and
+INERT at effort xhigh, headroom SEPARATED. The gate now counts **1/12
+measured**. Two contamination paths were caught on the way and are trapped:
+reading a sibling rep's prompt from a shared workspace, and reading any
+`SKILL.md` (including codex's bundled system skill). N=2 per arm is directional
+evidence of response-shape change, never quality uplift.
