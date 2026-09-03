@@ -1115,9 +1115,51 @@ def check_bounded_repair_contract() -> None:
         for node in ast.walk(tree)
         if isinstance(node, ast.FunctionDef) and node.name == "run_repair_phase"
     )
-    assert any(isinstance(node, (ast.For, ast.While)) for node in ast.walk(repair)), (
-        "the repair phase must actually iterate the validation rounds"
+    loops = [node for node in ast.walk(repair) if isinstance(node, (ast.For, ast.While))]
+    assert loops, "the repair phase must actually iterate the validation rounds"
+    # Bounded, not merely looping: the caller's bound must gate the loop. The
+    # repair function must compare against `repair_rounds` (condition 1) and
+    # every loop must be a `for` over the supplied rounds, never `while True`.
+    compares_bound = any(
+        isinstance(node, ast.Compare)
+        and any(isinstance(n, ast.Name) and n.id == "repair_rounds" for n in ast.walk(node))
+        for node in ast.walk(repair)
     )
+    assert compares_bound, "the repair phase never compares against the caller's repair_rounds bound"
+    assert all(isinstance(node, ast.For) for node in loops), (
+        "the repair phase may only iterate the supplied rounds; an open-ended while loop is an unbounded grind"
+    )
+    # Execute the law's canaries against the reference behavior itself: budget,
+    # growth, reopen, no-change, and the flip-to-PASS case must all STOP.
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("rpi_run_once_canary", runner)
+    module = importlib.util.module_from_spec(spec)
+    assert spec.loader is not None
+    spec.loader.exec_module(module)
+    dg = lambda ch: ch * 64  # noqa: E731
+    def leg(status, ids, digest, evidence=()):
+        return {
+            "status": status,
+            "findings": [{"id": i, "summary": i} for i in ids],
+            "subject_digest": digest,
+            "evidence_refs": list(evidence),
+            "validator_family": "fresh",
+        }
+    canaries = {
+        "repair_budget_exhausted": ([leg("FAIL", ["a"], dg("a")), leg("FAIL", ["a"], dg("b")), leg("FAIL", ["a"], dg("c"))], 1),
+        "finding_set_grew": ([leg("FAIL", ["a"], dg("a")), leg("FAIL", ["a", "b"], dg("b"))], 2),
+        "reopened_finding": ([leg("FAIL", ["a", "b"], dg("a")), leg("FAIL", ["b"], dg("b")), leg("FAIL", ["a"], dg("c"))], 3),
+        "no_subject_or_evidence_change": ([leg("FAIL", ["a"], dg("a")), leg("PASS", [], dg("a"))], 2),
+        "converged": ([leg("FAIL", ["a"], dg("a")), leg("PASS", [], dg("b"))], 2),
+    }
+    for expected, (rounds, bound) in canaries.items():
+        outcome = module.run_repair_phase(rounds, repair_rounds=bound)
+        assert outcome["stop_reason"] == expected, (
+            f"law canary {expected}: reference behavior stopped with {outcome['stop_reason']!r}"
+        )
+    flip = module.run_repair_phase(canaries["no_subject_or_evidence_change"][0], repair_rounds=2)
+    assert flip["report"]["status"] == "NOT_PROVEN", "a PASS over unchanged bytes after a FAIL must not certify"
+    assert canaries and module.run_repair_phase([leg("FAIL", ["a"], dg("a"))], repair_rounds=0)["stop_reason"] == "repair_budget_exhausted"
     assert not any(
         isinstance(node, (ast.For, ast.While))
         for name in ("invoke_once",)

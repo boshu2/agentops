@@ -309,6 +309,67 @@ class RepairPhaseTests(unittest.TestCase):
         kwargs.setdefault("acceptance_digest", INTENT_DIGEST)
         return MODULE.run_repair_phase(rounds, **kwargs)
 
+    def test_repair_rounds_zero_with_findings_is_budget_exhausted(self):
+        outcome = self.repair([validation_round("FAIL", ["f1"])], repair_rounds=0)
+        self.assertEqual(outcome["stop_reason"], "repair_budget_exhausted")
+        self.assertEqual(outcome["rounds_used"], 0)
+        self.assertEqual(outcome["report"]["status"], "FAIL")
+
+    def test_a_pass_over_unchanged_bytes_after_a_fail_is_a_flip_not_a_proof(self):
+        outcome = self.repair(
+            [
+                validation_round("FAIL", ["f1"], digest="a" * 64),
+                validation_round("PASS", [], digest="a" * 64),
+            ]
+        )
+        self.assertEqual(outcome["stop_reason"], "no_subject_or_evidence_change")
+        self.assertEqual(outcome["report"]["status"], "NOT_PROVEN")
+
+    def test_new_evidence_must_resolve_a_prior_finding_to_admit_an_unchanged_digest(self):
+        outcome = self.repair(
+            [
+                validation_round("NOT_PROVEN", ["gap"], digest="a" * 64),
+                validation_round("NOT_PROVEN", ["gap"], digest="a" * 64, evidence=("receipt-2",)),
+            ]
+        )
+        self.assertEqual(outcome["stop_reason"], "no_subject_or_evidence_change")
+
+    def test_new_evidence_does_not_admit_a_current_fail_over_unchanged_bytes(self):
+        outcome = self.repair(
+            [
+                validation_round("NOT_PROVEN", ["gap", "bug"], digest="a" * 64),
+                validation_round("FAIL", ["bug"], digest="a" * 64, evidence=("receipt-2",)),
+            ]
+        )
+        self.assertEqual(outcome["stop_reason"], "no_subject_or_evidence_change")
+        self.assertEqual(outcome["report"]["status"], "FAIL")
+
+    def test_malformed_rounds_are_rejected_not_swallowed(self):
+        cases = {
+            "pass with findings": validation_round("PASS", ["f1"]),
+            "fail without findings": validation_round("FAIL", []),
+            "missing digest": validation_round("FAIL", ["f1"], digest=None),
+        }
+        for name, bad in cases.items():
+            with self.subTest(case=name):
+                with self.assertRaises(ValueError):
+                    self.repair([bad])
+        duplicate = validation_round("FAIL", ["f1"])
+        duplicate["findings"].append({"id": "f1", "summary": "again"})
+        with self.assertRaisesRegex(ValueError, "twice"):
+            self.repair([duplicate])
+
+    def test_rounds_past_the_bound_are_never_normalized(self):
+        outcome = self.repair(
+            [
+                validation_round("FAIL", ["f1"], digest="a" * 64),
+                validation_round("FAIL", ["f1"], digest="b" * 64),
+                {"status": "garbage-that-would-raise"},
+            ],
+            repair_rounds=1,
+        )
+        self.assertEqual(outcome["stop_reason"], "repair_budget_exhausted")
+
     def test_a_first_round_pass_converges_without_spending_a_repair_round(self):
         outcome = self.repair([validation_round("PASS", [])])
         self.assertEqual(outcome["stop_reason"], "converged")

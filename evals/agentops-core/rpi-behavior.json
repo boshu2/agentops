@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "id": "agentops-core.rpi-behavior",
-  "name": "AgentOps Single-Pass RPI Canary",
-  "description": "Offline public canary for the Plan, Implement, fresh Validate, durable verdict, report-and-stop boundary.",
+  "name": "AgentOps Bounded-Repair RPI Canary",
+  "description": "Offline public canary for the Plan, Implement, fresh Validate, bounded repair under the convergence law, durable verdict boundary (ADR-0017).",
   "practices": [
     "llm-eval-harness",
     "agile-manifesto"
@@ -17,8 +17,8 @@
     "canary",
     "offline",
     "rpi",
-    "single-pass",
-    "verdict"
+    "verdict",
+    "bounded-repair"
   ],
   "allowed_runtimes": [
     "static",

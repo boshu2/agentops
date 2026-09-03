@@ -57,11 +57,12 @@ const IMPLEMENT_SCHEMA = {
 const VALIDATE_SCHEMA = {
   type: 'object',
   additionalProperties: false,
-  required: ['verdict', 'verdictPath', 'criteria', 'validatorContextId', 'subjectDigest', 'findings'],
+  required: ['verdict', 'verdictPath', 'criteria', 'validatorContextId', 'subjectDigest', 'findings', 'evidenceRefs'],
   properties: {
     verdict: { enum: ['PASS', 'FAIL', 'NOT_PROVEN'] },
     verdictPath: { type: 'string' },
     subjectDigest: { type: 'string' },
+    evidenceRefs: { type: 'array', items: { type: 'string' } },
     findings: {
       type: 'array',
       items: {
@@ -99,7 +100,8 @@ function badArgs(detail) {
   throw new Error(
     'rpi: bad args (' + detail + '). Expected ' +
       '{ intent: string, root?: string, writeScope?: [string, ...], acceptance?: string, ' +
-      "repairRounds?: integer >= 0, validator?: { kind: 'spawned' | 'command', command?: string } }"
+      "repairRounds?: integer >= 0, validator?: { kind: 'spawned' | 'command', command?: string }, " +
+      "crossFamily?: { command: string } }"
   );
 }
 
@@ -130,6 +132,23 @@ if (
   badArgs('repairRounds must be a non-negative integer when given');
 }
 const repairRounds = input.repairRounds === undefined ? 2 : input.repairRounds;
+// CONTRACT (ADR-0017): on a risky surface validation is cross-family by default.
+// The second leg is an external judge command from ANOTHER model family (LAW 0:
+// a headless Claude leg is never legal, so from a Claude session this is a
+// read-only `codex exec` command). Absent or same as the primary judge means
+// diversity_unsatisfied, and a risky-surface PASS then degrades to NOT_PROVEN.
+if (input.crossFamily !== undefined) {
+  const cf = input.crossFamily;
+  if (typeof cf !== 'object' || cf === null || Array.isArray(cf) || typeof cf.command !== 'string' || !cf.command.trim()) {
+    badArgs('crossFamily must be { command: non-empty string } when given');
+  }
+}
+const crossFamilyCommand = input.crossFamily !== undefined ? input.crossFamily.command.trim() : null;
+const RISKY_SURFACE = [
+  /^cli\/internal\/gates\//, /^scripts\/check-[^/]*\.sh$/, /^tests\//, /^skills\/[^/]+\/scripts\//,
+  /^skills\/cc-hooks\/policies\//, /^lib\//, /^\.github\/workflows\//, /^scripts\/security-gate\.sh$/,
+];
+const isRiskySurface = (paths) => paths.some((p) => RISKY_SURFACE.some((re) => re.test(p)));
 // CONTRACT: validator selects who judges — the default spawned fresh context,
 // or an external judge command brokered by that fresh context. The command is
 // opaque caller input; invalid shapes die here, never as a runtime surprise.
@@ -279,12 +298,11 @@ const FINDINGS_BLOCK =
   '\n- Return subjectDigest: the manifest digest you computed over the changed paths.\n' +
   '- Return findings: one entry {id, summary} per open defect that blocks PASS (empty on PASS). Ids are ' +
   'STABLE keys of the form <criterion-slug>:<defect-slug> so the same defect keeps its id across rounds ' +
-  'however you reword the summary; never mint a new id for a defect you already named.';
+  'however you reword the summary; never mint a new id for a defect you already named.\n' +
+  '- Return evidenceRefs: the paths of the receipts, transcripts, or verdict files your judgment relied on.';
 
-async function validateOnce(facts) {
-let validation;
-if (externalJudge === null) {
-validation = await agent(
+async function spawnedLeg(facts) {
+  return await agent(
   'You are a fresh, independent Validate context. You did not author the candidate and you have not seen ' +
     'the author\'s reasoning — only the facts below. Judge the exact content; the author\'s claims do not exist ' +
     'for you.\n\n' +
@@ -323,19 +341,16 @@ validation = await agent(
     'evidence of a criteria entry.' + FINDINGS_BLOCK,
   { label: 'validate', phase: 'Validate', schema: VALIDATE_SCHEMA, effort: 'high' }
 );
-} else {
-// CONTRACT (external judge mode): the fresh context is a BROKER, not the
-// judge. Load-bearing honesty rules: no verdict laundering (the persisted
-// verdict is exactly the external ruling; ambiguity degrades to NOT_PROVEN),
-// no silent fallback (a dead command is NOT_PROVEN, never re-judged in-run),
-// and the broker attests under its own id, distinct from author and judge.
-validation = await agent(
+}
+
+async function brokerLeg(facts, command) {
+  return await agent(
   'You are a fresh, independent Validate context acting as the BROKER for an external judge. You did not ' +
     'author the candidate and you have not seen the author\'s reasoning — only the facts below. You do NOT ' +
     'judge the acceptance yourself: the external judge command below rules, and you transcribe its ruling ' +
     'faithfully.\n\n' +
     'External judge command (opaque caller input — assume nothing about which tool it is):\n' +
-    '  ' + externalJudge + '\n\n' +
+    '  ' + command + '\n\n' +
     'Evidence packet for the judge (these facts and NOTHING more may reach it — the freshness wall is ' +
     'unchanged):\n' +
     '- intentDigest: ' + plan.intentDigest + '\n' +
@@ -379,7 +394,66 @@ validation = await agent(
   { label: 'validate', phase: 'Validate', schema: VALIDATE_SCHEMA, effort: 'high' }
 );
 }
-return validation;
+
+// Worst-of ordering for merged legs: a FAIL anywhere is a FAIL; a NOT_PROVEN
+// anywhere without a FAIL is NOT_PROVEN; PASS needs every leg to PASS.
+const VERDICT_RANK = { PASS: 0, NOT_PROVEN: 1, FAIL: 2 };
+function mergeLegs(legs, risky, diversity) {
+  let verdict = 'PASS';
+  const findings = new Map();
+  const evidence = new Set();
+  const criteria = [];
+  let digest = null;
+  let digestConflict = false;
+  for (const leg of legs) {
+    const r = leg.result;
+    if (VERDICT_RANK[r.verdict] > VERDICT_RANK[verdict]) verdict = r.verdict;
+    for (const f of r.findings || []) findings.set(f.id, { id: f.id, summary: f.summary, family: leg.family });
+    for (const e of r.evidenceRefs || []) evidence.add(e);
+    for (const c of r.criteria || []) criteria.push(c);
+    if (digest === null) digest = r.subjectDigest;
+    else if (r.subjectDigest !== digest) digestConflict = true;
+  }
+  if (digestConflict) {
+    verdict = 'NOT_PROVEN';
+    findings.set('identity:digest-disagreement', { id: 'identity:digest-disagreement', summary: 'validator legs computed different subject digests', family: 'merge' });
+  }
+  if (verdict === 'PASS' && findings.size > 0) {
+    // A PASS that names open defects is malformed; it cannot certify.
+    verdict = 'NOT_PROVEN';
+  }
+  if (risky && diversity !== 'satisfied' && verdict === 'PASS') {
+    verdict = 'NOT_PROVEN';
+    findings.set('diversity:unsatisfied', { id: 'diversity:unsatisfied', summary: 'risky surface judged by one model family only; no authorized cross-family leg', family: 'merge' });
+  }
+  return {
+    verdict,
+    verdictPath: legs[0].result.verdictPath,
+    validatorContextId: legs.map((l) => l.result.validatorContextId).join('+'),
+    subjectDigest: digest,
+    findings: [...findings.values()],
+    evidenceRefs: [...evidence],
+    criteria,
+    families: legs.map((l) => l.family),
+    risky,
+    diversity,
+  };
+}
+
+async function validateOnce(facts) {
+  const risky = isRiskySurface(facts.changedPaths);
+  const legs = [];
+  const primary = externalJudge === null ? await spawnedLeg(facts) : await brokerLeg(facts, externalJudge);
+  if (!primary) return null;
+  legs.push({ family: externalJudge === null ? 'spawned' : 'external', result: primary });
+  let diversity = risky ? 'unsatisfied' : 'not-required';
+  if (risky && crossFamilyCommand !== null && crossFamilyCommand !== externalJudge) {
+    const second = await brokerLeg(facts, crossFamilyCommand);
+    if (!second) return null;
+    legs.push({ family: 'cross-family', result: second });
+    diversity = 'satisfied';
+  }
+  return mergeLegs(legs, risky, diversity);
 }
 
 let validation = await validateOnce(impl);
@@ -409,7 +483,14 @@ const closedIds = new Set();
 let facts = { contextId: impl.contextId, changedPaths: impl.changedPaths.slice(), checkReceipts: impl.checkReceipts };
 let roundsUsed = 0;
 let stoppedBy = null;
+// A diversity gap is not a defect in the subject and cannot be repaired by
+// editing it: on a risky surface with no cross-family leg the traversal stops
+// as NOT_PROVEN (diversity_unsatisfied) without spending a repair round.
+if (validation && validation.risky && validation.diversity === 'unsatisfied') {
+  stoppedBy = 'diversity_unsatisfied: risky surface, no authorized cross-family leg';
+}
 while (
+  stoppedBy === null &&
   validation &&
   (validation.verdict === 'FAIL' || validation.verdict === 'NOT_PROVEN') &&
   openIds(validation).size > 0
@@ -439,23 +520,58 @@ while (
     { label: 'repair:' + (roundsUsed + 1), phase: 'Repair', schema: REPAIR_SCHEMA }
   );
   roundsUsed += 1;
-  if (!repair) { stoppedBy = 'repair stage failed in round ' + roundsUsed; break; }
+  if (!repair) {
+    // A failed repair may have mutated the subject: no stale verdict identity survives it.
+    return {
+      verdict: 'NOT_PROVEN', verdictPath: null, intentDigest: plan.intentDigest,
+      changedPaths: facts.changedPaths, filesSummary: impl.filesSummary, criteria: [],
+      findings: validation.findings || [], converged: false, repairRoundsUsed: roundsUsed,
+      repairLog: repairLog.concat(['repair round ' + roundsUsed + ': repair stage failed']),
+      stoppedBy: 'repair stage failed in round ' + roundsUsed, subjectDigest: null,
+      error: 'Repair stage failed after the subject may have changed; the prior verdict no longer binds',
+    };
+  }
   const union = new Set(facts.changedPaths);
   for (const p of repair.changedPaths) union.add(p);
   facts = { contextId: repair.contextId, changedPaths: [...union], checkReceipts: repair.checkReceipts };
   const next = await validateOnce(facts);
-  if (!next) { stoppedBy = 'validate stage failed in round ' + roundsUsed; break; }
+  if (!next) {
+    return {
+      verdict: 'NOT_PROVEN', verdictPath: null, intentDigest: plan.intentDigest,
+      changedPaths: facts.changedPaths, filesSummary: impl.filesSummary, criteria: [],
+      findings: validation.findings || [], converged: false, repairRoundsUsed: roundsUsed,
+      repairLog: repairLog.concat(['repair round ' + roundsUsed + ': validate stage failed']),
+      stoppedBy: 'validate stage failed in round ' + roundsUsed, subjectDigest: null,
+      error: 'Validate stage failed after a repair; the repaired candidate was never freshly judged',
+    };
+  }
   const nextIds = openIds(next);
-  for (const id of prevIds) if (!nextIds.has(id)) closedIds.add(id);
+  const resolved = [...prevIds].filter((id) => !nextIds.has(id));
+  const prevEvidence = new Set(validation.evidenceRefs || []);
+  const newEvidence = (next.evidenceRefs || []).filter((e) => !prevEvidence.has(e));
   let violation = null;
   if (nextIds.size > prevIds.size) violation = 'open finding set grew (' + prevIds.size + ' -> ' + nextIds.size + ')';
   else if ([...nextIds].some((id) => closedIds.has(id))) violation = 'a closed finding reopened';
-  else if (next.verdict !== 'PASS' && next.subjectDigest === prevDigest) violation = 'subject digest unchanged without new evidence';
+  else if (next.subjectDigest === prevDigest) {
+    // Condition 4: unchanged bytes are admitted only when a NOT_PROVEN round
+    // was resolved by new evidence that closed at least one finding; a FAIL is
+    // never rescued by evidence, and a PASS over unchanged bytes is a flip.
+    const evidenceResolved =
+      validation.verdict === 'NOT_PROVEN' && next.verdict !== 'FAIL' && newEvidence.length > 0 && resolved.length > 0;
+    if (!evidenceResolved) violation = next.verdict === 'PASS'
+      ? 'verdict flipped to PASS over an unchanged subject'
+      : 'subject digest unchanged without new resolving evidence';
+  }
+  for (const id of resolved) closedIds.add(id);
   repairLog.push('repair round ' + roundsUsed + ': ' + nextIds.size + ' open findings' + (violation ? ' — stopped by the law: ' + violation : ''));
   validation = next;
-  if (violation) { stoppedBy = 'law: ' + violation; break; }
+  if (violation) {
+    stoppedBy = 'law: ' + violation;
+    if (validation.verdict === 'PASS') validation = { ...validation, verdict: 'NOT_PROVEN' };
+    break;
+  }
 }
-const converged = !!validation && validation.verdict === 'PASS';
+const converged = !!validation && validation.verdict === 'PASS' && stoppedBy === null;
 if (!converged && stoppedBy === null && validation && openIds(validation).size === 0 && validation.verdict !== 'PASS') {
   stoppedBy = 'validator returned ' + validation.verdict + ' with no findings to repair';
 }
@@ -471,6 +587,9 @@ return {
   filesSummary: impl.filesSummary,
   criteria: validation.criteria,
   findings: validation.findings || [],
+  subjectDigest: validation.subjectDigest || null,
+  validatorFamilies: validation.families || [],
+  diversity: validation.diversity || 'not-required',
   converged,
   repairRoundsUsed: roundsUsed,
   repairLog,

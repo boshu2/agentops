@@ -459,8 +459,8 @@
     {
       "name": "craft-goal",
       "source_skill": "skills/craft-goal",
-      "source_hash": "7cb5678a3cf55ead80a0e43afdc62ead5d8cd36ff2a41d2d803b6bd74e1215bb",
-      "generated_hash": "10fbf5148de2ab8d9d4d9b57a72f3964b977f0705abe2ade4ace316074439539"
+      "source_hash": "30726392ad17a3316f5c2c32c9f4a1039ece4e2f55c7ccaa7e183c2c2432837f",
+      "generated_hash": "6458422d18684ac270bc1c8570d16e4bed80e8fa17895d5f8da79b41677a19bb"
     },
     {
       "name": "crank",
@@ -621,8 +621,8 @@
     {
       "name": "rpi",
       "source_skill": "skills/rpi",
-      "source_hash": "34a594f554f0c3c2cf6fc68dabf81a06fb1fd6830e1f6b15eed75c188cbef899",
-      "generated_hash": "9329ab2ed19205f05bb416ea788173dd1823d4dde9c72024b2cebb26e44375ea"
+      "source_hash": "d7db72af73f50f6bdd006dcf02a1375145fae4f2bd584fc4ba365e6269b63623",
+      "generated_hash": "7951c4234924d8bf19fac27574d30fcd136818d7812b26172d1e896c4c36c7c8"
     },
     {
       "name": "sbh",

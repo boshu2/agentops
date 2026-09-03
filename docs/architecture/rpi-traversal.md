@@ -16,11 +16,13 @@ intent
           -> runtime-derived subject-manifest.v1 + check receipts
           -> one fresh independent validation
           -> PASS | FAIL | NOT_PROVEN
-          -> report and stop
+          -> FAIL / NOT_PROVEN with findings: bounded repair under the
+             convergence law (caller's repair_rounds), re-validate freshly
+          -> report when converged, stopped by the law, or out of rounds
 ```
 
-One traversal is one experiment. The caller, a Goal, or a factory decides
-whether to start another; the traversal itself never continues.
+One traversal is one experiment plus its bounded repair. The caller, a Goal, or
+a factory decides whether to start another; the traversal never selects it.
 
 ## Roles
 

@@ -274,15 +274,28 @@ def normalize_round(value: Any) -> dict[str, Any]:
         leg_status = _leg_status(leg)
         if _STATUS_RANK[leg_status] > _STATUS_RANK[status]:
             status = leg_status
-        for finding in leg.get("findings") or []:
+        raw_findings = leg.get("findings")
+        if raw_findings is None:
+            raw_findings = []
+        if not isinstance(raw_findings, (list, tuple)):
+            raise ValueError("findings must be a list")
+        leg_ids: set[str] = set()
+        for finding in raw_findings:
             if not isinstance(finding, Mapping):
                 raise ValueError("each finding must be a mapping")
             finding_id = finding.get("id")
             if not isinstance(finding_id, str) or not finding_id.strip():
                 raise ValueError("each finding must carry a stable nonempty id")
+            if finding_id in leg_ids:
+                raise ValueError(f"finding id {finding_id!r} appears twice in one validate leg")
+            leg_ids.add(finding_id)
             # Last leg wins on wording; the id is the identity, so a reworded
             # summary is the same finding and never counts as a new one.
             open_findings[finding_id] = dict(finding)
+        if leg_status == "PASS" and leg_ids:
+            raise ValueError("a PASS leg cannot carry open findings")
+        if leg_status == "FAIL" and not leg_ids:
+            raise ValueError("a FAIL leg must name at least one finding")
         family = leg.get("validator_family")
         if isinstance(family, str) and family and family not in families:
             families.append(family)
@@ -290,10 +303,11 @@ def normalize_round(value: Any) -> dict[str, Any]:
             if ref not in evidence_refs:
                 evidence_refs.append(ref)
         leg_digest = leg.get("subject_digest", leg.get("subject_manifest_digest"))
-        if leg_digest is not None:
-            if digest is not None and leg_digest != digest:
-                raise ValueError("validate legs disagree about the subject digest")
-            digest = leg_digest
+        if not valid_digest(leg_digest):
+            raise ValueError("each validate leg must carry a valid subject digest")
+        if digest is not None and leg_digest != digest:
+            raise ValueError("validate legs disagree about the subject digest")
+        digest = leg_digest
         checked.extend(str(item) for item in leg.get("checked") or [])
         not_checked.extend(str(item) for item in leg.get("not_checked") or [])
 
@@ -330,10 +344,17 @@ def law_violation(
     new_evidence = [
         ref for ref in current["evidence_refs"] if ref not in set(previous["evidence_refs"])
     ]
-    # The evidence branch is NOT_PROVEN-only by construction: a FAIL says the
-    # subject is wrong, and no amount of new evidence over unchanged bytes
-    # repairs a wrong subject.
-    if previous["status"] == "NOT_PROVEN" and new_evidence:
+    # The evidence branch is NOT_PROVEN-only by construction, on both sides: a
+    # FAIL says the subject is wrong, and no amount of new evidence over
+    # unchanged bytes repairs a wrong subject. The new evidence must also have
+    # RESOLVED something: at least one previously open finding id is closed.
+    resolved = previous["open_ids"] - current["open_ids"]
+    if (
+        previous["status"] == "NOT_PROVEN"
+        and current["status"] != "FAIL"
+        and new_evidence
+        and resolved
+    ):
         return None
     return "no_subject_or_evidence_change"
 
@@ -364,8 +385,7 @@ def run_repair_phase(
       round 0 and spends none).
     - ``stop_reason``: one of :data:`STOP_REASONS`.
     """
-    rounds = [normalize_round(entry) for entry in validations]
-    if not rounds:
+    if not validations:
         raise ValueError("the repair phase needs at least one validation round")
     if not isinstance(repair_rounds, int) or isinstance(repair_rounds, bool) or repair_rounds < 0:
         raise ValueError("repair_rounds must be a non-negative integer")
@@ -373,16 +393,19 @@ def run_repair_phase(
     checked: list[str] = []
     closed_ids: set[str] = set()
     rounds_used = 0
-    current = rounds[0]
-    previous = rounds[0]
+    current = normalize_round(validations[0])
+    previous = current
     stop_reason = "not_converged"
+    law_stopped = False
 
-    for index, candidate in enumerate(rounds):
+    for index, raw_candidate in enumerate(validations):
         if index > 0:
-            # Condition 1: the caller's bound, checked before the round counts.
+            # Condition 1: the caller's bound, checked before the round is even
+            # normalized, so a round past the bound is never consumed.
             if rounds_used >= repair_rounds:
                 stop_reason = "repair_budget_exhausted"
                 break
+            candidate = normalize_round(raw_candidate)
             rounds_used += 1
             current = candidate
             checked.append(
@@ -391,10 +414,10 @@ def run_repair_phase(
             violation = law_violation(previous, current, closed_ids)
             if violation is not None:
                 stop_reason = violation
+                law_stopped = True
                 break
             closed_ids |= previous["open_ids"] - current["open_ids"]
         else:
-            current = candidate
             checked.append(f"repair round 0: {len(current['open_ids'])} open findings")
 
         converged, reason = _converged(current, risky_surface)
@@ -408,8 +431,15 @@ def run_repair_phase(
     else:
         stop_reason = "not_converged"
 
+    if stop_reason == "not_converged" and rounds_used >= repair_rounds and current["open_ids"]:
+        # Findings remain and the caller's bound is spent: name it as such.
+        stop_reason = "repair_budget_exhausted"
+
     status = current["status"]
-    if stop_reason == "diversity_unsatisfied":
+    if stop_reason == "diversity_unsatisfied" or (law_stopped and status == "PASS"):
+        # A PASS produced by a law-violating round cannot certify anything: a
+        # PASS over unchanged bytes after a FAIL is a flip, not a proof. A FAIL
+        # that also broke the law stays a FAIL; the subject is still wrong.
         status = "NOT_PROVEN"
 
     return {
