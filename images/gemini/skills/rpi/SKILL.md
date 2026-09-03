@@ -110,43 +110,34 @@ never creates a parallel revision artifact or selects the next work itself.
 A repair round is admitted only while all hold:
 
 1. `rounds_used < repair_rounds` (caller-declared, default 2).
-2. The open finding set, keyed by the validators' stable `findings[].id`
-   (union across the fresh and, when used, cross-family validators), is not
-   larger than the previous round's.
+2. The open finding set, keyed by stable `findings[].id` (union of the fresh
+   and cross-family validators), is not larger than the previous round's.
 3. No finding id closed in an earlier round reopens.
-4. Between rounds either the subject-manifest digest changed (generated-only
-   changes count when they change the digest) or, for `NOT_PROVEN`, new
-   digest-bound evidence was supplied that resolves a named gap.
+4. Between rounds the subject-manifest digest changed (generated-only changes
+   count) or, for `NOT_PROVEN`, new digest-bound evidence resolved a named gap.
 
-Converged ⇔ the fresh validator returns PASS and, when the diff touches a
-risky surface, the cross-family validator also returns PASS. On any violation
-of 1-4 RPI stops and reports the current status; `checked` carries one line
-per round (`repair round N: k open findings`), the open findings ride in the
-validation result and the interactive report, and `not_checked` keeps its
-meaning. No third judge, no escalation, no auto-replan.
-
-A reworded finding with the same id is the same finding. The fix step belongs
-to the orchestrating context; every judge leg stays non-mutating, so a verdict
-never rewrites the artifact it is judging.
+Converged: the fresh validator returns PASS and, on a risky surface, the
+cross-family validator also returns PASS. On any violation of 1-4 RPI stops and
+reports the current status. `checked` carries one line per round
+(`repair round N: k open findings`); open findings ride in the validation
+result and the report; `not_checked` keeps its meaning. A reworded finding with
+the same id is the same finding. The orchestrating context fixes; judge legs
+never mutate the subject. No third judge, no escalation, no auto-replan.
 
 ## Cross-family validation
 
 Risky surfaces default to a cross-family fresh validator: `cli/internal/gates/**`,
 `scripts/check-*.sh`, `tests/**`, `skills/*/scripts/**`,
-`skills/cc-hooks/policies/**`, `lib/**`, and anything `security-gate.sh` scans.
-The dispatch table — which direction may run headless and which must route to
-an interactive pane — is owned by [`validate`](../validate/SKILL.md); RPI
-selects when it applies, never how the leg is launched. With no authorized
-live adapter the result is `diversity_unsatisfied`, and on a risky surface that
-stops as `NOT_PROVEN` rather than converging same-family.
+`skills/cc-hooks/policies/**`, `lib/**`, anything `security-gate.sh` scans.
+[`validate`](../validate/SKILL.md) owns the dispatch table. No authorized live
+adapter means `diversity_unsatisfied`, which on a risky surface is `NOT_PROVEN`.
 
 ## Waves
 
-RPI executes one traversal. A multi-wave intent is executed one wave per
-`crank` invocation: the caller selects the wave and the
-`repair_rounds` bound, crank forwards both and invokes RPI per lane, then
-returns wave evidence and stops. RPI itself never selects a wave, queues the
-next one, or widens the bound it was given.
+RPI executes one traversal. A multi-wave intent runs one wave per `crank`
+invocation: the caller selects the wave and the `repair_rounds` bound, crank
+forwards both, invokes RPI per lane, returns wave evidence, and stops. RPI never
+selects a wave or queues the next one, and never extends the caller's bound.
 
 ## Anti-ceremony boundary
 

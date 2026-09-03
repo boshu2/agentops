@@ -14,11 +14,17 @@ Feature: RPI runs one bounded experiment
     Then Plan, Implement, and Validate are not dispatched
     And RPI reports NOT_PLANNED and stops
 
-  @covered-by:skills/rpi/tests/test_run_once.py::test_fail_reports_and_stops_without_another_dispatch
-  Scenario: Validation failure does not loop
-    Given Validate returns FAIL or NOT_PROVEN
-    When RPI reports the verdict
-    Then RPI stops without repair, replan, helper, retry, or delivery
+  @covered-by:skills/rpi/tests/test_run_once.py::test_fail_from_one_experiment_feeds_the_repair_phase
+  Scenario: Validation failure enters the bounded repair phase
+    Given Validate returns FAIL or NOT_PROVEN with findings
+    When the convergence law admits another round
+    Then RPI repairs the named findings and re-validates freshly, without replan, helper, or delivery
+
+  @covered-by:skills/rpi/tests/test_run_once.py::test_repair_stops_when_a_closed_finding_reopens
+  Scenario: The convergence law stops a repair spiral
+    Given a repair round reopens a closed finding id, grows the open set, or changes nothing
+    When RPI evaluates the law
+    Then RPI stops and reports the current status with the open findings
 
   @covered-by:skills/rpi/scripts/validate.sh
   Scenario: Interactive output does not require a machine artifact

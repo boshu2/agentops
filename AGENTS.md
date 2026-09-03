@@ -133,7 +133,7 @@ Skill logic ships in Go via `ao`;
    ids non-growing; no closed id reopens; the subject digest or the evidence
    changed). Stop when converged, stopped by the law, or out of rounds
    (ADR-0017). Report the result; emit no next action. Two consecutive
-   rounds with no subject or evidence change end the run. Reports lead with
+   rounds with no new implementation evidence end the run. Reports lead with
    the subject, never artifact counts.
 
 A caller may revise the intent and start a new invocation. Learn is an
