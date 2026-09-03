@@ -36,6 +36,10 @@ CAPTURE_CONTRACT_SCHEMA = "agentops-skill-probe-capture.v3"
 # the filesystem seal the dispatch ran under (2026-08-28 contamination: control
 # reps read SKILL.md off the checkout). Absent means the run was not sealed.
 SEAL_NAME = "seal.json"
+# The proxy's raw decision log, published beside the transcripts. Binding only
+# its digest in each rep's transcript left nothing to check the digest against
+# once the run directory was removed.
+NETWORK_LOG_NAME = "network.log"
 SEAL_RECORD_SCHEMA = "agentops-skill-probe-seal.v1"
 SEAL_MODES = {"seatbelt", "none"}
 LEGACY_SEAL_MODE = "legacy-unsealed"
@@ -73,7 +77,12 @@ PASS2_SEAL_KEYS = LEGACY_SEAL_KEYS | {
     "config_sanitized",
     "auth_copied",
 }
-SEAL_KEYS = PASS2_SEAL_KEYS | {
+# The 2026-09-03 third shape. It bound the network and could rebuild its own
+# profile, but most of what it recorded was still only RECORDED: the host list,
+# the writable roots, the device list, the env allowlist and the launcher chain
+# were whatever the harness wrote, so a record could name any of them and stay
+# coverage-eligible.
+PASS3_SEAL_KEYS = PASS2_SEAL_KEYS | {
     "network",
     "dev_write_paths",
     "cache_root",
@@ -84,10 +93,45 @@ SEAL_KEYS = PASS2_SEAL_KEYS | {
     "config_text",
     "env_allowlist",
 }
-SEAL_SHAPES = (LEGACY_SEAL_KEYS, PASS2_SEAL_KEYS, SEAL_KEYS)
+SEAL_KEYS = PASS3_SEAL_KEYS | {"timeout_bin"}
+SEAL_SHAPES = (LEGACY_SEAL_KEYS, PASS2_SEAL_KEYS, PASS3_SEAL_KEYS, SEAL_KEYS)
 SEAL_REP_ENV_KEYS = {"HOME", "CODEX_HOME", "TMPDIR"}
-SEAL_NETWORK_KEYS = {"mode", "hosts", "proxy", "unix_sockets"}
+SEAL_NETWORK_KEYS = {"mode", "hosts", "ports", "proxy", "unix_sockets"}
 SEAL_NETWORK_MODE = "proxy-allowlist"
+# A capture that overrode the allowlist records this instead, so an operator can
+# still run a custom probe and the row can never be counted as coverage.
+SEAL_NETWORK_MODE_CUSTOM = "proxy-custom"
+# The ONLY destinations a counted capture may permit. Recording a host list is
+# not the same as constraining it: pinning the set here is what stops a capture
+# from allowlisting the forge and calling itself sealed.
+PERMITTED_EGRESS_HOSTS = frozenset(
+    {
+        "chatgpt.com",
+        "ab.chatgpt.com",
+        ".oaiusercontent.com",
+        "api.openai.com",
+        "auth.openai.com",
+    }
+)
+PERMITTED_EGRESS_PORTS = [443]
+# The devices a sealed rep may write, pinned so the write allow cannot grow.
+PERMITTED_DEV_WRITE_PATHS = ["/dev/null", "/dev/zero", "/dev/dtracehelper", "/dev/tty"]
+# Every variable a rep may be launched with, beyond the PROBE_* test seams.
+PERMITTED_ENV_ALLOWLIST = frozenset(
+    {
+        "PATH", "HOME", "CODEX_HOME", "TMPDIR", "LANG", "TERM",
+        "PWD", "OLDPWD", "SHLVL", "_",
+        "HTTPS_PROXY", "HTTP_PROXY", "ALL_PROXY", "NO_PROXY",
+        "REVIEWER", "REVIEWER_MARKER",
+        "CODEX_EXEC_PROMPT_FILE", "CODEX_EXEC_DIR", "CODEX_EXEC_SANDBOX",
+        "CODEX_EXEC_SKIP_GIT_CHECK", "CODEX_EXEC_TIMEOUT", "CODEX_EXEC_MODEL",
+        "CODEX_EXEC_OUT_FILE", "CODEX_EXEC_STDERR_FILE",
+        "CODEX_EXEC_EXPECT_OUTPUT", "CODEX_EXEC_BIN",
+        "SKILL_PROBES_DIR", "SKILL_PROBE_SKILLS_DIR",
+    }
+)
+SEAL_ENV_SEAM_PREFIX = "PROBE_"
+PROXY_RELATIVE_PATH = "scripts/lib/probe-connect-proxy.py"
 SEAL_PLATFORM = "Darwin"
 SEAL_MECHANISM = "sandbox-exec"
 SEAL_SANDBOX_EXEC_PATH = "/usr/bin/sandbox-exec"
@@ -902,9 +946,10 @@ def probe_config_drift(path: Path, expected_text: str, workspace: str) -> list[s
         actual = path.read_text(encoding="utf-8")
     except OSError as exc:
         return [f"config unreadable after the rep: {exc}"]
-    if actual == expected_text:
-        return []
     findings: list[str] = []
+    # ALWAYS parse, even when the bytes are unchanged: a byte-equality shortcut
+    # means the structural rules below never run on the ordinary path, so a
+    # mistake in them would only ever show up on a rep that had already drifted.
     try:
         parsed = tomllib.loads(actual)
         baseline = tomllib.loads(expected_text)
@@ -923,6 +968,17 @@ def probe_config_drift(path: Path, expected_text: str, workspace: str) -> list[s
             for name in sorted(projects):
                 if name != workspace:
                     findings.append(f"[projects] gained an entry outside the workspace: {name}")
+                    continue
+                entry = projects[name]
+                if not isinstance(entry, dict):
+                    findings.append("[projects] workspace entry is not a table")
+                    continue
+                extra = sorted(set(entry) - {"trust_level"})
+                if extra:
+                    findings.append(
+                        "[projects] workspace entry carries more than trust_level: "
+                        + ", ".join(extra)
+                    )
     return findings
 
 
@@ -1075,10 +1131,19 @@ def seal_block_from_record(
         "config_sha256",
         "config_text",
         "env_allowlist",
+        "timeout_bin",
+        "profile_file",
+        "real_codex_home",
     }
     missing = required - set(record)
     if missing:
         raise MetadataError(f"{label} is missing: " + ", ".join(sorted(missing)))
+    # A record may carry nothing the reducer does not know about: an unknown
+    # field is either a shape this verifier cannot check or a place to smuggle
+    # one, and either way it must not pass silently.
+    unknown = set(record) - required
+    if unknown:
+        raise MetadataError(f"{label} has unknown fields: " + ", ".join(sorted(unknown)))
     if record["schema"] != SEAL_RECORD_SCHEMA:
         raise MetadataError(f"{label} schema is unsupported: {record['schema']!r}")
     mode = require_text(record["seal_mode"], f"{label} seal_mode")
@@ -1117,6 +1182,11 @@ def seal_block_from_record(
         isinstance(item, str) and item for item in network["hosts"]
     ):
         raise MetadataError(f"{label} network hosts must be a list of host names")
+    if not isinstance(network["ports"], list) or not all(
+        isinstance(item, int) and not isinstance(item, bool) and 0 < item < 65536
+        for item in network["ports"]
+    ):
+        raise MetadataError(f"{label} network ports must be a list of port numbers")
     if not isinstance(network["unix_sockets"], list) or not all(
         isinstance(item, str) and item.startswith("/") for item in network["unix_sockets"]
     ):
@@ -1188,6 +1258,7 @@ def seal_block_from_record(
                 network["proxy"], f"{label} network proxy", nullable=True
             ),
             "unix_sockets": sorted(network["unix_sockets"]),
+            "ports": sorted(network["ports"]),
         },
         "dev_write_paths": normalized_path_list(
             record["dev_write_paths"], f"{label} dev_write_paths"
@@ -1203,6 +1274,9 @@ def seal_block_from_record(
         ),
         "launcher_chain": launcher_chain,
         "launcher_sha256": record["launcher_sha256"],
+        "timeout_bin": optional_normalized_path(
+            record["timeout_bin"], f"{label} timeout_bin"
+        ),
         "config_sha256": record["config_sha256"],
         "config_text": (
             None
@@ -1231,6 +1305,7 @@ SEAL_PAYLOAD_KEYS = {
     "allowed_read_paths",
     "launcher_chain",
     "launcher_sha256",
+    "timeout_bin",
     "rep_env",
     "env_allowlist",
     "real_home",
@@ -1280,6 +1355,7 @@ def write_seal_record(payload_path: Path, output_path: Path) -> dict[str, Any]:
         "allowed_read_paths": list(fields["allowed_read_paths"]),
         "launcher_chain": list(fields["launcher_chain"]),
         "launcher_sha256": fields["launcher_sha256"] or None,
+        "timeout_bin": fields["timeout_bin"] or None,
         "rep_env": dict(fields["rep_env"]),
         "env_allowlist": sorted(fields["env_allowlist"]),
         "real_home": fields["real_home"],
@@ -1324,33 +1400,55 @@ def write_seal_record(payload_path: Path, output_path: Path) -> dict[str, Any]:
     return record
 
 
-def proxy_egress_summary(log_path: Path, rep: str) -> dict[str, Any]:
-    """One rep's CONNECT decisions plus the digest of the whole proxy log."""
-    raw = read_regular_bytes(log_path, "proxy log", maximum=MAX_TRANSCRIPT_BYTES)
-    allowed = 0
-    refused = 0
-    detail: list[str] = []
-    for line in raw.decode("utf-8", errors="replace").splitlines():
-        line = line.strip()
-        if not line:
+def proxy_egress_lines(raw: bytes, rep: str) -> tuple[list[dict[str, Any]], bytes, int]:
+    """The proxy log lines belonging to ONE rep, and their exact bytes.
+
+    The digest is over the rep's OWN lines, not the whole file: the proxy keeps
+    running while the next rep starts and a connection can be logged after the
+    rep that opened it has been summarized, so a whole-file digest is only ever
+    valid for the instant it was taken and never again.
+    """
+    entries: list[dict[str, Any]] = []
+    kept: list[bytes] = []
+    unparseable = 0
+    for line in raw.split(b"\n"):
+        stripped = line.strip()
+        if not stripped:
             continue
         try:
-            entry = json.loads(line)
+            entry = json.loads(stripped)
         except ValueError:
-            refused += 1
-            detail.append("unparseable proxy log line")
+            unparseable += 1
             continue
-        if entry.get("rep") != rep:
+        if not isinstance(entry, dict) or entry.get("rep") != rep:
             continue
-        if entry.get("decision") == "allowed":
+        entries.append(entry)
+        kept.append(stripped)
+    return entries, b"\n".join(kept) + (b"\n" if kept else b""), unparseable
+
+
+def proxy_egress_summary(log_path: Path, rep: str) -> dict[str, Any]:
+    """One rep's CONNECT decisions plus the digest of that rep's log lines."""
+    raw = read_regular_bytes(log_path, "proxy log", maximum=MAX_TRANSCRIPT_BYTES)
+    entries, own_bytes, unparseable = proxy_egress_lines(raw, rep)
+    allowed = 0
+    refused = unparseable
+    detail: list[str] = ["unparseable proxy log line"] * unparseable
+    for entry in entries:
+        decision = entry.get("decision")
+        # `attempt` is the pre-decision trace of the same connection, not an
+        # outcome; counting it would make every allowed CONNECT look refused.
+        if decision == "attempt":
+            continue
+        if decision == "allowed":
             allowed += 1
         else:
             refused += 1
-            detail.append(f"{entry.get('decision')}: {entry.get('host')}:{entry.get('port')}")
+            detail.append(f"{decision}: {entry.get('host')}:{entry.get('port')}")
     return {
         "allowed": allowed,
         "refused": refused,
-        "log_sha256": digest_bytes(raw),
+        "log_sha256": digest_bytes(own_bytes),
         "detail": detail,
     }
 
@@ -1391,7 +1489,11 @@ def read_seal_file(
             "real_tmpdir": None,
             "config_sanitized": None,
             "auth_copied": False,
-            "network": {"mode": "open", "hosts": [], "proxy": None, "unix_sockets": []},
+            "network": {
+                "mode": "open", "hosts": [], "ports": [], "proxy": None,
+                "unix_sockets": [],
+            },
+            "timeout_bin": None,
             "dev_write_paths": [],
             "cache_root": None,
             "real_codex_home": os.path.join(home, ".codex"),
@@ -1485,7 +1587,11 @@ def required_sealed_roots(seal: dict[str, Any]) -> list[str]:
     home = seal["original_home"]
     roots = [seal["repository_root"], home]
     roots += [os.path.join(home, relative) for relative in SEALED_SKILL_ROOTS]
-    for key in ("git_common_root", "real_tmpdir"):
+    # real_codex_home can be configured OUTSIDE the home (its sessions and
+    # rollouts carry canonical text), and cache_root is the operator-writable
+    # Darwin cache directory beside the temp root. Both were recorded and
+    # neither was required, so a seal could name them and deny neither.
+    for key in ("git_common_root", "real_tmpdir", "real_codex_home", "cache_root"):
         value = seal.get(key)
         if value:
             roots.append(value)
@@ -1531,6 +1637,12 @@ def seal_coverage_failure(seal: dict[str, Any]) -> str | None:
             "tier coverage requires the hardened seal block (2026-09-03 third "
             "pass): this contract cannot reconstruct its own profile and records "
             "no network mode, so it proves nothing about what the rep fetched"
+        )
+    if set(seal) == PASS3_SEAL_KEYS:
+        return (
+            "tier coverage requires the hardened seal block (2026-09-03 fourth "
+            "pass): this contract records no timeout binary, so the wrapper that "
+            "ran inside the sandbox is unaccounted for"
         )
     if seal["platform"] != SEAL_PLATFORM:
         return (
@@ -1580,10 +1692,34 @@ def seal_coverage_failure(seal: dict[str, Any]) -> str | None:
         )
     if not network["hosts"]:
         return "tier coverage requires a non-empty network host allowlist"
+    # Recording a host list is not constraining one. Pinning the permitted set
+    # here is what stops a capture from allowlisting the forge, recording that
+    # it did, and still counting.
+    extra_hosts = sorted(set(network["hosts"]) - PERMITTED_EGRESS_HOSTS)
+    if extra_hosts:
+        return (
+            "tier coverage permits egress only to the pinned host set; this seal "
+            "also allows: " + ", ".join(extra_hosts)
+        )
+    if network["ports"] != PERMITTED_EGRESS_PORTS:
+        return (
+            f"tier coverage permits egress only on ports {PERMITTED_EGRESS_PORTS}; "
+            f"the seal records {network['ports']}"
+        )
+    if network["unix_sockets"]:
+        return (
+            "tier coverage permits no unix-socket egress; the seal allows: "
+            + ", ".join(network["unix_sockets"])
+        )
     try:
         seal_network_port(network)
     except MetadataError as exc:
         return f"tier coverage requires a local proxy authority: {exc}"
+    if not seal["timeout_bin"]:
+        return (
+            "tier coverage requires the resolved timeout binary in the seal; the "
+            "wrapper runs inside the sandbox and a PATH lookup is not the record"
+        )
     for field in ("real_tmpdir", "git_common_root"):
         if not seal[field]:
             return (
@@ -1680,6 +1816,57 @@ def seal_coverage_failure(seal: dict[str, Any]) -> str | None:
                     "tier coverage refuses a seal that re-allows a read inside the "
                     f"{label}: {allowed}"
                 )
+    # Every writable root must sit inside the run directory. "Not the checkout,
+    # not the home" left the rest of the filesystem available to a record that
+    # simply named it.
+    run_root = seal["run_root"]
+    if not run_root:
+        return "tier coverage requires the run root in the seal"
+    for root in seal["writable_roots"]:
+        if not seal_covers([run_root], root):
+            return (
+                "tier coverage requires every writable root under the run "
+                f"directory; the seal also allows writes to: {root}"
+            )
+    if seal["dev_write_paths"] != PERMITTED_DEV_WRITE_PATHS:
+        return (
+            f"tier coverage permits exactly the devices {PERMITTED_DEV_WRITE_PATHS}; "
+            f"the seal records {seal['dev_write_paths']}"
+        )
+    extra_env = sorted(
+        name
+        for name in seal["env_allowlist"]
+        if name not in PERMITTED_ENV_ALLOWLIST
+        and not name.startswith(SEAL_ENV_SEAM_PREFIX)
+    )
+    if extra_env:
+        return (
+            "tier coverage permits only the pinned rep environment plus "
+            f"{SEAL_ENV_SEAM_PREFIX}* seams; this seal also passes: "
+            + ", ".join(extra_env)
+        )
+    # The launcher chain is the read exception, so it has to be a real chain:
+    # every link an existing file, and the last one the binary whose digest the
+    # producer identity also carries.
+    chain = seal["launcher_chain"]
+    if not chain:
+        return "tier coverage requires the producer launcher chain in the seal"
+    for link in chain:
+        if not os.path.isfile(link):
+            return (
+                "tier coverage requires every launcher_chain entry to be an "
+                f"existing file; missing: {link}"
+            )
+    try:
+        final_digest = digest_file(Path(chain[-1]))
+    except (OSError, MetadataError) as exc:
+        return f"tier coverage could not digest the bound launcher: {exc}"
+    if final_digest != seal["launcher_sha256"]:
+        return (
+            "tier coverage requires launcher_sha256 to be the digest of the last "
+            f"launcher_chain entry; recorded {seal['launcher_sha256']}, "
+            f"{chain[-1]} is {final_digest}"
+        )
     # The last check is the one that makes every check above load-bearing: the
     # block must reproduce the exact profile bytes the kernel enforced.
     try:
@@ -1903,6 +2090,51 @@ def load_capture_contract(fixture_dir: Path, expected_probe: str) -> dict[str, A
     )
 
 
+def verify_network_log(fixture_dir: Path, transcripts: list[str]) -> None:
+    """The published proxy log must reproduce what EVERY rep bound.
+
+    Each rep binds the digest and the counts of its own lines, so the published
+    file is checked rep by rep. That is what turns a bound digest into a
+    checkable fact: without the file, the digest is a number with nothing to
+    compare against.
+    """
+    path = fixture_dir / NETWORK_LOG_NAME
+    if path.is_symlink() or not path.is_file():
+        raise MetadataError(f"{NETWORK_LOG_NAME} must be a regular non-symlink file")
+    raw = read_regular_bytes(path, NETWORK_LOG_NAME, maximum=MAX_TRANSCRIPT_BYTES)
+    checked = 0
+    for name in transcripts:
+        transcript = fixture_dir / name
+        if not transcript.is_file():
+            continue
+        first_line = transcript.read_bytes().split(b"\n", 1)[0]
+        try:
+            event = json.loads(first_line)
+        except ValueError:
+            continue
+        if not isinstance(event, dict):
+            continue
+        egress = event.get("network_egress")
+        if not isinstance(egress, dict):
+            continue
+        rep_key = f"{event.get('arm')}-{event.get('rep')}"
+        entries, own_bytes, _ = proxy_egress_lines(raw, rep_key)
+        if digest_bytes(own_bytes) != egress.get("log_sha256"):
+            raise MetadataError(
+                f"{NETWORK_LOG_NAME} does not reproduce the lines {rep_key} bound"
+            )
+        allowed = sum(1 for entry in entries if entry.get("decision") == "allowed")
+        if allowed != egress.get("allowed"):
+            raise MetadataError(
+                f"{NETWORK_LOG_NAME} allowed count for {rep_key} disagrees with its transcript"
+            )
+        checked += 1
+    if not checked:
+        raise MetadataError(
+            f"{NETWORK_LOG_NAME} is present but no transcript binds a proxy log digest"
+        )
+
+
 def verify_seal_sidecar(
     fixture_dir: Path, skills_dir: Path, capture_contract: dict[str, Any]
 ) -> None:
@@ -2015,6 +2247,9 @@ def build_payload(
     if SEAL_NAME in actual:
         verify_seal_sidecar(fixture_dir, skills_dir, capture_contract)
         expected_before_manifest.append(SEAL_NAME)
+    if NETWORK_LOG_NAME in actual:
+        verify_network_log(fixture_dir, expected)
+        expected_before_manifest.append(NETWORK_LOG_NAME)
     if sorted(expected_before_manifest) != sorted(actual):
         missing = sorted(set(expected_before_manifest) - set(actual))
         extra = sorted(set(actual) - set(expected_before_manifest))
@@ -2106,6 +2341,13 @@ def build_payload(
             "dispatch_helper": {
                 "path": "scripts/lib/codex-exec.sh",
                 "sha256": digest_file(dispatch_helper),
+            },
+            # The proxy is the network half of the seal: change it and what a
+            # rep could reach changes, so it belongs in the identity a scorecard
+            # binds exactly as much as the harness does.
+            "network_proxy": {
+                "path": PROXY_RELATIVE_PATH,
+                "sha256": digest_file(proxy_module_path()),
             },
         },
     }
@@ -2305,14 +2547,21 @@ def validate_evaluator(
     value: Any, field: str, *, require_dispatch: bool | None = True
 ) -> None:
     legacy = {"harness", "metadata_helper"}
-    current = legacy | {"preamble", "dispatch_helper"}
+    pass3 = legacy | {"preamble", "dispatch_helper"}
+    current = pass3 | {"network_proxy"}
     allowed = {frozenset(current)}
     if require_dispatch is False:
         allowed = {frozenset(legacy)}
     elif require_dispatch is None:
         allowed.add(frozenset(legacy))
+        allowed.add(frozenset(pass3))
+    else:
+        # Sets captured before the proxy joined the identity still replay.
+        allowed.add(frozenset(pass3))
     if not isinstance(value, dict) or frozenset(value) not in allowed:
-        expected = "harness, preamble, metadata_helper, and dispatch_helper"
+        expected = (
+            "harness, preamble, metadata_helper, dispatch_helper, and network_proxy"
+        )
         if require_dispatch is False:
             expected = "harness and metadata_helper"
         elif require_dispatch is None:
@@ -2323,6 +2572,7 @@ def validate_evaluator(
         "preamble": "scripts/lib/preamble.sh",
         "metadata_helper": "scripts/lib/probe-fixture-metadata.py",
         "dispatch_helper": "scripts/lib/codex-exec.sh",
+        "network_proxy": PROXY_RELATIVE_PATH,
     }
     for key in value:
         expected_path = expected_paths[key]
@@ -2359,7 +2609,16 @@ def evaluator_identity(
             "path": "scripts/lib/codex-exec.sh",
             "sha256": digest_file(dispatch_helper),
         },
+        "network_proxy": {
+            "path": PROXY_RELATIVE_PATH,
+            "sha256": digest_file(proxy_module_path()),
+        },
     }
+
+
+def proxy_module_path() -> Path:
+    """The CONNECT proxy beside this helper."""
+    return Path(__file__).resolve().parent / "probe-connect-proxy.py"
 
 
 def repository_root() -> Path:
@@ -2377,9 +2636,12 @@ def verify_evaluator_files(value: Any, repo_root: Path) -> dict[str, Any]:
         "preamble": repo_root / "scripts" / "lib" / "preamble.sh",
         "metadata_helper": repo_root / "scripts" / "lib" / "probe-fixture-metadata.py",
         "dispatch_helper": repo_root / "scripts" / "lib" / "codex-exec.sh",
+        "network_proxy": repo_root / "scripts" / "lib" / "probe-connect-proxy.py",
     }
     actual: dict[str, Any] = {}
     for key, path in expected_paths.items():
+        if key not in value:
+            continue
         validate_regular_file(path, f"repo-local evaluator {key}")
         actual[key] = {"path": value[key]["path"], "sha256": digest_file(path)}
     if actual != value:
@@ -3246,6 +3508,24 @@ def verify_scorecard(
     # Eligibility first: a seal that cannot be coverage should say WHY, not fail
     # on a shape mismatch against its own scorecard copy.
     verify_seal_for_coverage(seal)
+    # Two ties the seal block alone cannot make, because both ends live in the
+    # producer identity the manifest binds.
+    if seal["mode"] == "seatbelt" and set(seal) == SEAL_KEYS:
+        expected_config = render_probe_config(producer.get("effort"))
+        if seal["config_text"] != expected_config:
+            raise MetadataError(
+                "tier coverage requires the rep config to be exactly what the "
+                "generator emits for the bound effort; a self-consistent digest "
+                "only proves the recorded text hashes to the recorded digest"
+            )
+        launcher_digest = seal["launcher_sha256"]
+        if launcher_digest != identity.get("executable_sha256"):
+            raise MetadataError(
+                "tier coverage requires the bound launcher to be the producer the "
+                "manifest identifies; launcher_sha256 "
+                f"{launcher_digest} is not the bound executable digest "
+                f"{identity.get('executable_sha256')}"
+            )
     if scorecard.get("seal") is not None:
         scorecard_seal = seal_block_from_record(
             scorecard["seal"], "scorecard seal", seal["repository_root"]
@@ -3424,11 +3704,15 @@ def validate_manifest(
         )
     actual_names = sorted(os.listdir(fixture_dir))
     has_seal_sidecar = schema == SCHEMA and SEAL_NAME in actual_names
+    has_network_log = schema == SCHEMA and NETWORK_LOG_NAME in actual_names
+    if has_network_log:
+        verify_network_log(fixture_dir, expected)
     expected_names = sorted(
         expected
         + [MANIFEST_NAME]
         + ([CAPTURE_CONTRACT_NAME] if schema == SCHEMA else [])
         + ([SEAL_NAME] if has_seal_sidecar else [])
+        + ([NETWORK_LOG_NAME] if has_network_log else [])
     )
     if actual_names != expected_names:
         raise MetadataError(

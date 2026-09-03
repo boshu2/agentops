@@ -73,18 +73,32 @@ write_seal() {
     # anything but its seal record.
     local payload
     payload="$(mktemp "$BATS_TEST_TMPDIR/seal-payload.XXXXXX")"
-    python3 - "$payload" "$mode" "$REAL_HOME" "$FIX_REAL" "$@" <<'SEALPY'
+    # The launcher exception is checked against the filesystem now: the chain
+    # has to be a real file whose digest matches launcher_sha256, and it has to
+    # sit under a denied root for the allowance to be re-derivable.
+    mkdir -p "$REAL_HOME/bin"
+    printf '#!/bin/sh\nexit 0\n' > "$REAL_HOME/bin/codex"
+    local launcher_sha
+    launcher_sha="sha256:$(shasum -a 256 "$REAL_HOME/bin/codex" | cut -d" " -f1)"
+    # The config text is pinned to the generator's output for the bound effort,
+    # so the fixture takes it from the generator rather than restating it.
+    local config_file
+    config_file="$(mktemp "$BATS_TEST_TMPDIR/probe-config.XXXXXX")"
+    python3 "$META_TOOL" probe-config --effort low --target "$config_file" >/dev/null
+    python3 - "$payload" "$mode" "$REAL_HOME" "$FIX_REAL" "$launcher_sha" "$config_file" "$@" <<'SEALPY'
 import json, pathlib, sys
 
 payload_path = pathlib.Path(sys.argv[1])
 mode = sys.argv[2]
 real_home = sys.argv[3]
 git_common_root = sys.argv[4]
-denied = sys.argv[5:]
+launcher_sha = sys.argv[5]
+config_text = pathlib.Path(sys.argv[6]).read_text()
+denied = sys.argv[7:]
 sealed = mode == "seatbelt"
 run_root = "/private/tmp/probe-run.aaaaaa"
 dispatch = run_root + "/dispatch"
-launcher = "/private/tmp/probe-run.aaaaaa-launcher/codex"
+launcher = real_home + "/bin/codex"
 payload = {
     "seal_mode": mode,
     "sandbox_exec": "/usr/bin/sandbox-exec" if sealed else "",
@@ -96,12 +110,15 @@ payload = {
     "writable_roots": (
         [run_root + "/home", run_root + "/ws", run_root + "/tmp"] if sealed else []
     ),
-    "dev_write_paths": ["/dev/null", "/dev/tty"] if sealed else [],
+    "dev_write_paths": (
+        ["/dev/null", "/dev/zero", "/dev/dtracehelper", "/dev/tty"] if sealed else []
+    ),
     # The launcher lives under the denied temp root, so the seal must re-allow
     # exactly it and coverage must be able to re-derive that from the chain.
     "allowed_read_paths": [launcher] if sealed else [],
     "launcher_chain": [launcher] if sealed else [],
-    "launcher_sha256": ("sha256:" + "a" * 64) if sealed else "",
+    "launcher_sha256": launcher_sha if sealed else "",
+    "timeout_bin": "/opt/homebrew/bin/timeout" if sealed else "",
     "env_allowlist": ["PATH", "HOME", "CODEX_HOME", "TMPDIR"],
     "rep_env": {
         "HOME": run_root + "/home",
@@ -111,7 +128,7 @@ payload = {
     "real_home": real_home,
     "real_codex_home": real_home + "/.codex",
     "real_tmpdir": "/private/tmp" if sealed else "",
-    "cache_root": "/private/var/folders/fixture/C" if sealed else "",
+    "cache_root": "/private/tmp/fixture-cache" if sealed else "",
     "git_common_root": git_common_root if sealed else "",
     "run_root": run_root if sealed else "",
     "workspace_root": run_root + "/ws" if sealed else "",
@@ -119,6 +136,7 @@ payload = {
     "network": {
         "mode": "proxy-allowlist" if sealed else "open",
         "hosts": ["chatgpt.com"] if sealed else [],
+        "ports": [443] if sealed else [],
         "proxy": "127.0.0.1:54321" if sealed else None,
         "unix_sockets": [],
     },
@@ -128,7 +146,7 @@ payload = {
         if sealed
         else ""
     ),
-    "config_text": 'web_search = "disabled"\n' if sealed else "",
+    "config_text": config_text if sealed else "",
     "auth_copied": bool(sealed),
 }
 if sealed:
@@ -971,8 +989,14 @@ PY
     local upstream_port
     upstream_port="$(cat "$BATS_TEST_TMPDIR/upstream.port")"
 
+    # --allow-private-upstream exists only for this test: a real capture refuses
+    # a destination that resolves into loopback or private space, so a local
+    # stand-in upstream is unreachable without it. --allow-port is what makes
+    # the ephemeral upstream port admissible; a capture pins 443.
     python3 "$proxy" --allow-host 127.0.0.1 --allow-host chatgpt.com \
         --allow-host .oaiusercontent.com \
+        --allow-port "$upstream_port" --allow-port 443 \
+        --allow-private-upstream \
         --log "$log" --port-file "$port_file" --rep-file "$rep_file" \
         >/dev/null 2>&1 &
     local proxy_pid=$!
@@ -1040,4 +1064,183 @@ PY
 
     [ "$status" -eq 0 ]
     [[ "$output" == *"405"* ]]
+}
+
+@test "the proxy admits one port and refuses a name that resolves into local space" {
+    local proxy="$REPO_ROOT/scripts/lib/probe-connect-proxy.py"
+    local log="$BATS_TEST_TMPDIR/pin.log"
+    local port_file="$BATS_TEST_TMPDIR/pin.port"
+    # No --allow-private-upstream and no extra --allow-port: this is the shape a
+    # capture actually runs.
+    python3 "$proxy" --allow-host chatgpt.com --allow-host 127.0.0.1 \
+        --log "$log" --port-file "$port_file" >/dev/null 2>&1 &
+    local proxy_pid=$!
+    while [[ ! -s "$port_file" ]]; do sleep 0.05; done
+
+    run python3 - "$(cat "$port_file")" <<'PY'
+import socket, sys
+
+def connect(port, authority):
+    sock = socket.create_connection(("127.0.0.1", int(port)), timeout=5)
+    sock.sendall(f"CONNECT {authority} HTTP/1.1\r\nHost: {authority}\r\n\r\n".encode())
+    head = sock.recv(4096).decode("latin-1", "replace")
+    sock.close()
+    return head.splitlines()[0]
+
+# An allowed host on a port the capture does not permit.
+print("otherport:", connect(sys.argv[1], "chatgpt.com:80"))
+# An allowed NAME that resolves to loopback: a rebinding answer must not become
+# a tunnel into a local service.
+print("loopback:", connect(sys.argv[1], "127.0.0.1:443"))
+PY
+    kill "$proxy_pid" 2>/dev/null || true
+
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"otherport: HTTP/1.1 403"* ]]
+    [[ "$output" == *"loopback: HTTP/1.1 403"* ]]
+    grep -q 'port is not on the capture allowlist' "$log"
+    grep -q 'resolves into local address space' "$log"
+    # Every CONNECT leaves an `attempt` record before any decision.
+    [ "$(grep -c '"decision": "attempt"' "$log")" -eq 2 ]
+}
+
+@test "the seal's egress policy is pinned, not merely recorded" {
+    local directory="$PROBE_DIR/fixtures-egresspin"
+    local contract="$directory/capture-contract.json"
+    mkdir -p "$directory"
+    local -a roots
+    mapfile -t roots < <(full_denied_roots)
+    write_seal "$directory/seal.json" seatbelt "${roots[@]}"
+    snapshot "$directory" >/dev/null
+
+    run coverage_reason "$contract"
+    [ "$output" = "ELIGIBLE" ]
+
+    # Recording a host list is not constraining one: before this a capture could
+    # allowlist the forge, record that it did, and still count.
+    rebind_contract "$contract" '
+contract["seal"]["network"]["hosts"] = ["chatgpt.com", "raw.githubusercontent.com"]
+'
+    run coverage_reason "$contract"
+    [[ "$output" == *"pinned host set"* ]]
+    [[ "$output" == *"raw.githubusercontent.com"* ]]
+
+    rebind_contract "$contract" '
+seal = contract["seal"]
+seal["network"]["hosts"] = ["chatgpt.com"]
+seal["network"]["ports"] = [443, 8080]
+'
+    run coverage_reason "$contract"
+    [[ "$output" == *"only on ports [443]"* ]]
+
+    rebind_contract "$contract" '
+seal = contract["seal"]
+seal["network"]["ports"] = [443]
+seal["network"]["unix_sockets"] = ["/var/run/mDNSResponder"]
+'
+    run coverage_reason "$contract"
+    [[ "$output" == *"no unix-socket egress"* ]]
+
+    rebind_contract "$contract" '
+seal = contract["seal"]
+seal["network"]["unix_sockets"] = []
+seal["network"]["mode"] = "proxy-custom"
+'
+    run coverage_reason "$contract"
+    [[ "$output" == *"network mode 'proxy-allowlist'"* ]]
+}
+
+@test "the seal must deny the real CODEX_HOME and the Darwin cache root" {
+    local directory="$PROBE_DIR/fixtures-dataroots"
+    local contract="$directory/capture-contract.json"
+    mkdir -p "$directory"
+    local -a roots
+    mapfile -t roots < <(full_denied_roots)
+    write_seal "$directory/seal.json" seatbelt "${roots[@]}"
+    snapshot "$directory" >/dev/null
+
+    # A CODEX_HOME configured outside the operator home was recorded and never
+    # required, so a seal could name it and deny nothing.
+    rebind_contract "$contract" '
+contract["seal"]["real_codex_home"] = "/private/tmp/elsewhere/.codex"
+contract["seal"]["denied_read_roots"] = [
+    root for root in contract["seal"]["denied_read_roots"] if root != "/private/tmp"
+]
+'
+    run coverage_reason "$contract"
+    [[ "$output" == *"denied_read_roots omit"* ]]
+    [[ "$output" == *"/private/tmp/elsewhere/.codex"* ]]
+
+    write_seal "$directory/seal.json" seatbelt "${roots[@]}"
+    rm "$contract"
+    snapshot "$directory" >/dev/null
+    rebind_contract "$contract" '
+contract["seal"]["cache_root"] = "/private/var/folders/elsewhere/C"
+'
+    run coverage_reason "$contract"
+    [[ "$output" == *"denied_read_roots omit"* ]]
+    [[ "$output" == *"/private/var/folders/elsewhere/C"* ]]
+}
+
+@test "writable roots, devices, environment and launcher chain are all pinned" {
+    local directory="$PROBE_DIR/fixtures-pins"
+    local contract="$directory/capture-contract.json"
+    mkdir -p "$directory"
+    local -a roots
+    mapfile -t roots < <(full_denied_roots)
+    write_seal "$directory/seal.json" seatbelt "${roots[@]}"
+    snapshot "$directory" >/dev/null
+
+    rebind_contract "$contract" '
+contract["seal"]["writable_roots"] = contract["seal"]["writable_roots"] + ["/private/tmp/elsewhere"]
+'
+    run coverage_reason "$contract"
+    [[ "$output" == *"writable root under the run"* ]]
+
+    write_seal "$directory/seal.json" seatbelt "${roots[@]}"; rm "$contract"; snapshot "$directory" >/dev/null
+    rebind_contract "$contract" 'contract["seal"]["dev_write_paths"] = ["/dev/null"]'
+    run coverage_reason "$contract"
+    [[ "$output" == *"exactly the devices"* ]]
+
+    write_seal "$directory/seal.json" seatbelt "${roots[@]}"; rm "$contract"; snapshot "$directory" >/dev/null
+    rebind_contract "$contract" '
+contract["seal"]["env_allowlist"] = contract["seal"]["env_allowlist"] + ["AWS_SECRET_ACCESS_KEY"]
+'
+    run coverage_reason "$contract"
+    [[ "$output" == *"AWS_SECRET_ACCESS_KEY"* ]]
+
+    write_seal "$directory/seal.json" seatbelt "${roots[@]}"; rm "$contract"; snapshot "$directory" >/dev/null
+    rebind_contract "$contract" '
+seal = contract["seal"]
+seal["launcher_chain"] = [seal["original_home"] + "/bin/does-not-exist"]
+seal["allowed_read_paths"] = list(seal["launcher_chain"])
+'
+    run coverage_reason "$contract"
+    [[ "$output" == *"existing file"* ]]
+
+    write_seal "$directory/seal.json" seatbelt "${roots[@]}"; rm "$contract"; snapshot "$directory" >/dev/null
+    rebind_contract "$contract" 'contract["seal"]["launcher_sha256"] = "sha256:" + "0" * 64'
+    run coverage_reason "$contract"
+    [[ "$output" == *"digest of the last"* ]]
+
+    write_seal "$directory/seal.json" seatbelt "${roots[@]}"; rm "$contract"; snapshot "$directory" >/dev/null
+    rebind_contract "$contract" 'contract["seal"]["timeout_bin"] = None'
+    run coverage_reason "$contract"
+    [[ "$output" == *"resolved timeout binary"* ]]
+}
+
+@test "a seal record carrying an unknown field is refused before any dispatch" {
+    local directory="$PROBE_DIR/fixtures-unknown"
+    mkdir -p "$directory"
+    local -a roots
+    mapfile -t roots < <(full_denied_roots)
+    write_seal "$directory/seal.json" seatbelt "${roots[@]}"
+    edit_seal "$directory/seal.json" 'record["extra_capability"] = "anything"'
+
+    run snapshot "$directory"
+
+    [ "$status" -eq 2 ]
+    [[ "$output" == *"unknown fields"* ]]
+    [[ "$output" == *"extra_capability"* ]]
+    [ ! -e "$directory/capture-contract.json" ]
 }
