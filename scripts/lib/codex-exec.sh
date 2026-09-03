@@ -119,6 +119,14 @@
 # could be a different binary than the one the record names.
 codex_exec_timeout_bin() {
   local candidate resolved
+  # A caller that already resolved and probed one passes it down, so the probe
+  # does not exec a PATH-resolved timeout OUTSIDE the seal once per rep.
+  if [ -n "${CODEX_EXEC_TIMEOUT_BIN:-}" ]; then
+    case "$CODEX_EXEC_TIMEOUT_BIN" in
+      /*) printf '%s' "$CODEX_EXEC_TIMEOUT_BIN"; return 0 ;;
+      *) return 3 ;;
+    esac
+  fi
   for candidate in timeout gtimeout; do
     resolved="$(command -v "$candidate" 2>/dev/null)" || continue
     [ -n "$resolved" ] || continue
@@ -267,6 +275,9 @@ reviewer_adapter_marker() {
 #   CODEX_EXEC_PROMPT_ARG    the prompt as a single positional argument.
 #                            If NEITHER is set, the prompt is read from stdin.
 #   CODEX_EXEC_TIMEOUT       timeout budget in seconds (0/unset = no timeout).
+#   CODEX_EXEC_TIMEOUT_BIN   absolute path of an already-probed timeout. Set it
+#                            when the caller resolved one, so the --foreground
+#                            capability probe does not run per invocation.
 #   CODEX_EXEC_SANDBOX       (codex) sandbox value, e.g. read-only / workspace-write
 #                            (default: read-only — the fail-closed default).
 #   CODEX_EXEC_MODEL         (codex) model id for `-m` (empty/unset = codex default).

@@ -631,20 +631,16 @@ seal_add_producer_path() {
         bin="$(command -v "$bin" 2>/dev/null || true)"
     fi
     [[ -n "$bin" && -e "$bin" ]] || return 0
-    candidate="$bin"
-    local guard=0 form resolved_form present existing
+    # The chain is a pure symlink walk from the INVOKED path, with ancestor
+    # directories resolved so each entry is the path the kernel matches. It has
+    # to be adjacent (entry N is a symlink to entry N+1, the last a regular
+    # file) or the coverage check cannot tell a launcher from any file someone
+    # prepended to the list.
+    candidate="$(seal_launcher_normalize "$bin")"
+    local guard=0
     while :; do
         seal_path_ok "$candidate" || { echo "error: seal cannot quote path: $candidate" >&2; exit 2; }
-        # Both traversal forms: seatbelt matches the path the kernel resolved, and
-        # a temp path reaches the same file as /var/... and /private/var/... .
-        resolved_form="$(seal_realpath "$candidate")"
-        for form in "$candidate" "$resolved_form"; do
-            present=0
-            for existing in "${SEAL_LAUNCHER_CHAIN[@]}"; do
-                [[ "$existing" != "$form" ]] || { present=1; break; }
-            done
-            [[ $present -eq 1 ]] || SEAL_LAUNCHER_CHAIN+=("$form")
-        done
+        SEAL_LAUNCHER_CHAIN+=("$candidate")
         [[ -L "$candidate" ]] || break
         next="$(python3 -c '
 import os, sys
@@ -652,7 +648,9 @@ target = os.readlink(sys.argv[1])
 print(target if os.path.isabs(target) else os.path.normpath(
     os.path.join(os.path.dirname(sys.argv[1]), target)))
 ' "$candidate")"
-        [[ -n "$next" && "$next" != "$candidate" ]] || break
+        [[ -n "$next" ]] || break
+        next="$(seal_launcher_normalize "$next")"
+        [[ "$next" != "$candidate" ]] || break
         candidate="$next"
         guard=$((guard + 1))
         [[ $guard -lt 16 ]] || break
@@ -673,6 +671,17 @@ print(hashlib.sha256(open(sys.argv[1], "rb").read()).hexdigest())
         [[ $covered -eq 1 ]] && SEAL_ALLOWED_READ_PATHS+=("$candidate")
     done
     return 0
+}
+
+# seal_launcher_normalize PATH — resolve the ancestor DIRECTORIES but not the
+# final component, so the entry is what seatbelt matches while the symlink walk
+# stays visible.
+seal_launcher_normalize() {
+    python3 -c '
+import os, sys
+path = sys.argv[1]
+print(os.path.join(os.path.realpath(os.path.dirname(path)), os.path.basename(path)))
+' "$1"
 }
 
 # seal_git_common_root — the parent of the git common directory. In a linked
@@ -712,9 +721,22 @@ build_seal() {
     # in the record: a `timeout` resolved fresh from PATH at dispatch time could
     # be a different one than this.
     local timeout_rc=0
+    # Resolved and probed ONCE, here: the capability probe used to exec the
+    # PATH-resolved timeout outside the seal, at seal build and again on every
+    # rep. The absolute path is passed down so nothing re-resolves per rep.
     SEAL_TIMEOUT_BIN="$(codex_exec_timeout_bin)" || timeout_rc=$?
     if [[ "$timeout_rc" -ne 0 ]]; then
         echo "error: the resolved timeout does not accept --foreground; a rep would run in its process group" >&2
+        exit 2
+    fi
+    if [[ -z "$SEAL_TIMEOUT_BIN" ]]; then
+        echo "error: no timeout binary is available; a sealed rep must run under a bound budget" >&2
+        exit 2
+    fi
+    # A recorded binary is not a budget: --timeout 0 omitted the wrapper while
+    # the record still named one.
+    if [[ ! "$TIMEOUT" =~ ^[1-9][0-9]*$ ]]; then
+        echo "error: a sealed capture requires a positive --timeout; got: $TIMEOUT" >&2
         exit 2
     fi
     # The Darwin per-user cache directory, sibling of the per-user T dir. It is
@@ -771,21 +793,10 @@ build_seal() {
     done
     seal_add_producer_path
     SEAL_PROFILE_FILE="$RUN_HOME/seal.sb"
+    rep_env_assignments
 }
 
-# seal_expand_env_allowlist — add the exported test-seam names to the allowlist
-# so the record lists concrete variables, never a pattern.
-seal_expand_env_allowlist() {
-    local name existing present
-    while IFS= read -r name; do
-        [[ "$name" == "$SEAL_ENV_SEAM_PREFIX"* ]] || continue
-        present=0
-        for existing in "${SEAL_ENV_ALLOWLIST[@]}"; do
-            [[ "$existing" != "$name" ]] || { present=1; break; }
-        done
-        [[ $present -eq 1 ]] || SEAL_ENV_ALLOWLIST+=("$name")
-    done < <(compgen -e || true)
-}
+
 
 # seal_payload_file PATH — the JSON the renderer turns into a profile and a
 # record. Every field the contract binds comes from here, so the harness never
@@ -809,7 +820,7 @@ seal_payload_file() {
         "$(printf '%s\n' ${NETWORK_SOCKET_LIST[@]+"${NETWORK_SOCKET_LIST[@]}"})" \
         "$PROXY_PORT" "$SEAL_CONFIG_KEPT" "$SEAL_CONFIG_SHA" "$SEAL_CONFIG_TEXT" \
         "$SEAL_AUTH_COPIED" "$SEAL_TIMEOUT_BIN" "$PROBE_NETWORK_PORT" \
-        "$PROBE_NETWORK_CUSTOM" <<'PY'
+        "$PROBE_NETWORK_CUSTOM" "$TIMEOUT" <<'PY'
 import json
 import sys
 
@@ -821,7 +832,7 @@ import sys
     real_home, real_codex_home, real_tmpdir, cache_root, git_common_root,
     run_root, workspace_root, dispatch_root,
     hosts, sockets, proxy_port, config_keys, config_sha, config_text,
-    auth_copied, timeout_bin, network_port, network_custom,
+    auth_copied, timeout_bin, network_port, network_custom, timeout_seconds,
 ) = sys.argv[1:]
 # config_text arrives as the generated file's path (empty when unsealed);
 # read the exact bytes so the digest matches what the rep was given.
@@ -874,6 +885,7 @@ payload = {
         "unix_sockets": sorted(lines(sockets)) if sealed else [],
     },
     "timeout_bin": timeout_bin,
+    "timeout_seconds": int(timeout_seconds) if sealed and timeout_seconds else 0,
     "config_sanitized": json.loads(config_keys) if config_keys else None,
     "config_sha256": config_sha,
     "config_text": config_text,
@@ -919,8 +931,13 @@ print(json.loads(sys.argv[1])["profile"], end="")
         SEAL_PROFILE_SHA="$(summary_get "$SEAL_JSON" profile_sha256)"
         printf '%s\n' "$SEAL_PROFILE" > "$SEAL_PROFILE_FILE" \
             || { echo "error: could not write the seal profile file" >&2; exit 2; }
+        # `env -i` is the outermost word: it is the environment boundary, and the
+        # seal runs inside it. The library appends the timeout argv and the
+        # producer binary after this prefix.
         # shellcheck disable=SC2034 # consumed by codex_exec_guarded in the sourced library
-        CODEX_EXEC_WRAP=("$SEAL_SANDBOX_EXEC" -p "$SEAL_PROFILE")
+        CODEX_EXEC_WRAP=(/usr/bin/env -i
+            ${REP_ENV_ASSIGNMENTS[@]+"${REP_ENV_ASSIGNMENTS[@]}"}
+            "$SEAL_SANDBOX_EXEC" -p "$SEAL_PROFILE")
     fi
 }
 
@@ -949,68 +966,131 @@ if [[ $REPLAY -eq 0 && -n "$EFFORT" ]]; then
     esac
 fi
 
-# rep_environment CMD... — run CMD with EXACTLY the variables
-# SEAL_ENV_ALLOWLIST names and nothing else. The operator's ambient environment
-# reached the producer before this: proxy settings, tokens, editor hooks and
-# PATH entries the seal never saw and the record never disclosed. The dispatch
-# entry point is a shell function from the sourced library, so `env -i` cannot
-# exec it; the environment is emptied in this subshell instead, which leaves the
-# producer with the same set either way.
-rep_environment() {
-    local -A wanted=()
+# rep_env_assignments — the EXACT environment the rep is launched with, as
+# KEY=VALUE words for `env -i`. The previous shape emptied the environment from
+# inside the dispatch subshell, which cannot clear bash's readonly exports
+# (SHELLOPTS, BASHOPTS, UID, EUID, PPID): they survived the unset loop and
+# reached the producer undeclared. Now that the seal is the outermost process
+# and the launch is a plain argv, `env -i` is the boundary and the recorded
+# allowlist is exactly what crosses it.
+rep_env_assignments() {
+    REP_ENV_ASSIGNMENTS=()
+    SEAL_ENV_ALLOWLIST=()
     local name value
-    # Resolve every allowlisted value BEFORE clearing, or the ambient ones
-    # (CODEX_EXEC_BIN, PATH, LANG) are gone by the time they are read back.
-    for name in "${SEAL_ENV_ALLOWLIST[@]}"; do
+    local -a names=(PATH HOME CODEX_HOME TMPDIR LANG TERM)
+    if [[ -n "$PROXY_PORT" ]]; then
+        names+=(HTTPS_PROXY HTTP_PROXY ALL_PROXY NO_PROXY)
+    fi
+    # Test seams: every exported PROBE_* name plus the two probes-tree pointers,
+    # so a stub producer can be told where to look. They are expanded to concrete
+    # names here, so the record lists variables rather than a pattern.
+    while IFS= read -r name; do
+        [[ "$name" == "$SEAL_ENV_SEAM_PREFIX"* ]] || continue
+        names+=("$name")
+    done < <(compgen -e || true)
+    names+=(SKILL_PROBES_DIR SKILL_PROBE_SKILLS_DIR)
+    for name in "${names[@]}"; do
         case "$name" in
             HOME) value="$REP_HOME";;
             CODEX_HOME) value="$REP_CODEX_HOME";;
             TMPDIR) value="$REP_TMPDIR";;
-            HTTPS_PROXY|HTTP_PROXY|ALL_PROXY)
-                [[ -n "$PROXY_PORT" ]] || continue
-                value="http://127.0.0.1:$PROXY_PORT";;
-            NO_PROXY)
-                [[ -n "$PROXY_PORT" ]] || continue
-                value="";;
-            REVIEWER) value="codex";;
-            REVIEWER_MARKER) value="turn.completed";;
-            CODEX_EXEC_SANDBOX) value="read-only";;
-            CODEX_EXEC_SKIP_GIT_CHECK) value="1";;
-            CODEX_EXEC_TIMEOUT) value="$TIMEOUT";;
-            CODEX_EXEC_MODEL) value="$MODEL";;
-            CODEX_EXEC_EXPECT_OUTPUT) value="1";;
+            HTTPS_PROXY|HTTP_PROXY|ALL_PROXY) value="http://127.0.0.1:$PROXY_PORT";;
+            NO_PROXY) value="";;
             PROBE_SEAL_PROFILE_FILE) value="$SEAL_PROFILE_FILE";;
             *)
                 [[ -n "${!name+set}" ]] || continue
                 value="${!name}";;
         esac
-        wanted["$name"]="$value"
+        seal_path_ok "$name" || { echo "error: unsafe rep environment name: $name" >&2; exit 2; }
+        case "$name" in
+            *=*) echo "error: unsafe rep environment name: $name" >&2; exit 2;;
+        esac
+        REP_ENV_ASSIGNMENTS+=("$name=$value")
+        SEAL_ENV_ALLOWLIST+=("$name")
     done
-    while IFS= read -r name; do
-        [[ -n "${wanted[$name]+set}" ]] && continue
-        unset -v "$name" 2>/dev/null || true
-    done < <(compgen -e || true)
-    # Exported FUNCTIONS travel in the environment too (as BASH_FUNC_name%%) and
-    # `compgen -e` does not list them, so a caller's shell helpers reached the
-    # producer. Nothing the rep runs needs an inherited function.
-    local declaration
-    while IFS= read -r declaration; do
-        name="${declaration##* }"
-        [[ -n "$name" ]] || continue
-        unset -f "$name" 2>/dev/null || true
-    done < <(declare -Fx 2>/dev/null || true)
-    for name in "${!wanted[@]}"; do
-        export "$name=${wanted[$name]}"
-    done
-    "$@"
+    # PROBE_SEAL_PROFILE_FILE is a harness-internal seam that no exported name
+    # carries, so it is added explicitly when the seal has one.
+    if [[ -n "$SEAL_PROFILE_FILE" ]]; then
+        local present=0 existing
+        for existing in "${SEAL_ENV_ALLOWLIST[@]}"; do
+            [[ "$existing" != "PROBE_SEAL_PROFILE_FILE" ]] || { present=1; break; }
+        done
+        if [[ $present -eq 0 ]]; then
+            REP_ENV_ASSIGNMENTS+=("PROBE_SEAL_PROFILE_FILE=$SEAL_PROFILE_FILE")
+            SEAL_ENV_ALLOWLIST+=(PROBE_SEAL_PROFILE_FILE)
+        fi
+    fi
+    # bash sets these for itself in any child shell; they are declared because
+    # the rep can see them, not because the harness passes them.
+    SEAL_ENV_ALLOWLIST+=(PWD SHLVL _)
 }
 
 # rep_group_members PGID — how many live processes are still in the group.
 # `pgrep -g` is not usable here: on macOS an unmatched group id makes it list
 # every process, which would report a survivor after every clean rep.
 rep_group_members() {
-    ps -A -o pgid=,pid= 2>/dev/null \
+    local snapshot
+    # A failed `ps` must NOT read as zero members: piping straight into awk
+    # printed 0 for "nothing matched" and for "could not look", and the caller
+    # could not tell the difference.
+    snapshot="$(ps -A -o pgid=,pid= 2>/dev/null)" || { printf 'ERR'; return 1; }
+    [[ -n "$snapshot" ]] || { printf 'ERR'; return 1; }
+    printf '%s' "$snapshot" \
         | awk -v want="$1" '$1 == want { count += 1 } END { print count + 0 }'
+}
+
+# run_root_residue — pids holding a cwd or an open descriptor under the run
+# root. A child that calls setsid() leaves the rep's process group entirely, so
+# the group reap cannot see it; it kept running with the run directory open and
+# no `rep-survivor` fired.
+run_root_residue() {
+    local out
+    [[ -n "$PROBE_RUN" && -d "$PROBE_RUN" ]] || { printf ''; return 0; }
+    command -v lsof >/dev/null 2>&1 || { printf 'ERR'; return 1; }
+    # +D walks the tree: a child's cwd is the WORKSPACE, one level under the run
+    # root, and `lsof -t -- <dir>` matches that exact path only.
+    out="$(lsof -t +D "$PROBE_RUN" 2>/dev/null || true)"
+    # The harness itself and its own proxy legitimately hold the run root: the
+    # proxy's stdout, stderr and log all live under dispatch/. Only processes
+    # that are neither are rep residue.
+    local pid keep=""
+    for pid in $out; do
+        [[ "$pid" =~ ^[0-9]+$ ]] || continue
+        [[ "$pid" != "$$" ]] || continue
+        [[ -z "$PROXY_PID" || "$pid" != "$PROXY_PID" ]] || continue
+        keep="$keep$pid "
+    done
+    printf '%s' "$keep"
+}
+
+# reap_run_root — kill anything still holding the run root, then prove it gone.
+# Returns 0 clean, 1 residue found and cleared, 2 unprovable.
+reap_run_root() {
+    local residue pid waited=0
+    residue="$(run_root_residue)" || return 2
+    [[ "$residue" != "ERR" ]] || return 2
+    [[ -n "${residue// /}" ]] || return 0
+    for pid in $residue; do
+        [[ "$pid" =~ ^[0-9]+$ ]] || continue
+        [[ "$pid" != "$$" ]] || continue
+        kill -TERM "$pid" 2>/dev/null || true
+    done
+    while :; do
+        local now
+        now="$(run_root_residue)" || return 2
+        [[ "$now" != "ERR" ]] || return 2
+        [[ -n "${now// /}" ]] || return 1
+        waited=$((waited + 1))
+        if [[ $waited -eq 20 ]]; then
+            for pid in $now; do
+                [[ "$pid" =~ ^[0-9]+$ ]] || continue
+                [[ "$pid" != "$$" ]] || continue
+                kill -KILL "$pid" 2>/dev/null || true
+            done
+        fi
+        [[ $waited -lt 40 ]] || return 2
+        sleep 0.1
+    done
 }
 
 # reap_rep_group PGID — count survivors BEFORE signalling, then kill the group
@@ -1020,10 +1100,14 @@ rep_group_members() {
 # Returns 0 clean, 1 when something outlived the rep, 2 when the group would not
 # die even after KILL.
 reap_rep_group() {
-    local pgid="$1" waited=0 survivors=0
-    survivors="$(rep_group_members "$pgid")"
+    local pgid="$1" waited=0 survivors=0 members
+    survivors="$(rep_group_members "$pgid")" || return 2
+    [[ "$survivors" != "ERR" ]] || return 2
     kill -TERM -"$pgid" 2>/dev/null || true
-    while [[ "$(rep_group_members "$pgid")" != "0" ]]; do
+    while :; do
+        members="$(rep_group_members "$pgid")" || return 2
+        [[ "$members" != "ERR" ]] || return 2
+        [[ "$members" != "0" ]] || break
         waited=$((waited + 1))
         if [[ $waited -eq 20 ]]; then
             kill -KILL -"$pgid" 2>/dev/null || true
@@ -1109,18 +1193,49 @@ dispatch_live() {
             [[ "$fd" =~ ^[0-9]+$ ]] || continue
             eval "exec ${fd}>&-" 2>/dev/null || true
         done
-        CODEX_EXEC_PROMPT_FILE="$prompt_file"
-        CODEX_EXEC_DIR="$workspace"
-        CODEX_EXEC_OUT_FILE="$runtime_file"
-        CODEX_EXEC_STDERR_FILE="$stderr_file"
-        export CODEX_EXEC_PROMPT_FILE CODEX_EXEC_DIR CODEX_EXEC_OUT_FILE CODEX_EXEC_STDERR_FILE
-        rep_environment codex_exec_guarded >/dev/null
+        # These are read by the sourced library to BUILD the argv; with `env -i`
+        # as the boundary they never reach the rep itself.
+        REVIEWER=codex \
+        REVIEWER_MARKER=turn.completed \
+        CODEX_EXEC_PROMPT_FILE="$prompt_file" \
+        CODEX_EXEC_DIR="$workspace" \
+        CODEX_EXEC_SANDBOX=read-only \
+        CODEX_EXEC_SKIP_GIT_CHECK=1 \
+        CODEX_EXEC_TIMEOUT="$TIMEOUT" \
+        CODEX_EXEC_TIMEOUT_BIN="$SEAL_TIMEOUT_BIN" \
+        CODEX_EXEC_MODEL="$MODEL" \
+        CODEX_EXEC_OUT_FILE="$runtime_file" \
+        CODEX_EXEC_STDERR_FILE="$stderr_file" \
+        CODEX_EXEC_EXPECT_OUTPUT=1 \
+            codex_exec_guarded >/dev/null
     ) &
     rep_pgid=$!
     [[ $had_monitor -eq 1 ]] || set +m
     wait "$rep_pgid" || rc=$?
-    if ! reap_rep_group "$rep_pgid"; then
+    # A reap that cannot PROVE the group empty is fatal to the whole capture, not
+    # a degraded rep: a process that outlived KILL, or a `ps` that could not be
+    # read, means the next rep would start beside something unaccounted for.
+    local reap_rc=0
+    reap_rep_group "$rep_pgid" || reap_rc=$?
+    if [[ "$reap_rc" -eq 2 ]]; then
+        echo "error: could not prove the $arm-$rep process group empty; capture aborted" >&2
+        exit 1
+    fi
+    if [[ "$reap_rc" -eq 1 ]]; then
         echo "probe-skill: $arm-$rep left a running process behind (rep-survivor)" >&2
+        [[ "$rc" -ne 0 ]] || rc=3
+    fi
+    # A child that calls setsid() leaves the process group, so the group reap
+    # cannot see it. Anything still holding the run root is the same defect by
+    # another route: degrade the rep, and abort when it cannot be cleared.
+    local residue_rc=0
+    reap_run_root || residue_rc=$?
+    if [[ "$residue_rc" -eq 2 ]]; then
+        echo "error: could not prove the run root free of $arm-$rep processes; capture aborted" >&2
+        exit 1
+    fi
+    if [[ "$residue_rc" -eq 1 ]]; then
+        echo "probe-skill: $arm-$rep left a process holding the run root (rep-survivor, session escape)" >&2
         [[ "$rc" -ne 0 ]] || rc=3
     fi
     printf '%s\n' "" > "$PROXY_REP_FILE" 2>/dev/null || true
@@ -1251,7 +1366,6 @@ if [[ $REPLAY -eq 0 ]]; then
     # denied file-read-DATA and writes, never metadata. The EXIT trap takes the
     # whole directory, so nothing from this run outlives it.
     make_run_dir
-    seal_expand_env_allowlist
     if [[ "$SEAL_MODE" == "seatbelt" ]]; then
         build_seal
     fi
