@@ -1,6 +1,6 @@
 ---
 name: council
-description: 'Collect independent perspectives for an explicitly high-stakes or contested judgment. Triggers: "council", "multi-judge review", "independent perspectives".'
+description: 'Gather independent views on a high-stakes judgment. Not for one-judge plan challenge; that is premortem. Triggers: "council", "multi-judge review", "independent perspectives".'
 practices: [llm-eval-harness, design-by-contract]
 hexagonal_role: domain
 consumes: [explicit-question, evidence]

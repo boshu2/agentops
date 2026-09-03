@@ -1,6 +1,6 @@
 ---
 name: research
-description: 'Answer a bounded question with current cited evidence. Triggers: "research", "investigate this question", "find evidence". (Investigating a repository routes to codebase-recon.)'
+description: 'Answer one bounded question, cited. Not for dissecting a codebase; that is codebase-recon or reverse-engineer. Triggers: "research", "investigate this question", "find evidence".'
 practices:
 - pragmatic-programmer
 - ddd-bounded-context

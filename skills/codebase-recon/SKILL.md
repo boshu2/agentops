@@ -1,6 +1,6 @@
 ---
 name: codebase-recon
-description: 'Reconstruct a repository as cited entry-to-test flows and bounded claims. Triggers: "codebase recon", "trace this codebase", "repository audit", "refresh the prior recon".'
+description: 'Trace a repo into cited flows. Not for a bounded question; that is research. Triggers: "codebase recon", "trace this codebase", "repository audit", "refresh the prior recon".'
 practices:
 - legacy-code-seams
 - ddd-bounded-context
