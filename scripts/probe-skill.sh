@@ -82,7 +82,7 @@
 #     as cwd (mktemp -d under $LIVE_WORKSPACE_ROOT; the arm name never appears
 #     in the path). The prompt reaches the rep on stdin only. The harness's
 #     own per-rep files (the materialized prompt, the raw codex JSONL, stderr)
-#     live in $LIVE_DISPATCH, a hidden dir beside the capture stage INSIDE the
+#     live in $LIVE_DISPATCH, a harness-private temp dir OUTSIDE the checkout,
 #     read-denied checkout — never in any workspace. 2026-09-03 defect: one
 #     shared workspace held every rep's prompt file, a control rep ran
 #     `rg --files`, saw treatment-1.prompt, and read the canonical SKILL.md
@@ -288,6 +288,7 @@ SEAL_PROFILE_SHA=""
 SEAL_SANDBOX_EXEC=""
 SEAL_JSON=""
 SEAL_DENIED_ROOTS=()
+SEAL_DENIED_DATA_ROOTS=()
 SEAL_WRITABLE_ROOTS=()
 SEAL_AUTH_LINKS=()
 REAL_HOME="${HOME:-}"
@@ -348,7 +349,7 @@ seal_add_root() {
 
 # build_seal — materialize the scratch HOME, the seatbelt profile, and the
 # CODEX_EXEC_WRAP prefix. Needs LIVE_WORKSPACE_ROOT (the parent of every
-# per-rep workspace) and LIVE_DISPATCH (harness-private, inside the checkout).
+# per-rep workspace) and LIVE_DISPATCH (harness-private temp dir, denied file-read-data).
 build_seal() {
     local checkout root name
     SEAL_HOME="$(mktemp -d "${TMPDIR:-/tmp}/probe-seal.XXXXXX")"
@@ -383,7 +384,7 @@ build_seal() {
     # The harness dispatch dir (prompt files, raw JSONL, stderr of every rep)
     # is denied on its own, not only by checkout ancestry: a test seam may
     # place the probes tree outside the checkout.
-    seal_add_root SEAL_DENIED_ROOTS "$LIVE_DISPATCH"
+    seal_add_root SEAL_DENIED_DATA_ROOTS "$LIVE_DISPATCH"
     seal_add_root SEAL_WRITABLE_ROOTS "$LIVE_WORKSPACE_ROOT"
     seal_add_root SEAL_WRITABLE_ROOTS "$SEAL_HOME"
     seal_add_root SEAL_WRITABLE_ROOTS /private/tmp
@@ -397,6 +398,8 @@ build_seal() {
     for root in "${SEAL_WRITABLE_ROOTS[@]}"; do SEAL_PROFILE+=$'\n'"  (subpath \"$root\")"; done
     SEAL_PROFILE+=')'$'\n''(deny file-read*'
     for root in "${SEAL_DENIED_ROOTS[@]}"; do SEAL_PROFILE+=$'\n'"  (subpath \"$root\")"; done
+    SEAL_PROFILE+=')'$'\n''(deny file-read-data'
+    for root in "${SEAL_DENIED_DATA_ROOTS[@]}"; do SEAL_PROFILE+=$'\n'"  (subpath \"$root\")"; done
     SEAL_PROFILE+=')'
     SEAL_PROFILE_FILE="$SEAL_HOME/seal.sb"
     printf '%s\n' "$SEAL_PROFILE" > "$SEAL_PROFILE_FILE"
@@ -414,14 +417,15 @@ write_seal_record() {
         "$(printf '%s\n' "${SEAL_DENIED_ROOTS[@]}")" \
         "$(printf '%s\n' "${SEAL_WRITABLE_ROOTS[@]}")" \
         "$REP_HOME" "$REP_CODEX_HOME" "$REAL_HOME" "$REAL_CODEX_HOME" \
-        "$(printf '%s\n' "${SEAL_AUTH_LINKS[@]}")" "$(uname -s)" <<'PY'
+        "$(printf '%s\n' "${SEAL_AUTH_LINKS[@]}")" "$(uname -s)" \
+        "$(printf '%s\n' "${SEAL_DENIED_DATA_ROOTS[@]}")" <<'PY'
 import json
 import sys
 
 (
     path, mode, sandbox_exec, profile, profile_file, profile_sha, wrap_json,
     denied, writable, rep_home, rep_codex_home, real_home, real_codex_home,
-    auth_links, platform,
+    auth_links, platform, denied_data,
 ) = sys.argv[1:]
 sealed = mode == "seatbelt"
 record = {
@@ -436,6 +440,7 @@ record = {
     "profile_file": profile_file or None,
     "profile_sha256": profile_sha or None,
     "denied_read_roots": [line for line in denied.split("\n") if line],
+    "denied_read_data_roots": [line for line in denied_data.split("\n") if line],
     "writable_roots": [line for line in writable.split("\n") if line],
     "rep_env": {"HOME": rep_home, "CODEX_HOME": rep_codex_home},
     "real_home": real_home,
@@ -606,7 +611,10 @@ if [[ $REPLAY -eq 0 ]]; then
     chmod 0700 "$LIVE_STAGE"
     # Harness-private per-rep files (prompt, raw JSONL, stderr) sit beside the
     # stage inside the checkout, which the seal denies to every rep.
-    LIVE_DISPATCH="$(mktemp -d "$PROBE_DIR/.${FIXTURE_SET}.dispatch.XXXXXX")"
+    # Harness-private, OUTSIDE the checkout: node aborts at startup when its
+    # stdio files sit under a file-read* denied tree (it stats them), so this
+    # dir is denied file-read-DATA only (contents and listing, not metadata).
+    LIVE_DISPATCH="$(mktemp -d "${TMPDIR:-/tmp}/probe-dispatch.XXXXXX")"
     chmod 0700 "$LIVE_DISPATCH"
     # It holds prompt copies and raw producer streams only; the published set
     # carries the bound transcripts, so it never outlives the run.
