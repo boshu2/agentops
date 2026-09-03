@@ -576,6 +576,17 @@ publish_fixture_set() {
 if [[ $REPLAY -eq 0 ]]; then
     LIVE_STAGE="$(mktemp -d "$PROBE_DIR/.${FIXTURE_SET}.capture.XXXXXX")"
     chmod 0700 "$LIVE_STAGE"
+    LIVE_WORKSPACE="$(mktemp -d "${TMPDIR:-/tmp}/probe-ws.XXXXXX")"
+    chmod 0700 "$LIVE_WORKSPACE"
+    if [[ "$SEAL_MODE" == "seatbelt" ]]; then
+        build_seal
+    fi
+    # The seal record lands in the capture stage BEFORE the snapshot binds the
+    # capture contract, so the contract's seal block is the record itself.
+    write_seal_record "$LIVE_STAGE/seal.json"
+    if [[ "$SEAL_MODE" == "seatbelt" ]]; then
+        echo "seal: seatbelt ($SEAL_SANDBOX_EXEC; ${#SEAL_DENIED_ROOTS[@]} denied read roots)" >&2
+    fi
     SNAPSHOT_ARGS=(
         snapshot
         --fixture-dir "$LIVE_STAGE"
@@ -597,16 +608,6 @@ if [[ $REPLAY -eq 0 ]]; then
         --probe "$PROBE")" || [[ "$CURRENT_CONTRACT" != "$PROBE_CONTRACT" ]]; then
         echo "error: live capture inputs changed while creating the pre-dispatch snapshot" >&2
         exit 2
-    fi
-    LIVE_WORKSPACE="$(mktemp -d "${TMPDIR:-/tmp}/probe-ws.XXXXXX")"
-    chmod 0700 "$LIVE_WORKSPACE"
-    if [[ "$SEAL_MODE" == "seatbelt" ]]; then
-        build_seal
-    fi
-    # The seal record lands in the capture stage before the first rep runs.
-    write_seal_record "$LIVE_STAGE/seal.json"
-    if [[ "$SEAL_MODE" == "seatbelt" ]]; then
-        echo "seal: seatbelt ($SEAL_SANDBOX_EXEC; ${#SEAL_DENIED_ROOTS[@]} denied read roots)" >&2
     fi
 fi
 
@@ -671,14 +672,6 @@ if [[ $REPLAY -eq 0 && "$LIVE_ALL_DISPATCH_OK" -eq 1 ]]; then
         --probe "$PROBE")" || [[ "$CURRENT_CONTRACT" != "$PROBE_CONTRACT" ]]; then
         echo "error: live capture inputs changed during dispatch; fixture set not published" >&2
         exit 2
-    fi
-    # The stage inventory is exact today (probe-fixture-metadata.py create and
-    # verify reject any file beyond the transcripts and capture-contract.json),
-    # so the seal record leaves the stage before binding and survives in the
-    # live workspace and the scorecard. Lane M-C: once the metadata tool binds
-    # seal.json into the capture contract, delete this relocation.
-    if [[ -f "$LIVE_STAGE/seal.json" ]]; then
-        mv "$LIVE_STAGE/seal.json" "$LIVE_WORKSPACE/seal.json"
     fi
     CREATE_ARGS=(
         create
