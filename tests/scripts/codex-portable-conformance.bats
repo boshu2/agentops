@@ -14,7 +14,7 @@ write_skill() {
 @test "checked-in Codex release projection is portable" {
   run bash "$GATE"
   [ "$status" -eq 0 ]
-  [[ "$output" == *"PASS [portable] 56 package(s)"* ]]
+  [[ "$output" == *"PASS [portable] 57 package(s)"* ]]
 }
 
 @test "portable gate accepts the minimal Agent Skills package" {
