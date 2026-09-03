@@ -78,3 +78,10 @@ write_skill() {
   [ "$status" -ne 0 ]
   [[ "$output" == *"found duplicate key"* ]]
 }
+
+@test "twins never turn a path segment after a placeholder into a skill invocation" {
+  # Regression for `<run-id>/codebase-recon.json` becoming `<run-id>$codebase-recon.json`:
+  # a closing '>' precedes a path segment, never an invocation.
+  run grep -rln '>\$' "$REPO_ROOT"/skills-codex/*/SKILL.md
+  [ "$status" -eq 1 ]
+}
