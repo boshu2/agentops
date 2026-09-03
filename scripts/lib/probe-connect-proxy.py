@@ -15,9 +15,16 @@ Standard library only, no third-party dependency.
 
 Usage:
   python3 probe-connect-proxy.py --log FILE --port-file FILE
-      [--allow-host HOST]... [--allow-any] [--rep-file FILE]
+      [--allow-host HOST]... [--allow-port PORT]... [--allow-any]
+      [--rep-file FILE] [--allow-private-upstream]
 
-An `--allow-host` beginning with a dot is an explicit domain suffix.
+An `--allow-host` beginning with a dot is an explicit domain suffix. Only the
+ports named by `--allow-port` are admitted (default 443). A destination whose
+name resolves into loopback, link-local or private space is refused even when
+the name is on the allowlist, because otherwise a rebinding answer turns an
+allowed name into a local service. `--allow-private-upstream` lifts that check
+and exists only so the test suite can stand up a local upstream; a capture
+never passes it.
 
 `--allow-any` is DISCOVERY mode: it permits and logs every destination so an
 operator can learn which hosts the producer needs before pinning the allowlist.
@@ -30,6 +37,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import ipaddress
 import select
 import socket
 import sys
@@ -43,14 +51,21 @@ MAX_REQUEST_BYTES = 8192
 
 
 class ProxyLog:
-    """One append-only JSONL record per CONNECT attempt."""
+    """Append-only JSONL: an `attempt` record, then the decision that followed.
+
+    The rep is captured when the connection is ACCEPTED, not when the line is
+    written: a decision can land after the rep that opened the connection has
+    exited, and attributing it to whichever rep happened to be current then
+    would put one rep's egress on another rep's record.
+    """
 
     def __init__(self, path: str, rep_file: str | None) -> None:
         self._path = path
         self._rep_file = rep_file
         self._lock = threading.Lock()
 
-    def _rep(self) -> str | None:
+    def current_rep(self) -> str | None:
+        """The rep the harness says is running right now, read at accept time."""
         if not self._rep_file:
             return None
         try:
@@ -59,10 +74,12 @@ class ProxyLog:
         except OSError:
             return None
 
-    def write(self, host: str, port: int, decision: str, detail: str = "") -> None:
+    def write(
+        self, host: str, port: int, decision: str, detail: str = "", rep: str | None = None
+    ) -> None:
         record = {
             "ts": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-            "rep": self._rep(),
+            "rep": rep,
             "host": host,
             "port": port,
             "decision": decision,
@@ -182,33 +199,100 @@ def parse_authority(target: str) -> tuple[str, int] | None:
     return host, port
 
 
+def local_address(text: str) -> bool:
+    """True when an address sits in loopback, link-local or private space."""
+    try:
+        address = ipaddress.ip_address(text)
+    except ValueError:
+        return False
+    return (
+        address.is_loopback
+        or address.is_link_local
+        or address.is_private
+        or address.is_reserved
+        or address.is_multicast
+        or address.is_unspecified
+    )
+
+
+def resolve_public(host: str, port: int) -> tuple[list[tuple], str]:
+    """Resolve HOST, refusing any answer that points into local space.
+
+    An allowlisted NAME is not an allowlisted destination: a rebinding answer
+    for `chatgpt.com` would otherwise tunnel the rep into a local service.
+    """
+    try:
+        infos = socket.getaddrinfo(host, port, proto=socket.IPPROTO_TCP)
+    except OSError as exc:
+        return [], f"could not resolve: {exc}"
+    for info in infos:
+        address = info[4][0]
+        if local_address(str(address)):
+            return [], f"resolves into local address space: {address}"
+    return infos, ""
+
+
+def connect_upstream(infos: list[tuple]) -> socket.socket:
+    last: OSError | None = None
+    for family, kind, proto, _canonical, sockaddr in infos:
+        try:
+            upstream = socket.socket(family, kind, proto)
+            upstream.settimeout(CONNECT_TIMEOUT_SECONDS)
+            upstream.connect(sockaddr)
+            return upstream
+        except OSError as exc:
+            last = exc
+    raise last if last is not None else OSError("no address to connect to")
+
+
 def serve_client(
-    client: socket.socket, allowed: frozenset[str], allow_any: bool, log: ProxyLog
+    client: socket.socket,
+    allowed: frozenset[str],
+    ports: frozenset[int],
+    allow_any: bool,
+    allow_private: bool,
+    log: ProxyLog,
+    rep: str | None,
 ) -> None:
     client.settimeout(CONNECT_TIMEOUT_SECONDS)
     request_line, _ = read_request_line(client)
     parts = request_line.split()
     if len(parts) != 3 or parts[0].upper() != "CONNECT":
-        log.write("", 0, "refused", "not a CONNECT request")
+        log.write("", 0, "refused", "not a CONNECT request", rep=rep)
         refuse(client, "405 Method Not Allowed", "probe proxy accepts CONNECT only\n")
         return
     authority = parse_authority(parts[1])
     if authority is None:
-        log.write(parts[1], 0, "refused", "unparseable authority")
+        log.write(parts[1], 0, "refused", "unparseable authority", rep=rep)
         refuse(client, "400 Bad Request", "probe proxy could not parse the authority\n")
         return
     host, port = authority
+    # The attempt goes on the record BEFORE anything is resolved or dialed, so a
+    # connection that dies mid-flight still leaves a trace of what was asked for.
+    log.write(host, port, "attempt", rep=rep)
     if not (allow_any or host_allowed(host, allowed)):
-        log.write(host, port, "refused", "host is not on the capture allowlist")
+        log.write(host, port, "refused", "host is not on the capture allowlist", rep=rep)
         refuse(client, "403 Forbidden", "probe proxy: host is not on the capture allowlist\n")
         return
+    if port not in ports:
+        log.write(host, port, "refused", "port is not on the capture allowlist", rep=rep)
+        refuse(client, "403 Forbidden", "probe proxy: port is not on the capture allowlist\n")
+        return
+    if allow_private:
+        infos, problem = socket.getaddrinfo(host, port, proto=socket.IPPROTO_TCP), ""
+    else:
+        infos, problem = resolve_public(host, port)
+    if problem:
+        log.write(host, port, "refused", problem, rep=rep)
+        refuse(client, "403 Forbidden", "probe proxy: destination is not reachable policy\n")
+        return
     try:
-        upstream = socket.create_connection((host, port), timeout=CONNECT_TIMEOUT_SECONDS)
+        upstream = connect_upstream(infos)
     except OSError as exc:
-        log.write(host, port, "failed", f"upstream connect failed: {exc}")
+        log.write(host, port, "failed", f"upstream connect failed: {exc}", rep=rep)
         refuse(client, "502 Bad Gateway", "probe proxy could not reach the destination\n")
         return
-    log.write(host, port, "allowed")
+    log.write(host, port, "allowed", rep=rep)
     try:
         client.sendall(b"HTTP/1.1 200 Connection established\r\n\r\n")
     except OSError:
@@ -223,13 +307,16 @@ def serve_client(
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--allow-host", action="append", default=[])
+    parser.add_argument("--allow-port", action="append", type=int, default=[])
     parser.add_argument("--allow-any", action="store_true")
+    parser.add_argument("--allow-private-upstream", action="store_true")
     parser.add_argument("--log", required=True)
     parser.add_argument("--port-file", required=True)
     parser.add_argument("--rep-file")
     args = parser.parse_args()
 
     allowed = frozenset(host.lower() for host in args.allow_host)
+    ports = frozenset(args.allow_port or [443])
     if not allowed and not args.allow_any:
         print("probe-connect-proxy: an allowlist or --allow-any is required", file=sys.stderr)
         return 2
@@ -250,7 +337,17 @@ def main() -> int:
         except OSError:
             return 0
         worker = threading.Thread(
-            target=serve_client, args=(client, allowed, args.allow_any, log), daemon=True
+            target=serve_client,
+            args=(
+                client,
+                allowed,
+                ports,
+                args.allow_any,
+                args.allow_private_upstream,
+                log,
+                log.current_rep(),
+            ),
+            daemon=True,
         )
         worker.start()
 
