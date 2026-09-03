@@ -3,55 +3,120 @@
   "id": "agentops-core.rpi-behavior",
   "name": "AgentOps Single-Pass RPI Canary",
   "description": "Offline public canary for the Plan, Implement, fresh Validate, durable verdict, report-and-stop boundary.",
-  "practices": ["llm-eval-harness", "agile-manifesto"],
+  "practices": [
+    "llm-eval-harness",
+    "agile-manifesto"
+  ],
   "domain": "rpi",
   "visibility": "public_canary",
   "tier": "deterministic",
-  "owners": ["agentops"],
-  "tags": ["canary", "offline", "rpi", "single-pass", "verdict"],
-  "allowed_runtimes": ["static", "shell"],
+  "owners": [
+    "agentops"
+  ],
+  "tags": [
+    "canary",
+    "offline",
+    "rpi",
+    "single-pass",
+    "verdict"
+  ],
+  "allowed_runtimes": [
+    "static",
+    "shell"
+  ],
   "environment": {
     "offline_required": true,
     "network": "forbidden",
-    "scrub_env_prefixes": ["AGENTOPS_RPI_RUNTIME", "ANTHROPIC_", "OPENAI_"],
+    "scrub_env_prefixes": [
+      "AGENTOPS_RPI_RUNTIME",
+      "ANTHROPIC_",
+      "OPENAI_"
+    ],
     "timeout_seconds": 30
   },
   "scoring": {
     "aggregate_threshold": 1,
     "dimensions": [
-      {"name": "correctness", "weight": 2, "threshold": 1, "critical": true},
-      {"name": "process_adherence", "weight": 1, "threshold": 1, "critical": true},
-      {"name": "artifact_quality", "weight": 1, "threshold": 1},
-      {"name": "safety", "weight": 1, "threshold": 1, "critical": true}
+      {
+        "name": "correctness",
+        "weight": 2,
+        "threshold": 1,
+        "critical": true
+      },
+      {
+        "name": "process_adherence",
+        "weight": 1,
+        "threshold": 1,
+        "critical": true
+      },
+      {
+        "name": "artifact_quality",
+        "weight": 1,
+        "threshold": 1
+      },
+      {
+        "name": "safety",
+        "weight": 1,
+        "threshold": 1,
+        "critical": true
+      }
     ]
   },
-  "baseline_policy": {"mode": "compare", "baseline_path": ".agents/evals/baselines/agentops-core.rpi-behavior.baseline.json", "blocking_gate": "none"},
+  "baseline_policy": {
+    "mode": "compare",
+    "baseline_path": ".agents/evals/baselines/agentops-core.rpi-behavior.baseline.json",
+    "blocking_gate": "none"
+  },
   "cases": [
     {
-      "id": "single-pass-reference-tests",
-      "title": "RPI dispatches each core phase at most once",
+      "id": "bounded-repair-reference-tests",
+      "title": "RPI dispatches Plan and Implement once and repairs under the convergence law",
       "kind": "command",
-      "objective": "Prove PASS and FAIL both stop after one Plan, one Implement, and one Validate dispatch.",
+      "objective": "Prove PASS converges, FAIL/NOT_PROVEN repair under the law, and the law's four stop conditions hold (ADR-0017).",
       "runtime": "shell",
       "inputs": {
         "cwd": "../..",
         "shell": "python3 skills/rpi/tests/test_run_once.py && python3 scripts/check-cathedral-cut-conformance.py"
       },
-      "expectations": [{"type": "exit_code", "value": 0}],
-      "dimensions": ["correctness", "process_adherence", "safety"],
+      "expectations": [
+        {
+          "type": "exit_code",
+          "value": 0
+        }
+      ],
+      "dimensions": [
+        "correctness",
+        "process_adherence",
+        "safety"
+      ],
       "critical": true
     },
     {
       "id": "rpi-skill-stop-contract",
-      "title": "RPI reports and stops without continuation authority",
+      "title": "RPI stops when converged, stopped by the law, or out of repair_rounds",
       "kind": "artifact_check",
-      "objective": "Keep the public wrapper anchored to one ordered invocation and caller-owned continuation.",
+      "objective": "Keep the public wrapper anchored to one traversal with a bounded repair phase and caller-owned continuation (ADR-0017).",
       "expectations": [
-        {"type": "artifact_contains", "target": "../../skills/rpi/SKILL.md", "value": "Plan -> Implement -> fresh Validate -> report"},
-        {"type": "artifact_contains", "target": "../../skills/rpi/SKILL.md", "value": "Stop regardless"},
-        {"type": "artifact_contains", "target": "../../skills/rpi/SKILL.md", "value": "Do not append a next action"}
+        {
+          "type": "artifact_contains",
+          "target": "../../skills/rpi/SKILL.md",
+          "value": "Plan -> Implement -> fresh Validate -> bounded repair -> report"
+        },
+        {
+          "type": "artifact_contains",
+          "target": "../../skills/rpi/SKILL.md",
+          "value": "## The convergence law"
+        },
+        {
+          "type": "artifact_contains",
+          "target": "../../skills/rpi/SKILL.md",
+          "value": "Do not append a next action"
+        }
       ],
-      "dimensions": ["process_adherence", "artifact_quality"],
+      "dimensions": [
+        "process_adherence",
+        "artifact_quality"
+      ],
       "critical": true
     },
     {
@@ -64,8 +129,16 @@
         "cwd": "../..",
         "shell": "grep -q NOT_PROVEN schemas/verdict.v2.schema.json && ! grep -q NOT_BUILT schemas/verdict.v2.schema.json && grep -q NOT_BUILT schemas/rpi-report.v1.schema.json"
       },
-      "expectations": [{"type": "exit_code", "value": 0}],
-      "dimensions": ["correctness", "artifact_quality"],
+      "expectations": [
+        {
+          "type": "exit_code",
+          "value": 0
+        }
+      ],
+      "dimensions": [
+        "correctness",
+        "artifact_quality"
+      ],
       "critical": true
     }
   ]

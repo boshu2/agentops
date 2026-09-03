@@ -1,12 +1,13 @@
 export const meta = {
   name: 'rpi',
   description:
-    'One RPI traversal: Plan shapes one behavior and snapshots intent identity, Implement runs one bounded RED->GREEN experiment, then a structurally fresh Validate context judges the exact content and persists verdict.v2 for this workflow\'s return contract. No retry, no revision, no lifecycle.',
-  whenToUse: 'When a caller intent (behavior request or bead text) should be driven through Plan -> Implement -> fresh Validate exactly once, ending in a durable PASS | FAIL | NOT_PROVEN verdict. Not for multi-lane waves (implement-wave) or verdict-only re-checks (verify-fixes).',
+    'One RPI traversal: Plan shapes one behavior and snapshots intent identity, Implement runs one bounded RED->GREEN experiment, then a structurally fresh Validate context judges the exact content and persists verdict.v2. A FAIL or NOT_PROVEN enters a bounded repair phase that stops when converged, stopped by the convergence law, or out of repairRounds. No lifecycle.',
+  whenToUse: 'When a caller intent (behavior request or bead text) should be driven through Plan -> Implement -> fresh Validate -> bounded repair, ending in a durable PASS | FAIL | NOT_PROVEN verdict. Not for multi-lane waves (implement-wave) or verdict-only re-checks (verify-fixes).',
   phases: [
     { title: 'Plan', detail: 'shape one active behavior; snapshot exact intent bytes under SHA-256 identity' },
     { title: 'Implement', detail: 'one bounded RED->GREEN experiment strictly inside write scope' },
     { title: 'Validate', detail: 'fresh context re-verifies identity, judges acceptance, persists verdict.v2' },
+    { title: 'Repair', detail: 'bounded repair rounds under the convergence law; stop when converged, stopped by the law, or out of budget' },
   ],
 };
 
@@ -49,13 +50,30 @@ const IMPLEMENT_SCHEMA = {
   },
 };
 
+// CONTRACT (ADR-0017): findings[].id is the convergence law's key. Ids must be
+// STABLE across rounds — the same defect keeps its id however the summary is
+// reworded — because "the open set did not grow" and "nothing reopened" are
+// meaningless over unstable ids. subjectDigest is the law's progress signal.
 const VALIDATE_SCHEMA = {
   type: 'object',
   additionalProperties: false,
-  required: ['verdict', 'verdictPath', 'criteria', 'validatorContextId'],
+  required: ['verdict', 'verdictPath', 'criteria', 'validatorContextId', 'subjectDigest', 'findings'],
   properties: {
     verdict: { enum: ['PASS', 'FAIL', 'NOT_PROVEN'] },
     verdictPath: { type: 'string' },
+    subjectDigest: { type: 'string' },
+    findings: {
+      type: 'array',
+      items: {
+        type: 'object',
+        additionalProperties: false,
+        required: ['id', 'summary'],
+        properties: {
+          id: { type: 'string' },
+          summary: { type: 'string' },
+        },
+      },
+    },
     criteria: {
       type: 'array',
       items: {
@@ -73,11 +91,15 @@ const VALIDATE_SCHEMA = {
   },
 };
 
+// The repair stage returns the same derived facts as Implement: the freshness
+// wall is identical, so a repair round's narrative never reaches the validator.
+const REPAIR_SCHEMA = IMPLEMENT_SCHEMA;
+
 function badArgs(detail) {
   throw new Error(
     'rpi: bad args (' + detail + '). Expected ' +
       '{ intent: string, root?: string, writeScope?: [string, ...], acceptance?: string, ' +
-      "validator?: { kind: 'spawned' | 'command', command?: string } }"
+      "repairRounds?: integer >= 0, validator?: { kind: 'spawned' | 'command', command?: string } }"
   );
 }
 
@@ -98,6 +120,16 @@ if (
 if (input.acceptance !== undefined && (typeof input.acceptance !== 'string' || !input.acceptance.trim())) {
   badArgs('acceptance must be a non-empty string when given');
 }
+// CONTRACT (ADR-0017): the repair bound is the CALLER's declaration, not the
+// workflow's budget. It is never widened at runtime; 0 reproduces the old
+// single-pass behavior exactly.
+if (
+  input.repairRounds !== undefined &&
+  (!Number.isInteger(input.repairRounds) || input.repairRounds < 0)
+) {
+  badArgs('repairRounds must be a non-negative integer when given');
+}
+const repairRounds = input.repairRounds === undefined ? 2 : input.repairRounds;
 // CONTRACT: validator selects who judges — the default spawned fresh context,
 // or an external judge command brokered by that fresh context. The command is
 // opaque caller input; invalid shapes die here, never as a runtime surprise.
@@ -151,7 +183,7 @@ const toolingBlock =
 phase('Plan');
 
 const plan = await agent(
-  'You are the Plan stage of one RPI traversal (Plan -> Implement -> fresh Validate -> report and stop).\n\n' +
+  'You are the Plan stage of one RPI traversal (Plan -> Implement -> fresh Validate -> bounded repair -> report).\n\n' +
     'Caller intent (behavior request or bead text):\n' + input.intent + '\n\n' +
     (input.acceptance
       ? 'The caller fixed the acceptance criteria — adopt them verbatim as your acceptance output:\n' + input.acceptance + '\n\n'
@@ -196,7 +228,7 @@ const writeScope = input.writeScope !== undefined ? input.writeScope : plan.writ
 phase('Implement');
 
 const impl = await agent(
-  'You are the Implement stage of one RPI traversal (Plan -> Implement -> fresh Validate -> report and stop). ' +
+  'You are the Implement stage of one RPI traversal (Plan -> Implement -> fresh Validate -> bounded repair -> report). ' +
     'A separate fresh context will judge your work against the acceptance below using only derived facts — ' +
     'it will never see your narrative, so evidence lives in receipts, not prose.\n\n' +
     'Caller intent:\n' + input.intent + '\n\n' +
@@ -240,6 +272,16 @@ phase('Validate');
 // wall is identical in both modes: in external-judge mode the same fresh
 // context brokers the same packet to the caller-supplied command and
 // transcribes its ruling without interpretation.
+
+// CONTRACT (ADR-0017): validators return the subject-manifest digest and the open
+// findings under STABLE ids so the repair phase can apply the convergence law.
+const FINDINGS_BLOCK =
+  '\n- Return subjectDigest: the manifest digest you computed over the changed paths.\n' +
+  '- Return findings: one entry {id, summary} per open defect that blocks PASS (empty on PASS). Ids are ' +
+  'STABLE keys of the form <criterion-slug>:<defect-slug> so the same defect keeps its id across rounds ' +
+  'however you reword the summary; never mint a new id for a defect you already named.';
+
+async function validateOnce(facts) {
 let validation;
 if (externalJudge === null) {
 validation = await agent(
@@ -251,11 +293,11 @@ validation = await agent(
     '- intent snapshot path: ' + plan.intentPath + '\n\n' +
     'Acceptance criteria to judge:\n' + acceptance + '\n\n' +
     'Declared write scope:\n' + writeScope.map((s) => '  - ' + s).join('\n') + '\n\n' +
-    'Author context id: ' + impl.contextId + '\n\n' +
+    'Author context id: ' + facts.contextId + '\n\n' +
     'Changed paths (derived, judge these exact files):\n' +
-    (impl.changedPaths.length ? impl.changedPaths.map((p) => '  - ' + p).join('\n') : '  (none reported)') + '\n\n' +
+    (facts.changedPaths.length ? facts.changedPaths.map((p) => '  - ' + p).join('\n') : '  (none reported)') + '\n\n' +
     'Check receipts (factual command outcomes, re-derivable — rerun them yourself):\n' +
-    JSON.stringify(impl.checkReceipts, null, 2) + '\n\n' +
+    JSON.stringify(facts.checkReceipts, null, 2) + '\n\n' +
     'Procedure:\n' +
     '- ' + where + '\n' +
     '- ' + toolingBlock + '\n' +
@@ -278,7 +320,7 @@ validation = await agent(
     'verdictPath.\n' +
     '- Read-only over the subject: fix nothing, commit nothing. The verdict file is the only thing you persist.\n' +
     '- If the tooling is absent or persistence fails, the verdict is NOT_PROVEN with the real error in the ' +
-    'evidence of a criteria entry.',
+    'evidence of a criteria entry.' + FINDINGS_BLOCK,
   { label: 'validate', phase: 'Validate', schema: VALIDATE_SCHEMA, effort: 'high' }
 );
 } else {
@@ -300,10 +342,10 @@ validation = await agent(
     '- intent snapshot path: ' + plan.intentPath + '\n' +
     '- Acceptance criteria to judge:\n' + acceptance + '\n' +
     '- Declared write scope:\n' + writeScope.map((s) => '  - ' + s).join('\n') + '\n' +
-    '- Author context id: ' + impl.contextId + '\n' +
+    '- Author context id: ' + facts.contextId + '\n' +
     '- Changed paths (derived):\n' +
-    (impl.changedPaths.length ? impl.changedPaths.map((p) => '  - ' + p).join('\n') : '  (none reported)') + '\n' +
-    '- Check receipts (factual command outcomes):\n' + JSON.stringify(impl.checkReceipts, null, 2) + '\n\n' +
+    (facts.changedPaths.length ? facts.changedPaths.map((p) => '  - ' + p).join('\n') : '  (none reported)') + '\n' +
+    '- Check receipts (factual command outcomes):\n' + JSON.stringify(facts.checkReceipts, null, 2) + '\n\n' +
     'Procedure:\n' +
     '- ' + where + '\n' +
     '- ' + toolingBlock + '\n' +
@@ -333,10 +375,14 @@ validation = await agent(
     '- Read-only over the subject: fix nothing, commit nothing. The transcript and the verdict file are the ' +
     'only things you persist.\n' +
     '- If the tooling is absent or persistence fails, the verdict is NOT_PROVEN with the real error in the ' +
-    'evidence of a criteria entry.',
+    'evidence of a criteria entry.' + FINDINGS_BLOCK,
   { label: 'validate', phase: 'Validate', schema: VALIDATE_SCHEMA, effort: 'high' }
 );
 }
+return validation;
+}
+
+let validation = await validateOnce(impl);
 
 if (!validation) {
   return {
@@ -350,13 +396,83 @@ if (!validation) {
   };
 }
 
-// Report and stop: script-assembled, no fourth agent, no next action.
+// REPAIR PHASE (ADR-0017): bounded by the caller's repairRounds and stopped by
+// the convergence law. The fix step is an Implement-shaped agent that sees the
+// open findings; every judge leg stays non-mutating. Law, per round:
+//   1. roundsUsed < repairRounds
+//   2. open finding set (stable ids) is not larger than the previous round's
+//   3. no id closed in an earlier round reopens
+//   4. the subject digest changed, or the round resolved NOT_PROVEN with new evidence
+const openIds = (v) => new Set((v.findings || []).map((f) => f.id));
+const repairLog = [];
+const closedIds = new Set();
+let facts = { contextId: impl.contextId, changedPaths: impl.changedPaths.slice(), checkReceipts: impl.checkReceipts };
+let roundsUsed = 0;
+let stoppedBy = null;
+while (
+  validation &&
+  (validation.verdict === 'FAIL' || validation.verdict === 'NOT_PROVEN') &&
+  openIds(validation).size > 0
+) {
+  if (roundsUsed >= repairRounds) { stoppedBy = 'out of repair_rounds (' + repairRounds + ')'; break; }
+  phase('Repair');
+  const prevIds = openIds(validation);
+  const prevDigest = validation.subjectDigest;
+  const repair = await agent(
+    'You are the Repair stage of one RPI traversal, round ' + (roundsUsed + 1) + ' of at most ' + repairRounds +
+      '. A fresh validator judged the current candidate and returned ' + validation.verdict +
+      ' with these open findings; fix exactly these, nothing else, inside the write scope.\n\n' +
+      'Open findings (stable ids):\n' +
+      (validation.findings || []).map((f) => '  - ' + f.id + ': ' + f.summary).join('\n') + '\n\n' +
+      'Acceptance the validator judges against:\n' + acceptance + '\n\n' +
+      'Write scope — you may create or edit ONLY paths matching:\n' +
+      writeScope.map((s) => '  - ' + s).join('\n') + '\n\n' +
+      'Paths changed so far:\n' + facts.changedPaths.map((p) => '  - ' + p).join('\n') + '\n\n' +
+      'Process rules (non-negotiable):\n' +
+      '- ' + where + '\n' +
+      '- Repair the named findings; rerun the repository\'s real checks and record each as a checkReceipts ' +
+      'entry {name, command, outcome}. Do not weaken tests, gates, or acceptance to obtain green.\n' +
+      '- Stay strictly inside the write scope; record any unmet out-of-scope need as a receipt, never an edit.\n' +
+      '- Generate your own author context id (random bytes via bash, hex-encoded) and return it as contextId.\n' +
+      '- List every path you changed under changedPaths. filesSummary is for the caller only.\n' +
+      '- No lifecycle: do not commit, push, tag, or close anything.',
+    { label: 'repair:' + (roundsUsed + 1), phase: 'Repair', schema: REPAIR_SCHEMA }
+  );
+  roundsUsed += 1;
+  if (!repair) { stoppedBy = 'repair stage failed in round ' + roundsUsed; break; }
+  const union = new Set(facts.changedPaths);
+  for (const p of repair.changedPaths) union.add(p);
+  facts = { contextId: repair.contextId, changedPaths: [...union], checkReceipts: repair.checkReceipts };
+  const next = await validateOnce(facts);
+  if (!next) { stoppedBy = 'validate stage failed in round ' + roundsUsed; break; }
+  const nextIds = openIds(next);
+  for (const id of prevIds) if (!nextIds.has(id)) closedIds.add(id);
+  let violation = null;
+  if (nextIds.size > prevIds.size) violation = 'open finding set grew (' + prevIds.size + ' -> ' + nextIds.size + ')';
+  else if ([...nextIds].some((id) => closedIds.has(id))) violation = 'a closed finding reopened';
+  else if (next.verdict !== 'PASS' && next.subjectDigest === prevDigest) violation = 'subject digest unchanged without new evidence';
+  repairLog.push('repair round ' + roundsUsed + ': ' + nextIds.size + ' open findings' + (violation ? ' — stopped by the law: ' + violation : ''));
+  validation = next;
+  if (violation) { stoppedBy = 'law: ' + violation; break; }
+}
+const converged = !!validation && validation.verdict === 'PASS';
+if (!converged && stoppedBy === null && validation && openIds(validation).size === 0 && validation.verdict !== 'PASS') {
+  stoppedBy = 'validator returned ' + validation.verdict + ' with no findings to repair';
+}
+
+// Report: script-assembled, no extra agent, no next action. The caller owns
+// continuation; repairRounds was the caller's declaration and is never widened.
 // filesSummary reaches only this caller-facing report — never the validator.
 return {
   verdict: validation.verdict,
   verdictPath: validation.verdictPath,
   intentDigest: plan.intentDigest,
-  changedPaths: impl.changedPaths,
+  changedPaths: facts.changedPaths,
   filesSummary: impl.filesSummary,
   criteria: validation.criteria,
+  findings: validation.findings || [],
+  converged,
+  repairRoundsUsed: roundsUsed,
+  repairLog,
+  stoppedBy,
 };
