@@ -109,40 +109,98 @@ and refuse a swapped record; a stage with no record is bound as mode `none`.
 `seatbelt` seal. Pre-seal v2 contracts (the 2026-08-26 sets) load as
 `legacy-unsealed`: replayable, never coverage.
 
-The bound block is `{mode, platform, mechanism, sandbox_exec, wrap,
+The bound block is `{mode, platform, mechanism, sandbox_exec, wrap, network,
 denied_read_roots, denied_read_data_roots, denied_link_roots, writable_roots,
-allowed_read_paths, rep_env, run_root, workspace_root, dispatch_root,
-git_common_root, real_tmpdir, config_sanitized, auth_copied, profile_sha256,
-original_home, repository_root}` (`original_home` = the record's `real_home`,
-`repository_root` = the resolved parent of the skills dir). `verify-scorecard`
-treats it as authoritative, cross-checks a scorecard's verbatim `seal` copy
-against it when present (null in replay), and requires all of: `platform`
-Darwin, `mechanism` `sandbox-exec` with a resolved path, `wrap` equal to
-`["sandbox-exec", "-p", profile_sha256]`, a sanitized config and a copied
-auth.json, denied reads covering `repository_root`, `git_common_root`,
-`original_home` and `real_tmpdir` (literal or realpath, since the kernel seals
-the resolved path), the dispatch directory denied for read-data, link and
-write, a workspace under the writable roots, a rep `HOME`/`CODEX_HOME`/`TMPDIR`
-inside them and outside the operator home, and no re-allowed read inside the
-checkout. Any root or step the seal omits is named on output.
+dev_write_paths, allowed_read_paths, launcher_chain, launcher_sha256, rep_env,
+env_allowlist, run_root, workspace_root, dispatch_root, git_common_root,
+real_tmpdir, real_codex_home, cache_root, config_sanitized, config_sha256,
+config_text, auth_copied, profile_sha256, original_home, repository_root}`
+(`original_home` = the record's `real_home`, `repository_root` = the resolved
+parent of the skills dir).
 
-**v3's seal block gained required keys on 2026-09-03 (second pass).** The
-first shape bound only `{mode, denied_read_roots, writable_roots,
-profile_sha256, original_home, repository_root}`, which a hand-written record
-claiming `seatbelt` on Linux with no mechanism satisfied. Contracts in that
-shape still load and still replay; they are never tier coverage, and they say
-so with `seal-block-superseded`. The contract name stays
-`agentops-skill-probe-capture.v3` because the only v3 sets ever committed were
-the two first-pass sets of 2026-09-03, which were deleted and recaptured under
-the hardened seal the same day.
+**The block rebuilds its own profile.** `render_seal_profile(block)` in
+`scripts/lib/probe-fixture-metadata.py` emits the profile text from the block,
+and it is the only writer of one: the harness renders through it at capture
+time, and `verify-scorecard` renders again and requires the digest to equal
+`profile_sha256`. Before this the roots were assertions ALONGSIDE an opaque
+profile, so a record claiming `writable_roots ["/"]`, an `allowed_read_paths`
+entry pointing at the main checkout's SKILL.md, or a null `real_tmpdir` was
+coverage-eligible while the profile said something else entirely.
 
-**The rep's producer config is sanitized.** The operator's `config.toml`
-carries `[mcp_servers.*]` tables (a rep would otherwise start those servers and
-be able to query them, reaching the operator's own vaults and tools) and
-`[projects.*]` trust entries naming other checkouts. Each rep gets a config
-built from the top-level scalar keys only, every table dropped, and the seal
-records which keys were kept in `config_sanitized`. `auth.json` is COPIED, not
-symlinked: the real home is read-denied, so a symlink into it cannot resolve.
+What `verify-scorecard` proves, stated as narrowly as it is true: the seal block
+reconstructs the profile text to its recorded digest; `platform` is Darwin and
+`mechanism` is `sandbox-exec` at `/usr/bin/sandbox-exec`; `wrap` equals
+`[sandbox_exec, "-p", profile_sha256]`; `network.mode` is `proxy-allowlist` with
+a non-empty host list and a `127.0.0.1:<port>` proxy; the config was generated
+and its text matches its digest; `auth.json` was copied; the denied reads cover
+`repository_root`, `git_common_root`, `original_home` and `real_tmpdir` (literal
+or realpath, since the kernel seals the resolved path); the dispatch directory
+is denied for read-data, link and write; the writable roots reach none of the
+checkout, the shared git root or the operator home; the workspace and the rep's
+`HOME`/`CODEX_HOME`/`TMPDIR` sit under the writable roots and outside the
+operator home; and `allowed_read_paths` is exactly the bound `launcher_chain`
+links a denied root would otherwise cover. It also cross-checks a scorecard's
+verbatim `seal` copy against the contract when present (null in replay). Any
+root or step the seal omits is named on output.
+
+What it does NOT prove: the profile is `(allow default)` outside the operations
+it denies, so process capabilities other than the network (signals, IPC, exec of
+anything already readable) remain open, and reads outside the denied roots are
+permitted. The seal is a bound, checkable statement about the filesystem and the
+network, not a claim of full isolation.
+
+**The network seal.** The outer profile is `(allow default)` and codex's own
+sandbox is bypassed inside it (seatbelt does not nest), so before 2026-09-03
+a rep could `curl` the canonical SKILL.md off the forge and the filesystem seal
+proved nothing about what it read. A judge demonstrated exactly that. Every
+capture now starts a harness-owned CONNECT proxy
+(`scripts/lib/probe-connect-proxy.py`, standard library only) on 127.0.0.1 and
+an ephemeral port; the profile denies `network*` except outbound to that port;
+the rep gets `HTTPS_PROXY`/`HTTP_PROXY`/`ALL_PROXY` pointing at it. The proxy
+allows CONNECT only to the bound host allowlist and refuses everything else with
+403, logging every attempt to the harness-private dispatch directory. A refused
+CONNECT degrades that rep as `network-egress`, and each rep's allowed/refused
+counts plus the log digest are bound into its transcript's probe-input event, so
+a capture cannot be accepted with a refusal in it.
+
+The allowlist was pinned from observation: one rep run through the proxy in
+discovery mode showed codex-cli 0.145 reaching `chatgpt.com` and
+`ab.chatgpt.com` and nothing else. `api.openai.com` and `auth.openai.com` are
+kept for an API-key producer and were not observed on a ChatGPT-auth account.
+No unix-socket allowance was needed: the proxy resolves DNS, so the rep never
+talks to `mDNSResponder`.
+
+**v3's seal block gained required keys twice on 2026-09-03.** The first shape
+bound only `{mode, denied_read_roots, writable_roots, profile_sha256,
+original_home, repository_root}`, which a hand-written record claiming
+`seatbelt` on Linux with no mechanism satisfied. The second added the mechanism,
+the wrap, the link denies and the rep environment, but still could not
+reconstruct its own profile and said nothing about the network. Contracts in
+either shape still load and still replay; neither is ever tier coverage, and
+they say so with `seal-block-superseded`. The contract name stays
+`agentops-skill-probe-capture.v3` because every v3 set ever committed has been
+recaptured under the current seal.
+
+**The rep's producer config is generated, not filtered.** The operator's
+`config.toml` carries `[mcp_servers.*]` tables (a rep would otherwise start
+those servers and be able to query them, reaching the operator's own vaults and
+tools), `[projects.*]` trust entries naming other checkouts, a `notify` hook
+naming an operator program, and `web_search` set live. Filtering it left all the
+scalars behind, so the file is now written from an allowlist instead: the
+reasoning effort and `web_search = "disabled"`, nothing else. Its exact text and
+digest are bound in the seal, the same file is copied into every rep, and after
+each rep the harness re-parses it: the only permitted growth is codex's own
+`[projects."<workspace>"]` trust table, and anything else degrades the rep as
+`config-mutated`. `auth.json` is COPIED, not symlinked: the real home is
+read-denied, so a symlink into it cannot resolve.
+
+**The rep environment, its descriptors and its process group.** The rep is
+launched with exactly the variables the seal's `env_allowlist` names and nothing
+else, with every non-stdio descriptor closed (the transcript sink was FD 9 and
+the dispatch handles sat just above it), and in its own process group. After the
+rep returns the group is signalled and proven empty before the workspace is
+reset; a survivor degrades the rep as `rep-survivor`, because a forked child
+outliving its rep would see the next rep's workspace.
 
 **One run directory; the workspace is reset, not relocated.** A live capture
 creates one `$TMPDIR/probe-run.XXXXXX` (mode 0700) holding `home/` (the scratch
@@ -176,14 +234,18 @@ name, degrades that rep as `sibling-prompt-read`. A rep naming its OWN `ws/` or
 recompute this, so the 2026-09-03 sets reclassify under it without any fixture
 edit.
 
-**Effective eligibility is reported per set.** A scorecard carries its
-capture's own `coverage_eligible` claim, and that field is immutable history:
+**Effective eligibility is reported per set, for every row.** A scorecard
+carries its capture's own `coverage_eligible` claim, and that field is immutable
+history:
 `docs/evals/scorecards/2026-08-26/premortem-plan-shape-t2-low.json` says `true`
 while the gate treats the set as `legacy-unsealed`. `check-skill-probe-coverage`
 therefore prints `set <skill>/<probe>: eligible=true|false (<reason>)` for
-every set the ledger points at, and carries the same rows under `sets` in
-`--json`. The gate's value is the effective one; the scorecard field is what
-the capture believed.
+every ledger row that names a scorecard, including WITHDRAWN, PRELUDE-ONLY and
+LEGACY-UNVERIFIED rows, and carries the same rows under `sets` in `--json`. The
+gate's value is the effective one; the scorecard field is what the capture
+believed. A row whose verdict is not current reads `verdict-<verdict>` rather
+than a seal reason: its evidence may verify perfectly and still not be a
+measurement.
 
 Replay makes the bound classification replayable; it does not make model
 generation deterministic or reproducible.

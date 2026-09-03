@@ -161,19 +161,26 @@ ls "$CODEX_HOME"                 # auth.json only — no skills/ directory
 ## Sealed dispatch (2026-09-03)
 
 ### What the seal is
-`scripts/probe-skill.sh` refuses live dispatch without `sandbox-exec` unless
-`PROBE_SEAL=none` (coverage-ineligible). A rep runs under an outer seatbelt
-profile: `file-read*` denied on the checkout and on `~/.agents`,
-`~/.claude/skills`, `~/.gemini/skills`, `~/.codex/skills`; `file-write*` denied
-outside the rep workspace, the scratch HOME, and the temp roots;
-`file-read-data` denied on the harness-private dispatch dir. HOME and
-CODEX_HOME are scratch (auth symlinked). Codex's own sandbox is bypassed inside
-the profile because seatbelt does not nest. The record (`seal.json`) is bound
-into `agentops-skill-probe-capture.v3` and `verify-scorecard` re-checks the
-denied roots.
+`scripts/probe-skill.sh` refuses live dispatch without the system seatbelt
+binary unless `PROBE_SEAL=none` (coverage-ineligible). A rep runs under an outer
+`/usr/bin/sandbox-exec` profile that denies `network*` except outbound to a
+harness-owned local CONNECT proxy, denies `file-read*` on the operator home, the
+real CODEX_HOME, the Darwin per-user cache dir, the temp roots, the checkout,
+the git common directory and every skill root, and denies `file-write*` outside
+the run directory's `home/`, `ws/` and `tmp/` plus four named devices. Codex's
+own sandbox is bypassed inside the profile because seatbelt does not nest, which
+is exactly why the outer profile has to carry the network deny. The record
+(`seal.json`) is bound into `agentops-skill-probe-capture.v3`.
 
-*(That is the first pass, kept here because it is what the two 2026-09-03 v3
-sets ran under. The second pass below replaced most of it the same day.)*
+What `verify-scorecard` proves about it, precisely: the block rebuilds the
+profile text to the recorded digest, the required roots are denied, the wrap
+names `/usr/bin/sandbox-exec` with that digest, the network mode is the proxy
+allowlist with a non-empty host list, the allowed read paths are exactly the
+bound launcher chain, and the rep environment and generated config are the
+recorded ones. It does NOT prove the absence of every ambient capability: the
+profile is `(allow default)` outside the operations it denies, so process
+capabilities other than the network are open, and that is a known gap rather
+than a solved one.
 
 ### Two leaks the seal exposed, both trapped now
 - **Shared workspace.** The first sealed xhigh run had every rep's prompt file
@@ -207,10 +214,14 @@ confirmed against the tree, and this is what changed.
 | MCP servers | the scratch CODEX_HOME symlinked the operator's real `config.toml`, so every rep started the operator's MCP servers (vault search, node repl, computer use) and could query them, and inherited `[projects]` trust entries naming other checkouts | the config is rebuilt per rep from top-level scalar keys only, every table dropped, and the kept keys are recorded in the seal |
 | auth | `auth.json` was symlinked into a home the seal denies | it is copied into the scratch CODEX_HOME |
 
-Prove a profile change by hand before trusting a test:
+Prove a profile change by hand before trusting a test. This works only WHILE a
+capture is running: the run directory and its profile file are removed by the
+EXIT trap, so run it from a second shell during a live capture, or render a
+profile from a seal block with `render_seal_profile` and write it somewhere
+yourself.
 
 ```bash
-run=$(ls -d "$TMPDIR"/probe-run.* | head -1)
+run=$(ls -d "$TMPDIR"/probe-run.* | head -1)     # mid-run only
 sandbox-exec -f "$run/home/seal.sb" /bin/sh -c "cd $run/ws && cat /path/to/skills/x/SKILL.md"
 ```
 
@@ -218,11 +229,44 @@ Denied reads must fail; `cd` into `ws` and a write there must succeed. A denied
 ancestor breaks `getcwd`, which is why the profile allows
 `file-read-metadata` on `(path-ancestors "<run>/ws")`.
 
+### Third pass: what two more judges found in the second seal
+Both failed it. The findings and what changed:
+
+| Finding | What was wrong | What the seal does now |
+|---|---|---|
+| network open | the outer profile was `(allow default)` and codex's own sandbox is bypassed inside it, so a rep could `curl` the canonical SKILL.md off the forge; a judge demonstrated it returning the canonical bytes | `(deny network*)` with one exception: outbound to a harness-owned CONNECT proxy on 127.0.0.1. The proxy allows only a pinned host allowlist, refuses everything else with 403, logs every attempt, and a refused CONNECT degrades that rep as `network-egress` |
+| web search | the sanitized config kept the operator's `web_search = "live"`, a second egress path the seal did not cover | the config is GENERATED, not filtered, and writes `web_search = "disabled"` |
+| profile unbound | the block's roots were assertions ALONGSIDE an opaque profile: records claiming `writable_roots ["/"]`, an allowed read path pointing at the main checkout's SKILL.md, or null `real_tmpdir` were all coverage-eligible | `render_seal_profile(block)` rebuilds the profile text from the block, and coverage requires its digest to equal `profile_sha256`. One renderer writes the profile and rebuilds it |
+| launcher allowlist | the read-deny exception for the producer binary was a free-form list, so a HOME path holding a SKILL.md could masquerade as a launcher | the whole resolved symlink chain is bound as `launcher_chain` with the binary's digest, and `allowed_read_paths` must equal exactly the links a denied root would cover |
+| wrap by PATH | the dispatch invoked bare `sandbox-exec` while the record claimed `/usr/bin/sandbox-exec`, so a stub earlier on PATH would have silently disabled the seal | the wrap uses the recorded absolute path, coverage requires that path to be `/usr/bin/sandbox-exec`, and a bats test proves a shadowing stub never runs |
+| data roots | only `<CODEX_HOME>/skills` was denied, so a CODEX_HOME outside the operator home kept its sessions and rollouts readable; the Darwin per-user cache dir beside the temp dir was readable too | the whole resolved real CODEX_HOME is denied and bound as `real_codex_home`; the cache dir is denied and bound as `cache_root` (verified: node and codex still start) |
+| descriptors and /dev | the open transcript sink (FD 9) was inherited by the rep, and `/dev` was writable whole | every non-stdio descriptor is closed before exec, and the write allow names `/dev/null`, `/dev/zero`, `/dev/dtracehelper`, `/dev/tty` |
+| ambient environment | the operator's whole environment reached the producer | the rep gets exactly the variables `env_allowlist` names, and the record lists them |
+| rep races | the same HOME/WS/TMP paths were reused per rep with no reaping, so a forked survivor could watch the next rep | each rep runs in its own process group, which is signalled and proven empty before the next reset; a survivor degrades the rep as `rep-survivor` |
+| config drift | the sanitization bound key NAMES only, and codex adds a `[projects]` table at runtime that nothing checked | the generated config's exact text and digest are bound, and after each rep the file is re-parsed: the only permitted growth is a trust table for the rep's own workspace, anything else degrades the rep as `config-mutated` |
+| cleanup | the capture stage was not removed on failure, an incomplete dispatch exited zero with an UNMEASURED scorecard, and the trap was installed after the chmod that could fail | one guarded trap covers the run root and the unpublished stage from the moment the run root exists, the stage is released only by a successful publish, and an incomplete dispatch exits nonzero with no scorecard |
+| eligibility rows | only directional rows got an eligibility line, so the WITHDRAWN row the README cites as the motivating example never got one | every ledger row that names a scorecard gets one, in text and in `--json` |
+
+The host allowlist was PINNED from observation, not guessed: one rep was run
+through the proxy in discovery mode on 2026-09-03 and codex-cli 0.145 reached
+`chatgpt.com` (the turn) and `ab.chatgpt.com` (feature flags) and nothing else.
+`api.openai.com` and `auth.openai.com` are kept for an API-key producer and were
+NOT observed on this ChatGPT-auth account. No unix socket allowance was needed:
+the proxy resolves DNS, so the rep never talks to `mDNSResponder`.
+
 ### premortem-plan-shape-t2, sealed, gpt-5.6-luna
 First-pass seal (superseded, deleted): low control 0/2, treatment 1/1 usable,
-BEHAVIORAL; xhigh 0/2 vs 0/2, INERT. Hardened seal (the rows that count,
-`fixtures-{low,xhigh}-2026-09-03-hardened`): low 0/2 vs 0/2, INERT; xhigh
-control 0/2, treatment 2/2, BEHAVIORAL. Headroom SEPARATED at both. No rep in
-the hardened sets ran a single command. The two captures disagree on which
-effort level moves; with two reps per arm that is variance, and the ledger says
-so. Scorecards under `docs/evals/scorecards/2026-09-03/`.
+BEHAVIORAL; xhigh 0/2 vs 0/2, INERT. Second-pass seal: low 0/2 vs 0/2, INERT;
+xhigh control 0/2, treatment 2/2, BEHAVIORAL. Headroom SEPARATED at both. No rep
+in the second-pass sets ran a single command. Scorecards under
+`docs/evals/scorecards/2026-09-03/`; the ledger table is where the current
+numbers live.
+
+The two captures disagree about which effort level shows a behavior change. At
+N=2 per arm that is an UNRESOLVED observation, not variance around a known
+value: two reps cannot establish a rate, so the reversal is a reason to run more
+reps, never a result to explain away.
+
+Every harness change moves the evaluator identity a scorecard binds, so every
+hardened row is recaptured after one. Until that recapture the gate reports the
+rows as not measured and says why, per set.

@@ -44,7 +44,7 @@
 | `operationalize` | `anti-ceremony-creation-gate-v2` | 2026-08-16 | UNMEASURED | First canonical-skill attempt: control 2/2 usable, treatment 0/2 usable after a leading-hyphen CLI dispatch defect; no fixture set was published. Attempt scorecard: `docs/evals/scorecards/2026-08-16/anti-ceremony-low-v2.json`; interpretation: `docs/evals/2026-08-16-anti-ceremony-creation-gate.md` |
 | `operationalize` | `anti-ceremony-creation-gate-v2` | 2026-08-16 | LEGACY-UNVERIFIED | Compatibility-only v2 canonical-SKILL run, historically classified INERT at control 2/2 versus treatment 2/2. Its retained scorecard and fixture predate the v3 response-only, counterbalanced, self-contained capture contract, so they do not count as current evidence: `docs/evals/scorecards/2026-08-16/anti-ceremony-low-v2b.json`; `evals/skill-probes/anti-ceremony-creation-gate-v2/fixtures-low-2026-08-16-v2b/fixture-set.json`; interpretation: `docs/evals/2026-08-16-anti-ceremony-creation-gate.md` |
 | `premortem` | `premortem-plan-shape-t2` | 2026-08-26 | WITHDRAWN | Filed as BEHAVIORAL, withdrawn same day: the fresh validator dumped the committed transcripts and every rep — both arms — had fetched `skills/premortem/SKILL.md` off disk (control-1 `sed`, control-2 `cat`, exit 0), so the arms were not differentiated by the bound bytes and the separation was band-spray variance between two arms holding the same skill. The harness now degrades any rep whose transcript shows a successful SKILL.md read (`skill-read-contamination`); the regenerated scorecard reads UNMEASURED 0/0 usable. `premortem` remains UNMEASURED. Evidence: `docs/evals/scorecards/2026-08-26/premortem-plan-shape-t2-low.json` (regenerated), fixtures unchanged. |
-| `premortem` | `premortem-plan-shape-t2` | 2026-09-03 | INERT | scorecard: `docs/evals/scorecards/2026-09-03/premortem-plan-shape-t2-low.json`; hardened sealed dispatch (one removed-on-exit run directory; reads denied under the real HOME, the real temp root, the checkout, the git common directory, and every skill root; sanitized per-rep config; copied auth; capture-contract v3 seal block with platform, mechanism, wrapper, roots, and rep environment bound); producer gpt-5.6-luna effort low; control 0/2, treatment 0/2, no rep ran a command; headroom SEPARATED; N=2, directional. The first-pass sealed capture of this level read BEHAVIORAL (1/1 usable) and was superseded with its seal; the two captures disagree on which effort level moves, which is what N=2 looks like. |
+| `premortem` | `premortem-plan-shape-t2` | 2026-09-03 | INERT | scorecard: `docs/evals/scorecards/2026-09-03/premortem-plan-shape-t2-low.json`; hardened sealed dispatch (one removed-on-exit run directory; reads denied under the real HOME, the real temp root, the checkout, the git common directory, and every skill root; sanitized per-rep config; copied auth; capture-contract v3 seal block with platform, mechanism, wrapper, roots, and rep environment bound); producer gpt-5.6-luna effort low; control 0/2, treatment 0/2, no rep ran a command; headroom SEPARATED; N=2, directional. The first-pass sealed capture of this level read BEHAVIORAL (1/1 usable) and was superseded with its seal. The two captures disagree on which effort level moves; at N=2 per arm that disagreement is an UNRESOLVED observation, not variance around a known value, and it is not resolvable without more reps. |
 | `premortem` | `premortem-plan-shape-t2` | 2026-09-03 | BEHAVIORAL | scorecard: `docs/evals/scorecards/2026-09-03/premortem-plan-shape-t2-xhigh.json`; same hardened seal and producer at effort xhigh; control 0/2, treatment 2/2, no rep ran a command; headroom SEPARATED; N=2, directional; response-shape behavior change, never quality uplift. The first-pass sealed capture of this level read INERT and was superseded with its seal. Earlier 2026-09-03 sets before that: one REGRESSIVE verdict collapsed to INERT under replay once the sibling-prompt-read trap degraded the control rep that had read `treatment-1.prompt` from the shared workspace, and one run never dispatched (node aborts when its stdio sits under a file-read* denied tree). |
 
 As of the 2026-08-16 provenance migration the coverage gate counted **0/12**
@@ -96,28 +96,46 @@ producer altitude — two ceilings, one insufficient capture, one contaminated
 withdrawal. The instrument caught all four states correctly; the next wave
 runs only after dispatch is filesystem-sealed.
 
-**2026-09-03 update.** Filesystem-sealed dispatch landed (outer `sandbox-exec`
-profile denying the checkout and every skill root, scratch HOME/CODEX_HOME, one
-empty workspace per rep, prompt on stdin only, seal bound into capture-contract
-v3 and required for coverage eligibility). Under it, `premortem-plan-shape-t2`
-carries the first current manifest-backed rows: BEHAVIORAL at effort low and
-INERT at effort xhigh, headroom SEPARATED. The gate now counts **1/12
-measured**. Two contamination paths were caught on the way and are trapped:
-reading a sibling rep's prompt from a shared workspace, and reading any
-`SKILL.md` (including codex's bundled system skill). N=2 per arm is directional
-evidence of response-shape change, never quality uplift.
+**2026-09-03, first pass (history).** Filesystem-sealed dispatch landed: an
+outer `sandbox-exec` profile denying the checkout and every skill root, a
+scratch HOME/CODEX_HOME, one empty workspace per rep, the prompt on stdin only,
+and the seal bound into capture-contract v3 as a condition of coverage. Two
+contamination paths were caught on the way and are still trapped: reading a
+sibling rep's prompt from a shared workspace, and reading any `SKILL.md`
+(including codex's bundled system skill). The rows that capture produced are
+NOT in the table above; every one of them was superseded by a later recapture,
+and the numbers below belong to the pass that produced them.
 
-**2026-09-03 second pass.** Two fresh judges read that seal and found nine
+**2026-09-03, second pass.** Two fresh judges read that seal and found nine
 defects in it, from a readable temp hierarchy holding 425 stale probe
 directories to a scratch CODEX_HOME that symlinked the operator's real config
 and so started the operator's MCP servers inside every rep. The seal was
 rebuilt (one removed-on-exit run directory, the real HOME and temp root
 read-denied, link and clone denied, a sanitized per-rep config) and the bound
-seal block gained the keys that make those claims checkable. The two rows above
-are the recapture under the hardened seal (fixture sets
-`fixtures-{low,xhigh}-2026-09-03-hardened`); the first-pass sets were deleted
-with their scorecards rather than kept as `seal-block-superseded` evidence,
-since a seal nothing can check is evidence about the instrument, not the skill.
-The headline is **1/12 measured**. The gate prints each set's effective
-eligibility on every run, so a reader never has to take a scorecard's own
-`coverage_eligible` field for the answer. Details: `RUNBOOK.md`, "Second pass".
+seal block gained the keys that make those claims checkable. The rows in the
+table were recaptured under it; the first-pass sets were deleted with their
+scorecards rather than kept, since a seal nothing can check is evidence about
+the instrument, not the skill.
+
+**2026-09-03, third pass.** Two more judges read THAT seal and both failed it.
+The headline gap was the network: the outer profile was `(allow default)` and
+codex's own sandbox is bypassed inside it, so a rep could fetch the canonical
+`SKILL.md` over HTTPS while the filesystem seal proved nothing about what it
+read. A judge demonstrated it. The seal now denies `network*` except to a
+harness-owned local CONNECT proxy with a pinned host allowlist, and the bound
+block can rebuild its own profile text so its roots are the bytes the kernel
+enforced rather than assertions beside them. Because the harness bytes moved
+again, every hardened row is recaptured after this pass and until that happens
+the honest headline is **0/12 measured**: the evaluator identity a scorecard
+binds no longer matches the repository, which the gate reports per set. What
+the verifier proves is narrow and worth stating plainly: the profile digest
+reconstructs from the block, the required roots are denied, the wrap names the
+system seatbelt, the network mode is the proxy allowlist, and the rep
+environment and config are the recorded ones. It does not prove the absence of
+every other ambient capability; the profile is still `(allow default)` outside
+the denies it names, so process capabilities other than the network remain
+open. Details: `RUNBOOK.md`, "Third pass".
+
+The gate prints each set's effective eligibility on every run, for every row
+that names a scorecard, so a reader never has to take a scorecard's own
+`coverage_eligible` field for the answer.
