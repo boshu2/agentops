@@ -11,6 +11,7 @@ import errno
 import hashlib
 import json
 import os
+import platform
 import re
 import shutil
 import signal
@@ -38,7 +39,11 @@ SEAL_NAME = "seal.json"
 SEAL_RECORD_SCHEMA = "agentops-skill-probe-seal.v1"
 SEAL_MODES = {"seatbelt", "none"}
 LEGACY_SEAL_MODE = "legacy-unsealed"
-SEAL_KEYS = {
+# The 2026-09-03 first shape of the v3 seal block. Sets captured against it stay
+# REPLAYABLE, but they can never be tier coverage: the block does not record the
+# mechanism, the wrap, the link denies, the rep env or the config sanitization,
+# so nothing in it separates a real seatbelt from a hand-written claim.
+LEGACY_SEAL_KEYS = {
     "mode",
     "denied_read_roots",
     "writable_roots",
@@ -46,6 +51,26 @@ SEAL_KEYS = {
     "original_home",
     "repository_root",
 }
+SEAL_KEYS = LEGACY_SEAL_KEYS | {
+    "platform",
+    "mechanism",
+    "sandbox_exec",
+    "wrap",
+    "denied_read_data_roots",
+    "denied_link_roots",
+    "allowed_read_paths",
+    "rep_env",
+    "run_root",
+    "workspace_root",
+    "dispatch_root",
+    "git_common_root",
+    "real_tmpdir",
+    "config_sanitized",
+    "auth_copied",
+}
+SEAL_REP_ENV_KEYS = {"HOME", "CODEX_HOME", "TMPDIR"}
+SEAL_PLATFORM = "Darwin"
+SEAL_MECHANISM = "sandbox-exec"
 # Roots a counted row must prove were unreadable, relative to the ORIGINAL home.
 SEALED_SKILL_ROOTS = (".agents", ".claude/skills", ".gemini/skills", ".codex/skills")
 TRANSCRIPT_RE = re.compile(r"^(control|treatment)-([1-9][0-9]*)\.txt$")
@@ -798,6 +823,70 @@ def capture_repository_root(skills_dir: Path) -> str:
     return require_absolute_path(str(resolved.parent), "capture repository root")
 
 
+def toml_scalar(value: Any) -> str | None:
+    """One TOML right-hand side, or None when the value is not a scalar."""
+    if isinstance(value, bool):
+        return "true" if value else "false"
+    if isinstance(value, int):
+        return str(value)
+    if isinstance(value, float):
+        return repr(value)
+    if isinstance(value, str):
+        return json.dumps(value, ensure_ascii=False)
+    if isinstance(value, list) and all(
+        isinstance(item, (bool, int, float, str)) for item in value
+    ):
+        rendered = [toml_scalar(item) for item in value]
+        if any(item is None for item in rendered):
+            return None
+        return "[" + ", ".join(item for item in rendered if item is not None) + "]"
+    return None
+
+
+# Top-level scalar keys a sealed rep must not inherit even though they are
+# scalars: `notify` names an operator program codex runs at the end of every
+# turn (on this operator, a computer-use client under ~/.codex).
+SANITIZE_DROP_KEYS = frozenset({"notify"})
+
+
+def sanitize_codex_config(source: Path, target: Path) -> list[str]:
+    """Write TARGET with only SOURCE's top-level scalar keys; return their names.
+
+    The operator's real config.toml carries [mcp_servers.*] tables (which a rep
+    would otherwise start and be able to query, reaching the operator's vaults
+    and tools) and [projects.*] trust entries that name other checkouts holding
+    the same canonical SKILL.md. A sealed rep gets the model and effort settings
+    and nothing else: every table is dropped, and so is every key in
+    SANITIZE_DROP_KEYS.
+    """
+    import tomllib
+
+    raw = read_regular_bytes(source, "producer config", maximum=MAX_INPUT_BYTES * 4)
+    try:
+        parsed = tomllib.loads(raw.decode("utf-8"))
+    except (UnicodeError, tomllib.TOMLDecodeError) as exc:
+        raise MetadataError(f"producer config is not readable TOML: {exc}") from exc
+    kept: list[str] = []
+    lines = [
+        "# Sanitized copy of the operator's codex config for one sealed probe rep.",
+        "# Top-level scalar keys only: every table (mcp_servers, projects, ...) is",
+        "# dropped so the rep starts no operator service and trusts no other checkout.",
+    ]
+    for key in sorted(parsed):
+        if key in SANITIZE_DROP_KEYS:
+            continue
+        rendered = toml_scalar(parsed[key])
+        if rendered is None:
+            continue
+        if not re.fullmatch(r"[A-Za-z0-9_-]+", key):
+            continue
+        kept.append(key)
+        lines.append(f"{key} = {rendered}")
+    target.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    target.chmod(0o600)
+    return kept
+
+
 def legacy_seal() -> dict[str, Any]:
     return {
         "mode": LEGACY_SEAL_MODE,
@@ -813,14 +902,16 @@ def seal_projection(seal: dict[str, Any]) -> dict[str, Any]:
     """The seal fields derived from the seal record itself (not the checkout)."""
     return {
         key: seal[key]
-        for key in (
-            "mode",
-            "denied_read_roots",
-            "writable_roots",
-            "profile_sha256",
-            "original_home",
-        )
+        for key in sorted(set(seal) - {"repository_root"})
     }
+
+
+def optional_normalized_path(value: Any, field: str) -> str | None:
+    if value is None:
+        return None
+    return require_absolute_path(
+        os.path.normpath(require_text(value, field)), field
+    )
 
 
 def seal_block_from_record(
@@ -838,6 +929,21 @@ def seal_block_from_record(
         "denied_read_roots",
         "writable_roots",
         "real_home",
+        "platform",
+        "mechanism",
+        "sandbox_exec",
+        "wrap",
+        "denied_read_data_roots",
+        "denied_link_roots",
+        "allowed_read_paths",
+        "rep_env",
+        "run_root",
+        "workspace_root",
+        "dispatch_root",
+        "git_common_root",
+        "real_tmpdir",
+        "config_sanitized",
+        "auth_copied",
     }
     missing = required - set(record)
     if missing:
@@ -859,14 +965,67 @@ def seal_block_from_record(
         if profile is not None or record["profile_sha256"] is not None:
             raise MetadataError(f"{label} profile must be null when the seal_mode is none")
         profile_sha256 = None
+    rep_env_value = record["rep_env"]
+    rep_env = require_exact_object(rep_env_value, SEAL_REP_ENV_KEYS, f"{label} rep_env")
+    config_sanitized = record["config_sanitized"]
+    if config_sanitized is not None:
+        if not isinstance(config_sanitized, list) or not all(
+            isinstance(item, str) for item in config_sanitized
+        ):
+            raise MetadataError(f"{label} config_sanitized must be a list of key names")
+        config_sanitized = list(config_sanitized)
+    wrap = record["wrap"]
+    if not isinstance(wrap, list) or not all(isinstance(item, str) for item in wrap):
+        raise MetadataError(f"{label} wrap must be an array of argv strings")
+    if not isinstance(record["auth_copied"], bool):
+        raise MetadataError(f"{label} auth_copied must be a boolean")
     return {
         "mode": mode,
+        "platform": require_text(record["platform"], f"{label} platform"),
+        "mechanism": require_text(
+            record["mechanism"], f"{label} mechanism", nullable=True
+        ),
+        "sandbox_exec": require_text(
+            record["sandbox_exec"], f"{label} sandbox_exec", nullable=True
+        ),
+        "wrap": list(wrap),
         "denied_read_roots": normalized_path_list(
             record["denied_read_roots"], f"{label} denied_read_roots"
+        ),
+        "denied_read_data_roots": normalized_path_list(
+            record["denied_read_data_roots"], f"{label} denied_read_data_roots"
+        ),
+        "denied_link_roots": normalized_path_list(
+            record["denied_link_roots"], f"{label} denied_link_roots"
         ),
         "writable_roots": normalized_path_list(
             record["writable_roots"], f"{label} writable_roots"
         ),
+        "allowed_read_paths": normalized_path_list(
+            record["allowed_read_paths"], f"{label} allowed_read_paths"
+        ),
+        "rep_env": {
+            key: require_absolute_path(
+                os.path.normpath(require_text(rep_env[key], f"{label} rep_env {key}")),
+                f"{label} rep_env {key}",
+            )
+            for key in sorted(SEAL_REP_ENV_KEYS)
+        },
+        "run_root": optional_normalized_path(record["run_root"], f"{label} run_root"),
+        "workspace_root": optional_normalized_path(
+            record["workspace_root"], f"{label} workspace_root"
+        ),
+        "dispatch_root": optional_normalized_path(
+            record["dispatch_root"], f"{label} dispatch_root"
+        ),
+        "git_common_root": optional_normalized_path(
+            record["git_common_root"], f"{label} git_common_root"
+        ),
+        "real_tmpdir": optional_normalized_path(
+            record["real_tmpdir"], f"{label} real_tmpdir"
+        ),
+        "config_sanitized": config_sanitized,
+        "auth_copied": record["auth_copied"],
         "profile_sha256": profile_sha256,
         "original_home": require_absolute_path(
             os.path.normpath(require_text(record["real_home"], f"{label} real_home")),
@@ -891,12 +1050,29 @@ def read_seal_file(
     if not path.exists():
         if seal_path is not None:
             raise MetadataError(f"seal record not found: {seal_path}")
+        home = original_home()
         return {
             "mode": "none",
+            "platform": platform.system(),
+            "mechanism": None,
+            "sandbox_exec": None,
+            "wrap": [],
             "denied_read_roots": [],
+            "denied_read_data_roots": [],
+            "denied_link_roots": [],
             "writable_roots": [],
+            "allowed_read_paths": [],
+            "rep_env": {"HOME": home, "CODEX_HOME": os.path.join(home, ".codex"),
+                        "TMPDIR": os.path.normpath(tempfile.gettempdir())},
+            "run_root": None,
+            "workspace_root": None,
+            "dispatch_root": None,
+            "git_common_root": None,
+            "real_tmpdir": None,
+            "config_sanitized": None,
+            "auth_copied": False,
             "profile_sha256": None,
-            "original_home": original_home(),
+            "original_home": home,
             "repository_root": repo_root,
         }
     record = parse_json_bytes(
@@ -906,7 +1082,19 @@ def read_seal_file(
 
 
 def validate_seal(value: Any) -> dict[str, Any]:
-    seal = require_exact_object(value, SEAL_KEYS, "capture contract seal")
+    """Accept the hardened seal block or the 2026-09-03 first shape.
+
+    Both shapes replay. Only the hardened shape can be tier coverage; the
+    narrower one is refused by verify_seal_for_coverage, not here, so an older
+    capture stays readable instead of failing to load at all.
+    """
+    if not isinstance(value, dict):
+        raise MetadataError("capture contract seal must be a JSON object")
+    keys = set(value)
+    if keys == LEGACY_SEAL_KEYS:
+        seal = require_exact_object(value, LEGACY_SEAL_KEYS, "capture contract seal")
+    else:
+        seal = require_exact_object(value, SEAL_KEYS, "capture contract seal")
     mode = require_text(seal["mode"], "seal mode")
     if mode not in SEAL_MODES | {LEGACY_SEAL_MODE}:
         raise MetadataError(f"seal mode is unsupported: {mode!r}")
@@ -918,6 +1106,11 @@ def validate_seal(value: Any) -> dict[str, Any]:
     require_path_list(seal["writable_roots"], "seal writable_roots")
     require_absolute_path(seal["original_home"], "seal original_home")
     require_absolute_path(seal["repository_root"], "seal repository_root")
+    if keys != LEGACY_SEAL_KEYS:
+        require_path_list(seal["denied_read_data_roots"], "seal denied_read_data_roots")
+        require_path_list(seal["denied_link_roots"], "seal denied_link_roots")
+        require_path_list(seal["allowed_read_paths"], "seal allowed_read_paths")
+        require_exact_object(seal["rep_env"], SEAL_REP_ENV_KEYS, "seal rep_env")
     profile_sha256 = seal["profile_sha256"]
     if mode == "seatbelt":
         if not isinstance(profile_sha256, str) or not SHA256_RE.fullmatch(profile_sha256):
@@ -949,10 +1142,22 @@ def seal_covers(denied_roots: list[str], required: str) -> bool:
 
 
 def required_sealed_roots(seal: dict[str, Any]) -> list[str]:
+    """Roots a counted row must prove were unreadable.
+
+    The original home subsumes the four skill roots, but they stay listed so a
+    seal that moved HOME still has to name them. The git common directory's
+    parent is the MAIN checkout a linked worktree shares: the same canonical
+    SKILL.md bytes under a path the checkout deny does not reach. The real
+    TMPDIR is where every other probe run's debris lives.
+    """
     home = seal["original_home"]
-    return [seal["repository_root"]] + [
-        os.path.join(home, relative) for relative in SEALED_SKILL_ROOTS
-    ]
+    roots = [seal["repository_root"], home]
+    roots += [os.path.join(home, relative) for relative in SEALED_SKILL_ROOTS]
+    for key in ("git_common_root", "real_tmpdir"):
+        value = seal.get(key)
+        if value:
+            roots.append(value)
+    return roots
 
 
 def unsealed_roots(seal: dict[str, Any]) -> list[str]:
@@ -964,24 +1169,117 @@ def unsealed_roots(seal: dict[str, Any]) -> list[str]:
     ]
 
 
-def verify_seal_for_coverage(seal: dict[str, Any]) -> None:
+def seal_coverage_failure(seal: dict[str, Any]) -> str | None:
+    """The reason this seal cannot be tier coverage, or None when it can.
+
+    Every bound field is checked, not just the mode: a hand-written record
+    claiming `seal_mode: seatbelt` on Linux with no mechanism and a two-line
+    profile passed the mode-and-roots check that shipped on 2026-09-03.
+    """
     mode = seal["mode"]
     if mode == LEGACY_SEAL_MODE:
-        raise MetadataError(
+        return (
             "tier coverage requires a seatbelt-sealed capture; this capture "
             "contract predates the filesystem seal (legacy-unsealed)"
         )
     if mode != "seatbelt":
-        raise MetadataError(
+        return (
             f"tier coverage requires a seatbelt-sealed capture; seal mode {mode!r} "
             "cannot prove the checkout and skill roots were unreadable"
         )
+    if set(seal) == LEGACY_SEAL_KEYS:
+        return (
+            "tier coverage requires the hardened seal block (2026-09-03 second "
+            "pass): this contract binds only the mode, roots and profile digest, "
+            "so it cannot prove the mechanism, the wrap, the link denies, the "
+            "rep environment or the config sanitization"
+        )
+    if seal["platform"] != SEAL_PLATFORM:
+        return (
+            f"tier coverage requires a {SEAL_PLATFORM} seatbelt capture; the seal "
+            f"records platform {seal['platform']!r}"
+        )
+    if seal["mechanism"] != SEAL_MECHANISM:
+        return (
+            f"tier coverage requires mechanism {SEAL_MECHANISM!r}; the seal records "
+            f"{seal['mechanism']!r}"
+        )
+    sandbox_exec = seal["sandbox_exec"]
+    if not isinstance(sandbox_exec, str) or not sandbox_exec.startswith("/"):
+        return "tier coverage requires the resolved sandbox-exec path in the seal"
+    expected_wrap = [SEAL_MECHANISM, "-p", seal["profile_sha256"]]
+    if seal["wrap"] != expected_wrap:
+        return (
+            "tier coverage requires the dispatch wrap to be the bound profile: "
+            f"expected {expected_wrap}, seal records {seal['wrap']}"
+        )
+    if seal["config_sanitized"] is None:
+        return (
+            "tier coverage requires the rep's producer config to be sanitized; "
+            "an unsanitized config starts the operator's MCP servers inside the rep"
+        )
+    if not seal["auth_copied"]:
+        return (
+            "tier coverage requires auth.json to be COPIED into the scratch "
+            "CODEX_HOME; a symlink cannot resolve under the read-denied home"
+        )
     missing = unsealed_roots(seal)
     if missing:
-        raise MetadataError(
-            "tier coverage requires the seal to deny reads under the checkout and "
-            "every skill root; denied_read_roots omit: " + ", ".join(missing)
+        return (
+            "tier coverage requires the seal to deny reads under the checkout, the "
+            "original home, the shared git checkout and the real temp root; "
+            "denied_read_roots omit: " + ", ".join(missing)
         )
+    dispatch = seal["dispatch_root"]
+    if not dispatch:
+        return "tier coverage requires the harness dispatch directory in the seal"
+    if not seal_covers(seal["denied_read_data_roots"], dispatch):
+        return (
+            "tier coverage requires the dispatch directory to be read-data denied: "
+            f"{dispatch}"
+        )
+    if not seal_covers(seal["denied_link_roots"], dispatch):
+        return (
+            "tier coverage requires link and clone to be denied on the dispatch "
+            f"directory: {dispatch}"
+        )
+    for root in (seal["repository_root"], seal["original_home"]):
+        if not seal_covers(seal["denied_link_roots"], root):
+            return (
+                "tier coverage requires link and clone to be denied wherever reads "
+                f"are; denied_link_roots omit: {root}"
+            )
+    workspace = seal["workspace_root"]
+    if not workspace or not seal_covers(seal["writable_roots"], workspace):
+        return (
+            "tier coverage requires the rep workspace to sit under the seal's "
+            f"writable roots: {workspace!r}"
+        )
+    for key in ("HOME", "CODEX_HOME", "TMPDIR"):
+        value = seal["rep_env"][key]
+        if not seal_covers(seal["writable_roots"], value):
+            return (
+                f"tier coverage requires the rep's {key} to be a writable scratch "
+                f"path inside the seal: {value}"
+            )
+        if seal_covers([seal["original_home"]], value):
+            return (
+                f"tier coverage requires the rep's {key} to sit OUTSIDE the "
+                f"operator's home: {value}"
+            )
+    for allowed in seal["allowed_read_paths"]:
+        if seal_covers([seal["repository_root"]], allowed):
+            return (
+                "tier coverage refuses a seal that re-allows a read inside the "
+                f"checkout: {allowed}"
+            )
+    return None
+
+
+def verify_seal_for_coverage(seal: dict[str, Any]) -> None:
+    failure = seal_coverage_failure(seal)
+    if failure is not None:
+        raise MetadataError(failure)
 
 
 def counterbalanced_schedule(reps: int) -> list[dict[str, Any]]:
@@ -1811,6 +2109,7 @@ def probe_input_event(
     rep: int,
     prompt: bytes,
     workspace: str | None = None,
+    workspace_reset: bool = False,
 ) -> dict[str, Any]:
     expected = decode_prompts(contract["prompts"])[arm]
     if prompt != expected:
@@ -1823,11 +2122,16 @@ def probe_input_event(
         "prompt": embedded_bytes_record(prompt, f"{arm}.prompt"),
     }
     if workspace is not None:
-        # The fresh per-rep cwd the harness dispatched into (2026-09-03
-        # sibling-prompt-read fix). Optional so pre-fix v3 sets still verify.
+        # The cwd the harness dispatched into (2026-09-03 sibling-prompt-read
+        # fix). Optional so pre-fix v3 sets still verify.
         text = require_text(workspace, f"{arm}-{rep} workspace")
         assert isinstance(text, str)
         event["workspace"] = text
+    if workspace_reset:
+        # The workspace is one fixed path under the run directory, emptied
+        # before this rep rather than freshly mktemp'd, so the seatbelt profile
+        # stays constant across the capture and binds one digest.
+        event["workspace_reset"] = True
     return event
 
 
@@ -1869,18 +2173,42 @@ def validate_structured_transcript(
     label: str,
 ) -> tuple[str, bytes]:
     events = parse_jsonl_events(transcript, label)
-    # `workspace` (the per-rep cwd) is optional: sets captured before the
-    # 2026-09-03 per-rep workspace fix carry the five bound keys only.
-    keys = PROBE_INPUT_KEYS | (
-        {"workspace"} if isinstance(events[0], dict) and "workspace" in events[0] else set()
+    # `workspace` (the rep cwd) and `workspace_reset` are optional in shape:
+    # sets captured before the 2026-09-03 workspace fixes carry the five bound
+    # keys only. A hardened seatbelt seal REQUIRES both, checked below.
+    optional = {"workspace", "workspace_reset"}
+    present = optional & set(events[0]) if isinstance(events[0], dict) else set()
+    first = require_exact_object(
+        events[0], PROBE_INPUT_KEYS | present, "probe input event"
     )
-    first = require_exact_object(events[0], keys, "probe input event")
     expected_prompt = decode_prompts(contract["prompts"])[arm]
     expected_event = probe_input_event(
-        contract, arm, rep, expected_prompt, workspace=first.get("workspace")
+        contract,
+        arm,
+        rep,
+        expected_prompt,
+        workspace=first.get("workspace"),
+        workspace_reset=bool(first.get("workspace_reset")),
     )
     if first != expected_event:
         raise MetadataError(f"{label} probe input event does not match bound {arm}-{rep} prompt")
+    seal = contract.get("seal")
+    if isinstance(seal, dict) and seal.get("mode") == "seatbelt" and set(seal) == SEAL_KEYS:
+        workspace = first.get("workspace")
+        if not workspace:
+            raise MetadataError(
+                f"{label} probe input event records no workspace; a sealed rep must "
+                "bind the directory it ran in"
+            )
+        if not first.get("workspace_reset"):
+            raise MetadataError(
+                f"{label} probe input event does not record workspace_reset; a sealed "
+                "rep must start from an emptied workspace"
+            )
+        if not seal_covers(seal["writable_roots"], workspace):
+            raise MetadataError(
+                f"{label} ran in {workspace}, which is not under the seal's writable roots"
+            )
     if any(event.get("type") == PROBE_INPUT_EVENT for event in events[1:]):
         raise MetadataError(f"{label} contains more than one probe input event")
     return validate_codex_runtime_events(events[1:], label)
@@ -1894,10 +2222,13 @@ def assemble_transcript(
     arm: str,
     rep: int,
     workspace: str | None = None,
+    workspace_reset: bool = False,
 ) -> bytes:
     contract = load_capture_contract(fixture_dir, expected_probe)
     prompt = read_regular_bytes(prompt_path, "actual dispatch prompt", maximum=MAX_INPUT_BYTES * 2 + 16)
-    input_event = probe_input_event(contract, arm, rep, prompt, workspace=workspace)
+    input_event = probe_input_event(
+        contract, arm, rep, prompt, workspace=workspace, workspace_reset=workspace_reset
+    )
     runtime = read_regular_bytes(
         runtime_path, "Codex JSONL runtime stream", maximum=MAX_TRANSCRIPT_BYTES
     )
@@ -1963,6 +2294,15 @@ SIBLING_ARTIFACT_PATTERN = re.compile(
     r"|fixture-set\.json"
     r"|\.codex\.(?:jsonl|stderr)\b"
     r"|\.(?:capture|dispatch)\.[A-Za-z0-9]{6}\b"
+    # The 2026-09-03 second pass renamed the harness temp directories: the run
+    # directory is probe-run.XXXXXX holding dispatch/, home/, ws/ and tmp/, and
+    # the earlier shape used probe-dispatch/probe-ws/probe-seal. The hyphen
+    # forms never matched the dotted stage pattern above. Only the
+    # harness-private children of a run root are traps: ws/ and tmp/ ARE the
+    # rep's own cwd and TMPDIR under this design, so naming them by absolute
+    # path is ordinary work, not contact with another rep's material.
+    r"|probe-(?:dispatch|ws|seal)\.[A-Za-z0-9]{6}\b"
+    r"|probe-run\.[A-Za-z0-9]{6}/(?:dispatch|home)\b"
 )
 # A sibling rep's artifact by name, as it appears in a listing (`rg --files`,
 # `ls`, `find`) or a read.
@@ -2435,6 +2775,9 @@ def verify_scorecard(
     # The seal is the prevention for skill-read contamination; a counted row
     # must prove the dispatch ran with the checkout and skill roots unreadable.
     seal = load_capture_contract(fixture_dir, ledger_probe)["seal"]
+    # Eligibility first: a seal that cannot be coverage should say WHY, not fail
+    # on a shape mismatch against its own scorecard copy.
+    verify_seal_for_coverage(seal)
     if scorecard.get("seal") is not None:
         scorecard_seal = seal_block_from_record(
             scorecard["seal"], "scorecard seal", seal["repository_root"]
@@ -2443,7 +2786,6 @@ def verify_scorecard(
             raise MetadataError(
                 "scorecard seal copy disagrees with the seal bound in the capture contract"
             )
-    verify_seal_for_coverage(seal)
     if not identity["coverage_eligible"]:
         raise MetadataError(
             "tier coverage requires a coverage-eligible producer identity bound "
@@ -2899,6 +3241,7 @@ def parse_args() -> argparse.Namespace:
     assemble.add_argument("--arm", choices=("control", "treatment"), required=True)
     assemble.add_argument("--rep", type=int, required=True)
     assemble.add_argument("--workspace", default=None)
+    assemble.add_argument("--workspace-reset", action="store_true")
 
     tiers = subparsers.add_parser("tier-skills")
     tiers.add_argument("--skills-dir", type=Path, required=True)
@@ -2920,6 +3263,10 @@ def parse_args() -> argparse.Namespace:
 
     write_output = subparsers.add_parser("write-output")
     write_output.add_argument("--path", type=Path, required=True)
+
+    sanitize = subparsers.add_parser("sanitize-codex-config")
+    sanitize.add_argument("--source", type=Path, required=True)
+    sanitize.add_argument("--target", type=Path, required=True)
     return parser.parse_args()
 
 
@@ -3000,9 +3347,12 @@ def main() -> int:
                 args.arm,
                 args.rep,
                 workspace=args.workspace,
+                workspace_reset=args.workspace_reset,
             )
             sys.stdout.buffer.write(encoded)
             return 0
+        elif args.command == "sanitize-codex-config":
+            result = sanitize_codex_config(args.source, args.target)
         elif args.command == "tier-skills":
             result = {"skills": tier_skills(args.skills_dir)}
         elif args.command == "snapshot":

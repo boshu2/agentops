@@ -62,23 +62,29 @@ SH
 }
 
 # write_seal PATH MODE [DENIED_ROOT...] — write the harness-shaped seal record
-# (agentops-skill-probe-seal.v1) with REAL_HOME as the recorded real home.
+# (agentops-skill-probe-seal.v1) with REAL_HOME as the recorded real home. The
+# run-directory paths are the fictional shape the harness builds: one run root
+# under the (denied) real temp root holding home/, ws/, tmp/ and dispatch/.
 write_seal() {
     local path="$1" mode="$2"
     shift 2
-    python3 - "$path" "$mode" "$REAL_HOME" "$@" <<'PY'
+    python3 - "$path" "$mode" "$REAL_HOME" "$FIX_REAL" "$@" <<'SEALPY'
 import hashlib, json, pathlib, sys
 
 path = pathlib.Path(sys.argv[1])
 mode = sys.argv[2]
 real_home = sys.argv[3]
-denied = sys.argv[4:]
+git_common_root = sys.argv[4]
+denied = sys.argv[5:]
 sealed = mode == "seatbelt"
+run_root = "/private/tmp/probe-run.aaaaaa"
+dispatch = run_root + "/dispatch"
 profile = None
 if sealed:
     profile = "(version 1)\n(allow default)\n(deny file-read*\n" + "".join(
         f'  (subpath "{root}")\n' for root in denied
     ) + ")"
+profile_sha = ("sha256:" + hashlib.sha256(profile.encode()).hexdigest()) if sealed else None
 record = {
     "schema": "agentops-skill-probe-seal.v1",
     "seal_mode": mode,
@@ -86,24 +92,43 @@ record = {
     "mechanism": "sandbox-exec" if sealed else None,
     "sandbox_exec": "/usr/bin/sandbox-exec" if sealed else None,
     "platform": "Darwin",
-    "wrap": ["sandbox-exec", "-p", profile] if sealed else [],
+    "wrap": ["sandbox-exec", "-p", profile_sha] if sealed else [],
     "profile": profile,
-    "profile_file": "/private/tmp/probe-seal/seal.sb" if sealed else None,
-    "profile_sha256": ("sha256:" + hashlib.sha256(profile.encode()).hexdigest()) if sealed else None,
+    "profile_file": run_root + "/home/seal.sb" if sealed else None,
+    "profile_sha256": profile_sha,
     "denied_read_roots": denied,
-    "writable_roots": ["/private/tmp/probe-ws", "/private/tmp/probe-seal"] if sealed else [],
-    "rep_env": {"HOME": "/private/tmp/probe-seal", "CODEX_HOME": "/private/tmp/probe-seal/.codex"},
+    "denied_read_data_roots": [dispatch] if sealed else [],
+    "denied_link_roots": (list(denied) + [dispatch]) if sealed else [],
+    "writable_roots": (
+        [run_root + "/home", run_root + "/ws", run_root + "/tmp", "/dev"] if sealed else []
+    ),
+    "allowed_read_paths": [],
+    "rep_env": {
+        "HOME": run_root + "/home",
+        "CODEX_HOME": run_root + "/home/.codex",
+        "TMPDIR": run_root + "/tmp",
+    },
     "real_home": real_home,
     "real_codex_home": real_home + "/.codex",
-    "auth_links": ["auth.json"] if sealed else [],
+    "real_tmpdir": "/private/tmp" if sealed else None,
+    "git_common_root": git_common_root if sealed else None,
+    "run_root": run_root if sealed else None,
+    "workspace_root": run_root + "/ws" if sealed else None,
+    "dispatch_root": dispatch if sealed else None,
+    "config_sanitized": ["model", "model_reasoning_effort"] if sealed else None,
+    "auth_copied": bool(sealed),
 }
 path.write_text(json.dumps(record, indent=2, sort_keys=True) + "\n")
-PY
+SEALPY
 }
 
+# The roots a hardened seal must deny: the checkout (also the shared git root in
+# these fixtures), the operator home, the four skill roots under it, and the
+# real temp root that holds every other run's debris.
 full_denied_roots() {
-    printf '%s\n' "$FIX_REAL" "$REAL_HOME/.agents" "$REAL_HOME/.claude/skills" \
-        "$REAL_HOME/.gemini/skills" "$REAL_HOME/.codex/skills"
+    printf '%s\n' "$FIX_REAL" "$REAL_HOME" "$REAL_HOME/.agents" \
+        "$REAL_HOME/.claude/skills" "$REAL_HOME/.gemini/skills" \
+        "$REAL_HOME/.codex/skills" /private/tmp
 }
 
 snapshot() {
@@ -135,8 +160,16 @@ position = next(
     for item in contract["schedule"]
     if item["arm"] == arm and item["rep"] == rep
 )
+event = {
+    "type": "agentops.probe-input.v1", "arm": arm, "rep": rep,
+    "position": position, "prompt": prompt,
+}
+seal = contract.get("seal") or {}
+if seal.get("mode") == "seatbelt" and seal.get("workspace_root"):
+    event["workspace"] = seal["workspace_root"]
+    event["workspace_reset"] = True
 events = [
-    {"type": "agentops.probe-input.v1", "arm": arm, "rep": rep, "position": position, "prompt": prompt},
+    event,
     {"type": "thread.started", "thread_id": f"seal-{directory.name}-{name}"},
     {"type": "turn.started"},
     {"type": "item.completed", "item": {"id": f"item-{name}", "type": "agent_message", "text": body}},
@@ -427,8 +460,16 @@ started = {
     "aggregated_output": "", "exit_code": None, "status": "in_progress",
 }
 completed = dict(started, aggregated_output=output, exit_code=0, status="completed")
+event = {
+    "type": "agentops.probe-input.v1", "arm": arm, "rep": rep,
+    "position": position, "prompt": prompt,
+}
+seal = contract.get("seal") or {}
+if seal.get("mode") == "seatbelt" and seal.get("workspace_root"):
+    event["workspace"] = seal["workspace_root"]
+    event["workspace_reset"] = True
 events = [
-    {"type": "agentops.probe-input.v1", "arm": arm, "rep": rep, "position": position, "prompt": prompt},
+    event,
     {"type": "thread.started", "thread_id": f"sibling-{directory.name}-{name}"},
     {"type": "turn.started"},
     {"type": "item.started", "item": started},
@@ -501,4 +542,244 @@ score() {
     [ "$(json_field "$output" per_rep.0.control)" = "ABSENT" ]
     [[ "$stderr" == *"skill-read-contamination"* ]]
     [[ "$stderr" != *"sibling-prompt-read"* ]]
+}
+
+# coverage_reason CONTRACT -> the reason the bound seal cannot be tier coverage,
+# or ELIGIBLE. Drives the exact function verify-scorecard calls.
+coverage_reason() {
+    python3 - "$META_TOOL" "$1" <<'REASONPY'
+import importlib.util, json, sys
+
+spec = importlib.util.spec_from_file_location("probe_fixture_metadata", sys.argv[1])
+module = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(module)
+contract = json.load(open(sys.argv[2], encoding="utf-8"))
+seal = module.validate_seal(contract["seal"])
+print(module.seal_coverage_failure(seal) or "ELIGIBLE")
+REASONPY
+}
+
+@test "the seal block is coverage only when every bound field proves the sandbox" {
+    local directory="$PROBE_DIR/fixtures-eligibility"
+    local contract="$directory/capture-contract.json"
+    mkdir -p "$directory"
+    local -a roots
+    mapfile -t roots < <(full_denied_roots)
+    write_seal "$directory/seal.json" seatbelt "${roots[@]}"
+    snapshot "$directory" >/dev/null
+
+    run coverage_reason "$contract"
+    [ "$status" -eq 0 ]
+    [ "$output" = "ELIGIBLE" ]
+
+    # The Codex CONTRACT-SEAL-004 record: seatbelt claimed on Linux with no
+    # mechanism and a two-line profile. The pre-repair block bound only mode,
+    # roots, digest and home, so it counted.
+    rebind_contract "$contract" '
+contract["seal"]["platform"] = "Linux"
+contract["seal"]["mechanism"] = None
+'
+    run coverage_reason "$contract"
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"platform 'Linux'"* ]]
+
+    rebind_contract "$contract" 'contract["seal"]["platform"] = "Darwin"'
+    run coverage_reason "$contract"
+    [[ "$output" == *"requires mechanism 'sandbox-exec'"* ]]
+
+    rebind_contract "$contract" 'contract["seal"]["mechanism"] = "sandbox-exec"'
+    rebind_contract "$contract" 'contract["seal"]["wrap"] = ["sandbox-exec", "-p", "(version 1)"]'
+    run coverage_reason "$contract"
+    [[ "$output" == *"dispatch wrap to be the bound profile"* ]]
+}
+
+@test "a seatbelt seal that omits a required root or a hardening step is not coverage" {
+    local directory="$PROBE_DIR/fixtures-partial"
+    local contract="$directory/capture-contract.json"
+    mkdir -p "$directory"
+    local -a roots
+    mapfile -t roots < <(full_denied_roots)
+    write_seal "$directory/seal.json" seatbelt "${roots[@]}"
+    snapshot "$directory" >/dev/null
+
+    rebind_contract "$contract" '
+contract["seal"]["denied_read_roots"] = [
+    root for root in contract["seal"]["denied_read_roots"] if root != "/private/tmp"
+]
+'
+    run coverage_reason "$contract"
+    [[ "$output" == *"denied_read_roots omit"* ]]
+    [[ "$output" == *"/private/tmp"* ]]
+
+    write_seal "$directory/seal.json" seatbelt "${roots[@]}"
+    rm "$contract"
+    snapshot "$directory" >/dev/null
+    rebind_contract "$contract" 'contract["seal"]["config_sanitized"] = None'
+    run coverage_reason "$contract"
+    [[ "$output" == *"producer config to be sanitized"* ]]
+
+    rebind_contract "$contract" '
+contract["seal"]["config_sanitized"] = ["model"]
+contract["seal"]["auth_copied"] = False
+'
+    run coverage_reason "$contract"
+    [[ "$output" == *"auth.json to be COPIED"* ]]
+
+    rebind_contract "$contract" '
+contract["seal"]["auth_copied"] = True
+contract["seal"]["denied_link_roots"] = []
+'
+    run coverage_reason "$contract"
+    [[ "$output" == *"link and clone to be denied"* ]]
+
+    rebind_contract "$contract" '
+seal = contract["seal"]
+seal["denied_link_roots"] = seal["denied_read_roots"] + [seal["dispatch_root"]]
+seal["rep_env"]["HOME"] = seal["original_home"] + "/scratch"
+'
+    run coverage_reason "$contract"
+    [[ "$output" == *"HOME"* ]]
+}
+
+@test "the 2026-09-03 first-shape seal block still replays but is never coverage" {
+    local directory="$PROBE_DIR/fixtures-firstshape"
+    local contract="$directory/capture-contract.json"
+    mkdir -p "$directory"
+    local -a roots
+    mapfile -t roots < <(full_denied_roots)
+    write_seal "$directory/seal.json" seatbelt "${roots[@]}"
+    snapshot "$directory" >/dev/null
+    rm "$directory/seal.json"
+    rebind_contract "$contract" '
+keep = {
+    "mode", "denied_read_roots", "writable_roots", "profile_sha256",
+    "original_home", "repository_root",
+}
+contract["seal"] = {k: v for k, v in contract["seal"].items() if k in keep}
+'
+
+    # It still loads: an older capture stays readable rather than failing shut.
+    run python3 "$META_TOOL" capture-file --fixture-dir "$directory" --probe demo --name question.md
+    [ "$status" -eq 0 ]
+
+    run coverage_reason "$contract"
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"hardened seal block"* ]]
+}
+
+@test "a sealed rep must bind the workspace it ran in and its reset" {
+    local directory="$PROBE_DIR/fixtures-noworkspace"
+    mkdir -p "$directory"
+    local -a roots
+    mapfile -t roots < <(full_denied_roots)
+    write_seal "$directory/seal.json" seatbelt "${roots[@]}"
+    snapshot "$directory" >/dev/null
+    for rep in 1 2; do
+        write_transcript "$directory" "control-$rep" ABSENT
+        write_transcript "$directory" "treatment-$rep" ACTION
+    done
+    # Strip the workspace binding from one rep BEFORE the manifest binds the
+    # bytes, so the digest check cannot mask the semantic one: a sealed capture
+    # cannot accept a transcript that will not say where it ran.
+    python3 - "$directory/control-1.txt" <<'STRIPPY'
+import json, pathlib, sys
+path = pathlib.Path(sys.argv[1])
+lines = path.read_text(encoding="utf-8").splitlines()
+event = json.loads(lines[0])
+event.pop("workspace", None)
+event.pop("workspace_reset", None)
+lines[0] = json.dumps(event, sort_keys=True, separators=(",", ":"))
+path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+STRIPPY
+    run verify "$directory"
+    [ "$status" -eq 2 ]
+    [[ "$output" == *"workspace"* ]]
+}
+
+@test "a sealed rep whose workspace is outside the seal's writable roots is refused" {
+    local directory="$PROBE_DIR/fixtures-badworkspace"
+    mkdir -p "$directory"
+    local -a roots
+    mapfile -t roots < <(full_denied_roots)
+    write_seal "$directory/seal.json" seatbelt "${roots[@]}"
+    snapshot "$directory" >/dev/null
+    for rep in 1 2; do
+        write_transcript "$directory" "control-$rep" ABSENT
+        write_transcript "$directory" "treatment-$rep" ACTION
+    done
+    python3 - "$directory/treatment-2.txt" <<'MOVEPY'
+import json, pathlib, sys
+path = pathlib.Path(sys.argv[1])
+lines = path.read_text(encoding="utf-8").splitlines()
+event = json.loads(lines[0])
+event["workspace"] = "/private/tmp/somewhere-else"
+lines[0] = json.dumps(event, sort_keys=True, separators=(",", ":"))
+path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+MOVEPY
+    run create "$directory"
+    [ "$status" -eq 2 ]
+    [[ "$output" == *"writable roots"* ]]
+    [ ! -e "$directory/fixture-set.json" ]
+}
+
+@test "the sibling trap names the run directory's harness-private children" {
+    local directory="$PROBE_DIR/fixtures-runnames"
+    mkdir -p "$directory"
+    snapshot "$directory" >/dev/null
+    write_command_transcript "$directory" control-1 ACTION \
+        "/bin/zsh -lc 'cat /private/tmp/probe-run.Ab12Cd/dispatch/treatment-1.prompt'" ""
+    write_command_transcript "$directory" control-2 ACTION \
+        "/bin/zsh -lc 'ls /private/tmp/probe-ws.Ab12Cd'" ""
+    write_command_transcript "$directory" treatment-1 ACTION \
+        "/bin/zsh -lc 'ls /private/tmp/probe-run.Ab12Cd/home/.codex'" ""
+    # Its OWN workspace by absolute path is ordinary work, not a sibling read.
+    write_command_transcript "$directory" treatment-2 ACTION \
+        "/bin/zsh -lc 'ls /private/tmp/probe-run.Ab12Cd/ws'" "notes.md"
+    create "$directory" >/dev/null
+
+    run --separate-stderr score "$directory"
+    [ "$status" -eq 0 ]
+    [ "$(json_field "$output" per_rep.0.control)" = "DEGRADED" ]
+    [ "$(json_field "$output" per_rep.1.control)" = "DEGRADED" ]
+    [ "$(json_field "$output" per_rep.0.treatment)" = "DEGRADED" ]
+    [ "$(json_field "$output" per_rep.1.treatment)" = "PRESENT" ]
+    [[ "$stderr" == *"sibling-prompt-read"* ]]
+}
+
+@test "the sanitized producer config keeps top-level scalars and drops every table" {
+    local source="$BATS_TEST_TMPDIR/config.toml"
+    local target="$BATS_TEST_TMPDIR/sanitized.toml"
+    cat > "$source" <<'TOML'
+model = "gpt-5.6-luna"
+model_reasoning_effort = "low"
+web_search = true
+service_tier = 3
+notify = ["/Users/operator/.codex/hook.app/Contents/MacOS/hook", "turn-ended"]
+
+[mcp_servers.smart-connections]
+command = "npx"
+args = ["-y", "smart-connections-mcp"]
+
+[mcp_servers.smart-connections.env]
+OBSIDIAN_VAULT = "/Users/operator/vault"
+
+[projects."/Users/operator/dev/agentops"]
+trust_level = "trusted"
+TOML
+
+    run python3 "$META_TOOL" sanitize-codex-config --source "$source" --target "$target"
+
+    [ "$status" -eq 0 ]
+    [ "$output" = '["model","model_reasoning_effort","service_tier","web_search"]' ]
+    grep -q '^model = "gpt-5.6-luna"$' "$target"
+    grep -q '^model_reasoning_effort = "low"$' "$target"
+    grep -q '^web_search = true$' "$target"
+    grep -q '^service_tier = 3$' "$target"
+    ! grep -q 'mcp_servers' "$target"
+    ! grep -q 'OBSIDIAN_VAULT' "$target"
+    ! grep -q 'projects' "$target"
+    ! grep -q 'npx' "$target"
+    # `notify` is a scalar, but it names an operator program codex runs at the
+    # end of every turn; a sealed rep must not inherit it.
+    ! grep -q 'notify' "$target"
 }
