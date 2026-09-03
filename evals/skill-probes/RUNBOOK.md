@@ -219,7 +219,10 @@ ancestor breaks `getcwd`, which is why the profile allows
 `file-read-metadata` on `(path-ancestors "<run>/ws")`.
 
 ### premortem-plan-shape-t2, sealed, gpt-5.6-luna
-low: control 0/2, treatment 1/1 usable, BEHAVIORAL. xhigh: 0/2 vs 0/2, INERT.
-Headroom SEPARATED at both. Scorecards under `docs/evals/scorecards/2026-09-03/`.
-Both sets ran under the FIRST-pass seal, so they are replayable but not tier
-coverage until they are recaptured under the hardened one.
+First-pass seal (superseded, deleted): low control 0/2, treatment 1/1 usable,
+BEHAVIORAL; xhigh 0/2 vs 0/2, INERT. Hardened seal (the rows that count,
+`fixtures-{low,xhigh}-2026-09-03-hardened`): low 0/2 vs 0/2, INERT; xhigh
+control 0/2, treatment 2/2, BEHAVIORAL. Headroom SEPARATED at both. No rep in
+the hardened sets ran a single command. The two captures disagree on which
+effort level moves; with two reps per arm that is variance, and the ledger says
+so. Scorecards under `docs/evals/scorecards/2026-09-03/`.

@@ -781,22 +781,20 @@ PY
     [ "$status" -eq 0 ]
     # 12 product/judgment-tier badges and no declared-denominator exclusion:
     # the `goals` alias was retired on 2026-09-03 (ADR-0018), so nothing is
-    # excluded and the denominator is the badge count. The two v3 sets
-    # committed on 2026-09-03 carry the FIRST-SHAPE seal block, which the
-    # second pass no longer accepts as coverage; they are recaptured under the
-    # hardened seal before this branch merges, so the honest headline here is
-    # 0/12 rather than a badge resting on a seal nothing can check.
+    # excluded and the denominator is the badge count. premortem is measured
+    # by the 2026-09-03 recapture under the hardened seal (the first-pass v3
+    # sets were deleted with their seal); the headline is 1/12.
     [ "$(json_field "$output" tier_total)" = "12" ]
     [ "$(json_field "$output" excluded_count)" = "0" ]
     [ "$(json_field "$output" gated_total)" = "12" ]
-    [ "$(json_field "$output" measured)" = "0" ]
-    [ "$(json_field "$output" unmeasured_count)" = "12" ]
+    [ "$(json_field "$output" measured)" = "1" ]
+    [ "$(json_field "$output" unmeasured_count)" = "11" ]
 
     # Every set the ledger points at reports its EFFECTIVE eligibility, so a
     # reader meets it before the scorecard's own immutable claim.
     run --separate-stderr bash "$GATE"
     [ "$status" -eq 0 ]
-    [[ "$output" == *"eligible=false ("* ]]
+    [[ "$output" == *"set premortem/premortem-plan-shape-t2: eligible=true (verified)"* ]]
 }
 
 @test "a set's effective eligibility is reported per set in text and JSON" {

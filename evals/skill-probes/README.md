@@ -132,9 +132,9 @@ profile_sha256, original_home, repository_root}`, which a hand-written record
 claiming `seatbelt` on Linux with no mechanism satisfied. Contracts in that
 shape still load and still replay; they are never tier coverage, and they say
 so with `seal-block-superseded`. The contract name stays
-`agentops-skill-probe-capture.v3` because the only v3 sets are the two
-committed on 2026-09-03 on this unmerged branch, and both are recaptured under
-the hardened seal before merge.
+`agentops-skill-probe-capture.v3` because the only v3 sets ever committed were
+the two first-pass sets of 2026-09-03, which were deleted and recaptured under
+the hardened seal the same day.
 
 **The rep's producer config is sanitized.** The operator's `config.toml`
 carries `[mcp_servers.*]` tables (a rep would otherwise start those servers and
