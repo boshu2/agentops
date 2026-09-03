@@ -164,7 +164,7 @@ PYCHECK
         fi
     }
 
-    expect validate 'Freshly judge a finished change against its acceptance: PASS, FAIL, or NOT_PROVEN. Not for claim-vs-tree checks; that is reality-check. Triggers: "validate", "is this proven".'
+    expect validate 'Freshly judge a finished change against its acceptance: PASS, FAIL, or NOT_PROVEN. Not for claim-vs-tree checks; that is reality-check. Triggers: "validate", "is this proven", "check this change".'
     expect rpi 'Coordinate one RPI traversal: one bounded Plan and Implement experiment, then fresh Validate and a bounded repair phase to convergence. Triggers: "run rpi", "run one traversal", "execute this plan", orchestration or worker delegation that implements changes.'
     expect plan 'Shape or refine the existing bead or caller intent without a second planning artifact. Triggers: "plan", "discover and plan", "shape this goal", "review write scope", "check scope boundaries", "scope this change".'
     expect council 'Gather independent views on a high-stakes judgment. Not for one-judge plan challenge; that is premortem. Triggers: "council", "multi-judge review", "independent perspectives".'

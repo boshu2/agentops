@@ -45,6 +45,9 @@ STUB_EOF
   jq -e 'has("schema_version") and has("suite_id") and has("context_off") and has("context_on") and has("aggregate_delta")' "$TMP/sc.json" >/dev/null
   jq -e '.seeds_per_arm == 2' "$TMP/sc.json" >/dev/null
   jq -e '.evidence_kind == "harness_plumbing"' "$TMP/sc.json" >/dev/null
+  # The default label is a harness default, not a classification it checked.
+  [ "$(jq -r '.evidence_attestation.basis' "$TMP/sc.json")" = "harness_default" ]
+  [ "$(jq -r '.evidence_attestation.verified' "$TMP/sc.json")" = "false" ]
 }
 
 @test "no delta when both arms see the same (empty) corpus" {

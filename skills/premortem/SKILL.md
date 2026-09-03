@@ -1,6 +1,6 @@
 ---
 name: premortem
-description: 'Fresh-judge a frozen plan. Not for a live decision''s reversibility; that is one-way-door. Triggers: "premortem", "challenge this plan", "what could make this plan fail".'
+description: 'Fresh-judge a frozen plan. Not for a live decision''s reversibility; that is one-way-door. Triggers: "premortem", "challenge this plan", "one judge", "what could make this plan fail".'
 practices: [design-by-contract, adr]
 hexagonal_role: domain
 consumes: []

@@ -136,16 +136,6 @@ func TestScore_ExclusionSentenceRoutesAway(t *testing.T) {
 	if got[0].Name != "premortem" {
 		t.Fatalf("named query: want premortem first, got %q (%+v)", got[0].Name, got)
 	}
-	pair := []SkillMeta{
-		{Name: "validate", Description: "Freshly judge a finished change against its acceptance: PASS, FAIL, or NOT_PROVEN. Not for claim-vs-tree checks; that is reality-check. Triggers: \"validate\", \"is this proven\"."},
-		{Name: "reality-check", Description: "Check a claim against the tree. Not for judging a finished change; that is validate. Triggers: \"reality check\"."},
-	}
-	for _, q := range []string{"validate the claim that tests pass", "validate this change and check the tests"} {
-		got = Score(q, pair)
-		if got[0].Name != "validate" {
-			t.Errorf("%q: want validate first, got %q (%+v)", q, got[0].Name, got)
-		}
-	}
 
 	got = Score("challenge this frozen plan", metas)
 	if got[0].Name != "premortem" {
@@ -168,6 +158,38 @@ func TestSplitExclusion(t *testing.T) {
 		pos, excl := splitExclusion(c.desc)
 		if pos != c.wantPositive || excl != c.wantExclusion {
 			t.Errorf("splitExclusion(%q) = (%q, %q); want (%q, %q)", c.desc, pos, excl, c.wantPositive, c.wantExclusion)
+		}
+	}
+}
+
+// TestScore_LiveCatalogOwnVocabulary runs the shipped catalog, not a fixture:
+// a skill's own words beside one word from its exclusion sentence must still
+// route to it. Each query regressed once when the exclusion sentence was
+// penalised instead of held out (round 3/4 of the 2026-09-03 Train 2 review).
+func TestScore_LiveCatalogOwnVocabulary(t *testing.T) {
+	root := repoSkillsDir(t)
+	if root == "" {
+		t.Skip("skills/ not found relative to test working dir")
+	}
+	metas, err := Load(root)
+	if err != nil {
+		t.Fatalf("Load(%s): %v", root, err)
+	}
+	cases := map[string]string{
+		"validate the claim that tests pass":       "validate",
+		"validate this change and check the tests": "validate",
+		"premortem the plan for this live rollout": "premortem",
+		"challenge this plan with one judge":       "premortem",
+		"is this live decision reversible":         "one-way-door",
+	}
+	for q, want := range cases {
+		got := Score(q, metas)
+		if len(got) == 0 || got[0].Name != want {
+			top := ""
+			if len(got) > 0 {
+				top = got[0].Name
+			}
+			t.Errorf("%q: want %s first, got %q (top: %+v)", q, want, top, got[:min(3, len(got))])
 		}
 	}
 }
