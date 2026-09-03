@@ -25,8 +25,11 @@ type SkillMeta struct {
 	Path        string
 }
 
-// Match is one scored result. Score is normalized to [0,1], where 1.0 means
-// every query token matched a skill-name token.
+// Match is one scored result. Score is normalized to [0,1]: token hits are
+// summed against the query length at name weight, a declared trigger phrase
+// quoted whole adds one name weight, and the sum is clamped, so 1.0 means the
+// query saturated the skill (every token on its name, or its own phrase plus
+// most of its words), not necessarily a name-only match.
 type Match struct {
 	Name        string  `json:"name"`
 	Description string  `json:"description"`
@@ -59,6 +62,9 @@ var stopwords = map[string]bool{
 // are comparable across queries of different lengths.
 func Score(query string, metas []SkillMeta) []Match {
 	qTokens := tokenize(query)
+	// Phrase matching reads the query in order without deduplication: with
+	// duplicates folded, "one council judge" would collapse into "one judge".
+	qStream := tokenStream(query)
 	matches := make([]Match, 0, len(metas))
 	for _, m := range metas {
 		nameToks := tokenize(m.Name)
@@ -85,7 +91,7 @@ func Score(query string, metas []SkillMeta) []Match {
 		// one of those words as a name token ("check this change" belongs to
 		// validate, not to reality-check).
 		for _, phrase := range triggerPhrases(m) {
-			if len(phrase) >= 2 && containsPhrase(qTokens, phrase) {
+			if len(phrase) >= 2 && containsPhrase(qStream, phrase) {
 				raw += weightName
 			}
 		}
@@ -153,20 +159,30 @@ var triggerClause = regexp.MustCompile(`(?i)\btriggers?:`)
 var quotedPhrase = regexp.MustCompile(`"([^"]+)"`)
 
 // triggerPhrases returns every declared trigger as a token sequence: the
-// frontmatter triggers list plus each quoted phrase after "Triggers:" in the
-// description. Phrases that tokenize to nothing are dropped.
+// frontmatter triggers list plus each quoted phrase in the description's
+// Triggers clause, which ends at the first sentence break after it. Phrases
+// that tokenize to nothing are dropped; a phrase declared twice counts once.
 func triggerPhrases(m SkillMeta) [][]string {
 	raw := append([]string(nil), m.Triggers...)
 	if loc := triggerClause.FindStringIndex(m.Description); loc != nil {
-		for _, q := range quotedPhrase.FindAllStringSubmatch(m.Description[loc[1]:], -1) {
+		clause := m.Description[loc[1]:]
+		if end := strings.Index(clause, ". "); end >= 0 {
+			clause = clause[:end]
+		}
+		for _, q := range quotedPhrase.FindAllStringSubmatch(clause, -1) {
 			raw = append(raw, q[1])
 		}
 	}
 	out := make([][]string, 0, len(raw))
+	seen := make(map[string]bool, len(raw))
 	for _, r := range raw {
-		if toks := tokenize(r); len(toks) > 0 {
-			out = append(out, toks)
+		toks := tokenStream(r)
+		key := strings.Join(toks, " ")
+		if len(toks) == 0 || seen[key] {
+			continue
 		}
+		seen[key] = true
+		out = append(out, toks)
 	}
 	return out
 }
@@ -191,6 +207,22 @@ func containsPhrase(qTokens, phrase []string) bool {
 		}
 	}
 	return false
+}
+
+// tokenStream is tokenize without deduplication: the same normalization,
+// every occurrence kept in order, for phrase matching.
+func tokenStream(s string) []string {
+	fields := strings.FieldsFunc(strings.ToLower(s), func(r rune) bool {
+		return !unicode.IsLetter(r) && !unicode.IsDigit(r)
+	})
+	out := make([]string, 0, len(fields))
+	for _, f := range fields {
+		if len(f) < 2 || stopwords[f] {
+			continue
+		}
+		out = append(out, f)
+	}
+	return out
 }
 
 // tokenize lowercases, splits on non-alphanumeric runes, and drops stopwords

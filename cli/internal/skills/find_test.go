@@ -189,6 +189,9 @@ func TestScore_LiveCatalogOwnVocabulary(t *testing.T) {
 		// a name token (reality-check, one-way-door).
 		"check this change": "validate",
 		"one judge":         "premortem",
+		// Phrase matching reads the query in order: "one council judge"
+		// must not collapse into premortem's "one judge".
+		"ask the council whether one council judge is enough": "council",
 	}
 	for q, want := range cases {
 		got := Score(q, metas)
@@ -237,5 +240,54 @@ func TestScore_DeclaredPhraseBeatsSiblingNameToken(t *testing.T) {
 	got = Score("validate", metas)
 	if got[0].Score != 1 {
 		t.Errorf("single name token: want score 1, got %v", got[0].Score)
+	}
+}
+
+func TestTriggerPhrases_DedupesAndStopsAtSentenceEnd(t *testing.T) {
+	m := SkillMeta{
+		Name:        "demo",
+		Triggers:    []string{"check this change"},
+		Description: `Do the job. Triggers: "check this change", "run the demo". Not for "other things".`,
+	}
+	got := triggerPhrases(m)
+	want := [][]string{{"check", "change"}, {"run", "demo"}}
+	if len(got) != len(want) {
+		t.Fatalf("triggerPhrases: got %v, want %v", got, want)
+	}
+	for i := range want {
+		if strings.Join(got[i], " ") != strings.Join(want[i], " ") {
+			t.Errorf("phrase %d: got %v, want %v", i, got[i], want[i])
+		}
+	}
+	// A phrase declared in both frontmatter and the description scores once.
+	// Both fixtures carry the same tokens at the same weights; only the
+	// number of declarations differs. The query is long enough that a
+	// double bonus (0.75) would not hide behind the clamp (0.5 expected).
+	once := []SkillMeta{{Name: "demo", Triggers: []string{"check this change"}, Description: `Do the job: check this change. Triggers: "run the demo".`}}
+	twice := []SkillMeta{m}
+	a, b := Score("please check this change today", once)[0].Score, Score("please check this change today", twice)[0].Score
+	if a != 0.5 || b != 0.5 {
+		t.Errorf("duplicate declaration must score identically at 0.5: once=%v twice=%v", a, b)
+	}
+}
+
+func TestScore_PhraseBonusClampsAtOne(t *testing.T) {
+	metas := []SkillMeta{{Name: "skill-builder", Description: `Build a skill. Triggers: "new skill".`}}
+	// "new skill": skill hits the name (3) and new the description (1), plus
+	// the whole phrase (3) = 7 over a ceiling of 6; the score reports 1.
+	got := Score("new skill", metas)
+	if got[0].Score != 1 {
+		t.Errorf("want clamped score 1, got %v", got[0].Score)
+	}
+}
+
+func TestScore_PhraseMatchesInOrderWithoutDedup(t *testing.T) {
+	metas := []SkillMeta{
+		{Name: "premortem", Description: `Fresh-judge a frozen plan. Triggers: "premortem", "one judge".`},
+		{Name: "council", Description: `Gather independent views on a high-stakes judgment. Triggers: "council", "multi-judge review".`},
+	}
+	got := Score("ask the council whether one council judge is enough", metas)
+	if got[0].Name != "council" {
+		t.Fatalf("want council first, got %+v", got)
 	}
 }
