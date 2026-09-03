@@ -120,12 +120,12 @@ authority.
 
 | Seam | Purpose | Typical skills | Handoff |
 |---|---|---|---|
-| Product and fitness | Define or measure the desired state | `product`, `fitness` (`goals` compatibility alias) | Evidence to caller or Goal |
+| Product and fitness | Define or measure the desired state | `product`, `fitness` | Evidence to caller or Goal |
 | Campaign design | Compile or lint the outer autonomy contract | `craft-goal` | Goal prompt or safety report |
 | Goal observation | Report durable state without steering | `status`, `handoff` | Facts to caller or Goal |
 | Intent evidence | Reduce uncertainty before one experiment is frozen | `research`, `codebase-recon`, `domain`, `standards`, `cass`, `reverse-engineer` | Cited facts to Goal or Plan |
 | Option shaping | Generate, challenge, or route candidate hypotheses | `idea-genie`, `reality-check`, `automation-shape-routing` | Advisory options, gaps, or semantic route to caller, Goal, or Plan |
-| Plan review | Challenge scope or a frozen experiment intent | `scope`, `premortem` | Findings to caller or Goal |
+| Plan review | Challenge a frozen experiment intent (write-scope review is Plan's own step) | `premortem` | Findings to caller or Goal |
 | Implement method | Produce the candidate or focused factual evidence | `test`, `refactor`, `doc`, `scaffold`, `converter`, `skill-builder`, `workflow-builder` | Subject changes and receipts to Implement |
 | Validation evidence | Supply a bounded deterministic or specialist check | `security`, `test`, `standards`, `codebase-recon` | Evidence to one accountable Validate |
 | Judgment strategy | Add independent perspectives without writing the verdict | `council` | Advisory report to Plan or Validate |

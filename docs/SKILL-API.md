@@ -225,14 +225,13 @@ machine-readable form (`ao skills list`).
 
 | Tier | Purpose | Skills that declare it |
 |------|---------|------------------------|
-| `judgment` | Legacy internal tier name for validation and review gates | anti-ceremony, council, craft-goal, postmortem, premortem, reality-check, validate |
+| `judgment` | Legacy internal tier name for validation and review gates | anti-ceremony, council, craft-goal, one-way-door, postmortem, premortem, reality-check, validate |
 | `execution` | Single-task implementation and runtime adapters | account-rotation, agent-mail, cass, cc-hooks, codebase-recon, dcg, idea-genie, implement, learn, ms, ntm, pattern-mining, plan, rch, refactor, research, reverse-engineer, sbh, scaffold, swarm, test, using-flywheel, using-gc |
 | `orchestration` | Multi-skill coordination | codex-exec |
 | `session` | Session lifecycle | bootstrap, handoff, status |
 | `knowledge` | Reference corpora loaded on demand | domain, standards |
-| `product` | Product strategy and product-surface work | doc, fitness, goals, product, security |
-| `library` | Shared references | shared |
-| `meta` | System-level (skills, workflows, scope, the traversal itself) | agent-native, automation-shape-routing, operationalize, rpi, scope, skill-builder, toil-mining, workflow-builder |
+| `product` | Product strategy and product-surface work | doc, fitness, product, security |
+| `meta` | System-level (skills, workflows, routing, the traversal itself) | agent-native, automation-shape-routing, crank, human-only-skills, operationalize, route, rpi, skill-builder, skill-eval, toil-mining, workflow-builder |
 | `cross-vendor` | Cross-runtime | agy-native, converter |
 
 The schema's tier enum also still accepts `background`, `contribute`, and
@@ -265,15 +264,14 @@ the key; nothing resolves the path or checks a skill's output against it.
 
 ## Context Declaration Quick Reference
 
-`context` is optional and most skills omit it. These 25 are every skill in
-`skills/` that declares one; the remaining 31 declare no `context` block at
-all. Regenerate this view with `rg -A5 '^context:' skills/*/SKILL.md` — the
+`context` is optional and most skills omit it. These 24 are every skill in
+`skills/` that declares one; the remaining 30 declare no `context` block at
+all. Regenerate this view with `rg -A5 '^context:' skills/*/SKILL.md`; the
 frontmatter is the source of truth, this table is a convenience copy.
 
 | Skill | Tier | Window | Sections | Intent |
 |-------|------|--------|----------|--------|
-| craft-goal | judgment | inherit | — | task |
-| human-only-skills | meta | inherit | — | none |
+| craft-goal | judgment | inherit | - | task |
 | postmortem | judgment | fork | exclude: HISTORY | task |
 | codebase-recon | execution | fork | exclude: HISTORY | task |
 | pattern-mining | execution | fork | exclude: HISTORY | task |
@@ -283,16 +281,16 @@ frontmatter is the source of truth, this table is a convenience copy.
 | scaffold | execution | fork | exclude: HISTORY | task |
 | test | execution | fork | exclude: HISTORY | task |
 | codex-exec | orchestration | inherit | exclude: HISTORY | none |
-| bootstrap | session | fork | — | task |
-| handoff | session | inherit | — | none |
-| status | session | inherit | — | none |
-| domain | knowledge | isolated | — | none |
+| bootstrap | session | fork | - | task |
+| handoff | session | inherit | - | none |
+| status | session | inherit | - | none |
+| domain | knowledge | isolated | - | none |
 | doc | product | fork | exclude: HISTORY | task |
-| fitness | product | fork | — | task |
-| product | product | inherit | — | task |
+| fitness | product | fork | - | task |
+| product | product | inherit | - | task |
 | security | product | fork | exclude: HISTORY | task |
-| automation-shape-routing | meta | inherit | — | task |
-| scope | meta | isolated | exclude: HISTORY, INTEL, TASK | none |
+| automation-shape-routing | meta | inherit | - | task |
+| human-only-skills | meta | inherit | - | none |
 | skill-builder | meta | fork | exclude: HISTORY | questions |
 | toil-mining | meta | fork | exclude: HISTORY | task |
 | workflow-builder | meta | fork | exclude: HISTORY | questions |

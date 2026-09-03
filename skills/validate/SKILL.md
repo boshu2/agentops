@@ -86,7 +86,7 @@ tree (the boundaries appendix records the regen that overwrote a subject).
 `not_checked` has exactly one meaning: **in-scope acceptance surface this
 validation did not verify**. PASS asserts the whole declared acceptance
 surface was verified, so a PASS carries no `not_checked` entries; every other
-scope limit has a home that survives inside a PASS — a bounded proof in
+scope limit has a home that survives inside a PASS: a bounded proof in
 `criteria[].reason`, a declared non-goal in the intent source, residual risk
 in the report (table in the mechanics reference). Emptying `not_checked` to
 obtain PASS is a contract violation: unverified acceptance makes the honest
@@ -98,8 +98,9 @@ and stays visible.
 1. Derive `subject-manifest.v1` with the helper's `manifest` command (flags
    in the mechanics reference) at the start and again at the end; any
    mismatch is subject mutation and returns `NOT_PROVEN`.
-2. Confirm the intent-source digest is unchanged since implementation and
-   complete changed-path coverage can be derived; otherwise `NOT_PROVEN`.
+2. Confirm the intent-source digest is unchanged since implementation, every
+   cited evidence digest matches the artifact it names, and complete
+   changed-path coverage can be derived; otherwise `NOT_PROVEN`.
 3. Adjudicate the actual diff: runtime-derived changed paths against the
    intent's scope classes. A proven out-of-scope path is `FAIL`; incomplete
    scope evidence is `NOT_PROVEN`.
@@ -107,13 +108,15 @@ and stays visible.
    re-execute the proofs that bear on acceptance. A changed test, gate,
    fixture, golden, tolerance, suppression, or acceptance source must be
    required by the original intent, with green coming from implemented
-   behavior; green obtained by weakening acceptance is `FAIL`.
+   behavior; green obtained by weakening acceptance is `FAIL`. Judge every
+   acceptance criterion against its own evidence reference; a criterion with
+   no evidence of its own is unverified, not passed.
 5. Choose exactly one semantic result: `PASS`, `FAIL`, or `NOT_PROVEN`. Return
    it with criterion-level results, findings, evidence references, `checked`,
    `not_checked`, both identities, both context IDs, and the freshness
-   attestation. PASS requires
-   distinct identities, explicit freshness, nonempty checked scope, evidence
-   for every criterion, and an empty `not_checked`.
+   attestation. PASS requires distinct identities, explicit freshness,
+   nonempty checked scope, nonempty top-level evidence, evidence for every
+   criterion, and an empty `not_checked`.
 6. Only when the caller requests machine-readable evidence or a declared
    downstream consumer requires it, persist canonical `verdict.v2` with the
    helper's `store-verdict` (mechanics reference), then return the artifact
@@ -128,7 +131,7 @@ once, on the final integrated subject.
 
 ## It's working if
 
-Observable in the trace, without reading the prose — and the rubric a fresh
+Observable in the trace, without reading the prose, and the rubric a fresh
 independent judge scores this skill against:
 
 - A criterion whose evidence is a justification rather than a proof is named,
@@ -137,7 +140,7 @@ independent judge scores this skill against:
   budget is reported as `FAIL`, never as completion.
 - Every scope limit is placed in one of the Scope-disclosure homes; none was
   deleted to reach `PASS`.
-- The subject manifest is derived twice — at the start and at the end — and the
+- The subject manifest is derived twice, at the start and at the end, and the
   two are compared.
 
 ## Boundary

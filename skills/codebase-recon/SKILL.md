@@ -49,7 +49,7 @@ PASS/WARN/FAIL verdict.
 ```text
 codebase-recon --mode=baseline --view=audit --lens=cli --depth=standard
 on agentops-wt/train2-c: trace the `ao gate check` entry point from
-cli/cmd/ao/gate.go through to its tests. I'm onboarding and need a cited
+cli/cmd/ao/gate_composition.go through to its tests. I'm onboarding and need a cited
 mental model, not a file inventory.
 ```
 

@@ -2,7 +2,7 @@
 
 Loaded by `SKILL.md` at the manifest step (helper commands), at cross-family
 dispatch (adapters), and at scope disclosure (the homes table). `$SKILL_DIR`
-is the directory containing `SKILL.md` — `skills/validate/` in a repository
+is the directory containing `SKILL.md`: `skills/validate/` in a repository
 checkout, `.agents/skills/validate/` in an installed runtime.
 
 ## Helper commands

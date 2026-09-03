@@ -1,6 +1,6 @@
 ---
 name: plan
-description: 'Shape or refine the existing bead or caller intent without a second planning artifact. Triggers: "plan", "discover and plan", "shape this goal".'
+description: 'Shape or refine the existing bead or caller intent without a second planning artifact. Triggers: "plan", "discover and plan", "shape this goal", "review write scope", "check scope boundaries", "scope this change".'
 practices:
 - bdd-gherkin
 - design-by-contract
@@ -55,7 +55,7 @@ scope as a class (cli/internal/gates/** plus regen outputs), first check
    skill's `scripts/validate.py snapshot-intent --source -` (under
    `skills/validate/` in a checkout, `.agents/skills/validate/` when
    installed) and carry the returned `intent_ref` into later phases.
-2. Route the work by type — Integrate, Extend, or Greenfield — and name its
+2. Route the work by type (Integrate, Extend, or Greenfield) and name its
    ground truth, control experiment, and deviation ledger first from
    [references/ground-truth-routing.md](references/ground-truth-routing.md).
    Then inspect only enough real context to make paths, interfaces, and
@@ -82,8 +82,8 @@ when it reduces reasoning cost.
 
 At scope, read `boundaries.md` in the rpi skill's `references` directory for
 what Plan does not own. In a repository with generated projections, write
-scope names generator-owned outputs as a class — the hand-edited sources plus
-all outputs of the owning regen commands — because a hand-enumerated list is
+scope names generator-owned outputs as a class (the hand-edited sources plus
+all outputs of the owning regen commands), because a hand-enumerated list is
 falsified the first time a regen command rewrites an unlisted companion.
 Before freezing acceptance, enumerate the generated companions, parity twins
 such as `skills-codex/`, and tests asserting on the changed paths;
