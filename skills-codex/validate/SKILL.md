@@ -36,7 +36,7 @@ the diff touches a risky surface:
 - `skills/*/scripts/**`
 - `skills/cc-hooks/policies/**`
 - `lib/**`
-- anything `security-gate.sh` scans
+- `.github/workflows/**` and `scripts/security-gate.sh` (the gate scans the whole tree, so "anything it scans" is not a predicate)
 
 Outside that list the second validator is caller-elected and a single fresh
 validator remains the default shape.

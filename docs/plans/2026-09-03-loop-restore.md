@@ -90,7 +90,7 @@ meaning. No third judge, no escalation, no auto-replan.
 
 Risky surface (cross-family default): `cli/internal/gates/**`,
 `scripts/check-*.sh`, `tests/**`, `skills/*/scripts/**`,
-`skills/cc-hooks/policies/**`, `lib/**`, anything `security-gate.sh` scans.
+`skills/cc-hooks/policies/**`, `lib/**`, `.github/workflows/**`, `scripts/security-gate.sh`.
 
 Cross-family dispatch (LAW 0): orchestrating in Claude → judge leg is
 read-only `codex exec`; orchestrating in Codex → judge leg is a caller-selected

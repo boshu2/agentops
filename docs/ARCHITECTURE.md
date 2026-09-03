@@ -8,7 +8,8 @@ existing bead or caller intent
   -> runtime-derived subject-manifest.v1 + check receipts
   -> fresh Validate
   -> PASS | FAIL | NOT_PROVEN
-  -> RPI report and stop
+  -> bounded repair under the convergence law (ADR-0017)
+  -> RPI report
 ```
 
 ## Core

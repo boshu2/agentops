@@ -274,9 +274,9 @@ def normalize_round(value: Any) -> dict[str, Any]:
         leg_status = _leg_status(leg)
         if _STATUS_RANK[leg_status] > _STATUS_RANK[status]:
             status = leg_status
-        raw_findings = leg.get("findings")
-        if raw_findings is None:
-            raw_findings = []
+        if "findings" not in leg:
+            raise ValueError("each validate leg must carry a findings list (empty on PASS)")
+        raw_findings = leg["findings"]
         if not isinstance(raw_findings, (list, tuple)):
             raise ValueError("findings must be a list")
         leg_ids: set[str] = set()
@@ -299,9 +299,9 @@ def normalize_round(value: Any) -> dict[str, Any]:
         family = leg.get("validator_family")
         if isinstance(family, str) and family and family not in families:
             families.append(family)
-        raw_evidence = leg.get("evidence_refs")
-        if raw_evidence is None:
-            raw_evidence = []
+        if "evidence_refs" not in leg:
+            raise ValueError("each validate leg must carry an evidence_refs list (empty if none)")
+        raw_evidence = leg["evidence_refs"]
         if not isinstance(raw_evidence, (list, tuple)):
             raise ValueError("evidence_refs must be a list")
         for ref in raw_evidence:
@@ -328,8 +328,11 @@ def normalize_round(value: Any) -> dict[str, Any]:
         if digest is not None and leg_digest != digest:
             raise ValueError("validate legs disagree about the subject digest")
         digest = leg_digest
-        checked.extend(str(item) for item in leg.get("checked") or [])
-        not_checked.extend(str(item) for item in leg.get("not_checked") or [])
+        for key, sink in (("checked", checked), ("not_checked", not_checked)):
+            items = leg.get(key, [])
+            if not valid_string_list(items):
+                raise ValueError(f"{key} must be a list of strings")
+            sink.extend(items)
 
     return {
         "status": status,

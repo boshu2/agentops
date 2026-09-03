@@ -359,6 +359,18 @@ class RepairPhaseTests(unittest.TestCase):
         )
         self.assertEqual(outcome["stop_reason"], "no_subject_or_evidence_change")
 
+    def test_missing_findings_or_evidence_keys_are_rejected(self):
+        for key in ("findings", "evidence_refs"):
+            with self.subTest(missing=key):
+                bad = validation_round("PASS", [])
+                del bad[key]
+                with self.assertRaisesRegex(ValueError, key):
+                    self.repair([bad])
+        bad = validation_round("PASS", [])
+        bad["checked"] = "acceptance"
+        with self.assertRaisesRegex(ValueError, "checked must be a list"):
+            self.repair([bad])
+
     def test_scalar_evidence_refs_are_rejected(self):
         bad = validation_round("FAIL", ["f1"])
         bad["evidence_refs"] = "receipt-1"

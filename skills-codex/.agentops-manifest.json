@@ -393,8 +393,8 @@
     {
       "name": "agent-native",
       "source_skill": "skills/agent-native",
-      "source_hash": "597bfaf6f186c52b14f1b6d60112e9305785a63ab4f24bb25b5b87fba2110b91",
-      "generated_hash": "ad4ad8f732f1f6ec81a4b33a49f12f139eda18cecbb1a581897e9b752d604a39"
+      "source_hash": "907fbf538921e939138493a649fc539d99132139723aa1d1446b221d3869c5ba",
+      "generated_hash": "7beea77b9216d6bb8c9cb1b7d0c66356b5560c05666783458424dfef9c4ad73c"
     },
     {
       "name": "agy-native",
@@ -621,8 +621,8 @@
     {
       "name": "rpi",
       "source_skill": "skills/rpi",
-      "source_hash": "a8fc21b100fa5b05ce8e6af5f08dea2e521561194eac4f63421736d9211d8590",
-      "generated_hash": "deda17a4ee72c6b5e0f8decedfa5de334afe744c730833bc3e9a46bc456a793e"
+      "source_hash": "032a23898cfee4cf8b45d463e551e54b12eb4eeb611588d18bd7bfcf432c881a",
+      "generated_hash": "c859895c1c3a8e146a9a03510bccb46131bbc7d1b97898cee1e09ed983798363"
     },
     {
       "name": "sbh",
@@ -711,8 +711,8 @@
     {
       "name": "validate",
       "source_skill": "skills/validate",
-      "source_hash": "da24e39ccab4bb4936988ca66329695f5dabd8c1dd618bf91f58e0d62e1b1f63",
-      "generated_hash": "1ed841f5634c1b9d7a21c0970902f0b997ae2104a5891d04761dc4d8af2c204c"
+      "source_hash": "c6b05c98c47ee74f23c1786d10b4f78d1452e440d271b8b3a7287ca4269e41db",
+      "generated_hash": "fbbf0c9053c437287226311177738031ac493b0e5b19153da1a6ea5d5e1014d8"
     },
     {
       "name": "workflow-builder",

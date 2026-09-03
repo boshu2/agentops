@@ -128,7 +128,7 @@ never mutate the subject. No third judge, no escalation, no auto-replan.
 
 Risky surfaces default to a cross-family fresh validator: `cli/internal/gates/**`,
 `scripts/check-*.sh`, `tests/**`, `skills/*/scripts/**`,
-`skills/cc-hooks/policies/**`, `lib/**`, anything `security-gate.sh` scans.
+`skills/cc-hooks/policies/**`, `lib/**`, `.github/workflows/**`, `scripts/security-gate.sh`.
 [`validate`](../validate/SKILL.md) owns the dispatch table. No authorized live
 adapter means `diversity_unsatisfied`, which on a risky surface is `NOT_PROVEN`.
 

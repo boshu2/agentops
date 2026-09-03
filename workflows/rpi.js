@@ -163,6 +163,8 @@ if (input.crossFamily !== undefined) {
   }
 }
 const crossFamilyCommand = input.crossFamily !== undefined ? input.crossFamily.command.trim() : null;
+// Explicit list; the skill contract names the same paths. (security-gate.sh
+// scans the whole repository, so "anything it scans" is not a usable predicate.)
 const RISKY_SURFACE = [
   /^cli\/internal\/gates\//, /^scripts\/check-[^/]*\.sh$/, /^tests\//, /^skills\/[^/]+\/scripts\//,
   /^skills\/cc-hooks\/policies\//, /^lib\//, /^\.github\/workflows\//, /^scripts\/security-gate\.sh$/,
@@ -454,9 +456,10 @@ function mergeLegs(legs, risky, diversity) {
   // A persisted verdict path is exposed only when every leg agrees with the
   // aggregate; a PASS file behind a FAIL/NOT_PROVEN result would launder it.
   const allAgree = legs.every((l) => l.result.verdict === verdict);
+  const persistedMatches = allAgree && legs[0].result.verdict === verdict;
   return {
     verdict,
-    verdictPath: allAgree ? legs[0].result.verdictPath : null,
+    verdictPath: persistedMatches ? legs[0].result.verdictPath : null,
     legVerdictPaths: legs.map((l) => ({ family: l.family, verdict: l.result.verdict, verdictPath: l.result.verdictPath })),
     validatorContextId: legs.map((l) => l.result.validatorContextId).join('+'),
     subjectDigest: digest,
@@ -494,10 +497,22 @@ async function validateOnce(facts) {
   const merged = mergeLegs(legs, risky, diversity);
   const unreported = merged.derivedChangedPaths.filter((p) => !facts.changedPaths.includes(p));
   if (unreported.length > 0) {
-    for (const p of unreported) merged.findings.push({ id: 'coverage:unreported:' + p, summary: 'changed path not reported by the author', family: 'merge' });
-    if (merged.verdict === 'PASS') merged.verdict = 'NOT_PROVEN';
+    const byId = new Map(merged.findings.map((f) => [f.id, f]));
+    for (const p of unreported) {
+      const id = 'coverage:unreported:' + p;
+      if (!byId.has(id)) byId.set(id, { id, summary: 'changed path not reported by the author', family: 'merge' });
+    }
+    merged.findings = [...byId.values()];
+    if (merged.verdict === 'PASS') return degrade(merged, 'NOT_PROVEN');
   }
   return merged;
+}
+
+// CONTRACT: every aggregate verdict mutation goes through here so a persisted
+// verdict file whose ruling differs from the reported verdict is never exposed.
+function degrade(result, verdict) {
+  if (result.verdict === verdict) return result;
+  return { ...result, verdict, verdictPath: null };
 }
 
 let validation = await validateOnce(impl);
@@ -528,16 +543,20 @@ let facts = { contextId: impl.contextId, changedPaths: impl.changedPaths.slice()
 let roundsUsed = 0;
 let stoppedBy = null;
 // A diversity gap is not a defect in the subject and cannot be repaired by
-// editing it: on a risky surface with no cross-family leg the traversal stops
-// as NOT_PROVEN (diversity_unsatisfied) without spending a repair round.
-if (validation && validation.risky && validation.diversity === 'unsatisfied') {
+// editing it. Real findings on a risky surface still enter repair (the
+// contract: FAIL with findings repairs); only when the remaining findings are
+// diversity-only does the traversal stop as NOT_PROVEN (diversity_unsatisfied)
+// without spending a repair round.
+const repairable = (v) => (v.findings || []).some((f) => !String(f.id).startsWith('diversity:'));
+const diversityOnly = (v) => v && v.risky && v.diversity === 'unsatisfied' && !repairable(v);
+if (diversityOnly(validation)) {
   stoppedBy = 'diversity_unsatisfied: risky surface, no authorized cross-family leg';
 }
 while (
   stoppedBy === null &&
   validation &&
   (validation.verdict === 'FAIL' || validation.verdict === 'NOT_PROVEN') &&
-  openIds(validation).size > 0
+  repairable(validation)
 ) {
   if (roundsUsed >= repairRounds) { stoppedBy = 'out of repair_rounds (' + repairRounds + ')'; break; }
   phase('Repair');
@@ -614,7 +633,11 @@ while (
   validation = next;
   if (violation) {
     stoppedBy = 'law: ' + violation;
-    if (validation.verdict === 'PASS') validation = { ...validation, verdict: 'NOT_PROVEN' };
+    if (validation.verdict === 'PASS') validation = degrade(validation, 'NOT_PROVEN');
+    break;
+  }
+  if (diversityOnly(validation)) {
+    stoppedBy = 'diversity_unsatisfied: risky surface, no authorized cross-family leg';
     break;
   }
 }

@@ -1174,6 +1174,16 @@ def check_bounded_repair_contract() -> None:
         )
     flip = module.run_repair_phase(canaries["no_subject_or_evidence_change"][0], repair_rounds=2)
     assert flip["report"]["status"] == "NOT_PROVEN", "a PASS over unchanged bytes after a FAIL must not certify"
+    # The bound must CONTROL admission, not merely be mentioned: a poison round
+    # past repair_rounds is never normalized (it would raise), and rounds_used
+    # never exceeds the bound.
+    poison = module.run_repair_phase(
+        [leg("FAIL", ["a"], dg("a")), leg("FAIL", ["a"], dg("b")), {"status": "poison-not-a-round"}],
+        repair_rounds=1,
+    )
+    assert poison["stop_reason"] == "repair_budget_exhausted" and poison["rounds_used"] == 1, (
+        "the repair phase consumed a round past the caller's bound"
+    )
     assert canaries and module.run_repair_phase([leg("FAIL", ["a"], dg("a"))], repair_rounds=0)["stop_reason"] == "repair_budget_exhausted"
     assert not any(
         isinstance(node, (ast.For, ast.While))
