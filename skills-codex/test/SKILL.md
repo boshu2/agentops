@@ -7,6 +7,19 @@ description: 'Generate tests and coverage plans. Triggers: "test", "generate tes
 Generate real tests, run them, and leave reproducible coverage or TDD evidence.
 Do not stop at a plan unless the requested mode is `strategy`.
 
+## Prompt
+
+```text
+Generate tests for the discount calculator at pricing-engine/internal/discount: mode=generate, scope=ApplyBulkDiscount. Derive cases from the acceptance scenarios, assert exact totals and error types, then run the focused test and the package suite plus coverage command and report results.
+```
+
+## It's working if
+
+- The transcript shows a failing test recorded before the implementation when `--mode=tdd` is requested, RED before green.
+- Each new test asserts an exact value or error type in `internal/discount/discount_test.go`, never a bare `!= nil` check.
+- The report cites the literal command run, e.g. `go test ./internal/discount/... -cover`, with its pass or fail result.
+- A discovered product bug surfaces as a reported finding, distinct from any edit inside `internal/discount/discount.go`.
+
 ## Critical Constraints
 
 - **Why: behavior is the contract.** Derive tests from acceptance scenarios and

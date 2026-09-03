@@ -1,6 +1,6 @@
 {
   "schema_version": "3",
-  "skill_count": 57,
+  "skill_count": 54,
   "skills": [
     {
       "canonical_status": "canonical",
@@ -337,7 +337,7 @@
         }
       ],
       "dependencies": [],
-      "description": "Reconstruct a repository as cited entry-to-test flows and bounded claims. Triggers: \"codebase recon\", \"trace this codebase\", \"repository audit\", \"refresh the prior recon\".",
+      "description": "Trace a repo into cited flows. Not for a bounded question; that is research. Triggers: \"codebase recon\", \"trace this codebase\", \"repository audit\", \"refresh the prior recon\".",
       "disposition": "keep_specialist",
       "effects": [
         "write_recon_pack"
@@ -434,7 +434,7 @@
       ],
       "context_rel": [],
       "dependencies": [],
-      "description": "Collect independent perspectives for an explicitly high-stakes or contested judgment. Triggers: \"council\", \"multi-judge review\", \"independent perspectives\".",
+      "description": "Gather independent views on a high-stakes judgment. Not for one-judge plan challenge; that is premortem. Triggers: \"council\", \"multi-judge review\", \"independent perspectives\".",
       "disposition": "keep_strategy",
       "effects": [
         "write_advisory_council_report"
@@ -643,32 +643,6 @@
       "references_count": 0,
       "tier": "product",
       "user_invocable": false
-    },
-    {
-      "canonical_status": "canonical",
-      "capabilities": [],
-      "codex_override_present": true,
-      "consumes": [],
-      "context_rel": [
-        {
-          "kind": "alias-of",
-          "with": "fitness"
-        }
-      ],
-      "dependencies": [],
-      "description": "Compatibility alias \u2014 renamed to fitness. Use fitness to measure declared project fitness goals. Triggers: \"goals\" (deprecated).",
-      "disposition": "keep_off_path",
-      "effects": [],
-      "graph_root": false,
-      "hexagonal_role": "domain",
-      "name": "goals",
-      "practices": [
-        "dora-metrics"
-      ],
-      "produces": [],
-      "references_count": 0,
-      "tier": "product",
-      "user_invocable": true
     },
     {
       "canonical_status": "canonical",
@@ -925,7 +899,7 @@
         }
       ],
       "dependencies": [],
-      "description": "Classify a pending decision as reversible or irreversible before it is acted on, and route irreversible ones to the caller instead of auto-deciding. Triggers: \"is this a one-way door\", \"can we undo this\", \"should I just decide this\", \"the models disagree with me\", before any auto-decided approval gate.",
+      "description": "Route irreversible pending decisions to the caller. Not for challenging a frozen plan; that is premortem. Triggers: \"is this a one-way door\", \"can we undo this\", \"should I just decide this\", \"the models disagree with me\", before any auto-decided approval gate.",
       "disposition": "keep_strategy",
       "effects": [
         "write_advisory_decision_classification"
@@ -1054,7 +1028,7 @@
         "ddd-bounded-context"
       ],
       "produces": [],
-      "references_count": 1,
+      "references_count": 2,
       "tier": "execution",
       "user_invocable": true
     },
@@ -1102,7 +1076,7 @@
         }
       ],
       "dependencies": [],
-      "description": "Optionally challenge a frozen plan with one fresh independent judge before implementation. Triggers: \"premortem\", \"challenge this plan\", \"what could make this plan fail\".",
+      "description": "Fresh-judge a frozen plan. Not for a live decision's reversibility; that is one-way-door. Triggers: \"premortem\", \"challenge this plan\", \"what could make this plan fail\".",
       "disposition": "keep_strategy",
       "effects": [
         "write_advisory_plan_review"
@@ -1258,7 +1232,7 @@
       ],
       "context_rel": [],
       "dependencies": [],
-      "description": "Answer a bounded question with current cited evidence. Triggers: \"research\", \"investigate this question\", \"find evidence\". (Investigating a repository routes to codebase-recon.)",
+      "description": "Answer one bounded question, cited. Not for dissecting a codebase; that is codebase-recon or reverse-engineer. Triggers: \"research\", \"investigate this question\", \"find evidence\".",
       "disposition": "keep_specialist",
       "effects": [
         "write_research_report"
@@ -1286,7 +1260,7 @@
       "consumes": [],
       "context_rel": [],
       "dependencies": [],
-      "description": "Reverse-engineer an authorized repo, binary, or product into a verifiable feature inventory and adoption map. Triggers: \"reverse-engineer X\", \"tear down Y\", \"what should we steal from Z\", \"evaluate competitor/upstream\", \"should we fork/adopt/build-native\".",
+      "description": "Inventory an authorized repo, binary, or product. Not for tracing your own repo; that is codebase-recon. Triggers: \"reverse-engineer X\", \"tear down Y\", \"what should we steal from Z\", \"evaluate competitor/upstream\", \"should we fork/adopt/build-native\".",
       "disposition": "keep_specialist",
       "effects": [
         "clone_upstream_repo",
@@ -1387,7 +1361,7 @@
       "produces": [
         "rpi-report.v1"
       ],
-      "references_count": 1,
+      "references_count": 2,
       "tier": "meta",
       "user_invocable": true
     },
@@ -1450,39 +1424,6 @@
     {
       "canonical_status": "canonical",
       "capabilities": [
-        "scope_review"
-      ],
-      "codex_override_present": true,
-      "consumes": [
-        "proposed-write-scope"
-      ],
-      "context_rel": [
-        {
-          "kind": "supplier-to",
-          "with": "plan"
-        }
-      ],
-      "dependencies": [],
-      "description": "Review the bead or caller intent write scope for completeness and ambiguity. Triggers: \"review write scope\", \"check scope boundaries\", \"scope this change\".",
-      "disposition": "keep_specialist",
-      "effects": [],
-      "graph_root": false,
-      "hexagonal_role": "supporting",
-      "name": "scope",
-      "practices": [
-        "ddd-bounded-context",
-        "design-by-contract"
-      ],
-      "produces": [
-        "scope-review"
-      ],
-      "references_count": 0,
-      "tier": "meta",
-      "user_invocable": false
-    },
-    {
-      "canonical_status": "canonical",
-      "capabilities": [
         "security"
       ],
       "codex_override_present": true,
@@ -1516,27 +1457,6 @@
       ],
       "references_count": 6,
       "tier": "product",
-      "user_invocable": false
-    },
-    {
-      "canonical_status": "canonical",
-      "capabilities": [],
-      "codex_override_present": true,
-      "consumes": [],
-      "context_rel": [],
-      "dependencies": [],
-      "description": "Retired \u2014 its runtime-neutrality contract moved to docs/contracts/runtime-neutrality.md. Triggers: none \u2014 not routable.",
-      "disposition": "keep_off_path",
-      "effects": [],
-      "graph_root": false,
-      "hexagonal_role": "domain",
-      "name": "shared",
-      "practices": [
-        "design-by-contract"
-      ],
-      "produces": [],
-      "references_count": 0,
-      "tier": "library",
       "user_invocable": false
     },
     {
@@ -1877,7 +1797,7 @@
         "validation-result",
         "verdict.v2"
       ],
-      "references_count": 1,
+      "references_count": 2,
       "tier": "judgment",
       "user_invocable": true
     },

@@ -33,7 +33,6 @@
 | `craft-goal` | `supplier-to` | `plan` |
 | `crank` | `customer-of` | `rpi` |
 | `fitness` | `shared-kernel` | `standards` |
-| `goals` | `alias-of` | `fitness` |
 | `idea-genie` | `customer-of` | `research` |
 | `idea-genie` | `supplier-to` | `plan` |
 | `implement` | `customer-of` | `plan` |
@@ -53,7 +52,6 @@
 | `rpi` | `customer-of` | `implement` |
 | `rpi` | `customer-of` | `plan` |
 | `rpi` | `customer-of` | `validate` |
-| `scope` | `supplier-to` | `plan` |
 | `security` | `supplier-to` | `validate` |
 | `skill-eval` | `supplier-to` | `skill-builder` |
 | `toil-mining` | `supplier-to` | `automation-shape-routing` |
@@ -145,8 +143,6 @@
 | `rpi` | consumes | `validate` |
 | `rpi` | produces | `rpi-report.v1` |
 | `scaffold` | produces | `project-scaffold` |
-| `scope` | consumes | `proposed-write-scope` |
-| `scope` | produces | `scope-review` |
 | `security` | consumes | `repo-context` |
 | `security` | produces | `security-gate-summary.json` |
 | `security` | produces | `suite-summary.json` |

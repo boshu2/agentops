@@ -1,6 +1,6 @@
 # one-way-door
 
-Classify a pending decision as reversible or irreversible before it is acted on, and route irreversible ones to the caller instead of auto-deciding. Triggers: "is this a one-way door", "can we undo this", "should I just decide this", "the models disagree with me", before any auto-decided approval gate.
+Route irreversible pending decisions to the caller. Not for challenging a frozen plan; that is premortem. Triggers: "is this a one-way door", "can we undo this", "should I just decide this", "the models disagree with me", before any auto-decided approval gate.
 
 ## Instructions
 

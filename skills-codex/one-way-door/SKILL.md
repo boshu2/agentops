@@ -1,6 +1,6 @@
 ---
 name: one-way-door
-description: 'Classify a pending decision as reversible or irreversible before it is acted on, and route irreversible ones to the caller instead of auto-deciding. Triggers: "is this a one-way door", "can we undo this", "should I just decide this", "the models disagree with me", before any auto-decided approval gate.'
+description: 'Route irreversible pending decisions to the caller. Triggers: "is this a one-way door", "can we undo this", "should I just decide this", "the models disagree with me", before any auto-decided approval gate.'
 ---
 # /one-way-door
 
@@ -128,6 +128,15 @@ One classification per decision:
 **Done when:** every decision in the batch carries a `door` and a `layer`, and no
 decision with `door: one-way` was answered by the agent. A batch is correctly
 gated when every `one-way` line went back to the caller unanswered.
+
+## Prompt
+
+```text
+I'm about to run `git push --force-with-lease origin train2/c` after
+rebasing onto main, and separately rotate the deploy key in
+cli/internal/config/secrets.go before shipping. Classify each decision:
+is it one-way or two-way, and who should decide?
+```
 
 ## It's working if
 

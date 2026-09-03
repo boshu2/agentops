@@ -1,6 +1,6 @@
 ---
 name: premortem
-description: 'Optionally challenge a frozen plan with one fresh independent judge before implementation. Triggers: "premortem", "challenge this plan", "what could make this plan fail".'
+description: 'Fresh-judge a frozen plan. Triggers: "premortem", "challenge this plan", "what could make this plan fail".'
 ---
 # Premortem
 
@@ -102,6 +102,15 @@ Two questions the challenger answers with an artifact, not an opinion:
 These are integration- and extension-class checks. The Grain question's
 native-counterpart list applies only to integration-class work; do not impose it
 on routine feature work.
+
+## Prompt
+
+```text
+Premortem this plan before I implement: bead ag-4f21 proposes rewriting
+`scripts/regen-all.sh` to call `ao gate check` instead of shelling out to
+the Python generators, touching cli/internal/gates/regen.go. Plan and
+acceptance are in the bead. Find concrete ways it fails.
+```
 
 ## It's working if
 

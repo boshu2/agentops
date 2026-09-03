@@ -1,12 +1,34 @@
 ---
 name: research
-description: 'Answer a bounded question with current cited evidence. Triggers: "research", "investigate this question", "find evidence". (Investigating a repository routes to codebase-recon.)'
+description: 'Answer one bounded question, cited. Triggers: "research", "investigate this question", "find evidence".'
 ---
 # Research
 
 Answer one bounded question with current evidence. Research informs a caller;
 it does not select work, approve a plan, mutate lifecycle state, or decide what
 happens next.
+
+## Prompt
+
+```text
+Research: does `ao gate check --scope head` in cli/cmd/ao/gate.go
+actually run scripts/check-skill-python-ratchet.sh, or only the schema
+and format gates? I'm deciding whether to add a new Python file under
+skills/foo/scripts/ and need a cited answer before I do.
+```
+
+## It's working if
+
+Observable in the trace, without reading the prose:
+
+- Every load-bearing claim cites a commit and `file:line`, checkable with
+  `git show <sha>:<path>`.
+- Each capability flag derived from the bounded question is answered with
+  evidence, or reported as `unknown` explicitly.
+- `contradictions` and `unknowns` stay visible in the output rather than
+  resolved by assertion.
+- The report ends with `checked` and `unchecked` scope, carrying no
+  approval or next-action field.
 
 ## Contract
 
