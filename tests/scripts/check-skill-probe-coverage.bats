@@ -126,6 +126,12 @@ seal = contract.get("seal") or {}
 if seal.get("mode") == "seatbelt" and seal.get("workspace_root"):
     event["workspace"] = seal["workspace_root"]
     event["workspace_reset"] = True
+    if "network" in seal:
+        event["network_egress"] = {
+            "allowed": 3,
+            "refused": 0,
+            "log_sha256": "sha256:" + "c" * 64,
+        }
 events = [
     event,
     {"type": "thread.started", "thread_id": f"gate-{directory.name}-{name}"},
@@ -185,41 +191,41 @@ write_seal() {
         *) echo "unknown seal spec: $spec" >&2; return 1 ;;
     esac
     roots+=(${tail_roots[@]+"${tail_roots[@]}"})
-    python3 - "$directory" "$spec" "$REAL_HOME" "$repo_real" "${roots[@]}" <<'PY'
+    # The record is written by the tool's OWN renderer, so the fixture profile
+    # and the fixture block relate exactly the way a real capture relates them.
+    local payload
+    payload="$(mktemp "$BATS_TEST_TMPDIR/seal-payload.XXXXXX")"
+    python3 - "$payload" "$spec" "$REAL_HOME" "$repo_real" "${roots[@]}" <<'SEALPY'
 import hashlib, json, pathlib, sys
 
-directory = pathlib.Path(sys.argv[1])
+payload_path = pathlib.Path(sys.argv[1])
 spec = sys.argv[2]
 real_home = sys.argv[3]
 git_common_root = sys.argv[4]
 denied = sys.argv[5:]
 sealed = spec != "none"
-profile = None
-if sealed:
-    profile = "(version 1)\n(allow default)\n(deny file-read*\n" + "".join(
-        f'  (subpath "{root}")\n' for root in denied
-    ) + ")"
-profile_sha = ("sha256:" + hashlib.sha256(profile.encode()).hexdigest()) if sealed else None
 run_root = "/private/tmp/probe-run.aaaaaa"
 dispatch = run_root + "/dispatch"
-record = {
-    "schema": "agentops-skill-probe-seal.v1",
+launcher = "/private/tmp/probe-run.aaaaaa-launcher/codex"
+config_text = 'web_search = "disabled"\n'
+payload = {
     "seal_mode": "seatbelt" if sealed else "none",
-    "coverage_eligible": sealed,
-    "mechanism": "sandbox-exec" if sealed else None,
-    "sandbox_exec": "/usr/bin/sandbox-exec" if sealed else None,
+    "sandbox_exec": "/usr/bin/sandbox-exec" if sealed else "",
     "platform": "Darwin",
-    "wrap": ["sandbox-exec", "-p", profile_sha] if sealed else [],
-    "profile": profile,
-    "profile_file": run_root + "/home/seal.sb" if sealed else None,
-    "profile_sha256": profile_sha,
+    "profile_file": run_root + "/home/seal.sb" if sealed else "",
     "denied_read_roots": denied,
     "denied_read_data_roots": [dispatch] if sealed else [],
     "denied_link_roots": (list(denied) + [dispatch]) if sealed else [],
     "writable_roots": (
-        [run_root + "/home", run_root + "/ws", run_root + "/tmp", "/dev"] if sealed else []
+        [run_root + "/home", run_root + "/ws", run_root + "/tmp"] if sealed else []
     ),
-    "allowed_read_paths": [],
+    "dev_write_paths": ["/dev/null", "/dev/tty"] if sealed else [],
+    "allowed_read_paths": (
+        [launcher] if sealed and any(launcher.startswith(root) for root in denied) else []
+    ),
+    "launcher_chain": [launcher] if sealed else [],
+    "launcher_sha256": ("sha256:" + "a" * 64) if sealed else "",
+    "env_allowlist": ["PATH", "HOME", "CODEX_HOME", "TMPDIR"],
     "rep_env": {
         "HOME": run_root + "/home",
         "CODEX_HOME": run_root + "/home/.codex",
@@ -227,16 +233,30 @@ record = {
     },
     "real_home": real_home,
     "real_codex_home": real_home + "/.codex",
-    "real_tmpdir": "/private/tmp" if sealed else None,
-    "git_common_root": git_common_root if sealed else None,
-    "run_root": run_root if sealed else None,
-    "workspace_root": run_root + "/ws" if sealed else None,
-    "dispatch_root": dispatch if sealed else None,
-    "config_sanitized": ["model", "model_reasoning_effort"] if sealed else None,
+    "real_tmpdir": "/private/tmp" if sealed else "",
+    "cache_root": "/private/var/folders/fixture/C" if sealed else "",
+    "git_common_root": git_common_root if sealed else "",
+    "run_root": run_root if sealed else "",
+    "workspace_root": run_root + "/ws" if sealed else "",
+    "dispatch_root": dispatch if sealed else "",
+    "network": {
+        "mode": "proxy-allowlist" if sealed else "open",
+        "hosts": ["chatgpt.com"] if sealed else [],
+        "proxy": "127.0.0.1:54321" if sealed else None,
+        "unix_sockets": [],
+    },
+    "config_sanitized": ["web_search"] if sealed else None,
+    "config_sha256": (
+        "sha256:" + hashlib.sha256(config_text.encode()).hexdigest() if sealed else ""
+    ),
+    "config_text": config_text if sealed else "",
     "auth_copied": bool(sealed),
 }
-(directory / "seal.json").write_text(json.dumps(record, indent=2, sort_keys=True) + "\n")
-PY
+payload_path.write_text(json.dumps(payload, sort_keys=True))
+SEALPY
+    rm -f "$directory/seal.json"
+    python3 "$META_TOOL" seal-record --payload "$payload" \
+        --output "$directory/seal.json" >/dev/null
 }
 
 # set_scorecard_seal SCORECARD_PATH SEAL_JSON_PATH [PYTHON_SNIPPET] — echo the
@@ -779,22 +799,25 @@ PY
     run --separate-stderr bash "$GATE" --json
 
     [ "$status" -eq 0 ]
-    # 12 product/judgment-tier badges and no declared-denominator exclusion:
-    # the `goals` alias was retired on 2026-09-03 (ADR-0018), so nothing is
-    # excluded and the denominator is the badge count. premortem is measured
-    # by the 2026-09-03 recapture under the hardened seal (the first-pass v3
-    # sets were deleted with their seal); the headline is 1/12.
-    [ "$(json_field "$output" tier_total)" = "12" ]
-    [ "$(json_field "$output" excluded_count)" = "0" ]
-    [ "$(json_field "$output" gated_total)" = "12" ]
-    [ "$(json_field "$output" measured)" = "1" ]
-    [ "$(json_field "$output" unmeasured_count)" = "11" ]
+    # The denominator is whatever the frontmatter declares minus the declared
+    # exclusions; what this test pins is the HONEST headline, not a number that
+    # moves with the catalog. Every hardened row is recaptured after a harness
+    # change (the evaluator hash moves with the bytes), so until that recapture
+    # the measured count is zero rather than a badge resting on stale evidence.
+    [ "$(json_field "$output" measured)" = "0" ]
+    [ "$(json_field "$output" gated_total)" = "$(json_field "$output" unmeasured_count)" ]
 
-    # Every set the ledger points at reports its EFFECTIVE eligibility, so a
-    # reader meets it before the scorecard's own immutable claim.
+    # M2V-02: EVERY ledger row that names a scorecard gets an eligibility line,
+    # including the 2026-08-26 WITHDRAWN row the README cites as the example of
+    # a scorecard whose own `coverage_eligible` says true while the gate treats
+    # the set as ineligible. Before this, only directional rows got one.
+    [[ "$output" == *"docs/evals/scorecards/2026-08-26/premortem-plan-shape-t2-low.json"* ]]
+    [[ "$output" == *'"eligible":false'* ]]
+
     run --separate-stderr bash "$GATE"
     [ "$status" -eq 0 ]
-    [[ "$output" == *"set premortem/premortem-plan-shape-t2: eligible=true (verified)"* ]]
+    [[ "$output" == *"eligible=false ("* ]]
+    [[ "$output" == *"2026-08-26/premortem-plan-shape-t2-low.json"* ]]
 }
 
 @test "a set's effective eligibility is reported per set in text and JSON" {

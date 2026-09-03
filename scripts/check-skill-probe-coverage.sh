@@ -117,6 +117,23 @@ print(refs[0])
 ' "$1"
 }
 
+# A row that is not a current result states its evidence in prose ("Evidence:
+# `path`", "honest replay scorecard: `path`"), so the strict pointer form is not
+# the only way a scorecard is named. The strict form stays the ONLY thing that
+# qualifies a directional row as coverage evidence; this looser read exists so
+# every row that names a scorecard still gets an eligibility line.
+scorecard_ref_loose() {
+    # shellcheck disable=SC2016 # Python source is intentionally single-quoted shell data.
+    python3 -c '
+import re, sys
+refs = re.findall(r"`(docs/evals/scorecards/[^`]+\.json)`", sys.argv[1])
+unique = sorted(set(refs))
+if len(unique) != 1:
+    raise SystemExit(1)
+print(unique[0])
+' "$1"
+}
+
 # Resolve the gate denominator first. Ledger rows outside this product/judgment
 # set may be useful evidence, but they are not tier-coverage candidates and
 # should not emit misleading "not measured" warnings from this gate.
@@ -244,29 +261,47 @@ if [[ -f "$LEDGER_FILE" ]]; then
         # Strip surrounding backticks/asterisks a table author may add.
         skill="$(printf '%s' "$skill" | tr -d '`*')"
         probe="$(printf '%s' "$probe" | tr -d '`*')"
+        [[ "$skill" =~ ^[A-Za-z0-9][A-Za-z0-9._-]*$ ]] || continue
+        directional=0
         if [[ "$verdict" == "BEHAVIORAL" || "$verdict" == "INERT" || "$verdict" == "REGRESSIVE" ]]; then
-            [[ "$skill" =~ ^[A-Za-z0-9][A-Za-z0-9._-]*$ ]] || continue
-            [[ -n "${GATED[$skill]:-}" ]] || continue
-            if ! scorecard_path="$(scorecard_ref_from_notes "$notes")"; then
+            directional=1
+        fi
+        if ! scorecard_path="$(scorecard_ref_from_notes "$notes")"; then
+            if [[ $directional -eq 1 && -n "${GATED[$skill]:-}" ]]; then
                 echo "::warning::probe ledger row '${skill}/${probe}' is not measured: current verdict lacks exactly one scorecard: \`path\` evidence pointer." >&2
                 SET_ROWS+=("${skill}|${probe}||false|no-scorecard-pointer")
                 continue
             fi
-            verification=""
-            if verification="$(python3 "$METADATA_TOOL" verify-scorecard \
-                --repo-root "$EVIDENCE_ROOT" \
-                --skills-dir "$SKILLS_DIR" \
-                --scorecard "$scorecard_path" \
-                --ledger-skill "$skill" \
-                --ledger-probe "$probe" \
-                --ledger-verdict "$verdict" 2>&1)"; then
+            # A non-current row states its evidence in prose; list it anyway.
+            scorecard_path="$(scorecard_ref_loose "$notes")" || continue
+        fi
+        # EVERY row that points at a scorecard gets an eligibility line, not just
+        # the directional ones. The 2026-08-26 WITHDRAWN row is the example the
+        # README cites for a scorecard whose own `coverage_eligible` says true
+        # while the gate treats the set as ineligible, and before this it never
+        # got a line at all.
+        verification=""
+        if verification="$(python3 "$METADATA_TOOL" verify-scorecard \
+            --repo-root "$EVIDENCE_ROOT" \
+            --skills-dir "$SKILLS_DIR" \
+            --scorecard "$scorecard_path" \
+            --ledger-skill "$skill" \
+            --ledger-probe "$probe" \
+            --ledger-verdict "$verdict" 2>&1)"; then
+            if [[ $directional -eq 1 && -n "${GATED[$skill]:-}" ]]; then
                 MEASURED["$skill"]=1
                 SET_ROWS+=("${skill}|${probe}|${scorecard_path}|true|verified")
             else
-                verification="$(printf '%s' "$verification" | tail -n 1)"
-                echo "::warning::probe ledger row '${skill}/${probe}' is not measured: ${verification:-evidence verification failed}" >&2
-                SET_ROWS+=("${skill}|${probe}|${scorecard_path}|false|$(seal_reason_label "$verification")")
+                # Verified evidence behind a non-current verdict is still not a
+                # coverage result: the ledger says the row is not a measurement.
+                SET_ROWS+=("${skill}|${probe}|${scorecard_path}|false|verdict-${verdict,,}")
             fi
+        else
+            verification="$(printf '%s' "$verification" | tail -n 1)"
+            if [[ $directional -eq 1 && -n "${GATED[$skill]:-}" ]]; then
+                echo "::warning::probe ledger row '${skill}/${probe}' is not measured: ${verification:-evidence verification failed}" >&2
+            fi
+            SET_ROWS+=("${skill}|${probe}|${scorecard_path}|false|$(seal_reason_label "$verification")")
         fi
     done < "$LEDGER_FILE"
 fi
