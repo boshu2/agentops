@@ -51,7 +51,12 @@ LEGACY_SEAL_KEYS = {
     "original_home",
     "repository_root",
 }
-SEAL_KEYS = LEGACY_SEAL_KEYS | {
+# The 2026-09-03 second shape. It bound the roots and the mechanism but left
+# the profile text unreconstructable from the block, so a record could assert
+# roots the profile never carried, and it said nothing about the network: the
+# outer profile was `(allow default)` and codex's own sandbox is bypassed inside
+# it, so a rep could fetch the canonical SKILL.md over HTTPS.
+PASS2_SEAL_KEYS = LEGACY_SEAL_KEYS | {
     "platform",
     "mechanism",
     "sandbox_exec",
@@ -68,9 +73,25 @@ SEAL_KEYS = LEGACY_SEAL_KEYS | {
     "config_sanitized",
     "auth_copied",
 }
+SEAL_KEYS = PASS2_SEAL_KEYS | {
+    "network",
+    "dev_write_paths",
+    "cache_root",
+    "real_codex_home",
+    "launcher_chain",
+    "launcher_sha256",
+    "config_sha256",
+    "config_text",
+    "env_allowlist",
+}
+SEAL_SHAPES = (LEGACY_SEAL_KEYS, PASS2_SEAL_KEYS, SEAL_KEYS)
 SEAL_REP_ENV_KEYS = {"HOME", "CODEX_HOME", "TMPDIR"}
+SEAL_NETWORK_KEYS = {"mode", "hosts", "proxy", "unix_sockets"}
+SEAL_NETWORK_MODE = "proxy-allowlist"
 SEAL_PLATFORM = "Darwin"
 SEAL_MECHANISM = "sandbox-exec"
+SEAL_SANDBOX_EXEC_PATH = "/usr/bin/sandbox-exec"
+PROXY_AUTHORITY_RE = re.compile(r"^127\.0\.0\.1:([1-9][0-9]{0,4})$")
 # Roots a counted row must prove were unreadable, relative to the ORIGINAL home.
 SEALED_SKILL_ROOTS = (".agents", ".claude/skills", ".gemini/skills", ".codex/skills")
 TRANSCRIPT_RE = re.compile(r"^(control|treatment)-([1-9][0-9]*)\.txt$")
@@ -843,48 +864,149 @@ def toml_scalar(value: Any) -> str | None:
     return None
 
 
-# Top-level scalar keys a sealed rep must not inherit even though they are
-# scalars: `notify` names an operator program codex runs at the end of every
-# turn (on this operator, a computer-use client under ~/.codex).
-SANITIZE_DROP_KEYS = frozenset({"notify"})
+# The rep's config is GENERATED from this allowlist, never copied or filtered
+# from the operator's. Copying it, even table-stripped, carried whatever the
+# operator had set: `web_search` live, a `notify` hook naming an operator
+# program, and a key set that changes under the harness. A generated file has
+# one text, one digest, and nothing else can be in it.
+PROBE_CONFIG_KEYS = ("model_reasoning_effort", "web_search")
+PROBE_CONFIG_HEADER = (
+    "# Generated for one sealed skill-probe capture. Not the operator's config.\n"
+    "# Only the keys this harness needs are present: the model comes from the\n"
+    "# --model flag, and web search is off so the rep has no second egress path.\n"
+)
 
 
-def sanitize_codex_config(source: Path, target: Path) -> list[str]:
-    """Write TARGET with only SOURCE's top-level scalar keys; return their names.
+def render_probe_config(effort: str | None) -> str:
+    """The exact config text every rep of one capture runs with."""
+    lines = [PROBE_CONFIG_HEADER.rstrip("\n")]
+    if effort:
+        require_text(effort, "probe config effort")
+        if not re.fullmatch(r"[a-z]+", effort):
+            raise MetadataError(f"probe config effort is unsafe: {effort!r}")
+        lines.append(f'model_reasoning_effort = "{effort}"')
+    lines.append('web_search = "disabled"')
+    return "\n".join(lines) + "\n"
 
-    The operator's real config.toml carries [mcp_servers.*] tables (which a rep
-    would otherwise start and be able to query, reaching the operator's vaults
-    and tools) and [projects.*] trust entries that name other checkouts holding
-    the same canonical SKILL.md. A sealed rep gets the model and effort settings
-    and nothing else: every table is dropped, and so is every key in
-    SANITIZE_DROP_KEYS.
+
+def probe_config_drift(path: Path, expected_text: str, workspace: str) -> list[str]:
+    """What a rep changed in its config beyond the one permitted growth.
+
+    codex writes a `[projects."<cwd>"]` trust table into its config on first run
+    in a directory. That growth is expected and harmless; anything else means
+    the rep edited the file it was measured under.
     """
     import tomllib
 
-    raw = read_regular_bytes(source, "producer config", maximum=MAX_INPUT_BYTES * 4)
     try:
-        parsed = tomllib.loads(raw.decode("utf-8"))
+        actual = path.read_text(encoding="utf-8")
+    except OSError as exc:
+        return [f"config unreadable after the rep: {exc}"]
+    if actual == expected_text:
+        return []
+    findings: list[str] = []
+    try:
+        parsed = tomllib.loads(actual)
+        baseline = tomllib.loads(expected_text)
     except (UnicodeError, tomllib.TOMLDecodeError) as exc:
-        raise MetadataError(f"producer config is not readable TOML: {exc}") from exc
-    kept: list[str] = []
-    lines = [
-        "# Sanitized copy of the operator's codex config for one sealed probe rep.",
-        "# Top-level scalar keys only: every table (mcp_servers, projects, ...) is",
-        "# dropped so the rep starts no operator service and trusts no other checkout.",
-    ]
-    for key in sorted(parsed):
-        if key in SANITIZE_DROP_KEYS:
+        return [f"config is no longer readable TOML: {exc}"]
+    for key in sorted(set(baseline) | set(parsed)):
+        if key == "projects":
             continue
-        rendered = toml_scalar(parsed[key])
-        if rendered is None:
-            continue
-        if not re.fullmatch(r"[A-Za-z0-9_-]+", key):
-            continue
-        kept.append(key)
-        lines.append(f"{key} = {rendered}")
-    target.write_text("\n".join(lines) + "\n", encoding="utf-8")
-    target.chmod(0o600)
-    return kept
+        if baseline.get(key) != parsed.get(key):
+            findings.append(f"key {key!r} changed")
+    projects = parsed.get("projects")
+    if projects is not None:
+        if not isinstance(projects, dict):
+            findings.append("[projects] is not a table")
+        else:
+            for name in sorted(projects):
+                if name != workspace:
+                    findings.append(f"[projects] gained an entry outside the workspace: {name}")
+    return findings
+
+
+def seal_quote(value: str, field: str) -> str:
+    """A seatbelt path literal. A quote or a backslash could break the profile."""
+    text = require_text(value, field)
+    assert isinstance(text, str)
+    if any(character in text for character in ('"', "\\", "\n")):
+        raise MetadataError(f"{field} cannot be quoted in a seatbelt profile: {text!r}")
+    return text
+
+
+def seal_network_port(network: dict[str, Any]) -> str:
+    match = PROXY_AUTHORITY_RE.fullmatch(str(network.get("proxy", "")))
+    if match is None:
+        raise MetadataError(
+            "seal network proxy must be 127.0.0.1:<port>, got: "
+            f"{network.get('proxy')!r}"
+        )
+    return match.group(1)
+
+
+def render_seal_profile(seal: dict[str, Any]) -> str:
+    """Rebuild the seatbelt profile text from the BOUND block.
+
+    This is the only writer of a probe seal profile: the harness renders through
+    it, and coverage requires digest(render_seal_profile(block)) to equal the
+    block's profile_sha256. Before this, the block's roots were assertions
+    ALONGSIDE an opaque profile, so a record could claim writable_roots ["/"] or
+    an allowed_read_paths entry pointing at the main checkout and still be
+    coverage-eligible: nothing tied the claim to the bytes the kernel enforced.
+    """
+    if seal.get("mode") != "seatbelt":
+        raise MetadataError("only a seatbelt seal has a profile to render")
+    if set(seal) != SEAL_KEYS:
+        raise MetadataError("only the hardened seal block can be rendered")
+    network = seal["network"]
+    home = seal["rep_env"]["HOME"]
+    workspace = seal["workspace_root"]
+    temp = seal["rep_env"]["TMPDIR"]
+    lines = ["(version 1)", "(allow default)", "(deny network*)"]
+    lines.append(
+        f'(allow network-outbound (remote ip "localhost:{seal_network_port(network)}"))'
+    )
+    for socket_path in network["unix_sockets"]:
+        lines.append(
+            f'(allow network-outbound (literal "{seal_quote(socket_path, "unix socket")}"))'
+        )
+    lines.append("(deny file-write*)")
+    lines.append("(allow file-write*")
+    for root in seal["writable_roots"]:
+        lines.append(f'  (subpath "{seal_quote(root, "writable root")}")')
+    for device in seal["dev_write_paths"]:
+        lines.append(f'  (literal "{seal_quote(device, "device")}")')
+    lines.append(")")
+    lines.append("(deny file-read*")
+    for root in seal["denied_read_roots"]:
+        lines.append(f'  (subpath "{seal_quote(root, "denied read root")}")')
+    lines.append(")")
+    lines.append("(allow file-read-metadata")
+    lines.append(f'  (path-ancestors "{seal_quote(workspace, "workspace root")}")')
+    for allowed in seal["allowed_read_paths"]:
+        lines.append(f'  (path-ancestors "{seal_quote(allowed, "allowed read path")}")')
+    lines.append(")")
+    lines.append("(allow file-read*")
+    for root in (home, workspace, temp):
+        lines.append(f'  (subpath "{seal_quote(root, "rep root")}")')
+    for allowed in seal["allowed_read_paths"]:
+        lines.append(f'  (literal "{seal_quote(allowed, "allowed read path")}")')
+    lines.append(")")
+    lines.append("(allow file-read-metadata")
+    for root in seal["denied_read_data_roots"]:
+        lines.append(f'  (subpath "{seal_quote(root, "denied read-data root")}")')
+    lines.append(")")
+    lines.append("(deny file-write*")
+    for root in seal["denied_read_data_roots"]:
+        lines.append(f'  (subpath "{seal_quote(root, "denied read-data root")}")')
+    lines.append(")")
+    for operation in ("file-link", "file-clone"):
+        lines.append(f"(deny {operation}")
+        for root in seal["denied_link_roots"]:
+            lines.append(f'  (subpath "{seal_quote(root, "denied link root")}")')
+        lines.append(")")
+    return "\n".join(lines)
 
 
 def legacy_seal() -> dict[str, Any]:
@@ -944,6 +1066,15 @@ def seal_block_from_record(
         "real_tmpdir",
         "config_sanitized",
         "auth_copied",
+        "network",
+        "dev_write_paths",
+        "cache_root",
+        "real_codex_home",
+        "launcher_chain",
+        "launcher_sha256",
+        "config_sha256",
+        "config_text",
+        "env_allowlist",
     }
     missing = required - set(record)
     if missing:
@@ -979,6 +1110,30 @@ def seal_block_from_record(
         raise MetadataError(f"{label} wrap must be an array of argv strings")
     if not isinstance(record["auth_copied"], bool):
         raise MetadataError(f"{label} auth_copied must be a boolean")
+    network = require_exact_object(
+        record["network"], SEAL_NETWORK_KEYS, f"{label} network"
+    )
+    if not isinstance(network["hosts"], list) or not all(
+        isinstance(item, str) and item for item in network["hosts"]
+    ):
+        raise MetadataError(f"{label} network hosts must be a list of host names")
+    if not isinstance(network["unix_sockets"], list) or not all(
+        isinstance(item, str) and item.startswith("/") for item in network["unix_sockets"]
+    ):
+        raise MetadataError(f"{label} network unix_sockets must be absolute paths")
+    launcher_chain = normalized_path_list(
+        record["launcher_chain"], f"{label} launcher_chain"
+    )
+    for field in ("config_sha256", "launcher_sha256"):
+        value = record[field]
+        if value is not None and not (
+            isinstance(value, str) and SHA256_RE.fullmatch(value)
+        ):
+            raise MetadataError(f"{label} {field} must be a sha256 digest or null")
+    if not isinstance(record["env_allowlist"], list) or not all(
+        isinstance(item, str) and item for item in record["env_allowlist"]
+    ):
+        raise MetadataError(f"{label} env_allowlist must be a list of variable names")
     return {
         "mode": mode,
         "platform": require_text(record["platform"], f"{label} platform"),
@@ -1026,12 +1181,177 @@ def seal_block_from_record(
         ),
         "config_sanitized": config_sanitized,
         "auth_copied": record["auth_copied"],
+        "network": {
+            "mode": require_text(network["mode"], f"{label} network mode"),
+            "hosts": sorted(network["hosts"]),
+            "proxy": require_text(
+                network["proxy"], f"{label} network proxy", nullable=True
+            ),
+            "unix_sockets": sorted(network["unix_sockets"]),
+        },
+        "dev_write_paths": normalized_path_list(
+            record["dev_write_paths"], f"{label} dev_write_paths"
+        ),
+        "cache_root": optional_normalized_path(
+            record["cache_root"], f"{label} cache_root"
+        ),
+        "real_codex_home": require_absolute_path(
+            os.path.normpath(
+                require_text(record["real_codex_home"], f"{label} real_codex_home")
+            ),
+            f"{label} real_codex_home",
+        ),
+        "launcher_chain": launcher_chain,
+        "launcher_sha256": record["launcher_sha256"],
+        "config_sha256": record["config_sha256"],
+        "config_text": (
+            None
+            if record["config_text"] is None
+            else require_message_text(record["config_text"], f"{label} config_text")
+        ),
+        "env_allowlist": sorted(record["env_allowlist"]),
         "profile_sha256": profile_sha256,
         "original_home": require_absolute_path(
             os.path.normpath(require_text(record["real_home"], f"{label} real_home")),
             f"{label} real_home",
         ),
         "repository_root": repo_root,
+    }
+
+
+SEAL_PAYLOAD_KEYS = {
+    "seal_mode",
+    "sandbox_exec",
+    "platform",
+    "denied_read_roots",
+    "denied_read_data_roots",
+    "denied_link_roots",
+    "writable_roots",
+    "dev_write_paths",
+    "allowed_read_paths",
+    "launcher_chain",
+    "launcher_sha256",
+    "rep_env",
+    "env_allowlist",
+    "real_home",
+    "real_codex_home",
+    "real_tmpdir",
+    "cache_root",
+    "git_common_root",
+    "run_root",
+    "workspace_root",
+    "dispatch_root",
+    "network",
+    "config_sanitized",
+    "config_sha256",
+    "config_text",
+    "auth_copied",
+    "profile_file",
+}
+
+
+def write_seal_record(payload_path: Path, output_path: Path) -> dict[str, Any]:
+    """Render the profile from the harness payload and write seal.json.
+
+    The harness assembles the facts; this renders the ONE profile text from them
+    and stamps its digest and the wrap, so the profile the kernel enforces and
+    the block the contract binds cannot drift apart. The record is written
+    exclusively (x mode): a capture never overwrites a seal.
+    """
+    payload = parse_json_bytes(
+        read_regular_bytes(payload_path, "seal payload", maximum=MAX_INPUT_BYTES),
+        "seal payload",
+    )
+    fields = require_exact_object(payload, SEAL_PAYLOAD_KEYS, "seal payload")
+    sealed = fields["seal_mode"] == "seatbelt"
+    record: dict[str, Any] = {
+        "schema": SEAL_RECORD_SCHEMA,
+        "seal_mode": fields["seal_mode"],
+        "coverage_eligible": sealed,
+        "mechanism": SEAL_MECHANISM if sealed else None,
+        "sandbox_exec": fields["sandbox_exec"] or None,
+        "platform": fields["platform"],
+        "profile_file": fields["profile_file"] or None,
+        "denied_read_roots": list(fields["denied_read_roots"]),
+        "denied_read_data_roots": list(fields["denied_read_data_roots"]),
+        "denied_link_roots": list(fields["denied_link_roots"]),
+        "writable_roots": list(fields["writable_roots"]),
+        "dev_write_paths": list(fields["dev_write_paths"]),
+        "allowed_read_paths": list(fields["allowed_read_paths"]),
+        "launcher_chain": list(fields["launcher_chain"]),
+        "launcher_sha256": fields["launcher_sha256"] or None,
+        "rep_env": dict(fields["rep_env"]),
+        "env_allowlist": sorted(fields["env_allowlist"]),
+        "real_home": fields["real_home"],
+        "real_codex_home": fields["real_codex_home"],
+        "real_tmpdir": fields["real_tmpdir"] or None,
+        "cache_root": fields["cache_root"] or None,
+        "git_common_root": fields["git_common_root"] or None,
+        "run_root": fields["run_root"] or None,
+        "workspace_root": fields["workspace_root"] or None,
+        "dispatch_root": fields["dispatch_root"] or None,
+        "network": dict(fields["network"]),
+        "config_sanitized": fields["config_sanitized"],
+        "config_sha256": fields["config_sha256"] or None,
+        "config_text": fields["config_text"] or None,
+        "auth_copied": bool(fields["auth_copied"]),
+    }
+    if sealed:
+        # Round-trip through the bound block so the rendered profile is exactly
+        # what a verifier will rebuild from the contract, not a parallel string.
+        placeholder = "(version 1)"
+        block = seal_block_from_record(
+            dict(
+                record,
+                profile=placeholder,
+                profile_sha256=digest_bytes(placeholder.encode("utf-8")),
+                wrap=[],
+            ),
+            "seal payload",
+            fields["run_root"] or "/",
+        )
+        profile = render_seal_profile(block)
+        record["profile"] = profile
+        record["profile_sha256"] = digest_bytes(profile.encode("utf-8"))
+        record["wrap"] = [fields["sandbox_exec"], "-p", record["profile_sha256"]]
+    else:
+        record["profile"] = None
+        record["profile_sha256"] = None
+        record["wrap"] = []
+    encoded = json.dumps(record, ensure_ascii=False, indent=2, sort_keys=True) + "\n"
+    with open(output_path, "x", encoding="utf-8") as handle:
+        handle.write(encoded)
+    return record
+
+
+def proxy_egress_summary(log_path: Path, rep: str) -> dict[str, Any]:
+    """One rep's CONNECT decisions plus the digest of the whole proxy log."""
+    raw = read_regular_bytes(log_path, "proxy log", maximum=MAX_TRANSCRIPT_BYTES)
+    allowed = 0
+    refused = 0
+    detail: list[str] = []
+    for line in raw.decode("utf-8", errors="replace").splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            entry = json.loads(line)
+        except ValueError:
+            refused += 1
+            detail.append("unparseable proxy log line")
+            continue
+        if entry.get("rep") != rep:
+            continue
+        if entry.get("decision") == "allowed":
+            allowed += 1
+        else:
+            refused += 1
+            detail.append(f"{entry.get('decision')}: {entry.get('host')}:{entry.get('port')}")
+    return {
+        "allowed": allowed,
+        "refused": refused,
+        "log_sha256": digest_bytes(raw),
+        "detail": detail,
     }
 
 
@@ -1071,6 +1391,15 @@ def read_seal_file(
             "real_tmpdir": None,
             "config_sanitized": None,
             "auth_copied": False,
+            "network": {"mode": "open", "hosts": [], "proxy": None, "unix_sockets": []},
+            "dev_write_paths": [],
+            "cache_root": None,
+            "real_codex_home": os.path.join(home, ".codex"),
+            "launcher_chain": [],
+            "launcher_sha256": None,
+            "config_sha256": None,
+            "config_text": None,
+            "env_allowlist": [],
             "profile_sha256": None,
             "original_home": home,
             "repository_root": repo_root,
@@ -1091,10 +1420,8 @@ def validate_seal(value: Any) -> dict[str, Any]:
     if not isinstance(value, dict):
         raise MetadataError("capture contract seal must be a JSON object")
     keys = set(value)
-    if keys == LEGACY_SEAL_KEYS:
-        seal = require_exact_object(value, LEGACY_SEAL_KEYS, "capture contract seal")
-    else:
-        seal = require_exact_object(value, SEAL_KEYS, "capture contract seal")
+    shape = next((candidate for candidate in SEAL_SHAPES if keys == candidate), SEAL_KEYS)
+    seal = require_exact_object(value, shape, "capture contract seal")
     mode = require_text(seal["mode"], "seal mode")
     if mode not in SEAL_MODES | {LEGACY_SEAL_MODE}:
         raise MetadataError(f"seal mode is unsupported: {mode!r}")
@@ -1111,6 +1438,11 @@ def validate_seal(value: Any) -> dict[str, Any]:
         require_path_list(seal["denied_link_roots"], "seal denied_link_roots")
         require_path_list(seal["allowed_read_paths"], "seal allowed_read_paths")
         require_exact_object(seal["rep_env"], SEAL_REP_ENV_KEYS, "seal rep_env")
+    if keys == SEAL_KEYS:
+        require_exact_object(seal["network"], SEAL_NETWORK_KEYS, "seal network")
+        require_path_list(seal["dev_write_paths"], "seal dev_write_paths")
+        require_path_list(seal["launcher_chain"], "seal launcher_chain")
+        require_absolute_path(seal["real_codex_home"], "seal real_codex_home")
     profile_sha256 = seal["profile_sha256"]
     if mode == "seatbelt":
         if not isinstance(profile_sha256, str) or not SHA256_RE.fullmatch(profile_sha256):
@@ -1194,6 +1526,12 @@ def seal_coverage_failure(seal: dict[str, Any]) -> str | None:
             "so it cannot prove the mechanism, the wrap, the link denies, the "
             "rep environment or the config sanitization"
         )
+    if set(seal) == PASS2_SEAL_KEYS:
+        return (
+            "tier coverage requires the hardened seal block (2026-09-03 third "
+            "pass): this contract cannot reconstruct its own profile and records "
+            "no network mode, so it proves nothing about what the rep fetched"
+        )
     if seal["platform"] != SEAL_PLATFORM:
         return (
             f"tier coverage requires a {SEAL_PLATFORM} seatbelt capture; the seal "
@@ -1207,7 +1545,10 @@ def seal_coverage_failure(seal: dict[str, Any]) -> str | None:
     sandbox_exec = seal["sandbox_exec"]
     if not isinstance(sandbox_exec, str) or not sandbox_exec.startswith("/"):
         return "tier coverage requires the resolved sandbox-exec path in the seal"
-    expected_wrap = [SEAL_MECHANISM, "-p", seal["profile_sha256"]]
+    # The wrap must name the RECORDED binary, not whatever `sandbox-exec`
+    # resolved to on PATH at dispatch time (a stub earlier on PATH would have
+    # run instead, and the record would still have said /usr/bin/sandbox-exec).
+    expected_wrap = [seal["sandbox_exec"], "-p", seal["profile_sha256"]]
     if seal["wrap"] != expected_wrap:
         return (
             "tier coverage requires the dispatch wrap to be the bound profile: "
@@ -1215,9 +1556,50 @@ def seal_coverage_failure(seal: dict[str, Any]) -> str | None:
         )
     if seal["config_sanitized"] is None:
         return (
-            "tier coverage requires the rep's producer config to be sanitized; "
-            "an unsanitized config starts the operator's MCP servers inside the rep"
+            "tier coverage requires the rep's producer config to be generated; "
+            "the operator's own config starts their MCP servers inside the rep"
         )
+    if seal["config_sha256"] is None or not seal["config_text"]:
+        return (
+            "tier coverage requires the generated config's exact text and digest "
+            "in the seal, so the file every rep ran under is inspectable"
+        )
+    if digest_bytes(seal["config_text"].encode("utf-8")) != seal["config_sha256"]:
+        return "tier coverage requires config_sha256 to match config_text"
+    if seal["sandbox_exec"] != SEAL_SANDBOX_EXEC_PATH:
+        return (
+            "tier coverage requires the system seatbelt binary "
+            f"{SEAL_SANDBOX_EXEC_PATH}; the seal records {seal['sandbox_exec']!r}"
+        )
+    network = seal["network"]
+    if network["mode"] != SEAL_NETWORK_MODE:
+        return (
+            f"tier coverage requires network mode {SEAL_NETWORK_MODE!r}; the seal "
+            f"records {network['mode']!r}, so the rep could reach any host and "
+            "fetch the canonical SKILL.md over the network"
+        )
+    if not network["hosts"]:
+        return "tier coverage requires a non-empty network host allowlist"
+    try:
+        seal_network_port(network)
+    except MetadataError as exc:
+        return f"tier coverage requires a local proxy authority: {exc}"
+    for field in ("real_tmpdir", "git_common_root"):
+        if not seal[field]:
+            return (
+                f"tier coverage requires {field} in the seal; a null value leaves "
+                "the required-root check with nothing to compare"
+            )
+    for field, root in (
+        ("repository_root", seal["repository_root"]),
+        ("git_common_root", seal["git_common_root"]),
+        ("original_home", seal["original_home"]),
+    ):
+        if seal_covers(seal["writable_roots"], root):
+            return (
+                "tier coverage refuses a seal whose writable roots reach the "
+                f"{field}: {root}"
+            )
     if not seal["auth_copied"]:
         return (
             "tier coverage requires auth.json to be COPIED into the scratch "
@@ -1267,12 +1649,49 @@ def seal_coverage_failure(seal: dict[str, Any]) -> str | None:
                 f"tier coverage requires the rep's {key} to sit OUTSIDE the "
                 f"operator's home: {value}"
             )
+    # The launcher exception is the one hole in the read denies, so it is tied to
+    # the producer the contract bound: exactly the resolved launcher chain, and
+    # only the links of it that a denied root would otherwise cover. Without
+    # this, a HOME path holding a SKILL.md could be listed as an allowed
+    # "launcher" and read straight through the seal.
+    expected_allowed = [
+        path
+        for path in seal["launcher_chain"]
+        if seal_covers(seal["denied_read_roots"], path)
+    ]
+    if seal["allowed_read_paths"] != expected_allowed:
+        return (
+            "tier coverage requires allowed_read_paths to be exactly the bound "
+            f"launcher chain under a denied root; expected {expected_allowed}, "
+            f"seal records {seal['allowed_read_paths']}"
+        )
+    forbidden = [
+        ("repository_root", seal["repository_root"]),
+        ("git_common_root", seal["git_common_root"]),
+        ("real_codex_home", seal["real_codex_home"]),
+    ] + [
+        ("skill root", os.path.join(seal["original_home"], relative))
+        for relative in SEALED_SKILL_ROOTS
+    ]
     for allowed in seal["allowed_read_paths"]:
-        if seal_covers([seal["repository_root"]], allowed):
-            return (
-                "tier coverage refuses a seal that re-allows a read inside the "
-                f"checkout: {allowed}"
-            )
+        for label, root in forbidden:
+            if root and seal_covers([root], allowed):
+                return (
+                    "tier coverage refuses a seal that re-allows a read inside the "
+                    f"{label}: {allowed}"
+                )
+    # The last check is the one that makes every check above load-bearing: the
+    # block must reproduce the exact profile bytes the kernel enforced.
+    try:
+        rendered = render_seal_profile(seal)
+    except MetadataError as exc:
+        return f"tier coverage could not rebuild the profile from the seal block: {exc}"
+    if digest_bytes(rendered.encode("utf-8")) != seal["profile_sha256"]:
+        return (
+            "tier coverage requires the seal block to rebuild its own profile: "
+            "the profile digest does not match the block, so the recorded roots "
+            "are assertions rather than the bytes the kernel enforced"
+        )
     return None
 
 
@@ -2110,6 +2529,7 @@ def probe_input_event(
     prompt: bytes,
     workspace: str | None = None,
     workspace_reset: bool = False,
+    network_egress: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     expected = decode_prompts(contract["prompts"])[arm]
     if prompt != expected:
@@ -2132,7 +2552,32 @@ def probe_input_event(
         # before this rep rather than freshly mktemp'd, so the seatbelt profile
         # stays constant across the capture and binds one digest.
         event["workspace_reset"] = True
+    if network_egress is not None:
+        # What this rep asked the harness proxy for, and the digest of the proxy
+        # log that says so. The seal denies every destination but the proxy, and
+        # the proxy allows only the bound host list, so a nonzero `refused` is a
+        # rep that reached for something the capture does not permit.
+        event["network_egress"] = validate_network_egress(network_egress)
     return event
+
+
+NETWORK_EGRESS_KEYS = {"allowed", "refused", "log_sha256"}
+
+
+def validate_network_egress(value: Any) -> dict[str, Any]:
+    record = require_exact_object(value, NETWORK_EGRESS_KEYS, "network_egress")
+    for field in ("allowed", "refused"):
+        count = record[field]
+        if not isinstance(count, int) or isinstance(count, bool) or count < 0:
+            raise MetadataError(f"network_egress {field} must be a count")
+    digest = record["log_sha256"]
+    if not isinstance(digest, str) or not SHA256_RE.fullmatch(digest):
+        raise MetadataError("network_egress log_sha256 must be a sha256 digest")
+    return {
+        "allowed": record["allowed"],
+        "refused": record["refused"],
+        "log_sha256": digest,
+    }
 
 
 def validate_codex_runtime_events(
@@ -2176,7 +2621,7 @@ def validate_structured_transcript(
     # `workspace` (the rep cwd) and `workspace_reset` are optional in shape:
     # sets captured before the 2026-09-03 workspace fixes carry the five bound
     # keys only. A hardened seatbelt seal REQUIRES both, checked below.
-    optional = {"workspace", "workspace_reset"}
+    optional = {"workspace", "workspace_reset", "network_egress"}
     present = optional & set(events[0]) if isinstance(events[0], dict) else set()
     first = require_exact_object(
         events[0], PROBE_INPUT_KEYS | present, "probe input event"
@@ -2189,11 +2634,15 @@ def validate_structured_transcript(
         expected_prompt,
         workspace=first.get("workspace"),
         workspace_reset=bool(first.get("workspace_reset")),
+        network_egress=first.get("network_egress"),
     )
     if first != expected_event:
         raise MetadataError(f"{label} probe input event does not match bound {arm}-{rep} prompt")
     seal = contract.get("seal")
-    if isinstance(seal, dict) and seal.get("mode") == "seatbelt" and set(seal) == SEAL_KEYS:
+    if isinstance(seal, dict) and seal.get("mode") == "seatbelt" and set(seal) in (
+        PASS2_SEAL_KEYS,
+        SEAL_KEYS,
+    ):
         workspace = first.get("workspace")
         if not workspace:
             raise MetadataError(
@@ -2209,6 +2658,18 @@ def validate_structured_transcript(
             raise MetadataError(
                 f"{label} ran in {workspace}, which is not under the seal's writable roots"
             )
+        if set(seal) == SEAL_KEYS:
+            egress = first.get("network_egress")
+            if egress is None:
+                raise MetadataError(
+                    f"{label} records no network_egress; a rep under the network "
+                    "seal must bind what it asked the harness proxy for"
+                )
+            if egress["refused"]:
+                raise MetadataError(
+                    f"{label} was refused {egress['refused']} egress connection(s) "
+                    "by the harness proxy (network-egress); it cannot be accepted"
+                )
     if any(event.get("type") == PROBE_INPUT_EVENT for event in events[1:]):
         raise MetadataError(f"{label} contains more than one probe input event")
     return validate_codex_runtime_events(events[1:], label)
@@ -2223,11 +2684,18 @@ def assemble_transcript(
     rep: int,
     workspace: str | None = None,
     workspace_reset: bool = False,
+    network_egress: dict[str, Any] | None = None,
 ) -> bytes:
     contract = load_capture_contract(fixture_dir, expected_probe)
     prompt = read_regular_bytes(prompt_path, "actual dispatch prompt", maximum=MAX_INPUT_BYTES * 2 + 16)
     input_event = probe_input_event(
-        contract, arm, rep, prompt, workspace=workspace, workspace_reset=workspace_reset
+        contract,
+        arm,
+        rep,
+        prompt,
+        workspace=workspace,
+        workspace_reset=workspace_reset,
+        network_egress=network_egress,
     )
     runtime = read_regular_bytes(
         runtime_path, "Codex JSONL runtime stream", maximum=MAX_TRANSCRIPT_BYTES
@@ -3242,6 +3710,7 @@ def parse_args() -> argparse.Namespace:
     assemble.add_argument("--rep", type=int, required=True)
     assemble.add_argument("--workspace", default=None)
     assemble.add_argument("--workspace-reset", action="store_true")
+    assemble.add_argument("--network-egress", default=None)
 
     tiers = subparsers.add_parser("tier-skills")
     tiers.add_argument("--skills-dir", type=Path, required=True)
@@ -3264,9 +3733,22 @@ def parse_args() -> argparse.Namespace:
     write_output = subparsers.add_parser("write-output")
     write_output.add_argument("--path", type=Path, required=True)
 
-    sanitize = subparsers.add_parser("sanitize-codex-config")
-    sanitize.add_argument("--source", type=Path, required=True)
-    sanitize.add_argument("--target", type=Path, required=True)
+    seal_record = subparsers.add_parser("seal-record")
+    seal_record.add_argument("--payload", type=Path, required=True)
+    seal_record.add_argument("--output", type=Path, required=True)
+
+    probe_config = subparsers.add_parser("probe-config")
+    probe_config.add_argument("--effort", default=None)
+    probe_config.add_argument("--target", type=Path, required=True)
+
+    config_drift = subparsers.add_parser("config-drift")
+    config_drift.add_argument("--path", type=Path, required=True)
+    config_drift.add_argument("--expected-file", type=Path, required=True)
+    config_drift.add_argument("--workspace", required=True)
+
+    proxy_egress = subparsers.add_parser("proxy-egress")
+    proxy_egress.add_argument("--log", type=Path, required=True)
+    proxy_egress.add_argument("--rep", required=True)
     return parser.parse_args()
 
 
@@ -3348,11 +3830,33 @@ def main() -> int:
                 args.rep,
                 workspace=args.workspace,
                 workspace_reset=args.workspace_reset,
+                network_egress=(
+                    json.loads(args.network_egress) if args.network_egress else None
+                ),
             )
             sys.stdout.buffer.write(encoded)
             return 0
-        elif args.command == "sanitize-codex-config":
-            result = sanitize_codex_config(args.source, args.target)
+        elif args.command == "seal-record":
+            result = write_seal_record(args.payload, args.output)
+        elif args.command == "probe-config":
+            text = render_probe_config(args.effort)
+            args.target.write_text(text, encoding="utf-8")
+            args.target.chmod(0o600)
+            result = {
+                "keys": [key for key in PROBE_CONFIG_KEYS if f"{key} =" in text],
+                "sha256": digest_bytes(text.encode("utf-8")),
+                "text": text,
+            }
+        elif args.command == "config-drift":
+            result = {
+                "findings": probe_config_drift(
+                    args.path,
+                    args.expected_file.read_text(encoding="utf-8"),
+                    args.workspace,
+                )
+            }
+        elif args.command == "proxy-egress":
+            result = proxy_egress_summary(args.log, args.rep)
         elif args.command == "tier-skills":
             result = {"skills": tier_skills(args.skills_dir)}
         elif args.command == "snapshot":

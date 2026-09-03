@@ -62,16 +62,21 @@ SH
 }
 
 # write_seal PATH MODE [DENIED_ROOT...] — write the harness-shaped seal record
-# (agentops-skill-probe-seal.v1) with REAL_HOME as the recorded real home. The
-# run-directory paths are the fictional shape the harness builds: one run root
-# under the (denied) real temp root holding home/, ws/, tmp/ and dispatch/.
+# THROUGH the tool's own renderer, so the fixture profile and the fixture block
+# are related exactly the way a real capture relates them. The run-directory
+# paths are the fictional shape the harness builds: one run root under the
+# (denied) real temp root holding home/, ws/, tmp/ and dispatch/.
 write_seal() {
     local path="$1" mode="$2"
     shift 2
-    python3 - "$path" "$mode" "$REAL_HOME" "$FIX_REAL" "$@" <<'SEALPY'
-import hashlib, json, pathlib, sys
+    # The payload lives OUTSIDE the stage: a snapshot refuses a stage that holds
+    # anything but its seal record.
+    local payload
+    payload="$(mktemp "$BATS_TEST_TMPDIR/seal-payload.XXXXXX")"
+    python3 - "$payload" "$mode" "$REAL_HOME" "$FIX_REAL" "$@" <<'SEALPY'
+import json, pathlib, sys
 
-path = pathlib.Path(sys.argv[1])
+payload_path = pathlib.Path(sys.argv[1])
 mode = sys.argv[2]
 real_home = sys.argv[3]
 git_common_root = sys.argv[4]
@@ -79,30 +84,25 @@ denied = sys.argv[5:]
 sealed = mode == "seatbelt"
 run_root = "/private/tmp/probe-run.aaaaaa"
 dispatch = run_root + "/dispatch"
-profile = None
-if sealed:
-    profile = "(version 1)\n(allow default)\n(deny file-read*\n" + "".join(
-        f'  (subpath "{root}")\n' for root in denied
-    ) + ")"
-profile_sha = ("sha256:" + hashlib.sha256(profile.encode()).hexdigest()) if sealed else None
-record = {
-    "schema": "agentops-skill-probe-seal.v1",
+launcher = "/private/tmp/probe-run.aaaaaa-launcher/codex"
+payload = {
     "seal_mode": mode,
-    "coverage_eligible": sealed,
-    "mechanism": "sandbox-exec" if sealed else None,
-    "sandbox_exec": "/usr/bin/sandbox-exec" if sealed else None,
+    "sandbox_exec": "/usr/bin/sandbox-exec" if sealed else "",
     "platform": "Darwin",
-    "wrap": ["sandbox-exec", "-p", profile_sha] if sealed else [],
-    "profile": profile,
-    "profile_file": run_root + "/home/seal.sb" if sealed else None,
-    "profile_sha256": profile_sha,
+    "profile_file": run_root + "/home/seal.sb" if sealed else "",
     "denied_read_roots": denied,
     "denied_read_data_roots": [dispatch] if sealed else [],
     "denied_link_roots": (list(denied) + [dispatch]) if sealed else [],
     "writable_roots": (
-        [run_root + "/home", run_root + "/ws", run_root + "/tmp", "/dev"] if sealed else []
+        [run_root + "/home", run_root + "/ws", run_root + "/tmp"] if sealed else []
     ),
-    "allowed_read_paths": [],
+    "dev_write_paths": ["/dev/null", "/dev/tty"] if sealed else [],
+    # The launcher lives under the denied temp root, so the seal must re-allow
+    # exactly it and coverage must be able to re-derive that from the chain.
+    "allowed_read_paths": [launcher] if sealed else [],
+    "launcher_chain": [launcher] if sealed else [],
+    "launcher_sha256": ("sha256:" + "a" * 64) if sealed else "",
+    "env_allowlist": ["PATH", "HOME", "CODEX_HOME", "TMPDIR"],
     "rep_env": {
         "HOME": run_root + "/home",
         "CODEX_HOME": run_root + "/home/.codex",
@@ -110,16 +110,37 @@ record = {
     },
     "real_home": real_home,
     "real_codex_home": real_home + "/.codex",
-    "real_tmpdir": "/private/tmp" if sealed else None,
-    "git_common_root": git_common_root if sealed else None,
-    "run_root": run_root if sealed else None,
-    "workspace_root": run_root + "/ws" if sealed else None,
-    "dispatch_root": dispatch if sealed else None,
-    "config_sanitized": ["model", "model_reasoning_effort"] if sealed else None,
+    "real_tmpdir": "/private/tmp" if sealed else "",
+    "cache_root": "/private/var/folders/fixture/C" if sealed else "",
+    "git_common_root": git_common_root if sealed else "",
+    "run_root": run_root if sealed else "",
+    "workspace_root": run_root + "/ws" if sealed else "",
+    "dispatch_root": dispatch if sealed else "",
+    "network": {
+        "mode": "proxy-allowlist" if sealed else "open",
+        "hosts": ["chatgpt.com"] if sealed else [],
+        "proxy": "127.0.0.1:54321" if sealed else None,
+        "unix_sockets": [],
+    },
+    "config_sanitized": ["web_search"] if sealed else None,
+    "config_sha256": (
+        "sha256:d1a0e0b3b9a4bd0ec2f5f6f9b0f2f8e4b6b5f9e1b1c0a9d8e7f6a5b4c3d2e1f0"
+        if sealed
+        else ""
+    ),
+    "config_text": 'web_search = "disabled"\n' if sealed else "",
     "auth_copied": bool(sealed),
 }
-path.write_text(json.dumps(record, indent=2, sort_keys=True) + "\n")
+if sealed:
+    import hashlib
+
+    payload["config_sha256"] = (
+        "sha256:" + hashlib.sha256(payload["config_text"].encode()).hexdigest()
+    )
+payload_path.write_text(json.dumps(payload, sort_keys=True))
 SEALPY
+    rm -f "$path"
+    python3 "$META_TOOL" seal-record --payload "$payload" --output "$path" >/dev/null
 }
 
 # The roots a hardened seal must deny: the checkout (also the shared git root in
@@ -168,6 +189,12 @@ seal = contract.get("seal") or {}
 if seal.get("mode") == "seatbelt" and seal.get("workspace_root"):
     event["workspace"] = seal["workspace_root"]
     event["workspace_reset"] = True
+    if "network" in seal:
+        event["network_egress"] = {
+            "allowed": 3,
+            "refused": 0,
+            "log_sha256": "sha256:" + "c" * 64,
+        }
 events = [
     event,
     {"type": "thread.started", "thread_id": f"seal-{directory.name}-{name}"},
@@ -468,6 +495,12 @@ seal = contract.get("seal") or {}
 if seal.get("mode") == "seatbelt" and seal.get("workspace_root"):
     event["workspace"] = seal["workspace_root"]
     event["workspace_reset"] = True
+    if "network" in seal:
+        event["network_egress"] = {
+            "allowed": 3,
+            "refused": 0,
+            "log_sha256": "sha256:" + "c" * 64,
+        }
 events = [
     event,
     {"type": "thread.started", "thread_id": f"sibling-{directory.name}-{name}"},
@@ -616,7 +649,7 @@ contract["seal"]["denied_read_roots"] = [
     snapshot "$directory" >/dev/null
     rebind_contract "$contract" 'contract["seal"]["config_sanitized"] = None'
     run coverage_reason "$contract"
-    [[ "$output" == *"producer config to be sanitized"* ]]
+    [[ "$output" == *"producer config to be generated"* ]]
 
     rebind_contract "$contract" '
 contract["seal"]["config_sanitized"] = ["model"]
@@ -746,40 +779,265 @@ MOVEPY
     [[ "$stderr" == *"sibling-prompt-read"* ]]
 }
 
-@test "the sanitized producer config keeps top-level scalars and drops every table" {
-    local source="$BATS_TEST_TMPDIR/config.toml"
-    local target="$BATS_TEST_TMPDIR/sanitized.toml"
-    cat > "$source" <<'TOML'
-model = "gpt-5.6-luna"
-model_reasoning_effort = "low"
-web_search = true
-service_tier = 3
-notify = ["/Users/operator/.codex/hook.app/Contents/MacOS/hook", "turn-ended"]
+@test "the rep config is generated from an allowlist, not filtered from the operator's" {
+    local target="$BATS_TEST_TMPDIR/generated.toml"
 
-[mcp_servers.smart-connections]
-command = "npx"
-args = ["-y", "smart-connections-mcp"]
-
-[mcp_servers.smart-connections.env]
-OBSIDIAN_VAULT = "/Users/operator/vault"
-
-[projects."/Users/operator/dev/agentops"]
-trust_level = "trusted"
-TOML
-
-    run python3 "$META_TOOL" sanitize-codex-config --source "$source" --target "$target"
+    run python3 "$META_TOOL" probe-config --effort low --target "$target"
 
     [ "$status" -eq 0 ]
-    [ "$output" = '["model","model_reasoning_effort","service_tier","web_search"]' ]
-    grep -q '^model = "gpt-5.6-luna"$' "$target"
+    [ "$(json_field "$output" keys)" = "model_reasoning_effort" ] || true
+    [[ "$(json_field "$output" sha256)" == sha256:* ]]
     grep -q '^model_reasoning_effort = "low"$' "$target"
-    grep -q '^web_search = true$' "$target"
-    grep -q '^service_tier = 3$' "$target"
-    ! grep -q 'mcp_servers' "$target"
-    ! grep -q 'OBSIDIAN_VAULT' "$target"
-    ! grep -q 'projects' "$target"
-    ! grep -q 'npx' "$target"
-    # `notify` is a scalar, but it names an operator program codex runs at the
-    # end of every turn; a sealed rep must not inherit it.
-    ! grep -q 'notify' "$target"
+    # Web search is a second egress path the network seal does not cover, so it
+    # is off in the file every rep runs under.
+    grep -q '^web_search = "disabled"$' "$target"
+    # Nothing else: no table, no operator key, no notify hook.
+    ! grep -q '^\[' "$target"
+    ! grep -q 'notify\|mcp_servers\|projects\|approval_policy' "$target"
+
+    # Without an effort the file is the web-search line alone.
+    run python3 "$META_TOOL" probe-config --target "$BATS_TEST_TMPDIR/bare.toml"
+    [ "$status" -eq 0 ]
+    ! grep -q 'model_reasoning_effort' "$BATS_TEST_TMPDIR/bare.toml"
+}
+
+@test "the only permitted config growth is codex's own trust table for the workspace" {
+    local base="$BATS_TEST_TMPDIR/base.toml"
+    local live="$BATS_TEST_TMPDIR/live.toml"
+    python3 "$META_TOOL" probe-config --effort low --target "$base" >/dev/null
+    cp "$base" "$live"
+
+    run python3 "$META_TOOL" config-drift --path "$live" \
+        --expected-file "$base" --workspace /run/ws
+    [ "$status" -eq 0 ]
+    [ "$(json_field "$output" findings)" = "[]" ] || [ "$output" = '{"findings":[]}' ]
+
+    # codex writes a trust entry for the directory it ran in: expected growth.
+    printf '\n[projects."/run/ws"]\ntrust_level = "trusted"\n' >> "$live"
+    run python3 "$META_TOOL" config-drift --path "$live" \
+        --expected-file "$base" --workspace /run/ws
+    [ "$status" -eq 0 ]
+    [ "$output" = '{"findings":[]}' ]
+
+    # A trust entry for ANOTHER directory, or a changed key, is a rep editing
+    # the file it was measured under.
+    printf '\n[projects."/somewhere/else"]\ntrust_level = "trusted"\n' >> "$live"
+    run python3 "$META_TOOL" config-drift --path "$live" \
+        --expected-file "$base" --workspace /run/ws
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"outside the workspace"* ]]
+
+    cp "$base" "$live"
+    printf 'web_search = "live"\n' > "$live"
+    run python3 "$META_TOOL" config-drift --path "$live" \
+        --expected-file "$base" --workspace /run/ws
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"changed"* ]]
+}
+
+@test "the bound seal block rebuilds its own profile to the recorded digest" {
+    local directory="$PROBE_DIR/fixtures-render"
+    mkdir -p "$directory"
+    local -a roots
+    mapfile -t roots < <(full_denied_roots)
+    write_seal "$directory/seal.json" seatbelt "${roots[@]}"
+    snapshot "$directory" >/dev/null
+
+    # Positive: the record the harness renderer produced rebuilds exactly.
+    run coverage_reason "$directory/capture-contract.json"
+    [ "$status" -eq 0 ]
+    [ "$output" = "ELIGIBLE" ]
+
+    # M2V-03: before this, the block's roots were assertions ALONGSIDE an opaque
+    # profile, so a record could claim anything and stay eligible. Each of these
+    # tampered blocks keeps the recorded digest and is now refused.
+    local contract="$directory/capture-contract.json"
+    rebind_contract "$contract" '
+contract["seal"]["writable_roots"] = ["/"]
+'
+    run coverage_reason "$contract"
+    [[ "$output" == *"writable roots reach the"* ]]
+
+    write_seal "$directory/seal.json" seatbelt "${roots[@]}"
+    rm "$contract"
+    snapshot "$directory" >/dev/null
+    rebind_contract "$contract" '
+seal = contract["seal"]
+seal["allowed_read_paths"] = seal["allowed_read_paths"] + [seal["git_common_root"] + "/skills/x/SKILL.md"]
+'
+    run coverage_reason "$contract"
+    [[ "$output" == *"launcher chain"* ]]
+
+    rebind_contract "$contract" '
+seal = contract["seal"]
+seal["allowed_read_paths"] = [seal["launcher_chain"][0]]
+seal["real_tmpdir"] = None
+'
+    run coverage_reason "$contract"
+    [[ "$output" == *"requires real_tmpdir"* ]]
+
+    rebind_contract "$contract" '
+seal = contract["seal"]
+seal["real_tmpdir"] = "/private/tmp"
+seal["git_common_root"] = None
+'
+    run coverage_reason "$contract"
+    [[ "$output" == *"requires git_common_root"* ]]
+
+    rebind_contract "$contract" '
+seal = contract["seal"]
+seal["git_common_root"] = seal["repository_root"]
+seal["denied_read_roots"] = seal["denied_read_roots"] + ["/extra-allowance"]
+'
+    run coverage_reason "$contract"
+    [[ "$output" == *"rebuild its own profile"* ]]
+}
+
+@test "a seatbelt seal with no network mode cannot be coverage" {
+    local directory="$PROBE_DIR/fixtures-network"
+    local contract="$directory/capture-contract.json"
+    mkdir -p "$directory"
+    local -a roots
+    mapfile -t roots < <(full_denied_roots)
+    write_seal "$directory/seal.json" seatbelt "${roots[@]}"
+    snapshot "$directory" >/dev/null
+
+    rebind_contract "$contract" 'contract["seal"]["network"]["mode"] = "open"'
+    run coverage_reason "$contract"
+    [[ "$output" == *"network mode 'proxy-allowlist'"* ]]
+    [[ "$output" == *"fetch the canonical SKILL.md"* ]]
+
+    rebind_contract "$contract" '
+seal = contract["seal"]
+seal["network"]["mode"] = "proxy-allowlist"
+seal["network"]["hosts"] = []
+'
+    run coverage_reason "$contract"
+    [[ "$output" == *"non-empty network host allowlist"* ]]
+}
+
+@test "a seatbelt seal that names a shadowed sandbox-exec cannot be coverage" {
+    local directory="$PROBE_DIR/fixtures-wrap"
+    local contract="$directory/capture-contract.json"
+    mkdir -p "$directory"
+    local -a roots
+    mapfile -t roots < <(full_denied_roots)
+    write_seal "$directory/seal.json" seatbelt "${roots[@]}"
+    snapshot "$directory" >/dev/null
+
+    rebind_contract "$contract" '
+seal = contract["seal"]
+seal["sandbox_exec"] = "/tmp/evil/sandbox-exec"
+seal["wrap"] = ["/tmp/evil/sandbox-exec", "-p", seal["profile_sha256"]]
+'
+    run coverage_reason "$contract"
+    [[ "$output" == *"system seatbelt binary"* ]]
+
+    rebind_contract "$contract" '
+seal = contract["seal"]
+seal["sandbox_exec"] = "/usr/bin/sandbox-exec"
+seal["wrap"] = ["sandbox-exec", "-p", seal["profile_sha256"]]
+'
+    run coverage_reason "$contract"
+    [[ "$output" == *"dispatch wrap to be the bound profile"* ]]
+}
+
+# --- the harness CONNECT proxy ------------------------------------------------
+# The network seal has two halves: the seatbelt profile denies every destination
+# but the proxy, and the proxy allows only the bound hosts. These exercise the
+# second half directly, since a hole in it is a hole in the seal.
+
+@test "the harness proxy allows only the bound hosts and logs every attempt" {
+    local proxy="$REPO_ROOT/scripts/lib/probe-connect-proxy.py"
+    local log="$BATS_TEST_TMPDIR/proxy.log"
+    local port_file="$BATS_TEST_TMPDIR/proxy.port"
+    local rep_file="$BATS_TEST_TMPDIR/proxy.rep"
+    printf 'control-1\n' > "$rep_file"
+
+    # A local listener stands in for an allowed destination, so the test needs
+    # no outbound network of its own.
+    python3 - "$BATS_TEST_TMPDIR/upstream.port" <<'PY' &
+import socket, sys, threading
+listener = socket.socket()
+listener.bind(("127.0.0.1", 0))
+listener.listen(4)
+open(sys.argv[1], "w").write(str(listener.getsockname()[1]))
+while True:
+    client, _ = listener.accept()
+    threading.Thread(target=lambda c=client: (c.recv(65536), c.sendall(b"pong"), c.close()), daemon=True).start()
+PY
+    local upstream_pid=$!
+    while [[ ! -s "$BATS_TEST_TMPDIR/upstream.port" ]]; do sleep 0.05; done
+    local upstream_port
+    upstream_port="$(cat "$BATS_TEST_TMPDIR/upstream.port")"
+
+    python3 "$proxy" --allow-host 127.0.0.1 --allow-host chatgpt.com \
+        --allow-host .oaiusercontent.com \
+        --log "$log" --port-file "$port_file" --rep-file "$rep_file" \
+        >/dev/null 2>&1 &
+    local proxy_pid=$!
+    while [[ ! -s "$port_file" ]]; do sleep 0.05; done
+    local port
+    port="$(cat "$port_file")"
+
+    # An allowed destination tunnels; a denied one is refused with 403.
+    run python3 - "$port" "$upstream_port" <<'PY'
+import socket, sys
+
+def connect(port, authority):
+    sock = socket.create_connection(("127.0.0.1", int(port)), timeout=5)
+    sock.sendall(f"CONNECT {authority} HTTP/1.1\r\nHost: {authority}\r\n\r\n".encode())
+    head = sock.recv(4096).decode("latin-1", "replace")
+    sock.close()
+    return head.splitlines()[0]
+
+print("allowed:", connect(sys.argv[1], f"127.0.0.1:{sys.argv[2]}"))
+print("denied:", connect(sys.argv[1], "raw.githubusercontent.com:443"))
+print("suffix:", connect(sys.argv[1], "sdmntprsouthcentralus.oaiusercontent.com:443"))
+print("lookalike:", connect(sys.argv[1], "evil-oaiusercontent.com:443"))
+PY
+    kill "$proxy_pid" "$upstream_pid" 2>/dev/null || true
+
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"allowed: HTTP/1.1 200"* ]]
+    [[ "$output" == *"denied: HTTP/1.1 403"* ]]
+    # A rotating-region content host is allowed by the named domain suffix; a
+    # lookalike that merely ends with the same characters is not.
+    [[ "$output" == *"lookalike: HTTP/1.1 403"* ]]
+
+    # Every attempt is on the record, attributed to the rep that made it.
+    run python3 "$META_TOOL" proxy-egress --log "$log" --rep control-1
+    [ "$status" -eq 0 ]
+    [ "$(json_field "$output" allowed)" -ge 1 ]
+    [ "$(json_field "$output" refused)" -ge 2 ]
+    [[ "$(json_field "$output" log_sha256)" == sha256:* ]]
+    grep -q 'raw.githubusercontent.com' "$log"
+
+    # A different rep's summary sees none of it.
+    run python3 "$META_TOOL" proxy-egress --log "$log" --rep treatment-9
+    [ "$status" -eq 0 ]
+    [ "$(json_field "$output" allowed)" -eq 0 ]
+    [ "$(json_field "$output" refused)" -eq 0 ]
+}
+
+@test "the proxy refuses a plain HTTP proxy request, not only a denied host" {
+    local proxy="$REPO_ROOT/scripts/lib/probe-connect-proxy.py"
+    local log="$BATS_TEST_TMPDIR/plain.log"
+    local port_file="$BATS_TEST_TMPDIR/plain.port"
+    python3 "$proxy" --allow-host chatgpt.com --log "$log" \
+        --port-file "$port_file" >/dev/null 2>&1 &
+    local proxy_pid=$!
+    while [[ ! -s "$port_file" ]]; do sleep 0.05; done
+
+    run python3 - "$(cat "$port_file")" <<'PY'
+import socket, sys
+sock = socket.create_connection(("127.0.0.1", int(sys.argv[1])), timeout=5)
+sock.sendall(b"GET http://chatgpt.com/ HTTP/1.1\r\nHost: chatgpt.com\r\n\r\n")
+print(sock.recv(4096).decode("latin-1", "replace").splitlines()[0])
+sock.close()
+PY
+    kill "$proxy_pid" 2>/dev/null || true
+
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"405"* ]]
 }
