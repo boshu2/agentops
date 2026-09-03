@@ -187,7 +187,9 @@ generator emits for the bound effort. It does NOT prove the absence of every
 ambient capability: the profile is `(allow default)` outside the operations it
 denies, so process capabilities other than the network (signals, IPC, Mach and
 XPC messaging, Apple Events) are open, and that is a known gap rather than a
-solved one. It also does not prove that the recorded paths WERE the operator's
+solved one. The reap covers the rep's process group and, through
+`lsof -t +D <run root>`, anything still holding the run directory; a child that
+both escapes the session and holds nothing under the run root is not detected. It also does not prove that the recorded paths WERE the operator's
 real ones: that they had to be denied is checked, that they were named honestly
 is the harness's word.
 
@@ -270,6 +272,24 @@ claims the harness or the verifier did not enforce.
 | withdrawn rows mislabeled | a non-current row was run through verify-scorecard first, so the WITHDRAWN row read `evidence-unverified` instead of saying it was withdrawn | non-current verdicts are classified before the evidence is verified and read `verdict-withdrawn` |
 | proxy outside the identity | the CONNECT proxy decides what a rep can reach and was not in the evaluator hash set a scorecard binds | `scripts/lib/probe-connect-proxy.py` joins the set, and the raw proxy log is published with the fixture set as `network.log` and checked against the digest the final rep bound |
 
+### Fifth pass: what two judges found in the fourth seal
+Codex closed nine of twelve and Fable found the seal, proxy, reap ordering,
+transcripts and scorecards sound. Both still failed on properties that were
+claimed and not enforced.
+
+| Finding | What was wrong | What the seal does now |
+|---|---|---|
+| the published log was not published | the repository `*.log` rule ignored `network.log`, so both final sets carried an untracked file the README called published, and the verifier accepted its absence | `.gitignore` exempts `evals/skill-probes/**/network.log`, coverage REQUIRES the file, and the log is parsed strictly: unknown fields, unknown decisions, a null rep, an unpaired attempt or a decision with no attempt refuse the set. Both counts, not just `allowed`, are recomputed per rep |
+| session escape | a child that calls `setsid()` leaves the rep's process group, so the reap could not see it: four forked survivors outlived a capture with only `config-mutated` firing | after the group reap, `lsof -t +D <run root>` treats any process still holding the run directory exactly like a survivor |
+| a reap that could not prove emptiness was not fatal | a process that outlived KILL, and a `ps` that failed (which read as zero members), both degraded one rep and let the schedule continue | both abort the capture before any reset or next rep, and a failed `ps` is distinguishable from an empty group |
+| data roots optional | `cache_root` was optional and a falsy value made the root VANISH from the required list; link denies were checked only for the checkout and the home | under seatbelt `real_codex_home` and `cache_root` must be non-null, and every required root must appear in both the read denies and the link denies |
+| stale evaluator counted | `verify-scorecard` accepted a consistent `evaluator_matches_capture: false`, so a set captured by different harness or proxy bytes counted as coverage | tier eligibility requires the capture evaluator to equal the current one; replay may still report the mismatch, the gate labels the set `evaluator-stale` |
+| timeout budget unbound | `--timeout 0` omitted the wrapper while `timeout_bin` still named a binary | the budget is recorded as `timeout_seconds`, must be positive, and `wrap` carries the timeout argv |
+| launcher chain not a chain | prepending any existing file to `launcher_chain` stayed eligible | the chain starts at the invoked path and must be adjacent: each entry a symlink to the next, the last a regular file with the bound digest |
+| environment boundary leaked | the in-shell scrub could not clear bash's readonly exports (`SHELLOPTS`, `BASHOPTS`, `UID`, `EUID`, `PPID`) | the launch goes through a real `env -i` with the declared assignments, and a Darwin test compares the rep's own `env` to the recorded allowlist |
+| config growth unchecked in value | the permitted `[projects."<ws>"]` table was checked for its key set only | it must be exactly `{trust_level}` with a value from the observed set |
+| ledger overclaim | the xhigh row said "no rep ran a command" while `control-1` recorded an `rg` over its empty workspace | the rows say what the transcripts show: every command any rep ran is listed, none touched a denied path, no trap fired, no egress refused |
+
 The host allowlist was PINNED from observation, not guessed: one rep was run
 through the proxy in discovery mode on 2026-09-03 and codex-cli 0.145 reached
 `chatgpt.com` (the turn) and `ab.chatgpt.com` (feature flags) and nothing else.
@@ -288,9 +308,12 @@ INERT. Fourth pass (network sealed, verifier pinning nothing in the network
 block): low BEHAVIORAL (control 0/2, treatment 1/2), xhigh INERT. Fifth pass
 (the rows that count, `fixtures-*-2026-09-03-final`, verifier pinning the
 network policy, config, roots, and launcher chain): low INERT (0/2 vs 0/2),
-xhigh INERT (control 1/2, treatment 1/2). Headroom SEPARATED throughout. No rep
-in the last four passes ran a shell command that touched a denied path, and no
-rep in the fourth or fifth had a refused egress.
+xhigh INERT (control 1/2, treatment 1/2). Headroom SEPARATED throughout. Every
+command any rep ran is recorded in its transcript, and in the fifth-pass sets
+that is exactly one: the xhigh control-1 rep ran `rg --files ... && rg -n ...`
+over its empty workspace and got exit 1. None of them touched a denied path, the
+sibling-read and skill-read traps fired on none, and no rep in the fourth or
+fifth had a refused egress.
 Scorecards under `docs/evals/scorecards/2026-09-03/`; the ledger table is where
 the current numbers live.
 

@@ -227,6 +227,7 @@ seal_reason_label() {
         *legacy-unsealed*)             echo "legacy-unsealed";;
         *"hardened seal block"*)       echo "seal-block-superseded";;
         *"seatbelt-sealed capture"*)   echo "unsealed";;
+        *"evaluator-stale"*)           echo "evaluator-stale";;
         *"tier coverage requires"*)    echo "seal-incomplete";;
         *"injected-prelude"*)          echo "prelude-only";;
         *)                             echo "evidence-unverified";;

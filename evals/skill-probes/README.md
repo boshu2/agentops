@@ -149,11 +149,25 @@ harness chose to write:
   `launcher_sha256`, that digest is the producer executable the manifest binds,
   and `allowed_read_paths` is exactly the chain links a denied root covers;
 - `timeout_bin` is present;
-- the denied reads cover `repository_root`, `git_common_root`, `original_home`,
-  `real_tmpdir`, `real_codex_home` and `cache_root` (literal or realpath, since
-  the kernel seals the resolved path); the dispatch directory is denied for
-  read-data, link and write; the rep's `HOME`/`CODEX_HOME`/`TMPDIR` sit under
-  the writable roots and outside the operator home.
+- `real_codex_home`, `cache_root`, `real_tmpdir` and `git_common_root` are
+  non-null, and EVERY required root (those four, plus `repository_root`, the
+  operator home and the four skill roots under it) appears in both
+  `denied_read_roots` and `denied_link_roots`, matched literally or by realpath
+  since the kernel seals the resolved path. A read deny alone is not a deny: a
+  hard link or a clone turns a denied file into a readable one, so the same
+  root has to be link-denied and the verifier names any root missing from
+  either list;
+- the dispatch directory is denied for read-data, link and write; the rep's
+  `HOME`/`CODEX_HOME`/`TMPDIR` sit under the writable roots and outside the
+  operator home;
+- `timeout_seconds` is positive and `wrap` carries the timeout argv, so a
+  zero-budget run that omitted the wrapper cannot pass as a bounded one;
+- the published `network.log` is present, every line parses with known fields
+  and a non-null rep, every attempt is paired with exactly one decision, and
+  BOTH the allowed and refused counts recompute to what each rep bound;
+- the capture evaluator equals the current one, including the CONNECT proxy: a
+  set captured by different bytes is labeled `evaluator-stale` and does not
+  count.
 
 **Which fields it only RECORDS.** These are validated for shape and carried into
 the profile, but nothing outside the seal corroborates them: `run_root`,
@@ -188,11 +202,17 @@ the proxy ACCEPTS is logged to the harness-private dispatch directory: an
 The rep is captured when the connection is accepted, so a connection accepted
 between reps carries no rep and is attributed to the run rather than to whichever
 rep happened to be current when the decision landed. A refused CONNECT degrades
-that rep as `network-egress`; each rep's allowed and refused counts plus the log
-digest are bound into its transcript's probe-input event, the log itself is
-published with the fixture set as `network.log`, and `verify` checks that file
-against the digest the final rep bound. A capture cannot be accepted with a
-refusal in it.
+that rep as `network-egress`; each rep's allowed and refused counts plus the
+digest of ITS OWN log lines are bound into its transcript's probe-input event,
+the log itself is published with the fixture set as `network.log`, and coverage
+requires that file to be present and to reproduce, rep by rep, the digest and
+both counts each transcript bound. The log is parsed strictly: an unknown field,
+a decision this reader does not know, an attempt with no decision, or a decision
+with a null rep refuses the whole set, because a refusal that belongs to no rep
+is checked against no transcript. A capture cannot be accepted with a refusal in
+it. The file is exempted from the repository `*.log` ignore rule; without that
+exemption it was written, never committed, and the digests had nothing to check
+against.
 
 The allowlist was pinned from observation: reps run through the proxy in
 discovery mode showed codex-cli 0.145 reaching `chatgpt.com`, `ab.chatgpt.com`
@@ -236,18 +256,34 @@ each rep the harness re-parses it: the only permitted growth is codex's own
 read-denied, so a symlink into it cannot resolve.
 
 **The rep environment, its descriptors and its process group.** The rep is
-launched with exactly the variables the seal's `env_allowlist` names and nothing
-else, with every non-stdio descriptor closed (the transcript sink was FD 9 and
-the dispatch handles sat just above it), and in its own process group. After the
+launched through a real `env -i` boundary with exactly the variables the seal's
+`env_allowlist` names and nothing else. Emptying the environment from inside the
+dispatch subshell could not clear bash's readonly exports (`SHELLOPTS`,
+`BASHOPTS`, `UID`, `EUID`, `PPID`), which reached the producer undeclared; the
+launch is now a plain argv, `env -i <declared assignments> sandbox-exec -p
+<profile> <timeout argv> <codex argv>`, and a Darwin test compares the rep's own
+`env` output to the recorded allowlist as sets. Every non-stdio descriptor is
+closed (the transcript sink was FD 9 and the dispatch handles sat just above
+it), and the rep runs in its own process group. After the
 rep returns the harness COUNTS the group's live members first, then signals the
 group with TERM, escalates to KILL, and refuses to continue until `ps` reports
 the group empty. The count comes first because the rep's own codex tree is
 already gone when `wait` returns, so anything still in the group outlived the
 rep: that count, not the emptiness afterwards, is what degrades the rep as
-`rep-survivor`. This only works because the timeout wrapper runs with
-`--foreground`; GNU timeout otherwise calls `setpgid(0,0)` and the reviewer and
-its children land in timeout's group rather than the one being reaped, which is
-how four forked `sleep` processes once survived a passing test.
+`rep-survivor`. A group that will not die even after KILL, or a `ps` that cannot
+be read, is not a degraded rep at all: it aborts the whole capture, because the
+next rep would otherwise start beside something nobody could account for. This
+only works because the timeout wrapper runs with `--foreground`; GNU timeout
+otherwise calls `setpgid(0,0)` and the reviewer and its children land in
+timeout's group rather than the one being reaped, which is how four forked
+`sleep` processes once survived a passing test.
+
+A process group is not the whole story: a child that calls `setsid()` leaves the
+group entirely and the reap cannot see it. After the group reap the harness runs
+`lsof -t +D <run root>` and treats any process still holding a cwd or an open
+descriptor under the run directory exactly like a survivor, fatal on the same
+terms. What remains open is a child that escapes the session AND holds nothing
+under the run root; nothing in this harness detects that.
 
 **One run directory; the workspace is reset, not relocated.** A live capture
 creates one `$TMPDIR/probe-run.XXXXXX` (mode 0700) holding `home/` (the scratch
