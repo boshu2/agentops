@@ -84,9 +84,10 @@ freshness attestation notes; do not change the `verdict.v2` schema.
 
 When no authorized live adapter is available, disclose the unsatisfied
 diversity request as `diversity_unsatisfied`. Off a risky surface that
-disclosure rides along with a same-model result. On a risky surface it is an
-unverified acceptance surface: the result is `NOT_PROVEN`, and same-family
-agreement never counts as convergence.
+disclosure rides along with a same-model result. On a risky surface a
+single-family PASS is an unverified acceptance surface: the result is
+`NOT_PROVEN`, and same-family agreement never counts as convergence. A
+single-family FAIL stands as FAIL; a wrong subject needs no second judge.
 
 ## Mutating-check quarantine
 

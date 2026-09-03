@@ -1129,6 +1129,16 @@ def check_bounded_repair_contract() -> None:
     assert all(isinstance(node, ast.For) for node in loops), (
         "the repair phase may only iterate the supplied rounds; an open-ended while loop is an unbounded grind"
     )
+    # Finite by construction: every loop iterates the `validations` parameter
+    # (directly or via enumerate), never a synthetic range or a constant.
+    def iterates_validations(node: ast.For) -> bool:
+        target = node.iter
+        if isinstance(target, ast.Call) and target.args:
+            target = target.args[0]
+        return isinstance(target, ast.Name) and target.id == "validations"
+    assert all(iterates_validations(node) for node in loops), (
+        "every repair-phase loop must iterate the supplied validation rounds; nothing else is finite by construction"
+    )
     # Execute the law's canaries against the reference behavior itself: budget,
     # growth, reopen, no-change, and the flip-to-PASS case must all STOP.
     import importlib.util

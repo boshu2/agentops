@@ -19,7 +19,7 @@ user-invocable: true
 metadata:
   graph_root: true
   tier: meta
-  dependencies: []
+  dependencies: [rpi]
   capabilities: [execute_wave]
   effects: [dispatch_rpi_per_lane]
   canonical_status: canonical

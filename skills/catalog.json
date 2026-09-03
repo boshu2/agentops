@@ -505,7 +505,9 @@
           "with": "rpi"
         }
       ],
-      "dependencies": [],
+      "dependencies": [
+        "rpi"
+      ],
       "description": "Execute one caller-selected wave by invoking RPI once per lane and return the wave evidence, then stop. Triggers: \"crank\", \"execute the next wave\", \"run this wave\".",
       "disposition": "keep",
       "effects": [

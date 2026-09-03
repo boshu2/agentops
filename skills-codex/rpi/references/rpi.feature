@@ -4,7 +4,7 @@ Feature: RPI runs one bounded experiment
     Given one intent
     When RPI is invoked
     Then the anti-ceremony guard is invoked exactly once before Plan
-    And Plan, Implement, and fresh Validate are each dispatched at most once in that order
+    And Plan and Implement are each dispatched at most once in that order, and fresh Validate repeats only inside the bounded repair phase
     And the final report contains no next action
 
   @covered-by:skills/rpi/tests/test_run_once.py::test_anti_ceremony_stop_dispatches_no_core_phase

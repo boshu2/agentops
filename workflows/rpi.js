@@ -57,12 +57,31 @@ const IMPLEMENT_SCHEMA = {
 const VALIDATE_SCHEMA = {
   type: 'object',
   additionalProperties: false,
-  required: ['verdict', 'verdictPath', 'criteria', 'validatorContextId', 'subjectDigest', 'findings', 'evidenceRefs'],
+  required: ['verdict', 'verdictPath', 'criteria', 'validatorContextId', 'subjectDigest', 'findings', 'evidenceRefs', 'derivedChangedPaths'],
   properties: {
     verdict: { enum: ['PASS', 'FAIL', 'NOT_PROVEN'] },
     verdictPath: { type: 'string' },
     subjectDigest: { type: 'string' },
-    evidenceRefs: { type: 'array', items: { type: 'string' } },
+    // CONTRACT (ADR-0017, condition 4): evidence is a BINDING, not a label. An
+    // entry admits an unchanged subject only when its subjectDigest equals the
+    // round's digest and it names a finding id the round actually closed.
+    evidenceRefs: {
+      type: 'array',
+      items: {
+        type: 'object',
+        additionalProperties: false,
+        required: ['ref', 'subjectDigest', 'resolves'],
+        properties: {
+          ref: { type: 'string' },
+          subjectDigest: { type: 'string' },
+          resolves: { type: 'array', items: { type: 'string' } },
+        },
+      },
+    },
+    // CONTRACT: the validator derives the changed set itself (git status and
+    // diff against the clean pre-run tree) so author-reported paths cannot hide
+    // an edit from coverage or from risky-surface classification.
+    derivedChangedPaths: { type: 'array', items: { type: 'string' } },
     findings: {
       type: 'array',
       items: {
@@ -299,7 +318,11 @@ const FINDINGS_BLOCK =
   '- Return findings: one entry {id, summary} per open defect that blocks PASS (empty on PASS). Ids are ' +
   'STABLE keys of the form <criterion-slug>:<defect-slug> so the same defect keeps its id across rounds ' +
   'however you reword the summary; never mint a new id for a defect you already named.\n' +
-  '- Return evidenceRefs: the paths of the receipts, transcripts, or verdict files your judgment relied on.';
+  '- Return evidenceRefs as bindings {ref, subjectDigest, resolves}: ref is the receipt/transcript/verdict path, ' +
+  'subjectDigest is the manifest digest it was produced against, resolves lists the finding ids it closes (empty if none).\n' +
+  '- Return derivedChangedPaths: derive the changed set YOURSELF from the working tree (git status --porcelain and ' +
+  'git diff --name-only against HEAD, including untracked files); do not copy the author list. Any path you derive that ' +
+  'the author did not report is a coverage finding (id coverage:unreported:<path>).';
 
 async function spawnedLeg(facts) {
   return await agent(
@@ -409,7 +432,7 @@ function mergeLegs(legs, risky, diversity) {
     const r = leg.result;
     if (VERDICT_RANK[r.verdict] > VERDICT_RANK[verdict]) verdict = r.verdict;
     for (const f of r.findings || []) findings.set(f.id, { id: f.id, summary: f.summary, family: leg.family });
-    for (const e of r.evidenceRefs || []) evidence.add(e);
+    for (const e of r.evidenceRefs || []) evidence.add(JSON.stringify(e));
     for (const c of r.criteria || []) criteria.push(c);
     if (digest === null) digest = r.subjectDigest;
     else if (r.subjectDigest !== digest) digestConflict = true;
@@ -426,13 +449,20 @@ function mergeLegs(legs, risky, diversity) {
     verdict = 'NOT_PROVEN';
     findings.set('diversity:unsatisfied', { id: 'diversity:unsatisfied', summary: 'risky surface judged by one model family only; no authorized cross-family leg', family: 'merge' });
   }
+  const derived = new Set();
+  for (const leg of legs) for (const p of leg.result.derivedChangedPaths || []) derived.add(p);
+  // A persisted verdict path is exposed only when every leg agrees with the
+  // aggregate; a PASS file behind a FAIL/NOT_PROVEN result would launder it.
+  const allAgree = legs.every((l) => l.result.verdict === verdict);
   return {
     verdict,
-    verdictPath: legs[0].result.verdictPath,
+    verdictPath: allAgree ? legs[0].result.verdictPath : null,
+    legVerdictPaths: legs.map((l) => ({ family: l.family, verdict: l.result.verdict, verdictPath: l.result.verdictPath })),
     validatorContextId: legs.map((l) => l.result.validatorContextId).join('+'),
     subjectDigest: digest,
     findings: [...findings.values()],
-    evidenceRefs: [...evidence],
+    evidenceRefs: [...evidence].map((e) => JSON.parse(e)),
+    derivedChangedPaths: [...derived],
     criteria,
     families: legs.map((l) => l.family),
     risky,
@@ -440,20 +470,34 @@ function mergeLegs(legs, risky, diversity) {
   };
 }
 
+// Family distinctness is asserted by the CALLER's choice of crossFamily.command
+// (a different vendor's read-only CLI); this script cannot verify a model's
+// identity and does not pretend to. From a Claude session the legal second leg
+// is a read-only `codex exec` (LAW 0: never a headless Claude leg).
 async function validateOnce(facts) {
-  const risky = isRiskySurface(facts.changedPaths);
   const legs = [];
   const primary = externalJudge === null ? await spawnedLeg(facts) : await brokerLeg(facts, externalJudge);
   if (!primary) return null;
   legs.push({ family: externalJudge === null ? 'spawned' : 'external', result: primary });
+  // Risk is classified over the union of author-reported and validator-derived
+  // paths, so an unreported edit on a gate or test cannot dodge cross-family.
+  const allPaths = new Set([...facts.changedPaths, ...(primary.derivedChangedPaths || [])]);
+  const risky = isRiskySurface([...allPaths]);
+  const elected = crossFamilyCommand !== null && crossFamilyCommand !== externalJudge;
   let diversity = risky ? 'unsatisfied' : 'not-required';
-  if (risky && crossFamilyCommand !== null && crossFamilyCommand !== externalJudge) {
+  if (elected) {
     const second = await brokerLeg(facts, crossFamilyCommand);
     if (!second) return null;
     legs.push({ family: 'cross-family', result: second });
-    diversity = 'satisfied';
+    diversity = risky ? 'satisfied' : 'elected';
   }
-  return mergeLegs(legs, risky, diversity);
+  const merged = mergeLegs(legs, risky, diversity);
+  const unreported = merged.derivedChangedPaths.filter((p) => !facts.changedPaths.includes(p));
+  if (unreported.length > 0) {
+    for (const p of unreported) merged.findings.push({ id: 'coverage:unreported:' + p, summary: 'changed path not reported by the author', family: 'merge' });
+    if (merged.verdict === 'PASS') merged.verdict = 'NOT_PROVEN';
+  }
+  return merged;
 }
 
 let validation = await validateOnce(impl);
@@ -531,7 +575,7 @@ while (
       error: 'Repair stage failed after the subject may have changed; the prior verdict no longer binds',
     };
   }
-  const union = new Set(facts.changedPaths);
+  const union = new Set([...facts.changedPaths, ...(validation.derivedChangedPaths || [])]);
   for (const p of repair.changedPaths) union.add(p);
   facts = { contextId: repair.contextId, changedPaths: [...union], checkReceipts: repair.checkReceipts };
   const next = await validateOnce(facts);
@@ -547,8 +591,11 @@ while (
   }
   const nextIds = openIds(next);
   const resolved = [...prevIds].filter((id) => !nextIds.has(id));
-  const prevEvidence = new Set(validation.evidenceRefs || []);
-  const newEvidence = (next.evidenceRefs || []).filter((e) => !prevEvidence.has(e));
+  const prevEvidence = new Set((validation.evidenceRefs || []).map((e) => e.ref));
+  const resolvedSet = new Set(resolved);
+  const bindingEvidence = (next.evidenceRefs || []).filter(
+    (e) => !prevEvidence.has(e.ref) && e.subjectDigest === next.subjectDigest && (e.resolves || []).some((id) => resolvedSet.has(id))
+  );
   let violation = null;
   if (nextIds.size > prevIds.size) violation = 'open finding set grew (' + prevIds.size + ' -> ' + nextIds.size + ')';
   else if ([...nextIds].some((id) => closedIds.has(id))) violation = 'a closed finding reopened';
@@ -557,7 +604,7 @@ while (
     // was resolved by new evidence that closed at least one finding; a FAIL is
     // never rescued by evidence, and a PASS over unchanged bytes is a flip.
     const evidenceResolved =
-      validation.verdict === 'NOT_PROVEN' && next.verdict !== 'FAIL' && newEvidence.length > 0 && resolved.length > 0;
+      validation.verdict === 'NOT_PROVEN' && next.verdict !== 'FAIL' && bindingEvidence.length > 0;
     if (!evidenceResolved) violation = next.verdict === 'PASS'
       ? 'verdict flipped to PASS over an unchanged subject'
       : 'subject digest unchanged without new resolving evidence';

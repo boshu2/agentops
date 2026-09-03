@@ -61,6 +61,7 @@ graph LR
   using_gc["using-gc"]
   validate["validate"]
   workflow_builder["workflow-builder"]
+  crank --> rpi
   rpi --> anti_ceremony
   rpi --> implement
   rpi --> plan

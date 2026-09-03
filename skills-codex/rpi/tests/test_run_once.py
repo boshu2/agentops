@@ -329,10 +329,41 @@ class RepairPhaseTests(unittest.TestCase):
         outcome = self.repair(
             [
                 validation_round("NOT_PROVEN", ["gap"], digest="a" * 64),
-                validation_round("NOT_PROVEN", ["gap"], digest="a" * 64, evidence=("receipt-2",)),
+                validation_round(
+                    "NOT_PROVEN", ["gap"], digest="a" * 64,
+                    evidence=({"ref": "receipt-2", "subject_digest": "a" * 64, "resolves": ["gap"]},),
+                ),
+            ]
+        )
+        # "resolves" claims gap, but gap is still open: nothing was resolved.
+        self.assertEqual(outcome["stop_reason"], "no_subject_or_evidence_change")
+
+    def test_a_bare_new_evidence_label_does_not_admit_an_unchanged_digest(self):
+        outcome = self.repair(
+            [
+                validation_round("NOT_PROVEN", ["gap", "other"], digest="a" * 64),
+                validation_round("NOT_PROVEN", ["other"], digest="a" * 64, evidence=("receipt-2",)),
             ]
         )
         self.assertEqual(outcome["stop_reason"], "no_subject_or_evidence_change")
+
+    def test_evidence_bound_to_another_digest_does_not_admit(self):
+        outcome = self.repair(
+            [
+                validation_round("NOT_PROVEN", ["gap", "other"], digest="a" * 64),
+                validation_round(
+                    "NOT_PROVEN", ["other"], digest="a" * 64,
+                    evidence=({"ref": "receipt-2", "subject_digest": "b" * 64, "resolves": ["gap"]},),
+                ),
+            ]
+        )
+        self.assertEqual(outcome["stop_reason"], "no_subject_or_evidence_change")
+
+    def test_scalar_evidence_refs_are_rejected(self):
+        bad = validation_round("FAIL", ["f1"])
+        bad["evidence_refs"] = "receipt-1"
+        with self.assertRaisesRegex(ValueError, "evidence_refs must be a list"):
+            self.repair([bad])
 
     def test_new_evidence_does_not_admit_a_current_fail_over_unchanged_bytes(self):
         outcome = self.repair(
@@ -439,7 +470,10 @@ class RepairPhaseTests(unittest.TestCase):
                 validation_round(
                     "NOT_PROVEN", ["gap1"], digest="a" * 64, evidence=["r1"]
                 ),
-                validation_round("PASS", [], digest="a" * 64, evidence=["r1", "r2"]),
+                validation_round(
+                    "PASS", [], digest="a" * 64,
+                    evidence=["r1", {"ref": "r2", "subject_digest": "a" * 64, "resolves": ["gap1"]}],
+                ),
             ]
         )
         self.assertEqual(outcome["stop_reason"], "converged")

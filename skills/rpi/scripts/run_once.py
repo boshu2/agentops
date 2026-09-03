@@ -299,9 +299,29 @@ def normalize_round(value: Any) -> dict[str, Any]:
         family = leg.get("validator_family")
         if isinstance(family, str) and family and family not in families:
             families.append(family)
-        for ref in leg.get("evidence_refs") or []:
-            if ref not in evidence_refs:
-                evidence_refs.append(ref)
+        raw_evidence = leg.get("evidence_refs")
+        if raw_evidence is None:
+            raw_evidence = []
+        if not isinstance(raw_evidence, (list, tuple)):
+            raise ValueError("evidence_refs must be a list")
+        for ref in raw_evidence:
+            # Evidence is either a bare label (unbound; it can never admit an
+            # unchanged digest) or a binding {ref, subject_digest, resolves}.
+            if isinstance(ref, str):
+                entry: dict[str, Any] = {"ref": ref}
+            elif isinstance(ref, Mapping):
+                if not isinstance(ref.get("ref"), str) or not ref["ref"].strip():
+                    raise ValueError("each evidence binding must carry a nonempty ref")
+                entry = dict(ref)
+                resolves = entry.get("resolves")
+                if resolves is not None and not valid_string_list(resolves):
+                    raise ValueError("evidence.resolves must be a list of finding ids")
+                if "subject_digest" in entry and not valid_digest(entry["subject_digest"]):
+                    raise ValueError("evidence.subject_digest must be a valid digest")
+            else:
+                raise ValueError("each evidence ref must be a string or a binding mapping")
+            if entry["ref"] not in {e["ref"] for e in evidence_refs}:
+                evidence_refs.append(entry)
         leg_digest = leg.get("subject_digest", leg.get("subject_manifest_digest"))
         if not valid_digest(leg_digest):
             raise ValueError("each validate leg must carry a valid subject digest")
@@ -341,19 +361,24 @@ def law_violation(
         return "finding_set_grew"
     if current["subject_digest"] != previous["subject_digest"]:
         return None
-    new_evidence = [
-        ref for ref in current["evidence_refs"] if ref not in set(previous["evidence_refs"])
-    ]
+    previous_refs = {e["ref"] for e in previous["evidence_refs"]}
+    resolved = previous["open_ids"] - current["open_ids"]
     # The evidence branch is NOT_PROVEN-only by construction, on both sides: a
     # FAIL says the subject is wrong, and no amount of new evidence over
-    # unchanged bytes repairs a wrong subject. The new evidence must also have
-    # RESOLVED something: at least one previously open finding id is closed.
-    resolved = previous["open_ids"] - current["open_ids"]
+    # unchanged bytes repairs a wrong subject. The new evidence must be BOUND:
+    # it names this exact subject digest and at least one finding id that this
+    # round actually closed. A bare new label admits nothing.
+    binding_evidence = [
+        e
+        for e in current["evidence_refs"]
+        if e["ref"] not in previous_refs
+        and e.get("subject_digest") == current["subject_digest"]
+        and resolved & set(e.get("resolves") or [])
+    ]
     if (
         previous["status"] == "NOT_PROVEN"
         and current["status"] != "FAIL"
-        and new_evidence
-        and resolved
+        and binding_evidence
     ):
         return None
     return "no_subject_or_evidence_change"

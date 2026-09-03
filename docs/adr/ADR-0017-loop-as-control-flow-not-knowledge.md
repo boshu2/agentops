@@ -94,6 +94,11 @@ the plan:
 - Converge's Go command, its canary, and its findings registry; crank's flags,
   lifecycle tiers, and Sisyphus markers.
 
+Two narrow authorizations ride on this decision: the skill mesh permits exactly
+one non-core hard dependency, `crank` on `rpi` (`scripts/generate-skill-mesh.py`),
+and the Claude conveyor's cross-family leg is a caller-supplied read-only command
+whose model family the script cannot verify and does not claim to.
+
 ## Consequences
 
 - RPI can end in a repaired PASS instead of only a first-pass verdict, and the

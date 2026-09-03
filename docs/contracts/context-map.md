@@ -6,6 +6,7 @@
 
 | Source | Target |
 |---|---|
+| `crank` | `rpi` |
 | `rpi` | `anti-ceremony` |
 | `rpi` | `implement` |
 | `rpi` | `plan` |
