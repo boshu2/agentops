@@ -280,6 +280,9 @@ FAKE
 stub_timeout() {
   cat > "$TMP/bin/timeout" <<FAKE
 #!/usr/bin/env bash
+# --foreground is probed functionally by the library, so the stub has to accept
+# it the way GNU timeout does: `timeout --foreground 1 true` must exit 0.
+if [ "\$1" = "--foreground" ]; then shift; fi
 printf '%s\n' "\$@" > "$TMP/timeout-argv"
 shift
 exec "\$@"
@@ -305,6 +308,7 @@ FAKE
 @test "(wrap-b) CODEX_EXEC_WRAP set: wrapper runs first with its flag, then codex with --dangerously-bypass-approvals-and-sandbox and NO --sandbox" {
   stub_argv_recorder
   stub_wrapper
+  stub_timeout
   run bash -c '
     . "'"$LIB"'"
     CODEX_EXEC_WRAP=("'"$TMP"'/bin/stub-wrapper" --flag)
@@ -315,11 +319,15 @@ FAKE
   '
   [ "$status" -eq 0 ]
   [[ "$output" == *"the answer is 42"* ]]
-  # The wrapper was exec'd with its flag first, then the codex binary + argv.
+  # The wrapper is OUTERMOST and was exec'd with its flag first; the timeout
+  # wrapper sits inside it, so the sandbox is the outermost process.
   [ -s "$TMP/wrapper-argv" ]
   [ "$(sed -n 1p "$TMP/wrapper-argv")" = "--flag" ]
-  [ "$(sed -n 2p "$TMP/wrapper-argv")" = "codex" ]
-  [ "$(sed -n 3p "$TMP/wrapper-argv")" = "exec" ]
+  [ "$(sed -n 2p "$TMP/wrapper-argv")" = "$TMP/bin/timeout" ]
+  [ "$(sed -n 3p "$TMP/wrapper-argv")" = "--foreground" ]
+  [ "$(sed -n 4p "$TMP/wrapper-argv")" = "10" ]
+  [ "$(sed -n 5p "$TMP/wrapper-argv")" = "codex" ]
+  [ "$(sed -n 6p "$TMP/wrapper-argv")" = "exec" ]
   # codex saw the bypass flag in place of --sandbox <value>; everything else intact.
   expected="$(printf '%s\n' exec --skip-git-repo-check --dangerously-bypass-approvals-and-sandbox -m gpt-test -C /tmp/work --json --ephemeral -- "do the thing")"
   [ "$(cat "$TMP/codex-argv")" = "$expected" ]
@@ -328,7 +336,12 @@ FAKE
   grep -qx -- '--dangerously-bypass-approvals-and-sandbox' "$TMP/codex-argv"
 }
 
-@test "(wrap-c) the timeout prefix still precedes the wrapper: order is timeout, wrapper, codex" {
+@test "(wrap-c) the seal is outermost: order is wrapper, timeout --foreground, codex" {
+  # GNU timeout calls setpgid(0,0), so with timeout OUTSIDE the wrapper the
+  # reviewer and every child landed in timeout's process group and a caller
+  # reaping "the rep's group" signalled a group the rep was never in. The
+  # wrapper also has to be outermost for the timeout binary itself to run
+  # INSIDE the sandbox rather than being resolved from PATH outside it.
   stub_argv_recorder
   stub_wrapper
   stub_timeout
@@ -338,14 +351,40 @@ FAKE
     CODEX_EXEC_PROMPT_ARG="do the thing" CODEX_EXEC_TIMEOUT=7 codex_exec_guarded
   '
   [ "$status" -eq 0 ]
+  [ -s "$TMP/wrapper-argv" ]
+  [ "$(sed -n 1p "$TMP/wrapper-argv")" = "--flag" ]
+  [ "$(sed -n 2p "$TMP/wrapper-argv")" = "$TMP/bin/timeout" ]
+  [ "$(sed -n 3p "$TMP/wrapper-argv")" = "--foreground" ]
+  [ "$(sed -n 4p "$TMP/wrapper-argv")" = "7" ]
+  [ "$(sed -n 5p "$TMP/wrapper-argv")" = "codex" ]
   [ -s "$TMP/timeout-argv" ]
   [ "$(sed -n 1p "$TMP/timeout-argv")" = "7" ]
-  [ "$(sed -n 2p "$TMP/timeout-argv")" = "$TMP/bin/stub-wrapper" ]
-  [ "$(sed -n 3p "$TMP/timeout-argv")" = "--flag" ]
-  [ "$(sed -n 4p "$TMP/timeout-argv")" = "codex" ]
-  [ "$(sed -n 5p "$TMP/timeout-argv")" = "exec" ]
-  [ -s "$TMP/wrapper-argv" ]
+  [ "$(sed -n 2p "$TMP/timeout-argv")" = "codex" ]
+  [ "$(sed -n 3p "$TMP/timeout-argv")" = "exec" ]
   [ -s "$TMP/codex-argv" ]
+}
+
+@test "(wrap-e) a timeout that refuses --foreground fails closed as MISSING" {
+  # Running without the flag would silently put the reviewer back in timeout's
+  # process group, which is the defect this whole ordering exists to close.
+  stub_argv_recorder
+  cat > "$TMP/bin/timeout" <<'FAKE'
+#!/usr/bin/env bash
+if [ "$1" = "--foreground" ]; then
+  printf 'timeout: unrecognized option --foreground\n' >&2
+  exit 125
+fi
+shift
+exec "$@"
+FAKE
+  chmod +x "$TMP/bin/timeout"
+  run bash -c '
+    . "'"$LIB"'"
+    CODEX_EXEC_PROMPT_ARG="do the thing" CODEX_EXEC_TIMEOUT=7 codex_exec_guarded
+  '
+  [ "$status" -eq 2 ]
+  [[ "$output" == *"MISSING-TIMEOUT"* ]]
+  [ ! -e "$TMP/codex-argv" ]
 }
 
 @test "(wrap-d) a wrapped run preserves the exit-code contract (genuine non-zero verbatim, stall 124)" {

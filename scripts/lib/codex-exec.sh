@@ -103,18 +103,54 @@
 : "${CODEX_EXEC_STALL_TIMEOUT:=124}"
 : "${CODEX_EXEC_ECHO:=125}"
 
+# codex_exec_timeout_bin — the ABSOLUTE path of a timeout that supports
+# `--foreground`, empty when no timeout binary exists at all, or return 3 when
+# one exists but will not take `--foreground`.
+#
+# WHY --foreground: GNU timeout calls setpgid(0,0) by default, so the reviewer
+# and every child it forks land in TIMEOUT's process group, not the caller's.
+# A caller that reaps "the rep's process group" then signals a group the rep was
+# never in, which is how four `/bin/sleep 45` children survived a passing
+# survivor test with ppid 1. `--foreground` keeps timeout in the caller's group,
+# which makes that reap mean something.
+#
+# WHY absolute: the path is recorded in the probe seal and the wrapper runs
+# INSIDE the sandbox, so a `timeout` resolved fresh from PATH at dispatch time
+# could be a different binary than the one the record names.
+codex_exec_timeout_bin() {
+  local candidate resolved
+  for candidate in timeout gtimeout; do
+    resolved="$(command -v "$candidate" 2>/dev/null)" || continue
+    [ -n "$resolved" ] || continue
+    case "$resolved" in /*) ;; *) continue ;; esac
+    # The FIRST candidate that resolves is the resolved timeout. Falling through
+    # to the next one would quietly run a different binary than the one a
+    # shadowing PATH selected, which is the failure this is meant to surface.
+    # Functional probe, not `--help` parsing: BSD timeout has no --help at all.
+    if "$resolved" --foreground 1 true >/dev/null 2>&1; then
+      printf '%s' "$resolved"
+      return 0
+    fi
+    return 3
+  done
+  return 0
+}
+
 # codex_exec_timeout_cmd — echo the timeout-wrapper argv (space-separated) for a
 # budget, or nothing when no timeout binary exists. Ported READ-ONLY from
 # Prefer `timeout`, fall back to `gtimeout`, and if
 # NEITHER exists degrade to running the reviewer with no timeout rather than failing
 # closed and being unusable on a bo-mac that ships no coreutils `timeout`.
+# A timeout that exists but refuses `--foreground` FAILS CLOSED (return 3): the
+# alternative is silently running without the flag and reaping the wrong group.
 # Usage: read -r -a _to <<<"$(codex_exec_timeout_cmd 300)"; "${_to[@]}" codex ...
 codex_exec_timeout_cmd() {
-  local budget="${1:-0}"
+  local budget="${1:-0}" bin="" rc=0
   [ "$budget" = "0" ] && return 0
-  if command -v timeout >/dev/null 2>&1; then printf 'timeout %s' "$budget"
-  elif command -v gtimeout >/dev/null 2>&1; then printf 'gtimeout %s' "$budget"
-  fi
+  bin="$(codex_exec_timeout_bin)" || rc=$?
+  [ "$rc" = "0" ] || return "$rc"
+  [ -n "$bin" ] || return 0
+  printf '%s --foreground %s' "$bin" "$budget"
 }
 
 # codex_exec_looks_echoed — return 0 (true) when the captured output looks like an
@@ -443,16 +479,29 @@ codex_exec_guarded() {
   # no-trailing-newline / empty-here-string case, so `|| true` keeps `set -e`
   # callers alive; to_cmd is already initialized empty for the no-timeout path.
   local -a to_cmd=()
+  local to_spec="" to_rc=0
+  to_spec="$(codex_exec_timeout_cmd "${CODEX_EXEC_TIMEOUT:-0}")" || to_rc=$?
+  if [ "$to_rc" != "0" ]; then
+    echo "codex-exec: MISSING-TIMEOUT — the resolved timeout does not accept --foreground." >&2
+    echo "  Without it the reviewer runs in timeout's process group, so a caller cannot reap it." >&2
+    echo "  (exit $CODEX_EXEC_MISSING = precondition, not a REFUTE / not a genuine failure)" >&2
+    return "$CODEX_EXEC_MISSING"
+  fi
   # shellcheck disable=SC2046,SC2206  # intentional word-split of the wrapper argv.
-  read -r -a to_cmd <<<"$(codex_exec_timeout_cmd "${CODEX_EXEC_TIMEOUT:-0}")" || true
+  read -r -a to_cmd <<<"$to_spec" || true
 
-  # The launch prefix, in this fixed order: timeout wrapper (if any), then the
-  # external CODEX_EXEC_WRAP prefix (if any), then the reviewer binary. The timeout
-  # stays OUTERMOST so a wrapped run is still killed on budget. `launch` always
-  # holds at least the binary, so its expansion is safe under `set -u` on bash 3.2.
+  # The launch prefix, in this fixed order: the external CODEX_EXEC_WRAP prefix
+  # (if any), then the timeout wrapper (if any), then the reviewer binary. The
+  # WRAP is outermost so the sandbox is the outermost process: with timeout
+  # outside it, the timeout binary itself was resolved from PATH and ran
+  # UNSEALED, so a shadowed timeout could have dropped the wrapper entirely.
+  # `--foreground` is what keeps the budget enforceable from inside the sandbox
+  # while leaving the reviewer in the caller's process group.
+  # `launch` always holds at least the binary, so its expansion is safe under
+  # `set -u` on bash 3.2.
   local -a launch=()
-  [ "${#to_cmd[@]}" -gt 0 ] && launch+=("${to_cmd[@]}")
   [ "${#wrap[@]}" -gt 0 ] && launch+=("${wrap[@]}")
+  [ "${#to_cmd[@]}" -gt 0 ] && launch+=("${to_cmd[@]}")
   launch+=("$bin")
 
   _codex_exec_run() {
