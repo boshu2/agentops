@@ -8,6 +8,7 @@ package skills
 
 import (
 	"math"
+	"regexp"
 	"sort"
 	"strings"
 	"unicode"
@@ -79,10 +80,22 @@ func Score(query string, metas []SkillMeta) []Match {
 				raw += weightDesc
 			}
 		}
+		// A declared trigger phrase quoted whole in the query is the caller
+		// using the skill's own words; it outranks a sibling that merely owns
+		// one of those words as a name token ("check this change" belongs to
+		// validate, not to reality-check).
+		for _, phrase := range triggerPhrases(m) {
+			if len(phrase) >= 2 && containsPhrase(qTokens, phrase) {
+				raw += weightName
+			}
+		}
 
 		score := 0.0
 		if len(qTokens) > 0 {
 			score = raw / (float64(len(qTokens)) * weightName)
+			if score > 1 {
+				score = 1
+			}
 		}
 		matches = append(matches, Match{
 			Name:        m.Name,
@@ -131,6 +144,53 @@ func splitExclusion(desc string) (positive, exclusion string) {
 		positive += " " + tail
 	}
 	return positive, rest[:end]
+}
+
+// triggerClause opens the description's declared trigger list.
+var triggerClause = regexp.MustCompile(`(?i)\btriggers?:`)
+
+// quotedPhrase matches one quoted trigger in that list.
+var quotedPhrase = regexp.MustCompile(`"([^"]+)"`)
+
+// triggerPhrases returns every declared trigger as a token sequence: the
+// frontmatter triggers list plus each quoted phrase after "Triggers:" in the
+// description. Phrases that tokenize to nothing are dropped.
+func triggerPhrases(m SkillMeta) [][]string {
+	raw := append([]string(nil), m.Triggers...)
+	if loc := triggerClause.FindStringIndex(m.Description); loc != nil {
+		for _, q := range quotedPhrase.FindAllStringSubmatch(m.Description[loc[1]:], -1) {
+			raw = append(raw, q[1])
+		}
+	}
+	out := make([][]string, 0, len(raw))
+	for _, r := range raw {
+		if toks := tokenize(r); len(toks) > 0 {
+			out = append(out, toks)
+		}
+	}
+	return out
+}
+
+// containsPhrase reports whether phrase occurs as a contiguous run inside
+// qTokens, token by token under tokenMatches, so "check this change" still
+// matches "checking this change".
+func containsPhrase(qTokens, phrase []string) bool {
+	if len(phrase) == 0 || len(phrase) > len(qTokens) {
+		return false
+	}
+	for start := 0; start+len(phrase) <= len(qTokens); start++ {
+		hit := true
+		for i, pt := range phrase {
+			if !tokenMatches(qTokens[start+i], []string{pt}) {
+				hit = false
+				break
+			}
+		}
+		if hit {
+			return true
+		}
+	}
+	return false
 }
 
 // tokenize lowercases, splits on non-alphanumeric runes, and drops stopwords

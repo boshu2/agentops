@@ -1,6 +1,9 @@
 package skills
 
-import "testing"
+import (
+	"strings"
+	"testing"
+)
 
 // fixtureSkills is a fixed in-memory catalog so ranking assertions are stable
 // and independent of the live skills/ tree (which churns).
@@ -181,6 +184,11 @@ func TestScore_LiveCatalogOwnVocabulary(t *testing.T) {
 		"premortem the plan for this live rollout": "premortem",
 		"challenge this plan with one judge":       "premortem",
 		"is this live decision reversible":         "one-way-door",
+		// The two triggers added in the 2026-09-03 repair, quoted verbatim:
+		// a declared phrase must beat a sibling that owns one of its words as
+		// a name token (reality-check, one-way-door).
+		"check this change": "validate",
+		"one judge":         "premortem",
 	}
 	for q, want := range cases {
 		got := Score(q, metas)
@@ -191,5 +199,43 @@ func TestScore_LiveCatalogOwnVocabulary(t *testing.T) {
 			}
 			t.Errorf("%q: want %s first, got %q (top: %+v)", q, want, top, got[:min(3, len(got))])
 		}
+	}
+}
+
+func TestTriggerPhrases_ParsesDescriptionAndFrontmatter(t *testing.T) {
+	m := SkillMeta{
+		Name:        "validate",
+		Triggers:    []string{"prove it"},
+		Description: `Freshly judge a change. Not for claim-vs-tree checks; that is reality-check. Triggers: "validate", "is this proven", "check this change".`,
+	}
+	got := triggerPhrases(m)
+	want := [][]string{{"prove"}, {"validate"}, {"proven"}, {"check", "change"}}
+	if len(got) != len(want) {
+		t.Fatalf("triggerPhrases: got %v, want %v", got, want)
+	}
+	for i := range want {
+		if strings.Join(got[i], " ") != strings.Join(want[i], " ") {
+			t.Errorf("phrase %d: got %v, want %v", i, got[i], want[i])
+		}
+	}
+}
+
+func TestScore_DeclaredPhraseBeatsSiblingNameToken(t *testing.T) {
+	metas := []SkillMeta{
+		{Name: "validate", Description: `Freshly judge a finished change. Triggers: "validate", "check this change".`},
+		{Name: "reality-check", Description: `Compare a claimed state with the tree. Triggers: "reality check".`},
+	}
+	got := Score("check this change", metas)
+	if got[0].Name != "validate" {
+		t.Fatalf("want validate first, got %+v", got)
+	}
+	if got[0].Score > 1 {
+		t.Errorf("score must stay clamped at 1, got %v", got[0].Score)
+	}
+	// A single-word trigger earns no phrase bonus; single-word behaviour is
+	// unchanged from the name/trigger/description weights.
+	got = Score("validate", metas)
+	if got[0].Score != 1 {
+		t.Errorf("single name token: want score 1, got %v", got[0].Score)
 	}
 }
