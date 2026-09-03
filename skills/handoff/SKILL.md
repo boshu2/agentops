@@ -27,6 +27,27 @@ A handoff works because the next context can act on exact paths and facts
 without trusting the author's memory; any line the reader cannot verify from
 the artifact itself is decoration, not handoff.
 
+## Prompt
+
+```text
+Write a handoff for this session in agentops-wt/train2-c: goal was
+migrating regen to Go, I finished cli/internal/gates/regen.go and left
+scripts/regen-all.sh untouched, tests are green, and the next context
+still needs to update docs/CI-CD.md. Write it to .agents/ao/handoff/.
+```
+
+## It's working if
+
+Observable in the trace, without reading the prose:
+
+- Every completed item names an exact evidence path like
+  `cli/internal/gates/regen.go`, not a chronological narration.
+- The artifact lands at the caller-named path or `.agents/ao/handoff/`.
+- `cat .agents/ao/handoff/<id>.json` after writing shows the same
+  content it wrote.
+- Only caller-supplied `continuation` text appears as next action; no
+  owner, tracker state, or verdict is invented.
+
 Write a factual session artifact that another context can read. Include:
 
 - caller-supplied goal and summary;

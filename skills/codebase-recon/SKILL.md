@@ -44,6 +44,31 @@ Build a reusable, falsifiable model of a repository. This skill reports what
 the tree and executable probes support; it does not edit code or issue a final
 PASS/WARN/FAIL verdict.
 
+## Prompt
+
+```text
+codebase-recon --mode=baseline --view=audit --lens=cli --depth=standard
+on agentops-wt/train2-c: trace the `ao gate check` entry point from
+cli/cmd/ao/gate.go through to its tests. I'm onboarding and need a cited
+mental model, not a file inventory.
+```
+
+## It's working if
+
+Observable in the trace, without reading the prose:
+
+- The manifest at
+  `.agents/scratch/codebase-recon/<run-id>/codebase-recon.json` names the
+  exact commit and passes
+  `skills/codebase-recon/scripts/validate-output.sh <codebase-recon.json>`.
+- Every `fact` cites `file:line`, and every `inference` cites the facts it
+  rests on.
+- The chosen `lens` (persistence, auth, CLI, build, or test) follows one
+  entry-to-test flow to completion, or the report names the exact
+  `file:line` where the trace was cut.
+- Inspected and uninspected scope both appear explicitly in
+  `codebase-recon.md`.
+
 ## Constraints
 
 - To prevent a floating recon, record the exact repository commit and local

@@ -129,6 +129,15 @@ from agreement counting and recorded as non-returning; if fewer than two
 independent judgments remain, report the round as insufficient rather than
 synthesize a thin consensus.
 
+## Prompt
+
+```text
+Convene a council on whether to force-push origin/main to drop the last 3
+commits in agentops-wt/train2-c after a bad rebase corrupted skills-codex/.
+Give each judge the git reflog and diff. I need independent judgments
+before I act, not one opinion.
+```
+
 ## It's working if
 
 Observable in the trace, without reading the prose — and the rubric a fresh

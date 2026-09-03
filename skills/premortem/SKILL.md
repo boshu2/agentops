@@ -122,6 +122,15 @@ These are integration- and extension-class checks. The Grain question's
 native-counterpart list applies only to integration-class work; do not impose it
 on routine feature work.
 
+## Prompt
+
+```text
+Premortem this plan before I implement: bead ag-4f21 proposes rewriting
+`scripts/regen-all.sh` to call `ao gate check` instead of shelling out to
+the Python generators, touching cli/internal/gates/regen.go. Plan and
+acceptance are in the bead. Find concrete ways it fails.
+```
+
 ## It's working if
 
 Observable in the trace, without reading the prose — and the rubric a fresh

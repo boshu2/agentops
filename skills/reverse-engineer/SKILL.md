@@ -34,6 +34,30 @@ Reverse-engineer an external system into two things: a **mechanically-verifiable
 
 **Triggers:** "reverse-engineer X", "tear down Y", "what should we steal from Z", "evaluate competitor/upstream", "should we fork/adopt/build-native".
 
+## Prompt
+
+```text
+Reverse-engineer the beads CLI (github.com/steveyegge/beads, tag v2.1.0)
+in repo mode, then author steal-map.md comparing its dependency-graph
+reconciler against our cli/internal/gates/ package. I own this analysis
+and have authorization for the clone.
+```
+
+## It's working if
+
+Observable in the trace, without reading the prose:
+
+- `feature-registry.yaml` and `clone-metadata.json` land under
+  `.agents/scratch/reverse-engineer/<product>/` with the resolved
+  upstream commit recorded.
+- Every `steal-map.md` row cites a teardown registry entry and our
+  matching surface, using the full `have`/`gap`/`steal`/`park`/`reject`
+  set.
+- `bash skills/reverse-engineer/scripts/validate-output.sh --output-dir
+  "$output_dir" --phase complete` exits 0 before handoff.
+- A one-way-door adoption row is routed to Plan instead of decided
+  inside `steal-map.md`.
+
 ## ⚠️ Constraints — Hard Guardrails (MANDATORY)
 
 - Only operate on code/binaries you own or have **explicit written authorization** to analyze — this matters because unauthorized teardown is the legal/IP line.

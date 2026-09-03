@@ -35,6 +35,28 @@ Answer one bounded question with current evidence. Research informs a caller;
 it does not select work, approve a plan, mutate lifecycle state, or decide what
 happens next.
 
+## Prompt
+
+```text
+Research: does `ao gate check --scope head` in cli/cmd/ao/gate.go
+actually run scripts/check-skill-python-ratchet.sh, or only the schema
+and format gates? I'm deciding whether to add a new Python file under
+skills/foo/scripts/ and need a cited answer before I do.
+```
+
+## It's working if
+
+Observable in the trace, without reading the prose:
+
+- Every load-bearing claim cites a commit and `file:line`, checkable with
+  `git show <sha>:<path>`.
+- Each capability flag derived from the bounded question is answered with
+  evidence, or reported as `unknown` explicitly.
+- `contradictions` and `unknowns` stay visible in the output rather than
+  resolved by assertion.
+- The report ends with `checked` and `unchecked` scope, carrying no
+  approval or next-action field.
+
 ## Contract
 
 1. State the question, decision it informs, scope, non-goals, and evidence
