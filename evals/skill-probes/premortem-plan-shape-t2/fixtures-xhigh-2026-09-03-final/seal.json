@@ -1,0 +1,142 @@
+{
+  "allowed_read_paths": [
+    "/Users/bo/.local/bin/codex",
+    "/Users/bo/dev/dotfiles/bin/codex"
+  ],
+  "auth_copied": true,
+  "cache_root": "/private/var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/C",
+  "config_sanitized": [
+    "model_reasoning_effort",
+    "web_search"
+  ],
+  "config_sha256": "sha256:fa9920fc1d96df3467c8f9eba0c274ca66e36473c76bf8a03bc70f04006d3523",
+  "config_text": "# Generated for one sealed skill-probe capture. Not the operator's config.\n# Only the keys this harness needs are present: the model comes from the\n# --model flag, and web search is off so the rep has no second egress path.\nmodel_reasoning_effort = \"xhigh\"\nweb_search = \"disabled\"\n",
+  "coverage_eligible": true,
+  "denied_link_roots": [
+    "/var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T",
+    "/private/var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T",
+    "/private/tmp",
+    "/tmp",
+    "/private/var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/C",
+    "/Users/bo",
+    "/Users/bo/.codex",
+    "/Users/bo/dev/agentops-wt/measure-int",
+    "/Users/bo/dev/agentops-wt/measure-int/skills",
+    "/Users/bo/dev/agentops",
+    "/Users/bo/.agents",
+    "/Users/bo/.claude/skills",
+    "/Users/bo/.gemini/skills",
+    "/Users/bo/.codex/skills",
+    "/Users/bo/dev/agentops/skills",
+    "/private/var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T/probe-run.Af74RV/dispatch"
+  ],
+  "denied_read_data_roots": [
+    "/private/var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T/probe-run.Af74RV/dispatch"
+  ],
+  "denied_read_roots": [
+    "/var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T",
+    "/private/var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T",
+    "/private/tmp",
+    "/tmp",
+    "/private/var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/C",
+    "/Users/bo",
+    "/Users/bo/.codex",
+    "/Users/bo/dev/agentops-wt/measure-int",
+    "/Users/bo/dev/agentops-wt/measure-int/skills",
+    "/Users/bo/dev/agentops",
+    "/Users/bo/.agents",
+    "/Users/bo/.claude/skills",
+    "/Users/bo/.gemini/skills",
+    "/Users/bo/.codex/skills",
+    "/Users/bo/dev/agentops/skills"
+  ],
+  "dev_write_paths": [
+    "/dev/null",
+    "/dev/zero",
+    "/dev/dtracehelper",
+    "/dev/tty"
+  ],
+  "dispatch_root": "/private/var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T/probe-run.Af74RV/dispatch",
+  "env_allowlist": [
+    "ALL_PROXY",
+    "CODEX_EXEC_BIN",
+    "CODEX_EXEC_DIR",
+    "CODEX_EXEC_EXPECT_OUTPUT",
+    "CODEX_EXEC_MODEL",
+    "CODEX_EXEC_OUT_FILE",
+    "CODEX_EXEC_PROMPT_FILE",
+    "CODEX_EXEC_SANDBOX",
+    "CODEX_EXEC_SKIP_GIT_CHECK",
+    "CODEX_EXEC_STDERR_FILE",
+    "CODEX_EXEC_TIMEOUT",
+    "CODEX_HOME",
+    "HOME",
+    "HTTPS_PROXY",
+    "HTTP_PROXY",
+    "LANG",
+    "NO_PROXY",
+    "OLDPWD",
+    "PATH",
+    "PROBE_SEAL",
+    "PROBE_SEAL_PROFILE_FILE",
+    "PWD",
+    "REVIEWER",
+    "REVIEWER_MARKER",
+    "SHLVL",
+    "SKILL_PROBES_DIR",
+    "SKILL_PROBE_SKILLS_DIR",
+    "TERM",
+    "TMPDIR",
+    "_"
+  ],
+  "git_common_root": "/Users/bo/dev/agentops",
+  "launcher_chain": [
+    "/Users/bo/.local/bin/codex",
+    "/Users/bo/dev/dotfiles/bin/codex"
+  ],
+  "launcher_sha256": "sha256:047bd39709cef43bb6d1125b19135d25d0a968b37147802bd1e4b6174ad779c2",
+  "mechanism": "sandbox-exec",
+  "network": {
+    "hosts": [
+      ".oaiusercontent.com",
+      "ab.chatgpt.com",
+      "api.openai.com",
+      "auth.openai.com",
+      "chatgpt.com"
+    ],
+    "mode": "proxy-allowlist",
+    "ports": [
+      443
+    ],
+    "proxy": "127.0.0.1:50832",
+    "unix_sockets": []
+  },
+  "platform": "Darwin",
+  "profile": "(version 1)\n(allow default)\n(deny network*)\n(allow network-outbound (remote ip \"localhost:50832\"))\n(deny file-write*)\n(allow file-write*\n  (subpath \"/private/var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T/probe-run.Af74RV/home\")\n  (subpath \"/private/var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T/probe-run.Af74RV/ws\")\n  (subpath \"/private/var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T/probe-run.Af74RV/tmp\")\n  (literal \"/dev/null\")\n  (literal \"/dev/zero\")\n  (literal \"/dev/dtracehelper\")\n  (literal \"/dev/tty\")\n)\n(deny file-read*\n  (subpath \"/var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T\")\n  (subpath \"/private/var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T\")\n  (subpath \"/private/tmp\")\n  (subpath \"/tmp\")\n  (subpath \"/private/var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/C\")\n  (subpath \"/Users/bo\")\n  (subpath \"/Users/bo/.codex\")\n  (subpath \"/Users/bo/dev/agentops-wt/measure-int\")\n  (subpath \"/Users/bo/dev/agentops-wt/measure-int/skills\")\n  (subpath \"/Users/bo/dev/agentops\")\n  (subpath \"/Users/bo/.agents\")\n  (subpath \"/Users/bo/.claude/skills\")\n  (subpath \"/Users/bo/.gemini/skills\")\n  (subpath \"/Users/bo/.codex/skills\")\n  (subpath \"/Users/bo/dev/agentops/skills\")\n)\n(allow file-read-metadata\n  (path-ancestors \"/private/var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T/probe-run.Af74RV/ws\")\n  (path-ancestors \"/Users/bo/.local/bin/codex\")\n  (path-ancestors \"/Users/bo/dev/dotfiles/bin/codex\")\n)\n(allow file-read*\n  (subpath \"/private/var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T/probe-run.Af74RV/home\")\n  (subpath \"/private/var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T/probe-run.Af74RV/ws\")\n  (subpath \"/private/var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T/probe-run.Af74RV/tmp\")\n  (literal \"/Users/bo/.local/bin/codex\")\n  (literal \"/Users/bo/dev/dotfiles/bin/codex\")\n)\n(allow file-read-metadata\n  (subpath \"/private/var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T/probe-run.Af74RV/dispatch\")\n)\n(deny file-write*\n  (subpath \"/private/var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T/probe-run.Af74RV/dispatch\")\n)\n(deny file-link\n  (subpath \"/var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T\")\n  (subpath \"/private/var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T\")\n  (subpath \"/private/tmp\")\n  (subpath \"/tmp\")\n  (subpath \"/private/var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/C\")\n  (subpath \"/Users/bo\")\n  (subpath \"/Users/bo/.codex\")\n  (subpath \"/Users/bo/dev/agentops-wt/measure-int\")\n  (subpath \"/Users/bo/dev/agentops-wt/measure-int/skills\")\n  (subpath \"/Users/bo/dev/agentops\")\n  (subpath \"/Users/bo/.agents\")\n  (subpath \"/Users/bo/.claude/skills\")\n  (subpath \"/Users/bo/.gemini/skills\")\n  (subpath \"/Users/bo/.codex/skills\")\n  (subpath \"/Users/bo/dev/agentops/skills\")\n  (subpath \"/private/var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T/probe-run.Af74RV/dispatch\")\n)\n(deny file-clone\n  (subpath \"/var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T\")\n  (subpath \"/private/var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T\")\n  (subpath \"/private/tmp\")\n  (subpath \"/tmp\")\n  (subpath \"/private/var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/C\")\n  (subpath \"/Users/bo\")\n  (subpath \"/Users/bo/.codex\")\n  (subpath \"/Users/bo/dev/agentops-wt/measure-int\")\n  (subpath \"/Users/bo/dev/agentops-wt/measure-int/skills\")\n  (subpath \"/Users/bo/dev/agentops\")\n  (subpath \"/Users/bo/.agents\")\n  (subpath \"/Users/bo/.claude/skills\")\n  (subpath \"/Users/bo/.gemini/skills\")\n  (subpath \"/Users/bo/.codex/skills\")\n  (subpath \"/Users/bo/dev/agentops/skills\")\n  (subpath \"/private/var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T/probe-run.Af74RV/dispatch\")\n)",
+  "profile_file": "/private/var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T/probe-run.Af74RV/home/seal.sb",
+  "profile_sha256": "sha256:175f1814c2c641935e8b99e4e755e0e810f00d9f668f5963e3fc5604173fa75b",
+  "real_codex_home": "/Users/bo/.codex",
+  "real_home": "/Users/bo",
+  "real_tmpdir": "/private/var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T",
+  "rep_env": {
+    "CODEX_HOME": "/private/var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T/probe-run.Af74RV/home/.codex",
+    "HOME": "/private/var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T/probe-run.Af74RV/home",
+    "TMPDIR": "/private/var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T/probe-run.Af74RV/tmp"
+  },
+  "run_root": "/private/var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T/probe-run.Af74RV",
+  "sandbox_exec": "/usr/bin/sandbox-exec",
+  "schema": "agentops-skill-probe-seal.v1",
+  "seal_mode": "seatbelt",
+  "timeout_bin": "/opt/homebrew/bin/timeout",
+  "workspace_root": "/private/var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T/probe-run.Af74RV/ws",
+  "wrap": [
+    "/usr/bin/sandbox-exec",
+    "-p",
+    "sha256:175f1814c2c641935e8b99e4e755e0e810f00d9f668f5963e3fc5604173fa75b"
+  ],
+  "writable_roots": [
+    "/private/var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T/probe-run.Af74RV/home",
+    "/private/var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T/probe-run.Af74RV/ws",
+    "/private/var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T/probe-run.Af74RV/tmp"
+  ]
+}
