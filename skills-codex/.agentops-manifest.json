@@ -615,8 +615,8 @@
     {
       "name": "security",
       "source_skill": "skills/security",
-      "source_hash": "be7ee7ca266740852671c539263478160ce5ea0b53947d2684a22fac54343d27",
-      "generated_hash": "8f7d5de875a93e4710973e836499091fe0f1a98055380cf061782812cd8dd0ad"
+      "source_hash": "9f25a379bbc15b174d23a612fa37a0d0ab65518a038cf411c07e11544c296434",
+      "generated_hash": "87a3f670040d5b7c4cdf9037bef9c3634c405e7d7338d04b32879871d5b98e4d"
     },
     {
       "name": "skill-builder",
@@ -675,8 +675,8 @@
     {
       "name": "validate",
       "source_skill": "skills/validate",
-      "source_hash": "447ceed6ec5e43918ceeee925f1853a4a5b6028e65df8e530e111c869fff0357",
-      "generated_hash": "0f11af7bc891c495a1cef09d9c9f06e3f3332c0cc60385e68eac5d05264c129a"
+      "source_hash": "fa8a4589e3b13f8ecd82d2194555f8c47774c83373b7f05f6ca73be6e1513310",
+      "generated_hash": "8097776f48531438fe9885cdb006fba77f34ca4b74a41b154622f036c5554426"
     },
     {
       "name": "workflow-builder",

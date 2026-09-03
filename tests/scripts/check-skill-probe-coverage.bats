@@ -538,13 +538,12 @@ PY
     run --separate-stderr bash "$GATE" --json
 
     [ "$status" -eq 0 ]
-    # 13 product/judgment-tier badges, 1 declared-denominator exclusion
-    # (`goals`, a pure alias of `fitness`), so the denominator is 12. The
-    # headline is 0/12 both before and after this change, but for different
-    # reasons: the alias left the denominator and the newly landed judgment
-    # skill `one-way-door` entered it, honestly unmeasured.
-    [ "$(json_field "$output" tier_total)" = "13" ]
-    [ "$(json_field "$output" excluded_count)" = "1" ]
+    # 12 product/judgment-tier badges and no declared-denominator exclusion:
+    # the `goals` alias was retired on 2026-09-03 (Train 2), so nothing is
+    # excluded and the denominator is the badge count. The headline stays
+    # 0/12 until a v3 capture-manifest-backed run records a current verdict.
+    [ "$(json_field "$output" tier_total)" = "12" ]
+    [ "$(json_field "$output" excluded_count)" = "0" ]
     [ "$(json_field "$output" gated_total)" = "12" ]
     [ "$(json_field "$output" measured)" = "0" ]
     [ "$(json_field "$output" unmeasured_count)" = "12" ]
@@ -557,8 +556,11 @@ PY
     run --separate-stderr bash "$GATE"
 
     [ "$status" -eq 0 ]
-    [[ "$output" == *"denominator excludes 'goals'"* ]]
-    [[ "$output" == *"alias-of fitness"* ]]
+    # The declared exclusion list is empty since the goals alias was retired
+    # (2026-09-03); the gate must run clean with nothing to argue and must not
+    # print a stale exclusion line.
+    ! grep -v '^#' "$REPO_ROOT/scripts/.skill-probe-denominator-exclusions" | grep -q '[^[:space:]]'
+    [[ "$output" != *"denominator excludes"* ]]
 }
 
 # --- declared denominator ------------------------------------------------------

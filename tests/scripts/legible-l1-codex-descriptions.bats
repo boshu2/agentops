@@ -167,7 +167,7 @@ PYCHECK
     expect validate 'Freshly judge a finished change against its acceptance: PASS, FAIL, or NOT_PROVEN. Triggers: "validate", "is this proven".'
     expect rpi 'Coordinate one RPI traversal: one bounded Plan and Implement experiment, then fresh Validate and a bounded repair phase to convergence. Triggers: "run rpi", "run one traversal", "execute this plan", orchestration or worker delegation that implements changes.'
     expect plan 'Shape or refine the existing bead or caller intent without a second planning artifact. Triggers: "plan", "discover and plan", "shape this goal".'
-    expect council 'Collect independent perspectives for an explicitly high-stakes or contested judgment. Triggers: "council", "multi-judge review", "independent perspectives".'
+    expect council 'Gather independent views on a high-stakes judgment. Triggers: "council", "multi-judge review", "independent perspectives".'
     expect domain 'Load the AgentOps language and bounded-context contracts when a term needs precise meaning. Triggers: "define this domain term", "check the bounded context".'
 }
 

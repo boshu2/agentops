@@ -8,6 +8,15 @@ description: 'Run authorized repository security scans for vulnerabilities, depe
 
 Use this skill for a caller-requested repository scan, authorized binary assurance, dependency risk, secrets, or offline prompt-surface redteam.
 
+## Critical Constraints
+
+- Scan only repositories, binaries, and prompt surfaces the operator owns or is explicitly authorized to assess. **Why:** a security review does not grant access to third-party systems or proprietary material.
+- Keep collection read-only by default; do not exfiltrate secrets, execute destructive payloads, or mutate policy/baselines to manufacture green. **Why:** the assessment must not become the incident or erase its evidence.
+- Treat missing/error scanners as a coverage gap, never a clean finding; use `--require-tools` when complete tool coverage is required. **Why:** absent evidence is not evidence of absence.
+- Use the current agent and local shell; do not start another runtime or orchestration substrate unless explicitly requested. **Why:** repository scanning is a bounded operation, not permission to fan out.
+- Run the selected scan once and report findings plus coverage gaps. Remediation,
+  risk acceptance, reruns, and promotion are caller decisions.
+
 ## Prompt
 
 ```text
@@ -20,15 +29,6 @@ Run a full security scan on cli/ in the fleet-router repo: dependency risk, secr
 - Collection stays read-only throughout: no `curl`, `rm`, or credential read appears in the transcript.
 - Findings cite a file and line, such as `cli/internal/auth/token.go:42`, never a vague category.
 - The response's `findings` and `coverage gaps` stay separate from any remediation step, left as caller decisions.
-
-## Critical Constraints
-
-- Scan only repositories, binaries, and prompt surfaces the operator owns or is explicitly authorized to assess. **Why:** a security review does not grant access to third-party systems or proprietary material.
-- Keep collection read-only by default; do not exfiltrate secrets, execute destructive payloads, or mutate policy/baselines to manufacture green. **Why:** the assessment must not become the incident or erase its evidence.
-- Treat missing/error scanners as a coverage gap, never a clean finding; use `--require-tools` when complete tool coverage is required. **Why:** absent evidence is not evidence of absence.
-- Use the current agent and local shell; do not start another runtime or orchestration substrate unless explicitly requested. **Why:** repository scanning is a bounded operation, not permission to fan out.
-- Run the selected scan once and report findings plus coverage gaps. Remediation,
-  risk acceptance, reruns, and promotion are caller decisions.
 
 ## Security Surfaces
 
