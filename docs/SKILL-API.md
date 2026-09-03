@@ -38,7 +38,7 @@ metadata:
 
 Legacy metadata that once controlled the now-retired lookup command. Nothing
 reads it today; it stays in the schema so skills written against the old shape
-keep validating. New skills can omit it — 31 of the 56 shipped skills do. Two
+keep validating. New skills can omit it; 30 of the 54 shipped skills do. Two
 forms remain accepted:
 
 **String form:**

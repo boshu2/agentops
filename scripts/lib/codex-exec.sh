@@ -54,7 +54,7 @@
 #     untrusted-repo posture is accepted; it runs `--sandbox` (terminal restrictions) +
 #     `--dangerously-skip-permissions` so a headless file-read review does not block on
 #     a permission prompt.
-#   Adapter 3 = local-mlx — a caller-selected local adapter. REVIEWER_BIN is required
+#   Adapter 3 = local-mlx, a caller-selected local adapter. REVIEWER_BIN is required
 #     (no default wrapper ships): a program that takes the reviewer prompt as $1 and
 #     echoes the model review.
 #
@@ -197,7 +197,7 @@ reviewer_adapter_bin() {
   case "$1" in
     codex)     printf '%s' "${CODEX_EXEC_BIN:-codex}" ;;
     agy)       printf '%s' "${REVIEWER_BIN:-agy}" ;;
-    local-mlx) printf '%s' "${REVIEWER_BIN:-local-mlx-membrane.sh}" ;;
+    local-mlx) printf '%s' "${REVIEWER_BIN:-}" ;;
     *)         printf '%s' "${REVIEWER_BIN:-$1}" ;;
   esac
 }
@@ -267,7 +267,7 @@ codex_exec_guarded() {
   # An unset REVIEWER_BIN is a PRECONDITION failure, never a fallback to whatever
   # happens to sit on PATH under the old wrapper name.
   if [ "$reviewer" = "local-mlx" ] && [ -z "${REVIEWER_BIN:-}" ]; then
-    echo "codex-exec: MISSING DEPENDENCY — REVIEWER=local-mlx requires REVIEWER_BIN (no default wrapper ships)." >&2
+    echo "codex-exec: MISSING DEPENDENCY: REVIEWER=local-mlx requires REVIEWER_BIN (no default wrapper ships)." >&2
     echo "  This is NOT a result. Set REVIEWER_BIN to the local reviewer executable, then re-run." >&2
     echo "  (exit $CODEX_EXEC_MISSING = precondition, not a REFUTE / not a genuine failure)" >&2
     return "$CODEX_EXEC_MISSING"

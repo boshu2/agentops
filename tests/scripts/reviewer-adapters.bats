@@ -246,11 +246,13 @@ FAKE
     . "'"$LIB"'"
     echo "bin=$(reviewer_adapter_bin codex) marker=$(reviewer_adapter_marker codex)"
     echo "bin=$(reviewer_adapter_bin agy) marker=$(reviewer_adapter_marker agy)"
+    echo "mlx=[$(REVIEWER_BIN= reviewer_adapter_bin local-mlx)]"
     echo "norm=$(reviewer_normalize GEMINI)"
   '
   [ "$status" -eq 0 ]
   [[ "$output" == *"bin=codex marker=tokens used"* ]]
   [[ "$output" == *"bin=agy marker=VERDICT:"* ]]
+  [[ "$output" == *"mlx=[]"* ]]
   [[ "$output" == *"norm=agy"* ]]
 }
 

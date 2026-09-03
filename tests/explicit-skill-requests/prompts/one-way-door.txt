@@ -1,0 +1,1 @@
+Use /one-way-door to tell me whether dropping this table is reversible

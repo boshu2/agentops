@@ -1,9 +1,9 @@
 # AgentOps Effectiveness — Evidence Audit
 
 > **HISTORICAL:** Point-in-time audit from 2026-06-16; cited command surfaces are not current.
-> The eval substrate it cites — `evals/workbench/`, `evals/membrane/`, `scripts/eval-agent-harness.sh`,
+> The eval substrate it cites (`evals/workbench/`, `evals/membrane/`, `scripts/eval-agent-harness.sh`,
 > `scripts/check-eval-workbench.sh`, `tests/scripts/corpus-delta-tasks.bats`, and the contracts
-> `docs/contracts/eval-baseline-ab.md`, `context-usefulness-eval.md`, `eval-environment.md` — was
+> `docs/contracts/eval-baseline-ab.md`, `context-usefulness-eval.md`, `eval-environment.md`) was
 > removed from the checkout in the 2026-09-03 archival sweep (no live consumer). The text below is
 > kept verbatim as the record; recover any cited file with `git log --diff-filter=D -- <path>`.
 

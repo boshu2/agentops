@@ -1,0 +1,1 @@
+Run /codebase-recon on this repo and write the pack to .agents/scratch/codebase-recon/

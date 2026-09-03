@@ -19,3 +19,13 @@ identity and verdict helpers do not acquire hidden substrate dependencies.
 
 `ao gate check` is an ordinary test runner. Its exit status is not a semantic
 verdict and does not authorize delivery.
+
+## Explicit skill requests
+
+`tests/explicit-skill-requests/` holds one prompt per shipped skill that a
+caller invokes by name (`prompts/<skill>.txt`). `run-all.sh` feeds each prompt
+to a fresh session and asserts the named skill is what fires, before any tool
+call. The static half runs without a model:
+`evals/agentops-core/fixtures/explicit-skill-prompts-smoke.sh` proves every
+prompt names a skill that exists in both `skills/` and `skills-codex/`, so a
+retired skill cannot linger as a live prompt.
