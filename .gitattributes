@@ -8,7 +8,6 @@
 # Mailbox-format patch archives intentionally preserve the source diff's blank
 # context lines and indentation; do not reinterpret those payload bytes as this
 # repository's whitespace errors.
-docs/audits/gc-mvp-2026-07-05/patches/*.patch -whitespace
 
 # Probe transcripts are immutable structured capture envelopes. Preserve their
 # exact JSONL bytes, including encoded prompt and runtime event content.
