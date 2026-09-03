@@ -1129,6 +1129,15 @@ print(" ".join(sorted(json.loads(sys.argv[1])["seal"]["env_allowlist"])))
     [[ "$(json_field "$output" seal.denied_read_roots)" == *"$fake_codex_home"* ]]
     [[ "$(json_field "$output" seal.launcher_chain)" == *"$producer"* ]]
     [[ "$(json_field "$output" seal.config_sha256)" == sha256:* ]]
+    # The bound text is the exact file bytes, trailing newline included, so
+    # the digest the verifier recomputes from config_text is the recorded one.
+    python3 -c '
+import hashlib, json, sys
+seal = json.loads(sys.argv[1])["seal"]
+digest = "sha256:" + hashlib.sha256(seal["config_text"].encode("utf-8")).hexdigest()
+assert digest == seal["config_sha256"], (digest, seal["config_sha256"])
+assert seal["config_text"].endswith("\n"), "config_text lost its trailing newline"
+' "$output"
     [[ "$(json_field "$output" seal.dev_write_paths)" == *"/dev/null"* ]]
     [[ "$(json_field "$output" seal.denied_read_roots)" == *"$HOME/.agents"* ]]
     [[ "$(json_field "$output" seal.denied_link_roots)" == *"$(json_field "$output" seal.dispatch_root)"* ]]

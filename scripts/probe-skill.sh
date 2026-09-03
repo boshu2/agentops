@@ -509,10 +509,10 @@ seal_generate_config() {
     fi
     SEAL_CONFIG_KEPT="$(summary_json "$summary" keys)"
     SEAL_CONFIG_SHA="$(summary_get "$summary" sha256)"
-    SEAL_CONFIG_TEXT="$(python3 -c '
-import json, sys
-print(json.loads(sys.argv[1])["text"], end="")
-' "$summary")"
+    # The record reads the text back from the generated file itself: a shell
+    # substitution would drop the trailing newline and the digest would no
+    # longer match the bytes the rep was given.
+    SEAL_CONFIG_TEXT="$SEAL_CONFIG_SOURCE"
 }
 
 # seal_install_rep_home — rebuild the scratch HOME/CODEX_HOME from scratch: a
@@ -798,6 +798,11 @@ import sys
     hosts, sockets, proxy_port, config_keys, config_sha, config_text,
     auth_copied,
 ) = sys.argv[1:]
+# config_text arrives as the generated file's path (empty when unsealed);
+# read the exact bytes so the digest matches what the rep was given.
+if config_text:
+    with open(config_text, encoding="utf-8") as handle:
+        config_text = handle.read()
 
 
 def lines(value):
