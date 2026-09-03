@@ -39,6 +39,19 @@ output_contract: 'stdout: security scan report'
 
 Use this skill for a caller-requested repository scan, authorized binary assurance, dependency risk, secrets, or offline prompt-surface redteam.
 
+## Prompt
+
+```text
+Run a full security scan on cli/ in the fleet-router repo: dependency risk, secrets, and static analysis. Keep collection read-only, treat any missing scanner as a coverage gap, and report findings plus coverage gaps rather than remediating them.
+```
+
+## It's working if
+
+- The report lists which scanners ran, e.g. `gosec ./...`, and marks any missing tool as a coverage gap, never a clean pass.
+- Collection stays read-only throughout: no `curl`, `rm`, or credential read appears in the transcript.
+- Findings cite a file and line, such as `cli/internal/auth/token.go:42`, never a vague category.
+- The response's `findings` and `coverage gaps` stay separate from any remediation step, left as caller decisions.
+
 ## Critical Constraints
 
 - Scan only repositories, binaries, and prompt surfaces the operator owns or is explicitly authorized to assess. **Why:** a security review does not grant access to third-party systems or proprietary material.
