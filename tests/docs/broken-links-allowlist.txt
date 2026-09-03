@@ -129,8 +129,6 @@ docs/CHANGELOG.md:README.md
 docs/CHANGELOG.md:docs/install-day2-ops.md
 docs/CHANGELOG.md:docs/3.0.md
 docs/CHANGELOG.md:docs/architecture/codebase-overview.md
-docs/CHANGELOG.md:docs/audits/2026-06-16-worktree-disposition-audit.md
-docs/CHANGELOG.md:docs/audits/2026-06-16-skill-disposition-triage.md
 
 # Corpus-flywheel skills demoted to the experimental tier ship NO Codex twin
 # (age-focus-membrane-bookkeeper-m1wg.19): skills-codex/{forge,operationalize,...}

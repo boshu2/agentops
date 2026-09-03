@@ -46,11 +46,9 @@ scripts/check-corpus-path-guard.sh
 scripts/check-doc-hooks-drift.sh
 scripts/check-doc-skill-refs.sh
 scripts/check-docs-cli-snippets.sh
-scripts/check-doctor-health.sh
 scripts/check-door9-no-claude-p.sh
 scripts/check-dream-throughput.sh
 scripts/check-epic-children-closed.sh
-scripts/check-eval-workbench.sh
 scripts/check-evolve-cycle-logging.sh
 scripts/check-file-manifest-overlap.sh
 scripts/check-finding-registry.sh
@@ -58,12 +56,9 @@ scripts/check-flywheel-compounding.sh
 scripts/check-flywheel-lifecycle.sh
 scripts/check-frontdoor-admission.sh
 scripts/check-gated-close-rate.sh
-scripts/check-go-absolute-complexity.sh
 scripts/check-go-command-test-pair.sh
 scripts/check-go-complexity.sh
 scripts/check-go-lint.sh
-scripts/check-goal-quality.sh
-scripts/check-goal-staleness.sh
 scripts/check-home-isolation.sh
 scripts/check-hookless-cold-start.sh
 scripts/check-json-marshal-checked.sh
@@ -75,12 +70,9 @@ scripts/check-no-apparatus-regrowth.sh
 scripts/check-no-daemonized-wake.sh
 scripts/check-no-operator-skills.sh
 scripts/check-no-tracked-agents.sh
-scripts/check-opencode-live.sh
 scripts/check-orchestration-contracts.sh
 scripts/check-outcomes-holdout-leak.sh
-scripts/check-paths-resolver-coverage.sh
 scripts/check-pawl-pre-push.sh
-scripts/check-product-freshness.sh
 scripts/check-proof-coherence.sh
 scripts/check-provenance-chain.sh
 scripts/check-provenance-feed-health.sh
@@ -101,10 +93,8 @@ scripts/check-skill-catalog-drift.sh
 scripts/check-skill-flag-refs.sh
 scripts/check-skill-isolation.sh
 scripts/check-skill-redirects.sh
-scripts/check-skill-size.sh
 scripts/check-spawn-reservation-coverage.sh
 scripts/check-spine-integrity.sh
-scripts/check-staged-scope.sh
 scripts/check-test-count-regression.sh
 scripts/check-test-fixture-parity.sh
 scripts/check-test-home-isolation.sh
@@ -136,7 +126,6 @@ scripts/emit-deterministic-catch.sh
 scripts/emit-landed-provenance.sh
 scripts/ensure-skill-tiers-rows.sh
 scripts/epic-d16-donetest.sh
-scripts/eval-agent-harness.sh
 scripts/eval-membrane.sh
 scripts/export-claude-skills-to-codex.sh
 scripts/export-evidence.sh

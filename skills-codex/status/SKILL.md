@@ -8,6 +8,21 @@ A status snapshot is trustworthy exactly when every line traces to an artifact
 that exists on disk right now; the first inferred line turns the report into a
 guess wearing a report's clothes.
 
+## Prompt
+
+```text
+Show AgentOps status for fleet-router (ao is installed). Report only observable .agents/ao evidence: intent and verdict counts, evidence recency, and any corrupt or unavailable sources. Disclose checked and not_checked explicitly.
+```
+
+## It's working if
+
+- The report cites `ao status` output directly, never a paraphrase of what it might show.
+- Intent and verdict counts trace to `.agents/ao/intents/sha256` and `.agents/ao/verdicts/sha256`, never an inferred count.
+- Runtime phase and tool-call activity get labeled `not_checked` unless the caller supplied that source separately.
+- Tracker, Git, and factory state stay in their own reported lines rather than one blended `health` claim.
+
+## Contract
+
 Report only observable local facts: available intent and verdict artifacts and
 their counts; deterministic check results; evidence recency; and unavailable or
 corrupt sources. The canonical durable stores are `.agents/ao/intents/sha256`

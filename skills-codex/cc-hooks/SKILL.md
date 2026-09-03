@@ -14,6 +14,19 @@ Named failure mode — **chatty happy path**: a hook that emits stdout on exit 0
 corrupts the tool call it was guarding; silence on success is part of the
 contract, not a style preference.
 
+## Prompt
+
+```text
+Add a PreToolUse hook to fleet-router/.claude/settings.json that blocks `git push --force` on the main branch. Keep it silent on exit 0, exit 2 with a message on block, and confirm it fires with a manual test invocation before committing the change.
+```
+
+## It's working if
+
+- The hook script exits `2` with a stderr message when it blocks `git push --force`, and exit `0` with no stdout on the allowed path.
+- `.claude/settings.json` gains one matcher entry for the new hook, alongside the existing hooks list rather than replacing it.
+- A manual test invocation against the new matcher shows the block firing in the transcript, with exit `2` visible, before the change gets committed.
+- The hook inspects only the `PreToolUse` call it guards, keeping every other file untouched.
+
 ## Constraints
 
 - Enforcement hooks (the PreToolUse policy dispatcher) ship by DEFAULT: plugin installs auto-wire `hooks/hooks.json`; skill copies and checkouts wire with one command (`scripts/install-hooks.sh`). Operators can disable per host (`/plugin disable`, or remove the settings matchers).

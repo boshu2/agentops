@@ -28,16 +28,24 @@ output_contract: 'artifact-free CONTINUE or STOP decision with reason, frozen_ou
 # Anti-Ceremony
 
 Keep work tied to the caller-visible outcome and the proof still needed for it.
-The default guard is a single, artifact-free judgment before RPI Plan.
+The default guard is a single, artifact-free judgment before RPI Plan; the full
+honesty audit runs only on an explicit "full anti-ceremony audit" request.
 
-## Modes
+## Prompt
 
-| Trigger | Mode |
-|---|---|
-| RPI pre-Plan invocation or ordinary use | Quick guard |
-| Explicit request for a full anti-ceremony audit | Full honesty audit |
+```text
+Quick guard. Outcome: "ao gate check lists the probe-coverage row". Proposed
+process work: a coverage dashboard and a second audit pass. Remaining proof:
+the gate row, green in CI. Stop condition: that gate passes on main.
+```
 
-Never promote the quick guard into the full audit without the explicit trigger.
+## It's working if
+
+- The response is the YAML shape below and nothing else: no file appears
+  under `.agents/`, and no tracker write is issued.
+- `reason:` is one sentence, and `parked_process_work:` names the
+  dashboard-shaped items.
+- A full audit appears only after the caller wrote `full anti-ceremony audit`.
 
 ## Quick guard
 
@@ -49,11 +57,8 @@ Never promote the quick guard into the full audit without the explicit trigger.
 5. Return `STOP` when the traversal would only create control artifacts or the
    frozen outcome is already sufficiently proved; otherwise return `CONTINUE`.
 
-Perform the guard exactly once in memory. Write no worksheet, ledger, capture,
-dashboard, prompt packet, or other hidden artifact. Parking is a field in the
-response, not a tracker or delivery mutation.
-
-Return this shape:
+Perform the guard exactly once in memory. Parking is a field in the response,
+not a tracker or delivery mutation. Return this shape:
 
 ```yaml
 decision: CONTINUE | STOP
@@ -71,13 +76,11 @@ present and the decision explains whether one RPI traversal earns its cost.
 
 Run this mode only when the caller explicitly requests it. Examine each named
 control artifact or ceremony step for its consumer, gated subject or release
-decision, observed defect, and retirement condition. Return concise keep,
-park, or drop findings in the response; create no audit artifact unless the
-caller separately requests one.
+decision, observed defect, and retirement condition; return concise keep,
+park, or drop findings in the response.
 
-## Boundaries
+## Boundary
 
-The guard makes one admission judgment. It does not retry, repair, replan,
-dispatch core phases, operate Git or a tracker, deliver, release, or select a
-next action. On malformed or missing inputs, return `STOP` with the missing
-field named in the one-sentence reason and stop.
+Before returning the decision, read `boundaries.md` in the rpi skill's
+`references` directory. On malformed or missing inputs, return `STOP` with
+the missing field named in the one-sentence reason.

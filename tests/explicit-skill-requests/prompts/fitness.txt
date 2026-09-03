@@ -1,0 +1,1 @@
+Run /fitness on this repo and report the score with evidence paths

@@ -14,8 +14,8 @@ func fixture() []CatalogEntry {
 			Name:          "evolve",
 			Description:   "Run autonomous improvement loops.",
 			HexagonalRole: "driving-adapter",
-			Consumes:      []string{"rpi", "goals"},
-			Dependencies:  []string{"rpi", "goals"},
+			Consumes:      []string{"rpi", "fitness"},
+			Dependencies:  []string{"rpi", "fitness"},
 			Produces:      []string{"verdict-ledger"},
 			Practices:     []string{"tdd", "dora-metrics"},
 			UserInvocable: true,
@@ -32,11 +32,11 @@ func fixture() []CatalogEntry {
 			UserInvocable: true,
 		},
 		{
-			Name:          "goals",
-			Description:   "Maintain AgentOps goals.",
+			Name:          "fitness",
+			Description:   "Maintain AgentOps fitness.",
 			HexagonalRole: "supporting",
 			Consumes:      []string{},
-			Produces:      []string{"goals-doc"},
+			Produces:      []string{"fitness-doc"},
 			Practices:     []string{"bdd-gherkin"},
 			UserInvocable: false,
 		},
@@ -94,7 +94,7 @@ func TestList_FilterByUserInvocable(t *testing.T) {
 
 	no := false
 	got = names(List(fixture(), ListFilter{UserInvocable: &no}))
-	want = []string{"goals"}
+	want = []string{"fitness"}
 	if !reflect.DeepEqual(got, want) {
 		t.Errorf("user_invocable=false: want %v, got %v", want, got)
 	}
@@ -110,7 +110,7 @@ func TestList_CombinedFilters(t *testing.T) {
 
 func TestList_NoFilterReturnsAllSortedNonNil(t *testing.T) {
 	got := List(fixture(), ListFilter{})
-	want := []string{"evolve", "goals", "rpi"}
+	want := []string{"evolve", "fitness", "rpi"}
 	if !reflect.DeepEqual(names(got), want) {
 		t.Errorf("no filter: want %v, got %v", want, names(got))
 	}
@@ -162,19 +162,19 @@ func TestProducers_VerdictLedger(t *testing.T) {
 }
 
 func TestProducers_Unique(t *testing.T) {
-	got := Producers(fixture(), "goals-doc")
-	want := []string{"goals"}
+	got := Producers(fixture(), "fitness-doc")
+	want := []string{"fitness"}
 	if !reflect.DeepEqual(got, want) {
-		t.Errorf("producers(goals-doc): want %v, got %v", want, got)
+		t.Errorf("producers(fitness-doc): want %v, got %v", want, got)
 	}
 }
 
 func TestMermaid_Deterministic(t *testing.T) {
 	want := "graph LR\n" +
 		"  s_evolve[evolve]\n" +
-		"  s_goals[goals]\n" +
+		"  s_fitness[fitness]\n" +
 		"  s_rpi[rpi]\n" +
-		"  s_evolve --> s_goals\n" +
+		"  s_evolve --> s_fitness\n" +
 		"  s_evolve --> s_rpi\n"
 	got := Mermaid(fixture())
 	if got != want {

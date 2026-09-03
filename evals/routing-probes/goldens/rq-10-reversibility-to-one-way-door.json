@@ -1,0 +1,20 @@
+{
+  "$schema": "../../../schemas/pack-quality-expectations.v1.schema.json",
+  "schema_version": 1,
+  "id": "rq-10-reversibility-to-one-way-door",
+  "retrieval_surface": "ao-skills-find",
+  "task": "The caller is about to act on a pending decision and wants to know whether it can be undone before deciding.",
+  "query": "is this live decision reversible",
+  "top_k": 3,
+  "expected_selected_ids": [
+    "one-way-door"
+  ],
+  "critical_omitted_ids": [],
+  "forbidden_leaks": [
+    "^premortem$"
+  ],
+  "min_provenance_density": 1.0,
+  "max_tokens": 110,
+  "rationale": "one-way-door classifies a pending decision as reversible or irreversible; 'decision' and 'reversible' are its own description words. premortem's description says it is Not for a live decision's reversibility, and that exclusion sentence names exactly this query's vocabulary, so a lexical router that scored every description token would rank premortem first for the query its own description routes away (observed 2026-09-03 before ao skills find learned to penalise exclusion-only tokens). This golden is the reciprocal of rq-02: premortem must win its plan-challenge query and lose this one.",
+  "notes": "Added 2026-09-03 with the exclusion-aware scoring in cli/internal/skills/find.go; the pair this golden pins is premortem vs one-way-door in the direction rq-02 does not cover."
+}

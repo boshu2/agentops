@@ -1,6 +1,6 @@
 ---
 name: codebase-recon
-description: 'Reconstruct a repository as cited entry-to-test flows and bounded claims. Triggers: "codebase recon", "trace this codebase", "repository audit", "refresh the prior recon".'
+description: 'Trace a repo into cited flows. Not for a bounded question; that is research. Triggers: "codebase recon", "trace this codebase", "repository audit", "refresh the prior recon".'
 practices:
 - legacy-code-seams
 - ddd-bounded-context
@@ -43,6 +43,31 @@ output_contract: codebase-recon.v1 JSON validated by skills/codebase-recon/scrip
 Build a reusable, falsifiable model of a repository. This skill reports what
 the tree and executable probes support; it does not edit code or issue a final
 PASS/WARN/FAIL verdict.
+
+## Prompt
+
+```text
+codebase-recon --mode=baseline --view=audit --lens=cli --depth=standard
+on agentops-wt/train2-c: trace the `ao gate check` entry point from
+cli/cmd/ao/gate_composition.go through to its tests. I'm onboarding and need a cited
+mental model, not a file inventory.
+```
+
+## It's working if
+
+Observable in the trace, without reading the prose:
+
+- The manifest at
+  `.agents/scratch/codebase-recon/<run-id>/codebase-recon.json` names the
+  exact commit and passes
+  `skills/codebase-recon/scripts/validate-output.sh <codebase-recon.json>`.
+- Every `fact` cites `file:line`, and every `inference` cites the facts it
+  rests on.
+- The chosen `lens` (persistence, auth, CLI, build, or test) follows one
+  entry-to-test flow to completion, or the report names the exact
+  `file:line` where the trace was cut.
+- Inspected and uninspected scope both appear explicitly in
+  `codebase-recon.md`.
 
 ## Constraints
 

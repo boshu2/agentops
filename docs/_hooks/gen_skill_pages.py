@@ -158,12 +158,6 @@ def emit_detail(skill: dict[str, str]) -> None:
         r"](https://github.com/boshu2/agentops/blob/main/\1)",
         body,
     )
-    # Rewrite `../shared/references/*` (shared skill references) to GitHub.
-    body = re.sub(
-        r"\]\(\.\./shared/references/([^)]+)\)",
-        r"](https://github.com/boshu2/agentops/blob/main/skills/shared/references/\1)",
-        body,
-    )
     # Any remaining `../<dir>/<file>` is another skill's subdir — send to GitHub.
     body = re.sub(
         r"\]\(\.\./([a-zA-Z0-9_-]+)/([^)]+)\)",

@@ -8,6 +8,19 @@ description: 'Generate and validate repo docs, READMEs, and OSS doc packs. Trigg
 
 Generate and validate documentation for any project. `--mode` selects the artifact family — the default mode handles code/API docs and code-maps; `--mode=readme` generates a gold-standard README; `--mode=oss` scaffolds and audits the open-source doc pack.
 
+## Prompt
+
+```text
+Document the retry-queue package at platform-lab/internal/retryqueue: default mode, code/API docs plus a code-map. Ground every claim in the current source, run the default mode's validation, and report which files were created or updated plus any not-checked gaps.
+```
+
+## It's working if
+
+- The generated doc cites real symbols from `internal/retryqueue/queue.go`, never an invented function name.
+- AgentOps self-documentation stays inside the operations-layer category from `docs/contracts/ubiquitous-language.md`, never calling it an execution orchestrator, factory, corpus, or loop.
+- OSS scaffold mode creates only missing files, e.g. skips `README.md` when it already exists and reports that skip.
+- The report names the mode's validation command it ran, such as `scripts/docs-build.sh --check`, with its result.
+
 ## Constraints
 
 - Ground every documentation claim in the current repository, because plausible but stale prose is a documentation defect.

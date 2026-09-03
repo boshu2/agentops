@@ -49,36 +49,11 @@
       "critical": true
     },
     {
-      "id": "go-complexity-gate-behavior",
-      "title": "absolute Go complexity gate passes, fails, and reports per-file counts",
-      "kind": "command",
-      "objective": "Behaviorally exercise the real complexity guard on synthetic Go fixtures so complexity regressions are caught by exit code and diagnostics, not just static text checks.",
-      "runtime": "shell",
-      "timeout_seconds": 120,
-      "inputs": {
-        "cwd": "../..",
-        "shell": "bash evals/agentops-core/fixtures/optimization-governance-smoke.sh all"
-      },
-      "expectations": [
-        {"type": "exit_code", "value": 0},
-        {"type": "stdout_contains", "value": "complexity-pass-ok"},
-        {"type": "stdout_contains", "value": "complexity-fail-ok"},
-        {"type": "stdout_contains", "value": "complexity-per-file-ok"}
-      ],
-      "dimensions": ["correctness", "runtime_compatibility", "safety"],
-      "critical": true
-    },
-    {
       "id": "absolute-complexity-script-contracts",
-      "title": "absolute Go complexity gate preserves offline and reporting controls",
+      "title": "complexity skill preserves ranked hotspot reporting",
       "kind": "artifact_check",
-      "objective": "Lock the script-level behavior that keeps complexity checks deterministic: non-test Go scan, opt-out from autoinstall, thresholded gocyclo invocation, and per-file summaries.",
+      "objective": "Lock the skill-level contract for complexity review: thresholded hotspots and a ranked report (scripts/check-go-absolute-complexity.sh was removed 2026-09-03 with no caller).",
       "expectations": [
-        {"type": "artifact_contains", "target": "../../scripts/check-go-absolute-complexity.sh", "value": "Checks that no non-test Go function exceeds the given cyclomatic complexity threshold."},
-        {"type": "artifact_contains", "target": "../../scripts/check-go-absolute-complexity.sh", "value": "GOCYCLO_NO_AUTOINSTALL=1"},
-        {"type": "artifact_contains", "target": "../../scripts/check-go-absolute-complexity.sh", "value": "find \"$DIR\" -name '*.go' ! -name '*_test.go'"},
-        {"type": "artifact_contains", "target": "../../scripts/check-go-absolute-complexity.sh", "value": "gocyclo -over \"$THRESHOLD\""},
-        {"type": "artifact_contains", "target": "../../scripts/check-go-absolute-complexity.sh", "value": "Per-file violations (complexity > $THRESHOLD in $DIR):"},
         {"type": "artifact_contains", "target": "../../skills/complexity/SKILL.md", "value": "Functions over threshold"},
         {"type": "artifact_contains", "target": "../../skills-codex/complexity/prompt.md", "value": "ranked hotspots"}
       ],
