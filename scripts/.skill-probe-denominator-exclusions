@@ -22,4 +22,3 @@
 # that no honest probe of THIS skill could produce a verdict about THIS skill.
 # Lines here are read by scripts/check-skill-probe-coverage.sh and echoed in
 # its output, so every exclusion argues itself on every run.
-
