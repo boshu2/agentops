@@ -140,12 +140,122 @@ events = [
 PY
 }
 
-# make_bound_result SKILL PROBE VERDICT [TREATMENT_SOURCE] [PRODUCER_OVERRIDE]
+# write_seal DIR SPEC — place the harness-shaped seal record
+# (agentops-skill-probe-seal.v1) the capture stage carries into `snapshot`.
+# `full` denies the checkout plus the four skill roots under the recorded real
+# home (a fixture home, so the test never depends on the operator's $HOME),
+# which is what a counted row must prove. `symlinked-skill-root` denies the
+# checkout but not the literal ~/.claude/skills, which is a symlink INTO the
+# checkout: the kernel seals the resolved path, so the row still counts.
+write_seal() {
+    local directory="$1" spec="$2"
+    local repo_real
+    repo_real="$(python3 -c 'import os,sys; print(os.path.realpath(sys.argv[1]))' "$FIX")"
+    # The fixture home lives OUTSIDE the fixture checkout so a checkout deny
+    # cannot cover a skill root by ancestry.
+    REAL_HOME="$(python3 -c 'import os,sys; print(os.path.realpath(sys.argv[1]))' "$BATS_TEST_TMPDIR")/home"
+    mkdir -p "$BATS_TEST_TMPDIR/home"
+    local -a roots=(
+        "$repo_real"
+        "$REAL_HOME/.agents"
+        "$REAL_HOME/.claude/skills"
+        "$REAL_HOME/.gemini/skills"
+        "$REAL_HOME/.codex/skills"
+    )
+    case "$spec" in
+        absent|legacy) return 0 ;;
+        none) roots=() ;;
+        full) ;;
+        omit-checkout) roots=("${roots[@]:1}") ;;
+        omit-skill-root) roots=("${roots[@]:0:4}") ;;
+        symlinked-skill-root)
+            mkdir -p "$BATS_TEST_TMPDIR/home/.claude"
+            ln -s "$FIX/skills" "$BATS_TEST_TMPDIR/home/.claude/skills"
+            roots=("${roots[0]}" "${roots[1]}" "${roots[3]}" "${roots[4]}")
+            ;;
+        *) echo "unknown seal spec: $spec" >&2; return 1 ;;
+    esac
+    python3 - "$directory" "$spec" "$REAL_HOME" "${roots[@]}" <<'PY'
+import hashlib, json, pathlib, sys
+
+directory = pathlib.Path(sys.argv[1])
+spec = sys.argv[2]
+real_home = sys.argv[3]
+denied = sys.argv[4:]
+sealed = spec != "none"
+profile = None
+if sealed:
+    profile = "(version 1)\n(allow default)\n(deny file-read*\n" + "".join(
+        f'  (subpath "{root}")\n' for root in denied
+    ) + ")"
+record = {
+    "schema": "agentops-skill-probe-seal.v1",
+    "seal_mode": "seatbelt" if sealed else "none",
+    "coverage_eligible": sealed,
+    "mechanism": "sandbox-exec" if sealed else None,
+    "sandbox_exec": "/usr/bin/sandbox-exec" if sealed else None,
+    "platform": "Darwin",
+    "wrap": ["sandbox-exec", "-p", profile] if sealed else [],
+    "profile": profile,
+    "profile_file": "/private/tmp/probe-seal/seal.sb" if sealed else None,
+    "profile_sha256": ("sha256:" + hashlib.sha256(profile.encode()).hexdigest()) if sealed else None,
+    "denied_read_roots": denied,
+    "writable_roots": ["/private/tmp/probe-ws", "/private/tmp/probe-seal"] if sealed else [],
+    "rep_env": {"HOME": "/private/tmp/probe-seal", "CODEX_HOME": "/private/tmp/probe-seal/.codex"},
+    "real_home": real_home,
+    "real_codex_home": real_home + "/.codex",
+    "auth_links": ["auth.json"] if sealed else [],
+}
+(directory / "seal.json").write_text(json.dumps(record, indent=2, sort_keys=True) + "\n")
+PY
+}
+
+# set_scorecard_seal SCORECARD_PATH SEAL_JSON_PATH [PYTHON_SNIPPET] — echo the
+# seal record into the scorecard the way the live harness does, optionally
+# mutating the copy first.
+set_scorecard_seal() {
+    python3 - "$1" "$2" "${3:-}" <<'PY'
+import json, sys
+scorecard_path, seal_path, snippet = sys.argv[1:]
+scorecard = json.load(open(scorecard_path))
+record = json.load(open(seal_path))
+if snippet:
+    exec(snippet, {"record": record})
+scorecard["seal"] = record
+open(scorecard_path, "w").write(json.dumps(scorecard, indent=2, sort_keys=True) + "\n")
+PY
+}
+
+# downgrade_contract_to_v2 PATH — rewrite a fresh v3 capture contract into the
+# pre-seal v2 shape (no seal block, v2-era eligibility) and rebind it.
+downgrade_contract_to_v2() {
+    python3 - "$1" <<'PY'
+import hashlib, json, sys
+path = sys.argv[1]
+contract = json.load(open(path))
+contract.pop("seal")
+contract["schema"] = "agentops-skill-probe-capture.v2"
+identity = contract["producer_request"]["identity"]
+identity["coverage_eligible"] = (
+    not identity["override"]
+    and contract["producer_request"]["model"] is not None
+    and contract["producer_request"]["effort"] is not None
+)
+payload = {key: value for key, value in contract.items() if key != "binding_sha256"}
+canonical = json.dumps(payload, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode()
+contract["binding_sha256"] = "sha256:" + hashlib.sha256(canonical).hexdigest()
+open(path, "w").write(json.dumps(contract, indent=2, sort_keys=True) + "\n")
+PY
+}
+
+# make_bound_result SKILL PROBE VERDICT [TREATMENT_SOURCE] [PRODUCER_OVERRIDE] [SEAL_SPEC]
 # Sets BOUND_SCORECARD_REL to a safe repo-relative v3 scorecard path.
 make_bound_result() {
     local skill="$1" probe="$2" verdict="$3"
     local treatment_source="${4:-canonical-skill}"
     local producer_override="${5:-}"
+    # SEAL_SPEC: full (default) | none | absent | omit-checkout | omit-skill-root | legacy
+    local seal_spec="${6:-full}"
     local probe_dir="$PROBES/$probe"
     local fixture_name="fixtures-test"
     local fixture_dir="$probe_dir/$fixture_name"
@@ -153,6 +263,7 @@ make_bound_result() {
 
     if [ "$verdict" = "BEHAVIORAL" ]; then treatment_body="ACTION"; fi
     mkdir -p "$fixture_dir"
+    write_seal "$fixture_dir" "$seal_spec"
     cat > "$probe_dir/probe.json" <<EOF
 {"id":"$probe","skill":"$skill","reps":2,"discriminator":"discriminator.sh","treatment_source":"$treatment_source"}
 EOF
@@ -177,6 +288,9 @@ SH
         snapshot_args+=(--producer-override-bin "$producer_override")
     fi
     python3 "$META_TOOL" "${snapshot_args[@]}" >/dev/null
+    if [[ "$seal_spec" == "legacy" ]]; then
+        downgrade_contract_to_v2 "$fixture_dir/capture-contract.json"
+    fi
     for rep in 1 2; do
         write_transcript "$fixture_dir" "control-$rep" "$control_body"
         write_transcript "$fixture_dir" "treatment-$rep" "$treatment_body"
@@ -285,6 +399,98 @@ print(value)
     [ "$status" -eq 1 ]
     [[ "$output" == *"tier coverage requires non-overrideable native Codex runtime evidence"* ]]
     [[ "$output" == *"foo"* ]]
+}
+
+@test "an unsealed capture (seal mode none) is replayable but cannot qualify as coverage" {
+    make_skill foo product
+    make_bound_result foo probe-foo BEHAVIORAL canonical-skill "" none
+    write_ledger "foo | probe-foo | 2026-09-03 | BEHAVIORAL | scorecard: \`$BOUND_SCORECARD_REL\`"
+
+    run bash "$GATE" --strict
+
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"seal mode 'none'"* ]]
+    [[ "$output" == *"foo"* ]]
+}
+
+@test "a capture stage with no seal.json is recorded unsealed and does not count" {
+    make_skill foo product
+    make_bound_result foo probe-foo BEHAVIORAL canonical-skill "" absent
+    write_ledger "foo | probe-foo | 2026-09-03 | BEHAVIORAL | scorecard: \`$BOUND_SCORECARD_REL\`"
+
+    run bash "$GATE" --strict
+
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"seal mode 'none'"* ]]
+}
+
+@test "a legacy-unsealed v2 capture contract stays replayable but does not count" {
+    make_skill foo product
+    make_bound_result foo probe-foo BEHAVIORAL canonical-skill "" legacy
+    write_ledger "foo | probe-foo | 2026-08-26 | BEHAVIORAL | scorecard: \`$BOUND_SCORECARD_REL\`"
+
+    run bash "$GATE" --strict
+
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"legacy-unsealed"* ]]
+    [[ "$output" == *"foo"* ]]
+}
+
+@test "a sealed capture whose denied roots omit the checkout does not count" {
+    make_skill foo product
+    make_bound_result foo probe-foo BEHAVIORAL canonical-skill "" omit-checkout
+    write_ledger "foo | probe-foo | 2026-09-03 | BEHAVIORAL | scorecard: \`$BOUND_SCORECARD_REL\`"
+    local repo_real
+    repo_real="$(python3 -c 'import os,sys; print(os.path.realpath(sys.argv[1]))' "$FIX")"
+
+    run bash "$GATE" --strict
+
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"denied_read_roots omit: $repo_real"* ]]
+    [[ "$output" == *"foo"* ]]
+}
+
+@test "a sealed capture whose denied roots omit a skill root does not count" {
+    make_skill foo product
+    make_bound_result foo probe-foo BEHAVIORAL canonical-skill "" omit-skill-root
+    write_ledger "foo | probe-foo | 2026-09-03 | BEHAVIORAL | scorecard: \`$BOUND_SCORECARD_REL\`"
+
+    run bash "$GATE" --strict
+
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"denied_read_roots"* ]]
+    [[ "$output" == *"$REAL_HOME/.codex/skills"* ]]
+}
+
+@test "a skill root symlinked into the sealed checkout counts through its realpath" {
+    make_skill foo product
+    make_bound_result foo probe-foo BEHAVIORAL canonical-skill "" symlinked-skill-root
+    write_ledger "foo | probe-foo | 2026-09-03 | BEHAVIORAL | scorecard: \`$BOUND_SCORECARD_REL\`"
+
+    run bash "$GATE" --strict
+
+    [ "$status" -eq 0 ]
+    [[ "$output" != *"foo"* ]]
+}
+
+@test "a scorecard seal copy is cross-checked against the bound contract seal" {
+    make_skill foo product
+    make_bound_result foo probe-foo BEHAVIORAL
+    write_ledger "foo | probe-foo | 2026-09-03 | BEHAVIORAL | scorecard: \`$BOUND_SCORECARD_REL\`"
+    local seal_record="$PROBES/probe-foo/fixtures-test/seal.json"
+
+    # The verbatim live-harness copy agrees with the contract and counts.
+    set_scorecard_seal "$FIX/$BOUND_SCORECARD_REL" "$seal_record"
+    run bash "$GATE" --strict
+    [ "$status" -eq 0 ]
+    [[ "$output" != *"foo"* ]]
+
+    # A copy that claims more denied roots than the bound seal is refused.
+    set_scorecard_seal "$FIX/$BOUND_SCORECARD_REL" "$seal_record" \
+        'record["denied_read_roots"] = record["denied_read_roots"][1:]'
+    run bash "$GATE" --strict
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"scorecard seal copy disagrees with the seal bound in the capture contract"* ]]
 }
 
 @test "bound injected-prelude evidence is replayable but does not count as skill coverage" {

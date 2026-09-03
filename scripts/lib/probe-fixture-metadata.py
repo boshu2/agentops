@@ -29,7 +29,25 @@ SCHEMA = "agentops-skill-probe-fixture-set.v3"
 SCORECARD_SCHEMA = "agentops-skill-probe.v3"
 MANIFEST_NAME = "fixture-set.json"
 CAPTURE_CONTRACT_NAME = "capture-contract.json"
-CAPTURE_CONTRACT_SCHEMA = "agentops-skill-probe-capture.v2"
+LEGACY_CAPTURE_CONTRACT_SCHEMA = "agentops-skill-probe-capture.v2"
+CAPTURE_CONTRACT_SCHEMA = "agentops-skill-probe-capture.v3"
+# The harness writes this into the capture stage before `snapshot`; it records
+# the filesystem seal the dispatch ran under (2026-08-28 contamination: control
+# reps read SKILL.md off the checkout). Absent means the run was not sealed.
+SEAL_NAME = "seal.json"
+SEAL_RECORD_SCHEMA = "agentops-skill-probe-seal.v1"
+SEAL_MODES = {"seatbelt", "none"}
+LEGACY_SEAL_MODE = "legacy-unsealed"
+SEAL_KEYS = {
+    "mode",
+    "denied_read_roots",
+    "writable_roots",
+    "profile_sha256",
+    "original_home",
+    "repository_root",
+}
+# Roots a counted row must prove were unreadable, relative to the ORIGINAL home.
+SEALED_SKILL_ROOTS = (".agents", ".claude/skills", ".gemini/skills", ".codex/skills")
 TRANSCRIPT_RE = re.compile(r"^(control|treatment)-([1-9][0-9]*)\.txt$")
 SHA256_RE = re.compile(r"^sha256:[0-9a-f]{64}$")
 SAFE_ID_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*$")
@@ -622,10 +640,23 @@ def resolve_executable(command: str) -> Path:
     return resolved
 
 
+def producer_coverage_eligible(
+    override: bool, model: str | None, effort: str | None, seal_mode: str
+) -> bool:
+    """A row counts only for a native, fully specified, seatbelt-sealed producer."""
+    return (
+        not override
+        and model is not None
+        and effort is not None
+        and seal_mode == "seatbelt"
+    )
+
+
 def producer_runtime_identity(
     requested_model: str | None,
     requested_effort: str | None,
     override_command: str | None,
+    seal_mode: str,
 ) -> dict[str, Any]:
     model = require_text(requested_model, "requested model", nullable=True)
     effort = require_text(requested_effort, "requested effort", nullable=True)
@@ -665,12 +696,22 @@ def producer_runtime_identity(
             "override": override,
             "version": version,
             "executable_sha256": digest_file(resolved),
-            "coverage_eligible": (not override and model is not None and effort is not None),
+            "coverage_eligible": producer_coverage_eligible(
+                override, model, effort, seal_mode
+            ),
         },
     }
 
 
-def validate_producer_request(value: Any) -> dict[str, Any]:
+def validate_producer_request(
+    value: Any, *, seal_mode: str | None = None
+) -> dict[str, Any]:
+    """Validate a producer request; with a seal mode, bind eligibility exactly.
+
+    Without a seal mode (manifest or scorecard copies, whose contract is checked
+    separately) only the one-way rule holds: a producer that fails the native
+    model/effort floor can never claim eligibility.
+    """
     request = require_exact_object(
         value, {"adapter", "model", "effort", "identity"}, "producer_request"
     )
@@ -694,10 +735,253 @@ def validate_producer_request(value: Any) -> dict[str, Any]:
         identity["executable_sha256"]
     ):
         raise MetadataError("producer executable_sha256 must be a sha256 digest")
-    eligible = not identity["override"] and model is not None and effort is not None
-    if identity["coverage_eligible"] is not eligible:
+    if not isinstance(identity["coverage_eligible"], bool):
+        raise MetadataError("producer coverage_eligible must be boolean")
+    floor = not identity["override"] and model is not None and effort is not None
+    if seal_mode is None:
+        consistent = not identity["coverage_eligible"] or floor
+    else:
+        consistent = identity["coverage_eligible"] is producer_coverage_eligible(
+            identity["override"], model, effort, seal_mode
+        )
+    if not consistent:
         raise MetadataError("producer coverage_eligible is inconsistent")
     return request
+
+
+def require_absolute_path(value: Any, field: str) -> str:
+    text = require_text(value, field)
+    assert text is not None
+    if not text.startswith("/") or os.path.normpath(text) != text:
+        raise MetadataError(f"{field} must be a normalized absolute path: {text!r}")
+    return text
+
+
+def require_path_list(value: Any, field: str) -> list[str]:
+    if not isinstance(value, list):
+        raise MetadataError(f"{field} must be an array of absolute paths")
+    paths = [require_absolute_path(item, f"{field}[{index}]") for index, item in enumerate(value)]
+    if len(set(paths)) != len(paths):
+        raise MetadataError(f"{field} contains duplicate paths")
+    return paths
+
+
+def normalized_path_list(value: Any, field: str) -> list[str]:
+    """Normalize harness-supplied roots (trailing slashes) before binding them."""
+    if not isinstance(value, list):
+        raise MetadataError(f"{field} must be an array of absolute paths")
+    normalized = []
+    for index, item in enumerate(value):
+        text = require_text(item, f"{field}[{index}]")
+        assert text is not None
+        if not text.startswith("/"):
+            raise MetadataError(f"{field}[{index}] must be an absolute path: {text!r}")
+        normalized.append(os.path.normpath(text))
+    return require_path_list(normalized, field)
+
+
+def original_home() -> str:
+    """The HOME the un-sealed agent would resolve its skill roots under.
+
+    The harness must snapshot before it swaps HOME for a scratch directory;
+    the seal check resolves the four skill roots under this recorded value.
+    """
+    home = os.environ.get("HOME") or os.path.expanduser("~")
+    return require_absolute_path(os.path.normpath(home), "original home")
+
+
+def capture_repository_root(skills_dir: Path) -> str:
+    try:
+        resolved = skills_dir.resolve(strict=True)
+    except OSError as exc:
+        raise MetadataError(f"canonical skills directory not found: {exc}") from exc
+    return require_absolute_path(str(resolved.parent), "capture repository root")
+
+
+def legacy_seal() -> dict[str, Any]:
+    return {
+        "mode": LEGACY_SEAL_MODE,
+        "denied_read_roots": [],
+        "writable_roots": [],
+        "profile_sha256": None,
+        "original_home": None,
+        "repository_root": None,
+    }
+
+
+def seal_projection(seal: dict[str, Any]) -> dict[str, Any]:
+    """The seal fields derived from the seal record itself (not the checkout)."""
+    return {
+        key: seal[key]
+        for key in (
+            "mode",
+            "denied_read_roots",
+            "writable_roots",
+            "profile_sha256",
+            "original_home",
+        )
+    }
+
+
+def seal_block_from_record(
+    record: Any, label: str, repo_root: str
+) -> dict[str, Any]:
+    """Reduce a harness seal record (agentops-skill-probe-seal.v1) to the bound block."""
+    if not isinstance(record, dict):
+        raise MetadataError(f"{label} must be a JSON object")
+    required = {
+        "schema",
+        "seal_mode",
+        "coverage_eligible",
+        "profile",
+        "profile_sha256",
+        "denied_read_roots",
+        "writable_roots",
+        "real_home",
+    }
+    missing = required - set(record)
+    if missing:
+        raise MetadataError(f"{label} is missing: " + ", ".join(sorted(missing)))
+    if record["schema"] != SEAL_RECORD_SCHEMA:
+        raise MetadataError(f"{label} schema is unsupported: {record['schema']!r}")
+    mode = require_text(record["seal_mode"], f"{label} seal_mode")
+    if mode not in SEAL_MODES:
+        raise MetadataError(f"{label} seal_mode is unsupported: {mode!r}")
+    if record["coverage_eligible"] is not (mode == "seatbelt"):
+        raise MetadataError(f"{label} coverage_eligible disagrees with its seal_mode")
+    profile = record["profile"]
+    if mode == "seatbelt":
+        profile_text = require_message_text(profile, f"{label} profile")
+        profile_sha256: str | None = digest_bytes(profile_text.encode("utf-8"))
+        if record["profile_sha256"] != profile_sha256:
+            raise MetadataError(f"{label} profile_sha256 does not match its profile text")
+    else:
+        if profile is not None or record["profile_sha256"] is not None:
+            raise MetadataError(f"{label} profile must be null when the seal_mode is none")
+        profile_sha256 = None
+    return {
+        "mode": mode,
+        "denied_read_roots": normalized_path_list(
+            record["denied_read_roots"], f"{label} denied_read_roots"
+        ),
+        "writable_roots": normalized_path_list(
+            record["writable_roots"], f"{label} writable_roots"
+        ),
+        "profile_sha256": profile_sha256,
+        "original_home": require_absolute_path(
+            os.path.normpath(require_text(record["real_home"], f"{label} real_home")),
+            f"{label} real_home",
+        ),
+        "repository_root": repo_root,
+    }
+
+
+def read_seal_file(
+    fixture_dir: Path, skills_dir: Path, seal_path: Path | None = None
+) -> dict[str, Any]:
+    """Build the contract seal block from the stage's seal.json (absent = none).
+
+    An explicit seal_path (the harness's workspace copy) takes precedence over
+    the stage sidecar.
+    """
+    path = seal_path if seal_path is not None else fixture_dir / SEAL_NAME
+    if path.is_symlink():
+        raise MetadataError(f"{SEAL_NAME} must be a regular non-symlink file")
+    repo_root = capture_repository_root(skills_dir)
+    if not path.exists():
+        if seal_path is not None:
+            raise MetadataError(f"seal record not found: {seal_path}")
+        return {
+            "mode": "none",
+            "denied_read_roots": [],
+            "writable_roots": [],
+            "profile_sha256": None,
+            "original_home": original_home(),
+            "repository_root": repo_root,
+        }
+    record = parse_json_bytes(
+        read_regular_bytes(path, SEAL_NAME, maximum=MAX_INPUT_BYTES), SEAL_NAME
+    )
+    return seal_block_from_record(record, SEAL_NAME, repo_root)
+
+
+def validate_seal(value: Any) -> dict[str, Any]:
+    seal = require_exact_object(value, SEAL_KEYS, "capture contract seal")
+    mode = require_text(seal["mode"], "seal mode")
+    if mode not in SEAL_MODES | {LEGACY_SEAL_MODE}:
+        raise MetadataError(f"seal mode is unsupported: {mode!r}")
+    if mode == LEGACY_SEAL_MODE:
+        if seal != legacy_seal():
+            raise MetadataError("legacy-unsealed seal must carry no roots or profile")
+        return seal
+    require_path_list(seal["denied_read_roots"], "seal denied_read_roots")
+    require_path_list(seal["writable_roots"], "seal writable_roots")
+    require_absolute_path(seal["original_home"], "seal original_home")
+    require_absolute_path(seal["repository_root"], "seal repository_root")
+    profile_sha256 = seal["profile_sha256"]
+    if mode == "seatbelt":
+        if not isinstance(profile_sha256, str) or not SHA256_RE.fullmatch(profile_sha256):
+            raise MetadataError("seatbelt seal profile_sha256 must be a sha256 digest")
+    elif profile_sha256 is not None:
+        raise MetadataError("seal profile_sha256 must be null when the seal mode is none")
+    return seal
+
+
+def path_forms(path: str) -> set[str]:
+    """A path and, when it exists here, its realpath; the kernel seals the latter."""
+    forms = {path}
+    try:
+        if os.path.lexists(path):
+            forms.add(os.path.realpath(path))
+    except OSError:
+        pass
+    return forms
+
+
+def seal_covers(denied_roots: list[str], required: str) -> bool:
+    candidates = path_forms(required)
+    for root in denied_roots:
+        for denied in path_forms(root):
+            prefix = denied.rstrip("/") + "/"
+            if any(item == denied or item.startswith(prefix) for item in candidates):
+                return True
+    return False
+
+
+def required_sealed_roots(seal: dict[str, Any]) -> list[str]:
+    home = seal["original_home"]
+    return [seal["repository_root"]] + [
+        os.path.join(home, relative) for relative in SEALED_SKILL_ROOTS
+    ]
+
+
+def unsealed_roots(seal: dict[str, Any]) -> list[str]:
+    """Required roots the recorded seal did not deny reads under."""
+    return [
+        root
+        for root in required_sealed_roots(seal)
+        if not seal_covers(seal["denied_read_roots"], root)
+    ]
+
+
+def verify_seal_for_coverage(seal: dict[str, Any]) -> None:
+    mode = seal["mode"]
+    if mode == LEGACY_SEAL_MODE:
+        raise MetadataError(
+            "tier coverage requires a seatbelt-sealed capture; this capture "
+            "contract predates the filesystem seal (legacy-unsealed)"
+        )
+    if mode != "seatbelt":
+        raise MetadataError(
+            f"tier coverage requires a seatbelt-sealed capture; seal mode {mode!r} "
+            "cannot prove the checkout and skill roots were unreadable"
+        )
+    missing = unsealed_roots(seal)
+    if missing:
+        raise MetadataError(
+            "tier coverage requires the seal to deny reads under the checkout and "
+            "every skill root; denied_read_roots omit: " + ", ".join(missing)
+        )
 
 
 def counterbalanced_schedule(reps: int) -> list[dict[str, Any]]:
@@ -726,7 +1010,11 @@ def build_capture_contract(
     skills_dir: Path,
     expected_probe: str,
     producer_request: dict[str, Any],
+    seal: dict[str, Any],
 ) -> dict[str, Any]:
+    seal = validate_seal(seal)
+    if seal["mode"] == LEGACY_SEAL_MODE:
+        raise MetadataError("a new capture contract cannot be legacy-unsealed")
     probe_meta = load_json(probe_dir / "probe.json")
     probe_contract = validate_probe_metadata(
         probe_meta, expected_probe, require_treatment=True
@@ -751,18 +1039,22 @@ def build_capture_contract(
         "prompts": prompt_records(
             decoded_inputs, canonical_skill_bytes, treatment_source
         ),
-        "producer_request": validate_producer_request(producer_request),
+        "producer_request": validate_producer_request(
+            producer_request, seal_mode=seal["mode"]
+        ),
         "schedule": counterbalanced_schedule(probe_contract["reps"]),
         "scoring": {
             "response_extraction": RESPONSE_EXTRACTION,
             "transcript_format": TRANSCRIPT_FORMAT,
             "discriminator_timeout_seconds": DISCRIMINATOR_TIMEOUT_SECONDS,
         },
+        "seal": seal,
     }
     return {**payload, "binding_sha256": digest_bytes(canonical_bytes(payload))}
 
 
 def validate_capture_contract(value: Any, expected_probe: str) -> dict[str, Any]:
+    """Validate a capture contract; legacy v2 contracts return a legacy-unsealed seal."""
     keys = {
         "schema",
         "probe",
@@ -776,9 +1068,18 @@ def validate_capture_contract(value: Any, expected_probe: str) -> dict[str, Any]
         "scoring",
         "binding_sha256",
     }
-    contract = require_exact_object(value, keys, "capture contract")
-    if contract["schema"] != CAPTURE_CONTRACT_SCHEMA:
+    schema = value.get("schema") if isinstance(value, dict) else None
+    if schema == CAPTURE_CONTRACT_SCHEMA:
+        keys = keys | {"seal"}
+    elif schema != LEGACY_CAPTURE_CONTRACT_SCHEMA:
         raise MetadataError("unsupported capture contract schema")
+    contract = require_exact_object(value, keys, "capture contract")
+    if schema == CAPTURE_CONTRACT_SCHEMA:
+        seal = validate_seal(contract["seal"])
+        if seal["mode"] == LEGACY_SEAL_MODE:
+            raise MetadataError("a v3 capture contract cannot be legacy-unsealed")
+    else:
+        seal = legacy_seal()
     if contract["probe"] != expected_probe:
         raise MetadataError("capture contract probe mismatch")
     reps = require_reps(contract["reps"])
@@ -804,7 +1105,12 @@ def validate_capture_contract(value: Any, expected_probe: str) -> dict[str, Any]
     decode_prompts(contract["prompts"])
     if contract["prompts"] != expected_prompts:
         raise MetadataError("capture contract prompts disagree with bound input bytes")
-    validate_producer_request(contract["producer_request"])
+    # A v2 contract binds v2-era eligibility; the legacy-unsealed seal is what
+    # makes the row ineligible, so only the one-way floor is checked here.
+    validate_producer_request(
+        contract["producer_request"],
+        seal_mode=seal["mode"] if schema == CAPTURE_CONTRACT_SCHEMA else None,
+    )
     validate_schedule(contract["schedule"], reps)
     if contract["scoring"] != {
         "response_extraction": RESPONSE_EXTRACTION,
@@ -818,7 +1124,9 @@ def validate_capture_contract(value: Any, expected_probe: str) -> dict[str, Any]
     payload = {key: item for key, item in contract.items() if key != "binding_sha256"}
     if digest_bytes(canonical_bytes(payload)) != binding:
         raise MetadataError("capture contract binding mismatch")
-    return contract
+    if schema == CAPTURE_CONTRACT_SCHEMA:
+        return contract
+    return {**contract, "seal": seal}
 
 
 def write_exclusive_bytes(path: Path, data: bytes, label: str) -> os.stat_result:
@@ -849,17 +1157,19 @@ def write_capture_contract(
     requested_model: str | None,
     requested_effort: str | None,
     producer_override: str | None,
+    seal_path: Path | None = None,
 ) -> dict[str, Any]:
     validate_fixture_dir(fixture_dir)
-    if os.listdir(fixture_dir):
+    if set(os.listdir(fixture_dir)) - {SEAL_NAME}:
         raise MetadataError(
             "capture snapshot requires an empty stage before any transcript exists"
         )
+    seal = read_seal_file(fixture_dir, skills_dir, seal_path)
     producer_request = producer_runtime_identity(
-        requested_model, requested_effort, producer_override
+        requested_model, requested_effort, producer_override, seal["mode"]
     )
     contract = build_capture_contract(
-        probe_dir, skills_dir, expected_probe, producer_request
+        probe_dir, skills_dir, expected_probe, producer_request, seal
     )
     encoded = (
         json.dumps(contract, ensure_ascii=False, indent=2, sort_keys=True) + "\n"
@@ -874,6 +1184,29 @@ def load_capture_contract(fixture_dir: Path, expected_probe: str) -> dict[str, A
     return validate_capture_contract(
         load_json(fixture_dir / CAPTURE_CONTRACT_NAME), expected_probe
     )
+
+
+def verify_seal_sidecar(
+    fixture_dir: Path, skills_dir: Path, capture_contract: dict[str, Any]
+) -> None:
+    """A seal.json left beside the contract must re-derive to the bound seal block."""
+    if capture_contract["schema"] != CAPTURE_CONTRACT_SCHEMA:
+        raise MetadataError(
+            f"{SEAL_NAME} is present but the capture contract predates the seal"
+        )
+    observed = seal_projection(read_seal_file(fixture_dir, skills_dir))
+    if observed != seal_projection(capture_contract["seal"]):
+        raise MetadataError(
+            f"{SEAL_NAME} disagrees with the seal bound in the capture contract"
+        )
+
+
+def fixture_seal(
+    fixture_dir: Path, manifest: dict[str, Any], expected_probe: str
+) -> dict[str, Any]:
+    if manifest["schema"] != SCHEMA:
+        return legacy_seal()
+    return load_capture_contract(fixture_dir, expected_probe)["seal"]
 
 
 def observed_producer_bytes(data: bytes, label: str) -> tuple[str, str]:
@@ -962,6 +1295,9 @@ def build_payload(
     expected = expected_transcripts(reps)
     actual = sorted(os.listdir(fixture_dir))
     expected_before_manifest = expected + [CAPTURE_CONTRACT_NAME]
+    if SEAL_NAME in actual:
+        verify_seal_sidecar(fixture_dir, skills_dir, capture_contract)
+        expected_before_manifest.append(SEAL_NAME)
     if sorted(expected_before_manifest) != sorted(actual):
         missing = sorted(set(expected_before_manifest) - set(actual))
         extra = sorted(set(actual) - set(expected_before_manifest))
@@ -1883,6 +2219,10 @@ def verify_scorecard(
         "verdict",
         "per_rep",
     }
+    # The scorecard's `seal` copy (the harness record, null in replay) is
+    # informational; the capture contract's bound seal block is authoritative.
+    if "seal" in scorecard:
+        scorecard_keys = scorecard_keys | {"seal"}
     require_exact_object(scorecard, scorecard_keys, "scorecard")
     if scorecard["schema"] != SCORECARD_SCHEMA:
         raise MetadataError(f"scorecard is not v3: {scorecard['schema']!r}")
@@ -1932,7 +2272,8 @@ def verify_scorecard(
     producer_request = validate_producer_request(
         {key: producer[key] for key in ("adapter", "model", "effort", "identity")}
     )
-    if not producer_request["identity"]["coverage_eligible"]:
+    identity = producer_request["identity"]
+    if identity["override"] or producer["model"] is None or producer["effort"] is None:
         raise MetadataError(
             "tier coverage requires non-overrideable native Codex runtime evidence"
         )
@@ -2012,6 +2353,23 @@ def verify_scorecard(
             "tier coverage requires treatment_source 'canonical-skill'; "
             "injected-prelude evidence measures only the bound prelude"
         )
+    # The seal is the prevention for skill-read contamination; a counted row
+    # must prove the dispatch ran with the checkout and skill roots unreadable.
+    seal = load_capture_contract(fixture_dir, ledger_probe)["seal"]
+    if scorecard.get("seal") is not None:
+        scorecard_seal = seal_block_from_record(
+            scorecard["seal"], "scorecard seal", seal["repository_root"]
+        )
+        if seal_projection(scorecard_seal) != seal_projection(seal):
+            raise MetadataError(
+                "scorecard seal copy disagrees with the seal bound in the capture contract"
+            )
+    verify_seal_for_coverage(seal)
+    if not identity["coverage_eligible"]:
+        raise MetadataError(
+            "tier coverage requires a coverage-eligible producer identity bound "
+            "at capture"
+        )
 
     probe_meta = load_json(probe_dir / "probe.json")
     if probe_meta.get("id") != ledger_probe:
@@ -2051,6 +2409,7 @@ def verify_scorecard(
         "producer": manifest["producer"],
         "probe": ledger_probe,
         "reps": reps,
+        "seal": seal,
         "skill": ledger_skill,
         "verdict": ledger_verdict,
     }
@@ -2175,10 +2534,12 @@ def validate_manifest(
             "fixture metadata transcript inventory or ordering is invalid"
         )
     actual_names = sorted(os.listdir(fixture_dir))
+    has_seal_sidecar = schema == SCHEMA and SEAL_NAME in actual_names
     expected_names = sorted(
         expected
         + [MANIFEST_NAME]
         + ([CAPTURE_CONTRACT_NAME] if schema == SCHEMA else [])
+        + ([SEAL_NAME] if has_seal_sidecar else [])
     )
     if actual_names != expected_names:
         raise MetadataError(
@@ -2233,6 +2594,8 @@ def validate_manifest(
         if digest_file(fixture_dir / CAPTURE_CONTRACT_NAME) != capture_contract_digest:
             raise MetadataError("capture contract file digest mismatch")
         capture_contract = load_capture_contract(fixture_dir, expected_probe)
+        if has_seal_sidecar:
+            verify_seal_sidecar(fixture_dir, skills_dir, capture_contract)
         for field in (
             "reps",
             "capture_inputs",
@@ -2338,9 +2701,10 @@ def validate_manifest(
     return manifest
 
 
-def summary(manifest: dict[str, Any]) -> dict[str, Any]:
+def summary(manifest: dict[str, Any], seal: dict[str, Any]) -> dict[str, Any]:
     return {
         "schema": manifest["schema"],
+        "seal": seal,
         "binding_sha256": manifest["binding_sha256"],
         "producer": manifest["producer"],
         "requested_producer": manifest["requested_producer"],
@@ -2467,6 +2831,7 @@ def parse_args() -> argparse.Namespace:
     snapshot.add_argument("--requested-model")
     snapshot.add_argument("--requested-effort")
     snapshot.add_argument("--producer-override-bin")
+    snapshot.add_argument("--seal-file", type=Path)
 
     capture_file = subparsers.add_parser("capture-file")
     capture_file.add_argument("--fixture-dir", type=Path, required=True)
@@ -2569,6 +2934,7 @@ def main() -> int:
                 args.requested_model,
                 args.requested_effort,
                 args.producer_override_bin,
+                args.seal_file,
             )
             result = {
                 "binding_sha256": contract["binding_sha256"],
@@ -2576,6 +2942,7 @@ def main() -> int:
                 "reps": contract["reps"],
                 "schedule": contract["schedule"],
                 "scoring": contract["scoring"],
+                "seal": contract["seal"],
                 "treatment_source": contract["treatment_source"],
                 "canonical_skill": {
                     key: contract["canonical_skill"][key]
@@ -2610,12 +2977,15 @@ def main() -> int:
                     args.requested_effort,
                 )
                 manifest = write_manifest(args.fixture_dir, payload)
-                result = summary(manifest)
-            elif args.command == "verify":
                 result = summary(
-                    validate_manifest(
-                        args.fixture_dir, args.probe_dir, args.skills_dir, args.probe
-                    )
+                    manifest, fixture_seal(args.fixture_dir, manifest, args.probe)
+                )
+            elif args.command == "verify":
+                manifest = validate_manifest(
+                    args.fixture_dir, args.probe_dir, args.skills_dir, args.probe
+                )
+                result = summary(
+                    manifest, fixture_seal(args.fixture_dir, manifest, args.probe)
                 )
             else:
                 result = {"producer": observe_paths(transcript_paths(args.fixture_dir))}

@@ -96,6 +96,29 @@ explicit binary overrides remain replayable but are coverage-ineligible. This
 binds local capture provenance, not model quality, external runtime attestation,
 or cross-platform reproducibility.
 
+**The seal (`capture-contract.json` v3, `seal` block).** The 2026-08-28
+contamination was control-arm reps reading `skills/<skill>/SKILL.md` off the
+checkout, so both arms held the same bytes. The prevention is a filesystem
+seal around dispatch, and a counted row has to prove it ran under one. Before
+`snapshot`, the harness writes its `agentops-skill-probe-seal.v1` record
+(`seal.json`: `seal_mode` `seatbelt` or `none`, the `sandbox-exec` profile text
+and `profile_sha256`, `denied_read_roots`, `writable_roots`, the scratch
+`rep_env`, and the operator's `real_home`) into the capture stage, or hands it
+to `snapshot --seal-file`; the snapshot reduces it to the contract block `seal:
+{mode, denied_read_roots, writable_roots, profile_sha256, original_home,
+repository_root}` (`original_home` = the record's `real_home`,
+`repository_root` = the resolved parent of the skills dir). The sidecar may stay
+beside the contract, where create/verify re-derive it against the bound block
+and refuse a swapped record; a stage with no record is bound as mode `none`.
+`coverage_eligible` is true only for a native, fully specified producer under a
+`seatbelt` seal. `verify-scorecard` treats the contract block as authoritative,
+cross-checks a scorecard's verbatim `seal` copy against it when present (null in
+replay), and requires the denied roots to cover `repository_root` and
+`.agents`, `.claude/skills`, `.gemini/skills`, and `.codex/skills` under
+`original_home` (literal or realpath, since the kernel seals the resolved
+path), naming any root the seal omitted. Pre-seal v2 contracts (the 2026-08-26
+sets) load as `legacy-unsealed`: replayable, never coverage.
+
 Replay makes the bound classification replayable; it does not make model
 generation deterministic or reproducible.
 
