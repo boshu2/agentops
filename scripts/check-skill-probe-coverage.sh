@@ -198,6 +198,25 @@ done
 # ledger file/section simply yields an empty measured set (every gated skill is
 # then a finding — surfaced as advisory).
 declare -A MEASURED=()
+# Per-set eligibility, reported on every run. A scorecard carries its capture's
+# own `coverage_eligible` claim, and that field is immutable history: the
+# 2026-08-26 premortem card says `true` while the gate treats the set as
+# legacy-unsealed. The EFFECTIVE value is what this gate decides, so it is
+# printed per set instead of leaving a reader to trust the card.
+declare -a SET_ROWS=()
+
+# seal_reason_label MESSAGE — the short reason a set is not coverage.
+seal_reason_label() {
+    case "$1" in
+        *legacy-unsealed*)             echo "legacy-unsealed";;
+        *"hardened seal block"*)       echo "seal-block-superseded";;
+        *"seatbelt-sealed capture"*)   echo "unsealed";;
+        *"tier coverage requires"*)    echo "seal-incomplete";;
+        *"injected-prelude"*)          echo "prelude-only";;
+        *)                             echo "evidence-unverified";;
+    esac
+}
+
 if [[ -f "$LEDGER_FILE" ]]; then
     in_ledger=0
     while IFS= read -r line; do
@@ -230,6 +249,7 @@ if [[ -f "$LEDGER_FILE" ]]; then
             [[ -n "${GATED[$skill]:-}" ]] || continue
             if ! scorecard_path="$(scorecard_ref_from_notes "$notes")"; then
                 echo "::warning::probe ledger row '${skill}/${probe}' is not measured: current verdict lacks exactly one scorecard: \`path\` evidence pointer." >&2
+                SET_ROWS+=("${skill}|${probe}||false|no-scorecard-pointer")
                 continue
             fi
             verification=""
@@ -241,9 +261,11 @@ if [[ -f "$LEDGER_FILE" ]]; then
                 --ledger-probe "$probe" \
                 --ledger-verdict "$verdict" 2>&1)"; then
                 MEASURED["$skill"]=1
+                SET_ROWS+=("${skill}|${probe}|${scorecard_path}|true|verified")
             else
                 verification="$(printf '%s' "$verification" | tail -n 1)"
                 echo "::warning::probe ledger row '${skill}/${probe}' is not measured: ${verification:-evidence verification failed}" >&2
+                SET_ROWS+=("${skill}|${probe}|${scorecard_path}|false|$(seal_reason_label "$verification")")
             fi
         fi
     done < "$LEDGER_FILE"
@@ -274,7 +296,27 @@ if [[ $JSON -eq 1 ]]; then
         [[ $i -gt 0 ]] && printf ','
         printf '"%s"' "${UNMEASURED[$i]}"
     done
+    printf '],"sets":['
+    for i in "${!SET_ROWS[@]}"; do
+        [[ $i -gt 0 ]] && printf ','
+        IFS='|' read -r set_skill set_probe set_card set_ok set_why <<<"${SET_ROWS[$i]}"
+        printf '{"skill":"%s","probe":"%s","scorecard":"%s","eligible":%s,"reason":"%s"}' \
+            "$set_skill" "$set_probe" "$set_card" "$set_ok" "$set_why"
+    done
     printf ']}\n'
+fi
+
+# The effective eligibility of every set the ledger points at, named before any
+# reader reaches the scorecard's own immutable `coverage_eligible` claim.
+if [[ $JSON -eq 0 && ${#SET_ROWS[@]} -gt 0 ]]; then
+    for row in "${SET_ROWS[@]}"; do
+        IFS='|' read -r set_skill set_probe set_card set_ok set_why <<<"$row"
+        if [[ "$set_ok" == "true" ]]; then
+            echo "check-skill-probe-coverage: set ${set_skill}/${set_probe}: eligible=true (${set_why})"
+        else
+            echo "check-skill-probe-coverage: set ${set_skill}/${set_probe}: eligible=false (${set_why})${set_card:+ [${set_card}]}"
+        fi
+    done
 fi
 
 # The denominator argues itself on every run: a reader who disagrees with an

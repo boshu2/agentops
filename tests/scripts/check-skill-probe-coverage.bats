@@ -115,14 +115,19 @@ position = next(
     for item in contract["schedule"]
     if item["arm"] == arm and item["rep"] == rep
 )
+event = {
+    "type": "agentops.probe-input.v1",
+    "arm": arm,
+    "rep": rep,
+    "position": position,
+    "prompt": prompt,
+}
+seal = contract.get("seal") or {}
+if seal.get("mode") == "seatbelt" and seal.get("workspace_root"):
+    event["workspace"] = seal["workspace_root"]
+    event["workspace_reset"] = True
 events = [
-    {
-        "type": "agentops.probe-input.v1",
-        "arm": arm,
-        "rep": rep,
-        "position": position,
-        "prompt": prompt,
-    },
+    event,
     {"type": "thread.started", "thread_id": f"gate-{directory.name}-{name}"},
     {"type": "turn.started"},
     {
@@ -155,6 +160,8 @@ write_seal() {
     # cannot cover a skill root by ancestry.
     REAL_HOME="$(python3 -c 'import os,sys; print(os.path.realpath(sys.argv[1]))' "$BATS_TEST_TMPDIR")/home"
     mkdir -p "$BATS_TEST_TMPDIR/home"
+    # A hardened seal denies the checkout, the four skill roots, the operator
+    # home itself and the real temp root that holds every other run's debris.
     local -a roots=(
         "$repo_real"
         "$REAL_HOME/.agents"
@@ -162,12 +169,14 @@ write_seal() {
         "$REAL_HOME/.gemini/skills"
         "$REAL_HOME/.codex/skills"
     )
+    local -a tail_roots=("$REAL_HOME" /private/tmp)
     case "$spec" in
         absent|legacy) return 0 ;;
-        none) roots=() ;;
+        none) roots=(); tail_roots=() ;;
         full) ;;
         omit-checkout) roots=("${roots[@]:1}") ;;
-        omit-skill-root) roots=("${roots[@]:0:4}") ;;
+        omit-skill-root) roots=("${roots[@]:0:4}"); tail_roots=(/private/tmp) ;;
+        omit-temp-root) tail_roots=("$REAL_HOME") ;;
         symlinked-skill-root)
             mkdir -p "$BATS_TEST_TMPDIR/home/.claude"
             ln -s "$FIX/skills" "$BATS_TEST_TMPDIR/home/.claude/skills"
@@ -175,19 +184,24 @@ write_seal() {
             ;;
         *) echo "unknown seal spec: $spec" >&2; return 1 ;;
     esac
-    python3 - "$directory" "$spec" "$REAL_HOME" "${roots[@]}" <<'PY'
+    roots+=(${tail_roots[@]+"${tail_roots[@]}"})
+    python3 - "$directory" "$spec" "$REAL_HOME" "$repo_real" "${roots[@]}" <<'PY'
 import hashlib, json, pathlib, sys
 
 directory = pathlib.Path(sys.argv[1])
 spec = sys.argv[2]
 real_home = sys.argv[3]
-denied = sys.argv[4:]
+git_common_root = sys.argv[4]
+denied = sys.argv[5:]
 sealed = spec != "none"
 profile = None
 if sealed:
     profile = "(version 1)\n(allow default)\n(deny file-read*\n" + "".join(
         f'  (subpath "{root}")\n' for root in denied
     ) + ")"
+profile_sha = ("sha256:" + hashlib.sha256(profile.encode()).hexdigest()) if sealed else None
+run_root = "/private/tmp/probe-run.aaaaaa"
+dispatch = run_root + "/dispatch"
 record = {
     "schema": "agentops-skill-probe-seal.v1",
     "seal_mode": "seatbelt" if sealed else "none",
@@ -195,16 +209,31 @@ record = {
     "mechanism": "sandbox-exec" if sealed else None,
     "sandbox_exec": "/usr/bin/sandbox-exec" if sealed else None,
     "platform": "Darwin",
-    "wrap": ["sandbox-exec", "-p", profile] if sealed else [],
+    "wrap": ["sandbox-exec", "-p", profile_sha] if sealed else [],
     "profile": profile,
-    "profile_file": "/private/tmp/probe-seal/seal.sb" if sealed else None,
-    "profile_sha256": ("sha256:" + hashlib.sha256(profile.encode()).hexdigest()) if sealed else None,
+    "profile_file": run_root + "/home/seal.sb" if sealed else None,
+    "profile_sha256": profile_sha,
     "denied_read_roots": denied,
-    "writable_roots": ["/private/tmp/probe-ws", "/private/tmp/probe-seal"] if sealed else [],
-    "rep_env": {"HOME": "/private/tmp/probe-seal", "CODEX_HOME": "/private/tmp/probe-seal/.codex"},
+    "denied_read_data_roots": [dispatch] if sealed else [],
+    "denied_link_roots": (list(denied) + [dispatch]) if sealed else [],
+    "writable_roots": (
+        [run_root + "/home", run_root + "/ws", run_root + "/tmp", "/dev"] if sealed else []
+    ),
+    "allowed_read_paths": [],
+    "rep_env": {
+        "HOME": run_root + "/home",
+        "CODEX_HOME": run_root + "/home/.codex",
+        "TMPDIR": run_root + "/tmp",
+    },
     "real_home": real_home,
     "real_codex_home": real_home + "/.codex",
-    "auth_links": ["auth.json"] if sealed else [],
+    "real_tmpdir": "/private/tmp" if sealed else None,
+    "git_common_root": git_common_root if sealed else None,
+    "run_root": run_root if sealed else None,
+    "workspace_root": run_root + "/ws" if sealed else None,
+    "dispatch_root": dispatch if sealed else None,
+    "config_sanitized": ["model", "model_reasoning_effort"] if sealed else None,
+    "auth_copied": bool(sealed),
 }
 (directory / "seal.json").write_text(json.dumps(record, indent=2, sort_keys=True) + "\n")
 PY
@@ -376,7 +405,9 @@ print(value)
     run bash "$GATE" --strict
 
     [ "$status" -eq 0 ]
-    [[ "$output" != *"foo"* ]]
+    [[ "$output" != *"unmeasured"* ]]
+    [[ "$output" != *"::warning::"* ]]
+    [[ "$output" == *"set foo/probe-foo: eligible=true (verified)"* ]]
 }
 
 @test "a valid bound INERT scorecard counts" {
@@ -463,6 +494,9 @@ print(value)
 }
 
 @test "a skill root symlinked into the sealed checkout counts through its realpath" {
+    # The home deny subsumes the four skill roots, and the seal names
+    # ~/.claude/skills only through the checkout it resolves into: the row still
+    # counts, because coverage matches a root by its resolved path.
     make_skill foo product
     make_bound_result foo probe-foo BEHAVIORAL canonical-skill "" symlinked-skill-root
     write_ledger "foo | probe-foo | 2026-09-03 | BEHAVIORAL | scorecard: \`$BOUND_SCORECARD_REL\`"
@@ -470,7 +504,8 @@ print(value)
     run bash "$GATE" --strict
 
     [ "$status" -eq 0 ]
-    [[ "$output" != *"foo"* ]]
+    [[ "$output" != *"::warning::"* ]]
+    [[ "$output" == *"eligible=true (verified)"* ]]
 }
 
 @test "a scorecard seal copy is cross-checked against the bound contract seal" {
@@ -483,7 +518,7 @@ print(value)
     set_scorecard_seal "$FIX/$BOUND_SCORECARD_REL" "$seal_record"
     run bash "$GATE" --strict
     [ "$status" -eq 0 ]
-    [[ "$output" != *"foo"* ]]
+    [[ "$output" != *"::warning::"* ]]
 
     # A copy that claims more denied roots than the bound seal is refused.
     set_scorecard_seal "$FIX/$BOUND_SCORECARD_REL" "$seal_record" \
@@ -737,7 +772,7 @@ PY
     [[ "$output" == *"foo"* ]]
 }
 
-@test "the real repository remains advisory with exactly 1/12 current results" {
+@test "the real repository remains advisory and names each set's effective eligibility" {
     unset SKILL_PROBE_SKILLS_DIR SKILL_PROBE_LEDGER_FILE SKILL_PROBE_TIERS_FILE
     unset SKILL_PROBE_EVIDENCE_ROOT SKILL_PROBE_METADATA_TOOL SKILL_PROBE_EXCLUSIONS_FILE
 
@@ -745,14 +780,68 @@ PY
 
     [ "$status" -eq 0 ]
     # 12 product/judgment-tier badges and no declared-denominator exclusion:
-    # the `goals` alias was retired on 2026-09-03 (Train 2), so nothing is
-    # excluded and the denominator is the badge count. The headline stays
-    # 0/12 until a v3 capture-manifest-backed run records a current verdict.
+    # the `goals` alias was retired on 2026-09-03 (ADR-0018), so nothing is
+    # excluded and the denominator is the badge count. The two v3 sets
+    # committed on 2026-09-03 carry the FIRST-SHAPE seal block, which the
+    # second pass no longer accepts as coverage; they are recaptured under the
+    # hardened seal before this branch merges, so the honest headline here is
+    # 0/12 rather than a badge resting on a seal nothing can check.
     [ "$(json_field "$output" tier_total)" = "12" ]
     [ "$(json_field "$output" excluded_count)" = "0" ]
     [ "$(json_field "$output" gated_total)" = "12" ]
-    [ "$(json_field "$output" measured)" = "1" ]
-    [ "$(json_field "$output" unmeasured_count)" = "11" ]
+    [ "$(json_field "$output" measured)" = "0" ]
+    [ "$(json_field "$output" unmeasured_count)" = "12" ]
+
+    # Every set the ledger points at reports its EFFECTIVE eligibility, so a
+    # reader meets it before the scorecard's own immutable claim.
+    run --separate-stderr bash "$GATE"
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"eligible=false ("* ]]
+}
+
+@test "a set's effective eligibility is reported per set in text and JSON" {
+    make_skill foo product
+    make_bound_result foo probe-foo BEHAVIORAL
+    write_ledger "foo | probe-foo | 2026-09-03 | BEHAVIORAL | scorecard: \`$BOUND_SCORECARD_REL\`"
+
+    run --separate-stderr bash "$GATE"
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"set foo/probe-foo: eligible=true (verified)"* ]]
+
+    run --separate-stderr bash "$GATE" --json
+    [ "$status" -eq 0 ]
+    [[ "$output" == *'"skill":"foo","probe":"probe-foo","scorecard":"docs/evals/scorecards/probe-foo.json","eligible":true,"reason":"verified"'* ]]
+
+}
+
+@test "an ineligible set is labeled false with its reason, whatever the card claims" {
+    # The scorecard carries its capture's own producer `coverage_eligible`
+    # claim: on the 2026-08-26 premortem card that field says true while the
+    # gate treats the set as ineligible. The EFFECTIVE value is printed here.
+    make_skill foo product
+    make_bound_result foo probe-foo BEHAVIORAL canonical-skill "" none
+    write_ledger "foo | probe-foo | 2026-09-03 | BEHAVIORAL | scorecard: \`$BOUND_SCORECARD_REL\`"
+
+    run --separate-stderr bash "$GATE"
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"set foo/probe-foo: eligible=false (unsealed)"* ]]
+    [[ "$output" == *"docs/evals/scorecards/probe-foo.json"* ]]
+
+    run --separate-stderr bash "$GATE" --json
+    [ "$status" -eq 0 ]
+    [[ "$output" == *'"eligible":false,"reason":"unsealed"'* ]]
+}
+
+@test "a sealed capture whose denied roots omit the real temp root does not count" {
+    make_skill foo product
+    make_bound_result foo probe-foo BEHAVIORAL canonical-skill "" omit-temp-root
+    write_ledger "foo | probe-foo | 2026-09-03 | BEHAVIORAL | scorecard: \`$BOUND_SCORECARD_REL\`"
+
+    run --separate-stderr bash "$GATE" --strict
+
+    [ "$status" -eq 1 ]
+    [[ "$stderr" == *"denied_read_roots omit"* ]]
+    [[ "$stderr" == *"/private/tmp"* ]]
 }
 
 @test "the real exclusion list resolves and argues every entry on stdout" {
