@@ -62,7 +62,9 @@ func Score(query string, metas []SkillMeta) []Match {
 	for _, m := range metas {
 		nameToks := tokenize(m.Name)
 		trigToks := tokenize(strings.Join(m.Triggers, " "))
-		descToks := tokenize(m.Description)
+		positive, exclusion := splitExclusion(m.Description)
+		descToks := tokenize(positive)
+		exclToks := exclusionTokens(exclusion, nameToks, trigToks, descToks)
 
 		var raw float64
 		for _, qt := range qTokens {
@@ -73,7 +75,12 @@ func Score(query string, metas []SkillMeta) []Match {
 				raw += weightTrigger
 			case tokenMatches(qt, descToks):
 				raw += weightDesc
+			case tokenMatches(qt, exclToks):
+				raw -= weightDesc
 			}
+		}
+		if raw < 0 {
+			raw = 0
 		}
 
 		score := 0.0
@@ -95,6 +102,56 @@ func Score(query string, metas []SkillMeta) []Match {
 		return matches[i].Name < matches[j].Name
 	})
 	return matches
+}
+
+// exclusionMarker opens a description's negative-routing sentence: "Not for
+// <sibling's job>; that is <sibling>." The sentence names the neighbouring
+// skill's vocabulary on purpose, so it must not score as if it were the
+// skill's own job.
+const exclusionMarker = "Not for "
+
+// splitExclusion separates a description into the text that describes the
+// skill's own job and its exclusion sentence, if one is present. The sentence
+// runs from the marker to the first period followed by whitespace or the end
+// of the text; everything after it (typically the Triggers clause) stays
+// positive.
+func splitExclusion(desc string) (positive, exclusion string) {
+	start := strings.Index(desc, exclusionMarker)
+	if start < 0 {
+		return desc, ""
+	}
+	rest := desc[start:]
+	end := len(rest)
+	for i := 0; i < len(rest); i++ {
+		if rest[i] == '.' && (i+1 == len(rest) || rest[i+1] == ' ' || rest[i+1] == '\n') {
+			end = i + 1
+			break
+		}
+	}
+	positive = strings.TrimSpace(desc[:start])
+	if tail := strings.TrimSpace(rest[end:]); tail != "" {
+		positive += " " + tail
+	}
+	return positive, rest[:end]
+}
+
+// exclusionTokens returns the exclusion sentence's tokens that the skill does
+// not also claim positively through its name, triggers, or own description.
+// A query token that hits only these earns a penalty instead of a match, so
+// "is this decision reversible" no longer lifts premortem because premortem
+// says it is not for reversibility.
+func exclusionTokens(exclusion string, nameToks, trigToks, descToks []string) []string {
+	if exclusion == "" {
+		return nil
+	}
+	out := make([]string, 0, 8)
+	for _, t := range tokenize(exclusion) {
+		if tokenMatches(t, nameToks) || tokenMatches(t, trigToks) || tokenMatches(t, descToks) {
+			continue
+		}
+		out = append(out, t)
+	}
+	return out
 }
 
 // tokenize lowercases, splits on non-alphanumeric runes, and drops stopwords

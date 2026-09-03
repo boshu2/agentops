@@ -277,7 +277,7 @@ print(value)
     run --separate-stderr bash "$REPO_ROOT/scripts/check-routing-probe-goldens.sh" --json
 
     [ "$status" -eq 0 ]
-    [ "$(json_field "$output" total)" = "9" ]
+    [ "$(json_field "$output" total)" = "10" ]
     [ "$(json_field "$output" failed)" = "0" ]
-    [ "$(json_field "$output" passed)" = "9" ]
+    [ "$(json_field "$output" passed)" = "10" ]
 }

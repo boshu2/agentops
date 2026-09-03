@@ -115,3 +115,42 @@ func TestTokenize_DropsStopwordsAndShortTokens(t *testing.T) {
 		}
 	}
 }
+
+func TestScore_ExclusionSentenceRoutesAway(t *testing.T) {
+	metas := []SkillMeta{
+		{Name: "premortem", Description: "Fresh-judge a frozen plan. Not for a live decision's reversibility; that is one-way-door. Triggers: \"premortem\", \"challenge this plan\"."},
+		{Name: "one-way-door", Description: "Classify a pending decision as reversible or irreversible; route irreversible ones to the caller. Not for challenging a frozen plan; that is premortem. Triggers: \"is this a one-way door\"."},
+	}
+
+	got := Score("is this live decision reversible", metas)
+	if got[0].Name != "one-way-door" {
+		t.Fatalf("reversibility query: want one-way-door first, got %q (%+v)", got[0].Name, got)
+	}
+	if got[1].Name != "premortem" || got[1].Score != 0 {
+		t.Errorf("premortem's exclusion vocabulary must earn nothing: got %+v", got[1])
+	}
+
+	got = Score("challenge this frozen plan", metas)
+	if got[0].Name != "premortem" {
+		t.Fatalf("plan-challenge query: want premortem first, got %q (%+v)", got[0].Name, got)
+	}
+	if got[1].Name != "one-way-door" || got[1].Score != 0 {
+		t.Errorf("one-way-door's exclusion vocabulary must earn nothing: got %+v", got[1])
+	}
+}
+
+func TestSplitExclusion(t *testing.T) {
+	cases := []struct {
+		desc, wantPositive, wantExclusion string
+	}{
+		{"Trace a repo. Not for a bounded question; that is research. Triggers: \"recon\".", "Trace a repo. Triggers: \"recon\".", "Not for a bounded question; that is research."},
+		{"Trace a repo. Triggers: \"recon\".", "Trace a repo. Triggers: \"recon\".", ""},
+		{"Answer one question. Not for dissecting a codebase; that is codebase-recon or reverse-engineer.", "Answer one question.", "Not for dissecting a codebase; that is codebase-recon or reverse-engineer."},
+	}
+	for _, c := range cases {
+		pos, excl := splitExclusion(c.desc)
+		if pos != c.wantPositive || excl != c.wantExclusion {
+			t.Errorf("splitExclusion(%q) = (%q, %q); want (%q, %q)", c.desc, pos, excl, c.wantPositive, c.wantExclusion)
+		}
+	}
+}
