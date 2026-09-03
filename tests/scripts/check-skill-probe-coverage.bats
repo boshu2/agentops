@@ -107,6 +107,44 @@ write_ledger() {
     } > "$ledger_file"
 }
 
+# write_network_log DIR REPS — the proxy log a sealed fixture set publishes.
+# One accepted CONNECT per rep, as an attempt paired with its decision, which is
+# the shape the verifier now requires.
+write_network_log() {
+    python3 - "$1" "${2:-2}" <<'NETLOGPY'
+import json, pathlib, sys
+
+directory = pathlib.Path(sys.argv[1])
+reps = int(sys.argv[2])
+contract = directory / "capture-contract.json"
+# Only a seatbelt capture publishes a log: the transcripts of any other mode
+# bind no egress, and a log with nothing to check against is refused.
+if not contract.is_file():
+    raise SystemExit(0)
+seal = json.loads(contract.read_text()).get("seal") or {}
+if seal.get("mode") != "seatbelt" or "network" not in seal:
+    raise SystemExit(0)
+lines = []
+for rep in range(1, reps + 1):
+    for arm in ("control", "treatment"):
+        key = f"{arm}-{rep}"
+        for decision in ("attempt", "allowed"):
+            lines.append(
+                json.dumps(
+                    {
+                        "decision": decision,
+                        "host": "chatgpt.com",
+                        "port": 443,
+                        "rep": key,
+                        "ts": "2026-09-03T00:00:00Z",
+                    },
+                    sort_keys=True,
+                )
+            )
+(directory / "network.log").write_text("\n".join(lines) + "\n")
+NETLOGPY
+}
+
 write_transcript() {
     local directory="$1" name="$2" body="$3"
     python3 - "$directory" "$name" "$body" <<'PY'
@@ -136,10 +174,21 @@ if seal.get("mode") == "seatbelt" and seal.get("workspace_root"):
     event["workspace"] = seal["workspace_root"]
     event["workspace_reset"] = True
     if "network" in seal:
+        import hashlib
+
+        log_path = directory / "network.log"
+        own = [
+            line
+            for line in log_path.read_text().splitlines()
+            if line.strip() and json.loads(line).get("rep") == name
+        ]
+        blob = ("\n".join(own) + "\n").encode() if own else b""
         event["network_egress"] = {
-            "allowed": 3,
+            "allowed": sum(
+                1 for line in own if json.loads(line)["decision"] == "allowed"
+            ),
             "refused": 0,
-            "log_sha256": "sha256:" + "c" * 64,
+            "log_sha256": "sha256:" + hashlib.sha256(blob).hexdigest(),
         }
 events = [
     event,
@@ -247,6 +296,7 @@ payload = {
     "launcher_chain": [launcher] if sealed else [],
     "launcher_sha256": launcher_sha if sealed else "",
     "timeout_bin": "/opt/homebrew/bin/timeout" if sealed else "",
+    "timeout_seconds": 240 if sealed else 0,
     "env_allowlist": ["PATH", "HOME", "CODEX_HOME", "TMPDIR"],
     "rep_env": {
         "HOME": run_root + "/home",
@@ -360,6 +410,7 @@ SH
         snapshot_args+=(--producer-override-bin "$producer_override")
     fi
     python3 "$META_TOOL" "${snapshot_args[@]}" >/dev/null
+    write_network_log "$fixture_dir"
     if [[ "$seal_spec" == "legacy" ]]; then
         downgrade_contract_to_v2 "$fixture_dir/capture-contract.json"
     fi
@@ -523,7 +574,8 @@ print(value)
     run bash "$GATE" --strict
 
     [ "$status" -eq 1 ]
-    [[ "$output" == *"denied_read_roots omit: $repo_real"* ]]
+    [[ "$output" == *"denied for BOTH reads and links"* ]]
+    [[ "$output" == *"read-denied: $repo_real"* ]]
     [[ "$output" == *"foo"* ]]
 }
 
@@ -535,7 +587,7 @@ print(value)
     run bash "$GATE" --strict
 
     [ "$status" -eq 1 ]
-    [[ "$output" == *"denied_read_roots"* ]]
+    [[ "$output" == *"denied for BOTH reads and links"* ]]
     [[ "$output" == *"$REAL_HOME/.codex/skills"* ]]
 }
 
@@ -832,8 +884,10 @@ PY
     # recaptured under the final seal on 2026-09-03 (the fifth capture that
     # day, after the fourth pass moved the evaluator identity once more), so
     # the headline is 1/12.
-    [ "$(json_field "$output" measured)" = "1" ]
-    [ "$(json_field "$output" unmeasured_count)" = "11" ]
+    # The evaluator identity a scorecard binds moves with every harness change,
+    # so the sealed rows read as unverified until the orchestrator recaptures.
+    [ "$(json_field "$output" measured)" = "0" ]
+    [ "$(json_field "$output" unmeasured_count)" = "$(json_field "$output" gated_total)" ]
 
     # M2V-02: EVERY ledger row that names a scorecard gets an eligibility line,
     # including the 2026-08-26 WITHDRAWN row the README cites as the example of
@@ -889,7 +943,7 @@ PY
     run --separate-stderr bash "$GATE" --strict
 
     [ "$status" -eq 1 ]
-    [[ "$stderr" == *"denied_read_roots omit"* ]]
+    [[ "$stderr" == *"denied for BOTH reads and links"* ]]
     [[ "$stderr" == *"/private/tmp"* ]]
 }
 
@@ -1018,4 +1072,30 @@ PY
     [ "$status" -eq 0 ]
     [ "$(json_field "$output" excluded_count)" = "0" ]
     [ "$(json_field "$output" gated_total)" = "1" ]
+}
+
+@test "a set captured by a different evaluator is not coverage (evaluator-stale)" {
+    make_skill foo product
+    make_bound_result foo probe-foo BEHAVIORAL
+    write_ledger "foo | probe-foo | 2026-09-03 | BEHAVIORAL | scorecard: \`$BOUND_SCORECARD_REL\`"
+    run bash "$GATE" --strict
+    [ "$status" -eq 0 ]
+
+    # The CONNECT proxy decides what a rep can reach, so a scorecard bound to a
+    # different one describes a different capture. A consistent `false` was
+    # accepted, which counted a set captured by another harness as coverage for
+    # this one.
+    python3 - "$FIX/$BOUND_SCORECARD_REL" <<'PY'
+import json, sys
+path = sys.argv[1]
+card = json.load(open(path))
+card["capture_evaluator"]["network_proxy"]["sha256"] = "sha256:" + "0" * 64
+card["evaluator_matches_capture"] = card["evaluator"] == card["capture_evaluator"]
+open(path, "w").write(json.dumps(card, indent=2, sort_keys=True) + "\n")
+PY
+
+    run --separate-stderr bash "$GATE" --json
+    [ "$status" -eq 0 ]
+    [[ "$output" == *'"eligible":false,"reason":"evaluator-stale"'* ]]
+    [[ "$stderr" == *"evaluator-stale"* ]]
 }

@@ -1604,3 +1604,169 @@ SH
         --probe-dir "$PROBE_DIR" --skills-dir "$SKILLS" --probe demo
     [ "$status" -eq 0 ]
 }
+
+@test "a group that will not die returns the fatal code, not a degraded rep" {
+    # The reap has three outcomes and only two used to matter. A process that
+    # outlived KILL returned the same "something survived" as one that died to
+    # TERM, so the schedule continued past a group nobody could prove empty.
+    # The two reap functions are sliced out of the SHIPPED harness, so this
+    # tests the bytes that run, without adding a seam to the harness for it.
+    local slice="$BATS_TEST_TMPDIR/reap.sh"
+    sed -n '/^rep_group_members() {/,/^}/p;/^reap_rep_group() {/,/^}/p' \
+        "$HARNESS" > "$slice"
+    [ -s "$slice" ]
+    grep -q 'reap_rep_group()' "$slice"
+
+    local psdir="$BATS_TEST_TMPDIR/ps-immortal"
+    mkdir -p "$psdir"
+    # Always reports one member of the queried group, whatever it is: the
+    # observable shape of a process that survives TERM and KILL.
+    cat > "$psdir/ps" <<'SH'
+#!/usr/bin/env bash
+printf '%s 4242\n' "$PROBE_STUB_PGID"
+SH
+    chmod +x "$psdir/ps"
+
+    run env PATH="$psdir:$PATH" PROBE_STUB_PGID=31337 bash -c '
+        set -uo pipefail
+        . "'"$slice"'"
+        reap_rep_group 31337
+        echo "rc=$?"
+    '
+    [ "$status" -eq 0 ]
+    # 2 is the fatal code the dispatcher turns into an aborted capture; 1 would
+    # only degrade the rep.
+    [[ "$output" == *"rc=2"* ]]
+
+    # And the caller treats 2 as fatal: the dispatcher exits before the reset.
+    grep -q 'could not prove the .* process group empty; capture aborted' "$HARNESS"
+}
+
+@test "an unreadable process table aborts the capture rather than reading as empty" {
+    [[ "$(uname -s)" == "Darwin" && -x /usr/bin/sandbox-exec ]] \
+        || skip "process-group reaping is exercised against the real seal"
+    unset PROBE_SEAL_SANDBOX_EXEC
+    export PATH="${PATH#"$SEATBELT_STUB_DIR:"}"
+    # Piping a failed `ps` into awk printed 0, so "could not look" and "nothing
+    # there" were the same answer.
+    local psdir="$BATS_TEST_TMPDIR/ps-broken"
+    mkdir -p "$psdir"
+    printf '#!/usr/bin/env bash\nexit 1\n' > "$psdir/ps"
+    chmod +x "$psdir/ps"
+    local producer="$BATS_TEST_TMPDIR/codex-psfail"
+    cat > "$producer" <<'SH'
+#!/usr/bin/env bash
+if [[ "${1:-}" == "--version" ]]; then printf 'codex-cli psfail-stub\n'; exit 0; fi
+cat >/dev/null
+printf '{"type":"thread.started","thread_id":"psfail-%s"}\n' "$$"
+printf '{"type":"turn.started"}\n'
+printf '{"type":"item.completed","item":{"id":"i","type":"agent_message","text":"ABSENT"}}\n'
+printf '{"type":"turn.completed","usage":{"input_tokens":1,"cached_input_tokens":0,"output_tokens":1}}\n'
+SH
+    chmod +x "$producer"
+
+    run --separate-stderr env PATH="$psdir:$PATH" CODEX_EXEC_BIN="$producer" \
+        bash "$HARNESS" --probe demo --live --reps 2 --fixtures fixtures-psfail
+
+    [ "$status" -ne 0 ]
+    [[ "$stderr" == *"capture aborted"* ]]
+    [ ! -e "$PROBE_DIR/fixtures-psfail" ]
+}
+
+@test "a child that calls setsid is caught by the run-root residue check" {
+    [[ "$(uname -s)" == "Darwin" && -x /usr/bin/sandbox-exec ]] \
+        || skip "session escape is exercised against the real seal"
+    command -v lsof >/dev/null 2>&1 || skip "lsof is required for the residue check"
+    unset PROBE_SEAL_SANDBOX_EXEC
+    export PATH="${PATH#"$SEATBELT_STUB_DIR:"}"
+    # A setsid() child leaves the rep's process group entirely, so the group
+    # reap cannot see it: four such survivors once outlived a capture with only
+    # `config-mutated` firing. Anything still holding the run root is the same
+    # defect by another route.
+    local producer="$BATS_TEST_TMPDIR/codex-setsid"
+    cat > "$producer" <<'SH'
+#!/usr/bin/env bash
+if [[ "${1:-}" == "--version" ]]; then printf 'codex-cli setsid-stub\n'; exit 0; fi
+cat >/dev/null
+python3 -c '
+import os, sys, time
+if os.fork() == 0:
+    os.setsid()
+    os.chdir(sys.argv[1])
+    sys.stderr.write("SETSID_PID=%d\n" % os.getpid())
+    sys.stderr.flush()
+    time.sleep(45)
+' "$PWD" &
+sleep 0.5
+printf '{"type":"thread.started","thread_id":"setsid-%s"}\n' "$$"
+printf '{"type":"turn.started"}\n'
+printf '{"type":"item.completed","item":{"id":"i","type":"agent_message","text":"ABSENT"}}\n'
+printf '{"type":"turn.completed","usage":{"input_tokens":1,"cached_input_tokens":0,"output_tokens":1}}\n'
+SH
+    chmod +x "$producer"
+
+    run --separate-stderr env CODEX_EXEC_BIN="$producer" \
+        bash "$HARNESS" --probe demo --live --reps 2 --fixtures fixtures-setsid
+
+    [ "$status" -ne 0 ]
+    [[ "$stderr" == *"rep-survivor"* ]]
+    [[ "$stderr" == *"session escape"* ]]
+    [ ! -e "$PROBE_DIR/fixtures-setsid" ]
+
+    local pids pid
+    pids="$(printf '%s\n' "$stderr" | sed -n 's/.*SETSID_PID=\([0-9][0-9]*\).*/\1/p')"
+    [ -n "$pids" ]
+    for pid in $pids; do
+        [ -z "$(ps -o pid= -p "$pid" 2>/dev/null)" ]
+    done
+}
+
+@test "the rep's environment is exactly the seal's env_allowlist" {
+    [[ "$(uname -s)" == "Darwin" && -x /usr/bin/sandbox-exec ]] \
+        || skip "the env boundary is exercised against the real seal"
+    unset PROBE_SEAL_SANDBOX_EXEC
+    export PATH="${PATH#"$SEATBELT_STUB_DIR:"}"
+    # Emptying the environment from inside the dispatch subshell could not clear
+    # bash's readonly exports (SHELLOPTS, BASHOPTS, UID, EUID, PPID): they
+    # reached the producer undeclared. `env -i` is the boundary now.
+    export SHELLOPTS BASHOPTS 2>/dev/null || true
+    local producer="$BATS_TEST_TMPDIR/codex-env"
+    cat > "$producer" <<'SH'
+#!/usr/bin/env bash
+if [[ "${1:-}" == "--version" ]]; then printf 'codex-cli env-stub\n'; exit 0; fi
+cat >/dev/null
+names="$(env | sed 's/=.*//' | sort -u | tr '\n' ' ')"
+printf '{"type":"thread.started","thread_id":"env-%s"}\n' "$$"
+printf '{"type":"turn.started"}\n'
+printf '{"type":"item.completed","item":{"id":"i","type":"agent_message","text":"env=%s"}}\n' "$names"
+printf '{"type":"turn.completed","usage":{"input_tokens":1,"cached_input_tokens":0,"output_tokens":1}}\n'
+SH
+    chmod +x "$producer"
+
+    run --separate-stderr env CODEX_EXEC_BIN="$producer" \
+        bash "$HARNESS" --probe demo --live --reps 2 --fixtures fixtures-env
+
+    [ "$status" -eq 0 ]
+    local text names declared
+    text="$(transcript_message "$PROBE_DIR/fixtures-env" control-1)"
+    names="${text#env=}"
+    declared="$(python3 -c '
+import json, sys
+print(" ".join(sorted(json.loads(sys.argv[1])["seal"]["env_allowlist"])))
+' "$output")"
+    # Set equality: nothing the rep sees is undeclared, and nothing declared is
+    # missing.
+    run python3 -c '
+import sys
+seen = set(sys.argv[1].split())
+declared = set(sys.argv[2].split())
+extra = sorted(seen - declared)
+missing = sorted(declared - seen)
+print("extra:", extra, "missing:", missing)
+raise SystemExit(0 if not extra and not missing else 1)
+' "$names" "$declared"
+    [ "$status" -eq 0 ]
+    # The readonly exports that used to survive are gone.
+    [[ "$names" != *SHELLOPTS* ]]
+    [[ "$names" != *BASHOPTS* ]]
+}

@@ -119,6 +119,7 @@ payload = {
     "launcher_chain": [launcher] if sealed else [],
     "launcher_sha256": launcher_sha if sealed else "",
     "timeout_bin": "/opt/homebrew/bin/timeout" if sealed else "",
+    "timeout_seconds": 240 if sealed else 0,
     "env_allowlist": ["PATH", "HOME", "CODEX_HOME", "TMPDIR"],
     "rep_env": {
         "HOME": run_root + "/home",
@@ -182,6 +183,44 @@ snapshot() {
         --requested-effort low "$@"
 }
 
+# write_network_log DIR REPS — the proxy log a sealed fixture set publishes.
+# One accepted CONNECT per rep, as an attempt paired with its decision, which is
+# the shape the verifier now requires.
+write_network_log() {
+    python3 - "$1" "${2:-2}" <<'NETLOGPY'
+import json, pathlib, sys
+
+directory = pathlib.Path(sys.argv[1])
+reps = int(sys.argv[2])
+contract = directory / "capture-contract.json"
+# Only a seatbelt capture publishes a log: the transcripts of any other mode
+# bind no egress, and a log with nothing to check against is refused.
+if not contract.is_file():
+    raise SystemExit(0)
+seal = json.loads(contract.read_text()).get("seal") or {}
+if seal.get("mode") != "seatbelt" or "network" not in seal:
+    raise SystemExit(0)
+lines = []
+for rep in range(1, reps + 1):
+    for arm in ("control", "treatment"):
+        key = f"{arm}-{rep}"
+        for decision in ("attempt", "allowed"):
+            lines.append(
+                json.dumps(
+                    {
+                        "decision": decision,
+                        "host": "chatgpt.com",
+                        "port": 443,
+                        "rep": key,
+                        "ts": "2026-09-03T00:00:00Z",
+                    },
+                    sort_keys=True,
+                )
+            )
+(directory / "network.log").write_text("\n".join(lines) + "\n")
+NETLOGPY
+}
+
 write_transcript() {
     local directory="$1" name="$2" body="$3"
     python3 - "$directory" "$name" "$body" <<'PY'
@@ -208,10 +247,21 @@ if seal.get("mode") == "seatbelt" and seal.get("workspace_root"):
     event["workspace"] = seal["workspace_root"]
     event["workspace_reset"] = True
     if "network" in seal:
+        import hashlib
+
+        log_path = directory / "network.log"
+        own = [
+            line
+            for line in log_path.read_text().splitlines()
+            if line.strip() and json.loads(line).get("rep") == name
+        ]
+        blob = ("\n".join(own) + "\n").encode() if own else b""
         event["network_egress"] = {
-            "allowed": 3,
+            "allowed": sum(
+                1 for line in own if json.loads(line)["decision"] == "allowed"
+            ),
             "refused": 0,
-            "log_sha256": "sha256:" + "c" * 64,
+            "log_sha256": "sha256:" + hashlib.sha256(blob).hexdigest(),
         }
 events = [
     event,
@@ -388,6 +438,7 @@ PY
     local directory="$PROBE_DIR/fixtures-noseal"
     mkdir -p "$directory"
     snapshot "$directory" >/dev/null
+    write_network_log "$directory"
     rebind_contract "$directory/capture-contract.json" 'contract.pop("seal")'
 
     run python3 "$META_TOOL" capture-file --fixture-dir "$directory" --probe demo --name question.md
@@ -401,6 +452,7 @@ PY
     local directory="$PROBE_DIR/fixtures-claim"
     mkdir -p "$directory"
     snapshot "$directory" >/dev/null
+    write_network_log "$directory"
     rebind_contract "$directory/capture-contract.json" \
         'contract["producer_request"]["identity"]["coverage_eligible"] = True'
 
@@ -414,6 +466,7 @@ PY
     local directory="$PROBE_DIR/fixtures-legacy"
     mkdir -p "$directory"
     snapshot "$directory" >/dev/null
+    write_network_log "$directory"
     rebind_contract "$directory/capture-contract.json" '
 contract.pop("seal")
 contract["schema"] = "agentops-skill-probe-capture.v2"
@@ -439,6 +492,7 @@ contract["producer_request"]["identity"]["coverage_eligible"] = True
     mapfile -t roots < <(full_denied_roots)
     write_seal "$directory/seal.json" seatbelt "${roots[@]}"
     snapshot "$directory" >/dev/null
+    write_network_log "$directory"
     for rep in 1 2; do
         write_transcript "$directory" "control-$rep" ABSENT
         write_transcript "$directory" "treatment-$rep" ACTION
@@ -460,6 +514,7 @@ contract["producer_request"]["identity"]["coverage_eligible"] = True
     mapfile -t roots < <(full_denied_roots)
     write_seal "$directory/seal.json" seatbelt "${roots[@]}"
     snapshot "$directory" >/dev/null
+    write_network_log "$directory"
     for rep in 1 2; do
         write_transcript "$directory" "control-$rep" ABSENT
         write_transcript "$directory" "treatment-$rep" ACTION
@@ -514,10 +569,21 @@ if seal.get("mode") == "seatbelt" and seal.get("workspace_root"):
     event["workspace"] = seal["workspace_root"]
     event["workspace_reset"] = True
     if "network" in seal:
+        import hashlib
+
+        log_path = directory / "network.log"
+        own = [
+            line
+            for line in log_path.read_text().splitlines()
+            if line.strip() and json.loads(line).get("rep") == name
+        ]
+        blob = ("\n".join(own) + "\n").encode() if own else b""
         event["network_egress"] = {
-            "allowed": 3,
+            "allowed": sum(
+                1 for line in own if json.loads(line)["decision"] == "allowed"
+            ),
             "refused": 0,
-            "log_sha256": "sha256:" + "c" * 64,
+            "log_sha256": "sha256:" + hashlib.sha256(blob).hexdigest(),
         }
 events = [
     event,
@@ -549,6 +615,7 @@ score() {
     local directory="$PROBE_DIR/fixtures-sibling"
     mkdir -p "$directory"
     snapshot "$directory" >/dev/null
+    write_network_log "$directory"
     write_command_transcript "$directory" control-1 ACTION \
         "/bin/zsh -lc \"sed -n '1,220p' treatment-1.prompt; sed -n '1,220p' control-1.prompt\"" \
         "---\nname: demo-skill\nCANONICAL_ACTION\n"
@@ -580,6 +647,7 @@ score() {
     local directory="$PROBE_DIR/fixtures-skillread"
     mkdir -p "$directory"
     snapshot "$directory" >/dev/null
+    write_network_log "$directory"
     write_transcript "$directory" control-1 ABSENT
     write_command_transcript "$directory" control-2 ACTION \
         "/bin/zsh -lc 'cat /somewhere/skills/demo-skill/SKILL.md'" "CANONICAL_ACTION"
@@ -618,6 +686,7 @@ REASONPY
     mapfile -t roots < <(full_denied_roots)
     write_seal "$directory/seal.json" seatbelt "${roots[@]}"
     snapshot "$directory" >/dev/null
+    write_network_log "$directory"
 
     run coverage_reason "$contract"
     [ "$status" -eq 0 ]
@@ -652,6 +721,7 @@ contract["seal"]["mechanism"] = None
     mapfile -t roots < <(full_denied_roots)
     write_seal "$directory/seal.json" seatbelt "${roots[@]}"
     snapshot "$directory" >/dev/null
+    write_network_log "$directory"
 
     rebind_contract "$contract" '
 contract["seal"]["denied_read_roots"] = [
@@ -659,12 +729,13 @@ contract["seal"]["denied_read_roots"] = [
 ]
 '
     run coverage_reason "$contract"
-    [[ "$output" == *"denied_read_roots omit"* ]]
-    [[ "$output" == *"/private/tmp"* ]]
+    [[ "$output" == *"denied for BOTH reads and links"* ]]
+    [[ "$output" == *"read-denied: /private/tmp"* ]]
 
     write_seal "$directory/seal.json" seatbelt "${roots[@]}"
     rm "$contract"
     snapshot "$directory" >/dev/null
+    write_network_log "$directory"
     rebind_contract "$contract" 'contract["seal"]["config_sanitized"] = None'
     run coverage_reason "$contract"
     [[ "$output" == *"producer config to be generated"* ]]
@@ -681,7 +752,8 @@ contract["seal"]["auth_copied"] = True
 contract["seal"]["denied_link_roots"] = []
 '
     run coverage_reason "$contract"
-    [[ "$output" == *"link and clone to be denied"* ]]
+    [[ "$output" == *"denied for BOTH reads and links"* ]]
+    [[ "$output" == *"link-denied:"* ]]
 
     rebind_contract "$contract" '
 seal = contract["seal"]
@@ -700,6 +772,7 @@ seal["rep_env"]["HOME"] = seal["original_home"] + "/scratch"
     mapfile -t roots < <(full_denied_roots)
     write_seal "$directory/seal.json" seatbelt "${roots[@]}"
     snapshot "$directory" >/dev/null
+    write_network_log "$directory"
     rm "$directory/seal.json"
     rebind_contract "$contract" '
 keep = {
@@ -725,6 +798,7 @@ contract["seal"] = {k: v for k, v in contract["seal"].items() if k in keep}
     mapfile -t roots < <(full_denied_roots)
     write_seal "$directory/seal.json" seatbelt "${roots[@]}"
     snapshot "$directory" >/dev/null
+    write_network_log "$directory"
     for rep in 1 2; do
         write_transcript "$directory" "control-$rep" ABSENT
         write_transcript "$directory" "treatment-$rep" ACTION
@@ -754,6 +828,7 @@ STRIPPY
     mapfile -t roots < <(full_denied_roots)
     write_seal "$directory/seal.json" seatbelt "${roots[@]}"
     snapshot "$directory" >/dev/null
+    write_network_log "$directory"
     for rep in 1 2; do
         write_transcript "$directory" "control-$rep" ABSENT
         write_transcript "$directory" "treatment-$rep" ACTION
@@ -777,6 +852,7 @@ MOVEPY
     local directory="$PROBE_DIR/fixtures-runnames"
     mkdir -p "$directory"
     snapshot "$directory" >/dev/null
+    write_network_log "$directory"
     write_command_transcript "$directory" control-1 ACTION \
         "/bin/zsh -lc 'cat /private/tmp/probe-run.Ab12Cd/dispatch/treatment-1.prompt'" ""
     write_command_transcript "$directory" control-2 ACTION \
@@ -860,6 +936,7 @@ MOVEPY
     mapfile -t roots < <(full_denied_roots)
     write_seal "$directory/seal.json" seatbelt "${roots[@]}"
     snapshot "$directory" >/dev/null
+    write_network_log "$directory"
 
     # Positive: the record the harness renderer produced rebuilds exactly.
     run coverage_reason "$directory/capture-contract.json"
@@ -879,6 +956,7 @@ contract["seal"]["writable_roots"] = ["/"]
     write_seal "$directory/seal.json" seatbelt "${roots[@]}"
     rm "$contract"
     snapshot "$directory" >/dev/null
+    write_network_log "$directory"
     rebind_contract "$contract" '
 seal = contract["seal"]
 seal["allowed_read_paths"] = seal["allowed_read_paths"] + [seal["git_common_root"] + "/skills/x/SKILL.md"]
@@ -919,6 +997,7 @@ seal["denied_read_roots"] = seal["denied_read_roots"] + ["/extra-allowance"]
     mapfile -t roots < <(full_denied_roots)
     write_seal "$directory/seal.json" seatbelt "${roots[@]}"
     snapshot "$directory" >/dev/null
+    write_network_log "$directory"
 
     rebind_contract "$contract" 'contract["seal"]["network"]["mode"] = "open"'
     run coverage_reason "$contract"
@@ -942,6 +1021,7 @@ seal["network"]["hosts"] = []
     mapfile -t roots < <(full_denied_roots)
     write_seal "$directory/seal.json" seatbelt "${roots[@]}"
     snapshot "$directory" >/dev/null
+    write_network_log "$directory"
 
     rebind_contract "$contract" '
 seal = contract["seal"]
@@ -1112,6 +1192,7 @@ PY
     mapfile -t roots < <(full_denied_roots)
     write_seal "$directory/seal.json" seatbelt "${roots[@]}"
     snapshot "$directory" >/dev/null
+    write_network_log "$directory"
 
     run coverage_reason "$contract"
     [ "$output" = "ELIGIBLE" ]
@@ -1158,6 +1239,7 @@ seal["network"]["mode"] = "proxy-custom"
     mapfile -t roots < <(full_denied_roots)
     write_seal "$directory/seal.json" seatbelt "${roots[@]}"
     snapshot "$directory" >/dev/null
+    write_network_log "$directory"
 
     # A CODEX_HOME configured outside the operator home was recorded and never
     # required, so a seal could name it and deny nothing.
@@ -1168,17 +1250,18 @@ contract["seal"]["denied_read_roots"] = [
 ]
 '
     run coverage_reason "$contract"
-    [[ "$output" == *"denied_read_roots omit"* ]]
+    [[ "$output" == *"denied for BOTH reads and links"* ]]
     [[ "$output" == *"/private/tmp/elsewhere/.codex"* ]]
 
     write_seal "$directory/seal.json" seatbelt "${roots[@]}"
     rm "$contract"
     snapshot "$directory" >/dev/null
+    write_network_log "$directory"
     rebind_contract "$contract" '
 contract["seal"]["cache_root"] = "/private/var/folders/elsewhere/C"
 '
     run coverage_reason "$contract"
-    [[ "$output" == *"denied_read_roots omit"* ]]
+    [[ "$output" == *"denied for BOTH reads and links"* ]]
     [[ "$output" == *"/private/var/folders/elsewhere/C"* ]]
 }
 
@@ -1190,6 +1273,7 @@ contract["seal"]["cache_root"] = "/private/var/folders/elsewhere/C"
     mapfile -t roots < <(full_denied_roots)
     write_seal "$directory/seal.json" seatbelt "${roots[@]}"
     snapshot "$directory" >/dev/null
+    write_network_log "$directory"
 
     rebind_contract "$contract" '
 contract["seal"]["writable_roots"] = contract["seal"]["writable_roots"] + ["/private/tmp/elsewhere"]
@@ -1243,4 +1327,187 @@ seal["allowed_read_paths"] = list(seal["launcher_chain"])
     [[ "$output" == *"unknown fields"* ]]
     [[ "$output" == *"extra_capability"* ]]
     [ ! -e "$directory/capture-contract.json" ]
+}
+
+@test "a required root that is read-denied but not link-denied is not coverage" {
+    local directory="$PROBE_DIR/fixtures-linkgap"
+    local contract="$directory/capture-contract.json"
+    mkdir -p "$directory"
+    local -a roots
+    mapfile -t roots < <(full_denied_roots)
+    write_seal "$directory/seal.json" seatbelt "${roots[@]}"
+    snapshot "$directory" >/dev/null
+    write_network_log "$directory"
+
+    # A hard link or a clone turns a denied file into a readable one, so a root
+    # that is read-denied and not link-denied is not actually denied. Coverage
+    # only checked the checkout and the home for link denies.
+    rebind_contract "$contract" '
+seal = contract["seal"]
+# The cache root is only covered by the temp-root entry, so dropping that entry
+# leaves it read-denied and link-open, which is the gap under test.
+seal["denied_link_roots"] = [
+    root for root in seal["denied_link_roots"] if root != "/private/tmp"
+]
+'
+    run coverage_reason "$contract"
+    [[ "$output" == *"denied for BOTH reads and links"* ]]
+    [[ "$output" == *"link-denied:"* ]]
+}
+
+@test "a null cache root is not coverage even when nothing else changed" {
+    local directory="$PROBE_DIR/fixtures-nullcache"
+    local contract="$directory/capture-contract.json"
+    mkdir -p "$directory"
+    local -a roots
+    mapfile -t roots < <(full_denied_roots)
+    write_seal "$directory/seal.json" seatbelt "${roots[@]}"
+    snapshot "$directory" >/dev/null
+    write_network_log "$directory"
+
+    # A falsy value used to make the root VANISH from the required list, so
+    # nulling the field meant nothing had to be denied.
+    rebind_contract "$contract" 'contract["seal"]["cache_root"] = None'
+    run coverage_reason "$contract"
+    [[ "$output" == *"cache_root is null"* ]]
+
+    rebind_contract "$contract" '
+contract["seal"]["cache_root"] = "/private/tmp/fixture-cache"
+contract["seal"]["real_codex_home"] = None
+'
+    run coverage_reason "$contract"
+    [ "$status" -ne 0 ] || [[ "$output" == *"real_codex_home"* ]]
+}
+
+@test "a timeout budget of zero is not coverage even with a timeout binary" {
+    local directory="$PROBE_DIR/fixtures-nobudget"
+    local contract="$directory/capture-contract.json"
+    mkdir -p "$directory"
+    local -a roots
+    mapfile -t roots < <(full_denied_roots)
+    write_seal "$directory/seal.json" seatbelt "${roots[@]}"
+    snapshot "$directory" >/dev/null
+    write_network_log "$directory"
+
+    # `--timeout 0` omitted the wrapper entirely while the record still named a
+    # binary, so an unbounded run looked exactly like a bounded one.
+    rebind_contract "$contract" '
+seal = contract["seal"]
+seal["timeout_seconds"] = 0
+seal["wrap"] = [seal["sandbox_exec"], "-p", seal["profile_sha256"]]
+'
+    run coverage_reason "$contract"
+    [[ "$output" == *"positive timeout budget"* ]]
+}
+
+@test "a launcher chain with an unrelated file prepended is not coverage" {
+    local directory="$PROBE_DIR/fixtures-chain"
+    local contract="$directory/capture-contract.json"
+    mkdir -p "$directory"
+    local -a roots
+    mapfile -t roots < <(full_denied_roots)
+    write_seal "$directory/seal.json" seatbelt "${roots[@]}"
+    snapshot "$directory" >/dev/null
+    write_network_log "$directory"
+
+    # Existence alone let any file be called a launcher. A chain is a symlink
+    # walk: entry N is a symlink to entry N+1 and only the last is a real file.
+    printf 'CANONICAL_ACTION\n' > "$REAL_HOME/decoy"
+    rebind_contract "$contract" '
+seal = contract["seal"]
+decoy = seal["original_home"] + "/decoy"
+seal["launcher_chain"] = [decoy] + seal["launcher_chain"]
+seal["allowed_read_paths"] = list(seal["launcher_chain"])
+'
+    run coverage_reason "$contract"
+    [[ "$output" == *"symlink to the next"* ]]
+}
+
+@test "a published proxy log with a null rep or an unpaired attempt is refused" {
+    local log="$BATS_TEST_TMPDIR/strict.log"
+    local directory="$PROBE_DIR/fixtures-strictlog"
+    mkdir -p "$directory"
+
+    # A refusal logged with no rep belonged to no rep, so a per-rep filter made
+    # it invisible: exactly the shape an unattributed egress would take.
+    printf '%s\n' \
+        '{"decision": "attempt", "host": "chatgpt.com", "port": 443, "rep": null, "ts": "t"}' \
+        > "$log"
+    run python3 - "$META_TOOL" "$log" <<'PY'
+import importlib.util, sys
+spec = importlib.util.spec_from_file_location("m", sys.argv[1])
+m = importlib.util.module_from_spec(spec); spec.loader.exec_module(m)
+try:
+    m.parse_proxy_log(open(sys.argv[2], "rb").read())
+except m.MetadataError as exc:
+    print("REFUSED:", exc)
+else:
+    print("ACCEPTED")
+PY
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"REFUSED"* ]]
+    [[ "$output" == *"belongs to no rep"* ]]
+
+    # An attempt with no decision is a connection whose fate the log does not
+    # record; a decision with no attempt is a decision from nowhere.
+    printf '%s\n' \
+        '{"decision": "attempt", "host": "chatgpt.com", "port": 443, "rep": "control-1", "ts": "t"}' \
+        > "$directory/network.log"
+    run python3 - "$META_TOOL" "$directory" <<'PY'
+import importlib.util, pathlib, sys
+spec = importlib.util.spec_from_file_location("m", sys.argv[1])
+m = importlib.util.module_from_spec(spec); spec.loader.exec_module(m)
+try:
+    m.verify_network_log(pathlib.Path(sys.argv[2]), [])
+except m.MetadataError as exc:
+    print("REFUSED:", exc)
+else:
+    print("ACCEPTED")
+PY
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"REFUSED"* ]]
+    [[ "$output" == *"decision(s)"* ]]
+
+    # An unknown field is a shape the reader cannot check.
+    printf '%s\n' \
+        '{"decision": "allowed", "host": "h", "port": 443, "rep": "control-1", "ts": "t", "extra": 1}' \
+        > "$log"
+    run python3 - "$META_TOOL" "$log" <<'PY'
+import importlib.util, sys
+spec = importlib.util.spec_from_file_location("m", sys.argv[1])
+m = importlib.util.module_from_spec(spec); spec.loader.exec_module(m)
+try:
+    m.parse_proxy_log(open(sys.argv[2], "rb").read())
+except m.MetadataError as exc:
+    print("REFUSED:", exc)
+else:
+    print("ACCEPTED")
+PY
+    [[ "$output" == *"unknown fields"* ]]
+}
+
+@test "the permitted config growth must be trust_level with a value codex writes" {
+    local base="$BATS_TEST_TMPDIR/cfgbase.toml"
+    local live="$BATS_TEST_TMPDIR/cfglive.toml"
+    python3 "$META_TOOL" probe-config --effort low --target "$base" >/dev/null
+
+    # An empty table is not codex writing its trust entry.
+    cp "$base" "$live"
+    printf '\n[projects."/run/ws"]\n' >> "$live"
+    run python3 "$META_TOOL" config-drift --path "$live" \
+        --expected-file "$base" --workspace /run/ws
+    [[ "$output" == *"exactly trust_level"* ]]
+
+    # Neither is a differently typed or unexpected value.
+    cp "$base" "$live"
+    printf '\n[projects."/run/ws"]\ntrust_level = 7\n' >> "$live"
+    run python3 "$META_TOOL" config-drift --path "$live" \
+        --expected-file "$base" --workspace /run/ws
+    [[ "$output" == *"not one codex writes"* ]]
+
+    cp "$base" "$live"
+    printf '\n[projects."/run/ws"]\ntrust_level = "trusted"\n' >> "$live"
+    run python3 "$META_TOOL" config-drift --path "$live" \
+        --expected-file "$base" --workspace /run/ws
+    [ "$output" = '{"findings":[]}' ]
 }
