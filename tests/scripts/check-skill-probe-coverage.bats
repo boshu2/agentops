@@ -240,6 +240,9 @@ write_seal() {
         omit-checkout) roots=("${roots[@]:1}") ;;
         omit-skill-root) roots=("${roots[@]:0:4}"); tail_roots=(/private/tmp) ;;
         omit-temp-root) tail_roots=("$REAL_HOME") ;;
+        # A chain whose paths do not exist on this host: the shape a capture
+        # from another machine has everywhere except the machine that made it.
+        absent-launcher) ;;
         symlinked-skill-root)
             mkdir -p "$BATS_TEST_TMPDIR/home/.claude"
             ln -s "$FIX/skills" "$BATS_TEST_TMPDIR/home/.claude/skills"
@@ -275,6 +278,9 @@ sealed = spec != "none"
 run_root = "/private/tmp/probe-run.aaaaaa"
 dispatch = run_root + "/dispatch"
 launcher = real_home + "/bin/codex"
+if spec == "absent-launcher":
+    # Absolute, structurally sound, and nowhere on this filesystem.
+    launcher = "/nonexistent-launcher-root/bin/codex"
 
 payload = {
     "seal_mode": "seatbelt" if sealed else "none",
@@ -293,7 +299,12 @@ payload = {
     "allowed_read_paths": (
         [launcher] if sealed and any(launcher.startswith(root) for root in denied) else []
     ),
-    "launcher_chain": [launcher] if sealed else [],
+    # The chain is recorded as structure: this fixture is a one-entry chain, the
+    # binary itself, so its head is also its only file entry.
+    "launcher_chain": (
+        [{"path": launcher, "kind": "file", "sha256": launcher_sha}] if sealed else []
+    ),
+    "launcher_invoked": launcher if sealed else "",
     "launcher_sha256": launcher_sha if sealed else "",
     "timeout_bin": "/opt/homebrew/bin/timeout" if sealed else "",
     "timeout_seconds": 240 if sealed else 0,
@@ -877,17 +888,54 @@ PY
     run --separate-stderr bash "$GATE" --json
 
     [ "$status" -eq 0 ]
-    # The denominator is whatever the frontmatter declares minus the declared
-    # exclusions; what this test pins is the HONEST headline, not a number that
-    # moves with the catalog. Every sealed row is recaptured after a harness
-    # change (the evaluator hash moves with the bytes); premortem's rows were
-    # recaptured under the final seal on 2026-09-03 (the fifth capture that
-    # day, after the fourth pass moved the evaluator identity once more), so
-    # the headline is 1/12.
-    # The evaluator identity a scorecard binds moves with every harness change,
-    # so the sealed rows read as unverified until the orchestrator recaptures.
-    [ "$(json_field "$output" measured)" = "1" ]
-    [ "$(json_field "$output" unmeasured_count)" = "11" ]
+    # What this pins is the property PR #1101 broke, not a number that moves
+    # with the catalog or with the next recapture: the gate's answer must be the
+    # SAME on a host that has the capturing machine's launcher chain and on one
+    # that does not. Before this, the sealed sets counted on the Mac that
+    # captured them and read seal-incomplete on the Linux runner, because
+    # coverage walked `/Users/bo/...` on the verifying filesystem.
+    local with_chain
+    with_chain="$output"
+
+    # The same gate, with the chain made absent: a shim patches os.path.lexists
+    # to deny the launcher paths, which is exactly the condition a host without
+    # the chain is in.
+    local shim="$BATS_TEST_TMPDIR/absent-chain-tool.py"
+    cat > "$shim" <<'SHIM'
+#!/usr/bin/env python3
+"""Run the real metadata tool as if this host had no launcher chain."""
+import importlib.util
+import os
+import os.path
+import sys
+
+real = os.environ["PROBE_REAL_METADATA_TOOL"]
+_lexists = os.path.lexists
+
+
+def lexists(path):
+    # Only the launcher entries: everything else must resolve normally or the
+    # simulation would change what the roots cover.
+    if os.path.basename(str(path)) in {"codex", "codex-link"}:
+        return False
+    return _lexists(path)
+
+
+os.path.lexists = lexists
+spec = importlib.util.spec_from_file_location("probe_tool_under_shim", real)
+module = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(module)
+raise SystemExit(module.main())
+SHIM
+    chmod +x "$shim"
+
+    run --separate-stderr env \
+        PROBE_REAL_METADATA_TOOL="$REPO_ROOT/scripts/lib/probe-fixture-metadata.py" \
+        SKILL_PROBE_METADATA_TOOL="$shim" \
+        bash "$GATE" --json
+    [ "$status" -eq 0 ]
+    # Byte-identical answers: same measured count, same per-set rows.
+    [ "$output" = "$with_chain" ]
 
     # M2V-02: EVERY ledger row that names a scorecard gets an eligibility line,
     # including the 2026-08-26 WITHDRAWN row the README cites as the example of
@@ -1098,4 +1146,55 @@ PY
     [ "$status" -eq 0 ]
     [[ "$output" == *'"eligible":false,"reason":"evaluator-stale"'* ]]
     [[ "$stderr" == *"evaluator-stale"* ]]
+}
+
+@test "a set whose launcher chain is absent on this host still counts" {
+    # PR #1101 CI: `seal_coverage_failure` walked the chain on the live
+    # filesystem, so both sealed sets read seal-incomplete on the Linux runner
+    # and `measured` was 0 there and 1 on the capturing Mac. A pin that only
+    # holds on one host is not a pin. The chain here names paths that exist on
+    # NO host, and the set counts because the record is structurally sound.
+    make_skill foo product
+    make_bound_result foo probe-foo BEHAVIORAL canonical-skill "" absent-launcher
+    write_ledger "foo | probe-foo | 2026-09-04 | BEHAVIORAL | scorecard: \`$BOUND_SCORECARD_REL\`"
+
+    [ ! -e /nonexistent-launcher-root/bin/codex ]
+
+    run --separate-stderr bash "$GATE" --json
+    [ "$status" -eq 0 ]
+    [ "$(json_field "$output" measured)" = "1" ]
+    [[ "$output" == *'"eligible":true,"reason":"verified"'* ]]
+
+    # And the verifier says which of the two things it did.
+    run python3 "$META_TOOL" verify-scorecard \
+        --repo-root "$FIX" --skills-dir "$SKILL_PROBE_SKILLS_DIR" \
+        --scorecard "$BOUND_SCORECARD_REL" \
+        --ledger-skill foo --ledger-probe probe-foo --ledger-verdict BEHAVIORAL
+    [ "$status" -eq 0 ]
+    [[ "$output" == *'"launcher_chain_host_check":"skipped-absent"'* ]]
+}
+
+@test "a set whose launcher chain IS on this host reports the cross-check" {
+    make_skill foo product
+    make_bound_result foo probe-foo BEHAVIORAL
+    write_ledger "foo | probe-foo | 2026-09-04 | BEHAVIORAL | scorecard: \`$BOUND_SCORECARD_REL\`"
+
+    [ -f "$REAL_HOME/bin/codex" ]
+
+    run bash "$GATE" --strict
+    [ "$status" -eq 0 ]
+
+    run python3 "$META_TOOL" verify-scorecard \
+        --repo-root "$FIX" --skills-dir "$SKILL_PROBE_SKILLS_DIR" \
+        --scorecard "$BOUND_SCORECARD_REL" \
+        --ledger-skill foo --ledger-probe probe-foo --ledger-verdict BEHAVIORAL
+    [ "$status" -eq 0 ]
+    [[ "$output" == *'"launcher_chain_host_check":"performed"'* ]]
+
+    # The cross-check is real: change the binary the record digests and the set
+    # stops counting on the host that has it.
+    printf 'tampered\n' >> "$REAL_HOME/bin/codex"
+    run --separate-stderr bash "$GATE" --strict
+    [ "$status" -eq 1 ]
+    [[ "$stderr" == *"this host has"* ]]
 }

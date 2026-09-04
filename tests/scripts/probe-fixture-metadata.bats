@@ -116,7 +116,12 @@ payload = {
     # The launcher lives under the denied temp root, so the seal must re-allow
     # exactly it and coverage must be able to re-derive that from the chain.
     "allowed_read_paths": [launcher] if sealed else [],
-    "launcher_chain": [launcher] if sealed else [],
+    # The chain is recorded as structure: this fixture is a one-entry chain, the
+    # binary itself, so its head is also its only file entry.
+    "launcher_chain": (
+        [{"path": launcher, "kind": "file", "sha256": launcher_sha}] if sealed else []
+    ),
+    "launcher_invoked": launcher if sealed else "",
     "launcher_sha256": launcher_sha if sealed else "",
     "timeout_bin": "/opt/homebrew/bin/timeout" if sealed else "",
     "timeout_seconds": 240 if sealed else 0,
@@ -343,6 +348,33 @@ canonical = json.dumps(payload, ensure_ascii=False, sort_keys=True, separators=(
 contract["binding_sha256"] = "sha256:" + hashlib.sha256(canonical).hexdigest()
 open(path, "w").write(json.dumps(contract, indent=2, sort_keys=True) + "\n")
 PY
+}
+
+# rebind_contract_profile PATH PYTHON_SNIPPET — mutate a contract, then
+# RE-RENDER its profile and re-stamp the digest and the wrap before rebinding.
+# Mutating `allowed_read_paths` changes the profile the block renders to, so
+# without this the profile-digest check fires first and the rule under test is
+# never reached.
+rebind_contract_profile() {
+    python3 - "$META_TOOL" "$1" "$2" <<'REBINDPY'
+import hashlib, importlib.util, json, sys
+
+spec = importlib.util.spec_from_file_location("probe_fixture_metadata", sys.argv[1])
+module = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(module)
+path = sys.argv[2]
+contract = json.load(open(path, encoding="utf-8"))
+exec(sys.argv[3], {"contract": contract})
+seal = contract["seal"]
+profile = module.render_seal_profile(module.validate_seal(seal))
+digest = "sha256:" + hashlib.sha256(profile.encode()).hexdigest()
+seal["profile_sha256"] = digest
+seal["wrap"] = [seal["wrap"][0], "-p", digest] + list(seal["wrap"][3:])
+payload = {key: value for key, value in contract.items() if key != "binding_sha256"}
+canonical = json.dumps(payload, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode()
+contract["binding_sha256"] = "sha256:" + hashlib.sha256(canonical).hexdigest()
+open(path, "w").write(json.dumps(contract, indent=2, sort_keys=True) + "\n")
+REBINDPY
 }
 
 # edit_seal PATH PYTHON_SNIPPET — mutate a seal record in place (no rebind).
@@ -966,7 +998,7 @@ seal["allowed_read_paths"] = seal["allowed_read_paths"] + [seal["git_common_root
 
     rebind_contract "$contract" '
 seal = contract["seal"]
-seal["allowed_read_paths"] = [seal["launcher_chain"][0]]
+seal["allowed_read_paths"] = [seal["launcher_chain"][0]["path"]]
 seal["real_tmpdir"] = None
 '
     run coverage_reason "$contract"
@@ -1294,18 +1326,34 @@ contract["seal"]["env_allowlist"] = contract["seal"]["env_allowlist"] + ["AWS_SE
     [[ "$output" == *"AWS_SECRET_ACCESS_KEY"* ]]
 
     write_seal "$directory/seal.json" seatbelt "${roots[@]}"; rm "$contract"; snapshot "$directory" >/dev/null
-    rebind_contract "$contract" '
+    write_network_log "$directory"
+    # A chain whose paths are absent on THIS host is still fine: the record is
+    # the evidence, and a pin that only held where the capture happened is what
+    # broke CI. What is refused is a chain the record itself contradicts.
+    rebind_contract_profile "$contract" '
 seal = contract["seal"]
-seal["launcher_chain"] = [seal["original_home"] + "/bin/does-not-exist"]
-seal["allowed_read_paths"] = list(seal["launcher_chain"])
+entry = dict(seal["launcher_chain"][0])
+entry["path"] = "/nonexistent-root/bin/codex"
+seal["launcher_chain"] = [entry]
+seal["launcher_invoked"] = entry["path"]
+seal["allowed_read_paths"] = []
 '
     run coverage_reason "$contract"
-    [[ "$output" == *"existing file"* ]]
+    [ "$output" = "ELIGIBLE" ]
 
     write_seal "$directory/seal.json" seatbelt "${roots[@]}"; rm "$contract"; snapshot "$directory" >/dev/null
+    write_network_log "$directory"
     rebind_contract "$contract" 'contract["seal"]["launcher_sha256"] = "sha256:" + "0" * 64'
     run coverage_reason "$contract"
-    [[ "$output" == *"digest of the last"* ]]
+    [[ "$output" == *"digest the chain"* ]]
+
+    write_seal "$directory/seal.json" seatbelt "${roots[@]}"; rm "$contract"; snapshot "$directory" >/dev/null
+    write_network_log "$directory"
+    rebind_contract "$contract" '
+contract["seal"]["launcher_invoked"] = "/nonexistent-root/bin/other"
+'
+    run coverage_reason "$contract"
+    [[ "$output" == *"start at the invoked launcher"* ]]
 
     write_seal "$directory/seal.json" seatbelt "${roots[@]}"; rm "$contract"; snapshot "$directory" >/dev/null
     rebind_contract "$contract" 'contract["seal"]["timeout_bin"] = None'
@@ -1411,16 +1459,115 @@ seal["wrap"] = [seal["sandbox_exec"], "-p", seal["profile_sha256"]]
     write_network_log "$directory"
 
     # Existence alone let any file be called a launcher. A chain is a symlink
-    # walk: entry N is a symlink to entry N+1 and only the last is a real file.
+    # walk: entry N is a symlink to entry N+1 and only the last is a real file,
+    # and the record says which is which so any host can check it.
     printf 'CANONICAL_ACTION\n' > "$REAL_HOME/decoy"
-    rebind_contract "$contract" '
+    rebind_contract_profile "$contract" '
 seal = contract["seal"]
 decoy = seal["original_home"] + "/decoy"
-seal["launcher_chain"] = [decoy] + seal["launcher_chain"]
-seal["allowed_read_paths"] = list(seal["launcher_chain"])
+seal["launcher_chain"] = [
+    {"path": decoy, "kind": "file", "sha256": seal["launcher_sha256"]}
+] + seal["launcher_chain"]
+seal["launcher_invoked"] = decoy
+seal["allowed_read_paths"] = [entry["path"] for entry in seal["launcher_chain"]]
 '
     run coverage_reason "$contract"
     [[ "$output" == *"symlink to the next"* ]]
+
+    # The same prepend declared as a symlink still fails: it points nowhere the
+    # chain continues to.
+    write_seal "$directory/seal.json" seatbelt "${roots[@]}"; rm "$contract"; snapshot "$directory" >/dev/null
+    write_network_log "$directory"
+    rebind_contract_profile "$contract" '
+seal = contract["seal"]
+decoy = seal["original_home"] + "/decoy"
+seal["launcher_chain"] = [
+    {"path": decoy, "kind": "symlink", "target": "/somewhere/else"}
+] + seal["launcher_chain"]
+seal["launcher_invoked"] = decoy
+seal["allowed_read_paths"] = [entry["path"] for entry in seal["launcher_chain"]]
+'
+    run coverage_reason "$contract"
+    [[ "$output" == *"adjacent"* ]]
+
+    # And a chain that repeats a path is refused outright.
+    write_seal "$directory/seal.json" seatbelt "${roots[@]}"; rm "$contract"; snapshot "$directory" >/dev/null
+    write_network_log "$directory"
+    rebind_contract_profile "$contract" '
+seal = contract["seal"]
+head = seal["launcher_chain"][0]["path"]
+seal["launcher_chain"] = [
+    {"path": head, "kind": "symlink", "target": head}
+] + seal["launcher_chain"]
+# Deduplicated, because allowed_read_paths refuses duplicates on its own: the
+# rule under test here is the chain's, not the allowance's.
+seal["allowed_read_paths"] = [head]
+'
+    run coverage_reason "$contract"
+    [[ "$output" == *"repeats a path"* ]]
+}
+
+@test "a launcher chain the host has is cross-checked against the filesystem" {
+    local directory="$PROBE_DIR/fixtures-hostcheck"
+    local contract="$directory/capture-contract.json"
+    mkdir -p "$directory"
+    local -a roots
+    mapfile -t roots < <(full_denied_roots)
+    write_seal "$directory/seal.json" seatbelt "${roots[@]}"
+    snapshot "$directory" >/dev/null
+    write_network_log "$directory"
+
+    # A REAL two-link chain under the fixture home: head is a symlink to the
+    # binary. The record is the evidence everywhere; where the host has the
+    # chain, the record must also agree with it.
+    ln -sf "$REAL_HOME/bin/codex" "$REAL_HOME/bin/codex-link"
+    rebind_contract_profile "$contract" '
+seal = contract["seal"]
+home = seal["original_home"]
+head = home + "/bin/codex-link"
+tail = seal["launcher_chain"][-1]
+seal["launcher_chain"] = [
+    {"path": head, "kind": "symlink", "target": tail["path"]},
+    tail,
+]
+seal["launcher_invoked"] = head
+seal["allowed_read_paths"] = [head, tail["path"]]
+'
+    run coverage_reason "$contract"
+    [ "$output" = "ELIGIBLE" ]
+
+    # Now the record says the head points somewhere the filesystem does not.
+    rebind_contract "$contract" '
+seal = contract["seal"]
+seal["launcher_chain"][0]["target"] = seal["original_home"] + "/bin/elsewhere"
+seal["launcher_chain"] = [seal["launcher_chain"][0]]
+seal["launcher_chain"][0]["kind"] = "symlink"
+seal["launcher_sha256"] = seal["launcher_sha256"]
+'
+    run coverage_reason "$contract"
+    # The record is self-inconsistent (a symlink as the last entry) OR the host
+    # disagrees; either way it is refused rather than counted.
+    [ "$output" != "ELIGIBLE" ]
+
+    # A record that is structurally sound but disagrees with the host it names.
+    write_seal "$directory/seal.json" seatbelt "${roots[@]}"; rm "$contract"; snapshot "$directory" >/dev/null
+    write_network_log "$directory"
+    rebind_contract_profile "$contract" '
+seal = contract["seal"]
+home = seal["original_home"]
+head = home + "/bin/codex-link"
+tail = dict(seal["launcher_chain"][-1])
+seal["launcher_chain"] = [
+    {"path": head, "kind": "symlink", "target": home + "/bin/not-the-target"},
+    {"path": home + "/bin/not-the-target", "kind": "file",
+     "sha256": tail["sha256"]},
+]
+seal["launcher_invoked"] = head
+seal["launcher_sha256"] = tail["sha256"]
+seal["allowed_read_paths"] = [entry["path"] for entry in seal["launcher_chain"]]
+'
+    run coverage_reason "$contract"
+    [[ "$output" == *"this host has"* ]]
 }
 
 @test "a published proxy log with a null rep or an unpaired attempt is refused" {
