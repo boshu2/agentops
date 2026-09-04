@@ -14,6 +14,7 @@ setup() {
     META_TOOL="$REPO_ROOT/scripts/lib/probe-fixture-metadata.py"
     PREAMBLE="$REPO_ROOT/scripts/lib/preamble.sh"
     DISPATCH_HELPER="$REPO_ROOT/scripts/lib/codex-exec.sh"
+    NETWORK_PROXY="$REPO_ROOT/scripts/lib/probe-connect-proxy.py"
 
     FIX="$BATS_TEST_TMPDIR/repo"
     PROBES="$FIX/evals/skill-probes"
@@ -22,10 +23,18 @@ setup() {
     cp "$META_TOOL" "$FIX/scripts/lib/probe-fixture-metadata.py"
     cp "$PREAMBLE" "$FIX/scripts/lib/preamble.sh"
     cp "$DISPATCH_HELPER" "$FIX/scripts/lib/codex-exec.sh"
-    mkdir -p "$FIX/test-bin"
+    # The CONNECT proxy is part of the evaluator identity a scorecard binds.
+    cp "$NETWORK_PROXY" "$FIX/scripts/lib/probe-connect-proxy.py"
+    # The fixture home lives OUTSIDE the fixture checkout so a checkout deny
+    # cannot cover a skill root by ancestry.
+    REAL_HOME="$(python3 -c 'import os,sys; print(os.path.realpath(sys.argv[1]))' "$BATS_TEST_TMPDIR")/home"
+    mkdir -p "$REAL_HOME/bin"
     # Synthetic unit-only runtime identity: it exercises the positive verifier
     # path but is neither persisted evidence nor a claim that a model was run.
-    cat > "$FIX/test-bin/codex" <<'SH'
+    # It lives under the fixture HOME because the verifier now ties the seal's
+    # launcher chain to the digest of the producer the manifest identifies, and
+    # the launcher exception only exists for a launcher under a denied root.
+    cat > "$REAL_HOME/bin/codex" <<'SH'
 #!/usr/bin/env bash
 if [[ "${1:-}" == "--version" ]]; then
     printf 'codex-cli synthetic-gate-test\n'
@@ -34,8 +43,8 @@ fi
 printf 'synthetic identity stub is not a live producer\n' >&2
 exit 70
 SH
-    chmod +x "$FIX/test-bin/codex"
-    export PATH="$FIX/test-bin:$PATH"
+    chmod +x "$REAL_HOME/bin/codex"
+    export PATH="$REAL_HOME/bin:$PATH"
     export SKILL_PROBE_SKILLS_DIR="$FIX/skills"
     export SKILL_PROBE_LEDGER_FILE="$PROBES/LEDGER.md"
     export SKILL_PROBE_EVIDENCE_ROOT="$FIX"
@@ -98,6 +107,44 @@ write_ledger() {
     } > "$ledger_file"
 }
 
+# write_network_log DIR REPS — the proxy log a sealed fixture set publishes.
+# One accepted CONNECT per rep, as an attempt paired with its decision, which is
+# the shape the verifier now requires.
+write_network_log() {
+    python3 - "$1" "${2:-2}" <<'NETLOGPY'
+import json, pathlib, sys
+
+directory = pathlib.Path(sys.argv[1])
+reps = int(sys.argv[2])
+contract = directory / "capture-contract.json"
+# Only a seatbelt capture publishes a log: the transcripts of any other mode
+# bind no egress, and a log with nothing to check against is refused.
+if not contract.is_file():
+    raise SystemExit(0)
+seal = json.loads(contract.read_text()).get("seal") or {}
+if seal.get("mode") != "seatbelt" or "network" not in seal:
+    raise SystemExit(0)
+lines = []
+for rep in range(1, reps + 1):
+    for arm in ("control", "treatment"):
+        key = f"{arm}-{rep}"
+        for decision in ("attempt", "allowed"):
+            lines.append(
+                json.dumps(
+                    {
+                        "decision": decision,
+                        "host": "chatgpt.com",
+                        "port": 443,
+                        "rep": key,
+                        "ts": "2026-09-03T00:00:00Z",
+                    },
+                    sort_keys=True,
+                )
+            )
+(directory / "network.log").write_text("\n".join(lines) + "\n")
+NETLOGPY
+}
+
 write_transcript() {
     local directory="$1" name="$2" body="$3"
     python3 - "$directory" "$name" "$body" <<'PY'
@@ -115,14 +162,36 @@ position = next(
     for item in contract["schedule"]
     if item["arm"] == arm and item["rep"] == rep
 )
+event = {
+    "type": "agentops.probe-input.v1",
+    "arm": arm,
+    "rep": rep,
+    "position": position,
+    "prompt": prompt,
+}
+seal = contract.get("seal") or {}
+if seal.get("mode") == "seatbelt" and seal.get("workspace_root"):
+    event["workspace"] = seal["workspace_root"]
+    event["workspace_reset"] = True
+    if "network" in seal:
+        import hashlib
+
+        log_path = directory / "network.log"
+        own = [
+            line
+            for line in log_path.read_text().splitlines()
+            if line.strip() and json.loads(line).get("rep") == name
+        ]
+        blob = ("\n".join(own) + "\n").encode() if own else b""
+        event["network_egress"] = {
+            "allowed": sum(
+                1 for line in own if json.loads(line)["decision"] == "allowed"
+            ),
+            "refused": 0,
+            "log_sha256": "sha256:" + hashlib.sha256(blob).hexdigest(),
+        }
 events = [
-    {
-        "type": "agentops.probe-input.v1",
-        "arm": arm,
-        "rep": rep,
-        "position": position,
-        "prompt": prompt,
-    },
+    event,
     {"type": "thread.started", "thread_id": f"gate-{directory.name}-{name}"},
     {"type": "turn.started"},
     {
@@ -140,12 +209,186 @@ events = [
 PY
 }
 
-# make_bound_result SKILL PROBE VERDICT [TREATMENT_SOURCE] [PRODUCER_OVERRIDE]
+# write_seal DIR SPEC — place the harness-shaped seal record
+# (agentops-skill-probe-seal.v1) the capture stage carries into `snapshot`.
+# `full` denies the checkout plus the four skill roots under the recorded real
+# home (a fixture home, so the test never depends on the operator's $HOME),
+# which is what a counted row must prove. `symlinked-skill-root` denies the
+# checkout but not the literal ~/.claude/skills, which is a symlink INTO the
+# checkout: the kernel seals the resolved path, so the row still counts.
+write_seal() {
+    local directory="$1" spec="$2"
+    local repo_real
+    repo_real="$(python3 -c 'import os,sys; print(os.path.realpath(sys.argv[1]))' "$FIX")"
+    # The fixture home lives OUTSIDE the fixture checkout so a checkout deny
+    # cannot cover a skill root by ancestry.
+    mkdir -p "$BATS_TEST_TMPDIR/home"
+    # A hardened seal denies the checkout, the four skill roots, the operator
+    # home itself and the real temp root that holds every other run's debris.
+    local -a roots=(
+        "$repo_real"
+        "$REAL_HOME/.agents"
+        "$REAL_HOME/.claude/skills"
+        "$REAL_HOME/.gemini/skills"
+        "$REAL_HOME/.codex/skills"
+    )
+    local -a tail_roots=("$REAL_HOME" /private/tmp)
+    case "$spec" in
+        absent|legacy) return 0 ;;
+        none) roots=(); tail_roots=() ;;
+        full) ;;
+        omit-checkout) roots=("${roots[@]:1}") ;;
+        omit-skill-root) roots=("${roots[@]:0:4}"); tail_roots=(/private/tmp) ;;
+        omit-temp-root) tail_roots=("$REAL_HOME") ;;
+        # A chain whose paths do not exist on this host: the shape a capture
+        # from another machine has everywhere except the machine that made it.
+        absent-launcher) ;;
+        symlinked-skill-root)
+            mkdir -p "$BATS_TEST_TMPDIR/home/.claude"
+            ln -s "$FIX/skills" "$BATS_TEST_TMPDIR/home/.claude/skills"
+            roots=("${roots[0]}" "${roots[1]}" "${roots[3]}" "${roots[4]}")
+            ;;
+        *) echo "unknown seal spec: $spec" >&2; return 1 ;;
+    esac
+    roots+=(${tail_roots[@]+"${tail_roots[@]}"})
+    # The record is written by the tool's OWN renderer, so the fixture profile
+    # and the fixture block relate exactly the way a real capture relates them.
+    local payload
+    payload="$(mktemp "$BATS_TEST_TMPDIR/seal-payload.XXXXXX")"
+    # The launcher exception is filesystem-checked: the PATH-resolved producer
+    # from setup(), under the denied fixture home, digest-matched to the seal.
+    local launcher_sha
+    launcher_sha="sha256:$(shasum -a 256 "$REAL_HOME/bin/codex" | cut -d" " -f1)"
+    # The config text is pinned to the generator's output for the bound effort,
+    # so the fixture takes it from the generator rather than restating it.
+    local config_file
+    config_file="$(mktemp "$BATS_TEST_TMPDIR/probe-config.XXXXXX")"
+    python3 "$META_TOOL" probe-config --effort low --target "$config_file" >/dev/null
+    python3 - "$payload" "$spec" "$REAL_HOME" "$repo_real" "$launcher_sha" "$config_file" "${roots[@]}" <<'SEALPY'
+import hashlib, json, pathlib, sys
+
+payload_path = pathlib.Path(sys.argv[1])
+spec = sys.argv[2]
+real_home = sys.argv[3]
+git_common_root = sys.argv[4]
+launcher_sha = sys.argv[5]
+config_text = pathlib.Path(sys.argv[6]).read_text()
+denied = sys.argv[7:]
+sealed = spec != "none"
+run_root = "/private/tmp/probe-run.aaaaaa"
+dispatch = run_root + "/dispatch"
+launcher = real_home + "/bin/codex"
+if spec == "absent-launcher":
+    # Absolute, structurally sound, and nowhere on this filesystem.
+    launcher = "/nonexistent-launcher-root/bin/codex"
+
+payload = {
+    "seal_mode": "seatbelt" if sealed else "none",
+    "sandbox_exec": "/usr/bin/sandbox-exec" if sealed else "",
+    "platform": "Darwin",
+    "profile_file": run_root + "/home/seal.sb" if sealed else "",
+    "denied_read_roots": denied,
+    "denied_read_data_roots": [dispatch] if sealed else [],
+    "denied_link_roots": (list(denied) + [dispatch]) if sealed else [],
+    "writable_roots": (
+        [run_root + "/home", run_root + "/ws", run_root + "/tmp"] if sealed else []
+    ),
+    "dev_write_paths": (
+        ["/dev/null", "/dev/zero", "/dev/dtracehelper", "/dev/tty"] if sealed else []
+    ),
+    "allowed_read_paths": (
+        [launcher] if sealed and any(launcher.startswith(root) for root in denied) else []
+    ),
+    # The chain is recorded as structure: this fixture is a one-entry chain, the
+    # binary itself, so its head is also its only file entry.
+    "launcher_chain": (
+        [{"path": launcher, "kind": "file", "sha256": launcher_sha}] if sealed else []
+    ),
+    "launcher_invoked": launcher if sealed else "",
+    "launcher_sha256": launcher_sha if sealed else "",
+    "timeout_bin": "/opt/homebrew/bin/timeout" if sealed else "",
+    "timeout_seconds": 240 if sealed else 0,
+    "env_allowlist": ["PATH", "HOME", "CODEX_HOME", "TMPDIR"],
+    "rep_env": {
+        "HOME": run_root + "/home",
+        "CODEX_HOME": run_root + "/home/.codex",
+        "TMPDIR": run_root + "/tmp",
+    },
+    "real_home": real_home,
+    "real_codex_home": real_home + "/.codex",
+    "real_tmpdir": "/private/tmp" if sealed else "",
+    "cache_root": "/private/tmp/fixture-cache" if sealed else "",
+    "git_common_root": git_common_root if sealed else "",
+    "run_root": run_root if sealed else "",
+    "workspace_root": run_root + "/ws" if sealed else "",
+    "dispatch_root": dispatch if sealed else "",
+    "network": {
+        "mode": "proxy-allowlist" if sealed else "open",
+        "hosts": ["chatgpt.com"] if sealed else [],
+        "ports": [443] if sealed else [],
+        "proxy": "127.0.0.1:54321" if sealed else None,
+        "unix_sockets": [],
+    },
+    "config_sanitized": ["web_search"] if sealed else None,
+    "config_sha256": (
+        "sha256:" + hashlib.sha256(config_text.encode()).hexdigest() if sealed else ""
+    ),
+    "config_text": config_text if sealed else "",
+    "auth_copied": bool(sealed),
+}
+payload_path.write_text(json.dumps(payload, sort_keys=True))
+SEALPY
+    rm -f "$directory/seal.json"
+    python3 "$META_TOOL" seal-record --payload "$payload" \
+        --output "$directory/seal.json" >/dev/null
+}
+
+# set_scorecard_seal SCORECARD_PATH SEAL_JSON_PATH [PYTHON_SNIPPET] — echo the
+# seal record into the scorecard the way the live harness does, optionally
+# mutating the copy first.
+set_scorecard_seal() {
+    python3 - "$1" "$2" "${3:-}" <<'PY'
+import json, sys
+scorecard_path, seal_path, snippet = sys.argv[1:]
+scorecard = json.load(open(scorecard_path))
+record = json.load(open(seal_path))
+if snippet:
+    exec(snippet, {"record": record})
+scorecard["seal"] = record
+open(scorecard_path, "w").write(json.dumps(scorecard, indent=2, sort_keys=True) + "\n")
+PY
+}
+
+# downgrade_contract_to_v2 PATH — rewrite a fresh v3 capture contract into the
+# pre-seal v2 shape (no seal block, v2-era eligibility) and rebind it.
+downgrade_contract_to_v2() {
+    python3 - "$1" <<'PY'
+import hashlib, json, sys
+path = sys.argv[1]
+contract = json.load(open(path))
+contract.pop("seal")
+contract["schema"] = "agentops-skill-probe-capture.v2"
+identity = contract["producer_request"]["identity"]
+identity["coverage_eligible"] = (
+    not identity["override"]
+    and contract["producer_request"]["model"] is not None
+    and contract["producer_request"]["effort"] is not None
+)
+payload = {key: value for key, value in contract.items() if key != "binding_sha256"}
+canonical = json.dumps(payload, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode()
+contract["binding_sha256"] = "sha256:" + hashlib.sha256(canonical).hexdigest()
+open(path, "w").write(json.dumps(contract, indent=2, sort_keys=True) + "\n")
+PY
+}
+
+# make_bound_result SKILL PROBE VERDICT [TREATMENT_SOURCE] [PRODUCER_OVERRIDE] [SEAL_SPEC]
 # Sets BOUND_SCORECARD_REL to a safe repo-relative v3 scorecard path.
 make_bound_result() {
     local skill="$1" probe="$2" verdict="$3"
     local treatment_source="${4:-canonical-skill}"
     local producer_override="${5:-}"
+    # SEAL_SPEC: full (default) | none | absent | omit-checkout | omit-skill-root | legacy
+    local seal_spec="${6:-full}"
     local probe_dir="$PROBES/$probe"
     local fixture_name="fixtures-test"
     local fixture_dir="$probe_dir/$fixture_name"
@@ -153,6 +396,7 @@ make_bound_result() {
 
     if [ "$verdict" = "BEHAVIORAL" ]; then treatment_body="ACTION"; fi
     mkdir -p "$fixture_dir"
+    write_seal "$fixture_dir" "$seal_spec"
     cat > "$probe_dir/probe.json" <<EOF
 {"id":"$probe","skill":"$skill","reps":2,"discriminator":"discriminator.sh","treatment_source":"$treatment_source"}
 EOF
@@ -177,6 +421,10 @@ SH
         snapshot_args+=(--producer-override-bin "$producer_override")
     fi
     python3 "$META_TOOL" "${snapshot_args[@]}" >/dev/null
+    write_network_log "$fixture_dir"
+    if [[ "$seal_spec" == "legacy" ]]; then
+        downgrade_contract_to_v2 "$fixture_dir/capture-contract.json"
+    fi
     for rep in 1 2; do
         write_transcript "$fixture_dir" "control-$rep" "$control_body"
         write_transcript "$fixture_dir" "treatment-$rep" "$treatment_body"
@@ -262,7 +510,9 @@ print(value)
     run bash "$GATE" --strict
 
     [ "$status" -eq 0 ]
-    [[ "$output" != *"foo"* ]]
+    [[ "$output" != *"unmeasured"* ]]
+    [[ "$output" != *"::warning::"* ]]
+    [[ "$output" == *"set foo/probe-foo: eligible=true (verified)"* ]]
 }
 
 @test "a valid bound INERT scorecard counts" {
@@ -277,7 +527,10 @@ print(value)
 
 @test "an explicit producer override is replayable but cannot qualify as coverage" {
     make_skill foo product
-    make_bound_result foo probe-foo BEHAVIORAL canonical-skill "$FIX/test-bin/codex"
+    local override="$BATS_TEST_TMPDIR/override-codex"
+    cp "$REAL_HOME/bin/codex" "$override"
+    chmod +x "$override"
+    make_bound_result foo probe-foo BEHAVIORAL canonical-skill "$override"
     write_ledger "foo | probe-foo | 2026-08-16 | BEHAVIORAL | scorecard: \`$BOUND_SCORECARD_REL\`"
 
     run bash "$GATE" --strict
@@ -285,6 +538,103 @@ print(value)
     [ "$status" -eq 1 ]
     [[ "$output" == *"tier coverage requires non-overrideable native Codex runtime evidence"* ]]
     [[ "$output" == *"foo"* ]]
+}
+
+@test "an unsealed capture (seal mode none) is replayable but cannot qualify as coverage" {
+    make_skill foo product
+    make_bound_result foo probe-foo BEHAVIORAL canonical-skill "" none
+    write_ledger "foo | probe-foo | 2026-09-03 | BEHAVIORAL | scorecard: \`$BOUND_SCORECARD_REL\`"
+
+    run bash "$GATE" --strict
+
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"seal mode 'none'"* ]]
+    [[ "$output" == *"foo"* ]]
+}
+
+@test "a capture stage with no seal.json is recorded unsealed and does not count" {
+    make_skill foo product
+    make_bound_result foo probe-foo BEHAVIORAL canonical-skill "" absent
+    write_ledger "foo | probe-foo | 2026-09-03 | BEHAVIORAL | scorecard: \`$BOUND_SCORECARD_REL\`"
+
+    run bash "$GATE" --strict
+
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"seal mode 'none'"* ]]
+}
+
+@test "a legacy-unsealed v2 capture contract stays replayable but does not count" {
+    make_skill foo product
+    make_bound_result foo probe-foo BEHAVIORAL canonical-skill "" legacy
+    write_ledger "foo | probe-foo | 2026-08-26 | BEHAVIORAL | scorecard: \`$BOUND_SCORECARD_REL\`"
+
+    run bash "$GATE" --strict
+
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"legacy-unsealed"* ]]
+    [[ "$output" == *"foo"* ]]
+}
+
+@test "a sealed capture whose denied roots omit the checkout does not count" {
+    make_skill foo product
+    make_bound_result foo probe-foo BEHAVIORAL canonical-skill "" omit-checkout
+    write_ledger "foo | probe-foo | 2026-09-03 | BEHAVIORAL | scorecard: \`$BOUND_SCORECARD_REL\`"
+    local repo_real
+    repo_real="$(python3 -c 'import os,sys; print(os.path.realpath(sys.argv[1]))' "$FIX")"
+
+    run bash "$GATE" --strict
+
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"denied for BOTH reads and links"* ]]
+    [[ "$output" == *"read-denied: $repo_real"* ]]
+    [[ "$output" == *"foo"* ]]
+}
+
+@test "a sealed capture whose denied roots omit a skill root does not count" {
+    make_skill foo product
+    make_bound_result foo probe-foo BEHAVIORAL canonical-skill "" omit-skill-root
+    write_ledger "foo | probe-foo | 2026-09-03 | BEHAVIORAL | scorecard: \`$BOUND_SCORECARD_REL\`"
+
+    run bash "$GATE" --strict
+
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"denied for BOTH reads and links"* ]]
+    [[ "$output" == *"$REAL_HOME/.codex/skills"* ]]
+}
+
+@test "a skill root symlinked into the sealed checkout counts through its realpath" {
+    # The home deny subsumes the four skill roots, and the seal names
+    # ~/.claude/skills only through the checkout it resolves into: the row still
+    # counts, because coverage matches a root by its resolved path.
+    make_skill foo product
+    make_bound_result foo probe-foo BEHAVIORAL canonical-skill "" symlinked-skill-root
+    write_ledger "foo | probe-foo | 2026-09-03 | BEHAVIORAL | scorecard: \`$BOUND_SCORECARD_REL\`"
+
+    run bash "$GATE" --strict
+
+    [ "$status" -eq 0 ]
+    [[ "$output" != *"::warning::"* ]]
+    [[ "$output" == *"eligible=true (verified)"* ]]
+}
+
+@test "a scorecard seal copy is cross-checked against the bound contract seal" {
+    make_skill foo product
+    make_bound_result foo probe-foo BEHAVIORAL
+    write_ledger "foo | probe-foo | 2026-09-03 | BEHAVIORAL | scorecard: \`$BOUND_SCORECARD_REL\`"
+    local seal_record="$PROBES/probe-foo/fixtures-test/seal.json"
+
+    # The verbatim live-harness copy agrees with the contract and counts.
+    set_scorecard_seal "$FIX/$BOUND_SCORECARD_REL" "$seal_record"
+    run bash "$GATE" --strict
+    [ "$status" -eq 0 ]
+    [[ "$output" != *"::warning::"* ]]
+
+    # A copy that claims more denied roots than the bound seal is refused.
+    set_scorecard_seal "$FIX/$BOUND_SCORECARD_REL" "$seal_record" \
+        'record["denied_read_roots"] = record["denied_read_roots"][1:]'
+    run bash "$GATE" --strict
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"scorecard seal copy disagrees with the seal bound in the capture contract"* ]]
 }
 
 @test "bound injected-prelude evidence is replayable but does not count as skill coverage" {
@@ -531,22 +881,125 @@ PY
     [[ "$output" == *"foo"* ]]
 }
 
-@test "the real repository remains advisory with exactly 0/12 current results" {
+@test "the real repository remains advisory and names each set's effective eligibility" {
     unset SKILL_PROBE_SKILLS_DIR SKILL_PROBE_LEDGER_FILE SKILL_PROBE_TIERS_FILE
     unset SKILL_PROBE_EVIDENCE_ROOT SKILL_PROBE_METADATA_TOOL SKILL_PROBE_EXCLUSIONS_FILE
 
     run --separate-stderr bash "$GATE" --json
 
     [ "$status" -eq 0 ]
-    # 12 product/judgment-tier badges and no declared-denominator exclusion:
-    # the `goals` alias was retired on 2026-09-03 (Train 2), so nothing is
-    # excluded and the denominator is the badge count. The headline stays
-    # 0/12 until a v3 capture-manifest-backed run records a current verdict.
-    [ "$(json_field "$output" tier_total)" = "12" ]
-    [ "$(json_field "$output" excluded_count)" = "0" ]
-    [ "$(json_field "$output" gated_total)" = "12" ]
-    [ "$(json_field "$output" measured)" = "0" ]
-    [ "$(json_field "$output" unmeasured_count)" = "12" ]
+    # What this pins is the property PR #1101 broke, not a number that moves
+    # with the catalog or with the next recapture: the gate's answer must be the
+    # SAME on a host that has the capturing machine's launcher chain and on one
+    # that does not. Before this, the sealed sets counted on the Mac that
+    # captured them and read seal-incomplete on the Linux runner, because
+    # coverage walked `/Users/bo/...` on the verifying filesystem.
+    local with_chain
+    with_chain="$output"
+    # The headline itself, pinned on BOTH runs (via the identity check below):
+    # the committed sets read verified and count, chain or no chain. Update the
+    # number with the ledger row on every recapture.
+    [ "$(json_field "$output" measured)" = "1" ]
+    [ "$(json_field "$output" unmeasured_count)" = "11" ]
+    [[ "$output" == *'"scorecard":"docs/evals/scorecards/2026-09-03/premortem-plan-shape-t2-low.json","eligible":true,"reason":"verified"'* ]]
+    [[ "$output" == *'"scorecard":"docs/evals/scorecards/2026-09-03/premortem-plan-shape-t2-xhigh.json","eligible":true,"reason":"verified"'* ]]
+
+    # The same gate, with the chain made absent: a shim patches os.path.lexists
+    # to deny the launcher paths, which is exactly the condition a host without
+    # the chain is in.
+    local shim="$BATS_TEST_TMPDIR/absent-chain-tool.py"
+    cat > "$shim" <<'SHIM'
+#!/usr/bin/env python3
+"""Run the real metadata tool as if this host had no launcher chain."""
+import importlib.util
+import os
+import os.path
+import sys
+
+real = os.environ["PROBE_REAL_METADATA_TOOL"]
+_lexists = os.path.lexists
+
+
+def lexists(path):
+    # Only the launcher entries: everything else must resolve normally or the
+    # simulation would change what the roots cover.
+    if os.path.basename(str(path)) in {"codex", "codex-link"}:
+        return False
+    return _lexists(path)
+
+
+os.path.lexists = lexists
+spec = importlib.util.spec_from_file_location("probe_tool_under_shim", real)
+module = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(module)
+raise SystemExit(module.main())
+SHIM
+    chmod +x "$shim"
+
+    run --separate-stderr env \
+        PROBE_REAL_METADATA_TOOL="$REPO_ROOT/scripts/lib/probe-fixture-metadata.py" \
+        SKILL_PROBE_METADATA_TOOL="$shim" \
+        bash "$GATE" --json
+    [ "$status" -eq 0 ]
+    # Byte-identical answers: same measured count, same per-set rows.
+    [ "$output" = "$with_chain" ]
+
+    # M2V-02: EVERY ledger row that names a scorecard gets an eligibility line,
+    # including the 2026-08-26 WITHDRAWN row the README cites as the example of
+    # a scorecard whose own `coverage_eligible` says true while the gate treats
+    # the set as ineligible. Before this, only directional rows got one.
+    # The exact reason for the withdrawn row, not whatever its evidence happens
+    # to fail on: the ledger already says the row is not a measurement.
+    [[ "$output" == *'"scorecard":"docs/evals/scorecards/2026-08-26/premortem-plan-shape-t2-low.json","eligible":false,"reason":"verdict-withdrawn"'* ]]
+
+    run --separate-stderr bash "$GATE"
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"eligible=false (verdict-withdrawn) [docs/evals/scorecards/2026-08-26/premortem-plan-shape-t2-low.json]"* ]]
+}
+
+@test "a set's effective eligibility is reported per set in text and JSON" {
+    make_skill foo product
+    make_bound_result foo probe-foo BEHAVIORAL
+    write_ledger "foo | probe-foo | 2026-09-03 | BEHAVIORAL | scorecard: \`$BOUND_SCORECARD_REL\`"
+
+    run --separate-stderr bash "$GATE"
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"set foo/probe-foo: eligible=true (verified)"* ]]
+
+    run --separate-stderr bash "$GATE" --json
+    [ "$status" -eq 0 ]
+    [[ "$output" == *'"skill":"foo","probe":"probe-foo","scorecard":"docs/evals/scorecards/probe-foo.json","eligible":true,"reason":"verified"'* ]]
+
+}
+
+@test "an ineligible set is labeled false with its reason, whatever the card claims" {
+    # The scorecard carries its capture's own producer `coverage_eligible`
+    # claim: on the 2026-08-26 premortem card that field says true while the
+    # gate treats the set as ineligible. The EFFECTIVE value is printed here.
+    make_skill foo product
+    make_bound_result foo probe-foo BEHAVIORAL canonical-skill "" none
+    write_ledger "foo | probe-foo | 2026-09-03 | BEHAVIORAL | scorecard: \`$BOUND_SCORECARD_REL\`"
+
+    run --separate-stderr bash "$GATE"
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"set foo/probe-foo: eligible=false (unsealed)"* ]]
+    [[ "$output" == *"docs/evals/scorecards/probe-foo.json"* ]]
+
+    run --separate-stderr bash "$GATE" --json
+    [ "$status" -eq 0 ]
+    [[ "$output" == *'"eligible":false,"reason":"unsealed"'* ]]
+}
+
+@test "a sealed capture whose denied roots omit the real temp root does not count" {
+    make_skill foo product
+    make_bound_result foo probe-foo BEHAVIORAL canonical-skill "" omit-temp-root
+    write_ledger "foo | probe-foo | 2026-09-03 | BEHAVIORAL | scorecard: \`$BOUND_SCORECARD_REL\`"
+
+    run --separate-stderr bash "$GATE" --strict
+
+    [ "$status" -eq 1 ]
+    [[ "$stderr" == *"denied for BOTH reads and links"* ]]
+    [[ "$stderr" == *"/private/tmp"* ]]
 }
 
 @test "the real exclusion list resolves and argues every entry on stdout" {
@@ -674,4 +1127,81 @@ PY
     [ "$status" -eq 0 ]
     [ "$(json_field "$output" excluded_count)" = "0" ]
     [ "$(json_field "$output" gated_total)" = "1" ]
+}
+
+@test "a set captured by a different evaluator is not coverage (evaluator-stale)" {
+    make_skill foo product
+    make_bound_result foo probe-foo BEHAVIORAL
+    write_ledger "foo | probe-foo | 2026-09-03 | BEHAVIORAL | scorecard: \`$BOUND_SCORECARD_REL\`"
+    run bash "$GATE" --strict
+    [ "$status" -eq 0 ]
+
+    # The CONNECT proxy decides what a rep can reach, so a scorecard bound to a
+    # different one describes a different capture. A consistent `false` was
+    # accepted, which counted a set captured by another harness as coverage for
+    # this one.
+    python3 - "$FIX/$BOUND_SCORECARD_REL" <<'PY'
+import json, sys
+path = sys.argv[1]
+card = json.load(open(path))
+card["capture_evaluator"]["network_proxy"]["sha256"] = "sha256:" + "0" * 64
+card["evaluator_matches_capture"] = card["evaluator"] == card["capture_evaluator"]
+open(path, "w").write(json.dumps(card, indent=2, sort_keys=True) + "\n")
+PY
+
+    run --separate-stderr bash "$GATE" --json
+    [ "$status" -eq 0 ]
+    [[ "$output" == *'"eligible":false,"reason":"evaluator-stale"'* ]]
+    [[ "$stderr" == *"evaluator-stale"* ]]
+}
+
+@test "a set whose launcher chain is absent on this host still counts" {
+    # PR #1101 CI: `seal_coverage_failure` walked the chain on the live
+    # filesystem, so both sealed sets read seal-incomplete on the Linux runner
+    # and `measured` was 0 there and 1 on the capturing Mac. A pin that only
+    # holds on one host is not a pin. The chain here names paths that exist on
+    # NO host, and the set counts because the record is structurally sound.
+    make_skill foo product
+    make_bound_result foo probe-foo BEHAVIORAL canonical-skill "" absent-launcher
+    write_ledger "foo | probe-foo | 2026-09-04 | BEHAVIORAL | scorecard: \`$BOUND_SCORECARD_REL\`"
+
+    [ ! -e /nonexistent-launcher-root/bin/codex ]
+
+    run --separate-stderr bash "$GATE" --json
+    [ "$status" -eq 0 ]
+    [ "$(json_field "$output" measured)" = "1" ]
+    [[ "$output" == *'"eligible":true,"reason":"verified"'* ]]
+
+    # And the verifier says which of the two things it did.
+    run python3 "$META_TOOL" verify-scorecard \
+        --repo-root "$FIX" --skills-dir "$SKILL_PROBE_SKILLS_DIR" \
+        --scorecard "$BOUND_SCORECARD_REL" \
+        --ledger-skill foo --ledger-probe probe-foo --ledger-verdict BEHAVIORAL
+    [ "$status" -eq 0 ]
+    [[ "$output" == *'"launcher_chain_host_check":"skipped-absent"'* ]]
+}
+
+@test "a set whose launcher chain IS on this host reports the cross-check" {
+    make_skill foo product
+    make_bound_result foo probe-foo BEHAVIORAL
+    write_ledger "foo | probe-foo | 2026-09-04 | BEHAVIORAL | scorecard: \`$BOUND_SCORECARD_REL\`"
+
+    [ -f "$REAL_HOME/bin/codex" ]
+
+    run bash "$GATE" --strict
+    [ "$status" -eq 0 ]
+
+    run python3 "$META_TOOL" verify-scorecard \
+        --repo-root "$FIX" --skills-dir "$SKILL_PROBE_SKILLS_DIR" \
+        --scorecard "$BOUND_SCORECARD_REL" \
+        --ledger-skill foo --ledger-probe probe-foo --ledger-verdict BEHAVIORAL
+    [ "$status" -eq 0 ]
+    [[ "$output" == *'"launcher_chain_host_check":"performed"'* ]]
+
+    # The cross-check is real: change the binary the record digests and the set
+    # stops counting on the host that has it.
+    printf 'tampered\n' >> "$REAL_HOME/bin/codex"
+    run --separate-stderr bash "$GATE" --strict
+    [ "$status" -eq 1 ]
+    [[ "$stderr" == *"this host has"* ]]
 }

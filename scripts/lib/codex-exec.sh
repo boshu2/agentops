@@ -26,6 +26,10 @@
 #                                           band (marker CANNOT
 #                                           veto packet echo)
 #   sandbox mapping    --sandbox <value>    --sandbox (toggle)    n/a (local endpoint)
+#   sandbox mapping    --dangerously-bypass- n/a (ignores the     n/a (ignores the
+#   (codex, wrapped)   approvals-and-sandbox wrap prefix)          wrap prefix)
+#                      (the outer CODEX_EXEC_WRAP wrapper IS the sandbox; codex's
+#                      own is bypassed because seatbelt does not nest — see below)
 #   prompt delivery    file(stdin)/arg      FILE-PATH pointer     single positional arg
 #                                           (sentinel-wrapped)
 #   local?             no                   no                    yes
@@ -99,18 +103,62 @@
 : "${CODEX_EXEC_STALL_TIMEOUT:=124}"
 : "${CODEX_EXEC_ECHO:=125}"
 
+# codex_exec_timeout_bin — the ABSOLUTE path of a timeout that supports
+# `--foreground`, empty when no timeout binary exists at all, or return 3 when
+# one exists but will not take `--foreground`.
+#
+# WHY --foreground: GNU timeout calls setpgid(0,0) by default, so the reviewer
+# and every child it forks land in TIMEOUT's process group, not the caller's.
+# A caller that reaps "the rep's process group" then signals a group the rep was
+# never in, which is how four `/bin/sleep 45` children survived a passing
+# survivor test with ppid 1. `--foreground` keeps timeout in the caller's group,
+# which makes that reap mean something.
+#
+# WHY absolute: the path is recorded in the probe seal and the wrapper runs
+# INSIDE the sandbox, so a `timeout` resolved fresh from PATH at dispatch time
+# could be a different binary than the one the record names.
+codex_exec_timeout_bin() {
+  local candidate resolved
+  # A caller that already resolved and probed one passes it down, so the probe
+  # does not exec a PATH-resolved timeout OUTSIDE the seal once per rep.
+  if [ -n "${CODEX_EXEC_TIMEOUT_BIN:-}" ]; then
+    case "$CODEX_EXEC_TIMEOUT_BIN" in
+      /*) printf '%s' "$CODEX_EXEC_TIMEOUT_BIN"; return 0 ;;
+      *) return 3 ;;
+    esac
+  fi
+  for candidate in timeout gtimeout; do
+    resolved="$(command -v "$candidate" 2>/dev/null)" || continue
+    [ -n "$resolved" ] || continue
+    case "$resolved" in /*) ;; *) continue ;; esac
+    # The FIRST candidate that resolves is the resolved timeout. Falling through
+    # to the next one would quietly run a different binary than the one a
+    # shadowing PATH selected, which is the failure this is meant to surface.
+    # Functional probe, not `--help` parsing: BSD timeout has no --help at all.
+    if "$resolved" --foreground 1 true >/dev/null 2>&1; then
+      printf '%s' "$resolved"
+      return 0
+    fi
+    return 3
+  done
+  return 0
+}
+
 # codex_exec_timeout_cmd — echo the timeout-wrapper argv (space-separated) for a
 # budget, or nothing when no timeout binary exists. Ported READ-ONLY from
 # Prefer `timeout`, fall back to `gtimeout`, and if
 # NEITHER exists degrade to running the reviewer with no timeout rather than failing
 # closed and being unusable on a bo-mac that ships no coreutils `timeout`.
+# A timeout that exists but refuses `--foreground` FAILS CLOSED (return 3): the
+# alternative is silently running without the flag and reaping the wrong group.
 # Usage: read -r -a _to <<<"$(codex_exec_timeout_cmd 300)"; "${_to[@]}" codex ...
 codex_exec_timeout_cmd() {
-  local budget="${1:-0}"
+  local budget="${1:-0}" bin="" rc=0
   [ "$budget" = "0" ] && return 0
-  if command -v timeout >/dev/null 2>&1; then printf 'timeout %s' "$budget"
-  elif command -v gtimeout >/dev/null 2>&1; then printf 'gtimeout %s' "$budget"
-  fi
+  bin="$(codex_exec_timeout_bin)" || rc=$?
+  [ "$rc" = "0" ] || return "$rc"
+  [ -n "$bin" ] || return 0
+  printf '%s --foreground %s' "$bin" "$budget"
 }
 
 # codex_exec_looks_echoed — return 0 (true) when the captured output looks like an
@@ -227,6 +275,9 @@ reviewer_adapter_marker() {
 #   CODEX_EXEC_PROMPT_ARG    the prompt as a single positional argument.
 #                            If NEITHER is set, the prompt is read from stdin.
 #   CODEX_EXEC_TIMEOUT       timeout budget in seconds (0/unset = no timeout).
+#   CODEX_EXEC_TIMEOUT_BIN   absolute path of an already-probed timeout. Set it
+#                            when the caller resolved one, so the --foreground
+#                            capability probe does not run per invocation.
 #   CODEX_EXEC_SANDBOX       (codex) sandbox value, e.g. read-only / workspace-write
 #                            (default: read-only — the fail-closed default).
 #   CODEX_EXEC_MODEL         (codex) model id for `-m` (empty/unset = codex default).
@@ -235,6 +286,22 @@ reviewer_adapter_marker() {
 #   CODEX_EXEC_EXTRA_ARGS    (codex) a bash array of extra passthrough flags appended
 #                            verbatim (e.g. --json). Ignored by non-codex adapters (they
 #                            are codex-specific flags).
+#   CODEX_EXEC_WRAP          (codex) a bash array prefixed BEFORE the codex binary (after
+#                            the timeout wrapper), e.g. CODEX_EXEC_WRAP=(sandbox-exec -p
+#                            "<profile>") — an EXTERNAL filesystem seal around the whole
+#                            rep. When non-empty the assembled command is
+#                              "${to_cmd[@]}" "${CODEX_EXEC_WRAP[@]}" <codex-bin> exec …
+#                            and the sandbox mapping emits
+#                            --dangerously-bypass-approvals-and-sandbox IN PLACE OF
+#                            --sandbox <value>: the outer wrapper IS the sandbox, and
+#                            codex's own seatbelt is bypassed because macOS seatbelt
+#                            does not nest inside an outer sandbox-exec profile (codex
+#                            dies with `sandbox_apply: Operation not permitted`); codex
+#                            documents that flag for exactly "externally sandboxed" use.
+#                            Empty/unset => byte-identical to the unwrapped behavior.
+#                            Codex-only: agy/local-mlx/reference adapters ignore it. Do
+#                            NOT wrap via CODEX_EXEC_BIN instead — the metadata tool
+#                            flips coverage_eligible to false on a non-default bin.
 #   CODEX_EXEC_OUT_FILE      write captured stdout here. If empty, output is captured
 #                            to a temp file used only for echo-detection and then
 #                            streamed to the caller's stdout on success.
@@ -295,6 +362,12 @@ codex_exec_guarded() {
   # packets legitimately CONTAIN the marker so marker-presence cannot veto echo checks;
   # see reviewer_packet_echoed). Empty for codex => the check is skipped (byte-compat).
   local packet_echo_file="" packet_nonce=""
+  # External wrap prefix (codex adapter ONLY; see CODEX_EXEC_WRAP above). Same `+set`
+  # guard idiom as CODEX_EXEC_EXTRA_ARGS so an unset array is safe under `set -u`.
+  local -a wrap=()
+  if [ "$reviewer" = "codex" ] && [ -n "${CODEX_EXEC_WRAP+set}" ] && [ "${#CODEX_EXEC_WRAP[@]}" -gt 0 ]; then
+    wrap=("${CODEX_EXEC_WRAP[@]}")
+  fi
 
   case "$reviewer" in
     codex)
@@ -304,7 +377,15 @@ codex_exec_guarded() {
       argv=(exec)
       [ "${CODEX_EXEC_SKIP_GIT_CHECK:-0}" = "1" ] && argv+=(--skip-git-repo-check)
       local sandbox="${CODEX_EXEC_SANDBOX:-read-only}"
-      argv+=(--sandbox "$sandbox")
+      if [ "${#wrap[@]}" -gt 0 ]; then
+        # sandbox mapping (codex, wrapped): the outer CODEX_EXEC_WRAP wrapper IS the
+        # sandbox; codex's own is bypassed because seatbelt does not nest (codex's
+        # documented flag for an externally sandboxed run). CODEX_EXEC_SANDBOX is
+        # deliberately not emitted — it would re-arm the nested seatbelt.
+        argv+=(--dangerously-bypass-approvals-and-sandbox)
+      else
+        argv+=(--sandbox "$sandbox")
+      fi
       [ -n "${CODEX_EXEC_MODEL:-}" ] && argv+=(-m "$CODEX_EXEC_MODEL")
       [ -n "${CODEX_EXEC_DIR:-}" ] && argv+=(-C "$CODEX_EXEC_DIR")
       # Append caller extra args ONLY if the array is set + non-empty. The `+set`
@@ -409,28 +490,40 @@ codex_exec_guarded() {
   # no-trailing-newline / empty-here-string case, so `|| true` keeps `set -e`
   # callers alive; to_cmd is already initialized empty for the no-timeout path.
   local -a to_cmd=()
+  local to_spec="" to_rc=0
+  to_spec="$(codex_exec_timeout_cmd "${CODEX_EXEC_TIMEOUT:-0}")" || to_rc=$?
+  if [ "$to_rc" != "0" ]; then
+    echo "codex-exec: MISSING-TIMEOUT — the resolved timeout does not accept --foreground." >&2
+    echo "  Without it the reviewer runs in timeout's process group, so a caller cannot reap it." >&2
+    echo "  (exit $CODEX_EXEC_MISSING = precondition, not a REFUTE / not a genuine failure)" >&2
+    return "$CODEX_EXEC_MISSING"
+  fi
   # shellcheck disable=SC2046,SC2206  # intentional word-split of the wrapper argv.
-  read -r -a to_cmd <<<"$(codex_exec_timeout_cmd "${CODEX_EXEC_TIMEOUT:-0}")" || true
+  read -r -a to_cmd <<<"$to_spec" || true
+
+  # The launch prefix, in this fixed order: the external CODEX_EXEC_WRAP prefix
+  # (if any), then the timeout wrapper (if any), then the reviewer binary. The
+  # WRAP is outermost so the sandbox is the outermost process: with timeout
+  # outside it, the timeout binary itself was resolved from PATH and ran
+  # UNSEALED, so a shadowed timeout could have dropped the wrapper entirely.
+  # `--foreground` is what keeps the budget enforceable from inside the sandbox
+  # while leaving the reviewer in the caller's process group.
+  # `launch` always holds at least the binary, so its expansion is safe under
+  # `set -u` on bash 3.2.
+  local -a launch=()
+  [ "${#wrap[@]}" -gt 0 ] && launch+=("${wrap[@]}")
+  [ "${#to_cmd[@]}" -gt 0 ] && launch+=("${to_cmd[@]}")
+  launch+=("$bin")
 
   _codex_exec_run() {
     if [ "$delivery" = "stdin_file" ]; then
       # File-prompt mode: feed the file on stdin.
-      if [ -n "$stderr_file" ]; then
-        if [ "${#to_cmd[@]}" -gt 0 ]; then "${to_cmd[@]}" "$bin" "${argv[@]}" <"$prompt_file" >"$out_file" 2>"$stderr_file"
-        else "$bin" "${argv[@]}" <"$prompt_file" >"$out_file" 2>"$stderr_file"; fi
-      else
-        if [ "${#to_cmd[@]}" -gt 0 ]; then "${to_cmd[@]}" "$bin" "${argv[@]}" <"$prompt_file" >"$out_file" 2>&1
-        else "$bin" "${argv[@]}" <"$prompt_file" >"$out_file" 2>&1; fi
-      fi
+      if [ -n "$stderr_file" ]; then "${launch[@]}" "${argv[@]}" <"$prompt_file" >"$out_file" 2>"$stderr_file"
+      else "${launch[@]}" "${argv[@]}" <"$prompt_file" >"$out_file" 2>&1; fi
     else
       # Arg/stdin-pipe/pointer mode: the prompt is already in argv (or on the caller's stdin).
-      if [ -n "$stderr_file" ]; then
-        if [ "${#to_cmd[@]}" -gt 0 ]; then "${to_cmd[@]}" "$bin" "${argv[@]}" >"$out_file" 2>"$stderr_file"
-        else "$bin" "${argv[@]}" >"$out_file" 2>"$stderr_file"; fi
-      else
-        if [ "${#to_cmd[@]}" -gt 0 ]; then "${to_cmd[@]}" "$bin" "${argv[@]}" >"$out_file" 2>&1
-        else "$bin" "${argv[@]}" >"$out_file" 2>&1; fi
-      fi
+      if [ -n "$stderr_file" ]; then "${launch[@]}" "${argv[@]}" >"$out_file" 2>"$stderr_file"
+      else "${launch[@]}" "${argv[@]}" >"$out_file" 2>&1; fi
     fi
   }
 

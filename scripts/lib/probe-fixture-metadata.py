@@ -11,6 +11,7 @@ import errno
 import hashlib
 import json
 import os
+import platform
 import re
 import shutil
 import signal
@@ -29,7 +30,132 @@ SCHEMA = "agentops-skill-probe-fixture-set.v3"
 SCORECARD_SCHEMA = "agentops-skill-probe.v3"
 MANIFEST_NAME = "fixture-set.json"
 CAPTURE_CONTRACT_NAME = "capture-contract.json"
-CAPTURE_CONTRACT_SCHEMA = "agentops-skill-probe-capture.v2"
+LEGACY_CAPTURE_CONTRACT_SCHEMA = "agentops-skill-probe-capture.v2"
+CAPTURE_CONTRACT_SCHEMA = "agentops-skill-probe-capture.v3"
+# The harness writes this into the capture stage before `snapshot`; it records
+# the filesystem seal the dispatch ran under (2026-08-28 contamination: control
+# reps read SKILL.md off the checkout). Absent means the run was not sealed.
+SEAL_NAME = "seal.json"
+# The proxy's raw decision log, published beside the transcripts. Binding only
+# its digest in each rep's transcript left nothing to check the digest against
+# once the run directory was removed.
+NETWORK_LOG_NAME = "network.log"
+SEAL_RECORD_SCHEMA = "agentops-skill-probe-seal.v1"
+SEAL_MODES = {"seatbelt", "none"}
+LEGACY_SEAL_MODE = "legacy-unsealed"
+# The 2026-09-03 first shape of the v3 seal block. Sets captured against it stay
+# REPLAYABLE, but they can never be tier coverage: the block does not record the
+# mechanism, the wrap, the link denies, the rep env or the config sanitization,
+# so nothing in it separates a real seatbelt from a hand-written claim.
+LEGACY_SEAL_KEYS = {
+    "mode",
+    "denied_read_roots",
+    "writable_roots",
+    "profile_sha256",
+    "original_home",
+    "repository_root",
+}
+# The 2026-09-03 second shape. It bound the roots and the mechanism but left
+# the profile text unreconstructable from the block, so a record could assert
+# roots the profile never carried, and it said nothing about the network: the
+# outer profile was `(allow default)` and codex's own sandbox is bypassed inside
+# it, so a rep could fetch the canonical SKILL.md over HTTPS.
+PASS2_SEAL_KEYS = LEGACY_SEAL_KEYS | {
+    "platform",
+    "mechanism",
+    "sandbox_exec",
+    "wrap",
+    "denied_read_data_roots",
+    "denied_link_roots",
+    "allowed_read_paths",
+    "rep_env",
+    "run_root",
+    "workspace_root",
+    "dispatch_root",
+    "git_common_root",
+    "real_tmpdir",
+    "config_sanitized",
+    "auth_copied",
+}
+# The 2026-09-03 third shape. It bound the network and could rebuild its own
+# profile, but most of what it recorded was still only RECORDED: the host list,
+# the writable roots, the device list, the env allowlist and the launcher chain
+# were whatever the harness wrote, so a record could name any of them and stay
+# coverage-eligible.
+PASS3_SEAL_KEYS = PASS2_SEAL_KEYS | {
+    "network",
+    "dev_write_paths",
+    "cache_root",
+    "real_codex_home",
+    "launcher_chain",
+    "launcher_sha256",
+    "config_sha256",
+    "config_text",
+    "env_allowlist",
+}
+# The 2026-09-03 fourth shape. It recorded the timeout BINARY but not the
+# budget, so `--timeout 0` omitted the wrapper entirely while the record still
+# named a binary and the capture stayed eligible.
+PASS4_SEAL_KEYS = PASS3_SEAL_KEYS | {"timeout_bin"}
+# The 2026-09-03 fifth shape. Its `launcher_chain` was a list of PATHS, so the
+# only way to check that it was a chain at all was to walk the live filesystem.
+# That made a pinned property hold on the capturing Mac and nowhere else: on CI
+# the operator's paths do not exist and every sealed set read seal-incomplete.
+PASS5_SEAL_KEYS = PASS4_SEAL_KEYS | {"timeout_seconds"}
+SEAL_KEYS = PASS5_SEAL_KEYS | {"launcher_invoked"}
+SEAL_SHAPES = (
+    LEGACY_SEAL_KEYS,
+    PASS2_SEAL_KEYS,
+    PASS3_SEAL_KEYS,
+    PASS4_SEAL_KEYS,
+    PASS5_SEAL_KEYS,
+    SEAL_KEYS,
+)
+LAUNCHER_LINK_KEYS = {"path", "kind", "target"}
+LAUNCHER_FILE_KEYS = {"path", "kind", "sha256"}
+SEAL_REP_ENV_KEYS = {"HOME", "CODEX_HOME", "TMPDIR"}
+SEAL_NETWORK_KEYS = {"mode", "hosts", "ports", "proxy", "unix_sockets"}
+SEAL_NETWORK_MODE = "proxy-allowlist"
+# A capture that overrode the allowlist records this instead, so an operator can
+# still run a custom probe and the row can never be counted as coverage.
+SEAL_NETWORK_MODE_CUSTOM = "proxy-custom"
+# The ONLY destinations a counted capture may permit. Recording a host list is
+# not the same as constraining it: pinning the set here is what stops a capture
+# from allowlisting the forge and calling itself sealed.
+PERMITTED_EGRESS_HOSTS = frozenset(
+    {
+        "chatgpt.com",
+        "ab.chatgpt.com",
+        ".oaiusercontent.com",
+        "api.openai.com",
+        "auth.openai.com",
+    }
+)
+PERMITTED_EGRESS_PORTS = [443]
+# The devices a sealed rep may write, pinned so the write allow cannot grow.
+PERMITTED_DEV_WRITE_PATHS = ["/dev/null", "/dev/zero", "/dev/dtracehelper", "/dev/tty"]
+# Every variable a rep may be launched with, beyond the PROBE_* test seams.
+PERMITTED_ENV_ALLOWLIST = frozenset(
+    {
+        "PATH", "HOME", "CODEX_HOME", "TMPDIR", "LANG", "TERM",
+        "PWD", "OLDPWD", "SHLVL", "_",
+        "HTTPS_PROXY", "HTTP_PROXY", "ALL_PROXY", "NO_PROXY",
+        "REVIEWER", "REVIEWER_MARKER",
+        "CODEX_EXEC_PROMPT_FILE", "CODEX_EXEC_DIR", "CODEX_EXEC_SANDBOX",
+        "CODEX_EXEC_SKIP_GIT_CHECK", "CODEX_EXEC_TIMEOUT", "CODEX_EXEC_MODEL",
+        "CODEX_EXEC_OUT_FILE", "CODEX_EXEC_STDERR_FILE",
+        "CODEX_EXEC_EXPECT_OUTPUT", "CODEX_EXEC_BIN",
+        "SKILL_PROBES_DIR", "SKILL_PROBE_SKILLS_DIR",
+    }
+)
+SEAL_ENV_SEAM_PREFIX = "PROBE_"
+PROXY_RELATIVE_PATH = "scripts/lib/probe-connect-proxy.py"
+SEAL_PLATFORM = "Darwin"
+SEAL_MECHANISM = "sandbox-exec"
+SEAL_SANDBOX_EXEC_PATH = "/usr/bin/sandbox-exec"
+PROXY_AUTHORITY_RE = re.compile(r"^127\.0\.0\.1:([1-9][0-9]{0,4})$")
+# Roots a counted row must prove were unreadable, relative to the ORIGINAL home.
+SEALED_SKILL_ROOTS = (".agents", ".claude/skills", ".gemini/skills", ".codex/skills")
 TRANSCRIPT_RE = re.compile(r"^(control|treatment)-([1-9][0-9]*)\.txt$")
 SHA256_RE = re.compile(r"^sha256:[0-9a-f]{64}$")
 SAFE_ID_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*$")
@@ -622,10 +748,23 @@ def resolve_executable(command: str) -> Path:
     return resolved
 
 
+def producer_coverage_eligible(
+    override: bool, model: str | None, effort: str | None, seal_mode: str
+) -> bool:
+    """A row counts only for a native, fully specified, seatbelt-sealed producer."""
+    return (
+        not override
+        and model is not None
+        and effort is not None
+        and seal_mode == "seatbelt"
+    )
+
+
 def producer_runtime_identity(
     requested_model: str | None,
     requested_effort: str | None,
     override_command: str | None,
+    seal_mode: str,
 ) -> dict[str, Any]:
     model = require_text(requested_model, "requested model", nullable=True)
     effort = require_text(requested_effort, "requested effort", nullable=True)
@@ -665,12 +804,22 @@ def producer_runtime_identity(
             "override": override,
             "version": version,
             "executable_sha256": digest_file(resolved),
-            "coverage_eligible": (not override and model is not None and effort is not None),
+            "coverage_eligible": producer_coverage_eligible(
+                override, model, effort, seal_mode
+            ),
         },
     }
 
 
-def validate_producer_request(value: Any) -> dict[str, Any]:
+def validate_producer_request(
+    value: Any, *, seal_mode: str | None = None
+) -> dict[str, Any]:
+    """Validate a producer request; with a seal mode, bind eligibility exactly.
+
+    Without a seal mode (manifest or scorecard copies, whose contract is checked
+    separately) only the one-way rule holds: a producer that fails the native
+    model/effort floor can never claim eligibility.
+    """
     request = require_exact_object(
         value, {"adapter", "model", "effort", "identity"}, "producer_request"
     )
@@ -694,10 +843,1298 @@ def validate_producer_request(value: Any) -> dict[str, Any]:
         identity["executable_sha256"]
     ):
         raise MetadataError("producer executable_sha256 must be a sha256 digest")
-    eligible = not identity["override"] and model is not None and effort is not None
-    if identity["coverage_eligible"] is not eligible:
+    if not isinstance(identity["coverage_eligible"], bool):
+        raise MetadataError("producer coverage_eligible must be boolean")
+    floor = not identity["override"] and model is not None and effort is not None
+    if seal_mode is None:
+        consistent = not identity["coverage_eligible"] or floor
+    else:
+        consistent = identity["coverage_eligible"] is producer_coverage_eligible(
+            identity["override"], model, effort, seal_mode
+        )
+    if not consistent:
         raise MetadataError("producer coverage_eligible is inconsistent")
     return request
+
+
+def require_absolute_path(value: Any, field: str) -> str:
+    text = require_text(value, field)
+    assert text is not None
+    if not text.startswith("/") or os.path.normpath(text) != text:
+        raise MetadataError(f"{field} must be a normalized absolute path: {text!r}")
+    return text
+
+
+def require_path_list(value: Any, field: str) -> list[str]:
+    if not isinstance(value, list):
+        raise MetadataError(f"{field} must be an array of absolute paths")
+    paths = [require_absolute_path(item, f"{field}[{index}]") for index, item in enumerate(value)]
+    if len(set(paths)) != len(paths):
+        raise MetadataError(f"{field} contains duplicate paths")
+    return paths
+
+
+def normalized_path_list(value: Any, field: str) -> list[str]:
+    """Normalize harness-supplied roots (trailing slashes) before binding them."""
+    if not isinstance(value, list):
+        raise MetadataError(f"{field} must be an array of absolute paths")
+    normalized = []
+    for index, item in enumerate(value):
+        text = require_text(item, f"{field}[{index}]")
+        assert text is not None
+        if not text.startswith("/"):
+            raise MetadataError(f"{field}[{index}] must be an absolute path: {text!r}")
+        normalized.append(os.path.normpath(text))
+    return require_path_list(normalized, field)
+
+
+def original_home() -> str:
+    """The HOME the un-sealed agent would resolve its skill roots under.
+
+    The harness must snapshot before it swaps HOME for a scratch directory;
+    the seal check resolves the four skill roots under this recorded value.
+    """
+    home = os.environ.get("HOME") or os.path.expanduser("~")
+    return require_absolute_path(os.path.normpath(home), "original home")
+
+
+def capture_repository_root(skills_dir: Path) -> str:
+    try:
+        resolved = skills_dir.resolve(strict=True)
+    except OSError as exc:
+        raise MetadataError(f"canonical skills directory not found: {exc}") from exc
+    return require_absolute_path(str(resolved.parent), "capture repository root")
+
+
+def toml_scalar(value: Any) -> str | None:
+    """One TOML right-hand side, or None when the value is not a scalar."""
+    if isinstance(value, bool):
+        return "true" if value else "false"
+    if isinstance(value, int):
+        return str(value)
+    if isinstance(value, float):
+        return repr(value)
+    if isinstance(value, str):
+        return json.dumps(value, ensure_ascii=False)
+    if isinstance(value, list) and all(
+        isinstance(item, (bool, int, float, str)) for item in value
+    ):
+        rendered = [toml_scalar(item) for item in value]
+        if any(item is None for item in rendered):
+            return None
+        return "[" + ", ".join(item for item in rendered if item is not None) + "]"
+    return None
+
+
+# The rep's config is GENERATED from this allowlist, never copied or filtered
+# from the operator's. Copying it, even table-stripped, carried whatever the
+# operator had set: `web_search` live, a `notify` hook naming an operator
+# program, and a key set that changes under the harness. A generated file has
+# one text, one digest, and nothing else can be in it.
+PROBE_CONFIG_KEYS = ("model_reasoning_effort", "web_search")
+# The only trust_level codex 0.145 writes for a directory it ran in, observed on
+# every capture: any other value means something other than codex touched the
+# file the rep was measured under.
+PERMITTED_TRUST_LEVELS = frozenset({"trusted"})
+PROBE_CONFIG_HEADER = (
+    "# Generated for one sealed skill-probe capture. Not the operator's config.\n"
+    "# Only the keys this harness needs are present: the model comes from the\n"
+    "# --model flag, and web search is off so the rep has no second egress path.\n"
+)
+
+
+def render_probe_config(effort: str | None) -> str:
+    """The exact config text every rep of one capture runs with."""
+    lines = [PROBE_CONFIG_HEADER.rstrip("\n")]
+    if effort:
+        require_text(effort, "probe config effort")
+        if not re.fullmatch(r"[a-z]+", effort):
+            raise MetadataError(f"probe config effort is unsafe: {effort!r}")
+        lines.append(f'model_reasoning_effort = "{effort}"')
+    lines.append('web_search = "disabled"')
+    return "\n".join(lines) + "\n"
+
+
+def probe_config_drift(path: Path, expected_text: str, workspace: str) -> list[str]:
+    """What a rep changed in its config beyond the one permitted growth.
+
+    codex writes a `[projects."<cwd>"]` trust table into its config on first run
+    in a directory. That growth is expected and harmless; anything else means
+    the rep edited the file it was measured under.
+    """
+    import tomllib
+
+    try:
+        actual = path.read_text(encoding="utf-8")
+    except OSError as exc:
+        return [f"config unreadable after the rep: {exc}"]
+    findings: list[str] = []
+    # ALWAYS parse, even when the bytes are unchanged: a byte-equality shortcut
+    # means the structural rules below never run on the ordinary path, so a
+    # mistake in them would only ever show up on a rep that had already drifted.
+    try:
+        parsed = tomllib.loads(actual)
+        baseline = tomllib.loads(expected_text)
+    except (UnicodeError, tomllib.TOMLDecodeError) as exc:
+        return [f"config is no longer readable TOML: {exc}"]
+    for key in sorted(set(baseline) | set(parsed)):
+        if key == "projects":
+            continue
+        if baseline.get(key) != parsed.get(key):
+            findings.append(f"key {key!r} changed")
+    projects = parsed.get("projects")
+    if projects is not None:
+        if not isinstance(projects, dict):
+            findings.append("[projects] is not a table")
+        else:
+            for name in sorted(projects):
+                if name != workspace:
+                    findings.append(f"[projects] gained an entry outside the workspace: {name}")
+                    continue
+                entry = projects[name]
+                if not isinstance(entry, dict):
+                    findings.append("[projects] workspace entry is not a table")
+                    continue
+                # Exactly {trust_level}, with a value from the observed set. An
+                # empty table or a differently typed value is not codex writing
+                # its own trust entry, it is something else in the file.
+                if set(entry) != {"trust_level"}:
+                    findings.append(
+                        "[projects] workspace entry must carry exactly trust_level, got: "
+                        + (", ".join(sorted(entry)) or "no keys")
+                    )
+                    continue
+                if entry["trust_level"] not in PERMITTED_TRUST_LEVELS:
+                    findings.append(
+                        "[projects] workspace trust_level is not one codex writes: "
+                        f"{entry['trust_level']!r}"
+                    )
+    return findings
+
+
+def validate_launcher_chain(value: Any, field: str) -> list[dict[str, Any]]:
+    """The chain as STRUCTURE, not as paths.
+
+    A list of bare paths can only be checked against a live filesystem, which is
+    why the pin held on the capturing Mac and failed everywhere else. Each entry
+    now carries what it is: a symlink and where it points, or the final file and
+    its digest.
+    """
+    if not isinstance(value, list):
+        raise MetadataError(f"{field} must be an array of chain entries")
+    entries: list[dict[str, Any]] = []
+    for index, item in enumerate(value):
+        label = f"{field}[{index}]"
+        if not isinstance(item, dict):
+            raise MetadataError(f"{label} must be an object")
+        kind = item.get("kind")
+        if kind == "symlink":
+            entry = require_exact_object(item, LAUNCHER_LINK_KEYS, label)
+            entries.append(
+                {
+                    "path": require_absolute_path(
+                        os.path.normpath(require_text(entry["path"], f"{label} path")),
+                        f"{label} path",
+                    ),
+                    "kind": "symlink",
+                    "target": require_absolute_path(
+                        os.path.normpath(require_text(entry["target"], f"{label} target")),
+                        f"{label} target",
+                    ),
+                }
+            )
+        elif kind == "file":
+            entry = require_exact_object(item, LAUNCHER_FILE_KEYS, label)
+            digest = entry["sha256"]
+            if not isinstance(digest, str) or not SHA256_RE.fullmatch(digest):
+                raise MetadataError(f"{label} sha256 must be a sha256 digest")
+            entries.append(
+                {
+                    "path": require_absolute_path(
+                        os.path.normpath(require_text(entry["path"], f"{label} path")),
+                        f"{label} path",
+                    ),
+                    "kind": "file",
+                    "sha256": digest,
+                }
+            )
+        else:
+            raise MetadataError(f"{label} kind must be 'symlink' or 'file', got {kind!r}")
+    return entries
+
+
+def launcher_chain_paths(seal: dict[str, Any]) -> list[str]:
+    """The chain's paths, for consumers that only need where it points."""
+    return [entry["path"] for entry in seal["launcher_chain"]]
+
+
+def seal_quote(value: str, field: str) -> str:
+    """A seatbelt path literal. A quote or a backslash could break the profile."""
+    text = require_text(value, field)
+    assert isinstance(text, str)
+    if any(character in text for character in ('"', "\\", "\n")):
+        raise MetadataError(f"{field} cannot be quoted in a seatbelt profile: {text!r}")
+    return text
+
+
+def seal_network_port(network: dict[str, Any]) -> str:
+    match = PROXY_AUTHORITY_RE.fullmatch(str(network.get("proxy", "")))
+    if match is None:
+        raise MetadataError(
+            "seal network proxy must be 127.0.0.1:<port>, got: "
+            f"{network.get('proxy')!r}"
+        )
+    return match.group(1)
+
+
+def render_seal_profile(seal: dict[str, Any]) -> str:
+    """Rebuild the seatbelt profile text from the BOUND block.
+
+    This is the only writer of a probe seal profile: the harness renders through
+    it, and coverage requires digest(render_seal_profile(block)) to equal the
+    block's profile_sha256. Before this, the block's roots were assertions
+    ALONGSIDE an opaque profile, so a record could claim writable_roots ["/"] or
+    an allowed_read_paths entry pointing at the main checkout and still be
+    coverage-eligible: nothing tied the claim to the bytes the kernel enforced.
+    """
+    if seal.get("mode") != "seatbelt":
+        raise MetadataError("only a seatbelt seal has a profile to render")
+    if set(seal) != SEAL_KEYS:
+        raise MetadataError("only the hardened seal block can be rendered")
+    network = seal["network"]
+    home = seal["rep_env"]["HOME"]
+    workspace = seal["workspace_root"]
+    temp = seal["rep_env"]["TMPDIR"]
+    lines = ["(version 1)", "(allow default)", "(deny network*)"]
+    lines.append(
+        f'(allow network-outbound (remote ip "localhost:{seal_network_port(network)}"))'
+    )
+    for socket_path in network["unix_sockets"]:
+        lines.append(
+            f'(allow network-outbound (literal "{seal_quote(socket_path, "unix socket")}"))'
+        )
+    lines.append("(deny file-write*)")
+    lines.append("(allow file-write*")
+    for root in seal["writable_roots"]:
+        lines.append(f'  (subpath "{seal_quote(root, "writable root")}")')
+    for device in seal["dev_write_paths"]:
+        lines.append(f'  (literal "{seal_quote(device, "device")}")')
+    lines.append(")")
+    lines.append("(deny file-read*")
+    for root in seal["denied_read_roots"]:
+        lines.append(f'  (subpath "{seal_quote(root, "denied read root")}")')
+    lines.append(")")
+    lines.append("(allow file-read-metadata")
+    lines.append(f'  (path-ancestors "{seal_quote(workspace, "workspace root")}")')
+    for allowed in seal["allowed_read_paths"]:
+        lines.append(f'  (path-ancestors "{seal_quote(allowed, "allowed read path")}")')
+    lines.append(")")
+    lines.append("(allow file-read*")
+    for root in (home, workspace, temp):
+        lines.append(f'  (subpath "{seal_quote(root, "rep root")}")')
+    for allowed in seal["allowed_read_paths"]:
+        lines.append(f'  (literal "{seal_quote(allowed, "allowed read path")}")')
+    lines.append(")")
+    lines.append("(allow file-read-metadata")
+    for root in seal["denied_read_data_roots"]:
+        lines.append(f'  (subpath "{seal_quote(root, "denied read-data root")}")')
+    lines.append(")")
+    lines.append("(deny file-write*")
+    for root in seal["denied_read_data_roots"]:
+        lines.append(f'  (subpath "{seal_quote(root, "denied read-data root")}")')
+    lines.append(")")
+    for operation in ("file-link", "file-clone"):
+        lines.append(f"(deny {operation}")
+        for root in seal["denied_link_roots"]:
+            lines.append(f'  (subpath "{seal_quote(root, "denied link root")}")')
+        lines.append(")")
+    return "\n".join(lines)
+
+
+def legacy_seal() -> dict[str, Any]:
+    return {
+        "mode": LEGACY_SEAL_MODE,
+        "denied_read_roots": [],
+        "writable_roots": [],
+        "profile_sha256": None,
+        "original_home": None,
+        "repository_root": None,
+    }
+
+
+def seal_projection(seal: dict[str, Any]) -> dict[str, Any]:
+    """The seal fields derived from the seal record itself (not the checkout)."""
+    return {
+        key: seal[key]
+        for key in sorted(set(seal) - {"repository_root"})
+    }
+
+
+def optional_normalized_path(value: Any, field: str) -> str | None:
+    if value is None:
+        return None
+    return require_absolute_path(
+        os.path.normpath(require_text(value, field)), field
+    )
+
+
+def seal_block_from_record(
+    record: Any, label: str, repo_root: str
+) -> dict[str, Any]:
+    """Reduce a harness seal record (agentops-skill-probe-seal.v1) to the bound block."""
+    if not isinstance(record, dict):
+        raise MetadataError(f"{label} must be a JSON object")
+    required = {
+        "schema",
+        "seal_mode",
+        "coverage_eligible",
+        "profile",
+        "profile_sha256",
+        "denied_read_roots",
+        "writable_roots",
+        "real_home",
+        "platform",
+        "mechanism",
+        "sandbox_exec",
+        "wrap",
+        "denied_read_data_roots",
+        "denied_link_roots",
+        "allowed_read_paths",
+        "rep_env",
+        "run_root",
+        "workspace_root",
+        "dispatch_root",
+        "git_common_root",
+        "real_tmpdir",
+        "config_sanitized",
+        "auth_copied",
+        "network",
+        "dev_write_paths",
+        "cache_root",
+        "real_codex_home",
+        "launcher_chain",
+        "launcher_invoked",
+        "launcher_sha256",
+        "config_sha256",
+        "config_text",
+        "env_allowlist",
+        "timeout_bin",
+        "timeout_seconds",
+        "profile_file",
+        "real_codex_home",
+    }
+    missing = required - set(record)
+    if missing:
+        raise MetadataError(f"{label} is missing: " + ", ".join(sorted(missing)))
+    # A record may carry nothing the reducer does not know about: an unknown
+    # field is either a shape this verifier cannot check or a place to smuggle
+    # one, and either way it must not pass silently.
+    unknown = set(record) - required
+    if unknown:
+        raise MetadataError(f"{label} has unknown fields: " + ", ".join(sorted(unknown)))
+    if record["schema"] != SEAL_RECORD_SCHEMA:
+        raise MetadataError(f"{label} schema is unsupported: {record['schema']!r}")
+    mode = require_text(record["seal_mode"], f"{label} seal_mode")
+    if mode not in SEAL_MODES:
+        raise MetadataError(f"{label} seal_mode is unsupported: {mode!r}")
+    if record["coverage_eligible"] is not (mode == "seatbelt"):
+        raise MetadataError(f"{label} coverage_eligible disagrees with its seal_mode")
+    profile = record["profile"]
+    if mode == "seatbelt":
+        profile_text = require_message_text(profile, f"{label} profile")
+        profile_sha256: str | None = digest_bytes(profile_text.encode("utf-8"))
+        if record["profile_sha256"] != profile_sha256:
+            raise MetadataError(f"{label} profile_sha256 does not match its profile text")
+    else:
+        if profile is not None or record["profile_sha256"] is not None:
+            raise MetadataError(f"{label} profile must be null when the seal_mode is none")
+        profile_sha256 = None
+    rep_env_value = record["rep_env"]
+    rep_env = require_exact_object(rep_env_value, SEAL_REP_ENV_KEYS, f"{label} rep_env")
+    config_sanitized = record["config_sanitized"]
+    if config_sanitized is not None:
+        if not isinstance(config_sanitized, list) or not all(
+            isinstance(item, str) for item in config_sanitized
+        ):
+            raise MetadataError(f"{label} config_sanitized must be a list of key names")
+        config_sanitized = list(config_sanitized)
+    wrap = record["wrap"]
+    if not isinstance(wrap, list) or not all(isinstance(item, str) for item in wrap):
+        raise MetadataError(f"{label} wrap must be an array of argv strings")
+    if not isinstance(record["auth_copied"], bool):
+        raise MetadataError(f"{label} auth_copied must be a boolean")
+    network = require_exact_object(
+        record["network"], SEAL_NETWORK_KEYS, f"{label} network"
+    )
+    if not isinstance(network["hosts"], list) or not all(
+        isinstance(item, str) and item for item in network["hosts"]
+    ):
+        raise MetadataError(f"{label} network hosts must be a list of host names")
+    if not isinstance(network["ports"], list) or not all(
+        isinstance(item, int) and not isinstance(item, bool) and 0 < item < 65536
+        for item in network["ports"]
+    ):
+        raise MetadataError(f"{label} network ports must be a list of port numbers")
+    if not isinstance(network["unix_sockets"], list) or not all(
+        isinstance(item, str) and item.startswith("/") for item in network["unix_sockets"]
+    ):
+        raise MetadataError(f"{label} network unix_sockets must be absolute paths")
+    launcher_chain = validate_launcher_chain(
+        record["launcher_chain"], f"{label} launcher_chain"
+    )
+    for field in ("config_sha256", "launcher_sha256"):
+        value = record[field]
+        if value is not None and not (
+            isinstance(value, str) and SHA256_RE.fullmatch(value)
+        ):
+            raise MetadataError(f"{label} {field} must be a sha256 digest or null")
+    if not isinstance(record["env_allowlist"], list) or not all(
+        isinstance(item, str) and item for item in record["env_allowlist"]
+    ):
+        raise MetadataError(f"{label} env_allowlist must be a list of variable names")
+    return {
+        "mode": mode,
+        "platform": require_text(record["platform"], f"{label} platform"),
+        "mechanism": require_text(
+            record["mechanism"], f"{label} mechanism", nullable=True
+        ),
+        "sandbox_exec": require_text(
+            record["sandbox_exec"], f"{label} sandbox_exec", nullable=True
+        ),
+        "wrap": list(wrap),
+        "denied_read_roots": normalized_path_list(
+            record["denied_read_roots"], f"{label} denied_read_roots"
+        ),
+        "denied_read_data_roots": normalized_path_list(
+            record["denied_read_data_roots"], f"{label} denied_read_data_roots"
+        ),
+        "denied_link_roots": normalized_path_list(
+            record["denied_link_roots"], f"{label} denied_link_roots"
+        ),
+        "writable_roots": normalized_path_list(
+            record["writable_roots"], f"{label} writable_roots"
+        ),
+        "allowed_read_paths": normalized_path_list(
+            record["allowed_read_paths"], f"{label} allowed_read_paths"
+        ),
+        "rep_env": {
+            key: require_absolute_path(
+                os.path.normpath(require_text(rep_env[key], f"{label} rep_env {key}")),
+                f"{label} rep_env {key}",
+            )
+            for key in sorted(SEAL_REP_ENV_KEYS)
+        },
+        "run_root": optional_normalized_path(record["run_root"], f"{label} run_root"),
+        "workspace_root": optional_normalized_path(
+            record["workspace_root"], f"{label} workspace_root"
+        ),
+        "dispatch_root": optional_normalized_path(
+            record["dispatch_root"], f"{label} dispatch_root"
+        ),
+        "git_common_root": optional_normalized_path(
+            record["git_common_root"], f"{label} git_common_root"
+        ),
+        "real_tmpdir": optional_normalized_path(
+            record["real_tmpdir"], f"{label} real_tmpdir"
+        ),
+        "config_sanitized": config_sanitized,
+        "auth_copied": record["auth_copied"],
+        "network": {
+            "mode": require_text(network["mode"], f"{label} network mode"),
+            "hosts": sorted(network["hosts"]),
+            "proxy": require_text(
+                network["proxy"], f"{label} network proxy", nullable=True
+            ),
+            "unix_sockets": sorted(network["unix_sockets"]),
+            "ports": sorted(network["ports"]),
+        },
+        "dev_write_paths": normalized_path_list(
+            record["dev_write_paths"], f"{label} dev_write_paths"
+        ),
+        "cache_root": optional_normalized_path(
+            record["cache_root"], f"{label} cache_root"
+        ),
+        "real_codex_home": require_absolute_path(
+            os.path.normpath(
+                require_text(record["real_codex_home"], f"{label} real_codex_home")
+            ),
+            f"{label} real_codex_home",
+        ),
+        "launcher_chain": launcher_chain,
+        # Empty for an unsealed capture, which has no launcher exception at all;
+        # coverage requires it non-empty under seatbelt.
+        "launcher_invoked": (
+            ""
+            if not record["launcher_invoked"]
+            else require_absolute_path(
+                os.path.normpath(
+                    require_text(record["launcher_invoked"], f"{label} launcher_invoked")
+                ),
+                f"{label} launcher_invoked",
+            )
+        ),
+        "launcher_sha256": record["launcher_sha256"],
+        "timeout_bin": optional_normalized_path(
+            record["timeout_bin"], f"{label} timeout_bin"
+        ),
+        "timeout_seconds": record["timeout_seconds"],
+        "config_sha256": record["config_sha256"],
+        "config_text": (
+            None
+            if record["config_text"] is None
+            else require_message_text(record["config_text"], f"{label} config_text")
+        ),
+        "env_allowlist": sorted(record["env_allowlist"]),
+        "profile_sha256": profile_sha256,
+        "original_home": require_absolute_path(
+            os.path.normpath(require_text(record["real_home"], f"{label} real_home")),
+            f"{label} real_home",
+        ),
+        "repository_root": repo_root,
+    }
+
+
+SEAL_PAYLOAD_KEYS = {
+    "seal_mode",
+    "sandbox_exec",
+    "platform",
+    "denied_read_roots",
+    "denied_read_data_roots",
+    "denied_link_roots",
+    "writable_roots",
+    "dev_write_paths",
+    "allowed_read_paths",
+    "launcher_chain",
+    "launcher_invoked",
+    "launcher_sha256",
+    "timeout_bin",
+    "timeout_seconds",
+    "rep_env",
+    "env_allowlist",
+    "real_home",
+    "real_codex_home",
+    "real_tmpdir",
+    "cache_root",
+    "git_common_root",
+    "run_root",
+    "workspace_root",
+    "dispatch_root",
+    "network",
+    "config_sanitized",
+    "config_sha256",
+    "config_text",
+    "auth_copied",
+    "profile_file",
+}
+
+
+def write_seal_record(payload_path: Path, output_path: Path) -> dict[str, Any]:
+    """Render the profile from the harness payload and write seal.json.
+
+    The harness assembles the facts; this renders the ONE profile text from them
+    and stamps its digest and the wrap, so the profile the kernel enforces and
+    the block the contract binds cannot drift apart. The record is written
+    exclusively (x mode): a capture never overwrites a seal.
+    """
+    payload = parse_json_bytes(
+        read_regular_bytes(payload_path, "seal payload", maximum=MAX_INPUT_BYTES),
+        "seal payload",
+    )
+    fields = require_exact_object(payload, SEAL_PAYLOAD_KEYS, "seal payload")
+    sealed = fields["seal_mode"] == "seatbelt"
+    record: dict[str, Any] = {
+        "schema": SEAL_RECORD_SCHEMA,
+        "seal_mode": fields["seal_mode"],
+        "coverage_eligible": sealed,
+        "mechanism": SEAL_MECHANISM if sealed else None,
+        "sandbox_exec": fields["sandbox_exec"] or None,
+        "platform": fields["platform"],
+        "profile_file": fields["profile_file"] or None,
+        "denied_read_roots": list(fields["denied_read_roots"]),
+        "denied_read_data_roots": list(fields["denied_read_data_roots"]),
+        "denied_link_roots": list(fields["denied_link_roots"]),
+        "writable_roots": list(fields["writable_roots"]),
+        "dev_write_paths": list(fields["dev_write_paths"]),
+        "allowed_read_paths": list(fields["allowed_read_paths"]),
+        "launcher_chain": list(fields["launcher_chain"]),
+        "launcher_invoked": fields["launcher_invoked"],
+        "launcher_sha256": fields["launcher_sha256"] or None,
+        "timeout_bin": fields["timeout_bin"] or None,
+        "timeout_seconds": fields["timeout_seconds"],
+        "rep_env": dict(fields["rep_env"]),
+        "env_allowlist": sorted(fields["env_allowlist"]),
+        "real_home": fields["real_home"],
+        "real_codex_home": fields["real_codex_home"],
+        "real_tmpdir": fields["real_tmpdir"] or None,
+        "cache_root": fields["cache_root"] or None,
+        "git_common_root": fields["git_common_root"] or None,
+        "run_root": fields["run_root"] or None,
+        "workspace_root": fields["workspace_root"] or None,
+        "dispatch_root": fields["dispatch_root"] or None,
+        "network": dict(fields["network"]),
+        "config_sanitized": fields["config_sanitized"],
+        "config_sha256": fields["config_sha256"] or None,
+        "config_text": fields["config_text"] or None,
+        "auth_copied": bool(fields["auth_copied"]),
+    }
+    if sealed:
+        # Round-trip through the bound block so the rendered profile is exactly
+        # what a verifier will rebuild from the contract, not a parallel string.
+        placeholder = "(version 1)"
+        block = seal_block_from_record(
+            dict(
+                record,
+                profile=placeholder,
+                profile_sha256=digest_bytes(placeholder.encode("utf-8")),
+                wrap=[],
+            ),
+            "seal payload",
+            fields["run_root"] or "/",
+        )
+        profile = render_seal_profile(block)
+        record["profile"] = profile
+        record["profile_sha256"] = digest_bytes(profile.encode("utf-8"))
+        # The seal prefix plus the timeout argv. The `env -i` boundary in front
+        # of it is disclosed through env_allowlist rather than repeated here
+        # with its values, which would put the rep's paths in two places.
+        record["wrap"] = [fields["sandbox_exec"], "-p", record["profile_sha256"]]
+        if fields["timeout_bin"] and fields["timeout_seconds"]:
+            record["wrap"] += [
+                fields["timeout_bin"],
+                "--foreground",
+                str(fields["timeout_seconds"]),
+            ]
+    else:
+        record["profile"] = None
+        record["profile_sha256"] = None
+        record["wrap"] = []
+    encoded = json.dumps(record, ensure_ascii=False, indent=2, sort_keys=True) + "\n"
+    with open(output_path, "x", encoding="utf-8") as handle:
+        handle.write(encoded)
+    return record
+
+
+def proxy_egress_lines(raw: bytes, rep: str) -> tuple[list[dict[str, Any]], bytes, int]:
+    """The proxy log lines belonging to ONE rep, and their exact bytes.
+
+    The digest is over the rep's OWN lines, not the whole file: the proxy keeps
+    running while the next rep starts and a connection can be logged after the
+    rep that opened it has been summarized, so a whole-file digest is only ever
+    valid for the instant it was taken and never again.
+    """
+    entries: list[dict[str, Any]] = []
+    kept: list[bytes] = []
+    unparseable = 0
+    for line in raw.split(b"\n"):
+        stripped = line.strip()
+        if not stripped:
+            continue
+        try:
+            entry = json.loads(stripped)
+        except ValueError:
+            unparseable += 1
+            continue
+        if not isinstance(entry, dict) or entry.get("rep") != rep:
+            continue
+        entries.append(entry)
+        kept.append(stripped)
+    return entries, b"\n".join(kept) + (b"\n" if kept else b""), unparseable
+
+
+def proxy_egress_summary(log_path: Path, rep: str) -> dict[str, Any]:
+    """One rep's CONNECT decisions plus the digest of that rep's log lines."""
+    raw = read_regular_bytes(log_path, "proxy log", maximum=MAX_TRANSCRIPT_BYTES)
+    entries, own_bytes, unparseable = proxy_egress_lines(raw, rep)
+    allowed = 0
+    refused = unparseable
+    detail: list[str] = ["unparseable proxy log line"] * unparseable
+    for entry in entries:
+        decision = entry.get("decision")
+        # `attempt` is the pre-decision trace of the same connection, not an
+        # outcome; counting it would make every allowed CONNECT look refused.
+        if decision == "attempt":
+            continue
+        if decision == "allowed":
+            allowed += 1
+        else:
+            refused += 1
+            detail.append(f"{decision}: {entry.get('host')}:{entry.get('port')}")
+    return {
+        "allowed": allowed,
+        "refused": refused,
+        "log_sha256": digest_bytes(own_bytes),
+        "detail": detail,
+    }
+
+
+def read_seal_file(
+    fixture_dir: Path, skills_dir: Path, seal_path: Path | None = None
+) -> dict[str, Any]:
+    """Build the contract seal block from the stage's seal.json (absent = none).
+
+    An explicit seal_path (the harness's workspace copy) takes precedence over
+    the stage sidecar.
+    """
+    path = seal_path if seal_path is not None else fixture_dir / SEAL_NAME
+    if path.is_symlink():
+        raise MetadataError(f"{SEAL_NAME} must be a regular non-symlink file")
+    repo_root = capture_repository_root(skills_dir)
+    if not path.exists():
+        if seal_path is not None:
+            raise MetadataError(f"seal record not found: {seal_path}")
+        home = original_home()
+        return {
+            "mode": "none",
+            "platform": platform.system(),
+            "mechanism": None,
+            "sandbox_exec": None,
+            "wrap": [],
+            "denied_read_roots": [],
+            "denied_read_data_roots": [],
+            "denied_link_roots": [],
+            "writable_roots": [],
+            "allowed_read_paths": [],
+            "rep_env": {"HOME": home, "CODEX_HOME": os.path.join(home, ".codex"),
+                        "TMPDIR": os.path.normpath(tempfile.gettempdir())},
+            "run_root": None,
+            "workspace_root": None,
+            "dispatch_root": None,
+            "git_common_root": None,
+            "real_tmpdir": None,
+            "config_sanitized": None,
+            "auth_copied": False,
+            "network": {
+                "mode": "open", "hosts": [], "ports": [], "proxy": None,
+                "unix_sockets": [],
+            },
+            "timeout_bin": None,
+            "timeout_seconds": 0,
+            "dev_write_paths": [],
+            "cache_root": None,
+            "real_codex_home": os.path.join(home, ".codex"),
+            "launcher_chain": [],
+            "launcher_invoked": "",
+            "launcher_sha256": None,
+            "config_sha256": None,
+            "config_text": None,
+            "env_allowlist": [],
+            "profile_sha256": None,
+            "original_home": home,
+            "repository_root": repo_root,
+        }
+    record = parse_json_bytes(
+        read_regular_bytes(path, SEAL_NAME, maximum=MAX_INPUT_BYTES), SEAL_NAME
+    )
+    return seal_block_from_record(record, SEAL_NAME, repo_root)
+
+
+def validate_seal(value: Any) -> dict[str, Any]:
+    """Accept the hardened seal block or the 2026-09-03 first shape.
+
+    Both shapes replay. Only the hardened shape can be tier coverage; the
+    narrower one is refused by verify_seal_for_coverage, not here, so an older
+    capture stays readable instead of failing to load at all.
+    """
+    if not isinstance(value, dict):
+        raise MetadataError("capture contract seal must be a JSON object")
+    keys = set(value)
+    shape = next((candidate for candidate in SEAL_SHAPES if keys == candidate), SEAL_KEYS)
+    seal = require_exact_object(value, shape, "capture contract seal")
+    mode = require_text(seal["mode"], "seal mode")
+    if mode not in SEAL_MODES | {LEGACY_SEAL_MODE}:
+        raise MetadataError(f"seal mode is unsupported: {mode!r}")
+    if mode == LEGACY_SEAL_MODE:
+        if seal != legacy_seal():
+            raise MetadataError("legacy-unsealed seal must carry no roots or profile")
+        return seal
+    require_path_list(seal["denied_read_roots"], "seal denied_read_roots")
+    require_path_list(seal["writable_roots"], "seal writable_roots")
+    require_absolute_path(seal["original_home"], "seal original_home")
+    require_absolute_path(seal["repository_root"], "seal repository_root")
+    if keys != LEGACY_SEAL_KEYS:
+        require_path_list(seal["denied_read_data_roots"], "seal denied_read_data_roots")
+        require_path_list(seal["denied_link_roots"], "seal denied_link_roots")
+        require_path_list(seal["allowed_read_paths"], "seal allowed_read_paths")
+        require_exact_object(seal["rep_env"], SEAL_REP_ENV_KEYS, "seal rep_env")
+    if keys == SEAL_KEYS:
+        require_exact_object(seal["network"], SEAL_NETWORK_KEYS, "seal network")
+        require_path_list(seal["dev_write_paths"], "seal dev_write_paths")
+        validate_launcher_chain(seal["launcher_chain"], "seal launcher_chain")
+        require_absolute_path(seal["real_codex_home"], "seal real_codex_home")
+    profile_sha256 = seal["profile_sha256"]
+    if mode == "seatbelt":
+        if not isinstance(profile_sha256, str) or not SHA256_RE.fullmatch(profile_sha256):
+            raise MetadataError("seatbelt seal profile_sha256 must be a sha256 digest")
+    elif profile_sha256 is not None:
+        raise MetadataError("seal profile_sha256 must be null when the seal mode is none")
+    return seal
+
+
+def path_forms(path: str) -> set[str]:
+    """A path and, when it exists here, its realpath; the kernel seals the latter."""
+    forms = {path}
+    try:
+        if os.path.lexists(path):
+            forms.add(os.path.realpath(path))
+    except OSError:
+        pass
+    return forms
+
+
+def seal_covers(denied_roots: list[str], required: str) -> bool:
+    candidates = path_forms(required)
+    for root in denied_roots:
+        for denied in path_forms(root):
+            prefix = denied.rstrip("/") + "/"
+            if any(item == denied or item.startswith(prefix) for item in candidates):
+                return True
+    return False
+
+
+def required_sealed_roots(seal: dict[str, Any]) -> list[str]:
+    """Roots a counted row must prove were unreadable.
+
+    The original home subsumes the four skill roots, but they stay listed so a
+    seal that moved HOME still has to name them. The git common directory's
+    parent is the MAIN checkout a linked worktree shares: the same canonical
+    SKILL.md bytes under a path the checkout deny does not reach. The real
+    TMPDIR is where every other probe run's debris lives.
+    """
+    home = seal["original_home"]
+    roots = [seal["repository_root"], home]
+    roots += [os.path.join(home, relative) for relative in SEALED_SKILL_ROOTS]
+    # real_codex_home can be configured OUTSIDE the home (its sessions and
+    # rollouts carry canonical text), and cache_root is the operator-writable
+    # Darwin cache directory beside the temp root. A falsy value used to make
+    # the root VANISH from this list, so a seal could null the field and be
+    # required to deny nothing.
+    for key in ("git_common_root", "real_tmpdir", "real_codex_home", "cache_root"):
+        value = seal.get(key)
+        if value:
+            roots.append(value)
+    return roots
+
+
+def required_root_gaps(seal: dict[str, Any]) -> list[str]:
+    """Required roots the seal did not deny for reads, for links, or at all."""
+    gaps: list[str] = []
+    for field in ("real_codex_home", "cache_root", "real_tmpdir", "git_common_root"):
+        if not seal.get(field):
+            gaps.append(f"{field} is null")
+    for root in required_sealed_roots(seal):
+        if not seal_covers(seal["denied_read_roots"], root):
+            gaps.append(f"read-denied: {root}")
+        if not seal_covers(seal["denied_link_roots"], root):
+            gaps.append(f"link-denied: {root}")
+    return gaps
+
+
+def unsealed_roots(seal: dict[str, Any]) -> list[str]:
+    """Required roots the recorded seal did not deny reads under."""
+    return [
+        root
+        for root in required_sealed_roots(seal)
+        if not seal_covers(seal["denied_read_roots"], root)
+    ]
+
+
+def launcher_chain_record_failure(seal: dict[str, Any]) -> str | None:
+    """Everything about the chain that the RECORD alone can settle.
+
+    Structure, adjacency, head, digest and uniqueness are all properties of the
+    record, so they hold on every host that reads it.
+    """
+    chain = seal["launcher_chain"]
+    if not chain:
+        return "tier coverage requires the producer launcher chain in the seal"
+    invoked = seal["launcher_invoked"]
+    if not invoked:
+        return "tier coverage requires the invoked launcher path in the seal"
+    if chain[0]["path"] != invoked:
+        return (
+            "tier coverage requires the chain to start at the invoked launcher; "
+            f"launcher_invoked is {invoked}, the chain starts at {chain[0]['path']}"
+        )
+    paths = launcher_chain_paths(seal)
+    if len(set(paths)) != len(paths):
+        return "tier coverage refuses a launcher chain that repeats a path"
+    for index, entry in enumerate(chain):
+        last = index == len(chain) - 1
+        if last:
+            if entry["kind"] != "file":
+                return (
+                    "tier coverage requires the final launcher_chain entry to be the "
+                    f"binary, not a link: {entry['path']}"
+                )
+            if entry["sha256"] != seal["launcher_sha256"]:
+                return (
+                    "tier coverage requires launcher_sha256 to be the digest the chain "
+                    f"records for {entry['path']}"
+                )
+            continue
+        if entry["kind"] != "symlink":
+            return (
+                "tier coverage requires every launcher_chain entry before the last "
+                f"to be a symlink to the next: {entry['path']} is recorded as "
+                f"{entry['kind']}"
+            )
+        if entry["target"] != chain[index + 1]["path"]:
+            return (
+                "tier coverage requires launcher_chain to be adjacent: "
+                f"{entry['path']} points at {entry['target']}, not "
+                f"{chain[index + 1]['path']}"
+            )
+    return None
+
+
+def launcher_chain_host_failure(seal: dict[str, Any]) -> tuple[str, str | None]:
+    """Cross-check the record against THIS host, when this host has the chain.
+
+    Returns (what happened, failure). The chain names paths on the machine that
+    captured the set, so a verifier elsewhere has the record and nothing to
+    compare it with. Where the head does exist, disagreement is refused.
+    """
+    chain = seal["launcher_chain"]
+    if not chain:
+        return ("skipped-absent", None)
+    head = chain[0]["path"]
+    if not os.path.lexists(head):
+        return ("skipped-absent", None)
+    for index, entry in enumerate(chain):
+        path = entry["path"]
+        if not os.path.lexists(path):
+            return (
+                "performed",
+                "the launcher chain disagrees with this host: "
+                f"{path} is recorded but absent",
+            )
+        if entry["kind"] == "symlink":
+            if not os.path.islink(path):
+                return (
+                    "performed",
+                    f"the launcher chain records {path} as a symlink; this host "
+                    "has something else",
+                )
+            try:
+                target = os.readlink(path)
+            except OSError as exc:
+                return ("performed", f"could not read the launcher link {path}: {exc}")
+            if not os.path.isabs(target):
+                target = os.path.join(os.path.dirname(path), target)
+            if os.path.normpath(target) != entry["target"]:
+                return (
+                    "performed",
+                    f"the launcher chain records {path} pointing at "
+                    f"{entry['target']}; this host has {os.path.normpath(target)}",
+                )
+            continue
+        if os.path.islink(path) or not os.path.isfile(path):
+            return (
+                "performed",
+                f"the launcher chain records {path} as the binary; this host has "
+                "a link or no regular file",
+            )
+        try:
+            digest = digest_file(Path(path))
+        except (OSError, MetadataError) as exc:
+            return ("performed", f"could not digest the bound launcher: {exc}")
+        if digest != entry["sha256"]:
+            return (
+                "performed",
+                f"the launcher chain records {path} as {entry['sha256']}; this host "
+                f"has {digest}",
+            )
+    return ("performed", None)
+
+
+def seal_coverage_failure(seal: dict[str, Any]) -> str | None:
+    """The reason this seal cannot be tier coverage, or None when it can.
+
+    Every bound field is checked, not just the mode: a hand-written record
+    claiming `seal_mode: seatbelt` on Linux with no mechanism and a two-line
+    profile passed the mode-and-roots check that shipped on 2026-09-03.
+    """
+    mode = seal["mode"]
+    if mode == LEGACY_SEAL_MODE:
+        return (
+            "tier coverage requires a seatbelt-sealed capture; this capture "
+            "contract predates the filesystem seal (legacy-unsealed)"
+        )
+    if mode != "seatbelt":
+        return (
+            f"tier coverage requires a seatbelt-sealed capture; seal mode {mode!r} "
+            "cannot prove the checkout and skill roots were unreadable"
+        )
+    if set(seal) == LEGACY_SEAL_KEYS:
+        return (
+            "tier coverage requires the hardened seal block (2026-09-03 second "
+            "pass): this contract binds only the mode, roots and profile digest, "
+            "so it cannot prove the mechanism, the wrap, the link denies, the "
+            "rep environment or the config sanitization"
+        )
+    if set(seal) == PASS2_SEAL_KEYS:
+        return (
+            "tier coverage requires the hardened seal block (2026-09-03 third "
+            "pass): this contract cannot reconstruct its own profile and records "
+            "no network mode, so it proves nothing about what the rep fetched"
+        )
+    if set(seal) == PASS3_SEAL_KEYS:
+        return (
+            "tier coverage requires the hardened seal block (2026-09-03 fourth "
+            "pass): this contract records no timeout binary, so the wrapper that "
+            "ran inside the sandbox is unaccounted for"
+        )
+    if set(seal) == PASS5_SEAL_KEYS:
+        return (
+            "tier coverage requires the hardened seal block (2026-09-04 sixth "
+            "pass): this contract records the launcher chain as bare paths, "
+            "which only a walk of the capturing host's filesystem can check, so "
+            "the pin does not hold on any other host"
+        )
+    if set(seal) == PASS4_SEAL_KEYS:
+        return (
+            "tier coverage requires the hardened seal block (2026-09-03 fifth "
+            "pass): this contract records no timeout budget, so a zero-timeout "
+            "run that omitted the wrapper entirely is indistinguishable from a "
+            "bounded one"
+        )
+    if seal["platform"] != SEAL_PLATFORM:
+        return (
+            f"tier coverage requires a {SEAL_PLATFORM} seatbelt capture; the seal "
+            f"records platform {seal['platform']!r}"
+        )
+    if seal["mechanism"] != SEAL_MECHANISM:
+        return (
+            f"tier coverage requires mechanism {SEAL_MECHANISM!r}; the seal records "
+            f"{seal['mechanism']!r}"
+        )
+    sandbox_exec = seal["sandbox_exec"]
+    if not isinstance(sandbox_exec, str) or not sandbox_exec.startswith("/"):
+        return "tier coverage requires the resolved sandbox-exec path in the seal"
+    if seal["sandbox_exec"] != SEAL_SANDBOX_EXEC_PATH:
+        return (
+            "tier coverage requires the system seatbelt binary "
+            f"{SEAL_SANDBOX_EXEC_PATH}; the seal records {seal['sandbox_exec']!r}"
+        )
+    if not seal["timeout_bin"]:
+        return (
+            "tier coverage requires the resolved timeout binary in the seal; the "
+            "wrapper runs inside the sandbox and a PATH lookup is not the record"
+        )
+    # A recorded timeout binary is not a timeout: `--timeout 0` omitted the
+    # wrapper entirely while the record still named a binary, so a rep could run
+    # unbounded under a seal that claimed a budget.
+    budget = seal["timeout_seconds"]
+    if not isinstance(budget, int) or isinstance(budget, bool) or budget <= 0:
+        return (
+            "tier coverage requires a positive timeout budget in the seal; "
+            f"timeout_seconds is {budget!r}"
+        )
+    # The wrap must name the RECORDED binary, not whatever `sandbox-exec`
+    # resolved to on PATH at dispatch time (a stub earlier on PATH would have
+    # run instead, and the record would still have said /usr/bin/sandbox-exec).
+    expected_wrap = [seal["sandbox_exec"], "-p", seal["profile_sha256"]]
+    if seal["timeout_bin"] and isinstance(seal["timeout_seconds"], int):
+        expected_wrap += [seal["timeout_bin"], "--foreground", str(seal["timeout_seconds"])]
+    if seal["wrap"] != expected_wrap:
+        return (
+            "tier coverage requires the dispatch wrap to be the bound profile: "
+            f"expected {expected_wrap}, seal records {seal['wrap']}"
+        )
+    if seal["config_sanitized"] is None:
+        return (
+            "tier coverage requires the rep's producer config to be generated; "
+            "the operator's own config starts their MCP servers inside the rep"
+        )
+    if seal["config_sha256"] is None or not seal["config_text"]:
+        return (
+            "tier coverage requires the generated config's exact text and digest "
+            "in the seal, so the file every rep ran under is inspectable"
+        )
+    if digest_bytes(seal["config_text"].encode("utf-8")) != seal["config_sha256"]:
+        return "tier coverage requires config_sha256 to match config_text"
+    network = seal["network"]
+    if network["mode"] != SEAL_NETWORK_MODE:
+        return (
+            f"tier coverage requires network mode {SEAL_NETWORK_MODE!r}; the seal "
+            f"records {network['mode']!r}, so the rep could reach any host and "
+            "fetch the canonical SKILL.md over the network"
+        )
+    if not network["hosts"]:
+        return "tier coverage requires a non-empty network host allowlist"
+    # Recording a host list is not constraining one. Pinning the permitted set
+    # here is what stops a capture from allowlisting the forge, recording that
+    # it did, and still counting.
+    extra_hosts = sorted(set(network["hosts"]) - PERMITTED_EGRESS_HOSTS)
+    if extra_hosts:
+        return (
+            "tier coverage permits egress only to the pinned host set; this seal "
+            "also allows: " + ", ".join(extra_hosts)
+        )
+    if network["ports"] != PERMITTED_EGRESS_PORTS:
+        return (
+            f"tier coverage permits egress only on ports {PERMITTED_EGRESS_PORTS}; "
+            f"the seal records {network['ports']}"
+        )
+    if network["unix_sockets"]:
+        return (
+            "tier coverage permits no unix-socket egress; the seal allows: "
+            + ", ".join(network["unix_sockets"])
+        )
+    try:
+        seal_network_port(network)
+    except MetadataError as exc:
+        return f"tier coverage requires a local proxy authority: {exc}"
+    for field in ("real_tmpdir", "git_common_root"):
+        if not seal[field]:
+            return (
+                f"tier coverage requires {field} in the seal; a null value leaves "
+                "the required-root check with nothing to compare"
+            )
+    for field, root in (
+        ("repository_root", seal["repository_root"]),
+        ("git_common_root", seal["git_common_root"]),
+        ("original_home", seal["original_home"]),
+    ):
+        if seal_covers(seal["writable_roots"], root):
+            return (
+                "tier coverage refuses a seal whose writable roots reach the "
+                f"{field}: {root}"
+            )
+    if not seal["auth_copied"]:
+        return (
+            "tier coverage requires auth.json to be COPIED into the scratch "
+            "CODEX_HOME; a symlink cannot resolve under the read-denied home"
+        )
+    gaps = required_root_gaps(seal)
+    if gaps:
+        return (
+            "tier coverage requires every required root to be recorded and denied "
+            "for BOTH reads and links (a link or clone turns a denied file into a "
+            "readable one); unmet: " + ", ".join(gaps)
+        )
+    dispatch = seal["dispatch_root"]
+    if not dispatch:
+        return "tier coverage requires the harness dispatch directory in the seal"
+    if not seal_covers(seal["denied_read_data_roots"], dispatch):
+        return (
+            "tier coverage requires the dispatch directory to be read-data denied: "
+            f"{dispatch}"
+        )
+    if not seal_covers(seal["denied_link_roots"], dispatch):
+        return (
+            "tier coverage requires link and clone to be denied on the dispatch "
+            f"directory: {dispatch}"
+        )
+
+    workspace = seal["workspace_root"]
+    if not workspace or not seal_covers(seal["writable_roots"], workspace):
+        return (
+            "tier coverage requires the rep workspace to sit under the seal's "
+            f"writable roots: {workspace!r}"
+        )
+    for key in ("HOME", "CODEX_HOME", "TMPDIR"):
+        value = seal["rep_env"][key]
+        if not seal_covers(seal["writable_roots"], value):
+            return (
+                f"tier coverage requires the rep's {key} to be a writable scratch "
+                f"path inside the seal: {value}"
+            )
+        if seal_covers([seal["original_home"]], value):
+            return (
+                f"tier coverage requires the rep's {key} to sit OUTSIDE the "
+                f"operator's home: {value}"
+            )
+    # The launcher chain is the read exception, so it has to be a real chain.
+    # Everything below reads the RECORD: a chain of bare paths could only be
+    # checked by walking the capturing operator's filesystem, so the pin held on
+    # one Mac and failed on every other host, CI included.
+    failure = launcher_chain_record_failure(seal)
+    if failure is not None:
+        return failure
+    # And WHEN the host has the chain, the record is cross-checked against it.
+    failure = launcher_chain_host_failure(seal)[1]
+    if failure is not None:
+        return failure
+    # The launcher exception is the one hole in the read denies, so it is tied to
+    # the producer the contract bound: exactly the resolved launcher chain, and
+    # only the links of it that a denied root would otherwise cover. Without
+    # this, a HOME path holding a SKILL.md could be listed as an allowed
+    # "launcher" and read straight through the seal.
+    expected_allowed = [
+        path
+        for path in launcher_chain_paths(seal)
+        if seal_covers(seal["denied_read_roots"], path)
+    ]
+    if seal["allowed_read_paths"] != expected_allowed:
+        return (
+            "tier coverage requires allowed_read_paths to be exactly the bound "
+            f"launcher chain under a denied root; expected {expected_allowed}, "
+            f"seal records {seal['allowed_read_paths']}"
+        )
+    forbidden = [
+        ("repository_root", seal["repository_root"]),
+        ("git_common_root", seal["git_common_root"]),
+        ("real_codex_home", seal["real_codex_home"]),
+    ] + [
+        ("skill root", os.path.join(seal["original_home"], relative))
+        for relative in SEALED_SKILL_ROOTS
+    ]
+    for allowed in seal["allowed_read_paths"]:
+        for label, root in forbidden:
+            if root and seal_covers([root], allowed):
+                return (
+                    "tier coverage refuses a seal that re-allows a read inside the "
+                    f"{label}: {allowed}"
+                )
+    # Every writable root must sit inside the run directory. "Not the checkout,
+    # not the home" left the rest of the filesystem available to a record that
+    # simply named it.
+    run_root = seal["run_root"]
+    if not run_root:
+        return "tier coverage requires the run root in the seal"
+    for root in seal["writable_roots"]:
+        if not seal_covers([run_root], root):
+            return (
+                "tier coverage requires every writable root under the run "
+                f"directory; the seal also allows writes to: {root}"
+            )
+    if seal["dev_write_paths"] != PERMITTED_DEV_WRITE_PATHS:
+        return (
+            f"tier coverage permits exactly the devices {PERMITTED_DEV_WRITE_PATHS}; "
+            f"the seal records {seal['dev_write_paths']}"
+        )
+    extra_env = sorted(
+        name
+        for name in seal["env_allowlist"]
+        if name not in PERMITTED_ENV_ALLOWLIST
+        and not name.startswith(SEAL_ENV_SEAM_PREFIX)
+    )
+    if extra_env:
+        return (
+            "tier coverage permits only the pinned rep environment plus "
+            f"{SEAL_ENV_SEAM_PREFIX}* seams; this seal also passes: "
+            + ", ".join(extra_env)
+        )
+    # The last check is the one that makes every check above load-bearing: the
+    # block must reproduce the exact profile bytes the kernel enforced.
+    try:
+        rendered = render_seal_profile(seal)
+    except MetadataError as exc:
+        return f"tier coverage could not rebuild the profile from the seal block: {exc}"
+    if digest_bytes(rendered.encode("utf-8")) != seal["profile_sha256"]:
+        return (
+            "tier coverage requires the seal block to rebuild its own profile: "
+            "the profile digest does not match the block, so the recorded roots "
+            "are assertions rather than the bytes the kernel enforced"
+        )
+    return None
+
+
+def verify_seal_for_coverage(seal: dict[str, Any]) -> None:
+    failure = seal_coverage_failure(seal)
+    if failure is not None:
+        raise MetadataError(failure)
 
 
 def counterbalanced_schedule(reps: int) -> list[dict[str, Any]]:
@@ -726,7 +2163,11 @@ def build_capture_contract(
     skills_dir: Path,
     expected_probe: str,
     producer_request: dict[str, Any],
+    seal: dict[str, Any],
 ) -> dict[str, Any]:
+    seal = validate_seal(seal)
+    if seal["mode"] == LEGACY_SEAL_MODE:
+        raise MetadataError("a new capture contract cannot be legacy-unsealed")
     probe_meta = load_json(probe_dir / "probe.json")
     probe_contract = validate_probe_metadata(
         probe_meta, expected_probe, require_treatment=True
@@ -751,18 +2192,22 @@ def build_capture_contract(
         "prompts": prompt_records(
             decoded_inputs, canonical_skill_bytes, treatment_source
         ),
-        "producer_request": validate_producer_request(producer_request),
+        "producer_request": validate_producer_request(
+            producer_request, seal_mode=seal["mode"]
+        ),
         "schedule": counterbalanced_schedule(probe_contract["reps"]),
         "scoring": {
             "response_extraction": RESPONSE_EXTRACTION,
             "transcript_format": TRANSCRIPT_FORMAT,
             "discriminator_timeout_seconds": DISCRIMINATOR_TIMEOUT_SECONDS,
         },
+        "seal": seal,
     }
     return {**payload, "binding_sha256": digest_bytes(canonical_bytes(payload))}
 
 
 def validate_capture_contract(value: Any, expected_probe: str) -> dict[str, Any]:
+    """Validate a capture contract; legacy v2 contracts return a legacy-unsealed seal."""
     keys = {
         "schema",
         "probe",
@@ -776,9 +2221,18 @@ def validate_capture_contract(value: Any, expected_probe: str) -> dict[str, Any]
         "scoring",
         "binding_sha256",
     }
-    contract = require_exact_object(value, keys, "capture contract")
-    if contract["schema"] != CAPTURE_CONTRACT_SCHEMA:
+    schema = value.get("schema") if isinstance(value, dict) else None
+    if schema == CAPTURE_CONTRACT_SCHEMA:
+        keys = keys | {"seal"}
+    elif schema != LEGACY_CAPTURE_CONTRACT_SCHEMA:
         raise MetadataError("unsupported capture contract schema")
+    contract = require_exact_object(value, keys, "capture contract")
+    if schema == CAPTURE_CONTRACT_SCHEMA:
+        seal = validate_seal(contract["seal"])
+        if seal["mode"] == LEGACY_SEAL_MODE:
+            raise MetadataError("a v3 capture contract cannot be legacy-unsealed")
+    else:
+        seal = legacy_seal()
     if contract["probe"] != expected_probe:
         raise MetadataError("capture contract probe mismatch")
     reps = require_reps(contract["reps"])
@@ -804,7 +2258,12 @@ def validate_capture_contract(value: Any, expected_probe: str) -> dict[str, Any]
     decode_prompts(contract["prompts"])
     if contract["prompts"] != expected_prompts:
         raise MetadataError("capture contract prompts disagree with bound input bytes")
-    validate_producer_request(contract["producer_request"])
+    # A v2 contract binds v2-era eligibility; the legacy-unsealed seal is what
+    # makes the row ineligible, so only the one-way floor is checked here.
+    validate_producer_request(
+        contract["producer_request"],
+        seal_mode=seal["mode"] if schema == CAPTURE_CONTRACT_SCHEMA else None,
+    )
     validate_schedule(contract["schedule"], reps)
     if contract["scoring"] != {
         "response_extraction": RESPONSE_EXTRACTION,
@@ -818,7 +2277,9 @@ def validate_capture_contract(value: Any, expected_probe: str) -> dict[str, Any]
     payload = {key: item for key, item in contract.items() if key != "binding_sha256"}
     if digest_bytes(canonical_bytes(payload)) != binding:
         raise MetadataError("capture contract binding mismatch")
-    return contract
+    if schema == CAPTURE_CONTRACT_SCHEMA:
+        return contract
+    return {**contract, "seal": seal}
 
 
 def write_exclusive_bytes(path: Path, data: bytes, label: str) -> os.stat_result:
@@ -849,17 +2310,21 @@ def write_capture_contract(
     requested_model: str | None,
     requested_effort: str | None,
     producer_override: str | None,
+    seal_path: Path | None = None,
 ) -> dict[str, Any]:
     validate_fixture_dir(fixture_dir)
-    if os.listdir(fixture_dir):
+    # A stage may already carry its seal record and the proxy log; both are
+    # capture evidence written outside the transcript flow.
+    if set(os.listdir(fixture_dir)) - {SEAL_NAME, NETWORK_LOG_NAME}:
         raise MetadataError(
             "capture snapshot requires an empty stage before any transcript exists"
         )
+    seal = read_seal_file(fixture_dir, skills_dir, seal_path)
     producer_request = producer_runtime_identity(
-        requested_model, requested_effort, producer_override
+        requested_model, requested_effort, producer_override, seal["mode"]
     )
     contract = build_capture_contract(
-        probe_dir, skills_dir, expected_probe, producer_request
+        probe_dir, skills_dir, expected_probe, producer_request, seal
     )
     encoded = (
         json.dumps(contract, ensure_ascii=False, indent=2, sort_keys=True) + "\n"
@@ -874,6 +2339,153 @@ def load_capture_contract(fixture_dir: Path, expected_probe: str) -> dict[str, A
     return validate_capture_contract(
         load_json(fixture_dir / CAPTURE_CONTRACT_NAME), expected_probe
     )
+
+
+PROXY_LOG_KEYS = {"ts", "rep", "host", "port", "decision"}
+PROXY_LOG_OPTIONAL_KEYS = {"detail"}
+PROXY_LOG_DECISIONS = {"attempt", "allowed", "refused", "failed"}
+
+
+def parse_proxy_log(raw: bytes) -> list[dict[str, Any]]:
+    """Every line of a proxy log, strictly. A log is evidence or it is refused.
+
+    Skipping a line the reader cannot understand is how an unattributed refusal
+    stays invisible: `verify_network_log` filters by rep, so a `refused` record
+    with a null rep belonged to no rep and was checked by nothing.
+    """
+    entries: list[dict[str, Any]] = []
+    for index, line in enumerate(raw.split(b"\n"), start=1):
+        stripped = line.strip()
+        if not stripped:
+            continue
+        try:
+            entry = json.loads(stripped)
+        except ValueError as exc:
+            raise MetadataError(f"{NETWORK_LOG_NAME} line {index} is not JSON: {exc}")
+        if not isinstance(entry, dict):
+            raise MetadataError(f"{NETWORK_LOG_NAME} line {index} is not an object")
+        unknown = set(entry) - PROXY_LOG_KEYS - PROXY_LOG_OPTIONAL_KEYS
+        if unknown:
+            raise MetadataError(
+                f"{NETWORK_LOG_NAME} line {index} has unknown fields: "
+                + ", ".join(sorted(unknown))
+            )
+        missing = PROXY_LOG_KEYS - set(entry)
+        if missing:
+            raise MetadataError(
+                f"{NETWORK_LOG_NAME} line {index} is missing: " + ", ".join(sorted(missing))
+            )
+        if entry["decision"] not in PROXY_LOG_DECISIONS:
+            raise MetadataError(
+                f"{NETWORK_LOG_NAME} line {index} has an unknown decision: "
+                f"{entry['decision']!r}"
+            )
+        if not isinstance(entry["rep"], str) or not entry["rep"]:
+            raise MetadataError(
+                f"{NETWORK_LOG_NAME} line {index} has no rep; an egress decision that "
+                "belongs to no rep is checked against no transcript"
+            )
+        entries.append(entry)
+    return entries
+
+
+def verify_network_log(fixture_dir: Path, transcripts: list[str]) -> None:
+    """The published proxy log must reproduce what EVERY rep bound.
+
+    Each rep binds the digest and both counts of its own lines, so the published
+    file is checked rep by rep. That is what turns a bound digest into a
+    checkable fact: without the file, the digest is a number with nothing to
+    compare against.
+    """
+    path = fixture_dir / NETWORK_LOG_NAME
+    if path.is_symlink() or not path.is_file():
+        raise MetadataError(f"{NETWORK_LOG_NAME} must be a regular non-symlink file")
+    raw = read_regular_bytes(path, NETWORK_LOG_NAME, maximum=MAX_TRANSCRIPT_BYTES)
+    entries = parse_proxy_log(raw)
+    # Every attempt is followed by exactly one decision: the proxy writes the
+    # attempt before it resolves anything and the outcome after, so a bare
+    # attempt is a connection whose fate the log does not record.
+    attempts: dict[str, int] = {}
+    outcomes: dict[str, int] = {}
+    for entry in entries:
+        key = f"{entry['rep']}|{entry['host']}|{entry['port']}"
+        if entry["decision"] == "attempt":
+            attempts[key] = attempts.get(key, 0) + 1
+        else:
+            outcomes[key] = outcomes.get(key, 0) + 1
+    for key, count in sorted(attempts.items()):
+        if outcomes.get(key, 0) != count:
+            raise MetadataError(
+                f"{NETWORK_LOG_NAME} records {count} attempt(s) and "
+                f"{outcomes.get(key, 0)} decision(s) for {key}"
+            )
+    for key in sorted(set(outcomes) - set(attempts)):
+        raise MetadataError(f"{NETWORK_LOG_NAME} records a decision with no attempt: {key}")
+    checked = 0
+    for name in transcripts:
+        transcript = fixture_dir / name
+        if not transcript.is_file():
+            continue
+        first_line = transcript.read_bytes().split(b"\n", 1)[0]
+        try:
+            event = json.loads(first_line)
+        except ValueError:
+            continue
+        if not isinstance(event, dict):
+            continue
+        egress = event.get("network_egress")
+        if not isinstance(egress, dict):
+            continue
+        rep_key = f"{event.get('arm')}-{event.get('rep')}"
+        rep_entries, own_bytes, _ = proxy_egress_lines(raw, rep_key)
+        if digest_bytes(own_bytes) != egress.get("log_sha256"):
+            raise MetadataError(
+                f"{NETWORK_LOG_NAME} does not reproduce the lines {rep_key} bound"
+            )
+        allowed = sum(1 for entry in rep_entries if entry.get("decision") == "allowed")
+        refused = sum(
+            1
+            for entry in rep_entries
+            if entry.get("decision") not in {"attempt", "allowed"}
+        )
+        # BOTH counts, recomputed: checking only `allowed` left the number that
+        # actually gates the capture unverified.
+        if allowed != egress.get("allowed"):
+            raise MetadataError(
+                f"{NETWORK_LOG_NAME} allowed count for {rep_key} disagrees with its transcript"
+            )
+        if refused != egress.get("refused"):
+            raise MetadataError(
+                f"{NETWORK_LOG_NAME} refused count for {rep_key} disagrees with its transcript"
+            )
+        checked += 1
+    if not checked:
+        raise MetadataError(
+            f"{NETWORK_LOG_NAME} is present but no transcript binds a proxy log digest"
+        )
+
+
+def verify_seal_sidecar(
+    fixture_dir: Path, skills_dir: Path, capture_contract: dict[str, Any]
+) -> None:
+    """A seal.json left beside the contract must re-derive to the bound seal block."""
+    if capture_contract["schema"] != CAPTURE_CONTRACT_SCHEMA:
+        raise MetadataError(
+            f"{SEAL_NAME} is present but the capture contract predates the seal"
+        )
+    observed = seal_projection(read_seal_file(fixture_dir, skills_dir))
+    if observed != seal_projection(capture_contract["seal"]):
+        raise MetadataError(
+            f"{SEAL_NAME} disagrees with the seal bound in the capture contract"
+        )
+
+
+def fixture_seal(
+    fixture_dir: Path, manifest: dict[str, Any], expected_probe: str
+) -> dict[str, Any]:
+    if manifest["schema"] != SCHEMA:
+        return legacy_seal()
+    return load_capture_contract(fixture_dir, expected_probe)["seal"]
 
 
 def observed_producer_bytes(data: bytes, label: str) -> tuple[str, str]:
@@ -962,6 +2574,12 @@ def build_payload(
     expected = expected_transcripts(reps)
     actual = sorted(os.listdir(fixture_dir))
     expected_before_manifest = expected + [CAPTURE_CONTRACT_NAME]
+    if SEAL_NAME in actual:
+        verify_seal_sidecar(fixture_dir, skills_dir, capture_contract)
+        expected_before_manifest.append(SEAL_NAME)
+    if NETWORK_LOG_NAME in actual:
+        verify_network_log(fixture_dir, expected)
+        expected_before_manifest.append(NETWORK_LOG_NAME)
     if sorted(expected_before_manifest) != sorted(actual):
         missing = sorted(set(expected_before_manifest) - set(actual))
         extra = sorted(set(actual) - set(expected_before_manifest))
@@ -1053,6 +2671,13 @@ def build_payload(
             "dispatch_helper": {
                 "path": "scripts/lib/codex-exec.sh",
                 "sha256": digest_file(dispatch_helper),
+            },
+            # The proxy is the network half of the seal: change it and what a
+            # rep could reach changes, so it belongs in the identity a scorecard
+            # binds exactly as much as the harness does.
+            "network_proxy": {
+                "path": PROXY_RELATIVE_PATH,
+                "sha256": digest_file(proxy_module_path()),
             },
         },
     }
@@ -1252,14 +2877,21 @@ def validate_evaluator(
     value: Any, field: str, *, require_dispatch: bool | None = True
 ) -> None:
     legacy = {"harness", "metadata_helper"}
-    current = legacy | {"preamble", "dispatch_helper"}
+    pass3 = legacy | {"preamble", "dispatch_helper"}
+    current = pass3 | {"network_proxy"}
     allowed = {frozenset(current)}
     if require_dispatch is False:
         allowed = {frozenset(legacy)}
     elif require_dispatch is None:
         allowed.add(frozenset(legacy))
+        allowed.add(frozenset(pass3))
+    else:
+        # Sets captured before the proxy joined the identity still replay.
+        allowed.add(frozenset(pass3))
     if not isinstance(value, dict) or frozenset(value) not in allowed:
-        expected = "harness, preamble, metadata_helper, and dispatch_helper"
+        expected = (
+            "harness, preamble, metadata_helper, dispatch_helper, and network_proxy"
+        )
         if require_dispatch is False:
             expected = "harness and metadata_helper"
         elif require_dispatch is None:
@@ -1270,6 +2902,7 @@ def validate_evaluator(
         "preamble": "scripts/lib/preamble.sh",
         "metadata_helper": "scripts/lib/probe-fixture-metadata.py",
         "dispatch_helper": "scripts/lib/codex-exec.sh",
+        "network_proxy": PROXY_RELATIVE_PATH,
     }
     for key in value:
         expected_path = expected_paths[key]
@@ -1306,7 +2939,16 @@ def evaluator_identity(
             "path": "scripts/lib/codex-exec.sh",
             "sha256": digest_file(dispatch_helper),
         },
+        "network_proxy": {
+            "path": PROXY_RELATIVE_PATH,
+            "sha256": digest_file(proxy_module_path()),
+        },
     }
+
+
+def proxy_module_path() -> Path:
+    """The CONNECT proxy beside this helper."""
+    return Path(__file__).resolve().parent / "probe-connect-proxy.py"
 
 
 def repository_root() -> Path:
@@ -1324,9 +2966,12 @@ def verify_evaluator_files(value: Any, repo_root: Path) -> dict[str, Any]:
         "preamble": repo_root / "scripts" / "lib" / "preamble.sh",
         "metadata_helper": repo_root / "scripts" / "lib" / "probe-fixture-metadata.py",
         "dispatch_helper": repo_root / "scripts" / "lib" / "codex-exec.sh",
+        "network_proxy": repo_root / "scripts" / "lib" / "probe-connect-proxy.py",
     }
     actual: dict[str, Any] = {}
     for key, path in expected_paths.items():
+        if key not in value:
+            continue
         validate_regular_file(path, f"repo-local evaluator {key}")
         actual[key] = {"path": value[key]["path"], "sha256": digest_file(path)}
     if actual != value:
@@ -1466,18 +3111,64 @@ def scheduled_position(contract: dict[str, Any], arm: str, rep: int) -> int:
     return matches[0]["position"]
 
 
+PROBE_INPUT_KEYS = {"type", "arm", "rep", "position", "prompt"}
+
+
 def probe_input_event(
-    contract: dict[str, Any], arm: str, rep: int, prompt: bytes
+    contract: dict[str, Any],
+    arm: str,
+    rep: int,
+    prompt: bytes,
+    workspace: str | None = None,
+    workspace_reset: bool = False,
+    network_egress: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     expected = decode_prompts(contract["prompts"])[arm]
     if prompt != expected:
         raise MetadataError(f"actual {arm}-{rep} prompt differs from capture contract")
-    return {
+    event = {
         "type": PROBE_INPUT_EVENT,
         "arm": arm,
         "rep": rep,
         "position": scheduled_position(contract, arm, rep),
         "prompt": embedded_bytes_record(prompt, f"{arm}.prompt"),
+    }
+    if workspace is not None:
+        # The cwd the harness dispatched into (2026-09-03 sibling-prompt-read
+        # fix). Optional so pre-fix v3 sets still verify.
+        text = require_text(workspace, f"{arm}-{rep} workspace")
+        assert isinstance(text, str)
+        event["workspace"] = text
+    if workspace_reset:
+        # The workspace is one fixed path under the run directory, emptied
+        # before this rep rather than freshly mktemp'd, so the seatbelt profile
+        # stays constant across the capture and binds one digest.
+        event["workspace_reset"] = True
+    if network_egress is not None:
+        # What this rep asked the harness proxy for, and the digest of the proxy
+        # log that says so. The seal denies every destination but the proxy, and
+        # the proxy allows only the bound host list, so a nonzero `refused` is a
+        # rep that reached for something the capture does not permit.
+        event["network_egress"] = validate_network_egress(network_egress)
+    return event
+
+
+NETWORK_EGRESS_KEYS = {"allowed", "refused", "log_sha256"}
+
+
+def validate_network_egress(value: Any) -> dict[str, Any]:
+    record = require_exact_object(value, NETWORK_EGRESS_KEYS, "network_egress")
+    for field in ("allowed", "refused"):
+        count = record[field]
+        if not isinstance(count, int) or isinstance(count, bool) or count < 0:
+            raise MetadataError(f"network_egress {field} must be a count")
+    digest = record["log_sha256"]
+    if not isinstance(digest, str) or not SHA256_RE.fullmatch(digest):
+        raise MetadataError("network_egress log_sha256 must be a sha256 digest")
+    return {
+        "allowed": record["allowed"],
+        "refused": record["refused"],
+        "log_sha256": digest,
     }
 
 
@@ -1519,13 +3210,58 @@ def validate_structured_transcript(
     label: str,
 ) -> tuple[str, bytes]:
     events = parse_jsonl_events(transcript, label)
+    # `workspace` (the rep cwd) and `workspace_reset` are optional in shape:
+    # sets captured before the 2026-09-03 workspace fixes carry the five bound
+    # keys only. A hardened seatbelt seal REQUIRES both, checked below.
+    optional = {"workspace", "workspace_reset", "network_egress"}
+    present = optional & set(events[0]) if isinstance(events[0], dict) else set()
     first = require_exact_object(
-        events[0], {"type", "arm", "rep", "position", "prompt"}, "probe input event"
+        events[0], PROBE_INPUT_KEYS | present, "probe input event"
     )
     expected_prompt = decode_prompts(contract["prompts"])[arm]
-    expected_event = probe_input_event(contract, arm, rep, expected_prompt)
+    expected_event = probe_input_event(
+        contract,
+        arm,
+        rep,
+        expected_prompt,
+        workspace=first.get("workspace"),
+        workspace_reset=bool(first.get("workspace_reset")),
+        network_egress=first.get("network_egress"),
+    )
     if first != expected_event:
         raise MetadataError(f"{label} probe input event does not match bound {arm}-{rep} prompt")
+    seal = contract.get("seal")
+    if isinstance(seal, dict) and seal.get("mode") == "seatbelt" and set(seal) in (
+        PASS2_SEAL_KEYS,
+        SEAL_KEYS,
+    ):
+        workspace = first.get("workspace")
+        if not workspace:
+            raise MetadataError(
+                f"{label} probe input event records no workspace; a sealed rep must "
+                "bind the directory it ran in"
+            )
+        if not first.get("workspace_reset"):
+            raise MetadataError(
+                f"{label} probe input event does not record workspace_reset; a sealed "
+                "rep must start from an emptied workspace"
+            )
+        if not seal_covers(seal["writable_roots"], workspace):
+            raise MetadataError(
+                f"{label} ran in {workspace}, which is not under the seal's writable roots"
+            )
+        if set(seal) == SEAL_KEYS:
+            egress = first.get("network_egress")
+            if egress is None:
+                raise MetadataError(
+                    f"{label} records no network_egress; a rep under the network "
+                    "seal must bind what it asked the harness proxy for"
+                )
+            if egress["refused"]:
+                raise MetadataError(
+                    f"{label} was refused {egress['refused']} egress connection(s) "
+                    "by the harness proxy (network-egress); it cannot be accepted"
+                )
     if any(event.get("type") == PROBE_INPUT_EVENT for event in events[1:]):
         raise MetadataError(f"{label} contains more than one probe input event")
     return validate_codex_runtime_events(events[1:], label)
@@ -1538,10 +3274,21 @@ def assemble_transcript(
     expected_probe: str,
     arm: str,
     rep: int,
+    workspace: str | None = None,
+    workspace_reset: bool = False,
+    network_egress: dict[str, Any] | None = None,
 ) -> bytes:
     contract = load_capture_contract(fixture_dir, expected_probe)
     prompt = read_regular_bytes(prompt_path, "actual dispatch prompt", maximum=MAX_INPUT_BYTES * 2 + 16)
-    input_event = probe_input_event(contract, arm, rep, prompt)
+    input_event = probe_input_event(
+        contract,
+        arm,
+        rep,
+        prompt,
+        workspace=workspace,
+        workspace_reset=workspace_reset,
+        network_egress=network_egress,
+    )
     runtime = read_regular_bytes(
         runtime_path, "Codex JSONL runtime stream", maximum=MAX_TRANSCRIPT_BYTES
     )
@@ -1597,6 +3344,84 @@ def run_bounded_discriminator(discriminator_bytes: bytes, response_bytes: bytes)
 
 
 SKILL_READ_PATTERN = re.compile(r"SKILL\.md")
+# Harness-owned names a rep must never touch: any *.prompt file, the capture
+# contract, the seal record, the fixture manifest, the raw codex stream or
+# stderr of a rep, and the hidden capture/dispatch stage directories.
+SIBLING_ARTIFACT_PATTERN = re.compile(
+    r"\.prompt\b"
+    r"|capture-contract"
+    r"|seal\.json"
+    r"|fixture-set\.json"
+    r"|\.codex\.(?:jsonl|stderr)\b"
+    r"|\.(?:capture|dispatch)\.[A-Za-z0-9]{6}\b"
+    # The 2026-09-03 second pass renamed the harness temp directories: the run
+    # directory is probe-run.XXXXXX holding dispatch/, home/, ws/ and tmp/, and
+    # the earlier shape used probe-dispatch/probe-ws/probe-seal. The hyphen
+    # forms never matched the dotted stage pattern above. Only the
+    # harness-private children of a run root are traps: ws/ and tmp/ ARE the
+    # rep's own cwd and TMPDIR under this design, so naming them by absolute
+    # path is ordinary work, not contact with another rep's material.
+    r"|probe-(?:dispatch|ws|seal)\.[A-Za-z0-9]{6}\b"
+    r"|probe-run\.[A-Za-z0-9]{6}/(?:dispatch|home)\b"
+)
+# A sibling rep's artifact by name, as it appears in a listing (`rg --files`,
+# `ls`, `find`) or a read.
+SIBLING_NAME_PATTERN = re.compile(
+    r"\b(?:control|treatment)-[1-9][0-9]*\.(?:prompt|txt|codex\.jsonl|codex\.stderr)\b"
+)
+
+
+def final_command_executions(transcript_bytes: bytes) -> list[dict[str, Any]]:
+    """The final state of every command_execution item, keyed by item id."""
+    final: dict[str, dict[str, Any]] = {}
+    for raw in transcript_bytes.splitlines():
+        raw = raw.strip()
+        if not raw.startswith(b"{"):
+            continue
+        try:
+            obj = json.loads(raw)
+        except (ValueError, UnicodeDecodeError):
+            continue
+        item = obj.get("item") if isinstance(obj, dict) else None
+        if not isinstance(item, dict) or item.get("type") != "command_execution":
+            continue
+        item_id = str(item.get("id", ""))
+        entry = final.setdefault(item_id, {})
+        if item.get("command") is not None:
+            entry["command"] = str(item.get("command"))
+        if item.get("exit_code") is not None:
+            entry["exit_code"] = item.get("exit_code")
+        if isinstance(item.get("aggregated_output"), str):
+            entry["output"] = item["aggregated_output"]
+    return list(final.values())
+
+
+def sibling_prompt_read(transcript_bytes: bytes) -> list[str]:
+    """Producer contact with a harness artifact or a sibling rep voids the rep.
+
+    The 2026-09-03 xhigh control-2 rep ran `rg --files | head -200` in the
+    then-shared live workspace, saw `treatment-1.prompt`, then `sed -n
+    '1,220p' treatment-1.prompt` — and held the canonical SKILL.md bytes
+    without ever naming SKILL.md, so the skill-read trap let it score. A
+    successful (final exit 0) command_execution is a hit when its command
+    string names any harness artifact (`*.prompt`, capture-contract,
+    seal.json, fixture-set.json, a rep's raw codex stream or stderr, or the
+    hidden capture/dispatch stage), or when its captured output lists a
+    sibling rep's artifact by name. Same FLOOR caveats as
+    skill_read_contamination; the per-rep workspace is the prevention.
+    """
+    hits = []
+    for entry in final_command_executions(transcript_bytes):
+        if entry.get("exit_code") != 0:
+            continue
+        command = entry.get("command", "")
+        if SIBLING_ARTIFACT_PATTERN.search(command) or SIBLING_NAME_PATTERN.search(command):
+            hits.append(f"command: {command}")
+            continue
+        listed = SIBLING_NAME_PATTERN.search(entry.get("output", ""))
+        if listed:
+            hits.append(f"output lists {listed.group(0)}: {command}")
+    return sorted(hits)
 
 
 def skill_read_contamination(transcript_bytes: bytes) -> list[str]:
@@ -1618,26 +3443,8 @@ def skill_read_contamination(transcript_bytes: bytes) -> list[str]:
     "isolation floor"); this trap exists so the KNOWN leak shape can never
     silently recur.
     """
-    final: dict[str, dict[str, Any]] = {}
-    for raw in transcript_bytes.splitlines():
-        raw = raw.strip()
-        if not raw.startswith(b"{"):
-            continue
-        try:
-            obj = json.loads(raw)
-        except (ValueError, UnicodeDecodeError):
-            continue
-        item = obj.get("item") if isinstance(obj, dict) else None
-        if not isinstance(item, dict) or item.get("type") != "command_execution":
-            continue
-        item_id = str(item.get("id", ""))
-        entry = final.setdefault(item_id, {})
-        if item.get("command") is not None:
-            entry["command"] = str(item.get("command"))
-        if item.get("exit_code") is not None:
-            entry["exit_code"] = item.get("exit_code")
     hits = []
-    for entry in final.values():
+    for entry in final_command_executions(transcript_bytes):
         command = entry.get("command", "")
         if entry.get("exit_code") == 0 and SKILL_READ_PATTERN.search(command):
             hits.append(command)
@@ -1664,6 +3471,14 @@ def classify_bytes(
         for command in contamination:
             print(
                 f"probe-skill: rep DEGRADED (skill-read-contamination): {command[:200]}",
+                file=sys.stderr,
+            )
+        return "DEGRADED"
+    sibling = sibling_prompt_read(transcript_bytes)
+    if sibling:
+        for hit in sibling:
+            print(
+                f"probe-skill: rep DEGRADED (sibling-prompt-read): {hit[:240]}",
                 file=sys.stderr,
             )
         return "DEGRADED"
@@ -1883,6 +3698,10 @@ def verify_scorecard(
         "verdict",
         "per_rep",
     }
+    # The scorecard's `seal` copy (the harness record, null in replay) is
+    # informational; the capture contract's bound seal block is authoritative.
+    if "seal" in scorecard:
+        scorecard_keys = scorecard_keys | {"seal"}
     require_exact_object(scorecard, scorecard_keys, "scorecard")
     if scorecard["schema"] != SCORECARD_SCHEMA:
         raise MetadataError(f"scorecard is not v3: {scorecard['schema']!r}")
@@ -1932,7 +3751,8 @@ def verify_scorecard(
     producer_request = validate_producer_request(
         {key: producer[key] for key in ("adapter", "model", "effort", "identity")}
     )
-    if not producer_request["identity"]["coverage_eligible"]:
+    identity = producer_request["identity"]
+    if identity["override"] or producer["model"] is None or producer["effort"] is None:
         raise MetadataError(
             "tier coverage requires non-overrideable native Codex runtime evidence"
         )
@@ -1974,6 +3794,16 @@ def verify_scorecard(
         scorecard["evaluator"] == scorecard["capture_evaluator"]
     ):
         raise MetadataError("scorecard evaluator_matches_capture is inconsistent")
+    # A CONSISTENT false is still false. A scorecard that honestly reports the
+    # evaluator moved was accepted, so a set captured by a different harness or
+    # a different CONNECT proxy counted as coverage for the current one. Replay
+    # may report it; the gate may not count it.
+    if not scorecard["evaluator_matches_capture"]:
+        raise MetadataError(
+            "tier coverage requires the capture evaluator to match the current "
+            "one (evaluator-stale); this set was captured by a different "
+            "harness, preamble, metadata helper, dispatch helper or CONNECT proxy"
+        )
     control = validate_scorecard_stats(scorecard["control"], "scorecard control")
     treatment = validate_scorecard_stats(scorecard["treatment"], "scorecard treatment")
 
@@ -2012,6 +3842,60 @@ def verify_scorecard(
             "tier coverage requires treatment_source 'canonical-skill'; "
             "injected-prelude evidence measures only the bound prelude"
         )
+    # The seal is the prevention for skill-read contamination; a counted row
+    # must prove the dispatch ran with the checkout and skill roots unreadable.
+    seal = load_capture_contract(fixture_dir, ledger_probe)["seal"]
+    # Eligibility first: a seal that cannot be coverage should say WHY, not fail
+    # on a shape mismatch against its own scorecard copy.
+    verify_seal_for_coverage(seal)
+    if seal["mode"] == "seatbelt" and set(seal) == SEAL_KEYS:
+        # The egress log is EVIDENCE, so a counted row has to carry it. The
+        # verifier accepting its absence made the README's "published and
+        # verified rep by rep" true only of sets that happened to have one, and
+        # the repo's `*.log` rule meant that was none of them.
+        if not (fixture_dir / NETWORK_LOG_NAME).is_file():
+            raise MetadataError(
+                "tier coverage requires the published proxy log "
+                f"({NETWORK_LOG_NAME}); each rep binds the digest of its own "
+                "lines and without the file there is nothing to check them against"
+            )
+        verify_network_log(fixture_dir, expected_transcripts(manifest["reps"]))
+    # Two ties the seal block alone cannot make, because both ends live in the
+    # producer identity the manifest binds.
+    launcher_host_check = "skipped-absent"
+    if seal["mode"] == "seatbelt" and set(seal) == SEAL_KEYS:
+        expected_config = render_probe_config(producer.get("effort"))
+        if seal["config_text"] != expected_config:
+            raise MetadataError(
+                "tier coverage requires the rep config to be exactly what the "
+                "generator emits for the bound effort; a self-consistent digest "
+                "only proves the recorded text hashes to the recorded digest"
+            )
+        launcher_digest = seal["launcher_sha256"]
+        # Which of the two things happened is part of the answer: the record was
+        # checked everywhere, and on a host that HAS the chain it was also
+        # compared with the filesystem.
+        launcher_host_check = launcher_chain_host_failure(seal)[0]
+        if launcher_digest != identity.get("executable_sha256"):
+            raise MetadataError(
+                "tier coverage requires the bound launcher to be the producer the "
+                "manifest identifies; launcher_sha256 "
+                f"{launcher_digest} is not the bound executable digest "
+                f"{identity.get('executable_sha256')}"
+            )
+    if scorecard.get("seal") is not None:
+        scorecard_seal = seal_block_from_record(
+            scorecard["seal"], "scorecard seal", seal["repository_root"]
+        )
+        if seal_projection(scorecard_seal) != seal_projection(seal):
+            raise MetadataError(
+                "scorecard seal copy disagrees with the seal bound in the capture contract"
+            )
+    if not identity["coverage_eligible"]:
+        raise MetadataError(
+            "tier coverage requires a coverage-eligible producer identity bound "
+            "at capture"
+        )
 
     probe_meta = load_json(probe_dir / "probe.json")
     if probe_meta.get("id") != ledger_probe:
@@ -2048,9 +3932,11 @@ def verify_scorecard(
 
     return {
         "binding_sha256": manifest["binding_sha256"],
+        "launcher_chain_host_check": launcher_host_check,
         "producer": manifest["producer"],
         "probe": ledger_probe,
         "reps": reps,
+        "seal": seal,
         "skill": ledger_skill,
         "verdict": ledger_verdict,
     }
@@ -2175,10 +4061,16 @@ def validate_manifest(
             "fixture metadata transcript inventory or ordering is invalid"
         )
     actual_names = sorted(os.listdir(fixture_dir))
+    has_seal_sidecar = schema == SCHEMA and SEAL_NAME in actual_names
+    has_network_log = schema == SCHEMA and NETWORK_LOG_NAME in actual_names
+    if has_network_log:
+        verify_network_log(fixture_dir, expected)
     expected_names = sorted(
         expected
         + [MANIFEST_NAME]
         + ([CAPTURE_CONTRACT_NAME] if schema == SCHEMA else [])
+        + ([SEAL_NAME] if has_seal_sidecar else [])
+        + ([NETWORK_LOG_NAME] if has_network_log else [])
     )
     if actual_names != expected_names:
         raise MetadataError(
@@ -2233,6 +4125,8 @@ def validate_manifest(
         if digest_file(fixture_dir / CAPTURE_CONTRACT_NAME) != capture_contract_digest:
             raise MetadataError("capture contract file digest mismatch")
         capture_contract = load_capture_contract(fixture_dir, expected_probe)
+        if has_seal_sidecar:
+            verify_seal_sidecar(fixture_dir, skills_dir, capture_contract)
         for field in (
             "reps",
             "capture_inputs",
@@ -2338,9 +4232,10 @@ def validate_manifest(
     return manifest
 
 
-def summary(manifest: dict[str, Any]) -> dict[str, Any]:
+def summary(manifest: dict[str, Any], seal: dict[str, Any]) -> dict[str, Any]:
     return {
         "schema": manifest["schema"],
+        "seal": seal,
         "binding_sha256": manifest["binding_sha256"],
         "producer": manifest["producer"],
         "requested_producer": manifest["requested_producer"],
@@ -2455,6 +4350,9 @@ def parse_args() -> argparse.Namespace:
     assemble.add_argument("--probe", required=True)
     assemble.add_argument("--arm", choices=("control", "treatment"), required=True)
     assemble.add_argument("--rep", type=int, required=True)
+    assemble.add_argument("--workspace", default=None)
+    assemble.add_argument("--workspace-reset", action="store_true")
+    assemble.add_argument("--network-egress", default=None)
 
     tiers = subparsers.add_parser("tier-skills")
     tiers.add_argument("--skills-dir", type=Path, required=True)
@@ -2467,6 +4365,7 @@ def parse_args() -> argparse.Namespace:
     snapshot.add_argument("--requested-model")
     snapshot.add_argument("--requested-effort")
     snapshot.add_argument("--producer-override-bin")
+    snapshot.add_argument("--seal-file", type=Path)
 
     capture_file = subparsers.add_parser("capture-file")
     capture_file.add_argument("--fixture-dir", type=Path, required=True)
@@ -2475,6 +4374,23 @@ def parse_args() -> argparse.Namespace:
 
     write_output = subparsers.add_parser("write-output")
     write_output.add_argument("--path", type=Path, required=True)
+
+    seal_record = subparsers.add_parser("seal-record")
+    seal_record.add_argument("--payload", type=Path, required=True)
+    seal_record.add_argument("--output", type=Path, required=True)
+
+    probe_config = subparsers.add_parser("probe-config")
+    probe_config.add_argument("--effort", default=None)
+    probe_config.add_argument("--target", type=Path, required=True)
+
+    config_drift = subparsers.add_parser("config-drift")
+    config_drift.add_argument("--path", type=Path, required=True)
+    config_drift.add_argument("--expected-file", type=Path, required=True)
+    config_drift.add_argument("--workspace", required=True)
+
+    proxy_egress = subparsers.add_parser("proxy-egress")
+    proxy_egress.add_argument("--log", type=Path, required=True)
+    proxy_egress.add_argument("--rep", required=True)
     return parser.parse_args()
 
 
@@ -2554,9 +4470,35 @@ def main() -> int:
                 args.probe,
                 args.arm,
                 args.rep,
+                workspace=args.workspace,
+                workspace_reset=args.workspace_reset,
+                network_egress=(
+                    json.loads(args.network_egress) if args.network_egress else None
+                ),
             )
             sys.stdout.buffer.write(encoded)
             return 0
+        elif args.command == "seal-record":
+            result = write_seal_record(args.payload, args.output)
+        elif args.command == "probe-config":
+            text = render_probe_config(args.effort)
+            args.target.write_text(text, encoding="utf-8")
+            args.target.chmod(0o600)
+            result = {
+                "keys": [key for key in PROBE_CONFIG_KEYS if f"{key} =" in text],
+                "sha256": digest_bytes(text.encode("utf-8")),
+                "text": text,
+            }
+        elif args.command == "config-drift":
+            result = {
+                "findings": probe_config_drift(
+                    args.path,
+                    args.expected_file.read_text(encoding="utf-8"),
+                    args.workspace,
+                )
+            }
+        elif args.command == "proxy-egress":
+            result = proxy_egress_summary(args.log, args.rep)
         elif args.command == "tier-skills":
             result = {"skills": tier_skills(args.skills_dir)}
         elif args.command == "snapshot":
@@ -2569,6 +4511,7 @@ def main() -> int:
                 args.requested_model,
                 args.requested_effort,
                 args.producer_override_bin,
+                args.seal_file,
             )
             result = {
                 "binding_sha256": contract["binding_sha256"],
@@ -2576,6 +4519,7 @@ def main() -> int:
                 "reps": contract["reps"],
                 "schedule": contract["schedule"],
                 "scoring": contract["scoring"],
+                "seal": contract["seal"],
                 "treatment_source": contract["treatment_source"],
                 "canonical_skill": {
                     key: contract["canonical_skill"][key]
@@ -2610,12 +4554,15 @@ def main() -> int:
                     args.requested_effort,
                 )
                 manifest = write_manifest(args.fixture_dir, payload)
-                result = summary(manifest)
-            elif args.command == "verify":
                 result = summary(
-                    validate_manifest(
-                        args.fixture_dir, args.probe_dir, args.skills_dir, args.probe
-                    )
+                    manifest, fixture_seal(args.fixture_dir, manifest, args.probe)
+                )
+            elif args.command == "verify":
+                manifest = validate_manifest(
+                    args.fixture_dir, args.probe_dir, args.skills_dir, args.probe
+                )
+                result = summary(
+                    manifest, fixture_seal(args.fixture_dir, manifest, args.probe)
                 )
             else:
                 result = {"producer": observe_paths(transcript_paths(args.fixture_dir))}
