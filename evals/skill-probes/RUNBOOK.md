@@ -324,9 +324,9 @@ NOT observed on this ChatGPT-auth account. No unix socket allowance was needed:
 the proxy resolves DNS, so the rep never talks to `mDNSResponder`.
 
 ### premortem-plan-shape-t2, sealed, gpt-5.6-luna
-Six captures on 2026-09-03, each under the seal of its pass; the first five
-were deleted with their scorecards once a judge broke that seal. First pass:
-low BEHAVIORAL (treatment 1/1 usable), xhigh INERT. Second pass (hardened
+Seven captures on 2026-09-03, each under the seal of its pass; the first six
+were deleted with their scorecards once a judge or CI broke that seal. First
+pass: low BEHAVIORAL (treatment 1/1 usable), xhigh INERT. Second pass (hardened
 filesystem seal): low INERT, xhigh BEHAVIORAL (treatment 2/2). Third pass
 (network sealed, but its config digest could not be verified because the
 record dropped a trailing newline): low INERT (treatment 0/1 usable), xhigh
@@ -334,23 +334,25 @@ INERT. Fourth pass (network sealed, verifier pinning nothing in the network
 block): low BEHAVIORAL (control 0/2, treatment 1/2), xhigh INERT. Fifth pass
 (verifier pinning the network policy, config, roots, and launcher chain; the
 egress log not yet tracked): low INERT, xhigh INERT (control 1/2, treatment
-1/2). Sixth pass (the rows that count, `fixtures-*-2026-09-03-sealed-r6`, the
-log tracked and required, the reap fatal, the environment sealed): low
-BEHAVIORAL (control 0/2, treatment 1/2), xhigh INERT (0/2 vs 0/2). Headroom
+1/2). Sixth pass (log tracked and required, reap fatal, environment sealed;
+the launcher pin still host-bound, which CI caught): low BEHAVIORAL (control
+0/2, treatment 1/2), xhigh INERT. Seventh pass (the rows that count,
+`fixtures-*-2026-09-03-sealed-r7`, the launcher chain bound as structure): low
+INERT (0/2 vs 0/2), xhigh INERT (control 1/2, treatment 1/2). Headroom
 SEPARATED throughout. Every command any rep ran is recorded in its transcript;
-in the sixth-pass sets no rep ran one, none in any pass touched a denied path,
-and no rep in the fourth, fifth, or sixth had a refused egress.
+in the seventh-pass sets no rep ran one, none in any pass touched a denied
+path, and no rep from the fourth pass on had a refused egress.
 
 The captures disagree about which effort level shows a behavior change. At N=2
 per arm that is an UNRESOLVED observation, not variance around a known value:
 two reps cannot establish a rate, so the reversals are a reason to run more
-reps, never a result to explain away. Across all six, the treatment arm put
-the marks in band in 6 of 22 usable reps and the control arm in 1 of 24; that
-aggregate spans six harness versions and is disclosure, not a ledger row. The
-count, capture by capture: at low, treatment 1/1, 0/2, 0/1, 1/2, 0/2 and 1/2
-usable; at xhigh, 0/2, 2/2, 0/2, 0/2, 1/2 and 0/2; the one control PRESENT is
-xhigh rep 1 of the fifth capture.
+reps, never a result to explain away. Across all seven, the treatment arm put
+the marks in band in 7 of 26 usable reps and the control arm in 2 of 28; that
+aggregate spans seven harness versions and is disclosure, not a ledger row. The
+count, capture by capture: at low, treatment 1/1, 0/2, 0/1, 1/2, 0/2, 1/2 and
+0/2 usable; at xhigh, 0/2, 2/2, 0/2, 0/2, 1/2, 0/2 and 1/2; the two control
+PRESENT reps are xhigh rep 1 of the fifth and of the seventh capture.
 
 Every harness change moves the evaluator identity a scorecard binds, so every
-sealed row is recaptured after one (five times on 2026-09-03). Until that
+sealed row is recaptured after one (six times on 2026-09-03). Until that
 recapture the gate reports the rows as not measured and says why, per set.
