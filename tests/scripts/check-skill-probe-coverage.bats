@@ -896,6 +896,13 @@ PY
     # coverage walked `/Users/bo/...` on the verifying filesystem.
     local with_chain
     with_chain="$output"
+    # The headline itself, pinned on BOTH runs (via the identity check below):
+    # the committed sets read verified and count, chain or no chain. Update the
+    # number with the ledger row on every recapture.
+    [ "$(json_field "$output" measured)" = "1" ]
+    [ "$(json_field "$output" unmeasured_count)" = "11" ]
+    [[ "$output" == *'"scorecard":"docs/evals/scorecards/2026-09-03/premortem-plan-shape-t2-low.json","eligible":true,"reason":"verified"'* ]]
+    [[ "$output" == *'"scorecard":"docs/evals/scorecards/2026-09-03/premortem-plan-shape-t2-xhigh.json","eligible":true,"reason":"verified"'* ]]
 
     # The same gate, with the chain made absent: a shim patches os.path.lexists
     # to deny the launcher paths, which is exactly the condition a host without

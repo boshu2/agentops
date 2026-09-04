@@ -146,7 +146,10 @@ harness chose to write:
 - `dev_write_paths` equals the four-device constant, and every `writable_roots`
   entry sits under `run_root`;
 - `env_allowlist` is a subset of the harness constant plus `PROBE_*` seams;
-- the launcher chain is bound as STRUCTURE, not as paths: each entry records
+- the launcher chain is bound as STRUCTURE, not as paths (a record the
+  verifier checks for consistency anywhere, and against the live filesystem
+  only on a host where the chain's head exists; on any other host the
+  record is the evidence): each entry records
   what it is, either `{path, kind: symlink, target}` or, for the last,
   `{path, kind: file, sha256}`, and `launcher_invoked` records the path the
   harness resolved. The verifier checks on EVERY host that the chain starts at

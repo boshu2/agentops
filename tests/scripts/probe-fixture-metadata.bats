@@ -1500,7 +1500,7 @@ seal["launcher_chain"] = [
     {"path": head, "kind": "symlink", "target": head}
 ] + seal["launcher_chain"]
 # Deduplicated, because allowed_read_paths refuses duplicates on its own: the
-# rule under test here is the chain's, not the allowance's.
+# rule under test here belongs to the chain, not to the allowance.
 seal["allowed_read_paths"] = [head]
 '
     run coverage_reason "$contract"
@@ -1545,9 +1545,9 @@ seal["launcher_chain"][0]["kind"] = "symlink"
 seal["launcher_sha256"] = seal["launcher_sha256"]
 '
     run coverage_reason "$contract"
-    # The record is self-inconsistent (a symlink as the last entry) OR the host
-    # disagrees; either way it is refused rather than counted.
-    [ "$output" != "ELIGIBLE" ]
+    # The record is self-inconsistent (a symlink as the last entry): the record
+    # rule fires, by name, before any host walk.
+    [[ "$output" == *"binary, not a link"* ]]
 
     # A record that is structurally sound but disagrees with the host it names.
     write_seal "$directory/seal.json" seatbelt "${roots[@]}"; rm "$contract"; snapshot "$directory" >/dev/null
