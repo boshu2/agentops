@@ -180,9 +180,11 @@ the Darwin cache root) are denied for reads and links; the wrap names
 allowlist, its hosts are a subset of the pinned five, its ports are exactly
 `[443]` and it permits no unix socket; the writable roots all sit under the run
 root and the devices are the pinned four; the env allowlist is a subset of the
-harness constant plus `PROBE_*`; the launcher chain is real files whose last
-digest is the producer the manifest binds, and the allowed read paths are
-exactly the chain links a denied root covers; and the config text is what the
+harness constant plus `PROBE_*`; the launcher chain is structurally
+adjacent from the invoked path down to the binary whose digest is the producer
+the manifest binds, checked from the record on every host and cross-checked
+against the filesystem on a host that has the chain, and the allowed read paths
+are exactly the chain paths a denied root covers; and the config text is what the
 generator emits for the bound effort. It does NOT prove the absence of every
 ambient capability: the profile is `(allow default)` outside the operations it
 denies, so process capabilities other than the network (signals, IPC, Mach and
@@ -272,6 +274,30 @@ claims the harness or the verifier did not enforce.
 | withdrawn rows mislabeled | a non-current row was run through verify-scorecard first, so the WITHDRAWN row read `evidence-unverified` instead of saying it was withdrawn | non-current verdicts are classified before the evidence is verified and read `verdict-withdrawn` |
 | proxy outside the identity | the CONNECT proxy decides what a rep can reach and was not in the evaluator hash set a scorecard binds | `scripts/lib/probe-connect-proxy.py` joins the set, and the raw proxy log is published with the fixture set as `network.log` and checked against the digest the final rep bound |
 
+### Sixth pass: the launcher pin was not portable
+PR #1101 went red on the ubuntu `correctness` job. `seal_coverage_failure`
+checked the launcher chain by walking the live filesystem (`os.path.lexists`,
+`os.path.islink`, `os.readlink`, `digest_file`) over `/Users/bo/.local/bin/codex`
+and friends. None of those exist on a CI runner, so every sealed set read
+`seal-incomplete` there and `measured` was 0 on Linux and 1 on the Mac that
+captured them. A property that only holds on the capturing host is not a pin.
+
+The chain is now bound as structure in the record and checked from the record
+everywhere: the head equals `launcher_invoked`, each entry before the last is a
+symlink whose `target` is the next entry's `path`, the last is a `file` whose
+`sha256` is `launcher_sha256` and the producer the manifest binds, and no path
+repeats. Where the verifying host HAS the chain, the record is additionally
+compared with the filesystem and any disagreement is refused;
+`verify-scorecard` reports `launcher_chain_host_check: performed` or
+`skipped-absent`. CI verifies the record on Linux; the Mac verifies the record
+AND the filesystem.
+
+An audit of every host-bound call in the coverage path (`exists`, `islink`,
+`readlink`, `is_file`, `digest_file`, `listdir`) found the launcher chain was
+the only one reaching outside the repository. Every other one reads a file the
+repository itself carries (the fixture set, its transcripts, the evaluator
+sources, the skills tree), which exists on any host that checks the repo out.
+
 ### Fifth pass: what two judges found in the fourth seal
 Codex closed nine of twelve and Fable found the seal, proxy, reap ordering,
 transcripts and scorecards sound. Both still failed on properties that were
@@ -285,7 +311,7 @@ claimed and not enforced.
 | data roots optional | `cache_root` was optional and a falsy value made the root VANISH from the required list; link denies were checked only for the checkout and the home | under seatbelt `real_codex_home` and `cache_root` must be non-null, and every required root must appear in both the read denies and the link denies |
 | stale evaluator counted | `verify-scorecard` accepted a consistent `evaluator_matches_capture: false`, so a set captured by different harness or proxy bytes counted as coverage | tier eligibility requires the capture evaluator to equal the current one; replay may still report the mismatch, the gate labels the set `evaluator-stale` |
 | timeout budget unbound | `--timeout 0` omitted the wrapper while `timeout_bin` still named a binary | the budget is recorded as `timeout_seconds`, must be positive, and `wrap` carries the timeout argv |
-| launcher chain not a chain | prepending any existing file to `launcher_chain` stayed eligible | the harness builds the chain from the invoked path; the verifier enforces adjacency (each entry a symlink to the next, the last a regular file with the bound digest) and does not yet bind the invoked path itself |
+| launcher chain not a chain | prepending any existing file to `launcher_chain` stayed eligible | the harness builds the chain from the invoked path and records it as structure (`{path, kind, target}` or `{path, kind, sha256}`) with `launcher_invoked` as the bound head; the verifier enforces the head, adjacency, kind, digest and uniqueness from the RECORD on every host, and additionally walks the filesystem where the chain exists. Recording it as bare paths made the check a filesystem walk, which passed only on the capturing Mac and failed the whole coverage pin on CI (PR #1101) |
 | environment boundary leaked | the in-shell scrub could not clear bash's readonly exports (`SHELLOPTS`, `BASHOPTS`, `UID`, `EUID`, `PPID`) | the launch goes through a real `env -i` with the declared assignments, and a Darwin test compares the rep's own `env` to the recorded allowlist |
 | config growth unchecked in value | the permitted `[projects."<ws>"]` table was checked for its key set only | it must be exactly `{trust_level}` with a value from the observed set |
 | ledger overclaim | the xhigh row said "no rep ran a command" while `control-1` recorded an `rg` over its empty workspace | the rows say what the transcripts show: every command any rep ran is listed, none touched a denied path, no trap fired, no egress refused |

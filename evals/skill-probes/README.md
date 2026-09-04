@@ -112,6 +112,7 @@ and refuse a swapped record; a stage with no record is bound as mode `none`.
 The bound block is `{mode, platform, mechanism, sandbox_exec, wrap, timeout_bin,
 timeout_seconds, network, denied_read_roots, denied_read_data_roots, denied_link_roots,
 writable_roots, dev_write_paths, allowed_read_paths, launcher_chain,
+launcher_invoked,
 launcher_sha256, rep_env, env_allowlist, run_root, workspace_root,
 dispatch_root, git_common_root, real_tmpdir, real_codex_home, cache_root,
 config_sanitized, config_sha256, config_text, auth_copied, profile_sha256,
@@ -145,9 +146,20 @@ harness chose to write:
 - `dev_write_paths` equals the four-device constant, and every `writable_roots`
   entry sits under `run_root`;
 - `env_allowlist` is a subset of the harness constant plus `PROBE_*` seams;
-- every `launcher_chain` entry is an existing file, the last one's digest is
-  `launcher_sha256`, that digest is the producer executable the manifest binds,
-  and `allowed_read_paths` is exactly the chain links a denied root covers;
+- the launcher chain is bound as STRUCTURE, not as paths: each entry records
+  what it is, either `{path, kind: symlink, target}` or, for the last,
+  `{path, kind: file, sha256}`, and `launcher_invoked` records the path the
+  harness resolved. The verifier checks on EVERY host that the chain starts at
+  the invoked path, that each entry before the last is a symlink whose target is
+  the next entry's path, that the last is the file whose digest is both
+  `launcher_sha256` and the producer executable the manifest binds, that no path
+  repeats, and that `allowed_read_paths` is exactly the chain paths a denied
+  root covers. On a host that HAS the chain it also walks the filesystem and
+  refuses any disagreement; on a host that does not, the record is the evidence
+  and the walk is skipped. `verify-scorecard` reports which happened as
+  `launcher_chain_host_check: performed | skipped-absent`. The chain names paths
+  on the machine that captured the set, so checking it by walking the verifying
+  host's filesystem made the pin hold on that one Mac and fail on CI;
 - `timeout_bin` is present;
 - `real_codex_home`, `cache_root`, `real_tmpdir` and `git_common_root` are
   non-null, and EVERY required root (those four, plus `repository_root`, the
