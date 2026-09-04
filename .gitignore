@@ -23,6 +23,10 @@ npm-debug.log*
 dist/
 build/
 *.log
+# ...except the skill-probe egress logs. They are bound evidence: every rep binds
+# the digest of its own lines, and the verifier recomputes both counts from this
+# file, so a set whose log the tree ignores has a digest with nothing to check.
+!evals/skill-probes/**/network.log
 
 # Python
 .venv/

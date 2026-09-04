@@ -1,8 +1,10 @@
 #!/usr/bin/env bash
 # check-skill-probe-headroom.sh — ADVISORY skill.probe-headroom gate.
 #
-# WHY: `evals/skill-probes/LEDGER.md` reports 0/12 product/judgment skills
-# measured, and the reason is not that the probes were never run — it is that
+# WHY: `evals/skill-probes/LEDGER.md` reports most product/judgment skills
+# unmeasured (run `bash scripts/check-skill-probe-coverage.sh --json` for the
+# current count and each set's effective eligibility), and the reason is not
+# that the probes were never run — it is that
 # the probes that DID run came back INERT with no way to tell which kind of
 # INERT it was. `INERT` compares the two arms and says they matched. It cannot
 # say whether the skill changed nothing (a real null, worth a ledger row) or
