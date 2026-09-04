@@ -97,14 +97,22 @@ PASS3_SEAL_KEYS = PASS2_SEAL_KEYS | {
 # budget, so `--timeout 0` omitted the wrapper entirely while the record still
 # named a binary and the capture stayed eligible.
 PASS4_SEAL_KEYS = PASS3_SEAL_KEYS | {"timeout_bin"}
-SEAL_KEYS = PASS4_SEAL_KEYS | {"timeout_seconds"}
+# The 2026-09-03 fifth shape. Its `launcher_chain` was a list of PATHS, so the
+# only way to check that it was a chain at all was to walk the live filesystem.
+# That made a pinned property hold on the capturing Mac and nowhere else: on CI
+# the operator's paths do not exist and every sealed set read seal-incomplete.
+PASS5_SEAL_KEYS = PASS4_SEAL_KEYS | {"timeout_seconds"}
+SEAL_KEYS = PASS5_SEAL_KEYS | {"launcher_invoked"}
 SEAL_SHAPES = (
     LEGACY_SEAL_KEYS,
     PASS2_SEAL_KEYS,
     PASS3_SEAL_KEYS,
     PASS4_SEAL_KEYS,
+    PASS5_SEAL_KEYS,
     SEAL_KEYS,
 )
+LAUNCHER_LINK_KEYS = {"path", "kind", "target"}
+LAUNCHER_FILE_KEYS = {"path", "kind", "sha256"}
 SEAL_REP_ENV_KEYS = {"HOME", "CODEX_HOME", "TMPDIR"}
 SEAL_NETWORK_KEYS = {"mode", "hosts", "ports", "proxy", "unix_sockets"}
 SEAL_NETWORK_MODE = "proxy-allowlist"
@@ -1004,6 +1012,62 @@ def probe_config_drift(path: Path, expected_text: str, workspace: str) -> list[s
     return findings
 
 
+def validate_launcher_chain(value: Any, field: str) -> list[dict[str, Any]]:
+    """The chain as STRUCTURE, not as paths.
+
+    A list of bare paths can only be checked against a live filesystem, which is
+    why the pin held on the capturing Mac and failed everywhere else. Each entry
+    now carries what it is: a symlink and where it points, or the final file and
+    its digest.
+    """
+    if not isinstance(value, list):
+        raise MetadataError(f"{field} must be an array of chain entries")
+    entries: list[dict[str, Any]] = []
+    for index, item in enumerate(value):
+        label = f"{field}[{index}]"
+        if not isinstance(item, dict):
+            raise MetadataError(f"{label} must be an object")
+        kind = item.get("kind")
+        if kind == "symlink":
+            entry = require_exact_object(item, LAUNCHER_LINK_KEYS, label)
+            entries.append(
+                {
+                    "path": require_absolute_path(
+                        os.path.normpath(require_text(entry["path"], f"{label} path")),
+                        f"{label} path",
+                    ),
+                    "kind": "symlink",
+                    "target": require_absolute_path(
+                        os.path.normpath(require_text(entry["target"], f"{label} target")),
+                        f"{label} target",
+                    ),
+                }
+            )
+        elif kind == "file":
+            entry = require_exact_object(item, LAUNCHER_FILE_KEYS, label)
+            digest = entry["sha256"]
+            if not isinstance(digest, str) or not SHA256_RE.fullmatch(digest):
+                raise MetadataError(f"{label} sha256 must be a sha256 digest")
+            entries.append(
+                {
+                    "path": require_absolute_path(
+                        os.path.normpath(require_text(entry["path"], f"{label} path")),
+                        f"{label} path",
+                    ),
+                    "kind": "file",
+                    "sha256": digest,
+                }
+            )
+        else:
+            raise MetadataError(f"{label} kind must be 'symlink' or 'file', got {kind!r}")
+    return entries
+
+
+def launcher_chain_paths(seal: dict[str, Any]) -> list[str]:
+    """The chain's paths, for consumers that only need where it points."""
+    return [entry["path"] for entry in seal["launcher_chain"]]
+
+
 def seal_quote(value: str, field: str) -> str:
     """A seatbelt path literal. A quote or a backslash could break the profile."""
     text = require_text(value, field)
@@ -1149,6 +1213,7 @@ def seal_block_from_record(
         "cache_root",
         "real_codex_home",
         "launcher_chain",
+        "launcher_invoked",
         "launcher_sha256",
         "config_sha256",
         "config_text",
@@ -1214,7 +1279,7 @@ def seal_block_from_record(
         isinstance(item, str) and item.startswith("/") for item in network["unix_sockets"]
     ):
         raise MetadataError(f"{label} network unix_sockets must be absolute paths")
-    launcher_chain = normalized_path_list(
+    launcher_chain = validate_launcher_chain(
         record["launcher_chain"], f"{label} launcher_chain"
     )
     for field in ("config_sha256", "launcher_sha256"):
@@ -1296,6 +1361,18 @@ def seal_block_from_record(
             f"{label} real_codex_home",
         ),
         "launcher_chain": launcher_chain,
+        # Empty for an unsealed capture, which has no launcher exception at all;
+        # coverage requires it non-empty under seatbelt.
+        "launcher_invoked": (
+            ""
+            if not record["launcher_invoked"]
+            else require_absolute_path(
+                os.path.normpath(
+                    require_text(record["launcher_invoked"], f"{label} launcher_invoked")
+                ),
+                f"{label} launcher_invoked",
+            )
+        ),
         "launcher_sha256": record["launcher_sha256"],
         "timeout_bin": optional_normalized_path(
             record["timeout_bin"], f"{label} timeout_bin"
@@ -1328,6 +1405,7 @@ SEAL_PAYLOAD_KEYS = {
     "dev_write_paths",
     "allowed_read_paths",
     "launcher_chain",
+    "launcher_invoked",
     "launcher_sha256",
     "timeout_bin",
     "timeout_seconds",
@@ -1379,6 +1457,7 @@ def write_seal_record(payload_path: Path, output_path: Path) -> dict[str, Any]:
         "dev_write_paths": list(fields["dev_write_paths"]),
         "allowed_read_paths": list(fields["allowed_read_paths"]),
         "launcher_chain": list(fields["launcher_chain"]),
+        "launcher_invoked": fields["launcher_invoked"],
         "launcher_sha256": fields["launcher_sha256"] or None,
         "timeout_bin": fields["timeout_bin"] or None,
         "timeout_seconds": fields["timeout_seconds"],
@@ -1534,6 +1613,7 @@ def read_seal_file(
             "cache_root": None,
             "real_codex_home": os.path.join(home, ".codex"),
             "launcher_chain": [],
+            "launcher_invoked": "",
             "launcher_sha256": None,
             "config_sha256": None,
             "config_text": None,
@@ -1579,7 +1659,7 @@ def validate_seal(value: Any) -> dict[str, Any]:
     if keys == SEAL_KEYS:
         require_exact_object(seal["network"], SEAL_NETWORK_KEYS, "seal network")
         require_path_list(seal["dev_write_paths"], "seal dev_write_paths")
-        require_path_list(seal["launcher_chain"], "seal launcher_chain")
+        validate_launcher_chain(seal["launcher_chain"], "seal launcher_chain")
         require_absolute_path(seal["real_codex_home"], "seal real_codex_home")
     profile_sha256 = seal["profile_sha256"]
     if mode == "seatbelt":
@@ -1658,6 +1738,115 @@ def unsealed_roots(seal: dict[str, Any]) -> list[str]:
     ]
 
 
+def launcher_chain_record_failure(seal: dict[str, Any]) -> str | None:
+    """Everything about the chain that the RECORD alone can settle.
+
+    Structure, adjacency, head, digest and uniqueness are all properties of the
+    record, so they hold on every host that reads it.
+    """
+    chain = seal["launcher_chain"]
+    if not chain:
+        return "tier coverage requires the producer launcher chain in the seal"
+    invoked = seal["launcher_invoked"]
+    if not invoked:
+        return "tier coverage requires the invoked launcher path in the seal"
+    if chain[0]["path"] != invoked:
+        return (
+            "tier coverage requires the chain to start at the invoked launcher; "
+            f"launcher_invoked is {invoked}, the chain starts at {chain[0]['path']}"
+        )
+    paths = launcher_chain_paths(seal)
+    if len(set(paths)) != len(paths):
+        return "tier coverage refuses a launcher chain that repeats a path"
+    for index, entry in enumerate(chain):
+        last = index == len(chain) - 1
+        if last:
+            if entry["kind"] != "file":
+                return (
+                    "tier coverage requires the final launcher_chain entry to be the "
+                    f"binary, not a link: {entry['path']}"
+                )
+            if entry["sha256"] != seal["launcher_sha256"]:
+                return (
+                    "tier coverage requires launcher_sha256 to be the digest the chain "
+                    f"records for {entry['path']}"
+                )
+            continue
+        if entry["kind"] != "symlink":
+            return (
+                "tier coverage requires every launcher_chain entry before the last "
+                f"to be a symlink to the next: {entry['path']} is recorded as "
+                f"{entry['kind']}"
+            )
+        if entry["target"] != chain[index + 1]["path"]:
+            return (
+                "tier coverage requires launcher_chain to be adjacent: "
+                f"{entry['path']} points at {entry['target']}, not "
+                f"{chain[index + 1]['path']}"
+            )
+    return None
+
+
+def launcher_chain_host_failure(seal: dict[str, Any]) -> tuple[str, str | None]:
+    """Cross-check the record against THIS host, when this host has the chain.
+
+    Returns (what happened, failure). The chain names paths on the machine that
+    captured the set, so a verifier elsewhere has the record and nothing to
+    compare it with. Where the head does exist, disagreement is refused.
+    """
+    chain = seal["launcher_chain"]
+    if not chain:
+        return ("skipped-absent", None)
+    head = chain[0]["path"]
+    if not os.path.lexists(head):
+        return ("skipped-absent", None)
+    for index, entry in enumerate(chain):
+        path = entry["path"]
+        if not os.path.lexists(path):
+            return (
+                "performed",
+                "the launcher chain disagrees with this host: "
+                f"{path} is recorded but absent",
+            )
+        if entry["kind"] == "symlink":
+            if not os.path.islink(path):
+                return (
+                    "performed",
+                    f"the launcher chain records {path} as a symlink; this host "
+                    "has something else",
+                )
+            try:
+                target = os.readlink(path)
+            except OSError as exc:
+                return ("performed", f"could not read the launcher link {path}: {exc}")
+            if not os.path.isabs(target):
+                target = os.path.join(os.path.dirname(path), target)
+            if os.path.normpath(target) != entry["target"]:
+                return (
+                    "performed",
+                    f"the launcher chain records {path} pointing at "
+                    f"{entry['target']}; this host has {os.path.normpath(target)}",
+                )
+            continue
+        if os.path.islink(path) or not os.path.isfile(path):
+            return (
+                "performed",
+                f"the launcher chain records {path} as the binary; this host has "
+                "a link or no regular file",
+            )
+        try:
+            digest = digest_file(Path(path))
+        except (OSError, MetadataError) as exc:
+            return ("performed", f"could not digest the bound launcher: {exc}")
+        if digest != entry["sha256"]:
+            return (
+                "performed",
+                f"the launcher chain records {path} as {entry['sha256']}; this host "
+                f"has {digest}",
+            )
+    return ("performed", None)
+
+
 def seal_coverage_failure(seal: dict[str, Any]) -> str | None:
     """The reason this seal cannot be tier coverage, or None when it can.
 
@@ -1694,6 +1883,13 @@ def seal_coverage_failure(seal: dict[str, Any]) -> str | None:
             "tier coverage requires the hardened seal block (2026-09-03 fourth "
             "pass): this contract records no timeout binary, so the wrapper that "
             "ran inside the sandbox is unaccounted for"
+        )
+    if set(seal) == PASS5_SEAL_KEYS:
+        return (
+            "tier coverage requires the hardened seal block (2026-09-04 sixth "
+            "pass): this contract records the launcher chain as bare paths, "
+            "which only a walk of the capturing host's filesystem can check, so "
+            "the pin does not hold on any other host"
         )
     if set(seal) == PASS4_SEAL_KEYS:
         return (
@@ -1849,6 +2045,17 @@ def seal_coverage_failure(seal: dict[str, Any]) -> str | None:
                 f"tier coverage requires the rep's {key} to sit OUTSIDE the "
                 f"operator's home: {value}"
             )
+    # The launcher chain is the read exception, so it has to be a real chain.
+    # Everything below reads the RECORD: a chain of bare paths could only be
+    # checked by walking the capturing operator's filesystem, so the pin held on
+    # one Mac and failed on every other host, CI included.
+    failure = launcher_chain_record_failure(seal)
+    if failure is not None:
+        return failure
+    # And WHEN the host has the chain, the record is cross-checked against it.
+    failure = launcher_chain_host_failure(seal)[1]
+    if failure is not None:
+        return failure
     # The launcher exception is the one hole in the read denies, so it is tied to
     # the producer the contract bound: exactly the resolved launcher chain, and
     # only the links of it that a denied root would otherwise cover. Without
@@ -1856,7 +2063,7 @@ def seal_coverage_failure(seal: dict[str, Any]) -> str | None:
     # "launcher" and read straight through the seal.
     expected_allowed = [
         path
-        for path in seal["launcher_chain"]
+        for path in launcher_chain_paths(seal)
         if seal_covers(seal["denied_read_roots"], path)
     ]
     if seal["allowed_read_paths"] != expected_allowed:
@@ -1908,56 +2115,6 @@ def seal_coverage_failure(seal: dict[str, Any]) -> str | None:
             "tier coverage permits only the pinned rep environment plus "
             f"{SEAL_ENV_SEAM_PREFIX}* seams; this seal also passes: "
             + ", ".join(extra_env)
-        )
-    # The launcher chain is the read exception, so it has to be a real chain:
-    # every link an existing file, and the last one the binary whose digest the
-    # producer identity also carries.
-    chain = seal["launcher_chain"]
-    if not chain:
-        return "tier coverage requires the producer launcher chain in the seal"
-    # Adjacency, not just existence: a chain is a symlink walk, so each entry
-    # must be a symlink resolving to the NEXT entry and only the last a regular
-    # file. Without that, prepending any existing file to the list stayed
-    # eligible and the read exception covered it.
-    for index, link in enumerate(chain):
-        if not os.path.lexists(link):
-            return (
-                "tier coverage requires every launcher_chain entry to be an "
-                f"existing file; missing: {link}"
-            )
-        last = index == len(chain) - 1
-        if last:
-            if os.path.islink(link) or not os.path.isfile(link):
-                return (
-                    "tier coverage requires the final launcher_chain entry to be a "
-                    f"regular file, not a link: {link}"
-                )
-            continue
-        if not os.path.islink(link):
-            return (
-                "tier coverage requires every launcher_chain entry before the last "
-                f"to be a symlink to the next: {link} is not a symlink"
-            )
-        try:
-            target = os.readlink(link)
-        except OSError as exc:
-            return f"tier coverage could not read the launcher link {link}: {exc}"
-        if not os.path.isabs(target):
-            target = os.path.normpath(os.path.join(os.path.dirname(link), target))
-        if os.path.normpath(target) != chain[index + 1]:
-            return (
-                "tier coverage requires launcher_chain to be adjacent: "
-                f"{link} resolves to {target}, not {chain[index + 1]}"
-            )
-    try:
-        final_digest = digest_file(Path(chain[-1]))
-    except (OSError, MetadataError) as exc:
-        return f"tier coverage could not digest the bound launcher: {exc}"
-    if final_digest != seal["launcher_sha256"]:
-        return (
-            "tier coverage requires launcher_sha256 to be the digest of the last "
-            f"launcher_chain entry; recorded {seal['launcher_sha256']}, "
-            f"{chain[-1]} is {final_digest}"
         )
     # The last check is the one that makes every check above load-bearing: the
     # block must reproduce the exact profile bytes the kernel enforced.
@@ -3705,6 +3862,7 @@ def verify_scorecard(
         verify_network_log(fixture_dir, expected_transcripts(manifest["reps"]))
     # Two ties the seal block alone cannot make, because both ends live in the
     # producer identity the manifest binds.
+    launcher_host_check = "skipped-absent"
     if seal["mode"] == "seatbelt" and set(seal) == SEAL_KEYS:
         expected_config = render_probe_config(producer.get("effort"))
         if seal["config_text"] != expected_config:
@@ -3714,6 +3872,10 @@ def verify_scorecard(
                 "only proves the recorded text hashes to the recorded digest"
             )
         launcher_digest = seal["launcher_sha256"]
+        # Which of the two things happened is part of the answer: the record was
+        # checked everywhere, and on a host that HAS the chain it was also
+        # compared with the filesystem.
+        launcher_host_check = launcher_chain_host_failure(seal)[0]
         if launcher_digest != identity.get("executable_sha256"):
             raise MetadataError(
                 "tier coverage requires the bound launcher to be the producer the "
@@ -3770,6 +3932,7 @@ def verify_scorecard(
 
     return {
         "binding_sha256": manifest["binding_sha256"],
+        "launcher_chain_host_check": launcher_host_check,
         "producer": manifest["producer"],
         "probe": ledger_probe,
         "reps": reps,

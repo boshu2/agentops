@@ -341,6 +341,8 @@ SEAL_DENIED_LINK_ROOTS=()
 SEAL_WRITABLE_ROOTS=()
 SEAL_ALLOWED_READ_PATHS=()
 SEAL_LAUNCHER_CHAIN=()
+SEAL_LAUNCHER_CHAIN_JSON="[]"
+SEAL_LAUNCHER_INVOKED=""
 SEAL_LAUNCHER_SHA=""
 SEAL_CONFIG_KEPT=""
 SEAL_CONFIG_SHA=""
@@ -655,10 +657,30 @@ print(target if os.path.isabs(target) else os.path.normpath(
         guard=$((guard + 1))
         [[ $guard -lt 16 ]] || break
     done
+    SEAL_LAUNCHER_INVOKED="${SEAL_LAUNCHER_CHAIN[0]}"
     SEAL_LAUNCHER_SHA="sha256:$(python3 -c '
 import hashlib, sys
 print(hashlib.sha256(open(sys.argv[1], "rb").read()).hexdigest())
 ' "${SEAL_LAUNCHER_CHAIN[-1]}")"
+    # The chain is recorded as STRUCTURE, not as paths: what each entry is and
+    # where it points. A list of paths can only be checked by walking the
+    # filesystem it was captured on, which made the pin hold on this Mac and
+    # fail on every other host.
+    SEAL_LAUNCHER_CHAIN_JSON="$(python3 -c '
+import hashlib, json, os, sys
+entries = []
+paths = sys.argv[1:]
+for index, path in enumerate(paths):
+    if index == len(paths) - 1:
+        with open(path, "rb") as handle:
+            digest = hashlib.sha256(handle.read()).hexdigest()
+        entries.append({"path": path, "kind": "file", "sha256": "sha256:" + digest})
+    else:
+        entries.append(
+            {"path": path, "kind": "symlink", "target": paths[index + 1]}
+        )
+print(json.dumps(entries, sort_keys=True))
+' "${SEAL_LAUNCHER_CHAIN[@]}")"
     local root covered
     for candidate in "${SEAL_LAUNCHER_CHAIN[@]}"; do
         covered=0
@@ -810,8 +832,8 @@ seal_payload_file() {
         "$(printf '%s\n' ${SEAL_WRITABLE_ROOTS[@]+"${SEAL_WRITABLE_ROOTS[@]}"})" \
         "$(printf '%s\n' ${SEAL_DEV_WRITE_PATHS[@]+"${SEAL_DEV_WRITE_PATHS[@]}"})" \
         "$(printf '%s\n' ${SEAL_ALLOWED_READ_PATHS[@]+"${SEAL_ALLOWED_READ_PATHS[@]}"})" \
-        "$(printf '%s\n' ${SEAL_LAUNCHER_CHAIN[@]+"${SEAL_LAUNCHER_CHAIN[@]}"})" \
-        "$SEAL_LAUNCHER_SHA" \
+        "$SEAL_LAUNCHER_CHAIN_JSON" \
+        "$SEAL_LAUNCHER_INVOKED" "$SEAL_LAUNCHER_SHA" \
         "$(printf '%s\n' ${SEAL_ENV_ALLOWLIST[@]+"${SEAL_ENV_ALLOWLIST[@]}"})" \
         "$REP_HOME" "$REP_CODEX_HOME" "$REP_TMPDIR" \
         "$REAL_HOME" "$REAL_CODEX_HOME" "$SEAL_REAL_TMPDIR" "$SEAL_CACHE_ROOT" \
@@ -827,7 +849,7 @@ import sys
 (
     path, mode, sandbox_exec, platform, profile_file,
     denied, denied_data, denied_link, writable, dev_write, allowed_read,
-    launcher_chain, launcher_sha, env_allowlist,
+    launcher_chain, launcher_invoked, launcher_sha, env_allowlist,
     rep_home, rep_codex_home, rep_tmpdir,
     real_home, real_codex_home, real_tmpdir, cache_root, git_common_root,
     run_root, workspace_root, dispatch_root,
@@ -857,7 +879,8 @@ payload = {
     "writable_roots": lines(writable),
     "dev_write_paths": lines(dev_write) if sealed else [],
     "allowed_read_paths": lines(allowed_read),
-    "launcher_chain": lines(launcher_chain),
+    "launcher_chain": json.loads(launcher_chain) if sealed else [],
+    "launcher_invoked": launcher_invoked,
     "launcher_sha256": launcher_sha,
     "env_allowlist": lines(env_allowlist),
     "rep_env": {
