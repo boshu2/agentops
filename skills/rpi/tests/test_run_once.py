@@ -28,7 +28,11 @@ VALIDATE_SPEC.loader.exec_module(VALIDATE)
 # A literal, independently written digest. Fakes must never derive an expected
 # identity by calling the code under test — that is how the original defect
 # stayed invisible.
-INTENT_DIGEST = "c" * 64
+INTENT_SNAPSHOT_BYTES = b'{"acceptance": ["works"], "intent_ref": "bead:agentops-test"}'
+# The digest of the bytes above, computed by the test rather than by the module
+# under test: a fake that borrows the subject's own digest function proves
+# nothing, which is how the original identity defect stayed invisible.
+INTENT_DIGEST = hashlib.sha256(INTENT_SNAPSHOT_BYTES).hexdigest()
 
 # The SHARED adversarial corpus. workflows/rpi.js reads the same file through
 # tests/scripts/agentops-product-boundary.bats, so a case only one side honors
@@ -118,6 +122,7 @@ class RunOnceTests(unittest.TestCase):
                 "intent": intent,
                 "acceptance": ["works"],
                 "acceptance_digest": INTENT_DIGEST,
+                "intent_snapshot_bytes": INTENT_SNAPSHOT_BYTES,
             }
 
         def implement(_plan):
@@ -129,6 +134,7 @@ class RunOnceTests(unittest.TestCase):
             return {
                 "verdict": verdict,
                 "acceptance_digest": INTENT_DIGEST,
+                "intent_snapshot_bytes": INTENT_SNAPSHOT_BYTES,
                 "subject_manifest_digest": "a" * 64,
                 "author_context_id": "author-ctx",
                 "validator_context_id": "validator-ctx",
@@ -291,6 +297,7 @@ class RunOnceTests(unittest.TestCase):
                 "intent_ref": "caller",
                 "acceptance": ["works"],
                 "acceptance_digest": INTENT_DIGEST,
+                "intent_snapshot_bytes": INTENT_SNAPSHOT_BYTES,
             },
             lambda _plan: None,
             lambda _plan, _candidate: calls.append("validate"),
@@ -328,6 +335,7 @@ class RunOnceTests(unittest.TestCase):
                         "intent_ref": "caller",
                         "acceptance": ["works"],
                         "acceptance_digest": value,
+                        "intent_snapshot_bytes": INTENT_SNAPSHOT_BYTES,
                     }
 
                 with self.assertRaisesRegex(ValueError, "acceptance_digest"):
@@ -815,6 +823,9 @@ class ComposedIdentityContractTests(unittest.TestCase):
                     "intent_ref": str(path),
                     "acceptance": ["works"],
                     "acceptance_digest": hashlib.sha256(self.INTENT_BYTES).hexdigest(),
+                    # RPI re-derives the digest from the snapshot ON DISK before
+                    # it dispatches Implement, so the binding is earned here too.
+                    "verify_snapshot": lambda: Path(path).read_bytes(),
                 }
 
             def implement(_plan):
@@ -888,7 +899,12 @@ class ComposedIdentityContractTests(unittest.TestCase):
 
 
 class IntentSnapshotBindingTests(unittest.TestCase):
-    """A digest nobody re-derived is the author's word, not an identity."""
+    """A digest nobody re-derived is the author's word, not an identity.
+
+    The re-derivation is REQUIRED. When it was optional, a Plan that simply
+    omitted the field got everything a verified one got, which made the whole
+    identity chain optional with it.
+    """
 
     def guard(self, _intent):
         return {
@@ -900,58 +916,105 @@ class IntentSnapshotBindingTests(unittest.TestCase):
             "stop_condition": "converged",
         }
 
-    def invoke(self, plan_output, implemented=None):
-        calls = []
-
-        def implement(_resolved):
-            calls.append("implement")
-            return implemented
-
-        def validate(_resolved, _subject):
-            raise AssertionError("validate must not run")
-
-        MODULE.invoke_once("intent", self.guard, lambda _i: plan_output, implement, validate)
-        return calls
-
-    def base_plan(self, **overrides):
-        plan = {"intent_ref": "bead:agentops-test", "acceptance_digest": "c" * 64}
-        plan.update(overrides)
-        return plan
-
-    def test_a_snapshot_digest_that_disagrees_is_refused_before_implement(self):
+    def run_plan(self, plan_output):
+        """Dispatch with a recording Implement; returns the stages that ran."""
         calls = []
 
         def implement(_resolved):
             calls.append("implement")
             return None
 
-        with self.assertRaisesRegex(ValueError, "does not hash to the acceptance digest"):
+        MODULE.invoke_once(
+            "intent", self.guard, lambda _i: plan_output, implement, lambda *_: None
+        )
+        return calls
+
+    def refuse(self, plan_output, pattern):
+        calls = []
+
+        def implement(_resolved):
+            calls.append("implement")
+            return None
+
+        with self.assertRaisesRegex(ValueError, pattern):
             MODULE.invoke_once(
-                "intent",
-                self.guard,
-                lambda _i: self.base_plan(intent_snapshot_digest="d" * 64),
-                implement,
-                lambda *_: None,
+                "intent", self.guard, lambda _i: plan_output, implement, lambda *_: None
             )
         self.assertEqual(calls, [], "Implement ran on an unbound intent identity")
 
-    def test_a_malformed_snapshot_digest_is_refused(self):
-        for bogus in ("", "aaaa", "A" * 64, 7):
+    def base_plan(self, **overrides):
+        plan = {"intent_ref": "bead:agentops-test", "acceptance_digest": INTENT_DIGEST}
+        plan.update(overrides)
+        return plan
+
+    def test_a_plan_that_returns_no_snapshot_is_refused_before_implement(self):
+        self.refuse(self.base_plan(), "must return the intent snapshot")
+
+    def test_snapshot_bytes_that_hash_to_the_declared_digest_dispatch(self):
+        self.assertEqual(
+            self.run_plan(self.base_plan(intent_snapshot_bytes=INTENT_SNAPSHOT_BYTES)),
+            ["implement"],
+        )
+
+    def test_snapshot_bytes_that_hash_to_anything_else_are_refused(self):
+        self.refuse(
+            self.base_plan(intent_snapshot_bytes=INTENT_SNAPSHOT_BYTES + b" tampered"),
+            "does not hash to the acceptance digest",
+        )
+
+    def test_a_verifier_returning_the_bytes_is_hashed_here(self):
+        self.assertEqual(
+            self.run_plan(self.base_plan(verify_snapshot=lambda: INTENT_SNAPSHOT_BYTES)),
+            ["implement"],
+        )
+
+    def test_a_verifier_returning_its_own_rederived_digest_binds(self):
+        self.assertEqual(
+            self.run_plan(self.base_plan(verify_snapshot=lambda: INTENT_DIGEST)),
+            ["implement"],
+        )
+
+    def test_a_verifier_returning_a_disagreeing_digest_is_refused(self):
+        self.refuse(
+            self.base_plan(verify_snapshot=lambda: "d" * 64),
+            "does not hash to the acceptance digest",
+        )
+
+    def test_a_malformed_rederived_digest_is_refused(self):
+        for bogus in ("", "aaaa", "A" * 64):
             with self.subTest(value=bogus):
-                with self.assertRaisesRegex(ValueError, "lowercase hex SHA-256"):
-                    MODULE.invoke_once(
-                        "intent",
-                        self.guard,
-                        lambda _i, v=bogus: self.base_plan(intent_snapshot_digest=v),
-                        lambda _r: None,
-                        lambda *_: None,
-                    )
+                self.refuse(
+                    self.base_plan(verify_snapshot=lambda v=bogus: v),
+                    "lowercase hex SHA-256",
+                )
 
-    def test_an_agreeing_snapshot_digest_binds_and_dispatches(self):
-        self.assertEqual(self.invoke(self.base_plan(intent_snapshot_digest="c" * 64)), ["implement"])
+    def test_a_snapshot_of_the_wrong_type_is_refused(self):
+        for bogus in (7, [], {}, None):
+            with self.subTest(value=bogus):
+                self.refuse(
+                    self.base_plan(verify_snapshot=lambda v=bogus: v),
+                    "must be bytes, or a lowercase hex SHA-256",
+                )
 
-    def test_an_absent_snapshot_digest_leaves_the_prior_contract_unchanged(self):
-        self.assertEqual(self.invoke(self.base_plan()), ["implement"])
+    def test_a_non_callable_verifier_is_refused(self):
+        self.refuse(self.base_plan(verify_snapshot="not callable"), "must be callable")
+
+    def test_declaring_both_forms_is_refused(self):
+        self.refuse(
+            self.base_plan(
+                intent_snapshot_bytes=INTENT_SNAPSHOT_BYTES,
+                verify_snapshot=lambda: INTENT_SNAPSHOT_BYTES,
+            ),
+            "exactly one of",
+        )
+
+    def test_the_digest_is_never_borrowed_from_the_module_under_test(self):
+        """The fixture digest is the test's own, over the fixture's own bytes."""
+        self.assertEqual(
+            INTENT_DIGEST, hashlib.sha256(INTENT_SNAPSHOT_BYTES).hexdigest()
+        )
+        self.assertNotEqual(INTENT_DIGEST, "c" * 64)
+
 
 class SharedConvergenceCorpusTests(unittest.TestCase):
     """Every case in the shared corpus, run through the Python law."""

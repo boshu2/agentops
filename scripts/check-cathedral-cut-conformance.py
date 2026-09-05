@@ -1431,6 +1431,9 @@ def probe_no_substrate_calls() -> None:
         resolved_intent = {
             **intent_source,
             "acceptance_digest": hashlib.sha256(intent_bytes).hexdigest(),
+            # RPI re-derives this from the bytes before it dispatches Implement;
+            # a declared digest nobody re-derived is not an identity.
+            "intent_snapshot_bytes": intent_bytes,
         }
         subject_facts = {
             "subject_manifest_digest": payload["canonical_manifest_digest"],
