@@ -419,3 +419,97 @@ MD
     [ "$status" -eq 0 ]
     [[ "$output" == *"OK:"* ]]
 }
+
+# --- data fences: a plain JSON string is a claim, not decoration -----------
+
+@test "a scorecard-shaped json fence reports a missing plain-string path" {
+    # The real shape: the claim word and the path are on different lines and
+    # neither is a backtick span, so backtick-only candidacy read it as clean.
+    cat > "$FIX/evals/doc.md" <<'MD'
+```json
+{
+  "status": "published",
+  "artifact": "evals/skill-probes/absent-egress.log"
+}
+```
+MD
+    git -C "$FIX" add evals/doc.md
+    git -C "$FIX" commit -q -m init
+
+    run bash "$GATE" "$FIX"
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"evals/skill-probes/absent-egress.log missing"* ]]
+}
+
+@test "a data fence reports an untracked plain-string path" {
+    cat > "$FIX/evals/doc.md" <<'MD'
+```json
+{"harness": "scripts/quoted-untracked.sh"}
+```
+MD
+    git -C "$FIX" add evals/doc.md
+    git -C "$FIX" commit -q -m init
+    touch "$FIX/scripts/quoted-untracked.sh"
+
+    run bash "$GATE" "$FIX"
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"scripts/quoted-untracked.sh untracked"* ]]
+}
+
+@test "a quoted token outside the governed trees is still not a candidate" {
+    cat > "$FIX/evals/doc.md" <<'MD'
+```json
+{"home": "~/notes/private.md", "url": "https://example.invalid/a/b", "glob": "scripts/*.sh"}
+```
+MD
+    git -C "$FIX" add evals/doc.md
+    git -C "$FIX" commit -q -m init
+
+    run bash "$GATE" "$FIX"
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"OK:"* ]]
+}
+
+@test "a shell fence keeps its exemption for quoted tokens too" {
+    cat > "$FIX/evals/doc.md" <<'MD'
+```bash
+cat "scripts/shell-quoted-untracked.sh"
+```
+MD
+    git -C "$FIX" add evals/doc.md
+    git -C "$FIX" commit -q -m init
+    touch "$FIX/scripts/shell-quoted-untracked.sh"
+
+    run bash "$GATE" "$FIX"
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"OK:"* ]]
+}
+
+# --- prose: the claim is the paragraph, not the line ----------------------
+
+@test "a prose claim wrapped across lines still binds its path" {
+    cat > "$FIX/evals/doc.md" <<'MD'
+The egress log for the low-effort capture is published at the
+path `evals/skill-probes/wrapped.log` for anyone to inspect.
+MD
+    git -C "$FIX" add evals/doc.md
+    git -C "$FIX" commit -q -m init
+
+    run bash "$GATE" "$FIX"
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"evals/skill-probes/wrapped.log missing"* ]]
+}
+
+@test "a claim word in a different paragraph does not bind a later path" {
+    cat > "$FIX/evals/doc.md" <<'MD'
+The scorecard is published in this repository.
+
+A future capture might land at `evals/skill-probes/future.log` eventually.
+MD
+    git -C "$FIX" add evals/doc.md
+    git -C "$FIX" commit -q -m init
+
+    run bash "$GATE" "$FIX"
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"OK:"* ]]
+}

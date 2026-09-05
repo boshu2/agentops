@@ -76,16 +76,15 @@ checks from 2 escapes, and `yield gauge` produced the escape-rate series E5 gove
 
 ## Results — 9-task series (Qwen2.5-Coder-32B producer × codex membrane)
 
-Run `harvest-qwen-codex-2026-06-22`. **Committed evidence** (verifiable from this
-repo, not the gitignored runtime corpus):
-[`evals/membrane/harvest-2026-06-22/scorecard.json`](../../evals/membrane/harvest-2026-06-22/scorecard.json)
-(the raw per-task scorecard the table below is read from),
-[`derived-check-rfd-nested-schema.md`](../../evals/membrane/harvest-2026-06-22/derived-check-rfd-nested-schema.md)
-(the high-value miss-check), and
-[`harvest-to-ledger.sh`](../../evals/membrane/harvest-2026-06-22/harvest-to-ledger.sh)
-(the reproducible flow). The isolated yield ledger + the full set of 4 derived
-checks live in the gitignored runtime corpus (`.agents/membrane/harvest-2026-06-22/`)
-and are reproducible by re-running the flow on the committed scorecard.
+Run `harvest-qwen-codex-2026-06-22`. The evidence this section reads from sat
+under a retired evals/membrane harvest tree: the raw per-task scorecard, the
+high-value `rfd-nested-schema` miss-check, and the reproducible harvest flow.
+The Train 2 legible-membrane cut removed that whole tree, so none of it is in
+this checkout; recover it from git history at the commit that deleted it. The
+isolated yield ledger and the full set of 4 derived checks never entered the
+repository at all, since they sat in the gitignored runtime corpus. Read the
+table below as a record of what that run measured, not as something you can
+re-derive from this checkout.
 
 | task | producer | oracle | membrane | class |
 |---|---|---|---|---|
@@ -129,9 +128,9 @@ tails.
   (The gauge's raw `catch_rate` reads lower — see the boxed note above — because
   its denominator includes the producer's self-`CONFIRMED@1` verdicts.)
 - the retired `membrane derive-checks` command compiled **4 membrane checks** (one per false-done
-  chain), including the high-value `rfd-nested-schema` miss-check committed at
-  [`evals/membrane/harvest-2026-06-22/derived-check-rfd-nested-schema.md`](../../evals/membrane/harvest-2026-06-22/derived-check-rfd-nested-schema.md)
-  (a fresh-context re-verification of the deterministic acceptance).
+  chain), including the high-value `rfd-nested-schema` miss-check, which sat under the retired
+  evals/membrane tree and went with it (a fresh-context re-verification of the deterministic
+  acceptance).
 
 ### A fail-open the membrane discipline caught in the harvest tooling
 

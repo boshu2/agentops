@@ -126,6 +126,10 @@ with open(sys.argv[2], "r", encoding="utf-8") as _fl:
     files = [line.rstrip("\n") for line in _fl if line.strip()]
 
 BACKTICK_RE = re.compile(r"`([^`\n]+)`")
+# Inside a DATA fence a repo path is usually a plain JSON or YAML string, not a
+# code span: a scorecard writes "artifact": "evals/.../x.log". Scanning only
+# backtick spans there left the commonest real shape unchecked.
+QUOTED_RE = re.compile(r"\"([^\"\n]+)\"")
 PREFIXES = ("evals/", "docs/evals/", "scripts/", "tests/")
 CLAIM_WORDS = ("published", "tracked", "committed", "lives at")
 FENCE_RE = re.compile(r"^\s{0,3}(`{3,}|~{3,})\s*(\S*)")
@@ -198,12 +202,19 @@ for display_path in files:
         sys.exit(2)
 
     rel_display = os.path.relpath(display_path, repo_root)
+    # PASS 1: classify each line as skipped, data-fence, or prose, and group the
+    # prose into blank-line-delimited paragraphs. The claim words are a property
+    # of the PARAGRAPH, not of the line: "the log is published at the\npath `x`"
+    # wrapped across two lines and the claim went blind.
+    KIND_SKIP, KIND_DATA, KIND_PROSE = 0, 1, 2
+    kinds = [KIND_SKIP] * len(lines)
+    paragraph_of = [-1] * len(lines)
+    paragraphs = []
     fence_marker = None
-    fence_info = None
     fence_decided = None
-    for lineno, line in enumerate(lines, start=1):
+    current = -1
+    for index, line in enumerate(lines):
         opener = FENCE_RE.match(line)
-        in_data_fence = False
         if fence_marker is None:
             if opener is not None:
                 fence_marker = opener.group(1)[0]
@@ -213,24 +224,44 @@ for display_path in files:
                 fence_decided = True if fence_info in SHELL_INFO else (
                     None if fence_info == "" else False
                 )
+                current = -1
                 continue
         else:
             if opener is not None and opener.group(1)[0] == fence_marker:
                 fence_marker = None
-                fence_info = None
                 fence_decided = None
                 continue
             if fence_decided is None:
                 fence_decided = command_fence(line)
-            if fence_decided:
-                continue
-            in_data_fence = True
-        lowered = line.lower()
-        # Inside a scanned data fence the whole block is the claim; in prose the
-        # claim is the sentence, so the claim words still gate a forward
-        # reference there.
-        claims = in_data_fence or any(word in lowered for word in CLAIM_WORDS)
-        for raw_tok in BACKTICK_RE.findall(line):
+            if not fence_decided:
+                kinds[index] = KIND_DATA
+            continue
+        if not line.strip():
+            current = -1
+            continue
+        if current == -1:
+            paragraphs.append("")
+            current = len(paragraphs) - 1
+        paragraphs[current] += line.lower()
+        kinds[index] = KIND_PROSE
+        paragraph_of[index] = current
+
+    paragraph_claims = [
+        any(word in text for word in CLAIM_WORDS) for text in paragraphs
+    ]
+
+    # PASS 2: resolve the candidates each line carries.
+    for lineno, line in enumerate(lines, start=1):
+        kind = kinds[lineno - 1]
+        if kind == KIND_SKIP:
+            continue
+        # A data block is a record of what IS, so every path it names is a
+        # claim; in prose the claim is the paragraph the path sits in.
+        claims = kind == KIND_DATA or paragraph_claims[paragraph_of[lineno - 1]]
+        raw_tokens = list(BACKTICK_RE.findall(line))
+        if kind == KIND_DATA:
+            raw_tokens += QUOTED_RE.findall(line)
+        for raw_tok in raw_tokens:
             # A path at the end of a sentence carries the sentence's
             # punctuation inside the span; strip it before resolving.
             tok = raw_tok.strip().rstrip(TRAILING_PUNCTUATION)
