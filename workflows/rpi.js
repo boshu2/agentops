@@ -1217,6 +1217,25 @@ while (
   const bindingEvidence = (next.evidenceRefs || []).filter(
     (e) => !prevEvidence.has(e.ref) && e.subjectDigest === next.subjectDigest && (e.resolves || []).some((id) => resolvedSet.has(id))
   );
+  // A class is a STABLE property of a finding, not a field a round may revise.
+  // Mutating it on an id that CARRIED THROUGH defeats the class law from the
+  // inside: in f1[X] -> f1[Y] -> f2[X] the id never resolves, so X reads as
+  // retired with nothing having closed it and the same kind reappears on a new
+  // id unremarked. Add and remove are the same mutation wearing other signs.
+  // An INVALID round, not a law violation: the law reasons over stable keys,
+  // and a round that moves the keys gives it nothing to reason with.
+  const priorClass = new Map(prevFindings.map((f) => [f.id, findingClass(f)]));
+  for (const f of nextFindings) {
+    if (!priorClass.has(f.id)) continue;
+    const before = priorClass.get(f.id);
+    const after = findingClass(f);
+    if (before !== after) {
+      throw new Error(
+        'rpi: finding ' + f.id + ' changed class from ' + JSON.stringify(before) +
+          ' to ' + JSON.stringify(after) + ' while still open; a finding class is stable across rounds'
+      );
+    }
+  }
   const reopened = [...nextIds].filter((id) => closedIds.has(id));
   // Condition 3b. SURVIVORS are prevIds intersect nextIds: an id minted THIS
   // round is not a survivor, however familiar its class. Treating it as one is

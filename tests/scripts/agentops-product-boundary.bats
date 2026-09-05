@@ -1329,8 +1329,22 @@ for index, spec in enumerate(case["rounds"]):
 PY
 }
 
+# Case names are DERIVED from the corpus, never listed here: a hardcoded list
+# is how a case gets added on one side and silently never read on the other,
+# which is the parity break the shared corpus exists to prevent.
+rpi_law_names() {
+  python3 -c '
+import json, pathlib, sys
+doc = json.loads(pathlib.Path(sys.argv[1]).read_text())
+print(" ".join(c["name"] for c in doc["cases"] if c["expect"]["kind"] == sys.argv[2]))
+' "$REPO_ROOT/tests/fixtures/rpi-convergence-law/cases.json" "$1"
+}
+
 @test "rpi.js honors every shared convergence-law case that stops" {
-  for name in continuous-rename classless-middle-round simultaneous-id-and-class-reopen distinct-classes-run-on; do
+  local names
+  names="$(rpi_law_names stop)"
+  [ -n "$names" ]
+  for name in $names; do
     rpi_law_case "$name"
     rpi_probe "$(cat "$BATS_TEST_TMPDIR/law-input.json")" "$(cat "$BATS_TEST_TMPDIR/law-queue.json")"
     python3 - "$BATS_TEST_TMPDIR/probe.json" "$BATS_TEST_TMPDIR/law-expect.json" "$name" <<'PY'
@@ -1349,7 +1363,10 @@ PY
 }
 
 @test "rpi.js refuses every shared convergence-law case that is invalid" {
-  for name in blank-class duplicate-ids fail-without-findings; do
+  local names
+  names="$(rpi_law_names invalid)"
+  [ -n "$names" ]
+  for name in $names; do
     rpi_law_case "$name"
     rpi_probe_refused "$(cat "$BATS_TEST_TMPDIR/law-input.json")" "$(cat "$BATS_TEST_TMPDIR/law-queue.json")"
     python3 - "$BATS_TEST_TMPDIR/law-expect.json" "$name" <<PY
