@@ -134,21 +134,21 @@ A risky split that survives repair goes to one
 [`council`](../council/SKILL.md) leg that adjudicates findings, not verdicts.
 The leg receives a bounded packet (acceptance, write scope, runtime-derived
 changed paths, criteria, and both legs' findings with evidence references,
-marked untrusted) and returns exactly one ruling per finding; a duplicated id
-refuses the whole set. A ruling closes a finding only when its evidence
-resolves: a `sha256:` digest a leg bound against the subject now under
-judgment (never a leg's own subject digest, which identifies the thing being
-judged), or a regular file beneath `.agents/ao/` that the change did not
-produce, confirmed by a read-only receipt. A leg whose FAIL keeps no surviving
-findings is treated as `NOT_PROVEN`.
+marked untrusted) and returns one ruling per finding. The traversal validates
+the shape of what comes back (exactly one ruling per finding id, a duplicated
+id refuses the whole set, ids checked against the table, evidence references
+kept verbatim and never resolved) and records it under `council.rulings`. It
+closes nothing. The verdict and the open finding set are exactly what the
+repair phase left them, and the rulings are there for the caller's next intent
+to read.
 
-A closure is a CLAIM about the subject, not a proof of it. By the time a
-council can rule, the repair phase has already ended on the caller's bound, so
-no round remains to re-judge the closure: the traversal records it under
-`council.closed`, sets `council.revalidated: false`, and reports `NOT_PROVEN`,
-never `PASS`. A convergence-law stop convenes no council at all: the run
-already failed to converge, and a third judge on top of that is the escalation
-the law forbids. Council mints no verdict.
+The council closed findings on cited evidence for five rounds, and each round
+of hardening that path drew a new defect of the same kind. By this traversal's
+own convergence law a class that reopens after repair means the design is
+wrong, so the closure was cut rather than hardened again. A convergence-law
+stop convenes no council at all: the run already failed to converge, and a
+third judge on top of that is the escalation the law forbids. Council mints no
+verdict.
 
 ## Judgment dispatch
 

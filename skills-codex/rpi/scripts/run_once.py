@@ -16,6 +16,7 @@ caller declares `repair_rounds`.
 from __future__ import annotations
 
 from collections.abc import Callable, Mapping, Sequence
+import hashlib
 import re
 from typing import Any
 
@@ -112,6 +113,54 @@ def report(
     }
 
 
+def verify_intent_snapshot(
+    resolved_intent: Mapping[str, Any], acceptance_digest: str
+) -> str:
+    """Re-derive the intent snapshot digest and bind it, or refuse.
+
+    Returns the digest it derived. Raises when the snapshot is absent,
+    malformed, or hashes to anything other than the acceptance digest Plan
+    declared. This module performs no I/O, so the caller supplies the bytes or
+    a callable that produces them; what it may never supply is nothing at all.
+    """
+    payload = resolved_intent.get("intent_snapshot_bytes")
+    verifier = resolved_intent.get("verify_snapshot")
+    if payload is None and verifier is None:
+        raise ValueError(
+            "Plan must return the intent snapshot to be verified, as "
+            "intent_snapshot_bytes or a verify_snapshot callable; a declared digest "
+            "nobody re-derived is the author's word, not an identity"
+        )
+    if payload is not None and verifier is not None:
+        raise ValueError(
+            "Plan must return exactly one of intent_snapshot_bytes or verify_snapshot"
+        )
+    if verifier is not None:
+        if not callable(verifier):
+            raise ValueError("verify_snapshot must be callable")
+        payload = verifier()
+    if isinstance(payload, str):
+        # A callable that re-derived the digest itself reports the digest.
+        derived = payload
+    elif isinstance(payload, (bytes, bytearray)):
+        derived = hashlib.sha256(bytes(payload)).hexdigest()
+    else:
+        raise ValueError(
+            "the intent snapshot must be bytes, or a lowercase hex SHA-256 the "
+            "verifier re-derived from them"
+        )
+    if not valid_digest(derived):
+        raise ValueError(
+            "the re-derived intent snapshot digest must be a lowercase hex SHA-256"
+        )
+    if derived != acceptance_digest:
+        raise ValueError(
+            "the intent snapshot does not hash to the acceptance digest Plan declared; "
+            "nothing may be built on an intent identity that does not bind"
+        )
+    return derived
+
+
 def invoke_once(
     intent: Any,
     anti_ceremony_guard: Callable[[Any], Mapping[str, Any]],
@@ -140,24 +189,18 @@ def invoke_once(
             "Plan must declare acceptance_digest as the SHA-256 of the exact resolved "
             "intent bytes it snapshotted (validate.py snapshot-intent emits it)"
         )
-    # THE SNAPSHOT BINDING. A digest is a claim about bytes, and a claim about
-    # bytes nobody re-derived is the author's word. Plan must therefore hand
-    # back the snapshot it took and the digest it independently recomputed over
-    # those exact bytes; equality here is the composed check, not a
-    # self-comparison, and it is refused before Implement is dispatched. Without
-    # it the whole identity chain rests on one assertion, which is precisely
-    # what a fresh validator exists not to accept.
-    snapshot_digest = resolved_intent.get("intent_snapshot_digest")
-    if snapshot_digest is not None:
-        if not valid_digest(snapshot_digest):
-            raise ValueError(
-                "the recomputed intent snapshot digest must be a lowercase hex SHA-256"
-            )
-        if snapshot_digest != acceptance_digest:
-            raise ValueError(
-                "the intent snapshot does not hash to the acceptance digest Plan declared; "
-                "nothing may be built on an intent identity that does not bind"
-            )
+    # THE SNAPSHOT BINDING, and it is REQUIRED. A digest is a claim about bytes,
+    # and a claim about bytes nobody re-derived is the author's word. Making the
+    # re-derivation optional made the whole identity chain optional with it: a
+    # Plan that simply omitted the field got everything a verified one got.
+    #
+    # Plan must therefore hand back the snapshot itself, one of:
+    #   `intent_snapshot_bytes`  the exact bytes, hashed HERE
+    #   `verify_snapshot`        a zero-argument callable returning those bytes,
+    #                            or the lowercase hex SHA-256 it re-derived
+    # Equality against the declared acceptance digest is the composed check, not
+    # a self-comparison, and it is refused before Implement is dispatched.
+    verify_intent_snapshot(resolved_intent, acceptance_digest)
 
     subject = implement_phase(resolved_intent)
     if subject is None:

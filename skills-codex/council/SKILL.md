@@ -39,25 +39,23 @@ It returns one ruling per finding, and nothing else:
 ```
 
 `ruling` is exactly one of `real`, `not_real`, or `not_proven`, one ruling per
-finding id, and each ruling cites the evidence it rests on. The traversal, not
-the council, applies them. A ruling closes a finding only when its evidence
-resolves: a `sha256:` digest a leg bound against the subject now under
-judgment (never a leg's own subject digest, which identifies the thing being
-judged), or a regular file beneath `.agents/ao/` that the change did not
-produce, confirmed by a read-only receipt. A `not_real` whose evidence does
-not resolve closes nothing, and a duplicated id refuses the whole ruling set.
-A leg whose FAIL keeps no surviving findings is treated as `NOT_PROVEN`.
+finding id, and each ruling cites the evidence it rests on. The traversal
+validates the shape of what comes back (exactly one ruling per finding id, a
+duplicated id refuses the whole set, ids checked against the table, evidence
+references kept verbatim and never resolved) and records it under
+`council.rulings`. It closes nothing. The verdict and the open finding set are
+exactly what the repair phase left them, and the rulings are there for the
+caller's next intent to read.
 
-A closure is a CLAIM about the subject, not a proof of it. By the time a
-council can rule, the repair phase has already ended on the caller's bound, so
-no round remains to re-judge the closure: the traversal records it under
-`council.closed`, sets `council.revalidated: false`, and reports `NOT_PROVEN`,
-never `PASS`. A convergence-law stop convenes no council at all: the run
-already failed to converge, and a third judge on top of that is the escalation
-the law forbids. No validator reads these rulings as a verdict, and this
-skill's
+The council closed findings on cited evidence for five rounds, and each round
+of hardening that path drew a new defect of the same kind. By this traversal's
+own convergence law a class that reopens after repair means the design is
+wrong, so the closure was cut rather than hardened again. A convergence-law
+stop convenes no council at all: the run already failed to converge, and a
+third judge on top of that is the escalation the law forbids.
 
-`scripts/validate.sh` still refuses a minted verdict in the output;
+No validator reads these rulings as a verdict, this skill's
+`scripts/validate.sh` still refuses a minted verdict in the output, and
 `council-report.v1` still carries no verdict field.
 
 ## Methodology-weighted agreement
