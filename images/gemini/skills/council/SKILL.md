@@ -52,15 +52,28 @@ It returns one ruling per finding, and nothing else:
 
 ```json
 {"rulings": [{"id": "f-3", "ruling": "not_real",
-              "evidence_refs": ["cli/internal/gates/probe.go:88"]}]}
+              "evidence_refs": [".agents/ao/council/seal-pinning-repro.txt"]}]}
 ```
 
-`ruling` is exactly one of `real`, `not_real`, or `not_proven`, and each
-ruling cites the evidence it rests on. The traversal, not the council, applies
-them: a `not_real` ruling that cites evidence closes that finding under the
-council's evidence binding, a leg whose FAIL keeps no surviving findings is
-treated as `NOT_PROVEN`, and the traversal continues under the convergence
-law. No validator reads these rulings as a verdict, and this skill's
+`ruling` is exactly one of `real`, `not_real`, or `not_proven`, one ruling per
+finding id, and each ruling cites the evidence it rests on. The traversal, not
+the council, applies them. A ruling closes a finding only when its evidence
+resolves: a `sha256:` digest a leg bound against the subject now under
+judgment (never a leg's own subject digest, which identifies the thing being
+judged), or a regular file beneath `.agents/ao/` that the change did not
+produce, confirmed by a read-only receipt. A `not_real` whose evidence does
+not resolve closes nothing, and a duplicated id refuses the whole ruling set.
+A leg whose FAIL keeps no surviving findings is treated as `NOT_PROVEN`.
+
+A closure is a CLAIM about the subject, not a proof of it. By the time a
+council can rule, the repair phase has already ended on the caller's bound, so
+no round remains to re-judge the closure: the traversal records it under
+`council.closed`, sets `council.revalidated: false`, and reports `NOT_PROVEN`,
+never `PASS`. A convergence-law stop convenes no council at all: the run
+already failed to converge, and a third judge on top of that is the escalation
+the law forbids. No validator reads these rulings as a verdict, and this
+skill's
+
 `scripts/validate.sh` still refuses a minted verdict in the output;
 `council-report.v1` still carries no verdict field.
 

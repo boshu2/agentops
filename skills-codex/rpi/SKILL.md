@@ -134,10 +134,21 @@ A risky split that survives repair goes to one
 [`council`](../council/SKILL.md) leg that adjudicates findings, not verdicts.
 The leg receives a bounded packet (acceptance, write scope, runtime-derived
 changed paths, criteria, and both legs' findings with evidence references,
-marked untrusted) and returns one ruling per finding. A `not_real` ruling that
-cites evidence closes that finding under the council's evidence binding; a leg
-whose FAIL keeps no surviving findings is treated as `NOT_PROVEN`. The
-traversal then continues under the law. Council mints no verdict.
+marked untrusted) and returns exactly one ruling per finding; a duplicated id
+refuses the whole set. A ruling closes a finding only when its evidence
+resolves: a `sha256:` digest a leg bound against the subject now under
+judgment (never a leg's own subject digest, which identifies the thing being
+judged), or a regular file beneath `.agents/ao/` that the change did not
+produce, confirmed by a read-only receipt. A leg whose FAIL keeps no surviving
+findings is treated as `NOT_PROVEN`.
+
+A closure is a CLAIM about the subject, not a proof of it. By the time a
+council can rule, the repair phase has already ended on the caller's bound, so
+no round remains to re-judge the closure: the traversal records it under
+`council.closed`, sets `council.revalidated: false`, and reports `NOT_PROVEN`,
+never `PASS`. A convergence-law stop convenes no council at all: the run
+already failed to converge, and a third judge on top of that is the escalation
+the law forbids. Council mints no verdict.
 
 ## Judgment dispatch
 
@@ -180,8 +191,10 @@ integration check and fresh validation for the frozen subject.
 
 The workflow result is the camelCase object the adapter returns. It carries
 `status`; `premortem`; `dissent`, the judge split with each leg's own verdict;
-`orphanedEvidence`, the bound evidence this change invalidated with a `cause`
-per entry; and `stopReason` from a fixed enum. Each is empty or null when
+`plannedOrphans`, the evidence the frozen plan said this write scope would
+orphan, budgeted as recapture work before any code was written;
+`orphanedEvidence`, the bound evidence this change actually invalidated with a
+`cause` per entry; and `stopReason` from a fixed enum. Each is empty or null when
 nothing applies; none is omitted to keep a result short. Those keys belong to
 the workflow result alone: `rpi-report.v1` keeps its nine snake_case keys
 unchanged.

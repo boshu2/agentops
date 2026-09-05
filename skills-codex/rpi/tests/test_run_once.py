@@ -41,17 +41,27 @@ LAW_CASES = json.loads(
 )
 
 
-def case_round(spec):
-    """Expand one shared-corpus round into a validate leg."""
+def case_leg(verdict, findings, digest, family="fresh"):
     return {
-        "status": spec["verdict"],
-        "findings": [dict(f) for f in spec["findings"]],
-        "subject_digest": spec["digest"] * 64,
+        "status": verdict,
+        "findings": [dict(f) for f in findings],
+        "subject_digest": digest * 64,
         "evidence_refs": [],
-        "validator_family": "fresh",
+        "validator_family": family,
         "checked": ["acceptance"],
         "not_checked": [],
     }
+
+
+def case_round(spec):
+    """Expand one shared-corpus round into a validate leg, or a list of them."""
+    if "legs" in spec:
+        families = ("fresh", "cross-family")
+        return [
+            case_leg(leg["verdict"], leg["findings"], spec["digest"], families[index % 2])
+            for index, leg in enumerate(spec["legs"])
+        ]
+    return case_leg(spec["verdict"], spec["findings"], spec["digest"])
 
 
 def validation_round(
@@ -875,6 +885,73 @@ class ComposedIdentityContractTests(unittest.TestCase):
         self.assertNotEqual(byte_digest, hashlib.sha256(reordered).hexdigest())
         self.assertEqual(value_digest, VALIDATE.digest_value(json.loads(reordered)))
 
+
+
+class IntentSnapshotBindingTests(unittest.TestCase):
+    """A digest nobody re-derived is the author's word, not an identity."""
+
+    def guard(self, _intent):
+        return {
+            "decision": "CONTINUE",
+            "reason": "The work is real.",
+            "frozen_outcome": "one behavior",
+            "parked_process_work": [],
+            "remaining_proof": [],
+            "stop_condition": "converged",
+        }
+
+    def invoke(self, plan_output, implemented=None):
+        calls = []
+
+        def implement(_resolved):
+            calls.append("implement")
+            return implemented
+
+        def validate(_resolved, _subject):
+            raise AssertionError("validate must not run")
+
+        MODULE.invoke_once("intent", self.guard, lambda _i: plan_output, implement, validate)
+        return calls
+
+    def base_plan(self, **overrides):
+        plan = {"intent_ref": "bead:agentops-test", "acceptance_digest": "c" * 64}
+        plan.update(overrides)
+        return plan
+
+    def test_a_snapshot_digest_that_disagrees_is_refused_before_implement(self):
+        calls = []
+
+        def implement(_resolved):
+            calls.append("implement")
+            return None
+
+        with self.assertRaisesRegex(ValueError, "does not hash to the acceptance digest"):
+            MODULE.invoke_once(
+                "intent",
+                self.guard,
+                lambda _i: self.base_plan(intent_snapshot_digest="d" * 64),
+                implement,
+                lambda *_: None,
+            )
+        self.assertEqual(calls, [], "Implement ran on an unbound intent identity")
+
+    def test_a_malformed_snapshot_digest_is_refused(self):
+        for bogus in ("", "aaaa", "A" * 64, 7):
+            with self.subTest(value=bogus):
+                with self.assertRaisesRegex(ValueError, "lowercase hex SHA-256"):
+                    MODULE.invoke_once(
+                        "intent",
+                        self.guard,
+                        lambda _i, v=bogus: self.base_plan(intent_snapshot_digest=v),
+                        lambda _r: None,
+                        lambda *_: None,
+                    )
+
+    def test_an_agreeing_snapshot_digest_binds_and_dispatches(self):
+        self.assertEqual(self.invoke(self.base_plan(intent_snapshot_digest="c" * 64)), ["implement"])
+
+    def test_an_absent_snapshot_digest_leaves_the_prior_contract_unchanged(self):
+        self.assertEqual(self.invoke(self.base_plan()), ["implement"])
 
 class SharedConvergenceCorpusTests(unittest.TestCase):
     """Every case in the shared corpus, run through the Python law."""
