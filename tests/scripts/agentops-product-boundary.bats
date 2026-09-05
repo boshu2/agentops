@@ -1186,9 +1186,34 @@ ORPHANS_ABSENT='{"label":"orphans","result":{"scriptPresent":false}}'
 
 @test "rpi.js refuses a caller write scope that is not repository-relative" {
   write_rpi_probe
-  for scope in '/tests/**' '../outside/**' 'tests/../../escape/**' '~/notes/**'; do
+  # Unsupported glob syntax would be classified by a matcher that cannot read it.
+  for scope in '/tests/**' '../outside/**' 'tests/../../escape/**' '~/notes/**' \
+    'tests/?.bats' 'tests/[a-z]/**' 'tests/{a,b}/**' 'tests/***/x'; do
     run env RPI_SRC="$REPO_ROOT/workflows/rpi.js" \
       RPI_INPUT="{\"intent\":\"do the thing\",\"writeScope\":[\"$scope\"],\"acceptance\":\"a\"}" \
+      RPI_AGENTS='[]' node "$BATS_TEST_TMPDIR/rpi-probe.mjs"
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"repository-relative"* ]]
+  done
+}
+
+@test "rpi.js refuses a caller write scope carrying control characters" {
+  # A newline, tab, or NUL would travel into a prompt or a shell word
+  # invisibly. The inputs are built in python with real control characters,
+  # because none of them survives a shell word intact.
+  write_rpi_probe
+  python3 - "$BATS_TEST_TMPDIR" <<'PY'
+import json, pathlib, sys
+out = pathlib.Path(sys.argv[1])
+for index, code in enumerate((10, 9, 0, 13, 27)):
+    scope = "tests/" + chr(code) + "y/**"
+    (out / ("ctrl-%d.json" % index)).write_text(json.dumps(
+        {"intent": "do the thing", "writeScope": [scope], "acceptance": "a"}))
+PY
+
+  for index in 0 1 2 3 4; do
+    run env RPI_SRC="$REPO_ROOT/workflows/rpi.js" \
+      RPI_INPUT="$(cat "$BATS_TEST_TMPDIR/ctrl-$index.json")" \
       RPI_AGENTS='[]' node "$BATS_TEST_TMPDIR/rpi-probe.mjs"
     [ "$status" -ne 0 ]
     [[ "$output" == *"repository-relative"* ]]

@@ -204,13 +204,20 @@
     }
   ],
   "rejected": {
-    "description": "Scopes the traversal refuses outright rather than classifying: an absolute path is not repo-relative, and a scope that climbs out of the repository root has no meaning inside it.",
+    "description": "Scopes the traversal refuses outright rather than classifying: an absolute path is not repo-relative, a scope that climbs out of the root has no meaning inside it, a control character cannot appear in a path the runtime will act on, and glob syntax the intersection does not implement would be classified by a matcher that cannot read it.",
     "globs": [
       "/tests/**",
       "/etc/passwd",
       "../outside/**",
       "tests/../../escape/**",
-      "~/notes/**"
+      "~/notes/**",
+      "tests/\nbats/**",
+      "tests/\ty/**",
+      "tests/\u0000z/**",
+      "tests/?.bats",
+      "tests/[a-z]/**",
+      "tests/{a,b}/**",
+      "tests/***/x"
     ]
   }
 }

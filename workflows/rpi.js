@@ -187,18 +187,6 @@ if (
 ) {
   badArgs('writeScope must be a non-empty array of path globs when given');
 }
-// Canonicalized BEFORE the risk classification and before the Plan schema is
-// chosen: `././tests/**` and `tests/**` are one scope, and an absolute or
-// escaping glob is not a scope in this repository at all. A scope the
-// classifier cannot read is a scope whose riskiness is unknown.
-if (input.writeScope !== undefined) {
-  const rejected = input.writeScope.filter((g) => canonicalScopeGlob(g) === null);
-  if (rejected.length > 0) {
-    badArgs(
-      'writeScope must be repository-relative globs; refused ' + JSON.stringify(rejected)
-    );
-  }
-}
 if (input.acceptance !== undefined && (typeof input.acceptance !== 'string' || !input.acceptance.trim())) {
   badArgs('acceptance must be a non-empty string when given');
 }
@@ -248,9 +236,18 @@ const RISKY_GLOBS = [
 // `..` that a preceding segment cancels. Returns null when the value is not a
 // repository-relative path at all: absolute, home-relative, or climbing out of
 // the root, none of which the traversal can reason about.
+// Control characters (and NUL above all) cannot appear in a path the runtime
+// will act on, and would travel into a prompt or a shell word invisibly.
+const CONTROL_CHARS = /[\u0000-\u001f\u007f]/;
+// Glob syntax the intersection implements: literal segments, `*`, and `**`.
+// Anything else would be classified by a matcher that cannot read it, and a
+// scope whose riskiness is decided by a misreading is worse than a refused one.
+const UNSUPPORTED_GLOB = /[?[\]{}!()]|\*{3,}/;
+
 function canonicalScopeGlob(value) {
   const raw = String(value).trim();
   if (!raw || raw.startsWith('/') || raw.startsWith('~')) return null;
+  if (CONTROL_CHARS.test(raw) || UNSUPPORTED_GLOB.test(raw)) return null;
   const segments = [];
   for (const segment of raw.split('/')) {
     if (segment === '' || segment === '.') continue;
@@ -324,6 +321,19 @@ function globsIntersect(globA, globB) {
 const isRiskyScope = (globs) => globs.some((g) => RISKY_GLOBS.some((r) => globsIntersect(g, r)));
 const isRiskySurface = (paths) => isRiskyScope(paths);
 // --- GLOB INTERSECTION BLOCK (end) ---------------------------------------
+
+// Canonicalized BEFORE the risk classification and before the Plan schema is
+// chosen: `././tests/**` and `tests/**` are one scope, and an absolute or
+// escaping glob is not a scope in this repository at all. A scope the
+// classifier cannot read is a scope whose riskiness is unknown.
+if (input.writeScope !== undefined) {
+  const rejected = input.writeScope.filter((g) => canonicalScopeGlob(g) === null);
+  if (rejected.length > 0) {
+    badArgs(
+      'writeScope must be repository-relative globs; refused ' + JSON.stringify(rejected)
+    );
+  }
+}
 // CONTRACT: a risky write scope buys one premortem judge BEFORE any code is
 // written. The 2026-09-03 run shipped a risky-surface design with no premortem
 // and paid six repair passes for defects a frozen-plan reading would have named
@@ -553,6 +563,9 @@ const writeScope = input.writeScope !== undefined ? input.writeScope : plan.writ
 // globs the plan authorized are the only surface there is — and they are GLOBS,
 // intersected with the risky surfaces rather than pattern-matched as if they
 // were paths.
+// Same rule as the caller argument, enforced on what the plan chose: a scope
+// the classifier cannot read is a scope whose riskiness is unknown, and it must
+// never reach a prompt, a packet, or the plan identity.
 const uncanonicalScope = (writeScope || []).filter((g) => canonicalScopeGlob(g) === null);
 if (uncanonicalScope.length > 0) {
   return traversalReport({
@@ -765,7 +778,7 @@ if (plannedRisky && premortemMode === 'skip') {
       '- Caller intent:\n' + input.intent + '\n' +
       '- Acceptance the fresh validator will judge against:\n' + acceptance + '\n' +
       '- Write scope (a risky surface: gates, tests, hook policies, shared libraries, skill scripts, or CI):\n' +
-      writeScope.map((s) => '  - ' + s).join('\n') + '\n\n' +
+      writeScopeCanonical.map((s) => '  - ' + s).join('\n') + '\n\n' +
       'Procedure:\n' +
       '- ' + where + '\n' +
       '- Read the exact files the write scope names before ruling. A premortem from the plan text alone is a ' +
@@ -813,7 +826,7 @@ const impl = await agent(
     'Caller intent:\n' + input.intent + '\n\n' +
     'Acceptance — the contract the fresh validator will judge against:\n' + acceptance + '\n\n' +
     'Write scope — you may create or edit ONLY paths matching:\n' +
-    writeScope.map((s) => '  - ' + s).join('\n') + '\n\n' +
+    writeScopeCanonical.map((s) => '  - ' + s).join('\n') + '\n\n' +
     'Process rules (non-negotiable):\n' +
     '- ' + where + '\n' +
     '- One bounded RED -> GREEN experiment: before editing, reproduce the failing behavior (test, command, ' +
@@ -962,7 +975,7 @@ async function spawnedLeg(facts) {
     '- intentDigest: ' + plan.intentDigest + '\n' +
     '- intent snapshot path: ' + plan.intentPath + '\n\n' +
     'Acceptance criteria to judge:\n' + acceptance + '\n\n' +
-    'Declared write scope:\n' + writeScope.map((s) => '  - ' + s).join('\n') + '\n\n' +
+    'Declared write scope:\n' + writeScopeCanonical.map((s) => '  - ' + s).join('\n') + '\n\n' +
     'Author context id: ' + facts.contextId + '\n\n' +
     'Changed paths (derived, judge these exact files):\n' +
     (facts.changedPaths.length ? facts.changedPaths.map((p) => '  - ' + p).join('\n') : '  (none reported)') + '\n\n' +
@@ -1009,7 +1022,7 @@ async function brokerLeg(facts, command) {
     '- intentDigest: ' + plan.intentDigest + '\n' +
     '- intent snapshot path: ' + plan.intentPath + '\n' +
     '- Acceptance criteria to judge:\n' + acceptance + '\n' +
-    '- Declared write scope:\n' + writeScope.map((s) => '  - ' + s).join('\n') + '\n' +
+    '- Declared write scope:\n' + writeScopeCanonical.map((s) => '  - ' + s).join('\n') + '\n' +
     '- Author context id: ' + facts.contextId + '\n' +
     '- Changed paths (derived):\n' +
     (facts.changedPaths.length ? facts.changedPaths.map((p) => '  - ' + p).join('\n') : '  (none reported)') + '\n' +
@@ -1126,7 +1139,7 @@ async function councilLeg(legs) {
   // needs, and nothing that would let a leg's argument do the judging.
   const packet = {
     acceptance,
-    writeScope,
+    writeScope: writeScopeCanonical,
     derivedChangedPaths: [...new Set(legs.flatMap((l) => l.result.derivedChangedPaths || []))],
     criteria: legs.flatMap((l) =>
       (l.result.criteria || []).map((c) => ({ family: l.family, criterion: c.criterion, result: c.result, evidence: c.evidence }))
@@ -1520,7 +1533,7 @@ while (
         .join('\n') + '\n\n' +
       'Acceptance the validator judges against:\n' + acceptance + '\n\n' +
       'Write scope — you may create or edit ONLY paths matching:\n' +
-      writeScope.map((s) => '  - ' + s).join('\n') + '\n\n' +
+      writeScopeCanonical.map((s) => '  - ' + s).join('\n') + '\n\n' +
       'Paths changed so far:\n' + facts.changedPaths.map((p) => '  - ' + p).join('\n') + '\n\n' +
       'Process rules (non-negotiable):\n' +
       '- ' + where + '\n' +
