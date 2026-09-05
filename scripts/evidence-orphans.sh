@@ -31,8 +31,12 @@
 #                  binding whose target is gone can never match again)
 #   both           changed_path and digest_drift together
 #   skill_changed  a `canonical_skill` binding whose skills/<slug>/SKILL.md no
-#                  longer matches (comparison reused from
-#                  scripts/lib/probe-fixture-metadata.py, not reimplemented)
+#                  longer matches, and that was NOT in the changed list
+#                  (comparison reused from scripts/lib/probe-fixture-metadata.py,
+#                  not reimplemented). A skill binding takes the same three-way
+#                  cause as an evaluator binding: changed_path when it is only
+#                  listed, skill_changed when only the digest moved, both when
+#                  each holds.
 #
 # OUTPUT (JSON, the only format):
 #   {"changed": [...],
@@ -258,13 +262,24 @@ for artifact_path, keys, scan_skill in artifacts():
     except HELPER.MetadataError:
         # The snapshot's skill is gone, unsafe, or no longer a regular file.
         current_sha256 = None
-    if current_sha256 != recorded_sha256 or bound_path in changed_set:
+    # Same three-way cause as an evaluator binding: a snapshot that is merely
+    # LISTED among the changed paths but still matches is not a rewritten skill,
+    # and calling it one hides which of the two actually happened.
+    is_changed = bound_path in changed_set
+    drifted = current_sha256 != recorded_sha256
+    if is_changed or drifted:
         seen.add(dedupe_key)
+        if is_changed and drifted:
+            cause = "both"
+        elif is_changed:
+            cause = "changed_path"
+        else:
+            cause = "skill_changed"
         orphaned.append(
             {
                 "artifact": rel_artifact,
                 "binds": bound_path,
-                "cause": "skill_changed",
+                "cause": cause,
                 "recorded_sha256": recorded_sha256,
                 "current_sha256": current_sha256,
             }

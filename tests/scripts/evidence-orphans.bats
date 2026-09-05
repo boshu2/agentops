@@ -299,3 +299,22 @@ assert not bad, bad
 assert data["artifact_count"] <= data["binding_count"]
 PY
 }
+
+@test "a skill binding that is listed but still matching reports changed_path" {
+    write_fixture_set "$SKILL_SHA"
+
+    run env EVIDENCE_ORPHANS_ROOT="$FIX" bash "$SCRIPT" skills/demo/SKILL.md
+    [ "$status" -eq 0 ]
+    [[ "$output" == *'"binds": "skills/demo/SKILL.md"'* ]]
+    [[ "$output" == *'"cause": "changed_path"'* ]]
+    [[ "$output" != *'"cause": "skill_changed"'* ]]
+}
+
+@test "a skill binding that is listed and rewritten reports both" {
+    write_fixture_set "$SKILL_SHA"
+    printf -- '---\nname: demo\ndescription: a rewritten demo skill\n---\n\nnew body\n' > "$FIX/skills/demo/SKILL.md"
+
+    run env EVIDENCE_ORPHANS_ROOT="$FIX" bash "$SCRIPT" skills/demo/SKILL.md
+    [ "$status" -eq 0 ]
+    [[ "$output" == *'"cause": "both"'* ]]
+}
