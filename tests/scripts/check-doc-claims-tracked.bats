@@ -334,3 +334,88 @@ SH
     [ "$status" -eq 2 ]
     [[ "$output" != *"untracked"* ]]
 }
+
+# --- enumeration must not certify what it could not read -------------------
+
+@test "an unreadable directory under evals fails closed instead of certifying clean" {
+    cat > "$FIX/evals/doc.md" <<'MD'
+Nothing controversial here.
+MD
+    git -C "$FIX" add evals/doc.md
+    git -C "$FIX" commit -q -m init
+    mkdir -p "$FIX/evals/locked"
+    chmod 000 "$FIX/evals/locked"
+
+    run bash "$GATE" "$FIX"
+    chmod 755 "$FIX/evals/locked"
+    [ "$status" -eq 2 ]
+    [[ "$output" != *"OK:"* ]]
+    [[ "$output" == *"could not enumerate"* ]]
+}
+
+# --- a claim and its path split across lines inside a data fence -----------
+#
+# The claim words are matched per LINE. Inside a data fence a scorecard's
+# `"status": "published"` and the path it names sit on different lines, so a
+# missing path read as a forward reference and the sentence outran the tree
+# unchecked. Inside a scanned data fence, a missing candidate path is an
+# offender on its own: a data block is a record of what IS, never a plan.
+
+@test "a multiline json fence reports a missing path even when the claim word is on another line" {
+    cat > "$FIX/evals/doc.md" <<'MD'
+```json
+{
+  "status": "published",
+  "artifact": "`evals/skill-probes/absent-egress.log`"
+}
+```
+MD
+    git -C "$FIX" add evals/doc.md
+    git -C "$FIX" commit -q -m init
+
+    run bash "$GATE" "$FIX"
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"evals/skill-probes/absent-egress.log missing"* ]]
+}
+
+@test "a multiline yaml fence reports a missing path even with no claim word at all" {
+    cat > "$FIX/evals/doc.md" <<'MD'
+```yaml
+capture:
+  harness: `scripts/absent-harness.sh`
+```
+MD
+    git -C "$FIX" add evals/doc.md
+    git -C "$FIX" commit -q -m init
+
+    run bash "$GATE" "$FIX"
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"scripts/absent-harness.sh missing"* ]]
+}
+
+@test "prose outside a fence keeps the claim-word rule for a missing path" {
+    cat > "$FIX/evals/doc.md" <<'MD'
+A future capture might land at `evals/skill-probes/future.log` eventually.
+MD
+    git -C "$FIX" add evals/doc.md
+    git -C "$FIX" commit -q -m init
+
+    run bash "$GATE" "$FIX"
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"OK:"* ]]
+}
+
+@test "a data fence naming a path that exists and is tracked stays clean" {
+    cat > "$FIX/evals/doc.md" <<'MD'
+```json
+{"harness": "`scripts/present.sh`"}
+```
+MD
+    touch "$FIX/scripts/present.sh"
+    git -C "$FIX" add evals/doc.md scripts/present.sh
+    git -C "$FIX" commit -q -m init
+
+    run bash "$GATE" "$FIX"
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"OK:"* ]]
+}

@@ -36,9 +36,13 @@
 #
 # For each candidate path, relative to the repository root:
 #   * exists on disk but is NOT tracked by git      -> offender: untracked
-#   * does NOT exist on disk, and the same line uses one of the words
-#     "published", "tracked", "committed", or "lives at" (case-insensitive)
-#     -> offender: missing
+#   * does NOT exist on disk, and EITHER the same line uses one of the words
+#     "published", "tracked", "committed", or "lives at" (case-insensitive) OR
+#     the token sits inside a scanned DATA fence -> offender: missing.
+#     A data fence is a record of what IS: a scorecard block's
+#     `"status": "published"` and the path it names sit on different lines, so
+#     matching claim words per line let the sentence outrun the tree. Inside a
+#     data block every named path is a claim about the tree, full stop.
 #   * anything else (tracked-and-present, or absent-with-no-claim-word, which
 #     reads as a forward reference rather than a claim) is not an offender.
 #
@@ -79,11 +83,29 @@ work=""
 with_tmpdir work claims-tracked
 file_list="$work/files.txt"
 : > "$file_list"
+find_errors="$work/find-errors.txt"
+: > "$find_errors"
 for base in "evals" "docs/evals"; do
   if [ -d "$TARGET/$base" ]; then
-    portable_find "$TARGET/$base" -type f -name '*.md' >> "$file_list" 2>/dev/null || true
+    # A swallowed enumeration error certifies whatever it could not read. An
+    # unreadable directory is a scan that did not happen, never a clean one, so
+    # find's exit code and its stderr are both load-bearing here.
+    set +e
+    portable_find "$TARGET/$base" -type f -name '*.md' >> "$file_list" 2>>"$find_errors"
+    find_rc=$?
+    set -e
+    if [ "$find_rc" -ne 0 ]; then
+      printf '[%s] FAIL: could not enumerate %s (find exit %s)\n' "$PROG" "$TARGET/$base" "$find_rc" >&2
+      [ -s "$find_errors" ] && cat "$find_errors" >&2
+      exit 2
+    fi
   fi
 done
+if [ -s "$find_errors" ]; then
+  printf '[%s] FAIL: could not enumerate every file under %s\n' "$PROG" "$TARGET" >&2
+  cat "$find_errors" >&2
+  exit 2
+fi
 sort -u -o "$file_list" "$file_list"
 
 scanned=$(wc -l < "$file_list" | tr -d ' ')
@@ -181,6 +203,7 @@ for display_path in files:
     fence_decided = None
     for lineno, line in enumerate(lines, start=1):
         opener = FENCE_RE.match(line)
+        in_data_fence = False
         if fence_marker is None:
             if opener is not None:
                 fence_marker = opener.group(1)[0]
@@ -201,8 +224,12 @@ for display_path in files:
                 fence_decided = command_fence(line)
             if fence_decided:
                 continue
+            in_data_fence = True
         lowered = line.lower()
-        claims = any(word in lowered for word in CLAIM_WORDS)
+        # Inside a scanned data fence the whole block is the claim; in prose the
+        # claim is the sentence, so the claim words still gate a forward
+        # reference there.
+        claims = in_data_fence or any(word in lowered for word in CLAIM_WORDS)
         for raw_tok in BACKTICK_RE.findall(line):
             # A path at the end of a sentence carries the sentence's
             # punctuation inside the span; strip it before resolving.
