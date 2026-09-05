@@ -392,6 +392,8 @@ function traversalReport(fields) {
     filesSummary,
     criteria: pick('criteria', []),
     findings: pick('findings', []),
+    // The frozen-plan fields a risky scope required and did not get.
+    planMissing: pick('planMissing', []),
     // The bound evidence the terminal verdict rests on, unioned across legs:
     // the caller sees what actually closed a finding, not only what stayed open.
     evidenceRefs: pick('evidenceRefs', []),
@@ -538,6 +540,7 @@ if (plannedRisky && !callerScopeRisky) {
     premortem = { status: 'required', blocking: [], notes: ['the traversal ended before the premortem ran'] };
     return traversalReport({
       status: 'NOT_PLANNED',
+      planMissing: missing,
       stopReason: STOP_REASONS.planIncomplete,
       stoppedBy: 'the plan chose a risky write scope without declaring ' + missing.join(' and '),
       error: 'A risky write scope must freeze its binding judge and its orphaned-evidence budget before Implement',
@@ -698,9 +701,11 @@ reportedChangedPaths = impl.changedPaths.slice();
 // This is a receipt, not a gate: it reports what the repository's own detector
 // says about the changed paths, and says plainly when there is no detector.
 //
-// It runs over the RUNTIME-DERIVED path set, not once over the author's list:
-// after Implement over the author paths, and again after every repair and every
-// Validate over the union with the validator-derived paths. An orphan an
+// WHEN it runs, exactly: once per round, keyed on the round and never on the
+// path set. Round 0 covers the author's reported list, right after Implement
+// and before the first validation. Every later round runs after that round's
+// repair and before that round's validation, over the runtime-derived union of
+// the paths so far and the validator's own derived set, because an orphan an
 // unreported edit created is exactly the one the author would not have named.
 // The latest result is reported AND appended to checkReceipts, so the next
 // validator leg judges the exposure instead of only the caller reading it.
@@ -985,6 +990,9 @@ const COUNCIL_EVIDENCE_SCHEMA = {
         properties: {
           ref: { type: 'string' },
           exists: { type: 'boolean' },
+          // True when the path is one the change itself produced: a file the
+          // subject created is the subject, never a disproof of it.
+          changed: { type: 'boolean' },
           sha256: { type: 'string' },
         },
       },
@@ -992,15 +1000,19 @@ const COUNCIL_EVIDENCE_SCHEMA = {
   },
 };
 
-async function resolveCouncilPaths(refs) {
+async function resolveCouncilPaths(refs, changedPaths) {
   const receipt = await agent(
     'You are a read-only receipt step. Do exactly one thing: report, for each path below, whether it is a ' +
-      'regular file in this repository right now. You judge nothing and you create nothing.\n\n' +
+      'regular file in this repository right now and whether it is one of the changed paths. You judge ' +
+      'nothing and you create nothing.\n\n' +
       'Paths:\n' + refs.map((r) => '  - ' + r).join('\n') + '\n\n' +
+      'Changed paths this run produced (a file among these is the subject, not evidence about it):\n' +
+      (changedPaths.length ? changedPaths.map((p) => '  - ' + p).join('\n') : '  (none)') + '\n\n' +
       'Procedure:\n' +
       '- ' + where + '\n' +
-      '- For each path, test whether it exists as a regular file. Return one resolved entry {ref, exists} per ' +
-      'path, and its sha256 when you can compute one.\n' +
+      '- For each path, test whether it exists as a regular file (not a directory, not a symlink). Return one ' +
+      'resolved entry {ref, exists, changed} per path, and its sha256 when you can compute one.\n' +
+      '- changed is true when the path appears in the changed-path list above.\n' +
       '- A path you cannot find is exists false. Never create a missing file to make it exist, and never ' +
       'guess: an invented result is worse than no result.\n' +
       '- Read-only: fix nothing, create nothing, commit nothing.',
@@ -1009,7 +1021,13 @@ async function resolveCouncilPaths(refs) {
   const resolved = new Map();
   // Fail closed: no receipt means nothing resolved, so nothing closes.
   if (!receipt) return resolved;
-  for (const entry of receipt.resolved || []) resolved.set(entry.ref, entry.exists === true);
+  const changed = new Set(changedPaths.map(normalizePath));
+  for (const entry of receipt.resolved || []) {
+    // Both the receipt's own answer and the script's list are consulted; a
+    // receipt that forgets to mark a changed path cannot launder one through.
+    const isChanged = entry.changed === true || changed.has(normalizePath(entry.ref));
+    resolved.set(entry.ref, entry.exists === true && !isChanged);
+  }
   return resolved;
 }
 
@@ -1517,15 +1535,23 @@ if (validation && validation.risky && validation.split && !councilEligible) {
 if (validation && validation.risky && validation.split && councilEligible) {
   phase('Validate');
   const onTable = new Set(validation.legs.flatMap((l) => (l.result.findings || []).map((f) => f.id)));
-  // Every digest the legs bound: what a `sha256:` ruling ref may resolve to.
+  // Digests a leg actually BOUND as evidence. A leg's own subjectDigest is
+  // excluded on purpose: it identifies the thing under judgment, so admitting
+  // it let the subject serve as its own disproof.
   const boundDigests = new Set();
   for (const leg of validation.legs) {
-    if (leg.result.subjectDigest) boundDigests.add('sha256:' + leg.result.subjectDigest);
     for (const e of leg.result.evidenceRefs || []) {
       if (typeof e.ref === 'string' && e.ref.startsWith('sha256:')) boundDigests.add(e.ref);
-      if (e.subjectDigest) boundDigests.add('sha256:' + e.subjectDigest);
     }
   }
+  // A disproof the council produced lives in the run's evidence area. Any other
+  // existing repo file resolving meant the file a finding was filed AGAINST
+  // could close it.
+  const EVIDENCE_AREA = '.agents/ao/';
+  const changedForCouncil = [...new Set([
+    ...facts.changedPaths,
+    ...(validation.derivedChangedPaths || []),
+  ])];
   const ruling = await councilLeg(validation.legs);
   const closedByCouncil = new Map();
   let councilRecord;
@@ -1538,15 +1564,21 @@ if (validation && validation.risky && validation.split && councilEligible) {
     for (const r of ruling.rulings || []) {
       if (r.ruling !== 'not_real' || !onTable.has(r.id)) continue;
       for (const ref of r.evidence_refs || []) {
-        const trimmed = typeof ref === 'string' ? ref.trim() : '';
-        if (trimmed && !trimmed.startsWith('sha256:')) candidates.add(trimmed);
+        const trimmed = typeof ref === 'string' ? normalizePath(ref.trim()) : '';
+        // Only an evidence-area path is worth a resolution receipt; anything
+        // else cannot close a finding however real the file is.
+        if (trimmed && !trimmed.startsWith('sha256:') && trimmed.startsWith(EVIDENCE_AREA)) {
+          candidates.add(trimmed);
+        }
       }
     }
-    const resolvedPaths = candidates.size > 0 ? await resolveCouncilPaths([...candidates]) : new Map();
+    const resolvedPaths =
+      candidates.size > 0 ? await resolveCouncilPaths([...candidates], changedForCouncil) : new Map();
     const resolves = (ref) => {
-      const trimmed = typeof ref === 'string' ? ref.trim() : '';
+      const trimmed = typeof ref === 'string' ? normalizePath(ref.trim()) : '';
       if (!trimmed) return false;
       if (trimmed.startsWith('sha256:')) return boundDigests.has(trimmed);
+      if (!trimmed.startsWith(EVIDENCE_AREA)) return false;
       return resolvedPaths.get(trimmed) === true;
     };
     const rulings = [];

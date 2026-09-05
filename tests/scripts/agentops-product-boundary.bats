@@ -1273,7 +1273,7 @@ assert result["stopReason"] == "plan_incomplete", result["stopReason"]
 assert result["status"] == "NOT_PLANNED", result["status"]
 assert result["verdict"] is None, result["verdict"]
 assert result["premortem"]["status"] == "required", result["premortem"]
-assert "binding_judge" in result["stoppedBy"], result["stoppedBy"]
+assert result["planMissing"] == ["binding_judge", "orphaned_evidence"], result["planMissing"]
 PY
 }
 
@@ -1614,7 +1614,7 @@ assert result["stopReason"] == "reopened_finding", result["stopReason"]
 assert "class_reopened" in result["stopReasons"], result["stopReasons"]
 # A class reopen degrades the status even when a reopened id outranks it.
 assert result["status"] == "NOT_PROVEN", result["status"]
-assert "class" in result["stoppedBy"] and "reopened" in result["stoppedBy"], result["stoppedBy"]
+assert result["stopReasons"] == ["reopened_finding", "class_reopened"], result["stopReasons"]
 PY
 }
 
@@ -1802,7 +1802,7 @@ PY
 
 @test "rpi.js says so when the council closes a finding with no round left to revalidate" {
   rpi_probe "$RISKY_SPLIT_ARGS" \
-    "[$PLAN_RESULT,$IMPL_RESULT_RISKY,$ORPHANS_ABSENT,$LEG_PASS,$LEG_FAIL,{\"label\":\"council\",\"result\":{\"rulings\":[{\"id\":\"x:y\",\"ruling\":\"not_real\",\"evidence_refs\":[\"tests/a.bats\"]}]}},{\"label\":\"council-evidence\",\"result\":{\"resolved\":[{\"ref\":\"tests/a.bats\",\"exists\":true}]}}]"
+    "[$PLAN_RESULT,$IMPL_RESULT_RISKY,$ORPHANS_ABSENT,$LEG_PASS,$LEG_FAIL,{\"label\":\"council\",\"result\":{\"rulings\":[{\"id\":\"x:y\",\"ruling\":\"not_real\",\"evidence_refs\":[\".agents/ao/disproof.txt\"]}]}},{\"label\":\"council-evidence\",\"result\":{\"resolved\":[{\"ref\":\".agents/ao/disproof.txt\",\"exists\":true,\"changed\":false}]}}]"
 
   python3 - "$BATS_TEST_TMPDIR/probe.json" <<'PY'
 import json, sys
@@ -1810,7 +1810,58 @@ result = json.load(open(sys.argv[1]))["result"]
 assert result["council"]["closed"] == ["x:y"], result["council"]
 assert result["stopReason"] == "repair_budget_exhausted", result["stopReason"]
 assert result["verdict"] == "NOT_PROVEN", result["verdict"]
-assert "not re-validated" in result["stoppedBy"], result["stoppedBy"]
+assert result["council"]["revalidated"] is False, result["council"]
+PY
+}
+
+@test "rpi.js does not let a leg's own subject digest close a finding" {
+  # boundDigests included sha256:<subjectDigest> of each leg, so the digest of
+  # the very thing under judgment counted as its own disproof.
+  rpi_probe "$RISKY_SPLIT_ARGS" \
+    "[$PLAN_RESULT,$IMPL_RESULT_RISKY,$ORPHANS_ABSENT,$LEG_PASS,$LEG_FAIL,{\"label\":\"council\",\"result\":{\"rulings\":[{\"id\":\"x:y\",\"ruling\":\"not_real\",\"evidence_refs\":[\"sha256:aa\"]}]}}]"
+
+  python3 - "$BATS_TEST_TMPDIR/probe.json" <<'PY'
+import json, sys
+result = json.load(open(sys.argv[1]))["result"]
+assert result["council"]["closed"] == [], result["council"]
+assert [f["id"] for f in result["findings"]] == ["x:y"], result["findings"]
+assert result["verdict"] == "FAIL", result["verdict"]
+PY
+}
+
+@test "rpi.js closes nothing on a council path ref outside the evidence area" {
+  # Any existing repo file resolved, so the subject file itself could close the
+  # finding filed against it. A disproof lives in the run's evidence area.
+  rpi_probe "$RISKY_SPLIT_ARGS" \
+    "[$PLAN_RESULT,$IMPL_RESULT_RISKY,$ORPHANS_ABSENT,$LEG_PASS,$LEG_FAIL,{\"label\":\"council\",\"result\":{\"rulings\":[{\"id\":\"x:y\",\"ruling\":\"not_real\",\"evidence_refs\":[\"tests/a.bats\"]}]}}]"
+
+  python3 - "$BATS_TEST_TMPDIR/probe.json" <<'PY'
+import json, sys
+probe = json.load(open(sys.argv[1]))
+# Outside .agents/ao/ it is rejected structurally; no receipt is spent on it.
+assert "council-evidence" not in probe["calls"], probe["calls"]
+result = probe["result"]
+assert result["council"]["closed"] == [], result["council"]
+assert [f["id"] for f in result["findings"]] == ["x:y"], result["findings"]
+PY
+}
+
+@test "rpi.js closes nothing on an evidence-area ref that is a changed path" {
+  # A file the change itself produced is the subject, not a disproof of it.
+  local impl_ev
+  impl_ev='{"label":"implement","result":{"contextId":"author-1","changedPaths":["tests/a.bats",".agents/ao/note.txt"],"checkReceipts":[],"filesSummary":"note"}}'
+  rpi_probe "$RISKY_SPLIT_ARGS" \
+    "[$PLAN_RESULT,$impl_ev,$ORPHANS_ABSENT,$LEG_PASS,$LEG_FAIL,{\"label\":\"council\",\"result\":{\"rulings\":[{\"id\":\"x:y\",\"ruling\":\"not_real\",\"evidence_refs\":[\".agents/ao/note.txt\"]}]}},{\"label\":\"council-evidence\",\"result\":{\"resolved\":[{\"ref\":\".agents/ao/note.txt\",\"exists\":true,\"changed\":true}]}}]"
+
+  python3 - "$BATS_TEST_TMPDIR/probe.json" <<'PY'
+import json, sys
+probe = json.load(open(sys.argv[1]))
+result = probe["result"]
+assert result["council"]["closed"] == [], result["council"]
+assert [f["id"] for f in result["findings"]] == ["x:y"], result["findings"]
+# The receipt is told which paths the change produced, so it can say so.
+assert ".agents/ao/note.txt" in probe["prompts"]["council-evidence"]
+assert "changed" in probe["prompts"]["council-evidence"].lower()
 PY
 }
 
@@ -1926,7 +1977,7 @@ result = json.load(open(sys.argv[1]))["result"]
 assert result["verdict"] == "NOT_PROVEN", result["verdict"]
 assert result["findings"] == [], result["findings"]
 assert result["council"]["closed"] == ["x:y"], result["council"]
-assert "not re-validated" in result["stoppedBy"], result["stoppedBy"]
+assert result["council"]["revalidated"] is False, result["council"]
 assert result["verdictPath"] is None
 PY
 }
