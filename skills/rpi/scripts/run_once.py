@@ -213,10 +213,11 @@ def invoke_once(
 # while every condition of the convergence law holds, so the loop cannot grind,
 # cannot re-open settled ground, and cannot spin without moving the subject.
 #
-# Condition ordering is deliberate. A reopened id is diagnosed before a grown
-# set, so the operator is told the specific regression rather than the generic
-# symptom; progress is checked last because it is the only condition that can
-# be satisfied by evidence instead of by bytes.
+# Condition ordering is deliberate. A reopened id is diagnosed before a
+# reopened class, and a reopened class before a grown set, so the operator is
+# told the specific regression rather than the generic symptom; progress is
+# checked last because it is the only condition that can be satisfied by
+# evidence instead of by bytes.
 
 REPAIR_ROUNDS_DEFAULT = 2
 
@@ -227,6 +228,7 @@ STOP_REASONS = (
     "diversity_unsatisfied",
     "repair_budget_exhausted",
     "reopened_finding",
+    "class_reopened",
     "finding_set_grew",
     "no_subject_or_evidence_change",
     "not_converged",
@@ -289,6 +291,14 @@ def normalize_round(value: Any) -> dict[str, Any]:
             if finding_id in leg_ids:
                 raise ValueError(f"finding id {finding_id!r} appears twice in one validate leg")
             leg_ids.add(finding_id)
+            # The CLASS is optional and stable: it names the KIND of defect
+            # ("seal.pinning"), so a repair phase that keeps minting fresh ids
+            # for the same kind is visible to the law. Absent means the class
+            # conditions simply do not apply to this finding.
+            if "class" in finding:
+                finding_class = finding["class"]
+                if not isinstance(finding_class, str) or not finding_class.strip():
+                    raise ValueError("a finding class must be a nonempty string when given")
             # Last leg wins on wording; the id is the identity, so a reworded
             # summary is the same finding and never counts as a new one.
             open_findings[finding_id] = dict(finding)
@@ -334,10 +344,16 @@ def normalize_round(value: Any) -> dict[str, Any]:
                 raise ValueError(f"{key} must be a list of strings")
             sink.extend(items)
 
+    open_classes = {
+        finding_id: finding["class"].strip()
+        for finding_id, finding in open_findings.items()
+        if isinstance(finding.get("class"), str)
+    }
     return {
         "status": status,
         "open_findings": list(open_findings.values()),
         "open_ids": set(open_findings),
+        "open_classes": open_classes,
         "subject_digest": digest,
         "evidence_refs": evidence_refs,
         "families": families,
@@ -350,16 +366,31 @@ def law_violation(
     previous: Mapping[str, Any],
     current: Mapping[str, Any],
     closed_ids: set[str],
+    closed_classes: Mapping[str, str] | None = None,
 ) -> str | None:
     """Return the violated convergence-law condition, or None when all hold.
 
     Condition 1 (the caller's `repair_rounds`) is a precondition on admission
     and is checked by `run_repair_phase` before a round is consumed; conditions
     2, 3, and 4 are properties of the round that was produced.
+
+    A reopened id is diagnosed before a reopened CLASS, and a reopened class
+    before a grown set: the operator is always told the most specific
+    regression the round exhibits, never the generic symptom.
     """
     reopened = current["open_ids"] & closed_ids
     if reopened:
         return "reopened_finding"
+    # Condition 3b: ids alone cannot see a repair phase that keeps renaming the
+    # same kind of defect. A NEW id carrying a class every earlier round closed
+    # is that pattern, and it is the failure the 2026-09-03 run produced three
+    # rounds running while the id count stayed flat.
+    if closed_classes:
+        appeared = current["open_ids"] - previous["open_ids"]
+        for finding_id in sorted(appeared):
+            finding_class = current["open_classes"].get(finding_id)
+            if finding_class is not None and finding_class in closed_classes:
+                return "class_reopened"
     if len(current["open_ids"]) > len(previous["open_ids"]):
         return "finding_set_grew"
     if current["subject_digest"] != previous["subject_digest"]:
@@ -420,6 +451,10 @@ def run_repair_phase(
 
     checked: list[str] = []
     closed_ids: set[str] = set()
+    # class -> the finding id whose closure retired it. A class is retired only
+    # once no open finding still carries it, so a surviving sibling never makes
+    # its own class a violation.
+    closed_classes: dict[str, str] = {}
     rounds_used = 0
     current = normalize_round(validations[0])
     previous = current
@@ -439,12 +474,26 @@ def run_repair_phase(
             checked.append(
                 f"repair round {rounds_used}: {len(current['open_ids'])} open findings"
             )
-            violation = law_violation(previous, current, closed_ids)
+            violation = law_violation(previous, current, closed_ids, closed_classes)
             if violation is not None:
                 stop_reason = violation
                 law_stopped = True
                 break
-            closed_ids |= previous["open_ids"] - current["open_ids"]
+            resolved_ids = previous["open_ids"] - current["open_ids"]
+            closed_ids |= resolved_ids
+            still_open = set(current["open_classes"].values())
+            # Comprehension, not a nested loop: the only iteration this phase
+            # performs is over the supplied rounds. Reverse order lets the
+            # lowest id win the class, so the record is deterministic.
+            retired = {
+                previous["open_classes"][resolved_id]: resolved_id
+                for resolved_id in sorted(resolved_ids, reverse=True)
+                if previous["open_classes"].get(resolved_id) is not None
+                and previous["open_classes"][resolved_id] not in still_open
+            }
+            closed_classes.update(
+                {k: v for k, v in retired.items() if k not in closed_classes}
+            )
         else:
             checked.append(f"repair round 0: {len(current['open_ids'])} open findings")
 
@@ -464,6 +513,11 @@ def run_repair_phase(
         stop_reason = "repair_budget_exhausted"
 
     status = current["status"]
+    # A class reopen means each round named a different id for the same kind of
+    # defect, so no round's ruling binds to a converging subject: the honest
+    # outcome is NOT_PROVEN, never the churning round's own status.
+    if stop_reason == "class_reopened":
+        status = "NOT_PROVEN"
     if stop_reason == "diversity_unsatisfied" or (law_stopped and status == "PASS"):
         # A PASS produced by a law-violating round cannot certify anything: a
         # PASS over unchanged bytes after a FAIL is a flip, not a proof. A FAIL

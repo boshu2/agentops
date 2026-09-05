@@ -38,15 +38,20 @@ def validation_round(
     evidence=(),
     family="fresh",
     summaries=None,
+    classes=None,
     checked=("acceptance",),
     not_checked=(),
 ):
     """One validate leg's result, as the repair phase consumes it (pure data)."""
     summaries = summaries or {}
+    classes = classes or {}
     return {
         "status": status,
         "findings": [
-            {"id": fid, "summary": summaries.get(fid, f"finding {fid}")}
+            dict(
+                {"id": fid, "summary": summaries.get(fid, f"finding {fid}")},
+                **({"class": classes[fid]} if fid in classes else {}),
+            )
             for fid in finding_ids
         ],
         "subject_digest": digest,
@@ -465,6 +470,134 @@ class RepairPhaseTests(unittest.TestCase):
         self.assertEqual(outcome["stop_reason"], "reopened_finding")
         self.assertEqual(outcome["rounds_used"], 2)
         self.assertEqual(outcome["report"]["status"], "FAIL")
+
+    def test_a_new_id_reusing_a_closed_class_stops_the_loop(self):
+        """The CLASS is the law's second key (the 2026-09-03 run).
+
+        Three rounds running, the open set never grew and no id reopened, yet
+        every round named a fresh id for the same recorded-but-unenforced
+        property. Counting ids alone cannot see that; the class can.
+        """
+        outcome = self.repair(
+            [
+                validation_round(
+                    "FAIL", ["f1"], digest="a" * 64, classes={"f1": "seal.pinning"}
+                ),
+                validation_round("FAIL", ["f2"], digest="b" * 64),
+                validation_round(
+                    "FAIL", ["f3"], digest="c" * 64, classes={"f3": "seal.pinning"}
+                ),
+            ],
+            repair_rounds=3,
+        )
+        self.assertEqual(outcome["stop_reason"], "class_reopened")
+        self.assertEqual(outcome["rounds_used"], 2)
+        self.assertEqual(outcome["report"]["status"], "NOT_PROVEN")
+        self.assertEqual([f["id"] for f in outcome["open_findings"]], ["f3"])
+
+    def test_findings_without_a_class_never_trigger_the_class_law(self):
+        outcome = self.repair(
+            [
+                validation_round("FAIL", ["f1"], digest="a" * 64),
+                validation_round("FAIL", ["f2"], digest="b" * 64),
+                validation_round("FAIL", ["f3"], digest="c" * 64),
+            ],
+            repair_rounds=3,
+        )
+        self.assertEqual(outcome["stop_reason"], "not_converged")
+        self.assertEqual(outcome["rounds_used"], 2)
+        self.assertEqual(outcome["report"]["status"], "FAIL")
+
+    def test_a_different_class_is_not_a_class_reopen(self):
+        outcome = self.repair(
+            [
+                validation_round(
+                    "FAIL", ["f1"], digest="a" * 64, classes={"f1": "seal.pinning"}
+                ),
+                validation_round("FAIL", ["f2"], digest="b" * 64),
+                validation_round(
+                    "FAIL", ["f3"], digest="c" * 64, classes={"f3": "scope.coverage"}
+                ),
+            ],
+            repair_rounds=3,
+        )
+        self.assertEqual(outcome["stop_reason"], "not_converged")
+        self.assertEqual(outcome["rounds_used"], 2)
+
+    def test_a_surviving_id_keeps_its_class_without_reopening_it(self):
+        """A class is closed only when every id carrying it closed."""
+        outcome = self.repair(
+            [
+                validation_round(
+                    "FAIL",
+                    ["f1", "f2"],
+                    digest="a" * 64,
+                    classes={"f1": "seal.pinning", "f2": "seal.pinning"},
+                ),
+                validation_round(
+                    "FAIL", ["f2"], digest="b" * 64, classes={"f2": "seal.pinning"}
+                ),
+                validation_round(
+                    "FAIL", ["f2"], digest="c" * 64, classes={"f2": "seal.pinning"}
+                ),
+            ],
+            repair_rounds=3,
+        )
+        self.assertEqual(outcome["stop_reason"], "not_converged")
+        self.assertEqual(outcome["rounds_used"], 2)
+
+    def test_a_reopened_id_is_diagnosed_before_its_class(self):
+        outcome = self.repair(
+            [
+                validation_round(
+                    "FAIL",
+                    ["f1", "f2"],
+                    digest="a" * 64,
+                    classes={"f1": "seal.pinning", "f2": "other"},
+                ),
+                validation_round(
+                    "FAIL", ["f2"], digest="b" * 64, classes={"f2": "other"}
+                ),
+                validation_round(
+                    "FAIL", ["f1"], digest="c" * 64, classes={"f1": "seal.pinning"}
+                ),
+            ],
+            repair_rounds=3,
+        )
+        self.assertEqual(outcome["stop_reason"], "reopened_finding")
+
+    def test_a_class_reopen_is_diagnosed_before_a_grown_set(self):
+        outcome = self.repair(
+            [
+                validation_round(
+                    "FAIL", ["f1"], digest="a" * 64, classes={"f1": "seal.pinning"}
+                ),
+                validation_round("FAIL", ["f2"], digest="b" * 64),
+                validation_round(
+                    "FAIL",
+                    ["f3", "f4"],
+                    digest="c" * 64,
+                    classes={"f3": "seal.pinning"},
+                ),
+            ],
+            repair_rounds=3,
+        )
+        self.assertEqual(outcome["stop_reason"], "class_reopened")
+
+    def test_a_malformed_class_is_rejected_not_swallowed(self):
+        for bogus in ("", "   ", 7, []):
+            with self.subTest(value=bogus):
+                bad = validation_round("FAIL", ["f1"])
+                bad["findings"][0]["class"] = bogus
+                with self.assertRaisesRegex(ValueError, "class"):
+                    self.repair([bad])
+
+    def test_the_open_findings_carry_their_class_through(self):
+        outcome = self.repair(
+            [validation_round("FAIL", ["f1"], classes={"f1": "seal.pinning"})],
+            repair_rounds=0,
+        )
+        self.assertEqual(outcome["open_findings"][0]["class"], "seal.pinning")
 
     def test_repair_stops_when_the_digest_is_unchanged_and_no_new_evidence(self):
         outcome = self.repair(
