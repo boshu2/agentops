@@ -75,15 +75,14 @@ single-family FAIL stands.
 
 When the two legs disagree, each reports its own verdict and neither resolves
 the split. A risky surface converges only when both legs return PASS, so a
-split is never PASS. The split is worked down by repair, and what
-survives goes to one council leg that rules on the findings, not the verdicts,
-unless the convergence law stopped the repair phase, in which case no council is
-convened at all. A council closure is a claim about the subject: no repair round
-remains to re-judge it, so the traversal records it under `council.closed` with
-`council.revalidated: false` and reports `NOT_PROVEN`, never `PASS`. The plan's
-`binding_judge` records the caller's disposition for that outcome and changes
-no verdict here. Validate never treats agreement with itself, the absence of a
-second verdict, or an elected leg as a tie-break.
+split is never PASS. The split is worked down by repair, and what survives goes to one council leg
+that rules on the findings, not the verdicts, unless the convergence law
+stopped the repair phase, in which case no council is convened at all. Those
+rulings are recorded for the caller and close nothing: the verdict and the
+open finding set stay exactly as repair left them. The plan's `binding_judge`
+records the caller's disposition for that outcome and changes no verdict here.
+Validate never treats agreement with itself, the absence of a second verdict,
+or an elected leg as a tie-break.
 
 ## Mutating-check quarantine
 
