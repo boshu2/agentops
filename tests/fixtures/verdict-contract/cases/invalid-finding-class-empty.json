@@ -1,0 +1,44 @@
+{
+  "name": "invalid-finding-class-empty",
+  "description": "a present-but-blank finding class is a malformed round key, not an absent one.",
+  "expected": "invalid",
+  "filename_digest": "40461ec592b55a9c7b4ba18870eca73fd134433e8395d241f09360b0bc25a565",
+  "artifact": {
+    "schema_version": "verdict.v2",
+    "acceptance_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "subject_manifest_digest": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "author_context_id": "ctx-author",
+    "validator_context_id": "ctx-validator",
+    "freshness_attestation": null,
+    "verdict": "FAIL",
+    "criteria": [
+      {
+        "id": "c1",
+        "result": "FAIL",
+        "evidence_refs": [
+          "gate:go.build"
+        ],
+        "reason": "checked"
+      }
+    ],
+    "findings": [
+      {
+        "id": "f1",
+        "class": "",
+        "summary": "the seal is not pinned",
+        "evidence_refs": [
+          "gate:go.build"
+        ]
+      }
+    ],
+    "evidence_refs": [
+      "gate:go.build"
+    ],
+    "checked": [
+      "cli/**"
+    ],
+    "not_checked": [],
+    "validated_at": "2026-09-05T12:00:00Z",
+    "artifact_digest": "40461ec592b55a9c7b4ba18870eca73fd134433e8395d241f09360b0bc25a565"
+  }
+}

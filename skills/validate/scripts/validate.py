@@ -405,8 +405,19 @@ def validate_verdict_v2(artifact: dict[str, Any]) -> None:
     if not isinstance(findings, list):
         raise ContractError("verdict.v2 findings must be an array")
     for index, finding in enumerate(findings):
-        if not isinstance(finding, dict) or set(finding) != {"id", "summary", "evidence_refs"}:
+        # `class` is the convergence law's second key (ADR-0017) and is
+        # OPTIONAL: it names the KIND of defect so a repair phase that mints a
+        # fresh id for the same kind every round stays visible. A finding that
+        # belongs to no nameable kind simply omits it — but present-and-blank is
+        # malformed, never the same as absent, on every leg of the contract.
+        if not isinstance(finding, dict) or not {"id", "summary", "evidence_refs"} <= set(finding) or not set(
+            finding
+        ) <= {"id", "class", "summary", "evidence_refs"}:
             raise ContractError(f"verdict.v2 findings[{index}] has invalid fields")
+        if "class" in finding and (
+            not isinstance(finding["class"], str) or not finding["class"].strip()
+        ):
+            raise ContractError(f"verdict.v2 findings[{index}].class must be a nonempty string")
         if not isinstance(finding["id"], str) or not finding["id"]:
             raise ContractError(f"verdict.v2 findings[{index}].id must be nonempty")
         if not isinstance(finding["summary"], str) or not finding["summary"]:
