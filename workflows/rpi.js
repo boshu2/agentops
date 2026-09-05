@@ -839,12 +839,62 @@ const COUNCIL_SCHEMA = {
         properties: {
           id: { type: 'string' },
           ruling: { enum: ['real', 'not_real', 'not_proven'] },
-          evidence_refs: { type: 'array', items: { type: 'string' } },
+          // minLength 1: a blank ref is not evidence, and `[""]` closing a
+          // finding was a disproof with nothing behind it.
+          evidence_refs: { type: 'array', items: { type: 'string', minLength: 1 } },
         },
       },
     },
   },
 };
+
+// COUNCIL EVIDENCE FLOOR: a "not_real" ruling closes a finding only when its
+// evidence actually resolves. A blank ref, or a path the council never wrote,
+// is a dismissal with nothing behind it, and `evidence_refs: [""]` used to
+// close a finding outright. A `sha256:` ref resolves against the evidence set
+// the legs already bound; a path ref is resolved by this read-only receipt,
+// because the script cannot stat the tree itself and must not pretend to.
+const COUNCIL_EVIDENCE_SCHEMA = {
+  type: 'object',
+  additionalProperties: false,
+  required: ['resolved'],
+  properties: {
+    resolved: {
+      type: 'array',
+      items: {
+        type: 'object',
+        additionalProperties: false,
+        required: ['ref', 'exists'],
+        properties: {
+          ref: { type: 'string' },
+          exists: { type: 'boolean' },
+          sha256: { type: 'string' },
+        },
+      },
+    },
+  },
+};
+
+async function resolveCouncilPaths(refs) {
+  const receipt = await agent(
+    'You are a read-only receipt step. Do exactly one thing: report, for each path below, whether it is a ' +
+      'regular file in this repository right now. You judge nothing and you create nothing.\n\n' +
+      'Paths:\n' + refs.map((r) => '  - ' + r).join('\n') + '\n\n' +
+      'Procedure:\n' +
+      '- ' + where + '\n' +
+      '- For each path, test whether it exists as a regular file. Return one resolved entry {ref, exists} per ' +
+      'path, and its sha256 when you can compute one.\n' +
+      '- A path you cannot find is exists false. Never create a missing file to make it exist, and never ' +
+      'guess: an invented result is worse than no result.\n' +
+      '- Read-only: fix nothing, create nothing, commit nothing.',
+    { label: 'council-evidence', phase: 'Validate', schema: COUNCIL_EVIDENCE_SCHEMA }
+  );
+  const resolved = new Map();
+  // Fail closed: no receipt means nothing resolved, so nothing closes.
+  if (!receipt) return resolved;
+  for (const entry of receipt.resolved || []) resolved.set(entry.ref, entry.exists === true);
+  return resolved;
+}
 
 async function councilLeg(legs) {
   // A BOUNDED, STRUCTURED packet: exactly the facts a finding-level ruling
@@ -904,12 +954,13 @@ const dissentOf = (leg) => ({
 // every leg — a declared bindingJudge is the caller's recorded DISPOSITION for
 // a split that survives repair, never a verdict override, and the council
 // closes individual findings on its own evidence rather than picking a winner.
-async function mergeLegs(allLegs, risky, diversity, council) {
+function mergeLegs(allLegs, risky, diversity, closedByCouncil = new Map(), councilRecord = null) {
   const split = allLegs.length === 2 && allLegs[0].result.verdict !== allLegs[1].result.verdict;
-  const onTable = new Set(allLegs.flatMap((l) => (l.result.findings || []).map((f) => f.id)));
-  const closedByCouncil = new Map();
-  let councilRecord = null;
-  let tieBreak = null;
+  // A split is merged WORST-OF here, whatever its surface. The council is not
+  // convened per validation: five contract sentences say it rules on a risky
+  // split that SURVIVES repair, and a disagreement the next repair round is
+  // about to settle never needed a third judge.
+  const tieBreak = split ? (risky ? 'worst-of-pending-council' : 'worst-of') : null;
 
   const declaredDisposition =
     declaredJudge === null
@@ -927,35 +978,6 @@ async function mergeLegs(allLegs, risky, diversity, council) {
               : 'no split on this round; the disposition was not consulted'
             : 'write scope is not risky; the declared disposition is recorded and ignored',
         };
-
-  if (split && risky) {
-    tieBreak = 'council';
-    const ruling = await council(allLegs);
-    if (!ruling) {
-      councilRecord = { status: 'unavailable', rulings: [], closed: [] };
-    } else {
-      const rulings = [];
-      for (const r of ruling.rulings || []) {
-        const refs = r.evidence_refs || [];
-        if (!onTable.has(r.id)) {
-          rulings.push({ id: r.id, ruling: r.ruling, evidence_refs: refs, applied: 'unknown-finding' });
-          continue;
-        }
-        // Only a disproof WITH evidence closes anything. "real" keeps it open;
-        // so does "not_proven"; so does an unsupported "not_real".
-        if (r.ruling === 'not_real' && refs.length > 0) {
-          closedByCouncil.set(r.id, refs);
-          rulings.push({ id: r.id, ruling: r.ruling, evidence_refs: refs, applied: 'closed' });
-        } else {
-          rulings.push({ id: r.id, ruling: r.ruling, evidence_refs: refs, applied: 'kept-open' });
-        }
-      }
-      councilRecord = { status: 'ruled', rulings, closed: [...closedByCouncil.keys()] };
-    }
-  } else if (split) {
-    // Non-risky split: worst-of, no council. A single-family FAIL stands.
-    tieBreak = 'worst-of';
-  }
 
   // A leg that ruled FAIL and whose every finding the council disproved has a
   // verdict with no surviving findings: it proves nothing either way, so it
@@ -1053,6 +1075,10 @@ async function mergeLegs(allLegs, risky, diversity, council) {
     families: allLegs.map((l) => l.family),
     risky,
     diversity,
+    split,
+    // The raw legs travel with the merge so the terminal council can rule over
+    // the exact rulings that survived repair, without a second validation.
+    legs: allLegs,
     tieBreak,
     declaredDisposition,
     dissent: (() => {
@@ -1087,7 +1113,7 @@ async function validateOnce(facts) {
     legs.push({ family: 'cross-family', result: normalizeLeg('cross-family', second) });
     diversity = risky ? 'satisfied' : 'elected';
   }
-  const merged = await mergeLegs(legs, risky, diversity, councilLeg);
+  const merged = mergeLegs(legs, risky, diversity);
   const unreported = merged.derivedChangedPaths.filter((p) => !facts.changedPaths.includes(p));
   if (unreported.length > 0) {
     const byId = new Map(merged.findings.map((f) => [f.id, f]));
@@ -1159,6 +1185,109 @@ if (diversityOnly(validation)) {
   stopReason = STOP_REASONS.diversityUnsatisfied;
   stoppedBy = 'risky surface, no authorized cross-family leg';
 }
+// The convergence law over ONE pair of rounds, extracted so the post-council
+// re-validation is judged by the same law as a repair round rather than by a
+// second copy of it. It updates the run's closed-id and closed-class memory
+// and returns what the round violated.
+// `alsoResolved` names ids this round closed by a means other than the id-set
+// difference: the terminal council's closures. Without it the council round
+// would show nothing resolving, and condition 4 would read a confirmed closure
+// over unchanged bytes as a flip.
+function applyLaw(previous, next, alsoResolved = []) {
+  const prevIds = openIds(previous);
+  const prevFindings = previous.findings || [];
+  const prevDigest = previous.subjectDigest;
+  const nextIds = openIds(next);
+  const nextFindings = next.findings || [];
+  const resolved = [...new Set([...prevIds, ...alsoResolved])].filter((id) => !nextIds.has(id));
+  const prevEvidence = new Set((previous.evidenceRefs || []).map((e) => e.ref));
+  const resolvedSet = new Set(resolved);
+  const bindingEvidence = (next.evidenceRefs || []).filter(
+    (e) => !prevEvidence.has(e.ref) && e.subjectDigest === next.subjectDigest && (e.resolves || []).some((id) => resolvedSet.has(id))
+  );
+  // A class is a STABLE property of a finding, not a field a round may revise.
+  // Mutating it on an id that CARRIED THROUGH defeats the class law from the
+  // inside: in f1[X] -> f1[Y] -> f2[X] the id never resolves, so X reads as
+  // retired with nothing having closed it and the same kind reappears on a new
+  // id unremarked. Add and remove are the same mutation wearing other signs.
+  // An INVALID round, not a law violation: the law reasons over stable keys,
+  // and a round that moves the keys gives it nothing to reason with.
+  const priorClass = new Map(prevFindings.map((f) => [f.id, findingClass(f)]));
+  for (const f of nextFindings) {
+    if (!priorClass.has(f.id)) continue;
+    const before = priorClass.get(f.id);
+    const after = findingClass(f);
+    if (before !== after) {
+      throw new Error(
+        'rpi: finding ' + f.id + ' changed class from ' + JSON.stringify(before) +
+          ' to ' + JSON.stringify(after) + ' while still open; a finding class is stable across rounds'
+      );
+    }
+  }
+  const reopened = [...nextIds].filter((id) => closedIds.has(id));
+  // Condition 3b. SURVIVORS are prevIds intersect nextIds: an id minted THIS
+  // round is not a survivor, however familiar its class. Treating it as one is
+  // exactly what let a continuous rename f1[X] -> f2[X] -> f3[X] run forever
+  // with a flat open set and no id ever reopening.
+  const survivors = new Set([...prevIds].filter((id) => nextIds.has(id)));
+  const survivingClasses = new Set();
+  for (const f of prevFindings) if (survivors.has(f.id) && findingClass(f)) survivingClasses.add(findingClass(f));
+  for (const f of nextFindings) if (survivors.has(f.id) && findingClass(f)) survivingClasses.add(findingClass(f));
+  // A class this round retired: carried by an id that resolved, with no
+  // surviving prior id still carrying it.
+  const retiredHere = new Set();
+  for (const f of prevFindings) {
+    const cls = findingClass(f);
+    if (cls !== null && !nextIds.has(f.id) && !survivingClasses.has(cls)) retiredHere.add(cls);
+  }
+  const classReopened = nextFindings
+    .filter((f) => !prevIds.has(f.id) && findingClass(f) !== null &&
+      (closedClasses.has(findingClass(f)) || retiredHere.has(findingClass(f))))
+    .map((f) => findingClass(f) + ': ' + f.id + ' reopens the class ' +
+      (closedClasses.has(findingClass(f))
+        ? 'closed by ' + closedClasses.get(findingClass(f))
+        : 'this round resolved'));
+  // Precedence orders the DIAGNOSIS — the most specific regression first — but
+  // it never deletes the other disposition: a round that reopens an id and a
+  // class reports both, because "we already told you about the id" is how a
+  // renaming pattern stays invisible.
+  const violations = [];
+  if (reopened.length > 0) {
+    violations.push({ reason: STOP_REASONS.reopenedFinding, detail: 'a closed finding reopened (' + reopened.join(', ') + ')' });
+  }
+  if (classReopened.length > 0) {
+    violations.push({ reason: STOP_REASONS.classReopened, detail: 'a closed finding class reopened (' + classReopened.join('; ') + ')' });
+  }
+  if (violations.length === 0) {
+    if (nextIds.size > prevIds.size) {
+      violations.push({ reason: STOP_REASONS.findingSetGrew, detail: 'open finding set grew (' + prevIds.size + ' -> ' + nextIds.size + ')' });
+    } else if (next.subjectDigest === prevDigest) {
+      // Condition 4: unchanged bytes are admitted only when a NOT_PROVEN round
+      // was resolved by new evidence that closed at least one finding; a FAIL is
+      // never rescued by evidence, and a PASS over unchanged bytes is a flip.
+      const evidenceResolved =
+        previous.verdict === 'NOT_PROVEN' && next.verdict !== 'FAIL' && bindingEvidence.length > 0;
+      if (!evidenceResolved) {
+        violations.push({
+          reason: STOP_REASONS.noSubjectOrEvidenceChange,
+          detail: next.verdict === 'PASS'
+            ? 'verdict flipped to PASS over an unchanged subject'
+            : 'subject digest unchanged without new resolving evidence',
+        });
+      }
+    }
+  }
+  const classStop = violations.some((v) => v.reason === STOP_REASONS.classReopened);
+  const stillOpen = new Set(nextFindings.map(findingClass).filter((c) => c !== null));
+  for (const id of resolved) {
+    closedIds.add(id);
+    const closed = prevFindings.find((f) => f.id === id);
+    const cls = closed ? findingClass(closed) : null;
+    if (cls !== null && !stillOpen.has(cls) && !closedClasses.has(cls)) closedClasses.set(cls, id);
+  }
+  return { violations, classStop, openCount: nextIds.size };
+}
+
 while (
   stopReason === null &&
   validation &&
@@ -1235,96 +1364,9 @@ while (
       error: 'Validate stage failed after a repair; the repaired candidate was never freshly judged',
     });
   }
-  const nextIds = openIds(next);
-  const nextFindings = next.findings || [];
-  const resolved = [...prevIds].filter((id) => !nextIds.has(id));
-  const prevEvidence = new Set((validation.evidenceRefs || []).map((e) => e.ref));
-  const resolvedSet = new Set(resolved);
-  const bindingEvidence = (next.evidenceRefs || []).filter(
-    (e) => !prevEvidence.has(e.ref) && e.subjectDigest === next.subjectDigest && (e.resolves || []).some((id) => resolvedSet.has(id))
-  );
-  // A class is a STABLE property of a finding, not a field a round may revise.
-  // Mutating it on an id that CARRIED THROUGH defeats the class law from the
-  // inside: in f1[X] -> f1[Y] -> f2[X] the id never resolves, so X reads as
-  // retired with nothing having closed it and the same kind reappears on a new
-  // id unremarked. Add and remove are the same mutation wearing other signs.
-  // An INVALID round, not a law violation: the law reasons over stable keys,
-  // and a round that moves the keys gives it nothing to reason with.
-  const priorClass = new Map(prevFindings.map((f) => [f.id, findingClass(f)]));
-  for (const f of nextFindings) {
-    if (!priorClass.has(f.id)) continue;
-    const before = priorClass.get(f.id);
-    const after = findingClass(f);
-    if (before !== after) {
-      throw new Error(
-        'rpi: finding ' + f.id + ' changed class from ' + JSON.stringify(before) +
-          ' to ' + JSON.stringify(after) + ' while still open; a finding class is stable across rounds'
-      );
-    }
-  }
-  const reopened = [...nextIds].filter((id) => closedIds.has(id));
-  // Condition 3b. SURVIVORS are prevIds intersect nextIds: an id minted THIS
-  // round is not a survivor, however familiar its class. Treating it as one is
-  // exactly what let a continuous rename f1[X] -> f2[X] -> f3[X] run forever
-  // with a flat open set and no id ever reopening.
-  const survivors = new Set([...prevIds].filter((id) => nextIds.has(id)));
-  const survivingClasses = new Set();
-  for (const f of prevFindings) if (survivors.has(f.id) && findingClass(f)) survivingClasses.add(findingClass(f));
-  for (const f of nextFindings) if (survivors.has(f.id) && findingClass(f)) survivingClasses.add(findingClass(f));
-  // A class this round retired: carried by an id that resolved, with no
-  // surviving prior id still carrying it.
-  const retiredHere = new Set();
-  for (const f of prevFindings) {
-    const cls = findingClass(f);
-    if (cls !== null && !nextIds.has(f.id) && !survivingClasses.has(cls)) retiredHere.add(cls);
-  }
-  const classReopened = nextFindings
-    .filter((f) => !prevIds.has(f.id) && findingClass(f) !== null &&
-      (closedClasses.has(findingClass(f)) || retiredHere.has(findingClass(f))))
-    .map((f) => findingClass(f) + ': ' + f.id + ' reopens the class ' +
-      (closedClasses.has(findingClass(f))
-        ? 'closed by ' + closedClasses.get(findingClass(f))
-        : 'this round resolved'));
-  // Precedence orders the DIAGNOSIS — the most specific regression first — but
-  // it never deletes the other disposition: a round that reopens an id and a
-  // class reports both, because "we already told you about the id" is how a
-  // renaming pattern stays invisible.
-  const violations = [];
-  if (reopened.length > 0) {
-    violations.push({ reason: STOP_REASONS.reopenedFinding, detail: 'a closed finding reopened (' + reopened.join(', ') + ')' });
-  }
-  if (classReopened.length > 0) {
-    violations.push({ reason: STOP_REASONS.classReopened, detail: 'a closed finding class reopened (' + classReopened.join('; ') + ')' });
-  }
-  if (violations.length === 0) {
-    if (nextIds.size > prevIds.size) {
-      violations.push({ reason: STOP_REASONS.findingSetGrew, detail: 'open finding set grew (' + prevIds.size + ' -> ' + nextIds.size + ')' });
-    } else if (next.subjectDigest === prevDigest) {
-      // Condition 4: unchanged bytes are admitted only when a NOT_PROVEN round
-      // was resolved by new evidence that closed at least one finding; a FAIL is
-      // never rescued by evidence, and a PASS over unchanged bytes is a flip.
-      const evidenceResolved =
-        validation.verdict === 'NOT_PROVEN' && next.verdict !== 'FAIL' && bindingEvidence.length > 0;
-      if (!evidenceResolved) {
-        violations.push({
-          reason: STOP_REASONS.noSubjectOrEvidenceChange,
-          detail: next.verdict === 'PASS'
-            ? 'verdict flipped to PASS over an unchanged subject'
-            : 'subject digest unchanged without new resolving evidence',
-        });
-      }
-    }
-  }
-  const classStop = violations.some((v) => v.reason === STOP_REASONS.classReopened);
-  const stillOpen = new Set(nextFindings.map(findingClass).filter((c) => c !== null));
-  for (const id of resolved) {
-    closedIds.add(id);
-    const closed = prevFindings.find((f) => f.id === id);
-    const cls = closed ? findingClass(closed) : null;
-    if (cls !== null && !stillOpen.has(cls) && !closedClasses.has(cls)) closedClasses.set(cls, id);
-  }
+  const { violations, classStop, openCount } = applyLaw(validation, next);
   repairLog.push(
-    'repair round ' + roundsUsed + ': ' + nextIds.size + ' open findings' +
+    'repair round ' + roundsUsed + ': ' + openCount + ' open findings' +
       (violations.length ? ' — stopped by the law: ' + violations.map((v) => v.detail).join('; ') : '')
   );
   validation = next;
@@ -1344,6 +1386,124 @@ while (
     break;
   }
 }
+// TERMINAL COUNCIL (item 5 of the contract, five sentences): the third judge is
+// convened once, and only when a risky split has SURVIVED the repair phase.
+// Inside every validation it was spending a judge on disagreements the next
+// repair round settled on its own.
+if (validation && validation.risky && validation.split) {
+  phase('Validate');
+  const onTable = new Set(validation.legs.flatMap((l) => (l.result.findings || []).map((f) => f.id)));
+  // Every digest the legs bound: what a `sha256:` ruling ref may resolve to.
+  const boundDigests = new Set();
+  for (const leg of validation.legs) {
+    if (leg.result.subjectDigest) boundDigests.add('sha256:' + leg.result.subjectDigest);
+    for (const e of leg.result.evidenceRefs || []) {
+      if (typeof e.ref === 'string' && e.ref.startsWith('sha256:')) boundDigests.add(e.ref);
+      if (e.subjectDigest) boundDigests.add('sha256:' + e.subjectDigest);
+    }
+  }
+  const ruling = await councilLeg(validation.legs);
+  const closedByCouncil = new Map();
+  let councilRecord;
+  if (!ruling) {
+    councilRecord = { status: 'unavailable', rulings: [], closed: [] };
+  } else {
+    // Candidate path refs, blanks dropped: a blank is not evidence, and there
+    // is nothing to spend a resolution receipt on.
+    const candidates = new Set();
+    for (const r of ruling.rulings || []) {
+      if (r.ruling !== 'not_real' || !onTable.has(r.id)) continue;
+      for (const ref of r.evidence_refs || []) {
+        const trimmed = typeof ref === 'string' ? ref.trim() : '';
+        if (trimmed && !trimmed.startsWith('sha256:')) candidates.add(trimmed);
+      }
+    }
+    const resolvedPaths = candidates.size > 0 ? await resolveCouncilPaths([...candidates]) : new Map();
+    const resolves = (ref) => {
+      const trimmed = typeof ref === 'string' ? ref.trim() : '';
+      if (!trimmed) return false;
+      if (trimmed.startsWith('sha256:')) return boundDigests.has(trimmed);
+      return resolvedPaths.get(trimmed) === true;
+    };
+    const rulings = [];
+    for (const r of ruling.rulings || []) {
+      const refs = (r.evidence_refs || []).filter((ref) => typeof ref === 'string' && ref.trim());
+      if (!onTable.has(r.id)) {
+        rulings.push({ id: r.id, ruling: r.ruling, evidence_refs: refs, applied: 'unknown-finding' });
+        continue;
+      }
+      // Only a disproof whose evidence RESOLVES closes anything. "real" keeps
+      // it open; so does "not_proven"; so does an unresolvable "not_real".
+      const binding = refs.filter(resolves);
+      if (r.ruling === 'not_real' && binding.length > 0) {
+        closedByCouncil.set(r.id, binding);
+        rulings.push({ id: r.id, ruling: r.ruling, evidence_refs: binding, applied: 'closed' });
+      } else {
+        rulings.push({ id: r.id, ruling: r.ruling, evidence_refs: refs, applied: 'kept-open' });
+      }
+    }
+    councilRecord = { status: 'ruled', rulings, closed: [...closedByCouncil.keys()] };
+  }
+  const postCouncil = mergeLegs(
+    validation.legs, validation.risky, validation.diversity, closedByCouncil, councilRecord
+  );
+  if (closedByCouncil.size === 0) {
+    // Nothing closed: the split stands exactly as repair left it.
+    validation = postCouncil;
+  } else if (roundsUsed >= repairRounds) {
+    // A council closure is a claim about the subject, not a proof of it. With
+    // no round left it stays unverified, and the run says so rather than
+    // reporting the post-council aggregate as if a judge had confirmed it.
+    validation = degrade(postCouncil, 'NOT_PROVEN');
+    // Never overwrite a stop the repair phase already named; append to it.
+    if (stopReason === null) {
+      stopReason = STOP_REASONS.repairBudgetExhausted;
+      stopReasons = [stopReason];
+    }
+    stoppedBy =
+      (stoppedBy ? stoppedBy + '; ' : '') +
+      'the council closed ' + [...closedByCouncil.keys()].join(', ') +
+      ' but no repair round remained, so the closure was not re-validated';
+    repairLog.push('council: closed ' + closedByCouncil.size + ' finding(s), not re-validated');
+  } else {
+    // A council disproof is new BOUND evidence over an unchanged subject, which
+    // is exactly the case condition 4 already admits. Spend one round and let a
+    // fresh validator judge it under the same law as any repair round.
+    roundsUsed += 1;
+    await refreshOrphans([...facts.changedPaths], 'round:' + roundsUsed);
+    facts = { ...facts, checkReceipts: facts.checkReceipts.concat(orphansReceipts.slice(-1)) };
+    const next = await validateOnce(facts);
+    if (!next) {
+      return traversalReport({
+        status: 'NOT_PROVEN',
+        changedPaths: facts.changedPaths,
+        findings: postCouncil.findings,
+        council: councilRecord,
+        repairRoundsUsed: roundsUsed,
+        repairLog: repairLog.concat(['council round ' + roundsUsed + ': validate stage failed']),
+        stopReason: STOP_REASONS.validateFailed,
+        stoppedBy: 'validate stage failed after the council ruled in round ' + roundsUsed,
+        error: 'Validate stage failed after the council closed findings; the closure was never freshly judged',
+      });
+    }
+    // Judged against the POST-council state, with the council's closures counted
+    // as this round's resolutions: the fresh validator must still bring its own
+    // bound evidence over this subject, or the law stops the run.
+    const { violations, classStop, openCount } = applyLaw(postCouncil, next, [...closedByCouncil.keys()]);
+    repairLog.push(
+      'council round ' + roundsUsed + ': ' + openCount + ' open findings' +
+        (violations.length ? ' — stopped by the law: ' + violations.map((v) => v.detail).join('; ') : '')
+    );
+    validation = { ...next, council: councilRecord, declaredDisposition: postCouncil.declaredDisposition };
+    if (violations.length > 0) {
+      stopReason = violations[0].reason;
+      stopReasons = violations.map((v) => v.reason);
+      stoppedBy = 'law: ' + violations.map((v) => v.detail).join('; ');
+      if (validation.verdict === 'PASS' || classStop) validation = degrade(validation, 'NOT_PROVEN');
+    }
+  }
+}
+
 const converged = !!validation && validation.verdict === 'PASS' && stopReason === null;
 if (converged) {
   stopReason = STOP_REASONS.converged;

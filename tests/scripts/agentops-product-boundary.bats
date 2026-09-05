@@ -1504,6 +1504,151 @@ assert result["verdict"] == "FAIL", result["verdict"]
 PY
 }
 
+@test "rpi.js does not convene a council on a split that repair still has rounds to fix" {
+  # Five contract sentences say the council convenes on a risky split that
+  # SURVIVES repair. Convening it inside every validateOnce spent a third judge
+  # on a disagreement the very next repair round was about to settle.
+  local repair v1
+  repair='{"label":"repair:1","result":{"contextId":"author-2","changedPaths":["tests/a.bats"],"checkReceipts":[],"filesSummary":"n"}}'
+  v1='{"label":"validate","result":{"verdict":"PASS","verdictPath":"/tmp/v.json","subjectDigest":"bb","criteria":[],"validatorContextId":"v3","findings":[],"evidenceRefs":[],"derivedChangedPaths":["tests/a.bats"]}}'
+
+  rpi_probe \
+    '{"intent":"harden the seal","writeScope":["tests/**"],"acceptance":"the behavior holds","premortem":"skip","crossFamily":{"command":"codex exec --read-only judge"},"repairRounds":1}' \
+    "[$PLAN_RESULT,$IMPL_RESULT_RISKY,$ORPHANS_ABSENT,$LEG_PASS,$LEG_FAIL,$repair,$ORPHANS_ABSENT,$v1,$v1]"
+
+  python3 - "$BATS_TEST_TMPDIR/probe.json" <<'PY'
+import json, sys
+probe = json.load(open(sys.argv[1]))
+assert "council" not in probe["calls"], probe["calls"]
+result = probe["result"]
+assert result["verdict"] == "PASS", result["verdict"]
+assert result["council"] is None, result["council"]
+assert result["repairRoundsUsed"] == 1, result["repairRoundsUsed"]
+PY
+}
+
+@test "rpi.js convenes the council only once the risky split survives repair" {
+  # repairRounds 0: the first split is already terminal, so it survives repair
+  # vacuously and the council convenes exactly once.
+  rpi_probe "$RISKY_SPLIT_ARGS" \
+    "[$PLAN_RESULT,$IMPL_RESULT_RISKY,$ORPHANS_ABSENT,$LEG_PASS,$LEG_FAIL,{\"label\":\"council\",\"result\":{\"rulings\":[{\"id\":\"x:y\",\"ruling\":\"real\",\"evidence_refs\":[]}]}}]"
+
+  python3 - "$BATS_TEST_TMPDIR/probe.json" <<'PY'
+import json, sys
+probe = json.load(open(sys.argv[1]))
+assert probe["calls"].count("council") == 1, probe["calls"]
+# The council runs AFTER the repair phase, so it is the last judge called.
+assert probe["calls"][-1] == "council", probe["calls"]
+result = probe["result"]
+assert result["verdict"] == "FAIL", result["verdict"]
+assert [f["id"] for f in result["findings"]] == ["x:y"], result["findings"]
+PY
+}
+
+@test "rpi.js revalidates once when the council closes a finding and a round remains" {
+  # Round 1 repairs nothing (same digest, same finding), so the law stops the
+  # phase with a round still unspent and the risky split live. The council then
+  # closes the finding the law tripped over, and its disproof is new BOUND
+  # evidence over an unchanged subject, which is exactly the case condition 4
+  # admits: spend the remaining round and let a fresh validator judge it.
+  local repair v_after
+  repair='{"label":"repair:1","result":{"contextId":"author-2","changedPaths":["tests/a.bats"],"checkReceipts":[],"filesSummary":"n"}}'
+  # The revalidator cites its OWN re-derivation, not the council's file: merely
+  # re-citing the council's artifact confirms nothing independently.
+  v_after='{"label":"validate","result":{"verdict":"PASS","verdictPath":"/tmp/v2.json","subjectDigest":"aa","criteria":[],"validatorContextId":"v9","findings":[],"evidenceRefs":[{"ref":".agents/ao/revalidation.txt","subjectDigest":"aa","resolves":["x:y"]}],"derivedChangedPaths":["tests/a.bats"]}}'
+
+  rpi_probe \
+    '{"intent":"harden the seal","writeScope":["tests/**"],"acceptance":"the behavior holds","premortem":"skip","crossFamily":{"command":"codex exec --read-only judge"},"repairRounds":2}' \
+    "[$PLAN_RESULT,$IMPL_RESULT_RISKY,$ORPHANS_ABSENT,$LEG_PASS,$LEG_FAIL,$repair,$ORPHANS_ABSENT,$LEG_PASS,$LEG_FAIL,{\"label\":\"council\",\"result\":{\"rulings\":[{\"id\":\"x:y\",\"ruling\":\"not_real\",\"evidence_refs\":[\"tests/a.bats\"]}]}},{\"label\":\"council-evidence\",\"result\":{\"resolved\":[{\"ref\":\"tests/a.bats\",\"exists\":true}]}},$ORPHANS_ABSENT,$v_after,$v_after]"
+
+  python3 - "$BATS_TEST_TMPDIR/probe.json" <<'PY'
+import json, sys
+probe = json.load(open(sys.argv[1]))
+assert probe["calls"].count("council") == 1, probe["calls"]
+# Two legs per validation: two repair-phase rounds plus one council round.
+assert probe["calls"].count("validate") == 6, probe["calls"]
+result = probe["result"]
+assert result["council"]["closed"] == ["x:y"], result["council"]
+assert result["repairRoundsUsed"] == 2, result["repairRoundsUsed"]
+assert result["verdict"] == "PASS", result["verdict"]
+assert any("council round 2" in line for line in result["repairLog"]), result["repairLog"]
+PY
+}
+
+@test "rpi.js says so when the council closes a finding with no round left to revalidate" {
+  rpi_probe "$RISKY_SPLIT_ARGS" \
+    "[$PLAN_RESULT,$IMPL_RESULT_RISKY,$ORPHANS_ABSENT,$LEG_PASS,$LEG_FAIL,{\"label\":\"council\",\"result\":{\"rulings\":[{\"id\":\"x:y\",\"ruling\":\"not_real\",\"evidence_refs\":[\"tests/a.bats\"]}]}},{\"label\":\"council-evidence\",\"result\":{\"resolved\":[{\"ref\":\"tests/a.bats\",\"exists\":true}]}}]"
+
+  python3 - "$BATS_TEST_TMPDIR/probe.json" <<'PY'
+import json, sys
+result = json.load(open(sys.argv[1]))["result"]
+assert result["council"]["closed"] == ["x:y"], result["council"]
+assert result["stopReason"] == "repair_budget_exhausted", result["stopReason"]
+assert result["verdict"] == "NOT_PROVEN", result["verdict"]
+assert "not re-validated" in result["stoppedBy"], result["stoppedBy"]
+PY
+}
+
+@test "rpi.js closes nothing on a council ref that does not resolve in the tree" {
+  rpi_probe "$RISKY_SPLIT_ARGS" \
+    "[$PLAN_RESULT,$IMPL_RESULT_RISKY,$ORPHANS_ABSENT,$LEG_PASS,$LEG_FAIL,{\"label\":\"council\",\"result\":{\"rulings\":[{\"id\":\"x:y\",\"ruling\":\"not_real\",\"evidence_refs\":[\"tests/never-written.txt\"]}]}},{\"label\":\"council-evidence\",\"result\":{\"resolved\":[{\"ref\":\"tests/never-written.txt\",\"exists\":false}]}}]"
+
+  python3 - "$BATS_TEST_TMPDIR/probe.json" <<'PY'
+import json, sys
+result = json.load(open(sys.argv[1]))["result"]
+assert [f["id"] for f in result["findings"]] == ["x:y"], result["findings"]
+assert result["council"]["closed"] == [], result["council"]
+assert result["council"]["rulings"][0]["applied"] == "kept-open", result["council"]
+assert result["verdict"] == "FAIL", result["verdict"]
+PY
+}
+
+@test "rpi.js closes nothing on a blank council evidence ref" {
+  rpi_probe "$RISKY_SPLIT_ARGS" \
+    "[$PLAN_RESULT,$IMPL_RESULT_RISKY,$ORPHANS_ABSENT,$LEG_PASS,$LEG_FAIL,{\"label\":\"council\",\"result\":{\"rulings\":[{\"id\":\"x:y\",\"ruling\":\"not_real\",\"evidence_refs\":[\"\",\"   \"]}]}}]"
+
+  python3 - "$BATS_TEST_TMPDIR/probe.json" <<'PY'
+import json, sys
+probe = json.load(open(sys.argv[1]))
+# Every ref is blank, so there is nothing to resolve and no receipt is spent.
+assert "council-evidence" not in probe["calls"], probe["calls"]
+result = probe["result"]
+assert [f["id"] for f in result["findings"]] == ["x:y"], result["findings"]
+assert result["council"]["closed"] == [], result["council"]
+assert result["verdict"] == "FAIL", result["verdict"]
+PY
+}
+
+@test "rpi.js accepts a council sha256 ref already present in the evidence set" {
+  # A digest ref needs no filesystem lookup: it either names bytes the legs
+  # already bound or it names nothing.
+  local leg_fail_ev
+  leg_fail_ev='{"label":"validate","result":{"verdict":"FAIL","verdictPath":null,"subjectDigest":"aa","criteria":[],"validatorContextId":"v2","findings":[{"id":"x:y","class":"seal.pinning","summary":"cross-family objection"}],"evidenceRefs":[{"ref":"sha256:beef","subjectDigest":"aa","resolves":[]}],"derivedChangedPaths":["tests/a.bats"]}}'
+
+  rpi_probe "$RISKY_SPLIT_ARGS" \
+    "[$PLAN_RESULT,$IMPL_RESULT_RISKY,$ORPHANS_ABSENT,$LEG_PASS,$leg_fail_ev,{\"label\":\"council\",\"result\":{\"rulings\":[{\"id\":\"x:y\",\"ruling\":\"not_real\",\"evidence_refs\":[\"sha256:beef\"]}]}}]"
+
+  python3 - "$BATS_TEST_TMPDIR/probe.json" <<'PY'
+import json, sys
+probe = json.load(open(sys.argv[1]))
+assert "council-evidence" not in probe["calls"], probe["calls"]
+result = probe["result"]
+assert result["council"]["closed"] == ["x:y"], result["council"]
+PY
+}
+
+@test "rpi.js closes nothing on a sha256 ref no leg ever bound" {
+  rpi_probe "$RISKY_SPLIT_ARGS" \
+    "[$PLAN_RESULT,$IMPL_RESULT_RISKY,$ORPHANS_ABSENT,$LEG_PASS,$LEG_FAIL,{\"label\":\"council\",\"result\":{\"rulings\":[{\"id\":\"x:y\",\"ruling\":\"not_real\",\"evidence_refs\":[\"sha256:invented\"]}]}}]"
+
+  python3 - "$BATS_TEST_TMPDIR/probe.json" <<'PY'
+import json, sys
+result = json.load(open(sys.argv[1]))["result"]
+assert result["council"]["closed"] == [], result["council"]
+assert [f["id"] for f in result["findings"]] == ["x:y"], result["findings"]
+PY
+}
+
 @test "rpi.js convenes a council that adjudicates findings and never a verdict" {
   rpi_probe "$RISKY_SPLIT_ARGS" \
     "[$PLAN_RESULT,$IMPL_RESULT_RISKY,$ORPHANS_ABSENT,$LEG_PASS,$LEG_FAIL,{\"label\":\"council\",\"result\":{\"rulings\":[{\"id\":\"x:y\",\"ruling\":\"real\",\"evidence_refs\":[\".agents/ao/repro.txt\"]}]}}]"
@@ -1545,18 +1690,18 @@ PY
 
 @test "rpi.js treats a FAIL leg whose findings the council all closed as NOT_PROVEN" {
   rpi_probe "$RISKY_SPLIT_ARGS" \
-    "[$PLAN_RESULT,$IMPL_RESULT_RISKY,$ORPHANS_ABSENT,$LEG_PASS,$LEG_FAIL,{\"label\":\"council\",\"result\":{\"rulings\":[{\"id\":\"x:y\",\"ruling\":\"not_real\",\"evidence_refs\":[\".agents/ao/disproof.txt\"]}]}}]"
+    "[$PLAN_RESULT,$IMPL_RESULT_RISKY,$ORPHANS_ABSENT,$LEG_PASS,$LEG_FAIL,{\"label\":\"council\",\"result\":{\"rulings\":[{\"id\":\"x:y\",\"ruling\":\"not_real\",\"evidence_refs\":[\".agents/ao/disproof.txt\"]}]}},{\"label\":\"council-evidence\",\"result\":{\"resolved\":[{\"ref\":\".agents/ao/disproof.txt\",\"exists\":true}]}}]"
 
   python3 - "$BATS_TEST_TMPDIR/probe.json" <<'PY'
 import json, sys
 result = json.load(open(sys.argv[1]))["result"]
 # A verdict with no surviving findings proves nothing either way; it is never
-# promoted to the other leg's PASS.
+# promoted to the other leg's PASS, and with no round left to re-judge the
+# closure it stays NOT_PROVEN and says why.
 assert result["verdict"] == "NOT_PROVEN", result["verdict"]
 assert result["findings"] == [], result["findings"]
 assert result["council"]["closed"] == ["x:y"], result["council"]
-assert result["stopReason"] == "verdict_without_findings", result["stopReason"]
-# The council's disproof enters as BOUND evidence over the judged subject.
+assert "not re-validated" in result["stoppedBy"], result["stoppedBy"]
 assert result["verdictPath"] is None
 PY
 }
