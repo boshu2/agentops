@@ -27,6 +27,8 @@ scope as a class (cli/internal/gates/** plus regen outputs), first check
 - The plan names one first check as a runnable command, such as
   `bash scripts/check-x.sh`, and a fresh context given only the source can
   start Implement.
+- On a risky write scope the source names its `binding_judge` and the evidence
+  the change will orphan, rather than leaving either for verify time.
 
 ## Workflow
 
@@ -42,8 +44,14 @@ scope as a class (cli/internal/gates/** plus regen outputs), first check
    evidence concrete, carrying citations forward; research and specialist
    skills are advisory inputs.
 3. Ensure the source contains acceptance examples, important non-goals, and the
-   allowed write scope. Use lightweight prose or Given/When/Then only where it
-   removes ambiguity. Write-scope checks (folded from the retired `scope` skill):
+   allowed write scope. Name `write_scope`, whether it hits a risky surface
+   (the list [`validate`](../validate/SKILL.md) owns), the `binding_judge`
+   (`primary` or `cross`) when it does, the caller's `repair_rounds`, and the
+   evidence this change will orphan: bound scorecards or contracts whose
+   evaluator files sit in the write scope. Recapturing that evidence is work
+   this plan carries, not a discovery for verify time. Use lightweight prose or
+   Given/When/Then only where it removes ambiguity. Write-scope checks (folded
+   from the retired `scope` skill):
    - patterns are normalized repository-relative paths;
    - includes cover the behavior without granting unrelated directories;
    - excludes do not contradict required changes;

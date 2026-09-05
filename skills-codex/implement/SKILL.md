@@ -41,7 +41,11 @@ return the manifest digest and check receipts, stop.
    acceptance test.
 6. Have the runtime derive actual changed paths and `subject-manifest.v1` from
    the before/after subject.
-7. Return the manifest digest, author context ID, and exact check receipts in the
+7. When `scripts/evidence-orphans.sh` exists, have the runtime run
+   `bash scripts/evidence-orphans.sh <changed paths>` over those derived paths
+   and carry its output in the check receipts. The runtime derives the orphan
+   set; the model never lists orphaned evidence by hand.
+8. Return the manifest digest, author context ID, and exact check receipts in the
    response or runtime channel. Stop.
 
 Specialists (standards, domain, test, refactor, security) advise only. During

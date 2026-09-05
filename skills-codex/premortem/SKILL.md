@@ -8,6 +8,25 @@ Premortem is an optional plan-challenge strategy. It asks one fresh context to
 identify concrete ways the resolved bead or caller intent could fail before implementation.
 It is not part of the required RPI sequence and does not authorize readiness.
 
+## Trigger: risky write scope at plan exit
+
+One trigger makes this leg mandatory rather than elective. A plan whose write
+scope hits a risky surface gets one premortem at Plan exit, before Implement.
+The caller may declare `premortem: skip`, and the traversal discloses that the
+premortem was skipped by caller declaration; silence is never a skip.
+
+On this trigger the leg returns the compact shape the traversal consumes:
+
+```json
+{"blocking": ["one sentence per finding that should stop Implement"],
+ "notes": ["everything else this judge found"]}
+```
+
+`blocking` carries only defects this judge constructed, and an empty list is
+the honest answer when there are none. The full `premortem-plan-review.v1`
+artifact stays the caller-invoked output; this shape is the same judgment
+bounded to what the traversal reads.
+
 ## The first check: who verifies, and are they fresh?
 
 Before any technical risk, test the plan's EVIDENCE SHAPE: for every unit of

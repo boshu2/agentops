@@ -73,6 +73,11 @@ it rides along with a same-model result; on a risky surface a single-family
 PASS is `NOT_PROVEN`, and same-family agreement is not convergence. A
 single-family FAIL stands.
 
+When the two legs disagree, each reports its own verdict and neither resolves
+the split. The binding judge declared in the plan settles it; with none
+declared, a risky split goes to one council leg. Validate never treats
+agreement with itself, or the absence of a second verdict, as the tie-break.
+
 ## Mutating-check quarantine
 
 Classify every acceptance-listed command as read-only or subject-mutating
@@ -114,9 +119,15 @@ and stays visible.
 5. Choose exactly one semantic result: `PASS`, `FAIL`, or `NOT_PROVEN`. Return
    it with criterion-level results, findings, evidence references, `checked`,
    `not_checked`, both identities, both context IDs, and the freshness
-   attestation. PASS requires distinct identities, explicit freshness,
-   nonempty checked scope, nonempty top-level evidence, evidence for every
-   criterion, and an empty `not_checked`.
+   attestation. Every finding carries a `class`: one stable short name for the
+   defect kind, exactly one per finding, reused verbatim when the same kind
+   recurs so the traversal can see a class reopen. A class that does not
+   describe the finding is itself a finding, against this validator. PASS
+   requires distinct identities, explicit freshness, nonempty checked scope,
+   nonempty top-level evidence, evidence for every criterion, and an empty
+   `not_checked`. A documentation sentence claiming something is published,
+   pinned, or proven is an acceptance criterion like any other: it needs a
+   check this validator can run, or it is `not_checked`.
 6. Only when the caller requests machine-readable evidence or a declared
    downstream consumer requires it, persist canonical `verdict.v2` with the
    helper's `store-verdict` (mechanics reference), then return the artifact

@@ -46,6 +46,13 @@ from failed lanes first — the canonical example is the mutating-check
 quarantine in `skills/validate/SKILL.md`, a durable rule minted from a
 `NOT_PROVEN`-then-`PASS` verdict pair.
 
+Promote a repeat into a check proposal: a finding `class` seen in two repair
+rounds of one traversal, or in two separate runs, leaves the output as a
+deterministic check proposal named with that class, the exact sentence or
+pattern the check would refuse, and the gate tier it would run in. The
+proposal is advisory text for a human or caller to weigh; Learn never edits a
+gate, a registry, or a check script itself.
+
 Prune for provenance decay: every cited artifact must still resolve — the
 file exists or the verdict digest is present under `.agents/ao/verdicts/`. A
 citation that no longer resolves gets pruned rather than paraphrased, and

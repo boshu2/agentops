@@ -35,6 +35,19 @@ cost of independent contexts is warranted only by a named one-way door.
    minority evidence and unresolved assumptions.
 5. Write `council-report.v1` and return it to the caller.
 
+## Trigger: a judge split with no binding judge declared
+
+The fresh validator and the cross-family leg disagree on the verdict and the
+plan named no binding judge. One council leg convenes on that split alone. It
+receives both verdicts and both finding lists, and its frozen question is
+which of the two stands.
+
+The council mints nothing here either: it returns the one verdict that stands,
+chosen from the two it was handed, with the reason it stands and the losing
+leg's findings preserved as minority evidence. That answer rides in the
+synthesis, where the accountable fresh validator reads it and reports the
+result; `council-report.v1` still carries no verdict field.
+
 ## Methodology-weighted agreement
 
 Agreement across differing evidence methodologies counts more than agreement
