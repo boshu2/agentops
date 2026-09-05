@@ -61,6 +61,7 @@ const STOP_REASONS = Object.freeze({
   premortemBlocking: 'premortem_blocking',
   planIncomplete: 'plan_incomplete',
   planIdentityMismatch: 'plan_identity_mismatch',
+  councilClosureUnrevalidated: 'council_closure_unrevalidated',
   implementFailed: 'implement_failed',
   validateFailed: 'validate_failed',
   repairFailed: 'repair_failed',
@@ -187,6 +188,18 @@ if (
 ) {
   badArgs('writeScope must be a non-empty array of path globs when given');
 }
+// Canonicalized BEFORE the risk classification and before the Plan schema is
+// chosen: `././tests/**` and `tests/**` are one scope, and an absolute or
+// escaping glob is not a scope in this repository at all. A scope the
+// classifier cannot read is a scope whose riskiness is unknown.
+if (input.writeScope !== undefined) {
+  const rejected = input.writeScope.filter((g) => canonicalScopeGlob(g) === null);
+  if (rejected.length > 0) {
+    badArgs(
+      'writeScope must be repository-relative globs; refused ' + JSON.stringify(rejected)
+    );
+  }
+}
 if (input.acceptance !== undefined && (typeof input.acceptance !== 'string' || !input.acceptance.trim())) {
   badArgs('acceptance must be a non-empty string when given');
 }
@@ -231,9 +244,31 @@ const RISKY_GLOBS = [
   'scripts/security-gate.sh',
 ];
 
-// Normalize the two spellings that make the same path look like two: a leading
-// `./` and a trailing `/`.
-const normalizePath = (value) => String(value).replace(/^\.\//, '').replace(/\/+$/, '');
+// Collapse the spellings that make one path look like several: repeated `./`,
+// `.` segments, empty segments from doubled slashes, a trailing `/`, and any
+// `..` that a preceding segment cancels. Returns null when the value is not a
+// repository-relative path at all: absolute, home-relative, or climbing out of
+// the root, none of which the traversal can reason about.
+function canonicalScopeGlob(value) {
+  const raw = String(value).trim();
+  if (!raw || raw.startsWith('/') || raw.startsWith('~')) return null;
+  const segments = [];
+  for (const segment of raw.split('/')) {
+    if (segment === '' || segment === '.') continue;
+    if (segment === '..') {
+      // `**/..` cannot be cancelled: what it climbs out of is unknown.
+      if (segments.length === 0 || segments[segments.length - 1] === '**') return null;
+      segments.pop();
+      continue;
+    }
+    segments.push(segment);
+  }
+  return segments.length > 0 ? segments.join('/') : null;
+}
+// The classifier's own normalization: a value that cannot be canonicalized is
+// left as written so the intersection sees it and no caller silently gets a
+// half-normalized path.
+const normalizePath = (value) => canonicalScopeGlob(value) || String(value).trim();
 
 // Does one PATTERN SEGMENT overlap another? Literals must be equal; `*` matches
 // any single segment; a segment with an interior `*` is matched against a
@@ -519,7 +554,20 @@ const writeScope = input.writeScope !== undefined ? input.writeScope : plan.writ
 // globs the plan authorized are the only surface there is — and they are GLOBS,
 // intersected with the risky surfaces rather than pattern-matched as if they
 // were paths.
-const plannedRisky = isRiskyScope(writeScope);
+const uncanonicalScope = (writeScope || []).filter((g) => canonicalScopeGlob(g) === null);
+if (uncanonicalScope.length > 0) {
+  return traversalReport({
+    status: 'NOT_PLANNED',
+    stopReason: STOP_REASONS.planIncomplete,
+    planMissing: ['writeScope'],
+    stoppedBy: 'the plan declared a write scope that is not repository-relative: ' + uncanonicalScope.join(', '),
+    error: 'A write scope must be repository-relative globs; an absolute or escaping glob has no meaning here',
+  });
+}
+// Canonical from here on, so the risk classification, the premortem prompt, and
+// the plan identity all read one spelling of the same scope.
+const writeScopeCanonical = writeScope.map((g) => canonicalScopeGlob(g));
+const plannedRisky = isRiskyScope(writeScopeCanonical);
 
 // The declared tie-break disposition may arrive from the caller, from the
 // frozen plan, or from both. Both and disagreeing is a contradiction about who
@@ -578,7 +626,7 @@ if (plannedRisky && !callerScopeRisky) {
 // function of the frozen plan, not of whether a field happened to be returned.
 const plannedOrphans = Array.isArray(plan.orphaned_evidence) ? plan.orphaned_evidence : [];
 const planPayload = planIdentityPayload(
-  acceptance, declaredJudge, plan.intentDigest, plannedOrphans, writeScope
+  acceptance, declaredJudge, plan.intentDigest, plannedOrphans, writeScopeCanonical
 );
 planDigest = await sha256Hex(planPayload);
 if (planDigest === null) {
@@ -895,7 +943,11 @@ async function brokerLeg(facts, command) {
     '- Author context id: ' + facts.contextId + '\n' +
     '- Changed paths (derived):\n' +
     (facts.changedPaths.length ? facts.changedPaths.map((p) => '  - ' + p).join('\n') : '  (none reported)') + '\n' +
-    '- Check receipts (factual command outcomes):\n' + JSON.stringify(facts.checkReceipts, null, 2) + '\n\n' +
+    '- Check receipts (factual command outcomes):\n' + JSON.stringify(facts.checkReceipts, null, 2) + '\n' +
+    (plannedOrphans.length
+      ? '- Evidence the frozen plan said this scope would orphan, budgeted as recapture work:\n' +
+        plannedOrphans.map((o) => '  - ' + o).join('\n') + '\n'
+      : '') + '\n' +
     'Procedure:\n' +
     '- ' + where + '\n' +
     '- ' + toolingBlock + '\n' +
@@ -998,6 +1050,38 @@ const COUNCIL_SCHEMA = {
     },
   },
 };
+
+// A digest ref names bytes only if it has the shape of a digest: `sha256:` plus
+// exactly 64 lowercase hex. "sha256:beef" identifies nothing and must not be
+// able to close a finding by matching a leg that wrote the same short string.
+const DIGEST_REF = /^sha256:[0-9a-f]{64}$/;
+
+// The one place a council disproof may live.
+const EVIDENCE_AREA = '.agents/ao/';
+
+// Canonicalize a council path ref and PROVE it stays beneath the evidence area,
+// or return null. Containment is decided on the canonical segments, never on a
+// string prefix: `.agents/ao/../../tests/a.bats` starts with the evidence area
+// and lands on the subject. Absolute paths are refused outright, and any `..`
+// that would climb out is refused rather than clamped.
+function containedEvidencePath(value) {
+  if (typeof value !== 'string') return null;
+  const raw = value.trim();
+  if (!raw || raw.startsWith('/') || raw.startsWith('~')) return null;
+  const segments = [];
+  for (const segment of raw.split('/')) {
+    if (segment === '' || segment === '.') continue;
+    if (segment === '..') {
+      if (segments.length === 0) return null;
+      segments.pop();
+      continue;
+    }
+    segments.push(segment);
+  }
+  const canonical = segments.join('/');
+  if (!canonical.startsWith(EVIDENCE_AREA) || canonical.length === EVIDENCE_AREA.length) return null;
+  return canonical;
+}
 
 // COUNCIL EVIDENCE FLOOR: a "not_real" ruling closes a finding only when its
 // evidence actually resolves. A blank ref, or a path the council never wrote,
@@ -1558,33 +1642,80 @@ while (
 // it: nothing left to repair, or the caller's bound spent.
 const councilEligible =
   stopReason === null || stopReason === STOP_REASONS.repairBudgetExhausted;
+const councilHasTable = !!validation && (validation.findings || []).length > 0;
 if (validation && validation.risky && validation.split && !councilEligible) {
-  validation = { ...validation, council: { status: 'not-convened', reason: 'law stop' } };
+  validation = {
+    ...validation,
+    // A tie-break still happened: worst-of, the merge repair ran under. Naming
+    // the law stop here keeps the record from reading as if a judge chose.
+    tieBreak: 'worst-of',
+    council: {
+      status: 'not-convened',
+      reason: 'law stop',
+      note: 'the convergence law stopped the repair phase (' + stopReason + '), so no third judge was convened',
+    },
+  };
+} else if (validation && validation.risky && validation.split && !councilHasTable) {
+  // A split with no open finding gives a council nothing to adjudicate, and
+  // convening one to rule on an empty list is ceremony.
+  validation = {
+    ...validation,
+    council: { status: 'not-convened', reason: 'nothing on the table' },
+  };
 }
-if (validation && validation.risky && validation.split && councilEligible) {
+if (validation && validation.risky && validation.split && councilEligible && councilHasTable) {
   phase('Validate');
   const onTable = new Set(validation.legs.flatMap((l) => (l.result.findings || []).map((f) => f.id)));
-  // Digests a leg actually BOUND as evidence. A leg's own subjectDigest is
-  // excluded on purpose: it identifies the thing under judgment, so admitting
-  // it let the subject serve as its own disproof.
+  // Digests a leg BOUND as evidence AGAINST THE SUBJECT NOW UNDER JUDGMENT.
+  // Every leg's own subjectDigest is excluded explicitly: it identifies the
+  // thing being judged, so admitting it let the subject serve as its own
+  // disproof. A binding recorded against some earlier subject is excluded too;
+  // it describes bytes that are no longer the ones in question.
+  const subjectDigests = new Set(
+    validation.legs.map((l) => 'sha256:' + l.result.subjectDigest).filter((d) => d !== 'sha256:undefined')
+  );
+  const currentDigest = validation.subjectDigest;
   const boundDigests = new Set();
   for (const leg of validation.legs) {
     for (const e of leg.result.evidenceRefs || []) {
-      if (typeof e.ref === 'string' && e.ref.startsWith('sha256:')) boundDigests.add(e.ref);
+      if (typeof e.ref !== 'string' || !DIGEST_REF.test(e.ref)) continue;
+      if (e.subjectDigest !== currentDigest) continue;
+      if (subjectDigests.has(e.ref)) continue;
+      boundDigests.add(e.ref);
     }
   }
   // A disproof the council produced lives in the run's evidence area. Any other
   // existing repo file resolving meant the file a finding was filed AGAINST
   // could close it.
-  const EVIDENCE_AREA = '.agents/ao/';
   const changedForCouncil = [...new Set([
     ...facts.changedPaths,
     ...(validation.derivedChangedPaths || []),
-  ])];
+  ])].map(containedEvidencePath).filter((p) => p !== null);
   const ruling = await councilLeg(validation.legs);
   const closedByCouncil = new Map();
   let councilRecord;
-  if (!ruling) {
+  // Exactly ONE ruling per id. Two rulings for one id is a council that said
+  // both things, and picking either is picking for it, so the whole ruling set
+  // is refused before anything closes.
+  const duplicateRuling = (() => {
+    const seen = new Set();
+    for (const r of (ruling && ruling.rulings) || []) {
+      if (seen.has(r.id)) return r.id;
+      seen.add(r.id);
+    }
+    return null;
+  })();
+  if (ruling && duplicateRuling !== null) {
+    councilRecord = {
+      status: 'invalid-rulings',
+      reason: 'finding ' + duplicateRuling + ' was ruled more than once',
+      rulings: (ruling.rulings || []).map((r) => ({
+        id: r.id, ruling: r.ruling, evidence_refs: r.evidence_refs || [], applied: 'refused',
+      })),
+      closed: [],
+      revalidated: false,
+    };
+  } else if (!ruling) {
     councilRecord = { status: 'unavailable', rulings: [], closed: [], revalidated: false };
   } else {
     // Candidate path refs, blanks dropped: a blank is not evidence, and there
@@ -1593,22 +1724,22 @@ if (validation && validation.risky && validation.split && councilEligible) {
     for (const r of ruling.rulings || []) {
       if (r.ruling !== 'not_real' || !onTable.has(r.id)) continue;
       for (const ref of r.evidence_refs || []) {
-        const trimmed = typeof ref === 'string' ? normalizePath(ref.trim()) : '';
-        // Only an evidence-area path is worth a resolution receipt; anything
-        // else cannot close a finding however real the file is.
-        if (trimmed && !trimmed.startsWith('sha256:') && trimmed.startsWith(EVIDENCE_AREA)) {
-          candidates.add(trimmed);
-        }
+        // Containment is proved BEFORE resolution: an escaping ref never
+        // reaches the receipt, so a path outside the evidence area cannot be
+        // resolved into a closure by any answer the receipt gives.
+        const contained = containedEvidencePath(ref);
+        if (contained !== null) candidates.add(contained);
       }
     }
     const resolvedPaths =
       candidates.size > 0 ? await resolveCouncilPaths([...candidates], changedForCouncil) : new Map();
     const resolves = (ref) => {
-      const trimmed = typeof ref === 'string' ? normalizePath(ref.trim()) : '';
+      const trimmed = typeof ref === 'string' ? ref.trim() : '';
       if (!trimmed) return false;
       if (trimmed.startsWith('sha256:')) return boundDigests.has(trimmed);
-      if (!trimmed.startsWith(EVIDENCE_AREA)) return false;
-      return resolvedPaths.get(trimmed) === true;
+      const contained = containedEvidencePath(trimmed);
+      if (contained === null) return false;
+      return resolvedPaths.get(contained) === true;
     };
     const rulings = [];
     for (const r of ruling.rulings || []) {
@@ -1644,9 +1775,14 @@ if (validation && validation.risky && validation.split && councilEligible) {
     // rather than reporting the post-council aggregate as if a judge had
     // confirmed it.
     validation = degrade(postCouncil, 'NOT_PROVEN');
+    // The council's closure is the reason this run ends where it does, so it
+    // gets its own name rather than borrowing the budget's. A pre-council stop
+    // already named is kept: it happened first.
     if (stopReason === null) {
-      stopReason = STOP_REASONS.repairBudgetExhausted;
+      stopReason = STOP_REASONS.councilClosureUnrevalidated;
       stopReasons = [stopReason];
+    } else if (!stopReasons.includes(STOP_REASONS.councilClosureUnrevalidated)) {
+      stopReasons = [...stopReasons, STOP_REASONS.councilClosureUnrevalidated];
     }
     stoppedBy =
       (stoppedBy ? stoppedBy + '; ' : '') +
