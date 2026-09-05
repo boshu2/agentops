@@ -238,16 +238,20 @@ const RISKY_GLOBS = [
 // the root, none of which the traversal can reason about.
 // Control characters (and NUL above all) cannot appear in a path the runtime
 // will act on, and would travel into a prompt or a shell word invisibly.
-const CONTROL_CHARS = /[\u0000-\u001f\u007f]/;
+// Every Unicode control or format character, tested on the ORIGINAL value:
+// trimming first would let a leading newline through.
+const CONTROL_CHARS = /[\p{Cc}\p{Cf}]/u;
 // Glob syntax the intersection implements: literal segments, `*`, and `**`.
 // Anything else would be classified by a matcher that cannot read it, and a
 // scope whose riskiness is decided by a misreading is worse than a refused one.
 const UNSUPPORTED_GLOB = /[?[\]{}!()]|\*{3,}/;
 
 function canonicalScopeGlob(value) {
-  const raw = String(value).trim();
+  const original = String(value);
+  if (CONTROL_CHARS.test(original)) return null;
+  const raw = original.trim();
   if (!raw || raw.startsWith('/') || raw.startsWith('~')) return null;
-  if (CONTROL_CHARS.test(raw) || UNSUPPORTED_GLOB.test(raw)) return null;
+  if (UNSUPPORTED_GLOB.test(raw)) return null;
   const segments = [];
   for (const segment of raw.split('/')) {
     if (segment === '' || segment === '.') continue;
@@ -333,6 +337,7 @@ if (input.writeScope !== undefined) {
       'writeScope must be repository-relative globs; refused ' + JSON.stringify(rejected)
     );
   }
+  input.writeScope = input.writeScope.map((g) => canonicalScopeGlob(g));
 }
 // CONTRACT: a risky write scope buys one premortem judge BEFORE any code is
 // written. The 2026-09-03 run shipped a risky-surface design with no premortem
@@ -638,8 +643,8 @@ const snapshot = await agent(
     '- Report exists: true only when the snapshot path is a regular file you could read.\n' +
     '- Report digest: the SHA-256 you compute over its exact bytes (the tooling\'s digest subcommand), ' +
     'lowercase hex. Compute it; never copy the declared value.\n' +
-    '- Report matchesIntent: true only when the file\'s bytes ARE the caller intent above. Trailing-newline ' +
-    'differences aside, any edit, truncation, or addition is false.\n' +
+    '- Report matchesIntent: true only when the file\'s bytes ARE the caller intent above, byte for byte; ' +
+    'any edit, truncation, addition, or a differing trailing newline is false.\n' +
     '- If you cannot read or hash it, return exists false with the real error text as error. An invented ' +
     'result is worse than no result.\n' +
     '- Read-only: fix nothing, create nothing, commit nothing.',
@@ -647,8 +652,15 @@ const snapshot = await agent(
 );
 
 const HEX_DIGEST = /^[0-9a-f]{64}$/;
+// The identity is the digest of the caller intent's exact UTF-8 bytes, computed
+// here; the plan's declaration and the receipt's derivation must both equal it.
+const callerIntentDigest = await sha256Hex(input.intent);
 const snapshotProblem = (() => {
   if (!snapshot) return 'the intent-snapshot receipt failed, so the snapshot was never verified';
+  if (plan.intentDigest !== callerIntentDigest) {
+    return 'the plan declared intentDigest ' + JSON.stringify(plan.intentDigest) +
+      ' but the caller intent hashes to ' + JSON.stringify(callerIntentDigest);
+  }
   if (!snapshot.exists) {
     return 'the intent snapshot at ' + plan.intentPath + ' is not readable' +
       (snapshot.error ? ': ' + snapshot.error : '');

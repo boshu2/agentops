@@ -1188,7 +1188,7 @@ ORPHANS_ABSENT='{"label":"orphans","result":{"scriptPresent":false}}'
   write_rpi_probe
   # Unsupported glob syntax would be classified by a matcher that cannot read it.
   for scope in '/tests/**' '../outside/**' 'tests/../../escape/**' '~/notes/**' \
-    'tests/?.bats' 'tests/[a-z]/**' 'tests/{a,b}/**' 'tests/***/x'; do
+    'tests/?.bats' 'tests/[a-z]/**' 'tests/{a,b}/**' 'tests/***/x' $'\ntests/**' $'tests/**\n' $'tests/\x85x'; do
     run env RPI_SRC="$REPO_ROOT/workflows/rpi.js" \
       RPI_INPUT="{\"intent\":\"do the thing\",\"writeScope\":[\"$scope\"],\"acceptance\":\"a\"}" \
       RPI_AGENTS='[]' node "$BATS_TEST_TMPDIR/rpi-probe.mjs"
