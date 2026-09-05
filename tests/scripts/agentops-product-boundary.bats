@@ -1117,6 +1117,7 @@ const traversal = new AsyncFunction('args', 'agent', 'phase', 'log', source);
 const queue = JSON.parse(process.env.RPI_AGENTS);
 const calls = [];
 const prompts = {};
+const schemas = {};
 const agent = async (prompt, options) => {
   const label = options && options.label;
   const next = queue.shift();
@@ -1126,11 +1127,18 @@ const agent = async (prompt, options) => {
   }
   calls.push(label);
   prompts[label] = prompt;
+  schemas[label] = options && options.schema;
   return Object.prototype.hasOwnProperty.call(next, 'result') ? next.result : null;
 };
 
-const result = await traversal(JSON.parse(process.env.RPI_INPUT), agent, () => {}, () => {});
-process.stdout.write(JSON.stringify({ result, calls, unusedResponses: queue.length, prompts }));
+let result = null;
+try {
+  result = await traversal(JSON.parse(process.env.RPI_INPUT), agent, () => {}, () => {});
+} catch (err) {
+  if (!process.env.RPI_DUMP_SCHEMA) throw err;
+  result = { error: String(err && err.message) };
+}
+process.stdout.write(JSON.stringify({ result, calls, unusedResponses: queue.length, prompts, schemas }));
 JS
 }
 
@@ -1154,6 +1162,105 @@ PLAN_RESULT_SAFE='{"label":"plan","result":{"acceptance":"the behavior holds","w
 IMPL_RESULT='{"label":"implement","result":{"contextId":"author-1","changedPaths":["docs/a.md"],"checkReceipts":[{"name":"repro","command":"true","outcome":"green"}],"filesSummary":"note"}}'
 IMPL_RESULT_RISKY='{"label":"implement","result":{"contextId":"author-1","changedPaths":["tests/a.bats"],"checkReceipts":[{"name":"repro","command":"true","outcome":"green"}],"filesSummary":"note"}}'
 ORPHANS_ABSENT='{"label":"orphans","result":{"scriptPresent":false}}'
+
+@test "rpi.js requires a risky plan to declare its binding judge and orphan list" {
+  # The docs say binding_judge is bound into the plan identity and the plan
+  # carries the orphan list on a risky scope. A caller-fixed risky scope makes
+  # both REQUIRED of the Plan schema, and a plan that omits them is not a plan
+  # this traversal can freeze.
+  write_rpi_probe
+  RPI_SRC="$REPO_ROOT/workflows/rpi.js" \
+    RPI_INPUT='{"intent":"harden the seal","writeScope":["tests/**"],"acceptance":"the behavior holds"}' \
+    RPI_AGENTS="[$PLAN_RESULT]" \
+    RPI_DUMP_SCHEMA=1 node "$BATS_TEST_TMPDIR/rpi-probe.mjs" >"$BATS_TEST_TMPDIR/probe.json" || true
+
+  python3 - "$BATS_TEST_TMPDIR/probe.json" <<'PY'
+import json, sys
+probe = json.load(open(sys.argv[1]))
+required = probe["schemas"]["plan"]["required"]
+assert "binding_judge" in required, required
+assert "orphaned_evidence" in required, required
+# The prompt has to ASK for what the schema demands.
+assert "binding_judge" in probe["prompts"]["plan"], probe["prompts"]["plan"]
+assert "orphan" in probe["prompts"]["plan"].lower(), probe["prompts"]["plan"]
+PY
+}
+
+@test "rpi.js leaves a non-risky plan free of the risky-scope fields" {
+  write_rpi_probe
+  RPI_SRC="$REPO_ROOT/workflows/rpi.js" \
+    RPI_INPUT='{"intent":"do the thing","writeScope":["docs/**"],"acceptance":"the behavior holds"}' \
+    RPI_AGENTS="[$PLAN_RESULT_SAFE]" \
+    RPI_DUMP_SCHEMA=1 node "$BATS_TEST_TMPDIR/rpi-probe.mjs" >"$BATS_TEST_TMPDIR/probe.json" || true
+
+  python3 - "$BATS_TEST_TMPDIR/probe.json" <<'PY'
+import json, sys
+required = json.load(open(sys.argv[1]))["schemas"]["plan"]["required"]
+assert "binding_judge" not in required, required
+assert "orphaned_evidence" not in required, required
+PY
+}
+
+@test "rpi.js binds the plan identity over the frozen tuple and carries it" {
+  rpi_probe \
+    '{"intent":"do the thing","writeScope":["docs/**"],"acceptance":"the behavior holds","repairRounds":0}' \
+    "[$PLAN_RESULT_SAFE,$IMPL_RESULT,$ORPHANS_ABSENT,{\"label\":\"validate\",\"result\":{\"verdict\":\"PASS\",\"verdictPath\":\"/tmp/v.json\",\"subjectDigest\":\"aa\",\"criteria\":[],\"validatorContextId\":\"v1\",\"findings\":[],\"evidenceRefs\":[],\"derivedChangedPaths\":[\"docs/a.md\"]}}]"
+
+  python3 - "$BATS_TEST_TMPDIR/probe.json" <<'PY'
+import hashlib, json, sys
+probe = json.load(open(sys.argv[1]))
+result = probe["result"]
+# Independently recomputed here, never read back from the script.
+payload = json.dumps({
+    "acceptance": "the behavior holds",
+    "binding_judge": None,
+    "intent_digest": "aaaa",
+    "write_scope": ["docs/**"],
+}, separators=(",", ":"))
+expected = hashlib.sha256(payload.encode("utf-8")).hexdigest()
+assert result["planDigest"] == expected, (result["planDigest"], expected)
+assert result["intentDigest"] == "aaaa", result["intentDigest"]
+# The frozen identity reaches the stages that must judge the same plan.
+assert expected in probe["prompts"]["implement"], probe["prompts"]["implement"]
+assert expected in probe["prompts"]["validate"], probe["prompts"]["validate"]
+PY
+}
+
+@test "rpi.js refuses a plan whose declared identity is not the tuple it returned" {
+  rpi_probe \
+    '{"intent":"do the thing","writeScope":["docs/**"],"acceptance":"the behavior holds","repairRounds":0}' \
+    '[{"label":"plan","result":{"acceptance":"the behavior holds","writeScope":["docs/**"],"intentDigest":"aaaa","intentPath":"/tmp/i.intent","plan_digest":"0000000000000000000000000000000000000000000000000000000000000000"}}]'
+
+  python3 - "$BATS_TEST_TMPDIR/probe.json" <<'PY'
+import json, sys
+probe = json.load(open(sys.argv[1]))
+# Refused before Implement: nothing was built on a plan that does not bind.
+assert probe["calls"] == ["plan"], probe["calls"]
+result = probe["result"]
+assert result["stopReason"] == "plan_identity_mismatch", result["stopReason"]
+assert result["status"] == "NOT_PROVEN", result["status"]
+PY
+}
+
+@test "rpi.js refuses a plan that chose a risky scope without freezing its fields" {
+  # The caller left the scope open, so the schema could not demand the risky
+  # fields before dispatch; the same contract is enforced on what came back.
+  rpi_probe \
+    '{"intent":"harden the seal","acceptance":"the behavior holds"}' \
+    '[{"label":"plan","result":{"acceptance":"the behavior holds","writeScope":["tests/**"],"intentDigest":"aaaa","intentPath":"/tmp/i.intent"}}]'
+
+  python3 - "$BATS_TEST_TMPDIR/probe.json" <<'PY'
+import json, sys
+probe = json.load(open(sys.argv[1]))
+assert probe["calls"] == ["plan"], probe["calls"]
+result = probe["result"]
+assert result["stopReason"] == "plan_incomplete", result["stopReason"]
+assert result["status"] == "NOT_PLANNED", result["status"]
+assert result["verdict"] is None, result["verdict"]
+assert result["premortem"]["status"] == "required", result["premortem"]
+assert "binding_judge" in result["stoppedBy"], result["stoppedBy"]
+PY
+}
 
 @test "rpi.js premortem blocks a risky write scope before any Implement" {
   rpi_probe \

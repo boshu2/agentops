@@ -12,22 +12,34 @@ export const meta = {
   ],
 };
 
-const PLAN_SCHEMA = {
+// CONTRACT: on a RISKY write scope the plan must declare its tie-break
+// disposition and the evidence the change will orphan. Both are bound into the
+// plan identity below, so a risky plan that names neither is not a plan this
+// traversal can freeze. On a non-risky scope both stay optional.
+const planSchema = (risky) => ({
   type: 'object',
   additionalProperties: false,
-  required: ['acceptance', 'writeScope', 'intentDigest', 'intentPath'],
+  required: risky
+    ? ['acceptance', 'writeScope', 'intentDigest', 'intentPath', 'binding_judge', 'orphaned_evidence']
+    : ['acceptance', 'writeScope', 'intentDigest', 'intentPath'],
   properties: {
     acceptance: { type: 'string' },
     writeScope: { type: 'array', items: { type: 'string' } },
     intentDigest: { type: 'string' },
     intentPath: { type: 'string' },
-    // CONTRACT: the tie-break DISPOSITION may also be declared in the frozen
-    // plan. It is a disposition, never a verdict override (see mergeLegs). When
-    // the caller and the plan both declare one they must agree; a contradiction
-    // is refused, never silently resolved in one declarer's favor.
+    // A disposition, never a verdict override (see mergeLegs). When the caller
+    // and the plan both declare one they must agree; a contradiction is
+    // refused, never silently resolved in one declarer's favor.
     binding_judge: { enum: ['primary', 'cross'] },
+    // The bound scorecards and contracts this write scope would orphan,
+    // budgeted as recapture work before any code is written.
+    orphaned_evidence: { type: 'array', items: { type: 'string' } },
+    // Optional: the plan's own SHA-256 over the frozen tuple. When present it
+    // must equal the script's computation, which catches a plan that froze and
+    // snapshotted a different tuple than the one it returned.
+    plan_digest: { type: 'string' },
   },
-};
+});
 
 // CONTRACT: the traversal's terminal reason is a FIXED enum, so callers and
 // tests read a key instead of matching prose. The first eight mirror
@@ -47,6 +59,8 @@ const STOP_REASONS = Object.freeze({
   bindingJudgeConflict: 'binding_judge_conflict',
   premortemFailed: 'premortem_failed',
   premortemBlocking: 'premortem_blocking',
+  planIncomplete: 'plan_incomplete',
+  planIdentityMismatch: 'plan_identity_mismatch',
   implementFailed: 'implement_failed',
   validateFailed: 'validate_failed',
   repairFailed: 'repair_failed',
@@ -344,6 +358,7 @@ const toolingBlock =
 // nothing to have judged. `status` carries it and `verdict` is null, matching
 // the contract docs (verdict is one of PASS, FAIL, NOT_PROVEN).
 let premortem = { status: 'not-required', blocking: [], notes: [] };
+let intentDigest = null;
 let planDigest = null;
 let filesSummary = null;
 let reportedChangedPaths = [];
@@ -357,7 +372,10 @@ function traversalReport(fields) {
     status,
     verdict: status === 'NOT_PLANNED' ? null : status,
     verdictPath: pick('verdictPath', null),
-    intentDigest: planDigest,
+    intentDigest,
+    // The frozen plan's identity: SHA-256 over the acceptance, the write scope,
+    // the declared binding judge, and the intent-source digest.
+    planDigest,
     changedPaths: pick('changedPaths', reportedChangedPaths),
     filesSummary,
     criteria: pick('criteria', []),
@@ -385,6 +403,31 @@ function traversalReport(fields) {
   };
 }
 
+// A caller-fixed write scope is classifiable BEFORE Plan runs, which is what
+// lets the schema demand the risky-scope fields of the plan itself.
+const callerScopeRisky = input.writeScope !== undefined && isRiskyScope(input.writeScope);
+
+// SHA-256 over the frozen tuple. The runtime's own digest, never a hand-rolled
+// one: if it provides none, the traversal says so rather than binding an
+// identity it cannot compute.
+async function sha256Hex(text) {
+  const subtle = globalThis.crypto && globalThis.crypto.subtle;
+  if (!subtle) return null;
+  const bytes = new TextEncoder().encode(text);
+  const digest = await subtle.digest('SHA-256', bytes);
+  return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, '0')).join('');
+}
+
+// Keys are written in alphabetical order, so the serialization is canonical by
+// construction rather than by the insertion order of whoever edits this next.
+const planIdentityPayload = (acceptanceText, judge, intentDigestValue, scope) =>
+  JSON.stringify({
+    acceptance: acceptanceText,
+    binding_judge: judge,
+    intent_digest: intentDigestValue,
+    write_scope: scope,
+  });
+
 phase('Plan');
 
 const plan = await agent(
@@ -408,9 +451,19 @@ const plan = await agent(
     'validate tooling\'s snapshot-intent subcommand on it, so the bytes persist under their SHA-256 content ' +
     'identity. Return the digest as intentDigest and the persisted snapshot path as intentPath.\n' +
     '- ' + toolingBlock + '\n' +
+    (callerScopeRisky
+      ? '- This write scope is RISKY (it reaches gates, tests, hook policies, shared libraries, skill scripts, ' +
+        'or CI). Two more outputs are required of you, and both are bound into the plan identity:\n' +
+        '  - binding_judge: "primary" or "cross" — whose reading governs a validator split that survives the ' +
+        'repair phase. It is a recorded disposition, never an override of a verdict, and a caller argument that ' +
+        'disagrees with it refuses the traversal.\n' +
+        '  - orphaned_evidence: the bound evidence this write scope would orphan. Where the repository ships ' +
+        'scripts/evidence-orphans.sh, run it over the write scope and list what it names; where it does not, ' +
+        'return an empty list rather than a guess. This is recapture work, budgeted before any code is written.\n'
+      : '') +
     '- Read-only otherwise: the intent snapshot is the only thing you persist. Do not implement, do not edit ' +
     'the subject, do not commit.',
-  { label: 'plan', phase: 'Plan', schema: PLAN_SCHEMA }
+  { label: 'plan', phase: 'Plan', schema: planSchema(callerScopeRisky) }
 );
 
 // CONTRACT: a failed stage degrades to NOT_PROVEN — never to a retry.
@@ -422,7 +475,7 @@ if (!plan) {
     error: 'Plan stage failed; no acceptance or intent identity exists, so nothing can be proven',
   });
 }
-planDigest = plan.intentDigest;
+intentDigest = plan.intentDigest;
 
 // CONTRACT: caller-fixed acceptance/writeScope are pinned by the script, not
 // by trusting the Plan agent to have echoed them verbatim.
@@ -461,6 +514,54 @@ if (bindingJudge !== null && planBindingJudge !== null && bindingJudge !== planB
 }
 const declaredJudge = bindingJudge !== null ? bindingJudge : planBindingJudge;
 
+// A plan whose scope turned out risky only AFTER the agent chose it never met
+// the risky-scope schema, because the schema was fixed before the dispatch.
+// Enforce the same contract here rather than proceeding on a plan that froze
+// neither its disposition nor its recapture budget.
+if (plannedRisky && !callerScopeRisky) {
+  const missing = [];
+  if (planBindingJudge === null) missing.push('binding_judge');
+  if (!Array.isArray(plan.orphaned_evidence)) missing.push('orphaned_evidence');
+  if (missing.length > 0) {
+    premortem = { status: 'required', blocking: [], notes: ['the traversal ended before the premortem ran'] };
+    return traversalReport({
+      status: 'NOT_PLANNED',
+      stopReason: STOP_REASONS.planIncomplete,
+      stoppedBy: 'the plan chose a risky write scope without declaring ' + missing.join(' and '),
+      error: 'A risky write scope must freeze its binding judge and its orphaned-evidence budget before Implement',
+    });
+  }
+}
+
+// PLAN IDENTITY: SHA-256 over the tuple the rest of the traversal is frozen
+// against. Computed here from the values actually in force (caller-fixed
+// acceptance and scope included), and verified against the plan's own
+// declaration when it made one, which catches a plan that snapshotted a
+// different tuple than it returned. Everything downstream carries it, so a
+// premortem, an implementer, and a validator can be shown to have judged the
+// same plan.
+const planPayload = planIdentityPayload(acceptance, declaredJudge, plan.intentDigest, writeScope);
+planDigest = await sha256Hex(planPayload);
+if (planDigest === null) {
+  return traversalReport({
+    status: 'NOT_PROVEN',
+    stopReason: STOP_REASONS.planIdentityMismatch,
+    stoppedBy: 'the runtime provides no SHA-256, so the plan identity cannot be bound',
+    error: 'No SHA-256 is available in this runtime; the traversal refuses to proceed on an unbound plan identity',
+  });
+}
+if (typeof plan.plan_digest === 'string' && plan.plan_digest && plan.plan_digest !== planDigest) {
+  return traversalReport({
+    status: 'NOT_PROVEN',
+    stopReason: STOP_REASONS.planIdentityMismatch,
+    stoppedBy: 'the plan declared plan identity ' + plan.plan_digest + ' over a tuple that hashes to ' + planDigest,
+    error: 'The plan declared a plan identity that is not the tuple it returned; the frozen plan does not bind',
+  });
+}
+const planIdentityBlock =
+  'Frozen plan identity (SHA-256 over the acceptance, write scope, binding judge, and intent digest):\n' +
+  '- planDigest: ' + planDigest + '\n';
+
 // PREMORTEM LEG: one fresh judge reads the FROZEN plan on a risky write scope
 // and names only what blocks. Blocking findings end the traversal as
 // NOT_PLANNED. The cheapest place to kill a bad design is before Implement,
@@ -496,6 +597,7 @@ if (plannedRisky && premortemMode === 'skip') {
       'it. The plan is FROZEN: you do not edit it, improve it, or propose an alternative. Assume the work ' +
       'shipped exactly as planned and then failed. Name only what BLOCKS.\n\n' +
       'Frozen plan\n' +
+      '- ' + planIdentityBlock.trim().split('\n').join('\n- ') + '\n' +
       '- intentDigest: ' + plan.intentDigest + '\n' +
       '- intent snapshot path: ' + plan.intentPath + '\n' +
       '- Caller intent:\n' + input.intent + '\n' +
@@ -545,6 +647,7 @@ const impl = await agent(
   'You are the Implement stage of one RPI traversal (Plan -> Implement -> fresh Validate -> bounded repair -> report). ' +
     'A separate fresh context will judge your work against the acceptance below using only derived facts — ' +
     'it will never see your narrative, so evidence lives in receipts, not prose.\n\n' +
+    planIdentityBlock + '\n' +
     'Caller intent:\n' + input.intent + '\n\n' +
     'Acceptance — the contract the fresh validator will judge against:\n' + acceptance + '\n\n' +
     'Write scope — you may create or edit ONLY paths matching:\n' +
@@ -690,7 +793,8 @@ async function spawnedLeg(facts) {
   'You are a fresh, independent Validate context. You did not author the candidate and you have not seen ' +
     'the author\'s reasoning — only the facts below. Judge the exact content; the author\'s claims do not exist ' +
     'for you.\n\n' +
-    'Intent identity:\n' +
+    planIdentityBlock +
+    '\nIntent identity:\n' +
     '- intentDigest: ' + plan.intentDigest + '\n' +
     '- intent snapshot path: ' + plan.intentPath + '\n\n' +
     'Acceptance criteria to judge:\n' + acceptance + '\n\n' +
@@ -737,6 +841,7 @@ async function brokerLeg(facts, command) {
     '  ' + command + '\n\n' +
     'Evidence packet for the judge (these facts and NOTHING more may reach it — the freshness wall is ' +
     'unchanged):\n' +
+    '- planDigest: ' + planDigest + '\n' +
     '- intentDigest: ' + plan.intentDigest + '\n' +
     '- intent snapshot path: ' + plan.intentPath + '\n' +
     '- Acceptance criteria to judge:\n' + acceptance + '\n' +
