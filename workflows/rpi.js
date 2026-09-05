@@ -212,72 +212,84 @@ if (input.crossFamily !== undefined) {
   }
 }
 const crossFamilyCommand = input.crossFamily !== undefined ? input.crossFamily.command.trim() : null;
-// Explicit list; the skill contract names the same paths. (security-gate.sh
-// scans the whole repository, so "anything it scans" is not a usable predicate.)
-const RISKY_SURFACE = [
-  /^cli\/internal\/gates\//, /^scripts\/check-[^/]*\.sh$/, /^tests\//, /^skills\/[^/]+\/scripts\//,
-  /^skills\/cc-hooks\/policies\//, /^lib\//, /^\.github\/workflows\//, /^scripts\/security-gate\.sh$/,
-];
-// One representative path per risky regex. A declared write scope is a GLOB,
-// not a path: testing the regexes against the glob text is what let `cli/**`
-// and a bare `**` read as safe on 2026-09-03 while authorizing every gate in
-// the repository. These witnesses turn the question into glob intersection.
-const RISKY_WITNESS = [
-  'cli/internal/gates/checks/seed.go',
-  'scripts/check-example.sh',
-  'tests/scripts/example.bats',
-  'skills/example/scripts/example.py',
-  'skills/cc-hooks/policies/example.json',
-  'lib/example.sh',
-  '.github/workflows/example.yml',
+// --- GLOB INTERSECTION BLOCK (begin) -------------------------------------
+// Unit-tested against this exact text by tests/scripts/agentops-product-boundary.bats
+// with tests/fixtures/rpi-glob-intersection/cases.json. Edit the cases with the
+// code.
+//
+// ONE source of risky truth, as segment globs. The skill contract names the
+// same surfaces. (security-gate.sh scans the whole repository, so "anything it
+// scans" is not a usable predicate.)
+const RISKY_GLOBS = [
+  'cli/internal/gates/**',
+  'scripts/check-*.sh',
+  'tests/**',
+  'skills/*/scripts/**',
+  'skills/cc-hooks/policies/**',
+  'lib/**',
+  '.github/workflows/**',
   'scripts/security-gate.sh',
 ];
+
 // Normalize the two spellings that make the same path look like two: a leading
 // `./` and a trailing `/`.
 const normalizePath = (value) => String(value).replace(/^\.\//, '').replace(/\/+$/, '');
-const isRiskySurface = (paths) => paths.some((p) => {
-  const path = normalizePath(p);
-  return RISKY_SURFACE.some((re) => re.test(path));
-});
-// `**` spans separators, `*` does not; everything else is literal.
-function globToRegExp(glob) {
-  const escaped = glob
-    .replace(/[.+^${}()|[\]\\]/g, '\\$&')
-    .replace(/\*\*/g, '\u0000')
-    .replace(/\*/g, '[^/]*')
-    .replace(/\u0000/g, '.*');
-  return new RegExp('^' + escaped + '$');
+
+// Does one PATTERN SEGMENT overlap another? Literals must be equal; `*` matches
+// any single segment; a segment with an interior `*` is matched against a
+// literal by regex. Two patterned segments are treated as overlapping, which is
+// the conservative direction for a safety classifier: the error it can make is
+// asking for a premortem that was not strictly required.
+function segmentsIntersect(a, b) {
+  const aWild = a.includes('*');
+  const bWild = b.includes('*');
+  if (!aWild && !bWild) return a === b;
+  if (a === '*' || b === '*') return true;
+  if (aWild && bWild) return true;
+  const [pattern, literal] = aWild ? [a, b] : [b, a];
+  const escaped = pattern.replace(/[.+^${}()|[\]\\]/g, '\\$&').replace(/\*/g, '[^/]*');
+  return new RegExp('^' + escaped + '$').test(literal);
 }
-// Instantiate a glob into ONE concrete path it authorizes: `**` becomes a
-// nested segment pair, `*` a single segment. A glob NARROWER than a witness
-// (`scripts/check-doc-claims-tracked.sh`, `skills/rpi/scripts/**`) matches no
-// witness and would read as safe, so the risky-surface regexes are run against
-// the instantiated path as well.
-const instantiateGlob = (glob) =>
-  glob.replace(/\*\*/g, '\u0000').replace(/\*/g, 'x').replace(/\u0000/g, 'x/x');
-// The literal text before the first wildcard: what the glob authorizes for
-// certain, whatever the wildcards expand to.
-const literalPrefix = (glob) => {
-  const index = glob.search(/[*?[]/);
-  return index === -1 ? glob : glob.slice(0, index);
-};
-// A declared glob reaches a risky surface three ways, and one is enough:
-//   1. instantiated, it IS a risky path (catches globs narrower than a witness)
-//   2. it can MATCH a risky witness path (catches globs wider than one)
-//   3. its literal prefix reaches a risky root (conservative; a bare `**` or
-//      `*` has the empty prefix, which reaches everything, so both are risky
-//      without a special case)
-function globReachesRisky(glob) {
-  const g = normalizePath(glob);
-  if (g === '') return true;
-  const instantiated = normalizePath(instantiateGlob(g));
-  if (RISKY_SURFACE.some((re) => re.test(instantiated))) return true;
-  const re = globToRegExp(g);
-  if (RISKY_WITNESS.some((w) => re.test(w))) return true;
-  const prefix = literalPrefix(g);
-  return RISKY_WITNESS.some((w) => w.startsWith(prefix));
+
+// Do two globs describe any path in common? `**` absorbs any run of segments
+// (including none), `*` matches exactly one, literals must agree.
+//
+// This replaces three successive heuristics that each missed a different half
+// of the problem: witness matching was blind to any pattern narrower than its
+// witness, wildcard instantiation to patterns that only overlap elsewhere, and
+// literal-prefix reach called `skills/*/SKILL.md` risky because its prefix
+// touched a risky root it never actually intersects.
+function globsIntersect(globA, globB) {
+  const A = normalizePath(globA).split('/');
+  const B = normalizePath(globB).split('/');
+  const seen = new Set();
+  const allDoubleStar = (segments, from) => segments.slice(from).every((seg) => seg === '**');
+  const walk = (i, j) => {
+    const key = i * (B.length + 1) + j;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    if (i === A.length && j === B.length) return true;
+    if (i === A.length) return allDoubleStar(B, j);
+    if (j === B.length) return allDoubleStar(A, i);
+    if (A[i] === '**') {
+      for (let k = j; k <= B.length; k += 1) if (walk(i + 1, k)) return true;
+      return false;
+    }
+    if (B[j] === '**') {
+      for (let k = i; k <= A.length; k += 1) if (walk(k, j + 1)) return true;
+      return false;
+    }
+    return segmentsIntersect(A[i], B[j]) && walk(i + 1, j + 1);
+  };
+  return walk(0, 0);
 }
-const isRiskyScope = (globs) => globs.some(globReachesRisky);
+
+// A DECLARED write scope is risky when any of its globs intersects a risky
+// glob. A concrete changed PATH is a glob with no wildcards, so the same
+// predicate answers both questions from the same source.
+const isRiskyScope = (globs) => globs.some((g) => RISKY_GLOBS.some((r) => globsIntersect(g, r)));
+const isRiskySurface = (paths) => isRiskyScope(paths);
+// --- GLOB INTERSECTION BLOCK (end) ---------------------------------------
 // CONTRACT: a risky write scope buys one premortem judge BEFORE any code is
 // written. The 2026-09-03 run shipped a risky-surface design with no premortem
 // and paid six repair passes for defects a frozen-plan reading would have named

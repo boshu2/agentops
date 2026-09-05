@@ -1262,6 +1262,77 @@ assert "binding_judge" in result["stoppedBy"], result["stoppedBy"]
 PY
 }
 
+# --- the glob intersection, unit-tested against the shipped source ----------
+#
+# The classifier is sliced out of workflows/rpi.js between two marker comments
+# and evaluated as-is, so these cases run the exact text that ships rather than
+# a copy of it. Two rounds of heuristics (witness matching, wildcard
+# instantiation, literal-prefix reach) each missed a different half of the
+# problem; a real segment-wise intersection is the design, and this is its spec.
+
+@test "rpi.js exposes exactly one glob-intersection block for the unit cases" {
+  run bash -c "grep -c 'GLOB INTERSECTION BLOCK' '$REPO_ROOT/workflows/rpi.js'"
+  [ "$output" = "2" ]
+}
+
+@test "rpi.js glob intersection matches every shared unit case" {
+  cat >"$BATS_TEST_TMPDIR/glob-probe.mjs" <<'JS'
+import { readFileSync } from 'node:fs';
+const source = readFileSync(process.env.RPI_SRC, 'utf8');
+const begin = source.indexOf('// --- GLOB INTERSECTION BLOCK (begin)');
+const end = source.indexOf('// --- GLOB INTERSECTION BLOCK (end)');
+if (begin < 0 || end < 0 || end <= begin) throw new Error('glob-intersection markers missing or out of order');
+const block = source.slice(begin, end);
+for (const name of ['globsIntersect', 'isRiskyScope', 'isRiskySurface', 'RISKY_GLOBS']) {
+  if (!block.includes(name)) throw new Error('block does not define ' + name);
+}
+const api = new Function(block + '\nreturn { globsIntersect, isRiskyScope, isRiskySurface, RISKY_GLOBS };')();
+const cases = JSON.parse(readFileSync(process.env.RPI_CASES, 'utf8'));
+const failures = [];
+for (const c of cases.pairs) {
+  // Intersection is symmetric; assert both directions.
+  for (const [x, y] of [[c.a, c.b], [c.b, c.a]]) {
+    const got = api.globsIntersect(x, y);
+    if (got !== c.intersect) failures.push(`globsIntersect(${x}, ${y}) = ${got}, want ${c.intersect} (${c.why})`);
+  }
+}
+for (const c of cases.scopes) {
+  const got = api.isRiskyScope([c.glob]);
+  if (got !== c.risky) failures.push(`isRiskyScope(${c.glob}) = ${got}, want ${c.risky}`);
+}
+if (failures.length) throw new Error(failures.join('\n'));
+process.stdout.write(String(cases.pairs.length * 2 + cases.scopes.length));
+JS
+  run env RPI_SRC="$REPO_ROOT/workflows/rpi.js" \
+    RPI_CASES="$REPO_ROOT/tests/fixtures/rpi-glob-intersection/cases.json" \
+    node "$BATS_TEST_TMPDIR/glob-probe.mjs"
+  [ "$status" -eq 0 ]
+  [ "$output" -ge 50 ]
+}
+
+@test "rpi.js classifies concrete changed paths from the same risky globs" {
+  cat >"$BATS_TEST_TMPDIR/path-probe.mjs" <<'JS'
+import { readFileSync } from 'node:fs';
+const source = readFileSync(process.env.RPI_SRC, 'utf8');
+const block = source.slice(
+  source.indexOf('// --- GLOB INTERSECTION BLOCK (begin)'),
+  source.indexOf('// --- GLOB INTERSECTION BLOCK (end)')
+);
+const api = new Function(block + '\nreturn { isRiskySurface };')();
+const risky = ['tests/scripts/a.bats', 'skills/rpi/scripts/run_once.py', 'cli/internal/gates/checks/seed.go',
+  'scripts/check-x.sh', 'lib/x.sh', '.github/workflows/validate.yml', './tests/a.bats'];
+const safe = ['docs/a.md', 'workflows/rpi.js', 'scripts/lib/preamble.sh', 'skills/rpi/SKILL.md', 'cli/cmd/ao/main.go'];
+const failures = [];
+for (const p of risky) if (!api.isRiskySurface([p])) failures.push('expected risky: ' + p);
+for (const p of safe) if (api.isRiskySurface([p])) failures.push('expected safe: ' + p);
+if (failures.length) throw new Error(failures.join('\n'));
+process.stdout.write('ok');
+JS
+  run env RPI_SRC="$REPO_ROOT/workflows/rpi.js" node "$BATS_TEST_TMPDIR/path-probe.mjs"
+  [ "$status" -eq 0 ]
+  [ "$output" = "ok" ]
+}
+
 @test "rpi.js premortem blocks a risky write scope before any Implement" {
   rpi_probe \
     '{"intent":"harden the seal","writeScope":["tests/**"],"acceptance":"the behavior holds"}' \
@@ -1294,7 +1365,8 @@ PY
   # file. Those are the commonest real write scopes there are.
   for scope in 'cli/**' '**' '*' './tests/**' 'scripts/*.sh' \
     'scripts/check-doc-claims-tracked.sh' 'skills/rpi/scripts/**' 'lib/preamble.sh' \
-    '.github/workflows/validate.yml' 'cli/internal/gates/new.go'; do
+    '.github/workflows/validate.yml' 'cli/internal/gates/new.go' \
+    'skills/rpi/**' 'skills/validate/**' 'skills/premortem/**' 'skills/anything-at-all/**'; do
     rpi_probe \
       "{\"intent\":\"harden the seal\",\"writeScope\":[\"$scope\"],\"acceptance\":\"the behavior holds\"}" \
       "[{\"label\":\"plan\",\"result\":{\"acceptance\":\"the behavior holds\",\"writeScope\":[\"$scope\"],\"intentDigest\":\"aaaa\",\"intentPath\":\"/tmp/i.intent\"}},{\"label\":\"premortem\",\"result\":{\"blocking\":[{\"id\":\"x:y\",\"class\":\"k\",\"summary\":\"blocks\"}],\"notes\":[]}}]"
@@ -1308,7 +1380,8 @@ PY
 }
 
 @test "rpi.js leaves a genuinely non-risky declared scope without a premortem" {
-  for scope in 'docs/**' 'workflows/rpi.js' 'scripts/lib/preamble.sh' 'cli/internal/statusapp/**'; do
+  for scope in 'docs/**' 'workflows/rpi.js' 'scripts/lib/preamble.sh' 'cli/internal/statusapp/**' \
+    'skills/*/SKILL.md' 'README.md' 'cli/cmd/**'; do
     rpi_probe \
       "{\"intent\":\"do the thing\",\"writeScope\":[\"$scope\"],\"acceptance\":\"the behavior holds\",\"repairRounds\":0}" \
       "[{\"label\":\"plan\",\"result\":{\"acceptance\":\"the behavior holds\",\"writeScope\":[\"$scope\"],\"intentDigest\":\"aaaa\",\"intentPath\":\"/tmp/i.intent\"}},$IMPL_RESULT,$ORPHANS_ABSENT,{\"label\":\"validate\",\"result\":{\"verdict\":\"PASS\",\"verdictPath\":\"/tmp/v.json\",\"subjectDigest\":\"aa\",\"criteria\":[],\"validatorContextId\":\"v1\",\"findings\":[],\"evidenceRefs\":[],\"derivedChangedPaths\":[\"docs/a.md\"]}}]"
