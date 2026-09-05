@@ -1557,6 +1557,45 @@ assert result["verdict"] == "FAIL", result["verdict"]
 PY
 }
 
+@test "rpi.js fails closed when two legs reuse one finding id with different classes" {
+  # Both legs FAIL on the same id, so there is no split and no council: the ids
+  # simply fold. Folding two different KINDS into one id is a silent identity
+  # collision, and the class law then reasons over a key that means two things.
+  local a b
+  a='{"label":"validate","result":{"verdict":"FAIL","verdictPath":null,"subjectDigest":"aa","criteria":[],"validatorContextId":"v1","findings":[{"id":"x:y","class":"seal.pinning","summary":"leg one"}],"evidenceRefs":[],"derivedChangedPaths":["docs/a.md"]}}'
+  b='{"label":"validate","result":{"verdict":"FAIL","verdictPath":null,"subjectDigest":"aa","criteria":[],"validatorContextId":"v2","findings":[{"id":"x:y","class":"scope.coverage","summary":"leg two"}],"evidenceRefs":[],"derivedChangedPaths":["docs/a.md"]}}'
+
+  rpi_probe_refused \
+    '{"intent":"do the thing","writeScope":["docs/**"],"acceptance":"the behavior holds","crossFamily":{"command":"codex exec --read-only judge"},"repairRounds":0}' \
+    "[$PLAN_RESULT_SAFE,$IMPL_RESULT,$ORPHANS_ABSENT,$a,$b]"
+  [[ "$output" == *"x:y"* ]]
+  [[ "$output" == *"class"* ]]
+}
+
+@test "rpi.js unions two legs that name one finding id compatibly" {
+  # Same id, one leg classes it and the other does not: a compatible identity.
+  # The class survives, both families are recorded, and the evidence unions.
+  local a b
+  a='{"label":"validate","result":{"verdict":"FAIL","verdictPath":null,"subjectDigest":"aa","criteria":[],"validatorContextId":"v1","findings":[{"id":"x:y","class":"seal.pinning","summary":"leg one"}],"evidenceRefs":[{"ref":".agents/ao/one.txt","subjectDigest":"aa","resolves":[]}],"derivedChangedPaths":["docs/a.md"]}}'
+  b='{"label":"validate","result":{"verdict":"FAIL","verdictPath":null,"subjectDigest":"aa","criteria":[],"validatorContextId":"v2","findings":[{"id":"x:y","summary":"leg two"}],"evidenceRefs":[{"ref":".agents/ao/two.txt","subjectDigest":"aa","resolves":[]}],"derivedChangedPaths":["docs/a.md"]}}'
+
+  rpi_probe \
+    '{"intent":"do the thing","writeScope":["docs/**"],"acceptance":"the behavior holds","crossFamily":{"command":"codex exec --read-only judge"},"repairRounds":0}' \
+    "[$PLAN_RESULT_SAFE,$IMPL_RESULT,$ORPHANS_ABSENT,$a,$b]"
+
+  python3 - "$BATS_TEST_TMPDIR/probe.json" <<'PY'
+import json, sys
+result = json.load(open(sys.argv[1]))["result"]
+findings = result["findings"]
+assert [f["id"] for f in findings] == ["x:y"], findings
+assert findings[0]["class"] == "seal.pinning", findings
+# Both families are on the record; neither leg's naming is dropped.
+assert "spawned" in findings[0]["family"] and "cross-family" in findings[0]["family"], findings
+refs = sorted(e["ref"] for e in result["evidenceRefs"])
+assert refs == [".agents/ao/one.txt", ".agents/ao/two.txt"], refs
+PY
+}
+
 @test "rpi.js keeps worst-of on a non-risky split and never convenes a council" {
   rpi_probe \
     '{"intent":"do the thing","writeScope":["docs/**"],"acceptance":"the behavior holds","crossFamily":{"command":"codex exec --read-only judge"},"repairRounds":0}' \

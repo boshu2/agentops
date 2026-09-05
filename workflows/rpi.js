@@ -362,6 +362,9 @@ function traversalReport(fields) {
     filesSummary,
     criteria: pick('criteria', []),
     findings: pick('findings', []),
+    // The bound evidence the terminal verdict rests on, unioned across legs:
+    // the caller sees what actually closed a finding, not only what stayed open.
+    evidenceRefs: pick('evidenceRefs', []),
     subjectDigest: pick('subjectDigest', null),
     validatorFamilies: pick('validatorFamilies', []),
     diversity: pick('diversity', 'not-required'),
@@ -977,7 +980,26 @@ async function mergeLegs(allLegs, risky, diversity, council) {
       // No leg's findings leave the open set except by the council's own
       // evidence; a tie-break never shrinks it.
       if (closedByCouncil.has(f.id)) continue;
-      findings.set(f.id, { id: f.id, class: f.class, summary: f.summary, family: leg.family });
+      const incoming = typeof f.class === 'string' && f.class.trim() ? f.class.trim() : null;
+      const existing = findings.get(f.id);
+      if (existing === undefined) {
+        findings.set(f.id, { id: f.id, class: incoming, summary: f.summary, family: leg.family });
+        continue;
+      }
+      // Two legs reached for the same id. A Map assignment would have folded
+      // them last-write-wins, and the class law would then reason over a key
+      // that means two different kinds. Compatible identities UNION; two
+      // different classes on one id fail closed.
+      if (existing.class !== null && incoming !== null && existing.class !== incoming) {
+        throw new Error(
+          'rpi: validator legs named finding ' + f.id + ' with different classes (' +
+            existing.class + ' and ' + incoming + '); one id cannot carry two kinds'
+        );
+      }
+      if (existing.class === null) existing.class = incoming;
+      if (!existing.family.split('+').includes(leg.family)) {
+        existing.family = existing.family + '+' + leg.family;
+      }
     }
     for (const e of r.evidenceRefs || []) evidence.add(JSON.stringify(e));
     for (const c of r.criteria || []) criteria.push(c);
@@ -1340,6 +1362,7 @@ return traversalReport({
   changedPaths: facts.changedPaths,
   criteria: validation.criteria,
   findings: validation.findings || [],
+  evidenceRefs: validation.evidenceRefs || [],
   subjectDigest: validation.subjectDigest || null,
   validatorFamilies: validation.families || [],
   diversity: validation.diversity || 'not-required',
