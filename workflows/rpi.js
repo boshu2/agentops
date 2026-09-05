@@ -595,6 +595,77 @@ if (bindingJudge !== null && planBindingJudge !== null && bindingJudge !== planB
 }
 const declaredJudge = bindingJudge !== null ? bindingJudge : planBindingJudge;
 
+// INTENT SNAPSHOT VERIFICATION, before a premortem judge reads the plan and
+// before Implement writes anything. planDigest binds intentDigest, but until
+// now that was a STRING the Plan stage asserted: nothing checked that the
+// snapshot exists, that its bytes hash to the digest, or that those bytes are
+// the caller's intent. The whole identity chain rested on the author's word,
+// which is precisely what a fresh validator is supposed not to accept.
+const SNAPSHOT_SCHEMA = {
+  type: 'object',
+  additionalProperties: false,
+  required: ['exists', 'matchesIntent'],
+  properties: {
+    exists: { type: 'boolean' },
+    digest: { type: 'string' },
+    matchesIntent: { type: 'boolean' },
+    error: { type: 'string' },
+  },
+};
+
+const snapshot = await agent(
+  'You are a read-only receipt step between Plan and Implement. Do exactly three things and judge ' +
+    'nothing.\n\n' +
+    'Snapshot path the Plan stage persisted:\n  ' + plan.intentPath + '\n\n' +
+    'Digest the Plan stage declared for it:\n  ' + plan.intentDigest + '\n\n' +
+    'The caller intent those bytes must be, verbatim between the markers:\n' +
+    '<<<INTENT\n' + input.intent + '\nINTENT\n\n' +
+    'Procedure:\n' +
+    '- ' + where + '\n' +
+    '- ' + toolingBlock + '\n' +
+    '- Report exists: true only when the snapshot path is a regular file you could read.\n' +
+    '- Report digest: the SHA-256 you compute over its exact bytes (the tooling\'s digest subcommand), ' +
+    'lowercase hex. Compute it; never copy the declared value.\n' +
+    '- Report matchesIntent: true only when the file\'s bytes ARE the caller intent above. Trailing-newline ' +
+    'differences aside, any edit, truncation, or addition is false.\n' +
+    '- If you cannot read or hash it, return exists false with the real error text as error. An invented ' +
+    'result is worse than no result.\n' +
+    '- Read-only: fix nothing, create nothing, commit nothing.',
+  { label: 'intent-snapshot', phase: 'Plan', schema: SNAPSHOT_SCHEMA }
+);
+
+const HEX_DIGEST = /^[0-9a-f]{64}$/;
+const snapshotProblem = (() => {
+  if (!snapshot) return 'the intent-snapshot receipt failed, so the snapshot was never verified';
+  if (!snapshot.exists) {
+    return 'the intent snapshot at ' + plan.intentPath + ' is not readable' +
+      (snapshot.error ? ': ' + snapshot.error : '');
+  }
+  if (!HEX_DIGEST.test(String(plan.intentDigest))) {
+    return 'the plan declared intentDigest ' + JSON.stringify(plan.intentDigest) +
+      ', which is not a lowercase hex SHA-256';
+  }
+  if (snapshot.digest !== plan.intentDigest) {
+    return 'the intent snapshot hashes to ' + JSON.stringify(snapshot.digest) +
+      ' but the plan declared ' + JSON.stringify(plan.intentDigest);
+  }
+  if (!snapshot.matchesIntent) {
+    return 'the intent snapshot bytes are not the caller intent they claim to be';
+  }
+  return null;
+})();
+if (snapshotProblem !== null) {
+  premortem = plannedRisky
+    ? { status: 'required', blocking: [], notes: ['the traversal ended before the premortem ran'] }
+    : premortem;
+  return traversalReport({
+    status: 'NOT_PROVEN',
+    stopReason: STOP_REASONS.planIdentityMismatch,
+    stoppedBy: snapshotProblem,
+    error: 'The intent snapshot does not bind; nothing was built, because no later verdict could name what it judged',
+  });
+}
+
 // A plan whose scope turned out risky only AFTER the agent chose it never met
 // the risky-scope schema, because the schema was fixed before the dispatch.
 // Enforce the same contract here rather than proceeding on a plan that froze

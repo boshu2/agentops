@@ -1172,8 +1172,9 @@ if result["stopReason"] in LAW:
 PY
 }
 
-PLAN_RESULT='{"label":"plan","result":{"acceptance":"the behavior holds","writeScope":["tests/**"],"intentDigest":"aaaa","intentPath":"/tmp/i.intent"}}'
-PLAN_RESULT_SAFE='{"label":"plan","result":{"acceptance":"the behavior holds","writeScope":["docs/**"],"intentDigest":"aaaa","intentPath":"/tmp/i.intent"}}'
+SNAPSHOT_OK='{"label":"intent-snapshot","result":{"exists":true,"digest":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","matchesIntent":true}}'
+PLAN_RESULT='{"label":"plan","result":{"acceptance":"the behavior holds","writeScope":["tests/**"],"intentDigest":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","intentPath":"/tmp/i.intent"}}'
+PLAN_RESULT_SAFE='{"label":"plan","result":{"acceptance":"the behavior holds","writeScope":["docs/**"],"intentDigest":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","intentPath":"/tmp/i.intent"}}'
 IMPL_RESULT='{"label":"implement","result":{"contextId":"author-1","changedPaths":["docs/a.md"],"checkReceipts":[{"name":"repro","command":"true","outcome":"green"}],"filesSummary":"note"}}'
 IMPL_RESULT_RISKY='{"label":"implement","result":{"contextId":"author-1","changedPaths":["tests/a.bats"],"checkReceipts":[{"name":"repro","command":"true","outcome":"green"}],"filesSummary":"note"}}'
 ORPHANS_ABSENT='{"label":"orphans","result":{"scriptPresent":false}}'
@@ -1192,7 +1193,7 @@ ORPHANS_ABSENT='{"label":"orphans","result":{"scriptPresent":false}}'
 @test "rpi.js refuses a plan write scope that is not repository-relative" {
   rpi_probe \
     '{"intent":"do the thing","acceptance":"the behavior holds"}' \
-    '[{"label":"plan","result":{"acceptance":"the behavior holds","writeScope":["/etc/passwd"],"intentDigest":"aaaa","intentPath":"/tmp/i.intent"}}]'
+    '[{"label":"plan","result":{"acceptance":"the behavior holds","writeScope":["/etc/passwd"],"intentDigest":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","intentPath":"/tmp/i.intent"}}]'
 
   python3 - "$BATS_TEST_TMPDIR/probe.json" <<'PY'
 import json, sys
@@ -1210,11 +1211,73 @@ PY
   for scope in 'tests/**' './tests/**' '././tests/**' 'tests//**'; do
     rpi_probe \
       "{\"intent\":\"harden the seal\",\"writeScope\":[\"$scope\"],\"acceptance\":\"the behavior holds\",\"premortem\":\"skip\",\"repairRounds\":0}" \
-      "[{\"label\":\"plan\",\"result\":{\"acceptance\":\"the behavior holds\",\"writeScope\":[\"$scope\"],\"intentDigest\":\"aaaa\",\"intentPath\":\"/tmp/i.intent\",\"binding_judge\":\"cross\",\"orphaned_evidence\":[]}},$IMPL_RESULT_RISKY,$ORPHANS_ABSENT,{\"label\":\"validate\",\"result\":{\"verdict\":\"PASS\",\"verdictPath\":\"/tmp/v.json\",\"subjectDigest\":\"aa\",\"criteria\":[],\"validatorContextId\":\"v1\",\"findings\":[],\"evidenceRefs\":[],\"derivedChangedPaths\":[\"tests/a.bats\"]}}]"
+      "[{\"label\":\"plan\",\"result\":{\"acceptance\":\"the behavior holds\",\"writeScope\":[\"$scope\"],\"intentDigest\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"intentPath\":\"/tmp/i.intent\",\"binding_judge\":\"cross\",\"orphaned_evidence\":[]}},$SNAPSHOT_OK,$IMPL_RESULT_RISKY,$ORPHANS_ABSENT,{\"label\":\"validate\",\"result\":{\"verdict\":\"PASS\",\"verdictPath\":\"/tmp/v.json\",\"subjectDigest\":\"aa\",\"criteria\":[],\"validatorContextId\":\"v1\",\"findings\":[],\"evidenceRefs\":[],\"derivedChangedPaths\":[\"tests/a.bats\"]}}]"
     digests="$digests $(python3 -c "import json,sys; print(json.load(open(sys.argv[1]))['result']['planDigest'])" "$BATS_TEST_TMPDIR/probe.json")"
   done
   # One scope, one identity, however it was spelled.
   [ "$(echo $digests | tr ' ' '\n' | sort -u | wc -l | tr -d ' ')" = "1" ]
+}
+
+@test "rpi.js verifies the intent snapshot before it builds anything" {
+  # planDigest bound intentDigest as a STRING the Plan stage asserted. Nothing
+  # checked that the snapshot exists, hashes to it, or holds the caller's
+  # intent, so the whole identity chain rested on the author's word.
+  rpi_probe \
+    '{"intent":"do the thing","writeScope":["docs/**"],"acceptance":"the behavior holds","repairRounds":0}' \
+    "[{\"label\":\"plan\",\"result\":{\"acceptance\":\"the behavior holds\",\"writeScope\":[\"docs/**\"],\"intentDigest\":\"aaaa\",\"intentPath\":\"/tmp/i.intent\"}},{\"label\":\"intent-snapshot\",\"result\":{\"exists\":true,\"digest\":\"aaaa\",\"matchesIntent\":true}}]"
+
+  python3 - "$BATS_TEST_TMPDIR/probe.json" <<'PY'
+import json, sys
+probe = json.load(open(sys.argv[1]))
+assert probe["calls"] == ["plan", "intent-snapshot"], probe["calls"]
+result = probe["result"]
+# intentDigest "aaaa" is not a 64-hex digest, so the identity does not bind.
+assert result["stopReason"] == "plan_identity_mismatch", result["stopReason"]
+assert result["status"] == "NOT_PROVEN", result["status"]
+# The receipt sees the exact caller intent to compare against.
+assert "do the thing" in probe["prompts"]["intent-snapshot"]
+assert "/tmp/i.intent" in probe["prompts"]["intent-snapshot"]
+PY
+}
+
+@test "rpi.js refuses a snapshot that is absent, mis-hashed, or not the intent" {
+  local d plan_ok
+  d="$(printf 'c%.0s' $(seq 64))"
+  plan_ok="{\"label\":\"plan\",\"result\":{\"acceptance\":\"the behavior holds\",\"writeScope\":[\"docs/**\"],\"intentDigest\":\"$d\",\"intentPath\":\"/tmp/i.intent\"}}"
+
+  for receipt in \
+    "{\"exists\":false,\"matchesIntent\":false}" \
+    "{\"exists\":true,\"digest\":\"$(printf 'd%.0s' $(seq 64))\",\"matchesIntent\":true}" \
+    "{\"exists\":true,\"digest\":\"$d\",\"matchesIntent\":false}"; do
+    rpi_probe \
+      '{"intent":"do the thing","writeScope":["docs/**"],"acceptance":"the behavior holds","repairRounds":0}' \
+      "[$plan_ok,{\"label\":\"intent-snapshot\",\"result\":$receipt}]"
+    python3 - "$BATS_TEST_TMPDIR/probe.json" <<'PY'
+import json, sys
+probe = json.load(open(sys.argv[1]))
+assert "implement" not in probe["calls"], probe["calls"]
+assert "premortem" not in probe["calls"], probe["calls"]
+result = probe["result"]
+assert result["stopReason"] == "plan_identity_mismatch", result["stopReason"]
+PY
+  done
+}
+
+@test "rpi.js proceeds past a snapshot that verifies" {
+  local d plan_ok
+  d="$(printf 'c%.0s' $(seq 64))"
+  plan_ok="{\"label\":\"plan\",\"result\":{\"acceptance\":\"the behavior holds\",\"writeScope\":[\"docs/**\"],\"intentDigest\":\"$d\",\"intentPath\":\"/tmp/i.intent\"}}"
+
+  rpi_probe \
+    '{"intent":"do the thing","writeScope":["docs/**"],"acceptance":"the behavior holds","repairRounds":0}' \
+    "[$plan_ok,{\"label\":\"intent-snapshot\",\"result\":{\"exists\":true,\"digest\":\"$d\",\"matchesIntent\":true}},$IMPL_RESULT,$ORPHANS_ABSENT,{\"label\":\"validate\",\"result\":{\"verdict\":\"PASS\",\"verdictPath\":\"/tmp/v.json\",\"subjectDigest\":\"aa\",\"criteria\":[],\"validatorContextId\":\"v1\",\"findings\":[],\"evidenceRefs\":[],\"derivedChangedPaths\":[\"docs/a.md\"]}}]"
+
+  python3 - "$BATS_TEST_TMPDIR/probe.json" <<'PY'
+import json, sys
+result = json.load(open(sys.argv[1]))["result"]
+assert result["verdict"] == "PASS", result["verdict"]
+assert result["intentDigest"] == "c" * 64, result["intentDigest"]
+PY
 }
 
 @test "rpi.js requires a risky plan to declare its binding judge and orphan list" {
@@ -1258,7 +1321,7 @@ PY
 @test "rpi.js binds the plan identity over the frozen tuple and carries it" {
   rpi_probe \
     '{"intent":"do the thing","writeScope":["docs/**"],"acceptance":"the behavior holds","repairRounds":0}' \
-    "[$PLAN_RESULT_SAFE,$IMPL_RESULT,$ORPHANS_ABSENT,{\"label\":\"validate\",\"result\":{\"verdict\":\"PASS\",\"verdictPath\":\"/tmp/v.json\",\"subjectDigest\":\"aa\",\"criteria\":[],\"validatorContextId\":\"v1\",\"findings\":[],\"evidenceRefs\":[],\"derivedChangedPaths\":[\"docs/a.md\"]}}]"
+    "[$PLAN_RESULT_SAFE,$SNAPSHOT_OK,$IMPL_RESULT,$ORPHANS_ABSENT,{\"label\":\"validate\",\"result\":{\"verdict\":\"PASS\",\"verdictPath\":\"/tmp/v.json\",\"subjectDigest\":\"aa\",\"criteria\":[],\"validatorContextId\":\"v1\",\"findings\":[],\"evidenceRefs\":[],\"derivedChangedPaths\":[\"docs/a.md\"]}}]"
 
   python3 - "$BATS_TEST_TMPDIR/probe.json" <<'PY'
 import hashlib, json, sys
@@ -1268,13 +1331,13 @@ result = probe["result"]
 payload = json.dumps({
     "acceptance": "the behavior holds",
     "binding_judge": None,
-    "intent_digest": "aaaa",
+    "intent_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
     "orphaned_evidence": [],
     "write_scope": ["docs/**"],
 }, separators=(",", ":"))
 expected = hashlib.sha256(payload.encode("utf-8")).hexdigest()
 assert result["planDigest"] == expected, (result["planDigest"], expected)
-assert result["intentDigest"] == "aaaa", result["intentDigest"]
+assert result["intentDigest"] == "a" * 64, result["intentDigest"]
 # The frozen identity reaches the stages that must judge the same plan.
 assert expected in probe["prompts"]["implement"], probe["prompts"]["implement"]
 assert expected in probe["prompts"]["validate"], probe["prompts"]["validate"]
@@ -1285,11 +1348,11 @@ PY
   # orphaned_evidence was required of a risky plan and then dropped: it reached
   # neither the identity, nor the report, nor any downstream prompt.
   local plan_risky
-  plan_risky='{"label":"plan","result":{"acceptance":"the behavior holds","writeScope":["tests/**"],"intentDigest":"aaaa","intentPath":"/tmp/i.intent","binding_judge":"cross","orphaned_evidence":["docs/evals/scorecards/x.json binds scripts/harness.sh"]}}'
+  plan_risky='{"label":"plan","result":{"acceptance":"the behavior holds","writeScope":["tests/**"],"intentDigest":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","intentPath":"/tmp/i.intent","binding_judge":"cross","orphaned_evidence":["docs/evals/scorecards/x.json binds scripts/harness.sh"]}}'
 
   rpi_probe \
     '{"intent":"harden the seal","writeScope":["tests/**"],"acceptance":"the behavior holds","premortem":"skip","repairRounds":0,"validator":{"kind":"command","command":"codex exec --read-only judge"}}' \
-    "[$plan_risky,$IMPL_RESULT_RISKY,$ORPHANS_ABSENT,{\"label\":\"validate\",\"result\":{\"verdict\":\"PASS\",\"verdictPath\":\"/tmp/v.json\",\"subjectDigest\":\"aa\",\"criteria\":[],\"validatorContextId\":\"v1\",\"findings\":[],\"evidenceRefs\":[],\"derivedChangedPaths\":[\"tests/a.bats\"]}}]"
+    "[$plan_risky,$SNAPSHOT_OK,$IMPL_RESULT_RISKY,$ORPHANS_ABSENT,{\"label\":\"validate\",\"result\":{\"verdict\":\"PASS\",\"verdictPath\":\"/tmp/v.json\",\"subjectDigest\":\"aa\",\"criteria\":[],\"validatorContextId\":\"v1\",\"findings\":[],\"evidenceRefs\":[],\"derivedChangedPaths\":[\"tests/a.bats\"]}}]"
 
   python3 - "$BATS_TEST_TMPDIR/probe.json" <<'PY'
 import hashlib, json, sys
@@ -1299,7 +1362,7 @@ orphans = ["docs/evals/scorecards/x.json binds scripts/harness.sh"]
 payload = json.dumps({
     "acceptance": "the behavior holds",
     "binding_judge": "cross",
-    "intent_digest": "aaaa",
+    "intent_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
     "orphaned_evidence": orphans,
     "write_scope": ["tests/**"],
 }, separators=(",", ":"))
@@ -1334,13 +1397,13 @@ PY
 @test "rpi.js refuses a plan whose declared identity is not the tuple it returned" {
   rpi_probe \
     '{"intent":"do the thing","writeScope":["docs/**"],"acceptance":"the behavior holds","repairRounds":0}' \
-    '[{"label":"plan","result":{"acceptance":"the behavior holds","writeScope":["docs/**"],"intentDigest":"aaaa","intentPath":"/tmp/i.intent","plan_digest":"0000000000000000000000000000000000000000000000000000000000000000"}}]'
+    "[{\"label\":\"plan\",\"result\":{\"acceptance\":\"the behavior holds\",\"writeScope\":[\"docs/**\"],\"intentDigest\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"intentPath\":\"/tmp/i.intent\",\"plan_digest\":\"0000000000000000000000000000000000000000000000000000000000000000\"}},$SNAPSHOT_OK]"
 
   python3 - "$BATS_TEST_TMPDIR/probe.json" <<'PY'
 import json, sys
 probe = json.load(open(sys.argv[1]))
 # Refused before Implement: nothing was built on a plan that does not bind.
-assert probe["calls"] == ["plan"], probe["calls"]
+assert probe["calls"] == ["plan", "intent-snapshot"], probe["calls"]
 result = probe["result"]
 assert result["stopReason"] == "plan_identity_mismatch", result["stopReason"]
 assert result["status"] == "NOT_PROVEN", result["status"]
@@ -1352,12 +1415,12 @@ PY
   # fields before dispatch; the same contract is enforced on what came back.
   rpi_probe \
     '{"intent":"harden the seal","acceptance":"the behavior holds"}' \
-    '[{"label":"plan","result":{"acceptance":"the behavior holds","writeScope":["tests/**"],"intentDigest":"aaaa","intentPath":"/tmp/i.intent"}}]'
+    "[{\"label\":\"plan\",\"result\":{\"acceptance\":\"the behavior holds\",\"writeScope\":[\"tests/**\"],\"intentDigest\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"intentPath\":\"/tmp/i.intent\"}},$SNAPSHOT_OK]"
 
   python3 - "$BATS_TEST_TMPDIR/probe.json" <<'PY'
 import json, sys
 probe = json.load(open(sys.argv[1]))
-assert probe["calls"] == ["plan"], probe["calls"]
+assert probe["calls"] == ["plan", "intent-snapshot"], probe["calls"]
 result = probe["result"]
 assert result["stopReason"] == "plan_incomplete", result["stopReason"]
 assert result["status"] == "NOT_PLANNED", result["status"]
@@ -1447,12 +1510,12 @@ JS
 @test "rpi.js premortem blocks a risky write scope before any Implement" {
   rpi_probe \
     '{"intent":"harden the seal","writeScope":["tests/**"],"acceptance":"the behavior holds"}' \
-    "[$PLAN_RESULT,{\"label\":\"premortem\",\"result\":{\"blocking\":[{\"id\":\"seal:unpinned\",\"class\":\"seal.pinning\",\"summary\":\"the plan never pins the seal\"}],\"notes\":[\"nit\"]}}]"
+    "[$PLAN_RESULT,$SNAPSHOT_OK,{\"label\":\"premortem\",\"result\":{\"blocking\":[{\"id\":\"seal:unpinned\",\"class\":\"seal.pinning\",\"summary\":\"the plan never pins the seal\"}],\"notes\":[\"nit\"]}}]"
 
   python3 - "$BATS_TEST_TMPDIR/probe.json" <<'PY'
 import json, sys
 probe = json.load(open(sys.argv[1]))
-assert probe["calls"] == ["plan", "premortem"], probe["calls"]
+assert probe["calls"] == ["plan", "intent-snapshot", "premortem"], probe["calls"]
 result = probe["result"]
 # NOT_PLANNED is a STATUS, not a verdict: nothing was built, so nothing was judged.
 assert result["status"] == "NOT_PLANNED", result["status"]
@@ -1480,7 +1543,7 @@ PY
     'skills/rpi/**' 'skills/validate/**' 'skills/premortem/**' 'skills/anything-at-all/**'; do
     rpi_probe \
       "{\"intent\":\"harden the seal\",\"writeScope\":[\"$scope\"],\"acceptance\":\"the behavior holds\"}" \
-      "[{\"label\":\"plan\",\"result\":{\"acceptance\":\"the behavior holds\",\"writeScope\":[\"$scope\"],\"intentDigest\":\"aaaa\",\"intentPath\":\"/tmp/i.intent\"}},{\"label\":\"premortem\",\"result\":{\"blocking\":[{\"id\":\"x:y\",\"class\":\"k\",\"summary\":\"blocks\"}],\"notes\":[]}}]"
+      "[{\"label\":\"plan\",\"result\":{\"acceptance\":\"the behavior holds\",\"writeScope\":[\"$scope\"],\"intentDigest\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"intentPath\":\"/tmp/i.intent\"}},$SNAPSHOT_OK,{\"label\":\"premortem\",\"result\":{\"blocking\":[{\"id\":\"x:y\",\"class\":\"k\",\"summary\":\"blocks\"}],\"notes\":[]}}]"
     python3 - "$BATS_TEST_TMPDIR/probe.json" "$scope" <<'PY'
 import json, sys
 probe = json.load(open(sys.argv[1]))
@@ -1495,7 +1558,7 @@ PY
     'skills/*/SKILL.md' 'README.md' 'cli/cmd/**'; do
     rpi_probe \
       "{\"intent\":\"do the thing\",\"writeScope\":[\"$scope\"],\"acceptance\":\"the behavior holds\",\"repairRounds\":0}" \
-      "[{\"label\":\"plan\",\"result\":{\"acceptance\":\"the behavior holds\",\"writeScope\":[\"$scope\"],\"intentDigest\":\"aaaa\",\"intentPath\":\"/tmp/i.intent\"}},$IMPL_RESULT,$ORPHANS_ABSENT,{\"label\":\"validate\",\"result\":{\"verdict\":\"PASS\",\"verdictPath\":\"/tmp/v.json\",\"subjectDigest\":\"aa\",\"criteria\":[],\"validatorContextId\":\"v1\",\"findings\":[],\"evidenceRefs\":[],\"derivedChangedPaths\":[\"docs/a.md\"]}}]"
+      "[{\"label\":\"plan\",\"result\":{\"acceptance\":\"the behavior holds\",\"writeScope\":[\"$scope\"],\"intentDigest\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"intentPath\":\"/tmp/i.intent\"}},$SNAPSHOT_OK,$IMPL_RESULT,$ORPHANS_ABSENT,{\"label\":\"validate\",\"result\":{\"verdict\":\"PASS\",\"verdictPath\":\"/tmp/v.json\",\"subjectDigest\":\"aa\",\"criteria\":[],\"validatorContextId\":\"v1\",\"findings\":[],\"evidenceRefs\":[],\"derivedChangedPaths\":[\"docs/a.md\"]}}]"
     python3 - "$BATS_TEST_TMPDIR/probe.json" "$scope" <<'PY'
 import json, sys
 probe = json.load(open(sys.argv[1]))
@@ -1509,7 +1572,7 @@ PY
 @test "rpi.js records a caller-declared premortem skip and implements anyway" {
   rpi_probe \
     '{"intent":"harden the seal","writeScope":["tests/**"],"acceptance":"the behavior holds","premortem":"skip","repairRounds":0}' \
-    "[$PLAN_RESULT,$IMPL_RESULT_RISKY,$ORPHANS_ABSENT,{\"label\":\"validate\",\"result\":{\"verdict\":\"PASS\",\"verdictPath\":\"/tmp/v.json\",\"subjectDigest\":\"aa\",\"criteria\":[],\"validatorContextId\":\"v1\",\"findings\":[],\"evidenceRefs\":[],\"derivedChangedPaths\":[\"tests/a.bats\"]}}]"
+    "[$PLAN_RESULT,$SNAPSHOT_OK,$IMPL_RESULT_RISKY,$ORPHANS_ABSENT,{\"label\":\"validate\",\"result\":{\"verdict\":\"PASS\",\"verdictPath\":\"/tmp/v.json\",\"subjectDigest\":\"aa\",\"criteria\":[],\"validatorContextId\":\"v1\",\"findings\":[],\"evidenceRefs\":[],\"derivedChangedPaths\":[\"tests/a.bats\"]}}]"
 
   python3 - "$BATS_TEST_TMPDIR/probe.json" <<'PY'
 import json, sys
@@ -1529,7 +1592,7 @@ PY
   # and the run read as if no premortem had ever been waived.
   rpi_probe \
     '{"intent":"harden the seal","writeScope":["tests/**"],"acceptance":"the behavior holds","premortem":"skip"}' \
-    "[$PLAN_RESULT,{\"label\":\"implement\"}]"
+    "[$PLAN_RESULT,$SNAPSHOT_OK,{\"label\":\"implement\"}]"
 
   python3 - "$BATS_TEST_TMPDIR/probe.json" <<'PY'
 import json, sys
@@ -1549,7 +1612,7 @@ PY
   v1='{"label":"validate","result":{"verdict":"PASS","verdictPath":"/tmp/v.json","subjectDigest":"bb","criteria":[],"validatorContextId":"v2","findings":[],"evidenceRefs":[],"derivedChangedPaths":["docs/a.md","scripts/harness.sh"]}}'
   rpi_probe \
     '{"intent":"do the thing","writeScope":["docs/**"],"acceptance":"the behavior holds","repairRounds":1}' \
-    "[$PLAN_RESULT_SAFE,$IMPL_RESULT,{\"label\":\"orphans\",\"result\":{\"scriptPresent\":true,\"json\":\"{\\\"count\\\":0}\"}},$v0,{\"label\":\"repair:1\",\"result\":{\"contextId\":\"author-2\",\"changedPaths\":[\"docs/a.md\"],\"checkReceipts\":[],\"filesSummary\":\"n\"}},{\"label\":\"orphans\",\"result\":{\"scriptPresent\":true,\"json\":\"{\\\"count\\\":2}\"}},$v1]"
+    "[$PLAN_RESULT_SAFE,$SNAPSHOT_OK,$IMPL_RESULT,{\"label\":\"orphans\",\"result\":{\"scriptPresent\":true,\"json\":\"{\\\"count\\\":0}\"}},$v0,{\"label\":\"repair:1\",\"result\":{\"contextId\":\"author-2\",\"changedPaths\":[\"docs/a.md\"],\"checkReceipts\":[],\"filesSummary\":\"n\"}},{\"label\":\"orphans\",\"result\":{\"scriptPresent\":true,\"json\":\"{\\\"count\\\":2}\"}},$v1]"
 
   python3 - "$BATS_TEST_TMPDIR/probe.json" <<'PY'
 import json, sys
@@ -1577,7 +1640,7 @@ PY
 
   rpi_probe \
     '{"intent":"do the thing","writeScope":["docs/**"],"acceptance":"the behavior holds","repairRounds":1}' \
-    "[$PLAN_RESULT_SAFE,$IMPL_RESULT,{\"label\":\"orphans\",\"result\":{\"scriptPresent\":true,\"json\":\"{\\\"binding_count\\\":0}\"}},$v0,$repair,{\"label\":\"orphans\",\"result\":{\"scriptPresent\":true,\"json\":\"{\\\"binding_count\\\":7}\"}},$v1]"
+    "[$PLAN_RESULT_SAFE,$SNAPSHOT_OK,$IMPL_RESULT,{\"label\":\"orphans\",\"result\":{\"scriptPresent\":true,\"json\":\"{\\\"binding_count\\\":0}\"}},$v0,$repair,{\"label\":\"orphans\",\"result\":{\"scriptPresent\":true,\"json\":\"{\\\"binding_count\\\":7}\"}},$v1]"
 
   python3 - "$BATS_TEST_TMPDIR/probe.json" <<'PY'
 import json, sys
@@ -1598,7 +1661,7 @@ PY
 @test "rpi.js attaches the orphaned-evidence receipt when the script is present" {
   rpi_probe \
     '{"intent":"do the thing","writeScope":["docs/**"],"acceptance":"the behavior holds","repairRounds":0}' \
-    "[$PLAN_RESULT_SAFE,$IMPL_RESULT,{\"label\":\"orphans\",\"result\":{\"scriptPresent\":true,\"json\":\"{\\\"orphans\\\":[\\\"receipt-1\\\"]}\"}},{\"label\":\"validate\",\"result\":{\"verdict\":\"PASS\",\"verdictPath\":\"/tmp/v.json\",\"subjectDigest\":\"aa\",\"criteria\":[],\"validatorContextId\":\"v1\",\"findings\":[],\"evidenceRefs\":[],\"derivedChangedPaths\":[\"docs/a.md\"]}}]"
+    "[$PLAN_RESULT_SAFE,$SNAPSHOT_OK,$IMPL_RESULT,{\"label\":\"orphans\",\"result\":{\"scriptPresent\":true,\"json\":\"{\\\"orphans\\\":[\\\"receipt-1\\\"]}\"}},{\"label\":\"validate\",\"result\":{\"verdict\":\"PASS\",\"verdictPath\":\"/tmp/v.json\",\"subjectDigest\":\"aa\",\"criteria\":[],\"validatorContextId\":\"v1\",\"findings\":[],\"evidenceRefs\":[],\"derivedChangedPaths\":[\"docs/a.md\"]}}]"
 
   python3 - "$BATS_TEST_TMPDIR/probe.json" <<'PY'
 import json, sys
@@ -1627,7 +1690,8 @@ doc = json.loads((root / "tests" / "fixtures" / "rpi-convergence-law" / "cases.j
 case = next(c for c in doc["cases"] if c["name"] == name)
 queue = [
     {"label": "plan", "result": {"acceptance": "the behavior holds", "writeScope": ["docs/**"],
-                                 "intentDigest": "aaaa", "intentPath": "/tmp/i.intent"}},
+                                 "intentDigest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "intentPath": "/tmp/i.intent"}},
+    {"label": "intent-snapshot", "result": {"exists": True, "digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "matchesIntent": True}},
     {"label": "implement", "result": {"contextId": "author-1", "changedPaths": ["docs/a.md"],
                                       "checkReceipts": [], "filesSummary": "note"}},
     {"label": "orphans", "result": {"scriptPresent": False}},
@@ -1730,7 +1794,7 @@ LEG_FAIL='{"label":"validate","result":{"verdict":"FAIL","verdictPath":null,"sub
 @test "rpi.js records a declared binding judge without letting it certify a split" {
   rpi_probe \
     "$(python3 -c 'import json,sys; a=json.loads(sys.argv[1]); a["bindingJudge"]="primary"; print(json.dumps(a))' "$RISKY_SPLIT_ARGS")" \
-    "[$PLAN_RESULT,$IMPL_RESULT_RISKY,$ORPHANS_ABSENT,$LEG_PASS,$LEG_FAIL,{\"label\":\"council\",\"result\":{\"rulings\":[{\"id\":\"x:y\",\"ruling\":\"real\",\"evidence_refs\":[]}]}}]"
+    "[$PLAN_RESULT,$SNAPSHOT_OK,$IMPL_RESULT_RISKY,$ORPHANS_ABSENT,$LEG_PASS,$LEG_FAIL,{\"label\":\"council\",\"result\":{\"rulings\":[{\"id\":\"x:y\",\"ruling\":\"real\",\"evidence_refs\":[]}]}}]"
 
   python3 - "$BATS_TEST_TMPDIR/probe.json" <<'PY'
 import json, sys
@@ -1753,7 +1817,7 @@ PY
 @test "rpi.js records and ignores a declared binding judge off a risky scope" {
   rpi_probe \
     '{"intent":"do the thing","writeScope":["docs/**"],"acceptance":"the behavior holds","bindingJudge":"cross","crossFamily":{"command":"codex exec --read-only judge"},"repairRounds":0}' \
-    "[$PLAN_RESULT_SAFE,$IMPL_RESULT,$ORPHANS_ABSENT,{\"label\":\"validate\",\"result\":{\"verdict\":\"PASS\",\"verdictPath\":\"/tmp/v.json\",\"subjectDigest\":\"aa\",\"criteria\":[],\"validatorContextId\":\"v1\",\"findings\":[],\"evidenceRefs\":[],\"derivedChangedPaths\":[\"docs/a.md\"]}},{\"label\":\"validate\",\"result\":{\"verdict\":\"FAIL\",\"verdictPath\":null,\"subjectDigest\":\"aa\",\"criteria\":[],\"validatorContextId\":\"v2\",\"findings\":[{\"id\":\"x:y\",\"summary\":\"single-family objection\"}],\"evidenceRefs\":[],\"derivedChangedPaths\":[\"docs/a.md\"]}}]"
+    "[$PLAN_RESULT_SAFE,$SNAPSHOT_OK,$IMPL_RESULT,$ORPHANS_ABSENT,{\"label\":\"validate\",\"result\":{\"verdict\":\"PASS\",\"verdictPath\":\"/tmp/v.json\",\"subjectDigest\":\"aa\",\"criteria\":[],\"validatorContextId\":\"v1\",\"findings\":[],\"evidenceRefs\":[],\"derivedChangedPaths\":[\"docs/a.md\"]}},{\"label\":\"validate\",\"result\":{\"verdict\":\"FAIL\",\"verdictPath\":null,\"subjectDigest\":\"aa\",\"criteria\":[],\"validatorContextId\":\"v2\",\"findings\":[{\"id\":\"x:y\",\"summary\":\"single-family objection\"}],\"evidenceRefs\":[],\"derivedChangedPaths\":[\"docs/a.md\"]}}]"
 
   python3 - "$BATS_TEST_TMPDIR/probe.json" <<'PY'
 import json, sys
@@ -1772,11 +1836,12 @@ PY
 @test "rpi.js refuses a caller and plan that declare different binding judges" {
   rpi_probe \
     '{"intent":"harden the seal","writeScope":["tests/**"],"acceptance":"the behavior holds","bindingJudge":"primary"}' \
-    '[{"label":"plan","result":{"acceptance":"the behavior holds","writeScope":["tests/**"],"intentDigest":"aaaa","intentPath":"/tmp/i.intent","binding_judge":"cross"}}]'
+    '[{"label":"plan","result":{"acceptance":"the behavior holds","writeScope":["tests/**"],"intentDigest":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","intentPath":"/tmp/i.intent","binding_judge":"cross"}}]'
 
   python3 - "$BATS_TEST_TMPDIR/probe.json" <<'PY'
 import json, sys
 probe = json.load(open(sys.argv[1]))
+# A structural contradiction is refused before a receipt is spent on it.
 assert probe["calls"] == ["plan"], probe["calls"]
 result = probe["result"]
 assert result["status"] == "NOT_PROVEN", result["status"]
@@ -1791,7 +1856,7 @@ PY
 @test "rpi.js accepts a binding judge declared only by the frozen plan" {
   rpi_probe \
     '{"intent":"harden the seal","writeScope":["tests/**"],"acceptance":"the behavior holds","premortem":"skip","crossFamily":{"command":"codex exec --read-only judge"},"repairRounds":0}' \
-    "[{\"label\":\"plan\",\"result\":{\"acceptance\":\"the behavior holds\",\"writeScope\":[\"tests/**\"],\"intentDigest\":\"aaaa\",\"intentPath\":\"/tmp/i.intent\",\"binding_judge\":\"cross\"}},$IMPL_RESULT_RISKY,$ORPHANS_ABSENT,$LEG_PASS,$LEG_FAIL,{\"label\":\"council\",\"result\":{\"rulings\":[{\"id\":\"x:y\",\"ruling\":\"real\",\"evidence_refs\":[]}]}}]"
+    "[{\"label\":\"plan\",\"result\":{\"acceptance\":\"the behavior holds\",\"writeScope\":[\"tests/**\"],\"intentDigest\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"intentPath\":\"/tmp/i.intent\",\"binding_judge\":\"cross\"}},$SNAPSHOT_OK,$IMPL_RESULT_RISKY,$ORPHANS_ABSENT,$LEG_PASS,$LEG_FAIL,{\"label\":\"council\",\"result\":{\"rulings\":[{\"id\":\"x:y\",\"ruling\":\"real\",\"evidence_refs\":[]}]}}]"
 
   python3 - "$BATS_TEST_TMPDIR/probe.json" <<'PY'
 import json, sys
@@ -1812,7 +1877,7 @@ PY
 
   rpi_probe \
     '{"intent":"harden the seal","writeScope":["tests/**"],"acceptance":"the behavior holds","premortem":"skip","crossFamily":{"command":"codex exec --read-only judge"},"repairRounds":1}' \
-    "[$PLAN_RESULT,$IMPL_RESULT_RISKY,$ORPHANS_ABSENT,$LEG_PASS,$LEG_FAIL,$repair,$ORPHANS_ABSENT,$v1,$v1]"
+    "[$PLAN_RESULT,$SNAPSHOT_OK,$IMPL_RESULT_RISKY,$ORPHANS_ABSENT,$LEG_PASS,$LEG_FAIL,$repair,$ORPHANS_ABSENT,$v1,$v1]"
 
   python3 - "$BATS_TEST_TMPDIR/probe.json" <<'PY'
 import json, sys
@@ -1829,7 +1894,7 @@ PY
   # repairRounds 0: the first split is already terminal, so it survives repair
   # vacuously and the council convenes exactly once.
   rpi_probe "$RISKY_SPLIT_ARGS" \
-    "[$PLAN_RESULT,$IMPL_RESULT_RISKY,$ORPHANS_ABSENT,$LEG_PASS,$LEG_FAIL,{\"label\":\"council\",\"result\":{\"rulings\":[{\"id\":\"x:y\",\"ruling\":\"real\",\"evidence_refs\":[]}]}}]"
+    "[$PLAN_RESULT,$SNAPSHOT_OK,$IMPL_RESULT_RISKY,$ORPHANS_ABSENT,$LEG_PASS,$LEG_FAIL,{\"label\":\"council\",\"result\":{\"rulings\":[{\"id\":\"x:y\",\"ruling\":\"real\",\"evidence_refs\":[]}]}}]"
 
   python3 - "$BATS_TEST_TMPDIR/probe.json" <<'PY'
 import json, sys
@@ -1853,7 +1918,7 @@ PY
 
   rpi_probe \
     '{"intent":"harden the seal","writeScope":["tests/**"],"acceptance":"the behavior holds","premortem":"skip","crossFamily":{"command":"codex exec --read-only judge"},"repairRounds":2}' \
-    "[$PLAN_RESULT,$IMPL_RESULT_RISKY,$ORPHANS_ABSENT,$LEG_PASS,$LEG_FAIL,$repair,$ORPHANS_ABSENT,$LEG_PASS,$LEG_FAIL]"
+    "[$PLAN_RESULT,$SNAPSHOT_OK,$IMPL_RESULT_RISKY,$ORPHANS_ABSENT,$LEG_PASS,$LEG_FAIL,$repair,$ORPHANS_ABSENT,$LEG_PASS,$LEG_FAIL]"
 
   python3 - "$BATS_TEST_TMPDIR/probe.json" <<'PY'
 import json, sys
@@ -1885,19 +1950,19 @@ PY
   # 0 rounds: the split is terminal at once, the budget stop is eligible.
   rpi_probe \
     '{"intent":"harden the seal","writeScope":["tests/**"],"acceptance":"the behavior holds","premortem":"skip","crossFamily":{"command":"codex exec --read-only judge"},"repairRounds":0}' \
-    "[$PLAN_RESULT,$IMPL_RESULT_RISKY,$ORPHANS_ABSENT,$LEG_PASS,$LEG_FAIL,$council_pair]"
+    "[$PLAN_RESULT,$SNAPSHOT_OK,$IMPL_RESULT_RISKY,$ORPHANS_ABSENT,$LEG_PASS,$LEG_FAIL,$council_pair]"
   assert_pass_never_under_law
 
   # 1 round that repairs nothing: the law stops the phase, no council.
   rpi_probe \
     '{"intent":"harden the seal","writeScope":["tests/**"],"acceptance":"the behavior holds","premortem":"skip","crossFamily":{"command":"codex exec --read-only judge"},"repairRounds":1}' \
-    "[$PLAN_RESULT,$IMPL_RESULT_RISKY,$ORPHANS_ABSENT,$LEG_PASS,$LEG_FAIL,$repair,$ORPHANS_ABSENT,$LEG_PASS,$LEG_FAIL]"
+    "[$PLAN_RESULT,$SNAPSHOT_OK,$IMPL_RESULT_RISKY,$ORPHANS_ABSENT,$LEG_PASS,$LEG_FAIL,$repair,$ORPHANS_ABSENT,$LEG_PASS,$LEG_FAIL]"
   assert_pass_never_under_law
 
   # 1 round that actually repairs: a clean convergence, PASS under converged.
   rpi_probe \
     '{"intent":"harden the seal","writeScope":["tests/**"],"acceptance":"the behavior holds","premortem":"skip","crossFamily":{"command":"codex exec --read-only judge"},"repairRounds":1}' \
-    "[$PLAN_RESULT,$IMPL_RESULT_RISKY,$ORPHANS_ABSENT,$LEG_PASS,$LEG_FAIL,$repair,$ORPHANS_ABSENT,$clean,$clean]"
+    "[$PLAN_RESULT,$SNAPSHOT_OK,$IMPL_RESULT_RISKY,$ORPHANS_ABSENT,$LEG_PASS,$LEG_FAIL,$repair,$ORPHANS_ABSENT,$clean,$clean]"
   assert_pass_never_under_law
   python3 - "$BATS_TEST_TMPDIR/probe.json" <<'PY'
 import json, sys
@@ -1908,7 +1973,7 @@ PY
 
 @test "rpi.js says so when the council closes a finding with no round left to revalidate" {
   rpi_probe "$RISKY_SPLIT_ARGS" \
-    "[$PLAN_RESULT,$IMPL_RESULT_RISKY,$ORPHANS_ABSENT,$LEG_PASS,$LEG_FAIL,{\"label\":\"council\",\"result\":{\"rulings\":[{\"id\":\"x:y\",\"ruling\":\"not_real\",\"evidence_refs\":[\".agents/ao/disproof.txt\"]}]}},{\"label\":\"council-evidence\",\"result\":{\"resolved\":[{\"ref\":\".agents/ao/disproof.txt\",\"exists\":true,\"changed\":false}]}}]"
+    "[$PLAN_RESULT,$SNAPSHOT_OK,$IMPL_RESULT_RISKY,$ORPHANS_ABSENT,$LEG_PASS,$LEG_FAIL,{\"label\":\"council\",\"result\":{\"rulings\":[{\"id\":\"x:y\",\"ruling\":\"not_real\",\"evidence_refs\":[\".agents/ao/disproof.txt\"]}]}},{\"label\":\"council-evidence\",\"result\":{\"resolved\":[{\"ref\":\".agents/ao/disproof.txt\",\"exists\":true,\"changed\":false}]}}]"
 
   python3 - "$BATS_TEST_TMPDIR/probe.json" <<'PY'
 import json, sys
@@ -1922,7 +1987,7 @@ PY
 
 @test "rpi.js rejects a council ref that escapes the evidence area by dot segments" {
   rpi_probe "$RISKY_SPLIT_ARGS" \
-    "[$PLAN_RESULT,$IMPL_RESULT_RISKY,$ORPHANS_ABSENT,$LEG_PASS,$LEG_FAIL,{\"label\":\"council\",\"result\":{\"rulings\":[{\"id\":\"x:y\",\"ruling\":\"not_real\",\"evidence_refs\":[\".agents/ao/../../tests/a.bats\"]}]}}]"
+    "[$PLAN_RESULT,$SNAPSHOT_OK,$IMPL_RESULT_RISKY,$ORPHANS_ABSENT,$LEG_PASS,$LEG_FAIL,{\"label\":\"council\",\"result\":{\"rulings\":[{\"id\":\"x:y\",\"ruling\":\"not_real\",\"evidence_refs\":[\".agents/ao/../../tests/a.bats\"]}]}}]"
 
   python3 - "$BATS_TEST_TMPDIR/probe.json" <<'PY'
 import json, sys
@@ -1937,7 +2002,7 @@ PY
 
 @test "rpi.js rejects an absolute council ref" {
   rpi_probe "$RISKY_SPLIT_ARGS" \
-    "[$PLAN_RESULT,$IMPL_RESULT_RISKY,$ORPHANS_ABSENT,$LEG_PASS,$LEG_FAIL,{\"label\":\"council\",\"result\":{\"rulings\":[{\"id\":\"x:y\",\"ruling\":\"not_real\",\"evidence_refs\":[\"/.agents/ao/disproof.txt\"]}]}}]"
+    "[$PLAN_RESULT,$SNAPSHOT_OK,$IMPL_RESULT_RISKY,$ORPHANS_ABSENT,$LEG_PASS,$LEG_FAIL,{\"label\":\"council\",\"result\":{\"rulings\":[{\"id\":\"x:y\",\"ruling\":\"not_real\",\"evidence_refs\":[\"/.agents/ao/disproof.txt\"]}]}}]"
 
   python3 - "$BATS_TEST_TMPDIR/probe.json" <<'PY'
 import json, sys
@@ -1949,7 +2014,7 @@ PY
 
 @test "rpi.js canonicalizes a containable council ref before resolving it" {
   rpi_probe "$RISKY_SPLIT_ARGS" \
-    "[$PLAN_RESULT,$IMPL_RESULT_RISKY,$ORPHANS_ABSENT,$LEG_PASS,$LEG_FAIL,{\"label\":\"council\",\"result\":{\"rulings\":[{\"id\":\"x:y\",\"ruling\":\"not_real\",\"evidence_refs\":[\"./.agents/ao/./sub/../disproof.txt\"]}]}},{\"label\":\"council-evidence\",\"result\":{\"resolved\":[{\"ref\":\".agents/ao/disproof.txt\",\"exists\":true,\"changed\":false}]}}]"
+    "[$PLAN_RESULT,$SNAPSHOT_OK,$IMPL_RESULT_RISKY,$ORPHANS_ABSENT,$LEG_PASS,$LEG_FAIL,{\"label\":\"council\",\"result\":{\"rulings\":[{\"id\":\"x:y\",\"ruling\":\"not_real\",\"evidence_refs\":[\"./.agents/ao/./sub/../disproof.txt\"]}]}},{\"label\":\"council-evidence\",\"result\":{\"resolved\":[{\"ref\":\".agents/ao/disproof.txt\",\"exists\":true,\"changed\":false}]}}]"
 
   python3 - "$BATS_TEST_TMPDIR/probe.json" <<'PY'
 import json, sys
@@ -1966,7 +2031,7 @@ PY
   leg_ev='{"label":"validate","result":{"verdict":"FAIL","verdictPath":null,"subjectDigest":"aa","criteria":[],"validatorContextId":"v2","findings":[{"id":"x:y","class":"seal.pinning","summary":"cross-family objection"}],"evidenceRefs":[{"ref":"sha256:beef","subjectDigest":"aa","resolves":[]}],"derivedChangedPaths":["tests/a.bats"]}}'
 
   rpi_probe "$RISKY_SPLIT_ARGS" \
-    "[$PLAN_RESULT,$IMPL_RESULT_RISKY,$ORPHANS_ABSENT,$LEG_PASS,$leg_ev,{\"label\":\"council\",\"result\":{\"rulings\":[{\"id\":\"x:y\",\"ruling\":\"not_real\",\"evidence_refs\":[\"sha256:beef\"]}]}}]"
+    "[$PLAN_RESULT,$SNAPSHOT_OK,$IMPL_RESULT_RISKY,$ORPHANS_ABSENT,$LEG_PASS,$leg_ev,{\"label\":\"council\",\"result\":{\"rulings\":[{\"id\":\"x:y\",\"ruling\":\"not_real\",\"evidence_refs\":[\"sha256:beef\"]}]}}]"
 
   python3 - "$BATS_TEST_TMPDIR/probe.json" <<'PY'
 import json, sys
@@ -1982,7 +2047,7 @@ PY
   leg_ev="{\"label\":\"validate\",\"result\":{\"verdict\":\"FAIL\",\"verdictPath\":null,\"subjectDigest\":\"aa\",\"criteria\":[],\"validatorContextId\":\"v2\",\"findings\":[{\"id\":\"x:y\",\"class\":\"seal.pinning\",\"summary\":\"cross-family objection\"}],\"evidenceRefs\":[{\"ref\":\"sha256:$d\",\"subjectDigest\":\"stale\",\"resolves\":[]}],\"derivedChangedPaths\":[\"tests/a.bats\"]}}"
 
   rpi_probe "$RISKY_SPLIT_ARGS" \
-    "[$PLAN_RESULT,$IMPL_RESULT_RISKY,$ORPHANS_ABSENT,$LEG_PASS,$leg_ev,{\"label\":\"council\",\"result\":{\"rulings\":[{\"id\":\"x:y\",\"ruling\":\"not_real\",\"evidence_refs\":[\"sha256:$d\"]}]}}]"
+    "[$PLAN_RESULT,$SNAPSHOT_OK,$IMPL_RESULT_RISKY,$ORPHANS_ABSENT,$LEG_PASS,$leg_ev,{\"label\":\"council\",\"result\":{\"rulings\":[{\"id\":\"x:y\",\"ruling\":\"not_real\",\"evidence_refs\":[\"sha256:$d\"]}]}}]"
 
   python3 - "$BATS_TEST_TMPDIR/probe.json" <<'PY'
 import json, sys
@@ -1998,7 +2063,7 @@ PY
   leg_ev="{\"label\":\"validate\",\"result\":{\"verdict\":\"FAIL\",\"verdictPath\":null,\"subjectDigest\":\"aa\",\"criteria\":[],\"validatorContextId\":\"v2\",\"findings\":[{\"id\":\"x:y\",\"class\":\"seal.pinning\",\"summary\":\"cross-family objection\"}],\"evidenceRefs\":[{\"ref\":\"sha256:$d\",\"subjectDigest\":\"aa\",\"resolves\":[]}],\"derivedChangedPaths\":[\"tests/a.bats\"]}}"
 
   rpi_probe "$RISKY_SPLIT_ARGS" \
-    "[$PLAN_RESULT,$IMPL_RESULT_RISKY,$ORPHANS_ABSENT,$LEG_PASS,$leg_ev,{\"label\":\"council\",\"result\":{\"rulings\":[{\"id\":\"x:y\",\"ruling\":\"not_real\",\"evidence_refs\":[\"sha256:$d\"]}]}}]"
+    "[$PLAN_RESULT,$SNAPSHOT_OK,$IMPL_RESULT_RISKY,$ORPHANS_ABSENT,$LEG_PASS,$leg_ev,{\"label\":\"council\",\"result\":{\"rulings\":[{\"id\":\"x:y\",\"ruling\":\"not_real\",\"evidence_refs\":[\"sha256:$d\"]}]}}]"
 
   python3 - "$BATS_TEST_TMPDIR/probe.json" <<'PY'
 import json, sys
@@ -2010,7 +2075,7 @@ PY
 
 @test "rpi.js fails the council closed when one id is ruled twice" {
   rpi_probe "$RISKY_SPLIT_ARGS" \
-    "[$PLAN_RESULT,$IMPL_RESULT_RISKY,$ORPHANS_ABSENT,$LEG_PASS,$LEG_FAIL,{\"label\":\"council\",\"result\":{\"rulings\":[{\"id\":\"x:y\",\"ruling\":\"real\",\"evidence_refs\":[]},{\"id\":\"x:y\",\"ruling\":\"not_real\",\"evidence_refs\":[\".agents/ao/disproof.txt\"]}]}}]"
+    "[$PLAN_RESULT,$SNAPSHOT_OK,$IMPL_RESULT_RISKY,$ORPHANS_ABSENT,$LEG_PASS,$LEG_FAIL,{\"label\":\"council\",\"result\":{\"rulings\":[{\"id\":\"x:y\",\"ruling\":\"real\",\"evidence_refs\":[]},{\"id\":\"x:y\",\"ruling\":\"not_real\",\"evidence_refs\":[\".agents/ao/disproof.txt\"]}]}}]"
 
   python3 - "$BATS_TEST_TMPDIR/probe.json" <<'PY'
 import json, sys
@@ -2032,7 +2097,7 @@ PY
   leg_np='{"label":"validate","result":{"verdict":"NOT_PROVEN","verdictPath":null,"subjectDigest":"aa","criteria":[],"validatorContextId":"v2","findings":[],"evidenceRefs":[],"derivedChangedPaths":["tests/a.bats"]}}'
 
   rpi_probe "$RISKY_SPLIT_ARGS" \
-    "[$PLAN_RESULT,$IMPL_RESULT_RISKY,$ORPHANS_ABSENT,$LEG_PASS,$leg_np]"
+    "[$PLAN_RESULT,$SNAPSHOT_OK,$IMPL_RESULT_RISKY,$ORPHANS_ABSENT,$LEG_PASS,$leg_np]"
 
   python3 - "$BATS_TEST_TMPDIR/probe.json" <<'PY'
 import json, sys
@@ -2048,7 +2113,7 @@ PY
   # boundDigests included sha256:<subjectDigest> of each leg, so the digest of
   # the very thing under judgment counted as its own disproof.
   rpi_probe "$RISKY_SPLIT_ARGS" \
-    "[$PLAN_RESULT,$IMPL_RESULT_RISKY,$ORPHANS_ABSENT,$LEG_PASS,$LEG_FAIL,{\"label\":\"council\",\"result\":{\"rulings\":[{\"id\":\"x:y\",\"ruling\":\"not_real\",\"evidence_refs\":[\"sha256:aa\"]}]}}]"
+    "[$PLAN_RESULT,$SNAPSHOT_OK,$IMPL_RESULT_RISKY,$ORPHANS_ABSENT,$LEG_PASS,$LEG_FAIL,{\"label\":\"council\",\"result\":{\"rulings\":[{\"id\":\"x:y\",\"ruling\":\"not_real\",\"evidence_refs\":[\"sha256:aa\"]}]}}]"
 
   python3 - "$BATS_TEST_TMPDIR/probe.json" <<'PY'
 import json, sys
@@ -2063,7 +2128,7 @@ PY
   # Any existing repo file resolved, so the subject file itself could close the
   # finding filed against it. A disproof lives in the run's evidence area.
   rpi_probe "$RISKY_SPLIT_ARGS" \
-    "[$PLAN_RESULT,$IMPL_RESULT_RISKY,$ORPHANS_ABSENT,$LEG_PASS,$LEG_FAIL,{\"label\":\"council\",\"result\":{\"rulings\":[{\"id\":\"x:y\",\"ruling\":\"not_real\",\"evidence_refs\":[\"tests/a.bats\"]}]}}]"
+    "[$PLAN_RESULT,$SNAPSHOT_OK,$IMPL_RESULT_RISKY,$ORPHANS_ABSENT,$LEG_PASS,$LEG_FAIL,{\"label\":\"council\",\"result\":{\"rulings\":[{\"id\":\"x:y\",\"ruling\":\"not_real\",\"evidence_refs\":[\"tests/a.bats\"]}]}}]"
 
   python3 - "$BATS_TEST_TMPDIR/probe.json" <<'PY'
 import json, sys
@@ -2081,7 +2146,7 @@ PY
   local impl_ev
   impl_ev='{"label":"implement","result":{"contextId":"author-1","changedPaths":["tests/a.bats",".agents/ao/note.txt"],"checkReceipts":[],"filesSummary":"note"}}'
   rpi_probe "$RISKY_SPLIT_ARGS" \
-    "[$PLAN_RESULT,$impl_ev,$ORPHANS_ABSENT,$LEG_PASS,$LEG_FAIL,{\"label\":\"council\",\"result\":{\"rulings\":[{\"id\":\"x:y\",\"ruling\":\"not_real\",\"evidence_refs\":[\".agents/ao/note.txt\"]}]}},{\"label\":\"council-evidence\",\"result\":{\"resolved\":[{\"ref\":\".agents/ao/note.txt\",\"exists\":true,\"changed\":true}]}}]"
+    "[$PLAN_RESULT,$SNAPSHOT_OK,$impl_ev,$ORPHANS_ABSENT,$LEG_PASS,$LEG_FAIL,{\"label\":\"council\",\"result\":{\"rulings\":[{\"id\":\"x:y\",\"ruling\":\"not_real\",\"evidence_refs\":[\".agents/ao/note.txt\"]}]}},{\"label\":\"council-evidence\",\"result\":{\"resolved\":[{\"ref\":\".agents/ao/note.txt\",\"exists\":true,\"changed\":true}]}}]"
 
   python3 - "$BATS_TEST_TMPDIR/probe.json" <<'PY'
 import json, sys
@@ -2097,7 +2162,7 @@ PY
 
 @test "rpi.js closes nothing on a council ref that does not resolve in the tree" {
   rpi_probe "$RISKY_SPLIT_ARGS" \
-    "[$PLAN_RESULT,$IMPL_RESULT_RISKY,$ORPHANS_ABSENT,$LEG_PASS,$LEG_FAIL,{\"label\":\"council\",\"result\":{\"rulings\":[{\"id\":\"x:y\",\"ruling\":\"not_real\",\"evidence_refs\":[\"tests/never-written.txt\"]}]}},{\"label\":\"council-evidence\",\"result\":{\"resolved\":[{\"ref\":\"tests/never-written.txt\",\"exists\":false}]}}]"
+    "[$PLAN_RESULT,$SNAPSHOT_OK,$IMPL_RESULT_RISKY,$ORPHANS_ABSENT,$LEG_PASS,$LEG_FAIL,{\"label\":\"council\",\"result\":{\"rulings\":[{\"id\":\"x:y\",\"ruling\":\"not_real\",\"evidence_refs\":[\"tests/never-written.txt\"]}]}},{\"label\":\"council-evidence\",\"result\":{\"resolved\":[{\"ref\":\"tests/never-written.txt\",\"exists\":false}]}}]"
 
   python3 - "$BATS_TEST_TMPDIR/probe.json" <<'PY'
 import json, sys
@@ -2111,7 +2176,7 @@ PY
 
 @test "rpi.js closes nothing on a blank council evidence ref" {
   rpi_probe "$RISKY_SPLIT_ARGS" \
-    "[$PLAN_RESULT,$IMPL_RESULT_RISKY,$ORPHANS_ABSENT,$LEG_PASS,$LEG_FAIL,{\"label\":\"council\",\"result\":{\"rulings\":[{\"id\":\"x:y\",\"ruling\":\"not_real\",\"evidence_refs\":[\"\",\"   \"]}]}}]"
+    "[$PLAN_RESULT,$SNAPSHOT_OK,$IMPL_RESULT_RISKY,$ORPHANS_ABSENT,$LEG_PASS,$LEG_FAIL,{\"label\":\"council\",\"result\":{\"rulings\":[{\"id\":\"x:y\",\"ruling\":\"not_real\",\"evidence_refs\":[\"\",\"   \"]}]}}]"
 
   python3 - "$BATS_TEST_TMPDIR/probe.json" <<'PY'
 import json, sys
@@ -2133,7 +2198,7 @@ PY
   leg_fail_ev="{\"label\":\"validate\",\"result\":{\"verdict\":\"FAIL\",\"verdictPath\":null,\"subjectDigest\":\"aa\",\"criteria\":[],\"validatorContextId\":\"v2\",\"findings\":[{\"id\":\"x:y\",\"class\":\"seal.pinning\",\"summary\":\"cross-family objection\"}],\"evidenceRefs\":[{\"ref\":\"sha256:$d\",\"subjectDigest\":\"aa\",\"resolves\":[]}],\"derivedChangedPaths\":[\"tests/a.bats\"]}}"
 
   rpi_probe "$RISKY_SPLIT_ARGS" \
-    "[$PLAN_RESULT,$IMPL_RESULT_RISKY,$ORPHANS_ABSENT,$LEG_PASS,$leg_fail_ev,{\"label\":\"council\",\"result\":{\"rulings\":[{\"id\":\"x:y\",\"ruling\":\"not_real\",\"evidence_refs\":[\"sha256:$d\"]}]}}]"
+    "[$PLAN_RESULT,$SNAPSHOT_OK,$IMPL_RESULT_RISKY,$ORPHANS_ABSENT,$LEG_PASS,$leg_fail_ev,{\"label\":\"council\",\"result\":{\"rulings\":[{\"id\":\"x:y\",\"ruling\":\"not_real\",\"evidence_refs\":[\"sha256:$d\"]}]}}]"
 
   python3 - "$BATS_TEST_TMPDIR/probe.json" <<'PY'
 import json, sys
@@ -2146,7 +2211,7 @@ PY
 
 @test "rpi.js closes nothing on a sha256 ref no leg ever bound" {
   rpi_probe "$RISKY_SPLIT_ARGS" \
-    "[$PLAN_RESULT,$IMPL_RESULT_RISKY,$ORPHANS_ABSENT,$LEG_PASS,$LEG_FAIL,{\"label\":\"council\",\"result\":{\"rulings\":[{\"id\":\"x:y\",\"ruling\":\"not_real\",\"evidence_refs\":[\"sha256:invented\"]}]}}]"
+    "[$PLAN_RESULT,$SNAPSHOT_OK,$IMPL_RESULT_RISKY,$ORPHANS_ABSENT,$LEG_PASS,$LEG_FAIL,{\"label\":\"council\",\"result\":{\"rulings\":[{\"id\":\"x:y\",\"ruling\":\"not_real\",\"evidence_refs\":[\"sha256:invented\"]}]}}]"
 
   python3 - "$BATS_TEST_TMPDIR/probe.json" <<'PY'
 import json, sys
@@ -2158,7 +2223,7 @@ PY
 
 @test "rpi.js convenes a council that adjudicates findings and never a verdict" {
   rpi_probe "$RISKY_SPLIT_ARGS" \
-    "[$PLAN_RESULT,$IMPL_RESULT_RISKY,$ORPHANS_ABSENT,$LEG_PASS,$LEG_FAIL,{\"label\":\"council\",\"result\":{\"rulings\":[{\"id\":\"x:y\",\"ruling\":\"real\",\"evidence_refs\":[\".agents/ao/repro.txt\"]}]}}]"
+    "[$PLAN_RESULT,$SNAPSHOT_OK,$IMPL_RESULT_RISKY,$ORPHANS_ABSENT,$LEG_PASS,$LEG_FAIL,{\"label\":\"council\",\"result\":{\"rulings\":[{\"id\":\"x:y\",\"ruling\":\"real\",\"evidence_refs\":[\".agents/ao/repro.txt\"]}]}}]"
 
   python3 - "$BATS_TEST_TMPDIR/probe.json" <<'PY'
 import json, sys
@@ -2183,7 +2248,7 @@ PY
 
 @test "rpi.js closes a finding only on a council disproof that carries evidence" {
   rpi_probe "$RISKY_SPLIT_ARGS" \
-    "[$PLAN_RESULT,$IMPL_RESULT_RISKY,$ORPHANS_ABSENT,$LEG_PASS,$LEG_FAIL,{\"label\":\"council\",\"result\":{\"rulings\":[{\"id\":\"x:y\",\"ruling\":\"not_real\",\"evidence_refs\":[]}]}}]"
+    "[$PLAN_RESULT,$SNAPSHOT_OK,$IMPL_RESULT_RISKY,$ORPHANS_ABSENT,$LEG_PASS,$LEG_FAIL,{\"label\":\"council\",\"result\":{\"rulings\":[{\"id\":\"x:y\",\"ruling\":\"not_real\",\"evidence_refs\":[]}]}}]"
 
   python3 - "$BATS_TEST_TMPDIR/probe.json" <<'PY'
 import json, sys
@@ -2197,7 +2262,7 @@ PY
 
 @test "rpi.js treats a FAIL leg whose findings the council all closed as NOT_PROVEN" {
   rpi_probe "$RISKY_SPLIT_ARGS" \
-    "[$PLAN_RESULT,$IMPL_RESULT_RISKY,$ORPHANS_ABSENT,$LEG_PASS,$LEG_FAIL,{\"label\":\"council\",\"result\":{\"rulings\":[{\"id\":\"x:y\",\"ruling\":\"not_real\",\"evidence_refs\":[\".agents/ao/disproof.txt\"]}]}},{\"label\":\"council-evidence\",\"result\":{\"resolved\":[{\"ref\":\".agents/ao/disproof.txt\",\"exists\":true}]}}]"
+    "[$PLAN_RESULT,$SNAPSHOT_OK,$IMPL_RESULT_RISKY,$ORPHANS_ABSENT,$LEG_PASS,$LEG_FAIL,{\"label\":\"council\",\"result\":{\"rulings\":[{\"id\":\"x:y\",\"ruling\":\"not_real\",\"evidence_refs\":[\".agents/ao/disproof.txt\"]}]}},{\"label\":\"council-evidence\",\"result\":{\"resolved\":[{\"ref\":\".agents/ao/disproof.txt\",\"exists\":true}]}}]"
 
   python3 - "$BATS_TEST_TMPDIR/probe.json" <<'PY'
 import json, sys
@@ -2215,7 +2280,7 @@ PY
 
 @test "rpi.js keeps every finding open when the council does not rule" {
   rpi_probe "$RISKY_SPLIT_ARGS" \
-    "[$PLAN_RESULT,$IMPL_RESULT_RISKY,$ORPHANS_ABSENT,$LEG_PASS,$LEG_FAIL,{\"label\":\"council\"}]"
+    "[$PLAN_RESULT,$SNAPSHOT_OK,$IMPL_RESULT_RISKY,$ORPHANS_ABSENT,$LEG_PASS,$LEG_FAIL,{\"label\":\"council\"}]"
 
   python3 - "$BATS_TEST_TMPDIR/probe.json" <<'PY'
 import json, sys
@@ -2228,7 +2293,7 @@ PY
 
 @test "rpi.js ignores a council ruling on a finding that is not on the table" {
   rpi_probe "$RISKY_SPLIT_ARGS" \
-    "[$PLAN_RESULT,$IMPL_RESULT_RISKY,$ORPHANS_ABSENT,$LEG_PASS,$LEG_FAIL,{\"label\":\"council\",\"result\":{\"rulings\":[{\"id\":\"invented:id\",\"ruling\":\"not_real\",\"evidence_refs\":[\"x\"]}]}}]"
+    "[$PLAN_RESULT,$SNAPSHOT_OK,$IMPL_RESULT_RISKY,$ORPHANS_ABSENT,$LEG_PASS,$LEG_FAIL,{\"label\":\"council\",\"result\":{\"rulings\":[{\"id\":\"invented:id\",\"ruling\":\"not_real\",\"evidence_refs\":[\"x\"]}]}}]"
 
   python3 - "$BATS_TEST_TMPDIR/probe.json" <<'PY'
 import json, sys
@@ -2250,7 +2315,7 @@ PY
 
   rpi_probe_refused \
     '{"intent":"do the thing","writeScope":["docs/**"],"acceptance":"the behavior holds","crossFamily":{"command":"codex exec --read-only judge"},"repairRounds":0}' \
-    "[$PLAN_RESULT_SAFE,$IMPL_RESULT,$ORPHANS_ABSENT,$a,$b]"
+    "[$PLAN_RESULT_SAFE,$SNAPSHOT_OK,$IMPL_RESULT,$ORPHANS_ABSENT,$a,$b]"
   [[ "$output" == *"x:y"* ]]
   [[ "$output" == *"class"* ]]
 }
@@ -2264,7 +2329,7 @@ PY
 
   rpi_probe \
     '{"intent":"do the thing","writeScope":["docs/**"],"acceptance":"the behavior holds","crossFamily":{"command":"codex exec --read-only judge"},"repairRounds":0}' \
-    "[$PLAN_RESULT_SAFE,$IMPL_RESULT,$ORPHANS_ABSENT,$a,$b]"
+    "[$PLAN_RESULT_SAFE,$SNAPSHOT_OK,$IMPL_RESULT,$ORPHANS_ABSENT,$a,$b]"
 
   python3 - "$BATS_TEST_TMPDIR/probe.json" <<'PY'
 import json, sys
@@ -2282,7 +2347,7 @@ PY
 @test "rpi.js keeps worst-of on a non-risky split and never convenes a council" {
   rpi_probe \
     '{"intent":"do the thing","writeScope":["docs/**"],"acceptance":"the behavior holds","crossFamily":{"command":"codex exec --read-only judge"},"repairRounds":0}' \
-    "[$PLAN_RESULT_SAFE,$IMPL_RESULT,$ORPHANS_ABSENT,{\"label\":\"validate\",\"result\":{\"verdict\":\"PASS\",\"verdictPath\":\"/tmp/v.json\",\"subjectDigest\":\"aa\",\"criteria\":[],\"validatorContextId\":\"v1\",\"findings\":[],\"evidenceRefs\":[],\"derivedChangedPaths\":[\"docs/a.md\"]}},{\"label\":\"validate\",\"result\":{\"verdict\":\"FAIL\",\"verdictPath\":null,\"subjectDigest\":\"aa\",\"criteria\":[],\"validatorContextId\":\"v2\",\"findings\":[{\"id\":\"x:y\",\"summary\":\"single-family objection\"}],\"evidenceRefs\":[],\"derivedChangedPaths\":[\"docs/a.md\"]}}]"
+    "[$PLAN_RESULT_SAFE,$SNAPSHOT_OK,$IMPL_RESULT,$ORPHANS_ABSENT,{\"label\":\"validate\",\"result\":{\"verdict\":\"PASS\",\"verdictPath\":\"/tmp/v.json\",\"subjectDigest\":\"aa\",\"criteria\":[],\"validatorContextId\":\"v1\",\"findings\":[],\"evidenceRefs\":[],\"derivedChangedPaths\":[\"docs/a.md\"]}},{\"label\":\"validate\",\"result\":{\"verdict\":\"FAIL\",\"verdictPath\":null,\"subjectDigest\":\"aa\",\"criteria\":[],\"validatorContextId\":\"v2\",\"findings\":[{\"id\":\"x:y\",\"summary\":\"single-family objection\"}],\"evidenceRefs\":[],\"derivedChangedPaths\":[\"docs/a.md\"]}}]"
 
   python3 - "$BATS_TEST_TMPDIR/probe.json" <<'PY'
 import json, sys

@@ -140,6 +140,24 @@ def invoke_once(
             "Plan must declare acceptance_digest as the SHA-256 of the exact resolved "
             "intent bytes it snapshotted (validate.py snapshot-intent emits it)"
         )
+    # THE SNAPSHOT BINDING. A digest is a claim about bytes, and a claim about
+    # bytes nobody re-derived is the author's word. Plan must therefore hand
+    # back the snapshot it took and the digest it independently recomputed over
+    # those exact bytes; equality here is the composed check, not a
+    # self-comparison, and it is refused before Implement is dispatched. Without
+    # it the whole identity chain rests on one assertion, which is precisely
+    # what a fresh validator exists not to accept.
+    snapshot_digest = resolved_intent.get("intent_snapshot_digest")
+    if snapshot_digest is not None:
+        if not valid_digest(snapshot_digest):
+            raise ValueError(
+                "the recomputed intent snapshot digest must be a lowercase hex SHA-256"
+            )
+        if snapshot_digest != acceptance_digest:
+            raise ValueError(
+                "the intent snapshot does not hash to the acceptance digest Plan declared; "
+                "nothing may be built on an intent identity that does not bind"
+            )
 
     subject = implement_phase(resolved_intent)
     if subject is None:
