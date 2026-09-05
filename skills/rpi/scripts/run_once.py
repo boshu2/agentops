@@ -16,6 +16,7 @@ caller declares `repair_rounds`.
 from __future__ import annotations
 
 from collections.abc import Callable, Mapping, Sequence
+import hashlib
 import re
 from typing import Any
 
@@ -41,7 +42,7 @@ DIGEST_PATTERN = re.compile(r"^[0-9a-f]{64}$")
 
 def valid_digest(value: Any) -> bool:
     """True for a lowercase hex SHA-256, the only shape an identity may take."""
-    return isinstance(value, str) and bool(DIGEST_PATTERN.match(value))
+    return isinstance(value, str) and bool(DIGEST_PATTERN.fullmatch(value))
 
 
 def valid_string_list(value: Any) -> bool:
@@ -112,6 +113,62 @@ def report(
     }
 
 
+def verify_intent_snapshot(
+    resolved_intent: Mapping[str, Any], acceptance_digest: str
+) -> str:
+    """Re-derive the intent snapshot digest and bind it, or refuse.
+
+    Returns the digest it derived. Raises when the snapshot is absent,
+    malformed, or hashes to anything other than the acceptance digest Plan
+    declared. This module performs no I/O, so the caller supplies the bytes or
+    a callable that produces them; what it may never supply is nothing at all.
+    """
+    payload = resolved_intent.get("intent_snapshot_bytes")
+    verifier = resolved_intent.get("verify_snapshot")
+    if payload is None and verifier is None:
+        raise ValueError(
+            "Plan must return the intent snapshot to be verified, as "
+            "intent_snapshot_bytes or a verify_snapshot callable; a declared digest "
+            "nobody re-derived is the author's word, not an identity"
+        )
+    if payload is not None and verifier is not None:
+        raise ValueError(
+            "Plan must return exactly one of intent_snapshot_bytes or verify_snapshot"
+        )
+    from_verifier = False
+    if verifier is not None:
+        if not callable(verifier):
+            raise ValueError("verify_snapshot must be callable")
+        payload = verifier()
+        from_verifier = True
+    if isinstance(payload, str):
+        # Only a callable that re-derived the digest itself may report a digest;
+        # a string handed over as intent_snapshot_bytes is a declaration, not bytes.
+        if not from_verifier:
+            raise ValueError(
+                "intent_snapshot_bytes must be bytes; a digest string is the author's "
+                "word, not a re-derivation"
+            )
+        derived = payload
+    elif isinstance(payload, (bytes, bytearray)):
+        derived = hashlib.sha256(bytes(payload)).hexdigest()
+    else:
+        raise ValueError(
+            "the intent snapshot must be bytes, or a lowercase hex SHA-256 the "
+            "verifier re-derived from them"
+        )
+    if not valid_digest(derived):
+        raise ValueError(
+            "the re-derived intent snapshot digest must be a lowercase hex SHA-256"
+        )
+    if derived != acceptance_digest:
+        raise ValueError(
+            "the intent snapshot does not hash to the acceptance digest Plan declared; "
+            "nothing may be built on an intent identity that does not bind"
+        )
+    return derived
+
+
 def invoke_once(
     intent: Any,
     anti_ceremony_guard: Callable[[Any], Mapping[str, Any]],
@@ -140,6 +197,18 @@ def invoke_once(
             "Plan must declare acceptance_digest as the SHA-256 of the exact resolved "
             "intent bytes it snapshotted (validate.py snapshot-intent emits it)"
         )
+    # THE SNAPSHOT BINDING, and it is REQUIRED. A digest is a claim about bytes,
+    # and a claim about bytes nobody re-derived is the author's word. Making the
+    # re-derivation optional made the whole identity chain optional with it: a
+    # Plan that simply omitted the field got everything a verified one got.
+    #
+    # Plan must therefore hand back the snapshot itself, one of:
+    #   `intent_snapshot_bytes`  the exact bytes, hashed HERE
+    #   `verify_snapshot`        a zero-argument callable returning those bytes,
+    #                            or the lowercase hex SHA-256 it re-derived
+    # Equality against the declared acceptance digest is the composed check, not
+    # a self-comparison, and it is refused before Implement is dispatched.
+    verify_intent_snapshot(resolved_intent, acceptance_digest)
 
     subject = implement_phase(resolved_intent)
     if subject is None:
@@ -213,10 +282,11 @@ def invoke_once(
 # while every condition of the convergence law holds, so the loop cannot grind,
 # cannot re-open settled ground, and cannot spin without moving the subject.
 #
-# Condition ordering is deliberate. A reopened id is diagnosed before a grown
-# set, so the operator is told the specific regression rather than the generic
-# symptom; progress is checked last because it is the only condition that can
-# be satisfied by evidence instead of by bytes.
+# Condition ordering is deliberate. A reopened id is diagnosed before a
+# reopened class, and a reopened class before a grown set, so the operator is
+# told the specific regression rather than the generic symptom; progress is
+# checked last because it is the only condition that can be satisfied by
+# evidence instead of by bytes.
 
 REPAIR_ROUNDS_DEFAULT = 2
 
@@ -227,6 +297,7 @@ STOP_REASONS = (
     "diversity_unsatisfied",
     "repair_budget_exhausted",
     "reopened_finding",
+    "class_reopened",
     "finding_set_grew",
     "no_subject_or_evidence_change",
     "not_converged",
@@ -289,9 +360,36 @@ def normalize_round(value: Any) -> dict[str, Any]:
             if finding_id in leg_ids:
                 raise ValueError(f"finding id {finding_id!r} appears twice in one validate leg")
             leg_ids.add(finding_id)
-            # Last leg wins on wording; the id is the identity, so a reworded
-            # summary is the same finding and never counts as a new one.
-            open_findings[finding_id] = dict(finding)
+            # The CLASS is optional and stable: it names the KIND of defect
+            # ("seal.pinning"), so a repair phase that keeps minting fresh ids
+            # for the same kind is visible to the law. Absent means the class
+            # conditions simply do not apply to this finding.
+            if "class" in finding:
+                finding_class = finding["class"]
+                if not isinstance(finding_class, str) or not finding_class.strip():
+                    raise ValueError("a finding class must be a nonempty string when given")
+            # Last leg wins on WORDING; the id is the identity, so a reworded
+            # summary is the same finding and never counts as a new one. The
+            # CLASS is not wording. Two legs naming one id with different kinds
+            # is an identity collision, and folding it last-write-wins hands the
+            # law a key that means two things, so the class conditions then
+            # reason over an identity that does not exist. Compatible identities
+            # union: a leg that names no kind never erases one another leg named.
+            previous = open_findings.get(finding_id)
+            merged = dict(finding)
+            if previous is not None:
+                before = previous.get("class")
+                after = merged.get("class")
+                before = before.strip() if isinstance(before, str) else None
+                after = after.strip() if isinstance(after, str) else None
+                if before is not None and after is not None and before != after:
+                    raise ValueError(
+                        f"validate legs named finding {finding_id!r} with different classes "
+                        f"({before!r} and {after!r}); one id cannot carry two kinds"
+                    )
+                if after is None and before is not None:
+                    merged["class"] = before
+            open_findings[finding_id] = merged
         if leg_status == "PASS" and leg_ids:
             raise ValueError("a PASS leg cannot carry open findings")
         if leg_status == "FAIL" and not leg_ids:
@@ -334,10 +432,16 @@ def normalize_round(value: Any) -> dict[str, Any]:
                 raise ValueError(f"{key} must be a list of strings")
             sink.extend(items)
 
+    open_classes = {
+        finding_id: finding["class"].strip()
+        for finding_id, finding in open_findings.items()
+        if isinstance(finding.get("class"), str)
+    }
     return {
         "status": status,
         "open_findings": list(open_findings.values()),
         "open_ids": set(open_findings),
+        "open_classes": open_classes,
         "subject_digest": digest,
         "evidence_refs": evidence_refs,
         "families": families,
@@ -346,24 +450,113 @@ def normalize_round(value: Any) -> dict[str, Any]:
     }
 
 
-def law_violation(
+def assert_stable_classes(
+    previous: Mapping[str, Any], current: Mapping[str, Any]
+) -> None:
+    """Refuse a round that mutates the class of an id that CARRIED THROUGH.
+
+    A class is a stable property of a finding, not a field a round may revise.
+    Mutating it on a surviving id defeats the class law from the inside: in
+    `f1[X] -> f1[Y] -> f2[X]` the id never resolves, so X looks retired with
+    nothing having closed it, and the same kind reappears on a new id
+    unremarked. Adding or removing a class on a surviving id is the same
+    mutation wearing a different sign.
+
+    This is an INVALID round, not a law violation: the law reasons over stable
+    keys, and a round that moves the keys gives it nothing to reason with.
+    """
+    for finding_id in sorted(previous["open_ids"] & current["open_ids"]):
+        before = previous["open_classes"].get(finding_id)
+        after = current["open_classes"].get(finding_id)
+        if before != after:
+            raise ValueError(
+                f"finding {finding_id!r} changed class from {before!r} to {after!r} "
+                "while still open; a finding class is stable across rounds"
+            )
+
+
+def reopened_classes(
+    previous: Mapping[str, Any],
+    current: Mapping[str, Any],
+    closed_classes: Mapping[str, str] | None = None,
+) -> list[str]:
+    """Return the classes this round reopened, sorted, empty when none.
+
+    Condition 3b. Ids alone cannot see a repair phase that keeps renaming the
+    same KIND of defect; that is the failure the 2026-09-03 run produced three
+    rounds running while the id count stayed flat.
+
+    SURVIVORS are `previous ∩ current` — the ids that actually carried through.
+    A newly minted id is NOT a survivor, however familiar its class: treating it
+    as one is precisely the hole that let a continuous rename f1[X] -> f2[X] ->
+    f3[X] run forever, because each round's fresh id kept its own class looking
+    "still open" and so never retired.
+
+    A class reopens when a NEW id in this round carries either
+    - a class an EARLIER round closed (`closed_classes`), or
+    - a class carried by an id THIS round resolved, with no surviving prior id
+      still carrying it.
+    """
+    closed_classes = closed_classes or {}
+    survivors = previous["open_ids"] & current["open_ids"]
+    resolved = previous["open_ids"] - current["open_ids"]
+    appeared = current["open_ids"] - previous["open_ids"]
+    surviving = {
+        previous["open_classes"][finding_id]
+        for finding_id in survivors
+        if finding_id in previous["open_classes"]
+    } | {
+        current["open_classes"][finding_id]
+        for finding_id in survivors
+        if finding_id in current["open_classes"]
+    }
+    retired_here = {
+        previous["open_classes"][finding_id]
+        for finding_id in resolved
+        if finding_id in previous["open_classes"]
+    } - surviving
+    reopened = {
+        current["open_classes"][finding_id]
+        for finding_id in appeared
+        if finding_id in current["open_classes"]
+        and (
+            current["open_classes"][finding_id] in closed_classes
+            or current["open_classes"][finding_id] in retired_here
+        )
+    }
+    return sorted(reopened)
+
+
+def law_violations(
     previous: Mapping[str, Any],
     current: Mapping[str, Any],
     closed_ids: set[str],
-) -> str | None:
-    """Return the violated convergence-law condition, or None when all hold.
+    closed_classes: Mapping[str, str] | None = None,
+) -> list[str]:
+    """Return every convergence-law condition this round violates, in order.
 
     Condition 1 (the caller's `repair_rounds`) is a precondition on admission
     and is checked by `run_repair_phase` before a round is consumed; conditions
-    2, 3, and 4 are properties of the round that was produced.
+    2, 3, 3b, and 4 are properties of the round that was produced.
+
+    Ordering is the DIAGNOSIS order, not a filter: a reopened id is named before
+    a reopened class, and a reopened class before a grown set, so the operator
+    reads the most specific regression first. The class disposition is computed
+    INDEPENDENTLY of the id precedence — a round that reopens both an id and its
+    class reports both, because "we already told you about the id" is how a
+    renaming pattern stays invisible.
     """
-    reopened = current["open_ids"] & closed_ids
-    if reopened:
-        return "reopened_finding"
+    violations = []
+    if current["open_ids"] & closed_ids:
+        violations.append("reopened_finding")
+    if reopened_classes(previous, current, closed_classes):
+        violations.append("class_reopened")
+    if violations:
+        return violations
     if len(current["open_ids"]) > len(previous["open_ids"]):
-        return "finding_set_grew"
+        return ["finding_set_grew"]
     if current["subject_digest"] != previous["subject_digest"]:
-        return None
+        return []
     previous_refs = {e["ref"] for e in previous["evidence_refs"]}
     resolved = previous["open_ids"] - current["open_ids"]
     # The evidence branch is NOT_PROVEN-only by construction, on both sides: a
@@ -383,8 +576,19 @@ def law_violation(
         and current["status"] != "FAIL"
         and binding_evidence
     ):
-        return None
-    return "no_subject_or_evidence_change"
+        return []
+    return ["no_subject_or_evidence_change"]
+
+
+def law_violation(
+    previous: Mapping[str, Any],
+    current: Mapping[str, Any],
+    closed_ids: set[str],
+    closed_classes: Mapping[str, str] | None = None,
+) -> str | None:
+    """The single most specific violated condition, or None when all hold."""
+    violations = law_violations(previous, current, closed_ids, closed_classes)
+    return violations[0] if violations else None
 
 
 def run_repair_phase(
@@ -420,10 +624,15 @@ def run_repair_phase(
 
     checked: list[str] = []
     closed_ids: set[str] = set()
+    # class -> the finding id whose closure retired it. A class is retired only
+    # once no open finding still carries it, so a surviving sibling never makes
+    # its own class a violation.
+    closed_classes: dict[str, str] = {}
     rounds_used = 0
     current = normalize_round(validations[0])
     previous = current
     stop_reason = "not_converged"
+    stop_reasons: list[str] = []
     law_stopped = False
 
     for index, raw_candidate in enumerate(validations):
@@ -434,17 +643,39 @@ def run_repair_phase(
                 stop_reason = "repair_budget_exhausted"
                 break
             candidate = normalize_round(raw_candidate)
+            assert_stable_classes(previous, candidate)
             rounds_used += 1
             current = candidate
             checked.append(
                 f"repair round {rounds_used}: {len(current['open_ids'])} open findings"
             )
-            violation = law_violation(previous, current, closed_ids)
-            if violation is not None:
-                stop_reason = violation
+            violations = law_violations(previous, current, closed_ids, closed_classes)
+            if violations:
+                # Precedence orders the diagnosis; it never deletes the other
+                # dispositions, so both are on the record and in the report.
+                stop_reason = violations[0]
+                stop_reasons = list(violations)
+                checked.append(
+                    f"repair round {rounds_used}: convergence law: "
+                    + ", ".join(violations)
+                )
                 law_stopped = True
                 break
-            closed_ids |= previous["open_ids"] - current["open_ids"]
+            resolved_ids = previous["open_ids"] - current["open_ids"]
+            closed_ids |= resolved_ids
+            still_open = set(current["open_classes"].values())
+            # Comprehension, not a nested loop: the only iteration this phase
+            # performs is over the supplied rounds. Reverse order lets the
+            # lowest id win the class, so the record is deterministic.
+            retired = {
+                previous["open_classes"][resolved_id]: resolved_id
+                for resolved_id in sorted(resolved_ids, reverse=True)
+                if previous["open_classes"].get(resolved_id) is not None
+                and previous["open_classes"][resolved_id] not in still_open
+            }
+            closed_classes.update(
+                {k: v for k, v in retired.items() if k not in closed_classes}
+            )
         else:
             checked.append(f"repair round 0: {len(current['open_ids'])} open findings")
 
@@ -462,8 +693,16 @@ def run_repair_phase(
     if stop_reason == "not_converged" and rounds_used >= repair_rounds and current["open_ids"]:
         # Findings remain and the caller's bound is spent: name it as such.
         stop_reason = "repair_budget_exhausted"
+    if not stop_reasons:
+        stop_reasons = [stop_reason]
 
     status = current["status"]
+    # A class reopen means each round named a different id for the same kind of
+    # defect, so no round's ruling binds to a converging subject: the honest
+    # outcome is NOT_PROVEN, never the churning round's own status. It holds
+    # whether or not a reopened id outranked it in the diagnosis order.
+    if "class_reopened" in stop_reasons:
+        status = "NOT_PROVEN"
     if stop_reason == "diversity_unsatisfied" or (law_stopped and status == "PASS"):
         # A PASS produced by a law-violating round cannot certify anything: a
         # PASS over unchanged bytes after a FAIL is a flip, not a proof. A FAIL
@@ -484,6 +723,7 @@ def run_repair_phase(
         "open_findings": list(current["open_findings"]),
         "rounds_used": rounds_used,
         "stop_reason": stop_reason,
+        "stop_reasons": stop_reasons,
     }
 
 

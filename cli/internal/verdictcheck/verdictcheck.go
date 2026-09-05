@@ -20,6 +20,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"strings"
 	"time"
 )
 
@@ -56,8 +57,16 @@ type Criterion struct {
 }
 
 // Finding mirrors one verdict finding.
+//
+// Class is the convergence law's second key (ADR-0017): it names the KIND of
+// defect so a repair phase that mints a fresh id for the same kind every round
+// is visible. It is OPTIONAL — a finding that belongs to no nameable kind omits
+// it — but present-and-blank is malformed, never the same as absent.
 type Finding struct {
-	ID           string   `json:"id"`
+	ID    string  `json:"id"`
+	Class *string `json:"class,omitempty"`
+	// Summary and EvidenceRefs are required by the schema; Class is not, so it
+	// is a pointer: absent and present-but-blank are different judgments.
 	Summary      string   `json:"summary"`
 	EvidenceRefs []string `json:"evidence_refs"`
 }
@@ -352,6 +361,13 @@ func validateCriteria(criteria []Criterion) error {
 
 func validateFindings(findings []Finding) error {
 	for _, finding := range findings {
+		// A present-but-blank class is a MALFORMED round key, not an absent
+		// one: the law would read a blank as "this defect has no kind" and lose
+		// the very signal the key exists to carry. Reject rather than normalize
+		// (the JSON schema's minLength 1 and the Python writer agree).
+		if finding.Class != nil && strings.TrimSpace(*finding.Class) == "" {
+			return fmt.Errorf("verdict.v2 finding %q has a present but blank class", finding.ID)
+		}
 		if finding.ID == "" || finding.Summary == "" || len(finding.EvidenceRefs) == 0 || !nonemptyStrings(finding.EvidenceRefs) {
 			return fmt.Errorf("verdict.v2 contains an invalid finding")
 		}

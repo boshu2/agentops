@@ -1,0 +1,46 @@
+{
+  "name": "valid-fail-finding-with-class",
+  "description": "FAIL whose finding carries the optional convergence-law class key.",
+  "expected": "valid",
+  "filename_digest": "1626a57074100518deade1364bdaf523819b8c512d7a4bdfc8be254a326747dc",
+  "artifact": {
+    "schema_version": "verdict.v2",
+    "acceptance_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "subject_manifest_digest": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "author_context_id": "ctx-author",
+    "validator_context_id": "ctx-validator",
+    "freshness_attestation": null,
+    "verdict": "FAIL",
+    "criteria": [
+      {
+        "id": "c1",
+        "result": "FAIL",
+        "evidence_refs": [
+          "gate:go.build"
+        ],
+        "reason": "checked"
+      }
+    ],
+    "findings": [
+      {
+        "id": "f1",
+        "class": "seal.pinning",
+        "summary": "the seal is not pinned",
+        "evidence_refs": [
+          "gate:go.build"
+        ]
+      }
+    ],
+    "evidence_refs": [
+      "gate:go.build"
+    ],
+    "checked": [
+      "cli/**"
+    ],
+    "not_checked": [
+      "docs/**"
+    ],
+    "validated_at": "2026-09-05T12:00:00Z",
+    "artifact_digest": "1626a57074100518deade1364bdaf523819b8c512d7a4bdfc8be254a326747dc"
+  }
+}

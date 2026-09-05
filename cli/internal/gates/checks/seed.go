@@ -208,6 +208,33 @@ var (
 		"scripts/check-shell-exec-bits.sh",
 		"tests/scripts/legible-l2-exec-bits.bats",
 	}
+	// docs.claims-tracked (age-legible-membrane-c): a doc under evals/ or
+	// docs/evals/ that names a repo-relative path in backticks is making a
+	// factual claim about the tree — on 2026-09-03 one such claim said an
+	// egress log was "published" while the repo's `*.log` ignore rule kept it
+	// out of the tree, and the fresh verifier accepted the absence because
+	// nothing checked the sentence against the working tree. Routes on the
+	// two doc trees it scans, on `.gitignore` (a rule change can turn a
+	// previously-tracked claim path untracked), on the two trees the claims
+	// POINT AT (deleting a claimed target is what turns a clean sentence
+	// false), and self-reference (the script and its bats live under those two
+	// trees) so editing the gate re-runs it.
+	//
+	// Directory prefixes, not `evals/**/*.md`: the router's own matcher
+	// (cli/internal/gates/routing.go matchGlob) reads a pattern with an
+	// interior `*` as "literal prefix plus literal suffix", so `evals/**/*.md`
+	// demanded a path ENDING in the characters `*/*.md` and selected nothing.
+	// A glob the matcher cannot evaluate is worse than no glob at all: the gate
+	// reads as routed while lying dormant on every doc edit. Over-selecting a
+	// few non-Markdown edits under these trees is the honest cost; the scan is
+	// fast and exits clean when there is nothing to check.
+	docClaimsTrackedPaths = []string{
+		"evals/**",
+		"docs/evals/**",
+		".gitignore",
+		"scripts/**",
+		"tests/**",
+	}
 	// Claude workflows must use `br` (bd/Dolt is retired). operating-loop.js —
 	// the most-viewed content artifact on the public repo — shipped a prompt
 	// telling agents to run `bd ready` with no gate to catch it.
@@ -437,6 +464,13 @@ func init() {
 		// Every other gate invokes scripts through an explicit `bash`, so
 		// nothing else can see this. Advisory-first per the repo convention.
 		{ID: "shell.exec-bits", Tiers: gates.Fast | gates.Full, Match: shellExecBitsPaths, Blocking: false, Backing: "check-shell-exec-bits.sh", RepairHint: "chmod +x <path> && git update-index --chmod=+x <path> for a shebang-bearing script; a sourced library without a shebang belongs under a lib/ directory"},
+		// docs.claims-tracked: BLOCKING — a doc sentence claiming a path is
+		// published/tracked/committed/lives-at is a factual claim about the
+		// tree, and the 2026-09-03 egress-log incident showed a fresh verifier
+		// will accept the claim on trust. The rule is narrow (four claim words,
+		// four governed trees, fenced blocks and globs/placeholders excluded)
+		// and the repository lands clean today, so there is no phase-in cost.
+		{ID: "docs.claims-tracked", Tiers: gates.Fast | gates.Full, Match: docClaimsTrackedPaths, Blocking: true, Backing: "check-doc-claims-tracked.sh", RepairHint: "track the file (git add) if it belongs in the tree, or fix the doc sentence to stop claiming published/tracked/committed/lives-at for a path that is not there"},
 		// go.jsonl-scanner-ratchet: ADVISORY grep-ratchet — a NEW raw
 		// bufio.NewScanner over JSONL outside cli/internal/storage silently
 		// truncates at the 64KB default buffer. Stays advisory PERMANENTLY (unless

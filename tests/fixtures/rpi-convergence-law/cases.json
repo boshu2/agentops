@@ -1,0 +1,460 @@
+{
+  "schema": "rpi-convergence-law-cases.v1",
+  "description": "Adversarial convergence-law rounds, read by BOTH implementations of the law: the Python reference behavior (skills/rpi/tests/test_run_once.py) and the workflow (tests/scripts/agentops-product-boundary.bats drives workflows/rpi.js). A case that only one side reads proves nothing about parity, which is exactly how the continuous-rename hole survived: the class conditions were tested in Python only. `digest` is a single character each suite expands to a 64-character hex digest; `class` is omitted when the finding carries none. A round may carry `legs` instead of `findings`: two validate results judged the same subject, which is how a cross-leg identity collision reaches the law.",
+  "cases": [
+    {
+      "name": "continuous-rename",
+      "description": "f1[X] -> f2[X] -> f3[X]: the open set never grows, no id reopens, and every round names a fresh id for the SAME kind. A newly minted id is not a survivor, so the class it carries reopens the moment its only prior carrier resolves.",
+      "repair_rounds": 3,
+      "rounds": [
+        {
+          "verdict": "FAIL",
+          "digest": "a",
+          "findings": [
+            {
+              "id": "f1",
+              "class": "seal.pinning",
+              "summary": "the seal is not pinned"
+            }
+          ]
+        },
+        {
+          "verdict": "FAIL",
+          "digest": "b",
+          "findings": [
+            {
+              "id": "f2",
+              "class": "seal.pinning",
+              "summary": "the seal is pinned at the wrong layer"
+            }
+          ]
+        },
+        {
+          "verdict": "FAIL",
+          "digest": "c",
+          "findings": [
+            {
+              "id": "f3",
+              "class": "seal.pinning",
+              "summary": "the seal pin is not enforced"
+            }
+          ]
+        }
+      ],
+      "expect": {
+        "kind": "stop",
+        "stop_reason": "class_reopened",
+        "stop_reasons": [
+          "class_reopened"
+        ],
+        "status": "NOT_PROVEN",
+        "rounds_used": 1
+      }
+    },
+    {
+      "name": "classless-middle-round",
+      "description": "f1[X] -> f2[no class] -> f3[X]: the rename hides behind one classless round. The class retired in round 1 must still be remembered in round 2.",
+      "repair_rounds": 3,
+      "rounds": [
+        {
+          "verdict": "FAIL",
+          "digest": "a",
+          "findings": [
+            {
+              "id": "f1",
+              "class": "seal.pinning",
+              "summary": "the seal is not pinned"
+            }
+          ]
+        },
+        {
+          "verdict": "FAIL",
+          "digest": "b",
+          "findings": [
+            {
+              "id": "f2",
+              "summary": "an unrelated defect with no nameable kind"
+            }
+          ]
+        },
+        {
+          "verdict": "FAIL",
+          "digest": "c",
+          "findings": [
+            {
+              "id": "f3",
+              "class": "seal.pinning",
+              "summary": "the seal pin is not enforced"
+            }
+          ]
+        }
+      ],
+      "expect": {
+        "kind": "stop",
+        "stop_reason": "class_reopened",
+        "stop_reasons": [
+          "class_reopened"
+        ],
+        "status": "NOT_PROVEN",
+        "rounds_used": 2
+      }
+    },
+    {
+      "name": "simultaneous-id-and-class-reopen",
+      "description": "The round reopens a closed id AND that id's closed class. The id is the more specific diagnosis and leads, but the class disposition is reported independently rather than swallowed by the precedence.",
+      "repair_rounds": 3,
+      "rounds": [
+        {
+          "verdict": "FAIL",
+          "digest": "a",
+          "findings": [
+            {
+              "id": "f1",
+              "class": "seal.pinning",
+              "summary": "the seal is not pinned"
+            },
+            {
+              "id": "f2",
+              "class": "scope.coverage",
+              "summary": "a changed path is uncovered"
+            }
+          ]
+        },
+        {
+          "verdict": "FAIL",
+          "digest": "b",
+          "findings": [
+            {
+              "id": "f2",
+              "class": "scope.coverage",
+              "summary": "a changed path is uncovered"
+            }
+          ]
+        },
+        {
+          "verdict": "FAIL",
+          "digest": "c",
+          "findings": [
+            {
+              "id": "f1",
+              "class": "seal.pinning",
+              "summary": "the seal is not pinned"
+            }
+          ]
+        }
+      ],
+      "expect": {
+        "kind": "stop",
+        "stop_reason": "reopened_finding",
+        "stop_reasons": [
+          "reopened_finding",
+          "class_reopened"
+        ],
+        "status": "NOT_PROVEN",
+        "rounds_used": 2
+      }
+    },
+    {
+      "name": "distinct-classes-run-on",
+      "description": "Three rounds, three different kinds, each genuinely repaired. The class law must not fire: it exists to catch renaming, not progress.",
+      "repair_rounds": 2,
+      "rounds": [
+        {
+          "verdict": "FAIL",
+          "digest": "a",
+          "findings": [
+            {
+              "id": "f1",
+              "class": "seal.pinning",
+              "summary": "the seal is not pinned"
+            }
+          ]
+        },
+        {
+          "verdict": "FAIL",
+          "digest": "b",
+          "findings": [
+            {
+              "id": "f2",
+              "class": "scope.coverage",
+              "summary": "a changed path is uncovered"
+            }
+          ]
+        },
+        {
+          "verdict": "FAIL",
+          "digest": "c",
+          "findings": [
+            {
+              "id": "f3",
+              "class": "evidence.binding",
+              "summary": "the evidence names no subject digest"
+            }
+          ]
+        }
+      ],
+      "expect": {
+        "kind": "stop",
+        "stop_reason": "repair_budget_exhausted",
+        "stop_reasons": [
+          "repair_budget_exhausted"
+        ],
+        "status": "FAIL",
+        "rounds_used": 2
+      }
+    },
+    {
+      "name": "blank-class",
+      "description": "A present-but-blank class is a malformed round key, not an absent one: reading it as 'no kind' silently disarms the class law.",
+      "repair_rounds": 2,
+      "rounds": [
+        {
+          "verdict": "FAIL",
+          "digest": "a",
+          "findings": [
+            {
+              "id": "f1",
+              "class": "   ",
+              "summary": "the seal is not pinned"
+            }
+          ]
+        }
+      ],
+      "expect": {
+        "kind": "invalid",
+        "message": "class"
+      }
+    },
+    {
+      "name": "duplicate-ids",
+      "description": "One leg naming the same id twice must be rejected, never folded last-write-wins: the id is the law's identity, and a silent fold makes 'the set did not grow' meaningless.",
+      "repair_rounds": 2,
+      "rounds": [
+        {
+          "verdict": "FAIL",
+          "digest": "a",
+          "findings": [
+            {
+              "id": "f1",
+              "class": "seal.pinning",
+              "summary": "the seal is not pinned"
+            },
+            {
+              "id": "f1",
+              "class": "scope.coverage",
+              "summary": "a different defect wearing the same id"
+            }
+          ]
+        }
+      ],
+      "expect": {
+        "kind": "invalid",
+        "message": "twice"
+      }
+    },
+    {
+      "name": "fail-without-findings",
+      "description": "A FAIL that names nothing to repair is a verdict without a subject: the repair stage would have nothing to fix and the law nothing to measure.",
+      "repair_rounds": 2,
+      "rounds": [
+        {
+          "verdict": "FAIL",
+          "digest": "a",
+          "findings": []
+        }
+      ],
+      "expect": {
+        "kind": "invalid",
+        "message": "at least one finding"
+      }
+    },
+    {
+      "name": "class-mutation-on-a-surviving-id",
+      "description": "f1[X] -> f1[Y] -> f2[X]: the id survives while its class silently changes, which retires X with no id ever resolving and lets the same kind reappear on a new id unremarked. A class is a STABLE property of a finding; mutating it on a surviving id is a malformed round, not a repair.",
+      "repair_rounds": 3,
+      "rounds": [
+        {
+          "verdict": "FAIL",
+          "digest": "a",
+          "findings": [
+            {
+              "id": "f1",
+              "class": "seal.pinning",
+              "summary": "the seal is not pinned"
+            }
+          ]
+        },
+        {
+          "verdict": "FAIL",
+          "digest": "b",
+          "findings": [
+            {
+              "id": "f1",
+              "class": "scope.coverage",
+              "summary": "the seal is not pinned"
+            }
+          ]
+        },
+        {
+          "verdict": "FAIL",
+          "digest": "c",
+          "findings": [
+            {
+              "id": "f2",
+              "class": "seal.pinning",
+              "summary": "the seal is still not pinned"
+            }
+          ]
+        }
+      ],
+      "expect": {
+        "kind": "invalid",
+        "message": "class"
+      }
+    },
+    {
+      "name": "class-removed-from-a-surviving-id",
+      "description": "A surviving id that drops its class is the same mutation wearing the other sign: the law would read the kind as retired while the defect is still open under the same id.",
+      "repair_rounds": 3,
+      "rounds": [
+        {
+          "verdict": "FAIL",
+          "digest": "a",
+          "findings": [
+            {
+              "id": "f1",
+              "class": "seal.pinning",
+              "summary": "the seal is not pinned"
+            }
+          ]
+        },
+        {
+          "verdict": "FAIL",
+          "digest": "b",
+          "findings": [
+            {
+              "id": "f1",
+              "summary": "the seal is not pinned"
+            }
+          ]
+        }
+      ],
+      "expect": {
+        "kind": "invalid",
+        "message": "class"
+      }
+    },
+    {
+      "name": "class-added-to-a-surviving-id",
+      "description": "A surviving classless id that acquires a class mid-run backdates a kind onto a defect the earlier rounds never classed.",
+      "repair_rounds": 3,
+      "rounds": [
+        {
+          "verdict": "FAIL",
+          "digest": "a",
+          "findings": [
+            {
+              "id": "f1",
+              "summary": "the seal is not pinned"
+            }
+          ]
+        },
+        {
+          "verdict": "FAIL",
+          "digest": "b",
+          "findings": [
+            {
+              "id": "f1",
+              "class": "seal.pinning",
+              "summary": "the seal is not pinned"
+            }
+          ]
+        }
+      ],
+      "expect": {
+        "kind": "invalid",
+        "message": "class"
+      }
+    },
+    {
+      "name": "cross-leg-class-collision",
+      "description": "Two legs name the same finding id with different kinds. Folding them last-write-wins gives the law one key that means two things, so the class conditions then reason over an identity that does not exist.",
+      "repair_rounds": 0,
+      "cross_family": true,
+      "rounds": [
+        {
+          "verdict": "FAIL",
+          "digest": "a",
+          "legs": [
+            {
+              "verdict": "FAIL",
+              "findings": [
+                {
+                  "id": "x:y",
+                  "class": "seal.pinning",
+                  "summary": "leg one"
+                }
+              ]
+            },
+            {
+              "verdict": "FAIL",
+              "findings": [
+                {
+                  "id": "x:y",
+                  "class": "scope.coverage",
+                  "summary": "leg two"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "expect": {
+        "kind": "invalid",
+        "message": "class"
+      }
+    },
+    {
+      "name": "cross-leg-compatible-identity",
+      "description": "The same id from two legs where only one names a kind is one finding, not a collision: the class survives and the round is valid.",
+      "repair_rounds": 0,
+      "cross_family": true,
+      "rounds": [
+        {
+          "verdict": "FAIL",
+          "digest": "a",
+          "legs": [
+            {
+              "verdict": "FAIL",
+              "findings": [
+                {
+                  "id": "x:y",
+                  "class": "seal.pinning",
+                  "summary": "leg one"
+                }
+              ]
+            },
+            {
+              "verdict": "FAIL",
+              "findings": [
+                {
+                  "id": "x:y",
+                  "summary": "leg two"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "expect": {
+        "kind": "stop",
+        "stop_reason": "repair_budget_exhausted",
+        "stop_reasons": [
+          "repair_budget_exhausted"
+        ],
+        "status": "FAIL",
+        "rounds_used": 0
+      }
+    }
+  ]
+}

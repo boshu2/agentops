@@ -47,6 +47,8 @@ scope as a class (cli/internal/gates/** plus regen outputs), first check
 - The plan names one first check as a runnable command, such as
   `bash scripts/check-x.sh`, and a fresh context given only the source can
   start Implement.
+- On a risky write scope the Plan output carries `binding_judge` and names the
+  evidence the change will orphan, rather than leaving either for verify time.
 
 ## Workflow
 
@@ -62,8 +64,14 @@ scope as a class (cli/internal/gates/** plus regen outputs), first check
    evidence concrete, carrying citations forward; research and specialist
    skills are advisory inputs.
 3. Ensure the source contains acceptance examples, important non-goals, and the
-   allowed write scope. Use lightweight prose or Given/When/Then only where it
-   removes ambiguity. Write-scope checks (folded from the retired `scope` skill):
+   allowed write scope. Name `write_scope`, whether it hits a risky surface
+   (the list [`validate`](../validate/SKILL.md) owns), the caller's
+   `repair_rounds`, and the evidence this change will orphan: bound scorecards
+   or contracts whose evaluator files sit in the write scope. Recapturing that
+   evidence is work this plan carries, not a discovery for verify time. Use
+   lightweight prose or
+   Given/When/Then only where it removes ambiguity. Write-scope checks (folded
+   from the retired `scope` skill):
    - patterns are normalized repository-relative paths;
    - includes cover the behavior without granting unrelated directories;
    - excludes do not contradict required changes;
@@ -72,6 +80,20 @@ scope as a class (cli/internal/gates/** plus regen outputs), first check
 4. Name the first useful acceptance check.
 5. If authorized and the source is writable, update that bead or issue in
    place. Otherwise return a concise proposed amendment to the caller.
+
+## The binding judge
+
+On a risky write scope the Plan output carries `binding_judge`, `primary` or
+`cross`, and it is bound into the plan identity like acceptance and scope. A
+caller argument that disagrees with the bound value refuses the traversal
+rather than rebinding it silently.
+
+`binding_judge` declares a disposition: which leg the caller would act on if
+the two judges still split after repair. It is not a verdict override. The
+convergence law still requires both legs to return PASS on a risky surface, a
+split still never certifies PASS, and no finding leaves the open set because
+this field named a leg. Validate reads it as caller intent, never as authority
+over its own result.
 
 Planning produces no AgentOps packet: the runtime carries the source's
 reference and digest to detect acceptance drift. Bound the work around the
