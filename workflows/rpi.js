@@ -1,10 +1,11 @@
 export const meta = {
   name: 'rpi',
   description:
-    'One RPI traversal: Plan shapes one behavior and snapshots intent identity, Implement runs one bounded RED->GREEN experiment, then a structurally fresh Validate context judges the exact content and persists verdict.v2. A FAIL or NOT_PROVEN enters a bounded repair phase that stops when converged, stopped by the convergence law, or out of repairRounds. No lifecycle.',
+    'One RPI traversal: Plan shapes one behavior and snapshots intent identity, a premortem judge reads the frozen plan when the write scope is risky, Implement runs one bounded RED->GREEN experiment, then a structurally fresh Validate context judges the exact content and persists verdict.v2. A FAIL or NOT_PROVEN enters a bounded repair phase that stops when converged, stopped by the convergence law, or out of repairRounds. No lifecycle.',
   whenToUse: 'When a caller intent (behavior request or bead text) should be driven through Plan -> Implement -> fresh Validate -> bounded repair, ending in a durable PASS | FAIL | NOT_PROVEN verdict. Not for multi-lane waves (implement-wave) or verdict-only re-checks (verify-fixes).',
   phases: [
     { title: 'Plan', detail: 'shape one active behavior; snapshot exact intent bytes under SHA-256 identity' },
+    { title: 'Premortem', detail: 'on a risky write scope only: one fresh judge reads the frozen plan and names what blocks' },
     { title: 'Implement', detail: 'one bounded RED->GREEN experiment strictly inside write scope' },
     { title: 'Validate', detail: 'fresh context re-verifies identity, judges acceptance, persists verdict.v2' },
     { title: 'Repair', detail: 'bounded repair rounds under the convergence law; stop when converged, stopped by the law, or out of budget' },
@@ -90,6 +91,10 @@ const VALIDATE_SCHEMA = {
         required: ['id', 'summary'],
         properties: {
           id: { type: 'string' },
+          // CONTRACT (ADR-0017): the CLASS is the law's second key. Ids alone
+          // cannot see a repair phase that mints a fresh id for the same KIND
+          // of defect every round; the class can, and does.
+          class: { type: 'string' },
           summary: { type: 'string' },
         },
       },
@@ -120,7 +125,8 @@ function badArgs(detail) {
     'rpi: bad args (' + detail + '). Expected ' +
       '{ intent: string, root?: string, writeScope?: [string, ...], acceptance?: string, ' +
       "repairRounds?: integer >= 0, validator?: { kind: 'spawned' | 'command', command?: string }, " +
-      "crossFamily?: { command: string } }"
+      "crossFamily?: { command: string }, premortem?: 'auto' | 'skip', " +
+      "bindingJudge?: 'primary' | 'cross' }"
   );
 }
 
@@ -170,6 +176,22 @@ const RISKY_SURFACE = [
   /^skills\/cc-hooks\/policies\//, /^lib\//, /^\.github\/workflows\//, /^scripts\/security-gate\.sh$/,
 ];
 const isRiskySurface = (paths) => paths.some((p) => RISKY_SURFACE.some((re) => re.test(p)));
+// CONTRACT: a risky write scope buys one premortem judge BEFORE any code is
+// written. The 2026-09-03 run shipped a risky-surface design with no premortem
+// and paid six repair passes for defects a frozen-plan reading would have named
+// first. `premortem: 'skip'` is the caller's explicit waiver, recorded in the
+// report so a skipped premortem is never mistaken for a clean one.
+if (input.premortem !== undefined && input.premortem !== 'skip' && input.premortem !== 'auto') {
+  badArgs("premortem must be 'auto' or 'skip' when given");
+}
+const premortemMode = input.premortem === undefined ? 'auto' : input.premortem;
+// CONTRACT: when two judge legs disagree the tie-break is DECLARED IN ADVANCE
+// or decided by a third judge, never named by the caller after seeing which
+// leg they preferred. Absent is the honest default: no tie-break was declared.
+if (input.bindingJudge !== undefined && input.bindingJudge !== 'primary' && input.bindingJudge !== 'cross') {
+  badArgs("bindingJudge must be 'primary' or 'cross' when given");
+}
+const bindingJudge = input.bindingJudge === undefined ? null : input.bindingJudge;
 // CONTRACT: validator selects who judges — the default spawned fresh context,
 // or an external judge command brokered by that fresh context. The command is
 // opaque caller input; invalid shapes die here, never as a runtime surprise.
@@ -265,6 +287,94 @@ if (!plan) {
 const acceptance = input.acceptance !== undefined ? input.acceptance : plan.acceptance;
 const writeScope = input.writeScope !== undefined ? input.writeScope : plan.writeScope;
 
+// PREMORTEM LEG: one fresh judge reads the FROZEN plan on a risky write scope
+// and names only what blocks. Blocking findings end the traversal as
+// NOT_PLANNED. The cheapest place to kill a bad design is before Implement,
+// not in the sixth repair round.
+const PREMORTEM_SCHEMA = {
+  type: 'object',
+  additionalProperties: false,
+  required: ['blocking', 'notes'],
+  properties: {
+    blocking: {
+      type: 'array',
+      items: {
+        type: 'object',
+        additionalProperties: false,
+        required: ['id', 'summary'],
+        properties: {
+          id: { type: 'string' },
+          class: { type: 'string' },
+          summary: { type: 'string' },
+        },
+      },
+    },
+    notes: { type: 'array', items: { type: 'string' } },
+  },
+};
+
+// Risk is classified over the DECLARED scope here: no code exists yet, so the
+// globs the plan authorized are the only surface there is.
+const plannedRisky = isRiskySurface(writeScope);
+let premortem = { status: 'not-required', blocking: [], notes: [] };
+if (plannedRisky && premortemMode === 'skip') {
+  premortem = { status: 'skipped', blocking: [], notes: ["caller declared premortem: 'skip'"] };
+} else if (plannedRisky) {
+  phase('Premortem');
+  const pm = await agent(
+    'You are a PREMORTEM judge: one fresh context that did not write the plan below and will not implement ' +
+      'it. The plan is FROZEN: you do not edit it, improve it, or propose an alternative. Assume the work ' +
+      'shipped exactly as planned and then failed. Name only what BLOCKS.\n\n' +
+      'Frozen plan\n' +
+      '- intentDigest: ' + plan.intentDigest + '\n' +
+      '- intent snapshot path: ' + plan.intentPath + '\n' +
+      '- Caller intent:\n' + input.intent + '\n' +
+      '- Acceptance the fresh validator will judge against:\n' + acceptance + '\n' +
+      '- Write scope (a risky surface: gates, tests, hook policies, shared libraries, skill scripts, or CI):\n' +
+      writeScope.map((s) => '  - ' + s).join('\n') + '\n\n' +
+      'Procedure:\n' +
+      '- ' + where + '\n' +
+      '- Read the exact files the write scope names before ruling. A premortem from the plan text alone is a ' +
+      'guess, and a guess blocks nothing.\n' +
+      '- Return blocking: one entry {id, class, summary} per defect that must be fixed in the PLAN before any ' +
+      'code is written: a failure this plan produces on this surface that this acceptance would not catch. ' +
+      'Ids are stable keys <surface-slug>:<defect-slug>; class names the KIND so a later repair round cannot ' +
+      'rename it. Return an empty list when nothing blocks: a premortem that always blocks is ceremony.\n' +
+      '- Return notes: everything that does not block. Notes never stop the traversal.\n' +
+      '- Read-only: change nothing, persist nothing, commit nothing.',
+    { label: 'premortem', phase: 'Premortem', schema: PREMORTEM_SCHEMA, effort: 'high' }
+  );
+  if (!pm) {
+    return {
+      verdict: 'NOT_PROVEN',
+      verdictPath: null,
+      intentDigest: plan.intentDigest,
+      changedPaths: [],
+      criteria: [],
+      findings: [],
+      premortem: { status: 'failed', blocking: [], notes: [] },
+      error: 'Premortem stage failed on a risky write scope; no candidate was built and nothing was judged',
+    };
+  }
+  premortem = {
+    status: pm.blocking.length > 0 ? 'blocked' : 'clean',
+    blocking: pm.blocking,
+    notes: pm.notes,
+  };
+  if (pm.blocking.length > 0) {
+    return {
+      verdict: 'NOT_PLANNED',
+      verdictPath: null,
+      intentDigest: plan.intentDigest,
+      changedPaths: [],
+      criteria: [],
+      findings: pm.blocking,
+      premortem,
+      error: 'Premortem named blocking findings on a risky write scope; Implement was never dispatched',
+    };
+  }
+}
+
 phase('Implement');
 
 const impl = await agent(
@@ -303,6 +413,55 @@ if (!impl) {
   };
 }
 
+// ORPHANED-EVIDENCE RECEIPT: every harness edit orphans the evidence bound to
+// the old harness, and on 2026-09-03 nobody knew until a later verify failed.
+// This is a receipt, not a gate: it reports what the repository's own detector
+// says about the changed paths, and says plainly when there is no detector.
+const ORPHANS_SCHEMA = {
+  type: 'object',
+  additionalProperties: false,
+  required: ['scriptPresent'],
+  properties: {
+    scriptPresent: { type: 'boolean' },
+    json: { type: 'string' },
+    error: { type: 'string' },
+  },
+};
+
+const orphans = await agent(
+  'You are a read-only receipt step after Implement. Do exactly one thing: report whether this repository ' +
+    'ships scripts/evidence-orphans.sh and, if it does, what it says about the changed paths below. You judge ' +
+    'nothing.\n\n' +
+    'Changed paths:\n' +
+    (impl.changedPaths.length ? impl.changedPaths.map((p) => '  - ' + p).join('\n') : '  (none reported)') + '\n\n' +
+    'Procedure:\n' +
+    '- ' + where + '\n' +
+    '- Test for scripts/evidence-orphans.sh. If it is absent, return scriptPresent false and nothing else. ' +
+    'Never substitute another script, never write one, and never approximate its output yourself.\n' +
+    '- If it is present, run it ONCE with the changed paths above as its arguments and capture its stdout ' +
+    'verbatim. Return that raw text as json, unedited.\n' +
+    '- If it exits nonzero or prints nothing, return scriptPresent true with the real error text as error and ' +
+    'omit json. An invented result is worse than no result.\n' +
+    '- Read-only: fix nothing, create nothing, commit nothing.',
+  { label: 'orphans', phase: 'Implement', schema: ORPHANS_SCHEMA }
+);
+
+let orphanedEvidence = null;
+let orphanedEvidenceReason = null;
+if (!orphans) {
+  orphanedEvidenceReason = 'receipt-leg-failed';
+} else if (!orphans.scriptPresent) {
+  orphanedEvidenceReason = 'script-absent';
+} else if (typeof orphans.json === 'string' && orphans.json.trim()) {
+  try {
+    orphanedEvidence = JSON.parse(orphans.json);
+  } catch (err) {
+    orphanedEvidenceReason = 'unparsable-output: ' + err.message;
+  }
+} else {
+  orphanedEvidenceReason = orphans.error ? 'script-failed: ' + orphans.error : 'no-output';
+}
+
 phase('Validate');
 
 // FRESHNESS WALL: this prompt is built ONLY from Plan outputs plus the
@@ -317,9 +476,13 @@ phase('Validate');
 // findings under STABLE ids so the repair phase can apply the convergence law.
 const FINDINGS_BLOCK =
   '\n- Return subjectDigest: the manifest digest you computed over the changed paths.\n' +
-  '- Return findings: one entry {id, summary} per open defect that blocks PASS (empty on PASS). Ids are ' +
+  '- Return findings: one entry {id, class, summary} per open defect that blocks PASS (empty on PASS). Ids are ' +
   'STABLE keys of the form <criterion-slug>:<defect-slug> so the same defect keeps its id across rounds ' +
   'however you reword the summary; never mint a new id for a defect you already named.\n' +
+  '- class names the KIND of defect ("seal.pinning", "scope.coverage"), stable across rounds and shared by ' +
+  'every finding of that kind. It is how the convergence law sees a repair phase that keeps renaming one ' +
+  'defect: a NEW id carrying a class an earlier round closed stops the run. Omit it only when the defect ' +
+  'genuinely belongs to no kind you can name.\n' +
   '- Return evidenceRefs as bindings {ref, subjectDigest, resolves}: ref is the receipt/transcript/verdict path, ' +
   'subjectDigest is the manifest digest it was produced against, resolves lists the finding ids it closes (empty if none).\n' +
   '- Return derivedChangedPaths: derive the changed set YOURSELF from the working tree (git status --porcelain and ' +
@@ -420,10 +583,97 @@ async function brokerLeg(facts, command) {
 );
 }
 
+// COUNCIL LEG: a third fresh judge, convened only on an undeclared split over a
+// risky surface. It rules BETWEEN the two legs: it re-reads the subject and
+// picks one of the two verdicts already on the table, never a third, so a
+// disagreement is resolved by a judge, not by whichever leg the caller liked.
+const councilSchema = (legs) => ({
+  type: 'object',
+  additionalProperties: false,
+  required: ['verdict', 'reason'],
+  properties: {
+    verdict: { enum: [...new Set(legs.map((l) => l.result.verdict))] },
+    reason: { type: 'string' },
+  },
+});
+
+async function councilLeg(legs) {
+  return await agent(
+    'You are the COUNCIL: a third fresh, independent judge convened because two validator legs ruled ' +
+      'differently on the same subject. You did not author the candidate and you did not write either ruling.\n\n' +
+      'The rulings on the table:\n' +
+      legs
+        .map(
+          (l) =>
+            '- ' + l.family + ' judged ' + l.result.verdict + ' with findings:\n' +
+            ((l.result.findings || []).length
+              ? (l.result.findings || []).map((f) => '    - ' + f.id + ': ' + f.summary).join('\n')
+              : '    (none)')
+        )
+        .join('\n') + '\n\n' +
+      'Subject digest both legs judged: ' + (legs[0].result.subjectDigest || '(none)') + '\n\n' +
+      'Acceptance criteria:\n' + acceptance + '\n\n' +
+      'Procedure:\n' +
+      '- ' + where + '\n' +
+      '- Re-derive the disputed facts YOURSELF: open the files the findings name and rerun the checks. ' +
+      'Neither leg\'s reasoning is evidence for you.\n' +
+      '- Return verdict: exactly ONE of the two verdicts above. You do not mint a third verdict, and you do ' +
+      'not average them. If the disputed findings reproduce, the leg that named them was right.\n' +
+      '- Return reason: one plain statement of what you re-derived and which leg it supports.\n' +
+      '- Read-only: fix nothing, persist nothing, commit nothing.',
+    { label: 'council', phase: 'Validate', schema: councilSchema(legs), effort: 'high' }
+  );
+}
+
 // Worst-of ordering for merged legs: a FAIL anywhere is a FAIL; a NOT_PROVEN
 // anywhere without a FAIL is NOT_PROVEN; PASS needs every leg to PASS.
 const VERDICT_RANK = { PASS: 0, NOT_PROVEN: 1, FAIL: 2 };
-function mergeLegs(legs, risky, diversity) {
+const dissentOf = (leg) => ({
+  family: leg.family,
+  verdict: leg.result.verdict,
+  findings: (leg.result.findings || []).map((f) => ({ id: f.id, class: f.class, summary: f.summary })),
+});
+
+// A SPLIT is a disagreement on the VERDICT, not merely on which findings each
+// leg named. Resolution is declared (bindingJudge) or judged (council); it is
+// never invented here, and it never silently becomes PASS.
+async function mergeLegs(allLegs, risky, diversity, council) {
+  let legs = allLegs;
+  let dissent = null;
+  let councilRecord = null;
+  let tieBreak = null;
+  const split = allLegs.length === 2 && allLegs[0].result.verdict !== allLegs[1].result.verdict;
+  if (split && bindingJudge !== null) {
+    const index = bindingJudge === 'primary' ? 0 : 1;
+    legs = [allLegs[index]];
+    dissent = [dissentOf(allLegs[1 - index])];
+    tieBreak = 'bindingJudge:' + bindingJudge;
+  } else if (split && risky) {
+    const ruling = await council(allLegs);
+    if (!ruling) {
+      tieBreak = 'council-unavailable';
+    } else {
+      councilRecord = {
+        verdict: ruling.verdict,
+        reason: ruling.reason,
+        legs: allLegs.map((l) => ({ family: l.family, verdict: l.result.verdict })),
+      };
+      const ruled = allLegs.filter((l) => l.result.verdict === ruling.verdict);
+      // The council picks one of the two verdicts on the table; a ruling that
+      // matches neither leg is a broken council, not a third opinion.
+      if (ruled.length > 0) {
+        legs = ruled;
+        const others = allLegs.filter((l) => l.result.verdict !== ruling.verdict);
+        dissent = others.map(dissentOf);
+        tieBreak = 'council';
+      } else {
+        tieBreak = 'council-invalid-ruling';
+      }
+    }
+  } else if (split) {
+    // Non-risky split: worst-of still stands, so a single-family FAIL stands.
+    tieBreak = 'worst-of';
+  }
   let verdict = 'PASS';
   const findings = new Map();
   const evidence = new Set();
@@ -433,11 +683,31 @@ function mergeLegs(legs, risky, diversity) {
   for (const leg of legs) {
     const r = leg.result;
     if (VERDICT_RANK[r.verdict] > VERDICT_RANK[verdict]) verdict = r.verdict;
-    for (const f of r.findings || []) findings.set(f.id, { id: f.id, summary: f.summary, family: leg.family });
+    for (const f of r.findings || []) findings.set(f.id, { id: f.id, class: f.class, summary: f.summary, family: leg.family });
     for (const e of r.evidenceRefs || []) evidence.add(JSON.stringify(e));
     for (const c of r.criteria || []) criteria.push(c);
     if (digest === null) digest = r.subjectDigest;
     else if (r.subjectDigest !== digest) digestConflict = true;
+  }
+  // Identity is asserted over EVERY leg, including a dissenting one: two judges
+  // that measured different bytes never proved anything, whoever was binding.
+  for (const leg of allLegs) {
+    if (digest !== null && leg.result.subjectDigest !== digest) digestConflict = true;
+  }
+  if (tieBreak === 'council-unavailable' || tieBreak === 'council-invalid-ruling') {
+    verdict = 'NOT_PROVEN';
+    const id = 'council:' + (tieBreak === 'council-unavailable' ? 'unavailable' : 'invalid-ruling');
+    findings.set(id, {
+      id,
+      class: 'council.tie-break',
+      summary: tieBreak === 'council-unavailable'
+        ? 'validator legs split on a risky surface and the council judge did not rule'
+        : 'the council returned a verdict neither leg had ruled',
+      family: 'merge',
+    });
+    for (const leg of allLegs) for (const f of leg.result.findings || []) {
+      if (!findings.has(f.id)) findings.set(f.id, { id: f.id, class: f.class, summary: f.summary, family: leg.family });
+    }
   }
   if (digestConflict) {
     verdict = 'NOT_PROVEN';
@@ -451,25 +721,31 @@ function mergeLegs(legs, risky, diversity) {
     verdict = 'NOT_PROVEN';
     findings.set('diversity:unsatisfied', { id: 'diversity:unsatisfied', summary: 'risky surface judged by one model family only; no authorized cross-family leg', family: 'merge' });
   }
+  // Coverage is derived from EVERY leg: a dissenting leg's derived path is
+  // still a changed path, and a tie-break must never shrink the checked set.
   const derived = new Set();
-  for (const leg of legs) for (const p of leg.result.derivedChangedPaths || []) derived.add(p);
-  // A persisted verdict path is exposed only when every leg agrees with the
-  // aggregate; a PASS file behind a FAIL/NOT_PROVEN result would launder it.
-  const allAgree = legs.every((l) => l.result.verdict === verdict);
+  for (const leg of allLegs) for (const p of leg.result.derivedChangedPaths || []) derived.add(p);
+  // A persisted verdict path is exposed only when every leg, dissent included,
+  // agrees with the aggregate; a PASS file behind a FAIL/NOT_PROVEN result, or
+  // behind a resolved split, would launder it.
+  const allAgree = allLegs.every((l) => l.result.verdict === verdict);
   const persistedMatches = allAgree && legs[0].result.verdict === verdict;
   return {
     verdict,
     verdictPath: persistedMatches ? legs[0].result.verdictPath : null,
-    legVerdictPaths: legs.map((l) => ({ family: l.family, verdict: l.result.verdict, verdictPath: l.result.verdictPath })),
-    validatorContextId: legs.map((l) => l.result.validatorContextId).join('+'),
+    legVerdictPaths: allLegs.map((l) => ({ family: l.family, verdict: l.result.verdict, verdictPath: l.result.verdictPath })),
+    validatorContextId: allLegs.map((l) => l.result.validatorContextId).join('+'),
     subjectDigest: digest,
     findings: [...findings.values()],
     evidenceRefs: [...evidence].map((e) => JSON.parse(e)),
     derivedChangedPaths: [...derived],
     criteria,
-    families: legs.map((l) => l.family),
+    families: allLegs.map((l) => l.family),
     risky,
     diversity,
+    tieBreak,
+    dissent,
+    council: councilRecord,
   };
 }
 
@@ -494,7 +770,7 @@ async function validateOnce(facts) {
     legs.push({ family: 'cross-family', result: second });
     diversity = risky ? 'satisfied' : 'elected';
   }
-  const merged = mergeLegs(legs, risky, diversity);
+  const merged = await mergeLegs(legs, risky, diversity, councilLeg);
   const unreported = merged.derivedChangedPaths.filter((p) => !facts.changedPaths.includes(p));
   if (unreported.length > 0) {
     const byId = new Map(merged.findings.map((f) => [f.id, f]));
@@ -525,6 +801,9 @@ if (!validation) {
     changedPaths: impl.changedPaths,
     filesSummary: impl.filesSummary,
     criteria: [],
+    premortem,
+    orphanedEvidence,
+    orphanedEvidenceReason,
     error: 'Validate stage failed; the candidate exists but was never freshly judged',
   };
 }
@@ -536,9 +815,15 @@ if (!validation) {
 //   2. open finding set (stable ids) is not larger than the previous round's
 //   3. no id closed in an earlier round reopens
 //   4. the subject digest changed, or the round resolved NOT_PROVEN with new evidence
+//   3b. no CLASS closed in an earlier round is reopened by a new id
 const openIds = (v) => new Set((v.findings || []).map((f) => f.id));
+const findingClass = (f) => (typeof f.class === 'string' && f.class.trim() ? f.class.trim() : null);
 const repairLog = [];
 const closedIds = new Set();
+// class -> the finding id whose closure retired it. A class is retired only
+// once no open finding still carries it, so a surviving sibling never makes
+// its own class a violation.
+const closedClasses = new Map();
 let facts = { contextId: impl.contextId, changedPaths: impl.changedPaths.slice(), checkReceipts: impl.checkReceipts };
 let roundsUsed = 0;
 let stoppedBy = null;
@@ -566,8 +851,10 @@ while (
     'You are the Repair stage of one RPI traversal, round ' + (roundsUsed + 1) + ' of at most ' + repairRounds +
       '. A fresh validator judged the current candidate and returned ' + validation.verdict +
       ' with these open findings; fix exactly these, nothing else, inside the write scope.\n\n' +
-      'Open findings (stable ids):\n' +
-      (validation.findings || []).map((f) => '  - ' + f.id + ': ' + f.summary).join('\n') + '\n\n' +
+      'Open findings (stable ids, class in brackets):\n' +
+      (validation.findings || [])
+        .map((f) => '  - ' + f.id + (findingClass(f) ? ' [' + findingClass(f) + ']' : '') + ': ' + f.summary)
+        .join('\n') + '\n\n' +
       'Acceptance the validator judges against:\n' + acceptance + '\n\n' +
       'Write scope — you may create or edit ONLY paths matching:\n' +
       writeScope.map((s) => '  - ' + s).join('\n') + '\n\n' +
@@ -591,6 +878,7 @@ while (
       findings: validation.findings || [], converged: false, repairRoundsUsed: roundsUsed,
       repairLog: repairLog.concat(['repair round ' + roundsUsed + ': repair stage failed']),
       stoppedBy: 'repair stage failed in round ' + roundsUsed, subjectDigest: null,
+      premortem, orphanedEvidence, orphanedEvidenceReason,
       error: 'Repair stage failed after the subject may have changed; the prior verdict no longer binds',
     };
   }
@@ -605,6 +893,7 @@ while (
       findings: validation.findings || [], converged: false, repairRoundsUsed: roundsUsed,
       repairLog: repairLog.concat(['repair round ' + roundsUsed + ': validate stage failed']),
       stoppedBy: 'validate stage failed in round ' + roundsUsed, subjectDigest: null,
+      premortem, orphanedEvidence, orphanedEvidenceReason,
       error: 'Validate stage failed after a repair; the repaired candidate was never freshly judged',
     };
   }
@@ -616,8 +905,21 @@ while (
     (e) => !prevEvidence.has(e.ref) && e.subjectDigest === next.subjectDigest && (e.resolves || []).some((id) => resolvedSet.has(id))
   );
   let violation = null;
-  if (nextIds.size > prevIds.size) violation = 'open finding set grew (' + prevIds.size + ' -> ' + nextIds.size + ')';
-  else if ([...nextIds].some((id) => closedIds.has(id))) violation = 'a closed finding reopened';
+  let classStop = false;
+  const reopened = [...nextIds].filter((id) => closedIds.has(id));
+  // Condition 3b: a NEW id carrying a class an earlier round closed. Counting
+  // ids alone cannot see it, and that is exactly how the 2026-09-03 run kept a
+  // flat open set for three rounds while the same class stayed unenforced.
+  const classReopened = (next.findings || [])
+    .filter((f) => !prevIds.has(f.id) && findingClass(f) !== null && closedClasses.has(findingClass(f)))
+    .map((f) => findingClass(f) + ': ' + f.id + ' reopens the class closed by ' + closedClasses.get(findingClass(f)));
+  // Most specific regression first: a reopened id, then a reopened class, then
+  // the generic grown set.
+  if (reopened.length > 0) violation = 'a closed finding reopened (' + reopened.join(', ') + ')';
+  else if (classReopened.length > 0) {
+    violation = 'a closed finding class reopened (' + classReopened.join('; ') + ')';
+    classStop = true;
+  } else if (nextIds.size > prevIds.size) violation = 'open finding set grew (' + prevIds.size + ' -> ' + nextIds.size + ')';
   else if (next.subjectDigest === prevDigest) {
     // Condition 4: unchanged bytes are admitted only when a NOT_PROVEN round
     // was resolved by new evidence that closed at least one finding; a FAIL is
@@ -628,12 +930,21 @@ while (
       ? 'verdict flipped to PASS over an unchanged subject'
       : 'subject digest unchanged without new resolving evidence';
   }
-  for (const id of resolved) closedIds.add(id);
+  const stillOpen = new Set((next.findings || []).map(findingClass).filter((c) => c !== null));
+  for (const id of resolved) {
+    closedIds.add(id);
+    const closed = (validation.findings || []).find((f) => f.id === id);
+    const cls = closed ? findingClass(closed) : null;
+    if (cls !== null && !stillOpen.has(cls) && !closedClasses.has(cls)) closedClasses.set(cls, id);
+  }
   repairLog.push('repair round ' + roundsUsed + ': ' + nextIds.size + ' open findings' + (violation ? ' — stopped by the law: ' + violation : ''));
   validation = next;
   if (violation) {
     stoppedBy = 'law: ' + violation;
-    if (validation.verdict === 'PASS') validation = degrade(validation, 'NOT_PROVEN');
+    // A class reopen means every round named a different id for the same kind
+    // of defect, so no round's ruling binds to a converging subject: the honest
+    // outcome is NOT_PROVEN, never the churning round's own status.
+    if (validation.verdict === 'PASS' || classStop) validation = degrade(validation, 'NOT_PROVEN');
     break;
   }
   if (diversityOnly(validation)) {
@@ -660,6 +971,12 @@ return {
   subjectDigest: validation.subjectDigest || null,
   validatorFamilies: validation.families || [],
   diversity: validation.diversity || 'not-required',
+  premortem,
+  orphanedEvidence,
+  orphanedEvidenceReason,
+  tieBreak: validation.tieBreak || null,
+  dissent: validation.dissent || null,
+  council: validation.council || null,
   converged,
   repairRoundsUsed: roundsUsed,
   repairLog,
