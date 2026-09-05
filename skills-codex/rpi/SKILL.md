@@ -15,8 +15,10 @@ and dispatches Plan and Implement at most once; Validate repeats only inside
 the repair phase, under the convergence law and the caller's `repair_rounds`.
 Read [references/boundaries.md](references/boundaries.md), the ownership and
 delegation boundary shared by the core skills, before dispatch.
-[`scripts/run_once.py`](scripts/run_once.py) makes dispatch, repair, and stop
-executable without Git, `ao`, or a tracker.
+[`scripts/run_once.py`](scripts/run_once.py) is the reference for the repair
+law: it makes round admission, class reopening, and stop executable without
+Git, `ao`, or a tracker. It implements that law only, not the premortem,
+council, or receipt legs.
 
 ## Prompt
 
@@ -63,11 +65,11 @@ comment alone is not that.
    caller-owned source by reference and digest, or, only when no durable
    source exists, the exact resolved bytes snapshotted by the runtime under
    their digest.
-3. When the write scope hits a risky surface (the Cross-family list), invoke
-   [`premortem`](../premortem/SKILL.md) once at Plan exit, before Implement.
-   A blocking premortem finding returns `NOT_PLANNED` naming that finding.
-   A caller may declare `premortem: skip`; the report then says the premortem
-   was skipped by caller declaration.
+3. On a risky write scope, dispatch the Plan-exit premortem leg below before
+   Implement. A nonempty `blocking` list returns `NOT_PLANNED` naming those
+   findings. A caller may declare `premortem: skip`. Every terminal report
+   carries `premortem: required | clean | blocking | skipped | failed`, so a
+   skipped or failed leg is never read as a clean one.
 4. Invoke Implement once: one bounded experiment; the runtime derives subject
    identity and check receipts. With no subject built, report `NOT_BUILT`.
 5. Invoke Validate once in a context distinct from the author's, passing the
@@ -94,9 +96,14 @@ A repair round is admitted only while all hold:
    count) or, for `NOT_PROVEN`, new digest-bound evidence resolved a named gap.
 5. No finding class closed in an earlier round reappears under a new id.
 
-Every finding carries a stable `class` alongside its id. A closed class
-returning under a new id is `class_reopened`: repair stops and the caller
-returns to Plan, because the design is wrong, not the patch.
+`findings[].class` is optional: a stable short name for the defect kind,
+either absent or a real name, never present and blank. A present-but-blank
+class makes the round invalid, because a blank class defeats rule 5 in
+silence. Rule 5 tests continuous rename: a resolved id's class reappearing on
+a new id, while no surviving prior id still carries that class, is
+`class_reopened`. One round can carry both a reopened id and a reopened class;
+repair stops on either, and the caller returns to Plan, because the design is
+wrong, not the patch.
 
 Converged: the fresh validator returns PASS and, on a risky surface, so does
 the cross-family validator. On any violation of 1-5 RPI stops and reports the
@@ -114,17 +121,29 @@ Risky surfaces default to a cross-family fresh validator: `cli/internal/gates/**
 [`validate`](../validate/SKILL.md) owns the surface list. No authorized live
 adapter means `diversity_unsatisfied`, which on a risky surface is `NOT_PROVEN`.
 
-Plan declares the binding judge for a risky surface, `primary` or `cross`, and
-that leg's verdict stands when the two disagree. Without a declared binding
-judge, a split goes to one [`council`](../council/SKILL.md) leg whose verdict
-stands; all three verdicts are recorded. A split never becomes PASS by default.
+The law stands over both legs. A risky surface converges only when both legs
+return PASS; a split never certifies PASS; no finding leaves the open set
+because a judge was elected. `binding_judge` is a field of the Plan output,
+bound into the plan identity, and a caller argument that disagrees with it
+refuses the traversal. It declares the caller's disposition for a split that
+survives repair, applies only on a risky scope, and is carried in the report.
+It is never a verdict override and never mutates a leg's verdict.
+
+A risky split that survives repair goes to one
+[`council`](../council/SKILL.md) leg that adjudicates findings, not verdicts.
+The leg receives a bounded packet (acceptance, write scope, runtime-derived
+changed paths, criteria, and both legs' findings with evidence references,
+marked untrusted) and returns one ruling per finding. A `not_real` ruling that
+cites evidence closes that finding under the council's evidence binding; a leg
+whose FAIL keeps no surviving findings is treated as `NOT_PROVEN`. The
+traversal then continues under the law. Council mints no verdict.
 
 ## Judgment dispatch
 
 | Condition | Leg |
 |---|---|
-| risky write scope at Plan exit | `premortem`, before Implement |
-| judge split with no binding judge declared | `council`, one leg, its verdict stands |
+| risky write scope at Plan exit: a `write_scope` glob intersects a risky-surface glob, and a `**` segment counts as an intersection | [`premortem`](../premortem/SKILL.md) before Implement, returning `{blocking: [{id, class, summary}], notes: [...]}`; nonempty `blocking` is `NOT_PLANNED` |
+| a risky split that survives repair | `council`, one leg, returning `{id, ruling: real \| not_real \| not_proven, evidence_refs}` per finding |
 | an irreversible landing decision | `one-way-door`, caller-selected, outside the traversal |
 
 ## Waves
@@ -158,9 +177,13 @@ integration check and fresh validation for the frozen subject.
    adapter consumes it; `schemas/rpi-report.v1.schema.json` (repo checkout)
    owns its exact shape and `status` set.
 
-The report carries `dissent`, the judge split and the leg whose verdict stood,
-and `orphaned_evidence`, the bound evidence this change invalidated. Both are
-empty when nothing applies; neither is omitted to keep a report short.
+The workflow result is the camelCase object the adapter returns. It carries
+`status`; `premortem`; `dissent`, the judge split with each leg's own verdict;
+`orphanedEvidence`, the bound evidence this change invalidated with a `cause`
+per entry; and `stopReason` from a fixed enum. Each is empty or null when
+nothing applies; none is omitted to keep a result short. Those keys belong to
+the workflow result alone: `rpi-report.v1` keeps its nine snake_case keys
+unchanged.
 
 Lead with the status and one sentence naming the caller-visible outcome, then
 the subject: paths changed, commits, test results, acceptance satisfied or

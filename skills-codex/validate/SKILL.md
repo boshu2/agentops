@@ -46,9 +46,13 @@ PASS is `NOT_PROVEN`, and same-family agreement is not convergence. A
 single-family FAIL stands.
 
 When the two legs disagree, each reports its own verdict and neither resolves
-the split. The binding judge declared in the plan settles it; with none
-declared, a risky split goes to one council leg. Validate never treats
-agreement with itself, or the absence of a second verdict, as the tie-break.
+the split. A risky surface converges only when both legs return PASS, so a
+split is never PASS. The split is worked down by repair, and what survives
+goes to one council leg that rules on the findings, not the verdicts; the
+convergence law then reads the surviving finding set. The plan's
+`binding_judge` records the caller's disposition for that outcome and changes
+no verdict here. Validate never treats agreement with itself, the absence of a
+second verdict, or an elected leg as a tie-break.
 
 ## Mutating-check quarantine
 
@@ -91,10 +95,11 @@ and stays visible.
 5. Choose exactly one semantic result: `PASS`, `FAIL`, or `NOT_PROVEN`. Return
    it with criterion-level results, findings, evidence references, `checked`,
    `not_checked`, both identities, both context IDs, and the freshness
-   attestation. Every finding carries a `class`: one stable short name for the
-   defect kind, exactly one per finding, reused verbatim when the same kind
-   recurs so the traversal can see a class reopen. A class that does not
-   describe the finding is itself a finding, against this validator. PASS
+   attestation. A finding may carry a `class`: one stable short name for the
+   defect kind, at most one per finding, reused verbatim when the same kind
+   recurs so the traversal can see a class reopen. Omit it or name it; a
+   `class` that is present and blank is a finding against this validator, and
+   so is a class that does not describe its finding. PASS
    requires distinct identities, explicit freshness, nonempty checked scope,
    nonempty top-level evidence, evidence for every criterion, and an empty
    `not_checked`. A documentation sentence claiming something is published,
