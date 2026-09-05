@@ -1095,14 +1095,16 @@ scan_obsolete_identity() {
   [ "$status" -eq 0 ]
 }
 
+
 # --- workflows/rpi.js: executable in-memory probes -------------------------
 #
 # rpi.js is a Workflow script, not a module: its only capabilities are the
 # harness globals `args`, `agent`, `phase`, and `log`, and it ends in a
 # top-level `return`. The probe below rebuilds it as an AsyncFunction over
 # exactly those four names and drives it with a SCRIPTED agent queue, so the
-# traversal's control flow (the convergence law, the tie-break, the premortem
-# gate) is executed rather than grepped. Nothing here spawns a real agent.
+# traversal's control flow (the convergence law, the tie-break disposition, the
+# premortem gate) is executed rather than grepped. Nothing here spawns a real
+# agent.
 
 write_rpi_probe() {
   cat >"$BATS_TEST_TMPDIR/rpi-probe.mjs" <<'JS'
@@ -1138,6 +1140,15 @@ rpi_probe() {
     node "$BATS_TEST_TMPDIR/rpi-probe.mjs" >"$BATS_TEST_TMPDIR/probe.json"
 }
 
+# The traversal REFUSES a malformed validate leg by throwing, exactly as the
+# Python reference behavior raises. The probe process dies with it.
+rpi_probe_refused() {
+  write_rpi_probe
+  run env RPI_SRC="$REPO_ROOT/workflows/rpi.js" RPI_INPUT="$1" RPI_AGENTS="$2" \
+    node "$BATS_TEST_TMPDIR/rpi-probe.mjs"
+  [ "$status" -ne 0 ]
+}
+
 PLAN_RESULT='{"label":"plan","result":{"acceptance":"the behavior holds","writeScope":["tests/**"],"intentDigest":"aaaa","intentPath":"/tmp/i.intent"}}'
 PLAN_RESULT_SAFE='{"label":"plan","result":{"acceptance":"the behavior holds","writeScope":["docs/**"],"intentDigest":"aaaa","intentPath":"/tmp/i.intent"}}'
 IMPL_RESULT='{"label":"implement","result":{"contextId":"author-1","changedPaths":["docs/a.md"],"checkReceipts":[{"name":"repro","command":"true","outcome":"green"}],"filesSummary":"note"}}'
@@ -1154,14 +1165,49 @@ import json, sys
 probe = json.load(open(sys.argv[1]))
 assert probe["calls"] == ["plan", "premortem"], probe["calls"]
 result = probe["result"]
-assert result["verdict"] == "NOT_PLANNED", result["verdict"]
-assert result["premortem"]["status"] == "blocked", result["premortem"]
+# NOT_PLANNED is a STATUS, not a verdict: nothing was built, so nothing was judged.
+assert result["status"] == "NOT_PLANNED", result["status"]
+assert result["verdict"] is None, result["verdict"]
+assert result["stopReason"] == "premortem_blocking", result["stopReason"]
+assert result["premortem"]["status"] == "blocking", result["premortem"]
 assert [f["id"] for f in result["findings"]] == ["seal:unpinned"], result["findings"]
 assert result["verdictPath"] is None
 # The judge must see the frozen plan, not a summary of it.
 assert "the behavior holds" in probe["prompts"]["premortem"]
 assert "tests/**" in probe["prompts"]["premortem"]
 PY
+}
+
+@test "rpi.js classifies a declared write scope by glob intersection, not path matching" {
+  # `cli/**` matches none of the risky-path regexes as literal text, yet it
+  # authorizes every gate in cli/internal/gates/. A bare `**` authorizes the
+  # repository. Both must buy a premortem.
+  for scope in 'cli/**' '**' '*' './tests/**' 'scripts/*.sh'; do
+    rpi_probe \
+      "{\"intent\":\"harden the seal\",\"writeScope\":[\"$scope\"],\"acceptance\":\"the behavior holds\"}" \
+      "[{\"label\":\"plan\",\"result\":{\"acceptance\":\"the behavior holds\",\"writeScope\":[\"$scope\"],\"intentDigest\":\"aaaa\",\"intentPath\":\"/tmp/i.intent\"}},{\"label\":\"premortem\",\"result\":{\"blocking\":[{\"id\":\"x:y\",\"class\":\"k\",\"summary\":\"blocks\"}],\"notes\":[]}}]"
+    python3 - "$BATS_TEST_TMPDIR/probe.json" "$scope" <<'PY'
+import json, sys
+probe = json.load(open(sys.argv[1]))
+assert "premortem" in probe["calls"], (sys.argv[2], probe["calls"])
+assert probe["result"]["premortem"]["status"] == "blocking", (sys.argv[2], probe["result"]["premortem"])
+PY
+  done
+}
+
+@test "rpi.js leaves a genuinely non-risky declared scope without a premortem" {
+  for scope in 'docs/**' 'workflows/rpi.js' 'scripts/lib/preamble.sh' 'cli/internal/statusapp/**'; do
+    rpi_probe \
+      "{\"intent\":\"do the thing\",\"writeScope\":[\"$scope\"],\"acceptance\":\"the behavior holds\",\"repairRounds\":0}" \
+      "[{\"label\":\"plan\",\"result\":{\"acceptance\":\"the behavior holds\",\"writeScope\":[\"$scope\"],\"intentDigest\":\"aaaa\",\"intentPath\":\"/tmp/i.intent\"}},$IMPL_RESULT,$ORPHANS_ABSENT,{\"label\":\"validate\",\"result\":{\"verdict\":\"PASS\",\"verdictPath\":\"/tmp/v.json\",\"subjectDigest\":\"aa\",\"criteria\":[],\"validatorContextId\":\"v1\",\"findings\":[],\"evidenceRefs\":[],\"derivedChangedPaths\":[\"docs/a.md\"]}}]"
+    python3 - "$BATS_TEST_TMPDIR/probe.json" "$scope" <<'PY'
+import json, sys
+probe = json.load(open(sys.argv[1]))
+assert "premortem" not in probe["calls"], (sys.argv[2], probe["calls"])
+assert probe["result"]["premortem"]["status"] == "not-required", (sys.argv[2], probe["result"]["premortem"])
+assert probe["result"]["stopReason"] == "converged", probe["result"]["stopReason"]
+PY
+  done
 }
 
 @test "rpi.js records a caller-declared premortem skip and implements anyway" {
@@ -1182,6 +1228,48 @@ assert result["orphanedEvidenceReason"] == "script-absent"
 PY
 }
 
+@test "rpi.js carries a recorded premortem skip through an Implement failure" {
+  # The 2026-09-03 shape: a hand-built early return dropped the recorded skip,
+  # and the run read as if no premortem had ever been waived.
+  rpi_probe \
+    '{"intent":"harden the seal","writeScope":["tests/**"],"acceptance":"the behavior holds","premortem":"skip"}' \
+    "[$PLAN_RESULT,{\"label\":\"implement\"}]"
+
+  python3 - "$BATS_TEST_TMPDIR/probe.json" <<'PY'
+import json, sys
+result = json.load(open(sys.argv[1]))["result"]
+assert result["status"] == "NOT_PROVEN", result["status"]
+assert result["stopReason"] == "implement_failed", result["stopReason"]
+assert result["premortem"]["status"] == "skipped", result["premortem"]
+PY
+}
+
+@test "rpi.js runs the orphan receipt on the validator-derived path set and feeds it to the validator" {
+  # The author reported one path; the validator derived another. The receipt
+  # must re-run over the UNION, and the next validator leg must see it as a
+  # check receipt rather than only the caller reading it beside the verdict.
+  local v0 v1
+  v0='{"label":"validate","result":{"verdict":"FAIL","verdictPath":null,"subjectDigest":"aa","criteria":[],"validatorContextId":"v1","findings":[{"id":"f1","summary":"defect"}],"evidenceRefs":[],"derivedChangedPaths":["docs/a.md","scripts/harness.sh"]}}'
+  v1='{"label":"validate","result":{"verdict":"PASS","verdictPath":"/tmp/v.json","subjectDigest":"bb","criteria":[],"validatorContextId":"v2","findings":[],"evidenceRefs":[],"derivedChangedPaths":["docs/a.md","scripts/harness.sh"]}}'
+  rpi_probe \
+    '{"intent":"do the thing","writeScope":["docs/**"],"acceptance":"the behavior holds","repairRounds":1}' \
+    "[$PLAN_RESULT_SAFE,$IMPL_RESULT,{\"label\":\"orphans\",\"result\":{\"scriptPresent\":true,\"json\":\"{\\\"count\\\":0}\"}},$v0,{\"label\":\"orphans\",\"result\":{\"scriptPresent\":true,\"json\":\"{\\\"count\\\":2}\"}},{\"label\":\"repair:1\",\"result\":{\"contextId\":\"author-2\",\"changedPaths\":[\"docs/a.md\"],\"checkReceipts\":[],\"filesSummary\":\"n\"}},$v1]"
+
+  python3 - "$BATS_TEST_TMPDIR/probe.json" <<'PY'
+import json, sys
+probe = json.load(open(sys.argv[1]))
+# Two receipts: one over the author paths, one over the widened union.
+assert probe["calls"].count("orphans") == 2, probe["calls"]
+assert "scripts/harness.sh" in probe["prompts"]["orphans"], probe["prompts"]["orphans"]
+result = probe["result"]
+assert result["orphanedEvidence"] == {"count": 2}, result["orphanedEvidence"]
+# The receipt reached the second validator leg as a check receipt.
+assert "evidence-orphans" in probe["prompts"]["validate"], probe["prompts"]["validate"]
+assert result["verdict"] == "PASS", result["verdict"]
+assert result["stopReason"] == "converged", result["stopReason"]
+PY
+}
+
 @test "rpi.js attaches the orphaned-evidence receipt when the script is present" {
   rpi_probe \
     '{"intent":"do the thing","writeScope":["docs/**"],"acceptance":"the behavior holds","repairRounds":0}' \
@@ -1198,59 +1286,174 @@ assert "scripts/evidence-orphans.sh" in probe["prompts"]["orphans"]
 PY
 }
 
-@test "rpi.js stops repair when a new finding reopens a closed class" {
-  validate_round() {
-    printf '{"label":"validate","result":{"verdict":"FAIL","verdictPath":null,"subjectDigest":"%s","criteria":[],"validatorContextId":"v","findings":[%s],"evidenceRefs":[],"derivedChangedPaths":["docs/a.md"]}}' "$1" "$2"
-  }
-  local r0 r1 r2
-  r0="$(validate_round aa '{"id":"f1","class":"seal.pinning","summary":"seal not pinned"}')"
-  r1="$(validate_round bb '{"id":"f2","summary":"other defect"}')"
-  r2="$(validate_round cc '{"id":"f3","class":"seal.pinning","summary":"seal pinned at the wrong layer"}')"
-  local repair='{"label":"repair:1","result":{"contextId":"author-2","changedPaths":["docs/a.md"],"checkReceipts":[],"filesSummary":"n"}}'
-  local repair2='{"label":"repair:2","result":{"contextId":"author-3","changedPaths":["docs/a.md"],"checkReceipts":[],"filesSummary":"n"}}'
+# --- the SHARED convergence-law corpus, driven through the workflow ---------
+#
+# tests/fixtures/rpi-convergence-law/cases.json is the same file
+# skills/rpi/tests/test_run_once.py reads. A case honored by only one
+# implementation is a parity break, and a parity break is exactly how the
+# continuous-rename hole survived.
 
+rpi_law_case() {
+  local name="$1"
+  python3 - "$REPO_ROOT" "$name" "$BATS_TEST_TMPDIR" <<'PY'
+import json, pathlib, sys
+root, name, tmp = pathlib.Path(sys.argv[1]), sys.argv[2], pathlib.Path(sys.argv[3])
+doc = json.loads((root / "tests" / "fixtures" / "rpi-convergence-law" / "cases.json").read_text())
+case = next(c for c in doc["cases"] if c["name"] == name)
+queue = [
+    {"label": "plan", "result": {"acceptance": "the behavior holds", "writeScope": ["docs/**"],
+                                 "intentDigest": "aaaa", "intentPath": "/tmp/i.intent"}},
+    {"label": "implement", "result": {"contextId": "author-1", "changedPaths": ["docs/a.md"],
+                                      "checkReceipts": [], "filesSummary": "note"}},
+    {"label": "orphans", "result": {"scriptPresent": False}},
+]
+for index, spec in enumerate(case["rounds"]):
+    if index > 0:
+        queue.append({"label": "repair:%d" % index,
+                      "result": {"contextId": "author-%d" % (index + 1), "changedPaths": ["docs/a.md"],
+                                 "checkReceipts": [], "filesSummary": "n"}})
+    queue.append({"label": "validate", "result": {
+        "verdict": spec["verdict"], "verdictPath": None, "subjectDigest": spec["digest"] * 2,
+        "criteria": [], "validatorContextId": "v%d" % index,
+        "findings": spec["findings"], "evidenceRefs": [], "derivedChangedPaths": ["docs/a.md"]}})
+(tmp / "law-input.json").write_text(json.dumps({
+    "intent": "do the thing", "writeScope": ["docs/**"],
+    "acceptance": "the behavior holds", "repairRounds": case["repair_rounds"]}))
+(tmp / "law-queue.json").write_text(json.dumps(queue))
+(tmp / "law-expect.json").write_text(json.dumps(case["expect"]))
+PY
+}
+
+@test "rpi.js honors every shared convergence-law case that stops" {
+  for name in continuous-rename classless-middle-round simultaneous-id-and-class-reopen distinct-classes-run-on; do
+    rpi_law_case "$name"
+    rpi_probe "$(cat "$BATS_TEST_TMPDIR/law-input.json")" "$(cat "$BATS_TEST_TMPDIR/law-queue.json")"
+    python3 - "$BATS_TEST_TMPDIR/probe.json" "$BATS_TEST_TMPDIR/law-expect.json" "$name" <<'PY'
+import json, sys
+result = json.load(open(sys.argv[1]))["result"]
+expect = json.load(open(sys.argv[2]))
+name = sys.argv[3]
+assert expect["kind"] == "stop", name
+assert result["stopReason"] == expect["stop_reason"], (name, result["stopReason"])
+assert result["stopReasons"] == expect["stop_reasons"], (name, result["stopReasons"])
+assert result["status"] == expect["status"], (name, result["status"])
+assert result["verdict"] == expect["status"], (name, result["verdict"])
+assert result["repairRoundsUsed"] == expect["rounds_used"], (name, result["repairRoundsUsed"])
+PY
+  done
+}
+
+@test "rpi.js refuses every shared convergence-law case that is invalid" {
+  for name in blank-class duplicate-ids fail-without-findings; do
+    rpi_law_case "$name"
+    rpi_probe_refused "$(cat "$BATS_TEST_TMPDIR/law-input.json")" "$(cat "$BATS_TEST_TMPDIR/law-queue.json")"
+    python3 - "$BATS_TEST_TMPDIR/law-expect.json" "$name" <<PY
+import json, sys
+expect = json.load(open("$BATS_TEST_TMPDIR/law-expect.json"))
+assert expect["kind"] == "invalid", "$name"
+assert expect["message"] in """$output""", ("$name", """$output""")
+PY
+  done
+}
+
+@test "rpi.js reports both dispositions when one round reopens an id and its class" {
+  rpi_law_case simultaneous-id-and-class-reopen
+  rpi_probe "$(cat "$BATS_TEST_TMPDIR/law-input.json")" "$(cat "$BATS_TEST_TMPDIR/law-queue.json")"
+  python3 - "$BATS_TEST_TMPDIR/probe.json" <<'PY'
+import json, sys
+result = json.load(open(sys.argv[1]))["result"]
+assert result["stopReason"] == "reopened_finding", result["stopReason"]
+assert "class_reopened" in result["stopReasons"], result["stopReasons"]
+# A class reopen degrades the status even when a reopened id outranks it.
+assert result["status"] == "NOT_PROVEN", result["status"]
+assert "class" in result["stoppedBy"] and "reopened" in result["stoppedBy"], result["stoppedBy"]
+PY
+}
+
+# --- the split law: a tie-break is a disposition, never a verdict override ---
+
+RISKY_SPLIT_ARGS='{"intent":"harden the seal","writeScope":["tests/**"],"acceptance":"the behavior holds","premortem":"skip","crossFamily":{"command":"codex exec --read-only judge"},"repairRounds":0}'
+LEG_PASS='{"label":"validate","result":{"verdict":"PASS","verdictPath":"/tmp/v.json","subjectDigest":"aa","criteria":[],"validatorContextId":"v1","findings":[],"evidenceRefs":[],"derivedChangedPaths":["tests/a.bats"]}}'
+LEG_FAIL='{"label":"validate","result":{"verdict":"FAIL","verdictPath":null,"subjectDigest":"aa","criteria":[],"validatorContextId":"v2","findings":[{"id":"x:y","class":"seal.pinning","summary":"cross-family objection"}],"evidenceRefs":[],"derivedChangedPaths":["tests/a.bats"]}}'
+
+@test "rpi.js records a declared binding judge without letting it certify a split" {
   rpi_probe \
-    '{"intent":"do the thing","writeScope":["docs/**"],"acceptance":"the behavior holds","repairRounds":3}' \
-    "[$PLAN_RESULT_SAFE,$IMPL_RESULT,$ORPHANS_ABSENT,$r0,$repair,$r1,$repair2,$r2]"
+    "$(python3 -c 'import json,sys; a=json.loads(sys.argv[1]); a["bindingJudge"]="primary"; print(json.dumps(a))' "$RISKY_SPLIT_ARGS")" \
+    "[$PLAN_RESULT,$IMPL_RESULT_RISKY,$ORPHANS_ABSENT,$LEG_PASS,$LEG_FAIL,{\"label\":\"council\",\"result\":{\"rulings\":[{\"id\":\"x:y\",\"ruling\":\"real\",\"evidence_refs\":[]}]}}]"
 
   python3 - "$BATS_TEST_TMPDIR/probe.json" <<'PY'
 import json, sys
 probe = json.load(open(sys.argv[1]))
 result = probe["result"]
-assert result["verdict"] == "NOT_PROVEN", result["verdict"]
-assert "class" in result["stoppedBy"], result["stoppedBy"]
-assert "seal.pinning" in result["stoppedBy"], result["stoppedBy"]
-assert "f3" in result["stoppedBy"], result["stoppedBy"]
-assert result["repairRoundsUsed"] == 2, result["repairRoundsUsed"]
-assert result["converged"] is False
+# The law stands: a split never certifies PASS, whoever was declared binding.
+assert result["verdict"] == "FAIL", result["verdict"]
+# And no leg's findings leave the open set.
+assert [f["id"] for f in result["findings"]] == ["x:y"], result["findings"]
+disposition = result["declaredDisposition"]
+assert disposition["judge"] == "primary", disposition
+assert disposition["source"] == "caller", disposition
+assert disposition["applies"] is True, disposition
+assert result["verdictPath"] is None, result["verdictPath"]
+dissent = result["dissent"]
+assert len(dissent) == 1 and dissent[0]["verdict"] == "PASS", dissent
 PY
 }
 
-@test "rpi.js honors a declared binding judge and carries the dissent" {
+@test "rpi.js records and ignores a declared binding judge off a risky scope" {
   rpi_probe \
-    '{"intent":"harden the seal","writeScope":["tests/**"],"acceptance":"the behavior holds","premortem":"skip","bindingJudge":"primary","crossFamily":{"command":"codex exec --read-only judge"},"repairRounds":0}' \
-    "[$PLAN_RESULT,$IMPL_RESULT_RISKY,$ORPHANS_ABSENT,{\"label\":\"validate\",\"result\":{\"verdict\":\"PASS\",\"verdictPath\":\"/tmp/v.json\",\"subjectDigest\":\"aa\",\"criteria\":[],\"validatorContextId\":\"v1\",\"findings\":[],\"evidenceRefs\":[],\"derivedChangedPaths\":[\"tests/a.bats\"]}},{\"label\":\"validate\",\"result\":{\"verdict\":\"FAIL\",\"verdictPath\":null,\"subjectDigest\":\"aa\",\"criteria\":[],\"validatorContextId\":\"v2\",\"findings\":[{\"id\":\"x:y\",\"summary\":\"cross-family objection\"}],\"evidenceRefs\":[],\"derivedChangedPaths\":[\"tests/a.bats\"]}}]"
+    '{"intent":"do the thing","writeScope":["docs/**"],"acceptance":"the behavior holds","bindingJudge":"cross","crossFamily":{"command":"codex exec --read-only judge"},"repairRounds":0}' \
+    "[$PLAN_RESULT_SAFE,$IMPL_RESULT,$ORPHANS_ABSENT,{\"label\":\"validate\",\"result\":{\"verdict\":\"PASS\",\"verdictPath\":\"/tmp/v.json\",\"subjectDigest\":\"aa\",\"criteria\":[],\"validatorContextId\":\"v1\",\"findings\":[],\"evidenceRefs\":[],\"derivedChangedPaths\":[\"docs/a.md\"]}},{\"label\":\"validate\",\"result\":{\"verdict\":\"FAIL\",\"verdictPath\":null,\"subjectDigest\":\"aa\",\"criteria\":[],\"validatorContextId\":\"v2\",\"findings\":[{\"id\":\"x:y\",\"summary\":\"single-family objection\"}],\"evidenceRefs\":[],\"derivedChangedPaths\":[\"docs/a.md\"]}}]"
 
   python3 - "$BATS_TEST_TMPDIR/probe.json" <<'PY'
 import json, sys
 probe = json.load(open(sys.argv[1]))
 assert "council" not in probe["calls"], probe["calls"]
 result = probe["result"]
-assert result["verdict"] == "PASS", result["verdict"]
-assert result["tieBreak"] == "bindingJudge:primary", result["tieBreak"]
-assert result["findings"] == [], result["findings"]
-dissent = result["dissent"]
-assert len(dissent) == 1 and dissent[0]["verdict"] == "FAIL", dissent
-assert [f["id"] for f in dissent[0]["findings"]] == ["x:y"], dissent
-# A split never exposes one leg's persisted verdict file as the aggregate.
-assert result["verdictPath"] is None
+assert result["verdict"] == "FAIL", result["verdict"]
+assert result["tieBreak"] == "worst-of", result["tieBreak"]
+assert [f["id"] for f in result["findings"]] == ["x:y"], result["findings"]
+disposition = result["declaredDisposition"]
+assert disposition["applies"] is False, disposition
+assert "not risky" in disposition["note"], disposition
 PY
 }
 
-@test "rpi.js convenes one council on an undeclared split over a risky surface" {
+@test "rpi.js refuses a caller and plan that declare different binding judges" {
+  rpi_probe \
+    '{"intent":"harden the seal","writeScope":["tests/**"],"acceptance":"the behavior holds","bindingJudge":"primary"}' \
+    '[{"label":"plan","result":{"acceptance":"the behavior holds","writeScope":["tests/**"],"intentDigest":"aaaa","intentPath":"/tmp/i.intent","binding_judge":"cross"}}]'
+
+  python3 - "$BATS_TEST_TMPDIR/probe.json" <<'PY'
+import json, sys
+probe = json.load(open(sys.argv[1]))
+assert probe["calls"] == ["plan"], probe["calls"]
+result = probe["result"]
+assert result["status"] == "NOT_PROVEN", result["status"]
+assert result["stopReason"] == "binding_judge_conflict", result["stopReason"]
+assert result["declaredDisposition"]["caller"] == "primary", result["declaredDisposition"]
+assert result["declaredDisposition"]["plan"] == "cross", result["declaredDisposition"]
+# The risky scope's premortem was required and never ran; say so.
+assert result["premortem"]["status"] == "required", result["premortem"]
+PY
+}
+
+@test "rpi.js accepts a binding judge declared only by the frozen plan" {
   rpi_probe \
     '{"intent":"harden the seal","writeScope":["tests/**"],"acceptance":"the behavior holds","premortem":"skip","crossFamily":{"command":"codex exec --read-only judge"},"repairRounds":0}' \
-    "[$PLAN_RESULT,$IMPL_RESULT_RISKY,$ORPHANS_ABSENT,{\"label\":\"validate\",\"result\":{\"verdict\":\"PASS\",\"verdictPath\":\"/tmp/v.json\",\"subjectDigest\":\"aa\",\"criteria\":[],\"validatorContextId\":\"v1\",\"findings\":[],\"evidenceRefs\":[],\"derivedChangedPaths\":[\"tests/a.bats\"]}},{\"label\":\"validate\",\"result\":{\"verdict\":\"FAIL\",\"verdictPath\":null,\"subjectDigest\":\"aa\",\"criteria\":[],\"validatorContextId\":\"v2\",\"findings\":[{\"id\":\"x:y\",\"summary\":\"cross-family objection\"}],\"evidenceRefs\":[],\"derivedChangedPaths\":[\"tests/a.bats\"]}},{\"label\":\"council\",\"result\":{\"verdict\":\"FAIL\",\"reason\":\"the objection reproduces\"}}]"
+    "[{\"label\":\"plan\",\"result\":{\"acceptance\":\"the behavior holds\",\"writeScope\":[\"tests/**\"],\"intentDigest\":\"aaaa\",\"intentPath\":\"/tmp/i.intent\",\"binding_judge\":\"cross\"}},$IMPL_RESULT_RISKY,$ORPHANS_ABSENT,$LEG_PASS,$LEG_FAIL,{\"label\":\"council\",\"result\":{\"rulings\":[{\"id\":\"x:y\",\"ruling\":\"real\",\"evidence_refs\":[]}]}}]"
+
+  python3 - "$BATS_TEST_TMPDIR/probe.json" <<'PY'
+import json, sys
+result = json.load(open(sys.argv[1]))["result"]
+assert result["declaredDisposition"]["judge"] == "cross", result["declaredDisposition"]
+assert result["declaredDisposition"]["source"] == "plan", result["declaredDisposition"]
+assert result["verdict"] == "FAIL", result["verdict"]
+PY
+}
+
+@test "rpi.js convenes a council that adjudicates findings and never a verdict" {
+  rpi_probe "$RISKY_SPLIT_ARGS" \
+    "[$PLAN_RESULT,$IMPL_RESULT_RISKY,$ORPHANS_ABSENT,$LEG_PASS,$LEG_FAIL,{\"label\":\"council\",\"result\":{\"rulings\":[{\"id\":\"x:y\",\"ruling\":\"real\",\"evidence_refs\":[\".agents/ao/repro.txt\"]}]}}]"
 
   python3 - "$BATS_TEST_TMPDIR/probe.json" <<'PY'
 import json, sys
@@ -1258,13 +1461,77 @@ probe = json.load(open(sys.argv[1]))
 assert probe["calls"].count("council") == 1, probe["calls"]
 result = probe["result"]
 assert result["verdict"] == "FAIL", result["verdict"]
-assert result["council"]["verdict"] == "FAIL", result["council"]
-assert result["council"]["reason"] == "the objection reproduces", result["council"]
 assert [f["id"] for f in result["findings"]] == ["x:y"], result["findings"]
-# The council rules between the two legs; it never mints a third verdict.
+assert result["council"]["status"] == "ruled", result["council"]
+assert result["council"]["closed"] == [], result["council"]
+assert result["council"]["rulings"][0]["applied"] == "kept-open", result["council"]
+# The packet is bounded, structured, and marked untrusted.
 prompt = probe["prompts"]["council"]
-assert "PASS" in prompt and "FAIL" in prompt
+assert "UNTRUSTED DATA" in prompt, prompt
 assert "cross-family objection" in prompt
+assert "the behavior holds" in prompt
+assert "tests/a.bats" in prompt
+# The council never returns a verdict, so it is never asked for one.
+assert "Return rulings" in prompt
+PY
+}
+
+@test "rpi.js closes a finding only on a council disproof that carries evidence" {
+  rpi_probe "$RISKY_SPLIT_ARGS" \
+    "[$PLAN_RESULT,$IMPL_RESULT_RISKY,$ORPHANS_ABSENT,$LEG_PASS,$LEG_FAIL,{\"label\":\"council\",\"result\":{\"rulings\":[{\"id\":\"x:y\",\"ruling\":\"not_real\",\"evidence_refs\":[]}]}}]"
+
+  python3 - "$BATS_TEST_TMPDIR/probe.json" <<'PY'
+import json, sys
+result = json.load(open(sys.argv[1]))["result"]
+# An unsupported dismissal closes nothing.
+assert [f["id"] for f in result["findings"]] == ["x:y"], result["findings"]
+assert result["verdict"] == "FAIL", result["verdict"]
+assert result["council"]["rulings"][0]["applied"] == "kept-open", result["council"]
+PY
+}
+
+@test "rpi.js treats a FAIL leg whose findings the council all closed as NOT_PROVEN" {
+  rpi_probe "$RISKY_SPLIT_ARGS" \
+    "[$PLAN_RESULT,$IMPL_RESULT_RISKY,$ORPHANS_ABSENT,$LEG_PASS,$LEG_FAIL,{\"label\":\"council\",\"result\":{\"rulings\":[{\"id\":\"x:y\",\"ruling\":\"not_real\",\"evidence_refs\":[\".agents/ao/disproof.txt\"]}]}}]"
+
+  python3 - "$BATS_TEST_TMPDIR/probe.json" <<'PY'
+import json, sys
+result = json.load(open(sys.argv[1]))["result"]
+# A verdict with no surviving findings proves nothing either way; it is never
+# promoted to the other leg's PASS.
+assert result["verdict"] == "NOT_PROVEN", result["verdict"]
+assert result["findings"] == [], result["findings"]
+assert result["council"]["closed"] == ["x:y"], result["council"]
+assert result["stopReason"] == "verdict_without_findings", result["stopReason"]
+# The council's disproof enters as BOUND evidence over the judged subject.
+assert result["verdictPath"] is None
+PY
+}
+
+@test "rpi.js keeps every finding open when the council does not rule" {
+  rpi_probe "$RISKY_SPLIT_ARGS" \
+    "[$PLAN_RESULT,$IMPL_RESULT_RISKY,$ORPHANS_ABSENT,$LEG_PASS,$LEG_FAIL,{\"label\":\"council\"}]"
+
+  python3 - "$BATS_TEST_TMPDIR/probe.json" <<'PY'
+import json, sys
+result = json.load(open(sys.argv[1]))["result"]
+assert result["council"]["status"] == "unavailable", result["council"]
+assert [f["id"] for f in result["findings"]] == ["x:y"], result["findings"]
+assert result["verdict"] == "FAIL", result["verdict"]
+PY
+}
+
+@test "rpi.js ignores a council ruling on a finding that is not on the table" {
+  rpi_probe "$RISKY_SPLIT_ARGS" \
+    "[$PLAN_RESULT,$IMPL_RESULT_RISKY,$ORPHANS_ABSENT,$LEG_PASS,$LEG_FAIL,{\"label\":\"council\",\"result\":{\"rulings\":[{\"id\":\"invented:id\",\"ruling\":\"not_real\",\"evidence_refs\":[\"x\"]}]}}]"
+
+  python3 - "$BATS_TEST_TMPDIR/probe.json" <<'PY'
+import json, sys
+result = json.load(open(sys.argv[1]))["result"]
+assert [f["id"] for f in result["findings"]] == ["x:y"], result["findings"]
+assert result["council"]["rulings"][0]["applied"] == "unknown-finding", result["council"]
+assert result["council"]["closed"] == [], result["council"]
+assert result["verdict"] == "FAIL", result["verdict"]
 PY
 }
 
@@ -1279,7 +1546,28 @@ probe = json.load(open(sys.argv[1]))
 assert "council" not in probe["calls"], probe["calls"]
 result = probe["result"]
 assert result["verdict"] == "FAIL", result["verdict"]
-assert result["dissent"] is None, result["dissent"]
+assert result["council"] is None, result["council"]
 assert [f["id"] for f in result["findings"]] == ["x:y"], result["findings"]
+PY
+}
+
+@test "rpi.js stop reasons come from the fixed enum, never from prose" {
+  python3 - "$REPO_ROOT/workflows/rpi.js" "$REPO_ROOT/skills/rpi/scripts/run_once.py" <<'PY'
+import re, sys
+js = open(sys.argv[1]).read()
+py = open(sys.argv[2]).read()
+block = re.search(r"const STOP_REASONS = Object\.freeze\(\{(.*?)\}\);", js, re.S).group(1)
+js_values = set(re.findall(r"'([a-z_]+)'", block))
+py_values = set(re.findall(r'"([a-z_]+)"', re.search(r"STOP_REASONS = \((.*?)\)", py, re.S).group(1)))
+assert len(py_values) == 8, py_values
+missing = py_values - js_values
+assert not missing, "the workflow enum does not mirror the reference behavior: %s" % sorted(missing)
+# The workflow adds only stops a dispatcher can reach.
+assert js_values - py_values, "the workflow declares no workflow-only stop reasons"
+# No stopReason is ever assigned a prose literal; the enum is the only source.
+literal = re.search(r"stopReason(?:s)?\s*[:=]\s*['\"]", js)
+assert literal is None, "stopReason assigned a string literal: %s" % literal.group(0)
+# And the report always carries one.
+assert "stopReason: fields.stopReason" in js
 PY
 }
