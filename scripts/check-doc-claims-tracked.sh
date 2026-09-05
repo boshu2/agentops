@@ -63,6 +63,7 @@ if ! git -C "$TARGET" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
   exit 2
 fi
 
+work=""
 with_tmpdir work claims-tracked
 file_list="$work/files.txt"
 : > "$file_list"

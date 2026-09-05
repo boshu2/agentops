@@ -69,6 +69,7 @@ while [ $# -gt 0 ]; do
   shift
 done
 
+work=""
 with_tmpdir work evidence-orphans
 changed_list="$work/changed.txt"
 : > "$changed_list"
