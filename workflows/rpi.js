@@ -1640,10 +1640,9 @@ if (validation && validation.risky && validation.split && councilEligible) {
     // is never certified without a fresh judgment. By the time the council can
     // rule, the repair phase has already ended on the caller's bound (a law
     // stop makes it ineligible), so no round remains to re-judge the closure
-    // and `revalidated` is false: the run reports the closure and degrades
+    // and `revalidated` stays false: the run reports the closure and degrades
     // rather than reporting the post-council aggregate as if a judge had
     // confirmed it.
-    councilRecord.revalidated = false;
     validation = degrade(postCouncil, 'NOT_PROVEN');
     if (stopReason === null) {
       stopReason = STOP_REASONS.repairBudgetExhausted;
