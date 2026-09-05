@@ -362,6 +362,31 @@ def normalize_round(value: Any) -> dict[str, Any]:
     }
 
 
+def assert_stable_classes(
+    previous: Mapping[str, Any], current: Mapping[str, Any]
+) -> None:
+    """Refuse a round that mutates the class of an id that CARRIED THROUGH.
+
+    A class is a stable property of a finding, not a field a round may revise.
+    Mutating it on a surviving id defeats the class law from the inside: in
+    `f1[X] -> f1[Y] -> f2[X]` the id never resolves, so X looks retired with
+    nothing having closed it, and the same kind reappears on a new id
+    unremarked. Adding or removing a class on a surviving id is the same
+    mutation wearing a different sign.
+
+    This is an INVALID round, not a law violation: the law reasons over stable
+    keys, and a round that moves the keys gives it nothing to reason with.
+    """
+    for finding_id in sorted(previous["open_ids"] & current["open_ids"]):
+        before = previous["open_classes"].get(finding_id)
+        after = current["open_classes"].get(finding_id)
+        if before != after:
+            raise ValueError(
+                f"finding {finding_id!r} changed class from {before!r} to {after!r} "
+                "while still open; a finding class is stable across rounds"
+            )
+
+
 def reopened_classes(
     previous: Mapping[str, Any],
     current: Mapping[str, Any],
@@ -530,6 +555,7 @@ def run_repair_phase(
                 stop_reason = "repair_budget_exhausted"
                 break
             candidate = normalize_round(raw_candidate)
+            assert_stable_classes(previous, candidate)
             rounds_used += 1
             current = candidate
             checked.append(
