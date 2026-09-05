@@ -513,3 +513,122 @@ MD
     [ "$status" -eq 0 ]
     [[ "$output" == *"OK:"* ]]
 }
+
+# --- fence closers: character and length both matter ----------------------
+#
+# CommonMark closes a fence only with the same character, at least as long as
+# the opener, and nothing but whitespace after it. Matching on the first
+# character alone let a shorter run or an info-bearing line close a block, so
+# the scanner's idea of "inside a fence" drifted from the renderer's.
+
+@test "a shorter backtick run does not close a longer fence" {
+    cat > "$FIX/evals/doc.md" <<'MD'
+````bash
+cat `scripts/still-inside.sh`
+```
+cat `scripts/also-inside.sh`
+````
+
+Back in prose.
+MD
+    git -C "$FIX" add evals/doc.md
+    git -C "$FIX" commit -q -m init
+    touch "$FIX/scripts/still-inside.sh" "$FIX/scripts/also-inside.sh"
+
+    run bash "$GATE" "$FIX"
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"OK:"* ]]
+}
+
+@test "a longer backtick run does close a shorter fence" {
+    cat > "$FIX/evals/doc.md" <<'MD'
+```bash
+cat `scripts/inside.sh`
+````
+
+This helper is at `scripts/outside-untracked.sh`.
+MD
+    git -C "$FIX" add evals/doc.md
+    git -C "$FIX" commit -q -m init
+    touch "$FIX/scripts/inside.sh" "$FIX/scripts/outside-untracked.sh"
+
+    run bash "$GATE" "$FIX"
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"scripts/outside-untracked.sh untracked"* ]]
+    [[ "$output" != *"scripts/inside.sh"* ]]
+}
+
+@test "a tilde run does not close a backtick fence" {
+    cat > "$FIX/evals/doc.md" <<'MD'
+```bash
+cat `scripts/tilde-inside.sh`
+~~~
+cat `scripts/tilde-also-inside.sh`
+```
+
+Back in prose.
+MD
+    git -C "$FIX" add evals/doc.md
+    git -C "$FIX" commit -q -m init
+    touch "$FIX/scripts/tilde-inside.sh" "$FIX/scripts/tilde-also-inside.sh"
+
+    run bash "$GATE" "$FIX"
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"OK:"* ]]
+}
+
+@test "a backtick run does not close a tilde fence" {
+    cat > "$FIX/evals/doc.md" <<'MD'
+~~~bash
+cat `scripts/backtick-inside.sh`
+```
+cat `scripts/backtick-also-inside.sh`
+~~~
+
+Back in prose.
+MD
+    git -C "$FIX" add evals/doc.md
+    git -C "$FIX" commit -q -m init
+    touch "$FIX/scripts/backtick-inside.sh" "$FIX/scripts/backtick-also-inside.sh"
+
+    run bash "$GATE" "$FIX"
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"OK:"* ]]
+}
+
+@test "a closer carrying an info string does not close the fence" {
+    cat > "$FIX/evals/doc.md" <<'MD'
+```bash
+cat `scripts/info-inside.sh`
+``` trailing words
+cat `scripts/info-also-inside.sh`
+```
+
+Back in prose.
+MD
+    git -C "$FIX" add evals/doc.md
+    git -C "$FIX" commit -q -m init
+    touch "$FIX/scripts/info-inside.sh" "$FIX/scripts/info-also-inside.sh"
+
+    run bash "$GATE" "$FIX"
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"OK:"* ]]
+}
+
+@test "a data fence closed by a longer run resumes prose rules after it" {
+    cat > "$FIX/evals/doc.md" <<'MD'
+~~~json
+{"harness": "scripts/data-inside-untracked.sh"}
+~~~~
+
+A future capture might land at `evals/skill-probes/later.log` eventually.
+MD
+    git -C "$FIX" add evals/doc.md
+    git -C "$FIX" commit -q -m init
+    touch "$FIX/scripts/data-inside-untracked.sh"
+
+    run bash "$GATE" "$FIX"
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"scripts/data-inside-untracked.sh untracked"* ]]
+    [[ "$output" != *"later.log"* ]]
+}

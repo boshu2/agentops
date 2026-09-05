@@ -21,6 +21,11 @@
 #   * does not contain `*` or `{` (a glob pattern, not one file);
 #   * starts with one of `evals/`, `docs/evals/`, `scripts/`, or `tests/` —
 #     the four trees this gate can reason about.
+# A fence opens on a run of at least three backticks or tildes and closes only
+# on a run of the SAME character, at least as long, with nothing but whitespace
+# after it: a shorter run, the other character, or a trailing info string does
+# not close it.
+#
 # A fenced code block is skipped ONLY when it quotes a COMMAND, because a
 # command line is an example invocation rather than a claim about the tree:
 #   * its info string is a shell (`bash`, `sh`, `shell`, `console`, `zsh`), or
@@ -211,6 +216,7 @@ for display_path in files:
     paragraph_of = [-1] * len(lines)
     paragraphs = []
     fence_marker = None
+    fence_length = 0
     fence_decided = None
     current = -1
     for index, line in enumerate(lines):
@@ -218,6 +224,7 @@ for display_path in files:
         if fence_marker is None:
             if opener is not None:
                 fence_marker = opener.group(1)[0]
+                fence_length = len(opener.group(1))
                 fence_info = opener.group(2).split(",")[0].strip().lower()
                 # A shell fence is exempt on its info string alone; an
                 # info-less fence waits for its first content line.
@@ -227,8 +234,20 @@ for display_path in files:
                 current = -1
                 continue
         else:
-            if opener is not None and opener.group(1)[0] == fence_marker:
+            # CommonMark closes a fence only with the SAME character, a run at
+            # least as long as the opener, and nothing but whitespace after it.
+            # Matching the first character alone let a shorter run, a different
+            # character, or an info-bearing line close a block, so the scanner's
+            # idea of "inside a fence" drifted from the renderer's.
+            if (
+                opener is not None
+                and opener.group(1)[0] == fence_marker
+                and len(opener.group(1)) >= fence_length
+                and not opener.group(2).strip()
+                and not line.strip().strip(fence_marker)
+            ):
                 fence_marker = None
+                fence_length = 0
                 fence_decided = None
                 continue
             if fence_decided is None:
