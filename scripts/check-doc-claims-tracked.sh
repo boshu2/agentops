@@ -21,8 +21,18 @@
 #   * does not contain `*` or `{` (a glob pattern, not one file);
 #   * starts with one of `evals/`, `docs/evals/`, `scripts/`, or `tests/` —
 #     the four trees this gate can reason about.
-# Text inside a fenced code block (``` ... ```) is skipped entirely: a fenced
-# block quotes an example command, not a claim about the tree.
+# A fenced code block is skipped ONLY when it quotes a COMMAND, because a
+# command line is an example invocation rather than a claim about the tree:
+#   * its info string is a shell (`bash`, `sh`, `shell`, `console`, `zsh`), or
+#   * it has NO info string and its first non-blank line starts with `$`, with
+#     `./`, or with a known command word.
+# Every other fence is SCANNED — `text`, `json`, and any other data fence is
+# exactly where a scorecard or a probe README shows its own layout, and
+# exempting all fences let those claims outrun the tree unchecked.
+#
+# A code span's trailing sentence punctuation (`.`, `,`, `;`, `:`) is stripped
+# before the token is treated as a path, so "lives at `scripts/x.sh`." resolves
+# `scripts/x.sh` rather than a file named `scripts/x.sh.`.
 #
 # For each candidate path, relative to the repository root:
 #   * exists on disk but is NOT tracked by git      -> offender: untracked
@@ -38,7 +48,9 @@
 #   0 - clean (or nothing to scan)
 #   1 - one or more offenders found
 #   2 - fail-closed error (git missing/unusable, python3 missing, a scanned
-#       file could not be read as UTF-8 text)
+#       file could not be read as UTF-8 text, or a `git ls-files` lookup that
+#       answered neither "tracked" (0) nor "untracked" (1) — an unanswered
+#       question is never a negative answer)
 #
 # Usage:
 #   bash scripts/check-doc-claims-tracked.sh
@@ -54,7 +66,7 @@ PROG="check-doc-claims-tracked"
 TARGET="${1:-$REPO_ROOT}"
 
 if [ "${1:-}" = "-h" ] || [ "${1:-}" = "--help" ]; then
-  sed -n '2,45p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
+  sed -n '2,58p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
   exit 0
 fi
 
@@ -94,6 +106,32 @@ with open(sys.argv[2], "r", encoding="utf-8") as _fl:
 BACKTICK_RE = re.compile(r"`([^`\n]+)`")
 PREFIXES = ("evals/", "docs/evals/", "scripts/", "tests/")
 CLAIM_WORDS = ("published", "tracked", "committed", "lives at")
+FENCE_RE = re.compile(r"^\s{0,3}(`{3,}|~{3,})\s*(\S*)")
+# A fence is exempt only when it quotes a COMMAND. These are the info strings
+# that say so outright.
+SHELL_INFO = frozenset({"bash", "sh", "shell", "console", "zsh"})
+# ...and these are the first words that say so for an info-less fence. An
+# allowlist, not a heuristic: "anything that looks like a word" would exempt
+# every data fence and reopen the hole this rule closes.
+COMMAND_WORDS = frozenset({
+    "ao", "bash", "bats", "bd", "br", "bv", "cat", "cd", "chmod", "cp", "curl",
+    "docker", "echo", "export", "find", "git", "go", "grep", "helm", "jq",
+    "kubectl", "ls", "make", "mkdir", "mv", "node", "npm", "npx", "printf",
+    "python", "python3", "rg", "rm", "sed", "sh", "shellcheck", "sort", "tar",
+    "touch", "uv", "yarn", "zsh",
+})
+# Sentence punctuation that follows a path inside a code span.
+TRAILING_PUNCTUATION = ".,;:"
+
+
+def command_fence(first_line: str) -> bool:
+    """True when an info-less fence's first content line is a command."""
+    stripped = first_line.strip()
+    if not stripped:
+        return False
+    if stripped.startswith("$") or stripped.startswith("./"):
+        return True
+    return stripped.split()[0] in COMMAND_WORDS
 
 
 def is_candidate(tok: str) -> bool:
@@ -116,6 +154,15 @@ def is_tracked(relpath: str) -> bool:
         stdout=subprocess.DEVNULL,
         stderr=subprocess.DEVNULL,
     )
+    # 0 is "tracked" and 1 is "not tracked"; anything else is git failing to
+    # answer. Reading a failure as "untracked" would report a false offender
+    # and, worse, would let a real answer be replaced by a broken tool.
+    if result.returncode not in (0, 1):
+        print(
+            f"git ls-files failed for {relpath} (exit {result.returncode})",
+            file=sys.stderr,
+        )
+        sys.exit(2)
     return result.returncode == 0
 
 
@@ -129,17 +176,37 @@ for display_path in files:
         sys.exit(2)
 
     rel_display = os.path.relpath(display_path, repo_root)
-    in_fence = False
+    fence_marker = None
+    fence_info = None
+    fence_decided = None
     for lineno, line in enumerate(lines, start=1):
-        if line.strip().startswith("```"):
-            in_fence = not in_fence
-            continue
-        if in_fence:
-            continue
+        opener = FENCE_RE.match(line)
+        if fence_marker is None:
+            if opener is not None:
+                fence_marker = opener.group(1)[0]
+                fence_info = opener.group(2).split(",")[0].strip().lower()
+                # A shell fence is exempt on its info string alone; an
+                # info-less fence waits for its first content line.
+                fence_decided = True if fence_info in SHELL_INFO else (
+                    None if fence_info == "" else False
+                )
+                continue
+        else:
+            if opener is not None and opener.group(1)[0] == fence_marker:
+                fence_marker = None
+                fence_info = None
+                fence_decided = None
+                continue
+            if fence_decided is None:
+                fence_decided = command_fence(line)
+            if fence_decided:
+                continue
         lowered = line.lower()
         claims = any(word in lowered for word in CLAIM_WORDS)
         for raw_tok in BACKTICK_RE.findall(line):
-            tok = raw_tok.strip()
+            # A path at the end of a sentence carries the sentence's
+            # punctuation inside the span; strip it before resolving.
+            tok = raw_tok.strip().rstrip(TRAILING_PUNCTUATION)
             if not is_candidate(tok):
                 continue
             abs_path = os.path.join(repo_root, tok)

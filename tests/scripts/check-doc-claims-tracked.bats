@@ -164,3 +164,173 @@ MD
     [ "$status" -eq 0 ]
     [[ "$output" == *"OK:"* ]]
 }
+
+# --- fence handling: skip shells, scan data --------------------------------
+#
+# The original rule skipped EVERY fenced block, so a `text` or `json` fence
+# quoting a real repo path -- the exact shape a scorecard or a probe README
+# uses to show its own layout -- was silently exempt. Only a fence that quotes
+# a COMMAND is exempt, because a command line is an example invocation, not a
+# claim about the tree.
+
+@test "a text fence naming an untracked path is scanned" {
+    cat > "$FIX/evals/doc.md" <<'MD'
+The layout:
+
+```text
+`scripts/text-fence-untracked.sh`
+```
+MD
+    git -C "$FIX" add evals/doc.md
+    git -C "$FIX" commit -q -m init
+    touch "$FIX/scripts/text-fence-untracked.sh"
+
+    run bash "$GATE" "$FIX"
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"scripts/text-fence-untracked.sh untracked"* ]]
+}
+
+@test "a json fence naming an untracked path is scanned" {
+    cat > "$FIX/evals/doc.md" <<'MD'
+```json
+{"harness": "`scripts/json-fence-untracked.sh`"}
+```
+MD
+    git -C "$FIX" add evals/doc.md
+    git -C "$FIX" commit -q -m init
+    touch "$FIX/scripts/json-fence-untracked.sh"
+
+    run bash "$GATE" "$FIX"
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"scripts/json-fence-untracked.sh untracked"* ]]
+}
+
+@test "shell-info fences stay exempt for every shell spelling" {
+    for info in bash sh shell console zsh; do
+        cat > "$FIX/evals/doc-$info.md" <<MD
+\`\`\`$info
+cat \`scripts/shell-fence-$info.sh\`
+\`\`\`
+MD
+        touch "$FIX/scripts/shell-fence-$info.sh"
+    done
+    git -C "$FIX" add evals
+    git -C "$FIX" commit -q -m init
+
+    run bash "$GATE" "$FIX"
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"OK:"* ]]
+}
+
+@test "an info-less fence whose first line is a prompt or a command stays exempt" {
+    cat > "$FIX/evals/prompt.md" <<'MD'
+```
+$ cat `scripts/prompt-fence-untracked.sh`
+```
+MD
+    cat > "$FIX/evals/command.md" <<'MD'
+```
+bash `scripts/command-fence-untracked.sh`
+```
+MD
+    touch "$FIX/scripts/prompt-fence-untracked.sh" "$FIX/scripts/command-fence-untracked.sh"
+    git -C "$FIX" add evals
+    git -C "$FIX" commit -q -m init
+
+    run bash "$GATE" "$FIX"
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"OK:"* ]]
+}
+
+@test "an info-less fence that is plainly data is scanned" {
+    cat > "$FIX/evals/doc.md" <<'MD'
+```
+{"binds": "`scripts/data-fence-untracked.sh`"}
+```
+MD
+    git -C "$FIX" add evals/doc.md
+    git -C "$FIX" commit -q -m init
+    touch "$FIX/scripts/data-fence-untracked.sh"
+
+    run bash "$GATE" "$FIX"
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"scripts/data-fence-untracked.sh untracked"* ]]
+}
+
+# --- code-span punctuation -------------------------------------------------
+
+@test "trailing sentence punctuation is stripped before the path is resolved" {
+    cat > "$FIX/evals/doc.md" <<'MD'
+The receipt lives at `scripts/punctuated.sh.`
+And the fixture at `tests/fixtures/thing.json,` plus `tests/other.json;` and `tests/third.json:`
+MD
+    git -C "$FIX" add evals/doc.md
+    git -C "$FIX" commit -q -m init
+    mkdir -p "$FIX/tests/fixtures"
+    touch "$FIX/scripts/punctuated.sh" "$FIX/tests/fixtures/thing.json" \
+        "$FIX/tests/other.json" "$FIX/tests/third.json"
+
+    run bash "$GATE" "$FIX"
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"scripts/punctuated.sh untracked"* ]]
+    [[ "$output" == *"tests/fixtures/thing.json untracked"* ]]
+    [[ "$output" == *"tests/other.json untracked"* ]]
+    [[ "$output" == *"tests/third.json untracked"* ]]
+    # The stripped punctuation never leaks into the reported path.
+    [[ "$output" != *"punctuated.sh. untracked"* ]]
+}
+
+@test "a punctuation-stripped path is still held to the claim rule when missing" {
+    cat > "$FIX/evals/doc.md" <<'MD'
+The egress log is published at `evals/gone.log.`
+MD
+    git -C "$FIX" add evals/doc.md
+    git -C "$FIX" commit -q -m init
+
+    run bash "$GATE" "$FIX"
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"evals/gone.log missing"* ]]
+}
+
+# --- enumeration and fail-closed ------------------------------------------
+
+@test "both offender states are retained in one run" {
+    cat > "$FIX/evals/doc.md" <<'MD'
+Present but untracked: `scripts/untracked.sh`.
+The log is published at `evals/absent.log`.
+MD
+    git -C "$FIX" add evals/doc.md
+    git -C "$FIX" commit -q -m init
+    touch "$FIX/scripts/untracked.sh"
+
+    run bash "$GATE" "$FIX"
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"scripts/untracked.sh untracked"* ]]
+    [[ "$output" == *"evals/absent.log missing"* ]]
+}
+
+@test "a git failure during the tracked lookup fails closed rather than reporting untracked" {
+    cat > "$FIX/evals/doc.md" <<'MD'
+This helper is at `scripts/tracked.sh`.
+MD
+    touch "$FIX/scripts/tracked.sh"
+    git -C "$FIX" add evals/doc.md scripts/tracked.sh
+    git -C "$FIX" commit -q -m init
+
+    # A `git` that exits with neither 0 (tracked) nor 1 (untracked) is an
+    # unanswered question, not a negative answer.
+    mkdir -p "$BATS_TEST_TMPDIR/fakebin"
+    cat > "$BATS_TEST_TMPDIR/fakebin/git" <<'SH'
+#!/usr/bin/env bash
+if [ "$3" = "ls-files" ] || [ "$*" != "${*/ls-files/}" ]; then
+  echo "git exploded" >&2
+  exit 128
+fi
+exec /usr/bin/git "$@"
+SH
+    chmod +x "$BATS_TEST_TMPDIR/fakebin/git"
+
+    run env PATH="$BATS_TEST_TMPDIR/fakebin:$PATH" bash "$GATE" "$FIX"
+    [ "$status" -eq 2 ]
+    [[ "$output" != *"untracked"* ]]
+}

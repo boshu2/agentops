@@ -215,14 +215,25 @@ var (
 	// out of the tree, and the fresh verifier accepted the absence because
 	// nothing checked the sentence against the working tree. Routes on the
 	// two doc trees it scans, on `.gitignore` (a rule change can turn a
-	// previously-tracked claim path untracked), and self-reference (the
-	// script + its bats) so editing the gate re-runs it.
+	// previously-tracked claim path untracked), on the two trees the claims
+	// POINT AT (deleting a claimed target is what turns a clean sentence
+	// false), and self-reference (the script and its bats live under those two
+	// trees) so editing the gate re-runs it.
+	//
+	// Directory prefixes, not `evals/**/*.md`: the router's own matcher
+	// (cli/internal/gates/routing.go matchGlob) reads a pattern with an
+	// interior `*` as "literal prefix plus literal suffix", so `evals/**/*.md`
+	// demanded a path ENDING in the characters `*/*.md` and selected nothing.
+	// A glob the matcher cannot evaluate is worse than no glob at all: the gate
+	// reads as routed while lying dormant on every doc edit. Over-selecting a
+	// few non-Markdown edits under these trees is the honest cost; the scan is
+	// fast and exits clean when there is nothing to check.
 	docClaimsTrackedPaths = []string{
-		"evals/**/*.md",
-		"docs/evals/**/*.md",
+		"evals/**",
+		"docs/evals/**",
 		".gitignore",
-		"scripts/check-doc-claims-tracked.sh",
-		"tests/scripts/check-doc-claims-tracked.bats",
+		"scripts/**",
+		"tests/**",
 	}
 	// Claude workflows must use `br` (bd/Dolt is retired). operating-loop.js —
 	// the most-viewed content artifact on the public repo — shipped a prompt
