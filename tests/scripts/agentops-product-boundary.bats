@@ -1230,6 +1230,7 @@ payload = json.dumps({
     "acceptance": "the behavior holds",
     "binding_judge": None,
     "intent_digest": "aaaa",
+    "orphaned_evidence": [],
     "write_scope": ["docs/**"],
 }, separators=(",", ":"))
 expected = hashlib.sha256(payload.encode("utf-8")).hexdigest()
@@ -1238,6 +1239,55 @@ assert result["intentDigest"] == "aaaa", result["intentDigest"]
 # The frozen identity reaches the stages that must judge the same plan.
 assert expected in probe["prompts"]["implement"], probe["prompts"]["implement"]
 assert expected in probe["prompts"]["validate"], probe["prompts"]["validate"]
+PY
+}
+
+@test "rpi.js binds the orphan list into the plan identity and carries it" {
+  # orphaned_evidence was required of a risky plan and then dropped: it reached
+  # neither the identity, nor the report, nor any downstream prompt.
+  local plan_risky
+  plan_risky='{"label":"plan","result":{"acceptance":"the behavior holds","writeScope":["tests/**"],"intentDigest":"aaaa","intentPath":"/tmp/i.intent","binding_judge":"cross","orphaned_evidence":["docs/evals/scorecards/x.json binds scripts/harness.sh"]}}'
+
+  rpi_probe \
+    '{"intent":"harden the seal","writeScope":["tests/**"],"acceptance":"the behavior holds","premortem":"skip","repairRounds":0}' \
+    "[$plan_risky,$IMPL_RESULT_RISKY,$ORPHANS_ABSENT,{\"label\":\"validate\",\"result\":{\"verdict\":\"PASS\",\"verdictPath\":\"/tmp/v.json\",\"subjectDigest\":\"aa\",\"criteria\":[],\"validatorContextId\":\"v1\",\"findings\":[],\"evidenceRefs\":[],\"derivedChangedPaths\":[\"tests/a.bats\"]}}]"
+
+  python3 - "$BATS_TEST_TMPDIR/probe.json" <<'PY'
+import hashlib, json, sys
+probe = json.load(open(sys.argv[1]))
+result = probe["result"]
+orphans = ["docs/evals/scorecards/x.json binds scripts/harness.sh"]
+payload = json.dumps({
+    "acceptance": "the behavior holds",
+    "binding_judge": "cross",
+    "intent_digest": "aaaa",
+    "orphaned_evidence": orphans,
+    "write_scope": ["tests/**"],
+}, separators=(",", ":"))
+assert result["planDigest"] == hashlib.sha256(payload.encode()).hexdigest(), result["planDigest"]
+# Surfaced to the caller and to the implementer who must budget the recapture.
+assert result["plannedOrphans"] == orphans, result["plannedOrphans"]
+assert orphans[0] in probe["prompts"]["implement"], probe["prompts"]["implement"]
+PY
+}
+
+@test "rpi.js tells the Plan stage exactly how the plan identity is computed" {
+  write_rpi_probe
+  RPI_SRC="$REPO_ROOT/workflows/rpi.js" \
+    RPI_INPUT='{"intent":"harden the seal","writeScope":["tests/**"],"acceptance":"the behavior holds","bindingJudge":"primary"}' \
+    RPI_AGENTS="[$PLAN_RESULT]" \
+    RPI_DUMP_SCHEMA=1 node "$BATS_TEST_TMPDIR/rpi-probe.mjs" >"$BATS_TEST_TMPDIR/probe.json" || true
+
+  python3 - "$BATS_TEST_TMPDIR/probe.json" <<'PY'
+import json, sys
+prompt = json.load(open(sys.argv[1]))["prompts"]["plan"]
+# A plan asked for plan_digest must be told the payload it hashes.
+for token in ("plan_digest", "acceptance", "binding_judge", "intent_digest",
+              "orphaned_evidence", "write_scope", "SHA-256"):
+    assert token in prompt, token
+# The caller already declared a judge; a plan that hashed its own guess would
+# be refused, so the prompt names the effective judge.
+assert '"primary"' in prompt, prompt
 PY
 }
 

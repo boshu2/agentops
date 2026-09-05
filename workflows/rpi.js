@@ -388,6 +388,9 @@ function traversalReport(fields) {
     // The frozen plan's identity: SHA-256 over the acceptance, the write scope,
     // the declared binding judge, and the intent-source digest.
     planDigest,
+    // The evidence the frozen plan said this scope would orphan: recapture work
+    // the caller budgeted before any code was written.
+    plannedOrphans: pick('plannedOrphans', []),
     changedPaths: pick('changedPaths', reportedChangedPaths),
     filesSummary,
     criteria: pick('criteria', []),
@@ -432,13 +435,17 @@ async function sha256Hex(text) {
   return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, '0')).join('');
 }
 
-// Keys are written in alphabetical order, so the serialization is canonical by
-// construction rather than by the insertion order of whoever edits this next.
-const planIdentityPayload = (acceptanceText, judge, intentDigestValue, scope) =>
+// THE PLAN IDENTITY PAYLOAD. Keys are written in alphabetical order, so the
+// serialization is canonical by construction rather than by the insertion order
+// of whoever edits this next. JSON.stringify emits no whitespace, and the digest
+// is over its UTF-8 bytes. The Plan prompt states this shape verbatim, so a plan
+// that computes plan_digest itself hashes the same thing.
+const planIdentityPayload = (acceptanceText, judge, intentDigestValue, orphans, scope) =>
   JSON.stringify({
     acceptance: acceptanceText,
     binding_judge: judge,
     intent_digest: intentDigestValue,
+    orphaned_evidence: orphans,
     write_scope: scope,
   });
 
@@ -475,6 +482,18 @@ const plan = await agent(
         'scripts/evidence-orphans.sh, run it over the write scope and list what it names; where it does not, ' +
         'return an empty list rather than a guess. This is recapture work, budgeted before any code is written.\n'
       : '') +
+    '- OPTIONAL plan_digest, the frozen plan identity. Return it only if you compute it exactly as follows, ' +
+    'because the traversal recomputes it and refuses a plan whose declaration disagrees. It is the lowercase ' +
+    'hex SHA-256 of the UTF-8 bytes of a JSON object with EXACTLY these five keys in THIS order and no ' +
+    'whitespace: acceptance (string), binding_judge (string or null), intent_digest (string), ' +
+    'orphaned_evidence (array of strings, [] when you return none), write_scope (array of strings). Example ' +
+    'shape: {"acceptance":...,"binding_judge":...,"intent_digest":...,"orphaned_evidence":[...],' +
+    '"write_scope":[...]}.\n' +
+    '  binding_judge here is the EFFECTIVE judge, not necessarily the one you return. ' +
+    (bindingJudge !== null
+      ? 'The caller declared "' + bindingJudge + '", so that is the effective value; if you also return a ' +
+        'binding_judge it must be the same string, or the traversal refuses the contradiction.\n'
+      : 'The caller declared none, so it is the binding_judge you return, or null when you return none.\n') +
     '- Read-only otherwise: the intent snapshot is the only thing you persist. Do not implement, do not edit ' +
     'the subject, do not commit.',
   { label: 'plan', phase: 'Plan', schema: planSchema(callerScopeRisky) }
@@ -555,7 +574,12 @@ if (plannedRisky && !callerScopeRisky) {
 // different tuple than it returned. Everything downstream carries it, so a
 // premortem, an implementer, and a validator can be shown to have judged the
 // same plan.
-const planPayload = planIdentityPayload(acceptance, declaredJudge, plan.intentDigest, writeScope);
+// Absent means the empty list, never undefined: the identity must be a total
+// function of the frozen plan, not of whether a field happened to be returned.
+const plannedOrphans = Array.isArray(plan.orphaned_evidence) ? plan.orphaned_evidence : [];
+const planPayload = planIdentityPayload(
+  acceptance, declaredJudge, plan.intentDigest, plannedOrphans, writeScope
+);
 planDigest = await sha256Hex(planPayload);
 if (planDigest === null) {
   return traversalReport({
@@ -574,8 +598,13 @@ if (typeof plan.plan_digest === 'string' && plan.plan_digest && plan.plan_digest
   });
 }
 const planIdentityBlock =
-  'Frozen plan identity (SHA-256 over the acceptance, write scope, binding judge, and intent digest):\n' +
-  '- planDigest: ' + planDigest + '\n';
+  'Frozen plan identity (SHA-256 over the acceptance, write scope, binding judge, orphan list, and intent ' +
+  'digest):\n' +
+  '- planDigest: ' + planDigest + '\n' +
+  (plannedOrphans.length
+    ? '- evidence this scope orphans, budgeted as recapture work:\n' +
+      plannedOrphans.map((o) => '  - ' + o).join('\n') + '\n'
+    : '');
 
 // PREMORTEM LEG: one fresh judge reads the FROZEN plan on a risky write scope
 // and names only what blocks. Blocking findings end the traversal as
@@ -1648,6 +1677,7 @@ return traversalReport({
   status: validation.verdict,
   verdictPath: validation.verdictPath,
   changedPaths: facts.changedPaths,
+  plannedOrphans,
   criteria: validation.criteria,
   findings: validation.findings || [],
   evidenceRefs: validation.evidenceRefs || [],
