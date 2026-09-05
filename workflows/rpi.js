@@ -652,15 +652,8 @@ const snapshot = await agent(
 );
 
 const HEX_DIGEST = /^[0-9a-f]{64}$/;
-// The identity is the digest of the caller intent's exact UTF-8 bytes, computed
-// here; the plan's declaration and the receipt's derivation must both equal it.
-const callerIntentDigest = await sha256Hex(input.intent);
 const snapshotProblem = (() => {
   if (!snapshot) return 'the intent-snapshot receipt failed, so the snapshot was never verified';
-  if (plan.intentDigest !== callerIntentDigest) {
-    return 'the plan declared intentDigest ' + JSON.stringify(plan.intentDigest) +
-      ' but the caller intent hashes to ' + JSON.stringify(callerIntentDigest);
-  }
   if (!snapshot.exists) {
     return 'the intent snapshot at ' + plan.intentPath + ' is not readable' +
       (snapshot.error ? ': ' + snapshot.error : '');

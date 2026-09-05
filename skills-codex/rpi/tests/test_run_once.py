@@ -1074,3 +1074,15 @@ class SharedConvergenceCorpusTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class SnapshotShapeTests(unittest.TestCase):
+    def test_digest_string_as_snapshot_bytes_is_refused(self):
+        with self.assertRaises(ValueError):
+            MODULE.verify_intent_snapshot(
+                {"intent_snapshot_bytes": "a" * 64}, "a" * 64
+            )
+
+    def test_digest_pattern_rejects_trailing_newline(self):
+        self.assertFalse(MODULE.valid_digest("a" * 64 + "\n"))
+        self.assertTrue(MODULE.valid_digest("a" * 64))

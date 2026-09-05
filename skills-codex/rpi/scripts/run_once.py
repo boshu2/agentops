@@ -42,7 +42,7 @@ DIGEST_PATTERN = re.compile(r"^[0-9a-f]{64}$")
 
 def valid_digest(value: Any) -> bool:
     """True for a lowercase hex SHA-256, the only shape an identity may take."""
-    return isinstance(value, str) and bool(DIGEST_PATTERN.match(value))
+    return isinstance(value, str) and bool(DIGEST_PATTERN.fullmatch(value))
 
 
 def valid_string_list(value: Any) -> bool:
@@ -135,12 +135,20 @@ def verify_intent_snapshot(
         raise ValueError(
             "Plan must return exactly one of intent_snapshot_bytes or verify_snapshot"
         )
+    from_verifier = False
     if verifier is not None:
         if not callable(verifier):
             raise ValueError("verify_snapshot must be callable")
         payload = verifier()
+        from_verifier = True
     if isinstance(payload, str):
-        # A callable that re-derived the digest itself reports the digest.
+        # Only a callable that re-derived the digest itself may report a digest;
+        # a string handed over as intent_snapshot_bytes is a declaration, not bytes.
+        if not from_verifier:
+            raise ValueError(
+                "intent_snapshot_bytes must be bytes; a digest string is the author's "
+                "word, not a re-derivation"
+            )
         derived = payload
     elif isinstance(payload, (bytes, bytearray)):
         derived = hashlib.sha256(bytes(payload)).hexdigest()
