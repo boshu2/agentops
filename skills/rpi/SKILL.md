@@ -175,7 +175,7 @@ traversal then continues under the law. Council mints no verdict.
 
 | Condition | Leg |
 |---|---|
-| risky write scope at Plan exit: a `write_scope` glob intersects a risky-surface glob, and a `**` segment counts as an intersection | `premortem` before Implement, returning `{blocking: [{id, class, summary}], notes: [...]}`; nonempty `blocking` is `NOT_PLANNED` |
+| risky write scope at Plan exit: a `write_scope` glob intersects a risky-surface glob, and a `**` segment counts as an intersection | [`premortem`](../premortem/SKILL.md) before Implement, returning `{blocking: [{id, class, summary}], notes: [...]}`; nonempty `blocking` is `NOT_PLANNED` |
 | a risky split that survives repair | `council`, one leg, returning `{id, ruling: real \| not_real \| not_proven, evidence_refs}` per finding |
 | an irreversible landing decision | `one-way-door`, caller-selected, outside the traversal |
 
