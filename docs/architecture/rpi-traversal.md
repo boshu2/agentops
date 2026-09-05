@@ -76,7 +76,7 @@ That source records:
 
 A plan whose write scope hits a risky surface exits through one premortem
 before Implement. A scope is risky when one of its globs intersects a
-risky-surface glob, and a `**` segment counts as an intersection. The leg
+risky-surface glob, and a bare `**` or `*` glob counts as an intersection. The leg
 returns `{blocking: [{id, class, summary}], notes: [...]}`; a nonempty
 `blocking` list ends the traversal at the `NOT_PLANNED` status, which is a
 progress status and not a verdict, because the design is challenged before a
