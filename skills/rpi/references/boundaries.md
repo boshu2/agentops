@@ -44,8 +44,13 @@ Plan exit, and council on a risky split that survives repair. Both stay
 judgment legs. Premortem returns blocking findings against a plan that has no
 subject yet, so its block is the `NOT_PLANNED` status, never a verdict.
 Council rules on findings, never on verdicts, and its `not_real` ruling closes
-a finding only under the evidence it cites; the split itself is still resolved
-by the convergence law, not by electing a leg. A
+a finding only when the evidence it cites resolves: a `sha256:` digest a leg
+bound against the subject under judgment, or a regular file beneath
+`.agents/ao/` the change did not produce. A closure is a claim, not a proof:
+no repair round remains to re-judge it, so the run records it under
+`council.closed` with `council.revalidated: false` and reports `NOT_PROVEN`,
+never `PASS`. A convergence-law stop convenes no council at all. The split
+itself is still resolved by the law, not by electing a leg. A
 [`plan`](../../plan/SKILL.md) source owns `binding_judge`: it is the caller's
 declared disposition for a split that survives repair, bound into the plan
 identity so a disagreeing caller argument refuses the traversal rather than

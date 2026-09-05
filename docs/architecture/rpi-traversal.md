@@ -165,10 +165,20 @@ repair goes to one council leg that adjudicates findings rather than verdicts:
 it receives a bounded packet (acceptance, write scope, runtime-derived changed
 paths, criteria, and both legs' findings with evidence references, marked
 untrusted) and returns `{id, ruling: real | not_real | not_proven,
-evidence_refs}` per finding. A `not_real` ruling that cites evidence closes
-that finding under the council's evidence binding, a leg whose FAIL keeps no
-surviving findings is treated as `NOT_PROVEN`, and the traversal continues
-under the convergence law. The council mints no verdict.
+evidence_refs}` per finding, exactly one ruling per id. A ruling closes a
+finding only when its evidence resolves: a `sha256:` digest a leg bound
+against the subject now under judgment (never a leg's own subject digest,
+which identifies the thing being judged), or a regular file beneath
+`.agents/ao/` that the change did not produce, confirmed by a read-only
+receipt. A leg whose FAIL keeps no surviving findings is treated as
+`NOT_PROVEN`.
+
+A closure is a claim about the subject, not a proof of it. By the time a
+council can rule, the repair phase has already ended on the caller's bound, so
+no round remains to re-judge the closure: the traversal records it under
+`council.closed`, sets `council.revalidated: false`, and reports `NOT_PROVEN`,
+never `PASS`. A convergence-law stop convenes no council at all. The council
+mints no verdict.
 
 The validation result records criterion results, findings, evidence references,
 checked and not-checked surfaces, identities, and freshness. It carries no
@@ -202,7 +212,8 @@ describe RPI progress only and are not verdict values.
 The adapter's result names why the run ended in `stopReason`, drawn from a
 fixed enum rather than free prose, so a stop is machine-readable. It sits
 beside the other camelCase result keys (`status`, `premortem`, `dissent`,
-`orphanedEvidence`), which belong to the workflow result alone: the
+`plannedOrphans` for what the frozen plan budgeted, `orphanedEvidence` for what
+the change actually invalidated), which belong to the workflow result alone: the
 `rpi-report.v1` artifact keeps its nine snake_case keys unchanged.
 
 If a caller wants another experiment, it updates the existing bead or caller
