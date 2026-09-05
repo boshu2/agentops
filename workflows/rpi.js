@@ -600,16 +600,19 @@ const ORPHANS_SCHEMA = {
   },
 };
 
-let orphansScope = null;
+const orphansRounds = new Set();
 const orphansReceipts = [];
 
-async function refreshOrphans(paths) {
+// Keyed on the ROUND, never on the path set. Keying on the path set meant a
+// repair that edited the same files produced no new receipt, so the
+// post-repair validator judged the REPAIRED subject against the PRE-repair
+// exposure: the one reading guaranteed to be stale is the one taken before the
+// edit that changed the bindings. Same paths, different bytes, different
+// orphans.
+async function refreshOrphans(paths, round) {
+  if (orphansRounds.has(round)) return;
+  orphansRounds.add(round);
   const scope = [...new Set(paths.map(normalizePath))].sort();
-  const signature = scope.join('\n');
-  // The same path set produces the same receipt; re-running it would spend an
-  // agent call to learn nothing.
-  if (signature === orphansScope) return;
-  orphansScope = signature;
   const orphans = await agent(
     'You are a read-only receipt step. Do exactly one thing: report whether this repository ' +
       'ships scripts/evidence-orphans.sh and, if it does, what it says about the changed paths below. You judge ' +
@@ -653,7 +656,7 @@ async function refreshOrphans(paths) {
   });
 }
 
-await refreshOrphans(impl.changedPaths);
+await refreshOrphans(impl.changedPaths, 'round:0');
 
 phase('Validate');
 
@@ -1126,7 +1129,6 @@ if (!validation) {
     error: 'Validate stage failed; the candidate exists but was never freshly judged',
   });
 }
-await refreshOrphans([...facts.changedPaths, ...(validation.derivedChangedPaths || [])]);
 
 // REPAIR PHASE (ADR-0017): bounded by the caller's repairRounds and stopped by
 // the convergence law. The fix step is an Implement-shaped agent that sees the
@@ -1211,7 +1213,10 @@ while (
   const union = new Set([...facts.changedPaths, ...(validation.derivedChangedPaths || [])]);
   for (const p of repair.changedPaths) union.add(p);
   reportedChangedPaths = [...union];
-  await refreshOrphans([...union]);
+  // Over the runtime-derived union (the validator's paths included), once per
+  // round, BEFORE the round's validation so the judge sees the current
+  // exposure rather than the previous round's.
+  await refreshOrphans([...union], 'round:' + roundsUsed);
   facts = {
     contextId: repair.contextId,
     changedPaths: [...union],
@@ -1230,7 +1235,6 @@ while (
       error: 'Validate stage failed after a repair; the repaired candidate was never freshly judged',
     });
   }
-  await refreshOrphans([...facts.changedPaths, ...(next.derivedChangedPaths || [])]);
   const nextIds = openIds(next);
   const nextFindings = next.findings || [];
   const resolved = [...prevIds].filter((id) => !nextIds.has(id));

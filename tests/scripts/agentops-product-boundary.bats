@@ -1258,7 +1258,7 @@ PY
   v1='{"label":"validate","result":{"verdict":"PASS","verdictPath":"/tmp/v.json","subjectDigest":"bb","criteria":[],"validatorContextId":"v2","findings":[],"evidenceRefs":[],"derivedChangedPaths":["docs/a.md","scripts/harness.sh"]}}'
   rpi_probe \
     '{"intent":"do the thing","writeScope":["docs/**"],"acceptance":"the behavior holds","repairRounds":1}' \
-    "[$PLAN_RESULT_SAFE,$IMPL_RESULT,{\"label\":\"orphans\",\"result\":{\"scriptPresent\":true,\"json\":\"{\\\"count\\\":0}\"}},$v0,{\"label\":\"orphans\",\"result\":{\"scriptPresent\":true,\"json\":\"{\\\"count\\\":2}\"}},{\"label\":\"repair:1\",\"result\":{\"contextId\":\"author-2\",\"changedPaths\":[\"docs/a.md\"],\"checkReceipts\":[],\"filesSummary\":\"n\"}},$v1]"
+    "[$PLAN_RESULT_SAFE,$IMPL_RESULT,{\"label\":\"orphans\",\"result\":{\"scriptPresent\":true,\"json\":\"{\\\"count\\\":0}\"}},$v0,{\"label\":\"repair:1\",\"result\":{\"contextId\":\"author-2\",\"changedPaths\":[\"docs/a.md\"],\"checkReceipts\":[],\"filesSummary\":\"n\"}},{\"label\":\"orphans\",\"result\":{\"scriptPresent\":true,\"json\":\"{\\\"count\\\":2}\"}},$v1]"
 
   python3 - "$BATS_TEST_TMPDIR/probe.json" <<'PY'
 import json, sys
@@ -1272,6 +1272,35 @@ assert result["orphanedEvidence"] == {"count": 2}, result["orphanedEvidence"]
 assert "evidence-orphans" in probe["prompts"]["validate"], probe["prompts"]["validate"]
 assert result["verdict"] == "PASS", result["verdict"]
 assert result["stopReason"] == "converged", result["stopReason"]
+PY
+}
+
+@test "rpi.js reruns the orphan receipt after a repair that changed no paths" {
+  # The receipt was keyed on the PATH SET, so a repair that edited the same
+  # files never reran it and the post-repair validator judged the repaired
+  # subject against the pre-repair exposure. The key is the round.
+  local v0 v1 repair
+  v0='{"label":"validate","result":{"verdict":"FAIL","verdictPath":null,"subjectDigest":"aa","criteria":[],"validatorContextId":"v1","findings":[{"id":"f1","summary":"defect"}],"evidenceRefs":[],"derivedChangedPaths":["docs/a.md"]}}'
+  v1='{"label":"validate","result":{"verdict":"PASS","verdictPath":"/tmp/v.json","subjectDigest":"bb","criteria":[],"validatorContextId":"v2","findings":[],"evidenceRefs":[],"derivedChangedPaths":["docs/a.md"]}}'
+  repair='{"label":"repair:1","result":{"contextId":"author-2","changedPaths":["docs/a.md"],"checkReceipts":[],"filesSummary":"n"}}'
+
+  rpi_probe \
+    '{"intent":"do the thing","writeScope":["docs/**"],"acceptance":"the behavior holds","repairRounds":1}' \
+    "[$PLAN_RESULT_SAFE,$IMPL_RESULT,{\"label\":\"orphans\",\"result\":{\"scriptPresent\":true,\"json\":\"{\\\"binding_count\\\":0}\"}},$v0,$repair,{\"label\":\"orphans\",\"result\":{\"scriptPresent\":true,\"json\":\"{\\\"binding_count\\\":7}\"}},$v1]"
+
+  python3 - "$BATS_TEST_TMPDIR/probe.json" <<'PY'
+import json, sys
+probe = json.load(open(sys.argv[1]))
+# An identical path set across the two rounds must still produce two receipts.
+assert probe["calls"].count("orphans") == 2, probe["calls"]
+result = probe["result"]
+assert result["orphanedEvidence"] == {"binding_count": 7}, result["orphanedEvidence"]
+# The round-2 validator must judge against the FRESH receipt, not round 1's.
+# The receipt outcome is embedded as an escaped JSON string inside the
+# pretty-printed checkReceipts block; compare with the noise removed.
+prompt = probe["prompts"]["validate"].replace(" ", "").replace("\\", "")
+assert '"binding_count":7' in prompt, prompt[-1200:]
+assert '"binding_count":0' not in prompt, prompt[-1200:]
 PY
 }
 
@@ -1317,6 +1346,8 @@ for index, spec in enumerate(case["rounds"]):
         queue.append({"label": "repair:%d" % index,
                       "result": {"contextId": "author-%d" % (index + 1), "changedPaths": ["docs/a.md"],
                                  "checkReceipts": [], "filesSummary": "n"}})
+        # One receipt per round: the rerun is keyed on the round, not the paths.
+        queue.append({"label": "orphans", "result": {"scriptPresent": False}})
     queue.append({"label": "validate", "result": {
         "verdict": spec["verdict"], "verdictPath": None, "subjectDigest": spec["digest"] * 2,
         "criteria": [], "validatorContextId": "v%d" % index,
