@@ -1306,17 +1306,13 @@ if (diversityOnly(validation)) {
 // re-validation is judged by the same law as a repair round rather than by a
 // second copy of it. It updates the run's closed-id and closed-class memory
 // and returns what the round violated.
-// `alsoResolved` names ids this round closed by a means other than the id-set
-// difference: the terminal council's closures. Without it the council round
-// would show nothing resolving, and condition 4 would read a confirmed closure
-// over unchanged bytes as a flip.
-function applyLaw(previous, next, alsoResolved = []) {
+function applyLaw(previous, next) {
   const prevIds = openIds(previous);
   const prevFindings = previous.findings || [];
   const prevDigest = previous.subjectDigest;
   const nextIds = openIds(next);
   const nextFindings = next.findings || [];
-  const resolved = [...new Set([...prevIds, ...alsoResolved])].filter((id) => !nextIds.has(id));
+  const resolved = [...prevIds].filter((id) => !nextIds.has(id));
   const prevEvidence = new Set((previous.evidenceRefs || []).map((e) => e.ref));
   const resolvedSet = new Set(resolved);
   const bindingEvidence = (next.evidenceRefs || []).filter(
@@ -1507,7 +1503,18 @@ while (
 // convened once, and only when a risky split has SURVIVED the repair phase.
 // Inside every validation it was spending a judge on disagreements the next
 // repair round settled on its own.
-if (validation && validation.risky && validation.split) {
+// Eligibility: a law violation means the run ALREADY failed to converge, and a
+// third judge on top of it is the escalation the law exists to forbid. Letting
+// the council rule there produced a report whose verdict was PASS under
+// stopReason class_reopened, which the contract refuses outright. So the
+// council convenes only when the repair phase ended without the law stopping
+// it: nothing left to repair, or the caller's bound spent.
+const councilEligible =
+  stopReason === null || stopReason === STOP_REASONS.repairBudgetExhausted;
+if (validation && validation.risky && validation.split && !councilEligible) {
+  validation = { ...validation, council: { status: 'not-convened', reason: 'law stop' } };
+}
+if (validation && validation.risky && validation.split && councilEligible) {
   phase('Validate');
   const onTable = new Set(validation.legs.flatMap((l) => (l.result.findings || []).map((f) => f.id)));
   // Every digest the legs bound: what a `sha256:` ruling ref may resolve to.
@@ -1523,7 +1530,7 @@ if (validation && validation.risky && validation.split) {
   const closedByCouncil = new Map();
   let councilRecord;
   if (!ruling) {
-    councilRecord = { status: 'unavailable', rulings: [], closed: [] };
+    councilRecord = { status: 'unavailable', rulings: [], closed: [], revalidated: false };
   } else {
     // Candidate path refs, blanks dropped: a blank is not evidence, and there
     // is nothing to spend a resolution receipt on.
@@ -1559,7 +1566,7 @@ if (validation && validation.risky && validation.split) {
         rulings.push({ id: r.id, ruling: r.ruling, evidence_refs: refs, applied: 'kept-open' });
       }
     }
-    councilRecord = { status: 'ruled', rulings, closed: [...closedByCouncil.keys()] };
+    councilRecord = { status: 'ruled', rulings, closed: [...closedByCouncil.keys()], revalidated: false };
   }
   const postCouncil = mergeLegs(
     validation.legs, validation.risky, validation.diversity, closedByCouncil, councilRecord
@@ -1567,12 +1574,16 @@ if (validation && validation.risky && validation.split) {
   if (closedByCouncil.size === 0) {
     // Nothing closed: the split stands exactly as repair left it.
     validation = postCouncil;
-  } else if (roundsUsed >= repairRounds) {
-    // A council closure is a claim about the subject, not a proof of it. With
-    // no round left it stays unverified, and the run says so rather than
-    // reporting the post-council aggregate as if a judge had confirmed it.
+  } else {
+    // A council closure is a CLAIM about the subject, not a proof of it, and it
+    // is never certified without a fresh judgment. By the time the council can
+    // rule, the repair phase has already ended on the caller's bound (a law
+    // stop makes it ineligible), so no round remains to re-judge the closure
+    // and `revalidated` is false: the run reports the closure and degrades
+    // rather than reporting the post-council aggregate as if a judge had
+    // confirmed it.
+    councilRecord.revalidated = false;
     validation = degrade(postCouncil, 'NOT_PROVEN');
-    // Never overwrite a stop the repair phase already named; append to it.
     if (stopReason === null) {
       stopReason = STOP_REASONS.repairBudgetExhausted;
       stopReasons = [stopReason];
@@ -1582,42 +1593,6 @@ if (validation && validation.risky && validation.split) {
       'the council closed ' + [...closedByCouncil.keys()].join(', ') +
       ' but no repair round remained, so the closure was not re-validated';
     repairLog.push('council: closed ' + closedByCouncil.size + ' finding(s), not re-validated');
-  } else {
-    // A council disproof is new BOUND evidence over an unchanged subject, which
-    // is exactly the case condition 4 already admits. Spend one round and let a
-    // fresh validator judge it under the same law as any repair round.
-    roundsUsed += 1;
-    await refreshOrphans([...facts.changedPaths], 'round:' + roundsUsed);
-    facts = { ...facts, checkReceipts: facts.checkReceipts.concat(orphansReceipts.slice(-1)) };
-    const next = await validateOnce(facts);
-    if (!next) {
-      return traversalReport({
-        status: 'NOT_PROVEN',
-        changedPaths: facts.changedPaths,
-        findings: postCouncil.findings,
-        council: councilRecord,
-        repairRoundsUsed: roundsUsed,
-        repairLog: repairLog.concat(['council round ' + roundsUsed + ': validate stage failed']),
-        stopReason: STOP_REASONS.validateFailed,
-        stoppedBy: 'validate stage failed after the council ruled in round ' + roundsUsed,
-        error: 'Validate stage failed after the council closed findings; the closure was never freshly judged',
-      });
-    }
-    // Judged against the POST-council state, with the council's closures counted
-    // as this round's resolutions: the fresh validator must still bring its own
-    // bound evidence over this subject, or the law stops the run.
-    const { violations, classStop, openCount } = applyLaw(postCouncil, next, [...closedByCouncil.keys()]);
-    repairLog.push(
-      'council round ' + roundsUsed + ': ' + openCount + ' open findings' +
-        (violations.length ? ' — stopped by the law: ' + violations.map((v) => v.detail).join('; ') : '')
-    );
-    validation = { ...next, council: councilRecord, declaredDisposition: postCouncil.declaredDisposition };
-    if (violations.length > 0) {
-      stopReason = violations[0].reason;
-      stopReasons = violations.map((v) => v.reason);
-      stoppedBy = 'law: ' + violations.map((v) => v.detail).join('; ');
-      if (validation.verdict === 'PASS' || classStop) validation = degrade(validation, 'NOT_PROVEN');
-    }
   }
 }
 

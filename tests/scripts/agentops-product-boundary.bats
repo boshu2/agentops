@@ -1157,6 +1157,21 @@ rpi_probe_refused() {
   [ "$status" -ne 0 ]
 }
 
+# The law-stop invariant, asserted over whatever the last probe produced.
+assert_pass_never_under_law() {
+  python3 - "$BATS_TEST_TMPDIR/probe.json" <<'PY'
+import json, sys
+result = json.load(open(sys.argv[1]))["result"]
+LAW = {"reopened_finding", "class_reopened", "finding_set_grew",
+       "no_subject_or_evidence_change", "diversity_unsatisfied"}
+if result["verdict"] == "PASS":
+    assert result["stopReason"] in ("converged", "repair_budget_exhausted", None), result["stopReason"]
+if result["stopReason"] in LAW:
+    assert result["verdict"] != "PASS", (result["verdict"], result["stopReason"])
+    assert result["converged"] is False, result
+PY
+}
+
 PLAN_RESULT='{"label":"plan","result":{"acceptance":"the behavior holds","writeScope":["tests/**"],"intentDigest":"aaaa","intentPath":"/tmp/i.intent"}}'
 PLAN_RESULT_SAFE='{"label":"plan","result":{"acceptance":"the behavior holds","writeScope":["docs/**"],"intentDigest":"aaaa","intentPath":"/tmp/i.intent"}}'
 IMPL_RESULT='{"label":"implement","result":{"contextId":"author-1","changedPaths":["docs/a.md"],"checkReceipts":[{"name":"repro","command":"true","outcome":"green"}],"filesSummary":"note"}}'
@@ -1725,33 +1740,63 @@ assert [f["id"] for f in result["findings"]] == ["x:y"], result["findings"]
 PY
 }
 
-@test "rpi.js revalidates once when the council closes a finding and a round remains" {
-  # Round 1 repairs nothing (same digest, same finding), so the law stops the
-  # phase with a round still unspent and the risky split live. The council then
-  # closes the finding the law tripped over, and its disproof is new BOUND
-  # evidence over an unchanged subject, which is exactly the case condition 4
-  # admits: spend the remaining round and let a fresh validator judge it.
-  local repair v_after
+@test "rpi.js does not convene the council after a convergence-law stop" {
+  # A law violation means the run already failed to converge. Convening a third
+  # judge on top of it let a council closure spend a round and report
+  # verdict PASS under stopReason class_reopened: a verdict the law had already
+  # refused. On a law stop the split is reported as repair left it.
+  local repair
   repair='{"label":"repair:1","result":{"contextId":"author-2","changedPaths":["tests/a.bats"],"checkReceipts":[],"filesSummary":"n"}}'
-  # The revalidator cites its OWN re-derivation, not the council's file: merely
-  # re-citing the council's artifact confirms nothing independently.
-  v_after='{"label":"validate","result":{"verdict":"PASS","verdictPath":"/tmp/v2.json","subjectDigest":"aa","criteria":[],"validatorContextId":"v9","findings":[],"evidenceRefs":[{"ref":".agents/ao/revalidation.txt","subjectDigest":"aa","resolves":["x:y"]}],"derivedChangedPaths":["tests/a.bats"]}}'
 
   rpi_probe \
     '{"intent":"harden the seal","writeScope":["tests/**"],"acceptance":"the behavior holds","premortem":"skip","crossFamily":{"command":"codex exec --read-only judge"},"repairRounds":2}' \
-    "[$PLAN_RESULT,$IMPL_RESULT_RISKY,$ORPHANS_ABSENT,$LEG_PASS,$LEG_FAIL,$repair,$ORPHANS_ABSENT,$LEG_PASS,$LEG_FAIL,{\"label\":\"council\",\"result\":{\"rulings\":[{\"id\":\"x:y\",\"ruling\":\"not_real\",\"evidence_refs\":[\"tests/a.bats\"]}]}},{\"label\":\"council-evidence\",\"result\":{\"resolved\":[{\"ref\":\"tests/a.bats\",\"exists\":true}]}},$ORPHANS_ABSENT,$v_after,$v_after]"
+    "[$PLAN_RESULT,$IMPL_RESULT_RISKY,$ORPHANS_ABSENT,$LEG_PASS,$LEG_FAIL,$repair,$ORPHANS_ABSENT,$LEG_PASS,$LEG_FAIL]"
 
   python3 - "$BATS_TEST_TMPDIR/probe.json" <<'PY'
 import json, sys
 probe = json.load(open(sys.argv[1]))
-assert probe["calls"].count("council") == 1, probe["calls"]
-# Two legs per validation: two repair-phase rounds plus one council round.
-assert probe["calls"].count("validate") == 6, probe["calls"]
+assert "council" not in probe["calls"], probe["calls"]
 result = probe["result"]
-assert result["council"]["closed"] == ["x:y"], result["council"]
-assert result["repairRoundsUsed"] == 2, result["repairRoundsUsed"]
-assert result["verdict"] == "PASS", result["verdict"]
-assert any("council round 2" in line for line in result["repairLog"]), result["repairLog"]
+assert result["stopReason"] == "no_subject_or_evidence_change", result["stopReason"]
+assert result["council"] == {"status": "not-convened", "reason": "law stop"}, result["council"]
+# The split stands exactly as repair left it.
+assert [f["id"] for f in result["findings"]] == ["x:y"], result["findings"]
+assert result["verdict"] == "FAIL", result["verdict"]
+assert result["converged"] is False
+PY
+}
+
+@test "rpi.js never reports PASS under a convergence-law stop reason" {
+  # The invariant the incoherent report violated: a PASS may only be reported
+  # under a stop the law did not force. Driven over the three terminal shapes a
+  # risky split can reach: budget stop with a council, law stop without one,
+  # and a clean convergence.
+  local repair council_pair clean
+  repair='{"label":"repair:1","result":{"contextId":"author-2","changedPaths":["tests/a.bats"],"checkReceipts":[],"filesSummary":"n"}}'
+  council_pair="{\"label\":\"council\",\"result\":{\"rulings\":[{\"id\":\"x:y\",\"ruling\":\"not_real\",\"evidence_refs\":[\".agents/ao/disproof.txt\"]}]}},{\"label\":\"council-evidence\",\"result\":{\"resolved\":[{\"ref\":\".agents/ao/disproof.txt\",\"exists\":true}]}}"
+  clean='{"label":"validate","result":{"verdict":"PASS","verdictPath":"/tmp/v.json","subjectDigest":"bb","criteria":[],"validatorContextId":"v3","findings":[],"evidenceRefs":[],"derivedChangedPaths":["tests/a.bats"]}}'
+
+  # 0 rounds: the split is terminal at once, the budget stop is eligible.
+  rpi_probe \
+    '{"intent":"harden the seal","writeScope":["tests/**"],"acceptance":"the behavior holds","premortem":"skip","crossFamily":{"command":"codex exec --read-only judge"},"repairRounds":0}' \
+    "[$PLAN_RESULT,$IMPL_RESULT_RISKY,$ORPHANS_ABSENT,$LEG_PASS,$LEG_FAIL,$council_pair]"
+  assert_pass_never_under_law
+
+  # 1 round that repairs nothing: the law stops the phase, no council.
+  rpi_probe \
+    '{"intent":"harden the seal","writeScope":["tests/**"],"acceptance":"the behavior holds","premortem":"skip","crossFamily":{"command":"codex exec --read-only judge"},"repairRounds":1}' \
+    "[$PLAN_RESULT,$IMPL_RESULT_RISKY,$ORPHANS_ABSENT,$LEG_PASS,$LEG_FAIL,$repair,$ORPHANS_ABSENT,$LEG_PASS,$LEG_FAIL]"
+  assert_pass_never_under_law
+
+  # 1 round that actually repairs: a clean convergence, PASS under converged.
+  rpi_probe \
+    '{"intent":"harden the seal","writeScope":["tests/**"],"acceptance":"the behavior holds","premortem":"skip","crossFamily":{"command":"codex exec --read-only judge"},"repairRounds":1}' \
+    "[$PLAN_RESULT,$IMPL_RESULT_RISKY,$ORPHANS_ABSENT,$LEG_PASS,$LEG_FAIL,$repair,$ORPHANS_ABSENT,$clean,$clean]"
+  assert_pass_never_under_law
+  python3 - "$BATS_TEST_TMPDIR/probe.json" <<'PY'
+import json, sys
+result = json.load(open(sys.argv[1]))["result"]
+assert result["verdict"] == "PASS" and result["stopReason"] == "converged", result
 PY
 }
 
