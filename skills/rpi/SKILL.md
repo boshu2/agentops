@@ -96,12 +96,17 @@ comment alone is not that.
    caller-owned source by reference and digest, or, only when no durable
    source exists, the exact resolved bytes snapshotted by the runtime under
    their digest.
-3. Invoke Implement once: one bounded experiment; the runtime derives subject
+3. When the write scope hits a risky surface (the Cross-family list), invoke
+   [`premortem`](../premortem/SKILL.md) once at Plan exit, before Implement.
+   A blocking premortem finding returns `NOT_PLANNED` naming that finding.
+   A caller may declare `premortem: skip`; the report then says the premortem
+   was skipped by caller declaration.
+4. Invoke Implement once: one bounded experiment; the runtime derives subject
    identity and check receipts. With no subject built, report `NOT_BUILT`.
-4. Invoke Validate once in a context distinct from the author's, passing the
+5. Invoke Validate once in a context distinct from the author's, passing the
    intent reference and digest, exact subject manifest, receipts, validator
    identity, and freshness attestation.
-5. Enter the bounded repair phase: on `FAIL` or `NOT_PROVEN` with findings,
+6. Enter the bounded repair phase: on `FAIL` or `NOT_PROVEN` with findings,
    repair the named findings and re-validate freshly while the law admits
    another round; stop when converged, stopped by the law, or out of
    `repair_rounds`. Persist `verdict.v2` only when the caller requests
@@ -120,9 +125,14 @@ A repair round is admitted only while all hold:
 3. No finding id closed in an earlier round reopens.
 4. Between rounds the subject-manifest digest changed (generated-only changes
    count) or, for `NOT_PROVEN`, new digest-bound evidence resolved a named gap.
+5. No finding class closed in an earlier round reappears under a new id.
+
+Every finding carries a stable `class` alongside its id. A closed class
+returning under a new id is `class_reopened`: repair stops and the caller
+returns to Plan, because the design is wrong, not the patch.
 
 Converged: the fresh validator returns PASS and, on a risky surface, so does
-the cross-family validator. On any violation of 1-4 RPI stops and reports the
+the cross-family validator. On any violation of 1-5 RPI stops and reports the
 current status. `checked` carries one line per round
 (`repair round N: k open findings`); open findings ride in the result and the
 report. A reworded finding with the same id is the same finding. Acceptance
@@ -134,8 +144,21 @@ context fixes; judge legs only read. No third judge, no escalation, no auto-repl
 Risky surfaces default to a cross-family fresh validator: `cli/internal/gates/**`,
 `scripts/check-*.sh`, `tests/**`, `skills/*/scripts/**`,
 `skills/cc-hooks/policies/**`, `lib/**`, `.github/workflows/**`, `scripts/security-gate.sh`.
-[`validate`](../validate/SKILL.md) owns the dispatch table. No authorized live
+[`validate`](../validate/SKILL.md) owns the surface list. No authorized live
 adapter means `diversity_unsatisfied`, which on a risky surface is `NOT_PROVEN`.
+
+Plan declares the binding judge for a risky surface, `primary` or `cross`, and
+that leg's verdict stands when the two disagree. Without a declared binding
+judge, a split goes to one [`council`](../council/SKILL.md) leg whose verdict
+stands; all three verdicts are recorded. A split never becomes PASS by default.
+
+## Judgment dispatch
+
+| Condition | Leg |
+|---|---|
+| risky write scope at Plan exit | `premortem`, before Implement |
+| judge split with no binding judge declared | `council`, one leg, its verdict stands |
+| an irreversible landing decision | `one-way-door`, caller-selected, outside the traversal |
 
 ## Waves
 
@@ -166,7 +189,11 @@ integration check and fresh validation for the frozen subject.
 2. **Machine artifact:** return or persist the exact `rpi-report.v1` object
    only when the caller requests machine-readable evidence or a declared
    adapter consumes it; `schemas/rpi-report.v1.schema.json` (repo checkout)
-   owns its nine-key shape and `status` set.
+   owns its exact shape and `status` set.
+
+The report carries `dissent`, the judge split and the leg whose verdict stood,
+and `orphaned_evidence`, the bound evidence this change invalidated. Both are
+empty when nothing applies; neither is omitted to keep a report short.
 
 Lead with the status and one sentence naming the caller-visible outcome, then
 the subject: paths changed, commits, test results, acceptance satisfied or

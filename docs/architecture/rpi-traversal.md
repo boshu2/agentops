@@ -12,12 +12,21 @@ intent
   -> anti-ceremony quick guard once before Plan
       -> STOP: NOT_PLANNED -> report and stop; dispatch no core phase
       -> CONTINUE: existing bead or caller source
-          -> Plan -> one bounded implementation experiment
-          -> runtime-derived subject-manifest.v1 + check receipts
-          -> one fresh independent validation
+          -> Plan
+          -> risky write scope: one premortem before Implement, unless the
+             caller declared premortem: skip
+              -> blocking finding: NOT_PLANNED -> report and stop
+          -> one bounded implementation experiment
+          -> runtime-derived subject-manifest.v1 + check receipts, including
+             the orphaned-evidence receipt over the changed paths
+          -> one fresh independent validation, plus the cross-family leg on a
+             risky surface; a split goes to the plan's binding judge, or to
+             one council leg when the plan declared none
           -> PASS | FAIL | NOT_PROVEN
           -> FAIL / NOT_PROVEN with findings: bounded repair under the
              convergence law (caller's repair_rounds), re-validate freshly
+          -> a closed finding class reappearing under a new id stops repair
+             and returns the caller to Plan
           -> report when converged, stopped by the law, or out of rounds
 ```
 
@@ -56,8 +65,17 @@ That source records:
 - acceptance examples where they reduce ambiguity;
 - non-goals and required evidence;
 - `write_scope.include` and `write_scope.exclude`, including generated companions;
+- whether that scope hits a risky surface, and if it does, the binding judge
+  (`primary` or `cross`) that settles a split verdict;
+- the evidence this change will orphan: bound scorecards or contracts whose
+  evaluator files sit inside the write scope, budgeted as recapture work;
 - a first acceptance command or artifact path;
 - optional decomposition with no scheduling semantics.
+
+A plan whose write scope hits a risky surface exits through one premortem
+before Implement. A blocking premortem finding is `NOT_PLANNED`: the design is
+challenged before a subject exists. The caller may declare `premortem: skip`,
+and the report discloses the skip rather than omitting the leg silently.
 
 The runtime leaves a durable caller-owned source in place and carries its
 reference plus the acceptance digest derived from its exact resolved bytes.
@@ -77,7 +95,10 @@ refactors under the unchanged acceptance check. Docs-only and pure-refactor
 work record an honest pre-change baseline.
 
 The runtime derives the author context, subject manifest, actual changed paths,
-coverage fact, and check receipts. These facts can be passed directly to
+coverage fact, and check receipts. Where `scripts/evidence-orphans.sh` exists,
+the runtime also runs it over those changed paths and carries its output as one
+more receipt, so evidence the change orphaned is named at Implement rather than
+discovered as a surprise at verify time. These facts can be passed directly to
 Validate; the model does not transcribe a CandidatePacket. A failed check is
 evidence, not loop authority.
 
@@ -114,6 +135,20 @@ the intent source (optionally restated as an evidence-backed boundary
 criterion), and residual risk goes in the caller-facing report. The full table
 lives in `skills/validate/SKILL.md` under Scope disclosure.
 
+Every finding carries a stable `class` beside its id: one short name for the
+defect kind, reused verbatim when the kind recurs, so a design defect returning
+under a fresh id is visible as a class rather than counted as a new finding. A
+documentation sentence claiming something is published, pinned, or proven is an
+acceptance criterion like any other: it needs a check the validator can run, or
+it is `not_checked`.
+
+On a risky surface the fresh validator and the cross-family leg each report
+their own verdict and neither resolves a disagreement. The binding judge the
+plan declared settles it; when the plan declared none, one council leg takes
+both verdicts and both finding lists and returns the one that stands, with the
+reason. All three verdicts are recorded, and a split never becomes PASS by
+default.
+
 The validation result records criterion results, findings, evidence references,
 checked and not-checked surfaces, identities, and freshness. It carries no
 WARN, confidence, disposition, learning, owner, next action, retry, closure,
@@ -136,8 +171,10 @@ Plan and Implement at most once; on `STOP`, it invokes none of them. Validate
 repeats only inside the bounded repair phase (ADR-0017): a `FAIL` or
 `NOT_PROVEN` with findings is repaired and re-validated freshly while the
 convergence law admits another round, and RPI stops when converged, stopped by
-the law, or out of the caller's `repair_rounds`. The law is stated once, in
-`skills/rpi/SKILL.md`. RPI does not replan, consult a helper, or escalate. `NOT_PLANNED` and `NOT_BUILT`
+the law, or out of the caller's `repair_rounds`. A finding class closed in an
+earlier round that reappears under a new id is `class_reopened`: repair stops
+and the caller returns to Plan, because what failed is the design, not the
+patch. The law is stated once, in `skills/rpi/SKILL.md`. RPI does not replan, consult a helper, or escalate. `NOT_PLANNED` and `NOT_BUILT`
 describe RPI progress only and are not verdict values.
 
 If a caller wants another experiment, it updates the existing bead or caller
@@ -147,8 +184,11 @@ packet. Changed acceptance is represented once in the intent source.
 
 ## Optional ports
 
-- Premortem, Postmortem, Council, and genie skills are optional judgment
-  strategies selected by the caller.
+- Premortem, Postmortem, Council, and genie skills are judgment strategies the
+  caller selects, with two exceptions the traversal dispatches by itself:
+  premortem at Plan exit on a risky write scope, and one council leg on a split
+  verdict with no binding judge declared. An irreversible landing decision is
+  `one-way-door`'s to classify, caller-selected and outside this traversal.
 - `dispatch_once(explicit_disjoint_work, executor)` may dispatch explicit
   disjoint work exactly once. It does not select, queue, persist, retry,
   validate, integrate, close, or deliver.
