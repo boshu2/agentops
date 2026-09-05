@@ -299,9 +299,28 @@ def normalize_round(value: Any) -> dict[str, Any]:
                 finding_class = finding["class"]
                 if not isinstance(finding_class, str) or not finding_class.strip():
                     raise ValueError("a finding class must be a nonempty string when given")
-            # Last leg wins on wording; the id is the identity, so a reworded
-            # summary is the same finding and never counts as a new one.
-            open_findings[finding_id] = dict(finding)
+            # Last leg wins on WORDING; the id is the identity, so a reworded
+            # summary is the same finding and never counts as a new one. The
+            # CLASS is not wording. Two legs naming one id with different kinds
+            # is an identity collision, and folding it last-write-wins hands the
+            # law a key that means two things, so the class conditions then
+            # reason over an identity that does not exist. Compatible identities
+            # union: a leg that names no kind never erases one another leg named.
+            previous = open_findings.get(finding_id)
+            merged = dict(finding)
+            if previous is not None:
+                before = previous.get("class")
+                after = merged.get("class")
+                before = before.strip() if isinstance(before, str) else None
+                after = after.strip() if isinstance(after, str) else None
+                if before is not None and after is not None and before != after:
+                    raise ValueError(
+                        f"validate legs named finding {finding_id!r} with different classes "
+                        f"({before!r} and {after!r}); one id cannot carry two kinds"
+                    )
+                if after is None and before is not None:
+                    merged["class"] = before
+            open_findings[finding_id] = merged
         if leg_status == "PASS" and leg_ids:
             raise ValueError("a PASS leg cannot carry open findings")
         if leg_status == "FAIL" and not leg_ids:

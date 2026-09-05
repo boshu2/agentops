@@ -41,17 +41,27 @@ LAW_CASES = json.loads(
 )
 
 
-def case_round(spec):
-    """Expand one shared-corpus round into a validate leg."""
+def case_leg(verdict, findings, digest, family="fresh"):
     return {
-        "status": spec["verdict"],
-        "findings": [dict(f) for f in spec["findings"]],
-        "subject_digest": spec["digest"] * 64,
+        "status": verdict,
+        "findings": [dict(f) for f in findings],
+        "subject_digest": digest * 64,
         "evidence_refs": [],
-        "validator_family": "fresh",
+        "validator_family": family,
         "checked": ["acceptance"],
         "not_checked": [],
     }
+
+
+def case_round(spec):
+    """Expand one shared-corpus round into a validate leg, or a list of them."""
+    if "legs" in spec:
+        families = ("fresh", "cross-family")
+        return [
+            case_leg(leg["verdict"], leg["findings"], spec["digest"], families[index % 2])
+            for index, leg in enumerate(spec["legs"])
+        ]
+    return case_leg(spec["verdict"], spec["findings"], spec["digest"])
 
 
 def validation_round(

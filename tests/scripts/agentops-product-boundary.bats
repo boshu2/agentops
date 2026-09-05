@@ -1593,13 +1593,20 @@ for index, spec in enumerate(case["rounds"]):
                                  "checkReceipts": [], "filesSummary": "n"}})
         # One receipt per round: the rerun is keyed on the round, not the paths.
         queue.append({"label": "orphans", "result": {"scriptPresent": False}})
-    queue.append({"label": "validate", "result": {
-        "verdict": spec["verdict"], "verdictPath": None, "subjectDigest": spec["digest"] * 2,
-        "criteria": [], "validatorContextId": "v%d" % index,
-        "findings": spec["findings"], "evidenceRefs": [], "derivedChangedPaths": ["docs/a.md"]}})
-(tmp / "law-input.json").write_text(json.dumps({
+    # A round may carry `legs`: two validate results over the same subject, which
+    # is how a cross-leg identity collision reaches the law.
+    legs = spec.get("legs") or [{"verdict": spec["verdict"], "findings": spec["findings"]}]
+    for leg_index, leg in enumerate(legs):
+        queue.append({"label": "validate", "result": {
+            "verdict": leg["verdict"], "verdictPath": None, "subjectDigest": spec["digest"] * 2,
+            "criteria": [], "validatorContextId": "v%d-%d" % (index, leg_index),
+            "findings": leg["findings"], "evidenceRefs": [], "derivedChangedPaths": ["docs/a.md"]}})
+law_input = {
     "intent": "do the thing", "writeScope": ["docs/**"],
-    "acceptance": "the behavior holds", "repairRounds": case["repair_rounds"]}))
+    "acceptance": "the behavior holds", "repairRounds": case["repair_rounds"]}
+if case.get("cross_family"):
+    law_input["crossFamily"] = {"command": "codex exec --read-only judge"}
+(tmp / "law-input.json").write_text(json.dumps(law_input))
 (tmp / "law-queue.json").write_text(json.dumps(queue))
 (tmp / "law-expect.json").write_text(json.dumps(case["expect"]))
 PY

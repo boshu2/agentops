@@ -1,6 +1,6 @@
 {
   "schema": "rpi-convergence-law-cases.v1",
-  "description": "Adversarial convergence-law rounds, read by BOTH implementations of the law: the Python reference behavior (skills/rpi/tests/test_run_once.py) and the workflow (tests/scripts/agentops-product-boundary.bats drives workflows/rpi.js). A case that only one side reads proves nothing about parity, which is exactly how the continuous-rename hole survived: the class conditions were tested in Python only. `digest` is a single character each suite expands to a 64-character hex digest; `class` is omitted when the finding carries none.",
+  "description": "Adversarial convergence-law rounds, read by BOTH implementations of the law: the Python reference behavior (skills/rpi/tests/test_run_once.py) and the workflow (tests/scripts/agentops-product-boundary.bats drives workflows/rpi.js). A case that only one side reads proves nothing about parity, which is exactly how the continuous-rename hole survived: the class conditions were tested in Python only. `digest` is a single character each suite expands to a 64-character hex digest; `class` is omitted when the finding carries none. A round may carry `legs` instead of `findings`: two validate results judged the same subject, which is how a cross-leg identity collision reaches the law.",
   "cases": [
     {
       "name": "continuous-rename",
@@ -374,6 +374,86 @@
       "expect": {
         "kind": "invalid",
         "message": "class"
+      }
+    },
+    {
+      "name": "cross-leg-class-collision",
+      "description": "Two legs name the same finding id with different kinds. Folding them last-write-wins gives the law one key that means two things, so the class conditions then reason over an identity that does not exist.",
+      "repair_rounds": 0,
+      "cross_family": true,
+      "rounds": [
+        {
+          "verdict": "FAIL",
+          "digest": "a",
+          "legs": [
+            {
+              "verdict": "FAIL",
+              "findings": [
+                {
+                  "id": "x:y",
+                  "class": "seal.pinning",
+                  "summary": "leg one"
+                }
+              ]
+            },
+            {
+              "verdict": "FAIL",
+              "findings": [
+                {
+                  "id": "x:y",
+                  "class": "scope.coverage",
+                  "summary": "leg two"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "expect": {
+        "kind": "invalid",
+        "message": "class"
+      }
+    },
+    {
+      "name": "cross-leg-compatible-identity",
+      "description": "The same id from two legs where only one names a kind is one finding, not a collision: the class survives and the round is valid.",
+      "repair_rounds": 0,
+      "cross_family": true,
+      "rounds": [
+        {
+          "verdict": "FAIL",
+          "digest": "a",
+          "legs": [
+            {
+              "verdict": "FAIL",
+              "findings": [
+                {
+                  "id": "x:y",
+                  "class": "seal.pinning",
+                  "summary": "leg one"
+                }
+              ]
+            },
+            {
+              "verdict": "FAIL",
+              "findings": [
+                {
+                  "id": "x:y",
+                  "summary": "leg two"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "expect": {
+        "kind": "stop",
+        "stop_reason": "repair_budget_exhausted",
+        "stop_reasons": [
+          "repair_budget_exhausted"
+        ],
+        "status": "FAIL",
+        "rounds_used": 0
       }
     }
   ]
