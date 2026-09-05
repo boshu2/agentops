@@ -1156,10 +1156,14 @@ def check_bounded_repair_contract() -> None:
     assert spec.loader is not None
     spec.loader.exec_module(module)
     dg = lambda ch: ch * 64  # noqa: E731
-    def leg(status, ids, digest, evidence=()):
+    def leg(status, ids, digest, evidence=(), classes=None):
+        classes = classes or {}
         return {
             "status": status,
-            "findings": [{"id": i, "summary": i} for i in ids],
+            "findings": [
+                dict({"id": i, "summary": i}, **({"class": classes[i]} if i in classes else {}))
+                for i in ids
+            ],
             "subject_digest": digest,
             "evidence_refs": list(evidence),
             "validator_family": "fresh",
@@ -1168,6 +1172,16 @@ def check_bounded_repair_contract() -> None:
         "repair_budget_exhausted": ([leg("FAIL", ["a"], dg("a")), leg("FAIL", ["a"], dg("b")), leg("FAIL", ["a"], dg("c"))], 1),
         "finding_set_grew": ([leg("FAIL", ["a"], dg("a")), leg("FAIL", ["a", "b"], dg("b"))], 2),
         "reopened_finding": ([leg("FAIL", ["a", "b"], dg("a")), leg("FAIL", ["b"], dg("b")), leg("FAIL", ["a"], dg("c"))], 3),
+        # A flat id count hides a repair phase that renames the same KIND of
+        # defect every round; the class key is what catches it.
+        "class_reopened": (
+            [
+                leg("FAIL", ["a"], dg("a"), classes={"a": "seal.pinning"}),
+                leg("FAIL", ["b"], dg("b")),
+                leg("FAIL", ["c"], dg("c"), classes={"c": "seal.pinning"}),
+            ],
+            3,
+        ),
         "no_subject_or_evidence_change": ([leg("FAIL", ["a"], dg("a")), leg("PASS", [], dg("a"))], 2),
         "converged": ([leg("FAIL", ["a"], dg("a")), leg("PASS", [], dg("b"))], 2),
     }
@@ -1189,6 +1203,66 @@ def check_bounded_repair_contract() -> None:
         "the repair phase consumed a round past the caller's bound"
     )
     assert canaries and module.run_repair_phase([leg("FAIL", ["a"], dg("a"))], repair_rounds=0)["stop_reason"] == "repair_budget_exhausted"
+    # The class law must STOP the loop, not merely be reported at the end: a
+    # poison round after the class reopen is never normalized (it would raise),
+    # and the churning round's own FAIL never certifies the outcome.
+    class_poison = module.run_repair_phase(
+        [
+            leg("FAIL", ["a"], dg("a"), classes={"a": "seal.pinning"}),
+            leg("FAIL", ["b"], dg("b")),
+            leg("FAIL", ["c"], dg("c"), classes={"c": "seal.pinning"}),
+            {"status": "poison-not-a-round"},
+        ],
+        repair_rounds=9,
+    )
+    assert class_poison["stop_reason"] == "class_reopened" and class_poison["rounds_used"] == 2, (
+        "the class law did not stop the repair phase before the next round"
+    )
+    assert class_poison["report"]["status"] == "NOT_PROVEN", (
+        "a round that renamed the same finding class must not certify its own status"
+    )
+    # CONTINUOUS RENAME: f1[X] -> f2[X] -> f3[X]. The open set never grows and
+    # no id reopens, so the id conditions are blind; a newly minted id must NOT
+    # count as a survivor keeping its own class open, or the loop runs forever.
+    rename = module.run_repair_phase(
+        [
+            leg("FAIL", ["f1"], dg("a"), classes={"f1": "seal.pinning"}),
+            leg("FAIL", ["f2"], dg("b"), classes={"f2": "seal.pinning"}),
+            leg("FAIL", ["f3"], dg("c"), classes={"f3": "seal.pinning"}),
+        ],
+        repair_rounds=9,
+    )
+    assert rename["stop_reason"] == "class_reopened" and rename["rounds_used"] == 1, (
+        "a continuous rename of one finding class did not trip the law: "
+        f"{rename['stop_reason']!r} after {rename['rounds_used']} round(s)"
+    )
+    assert rename["report"]["status"] == "NOT_PROVEN", (
+        "a continuously renamed finding class must not certify its round's status"
+    )
+    # A reopened id and a reopened class in ONE round: precedence orders the
+    # diagnosis, it never deletes the class disposition.
+    both = module.run_repair_phase(
+        [
+            leg("FAIL", ["f1", "f2"], dg("a"), classes={"f1": "seal.pinning", "f2": "scope.coverage"}),
+            leg("FAIL", ["f2"], dg("b"), classes={"f2": "scope.coverage"}),
+            leg("FAIL", ["f1"], dg("c"), classes={"f1": "seal.pinning"}),
+        ],
+        repair_rounds=9,
+    )
+    assert both["stop_reason"] == "reopened_finding" and both["stop_reasons"] == [
+        "reopened_finding",
+        "class_reopened",
+    ], f"a round reopening both an id and its class reported only {both['stop_reasons']!r}"
+    assert both["report"]["status"] == "NOT_PROVEN"
+    # Classless findings are outside the class law entirely; the same shape with
+    # no class runs on and is never diagnosed as a class reopen.
+    classless = module.run_repair_phase(
+        [leg("FAIL", ["a"], dg("a")), leg("FAIL", ["b"], dg("b")), leg("FAIL", ["c"], dg("c"))],
+        repair_rounds=9,
+    )
+    assert classless["stop_reason"] == "not_converged", (
+        "findings without a class must never trigger the class law"
+    )
     assert not any(
         isinstance(node, (ast.For, ast.While))
         for name in ("invoke_once",)
@@ -1198,6 +1272,7 @@ def check_bounded_repair_contract() -> None:
     for reason in (
         "repair_budget_exhausted",
         "reopened_finding",
+        "class_reopened",
         "finding_set_grew",
         "no_subject_or_evidence_change",
         "diversity_unsatisfied",
@@ -1356,6 +1431,9 @@ def probe_no_substrate_calls() -> None:
         resolved_intent = {
             **intent_source,
             "acceptance_digest": hashlib.sha256(intent_bytes).hexdigest(),
+            # RPI re-derives this from the bytes before it dispatches Implement;
+            # a declared digest nobody re-derived is not an identity.
+            "intent_snapshot_bytes": intent_bytes,
         }
         subject_facts = {
             "subject_manifest_digest": payload["canonical_manifest_digest"],

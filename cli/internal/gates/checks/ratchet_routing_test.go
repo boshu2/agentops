@@ -59,3 +59,48 @@ func TestRatchetLibConsumersRouteLibEdits(t *testing.T) {
 	}
 	t.Logf("ratchet-lib consumers verified: %d", consumers)
 }
+
+// TestDocClaimsTrackedRoutesItsOwnSubject is the docs.claims-tracked routing
+// witness. A Match glob the router's own matcher cannot evaluate is worse than
+// no glob at all: the gate reads as routed while never being selected. The
+// registry shipped `evals/**/*.md`, which matchGlob resolves as "prefix evals/
+// AND literal suffix */*.md" — a suffix no path can have — so the gate was
+// dead on every doc edit. Assert the real paths the gate reasons about select
+// it, including a DELETED claimed target under scripts/ or tests/, which is
+// how a doc sentence starts outrunning the tree in the first place.
+func TestDocClaimsTrackedRoutesItsOwnSubject(t *testing.T) {
+	var check gates.Check
+	for _, c := range gates.Default.All() {
+		if c.ID == "docs.claims-tracked" {
+			check = c
+		}
+	}
+	if check.ID == "" {
+		t.Fatal("docs.claims-tracked is not registered")
+	}
+	if len(check.Match) == 0 {
+		t.Fatal("docs.claims-tracked has no Match globs; it would always run")
+	}
+	selecting := []string{
+		"evals/skill-probes/README.md",
+		"evals/notes.md",
+		"docs/evals/scorecards/2026-09-05/notes.md",
+		".gitignore",
+		"scripts/check-doc-claims-tracked.sh",
+		"tests/scripts/check-doc-claims-tracked.bats",
+		// Deleting a claimed target is exactly the change that turns a clean
+		// doc sentence into a false one.
+		"scripts/probe-skill.sh",
+		"tests/fixtures/verdict-contract/cases/valid-pass.json",
+	}
+	for _, path := range selecting {
+		if !gates.PathMatchesAny(check.Match, path) {
+			t.Errorf("docs.claims-tracked does not route %q; its Match globs are %v", path, check.Match)
+		}
+	}
+	for _, path := range []string{"cli/internal/gates/routing.go", "README.md", "skills/rpi/SKILL.md"} {
+		if gates.PathMatchesAny(check.Match, path) {
+			t.Errorf("docs.claims-tracked routes unrelated path %q", path)
+		}
+	}
+}
