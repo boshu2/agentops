@@ -1182,7 +1182,12 @@ PY
   # `cli/**` matches none of the risky-path regexes as literal text, yet it
   # authorizes every gate in cli/internal/gates/. A bare `**` authorizes the
   # repository. Both must buy a premortem.
-  for scope in 'cli/**' '**' '*' './tests/**' 'scripts/*.sh'; do
+  # Witness intersection alone is blind to any pattern NARROWER than the
+  # witness: a literal risky file, a scope under one risky skill, a risky root
+  # file. Those are the commonest real write scopes there are.
+  for scope in 'cli/**' '**' '*' './tests/**' 'scripts/*.sh' \
+    'scripts/check-doc-claims-tracked.sh' 'skills/rpi/scripts/**' 'lib/preamble.sh' \
+    '.github/workflows/validate.yml' 'cli/internal/gates/new.go'; do
     rpi_probe \
       "{\"intent\":\"harden the seal\",\"writeScope\":[\"$scope\"],\"acceptance\":\"the behavior holds\"}" \
       "[{\"label\":\"plan\",\"result\":{\"acceptance\":\"the behavior holds\",\"writeScope\":[\"$scope\"],\"intentDigest\":\"aaaa\",\"intentPath\":\"/tmp/i.intent\"}},{\"label\":\"premortem\",\"result\":{\"blocking\":[{\"id\":\"x:y\",\"class\":\"k\",\"summary\":\"blocks\"}],\"notes\":[]}}]"

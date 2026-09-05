@@ -234,14 +234,34 @@ function globToRegExp(glob) {
     .replace(/\u0000/g, '.*');
   return new RegExp('^' + escaped + '$');
 }
-// A declared glob reaches a risky surface when it can MATCH a risky path, or
-// when it is a directory prefix of one. `**` and `*` authorize the repository
-// and are risky by construction.
+// Instantiate a glob into ONE concrete path it authorizes: `**` becomes a
+// nested segment pair, `*` a single segment. A glob NARROWER than a witness
+// (`scripts/check-doc-claims-tracked.sh`, `skills/rpi/scripts/**`) matches no
+// witness and would read as safe, so the risky-surface regexes are run against
+// the instantiated path as well.
+const instantiateGlob = (glob) =>
+  glob.replace(/\*\*/g, '\u0000').replace(/\*/g, 'x').replace(/\u0000/g, 'x/x');
+// The literal text before the first wildcard: what the glob authorizes for
+// certain, whatever the wildcards expand to.
+const literalPrefix = (glob) => {
+  const index = glob.search(/[*?[]/);
+  return index === -1 ? glob : glob.slice(0, index);
+};
+// A declared glob reaches a risky surface three ways, and one is enough:
+//   1. instantiated, it IS a risky path (catches globs narrower than a witness)
+//   2. it can MATCH a risky witness path (catches globs wider than one)
+//   3. its literal prefix reaches a risky root (conservative; a bare `**` or
+//      `*` has the empty prefix, which reaches everything, so both are risky
+//      without a special case)
 function globReachesRisky(glob) {
   const g = normalizePath(glob);
-  if (g === '' || g === '**' || g === '*') return true;
+  if (g === '') return true;
+  const instantiated = normalizePath(instantiateGlob(g));
+  if (RISKY_SURFACE.some((re) => re.test(instantiated))) return true;
   const re = globToRegExp(g);
-  return RISKY_WITNESS.some((w) => re.test(w) || w === g || w.startsWith(g + '/'));
+  if (RISKY_WITNESS.some((w) => re.test(w))) return true;
+  const prefix = literalPrefix(g);
+  return RISKY_WITNESS.some((w) => w.startsWith(prefix));
 }
 const isRiskyScope = (globs) => globs.some(globReachesRisky);
 // CONTRACT: a risky write scope buys one premortem judge BEFORE any code is
