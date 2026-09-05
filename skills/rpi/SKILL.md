@@ -101,7 +101,7 @@ comment alone is not that.
 3. On a risky write scope, dispatch the Plan-exit premortem leg below before
    Implement. A nonempty `blocking` list returns `NOT_PLANNED` naming those
    findings. A caller may declare `premortem: skip`. Every terminal report
-   carries `premortem: required | clean | blocking | skipped | failed`, so a
+   carries `premortem: not-required | required | clean | blocking | skipped | failed`, so a
    skipped or failed leg is never read as a clean one.
 4. Invoke Implement once: one bounded experiment; the runtime derives subject
    identity and check receipts. With no subject built, report `NOT_BUILT`.

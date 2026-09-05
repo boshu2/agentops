@@ -81,7 +81,7 @@ returns `{blocking: [{id, class, summary}], notes: [...]}`; a nonempty
 `blocking` list ends the traversal at the `NOT_PLANNED` status, which is a
 progress status and not a verdict, because the design is challenged before a
 subject exists. The caller may declare `premortem: skip`. Every terminal
-report carries `premortem: required | clean | blocking | skipped | failed`, so
+report carries `premortem: not-required | required | clean | blocking | skipped | failed`, so
 a skipped or failed leg is never read as a clean one.
 
 The runtime leaves a durable caller-owned source in place and carries its
