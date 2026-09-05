@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import importlib.util
+import json
 from pathlib import Path
 import tempfile
 import unittest
@@ -28,6 +29,29 @@ VALIDATE_SPEC.loader.exec_module(VALIDATE)
 # identity by calling the code under test — that is how the original defect
 # stayed invisible.
 INTENT_DIGEST = "c" * 64
+
+# The SHARED adversarial corpus. workflows/rpi.js reads the same file through
+# tests/scripts/agentops-product-boundary.bats, so a case only one side honors
+# is a parity break, not a passing suite. (parents[3] is the repository root
+# from both skills/rpi/tests/ and its skills-codex/ projection.)
+LAW_CASES = json.loads(
+    (Path(__file__).parents[3] / "tests" / "fixtures" / "rpi-convergence-law" / "cases.json").read_text(
+        encoding="utf-8"
+    )
+)
+
+
+def case_round(spec):
+    """Expand one shared-corpus round into a validate leg."""
+    return {
+        "status": spec["verdict"],
+        "findings": [dict(f) for f in spec["findings"]],
+        "subject_digest": spec["digest"] * 64,
+        "evidence_refs": [],
+        "validator_family": "fresh",
+        "checked": ["acceptance"],
+        "not_checked": [],
+    }
 
 
 def validation_round(
@@ -850,6 +874,62 @@ class ComposedIdentityContractTests(unittest.TestCase):
         self.assertEqual(json.loads(reordered), json.loads(self.INTENT_BYTES))
         self.assertNotEqual(byte_digest, hashlib.sha256(reordered).hexdigest())
         self.assertEqual(value_digest, VALIDATE.digest_value(json.loads(reordered)))
+
+
+class SharedConvergenceCorpusTests(unittest.TestCase):
+    """Every case in the shared corpus, run through the Python law."""
+
+    def test_the_corpus_is_nonempty_and_versioned(self):
+        self.assertEqual(LAW_CASES["schema"], "rpi-convergence-law-cases.v1")
+        self.assertGreaterEqual(len(LAW_CASES["cases"]), 7)
+
+    def test_every_shared_case_matches_the_reference_behavior(self):
+        for case in LAW_CASES["cases"]:
+            with self.subTest(case=case["name"]):
+                rounds = [case_round(r) for r in case["rounds"]]
+                expect = case["expect"]
+                if expect["kind"] == "invalid":
+                    with self.assertRaises(ValueError) as caught:
+                        MODULE.run_repair_phase(
+                            rounds,
+                            repair_rounds=case["repair_rounds"],
+                            intent_ref="bead:agentops-test",
+                            acceptance_digest=INTENT_DIGEST,
+                        )
+                    self.assertIn(expect["message"], str(caught.exception))
+                    continue
+                outcome = MODULE.run_repair_phase(
+                    rounds,
+                    repair_rounds=case["repair_rounds"],
+                    intent_ref="bead:agentops-test",
+                    acceptance_digest=INTENT_DIGEST,
+                )
+                self.assertEqual(outcome["stop_reason"], expect["stop_reason"])
+                self.assertEqual(outcome["stop_reasons"], expect["stop_reasons"])
+                self.assertEqual(outcome["report"]["status"], expect["status"])
+                self.assertEqual(outcome["rounds_used"], expect["rounds_used"])
+
+    def test_both_dispositions_are_named_when_a_round_carries_both(self):
+        """Precedence orders the diagnosis; it never deletes the other one."""
+        outcome = self.subject_of("simultaneous-id-and-class-reopen")
+        self.assertEqual(outcome["stop_reason"], "reopened_finding")
+        self.assertIn("class_reopened", outcome["stop_reasons"])
+        self.assertTrue(
+            any(
+                "class_reopened" in line and "reopened_finding" in line
+                for line in outcome["report"]["checked"]
+            ),
+            outcome["report"]["checked"],
+        )
+
+    def subject_of(self, name):
+        case = next(c for c in LAW_CASES["cases"] if c["name"] == name)
+        return MODULE.run_repair_phase(
+            [case_round(r) for r in case["rounds"]],
+            repair_rounds=case["repair_rounds"],
+            intent_ref="bead:agentops-test",
+            acceptance_digest=INTENT_DIGEST,
+        )
 
 
 if __name__ == "__main__":

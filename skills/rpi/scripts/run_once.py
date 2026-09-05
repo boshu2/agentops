@@ -362,39 +362,88 @@ def normalize_round(value: Any) -> dict[str, Any]:
     }
 
 
-def law_violation(
+def reopened_classes(
+    previous: Mapping[str, Any],
+    current: Mapping[str, Any],
+    closed_classes: Mapping[str, str] | None = None,
+) -> list[str]:
+    """Return the classes this round reopened, sorted, empty when none.
+
+    Condition 3b. Ids alone cannot see a repair phase that keeps renaming the
+    same KIND of defect; that is the failure the 2026-09-03 run produced three
+    rounds running while the id count stayed flat.
+
+    SURVIVORS are `previous ∩ current` — the ids that actually carried through.
+    A newly minted id is NOT a survivor, however familiar its class: treating it
+    as one is precisely the hole that let a continuous rename f1[X] -> f2[X] ->
+    f3[X] run forever, because each round's fresh id kept its own class looking
+    "still open" and so never retired.
+
+    A class reopens when a NEW id in this round carries either
+    - a class an EARLIER round closed (`closed_classes`), or
+    - a class carried by an id THIS round resolved, with no surviving prior id
+      still carrying it.
+    """
+    closed_classes = closed_classes or {}
+    survivors = previous["open_ids"] & current["open_ids"]
+    resolved = previous["open_ids"] - current["open_ids"]
+    appeared = current["open_ids"] - previous["open_ids"]
+    surviving = {
+        previous["open_classes"][finding_id]
+        for finding_id in survivors
+        if finding_id in previous["open_classes"]
+    } | {
+        current["open_classes"][finding_id]
+        for finding_id in survivors
+        if finding_id in current["open_classes"]
+    }
+    retired_here = {
+        previous["open_classes"][finding_id]
+        for finding_id in resolved
+        if finding_id in previous["open_classes"]
+    } - surviving
+    reopened = {
+        current["open_classes"][finding_id]
+        for finding_id in appeared
+        if finding_id in current["open_classes"]
+        and (
+            current["open_classes"][finding_id] in closed_classes
+            or current["open_classes"][finding_id] in retired_here
+        )
+    }
+    return sorted(reopened)
+
+
+def law_violations(
     previous: Mapping[str, Any],
     current: Mapping[str, Any],
     closed_ids: set[str],
     closed_classes: Mapping[str, str] | None = None,
-) -> str | None:
-    """Return the violated convergence-law condition, or None when all hold.
+) -> list[str]:
+    """Return every convergence-law condition this round violates, in order.
 
     Condition 1 (the caller's `repair_rounds`) is a precondition on admission
     and is checked by `run_repair_phase` before a round is consumed; conditions
-    2, 3, and 4 are properties of the round that was produced.
+    2, 3, 3b, and 4 are properties of the round that was produced.
 
-    A reopened id is diagnosed before a reopened CLASS, and a reopened class
-    before a grown set: the operator is always told the most specific
-    regression the round exhibits, never the generic symptom.
+    Ordering is the DIAGNOSIS order, not a filter: a reopened id is named before
+    a reopened class, and a reopened class before a grown set, so the operator
+    reads the most specific regression first. The class disposition is computed
+    INDEPENDENTLY of the id precedence — a round that reopens both an id and its
+    class reports both, because "we already told you about the id" is how a
+    renaming pattern stays invisible.
     """
-    reopened = current["open_ids"] & closed_ids
-    if reopened:
-        return "reopened_finding"
-    # Condition 3b: ids alone cannot see a repair phase that keeps renaming the
-    # same kind of defect. A NEW id carrying a class every earlier round closed
-    # is that pattern, and it is the failure the 2026-09-03 run produced three
-    # rounds running while the id count stayed flat.
-    if closed_classes:
-        appeared = current["open_ids"] - previous["open_ids"]
-        for finding_id in sorted(appeared):
-            finding_class = current["open_classes"].get(finding_id)
-            if finding_class is not None and finding_class in closed_classes:
-                return "class_reopened"
+    violations = []
+    if current["open_ids"] & closed_ids:
+        violations.append("reopened_finding")
+    if reopened_classes(previous, current, closed_classes):
+        violations.append("class_reopened")
+    if violations:
+        return violations
     if len(current["open_ids"]) > len(previous["open_ids"]):
-        return "finding_set_grew"
+        return ["finding_set_grew"]
     if current["subject_digest"] != previous["subject_digest"]:
-        return None
+        return []
     previous_refs = {e["ref"] for e in previous["evidence_refs"]}
     resolved = previous["open_ids"] - current["open_ids"]
     # The evidence branch is NOT_PROVEN-only by construction, on both sides: a
@@ -414,8 +463,19 @@ def law_violation(
         and current["status"] != "FAIL"
         and binding_evidence
     ):
-        return None
-    return "no_subject_or_evidence_change"
+        return []
+    return ["no_subject_or_evidence_change"]
+
+
+def law_violation(
+    previous: Mapping[str, Any],
+    current: Mapping[str, Any],
+    closed_ids: set[str],
+    closed_classes: Mapping[str, str] | None = None,
+) -> str | None:
+    """The single most specific violated condition, or None when all hold."""
+    violations = law_violations(previous, current, closed_ids, closed_classes)
+    return violations[0] if violations else None
 
 
 def run_repair_phase(
@@ -459,6 +519,7 @@ def run_repair_phase(
     current = normalize_round(validations[0])
     previous = current
     stop_reason = "not_converged"
+    stop_reasons: list[str] = []
     law_stopped = False
 
     for index, raw_candidate in enumerate(validations):
@@ -474,9 +535,16 @@ def run_repair_phase(
             checked.append(
                 f"repair round {rounds_used}: {len(current['open_ids'])} open findings"
             )
-            violation = law_violation(previous, current, closed_ids, closed_classes)
-            if violation is not None:
-                stop_reason = violation
+            violations = law_violations(previous, current, closed_ids, closed_classes)
+            if violations:
+                # Precedence orders the diagnosis; it never deletes the other
+                # dispositions, so both are on the record and in the report.
+                stop_reason = violations[0]
+                stop_reasons = list(violations)
+                checked.append(
+                    f"repair round {rounds_used}: convergence law: "
+                    + ", ".join(violations)
+                )
                 law_stopped = True
                 break
             resolved_ids = previous["open_ids"] - current["open_ids"]
@@ -511,12 +579,15 @@ def run_repair_phase(
     if stop_reason == "not_converged" and rounds_used >= repair_rounds and current["open_ids"]:
         # Findings remain and the caller's bound is spent: name it as such.
         stop_reason = "repair_budget_exhausted"
+    if not stop_reasons:
+        stop_reasons = [stop_reason]
 
     status = current["status"]
     # A class reopen means each round named a different id for the same kind of
     # defect, so no round's ruling binds to a converging subject: the honest
-    # outcome is NOT_PROVEN, never the churning round's own status.
-    if stop_reason == "class_reopened":
+    # outcome is NOT_PROVEN, never the churning round's own status. It holds
+    # whether or not a reopened id outranked it in the diagnosis order.
+    if "class_reopened" in stop_reasons:
         status = "NOT_PROVEN"
     if stop_reason == "diversity_unsatisfied" or (law_stopped and status == "PASS"):
         # A PASS produced by a law-violating round cannot certify anything: a
@@ -538,6 +609,7 @@ def run_repair_phase(
         "open_findings": list(current["open_findings"]),
         "rounds_used": rounds_used,
         "stop_reason": stop_reason,
+        "stop_reasons": stop_reasons,
     }
 
 

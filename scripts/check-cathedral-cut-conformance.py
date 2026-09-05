@@ -1221,6 +1221,39 @@ def check_bounded_repair_contract() -> None:
     assert class_poison["report"]["status"] == "NOT_PROVEN", (
         "a round that renamed the same finding class must not certify its own status"
     )
+    # CONTINUOUS RENAME: f1[X] -> f2[X] -> f3[X]. The open set never grows and
+    # no id reopens, so the id conditions are blind; a newly minted id must NOT
+    # count as a survivor keeping its own class open, or the loop runs forever.
+    rename = module.run_repair_phase(
+        [
+            leg("FAIL", ["f1"], dg("a"), classes={"f1": "seal.pinning"}),
+            leg("FAIL", ["f2"], dg("b"), classes={"f2": "seal.pinning"}),
+            leg("FAIL", ["f3"], dg("c"), classes={"f3": "seal.pinning"}),
+        ],
+        repair_rounds=9,
+    )
+    assert rename["stop_reason"] == "class_reopened" and rename["rounds_used"] == 1, (
+        "a continuous rename of one finding class did not trip the law: "
+        f"{rename['stop_reason']!r} after {rename['rounds_used']} round(s)"
+    )
+    assert rename["report"]["status"] == "NOT_PROVEN", (
+        "a continuously renamed finding class must not certify its round's status"
+    )
+    # A reopened id and a reopened class in ONE round: precedence orders the
+    # diagnosis, it never deletes the class disposition.
+    both = module.run_repair_phase(
+        [
+            leg("FAIL", ["f1", "f2"], dg("a"), classes={"f1": "seal.pinning", "f2": "scope.coverage"}),
+            leg("FAIL", ["f2"], dg("b"), classes={"f2": "scope.coverage"}),
+            leg("FAIL", ["f1"], dg("c"), classes={"f1": "seal.pinning"}),
+        ],
+        repair_rounds=9,
+    )
+    assert both["stop_reason"] == "reopened_finding" and both["stop_reasons"] == [
+        "reopened_finding",
+        "class_reopened",
+    ], f"a round reopening both an id and its class reported only {both['stop_reasons']!r}"
+    assert both["report"]["status"] == "NOT_PROVEN"
     # Classless findings are outside the class law entirely; the same shape with
     # no class runs on and is never diagnosed as a class reopen.
     classless = module.run_repair_phase(
