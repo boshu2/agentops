@@ -73,16 +73,12 @@ it rides along with a same-model result; on a risky surface a single-family
 PASS is `NOT_PROVEN`, and same-family agreement is not convergence. A
 single-family FAIL stands.
 
-When the two legs disagree, each reports its own verdict and neither resolves
-the split. A risky surface converges only when both legs return PASS, so a
-split is never PASS. The split is worked down by repair, and what survives goes to one council leg
-that rules on the findings, not the verdicts, unless the convergence law
-stopped the repair phase, in which case no council is convened at all. Those
-rulings are recorded for the caller and close nothing: the verdict and the
-open finding set stay exactly as repair left them. The plan's `binding_judge`
-records the caller's disposition for that outcome and changes no verdict here.
-Validate never treats agreement with itself, the absence of a second verdict,
-or an elected leg as a tie-break.
+When the two judges disagree, each reports its own verdict and neither resolves
+the split. A risky surface converges only when both judges pass, so a split is
+never PASS. Repair works the split down, and what survives it is the
+orchestrator's decision, made in the open: both reads go in the report with
+what was decided and why. Validate never treats agreement with itself, the
+absence of a second verdict, or a preferred judge as a tie-break.
 
 ## Mutating-check quarantine
 
@@ -125,16 +121,18 @@ and stays visible.
 5. Choose exactly one semantic result: `PASS`, `FAIL`, or `NOT_PROVEN`. Return
    it with criterion-level results, findings, evidence references, `checked`,
    `not_checked`, both identities, both context IDs, and the freshness
-   attestation. A finding may carry a `class`: one stable short name for the
-   defect kind, at most one per finding, reused verbatim when the same kind
-   recurs so the traversal can see a class reopen. Omit it or name it; a
-   `class` that is present and blank is a finding against this validator, and
-   so is a class that does not describe its finding. PASS
+   attestation. Name a `class` for each finding: one short stable name for the
+   kind of defect, one per finding, reused word for word when the same kind
+   recurs, so the orchestrator can see a closed kind come back. Name it or omit
+   it; a `class` that is present and blank is a finding against this validator,
+   and so is a class that does not describe its finding. PASS
    requires distinct identities, explicit freshness, nonempty checked scope,
    nonempty top-level evidence, evidence for every criterion, and an empty
    `not_checked`. A documentation sentence claiming something is published,
    pinned, or proven is an acceptance criterion like any other: it needs a
-   check this validator can run, or it is `not_checked`.
+   check this validator can run, or it is `not_checked`. The
+   `docs.claims-tracked` gate covers the tracked-file half of that and nothing
+   more.
 6. Only when the caller requests machine-readable evidence or a declared
    downstream consumer requires it, persist canonical `verdict.v2` with the
    helper's `store-verdict` (mechanics reference), then return the artifact

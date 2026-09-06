@@ -12,14 +12,15 @@ export const meta = {
 // traversal's one-experiment contract, so nothing is translated automatically:
 // choosing the replacement shape is the caller's decision.
 //
-// - One bounded experiment, independently judged: workflows/rpi.js
+// - One bounded experiment, independently judged: the `rpi` skill
+//   (skills/rpi/SKILL.md), which the model follows directly.
 // - Multi-bead repository delivery orchestration: workflows/ship-beads.js,
 //   or a caller-selected software factory operated through its own doors.
 //
 // The former doctrine page moved to docs/architecture/rpi-traversal.md.
 throw new Error(
   'workflows/operating-loop.js is retired. ' +
-    'For one bounded experiment use workflows/rpi.js; ' +
+    'For one bounded experiment follow the rpi skill (skills/rpi/SKILL.md); ' +
     'for multi-bead delivery use workflows/ship-beads.js or a caller-selected factory. ' +
     'Arguments are not translated automatically (the seven-move shapes are incompatible with one RPI traversal). ' +
     'See docs/architecture/rpi-traversal.md.'
