@@ -435,8 +435,8 @@
     {
       "name": "council",
       "source_skill": "skills/council",
-      "source_hash": "f3888a337712e08ca88f1db2162f4593005287b0990950dbdddccf6ebea10e92",
-      "generated_hash": "da6e18aed7a40d7139f1018d2a3842fd3513d5cc7fc307ccc324567e6139647c"
+      "source_hash": "8f800d36948f9fb2657644515199d70639feedb8a6ef1a8b1ec7b07d2427383f",
+      "generated_hash": "620aee79caf5f836d15597eb29043f040e681fe5ec29436047b487965ea4bf64"
     },
     {
       "name": "craft-goal",
@@ -495,8 +495,8 @@
     {
       "name": "implement",
       "source_skill": "skills/implement",
-      "source_hash": "e5cc3fb3ea2a025299cad6f7d54a6cfa653a705e5560e1ccb03d63e4b6543813",
-      "generated_hash": "de1e6a18518c37cd8029697ca314d9931d81bb99a41ba2b1b8c172a7657de29d"
+      "source_hash": "49987f367c5d345e164fccab65a9cc207a8da61ff38de44bffbc0dc13680fb47",
+      "generated_hash": "375b34a916228126c2b20f269dbeb5e1444abe4e478e51bf6a8fdaf8c6efd584"
     },
     {
       "name": "learn",
@@ -537,8 +537,8 @@
     {
       "name": "plan",
       "source_skill": "skills/plan",
-      "source_hash": "3582734f9d83383ec56771048e59219823645506e99abdd5c97fdd5bdae1c386",
-      "generated_hash": "86a8fcba5e9128f7ba2557d955f63dc170525cf546bef3cb5bcc8115794734cd"
+      "source_hash": "67599658abe9b843cf40945f3acf4a5d1c669b6303c0ab849a785c590a0a3bae",
+      "generated_hash": "b488d44e0561c31385d73c95093718c4975654fa1e54f29888005568abe9705d"
     },
     {
       "name": "postmortem",
@@ -597,8 +597,8 @@
     {
       "name": "rpi",
       "source_skill": "skills/rpi",
-      "source_hash": "682a7615d4cbfef0e88958be4adad0065282e2e8817afc60577fe41a91c2116c",
-      "generated_hash": "a946c29f4e4fd6cdcfab2b7ed027bc53217c02a52f9b14d3fc2cc37edf0f66cf"
+      "source_hash": "62f5f93d4c534a0bb0a50191525f1a287dcf3eddeaa166cacb646edeb86d3f56",
+      "generated_hash": "18a86f66d3515b798ead345e201657dac19add8518c3e125c2745f173f691f1d"
     },
     {
       "name": "sbh",
@@ -675,8 +675,8 @@
     {
       "name": "validate",
       "source_skill": "skills/validate",
-      "source_hash": "e1e9d6b61f98de227ebd51001abc5b4e19b1fc1608b49b4bd67bf34c0eb59069",
-      "generated_hash": "d550e520696607788e3b7e0e719656aefff15f9aeaa6a9a42842f3d8eb679506"
+      "source_hash": "d3fb952a1868045267ae2cb60adea291e2a20acddbc97e7c51dbb317f917576a",
+      "generated_hash": "e1cbfa9ef97f9fcad60fd08b9e044383f401c14d1adc27b37a8625ee979961d9"
     },
     {
       "name": "workflow-builder",

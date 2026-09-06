@@ -64,15 +64,12 @@ return the manifest digest and check receipts, stop.
    acceptance test.
 6. Have the runtime derive actual changed paths and `subject-manifest.v1` from
    the before/after subject.
-7. When `scripts/evidence-orphans.sh` exists, have the runtime run it over the
-   runtime-derived union of changed paths and append its output to the check
-   receipts the validator reads, so orphaned evidence is a receipt like any
-   other rather than a surprise at verify time. The receipt runs again after
-   every repair round, over the union as it stands, because a repair can
-   orphan evidence the first pass did not. Each entry carries a `cause`:
-   `changed_path`, `digest_drift`, `both`, or `skill_changed`, which separates
-   the evidence this change orphaned from drift that was already there. The
-   runtime derives the orphan set; the model never lists it by hand.
+7. Run `bash scripts/evidence-orphans.sh <changed paths>` over the changed
+   paths the runtime derived, and put its output in the check receipts the
+   validator reads, so orphaned evidence arrives as a receipt rather than as a
+   surprise at verify time. Run it again after every repair round, over the
+   paths as they stand, because a repair can orphan evidence the first pass did
+   not. Read the output as written and never hand-list the orphans instead.
 8. Return the manifest digest, author context ID, and exact check receipts in the
    response or runtime channel. Stop.
 
