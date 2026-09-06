@@ -27,8 +27,9 @@ scope as a class (cli/internal/gates/** plus regen outputs), first check
 - The plan names one first check as a runnable command, such as
   `bash scripts/check-x.sh`, and a fresh context given only the source can
   start Implement.
-- On a risky write scope the Plan output carries `binding_judge` and names the
-  evidence the change will orphan, rather than leaving either for verify time.
+- On a risky write scope the plan says which judge the caller will side with if
+  the two judges split, and names the evidence the change will orphan, rather
+  than leaving either for verify time.
 
 ## Workflow
 
@@ -44,14 +45,15 @@ scope as a class (cli/internal/gates/** plus regen outputs), first check
    evidence concrete, carrying citations forward; research and specialist
    skills are advisory inputs.
 3. Ensure the source contains acceptance examples, important non-goals, and the
-   allowed write scope. Name `write_scope`, whether it hits a risky surface
-   (the list [`validate`](../validate/SKILL.md) owns), the caller's
+   allowed write scope. Name the write scope, whether it reaches a risky surface
+   (the short list [`validate`](../validate/SKILL.md) names), the caller's
    `repair_rounds`, and the evidence this change will orphan: bound scorecards
-   or contracts whose evaluator files sit in the write scope. Recapturing that
-   evidence is work this plan carries, not a discovery for verify time. Use
-   lightweight prose or
-   Given/When/Then only where it removes ambiguity. Write-scope checks (folded
-   from the retired `scope` skill):
+   or contracts whose evaluator files sit in the write scope. Run
+   `bash scripts/evidence-orphans.sh <write scope>` to see that list rather than
+   guessing it, and budget recapturing it as work this plan carries, not a
+   discovery for verify time. Use lightweight prose or Given/When/Then only
+   where it removes ambiguity. Write-scope checks (folded from the retired
+   `scope` skill):
    - patterns are normalized repository-relative paths;
    - includes cover the behavior without granting unrelated directories;
    - excludes do not contradict required changes;
@@ -61,19 +63,19 @@ scope as a class (cli/internal/gates/** plus regen outputs), first check
 5. If authorized and the source is writable, update that bead or issue in
    place. Otherwise return a concise proposed amendment to the caller.
 
-## The binding judge
+## Which judge the caller will side with
 
-On a risky write scope the Plan output carries `binding_judge`, `primary` or
-`cross`, and it is bound into the plan identity like acceptance and scope. A
-caller argument that disagrees with the bound value refuses the traversal
-rather than rebinding it silently.
+On a risky write scope the plan may say up front which of the two judges the
+caller will side with if they still disagree after repair: the fresh judge or
+the cross-family one. Say it in the plan, before any evidence exists, so it
+reads as a disposition rather than a preference formed after seeing which judge
+was kinder.
 
-`binding_judge` declares a disposition: which leg the caller would act on if
-the two judges still split after repair. It is not a verdict override. The
-convergence law still requires both legs to return PASS on a risky surface, a
-split still never certifies PASS, and no finding leaves the open set because
-this field named a leg. Validate reads it as caller intent, never as authority
-over its own result.
+That statement is recorded, never applied. It is not a verdict override. A
+risky surface still converges only when both judges pass, a split still never
+certifies PASS, and no finding leaves the open set because the plan named a
+judge. Validate reads it as caller intent and never as authority over its own
+result.
 
 Planning produces no AgentOps packet: the runtime carries the source's
 reference and digest to detect acceptance drift. Bound the work around the
