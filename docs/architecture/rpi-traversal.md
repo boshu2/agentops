@@ -76,7 +76,8 @@ That source records:
 
 A plan whose write scope reaches a risky surface exits through one premortem
 before Implement: one fresh judge reads the frozen plan. A scope reaches a
-risky surface when it can touch one, and a broad or unbounded scope always can.
+risky surface when any path it permits sits on one, and a broad or unbounded
+scope always does.
 A blocking finding ends the traversal at the `NOT_PLANNED` status, which is a
 progress status and not a verdict, because the design is challenged before a
 subject exists, and the plan goes back to the caller. The caller may waive that
