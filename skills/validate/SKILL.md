@@ -77,10 +77,8 @@ When the two judges disagree, each reports its own verdict and neither resolves
 the split. A risky surface converges only when both judges pass, so a split is
 never PASS. Repair works the split down, and what survives it is the
 orchestrator's decision, made in the open: both reads go in the report with
-what was decided and why. If the plan said up front which judge the caller
-would side with, that statement is recorded there too and changes no verdict
-here. Validate never treats agreement with itself, the absence of a second
-verdict, or a preferred judge as a tie-break.
+what was decided and why. Validate never treats agreement with itself, the
+absence of a second verdict, or a preferred judge as a tie-break.
 
 ## Mutating-check quarantine
 

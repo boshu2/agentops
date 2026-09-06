@@ -65,10 +65,7 @@ That source records:
 - acceptance examples where they reduce ambiguity;
 - non-goals and required evidence;
 - `write_scope.include` and `write_scope.exclude`, including generated companions;
-- whether that scope reaches a risky surface, and if it does, which judge the
-  caller will side with should the two judges still disagree after repair: a
-  disposition stated before any evidence exists, recorded rather than applied,
-  and never an override of a verdict;
+- whether that scope reaches a risky surface;
 - the evidence this change will orphan, as `bash scripts/evidence-orphans.sh`
   reports it over the write scope, budgeted as recapture work;
 - a first acceptance command or artifact path;
