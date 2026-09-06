@@ -12,16 +12,15 @@ Three generic conveyor shapes:
 | `audit-dimensions` | pipeline: finder → skeptic, per dimension | auditing a subject across independent lenses |
 | `verify-fixes` | parallel adversarial verifiers, one per group | refuting "it's fixed" claims after a change |
 | `implement-wave` | parallel disjoint-scope lanes → one fresh verifier | executing a wave of bead-shaped work items |
-| `rpi` | pipeline: plan → implement → fresh validate | one RPI traversal to a durable verdict |
 
 Two repository-delivery conveyors also live here, outside the AgentOps
 semantic core: `bdd-foundry` (behavior-first planning → acceptance-gated
 beads) and `ship-beads` (repository delivery orchestration: drive a list of
 beads to confirmed-merged; `bead-crank` is its deprecated alias). The former
 seven-move `operating-loop` workflow is a retired tombstone that fails with
-replacement pointers — one experiment belongs to `rpi`, multi-bead delivery
-to `ship-beads` or a caller-selected factory. Each workflow documents itself
-in its `meta` header.
+replacement pointers — one experiment belongs to the `rpi` skill, multi-bead
+delivery to `ship-beads` or a caller-selected factory. Each workflow documents
+itself in its `meta` header.
 
 ## Install
 
@@ -111,54 +110,3 @@ Workflow({ name: 'implement-wave', args: {
 }})
 ```
 
-## rpi
-
-One caller intent through the core loop, once: Plan shapes one active behavior
-and snapshots the exact intent bytes under SHA-256 identity (validate tooling's
-`snapshot-intent`), Implement runs one bounded RED→GREEN experiment strictly
-inside the write scope, then a separately spawned Validate context re-verifies
-the intent digest, computes the subject manifest over the changed paths, judges
-every acceptance criterion with fresh evidence, and persists `verdict.v2` via
-`store-verdict` with distinct author/validator context ids and a freshness
-attestation. The script is the wall: the validator receives only the intent
-identity, acceptance, write scope, changed paths, check receipts, and author
-context id — never the implementer's narrative. Any dead stage degrades the
-result to `NOT_PROVEN` with an `error` naming the stage.
-
-Doctrine (ADR-0017): Plan and Implement once; Validate freshly; on FAIL or
-NOT_PROVEN with findings a bounded repair phase repairs and re-validates under
-the convergence law within the caller's `repairRounds` (default 2), and stops
-when converged, stopped by the law, or out of rounds. No revision path beyond
-that, no lifecycle ownership, and the authoring context structurally cannot
-issue its own binding PASS.
-
-Cross-vendor validation: with `validator: { kind: 'command', command: '<judge>' }`
-the spawned fresh Validate context becomes a broker for an external judge — it
-learns the command's invocation shape from its `--help`, passes it the validator
-charter plus the exact evidence packet the spawned judge receives today (intent
-digest + snapshot path, pinned acceptance, pinned write scope, changed paths,
-check receipts, author context id — nothing more; the freshness wall is
-unchanged), captures raw stdout+stderr under the run's `.agents/ao/` evidence
-area, and persists `verdict.v2` exactly as today. Three honesty rules are
-load-bearing: **no verdict laundering** — the persisted verdict is exactly the
-external judge's ruling, and output without an unambiguous
-PASS/FAIL/NOT_PROVEN ruling becomes `NOT_PROVEN` with the parse problem named
-in evidence, never an interpreted verdict; **no silent fallback** — an absent,
-non-executable, or output-less command makes the run `NOT_PROVEN` naming the
-command failure, never falling back to the spawned judge; **vendor-agnostic** —
-the script and prompts name no vendor, the command is opaque caller input. The
-broker records its own context id in the attestation as the attester, distinct
-from both the author id and the external validator id (the judge's run/session
-identity when its output provides one, else the SHA-256 of the raw transcript
-file), with the transcript path recorded in `evidence_refs` and the criteria
-transcribed from the external ruling.
-
-Args: `{ intent: string, root?: string, writeScope?: [string], acceptance?: string, validator?: { kind: 'spawned' | 'command', command?: string } }` — `writeScope`/`acceptance` are caller-fixed when given, otherwise Plan derives them; `validator` absent or `{ kind: 'spawned' }` is today's behavior (the spawned fresh judge), `{ kind: 'command', command }` brokers to the external judge command.
-Returns: `{ verdict: PASS|FAIL|NOT_PROVEN, verdictPath, intentDigest, changedPaths, filesSummary, criteria: [{ criterion, result, evidence }] }` (plus `error` when a stage died; `filesSummary` is the implementer's caller-facing note — it never reaches the validator).
-
-```js
-Workflow({ name: 'rpi', args: {
-  intent: 'ao doctor should exit non-zero and name the missing hook when the pre-push hook is absent',
-  writeScope: ['cli/internal/doctor/**'],
-}})
-```
