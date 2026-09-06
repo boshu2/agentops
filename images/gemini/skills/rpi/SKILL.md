@@ -48,8 +48,9 @@ and dispatches Plan and Implement at most once; Validate repeats only inside
 the repair phase, under the convergence law and the caller's `repair_rounds`.
 Read [references/boundaries.md](references/boundaries.md), the ownership and
 delegation boundary shared by the core skills, before dispatch.
-[`scripts/run_once.py`](scripts/run_once.py) makes dispatch, repair, and stop
-executable without Git, `ao`, or a tracker.
+[`scripts/run_once.py`](scripts/run_once.py) makes dispatch, repair, and the
+four mechanical stop rules executable without Git, `ao`, or a tracker; the
+class rule is the orchestrator's judgment, not the script's.
 
 ## Prompt
 
@@ -160,9 +161,7 @@ Two judges disagreeing is the orchestrator's decision, and it is made in the
 open. Both reads go in the report, each with its own verdict, alongside what
 was decided and why. A risky surface still converges only when both judges
 pass, so a split is never a PASS and no finding leaves the open set because one
-judge was preferred. The plan may state up front which judge the caller will
-side with if a split survives repair; that statement is recorded in the report
-and is never applied to a verdict.
+judge was preferred.
 
 ## Judgment dispatch
 

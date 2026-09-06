@@ -46,9 +46,7 @@ findings against a plan that has no subject yet, so its block is the
 
 A judge split is the orchestrator's decision, made in the open and recorded in
 the report; it is never resolved by a third judge convened on the traversal's
-own initiative. The [`plan`](../../plan/SKILL.md) source may say up front which
-judge the caller will side with if a split survives repair. That statement is
-recorded, not applied, and Validate never reads it as an override. A
+own initiative. A
 selected factory receives intent through its own coordinator (for Gas City,
 the Mayor; see the `using-gc` skill); the core hands over intent and reads
 native state, and the factory's own reconciler creates, scales, and repairs

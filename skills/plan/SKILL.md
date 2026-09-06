@@ -97,3 +97,8 @@ gate.
 A plan is done only when it passes the fresh-context test: a cold context,
 given the intent source alone, could execute it. Move any fact that lives only
 in the planning conversation into the source before freezing.
+
+Planning produces no AgentOps packet: the runtime carries the source's
+reference and digest to detect acceptance drift. Bound the work around the
+caller-visible outcome, not files, gates, or reviewer comments; decompose only
+when it reduces reasoning cost.

@@ -47,9 +47,8 @@ scope as a class (cli/internal/gates/** plus regen outputs), first check
 - The plan names one first check as a runnable command, such as
   `bash scripts/check-x.sh`, and a fresh context given only the source can
   start Implement.
-- On a risky write scope the plan says which judge the caller will side with if
-  the two judges split, and names the evidence the change will orphan, rather
-  than leaving either for verify time.
+- On a risky write scope the plan names the evidence the change will orphan,
+  rather than leaving it for verify time.
 
 ## Workflow
 
@@ -83,25 +82,6 @@ scope as a class (cli/internal/gates/** plus regen outputs), first check
 5. If authorized and the source is writable, update that bead or issue in
    place. Otherwise return a concise proposed amendment to the caller.
 
-## Which judge the caller will side with
-
-On a risky write scope the plan may say up front which of the two judges the
-caller will side with if they still disagree after repair: the fresh judge or
-the cross-family one. Say it in the plan, before any evidence exists, so it
-reads as a disposition rather than a preference formed after seeing which judge
-was kinder.
-
-That statement is recorded, never applied. It is not a verdict override. A
-risky surface still converges only when both judges pass, a split still never
-certifies PASS, and no finding leaves the open set because the plan named a
-judge. Validate reads it as caller intent and never as authority over its own
-result.
-
-Planning produces no AgentOps packet: the runtime carries the source's
-reference and digest to detect acceptance drift. Bound the work around the
-caller-visible outcome, not files, gates, or reviewer comments; decompose only
-when it reduces reasoning cost.
-
 ## Scope admission
 
 At scope, read `boundaries.md` in the rpi skill's `references` directory for
@@ -117,3 +97,8 @@ gate.
 A plan is done only when it passes the fresh-context test: a cold context,
 given the intent source alone, could execute it. Move any fact that lives only
 in the planning conversation into the source before freezing.
+
+Planning produces no AgentOps packet: the runtime carries the source's
+reference and digest to detect acceptance drift. Bound the work around the
+caller-visible outcome, not files, gates, or reviewer comments; decompose only
+when it reduces reasoning cost.
