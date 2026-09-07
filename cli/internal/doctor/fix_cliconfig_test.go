@@ -184,13 +184,18 @@ func writeFakeCLIRepoRoot(t *testing.T, root string) {
 	writeFile(t, filepath.Join(root, "cli", "go.mod"), "module github.com/boshu2/agentops/cli\n")
 }
 
-func TestCliConfigMissingRequiredCLI_DetectsMissingBrInsideRepo(t *testing.T) {
+func TestCliConfigMissingRequiredCLI_DetectsMissingBdDespiteBrInsideRepo(t *testing.T) {
 	tmp := t.TempDir()
 	fakebin := filepath.Join(tmp, "fakebin")
-	// Only git present, no br.
+	// Only git present, no bd.
 	writeFile(t, filepath.Join(fakebin, "git"), "#!/bin/sh\nexit 0\n")
 	if err := os.Chmod(filepath.Join(fakebin, "git"), 0o755); err != nil {
 		t.Fatalf("chmod: %v", err)
+	}
+	// A different Beads implementation must not satisfy the BD requirement.
+	writeFile(t, filepath.Join(fakebin, "br"), "#!/bin/sh\nexit 0\n")
+	if err := os.Chmod(filepath.Join(fakebin, "br"), 0o755); err != nil {
+		t.Fatalf("chmod br: %v", err)
 	}
 	t.Setenv("PATH", fakebin)
 
@@ -204,23 +209,23 @@ func TestCliConfigMissingRequiredCLI_DetectsMissingBrInsideRepo(t *testing.T) {
 	if f.Severity != "P1" {
 		t.Errorf("Severity = %q, want P1", f.Severity)
 	}
-	if !strings.Contains(f.Evidence.Query, "missing_clis=br") {
-		t.Errorf("Evidence.Query missing br: %q", f.Evidence.Query)
+	if !strings.Contains(f.Evidence.Query, "missing_clis=bd") {
+		t.Errorf("Evidence.Query missing bd: %q", f.Evidence.Query)
 	}
-	if strings.Contains(f.Evidence.Query, "missing_clis=br,git") {
+	if strings.Contains(f.Evidence.Query, "missing_clis=bd,git") {
 		t.Errorf("git wrongly reported missing: %q", f.Evidence.Query)
 	}
-	if !strings.Contains(f.Remediation.Command, "beads_rust") {
-		t.Errorf("Remediation.Command lacks br install hint: %q", f.Remediation.Command)
+	if !strings.Contains(f.Remediation.Command, "gastownhall/beads") {
+		t.Errorf("Remediation.Command lacks bd install hint: %q", f.Remediation.Command)
 	}
 }
 
-// Outside an agentops clone, br is NOT required — an installed user who tracks
-// with bd (or nothing) must never see br reported as a missing required CLI.
-func TestCliConfigMissingRequiredCLI_BrNotRequiredOutsideRepo(t *testing.T) {
+// Outside an agentops clone, bd is NOT required: users may select another
+// tracker or none. Keep only Git universally required.
+func TestCliConfigMissingRequiredCLI_BdNotRequiredOutsideRepo(t *testing.T) {
 	tmp := t.TempDir()
 	fakebin := filepath.Join(tmp, "fakebin")
-	// Only git present, no br. RepoRoot is a plain dir (not an agentops clone).
+	// Only git present, no bd. RepoRoot is a plain dir (not an agentops clone).
 	writeFile(t, filepath.Join(fakebin, "git"), "#!/bin/sh\nexit 0\n")
 	if err := os.Chmod(filepath.Join(fakebin, "git"), 0o755); err != nil {
 		t.Fatalf("chmod: %v", err)
@@ -252,15 +257,15 @@ func TestCliConfigMissingRequiredCLI_GitStillRequiredOutsideRepo(t *testing.T) {
 	if !strings.Contains(f.Evidence.Query, "missing_clis=git") {
 		t.Errorf("Evidence.Query missing git: %q", f.Evidence.Query)
 	}
-	if strings.Contains(f.Evidence.Query, "br") {
-		t.Errorf("br wrongly reported outside a clone: %q", f.Evidence.Query)
+	if strings.Contains(f.Evidence.Query, "bd") {
+		t.Errorf("bd wrongly reported outside a clone: %q", f.Evidence.Query)
 	}
 }
 
 func TestCliConfigMissingRequiredCLI_AllPresentYieldsNoFinding(t *testing.T) {
 	tmp := t.TempDir()
 	fakebin := filepath.Join(tmp, "fakebin")
-	for _, name := range []string{"br", "git"} {
+	for _, name := range []string{"bd", "git"} {
 		p := filepath.Join(fakebin, name)
 		writeFile(t, p, "#!/bin/sh\nexit 0\n")
 		if err := os.Chmod(p, 0o755); err != nil {
@@ -269,7 +274,9 @@ func TestCliConfigMissingRequiredCLI_AllPresentYieldsNoFinding(t *testing.T) {
 	}
 	t.Setenv("PATH", fakebin)
 
-	fs, err := missingRequiredCLIDetector{}.Detect(&DetectEnv{})
+	repoRoot := filepath.Join(tmp, "repo")
+	writeFakeCLIRepoRoot(t, repoRoot)
+	fs, err := missingRequiredCLIDetector{}.Detect(&DetectEnv{RepoRoot: repoRoot})
 	if err != nil {
 		t.Fatalf("Detect error: %v", err)
 	}
@@ -282,7 +289,7 @@ func TestCliConfigMissingRequiredCLI_SymlinkEquivalentPathIsNotShadowed(t *testi
 	tmp := t.TempDir()
 	realbin := filepath.Join(tmp, "usr", "bin")
 	aliasbin := filepath.Join(tmp, "bin")
-	for _, name := range []string{"br", "git"} {
+	for _, name := range []string{"bd", "git"} {
 		p := filepath.Join(realbin, name)
 		writeFile(t, p, "#!/bin/sh\nexit 0\n")
 		if err := os.Chmod(p, 0o755); err != nil {
@@ -359,7 +366,7 @@ func TestCliConfigMissingRequiredCLI_MissingRemediationNamesTheCLI(t *testing.T)
 // When a CLI is genuinely missing, the finding still fires as P1 and duplicate
 // evidence for another required CLI rides along in the evidence query — the
 // shadow signal is informational context, not its own failure mode.
-func TestCliConfigMissingRequiredCLI_MissingBrKeepsShadowedGitEvidence(t *testing.T) {
+func TestCliConfigMissingRequiredCLI_MissingBdKeepsShadowedGitEvidence(t *testing.T) {
 	tmp := t.TempDir()
 	binA := filepath.Join(tmp, "binA")
 	binB := filepath.Join(tmp, "binB")
@@ -385,14 +392,14 @@ func TestCliConfigMissingRequiredCLI_MissingBrKeepsShadowedGitEvidence(t *testin
 	if f.Title != "required external CLI missing from PATH" {
 		t.Errorf("Title = %q, want missing title even with shadow evidence", f.Title)
 	}
-	if !strings.Contains(f.Evidence.Query, "missing_clis=br") {
-		t.Errorf("Evidence.Query missing br: %q", f.Evidence.Query)
+	if !strings.Contains(f.Evidence.Query, "missing_clis=bd") {
+		t.Errorf("Evidence.Query missing bd: %q", f.Evidence.Query)
 	}
 	if !strings.Contains(f.Evidence.Query, "shadowed_clis=git -> ") {
 		t.Errorf("Evidence.Query lacks shadowed git context: %q", f.Evidence.Query)
 	}
-	if !strings.Contains(f.Remediation.Command, "beads_rust") {
-		t.Errorf("Remediation.Command lacks br install hint: %q", f.Remediation.Command)
+	if !strings.Contains(f.Remediation.Command, "gastownhall/beads") {
+		t.Errorf("Remediation.Command lacks bd install hint: %q", f.Remediation.Command)
 	}
 	if strings.Contains(f.Remediation.Command, "—  —") {
 		t.Errorf("Remediation.Command rendered an empty hint slot: %q", f.Remediation.Command)

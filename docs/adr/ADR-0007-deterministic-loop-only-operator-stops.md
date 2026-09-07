@@ -1,11 +1,11 @@
 # ADR-0007: Deterministic `/evolve` Loop — Only the Operator Stops It
 
-- **Status:** Accepted (2026-05-22)
+- **Status:** Accepted, amended for selected CDLC 2026-09-06 (2026-05-22)
 - **Author:** AgentOps maintainers
 - **Tracking:** bead `soc-sfjx`
 - **Origin:** ported from the mt-olympus unbounded-evolve substrate (`docs/decisions/2026-05-21-deterministic-loop-only-operator-stops.md`), which has driven ~245 cycles without self-halting.
 
-## Active stopping amendment — 2026-09-07
+## Active disposition — 2026-09-06 CDLC adoption
 
 The Decision below's unlimited/operator-only stop rule and automatic bypass of
 stale stop markers are superseded for selected finite campaigns. An explicitly
@@ -27,9 +27,12 @@ pause nor an aggregate allowance operation; report observed enforcement and
 measurement gaps truthfully.
 
 Preserve the lesson demonstrated below: an unused helper enforces nothing.
-Native continuation and stop behavior need observed consumer execution and
-bounded recovery evidence. This amendment neither starts recurrence nor
-restores the retired unlimited loop machinery.
+Native continuation/stop behavior needs observed consumer execution and bounded
+recovery evidence, not prose, elapsed time or green CI. T23/T24 own the native
+continuation amendments with implemented behavior; T25 alone owns evolve
+restoration after that proof. The old evolve commands, marker machinery and
+operator-only rules remain retired. This disposition neither starts recurrence
+nor reinstates unlimited operation. Earlier evidence is preserved as history.
 
 ## Historical context
 

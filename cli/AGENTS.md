@@ -5,16 +5,28 @@ This file is **not** the issue-tracker or workflow source of truth. Read the rep
 - [`../AGENTS.md`](../AGENTS.md) — canonical operator contract
 - [`../docs/architecture/go-cli.md`](../docs/architecture/go-cli.md) — CLI composition, gate system, evidence boundary
 
-## Issue tracker (br only)
+## Issue tracker (BD)
+
+Use the latest stable `bd`, the same native repository tracker used from the
+repo root. The root `.beads/redirect` resolves its private BD/Dolt store from
+this subtree too. Check the resolved identity before work:
 
 ```bash
-BEADS_DIR="$(ao beads dir)" br ready              # Find available work
-BEADS_DIR="$(ao beads dir)" br show <id>          # View issue details
-BEADS_DIR="$(ao beads dir)" br update <id> --claim  # Claim work
-BEADS_DIR="$(ao beads dir)" br close <id> -r "Done" # Complete work
+bd context --json
+bd ready --json
+bd show <id> --json
+bd update <id> --claim
+bd close <id> --reason "Acceptance and validation evidence"
 ```
 
-**Two-store truth:** `br` is this repo's tracker; `bd`/Dolt is the gascity substrate store (a different layer, not this repo's tracker). Do not run `bd` for this repo's tracking here. Sync the private ledger with `git -C "$(ao beads dir)" push`; never stage that ledger from the public repo.
+`br` is a separate implementation and is not used for this repository. Never
+substitute it, run the removed `ao beads dir`, or initialize an empty store to
+bypass missing routing. Preserve `_beads` and the pre-migration `.beads` estate
+as history. Git and Dolt synchronization follow the configured native store's
+policy; do not infer a remote or push private data from these examples.
+
+BV may rank a fresh explicit BD export. Recheck selected IDs in live BD; a
+viewer recommendation cannot authorize a claim, parallel write or closure.
 
 ## CLI development
 

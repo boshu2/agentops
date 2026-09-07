@@ -33,6 +33,49 @@ intent
 One traversal is one experiment plus its bounded repair. The caller, a Goal, or
 a factory decides whether to start another; the traversal never selects it.
 
+## Selected Context Delivery Lifecycle
+
+CDLC means **Context Delivery Lifecycle**. It maintains external context and
+environment around disposable agents; it does not train weights or promise
+deterministic inference. The selected contract has three delivery phases:
+
+| Phase | Responsibility |
+|---|---|
+| Discovery | Retrieve authorized prior experience, resolve current intent and constraints, investigate uncertainty, challenge consequential choices, and shape the existing native work graph. Plan remains the shaping owner and freezes one experiment's acceptance. Research, Premortem and Council compose by selection; no new Discovery root or packet engine is required. |
+| Implement | Execute that experiment, preserve episode associations before dispatch, collect factual evidence, and integrate only authorized disjoint work. |
+| Validate | Independently judge the exact subject and unchanged acceptance; admitted repairs require fresh revalidation. Return the result to the caller or selected outer goal. |
+
+Standalone RPI remains runnable with once-only Plan/Implement and bounded repair.
+Selected-mode RPI is required to perform Recall at entry even when already shaped
+intent skips further discovery. T14 owns that later Recall behavior and root;
+this adoption does not enable an unavailable entrypoint
+or bypass current skill checks. Selected recall is instruction-level composition,
+not a new hard dependency. Learn's broader episode/curation behavior is also
+later work. Only T25 may restore the small evolve skill and change its removal
+guard, after native stop/continuation is proven.
+
+An explicitly selected bounded outer goal may authorize a different experiment,
+including a return to Discovery, within its accepted envelope. It retains native
+budgets, stops, queue, work and delivery authority. RPI never extends that bound
+or changes acceptance during a repair. AO gains no scheduler, second work store,
+semantic workflow engine, lifecycle CLI or delivery ownership. The core hard
+edges, specialist independence and retired command/schema tombstones remain.
+
+Learning changes later context; it cannot retroactively change a product verdict.
+Searchable supported references remain useful candidates even when they do not
+justify method promotion. Default Recall supplies no optional knowledge without
+an applicable admitted answer. Indispensable acceptance must remain available
+or assembly reports overflow. There is no universal context percentage, numeric
+utility score, page quota or required lesson per session.
+
+[ADR-0016](../adr/ADR-0016-state-tiers.md) owns external memory, confidential
+staging and legacy preservation. Exact factual support, destination disclosure
+before any Git object/index/stash, and later observed utility are separate
+claims. The current trial retrieved source references without requesting the
+optional knowledge body: it showed no memory benefit. Mechanism success cannot
+be reported as measured improvement, and a whole-trial acceptance cannot erase
+a worker failure.
+
 ## Roles
 
 | Role | Owns | Does not own |
@@ -88,10 +131,18 @@ for a clean one.
 
 The runtime leaves a durable caller-owned source in place and carries its
 reference plus the acceptance digest derived from its exact resolved bytes.
-Only when no durable source exists does it store those bytes under
+For standalone product proof, only when no durable source exists does it store those bytes under
 `.agents/ao/intents/sha256/<digest>.intent`. This fallback makes
 conversation-only intent available to a fresh validator. The model does not
 author a second PlanPacket.
+
+Selected CDLC knowledge/disclosure proof requires an explicit protected external
+non-Git evidence root, including snapshots, manifests, verdicts and receipts,
+with no consumer-workspace fallback. Existing helpers do not yet implement the
+complete selected routing: their current commands and limits are described in
+[Validate mechanics](../../skills/validate/references/mechanics.md). Do not send
+restricted CDLC inputs through an incompatible entrypoint. The later Go owner
+must establish shared conformance before this runtime path is advertised.
 
 Owner, ready, claim, priority, attempt, wave, queue, lease, admission, next
 action, close, release, and delivery fields are outside the contract.
@@ -158,7 +209,11 @@ pinned, or proven is an acceptance criterion like any other: it needs a check
 the validator can run, or it is `not_checked`. The `docs.claims-tracked` gate
 covers the tracked-file half of that claim and nothing more.
 
-On a risky surface the fresh judge and the cross-family judge each report their
+For required diversity (risky surface or explicit caller acceptance), use the
+[bounded model-dispatch contract](../../skills/agent-native/references/model-dispatch.md).
+The fresh and cross-family legs receive independently supplied initial inputs
+for the exact subject; required unavailable diversity is `NOT_PROVEN` with
+`diversity_unsatisfied`, never a silent single-family PASS. Each reports its
 own verdict and neither resolves a disagreement. The surface converges only
 when both judges pass, so a split never certifies PASS and no finding leaves
 the open set because one judge was preferred. A split that survives repair is
@@ -245,3 +300,25 @@ provenance remains, and knowledge volume is not monotonic truth or progress.
   verdict, plan, or core result.
 - Consumer repository Git, CI, merge, rollback, and release mechanisms operate
   after and outside this loop.
+
+## Active ADR dispositions for selected CDLC
+
+These dispositions preserve the historical evidence and distinguish T04 contract
+adoption from later behavior. The eight amended ADRs carry their exact replacement
+and retained invariant at the top of each owner.
+
+| ADR | Disposition |
+|---|---|
+| [0001](../adr/ADR-0001-ddd-hexagonal-adoption.md) | Retain DDD/effect seams; retire mandatory ExecutionPacket/package layout. Later Go effects belong to T06. |
+| [0002](../adr/ADR-0002-agentops-3-hookless-cdlc-rearchitecture.md) | Proposed hookless CDLC hypotheses remain historical; no packet, phase engine or daemon revival. |
+| [0003](../adr/ADR-0003-executable-spec-artifact-durability.md) | Retain executable acceptance and private holdout/public fixture separation; no automatic promotion. |
+| [0004](../adr/ADR-0004-corpus-moat-unproven-position-on-the-system.md), [0011](../adr/ADR-0011-escape-corpus-compounding-unproven-structural-starvation.md) | Retain negative evidence and mechanism/benefit separation; a new cohort must establish any new lift claim. |
+| [0005](../adr/ADR-0005-trace-link-convention.md) | Replace trace-walker/confidence closure prescriptions with exact native source identity and fresh acceptance evidence; T07 owns later mechanics. |
+| [0007](../adr/ADR-0007-deterministic-loop-only-operator-stops.md), [0008](../adr/ADR-0008-evolve-intelligent-agile-operating-model.md) | Preserve doctrine and actual consumer enforcement; supersede unlimited/operator-only operation and CI-only delivery. T23/T24/T25 own later native control behavior. |
+| [0009](../adr/ADR-0009-daemon-deletion-in-session-only.md) | Daemon stays deleted; external selected triggers may invoke bounded skills. T27 owns later trigger behavior. |
+| [0010](../adr/ADR-0010-e6-session-log-miner-build-native.md) | Retain the tool-call event miner; it does not establish full raw-source coverage. T08/T09 own that later distinction in mechanics. |
+| [0014](../adr/ADR-0014-catch-to-producer-loop-judgment-catches-need-a-producer-route.md) | Remains superseded; retain failure-to-improvement hypothesis without restoring its producer registry. T29 owns later methods. |
+| [0015](../adr/ADR-0015-gas-city-fenced-steward.md) | Remains historical; selected upstream factories keep their native doors and authority. |
+| [0016](../adr/ADR-0016-state-tiers.md) | Admit external reviewed memory, protected staging and preservation; retain source authority, verified BD routing and Go skill logic. |
+| [0017](../adr/ADR-0017-loop-as-control-flow-not-knowledge.md) | Retain exact fresh validation/repairs; admit selected outer experiments, learning and bounded cross-family invocation. T25 alone changes evolve removal. |
+| [0018](../adr/ADR-0018-retire-goals-shared-scope.md) | Keep goals/shared/scope retired; count projections change only with later Recall/evolve implementations. |

@@ -1,11 +1,29 @@
 # ADR-0005: Trace Link Convention
 
-- **Status:** Accepted (2026-05-17)
+- **Status:** Accepted, amended for selected CDLC 2026-09-06 (2026-05-17)
 - **Author:** AgentOps maintainers
 - **Builds on:** [ADR-0003](ADR-0003-executable-spec-artifact-durability.md)
 - **Tracking:** epic `soc-58nt` (Executable spec layer), bead `soc-58nt.4.8`
 
-## Context
+## Active disposition — 2026-09-06 CDLC adoption
+
+Supersede the trace-walker prescription below, including the global rule that
+an exact ID or `confidence: high` counts as closure proof. Exact native
+project/source and revision/content identities establish what was referenced;
+a fresh author-distinct judgment establishes whether it satisfies unchanged
+acceptance. Heuristic matches may locate evidence but never prove acceptance.
+No confidence score, citation, trace edge or closed child certifies a parent.
+Broken, missing, inaccessible and unverified references remain visible.
+
+Use native BD work identity and source-owned Git/session identities without a
+second work index. Reviewed external Markdown/OKF claims and protected evidence
+follow [ADR-0016](ADR-0016-state-tiers.md), replacing automatic repo
+`docs/learnings/` promotion and mandatory learning yield. The legacy walker
+output/CLI and packet prescriptions below are historical, not a runnable CDLC
+interface. T07 owns later exact-link mechanics; no trace engine is restored here.
+The preserved invariant is accountable source linkage with honest gaps.
+
+## Historical context
 
 Epic `soc-58nt` builds a full directive→scenario→bead→artifact→learning trace chain
 (`ao goals trace`, F4). Before the F4.1 walker can be implemented, the graph-edge

@@ -1,9 +1,53 @@
 # ADR-0017: The Loop Is Control Flow, Not Knowledge
 
-- **Status:** Accepted (2026-09-03)
+- **Status:** Accepted, amended for selected CDLC 2026-09-06 (2026-09-03)
 - **Author:** AgentOps maintainers
 - **Builds on:** [ADR-0004](ADR-0004-corpus-moat-unproven-position-on-the-system.md) (corpus moat unproven, position on the verification system), [ADR-0011](ADR-0011-escape-corpus-compounding-unproven-structural-starvation.md) (escape-corpus compounding demoted to hypothesis)
 - **Origin:** `docs/plans/2026-09-03-loop-restore.md` (this decision's intent source), and the 2026-09-02 Train 1 run, where the repair loop had to be improvised by hand
+
+## Active disposition — 2026-09-06 selected CDLC
+
+Retain the bounded repair law, once-only Plan/Implement, exact subject and fresh
+author-distinct Validate. Replace the blanket exclusion of knowledge writes and
+outer re-planning with selected **Context Delivery Lifecycle** contracts:
+maintained external context/environment around disposable agents, no weight
+training and no deterministic-inference promise. Discovery (Plan shapes),
+Implement and Validate are the delivery phases. An explicitly selected bounded
+outer goal may authorize a new experiment within its accepted envelope; RPI
+itself neither replans nor owns native budgets, stops, queues or delivery.
+
+Replace Decision 3's NTM-only and blanket headless-Claude ban with the single
+[authorized bounded model-dispatch recipe](../../skills/agent-native/references/model-dispatch.md).
+Both fresh and required cross-family exact-subject legs remain, with independent
+initial inputs and actual model/context receipts. Risk or caller-required
+unavailable diversity stays `diversity_unsatisfied` / `NOT_PROVEN`; no preferred
+judge, majority vote or author can supply binding PASS. Native runtimes own
+finite input/output, timeout and verified cleanup. Exit/process facts are not
+semantic verdicts. Executable Door9 and specialist provider guards stay intact.
+
+The selected new roots are Recall first and a small evolve only after native
+stop/continuation proof. Recall and broader Learn source/curation behavior have
+later owners; T25 alone may restore evolve and amend `REMOVED_SKILLS`. Thus
+"What stays removed" below describes the current executable inventory, not a
+permanent prohibition on the selected later learning contract. No Recall or
+evolve entrypoint is advertised as runnable by T04; existing entrypoint checks
+and dependency invariants remain enforced. Selected recall is instruction-level
+composition, not a new hard edge or Discovery root. The old evolve implementation,
+operator-only unlimited rules, CLI/controller and packet machinery stay retired.
+
+[ADR-0016](ADR-0016-state-tiers.md) admits caller-owned external reviewed
+Markdown/OKF memory and protected non-Git drafts/evidence. This replaces
+scratch-only curation without restoring a transcript lake or a second work
+store. Factual support, destination disclosure before any Git object/index/stash,
+and later utility are separate decisions. Source authors cannot approve their
+own knowledge, and learning cannot change completed product verdicts.
+
+ADR-0004/0011's honesty remains: measured mechanism and net benefit are distinct.
+The current cold-reuse trial requested no optional knowledge body and showed no
+memory benefit. Trial acceptance preserves its failed worker and null result;
+it cannot imply improvement. The selected skills-plus-Go evidence path needs
+later implementation and shared conformance, not a shipped Python expansion.
+The original removal rationale and repair evidence below remain historical.
 
 ## Active stopping amendment — 2026-09-07
 

@@ -1,9 +1,24 @@
 # ADR-0001: Adopt DDD + Hexagonal Architecture
 
-- **Status:** Accepted (2026-05-12)
+- **Status:** Accepted, amended for selected CDLC 2026-09-06 (2026-05-12)
 - **Author:** AgentOps maintainers (DDD+Hexagonal v1 epic)
 
-## Context
+## Active disposition — 2026-09-06 CDLC adoption
+
+Retain DDD meaning boundaries, explicit effect seams and testable invariants.
+Supersede the original Decision's mandatory `ExecutionPacket` aggregate and
+universal `domain/ports/adapters` package prescription. Current composition is
+owned by [Go CLI architecture](../architecture/go-cli.md): focused application
+services and consumer-owned ports where an actual effect earns the seam, with
+app seams elsewhere. No retired execution packet, semantic phase engine or
+new package hierarchy is authorized. Native BD owns work; Git owns revisions;
+runtimes own execution; fresh judges assess meaning. T06 owns later Go evidence
+mechanics; T04 adopts the contract only.
+
+The original context, decision and consequences below remain historical
+rationale for the retained architecture, not permission to rebuild the packet.
+
+## Historical context
 
 [`docs/cdlc.md`](../cdlc.md), [`PRODUCT.md`](https://github.com/boshu2/agentops/blob/main/PRODUCT.md), and the `ddd-bounded-context` / `hexagonal-architecture` rows in [`PRACTICE-REGISTRY.md`](https://github.com/boshu2/agentops/blob/main/PRACTICE-REGISTRY.md) already identify DDD + Hexagonal as the load-bearing architectural style. The encoding existed implicitly in `skills/rpi/references/phase-data-contracts.md` (linked-intent packet), `skills/domain/` (ubiquitous language), and the practice slug registry — but it was not mechanically enforced. This left the architecture as documentation rather than code-as-truth.
 
