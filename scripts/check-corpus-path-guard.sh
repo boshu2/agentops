@@ -1,87 +1,63 @@
 #!/usr/bin/env bash
-# check-corpus-path-guard.sh — fail-closed pre-push PATH guard (ag-ao0eo, epic ag-k7tq9).
-#
-# Layer 4 of the private/public corpus seam (council verdict:
-# .agents/council/2026-06-15-corpus-private-public-seam-verdict.md). S0 carved the
-# corpus into a private nested repo; this guard makes it IMPOSSIBLE for a private
-# artifact to be committed/pushed to the PUBLIC boshu2/agentops repo.
-#
-# PRIVACY-CRITICAL: this MUST fail closed. If the push range cannot be determined,
-# we still scan the staged index and the nearest committed range we can compute —
-# we never silently pass.
-#
-# This is a PATH guard. It is DISTINCT from:
-#   - the S4 `ao corpus scan` marker registry — the marker allowlist.
-# Do NOT add a second marker/content allowlist here. PATHS ONLY.
-#
-# SCOPE — what this guard does NOT cover (do not credit it for these):
-#   - It does NOT protect against `git worktree remove` / `git branch -D` /
-#     destructive cleanup. Pre-push runs on what is being PUSHED, not on local
-#     worktree/branch deletion. That hazard is a SEPARATE concern and out of
-#     scope here. Do not pretend this guard covers it.
+# Reject known private paths in outgoing Git history and the staged index.
+# This is a path guard, not a content classifier or a deletion/cleanup guard.
+# Native BD data/exports/local routing and the preserved legacy estate stay
+# private, including .beads directories below the root. Only the existing root
+# .beads/identity.toml may be publicly versioned.
 set -euo pipefail
 
-# Forbidden top-level paths (anchored at repo root). Any push-range or staged
-# path matching these is private and must never reach the public repo:
-#   .agents/learnings/  — the private corpus dir (S0)
-#   _beads/             — the private tracker (its own nested repo)
-#   docs/wiki/          — generated public wiki, but UNTRACEABLE for now:
-#                         the promotion manifest (bead S5) does not exist yet, so
-#                         we treat ANY docs/wiki/ path as untraceable and reject.
-# TODO(S5): replace the blanket docs/wiki/ rejection with a traceability
-#           allowlist — accept a docs/wiki/ path only when the S5 promotion
-#           manifest proves it was generated from a public-promoted source.
-FORBIDDEN='^\.agents/learnings/|^_beads/|^docs/wiki/'
-
-# Base ref override lets the gate/CI pass the exact range; default origin/main..HEAD.
 BASE_REF="${CORPUS_PATH_GUARD_BASE:-origin/main}"
-
-# Compute the committed range robustly. We want everything reachable from HEAD
-# that is not already on the public base. Prefer merge-base with the base ref;
-# fall back so we NEVER silently skip the committed range.
 base=""
 if git rev-parse --verify -q "$BASE_REF" >/dev/null 2>&1; then
-  base="$(git merge-base "$BASE_REF" HEAD 2>/dev/null || echo "")"
+  base="$(git merge-base "$BASE_REF" HEAD 2>/dev/null || true)"
 fi
 
-committed=""
+# Keep paths NUL-delimited throughout: Git quotes newlines, tabs, quotes and
+# other bytes in line-oriented output, which can hide an anchored private path.
+paths_file="$(mktemp "${TMPDIR:-/tmp}/agentops-corpus-paths.XXXXXX")"
+trap 'rm -f "$paths_file"' EXIT
+
+# Inspect every outgoing commit, not merely the endpoint diff: adding a secret
+# and deleting it again still sends the introducing commit. Without a usable
+# base, conservatively inspect all locally reachable HEAD history. Include merge
+# resolutions and disable rename detection so a moved private file is seen as
+# an addition. Pure deletion of an already-public path adds no private bytes.
+history_ref="HEAD"
 if [ -n "$base" ]; then
-  committed="$(git diff --name-only "$base..HEAD" 2>/dev/null || true)"
-else
-  # FAIL-CLOSED: the authoritative base ($BASE_REF, default origin/main) is
-  # unavailable (fresh clone, detached, CI without the remote). We CANNOT know
-  # which commits are "new", so we scan HEAD's FULL TREE — every path that would
-  # be pushed. We deliberately do NOT fall back to HEAD~1..HEAD: that narrow
-  # window misses a forbidden path introduced in an EARLIER unpushed commit that
-  # is still present in HEAD (a fail-OPEN hole — caught by Navi review, ag-ao0eo).
-  committed="$(git ls-tree -r --name-only HEAD 2>/dev/null || true)"
+  history_ref="$base..HEAD"
+fi
+if ! git log --format= --name-only -z --full-history -m --no-renames \
+  --diff-filter=ACMT "$history_ref" -- > "$paths_file"; then
+  echo "check-corpus-path-guard: FAIL — cannot read committed history" >&2
+  exit 2
+fi
+if ! git diff --cached --name-only -z --no-renames --diff-filter=ACMT -- >> "$paths_file"; then
+  echo "check-corpus-path-guard: FAIL — cannot read staged paths" >&2
+  exit 2
 fi
 
-# Staged index too — an already-committed private file would pass a staged-only
-# check, but a staged-but-uncommitted one would pass a committed-only check.
-# Scan BOTH.
-staged="$(git diff --cached --name-only 2>/dev/null || true)"
+count=0
+failed=0
+while IFS= read -r -d '' path; do
+  [ -n "$path" ] || continue
+  count=$((count + 1))
+  case "$path" in
+    .beads/identity.toml) continue ;;
+    .agents/learnings/*|_beads/*|.beads|.beads/*|*/.beads|*/.beads/*|docs/wiki/*)
+      if [ "$failed" -eq 0 ]; then
+        echo "check-corpus-path-guard: FAIL — private artifact path(s) heading to the PUBLIC repo:" >&2
+      fi
+      failed=1
+      printf '  forbidden: %q\n' "$path" >&2
+      ;;
+  esac
+done < "$paths_file"
 
-# Union, de-duplicated.
-all_paths="$(printf '%s\n%s\n' "$committed" "$staged" | grep -v '^$' | sort -u || true)"
-
-if [ -z "$all_paths" ]; then
-  echo "check-corpus-path-guard: ok (no committed/staged paths in scope)"
-  exit 0
-fi
-
-offenders="$(printf '%s\n' "$all_paths" | grep -E "$FORBIDDEN" || true)"
-
-if [ -n "$offenders" ]; then
-  echo "check-corpus-path-guard: FAIL — private artifact path(s) heading to the PUBLIC repo:" >&2
-  printf '%s\n' "$offenders" | while IFS= read -r p; do
-    [ -n "$p" ] && echo "  forbidden: $p" >&2
-  done
-  echo "  fix: private artifacts must stay in their nested repo (_beads/ has its own remote;" >&2
-  echo "       .agents/learnings/ is the private corpus). Never commit/push them to boshu2/agentops." >&2
-  echo "       docs/wiki/ is rejected until the S5 promotion manifest adds a traceability allowlist." >&2
+if [ "$failed" -ne 0 ]; then
+  echo "  fix: remove private data from the outgoing history/index, not only the working tree." >&2
+  echo "       Keep BD data/exports/local routing, legacy tracker data and private learnings private." >&2
+  echo "       Only .beads/identity.toml is exempt; docs/wiki/ remains blocked pending traceability." >&2
   exit 1
 fi
 
-count="$(printf '%s\n' "$all_paths" | grep -c '' || echo 0)"
-echo "check-corpus-path-guard: ok (${count} path(s) scanned, no private artifacts)"
+echo "check-corpus-path-guard: ok (${count} path observations scanned, no private artifacts)"

@@ -110,7 +110,7 @@ for root in roots:
         for lineno, line in enumerate(text.splitlines(), start=1):
             if stale_beads_resolver.search(line) and not stale_beads_allowed.search(line):
                 failures.append(
-                    f"{path.relative_to(repo_root)}:{lineno}: stale beads resolver; use BEADS_DIR=\"$(ao beads dir)\" and git -C \"$(ao beads dir)\""
+                    f"{path.relative_to(repo_root)}:{lineno}: stale beads resolver; use native bd routing, verify it with bd context --json, and keep private tracker data out of public staging"
                 )
         for lineno, snippet in iter_snippets(text):
             validate_snippet(path, lineno, snippet)

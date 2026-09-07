@@ -1,6 +1,6 @@
 # ADR-0009: Delete the Daemon — AgentOps Is In-Session Only, Out-of-Session Opts Into Gas City
 
-- **Status:** Accepted (2026-05-24)
+- **Status:** Accepted, amended for selected CDLC 2026-09-06 (2026-05-24)
 - **Author:** AgentOps maintainers
 - **Tracking:** bead `soc-j7a5q`
 - **Builds on:** [ADR-0002](ADR-0002-agentops-3-hookless-cdlc-rearchitecture.md) (hookless-first), [ADR-0007](ADR-0007-deterministic-loop-only-operator-stops.md) (deterministic evolve loop)
@@ -8,7 +8,23 @@
 
 > **Historical-substrate note (added 2026-06-03, ag-xa7q):** This ADR predates the Gas City prune (ag-124p, #679) and names **Gas City** as the reference out-of-session substrate throughout. The *decision* (delete the daemon; adopt a substrate; AgentOps has no sovereign core to protect) stands unchanged — but the substrate has since been renarrated to **NTM + MCP (`ao mcp serve`) + managed-agents (`ao agent`)**; `runtime=gc`, `city.toml`, and `packs/agentops` were removed. Read "Gas City" below as "the out-of-session substrate." Canonical current statement: [docs/3.0.md](../3.0.md). The decision record is preserved as-is for provenance.
 
-## Context
+## Active disposition — 2026-09-06 CDLC adoption
+
+Keep the AgentOps daemon deleted. Supersede the mandatory Gas City (and later
+NTM/MCP/managed-agent) substrate and zero-dependency full-loop claims below.
+Native coding agents and local shell can run bounded in-session skills;
+explicitly selected external native triggers may invoke the same bounded
+skills. Scheduling, quota, supervision, queues and delivery remain external.
+Gas City and other factories are optional and operated through their own doors,
+as retained by ADR-0015; AO does not wrap them in a second control plane.
+
+Historical `ao daemon`, phase, inject/compile and reference-pack examples below
+are not current CDLC entrypoints. No daemon, scheduler, old context compiler or
+semantic workflow engine is revived. T27 owns later selected trigger behavior;
+this adoption creates no persistent goal or recurrence. Preserve the original
+separation of in-session work from external supervision and its recorded gaps.
+
+## Historical context
 
 AgentOps 3.0 converged on an honest identity: it is the **in-session agent operating loop plus the context compiler that feeds it**. The in-session loop — `rpi` (inner), `evolve` (outer), `crank`/`swarm` (in-session agent teams), the skills as the portable runtime, and the `.agents/` corpus as the compounding moat — is the product. It runs end-to-end in a plain session with zero AgentOps-managed always-on infrastructure.
 

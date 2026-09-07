@@ -375,8 +375,8 @@
     {
       "name": "agent-native",
       "source_skill": "skills/agent-native",
-      "source_hash": "907fbf538921e939138493a649fc539d99132139723aa1d1446b221d3869c5ba",
-      "generated_hash": "7beea77b9216d6bb8c9cb1b7d0c66356b5560c05666783458424dfef9c4ad73c"
+      "source_hash": "57ff92e59975404af52aa71b7ec64e45389d1dce26ee899bdb10b9d9ae0788cf",
+      "generated_hash": "c7fb89d595199a14d7b00754603bd4a90cadbcc4ae496663161fca97463b7d81"
     },
     {
       "name": "agy-native",
@@ -435,8 +435,8 @@
     {
       "name": "council",
       "source_skill": "skills/council",
-      "source_hash": "f84245516b70f6a7edb5aa32f8166fc826b55c04db66d666728cdf42df9480aa",
-      "generated_hash": "be351944ba3b551093ea7add6dc0a90f8330baf9c9e1955a073296d4a47f99c4"
+      "source_hash": "b04e701f60cd8ec4879aaa3665d3c783d63da777aab321bbd14aa102f9e28436",
+      "generated_hash": "a1f865e33b47a9c98f4e00cb9c3c0063b4c5fed9284c211e0f71897c42e341e1"
     },
     {
       "name": "craft-goal",
@@ -675,8 +675,8 @@
     {
       "name": "validate",
       "source_skill": "skills/validate",
-      "source_hash": "2d48a686c1d1fac4aed8d613feea0fc6c68c1c8cefada55c4579afe1f58d99f5",
-      "generated_hash": "7ebacf9a7ae73b6cf90186c9aae44ba77780f77244a45fca300db7511f530130"
+      "source_hash": "83a91c6fd7098b9877fb758510d3acf4cb17c9a21af05dccf522782c36fc5807",
+      "generated_hash": "4d5527ccff090ae4cac87635b3fbebebc20002ef23fadfcf09d31085f9862bf4"
     },
     {
       "name": "workflow-builder",

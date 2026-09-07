@@ -86,3 +86,89 @@ teardown() {
   [ "$status" -eq 0 ]
   [[ "$output" == *"ok"* ]]
 }
+
+@test "FAILS when a BD export or local redirect is staged under .beads/" {
+  mkdir -p .beads
+  printf '{}\n' > .beads/issues.jsonl
+  printf '/private/tracker/.beads\n' > .beads/redirect
+  git add -A
+  run bash "$SCRIPT"
+  [ "$status" -ne 0 ]
+  [[ "$output" == *".beads/issues.jsonl"* ]]
+  [[ "$output" == *".beads/redirect"* ]]
+}
+
+@test "FAILS for committed Dolt data and identity backup under .beads/" {
+  mkdir -p .beads/dolt
+  printf 'private database\n' > .beads/dolt/data
+  printf 'private backup\n' > .beads/identity.toml.bak
+  git add -A && git commit -qm "private BD data"
+  run bash "$SCRIPT"
+  [ "$status" -ne 0 ]
+  [[ "$output" == *".beads/dolt/data"* ]]
+  [[ "$output" == *".beads/identity.toml.bak"* ]]
+}
+
+@test "PASSES the existing public .beads/identity.toml without admitting sibling data" {
+  mkdir -p .beads
+  printf 'project_id = "public-identity"\n' > .beads/identity.toml
+  git add -A && git commit -qm "public project identity"
+  run bash "$SCRIPT"
+  [ "$status" -eq 0 ]
+  printf '{}\n' > .beads/issues.jsonl
+  git add -A
+  run bash "$SCRIPT"
+  [ "$status" -ne 0 ]
+  [[ "$output" == *".beads/issues.jsonl"* ]]
+}
+
+@test "FAILS for a staged private BD filename containing a newline and quote" {
+  mkdir -p .beads
+  private_path=$'.beads/private\n"export.jsonl'
+  printf '{}\n' > "$private_path"
+  git add -A
+  run bash "$SCRIPT"
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"forbidden:"* ]]
+}
+
+@test "FAILS when private BD data was added then deleted in outgoing history" {
+  mkdir -p .beads
+  printf '{}\n' > .beads/issues.jsonl
+  git add -A && git commit -qm "private file introduced"
+  git rm -q .beads/issues.jsonl && git commit -qm "private file removed"
+  run bash "$SCRIPT"
+  [ "$status" -ne 0 ]
+  [[ "$output" == *".beads/issues.jsonl"* ]]
+}
+
+@test "FAILS with a missing base when removed private data remains in reachable history" {
+  mkdir -p .beads
+  printf '{}\n' > .beads/issues.jsonl
+  git add -A && git commit -qm "private file introduced"
+  git rm -q .beads/issues.jsonl && git commit -qm "private file removed"
+  run env CORPUS_PATH_GUARD_BASE=missing-base bash "$SCRIPT"
+  [ "$status" -ne 0 ]
+  [[ "$output" == *".beads/issues.jsonl"* ]]
+}
+
+@test "FAILS for nested BD exports and identities; only the root identity is public" {
+  mkdir -p cli/.beads
+  printf '{}\n' > cli/.beads/issues.jsonl
+  printf 'private identity\n' > cli/.beads/identity.toml
+  git add -A
+  run bash "$SCRIPT"
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"cli/.beads/issues.jsonl"* ]]
+  [[ "$output" == *"cli/.beads/identity.toml"* ]]
+}
+
+@test "FAILS when a BD directory name is staged as a file or symlink" {
+  printf 'private route\n' > .beads
+  ln -s /private/tracker cli/.beads
+  git add -A
+  run bash "$SCRIPT"
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"forbidden: .beads"* ]]
+  [[ "$output" == *"forbidden: cli/.beads"* ]]
+}

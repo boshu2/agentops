@@ -42,9 +42,10 @@ type Options struct {
 	Strict              bool
 }
 
-// referenceLinkPattern matches markdown references to references/<name>.md
-// (with or without leading paths or angle-bracketed link forms).
-var referenceLinkPattern = regexp.MustCompile(`references/([A-Za-z0-9_./-]+\.md)`)
+// referenceLinkPattern preserves explicit ./ and ../ targets, including
+// sibling skill paths and angle-bracketed links. Bare references/<name>.md
+// mentions (also used inside repo-qualified shell examples) remain local refs.
+var referenceLinkPattern = regexp.MustCompile(`((?:\.\.?/[A-Za-z0-9_./-]*)?references/[A-Za-z0-9_./-]+\.md)`)
 
 // Audit walks SkillsDir and CodexDir and produces a Report.
 func Audit(opts Options) (*Report, error) {
@@ -239,10 +240,10 @@ func findBrokenRefs(skillDir, body string) []string {
 			continue
 		}
 		ref := m[1]
-		linked[ref] = true
-		full := filepath.Join(skillDir, "references", ref)
+		full := filepath.Join(skillDir, filepath.FromSlash(ref))
+		linked[full] = true
 		if _, err := os.Stat(full); err != nil {
-			broken = append(broken, "references/"+ref+" (linked but missing on disk)")
+			broken = append(broken, ref+" (linked but missing on disk)")
 		}
 	}
 
@@ -263,7 +264,7 @@ func findBrokenRefs(skillDir, body string) []string {
 						continue
 					}
 					rel := e.Name() + "/" + s.Name()
-					if !linked[rel] {
+					if !linked[filepath.Join(refsDir, rel)] {
 						broken = append(broken, "references/"+rel+" (on disk but unlinked)")
 					}
 				}
@@ -272,7 +273,7 @@ func findBrokenRefs(skillDir, body string) []string {
 			if filepath.Ext(e.Name()) != ".md" {
 				continue
 			}
-			if !linked[e.Name()] {
+			if !linked[filepath.Join(refsDir, e.Name())] {
 				broken = append(broken, "references/"+e.Name()+" (on disk but unlinked)")
 			}
 		}

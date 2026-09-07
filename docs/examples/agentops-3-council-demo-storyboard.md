@@ -1,6 +1,6 @@
 # AgentOps 3.0 Council Demo Storyboard
 
-> **SUPERSEDED:** This storyboard targets command surfaces removed from current `main`.
+> **SUPERSEDED:** This storyboard targets command surfaces removed from current `main`. Its BR and `ao beads dir` commands are historical examples, not current instructions; current work uses native BD under the repository operating contract.
 
 This storyboard is the canonical 3.0 launch demo. It is designed to become a
 video script, docs quickstart, and PMF scenario seed.

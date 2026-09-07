@@ -27,7 +27,7 @@ not proven.
 | `tests/` | bats suites |
 | `schemas/` | evidence contracts (`*.schema.json`) |
 | `docs/adr/` | active constraints |
-| `.agents/` | disposable local state (ADR-0016); never authority |
+| `.agents/` | requested legacy proof and local scratch; preserve by owner policy (ADR-0016) |
 
 Build bar for any Go change:
 
@@ -39,6 +39,37 @@ Run the gates with `ao gate check` (`--full` for the whole registry). Regenerate
 `scripts/regen-all.sh` (`--check` to verify without writing); edit `skills/`, then regenerate. `tests/run-all.sh` is the local aggregate runner and must be green.
 CI is authoritative (`.github/workflows/validate.yml`) and runs the bats suites as
 `bats --jobs 4 --no-parallelize-within-files --print-output-on-failure tests/scripts/*.bats`, plus the Go bar above with `go test -race -shuffle=on ./...`.
+
+## Repository work tracker
+
+Use the latest stable **BD (Beads)** for this repository. `br` is a different
+implementation and is not a fallback or an alias for `bd`. The repo-local
+`.beads/redirect` resolves the verified private BD/Dolt store from the root and
+subdirectories; use `bd context --json` to inspect the actual destination before
+mutating work. Do not use the removed `ao beads dir` command or initialize a new
+store when routing is unavailable. The preserved `_beads` SQLite estate is
+migration history, not the live work queue.
+
+Beads Viewer is optional advice over an explicitly refreshed BD export. BD owns
+status and dependencies; recheck suggested work there and against the goal's
+acceptance before acting. Viewer rank does not prove readiness, safe concurrent
+writes or completion. Keep private tracker data out of the public repository.
+
+Read `bd <command> --help` for the installed contract; `bd info` provides human
+DB diagnostics. Inspect the exact goal bead and its scoped ready task
+descendants, then claim through native BD after understanding acceptance,
+dependencies and write scope. Preserve handoff facts and evidence links in
+native notes/comments. Search closed work explicitly and disclose query limits.
+Use flat namespaced metadata keys for native filters, not assumed nested paths.
+
+Recover missing Beads workflow context with an explicit `bd prime`; its vendor
+guidance and injected memories remain retrieved context under this contract.
+`bd remember` is a small project-hint store, not automatic publication of mined
+lessons. Reviewed knowledge belongs in the caller-selected bundle. Native Dolt
+history and backups support work recovery; compaction/GC is a separate retention
+operation that must preserve live evidence and withdrawal records. A configured
+maintenance anchor's direct `bd comments` read must succeed before interpreting
+absence of a withdrawal; child closure and deletion cannot clear an anchor fact.
 
 ## Authority and trust
 
@@ -71,9 +102,10 @@ CI is authoritative (`.github/workflows/validate.yml`) and runs the bats suites 
 
 ## Runtime floor
 
-Never run `claude -p` or `claude --print`, directly or indirectly.
 Default to native Codex plus the local shell; other runtimes only on explicit
-request. `ao` is a repository tool, not a session ritual.
+request. Bounded cross-family judgment follows
+[model-dispatch](skills/agent-native/references/model-dispatch.md) and actual host
+authorization. `ao` is a repository tool, not a session ritual.
 
 ## Federated source authority
 
@@ -85,11 +117,11 @@ absorbs their authority.
 | Work, status, dependencies, close reasons | Beads or the caller's tracker | Query directly; never build a second work index. |
 | Source content and delivery history | Git and repository policy | Bind exact content when useful; a commit or merge never implies semantic PASS. |
 | Past agent sessions | CASS | Retrieve cited episodes on demand; search output is evidence, not policy. |
-| Curated cross-session memory | CM, ee (eidetic-engine), or another caller-selected memory system | Retrieve by explicit need with provenance and freshness. |
-| Runtime execution | NTM, Gas City, Agent Mail, cloud agents, or another selected factory | Read and report native state; runtime completion is never validation. |
+| Curated cross-session memory | caller-selected reviewed external Markdown/OKF bundle, CM, ee, or another memory system | Check owner, task, model and destination access before retrieval; ADR-0016 governs disclosure. |
+| Runtime execution | native coding agent and shell, or an explicitly selected factory | Read and report native state; runtime completion is never validation. |
 | Checks and test output | The executable that produced them | Store factual receipts; a fresh context judges meaning. |
-| Requested proof | `.agents/ao/` | Persist only for a caller request or declared consumer. |
-| Disposable and derived local state | `.agents/scratch/`, `.agents/projections/` | Rebuild or expire; never treat as authority (ADR-0016). |
+| Requested proof | caller-selected storage; existing `.agents/ao/` preserved | New CDLC proof defaults to protected external non-Git storage (ADR-0016). |
+| Disposable and derived local state | caller-selected scratch/projections; legacy `.agents/` preserved | Inventory unique evidence before owner-directed expiry (ADR-0016). |
 
 ## Source precedence
 
@@ -157,7 +189,12 @@ written as documentation; unknown risk takes the stronger path. This prospective
 rule never waives a leg already required for the current change. Exact subject,
 all acceptance, and empty `not_checked` remain the binding PASS bar.
 
-Learn remains an optional later consumer and cannot change core outcomes.
+CDLC (Context Delivery Lifecycle) adopts maintained
+external context for disposable agents, without weight training or deterministic
+inference. Discovery (Plan shapes), Implement and Validate are its three phases.
+See [RPI traversal](docs/architecture/rpi-traversal.md) for selected-mode contracts,
+later implementation owners and honest mechanism-versus-benefit limits.
+Standalone RPI remains runnable; learning cannot change its outcomes.
 
 ## Product boundary
 

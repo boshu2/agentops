@@ -1,11 +1,24 @@
 # ADR-0018: Retire the goals, shared, and scope skills
 
-- **Status:** Accepted (2026-09-03)
+- **Status:** Accepted, amended for selected CDLC 2026-09-06 (2026-09-03)
 - **Author:** AgentOps maintainers
 - **Builds on:** [ADR-0017](ADR-0017-loop-as-control-flow-not-knowledge.md) (the loop restored; its cathedral-cut gate is where retirements are tombstoned)
 - **Origin:** the 2026-09-02 field audit's inventory of the shipped skills, which named `goals` as a verbatim alias, `shared` as a consumer-less tombstone, and `scope` as five write-scope checks that belong in Plan (the plan folded them into plan step 3); Train 1 excluded them (`docs/plans/2026-09-02-legible-membrane-plan.md`, Non-goals: "No directory moves, deletions, or retirements (Train 2)") and Train 2 acted on them
 
-## Context
+## Active disposition — 2026-09-06 CDLC adoption
+
+Keep `goals`, `shared` and `scope` skill roots retired and their tombstones
+unchanged. Intent shaping uses craft-goal/Plan and fitness owns measurement;
+selected Discovery is a delivery phase, not another root. T14's Recall and
+T25's evolve root change generated counts only when their owning implementations
+land. T04 neither changes the current 54-skill inventory nor removes evolve
+from `REMOVED_SKILLS`. Canonical `skills/` and declared metadata owners generate
+catalogs and Codex projections through `scripts/regen-all.sh`; never hand-edit
+companions. Preserve one owner per behavior and the core/specialist dependency
+invariants. Historical count changes below describe the retirement, not a
+promise of new runnable CDLC roots.
+
+## Historical context
 
 Three shipped skills carried no contract of their own:
 
