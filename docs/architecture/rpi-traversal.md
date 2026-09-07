@@ -73,8 +73,12 @@ That source records:
 
 A plan whose write scope reaches a risky surface exits through one premortem
 before Implement: one fresh judge reads the frozen plan. A scope reaches a
-risky surface when any path it permits sits on one, and a broad or unbounded
-scope always does.
+risky surface when its permitted effects can alter acceptance or enforcement;
+Validate owns the conservative path cues and the effect-based rule. Policy
+written as documentation can require stronger review. Unknown, broad, or
+unbounded scope takes the stronger path. A narrow wording correction proven to
+have no behavioral effect may use the lighter path prospectively; no change
+waives a review leg already required for itself.
 A blocking finding ends the traversal at the `NOT_PLANNED` status, which is a
 progress status and not a verdict, because the design is challenged before a
 subject exists, and the plan goes back to the caller. The caller may waive that
@@ -144,9 +148,11 @@ criterion), and residual risk goes in the caller-facing report. The full table
 lives in `skills/validate/SKILL.md` under Scope disclosure.
 
 Each finding carries a stable `class` beside its id: one short name for the
-kind of defect, reused word for word when the kind recurs, so a design defect
-returning under a fresh id is visible as a kind rather than counted as a new
-finding. A `class` that is present and blank is a finding against the validator
+kind of defect, reused word for word when the kind recurs, so recurrence under
+a fresh id stays visible. Causal evidence must distinguish a newly discovered
+pre-existing defect from an introduced regression; new ids and counts alone do
+not establish cause. Unknown cause and recurrence call for causal examination,
+not an unsupported claim that the design is wrong. A `class` that is present and blank is a finding against the validator
 that emitted it. A documentation sentence claiming something is published,
 pinned, or proven is an acceptance criterion like any other: it needs a check
 the validator can run, or it is `not_checked`. The `docs.claims-tracked` gate
@@ -184,20 +190,47 @@ Plan and Implement at most once; on `STOP`, it invokes none of them. Validate
 repeats only inside the bounded repair phase (ADR-0017): a `FAIL` or
 `NOT_PROVEN` with findings is repaired and re-validated freshly while the
 convergence law admits another round, and RPI stops when converged, stopped by
-the law, or out of the caller's `repair_rounds`. A class of finding closed in
-an earlier round that comes back on a new finding stops repair and returns the
-caller to Plan, because what failed is the design, not the patch. The law is
-stated once, in `skills/rpi/SKILL.md`. RPI does not replan, consult a helper, or escalate. `NOT_PLANNED` and `NOT_BUILT`
-describe RPI progress only and are not verdict values.
+the law, or out of the caller's `repair_rounds`. The law requires new
+digest-bound evidence of a named acceptance gap actually closed; changed bytes
+or a smaller finding count alone are insufficient. Evidenced pre-existing
+discovery can increase the count, while introduced regression, unknown cause,
+reopened ids, and returning closed classes stop repair for causal examination.
+A recurrence alone proves neither design failure nor permission to reopen Plan.
+The law is owned by `skills/rpi/SKILL.md`; the existing pure Python reference
+consumes supplied receipt facts and dispatches no runtime or helper. RPI does
+not replan, consult a helper, or escalate. `NOT_PLANNED` and `NOT_BUILT` describe
+RPI progress only and are not verdict values.
 
 The report says why the run ended, and it says what the change orphaned: the
 evidence the plan budgeted to recapture, and the evidence the orphan receipt
 named after Implement and after each repair round.
 
-If a caller wants another experiment, it updates the existing bead or caller
-intent and starts a new invocation. Any persisted verdicts and manifests remain
-durable evidence, but AgentOps does not require a model-authored revision
-packet. Changed acceptance is represented once in the intent source.
+Informative FAIL or NOT_PROVEN may falsify a live hypothesis or resolve a
+blocking uncertainty and justify a materially different outer experiment under
+unchanged goal acceptance. A caller or selected bounded outer goal authorizes
+that experiment within its remaining envelope, updates the existing bead or
+caller intent, and starts a new invocation; a new subject never resets totals.
+Necessary findings stay visible, and information gained is not achieved
+capability. Changed acceptance requires caller authority in the intent source.
+
+The selected outer goal owns causal HOLD on regression, unknown cause,
+recurrence, oscillation, or its declared no-progress threshold. Exactly one
+bounded fresh helper per incident fits inside the existing allowance; automatic
+continuation of the same incident grants no additional helper. UNSTUCK needs a
+different admissible experiment and discriminating check. An unhelpful helper
+or ESCALATE stops implementation. Cancellation, explicit refusal/judgment, and
+a genuinely spent hard time/cost/quota ceiling skip the helper. A retry count is
+not itself a spent budget, and a helper never revives a consumed RPI bound.
+
+Native controls own enforcement. Goal objective text and reports do not prove
+pause or aggregate allowance enforcement; neither native operation is
+demonstrated by these contracts. Reuse existing receipts and truthful handoff
+for observed controls, measurement gaps, unresolved acceptance, and helper use.
+The native controller's threshold for recording blocked is status bookkeeping,
+not permission for more work. Any persisted verdicts and manifests remain
+durable evidence; no new lifecycle schema, goal ledger, runtime, or budget
+account is introduced. Beliefs may be revised or withdrawn as evidence changes;
+provenance remains, and knowledge volume is not monotonic truth or progress.
 
 ## Optional ports
 

@@ -12,8 +12,8 @@ setup() {
   mkdir -p "$TMP/bin"
   export PATH="$TMP/bin:$PATH"
   export TMPDIR="$TMP"
-  # Require a timeout binary for the STALL/timeout cases (the lib degrades to
-  # no-timeout when neither exists, so the kill-based assertions can't hold).
+  # Require a timeout binary for the STALL/timeout cases. Missing enforcement
+  # now fails closed; hang fixtures need the supported capability installed.
   # NOTE: keep this a single `if` so setup's terminal exit status is always 0.
   # A bare `command -v gtimeout ... && HAVE_TIMEOUT=1` as the last setup line
   # returns non-zero on Linux CI (gtimeout is a macOS/coreutils name only),
@@ -21,10 +21,22 @@ setup() {
   HAVE_TIMEOUT=0
   if command -v timeout >/dev/null 2>&1 || command -v gtimeout >/dev/null 2>&1; then
     HAVE_TIMEOUT=1
+    REAL_TIMEOUT="$(command -v timeout || command -v gtimeout)"
   fi
 }
 
 teardown() { rm -rf "$TMP"; }
+
+# Stop fixtures independently if a regression leaves a process behind. A zombie
+# is already dead; only an executing survivor violates the cleanup contract.
+assert_stopped() {
+  local pid="$1" state
+  state="$(ps -o stat= -p "$pid" 2>/dev/null)" || return 0
+  [[ "$state" == *Z* ]] && return 0
+  kill -KILL "$pid" 2>/dev/null || true
+  echo "surviving process: $pid ($state)" >&2
+  return 1
+}
 
 # --- stub factories -----------------------------------------------------------
 
@@ -216,6 +228,8 @@ FAKE
   # codex's own rc (1) is preserved — NOT collapsed to a fixed constant and NOT
   # mistaken for a stall (124).
   [ "$status" -eq 1 ]
+  [[ "$output" == *"runtime evidence, not a review verdict"* ]]
+  [[ "$output" != *"genuine reviewer failure"* ]]
 }
 
 # --- the distinct exit-code constants are defined and unique -------------------
@@ -428,4 +442,281 @@ FAKE
   [ ! -e "$TMP/wrapper-argv" ]
   grep -qx -- '--sandbox' "$TMP/agy-argv"
   ! grep -qx -- '--dangerously-bypass-approvals-and-sandbox' "$TMP/agy-argv"
+}
+
+@test "bounds: omitted timeout uses the finite 600 second default" {
+  stub_argv_recorder
+  stub_timeout
+  run bash -c '. "'"$LIB"'"; CODEX_EXEC_PROMPT_ARG=x codex_exec_guarded'
+  [ "$status" -eq 0 ]
+  [ "$(sed -n 1p "$TMP/timeout-argv")" = "600" ]
+}
+
+@test "bounds: invalid timeout and capture limits prevent reviewer launch" {
+  stub_argv_recorder
+  for setting in CODEX_EXEC_TIMEOUT CODEX_EXEC_MAX_OUTPUT_BYTES; do
+    for invalid in '' 0 -1 NaN inf 1e999 bad; do
+      run env "$setting=$invalid" bash -c '. "'"$LIB"'"; CODEX_EXEC_PROMPT_ARG=x codex_exec_guarded'
+      [ "$status" -eq 2 ]
+      [[ "$output" == *"INVALID-LIMIT"* ]]
+      [ ! -e "$TMP/codex-argv" ]
+    done
+  done
+}
+
+@test "bounds: invalid and expired inherited deadlines prevent launch" {
+  stub_argv_recorder
+  for deadline in '' 0 -1 NaN later; do
+    run env "CODEX_EXEC_DEADLINE_EPOCH=$deadline" bash -c '. "'"$LIB"'"; CODEX_EXEC_PROMPT_ARG=x codex_exec_guarded'
+    [ "$status" -eq 2 ]
+    [ ! -e "$TMP/codex-argv" ]
+  done
+  run env CODEX_EXEC_DEADLINE_EPOCH=1 bash -c '. "'"$LIB"'"; CODEX_EXEC_PROMPT_ARG=x codex_exec_guarded'
+  [ "$status" -eq 124 ]
+  [ ! -e "$TMP/codex-argv" ]
+}
+
+@test "bounds: missing timeout enforcement fails closed" {
+  stub_argv_recorder
+  run bash -c '. "'"$LIB"'"; CODEX_EXEC_TIMEOUT_BIN=/nonexistent/timeout CODEX_EXEC_PROMPT_ARG=x codex_exec_guarded'
+  [ "$status" -eq 2 ]
+  [[ "$output" == *"MISSING-TIMEOUT"* ]]
+  [ ! -e "$TMP/codex-argv" ]
+}
+
+@test "bounds: TERM resistant reviewer and child are killed with partial evidence" {
+  cat > "$TMP/bin/codex" <<'FAKE'
+#!/usr/bin/env bash
+trap '' TERM
+echo $$ > "$TMPDIR/reviewer-pid"
+bash -c 'trap "" TERM; echo $$ > "$TMPDIR/child-pid"; exec sleep 30' &
+printf 'partial result\n'
+wait
+FAKE
+  chmod +x "$TMP/bin/codex"
+  start=$SECONDS
+  run timeout --kill-after=1 5 bash -c '. "'"$LIB"'"; CODEX_EXEC_TIMEOUT=.3 CODEX_EXEC_PROMPT_ARG=x codex_exec_guarded'
+  [ "$status" -eq 124 ]
+  [ $((SECONDS - start)) -lt 4 ]
+  assert_stopped "$(cat "$TMP/reviewer-pid")"
+  assert_stopped "$(cat "$TMP/child-pid")"
+  [[ "$output" == *"partial result"* ]]
+}
+
+@test "bounds: clean parent exit with children is degraded even when cleanup succeeds" {
+  cat > "$TMP/bin/codex" <<'FAKE'
+#!/usr/bin/env bash
+bash -c 'trap "" TERM; echo $$ > "$TMPDIR/child-pid"; exec sleep 30' &
+while [ ! -s "$TMPDIR/child-pid" ]; do sleep .01; done
+printf 'tokens used: 1\n'
+exit 0
+FAKE
+  chmod +x "$TMP/bin/codex"
+  start=$SECONDS
+  run timeout --kill-after=1 5 bash -c '. "'"$LIB"'"; CODEX_EXEC_TIMEOUT=3 CODEX_EXEC_PROMPT_ARG=x codex_exec_guarded'
+  [ "$status" -eq 122 ]
+  [ $((SECONDS - start)) -lt 3 ]
+  assert_stopped "$(cat "$TMP/child-pid")"
+  [[ "$output" == *"rep-survivor"* ]]
+  [[ "$output" == *"tokens used: 1"* ]]
+  [[ "$output" != *"genuine reviewer failure"* ]]
+}
+
+@test "bounds: silent producer descendants are degraded without inherited capture pipes" {
+  cat > "$TMP/bin/codex" <<'FAKE'
+#!/usr/bin/env bash
+sleep 30 </dev/null >/dev/null 2>&1 &
+echo $! > "$TMPDIR/child-pid"
+exit 0
+FAKE
+  chmod +x "$TMP/bin/codex"
+  run timeout --kill-after=1 5 bash -c '. "'"$LIB"'"; CODEX_EXEC_TIMEOUT=3 CODEX_EXEC_EXPECT_OUTPUT=0 CODEX_EXEC_PROMPT_ARG=x codex_exec_guarded'
+  [ "$status" -eq 122 ]
+  [[ "$output" == *"rep-survivor"* ]]
+  assert_stopped "$(cat "$TMP/child-pid")"
+}
+
+@test "bounds: continuous stdout and stderr share one exact capture cap" {
+  cat > "$TMP/bin/codex" <<'FAKE'
+#!/usr/bin/env bash
+trap '' TERM
+echo $$ > "$TMPDIR/reviewer-pid"
+while :; do printf 'stdout data\n'; printf 'stderr data\n' >&2; done
+FAKE
+  chmod +x "$TMP/bin/codex"
+  run timeout --kill-after=1 5 bash -c '
+    . "'"$LIB"'"
+    CODEX_EXEC_TIMEOUT=3 CODEX_EXEC_MAX_OUTPUT_BYTES=1024 \
+    CODEX_EXEC_OUT_FILE="'"$TMP"'/out" CODEX_EXEC_STDERR_FILE="'"$TMP"'/err" \
+    CODEX_EXEC_PROMPT_ARG=x codex_exec_guarded
+  '
+  [ "$status" -eq 123 ]
+  [ $(( $(wc -c < "$TMP/out") + $(wc -c < "$TMP/err") )) -eq 1024 ]
+  [[ "$output" == *"OUTPUT-LIMIT"* ]]
+  assert_stopped "$(cat "$TMP/reviewer-pid")"
+}
+
+@test "bounds: repeated invocations cannot renew a shared deadline" {
+  cat > "$TMP/bin/codex" <<'FAKE'
+#!/usr/bin/env bash
+printf 'invoked\n' >> "$TMPDIR/invocations"
+sleep .8
+printf 'tokens used: 1\n'
+FAKE
+  chmod +x "$TMP/bin/codex"
+  run timeout --kill-after=1 5 bash -c '
+    . "'"$LIB"'"
+    export CODEX_EXEC_DEADLINE_EPOCH="$(/usr/bin/perl -MTime::HiRes=time -e "print time + 1.5")"
+    export CODEX_EXEC_TIMEOUT=10 CODEX_EXEC_PROMPT_ARG=x
+    codex_exec_guarded || exit 91
+    codex_exec_guarded; second=$?
+    codex_exec_guarded; third=$?
+    [ "$second" -eq 124 ] && [ "$third" -eq 124 ]
+  '
+  [ "$status" -eq 0 ]
+  [ "$(wc -l < "$TMP/invocations" | tr -d ' ')" -eq 2 ]
+}
+
+@test "bounds: cancellation of the sourced caller cleans workers and restores traps" {
+  cat > "$TMP/bin/codex" <<'FAKE'
+#!/usr/bin/env bash
+trap '' TERM
+echo $$ > "$TMPDIR/reviewer-pid"
+bash -c 'trap "" TERM; echo $$ > "$TMPDIR/child-pid"; exec sleep 30' &
+printf 'partial before cancellation\n'
+wait
+FAKE
+  chmod +x "$TMP/bin/codex"
+  cat > "$TMP/caller.sh" <<'CALLER'
+source "$1"
+trap 'echo original-term-handler' TERM
+original=$(trap -p TERM)
+CODEX_EXEC_TIMEOUT=10 CODEX_EXEC_OUT_FILE="$TMPDIR/evidence" CODEX_EXEC_PROMPT_ARG=x codex_exec_guarded
+result=$?
+[ "$(trap -p TERM)" = "$original" ] || exit 92
+exit "$result"
+CALLER
+  run timeout --kill-after=1 5 bash -c '
+    bash "'"$TMP"'/caller.sh" "'"$LIB"'" & runner=$!
+    for attempt in {1..100}; do [ -s "'"$TMP"'/child-pid" ] && break; sleep .02; done
+    kill -TERM "$runner"
+    wait "$runner"
+  '
+  [ "$status" -eq 143 ]
+  grep -q 'partial before cancellation' "$TMP/evidence"
+  assert_stopped "$(cat "$TMP/reviewer-pid")"
+  assert_stopped "$(cat "$TMP/child-pid")"
+}
+
+@test "bounds: parent death also stops the owned worker group" {
+  cat > "$TMP/bin/codex" <<'FAKE'
+#!/usr/bin/env bash
+trap '' TERM
+echo $$ > "$TMPDIR/reviewer-pid"
+printf 'partial before parent death\n'
+exec sleep 30
+FAKE
+  chmod +x "$TMP/bin/codex"
+  run timeout --kill-after=1 5 bash -c '
+    bash -c '\''source "$1"; CODEX_EXEC_TIMEOUT=10 CODEX_EXEC_OUT_FILE="$TMPDIR/evidence" CODEX_EXEC_PROMPT_ARG=x codex_exec_guarded'\'' _ "'"$LIB"'" & runner=$!
+    for attempt in {1..100}; do [ -s "'"$TMP"'/reviewer-pid" ] && break; sleep .02; done
+    kill -KILL "$runner"
+    wait "$runner" || true
+    sleep .5
+  '
+  [ "$status" -eq 0 ]
+  assert_stopped "$(cat "$TMP/reviewer-pid")"
+  grep -q 'partial before parent death' "$TMP/evidence"
+}
+
+@test "bounds: missing default timeout and hanging capability probe prevent launch" {
+  stub_argv_recorder
+  mkdir "$TMP/no-timeout"
+  ln -s "$(command -v tr)" "$TMP/no-timeout/tr"
+  run env PATH="$TMP/no-timeout" CODEX_EXEC_BIN="$TMP/bin/codex" /bin/bash -c '. "'"$LIB"'"; CODEX_EXEC_PROMPT_ARG=x codex_exec_guarded'
+  [ "$status" -eq 2 ]
+  [[ "$output" == *"MISSING-TIMEOUT"* ]]
+  [ ! -e "$TMP/codex-argv" ]
+  cat > "$TMP/bin/timeout" <<'FAKE'
+#!/usr/bin/env bash
+trap '' TERM
+echo $$ > "$TMPDIR/probe-pid"
+exec sleep 30
+FAKE
+  chmod +x "$TMP/bin/timeout"
+  start=$SECONDS
+  run "$REAL_TIMEOUT" --kill-after=1 5 bash -c '. "'"$LIB"'"; CODEX_EXEC_PROMPT_ARG=x codex_exec_guarded'
+  [ "$status" -eq 2 ]
+  [ $((SECONDS - start)) -lt 4 ]
+  [ ! -e "$TMP/codex-argv" ]
+  assert_stopped "$(cat "$TMP/probe-pid")"
+}
+
+@test "bounds: file and stdin prompt bytes survive bounded capture" {
+  cat > "$TMP/bin/codex" <<'FAKE'
+#!/usr/bin/env bash
+cat > "$TMPDIR/received-prompt"
+printf 'tokens used: 1\n'
+FAKE
+  chmod +x "$TMP/bin/codex"
+  printf 'file prompt\n\n' > "$TMP/prompt"
+  run bash -c '. "'"$LIB"'"; CODEX_EXEC_PROMPT_FILE="'"$TMP"'/prompt" CODEX_EXEC_PROMPT_ARG=ignored codex_exec_guarded'
+  [ "$status" -eq 0 ]
+  cmp "$TMP/prompt" "$TMP/received-prompt"
+  run bash -c '. "'"$LIB"'"; printf "stdin prompt\n\n" | codex_exec_guarded'
+  [ "$status" -eq 0 ]
+  [ "$(cat "$TMP/received-prompt")" = 'stdin prompt' ]
+}
+
+@test "bounds: cancelling the caller during a hanging capability probe prevents launch" {
+  stub_argv_recorder
+  cat > "$TMP/bin/timeout" <<'FAKE'
+#!/usr/bin/env bash
+trap '' TERM
+echo $$ > "$TMPDIR/probe-pid"
+exec sleep 30
+FAKE
+  chmod +x "$TMP/bin/timeout"
+  run "$REAL_TIMEOUT" --kill-after=1 5 bash -c '
+    bash -c '\''source "$1"; CODEX_EXEC_PROMPT_ARG=x codex_exec_guarded'\'' _ "'"$LIB"'" & runner=$!
+    for attempt in {1..100}; do [ -s "'"$TMP"'/probe-pid" ] && break; sleep .02; done
+    kill -TERM "$runner"
+    wait "$runner" || true
+    sleep .5
+  '
+  [ "$status" -eq 0 ]
+  [ ! -e "$TMP/codex-argv" ]
+  assert_stopped "$(cat "$TMP/probe-pid")"
+}
+
+@test "bounds: unopened prompt FIFO expires before reviewer launch" {
+  stub_argv_recorder
+  mkfifo "$TMP/prompt-pipe"
+  run timeout --kill-after=1 5 bash -c '. "'"$LIB"'"; CODEX_EXEC_TIMEOUT=.3 CODEX_EXEC_PROMPT_FILE="'"$TMP"'/prompt-pipe" codex_exec_guarded'
+  [ "$status" -eq 124 ]
+  [[ "$output" == *"partial input preserved at"* ]]
+  [ ! -e "$TMP/codex-argv" ]
+}
+
+@test "bounds: capture limits do not limit reviewer workspace file writes" {
+  cat > "$TMP/bin/codex" <<'FAKE'
+#!/usr/bin/env bash
+dd if=/dev/zero of="$TMPDIR/work-product" bs=4096 count=8 2>/dev/null
+printf 'tokens used: 1\n'
+FAKE
+  chmod +x "$TMP/bin/codex"
+  run bash -c '. "'"$LIB"'"; CODEX_EXEC_MAX_OUTPUT_BYTES=32 CODEX_EXEC_PROMPT_ARG=x codex_exec_guarded'
+  [ "$status" -eq 0 ]
+  [ "$(wc -c < "$TMP/work-product" | tr -d ' ')" -eq 32768 ]
+}
+
+@test "bounds: default capture limit is finite and retains exactly ten MiB" {
+  cat > "$TMP/bin/codex" <<'FAKE'
+#!/usr/bin/env bash
+dd if=/dev/zero bs=1048576 count=11 2>/dev/null
+FAKE
+  chmod +x "$TMP/bin/codex"
+  run "$REAL_TIMEOUT" --kill-after=1 5 bash -c '. "'"$LIB"'"; CODEX_EXEC_OUT_FILE="'"$TMP"'/evidence" CODEX_EXEC_PROMPT_ARG=x codex_exec_guarded'
+  [ "$status" -eq 123 ]
+  [ "$(wc -c < "$TMP/evidence" | tr -d ' ')" -eq 10485760 ]
 }

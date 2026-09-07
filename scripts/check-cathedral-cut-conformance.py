@@ -1097,9 +1097,9 @@ def check_bounded_repair_contract() -> None:
         "stop when converged, stopped by the law, or out of `repair_rounds`",
         "## The convergence law",
         "rounds_used < repair_rounds",
-        "larger than the previous round",
+        "finding count alone is not useful progress",
         "No finding id closed in an earlier round reopens.",
-        "the subject-manifest digest changed",
+        "unknown cause stops repair for causal examination",
         "repair round N: k open findings",
     ):
         assert phrase in text, f"RPI contract is missing a convergence-law canary: {phrase}"
@@ -1148,47 +1148,52 @@ def check_bounded_repair_contract() -> None:
     assert all(iterates_validations(node) for node in loops), (
         "every repair-phase loop must iterate the supplied validation rounds; nothing else is finite by construction"
     )
-    # Execute the law's canaries against the reference behavior itself: budget,
-    # growth, reopen, no-change, and the flip-to-PASS case must all STOP.
+    # Probe actual repair decisions: progress needs proof, and discovery must
+    # be distinguished from regression before another bounded round is admitted.
     import importlib.util
     spec = importlib.util.spec_from_file_location("rpi_run_once_canary", runner)
     module = importlib.util.module_from_spec(spec)
     assert spec.loader is not None
     spec.loader.exec_module(module)
     dg = lambda ch: ch * 64  # noqa: E731
-    def leg(status, ids, digest, evidence=()):
+    def leg(status, ids, digest, evidence=("acceptance-receipt",)):
         return {
             "status": status,
             "findings": [{"id": i, "summary": i} for i in ids],
             "subject_digest": digest,
             "evidence_refs": list(evidence),
             "validator_family": "fresh",
+            "checked": ["acceptance"],
+            "not_checked": [],
         }
+    fixed_a = {"ref": "fixed-a", "subject_digest": dg("b"), "resolves": ["a"]}
+    progressing = [leg("FAIL", ["a", "b"], dg("a")), leg("FAIL", ["b"], dg("b"), [fixed_a])]
     canaries = {
-        "repair_budget_exhausted": ([leg("FAIL", ["a"], dg("a")), leg("FAIL", ["a"], dg("b")), leg("FAIL", ["a"], dg("c"))], 1),
-        "finding_set_grew": ([leg("FAIL", ["a"], dg("a")), leg("FAIL", ["a", "b"], dg("b"))], 2),
-        "reopened_finding": ([leg("FAIL", ["a", "b"], dg("a")), leg("FAIL", ["b"], dg("b")), leg("FAIL", ["a"], dg("c"))], 3),
-        "no_subject_or_evidence_change": ([leg("FAIL", ["a"], dg("a")), leg("PASS", [], dg("a"))], 2),
-        "converged": ([leg("FAIL", ["a"], dg("a")), leg("PASS", [], dg("b"))], 2),
+        "repair_budget_exhausted": (progressing + [leg("FAIL", ["b"], dg("c"))], 1),
+        "new_finding_requires_causal_review": (
+            [leg("FAIL", ["a"], dg("a")), leg("FAIL", ["b"], dg("b"), [fixed_a])], 2),
+        "reopened_finding": (progressing + [leg("FAIL", ["a"], dg("c"))], 3),
+        "no_acceptance_progress": ([leg("FAIL", ["a"], dg("a")), leg("PASS", [], dg("b"))], 2),
+        "introduced_regression": ([leg("FAIL", ["a"], dg("a")), leg("FAIL", ["b"], dg("b"), [
+            fixed_a, {"ref": "comparison", "subject_digest": dg("b"), "introduced": ["b"]}])], 2),
+        "not_converged": ([leg("FAIL", ["a"], dg("a")), leg("FAIL", ["b", "c"], dg("b"), [
+            fixed_a, {"ref": "prior-reproduction", "subject_digest": dg("a"), "preexisting": ["b", "c"]}])], 2),
+        "converged": ([leg("FAIL", ["a"], dg("a")), leg("PASS", [], dg("b"), [fixed_a])], 2),
     }
     for expected, (rounds, bound) in canaries.items():
         outcome = module.run_repair_phase(rounds, repair_rounds=bound)
         assert outcome["stop_reason"] == expected, (
             f"law canary {expected}: reference behavior stopped with {outcome['stop_reason']!r}"
         )
-    flip = module.run_repair_phase(canaries["no_subject_or_evidence_change"][0], repair_rounds=2)
-    assert flip["report"]["status"] == "NOT_PROVEN", "a PASS over unchanged bytes after a FAIL must not certify"
-    # The bound must CONTROL admission, not merely be mentioned: a poison round
-    # past repair_rounds is never normalized (it would raise), and rounds_used
-    # never exceeds the bound.
-    poison = module.run_repair_phase(
-        [leg("FAIL", ["a"], dg("a")), leg("FAIL", ["a"], dg("b")), {"status": "poison-not-a-round"}],
-        repair_rounds=1,
-    )
+    for digest in (dg("a"), dg("b")):
+        flip = module.run_repair_phase([leg("FAIL", ["a"], dg("a")), leg("PASS", [], digest)])
+        assert flip["report"]["status"] == "NOT_PROVEN", "byte or verdict movement alone must not certify progress"
+    # A poison round beyond the caller's bound must never be normalized.
+    poison = module.run_repair_phase(progressing + [{"status": "poison-not-a-round"}], repair_rounds=1)
     assert poison["stop_reason"] == "repair_budget_exhausted" and poison["rounds_used"] == 1, (
         "the repair phase consumed a round past the caller's bound"
     )
-    assert canaries and module.run_repair_phase([leg("FAIL", ["a"], dg("a"))], repair_rounds=0)["stop_reason"] == "repair_budget_exhausted"
+    assert module.run_repair_phase([leg("FAIL", ["a"], dg("a"))], repair_rounds=0)["stop_reason"] == "repair_budget_exhausted"
     assert not any(
         isinstance(node, (ast.For, ast.While))
         for name in ("invoke_once",)
@@ -1198,8 +1203,10 @@ def check_bounded_repair_contract() -> None:
     for reason in (
         "repair_budget_exhausted",
         "reopened_finding",
-        "finding_set_grew",
-        "no_subject_or_evidence_change",
+        "new_finding_requires_causal_review",
+        "introduced_regression",
+        "recurring_finding_class",
+        "no_acceptance_progress",
         "diversity_unsatisfied",
         "converged",
     ):

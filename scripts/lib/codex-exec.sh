@@ -86,33 +86,207 @@
 #                                agent exit — e.g. eval-agent-harness's
 #                                `agent_exit` field — preserves the real code); the
 #                                constant 3 is the representative/default value.
-#                                MISSING is checked BEFORE exec, so a returned 2
-#                                here is unambiguously the reviewer's own code, not MISSING.
+#                                Reserved adapter codes can also describe runtime
+#                                failures; use the accompanying diagnostic rather
+#                                than treating status alone as reviewer provenance.
 #   124 CODEX_EXEC_STALL_TIMEOUT STALL-TIMEOUT: the run exceeded the timeout budget
 #                                and was killed (124 = the value `timeout` itself
 #                                returns on kill; preserved so callers already
 #                                keyed on 124 keep working).
 #   125 CODEX_EXEC_ECHO          ECHO: output reflected the prompt back with no
 #                                genuine-run marker — no real review happened.
-# These names are exported as readonly ints so sourcing callers can switch on
-# names rather than magic numbers.
+#   123 CODEX_EXEC_OUTPUT_LIMIT  OUTPUT-LIMIT: capture or prompt preparation exceeded
+#                                its byte cap; partial evidence is retained.
+#   122 CODEX_EXEC_DESCENDANT_LEAK rep-survivor: the owned group retained members
+#                                after direct-parent exit. The run is degraded
+#                                even when the adapter cleans them successfully.
+#   129/130/143                 Cancellation by HUP/INT/TERM, respectively.
+#   2 also covers invalid bounds, unavailable capture/cleanup capability, and
+#     cleanup that remains unverified after its bounded window.
+# These shell defaults let sourcing callers switch on names rather than magic
+# numbers; they are runtime categories, not semantic judgments.
 # ---------------------------------------------------------------------------
 : "${CODEX_EXEC_OK:=0}"
 : "${CODEX_EXEC_MISSING:=2}"
 : "${CODEX_EXEC_GENUINE_NONZERO:=3}"
 : "${CODEX_EXEC_STALL_TIMEOUT:=124}"
 : "${CODEX_EXEC_ECHO:=125}"
+: "${CODEX_EXEC_OUTPUT_LIMIT:=123}"
+: "${CODEX_EXEC_DESCENDANT_LEAK:=122}"
+
+# Private execution mechanism for this adapter, using only the host Perl core.
+# `limits` validates before any reviewer launch; `run` captures one owned process
+# group. No setsid executable, global file-size ulimit, retry, or service is used.
+# The child establishes its own group BEFORE exec. The parent alone writes the
+# bounded capture files and kills ordinary descendants even after a clean exit.
+# Descendants that deliberately escape into other groups/sessions are out of scope.
+_codex_exec_control() {
+  local control_exec=command
+  [ "$1" != run ] || control_exec="exec" # run is always a dedicated background child.
+  # shellcheck disable=SC2016 # This is Perl source, not shell interpolation.
+  "$control_exec" /usr/bin/perl -MPOSIX=:sys_wait_h,isfinite,setpgid -MTime::HiRes=time,clock_gettime,CLOCK_MONOTONIC -MIO::Select -MFcntl=:DEFAULT -e '
+    use strict; use warnings;
+    sub fail { print STDERR "codex-exec: $_[0]\n"; exit 2 }
+    sub positive {
+      my ($name, $value, $integer) = @_;
+      my $pattern = $integer ? qr/\A[0-9]+\z/ : qr/\A(?:[0-9]+(?:\.[0-9]+)?|\.[0-9]+)\z/;
+      fail("INVALID-LIMIT: $name must be positive and finite")
+        unless defined($value) && $value =~ $pattern && isfinite(0 + $value) && $value > 0;
+      return 0 + $value;
+    }
+    my $mode = shift @ARGV;
+    if ($mode eq "limits") {
+      my ($timeout, $cap, $deadline, $has_deadline) = @ARGV;
+      positive("CODEX_EXEC_TIMEOUT", $timeout, 0);
+      positive("CODEX_EXEC_MAX_OUTPUT_BYTES", $cap, 1);
+      fail("INVALID-LIMIT: capture cap exceeds exact integer range") if $cap > 9007199254740991;
+      my $end = time + $timeout;
+      fail("INVALID-LIMIT: timeout is too large") unless isfinite($end);
+      if ($has_deadline) {
+        positive("CODEX_EXEC_DEADLINE_EPOCH", $deadline, 0);
+        if ($deadline <= time) { print STDERR "codex-exec: STALL — caller deadline already expired; reviewer not launched.\n"; exit 124 }
+        if ($deadline < $end) { $end = 0 + $deadline; $timeout = $end - time }
+      }
+      clock_gettime(CLOCK_MONOTONIC); # Unsupported clock capability fails before launch.
+      printf "%s %s %.6f\n", $timeout, $cap, $end;
+      exit 0;
+    }
+    fail("unrecognized adapter control mode") unless $mode eq "run";
+    my $source_owner = shift @ARGV;
+    my ($budget, $cap, $end, $out_path, $err_path, $input_path) = splice @ARGV, 0, 6;
+    my $remaining = $end - time;
+    if ($remaining <= 0) { print STDERR "codex-exec: STALL — deadline expired before launch.\n"; exit 124 }
+    $remaining = $budget if $budget < $remaining;
+    my $expires = clock_gettime(CLOCK_MONOTONIC) + $remaining;
+    my ($cancel, $owned, $pid, $reaped, $child_status) = (0, 0, 0, 0, 0);
+    $SIG{HUP} = sub { $cancel = 129 }; $SIG{INT} = sub { $cancel = 130 }; $SIG{TERM} = sub { $cancel = 143 };
+    # Even an unexpected capture error must not abandon an owned worker group.
+    END { if ($owned && $pid) { kill "KILL", -$pid; kill "KILL", $pid unless $reaped; waitpid($pid, WNOHANG) unless $reaped } }
+    sub sink {
+      my ($path) = @_;
+      sysopen(my $fh, $path, O_WRONLY | O_CREAT | O_TRUNC | O_NONBLOCK, 0600) or fail("CAPTURE-UNAVAILABLE: $path: $!");
+      fail("CAPTURE-UNAVAILABLE: sink must be a regular file or /dev/null") unless -f $fh || $path eq "/dev/null";
+      return $fh;
+    }
+    my $out = sink($out_path);
+    my $err = length($err_path) ? ($err_path eq $out_path ? $out : sink($err_path)) : $out;
+    pipe(my $read_out, my $write_out) or fail("CAPTURE-UNAVAILABLE: pipe: $!");
+    pipe(my $read_err, my $write_err) or fail("CAPTURE-UNAVAILABLE: pipe: $!");
+    my $parent = getppid();
+    $pid = fork(); defined $pid or fail("CAPTURE-UNAVAILABLE: fork: $!");
+    if (!$pid) {
+      $owned = 0;
+      # A failed group setup must never run the reviewer in the caller group.
+      setpgid(0, 0) == 0 or fail("CLEANUP-UNAVAILABLE: setpgid: $!");
+      $SIG{HUP} = $SIG{INT} = $SIG{TERM} = "DEFAULT";
+      open STDOUT, ">&", $write_out or POSIX::_exit(2);
+      open STDERR, ">&", (length($err_path) ? $write_err : $write_out) or POSIX::_exit(2);
+      if (length $input_path) { open STDIN, "<", $input_path or fail("PROMPT-UNAVAILABLE: $input_path: $!") }
+      close $read_out; close $read_err; close $write_out; close $write_err; close $out; close $err;
+      exec { $ARGV[0] } @ARGV or fail("EXEC-UNAVAILABLE: $ARGV[0]: $!");
+    }
+    $owned = 1;
+    # Close the fork/exec race too: cleanup can signal the group immediately.
+    setpgid($pid, $pid);
+    close $write_out; close $write_err;
+    my $select = IO::Select->new($read_out, $read_err);
+    my %sinks = (fileno($read_out) => $out, fileno($read_err) => $err);
+    my ($written, $reason, $stop_at, $killed, $survivor) = (0, "", undef, 0, 0);
+    while (1) {
+      my $now = clock_gettime(CLOCK_MONOTONIC);
+      $cancel ||= 143 if getppid() != $parent || !kill(0, $source_owner);
+      if (!$reaped) {
+        my $done = waitpid($pid, WNOHANG);
+        if ($done == $pid) { $child_status = $?; $reaped = 1 }
+      }
+      if (!defined $stop_at) {
+        if ($cancel) { $reason = "cancel" }
+        elsif ($now >= $expires || time >= $end) { $reason = "timeout" }
+        elsif ($reaped) {
+          $reason = "exit";
+          # Preserve the defect BEFORE cleanup hides it from an outer caller.
+          # With the direct parent reaped, remaining group members outlived it.
+          if (kill(0, -$pid)) {
+            $survivor = 1;
+            print STDERR "codex-exec: rep-survivor — owned group $pid retained members after direct-parent exit; run degraded.\n";
+          }
+        }
+        if (length $reason) { $stop_at = $now; kill "TERM", -$pid }
+      }
+      # Fixed, short cleanup allowance; it never renews the caller deadline.
+      if (defined($stop_at) && !$killed && $now >= $stop_at + .2) {
+        kill "KILL", -$pid; kill "KILL", $pid unless $reaped;
+        $killed = 1;
+      }
+      $killed = 1 if defined($stop_at) && $reaped && !kill(0, -$pid);
+      for my $fh ($select->can_read(.02)) {
+        my $n = sysread($fh, my $chunk, 16384);
+        if (!defined $n) { next if $!{EINTR} || $!{EAGAIN}; fail("CAPTURE-UNAVAILABLE: read: $!") }
+        if (!$n) { $select->remove($fh); close $fh; next }
+        my $keep = $cap - $written; $keep = $n if $keep > $n;
+        if ($keep > 0) {
+          my $offset = 0;
+          while ($offset < $keep) {
+            my $count = syswrite($sinks{fileno($fh)}, $chunk, $keep - $offset, $offset);
+            if (!defined $count) { next if $!{EINTR}; fail("CAPTURE-UNAVAILABLE: write: $!") }
+            fail("CAPTURE-UNAVAILABLE: zero-byte write") unless $count;
+            $offset += $count;
+          }
+          $written += $keep;
+        }
+        if ($n > $keep && $reason ne "limit" && $reason ne "timeout" && $reason ne "cancel") {
+          $reason = "limit";
+          if (!defined $stop_at) { $stop_at = clock_gettime(CLOCK_MONOTONIC); kill "TERM", -$pid }
+        }
+      }
+      # Waiting for EOF alone is unsafe: descendants can inherit the pipes.
+      last if $killed && (($reaped && !$select->count && !kill(0, -$pid)) || $now >= $stop_at + .5);
+    }
+    # Signal delivery is not proof of cleanup. Do not claim success if the
+    # process group still exists; unresolved zombies also conservatively fail.
+    if (!$reaped || kill(0, -$pid)) {
+      print STDERR "codex-exec: CLEANUP-UNVERIFIED — owned process group still present after bounded cleanup; partial output preserved.\n";
+      exit 2;
+    }
+    $owned = 0;
+    close $out; close $err;
+    if ($reason eq "limit") { print STDERR "codex-exec: OUTPUT-LIMIT — captured $written bytes; owned process group stopped.\n"; exit 123 }
+    if ($reason eq "timeout") { print STDERR "codex-exec: STALL — deadline expired; owned process group stopped.\n"; exit 124 }
+    if ($reason eq "cancel") { print STDERR "codex-exec: CANCELLED — owned process group stopped.\n"; exit $cancel }
+    exit 122 if $survivor;
+    exit(($child_status & 127) ? 128 + ($child_status & 127) : $child_status >> 8);
+  ' -- "$@"
+}
+
+# Wait interruptibly so signalling a shell that sourced the library cancels the
+# owned invocation. Restore its signal handlers before returning; no caller shell
+# options or global limits change. The supervisor also detects parent death.
+_codex_exec_bounded() {
+  local saved_hup saved_int saved_term control_pid="" cancelled=0 rc=0
+  saved_hup="$(trap -p HUP)"; saved_int="$(trap -p INT)"; saved_term="$(trap -p TERM)"
+  trap 'cancelled=129; [ -z "$control_pid" ] || kill -HUP "$control_pid" 2>/dev/null || true' HUP
+  trap 'cancelled=130; [ -z "$control_pid" ] || kill -INT "$control_pid" 2>/dev/null || true' INT
+  trap 'cancelled=143; [ -z "$control_pid" ] || kill -TERM "$control_pid" 2>/dev/null || true' TERM
+  _codex_exec_control run "$$" "$@" <&0 &
+  control_pid=$!
+  [ "$cancelled" -eq 0 ] || kill -TERM "$control_pid" 2>/dev/null || true
+  while :; do
+    rc=0; wait "$control_pid" || rc=$?
+    kill -0 "$control_pid" 2>/dev/null || break
+  done
+  trap - HUP INT TERM
+  [ -z "$saved_hup" ] || eval "$saved_hup"
+  [ -z "$saved_int" ] || eval "$saved_int"
+  [ -z "$saved_term" ] || eval "$saved_term"
+  [ "$cancelled" -eq 0 ] || return "$cancelled"
+  return "$rc"
+}
 
 # codex_exec_timeout_bin — the ABSOLUTE path of a timeout that supports
-# `--foreground`, empty when no timeout binary exists at all, or return 3 when
-# one exists but will not take `--foreground`.
+# `--foreground`, or return 3 when it is missing or unsupported. The bounded
+# capability probe cannot launch a reviewer or hang indefinitely.
 #
-# WHY --foreground: GNU timeout calls setpgid(0,0) by default, so the reviewer
-# and every child it forks land in TIMEOUT's process group, not the caller's.
-# A caller that reaps "the rep's process group" then signals a group the rep was
-# never in, which is how four `/bin/sleep 45` children survived a passing
-# survivor test with ppid 1. `--foreground` keeps timeout in the caller's group,
-# which makes that reap mean something.
+# WHY --foreground: keep timeout and the reviewer in the supervisor-owned group.
 #
 # WHY absolute: the path is recorded in the probe seal and the wrapper runs
 # INSIDE the sandbox, so a `timeout` resolved fresh from PATH at dispatch time
@@ -123,7 +297,8 @@ codex_exec_timeout_bin() {
   # does not exec a PATH-resolved timeout OUTSIDE the seal once per rep.
   if [ -n "${CODEX_EXEC_TIMEOUT_BIN:-}" ]; then
     case "$CODEX_EXEC_TIMEOUT_BIN" in
-      /*) printf '%s' "$CODEX_EXEC_TIMEOUT_BIN"; return 0 ;;
+      /*) [ -x "$CODEX_EXEC_TIMEOUT_BIN" ] || return 3
+          printf '%s' "$CODEX_EXEC_TIMEOUT_BIN"; return 0 ;;
       *) return 3 ;;
     esac
   fi
@@ -135,29 +310,27 @@ codex_exec_timeout_bin() {
     # to the next one would quietly run a different binary than the one a
     # shadowing PATH selected, which is the failure this is meant to surface.
     # Functional probe, not `--help` parsing: BSD timeout has no --help at all.
-    if "$resolved" --foreground 1 true >/dev/null 2>&1; then
+    local probe_limits probe_budget probe_cap probe_end
+    probe_limits="$(_codex_exec_control limits 1 1024 "${CODEX_EXEC_DEADLINE_EPOCH-}" "${CODEX_EXEC_DEADLINE_EPOCH+1}")" || return 3
+    read -r probe_budget probe_cap probe_end <<<"$probe_limits"
+    if _codex_exec_bounded "$probe_budget" "$probe_cap" "$probe_end" /dev/null "" /dev/null "$resolved" --foreground 1 true >/dev/null 2>&1; then
       printf '%s' "$resolved"
       return 0
     fi
     return 3
   done
-  return 0
+  return 3
 }
 
 # codex_exec_timeout_cmd — echo the timeout-wrapper argv (space-separated) for a
-# budget, or nothing when no timeout binary exists. Ported READ-ONLY from
-# Prefer `timeout`, fall back to `gtimeout`, and if
-# NEITHER exists degrade to running the reviewer with no timeout rather than failing
-# closed and being unusable on a bo-mac that ships no coreutils `timeout`.
-# A timeout that exists but refuses `--foreground` FAILS CLOSED (return 3): the
-# alternative is silently running without the flag and reaping the wrong group.
+# positive budget. Missing or unsupported enforcement fails closed (return 3).
 # Usage: read -r -a _to <<<"$(codex_exec_timeout_cmd 300)"; "${_to[@]}" codex ...
 codex_exec_timeout_cmd() {
-  local budget="${1:-0}" bin="" rc=0
-  [ "$budget" = "0" ] && return 0
+  local budget="${1-600}" bin="" rc=0
+  _codex_exec_control limits "$budget" 1 "" "" >/dev/null || return 3
   bin="$(codex_exec_timeout_bin)" || rc=$?
   [ "$rc" = "0" ] || return "$rc"
-  [ -n "$bin" ] || return 0
+  [ -n "$bin" ] || return 3
   printf '%s --foreground %s' "$bin" "$budget"
 }
 
@@ -274,7 +447,13 @@ reviewer_adapter_marker() {
 #                            with CODEX_EXEC_PROMPT_ARG; a file wins if both set).
 #   CODEX_EXEC_PROMPT_ARG    the prompt as a single positional argument.
 #                            If NEITHER is set, the prompt is read from stdin.
-#   CODEX_EXEC_TIMEOUT       timeout budget in seconds (0/unset = no timeout).
+#   CODEX_EXEC_TIMEOUT       positive finite seconds (omitted = 600; empty invalid).
+#   CODEX_EXEC_DEADLINE_EPOCH optional positive absolute Unix timestamp in seconds;
+#                            clamps this invocation and its preparation. Reuse the
+#                            same value across calls to preserve a caller deadline.
+#   CODEX_EXEC_MAX_OUTPUT_BYTES positive integer, default 10485760 (10 MiB), across
+#                            captured stdout + stderr combined. File-prompt copies
+#                            and non-codex stdin preparation each use the same cap.
 #   CODEX_EXEC_TIMEOUT_BIN   absolute path of an already-probed timeout. Set it
 #                            when the caller resolved one, so the --foreground
 #                            capability probe does not run per invocation.
@@ -286,11 +465,11 @@ reviewer_adapter_marker() {
 #   CODEX_EXEC_EXTRA_ARGS    (codex) a bash array of extra passthrough flags appended
 #                            verbatim (e.g. --json). Ignored by non-codex adapters (they
 #                            are codex-specific flags).
-#   CODEX_EXEC_WRAP          (codex) a bash array prefixed BEFORE the codex binary (after
-#                            the timeout wrapper), e.g. CODEX_EXEC_WRAP=(sandbox-exec -p
+#   CODEX_EXEC_WRAP          (codex) a bash array prefixed BEFORE timeout and codex,
+#                            e.g. CODEX_EXEC_WRAP=(sandbox-exec -p
 #                            "<profile>") — an EXTERNAL filesystem seal around the whole
 #                            rep. When non-empty the assembled command is
-#                              "${to_cmd[@]}" "${CODEX_EXEC_WRAP[@]}" <codex-bin> exec …
+#                              "${CODEX_EXEC_WRAP[@]}" "${to_cmd[@]}" <codex-bin> exec …
 #                            and the sandbox mapping emits
 #                            --dangerously-bypass-approvals-and-sandbox IN PLACE OF
 #                            --sandbox <value>: the outer wrapper IS the sandbox, and
@@ -303,8 +482,9 @@ reviewer_adapter_marker() {
 #                            NOT wrap via CODEX_EXEC_BIN instead — the metadata tool
 #                            flips coverage_eligible to false on a non-default bin.
 #   CODEX_EXEC_OUT_FILE      write captured stdout here. If empty, output is captured
-#                            to a temp file used only for echo-detection and then
-#                            streamed to the caller's stdout on success.
+#                            to a temp file used for echo-detection, then streamed
+#                            on success or an interrupted/limited run. Capture
+#                            files must be regular files (or /dev/null).
 #   CODEX_EXEC_STDERR_FILE   optional separate stderr sink. If empty, stderr is merged
 #                            into CODEX_EXEC_OUT_FILE for backward compatibility.
 #   CODEX_EXEC_EXPECT_OUTPUT 1 (default) => the caller CONSUMES reviewer output, so a
@@ -318,8 +498,9 @@ reviewer_adapter_marker() {
 #   CODEX_EXEC_BIN           (codex) the codex binary (default: codex) — lets a test feed
 #                            a stub, matching second-poll.sh's CODEX_BIN convention.
 #
-# Returns one of the documented exit codes above. On CODEX_EXEC_OK the output is
-# in CODEX_EXEC_OUT_FILE (if set) or on stdout.
+# Returns one of the documented exit codes above. Output and interrupted partial
+# capture are in CODEX_EXEC_OUT_FILE (if set) or on stdout. Only ordinary children
+# in the owned process group are covered; escaped groups/sessions are excluded.
 codex_exec_guarded() {
   local reviewer; reviewer="$(reviewer_normalize "${REVIEWER:-codex}")"
 
@@ -351,12 +532,42 @@ codex_exec_guarded() {
     return "$CODEX_EXEC_MISSING"
   fi
 
+  # Validate all caller bounds before touching prompt/output files or starting
+  # the reviewer. An explicitly empty value is invalid; only omission defaults.
+  if [ ! -x /usr/bin/perl ]; then
+    echo "codex-exec: CLEANUP-UNAVAILABLE — core Perl/POSIX support is required." >&2
+    return "$CODEX_EXEC_MISSING"
+  fi
+  local limits budget capture_cap deadline limit_rc=0
+  limits="$(_codex_exec_control limits "${CODEX_EXEC_TIMEOUT-600}" "${CODEX_EXEC_MAX_OUTPUT_BYTES-10485760}" "${CODEX_EXEC_DEADLINE_EPOCH-}" "${CODEX_EXEC_DEADLINE_EPOCH+1}")" || limit_rc=$?
+  if [ "$limit_rc" -ne 0 ]; then
+    [ "$limit_rc" -ne 124 ] || return "$CODEX_EXEC_STALL_TIMEOUT"
+    echo "codex-exec: execution limits or required Perl/POSIX capability unavailable; reviewer not launched." >&2
+    return "$CODEX_EXEC_MISSING"
+  fi
+  read -r budget capture_cap deadline <<<"$limits"
+  local -a to_cmd=()
+  local timeout_bin="" to_rc=0
+  # The capability probe shares the invocation end, including preparation time.
+  timeout_bin="$(CODEX_EXEC_DEADLINE_EPOCH="$deadline" codex_exec_timeout_bin)" || to_rc=$?
+  if [ "$to_rc" -ne 0 ] || [ -z "$timeout_bin" ]; then
+    limit_rc=0
+    _codex_exec_control limits "$budget" "$capture_cap" "$deadline" 1 >/dev/null || limit_rc=$?
+    [ "$limit_rc" -ne 124 ] || return "$CODEX_EXEC_STALL_TIMEOUT"
+    echo "codex-exec: MISSING-TIMEOUT — a resolved executable supporting --foreground is required; reviewer not launched." >&2
+    return "$CODEX_EXEC_MISSING"
+  fi
+  to_cmd=("$timeout_bin" --foreground "$budget")
+
   # (2) assemble the reviewer argv + resolve the prompt delivery + the echo-compare
   # target, per adapter. `delivery` is stdin_file (redirect a file on stdin) or plain
   # (no redirect); `run_echo_check` gates echo-detection off for stdin-pipe callers;
   # `echo_cmp_file` is the bytes an echo would reflect (what the model received INLINE).
   local -a argv=()
   local -a _cleanup=()
+  _codex_exec_cleanup() {
+    [ "${#_cleanup[@]}" -eq 0 ] || rm -f "${_cleanup[@]}"
+  }
   local prompt_file="" delivery="plain" run_echo_check=1 echo_cmp_file=""
   # Packet-echo compare targets (agy/local-mlx — the VERDICT:-marker adapters, whose
   # packets legitimately CONTAIN the marker so marker-presence cannot veto echo checks;
@@ -367,6 +578,21 @@ codex_exec_guarded() {
   local -a wrap=()
   if [ "$reviewer" = "codex" ] && [ -n "${CODEX_EXEC_WRAP+set}" ] && [ "${#CODEX_EXEC_WRAP[@]}" -gt 0 ]; then
     wrap=("${CODEX_EXEC_WRAP[@]}")
+  fi
+
+  # File prompts and non-codex stdin need a local copy before argv/echo setup.
+  # Capture that copy under the SAME deadline and byte cap, including FIFOs or
+  # a producer that never closes stdin. Codex raw stdin stays with its reviewer.
+  local selected_prompt_file="${CODEX_EXEC_PROMPT_FILE:-}"
+  if [ -n "$selected_prompt_file" ] || { [ "$reviewer" != codex ] && [ -z "${CODEX_EXEC_PROMPT_ARG:-}" ]; }; then
+    local input_file prepare_rc=0
+    input_file="$(mktemp "${TMPDIR:-/tmp}/reviewer-input.XXXXXX")"; _cleanup+=("$input_file")
+    _codex_exec_bounded "$budget" "$capture_cap" "$deadline" "$input_file" "" "$selected_prompt_file" cat || prepare_rc=$?
+    if [ "$prepare_rc" -ne 0 ]; then
+      echo "codex-exec: prompt preparation stopped; partial input preserved at $input_file" >&2
+      return "$prepare_rc"
+    fi
+    selected_prompt_file="$input_file"
   fi
 
   case "$reviewer" in
@@ -396,8 +622,8 @@ codex_exec_guarded() {
       fi
       # Resolve the prompt source (byte-compat): FILE => stdin redirect; ARG =>
       # positional; NEITHER => stdin (no echo-detection).
-      if [ -n "${CODEX_EXEC_PROMPT_FILE:-}" ]; then
-        prompt_file="$CODEX_EXEC_PROMPT_FILE"; delivery="stdin_file"; echo_cmp_file="$prompt_file"
+      if [ -n "$selected_prompt_file" ]; then
+        prompt_file="$selected_prompt_file"; delivery="stdin_file"; echo_cmp_file="$prompt_file"
       elif [ -n "${CODEX_EXEC_PROMPT_ARG:-}" ]; then
         argv+=(-- "$CODEX_EXEC_PROMPT_ARG")
         prompt_file="$(mktemp "${TMPDIR:-/tmp}/codex-exec-prompt.XXXXXX")"; _cleanup+=("$prompt_file")
@@ -412,14 +638,11 @@ codex_exec_guarded() {
       # review packet to a FILE, then hand agy a SHORT pointer telling it to READ that
       # file — never a giant inline paste on the argv.
       local packet_file
-      if [ -n "${CODEX_EXEC_PROMPT_FILE:-}" ]; then
-        packet_file="$CODEX_EXEC_PROMPT_FILE"
-      elif [ -n "${CODEX_EXEC_PROMPT_ARG:-}" ]; then
-        packet_file="$(mktemp "${TMPDIR:-/tmp}/reviewer-packet.XXXXXX")"; _cleanup+=("$packet_file")
-        printf '%s' "$CODEX_EXEC_PROMPT_ARG" > "$packet_file"
+      if [ -n "$selected_prompt_file" ]; then
+        packet_file="$selected_prompt_file"
       else
         packet_file="$(mktemp "${TMPDIR:-/tmp}/reviewer-packet.XXXXXX")"; _cleanup+=("$packet_file")
-        cat > "$packet_file"   # drain stdin into the packet file
+        printf '%s' "$CODEX_EXEC_PROMPT_ARG" > "$packet_file"
       fi
       # SENTINEL WRAP (age-rk3r.1 refutation fix): the pointer references a lib-owned
       # WRAPPED copy of the packet whose first and last lines carry a random boundary
@@ -450,7 +673,7 @@ codex_exec_guarded() {
       [ -n "${REVIEWER_MODEL:-}" ] && argv+=(--model "$REVIEWER_MODEL")
       argv+=(--add-dir "$(dirname "$wrapped_packet")")
       # Align agy's own print-mode wait to our kill budget so it does not wait past it.
-      [ -n "${CODEX_EXEC_TIMEOUT:-}" ] && [ "${CODEX_EXEC_TIMEOUT:-0}" != "0" ] && argv+=(--print-timeout "${CODEX_EXEC_TIMEOUT}s")
+      argv+=(--print-timeout "${budget}s")
       argv+=(-p "$wrapper")
       delivery="plain"
       # A pointer-echo reflects the SHORT wrapper agy received inline — compare vs THAT.
@@ -464,9 +687,8 @@ codex_exec_guarded() {
       # `bash <script> "<prompt>"` shape). A local endpoint has no CLI big-content drop
       # bug, so inline is fine; the wrapper relays the model review.
       local payload
-      if [ -n "${CODEX_EXEC_PROMPT_FILE:-}" ]; then payload="$(cat "$CODEX_EXEC_PROMPT_FILE")"
-      elif [ -n "${CODEX_EXEC_PROMPT_ARG:-}" ]; then payload="$CODEX_EXEC_PROMPT_ARG"
-      else payload="$(cat)"; fi
+      if [ -n "$selected_prompt_file" ]; then payload="$(cat "$selected_prompt_file")"
+      else payload="$CODEX_EXEC_PROMPT_ARG"; fi
       argv+=("$payload")
       delivery="plain"
       echo_cmp_file="$(mktemp "${TMPDIR:-/tmp}/reviewer-mlx-prompt.XXXXXX")"; _cleanup+=("$echo_cmp_file")
@@ -486,28 +708,12 @@ codex_exec_guarded() {
     cleanup_out="$out_file"
   fi
 
-  # Build the timeout wrapper (may be empty). `read` returns non-zero on the
-  # no-trailing-newline / empty-here-string case, so `|| true` keeps `set -e`
-  # callers alive; to_cmd is already initialized empty for the no-timeout path.
-  local -a to_cmd=()
-  local to_spec="" to_rc=0
-  to_spec="$(codex_exec_timeout_cmd "${CODEX_EXEC_TIMEOUT:-0}")" || to_rc=$?
-  if [ "$to_rc" != "0" ]; then
-    echo "codex-exec: MISSING-TIMEOUT — the resolved timeout does not accept --foreground." >&2
-    echo "  Without it the reviewer runs in timeout's process group, so a caller cannot reap it." >&2
-    echo "  (exit $CODEX_EXEC_MISSING = precondition, not a REFUTE / not a genuine failure)" >&2
-    return "$CODEX_EXEC_MISSING"
-  fi
-  # shellcheck disable=SC2046,SC2206  # intentional word-split of the wrapper argv.
-  read -r -a to_cmd <<<"$to_spec" || true
-
   # The launch prefix, in this fixed order: the external CODEX_EXEC_WRAP prefix
   # (if any), then the timeout wrapper (if any), then the reviewer binary. The
   # WRAP is outermost so the sandbox is the outermost process: with timeout
   # outside it, the timeout binary itself was resolved from PATH and ran
   # UNSEALED, so a shadowed timeout could have dropped the wrapper entirely.
-  # `--foreground` is what keeps the budget enforceable from inside the sandbox
-  # while leaving the reviewer in the caller's process group.
+  # `--foreground` leaves the entire sealed launch in the supervisor-owned group.
   # `launch` always holds at least the binary, so its expansion is safe under
   # `set -u` on bash 3.2.
   local -a launch=()
@@ -515,27 +721,16 @@ codex_exec_guarded() {
   [ "${#to_cmd[@]}" -gt 0 ] && launch+=("${to_cmd[@]}")
   launch+=("$bin")
 
-  _codex_exec_run() {
-    if [ "$delivery" = "stdin_file" ]; then
-      # File-prompt mode: feed the file on stdin.
-      if [ -n "$stderr_file" ]; then "${launch[@]}" "${argv[@]}" <"$prompt_file" >"$out_file" 2>"$stderr_file"
-      else "${launch[@]}" "${argv[@]}" <"$prompt_file" >"$out_file" 2>&1; fi
-    else
-      # Arg/stdin-pipe/pointer mode: the prompt is already in argv (or on the caller's stdin).
-      if [ -n "$stderr_file" ]; then "${launch[@]}" "${argv[@]}" >"$out_file" 2>"$stderr_file"
-      else "${launch[@]}" "${argv[@]}" >"$out_file" 2>&1; fi
-    fi
-  }
-
   local expect_output="${CODEX_EXEC_EXPECT_OUTPUT:-1}"
+  local rc=0 input_path=""
+  [ "$delivery" != stdin_file ] || input_path="$prompt_file"
+  _codex_exec_bounded "$budget" "$capture_cap" "$deadline" "$out_file" "$stderr_file" "$input_path" "${launch[@]}" "${argv[@]}" || rc=$?
 
-  local rc=0
-  _codex_exec_run || rc=$?
-
-  _codex_exec_cleanup() {
-    unset -f _codex_exec_run
-    [ "${#_cleanup[@]}" -gt 0 ] && rm -f "${_cleanup[@]}"
-  }
+  if [ "$rc" -eq "$CODEX_EXEC_MISSING" ] || [ "$rc" -eq "$CODEX_EXEC_DESCENDANT_LEAK" ] || [ "$rc" -eq "$CODEX_EXEC_OUTPUT_LIMIT" ] || [ "$rc" -eq 129 ] || [ "$rc" -eq 130 ] || [ "$rc" -eq 143 ]; then
+    [ -z "$cleanup_out" ] || { cat "$out_file"; rm -f "$cleanup_out"; }
+    _codex_exec_cleanup
+    return "$rc"
+  fi
 
   # Classify the outcome into the documented exit codes.
   # 1) TIMEOUT: the wrapper kills with 124 (or 137 on some `timeout` builds when it
@@ -543,9 +738,9 @@ codex_exec_guarded() {
   #    read as a clean pass — ALWAYS, regardless of CODEX_EXEC_EXPECT_OUTPUT (a
   #    kill is never a success). Only meaningful when a timeout was applied.
   if [ "${#to_cmd[@]}" -gt 0 ] && { [ "$rc" -eq 124 ] || [ "$rc" -eq 137 ]; }; then
-    echo "codex-exec: STALL — run exceeded the ${CODEX_EXEC_TIMEOUT}s budget and was killed (rc=$rc)." >&2
+    echo "codex-exec: STALL — run stopped within the ${budget}s allowance (rc=$rc); partial output preserved." >&2
     echo "  (exit $CODEX_EXEC_STALL_TIMEOUT = stall/timeout, NOT a review result)" >&2
-    [ -n "$cleanup_out" ] && rm -f "$cleanup_out"
+    [ -z "$cleanup_out" ] || { cat "$out_file"; rm -f "$cleanup_out"; }
     _codex_exec_cleanup
     return "$CODEX_EXEC_STALL_TIMEOUT"
   fi
@@ -586,13 +781,10 @@ codex_exec_guarded() {
     fi
   fi
 
-  # 4) GENUINE-NONZERO: the reviewer launched and exited non-zero for its own reason.
-  # Return the reviewer's OWN exit code verbatim (category = CODEX_EXEC_GENUINE_NONZERO,
-  # but the real code is more useful to a caller recording the agent exit — e.g.
-  # eval-agent-harness's `agent_exit`). MISSING is caught before exec, so a rc of 2
-  # here is unambiguous.
+  # 4) Preserve other nonzero codes verbatim. Exit status is runtime evidence;
+  # by itself it does not prove whether the reviewer or execution setup failed.
   if [ "$rc" -ne 0 ]; then
-    echo "codex-exec: reviewer exited non-zero (rc=$rc) with output preserved (genuine reviewer failure, distinct from a stall/timeout)." >&2
+    echo "codex-exec: execution exited non-zero (rc=$rc); captured output preserved. This is runtime evidence, not a review verdict." >&2
     # Stream the captured output for the caller when we own the sink.
     [ -n "$cleanup_out" ] && { cat "$out_file"; rm -f "$cleanup_out"; }
     _codex_exec_cleanup

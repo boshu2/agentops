@@ -81,5 +81,17 @@ stripped_validator_must_fail() {
   grep -Fq 'A synthesis frozen without an active constraint is invalid' "$REPO_ROOT/AGENTS.md"
   grep -Fq 'check-skill-python-ratchet.sh' "$REPO_ROOT/AGENTS.md"
   grep -Fq 'Plan is closed' "$REPO_ROOT/AGENTS.md"
-  grep -Fq 'no new implementation evidence end the run' "$REPO_ROOT/AGENTS.md"
+  grep -Fq 'implementation evidence end the run' "$REPO_ROOT/AGENTS.md"
+}
+
+@test "rpi validator pins acceptance progress rather than digest or count movement" {
+  stripped_validator_must_fail rpi 'finding count alone is not useful progress'
+}
+
+@test "rpi validator pins causal review for unknown new findings" {
+  stripped_validator_must_fail rpi 'unknown cause stops repair for causal examination'
+}
+
+@test "rpi validator pins prospective review without a self-waiver" {
+  stripped_validator_must_fail rpi 'This prospective rule never waives a leg already'
 }

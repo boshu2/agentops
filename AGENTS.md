@@ -129,15 +129,35 @@ Skill logic ships in Go via `ao`;
    required by a declared consumer.
 4. **Repair to convergence, then report.** On `FAIL` or `NOT_PROVEN` with
    findings, repair and re-validate freshly while the convergence law admits
-   another round (caller-declared `repair_rounds`, default 2; open finding
-   ids non-growing; no closed id reopens; the subject digest or the evidence
-   changed). Stop when converged, stopped by the law, or out of rounds
-   (ADR-0017). Report the result; emit no next action. Two consecutive
-   rounds with no new implementation evidence end the run. Reports lead with
-   the subject, never artifact counts.
+   another round (caller-declared `repair_rounds`, default 2; new digest-bound
+   evidence closes a named acceptance gap; no reopened id, recurring closed
+   class, introduced regression, or new finding of unknown cause). Digest and
+   finding-count movement alone is not progress. Evidenced pre-existing
+   discoveries can grow the count; every necessary finding remains visible.
+   Stop when converged, stopped by the law, or out of rounds (ADR-0017).
+   Report the result; emit no next action. Rounds with no acceptance-relevant
+   implementation evidence end the run. Reports lead with the subject.
 
-A caller may revise the intent and start a new invocation. Learn is an
-optional later consumer and cannot change core outcomes.
+A caller or explicitly selected bounded outer goal may authorize a new
+experiment within its accepted envelope; native budgets, stops and work
+authority stay upstream. Informative red may justify that different experiment
+under unchanged acceptance. A selected goal's regression, unknown cause,
+recurrence, oscillation, or no-progress breaker enters causal HOLD; recurrence
+alone does not prove design failure. Exactly one bounded fresh helper per HOLD
+incident fits inside the existing allowance. Cancellation, explicit refusal or
+judgment, and genuinely spent hard time/cost/quota skip the helper. Retry counts,
+new subjects, compaction, and helper calls never renew a goal allowance. Native
+objective text does not demonstrate a pause or aggregate budget enforcement;
+report actual observed controls and unmeasured gaps truthfully.
+
+Fresh author-distinct validation is always required. Size additional review by
+effect on acceptance and enforcement under `skills/validate/SKILL.md`: policy,
+stopping, guard, and acceptance changes require cross-family review even when
+written as documentation; unknown risk takes the stronger path. This prospective
+rule never waives a leg already required for the current change. Exact subject,
+all acceptance, and empty `not_checked` remain the binding PASS bar.
+
+Learn remains an optional later consumer and cannot change core outcomes.
 
 ## Product boundary
 
