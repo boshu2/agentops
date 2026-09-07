@@ -11,12 +11,14 @@ For multi-model judgment (mixed council, dueling perspectives, cross-model
 validate, which is default on risky surfaces per ADR-0017 and caller-elected
 otherwise), follow
 [references/model-dispatch.md](references/model-dispatch.md): the working
-session is the controller; probe `codex-exec` and `ntm` at runtime; never
-require either; never use Agent Mail for judgment; never invoke `claude -p`.
+session is the controller; check the explicitly selected adapter at runtime;
+no factory is required and Agent Mail is never the judgment path. The recipe
+owns host authorization, finite input/output, timeout and cleanup requirements.
 
-Role separation works because each role's authority is checkable from its
-packet: a worker that cannot exceed its declared subject cannot corrupt a
-sibling's evidence, so factory failures stay local instead of systemic.
+Role requests declare authority; actual native runtime/OS filesystem and egress
+controls must enforce it. A prompt, worktree, chmod or unrestricted same-user
+process does not establish isolation. Observe synthetic canary denials before
+restricted-source work; unavailable protection remains unavailable.
 
 When a worker looks stuck, score interventions by evidence and reversibility
 before acting: observe more (free, fully reversible), then nudge, then replace

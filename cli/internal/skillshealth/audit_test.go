@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"slices"
 	"testing"
 )
 
@@ -88,6 +89,51 @@ func TestValidateFrontmatter_NameMismatch(t *testing.T) {
 	missing := ValidateFrontmatter(fm, "bar")
 	if len(missing) == 0 {
 		t.Fatal("expected mismatch error")
+	}
+}
+
+func TestFindBrokenRefs_RelativeTargets(t *testing.T) {
+	cases := []struct {
+		name  string
+		body  string
+		files []string
+		want  []string
+	}{
+		{name: "local", body: "[local](references/local.md)", files: []string{"references/local.md"}},
+		{name: "dot local", body: "[local](./references/local.md)", files: []string{"references/local.md"}},
+		{name: "nested local", body: "[local](references/nested/local.md)", files: []string{"references/nested/local.md"}},
+		{name: "sibling", body: "[shared](../agent-native/references/shared.md)", files: []string{"../agent-native/references/shared.md"}},
+		{name: "angle sibling", body: "[shared](<../agent-native/references/shared.md>)", files: []string{"../agent-native/references/shared.md"}},
+		{name: "normalized local", body: "[local](../current/references/local.md)", files: []string{"references/local.md"}},
+		{name: "existing bare repo path", body: "grep text skills/current/references/local.md", files: []string{"references/local.md"}},
+		{name: "missing local", body: "[missing](references/missing.md)", want: []string{"references/missing.md (linked but missing on disk)"}},
+		{name: "missing sibling", body: "[missing](../agent-native/references/missing.md)", want: []string{"../agent-native/references/missing.md (linked but missing on disk)"}},
+		{
+			name:  "sibling does not link same-named local file",
+			body:  "[shared](../agent-native/references/shared.md)",
+			files: []string{"../agent-native/references/shared.md", "references/shared.md"},
+			want:  []string{"references/shared.md (on disk but unlinked)"},
+		},
+		{
+			name:  "local file does not satisfy missing sibling",
+			body:  "[shared](../agent-native/references/shared.md)",
+			files: []string{"references/shared.md"},
+			want:  []string{"../agent-native/references/shared.md (linked but missing on disk)", "references/shared.md (on disk but unlinked)"},
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			skillDir := filepath.Join(t.TempDir(), "skills", "current")
+			mustMkdirAll(t, skillDir)
+			for _, ref := range tc.files {
+				p := filepath.Join(skillDir, ref)
+				mustMkdirAll(t, filepath.Dir(p))
+				mustWrite(t, p, "reference\n")
+			}
+			if got := findBrokenRefs(skillDir, tc.body); !slices.Equal(got, tc.want) {
+				t.Errorf("broken refs: got %q want %q", got, tc.want)
+			}
+		})
 	}
 }
 

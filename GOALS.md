@@ -33,8 +33,10 @@ explicit behavior
    failure returns FAIL.
 6. **Sovereign proof.** Validate atomically writes content-addressed JSON to
    caller-controlled storage. Provenance is optional audit.
-7. **Stop boundary.** RPI dispatches Plan, Implement, and Validate at most once,
-   reports the result, and emits no next action.
+7. **Stop boundary.** RPI dispatches Plan and Implement at most once, validates
+   freshly and admits only bounded repairs under ADR-0017, then reports. A
+   selected outer goal may authorize a new experiment inside its accepted
+   envelope; the native caller keeps budgets, stops, queue and work authority.
 8. **Open ecosystem.** Callers keep their trackers, Git, PRs, CI, cloud agents,
    merge queues, rollback, and release systems.
 
@@ -79,7 +81,19 @@ evidence for them.
 
 ## Measured learning hypothesis
 
-Collections of durable verdicts may reveal repeated defect classes that deserve
-better context, tests, or checks. Learn may propose evidence-backed candidates
-off-path. Promotion requires separate evaluation; no observation silently
-becomes policy or changes a prior verdict.
+The selected CDLC (Context Delivery Lifecycle) contract maintains external
+context/environment around disposable agents; it neither trains weights nor
+promises deterministic inference. Discovery (with Plan as shaping owner),
+Implement and Validate preserve the one-experiment boundary. Recall and Learn
+extensions remain later work; evolve restoration belongs only to T25. No
+unavailable entrypoint is enabled by this document.
+
+Caller-selected external Markdown/OKF memory requires exact factual support
+and destination disclosure before Git ingestion, then later observed utility.
+These are distinct claims. The current trial used no optional knowledge body
+and showed no memory benefit. Keep null, failed, missing and harmful outcomes;
+there is no numeric utility score, universal context percentage, page quota or
+mandatory lesson per session. Learning cannot change a completed verdict or
+silently promote policy. [ADR-0016](docs/adr/ADR-0016-state-tiers.md) and
+[RPI traversal](docs/architecture/rpi-traversal.md) own the selected contracts;
+the executable gates above measure their stated existing floor only.

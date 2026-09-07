@@ -1,5 +1,5 @@
 ---
-last_reviewed: 2026-08-17
+last_reviewed: 2026-09-06
 ---
 
 # AgentOps
@@ -77,13 +77,44 @@ the same result is plain `verdict.v2` JSON under caller-controlled storage. A
 generic provenance ledger may copy or reference it later, but verdict storage
 and ledger availability are never required for validity.
 
-## Learning thesis
+## Selected Context Delivery Lifecycle contract
 
-The long-term hypothesis remains that recurring validated mistakes can become
-better context, tests, or deterministic checks. That compounding claim is not
-the core completion boundary. Learning runs off-path, cites distinct verdicts
-and findings, and proposes evidence for later evaluation; it does not silently
-promote policy or control another experiment.
+CDLC means **Context Delivery Lifecycle**: disposable agents improve through
+maintained external context and environment. It does not train model weights
+or promise deterministic inference. The selected contract adds continuous
+learning alongside bounded delivery; it is contract adoption, not a claim that
+new CDLC skills or Go evidence operations already ship.
+
+Delivery has three phases: **Discovery** retrieves authorized experience,
+resolves intent and uncertainty, and uses Plan to shape one experiment;
+**Implement** builds that bounded experiment; **Validate** judges its exact
+subject freshly, including admitted bounded repairs. Standalone RPI still
+runs with Plan and Implement once. An explicitly selected bounded outer goal
+may authorize another experiment within its accepted envelope, including a
+return to Discovery. Native work, budgets, stops, queues and delivery remain
+with the caller/runtime; AO gains no scheduler or semantic workflow engine.
+
+The selected memory is a caller-owned external reviewed Markdown/OKF bundle.
+Protected non-Git drafts and evidence precede exact factual-support review
+and distinct destination-disclosure review, both before any Git object, index
+or stash. Maintained claims are evidence, never automatic policy. Requested
+legacy `.agents/` proof and unique research remain preserved under owner policy.
+[ADR-0016](docs/adr/ADR-0016-state-tiers.md) owns placement and confidentiality.
+
+Mechanism correctness and demonstrated net benefit are separate claims.
+Factual support, permission to store exact content in a destination, and later
+observed usefulness each need their own evidence. The current cold-reuse trial
+had no optional knowledge-body use and demonstrates no memory benefit; failed
+and null outcomes remain visible. A positive compounding claim needs new
+independent task evidence, not citations, stored pages or closed work.
+
+Recall and the Learn extension have later implementation owners; only T25 may
+restore the small evolve skill after native stop/continuation is proven.
+Existing entrypoint checks stay enforced. The selected runtime target is skills
+plus Go `ao` evidence operations, with shared conformance before migrating the
+current Python helpers. It does not migrate unrelated grandfathered scripts
+or development generators. See [RPI traversal](docs/architecture/rpi-traversal.md)
+and [ADR-0017](docs/adr/ADR-0017-loop-as-control-flow-not-knowledge.md).
 
 ## Why this shape
 

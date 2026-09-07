@@ -1,5 +1,7 @@
 # AgentOps 3.0 Council Verdict Example
 
+> **HISTORICAL SAMPLE:** This 3.0 example includes retired AO/BR surfaces and illustrative verdicts. It is not a current execution recipe. Use native BD and the current evidence contracts for live work.
+
 This is public sample output for the 3.0 explainer kit. It is an example
 artifact shape, not PMF evidence or a claim that a live mixed council completed.
 

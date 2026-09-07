@@ -77,17 +77,19 @@ required. Unknown or disputed risk takes the stronger path. This rule applies
 prospectively: it cannot remove a review leg already required for the current
 change, or override caller-required diversity. Fresh judgment, exact subject,
 all acceptance, and empty `not_checked` remain mandatory at every risk level.
-
-The runtime floor holds: never `claude -p` or
-`claude --print`, directly or indirectly. Adapters and `model_identity`
-recording: [references/mechanics.md](references/mechanics.md). With no
-authorized live adapter, disclose `diversity_unsatisfied`: off a risky surface
-it rides along with a same-model result; on a risky surface a single-family
-PASS is `NOT_PROVEN`, and same-family agreement is not convergence. A
-single-family FAIL stands.
+Route adapter selection and invocation through
+[agent-native model-dispatch](../agent-native/references/model-dispatch.md);
+[references/mechanics.md](references/mechanics.md) owns evidence storage.
+The fresh and cross-family legs receive independently supplied initial inputs:
+exact subject, unchanged acceptance and authorized evidence, without peer
+conclusions. Record actual model/context identities and runtime receipts.
+With no authorized live adapter, disclose `diversity_unsatisfied`. If the leg
+is required by risk or caller acceptance, a single-family PASS is `NOT_PROVEN`;
+optional unavailable diversity is disclosed with the same-model result.
+Same-family agreement is not convergence. A single-family FAIL stands.
 
 When the two judges disagree, each reports its own verdict and neither resolves
-the split. A risky surface converges only when both judges pass, so a split is
+the split. Required diversity converges only when both judges pass, so a split is
 never PASS. Repair works the split down, and what survives it is the
 orchestrator's decision, made in the open: both reads go in the report with
 what was decided and why. Validate never treats agreement with itself, the

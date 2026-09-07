@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 # gc-outcomes-report.sh — thin READ-ONLY rollup of a Gas City's outcomes for
-# the agentops br ledger (age-gc-adoption-u0he.6; carried from age-gc-mvp-w2-nuiw.8).
+# the AgentOps BD work ledger (age-gc-adoption-u0he.6; carried from age-gc-mvp-w2-nuiw.8).
 #
 # NOT a live sync. This reads a city's event stream + bead store and prints a
 # report the operator (or a bead note) can consume: closed work beads with
 # outcomes, membrane verdicts where stamped, and open in-progress work. The
-# tracker seam it serves: br = the agentops ledger; bd/dolt = the city's own
-# store; outcomes cross ONE WAY, via this report (skills/beads-br carve-out,
-# age-gc-integrate-8aom.2). It never writes to either store.
+# tracker seam it serves: the AgentOps BD ledger and the city's native store
+# remain separate authorities; outcomes cross ONE WAY as cited report evidence
+# (historical age-gc-integrate-8aom.2). It never writes to either store.
 #
 # Usage: scripts/gc-outcomes-report.sh <city-dir> [--since <dur>] [--json]
 #   <city-dir>   a gc city root (contains .gc-home/ or an env.sh exporting GC_HOME)
@@ -128,4 +128,4 @@ else
   echo "- (none)"
 fi
 echo
-echo "_read-only rollup; br remains the agentops ledger — paste relevant lines into a bead note, do not sync stores_"
+echo "_read-only rollup; BD owns AgentOps work — cite relevant lines in a bead note, do not sync stores_"

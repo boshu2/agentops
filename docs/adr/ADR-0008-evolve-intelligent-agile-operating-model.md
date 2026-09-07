@@ -1,12 +1,31 @@
 # ADR-0008: `/evolve` Operating Model — Intelligent-Agile, Not Waterfall
 
-- **Status:** Accepted (2026-05-22)
+- **Status:** Accepted, amended for selected CDLC 2026-09-06 (2026-05-22)
 - **Author:** AgentOps maintainers
 - **Tracking:** bead `soc-sfjx`
 - **Builds on:** [ADR-0007](ADR-0007-deterministic-loop-only-operator-stops.md)
 - **Origin:** ported from mt-olympus (`docs/decisions/2026-05-21-operating-model-intelligent-agile-not-waterfall.md`).
 
-## Context
+## Active disposition — 2026-09-06 CDLC adoption
+
+Retain doctrine-anchored work selection, frozen acceptance and the lesson that
+primitives need a demonstrated consumer. Supersede unlimited operation, the
+claim that chat cannot carry operator intent, and the entire green-CI-only
+automatic merge/delivery grant below. Current user intent and native work
+constraints govern an explicitly selected bounded goal. Native BD owns work,
+status and allowances; the caller/runtime owns budgets, stops, queues and
+repository delivery policy. A filed task or a green check grants none of them.
+
+Discovery uses Plan to shape one experiment; Implement and fresh Validate
+complete its delivery phases with admitted bounded repairs. A selected outer
+goal may authorize another experiment within its accepted envelope. Exact
+subject, independent judgment and honest unknowns remain mandatory; CI success
+is factual evidence, never semantic acceptance or delivery authorization.
+T23/T25 own later goal/evolve behavior. This contract adoption does not ship it
+or authorize a scheduler, semantic workflow engine or second work store.
+The earlier operating model and delivery command are historical evidence only.
+
+## Historical context
 
 An autonomous loop fails in two opposite ways: it halts the moment work gets hard (over-cautious waterfall), or it confidently builds the wrong thing because nothing re-anchors it to operator intent (unanchored drift). The `soc-g2qd` session (2026-05-21) hit the second failure — it executed a bead queue as if it were validated spec, never re-derived the operator's actual goal, and shipped primitives no consumer used. This ADR defines the operating contract that prevents both.
 

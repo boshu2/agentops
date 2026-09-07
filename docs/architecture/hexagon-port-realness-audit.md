@@ -1,6 +1,6 @@
 # Hexagon Port-Realness Audit
 
-> **RETIRED / HISTORICAL (snapshot 2026-05-23).** The "gc bridge vs legacy tmux" choice below is stale — the Gas City `gc` bridge was REMOVED (soc-2rtm0; `runtime=gc` is rejected). The live RPI phase-executor backends are `auto`/`direct`/`stream`/`tmux`. Tracker `bd` is retired (use `BEADS_DIR="$(ao beads dir)" br`). Read as a dated inventory, not current build guidance — see AGENTS.md.
+> **RETIRED / HISTORICAL (snapshot 2026-05-23).** Runtime and tracker choices below describe that dated inventory, not current instructions. The repository now uses latest stable BD; the legacy BR estate is preserved migration history. Read [AGENTS.md](../../AGENTS.md) and current command help for live behavior.
 
 > Empirical ground-truth inventory of the AgentOps runtime hexagonal seam, taken
 > 2026-05-23 against `main`. Bead: `soc-upwor` (epic `soc-zvhsl` — "3.0: make the

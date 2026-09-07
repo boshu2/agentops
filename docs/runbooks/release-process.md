@@ -113,7 +113,7 @@ curl -sL https://github.com/boshu2/agentops/releases/download/vX.Y.Z/ao_X.Y.Z_da
 ```
 
 2. Update install docs if paths or platform support changed.
-3. Close the release bead/epic in br (`BEADS_DIR="$(ao beads dir)" br close <id>`).
+3. Verify the selected native store with `bd context --json`, then close the release bead with `bd close <id> --reason "<scoped release evidence>"`. Close its epic only when the epic's own acceptance is satisfied.
 
 ## Quick Reference
 

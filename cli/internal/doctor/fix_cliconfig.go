@@ -119,11 +119,11 @@ func insideAgentopsRepo(dir string) bool {
 // installHintFor returns a platform-specific install command for a CLI.
 func installHintFor(name string) string {
 	switch name {
-	case "br":
+	case "bd":
 		if runtime.GOOS == "windows" {
-			return "br: install beads_rust from its Windows release or use WSL/Homebrew — https://github.com/Dicklesworthstone/beads_rust"
+			return "bd: install Beads from its Windows release or use WSL — https://github.com/gastownhall/beads"
 		}
-		return "br: install beads_rust — https://github.com/Dicklesworthstone/beads_rust ('ao beads dir' prints the resolved ledger)"
+		return "bd: install Beads — brew install beads (macOS), or https://github.com/gastownhall/beads; verify the native store with bd info"
 	case "git":
 		if runtime.GOOS == "windows" {
 			return "git: choco install git  |  https://git-scm.com/download/win"
@@ -362,10 +362,10 @@ func probeConfigSourceShape(repoRoot string) bool {
 const fmMissingRequiredCLI = "fm-cli-config-missing-required-cli"
 
 // missingRequiredCLIDetector flags a required external CLI absent from PATH.
-// Only `git` is universally required; `br` (this repo's own tracker) is
-// required only when running inside an agentops repo clone — an installed user
-// who tracks work with `bd` (or nothing) must never see `br` reported as a
-// missing "required" CLI.
+// Only `git` is universally required; `bd` (this repo's selected tracker) is
+// required only when running inside an agentops repo clone. Other repositories
+// may select another tracker or none. BR is a distinct implementation, not an
+// alias that can satisfy the BD requirement.
 //
 // PATH shadowing alone (multiple installs of a required CLI, the first
 // resolving fine) is NOT a failure mode: it is the default state of a macOS
@@ -384,7 +384,7 @@ func (missingRequiredCLIDetector) EstimatedCostMS() int { return 5 }
 func (missingRequiredCLIDetector) OnlineRequired() bool { return false }
 func (missingRequiredCLIDetector) QuickPath() bool      { return true }
 func (missingRequiredCLIDetector) Describe() string {
-	return "Detects required external CLIs (git always; br inside an agentops clone) missing from PATH; benign PATH shadowing alone is not flagged."
+	return "Detects required external CLIs (git always; bd inside an agentops clone) missing from PATH; benign PATH shadowing alone is not flagged."
 }
 
 // Detect resolves every match for the required CLIs on PATH. It is pure:
@@ -393,7 +393,7 @@ func (missingRequiredCLIDetector) Describe() string {
 func (missingRequiredCLIDetector) Detect(env *DetectEnv) ([]Finding, error) {
 	required := []string{"git"}
 	if env != nil && insideAgentopsRepo(env.RepoRoot) {
-		required = append(required, "br")
+		required = append(required, "bd")
 	}
 	var missing, shadowed, hints []string
 	for _, name := range required {

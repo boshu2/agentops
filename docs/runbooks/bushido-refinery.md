@@ -1,6 +1,6 @@
 # Bushido Refinery — continuous main-validation backstop
 
-> **RETIRED:** The refinery command and lifecycle described here are no longer live.
+> **RETIRED:** The refinery command and lifecycle described here are no longer live. BR and `ao beads dir` examples below preserve historical behavior; they are not current tracker instructions. Use the repository operating contract and native BD for current work.
 
 The refinery (`ao refinery`) is the **backstop** half of the push-to-main model
 (ag-qidx). Push-to-main makes the local pre-push gate the pre-merge wall; the
