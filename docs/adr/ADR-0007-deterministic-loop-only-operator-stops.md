@@ -5,7 +5,33 @@
 - **Tracking:** bead `soc-sfjx`
 - **Origin:** ported from the mt-olympus unbounded-evolve substrate (`docs/decisions/2026-05-21-deterministic-loop-only-operator-stops.md`), which has driven ~245 cycles without self-halting.
 
-## Context
+## Active stopping amendment — 2026-09-07
+
+The Decision below's unlimited/operator-only stop rule and automatic bypass of
+stale stop markers are superseded for selected finite campaigns. An explicitly
+selected outer goal owns experiment authorization within its accepted envelope;
+native time, cost, quota, stop and continuation controls bound execution. A
+human stop or native HOLD cannot be bypassed by autonomy. RPI still stops under
+its admitted repair law and returns honest outcomes; it acquires no goal
+controller, helper loop, budget account or work-selection authority.
+
+Under the 2026-09-07 stopping amendment, informative red may support a different
+experiment within unchanged acceptance. A selected goal's causal HOLD allows
+exactly one bounded fresh helper per incident inside the existing allowance;
+recurrence is a reason to examine cause, not proof the design is wrong.
+Cancellation, explicit refusal/judgment, and spent hard time/cost/quota skip the
+helper. Repeated continuation never resets totals or helper use. A retry count
+alone is not a spent hard budget, and status bookkeeping is not permission for
+more work. Goal objective text and terminal reports demonstrate neither a native
+pause nor an aggregate allowance operation; report observed enforcement and
+measurement gaps truthfully.
+
+Preserve the lesson demonstrated below: an unused helper enforces nothing.
+Native continuation and stop behavior need observed consumer execution and
+bounded recovery evidence. This amendment neither starts recurrence nor
+restores the retired unlimited loop machinery.
+
+## Historical context
 
 `/evolve` is meant to run continuously while open work exists, with the operator **on** the loop (curating intent in `GOALS.md`, `PRODUCT.md`, ADRs, and the `bd ready` queue) rather than **in** it. Its self-regulation defaults were written assuming the agent IS the operator in a single burst session — so several defaults let any cycle's agent self-halt the loop on heuristics the operator never sanctioned (`CONTEXT_BUDGET_EXHAUSTED`, scout-streak halt, "honest stop"). `soc-5qit` already removed sticky `DORMANT`. This ADR makes the no-self-stop rule doctrine the loop re-reads every cycle, and — load-bearing — **mechanical**, not prose the agent can rationalize past.
 

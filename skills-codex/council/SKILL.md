@@ -24,7 +24,10 @@ When the fresh judge and the cross-family judge disagree and the disagreement
 survives repair, the split is the orchestrator's decision, made in the open and
 recorded in the report. A caller who wants more reads before deciding may
 select council on that split alone. Council is that caller's choice, never a
-step the traversal takes on its own.
+step the traversal takes on its own. A selected outer goal's single HOLD helper
+is bounded causal advice, not permission to convene more votes or substitute
+for required fresh validation. An exhausted allowance or cancellation skips
+that helper; an unhelpful consultation does not authorize a second one.
 
 Ask which findings are real, never which verdict stands. Give the leg the
 acceptance, the write scope, the changed paths, the criteria, and both judges'

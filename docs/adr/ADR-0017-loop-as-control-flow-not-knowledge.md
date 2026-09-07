@@ -5,7 +5,37 @@
 - **Builds on:** [ADR-0004](ADR-0004-corpus-moat-unproven-position-on-the-system.md) (corpus moat unproven, position on the verification system), [ADR-0011](ADR-0011-escape-corpus-compounding-unproven-structural-starvation.md) (escape-corpus compounding demoted to hypothesis)
 - **Origin:** `docs/plans/2026-09-03-loop-restore.md` (this decision's intent source), and the 2026-09-02 Train 1 run, where the repair loop had to be improvised by hand
 
-## Context
+## Active stopping amendment — 2026-09-07
+
+Replace finding-count monotonicity and digest movement as repair admission
+proxies with acceptance evidence: a fresh digest-bound receipt proves closure
+of a named acceptance finding or proof gap. New ids need causal evidence of
+pre-existing discovery; introduced regression or unknown cause stops repair.
+Reopened ids and recurring closed classes warrant causal HOLD, never an
+automatic design-failure diagnosis. The existing pure reference consumes those
+receipt facts without creating a runtime, persisted schema, or budget account.
+
+Informative red can justify a different experiment in an explicitly selected
+bounded outer goal under unchanged acceptance. Its causal HOLD gets exactly one
+bounded fresh helper per incident inside the remaining allowance; unhelpful
+advice stops implementation. Cancellation, explicit refusal/judgment, or a spent
+hard time/cost/quota skips the helper. New subjects, compaction, and repeated
+continuations never reset allowance or helper use. RPI itself stops and reports.
+
+Size validation by effect on acceptance/enforcement, as owned by Validate.
+Policy and stopping changes need cross-family judgment even as documentation;
+unknown risk takes the stronger path. Narrow nonbehavioral wording changes may
+use one fresh judge prospectively. This amendment does not waive its own or
+any already-required review leg. Exact subject, all acceptance, and empty
+`not_checked` remain necessary for binding PASS. Reuse applicable exact-input
+receipts and fast discriminating checks; no additional progress ledger is owed.
+
+Native objective text demonstrates neither pause nor aggregate allowance
+operations. Report observed controls and missing measurement truthfully. Evidence
+and provenance are retained while beliefs may be revised; knowledge is not
+monotonically true or useful. The historical rationale below is preserved.
+
+## Historical context
 
 The 2026-07-14 cut (`482307762`, 2,433 files, −416K lines) removed the
 compounding-knowledge machinery and the iterate loop in the same pass. It took
@@ -33,14 +63,13 @@ Restore the control flow the cut over-reached on, and only that.
    convergence law from the plan. A repair round is admitted only while all
    hold:
    1. `rounds_used < repair_rounds` (caller-declared, default 2).
-   2. The open finding set, keyed by the validators' stable `findings[].id`
-      (union across the fresh and, when used, cross-family validators), is not
-      larger than the previous round's.
-   3. No finding id closed in an earlier round reopens.
-   4. Between rounds either the subject-manifest digest changed
-      (generated-only changes count when they change the digest) or, for
-      `NOT_PROVEN`, new digest-bound evidence was supplied that resolves a
-      named gap.
+   2. New digest-bound evidence proves closure of a named acceptance finding
+      or proof gap. Changed bytes or a reduced finding count alone do not count.
+   3. No closed id reopens, closed class recurs, or introduced regression is
+      admitted. A new finding needs causal evidence of prior existence under
+      the same acceptance; unknown cause stops repair. The open set remains
+      the union of required judges' stable ids, including necessary discoveries.
+      The precise current law and receipt bindings live in `skills/rpi/SKILL.md`.
 
    Converged means the fresh validator returns PASS and, when the diff touches
    a risky surface, the cross-family validator also returns PASS. On any
@@ -52,16 +81,13 @@ Restore the control flow the cut over-reached on, and only that.
    evidence, and stops. It owns no wave selection, retry, budget, queue, claim,
    lease, Git, closure, or next work.
 
-3. **Cross-family validation is the default on risky surfaces**
-   (`cli/internal/gates/**`, `scripts/check-*.sh`, `tests/**`,
-   `skills/*/scripts/**`, `skills/cc-hooks/policies/**`, `lib/**`, anything
-   `security-gate.sh` scans), caller-elected elsewhere. Dispatch obeys the
-   runtime floor: orchestrating in Claude, the judge leg is a read-only
-   `codex exec`; orchestrating in Codex, the judge leg is a caller-selected
-   interactive Claude session in an NTM pane. `claude -p` and `claude --print`
-   are never used, directly or indirectly. With no authorized live adapter the
-   request is disclosed as `diversity_unsatisfied`, and on a risky surface that
-   is `NOT_PROVEN` rather than same-family convergence.
+3. **Cross-family validation follows effect-based risk**, as owned by
+   `skills/validate/SKILL.md`, with its conservative path cues and stronger
+   treatment of unknown risk. Fresh author-distinct judgment always remains.
+   The prospective rule cannot waive a leg already required for the change
+   being judged. Dispatch uses the authorized bounded model-dispatch recipe
+   cited above; required unavailable diversity remains `diversity_unsatisfied`
+   / `NOT_PROVEN`. Same-family agreement cannot satisfy a required second leg.
 
 ### Conformance assertions flipped
 
@@ -104,9 +130,10 @@ whose model family the script cannot verify and does not claim to.
 - RPI can end in a repaired PASS instead of only a first-pass verdict, and the
   stopping rule is in the contract where a validator can check it, rather than
   in an orchestrator's judgment.
-- A repair round that cannot show a subject or evidence change is a stop, not a
-  retry. That is the anti-ceremony guard: rounds that produce only control
-  artifacts end the run.
+- A repair round without new acceptance-relevant proof stops even when bytes
+  or counts move. Newly discovered pre-existing defects do not become
+  regressions merely because they increase the count; unknown cause still stops
+  for examination. Control artifacts alone never justify repair.
 - Risky-surface changes cost a second judge leg. When no legal adapter is
   available, the honest outcome is `NOT_PROVEN` and the change waits.
 - The removed surfaces stay removed. A future proposal to bring back a

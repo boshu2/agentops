@@ -54,13 +54,21 @@ Write a factual session artifact that another context can read. Include:
 
 - caller-supplied goal and summary;
 - completed artifacts and exact evidence paths;
-- unresolved facts or risks;
+- unresolved acceptance, findings, causal uncertainties, and risks;
+- for a bounded goal, observed native stop/continuation state, measured remaining
+  allowance or explicit measurement gaps, and whether the one helper for the
+  current HOLD incident was already used, with existing evidence references;
 - optional caller-supplied continuation text;
 - best-effort read-only repository identity when useful.
 
 Do not infer a next action, select work, assign ownership, consume the artifact,
 change tracker or Git state, classify a verdict, govern retries, or restart a
-runtime. Reading a handoff must not mutate it.
+runtime. Reading a handoff must not mutate it. A report saying HOLD or
+NEEDS_OPERATOR is not evidence that a native goal paused; record the actual
+observed state and operator action still required. Compaction or handoff never
+resets an allowance, repair bound, or helper incident. Retain informative red
+and withdrawn claims with their provenance instead of presenting knowledge as
+monotonically correct.
 
 Named failure mode — **optimistic closure**: writing "done" for work whose
 evidence path does not exist, so the next context builds on a phantom.

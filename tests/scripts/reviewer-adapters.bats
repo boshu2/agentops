@@ -26,6 +26,50 @@ setup() {
 
 teardown() { rm -rf "$TMP"; }
 
+@test "agy and local-mlx: an open stdin expires during preparation without reviewer launch" {
+  cat > "$TMP/bin/reviewer-stub" <<'FAKE'
+#!/usr/bin/env bash
+touch "$TMPDIR/reviewer-launched"
+printf 'VERDICT: CONFIRMED\n'
+FAKE
+  chmod +x "$TMP/bin/reviewer-stub"
+  mkfifo "$TMP/open-input"
+  for adapter in agy local-mlx; do
+    run timeout --kill-after=1 5 bash -c '
+      . "'"$LIB"'"
+      exec 3<> "'"$TMP"'/open-input"
+      printf partial >&3
+      REVIEWER="'"$adapter"'" REVIEWER_BIN="'"$TMP"'/bin/reviewer-stub" \
+        CODEX_EXEC_TIMEOUT=.3 codex_exec_guarded <&3
+    '
+    [ "$status" -eq 124 ]
+    [[ "$output" == *"partial input preserved at"* ]]
+    [ ! -e "$TMP/reviewer-launched" ]
+    partial_path="${output##*partial input preserved at }"
+    [ "$(cat "$partial_path")" = partial ]
+  done
+}
+
+@test "agy and local-mlx: excessive stdin is capped before reviewer launch" {
+  cat > "$TMP/bin/reviewer-stub" <<'FAKE'
+#!/usr/bin/env bash
+touch "$TMPDIR/reviewer-launched"
+printf 'VERDICT: CONFIRMED\n'
+FAKE
+  chmod +x "$TMP/bin/reviewer-stub"
+  for adapter in agy local-mlx; do
+    run bash -c '
+      . "'"$LIB"'"
+      printf "%64s" x | REVIEWER="'"$adapter"'" REVIEWER_BIN="'"$TMP"'/bin/reviewer-stub" \
+        CODEX_EXEC_MAX_OUTPUT_BYTES=32 codex_exec_guarded
+    '
+    [ "$status" -eq 123 ]
+    [ ! -e "$TMP/reviewer-launched" ]
+    partial_path="${output##*partial input preserved at }"
+    [ "$(wc -c < "$partial_path" | tr -d ' ')" -eq 32 ]
+  done
+}
+
 # --- stub factories (installed under a chosen binary name) ---------------------
 
 # $1 = binary name. SUCCEEDS with a review + a VERDICT line (the agy/mlx genuine-run
