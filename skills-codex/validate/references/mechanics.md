@@ -33,6 +33,22 @@ conflicting content is an integrity failure represented by `NOT_PROVEN`.
 `store-verdict` refuses an empty manifest and refuses a PASS carrying
 `not_checked` entries, recording a `validate.integrity` finding.
 
+## Proportionate fresh checks
+
+Apply the owning skill's prospective effect-based risk rule. A low-risk wording
+correction can use one fresh judge; acceptance or enforcement changes and
+unknown risk require stronger review. The current change keeps every review
+leg already required. This changes review cost, never the exact subject, full
+acceptance, evidence for every criterion, or the empty-`not_checked` bar.
+
+Reuse existing digest-bound check receipts when their subject, inputs, tool
+identity, and claimed criterion still match. Rerun the fast discriminating
+check for a changed or uncertain criterion; rerun broader checks when the change
+invalidates their receipts or acceptance explicitly requires them. A new receipt
+label, changed digest, reduced finding count, or repeated review is not useful
+progress without evidence that a named acceptance gap closed. Reuse the current
+findings/evidence fields for causal comparisons; create no progress ledger.
+
 ## Cross-family adapters
 
 | Orchestrating runtime | Cross-family judge leg |

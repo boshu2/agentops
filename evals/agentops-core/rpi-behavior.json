@@ -72,7 +72,7 @@
       "id": "bounded-repair-reference-tests",
       "title": "RPI dispatches Plan and Implement once and repairs under the convergence law",
       "kind": "command",
-      "objective": "Prove PASS converges, FAIL/NOT_PROVEN repair under the law, and the law's four stop conditions hold (ADR-0017).",
+      "objective": "Prove PASS converges, FAIL/NOT_PROVEN repair under the law, and evidence of acceptance progress and defect cause gates bounded repair (ADR-0017).",
       "runtime": "shell",
       "inputs": {
         "cwd": "../..",
