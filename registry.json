@@ -768,7 +768,7 @@
         "has_skill_md": true,
         "name": "agent-native",
         "path": "skills/agent-native/",
-        "reference_count": 1,
+        "reference_count": 2,
         "tier": "meta"
       },
       {
@@ -826,7 +826,7 @@
         "has_skill_md": true,
         "name": "bootstrap",
         "path": "skills/bootstrap/",
-        "reference_count": 1,
+        "reference_count": 2,
         "tier": "session"
       },
       {

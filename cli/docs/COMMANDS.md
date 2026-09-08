@@ -567,7 +567,7 @@ ao completion [bash|zsh|fish|powershell]
 View and manage AgentOps configuration.
 
 ```
-ao config [flags]
+ao config [command]
 ```
 
 **Flags:**
@@ -575,6 +575,37 @@ ao config [flags]
 ```
   -h, --help   help for config
       --show   Show resolved configuration with sources
+```
+
+**Subcommands:**
+
+#### `ao config context`
+
+Resolve caller/home CDLC routes and read the selected native maintenance anchor.
+
+```
+ao config context [flags]
+```
+
+**Flags:**
+
+```
+      --access-policy-ref string      Existing caller-owned access policy JSON
+      --bundle-root string            Selected existing external bundle
+      --consumer-root string          Existing consumer checkout to exclude
+      --destination-ref string        Caller destination identity
+      --evidence-root string          Selected existing protected non-Git evidence
+      --field string                  Emit one checked root for its caller-owned consumer
+  -h, --help                          help for context
+      --maintenance-work-ref string   Known native maintenance anchor
+      --model-ref string              Caller model/provider identity
+      --native-directory string       Explicit native BD source directory
+      --owner-scope string            Expected separately authorized owner scope
+      --project-id string             Expected native project ID
+      --recover                       Recover the same route from its native maintenance anchor
+      --source-id string              Expected canonical native beads_dir
+      --staging-root string           Selected existing protected non-Git staging
+      --task-ref string               Caller task identity
 ```
 
 ---
@@ -824,6 +855,31 @@ ao provenance verify [flags]
 ```
   -h, --help   help for verify
       --json   Emit the machine-readable verify result as JSON
+```
+
+#### `ao provenance verify-judgments`
+
+Check caller-selected required judgment legs using existing verdict.v2 evidence_refs.
+
+```
+ao provenance verify-judgments [flags]
+```
+
+**Flags:**
+
+```
+      --allowed-provider stringArray   Independently authorized provider: openai or anthropic (repeatable)
+      --author-context-id string       Independent native author context identity
+      --base-manifest string           Base manifest for deletions
+      --evidence-root string           Explicit private non-Git root for receipts, transcripts and verdicts
+  -h, --help                           help for verify-judgments
+      --helper-version string          Required evidence helper version (default "1")
+      --intent string                  Independent expected immutable acceptance file
+      --json                           Emit JSON (the default)
+      --manifest string                Expected subject-manifest.v1 file
+      --required-profiles string       Independent JSON object containing the required profiles array
+      --root string                    Explicit subject directory
+      --verdict stringArray            Content-addressed verdict.v2 file inside evidence root (repeatable)
 ```
 
 #### `ao provenance verify-manifest`

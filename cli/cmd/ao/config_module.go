@@ -24,6 +24,7 @@ func newConfigCommand() *cobra.Command {
 		clicontract.HostOptions{OutputMode: GetOutput, Verbose: GetVerbose, DryRun: GetDryRun},
 	)
 	command := module.Command()
+	command.AddCommand(configcommands.NewContextCommand(configapp.NewCommandService(configadapter.Gateway{})))
 	command.GroupID = "config"
 	if err := clicontract.Attach(command, module.Contract()); err != nil {
 		panic(err)

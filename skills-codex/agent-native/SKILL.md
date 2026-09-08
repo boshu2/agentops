@@ -75,3 +75,7 @@ adapters. Use them only when the caller selected that execution shape. A
 single local agent pays no factory coordination cost. Model identity, when
 recorded, is a declared runtime fact like context identity — see
 [references/model-dispatch.md](references/model-dispatch.md).
+
+[Native judgment receipts](references/judgment-receipts.md) defines exact private
+receipt references and the independent profile/subject/acceptance checks for
+caller-required model diversity. Missing native identity never satisfies a leg.

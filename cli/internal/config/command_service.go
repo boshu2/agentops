@@ -2,6 +2,7 @@ package config
 
 import (
 	"context"
+	"fmt"
 )
 
 // showEnvironmentKeys deliberately omits AGENTOPS_NO_SC: it only toggles
@@ -61,4 +62,12 @@ func (service *CommandService) Show(_ context.Context, output string, verbose bo
 		Resolved: service.gateway.Resolve(output, verbose), ConfigFiles: files,
 		Environment: service.gateway.Environment(showEnvironmentKeys),
 	}, nil
+}
+
+func (service *CommandService) Context(ctx context.Context, req ContextRequest) (ContextResult, error) {
+	gateway, ok := service.gateway.(ContextGateway)
+	if !ok {
+		return ContextResult{}, fmt.Errorf("native context adapter unavailable")
+	}
+	return ResolveContext(ctx, gateway, req)
 }
