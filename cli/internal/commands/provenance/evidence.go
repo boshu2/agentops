@@ -142,18 +142,7 @@ func (m *Module) runEvidence(cmd *cobra.Command, args []string, name string, o *
 	case "manifest":
 		value, err = o.buildManifest()
 	case "verify-manifest":
-		var subject, prior *evidence.Manifest
-		subject, err = evidence.LoadManifest(o.manifest)
-		if err != nil {
-			return err
-		}
-		if o.base != "" {
-			prior, err = evidence.LoadManifest(o.base)
-			if err != nil {
-				return err
-			}
-		}
-		err = evidence.VerifyManifest(o.root, subject, prior)
+		err = o.verifyManifest()
 		value = map[string]string{"result": "PASS", "reason": "manifest matches subject"}
 	case "digest":
 		raw, e := evidence.ReadObject(args[0])
@@ -193,6 +182,21 @@ func (m *Module) runEvidence(cmd *cobra.Command, args []string, name string, o *
 	encoder := json.NewEncoder(cmd.OutOrStdout())
 	encoder.SetIndent("", "  ")
 	return encoder.Encode(value)
+}
+
+func (o *evidenceOptions) verifyManifest() error {
+	subject, err := evidence.LoadManifest(o.manifest)
+	if err != nil {
+		return err
+	}
+	var prior *evidence.Manifest
+	if o.base != "" {
+		prior, err = evidence.LoadManifest(o.base)
+		if err != nil {
+			return err
+		}
+	}
+	return evidence.VerifyManifest(o.root, subject, prior)
 }
 
 func (o *evidenceOptions) buildManifest() (value any, err error) {
