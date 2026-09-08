@@ -230,6 +230,9 @@ func TestContextNonGitRoots(t *testing.T) {
 				git := func(args ...string) {
 					t.Helper()
 					cmd := exec.Command("git", args...)
+					// contextFixture isolates HOME and clears active Git bindings;
+					// capture that environment explicitly for this child process.
+					cmd.Env = os.Environ()
 					if b, e := cmd.CombinedOutput(); e != nil {
 						t.Fatalf("git: %v %s", e, b)
 					}
