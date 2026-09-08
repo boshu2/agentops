@@ -17,8 +17,11 @@ majority vote establishes truth. Authors cannot issue their own binding PASS.
 One request selects one worker and one result destination. Before dispatch,
 resolve role, exact subject/acceptance references, authorized input bytes,
 workspace, read/write scope, output/evidence destination, requested model,
-fresh context identity distinct from the author and every peer, finite
-input/output limits and timeout from the caller and native runtime. These are invocation facts, not a new AO packet schema,
+requirement for a fresh context distinct from the author and every peer, finite
+input/output limits and timeout from the caller and native runtime. Actual
+context identity remains unknown until the native runtime reports it; verify
+freshness and distinctness against that observed identity before relying on
+judgment. These are invocation facts, not a new AO packet schema,
 work store or budget account. Retry remains the caller's decision. Judge legs
 receive read-only subject access; only their declared evidence output is writable.
 
@@ -37,6 +40,31 @@ prompt restrictions, a worktree or a same-user unrestricted process do not.
 Unsupported protection prevents restricted-source dispatch. The repository
 contract is ADR-0016, State tiers; this installed skill carries the requirements
 above without depending on a repository-relative documentation link.
+
+## Association before execution
+
+Before launch, pass source-store/project/work identity and permitted frozen
+intent references through the selected runtime input. The caller records the
+dispatch association in native work comments/metadata or existing runtime facts
+before execution can fail, with worker identity explicitly unknown if not yet
+observed. At startup, capture actual runtime/session/context identity and return
+it to that caller-owned channel before substantive work; final handoff is only
+an additional reference. Do this for a child or resumed execution as well.
+
+Keep requested model/ID, observed model/ID, controller identity, native parent
+and resume predecessor distinct. Use the selected runtime's observed resume
+identity even if it retains the original session ID; invocation observations
+must still remain distinguishable. Never infer parentage from workspace,
+filename, title or proximity. An unavailable startup/recording operation stays
+a named failure with unknown identity, not a fabricated successful launch.
+
+[Session associations](../../cass/references/SESSION_FORMATS.md#work-to-session-associations)
+owns the fact distinctions: provenance, permitted locators, source bounds and
+multi-work spans. Record only metadata authorized for the source owner and
+recipient/destination; BD/Dolt is versioned, not secret storage. Neither this
+reference nor the core phases gain tracker mutation, a new association store,
+or runtime lifecycle authority. Required judgment freshness remains unsatisfied
+when observed identities or their provenance are missing.
 
 ## Selected adapters
 
