@@ -576,23 +576,42 @@ FAKE
   [ ! -e "$TMP/codex-argv" ]
 }
 
+@test "bounds: preparation expiry prevents launch without renewing the caller deadline" {
+  stub_argv_recorder
+  run timeout --kill-after=1 5 bash -c '
+    . "'"$LIB"'"
+    # Preparation consumes the same deadline as the eventual reviewer.
+    codex_exec_timeout_bin() { sleep .4; printf "%s" "'"$REAL_TIMEOUT"'"; }
+    CODEX_EXEC_TIMEOUT=.3 CODEX_EXEC_PROMPT_ARG=x codex_exec_guarded
+  '
+  [ "$status" -eq 124 ]
+  [[ "$output" == *"deadline expired before launch"* ]]
+  [ ! -e "$TMP/codex-argv" ]
+}
+
 @test "bounds: TERM resistant reviewer and child are killed with partial evidence" {
   cat > "$TMP/bin/codex" <<'FAKE'
 #!/usr/bin/env bash
 trap '' TERM
 echo $$ > "$TMPDIR/reviewer-pid"
 bash -c 'trap "" TERM; echo $$ > "$TMPDIR/child-pid"; exec sleep 30' &
+while [ ! -s "$TMPDIR/child-pid" ]; do sleep .01; done
 printf 'partial result\n'
 wait
 FAKE
   chmod +x "$TMP/bin/codex"
   start=$SECONDS
-  run timeout --kill-after=1 5 bash -c '. "'"$LIB"'"; CODEX_EXEC_TIMEOUT=.3 CODEX_EXEC_PROMPT_ARG=x codex_exec_guarded'
+  # This fixture must reach the running-reviewer branch. A .3s budget can be
+  # consumed by capability probing alone; the preceding case proves that path.
+  run timeout --kill-after=1 5 bash -c '. "'"$LIB"'"; CODEX_EXEC_TIMEOUT=2 CODEX_EXEC_PROMPT_ARG=x codex_exec_guarded'
   [ "$status" -eq 124 ]
   [ $((SECONDS - start)) -lt 4 ]
+  [ -s "$TMP/reviewer-pid" ]
+  [ -s "$TMP/child-pid" ]
   assert_stopped "$(cat "$TMP/reviewer-pid")"
   assert_stopped "$(cat "$TMP/child-pid")"
   [[ "$output" == *"partial result"* ]]
+  [[ "$output" == *"deadline expired; owned process group stopped"* ]]
 }
 
 @test "bounds: clean parent exit with children is degraded even when cleanup succeeds" {
