@@ -669,7 +669,7 @@
         "code-complete"
       ],
       "produces": [
-        "caller-selected handoff path or .agents/ao/handoff/*"
+        "caller-selected handoff artifact"
       ],
       "references_count": 1,
       "tier": "session",
