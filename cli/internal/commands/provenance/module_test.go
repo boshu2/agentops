@@ -58,7 +58,7 @@ func TestModuleConstructsCommandTree(t *testing.T) {
 	want := map[string]bool{
 		"add": true, "list": true, "export": true, "show": true,
 		"position": true, "trace": true, "verify": true, "mine-session": true,
-		"snapshot-intent": true, "manifest": true, "verify-manifest": true, "digest": true, "store-verdict": true, "verify-verdict": true, "verify-subject": true, "evidence-orphans": true,
+		"snapshot-intent": true, "manifest": true, "verify-manifest": true, "digest": true, "store-verdict": true, "verify-verdict": true, "verify-subject": true, "evidence-orphans": true, "verify-judgments": true,
 	}
 	got := map[string]bool{}
 	for _, c := range root.Commands() {

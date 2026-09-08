@@ -24,7 +24,7 @@
     },
     {
       "category": "public-tested",
-      "command": "config",
+      "command": "config context",
       "coverage_status": "covered",
       "kind": "leaf",
       "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
@@ -287,6 +287,13 @@
       "coverage_status": "allowlisted",
       "kind": "leaf",
       "reason": "Covered by internal/commands/provenance module tests after the provenance carve-out."
+    },
+    {
+      "category": "public-tested",
+      "command": "provenance verify-judgments",
+      "coverage_status": "covered",
+      "kind": "leaf",
+      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
     },
     {
       "category": "public-tested",
