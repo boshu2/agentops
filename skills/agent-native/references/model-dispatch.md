@@ -117,7 +117,16 @@ For a caller-selected Fable profile, the native command is:
 claude --print --model claude-fable-5-1 --effort xhigh
 ```
 
-This is the command supplied to a native bounded invocation, not a standalone
+This is one caller-selected profile, not a mandatory model pin. Select another
+authorized capable Claude profile when requested. For native model evidence,
+request `--output-format stream-json --verbose`; preserve assistant-envelope
+model/context fields and the terminal result, not just rendered text. Inspect the
+installed CLI contract before choosing flags. An authorized public/toy read can
+use native safe-mode/restricted controls with tools, customizations, MCP and
+session persistence disabled when the installed runtime supports them. Those
+controls and cleared toy bytes do not establish restricted-source isolation.
+
+The command is supplied to a native bounded invocation, not a standalone
 unbounded shell recipe. Before starting it, the native runtime must:
 
 1. Freeze exact authorized input and subject/acceptance identities; declare
@@ -149,8 +158,12 @@ shipped runner, or relax specialist provider-name guards.
 A successful prompt send proves transport, not engagement. Output bytes, exit
 zero, a terminated process and clean cleanup prove only those facts. Only fresh
 Validate can judge acceptance and persist `verdict.v2` when requested. Keep
-model/context identities in evidence references and freshness attestation notes;
-no verdict schema change is required and these attestations are not
+model/context identities in [native judgment receipt references](judgment-receipts.md)
+and freshness attestation notes. `ao provenance verify-judgments` compares all
+caller-required profiles with exact native transcript spans, independently
+supplied subject and acceptance, actual termination and omissions. Requested
+profile echo or unknown native identity cannot satisfy required diversity.
+No verdict schema change is required, and these attestations are not
 cryptographic proof of independence.
 
 Both required legs must pass the same exact subject for convergence. A split

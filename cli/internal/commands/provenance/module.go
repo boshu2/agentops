@@ -142,6 +142,7 @@ judgment. See each leaf for evidence helper version and mutation conditions.`,
 	root.AddCommand(m.mineSessionCommand())
 	root.AddCommand(m.evidenceCommands()...)
 	root.AddCommand(m.evidenceOrphansCommand())
+	root.AddCommand(m.verifyJudgmentsCommand())
 	if err := clicontract.Attach(root, m.Contract()); err != nil {
 		panic(err)
 	}

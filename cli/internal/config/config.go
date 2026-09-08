@@ -44,6 +44,9 @@ type Config struct {
 	// Models settings
 	Models ModelsConfig `yaml:"models" json:"models"`
 
+	// Context explicitly selects external CDLC storage; it has no defaults.
+	Context ContextConfig `yaml:"context" json:"context"`
+
 	// Compile settings for ao compile headless runtime preference.
 	Compile CompileConfig `yaml:"compile" json:"compile"`
 }
@@ -487,6 +490,7 @@ func envBool(envKey string) bool {
 
 // applyEnv applies environment variable overrides.
 func applyEnv(cfg *Config) *Config {
+	applyContextEnv(&cfg.Context)
 	applyEnvStr(&cfg.Output, "AGENTOPS_OUTPUT")
 	applyEnvStr(&cfg.BaseDir, "AGENTOPS_BASE_DIR")
 	if envBool("AGENTOPS_VERBOSE") {
@@ -541,6 +545,7 @@ func merge(dst, src *Config) *Config {
 	mergeRPI(&dst.RPI, &src.RPI)
 	mergeModels(&dst.Models, &src.Models)
 	mergePaths(&dst.Paths, &src.Paths)
+	mergeContext(&dst.Context, src.Context)
 
 	return dst
 }

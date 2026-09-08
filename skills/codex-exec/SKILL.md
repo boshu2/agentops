@@ -125,3 +125,11 @@ report. The validator context ID must be distinct from the author's before a
 validator, record model identities per
 the `agent-native` model-dispatch recipe and match the sandbox to
 declared effects.
+
+For caller-required model identity, preserve native session metadata and terminal
+events as well as rendered output. The [judgment receipt convention](../agent-native/references/judgment-receipts.md)
+binds exact transcript byte spans and their SHA-256 through existing
+`evidence_refs`; the consumer supplies expected profiles, subject and acceptance
+independently. A requested model flag, Codex `turn_context` configuration, stdout
+marker or model self-description does not prove actual model identity. Missing
+native reporting stays `identity_unverified` and cannot satisfy a required leg.

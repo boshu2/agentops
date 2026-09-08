@@ -152,10 +152,10 @@ func TestTruthfulnessProvenanceEvidenceContracts(t *testing.T) {
 	if family.ID != "ao.provenance" || family.Effects != "filesystem,environment,clock" {
 		t.Fatalf("family: %+v", family)
 	}
-	for _, name := range []string{"snapshot-intent", "manifest", "verify-manifest", "digest", "store-verdict", "verify-verdict", "verify-subject", "evidence-orphans"} {
+	for _, name := range []string{"snapshot-intent", "manifest", "verify-manifest", "digest", "store-verdict", "verify-verdict", "verify-subject", "evidence-orphans", "verify-judgments"} {
 		entry := capabilityEntry(t, "ao provenance "+name)
 		wantEffects := "filesystem"
-		if name == "snapshot-intent" || name == "manifest" || name == "store-verdict" {
+		if name == "snapshot-intent" || name == "manifest" || name == "store-verdict" || name == "verify-judgments" {
 			wantEffects = "filesystem,environment"
 		}
 		failureCode := "1"

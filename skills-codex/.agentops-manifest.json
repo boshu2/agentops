@@ -375,8 +375,8 @@
     {
       "name": "agent-native",
       "source_skill": "skills/agent-native",
-      "source_hash": "0a76ac9a1c8e1e9f8a57b943090f70e7e1fd251e9d1aece89b2bd2af08b6a6cb",
-      "generated_hash": "53c18f88fdd399e3de7ec09443cc735bceef878b6d2ec47dd4f763a716d7306c"
+      "source_hash": "82db24856239d7489842a400d273dae6192b8795f908c27884a829336105cd23",
+      "generated_hash": "e17fcecf436bbaab6b863e83a8c94cbc32ff18dfa8a14078e27d949f14ef7f7e"
     },
     {
       "name": "agy-native",
@@ -399,8 +399,8 @@
     {
       "name": "bootstrap",
       "source_skill": "skills/bootstrap",
-      "source_hash": "7bbb26e91b90929ead429d47181151f04c9925936d82b74abaac2c3545f3180d",
-      "generated_hash": "214989d49b68a47d00099e191e567431370be0a0f9ea73b10e83d23ac5ca8277"
+      "source_hash": "2f3a78e812689e4e07de1e8e613a20ed92b0ee9a0b7e547936f8d789e2d4b4ee",
+      "generated_hash": "f81660a56cba892511335859357e95b96ff48a7b0f73b56cfb0d1cc2b9b14657"
     },
     {
       "name": "cass",
@@ -423,8 +423,8 @@
     {
       "name": "codex-exec",
       "source_skill": "skills/codex-exec",
-      "source_hash": "8c84752797e7ffd9405eab523edb0c820d4c047384b9ad9b133f7c26ff1a4a9a",
-      "generated_hash": "0db2993854002bd005ddf1de805bd47f8cf8d857014eebe6b5aba4d9e320b461"
+      "source_hash": "9cdb3302e82aba2b7a8075f469092b6df17d89b56f3053808e08216115d986e3",
+      "generated_hash": "515002e8834b78bb54a52f748aefb2fa199c63b796d57fc8fba3c0539f029e39"
     },
     {
       "name": "converter",

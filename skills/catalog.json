@@ -107,7 +107,7 @@
         "runtime-evidence",
         "worker-handoff"
       ],
-      "references_count": 1,
+      "references_count": 2,
       "tier": "meta",
       "user_invocable": true
     },
@@ -254,7 +254,7 @@
         "code-complete"
       ],
       "produces": [],
-      "references_count": 1,
+      "references_count": 2,
       "tier": "session",
       "user_invocable": true
     },
