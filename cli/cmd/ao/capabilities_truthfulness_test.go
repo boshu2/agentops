@@ -146,3 +146,31 @@ func TestTruthfulnessGateCheckExitCodesObserved(t *testing.T) {
 		t.Errorf("ao gate check bogus observed exit %d, want 1 (cobra usage error, not the exit-2 config class)", observedExit(err))
 	}
 }
+
+func TestTruthfulnessProvenanceEvidenceContracts(t *testing.T) {
+	family := capabilityEntry(t, "ao provenance")
+	if family.ID != "ao.provenance" || family.Effects != "filesystem,environment,clock" {
+		t.Fatalf("family: %+v", family)
+	}
+	for _, name := range []string{"snapshot-intent", "manifest", "verify-manifest", "digest", "store-verdict", "verify-verdict", "verify-subject", "evidence-orphans"} {
+		entry := capabilityEntry(t, "ao provenance "+name)
+		wantEffects := "filesystem"
+		if name == "snapshot-intent" || name == "manifest" || name == "store-verdict" {
+			wantEffects = "filesystem,environment"
+		}
+		failureCode := "1"
+		if name == "evidence-orphans" {
+			failureCode = "2"
+		}
+		if entry.ID != "ao.provenance."+name || entry.Effects != wantEffects || entry.ExitCodes["0"] != "success" || entry.ExitCodes[failureCode] != "failure" {
+			t.Fatalf("%s: %+v", name, entry)
+		}
+		args, output := "no-args", "structured"
+		if name == "digest" {
+			args, output = "exact-1", "text"
+		}
+		if entry.Args != args || entry.Output != output {
+			t.Fatalf("%s: %+v", name, entry)
+		}
+	}
+}

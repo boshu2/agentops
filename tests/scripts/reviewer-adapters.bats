@@ -61,7 +61,7 @@ FAKE
     run bash -c '
       . "'"$LIB"'"
       printf "%64s" x | REVIEWER="'"$adapter"'" REVIEWER_BIN="'"$TMP"'/bin/reviewer-stub" \
-        CODEX_EXEC_MAX_OUTPUT_BYTES=32 codex_exec_guarded
+        CODEX_EXEC_TIMEOUT=10 CODEX_EXEC_MAX_OUTPUT_BYTES=32 codex_exec_guarded
     '
     [ "$status" -eq 123 ]
     [ ! -e "$TMP/reviewer-launched" ]
@@ -198,7 +198,7 @@ FAKE
   stub_success some-mlx-bin
   run bash -c '
     . "'"$LIB"'"
-    REVIEWER=local-mlx REVIEWER_BIN="some-mlx-bin" CODEX_EXEC_PROMPT_ARG="review" codex_exec_guarded
+    REVIEWER=local-mlx REVIEWER_BIN="some-mlx-bin" CODEX_EXEC_TIMEOUT=10 CODEX_EXEC_PROMPT_ARG="review" codex_exec_guarded
   '
   [ "$status" -eq 0 ]
   [[ "$output" == *"VERDICT: CONFIRMED"* ]]

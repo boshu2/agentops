@@ -42,7 +42,7 @@ func TestCanonicalJSONLineSeparators(t *testing.T) {
 		{
 			name:  "literal backslash-u2028 preserved (even backslash run)",
 			value: map[string]any{"k": "a\\u2028b"}, // literal: a \ u 2 0 2 8 b
-			want:  "{\"k\":\"a\\\\u2028b\"}",         // JSON-escaped backslash: a \\ u2028 b
+			want:  "{\"k\":\"a\\\\u2028b\"}",        // JSON-escaped backslash: a \\ u2028 b
 		},
 		{
 			name:  "escaped-backslash then real separator both preserved",
@@ -73,7 +73,7 @@ func TestLineSeparatorDigestParity(t *testing.T) {
 	if err != nil {
 		t.Skip("python3 unavailable; digest-parity cross-check skipped")
 	}
-	validatePy := filepath.Join("..", "..", "..", "skills", "validate", "scripts", "validate.py")
+	validatePy := filepath.Join("..", "..", "..", "skills", "validate", "tests", "validate.py")
 	if _, err := os.Stat(validatePy); err != nil {
 		t.Fatalf("validate.py not found at %s: %v", validatePy, err)
 	}

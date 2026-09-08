@@ -33,7 +33,8 @@ affects_files:
   verdict-contract-corpus:
     - schemas/verdict.v2.schema.json
     - scripts/check-verdict-contract-corpus.sh
-    - skills/validate/scripts/validate.py
+    - skills/validate/tests/validate.py
+    - skills/validate/tests/check_contract_corpus.py
     - cli/internal/verdictcheck/**
     - tests/fixtures/verdict-contract/**
 

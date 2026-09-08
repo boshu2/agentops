@@ -33,13 +33,21 @@
 | `ao help` | `internal-hidden` | `allowlisted` | Built-in Cobra help dispatcher with no application handler. |
 | `ao init` | `public-tested` | `allowlisted` | Covered by internal/commands/init module tests and internal/initapp tests after the init carve-out. |
 | `ao provenance add` | `public-tested` | `allowlisted` | Covered by internal/commands/provenance module tests after the provenance carve-out. |
+| `ao provenance digest` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
+| `ao provenance evidence-orphans` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao provenance export` | `public-tested` | `allowlisted` | Covered by internal/commands/provenance module tests after the provenance carve-out. |
 | `ao provenance list` | `public-tested` | `allowlisted` | Covered by internal/commands/provenance module tests after the provenance carve-out. |
+| `ao provenance manifest` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao provenance mine-session` | `public-tested` | `allowlisted` | Covered by internal/provenanceapp mine-session tests after the provenance carve-out. |
 | `ao provenance position` | `public-tested` | `allowlisted` | Covered by internal/commands/provenance module tests after the provenance carve-out. |
 | `ao provenance show` | `public-tested` | `allowlisted` | Covered by internal/commands/provenance module tests after the provenance carve-out. |
+| `ao provenance snapshot-intent` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
+| `ao provenance store-verdict` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao provenance trace` | `public-tested` | `allowlisted` | Covered by internal/commands/provenance module tests after the provenance carve-out. |
 | `ao provenance verify` | `public-tested` | `allowlisted` | Covered by internal/commands/provenance module tests after the provenance carve-out. |
+| `ao provenance verify-manifest` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
+| `ao provenance verify-subject` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
+| `ao provenance verify-verdict` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao quick-start` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao robot-docs` | `public-tested` | `allowlisted` | Covered by generated documentation tests. |
 | `ao session bootstrap` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
