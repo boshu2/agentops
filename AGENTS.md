@@ -182,12 +182,13 @@ new subjects, compaction, and helper calls never renew a goal allowance. Native
 objective text does not demonstrate a pause or aggregate budget enforcement;
 report actual observed controls and unmeasured gaps truthfully.
 
-Fresh author-distinct validation is always required. Size additional review by
-effect on acceptance and enforcement under `skills/validate/SKILL.md`: policy,
-stopping, guard, and acceptance changes require cross-family review even when
-written as documentation; unknown risk takes the stronger path. This prospective
-rule never waives a leg already required for the current change. Exact subject,
-all acceptance, and empty `not_checked` remain the binding PASS bar.
+Fresh author-distinct validation is always required. Default to a fresh reviewer
+from the author's model family: Codex for Codex work, Claude for Claude work.
+Risk sizes evidence inspection; cross-model review is caller-selected through
+`--cross-model [model]` or an explicit request under `skills/validate/SKILL.md`.
+An explicitly requested leg remains required until the caller changes it.
+Reviews use caller/native time bounds, with no fixed ten-minute cap. Exact
+subject, all acceptance, and empty `not_checked` remain the binding PASS bar.
 
 CDLC (Context Delivery Lifecycle) adopts maintained
 external context for disposable agents, without weight training or deterministic

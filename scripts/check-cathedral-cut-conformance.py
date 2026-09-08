@@ -1220,7 +1220,7 @@ def check_bounded_repair_contract() -> None:
 
 
 def check_validate_helper() -> None:
-    path = ROOT / "skills" / "validate" / "scripts" / "validate.py"
+    path = ROOT / "skills" / "validate" / "tests" / "validate.py"
     tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
     forbidden_imports = {"subprocess", "socket", "urllib", "http", "requests", "git", "dulwich"}
     for node in ast.walk(tree):
@@ -1314,7 +1314,7 @@ def check_dispatch_once() -> None:
 
 
 def probe_no_substrate_calls() -> None:
-    helper = ROOT / "skills" / "validate" / "scripts" / "validate.py"
+    helper = ROOT / "skills" / "validate" / "tests" / "validate.py"
     rpi_runner = ROOT / "skills" / "rpi" / "scripts" / "run_once.py"
     with tempfile.TemporaryDirectory() as raw:
         temp = Path(raw)

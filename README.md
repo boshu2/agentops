@@ -38,9 +38,9 @@ more:
 
 | Skill | Needs | Why |
 |---|---|---|
-| `rpi` | `python3`, conditional | invokes plan and validate, which may run `python3` (see below); rpi's own procedure only cites `scripts/run_once.py` as reference behavior |
-| `plan` | `python3`, conditional | runs `scripts/validate.py snapshot-intent` only when the intent source is not durable |
-| `validate` | `python3` | its helper commands run `python3` against `scripts/validate.py` |
+| `rpi` | `ao`, conditional | runs `ao provenance evidence-orphans --root <repo-root>` after an implementation round and invokes Plan and Validate; `scripts/run_once.py` is developer-only reference behavior |
+| `plan` | `ao`, conditional | runs `ao provenance snapshot-intent` with an explicit evidence root when the intent source is not durable |
+| `validate` | `ao` | derives exact subject identity with the helper and uses `ao provenance store-verdict` when persistence is requested; Python/schema checks are developer-only |
 | `fitness` | `ao` | its whole procedure is running one `ao goals` subcommand |
 | `using-gc` | `ao` | rig prep runs `ao gc prepare` and `ao gc check` |
 | `handoff` | `ao`, optional | `ao session handoff`/`rehydrate` cover the same artifact; the skill can write it directly |
@@ -110,10 +110,11 @@ text and the runtime snapshots those bytes the same way. These are standalone
 product-proof defaults; selected CDLC knowledge/disclosure evidence requires
 protected external routing before storage (ADR-0016).
 
-`validate` must run in a fresh context (not the author session). Risky surfaces
-and caller-required diversity need both fresh and cross-family exact-subject
-judgments; an unavailable required leg leaves PASS unproven. Other surfaces
-may use the same model. See the authorized bounded
+`validate` runs in a fresh context from the author's model family by default:
+Codex reviews Codex work, and Claude reviews Claude work. Request
+`--cross-model [model]` in Validate or RPI to add a different-family reviewer;
+an unavailable requested leg leaves the combined result unproven. Review time
+comes from caller/native bounds, with no fixed ten-minute cap. See the
 [model-dispatch recipe](skills/agent-native/references/model-dispatch.md).
 
 ## Multi-agent systems

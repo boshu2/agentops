@@ -53,10 +53,11 @@ scope as a class (cli/internal/gates/** plus regen outputs), first check
 ## Workflow
 
 1. Resolve the intent source and choose one active behavior. When the source
-   is not durable, have the runtime pass its exact bytes to the validate
-   skill's `scripts/validate.py snapshot-intent --source -` (under
-   `skills/validate/` in a checkout, `.agents/skills/validate/` when
-   installed) and carry the returned `intent_ref` into later phases.
+   is not durable, have the runtime pass its exact bytes to
+   `ao provenance snapshot-intent --source - --evidence-root <explicit-root>`
+   and carry the returned `intent_ref` into later phases. The caller selects
+   an existing non-Git evidence directory; CDLC uses the resolved protected
+   external evidence root. Missing routing fails without workspace fallback.
 2. Route the work by type (Integrate, Extend, or Greenfield) and name its
    ground truth, control experiment, and deviation ledger first from
    [references/ground-truth-routing.md](references/ground-truth-routing.md).
@@ -70,8 +71,10 @@ scope as a class (cli/internal/gates/** plus regen outputs), first check
    gap and discriminating check that would establish progress, and the evidence
    this change will orphan: bound scorecards
    or contracts whose evaluator files sit in the write scope. Run
-   `bash scripts/evidence-orphans.sh <write scope>` to see that list rather than
-   guessing it, and budget recapturing it as work this plan carries, not a
+   `ao provenance evidence-orphans --root <repo-root>` with one
+   `--changed <path>` per proposed changed path to see existing digest drift
+   and exact-path exposure; the reader does not expand scope globs. Budget
+   recapturing affected evidence as work this plan carries, not a
    discovery for verify time. Use lightweight prose or Given/When/Then only
    where it removes ambiguity. Write-scope checks (folded from the retired
    `scope` skill):

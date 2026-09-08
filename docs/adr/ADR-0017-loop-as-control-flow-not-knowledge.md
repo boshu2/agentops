@@ -1,6 +1,6 @@
 # ADR-0017: The Loop Is Control Flow, Not Knowledge
 
-- **Status:** Accepted, amended for selected CDLC 2026-09-06 (2026-09-03)
+- **Status:** Accepted, amended for review selection 2026-09-08 (2026-09-03)
 - **Author:** AgentOps maintainers
 - **Builds on:** [ADR-0004](ADR-0004-corpus-moat-unproven-position-on-the-system.md) (corpus moat unproven, position on the verification system), [ADR-0011](ADR-0011-escape-corpus-compounding-unproven-structural-starvation.md) (escape-corpus compounding demoted to hypothesis)
 - **Origin:** `docs/plans/2026-09-03-loop-restore.md` (this decision's intent source), and the 2026-09-02 Train 1 run, where the repair loop had to be improvised by hand
@@ -19,7 +19,7 @@ itself neither replans nor owns native budgets, stops, queues or delivery.
 Replace Decision 3's NTM-only and blanket headless-Claude ban with the single
 [authorized bounded model-dispatch recipe](../../skills/agent-native/references/model-dispatch.md).
 Both fresh and required cross-family exact-subject legs remain, with independent
-initial inputs and actual model/context receipts. Risk or caller-required
+initial inputs and actual model/context receipts. Caller-required
 unavailable diversity stays `diversity_unsatisfied` / `NOT_PROVEN`; no preferred
 judge, majority vote or author can supply binding PASS. Native runtimes own
 finite input/output, timeout and verified cleanup. Exit/process facts are not
@@ -66,18 +66,35 @@ advice stops implementation. Cancellation, explicit refusal/judgment, or a spent
 hard time/cost/quota skips the helper. New subjects, compaction, and repeated
 continuations never reset allowance or helper use. RPI itself stops and reports.
 
-Size validation by effect on acceptance/enforcement, as owned by Validate.
-Policy and stopping changes need cross-family judgment even as documentation;
-unknown risk takes the stronger path. Narrow nonbehavioral wording changes may
-use one fresh judge prospectively. This amendment does not waive its own or
-any already-required review leg. Exact subject, all acceptance, and empty
-`not_checked` remain necessary for binding PASS. Reuse applicable exact-input
-receipts and fast discriminating checks; no additional progress ledger is owed.
+Size evidence inspection by effect on acceptance/enforcement, as owned by
+Validate. The 2026-09-08 amendment below replaces this amendment's automatic
+cross-family requirement. Exact subject, all acceptance, and empty `not_checked`
+remain necessary for binding PASS. Reuse applicable exact-input receipts and
+fast discriminating checks; no additional progress ledger is owed.
 
 Native objective text demonstrates neither pause nor aggregate allowance
 operations. Report observed controls and missing measurement truthfully. Evidence
 and provenance are retained while beliefs may be revised; knowledge is not
 monotonically true or useful. The historical rationale below is preserved.
+
+## Active review-selection amendment — 2026-09-08
+
+At the caller's request, default to one fresh author-distinct validator in the
+author's model family: Codex/OpenAI for Codex/OpenAI work, Claude/Anthropic for
+Claude/Anthropic work. Risk determines evidence depth, not automatic model
+multiplicity. Validate and RPI accept `--cross-model [model]` or an explicit
+cross-model request to add a different-family judge; a supplied model pins it.
+This supersedes the earlier risk-triggered family rule, including Decision 3.
+An independently explicit caller requirement stays required until the caller
+changes it. Historical findings and missing reviews remain recorded.
+
+Remove the fixed ten-minute invocation default. Native runtime bounds come
+from an explicit caller timeout or the remaining caller deadline, taking the
+earlier when both exist. Headless calls retain finite bounds, output limits,
+cancellation and verified cleanup; retries never renew the allowance. A timeout
+is an incomplete review, not a semantic objection. The observed motivation was
+repeated reviews expiring before returning judgment. This amendment changes
+selection and delivery behavior; it does not claim measured model superiority.
 
 ## Historical context
 
@@ -115,8 +132,8 @@ Restore the control flow the cut over-reached on, and only that.
       the union of required judges' stable ids, including necessary discoveries.
       The precise current law and receipt bindings live in `skills/rpi/SKILL.md`.
 
-   Converged means the fresh validator returns PASS and, when the diff touches
-   a risky surface, the cross-family validator also returns PASS. On any
+   Converged means the fresh validator returns PASS and, when the caller
+   selects cross-model review, that validator also returns PASS. On any
    violation RPI stops and reports the current status. No third judge, no
    escalation, no auto-replan.
 
@@ -125,13 +142,12 @@ Restore the control flow the cut over-reached on, and only that.
    evidence, and stops. It owns no wave selection, retry, budget, queue, claim,
    lease, Git, closure, or next work.
 
-3. **Cross-family validation follows effect-based risk**, as owned by
-   `skills/validate/SKILL.md`, with its conservative path cues and stronger
-   treatment of unknown risk. Fresh author-distinct judgment always remains.
-   The prospective rule cannot waive a leg already required for the change
-   being judged. Dispatch uses the authorized bounded model-dispatch recipe
-   cited above; required unavailable diversity remains `diversity_unsatisfied`
-   / `NOT_PROVEN`. Same-family agreement cannot satisfy a required second leg.
+3. **Fresh same-family validation is the default**, as owned by
+   `skills/validate/SKILL.md`. Cross-family validation is caller-selected under
+   the active 2026-09-08 amendment. Dispatch uses the authorized bounded
+   model-dispatch recipe; required unavailable diversity remains
+   `diversity_unsatisfied` / `NOT_PROVEN`. Same-family agreement cannot satisfy
+   an explicitly required second family.
 
 ### Conformance assertions flipped
 
@@ -178,8 +194,9 @@ whose model family the script cannot verify and does not claim to.
   or counts move. Newly discovered pre-existing defects do not become
   regressions merely because they increase the count; unknown cause still stops
   for examination. Control artifacts alone never justify repair.
-- Risky-surface changes cost a second judge leg. When no legal adapter is
-  available, the honest outcome is `NOT_PROVEN` and the change waits.
+- Caller-selected cross-model review costs a second judge leg. When its legal
+  adapter is unavailable, the combined result is `NOT_PROVEN`. The default
+  fresh same-family review retains the full acceptance and evidence bar.
 - The removed surfaces stay removed. A future proposal to bring back a
   knowledge store or a lifecycle command does not inherit this ADR's
   permission; it needs its own, with evidence.

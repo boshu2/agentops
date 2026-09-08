@@ -26,13 +26,16 @@ first useful check in that source. Do not create a second planning artifact.
 The runtime leaves a durable caller-owned source in place and carries its
 reference plus the digest of its exact resolved bytes. Only when no durable
 source exists does it snapshot those bytes under
-`.agents/ao/intents/sha256/<digest>.intent`. This fallback is derived identity,
+`<explicit-evidence-root>/intents/sha256/<digest>.intent`. This fallback is derived identity,
 not a model-authored packet, and makes conversation-only intent readable by a
 fresh validator. The pure fallback helper accepts a file or stdin:
 
 ```bash
-python3 skills/validate/scripts/validate.py snapshot-intent --source PATH  # use - for stdin
+ao provenance snapshot-intent --source PATH --evidence-root EXPLICIT_NON_GIT_ROOT  # use - for stdin
 ```
+
+The caller selects an existing protected non-Git evidence directory; missing
+routing fails without falling back to the consumer checkout.
 
 ## 3. Implement
 

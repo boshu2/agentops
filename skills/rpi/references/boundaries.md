@@ -11,8 +11,10 @@ below are the contract at that step, stated once.
 - **plan**: the shape of the intent inside the caller's own source: one
   active behavior, acceptance, non-goals, write scope, first check.
 - **implement**: subject edits and factual check receipts.
-- **validate**: one semantic result over one exact subject; the sole
-  `verdict.v2` writer when persistence is requested.
+- **validate**: one semantic result over one exact subject; the sole semantic
+  author of `verdict.v2` when persistence is requested. The caller invokes
+  `ao provenance store-verdict` for structural verification and atomic storage
+  of that supplied result; the helper does not issue a semantic judgment.
 - **anti-ceremony**: one admission judgment, `CONTINUE` or `STOP`.
 
 ## What none of them owns

@@ -610,6 +610,38 @@ ao provenance add <from-id> <to-id> [flags]
       --ts string           Override the UTC RFC3339 timestamp (defaults to now)
 ```
 
+#### `ao provenance digest`
+
+Hash a strict JSON object in canonical form.
+
+```
+ao provenance digest <json-file> [flags]
+```
+
+**Flags:**
+
+```
+  -h, --help                    help for digest
+      --helper-version string   Require evidence helper version; incompatibility fails before mutation (default "1")
+      --json                    Emit JSON (the default for evidence operations except digest)
+```
+
+#### `ao provenance evidence-orphans`
+
+Read the established scorecard, fixture-set and capture-contract bindings
+
+```
+ao provenance evidence-orphans [flags]
+```
+
+**Flags:**
+
+```
+      --changed stringArray   Changed bound path; repeat to preserve input order
+  -h, --help                  help for evidence-orphans
+      --root string           Explicit repository root to scan
+```
+
 #### `ao provenance export`
 
 Read docs/provenance/ledger.jsonl, canonically sort its edges by
@@ -641,6 +673,30 @@ ao provenance list [flags]
   -h, --help              help for list
       --json              Emit machine-readable JSON
       --relation string   Filter to edges with this relation
+```
+
+#### `ao provenance manifest`
+
+Compute subject-manifest.v1 from declared filesystem paths.
+
+```
+ao provenance manifest [flags]
+```
+
+**Flags:**
+
+```
+      --base-manifest string           Base manifest for deletions
+      --evidence-root string           Existing non-Git directory required with --out
+      --exclude stringArray            Excluded path or fnmatch pattern (repeatable)
+      --exclude-git-root stringArray   Caller-known existing Git storage root to exclude (repeatable); unresolved roots fail before writes
+      --git-metadata-json string       Descriptive string/null metadata object; excluded from identity
+  -h, --help                           help for manifest
+      --helper-version string          Require evidence helper version; incompatibility fails before mutation (default "1")
+      --include stringArray            Declared relative path (repeatable)
+      --json                           Emit JSON (the default for evidence operations except digest)
+      --out string                     Optional relative output path inside evidence root
+      --root string                    Explicit subject directory
 ```
 
 #### `ao provenance mine-session`
@@ -690,6 +746,53 @@ ao provenance show <node-id> [flags]
       --json   Emit machine-readable JSON
 ```
 
+#### `ao provenance snapshot-intent`
+
+Store exact immutable intent bytes in an explicit non-Git evidence root.
+
+```
+ao provenance snapshot-intent [flags]
+```
+
+**Flags:**
+
+```
+      --evidence-root string           Existing explicit non-Git evidence directory
+      --exclude-git-root stringArray   Caller-known existing Git storage root to exclude (repeatable); unresolved roots fail before writes
+  -h, --help                           help for snapshot-intent
+      --helper-version string          Require evidence helper version; incompatibility fails before mutation (default "1")
+      --json                           Emit JSON (the default for evidence operations except digest)
+      --source string                  Intent file, or - for stdin
+```
+
+#### `ao provenance store-verdict`
+
+Verify and atomically store a supplied verdict.v2 with runtime facts.
+
+```
+ao provenance store-verdict [flags]
+```
+
+**Flags:**
+
+```
+      --author-context-id string       Runtime author identity
+      --base-manifest string           Base manifest for deletions
+      --draft string                   Fresh judge's supplied draft JSON
+      --evidence-root string           Existing explicit non-Git evidence directory
+      --exclude-git-root stringArray   Caller-known existing Git storage root to exclude (repeatable); unresolved roots fail before writes
+      --freshness-attester-id string   Freshness attester identity
+      --freshness-source string        runtime or caller
+  -h, --help                           help for store-verdict
+      --helper-version string          Require evidence helper version; incompatibility fails before mutation (default "1")
+      --intent-source string           Independently supplied immutable intent file
+      --json                           Emit JSON (the default for evidence operations except digest)
+      --root string                    Explicit subject directory
+      --scope-result string            Runtime-derived PASS, FAIL or NOT_PROVEN scope fact
+      --subject-manifest string        Runtime-derived manifest
+      --validator-context-id string    Fresh validator identity
+```
+
 #### `ao provenance trace`
 
 Audit a provenance trace-graph for orphans: engineered artifact nodes
@@ -721,6 +824,63 @@ ao provenance verify [flags]
 ```
   -h, --help   help for verify
       --json   Emit the machine-readable verify result as JSON
+```
+
+#### `ao provenance verify-manifest`
+
+Recompute and compare exact subject identity.
+
+```
+ao provenance verify-manifest [flags]
+```
+
+**Flags:**
+
+```
+      --base-manifest string    Base manifest required for deletion identity
+  -h, --help                    help for verify-manifest
+      --helper-version string   Require evidence helper version; incompatibility fails before mutation (default "1")
+      --json                    Emit JSON (the default for evidence operations except digest)
+      --manifest string         subject-manifest.v1 file
+      --root string             Explicit subject directory
+```
+
+#### `ao provenance verify-subject`
+
+Check a supplied PASS against exact content and independent expected intent.
+
+```
+ao provenance verify-subject [flags]
+```
+
+**Flags:**
+
+```
+      --base-manifest string    Base manifest required for deletion identity
+  -h, --help                    help for verify-subject
+      --helper-version string   Require evidence helper version; incompatibility fails before mutation (default "1")
+      --intent string           Independent expected immutable acceptance file
+      --json                    Emit JSON (the default for evidence operations except digest)
+      --manifest string         subject-manifest.v1 file
+      --root string             Explicit subject directory
+      --verdict string          Content-addressed supplied verdict.v2 PASS
+```
+
+#### `ao provenance verify-verdict`
+
+Structurally verify a content-addressed verdict.v2.
+
+```
+ao provenance verify-verdict [flags]
+```
+
+**Flags:**
+
+```
+  -h, --help                    help for verify-verdict
+      --helper-version string   Require evidence helper version; incompatibility fails before mutation (default "1")
+      --json                    Emit JSON (the default for evidence operations except digest)
+      --verdict string          Content-addressed verdict.v2 file
 ```
 
 ---

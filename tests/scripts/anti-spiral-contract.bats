@@ -62,9 +62,13 @@ stripped_validator_must_fail() {
   mkdir -p "$ws"
   printf 'intent bytes\n' > "$ws/intent.txt"
   printf '{}\n' > "$ws/draft.json"
-  printf '{"schema_version":"subject-manifest.v1","entries":[]}\n' > "$ws/empty-manifest.json"
-  run python3 "$REPO_ROOT/skills/validate/scripts/validate.py" store-verdict \
-    --workspace "$ws" \
+  local candidate="$BATS_TEST_TMPDIR/ao"
+  (cd "$REPO_ROOT/cli" && go build -o "$candidate" ./cmd/ao)
+  local protected="$BATS_TEST_TMPDIR/protected"
+  mkdir -p "$protected"
+  "$candidate" provenance manifest --root "$ws" --include missing > "$ws/empty-manifest.json"
+  run "$candidate" provenance store-verdict \
+    --root "$ws" --evidence-root "$protected" \
     --draft "$ws/draft.json" \
     --intent-source "$ws/intent.txt" \
     --subject-manifest "$ws/empty-manifest.json" \
@@ -92,6 +96,6 @@ stripped_validator_must_fail() {
   stripped_validator_must_fail rpi 'unknown cause stops repair for causal examination'
 }
 
-@test "rpi validator pins prospective review without a self-waiver" {
-  stripped_validator_must_fail rpi 'This prospective rule never waives a leg already'
+@test "rpi validator preserves explicitly requested review until caller changes it" {
+  stripped_validator_must_fail rpi 'An explicit caller-required leg remains required until that caller changes it.'
 }

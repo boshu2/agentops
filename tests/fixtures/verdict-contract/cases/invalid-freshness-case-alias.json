@@ -1,0 +1,39 @@
+{
+  "name": "invalid-freshness-case-alias",
+  "description": "A canonical digest does not authorize Source alongside the exact freshness source field.",
+  "expected": "invalid",
+  "filename_digest": "4e545aea3806c1d38c905146045af38193272c395189d7698a72add7b9ee0b80",
+  "artifact": {
+    "schema_version": "verdict.v2",
+    "acceptance_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "subject_manifest_digest": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "author_context_id": "ctx-author",
+    "validator_context_id": "ctx-validator",
+    "freshness_attestation": {
+      "source": "runtime",
+      "attester_identity": "runtime:test",
+      "Source": "runtime"
+    },
+    "verdict": "PASS",
+    "criteria": [
+      {
+        "id": "c1",
+        "result": "PASS",
+        "evidence_refs": [
+          "gate:go.build"
+        ],
+        "reason": "checked"
+      }
+    ],
+    "findings": [],
+    "evidence_refs": [
+      "gate:go.build"
+    ],
+    "checked": [
+      "cli/**"
+    ],
+    "not_checked": [],
+    "validated_at": "2026-07-18T12:00:00Z",
+    "artifact_digest": "4e545aea3806c1d38c905146045af38193272c395189d7698a72add7b9ee0b80"
+  }
+}

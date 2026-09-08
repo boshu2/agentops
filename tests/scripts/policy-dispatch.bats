@@ -254,14 +254,14 @@ telemetry_lines() {
   [ -z "$output" ]
 }
 
-@test "SILENT: the sanctioned writer (validate.py store-verdict) does not fire" {
-  run run_dispatch Bash command "python3 skills/validate/scripts/validate.py store-verdict --draft draft.json --intent-source intent.md --subject-manifest manifest.json --author-context-id a --validator-context-id b --freshness-source runtime --freshness-attester-id r --scope-result PASS"
+@test "SILENT: the sanctioned writer (ao provenance store-verdict) does not fire" {
+  run run_dispatch Bash command "ao provenance store-verdict --root . --evidence-root /protected/evidence --draft draft.json --intent-source intent.md --subject-manifest manifest.json --author-context-id a --validator-context-id b --freshness-source runtime --freshness-attester-id r --scope-result PASS"
   [ "$status" -eq 0 ]
   [ -z "$output" ]
 }
 
-@test "SILENT: the sanctioned writer naming --verdict-dir explicitly does not fire" {
-  run run_dispatch Bash command "python3 skills/validate/scripts/validate.py store-verdict --draft draft.json --verdict-dir .agents/ao/verdicts/sha256 --scope-result PASS"
+@test "SILENT: the sanctioned writer naming --evidence-root explicitly does not fire" {
+  run run_dispatch Bash command "ao provenance store-verdict --draft draft.json --evidence-root .agents/ao/verdicts/sha256 --scope-result PASS"
   [ "$status" -eq 0 ]
   [ -z "$output" ]
 }

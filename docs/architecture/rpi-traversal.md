@@ -19,8 +19,8 @@ intent
           -> one bounded implementation experiment
           -> runtime-derived subject-manifest.v1 + check receipts, including
              the orphaned-evidence receipt over the changed paths
-          -> one fresh independent validation, plus the cross-family judge on
-             a risky surface; a split is never PASS, and a split that survives
+          -> one fresh same-family validation, plus a cross-family judge when
+             caller-selected; a split is never PASS, and a split that survives
              repair is the orchestrator's decision, recorded in the report
           -> PASS | FAIL | NOT_PROVEN
           -> FAIL / NOT_PROVEN with findings: bounded repair under the
@@ -173,8 +173,15 @@ declared roots and exclusions, an optional base-manifest digest, and one
 canonical manifest digest. Git commit/tree information may be attached as
 read-only metadata.
 
-The pure helper lives at `skills/validate/scripts/validate.py`. It makes no Git,
-tracker, queue, network, release, or delivery call.
+The deterministic helpers are `ao provenance manifest`, `verify-manifest`,
+`snapshot-intent`, `digest`, `store-verdict`, `verify-verdict`, and
+`verify-subject`. They make no Git, tracker, queue, network, release, or delivery
+call. Helper version 1 keeps the canonical schemas and uses explicit existing
+non-Git evidence roots before any storage. The caller resolves CDLC routing;
+missing routing has no workspace fallback. The independent Python reference
+lives under `skills/validate/tests` for developer conformance only.
+`verify-subject` requires an independently supplied immutable intent for each
+required review leg; structural success is not a semantic judgment.
 
 ## Fresh Validate
 
@@ -209,8 +216,12 @@ pinned, or proven is an acceptance criterion like any other: it needs a check
 the validator can run, or it is `not_checked`. The `docs.claims-tracked` gate
 covers the tracked-file half of that claim and nothing more.
 
-For required diversity (risky surface or explicit caller acceptance), use the
+Default to one fresh author-distinct judge from the author's model family,
+for both Codex and Claude. Risk sizes evidence depth without adding model
+families. For caller-selected diversity (`--cross-model [model]` in Validate or
+RPI), use the
 [bounded model-dispatch contract](../../skills/agent-native/references/model-dispatch.md).
+Review time comes from caller/native bounds; no fixed ten-minute cap applies.
 The fresh and cross-family legs receive independently supplied initial inputs
 for the exact subject; required unavailable diversity is `NOT_PROVEN` with
 `diversity_unsatisfied`, never a silent single-family PASS. Each reports its

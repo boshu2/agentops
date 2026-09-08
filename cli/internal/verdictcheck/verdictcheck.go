@@ -3,8 +3,8 @@
 // It is a READER for evidence inspection (`ao status`): it checks JSON shape,
 // canonical-form digest binding, and the PASS scope rules declared by
 // schemas/verdict.v2.schema.json. It never writes verdicts — the Validate
-// skill (skills/validate/scripts/validate.py) is the writer and the semantic
-// authority. Structural validity here is not a semantic verdict, and a
+// skill is the semantic author; internal/evidence supplies mechanical storage.
+// Structural verification supplies no semantic authority. Structural validity here is not a semantic verdict, and a
 // well-formed evidence_refs string is a declared reference only: this package
 // does not resolve or digest-bind the referenced evidence.
 //
@@ -89,38 +89,12 @@ func ValidDigest(value string) bool {
 // verdict.v2 field set, structural shape rules, and recomputed canonical-form
 // digest binding.
 func VerifyArtifact(payload []byte, expectedDigest string) error {
-	var raw map[string]any
-	decoder := json.NewDecoder(bytes.NewReader(payload))
-	decoder.UseNumber()
-	if err := decoder.Decode(&raw); err != nil {
+	raw, err := DecodeObject(payload)
+	if err != nil {
 		return fmt.Errorf("invalid verdict JSON: %w", err)
 	}
-	if err := requireJSONEOF(decoder); err != nil {
+	if err := strictVerdictFields(raw); err != nil {
 		return err
-	}
-	// Reject duplicate JSON keys anywhere in the tree. Go's map/struct decode is
-	// last-wins, so a duplicated key (a second top-level "verdict":"PASS", or a
-	// nested second "source") would silently hide the real value and bind a
-	// digest the stored bytes never canonicalize to. Detect it at the token
-	// level and fail closed. (Logic mirrors cli/internal/gates/checks
-	// duplicateKey; copied rather than imported — those helpers are unexported,
-	// and importing the gate-framework package into this leaf reader would
-	// invert the dependency direction and pull a heavy graph into it.)
-	if dupKey, err := duplicateKey(payload); err != nil {
-		return fmt.Errorf("invalid verdict JSON: %w", err)
-	} else if dupKey != "" {
-		return fmt.Errorf("verdict.v2 contains duplicate key %q", dupKey)
-	}
-	required := []string{
-		"schema_version", "acceptance_digest", "subject_manifest_digest",
-		"author_context_id", "validator_context_id", "freshness_attestation",
-		"verdict", "criteria", "findings", "evidence_refs", "checked",
-		"not_checked", "validated_at", "artifact_digest",
-	}
-	for _, key := range required {
-		if _, ok := raw[key]; !ok {
-			return fmt.Errorf("verdict.v2 missing required field %q", key)
-		}
 	}
 
 	var verdict Verdict
@@ -173,6 +147,11 @@ func requireJSONEOF(decoder *json.Decoder) error {
 // canonical bytes and thus the digest, so ao status would false-reject legit
 // Python-written verdicts. unescapeLineSeparators undoes exactly that escape.
 func CanonicalJSON(value any) ([]byte, error) {
+	var err error
+	value, err = canonicalNumbers(value)
+	if err != nil {
+		return nil, err
+	}
 	var buffer bytes.Buffer
 	encoder := json.NewEncoder(&buffer)
 	encoder.SetEscapeHTML(false)
@@ -249,6 +228,7 @@ func unescapeLineSeparators(in []byte) []byte {
 // this leaf reader would invert the dependency direction.
 func duplicateKey(raw []byte) (string, error) {
 	dec := json.NewDecoder(bytes.NewReader(raw))
+	dec.UseNumber()
 	return scanDuplicateKey(dec)
 }
 
@@ -276,7 +256,7 @@ func scanDuplicateKey(dec *json.Decoder) (string, error) {
 				return "", fmt.Errorf("malformed object key")
 			}
 			if seen[key] {
-				return key, nil
+				return key, fmt.Errorf("duplicate JSON key %q", key)
 			}
 			seen[key] = true
 			if dup, err := scanDuplicateKey(dec); err != nil || dup != "" {

@@ -39,6 +39,3 @@ skills/skill-builder/scripts/scan_descriptions.py
 skills/skill-builder/scripts/score_agentops_skill.py
 skills/swarm/scripts/dispatch_once.py
 skills/toil-mining/scripts/recent_human.py
-skills/validate/scripts/check_contract_corpus.py
-skills/validate/scripts/test_validate.py
-skills/validate/scripts/validate.py

@@ -1,7 +1,8 @@
 // Package provenance owns Cobra presentation for the `ao provenance` command
 // family. The module builds its command tree with host-provided seams and
 // delegates every filesystem and clock effect to the host (ledger-path
-// resolution, the clock) or to internal/provenanceapp (session mining), so this
+// resolution, the clock), internal/provenanceapp (session mining), or
+// internal/evidence (explicit evidence mechanics), so this
 // package performs no direct effect.
 package provenance
 
@@ -68,19 +69,19 @@ func NewModule(host clicontract.HostOptions) *Module {
 }
 
 // Contract declares provenance's real behavior for the family architecture
-// gate. The provenance family did not attach a capabilities contract before the
-// carve-out, so the composition does not attach this one either; it exists to
-// document the family's effect and profile shape.
+// gate and live capabilities. Relationship operations remain optional; evidence
+// leaves declare their own exact filesystem and output contracts.
 func (*Module) Contract() clicontract.CommandContract {
 	return clicontract.CommandContract{
 		ID:       "ao.provenance",
 		Profiles: clicontract.ProfileDefault | clicontract.ProfileLegacy | clicontract.ProfileCombined,
 		Args:     clicontract.ArgsPolicy{Name: "arbitrary", Validate: cobra.ArbitraryArgs},
 		Output:   clicontract.OutputText,
-		Effects:  clicontract.EffectFilesystem | clicontract.EffectClock,
+		Effects:  clicontract.EffectFilesystem | clicontract.EffectEnvironment | clicontract.EffectClock,
 		ExitClasses: map[int]clicontract.ExitClass{
 			0: clicontract.ExitSuccess,
 			1: clicontract.ExitFailure,
+			2: clicontract.ExitFailure,
 		},
 	}
 }
@@ -119,14 +120,17 @@ func (m *Module) emitStructured(out io.Writer, localJSON bool, value any) (handl
 func (m *Module) Command() *cobra.Command {
 	root := &cobra.Command{
 		Use:     "provenance",
-		Short:   "Write and read optional evidence relationships",
+		Short:   "Inspect relationships and operate on explicit exact-subject evidence",
 		GroupID: "comms",
 		Long: `Append and inspect generic, evidence-backed relationships between
 artifacts, decisions, and observations. Records use a hash-chained JSONL file
 at docs/provenance/ledger.jsonl when that repository path exists.
 
-Provenance is optional audit evidence. Its availability or contents never
-change RPI sequencing, candidate identity, or a Validate verdict.`,
+Provenance relationships are optional audit evidence. Their availability never
+changes RPI sequencing or a Validate verdict. The caller-invoked evidence leaves
+compute exact subject identity, verify supplied judgments and atomically store
+evidence in an explicit non-Git root. They never sequence RPI or issue a semantic
+judgment. See each leaf for evidence helper version and mutation conditions.`,
 	}
 	root.AddCommand(m.addCommand())
 	root.AddCommand(m.listCommand())
@@ -136,6 +140,11 @@ change RPI sequencing, candidate identity, or a Validate verdict.`,
 	root.AddCommand(m.traceCommand())
 	root.AddCommand(m.verifyCommand())
 	root.AddCommand(m.mineSessionCommand())
+	root.AddCommand(m.evidenceCommands()...)
+	root.AddCommand(m.evidenceOrphansCommand())
+	if err := clicontract.Attach(root, m.Contract()); err != nil {
+		panic(err)
+	}
 	return root
 }
 

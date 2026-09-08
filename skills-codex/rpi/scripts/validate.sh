@@ -18,7 +18,7 @@ grep -Fq 'No finding id closed in an earlier round reopens.' "$skill_dir/SKILL.m
 grep -Fq 'unknown cause stops repair for causal examination' "$skill_dir/SKILL.md"
 grep -Fq 'repair round N: k open findings' "$skill_dir/SKILL.md"
 grep -Fq '## Waves' "$skill_dir/SKILL.md"
-grep -Fq 'This prospective rule never waives a leg already' "$skill_dir/SKILL.md"
+grep -Fq 'An explicit caller-required leg remains required until that caller changes it.' "$skill_dir/SKILL.md"
 grep -Fq '## Cross-family validation' "$skill_dir/SKILL.md"
 grep -Fq 'creates no AgentOps packet' "$skill_dir/SKILL.md"
 grep -Fq 'Plan is closed for that intent' "$skill_dir/SKILL.md"
