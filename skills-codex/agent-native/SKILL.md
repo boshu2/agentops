@@ -7,9 +7,9 @@ description: 'Operate explicit orchestrator, implementer, validator, and scribe 
 Operate caller-selected agent sessions as explicit roles without turning the
 runtime into AgentOps lifecycle authority.
 
-For multi-model judgment (mixed council, dueling perspectives, cross-model
-validate, which is default on risky surfaces per ADR-0017 and caller-elected
-otherwise), follow
+For judgment, default to a fresh context in the author's model family.
+Cross-model Validate, mixed Council and dueling model perspectives are explicit
+caller selections. Follow
 [references/model-dispatch.md](references/model-dispatch.md): the working
 session is the controller; check the explicitly selected adapter at runtime;
 no factory is required and Agent Mail is never the judgment path. The recipe

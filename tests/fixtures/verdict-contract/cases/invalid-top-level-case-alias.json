@@ -1,0 +1,39 @@
+{
+  "name": "invalid-top-level-case-alias",
+  "description": "A canonical digest does not authorize an extra Verdict alongside the exact verdict field.",
+  "expected": "invalid",
+  "filename_digest": "b55054f8e64274b53ba72b04613fe587cbe1d1fa1d894495e1cdff2530a0d25e",
+  "artifact": {
+    "schema_version": "verdict.v2",
+    "acceptance_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "subject_manifest_digest": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "author_context_id": "ctx-author",
+    "validator_context_id": "ctx-validator",
+    "freshness_attestation": {
+      "source": "runtime",
+      "attester_identity": "runtime:test"
+    },
+    "verdict": "PASS",
+    "criteria": [
+      {
+        "id": "c1",
+        "result": "PASS",
+        "evidence_refs": [
+          "gate:go.build"
+        ],
+        "reason": "checked"
+      }
+    ],
+    "findings": [],
+    "evidence_refs": [
+      "gate:go.build"
+    ],
+    "checked": [
+      "cli/**"
+    ],
+    "not_checked": [],
+    "validated_at": "2026-07-18T12:00:00Z",
+    "Verdict": "PASS",
+    "artifact_digest": "b55054f8e64274b53ba72b04613fe587cbe1d1fa1d894495e1cdff2530a0d25e"
+  }
+}

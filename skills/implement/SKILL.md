@@ -75,10 +75,10 @@ return the manifest digest and check receipts, stop.
    acceptance test.
 6. Have the runtime derive actual changed paths and `subject-manifest.v1` from
    the before/after subject.
-7. Run `bash scripts/evidence-orphans.sh <changed paths>` over the changed
-   paths the runtime derived, and put its output in the check receipts the
-   validator reads, so orphaned evidence arrives as a receipt rather than as a
-   surprise at verify time. Run it again after every repair round, over the
+7. Run `ao provenance evidence-orphans --root <repo-root>` with one
+   `--changed <path>` per changed path the runtime derived, and put its JSON
+   output in the check receipts the validator reads, so orphaned evidence
+   arrives as a receipt rather than as a surprise at verify time. Run it again after every repair round, over the
    paths as they stand, because a repair can orphan evidence the first pass did
    not. Read the output as written and never hand-list the orphans instead.
 8. Return the manifest digest, author context ID, and exact check receipts in the

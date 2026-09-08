@@ -1,0 +1,47 @@
+{
+  "name": "invalid-null-finding-class",
+  "description": "Reject JSON null where the unchanged verdict.v2 schema requires an array or present string.",
+  "expected": "invalid",
+  "filename_digest": "5d2aca7e0e6435018e3d5fc2b02e956434a12ba8ce3270c930b123077540ba60",
+  "artifact": {
+    "schema_version": "verdict.v2",
+    "acceptance_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "subject_manifest_digest": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "author_context_id": "ctx-author",
+    "validator_context_id": "ctx-validator",
+    "freshness_attestation": {
+      "source": "runtime",
+      "attester_identity": "runtime:test"
+    },
+    "verdict": "PASS",
+    "criteria": [
+      {
+        "id": "c1",
+        "result": "PASS",
+        "evidence_refs": [
+          "gate:go.build"
+        ],
+        "reason": "checked"
+      }
+    ],
+    "findings": [
+      {
+        "id": "f",
+        "class": null,
+        "summary": "s",
+        "evidence_refs": [
+          "e"
+        ]
+      }
+    ],
+    "evidence_refs": [
+      "gate:go.build"
+    ],
+    "checked": [
+      "cli/**"
+    ],
+    "not_checked": [],
+    "validated_at": "2026-07-18T12:00:00Z",
+    "artifact_digest": "5d2aca7e0e6435018e3d5fc2b02e956434a12ba8ce3270c930b123077540ba60"
+  }
+}

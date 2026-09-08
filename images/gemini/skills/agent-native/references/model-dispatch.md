@@ -1,16 +1,25 @@
 # Model Dispatch (controller-session)
 
-The caller selects multi-model judgment from the current session. Native Codex
-plus the local shell is the default execution shape. Factories are optional
-adapters; no mailbox, Agent Mail judgment path, AO queue or scheduler is added.
-The working session passes bounded requests and returns runtime facts.
+Judgment defaults to a fresh, author-distinct context in the author's model
+family: Codex/OpenAI reviews Codex/OpenAI work, and Claude/Anthropic reviews
+Claude/Anthropic work. Use that runtime's configured capable model unless the
+caller pins one. Other execution roles retain their caller-selected runtime.
+Factories are optional adapters; the current session passes requests and
+returns runtime facts without adding a mailbox, AO queue or scheduler.
 
-Risky-surface Validate requires a second fresh, cross-family exact-subject leg
-under ADR-0017; elsewhere diversity is caller-elected. A required unavailable
-leg remains `diversity_unsatisfied`: a single-family PASS is `NOT_PROVEN`.
-Optional unavailable diversity may accompany the same-model result with that
-disclosure. A single-family FAIL stands. Neither same-family agreement nor
-majority vote establishes truth. Authors cannot issue their own binding PASS.
+`--cross-model [model]` on Validate or RPI, or an explicit "cross-model review"
+request, adds a fresh judge from a different family. The optional model pins
+that leg; absent a pin, select an authorized capable other-family model.
+Council and other judgment strategies use fresh same-family contexts unless
+the caller selects mixed models. These are skill prompt selections, not new
+native CLI flags. Selection never grants source-disclosure or provider access.
+
+Risk changes evidence depth; it does not automatically select another family.
+An explicitly required unavailable leg remains `diversity_unsatisfied`: a
+single-family PASS is `NOT_PROVEN` for the combined request. Optional unavailable
+diversity may accompany the same-family result with that disclosure. A delivered
+FAIL stands. Neither agreement nor majority vote establishes truth. Authors
+cannot issue their own binding PASS.
 
 ## Request and independent inputs
 
@@ -18,7 +27,7 @@ One request selects one worker and one result destination. Before dispatch,
 resolve role, exact subject/acceptance references, authorized input bytes,
 workspace, read/write scope, output/evidence destination, requested model,
 requirement for a fresh context distinct from the author and every peer, finite
-input/output limits and timeout from the caller and native runtime. Actual
+input/output limits and time bounds from the caller and native runtime. Actual
 context identity remains unknown until the native runtime reports it; verify
 freshness and distinctness against that observed identity before relying on
 judgment. These are invocation facts, not a new AO packet schema,
@@ -78,14 +87,31 @@ merely because it is installed. No substitute can satisfy a required family.
 | Interactive runtime / NTM | Only when the caller selects interactive hosting; verify native readiness, observation and stop support. NTM itself is never required. |
 | Test runner | Synthetic conformance only; never evidence of a live model or semantic judgment. |
 
-Prefer native Codex for Codex-family work. A Claude-family checkpoint may use
-the explicitly selected bounded adapter below when the actual host permits it.
+Prefer the matching native runtime for same-family judgment. A Claude-family
+checkpoint may use the bounded adapter below when the actual host permits it;
+Codex-family judgment may use a fresh native Codex context or `codex exec`.
 A selection is not permission to override a host prohibition, missing controls,
 quota ceiling or provider guard in a specialist skill.
 
-## Authorized bounded cross-family invocation
+## Review duration
 
-The first selected Claude-family profile is:
+Do not impose a fixed ten-minute timeout. Use an explicit caller-selected
+review timeout or derive the invocation timeout from the remaining caller/native
+deadline; when both exist, the earlier bound wins. A headless call still needs
+finite time and input/output bounds under host policy. If neither time bound is
+available, report the missing invocation bound before launching; do not invent
+a universal review limit. Native cancellation, output caps and cleanup remain.
+
+For the repository's shared adapter, supply `CODEX_EXEC_TIMEOUT` in seconds or
+`CODEX_EXEC_DEADLINE_EPOCH` as an absolute timestamp. With no explicit timeout,
+the adapter uses the remaining deadline without a ten-minute clamp. Reuse the
+same goal deadline across invocations; retries, context resets and renewed
+connections do not renew the caller's allowance. Record a timeout as an
+incomplete review, preserve its bounded output, and return control to the caller.
+
+## Authorized bounded Claude invocation
+
+For a caller-selected Fable profile, the native command is:
 
 ```sh
 claude --print --model claude-fable-5-1 --effort xhigh
@@ -138,5 +164,5 @@ third judge, retry, or resolve truth by a vote on this recipe's initiative.
   perspectives, preserved dissent and no majority-derived PASS.
 - Idea Genie duel: optional selected model pins and sealed perspectives within
   its owning challenge contract; specialist provider guards remain intact.
-- Validate: fresh and required cross-family exact-subject judgments; this
+- Validate: fresh same-family and explicitly selected cross-family judgments; this
   reference is the invocation owner and Validate remains the verdict writer.

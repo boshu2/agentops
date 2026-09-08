@@ -22,7 +22,13 @@ Options:
   --expected <a,b,c>  Comma-separated skill names to require
   --workdir <dir>     Working directory for the ephemeral Codex session
   --profile <name>    Codex profile to use (default: safe)
+  --timeout <seconds> Positive finite execution budget; no default
+  --deadline-epoch <seconds> Absolute Unix deadline for the caller's whole run
   --help              Show this help
+
+Declare at least one execution bound with these options or the corresponding
+CODEX_EXEC_TIMEOUT / CODEX_EXEC_DEADLINE_EPOCH environment variables. The earlier
+bound wins when both are set. Reuse the same absolute deadline across retries.
 EOF
 }
 
@@ -38,6 +44,16 @@ while [[ $# -gt 0 ]]; do
       ;;
     --profile)
       PROFILE="${2:-}"
+      shift 2
+      ;;
+    --timeout)
+      # shellcheck disable=SC2034 # consumed by the sourced codex_exec_guarded.
+      CODEX_EXEC_TIMEOUT="${2-}"
+      shift 2
+      ;;
+    --deadline-epoch)
+      # shellcheck disable=SC2034 # consumed by the sourced codex_exec_guarded.
+      CODEX_EXEC_DEADLINE_EPOCH="${2-}"
       shift 2
       ;;
     --help|-h)

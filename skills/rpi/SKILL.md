@@ -48,19 +48,19 @@ and dispatches Plan and Implement at most once; Validate repeats only inside
 the repair phase, under the convergence law and the caller's `repair_rounds`.
 Read [references/boundaries.md](references/boundaries.md), the ownership and
 delegation boundary shared by the core skills, before dispatch.
-[`scripts/run_once.py`](scripts/run_once.py) is the grandfathered pure reference:
-it consumes supplied rounds and decoded receipt facts without Git, `ao`, a
-tracker, I/O, helper dispatch, or a budget account. It checks the repair bound,
-recurrence, discovery classification evidence, and named gap closure; fresh
-judgment still establishes acceptance relevance and the truth of those facts.
+[`scripts/run_once.py`](scripts/run_once.py) is a grandfathered developer-only
+pure reference exercised by repository tests, without Git, `ao`, tracker I/O,
+helper dispatch or a budget account. It checks repair bounds, recurrence,
+discovery classification evidence and named gap closure; fresh judgment establishes
+relevance and truth. Installed runtimes follow this skill without invoking Python.
 
 ## Prompt
 
 ```text
 Run rpi on bead ag-1234 ("ao gate check lists the probe-coverage row").
 Intent: the bead. Scope: cli/internal/gates/** plus docs/CI-CD.md. First check:
-cd cli && go test ./internal/gates/... Fresh validator in a distinct context,
-plus a cross-family leg (the scope is a risky surface). repair_rounds=2.
+cd cli && go test ./internal/gates/... Fresh same-family validator in a distinct
+context. repair_rounds=2. Add --cross-model [model] only when requested.
 ```
 
 ## It's working if
@@ -109,11 +109,11 @@ comment alone is not that.
    and the report says so. Every terminal report says whether that read was not
    required, clean, blocking, waived, or never finished, so a waived or dead
    read is never taken for a clean one.
-4. Invoke Implement once: one bounded experiment; the runtime derives subject
-   identity and check receipts. After Implement, and again after each repair
-   round, run `bash scripts/evidence-orphans.sh <changed paths>` and put its
-   output in the check receipts, so the validator and the caller both see what
-   evidence this change orphaned. With no subject built, report `NOT_BUILT`.
+4. Invoke Implement once; the runtime derives subject identity and check receipts.
+   After Implement and each repair round, run `ao provenance evidence-orphans --root <repo-root>` with one `--changed <path>` per runtime-derived changed path.
+   Keep its JSON receipt so the validator and caller see what evidence was orphaned.
+   Exit 0 means the scan completed, even with orphans; exit 2 means incomplete and cannot prove an empty result.
+   Without a subject, report `NOT_BUILT`.
 5. Invoke Validate once in a context distinct from the author's, passing the
    intent reference and digest, exact subject manifest, receipts, validator
    identity, and freshness attestation.
@@ -174,20 +174,20 @@ does not escalate, and does not auto-replan.
 
 ## Cross-family validation
 
-[`validate`](../validate/SKILL.md) owns risk classification by effect on
-acceptance and enforcement. Fresh author-distinct judgment always remains;
-changes to acceptance, stopping, guards, safety, or enforcement require the
-stronger cross-family leg even when expressed in documentation. Narrow low-risk
-wording edits may use one fresh judge with exact applicable receipts. Unknown
-risk takes the stronger path. This prospective rule never waives a leg already
-required for the current change or by caller acceptance. No authorized live
-adapter for a required leg means `diversity_unsatisfied` / `NOT_PROVEN`.
+[`validate`](../validate/SKILL.md) owns model selection: one fresh author-distinct
+same-family reviewer by default, in both Codex and Claude. Risk sizes evidence
+inspection, not the number of model families. Forward the caller's
+`--cross-model [model]` or explicit cross-model request to add a different-family
+reviewer; record the selected model and preserve the choice through repair.
+The pure reference receives this explicit choice as `cross_model=True`.
+An explicit caller-required leg remains required until that caller changes it.
+No authorized adapter for it means `diversity_unsatisfied` / `NOT_PROVEN`.
 
-Two judges disagreeing is the orchestrator's decision, and it is made in the
-open. Both reads go in the report, each with its own verdict, alongside what
-was decided and why. A risky surface still converges only when both judges
-pass, so a split is never a PASS and no finding leaves the open set because one
-judge was preferred.
+Both selected reads go in the report with evidence and unresolved dissent.
+Required cross-model review converges only when both judges pass the exact
+subject and all acceptance. No finding disappears because a judge was preferred.
+Review duration comes from caller/native time bounds under model-dispatch;
+there is no fixed ten-minute cap and no allowance reset on a fresh invocation.
 
 ## Judgment dispatch
 

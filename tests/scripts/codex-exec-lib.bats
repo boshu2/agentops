@@ -12,6 +12,7 @@ setup() {
   mkdir -p "$TMP/bin"
   export PATH="$TMP/bin:$PATH"
   export TMPDIR="$TMP"
+  unset CODEX_EXEC_TIMEOUT CODEX_EXEC_DEADLINE_EPOCH
   # Require a timeout binary for the STALL/timeout cases. Missing enforcement
   # now fails closed; hang fixtures need the supported capability installed.
   # NOTE: keep this a single `if` so setup's terminal exit status is always 0.
@@ -444,19 +445,110 @@ FAKE
   ! grep -qx -- '--dangerously-bypass-approvals-and-sandbox' "$TMP/agy-argv"
 }
 
-@test "bounds: omitted timeout uses the finite 600 second default" {
+@test "bounds: explicit four-argument control calls preserve their timeout" {
+  run bash -c '. "'"$LIB"'"; _codex_exec_control limits 1800 1024 "" ""'
+  [ "$status" -eq 0 ]
+  [[ "$output" == "1800 1024 "* ]]
+}
+
+@test "bounds: missing timeout and deadline prevent any launch" {
   stub_argv_recorder
   stub_timeout
-  run bash -c '. "'"$LIB"'"; CODEX_EXEC_PROMPT_ARG=x codex_exec_guarded'
+  run bash -c '. "'"$LIB"'"; unset CODEX_EXEC_TIMEOUT CODEX_EXEC_DEADLINE_EPOCH; CODEX_EXEC_PROMPT_ARG=x codex_exec_guarded'
+  [ "$status" -eq 2 ]
+  [[ "$output" == *"MISSING-LIMIT"* ]]
+  [ ! -e "$TMP/codex-argv" ]
+  [ ! -e "$TMP/timeout-argv" ]
+}
+
+@test "bounds: caller timeout above ten minutes reaches the wrapper unchanged" {
+  stub_argv_recorder
+  stub_timeout
+  run bash -c '. "'"$LIB"'"; unset CODEX_EXEC_DEADLINE_EPOCH; CODEX_EXEC_TIMEOUT=1800 CODEX_EXEC_PROMPT_ARG=x codex_exec_guarded'
   [ "$status" -eq 0 ]
-  [ "$(sed -n 1p "$TMP/timeout-argv")" = "600" ]
+  [ "$(sed -n 1p "$TMP/timeout-argv")" = "1800" ]
+}
+
+@test "bounds: deadline alone supplies its remaining time beyond ten minutes" {
+  stub_argv_recorder
+  stub_timeout
+  run bash -c '
+    . "'"$LIB"'"
+    unset CODEX_EXEC_TIMEOUT
+    export CODEX_EXEC_DEADLINE_EPOCH="$(/usr/bin/perl -MTime::HiRes=time -e "print time + 1800")"
+    CODEX_EXEC_PROMPT_ARG=x codex_exec_guarded
+  '
+  [ "$status" -eq 0 ]
+  /usr/bin/perl -e 'exit !($ARGV[0] > 1790 && $ARGV[0] <= 1800)' "$(sed -n 1p "$TMP/timeout-argv")"
+}
+
+@test "bounds: the earlier of caller timeout and deadline governs the invocation" {
+  stub_argv_recorder
+  stub_timeout
+  run bash -c '
+    . "'"$LIB"'"
+    export CODEX_EXEC_DEADLINE_EPOCH="$(/usr/bin/perl -MTime::HiRes=time -e "print time + 1800")"
+    CODEX_EXEC_TIMEOUT=900 CODEX_EXEC_PROMPT_ARG=x codex_exec_guarded
+  '
+  [ "$status" -eq 0 ]
+  [ "$(sed -n 1p "$TMP/timeout-argv")" = "900" ]
+  run bash -c '
+    . "'"$LIB"'"
+    export CODEX_EXEC_DEADLINE_EPOCH="$(/usr/bin/perl -MTime::HiRes=time -e "print time + 900")"
+    CODEX_EXEC_TIMEOUT=1800 CODEX_EXEC_PROMPT_ARG=x codex_exec_guarded
+  '
+  [ "$status" -eq 0 ]
+  /usr/bin/perl -e 'exit !($ARGV[0] > 890 && $ARGV[0] <= 900)' "$(sed -n 1p "$TMP/timeout-argv")"
+}
+
+@test "timeout argv helper: missing or invalid bounds fail before capability probe" {
+  stub_timeout
+  run bash -c '. "'"$LIB"'"; unset CODEX_EXEC_TIMEOUT CODEX_EXEC_DEADLINE_EPOCH; codex_exec_timeout_cmd'
+  [ "$status" -eq 3 ]
+  [[ "$output" == *"MISSING-LIMIT"* ]]
+  [ ! -e "$TMP/timeout-argv" ]
+  for invalid in '' 0 -1 NaN inf bad; do
+    run env CODEX_EXEC_TIMEOUT=900 bash -c '. "'"$LIB"'"; codex_exec_timeout_cmd "$1"' _ "$invalid"
+    [ "$status" -eq 3 ]
+    [[ "$output" == *"INVALID-LIMIT"* ]]
+    [ ! -e "$TMP/timeout-argv" ]
+  done
+}
+
+@test "timeout argv helper: positional and inherited budgets have no ten-minute cap" {
+  stub_timeout
+  for mode in positional inherited deadline; do
+    run bash -c '
+      . "'"$LIB"'"
+      unset CODEX_EXEC_TIMEOUT CODEX_EXEC_DEADLINE_EPOCH
+      case "$1" in
+        positional) CODEX_EXEC_TIMEOUT=2000 codex_exec_timeout_cmd 1800 ;;
+        inherited) CODEX_EXEC_TIMEOUT=1800 codex_exec_timeout_cmd ;;
+        deadline) CODEX_EXEC_DEADLINE_EPOCH="$(/usr/bin/perl -MTime::HiRes=time -e "print time + 1800")" codex_exec_timeout_cmd ;;
+      esac
+    ' _ "$mode"
+    [ "$status" -eq 0 ]
+    [[ "$output" == "$TMP/bin/timeout --foreground "* ]]
+    /usr/bin/perl -e 'exit !($ARGV[0] > 1790 && $ARGV[0] <= 1800)' "${output##* }"
+  done
+}
+
+@test "timeout argv helper: preparation consumes the earlier deadline" {
+  stub_timeout
+  run bash -c '
+    . "'"$LIB"'"
+    codex_exec_timeout_bin() { sleep .2; printf "%s" "'"$TMP"'/bin/timeout"; }
+    CODEX_EXEC_TIMEOUT=1800 CODEX_EXEC_DEADLINE_EPOCH="$(/usr/bin/perl -MTime::HiRes=time -e "print time + 900")" codex_exec_timeout_cmd
+  '
+  [ "$status" -eq 0 ]
+  /usr/bin/perl -e 'exit !($ARGV[0] > 890 && $ARGV[0] < 899.9)' "${output##* }"
 }
 
 @test "bounds: invalid timeout and capture limits prevent reviewer launch" {
   stub_argv_recorder
   for setting in CODEX_EXEC_TIMEOUT CODEX_EXEC_MAX_OUTPUT_BYTES; do
     for invalid in '' 0 -1 NaN inf 1e999 bad; do
-      run env "$setting=$invalid" bash -c '. "'"$LIB"'"; CODEX_EXEC_PROMPT_ARG=x codex_exec_guarded'
+      run env CODEX_EXEC_TIMEOUT=10 CODEX_EXEC_DEADLINE_EPOCH=4102444800 "$setting=$invalid" bash -c '. "'"$LIB"'"; CODEX_EXEC_PROMPT_ARG=x codex_exec_guarded'
       [ "$status" -eq 2 ]
       [[ "$output" == *"INVALID-LIMIT"* ]]
       [ ! -e "$TMP/codex-argv" ]
@@ -478,7 +570,7 @@ FAKE
 
 @test "bounds: missing timeout enforcement fails closed" {
   stub_argv_recorder
-  run bash -c '. "'"$LIB"'"; CODEX_EXEC_TIMEOUT_BIN=/nonexistent/timeout CODEX_EXEC_PROMPT_ARG=x codex_exec_guarded'
+  run bash -c '. "'"$LIB"'"; CODEX_EXEC_TIMEOUT=10 CODEX_EXEC_TIMEOUT_BIN=/nonexistent/timeout CODEX_EXEC_PROMPT_ARG=x codex_exec_guarded'
   [ "$status" -eq 2 ]
   [[ "$output" == *"MISSING-TIMEOUT"* ]]
   [ ! -e "$TMP/codex-argv" ]
@@ -567,7 +659,8 @@ FAKE
   run timeout --kill-after=1 5 bash -c '
     . "'"$LIB"'"
     export CODEX_EXEC_DEADLINE_EPOCH="$(/usr/bin/perl -MTime::HiRes=time -e "print time + 1.5")"
-    export CODEX_EXEC_TIMEOUT=10 CODEX_EXEC_PROMPT_ARG=x
+    unset CODEX_EXEC_TIMEOUT
+    export CODEX_EXEC_PROMPT_ARG=x
     codex_exec_guarded || exit 91
     codex_exec_guarded; second=$?
     codex_exec_guarded; third=$?
@@ -633,7 +726,7 @@ FAKE
   stub_argv_recorder
   mkdir "$TMP/no-timeout"
   ln -s "$(command -v tr)" "$TMP/no-timeout/tr"
-  run env PATH="$TMP/no-timeout" CODEX_EXEC_BIN="$TMP/bin/codex" /bin/bash -c '. "'"$LIB"'"; CODEX_EXEC_PROMPT_ARG=x codex_exec_guarded'
+  run env PATH="$TMP/no-timeout" CODEX_EXEC_BIN="$TMP/bin/codex" CODEX_EXEC_TIMEOUT=10 /bin/bash -c '. "'"$LIB"'"; CODEX_EXEC_PROMPT_ARG=x codex_exec_guarded'
   [ "$status" -eq 2 ]
   [[ "$output" == *"MISSING-TIMEOUT"* ]]
   [ ! -e "$TMP/codex-argv" ]
@@ -645,7 +738,7 @@ exec sleep 30
 FAKE
   chmod +x "$TMP/bin/timeout"
   start=$SECONDS
-  run "$REAL_TIMEOUT" --kill-after=1 5 bash -c '. "'"$LIB"'"; CODEX_EXEC_PROMPT_ARG=x codex_exec_guarded'
+  run "$REAL_TIMEOUT" --kill-after=1 5 bash -c '. "'"$LIB"'"; CODEX_EXEC_TIMEOUT=10 CODEX_EXEC_PROMPT_ARG=x codex_exec_guarded'
   [ "$status" -eq 2 ]
   [ $((SECONDS - start)) -lt 4 ]
   [ ! -e "$TMP/codex-argv" ]
@@ -660,10 +753,10 @@ printf 'tokens used: 1\n'
 FAKE
   chmod +x "$TMP/bin/codex"
   printf 'file prompt\n\n' > "$TMP/prompt"
-  run bash -c '. "'"$LIB"'"; CODEX_EXEC_PROMPT_FILE="'"$TMP"'/prompt" CODEX_EXEC_PROMPT_ARG=ignored codex_exec_guarded'
+  run bash -c '. "'"$LIB"'"; CODEX_EXEC_TIMEOUT=10 CODEX_EXEC_PROMPT_FILE="'"$TMP"'/prompt" CODEX_EXEC_PROMPT_ARG=ignored codex_exec_guarded'
   [ "$status" -eq 0 ]
   cmp "$TMP/prompt" "$TMP/received-prompt"
-  run bash -c '. "'"$LIB"'"; printf "stdin prompt\n\n" | codex_exec_guarded'
+  run bash -c '. "'"$LIB"'"; printf "stdin prompt\n\n" | CODEX_EXEC_TIMEOUT=10 codex_exec_guarded'
   [ "$status" -eq 0 ]
   [ "$(cat "$TMP/received-prompt")" = 'stdin prompt' ]
 }
@@ -678,7 +771,7 @@ exec sleep 30
 FAKE
   chmod +x "$TMP/bin/timeout"
   run "$REAL_TIMEOUT" --kill-after=1 5 bash -c '
-    bash -c '\''source "$1"; CODEX_EXEC_PROMPT_ARG=x codex_exec_guarded'\'' _ "'"$LIB"'" & runner=$!
+    bash -c '\''source "$1"; CODEX_EXEC_TIMEOUT=10 CODEX_EXEC_PROMPT_ARG=x codex_exec_guarded'\'' _ "'"$LIB"'" & runner=$!
     for attempt in {1..100}; do [ -s "'"$TMP"'/probe-pid" ] && break; sleep .02; done
     kill -TERM "$runner"
     wait "$runner" || true
@@ -705,7 +798,7 @@ dd if=/dev/zero of="$TMPDIR/work-product" bs=4096 count=8 2>/dev/null
 printf 'tokens used: 1\n'
 FAKE
   chmod +x "$TMP/bin/codex"
-  run bash -c '. "'"$LIB"'"; CODEX_EXEC_MAX_OUTPUT_BYTES=32 CODEX_EXEC_PROMPT_ARG=x codex_exec_guarded'
+  run bash -c '. "'"$LIB"'"; CODEX_EXEC_TIMEOUT=10 CODEX_EXEC_MAX_OUTPUT_BYTES=32 CODEX_EXEC_PROMPT_ARG=x codex_exec_guarded'
   [ "$status" -eq 0 ]
   [ "$(wc -c < "$TMP/work-product" | tr -d ' ')" -eq 32768 ]
 }
@@ -716,7 +809,39 @@ FAKE
 dd if=/dev/zero bs=1048576 count=11 2>/dev/null
 FAKE
   chmod +x "$TMP/bin/codex"
-  run "$REAL_TIMEOUT" --kill-after=1 5 bash -c '. "'"$LIB"'"; CODEX_EXEC_OUT_FILE="'"$TMP"'/evidence" CODEX_EXEC_PROMPT_ARG=x codex_exec_guarded'
+  run "$REAL_TIMEOUT" --kill-after=1 5 bash -c '. "'"$LIB"'"; CODEX_EXEC_TIMEOUT=10 CODEX_EXEC_OUT_FILE="'"$TMP"'/evidence" CODEX_EXEC_PROMPT_ARG=x codex_exec_guarded'
   [ "$status" -eq 123 ]
   [ "$(wc -c < "$TMP/evidence" | tr -d ' ')" -eq 10485760 ]
+}
+
+@test "skill discovery caller: absent bounds fail before reviewer launch" {
+  stub_argv_recorder
+  run bash "$BATS_TEST_DIRNAME/../../scripts/validate-codex-cli-skills.sh" --workdir "$TMP"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"MISSING-LIMIT"* ]]
+  [ ! -e "$TMP/codex-argv" ]
+}
+
+@test "skill discovery caller: explicit timeout and deadline options reach the adapter" {
+  stub_timeout
+  cat > "$TMP/bin/codex" <<'FAKE'
+#!/usr/bin/env bash
+printf '%s\n' '{"type":"item.completed","item":{"type":"agent_message","text":"using-agentops,swarm,research"}}'
+printf 'tokens used: 1\n'
+FAKE
+  chmod +x "$TMP/bin/codex"
+  caller="$BATS_TEST_DIRNAME/../../scripts/validate-codex-cli-skills.sh"
+  run bash "$caller" --workdir "$TMP" --timeout 1800
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"Required skills present"* ]]
+  [ "$(sed -n 1p "$TMP/timeout-argv")" = "1800" ]
+
+  deadline="$(/usr/bin/perl -MTime::HiRes=time -e 'print time + 1800')"
+  run bash "$caller" --workdir "$TMP" --deadline-epoch "$deadline"
+  [ "$status" -eq 0 ]
+  /usr/bin/perl -e 'exit !($ARGV[0] > 1790 && $ARGV[0] <= 1800)' "$(sed -n 1p "$TMP/timeout-argv")"
+
+  run bash "$caller" --workdir "$TMP" --timeout 900 --deadline-epoch "$deadline"
+  [ "$status" -eq 0 ]
+  [ "$(sed -n 1p "$TMP/timeout-argv")" = "900" ]
 }

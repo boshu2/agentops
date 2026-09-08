@@ -206,6 +206,20 @@
     },
     {
       "category": "public-tested",
+      "command": "provenance digest",
+      "coverage_status": "covered",
+      "kind": "leaf",
+      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
+    },
+    {
+      "category": "public-tested",
+      "command": "provenance evidence-orphans",
+      "coverage_status": "covered",
+      "kind": "leaf",
+      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
+    },
+    {
+      "category": "public-tested",
       "command": "provenance export",
       "coverage_status": "allowlisted",
       "kind": "leaf",
@@ -217,6 +231,13 @@
       "coverage_status": "allowlisted",
       "kind": "leaf",
       "reason": "Covered by internal/commands/provenance module tests after the provenance carve-out."
+    },
+    {
+      "category": "public-tested",
+      "command": "provenance manifest",
+      "coverage_status": "covered",
+      "kind": "leaf",
+      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
     },
     {
       "category": "public-tested",
@@ -241,6 +262,20 @@
     },
     {
       "category": "public-tested",
+      "command": "provenance snapshot-intent",
+      "coverage_status": "covered",
+      "kind": "leaf",
+      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
+    },
+    {
+      "category": "public-tested",
+      "command": "provenance store-verdict",
+      "coverage_status": "covered",
+      "kind": "leaf",
+      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
+    },
+    {
+      "category": "public-tested",
       "command": "provenance trace",
       "coverage_status": "allowlisted",
       "kind": "leaf",
@@ -252,6 +287,27 @@
       "coverage_status": "allowlisted",
       "kind": "leaf",
       "reason": "Covered by internal/commands/provenance module tests after the provenance carve-out."
+    },
+    {
+      "category": "public-tested",
+      "command": "provenance verify-manifest",
+      "coverage_status": "covered",
+      "kind": "leaf",
+      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
+    },
+    {
+      "category": "public-tested",
+      "command": "provenance verify-subject",
+      "coverage_status": "covered",
+      "kind": "leaf",
+      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
+    },
+    {
+      "category": "public-tested",
+      "command": "provenance verify-verdict",
+      "coverage_status": "covered",
+      "kind": "leaf",
+      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
     },
     {
       "category": "public-tested",

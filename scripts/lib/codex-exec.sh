@@ -136,16 +136,24 @@ _codex_exec_control() {
     }
     my $mode = shift @ARGV;
     if ($mode eq "limits") {
-      my ($timeout, $cap, $deadline, $has_deadline) = @ARGV;
-      positive("CODEX_EXEC_TIMEOUT", $timeout, 0);
+      my ($timeout, $cap, $deadline, $has_deadline, $has_timeout) = @ARGV;
+      # Existing direct callers supply an explicit timeout in four arguments.
+      # The fifth presence flag distinguishes omission from an empty value.
+      $has_timeout = 1 if @ARGV < 5;
+      positive("CODEX_EXEC_TIMEOUT", $timeout, 0) if $has_timeout;
       positive("CODEX_EXEC_MAX_OUTPUT_BYTES", $cap, 1);
       fail("INVALID-LIMIT: capture cap exceeds exact integer range") if $cap > 9007199254740991;
-      my $end = time + $timeout;
-      fail("INVALID-LIMIT: timeout is too large") unless isfinite($end);
+      positive("CODEX_EXEC_DEADLINE_EPOCH", $deadline, 0) if $has_deadline;
+      fail("MISSING-LIMIT: set CODEX_EXEC_TIMEOUT or CODEX_EXEC_DEADLINE_EPOCH") unless $has_timeout || $has_deadline;
+      my $now = time;
+      my $end;
+      if ($has_timeout) {
+        $end = $now + $timeout;
+        fail("INVALID-LIMIT: timeout is too large") unless isfinite($end);
+      }
       if ($has_deadline) {
-        positive("CODEX_EXEC_DEADLINE_EPOCH", $deadline, 0);
-        if ($deadline <= time) { print STDERR "codex-exec: STALL — caller deadline already expired; reviewer not launched.\n"; exit 124 }
-        if ($deadline < $end) { $end = 0 + $deadline; $timeout = $end - time }
+        if ($deadline <= $now) { print STDERR "codex-exec: STALL — caller deadline already expired; reviewer not launched.\n"; exit 124 }
+        if (!$has_timeout || $deadline < $end) { $end = 0 + $deadline; $timeout = $end - $now }
       }
       clock_gettime(CLOCK_MONOTONIC); # Unsupported clock capability fails before launch.
       printf "%s %s %.6f\n", $timeout, $cap, $end;
@@ -311,7 +319,7 @@ codex_exec_timeout_bin() {
     # shadowing PATH selected, which is the failure this is meant to surface.
     # Functional probe, not `--help` parsing: BSD timeout has no --help at all.
     local probe_limits probe_budget probe_cap probe_end
-    probe_limits="$(_codex_exec_control limits 1 1024 "${CODEX_EXEC_DEADLINE_EPOCH-}" "${CODEX_EXEC_DEADLINE_EPOCH+1}")" || return 3
+    probe_limits="$(_codex_exec_control limits 1 1024 "${CODEX_EXEC_DEADLINE_EPOCH-}" "${CODEX_EXEC_DEADLINE_EPOCH+1}" 1)" || return 3
     read -r probe_budget probe_cap probe_end <<<"$probe_limits"
     if _codex_exec_bounded "$probe_budget" "$probe_cap" "$probe_end" /dev/null "" /dev/null "$resolved" --foreground 1 true >/dev/null 2>&1; then
       printf '%s' "$resolved"
@@ -323,14 +331,24 @@ codex_exec_timeout_bin() {
 }
 
 # codex_exec_timeout_cmd — echo the timeout-wrapper argv (space-separated) for a
-# positive budget. Missing or unsupported enforcement fails closed (return 3).
-# Usage: read -r -a _to <<<"$(codex_exec_timeout_cmd 300)"; "${_to[@]}" codex ...
+# supplied positive budget, or CODEX_EXEC_TIMEOUT / CODEX_EXEC_DEADLINE_EPOCH.
+# A positional budget overrides CODEX_EXEC_TIMEOUT; a deadline always clamps it.
+# Invalid/missing bounds or unsupported enforcement fail closed (return 3).
+# Resolve immediately before use; reuse the caller absolute deadline across retries.
+# Usage: _argv="$(codex_exec_timeout_cmd "$caller_timeout")" || return "$?"
+#        read -r -a _to <<<"$_argv"; "${_to[@]}" codex ...
 codex_exec_timeout_cmd() {
-  local budget="${1-600}" bin="" rc=0
-  _codex_exec_control limits "$budget" 1 "" "" >/dev/null || return 3
-  bin="$(codex_exec_timeout_bin)" || rc=$?
+  local budget="${1-${CODEX_EXEC_TIMEOUT-}}" has_timeout="${CODEX_EXEC_TIMEOUT+1}" bin="" rc=0
+  local limits _cap deadline
+  [ "$#" -eq 0 ] || has_timeout=1
+  limits="$(_codex_exec_control limits "$budget" 1 "${CODEX_EXEC_DEADLINE_EPOCH-}" "${CODEX_EXEC_DEADLINE_EPOCH+1}" "$has_timeout")" || return 3
+  read -r budget _cap deadline <<<"$limits"
+  bin="$(CODEX_EXEC_DEADLINE_EPOCH="$deadline" codex_exec_timeout_bin)" || rc=$?
   [ "$rc" = "0" ] || return "$rc"
   [ -n "$bin" ] || return 3
+  # A capability probe consumes this budget too; do not restart it on return.
+  limits="$(_codex_exec_control limits "$budget" 1 "$deadline" 1 1)" || return 3
+  read -r budget _cap deadline <<<"$limits"
   printf '%s --foreground %s' "$bin" "$budget"
 }
 
@@ -447,10 +465,12 @@ reviewer_adapter_marker() {
 #                            with CODEX_EXEC_PROMPT_ARG; a file wins if both set).
 #   CODEX_EXEC_PROMPT_ARG    the prompt as a single positional argument.
 #                            If NEITHER is set, the prompt is read from stdin.
-#   CODEX_EXEC_TIMEOUT       positive finite seconds (omitted = 600; empty invalid).
+#   CODEX_EXEC_TIMEOUT       positive finite seconds; no default, empty invalid.
 #   CODEX_EXEC_DEADLINE_EPOCH optional positive absolute Unix timestamp in seconds;
-#                            clamps this invocation and its preparation. Reuse the
-#                            same value across calls to preserve a caller deadline.
+#                            supplies the remaining timeout when timeout is omitted;
+#                            otherwise the earlier bound wins. One bound is required.
+#                            Includes preparation; reuse the same absolute value
+#                            across calls to preserve a caller deadline.
 #   CODEX_EXEC_MAX_OUTPUT_BYTES positive integer, default 10485760 (10 MiB), across
 #                            captured stdout + stderr combined. File-prompt copies
 #                            and non-codex stdin preparation each use the same cap.
@@ -533,13 +553,13 @@ codex_exec_guarded() {
   fi
 
   # Validate all caller bounds before touching prompt/output files or starting
-  # the reviewer. An explicitly empty value is invalid; only omission defaults.
+  # the reviewer. Empty values are invalid; timeout has no implicit default.
   if [ ! -x /usr/bin/perl ]; then
     echo "codex-exec: CLEANUP-UNAVAILABLE — core Perl/POSIX support is required." >&2
     return "$CODEX_EXEC_MISSING"
   fi
   local limits budget capture_cap deadline limit_rc=0
-  limits="$(_codex_exec_control limits "${CODEX_EXEC_TIMEOUT-600}" "${CODEX_EXEC_MAX_OUTPUT_BYTES-10485760}" "${CODEX_EXEC_DEADLINE_EPOCH-}" "${CODEX_EXEC_DEADLINE_EPOCH+1}")" || limit_rc=$?
+  limits="$(_codex_exec_control limits "${CODEX_EXEC_TIMEOUT-}" "${CODEX_EXEC_MAX_OUTPUT_BYTES-10485760}" "${CODEX_EXEC_DEADLINE_EPOCH-}" "${CODEX_EXEC_DEADLINE_EPOCH+1}" "${CODEX_EXEC_TIMEOUT+1}")" || limit_rc=$?
   if [ "$limit_rc" -ne 0 ]; then
     [ "$limit_rc" -ne 124 ] || return "$CODEX_EXEC_STALL_TIMEOUT"
     echo "codex-exec: execution limits or required Perl/POSIX capability unavailable; reviewer not launched." >&2
@@ -552,7 +572,7 @@ codex_exec_guarded() {
   timeout_bin="$(CODEX_EXEC_DEADLINE_EPOCH="$deadline" codex_exec_timeout_bin)" || to_rc=$?
   if [ "$to_rc" -ne 0 ] || [ -z "$timeout_bin" ]; then
     limit_rc=0
-    _codex_exec_control limits "$budget" "$capture_cap" "$deadline" 1 >/dev/null || limit_rc=$?
+    _codex_exec_control limits "$budget" "$capture_cap" "$deadline" 1 1 >/dev/null || limit_rc=$?
     [ "$limit_rc" -ne 124 ] || return "$CODEX_EXEC_STALL_TIMEOUT"
     echo "codex-exec: MISSING-TIMEOUT — a resolved executable supporting --foreground is required; reviewer not launched." >&2
     return "$CODEX_EXEC_MISSING"

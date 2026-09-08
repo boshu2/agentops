@@ -4,7 +4,7 @@
 # Runs the shared golden corpus (tests/fixtures/verdict-contract/cases/)
 # through all three implementations of the contract:
 #   1. the JSON schema (schemas/verdict.v2.schema.json, via python jsonschema);
-#   2. the Python Validate writer/validator (skills/validate/scripts/validate.py);
+#   2. the developer-only Python reference writer/validator (skills/validate/tests/validate.py);
 #   3. the Go evidence reader (cli/internal/verdictcheck).
 # A case any implementation judges differently from the corpus expectation is
 # a contract fork and fails this check.
@@ -24,8 +24,8 @@ require_cmd go
 
 # CONTRACT_CORPUS_REQUIRE_SCHEMA=1 makes the Python harness fail (not skip) when
 # jsonschema is unavailable, so the schema leg is proven to have run too.
-CONTRACT_CORPUS_REQUIRE_SCHEMA=1 python3 "$REPO_ROOT/skills/validate/scripts/check_contract_corpus.py"
+CONTRACT_CORPUS_REQUIRE_SCHEMA=1 python3 "$REPO_ROOT/skills/validate/tests/check_contract_corpus.py"
 
-(cd "$REPO_ROOT/cli" && go test ./internal/verdictcheck -run TestGoldenCorpus -count=1)
+(cd "$REPO_ROOT/cli" && go test ./internal/verdictcheck ./internal/evidence -run TestGoldenCorpus -count=1)
 
 echo "check-verdict-contract-corpus: PASS (schema + python + go all ran)"

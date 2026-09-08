@@ -90,8 +90,17 @@ A gate PASS is a deterministic fact, not a semantic verdict.
 
 - `schemas/verdict.v2.schema.json` and `schemas/subject-manifest.v1.schema.json`
   declare the evidence contracts (see [docs/SCHEMAS.md](../SCHEMAS.md)).
-- The Validate skill (`skills/validate/scripts/validate.py`) is the writer and
-  the semantic authority for `verdict.v2` and the subject manifest.
+- The Validate skill is the semantic author of `verdict.v2`. The
+  `ao provenance` evidence leaves compute subject identity and structurally
+  verify and atomically store a supplied judgment through `internal/evidence`,
+  reusing `internal/verdictcheck` canonical/strict primitives. Evidence helper
+  version 1 requires explicit existing non-Git roots for storage, with no
+  configuration lookup or workspace fallback. The caller resolves CDLC routing;
+  `internal/evidencepath` supplies the shared explicit-root guard.
+- Python reference/schema checks live under `skills/validate/tests` and are
+  developer tests, not installed runtime dependencies. Evidence leaves attach
+  their actual contracts to the provenance family; optional relationship
+  records remain separate from exact-subject mechanics.
 - `ao status` is a read-only evidence inspector: it structurally verifies
   stored verdict artifacts (digest binding, canonical form, PASS scope rules)
   but never writes verdicts and never converts check success into semantic
