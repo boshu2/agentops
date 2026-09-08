@@ -375,8 +375,8 @@
     {
       "name": "agent-native",
       "source_skill": "skills/agent-native",
-      "source_hash": "57ff92e59975404af52aa71b7ec64e45389d1dce26ee899bdb10b9d9ae0788cf",
-      "generated_hash": "c7fb89d595199a14d7b00754603bd4a90cadbcc4ae496663161fca97463b7d81"
+      "source_hash": "5776f850e6004e24a9348a1ae4eba137061af292e47f71fea076dd6d31de3f78",
+      "generated_hash": "3379750defcc316401fc594a15f5746c2c321aaa78ec6a65304dbce4c0870301"
     },
     {
       "name": "agy-native",
@@ -405,8 +405,8 @@
     {
       "name": "cass",
       "source_skill": "skills/cass",
-      "source_hash": "87bd3747933a20e2dbc90191812d855a9b73bde5a966a576fbd6022907bf8e13",
-      "generated_hash": "1f25050e2f004faf4d4e24a76ebc66ee1877774119fbb4a2d3730dcb379e30dc"
+      "source_hash": "7cb1e367d30d8cdf8482eae60ee6acb25187e4642fe5089e7452d72ed0578215",
+      "generated_hash": "633b8a299b60ef25621291a97c4c0e5d89312f115daa3a39bfdf3a4923e67172"
     },
     {
       "name": "cc-hooks",
@@ -477,8 +477,8 @@
     {
       "name": "handoff",
       "source_skill": "skills/handoff",
-      "source_hash": "5d6921b7d42edcc15d6c6a95c0469c520941dec0a6175db178151583db4a5dd6",
-      "generated_hash": "06d2d26f9e670f7df7503a2d3c03daab0a09f3da18f5a70086d9012ba4724592"
+      "source_hash": "0011762be4d71bb359ea78a0088ad3eec2ca9d704718f5dc70abe38a89966fd5",
+      "generated_hash": "d4e35cd31aad23fa9462f71a7efa43da1abe7671d9a29638541ec9951107b7a7"
     },
     {
       "name": "human-only-skills",
@@ -495,8 +495,8 @@
     {
       "name": "implement",
       "source_skill": "skills/implement",
-      "source_hash": "49987f367c5d345e164fccab65a9cc207a8da61ff38de44bffbc0dc13680fb47",
-      "generated_hash": "375b34a916228126c2b20f269dbeb5e1444abe4e478e51bf6a8fdaf8c6efd584"
+      "source_hash": "d24c73ea0104aabff2ca0b9c8826014b07604af64d3c5f9dd56a896973a7ecfa",
+      "generated_hash": "f2e4c6a5c7c3a4c0b15096165197a29f3813bf5161f495655b45273fdfec2615"
     },
     {
       "name": "learn",
@@ -597,8 +597,8 @@
     {
       "name": "rpi",
       "source_skill": "skills/rpi",
-      "source_hash": "62895cade9636d266190382c422d806193ae246c21589ca6dc98c8a31d988c6d",
-      "generated_hash": "a56999a2700ac4629ffaf2f4dd59bf8797af104920f7622ee8c65754dc7892a2"
+      "source_hash": "44814912c9d640bf6d9ae4bdc27a75f4437b81435954178e3ac44f3c76758ed0",
+      "generated_hash": "c25f250b18d19ac492ec95c4552f510d128ff5b7fb1ef1f4129d17bbb4c818ee"
     },
     {
       "name": "sbh",

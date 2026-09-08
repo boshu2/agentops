@@ -44,9 +44,23 @@ stalled, and rescue is usually cheaper than rerun.
 
 ## Contract
 
-1. Require an explicit packet, role, workspace, context identity, and evidence
-   destination before starting a worker.
-2. Prove runtime readiness and engagement from observable state; a successful
+1. Require caller intent, role, workspace, authorized source/output scope and
+   evidence destination before starting a worker. Pass source-store/project/work
+   identity and permitted intent locators before execution can fail. Record this
+   dispatch association in caller-owned native comments/metadata or runtime
+   facts, with actual worker session/context IDs explicitly unknown until
+   observed; a requested ID is not an observed ID. This adds no AO packet schema.
+2. Capture observed native runtime/session/context identity at startup, before
+   substantive work and independently of final handoff. Return the observation
+   through the caller-owned native recording channel with its provenance and
+   permitted source locator. Preserve launch failures and unknowns if startup
+   never becomes observable. Follow
+   [session associations](../cass/references/SESSION_FORMATS.md#work-to-session-associations)
+   for separate parent/resume links, supported multi-work spans and frozen source
+   bounds. A controller is not necessarily a native parent; every requested
+   child and resumed execution needs its own observed association. If recording
+   fails, report the gap; do not claim crash recovery from prompt delivery alone.
+   Prove runtime readiness and engagement from observable state; a successful
    prompt send is not proof of work.
 3. Keep concurrent writers disjoint and isolated. Runtime coordination is not a
    claim, lease, queue, or completion state in AgentOps.

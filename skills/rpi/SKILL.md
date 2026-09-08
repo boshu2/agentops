@@ -101,6 +101,7 @@ comment alone is not that.
    caller-owned source by reference and digest, or, only when no durable
    source exists, the exact resolved bytes snapshotted by the runtime under
    their digest.
+   For selected CDLC work, the caller carries and records work/startup identities before substantive work for every child or resume, following [session associations](../cass/references/SESSION_FORMATS.md#work-to-session-associations) independently of final handoff; unknowns and failures remain explicit, and RPI never mutates the tracker.
 3. When the write scope touches a risky surface (the short list
    [`validate`](../validate/SKILL.md) names), have one fresh judge read the
    frozen plan before Implement. A blocking finding sends the plan back to the

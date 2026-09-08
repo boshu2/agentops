@@ -105,7 +105,7 @@
 | `doc` | produces | `documentation` |
 | `domain` | produces | `stdout` |
 | `fitness` | produces | `goal-measurement-report` |
-| `handoff` | produces | `caller-selected handoff path or .agents/ao/handoff/*` |
+| `handoff` | produces | `caller-selected handoff artifact` |
 | `human-only-skills` | produces | `stdout` |
 | `idea-genie` | consumes | `repo-context` |
 | `idea-genie` | consumes | `task-question` |
