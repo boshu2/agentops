@@ -24,8 +24,9 @@ metadata:
 
 # Plan
 
-Shape only missing intent in the caller's bead, conversation or supplied text.
-Planning produces no AgentOps packet. A clear change can proceed directly.
+Shape only missing intent. Prefer the caller's tracker, if any; otherwise use
+the conversation or supplied text. Planning produces no AgentOps packet.
+A clear change can proceed directly.
 
 ## Workflow
 

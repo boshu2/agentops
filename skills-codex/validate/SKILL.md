@@ -4,8 +4,8 @@ description: 'Freshly judge a finished change against its acceptance: PASS, FAIL
 ---
 # Validate
 
-Freshly judge the exact candidate against accepted intent, return PASS, FAIL or
-NOT_PROVEN, and stop. The author cannot provide binding PASS. Read RPI
+Freshly judge the exact candidate against accepted intent, return
+`PASS`, `FAIL`, or `NOT_PROVEN`, and stop. The author cannot provide binding PASS. Read RPI
 [boundaries](../rpi/references/boundaries.md) before judgment; load helper flags
 and storage details from [mechanics](references/mechanics.md) when needed.
 
@@ -13,7 +13,7 @@ and storage details from [mechanics](references/mechanics.md) when needed.
 
 Final review starts after required checks and known repairs, with the candidate
 held unchanged. Supplied failed-acceptance evidence means FAIL on that subject;
-do not review a moving repair. The subject manifest is nonempty; plans, audits
+do not review a moving repair. The subject is a nonempty implementation candidate; plans, audits
 and reviews are subjects only when the caller requested document review.
 
 Use exact caller/runtime-owned intent bytes and derived acceptance identity.
@@ -86,8 +86,9 @@ needed to assess a finding. Do not retell the investigation or duplicate logs.
 Brevity must retain every criterion, necessary finding, identity, freshness
 fact and unchecked surface.
 
-Only when requested or required by a declared consumer, persist `verdict.v2`
-through `ao provenance store-verdict`. Validate supplies semantic judgment;
+Validate is the sole semantic author of `verdict.v2`.
+Only when the caller requests machine-readable evidence or a declared consumer
+requires it, persist through `ao provenance store-verdict`. Validate supplies judgment;
 Go verifies structure and storage, not truth. Otherwise return the result
 through the existing caller channel without hidden machine artifacts.
 Validate owns no repair, retry, delivery or tracker transition.

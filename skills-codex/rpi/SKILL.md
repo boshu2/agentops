@@ -4,7 +4,7 @@ description: 'Own an authorized outcome through implementation, checks and fresh
 ---
 # RPI
 
-Own the authorized outcome through finish using the native coding agent and
+Own the authorized outcome through finish. Use the native coding agent and
 shell. BD or the caller's tracker owns work and handoffs; Git owns content and
 delivery. AgentOps supplies a small charter and fresh judgment, not a scheduler.
 
@@ -17,7 +17,8 @@ delivery. AgentOps supplies a small charter and fresh judgment, not a scheduler.
    shapes missing intent or revises a disproved approach. Once an implementer
    can act and a validator can judge, implement; do not keep improving the plan.
    Approach revisions preserve acceptance and authorized scope.
-3. [Implement](../implement/SKILL.md) and repair understood defects directly.
+   Acceptance changes need caller authority.
+3. [Implement](../implement/SKILL.md) and repair ordinary known defects directly.
    A known test failure needs a fix and a discriminating check, not another
    planning phase, council or helper.
 4. Use focused checks during edits and complete required integration checks
@@ -26,7 +27,8 @@ delivery. AgentOps supplies a small charter and fresh judgment, not a scheduler.
    Keep the final subject unchanged while it is being judged.
 5. Obtain [Validate](../validate/SKILL.md) from one fresh author-distinct context
    in the author's model family unless the caller selects required additional
-   legs. Risk deepens evidence, not automatic reviewer multiplication. Repair
+   legs. There is no fixed ten-minute cap; explicitly required
+   reviewers remain required. Risk deepens evidence, not reviewer multiplication. Repair
    actionable findings within authority and remaining bounds, then revalidate
    the changed exact subject.
 6. Stop at completed acceptance, cancellation, refusal, a spent real bound or
@@ -52,13 +54,14 @@ Use observed runtime capabilities; prompt wording does not prove isolation.
 Return concise findings, check facts and accessible evidence references. Keep
 full logs available, showing only decision-relevant excerpts; disclose truncation
 or missing evidence. Reuse one caller-owned handoff instead of multiplying
-plans, receipt summaries and status documents. Machine evidence is optional
-unless requested or required by a declared consumer.
+plans, receipt summaries and status documents. Machine evidence such as `verdict.v2` is optional
+unless requested or required by a declared consumer. When no machine
+artifact is requested or required, return the result without creating one.
 
 ## Causal stall and bounds
 
-Unknown cause, recurrence, no progress or a wrong objective admits at most one
-bounded fresh helper for that incident within authority and remaining bounds.
+Unknown cause, recurrence, no progress or a wrong objective admits
+at most one bounded fresh helper for that incident within authority and bounds.
 Give it the failed assumption, evidence and one discriminating question. Resume
 only with a different testable approach; an unhelpful answer ends the attempt.
 Do not chain helpers or rename the incident. Known failures get direct repair.

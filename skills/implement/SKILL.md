@@ -27,7 +27,7 @@ metadata:
 
 # Implement
 
-Implement the accepted outcome and repair understood defects. Use the existing
+Implement the accepted outcome. Repair ordinary known defects directly. Use the existing
 intent; no Plan, Recall or Learn worksheet is owed for a clear edit. Implement
 owns source changes and factual checks; the runtime derives identity and receipts.
 
@@ -57,7 +57,7 @@ owns source changes and factual checks; the runtime derives identity and receipt
    goldens, tolerances, suppressions and specification text against original
    intent. Mocks, placeholders or weakened oracles cannot substitute for the
    requested behavior.
-6. Derive complete changed paths and `subject-manifest.v1`. When changed paths
+6. Have the runtime derive actual changed paths and `subject-manifest.v1`. When changed paths
    affect bound acceptance evidence, run `ao provenance evidence-orphans --root
    <repo-root>` with one `--changed <path>` per derived path, and retain the
    actual output for the validator. Repeat after repairs that change that
