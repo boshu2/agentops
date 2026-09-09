@@ -1,6 +1,7 @@
 package provenanceapp
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"runtime"
@@ -22,7 +23,7 @@ func checkpointSecurity(path string, _ os.FileInfo) ([]byte, error) {
 	var size uint32
 	_, _, callErr := checkpointGetFileSecurity.Call(uintptr(unsafe.Pointer(name)), securityInformation,
 		0, 0, uintptr(unsafe.Pointer(&size)))
-	if callErr != syscall.ERROR_INSUFFICIENT_BUFFER {
+	if !errors.Is(callErr, syscall.ERROR_INSUFFICIENT_BUFFER) {
 		return nil, fmt.Errorf("query security descriptor size: %w", callErr)
 	}
 	if size == 0 || size > 65536 {
