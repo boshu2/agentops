@@ -7,8 +7,10 @@ repository owns Git, CI, merging, release, and deployment.
 
 ## What happens after FAIL or NOT_PROVEN?
 
-The invocation reports the result and stops. The caller decides whether to
-revise, re-plan, abandon, or begin a new invocation.
+Repair known findings within accepted scope and real remaining bounds, then
+validate the changed subject freshly. A genuine causal stall gets at most one
+bounded fresh helper. Stop on completed acceptance, cancellation, refusal, a
+spent real bound or unresolved stall; report unfinished acceptance honestly.
 
 ## Must I use multiple models?
 
@@ -22,5 +24,6 @@ No. The semantic loop and content manifest are designed to work without Git or
 
 ## Where does learning happen?
 
-Learn is an optional later consumer of verdict collections. It is not required
-for a verdict and cannot change the completed invocation.
+Memory optionally recalls reviewed topic pages or separately mines authorized
+episodes and curates supported claims. Learn is a compatible mining entrypoint.
+Neither is required for a verdict or can change completed product judgment.

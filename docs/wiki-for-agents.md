@@ -1,21 +1,25 @@
 ---
 title: "Evidence your agents can read"
-description: "AgentOps packets and verdicts are portable files, not a hosted control plane."
+description: "Portable engineering evidence and optional reviewed topic memory."
 permalink: /wiki-for-agents
-last_reviewed: 2026-07-14
+last_reviewed: 2026-09-09
 ---
 
 # Evidence your agents can read
 
-AgentOps produces ordinary structured files: plans, candidates, content
-manifests, evidence references, and verdicts. They can be inspected by people,
-passed to another fresh context, retained under a repository's policy, or
-exported into an external assurance system.
+AgentOps refines existing intent and identifies exact candidates. Requested
+durable proof uses ordinary content manifests, evidence references and verdicts
+in caller-selected protected external non-Git storage. These can be inspected
+by people or passed to another authorized fresh context.
 
-The core does not maintain an automatic wiki or knowledge corpus. Optional
-specialist tools may search prior material, and an explicitly invoked Learn
-step may analyze verdict collections later. Those capabilities remain outside
-RPI correctness and never decide whether current work is valid.
+Optional Memory recalls reviewed topic pages or separately mines authorized
+episodes and curates supported claims; Learn is its compatible mining entrypoint.
+BD owns work, Git content and native/CASS systems episode evidence. Update an
+existing topic page with applicability, action, support, limits and invalidation;
+do not create one file per session. Exact independent support and destination
+review precede import. This path uses public or already-cleared inputs only and
+does not implement native restricted-source isolation. Memory cannot decide
+current product validity or claim benefit without later-task evidence.
 
 This boundary keeps the durable asset portable without turning AgentOps into a
 hosted control plane, tracker, queue, or delivery system.

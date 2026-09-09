@@ -1,5 +1,5 @@
 ---
-last_reviewed: 2026-09-06
+last_reviewed: 2026-09-09
 ---
 
 # AgentOps
@@ -16,7 +16,7 @@ handoffs — and the product boundary is deliberately small. The standard
 traversal through the graph is:
 
 ```text
-RPI -> Plan -> Implement -> fresh Validate -> repair to convergence -> report
+RPI charter -> on-demand Plan -> Implement and checks -> fresh Validate -> finish
 ```
 
 ## Proven floor
@@ -24,7 +24,7 @@ RPI -> Plan -> Implement -> fresh Validate -> repair to convergence -> report
 AgentOps provides:
 
 - behavior-first intent with normal and edge acceptance examples;
-- one bounded RED -> GREEN -> refactor experiment;
+- bounded implementation and direct repair under the caller's accepted intent;
 - deterministic content identity independent of Git;
 - one fresh, author-distinct semantic judgment;
 - a `PASS | FAIL | NOT_PROVEN` result with optional content-addressed storage.
@@ -38,7 +38,7 @@ model isolation.
 AgentOps is not a new GitLab, CI service, tracker, merge queue, delivery system,
 release manager, scheduler, or autonomous retry controller. It does not own:
 
-- retries, budgets, queues, claims, leases, work ownership, or next actions;
+- aggregate retry controllers, budgets, queues, claims, leases, or work ownership;
 - Git commits, branches, pushes, PRs, merges, rollback, closure, or release;
 - the caller's decision after a validation result;
 - mandatory provenance or learning on the validation critical path.
@@ -49,16 +49,18 @@ AgentOps for delivery permission.
 
 ## Product surfaces
 
-Four load-bearing skills define the core:
+RPI carries the operating charter; four skills are loaded as needed:
 
 | Skill | Responsibility |
 |---|---|
-| `rpi` | dispatch Plan and Implement once, Validate freshly, repair to convergence under the caller's bound; report |
-| `plan` | shape acceptance, evidence, and write scope |
-| `implement` | run one bounded experiment and produce a candidate |
+| `rpi` | own the authorized outcome through direct repair, checks and fresh final judgment |
+| `plan` | shape missing intent or revise a disproved approach within accepted scope |
+| `implement` | implement, check and repair known defects within real bounds |
 | `validate` | independently judge exact content; persist only for a declared consumer |
+| `memory` | recall reviewed context or separately mine and curate topic pages |
 
-`learn` remains an optional off-path consumer of verdict collections. Strategy
+`learn` is a compatible off-path entrypoint for Memory's mining operation over
+authorized episodes, corrections and other evidence. Strategy
 skills such as Premortem, Postmortem, Council, and idea genies add judgment when
 the caller wants it. Factory/runtime adapters such as NTM, Agent Mail, Gas City,
 and swarms may provide roles and dispatch. None is a correctness or lifecycle

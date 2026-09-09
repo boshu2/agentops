@@ -3,14 +3,15 @@
 AgentOps now owns one small product boundary:
 
 ```text
-RPI -> Plan -> Implement -> fresh Validate -> repair to convergence -> report
+RPI charter -> Plan if needed -> Implement and check -> fresh Validate -> finish
 ```
 
 (The 3.0 through 3.6 releases stopped after one validation; ADR-0017 added the
 bounded repair phase.)
 
-The caller owns whether to revise, run another invocation, schedule work, use a
-tracker, manage Git, or deliver the result. Deterministic repository checks stay
+Known defects can be repaired directly and an approach can change within the
+accepted outcome, scope and real allowance. The caller owns changes to that
+acceptance, new allowances, scheduling, trackers, Git and delivery. Deterministic repository checks stay
 under `ao gate check`; semantic judgment is the Validate skill.
 
 ## Removed responsibilities
@@ -32,13 +33,13 @@ under `ao gate check`; semantic judgment is the Validate skill.
 | `ao constraint` | Encode accepted mechanical policy in repository-owned linters or checks; AgentOps no longer promotes findings into blocking state. |
 | `ao skills edit` | Edit canonical `skills/<slug>/` sources directly; use normal repository Git policy outside `ao`. |
 | `ao goals trace` | Inspect current goal/scenario artifacts directly; the retired directive-to-bead lifecycle chain has no replacement. |
-| `ao inject` | AgentOps no longer retrieves prior knowledge; use the caller's own memory or context tooling. |
+| `ao inject` | Use optional Memory recall over caller-owned, authorized context sources; there is no replacement CLI retrieval controller. |
 | `ao session memory` | Use caller-authored `ao session handoff` evidence or maintain repository memory through the caller's own policy. |
 | `ao config models` | Model-tier configuration was removed; nothing consumed it. Model choice belongs to the caller's runtime. Existing `models:` config sections still parse and are ignored. |
 | `ao verify` | Use the Validate skill for semantic judgment and `ao gate check` for deterministic checks. Delete any `ao verify init` pre-push ratchet from `.git/hooks/pre-push` (restore `pre-push.agentops-orig` if one was set aside); `ao verify init --remove` no longer exists, and `git push --no-verify` bypasses a stale hook once. |
-| `ao flywheel` | The knowledge-flywheel product surface was retired; AgentOps no longer computes or reports knowledge-compounding state. Learning remains an optional off-path consumer of durable verdicts (the `learn` skill), and existing `flywheel:` config sections still parse and are ignored. |
+| `ao flywheel` | The CLI surface remains retired; existing `flywheel:` config sections still parse and are ignored. Optional Memory and Learn skills can review useful episodes and curate topic pages. They do not automatically compute compounding or claim benefit without later work. |
 | `ao eval` | The offline eval surface was retired unconsumed (no gate, workflow, or script ran it); use a repository-selected evaluator and record the result as generic `ao provenance` evidence. |
-| `ao redact` | Its only declared caller (the compile skill's render-write) never existed; pipe content through your own scrubber before writing. |
+| `ao redact` | Its only declared caller (the compile skill's render-write) never existed. Use owner-authorized disclosure review before storage; removing or replacing this command does not authorize reading restricted sources. |
 
 These names are no longer registered commands. Invoking one fails as an
 unknown command (exit 1) and prints the matching replacement pointer from the
@@ -68,22 +69,26 @@ mkdir -p ~/.agents/ao && mv ~/.agentops/config.yaml ~/.agents/ao/config.yaml
 
 - `plan` now contains the useful behavior from `discovery`,
   `behavior-first-planning`, and `goal-design`.
-- `swarm` exposes only caller-directed `dispatch_once`; `crank` was removed.
-- `learn` is an optional later consumer of verdict collections, never a
-  lifecycle phase or authority.
+- `swarm` and `crank` are optional caller-selected dispatch adapters, not
+  lifecycle authorities.
+- `memory` offers optional recall, mining and topic curation; `learn` is a
+  compatible mining entrypoint for authorized episodes, including corrections
+  and failures. Neither is a required lifecycle phase.
 - Canonical mortem names are `premortem` and `postmortem`. Hyphenated and
   underscored variants were removed.
-- `beads-br` and `beads-bv` were removed from the bundle. Invoke `br` and `bv`
-  directly if the caller selects those tools.
+- `beads-br` and `beads-bv` were removed from the bundle. This repository uses
+  native BD for work authority; BR is a different implementation, not a fallback.
+  Beads Viewer is optional advice over an explicitly refreshed BD export.
 
 ## Verdicts and identity
 
 When persistence is requested, `verdict.v2` binds acceptance and a deterministic
 `subject-manifest.v1` to distinct declared author and validator context
 identities. Freshness is an attested trust fact, not cryptographic proof of
-process isolation. Verdicts are stored atomically by content digest under
-`.agents/ao/verdicts/sha256/` unless a
-caller supplies another directory.
+process isolation. New CDLC proof uses caller-selected protected external
+non-Git storage, with atomic content-addressed verdict writes when requested.
+Preserve existing `.agents/` evidence under owner policy. Missing destination
+routing is not permission to fall back to repository storage (ADR-0016).
 
 Historical Pawl, queue, claim, landing, and lifecycle artifacts remain inert
 evidence. They no longer influence phase sequencing, verdict validity, or CLI

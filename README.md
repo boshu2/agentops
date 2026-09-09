@@ -179,15 +179,16 @@ for sealed or multi-judge review. They return a report; an author-distinct
 
 ### 3. Acceptance drifted mid-flight
 
-Without a fixed behavior and write scope, "done" is whatever the agent
-improvised. `plan` locks acceptance in the bead before anyone builds. Later
-phases bind to that digest.
+Keep accepted behavior and write scope in the existing intent source. Use
+`plan` when they need shaping; revise the approach when evidence requires it,
+without silently changing acceptance. Validation binds to that accepted intent.
 
 ### 4. Nobody can replay what was judged
 
 Chat scrolls away. When replay or automation needs durable evidence, `validate`
-writes a content-addressed `verdict.v2` under
-`.agents/ao/verdicts/sha256/` with checked scope, omissions, and evidence refs.
+writes a content-addressed `verdict.v2` in caller-selected protected external
+non-Git storage, with checked scope, omissions, and evidence refs. Existing
+`.agents/` proof remains preserved under owner policy.
 Plain JSON. No hosted service required. Interactive validation does not create
 one unless requested.
 
@@ -195,13 +196,14 @@ one unless requested.
 
 | Skill | Job |
 |---|---|
-| [`rpi`](skills/rpi/SKILL.md) | guard once, Plan and Implement at most once, fresh Validate plus admitted bounded repairs; report |
-| [`anti-ceremony`](skills/anti-ceremony/SKILL.md) | Optional STOP/CONTINUE guard: name the consumer, the decision, the defect, and the retirement condition, or do not create the artifact |
-| [`plan`](skills/plan/SKILL.md) | create the bead (BDD + DDD ubiquitous language) |
-| [`implement`](skills/implement/SKILL.md) | TDD against the bead: RED → GREEN → refactor |
+| [`rpi`](skills/rpi/SKILL.md) | own the authorized outcome through checks, direct repair and fresh final judgment |
+| [`plan`](skills/plan/SKILL.md) | shape existing intent when needed; revise disproved approaches within accepted scope |
+| [`implement`](skills/implement/SKILL.md) | implement and repair known defects with discriminating checks |
 | [`validate`](skills/validate/SKILL.md) | fresh context (optionally different model); optionally persist `verdict.v2` |
+| [`memory`](skills/memory/SKILL.md) | recall reviewed topic pages or separately mine and curate when useful |
 
-Optional later: [`learn`](skills/learn/SKILL.md). Strategies:
+Optional later: [`learn`](skills/learn/SKILL.md). Optional strategies:
+[`anti-ceremony`](skills/anti-ceremony/SKILL.md),
 [`council`](skills/council/SKILL.md), [`idea-genie`](skills/idea-genie/SKILL.md),
 [`premortem`](skills/premortem/SKILL.md), [`postmortem`](skills/postmortem/SKILL.md),
 [`one-way-door`](skills/one-way-door/SKILL.md) (is this decision reversible?),
