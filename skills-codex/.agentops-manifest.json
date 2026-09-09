@@ -687,8 +687,8 @@
     {
       "name": "validate",
       "source_skill": "skills/validate",
-      "source_hash": "f3a1e5e6281f0dd08b0e8f87854d7fe013702e5d1548e5009f8875fdef439be5",
-      "generated_hash": "184645e1c205399ee7e98eb608b531b39e1046900d47290ded584a2e9b35bb06"
+      "source_hash": "d458f6c3ccc510825984c9decff2eae90e8aca5111e8561be6e06bd12c2c17b6",
+      "generated_hash": "f8aabaed14d3e61c1f9b23376c7f79fb3b28751567418fe3a2e043efa53b30f7"
     },
     {
       "name": "workflow-builder",

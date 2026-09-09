@@ -70,6 +70,12 @@ alone is not truth or proof of freedom from training bias.
 
 ## Judgment
 
+Use the helper for each changed path (repeat `--include` for complete scope):
+
+```sh
+ao provenance manifest --root "$REPO_ROOT" --include "$CHANGED_PATH"
+```
+
 1. Derive `subject-manifest.v1` using the existing helper at start and end.
    A mismatch means mutation and NOT_PROVEN. Verify exact intent continuity,
    cited evidence digests and complete changed-path coverage; missing integrity
