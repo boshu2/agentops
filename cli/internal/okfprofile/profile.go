@@ -278,7 +278,8 @@ func splitFrontmatter(payload []byte) ([]byte, []byte, string) {
 	}
 	start := opening + 1
 	for position := start; position < len(payload); {
-		if position > MaxFrontmatterBytes {
+		// Count raw header bytes, including its line endings but not delimiters.
+		if position-start > MaxFrontmatterBytes {
 			return nil, nil, "exceeds_64_kib"
 		}
 		length := bytes.IndexByte(payload[position:], '\n')
