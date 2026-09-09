@@ -15,6 +15,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/boshu2/agentops/cli/internal/evidencepath"
 	"github.com/boshu2/agentops/cli/internal/verdictcheck"
 )
 
@@ -22,6 +23,9 @@ import (
 // The working directory and clock are resolved inside Run so the module never
 // performs a direct filesystem or clock effect.
 type RunOptions struct {
+	// EvidenceRoot selects an existing non-Git store. Nil preserves cwd/.agents/ao;
+	// an explicitly empty value is invalid, rather than a request for fallback.
+	EvidenceRoot *string
 	// JSON selects machine-readable output when true.
 	JSON bool
 	// Stdout receives the rendered report. It is the command's output stream.
@@ -61,6 +65,13 @@ type evidenceSource struct {
 // Run resolves the working directory and clock, inventories the durable stores,
 // and renders the report to the configured stream.
 func Run(opts RunOptions) error {
+	if opts.EvidenceRoot != nil {
+		root, err := evidencepath.Validate(*opts.EvidenceRoot)
+		if err != nil {
+			return fmt.Errorf("invalid --evidence-root: %w", err)
+		}
+		return Render(opts.Stdout, opts.JSON, &Output{LoopEvidence: loadEvidence(root, root, true, time.Now())})
+	}
 	cwd, err := os.Getwd()
 	if err != nil {
 		return fmt.Errorf("get working directory: %w", err)
@@ -71,6 +82,10 @@ func Run(opts RunOptions) error {
 // LoadLoopEvidence inventories only the two immutable stores AgentOps owns.
 // Recency describes durable evidence, never live process state or remaining work.
 func LoadLoopEvidence(cwd string, now time.Time) *LoopEvidenceStatus {
+	return loadEvidence(filepath.Join(cwd, ".agents", "ao"), cwd, false, now)
+}
+
+func loadEvidence(root, displayRoot string, explicit bool, now time.Time) *LoopEvidenceStatus {
 	result := &LoopEvidenceStatus{
 		NotChecked: []string{
 			"active runtime phase",
@@ -82,22 +97,30 @@ func LoadLoopEvidence(cwd string, now time.Time) *LoopEvidenceStatus {
 	}
 	sources := []evidenceSource{
 		{
-			kind: "intent", path: filepath.Join(cwd, ".agents", "ao", "intents", "sha256"),
+			kind: "intent", path: filepath.Join(root, "intents", "sha256"),
 			suffix: ".intent", count: &result.IntentArtifacts, validate: validateIntentArtifact,
 		},
 		{
-			kind: "verdict", path: filepath.Join(cwd, ".agents", "ao", "verdicts", "sha256"),
+			kind: "verdict", path: filepath.Join(root, "verdicts", "sha256"),
 			suffix: ".json", count: &result.VerdictArtifacts, validate: validateVerdictArtifact,
 		},
 	}
 
 	var latest time.Time
 	for _, source := range sources {
-		rel, err := filepath.Rel(cwd, source.path)
+		rel, err := filepath.Rel(displayRoot, source.path)
 		if err != nil {
 			rel = source.path
 		}
 		result.Checked = append(result.Checked, rel)
+		if explicit {
+			if err := checkEvidenceDirectories(root, source.kind+"s"); err != nil {
+				if !os.IsNotExist(err) {
+					result.Unavailable = append(result.Unavailable, fmt.Sprintf("%s: %v", rel, err))
+				}
+				continue
+			}
+		}
 		entries, err := os.ReadDir(source.path)
 		if os.IsNotExist(err) {
 			continue
@@ -116,6 +139,9 @@ func LoadLoopEvidence(cwd string, now time.Time) *LoopEvidenceStatus {
 				continue
 			}
 			if !info.Mode().IsRegular() {
+				if explicit && info.Mode()&os.ModeSymlink != 0 {
+					result.Unavailable = append(result.Unavailable, filepath.Join(rel, entry.Name())+": evidence file symlink excluded")
+				}
 				continue
 			}
 			expectedDigest, ok := artifactDigestFromName(entry.Name(), source.suffix)
@@ -159,6 +185,26 @@ func LoadLoopEvidence(cwd string, now time.Time) *LoopEvidenceStatus {
 	}
 	result.LastEvidenceAge = FormatDurationBrief(age)
 	return result
+}
+
+// Check each store component before ReadDir; Lstat never follows an evidence
+// directory symlink into another store. The validated root itself is canonical.
+func checkEvidenceDirectories(root, store string) error {
+	path := root
+	for _, name := range []string{store, "sha256"} {
+		path = filepath.Join(path, name)
+		info, err := os.Lstat(path)
+		if err != nil {
+			return err
+		}
+		if info.Mode()&os.ModeSymlink != 0 {
+			return fmt.Errorf("evidence directory symlink excluded")
+		}
+		if !info.IsDir() {
+			return fmt.Errorf("evidence store component is not a directory")
+		}
+	}
+	return nil
 }
 
 func artifactDigestFromName(name, suffix string) (string, bool) {

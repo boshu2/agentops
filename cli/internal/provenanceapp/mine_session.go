@@ -15,6 +15,7 @@ import (
 	"strings"
 
 	"github.com/boshu2/agentops/cli/internal/parser"
+	"github.com/boshu2/agentops/cli/internal/storage"
 )
 
 // MineEventSchemaVersion is the schema version for mined per-inference events.
@@ -85,6 +86,11 @@ func MineSession(opts MineOptions, out io.Writer) error {
 	startAfter := 0 // mine messages with SourceLine > startAfter
 	var prior *mineState
 	if mineStatePath != "" {
+		// Reject special entries before reading: opening a FIFO could block,
+		// and replacing a symlink would change where its checkpoint is stored.
+		if _, err := mineStateMode(mineStatePath); err != nil {
+			return fmt.Errorf("mine-session: inspect state %s: %w", mineStatePath, err)
+		}
 		if b, rerr := os.ReadFile(mineStatePath); rerr == nil {
 			var st mineState
 			if json.Unmarshal(b, &st) == nil {
@@ -276,8 +282,27 @@ func writeMineState(path string, st mineState) error {
 	if err != nil {
 		return err
 	}
-	if dir := filepath.Dir(path); dir != "" && dir != "." {
-		_ = os.MkdirAll(dir, 0o755)
+	mode, err := mineStateMode(path)
+	if err != nil {
+		return err
 	}
-	return os.WriteFile(path, b, 0o644)
+	// Pre-rename failures preserve the previous checkpoint. A subsequent
+	// directory-sync error can report failure with the new checkpoint visible.
+	return storage.AtomicWriteFile(path, b, mode)
+}
+
+func mineStateMode(path string) (os.FileMode, error) {
+	info, err := os.Lstat(path)
+	if os.IsNotExist(err) {
+		// AtomicWriteFile explicitly chmods its temporary file. Keep a new
+		// checkpoint private instead of bypassing a restrictive caller umask.
+		return 0o600, nil
+	}
+	if err != nil {
+		return 0, err
+	}
+	if !info.Mode().IsRegular() {
+		return 0, fmt.Errorf("checkpoint must be a regular file: %s", path)
+	}
+	return info.Mode().Perm(), nil
 }

@@ -229,13 +229,12 @@ func tokenStream(s string) []string {
 // and single-character tokens, returning a deduplicated, order-preserving
 // slice of meaningful tokens.
 func tokenize(s string) []string {
-	fields := strings.FieldsFunc(strings.ToLower(s), func(r rune) bool {
-		return !unicode.IsLetter(r) && !unicode.IsDigit(r)
-	})
-	seen := make(map[string]bool, len(fields))
-	out := make([]string, 0, len(fields))
-	for _, f := range fields {
-		if len(f) < 2 || stopwords[f] || seen[f] {
+	tokens := tokenStream(s)
+	seen := make(map[string]bool, len(tokens))
+	// Compact the normalized stream in place, keeping each token's first occurrence.
+	out := tokens[:0]
+	for _, f := range tokens {
+		if seen[f] {
 			continue
 		}
 		seen[f] = true

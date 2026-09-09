@@ -243,6 +243,13 @@ Display the content-addressed intent and verdict evidence stored by AgentOps.
 ao status [flags]
 ```
 
+**Flags:**
+
+```
+      --evidence-root string   Existing explicit non-Git evidence directory (default: working directory's .agents/ao)
+  -h, --help                   help for status
+```
+
 ---
 
 ### `ao version`

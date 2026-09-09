@@ -35,7 +35,7 @@ func TestTruthfulnessSixCommandSliceReportsRealContracts(t *testing.T) {
 	}{
 		{"ao version", "arbitrary", "text", "pure", map[string]string{"0": "success", "1": "failure"}},
 		{"ao capabilities", "none", "structured", "pure", map[string]string{"0": "success", "1": "failure"}},
-		{"ao status", "arbitrary", "text", "filesystem,clock", map[string]string{"0": "success", "1": "failure"}},
+		{"ao status", "arbitrary", "text", "filesystem,environment,clock", map[string]string{"0": "success", "1": "failure"}},
 		{"ao doctor", "no-args", "none", "filesystem,process,network,environment,clock", map[string]string{"0": "success", "1": "failure"}},
 		{"ao gate check", "no-args", "text", "filesystem,process,environment,clock", map[string]string{"0": "success", "1": "failure", "2": "invalid-configuration"}},
 		{"ao config", "none", "text", "filesystem,environment", map[string]string{"0": "success", "1": "failure"}},
