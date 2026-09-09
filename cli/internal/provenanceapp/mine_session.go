@@ -4,6 +4,7 @@
 package provenanceapp
 
 import (
+	"bufio"
 	"crypto/sha256"
 	"encoding/json"
 	"fmt"
@@ -219,7 +220,11 @@ func mineEventID(sessionID string, line int, kind, tool string, ordinal int) str
 // `upto`. Used as the rollback sentinel: if the previously-mined prefix's
 // checksum no longer matches, the transcript was rewritten and we re-mine.
 func prefixChecksum(result *parser.ParseResult, upto int) string {
-	var b strings.Builder
+	h := sha256.New()
+	// Buffer string writes in fixed-size chunks instead of allocating the entire
+	// transcript prefix (or converting each full tool output to a byte slice).
+	// The writes and final flush cannot fail because SHA-256 writes cannot fail.
+	b := bufio.NewWriter(h)
 	for _, m := range result.Messages {
 		if m.MessageIndex > upto {
 			continue
@@ -230,23 +235,23 @@ func prefixChecksum(result *parser.ParseResult, upto int) string {
 		// be silently trusted as unchanged, defeating rollback detection. Including
 		// the JSON-serialized input (Go sorts map keys, so it is stable across
 		// re-parses of the same bytes) makes a content rewrite change the checksum.
-		fmt.Fprintf(&b, "%d|%s|", m.MessageIndex, m.Type)
+		fmt.Fprintf(b, "%d|%s|", m.MessageIndex, m.Type)
 		for _, tc := range m.Tools {
-			b.WriteString(tc.Name)
-			b.WriteByte(0x1f)
+			_, _ = b.WriteString(tc.Name)
+			_ = b.WriteByte(0x1f)
 			if len(tc.Input) > 0 {
 				if ib, err := json.Marshal(tc.Input); err == nil {
-					b.Write(ib)
+					_, _ = b.Write(ib)
 				}
 			}
-			b.WriteByte(0x1f)
-			b.WriteString(tc.Output)
-			b.WriteByte(',')
+			_ = b.WriteByte(0x1f)
+			_, _ = b.WriteString(tc.Output)
+			_ = b.WriteByte(',')
 		}
-		b.WriteByte('\n')
+		_ = b.WriteByte('\n')
 	}
-	h := sha256.Sum256([]byte(b.String()))
-	return fmt.Sprintf("%x", h)[:16]
+	_ = b.Flush() // SHA-256 writes cannot fail.
+	return fmt.Sprintf("%x", h.Sum(nil))[:16]
 }
 
 func sessionIDFromPath(path string) string {

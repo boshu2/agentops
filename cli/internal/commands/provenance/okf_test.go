@@ -2,7 +2,9 @@ package provenance
 
 import (
 	"bytes"
+	"crypto/sha256"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -133,5 +135,67 @@ func TestCheckOKFCapabilityContract(t *testing.T) {
 	}
 	if leaf.Flags().Lookup("profile").DefValue != okfprofile.Profile {
 		t.Fatal("profile default does not match implementation pin")
+	}
+}
+
+func TestCheckOKFCLIFrontmatterByteBoundary(t *testing.T) {
+	fixture, err := os.ReadFile("../../okfprofile/testdata/maintained-reference.md")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, newline := range []struct{ name, value string }{{"LF", "\n"}, {"CRLF", "\r\n"}} {
+		for _, size := range []int{65535, 65536, 65537} {
+			t.Run(fmt.Sprintf("%s/%d", newline.name, size), func(t *testing.T) {
+				header, body, found := strings.Cut(strings.TrimPrefix(string(fixture), "---\n"), "---\n")
+				if !found {
+					t.Fatal("fixture is missing its closing delimiter")
+				}
+				header = strings.ReplaceAll(header, "\n", newline.value)
+				body = strings.ReplaceAll(body, "\n", newline.value)
+				padding := "# private-boundary-canary: "
+				header += padding + strings.Repeat("x", size-len(header)-len(padding)-len(newline.value)) + newline.value
+				if len(header) != size {
+					t.Fatalf("frontmatter fixture has %d bytes, want %d", len(header), size)
+				}
+				payload := []byte("---" + newline.value + header + "---" + newline.value + body)
+				dir := t.TempDir()
+				file := filepath.Join(dir, "input.md")
+				if err := os.WriteFile(file, payload, 0600); err != nil {
+					t.Fatal(err)
+				}
+				out, err := execProv(t, "must-not-resolve-ledger", "check-okf", "--file", file)
+				if (err == nil) != (size <= 65536) {
+					t.Errorf("%d-byte frontmatter: command error=%v", size, err)
+				}
+				var result okfprofile.Result
+				if err := json.Unmarshal([]byte(out), &result); err != nil {
+					t.Fatal(err)
+				}
+				if result.StructurallyValid != (size <= 65536) {
+					t.Errorf("%d-byte frontmatter: valid=%v, issues=%+v", size, result.StructurallyValid, result.Issues)
+				}
+				if size <= 65536 {
+					if len(result.Issues) != 0 {
+						t.Errorf("valid frontmatter has findings: %+v", result.Issues)
+					}
+				} else if len(result.Issues) != 1 || result.Issues[0] != (okfprofile.Issue{Field: "frontmatter", Code: "exceeds_64_kib"}) {
+					t.Errorf("oversized frontmatter findings: %+v", result.Issues)
+				}
+				if result.ContentSHA256 != fmt.Sprintf("%x", sha256.Sum256(payload)) || result.Assurance != okfprofile.Assurance {
+					t.Error("exact input digest or structural assurance changed")
+				}
+				if strings.Contains(out, "private-boundary-canary") || strings.Contains(out, "declared-source") || strings.Contains(out, "Synthetic request behavior") {
+					t.Error("candidate content echoed")
+				}
+				after, err := os.ReadFile(file)
+				if err != nil || !bytes.Equal(after, payload) {
+					t.Error("checker changed candidate")
+				}
+				entries, err := os.ReadDir(dir)
+				if err != nil || len(entries) != 1 {
+					t.Errorf("unexpected file effects: %v %v", entries, err)
+				}
+			})
+		}
 	}
 }
