@@ -79,8 +79,8 @@ that limitation; it cannot discard an acceptance-relevant finding.
 
 When selected judges disagree, preserve both verdicts and their evidence.
 Required diversity converges only when both pass; neither majority vote nor a
-preferred judge settles a split. Repair addresses findings under the existing
-convergence law. Report unresolved dissent and the caller's decision openly.
+preferred judge settles a split. Repair addresses known findings directly under RPI and real caller/native
+bounds. Report unresolved dissent and the caller's decision openly.
 Same-family fresh judgment reduces anchoring, but does not prove independence
 from shared training biases; cross-family agreement is corroboration, not truth.
 
@@ -133,7 +133,9 @@ optional, residual risk, or a non-goal to obtain PASS.
    change, was introduced by it, or has unknown cause. Use before/after proof or
    equivalent causal evidence under unchanged acceptance; counts and timestamps
    do not establish cause. Recurrence calls for causal examination and does not
-   by itself prove a design failure. Name the class or omit it; a `class` that is
+   by itself prove a design failure. Known defects return to direct repair;
+   unknown cause, recurrence or no progress uses the charter's single bounded
+   helper rule, without delegating repairs to this validator. Name the class or omit it; a `class` that is
    present and blank is a finding against this validator,
    and so is a class that does not describe its finding. PASS
    requires distinct identities, explicit freshness, nonempty checked scope,

@@ -1,23 +1,28 @@
 # Program
 
-This repository self-hosts the same bounded-repair RPI boundary it ships (ADR-0017). PROGRAM is
+This repository self-hosts the lean RPI charter it ships (ADR-0017). PROGRAM is
 repository execution guidance, not a product retry or delivery controller.
 
 ## Experiment unit
 
 One invocation consumes and produces:
 
-1. one resolved caller-owned intent, snapshotted by content when necessary;
-2. one bounded RED -> GREEN -> refactor implementation experiment;
+1. one resolved caller-owned intent, using Plan only when needed and a content
+   snapshot only when necessary;
+2. bounded implementation and checks, with direct repair of known defects and
+   evidence-based approach revision within unchanged acceptance;
 3. one runtime-derived subject manifest and factual check receipts with
    complete or honestly incomplete changed-path proof;
-4. one fresh author-distinct Validate judgment over exact content, repeated
-   only inside the bounded repair phase under the convergence law;
-5. one durable verdict and report.
+4. fresh author-distinct Validate judgment over exact content, with fresh
+   re-validation after acceptance-relevant repairs;
+5. a subject-led report, with a durable verdict only when requested or required
+   by a declared consumer.
 
-The invocation stops when converged, stopped by the law, or out of the caller's
-repair rounds. A later revision is a caller-created new
-invocation. Repository Git and release procedures remain separate.
+Finish when acceptance is met and freshly validated. A true causal stall admits
+at most one bounded fresh helper within the existing allowance; cancellation,
+refusal and spent hard resources stop work. Do not renew an allowance through
+replanning, compaction or delegation. Changed acceptance requires caller
+authority. Repository Git and release procedures remain separate.
 
 ## Mutable scope
 

@@ -6,6 +6,31 @@
 - **Origin:** `.agents/brainstorm/2026-06-19-agentops-memory-state-substrate.md` (the governed-lakehouse brainstorm that first stated the one-authority invariant), `.agents/audits/2026-07-18-agents-writer-matrix.md` (the writer-matrix audit that exposed the junk drawer)
 - **Tracking:** epic `age-state-tiers-operationalize-5mzlm` (this ADR is `.1`), tracker epic `age-tracker-bd-dolt-return-jyg2g`
 
+## Active lean-memory amendment — 2026-09-09
+
+The lean Memory skill now implements optional recall, separately budgeted
+mine/learn and curate/qualify/retire through operation references. It supersedes
+older verdict-only Learn, lesson-per-session and automatic scratch-TTL guidance.
+The following selected confidentiality requirements remain; this implementation
+supports public or already-cleared trial inputs only, and does not claim native
+restricted-source or model-egress enforcement. Required future isolation is not
+supplied by these skills, labels, prompts or a same-user worktree.
+
+BD owns work/status/handoffs, Git content, native/CASS sources episodes and
+caller-selected reviewed external Markdown topic pages reusable claims. Update
+an existing page; applicability, action, support, limits and invalidation belong
+in each entry. A single incident stays narrow; stronger rules need stronger
+support. Keep rare useful constraints and preserve withdrawal provenance. No
+blind TTL/deletion. Learning can remove rules; no-change is valid. Saved pages
+are not benefit; only later task evidence can demonstrate helpful reuse.
+
+Protected external non-Git drafts and exact fresh support/disclosure review
+precede every Git object/index/stash/import. Legacy `.agents/` and unique proof
+remain preserved. The optional OKF structural profile does not establish truth,
+permission, isolation or usefulness. No new source store, scheduler or AO command
+is needed; previous references to unimplemented Recall/Learn owners are historical
+for these limited instruction-level operations. Broader enforcement is deferred.
+
 ## Active amendment — 2026-09-06 external reviewed memory
 
 This amendment supersedes the earlier location-based tiers, automatic citation

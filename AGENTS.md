@@ -9,7 +9,7 @@ AgentOps joins them as a federated integration graph and adds the judgment
 step, one RPI traversal at a time:
 
 ```text
-RPI -> Plan -> Implement -> fresh Validate -> repair to convergence -> report
+RPI charter -> on-demand Plan -> Implement and checks -> fresh Validate -> finish
 ```
 
 No fresh independent judgment over the exact subject means the experiment is
@@ -116,7 +116,7 @@ absorbs their authority.
 |---|---|---|
 | Work, status, dependencies, close reasons | Beads or the caller's tracker | Query directly; never build a second work index. |
 | Source content and delivery history | Git and repository policy | Bind exact content when useful; a commit or merge never implies semantic PASS. |
-| Past agent sessions | CASS | Retrieve cited episodes on demand; search output is evidence, not policy. |
+| Past agent sessions | Native sessions / CASS | Retrieve cited episodes on demand; search output is evidence, not policy. |
 | Curated cross-session memory | caller-selected reviewed external Markdown/OKF bundle, CM, ee, or another memory system | Check owner, task, model and destination access before retrieval; ADR-0016 governs disclosure. |
 | Runtime execution | native coding agent and shell, or an explicitly selected factory | Read and report native state; runtime completion is never validation. |
 | Checks and test output | The executable that produced them | Store factual receipts; a fresh context judges meaning. |
@@ -143,65 +143,60 @@ Skill logic ships in Go via `ao`;
 `skills/*/scripts/**/*.py`. Skill tests retain their documented exemption
 (ADR-0016, gate-enforced).
 
-## Standard RPI traversal
+## Lean RPI operating charter
 
-1. **Plan once.** Shape one active behavior in the existing bead or caller
-   intent — acceptance, non-goals, scope, first check. Once the caller accepts
-   the acceptance and scope, Plan is closed for that intent; further planning
-   over the same intent needs new explicit authorization.
-2. **Implement once.** One bounded RED -> GREEN -> refactor experiment; the
-   runtime derives the manifest, changed paths, and check receipts.
-3. **Validate once, fresh.** A distinct context verifies subject identity,
-   scope, evidence, and acceptance: `PASS | FAIL | NOT_PROVEN`. Missing or
-   colliding context identities, unattested freshness, subject mutation or
-   digest mismatch, and incomplete changed-path coverage are `NOT_PROVEN`;
-   proven out-of-scope change is `FAIL`. PASS requires nonempty checked scope,
-   top-level evidence, evidence for every criterion, and an empty
-   `not_checked`. Persist `verdict.v2` only when requested by a caller or
-   required by a declared consumer.
-4. **Repair to convergence, then report.** On `FAIL` or `NOT_PROVEN` with
-   findings, repair and re-validate freshly while the convergence law admits
-   another round (caller-declared `repair_rounds`, default 2; new digest-bound
-   evidence closes a named acceptance gap; no reopened id, recurring closed
-   class, introduced regression, or new finding of unknown cause). Digest and
-   finding-count movement alone is not progress. Evidenced pre-existing
-   discoveries can grow the count; every necessary finding remains visible.
-   Stop when converged, stopped by the law, or out of rounds (ADR-0017).
-   Report the result; emit no next action. Rounds with no acceptance-relevant
-   implementation evidence end the run. Reports lead with the subject.
+Own the authorized outcome through finish. Use the existing accepted intent and
+scope; a clear trivial change needs no Plan, Recall or Learn worksheet. Take the
+smallest action that advances acceptance or resolves consequential uncertainty.
+Plan may revise an approach when evidence disproves an assumption within
+unchanged accepted outcome and scope; acceptance changes need caller authority.
+Implement repairs ordinary known defects directly. Specialists remain optional.
 
-A caller or explicitly selected bounded outer goal may authorize a new
-experiment within its accepted envelope; native budgets, stops and work
-authority stay upstream. Informative red may justify that different experiment
-under unchanged acceptance. A selected goal's regression, unknown cause,
-recurrence, oscillation, or no-progress breaker enters causal HOLD; recurrence
-alone does not prove design failure. Exactly one bounded fresh helper per HOLD
-incident fits inside the existing allowance. Cancellation, explicit refusal or
-judgment, and genuinely spent hard time/cost/quota skip the helper. Retry counts,
-new subjects, compaction, and helper calls never renew a goal allowance. Native
-objective text does not demonstrate a pause or aggregate budget enforcement;
-report actual observed controls and unmeasured gaps truthfully.
+Use cheap discriminating checks during edits, required integration checks before
+final judgment, and reserve capacity for integration, validation, repair and a
+truthful handoff. On a genuine causal stall (unknown cause, recurrence, no
+progress or wrong objective), use at most one bounded fresh helper for that
+incident within authority and real remaining bounds. An unhelpful answer ends
+the attempt; do not build a helper chain. Known failures need direct repair.
+Cancellation, refusal and spent hard time/cost/quota skip help. Retry counts,
+compaction, helpers and new subjects never renew real limits. Preserve compact
+recovery state in native handoff only when needed to prevent evidence loss.
 
-Fresh author-distinct validation is always required. Default to a fresh reviewer
-from the author's model family: Codex for Codex work, Claude for Claude work.
-Risk sizes evidence inspection; cross-model review is caller-selected through
-`--cross-model [model]` or an explicit request under `skills/validate/SKILL.md`.
-An explicitly requested leg remains required until the caller changes it.
-Reviews use caller/native time bounds, with no fixed ten-minute cap. Exact
-subject, all acceptance, and empty `not_checked` remain the binding PASS bar.
+Fresh author-distinct final validation is required over the exact subject,
+unchanged acceptance and all changed paths. Default to a fresh reviewer from
+the author's model family; cross-model review is opt-in and every explicitly
+required leg remains required. No fixed ten-minute cap applies. Risk determines
+evidence depth, not mandatory specialist or model-family multiplication.
+PASS needs distinct identities, attested freshness, nonempty checked scope,
+evidence for every criterion and empty `not_checked`. Missing identity,
+freshness, subject continuity or acceptance proof means `NOT_PROVEN`; proven
+out-of-scope change or failed acceptance means `FAIL`. Repair known findings
+within authority and real bounds, then revalidate the changed exact subject.
+Persist machine evidence only for a caller request or declared consumer.
 
-CDLC (Context Delivery Lifecycle) adopts maintained
-external context for disposable agents, without weight training or deterministic
-inference. Discovery (Plan shapes), Implement and Validate are its three phases.
-See [RPI traversal](docs/architecture/rpi-traversal.md) for selected-mode contracts,
-later implementation owners and honest mechanism-versus-benefit limits.
-Standalone RPI remains runnable; learning cannot change its outcomes.
+[Memory](skills/memory/SKILL.md) is optional and on demand: recall applicable
+reviewed external topic pages, or separately budget mining/learning and curation.
+BD owns work/status/handoffs, Git content, and native/CASS systems episodes.
+Reuse existing topic pages; entries give applicability, action, support, limits
+and invalidation. One incident supports a narrow observation; stronger rules
+need stronger evidence. Preserve rare useful constraints and legacy `.agents/`
+evidence; no blind TTL/deletion. Learning may remove rules and no-change is valid.
+Benefit requires later work evidence, not saved pages. This lean path accepts
+public or already-cleared trial inputs only and claims no native enforcement
+for restricted sources. Protected external drafts and exact independent support
+and destination-disclosure review precede Git import (ADR-0016).
+
+The [RPI skill](skills/rpi/SKILL.md) owns the charter; the
+[architecture reference](docs/architecture/rpi-traversal.md) owns exact evidence
+semantics. Optional outer-goal guidance and the grandfathered fixed-dispatch
+reference adapter stay outside the native core. No scheduler or new AO command
+is needed for this harness.
 
 ## Product boundary
 
-AgentOps reads or refines caller-owned intent, runs one bounded experiment,
+AgentOps reads or refines caller-owned intent, implements authorized work and direct repairs,
 establishes exact content identity, and obtains fresh independent judgment. It
-can persist that judgment as standalone evidence when requested. It owns no retry,
+can persist that judgment as standalone evidence when requested. It owns no aggregate retry controller,
 budget, queue, work ownership, Git, closure, release, landing, or delivery
 transition. Consumer repositories keep their own direct-push, PR, CI, merge,
 rollback, and release policy.

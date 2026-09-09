@@ -2,7 +2,7 @@
 
 # Skill Router
 
-54 live skills. Metadata is the sole inventory and graph source.
+55 live skills. Metadata is the sole inventory and graph source.
 
 ## keep
 
@@ -10,7 +10,7 @@
 
 ## keep_off_path
 
-`learn`
+`learn`, `memory`
 
 ## keep_strategy
 
@@ -51,7 +51,8 @@
 | `human-only-skills` | meta | `keep_specialist` | - | `human_only_skill_routing` | - |
 | `idea-genie` | execution | `keep_strategy` | - | `generate_evidenced_options`, `dueling_idea_genies` | `write_idea_portfolio` |
 | `implement` | execution | `keep` | - | `execute_one_experiment`, `collect_factual_evidence` | `modify_declared_subject`, `derive_subject_manifest` |
-| `learn` | execution | `keep_off_path` | - | `analyze_verdict_collections` | `write_advisory_observations` |
+| `learn` | execution | `keep_off_path` | - | `analyze_bounded_evidence` | `write_advisory_observations` |
+| `memory` | execution | `keep_off_path` | - | `recall_applicable_context`, `mine_supported_observations`, `curate_topic_pages` | `write_protected_drafts`, `update_authorized_topic_pages` |
 | `ms` | execution | `keep_specialist` | - | `ms` | `spawn_search_server`, `write_feedback_outcomes`, `rebuild_search_index` |
 | `ntm` | execution | `keep_optional_adapter` | - | `ntm` | `manage_ntm_panes`, `dispatch_pane_commands` |
 | `one-way-door` | judgment | `keep_strategy` | - | `classify_decision_reversibility`, `escalate_user_challenge` | `write_advisory_decision_classification` |
@@ -67,7 +68,7 @@
 | `research` | execution | `keep_specialist` | - | `research` | `write_research_report` |
 | `reverse-engineer` | execution | `keep_specialist` | - | `reverse_engineer` | `clone_upstream_repo`, `authorized_binary_execution`, `write_teardown_artifacts` |
 | `route` | meta | `keep_specialist` | - | `route_request_to_skill` | - |
-| `rpi` | meta | `keep` | `anti-ceremony`, `plan`, `implement`, `validate` | `orchestrate_once`, `report` | `invoke_anti_ceremony_guard`, `dispatch_core_phases` |
+| `rpi` | meta | `keep` | `plan`, `implement`, `validate` | `own_authorized_outcome`, `report` | `dispatch_core_phases` |
 | `sbh` | execution | `keep_specialist` | - | `sbh` | `delete_reclaimable_files`, `release_disk_ballast`, `modify_host_storage_config` |
 | `scaffold` | execution | `keep_specialist` | - | `scaffold` | `write_project_files` |
 | `security` | product | `keep_specialist` | - | `security` | `write_scan_artifacts` |

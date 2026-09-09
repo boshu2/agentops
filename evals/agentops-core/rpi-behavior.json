@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "id": "agentops-core.rpi-behavior",
-  "name": "AgentOps Bounded-Repair RPI Canary",
-  "description": "Offline public canary for the Plan, Implement, fresh Validate, bounded repair under the convergence law, durable verdict boundary (ADR-0017).",
+  "name": "AgentOps Lean RPI and Optional Adapter Canary",
+  "description": "Offline structural canary for the lean charter and optional finite repair adapter; native behavior needs task trials.",
   "practices": [
     "llm-eval-harness",
     "agile-manifesto"
@@ -70,7 +70,7 @@
   "cases": [
     {
       "id": "bounded-repair-reference-tests",
-      "title": "RPI dispatches Plan and Implement once and repairs under the convergence law",
+      "title": "Optional fixed-dispatch reference preserves finite supplied-round evaluation",
       "kind": "command",
       "objective": "Prove PASS converges, FAIL/NOT_PROVEN repair under the law, and evidence of acceptance progress and defect cause gates bounded repair (ADR-0017).",
       "runtime": "shell",
@@ -93,19 +93,19 @@
     },
     {
       "id": "rpi-skill-stop-contract",
-      "title": "RPI stops when converged, stopped by the law, or out of repair_rounds",
+      "title": "Lean RPI owns authorized outcome through checks and fresh judgment",
       "kind": "artifact_check",
-      "objective": "Keep the public wrapper anchored to one traversal with a bounded repair phase and caller-owned continuation (ADR-0017).",
+      "objective": "Keep direct repair, fresh judgment and real bounds in the native charter without mandatory phase worksheets.",
       "expectations": [
         {
           "type": "artifact_contains",
           "target": "../../skills/rpi/SKILL.md",
-          "value": "Plan -> Implement -> fresh Validate -> bounded repair -> report"
+          "value": "Own the authorized outcome through finish."
         },
         {
           "type": "artifact_contains",
           "target": "../../skills/rpi/SKILL.md",
-          "value": "## The convergence law"
+          "value": "## Causal stall and bounds"
         },
         {
           "type": "artifact_contains",

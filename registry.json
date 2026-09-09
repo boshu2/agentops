@@ -284,9 +284,36 @@
       "driven_by_skills": [
         "learn"
       ],
-      "id": "skill:learn:analyze_verdict_collections",
-      "name": "analyze_verdict_collections",
+      "id": "skill:learn:analyze_bounded_evidence",
+      "name": "analyze_bounded_evidence",
       "path": "skills/learn/SKILL.md",
+      "type": "skill"
+    },
+    {
+      "driven_by_skills": [
+        "memory"
+      ],
+      "id": "skill:memory:recall_applicable_context",
+      "name": "recall_applicable_context",
+      "path": "skills/memory/SKILL.md",
+      "type": "skill"
+    },
+    {
+      "driven_by_skills": [
+        "memory"
+      ],
+      "id": "skill:memory:mine_supported_observations",
+      "name": "mine_supported_observations",
+      "path": "skills/memory/SKILL.md",
+      "type": "skill"
+    },
+    {
+      "driven_by_skills": [
+        "memory"
+      ],
+      "id": "skill:memory:curate_topic_pages",
+      "name": "curate_topic_pages",
+      "path": "skills/memory/SKILL.md",
       "type": "skill"
     },
     {
@@ -464,8 +491,8 @@
       "driven_by_skills": [
         "rpi"
       ],
-      "id": "skill:rpi:orchestrate_once",
-      "name": "orchestrate_once",
+      "id": "skill:rpi:own_authorized_outcome",
+      "name": "own_authorized_outcome",
       "path": "skills/rpi/SKILL.md",
       "type": "skill"
     },
@@ -699,19 +726,19 @@
     "cli_commands": 0,
     "gates": 0,
     "reference_impls": 0,
-    "skills": 77,
-    "total": 77
+    "skills": 80,
+    "total": 80
   },
   "cli_top_level_commands": [],
   "schema_version": 3,
   "summary": {
-    "capabilities": 77,
+    "capabilities": 80,
     "cli_commands": 0,
     "eval_files": 0,
     "hooks": 0,
     "job_types": 0,
     "knowledge_stores": 0,
-    "skills": 54,
+    "skills": 55,
     "workflows": 0
   },
   "surfaces": {
@@ -1078,7 +1105,7 @@
       },
       {
         "capabilities": [
-          "analyze_verdict_collections"
+          "analyze_bounded_evidence"
         ],
         "disposition": "keep_off_path",
         "effects": [
@@ -1089,6 +1116,24 @@
         "name": "learn",
         "path": "skills/learn/",
         "reference_count": 2,
+        "tier": "execution"
+      },
+      {
+        "capabilities": [
+          "recall_applicable_context",
+          "mine_supported_observations",
+          "curate_topic_pages"
+        ],
+        "disposition": "keep_off_path",
+        "effects": [
+          "write_protected_drafts",
+          "update_authorized_topic_pages"
+        ],
+        "has_references": true,
+        "has_skill_md": true,
+        "name": "memory",
+        "path": "skills/memory/",
+        "reference_count": 3,
         "tier": "execution"
       },
       {
@@ -1326,19 +1371,18 @@
       },
       {
         "capabilities": [
-          "orchestrate_once",
+          "own_authorized_outcome",
           "report"
         ],
         "disposition": "keep",
         "effects": [
-          "invoke_anti_ceremony_guard",
           "dispatch_core_phases"
         ],
         "has_references": true,
         "has_skill_md": true,
         "name": "rpi",
         "path": "skills/rpi/",
-        "reference_count": 2,
+        "reference_count": 4,
         "tier": "meta"
       },
       {

@@ -7,7 +7,6 @@
 | Source | Target |
 |---|---|
 | `crank` | `rpi` |
-| `rpi` | `anti-ceremony` |
 | `rpi` | `implement` |
 | `rpi` | `plan` |
 | `rpi` | `validate` |
@@ -48,7 +47,6 @@
 | `premortem` | `supplier-to` | `plan` |
 | `product` | `supplier-to` | `plan` |
 | `reality-check` | `supplier-to` | `plan` |
-| `rpi` | `customer-of` | `anti-ceremony` |
 | `rpi` | `customer-of` | `implement` |
 | `rpi` | `customer-of` | `plan` |
 | `rpi` | `customer-of` | `validate` |
@@ -113,8 +111,10 @@
 | `idea-genie` | produces | `idea-portfolio.v1` |
 | `idea-genie` | produces | `idea-challenge.v1` |
 | `implement` | produces | `subject-manifest.v1` |
-| `learn` | consumes | `verdict.v2` |
+| `learn` | consumes | `authorized-episode-evidence` |
 | `learn` | produces | `learning-observations` |
+| `memory` | produces | `applicable-context` |
+| `memory` | produces | `reviewed-topic-pages` |
 | `ntm` | consumes | `pane-command-request` |
 | `ntm` | produces | `ntm-robot-state` |
 | `ntm` | produces | `agent-worker-transcript` |
@@ -137,7 +137,6 @@
 | `research` | produces | `research-report` |
 | `reverse-engineer` | produces | `.agents/scratch/reverse-engineer/*/` |
 | `route` | produces | `routing-decision.v1` |
-| `rpi` | consumes | `anti-ceremony` |
 | `rpi` | consumes | `plan` |
 | `rpi` | consumes | `implement` |
 | `rpi` | consumes | `validate` |

@@ -1,6 +1,6 @@
 ---
 name: anti-ceremony
-description: 'Guard outcome work against process overhead. Triggers: RPI pre-Plan guard; explicit "full anti-ceremony audit" requests.'
+description: 'Guard outcome work against process overhead. Triggers: optional "quick guard"; explicit "full anti-ceremony audit" requests.'
 practices:
 - lean
 - evidence-based-development
@@ -28,7 +28,7 @@ output_contract: 'artifact-free CONTINUE or STOP decision with reason, frozen_ou
 # Anti-Ceremony
 
 Keep work tied to the caller-visible outcome and the proof still needed for it.
-The default guard is a single, artifact-free judgment before RPI Plan; the full
+The optional guard is a single, artifact-free judgment when selected; the full
 honesty audit runs only on an explicit "full anti-ceremony audit" request.
 
 ## Prompt
@@ -60,7 +60,7 @@ the gate row, green in CI. Stop condition: that gate passes on main.
 Progress needs evidence tied to acceptance or a named blocking uncertainty.
 Digest movement, finding counts, and additional reviews alone earn no credit.
 Informative red can justify a different experiment inside an explicitly selected
-outer goal's unchanged acceptance and allowance; repeated no-information work
+authorized outcome's unchanged acceptance and allowance; repeated no-information work
 cannot. Keep required independent proof in `remaining_proof`, including every
 necessary unresolved finding. Apply Validate's effect-based risk rule to the
 cost of proof; never weaken the exact-subject or all-acceptance PASS bar.

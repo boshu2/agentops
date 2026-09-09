@@ -6,6 +6,15 @@
 **Question:** what meta-loops and graphs did the skill system actually build,
 and where can skills still create compounding improvement in agent harnesses?
 
+## Current-contract note — 2026-09-09
+
+The historical release synthesis below retains the August graph and evidence.
+Current execution uses the [lean RPI charter](../../skills/rpi/SKILL.md): on-demand
+Plan, direct repairs, cheap checks and fresh final validation. Anti-Ceremony and
+all specialists are optional; Memory supplies on-demand recall and separately
+budgeted episode/curation operations. The historical verdict-only Learn and
+mandatory guard diagrams below are not current operating instructions.
+
 ## Executive finding
 
 AgentOps did not evolve into one ever-larger autonomous loop. It repeatedly

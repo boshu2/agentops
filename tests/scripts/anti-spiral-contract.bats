@@ -1,7 +1,7 @@
 #!/usr/bin/env bats
 # Anti-spiral guards (2026-07-28 incident: three days of planning/validation
 # artifacts, zero implementation commits). Deterministic surface:
-#   1. the rpi contract carries admission, phase-lock, spiral-breaker, and
+#   1. the rpi contract carries outcome ownership, bounded help, direct repair, and
 #      subject-first-reporting language, and its validator fails when any of
 #      those lines is removed;
 #   2. the validate contract requires a nonempty implementation candidate,
@@ -28,16 +28,16 @@ stripped_validator_must_fail() {
   [ "$status" -ne 0 ]
 }
 
-@test "rpi validator pins the phase lock" {
-  stripped_validator_must_fail rpi 'Plan is closed for that intent'
+@test "rpi validator pins acceptance authority" {
+  stripped_validator_must_fail rpi 'Acceptance changes need caller authority.'
 }
 
-@test "rpi validator pins the spiral breaker" {
-  stripped_validator_must_fail rpi 'spiral breaker'
+@test "rpi validator pins one bounded helper" {
+  stripped_validator_must_fail rpi 'at most one bounded'
 }
 
 @test "rpi validator pins subject-first reporting" {
-  stripped_validator_must_fail rpi 'A rising artifact count over an unchanged subject is a stop'
+  stripped_validator_must_fail rpi 'Own the authorized outcome through finish.'
 }
 
 @test "validate validator pins the nonempty-candidate precondition" {
@@ -84,18 +84,18 @@ stripped_validator_must_fail() {
 @test "AGENTS.md carries the constraint floor and spiral stop" {
   grep -Fq 'A synthesis frozen without an active constraint is invalid' "$REPO_ROOT/AGENTS.md"
   grep -Fq 'check-skill-python-ratchet.sh' "$REPO_ROOT/AGENTS.md"
-  grep -Fq 'Plan is closed' "$REPO_ROOT/AGENTS.md"
-  grep -Fq 'implementation evidence end the run' "$REPO_ROOT/AGENTS.md"
+  grep -Fq 'Implement repairs ordinary known defects directly.' "$REPO_ROOT/AGENTS.md"
+  grep -Fq 'do not build a helper chain.' "$REPO_ROOT/AGENTS.md"
 }
 
-@test "rpi validator pins acceptance progress rather than digest or count movement" {
-  stripped_validator_must_fail rpi 'finding count alone is not useful progress'
+@test "rpi validator pins direct repair of understood defects" {
+  stripped_validator_must_fail rpi 'ordinary known'
 }
 
-@test "rpi validator pins causal review for unknown new findings" {
-  stripped_validator_must_fail rpi 'unknown cause stops repair for causal examination'
+@test "rpi validator pins fresh judgment" {
+  stripped_validator_must_fail rpi 'author-distinct'
 }
 
 @test "rpi validator preserves explicitly requested review until caller changes it" {
-  stripped_validator_must_fail rpi 'An explicit caller-required leg remains required until that caller changes it.'
+  stripped_validator_must_fail rpi 'reviewers remain required.'
 }

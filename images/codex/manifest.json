@@ -1,7 +1,7 @@
 {
   "image": "codex",
   "schema_version": "skill-image.v1",
-  "skill_count": 54,
+  "skill_count": 55,
   "skills": [
     {
       "disposition": "keep_specialist",
@@ -146,6 +146,12 @@
       "slug": "learn",
       "source_path": "skills/learn/",
       "twin_path": "skills-codex/learn/"
+    },
+    {
+      "disposition": "keep_off_path",
+      "slug": "memory",
+      "source_path": "skills/memory/",
+      "twin_path": "skills-codex/memory/"
     },
     {
       "disposition": "keep_specialist",

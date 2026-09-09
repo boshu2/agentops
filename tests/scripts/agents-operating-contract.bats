@@ -8,23 +8,22 @@
   for required in \
     "operations layer for agentic engineering" \
     "federated integration graph" \
-    "Standard RPI traversal" \
-    "RPI -> Plan -> Implement -> fresh Validate -> repair to convergence -> report" \
-    "Persist \`verdict.v2\` only when" \
-    "It owns no retry" \
+    "Lean RPI operating charter" \
+    "RPI charter -> on-demand Plan -> Implement and checks -> fresh Validate -> finish" \
+    "Persist machine evidence only for a caller request or declared consumer" \
+    "It owns no aggregate retry controller" \
     "fresh independent judgment" \
-    "A caller or explicitly selected bounded outer goal may authorize a new" \
-    "authority stay upstream" \
-    "breaker enters causal HOLD" \
-    "Exactly one bounded fresh helper per HOLD" \
-    "incident fits inside the existing allowance" \
-    "genuinely spent hard time/cost/quota skip the helper" \
-    "never renew a goal allowance" \
+    "unchanged accepted outcome and scope; acceptance changes need caller authority" \
+    "Implement repairs ordinary known defects directly" \
+    "use at most one bounded fresh helper" \
+    "incident within authority and real remaining bounds" \
+    "Cancellation, refusal and spent hard time/cost/quota skip help" \
+    "compaction, helpers and new subjects never renew real limits" \
     "docs/architecture/rpi-traversal.md"; do
     grep -Fq -- "$required" "$contract"
   done
 
-  # A bounded outer goal owns HOLD and allowance; the RPI product boundary
-  # above must still deny retry/budget ownership and retired delivery machinery.
+  # Native controls own aggregate allowances; the lean charter keeps direct
+  # repair, bounded help and fresh judgment without adding delivery machinery.
   ! grep -Eq 'ao land|next-work|Plan-Pawl' "$contract"
 }

@@ -13,7 +13,7 @@ explicit behavior
   -> bounded implementation experiment
   -> exact content identity
   -> fresh independent judgment
-  -> durable PASS | FAIL | NOT_PROVEN
+  -> PASS | FAIL | NOT_PROVEN, persisted when requested
 ```
 
 ## Fitness properties
@@ -21,8 +21,9 @@ explicit behavior
 1. **Behavior before activity.** The caller-owned intent states the active
    behavior, acceptance examples where useful, non-goals, evidence, and bounded
    write scope before implementation begins.
-2. **One experiment.** Implement performs one RED -> GREEN -> refactor cycle and
-   reports facts without retry or delivery authority.
+2. **Bounded implementation.** Implement makes and checks the change, repairing
+   known defects directly within the accepted scope and allowance. Aggregate
+   budgets and delivery authority remain with the caller or selected runtime.
 3. **Fresh judgment.** PASS requires explicit, distinct author and validator
    context IDs plus a freshness attestation.
 4. **Exact subject.** Content identity covers files, symlinks, deletions,
@@ -31,19 +32,23 @@ explicit behavior
 5. **Honest uncertainty.** Mutation, incomplete changed-path coverage, missing
    identity, or missing proof returns NOT_PROVEN. Proven scope or acceptance
    failure returns FAIL.
-6. **Sovereign proof.** Validate atomically writes content-addressed JSON to
-   caller-controlled storage. Provenance is optional audit.
-7. **Stop boundary.** RPI dispatches Plan and Implement at most once, validates
-   freshly and admits only bounded repairs under ADR-0017, then reports. A
-   selected outer goal may authorize a new experiment inside its accepted
-   envelope; the native caller keeps budgets, stops, queue and work authority.
+6. **Sovereign proof.** When requested, Validate atomically writes
+   content-addressed JSON to caller-selected protected external non-Git storage.
+   Preserve legacy evidence under owner policy. Provenance is optional audit.
+7. **Stop boundary.** RPI owns the authorized outcome, using Plan only when
+   needed and revising approach within unchanged acceptance. Known defects get
+   direct repair; a causal stall gets at most one bounded fresh helper inside
+   the existing allowance. Finish when accepted and freshly validated, or stop
+   at the actual cancellation, refusal, causal or resource boundary. The native
+   caller keeps budgets, stops, queue and work authority.
 8. **Open ecosystem.** Callers keep their trackers, Git, PRs, CI, cloud agents,
    merge queues, rollback, and release systems.
 
 ## Structural constraints
 
-- Core hard dependencies are only `rpi -> {plan, implement, validate}`.
-- Learn and all strategy/factory/specialist skills are off-path or optional.
+- Core hard dependencies are only `rpi -> {plan, implement, validate}`; these
+  capability references do not require invoking every skill on every change.
+- Memory, Learn and all strategy/factory/specialist skills are optional.
 - Core schemas contain no retry, budget, queue, claim, lease, admission,
   next-action, closure, release, or delivery state.
 - The pure manifest and verdict helpers make no Git, tracker, queue, network,
@@ -84,14 +89,15 @@ evidence for them.
 The selected CDLC (Context Delivery Lifecycle) contract maintains external
 context/environment around disposable agents; it neither trains weights nor
 promises deterministic inference. Discovery (with Plan as shaping owner),
-Implement and Validate preserve the one-experiment boundary. Recall and Learn
-extensions remain later work; evolve restoration belongs only to T25. No
-unavailable entrypoint is enabled by this document.
+Implement and Validate operate within caller-owned intent and allowance.
+Optional Memory recall and mining are skill guidance, not a new runtime or
+automatic private-source authorization; evolve restoration belongs only to
+T25. No unavailable entrypoint is enabled by this document.
 
 Caller-selected external Markdown/OKF memory requires exact factual support
 and destination disclosure before Git ingestion, then later observed utility.
-These are distinct claims. The current trial used no optional knowledge body
-and showed no memory benefit. Keep null, failed, missing and harmful outcomes;
+These are distinct claims. A reviewed page alone shows no memory benefit;
+that requires evidence from later work. Keep null, failed, missing and harmful outcomes;
 there is no numeric utility score, universal context percentage, page quota or
 mandatory lesson per session. Learning cannot change a completed verdict or
 silently promote policy. [ADR-0016](docs/adr/ADR-0016-state-tiers.md) and

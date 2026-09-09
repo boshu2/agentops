@@ -14,7 +14,7 @@ import yaml
 ROOT = Path(__file__).resolve().parents[1]
 CORE = {"rpi", "plan", "implement", "validate"}
 EXPECTED_CORE = {
-    "rpi": {"anti-ceremony", "plan", "implement", "validate"},
+    "rpi": {"plan", "implement", "validate"},
     "plan": set(),
     "implement": set(),
     "validate": set(),

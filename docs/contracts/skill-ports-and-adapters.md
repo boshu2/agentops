@@ -10,7 +10,7 @@ an AgentOps-owned control level.
 caller product boundary + fitness evidence
   -> caller-selected Goal / Mayor campaign (execution orchestrator)
        -> select one experiment intent
-       -> RPI traversal: anti-ceremony guard -> Plan -> Implement -> fresh Validate -> bounded repair -> report
+       -> RPI charter -> on-demand Plan -> Implement and direct repair -> fresh Validate -> finish
        -> consume the immutable report and verdict
        -> ratchet the graph, select another experiment, or stop
   -> optional post-verdict learning
@@ -28,27 +28,25 @@ independently judged traversal in every execution shape.
 |---|---|---|
 | Caller and product | Desired outcome, product boundary, authority, terminal acceptance | An AgentOps semantic verdict without fresh validation |
 | Goal / Mayor (caller-side orchestrator) | Campaign graph, experiment selection, cumulative budgets, ratchet, breakers, terminal campaign report | Rewriting verdicts or issuing its own PASS for a candidate |
-| RPI | One ordered experiment dispatch and one report | Campaign continuation, retries, queues, delivery, or work selection |
-| Anti-ceremony | One artifact-free pre-Plan dispatch guard | A planning artifact, acceptance change, or core-phase dispatch |
+| RPI | Authorized outcome through direct repairs, checks and fresh final judgment | Aggregate campaign control, queues or future work selection |
+| Anti-ceremony | Optional artifact-free guard | Mandatory core admission or acceptance change |
 | Plan | One experiment's acceptance, non-goals, write scope, and first useful check | The campaign graph or a duplicate planning artifact |
-| Implement | One exact candidate and factual check evidence | Semantic judgment, repair loops, or later work selection |
+| Implement | Authorized edits, direct repairs and factual checks | Semantic judgment or later work selection |
 | Validate | Independent judgment over unchanged intent and exact subject identity | Candidate edits, continuation, closure, or delivery |
 | Runtime adapter | Execution of an explicit packet and runtime facts | Experiment selection, phase meaning, or verdict authority |
 
 The core hard-dependency graph is deliberately small:
 
 ```text
-rpi -> anti-ceremony
 rpi -> plan
 rpi -> implement
 rpi -> validate
 ```
 
-Hard dependencies mean the source skill cannot perform its declared behavior
-without the target. RPI invokes the anti-ceremony quick guard once before Plan:
-`STOP` dispatches no core phase, while `CONTINUE` preserves Plan -> Implement ->
-fresh Validate. Other advice, evidence, strategies, and runtime transport never
-become hard core dependencies.
+The three operations are available core capabilities, not mandatory worksheets.
+Plan loads only when useful; Implement repairs known failures directly; fresh
+final Validate is required. Memory and specialists, including anti-ceremony and
+premortem, stay optional. Risk increases evidence depth, not mandatory dispatch.
 
 ## Campaign boundary
 
@@ -72,40 +70,23 @@ Campaign attempts, waves, helpers, ratchets, and breakers are Goal state. RPI
 may carry their identifiers as opaque correlation facts but never interprets,
 resets, or renews them.
 
-## Experiment boundary
+## Authorized outcome boundary
 
-One RPI invocation is an evidence transaction:
+RPI follows the accepted outcome through implementation, direct repairs and fresh
+final validation within real caller/native bounds. An approach may change when
+evidence disproves an assumption under unchanged acceptance/scope. Acceptance
+changes need caller authority. A small edit needs no Plan/Recall/Learn worksheet.
 
-```text
-anti-ceremony quick guard once
-  -> STOP: NOT_PLANNED report; dispatch no core phase; stop
-  -> CONTINUE: single-mint resolved intent bytes
-  -> exact intent digest reference
-  -> one bounded subject change
-  -> before/final subject manifests + complete changed paths
-  -> factual receipts + effect-receipt.v1
-  -> one author-distinct Validate
-  -> PASS | FAIL | NOT_PROVEN
-  -> optional verdict.v2 / rpi-report.v2 for declared consumers
-  -> stop
-```
+Runtime-derived exact intent, changed paths, subject manifests and receipts let
+Validate judge actual content. New subject bytes need new fresh judgment;
+changing approach never rewrites an earlier verdict. A required evidence gap
+stays NOT_PROVEN and cannot become a non-goal after the fact. Machine evidence
+is optional unless a caller or declared consumer requires it.
 
-Plan may be an identity/refinement step when the selected graph node is already
-well shaped. Implement may use several focused edits and deterministic checks
-inside one RED-to-GREEN experiment, but it cannot revise acceptance or start a
-second candidate after the subject freezes. Validate judges once and cannot
-repair the candidate.
-
-`FAIL` and `NOT_PROVEN` are valid experiment results. They do not imply that a
-campaign is over, and they do not authorize RPI to continue. The caller or Goal
-decides whether another experiment is justified.
-
-Intent bytes are minted once. Later phases and remote validators receive the
-snapshot by digest reference; they do not re-fetch or reserialize the living
-source. Acceptance criteria receive stable IDs at freeze. A required criterion
-without evidence is `unchecked_required` and forces NOT_PROVEN; a
-`declared_exclusion` is valid only when the caller excluded it before the
-candidate froze.
+A genuine causal stall admits at most one authorized bounded helper per incident;
+known failures get direct repair. Optional outer-goal guidance does not create a
+scheduler, budget account or new command. The pure fixed-dispatch reference
+adapter has its own narrower explicit contract and is not the native charter.
 
 Every verdict binds the validator implementation and the verdict, report, and
 subject-manifest schema digests. Proof contracts advance through an explicit
@@ -135,9 +116,10 @@ authority.
 | Cross-cutting support | Prepare or protect the environment without steering | `bootstrap`, `account-rotation`, `cc-hooks`, `dcg`, `rch`, `sbh`, `ms` | Factual result to the invoking owner |
 
 An optional strategy that finds a material defect cannot silently edit its
-input. For example, a Premortem finding after Plan causes the current RPI to
-stop before Implement; the caller or Goal may revise the experiment source and
-start a new RPI.
+input. For example, an optional Premortem finding may disprove an approach;
+revise it within unchanged accepted outcome and scope, then implement. A finding
+that requires different acceptance or authority goes to the caller. Advice does
+not create a new mandatory planning lane or erase an existing finding.
 
 There is no miscellaneous seam owner. Runtime-neutral contracts belong under
 declared contract owners, while adapter mechanics remain with their adapters.
@@ -202,10 +184,10 @@ skill metadata. They are never edited as architecture sources.
 
 ## Invariants
 
-- Only RPI depends on the anti-ceremony guard and all three core phases.
+- RPI depends on the three core operations; Memory and specialists are optional.
 - Only Validate may write `verdict.v2`, and only for a caller request or
   declared downstream consumer.
-- Only the caller or Goal selects another experiment.
+- Approach revision within accepted authority is allowed; new outcomes belong to the caller.
 - A runtime adapter never changes a semantic outcome.
 - A strategy report never masquerades as readiness or PASS.
 - A specialist that edits the subject operates under Implement authority.
