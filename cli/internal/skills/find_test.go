@@ -1,6 +1,7 @@
 package skills
 
 import (
+	"reflect"
 	"strings"
 	"testing"
 )
@@ -116,6 +117,55 @@ func TestTokenize_DropsStopwordsAndShortTokens(t *testing.T) {
 		if got[i] != want[i] {
 			t.Errorf("token %d: expected %q, got %q", i, want[i], got[i])
 		}
+	}
+}
+
+func TestTokenNormalization_PreservesStreamAndFirstOccurrence(t *testing.T) {
+	tests := []struct {
+		name   string
+		input  string
+		stream []string
+		unique []string
+	}{
+		{"repetitions", "Council judge council ONE judge", []string{"council", "judge", "council", "one", "judge"}, []string{"council", "judge", "one"}},
+		{"punctuation", "CHECK—this, change! check_change", []string{"check", "change", "check", "change"}, []string{"check", "change"}},
+		{"unicode", "É CAFÉ 例 １２ café é", []string{"é", "café", "例", "１２", "café", "é"}, []string{"é", "café", "例", "１２"}},
+		{"short ascii", "x 7 go 42 X", []string{"go", "42"}, []string{"go", "42"}},
+		{"stopwords", "the a an and or of to in on for is it with by at as be this", []string{}, []string{}},
+		{"empty", "", []string{}, []string{}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tokenStream(tt.input); !reflect.DeepEqual(got, tt.stream) {
+				t.Errorf("tokenStream(%q) = %v, want %v", tt.input, got, tt.stream)
+			}
+			if got := tokenize(tt.input); !reflect.DeepEqual(got, tt.unique) {
+				t.Errorf("tokenize(%q) = %v, want %v", tt.input, got, tt.unique)
+			}
+		})
+	}
+}
+
+func TestContainsPhrase_NormalizedContiguity(t *testing.T) {
+	tests := []struct {
+		query  string
+		phrase string
+		want   bool
+	}{
+		{"checking this change", "check this change", true},
+		{"change this check", "check this change", false},
+		{"check another change", "check this change", false},
+		{"council one council judge", "one judge", false},
+		{"council one council judge", "council judge", true},
+		{"council council judge", "council council", true},
+		{"council judge", "council council", false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.query+"/"+tt.phrase, func(t *testing.T) {
+			if got := containsPhrase(tokenStream(tt.query), tokenStream(tt.phrase)); got != tt.want {
+				t.Errorf("containsPhrase(%q, %q) = %v, want %v", tt.query, tt.phrase, got, tt.want)
+			}
+		})
 	}
 }
 

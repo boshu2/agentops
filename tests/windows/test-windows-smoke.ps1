@@ -232,6 +232,7 @@ Write-Step "Running focused Windows-sensitive Go tests"
 Invoke-GoTest -TestArgs @("-timeout", "3m", "./internal/quality")
 Invoke-GoTest -TestArgs @("-timeout", "3m", "./cmd/ao", "-run", "^(TestBatchForge_appendForgedRecord|TestAppendForgedRecord|TestBatchForgeSkipsAlreadyForged|TestLoadAndFilterTranscripts_RespectsForgedIndex|TestCanonicalArtifactPath|TestCobraDemoConceptsCommand|TestCobraDemoQuickCommand|TestCobraShowConcepts)$")
 Invoke-GoTest -TestArgs @("-timeout", "3m", "./internal/storage", "-run", "^TestWithLockedFile_")
+Invoke-GoTest -TestArgs @("-timeout", "3m", "./internal/provenanceapp", "-run", "^Test(MineSession|WriteMineState)", "-count", "1")
 Invoke-GoTest -TestArgs @("-timeout", "3m", "./internal/config", "-run", "^TestSave_ConcurrentPatchesPreserveBothUpdates$")
 
 Write-Host "Windows smoke tests passed"

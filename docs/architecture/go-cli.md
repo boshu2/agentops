@@ -106,6 +106,14 @@ A gate PASS is a deterministic fact, not a semantic verdict.
   but never writes verdicts and never converts check success into semantic
   PASS. Evidence references are reported as declared strings; `ao status` does
   not resolve or digest-bind their targets.
+  By default it reads the working directory's `.agents/ao`. To inspect existing
+  external evidence, use `ao status --evidence-root /path/to/evidence --json`
+  (or `-o yaml` for the same report). The shared `evidencepath` guard requires an
+  existing non-Git root and checks active Git environment storage bindings.
+  Only `intents/sha256` and `verdicts/sha256` are inspected; evidence directory
+  and file symlinks are excluded. Invalid explicit roots fail without fallback
+  or writes. Corrupt artifacts remain excluded and reported, and `not_checked`
+  continues to disclose the limits of structural inspection.
 
 ## The Learn seat (off-path)
 
