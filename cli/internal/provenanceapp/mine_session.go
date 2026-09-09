@@ -286,6 +286,9 @@ func writeMineState(path string, st mineState) error {
 	if err != nil {
 		return err
 	}
+	if err := checkCheckpointReplacement(path, mode); err != nil {
+		return err
+	}
 	// Pre-rename failures preserve the previous checkpoint. A subsequent
 	// directory-sync error can report failure with the new checkpoint visible.
 	return storage.AtomicWriteFile(path, b, mode)
@@ -295,7 +298,7 @@ func mineStateMode(path string) (os.FileMode, error) {
 	info, err := os.Lstat(path)
 	if os.IsNotExist(err) {
 		// AtomicWriteFile explicitly chmods its temporary file. Keep a new
-		// checkpoint private instead of bypassing a restrictive caller umask.
+		// checkpoint's mode restrictive instead of bypassing the caller's umask.
 		return 0o600, nil
 	}
 	if err != nil {

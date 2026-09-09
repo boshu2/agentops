@@ -659,6 +659,12 @@ a watermark + a prefix checksum. If the transcript's already-mined prefix change
 (rollback) — borrowed from cass's incremental-index discipline (stale-is-usable,
 recover loudly, never rebuild expensive state unnecessarily).
 
+Checkpoint updates are atomic; new files use mode 0600. Symlinks and special
+files are rejected. Existing permissions must match an atomic replacement;
+unverifiable or different security metadata returns an error without replacing
+the checkpoint. An error syncing the directory after replacement can leave the
+new checkpoint visible. Events may already have been emitted before an error.
+
 Output (--json, default): one JSON event per line on stdout. The events feed the
 PROV-O graph via a downstream step (e.g. wired as an ASSAY --mine-cmd); this
 command does not itself write the committed ledger.`,
