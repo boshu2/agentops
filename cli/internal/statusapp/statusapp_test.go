@@ -1,17 +1,133 @@
 package statusapp
 
 import (
+	"bytes"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/boshu2/agentops/cli/internal/verdictcheck"
 )
+
+func TestRun_ExplicitRootDoesNotFollowEvidenceSymlinks(t *testing.T) {
+	outside := t.TempDir()
+	intent := writeIntentArtifact(t, outside, "outside intent must not be read")
+	verdict := writeVerdictArtifact(t, outside)
+	for _, artifact := range []string{intent, verdict} {
+		store := filepath.Base(filepath.Dir(filepath.Dir(artifact)))
+		for _, level := range []string{"store", "sha256", "file"} {
+			t.Run(store+"/"+level, func(t *testing.T) {
+				root := t.TempDir()
+				link, target := filepath.Join(root, store), filepath.Dir(filepath.Dir(artifact))
+				if level == "sha256" {
+					link, target = filepath.Join(link, "sha256"), filepath.Dir(artifact)
+				}
+				if level == "file" {
+					link, target = filepath.Join(link, "sha256", filepath.Base(artifact)), artifact
+				}
+				if err := os.MkdirAll(filepath.Dir(link), 0700); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.Symlink(target, link); err != nil {
+					t.Fatal(err)
+				}
+				got := runExplicitEvidence(t, root)
+				if got.IntentArtifacts != 0 || got.VerdictArtifacts != 0 || got.State != "evidence_unavailable" || len(got.Unavailable) != 1 {
+					t.Fatalf("symlink inspection: %+v", got)
+				}
+				if !strings.Contains(got.Unavailable[0], "symlink excluded") {
+					t.Fatalf("symlink not disclosed: %+v", got)
+				}
+			})
+		}
+	}
+}
+
+func TestRun_ExplicitRootIsReadOnly(t *testing.T) {
+	base := t.TempDir()
+	for _, name := range []string{"empty", "missing", "Git"} {
+		t.Run(name, func(t *testing.T) {
+			root := filepath.Join(base, name)
+			if name != "missing" {
+				if err := os.Mkdir(root, 0700); err != nil {
+					t.Fatal(err)
+				}
+			}
+			if name == "Git" {
+				if err := os.Mkdir(filepath.Join(root, ".git"), 0700); err != nil {
+					t.Fatal(err)
+				}
+			}
+			before := treeEntries(t, base)
+			var out bytes.Buffer
+			err := Run(RunOptions{EvidenceRoot: &root, JSON: true, Stdout: &out})
+			if name == "empty" {
+				if err != nil {
+					t.Fatal(err)
+				}
+				var got Output
+				if err := json.Unmarshal(out.Bytes(), &got); err != nil || got.LoopEvidence.State != "no_evidence" {
+					t.Fatalf("empty explicit root: %v, %s", err, out.String())
+				}
+			} else if err == nil || out.Len() != 0 {
+				t.Fatalf("invalid explicit root: %v, %s", err, out.String())
+			}
+			if after := treeEntries(t, base); !reflect.DeepEqual(before, after) {
+				t.Fatalf("inspection wrote directories/files: before %v, after %v", before, after)
+			}
+		})
+	}
+}
+
+func TestRun_ExplicitRootHonorsActiveGitStorageBinding(t *testing.T) {
+	root := t.TempDir()
+	t.Setenv("GIT_OBJECT_DIRECTORY", root)
+	var out bytes.Buffer
+	err := Run(RunOptions{EvidenceRoot: &root, JSON: true, Stdout: &out})
+	if err == nil || !strings.Contains(err.Error(), "overlaps declared Git storage") || out.Len() != 0 {
+		t.Fatalf("active Git storage guard: %v, %s", err, out.String())
+	}
+	// The environment guard is confined to explicit-root selection; no-flag
+	// status retains the original cwd-based legacy behavior.
+	t.Chdir(t.TempDir())
+	if err := Run(RunOptions{JSON: true, Stdout: &out}); err != nil {
+		t.Fatalf("legacy status changed: %v", err)
+	}
+}
+
+func runExplicitEvidence(t *testing.T, root string) *LoopEvidenceStatus {
+	t.Helper()
+	var out bytes.Buffer
+	if err := Run(RunOptions{EvidenceRoot: &root, JSON: true, Stdout: &out}); err != nil {
+		t.Fatal(err)
+	}
+	var got Output
+	if err := json.Unmarshal(out.Bytes(), &got); err != nil {
+		t.Fatal(err)
+	}
+	return got.LoopEvidence
+}
+
+func treeEntries(t *testing.T, root string) []string {
+	t.Helper()
+	var entries []string
+	if err := filepath.WalkDir(root, func(path string, entry os.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		entries = append(entries, path+":"+entry.Type().String())
+		return nil
+	}); err != nil {
+		t.Fatal(err)
+	}
+	return entries
+}
 
 func TestFormatDurationBrief(t *testing.T) {
 	tests := []struct {

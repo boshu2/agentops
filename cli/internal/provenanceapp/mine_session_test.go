@@ -4,6 +4,7 @@ package provenanceapp
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"os"
 	"path/filepath"
 	"strings"
@@ -369,5 +370,93 @@ func TestMineSession_IncrementalIdempotentRollback(t *testing.T) {
 				t.Errorf("stable-id regression: %s/%s id %s differs from run1 (ids not deterministic)", e.Tool, e.Kind, e.ID)
 			}
 		}
+	}
+}
+
+func TestWriteMineState_RegularFileBytes(t *testing.T) {
+	const want = "{\n  \"file\": \"session.jsonl\",\n  \"last_line\": 2,\n  \"prefix_checksum\": \"abcdef1234567890\",\n  \"mined_count\": 1\n}"
+	for _, existing := range []bool{false, true} {
+		name := "new_nested_checkpoint"
+		if existing {
+			name = "replace_regular_checkpoint"
+		}
+		t.Run(name, func(t *testing.T) {
+			path := filepath.Join(t.TempDir(), "nested", "state.json")
+			if existing {
+				if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.WriteFile(path, []byte("previous checkpoint"), 0o600); err != nil {
+					t.Fatal(err)
+				}
+			}
+			if err := writeMineState(path, mineState{File: "session.jsonl", LastLine: 2, PrefixChecksum: "abcdef1234567890", MinedCount: 1}); err != nil {
+				t.Fatal(err)
+			}
+			got, err := os.ReadFile(path)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if string(got) != want {
+				t.Fatalf("checkpoint bytes = %q, want %q", got, want)
+			}
+		})
+	}
+}
+
+func TestWriteMineState_ParentDirectoryFailure(t *testing.T) {
+	parent := filepath.Join(t.TempDir(), "file-not-directory")
+	if err := os.WriteFile(parent, []byte("preserve parent"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	err := writeMineState(filepath.Join(parent, "nested", "state.json"), mineState{})
+	var pathErr *os.PathError
+	if !errors.As(err, &pathErr) {
+		t.Fatalf("parent failure must remain a filesystem error, got %v", err)
+	}
+	got, err := os.ReadFile(parent)
+	if err != nil || string(got) != "preserve parent" {
+		t.Fatalf("parent changed: %q, %v", got, err)
+	}
+}
+
+func TestMineSession_CheckpointDirectoryRejectedThenRetry(t *testing.T) {
+	dir := t.TempDir()
+	sess := writeMineSession(t, dir, "s.jsonl", "{\"type\":\"tool_use\",\"tool_name\":\"Read\",\"tool_input\":{}}\n")
+	state := filepath.Join(dir, "state.json")
+	if err := os.Mkdir(state, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	marker := filepath.Join(state, "keep")
+	if err := os.WriteFile(marker, []byte("preserved"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	out, err := mine(t, MineOptions{File: sess, State: state})
+	if err == nil || !strings.Contains(err.Error(), "checkpoint must be a regular file") || out != "" {
+		t.Fatalf("directory state must fail before emission: output %q, error %v", out, err)
+	}
+	if got, err := os.ReadFile(marker); err != nil || string(got) != "preserved" {
+		t.Fatalf("rejected directory content changed: %q, %v", got, err)
+	}
+	if err := os.Remove(marker); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Remove(state); err != nil {
+		t.Fatal(err)
+	}
+	want, err := mine(t, MineOptions{File: sess})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if events := parseMineEvents(t, want); len(events) != 1 || events[0].Tool != "Read" {
+		t.Fatalf("expected one uncheckpointed Read event: %+v", events)
+	}
+	retry, err := mine(t, MineOptions{File: sess, State: state})
+	if err != nil || retry != want {
+		t.Fatalf("retry changed event bytes or stable IDs: got %q, want %q, error %v", retry, want, err)
+	}
+	again, err := mine(t, MineOptions{File: sess, State: state})
+	if err != nil || again != "" {
+		t.Fatalf("successful retry did not checkpoint: %q, %v", again, err)
 	}
 }
