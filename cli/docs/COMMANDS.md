@@ -535,6 +535,37 @@ ao session prune-agents [flags]
       --quiet     Suppress per-path output and print only the summary
 ```
 
+#### `ao session read-source`
+
+Read one explicit regular source file under independently selected T05 context
+
+```
+ao session read-source [flags]
+```
+
+**Flags:**
+
+```
+      --access-policy-ref string      Independently selected T05 access policy JSON (required)
+      --allow-oversize                Explicitly bypass serialized profile size bound; host delivery remains unverified
+      --consumer-root string          Existing consumer checkout for T05 route verification (required)
+      --destination-ref string        Expected destination identity (required)
+      --expect-file-identity string   Expected prior file_before.identity, for replacement checks across calls
+      --expect-prefix-sha256 string   Expected SHA-256 of all bytes before through-byte
+      --file string                   Exact absolute source file path (required)
+  -h, --help                          help for read-source
+      --json                          Emit JSON (also the default; no text-only coverage view)
+      --max-bytes int                 Positive maximum returned source bytes (required)
+      --model-ref string              Expected model/provider identity (required)
+      --native-directory string       Explicit directory for native BD source verification (required)
+      --owner-scope string            Independently expected owner scope (required)
+      --project-id string             Expected native project identity (required)
+      --source-id string              Expected canonical native beads_dir (required)
+      --start-byte int                First byte of the returned half-open range (required)
+      --task-ref string               Expected caller task identity (required)
+      --through-byte int              Frozen exclusive prefix boundary, paired with expect-prefix-sha256
+```
+
 #### `ao session rehydrate`
 
 Read a handoff without consuming it, claiming work, or choosing a next action.
@@ -639,6 +670,23 @@ ao provenance add <from-id> <to-id> [flags]
       --to-type string      Target node type (for example decision, artifact, or observation) (default "artifact")
       --trust-tier string   Trust tier (authored|inferred|mined) (default "authored")
       --ts string           Override the UTC RFC3339 timestamp (defaults to now)
+```
+
+#### `ao provenance check-okf`
+
+Check one explicitly selected Markdown concept against agentops-okf-v0.2/v1,
+
+```
+ao provenance check-okf [flags]
+```
+
+**Flags:**
+
+```
+      --file string      Explicit Markdown concept file (required; at most 1 MiB)
+  -h, --help             help for check-okf
+      --json             Emit JSON (the default)
+      --profile string   Exact supported structural profile version (default "agentops-okf-v0.2/v1")
 ```
 
 #### `ao provenance digest`
