@@ -10,6 +10,9 @@
 
 ## Before Committing Go Changes
 
+While editing, run focused package tests and `cd cli && make lint` before the
+broad checks below. Catch the repository's lint findings before final review.
+
 ```bash
 cd cli && go build ./... && go vet ./... && go test ./...
 ```

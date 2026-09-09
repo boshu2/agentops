@@ -51,6 +51,10 @@ Return PASS, FAIL, or NOT_PROVEN with evidence; stop.
 
 ## Preconditions
 
+- Final judgment starts after required checks and known repairs are complete,
+  over a subject the author keeps unchanged during review. If supplied checks
+  already prove failed acceptance, return FAIL on that subject; do not wait
+  while the author repairs it inside the same review.
 - The subject is a nonempty implementation candidate: the manifest lists at
   least one entry. Plans, audits, and reviews are subjects only when the
   caller explicitly requested document review.
@@ -177,6 +181,10 @@ optional, residual risk, or a non-goal to obtain PASS.
    downstream consumer requires it, persist canonical `verdict.v2` with the
    helper's `store-verdict` (mechanics reference), then return the artifact
    path and digest with the result. Stop.
+
+Keep the judgment proportional to the change. Cite existing receipts instead of
+repeating their history; brevity must preserve every criterion, necessary
+finding, identity, freshness fact and unchecked acceptance surface.
 
 Fresh validation is independent judgment over the exact subject, not a replay
 of every author command: rerun the risk-critical, uncertain, or thinly

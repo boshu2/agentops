@@ -35,6 +35,10 @@ Build bar for any Go change:
 cd cli && go build ./... && go vet ./... && go test ./...
 ```
 
+During Go edits, run focused package tests and `bash scripts/check-go-lint.sh`
+from the repository root before broad integration and final review. A passing
+Go test does not establish the repository's lint contract.
+
 Run the gates with `ao gate check` (`--full` for the whole registry). Regenerate every metadata-owned projection — `skills-codex/` included — with
 `scripts/regen-all.sh` (`--check` to verify without writing); edit `skills/`, then regenerate. `tests/run-all.sh` is the local aggregate runner and must be green.
 CI is authoritative (`.github/workflows/validate.yml`) and runs the bats suites as

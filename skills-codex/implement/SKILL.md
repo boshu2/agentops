@@ -54,7 +54,9 @@ return the manifest digest and check receipts, stop.
    a fix and another discriminating check, not a helper or fresh planning lane.
    If evidence disproves an assumption, revise the approach within unchanged
    acceptance and scope; use Plan only to resolve consequential uncertainty.
-4. Run the targeted acceptance checks and capture factual results.
+4. Run the targeted acceptance checks and applicable repository lint/static
+   checks before handing off a candidate for broad integration. Capture factual
+   results; package tests alone do not establish a separate lint contract.
 5. Refactor only while those checks stay green. Refactoring does not change the
    acceptance test.
 6. Have the runtime derive actual changed paths and `subject-manifest.v1` from
