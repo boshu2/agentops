@@ -405,8 +405,8 @@
     {
       "name": "cass",
       "source_skill": "skills/cass",
-      "source_hash": "7cb1e367d30d8cdf8482eae60ee6acb25187e4642fe5089e7452d72ed0578215",
-      "generated_hash": "633b8a299b60ef25621291a97c4c0e5d89312f115daa3a39bfdf3a4923e67172"
+      "source_hash": "55d89dea2068721e97381c9fe9afc11a7b7559902ae77106f07152850c21ebdc",
+      "generated_hash": "018a43b37f201e611578231b693b59dc47f9f5ffad4064947c257507ecc6d9d6"
     },
     {
       "name": "cc-hooks",
@@ -501,8 +501,8 @@
     {
       "name": "learn",
       "source_skill": "skills/learn",
-      "source_hash": "e7d329dd0ef3a4e93075790f7c354d336fb8761376d4eaab2b88b3d3e50d62ab",
-      "generated_hash": "b28e290d568b3bf31a8ee9d863e02c17e5b5f00780a56cece0ca9f8ba657f482"
+      "source_hash": "bf17da90d561f993d1b863a2337e04ba30aa693123da2cb0509ba4641bfd9d9b",
+      "generated_hash": "118ef31f294805ba3dafd8b1aa5b58cb9fe0533ca15a1bf78b2bcaf7dd920117"
     },
     {
       "name": "ms",

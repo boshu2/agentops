@@ -281,7 +281,7 @@
         "pragmatic-programmer"
       ],
       "produces": [],
-      "references_count": 16,
+      "references_count": 17,
       "tier": "execution",
       "user_invocable": false
     },
@@ -813,7 +813,7 @@
       "produces": [
         "learning-observations"
       ],
-      "references_count": 1,
+      "references_count": 2,
       "tier": "execution",
       "user_invocable": true
     },
