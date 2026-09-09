@@ -4,100 +4,58 @@ description: 'Implement authorized work and repair understood defects; return de
 ---
 # Implement
 
-Implement the authorized outcome, including ordinary direct repairs. Use the
-resolved bead or caller intent; do not turn every failed check into a new phase.
-Implement owns subject edits and factual evidence; the runtime derives identity
-and receipts. A clear trivial change needs no Plan, Recall or Learn worksheet.
-
-## Prompt
-
-```text
-Implement bead ag-1234 from its text: acceptance "ao gate check lists
-skill.probe-coverage", scope cli/internal/gates/** plus regen outputs, first
-check `cd cli && go test ./internal/gates/...`. RED first, smallest change,
-return the manifest digest and check receipts, stop.
-```
-
-## It's working if
-
-- After source activation and startup association, the first behavior check
-  is the acceptance check; its output shows the expected failure (or an honest
-  green structural baseline for documentation, relocation, or refactor work).
-- Every path in `git diff --stat` falls inside the declared scope; an outside
-  consumer is reported as `file:line`, not absorbed.
-- The response carries the `subject-manifest.v1` digest, author context ID,
-  and verbatim check output; no `git commit` or `git push` appears.
+Implement the accepted outcome and repair understood defects. Use the existing
+intent; no Plan, Recall or Learn worksheet is owed for a clear edit. Implement
+owns source changes and factual checks; the runtime derives identity and receipts.
 
 ## Workflow
 
-1. Read the intent, acceptance, and scope from their existing source; before
-   the first write, read `boundaries.md` in the rpi skill's `references`
-   directory for what Implement does not own. Before execution can fail, the
-   caller passes source-store/project/work identity and permitted intent
-   locators at dispatch/start. At startup, return observed native runtime,
-   session/context identity (or explicit unknowns) through the caller-owned
-   runtime channel for native comments/metadata recording; do not defer this
-   association until handoff. Follow the fact distinctions in
-   [session associations](../cass/references/SESSION_FORMATS.md#work-to-session-associations).
-   Parent and resume links need observed provenance; controller dispatch alone
-   does not establish native parentage. If startup observation or recording
-   fails, preserve that failure and the pre-execution reference with the caller,
-   leaving unobserved IDs unknown. Startup association applies when the caller selected episode tracking; a
-   trivial edit does not need a new tracking worksheet. Use the caller-owned
-   runtime channel for handoff facts, without a second work account.
-2. Run the declared first acceptance check before changing behavior. RED-first
-   applies when acceptance is behavioral: preserve evidence that the check
-   fails for the expected missing behavior. Relocations, doc merges, and pure
-   refactors record an honest green pre-change baseline instead.
-3. Make the smallest in-scope change that satisfies the active behavior. Repair
-   ordinary known defects directly. A failed test with an understood cause needs
-   a fix and another discriminating check, not a helper or fresh planning lane.
-   If evidence disproves an assumption, revise the approach within unchanged
-   acceptance and scope; use Plan only to resolve consequential uncertainty.
-4. Run the targeted acceptance checks and applicable repository lint/static
-   checks before handing off a candidate for broad integration. Capture factual
-   results; package tests alone do not establish a separate lint contract.
-5. Refactor only while those checks stay green. Refactoring does not change the
-   acceptance test.
-6. Have the runtime derive actual changed paths and `subject-manifest.v1` from
-   the before/after subject.
-7. When changed files affect bound acceptance evidence, run `ao provenance evidence-orphans --root <repo-root>` with one
-   `--changed <path>` per changed path the runtime derived, and put its JSON
-   output in the check receipts the validator reads, so orphaned evidence
-   arrives as a receipt rather than as a surprise at verify time. Run it again after every repair round, over the
-   paths as they stand, because a repair can orphan evidence the first pass did
-   not. Read the output as written and never hand-list the orphans instead.
-8. Return the manifest digest, author context ID, and exact check receipts in the
-   response or runtime channel. Stop.
+1. Read intent, acceptance, scope and the RPI [boundaries](../rpi/references/boundaries.md)
+   before the first write; reuse contracts already loaded in this context.
+   When the caller selected episode tracking, obtain permitted work/source
+   references before execution and return observed runtime/context identity at
+   startup through the native recording channel. Unknowns and recording failures
+   stay explicit; do not invent parentage or a second tracker. The optional
+   [session association reference](../cass/references/SESSION_FORMATS.md#work-to-session-associations)
+   supplies mechanics for that selected workflow.
+2. Run the first useful acceptance check. Behavioral changes preserve RED for
+   the expected missing behavior; a pure refactor, relocation or documentation
+   change may have an honest green baseline. Avoid building elaborate fixtures
+   when an existing test or small discriminating probe answers the question.
+3. Make the smallest in-scope change. Fix known failures directly, then rerun
+   the affected check. A disproved assumption may change the approach within
+   accepted outcome and scope; use Plan only for consequential uncertainty.
+4. Use targeted tests and applicable repository lint/static checks before
+   broad integration. Read the repository's actual check recipe, including
+   instrumentation and environment, rather than reconstructing it from memory.
+   Run required full checks at integration, not after each small edit. Reuse
+   exact-input receipts only while source, tool and relevant environment match.
+5. Refactor while acceptance remains green. Inspect changed tests, fixtures,
+   goldens, tolerances, suppressions and specification text against original
+   intent. Mocks, placeholders or weakened oracles cannot substitute for the
+   requested behavior.
+6. Derive complete changed paths and `subject-manifest.v1`. When changed paths
+   affect bound acceptance evidence, run `ao provenance evidence-orphans --root
+   <repo-root>` with one `--changed <path>` per derived path, and retain the
+   actual output for the validator. Repeat after repairs that change that
+   subject; do not hand-invent an orphan list.
+7. Return the manifest digest, author context ID, acceptance-check facts and
+   evidence references through the caller's response/runtime channel, then stop.
+   Include command, result and decision-relevant failures. Keep full output
+   accessible instead of pasting successful logs or repeated receipt inventories
+   into every handoff. Missing or truncated evidence must remain visible.
 
-Specialists (standards, domain, test, refactor, security) advise only. During
-edits, run the smallest deterministic checks that can falsify the change,
-reuse exact-input receipts whose subject and tool identity still match, and
-run the full suite at the integration boundary unless the intent makes it the
-first check.
+## Scope and finish
 
-## Scope conflict rule
+Report an uncovered live consumer as `file:line` for a caller scope amendment;
+continue independent authorized work. Generated companions already included as
+scope require no new approval. Acceptance changes always require caller authority.
 
-On discovering a live consumer of the change outside the declared write scope
-(a test asserting the old path, a generated twin, a gate reading the moved
-file), stop and report the exact file and line to the caller for a scope amendment; continue independent authorized work. A different
-acceptance contract needs caller authority. Generated outputs already included
-as a scope class need no new permission.
+Specialists advise only. Known defects stay implementation work; a genuine
+causal stall follows RPI's at-most-one bounded helper rule. Respect remaining
+caller/native bounds and reserve finishing capacity. No retry resets them.
 
-Before declaring GREEN, self-audit the diff for mocks, placeholders, TODO
-stubs, hardcoded fixture values, weakened assertions, regenerated goldens,
-widened tolerances, suppression directives, or specification edits standing
-in for real behavior. A changed test, gate, fixture, golden, or acceptance
-source must be required by the original intent, with green coming from the
-implemented behavior; a check that passes against a substitute or weakened
-oracle is not evidence: finish the behavior or report it as not built.
-
-## Boundary
-
-Do not issue semantic PASS or infer Git, tracker or delivery permission from
-this skill. Follow the caller's existing authority and repository policy.
-An implement-only handoff returns facts to its caller; a full outcome request
-uses RPI through fresh final validation. Known defects stay implementation work.
-On a genuine causal stall, use RPI's at-most-one bounded helper rule, never a
-helper chain. Reserve finishing capacity and respect actual caller/native bounds;
-a retry count alone is not a spent time or quota budget.
+Return facts, not semantic PASS. An implement-only handoff does not authorize
+Git, tracker or delivery transitions; existing caller authority remains usable.
+A full outcome request uses RPI through fresh final judgment. Success is working
+behavior with usable evidence, not volume of logs or process artifacts.
