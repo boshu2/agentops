@@ -4,33 +4,36 @@ AgentOps has a small semantic core and optional adapters around it.
 
 ```text
 existing bead or caller intent
-  -> one bounded implementation experiment
+  -> on-demand planning and bounded implementation
   -> runtime-derived subject-manifest.v1 + check receipts
   -> fresh Validate
   -> PASS | FAIL | NOT_PROVEN
-  -> bounded repair under the convergence law (ADR-0017)
-  -> RPI report
+  -> direct repair and fresh revalidation within real bounds when needed
+  -> completed acceptance or truthful unfinished result
 ```
 
 ## Core
 
-- **Plan** refines one active behavior, examples, non-goals, required evidence,
-  write scope, and the first acceptance check in the existing intent source.
-- **Implement** performs one bounded RED → GREEN → refactor experiment and
+- **Plan** shapes missing intent and revises disproved approaches under unchanged
+  acceptance and scope; clear work need not invoke it.
+- **Implement** performs bounded implementation and direct known-defect repair and
   returns runtime-derived subject identity, actual changed paths, and factual
   check receipts.
 - **Validate** identifies the exact subject without Git, checks scope and
   acceptance, and obtains one judgment from a distinct declared context. It
   stores a content-addressed verdict atomically only when requested by the
   caller or a declared downstream consumer.
-- **RPI** invokes Plan and Implement at most once, validates freshly, and on
-  `FAIL` or `NOT_PROVEN` with findings repairs and re-validates under the
-  convergence law within the caller's `repair_rounds` (ADR-0017).
+- **RPI** owns the authorized outcome through checks, direct repair and fresh
+  final judgment; specialists and planning are on demand (ADR-0017).
+- **Memory** optionally recalls reviewed topic pages or separately mines and
+  curates supported claims. It cannot change completed product verdicts.
 
-`FAIL` and `NOT_PROVEN` are terminal when the law stops the repair phase or the
-rounds are spent. A caller may update the existing intent source and start a new
-invocation. RPI never creates a parallel revision record and never widens the
-caller's bound.
+Known findings are repaired within authority and real remaining bounds. A
+genuine causal stall admits at most one bounded fresh helper; an unhelpful
+answer, cancellation, refusal or a spent real bound ends the attempt. Explicit
+repair-round bounds still apply, and no invocation renews an allowance. The
+[fixed-dispatch adapter](../skills/rpi/references/bounded-adapter.md) keeps its
+narrower optional contract; it does not govern native RPI execution.
 
 ## Hexagonal boundary
 

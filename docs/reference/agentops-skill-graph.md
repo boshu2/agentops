@@ -28,6 +28,7 @@ graph LR
   idea_genie["idea-genie"]
   implement["implement"]
   learn["learn"]
+  memory["memory"]
   ms["ms"]
   ntm["ntm"]
   one_way_door["one-way-door"]
@@ -59,7 +60,6 @@ graph LR
   validate["validate"]
   workflow_builder["workflow-builder"]
   crank --> rpi
-  rpi --> anti_ceremony
   rpi --> implement
   rpi --> plan
   rpi --> validate

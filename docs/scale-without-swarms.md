@@ -1,16 +1,16 @@
 # Bounded Work Without Lifecycle Control
 
-AgentOps deliberately keeps its core experiment small:
+AgentOps keeps its operating charter small:
 
 ```text
-RPI -> Plan -> Implement -> fresh Validate -> repair to convergence -> report
+RPI charter -> on-demand Plan -> Implement and checks -> fresh Validate -> finish
 ```
 
-Plan names one active behavior and its write scope. Implement performs one
-bounded experiment. Validate independently judges the exact content described
-by the candidate manifest. RPI dispatches Plan and Implement once, repairs and
-re-validates under the convergence law within the caller's bound, and reports
-the result without deciding what happens next.
+Plan shapes missing intent or revises a disproved approach within accepted
+scope. Implement makes the change and repairs known defects directly. Validate
+independently judges exact content. RPI owns the authorized outcome through
+finish within real bounds; causal stalls admit at most one bounded fresh helper.
+Memory and specialists are optional, and completed acceptance ends the run.
 
 Fresh context is valuable because the author cannot turn its own claim into the
 binding semantic verdict. More agents are not automatically better. One fresh

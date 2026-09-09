@@ -671,13 +671,16 @@ FAKE
   cat > "$TMP/bin/codex" <<'FAKE'
 #!/usr/bin/env bash
 printf 'invoked\n' >> "$TMPDIR/invocations"
-sleep .8
+# The first call succeeds immediately; the second must exhaust the shared
+# deadline. Avoid requiring two nearly-one-second calls to fit in 1.5 seconds
+# on a loaded CI worker. A third worker must never launch.
+if [ "$(wc -l < "$TMPDIR/invocations" | tr -d ' ')" -gt 1 ]; then sleep 30; fi
 printf 'tokens used: 1\n'
 FAKE
   chmod +x "$TMP/bin/codex"
-  run timeout --kill-after=1 5 bash -c '
+  run timeout --kill-after=1 12 bash -c '
     . "'"$LIB"'"
-    export CODEX_EXEC_DEADLINE_EPOCH="$(/usr/bin/perl -MTime::HiRes=time -e "print time + 1.5")"
+    export CODEX_EXEC_DEADLINE_EPOCH="$(/usr/bin/perl -MTime::HiRes=time -e "print time + 5")"
     unset CODEX_EXEC_TIMEOUT
     export CODEX_EXEC_PROMPT_ARG=x
     codex_exec_guarded || exit 91

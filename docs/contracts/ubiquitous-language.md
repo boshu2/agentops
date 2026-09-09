@@ -7,7 +7,7 @@
 | Operations layer | The product category: the portable layer that makes heterogeneous agentic engineering systems interoperate semantically. |
 | Federated integration graph | The topology: caller-owned intent, source systems, agents, factories, checks, and judgments remain separate nodes joined by typed handoffs. |
 | Semantic work-and-proof protocol | The interoperability contract: exact intent, exact subject, evidence, fresh judgment, and honest outcomes. |
-| RPI traversal | One standard path through the graph: Plan -> Implement -> fresh Validate -> bounded repair to convergence -> report. |
+| RPI traversal | The lean charter: on-demand Plan, Implement/direct repairs and checks, fresh final Validate, then the outcome report. |
 
 The traversal is RPI. The graph is the topology. The protocol defines
 interoperability. The operations layer is the product.
@@ -38,14 +38,14 @@ campaign. It is not the product category and not the global architecture.
 | Fresh validator | A declared context identity distinct from the candidate author's identity. |
 | Verdict | `PASS`, `FAIL`, or `NOT_PROVEN` over one acceptance digest and one subject digest. |
 | RPI report | `NOT_PLANNED`, `NOT_BUILT`, or the semantic verdict, followed by stop. |
-| Revision | A change to the caller-owned intent source followed by a new invocation. |
+| Revision | A change to accepted outcome/scope requires caller authority; an evidence-driven approach revision within them does not. |
 | Strategy | Optional advice such as premortem, postmortem, council, or an idea genie. |
 | Adapter | Optional transport or runtime that cannot change core semantics. |
 
 ## Forbidden conflations
 
 - An **operations layer is not an execution orchestrator**: AgentOps connects
-  systems semantically; it does not schedule, retry, or own their work.
+  systems semantically; it does not schedule, own aggregate retry controllers, or own their work.
 - An **RPI result is not a factory result**: a traversal's verdict and a
   factory's completion report are different facts from different owners.
 - **Check success is not semantic PASS**: deterministic green proves facts;

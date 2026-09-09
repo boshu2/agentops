@@ -50,7 +50,7 @@ except AssertionError as exc:
 PY
 }
 
-@test "active authority teaches one bounded experiment and stop" {
+@test "active authority teaches authorized outcome ownership and fresh judgment" {
   local file
   for file in "${ACTIVE_AUTHORITY[@]}"; do
     run scan_obsolete_authority "$REPO_ROOT/$file"
@@ -61,18 +61,18 @@ PY
   done
 
   require_text AGENTS.md \
-    "RPI -> Plan -> Implement -> fresh Validate -> repair to convergence -> report"
+    "RPI charter -> on-demand Plan -> Implement and checks -> fresh Validate -> finish"
   require_text AGENTS.md \
-    "Persist \`verdict.v2\` only when"
+    "Persist machine evidence only for"
   require_text PRODUCT.md \
     "AgentOps is not a new GitLab, CI service, tracker, merge queue, delivery system"
   require_text docs/architecture/rpi-traversal.md \
-    "RPI invokes the anti-ceremony guard exactly once."
+    "Known failures stay implementation work."
   require_text docs/CI-CD.md \
     "Repositories own delivery policy for local and cloud agents."
 }
 
-@test "RPI dependencies are exactly the anti-ceremony guard and core phases" {
+@test "RPI dependencies are core operations and specialists stay optional" {
   run python3 - "$REPO_ROOT" <<'PY'
 from pathlib import Path
 import sys
@@ -83,22 +83,20 @@ actual = {}
 for name in ("rpi", "plan", "implement", "validate"):
     data = yaml.safe_load((root / "skills" / name / "SKILL.md").read_text().split("---", 2)[1])
     actual[name] = set(data["metadata"]["dependencies"])
-expected = {"rpi": {"anti-ceremony", "plan", "implement", "validate"}, "plan": set(), "implement": set(), "validate": set()}
+expected = {"rpi": {"plan", "implement", "validate"}, "plan": set(), "implement": set(), "validate": set()}
 if actual != expected:
     raise SystemExit(actual)
 PY
   [ "$status" -eq 0 ]
 
   require_text skills/standards/references/skill-structure.md \
-    "rpi -> anti-ceremony"
+    "Anti-ceremony and Memory are optional"
   require_text docs/contracts/skill-ports-and-adapters.md \
-    "Only RPI depends on the anti-ceremony guard and all three core phases."
-  require_text docs/reference/skill-system-evolution.md \
-    "Anti-Ceremony, Plan, Implement, and Validate"
+    "RPI depends on the three core operations; Memory and specialists are optional."
   require_text docs/architecture/rpi-traversal.md \
-    "\`STOP\` dispatches none of Plan, Implement, or Validate"
+    "No hard specialist or Memory dependency is added to RPI."
   require_text docs/agent-workflow-reference.md \
-    "\`CONTINUE\` creates no process artifact"
+    "Specialists, anti-ceremony audits, factories and outer-goal guidance are optional."
 }
 
 @test "validation worksheet requires fresh judgment and makes persistence optional" {
@@ -171,7 +169,7 @@ scan_obsolete_identity() {
   require_text AGENTS.md \
     "operations layer for agentic engineering"
   require_text AGENTS.md \
-    "Standard RPI traversal"
+    "Lean RPI operating charter"
   require_text AGENTS.md \
     "Federated source authority"
   require_text docs/contracts/ubiquitous-language.md \

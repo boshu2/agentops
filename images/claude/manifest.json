@@ -1,7 +1,7 @@
 {
   "image": "claude",
   "schema_version": "skill-image.v1",
-  "skill_count": 54,
+  "skill_count": 55,
   "skills": [
     {
       "disposition": "keep_specialist",
@@ -122,6 +122,11 @@
       "disposition": "keep_off_path",
       "path": "skills/learn/",
       "slug": "learn"
+    },
+    {
+      "disposition": "keep_off_path",
+      "path": "skills/memory/",
+      "slug": "memory"
     },
     {
       "disposition": "keep_specialist",

@@ -45,8 +45,10 @@ seeded_validator_must_fail() {
   seeded_validator_must_fail implement 'candidate-packet.v1'
 }
 
-@test "learn validator fails on seeded forbidden token" {
-  seeded_validator_must_fail learn 'emit a lifecycle receipt'
+@test "learn validator fails on a retired source restriction" {
+  # Memory now admits episodes and corrections; keep proving guard liveness
+  # against that boundary instead of banning every mention of a receipt.
+  seeded_validator_must_fail learn 'verdict-only input'
 }
 
 @test "ms validator fails on seeded forbidden token" {

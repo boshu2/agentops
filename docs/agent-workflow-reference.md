@@ -1,80 +1,36 @@
 # Agent workflow reference
 
-This document expands the repository contract in [AGENTS.md](../AGENTS.md).
+[AGENTS.md](../AGENTS.md) and the [RPI charter](../skills/rpi/SKILL.md) direct the
+agent to own the authorized outcome through finish. Use the native agent and
+shell; the tracker, Git and runtime keep their existing authority.
 
-AgentOps is the operations layer for agentic engineering; the standard
-traversal through its federated integration graph is one pass
-(exact semantics: [rpi-traversal.md](architecture/rpi-traversal.md)):
+1. Use the existing intent. Invoke Plan only for missing intent or consequential
+   uncertainty. A trivial change needs no Plan, Recall or Learn worksheet.
+2. Implement the smallest useful change, repair known defects directly, and
+   revise an approach when evidence disproves its assumption within unchanged
+   outcome and scope. Changing acceptance needs caller authority.
+3. Run cheap discriminating checks while editing, then required integration
+   checks. Reserve capacity for finishing, final judgment and needed repairs.
+4. Obtain fresh author-distinct final Validate over the exact subject. Same-family
+   is default; cross-model is opt-in, with no fixed ten-minute cap. PASS requires
+   all acceptance and empty `not_checked`; evidence gaps remain visible.
+5. Repair known findings within real bounds and revalidate the changed subject.
+   A genuine causal stall admits at most one bounded helper, never a chain.
+   Report the outcome and evidence truthfully when complete or actually stopped.
 
-```text
-RPI -> anti-ceremony guard -> Plan -> Implement -> fresh Validate -> bounded repair -> report
-```
+[Memory](../skills/memory/SKILL.md) supplies on-demand recall and separately
+budgeted mining/curation over caller-selected reviewed external topic pages.
+BD owns work/status/handoffs, Git content, and native/CASS sources episodes.
+Learning can update, qualify or remove a rule; no-change is valid. Only later
+work establishes benefit. This lean route uses public or already-cleared inputs
+and claims no native restricted-source enforcement.
 
-## 1. Pre-dispatch guard
+Specialists, anti-ceremony audits, factories and outer-goal guidance are optional.
+No new scheduler, command or process ledger is needed. The grandfathered pure
+fixed-dispatch adapter is separately described in its own reference.
 
-RPI invokes Anti-Ceremony's artifact-free quick guard once before Plan. `STOP`
-dispatches none of Plan, Implement, or Validate, reports `NOT_PLANNED` with the
-guard's one-sentence reason, and stops. `CONTINUE` creates no process artifact
-and preserves Plan -> Implement -> fresh Validate.
-
-## 2. Plan
-
-Resolve one active behavior in the caller-owned tracker, issue, or conversation.
-Keep acceptance, important non-goals, required evidence, write scope, and the
-first useful check in that source. Do not create a second planning artifact.
-
-The runtime leaves a durable caller-owned source in place and carries its
-reference plus the digest of its exact resolved bytes. Only when no durable
-source exists does it snapshot those bytes under
-`<explicit-evidence-root>/intents/sha256/<digest>.intent`. This fallback is derived identity,
-not a model-authored packet, and makes conversation-only intent readable by a
-fresh validator. The pure fallback helper accepts a file or stdin:
-
-```bash
-ao provenance snapshot-intent --source PATH --evidence-root EXPLICIT_NON_GIT_ROOT  # use - for stdin
-```
-
-The caller selects an existing protected non-Git evidence directory; missing
-routing fails without falling back to the consumer checkout.
-
-## 3. Implement
-
-Run one bounded RED-GREEN-refactor experiment when the behavior supports it.
-The runtime derives factual check receipts, actual changed paths, author context
-ID, and `subject-manifest.v1`; the model does not transcribe them into a
-candidate packet. Implement does not commit, claim, repair, retry, close, push,
-or deliver.
-
-## 4. Validate
-
-An author-distinct context judges the exact subject against acceptance. It
-returns `PASS`, `FAIL`, or `NOT_PROVEN`, lists checked and unchecked scope, and
-stops. PASS requires nonempty checked scope, top-level evidence, and evidence
-for every criterion. A `NOT_PROVEN` finding states the concrete missing runtime
-precondition or examined uncertainty; it does not manufacture a next action.
-Validate does not repair, re-plan, choose a next action, or authorize Git.
-
-The returned result is sufficient for interactive use. Validate persists the
-same result as content-addressed `verdict.v2` only when the caller requests a
-machine-readable artifact or a declared downstream consumer requires one.
-
-## 5. Caller continuation
-
-The caller receives the RPI report and decides what happens next. A revision
-updates the caller-owned intent source and starts a new invocation. RPI creates
-no parallel revision artifact. Changing acceptance changes the intent digest.
-
-## Optional surfaces
-
-Apart from RPI's required artifact-free Anti-Ceremony quick guard, premortem,
-postmortem, councils, idea genies, runtime adapters, research tools, and factory
-dispatch are caller-selected. Those optional surfaces never become hard
-dependencies or lifecycle authorities. `dispatch_once` executes only explicitly
-supplied, disjoint work once and performs no selection, retry, validation,
-integration, Git, closure, or delivery.
-
-## Repository mechanics
-
-Git branches, worktrees, trackers, pull requests, merge queues, CI, pushing,
-rollback, and release are repository or caller policy. `ao gate check` may run
-deterministic checks; it conveys no semantic verdict.
+For exact intent snapshots, subject manifests, evidence storage, scope and
+freshness, use [RPI traversal](architecture/rpi-traversal.md) and
+[Validate mechanics](../skills/validate/references/mechanics.md). New proof goes
+to caller-selected protected external non-Git storage; missing routing does not
+permit a workspace fallback. Legacy `.agents/` evidence remains preserved.
