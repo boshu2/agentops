@@ -96,11 +96,16 @@ func TestMineSession_CheckpointPartialWriteChild(t *testing.T) {
 	if err := syscall.Getrlimit(syscall.RLIMIT_FSIZE, &limit); err != nil {
 		t.Fatal(err)
 	}
+	originalLimit := limit
 	limit.Cur = 32
 	if err := syscall.Setrlimit(syscall.RLIMIT_FSIZE, &limit); err != nil {
 		t.Fatal(err)
 	}
 	err := MineSession(MineOptions{File: filepath.Join(dir, "session.jsonl"), State: filepath.Join(dir, "state.json"), JSON: true}, os.Stdout)
+	// Coverage data is flushed at exit; only the checkpoint write is limited.
+	if restoreErr := syscall.Setrlimit(syscall.RLIMIT_FSIZE, &originalLimit); restoreErr != nil {
+		t.Fatalf("restore file-size limit: %v", restoreErr)
+	}
 	if !errors.Is(err, syscall.EFBIG) {
 		t.Fatalf("expected file-size write error, got %v", err)
 	}
