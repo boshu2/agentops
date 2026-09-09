@@ -1,6 +1,6 @@
 ---
 name: plan
-description: 'Shape or refine the existing bead or caller intent without a second planning artifact. Triggers: "plan", "discover and plan", "shape this goal", "review write scope", "check scope boundaries", "scope this change".'
+description: 'Shape or refine the existing bead or caller intent in place. Triggers: "plan", "discover and plan", "shape this goal", "review write scope", "check scope boundaries", "scope this change".'
 practices:
 - bdd-gherkin
 - design-by-contract

@@ -549,8 +549,8 @@
     {
       "name": "plan",
       "source_skill": "skills/plan",
-      "source_hash": "4787fdbbcb55350c75be036c026faafb79cecc02865124f0ce86f20c13d88e57",
-      "generated_hash": "315a351004cd94718693a74940e96c1c1aeb878d03530b6a605fe78d39a70b06"
+      "source_hash": "2a51bd355c0ce2dde9da62bd03e2898a5e2c05f1248a97550f9278f372a9a6d1",
+      "generated_hash": "f24926c0841ef5a441c9ad163612116f4767caa54e90d0e91ded3369d1d2d350"
     },
     {
       "name": "postmortem",
