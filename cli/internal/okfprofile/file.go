@@ -11,7 +11,7 @@ import (
 // CheckFile reads only the explicitly named regular concept file. It does not
 // discover a bundle, consult configuration, resolve sources or write receipts.
 // Authorization and OS confinement belong to the invoking native runtime.
-func CheckFile(path, profile string) (Result, error) {
+func CheckFile(path, profile string) (result Result, err error) {
 	if err := checkProfile(profile); err != nil {
 		return Result{}, err
 	}
@@ -26,7 +26,12 @@ func CheckFile(path, profile string) (Result, error) {
 	if err != nil {
 		return Result{}, fmt.Errorf("cannot open input directory")
 	}
-	defer root.Close()
+	defer func() {
+		if closeErr := root.Close(); err == nil && closeErr != nil {
+			result = Result{}
+			err = fmt.Errorf("cannot close input directory")
+		}
+	}()
 	before, err := root.Lstat(base)
 	if err != nil {
 		return Result{}, fmt.Errorf("cannot inspect input file")
@@ -41,7 +46,12 @@ func CheckFile(path, profile string) (Result, error) {
 	if err != nil {
 		return Result{}, fmt.Errorf("cannot open input file")
 	}
-	defer file.Close()
+	defer func() {
+		if closeErr := file.Close(); err == nil && closeErr != nil {
+			result = Result{}
+			err = fmt.Errorf("cannot close input file")
+		}
+	}()
 	opened, err := file.Stat()
 	if err != nil || !opened.Mode().IsRegular() || !os.SameFile(before, opened) {
 		return Result{}, fmt.Errorf("input changed while opening")

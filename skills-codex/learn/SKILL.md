@@ -56,7 +56,8 @@ When the caller selects an OKF page for an observation or maintained reference,
 follow the [pinned page profile](references/okf-page-profile.md) and run
 `ao provenance check-okf --file <concept.md>` before exact-content review.
 The command checks structure only: it cannot establish factual support,
-destination disclosure, independent review or usefulness, and it neither
+permission to disclose to the destination, independent review or usefulness,
+and it neither
 admits pages nor promotes rules. This optional representation does not broaden
 Learn's verdict-only input or authorize a new storage destination.
 

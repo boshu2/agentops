@@ -6,6 +6,7 @@ package okfprofile
 import (
 	"bytes"
 	"crypto/sha256"
+	"errors"
 	"fmt"
 	"io"
 	"strings"
@@ -257,7 +258,7 @@ func frontmatter(payload []byte) (map[string]*yaml.Node, string, string) {
 		return nil, "", "invalid_yaml"
 	}
 	var extra yaml.Node
-	if decoder.Decode(&extra) != io.EOF {
+	if err := decoder.Decode(&extra); !errors.Is(err, io.EOF) {
 		return nil, "", "multiple_yaml_documents"
 	}
 	if len(doc.Content) != 1 || doc.Content[0].Kind != yaml.MappingNode {

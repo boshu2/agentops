@@ -501,8 +501,8 @@
     {
       "name": "learn",
       "source_skill": "skills/learn",
-      "source_hash": "bf17da90d561f993d1b863a2337e04ba30aa693123da2cb0509ba4641bfd9d9b",
-      "generated_hash": "118ef31f294805ba3dafd8b1aa5b58cb9fe0533ca15a1bf78b2bcaf7dd920117"
+      "source_hash": "22d1def72722df94fa0d1be6e62a952f57c344339aa0f3b7bb9a918424609eda",
+      "generated_hash": "59c3a3d8a93bd30eab75d3ed233c07dda9ac3fddf600852b4662f25533a8637e"
     },
     {
       "name": "ms",
