@@ -1,6 +1,6 @@
 {
   "schema_version": "3",
-  "skill_count": 54,
+  "skill_count": 55,
   "skills": [
     {
       "canonical_status": "canonical",
@@ -161,7 +161,7 @@
       ],
       "context_rel": [],
       "dependencies": [],
-      "description": "Guard outcome work against process overhead. Triggers: RPI pre-Plan guard; explicit \"full anti-ceremony audit\" requests.",
+      "description": "Guard outcome work against process overhead. Triggers: optional \"quick guard\"; explicit \"full anti-ceremony audit\" requests.",
       "disposition": "keep_specialist",
       "effects": [],
       "graph_root": false,
@@ -761,7 +761,7 @@
         }
       ],
       "dependencies": [],
-      "description": "Execute one bounded RED to GREEN experiment from bead or caller intent; return derived subject identity and check facts. Triggers: \"implement\", \"implement this bead\", \"run the experiment\". Full plan-to-validation requests route to rpi.",
+      "description": "Implement authorized work and repair understood defects; return derived subject identity and check facts. Triggers: \"implement\", \"implement this bead\", \"run the experiment\". Full plan-to-validation requests route to rpi.",
       "disposition": "keep",
       "effects": [
         "modify_declared_subject",
@@ -785,11 +785,11 @@
     {
       "canonical_status": "canonical",
       "capabilities": [
-        "analyze_verdict_collections"
+        "analyze_bounded_evidence"
       ],
       "codex_override_present": true,
       "consumes": [
-        "verdict.v2"
+        "authorized-episode-evidence"
       ],
       "context_rel": [
         {
@@ -798,7 +798,7 @@
         }
       ],
       "dependencies": [],
-      "description": "Optionally analyze collections of durable verdicts for recurring evidence after the critical path. Triggers: \"learn from verdicts\", \"mine validation history\".",
+      "description": "Optionally mine bounded episodes, verdicts and corrections after the critical path. Triggers: \"learn from verdicts\", \"mine validation history\".",
       "disposition": "keep_off_path",
       "effects": [
         "write_advisory_observations"
@@ -814,6 +814,38 @@
         "learning-observations"
       ],
       "references_count": 2,
+      "tier": "execution",
+      "user_invocable": true
+    },
+    {
+      "canonical_status": "canonical",
+      "capabilities": [
+        "recall_applicable_context",
+        "mine_supported_observations",
+        "curate_topic_pages"
+      ],
+      "codex_override_present": true,
+      "consumes": [],
+      "context_rel": [],
+      "dependencies": [],
+      "description": "Recall applicable reviewed topic pages or maintain them through separately budgeted mining, learning and curation. Triggers: \"memory\", \"recall prior work\", \"mine and learn\", \"curate memory\", \"qualify or retire a lesson\".",
+      "disposition": "keep_off_path",
+      "effects": [
+        "write_protected_drafts",
+        "update_authorized_topic_pages"
+      ],
+      "graph_root": true,
+      "hexagonal_role": "supporting",
+      "name": "memory",
+      "practices": [
+        "evidence-based-engineering",
+        "continuous-learning"
+      ],
+      "produces": [
+        "applicable-context",
+        "reviewed-topic-pages"
+      ],
+      "references_count": 3,
       "tier": "execution",
       "user_invocable": true
     },
@@ -1310,21 +1342,16 @@
     {
       "canonical_status": "canonical",
       "capabilities": [
-        "orchestrate_once",
+        "own_authorized_outcome",
         "report"
       ],
       "codex_override_present": true,
       "consumes": [
-        "anti-ceremony",
         "plan",
         "implement",
         "validate"
       ],
       "context_rel": [
-        {
-          "kind": "customer-of",
-          "with": "anti-ceremony"
-        },
         {
           "kind": "customer-of",
           "with": "plan"
@@ -1339,15 +1366,13 @@
         }
       ],
       "dependencies": [
-        "anti-ceremony",
         "plan",
         "implement",
         "validate"
       ],
-      "description": "Coordinate one RPI traversal: one bounded Plan and Implement experiment, then fresh Validate and a bounded repair phase to convergence. Triggers: \"run rpi\", \"run one traversal\", \"execute this plan\", orchestration or worker delegation that implements changes.",
+      "description": "Own an authorized outcome through implementation, checks and fresh final validation; load planning and memory only when useful. Triggers: \"run rpi\", \"run one traversal\", \"execute this plan\", orchestration or worker delegation that implements changes.",
       "disposition": "keep",
       "effects": [
-        "invoke_anti_ceremony_guard",
         "dispatch_core_phases"
       ],
       "graph_root": true,
@@ -1361,7 +1386,7 @@
       "produces": [
         "rpi-report.v1"
       ],
-      "references_count": 2,
+      "references_count": 4,
       "tier": "meta",
       "user_invocable": true
     },

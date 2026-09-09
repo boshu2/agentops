@@ -31,7 +31,7 @@ requirements. Most need nothing beyond the coding agent; these need more:
 | `security` | `python3`, conditional | the composable suite and offline redteam surfaces run `security_suite.py` when that scan type is selected |
 | `cass` | `python3`, optional | `scripts/prompt_miner.py` mines repeated prompts; one of several selectable Scripts-table entries |
 
-The plugin and `npx skills@latest add boshu2/agentops --all -g` install all 54 skills today, regardless of whether you have `python3` or `ao`.
+The plugin and `npx skills@latest add boshu2/agentops --all -g` install the generated skill catalog, regardless of whether you have `python3` or `ao`.
 
 ## Maintainer / contributor: the `ao` binary
 

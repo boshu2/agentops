@@ -5,7 +5,50 @@
 - **Builds on:** [ADR-0004](ADR-0004-corpus-moat-unproven-position-on-the-system.md) (corpus moat unproven, position on the verification system), [ADR-0011](ADR-0011-escape-corpus-compounding-unproven-structural-starvation.md) (escape-corpus compounding demoted to hypothesis)
 - **Origin:** `docs/plans/2026-09-03-loop-restore.md` (this decision's intent source), and the 2026-09-02 Train 1 run, where the repair loop had to be improvised by hand
 
-## Active disposition — 2026-09-06 selected CDLC
+## Active lean-harness amendment — 2026-09-09
+
+The caller approved a short RPI charter with on-demand Plan, Implement,
+Validate and Memory. This supersedes the once-only phase lock, mandatory
+anti-ceremony/premortem dispatch, mandatory entry Recall, Learn's verdict-only
+input/scratch-TTL limit, and a default two-round native stop. Those earlier
+prescriptions below are historical; the pure fixed-dispatch reference retains
+its narrower contract only for explicit adapter callers.
+
+Own the authorized outcome through finish. Plan may revise an approach when
+evidence disproves an assumption under unchanged accepted outcome and scope;
+acceptance changes need caller authority. Implement fixes ordinary known defects
+directly. Use cheap checks, reserve finishing capacity, respect real native/caller
+bounds, and obtain fresh author-distinct final validation. Same-family remains
+default, cross-model opt-in, with no fixed ten-minute cap. Exact subject,
+all acceptance, empty `not_checked` and prior findings remain required.
+
+Unknown cause, recurrence, no progress or wrong objective warrants causal
+examination. A genuine stall gets at most one authorized bounded fresh helper
+per incident inside remaining bounds. An unhelpful answer ends the attempt;
+known failures need direct repair, never a helper chain. Cancellation, refusal
+and spent real time/cost/quota skip help. No new invocation or compaction resets
+limits. Optional outer-goal guidance remains outside the core; no scheduler,
+evolve root, new AO command or process ledger is restored.
+
+Memory is an optional skill root with recall, mine/learn and curate/qualify/retire
+references. Use reviewed caller-selected external topic pages and update existing
+pages. Mining is separately budgeted off-path. Single incidents support narrow
+observations; stronger rules need stronger support, and benefit needs later work.
+Learning may remove rules; no-change and rare useful constraints remain valid.
+ADR-0016 still protects legacy evidence, external staging and review before Git.
+The lean trials use public/already-cleared inputs only and claim no native
+restricted-source enforcement. No worksheet is owed for trivial work.
+
+The observed failure motivating this change was process work and repeated
+judgment displacing implementation and finishing. The guardrail is the smallest
+acceptance-advancing action and bounded causal help. The counterexample is a
+falsified implementation assumption: revising that approach is useful work, not
+a forbidden return to planning. This amendment establishes behavior contracts;
+only subsequent task evidence can establish benefit.
+
+## Historical amendments retained for provenance
+
+### Prior disposition — 2026-09-06 selected CDLC
 
 Retain the bounded repair law, once-only Plan/Implement, exact subject and fresh
 author-distinct Validate. Replace the blanket exclusion of knowledge writes and
@@ -49,7 +92,7 @@ it cannot imply improvement. The selected skills-plus-Go evidence path needs
 later implementation and shared conformance, not a shipped Python expansion.
 The original removal rationale and repair evidence below remain historical.
 
-## Active stopping amendment — 2026-09-07
+### Prior stopping amendment — 2026-09-07
 
 Replace finding-count monotonicity and digest movement as repair admission
 proxies with acceptance evidence: a fresh digest-bound receipt proves closure
@@ -77,7 +120,7 @@ operations. Report observed controls and missing measurement truthfully. Evidenc
 and provenance are retained while beliefs may be revised; knowledge is not
 monotonically true or useful. The historical rationale below is preserved.
 
-## Active review-selection amendment — 2026-09-08
+### Prior review-selection amendment — 2026-09-08
 
 At the caller's request, default to one fresh author-distinct validator in the
 author's model family: Codex/OpenAI for Codex/OpenAI work, Claude/Anthropic for

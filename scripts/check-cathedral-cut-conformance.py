@@ -987,7 +987,7 @@ def property_names(value: object) -> set[str]:
 
 def check_skill_graph() -> None:
     entries = {path.parent.name: frontmatter(path.parent.name) for path in (ROOT / "skills").glob("*/SKILL.md")}
-    expected = {"rpi": {"anti-ceremony", "plan", "implement", "validate"}, "plan": set(), "implement": set(), "validate": set()}
+    expected = {"rpi": {"plan", "implement", "validate"}, "plan": set(), "implement": set(), "validate": set()}
     actual = {
         name: set((entries[name].get("metadata") or {}).get("dependencies") or [])
         for name in CORE
@@ -1087,14 +1087,14 @@ def check_bounded_repair_contract() -> None:
     conditions must be present BY NAME, so a bounded repair phase is allowed
     while an unbounded grind still fails this gate.
     """
-    raw = (ROOT / "skills" / "rpi" / "SKILL.md").read_text(encoding="utf-8")
+    raw = (ROOT / "skills" / "rpi" / "references" / "bounded-adapter.md").read_text(encoding="utf-8")
     # Whitespace-normalized so a canary phrase may wrap across source lines.
     text = " ".join(raw.split())
     assert "Stop regardless" not in text, (
         "RPI still asserts the retired single-pass stop; ADR-0017 replaced it with the law"
     )
     for phrase in (
-        "stop when converged, stopped by the law, or out of `repair_rounds`",
+        "stops when converged, stopped by the law, or out of `repair_rounds`",
         "## The convergence law",
         "rounds_used < repair_rounds",
         "finding count alone is not useful progress",
@@ -1103,8 +1103,9 @@ def check_bounded_repair_contract() -> None:
         "repair round N: k open findings",
     ):
         assert phrase in text, f"RPI contract is missing a convergence-law canary: {phrase}"
-    # Plan and Implement keep their single-dispatch lock; only Validate repeats.
-    assert "dispatches Plan and Implement at most once" in text
+    # The explicitly selected reference adapter retains finite dispatch.
+    # Native RPI uses the lean charter and may revise its approach.
+    assert "Plan and Implement at most once" in text
     assert "never extends the caller's" in text, "RPI does not disclaim the caller's repair bound"
 
     runner = ROOT / "skills" / "rpi" / "scripts" / "run_once.py"

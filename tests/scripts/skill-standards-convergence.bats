@@ -31,7 +31,7 @@ PY
   [ "$status" -eq 0 ]
 }
 
-@test "RPI hard dependencies are anti-ceremony then Plan Implement Validate" {
+@test "RPI core operations exclude mandatory specialists" {
   run python3 - "$REPO_ROOT" <<'PY'
 from pathlib import Path
 import sys
@@ -43,7 +43,7 @@ for name in ("rpi", "plan", "implement", "validate"):
     path = root / "skills" / name / "SKILL.md"
     data = yaml.safe_load(path.read_text(encoding="utf-8").split("---", 2)[1])
     actual[name] = set((data.get("metadata") or {}).get("dependencies") or [])
-expected = {"rpi": {"anti-ceremony", "plan", "implement", "validate"}, "plan": set(), "implement": set(), "validate": set()}
+expected = {"rpi": {"plan", "implement", "validate"}, "plan": set(), "implement": set(), "validate": set()}
 if actual != expected:
     raise SystemExit(f"core graph mismatch: {actual!r}")
 PY

@@ -79,42 +79,36 @@ and ledger availability are never required for validity.
 
 ## Selected Context Delivery Lifecycle contract
 
-CDLC means **Context Delivery Lifecycle**: disposable agents improve through
-maintained external context and environment. It does not train model weights
-or promise deterministic inference. The selected contract adds continuous
-learning alongside bounded delivery; it is contract adoption, not a claim that
-new CDLC skills or Go evidence operations already ship.
+The lean [RPI charter](skills/rpi/SKILL.md) owns the authorized outcome through
+finish with on-demand Plan, Implement, Validate and optional Memory. Known
+failures get direct repair; evidence can revise an approach within unchanged
+acceptance and scope. A genuine causal stall admits at most one bounded helper,
+never a helper chain. Cheap checks precede fresh author-distinct final judgment;
+reserve capacity for finishing and respect real caller/native bounds.
 
-Delivery has three phases: **Discovery** retrieves authorized experience,
-resolves intent and uncertainty, and uses Plan to shape one experiment;
-**Implement** builds that bounded experiment; **Validate** judges its exact
-subject freshly, including admitted bounded repairs. Standalone RPI still
-runs with Plan and Implement once. An explicitly selected bounded outer goal
-may authorize another experiment within its accepted envelope, including a
-return to Discovery. Native work, budgets, stops, queues and delivery remain
-with the caller/runtime; AO gains no scheduler or semantic workflow engine.
+[Memory](skills/memory/SKILL.md) supplies optional recall and separately budgeted
+mine/learn and curate/qualify/retire operations. BD owns work/status/handoffs,
+Git content, native/CASS systems episodes, and caller-selected reviewed external
+Markdown topic pages reusable claims. Update a topic page rather than one file
+per session; preserve applicability, action, support, limits and invalidation.
+A single incident supports a narrow observation. Learning can remove rules;
+rare useful constraints and no-change remain valid. No blind TTL/deletion.
 
-The selected memory is a caller-owned external reviewed Markdown/OKF bundle.
-Protected non-Git drafts and evidence precede exact factual-support review
-and distinct destination-disclosure review, both before any Git object, index
-or stash. Maintained claims are evidence, never automatic policy. Requested
-legacy `.agents/` proof and unique research remain preserved under owner policy.
-[ADR-0016](docs/adr/ADR-0016-state-tiers.md) owns placement and confidentiality.
+Exact factual support, permission to store content and later usefulness are
+separate claims. Protected external non-Git drafts and fresh support/disclosure
+review precede any Git object/index/stash/import. Preserve legacy `.agents/`
+evidence under [ADR-0016](docs/adr/ADR-0016-state-tiers.md). This lean path uses
+public or already-cleared trial inputs only; native restricted-source isolation
+is not supplied by a skill or same-user process. No new scheduler or AO command
+is needed, and no evolve root is restored.
 
-Mechanism correctness and demonstrated net benefit are separate claims.
-Factual support, permission to store exact content in a destination, and later
-observed usefulness each need their own evidence. The current cold-reuse trial
-had no optional knowledge-body use and demonstrates no memory benefit; failed
-and null outcomes remain visible. A positive compounding claim needs new
-independent task evidence, not citations, stored pages or closed work.
-
-Recall and the Learn extension have later implementation owners; only T25 may
-restore the small evolve skill after native stop/continuation is proven.
-Existing entrypoint checks stay enforced. The selected runtime target is skills
-plus Go `ao` evidence operations, with shared conformance before migrating the
-current Python helpers. It does not migrate unrelated grandfathered scripts
-or development generators. See [RPI traversal](docs/architecture/rpi-traversal.md)
-and [ADR-0017](docs/adr/ADR-0017-loop-as-control-flow-not-knowledge.md).
+Saved pages, retrieval and closed work cannot prove benefit or compounding.
+The prior cold-reuse trial demonstrated no memory benefit and its failed/null
+outcomes remain visible. Positive usefulness needs later task evidence. These
+skills maintain external context; they do not train weights or promise
+deterministic inference. [RPI traversal](docs/architecture/rpi-traversal.md) and
+[ADR-0017](docs/adr/ADR-0017-loop-as-control-flow-not-knowledge.md) own the amended
+behavior and the explicitly optional fixed-dispatch reference adapter.
 
 ## Why this shape
 

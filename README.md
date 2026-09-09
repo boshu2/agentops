@@ -10,19 +10,21 @@ the exact change and returns `PASS`, `FAIL`, or `NOT_PROVEN`. The standard
 path is one RPI traversal:
 
 ```text
-RPI -> Plan -> Implement -> fresh Validate -> repair to convergence -> report
+RPI charter -> on-demand Plan -> Implement and checks -> fresh Validate -> finish
 ```
 
-The selected **CDLC (Context Delivery Lifecycle)** contract adds maintained
-external context and learning around disposable agents. Discovery (shaped by
-Plan), Implement and Validate remain bounded by caller intent; a selected outer
-goal can authorize a new experiment within its native limits. This is contract
-adoption: Recall, extended Learn, evolve and the Go evidence migration are later
-work, not new runnable entrypoints. It promises neither weight training nor
-deterministic inference, and the current trial demonstrates no memory benefit.
-External reviewed Markdown/OKF memory, protected non-Git evidence and separate
-support/disclosure/utility claims are specified in
-[ADR-0016](docs/adr/ADR-0016-state-tiers.md).
+The lean [RPI charter](skills/rpi/SKILL.md) owns an authorized outcome through
+finish: Plan on demand, direct repair of understood failures, cheap checks and
+fresh final judgment. Evidence can revise an approach within unchanged outcome
+and scope. A clear small edit needs no planning or memory worksheet.
+
+[Memory](skills/memory/SKILL.md) offers on-demand recall and separately budgeted
+mining/curation over reviewed caller-selected external Markdown topic pages.
+Update an existing page; preserve support, limits and invalidation. Learning may
+remove rules. Saved pages do not prove benefit; only later task evidence does.
+This lean path uses public or already-cleared inputs and claims no native
+restricted-source enforcement. Protected external drafts, review before Git and
+legacy evidence preservation follow [ADR-0016](docs/adr/ADR-0016-state-tiers.md).
 
 ## Quickstart
 
@@ -194,7 +196,7 @@ one unless requested.
 | Skill | Job |
 |---|---|
 | [`rpi`](skills/rpi/SKILL.md) | guard once, Plan and Implement at most once, fresh Validate plus admitted bounded repairs; report |
-| [`anti-ceremony`](skills/anti-ceremony/SKILL.md) | STOP/CONTINUE guard before Plan: name the consumer, the decision, the defect, and the retirement condition, or do not create the artifact |
+| [`anti-ceremony`](skills/anti-ceremony/SKILL.md) | Optional STOP/CONTINUE guard: name the consumer, the decision, the defect, and the retirement condition, or do not create the artifact |
 | [`plan`](skills/plan/SKILL.md) | create the bead (BDD + DDD ubiquitous language) |
 | [`implement`](skills/implement/SKILL.md) | TDD against the bead: RED → GREEN → refactor |
 | [`validate`](skills/validate/SKILL.md) | fresh context (optionally different model); optionally persist `verdict.v2` |
