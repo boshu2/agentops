@@ -52,7 +52,9 @@ small operating charter and fresh judgment, not a scheduler or a second queue.
    work, not a reason for another plan, council or helper.
 4. Use cheap discriminating checks during edits, then the required integration
    checks. Preserve valid exact-input receipts. Reserve finishing capacity for
-   integration, fresh final judgment, repairs and a truthful handoff.
+   integration, fresh final judgment, repairs and a truthful handoff. Complete
+   required checks and known repairs before dispatching final judgment, then
+   keep that subject unchanged until the review returns.
 5. Obtain [Validate](../validate/SKILL.md) in a fresh author-distinct context over
    the exact final subject. Default to the author's model family; cross-model
    review is opt-in. There is no fixed ten-minute cap. Required caller-selected
