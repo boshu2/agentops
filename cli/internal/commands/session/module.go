@@ -1,7 +1,7 @@
 // Package session owns Cobra presentation for the `ao session` commands
-// (bootstrap, rehydrate, and prune-agents). The module builds its command tree with
+// (bootstrap, rehydrate, prune-agents, and read-source). The module builds its command tree with
 // constructor-scoped flag state and delegates every filesystem effect to
-// internal/sessionapp, so this package performs no direct effect. The optional
+// internal/sessionapp and internal/sourceread, so this package performs no direct effect. The optional
 // `ao session handoff` writer is attached by the cmd/ao composition; it is a
 // separate command that shares this parent.
 package session
@@ -42,15 +42,15 @@ func (m Module) outputMode() string {
 // caller-authored handoff, and its explicitly selected prune-agents command can
 // apply retention mutations (dry-run by default). It emits text (JSON under the
 // read commands' --json flags) and exits 0 on success or 1 on a filesystem
-// failure. The session family attached no capabilities contract before the
-// carve-out, so the composition does not attach this one either.
+// failure. The source reader additionally reads caller configuration and native
+// BD through its existing read-only gateway; leaf contracts state exact effects.
 func (Module) Contract() clicontract.CommandContract {
 	return clicontract.CommandContract{
 		ID:       "ao.session",
 		Profiles: clicontract.ProfileDefault | clicontract.ProfileLegacy | clicontract.ProfileCombined,
 		Args:     clicontract.ArgsPolicy{Name: "arbitrary", Validate: cobra.ArbitraryArgs},
 		Output:   clicontract.OutputText,
-		Effects:  clicontract.EffectFilesystem,
+		Effects:  clicontract.EffectFilesystem | clicontract.EffectEnvironment | clicontract.EffectProcess,
 		ExitClasses: map[int]clicontract.ExitClass{
 			0: clicontract.ExitSuccess,
 			1: clicontract.ExitFailure,
@@ -59,7 +59,7 @@ func (Module) Contract() clicontract.CommandContract {
 }
 
 // Command builds the `ao session` command. The RunE closures delegate entirely
-// to internal/sessionapp so this module performs no direct filesystem effect.
+// to application packages so this module performs no direct filesystem effect.
 func (m Module) Command() *cobra.Command {
 	root := &cobra.Command{
 		Use:     "session",
@@ -69,6 +69,10 @@ func (m Module) Command() *cobra.Command {
 	root.AddCommand(m.bootstrapCommand())
 	root.AddCommand(m.rehydrateCommand())
 	root.AddCommand(m.pruneAgentsCommand())
+	root.AddCommand(m.readSourceCommand())
+	if err := clicontract.Attach(root, m.Contract()); err != nil {
+		panic(err)
+	}
 	return root
 }
 

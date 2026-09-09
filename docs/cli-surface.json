@@ -206,6 +206,13 @@
     },
     {
       "category": "public-tested",
+      "command": "provenance check-okf",
+      "coverage_status": "covered",
+      "kind": "leaf",
+      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
+    },
+    {
+      "category": "public-tested",
       "command": "provenance digest",
       "coverage_status": "covered",
       "kind": "leaf",
@@ -347,6 +354,13 @@
     {
       "category": "public-tested",
       "command": "session prune-agents",
+      "coverage_status": "covered",
+      "kind": "leaf",
+      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
+    },
+    {
+      "category": "public-tested",
+      "command": "session read-source",
       "coverage_status": "covered",
       "kind": "leaf",
       "reason": "Covered by release smoke tests, direct command tests, or command handler tests."

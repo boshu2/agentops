@@ -843,7 +843,7 @@
         "has_skill_md": true,
         "name": "cass",
         "path": "skills/cass/",
-        "reference_count": 16,
+        "reference_count": 17,
         "tier": "execution"
       },
       {
@@ -1088,7 +1088,7 @@
         "has_skill_md": true,
         "name": "learn",
         "path": "skills/learn/",
-        "reference_count": 1,
+        "reference_count": 2,
         "tier": "execution"
       },
       {
