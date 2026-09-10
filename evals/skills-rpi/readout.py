@@ -360,7 +360,7 @@ def build(report, receipts=None, *, control="control", treatment="treatment", n_
                                          "source": row["verifier_grade"]["source"]} for row in attempts],
             "limits": list(report.get("limits", [])) + [
                 "All supplied attempts remain visible. Native expected counts are assignments, not a reconstructed historical start ledger. Missing jobs in receipts remain separately visible.",
-                "Endpoint successes and receipt-backed comparable pairs are distinct. Isolation configuration is not proof against every contamination route; receipts must come from the external runner, never the worker.",
+                "Endpoint successes count finished runs without execution errors whose oracle passed. A timed-out worker can leave passing code; raw native rewards stay visible and do not turn the interrupted run into completion. Endpoint successes and receipt-backed comparable pairs are distinct. Isolation configuration is not proof against every contamination route; receipts must come from the external runner, never the worker.",
                 "Time distributions cover recorded trial start to finish, including recorded setup/verifier work. No outer setup or analysis window is inferred; native phase endpoints are retained without fabricated allocation.",
                 "Native cumulative counters are per session and evidence copy. Cached input is within input; reasoning is within output. Never sum copies, parent/child totals, or Harbor metrics with native usage.",
                 "Harbor cost values and ratios are incomplete estimates, even when every attempt has a scalar: the adapter may omit nested sessions. They are separate from native usage and do not establish billing. Missing usage or billing is unknown; zero accepted outcomes makes cost per accepted outcome undefined.",
@@ -373,7 +373,7 @@ def markdown(result):
     def show(value):
         return "unknown" if value is None else str(round(value, 4)) if isinstance(value, float) else str(value)
     lines = ["Recommendation: **" + result["recommendation"] + "**.", "", result["recommendation_reason"], "",
-             "| Arm | Assigned | Observed | Endpoint successes / denominator | Outcomes | Harbor estimate (incomplete) / attempts without estimate |",
+             "| Arm | Assigned | Observed | Finished trials with passing endpoint / denominator | Outcomes | Harbor estimate (incomplete) / attempts without estimate |",
              "|---|---:|---:|---|---|---|"]
     for arm, row in result["arms"].items():
         cost = row["harbor_cost_usd"]
@@ -384,7 +384,7 @@ def markdown(result):
               "Attempt disposition (all observed attempts):"]
     for row in result["attempts"]:
         exclusion = "; ".join(row["comparison_exclusions"]) or "included in paired endpoint analysis"
-        lines.append(f"- {row['job']} / {row['trial_id'] or row['directory']}: {row['outcome']}; {show(row['elapsed_seconds'])} seconds; {exclusion}.")
+        lines.append(f"- {row['job']} / {row['trial_id'] or row['directory']}: {row['outcome']}; native oracle {json.dumps(row['native_rewards'], sort_keys=True)}; {show(row['elapsed_seconds'])} seconds; {exclusion}.")
     lines += ["", "Independent validation cases (count / expected-case denominator; unknown cases):",
               "", "| Arm | False acceptance | False blocker | Justified NOT_PROVEN | Attempts without case grade |",
               "|---|---|---|---|---:|"]

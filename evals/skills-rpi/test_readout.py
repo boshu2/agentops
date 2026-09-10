@@ -301,3 +301,13 @@ def test_invalid_analysis_settings_fail(kwargs):
     report, receipts = fixture()
     with pytest.raises(ValueError):
         readout.build(report, receipts, **kwargs)
+
+
+def test_timeout_preserves_passing_code_without_claiming_completed_run():
+    report, receipts = fixture(("execution_error", "execution_error"))
+    for job in report["jobs"]:
+        job["trials"][0]["documents"]["result.json"]["data"]["verifier_result"] = {"rewards": {"reward": 1.0}}
+    result = readout.build(report, receipts)
+    assert all(arm["endpoint_successes"] == 0 for arm in result["arms"].values())
+    assert all(row["native_rewards"] == {"reward": 1.0} for row in result["attempts"])
+    assert 'execution_error; native oracle {"reward": 1.0}' in readout.markdown(result)
