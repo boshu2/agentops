@@ -2,7 +2,6 @@ package provenancegraph
 
 import (
 	"bufio"
-	"encoding/json"
 	"fmt"
 	"os"
 )
@@ -58,8 +57,8 @@ func (s *Store) VerifyFile() (VerifyResult, error) {
 		if len(trimSpace(raw)) == 0 {
 			continue
 		}
-		var e Edge
-		if err := json.Unmarshal(raw, &e); err != nil {
+		e, err := decodeEdge(raw)
+		if err != nil {
 			return VerifyResult{
 				Pass:            false,
 				RecordCount:     count,

@@ -4,10 +4,37 @@
 package scenarioresults
 
 import (
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"testing"
 )
+
+func TestLoad_InvalidJudgedAtCannotReplaceFailure(t *testing.T) {
+	root := t.TempDir()
+	stageFixture(t, root, "has-failing.json")
+	loaded, err := Load(root, true)
+	if err != nil {
+		t.Fatal(err)
+	}
+	invalid := loaded.Artifact.Results[1]
+	if invalid.Verdict != VerdictFail {
+		t.Fatal("fixture must contain a failure")
+	}
+	invalid.JudgedAt, invalid.Verdict, invalid.Score = "not-a-time", VerdictPass, 1
+	loaded.Artifact.Results = append(loaded.Artifact.Results, invalid)
+	payload, err := json.Marshal(loaded.Artifact)
+	if err != nil {
+		t.Fatal(err)
+	}
+	writeArtifactBytes(t, root, payload)
+	for _, strict := range []bool{false, true} {
+		result, err := Load(root, strict)
+		if (err != nil) != strict || result.Status != StatusMalformed || result.Artifact != nil || !result.IsSkip() {
+			t.Errorf("strict=%v: malformed duplicate supplied evidence: %+v, %v", strict, result, err)
+		}
+	}
+}
 
 // writeArtifactBytes stages raw JSON bytes at the canonical artifact path.
 func writeArtifactBytes(t *testing.T, root string, data []byte) {

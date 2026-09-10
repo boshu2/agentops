@@ -1,6 +1,7 @@
 package provenancegraph
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -9,6 +10,34 @@ import (
 	"sync"
 	"testing"
 )
+
+func TestStore_AppendPreservesUnterminatedRecord(t *testing.T) {
+	store, path := seedVerifyLedger(t)
+	before, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	before = bytes.TrimSuffix(before, []byte{'\n'})
+	if err := os.WriteFile(path, before, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if result, err := store.VerifyFile(); err != nil || !result.Pass {
+		t.Fatalf("unterminated starting ledger: %+v, %v", result, err)
+	}
+	if _, err := store.Append(validEdge()); err != nil {
+		t.Fatal(err)
+	}
+	after, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.HasPrefix(after, append(bytes.Clone(before), '\n')) {
+		t.Fatal("append changed prior bytes or omitted the record separator")
+	}
+	if result, err := store.VerifyFile(); err != nil || !result.Pass || result.RecordCount != 3 {
+		t.Fatalf("appended ledger: %+v, %v", result, err)
+	}
+}
 
 func TestStore_AppendThenReadRoundTrips(t *testing.T) {
 	dir := t.TempDir()
