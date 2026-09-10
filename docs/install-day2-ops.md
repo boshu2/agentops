@@ -1,6 +1,19 @@
 # Install And Day-2 Operations
 
-AgentOps 3.3 supports three install paths:
+The default is your native coding agent plus the `ao` binary, with zero
+mandatory AgentOps skills. Install AO and read the native quickstart:
+
+```bash
+go install github.com/boshu2/agentops/cli/cmd/ao@latest
+ao quick-start
+ao demo
+```
+
+These guidance commands do not write skills, hooks, or project state. `ao init`
+is optional local evidence setup, not a prerequisite. Development features can
+be built from this checkout with `cd cli && go install ./cmd/ao`.
+
+Three optional skill installation paths remain supported:
 
 - `npx skills@latest add boshu2/agentops --all -g` — universal; one command
   installs the skills into all your coding agents.
@@ -35,9 +48,8 @@ The plugin and `npx skills@latest add boshu2/agentops --all -g` install the gene
 
 ## Maintainer / contributor: the `ao` binary
 
-The `ao` CLI is optional: `fitness` and `using-gc` call it directly
-(see the table above); the rest of the skills work without it. Install it on
-its own:
+Install `ao` on its own; no skill linking is needed for native execution.
+Selected skills may also require it as listed above:
 
 ```bash
 brew tap boshu2/agentops https://github.com/boshu2/homebrew-agentops
@@ -51,14 +63,15 @@ To track skills from a local checkout instead of a release bundle, run
 
 ## Install (source checkout)
 
-Install the optional `ao` CLI, clone AgentOps, and link its skills:
+To make selected guidance discoverable, install the CLI, clone AgentOps, and
+link those skills:
 
 ```bash
 brew tap boshu2/agentops https://github.com/boshu2/homebrew-agentops
 brew install agentops
 git clone https://github.com/boshu2/agentops.git ~/.local/share/agentops
 cd ~/.local/share/agentops
-ao skills link
+ao skills link --skill test --skill refactor
 ```
 
 Without Homebrew:
@@ -68,10 +81,15 @@ git clone https://github.com/boshu2/agentops.git ~/.local/share/agentops
 cd ~/.local/share/agentops/cli
 go install ./cmd/ao
 cd ..
-"$(go env GOPATH)/bin/ao" skills link
+"$(go env GOPATH)/bin/ao" skills link --skill test --skill refactor
 ```
 
-The command links each canonical `skills/<slug>/` directory into
+Repeat `--skill` to select exact catalog names. Unknown or invalid names fail
+before any links are created. Omit selectors for the existing full-library
+behavior; choosing a subset does not remove previously installed skills.
+Use `--dry-run` to preview and `--dest /path/to/skills` for one discovery root.
+
+The command links selected canonical `skills/<slug>/` directories into
 `~/.agents/skills` and every detected runtime skills root. It refuses to replace
 real directories, foreign links, or user-owned skills.
 
@@ -80,11 +98,12 @@ real directories, foreign links, or user-owned skills.
 ```bash
 cd ~/.local/share/agentops
 git pull --ff-only
-ao skills link
+ao skills link --skill test --skill refactor
 ```
 
 Existing links immediately see edits to their targets. Rerunning `ao skills
-link` adds newly introduced skills and reports conflicts. It does not copy the
+link` with the same selection restores selected links and reports conflicts;
+without selectors it also adds newly introduced skills. It does not copy the
 corpus or refresh a plugin cache.
 
 ## Audit
