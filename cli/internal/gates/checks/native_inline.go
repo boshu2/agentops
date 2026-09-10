@@ -141,7 +141,10 @@ func runLearningCoherence(ctx context.Context, rc gates.RunContext) (ports.GateV
 		}
 		data, err := os.ReadFile(filepath.Join(rc.RepoRoot, f))
 		if err != nil {
-			continue // deleted
+			if os.IsNotExist(err) {
+				continue // deleted
+			}
+			return ports.GateVerdict{Status: ports.GateStatusFail, Reason: fmt.Sprintf("read learning %s: %v", f, err)}, nil
 		}
 		if !bytes.HasPrefix(data, []byte("---")) {
 			missing = append(missing, f)
