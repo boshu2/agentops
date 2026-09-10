@@ -1,6 +1,6 @@
 # skill-eval
 
-Author and tier behavioral probes for a skill, including seeded-defect probes that escape ceiling saturation. Triggers: "measure this skill", "the probe came back INERT", "the control arm aces it", "harden this scenario", "is this skill actually doing anything".
+Evaluate a named maintenance decision with behavioral probes, controlled coding comparisons, or separate memory transfer tests. Triggers: "measure this skill", "the probe came back INERT", "the control arm aces it", "harden this scenario", "is this skill actually doing anything".
 
 ## Instructions
 

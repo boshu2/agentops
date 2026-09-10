@@ -1,0 +1,38 @@
+schema_version = "1.4"
+
+[task]
+name = "agentops/learning-read-error"
+version = "1.0.1"
+description = "Repair an observed Go gate error without broadening its inputs."
+
+[metadata]
+family = "small-go-repair"
+source_commit = "8a9a01a70abcb4f6325de32e7d17fcd942c40fcb"
+source_path = "cli/internal/gates/checks/native_inline.go"
+visibility = "development"
+historical_fix_seen_by_task_author = true
+
+[agent]
+timeout_sec = 900
+network_mode = "allowlist"
+allowed_hosts = ["chatgpt.com", "api.openai.com", "auth.openai.com", "auth0.openai.com"]
+
+[environment]
+build_timeout_sec = 900
+cpus = 2
+memory_mb = 4096
+storage_mb = 16384
+network_mode = "public"
+
+[verifier]
+timeout_sec = 180
+environment_mode = "separate"
+
+[verifier.environment]
+docker_image = "agentops-skill-eval-verifier:learning-read-error-v1"
+network_mode = "no-network"
+cpus = 2
+memory_mb = 4096
+
+[[artifacts]]
+source = "/app/work"

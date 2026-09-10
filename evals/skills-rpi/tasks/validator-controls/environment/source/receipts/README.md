@@ -1,0 +1,1 @@
+Candidate-c has no original check record. Its absence is intentional. The supplied A/B records were collected locally when this development fixture was frozen. Rerunning tests does not recover the missing original event.

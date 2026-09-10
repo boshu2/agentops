@@ -639,8 +639,8 @@
     {
       "name": "skill-eval",
       "source_skill": "skills/skill-eval",
-      "source_hash": "579dfe394e4baa62287389c695735bfdc550e981381af084ff5667db4c3eaf4b",
-      "generated_hash": "0cd12a5dc16657870e444bdc9dc4dd2e9bd4bcca008dfc746a8fb35935cc1f4f"
+      "source_hash": "fd8627d0a2ad75ce2901482851143db12ffac777415c099ec05dfe6d32901821",
+      "generated_hash": "1925e91a27cd710813a7e10f7b8a1e7e0d685ab5156d3be047bfa2d51b53e1fa"
     },
     {
       "name": "standards",

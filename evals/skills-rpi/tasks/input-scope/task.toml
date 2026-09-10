@@ -1,0 +1,38 @@
+schema_version = "1.4"
+
+[task]
+name = "agentops/input-scope"
+version = "1.0.0"
+description = "Preserve selected inputs while repairing merge discovery."
+
+[metadata]
+family = "input-scope"
+visibility = "development"
+source_kind = "sanitized-standalone"
+source_snapshot = "environment/source"
+endpoint_reward_is_workflow_proof = false
+
+[agent]
+timeout_sec = 900
+network_mode = "allowlist"
+allowed_hosts = ["chatgpt.com", "api.openai.com", "auth.openai.com", "auth0.openai.com"]
+
+[environment]
+build_timeout_sec = 900
+cpus = 2
+memory_mb = 2048
+storage_mb = 4096
+network_mode = "public"
+
+[verifier]
+timeout_sec = 180
+environment_mode = "separate"
+
+[verifier.environment]
+docker_image = "agentops-skill-eval-verifier:input-scope-v1"
+network_mode = "no-network"
+cpus = 2
+memory_mb = 2048
+
+[[artifacts]]
+source = "/app/work"
