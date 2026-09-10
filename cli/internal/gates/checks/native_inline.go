@@ -30,32 +30,19 @@ func init() {
 		RepairHint: "give each reported learning file YAML frontmatter: a leading '---' line at the top"})
 }
 
-// changedFilesFor returns the routed change set, falling back to the diff vs
-// origin/main when the orchestrator didn't route (Full mode).
-// The orchestrator already filtered installed skill copies out of
-// rc.ChangedFiles; the origin/main fallback below computes its own set, so it
-// applies the same filter — otherwise a Full-mode run would shellcheck the
-// installed copies the routed path deliberately excluded.
-func changedFilesFor(ctx context.Context, rc gates.RunContext) []string {
-	if len(rc.ChangedFiles) > 0 {
-		return rc.ChangedFiles
+// changedFilesFor preserves the routed fast scope, including a valid empty
+// set. Full checks enumerate repository files and propagate discovery failures
+// rather than mistaking them for an empty diff. Both modes exclude installed
+// skill copies, which are not repository source.
+func changedFilesFor(ctx context.Context, rc gates.RunContext) ([]string, error) {
+	if rc.Mode != gates.Full {
+		return gates.FilterInstalledSkillCopies(rc.ChangedFiles), nil
 	}
-	cmd := exec.CommandContext(ctx, "git", "diff", "--name-only", "origin/main...HEAD")
-	cmd.Dir = rc.RepoRoot
-	// Scrub git's hook-injected discovery env (GIT_DIR, ...) so a leaked GIT_DIR
-	// cannot route this fallback change set at the wrong repo (SECURITY-MED).
-	cmd.Env = gates.ScrubbedGitEnv()
-	out, err := cmd.Output()
+	files, err := gates.NewGitChangedFiles(rc.RepoRoot).All(ctx)
 	if err != nil {
-		return nil
+		return nil, fmt.Errorf("enumerate repository files for full checks: %w", err)
 	}
-	var files []string
-	for _, l := range strings.Split(string(out), "\n") {
-		if l = strings.TrimSpace(l); l != "" {
-			files = append(files, l)
-		}
-	}
-	return gates.FilterInstalledSkillCopies(files)
+	return gates.FilterInstalledSkillCopies(files), nil
 }
 
 func runGoVet(ctx context.Context, rc gates.RunContext) (ports.GateVerdict, error) {
@@ -96,7 +83,11 @@ func runShellcheckChanged(ctx context.Context, rc gates.RunContext) (ports.GateV
 	}
 	var failed []string
 	var logs bytes.Buffer
-	for _, f := range changedFilesFor(ctx, rc) {
+	files, err := changedFilesFor(ctx, rc)
+	if err != nil {
+		return ports.GateVerdict{}, err
+	}
+	for _, f := range files {
 		if !strings.HasSuffix(f, ".sh") {
 			continue
 		}
@@ -140,7 +131,11 @@ func underLearningRoot(f string) bool {
 
 func runLearningCoherence(ctx context.Context, rc gates.RunContext) (ports.GateVerdict, error) {
 	var missing []string
-	for _, f := range changedFilesFor(ctx, rc) {
+	files, err := changedFilesFor(ctx, rc)
+	if err != nil {
+		return ports.GateVerdict{}, err
+	}
+	for _, f := range files {
 		if !underLearningRoot(f) || !strings.HasSuffix(f, ".md") {
 			continue
 		}

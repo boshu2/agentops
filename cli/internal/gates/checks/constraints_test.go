@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/boshu2/agentops/cli/internal/gates"
@@ -380,5 +381,76 @@ func TestConstraintGate_RegisteredInDefault(t *testing.T) {
 	}
 	if !found {
 		t.Fatalf("constraints.enforce not registered in gates.Default")
+	}
+}
+
+func TestConstraintGate_ShadowDoesNotBlockFailFast(t *testing.T) {
+	for _, broken := range []bool{false, true} {
+		index := strings.ReplaceAll(forbidConstraint, `"active"`, `"shadow"`)
+		if broken {
+			index = strings.ReplaceAll(index, `"regex"`, `"unsupported"`)
+		}
+		rc := writeConstraintFixture(t, index, map[string]string{"cli/a.go": "panic()"}, nil)
+		reg := gates.NewRegistry()
+		for _, c := range gates.Default.All() {
+			if strings.HasPrefix(c.ID, "constraints.") {
+				if err := reg.Add(c); err != nil {
+					t.Fatal(err)
+				}
+			}
+		}
+		continued := false
+		if err := reg.Add(gates.Check{ID: "zz.after-constraints", Tiers: gates.Full, Blocking: true,
+			Run: func(context.Context, gates.RunContext) (ports.GateVerdict, error) {
+				continued = true
+				return ports.GateVerdict{Status: ports.GateStatusPass}, nil
+			}}); err != nil {
+			t.Fatal(err)
+		}
+		report, err := gates.NewOrchestrator(reg, nil, nil, rc.RepoRoot).Run(context.Background(), gates.RunOptions{Mode: gates.Full, FailFast: true})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if report.ExitCode() != 0 || !continued {
+			t.Fatalf("shadow broken=%t: exit=%d continued=%t, want advisory success and continued execution", broken, report.ExitCode(), continued)
+		}
+		warned := false
+		for _, result := range report.Results {
+			if result.Verdict.Status == ports.GateStatusWarn && !result.Check.Blocking && result.Verdict.LogTail != "" {
+				warned = true
+			}
+		}
+		if !warned {
+			t.Fatal("shadow observation was lost instead of reported as advisory WARN")
+		}
+	}
+}
+
+func TestConstraintGate_ActiveFailuresStillStopFailFast(t *testing.T) {
+	for name, index := range map[string]string{
+		"violation":        forbidConstraint,
+		"evaluation error": strings.ReplaceAll(forbidConstraint, `"regex"`, `"unsupported"`),
+		"malformed index":  `{"schema_version":1,"constraints":null}`,
+	} {
+		t.Run(name, func(t *testing.T) {
+			rc := writeConstraintFixture(t, index, map[string]string{"cli/a.go": "panic()"}, nil)
+			reg := gates.NewRegistry()
+			for _, id := range []string{"constraints.enforce", "constraints.shadow"} {
+				check, ok := gates.Default.Get(id)
+				if !ok {
+					t.Fatalf("missing registered check %s", id)
+				}
+				if err := reg.Add(check); err != nil {
+					t.Fatal(err)
+				}
+			}
+			report, err := gates.NewOrchestrator(reg, nil, nil, rc.RepoRoot).Run(context.Background(), gates.RunOptions{Mode: gates.Full, FailFast: true})
+			if err != nil {
+				t.Fatal(err)
+			}
+			if report.ExitCode() != 1 || len(report.Results) != 1 || report.Results[0].Check.ID != "constraints.enforce" {
+				t.Fatalf("active failure did not block and stop fail-fast: %+v", report)
+			}
+		})
 	}
 }

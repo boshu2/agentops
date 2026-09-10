@@ -175,7 +175,17 @@ func (g *GitChangedFiles) Changed(ctx context.Context, scope Scope) ([]string, e
 		}
 		return nil, err
 	}
-	return dedupeLines(out), nil
+	return dedupePaths(out), nil
+}
+
+// All returns tracked and non-ignored untracked repository files. Full checks
+// inspect the current repository, independently of branch or remote history.
+func (g *GitChangedFiles) All(ctx context.Context) ([]string, error) {
+	out, err := g.exec(ctx, "ls-files", "--cached", "--others", "--exclude-standard", "-z")
+	if err != nil {
+		return nil, err
+	}
+	return dedupePaths(out), nil
 }
 
 // unbornHeadError translates a failed change-set computation into the friendly
@@ -205,31 +215,32 @@ func (g *GitChangedFiles) unbornHeadError(ctx context.Context, scope Scope) erro
 func scopeArgs(scope Scope) ([]string, error) {
 	switch scope {
 	case ScopeHead:
-		return []string{"show", "--name-only", "--pretty=format:", "HEAD"}, nil
+		// Explicit merge diffs use the first parent; --root compares an initial
+		// commit with the empty tree instead of requiring HEAD^ to exist.
+		return []string{"diff-tree", "--root", "--no-commit-id", "--name-only", "-r", "--diff-merges=first-parent", "-z", "HEAD"}, nil
 	case ScopeStaged:
-		return []string{"diff", "--name-only", "--cached"}, nil
+		return []string{"diff", "--name-only", "-z", "--cached"}, nil
 	case ScopeWorktree:
-		return []string{"diff", "--name-only", "HEAD"}, nil
+		return []string{"diff", "--name-only", "-z", "HEAD"}, nil
 	case ScopeUpstream:
-		return []string{"diff", "--name-only", "@{upstream}...HEAD"}, nil
+		return []string{"diff", "--name-only", "-z", "@{upstream}...HEAD"}, nil
 	default:
 		if spec, ok := ScopeRange(scope); ok {
 			if err := ValidateRangeSpec(spec); err != nil {
 				return nil, err
 			}
-			return []string{"diff", "--name-only", spec}, nil
+			return []string{"diff", "--name-only", "-z", spec}, nil
 		}
 		return nil, fmt.Errorf("gates: unknown scope %q", scope)
 	}
 }
 
-// dedupeLines splits git output into trimmed, non-empty, deduplicated lines,
-// preserving first-seen order.
-func dedupeLines(s string) []string {
+// dedupePaths splits NUL-delimited Git paths without unquoting or trimming:
+// whitespace, newlines and backslashes are all valid filename bytes.
+func dedupePaths(s string) []string {
 	var out []string
 	seen := map[string]bool{}
-	for _, ln := range strings.Split(s, "\n") {
-		ln = strings.TrimSpace(ln)
+	for _, ln := range strings.Split(s, "\x00") {
 		if ln == "" || seen[ln] {
 			continue
 		}
