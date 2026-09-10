@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"strings"
+	"time"
 )
 
 // CodexUsage retains native inclusive input and nullable counters. Reasoning is
@@ -33,26 +34,36 @@ type CodexProviderError struct {
 	Message string `json:"message"`
 }
 
+// CodexInheritedHeader retains a corroborated parent header copied into a
+// child's rollout. Metadata does not establish inherited token attribution or
+// review freshness, so InheritedUsage remains unknown even when Usage is present.
+type CodexInheritedHeader struct {
+	Line           int             `json:"line"`
+	Metadata       json.RawMessage `json:"metadata"`
+	InheritedUsage *CodexUsage     `json:"inherited_usage"`
+}
+
 // CodexAccounting is a read-only view of one native rollout. Metadata and the
 // last cumulative payload are retained verbatim, including unrecognized fields.
 // Raw content for other events remains in the evidence file at the stated line.
 type CodexAccounting struct {
-	ID                string                 `json:"id"`
-	ParentID          string                 `json:"parent_id"`
-	Metadata          json.RawMessage        `json:"metadata"`
-	FirstTimestamp    string                 `json:"first_timestamp"`
-	LastTimestamp     string                 `json:"last_timestamp"`
-	LatestTurnState   string                 `json:"latest_turn_state"`
-	LatestTurnPayload json.RawMessage        `json:"latest_turn_payload"`
-	ProviderError     *CodexProviderError    `json:"provider_error"`
-	Usage             *CodexUsage            `json:"usage"`
-	UsagePayload      json.RawMessage        `json:"usage_payload"`
-	UsageLine         int                    `json:"usage_line"`
-	UsageTimestamp    string                 `json:"usage_timestamp"`
-	UsageEvents       int                    `json:"usage_events"`
-	Lines             int                    `json:"lines"`
-	Uninterpreted     map[string]int         `json:"uninterpreted_event_counts"`
-	Diagnostics       []AccountingDiagnostic `json:"diagnostics"`
+	ID                     string                 `json:"id"`
+	ParentID               string                 `json:"parent_id"`
+	Metadata               json.RawMessage        `json:"metadata"`
+	InheritedParentHeaders []CodexInheritedHeader `json:"inherited_parent_headers"`
+	FirstTimestamp         string                 `json:"first_timestamp"`
+	LastTimestamp          string                 `json:"last_timestamp"`
+	LatestTurnState        string                 `json:"latest_turn_state"`
+	LatestTurnPayload      json.RawMessage        `json:"latest_turn_payload"`
+	ProviderError          *CodexProviderError    `json:"provider_error"`
+	Usage                  *CodexUsage            `json:"usage"`
+	UsagePayload           json.RawMessage        `json:"usage_payload"`
+	UsageLine              int                    `json:"usage_line"`
+	UsageTimestamp         string                 `json:"usage_timestamp"`
+	UsageEvents            int                    `json:"usage_events"`
+	Lines                  int                    `json:"lines"`
+	Uninterpreted          map[string]int         `json:"uninterpreted_event_counts"`
+	Diagnostics            []AccountingDiagnostic `json:"diagnostics"`
 }
 
 // ParseCodexAccounting never sums cumulative events. Missing usage remains nil;
@@ -144,12 +155,57 @@ func (a *CodexAccounting) readMetadata(raw json.RawMessage) {
 	}
 	id := coalesce(meta.ID, meta.SessionID)
 	if a.ID != "" && a.ID != id {
+		if a.isInheritedParentHeader(raw) {
+			a.InheritedParentHeaders = append(a.InheritedParentHeaders, CodexInheritedHeader{
+				Line: a.Lines, Metadata: append(json.RawMessage(nil), raw...),
+			})
+			return
+		}
 		a.diagnose("conflicting session_meta identities")
 		return
 	}
 	a.ID = id
 	a.ParentID = coalesce(meta.ParentID, meta.Source.Subagent.ThreadSpawn.ParentID)
 	a.Metadata = append(json.RawMessage(nil), raw...)
+}
+
+func (a *CodexAccounting) isInheritedParentHeader(raw json.RawMessage) bool {
+	var child, parent struct {
+		ID           string          `json:"id"`
+		SessionID    string          `json:"session_id"`
+		ParentID     string          `json:"parent_thread_id"`
+		ForkedFromID string          `json:"forked_from_id"`
+		Timestamp    string          `json:"timestamp"`
+		Source       json.RawMessage `json:"source"`
+	}
+	if json.Unmarshal(a.Metadata, &child) != nil || json.Unmarshal(raw, &parent) != nil {
+		return false
+	}
+	if a.ParentID == "" || child.ID != a.ID || child.ID == a.ParentID ||
+		child.SessionID != a.ParentID || child.ParentID != a.ParentID ||
+		(child.ForkedFromID != "" && child.ForkedFromID != a.ParentID) {
+		return false
+	}
+	var source struct {
+		Subagent struct {
+			ThreadSpawn struct {
+				ParentID string `json:"parent_thread_id"`
+			} `json:"thread_spawn"`
+		} `json:"subagent"`
+	}
+	if json.Unmarshal(child.Source, &source) != nil || source.Subagent.ThreadSpawn.ParentID != a.ParentID {
+		return false
+	}
+	var parentSource string
+	if json.Unmarshal(parent.Source, &parentSource) != nil || (parentSource != "exec" && parentSource != "cli") {
+		return false
+	}
+	if parent.ID != a.ParentID || parent.SessionID != a.ParentID || parent.ParentID != "" || parent.ForkedFromID != "" {
+		return false
+	}
+	childTime, childErr := time.Parse(time.RFC3339Nano, child.Timestamp)
+	parentTime, parentErr := time.Parse(time.RFC3339Nano, parent.Timestamp)
+	return childErr == nil && parentErr == nil && !parentTime.After(childTime)
 }
 
 func (a *CodexAccounting) readPayload(raw json.RawMessage, timestamp string) {
