@@ -54,6 +54,9 @@ def test_pairs_keep_repetitions_clustered_and_replay_exactly():
     assert result["uncertainty"]["task_clusters"] == 3
     assert result["uncertainty"]["signal"] == "underpowered"
     assert result["uncertainty"]["delta_treatment_minus_control"] == pytest.approx(-1 / 3)
+    assert result["uncertainty"]["status"] == "available"
+    assert result["uncertainty"]["ci_low"] is not None
+    assert result["uncertainty"]["confidence"] == 0.95
     assert result == readout.build(report, receipts, n_required=10, resamples=500)
     assert result["recommendation"] == "insufficient-evidence"
 
@@ -144,11 +147,42 @@ def test_no_change_and_degenerate_are_not_equivalence():
     report, receipts = fixture(("success", "success"))
     result = readout.build(report, receipts, n_required=1)
     assert result["uncertainty"]["signal"] == "inconclusive_degenerate"
+    assert result["uncertainty"]["status"] == "insufficient_clusters"
+    assert result["uncertainty"]["ci_low"] is None
+    assert result["uncertainty"]["ci_high"] is None
+    assert result["uncertainty"]["confidence"] is None
     assert result["recommendation"] == "insufficient-evidence"
     pairs = [{"task": str(n), "rep": 1, "control_score": int(n % 2 == 0), "treatment_score": int(n % 2 != 0)} for n in range(4)]
     uncertain = readout.uncertainty(pairs, n_required=1, resamples=500)
     assert uncertain["signal"] == "no_change"
     assert "not equivalence" in uncertain["interpretation"]
+
+
+@pytest.mark.parametrize("scores,expected_delta", [((1, 1), 0.0), ((0, 1), 1.0)])
+def test_multiple_clusters_with_constant_deltas_have_no_inferential_interval(scores, expected_delta):
+    pairs = [{"task": str(n), "rep": rep, "control_score": scores[0], "treatment_score": scores[1]}
+             for n in range(3) for rep in (1, 2)]
+    result = readout.uncertainty(pairs, n_required=3)
+    assert result["status"] == "degenerate_no_interval"
+    assert result["delta_treatment_minus_control"] == expected_delta
+    assert result["task_clusters"] == 3
+    assert result["paired_repetitions"] == 6
+    assert all(result[key] is None for key in ("ci_low", "ci_high", "confidence"))
+
+
+def test_harbor_estimates_remain_incomplete_even_with_scalars_for_every_attempt():
+    report, receipts = fixture(("success", "success"))
+    result = readout.build(report, receipts)
+    arm = result["arms"]["treatment"]
+    assert arm["harbor_cost_usd"]["known_sum"] == 0.25
+    assert arm["harbor_cost_usd"]["unknown"] == 0
+    assert "Incomplete Harbor estimate" in arm["harbor_cost_note"]
+    assert "nested sessions" in arm["harbor_cost_note"]
+    assert arm["total_billed_cost_per_accepted_outcome"] is None
+    rendered = readout.markdown(result)
+    assert "Harbor estimate (incomplete) / attempts without estimate" in rendered
+    assert "Harbor known cost" not in rendered
+    assert "do not establish billing" in rendered
 
 
 def test_no_receipt_keeps_observations_and_missing_usage_unknown():

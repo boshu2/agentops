@@ -140,12 +140,16 @@ def uncertainty(pairs, *, n_required=None, resamples=10000):
     seed = derive_bootstrap_seed("skills-rpi", ["treatment", "control"], paired_sample_ids_hash(inputs), rule)
     result = paired_cluster_bootstrap(inputs, bootstrap_seed=seed, B=resamples)
     signal = compute_verdict(result, n_required=n_required).kind.value if n_required is not None else "pilot_descriptive_only"
-    return {"status": "available", "signal": signal, "delta_treatment_minus_control": result.delta_point,
-            "ci_low": result.ci_low, "ci_high": result.ci_high, "confidence": result.confidence,
+    interval_status = "insufficient_clusters" if result.n_clusters < 2 else "degenerate_no_interval" if result.degenerate else "available"
+    interval_available = interval_status == "available"
+    return {"status": interval_status, "signal": signal, "delta_treatment_minus_control": result.delta_point,
+            "ci_low": result.ci_low if interval_available else None,
+            "ci_high": result.ci_high if interval_available else None,
+            "confidence": result.confidence if interval_available else None,
             "degenerate": result.degenerate, "task_clusters": result.n_clusters, "paired_repetitions": len(inputs),
             "n_required": n_required, "resamples": result.B, "bootstrap_seed": seed,
             "inputs_sha256": bootstrap_inputs_hash(inputs),
-            "interpretation": "Task-cluster bootstrap retains paired repetitions. A zero-crossing interval or no_change is not equivalence. Degenerate intervals do not establish certainty. Pilot results do not establish general skill benefit."}
+            "interpretation": "Task-cluster bootstrap retains paired repetitions. No interval is shown with fewer than two task clusters or degenerate deltas. A zero-crossing interval or no_change is not equivalence. Pilot results do not establish general skill benefit."}
 
 
 def build(report, receipts=None, *, control="control", treatment="treatment", n_required=None, resamples=10000):
@@ -283,6 +287,7 @@ def build(report, receipts=None, *, control="control", treatment="treatment", n_
                           "independently_completed_outcomes": None,
                           "comparison_eligible_attempts": sum(not row["comparison_exclusions"] for row in rows),
                           "harbor_cost_usd": costs, "elapsed_seconds": distribution([row["elapsed_seconds"] for row in rows]),
+                          "harbor_cost_note": "Incomplete Harbor estimate; nested sessions may be omitted. Billing is unknown.",
                           "harbor_cost_per_endpoint_success": costs["known_sum"] / successes if successes and not costs["unknown"] and denominator == len(rows) else None,
                           "total_billed_cost_per_accepted_outcome": None}
     sessions = [{"id": session.get("id"), "diagnostics": session.get("diagnostics"),
@@ -306,7 +311,7 @@ def build(report, receipts=None, *, control="control", treatment="treatment", n_
                 "Endpoint successes and receipt-backed comparable pairs are distinct. Isolation configuration is not proof against every contamination route; receipts must come from the external runner, never the worker.",
                 "Time distributions cover recorded trial start to finish, including recorded setup/verifier work. No outer setup or analysis window is inferred; native phase endpoints are retained without fabricated allocation.",
                 "Native cumulative counters are per session and evidence copy. Cached input is within input; reasoning is within output. Never sum copies, parent/child totals, or Harbor metrics with native usage.",
-                "Harbor costs are a separate source and partial sums are labeled. Missing usage or billing is unknown; zero accepted outcomes makes cost per accepted outcome undefined.",
+                "Harbor cost values and ratios are incomplete estimates, even when every attempt has a scalar: the adapter may omit nested sessions. They are separate from native usage and do not establish billing. Missing usage or billing is unknown; zero accepted outcomes makes cost per accepted outcome undefined.",
                 "Infrastructure, missing and ambiguous endpoints are excluded from paired inference, retained in overall assignment accounting. Execution errors count as unsuccessful endpoints when identity is intact.",
                 "Numeric repetition IDs pair observations, not provider randomness. No live enforcement or general uplift claim follows from replay fixtures."]}
 
@@ -315,7 +320,7 @@ def markdown(result):
     def show(value):
         return "unknown" if value is None else str(round(value, 4)) if isinstance(value, float) else str(value)
     lines = ["Recommendation: **" + result["recommendation"] + "**.", "", result["recommendation_reason"], "",
-             "| Arm | Assigned | Observed | Endpoint successes / denominator | Outcomes | Harbor known cost / unknown attempts |",
+             "| Arm | Assigned | Observed | Endpoint successes / denominator | Outcomes | Harbor estimate (incomplete) / attempts without estimate |",
              "|---|---:|---:|---|---|---|"]
     for arm, row in result["arms"].items():
         cost = row["harbor_cost_usd"]

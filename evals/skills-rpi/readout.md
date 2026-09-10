@@ -80,6 +80,10 @@ bias the subset, so it cannot replace the overall rate.
 clusters with all repetitions retained, weighting tasks equally. Repetition
 numbers do not guarantee matched provider randomness. A zero-crossing interval,
 `no_change`, underpowered or degenerate result never becomes equivalence.
+With fewer than two task clusters, interval status is `insufficient_clusters`;
+with degenerate bootstrap deltas it is `degenerate_no_interval`. Both retain the
+existing statistics implementation's point delta and sample counts, and display
+null interval bounds/confidence instead of a misleading zero-width interval.
 One small development batch is not a powered or held-out skill-benefit claim.
 The automated pilot recommendation is `insufficient-evidence`; the specialist
 can make a narrower supported, explicitly provisional maintenance decision.
@@ -93,10 +97,13 @@ semantic measurements or parse worker claims into acceptance.
 
 Cost and timing retain their measurement windows:
 
-- Harbor `agent_result` counters/cost are per-trial native source values. Partial
-  cost sums show the unknown-attempt count. A Harbor cost per endpoint success
-  appears only with complete reported cost and assignment coverage; total billed
-  cost per independently accepted outcome stays unknown.
+- Harbor `agent_result` counters/cost are incomplete per-trial estimates: the
+  adapter may omit nested sessions even when every attempt has a scalar. The
+  table labels them **Harbor estimate (incomplete)** and retains both the scalar
+  sum and the count of attempts without an estimate. A Harbor estimate per
+  endpoint success appears only with a scalar for every reported assignment;
+  it is still incomplete, and total billed cost per independently accepted
+  outcome stays unknown.
 - Native cumulative usage remains per session and copy. No copies, parents,
   children or Harbor counters are summed together. Input includes cached input;
   output includes reasoning. Missing counters are null, not zero.
