@@ -35,20 +35,24 @@ func TestModule_CommandAttributes(t *testing.T) {
 	if command.GroupID != "start" {
 		t.Errorf("GroupID = %q, want start", command.GroupID)
 	}
-	if command.Short != "Show the AgentOps RPI workflow" {
+	if command.Short != "Show the native AgentOps execution brief" {
 		t.Errorf("Short = %q", command.Short)
 	}
 }
 
-func TestCommand_RunPrintsWorkflow(t *testing.T) {
+func TestCommand_RunPrintsNativeCompletionBrief(t *testing.T) {
 	command := NewModule().Command()
 	var out bytes.Buffer
 	command.SetOut(&out)
 	command.Run(command, nil)
 	for _, want := range []string{
-		"RPI -> Plan -> Implement -> fresh Validate -> repair to convergence -> report",
-		"Deterministic checks: ao gate check",
-		"Semantic judgment: invoke the Validate skill from a fresh context",
+		"native agent and shell",
+		"ao gate check supplies deterministic facts",
+		"fresh independent judgment of the exact final change against unchanged acceptance",
+		"checked and not_checked",
+		"NOT_PROVEN",
+		"From an AgentOps checkout",
+		"including the Validate skill, are optional",
 		"Artifact persistence: optional",
 	} {
 		if !strings.Contains(out.String(), want) {

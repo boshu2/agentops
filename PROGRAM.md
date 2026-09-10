@@ -1,19 +1,19 @@
 # Program
 
-This repository self-hosts the lean RPI charter it ships (ADR-0017). PROGRAM is
+This repository defaults to native execution with optional skills (ADR-0017). PROGRAM is
 repository execution guidance, not a product retry or delivery controller.
 
 ## Experiment unit
 
 One invocation consumes and produces:
 
-1. one resolved caller-owned intent, using Plan only when needed and a content
+1. one resolved caller-owned intent, planning only when needed and a content
    snapshot only when necessary;
 2. bounded implementation and checks, with direct repair of known defects and
    evidence-based approach revision within unchanged acceptance;
 3. one runtime-derived subject manifest and factual check receipts with
    complete or honestly incomplete changed-path proof;
-4. fresh author-distinct Validate judgment over exact content, with fresh
+4. fresh author-distinct native judgment over exact content, with fresh
    re-validation after acceptance-relevant repairs;
 5. a subject-led report, with a durable verdict only when requested or required
    by a declared consumer.
@@ -39,7 +39,7 @@ ordinary implementation authority.
 
 Use the cheapest targeted checks during implementation. Before reporting the
 complete change, run the ordinary deterministic suite appropriate to the final
-surface and obtain one fresh Validate verdict. Record exactly what was checked
+surface and obtain one fresh independent judgment. Record exactly what was checked
 and not checked.
 
 The repository may then commit, push, merge, release, or roll back through its

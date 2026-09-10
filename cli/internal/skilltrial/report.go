@@ -93,6 +93,7 @@ type Report struct {
 	RewardKey string    `json:"reward_key"`
 	Jobs      []Job     `json:"jobs"`
 	Sessions  []Session `json:"sessions"`
+	Work      *Work     `json:"work"`
 	Limits    []string  `json:"limits"`
 }
 
