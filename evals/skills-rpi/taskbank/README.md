@@ -57,12 +57,30 @@ the file-system oracle establishes cancellation and reopened payload behavior.
 Explicit exclusions such as power-loss durability are recorded as limitations,
 not silently treated as tested acceptance.
 
-For `fresh-handoff`, use `instruction.md` as the producer prompt, end that
-session after `HANDOFF.md`, then run `successor.md` in a separate native context
-over the same exported workspace with trajectory replay disabled. Record the
-two real context identities and final subject externally. A single session
-that repairs both files can pass the endpoint but cannot establish the required
-fresh successor. The task source does not invent Harbor multistep configuration.
+`fresh-handoff` declares Harbor's native `producer` and `successor` steps, with
+complete prompts in `steps/<name>/instruction.md`. Set the job's
+`agent.resume_trajectory=false` so the successor starts a fresh conversation
+over the same workspace; root `instruction.md` is an overview, not an additional
+step prompt. Record both actual native context identities and the final subject
+externally. A single conversation that repairs both files cannot establish the
+required fresh successor. Parsing this configuration does not prove execution;
+the grader retains handoff and independent review in `not_checked` until the
+external native observations establish them.
+
+Both steps inherit the separate root verifier and run the whole-task endpoint
+oracle. The producer-only repair is intentionally incomplete and should receive
+0. No `min_reward` threshold is configured, so that ordinary zero reward does
+not prevent the successor from running. Infrastructure failures without a
+verifier result can still abort the task. `multi_step_reward_strategy="final"`
+selects the successor's verifier result instead of averaging away that expected
+producer incompleteness. Retain both step results in the attempted-run record.
+
+Each agent step has a 450-second timeout; the task-level default remains 900.
+These are agent-phase bounds, not a cap on setup, two verifier passes, or the
+whole experiment. Harbor's job-level `agent.override_timeout_sec`, when set,
+overrides each step's value; leave it unset or preserve 450 for this task. The
+native runner and caller still own the aggregate allowance. No configuration
+alone proves real stop delivery, cleanup, or enforcement.
 
 ## Local calibration
 

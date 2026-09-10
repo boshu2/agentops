@@ -1,8 +1,9 @@
 schema_version = "1.4"
+multi_step_reward_strategy = "final"
 
 [task]
 name = "agentops/fresh-handoff"
-version = "1.0.0"
+version = "1.0.1"
 description = "Integrate a two-file repair across a required fresh successor session."
 
 [metadata]
@@ -37,3 +38,15 @@ memory_mb = 2048
 
 [[artifacts]]
 source = "/app/work"
+
+[[steps]]
+name = "producer"
+
+[steps.agent]
+timeout_sec = 450
+
+[[steps]]
+name = "successor"
+
+[steps.agent]
+timeout_sec = 450
