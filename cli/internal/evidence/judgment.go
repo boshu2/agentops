@@ -28,6 +28,9 @@ func VerifyJudgments(o JudgmentOptions) (*JudgmentResult, error) {
 	if err != nil {
 		return nil, err
 	}
+	if len(manifest.Entries) == 0 {
+		return nil, fmt.Errorf("subject manifest has no entries; nonempty implementation candidate required")
+	}
 	var base *Manifest
 	if o.BaseManifest != "" {
 		base, err = LoadManifest(o.BaseManifest)
