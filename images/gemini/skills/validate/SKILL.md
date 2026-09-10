@@ -115,10 +115,19 @@ before/after or equivalent causal evidence. Counts and timestamps alone do not
 establish cause. Known findings return to direct repair; causal stalls use the
 RPI single-helper rule, not repairs delegated to this validator.
 
-Keep the report proportional: cite existing receipts and include only excerpts
-needed to assess a finding. Do not retell the investigation or duplicate logs.
-Brevity must retain every criterion, necessary finding, identity, freshness
-fact and unchecked surface.
+Keep the report proportional: cite the exact subject, complete bound manifest
+and existing receipts instead of copying path or digest inventories. Group
+generated companions by source owner and verified equivalence; still verify
+every changed path and cited binding. Include excerpts only to assess a finding.
+Retain every criterion, necessary finding, identity, freshness fact and unchecked
+surface. Complete coverage does not require a second copy of the evidence.
+
+Return the candidate verdict promptly when the judgment is complete. When
+delivery is outside the accepted review scope, the caller checks its native facts without
+another semantic review of unchanged content. Delivery inside acceptance stays
+unverified until its evidence exists: do not issue complete PASS early or remove
+the criterion. Use the existing result for any pending delivery update, without
+repeating the investigation or creating another report.
 
 Validate is the sole semantic author of `verdict.v2`.
 Only when the caller requests machine-readable evidence or a declared consumer
