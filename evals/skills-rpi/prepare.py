@@ -107,6 +107,10 @@ def prepare(task, output, skills, auth_file, reps):
     for kind, tag in (("worker_image_id", worker_tag), ("verifier_image_id", verifier_tag)):
         ids[kind] = run(["docker", "image", "inspect", "--format", "{{.Id}}", tag],
                         capture_output=True, text=True).stdout.strip()
+        # A later variant can replace the mutable build tag. Keep this exact
+        # local image reachable for the already-frozen native configuration.
+        run(["docker", "tag", ids[kind],
+             "agentops-skill-eval-frozen:" + ids[kind].removeprefix("sha256:")])
     text = (staged / "task.toml").read_text()
     # Freeze local image identities after builds; no mutable tag is launched.
     text = text.replace(f'docker_image = "{verifier_tag}"',

@@ -34,6 +34,8 @@ python evals/skills-rpi/prepare.py \
 
 Preparation builds the worker and separate verifier, freezes their image IDs,
 stages public source and the full package, and writes native Harbor job configs.
+Digest-named local retention tags keep earlier images available when another
+variant replaces a build tag; explicit Docker image removal can still remove them.
 It starts no agents and refuses to overwrite an existing output. The initial
 Go incident is a historical development case; this suite does not present it
 as an unseen holdout. Other cases are sanitized standalone Go modules.
