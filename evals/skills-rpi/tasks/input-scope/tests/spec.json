@@ -1,0 +1,7 @@
+{
+  "editable": ["select.go"],
+  "production": ["select.go"],
+  "allow_added_tests": true,
+  "checked": ["merge-parent union", "unchanged-input exclusion", "existing path filter", "sorted uniqueness", "caller input preserved"],
+  "not_checked": ["fresh independent in-workflow review"]
+}

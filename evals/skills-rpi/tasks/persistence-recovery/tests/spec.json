@@ -1,0 +1,24 @@
+{
+  "editable": [
+    "store.go"
+  ],
+  "production": [
+    "store.go"
+  ],
+  "allow_added_tests": true,
+  "checked": [
+    "old checkpoint remains readable until commit",
+    "cancellation preserves exact payload",
+    "successful checkpoint reopens",
+    "cancelled creation leaves no checkpoint",
+    "temporary cleanup"
+  ],
+  "not_checked": [
+    "fresh independent in-workflow review",
+    "precommit flush and close order"
+  ],
+  "limitations": [
+    "power-loss durability after rename is outside fixture acceptance",
+    "access preservation is outside fixture acceptance"
+  ]
+}

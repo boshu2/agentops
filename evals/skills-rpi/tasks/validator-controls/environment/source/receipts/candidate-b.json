@@ -1,0 +1,16 @@
+{
+  "kind": "development-fixture-check-record",
+  "candidate": "candidate-b",
+  "source_path": "candidate_b/lease.go",
+  "source_sha256": "fbf8649a6e8d6681b0cdc7e3db3c40520d35d05907455ca11fb9d8a826aa37a2",
+  "command": [
+    "go",
+    "test",
+    "-count=1",
+    "./..."
+  ],
+  "runtime": "go version go1.26.4 darwin/arm64",
+  "exit_code": 0,
+  "output": "ok  \texample.invalid/eval/leases\t0.260s\n?   \texample.invalid/eval/leases/candidate_a\t[no test files]\n?   \texample.invalid/eval/leases/candidate_b\t[no test files]\n?   \texample.invalid/eval/leases/candidate_c\t[no test files]\n",
+  "limits": "Local calibration of this sanitized development fixture; not a production run or release attestation."
+}
