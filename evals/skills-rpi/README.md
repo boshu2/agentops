@@ -104,10 +104,18 @@ Do not add native and Harbor usage together or sum repeated cumulative copies.
 
 For an ordinary coding observation, the same reader accepts explicit
 `--session /absolute/native/session.jsonl` inputs. This collects execution facts;
-it does not automatically discover or join arbitrary sessions to Git acceptance
-or reviews. Existing caller-owned check/judgment evidence must supply that
-relationship. Historical imports remain observational, with missing baseline
-fields visible. They do not establish skill efficiency.
+an optional one-subject join accepts the existing provenance flags (`--root`,
+`--manifest`, `--intent`, `--author-context-id`, `--required-profiles`,
+`--allowed-provider`, `--evidence-root`, and repeated `--verdict`). It reuses
+`evidence.VerifyJudgments` over caller-owned exact subject, acceptance and native
+reviewer receipts, then requires a unique observed author association and
+completed execution before reporting accepted work. No skill invocation is
+required. Endpoint rewards, verified FAIL, missing proof and unfinished work
+remain separate. See [the readout contract](readout.md) for the complete example,
+denominators and limitations, including unresolved arbitrary criterion evidence
+references. It does not automatically discover or join arbitrary sessions to
+Git acceptance or reviews. Historical imports remain observational, with missing
+baseline fields visible. They do not establish skill efficiency.
 
 A small baseline pilot normally ends with **insufficient evidence** about
 uplift. Keep case-level outcomes, uncertainty, all unsuccessful costs and missing

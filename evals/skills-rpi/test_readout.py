@@ -145,6 +145,69 @@ def test_native_session_copies_and_parent_child_counters_are_not_added():
     assert "session identity shared" in str(result["attempts"])
 
 
+def test_independent_work_keeps_endpoint_and_missing_proof_separate():
+    report, receipts = fixture(("success", "success"))
+    trial = report["jobs"][1]["trials"][0]
+    trial["session_ids"] = ["author"]
+    report["work"] = {"status": "accepted", "execution": "completed", "association": "trial",
+                      "author_context_id": "author", "trial_directory": trial["directory"], "problems": [],
+                      "judgments": {"satisfied": True, "legs": [{"id": "review", "verdict": "PASS"}]}}
+    result = readout.build(report, receipts)
+    assert result["arms"]["control"]["endpoint_successes"] == 1
+    assert result["arms"]["treatment"]["endpoint_successes"] == 1
+    assert result["arms"]["control"]["independently_completed_outcomes"] is None
+    assert result["arms"]["control"]["independent_work"]["not_proven"] == 1
+    assert result["arms"]["treatment"]["independently_completed_outcomes"] == 1
+    assert result["arms"]["treatment"]["independent_work"]["known_accepted"] == 1
+    assert result["arms"]["treatment"]["total_billed_cost_per_accepted_outcome"] is None
+    assert "accepted; execution completed; association trial" in readout.markdown(result)
+    report["jobs"][1]["counts"]["expected"] = 3
+    result = readout.build(report, receipts)
+    assert result["arms"]["treatment"]["independently_completed_outcomes"] is None
+    assert result["arms"]["treatment"]["independent_work"]["known_accepted"] == 1
+    assert result["arms"]["treatment"]["independent_work"]["unobserved_assignments"] == 2
+    assert result["arms"]["treatment"]["independent_work"]["known_accepted_rate_all_assignments"] == pytest.approx(1 / 3)
+
+
+@pytest.mark.parametrize("status,execution,verdict", [
+    ("failed", "completed", "FAIL"), ("not_proven", "unfinished", "PASS"),
+    ("not_proven", "completed", "NOT_PROVEN"),
+])
+def test_independent_work_preserves_original_judgments_and_execution(status, execution, verdict):
+    report, receipts = fixture(("success", "success"))
+    trial = report["jobs"][1]["trials"][0]
+    trial["session_ids"] = ["author"]
+    report["work"] = {"status": status, "execution": execution, "association": "trial",
+                      "author_context_id": "author", "trial_directory": trial["directory"],
+                      "judgments": {"satisfied": verdict == "PASS", "legs": [{"verdict": verdict}]}}
+    result = readout.build(report, receipts)
+    assert result["native_work"] == report["work"]
+    assert result["attempts"][1]["independent_work"] == report["work"]
+    assert result["arms"]["treatment"]["endpoint_successes"] == 1
+    assert result["arms"]["treatment"]["independent_work"]["known_accepted"] == 0
+    assert result["arms"]["treatment"]["independent_work"]["known_failed"] == int(status == "failed")
+
+
+def test_standalone_work_stays_visible_without_invented_trial_or_cost():
+    report = {"jobs": [], "sessions": [], "limits": [], "work": {
+        "status": "accepted", "execution": "completed", "association": "standalone_session",
+        "author_context_id": "native", "trial_directory": "", "judgments": {"satisfied": True}}}
+    result = readout.build(report)
+    assert result["native_work"] == report["work"]
+    assert not result["attempts"] and not result["arms"]
+    assert "accepted; execution completed; association standalone_session" in readout.markdown(result)
+
+
+def test_ambiguous_work_is_not_assigned_to_any_attempt():
+    report, receipts = fixture()
+    report["work"] = {"status": "not_proven", "execution": "unknown", "association": "ambiguous",
+                      "author_context_id": "shared", "trial_directory": "", "problems": ["ambiguous native copies"]}
+    result = readout.build(report, receipts)
+    assert result["native_work"] == report["work"]
+    assert all(row["independent_work"]["status"] == "not_proven" for row in result["attempts"])
+    assert all(arm["independent_work"]["known_accepted"] == 0 for arm in result["arms"].values())
+
+
 def test_no_change_and_degenerate_are_not_equivalence():
     report, receipts = fixture(("success", "success"))
     result = readout.build(report, receipts, n_required=1)
