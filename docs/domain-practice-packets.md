@@ -112,7 +112,7 @@ Before a packet is used in a demo, PMF scenario, or release claim, verify:
 
 ## Example
 
-See [AgentOps 3.0 Domain/Practice Packet](examples/agentops-3-domain-practice-packet.md).
+Historical example: AgentOps 3.0 Domain/Practice Packet (retired path: `examples/agentops-3-domain-practice-packet.md`).
 The matching launch storyboard is
 [AgentOps 3.0 Council Demo Storyboard](examples/agentops-3-council-demo-storyboard.md).
 The sample verdict artifact is
