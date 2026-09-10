@@ -411,8 +411,8 @@
     {
       "name": "cass",
       "source_skill": "skills/cass",
-      "source_hash": "e10c9c9a3be283974857bd95a1db54a2b949d6d23a11bb6c2e990368c5d11be4",
-      "generated_hash": "fd146a3d0765ff13af36928b0630021a64787a85c27ce202c05dc272c5a39116"
+      "source_hash": "6ff52d3728af7875ca201e7d61c630ea8501e5716dd4b299bc3e10aba14e50aa",
+      "generated_hash": "8c46de3b047459826bea613e85e7cf6686e79a41d359031043e47bd62a3e9a8d"
     },
     {
       "name": "cc-hooks",
@@ -519,8 +519,8 @@
     {
       "name": "ms",
       "source_skill": "skills/ms",
-      "source_hash": "8634a28c128d80d574da339747315ed4af5e047081c20d7647f69d08f7c88e71",
-      "generated_hash": "004f0940e893cf08447b3327c332d8beab5c78bb14e30a3cdc8ff72b01a0edee"
+      "source_hash": "2bb8f7245062980ea8fae4d89f6b2d0d61abd7f1f16b7841ce40d7a2ecb73157",
+      "generated_hash": "f2d55ab48b5a296af30a3928c39e4678f69b3804775a1c2cfe86a59cfcc084a5"
     },
     {
       "name": "ntm",
