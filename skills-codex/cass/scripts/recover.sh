@@ -47,11 +47,19 @@ cass_state() {
     return 2
   fi
   printf '%s' "$out" \
-    | jq -er 'select(type == "object" and (.index | type == "object") and (.database | type == "object")) | [
-        (.index.fresh // false),
-        (.database.exists // false),
-        (.index.documents // 0),
-        (.database.messages // 0),
+    | jq -er 'select(
+        type == "object"
+        and (.index | type == "object")
+        and (.database | type == "object")
+        and (.index.fresh | type == "boolean")
+        and (.database.exists | type == "boolean")
+        and (.index.documents | type == "number" and . >= 0 and floor == .)
+        and (.database.messages | type == "number" and . >= 0 and floor == .)
+      ) | [
+        .index.fresh,
+        .database.exists,
+        .index.documents,
+        .database.messages,
         (.recommended_action // "")
       ] | @tsv' 2>/dev/null \
     || return 2

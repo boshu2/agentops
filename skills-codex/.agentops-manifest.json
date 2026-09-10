@@ -411,8 +411,8 @@
     {
       "name": "cass",
       "source_skill": "skills/cass",
-      "source_hash": "6ff52d3728af7875ca201e7d61c630ea8501e5716dd4b299bc3e10aba14e50aa",
-      "generated_hash": "8c46de3b047459826bea613e85e7cf6686e79a41d359031043e47bd62a3e9a8d"
+      "source_hash": "2c8d3783703884fabde9766d4f3207603d400e514d7f5d4bdb5fe906eb7f9b01",
+      "generated_hash": "d68b1068af6bcbd050c2659554688e369e423e08bd3c57821e1d059e6dd330e6"
     },
     {
       "name": "cc-hooks",
