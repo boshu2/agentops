@@ -1,0 +1,23 @@
+{
+  "editable": [
+    "parse.go",
+    "summary.go",
+    "HANDOFF.md"
+  ],
+  "production": [
+    "parse.go",
+    "summary.go"
+  ],
+  "allow_added_tests": true,
+  "checked": [
+    "reject malformed rows without partial data",
+    "sum duplicate case-sensitive names",
+    "sorted output",
+    "parse and summary integration",
+    "caller input preserved"
+  ],
+  "not_checked": [
+    "native fresh-successor handoff",
+    "fresh independent in-workflow review"
+  ]
+}

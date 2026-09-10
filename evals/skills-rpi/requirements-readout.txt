@@ -1,0 +1,4 @@
+# Development-only statistics dependency; Python 3.12 or 3.13.
+numpy==2.2.6
+# _stats/__init__.py also exposes its existing power-analysis helpers.
+scipy==1.15.3

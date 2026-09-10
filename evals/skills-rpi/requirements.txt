@@ -1,0 +1,2 @@
+# Repository development evaluator. Not an AgentOps runtime dependency.
+harbor==0.22.0

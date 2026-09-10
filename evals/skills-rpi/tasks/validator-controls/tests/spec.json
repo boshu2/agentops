@@ -1,0 +1,19 @@
+{
+  "editable": [
+    "verdicts.json",
+    "review.md"
+  ],
+  "production": [],
+  "checked": [
+    "faulty candidate FAIL",
+    "clean candidate PASS",
+    "missing original evidence NOT_PROVEN",
+    "frozen candidate and receipt integrity"
+  ],
+  "not_checked": [],
+  "verdicts": {
+    "candidate-a": "FAIL",
+    "candidate-b": "PASS",
+    "candidate-c": "NOT_PROVEN"
+  }
+}

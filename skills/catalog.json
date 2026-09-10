@@ -1521,7 +1521,8 @@
       "canonical_status": "canonical",
       "capabilities": [
         "author_seeded_probe",
-        "run_probe_tier"
+        "run_probe_tier",
+        "evaluate_skill_decision"
       ],
       "codex_override_present": true,
       "consumes": [
@@ -1534,7 +1535,7 @@
         }
       ],
       "dependencies": [],
-      "description": "Author and tier behavioral probes for a skill, including seeded-defect probes that escape ceiling saturation. Triggers: \"measure this skill\", \"the probe came back INERT\", \"the control arm aces it\", \"harden this scenario\", \"is this skill actually doing anything\".",
+      "description": "Evaluate a named maintenance decision with behavioral probes, controlled coding comparisons, or separate memory transfer tests. Triggers: \"measure this skill\", \"the probe came back INERT\", \"the control arm aces it\", \"harden this scenario\", \"is this skill actually doing anything\".",
       "disposition": "keep_specialist",
       "effects": [
         "write_probe_package",

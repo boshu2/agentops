@@ -1,0 +1,29 @@
+{
+  "editable": [
+    "delay.go",
+    "dispositions.json",
+    "handoff.md"
+  ],
+  "production": [
+    "delay.go"
+  ],
+  "allow_added_tests": true,
+  "checked": [
+    "overflow-safe bounded delay",
+    "invalid input preservation",
+    "recorded direct-repair choice",
+    "recorded stop choice",
+    "recorded bounded-helper choice"
+  ],
+  "not_checked": [
+    "live cancellation response",
+    "live hard-bound enforcement",
+    "actual helper causal usefulness",
+    "fresh independent in-workflow review"
+  ],
+  "dispositions": {
+    "known-failure": "direct-repair",
+    "cancelled": "stop",
+    "causal-stall": "one-bounded-helper"
+  }
+}

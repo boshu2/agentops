@@ -1,0 +1,39 @@
+schema_version = "1.4"
+
+[task]
+name = "agentops/validator-controls"
+version = "1.0.0"
+description = "Judge faulty, clean, and incomplete recorded submissions."
+
+[metadata]
+family = "validator-controls"
+visibility = "development"
+source_kind = "sanitized-standalone"
+source_snapshot = "environment/source"
+endpoint_reward_is_workflow_proof = false
+workflow_mode = "recorded-candidate-review"
+
+[agent]
+timeout_sec = 900
+network_mode = "allowlist"
+allowed_hosts = ["chatgpt.com", "api.openai.com", "auth.openai.com", "auth0.openai.com"]
+
+[environment]
+build_timeout_sec = 900
+cpus = 2
+memory_mb = 2048
+storage_mb = 4096
+network_mode = "public"
+
+[verifier]
+timeout_sec = 180
+environment_mode = "separate"
+
+[verifier.environment]
+docker_image = "agentops-skill-eval-verifier:validator-controls-v1"
+network_mode = "no-network"
+cpus = 2
+memory_mb = 2048
+
+[[artifacts]]
+source = "/app/work"

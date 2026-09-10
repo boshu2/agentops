@@ -570,6 +570,15 @@
     },
     {
       "driven_by_skills": [
+        "skill-eval"
+      ],
+      "id": "skill:skill-eval:evaluate_skill_decision",
+      "name": "evaluate_skill_decision",
+      "path": "skills/skill-eval/SKILL.md",
+      "type": "skill"
+    },
+    {
+      "driven_by_skills": [
         "standards"
       ],
       "id": "skill:standards:standards",
@@ -726,13 +735,13 @@
     "cli_commands": 0,
     "gates": 0,
     "reference_impls": 0,
-    "skills": 80,
-    "total": 80
+    "skills": 81,
+    "total": 81
   },
   "cli_top_level_commands": [],
   "schema_version": 3,
   "summary": {
-    "capabilities": 80,
+    "capabilities": 81,
     "cli_commands": 0,
     "eval_files": 0,
     "hooks": 0,
@@ -1454,7 +1463,8 @@
       {
         "capabilities": [
           "author_seeded_probe",
-          "run_probe_tier"
+          "run_probe_tier",
+          "evaluate_skill_decision"
         ],
         "disposition": "keep_specialist",
         "effects": [
