@@ -1,6 +1,8 @@
 """Synthetic native-record replays; no live models, private sources or launches."""
 from copy import deepcopy
+import hashlib
 import importlib.util
+import json
 from pathlib import Path
 
 import pytest
@@ -254,6 +256,73 @@ def test_missing_or_untrusted_grade_never_manufactures_zero_case_errors(invalid)
     assert metrics["false_acceptance"]["count"] is None
     assert metrics["false_acceptance"]["denominator"] is None
     assert metrics["false_acceptance"]["rate"] is None
+
+
+def multistep_fixture(tmp_path):
+    from dirhash import dirhash
+    report, receipts = fixture(("success", "success"))
+    task = tmp_path / "task"
+    task.mkdir()
+    spec = '''[environment]
+docker_image = "sha256:worker"
+[verifier]
+environment_mode = "separate"
+[verifier.environment]
+docker_image = "sha256:verifier"
+[[steps]]
+name = "producer"
+[[steps]]
+name = "successor"
+'''
+    (task / "task.toml").write_text(spec)
+    checksum = dirhash(task, "sha256")
+    for receipt, job in zip(receipts["trials"], report["jobs"]):
+        receipt["runtime"]["harbor_version"] = "0.22.0"
+        receipt["task_checksum"] = checksum
+        trial = job["trials"][0]
+        trial["task_checksum"] = checksum
+        trial["documents"]["config.json"]["data"]["task"]["path"] = str(task)
+        native = trial["documents"]["result.json"]["data"]
+        native["verifier_environment_mode"] = None
+        native["step_results"] = [{"step_name": name, "verifier_environment_mode": None,
+                                   "verifier_result": {"rewards": {"reward": score}}}
+                                  for name, score in (("producer", 0), ("successor", 1))]
+    frozen = {"task_checksum": checksum, "runtime": receipts["trials"][0]["runtime"]}
+    manifest = tmp_path / "staged.json"
+    manifest.write_text(json.dumps(frozen))
+    for receipt in receipts["trials"]:
+        receipt["staging_manifest"] = {"path": str(manifest), "sha256": hashlib.sha256(manifest.read_bytes()).hexdigest()}
+    return report, receipts
+
+
+def test_multistep_mode_uses_bound_frozen_configuration_and_labels_its_limit(tmp_path):
+    report, receipts = multistep_fixture(tmp_path)
+    result = readout.build(report, receipts)
+    assert len(result["paired_outcomes"]) == 1
+    assert all(row["verifier_mode_source"] == "frozen task configuration (runtime isolation not measured)"
+               for row in result["attempts"])
+    assert "Verifier mode: frozen task configuration (runtime isolation not measured)" in readout.markdown(result)
+
+
+@pytest.mark.parametrize("invalid", ["changed_task", "wrong_manifest_hash", "native_contradiction", "step_contradiction", "wrong_task_path"])
+def test_multistep_fallback_never_overrides_missing_or_conflicting_provenance(tmp_path, invalid):
+    report, receipts = multistep_fixture(tmp_path)
+    trial = report["jobs"][0]["trials"][0]
+    native = trial["documents"]["result.json"]["data"]
+    if invalid == "changed_task":
+        with (tmp_path / "task/task.toml").open("a") as output:
+            output.write('[steps.verifier]\nenvironment_mode = "same"\n')
+    elif invalid == "wrong_manifest_hash":
+        receipts["trials"][0]["staging_manifest"]["sha256"] = "0" * 64
+    elif invalid == "native_contradiction":
+        native["verifier_environment_mode"] = "same"
+    elif invalid == "step_contradiction":
+        native["step_results"][1]["verifier_environment_mode"] = "same"
+    else:
+        trial["documents"]["config.json"]["data"]["task"]["path"] = "/wrong/task"
+    result = readout.build(report, receipts)
+    assert result["paired_outcomes"] == []
+    assert "native separate verifier not evidenced" in str(result["pair_dispositions"])
 
 
 def test_no_receipt_keeps_observations_and_missing_usage_unknown():

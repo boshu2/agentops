@@ -63,6 +63,16 @@ exploit an unknown isolation gap. False assertions cannot be repaired by a
 passing reward: inspect or invalidate the source receipt. Hashes establish
 content identity, not truth. This reader is not a sandbox or attestation service.
 
+Harbor 0.22.0 multi-step results omit the verifier mode at both trial and step
+levels. For that shape only, the reader can use the receipt's explicitly cited
+staging manifest and frozen task configuration. It verifies the manifest hash,
+rehashes the task with Harbor's `dirhash`, matches native task path/checksum,
+runtime image identities and step names, and rejects contradictory modes or
+step verifier overrides. This requires the pinned Harbor environment (which
+supplies `dirhash`). Missing dependencies or evidence retain the exclusion.
+The readout labels this **frozen task configuration (runtime isolation not
+measured)**; a green reward alone cannot enable the fallback.
+
 The primary displayed rate is **endpoint successes / all assigned-or-observed
 attempts**, using native expected counts where known and never shrinking below
 observed attempts. A missing expected total makes the aggregate rate unknown;

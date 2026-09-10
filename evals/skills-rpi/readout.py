@@ -16,6 +16,7 @@ import math
 from pathlib import Path
 import statistics
 import sys
+import tomllib
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
@@ -50,6 +51,51 @@ def normalized_config(config):
     return value
 
 
+def verifier_mode_source(trial, receipt):
+    native = document(trial, "result.json")
+    mode = native.get("verifier_environment_mode")
+    if mode == "separate":
+        return "native result"
+    steps = native.get("step_results")
+    # Harbor 0.22 multi-step results omit mode. Never override a contradiction
+    # or infer separation from rewards; resolve only the cited frozen task.
+    if mode is not None or not isinstance(steps, list) or len(steps) < 2 or not receipt:
+        return None
+    try:
+        from dirhash import dirhash
+        reference = receipt["staging_manifest"]
+        manifest = Path(reference["path"])
+        if not manifest.is_absolute() or manifest.is_symlink():
+            return None
+        raw = manifest.read_bytes()
+        if not same_digest(hashlib.sha256(raw).hexdigest(), reference["sha256"]):
+            return None
+        frozen = json.loads(raw)
+        root = manifest.parent / "task"
+        if root.is_symlink() or any(path.is_symlink() for path in root.rglob("*")):
+            return None
+        checksum = dirhash(root, "sha256")
+        if not all(same_digest(checksum, owner.get("task_checksum")) for owner in (frozen, receipt, trial)):
+            return None
+        if Path(document(trial, "config.json")["task"]["path"]).resolve() != root.resolve():
+            return None
+        spec = tomllib.loads((root / "task.toml").read_text())
+        runtime = receipt["runtime"]
+        verifier = spec["verifier"]
+        configured_steps = spec["steps"]
+        if (runtime.get("harbor_version") != "0.22.0" or frozen["runtime"] != runtime or verifier.get("environment_mode") != "separate"
+                or spec["environment"]["docker_image"] != runtime["worker_image_id"]
+                or verifier["environment"]["docker_image"] != runtime["verifier_image_id"]
+                or [step["name"] for step in configured_steps] != [step["step_name"] for step in steps]
+                or any(step.get("verifier") for step in configured_steps)
+                or any(step.get("verifier_environment_mode") not in (None, "separate") or not step.get("verifier_result") for step in steps)
+                or document(trial, "config.json").get("verifier", {}).get("disable") is True):
+            return None
+        return "frozen task configuration (runtime isolation not measured)"
+    except (ImportError, OSError, ValueError, KeyError, TypeError, AttributeError):
+        return None
+
+
 def validate_receipt(job, trial, receipt):
     reasons = []
     if receipt is None:
@@ -82,7 +128,7 @@ def validate_receipt(job, trial, receipt):
     if isolation.get("contamination_detected") is True or receipt.get("contamination_detected") is True:
         reasons.append("contamination detected")
     native = document(trial, "result.json")
-    if native.get("verifier_environment_mode") != "separate":
+    if verifier_mode_source(trial, receipt) is None:
         reasons.append("native separate verifier not evidenced")
     info = native.get("agent_info") or {}
     model_info = info.get("model_info") or {}
@@ -253,6 +299,7 @@ def build(report, receipts=None, *, control="control", treatment="treatment", n_
                    "timing": trial.get("timing"), "comparison_exclusions": reasons,
                    "harbor_agent_result": native.get("agent_result"),
                    "native_rewards": (native.get("verifier_result") or {}).get("rewards"),
+                   "verifier_mode_source": verifier_mode_source(trial, receipt),
                    "verifier_grade": grade,
                    "native_phase_endpoints": {key: native.get(key) for key in
                                               ("environment_setup", "agent_setup", "agent_execution", "verifier")},
@@ -385,6 +432,8 @@ def markdown(result):
     for row in result["attempts"]:
         exclusion = "; ".join(row["comparison_exclusions"]) or "included in paired endpoint analysis"
         lines.append(f"- {row['job']} / {row['trial_id'] or row['directory']}: {row['outcome']}; native oracle {json.dumps(row['native_rewards'], sort_keys=True)}; {show(row['elapsed_seconds'])} seconds; {exclusion}.")
+        if (row["verifier_mode_source"] or "").startswith("frozen"):
+            lines.append("  Verifier mode: " + row["verifier_mode_source"] + ".")
     lines += ["", "Independent validation cases (count / expected-case denominator; unknown cases):",
               "", "| Arm | False acceptance | False blocker | Justified NOT_PROVEN | Attempts without case grade |",
               "|---|---|---|---|---:|"]
