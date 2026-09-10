@@ -14,25 +14,28 @@ class VerdictMismatch(ValueError):
     def __init__(self, case_results):
         super().__init__("verdicts do not match the case-level oracle")
         self.case_results = case_results
+        self.grade_context = {}
 
 
 def judge_verdicts(expected, actual):
-    if not isinstance(actual, dict):
-        raise ValueError("verdicts.json must contain an object")
-    results = {}
+    is_object = isinstance(actual, dict)
+    submitted = actual if is_object else {}
+    results = []
     for case, wanted in expected.items():
-        got = actual.get(case)
+        got = submitted.get(case)
         if got == wanted:
-            disposition = {"PASS": "correct_acceptance", "FAIL": "correct_rejection",
-                           "NOT_PROVEN": "justified_not_proven"}[wanted]
+            classification = "justified_not_proven" if wanted == "NOT_PROVEN" else "correct"
         elif wanted == "PASS" and got in ("FAIL", "NOT_PROVEN"):
-            disposition = "false_blocker"
-        elif got == "PASS":
-            disposition = "false_acceptance" if wanted == "FAIL" else "missing_evidence_accepted"
+            classification = "false_blocker"
+        elif wanted in ("FAIL", "NOT_PROVEN") and got == "PASS":
+            classification = "false_acceptance"
+        elif got is None:
+            classification = "missing"
         else:
-            disposition = "incorrect_or_incomplete_verdict"
-        results[case] = {"expected": wanted, "actual": got, "disposition": disposition}
-    if actual != expected:
+            classification = "incorrect_disposition"
+        results.append({"case_id": case, "expected": wanted, "actual": got,
+                        "classification": classification})
+    if not is_object or submitted != expected:
         raise VerdictMismatch(results)
     return results
 
@@ -87,20 +90,26 @@ def grade(baseline, candidate, tests, log):
         (log / "go-test.log").write_bytes(check.stdout)
         if check.returncode:
             raise ValueError("endpoint oracle failed; see go-test.log")
-    case_results = None
-    if spec.get("verdicts"):
-        verdicts = json.loads(after.get("verdicts.json", b"{}"))
-        case_results = judge_verdicts(spec["verdicts"], verdicts)
-    if spec.get("dispositions"):
-        actual = json.loads(after.get("dispositions.json", b"{}"))
-        if actual != spec["dispositions"]:
-            raise ValueError("recorded dispositions do not match fixed caller authority")
     result = {"endpoint_pass": True, "subject_sha256": digest(after),
               "checked": spec["checked"], "not_checked": spec.get("not_checked", [])}
     if spec.get("limitations"):
         result["limitations"] = spec["limitations"]
-    if case_results is not None:
-        result["case_results"] = case_results
+    if spec.get("verdicts"):
+        try:
+            verdicts = json.loads(after.get("verdicts.json", b"{}"))
+        except (ValueError, UnicodeDecodeError):
+            # The trusted subject was checked, but no case verdict was supplied
+            # in a readable document. Retain all expected cases as missing.
+            verdicts = None
+        try:
+            result["case_results"] = judge_verdicts(spec["verdicts"], verdicts)
+        except VerdictMismatch as error:
+            error.grade_context = {**result, "endpoint_pass": False}
+            raise
+    if spec.get("dispositions"):
+        actual = json.loads(after.get("dispositions.json", b"{}"))
+        if actual != spec["dispositions"]:
+            raise ValueError("recorded dispositions do not match fixed caller authority")
     return result
 
 
@@ -118,6 +127,7 @@ def main():
         (log / "reward.txt").write_text("0\n")
         result = {"endpoint_pass": False, "error": str(error)}
         if isinstance(error, VerdictMismatch):
+            result.update(error.grade_context)
             result["case_results"] = error.case_results
         status = 1
     (log / "grade.json").write_text(json.dumps(result, indent=2) + "\n")
