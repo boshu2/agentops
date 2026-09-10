@@ -13,7 +13,7 @@ import (
 // front doors need neither skills nor setup and leave both directories empty.
 func TestNativeOnboardingWithoutSkillsOrSetupWrites(t *testing.T) {
 	bin := aoBinary(t)
-	for _, args := range [][]string{{"--help"}, {"quick-start"}, {"quick-start", "--help"}, {"demo"}, {"demo", "--quick"}, {"demo", "--concepts"}, {"demo", "--help"}, {"init", "--help"}} {
+	for _, args := range [][]string{{"--help"}, {"quick-start"}, {"quick-start", "--help"}, {"demo"}, {"demo", "--quick"}, {"demo", "--concepts"}, {"demo", "--help"}, {"init", "--help"}, {"robot-docs"}, {"robot-docs", "--help"}} {
 		t.Run(strings.Join(args, "_"), func(t *testing.T) {
 			home, consumer := t.TempDir(), t.TempDir()
 			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
