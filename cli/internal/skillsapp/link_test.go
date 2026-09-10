@@ -285,7 +285,10 @@ func TestLinkAllDests_ResilientAcrossDests(t *testing.T) {
 	}
 	bad := filepath.Join(badParent, "skills")
 
-	results, anyErr := LinkAllDests(src, []string{bad, good}, false)
+	results, anyErr, err := LinkAllDests(src, []string{bad, good}, false)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	if !anyErr {
 		t.Fatal("anyErr should be true when a dest fails")
@@ -331,5 +334,81 @@ func TestRenderLinkResult_ErrorDryRunAndConflictLines(t *testing.T) {
 	}
 	if !strings.Contains(out, "! gamma (real dir — foreign corpus, not clobbered)") {
 		t.Errorf("conflict line must state the non-clobber guarantee, got:\n%s", out)
+	}
+}
+
+func TestSelectedLinkDryRunPreflightsAllNamesAcrossDestinations(t *testing.T) {
+	src := t.TempDir()
+	mkSkill(t, src, "alpha")
+	mkSkill(t, src, "beta")
+	dests := []string{filepath.Join(t.TempDir(), "one"), filepath.Join(t.TempDir(), "two")}
+	for _, dryRun := range []bool{false, true} {
+		results, _, err := LinkAllDests(src, dests, dryRun, "alpha", "missing")
+		if err == nil || len(results) != 0 {
+			t.Fatalf("invalid selection attempted destinations: %+v, %v", results, err)
+		}
+	}
+	results, anyErr, err := LinkAllDests(src, dests, true, "beta", "beta")
+	if err != nil || anyErr || len(results) != 2 {
+		t.Fatalf("selected dry-run: %+v, %v, %v", results, anyErr, err)
+	}
+	for _, res := range results {
+		if !res.DryRun || len(res.Linked) != 1 || res.Linked[0] != "beta" {
+			t.Fatalf("wrong selected dry-run: %+v", res)
+		}
+	}
+	for _, dest := range dests {
+		if _, err := os.Lstat(dest); !os.IsNotExist(err) {
+			t.Fatalf("preflight or dry-run created %s: %v", dest, err)
+		}
+	}
+}
+
+func TestSelectedLinkPreservesForeignAndUnselectedEntries(t *testing.T) {
+	src, dest := t.TempDir(), t.TempDir()
+	for _, name := range []string{"alpha", "beta", "gamma"} {
+		mkSkill(t, src, name)
+	}
+	foreign := filepath.Join(dest, "alpha")
+	if err := os.WriteFile(foreign, []byte("user-owned"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	unselected := filepath.Join(dest, "gamma")
+	if err := os.Symlink(filepath.Join(src, "gamma"), unselected); err != nil {
+		t.Fatal(err)
+	}
+	results, anyErr, err := LinkAllDests(src, []string{dest}, false, "beta", "alpha")
+	if err != nil || anyErr || len(results) != 1 {
+		t.Fatalf("selected link: %+v, %v, %v", results, anyErr, err)
+	}
+	res := results[0]
+	if len(res.Conflicts) != 1 || res.Conflicts[0] != "alpha" || len(res.Linked) != 1 || res.Linked[0] != "beta" || len(res.Present) != 0 {
+		t.Fatalf("selection escaped or lost ownership: %+v", res)
+	}
+	if data, err := os.ReadFile(foreign); err != nil || string(data) != "user-owned" {
+		t.Fatalf("foreign entry changed: %q, %v", data, err)
+	}
+	if target, err := os.Readlink(unselected); err != nil || target != filepath.Join(src, "gamma") {
+		t.Fatalf("unselected existing entry changed: %q, %v", target, err)
+	}
+}
+
+func TestSelectedLinkContinuesAfterDestinationError(t *testing.T) {
+	src, dest := t.TempDir(), t.TempDir()
+	mkSkill(t, src, "alpha")
+	mkSkill(t, src, "beta")
+	bad := filepath.Join(t.TempDir(), "file")
+	if err := os.WriteFile(bad, []byte("user-owned"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	results, anyErr, err := LinkAllDests(src, []string{bad, dest}, false, "alpha")
+	if err != nil || !anyErr || len(results) != 2 || results[0].Err == "" || results[1].Err != "" {
+		t.Fatalf("selected destination error handling: %+v, %v, %v", results, anyErr, err)
+	}
+	if _, err := os.Stat(filepath.Join(dest, "alpha", "SKILL.md")); err != nil {
+		t.Fatalf("good destination skipped: %v", err)
+	}
+	if _, err := os.Lstat(filepath.Join(dest, "beta")); !os.IsNotExist(err) {
+		t.Fatalf("unselected name leaked: %v", err)
 	}
 }

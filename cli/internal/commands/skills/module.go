@@ -53,6 +53,7 @@ type Module struct {
 	// link / unlink
 	linkDest   string
 	linkJSON   bool
+	linkSkills []string
 	unlinkDest string
 	unlinkJSON bool
 }
@@ -492,8 +493,14 @@ func (m *Module) linkCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "link",
 		Short: "Symlink repo skills into portable and installed runtime skill roots",
-		Long: `Scan skills/ and create a live-tier symlink for every skill dir that has
-no entry yet. By DEFAULT it links into EVERY agent runtime you have installed —
+		Long: `Optionally install skills from a source checkout. Native execution needs no
+skill installation. With no --skill selector, preserve the full install: scan
+skills/ and create a live-tier symlink for every skill dir that has no entry yet.
+Repeat --skill NAME to install only named specialists. Every name is validated
+before any destination is changed; duplicates are installed once. Selection
+does not remove existing unselected skills or install dependencies automatically.
+
+By DEFAULT it links into EVERY agent runtime you have installed —
 ~/.agents/skills, ~/.claude/skills, ~/.codex/skills, ~/.gemini/skills,
 ~/.cursor/skills, and ~/.pi/skills — detected by the config root existing under $HOME;
 --dest overrides to a single dir. Idempotent and non-destructive: skills already
@@ -515,6 +522,7 @@ inspect and resolve the named operator-owned path explicitly.
 
   ao skills link                        # link missing into every installed runtime
   ao skills link --dry-run              # show what's missing without linking
+  ao skills link --skill security --skill test # install only these specialists
   git pull && ao skills link            # track main: pick up newly-landed skills
   ao skills link --dest ~/.codex/skills # link into ONE specific dir only`,
 		Args: cobra.NoArgs,
@@ -522,6 +530,7 @@ inspect and resolve the named operator-owned path explicitly.
 	}
 	cmd.Flags().StringVar(&m.linkDest, "dest", "", "Link into this single dir instead of the auto-detected roots (default: ~/.agents plus every installed runtime)")
 	cmd.Flags().BoolVar(&m.linkJSON, "json", false, "Emit machine-readable JSON")
+	cmd.Flags().StringArrayVar(&m.linkSkills, "skill", nil, "Install only this skill; repeat for more names (default: all skills)")
 	return cmd
 }
 
@@ -538,7 +547,11 @@ func (m *Module) runLink(cmd *cobra.Command, _ []string) error {
 		return err
 	}
 
-	results, anyErr := skillsapp.LinkAllDests(skillsDir, dests, m.host.DryRun())
+	results, anyErr, err := skillsapp.LinkAllDests(skillsDir, dests, m.host.DryRun(), m.linkSkills...)
+	if err != nil {
+		cmd.SilenceUsage = true
+		return err
+	}
 
 	if m.linkJSON {
 		enc := json.NewEncoder(cmd.OutOrStdout())
