@@ -18,7 +18,9 @@ owns source changes and factual checks; the runtime derives identity and receipt
    stay explicit; do not invent parentage or a second tracker. The optional
    [session association reference](../cass/references/SESSION_FORMATS.md#work-to-session-associations)
    supplies mechanics for that selected workflow.
-2. Run the first useful acceptance check. Behavioral changes preserve RED for
+2. Find nearby validation scripts and tests that consume the edited paths or
+   contract wording. Run the smallest applicable existing check before editing
+   and after the change. Behavioral changes preserve RED for
    the expected missing behavior; a pure refactor, relocation or documentation
    change may have an honest green baseline. Avoid building elaborate fixtures
    when an existing test or small discriminating probe answers the question.
