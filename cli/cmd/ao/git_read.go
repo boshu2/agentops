@@ -33,29 +33,54 @@ func gitDiscoveryEnv() []string {
 	return env
 }
 
-// gitChangedFiles lists worktree-modified paths (read-only, bounded) for
-// handoff evidence. Returns nil when git is unavailable or the tree is clean.
-func gitChangedFiles(cwd string, limit int) []string {
+// gitChangedFiles includes tracked and untracked work for handoff evidence.
+// A failed observation is distinct from a successfully observed clean tree.
+func gitChangedFiles(cwd string, limit int) ([]string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 1200*time.Millisecond)
 	defer cancel()
-	command := exec.CommandContext(ctx, "git", "diff", "--name-only", "HEAD")
+	command := exec.CommandContext(ctx, "git", "status", "--porcelain=v1", "-z", "--untracked-files=all")
 	command.Dir = cwd
 	command.Env = gitDiscoveryEnv()
 	out, err := command.Output()
-	if err != nil || strings.TrimSpace(string(out)) == "" {
-		return nil
+	if err != nil {
+		return nil, fmt.Errorf("observe Git status: %w", err)
 	}
-	lines := strings.Split(strings.TrimSpace(string(out)), "\n")
-	if limit > 0 && len(lines) > limit {
-		lines = lines[:limit]
+	files, err := parseGitStatus(string(out))
+	if err != nil {
+		return nil, err
 	}
-	result := make([]string, 0, len(lines))
-	for _, line := range lines {
-		if line = strings.TrimSpace(line); line != "" {
-			result = append(result, line)
+	if limit > 0 && len(files) > limit {
+		files = files[:limit]
+	}
+	return files, nil
+}
+
+func parseGitStatus(raw string) ([]string, error) {
+	if raw == "" {
+		return nil, nil
+	}
+	if !strings.HasSuffix(raw, "\x00") {
+		return nil, fmt.Errorf("unterminated Git status record")
+	}
+	records := strings.Split(strings.TrimSuffix(raw, "\x00"), "\x00")
+	var paths []string
+	for i := 0; i < len(records); i++ {
+		record := records[i]
+		if len(record) < 4 || record[2] != ' ' {
+			return nil, fmt.Errorf("invalid Git status record")
+		}
+		paths = append(paths, record[3:])
+		// Porcelain -z emits a rename/copy destination followed by the
+		// original path as a separate NUL-delimited field without a status.
+		if strings.ContainsAny(record[:2], "RC") {
+			i++
+			if i == len(records) || records[i] == "" {
+				return nil, fmt.Errorf("missing Git rename/copy source")
+			}
+			paths = append(paths, records[i])
 		}
 	}
-	return result
+	return paths, nil
 }
 
 // resolveRepoRoot is read-only discovery. AgentOps does not mutate Git state.
