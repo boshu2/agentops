@@ -173,7 +173,7 @@ func readEvidence(path string, document bool) (Evidence, []byte, error) {
 
 func readDocuments(dir string) (map[string]Evidence, []string) {
 	docs, diagnostics := map[string]Evidence{}, []string{}
-	for _, name := range []string{"config.json", "lock.json", "result.json"} {
+	for _, name := range []string{"config.json", "lock.json", "result.json", "verifier/grade.json"} {
 		path := filepath.Join(dir, name)
 		e, raw, err := readEvidence(path, true)
 		if os.IsNotExist(err) {

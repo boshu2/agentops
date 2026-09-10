@@ -146,3 +146,23 @@ func TestNativeProviderRejectionIsNotAZeroQualityScore(t *testing.T) {
 		t.Fatalf("native error: %+v", a)
 	}
 }
+
+func TestReportRetainsIndependentGradeForFailedEndpoint(t *testing.T) {
+	dir := t.TempDir()
+	put(t, filepath.Join(dir, "trial", "result.json"), `{"id":"trial","started_at":"2026-09-10T14:00:00Z","finished_at":"2026-09-10T14:00:05Z","verifier_result":{"rewards":{"reward":0}}}`)
+	grade := `{"endpoint_pass":false,"case_results":[{"case_id":"clean","expected":"PASS","actual":"FAIL","classification":"false_blocker"}],"not_checked":["fresh review"]}`
+	path := filepath.Join(dir, "trial", "verifier", "grade.json")
+	put(t, path, grade)
+	r, err := Build([]JobInput{{Arm: "control", Directory: dir}}, nil, "reward")
+	if err != nil {
+		t.Fatal(err)
+	}
+	e := r.Jobs[0].Trials[0].Documents["verifier/grade.json"]
+	resolvedPath, err := filepath.EvalSymlinks(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if e.Path != resolvedPath || len(e.SHA256) != 64 || string(e.Data) != grade || r.Jobs[0].Counts.Failed != 1 {
+		t.Fatalf("independent failed-case grade lost: %+v", e)
+	}
+}

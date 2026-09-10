@@ -83,7 +83,7 @@
 | `scaffold` | execution | `keep_specialist` | - | `scaffold` | `write_project_files` |
 | `security` | product | `keep_specialist` | - | `security` | `write_scan_artifacts` |
 | `skill-builder` | meta | `keep_specialist` | - | `skill_builder`, `heal_skill` | `write_skill_source`, `write_build_report`, `regenerate_skill_projections`, `repair_skill_projections` |
-| `skill-eval` | meta | `keep_specialist` | - | `author_seeded_probe`, `run_probe_tier` | `write_probe_package`, `dispatch_probe_producer` |
+| `skill-eval` | meta | `keep_specialist` | - | `author_seeded_probe`, `run_probe_tier`, `evaluate_skill_decision` | `write_probe_package`, `dispatch_probe_producer` |
 | `standards` | knowledge | `keep_specialist` | - | `standards` | - |
 | `status` | session | `keep_specialist` | - | `status` | `read_filesystem`, `read_clock` |
 | `swarm` | execution | `keep_optional_adapter` | - | `dispatch_once` | `invoke_selected_executor` |

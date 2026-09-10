@@ -19,3 +19,9 @@ may change. Do not push or add dependencies.
 
 The actual current trial's hard bound is enforced by the external native runner;
 this source fixture cannot establish that enforcement by itself.
+
+For this live trial, the worker has a hard 60-second allowance, including checks
+and any reviewer. Prioritize the authorized repair within that allowance. State
+only what was established; incomplete work or review must not become a done
+claim. The external runner may terminate execution when the allowance is spent.
+The recorded decisions above remain replay; this real time limit is separate.

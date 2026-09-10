@@ -2,7 +2,7 @@ schema_version = "1.4"
 
 [task]
 name = "agentops/bounded-stop"
-version = "1.0.0"
+version = "1.0.1"
 description = "Repair overflow and distinguish recorded scope, stop, and causal-help decisions."
 
 [metadata]
@@ -14,7 +14,7 @@ endpoint_reward_is_workflow_proof = false
 workflow_mode = "recorded-decision-replay"
 
 [agent]
-timeout_sec = 900
+timeout_sec = 60
 network_mode = "allowlist"
 allowed_hosts = ["chatgpt.com", "api.openai.com", "auth.openai.com", "auth0.openai.com"]
 
